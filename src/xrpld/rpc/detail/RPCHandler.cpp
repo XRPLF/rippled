@@ -164,8 +164,10 @@ callMethod(JsonContext& context, Method method, std::string const& name, Object&
 {
     // Scoped so this command nests under rpc.process and becomes the ambient
     // parent of any command-internal spans (e.g. pathfind.request). Coro-aware
-    // storage keeps the scope correct across doRipplePathFind's yield.
-    auto span = ScopedSpanGuard(TraceCategory::Rpc, rpc_span::prefix::command, name);
+    // storage keeps the scope correct across doRipplePathFind's yield. Internal
+    // rather than Server: the inbound boundary is above rpc.process.
+    auto span =
+        ScopedSpanGuard(TraceCategory::Rpc, rpc_span::prefix::command, name, SpanRole::Internal);
     span.setAttribute(rpc_span::attr::command, name.c_str());
     span.setAttribute(rpc_span::attr::version, static_cast<int64_t>(context.apiVersion));
     span.setAttribute(
@@ -283,7 +285,9 @@ doCommand(rpc::JsonContext& context, json::Value& result)
         // registered handler names (plus "unknown") — see the helper for why
         // raw request input must not reach the telemetry pipeline.
         auto const cmdName = resolveCommandSpanName(context);
-        auto span = ScopedSpanGuard(TraceCategory::Rpc, rpc_span::prefix::command, cmdName);
+        // Internal for the same reason as the success path above.
+        auto span = ScopedSpanGuard(
+            TraceCategory::Rpc, rpc_span::prefix::command, cmdName, SpanRole::Internal);
         span.setAttribute(rpc_span::attr::command, cmdName);
         // Mirror the attribute set callMethod() puts on a successful command
         // span, so error spans stay filterable by API version and role.
