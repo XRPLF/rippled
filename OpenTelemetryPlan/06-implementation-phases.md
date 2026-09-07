@@ -97,7 +97,7 @@ gantt
 | ---- | -------------------------------------------------------------------------- |
 | 2.1  | Implement W3C Trace Context HTTP header extraction                         |
 | 2.2  | Instrument `ServerHandler::onRequest()`                                    |
-| 2.3  | Instrument `RPCHandler::doCommand()`                                       |
+| 2.3  | Instrument `xrpl::rpc::doCommand()`                                        |
 | 2.4  | Add RPC-specific attributes                                                |
 | 2.5  | Instrument WebSocket handler                                               |
 | 2.6  | PathFinding instrumentation (`pathfind.request`, `pathfind.compute` spans) |
@@ -150,19 +150,19 @@ gantt
 
 ### Tasks
 
-| Task | Description                                    |
-| ---- | ---------------------------------------------- |
-| 4.1  | Instrument `RCLConsensusAdaptor::startRound()` |
-| 4.2  | Instrument phase transitions                   |
-| 4.3  | Instrument proposal handling                   |
-| 4.4  | Instrument validation handling                 |
-| 4.5  | Add consensus-specific attributes              |
-| 4.6  | Correlate with transaction traces              |
-| 4.7  | Validator list and manifest tracing            |
-| 4.8  | Amendment voting tracing                       |
-| 4.9  | SHAMap sync tracing                            |
-| 4.10 | Multi-validator integration tests              |
-| 4.11 | Performance validation                         |
+| Task | Description                             |
+| ---- | --------------------------------------- |
+| 4.1  | Instrument `RCLConsensus::startRound()` |
+| 4.2  | Instrument phase transitions            |
+| 4.3  | Instrument proposal handling            |
+| 4.4  | Instrument validation handling          |
+| 4.5  | Add consensus-specific attributes       |
+| 4.6  | Correlate with transaction traces       |
+| 4.7  | Validator list and manifest tracing     |
+| 4.8  | Amendment voting tracing                |
+| 4.9  | SHAMap sync tracing                     |
+| 4.10 | Multi-validator integration tests       |
+| 4.11 | Performance validation                  |
 
 ### Exit Criteria
 
