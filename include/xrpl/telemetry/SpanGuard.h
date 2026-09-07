@@ -99,7 +99,7 @@
  *     auto ctx = span.spanContext();
  *
  *     // Thread B: create child with captured context
- *     auto child = SpanGuard::childSpan(rpc_span::op::process, ctx);
+ *     auto child = SpanGuard::childSpan(rpc_span::prefix::command, ctx);
  * @endcode
  *
  * 4. Conditional check (rarely needed — methods are no-ops on null):
@@ -155,6 +155,22 @@
  *         });
  * @endcode
  *
+ * 8. Internal work inside a category whose default role is Server:
+ * @code
+ *     #include <xrpld/rpc/detail/RpcSpanNames.h>
+ *     using namespace xrpl::telemetry;
+ *
+ *     // Only the inbound handler is the server side of a remote call.
+ *     // Work below it is internal, so pass the role explicitly: the
+ *     // category default (Server) would read as a second inbound
+ *     // request and leave an unpaired edge in a service graph.
+ *     auto span = SpanGuard::span(
+ *         TraceCategory::Rpc,
+ *         rpc_span::prefix::rpc,
+ *         rpc_span::op::process,
+ *         SpanRole::Internal);
+ * @endcode
+ *
  * @note Thread safety: SpanGuard is thread-free. It holds only the
  * span (no Scope), so it never binds to a thread-local context stack
  * and may be moved to and destroyed on any thread. To make a span the
@@ -197,6 +213,25 @@ namespace xrpl::telemetry {
  * whether to create a real span or return a null guard.
  */
 enum class TraceCategory { Rpc, Transactions, Consensus, Peer, Ledger };
+
+/**
+ * Role a span plays in a call relationship. Each value maps to the OTel
+ * span kind of the same name; see Telemetry::startSpan() for what those
+ * mean.
+ *
+ * Orthogonal to TraceCategory. The category names the subsystem and gates
+ * the span on config (`trace_rpc=1`); the role says whether the span
+ * handles a remote call or is internal work. An Rpc-category span can be
+ * either: the inbound request handler is Server, everything it calls into
+ * is Internal.
+ *
+ * FromCategory takes the category's own role, so a call site that does not
+ * care passes nothing. Pick a role explicitly where the category default
+ * is wrong: trace backends pair Server with Client and Consumer with
+ * Producer, so internal work left as Server becomes an unpaired edge in a
+ * service graph.
+ */
+enum class SpanRole { FromCategory, Internal, Server, Client, Producer, Consumer };
 
 /**
  * Raw trace context bytes for cross-node propagation.
@@ -310,9 +345,16 @@ public:
      * @param cat     Trace subsystem category.
      * @param prefix  Span name prefix (e.g. "rpc.command").
      * @param name    Span name suffix (e.g. "submit").
+     * @param role    Call-relationship role; defaults to the category's own
+     * role. Pass Internal for work the category maps to Server or Consumer
+     * but that handles no remote call.
      */
     [[nodiscard]] static SpanGuard
-    span(TraceCategory cat, std::string_view prefix, std::string_view name) noexcept;
+    span(
+        TraceCategory cat,
+        std::string_view prefix,
+        std::string_view name,
+        SpanRole role = SpanRole::FromCategory) noexcept;
 
     /**
      * Create a span that always starts a fresh trace root.
@@ -327,10 +369,16 @@ public:
      * @param cat     Trace subsystem category.
      * @param prefix  Span name prefix (e.g. "peer").
      * @param name    Span name suffix (e.g. "validation.receive").
+     * @param role    Call-relationship role; defaults to the category's own
+     * role. See span().
      * @return An active root-span guard, or a null guard if disabled.
      */
     [[nodiscard]] static SpanGuard
-    freshRoot(TraceCategory cat, std::string_view prefix, std::string_view name) noexcept;
+    freshRoot(
+        TraceCategory cat,
+        std::string_view prefix,
+        std::string_view name,
+        SpanRole role = SpanRole::FromCategory) noexcept;
 
     // --- Child / linked span creation ----------------------------------
 
@@ -607,10 +655,12 @@ public:
  *     using namespace xrpl::telemetry;
  *
  *     ScopedSpanGuard span(
- *         TraceCategory::Rpc, rpc_span::prefix::command, commandName);
- *     span.setAttribute(rpc_span::attr::command, commandName);
- *     // childSpan parents to `span` because it is active on this thread
- *     auto child = span.childSpan(rpc_span::op::process);
+ *         TraceCategory::Rpc, rpc_span::prefix::rpc, rpc_span::op::process);
+ *     // childSpan takes the name verbatim, so pass a full dotted constant,
+ *     // never a bare op:: suffix. The child parents to `span` because
+ *     // `span` is active on this thread.
+ *     auto child = span.childSpan(rpc_span::prefix::command);
+ *     child.setAttribute(rpc_span::attr::command, commandName);
  * @endcode
  *
  * 2. Capture on this thread, hand off to another (edge case):
@@ -657,8 +707,14 @@ public:
      * @param cat     Trace subsystem category.
      * @param prefix  Span name prefix (e.g. "rpc.command").
      * @param name    Span name suffix (e.g. "submit").
+     * @param role    Call-relationship role; defaults to the category's own
+     * role. See SpanGuard::span().
      */
-    ScopedSpanGuard(TraceCategory cat, std::string_view prefix, std::string_view name) noexcept;
+    ScopedSpanGuard(
+        TraceCategory cat,
+        std::string_view prefix,
+        std::string_view name,
+        SpanRole role = SpanRole::FromCategory) noexcept;
 
     ~ScopedSpanGuard();
 
@@ -677,10 +733,16 @@ public:
      * @param cat     Trace subsystem category.
      * @param prefix  Span name prefix.
      * @param name    Span name suffix.
+     * @param role    Call-relationship role; defaults to the category's own
+     * role. See SpanGuard::span().
      * @return An active scoped root-span guard, or a null one if disabled.
      */
     [[nodiscard]] static ScopedSpanGuard
-    freshRoot(TraceCategory cat, std::string_view prefix, std::string_view name) noexcept;
+    freshRoot(
+        TraceCategory cat,
+        std::string_view prefix,
+        std::string_view name,
+        SpanRole role = SpanRole::FromCategory) noexcept;
 
     // --- Child / linked span creation ----------------------------------
 
@@ -972,13 +1034,21 @@ public:
     operator=(SpanGuard const&) = delete;
 
     [[nodiscard]] static SpanGuard
-    span(TraceCategory, std::string_view, std::string_view) noexcept
+    span(
+        TraceCategory,
+        std::string_view,
+        std::string_view,
+        SpanRole = SpanRole::FromCategory) noexcept
     {
         return {};
     }
 
     [[nodiscard]] static SpanGuard
-    freshRoot(TraceCategory, std::string_view, std::string_view) noexcept
+    freshRoot(
+        TraceCategory,
+        std::string_view,
+        std::string_view,
+        SpanRole = SpanRole::FromCategory) noexcept
     {
         return {};
     }
@@ -1106,7 +1176,11 @@ class ScopedSpanGuard
     ScopedSpanGuard() = default;
 
 public:
-    ScopedSpanGuard(TraceCategory, std::string_view, std::string_view) noexcept
+    ScopedSpanGuard(
+        TraceCategory,
+        std::string_view,
+        std::string_view,
+        SpanRole = SpanRole::FromCategory) noexcept
     {
     }
     /**
@@ -1127,7 +1201,11 @@ public:
     operator=(ScopedSpanGuard const&) = delete;
 
     [[nodiscard]] static ScopedSpanGuard
-    freshRoot(TraceCategory, std::string_view, std::string_view) noexcept
+    freshRoot(
+        TraceCategory,
+        std::string_view,
+        std::string_view,
+        SpanRole = SpanRole::FromCategory) noexcept
     {
         return {};
     }
