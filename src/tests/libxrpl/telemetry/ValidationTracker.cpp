@@ -291,6 +291,77 @@ TEST_F(ValidationTrackerTest, OnlyWeValidated)
 }
 
 // ---------------------------------------------------------------
+// 10. A counted ledger is never counted twice
+//     reconcile() drops the oldest reconciled events once the
+//     pending map passes kMaxPendingEvents. A validation arriving
+//     for one of those ledgers afterwards must not reach the
+//     agreement or missed totals a second time.
+//
+//     Two hashes are made the oldest so the trim drops both:
+//       - evictedMiss  (network only) reconciles as a miss. Our late
+//         validation cannot repair an entry the trim dropped, so
+//         totalMissed staying at 1 proves the trim really dropped
+//         it. A fixture where the trim did not run would repair it
+//         and report 0 misses.
+//       - evictedAgreed (both sides) reconciles as an agreement.
+//         Re-recording both sides is what double-counts an
+//         agreement.
+// ---------------------------------------------------------------
+TEST_F(ValidationTrackerTest, CountedLedgerNotCountedTwice)
+{
+    // The trim drops the oldest reconciled entries first. Each pause makes
+    // the next record time strictly larger, so these two are the oldest.
+    auto const evictedMiss = makeHash(1);
+    tracker_.recordNetworkValidation(evictedMiss, 1);
+    std::this_thread::sleep_for(std::chrono::milliseconds(5));
+
+    auto const evictedAgreed = makeHash(2);
+    tracker_.recordOurValidation(evictedAgreed, 2);
+    tracker_.recordNetworkValidation(evictedAgreed, 2);
+    std::this_thread::sleep_for(std::chrono::milliseconds(5));
+
+    // Fill to three over the bound so the trim drops three entries: the two
+    // above plus one filler.
+    constexpr std::size_t kFill = ValidationTracker::kMaxPendingEvents + 1;
+    for (std::size_t i = 0; i < kFill; ++i)
+    {
+        auto const hash = makeHash(i + 3);
+        auto const seq = static_cast<LedgerIndex>(i + 3);
+        tracker_.recordOurValidation(hash, seq);
+        tracker_.recordNetworkValidation(hash, seq);
+    }
+
+    std::this_thread::sleep_for(std::chrono::seconds(9));
+    tracker_.reconcile();
+
+    // Every filler plus evictedAgreed agrees; evictedMiss is the one miss.
+    EXPECT_EQ(tracker_.totalAgreements(), kFill + 1);
+    EXPECT_EQ(tracker_.totalMissed(), 1u);
+    EXPECT_EQ(tracker_.agreements1h(), kFill + 1);
+    EXPECT_EQ(tracker_.missed1h(), 1u);
+
+    // Validations arrive again for the two dropped ledgers.
+    tracker_.recordOurValidation(evictedMiss, 1);
+    tracker_.recordOurValidation(evictedAgreed, 2);
+    tracker_.recordNetworkValidation(evictedAgreed, 2);
+
+    // Long enough for a re-created pending entry to pass the grace period.
+    std::this_thread::sleep_for(std::chrono::seconds(9));
+    tracker_.reconcile();
+
+    // Both ledgers were already counted, so every total is unchanged.
+    EXPECT_EQ(tracker_.totalAgreements(), kFill + 1);
+    EXPECT_EQ(tracker_.totalMissed(), 1u);
+    EXPECT_EQ(tracker_.agreements1h(), kFill + 1);
+    EXPECT_EQ(tracker_.missed1h(), 1u);
+
+    // The send and check counters count messages, not ledgers, so the
+    // repeated validations do count towards them.
+    EXPECT_EQ(tracker_.totalValidationsSent(), kFill + 3);
+    EXPECT_EQ(tracker_.totalValidationsChecked(), kFill + 3);
+}
+
+// ---------------------------------------------------------------
 // 10. Gross miss tally is monotonic across a late repair
 //     The gross lifetime tallies (totalAgreementsEver/totalMissedEver)
 //     back the monotonic Prometheus _total counters. A late repair must

@@ -1340,28 +1340,54 @@ class RuleDDashboards(unittest.TestCase):
             ["bogus_label"],
         )
 
+    # Rule D returns early on an empty L1 set, so a test that passes one asserts
+    # nothing. Each test below passes a nonempty L1 set and puts `bogus_label` in
+    # the same expression as the labels under test: the assertion then pins both
+    # halves at once — the accepted labels are absent from the result, and Rule D
+    # demonstrably ran because it flagged the bad one.
+
     def test_builtin_labels_not_flagged(self):
         self.assertEqual(
-            self._run('"expr": "sum by (le, span_name, exported_instance) (x)"', set()),
-            [],
+            self._run(
+                '"expr": "sum by (le, span_name, exported_instance, bogus_label) (x)"',
+                {"command"},
+            ),
+            ["bogus_label"],
         )
 
     def test_external_infra_labels_not_flagged(self):
         # EXTERNAL_INFRA_LABELS (perf-iac identity labels with no in-tree
-        # source) must be recognized as valid, distinct from `builtins`.
-        expr = "sum by (" + ", ".join(sorted(chk.EXTERNAL_INFRA_LABELS)) + ") (x)"
-        self.assertEqual(self._run(f'"expr": "{expr}"', set()), [])
+        # source) must be recognized as valid, distinct from `builtins`. The
+        # names are spelled out rather than joined from chk.EXTERNAL_INFRA_LABELS
+        # because building the query from the set that validates it passes for
+        # whatever that set happens to hold — including an empty one.
+        self.assertEqual(
+            self._run(
+                '"expr": "sum by (xrpl_branch, xrpl_node_role, bogus_label) (x)"',
+                {"command"},
+            ),
+            ["bogus_label"],
+        )
 
     def test_prometheus_name_label_not_flagged(self):
         # `__name__` is the Prometheus reserved metric-name label; the renamed
         # system-*.json dashboards use `sum by (le, __name__)`.
         self.assertEqual(
-            self._run('"expr": "sum by (le, __name__) (rate(x[5m]))"', set()),
-            [],
+            self._run(
+                '"expr": "sum by (le, __name__, bogus_label) (rate(x[5m]))"',
+                {"command"},
+            ),
+            ["bogus_label"],
         )
 
     def test_l1_label_passes(self):
-        self.assertEqual(self._run('"q": "{command=\\"x\\"}"', {"command"}), [])
+        # `by (...)` form, not a `{command="x"}` selector: a dashboard stores the
+        # query inside a JSON string, so its quotes are escaped on disk and the
+        # selector branch extracts nothing from them here.
+        self.assertEqual(
+            self._run('"expr": "sum by (command, bogus_label) (x)"', {"command"}),
+            ["bogus_label"],
+        )
 
     def test_traceql_span_prefix_stripped(self):
         # `span.establish_count` must validate against the bare L1 key.
@@ -1374,7 +1400,15 @@ class RuleDDashboards(unittest.TestCase):
         )
 
     def test_traceql_resource_prefix_stripped(self):
-        self.assertEqual(self._run('"q": "{resource.service_name=\\"x\\"}"', set()), [])
+        # `resource.service_name` must validate against the bare builtin, same as
+        # the `span.` case above.
+        self.assertEqual(
+            self._run(
+                '"expr": "count_over_time(x) by (resource.service_name, bogus_label)"',
+                {"command"},
+            ),
+            ["bogus_label"],
+        )
 
     def test_native_metric_label_passes(self):
         # `job_type` / `reason` are emitted by MetricsRegistry, not span attrs.
