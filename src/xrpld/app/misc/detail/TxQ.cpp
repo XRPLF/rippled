@@ -801,7 +801,16 @@ TxQ::apply(
     // into the ledger.
     if (auto directApplied = tryDirectApply(app, view, tx, flags, j))
     {
-        span.setAttribute(txq_span::attr::txqStatus, txq_span::val::appliedDirect);
+        // A result comes back even when the apply failed, so branch on the outcome.
+        // transToken() builds a string, so the whole block is guarded.
+        if (span)
+        {
+            span.setAttribute(txq_span::attr::terCode, transToken(directApplied->ter).c_str());
+            if (directApplied->applied)
+                span.setAttribute(txq_span::attr::txqStatus, txq_span::val::appliedDirect);
+            else
+                span.setAttribute(txq_span::attr::txqStatus, txq_span::val::failed);
+        }
         return *directApplied;
     }
 
