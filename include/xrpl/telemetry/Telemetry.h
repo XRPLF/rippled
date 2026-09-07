@@ -53,14 +53,18 @@
  *
  * 2. Child span for a sub-operation (scoped child):
  * @code
- * auto parent = SpanGuard::span(
+ * auto parent = ScopedSpanGuard(
  * TraceCategory::Rpc, rpc_span::prefix::rpc, rpc_span::op::process);
  * {
- * auto child = parent.childSpan(rpc_span::op::process);
- * child.setAttribute(rpc_span::attr::version, apiVersion);
+ * auto child = parent.childSpan(rpc_span::prefix::command);
+ * child.setAttribute(rpc_span::attr::version, static_cast<int64_t>(apiVersion));
  * // child ends here
  * }
  * @endcode
+ * childSpan() parents to the ambient scope, so the parent must be a
+ * ScopedSpanGuard. A plain SpanGuard is not ambient: pass its spanContext()
+ * to childSpan(name, ctx) instead. childSpan() takes the name verbatim, so
+ * pass a full dotted constant, never a bare op:: suffix.
  *
  * 3. Unrelated span (cross-scope, same thread):
  * @code
@@ -78,7 +82,7 @@
  * auto ctx = parentGuard.spanContext();
  *
  * // Thread B: create child span with explicit parent
- * auto child = SpanGuard::childSpan(rpc_span::op::process, ctx);
+ * auto child = SpanGuard::childSpan(rpc_span::prefix::command, ctx);
  * @endcode
  *
  * @note Thread safety: The Telemetry interface is safe for concurrent reads

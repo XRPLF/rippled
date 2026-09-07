@@ -245,7 +245,7 @@ A Tempo-backed dashboard (uid `xrpld-node-overview`) with four panels:
 
 - **Active Nodes** (stat): count of distinct `resource.service.instance.id` values seen for the `xrpld` service.
 - **Total Transactions (1h)** (stat): count of `tx.receive` spans.
-- **Error Rate** (gauge, percent): ratio of `status.code=error` spans to all spans, with yellow/red thresholds at 1%/5%.
+- **Error Rate** (gauge, percent): ratio of `status = error` spans to all spans, with yellow/red thresholds at 1%/5%.
 - **Service Map** (nodeGraph): Tempo-generated service dependency graph.
 
 ### 7.6.3 Alert Rules
