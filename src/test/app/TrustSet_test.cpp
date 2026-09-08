@@ -16,6 +16,9 @@
 #include <xrpl/json/to_string.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/UintTypes.h>
@@ -322,6 +325,13 @@ public:
         // trust amount can't be negative
         env(trust(alice, gw["USD"](-1000)), Ter(temBAD_LIMIT));
 
+        // ... however many trailing zeros it is written with
+        {
+            auto jv = trustExplicitAmt(alice, gw["USD"](1500));
+            jv[jss::LimitAmount][jss::value] = "-1500.0000000000000000";
+            env(jv, Ter(temBAD_LIMIT));
+        }
+
         // trust amount can't be from invalid issuer
         env(trustExplicitAmt(alice, STAmount{Issue{toCurrency("USD"), noAccount()}, 100}),
             Ter(temDST_NEEDED));
@@ -583,6 +593,33 @@ public:
     }
 
     void
+    testTrailingZeroLimit(FeatureBitset features)
+    {
+        testcase("TrustSet limit written with trailing zeros");
+
+        using namespace jtx;
+        Env env{*this, features};
+
+        auto const gw = Account{"gateway"};
+        auto const alice = Account{"alice"};
+        env.fund(XRP(10000), gw, alice);
+
+        auto jv = trustExplicitAmt(alice, gw["USD"](1500));
+        jv[jss::LimitAmount][jss::value] = "1500.0000000000000000";
+        env(jv);
+        env.close();
+
+        auto const sle = env.le(keylet::trustLine(alice, gw, toCurrency("USD")));
+        BEAST_EXPECT(sle != nullptr);
+        if (sle)
+        {
+            STAmount const limit = (*sle)[alice.id() > gw.id() ? sfHighLimit : sfLowLimit];
+            BEAST_EXPECT(!limit.negative());
+            BEAST_EXPECT(limit.getText() == "1500");
+        }
+    }
+
+    void
     testWithFeats(FeatureBitset features)
     {
         testFreeTrustlines(features, true, false);
@@ -593,6 +630,7 @@ public:
         // independent of hi/low account ids for endpoints
         testTicketTrustSet(features);
         testMalformedTransaction(features);
+        testTrailingZeroLimit(features);
         testModifyQualityOfTrustline(features, false, false);
         testModifyQualityOfTrustline(features, false, true);
         testModifyQualityOfTrustline(features, true, false);

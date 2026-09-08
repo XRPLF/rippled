@@ -903,12 +903,34 @@ amountFromQuality(std::uint64_t rate)
     return STAmount(noIssue(), mantissa, exponent);
 }
 
+namespace {
+
+// An IOU stores a signed mantissa, but partsFromString() reports an unsigned
+// one, so anything above INT64_MAX has to go through Number, which keeps the
+// sign apart from the mantissa.
+[[nodiscard]] bool
+needsNumber(Asset const& asset, NumberParts const& parts)
+{
+    return !asset.integral() && parts.mantissa > std::numeric_limits<std::int64_t>::max();
+}
+
+[[nodiscard]] Number
+numberFromParts(NumberParts const& parts)
+{
+    return Number{parts.negative, parts.mantissa, parts.exponent, Number::Unchecked{}};
+}
+
+}  // namespace
+
 STAmount
 amountFromString(Asset const& asset, std::string const& amount)
 {
     auto const parts = partsFromString(amount);
     if ((asset.native() || asset.holds<MPTIssue>()) && parts.exponent < 0)
         Throw<std::runtime_error>("XRP and MPT must be specified as integral amount.");
+    if (needsNumber(asset, parts))
+        return STAmount{asset, numberFromParts(parts)};
+
     return {asset, parts.mantissa, parts.exponent, parts.negative};
 }
 
@@ -1032,6 +1054,9 @@ amountFromJson(SField const& name, json::Value const& v)
     {
         Throw<std::runtime_error>("invalid amount type");
     }
+
+    if (needsNumber(asset, parts))
+        return STAmount{name, STAmount{asset, numberFromParts(parts)}};
 
     return {name, asset, parts.mantissa, parts.exponent, parts.negative};
 }
