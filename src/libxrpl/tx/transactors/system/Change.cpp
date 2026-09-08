@@ -123,6 +123,25 @@ Change::preclaim(PreclaimContext const& ctx)
                     ctx.tx.isFieldPresent(sfReserveIncrementDrops))
                     return temDISABLED;
             }
+            if (ctx.view.rules().enabled(featureSmartEscrow))
+            {
+                // The ttFEE transaction format defines these fields as
+                // optional, but once the SmartEscrow feature is enabled,
+                // they are required.
+                if (!ctx.tx.isFieldPresent(sfGasLimit) ||
+                    !ctx.tx.isFieldPresent(sfBytecodeSizeLimit) ||
+                    !ctx.tx.isFieldPresent(sfGasPrice))
+                    return temMALFORMED;
+            }
+            else
+            {
+                // The ttFEE transaction format defines these fields as
+                // optional, but without the SmartEscrow feature, they are
+                // forbidden.
+                if (ctx.tx.isFieldPresent(sfGasLimit) ||
+                    ctx.tx.isFieldPresent(sfBytecodeSizeLimit) || ctx.tx.isFieldPresent(sfGasPrice))
+                    return temDISABLED;
+            }
             return tesSUCCESS;
         case ttAMENDMENT:
         case ttUNL_MODIFY:
@@ -283,6 +302,12 @@ Change::applyFee()
         set(feeObject, ctx_.tx, sfReferenceFeeUnits);
         set(feeObject, ctx_.tx, sfReserveBase);
         set(feeObject, ctx_.tx, sfReserveIncrement);
+    }
+    if (view().rules().enabled(featureSmartEscrow))
+    {
+        set(feeObject, ctx_.tx, sfGasLimit);
+        set(feeObject, ctx_.tx, sfBytecodeSizeLimit);
+        set(feeObject, ctx_.tx, sfGasPrice);
     }
 
     view().update(feeObject);
