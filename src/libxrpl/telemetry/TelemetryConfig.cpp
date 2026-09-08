@@ -51,6 +51,7 @@ constexpr char const* traceConsensus = "trace_consensus";
 constexpr char const* traceRpc = "trace_rpc";
 constexpr char const* tracePeer = "trace_peer";
 constexpr char const* traceLedger = "trace_ledger";
+constexpr char const* consensusTraceStrategy = "consensus_trace_strategy";
 }  // namespace key
 
 /**
@@ -212,6 +213,33 @@ requireHttpsEndpoint(std::string const& endpoint, char const* configKey)
         " is set, but is '" + endpoint + "'.");
 }
 
+/**
+ * Map a `consensus_trace_strategy` value onto its enumerator.
+ *
+ * Only the two documented spellings are accepted. A typo would otherwise pick
+ * the default silently, and the operator would never learn the setting had no
+ * effect. Matching is exact and case-sensitive, like every other value in this
+ * section.
+ *
+ * @param value  Raw config value; empty means the key was absent.
+ * @return The matching strategy, or Deterministic when the key was absent.
+ * @throws std::runtime_error  If the value is neither documented spelling.
+ */
+[[nodiscard]] ConsensusTraceStrategy
+readConsensusTraceStrategy(std::string const& value)
+{
+    if (value.empty() || value == strategyName(ConsensusTraceStrategy::Deterministic))
+        return ConsensusTraceStrategy::Deterministic;
+
+    if (value == strategyName(ConsensusTraceStrategy::Random))
+        return ConsensusTraceStrategy::Random;
+
+    Throw<std::runtime_error>(
+        std::string("Invalid value '") + key::consensusTraceStrategy + "' in " + kSectionLabel +
+        ": must be '" + strategyName(ConsensusTraceStrategy::Deterministic) + "' or '" +
+        strategyName(ConsensusTraceStrategy::Random) + "'.");
+}
+
 }  // namespace
 
 Telemetry::Setup
@@ -322,7 +350,7 @@ makeTelemetrySetup(
     setup.traceLedger = section.valueOr<int>(key::traceLedger, 1) != 0;
 
     setup.consensusTraceStrategy =
-        section.valueOr<std::string>("consensus_trace_strategy", "deterministic");
+        readConsensusTraceStrategy(section.valueOr<std::string>(key::consensusTraceStrategy, ""));
 
     return setup;
 }
