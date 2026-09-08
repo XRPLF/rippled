@@ -190,7 +190,8 @@ Phase 4a (establish-phase gap fill & cross-node correlation) will add:
 
 - **Deterministic trace ID** derived from `previousLedger.id()` so all validators
   in the same round share the same `trace_id` (switchable via
-  `consensus_trace_strategy` config: `"deterministic"` or `"attribute"`).
+  `consensus_trace_strategy` config: `"deterministic"`, or `"random"` which is
+  experimental and not used).
   See [Configuration Reference](./05-configuration-reference.md) for full
   configuration options.
 - **Round lifecycle spans**: `consensus.round` with round-to-round span links.
