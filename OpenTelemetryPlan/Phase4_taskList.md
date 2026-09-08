@@ -943,12 +943,11 @@ and OFF, and don't affect consensus timing.
 - **No `getTelemetry()` adaptor method**: `SpanGuard::span()` is a static factory that
   internally checks telemetry state, so `Consensus.h` doesn't need adaptor access
   for span creation. Only `RCLConsensus::Adaptor` accesses `app_.getTelemetry()` directly.
-- **No config validation**: `consensus_trace_strategy` is **not** validated.
-  `TelemetryConfig.cpp:155-156` copies the raw string through, and the only
-  comparison in the code is `strategy == "attribute"` (`RCLConsensus.cpp:1296`).
-  Any unrecognised value — including a typo — silently takes the deterministic
-  branch, with no log warning. The effective fallback is correct; the absence of
-  a diagnostic is a known gap.
+- **Config validation**: `readConsensusTraceStrategy()` in `TelemetryConfig.cpp`
+  maps `consensus_trace_strategy` onto `ConsensusTraceStrategy`, accepting only
+  `deterministic` and `random`. Anything else, including a typo, makes the node
+  exit at startup with a message naming the key. `RCLConsensus::Adaptor` branches
+  on the enumerator, so no string comparison reaches the consensus path.
 - **Plan deviation**: `roundSpan_` is stored in `RCLConsensus::Adaptor` (not
   `Consensus.h`) because the adaptor has access to telemetry config and can
   implement the deterministic trace ID strategy. `establishSpan_` is correctly

@@ -15,8 +15,11 @@
 
 #include <chrono>
 #include <cstdint>
+#include <limits>
+#include <optional>
 #include <stdexcept>
 #include <string>
+#include <string_view>
 #include <system_error>
 #include <type_traits>
 
@@ -52,6 +55,7 @@ constexpr char const* traceConsensus = "trace_consensus";
 constexpr char const* traceRpc = "trace_rpc";
 constexpr char const* tracePeer = "trace_peer";
 constexpr char const* traceLedger = "trace_ledger";
+constexpr char const* consensusTraceStrategy = "consensus_trace_strategy";
 }  // namespace key
 
 /**
@@ -77,6 +81,71 @@ constexpr std::uint32_t maxQueueSize = 2048u;
 constexpr auto metricExportInterval = kDefaultMetricExportInterval;
 constexpr auto metricExportTimeout = kDefaultMetricExportTimeout;
 }  // namespace dflt
+
+/**
+ * Smallest accepted value for the three batch settings.
+ *
+ * All three size a queue or a timer, so zero is meaningless for every one of
+ * them. The OTel BatchSpanProcessor takes them as given and does not validate,
+ * so the config parser is the only place a nonsense value can be rejected.
+ */
+constexpr std::uint32_t kMinBatchSetting = 1u;
+
+/**
+ * Section name used in error messages, so the operator knows where to look.
+ */
+constexpr char const* kSectionLabel = "[telemetry]";
+
+/**
+ * Read a config value and reject anything outside minValue..UINT32_MAX.
+ *
+ * Section::get() lets boost::bad_lexical_cast escape. That derives from
+ * std::bad_cast, not std::runtime_error, so a mistyped value gives the operator
+ * a bare "bad cast" naming no key. Wrap it and rethrow with the key name.
+ *
+ * @param section The [telemetry] section to read from.
+ * @param name Key to read, as documented in cfg/xrpld-example.cfg.
+ * @param absentValue Value returned when the key is absent.
+ * @param minValue Smallest accepted value.
+ * @return The configured value, or absentValue if the key is absent.
+ * @note Throws std::runtime_error for a value that is not a whole number, and
+ * for one out of range, with a different message for each.
+ */
+[[nodiscard]] std::uint32_t
+readBounded(
+    Section const& section,
+    char const* name,
+    std::uint32_t absentValue,
+    std::uint32_t minValue)
+{
+    // Read as signed. boost::lexical_cast to an unsigned type wraps a leading
+    // minus instead of failing ("-1" yields 4294967295), so reading signed is
+    // the only way to see a negative value and reject it below.
+    std::optional<std::int64_t> parsed;
+    try
+    {
+        parsed = section.get<std::int64_t>(name);
+    }
+    catch (...)
+    {
+        Throw<std::runtime_error>(
+            std::string("Invalid value '") + name + "' in " + kSectionLabel +
+            ": must be a whole number.");
+    }
+
+    if (!parsed)
+        return absentValue;
+
+    constexpr auto maxValue = static_cast<std::int64_t>(std::numeric_limits<std::uint32_t>::max());
+    if (*parsed < static_cast<std::int64_t>(minValue) || *parsed > maxValue)
+    {
+        Throw<std::runtime_error>(
+            std::string("Invalid value '") + name + "' in " + kSectionLabel + ": must be between " +
+            std::to_string(minValue) + " and " + std::to_string(maxValue) + ".");
+    }
+
+    return static_cast<std::uint32_t>(*parsed);
+}
 
 /**
  * Throw unless the given path names a file this process can read.
@@ -157,6 +226,61 @@ requirePositive(std::chrono::milliseconds value, char const* configKey)
         Throw<std::runtime_error>(
             std::string{"[telemetry] "} + configKey + " must be greater than 0 milliseconds.");
     }
+}
+
+/**
+ * Throw unless an endpoint URL is one the client certificate can be used on.
+ *
+ * The OTLP/HTTP exporter turns TLS on from the URL scheme alone, and matches
+ * "https:" exactly and case-sensitively. So a client certificate only reaches
+ * the collector on an https endpoint, and this check is what holds that
+ * invariant: with a client certificate configured, the endpoint is an https URL.
+ * "https://" is required in full, which is stricter than the exporter's own
+ * test, so anything this accepts the exporter also treats as TLS.
+ *
+ * @param endpoint   Endpoint URL from the config, or the built-in default.
+ * @param configKey  Config key the URL came from, named in the message.
+ * @throws std::runtime_error  If the URL does not begin with "https://".
+ */
+void
+requireHttpsEndpoint(std::string const& endpoint, char const* configKey)
+{
+    constexpr std::string_view kHttpsPrefix{"https://"};
+
+    if (std::string_view{endpoint}.starts_with(kHttpsPrefix))
+        return;
+
+    Throw<std::runtime_error>(
+        std::string("Invalid value '") + configKey + "' in " + kSectionLabel +
+        ": must start with '" + std::string{kHttpsPrefix} + "' when " + key::tlsClientCert +
+        " is set, but is '" + endpoint + "'.");
+}
+
+/**
+ * Map a `consensus_trace_strategy` value onto its enumerator.
+ *
+ * Only the two documented spellings are accepted. A typo would otherwise pick
+ * the default silently, and the operator would never learn the setting had no
+ * effect. Matching is exact and case-sensitive, like every other value in this
+ * section.
+ *
+ * @param value  Raw config value; empty means the key was absent.
+ * @return The matching strategy, or Deterministic when the key was absent.
+ * @throws std::runtime_error  If the value is neither documented spelling.
+ */
+[[nodiscard]] ConsensusTraceStrategy
+readConsensusTraceStrategy(std::string const& value)
+{
+    if (value.empty() || value == strategyName(ConsensusTraceStrategy::Deterministic))
+        return ConsensusTraceStrategy::Deterministic;
+
+    if (value == strategyName(ConsensusTraceStrategy::Random))
+        return ConsensusTraceStrategy::Random;
+
+    Throw<std::runtime_error>(
+        std::string("Invalid value '") + key::consensusTraceStrategy + "' in " + kSectionLabel +
+        ": must be '" + strategyName(ConsensusTraceStrategy::Deterministic) + "' or '" +
+        strategyName(ConsensusTraceStrategy::Random) + "'.");
 }
 
 }  // namespace
@@ -241,6 +365,15 @@ makeTelemetrySetup(
                 "(set use_tls=1 to enable mutual TLS, or remove the cert paths).");
         }
 
+        // Still inside the enabled branch, and checked before the files are
+        // opened so a scheme problem is not hidden behind a path problem. The
+        // exporter reads TLS off the endpoint scheme, so a client certificate is
+        // only presented on an https endpoint. tls_ca_cert is left out of this
+        // check: it only names a trust store, while a client certificate is this
+        // node's own identity and has to reach the collector to mean anything.
+        if (!setup.tlsClientCertPath.empty())
+            requireHttpsEndpoint(setup.tracesEndpoint, key::tracesEndpoint);
+
         // Still inside the enabled branch. The exporter opens these files only
         // when TLS is on, so check them only then: a bad path behind use_tls=0
         // stops nothing. Checking here turns what would otherwise surface much
@@ -260,10 +393,22 @@ makeTelemetrySetup(
     // traces; volume reduction is delegated to the collector's tail sampling.
     // setup.samplingRatio is a const member fixed at 1.0; nothing to parse.
 
-    setup.batchSize = section.valueOr<std::uint32_t>(key::batchSize, dflt::batchSize);
+    setup.batchSize = readBounded(section, key::batchSize, dflt::batchSize, kMinBatchSetting);
     setup.batchDelay = std::chrono::milliseconds{
-        section.valueOr<std::uint32_t>(key::batchDelayMs, dflt::batchDelayMs)};
-    setup.maxQueueSize = section.valueOr<std::uint32_t>(key::maxQueueSize, dflt::maxQueueSize);
+        readBounded(section, key::batchDelayMs, dflt::batchDelayMs, kMinBatchSetting)};
+    setup.maxQueueSize =
+        readBounded(section, key::maxQueueSize, dflt::maxQueueSize, kMinBatchSetting);
+
+    // The OTel SDK documents max_export_batch_size <= max_queue_size as a
+    // precondition of BatchSpanProcessorOptions and does not enforce it, so
+    // reject the pair here rather than hand the SDK a state it forbids.
+    if (setup.batchSize > setup.maxQueueSize)
+    {
+        Throw<std::runtime_error>(
+            std::string("Invalid value '") + key::batchSize + "' in " + kSectionLabel +
+            ": must not exceed '" + key::maxQueueSize + "' (" + std::to_string(setup.maxQueueSize) +
+            ").");
+    }
 
     setup.metricExportInterval =
         durationOr(section, key::metricExportIntervalMs, dflt::metricExportInterval);
@@ -297,7 +442,7 @@ makeTelemetrySetup(
     setup.traceLedger = section.valueOr<int>(key::traceLedger, 1) != 0;
 
     setup.consensusTraceStrategy =
-        section.valueOr<std::string>("consensus_trace_strategy", "deterministic");
+        readConsensusTraceStrategy(section.valueOr<std::string>(key::consensusTraceStrategy, ""));
 
     return setup;
 }
