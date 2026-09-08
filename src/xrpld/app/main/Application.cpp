@@ -1241,8 +1241,10 @@ ApplicationImp::setup(boost::program_options::variables_map const& cmdline)
 
     SHAMap::setShedEnabled(config_->shedColdSubtrees);
     if (config_->shedColdSubtrees)
+    {
         JLOG(journal_.warn()) << "SHAMap cold subtree shedding enabled (shed_min_depth "
                               << config_->shedMinDepth << ")";
+    }
 
     if (!initRelationalDatabase() || !initNodeStore())
         return false;
