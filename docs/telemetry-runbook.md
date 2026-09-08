@@ -91,6 +91,8 @@ cmake --build . --target xrpld
 
 Conan also writes a `conan-release` CMake preset, so `cmake --preset conan-release -Dtelemetry=ON` works instead of the explicit toolchain line. There is no preset named `default`.
 
+Both telemetry flags are the current default, so omitting them still gives you an instrumented build. Pass them anyway, so the build stays instrumented wherever the default moves.
+
 ### 4. Run against a live network
 
 Two ready-made configs connect a tracking node (no validator credentials) to a
@@ -3635,7 +3637,7 @@ conan install .. --output-folder . --build missing -o telemetry=False --settings
 cmake -DCMAKE_TOOLCHAIN_FILE:FILEPATH=build/generators/conan_toolchain.cmake -DCMAKE_BUILD_TYPE=Release -Dtelemetry=OFF ..
 ```
 
-Pass the flag explicitly rather than omitting it — an omitted flag resolves to whatever
+Both flags are needed. Pass each explicitly rather than omitting it — an omitted flag resolves to whatever
 the build's current default is. That default is `ON` on the telemetry branches so CI
 compiles the instrumented paths, and `OFF` once the feature is merged; `-Dtelemetry=OFF`
 is correct either way. `-DXRPL_ENABLE_TELEMETRY=OFF` does **not** work: that name is only
