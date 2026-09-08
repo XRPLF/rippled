@@ -98,7 +98,7 @@ fn a_disabled_feature_does_not_pass() {
 
 /// Every host function the ABI declares, spelled as a guest imports it. The count
 /// is asserted against the ABI so a function added to it cannot be left out here.
-const ALL_IMPORTS: [&str; 60] = [
+const ALL_IMPORTS: [&str; 63] = [
     import::LDGR_INDEX,
     import::PARENT_LDGR_TIME,
     import::PARENT_LDGR_HASH,
@@ -137,6 +137,9 @@ const ALL_IMPORTS: [&str; 60] = [
     import::SIGNERS_ID,
     import::TICKET_ID,
     import::VAULT_ID,
+    import::SPONSORSHIP_ID,
+    import::LOAN_BROKER_ID,
+    import::LOAN_ID,
     import::SHA512_HALF,
     import::TRACE,
     import::SET_DATA,

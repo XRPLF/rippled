@@ -767,6 +767,73 @@ pub(crate) fn register_host_functions(
                     })
                 },
             ),
+            HostFunctionSpec::SponsorshipKeylet => linker.func_wrap(
+                HOST_MODULE,
+                op.wasm_name(),
+                |mut caller: Caller<'_, VmState<'_>>,
+                 sponsor_ptr: i32,
+                 sponsor_len: i32,
+                 sponsee_ptr: i32,
+                 sponsee_len: i32,
+                 out_ptr: i32,
+                 out_len: i32|
+                 -> Result<i32, wasmi::Error> {
+                    charged(&mut caller, HostFunctionSpec::SponsorshipKeylet, |c| {
+                        let out = Region::new(out_ptr, out_len);
+                        let sponsor = Region::new(sponsor_ptr, sponsor_len);
+                        let sponsee = Region::new(sponsee_ptr, sponsee_len);
+                        write_buffered(c, out, |host, data, buf| {
+                            host.sponsorship_keylet(sponsor.read(data)?, sponsee.read(data)?, buf)
+                        })
+                    })
+                },
+            ),
+            HostFunctionSpec::LoanBrokerKeylet => linker.func_wrap(
+                HOST_MODULE,
+                op.wasm_name(),
+                |mut caller: Caller<'_, VmState<'_>>,
+                 owner_ptr: i32,
+                 owner_len: i32,
+                 seq_ptr: i32,
+                 seq_len: i32,
+                 out_ptr: i32,
+                 out_len: i32|
+                 -> Result<i32, wasmi::Error> {
+                    charged(&mut caller, HostFunctionSpec::LoanBrokerKeylet, |c| {
+                        let out = Region::new(out_ptr, out_len);
+                        let owner = Region::new(owner_ptr, owner_len);
+                        let seq = Region::new(seq_ptr, seq_len);
+                        write_buffered(c, out, |host, data, buf| {
+                            let owner = owner.read(data)?;
+                            let seq = read_u32_arg(seq.read(data)?)?;
+                            host.loan_broker_keylet(owner, seq, buf)
+                        })
+                    })
+                },
+            ),
+            HostFunctionSpec::LoanKeylet => linker.func_wrap(
+                HOST_MODULE,
+                op.wasm_name(),
+                |mut caller: Caller<'_, VmState<'_>>,
+                 broker_ptr: i32,
+                 broker_len: i32,
+                 seq_ptr: i32,
+                 seq_len: i32,
+                 out_ptr: i32,
+                 out_len: i32|
+                 -> Result<i32, wasmi::Error> {
+                    charged(&mut caller, HostFunctionSpec::LoanKeylet, |c| {
+                        let out = Region::new(out_ptr, out_len);
+                        let loan_broker_id = Region::new(broker_ptr, broker_len);
+                        let seq = Region::new(seq_ptr, seq_len);
+                        write_buffered(c, out, |host, data, buf| {
+                            let loan_broker_id = loan_broker_id.read(data)?;
+                            let loan_seq = read_u32_arg(seq.read(data)?)?;
+                            host.loan_keylet(loan_broker_id, loan_seq, buf)
+                        })
+                    })
+                },
+            ),
             HostFunctionSpec::Sha512Half => linker.func_wrap(
                 HOST_MODULE,
                 op.wasm_name(),

@@ -302,6 +302,21 @@ pub struct FakeHost {
     pub vault_keylets: HashMap<(Vec<u8>, i32), Answer>,
     /// Every (account, seq) `vault_keylet` was asked for.
     pub vault_keylets_asked: RefCell<Vec<(Vec<u8>, i32)>>,
+    /// What `sponsorship_keylet` answers, by (sponsor, sponsee) bytes. An unlisted key
+    /// answers `InvalidAccount`.
+    pub sponsorship_keylets: HashMap<(Vec<u8>, Vec<u8>), Answer>,
+    /// Every (sponsor, sponsee) `sponsorship_keylet` was asked for.
+    pub sponsorship_keylets_asked: RefCell<Vec<(Vec<u8>, Vec<u8>)>>,
+    /// What `loan_broker_keylet` answers, by (owner bytes, seq). An unlisted key
+    /// answers `InvalidAccount`.
+    pub loan_broker_keylets: HashMap<(Vec<u8>, i32), Answer>,
+    /// Every (owner, seq) `loan_broker_keylet` was asked for.
+    pub loan_broker_keylets_asked: RefCell<Vec<(Vec<u8>, i32)>>,
+    /// What `loan_keylet` answers, by (loan broker id bytes, loan seq). An unlisted key
+    /// answers `InvalidParams`.
+    pub loan_keylets: HashMap<(Vec<u8>, i32), Answer>,
+    /// Every (loan broker id, loan seq) `loan_keylet` was asked for.
+    pub loan_keylets_asked: RefCell<Vec<(Vec<u8>, i32)>>,
     /// What `sha512_half` answers, whatever it is given.
     pub digest: Answer,
     /// Every field selector `get_current_ledger_obj_field` was asked for.
@@ -456,6 +471,12 @@ impl Default for FakeHost {
             ticket_keylets_asked: RefCell::new(Vec::new()),
             vault_keylets: HashMap::new(),
             vault_keylets_asked: RefCell::new(Vec::new()),
+            sponsorship_keylets: HashMap::new(),
+            sponsorship_keylets_asked: RefCell::new(Vec::new()),
+            loan_broker_keylets: HashMap::new(),
+            loan_broker_keylets_asked: RefCell::new(Vec::new()),
+            loan_keylets: HashMap::new(),
+            loan_keylets_asked: RefCell::new(Vec::new()),
             digest: Answer::filler(32),
             fields_asked: RefCell::new(Vec::new()),
             digested: RefCell::new(Vec::new()),
@@ -781,6 +802,36 @@ impl FakeHost {
         answer: Answer,
     ) -> FakeHost {
         self.vault_keylets.insert((account, seq), answer);
+        self
+    }
+
+    pub fn answering_sponsorship_keylet(
+        mut self,
+        sponsor: Vec<u8>,
+        sponsee: Vec<u8>,
+        answer: Answer,
+    ) -> FakeHost {
+        self.sponsorship_keylets.insert((sponsor, sponsee), answer);
+        self
+    }
+
+    pub fn answering_loan_broker_keylet(
+        mut self,
+        owner: Vec<u8>,
+        seq: i32,
+        answer: Answer,
+    ) -> FakeHost {
+        self.loan_broker_keylets.insert((owner, seq), answer);
+        self
+    }
+
+    pub fn answering_loan_keylet(
+        mut self,
+        loan_broker_id: Vec<u8>,
+        loan_seq: i32,
+        answer: Answer,
+    ) -> FakeHost {
+        self.loan_keylets.insert((loan_broker_id, loan_seq), answer);
         self
     }
 
@@ -1226,6 +1277,47 @@ impl HostFunctions for FakeHost {
         }
     }
 
+    fn sponsorship_keylet(
+        &self,
+        sponsor: &[u8],
+        sponsee: &[u8],
+        out: &mut [u8],
+    ) -> HostResult<usize> {
+        let key = (sponsor.to_vec(), sponsee.to_vec());
+        self.sponsorship_keylets_asked
+            .borrow_mut()
+            .push(key.clone());
+        match self.sponsorship_keylets.get(&key) {
+            Some(answer) => answer.fill(out),
+            None => Err(HostError::InvalidAccount),
+        }
+    }
+
+    fn loan_broker_keylet(&self, owner: &[u8], seq: i32, out: &mut [u8]) -> HostResult<usize> {
+        let key = (owner.to_vec(), seq);
+        self.loan_broker_keylets_asked
+            .borrow_mut()
+            .push(key.clone());
+        match self.loan_broker_keylets.get(&key) {
+            Some(answer) => answer.fill(out),
+            None => Err(HostError::InvalidAccount),
+        }
+    }
+
+    fn loan_keylet(
+        &self,
+        loan_broker_id: &[u8],
+        loan_seq: i32,
+        out: &mut [u8],
+    ) -> HostResult<usize> {
+        let key = (loan_broker_id.to_vec(), loan_seq);
+        self.loan_keylets_asked.borrow_mut().push(key.clone());
+        match self.loan_keylets.get(&key) {
+            Some(answer) => answer.fill(out),
+            None => Err(HostError::InvalidParams),
+        }
+    }
+
     fn sha512_half(&self, data: &[u8], out: &mut [u8]) -> HostResult<usize> {
         self.digested.borrow_mut().push(data.to_vec());
         self.digest.fill(out)
@@ -1451,6 +1543,9 @@ pub mod import {
     pub const SIGNERS_ID: &str = r#"(import "host_lib" "signers_id" (func $signers_id (param i32 i32 i32 i32) (result i32)))"#;
     pub const TICKET_ID: &str = r#"(import "host_lib" "ticket_id" (func $ticket_id (param i32 i32 i32 i32 i32 i32) (result i32)))"#;
     pub const VAULT_ID: &str = r#"(import "host_lib" "vault_id" (func $vault_id (param i32 i32 i32 i32 i32 i32) (result i32)))"#;
+    pub const SPONSORSHIP_ID: &str = r#"(import "host_lib" "sponsorship_id" (func $sponsorship_id (param i32 i32 i32 i32 i32 i32) (result i32)))"#;
+    pub const LOAN_BROKER_ID: &str = r#"(import "host_lib" "loan_broker_id" (func $loan_broker_id (param i32 i32 i32 i32 i32 i32) (result i32)))"#;
+    pub const LOAN_ID: &str = r#"(import "host_lib" "loan_id" (func $loan_id (param i32 i32 i32 i32 i32 i32) (result i32)))"#;
     pub const SHA512_HALF: &str = r#"(import "host_lib" "sha512_half" (func $sha512_half (param i32 i32 i32 i32) (result i32)))"#;
     /// No result, unlike every other import here: `trace` answers the guest nothing.
     pub const TRACE: &str =

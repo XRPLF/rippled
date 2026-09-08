@@ -762,6 +762,67 @@ fn vault_id_reads_the_account_and_seq() {
     assert_eq!(*host.vault_keylets_asked.borrow(), vec![(account, 5)]);
 }
 
+/// The same two-account keylet shape as delegate, for a sponsorship.
+#[test]
+fn sponsorship_id_reads_both_accounts_and_writes_the_keylet() {
+    let sponsor = vec![0u8; 20];
+    let sponsee = vec![0u8; 20];
+    let host = FakeHost::new().answering_sponsorship_keylet(
+        sponsor.clone(),
+        sponsee.clone(),
+        support::Answer::filler(32),
+    );
+
+    let wat = module(
+        &[import::SPONSORSHIP_ID, ONE_PAGE],
+        "(call $sponsorship_id
+            (i32.const 0) (i32.const 20)
+            (i32.const 20) (i32.const 20)
+            (i32.const 64) (i32.const 64))",
+    );
+    assert_eq!(status(&wat, &host), 32, "the 32-byte keylet length");
+    assert_eq!(
+        *host.sponsorship_keylets_asked.borrow(),
+        vec![(sponsor, sponsee)]
+    );
+}
+
+/// The same account-and-sequence keylet shape as vault, for a loan broker.
+#[test]
+fn loan_broker_id_reads_the_account_and_seq() {
+    let owner = vec![0u8; 20];
+    let host =
+        FakeHost::new().answering_loan_broker_keylet(owner.clone(), 5, support::Answer::filler(32));
+
+    let wat = module(
+        &[import::LOAN_BROKER_ID, ONE_PAGE],
+        "(i32.store (i32.const 20) (i32.const 5))
+         (call $loan_broker_id (i32.const 0) (i32.const 20) (i32.const 20) (i32.const 4) (i32.const 64) (i32.const 64))",
+    );
+    assert_eq!(status(&wat, &host), 32, "the 32-byte keylet length");
+    assert_eq!(*host.loan_broker_keylets_asked.borrow(), vec![(owner, 5)]);
+}
+
+/// A loan keylet: a 32-byte loan broker id plus a sequence, rather than a 20-byte
+/// account.
+#[test]
+fn loan_id_reads_the_broker_id_and_seq() {
+    let loan_broker_id = vec![0u8; 32];
+    let host = FakeHost::new().answering_loan_keylet(
+        loan_broker_id.clone(),
+        5,
+        support::Answer::filler(32),
+    );
+
+    let wat = module(
+        &[import::LOAN_ID, ONE_PAGE],
+        "(i32.store (i32.const 32) (i32.const 5))
+         (call $loan_id (i32.const 0) (i32.const 32) (i32.const 32) (i32.const 4) (i32.const 64) (i32.const 64))",
+    );
+    assert_eq!(status(&wat, &host), 32, "the 32-byte keylet length");
+    assert_eq!(*host.loan_keylets_asked.borrow(), vec![(loan_broker_id, 5)]);
+}
+
 /// A call that reads an input region and returns a scalar rather than writing bytes:
 /// the data blob reaches the host, and the byte count it reports comes back as the
 /// call's status.

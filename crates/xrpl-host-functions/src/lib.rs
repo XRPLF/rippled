@@ -358,6 +358,35 @@ host_functions! {
     #[wasm_name = "vault_id"]
     fn vault_keylet(&self, account: &[u8], seq: i32, out: &mut [u8]) -> HostResult<usize>;
 
+    /// The 32-byte keylet of a `Sponsorship`, computed from the 20-byte sponsor account
+    /// and the 20-byte sponsee account.
+    #[gas = 350]
+    #[wasm_name = "sponsorship_id"]
+    fn sponsorship_keylet(
+        &self,
+        sponsor: &[u8],
+        sponsee: &[u8],
+        out: &mut [u8],
+    ) -> HostResult<usize>;
+
+    /// The 32-byte keylet of a `LoanBroker`, computed from the 20-byte owner account and
+    /// its sequence number. `seq` is the guest's `u32` carried as its `i32` bit pattern.
+    #[gas = 350]
+    #[wasm_name = "loan_broker_id"]
+    fn loan_broker_keylet(&self, owner: &[u8], seq: i32, out: &mut [u8]) -> HostResult<usize>;
+
+    /// The 32-byte keylet of a `Loan`, computed from the 32-byte id of its `LoanBroker`
+    /// and the loan's sequence number. `loan_seq` is the guest's `u32` carried as its
+    /// `i32` bit pattern.
+    #[gas = 350]
+    #[wasm_name = "loan_id"]
+    fn loan_keylet(
+        &self,
+        loan_broker_id: &[u8],
+        loan_seq: i32,
+        out: &mut [u8],
+    ) -> HostResult<usize>;
+
     /// The XRPL `sha512Half` of `data`: the first [`HASH_LEN`] bytes of its SHA-512.
     #[gas = 2000]
     #[wasm_name = "sha512_half"]

@@ -273,6 +273,29 @@ public:
         std::int32_t seq,
         rust::Slice<std::uint8_t> out) const noexcept;
 
+    // Both accounts must be 20 bytes, else `InvalidParams`. Writes the 32-byte keylet.
+    [[nodiscard]] std::int32_t
+    sponsorshipKeylet(
+        rust::Slice<std::uint8_t const> sponsor,
+        rust::Slice<std::uint8_t const> sponsee,
+        rust::Slice<std::uint8_t> out) const noexcept;
+
+    // The account id must be 20 bytes, else `InvalidParams`. `seq` carries the guest's
+    // u32 as its i32 bit pattern. Writes the 32-byte keylet.
+    [[nodiscard]] std::int32_t
+    loanBrokerKeylet(
+        rust::Slice<std::uint8_t const> owner,
+        std::int32_t seq,
+        rust::Slice<std::uint8_t> out) const noexcept;
+
+    // The loan broker id must be 32 bytes, else `InvalidParams`. `loanSeq` carries the
+    // guest's u32 as its i32 bit pattern. Writes the 32-byte keylet.
+    [[nodiscard]] std::int32_t
+    loanKeylet(
+        rust::Slice<std::uint8_t const> loanBrokerID,
+        std::int32_t loanSeq,
+        rust::Slice<std::uint8_t> out) const noexcept;
+
     [[nodiscard]] std::int32_t
     sha512Half(rust::Slice<std::uint8_t const> data, rust::Slice<std::uint8_t> out) const noexcept;
 
