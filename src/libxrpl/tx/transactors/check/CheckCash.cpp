@@ -173,13 +173,16 @@ CheckCash::preclaim(PreclaimContext const& ctx)
             // Frozen holders can always return an IOU to its issuer (Payment already
             // allows this). Pre-fixCleanup3_5_0, ZeroIfFrozen treated globally- or
             // individually-frozen source funds as zero even when dest was the issuer,
-            // trapping uncashed checks.
-            bool const destIsIssuer = !value.native() && value.getIssuer() == dstId;
+            // trapping uncashed checks. Restricted to IOU: MPT lock is a stronger
+            // primitive than IOU freeze and is preserved even when the destination
+            // is the MPT issuer.
+            bool const destIsIouIssuer =
+                value.holds<Issue>() && !value.native() && value.getIssuer() == dstId;
             STAmount availableFunds{accountFunds(
                 ctx.view,
                 sleCheck->at(sfAccount),
                 value,
-                (ctx.view.rules().enabled(fixCleanup3_5_0) && destIsIssuer)
+                (ctx.view.rules().enabled(fixCleanup3_5_0) && destIsIouIssuer)
                     ? FreezeHandling::IgnoreFreeze
                     : FreezeHandling::ZeroIfFrozen,
                 AuthHandling::ZeroIfUnauthorized,
