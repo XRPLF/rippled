@@ -12,7 +12,6 @@
 #include <xrpl/ledger/LedgerTiming.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/nodestore/NodeObject.h>
-#include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Fees.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/KeyType.h>
@@ -36,7 +35,6 @@
 #include <xrpl/shamap/SHAMapMissingNode.h>
 #include <xrpl/shamap/SHAMapTreeNode.h>
 
-#include <algorithm>
 #include <cstdint>
 #include <exception>
 #include <memory>
@@ -181,23 +179,9 @@ Ledger::Ledger(
 
     {
         auto sle = std::make_shared<SLE>(keylet::feeSettings());
-        // Whether featureXRPFees is supported will depend on startup options.
-        if (std::ranges::find(amendments, featureXRPFees) != amendments.end())
-        {
-            sle->at(sfBaseFeeDrops) = fees.base;
-            sle->at(sfReserveBaseDrops) = fees.reserve;
-            sle->at(sfReserveIncrementDrops) = fees.increment;
-        }
-        else
-        {
-            if (auto const f = fees.base.dropsAs<std::uint64_t>())
-                sle->at(sfBaseFee) = *f;
-            if (auto const f = fees.reserve.dropsAs<std::uint32_t>())
-                sle->at(sfReserveBase) = *f;
-            if (auto const f = fees.increment.dropsAs<std::uint32_t>())
-                sle->at(sfReserveIncrement) = *f;
-            sle->at(sfReferenceFeeUnits) = kFeeUnitsDeprecated;
-        }
+        sle->at(sfBaseFeeDrops) = fees.base;
+        sle->at(sfReserveBaseDrops) = fees.reserve;
+        sle->at(sfReserveIncrementDrops) = fees.increment;
         rawInsert(sle);
     }
 
@@ -601,11 +585,6 @@ Ledger::setup()
             if (oldFees && newFees)
             {
                 // Should be all of one or the other, but not both
-                ret = false;
-            }
-            if (!rules_.enabled(featureXRPFees) && newFees)
-            {
-                // Can't populate the new fees before the amendment is enabled
                 ret = false;
             }
         }

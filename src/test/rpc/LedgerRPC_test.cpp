@@ -422,19 +422,18 @@ class LedgerRPC_test : public beast::unit_test::Suite
         }
 
         {
-            std::string const hash3{
-                "0F1A9E0C109ADEF6DA2BDE19217C12BBEC57174CBDBD212B0EBDC1CEDB8531"
-                "85"};
+            std::string const hash5{
+                "BFF5D915A6386545C8F1D8D9B165BDB6B29636653009509E0B43517E52E36CAE"};
             // access via the ledger_hash field
             json::Value jvParams;
-            jvParams[jss::ledger_hash] = hash3;
+            jvParams[jss::ledger_hash] = hash5;
             auto jrr = env.rpc("json", "ledger", to_string(jvParams))[jss::result];
             BEAST_EXPECT(jrr.isMember(jss::ledger));
             BEAST_EXPECT(jrr.isMember(jss::ledger_hash));
-            BEAST_EXPECT(jrr[jss::ledger][jss::ledger_index] == "3");
+            BEAST_EXPECT(jrr[jss::ledger][jss::ledger_index] == "5");
 
             // extra leading hex chars in hash are not allowed
-            jvParams[jss::ledger_hash] = "DEADBEEF" + hash3;
+            jvParams[jss::ledger_hash] = "DEADBEEF" + hash5;
             jrr = env.rpc("json", "ledger", to_string(jvParams))[jss::result];
             BEAST_EXPECT(jrr[jss::error] == "invalidParams");
             BEAST_EXPECT(jrr[jss::error_message] == "Invalid field 'ledger_hash', not hex string.");
@@ -651,14 +650,14 @@ class LedgerRPC_test : public beast::unit_test::Suite
         {
             auto const& parentHash = env.current()->header().parentHash;
             auto const txid1 = [&]() {
-                auto const& txj = jrr[jss::queue_data][1u];
+                auto const& txj = jrr[jss::queue_data][0u];
                 BEAST_EXPECT(txj[jss::account] == alice.human());
                 BEAST_EXPECT(txj[jss::fee_level] == "256");
                 BEAST_EXPECT(txj["preflight_result"] == "tesSUCCESS");
                 BEAST_EXPECT(txj.isMember(jss::tx));
                 return txj[jss::tx].asString();
             }();
-            auto const& txj = jrr[jss::queue_data][0u];
+            auto const& txj = jrr[jss::queue_data][1u];
             BEAST_EXPECT(txj[jss::account] == alice.human());
             BEAST_EXPECT(txj[jss::fee_level] == "256");
             BEAST_EXPECT(txj["preflight_result"] == "tesSUCCESS");
@@ -669,7 +668,7 @@ class LedgerRPC_test : public beast::unit_test::Suite
             uint256 tx0, tx1;
             BEAST_EXPECT(tx0.parseHex(txid0));
             BEAST_EXPECT(tx1.parseHex(txid1));
-            BEAST_EXPECT((tx0 ^ parentHash) < (tx1 ^ parentHash));
+            BEAST_EXPECT((tx1 ^ parentHash) < (tx0 ^ parentHash));
         }
 
         env.close();
@@ -680,7 +679,7 @@ class LedgerRPC_test : public beast::unit_test::Suite
         jrr = env.rpc("json", "ledger", to_string(jv))[jss::result];
         if (BEAST_EXPECT(jrr[jss::queue_data].size() == 2))
         {
-            auto const& txj = jrr[jss::queue_data][1u];
+            auto const& txj = jrr[jss::queue_data][0u];
             BEAST_EXPECT(txj[jss::account] == alice.human());
             BEAST_EXPECT(txj[jss::fee_level] == "256");
             BEAST_EXPECT(txj["preflight_result"] == "tesSUCCESS");
@@ -689,7 +688,7 @@ class LedgerRPC_test : public beast::unit_test::Suite
             BEAST_EXPECT(txj.isMember(jss::tx));
             BEAST_EXPECT(txj[jss::tx].isMember(jss::tx_blob));
 
-            auto const& txj2 = jrr[jss::queue_data][0u];
+            auto const& txj2 = jrr[jss::queue_data][1u];
             BEAST_EXPECT(txj2[jss::account] == alice.human());
             BEAST_EXPECT(txj2[jss::fee_level] == "256");
             BEAST_EXPECT(txj2["preflight_result"] == "tesSUCCESS");
