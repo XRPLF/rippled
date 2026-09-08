@@ -394,13 +394,13 @@ Phase 7's `ValidationTracker` builds metric-level aggregation (1h/24h agreement 
 The `consensus.accept.apply` span captures ledger close time agreement details
 driven by `avCT_CONSENSUS_PCT` (75% validator agreement threshold):
 
-- **`close_time_ripple_epoch_s`** — Agreed-upon ledger close time (Ripple epoch seconds). When validators disagree (`consensusCloseTime == epoch`), this is synthetically set to `prevCloseTime + 1s`.
+- **`close_time_ripple_epoch_s`** — Agreed-upon ledger close time (XRPL epoch seconds). When validators disagree (`consensusCloseTime == epoch`), this is synthetically set to `prevCloseTime + 1s`.
 - **`close_time_correct`** — `true` if validators reached agreement, `false` if they "agreed to disagree" (close time forced to prev+1s).
 - **`close_resolution_ms`** — Rounding granularity for close time (starts at 30s, decreases as ledger interval stabilizes).
 - **`consensus_state`** — `"finished"` (normal) or `"moved_on"` (consensus failed, adopted best available).
 - **`proposing`** — Whether this node was proposing.
 - **`round_time_ms`** — Total consensus round duration.
-- **`parent_close_time_ripple_epoch_s`** — Previous ledger's close time (Ripple epoch seconds). Enables computing close-time deltas across consecutive rounds without correlating separate spans.
+- **`parent_close_time_ripple_epoch_s`** — Previous ledger's close time (XRPL epoch seconds). Enables computing close-time deltas across consecutive rounds without correlating separate spans.
 - **`close_time_self_ripple_epoch_s`** — This node's own proposed close time before consensus voting.
 - **`close_time_vote_bins`** — Number of distinct close-time vote bins from peer proposals. Higher values indicate less agreement among validators.
 - **`resolution_direction`** — Whether close-time resolution `"increased"` (coarser), `"decreased"` (finer), or stayed `"unchanged"` relative to the previous ledger.

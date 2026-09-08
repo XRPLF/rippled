@@ -23,11 +23,11 @@ namespace {
  * certificate written into the key field, or a CA bundle written into either,
  * shows up as an inequality naming both paths rather than as a near-miss.
  */
-namespace tlsPath {
+namespace tls_path {
 constexpr char const* ca = "/etc/xrpl/tls/collector-ca-bundle.pem";
 constexpr char const* clientCert = "/etc/xrpl/tls/node-client-certificate.pem";
 constexpr char const* clientKey = "/etc/xrpl/tls/node-client-private-key.pem";
-}  // namespace tlsPath
+}  // namespace tls_path
 
 constexpr char const* kHttpsEndpoint = "https://collector.example:4318/v1/traces";
 
@@ -48,9 +48,9 @@ makeMtlsSetup(bool useTls)
     setup.enabled = true;
     setup.tracesEndpoint = kHttpsEndpoint;
     setup.useTls = useTls;
-    setup.tlsCertPath = tlsPath::ca;
-    setup.tlsClientCertPath = tlsPath::clientCert;
-    setup.tlsClientKeyPath = tlsPath::clientKey;
+    setup.tlsCertPath = tls_path::ca;
+    setup.tlsClientCertPath = tls_path::clientCert;
+    setup.tlsClientKeyPath = tls_path::clientKey;
     return setup;
 }
 
@@ -84,9 +84,9 @@ TEST(TraceExporterOptions, mtls_paths_reach_the_matching_exporter_fields)
     auto const opts = telemetry::makeTraceExporterOptions(makeMtlsSetup(true));
 
     EXPECT_EQ(opts.url, kHttpsEndpoint);
-    EXPECT_EQ(opts.ssl_ca_cert_path, tlsPath::ca);
-    EXPECT_EQ(opts.ssl_client_cert_path, tlsPath::clientCert);
-    EXPECT_EQ(opts.ssl_client_key_path, tlsPath::clientKey);
+    EXPECT_EQ(opts.ssl_ca_cert_path, tls_path::ca);
+    EXPECT_EQ(opts.ssl_client_cert_path, tls_path::clientCert);
+    EXPECT_EQ(opts.ssl_client_key_path, tls_path::clientKey);
 }
 
 TEST(TraceExporterOptions, one_way_tls_leaves_the_client_fields_empty)
@@ -101,7 +101,7 @@ TEST(TraceExporterOptions, one_way_tls_leaves_the_client_fields_empty)
     auto const opts = telemetry::makeTraceExporterOptions(setup);
 
     EXPECT_EQ(opts.url, kHttpsEndpoint);
-    EXPECT_EQ(opts.ssl_ca_cert_path, tlsPath::ca);
+    EXPECT_EQ(opts.ssl_ca_cert_path, tls_path::ca);
     EXPECT_EQ(opts.ssl_client_cert_path, "");
     EXPECT_EQ(opts.ssl_client_key_path, "");
 }
