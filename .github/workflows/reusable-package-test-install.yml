@@ -1,0 +1,103 @@
+# Install one package format on every distro family it targets, one job per
+# package name and image, and run the binaries there. Called once per format by
+# reusable-package.yml, which owns the names and the image lists.
+name: Install packages
+
+on:
+  workflow_call:
+    inputs:
+      package_type:
+        description: 'The package format to install ("deb" or "rpm").'
+        required: true
+        type: string
+      package_names:
+        description: "JSON array of package names built for this format."
+        required: true
+        type: string
+      images:
+        description: "JSON array of container images to install in."
+        required: true
+        type: string
+
+defaults:
+  run:
+    shell: bash
+
+env:
+  PACKAGE_DIR: packages
+
+jobs:
+  install:
+    strategy:
+      fail-fast: false
+      matrix:
+        package_name: ${{ fromJson(inputs.package_names) }}
+        image: ${{ fromJson(inputs.images) }}
+    name: "${{ matrix.package_name }} on ${{ matrix.image }}"
+    permissions:
+      contents: read
+    runs-on: ubuntu-latest
+    container: ${{ matrix.image }}
+    timeout-minutes: 5
+
+    steps:
+      # Every package lands in one directory; the step below picks its own,
+      # which keeps this independent of the artifact names.
+      - name: Download package artifacts
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          pattern: "*-pkg"
+          merge-multiple: true
+          path: ${{ env.PACKAGE_DIR }}
+
+      - name: Find the package
+        id: find
+        env:
+          PACKAGE_NAME: ${{ matrix.package_name }}
+          PACKAGE_TYPE: ${{ inputs.package_type }}
+        run: |
+          # The version follows the name, separated by '_' in a DEB and '-' in an
+          # RPM. Requiring a digit after it is what keeps 'xrpld' from picking up
+          # another package, such as 'xrpld-assert'.
+          pattern="${PACKAGE_NAME}[_-][0-9]*.${PACKAGE_TYPE}"
+          package="$(find "${PACKAGE_DIR}" -type f -name "${pattern}" -print -quit)"
+          test -n "${package}" || {
+              echo "no ${pattern} found in ${PACKAGE_DIR}" >&2
+              exit 1
+          }
+          echo "package=${package}" >>"${GITHUB_OUTPUT}"
+
+      - name: Install the DEB
+        if: ${{ inputs.package_type == 'deb' }}
+        env:
+          DEBIAN_FRONTEND: noninteractive
+          PACKAGE: ${{ steps.find.outputs.package }}
+        run: |
+          # Stock Debian and Ubuntu images carry no package lists, so apt has
+          # nothing to resolve the systemd dependency from until it fetches them.
+          apt-get update -qq
+          apt-get install -y "./${PACKAGE}"
+
+      - name: Install the RPM
+        if: ${{ inputs.package_type == 'rpm' }}
+        env:
+          PACKAGE: ${{ steps.find.outputs.package }}
+        run: dnf install -y "./${PACKAGE}"
+
+      - name: Run xrpld
+        run: xrpld --version
+
+      - name: Run validator-keys
+        run: validator-keys --version
+
+      - name: Run rippled, the legacy compatibility symlink
+        run: rippled --version
+
+      - name: Check the service account
+        run: id xrpld
+
+      - name: Check the state directory
+        run: test -d /var/lib/xrpld
+
+      - name: Check the log directory
+        run: test -d /var/log/xrpld
