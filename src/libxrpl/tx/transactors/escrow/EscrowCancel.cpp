@@ -169,6 +169,12 @@ EscrowCancel::doApply()
     auto const sle = ctx_.view().peek(keylet::account(account));
     STAmount const amount = slep->getFieldAmount(sfAmount);
 
+    // The return can re-create a holding the owner deleted while the escrow
+    // was pending; the removed escrow must not be counted against its reserve.
+    bool const recycleReserve = ctx_.view().rules().enabled(fixCleanup3_4_0);
+    if (recycleReserve)
+        decreaseOwnerCountForObject(ctx_.view(), sle, slep, 1, ctx_.journal);
+
     // Transfer amount back to the owner
     if (isXRP(amount))
     {
@@ -212,7 +218,8 @@ EscrowCancel::doApply()
         }
     }
 
-    decreaseOwnerCountForObject(ctx_.view(), sle, slep, 1, ctx_.journal);
+    if (!recycleReserve)
+        decreaseOwnerCountForObject(ctx_.view(), sle, slep, 1, ctx_.journal);
 
     // Remove escrow from ledger
     ctx_.view().erase(slep);
