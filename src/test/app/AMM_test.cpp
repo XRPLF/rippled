@@ -847,7 +847,7 @@ private:
         // Regular holder freeze does not block sending; any-side deep freeze does.
         testAMM(
             [&](AMM& ammAlice, Env& env) {
-                auto const fix340 = env.current()->rules().enabled(fixCleanup3_4_0);
+                auto const fix350 = env.current()->rules().enabled(fixCleanup3_5_0);
                 env(trust(carol_, USD(30'000), tfSetFreeze));
                 env.close();
                 ammAlice.deposit(carol_, USD(100));
@@ -859,13 +859,13 @@ private:
                     std::nullopt,
                     std::nullopt,
                     std::nullopt,
-                    Ter(fix340 ? TER(tecFROZEN) : TER(tesSUCCESS)));
+                    Ter(fix350 ? TER(tecFROZEN) : TER(tesSUCCESS)));
                 env(trust(carol_, USD(30'000), tfClearFreeze | tfClearDeepFreeze));
             },
             std::nullopt,
             0,
             std::nullopt,
-            {features, features - fixCleanup3_4_0});
+            {features, features - fixCleanup3_5_0});
 
         // Individually frozen (AMM) account with IOU/IOU AMM
         testAMM(

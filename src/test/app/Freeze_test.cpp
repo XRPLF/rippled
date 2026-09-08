@@ -1385,9 +1385,9 @@ class Freeze_test : public beast::unit_test::Suite
             env.close();
         }
 
-        auto const destIndivFreeze = features[fixCleanup3_4_0] ? Ter(tesSUCCESS) : Ter(tecFROZEN);
+        auto const destIndivFreeze = features[fixCleanup3_5_0] ? Ter(tesSUCCESS) : Ter(tecFROZEN);
         auto const issuerRedeem =
-            features[fixCleanup3_4_0] ? Ter(tesSUCCESS) : Ter(tecPATH_PARTIAL);
+            features[fixCleanup3_5_0] ? Ter(tesSUCCESS) : Ter(tecPATH_PARTIAL);
 
         // Testing creation and cashing of checks on a trustline frozen by
         // issuer
@@ -2003,7 +2003,7 @@ public:
         testAll(sa - fixEnforceNFTokenTrustlineV2);
         testAll(sa - featureDeepFreeze);
         testAll(sa);
-        testChecksWhenFrozen(sa - fixCleanup3_4_0);
+        testChecksWhenFrozen(sa - fixCleanup3_5_0);
     }
 };
 

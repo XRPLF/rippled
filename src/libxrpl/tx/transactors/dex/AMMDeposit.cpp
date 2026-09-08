@@ -302,7 +302,7 @@ AMMDeposit::preclaim(PreclaimContext const& ctx)
 
                 return ter;
             }
-            if (ctx.view.rules().enabled(fixCleanup3_4_0))
+            if (ctx.view.rules().enabled(fixCleanup3_5_0))
             {
                 if (auto const ter = checkDeepFrozen(ctx.view, accountID, asset);
                     !isTesSuccess(ter))
@@ -357,7 +357,7 @@ AMMDeposit::preclaim(PreclaimContext const& ctx)
                         << " " << to_string(amount->asset());
                     return ter;
                 }
-                if (ctx.view.rules().enabled(fixCleanup3_4_0))
+                if (ctx.view.rules().enabled(fixCleanup3_5_0))
                 {
                     if (auto const ter = checkDeepFrozen(ctx.view, accountID, amount->asset());
                         !isTesSuccess(ter))

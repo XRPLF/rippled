@@ -93,11 +93,11 @@ private:
             {
                 testcase("VaultDeposit IOU depositor holder-side deep freeze");
                 env(trust(owner, asset(1'000'000), tfSetFreeze | tfSetDeepFreeze));
-                auto const fix340Enabled = env.current()->rules().enabled(fixCleanup3_4_0);
-                // Post-fixCleanup3_4_0: checkDeepFrozen catches any-side deep freeze.
+                auto const fix350Enabled = env.current()->rules().enabled(fixCleanup3_5_0);
+                // Post-fixCleanup3_5_0: checkDeepFrozen catches any-side deep freeze.
                 // Pre-fix: ZeroIfFrozen still reports the holder as unfunded.
                 env(vault.deposit({.depositor = owner, .id = keylet.key, .amount = asset(1)}),
-                    Ter(fix340Enabled ? TER(tecFROZEN) : TER(tecINSUFFICIENT_FUNDS)));
+                    Ter(fix350Enabled ? TER(tecFROZEN) : TER(tecINSUFFICIENT_FUNDS)));
                 env(trust(owner, asset(1'000'000), tfClearFreeze | tfClearDeepFreeze));
             }
 
@@ -175,9 +175,9 @@ private:
         env.disableFeature(fixCleanup3_3_0);
         runTests();
         env.enableFeature(fixCleanup3_3_0);
-        env.disableFeature(fixCleanup3_4_0);
+        env.disableFeature(fixCleanup3_5_0);
         runTests();
-        env.enableFeature(fixCleanup3_4_0);
+        env.enableFeature(fixCleanup3_5_0);
     }
 
     void

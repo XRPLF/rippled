@@ -242,7 +242,7 @@ checkDepositFreeze(
             return ret;
         // isIndividualFrozen only sees the issuer-side freeze bit. Any-side deep freeze
         // (holder or issuer) must also block sending into a pseudo-account.
-        if (view.rules().enabled(fixCleanup3_4_0))
+        if (view.rules().enabled(fixCleanup3_5_0))
         {
             if (auto const ret = checkDeepFrozen(view, srcAcct, asset); !isTesSuccess(ret))
                 return ret;

@@ -171,7 +171,7 @@ CheckCash::preclaim(PreclaimContext const& ctx)
         // less than value the check cannot be cashed.
         {
             // Frozen holders can always return an IOU to its issuer (Payment already
-            // allows this). Pre-fixCleanup3_4_0, ZeroIfFrozen treated globally- or
+            // allows this). Pre-fixCleanup3_5_0, ZeroIfFrozen treated globally- or
             // individually-frozen source funds as zero even when dest was the issuer,
             // trapping uncashed checks.
             bool const destIsIssuer = !value.native() && value.getIssuer() == dstId;
@@ -179,7 +179,7 @@ CheckCash::preclaim(PreclaimContext const& ctx)
                 ctx.view,
                 sleCheck->at(sfAccount),
                 value,
-                (ctx.view.rules().enabled(fixCleanup3_4_0) && destIsIssuer)
+                (ctx.view.rules().enabled(fixCleanup3_5_0) && destIsIssuer)
                     ? FreezeHandling::IgnoreFreeze
                     : FreezeHandling::ZeroIfFrozen,
                 AuthHandling::ZeroIfUnauthorized,
@@ -251,9 +251,9 @@ CheckCash::preclaim(PreclaimContext const& ctx)
 
                     // Destination may receive under a regular individual freeze.
                     // Only global freeze and deep freeze block receiving.
-                    // Pre-fixCleanup3_4_0 used isFrozen, which also rejected
+                    // Pre-fixCleanup3_5_0 used isFrozen, which also rejected
                     // an individually frozen destination and trapped funds.
-                    if (ctx.view.rules().enabled(fixCleanup3_4_0))
+                    if (ctx.view.rules().enabled(fixCleanup3_5_0))
                     {
                         if (auto const ter = checkGlobalFrozen(ctx.view, value.asset());
                             !isTesSuccess(ter))
