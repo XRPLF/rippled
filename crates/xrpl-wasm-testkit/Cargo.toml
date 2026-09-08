@@ -9,3 +9,4 @@ crate-type = ["staticlib", "rlib"]
 [dependencies]
 cxx.workspace = true
 wat = "1"
+xrpl-host-functions = { path = "../xrpl-host-functions" }

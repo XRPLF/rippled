@@ -6,8 +6,8 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 #include <helpers/CaptureSink.h>
-#include <tx/wasm/MockHostFunctions.h>
-#include <tx/wasm/WasmFixture.h>
+#include <tx/wasm/fixtures/MockHostFunctions.h>
+#include <tx/wasm/fixtures/WasmRun.h>
 
 #include <string>
 #include <string_view>
@@ -29,7 +29,7 @@ constexpr std::string_view kRunnableWat = R"wat(
 }  // namespace
 
 // `preflightEscrowWasm` takes no host, so this fixture holds none - which is the point of
-// the signature, and what deriving from `WasmTest` would hide. Only a journal, to read the
+// the signature, and what deriving from `MockVmTest` would hide. Only a journal, to read the
 // refusal out of.
 struct PreflightTest : testing::Test
 {

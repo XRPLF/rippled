@@ -4,7 +4,7 @@
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
-#include <tx/wasm/HostContextFixture.h>
+#include <tx/wasm/fixtures/HostContextFixture.h>
 
 #include <cstdint>
 #include <expected>
