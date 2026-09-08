@@ -3659,17 +3659,19 @@ public:
             // Covers BookStep::forEachOffer() offer preparation, where
             // stpAmt.in = mulRatio(ofrAmt.in, transferRateIn) overflowed.
             // The MPT/MPT amounts keep the offer quality reachable while
-            // applying tokenA's transfer rate overflows the input side.
+            // applying tokenA's transfer rate overflows the input side. Such
+            // an offer can no longer rest (see the fee gross-up scenarios
+            // below), so with nothing to cross it is tecKILLED.
             std::int64_t const poisonPays = 6'148'914'691'236'517'205LL;
             std::int64_t const poisonGets = 34'000'000'000'000'000LL;
             env(pay(gwB, mallory, tokenB(poisonGets)));
 
             auto const poisonSeq = env.seq(mallory);
-            env(offer(mallory, tokenA(poisonPays), tokenB(poisonGets)));
+            env(offer(mallory, tokenA(poisonPays), tokenB(poisonGets)), Ter(tecKILLED));
             env.close();
 
             auto const poisonKeylet = keylet::offer(mallory.id(), SeqProxy::rawSequence(poisonSeq));
-            BEAST_EXPECT(env.le(poisonKeylet) != nullptr);
+            BEAST_EXPECT(env.le(poisonKeylet) == nullptr);
 
             auto const aliceSeq = env.seq(alice);
             env(offer(alice, tokenB(1), tokenA(100)));
@@ -3821,6 +3823,382 @@ public:
                     env.le(keylet::offer(taker.id(), SeqProxy::rawSequence(takerSeq))) != nullptr);
             }
             BEAST_EXPECT(logs.contains("Removing offer with overflowing amount calculation"));
+        }
+
+        auto const maxAmt = static_cast<std::int64_t>(kMaxMpTokenAmount);
+        // floor(maxAmt / 1.1): the largest amount whose 10% fee gross-up fits.
+        std::int64_t const maxGross = 8'384'883'669'867'978'006LL;
+
+        // An MPT amount grossed up by its transfer fee may not fit in an MPT
+        // amount.
+        //
+        // TakerGets: flowCross() grosses up the taker's own TakerGets for
+        // sendMax, and that multiply used to throw (tecINTERNAL). It is now
+        // capped at the balance and the offer rests. A Payment consumes such an
+        // offer normally (the owner's side isn't grossed up there); an
+        // OfferCreate taker removes it when BookStep grosses up ownerGives.
+        //
+        // TakerPays: every redeeming taker grosses up the bid's whole TakerPays
+        // in BookStep, so no taker can take it and it would be removed on the
+        // first attempt. Such a bid may still cross, but its remainder isn't
+        // placed: tecKILLED if nothing crossed, like an offer with an
+        // unrepresentable quality.
+        {
+            // The reported case: alice holds the whole supply and sells it for
+            // a little XRP or USD. The offers rest.
+            auto const gw = Account("gw");
+            auto const usd = gw["USD"];
+            auto const alice = Account("alice");
+            auto const bob = Account("bob");
+
+            Env env{*this, features};
+            env.fund(XRP(100'000), issuer, alice, bob, gw);
+            env.close();
+
+            MPTTester const token{
+                {.env = env,
+                 .issuer = issuer,
+                 .holders = {alice, bob},
+                 .transferFee = 10'000,
+                 .maxAmt = kMaxMpTokenAmount}};
+            env(pay(issuer, alice, token(maxAmt)));
+            env.close();
+
+            // A bid for the whole supply can't rest: the taker would pay the
+            // fee on top of it. Nothing to cross yet, so tecKILLED.
+            env(offer(bob, token(maxAmt), XRP(1)), Ter(tecKILLED));
+            env(offer(bob, token(maxGross + 1), XRP(1)), Ter(tecKILLED));
+            env.close();
+            BEAST_EXPECT(env.ownerCount(bob) == 1);
+
+            auto const seq1 = env.seq(alice);
+            env(offer(alice, XRP(1), token(maxAmt)));
+            auto const seq2 = env.seq(alice);
+            env(offer(alice, usd(1), token(maxAmt)));
+            auto const seq3 = env.seq(alice);
+            env(offer(alice, XRP(1), token(maxGross + 1)));
+            env.close();
+            for (auto const seq : {seq1, seq2, seq3})
+            {
+                BEAST_EXPECT(
+                    env.le(keylet::offer(alice.id(), SeqProxy::rawSequence(seq))) != nullptr);
+            }
+            BEAST_EXPECT(env.balance(alice, token) == token(maxAmt));
+            BEAST_EXPECT(env.ownerCount(alice) == 4);
+        }
+
+        {
+            // The resting whole-supply ask is consumed by a Payment (the fee
+            // is charged in the endpoint step, not on the owner's side) and
+            // removed by an OfferCreate taker (BookStep grosses up ownerGives
+            // for the whole offer, which overflows; see the poison scenarios
+            // above).
+            auto const alice = Account("alice");
+            auto const bob = Account("bob");
+            auto const carol = Account("carol");
+
+            Env env{*this, features};
+            env.fund(XRP(100'000), issuer, alice, bob, carol);
+            env.close();
+
+            MPTTester const token{
+                {.env = env,
+                 .issuer = issuer,
+                 .holders = {alice, bob, carol},
+                 .transferFee = 10'000,
+                 .maxAmt = kMaxMpTokenAmount}};
+            MPT const mpt = token;
+            env(pay(issuer, alice, token(maxAmt)));
+            env.close();
+
+            // One drop buys 1e9 units.
+            auto const askSeq = env.seq(alice);
+            env(offer(alice, drops(9'223'372'036), token(maxAmt)));
+            env.close();
+            auto const askKeylet = keylet::offer(alice.id(), SeqProxy::rawSequence(askSeq));
+            BEAST_EXPECT(env.le(askKeylet) != nullptr);
+
+            std::int64_t const small = 1'000'000'000LL;
+            env(pay(bob, carol, token(small)),
+                Path(~mpt),
+                Sendmax(XRP(100)),
+                Txflags(tfNoRippleDirect | tfPartialPayment));
+            env.close();
+            BEAST_EXPECT(env.balance(carol, token) == token(small));
+            BEAST_EXPECT(env.balance(alice, token) == token(maxAmt - small - (small / 10)));
+            {
+                auto const sle = env.le(askKeylet);
+                if (BEAST_EXPECT(sle))
+                    BEAST_EXPECT((*sle)[sfTakerGets] == token(maxAmt - small - (small / 10)));
+            }
+
+            auto const bidSeq = env.seq(bob);
+            env(offer(bob, token(small), drops(2)));
+            env.close();
+            BEAST_EXPECT(env.le(askKeylet) == nullptr);
+            BEAST_EXPECT(env.balance(bob, token) == token(0));
+            BEAST_EXPECT(env.le(keylet::offer(bob.id(), SeqProxy::rawSequence(bidSeq))) != nullptr);
+        }
+
+        {
+            // Control: an ask at the largest amount whose gross-up fits is
+            // taken normally. bob buys 1e9 for a couple of drops and alice
+            // pays 1e9 plus the 1e8 fee.
+            auto const alice = Account("alice");
+            auto const bob = Account("bob");
+
+            Env env{*this, features};
+            env.fund(XRP(100'000), issuer, alice, bob);
+            env.close();
+
+            MPTTester const token{
+                {.env = env,
+                 .issuer = issuer,
+                 .holders = {alice, bob},
+                 .transferFee = 10'000,
+                 .maxAmt = kMaxMpTokenAmount}};
+            env(pay(issuer, alice, token(maxAmt)));
+            env.close();
+
+            auto const okSeq = env.seq(alice);
+            env(offer(alice, drops(maxGross / 1'000'000'000), token(maxGross)));
+            env.close();
+            auto const okKeylet = keylet::offer(alice.id(), SeqProxy::rawSequence(okSeq));
+            BEAST_EXPECT(env.le(okKeylet) != nullptr);
+
+            std::int64_t const small = 1'000'000'000LL;
+            env(offer(bob, token(small), drops(2)));
+            env.close();
+            BEAST_EXPECT(env.balance(bob, token) == token(small));
+            BEAST_EXPECT(env.balance(alice, token) == token(maxAmt - small - (small / 10)));
+            auto const sle = env.le(okKeylet);
+            if (BEAST_EXPECT(sle))
+                BEAST_EXPECT((*sle)[sfTakerGets] == token(maxGross - small));
+        }
+
+        {
+            // With a resting bid, the whole-supply ask crosses it and the
+            // remainder rests. MPT/MPT so the remainder's quality is
+            // representable (a 63-bit MPT over a few drops is not).
+            auto const gwA = Account("gatewayA");
+            auto const gwB = Account("gatewayB");
+            auto const alice = Account("alice");
+            auto const bob = Account("bob");
+
+            Env env{*this, features};
+            env.fund(XRP(10'000), gwA, gwB, alice, bob);
+            env.close();
+
+            MPTTester const tokenA{
+                {.env = env,
+                 .issuer = gwA,
+                 .holders = {alice, bob},
+                 .transferFee = 10'000,
+                 .maxAmt = kMaxMpTokenAmount}};
+            MPTTester const tokenB{{.env = env, .issuer = gwB, .holders = {alice, bob}}};
+
+            std::int64_t const small = 1'000'000'000LL;
+            std::int64_t const bobPays = 20'000'000LL;
+            std::int64_t const alicePays = 110'000'000'000'000'000LL;
+            env(pay(gwA, alice, tokenA(maxAmt)));
+            env(pay(gwB, bob, tokenB(bobPays)));
+            env.close();
+
+            env(offer(bob, tokenA(small), tokenB(bobPays)));
+            env.close();
+
+            auto const aliceSeq = env.seq(alice);
+            env(offer(alice, tokenB(alicePays), tokenA(maxAmt)));
+            env.close();
+            BEAST_EXPECT(env.balance(bob, tokenA) == tokenA(small));
+            BEAST_EXPECT(env.balance(alice, tokenA) == tokenA(maxAmt - small - (small / 10)));
+            BEAST_EXPECT(env.balance(alice, tokenB) == tokenB(bobPays));
+            auto const sle = env.le(keylet::offer(alice.id(), SeqProxy::rawSequence(aliceSeq)));
+            if (BEAST_EXPECT(sle))
+            {
+                BEAST_EXPECT((*sle)[sfTakerPays] == tokenB(alicePays - bobPays));
+                // TakerGets is scaled by the offer's own quality (about 83.85
+                // tokenA per tokenB), so it drops by about 1.68e9.
+                auto const gets = (*sle)[sfTakerGets].mpt().value();
+                BEAST_EXPECT(gets > maxAmt - (2 * small) && gets <= maxAmt - small);
+            }
+        }
+
+        {
+            // The issuer's ask for the whole supply rests too; flowCross()
+            // doesn't gross up the issuer's own sendMax at all.
+            Env env{*this, features};
+            env.fund(XRP(10'000), issuer, taker);
+            env.close();
+
+            MPTTester const token{
+                {.env = env,
+                 .issuer = issuer,
+                 .holders = {taker},
+                 .transferFee = 10'000,
+                 .maxAmt = kMaxMpTokenAmount}};
+
+            auto const issuerSeq = env.seq(issuer);
+            env(offer(issuer, XRP(1), token(maxAmt)));
+            env.close();
+            BEAST_EXPECT(
+                env.le(keylet::offer(issuer.id(), SeqProxy::rawSequence(issuerSeq))) != nullptr);
+        }
+
+        {
+            // An issuer offer above MaximumAmount is not rejected either. It
+            // is a partially funded offer, and fills up to the remaining
+            // issuance capacity.
+            Env env{*this, features};
+            env.fund(XRP(10'000), issuer, taker);
+            env.close();
+
+            MPTTester const token{
+                {.env = env, .issuer = issuer, .holders = {taker}, .maxAmt = 1'000}};
+
+            auto const issuerSeq = env.seq(issuer);
+            env(offer(issuer, XRP(2), token(2'000)));
+            env.close();
+            auto const issuerKeylet = keylet::offer(issuer.id(), SeqProxy::rawSequence(issuerSeq));
+            BEAST_EXPECT(env.le(issuerKeylet) != nullptr);
+
+            auto const takerXRPBefore = env.balance(taker, XRP);
+            auto const fee = env.current()->fees().base;
+            auto const takerSeq = env.seq(taker);
+            env(offer(taker, token(2'000), XRP(2)));
+            env.close();
+
+            // 1,000 units for XRP(1); the exhausted issuer offer is removed and
+            // the taker's remainder rests.
+            BEAST_EXPECT(env.balance(taker, token) == token(1'000));
+            BEAST_EXPECT(env.balance(taker, XRP) == takerXRPBefore - fee - XRP(1));
+            BEAST_EXPECT(env.le(issuerKeylet) == nullptr);
+            auto const sle = env.le(keylet::offer(taker.id(), SeqProxy::rawSequence(takerSeq)));
+            if (BEAST_EXPECT(sle))
+                BEAST_EXPECT((*sle)[sfTakerPays] == token(1'000));
+        }
+
+        {
+            // No fee: the whole supply can be offered.
+            Env env{*this, features};
+            env.fund(XRP(10'000), issuer, taker);
+            env.close();
+
+            MPTTester const token{
+                {.env = env,
+                 .issuer = issuer,
+                 .holders = {taker},
+                 .pay = kMaxMpTokenAmount,
+                 .maxAmt = kMaxMpTokenAmount}};
+
+            auto const takerSeq = env.seq(taker);
+            env(offer(taker, XRP(1), token(maxAmt)));
+            env.close();
+            BEAST_EXPECT(
+                env.le(keylet::offer(taker.id(), SeqProxy::rawSequence(takerSeq))) != nullptr);
+        }
+
+        {
+            // TakerPays side, MPT/MPT book: bob buys the whole tokenA supply
+            // (10% fee) for tokenB. Rejected; the largest amount that fits is
+            // accepted.
+            auto const gwA = Account("gatewayA");
+            auto const gwB = Account("gatewayB");
+            auto const alice = Account("alice");
+            auto const bob = Account("bob");
+
+            Env env{*this, features};
+            env.fund(XRP(10'000), gwA, gwB, alice, bob);
+            env.close();
+
+            MPTTester const tokenA{
+                {.env = env,
+                 .issuer = gwA,
+                 .holders = {alice, bob},
+                 .transferFee = 10'000,
+                 .maxAmt = kMaxMpTokenAmount}};
+            MPTTester const tokenB{{.env = env, .issuer = gwB, .holders = {alice, bob}}};
+
+            std::int64_t const bobGets = 100'000'000'000'000'000LL;
+            env(pay(gwB, bob, tokenB(bobGets)));
+            env.close();
+
+            env(offer(bob, tokenA(maxAmt), tokenB(bobGets)), Ter(tecKILLED));
+            env(offer(bob, tokenA(maxGross + 1), tokenB(bobGets)), Ter(tecKILLED));
+            auto const bobSeq = env.seq(bob);
+            env(offer(bob, tokenA(maxGross), tokenB(bobGets)));
+            env.close();
+            BEAST_EXPECT(env.le(keylet::offer(bob.id(), SeqProxy::rawSequence(bobSeq))) != nullptr);
+            env(offerCancel(bob, bobSeq));
+            env.close();
+
+            // With a resting ask the rejected bid crosses it (bob pays no fee
+            // as the buyer; alice, the seller, pays 10% on top), and bob's
+            // remainder isn't placed.
+            env(pay(gwA, alice, tokenA(1'100)));
+            env.close();
+            env(offer(alice, tokenB(1), tokenA(1'000)));
+            env.close();
+            auto const crossSeq = env.seq(bob);
+            env(offer(bob, tokenA(maxAmt), tokenB(bobGets)));
+            env.close();
+            BEAST_EXPECT(env.balance(bob, tokenA) == tokenA(1'000));
+            BEAST_EXPECT(env.balance(bob, tokenB) == tokenB(bobGets - 1));
+            BEAST_EXPECT(env.balance(alice, tokenA) == tokenA(0));
+            BEAST_EXPECT(env.balance(alice, tokenB) == tokenB(1));
+            BEAST_EXPECT(
+                env.le(keylet::offer(bob.id(), SeqProxy::rawSequence(crossSeq))) == nullptr);
+        }
+
+        {
+            // If the crossing consumes enough of the bid, the remainder's
+            // gross-up fits and the remainder rests.
+            auto const gwA = Account("gatewayA");
+            auto const gwB = Account("gatewayB");
+            auto const alice = Account("alice");
+            auto const bob = Account("bob");
+
+            Env env{*this, features};
+            env.fund(XRP(10'000), gwA, gwB, alice, bob);
+            env.close();
+
+            MPTTester const tokenA{
+                {.env = env,
+                 .issuer = gwA,
+                 .holders = {alice, bob},
+                 .transferFee = 10'000,
+                 .maxAmt = kMaxMpTokenAmount}};
+            MPTTester const tokenB{{.env = env, .issuer = gwB, .holders = {alice, bob}}};
+
+            // bob bids the whole tokenA supply at about 83.85 tokenA per
+            // tokenB. alice asks 1.5e18 tokenA at 100 per tokenB.
+            std::int64_t const bobGets = 110'000'000'000'000'000LL;
+            std::int64_t const aliceGets = 1'500'000'000'000'000'000LL;
+            std::int64_t const alicePays = 15'000'000'000'000'000LL;
+            env(pay(gwA, alice, tokenA(maxAmt)));
+            env(pay(gwB, bob, tokenB(bobGets)));
+            env.close();
+
+            env(offer(alice, tokenB(alicePays), tokenA(aliceGets)));
+            env.close();
+
+            auto const bobSeq = env.seq(bob);
+            env(offer(bob, tokenA(maxAmt), tokenB(bobGets)));
+            env.close();
+            BEAST_EXPECT(env.balance(bob, tokenA) == tokenA(aliceGets));
+            BEAST_EXPECT(
+                env.balance(alice, tokenA) == tokenA(maxAmt - aliceGets - (aliceGets / 10)));
+            BEAST_EXPECT(env.balance(alice, tokenB) == tokenB(alicePays));
+            // Remainder: TakerPays drops by what bob received, to 7.72e18,
+            // whose 10% gross-up fits; TakerGets is rescaled by the bid's
+            // quality to about 9.21e16.
+            auto const sle = env.le(keylet::offer(bob.id(), SeqProxy::rawSequence(bobSeq)));
+            if (BEAST_EXPECT(sle))
+            {
+                BEAST_EXPECT((*sle)[sfTakerPays] == tokenA(maxAmt - aliceGets));
+                auto const gets = (*sle)[sfTakerGets].mpt().value();
+                BEAST_EXPECT(gets > 92'000'000'000'000'000LL && gets < 92'200'000'000'000'000LL);
+            }
         }
     }
 
