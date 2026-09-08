@@ -598,3 +598,114 @@ fn a_memory64_module_is_rejected_at_compile() {
         "rejected before instantiation, so nothing is charged: {failure}"
     );
 }
+
+/// A function declaring more parameters than wasm allows (1000) is refused at compile, so a
+/// contract cannot smuggle an unbounded signature past screening.
+#[test]
+fn a_function_with_too_many_params_is_refused() {
+    let host = FakeHost::new();
+    let params = " i32".repeat(1001);
+    let wat = format!(
+        "(module {ONE_PAGE} (func (param{params}) (result i32) (i32.const 0)) \
+         (func (export \"finish\") (result i32) (i32.const 0)))"
+    );
+    assert_stage!(failure(&wat, &host), RunError::Compile(_));
+}
+
+/// A function declaring more locals than wasm allows (50 000) is refused at compile.
+#[test]
+fn a_function_with_too_many_locals_is_refused() {
+    let host = FakeHost::new();
+    let locals = format!("(local{})", " i32".repeat(50_001));
+    let wat = module(&[ONE_PAGE], &format!("{locals} (i32.const 0)"));
+    assert_stage!(failure(&wat, &host), RunError::Compile(_));
+}
+
+/// Below the compile cap but past the engine's register frame, a locals-heavy function is
+/// refused when the frame is built rather than at compile — still refused, just later.
+#[test]
+fn a_function_past_the_register_frame_is_refused() {
+    let host = FakeHost::new();
+    let locals = format!("(local{})", " i32".repeat(40_000));
+    let wat = module(&[ONE_PAGE], &format!("{locals} (i32.const 0)"));
+    assert_stage!(failure(&wat, &host), RunError::Trap(_));
+}
+
+/// Unbounded recursion is stopped by the engine's call-stack limit — it traps rather than
+/// running the host's native stack off the end (the portable dispatcher makes loops safe;
+/// this pins that guest *calls* are bounded too).
+#[test]
+fn unbounded_recursion_is_stopped_by_the_call_stack_limit() {
+    let host = FakeHost::new();
+    let wat = format!(
+        "(module {ONE_PAGE} \
+          (func $rec (param i32) (result i32) \
+            (if (result i32) (i32.eqz (local.get 0)) (then (i32.const 0)) \
+              (else (call $rec (i32.sub (local.get 0) (i32.const 1)))))) \
+          (func (export \"finish\") (result i32) (call $rec (i32.const 1000000))))"
+    );
+    assert_stage!(failure(&wat, &host), RunError::Trap(_));
+}
+
+/// A module with many functions currently compiles and runs: wasmi's only cap is its
+/// 1,000,000 hard limit, so the ticket's ~24k-function module — a CodeMap-growth DoS, since
+/// every validation appends to the engine's append-only CodeMap — is not refused here.
+/// Enforcing a tighter bound (a function-count / average-bytes-per-function limit) belongs in
+/// a future preflight pass that parses the module before the engine sees it. Ignored until
+/// then, so this documents the gap without asserting it is acceptable.
+#[test]
+#[ignore = "CodeMap-DoS unmitigated; a function-count limit is deferred to preflight parsing"]
+fn many_functions_currently_run_unbounded() {
+    let host = FakeHost::new();
+    let funcs: String = (0..24_000)
+        .map(|i| format!("(func $f{i} (result i32) (i32.const {}))", i % 7))
+        .collect();
+    let wat =
+        format!("(module {ONE_PAGE} {funcs} (func (export \"finish\") (result i32) (call $f0)))");
+    assert!(
+        run(&wat, &host).is_ok(),
+        "a large-function module currently compiles and runs"
+    );
+}
+
+/// The trap *kinds* wasmi distinguishes all reach the caller identically — a guest trap
+/// charged as the contract's fault — so the `unreachable` representative pins the mapping.
+/// These pin the individual kinds too, guarding against a wasmi upgrade reclassifying any of
+/// them as something other than a trap.
+#[test]
+fn a_division_by_zero_traps() {
+    let host = FakeHost::new();
+    let wat = module(&[ONE_PAGE], "(i32.div_s (i32.const 1) (i32.const 0))");
+    assert_stage!(failure(&wat, &host), RunError::Trap(_));
+}
+
+#[test]
+fn a_signed_integer_overflow_traps() {
+    let host = FakeHost::new();
+    let wat = module(
+        &[ONE_PAGE],
+        "(i32.div_s (i32.const 0x80000000) (i32.const -1))",
+    );
+    assert_stage!(failure(&wat, &host), RunError::Trap(_));
+}
+
+#[test]
+fn an_indirect_call_to_a_null_table_entry_traps() {
+    let host = FakeHost::new();
+    let wat = format!(
+        "(module {ONE_PAGE} (type $t (func (result i32))) (table 1 funcref) \
+          (func (export \"finish\") (result i32) (call_indirect (type $t) (i32.const 0))))"
+    );
+    assert_stage!(failure(&wat, &host), RunError::Trap(_));
+}
+
+#[test]
+fn an_indirect_call_with_a_mismatched_signature_traps() {
+    let host = FakeHost::new();
+    let wat = format!(
+        "(module {ONE_PAGE} (type $void (func)) (type $i32 (func (result i32))) \
+          (table 1 funcref) (elem (i32.const 0) $f) (func $f (type $void)) \
+          (func (export \"finish\") (result i32) (call_indirect (type $i32) (i32.const 0))))"
+    );
+    assert_stage!(failure(&wat, &host), RunError::Trap(_));
+}

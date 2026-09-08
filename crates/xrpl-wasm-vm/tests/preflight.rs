@@ -593,3 +593,61 @@ fn a_memory64_memory_is_refused_by_screening() {
         "{refusal}"
     );
 }
+
+/// The corruption fixtures below are written as hex strings, which is how the old Beast suite
+/// carried them — the bytes are deliberately malformed, so there is nothing to assemble them
+/// from.
+fn hex(s: &str) -> Vec<u8> {
+    (0..s.len())
+        .step_by(2)
+        .map(|i| u8::from_str_radix(&s[i..i + 2], 16).unwrap())
+        .collect()
+}
+
+/// Malformed modules crafted to abuse the parser rather than merely be invalid — a vector
+/// length that lies about its size, a section that overruns its payload, a locals-count bomb,
+/// and a non-terminating LEB128 — are refused at compile like any other garbage. These guard
+/// the parser against resource-exhaustion shapes (ported from the old Beast section-corruption
+/// fixtures); the plainer "bad magic / wrong version" shapes are covered by `garbage_does_not_pass`.
+#[test]
+fn parser_abuse_shapes_are_refused() {
+    let cases = [
+        ("vector length lies", "0061736d010000000105ffffffff0f"),
+        ("section overruns its payload", "0061736d01000000010a0160"),
+        (
+            "locals-count bomb",
+            "0061736d01000000010401600000030201000a0f010d01ffffffff0f7f0b",
+        ),
+        (
+            "non-terminating LEB128",
+            "0061736d0100000001058080808080808080808080808080808080808080808080808080808080808080808080808080808080808080808080808080808080808080808080808080808080808080808080808080808080808080808080808080808080808080808080808080808080808080808080",
+        ),
+    ];
+    for (label, h) in cases {
+        let refusal = xrpl_wasm_vm::check(&hex(h), ENTRY).expect_err(label);
+        assert_stage!(refusal, CheckError::Compile(_));
+    }
+}
+
+/// The plain structurally-malformed modules from the old section-corruption fixtures — a
+/// corrupt magic, a wrong version, a lying section length, sections out of order, junk after
+/// the last section, an unknown section id — are all refused at compile. Belt-and-suspenders
+/// alongside `garbage_does_not_pass`: guards against a wasmi upgrade loosening the validator.
+#[test]
+fn structurally_malformed_modules_are_refused() {
+    let cases = [
+        ("corrupt magic number", "0161736d01000000"),
+        ("wrong version", "0061736d02000000"),
+        ("lying section length", "0061736d01000000018080808008"),
+        ("sections out of order", "0061736d010000000a02000b03020000"),
+        (
+            "junk after last section",
+            "0061736d01000000010a01600000000000000000",
+        ),
+        ("unknown section id", "0061736d01000000ff0100"),
+    ];
+    for (label, h) in cases {
+        let refusal = xrpl_wasm_vm::check(&hex(h), ENTRY).expect_err(label);
+        assert_stage!(refusal, CheckError::Compile(_));
+    }
+}
