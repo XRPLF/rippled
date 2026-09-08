@@ -44,13 +44,11 @@ class TMGetLedger_test : public beast::unit_test::Suite
         auto request = std::make_shared<protocol::TMGetLedger>();
         request->set_itype(protocol::liTX_NODE);
 
-        // A uint256-sized ledger hash so the request passes the earlier
-        // structural validation and reaches the node-ID checks.
+        // A uint256-sized ledger hash, as a well-formed request carries.
         uint256 const ledgerHash{1};
         request->set_ledgerhash(ledgerHash.data(), ledgerHash.size());
 
-        // Valid, deserializable SHAMap node IDs (the root node ID, repeated).
-        // The count is what the hard bound cares about.
+        // Valid, deserializable SHAMap node IDs.
         auto const rootNodeId = SHAMapNodeID{}.getRawString();
         for (std::size_t i = 0; i < numNodeIds; ++i)
         {
@@ -61,9 +59,9 @@ class TMGetLedger_test : public beast::unit_test::Suite
     }
 
     void
-    testNodeIdHardLimit(std::size_t const numNodeIds, bool const expectRejected)
+    testNodeIdCountAccepted(std::size_t const numNodeIds, bool const expectRejected)
     {
-        testcase("Node ID Hard Limit");
+        testcase("Node ID Count Accepted");
 
         Env env{*this};
         PeerTest::resetId();
@@ -71,17 +69,18 @@ class TMGetLedger_test : public beast::unit_test::Suite
         auto peer = makePeerTest(env, context_, protocolVersion_);
         peer->onMessage(createRequest(numNodeIds));
 
-        // An over-limit request is charged kFeeInvalidData; an in-limit request should not be.
-        // The JobQueue handler may run concurrently and update the fee for in-limit requests.
+        // A request outside the accepted node-ID count is charged kFeeInvalidData; one inside
+        // it is not. The JobQueue handler may run concurrently and update the fee in the
+        // accepted case.
         BEAST_EXPECT(
             expectRejected ? (peer->getCurrentFeeCharge() == resource::kFeeInvalidData)
                            : !(peer->getCurrentFeeCharge() == resource::kFeeInvalidData));
     }
 
     void
-    testProcessLedgerRequestReplyCapped(std::size_t const numNodeIds)
+    testProcessLedgerRequestNodeCount(std::size_t const numNodeIds)
     {
-        testcase("Process Ledger Request Reply Capped");
+        testcase("Process Ledger Request Node Count");
 
         Env env{*this};
         env.close();
@@ -89,8 +88,7 @@ class TMGetLedger_test : public beast::unit_test::Suite
 
         auto peer = makePeerTest(env, context_, protocolVersion_);
 
-        // Request the account-state root node of the closed ledger, asking
-        // for far more node IDs than the hard bound allows.
+        // Ask for the account-state root node of the closed ledger.
         auto request = createRequest(numNodeIds);
         request->clear_ledgerhash();
         request->set_itype(protocol::liAS_NODE);
@@ -121,12 +119,12 @@ class TMGetLedger_test : public beast::unit_test::Suite
     run() override
     {
         auto const limit = static_cast<std::size_t>(tuning::kHardMaxReplyNodes);
-        testNodeIdHardLimit(limit + 1, true);
-        testNodeIdHardLimit(limit, false);
-        testNodeIdHardLimit(limit - 1, false);
-        testProcessLedgerRequestReplyCapped(limit + 1);
-        testProcessLedgerRequestReplyCapped(limit);
-        testProcessLedgerRequestReplyCapped(limit - 1);
+        testNodeIdCountAccepted(limit + 1, true);
+        testNodeIdCountAccepted(limit, false);
+        testNodeIdCountAccepted(limit - 1, false);
+        testProcessLedgerRequestNodeCount(limit + 1);
+        testProcessLedgerRequestNodeCount(limit);
+        testProcessLedgerRequestNodeCount(limit - 1);
     }
 };
 

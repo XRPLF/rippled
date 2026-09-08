@@ -26,6 +26,7 @@
 #include <xrpl.pb.h>
 
 #include <memory>
+#include <optional>
 #include <vector>
 
 namespace xrpl::test {
@@ -35,9 +36,10 @@ namespace xrpl::test {
  */
 class PeerTest : public PeerImp
 {
-private:
     inline static Peer::id_t id{};
     std::shared_ptr<Message> lastSentMessage_;
+    std::optional<bool> compressionEnabled_;
+    std::optional<bool> reduceRelayEnabled_;
 
 public:
     using MiddleType = boost::beast::tcp_stream;
@@ -83,6 +85,18 @@ public:
 
     static void
     resetId();
+
+    bool
+    compressionEnabled() const override;
+
+    void
+    compressionEnabled(std::optional<bool> enabled);
+
+    bool
+    txReduceRelayEnabled() const override;
+
+    void
+    txReduceRelayEnabled(std::optional<bool> enabled);
 };
 
 std::shared_ptr<PeerTest>
