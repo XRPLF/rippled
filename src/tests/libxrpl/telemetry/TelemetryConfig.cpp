@@ -8,6 +8,7 @@
 
 #include <chrono>
 #include <cstdint>
+#include <filesystem>
 #include <fstream>
 #include <initializer_list>
 #include <limits>
@@ -45,7 +46,9 @@ namespace {
  * pairingError, useTlsError and readError are message fragments. All three
  * guards throw std::runtime_error, so the exception type alone cannot tell
  * them apart. Each fragment occurs in exactly one of the three messages, so
- * matching it proves which guard fired.
+ * matching it proves which guard fired. notRegularError names the one reason
+ * the readability guard supplies itself rather than taking from the operating
+ * system, so matching it proves the file-type branch ran and not the open.
  */
 namespace mtls {
 constexpr char const* keyClientCert = "tls_client_cert";
@@ -55,6 +58,7 @@ constexpr char const* clientKey = "/etc/ssl/client.key";
 constexpr char const* pairingError = "must be set together";
 constexpr char const* useTlsError = "require use_tls=1";
 constexpr char const* readError = "cannot be read";
+constexpr char const* notRegularError = "not a regular file";
 
 /**
  * Endpoint values and the message fragment of the scheme guard.
@@ -461,6 +465,31 @@ TEST(TelemetryConfig, tls_missing_ca_cert_file_throws)
         [&section] { mtls::parseSection(section); },
         ThrowsMessage<std::runtime_error>(
             AllOf(HasSubstr(mtls::readError), HasSubstr("tls_ca_cert"), HasSubstr(absentCa))));
+}
+
+TEST(TelemetryConfig, tls_client_key_that_is_a_directory_throws)
+{
+    // A path that exists but is a directory. The check opens the file instead
+    // of reading it, and opening a directory for input succeeds on Linux, so
+    // the file-type branch is the only thing that can reject this. The message
+    // must still name the key and the path, which is what tells the operator
+    // which setting is wrong.
+    TempDir const dir;
+    auto const keyDir = dir.file("keydir");
+    ASSERT_TRUE(std::filesystem::create_directory(keyDir));
+    Section section = mtls::makeSection(true);
+    section.set("use_tls", "1");
+    section.set(mtls::keyEndpoint, mtls::httpsEndpoint);
+    section.set(mtls::keyClientCert, mtls::writeCertFile(dir.file("c.pem")));
+    section.set(mtls::keyClientKey, keyDir);
+
+    EXPECT_THAT(
+        [&section] { mtls::parseSection(section); },
+        ThrowsMessage<std::runtime_error>(AllOf(
+            HasSubstr(mtls::readError),
+            HasSubstr(mtls::notRegularError),
+            HasSubstr(mtls::keyClientKey),
+            HasSubstr(keyDir))));
 }
 
 TEST(TelemetryConfig, tls_readable_files_are_accepted)

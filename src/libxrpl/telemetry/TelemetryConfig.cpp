@@ -8,13 +8,16 @@
  * See cfg/xrpld-example.cfg for the full list of available options.
  */
 
-#include <xrpl/basics/FileUtilities.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/config/BasicConfig.h>
 #include <xrpl/telemetry/Telemetry.h>
 
+#include <cerrno>
 #include <chrono>
 #include <cstdint>
+#include <filesystem>
+#include <fstream>
+#include <ios>
 #include <limits>
 #include <optional>
 #include <stdexcept>
@@ -157,12 +160,15 @@ networkTypeFromId(std::uint32_t networkId)
 }
 
 /**
- * Throw unless the given path names a file this process can read.
+ * Throw unless the given path names a regular file this process can read.
  *
- * An empty path means the option is unset, which every caller allows. Reading
- * the file proves it is both present and readable; testing existence alone
- * would miss a permissions problem. The contents are discarded — nothing here
- * checks that they parse as PEM.
+ * An empty path means the option is unset, which every caller allows. Opening
+ * the file proves it is present and that the read permission check passes,
+ * without loading any of its contents — one of these paths names a private key.
+ * Nothing here checks that the contents parse as PEM.
+ *
+ * A path that is not a regular file is rejected before the open, because
+ * opening a FIFO waits for a writer.
  *
  * @param path       Path taken from the config, possibly empty.
  * @param configKey  Config key the path came from, named in the message. Not
@@ -175,13 +181,28 @@ requireReadableFile(std::string const& path, char const* configKey)
     if (path.empty())
         return;
 
+    // Each branch sets the reason and stops. The two that come from the
+    // operating system reuse its message; the middle one has no errno to read.
     std::error_code ec;
-    getFileContents(ec, path);
+    std::string reason;
+    auto const fileStatus = std::filesystem::status(path, ec);
     if (ec)
     {
+        reason = ec.message();
+    }
+    else if (!std::filesystem::is_regular_file(fileStatus))
+    {
+        reason = "not a regular file";
+    }
+    else if (std::ifstream stream{path, std::ios::in}; !stream)
+    {
+        reason = std::error_code{errno, std::generic_category()}.message();
+    }
+
+    if (!reason.empty())
+    {
         Throw<std::runtime_error>(
-            std::string{"[telemetry] "} + configKey + " cannot be read: " + path + " - " +
-            ec.message());
+            std::string{"[telemetry] "} + configKey + " cannot be read: " + path + " - " + reason);
     }
 }
 
