@@ -3,7 +3,7 @@
 #include <xrpl/protocol/Seed.h>
 
 #include <gtest/gtest.h>
-#include <tx/wasm/RealHostFixture.h>
+#include <tx/wasm/fixtures/RealHostFixture.h>
 
 #include <cstdint>
 

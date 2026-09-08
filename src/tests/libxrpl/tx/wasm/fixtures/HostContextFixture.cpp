@@ -1,4 +1,4 @@
-#include <tx/wasm/HostContextFixture.h>
+#include <tx/wasm/fixtures/HostContextFixture.h>
 
 #include <xrpl/tx/wasm/WasmCommon.h>
 

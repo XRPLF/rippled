@@ -3,15 +3,17 @@
 #include <xrpl/basics/Slice.h>
 #include <xrpl/tx/wasm/WasmCommon.h>
 
-#include <tx/wasm/RealHostFixture.h>
-
 #include <cstdint>
 #include <limits>
 #include <string_view>
 
+// Canonical float encodings, with no ledger and no test framework behind them — just the byte
+// patterns the float host functions take and return. Benchmarks include this directly;
+// `FloatFixture.h` mixes it into the GTest fixture the `host_functions/` tests use.
+
 namespace xrpl::test {
 
-struct FloatTest : RealHostFixture
+struct FloatConstants
 {
     static constexpr std::int64_t kMin64 = std::numeric_limits<std::int64_t>::min();
     static constexpr std::int64_t kMax64 = std::numeric_limits<std::int64_t>::max();

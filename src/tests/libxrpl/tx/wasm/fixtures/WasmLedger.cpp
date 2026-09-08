@@ -1,4 +1,4 @@
-#include <tx/wasm/RealHostFixture.h>
+#include <tx/wasm/fixtures/WasmLedger.h>
 
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/Journal.h>
@@ -24,36 +24,42 @@
 #include <xrpl/tx/wasm/HostFuncImpl.h>
 #include <xrpl/tx/wasm/WasmCommon.h>
 
-#include <gtest/gtest.h>
 #include <helpers/Account.h>
 #include <helpers/TxTest.h>
 
 #include <cstdint>
-#include <expected>
 #include <functional>
 #include <iterator>
 #include <memory>
 #include <span>
+#include <stdexcept>
+#include <string>
 #include <string_view>
 #include <utility>
 #include <vector>
 
 namespace xrpl::test {
 
+void
+fixtureFailed(std::string_view what)
+{
+    throw std::runtime_error("test fixture setup failed: " + std::string{what});
+}
+
 Bytes
-RealHostFixture::toBytes(std::uint8_t value)
+WasmLedger::toBytes(std::uint8_t value)
 {
     return {value};
 }
 
 Bytes
-RealHostFixture::toBytes(std::uint16_t value)
+WasmLedger::toBytes(std::uint16_t value)
 {
     return {static_cast<std::uint8_t>(value), static_cast<std::uint8_t>(value >> 8)};
 }
 
 Bytes
-RealHostFixture::toBytes(std::uint32_t value)
+WasmLedger::toBytes(std::uint32_t value)
 {
     return {
         static_cast<std::uint8_t>(value),
@@ -63,31 +69,31 @@ RealHostFixture::toBytes(std::uint32_t value)
 }
 
 Bytes
-RealHostFixture::toBytes(uint256 const& value)
+WasmLedger::toBytes(uint256 const& value)
 {
     return Bytes{std::begin(value), std::end(value)};
 }
 
 Bytes
-RealHostFixture::toBytes(std::string_view value)
+WasmLedger::toBytes(std::string_view value)
 {
     return Bytes{std::begin(value), std::end(value)};
 }
 
 Bytes
-RealHostFixture::toBytes(std::span<std::uint8_t const> value)
+WasmLedger::toBytes(std::span<std::uint8_t const> value)
 {
     return Bytes{std::begin(value), std::end(value)};
 }
 
 Bytes
-RealHostFixture::toBytes(AccountID const& account)
+WasmLedger::toBytes(AccountID const& account)
 {
     return Bytes{std::begin(account), std::end(account)};
 }
 
 Bytes
-RealHostFixture::toBytes(Issue const& issue)
+WasmLedger::toBytes(Issue const& issue)
 {
     auto s = Serializer{};
     s.addBitString(issue.currency);
@@ -97,7 +103,7 @@ RealHostFixture::toBytes(Issue const& issue)
 }
 
 Bytes
-RealHostFixture::toBytes(Asset const& asset)
+WasmLedger::toBytes(Asset const& asset)
 {
     if (asset.holds<Issue>())
         return toBytes(asset.get<Issue>());
@@ -108,7 +114,7 @@ RealHostFixture::toBytes(Asset const& asset)
 }
 
 Bytes
-RealHostFixture::toBytes(STAmount const& amount)
+WasmLedger::toBytes(STAmount const& amount)
 {
     auto msg = Serializer{};
     amount.add(msg);
@@ -116,17 +122,11 @@ RealHostFixture::toBytes(STAmount const& amount)
 }
 
 Bytes
-RealHostFixture::toBytes(STNumber const& number)
+WasmLedger::toBytes(STNumber const& number)
 {
     auto msg = Serializer{};
     number.add(msg);
     return msg.getData();
-}
-
-void
-expectKeyletMatches(std::expected<Bytes, HostFunctionError> const& result, Keylet const& expected)
-{
-    expectValue(result, RealHostFixture::toBytes(expected.key));
 }
 
 SignedMessage
@@ -145,7 +145,10 @@ uint256
 credentialId(std::string_view hex)
 {
     auto id = uint256{};
-    EXPECT_TRUE(id.parseHex(std::string{hex}));
+    if (!id.parseHex(std::string{hex}))
+    {
+        fixtureFailed("parsing the credential id hex");
+    }
     return id;
 }
 
@@ -168,8 +171,11 @@ escrowFinishTx(TxTest& ledger, Account const& acct)
 {
     return {.type = ttESCROW_FINISH, .build = [&ledger, acct](STObject& obj) {
                 auto credId = uint256{};
-                EXPECT_TRUE(credId.parseHex(
-                    "0011223344556677889900112233445566778899001122334455667788990011"));
+                if (!credId.parseHex(
+                        "0011223344556677889900112233445566778899001122334455667788990011"))
+                {
+                    fixtureFailed("parsing the credential id hex");
+                }
 
                 obj.setAccountID(sfAccount, acct.id());
                 obj.setAccountID(sfOwner, acct.id());
@@ -221,7 +227,7 @@ WasmHost::operator*() const
 }
 
 Account
-RealHostFixture::fund(char const* name, XRPAmount amount)
+WasmLedger::fund(char const* name, XRPAmount amount)
 {
     auto const account = Account{name};
     ledger.createAccount(account, amount);
@@ -229,7 +235,7 @@ RealHostFixture::fund(char const* name, XRPAmount amount)
 }
 
 WasmHost
-RealHostFixture::makeHost(
+WasmLedger::makeHost(
     beast::Journal journal,
     Keylet const& leKey,
     TxType txType,
@@ -250,17 +256,14 @@ RealHostFixture::makeHost(
 }
 
 WasmHost
-RealHostFixture::makeHost(
-    Keylet const& leKey,
-    TxType txType,
-    std::function<void(STObject&)> assembler)
+WasmLedger::makeHost(Keylet const& leKey, TxType txType, std::function<void(STObject&)> assembler)
 {
     return makeHost(
         beast::Journal{beast::Journal::getNullSink()}, leKey, txType, std::move(assembler));
 }
 
 WasmHost
-RealHostFixture::makeTracingHost(
+WasmLedger::makeTracingHost(
     Keylet const& leKey,
     TxType txType,
     std::function<void(STObject&)> assembler)
@@ -269,13 +272,13 @@ RealHostFixture::makeTracingHost(
 }
 
 std::string
-RealHostFixture::logged() const
+WasmLedger::logged() const
 {
     return traceSink_.messages();
 }
 
 void
-RealHostFixture::makeSignerList(
+WasmLedger::makeSignerList(
     Account const& owner,
     std::uint32_t quorum,
     std::vector<std::pair<Account, std::uint16_t>> const& signers)
@@ -290,7 +293,10 @@ RealHostFixture::makeSignerList(
     }
     auto const r = ledger.submit(
         transactions::SignerListSetBuilder{owner.id(), quorum}.setSignerEntries(entries), owner);
-    EXPECT_EQ(r.ter, tesSUCCESS) << transToken(r.ter);
+    if (r.ter != tesSUCCESS)
+    {
+        fixtureFailed(std::string{"submitting the signer list: "} + transToken(r.ter));
+    }
     ledger.close();
 }
 

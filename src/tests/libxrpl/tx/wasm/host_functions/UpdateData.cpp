@@ -2,7 +2,7 @@
 #include <xrpl/tx/wasm/WasmCommon.h>
 
 #include <gtest/gtest.h>
-#include <tx/wasm/RealHostFixture.h>
+#include <tx/wasm/fixtures/RealHostFixture.h>
 
 namespace xrpl::test {
 
