@@ -24,7 +24,7 @@
 #include <vector>
 
 namespace xrpl {
-namespace Attestations {
+namespace attestations {
 
 AttestationBase::AttestationBase(
     AccountID attestationSignerAccount,
@@ -385,7 +385,7 @@ operator==(AttestationCreateAccount const& lhs, AttestationCreateAccount const& 
         std::tie(rhs.createCount, rhs.toCreate, rhs.rewardAmount);
 }
 
-}  // namespace Attestations
+}  // namespace attestations
 
 SField const& XChainClaimAttestation::arrayFieldName{sfXChainClaimAttestations};
 SField const& XChainCreateAccountAttestation::arrayFieldName{sfXChainCreateAccountAttestations};

@@ -7,7 +7,7 @@
 #include <chrono>
 #include <cstddef>
 
-namespace xrpl::PeerFinder {
+namespace xrpl::peer_finder {
 
 /**
  * Metadata for a Fixed slot.
@@ -36,8 +36,8 @@ public:
     void
     failure(clock_type::time_point const& now)
     {
-        failures_ = std::min(failures_ + 1, Tuning::kConnectionBackoff.size() - 1);
-        when_ = now + std::chrono::minutes(Tuning::kConnectionBackoff[failures_]);
+        failures_ = std::min(failures_ + 1, tuning::kConnectionBackoff.size() - 1);
+        when_ = now + std::chrono::minutes(tuning::kConnectionBackoff[failures_]);
     }
 
     /**
@@ -55,4 +55,4 @@ private:
     std::size_t failures_{0};
 };
 
-}  // namespace xrpl::PeerFinder
+}  // namespace xrpl::peer_finder

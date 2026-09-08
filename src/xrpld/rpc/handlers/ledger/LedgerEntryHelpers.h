@@ -22,7 +22,7 @@
 #include <stdexcept>
 #include <string>
 
-namespace xrpl::LedgerEntryHelpers {
+namespace xrpl::ledger_entry_helpers {
 
 inline std::unexpected<json::Value>
 missingFieldError(json::StaticString const field, std::optional<std::string> err = std::nullopt)
@@ -30,7 +30,7 @@ missingFieldError(json::StaticString const field, std::optional<std::string> err
     json::Value json = json::ValueType::Object;
     json[jss::error] = err.value_or("malformedRequest");
     json[jss::error_code] = RpcInvalidParams;
-    json[jss::error_message] = RPC::missingFieldMessage(std::string(field.cStr()));
+    json[jss::error_message] = rpc::missingFieldMessage(std::string(field.cStr()));
     return std::unexpected(json);
 }
 
@@ -40,7 +40,7 @@ invalidFieldError(std::string const& err, json::StaticString const field, std::s
     json::Value json = json::ValueType::Object;
     json[jss::error] = err;
     json[jss::error_code] = RpcInvalidParams;
-    json[jss::error_message] = RPC::expectedFieldMessage(field, type);
+    json[jss::error_message] = rpc::expectedFieldMessage(field, type);
     return std::unexpected(json);
 }
 
@@ -291,4 +291,4 @@ parseBridgeFields(json::Value const& params)
         *lockingChainDoor, lockingChainIssue, *issuingChainDoor, issuingChainIssue);
 }
 
-}  // namespace xrpl::LedgerEntryHelpers
+}  // namespace xrpl::ledger_entry_helpers

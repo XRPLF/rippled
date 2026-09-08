@@ -24,7 +24,7 @@ namespace test {
 class LedgerReplayClient;
 }  // namespace test
 
-namespace LedgerReplayParameters {
+namespace ledger_replay_parameters {
 // timeout value for LedgerReplayTask
 constexpr auto kTaskTimeout = std::chrono::milliseconds{500};
 
@@ -53,7 +53,7 @@ constexpr std::uint32_t kMaxTaskSize = 256;
 
 // to limit the number of LedgerReplay related jobs in JobQueue
 constexpr std::uint32_t kMaxQueuedTasks = 100;
-}  // namespace LedgerReplayParameters
+}  // namespace ledger_replay_parameters
 
 /**
  * Manages the lifetime of ledger replay tasks.

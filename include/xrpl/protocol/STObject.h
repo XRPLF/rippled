@@ -90,7 +90,11 @@ public:
     operator=(STObject&& other);
 
     STObject(SOTemplate const& type, SField const& name);
-    STObject(SOTemplate const& type, SerialIter& sit, SField const& name);
+    STObject(
+        SOTemplate const& type,
+        SerialIter& sit,
+        SField const& name,
+        bool requireCanonicalOrder = false);
     STObject(SerialIter& sit, SField const& name, int depth = 0);
     STObject(SerialIter&& sit, SField const& name);
     explicit STObject(SField const& name);
@@ -123,7 +127,7 @@ public:
     set(SOTemplate const&);
 
     bool
-    set(SerialIter& u, int depth = 0);
+    set(SerialIter& u, int depth = 0, bool requireCanonicalOrder = false);
 
     [[nodiscard]] SerializedTypeID
     getSType() const override;
@@ -428,8 +432,6 @@ public:
 
     bool
     operator==(STObject const& o) const;
-    bool
-    operator!=(STObject const& o) const;
 
     class FieldErr;
 
@@ -661,36 +663,6 @@ public:
         if (lhs.engaged() != rhs.engaged())
             return false;
         return !lhs.engaged() || *lhs == *rhs;
-    }
-
-    friend bool
-    operator!=(OptionalProxy const& lhs, std::nullopt_t) noexcept
-    {
-        return !(lhs == std::nullopt);
-    }
-
-    friend bool
-    operator!=(std::nullopt_t, OptionalProxy const& rhs) noexcept
-    {
-        return !(rhs == std::nullopt);
-    }
-
-    friend bool
-    operator!=(OptionalProxy const& lhs, optional_type const& rhs) noexcept
-    {
-        return !(lhs == rhs);
-    }
-
-    friend bool
-    operator!=(optional_type const& lhs, OptionalProxy const& rhs) noexcept
-    {
-        return !(lhs == rhs);
-    }
-
-    friend bool
-    operator!=(OptionalProxy const& lhs, OptionalProxy const& rhs) noexcept
-    {
-        return !(lhs == rhs);
     }
 
     // Emulate std::optional::value_or
@@ -1196,12 +1168,6 @@ STObject::setFieldH160(SField const& field, BaseUInt<160, Tag> const& v)
     {
         Throw<std::runtime_error>("Wrong field type");
     }
-}
-
-inline bool
-STObject::operator!=(STObject const& o) const
-{
-    return !(*this == o);
 }
 
 template <typename T, typename V>

@@ -38,7 +38,7 @@
 #include <utility>
 #include <vector>
 
-namespace xrpl::PeerFinder {
+namespace xrpl::peer_finder {
 namespace {
 
 using ::testing::_;
@@ -51,10 +51,10 @@ journal()
     return beast::Journal{TestSink::instance()};
 }
 
-beast::IP::Endpoint
+beast::ip::Endpoint
 endpoint(std::string const& value)
 {
-    return beast::IP::Endpoint::fromString(value);
+    return beast::ip::Endpoint::fromString(value);
 }
 
 class MockStore : public Store
@@ -86,7 +86,7 @@ public:
 };
 
 Store::Entry
-storeEntry(beast::IP::Endpoint const& endpoint, int valence)
+storeEntry(beast::ip::Endpoint const& endpoint, int valence)
 {
     Store::Entry entry;
     entry.endpoint = endpoint;
@@ -106,15 +106,15 @@ class MockChecker
 public:
     MOCK_METHOD(void, stop, ());
     MOCK_METHOD(void, wait, ());
-    MOCK_METHOD(void, recordAsyncConnect, (beast::IP::Endpoint const& ep));
+    MOCK_METHOD(void, recordAsyncConnect, (beast::ip::Endpoint const& ep));
 
     boost::system::error_code nextError;
     bool completeAsync = true;
-    std::vector<beast::IP::Endpoint> asyncConnects;
+    std::vector<beast::ip::Endpoint> asyncConnects;
 
     template <class Handler>
     void
-    asyncConnect(beast::IP::Endpoint const& ep, Handler&& handler)
+    asyncConnect(beast::ip::Endpoint const& ep, Handler&& handler)
     {
         asyncConnects.push_back(ep);
         recordAsyncConnect(ep);
@@ -204,7 +204,7 @@ protected:
 };
 
 int
-savedValence(std::vector<Store::Entry> const& entries, beast::IP::Endpoint const& endpoint)
+savedValence(std::vector<Store::Entry> const& entries, beast::ip::Endpoint const& endpoint)
 {
     for (auto const& entry : entries)
     {
@@ -458,7 +458,7 @@ TEST(PeerFinderCounts, tracks_slot_states_and_capacity)
     EXPECT_EQ(counts.outboundSlotsFree(), 1);
     EXPECT_EQ(counts.totalActive(), 0);
     EXPECT_FALSE(counts.isConnectedToNetwork());
-    EXPECT_EQ(counts.attemptsNeeded(), Tuning::kMaxConnectAttempts);
+    EXPECT_EQ(counts.attemptsNeeded(), tuning::kMaxConnectAttempts);
     EXPECT_EQ(counts.stateString(), "0/1 out, 0/1 in, 0 connecting, 0 closing");
 
     SlotImp inbound(endpoint("65.0.0.1:10001"), endpoint("65.0.0.2:10002"), false, clock);
@@ -483,7 +483,7 @@ TEST(PeerFinderCounts, tracks_slot_states_and_capacity)
     counts.add(outbound);
     EXPECT_EQ(counts.attempts(), 1);
     EXPECT_EQ(counts.connectCount(), 1);
-    EXPECT_EQ(counts.attemptsNeeded(), Tuning::kMaxConnectAttempts - 1);
+    EXPECT_EQ(counts.attemptsNeeded(), tuning::kMaxConnectAttempts - 1);
     counts.remove(outbound);
 
     outbound.state(Slot::State::Connected);
@@ -535,7 +535,7 @@ TEST(PeerFinderCounts, tracks_slot_states_and_capacity)
     Counts saturatedAttempts;
     saturatedAttempts.onConfig(config);
     std::vector<std::unique_ptr<SlotImp>> attempts;
-    for (int i = 0; i < Tuning::kMaxConnectAttempts; ++i)
+    for (int i = 0; i < tuning::kMaxConnectAttempts; ++i)
     {
         attempts.push_back(
             std::make_unique<SlotImp>(
@@ -544,7 +544,7 @@ TEST(PeerFinderCounts, tracks_slot_states_and_capacity)
                 clock));
         saturatedAttempts.add(*attempts.back());
     }
-    EXPECT_EQ(saturatedAttempts.attempts(), Tuning::kMaxConnectAttempts);
+    EXPECT_EQ(saturatedAttempts.attempts(), tuning::kMaxConnectAttempts);
     EXPECT_EQ(saturatedAttempts.attemptsNeeded(), 0u);
 
     Config disconnected;
@@ -563,7 +563,7 @@ TEST(PeerFinderHandouts, filters_redirect_slot_and_connect_targets)
     EXPECT_EQ(redirects.slot(), slot);
     EXPECT_TRUE(redirects.list().empty());
     EXPECT_FALSE(redirects.full());
-    EXPECT_FALSE(redirects.tryInsert(Endpoint{endpoint("65.0.0.3:10003"), Tuning::kMaxHops + 1}));
+    EXPECT_FALSE(redirects.tryInsert(Endpoint{endpoint("65.0.0.3:10003"), tuning::kMaxHops + 1}));
     EXPECT_FALSE(redirects.tryInsert(Endpoint{endpoint("65.0.0.3:10003"), 0}));
     EXPECT_FALSE(redirects.tryInsert(Endpoint{remote.atPort(12000), 1}));
     EXPECT_TRUE(redirects.tryInsert(Endpoint{endpoint("65.0.0.3:10003"), 1}));
@@ -574,7 +574,7 @@ TEST(PeerFinderHandouts, filters_redirect_slot_and_connect_targets)
     EXPECT_EQ(slotHandouts.slot(), slot);
     EXPECT_FALSE(slotHandouts.full());
     EXPECT_FALSE(
-        slotHandouts.tryInsert(Endpoint{endpoint("65.0.0.4:10004"), Tuning::kMaxHops + 1}));
+        slotHandouts.tryInsert(Endpoint{endpoint("65.0.0.4:10004"), tuning::kMaxHops + 1}));
     EXPECT_FALSE(slotHandouts.tryInsert(Endpoint{remote.atPort(12001), 1}));
 
     auto const recent = endpoint("65.0.0.5:10005");
@@ -620,7 +620,7 @@ TEST(PeerFinderHandouts, distributes_livecache_entries)
     EXPECT_FALSE(targets.front().list().empty());
     EXPECT_FALSE(targets.back().list().empty());
 
-    for (std::uint32_t i = 0; i < Tuning::kNumberOfEndpoints; ++i)
+    for (std::uint32_t i = 0; i < tuning::kNumberOfEndpoints; ++i)
         targets.front().insert(Endpoint{endpoint("65.1.0." + std::to_string(i + 1) + ":12000"), 1});
 
     handout(targets.begin(), targets.begin() + 1, cache.hops.begin(), cache.hops.end());
@@ -633,7 +633,7 @@ TEST_F(PeerFinderTest, preprocess_filters_invalid_duplicate_and_extra_self_endpo
     auto const remote = endpoint("65.0.0.2:10002");
     auto const slot = std::make_shared<SlotImp>(local, remote, false, clock_);
     Endpoints endpoints{
-        Endpoint{endpoint("65.0.0.3:10003"), Tuning::kMaxHops + 1},
+        Endpoint{endpoint("65.0.0.3:10003"), tuning::kMaxHops + 1},
         Endpoint{endpoint("0.0.0.0:2459"), 0},
         Endpoint{endpoint("0.0.0.0:2460"), 0},
         Endpoint{endpoint("10.0.0.1:10004"), 1},
@@ -677,7 +677,7 @@ TEST_F(PeerFinderTest, on_endpoints_checks_neighbor_before_caching_it)
     EXPECT_TRUE(slot->canAccept);
     EXPECT_TRUE(logic_.livecache.empty());
 
-    clock_.advance(Tuning::kSecondsPerMessage);
+    clock_.advance(tuning::kSecondsPerMessage);
     logic_.onEndpoints(slot, advertised);
     EXPECT_EQ(logic_.livecache.size(), 1u);
     EXPECT_EQ(logic_.bootcache.size(), 1u);
@@ -711,7 +711,7 @@ TEST_F(PeerFinderTest, on_endpoints_skips_failed_neighbor_connectivity_checks)
     EXPECT_TRUE(slot->checked);
     EXPECT_FALSE(slot->canAccept);
 
-    clock_.advance(Tuning::kSecondsPerMessage);
+    clock_.advance(tuning::kSecondsPerMessage);
     logic_.onEndpoints(slot, advertised);
     EXPECT_TRUE(logic_.livecache.empty());
 
@@ -740,7 +740,7 @@ TEST_F(PeerFinderTest, on_endpoints_waits_for_pending_connectivity_check)
     logic_.onEndpoints(slot, advertised);
     EXPECT_TRUE(slot->connectivityCheckInProgress);
 
-    clock_.advance(Tuning::kSecondsPerMessage);
+    clock_.advance(tuning::kSecondsPerMessage);
     logic_.onEndpoints(slot, advertised);
     EXPECT_EQ(checker_.asyncConnects.size(), 1u);
     EXPECT_TRUE(logic_.livecache.empty());
@@ -950,7 +950,7 @@ TEST(PeerFinderBootcache, periodic_activity_saves_after_cooldown)
         cache.periodicActivity();
         EXPECT_TRUE(store.saves.empty());
 
-        clock.advance(Tuning::kBootcacheCooldownTime + 1s);
+        clock.advance(tuning::kBootcacheCooldownTime + 1s);
         cache.periodicActivity();
         ASSERT_EQ(store.saves.size(), 1u);
 
@@ -967,23 +967,23 @@ TEST(PeerFinderBootcache, prunes_when_cache_exceeds_limit)
     TestStopwatch clock;
     Bootcache cache(store, clock, journal());
 
-    for (std::uint16_t i = 0; i <= Tuning::kBootcacheSize; ++i)
+    for (std::uint16_t i = 0; i <= tuning::kBootcacheSize; ++i)
     {
         EXPECT_TRUE(cache.insert(endpoint(
             "65.0." + std::to_string((i / 256) % 256) + "." + std::to_string(i % 256) + ":" +
             std::to_string(10000 + i))));
     }
 
-    EXPECT_LE(cache.size(), Tuning::kBootcacheSize);
+    EXPECT_LE(cache.size(), tuning::kBootcacheSize);
 }
 
 TEST(PeerFinderEndpoint, clamps_hops_to_overflow_bucket)
 {
     auto const address = endpoint("65.0.0.1:10001");
-    Endpoint const ep(address, Tuning::kMaxHops + 10);
+    Endpoint const ep(address, tuning::kMaxHops + 10);
 
     EXPECT_EQ(ep.address, address);
-    EXPECT_EQ(ep.hops, Tuning::kMaxHops + 1);
+    EXPECT_EQ(ep.hops, tuning::kMaxHops + 1);
 }
 
 TEST(PeerFinderSlotImp, tracks_state_and_recent_endpoints)
@@ -1001,7 +1001,7 @@ TEST(PeerFinderSlotImp, tracks_state_and_recent_endpoints)
     EXPECT_FALSE(inbound.reserved());
     EXPECT_EQ(inbound.state(), State::Accept);
     EXPECT_EQ(inbound.remoteEndpoint(), remote);
-    EXPECT_EQ(inbound.localEndpoint(), std::optional<beast::IP::Endpoint>{local});
+    EXPECT_EQ(inbound.localEndpoint(), std::optional<beast::ip::Endpoint>{local});
     EXPECT_FALSE(inbound.publicKey());
     EXPECT_FALSE(inbound.listeningPort());
     EXPECT_FALSE(inbound.checked);
@@ -1018,7 +1018,7 @@ TEST(PeerFinderSlotImp, tracks_state_and_recent_endpoints)
     inbound.reserved(true);
     inbound.setListeningPort(2459);
 
-    EXPECT_EQ(inbound.localEndpoint(), std::optional<beast::IP::Endpoint>{newLocal});
+    EXPECT_EQ(inbound.localEndpoint(), std::optional<beast::ip::Endpoint>{newLocal});
     EXPECT_EQ(inbound.remoteEndpoint(), newRemote);
     EXPECT_EQ(inbound.publicKey(), std::optional<PublicKey>{publicKey});
     EXPECT_TRUE(inbound.reserved());
@@ -1055,7 +1055,7 @@ TEST(PeerFinderSlotImp, tracks_state_and_recent_endpoints)
     EXPECT_TRUE(outbound.recent.filter(recent, 1));
     EXPECT_FALSE(outbound.recent.filter(recent, 0));
 
-    clock.advance(Tuning::kLiveCacheSecondsToLive + 1s);
+    clock.advance(tuning::kLiveCacheSecondsToLive + 1s);
     outbound.expire();
     EXPECT_FALSE(outbound.recent.filter(recent, 1));
 }
@@ -1112,7 +1112,7 @@ TEST(PeerFinderConfig, calculates_outbound_peers_and_clamps_ip_limits)
 {
     Config config;
     config.maxPeers = 1;
-    EXPECT_EQ(config.calcOutPeers(), Tuning::kMinOutCount);
+    EXPECT_EQ(config.calcOutPeers(), tuning::kMinOutCount);
 
     config.maxPeers = 100;
     EXPECT_EQ(config.calcOutPeers(), 15u);
@@ -1267,4 +1267,4 @@ TEST(PeerFinderConfig, rejects_incomplete_or_out_of_range_peer_limits)
 }
 
 }  // namespace
-}  // namespace xrpl::PeerFinder
+}  // namespace xrpl::peer_finder

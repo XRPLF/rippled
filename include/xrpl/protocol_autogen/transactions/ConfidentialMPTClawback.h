@@ -21,7 +21,7 @@ class ConfidentialMPTClawbackBuilder;
  * Type: ttCONFIDENTIAL_MPT_CLAWBACK (89)
  * Delegable: Delegation::Delegable
  * Amendment: featureConfidentialTransfer
- * Privileges: NoPriv
+ * Privileges: Privilege::NoPriv
  *
  * Immutable wrapper around STTx providing type-safe field access.
  * Use ConfidentialMPTClawbackBuilder to construct new transactions.

@@ -91,6 +91,7 @@
 #include <xrpl/resource/Fees.h>
 #include <xrpl/resource/ResourceManager.h>
 #include <xrpl/server/LoadFeeTrack.h>
+#include <xrpl/server/Manifest.h>
 #include <xrpl/server/NetworkOPs.h>
 #include <xrpl/server/Wallet.h>
 #include <xrpl/server/detail/ServerImpl.h>
@@ -230,7 +231,7 @@ public:
     std::optional<std::pair<PublicKey, SecretKey>> nodeIdentity_;
     ValidatorKeys const validatorKeys_;
 
-    std::unique_ptr<Resource::Manager> resourceManager_;
+    std::unique_ptr<resource::Manager> resourceManager_;
 
     std::unique_ptr<node_store::Database> nodeStore_;
     NodeFamily nodeFamily_;
@@ -375,7 +376,7 @@ public:
         , networkIDService_(std::make_unique<NetworkIDServiceImpl>(config_->networkId))
         , validatorKeys_(*config_, journal_)
         , resourceManager_(
-              Resource::makeManager(collectorManager_->collector(), logs_->journal("Resource")))
+              resource::makeManager(collectorManager_->collector(), logs_->journal("Resource")))
         , nodeStore_(shaMapStore_->makeNodeStore(
               config_->prefetchWorkers > 0 ? config_->prefetchWorkers : 4))
         , nodeFamily_(*this, *collectorManager_)
@@ -428,8 +429,14 @@ public:
         , cluster_(std::make_unique<Cluster>(logs_->journal("Overlay")))
         , peerReservations_(
               std::make_unique<PeerReservationTable>(logs_->journal("PeerReservationTable")))
-        , validatorManifests_(std::make_unique<ManifestCache>(logs_->journal("ManifestCache")))
-        , publisherManifests_(std::make_unique<ManifestCache>(logs_->journal("ManifestCache")))
+        , validatorManifests_(
+              std::make_unique<ManifestCache>(
+                  logs_->journal("ManifestCache"),
+                  untrustedManifestCount(config_->maxUntrustedCount)))
+        , publisherManifests_(
+              std::make_unique<ManifestCache>(
+                  logs_->journal("ManifestCache"),
+                  untrustedManifestCount(config_->maxUntrustedCount)))
         , validators_(
               std::make_unique<ValidatorList>(
                   *validatorManifests_,
@@ -673,7 +680,7 @@ public:
         return *loadManager_;
     }
 
-    Resource::Manager&
+    resource::Manager&
     getResourceManager() override
     {
         return *resourceManager_;
@@ -1090,18 +1097,12 @@ public:
                                    << "; size after: " << cachedSLEs_.size();
         }
 
-        // Follow the runtime gate, not the config flag: [shed_cold_subtrees]
-        // seeds the gate at startup, and the admin `shed` RPC can flip it live —
-        // sweep-driven shedding must track the toggle.
+        // Read the runtime gate rather than the config value so the admin
+        // shed RPC toggle takes effect here.
         if (SHAMap::shedEnabled())
         {
-            // Reclaim resident cold subtrees of the most-recent fully-validated
-            // ledger's state map. Dropped nodes keep their child hashes and are
-            // re-faulted from the NodeStore on demand, so this is a memory/cache
-            // operation that leaves the map logically unchanged (like lazy
-            // descend) -- hence the const_cast off the const stateMap ref.
-            // getValidatedLedger never returns the open/current ledger, so a
-            // null check is the only guard needed.
+            // shedCold changes which nodes are resident, not the map's content,
+            // so the const_cast is sound.
             try
             {
                 if (auto const validated = getLedgerMaster().getValidatedLedger())
@@ -1217,8 +1218,17 @@ ApplicationImp::setup(boost::program_options::variables_map const& cmdline)
             logs_->threshold(Severity::Debug);
     }
 
-    JLOG(journal_.info()) << "Process starting: " << BuildInfo::getFullVersionString()
+    JLOG(journal_.info()) << "Process starting: " << build_info::getFullVersionString()
                           << ", Instance Cookie: " << instanceCookie_;
+
+    // Log the resolved manifest counts, whether configured or defaulted, so a
+    // shared log shows what the server is running without needing its config.
+    JLOG(journal_.warn()) << "Manifest counts: max_untrusted_count "
+                          << untrustedManifestCount(config_->maxUntrustedCount)
+                          << (config_->maxUntrustedCount ? " (configured)" : " (default)")
+                          << ", max_trusted_count "
+                          << trustedManifestCount(config_->maxTrustedCount)
+                          << (config_->maxTrustedCount ? " (configured)" : " (default)");
 
     if (numberOfThreads(*config_) < 2)
     {
@@ -1229,12 +1239,10 @@ ApplicationImp::setup(boost::program_options::variables_map const& cmdline)
     // Optionally turn off logging to console.
     logs_->silent(config_->silent());
 
-    // One-time: gate SHAMap cold-subtree shedding from config (default off).
-    // When off, SHAMap traversals add no locking, only a relaxed atomic load.
     SHAMap::setShedEnabled(config_->shedColdSubtrees);
-    JLOG(journal_.warn()) << "sheddable-subtrees gate at startup: "
-                          << (config_->shedColdSubtrees ? "ENABLED" : "disabled")
-                          << " ([shed_cold_subtrees]; admin `shed` RPC can flip it live)";
+    if (config_->shedColdSubtrees)
+        JLOG(journal_.warn()) << "SHAMap cold subtree shedding enabled (shed_min_depth "
+                              << config_->shedMinDepth << ")";
 
     if (!initRelationalDatabase() || !initNodeStore())
         return false;
@@ -1494,9 +1502,9 @@ ApplicationImp::setup(boost::program_options::variables_map const& cmdline)
             JLOG(journal_.fatal()) << "Startup RPC: " << jvCommand << std::endl;
         }
 
-        Resource::Charge loadType = Resource::kFeeReferenceRpc;
-        Resource::Consumer c;
-        RPC::JsonContext context{
+        resource::Charge loadType = resource::kFeeReferenceRpc;
+        resource::Consumer c;
+        rpc::JsonContext context{
             {.j = getJournal("RPCHandler"),
              .app = *this,
              .loadType = loadType,
@@ -1506,11 +1514,11 @@ ApplicationImp::setup(boost::program_options::variables_map const& cmdline)
              .role = Role::ADMIN,
              .coro = {},
              .infoSub = {},
-             .apiVersion = RPC::kApiMaximumSupportedVersion},
+             .apiVersion = rpc::kApiMaximumSupportedVersion},
             jvCommand};
 
         json::Value jvResult;
-        RPC::doCommand(context, jvResult);
+        rpc::doCommand(context, jvResult);
 
         if (!config_->quiet())
         {
@@ -1526,7 +1534,7 @@ ApplicationImp::setup(boost::program_options::variables_map const& cmdline)
 void
 ApplicationImp::start(bool withTimers)
 {
-    JLOG(journal_.info()) << "Application starting. Version is " << BuildInfo::getVersionString();
+    JLOG(journal_.info()) << "Application starting. Version is " << build_info::getVersionString();
 
     if (withTimers)
     {

@@ -226,7 +226,7 @@ getAMMOfferStartWithTakerGets(
 
     auto getAmounts = [&pool, &tfee](Number const& nTakerGetsProposed) {
         // Round downward to minimize the offer and to maximize the quality.
-        // This has the most impact when takerGets is XRP.
+        // This has the most impact when takerGets is integral.
         auto const takerGets =
             toAmount<TOut>(getAsset(pool.out), nTakerGetsProposed, Number::RoundingMode::Downward);
         return TAmounts<TIn, TOut>{swapAssetOut(pool, takerGets, tfee), takerGets};
@@ -294,7 +294,7 @@ getAMMOfferStartWithTakerPays(
 
     auto getAmounts = [&pool, &tfee](Number const& nTakerPaysProposed) {
         // Round downward to minimize the offer and to maximize the quality.
-        // This has the most impact when takerPays is XRP.
+        // This has the most impact when takerPays is integral.
         auto const takerPays =
             toAmount<TIn>(getAsset(pool.in), nTakerPaysProposed, Number::RoundingMode::Downward);
         return TAmounts<TIn, TOut>{takerPays, swapAssetIn(pool, takerPays, tfee)};
@@ -313,11 +313,11 @@ getAMMOfferStartWithTakerPays(
  * is equal to LOB quality (in this case AMM offer quality is
  * better than LOB quality) or AMM offer is equal to LOB quality
  * (in this case SPQ is better than LOB quality).
- * Pre-amendment code calculates takerPays first. If takerGets is XRP,
- * it is rounded down, which results in worse offer quality than
- * LOB quality, and the offer might fail to generate.
- * Post-amendment code calculates the XRP offer side first. The result
- * is rounded down, which makes the offer quality better.
+ * Pre-amendment code calculates takerPays first. If takerGets is the
+ * economically coarser integral side, it is rounded down, which results in
+ * worse offer quality than LOB quality, and the offer might fail to generate.
+ * Post-amendment code calculates the economically coarser integral offer side
+ * first. The result is rounded down, which makes the offer quality better.
  *   It might not be possible to match either SPQ or AMM offer to LOB
  * quality. This generally happens at higher fees.
  * @param pool AMM pool balances
@@ -396,10 +396,18 @@ changeSpotPriceQuality(
         return std::nullopt;
     }
 
-    // Generate the offer starting with XRP side. Return seated offer amounts
-    // if the offer can be generated, otherwise nullopt.
     auto amounts = [&]() {
-        if (isXRP(getAsset(pool.out)))
+        bool const inIntegral = getAsset(pool.in).integral();
+        bool const outIntegral = getAsset(pool.out).integral();
+
+        // Preserve historical behavior for fractional pairs and XRP/IOU-style
+        // one-integral-side pairs. For two integral assets, pick the side whose
+        // minimum unit is economically coarser at this quality.
+        //
+        // Quality::rate() is input units per output unit, so one output unit is
+        // coarser when it costs at least one input unit. Ties use takerGets,
+        // matching the historical XRP-output behavior.
+        if (outIntegral && (!inIntegral || Number(quality.rate()) >= 1))
             return getAMMOfferStartWithTakerGets(pool, quality, tfee);
         return getAMMOfferStartWithTakerPays(pool, quality, tfee);
     }();

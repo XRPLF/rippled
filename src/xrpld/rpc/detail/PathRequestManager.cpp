@@ -254,7 +254,7 @@ json::Value
 PathRequestManager::makeLegacyPathRequest(
     PathRequest::pointer& req,
     std::function<void(void)> completion,
-    Resource::Consumer& consumer,
+    resource::Consumer& consumer,
     std::shared_ptr<ReadView const> const& inLedger,
     json::Value const& request)
 {
@@ -285,7 +285,7 @@ PathRequestManager::makeLegacyPathRequest(
 
 json::Value
 PathRequestManager::doLegacyPathRequest(
-    Resource::Consumer& consumer,
+    resource::Consumer& consumer,
     std::shared_ptr<ReadView const> const& inLedger,
     json::Value const& request)
 {

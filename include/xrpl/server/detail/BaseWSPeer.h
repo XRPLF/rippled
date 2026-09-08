@@ -25,6 +25,7 @@
 #include <iterator>
 #include <list>
 #include <memory>
+#include <string_view>
 #include <utility>
 #include <vector>
 
@@ -62,8 +63,7 @@ private:
     bool pingActive_ = false;
     boost::beast::websocket::ping_data payload_;
     error_code ec_;
-    std::function<void(boost::beast::websocket::frame_type, boost::beast::string_view)>
-        controlCallback_;
+    std::function<void(boost::beast::websocket::frame_type, std::string_view)> controlCallback_;
 
 public:
     template <class Body, class Headers>
@@ -151,7 +151,7 @@ protected:
     onPing(error_code const& ec);
 
     void
-    onPingPong(boost::beast::websocket::frame_type kind, boost::beast::string_view payload);
+    onPingPong(boost::beast::websocket::frame_type kind, std::string_view payload);
 
     void
     onTimer(error_code ec);
@@ -189,14 +189,14 @@ BaseWSPeer<Handler, Impl>::run()
     impl().ws_.set_option(port().pmdOptions);
     // Must manage the control callback memory outside of the `control_callback`
     // function
-    controlCallback_ = [this](
-                           boost::beast::websocket::frame_type kind,
-                           boost::beast::string_view payload) { onPingPong(kind, payload); };
+    controlCallback_ = [this](boost::beast::websocket::frame_type kind, std::string_view payload) {
+        onPingPong(kind, payload);
+    };
     impl().ws_.control_callback(controlCallback_);
     startTimer();
     closeOnTimer_ = true;
     impl().ws_.set_option(boost::beast::websocket::stream_base::decorator([](auto& res) {
-        res.set(boost::beast::http::field::server, BuildInfo::getFullVersionString());
+        res.set(boost::beast::http::field::server, build_info::getFullVersionString());
     }));
     impl().ws_.async_accept(
         request_, bind_executor(strand_, [self = impl().shared_from_this()](error_code const& ec) {
@@ -430,11 +430,11 @@ template <class Handler, class Impl>
 void
 BaseWSPeer<Handler, Impl>::onPingPong(
     boost::beast::websocket::frame_type kind,
-    boost::beast::string_view payload)
+    std::string_view payload)
 {
     if (kind == boost::beast::websocket::frame_type::pong)
     {
-        boost::beast::string_view const p(payload_.begin());
+        std::string_view const p(payload_.begin(), payload_.size());
         if (payload == p)
         {
             closeOnTimer_ = false;

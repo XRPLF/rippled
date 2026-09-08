@@ -18,7 +18,7 @@ namespace json {
 class Object;
 }  // namespace json
 
-namespace xrpl::RPC {
+namespace xrpl::rpc {
 
 struct JsonContext;
 
@@ -42,9 +42,9 @@ public:
     // NOLINTBEGIN(readability-identifier-naming)
     static constexpr char name[] = "ledger";
 
-    static constexpr unsigned minApiVer = RPC::kApiMinimumSupportedVersion;
+    static constexpr unsigned minApiVer = rpc::kApiMinimumSupportedVersion;
 
-    static constexpr unsigned maxApiVer = RPC::kApiMaximumValidVersion;
+    static constexpr unsigned maxApiVer = rpc::kApiMaximumValidVersion;
 
     static constexpr Role role = Role::USER;
 
@@ -59,4 +59,4 @@ private:
     int options_ = 0;
 };
 
-}  // namespace xrpl::RPC
+}  // namespace xrpl::rpc

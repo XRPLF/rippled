@@ -12,7 +12,7 @@
 #include <utility>
 #include <vector>
 
-namespace xrpl::PeerFinder {
+namespace xrpl::peer_finder {
 
 namespace detail {
 
@@ -28,7 +28,7 @@ template <class Target, class HopContainer>
 std::size_t
 handoutOne(Target& t, HopContainer& h)
 {
-    XRPL_ASSERT(!t.full(), "xrpl::PeerFinder::detail::handoutOne : target is not full");
+    XRPL_ASSERT(!t.full(), "xrpl::peer_finder::detail::handoutOne : target is not full");
     for (auto it = h.begin(); it != h.end(); ++it)
     {
         auto const& e = *it;
@@ -95,7 +95,7 @@ public:
     [[nodiscard]] bool
     full() const
     {
-        return list_.size() >= Tuning::kRedirectEndpointCount;
+        return list_.size() >= tuning::kRedirectEndpointCount;
     }
 
     [[nodiscard]] SlotImp::ptr const&
@@ -124,7 +124,7 @@ private:
 template <class>
 RedirectHandouts::RedirectHandouts(SlotImp::ptr slot) : slot_(std::move(slot))
 {
-    list_.reserve(Tuning::kRedirectEndpointCount);
+    list_.reserve(tuning::kRedirectEndpointCount);
 }
 
 template <class>
@@ -138,7 +138,7 @@ RedirectHandouts::tryInsert(Endpoint const& ep)
     //             addresses in a peer HTTP handshake instead of
     //             the tmENDPOINTS message.
     //
-    if (ep.hops > Tuning::kMaxHops)
+    if (ep.hops > tuning::kMaxHops)
         return false;
 
     // Don't send them our address
@@ -181,7 +181,7 @@ public:
     [[nodiscard]] bool
     full() const
     {
-        return list_.size() >= Tuning::kNumberOfEndpoints;
+        return list_.size() >= tuning::kNumberOfEndpoints;
     }
 
     void
@@ -210,7 +210,7 @@ private:
 template <class>
 SlotHandouts::SlotHandouts(SlotImp::ptr slot) : slot_(std::move(slot))
 {
-    list_.reserve(Tuning::kNumberOfEndpoints);
+    list_.reserve(tuning::kNumberOfEndpoints);
 }
 
 template <class>
@@ -220,7 +220,7 @@ SlotHandouts::tryInsert(Endpoint const& ep)
     if (full())
         return false;
 
-    if (ep.hops > Tuning::kMaxHops)
+    if (ep.hops > tuning::kMaxHops)
         return false;
 
     if (slot_->recent.filter(ep.address, ep.hops))
@@ -259,9 +259,9 @@ class ConnectHandouts
 public:
     // Keeps track of addresses we have made outgoing connections
     // to, for the purposes of not connecting to them too frequently.
-    using Squelches = beast::aged_set<beast::IP::Address>;
+    using Squelches = beast::aged_set<beast::ip::Address>;
 
-    using list_type = std::vector<beast::IP::Endpoint>;
+    using list_type = std::vector<beast::ip::Endpoint>;
 
 private:
     std::size_t needed_;
@@ -274,7 +274,7 @@ public:
 
     template <class = void>
     bool
-    tryInsert(beast::IP::Endpoint const& endpoint);
+    tryInsert(beast::ip::Endpoint const& endpoint);
 
     [[nodiscard]] bool
     empty() const
@@ -316,13 +316,13 @@ ConnectHandouts::ConnectHandouts(std::size_t needed, Squelches& squelches)
 
 template <class>
 bool
-ConnectHandouts::tryInsert(beast::IP::Endpoint const& endpoint)
+ConnectHandouts::tryInsert(beast::ip::Endpoint const& endpoint)
 {
     if (full())
         return false;
 
     // Make sure the address isn't already in our list
-    if (std::ranges::any_of(list_, [&endpoint](beast::IP::Endpoint const& other) {
+    if (std::ranges::any_of(list_, [&endpoint](beast::ip::Endpoint const& other) {
             // Ignore port for security reasons
             return other.address() == endpoint.address();
         }))
@@ -341,4 +341,4 @@ ConnectHandouts::tryInsert(beast::IP::Endpoint const& endpoint)
     return true;
 }
 
-}  // namespace xrpl::PeerFinder
+}  // namespace xrpl::peer_finder

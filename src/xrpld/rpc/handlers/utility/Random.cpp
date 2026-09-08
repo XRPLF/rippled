@@ -10,16 +10,16 @@
 
 namespace xrpl {
 
-namespace RPC {
+namespace rpc {
 struct JsonContext;
-}  // namespace RPC
+}  // namespace rpc
 
 // Result:
 // {
 //   random: <uint256>
 // }
 json::Value
-doRandom(RPC::JsonContext& context)
+doRandom(rpc::JsonContext& context)
 {
     // TODO(tom): the try/catch is almost certainly redundant, we catch at the
     // top level too.

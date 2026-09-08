@@ -140,8 +140,6 @@ public:
 
     bool
     operator==(STBase const& t) const;
-    bool
-    operator!=(STBase const& t) const;
 
     template <class D>
     D&

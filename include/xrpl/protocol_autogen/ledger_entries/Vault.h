@@ -311,6 +311,78 @@ public:
     {
         return this->sle_->isFieldPresent(sfLEVersion);
     }
+
+    /**
+     * @brief Get sfVaultKind (SoeDefault)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_UINT8::type::value_type>
+    getVaultKind() const
+    {
+        if (hasVaultKind())
+            return this->sle_->at(sfVaultKind);
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfVaultKind is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasVaultKind() const
+    {
+        return this->sle_->isFieldPresent(sfVaultKind);
+    }
+
+    /**
+     * @brief Get sfSubscriptionDate (SoeOptional)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_UINT32::type::value_type>
+    getSubscriptionDate() const
+    {
+        if (hasSubscriptionDate())
+            return this->sle_->at(sfSubscriptionDate);
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfSubscriptionDate is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasSubscriptionDate() const
+    {
+        return this->sle_->isFieldPresent(sfSubscriptionDate);
+    }
+
+    /**
+     * @brief Get sfRedemptionDate (SoeOptional)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_UINT32::type::value_type>
+    getRedemptionDate() const
+    {
+        if (hasRedemptionDate())
+            return this->sle_->at(sfRedemptionDate);
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfRedemptionDate is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasRedemptionDate() const
+    {
+        return this->sle_->isFieldPresent(sfRedemptionDate);
+    }
 };
 
 /**
@@ -540,6 +612,39 @@ public:
     setLEVersion(std::decay_t<typename SF_UINT8::type::value_type> const& value)
     {
         object_[sfLEVersion] = value;
+        return *this;
+    }
+
+    /**
+     * @brief Set sfVaultKind (SoeDefault)
+     * @return Reference to this builder for method chaining.
+     */
+    VaultBuilder&
+    setVaultKind(std::decay_t<typename SF_UINT8::type::value_type> const& value)
+    {
+        object_[sfVaultKind] = value;
+        return *this;
+    }
+
+    /**
+     * @brief Set sfSubscriptionDate (SoeOptional)
+     * @return Reference to this builder for method chaining.
+     */
+    VaultBuilder&
+    setSubscriptionDate(std::decay_t<typename SF_UINT32::type::value_type> const& value)
+    {
+        object_[sfSubscriptionDate] = value;
+        return *this;
+    }
+
+    /**
+     * @brief Set sfRedemptionDate (SoeOptional)
+     * @return Reference to this builder for method chaining.
+     */
+    VaultBuilder&
+    setRedemptionDate(std::decay_t<typename SF_UINT32::type::value_type> const& value)
+    {
+        object_[sfRedemptionDate] = value;
         return *this;
     }
 

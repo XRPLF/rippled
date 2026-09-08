@@ -50,6 +50,9 @@ let
   # environment (the plain stdenv compiler in the dev shell, the custom-glibc
   # wrappers in ci-env.nix), so those callers pass their own `package`; the
   # clang tooling is environment-independent and is linked in commonPackages.
+  #
+  # Exec wrappers, not symlinks: the nixpkgs clang-tools wrapper dispatches on
+  # `$(basename $0)-unwrapped`, which a suffixed symlink turns into a dead path.
   mkVersionedToolLinks =
     {
       name,
@@ -57,12 +60,15 @@ let
       version,
       tools,
     }:
-    pkgs.linkFarm "${name}-${toString version}-versioned-links" (
-      map (tool: {
-        name = "bin/${tool}-${toString version}";
-        path = "${package}/bin/${tool}";
-      }) tools
-    );
+    pkgs.symlinkJoin {
+      name = "${name}-${toString version}-versioned-links";
+      paths = map (
+        tool:
+        pkgs.writeShellScriptBin "${tool}-${toString version}" ''
+          exec "${package}/bin/${tool}" "$@"
+        ''
+      ) tools;
+    };
 
   # The cc-wrapper doesn't re-export gcov, but coverage tooling (gcovr) needs a
   # gcov that exactly matches the compiler. Surface it from a gcc `cc` output.
@@ -129,15 +135,6 @@ in
     perl # needed for openssl
     pkg-config
     pre-commit
-    # protoc generates the Go gRPC bindings and embeds its own version string into every committed
-    # .pb.go file. To allow CI to verify those files with a plain `git diff`, we pin the version to
-    # `protobuf_34` rather than the rolling `protobuf` to keep regeneration reproducible across the
-    # Nix frequently changing unstable channel. The protoc-gen-go* plugins have no versioned
-    # attributes in nixpkgs; protoc-gen-go's version is in turn constrained by the go.mod require
-    # on google.golang.org/protobuf.
-    protobuf_34 # provides protoc
-    protoc-gen-go # protoc plugin for the Go message bindings
-    protoc-gen-go-grpc # protoc plugin for the Go gRPC service stubs
     python3
     runClangTidy
     vim
@@ -146,7 +143,6 @@ in
     cargo-audit
     cargo-llvm-cov
     cargo-nextest
-    corrosion
     rustToolchain
   ];
 }

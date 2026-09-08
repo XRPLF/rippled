@@ -1,0 +1,76 @@
+# This workflow checks that the generated protocol wrapper classes are
+# up-to-date with the macro files and generator scripts they are produced from,
+# see more info in include/xrpl/protocol_autogen/README.md.
+name: Check autogen
+
+# This workflow can only be triggered by other workflows.
+on: workflow_call
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}-autogen
+  cancel-in-progress: true
+
+defaults:
+  run:
+    shell: bash
+
+env:
+  BUILD_DIR: build/codegen
+
+jobs:
+  autogen:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.13"
+
+      # Code generation is pure Python, so the standalone project below offers
+      # the same targets as the main build without needing its dependencies or
+      # a compiler, which keeps this job down to a few seconds.
+      - name: Configure CMake
+        run: cmake -S cmake/codegen -B "${BUILD_DIR}"
+
+      - name: Install code generation dependencies
+        run: cmake --build "${BUILD_DIR}" --target setup_code_gen
+
+      - name: Generate code
+        run: cmake --build "${BUILD_DIR}" --target code_gen
+
+      - name: Check for differences
+        env:
+          MESSAGE: |
+
+            The generated protocol wrapper classes are out of date.
+
+            This typically happens when the macro files or generator scripts
+            have changed but the generated files were not regenerated.
+
+            Run the following from the repository root, then commit and push
+            the regenerated files. This needs neither the dependencies nor a
+            compiler. See include/xrpl/protocol_autogen/README.md for more info.
+
+              cmake -S cmake/codegen -B build/codegen
+              cmake --build build/codegen --target setup_code_gen
+              cmake --build build/codegen --target code_gen
+
+            In an already configured build directory, the 'setup_code_gen' and
+            'code_gen' targets do the same thing.
+        run: |
+          # Record untracked files in the index without staging their contents,
+          # so that classes generated for a newly added transaction or ledger
+          # entry type show up in the diff below rather than silently as an
+          # empty one.
+          git add --intent-to-add .
+          DIFF=$(git status --porcelain)
+          if [ -n "${DIFF}" ]; then
+              # Print the differences to give the contributor a hint about what to
+              # expect when running code generation on their own machine.
+              git diff
+              echo "${MESSAGE}"
+              exit 1
+          fi

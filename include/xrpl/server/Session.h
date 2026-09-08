@@ -52,7 +52,7 @@ public:
     /**
      * Returns the remote address of the connection.
      */
-    virtual beast::IP::Endpoint
+    virtual beast::ip::Endpoint
     remoteAddress() = 0;
 
     /**

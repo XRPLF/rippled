@@ -5,7 +5,7 @@
 #include <functional>
 #include <string>
 
-namespace xrpl::RPC {
+namespace xrpl::rpc {
 
 using Output = std::function<void(boost::string_ref const&)>;
 
@@ -15,4 +15,4 @@ stringOutput(std::string& s)
     return [&](boost::string_ref const& b) { s.append(b.data(), b.size()); };
 }
 
-}  // namespace xrpl::RPC
+}  // namespace xrpl::rpc

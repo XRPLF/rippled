@@ -16,7 +16,6 @@
 #include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/Sign.h>
 
-#include <boost/algorithm/string/predicate.hpp>
 #include <boost/asio.hpp>
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/asio/ssl/stream.hpp>
@@ -549,7 +548,7 @@ private:
                 res.keep_alive(req.keep_alive());
                 bool prepare = true;
 
-                if (boost::starts_with(path, "/validators2"))
+                if (path.starts_with("/validators2"))
                 {
                     res.result(http::status::ok);
                     res.insert("Content-Type", "application/json");
@@ -565,7 +564,7 @@ private:
                     {
                         int refresh = 5;
                         static constexpr char const* kRefreshPrefix = "/validators2/refresh/";
-                        if (boost::starts_with(path, kRefreshPrefix))
+                        if (path.starts_with(kRefreshPrefix))
                         {
                             refresh = boost::lexical_cast<unsigned int>(
                                 path.substr(strlen(kRefreshPrefix)));
@@ -573,7 +572,7 @@ private:
                         res.body() = getList2_(refresh);
                     }
                 }
-                else if (boost::starts_with(path, "/validators"))
+                else if (path.starts_with("/validators"))
                 {
                     res.result(http::status::ok);
                     res.insert("Content-Type", "application/json");
@@ -589,7 +588,7 @@ private:
                     {
                         int refresh = 5;
                         static constexpr char const* kRefreshPrefix = "/validators/refresh/";
-                        if (boost::starts_with(path, kRefreshPrefix))
+                        if (path.starts_with(kRefreshPrefix))
                         {
                             refresh = boost::lexical_cast<unsigned int>(
                                 path.substr(strlen(kRefreshPrefix)));
@@ -597,13 +596,13 @@ private:
                         res.body() = getList_(refresh);
                     }
                 }
-                else if (boost::starts_with(path, "/textfile"))
+                else if (path.starts_with("/textfile"))
                 {
                     prepare = false;
                     res.result(http::status::ok);
                     res.insert("Content-Type", "text/example");
                     // if huge was requested, lie about content length
-                    std::uint64_t const cl = boost::starts_with(path, "/textfile/huge")
+                    std::uint64_t const cl = path.starts_with("/textfile/huge")
                         ? std::numeric_limits<uint64_t>::max()
                         : 1024;
                     res.content_length(cl);
@@ -617,41 +616,39 @@ private:
                         }
                     }
                 }
-                else if (boost::starts_with(path, "/sleep/"))
+                else if (path.starts_with("/sleep/"))
                 {
                     auto const sleepSec = boost::lexical_cast<unsigned int>(path.substr(7));
                     std::this_thread::sleep_for(std::chrono::seconds(sleepSec));
                 }
-                else if (boost::starts_with(path, "/redirect"))
+                else if (path.starts_with("/redirect"))
                 {
-                    if (boost::ends_with(path, "/301"))
+                    if (path.ends_with("/301"))
                     {
                         res.result(http::status::moved_permanently);
                     }
-                    else if (boost::ends_with(path, "/302"))
+                    else if (path.ends_with("/302"))
                     {
                         res.result(http::status::found);
                     }
-                    else if (boost::ends_with(path, "/307"))
+                    else if (path.ends_with("/307"))
                     {
                         res.result(http::status::temporary_redirect);
                     }
-                    else if (boost::ends_with(path, "/308"))
+                    else if (path.ends_with("/308"))
                     {
                         res.result(http::status::permanent_redirect);
                     }
 
                     std::stringstream location;
-                    if (boost::starts_with(path, "/redirect_to/"))
+                    if (path.starts_with("/redirect_to/"))
                     {
                         location << path.substr(13);
                     }
-                    else if (!boost::starts_with(path, "/redirect_nolo"))
+                    else if (!path.starts_with("/redirect_nolo"))
                     {
                         location << (ssl ? "https://" : "http://") << localEndpoint()
-                                 << (boost::starts_with(path, "/redirect_forever/")
-                                         ? path
-                                         : "/validators");
+                                 << (path.starts_with("/redirect_forever/") ? path : "/validators");
                     }
                     if (!location.str().empty())
                         res.insert("Location", location.str());

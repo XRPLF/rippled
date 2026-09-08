@@ -29,7 +29,7 @@
 #include <utility>
 #include <vector>
 
-namespace xrpl::PeerFinder {
+namespace xrpl::peer_finder {
 namespace {
 
 class LivecacheTest : public ::testing::Test
@@ -41,22 +41,22 @@ protected:
         return beast::Journal{TestSink::instance()};
     }
 
-    static beast::IP::Endpoint
+    static beast::ip::Endpoint
     endpoint(std::uint16_t index, bool v4 = true)
     {
         auto const port = static_cast<std::uint16_t>(10000 + index);
 
         if (v4)
         {
-            auto bytes = beast::IP::AddressV4::bytes_type{
+            auto bytes = beast::ip::AddressV4::bytes_type{
                 {54,
                  static_cast<std::uint8_t>((index / 256) % 256),
                  static_cast<std::uint8_t>(index % 256),
                  1}};
-            return beast::IP::Endpoint{beast::IP::Address{beast::IP::AddressV4{bytes}}, port};
+            return beast::ip::Endpoint{beast::ip::Address{beast::ip::AddressV4{bytes}}, port};
         }
 
-        auto bytes = beast::IP::AddressV6::bytes_type{
+        auto bytes = beast::ip::AddressV6::bytes_type{
             {0x20,
              0x01,
              0x0d,
@@ -73,11 +73,11 @@ protected:
              static_cast<std::uint8_t>((index / 256) % 256),
              static_cast<std::uint8_t>(index % 256),
              1}};
-        return beast::IP::Endpoint{beast::IP::Address{beast::IP::AddressV6{bytes}}, port};
+        return beast::ip::Endpoint{beast::ip::Address{beast::ip::AddressV6{bytes}}, port};
     }
 
     void
-    addEndpoint(beast::IP::Endpoint const& ep, std::uint32_t hops = 0)
+    addEndpoint(beast::ip::Endpoint const& ep, std::uint32_t hops = 0)
     {
         cache_.insert(Endpoint{ep, hops});
     }
@@ -161,7 +161,7 @@ TEST_F(LivecacheTest, hop_iterators_support_const_reverse_and_move_back)
 TEST_F(LivecacheTest, on_write_reports_entries_and_expiration)
 {
     cache_.insert(Endpoint{endpoint(1), 1});
-    cache_.insert(Endpoint{endpoint(2), Tuning::kMaxHops + 1});
+    cache_.insert(Endpoint{endpoint(2), tuning::kMaxHops + 1});
 
     JsonPropertyStream stream;
     {
@@ -190,7 +190,7 @@ TEST_F(LivecacheTest, expire_removes_entries_after_ttl)
     cache_.expire();
     EXPECT_EQ(cache_.size(), 1u);
 
-    clock_.advance(Tuning::kLiveCacheSecondsToLive - 1s);
+    clock_.advance(tuning::kLiveCacheSecondsToLive - 1s);
     cache_.expire();
     EXPECT_EQ(cache_.size(), 1u);
 
@@ -206,7 +206,7 @@ TEST_F(LivecacheTest, expire_removes_multiple_entries_after_ttl)
     cache_.insert(Endpoint{endpoint(1), 1});
     cache_.insert(Endpoint{endpoint(2), 2});
 
-    clock_.advance(Tuning::kLiveCacheSecondsToLive);
+    clock_.advance(tuning::kLiveCacheSecondsToLive);
     cache_.expire();
     EXPECT_TRUE(cache_.empty());
 }
@@ -240,11 +240,11 @@ TEST_F(LivecacheTest, shuffle_preserves_bucket_contents)
 {
     for (auto i = 0; i < 100; ++i)
     {
-        addEndpoint(endpoint(static_cast<std::uint16_t>(i)), xrpl::randInt(Tuning::kMaxHops + 1));
+        addEndpoint(endpoint(static_cast<std::uint16_t>(i)), xrpl::randInt(tuning::kMaxHops + 1));
     }
 
     using AtHop = std::vector<Endpoint>;
-    using AllHops = std::array<AtHop, 1 + Tuning::kMaxHops + 1>;
+    using AllHops = std::array<AtHop, 1 + tuning::kMaxHops + 1>;
 
     auto const compareEndpoint = [](Endpoint const& lhs, Endpoint const& rhs) {
         return rhs.hops < lhs.hops || (rhs.hops == lhs.hops && rhs.address < lhs.address);
@@ -291,4 +291,4 @@ TEST_F(LivecacheTest, shuffle_preserves_bucket_contents)
     EXPECT_FALSE(allBucketsKeptOriginalOrder);
 }
 
-}  // namespace xrpl::PeerFinder
+}  // namespace xrpl::peer_finder

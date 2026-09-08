@@ -7,13 +7,13 @@
 #include <cstdint>
 #include <stdexcept>
 
-namespace xrpl::PeerFinder {
+namespace xrpl::peer_finder {
 
 std::size_t
 Config::calcOutPeers() const
 {
     return std::max(
-        ((maxPeers * Tuning::kOutPercent) + 50) / 100, std::size_t(Tuning::kMinOutCount));
+        ((maxPeers * tuning::kOutPercent) + 50) / 100, std::size_t(tuning::kMinOutCount));
 }
 
 void
@@ -26,8 +26,8 @@ Config::applyTuning()
         // IP addresses.
         ipLimit = 2;
 
-        if (inPeers > Tuning::kDefaultMaxPeers)
-            ipLimit += std::min(5, static_cast<int>(inPeers / Tuning::kDefaultMaxPeers));
+        if (inPeers > tuning::kDefaultMaxPeers)
+            ipLimit += std::min(5, static_cast<int>(inPeers / tuning::kDefaultMaxPeers));
     }
 
     // We don't allow a single IP to consume all incoming slots,
@@ -58,7 +58,7 @@ Config::makeConfig(
     int ipLimit,
     bool verifyEndpoints)
 {
-    PeerFinder::Config config;
+    peer_finder::Config config;
 
     if (!limits.maxPeers)
     {
@@ -85,7 +85,7 @@ Config::makeConfig(
         if (limits.maxPeers && *limits.maxPeers != 0)
             config.maxPeers = *limits.maxPeers;
 
-        config.maxPeers = std::max<std::size_t>(config.maxPeers, Tuning::kMinOutCount);
+        config.maxPeers = std::max<std::size_t>(config.maxPeers, tuning::kMinOutCount);
         config.outPeers = config.calcOutPeers();
 
         // Calculate the number of outbound peers we want. If we dont want
@@ -132,4 +132,4 @@ Config::makeConfig(
     return config;
 }
 
-}  // namespace xrpl::PeerFinder
+}  // namespace xrpl::peer_finder

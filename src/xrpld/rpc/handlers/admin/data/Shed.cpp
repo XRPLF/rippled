@@ -13,21 +13,18 @@ namespace xrpl {
 
 // shed {enable: bool?, run: bool = true, min_depth: uint?}
 //
-// Admin-only live control of sheddable resident subtrees. `enable` flips the
-// process-wide runtime gate that drives the sweep hook. When `run` is true and
-// the gate was already up before this request, a single shed pass is executed
-// immediately on the most-recent fully-validated ledger's state map, so the
-// response carries an instant before/after.
+// `enable` sets the process-wide shed gate that drives the sweep hook. When
+// `run` is true and the gate was already on before this request, one shed pass
+// runs on the validated ledger's state map and the response carries the
+// TreeNodeCache counts before and after it.
 json::Value
-doShed(RPC::JsonContext& context)
+doShed(rpc::JsonContext& context)
 {
     bool const run = context.params.isMember("run") ? context.params["run"].asBool() : true;
 
-    // Readers only take the shed guard when the gate is on, so a shed pass is
-    // only safe against readers that started AFTER the gate went up. Require
-    // the gate to have been enabled before this request (and still be enabled)
-    // to run the immediate pass; a flip-and-run in one call could free nodes
-    // under a pre-flip unguarded descent.
+    // Readers take the shed guard only while the gate is on, so a pass is safe
+    // only against descents that started after it went up. Enabling and
+    // shedding in one call could free nodes under an unguarded descent.
     bool const wasEnabled = SHAMap::shedEnabled();
 
     if (context.params.isMember("enable"))
@@ -52,9 +49,7 @@ doShed(RPC::JsonContext& context)
                 ? context.params["min_depth"].asUInt()
                 : static_cast<unsigned>(context.app.config().shedMinDepth);
 
-            // shedCold mutates the shared physical tree; mirror the sweep hook's
-            // const_cast off the const stateMap ref (the map stays logically
-            // unchanged, dropped nodes re-fault from the NodeStore on demand).
+            // shedCold changes which nodes are resident, not the map's content.
             auto& stateMap = const_cast<SHAMap&>(validated->stateMap());
             dropped = stateMap.shedCold(minDepth);
             JLOG(context.j.warn())

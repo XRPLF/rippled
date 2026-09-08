@@ -19,8 +19,9 @@
 #include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/Keylet.h>
 #include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/MPTAmount.h>
 #include <xrpl/protocol/MPTIssue.h>
-#include <xrpl/protocol/Protocol.h>
+#include <xrpl/protocol/Quality.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STLedgerEntry.h>
@@ -376,18 +377,29 @@ CheckCash::doApply()
         else
         {
             // Note that for DeliverMin we don't know exactly how much
-            // currency we want flow to deliver.  We can't ask for the
-            // maximum possible currency because there might be a gateway
-            // transfer rate to account for.  Since the transfer rate cannot
-            // exceed 200%, we use 1/2 maxValue as our limit.
+            // currency we want flow to deliver.  For IOUs, use a value
+            // higher than any real delivery as the request. MPTs are
+            // bounded integral amounts, so use the maximum output the check
+            // can actually deliver without exceeding SendMax.
             auto const maxDeliverMin = [&]() {
                 return optDeliverMin->asset().visit(
                     [&](Issue const&) {
                         return STAmount(
                             optDeliverMin->asset(), STAmount::kMaxValue / 2, STAmount::kMaxOffset);
                     },
-                    [&](MPTIssue const&) {
-                        return STAmount(optDeliverMin->asset(), kMaxMpTokenAmount / 2);
+                    [&](MPTIssue const& issue) {
+                        MPTAmount maxDeliver = sendMax.mpt();
+                        auto const& issuer = issue.getIssuer();
+                        if (srcId != issuer && accountID_ != issuer)
+                        {
+                            auto const rate = transferRate(psb, issue.getMptID());
+                            // Request at most floor(SendMax / rate). The endpoint reverse pass
+                            // will quote ceil(output * rate), so this keeps the input
+                            // representable and within SendMax.
+                            maxDeliver =
+                                mulRatio(maxDeliver, QUALITY_ONE, rate.value, /*roundUp*/ false);
+                        }
+                        return STAmount(maxDeliver, issue);
                     });
             };
             STAmount const flowDeliver{
@@ -516,7 +528,7 @@ CheckCash::doApply()
                                 return tecINSUFFICIENT_RESERVE;
 
                             if (auto const err =
-                                    checkCreateMPT(psb, mptID, accountID_, *sponsorSle, j_);
+                                    checkCreateMPT(psb, mptID, accountID_, *sponsorSle, 0, j_);
                                 !isTesSuccess(err))
                             {
                                 return err;

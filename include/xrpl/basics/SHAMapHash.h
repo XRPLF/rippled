@@ -85,12 +85,6 @@ public:
     }
 };
 
-inline bool
-operator!=(SHAMapHash const& x, SHAMapHash const& y)
-{
-    return !(x == y);
-}
-
 template <>
 inline std::size_t
 extract(SHAMapHash const& key)

@@ -431,12 +431,10 @@ public:
     shedCold(unsigned minDepth);
 
     /**
-     * Enable or disable sheddable resident subtrees process-wide.
+     * Enable or disable resident subtree shedding process-wide.
      *
-     * Default is off. While off, the reader guards on bare-pointer traversals
-     * cost only a single relaxed atomic load and take no lock, and shedCold()
-     * is never driven by the sweep. Intended to be set once at startup from
-     * config, before any traversal or sweep runs.
+     * Default is off. While off, reader guards cost one relaxed atomic load and
+     * take no lock, and the sweep never calls shedCold().
      */
     static void
     setShedEnabled(bool enabled);
@@ -517,31 +515,36 @@ private:
 
     // returns the first item at or below this node
     SHAMapLeafNode*
-    firstBelow(SHAMapTreeNodePtr node, SharedPtrNodeStack& stack, int branch = 0) const;
+    firstBelow(SHAMapTreeNodePtr node, SharedPtrNodeStack& stack, unsigned int branch = 0u) const;
 
     // returns the last item at or below this node
     SHAMapLeafNode*
-    lastBelow(SHAMapTreeNodePtr node, SharedPtrNodeStack& stack, int branch = kBranchFactor) const;
+    lastBelow(
+        SHAMapTreeNodePtr node,
+        SharedPtrNodeStack& stack,
+        unsigned int branch = kBranchFactor) const;
+
+    // direction in which belowHelper scans an inner node's branches
+    enum class BelowDirection { First, Last };
 
     // helper function for firstBelow and lastBelow
     SHAMapLeafNode*
     belowHelper(
         SHAMapTreeNodePtr node,
         SharedPtrNodeStack& stack,
-        int branch,
-        std::tuple<int, std::function<bool(int)>, std::function<void(int&)>> const& loopParams)
-        const;
+        unsigned int branch,
+        BelowDirection direction) const;
 
     // Simple descent
     // Get a child of the specified node
     SHAMapTreeNode*
-    descend(SHAMapInnerNode*, int branch) const;
+    descend(SHAMapInnerNode*, unsigned int branch) const;
     SHAMapTreeNode*
-    descendThrow(SHAMapInnerNode*, int branch) const;
+    descendThrow(SHAMapInnerNode*, unsigned int branch) const;
     SHAMapTreeNodePtr
-    descend(SHAMapInnerNode&, int branch) const;
+    descend(SHAMapInnerNode&, unsigned int branch) const;
     SHAMapTreeNodePtr
-    descendThrow(SHAMapInnerNode&, int branch) const;
+    descendThrow(SHAMapInnerNode&, unsigned int branch) const;
 
     // Descend with filter
     // If pending, callback is called as if it called fetchNodeNT
@@ -549,7 +552,7 @@ private:
     SHAMapTreeNode*
     descendAsync(
         SHAMapInnerNode* parent,
-        int branch,
+        unsigned int branch,
         SHAMapSyncFilter const* filter,
         bool& pending,
         descendCallback&&) const;
@@ -558,13 +561,13 @@ private:
     descend(
         SHAMapInnerNode* parent,
         SHAMapNodeID const& parentID,
-        int branch,
+        unsigned int branch,
         SHAMapSyncFilter const* filter) const;
 
     // Non-storing
     // Does not hook the returned node to its parent
     SHAMapTreeNodePtr
-    descendNoStore(SHAMapInnerNode&, int branch) const;
+    descendNoStore(SHAMapInnerNode&, unsigned int branch) const;
 
     /**
      * If there is only one leaf below this node, get its contents
@@ -600,27 +603,16 @@ private:
         unsigned minDepth,
         std::size_t& dropped);
 
-    // Sheddable-subtree gate (shedEnabled_) and reader/writer lock
-    // (shedMutex_) guarding the shared physical tree against a concurrent
-    // shedCold() that frees nodes a bare-pointer traversal may be holding.
-    //
-    // Both are static (process-wide) on purpose. Immutable snapshots are
-    // distinct SHAMap objects that SHARE the same physical inner/leaf nodes:
-    // SHAMap(SHAMap const&) copies root_ and only unshare()s when a map is
-    // mutable, so two immutable snapshots of the same ledger alias the same
-    // nodes. A shedCold() runs on one snapshot's SHAMap object while a reader
-    // traverses another; a per-object mutex would not serialize them. A single
-    // process-wide RW lock guards every shared node regardless of which
-    // snapshot object reaches it. It is only ever taken when shedEnabled_ is
-    // true, so the default-off path adds no locking (readers do one relaxed
-    // load and construct an unlocked std::shared_lock).
+    // Shed gate and the lock that serializes shedCold against bare-pointer
+    // traversals. Both are process-wide: immutable snapshots of one ledger are
+    // distinct SHAMap objects sharing the same physical nodes, so a per-object
+    // mutex would not cover a reader on another snapshot. The lock is taken
+    // only while shedEnabled_ is set.
     static std::atomic<bool> shedEnabled_;
     static std::shared_mutex shedMutex_;
 
-    // Returns an engaged shared lock on shedMutex_ when shedding is enabled,
-    // otherwise an empty (unlocked) shared_lock. Held for the duration of a
-    // bare-pointer descent to keep a concurrent shedCold() from freeing a node
-    // the descent still references.
+    // Shared lock on shedMutex_ while shedding is enabled, otherwise an empty
+    // lock. Held across a bare-pointer descent.
     [[nodiscard]] std::shared_lock<std::shared_mutex>
     shedReadGuard() const
     {
@@ -652,8 +644,8 @@ private:
         using StackEntry = std::tuple<
             SHAMapInnerNode*,  // pointer to the node
             SHAMapNodeID,      // the node's ID
-            int,               // while child we check first
-            int,               // which child we check next
+            unsigned int,      // which child we check first
+            unsigned int,      // which child we check next
             bool>;             // whether we've found any missing children yet
 
         // We explicitly choose to specify the use of std::deque here, because
@@ -667,7 +659,7 @@ private:
         using DeferredNode = std::tuple<
             SHAMapInnerNode*,    // parent node
             SHAMapNodeID,        // parent node ID
-            int,                 // branch
+            unsigned int,        // branch
             SHAMapTreeNodePtr>;  // node
 
         int deferred;
@@ -858,12 +850,6 @@ operator==(SHAMap::ConstIterator const& x, SHAMap::ConstIterator const& y)
         "xrpl::operator==(SHAMap::const_iterator, SHAMap::const_iterator) : "
         "inputs map do match");
     return x.item_ == y.item_;
-}
-
-inline bool
-operator!=(SHAMap::ConstIterator const& x, SHAMap::ConstIterator const& y)
-{
-    return !(x == y);
 }
 
 inline SHAMap::ConstIterator

@@ -27,7 +27,7 @@ namespace xrpl {
 
 class ReadView;
 
-namespace RPC {
+namespace rpc {
 
 struct JsonContext;
 
@@ -85,7 +85,7 @@ parseAccountIds(json::Value const& jvArray);
  * std::nullopt on success.
  */
 std::optional<json::Value>
-readLimitField(unsigned int& limit, Tuning::LimitRange const& range, JsonContext const& context);
+readLimitField(unsigned int& limit, tuning::LimitRange const& range, JsonContext const& context);
 
 /**
  * @brief Extracts a Seed from RPC parameters.
@@ -123,7 +123,7 @@ parseXrplLibSeed(json::Value const& params);
  * @param params The JSON value containing RPC parameters.
  * @return A pair consisting of the RPC status and the chosen LedgerEntryType.
  */
-std::pair<RPC::Status, LedgerEntryType>
+std::pair<rpc::Status, LedgerEntryType>
 chooseLedgerEntryType(json::Value const& params);
 
 /**
@@ -172,6 +172,6 @@ parseSubUnsubJson(
     json::StaticString const& name,
     beast::Journal j);
 
-}  // namespace RPC
+}  // namespace rpc
 
 }  // namespace xrpl

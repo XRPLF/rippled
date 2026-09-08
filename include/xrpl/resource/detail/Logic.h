@@ -24,7 +24,7 @@
 #include <tuple>
 #include <utility>
 
-namespace xrpl::Resource {
+namespace xrpl::resource {
 
 class Logic
 {
@@ -96,7 +96,7 @@ public:
     }
 
     Consumer
-    newInboundEndpoint(beast::IP::Endpoint const& address)
+    newInboundEndpoint(beast::ip::Endpoint const& address)
     {
         Entry* entry(nullptr);
 
@@ -126,7 +126,7 @@ public:
     }
 
     Consumer
-    newOutboundEndpoint(beast::IP::Endpoint const& address)
+    newOutboundEndpoint(beast::ip::Endpoint const& address)
     {
         Entry* entry(nullptr);
 
@@ -159,7 +159,7 @@ public:
      * enabled.
      */
     Consumer
-    newUnlimitedEndpoint(beast::IP::Endpoint const& address)
+    newUnlimitedEndpoint(beast::ip::Endpoint const& address)
     {
         Entry* entry(nullptr);
 
@@ -387,7 +387,7 @@ public:
     {
         std::scoped_lock const _(lock_);
         Entry& entry(iter->second);
-        XRPL_ASSERT(entry.refcount == 0, "xrpl::Resource::Logic::erase : entry not used");
+        XRPL_ASSERT(entry.refcount == 0, "xrpl::resource::Logic::erase : entry not used");
         inactive_.erase(inactive_.iteratorTo(entry));
         table_.erase(iter);
     }
@@ -421,7 +421,7 @@ public:
                 default:
                     // LCOV_EXCL_START
                     UNREACHABLE(
-                        "xrpl::Resource::Logic::release : invalid entry "
+                        "xrpl::resource::Logic::release : invalid entry "
                         "kind");
                     break;
                     // LCOV_EXCL_STOP
@@ -440,7 +440,7 @@ public:
         static_assert(
             kFeeLogAsWarn > kFeeLogAsInfo && kFeeLogAsInfo > kFeeLogAsDebug && kFeeLogAsDebug > 10);
 
-        static auto kGetStream = [](Resource::Charge::value_type cost, beast::Journal& journal) {
+        static auto kGetStream = [](resource::Charge::value_type cost, beast::Journal& journal) {
             if (cost >= kFeeLogAsWarn)
                 return journal.warn();
             if (cost >= kFeeLogAsInfo)
@@ -564,4 +564,4 @@ public:
     }
 };
 
-}  // namespace xrpl::Resource
+}  // namespace xrpl::resource

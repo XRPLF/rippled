@@ -11,7 +11,7 @@
 #include <utility>
 #include <vector>
 
-namespace xrpl::RPC {
+namespace xrpl::rpc {
 
 /**
  * Status represents the results of an operation that might fail.
@@ -56,9 +56,11 @@ public:
     {
     }
 
-    /* Returns a representation of the integer status Code as a string.
-       If the Status is OK, the result is an empty string.
-    */
+    /**
+     * If the Status is OK, the result is an empty string.
+     *
+     * @return a representation of the integer status Code as a string.
+     */
     [[nodiscard]] std::string
     codeString() const;
 
@@ -86,7 +88,7 @@ public:
     [[nodiscard]] TER
     toTER() const
     {
-        XRPL_ASSERT(type_ == Type::TER, "xrpl::RPC::Status::toTER : type is TER");
+        XRPL_ASSERT(type_ == Type::TER, "xrpl::rpc::Status::toTER : type is TER");
         return TER::fromInt(code_);
     }
 
@@ -97,7 +99,8 @@ public:
     [[nodiscard]] ErrorCodeI
     toErrorCode() const
     {
-        XRPL_ASSERT(type_ == Type::ErrorCodeI, "xrpl::RPC::Status::toTER : type is error code");
+        XRPL_ASSERT(
+            type_ == Type::ErrorCodeI, "xrpl::rpc::Status::toErrorCode : type is error code");
         return ErrorCodeI(code_);
     }
 
@@ -155,4 +158,4 @@ private:
     Strings messages_;
 };
 
-}  // namespace xrpl::RPC
+}  // namespace xrpl::rpc

@@ -4,8 +4,7 @@
 #include <xrpld/app/misc/DeliverMax.h>
 #include <xrpld/app/misc/TxQ.h>
 #include <xrpld/rpc/Context.h>
-#include <xrpld/rpc/DeliveredAmount.h>
-#include <xrpld/rpc/MPTokenIssuanceID.h>
+#include <xrpld/rpc/detail/SyntheticFields.h>
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/base_uint.h>
@@ -19,6 +18,7 @@
 #include <xrpl/protocol/LedgerHeader.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STObject.h>
+#include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFormats.h>
@@ -135,25 +135,18 @@ fillJsonTx(
     {
         copyFrom(txJson[jss::tx_json], txn->getJson(JsonOptions::Values::DisableApiPriorV2, false));
         txJson[jss::hash] = to_string(txn->getTransactionID());
-        RPC::insertDeliverMax(txJson[jss::tx_json], txnType, fill.context->apiVersion);
+        rpc::insertDeliverMax(txJson[jss::tx_json], txnType, fill.context->apiVersion);
 
         if (stMeta)
         {
             txJson[jss::meta] = stMeta->getJson(JsonOptions::Values::None);
 
-            // If applicable, insert delivered amount
-            if (txnType == ttPAYMENT || txnType == ttCHECK_CASH)
-            {
-                RPC::insertDeliveredAmount(
-                    txJson[jss::meta],
-                    fill.ledger,
-                    txn,
-                    {txn->getTransactionID(), fill.ledger.seq(), *stMeta});
-            }
-
-            // If applicable, insert mpt issuance id
-            RPC::insertMPTokenIssuanceID(
-                txJson[jss::meta], txn, {txn->getTransactionID(), fill.ledger.seq(), *stMeta});
+            // Insert all synthetic fields
+            rpc::insertAllSyntheticInJson(
+                txJson[jss::meta],
+                fill.ledger,
+                txn,
+                {txn->getTransactionID(), fill.ledger.seq(), *stMeta});
         }
 
         if (!fill.ledger.open())
@@ -172,24 +165,17 @@ fillJsonTx(
     else
     {
         copyFrom(txJson, txn->getJson(JsonOptions::Values::None));
-        RPC::insertDeliverMax(txJson, txnType, fill.context->apiVersion);
+        rpc::insertDeliverMax(txJson, txnType, fill.context->apiVersion);
         if (stMeta)
         {
             txJson[jss::metaData] = stMeta->getJson(JsonOptions::Values::None);
 
-            // If applicable, insert delivered amount
-            if (txnType == ttPAYMENT || txnType == ttCHECK_CASH)
-            {
-                RPC::insertDeliveredAmount(
-                    txJson[jss::metaData],
-                    fill.ledger,
-                    txn,
-                    {txn->getTransactionID(), fill.ledger.seq(), *stMeta});
-            }
-
-            // If applicable, insert mpt issuance id
-            RPC::insertMPTokenIssuanceID(
-                txJson[jss::metaData], txn, {txn->getTransactionID(), fill.ledger.seq(), *stMeta});
+            // Insert all synthetic fields
+            rpc::insertAllSyntheticInJson(
+                txJson[jss::metaData],
+                fill.ledger,
+                txn,
+                {txn->getTransactionID(), fill.ledger.seq(), *stMeta});
         }
     }
 
@@ -208,6 +194,7 @@ fillJsonTx(
                 account,
                 amount,
                 FreezeHandling::IgnoreFreeze,
+                AuthHandling::IgnoreAuth,
                 beast::Journal{beast::Journal::getNullSink()});
             txJson[jss::owner_funds] = ownerFunds.getText();
         }
@@ -337,7 +324,7 @@ fillJson(json::Value& json, LedgerFill const& fill)
             fill.ledger.header(),
             bFull,
             ((fill.context != nullptr) ? fill.context->apiVersion
-                                       : RPC::kApiMaximumSupportedVersion));
+                                       : rpc::kApiMaximumSupportedVersion));
     }
 
     if (bFull || ((fill.options & static_cast<int>(LedgerFill::Options::DumpTxrp)) != 0))

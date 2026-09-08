@@ -15,7 +15,7 @@
 
 namespace xrpl {
 std::pair<org::xrpl::rpc::v1::GetLedgerDiffResponse, grpc::Status>
-doLedgerDiffGrpc(RPC::GRPCContext<org::xrpl::rpc::v1::GetLedgerDiffRequest>& context)
+doLedgerDiffGrpc(rpc::GRPCContext<org::xrpl::rpc::v1::GetLedgerDiffRequest>& context)
 {
     org::xrpl::rpc::v1::GetLedgerDiffRequest const& request = context.params;
     org::xrpl::rpc::v1::GetLedgerDiffResponse response;
@@ -24,13 +24,13 @@ doLedgerDiffGrpc(RPC::GRPCContext<org::xrpl::rpc::v1::GetLedgerDiffRequest>& con
     std::shared_ptr<ReadView const> baseLedgerRv;
     std::shared_ptr<ReadView const> desiredLedgerRv;
 
-    if (RPC::ledgerFromSpecifier(baseLedgerRv, request.base_ledger(), context))
+    if (rpc::ledgerFromSpecifier(baseLedgerRv, request.base_ledger(), context))
     {
         grpc::Status const errorStatus{grpc::StatusCode::NOT_FOUND, "base ledger not found"};
         return {response, errorStatus};
     }
 
-    if (RPC::ledgerFromSpecifier(desiredLedgerRv, request.desired_ledger(), context))
+    if (rpc::ledgerFromSpecifier(desiredLedgerRv, request.desired_ledger(), context))
     {
         grpc::Status const errorStatus{grpc::StatusCode::NOT_FOUND, "desired ledger not found"};
         return {response, errorStatus};

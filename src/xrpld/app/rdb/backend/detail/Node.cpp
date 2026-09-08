@@ -40,8 +40,6 @@
 #include <xrpl/rdb/RelationalDatabase.h>
 #include <xrpl/rdb/SociDB.h>
 
-#include <boost/filesystem/operations.hpp>
-#include <boost/format/free_funcs.hpp>
 #include <boost/optional/optional.hpp>  // IWYU pragma: keep
 #include <boost/system/detail/error_code.hpp>
 
@@ -58,6 +56,8 @@
 #include <cstddef>
 #include <cstdint>
 #include <exception>
+#include <filesystem>
+#include <format>
 #include <functional>
 #include <limits>
 #include <map>
@@ -66,6 +66,7 @@
 #include <sstream>
 #include <stdexcept>
 #include <string>
+#include <system_error>
 #include <utility>
 #include <variant>
 #include <vector>
@@ -108,18 +109,16 @@ makeLedgerDBs(
     // ledger database
     auto lgr{std::make_unique<DatabaseCon>(
         setup, kLgrDbName, setup.lgrPragma, kLgrDbInit, checkpointerSetup, j)};
-    lgr->getSession() << boost::str(
-        boost::format("PRAGMA cache_size=-%d;") %
-        kilobytes(config.getValueFor(SizedItem::LgrDbCache)));
+    lgr->getSession() << std::format(
+        "PRAGMA cache_size=-{};", kilobytes(config.getValueFor(SizedItem::LgrDbCache)));
 
     if (config.useTxTables())
     {
         // transaction database
         auto tx{std::make_unique<DatabaseCon>(
             setup, kTxDbName, setup.txPragma, kTxDbInit, checkpointerSetup, j)};
-        tx->getSession() << boost::str(
-            boost::format("PRAGMA cache_size=-%d;") %
-            kilobytes(config.getValueFor(SizedItem::TxnDbCache)));
+        tx->getSession() << std::format(
+            "PRAGMA cache_size=-{};", kilobytes(config.getValueFor(SizedItem::TxnDbCache)));
 
         if (!setup.standAlone || setup.startUp == StartUpType::Load ||
             setup.startUp == StartUpType::LoadFile || setup.startUp == StartUpType::Replay)
@@ -279,15 +278,17 @@ saveValidatedLedger(
     }
 
     {
-        static boost::format kDeleteLedger("DELETE FROM Ledgers WHERE LedgerSeq = %u;");
-        static boost::format kDeleteTranS1("DELETE FROM Transactions WHERE LedgerSeq = %u;");
-        static boost::format kDeleteTranS2("DELETE FROM AccountTransactions WHERE LedgerSeq = %u;");
-        static boost::format kDeleteAcctTrans(
-            "DELETE FROM AccountTransactions WHERE TransID = '%s';");
+        static constexpr char const* kDeleteLedger = "DELETE FROM Ledgers WHERE LedgerSeq = {};";
+        static constexpr char const* kDeleteTranS1 =
+            "DELETE FROM Transactions WHERE LedgerSeq = {};";
+        static constexpr char const* kDeleteTranS2 =
+            "DELETE FROM AccountTransactions WHERE LedgerSeq = {};";
+        static constexpr char const* kDeleteAcctTrans =
+            "DELETE FROM AccountTransactions WHERE TransID = '{}';";
 
         {
             auto db = ldgDB.checkoutDb();
-            *db << boost::str(kDeleteLedger % seq);
+            *db << std::format(kDeleteLedger, seq);
         }
 
         if (app.config().useTxTables())
@@ -304,19 +305,19 @@ saveValidatedLedger(
 
             soci::transaction tr(*db);
 
-            *db << boost::str(kDeleteTranS1 % seq);
-            *db << boost::str(kDeleteTranS2 % seq);
+            *db << std::format(kDeleteTranS1, seq);
+            *db << std::format(kDeleteTranS2, seq);
 
             std::string const ledgerSeq(std::to_string(seq));
 
             for (auto const& acceptedLedgerTx : *aLedger)
             {
-                uint256 transactionID = acceptedLedgerTx->getTransactionID();
+                uint256 const transactionID = acceptedLedgerTx->getTransactionID();
 
                 std::string const txnId(to_string(transactionID));
                 std::string const txnSeq(std::to_string(acceptedLedgerTx->getTxnSeq()));
 
-                *db << boost::str(kDeleteAcctTrans % transactionID);
+                *db << std::format(kDeleteAcctTrans, txnId);
 
                 auto const& accts = acceptedLedgerTx->getAffected();
 
@@ -628,11 +629,11 @@ getHashesByIndex(soci::session& session, LedgerIndex minSeq, LedgerIndex maxSeq,
 std::pair<std::vector<std::shared_ptr<Transaction>>, int>
 getTxHistory(soci::session& session, Application& app, LedgerIndex startIndex, int quantity)
 {
-    std::string const sql = boost::str(
-        boost::format(
-            "SELECT LedgerSeq, Status, RawTxn "
-            "FROM Transactions ORDER BY LedgerSeq DESC LIMIT %u,%u;") %
-        startIndex % quantity);
+    std::string const sql = std::format(
+        "SELECT LedgerSeq, Status, RawTxn "
+        "FROM Transactions ORDER BY LedgerSeq DESC LIMIT {},{};",
+        startIndex,
+        quantity);
 
     std::vector<std::shared_ptr<Transaction>> txs;
     int total = 0;
@@ -729,41 +730,50 @@ transactionsSQL(
 
     if (options.ledgerRange.max != 0u)
     {
-        maxClause = boost::str(
-            boost::format("AND AccountTransactions.LedgerSeq <= '%u'") % options.ledgerRange.max);
+        maxClause =
+            std::format("AND AccountTransactions.LedgerSeq <= '{}'", options.ledgerRange.max);
     }
 
     if (options.ledgerRange.min != 0u)
     {
-        minClause = boost::str(
-            boost::format("AND AccountTransactions.LedgerSeq >= '%u'") % options.ledgerRange.min);
+        minClause =
+            std::format("AND AccountTransactions.LedgerSeq >= '{}'", options.ledgerRange.min);
     }
 
     std::string sql;
 
     if (count)
     {
-        sql = boost::str(
-            boost::format(
-                "SELECT %s FROM AccountTransactions "
-                "WHERE Account = '%s' %s %s LIMIT %u, %u;") %
-            selection % toBase58(options.account) % maxClause % minClause % options.offset %
+        sql = std::format(
+            "SELECT {} FROM AccountTransactions "
+            "WHERE Account = '{}' {} {} LIMIT {}, {};",
+            selection,
+            toBase58(options.account),
+            maxClause,
+            minClause,
+            options.offset,
             numberOfResults);
     }
     else
     {
-        sql = boost::str(
-            boost::format(
-                "SELECT %s FROM "
-                "AccountTransactions INNER JOIN Transactions "
-                "ON Transactions.TransID = AccountTransactions.TransID "
-                "WHERE Account = '%s' %s %s "
-                "ORDER BY AccountTransactions.LedgerSeq %s, "
-                "AccountTransactions.TxnSeq %s, AccountTransactions.TransID %s "
-                "LIMIT %u, %u;") %
-            selection % toBase58(options.account) % maxClause % minClause %
-            (descending ? "DESC" : "ASC") % (descending ? "DESC" : "ASC") %
-            (descending ? "DESC" : "ASC") % options.offset % numberOfResults);
+        char const* const order = descending ? "DESC" : "ASC";
+        sql = std::format(
+            "SELECT {} FROM "
+            "AccountTransactions INNER JOIN Transactions "
+            "ON Transactions.TransID = AccountTransactions.TransID "
+            "WHERE Account = '{}' {} {} "
+            "ORDER BY AccountTransactions.LedgerSeq {}, "
+            "AccountTransactions.TxnSeq {}, AccountTransactions.TransID {} "
+            "LIMIT {}, {};",
+            selection,
+            toBase58(options.account),
+            maxClause,
+            minClause,
+            order,
+            order,
+            order,
+            options.offset,
+            numberOfResults);
     }
     JLOG(j.trace()) << "txSQL query: " << sql;
     return sql;
@@ -1104,14 +1114,6 @@ accountTxPage(
 
     std::optional<RelationalDatabase::AccountTxMarker> newmarker;
 
-    static std::string const kPrefix(
-        R"(SELECT AccountTransactions.LedgerSeq,AccountTransactions.TxnSeq,
-          Status,RawTxn,TxnMeta
-          FROM AccountTransactions INNER JOIN Transactions
-          ON Transactions.TransID = AccountTransactions.TransID
-          AND AccountTransactions.Account = '%s' WHERE
-          )");
-
     std::string sql;
 
     // SQL's BETWEEN uses a closed interval ([a,b])
@@ -1120,13 +1122,22 @@ accountTxPage(
 
     if (findLedger == 0)
     {
-        sql = boost::str(
-            boost::format(kPrefix + R"(AccountTransactions.LedgerSeq BETWEEN %u AND %u
-             ORDER BY AccountTransactions.LedgerSeq %s,
-             AccountTransactions.TxnSeq %s
-             LIMIT %u;)") %
-            toBase58(options.account) % options.ledgerRange.min % options.ledgerRange.max % order %
-            order % queryLimit);
+        sql = std::format(
+            R"(SELECT AccountTransactions.LedgerSeq,AccountTransactions.TxnSeq,
+          Status,RawTxn,TxnMeta
+          FROM AccountTransactions INNER JOIN Transactions
+          ON Transactions.TransID = AccountTransactions.TransID
+          AND AccountTransactions.Account = '{}' WHERE
+          AccountTransactions.LedgerSeq BETWEEN {} AND {}
+             ORDER BY AccountTransactions.LedgerSeq {},
+             AccountTransactions.TxnSeq {}
+             LIMIT {};)",
+            toBase58(options.account),
+            options.ledgerRange.min,
+            options.ledgerRange.max,
+            order,
+            order,
+            queryLimit);
     }
     else
     {
@@ -1135,27 +1146,34 @@ accountTxPage(
         std::uint32_t const maxLedger = forward ? options.ledgerRange.max : findLedger - 1;
 
         auto b58acct = toBase58(options.account);
-        sql = boost::str(
-            boost::format(
-                R"(SELECT AccountTransactions.LedgerSeq,AccountTransactions.TxnSeq,
+        sql = std::format(
+            R"(SELECT AccountTransactions.LedgerSeq,AccountTransactions.TxnSeq,
             Status,RawTxn,TxnMeta
             FROM AccountTransactions, Transactions WHERE
             (AccountTransactions.TransID = Transactions.TransID AND
-            AccountTransactions.Account = '%s' AND
-            AccountTransactions.LedgerSeq BETWEEN %u AND %u)
+            AccountTransactions.Account = '{}' AND
+            AccountTransactions.LedgerSeq BETWEEN {} AND {})
             UNION
             SELECT AccountTransactions.LedgerSeq,AccountTransactions.TxnSeq,Status,RawTxn,TxnMeta
             FROM AccountTransactions, Transactions WHERE
             (AccountTransactions.TransID = Transactions.TransID AND
-            AccountTransactions.Account = '%s' AND
-            AccountTransactions.LedgerSeq = %u AND
-            AccountTransactions.TxnSeq %s %u)
-            ORDER BY AccountTransactions.LedgerSeq %s,
-            AccountTransactions.TxnSeq %s
-            LIMIT %u;
-            )") %
-            b58acct % minLedger % maxLedger % b58acct % findLedger % compare % findSeq % order %
-            order % queryLimit);
+            AccountTransactions.Account = '{}' AND
+            AccountTransactions.LedgerSeq = {} AND
+            AccountTransactions.TxnSeq {} {})
+            ORDER BY AccountTransactions.LedgerSeq {},
+            AccountTransactions.TxnSeq {}
+            LIMIT {};
+            )",
+            b58acct,
+            minLedger,
+            maxLedger,
+            b58acct,
+            findLedger,
+            compare,
+            findSeq,
+            order,
+            order,
+            queryLimit);
     }
 
     {
@@ -1393,8 +1411,8 @@ getTransaction(
 bool
 dbHasSpace(soci::session& session, Config const& config, beast::Journal j)
 {
-    boost::filesystem::space_info const space =
-        boost::filesystem::space(config.legacy(Sections::kDatabasePath));
+    std::filesystem::space_info const space =
+        std::filesystem::space(config.legacy(Sections::kDatabasePath));
 
     if (space.available < megabytes(512))
     {
@@ -1405,9 +1423,9 @@ dbHasSpace(soci::session& session, Config const& config, beast::Journal j)
     if (config.useTxTables())
     {
         DatabaseCon::Setup const dbSetup = setupDatabaseCon(config);
-        boost::filesystem::path const dbPath = dbSetup.dataDir / kTxDbName;
-        boost::system::error_code ec;
-        std::optional<std::uint64_t> dbSize = boost::filesystem::file_size(dbPath, ec);
+        std::filesystem::path const dbPath = dbSetup.dataDir / kTxDbName;
+        std::error_code ec;
+        std::optional<std::uint64_t> dbSize = std::filesystem::file_size(dbPath, ec);
         if (ec)
         {
             JLOG(j.error()) << "Error checking transaction db file size: " << ec.message();

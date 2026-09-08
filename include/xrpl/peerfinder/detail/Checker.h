@@ -11,7 +11,7 @@
 #include <memory>
 #include <mutex>
 
-namespace xrpl::PeerFinder {
+namespace xrpl::peer_finder {
 
 /**
  * Tests remote listening sockets to make sure they are connectable.
@@ -104,7 +104,7 @@ public:
      */
     template <class Handler>
     void
-    asyncConnect(beast::IP::Endpoint const& endpoint, Handler&& handler);
+    asyncConnect(beast::ip::Endpoint const& endpoint, Handler&& handler);
 
 private:
     void
@@ -179,7 +179,7 @@ Checker<Protocol>::wait()
 template <class Protocol>
 template <class Handler>
 void
-Checker<Protocol>::asyncConnect(beast::IP::Endpoint const& endpoint, Handler&& handler)
+Checker<Protocol>::asyncConnect(beast::ip::Endpoint const& endpoint, Handler&& handler)
 {
     auto const op =
         std::make_shared<AsyncOp<Handler>>(*this, ioContext_, std::forward<Handler>(handler));
@@ -202,4 +202,4 @@ Checker<Protocol>::remove(BasicAsyncOp& op)
         cond_.notify_all();
 }
 
-}  // namespace xrpl::PeerFinder
+}  // namespace xrpl::peer_finder
