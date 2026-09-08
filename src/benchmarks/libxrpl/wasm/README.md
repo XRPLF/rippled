@@ -145,8 +145,7 @@ rows, all blaming cases that were innocent.
 
 **Outside the suite it is worth a look.** A validator compiles twice per programmable-escrow
 transaction against that same static engine. Whether that is unbounded growth in production depends
-on wasmi internals not checked here — this is the C++-visible symptom, not a diagnosis. wasmi is
-pinned at `2.0.0-beta.10`, a beta, so try a version bump first.
+on wasmi internals not checked here — this is the C++-visible symptom, not a diagnosis.
 
 ## Gotchas, each of which has already cost someone an afternoon
 
