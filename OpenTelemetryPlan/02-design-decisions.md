@@ -487,7 +487,8 @@ The first 16 bytes are used as trace_id. See [Phase 4a implementation status](./
 and `createDeterministicContext()` in `RCLConsensus.cpp` for the implementation.
 
 Switchable via `consensus_trace_strategy` config:
-`"deterministic"` (default) or `"attribute"` (random trace_id, correlation via attribute queries).
+`"deterministic"` (default) or `"random"` (random trace_id, correlation via attribute queries).
+`"random"` is experimental and not used: it would break cross-node trace correlation.
 
 #### Why Not Random IDs with Propagation Only?
 
