@@ -74,7 +74,7 @@
         "extra_cmake_args": "-Dvalidator_keys=ON",
         "package": {
           "type": "deb",
-          "image": "ghcr.io/xrplf/xrpld/packaging-debian:sha-b6a8995"
+          "image": "ghcr.io/xrplf/xrpld/packaging-debian:sha-49cdc10"
         }
       }
     ],
@@ -88,7 +88,7 @@
         "extra_cmake_args": "-Dvalidator_keys=ON",
         "package": {
           "type": "rpm",
-          "image": "ghcr.io/xrplf/xrpld/packaging-rhel:sha-b6a8995"
+          "image": "ghcr.io/xrplf/xrpld/packaging-rhel:sha-49cdc10"
         }
       }
     ]
