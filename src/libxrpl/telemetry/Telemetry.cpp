@@ -216,7 +216,7 @@ public:
         return false;
     }
 
-    [[nodiscard]] std::string const&
+    [[nodiscard]] ConsensusTraceStrategy
     getConsensusTraceStrategy() const override
     {
         return setup_.consensusTraceStrategy;
@@ -436,7 +436,7 @@ public:
         return setup_.traceLedger;
     }
 
-    [[nodiscard]] std::string const&
+    [[nodiscard]] ConsensusTraceStrategy
     getConsensusTraceStrategy() const override
     {
         return setup_.consensusTraceStrategy;

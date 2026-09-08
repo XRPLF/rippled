@@ -269,7 +269,7 @@ Establish-phase gap fill and cross-node correlation attributes (Phase 4a):
 | --------------------- | ------ | --------------------------------------------------------- |
 | `consensus_round_id`  | int64  | Consensus round number                                    |
 | `consensus_ledger_id` | string | `previousLedger.id()` — shared across nodes               |
-| `trace_strategy`      | string | `"deterministic"` or `"attribute"`                        |
+| `trace_strategy`      | string | `"deterministic"` or `"random"`                           |
 | `converge_percent`    | int64  | Convergence % (0-100+)                                    |
 | `establish_count`     | int64  | Number of establish iterations                            |
 | `disputes_count`      | int64  | Active disputed transactions                              |
