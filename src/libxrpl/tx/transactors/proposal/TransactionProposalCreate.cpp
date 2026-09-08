@@ -187,15 +187,18 @@ TransactionProposalCreate::preclaim(PreclaimContext const& ctx)
             if (!sleSigners)
                 return false;
 
-            // deserialize reports temMALFORMED for a missing or wrongly-named
-            // sfSignerEntries array, which is the right code for a transaction.
-            // Here the object is an on-ledger ltSIGNER_LIST (sfSignerEntries
-            // is SoeRequired; each element is an sfSignerEntry). A corrupt SLE
-            // therefore typically throws from the field accessors rather than
-            // returning temMALFORMED. Either way this is unexpected ledger
-            // state, not a malformed TransactionProposalCreate, so tefBAD_LEDGER
-            // (rather than tefINTERNAL, which is reserved for truly unreachable
-            // code paths) is the right code.
+            // deserialize itself returns unexpected(temMALFORMED) when
+            // sfSignerEntries is missing or an element is not an sfSignerEntry.
+            // Those are the right codes for a transaction object. Here the object
+            // is an on-ledger ltSIGNER_LIST (sfSignerEntries is SoeRequired;
+            // each element is an sfSignerEntry). A corrupt SLE can still throw
+            // from the STObject accessors deserialize calls: getFieldArray
+            // ("Wrong field type") or getAccountID/getFieldU16 ("Field not
+            // found") when an sfSignerEntry is missing required fields. Either
+            // the expected<> error or a throw is unexpected ledger state, not a
+            // malformed TransactionProposalCreate, so tefBAD_LEDGER (rather
+            // than tefINTERNAL, which is reserved for truly unreachable code
+            // paths) is the right code.
             try
             {
                 auto const accountSigners =
@@ -237,9 +240,15 @@ TransactionProposalCreate::preclaim(PreclaimContext const& ctx)
         {
             AccountID const delegateAccount = proposedTx.getAccountID(sfDelegate);
             STTx const proposedStTx{STObject{proposedTx}};
-            if (ctx.view.exists(keylet::account(delegateAccount)) &&
-                isTesSuccess(xrpl::invokeCheckPermission(ctx.view, proposedStTx)))
+            if (isTesSuccess(xrpl::invokeCheckPermission(ctx.view, proposedStTx)))
             {
+                // A grant cannot exist without a funded authorize (DelegateSet
+                // uses tecNO_TARGET; AccountDelete of the delegatee removes the
+                // Delegate SLE). Do not treat a missing account as a Create-time
+                // user error — that would extra-validate the proposed tx. If
+                // permission passed anyway, the ledger is corrupt.
+                if (!ctx.view.exists(keylet::account(delegateAccount)))
+                    return tefINTERNAL;  // LCOV_EXCL_LINE
                 isSigner = isAuthorizedFor(delegateAccount);
                 if (!isSigner)
                     return isSigner.error();

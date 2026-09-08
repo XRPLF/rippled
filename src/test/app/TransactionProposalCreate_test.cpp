@@ -711,9 +711,10 @@ struct TransactionProposalCreate_test : public beast::unit_test::Suite
     // reserved for truly unreachable paths, and not the tefEXCEPTION that
     // applySteps would wrap an uncaught throw with).
     //
-    // ltSIGNER_LIST's SOTemplate makes sfSignerEntries required and each
-    // element an sfSignerEntry, so the corruptions below throw from the
-    // field accessors rather than taking deserialize's temMALFORMED path.
+    // SignerEntries::deserialize returns unexpected(temMALFORMED) when
+    // sfSignerEntries is missing or an element is not named sfSignerEntry.
+    // It still throws from STObject accessors when an sfSignerEntry is
+    // missing required fields (getAccountID → "Field not found: Account").
     // Do not close() after the synthetic corruption: a closed ledger would
     // drop the overlay and restore a well-formed list.
     void
@@ -781,6 +782,32 @@ struct TransactionProposalCreate_test : public beast::unit_test::Suite
                 auto replacement = std::make_shared<SLE>(*sle);
                 STArray badEntries;
                 badEntries.pushBack(STObject{sfSigner});
+                replacement->setFieldArray(sfSignerEntries, badEntries);
+                view.rawReplace(replacement);
+                return true;
+            }));
+            BEAST_EXPECT(env.le(signerListKeylet));
+
+            proposeAsSigner(env, target, signer, ticketSeq);
+        }
+
+        {
+            Env env{*this, features};
+            Account const target{"targetMissingAccount"};
+            Account const signer{"signerMissingAccount"};
+            std::uint32_t const ticketSeq = setup(env, target, signer);
+
+            auto const signerListKeylet = keylet::signerList(target.id());
+            BEAST_EXPECT(env.app().getOpenLedger().modify([&](OpenView& view, beast::Journal) {
+                auto const sle = view.read(signerListKeylet);
+                if (!sle)
+                    return false;
+                auto replacement = std::make_shared<SLE>(*sle);
+                STArray badEntries;
+                // Right inner name, but no sfAccount: deserialize calls
+                // getAccountID and throws (Field not found), which the
+                // catch maps to tefBAD_LEDGER.
+                badEntries.pushBack(STObject{sfSignerEntry});
                 replacement->setFieldArray(sfSignerEntries, badEntries);
                 view.rawReplace(replacement);
                 return true;
