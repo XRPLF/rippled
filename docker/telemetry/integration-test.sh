@@ -42,6 +42,11 @@ PROM="http://localhost:9090"
 PASS=0
 FAIL=0
 
+# Unix seconds just before this run's nodes start. Every Tempo search is
+# bounded to this run, so a previous run's traces cannot satisfy an assertion.
+# Set in Step 5; check_span refuses to run while it is empty.
+RUN_START=""
+
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
@@ -62,11 +67,19 @@ die() {
 check_span() {
     local op="$1"
     local count
+    [ -n "$RUN_START" ] || die "check_span called before RUN_START was set"
     # -G is required: it moves the urlencoded params into the query string.
     # Without it curl POSTs them as a request body, and Tempo answers 200
     # while ignoring the query — so every span name would look present.
+    #
+    # start/end bound the search to this run. Tempo keeps blocks for
+    # block_retention (tempo.yaml, 1h) on a named volume, so without a bound
+    # an older run's spans answer for this one. The end margin covers spans
+    # exported while this query is in flight.
     count=$(curl -sfG "$TEMPO/api/search" \
         --data-urlencode "q={resource.service.name=\"xrpld\" && name=\"$op\"}" \
+        --data-urlencode "start=$RUN_START" \
+        --data-urlencode "end=$(($(date +%s) + 60))" \
         --data-urlencode "limit=5" |
         jq '.traces | length' 2>/dev/null || echo 0)
     if [ "$count" -gt 0 ]; then
@@ -88,8 +101,9 @@ cleanup() {
     done
     # Also kill any straggling xrpld processes from our workdir
     pkill -f "$WORKDIR" 2>/dev/null || true
-    # Stop docker stack
-    docker compose -f "$COMPOSE_FILE" down 2>/dev/null || true
+    # Stop docker stack. -v also drops the tempo-data volume: plain `down`
+    # keeps it, and retained traces would then answer a later run's searches.
+    docker compose -f "$COMPOSE_FILE" down -v 2>/dev/null || true
     # Remove workdir
     rm -rf "$WORKDIR"
     log "Cleanup complete."
@@ -131,6 +145,10 @@ pkill -f "$WORKDIR" 2>/dev/null || true
 pkill -f "xrpld-telemetry.cfg" 2>/dev/null || true
 sleep 2
 rm -rf "$WORKDIR"
+# A run that reached the summary left the stack up, so nothing has torn it
+# down. Do it here, with -v: Tempo's traces and Prometheus' samples must not
+# survive into this run, or an assertion can pass on the previous run's data.
+docker compose -f "$COMPOSE_FILE" down -v 2>/dev/null || true
 mkdir -p "$WORKDIR"
 
 # ---------------------------------------------------------------------------
@@ -361,6 +379,10 @@ done
 # ---------------------------------------------------------------------------
 log "Starting $NUM_NODES xrpld nodes..."
 
+# Lower bound for every Tempo search below. Only these nodes have a
+# [telemetry] section, so nothing before this instant belongs to this run.
+RUN_START=$(date +%s)
+
 for i in $(seq 1 "$NUM_NODES"); do
     NODE_DIR="$WORKDIR/node$i"
     "$XRPLD" --conf "$NODE_DIR/xrpld.cfg" --start >"$NODE_DIR/stdout.log" 2>&1 &
@@ -497,7 +519,10 @@ log "Verifying spans in Tempo..."
 # Check service registration
 services=$(curl -sf "$TEMPO/api/v2/search/tag/resource.service.name/values" |
     jq -r '.tagValues[].value' 2>/dev/null || echo "")
-if echo "$services" | grep -q "xrpld"; then
+# Whole-line match: a substring match would also accept a value that merely
+# contains "xrpld". This endpoint ignores start/end (measured), so its only
+# protection against a previous run is the teardown in Step 1.
+if echo "$services" | grep -Fxq "xrpld"; then
     ok "Service 'xrpld' registered in Tempo"
 else
     fail "Service 'xrpld' NOT found in Tempo (found: $services)"
@@ -598,11 +623,27 @@ check_statsd_metric "rippled_State_Accounting_Full_duration"
 check_statsd_metric "rippled_Peer_Finder_Active_Inbound_Peers"
 check_statsd_metric "rippled_Peer_Finder_Active_Outbound_Peers"
 
-# RPC counters (only if RPC was exercised — should be true from Steps 5-8)
-check_statsd_metric "rippled_rpc_requests"
+# RPC counters (only if RPC was exercised — should be true from Steps 5-8).
+# This one is a beast::insight Counter, and the statsd receiver runs with
+# is_monotonic_counter: true, so the Prometheus exporter appends _total. The
+# gauges above keep their bare name.
+check_statsd_metric "rippled_rpc_requests_total"
 
-# Overlay traffic
+# Overlay traffic. "total" is the TrafficCount category name, not a Prometheus
+# suffix — the metric is a gauge, so nothing is appended.
 check_statsd_metric "rippled_total_Bytes_In"
+
+# A gauge for a traffic category no message reaches on a private 6-node
+# network: ledger replay is off, so nothing is ever counted here. A StatsD
+# gauge is only re-sent when its value changes, so this series exists solely
+# because a gauge starts dirty and flushes its initial zero.
+check_statsd_metric "rippled_replay_delta_request_Messages_In"
+
+# io_context latency is an Event, so it reaches Prometheus only when notify()
+# is called: on the first sample, and after that only at >= 10 ms. This covers
+# the metric arriving at all, not the first-sample path on its own — a busy
+# startup can also produce a >= 10 ms sample.
+check_statsd_metric "rippled_ios_latency_count"
 
 # ---------------------------------------------------------------------------
 # Step 11: Summary
