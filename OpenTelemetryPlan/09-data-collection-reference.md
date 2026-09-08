@@ -402,7 +402,7 @@ Join a transaction's work to its ledger with `{span.current_ledger_seq=<N>}`.
 | `quorum`                           | int64   | `consensus.check`, `consensus.accept`                                                              | Quorum required                                            |
 | `round_time_ms`                    | int64   | `consensus.accept`, `consensus.accept.apply`                                                       | Total consensus round duration in milliseconds             |
 | `consensus_state`                  | string  | `consensus.accept.apply`                                                                           | Consensus outcome: `"finished"` or `"moved_on"`            |
-| `close_time_ripple_epoch_s`        | int64   | `consensus.accept.apply`                                                                           | Agreed-upon ledger close time (Ripple epoch seconds)       |
+| `close_time_ripple_epoch_s`        | int64   | `consensus.accept.apply`                                                                           | Agreed-upon ledger close time (XRPL epoch seconds)         |
 | `close_time_correct`               | boolean | `consensus.accept.apply`                                                                           | Whether validators agreed on close time                    |
 | `close_resolution_ms`              | int64   | `consensus.accept.apply`                                                                           | Close-time rounding granularity in milliseconds            |
 | `proposing`                        | boolean | `consensus.accept.apply`, `consensus.validation.send`                                              | Whether this node was a proposer                           |
@@ -426,7 +426,7 @@ Join a transaction's work to its ledger with `{span.current_ledger_seq=<N>}`.
 | Attribute                   | Type    | Set On                                            | Description                                      |
 | --------------------------- | ------- | ------------------------------------------------- | ------------------------------------------------ |
 | `ledger_seq`                | int64   | `ledger.build`, `ledger.validate`, `ledger.store` | Ledger sequence number                           |
-| `close_time_ripple_epoch_s` | int64   | `ledger.build`                                    | Ledger close time (Ripple epoch seconds)         |
+| `close_time_ripple_epoch_s` | int64   | `ledger.build`                                    | Ledger close time (XRPL epoch seconds)           |
 | `close_time_correct`        | boolean | `ledger.build`                                    | Whether close time was agreed upon by validators |
 | `close_resolution_ms`       | int64   | `ledger.build`                                    | Close time rounding granularity in milliseconds  |
 | `tx_count`                  | int64   | `tx.apply`                                        | Transactions applied to the ledger               |
