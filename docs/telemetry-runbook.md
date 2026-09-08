@@ -126,40 +126,35 @@ curl -s http://localhost:5015 -d '{"method":"server_info"}' |
 
 ## Configuration Reference
 
-| Option                     | Default                           | Description                                                  |
-| -------------------------- | --------------------------------- | ------------------------------------------------------------ |
-| `enabled`                  | `0`                               | Master switch for telemetry                                  |
-| `traces_endpoint`          | `http://localhost:4318/v1/traces` | OTLP/HTTP endpoint                                           |
-| `service_name`             | `xrpld`                           | OpenTelemetry service name resource attribute                |
-| `service_instance_id`      | node public key                   | OpenTelemetry service instance ID resource attribute         |
-| `trace_rpc`                | `1`                               | Enable RPC request tracing                                   |
-| `trace_transactions`       | `1`                               | Enable transaction tracing                                   |
-| `trace_consensus`          | `1`                               | Enable consensus tracing                                     |
-| `trace_peer`               | `1`                               | Enable peer message tracing (high volume)                    |
-| `trace_ledger`             | `1`                               | Enable ledger tracing                                        |
-| `consensus_trace_strategy` | `deterministic`                   | Consensus trace ID strategy (`deterministic` or `attribute`) |
-| `batch_size`               | `512`                             | Max spans per batch export                                   |
-| `batch_delay_ms`           | `5000`                            | Delay between batch exports                                  |
-| `max_queue_size`           | `2048`                            | Max spans queued before dropping                             |
-| `use_tls`                  | `0`                               | Use TLS for exporter connection                              |
-| `tls_ca_cert`              | (empty)                           | Path to CA certificate bundle                                |
-| `tls_client_cert`          | (empty)                           | Client cert (PEM) for mTLS; empty = one-way. See note        |
-| `tls_client_key`           | (empty)                           | Private key (PEM) for `tls_client_cert`. See note            |
+| Option                     | Default                           | Description                                                                                           |
+| -------------------------- | --------------------------------- | ----------------------------------------------------------------------------------------------------- |
+| `enabled`                  | `0`                               | Master switch for telemetry                                                                           |
+| `traces_endpoint`          | `http://localhost:4318/v1/traces` | Full OTLP/HTTP URL for spans, used verbatim                                                           |
+| `service_name`             | `xrpld`                           | OpenTelemetry service name resource attribute                                                         |
+| `service_instance_id`      | node public key                   | OpenTelemetry service instance ID resource attribute                                                  |
+| `trace_rpc`                | `1`                               | Enable RPC request tracing                                                                            |
+| `trace_transactions`       | `1`                               | Enable transaction tracing                                                                            |
+| `trace_consensus`          | `1`                               | Enable consensus tracing                                                                              |
+| `trace_peer`               | `1`                               | Enable peer message tracing (high volume)                                                             |
+| `trace_ledger`             | `1`                               | Enable ledger tracing                                                                                 |
+| `consensus_trace_strategy` | `deterministic`                   | Consensus trace ID strategy. `deterministic` is the value to use; `random` is experimental — see note |
+| `batch_size`               | `512`                             | Max spans per batch export                                                                            |
+| `batch_delay_ms`           | `5000`                            | Delay between batch exports                                                                           |
+| `max_queue_size`           | `2048`                            | Max spans queued before dropping                                                                      |
+| `use_tls`                  | `0`                               | Use TLS for exporter connection                                                                       |
+| `tls_ca_cert`              | (empty)                           | Path to CA certificate bundle                                                                         |
+| `tls_client_cert`          | (empty)                           | Client cert (PEM) for mTLS; empty = one-way. See note                                                 |
+| `tls_client_key`           | (empty)                           | Private key (PEM) for `tls_client_cert`. See note                                                     |
 
-> **mTLS (mutual TLS) note**: `tls_client_cert` and `tls_client_key` are optional — leaving both empty gives one-way (server-only) TLS. **If either one is set**, `enabled=1` requires both of them **and** `use_tls=1`, or the node exits at startup; see the Troubleshooting entry for `Unable to start ...: [telemetry] ...`. When `enabled=0` they are read but never validated.
+> **mTLS (mutual TLS) note**: `tls_client_cert` and `tls_client_key` are optional — leaving both empty gives one-way (server-only) TLS. **If either one is set**, `enabled=1` requires both of them, `use_tls=1`, **and** a `traces_endpoint` starting with `https://` — the exporter decides encryption from the URL scheme, so the certificate is only ever presented on an `https://` endpoint. The default `traces_endpoint` is plain HTTP, so mTLS means setting that key too. Breaking any of these makes the node exit at startup; see the Troubleshooting entry for `Unable to start ...: [telemetry] ...`. When `enabled=0` they are read but never validated.
+
+> **`consensus_trace_strategy` note**: only `deterministic` and `random` are accepted, and anything else makes the node exit at startup. Use `deterministic`: it seeds the round's trace ID from the previous ledger hash, so every validator of a round reports into one trace. `random` is experimental and not used — each node would invent its own trace ID, so a single round would arrive as one separate trace per node, joinable only by hand through `consensus_ledger_id`.
 
 > **Traces and metrics also carry `xrpl.node.id`.** xrpld sets it as a resource
 > attribute alongside `service.instance.id`; the value is the node public key
 > (base58, begins with `n`). It comes from the node identity unconditionally, so
 > it is present even when `[telemetry] service_instance_id` is configured.
 > TraceQL filters on it as `resource.xrpl.node.id`.
-
-> **`consensus_trace_strategy` is not validated.** The parser copies the raw
-> string through (`TelemetryConfig.cpp:155-156`) and the only equality test in
-> the code is `strategy == "attribute"` (`RCLConsensus.cpp:1296`). Any other
-> value — including a typo such as `determinstic` — silently selects the
-> deterministic branch. There is no warning in the log. The two accepted values
-> are documented at `include/xrpl/telemetry/Telemetry.h:287-292`.
 
 ## Exporting to Grafana Cloud
 
@@ -344,17 +339,17 @@ read it from the parent rather than filtering `tx.apply` on it.
 
 #### Consensus Span Events
 
-| Parent Span                  | Event Name         | Event Attributes                                            | Description                                              |
-| ---------------------------- | ------------------ | ----------------------------------------------------------- | -------------------------------------------------------- |
-| `consensus.update_positions` | `dispute.resolve`  | `tx_id`, `dispute_our_vote`, `dispute_yays`, `dispute_nays` | Emitted per dispute when votes are tallied               |
-| `consensus.accept.apply`     | `tx.included`      | `tx_id`                                                     | Emitted per transaction included in the accepted ledger  |
-| `consensus.round`            | `phase.open`       | --                                                          | Round entered the open phase (also re-fired on recovery) |
-| `consensus.round`            | `phase.recovery`   | --                                                          | Round started with `StartRoundReason::Recovered`         |
-| `consensus.round`            | `phase.establish`  | --                                                          | Round entered the establish phase on close               |
-| `consensus.round`            | `phase.accepted`   | --                                                          | Round reached the accepted phase                         |
-| `consensus.round`            | `outcome.yes`      | --                                                          | Round settled with consensus reached                     |
-| `consensus.round`            | `outcome.moved_on` | --                                                          | Round abandoned; the network moved on without us         |
-| `consensus.round`            | `outcome.expired`  | --                                                          | Round expired without settling                           |
+| Parent Span                  | Event Name         | Event Attributes                                            | Description                                                                                |
+| ---------------------------- | ------------------ | ----------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
+| `consensus.update_positions` | `dispute.resolve`  | `tx_id`, `dispute_our_vote`, `dispute_yays`, `dispute_nays` | Emitted per dispute when votes are tallied                                                 |
+| `consensus.accept.apply`     | `tx.included`      | `tx_id`                                                     | Emitted per transaction of the agreed consensus set, before the ledger is built — see note |
+| `consensus.round`            | `phase.open`       | --                                                          | Round entered the open phase (also re-fired on recovery)                                   |
+| `consensus.round`            | `phase.recovery`   | --                                                          | Round started with `StartRoundReason::Recovered`                                           |
+| `consensus.round`            | `phase.establish`  | --                                                          | Round entered the establish phase on close                                                 |
+| `consensus.round`            | `phase.accepted`   | --                                                          | Round reached the accepted phase                                                           |
+| `consensus.round`            | `outcome.yes`      | --                                                          | Round settled with consensus reached                                                       |
+| `consensus.round`            | `outcome.moved_on` | --                                                          | Round abandoned; the network moved on without us                                           |
+| `consensus.round`            | `outcome.expired`  | --                                                          | Round expired without settling                                                             |
 
 The nine events above are the complete set. The seven on `consensus.round`
 carry **no event attributes** — they are timestamps marking phase entry and the
@@ -368,9 +363,16 @@ attribute, which is why `phase.recovery` is the one phase event that leaves
 from `result_->state` at
 [Consensus.h:1517-1525](../include/xrpl/consensus/Consensus.h#L1517).
 
+> **`tx.included` note**: the event is recorded while the canonical transaction set is being assembled, which happens before `buildLCL()` applies anything. So a transaction that fails to apply, or is left over to retry in a later ledger, still has a `tx.included` event. Treat the events as the round's **input** set, not as proof a transaction reached the accepted ledger; `tx_count` on the same span counts the same set. A transaction whose bytes cannot be parsed gets no event, and nothing in the accepted ledger is missing one, so the events are always a superset of the ledger's contents. To confirm a transaction actually applied, read `ter_result` and `applied` on its `tx.transactor` span.
+
 #### Close Time Queries (Tempo TraceQL)
 
-Span attributes are filtered with `span.<attr>` inside `{}`. Combine conditions with `&&`.
+> **TraceQL syntax**: an attribute filter belongs inside the braces, as
+> `{name="x" && span.attr = value}`. The `{name="x"} | attr = value` form used
+> by several examples in this document is rejected by current Tempo with a parse
+> error, so convert an example to the braced form before running it. Numeric
+> attributes such as `consensus_round_id` and `retries_remaining` must be
+> compared unquoted.
 
 ```
 # Find rounds where validators disagreed on close time
@@ -385,11 +387,14 @@ Span attributes are filtered with `span.<attr>` inside `{}`. Combine conditions 
 # Find specific ledger's consensus details
 {name="consensus.accept.apply" && span.ledger_seq = 92345678}
 
-# Find all spans in a consensus round (deterministic trace strategy)
-{name="consensus.round" && span.consensus_round_id = "<round_id>"}
+# Find a consensus round by its id. consensus_round_id is an int64 — the
+# previous ledger sequence plus one — so it must not be quoted, and it is set
+# only on consensus.round.
+{name="consensus.round" && span.consensus_round_id = 92345678}
 
-# Find dispute resolutions
-{name="consensus.update_positions"} >> {event:name="dispute.resolve"}
+# Find dispute resolutions. The event is recorded on the update_positions
+# span itself, so it is a condition on that span, not on a descendant.
+{name="consensus.update_positions" && event:name="dispute.resolve"}
 ```
 
 ### Ledger Spans
@@ -1348,8 +1353,11 @@ sum by (stage) (rate(span_calls_total{span_name=~"tx.preflight|tx.preclaim|tx.tr
 # Find transactions being retried
 {name="txq.accept_tx" && span.txq_status = "retried"}
 
-# Find transactions that exhausted retries
-{name="txq.accept_tx" && span.txq_status = "retried" && span.retries_remaining = 0}
+# Find transactions dropped because they had no retries left.
+# retries_remaining is recorded before the attempt, and the "retried" branch
+# is only reached while retries are left, so exhaustion always shows up as
+# "failed" with a zero count.
+{name="txq.accept_tx" && span.txq_status = "failed" && span.retries_remaining <= 0}
 
 # Which transaction types get queued most often?
 {name="txq.enqueue" && span.tx_type = "Payment"}
@@ -1556,8 +1564,12 @@ all its normal attributes, it just lacks a cross-node parent link.
 # Trace a transaction across the network by its hash
 {name =~ "tx.*" && span.tx_hash = "<hash>"}
 
-# Find all spans in a cross-node consensus trace
-{resource.service.name="xrpld" && span.consensus_round_id = "<round_id>"}
+# Find a cross-node consensus trace by round id, then open the returned trace
+# to see every node's spans. Under the deterministic strategy all validators of
+# a round share one trace id, so one trace holds all of them. The value is an
+# integer, so it must not be quoted, and it only matches the consensus.round
+# span that carries it.
+{name="consensus.round" && span.consensus_round_id = 92345678}
 
 # Compare latency between sender and receiver for validations
 {name = "consensus.validation.send" || name = "consensus.validation.receive"}

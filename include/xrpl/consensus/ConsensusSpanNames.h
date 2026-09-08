@@ -361,7 +361,9 @@ namespace event {
  */
 inline constexpr auto disputeResolve = join(makeStr("dispute"), makeStr("resolve"));
 /**
- * "tx.included"
+ * "tx.included" — one per transaction of the agreed consensus set, recorded
+ * before the ledger is built. A transaction that then fails to apply still
+ * has an event, so this is a superset of the accepted ledger's contents.
  */
 inline constexpr auto txIncluded = join(makeStr("tx"), makeStr("included"));
 
