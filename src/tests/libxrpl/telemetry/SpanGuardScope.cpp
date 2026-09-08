@@ -168,14 +168,13 @@ public:
     }
 
     /**
-     * @return A fixed strategy label; the scope tests do not exercise
-     * deterministic trace-id correlation, so any stable value works.
+     * @return A fixed strategy; the scope tests do not exercise trace-id
+     * correlation, so either value works.
      */
-    [[nodiscard]] std::string const&
+    [[nodiscard]] ConsensusTraceStrategy
     getConsensusTraceStrategy() const override
     {
-        static std::string const kStrategy{"none"};
-        return kStrategy;
+        return ConsensusTraceStrategy::Deterministic;
     }
 
     opentelemetry::nostd::shared_ptr<opentelemetry::trace::Tracer>
