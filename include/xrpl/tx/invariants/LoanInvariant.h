@@ -15,9 +15,33 @@ namespace xrpl {
 /**
  * @brief Invariants: Loans are internally consistent
  *
- * 1. If `Loan.PaymentRemaining = 0` then `Loan.PrincipalOutstanding = 0`
+ * 1. If `Loan.PaymentRemaining = 0` then `Loan.PrincipalOutstanding = 0`.
  * 2. A newly-created Loan against a closed-ended vault must satisfy
  *    `StartDate + PaymentInterval * PaymentRemaining < Vault.RedemptionDate`.
+ * 3. An `ltLOAN` may only be created by a `ttLOAN_SET` transaction.
+ * 4. Prior to `featureLendingProtocolV1_1`, the `lsfLoanOverpayment` flag on a
+ *    Loan must not change. From `featureLendingProtocolV1_1` onward the same
+ *    rule is enforced by `NoModifiedUnmodifiableFields`.
+ * 5. Under `featureLendingProtocolV1_1`:
+ *    a. An `ltLOAN` may only be deleted by a `ttLOAN_DELETE` transaction.
+ *    b. If `Loan.PaymentRemaining = 0` then `Loan.NextPaymentDueDate = 0`.
+ *    c. The `lsfLoanImpaired` flag may only change through a `ttLOAN_MANAGE`
+ *       or `ttLOAN_PAY` transaction.
+ *    d. The `lsfLoanDefault` flag may only change through a `ttLOAN_MANAGE`
+ *       transaction. Combined with `NoModifiedUnmodifiableFields`, which
+ *       rejects any clearing of `lsfLoanDefault`, this makes the flag
+ *       write-once: `ttLOAN_MANAGE` may set it, and no transaction may
+ *       clear it.
+ *    e. Interest due, computed as `TotalValueOutstanding -
+ *       PrincipalOutstanding - ManagementFeeOutstanding`, must not be
+ *       negative.
+ *    f. A Loan must reference a live `ltLOAN_BROKER`, and that broker must
+ *       reference a live `ltVAULT`.
+ *    g. Post-conditions for the Loan paid down by a successful `ttLOAN_PAY`:
+ *       `PaymentRemaining > 0` after: `PrincipalOutstanding` and
+ *          `PaymentRemaining` strictly decrease; `NextPaymentDueDate`
+ *          advances by N * `PaymentInterval`, N > 0.
+ *       `PaymentRemaining == 0` after: pinned by checks 1 and 5b.
  *
  */
 class ValidLoan
@@ -25,6 +49,9 @@ class ValidLoan
     // Pair is <before, after>. After is used for most of the checks, except
     // those that check changed values.
     std::vector<std::pair<SLE::const_pointer, SLE::const_pointer>> loans_;
+    // Loans removed from the ledger, in the same <before, after> form as loans_.
+    // Note that `after` holds the erased entry, so it is not null.
+    std::vector<std::pair<SLE::const_pointer, SLE::const_pointer>> deletedLoans_;
 
 public:
     void
