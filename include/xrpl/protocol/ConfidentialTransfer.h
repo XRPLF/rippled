@@ -302,6 +302,53 @@ NotTEC
 checkEncryptedAmountFormat(STObject const& object);
 
 /**
+ * @brief Reports whether a holder's issuer mirror is encrypted under the
+ * issuance's currently registered issuer key.
+ *
+ * An absent mirror epoch means epoch 0, matching the issuance convention. A
+ * holder with no issuer mirror at all is not current: there is nothing for a
+ * later re-encryption to anchor on.
+ *
+ * @param issuance The MPTokenIssuance ledger object.
+ * @param mptoken  The holder's MPToken ledger object.
+ * @return true if the MPToken's issuer mirror is current. false if stale.
+ */
+[[nodiscard]] bool
+isIssuerMirrorCurrent(STObject const& issuance, STObject const& mptoken);
+
+/**
+ * @brief Reports whether a holder's auditor mirror is encrypted under the
+ * issuance's currently registered auditor key.
+ *
+ * An issuance with no auditor key requires no auditor mirror, so the holder is
+ * trivially current. Once an auditor key is configured the mirror must also be
+ * present: a key registered after the holder initialized confidential state
+ * leaves them with no auditor mirror at all.
+ *
+ * @param issuance The MPTokenIssuance ledger object.
+ * @param mptoken  The holder's MPToken ledger object.
+ * @return true if the auditor mirror is current or not required.
+ */
+[[nodiscard]] bool
+isAuditorMirrorCurrent(STObject const& issuance, STObject const& mptoken);
+
+/**
+ * @brief Reports whether every mirror a holder is required to have is encrypted
+ * under the issuance's currently registered ElGamal keys.
+ *
+ * A transaction that homomorphically combines a new ciphertext into an existing
+ * mirror requires that mirror to be current. The new ciphertext is encrypted
+ * under the registered key, so combining it into a mirror left behind by a key
+ * rotation would produce a ciphertext that no party can decrypt.
+ *
+ * @param issuance The MPTokenIssuance ledger object.
+ * @param mptoken  The holder's MPToken ledger object.
+ * @return true if the required mirrors are current.
+ */
+[[nodiscard]] bool
+areMirrorsCurrent(STObject const& issuance, STObject const& mptoken);
+
+/**
  * @brief Verifies revealed amount encryptions for all recipients.
  *
  * Validates that the same amount was correctly encrypted for the holder,
