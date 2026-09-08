@@ -697,6 +697,11 @@ RCLConsensus::Adaptor::doAccept(
 
     JLOG(j_.debug()) << "Building canonical tx set: " << retriableTxs.key();
 
+    // One tx.included event per transaction of the agreed consensus set, which
+    // is not yet the accepted ledger: buildLCL() below applies these and some
+    // may fail, so the events are a superset of what the ledger ends up with. A
+    // transaction whose bytes cannot be parsed gets no event at all.
+    //
     // txCount and the per-transaction event feed the span and nothing else, so
     // both are guarded on the span being active. Unguarded, every accepted
     // ledger builds one 64-character hash string per transaction that no one
@@ -1361,19 +1366,19 @@ RCLConsensus::Adaptor::startRoundTracing(RCLCxLedger const& prevLgr)
     if (roundSpan_)
         roundSpan_.reset();
 
-    auto const& strategy = app_.getTelemetry().getConsensusTraceStrategy();
+    auto const strategy = app_.getTelemetry().getConsensusTraceStrategy();
 
     telemetry::SpanContext const* const link =
         prevRoundSpanContext_.isValid() ? &prevRoundSpanContext_ : nullptr;
 
-    if (strategy == "attribute")
+    if (strategy == telemetry::ConsensusTraceStrategy::Random)
     {
-        // Non-deterministic strategy: each node gets a random trace_id,
-        // correlated via the consensus_ledger_id attribute rather than a
-        // shared trace_id. Still attach a follows-from link to the prior
-        // round so consecutive rounds stay navigable. linkedSpan is not
-        // TraceCategory-aware, so gate it explicitly to match the gating
-        // of the hashSpan/span factories used below.
+        // Experimental strategy, not used on a live network: each node gets a
+        // random trace_id, so one round arrives as one trace per node, joinable
+        // only by the consensus_ledger_id attribute. Still attach a follows-from
+        // link to the prior round so consecutive rounds stay navigable.
+        // linkedSpan is not TraceCategory-aware, so gate it explicitly to match
+        // the gating of the hashSpan/span factories used below.
         if (link != nullptr && app_.getTelemetry().shouldTraceConsensus())
         {
             roundSpan_.emplace(telemetry::SpanGuard::linkedSpan(cs::round, *link));
@@ -1387,7 +1392,7 @@ RCLConsensus::Adaptor::startRoundTracing(RCLCxLedger const& prevLgr)
     }
     else
     {
-        // "deterministic" (the default): derive the trace_id from the previous
+        // Deterministic (the default): derive the trace_id from the previous
         // ledger hash so all validators tracing the same round share one trace.
         roundSpan_.emplace(
             telemetry::SpanGuard::hashSpan(
@@ -1405,7 +1410,7 @@ RCLConsensus::Adaptor::startRoundTracing(RCLCxLedger const& prevLgr)
 
     roundSpan_->setAttribute(cs::attr::ledgerId, to_string(prevLgr.id()).c_str());
     roundSpan_->setAttribute(cs::attr::ledgerSeq, static_cast<int64_t>(prevLgr.seq()) + 1);
-    roundSpan_->setAttribute(cs::attr::traceStrategy, strategy.c_str());
+    roundSpan_->setAttribute(cs::attr::traceStrategy, telemetry::strategyName(strategy));
     roundSpan_->setAttribute(cs::attr::roundId, static_cast<int64_t>(prevLgr.seq()) + 1);
     roundSpan_->setAttribute(cs::attr::previousLedgerSeq, static_cast<int64_t>(prevLgr.seq()));
     roundSpan_->setAttribute(cs::attr::previousProposers, static_cast<int64_t>(prevProposers_));

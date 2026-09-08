@@ -19,6 +19,7 @@
 #include <optional>
 #include <stdexcept>
 #include <string>
+#include <string_view>
 #include <system_error>
 #include <type_traits>
 
@@ -54,6 +55,7 @@ constexpr char const* traceConsensus = "trace_consensus";
 constexpr char const* traceRpc = "trace_rpc";
 constexpr char const* tracePeer = "trace_peer";
 constexpr char const* traceLedger = "trace_ledger";
+constexpr char const* consensusTraceStrategy = "consensus_trace_strategy";
 }  // namespace key
 
 /**
@@ -226,6 +228,61 @@ requirePositive(std::chrono::milliseconds value, char const* configKey)
     }
 }
 
+/**
+ * Throw unless an endpoint URL is one the client certificate can be used on.
+ *
+ * The OTLP/HTTP exporter turns TLS on from the URL scheme alone, and matches
+ * "https:" exactly and case-sensitively. So a client certificate only reaches
+ * the collector on an https endpoint, and this check is what holds that
+ * invariant: with a client certificate configured, the endpoint is an https URL.
+ * "https://" is required in full, which is stricter than the exporter's own
+ * test, so anything this accepts the exporter also treats as TLS.
+ *
+ * @param endpoint   Endpoint URL from the config, or the built-in default.
+ * @param configKey  Config key the URL came from, named in the message.
+ * @throws std::runtime_error  If the URL does not begin with "https://".
+ */
+void
+requireHttpsEndpoint(std::string const& endpoint, char const* configKey)
+{
+    constexpr std::string_view kHttpsPrefix{"https://"};
+
+    if (std::string_view{endpoint}.starts_with(kHttpsPrefix))
+        return;
+
+    Throw<std::runtime_error>(
+        std::string("Invalid value '") + configKey + "' in " + kSectionLabel +
+        ": must start with '" + std::string{kHttpsPrefix} + "' when " + key::tlsClientCert +
+        " is set, but is '" + endpoint + "'.");
+}
+
+/**
+ * Map a `consensus_trace_strategy` value onto its enumerator.
+ *
+ * Only the two documented spellings are accepted. A typo would otherwise pick
+ * the default silently, and the operator would never learn the setting had no
+ * effect. Matching is exact and case-sensitive, like every other value in this
+ * section.
+ *
+ * @param value  Raw config value; empty means the key was absent.
+ * @return The matching strategy, or Deterministic when the key was absent.
+ * @throws std::runtime_error  If the value is neither documented spelling.
+ */
+[[nodiscard]] ConsensusTraceStrategy
+readConsensusTraceStrategy(std::string const& value)
+{
+    if (value.empty() || value == strategyName(ConsensusTraceStrategy::Deterministic))
+        return ConsensusTraceStrategy::Deterministic;
+
+    if (value == strategyName(ConsensusTraceStrategy::Random))
+        return ConsensusTraceStrategy::Random;
+
+    Throw<std::runtime_error>(
+        std::string("Invalid value '") + key::consensusTraceStrategy + "' in " + kSectionLabel +
+        ": must be '" + strategyName(ConsensusTraceStrategy::Deterministic) + "' or '" +
+        strategyName(ConsensusTraceStrategy::Random) + "'.");
+}
+
 }  // namespace
 
 /**
@@ -308,6 +365,15 @@ makeTelemetrySetup(
                 "(set use_tls=1 to enable mutual TLS, or remove the cert paths).");
         }
 
+        // Still inside the enabled branch, and checked before the files are
+        // opened so a scheme problem is not hidden behind a path problem. The
+        // exporter reads TLS off the endpoint scheme, so a client certificate is
+        // only presented on an https endpoint. tls_ca_cert is left out of this
+        // check: it only names a trust store, while a client certificate is this
+        // node's own identity and has to reach the collector to mean anything.
+        if (!setup.tlsClientCertPath.empty())
+            requireHttpsEndpoint(setup.tracesEndpoint, key::tracesEndpoint);
+
         // Still inside the enabled branch. The exporter opens these files only
         // when TLS is on, so check them only then: a bad path behind use_tls=0
         // stops nothing. Checking here turns what would otherwise surface much
@@ -376,7 +442,7 @@ makeTelemetrySetup(
     setup.traceLedger = section.valueOr<int>(key::traceLedger, 1) != 0;
 
     setup.consensusTraceStrategy =
-        section.valueOr<std::string>("consensus_trace_strategy", "deterministic");
+        readConsensusTraceStrategy(section.valueOr<std::string>(key::consensusTraceStrategy, ""));
 
     return setup;
 }
