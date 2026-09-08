@@ -73,6 +73,7 @@
 #include <xrpl/server/NetworkOPs.h>
 #include <xrpl/telemetry/GetObjectMetricNames.h>
 #include <xrpl/telemetry/HistogramBuckets.h>
+#include <xrpl/telemetry/RpcMetricNames.h>
 #include <xrpl/telemetry/SpanNames.h>
 // For networkTypeFromId(), the one xrpl.network.type mapping both export
 // paths use. Adds no levelization edge: xrpld.telemetry > xrpl.telemetry
@@ -448,6 +449,22 @@ MetricsRegistry::initExporterAndProvider(StartOptions const& options)
     // peer's fate -- kWarningThreshold (5000) and kDropThreshold (25000) --
     // so a dashboard can show how close charges run to each.
     addHistogramView(*views, kGetObjectCharge, buckets::toVector(buckets::kChargeBuckets));
+
+    // The two RPC request-count histograms are recorded at their ServerHandler
+    // and PathRequest call sites, so the names come from the shared constants
+    // all three sites use. Both are small counts, and the reason they need a
+    // view is the FLOOR rather than the ceiling: the SDK default edges start
+    // 0, 5, 10, 25, so a batch of one to five sub-requests -- the normal case --
+    // would land in a single bucket and every quantile over it would be an
+    // interpolation inside that bucket rather than a measurement.
+    //
+    // The object-count ladder is the fit: its 1, 2, 4, 8, 16 edges sit exactly
+    // where both distributions have their mass. Path counts are hard-bounded at
+    // kMaxPaths * kMaxAutoSrcCur = 352, well under its 12288 top. Batch sizes
+    // have no such cap; see the ceiling note in RpcMetricNames.h.
+    addHistogramView(*views, kRpcBatchSize, buckets::toVector(buckets::kObjectCountBuckets));
+    addHistogramView(
+        *views, kPathfindDiscoveredPaths, buckets::toVector(buckets::kObjectCountBuckets));
 
     // Create MeterProvider with resource, then attach the metric reader.
     provider_ = metric_sdk::MeterProviderFactory::Create(std::move(views), resourceAttrs);

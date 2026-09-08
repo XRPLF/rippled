@@ -92,8 +92,8 @@ class RCLConsensus
          * Span for the current consensus round.
          *
          *  Created in preStartRound(), ended (via reset()) when the next
-         *  round begins. When consensusTraceStrategy is "deterministic",
-         *  the trace_id is derived from previousLedger.id() so that all
+         *  round begins. Under ConsensusTraceStrategy::Deterministic the
+         *  trace_id is derived from previousLedger.id() so that all
          *  validators in the same round share the same trace_id.
          *
          *  Thread-free: a SpanGuard owns no thread-local Scope, so it can be

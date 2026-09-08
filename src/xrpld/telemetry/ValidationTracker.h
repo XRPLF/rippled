@@ -47,6 +47,7 @@ namespace xrpl::telemetry {
  *  |   ValidationTracker       |
  *  |---------------------------|
  *  |  pending_  (hash_map)     |----> LedgerEvent per hash
+ *  |  tallied_  (hash_set)     |----> hashes already counted
  *  |  window1h_ (deque)        |----> WindowEvent sliding window
  *  |  window24h_ (deque)       |----> WindowEvent sliding window
  *  |  atomic totals            |
@@ -103,6 +104,13 @@ public:
      * Time point type from the monotonic clock.
      */
     using TimePoint = Clock::time_point;
+
+    /**
+     * Maximum number of pending (unreconciled + recently reconciled) events.
+     * Once the pending map passes this size, reconcile() drops the oldest
+     * reconciled events. Public so a test can size a fixture against it.
+     */
+    static constexpr std::size_t kMaxPendingEvents = 1000;
 
     /**
      * Record that this node sent a validation for the given ledger.
@@ -302,9 +310,12 @@ private:
     static constexpr auto kLateRepairWindow = std::chrono::minutes(5);
 
     /**
-     * Maximum number of pending (unreconciled + recently reconciled) events.
+     * Maximum number of ledger hashes remembered as already counted.
+     * At one ledger every four seconds this spans about eleven hours.
+     * A validation arriving for a ledger counted before that is counted
+     * again.
      */
-    static constexpr std::size_t kMaxPendingEvents = 1000;
+    static constexpr std::size_t kMaxTalliedEvents = 10000;
 
     /**
      * Duration of the short rolling window.
@@ -322,7 +333,8 @@ private:
     static constexpr auto kWindow7d = std::chrono::hours(168);
 
     /**
-     * Protects pending_, window1h_, window24h_, and window7d_.
+     * Protects pending_, tallied_, talliedOrder_, window1h_, window24h_,
+     * and window7d_.
      */
     mutable std::mutex mutex_;
 
@@ -330,6 +342,19 @@ private:
      * Pending ledger events indexed by ledger hash.
      */
     hash_map<uint256, LedgerEvent> pending_;
+
+    /**
+     * Ledger hashes already counted into the agreement and missed totals.
+     * Membership survives eviction from pending_, so a ledger reaches the
+     * totals once. Holds at most kMaxTalliedEvents hashes.
+     */
+    hash_set<uint256> tallied_;
+
+    /**
+     * The hashes in tallied_ in the order they were counted. The front is
+     * the oldest and is dropped first once the bound is reached.
+     */
+    std::deque<uint256> talliedOrder_;
 
     /**
      * Sliding window of reconciled events (last 1 hour).
@@ -392,6 +417,27 @@ private:
      * Lifetime count of network validations observed.
      */
     std::atomic<uint64_t> totalValidationsChecked_{0};
+
+    /**
+     * Locate the pending event for a ledger, creating it on first sight.
+     * @param ledgerHash Hash of the ledger being recorded.
+     * @param seq        Ledger sequence number, stored only on creation.
+     * @return Pointer to the event, or nullptr for a ledger that already
+     * reached the totals and left pending_. The caller records nothing in
+     * that case.
+     * @note Called with mutex_ held.
+     */
+    [[nodiscard]] LedgerEvent*
+    pendingEvent(uint256 const& ledgerHash, LedgerIndex seq);
+
+    /**
+     * Remember a ledger hash as counted, dropping the oldest remembered
+     * hash once kMaxTalliedEvents is reached.
+     * @param ledgerHash Hash of the ledger just counted into the totals.
+     * @note Called with mutex_ held.
+     */
+    void
+    noteTallied(uint256 const& ledgerHash);
 
     /**
      * Remove entries older than their respective window durations.
