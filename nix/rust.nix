@@ -8,18 +8,30 @@ let
   # elsewhere, so it shadows our clang and the build can silently use a different
   # compiler version. Drop that cc from every propagation channel instead of
   # pinning a replacement: the toolchain then carries no compiler and cargo just
-  # uses the active shell's stdenv cc. Must cover all channels — rust-overlay
-  # uses both propagatedBuildInputs and depsHostHostPropagated.
+  # uses the active shell's stdenv cc.
+  #
+  # The channel list is every list mkDerivation propagates to a dependent's
+  # environment (including the two legacy aliases). rust-overlay currently only
+  # uses propagatedBuildInputs and depsHostHostPropagated, but covering all of
+  # them means an upstream switch to another channel cannot quietly put the
+  # compiler back on PATH.
   dropDefaultCc =
     toolchain:
     let
       defaultCc = pkgs.stdenv.cc; # default compiler from nixpkgs stdenv
       withoutDefaultCc = builtins.filter (dep: (dep.outPath or "") != defaultCc.outPath);
     in
-    toolchain.overrideAttrs (old: {
-      propagatedBuildInputs = withoutDefaultCc (old.propagatedBuildInputs or [ ]);
-      depsHostHostPropagated = withoutDefaultCc (old.depsHostHostPropagated or [ ]);
-    });
+    toolchain.overrideAttrs (
+      old:
+      pkgs.lib.genAttrs [
+        "depsBuildBuildPropagated"
+        "propagatedNativeBuildInputs" # alias of depsBuildHostPropagated
+        "depsBuildTargetPropagated"
+        "depsHostHostPropagated"
+        "propagatedBuildInputs" # alias of depsHostTargetPropagated
+        "depsTargetTargetPropagated"
+      ] (channel: withoutDefaultCc (old.${channel} or [ ]))
+    );
 
   rustToolchain = dropDefaultCc (pkgs.rust-bin.fromRustupToolchainFile ../rust-toolchain.toml);
 
