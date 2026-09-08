@@ -5,6 +5,7 @@
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/protocol/ConfidentialTransfer.h>
+#include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/Protocol.h>
@@ -207,6 +208,21 @@ ConfidentialMPTClawback::doApply()
         }
 
         (*sleHolderMPToken)[sfAuditorEncryptedBalance] = std::move(*encZeroForAuditor);
+    }
+
+    // Allow clawback on stale mirrors since the issuer can still generate the
+    // proof using the corresponding stale private key. The mirrors are updated
+    // to the current epoch during execution.
+    if (view().rules().enabled(featureConfidentialMPTKeyRotation))
+    {
+        if (auto const epoch = (*sleIssuance)[~sfIssuerKeyEpoch].valueOr(0); epoch != 0)
+            (*sleHolderMPToken)[sfIssuerKeyMirrorEpoch] = epoch;
+
+        if (sleHolderMPToken->isFieldPresent(sfAuditorEncryptedBalance))
+        {
+            if (auto const epoch = (*sleIssuance)[~sfAuditorKeyEpoch].valueOr(0); epoch != 0)
+                (*sleHolderMPToken)[sfAuditorKeyMirrorEpoch] = epoch;
+        }
     }
 
     // Decrease Global Confidential Outstanding Amount

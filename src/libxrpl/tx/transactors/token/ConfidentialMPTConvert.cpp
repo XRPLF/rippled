@@ -8,6 +8,7 @@
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/ConfidentialTransfer.h>
+#include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/MPTIssue.h>
@@ -110,6 +111,17 @@ ConfidentialMPTConvert::preclaim(PreclaimContext const& ctx)
     auto const sleMptoken = ctx.view.read(keylet::mptoken(issuanceID, account));
     if (!sleMptoken)
         return tecOBJECT_NOT_FOUND;
+
+    // An already-initialized holder has their new ciphertexts homomorphically
+    // added to their existing mirrors, so those mirrors must be encrypted under
+    // the currently registered keys. A first-time convert creates the mirrors
+    // under those keys instead, and has nothing to be stale.
+    if (ctx.view.rules().enabled(featureConfidentialMPTKeyRotation) &&
+        sleMptoken->isFieldPresent(sfIssuerEncryptedBalance) &&
+        !areMirrorsCurrent(*sleIssuance, *sleMptoken))
+    {
+        return tecNO_PERMISSION;
+    }
 
     auto const mptIssue = MPTIssue{issuanceID};
 
@@ -330,6 +342,19 @@ ConfidentialMPTConvert::doApply()
 
         if (auditorEc)
             (*sleMptoken)[sfAuditorEncryptedBalance] = *auditorEc;
+
+        // Initialize key epochs when registering the keys.
+        if (view().rules().enabled(featureConfidentialMPTKeyRotation))
+        {
+            if (auto const epoch = (*sleIssuance)[~sfIssuerKeyEpoch].valueOr(0); epoch != 0)
+                (*sleMptoken)[sfIssuerKeyMirrorEpoch] = epoch;
+
+            if (auditorEc)
+            {
+                if (auto const epoch = (*sleIssuance)[~sfAuditorKeyEpoch].valueOr(0); epoch != 0)
+                    (*sleMptoken)[sfAuditorKeyMirrorEpoch] = epoch;
+            }
+        }
 
         // Spending balance starts at zero. Must use canonical zero encryption
         // (deterministic ciphertext) so the ledger state is reproducible.

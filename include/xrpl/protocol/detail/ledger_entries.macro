@@ -429,6 +429,8 @@ LEDGER_ENTRY(ltMPTOKEN, 0x007f, MPToken, mptoken, ({
     {sfConfidentialBalanceVersion,  SoeDefault},
     {sfIssuerEncryptedBalance,      SoeOptional},
     {sfAuditorEncryptedBalance,     SoeOptional},
+    {sfIssuerKeyMirrorEpoch,        SoeOptional},
+    {sfAuditorKeyMirrorEpoch,       SoeOptional},
     {sfHolderEncryptionKey,         SoeOptional},
 }))
 

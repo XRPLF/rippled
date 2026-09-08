@@ -397,6 +397,29 @@ checkEncryptedAmountFormat(STObject const& object)
     return tesSUCCESS;
 }
 
+bool
+isIssuerMirrorCurrent(STObject const& issuance, STObject const& mptoken)
+{
+    return mptoken.isFieldPresent(sfIssuerEncryptedBalance) &&
+        mptoken[~sfIssuerKeyMirrorEpoch].value_or(0) == issuance[~sfIssuerKeyEpoch].value_or(0);
+}
+
+bool
+isAuditorMirrorCurrent(STObject const& issuance, STObject const& mptoken)
+{
+    if (!issuance.isFieldPresent(sfAuditorEncryptionKey))
+        return true;
+
+    return mptoken.isFieldPresent(sfAuditorEncryptedBalance) &&
+        mptoken[~sfAuditorKeyMirrorEpoch].value_or(0) == issuance[~sfAuditorKeyEpoch].value_or(0);
+}
+
+bool
+areMirrorsCurrent(STObject const& issuance, STObject const& mptoken)
+{
+    return isIssuerMirrorCurrent(issuance, mptoken) && isAuditorMirrorCurrent(issuance, mptoken);
+}
+
 TER
 verifySchnorrProof(Slice const& pubKeySlice, Slice const& proofSlice, uint256 const& contextHash)
 {
