@@ -288,15 +288,15 @@ keys (the dotted form is reserved for resource scope per §2.3.3).
 
 #### Ledger & Job Attributes
 
-| Key                         | Type    | Description                       |
-| --------------------------- | ------- | --------------------------------- |
-| `ledger_hash`               | string  | Ledger hash                       |
-| `ledger_seq`                | int64   | Closed/validated ledger sequence  |
-| `close_time_ripple_epoch_s` | int64   | Close time (Ripple epoch seconds) |
-| `ledger_tx_count`           | int64   | Transaction count                 |
-| `job_type`                  | string  | Job type name                     |
-| `job_queue_ms`              | float64 | Time spent in queue               |
-| `job_worker`                | int64   | Worker thread ID                  |
+| Key                         | Type    | Description                      |
+| --------------------------- | ------- | -------------------------------- |
+| `ledger_hash`               | string  | Ledger hash                      |
+| `ledger_seq`                | int64   | Closed/validated ledger sequence |
+| `close_time_ripple_epoch_s` | int64   | Close time (XRPL epoch seconds)  |
+| `ledger_tx_count`           | int64   | Transaction count                |
+| `job_type`                  | string  | Job type name                    |
+| `job_queue_ms`              | float64 | Time spent in queue              |
+| `job_worker`                | int64   | Worker thread ID                 |
 
 #### PathFinding Attributes
 
