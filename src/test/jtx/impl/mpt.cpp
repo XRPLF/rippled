@@ -648,6 +648,38 @@ MPTTester::checkImmutableFlags(std::uint32_t expectedFlags) const
     });
 }
 
+[[nodiscard]] bool
+MPTTester::checkKeyEpochs(
+    std::optional<std::uint32_t> issuerKeyEpoch,
+    std::optional<std::uint32_t> auditorKeyEpoch) const
+{
+    return forObject([&](SLEP const& sle) -> bool {
+        return (*sle)[~sfIssuerKeyEpoch] == issuerKeyEpoch &&
+            (*sle)[~sfAuditorKeyEpoch] == auditorKeyEpoch;
+    });
+}
+
+[[nodiscard]] bool
+MPTTester::checkEncryptionKeys(
+    std::optional<Account> const& issuerKeyOwner,
+    std::optional<Account> const& auditorKeyOwner) const
+{
+    auto const matches =
+        [this](SLEP const& sle, SF_VL const& field, std::optional<Account> const& owner) {
+            if (!owner)
+                return !sle->isFieldPresent(field);
+
+            auto const expected = getPubKey(*owner);
+            return expected && sle->isFieldPresent(field) &&
+                strHex((*sle)[field]) == strHex(*expected);
+        };
+
+    return forObject([&](SLEP const& sle) -> bool {
+        return matches(sle, sfIssuerEncryptionKey, issuerKeyOwner) &&
+            matches(sle, sfAuditorEncryptionKey, auditorKeyOwner);
+    });
+}
+
 void
 MPTTester::pay(
     Account const& src,

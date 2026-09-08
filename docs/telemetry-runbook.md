@@ -36,11 +36,17 @@ traces_endpoint=http://localhost:4318/v1/traces
 
 ### 3. Build with telemetry support
 
+Follow [BUILD.md](../BUILD.md), adding `-o telemetry=True` so Conan pulls `opentelemetry-cpp`. From a build directory (`.build/`):
+
 ```bash
-conan install . --build=missing -o telemetry=True
-cmake --preset default -Dtelemetry=ON
-cmake --build --preset default
+conan install .. --output-folder . --build missing -o telemetry=True --settings build_type=Release
+cmake -DCMAKE_TOOLCHAIN_FILE:FILEPATH=build/generators/conan_toolchain.cmake -DCMAKE_BUILD_TYPE=Release -Dxrpld=ON -Dtelemetry=ON ..
+cmake --build . --target xrpld
 ```
+
+Conan also writes a `conan-release` CMake preset, so `cmake --preset conan-release -Dtelemetry=ON` works instead of the explicit toolchain line. There is no preset named `default`.
+
+Both telemetry flags are the current default, so omitting them still gives you an instrumented build. Pass them anyway, so the build stays instrumented wherever the default moves.
 
 ## Configuration Reference
 
@@ -982,10 +988,13 @@ count_over_time({service_name="xrpld"} |= "trace_id=" [5m])
 
 ## Disabling Telemetry
 
-Set `enabled=0` in config (runtime disable) or build without the flag:
+Set `enabled=0` in config (runtime disable), or compile telemetry out:
 
 ```bash
-cmake --preset default -Dtelemetry=OFF
+conan install .. --output-folder . --build missing -o telemetry=False --settings build_type=Release
+cmake -DCMAKE_TOOLCHAIN_FILE:FILEPATH=build/generators/conan_toolchain.cmake -DCMAKE_BUILD_TYPE=Release -Dtelemetry=OFF ..
 ```
+
+Both flags are needed, and both must be stated. The default is `ON`, so omitting a flag leaves telemetry compiled in.
 
 When telemetry is compiled out, all trace macros expand to no-ops with zero overhead.
