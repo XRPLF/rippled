@@ -25,6 +25,8 @@
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/UintTypes.h>
 
+#include <cstdint>
+
 namespace xrpl {
 
 template <ValidIssueType T>
@@ -270,6 +272,17 @@ escrowUnlockApplyHelper<MPTIssue>(
         finalAmt,
         ctx.view.rules().enabled(fixTokenEscrowV1) ? amount : finalAmt,
         journal);
+}
+
+template <class T>
+static int32_t
+calculateAdditionalReserve(T const& finishFunction)
+{
+    if (!finishFunction)
+        return 1;
+    // First 500 bytes included in the normal reserve
+    // Each additional 500 bytes requires an additional reserve
+    return 1 + (finishFunction->size() / 500);
 }
 
 }  // namespace xrpl
