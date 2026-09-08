@@ -92,6 +92,9 @@ target/
 # Direnv's directory
 /.direnv
 
+# Direnv's local, per-developer overrides
+/.envrc.local
+
 # clangd cache
 /.cache
 

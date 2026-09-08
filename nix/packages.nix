@@ -106,6 +106,7 @@ in
     llvmVersion
     gccPackage
     llvmPackages
+    leanToolchain
     mkVersionedToolLinks
     mkGcov
     ;
@@ -129,7 +130,6 @@ in
     gnumake
     gnupg # needed for signing commits & codecov/codecov-action
     graphviz
-    leanToolchain # formal verification toolchain
     less # needed for git diff
     mold
     nettools # provides netstat, used to debug failures in CI
