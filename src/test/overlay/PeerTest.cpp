@@ -29,6 +29,7 @@
 #include <xrpl.pb.h>
 
 #include <memory>
+#include <optional>
 #include <utility>
 #include <vector>
 
@@ -97,6 +98,38 @@ void
 PeerTest::resetId()
 {
     id = 0;
+}
+
+bool
+PeerTest::compressionEnabled() const
+{
+    if (compressionEnabled_.has_value())
+    {
+        return *compressionEnabled_;
+    }
+    return PeerImp::compressionEnabled();
+}
+
+void
+PeerTest::compressionEnabled(std::optional<bool> enabled)
+{
+    compressionEnabled_ = enabled;
+}
+
+bool
+PeerTest::txReduceRelayEnabled() const
+{
+    if (reduceRelayEnabled_.has_value())
+    {
+        return *reduceRelayEnabled_;
+    }
+    return PeerImp::txReduceRelayEnabled();
+}
+
+void
+PeerTest::txReduceRelayEnabled(std::optional<bool> enabled)
+{
+    reduceRelayEnabled_ = enabled;
 }
 
 std::shared_ptr<PeerTest>

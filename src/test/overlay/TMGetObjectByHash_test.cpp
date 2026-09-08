@@ -33,11 +33,11 @@ namespace xrpl::test {
 using namespace jtx;
 
 /**
- * Test for TMGetObjectByHash reply size limiting.
+ * Coverage for the TMGetObjectByHash object-count bound.
  *
- * This verifies the fix that limits TMGetObjectByHash replies to
- * tuning::hardMaxReplyNodes to prevent excessive memory usage and
- * potential DoS attacks from peers requesting large numbers of objects.
+ * A generic query names some number of objects; the number of entries the
+ * reply carries is bounded by tuning::kHardMaxReplyNodes. These cases pin that
+ * bound at and either side of its boundary.
  */
 class TMGetObjectByHash_test : public beast::unit_test::Suite
 {
@@ -63,7 +63,7 @@ class TMGetObjectByHash_test : public beast::unit_test::Suite
                 NodeObjectType::Ledger, std::move(data), hash, nodeStore.earliestLedgerSeq());
         }
 
-        // Create a request with more objects than hardMaxReplyNodes
+        // Name every stored object in a single generic query.
         auto request = std::make_shared<protocol::TMGetObjectByHash>();
         request->set_type(protocol::TMGetObjectByHash_ObjectType_otLEDGER);
         request->set_query(true);
@@ -78,17 +78,16 @@ class TMGetObjectByHash_test : public beast::unit_test::Suite
     }
 
     /**
-     * Test that reply is limited to hardMaxReplyNodes when more objects
-     * are requested than the limit allows.
+     * Check the object count a generic-query reply carries.
      *
      * `onMessage(TMGetObjectByHash)` dispatches the generic-query path
      * to the JobQueue, so tests invoke the synchronous processor
      * directly via `runProcessGetObjectByHash`.
      */
     void
-    testReplyLimit(size_t const numObjects, int const expectedReplySize)
+    testReplyObjectCount(size_t const numObjects, int const expectedReplySize)
     {
-        testcase("Reply Limit");
+        testcase("Reply Object Count");
 
         Env env(*this);
         PeerTest::resetId();
@@ -110,7 +109,7 @@ class TMGetObjectByHash_test : public beast::unit_test::Suite
         protocol::TMGetObjectByHash reply;
         BEAST_EXPECT(reply.ParseFromArray(buffer.data() + 6, buffer.size() - 6) == true);
 
-        // Verify the reply is limited to expectedReplySize
+        // The reply carries the expected number of objects.
         BEAST_EXPECT(reply.objects_size() == expectedReplySize);
     }
 
@@ -118,9 +117,9 @@ class TMGetObjectByHash_test : public beast::unit_test::Suite
     run() override
     {
         int const limit = static_cast<int>(tuning::kHardMaxReplyNodes);
-        testReplyLimit(limit + 1, limit);
-        testReplyLimit(limit, limit);
-        testReplyLimit(limit - 1, limit - 1);
+        testReplyObjectCount(limit + 1, limit);
+        testReplyObjectCount(limit, limit);
+        testReplyObjectCount(limit - 1, limit - 1);
     }
 };
 
