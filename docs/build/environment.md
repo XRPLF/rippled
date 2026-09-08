@@ -1,5 +1,5 @@
 Our [build instructions][BUILD.md] assume you have a C++ development
-environment complete with Git, Python, Conan, CMake, and a C++ compiler.
+environment complete with Git, Python, Conan, CMake, Rust, and a C++ compiler.
 This document explains how to set one up.
 
 [BUILD.md]: ../../BUILD.md
@@ -36,18 +36,16 @@ compiler building. Treat support for anything outside the table as best-effort.
 
 Besides a compiler, building `xrpld` requires:
 
-| Tool                                        | Minimum version |
-| ------------------------------------------- | --------------- |
-| [Git](https://git-scm.com/downloads)        | any recent      |
-| [Python](https://www.python.org/downloads/) | 3.11            |
-| [Conan](https://conan.io/downloads.html)    | 2.17            |
-| [CMake](https://cmake.org/download/)        | 3.16            |
+| Tool                                        | Minimum version          |
+| ------------------------------------------- | ------------------------ |
+| [Git](https://git-scm.com/downloads)        | any recent               |
+| [Python](https://www.python.org/downloads/) | 3.11                     |
+| [Conan](https://conan.io/downloads.html)    | 2.17                     |
+| [CMake](https://cmake.org/download/)        | 3.16                     |
+| [Rust](https://rustup.rs)                   | 1.95 (see [Rust](#rust)) |
 
 On Linux and macOS, the [Nix development shell](./nix.md) provides all of them
 (see below). On Windows they have to be installed manually.
-
-Building with `-Drust=ON` additionally requires a Rust toolchain, see
-[Rust](#rust). A default build does not, so it is not in the table above.
 
 Once they are in place, verify that everything is installed and runnable with:
 
@@ -122,18 +120,14 @@ manually:
   "x64 Native Tools Command Prompt". CI configures CMake with the
   `Visual Studio 18 2026` generator.
 - [Git for Windows](https://git-scm.com/download/win)
-- Python, Conan, and CMake, at the versions listed in
+- Python, Conan, CMake, and Rust, at the versions listed in
   [Required tools](#required-tools).
-- a [Rust toolchain](https://rustup.rs) — only needed to build with
-  `-Drust=ON`, see [Rust](#rust)
 
 ## Rust
 
 The repository contains a Rust workspace in [`crates/`](../../crates), whose
-crates are exposed to C++ through [cxx](https://cxx.rs) bindings. It is **not**
-part of a default build: the CMake `rust` option is OFF by default, and with it
-off no Rust toolchain is needed. It is only required when configuring with
-`-Drust=ON` (which is what CI does), see [Options](../../BUILD.md#options).
+crates are exposed to C++ through [cxx](https://cxx.rs) bindings and compiled by
+the CMake build, so a Rust toolchain is required.
 
 The toolchain (`cargo`, `rustc`) is pinned to the channel in
 [`rust-toolchain.toml`](../../rust-toolchain.toml) at the repository root. If

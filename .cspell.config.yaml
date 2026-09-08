@@ -7,6 +7,7 @@ ignorePaths:
   - cmake/**
   - LICENSE.md
   - .clang-tidy
+  - src/test/app/wasm_fixtures/*.c
   - nix/check-tools/*.txt # generated, and full of Nix store hashes
 language: en
 allowCompoundWords: true # TODO (#6334)
@@ -68,6 +69,7 @@ words:
   - Btrfs
   - Buildx
   - canonicality
+  - cdylib
   - canonicalised
   - cctools
   - changespq
@@ -105,6 +107,7 @@ words:
   - deleteme
   - demultiplexer
   - deserializaton
+  - desugars
   - desync
   - desynced
   - determ
@@ -131,6 +134,7 @@ words:
   - gcov
   - gcovr
   - ghead
+  - gmock
   - Gnutella
   - godexsoft
   - gpgcheck
@@ -140,7 +144,9 @@ words:
   - hwaddress
   - hwrap
   - ifndef
+  - impls
   - inequation
+  - initialiser
   - insuf
   - insuff
   - invasively
@@ -250,6 +256,7 @@ words:
   - pyparsing
   - qalloc
   - qbsprofile
+  - qself
   - queuable
   - Raphson
   - rcflags
@@ -307,6 +314,7 @@ words:
   - STATSDCOLLECTOR
   - stissue
   - stnum
+  - stnumber
   - stobj
   - stobject
   - stpath
@@ -347,6 +355,7 @@ words:
   - unflatten
   - unfund
   - unimpair
+  - unmetered
   - unroutable
   - unscalable
   - unserviced
@@ -367,6 +376,8 @@ words:
   - vfalco
   - vinnie
   - wasmi
+  - wasmparser
+  - Werror
   - wextra
   - wptr
   - writeme
@@ -375,6 +386,7 @@ words:
   - xbridge
   - xchain
   - xcrun
+  - xfloat
   - ximinez
   - XMACRO
   - xored

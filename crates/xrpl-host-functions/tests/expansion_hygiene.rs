@@ -1,0 +1,34 @@
+//! `host_functions!` must work outside the crate that declares the ABI: the only
+//! names its expansion needs are the ones the declarations themselves spell.
+
+use xrpl_host_functions::HostResult;
+use xrpl_host_functions_macros::host_functions;
+
+host_functions! {
+    /// Answers with the number it was given.
+    #[gas = 7]
+    #[wasm_name = "ping"]
+    fn ping(&self, number: i32) -> HostResult<i32>;
+}
+
+struct Host;
+
+impl HostFunctions for Host {
+    fn ping(&self, number: i32) -> HostResult<i32> {
+        Ok(number)
+    }
+}
+
+#[test]
+fn the_generated_table_stands_on_its_own() {
+    assert_eq!(HostFunctionSpec::ALL.len(), 1);
+    assert_eq!(HostFunctionSpec::Ping.wasm_name(), "ping");
+    assert_eq!(HostFunctionSpec::Ping.gas(), 7);
+}
+
+/// The generated trait is implementable from another crate, which is the point of
+/// declaring the ABI in a library at all.
+#[test]
+fn the_generated_trait_is_implementable_here() {
+    assert_eq!(Host.ping(3), Ok(3));
+}

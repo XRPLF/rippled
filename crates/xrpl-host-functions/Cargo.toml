@@ -1,0 +1,7 @@
+[package]
+name = "xrpl-host-functions"
+version = "0.1.0"
+edition.workspace = true
+
+[dependencies]
+xrpl-host-functions-macros.path = "../xrpl-host-functions-macros"

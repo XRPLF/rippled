@@ -129,8 +129,10 @@ enum TEMcodes : TERUnderlyingType {
     temARRAY_TOO_LARGE,
     temBAD_TRANSFER_FEE,
     temINVALID_INNER_BATCH,
+
     temBAD_MPT,
     temBAD_CIPHERTEXT,
+    temINVALID_BYTECODE,
 };
 
 //------------------------------------------------------------------------------
@@ -370,6 +372,7 @@ enum TECcodes : TERUnderlyingType {
     tecNO_DELEGATE_PERMISSION = 198,
     tecBAD_PROOF = 199,
     tecNO_SPONSOR_PERMISSION = 200,
+    tecOUT_OF_GAS = 201,
 };
 
 //------------------------------------------------------------------------------

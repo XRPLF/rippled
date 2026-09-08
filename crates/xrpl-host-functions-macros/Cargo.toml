@@ -1,0 +1,18 @@
+[package]
+name = "xrpl-host-functions-macros"
+version = "0.1.0"
+edition.workspace = true
+
+[lib]
+proc-macro = true
+
+[dependencies]
+syn = { version = "3", features = ["full"] }
+quote = "1"
+proc-macro2 = "1"
+
+# The doctest declares host functions returning `HostResult`, which the facade
+# crate hand-writes. Cargo allows this cycle because dev-dependencies are outside
+# the library build graph.
+[dev-dependencies]
+xrpl-host-functions.path = "../xrpl-host-functions"

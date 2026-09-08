@@ -1,6 +1,6 @@
-| :warning: **WARNING** :warning:                                                                                                                                                                                                                                                                                                                                                                                                                                               |
-| ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| These instructions assume you have a C++ development environment ready with Git, Python, Conan, CMake, and a C++ compiler. For help setting one up on Linux, macOS, or Windows, [see this guide](./docs/build/environment.md).<br><br>These instructions also assume a basic familiarity with Conan and CMake. If you are unfamiliar with Conan, you can read our [crash course](./docs/build/conan.md) or the official [Getting Started][conan-getting-started] walkthrough. |
+| :warning: **WARNING** :warning:                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| These instructions assume you have a C++ development environment ready with Git, Python, Conan, CMake, Rust, and a C++ compiler. For help setting one up on Linux, macOS, or Windows, [see this guide](./docs/build/environment.md).<br><br>These instructions also assume a basic familiarity with Conan and CMake. If you are unfamiliar with Conan, you can read our [crash course](./docs/build/conan.md) or the official [Getting Started][conan-getting-started] walkthrough. |
 
 ## Minimum Requirements
 
@@ -304,7 +304,6 @@ See [Sanitizers docs](./docs/build/sanitizers.md) for more details.
 | ---------------- | ------------- | ----------------------------------------------------------------------------- |
 | `assert`         | OFF           | Force enabling assertions.                                                    |
 | `coverage`       | OFF           | Prepare the coverage report.                                                  |
-| `rust`           | OFF           | Build the Rust crates and the C++ code that depends on them.                  |
 | `tests`          | OFF           | Build tests.                                                                  |
 | `unity`          | OFF           | Configure a unity build.                                                      |
 | `verify_headers` | ON            | Make the `verify-headers` target available to compile each header on its own. |
@@ -319,23 +318,15 @@ builds may be faster for incremental builds, and can be helpful for detecting
 
 ### Rust crates
 
-The Rust crates in `crates/` are only part of the build when `rust` is ON. With
-`-Drust=OFF` (the default) the `crates` directory is not added to the build, no
-cxxbridge bindings are generated, and the C++ tests that exercise the Rust
-interop are not compiled — so no Rust toolchain is needed. CI builds always pass
-`-Drust=ON`.
-
-With `-Drust=ON` you need one extra dependency: a Rust toolchain (`cargo`,
-`rustc`) matching the channel pinned in
-[`rust-toolchain.toml`](./rust-toolchain.toml), which compiles the crates and
-generates the cxxbridge bindings. It is provided by the
-[Nix development shell](./docs/build/nix.md), so `-Drust=ON` works there without
-any extra setup; otherwise install it as described in
-[Rust](./docs/build/environment.md#rust).
+The build compiles the Rust workspace in `crates/` and generates the cxxbridge
+bindings the C++ side includes, so it needs a Rust toolchain (`cargo`, `rustc`)
+at the channel pinned in [`rust-toolchain.toml`](./rust-toolchain.toml). The
+[Nix development shell](./docs/build/nix.md) provides one; otherwise install it
+as described in [Rust](./docs/build/environment.md#rust).
 
 The crates also have their own Rust unit tests. Those are run with `cargo` and
-need only the Rust toolchain, independently of CMake and of the `rust` option
-(CI runs them with `cargo nextest`):
+need only the Rust toolchain, independently of CMake (CI runs them with
+`cargo nextest`):
 
 ```bash
 cargo test --manifest-path crates/Cargo.toml --workspace

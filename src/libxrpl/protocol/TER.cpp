@@ -108,6 +108,7 @@ transResults()
         MAKE_ERROR(tecPRECISION_LOSS,                "The amounts used by the transaction cannot interact."),
         MAKE_ERROR(tecBAD_PROOF,                     "Proof cannot be verified"),
         MAKE_ERROR(tecNO_SPONSOR_PERMISSION,         "Sponsor has not authorized this transaction."),
+        MAKE_ERROR(tecOUT_OF_GAS,                    "The WASM code ran out of gas during execution."),
 
         MAKE_ERROR(tefALREADY,                     "The exact transaction was already in this ledger."),
         MAKE_ERROR(tefBAD_ADD_AUTH,                "Not authorized to add account."),
@@ -204,6 +205,7 @@ transResults()
         MAKE_ERROR(temBAD_TRANSFER_FEE,          "Malformed: Transfer fee is outside valid range."),
         MAKE_ERROR(temINVALID_INNER_BATCH,       "Malformed: Invalid inner batch transaction."),
         MAKE_ERROR(temBAD_CIPHERTEXT,            "Malformed: Invalid ciphertext."),
+        MAKE_ERROR(temINVALID_BYTECODE,          "Malformed: Provided byte code is invalid."),
 
         MAKE_ERROR(terRETRY,                  "Retry transaction."),
         MAKE_ERROR(terFUNDS_SPENT,            "DEPRECATED."),
