@@ -97,6 +97,8 @@ let
     version = llvmVersion;
     tools = [ "run-clang-tidy" ];
   };
+
+  leanToolchain = pkgs.callPackage ./lean4.nix { };
 in
 {
   inherit
@@ -127,6 +129,7 @@ in
     gnumake
     gnupg # needed for signing commits & codecov/codecov-action
     graphviz
+    leanToolchain # formal verification toolchain
     less # needed for git diff
     mold
     nettools # provides netstat, used to debug failures in CI
