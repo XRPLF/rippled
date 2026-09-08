@@ -15,39 +15,38 @@ The authoritative `[telemetry]` example lives in `cfg/xrpld-example.cfg`. Teleme
 
 ### 5.1.2 Configuration Options Summary
 
-| Option                     | Type   | Default                           | Description                                                                                                |
-| -------------------------- | ------ | --------------------------------- | ---------------------------------------------------------------------------------------------------------- |
-| `enabled`                  | 0 or 1 | `0`                               | Enable/disable telemetry                                                                                   |
-| `traces_endpoint`          | string | `http://localhost:4318/v1/traces` | Full OTLP/HTTP URL for spans, used verbatim                                                                |
-| `use_tls`                  | 0 or 1 | `0`                               | Enable TLS for exporter connection                                                                         |
-| `tls_ca_cert`              | string | `""`                              | Path to CA certificate file                                                                                |
-| `tls_client_cert`          | string | `""`                              | Client cert (PEM) for mTLS; empty = one-way; if `enabled=1`, needs key + `use_tls=1` or startup fails      |
-| `tls_client_key`           | string | `""`                              | Private key (PEM) for `tls_client_cert`; if set with `enabled=1`, needs the cert + `use_tls=1` or fails    |
-| `batch_size`               | uint   | `512`                             | Spans per export batch                                                                                     |
-| `batch_delay_ms`           | uint   | `5000`                            | Max delay before sending batch (ms)                                                                        |
-| `max_queue_size`           | uint   | `2048`                            | Maximum queued spans                                                                                       |
-| `trace_transactions`       | 0 or 1 | `1`                               | Enable transaction tracing                                                                                 |
-| `trace_consensus`          | 0 or 1 | `1`                               | Enable consensus tracing                                                                                   |
-| `trace_rpc`                | 0 or 1 | `1`                               | Enable RPC tracing                                                                                         |
-| `trace_peer`               | 0 or 1 | `1`                               | Enable peer message tracing (high volume)                                                                  |
-| `trace_ledger`             | 0 or 1 | `1`                               | Enable ledger tracing                                                                                      |
-| `tx_trace_strategy`        | string | `"deterministic"`                 | TX trace ID strategy: `"deterministic"` (trace_id = txHash[0:16]) or `"attribute"` (random)                |
-| `consensus_trace_strategy` | string | `"deterministic"`                 | Consensus trace ID strategy: `"deterministic"` (trace_id = prevLedgerHash[0:16]) or `"attribute"` (random) |
-| `service_name`             | string | `"xrpld"`                         | Service name (`service.name`) for traces and metrics                                                       |
-| `service_instance_id`      | string | `<node_pubkey>`                   | Instance identifier                                                                                        |
+| Option                     | Type   | Default                           | Description                                                                                                             |
+| -------------------------- | ------ | --------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| `enabled`                  | 0 or 1 | `0`                               | Enable/disable telemetry                                                                                                |
+| `traces_endpoint`          | string | `http://localhost:4318/v1/traces` | Full OTLP/HTTP URL for spans, used verbatim                                                                             |
+| `use_tls`                  | 0 or 1 | `0`                               | Enable TLS for exporter connection                                                                                      |
+| `tls_ca_cert`              | string | `""`                              | Path to CA certificate file                                                                                             |
+| `tls_client_cert`          | string | `""`                              | Client cert (PEM) for mTLS; empty = one-way; if `enabled=1`, needs key + `use_tls=1` or startup fails                   |
+| `tls_client_key`           | string | `""`                              | Private key (PEM) for `tls_client_cert`; if set with `enabled=1`, needs the cert + `use_tls=1` or fails                 |
+| `batch_size`               | uint   | `512`                             | Spans per export batch                                                                                                  |
+| `batch_delay_ms`           | uint   | `5000`                            | Max delay before sending batch (ms)                                                                                     |
+| `max_queue_size`           | uint   | `2048`                            | Maximum queued spans                                                                                                    |
+| `trace_transactions`       | 0 or 1 | `1`                               | Enable transaction tracing                                                                                              |
+| `trace_consensus`          | 0 or 1 | `1`                               | Enable consensus tracing                                                                                                |
+| `trace_rpc`                | 0 or 1 | `1`                               | Enable RPC tracing                                                                                                      |
+| `trace_peer`               | 0 or 1 | `1`                               | Enable peer message tracing (high volume)                                                                               |
+| `trace_ledger`             | 0 or 1 | `1`                               | Enable ledger tracing                                                                                                   |
+| `tx_trace_strategy`        | string | `"deterministic"`                 | TX trace ID strategy: `"deterministic"` (trace_id = txHash[0:16]) or `"attribute"` (random)                             |
+| `consensus_trace_strategy` | string | `"deterministic"`                 | Consensus trace ID strategy: `"deterministic"` (trace_id = prevLedgerHash[0:16]) or `"random"` (experimental, not used) |
+| `service_name`             | string | `"xrpld"`                         | Service name (`service.name`) for traces and metrics                                                                    |
+| `service_instance_id`      | string | `<node_pubkey>`                   | Instance identifier                                                                                                     |
 
 **Planned (not yet implemented)**: the following options appear in the design
 documents but are not parsed by `TelemetryConfig.cpp` in Phase 1b and later
 phases. They will be added as the corresponding subsystems are instrumented:
 
-| Option                     | Planned Phase | Purpose                                                                 |
-| -------------------------- | ------------- | ----------------------------------------------------------------------- |
-| `exporter`                 | Future        | Select between OTLP/HTTP and OTLP/gRPC                                  |
-| `trace_pathfind`           | Phase 2       | Path computation tracing toggle                                         |
-| `trace_txq`                | Phase 3       | Transaction queue tracing toggle                                        |
-| `trace_validator`          | Future        | Validator list / manifest update tracing                                |
-| `trace_amendment`          | Future        | Amendment voting tracing                                                |
-| `consensus_trace_strategy` | Phase 4       | Trace ID strategy for consensus rounds (`deterministic` \| `attribute`) |
+| Option            | Planned Phase | Purpose                                  |
+| ----------------- | ------------- | ---------------------------------------- |
+| `exporter`        | Future        | Select between OTLP/HTTP and OTLP/gRPC   |
+| `trace_pathfind`  | Phase 2       | Path computation tracing toggle          |
+| `trace_txq`       | Phase 3       | Transaction queue tracing toggle         |
+| `trace_validator` | Future        | Validator list / manifest update tracing |
+| `trace_amendment` | Future        | Amendment voting tracing                 |
 
 ---
 
