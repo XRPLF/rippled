@@ -17,7 +17,7 @@
 #include <xrpl/basics/strHex.h>
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/json/json_value.h>
-#include <xrpl/ledger/helpers/TokenHelpers.h>
+#include <xrpl/ledger/helpers/MPTokenHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/ConfidentialTransfer.h>
@@ -645,6 +645,38 @@ MPTTester::checkImmutableFlags(std::uint32_t expectedFlags) const
     // sfImmutableFlags is soeDEFAULT, defaulting to 0 if not present.
     return forObject([&](SLEP const& sle) -> bool {
         return sle->getFieldU32(sfImmutableFlags) == expectedFlags;
+    });
+}
+
+[[nodiscard]] bool
+MPTTester::checkKeyEpochs(
+    std::optional<std::uint32_t> issuerKeyEpoch,
+    std::optional<std::uint32_t> auditorKeyEpoch) const
+{
+    return forObject([&](SLEP const& sle) -> bool {
+        return (*sle)[~sfIssuerKeyEpoch] == issuerKeyEpoch &&
+            (*sle)[~sfAuditorKeyEpoch] == auditorKeyEpoch;
+    });
+}
+
+[[nodiscard]] bool
+MPTTester::checkEncryptionKeys(
+    std::optional<Account> const& issuerKeyOwner,
+    std::optional<Account> const& auditorKeyOwner) const
+{
+    auto const matches =
+        [this](SLEP const& sle, SF_VL const& field, std::optional<Account> const& owner) {
+            if (!owner)
+                return !sle->isFieldPresent(field);
+
+            auto const expected = getPubKey(*owner);
+            return expected && sle->isFieldPresent(field) &&
+                strHex((*sle)[field]) == strHex(*expected);
+        };
+
+    return forObject([&](SLEP const& sle) -> bool {
+        return matches(sle, sfIssuerEncryptionKey, issuerKeyOwner) &&
+            matches(sle, sfAuditorEncryptionKey, auditorKeyOwner);
     });
 }
 
