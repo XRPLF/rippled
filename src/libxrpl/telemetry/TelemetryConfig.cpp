@@ -19,6 +19,7 @@
 #include <optional>
 #include <stdexcept>
 #include <string>
+#include <string_view>
 #include <system_error>
 
 namespace xrpl::telemetry {
@@ -183,6 +184,34 @@ requireReadableFile(std::string const& path, char const* configKey)
     }
 }
 
+/**
+ * Throw unless an endpoint URL is one the client certificate can be used on.
+ *
+ * The OTLP/HTTP exporter turns TLS on from the URL scheme alone, and matches
+ * "https:" exactly and case-sensitively. So a client certificate only reaches
+ * the collector on an https endpoint, and this check is what holds that
+ * invariant: with a client certificate configured, the endpoint is an https URL.
+ * "https://" is required in full, which is stricter than the exporter's own
+ * test, so anything this accepts the exporter also treats as TLS.
+ *
+ * @param endpoint   Endpoint URL from the config, or the built-in default.
+ * @param configKey  Config key the URL came from, named in the message.
+ * @throws std::runtime_error  If the URL does not begin with "https://".
+ */
+void
+requireHttpsEndpoint(std::string const& endpoint, char const* configKey)
+{
+    constexpr std::string_view kHttpsPrefix{"https://"};
+
+    if (std::string_view{endpoint}.starts_with(kHttpsPrefix))
+        return;
+
+    Throw<std::runtime_error>(
+        std::string("Invalid value '") + configKey + "' in " + kSectionLabel +
+        ": must start with '" + std::string{kHttpsPrefix} + "' when " + key::tlsClientCert +
+        " is set, but is '" + endpoint + "'.");
+}
+
 }  // namespace
 
 Telemetry::Setup
@@ -237,6 +266,15 @@ makeTelemetrySetup(
                 "[telemetry] tls_client_cert/tls_client_key require use_tls=1 "
                 "(set use_tls=1 to enable mutual TLS, or remove the cert paths).");
         }
+
+        // Still inside the enabled branch, and checked before the files are
+        // opened so a scheme problem is not hidden behind a path problem. The
+        // exporter reads TLS off the endpoint scheme, so a client certificate is
+        // only presented on an https endpoint. tls_ca_cert is left out of this
+        // check: it only names a trust store, while a client certificate is this
+        // node's own identity and has to reach the collector to mean anything.
+        if (!setup.tlsClientCertPath.empty())
+            requireHttpsEndpoint(setup.tracesEndpoint, key::tracesEndpoint);
 
         // Still inside the enabled branch. The exporter opens these files only
         // when TLS is on, so check them only then: a bad path behind use_tls=0
