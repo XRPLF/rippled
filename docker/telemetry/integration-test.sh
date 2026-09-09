@@ -38,6 +38,12 @@ DEST_ACCOUNT="" # Generated dynamically via wallet_propose
 TEMPO="http://localhost:3200"
 PROM="http://localhost:9090"
 
+# Hard ceiling on every curl probe below. curl has no overall timeout of its
+# own, so a server that accepts the connection and then never answers parks a
+# poll loop forever and its attempt count stops bounding anything. 5 s is well
+# above a healthy reply, so only a wedged server hits the ceiling.
+CURL_MAX_TIME=5
+
 # Counters for pass/fail
 PASS=0
 FAIL=0
@@ -76,7 +82,7 @@ check_span() {
     # block_retention (tempo.yaml, 1h) on a named volume, so without a bound
     # an older run's spans answer for this one. The end margin covers spans
     # exported while this query is in flight.
-    count=$(curl -sfG "$TEMPO/api/search" \
+    count=$(curl -sfG --max-time "$CURL_MAX_TIME" "$TEMPO/api/search" \
         --data-urlencode "q={resource.service.name=\"xrpld\" && name=\"$op\"}" \
         --data-urlencode "start=$RUN_START" \
         --data-urlencode "end=$(($(date +%s) + 60))" \
@@ -179,7 +185,7 @@ for attempt in $(seq 1 30); do
     # The OTLP HTTP endpoint returns 405 for GET (expects POST), which
     # means it is listening.  curl -sf would fail on 405, so we check
     # the HTTP status code explicitly.
-    status=$(curl -so /dev/null -w '%{http_code}' http://localhost:4318/ 2>/dev/null || echo 000)
+    status=$(curl -so /dev/null -w '%{http_code}' --max-time "$CURL_MAX_TIME" http://localhost:4318/ 2>/dev/null || echo 000)
     if [ "$status" != "000" ]; then
         log "otel-collector ready (attempt $attempt, HTTP $status)."
         break
@@ -192,7 +198,7 @@ done
 
 log "Waiting for Tempo to be ready..."
 for attempt in $(seq 1 30); do
-    if curl -sf "$TEMPO/ready" >/dev/null 2>&1; then
+    if curl -sf --max-time "$CURL_MAX_TIME" "$TEMPO/ready" >/dev/null 2>&1; then
         log "Tempo ready (attempt $attempt)."
         break
     fi
@@ -243,7 +249,7 @@ TEMP_PID=$!
 log "Temporary xrpld started (PID $TEMP_PID), waiting for RPC..."
 
 for attempt in $(seq 1 30); do
-    if curl -sf http://localhost:5099 -d '{"method":"server_info"}' >/dev/null 2>&1; then
+    if curl -sf --max-time "$CURL_MAX_TIME" http://localhost:5099 -d '{"method":"server_info"}' >/dev/null 2>&1; then
         log "Temporary xrpld RPC ready (attempt $attempt)."
         break
     fi
@@ -258,7 +264,7 @@ declare -a SEEDS
 declare -a PUBKEYS
 
 for i in $(seq 1 "$NUM_NODES"); do
-    result=$(curl -sf http://localhost:5099 -d '{"method":"validation_create"}')
+    result=$(curl -sf --max-time "$CURL_MAX_TIME" http://localhost:5099 -d '{"method":"validation_create"}')
     seed=$(echo "$result" | jq -r '.result.validation_seed')
     pubkey=$(echo "$result" | jq -r '.result.validation_public_key')
     if [ -z "$seed" ] || [ "$seed" = "null" ]; then
@@ -414,7 +420,7 @@ while [ "$nodes_ready" -lt "$NUM_NODES" ]; do
     nodes_ready=0
     for i in $(seq 1 "$NUM_NODES"); do
         RPC_PORT=$((RPC_PORT_BASE + i - 1))
-        state=$(curl -sf "http://localhost:$RPC_PORT" \
+        state=$(curl -sf --max-time "$CURL_MAX_TIME" "http://localhost:$RPC_PORT" \
             -d '{"method":"server_info"}' 2>/dev/null |
             jq -r '.result.info.server_state' 2>/dev/null || echo "unreachable")
         if [ "$state" = "proposing" ]; then
@@ -442,7 +448,7 @@ fi
 # ---------------------------------------------------------------------------
 log "Waiting for first validated ledger..."
 for attempt in $(seq 1 60); do
-    val_seq=$(curl -sf "http://localhost:$RPC_PORT_BASE" \
+    val_seq=$(curl -sf --max-time "$CURL_MAX_TIME" "http://localhost:$RPC_PORT_BASE" \
         -d '{"method":"server_info"}' 2>/dev/null |
         jq -r '.result.info.validated_ledger.seq // 0' 2>/dev/null || echo 0)
     if [ "$val_seq" -gt 2 ] 2>/dev/null; then
@@ -460,11 +466,11 @@ done
 # ---------------------------------------------------------------------------
 log "Exercising RPC spans..."
 
-curl -sf "http://localhost:$RPC_PORT_BASE" \
+curl -sf --max-time "$CURL_MAX_TIME" "http://localhost:$RPC_PORT_BASE" \
     -d '{"method":"server_info"}' >/dev/null
-curl -sf "http://localhost:$RPC_PORT_BASE" \
+curl -sf --max-time "$CURL_MAX_TIME" "http://localhost:$RPC_PORT_BASE" \
     -d '{"method":"server_state"}' >/dev/null
-curl -sf "http://localhost:$RPC_PORT_BASE" \
+curl -sf --max-time "$CURL_MAX_TIME" "http://localhost:$RPC_PORT_BASE" \
     -d '{"method":"ledger","params":[{"ledger_index":"current"}]}' >/dev/null
 
 log "RPC commands sent. Waiting 5s for batch export..."
@@ -479,7 +485,7 @@ log "Submitting Payment transaction..."
 log "  Generating destination wallet..."
 # Guarded: under set -e an unguarded curl failure would abort the whole
 # script, so the fallback below could never run.
-wallet_result=$(curl -sf "http://localhost:$RPC_PORT_BASE" \
+wallet_result=$(curl -sf --max-time "$CURL_MAX_TIME" "http://localhost:$RPC_PORT_BASE" \
     -d '{"method":"wallet_propose"}') || wallet_result=""
 DEST_ACCOUNT=$(echo "$wallet_result" | jq -r '.result.account_id' 2>/dev/null || echo "")
 if [ -z "$DEST_ACCOUNT" ] || [ "$DEST_ACCOUNT" = "null" ]; then
@@ -489,13 +495,13 @@ fi
 log "  Destination: $DEST_ACCOUNT"
 
 # Get genesis account info
-acct_result=$(curl -sf "http://localhost:$RPC_PORT_BASE" \
+acct_result=$(curl -sf --max-time "$CURL_MAX_TIME" "http://localhost:$RPC_PORT_BASE" \
     -d "{\"method\":\"account_info\",\"params\":[{\"account\":\"$GENESIS_ACCOUNT\"}]}") || acct_result=""
 seq_num=$(echo "$acct_result" | jq -r '.result.account_data.Sequence' 2>/dev/null || echo "unknown")
 log "  Genesis account sequence: $seq_num"
 
 # Submit payment
-submit_result=$(curl -sf "http://localhost:$RPC_PORT_BASE" \
+submit_result=$(curl -sf --max-time "$CURL_MAX_TIME" "http://localhost:$RPC_PORT_BASE" \
     -d "{\"method\":\"submit\",\"params\":[{\"secret\":\"$GENESIS_SEED\",\"tx_json\":{\"TransactionType\":\"Payment\",\"Account\":\"$GENESIS_ACCOUNT\",\"Destination\":\"$DEST_ACCOUNT\",\"Amount\":\"10000000\"}}]}") || submit_result=""
 
 engine_result=$(echo "$submit_result" | jq -r '.result.engine_result' 2>/dev/null || echo "unknown")
@@ -517,7 +523,7 @@ sleep 15
 log "Verifying spans in Tempo..."
 
 # Check service registration
-services=$(curl -sf "$TEMPO/api/v2/search/tag/resource.service.name/values" |
+services=$(curl -sf --max-time "$CURL_MAX_TIME" "$TEMPO/api/v2/search/tag/resource.service.name/values" |
     jq -r '.tagValues[].value' 2>/dev/null || echo "")
 # Whole-line match: a substring match would also accept a value that merely
 # contains "xrpld". This endpoint ignores start/end (measured), so its only
@@ -568,7 +574,7 @@ log "--- Spanmetrics ---"
 log "Waiting 20s for Prometheus scrape cycle..."
 sleep 20
 
-calls_count=$(curl -sf "$PROM/api/v1/query?query=traces_span_metrics_calls_total" |
+calls_count=$(curl -sf --max-time "$CURL_MAX_TIME" "$PROM/api/v1/query?query=traces_span_metrics_calls_total" |
     jq '.data.result | length' 2>/dev/null || echo 0)
 if [ "$calls_count" -gt 0 ]; then
     ok "Prometheus: traces_span_metrics_calls_total ($calls_count series)"
@@ -576,7 +582,7 @@ else
     fail "Prometheus: traces_span_metrics_calls_total (0 series)"
 fi
 
-duration_count=$(curl -sf "$PROM/api/v1/query?query=traces_span_metrics_duration_milliseconds_count" |
+duration_count=$(curl -sf --max-time "$CURL_MAX_TIME" "$PROM/api/v1/query?query=traces_span_metrics_duration_milliseconds_count" |
     jq '.data.result | length' 2>/dev/null || echo 0)
 if [ "$duration_count" -gt 0 ]; then
     ok "Prometheus: duration histogram ($duration_count series)"
@@ -585,7 +591,7 @@ else
 fi
 
 # Check Grafana
-if curl -sf http://localhost:3000/api/health >/dev/null 2>&1; then
+if curl -sf --max-time "$CURL_MAX_TIME" http://localhost:3000/api/health >/dev/null 2>&1; then
     ok "Grafana: healthy at localhost:3000"
 else
     fail "Grafana: not reachable at localhost:3000"
@@ -602,7 +608,7 @@ sleep 20
 check_statsd_metric() {
     local metric_name="$1"
     local result
-    result=$(curl -sf "$PROM/api/v1/query?query=$metric_name" |
+    result=$(curl -sf --max-time "$CURL_MAX_TIME" "$PROM/api/v1/query?query=$metric_name" |
         jq '.data.result | length' 2>/dev/null || echo 0)
     if [ "$result" -gt 0 ]; then
         ok "StatsD: $metric_name ($result series)"
