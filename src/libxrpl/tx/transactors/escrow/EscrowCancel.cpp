@@ -212,7 +212,8 @@ EscrowCancel::doApply()
         }
     }
 
-    decreaseOwnerCountForObject(ctx_.view(), sle, slep, 1, ctx_.journal);
+    auto const reserveToSubtract = calculateAdditionalReserve((*slep)[~sfBytecode]);
+    decreaseOwnerCountForObject(ctx_.view(), sle, slep, reserveToSubtract, ctx_.journal);
 
     // Remove escrow from ledger
     ctx_.view().erase(slep);

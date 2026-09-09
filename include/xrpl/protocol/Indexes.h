@@ -237,6 +237,12 @@ page(Keylet const& root, std::uint64_t const index = 0) noexcept
 Keylet
 escrow(AccountID const& src, SeqProxy const& seq) noexcept;
 
+inline Keylet
+escrow(uint256 const& key) noexcept
+{
+    return {ltESCROW, key};
+}
+
 /**
  * A PaymentChannel
  */
