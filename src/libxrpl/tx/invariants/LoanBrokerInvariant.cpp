@@ -38,21 +38,18 @@ ValidLoanBroker::visitEntry(InvariantEntry const& entry)
     //   (c) DebtTotal and OwnerCount were zero before deletion
     // `before` is the pre-transaction state, which is what
     // LoanBrokerDelete::preclaim reads. Erased trust lines and MPTokens need no
-    // special handling here: the non-delete branch below already records them.
-    if (isDelete)
+    // special handling here: after is never null, so the type dispatch below
+    // still records them.
+    if (isDelete && before->getType() == ltLOAN_BROKER)
     {
-        if (before->getType() == ltLOAN_BROKER)
+        if (deletedBroker_)
         {
-            if (deletedBroker_)
-            {
-                multipleBrokerDeletions_ = true;
-            }
-            else
-            {
-                deletedBroker_ = before;
-            }
+            multipleBrokerDeletions_ = true;
         }
-        return;
+        else
+        {
+            deletedBroker_ = before;
+        }
     }
 
     if (after->getType() == ltLOAN_BROKER)
