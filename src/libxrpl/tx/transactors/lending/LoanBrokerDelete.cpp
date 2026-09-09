@@ -94,21 +94,37 @@ LoanBrokerDelete::preclaim(PreclaimContext const& ctx)
 
     auto const coverAvailable = STAmount{asset, sleBroker->at(sfCoverAvailable)};
     // If there are assets in the cover, broker will receive them on deletion.
-    // So we need to check if the broker owner is deep frozen for that asset.
     if (coverAvailable > beast::kZero)
     {
+        auto const brokerPseudo = sleBroker->at(sfAccount);
+
+        // Pre-fixCleanup3_4_0: only freeze checks apply to the cover payout.
+        // Post-fixCleanup3_4_0: apply the cover-withdraw transfer and authorization checks too.
+        if (ctx.view.rules().enabled(fixCleanup3_4_0))
+        {
+            auto const waive = ctx.view.rules().enabled(fixCleanup3_2_0) ? WaiveMPTCanTransfer::Yes
+                                                                         : WaiveMPTCanTransfer::No;
+            if (auto const ret = canTransfer(ctx.view, asset, brokerPseudo, brokerOwner, waive))
+                return ret;
+
+            if (auto const ret = requireAuth(ctx.view, asset, brokerOwner, AuthType::WeakAuth))
+                return ret;
+
+            if (!holdingExists(ctx.view, brokerOwner, asset))
+            {
+                if (auto const ret = canAddHolding(ctx.view, asset); !isTesSuccess(ret))
+                    return ret;
+            }
+        }
+
         if (auto const ret = checkDeepFrozen(ctx.view, brokerOwner, asset))
         {
             JLOG(ctx.j.warn()) << "Broker owner account is frozen.";
             return ret;
         }
-    }
 
-    if (ctx.view.rules().enabled(fixCleanup3_2_0))
-    {
-        if (coverAvailable > beast::kZero)
+        if (ctx.view.rules().enabled(fixCleanup3_2_0))
         {
-            auto const brokerPseudo = sleBroker->at(sfAccount);
             if (auto const ret = checkFrozen(ctx.view, brokerPseudo, asset))
             {
                 JLOG(ctx.j.warn()) << "Broker pseudo-account is frozen/locked.";
