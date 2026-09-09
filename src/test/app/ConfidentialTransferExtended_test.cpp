@@ -30,6 +30,7 @@
 
 #include <chrono>
 #include <cstdint>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -660,6 +661,7 @@ class ConfidentialTransferExtended_test : public ConfidentialTransferTestBase
         Account const carol("carol");
 
         for (bool const withFix : {true, false})
+        {
             for (bool const carolConverts : {false, true})
             {
                 Env env{*this, withFix ? features | fixCleanup3_5_0 : features - fixCleanup3_5_0};
@@ -740,6 +742,7 @@ class ConfidentialTransferExtended_test : public ConfidentialTransferTestBase
                         nullptr);
                 }
             }
+        }
     }
 
     // Exercises every Confidential Transfer transaction type (MPTokenIssuanceSet,
