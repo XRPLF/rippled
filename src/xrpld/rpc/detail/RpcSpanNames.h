@@ -32,7 +32,7 @@
  *    |  |                                                  | |
  *    |  |  +---------------------------------------------+ | |
  *    |  |  | rpc.command.{name}                          | | |
- *    |  |  | RPC::callMethod()                           | | |
+ *    |  |  | rpc::callMethod()                           | | |
  *    |  |  | attrs: command, version, rpc_role, rpc_status | | |
  *    |  |  +---------------------------------------------+ | |
  *    |  +--------------------------------------------------+ |
@@ -60,7 +60,7 @@
  *    |                                                       |
  *    |  +--------------------------------------------------+ |
  *    |  | rpc.command.{name}                               | |
- *    |  | RPC::callMethod()                                | |
+ *    |  | rpc::callMethod()                                | |
  *    |  | attrs: command, version, rpc_role, rpc_status     | |
  *    |  +--------------------------------------------------+ |
  *    +-------------------------------------------------------+
@@ -81,7 +81,7 @@
  *
  *    +-------------------------------------------------------+
  *    | rpc.command.{name} (error: too_busy/unknown/etc)       |
- *    | RPC::doCommand() — fillHandler() rejection             |
+ *    | rpc::doCommand() — fillHandler() rejection             |
  *    +-------------------------------------------------------+
  *
  *  gRPC path (see GrpcSpanNames.h for constants):
@@ -102,7 +102,7 @@
  *    - gRPC endpoints (GetLedger, GetLedgerData, GetLedgerDiff,
  *      GetLedgerEntry)
  *    - Command execution: timing, success/failure, exceptions
- *    - Per-command attributes: name, API version, role, status
+ *    - Per-command attributes: name, API version, rpc_role, rpc_status
  *
  *  Known gaps (not yet instrumented):
  *    - Early validation errors in processRequest() before rpc.process
@@ -159,6 +159,18 @@ inline constexpr auto rpcStatus = makeStr("rpc_status");
  * "request_payload_size" — bytes of inbound request payload.
  */
 inline constexpr auto requestPayloadSize = makeStr("request_payload_size");
+/**
+ * "is_batch" — whether request is a JSON-RPC batch.
+ */
+inline constexpr auto isBatch = makeStr("is_batch");
+/**
+ * "batch_size" — number of sub-requests in a batch.
+ */
+inline constexpr auto batchSize = makeStr("batch_size");
+/**
+ * "load_type" — resource cost category after execution.
+ */
+inline constexpr auto loadType = makeStr("load_type");
 }  // namespace attr
 
 // ===== Attribute values ====================================================

@@ -55,6 +55,7 @@ libxrpl.shamap > xrpl.protocol
 libxrpl.shamap > xrpl.shamap
 libxrpl.telemetry > xrpl.basics
 libxrpl.telemetry > xrpl.config
+libxrpl.telemetry > xrpl.protocol
 libxrpl.telemetry > xrpl.telemetry
 libxrpl.tx > xrpl.basics
 libxrpl.tx > xrpl.conditions
