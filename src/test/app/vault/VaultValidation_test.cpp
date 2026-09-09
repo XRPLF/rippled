@@ -512,10 +512,13 @@ private:
                 testcase("invalid set immutable flag");
 
                 auto [tx, keylet] = vault.create({.owner = owner, .asset = asset});
+                env(tx);
 
                 {
                     auto tx = vault.set({.owner = owner, .id = keylet.key});
-                    tx[sfFlags] = tfVaultPrivate;
+                    // tfVaultPrivate aliases tfVaultDepositBlock (0x00010000). Use a
+                    // VaultCreate-only flag that VaultSet still rejects.
+                    tx[sfFlags] = tfVaultOwnerCanBlockDeposit;
                     env(tx, Ter(temINVALID_FLAG));
                 }
             });

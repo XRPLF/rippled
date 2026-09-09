@@ -9,6 +9,8 @@
 #include <xrpl/tx/ApplyContext.h>
 #include <xrpl/tx/Transactor.h>
 
+#include <cstdint>
+
 namespace xrpl {
 
 class VaultSet : public Transactor
