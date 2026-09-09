@@ -138,8 +138,15 @@ public:
  * - Convert/ConvertBack symmetry:
  * Regular MPToken balance change (±X) == COA (Confidential Outstanding Amount) change (∓X)
  * - Cannot delete MPToken with non-zero confidential state:
- * Cannot delete if sfIssuerEncryptedBalance exists
- * Cannot delete if sfConfidentialBalanceInbox and sfConfidentialBalanceSpending exist
+ * Cannot delete if any of sfConfidentialBalanceSpending, sfConfidentialBalanceInbox,
+ * sfIssuerEncryptedBalance or sfAuditorEncryptedBalance is present, and the issuance's
+ * sfConfidentialOutstandingAmount is non-zero. Mirrors MPTokenAuthorize::preclaim.
+ * - Cannot delete MPToken holding a public balance (fixCleanup3_5_0):
+ * An erased MPToken must have sfMPTAmount == 0 at erase time. This is
+ * independent of the issuance's confidential state. Before fixCleanup3_5_0
+ * the public balance was read from the pre-transaction snapshot and shared
+ * the confidential gate above, which rejected legitimate transactions that
+ * drain an MPToken and erase it in the same doApply.
  * - Privacy flag consistency:
  * MPToken confidential balance fields can only be created or changed if
  * lsfMPTCanHoldConfidentialBalance is set on the issuance.
@@ -162,6 +169,11 @@ class ValidConfidentialMPToken
         std::int64_t outstandingDelta = 0;
         SLE::const_pointer issuance;
         bool deletedWithEncrypted = false;
+        // Public balance of an erased MPToken, sampled from each snapshot.
+        // `Before` reproduces the pre-fixCleanup3_5_0 behaviour; `After` is
+        // the balance at erase time, which is what the rule actually means.
+        bool deletedWithBalanceBefore = false;
+        bool deletedWithBalanceAfter = false;
         bool badConsistency = false;
         bool badCOA = false;
         bool changesConfidentialFields = false;
