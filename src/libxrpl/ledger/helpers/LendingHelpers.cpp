@@ -12,6 +12,7 @@
 #include <xrpl/ledger/helpers/VaultHelpers.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/Rules.h>
@@ -20,12 +21,15 @@
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/TxFlags.h>
+#include <xrpl/protocol/TxFormats.h>
 #include <xrpl/protocol/Units.h>
 
 #include <algorithm>
 #include <cstddef>
 #include <cstdint>
 #include <expected>
+#include <optional>
 #include <string_view>
 #include <utility>
 
@@ -75,6 +79,40 @@ checkLendingProtocolDependencies(Rules const& rules, STTx const& tx)
         return false;
 
     return true;
+}
+
+std::optional<LoanDefaultFreezeExemptAccounts>
+getLoanDefaultFreezeExemptAccounts(ReadView const& view, STTx const& tx)
+{
+    if (tx.getTxnType() != ttLOAN_MANAGE || !tx.isFlag(tfLoanDefault) ||
+        !view.rules().enabled(fixCleanup3_4_0))
+        return std::nullopt;
+
+    // Unlike the broker/vault lookups below, the submitter picks the LoanID,
+    // so a nonexistent Loan is an ordinary (if unusual) input, not a
+    // structural impossibility -- exercised directly in LendingHelpers_test.
+    auto const loanSle = view.read(keylet::loan(tx[sfLoanID]));
+    if (!loanSle)
+        return std::nullopt;
+
+    // A Loan can't outlive its LoanBroker (LoanBrokerDelete's preclaim
+    // rejects deletion while DebtTotal != 0), and a LoanBroker can't outlive
+    // its Vault (VaultDelete's preclaim has the equivalent guard) -- so these
+    // two lookups are structurally guaranteed to succeed here.
+    auto const brokerSle = view.read(keylet::loanBroker(loanSle->at(sfLoanBrokerID)));
+    if (!brokerSle)
+        return std::nullopt;  // LCOV_EXCL_LINE
+
+    auto const vaultSle = view.read(keylet::vault(brokerSle->at(sfVaultID)));
+    if (!vaultSle)
+        return std::nullopt;  // LCOV_EXCL_LINE
+
+    Asset const vaultAsset = vaultSle->at(sfAsset);
+    return LoanDefaultFreezeExemptAccounts{
+        .issuer = vaultAsset.getIssuer(),
+        .broker = brokerSle->at(sfAccount),
+        .vault = vaultSle->at(sfAccount),
+        .asset = vaultAsset};
 }
 
 LoanPaymentParts&
@@ -129,6 +167,16 @@ isRounded(Asset const& asset, Number const& value, std::int32_t scale)
 {
     return roundToAsset(asset, value, scale, Number::RoundingMode::Downward) ==
         roundToAsset(asset, value, scale, Number::RoundingMode::Upward);
+}
+
+[[nodiscard]] bool
+isPaymentLate(ReadView const& view, SLE::const_ref loanSle)
+{
+    return hasExpired(
+        view,
+        loanSle->at(sfNextPaymentDueDate),
+        view.rules().enabled(fixCleanup3_4_0) ? ExpiryComparison::Exclusive
+                                              : ExpiryComparison::Inclusive);
 }
 
 namespace accrual {
@@ -476,7 +524,7 @@ loanLatePaymentInterest(
     // If the payment is not late by any amount of time, then there's no late
     // interest
     if (now <= nextPaymentDueDate)
-        return 0;
+        return kNumZero;
 
     // Equation (3) from XLS-66 spec, Section A-2 Equation Glossary
     auto const secondsOverdue = now - nextPaymentDueDate;
@@ -997,7 +1045,7 @@ doOverpayment(
 std::expected<ExtendedPaymentComponents, TER>
 computeLatePayment(
     Asset const& asset,
-    ApplyView const& view,
+    ReadView const& view,
     SLE::const_ref loan,
     ExtendedPaymentComponents const& periodic,
     STAmount const& amount,
@@ -1008,8 +1056,11 @@ computeLatePayment(
     std::int32_t const loanScale = loan->at(sfLoanScale);
 
     // Check if the due date has passed. If not, reject the payment as
-    // being too soon
-    if (!hasExpired(view, nextDueDate))
+    // being too soon. Uses isPaymentLate() so this agrees with the
+    // regular payment path on whether the loan is actually late at the
+    // exact due date boundary (amendment-gated: Exclusive once
+    // fixCleanup3_4_0 is enabled, Inclusive otherwise).
+    if (!isPaymentLate(view, loan))
         return std::unexpected(tecTOO_SOON);
 
     // Calculate the penalty interest based on how long the payment is overdue.
@@ -1090,7 +1141,7 @@ computeLatePayment(
 std::expected<ExtendedPaymentComponents, TER>
 computeFullPayment(
     Asset const& asset,
-    ApplyView& view,
+    ReadView const& view,
     SLE::const_ref loan,
     Number const& periodicRate,
     STAmount const& amount,
@@ -2232,7 +2283,7 @@ loanMakePayment(
 
     // -------------------------------------------------------------
     // A late payment not flagged as late overrides all other options.
-    if (paymentType != LoanPaymentType::Late && hasExpired(view, nextDueDateProxy))
+    if (paymentType != LoanPaymentType::Late && isPaymentLate(view, loan))
     {
         // If the payment is late, and the late flag was not set, it's not
         // valid

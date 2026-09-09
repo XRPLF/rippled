@@ -1,0 +1,10 @@
+[package]
+name = "rs-hello_world"
+version = "0.1.0"
+edition.workspace = true
+
+[lib]
+crate-type = ["staticlib"]
+
+[dependencies]
+cxx.workspace = true

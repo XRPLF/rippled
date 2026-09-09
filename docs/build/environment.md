@@ -46,6 +46,9 @@ Besides a compiler, building `xrpld` requires:
 On Linux and macOS, the [Nix development shell](./nix.md) provides all of them
 (see below). On Windows they have to be installed manually.
 
+Building with `-Drust=ON` additionally requires a Rust toolchain, see
+[Rust](#rust). A default build does not, so it is not in the table above.
+
 Once they are in place, verify that everything is installed and runnable with:
 
 ```bash
@@ -121,6 +124,25 @@ manually:
 - [Git for Windows](https://git-scm.com/download/win)
 - Python, Conan, and CMake, at the versions listed in
   [Required tools](#required-tools).
+- a [Rust toolchain](https://rustup.rs) — only needed to build with
+  `-Drust=ON`, see [Rust](#rust)
+
+## Rust
+
+The repository contains a Rust workspace in [`crates/`](../../crates), whose
+crates are exposed to C++ through [cxx](https://cxx.rs) bindings. It is **not**
+part of a default build: the CMake `rust` option is OFF by default, and with it
+off no Rust toolchain is needed. It is only required when configuring with
+`-Drust=ON` (which is what CI does), see [Options](../../BUILD.md#options).
+
+The toolchain (`cargo`, `rustc`) is pinned to the channel in
+[`rust-toolchain.toml`](../../rust-toolchain.toml) at the repository root. If
+you install Rust with [rustup](https://rustup.rs), that file is picked up
+automatically, and `cargo`/`rustc` in the repository will use the pinned
+version.
+
+Everything else the Rust build needs on the CMake side comes from Conan along
+with the rest of the dependencies, so there is nothing further to install.
 
 ## Clang-tidy
 
