@@ -59,6 +59,16 @@ allFeatures()
 }
 
 //------------------------------------------------------------------------------
+// TxTest free helpers
+//------------------------------------------------------------------------------
+
+std::uint32_t
+closeTimeOffset(TxTest const& env, std::uint32_t seconds)
+{
+    return static_cast<std::uint32_t>(env.getCloseTime().time_since_epoch().count()) + seconds;
+}
+
+//------------------------------------------------------------------------------
 // TxTest
 //------------------------------------------------------------------------------
 
@@ -71,7 +81,7 @@ TxTest::TxTest(std::optional<FeatureBitset> features, std::optional<Fees> feesOv
     // Create rules with the specified features
     rules_.emplace(featureSet_);
 
-    // One fee set for both the view and the registry — see the constructor's doc comment.
+    // One fee set for both the view and the registry.
     Fees const fees = feesOverride.value_or(TestServiceRegistry::defaultFees());
     registry_.setFees(fees);
 
@@ -222,7 +232,9 @@ TxTest::close()
             }
             // `accum` is not an open view, so this is the apply that produces metadata.
             if (result.metadata.has_value())
+            {
                 closedMetadata_.emplace(tx->getTransactionID(), *std::move(result).metadata);
+            }
         }
         accum.apply(*newLedger);
     }
@@ -242,8 +254,10 @@ std::optional<TxMeta>
 TxTest::getMetadata(uint256 const& txId) const
 {
     auto const it = closedMetadata_.find(txId);
-    if (it == closedMetadata_.end())
+    if (it == std::end(closedMetadata_))
+    {
         return std::nullopt;
+    }
     return it->second;
 }
 

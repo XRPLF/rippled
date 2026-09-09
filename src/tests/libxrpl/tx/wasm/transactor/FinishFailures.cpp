@@ -34,8 +34,7 @@ struct FinishFailures : testing::Test
     void
     SetUp() override
     {
-        env.createAccount(alice, XRP(5'000));
-        env.createAccount(carol, XRP(5'000));
+        createAccounts(env, XRP(5'000), alice, carol);
     }
 
     std::uint32_t
@@ -46,8 +45,7 @@ struct FinishFailures : testing::Test
 
         auto builder = transactions::EscrowCreateBuilder{alice, carol, STAmount{XRP(500)}};
         builder.setBytecode(makeSlice(wasm));
-        builder.setCancelAfter(
-            static_cast<std::uint32_t>(env.getCloseTime().time_since_epoch().count()) + 1'000);
+        builder.setCancelAfter(closeTimeOffset(env, 1'000));
 
         EXPECT_EQ(env.submit(builder, alice, escrowCreateFee(env, wasm)).ter, tesSUCCESS);
         env.close();
@@ -59,13 +57,11 @@ struct FinishFailures : testing::Test
     {
         auto const seq = env.getAccountRoot(alice).getSequence();
 
-        auto const now = static_cast<std::uint32_t>(env.getCloseTime().time_since_epoch().count());
-
         auto builder = transactions::EscrowCreateBuilder{alice, carol, STAmount{XRP(500)}};
         // A contract-free escrow needs a `FinishAfter` or a condition; `CancelAfter` alone is
         // `temMALFORMED`.
-        builder.setFinishAfter(now + 1);
-        builder.setCancelAfter(now + 1'000);
+        builder.setFinishAfter(closeTimeOffset(env, 1));
+        builder.setCancelAfter(closeTimeOffset(env, 1'000));
 
         EXPECT_EQ(env.submit(builder, alice, XRPAmount{100'000}).ter, tesSUCCESS);
         env.close();
@@ -73,30 +69,23 @@ struct FinishFailures : testing::Test
         return seq;
     }
 
-    struct Finished
-    {
-        TER ter;
-        std::optional<TxMeta> meta;
-    };
-
-    [[nodiscard]] Finished
+    [[nodiscard]] ClosedResult
     finish(std::uint32_t seq, std::optional<std::uint32_t> allowance, XRPAmount fee)
     {
         auto builder = transactions::EscrowFinishBuilder{carol, alice, seq};
         if (allowance)
+        {
             builder.setGas(*allowance);
+        }
 
-        auto const result = env.submit(builder, carol, fee);
-        env.close();
-        return Finished{.ter = result.ter, .meta = env.getMetadata(result.tx->getTransactionID())};
+        return env.submitAndClose(builder, carol, fee);
     }
 };
 
 TEST_F(FinishFailures, FinishIsRefusedWhileSmartEscrowIsDisabled)
 {
-    TxTest disabled{allFeatures() - featureSmartEscrow};
-    disabled.createAccount(alice, XRP(5'000));
-    disabled.createAccount(carol, XRP(5'000));
+    auto disabled = TxTest{allFeatures() - featureSmartEscrow};
+    createAccounts(disabled, XRP(5'000), alice, carol);
 
     auto builder = transactions::EscrowFinishBuilder{carol, alice, 1};
     builder.setGas(4);

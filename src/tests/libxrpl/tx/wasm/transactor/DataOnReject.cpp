@@ -58,8 +58,7 @@ struct DataOnReject : testing::Test
 
         auto builder = transactions::EscrowCreateBuilder{alice, alice, STAmount{XRP(1'000)}};
         builder.setBytecode(makeSlice(wasm));
-        builder.setCancelAfter(
-            static_cast<std::uint32_t>(env.getCloseTime().time_since_epoch().count() + 1'000));
+        builder.setCancelAfter(closeTimeOffset(env, 1'000));
 
         auto const fee = (env.getOpenLedger().fees().base * 10) +
             XRPAmount{static_cast<std::int64_t>(wasm.size()) * 5};
@@ -67,15 +66,7 @@ struct DataOnReject : testing::Test
         env.close();
     }
 
-    // Submits the finish and closes, because metadata only exists for a closed ledger.
-    // Returns the result alongside its metadata.
-    struct Finished
-    {
-        TER ter;
-        std::optional<TxMeta> meta;
-    };
-
-    [[nodiscard]] Finished
+    [[nodiscard]] ClosedResult
     finish()
     {
         auto builder = transactions::EscrowFinishBuilder{alice, alice, escrowSeq};
@@ -86,9 +77,7 @@ struct DataOnReject : testing::Test
             static_cast<std::int64_t>(
                 (std::uint64_t{kAllowance} * fees.gasPrice) / microDropsPerDrop) +
             1};
-        auto const result = env.submit(builder, alice, fees.base + gasFee);
-        env.close();
-        return Finished{.ter = result.ter, .meta = env.getMetadata(result.tx->getTransactionID())};
+        return env.submitAndClose(builder, alice, fees.base + gasFee);
     }
 };
 

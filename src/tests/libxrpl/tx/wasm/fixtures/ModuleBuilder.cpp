@@ -38,7 +38,9 @@ appendU32Leb(Bytes& out, std::uint32_t value)
         auto byte = static_cast<std::uint8_t>(value & 0x7F);
         value >>= 7;
         if (value != 0U)
+        {
             byte |= 0x80;
+        }
         out.push_back(byte);
     } while (value != 0U);
 }
@@ -48,7 +50,7 @@ appendSection(Bytes& out, std::uint8_t section, Bytes const& payload)
 {
     out.push_back(section);
     appendU32Leb(out, static_cast<std::uint32_t>(payload.size()));
-    out.insert(out.end(), payload.begin(), payload.end());
+    out.insert(std::end(out), std::begin(payload), std::end(payload));
 }
 
 // A function body: no locals, `code`, `end` — prefixed by its own byte length.
@@ -56,11 +58,11 @@ void
 appendBody(Bytes& out, Bytes const& code)
 {
     auto body = Bytes{0x00};  // local declaration count
-    body.insert(body.end(), code.begin(), code.end());
+    body.insert(std::end(body), std::begin(code), std::end(code));
     body.push_back(kOpcodeEnd);
 
     appendU32Leb(out, static_cast<std::uint32_t>(body.size()));
-    out.insert(out.end(), body.begin(), body.end());
+    out.insert(std::end(out), std::begin(body), std::end(body));
 }
 
 Bytes
@@ -77,8 +79,8 @@ void
 appendTypeSection(Bytes& out)
 {
     auto payload = Bytes{0x02};  // two types
-    payload.insert(payload.end(), {kTypeFunc, 0x00, 0x00});
-    payload.insert(payload.end(), {kTypeFunc, 0x00, 0x01, kTypeI32});
+    payload.insert(std::end(payload), {kTypeFunc, 0x00, 0x00});
+    payload.insert(std::end(payload), {kTypeFunc, 0x00, 0x01, kTypeI32});
     appendSection(out, kSectionType, payload);
 }
 
@@ -88,7 +90,7 @@ appendFunctionSection(Bytes& out, std::uint32_t fillerCount)
 {
     auto payload = Bytes{};
     appendU32Leb(payload, fillerCount + 1);
-    payload.insert(payload.end(), fillerCount, kTypeVoid);
+    payload.insert(std::end(payload), fillerCount, kTypeVoid);
     payload.push_back(kTypeReturnsI32);
     appendSection(out, kSectionFunction, payload);
 }
@@ -104,13 +106,13 @@ appendExportSection(Bytes& out, std::uint32_t fillerCount, bool exportMemory)
     {
         static constexpr auto kMemory = std::string_view{"memory"};
         appendU32Leb(payload, static_cast<std::uint32_t>(kMemory.size()));
-        payload.insert(payload.end(), kMemory.begin(), kMemory.end());
+        payload.insert(std::end(payload), std::begin(kMemory), std::end(kMemory));
         payload.push_back(0x02);  // export kind: memory
         payload.push_back(0x00);  // memory index
     }
 
     appendU32Leb(payload, static_cast<std::uint32_t>(escrowFunctionName.size()));
-    payload.insert(payload.end(), escrowFunctionName.begin(), escrowFunctionName.end());
+    payload.insert(std::end(payload), std::begin(escrowFunctionName), std::end(escrowFunctionName));
     payload.push_back(0x00);  // export kind: function
     appendU32Leb(payload, fillerCount);
 
@@ -164,9 +166,9 @@ dataHeavyModule(std::uint32_t dataBytes)
     appendSection(out, kSectionCode, codePayload);
 
     auto dataPayload = Bytes{0x01, 0x00};  // one segment, memory 0
-    dataPayload.insert(dataPayload.end(), {kOpcodeI32Const, 0x00, kOpcodeEnd});  // offset 0
+    dataPayload.insert(std::end(dataPayload), {kOpcodeI32Const, 0x00, kOpcodeEnd});  // offset 0
     appendU32Leb(dataPayload, dataBytes);
-    dataPayload.insert(dataPayload.end(), dataBytes, kDataFillByte);
+    dataPayload.insert(std::end(dataPayload), dataBytes, kDataFillByte);
     appendSection(out, kSectionData, dataPayload);
 
     return out;

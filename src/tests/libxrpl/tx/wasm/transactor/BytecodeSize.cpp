@@ -14,7 +14,6 @@
 #include <helpers/TxTest.h>
 #include <tx/wasm/fixtures/ModuleBuilder.h>
 
-#include <chrono>
 #include <cstdint>
 #include <optional>
 
@@ -32,12 +31,9 @@ createFee(TxTest const& env, Bytes const& bytecode)
 TER
 createEscrowWith(TxTest& env, Account const& account, Bytes const& bytecode)
 {
-    using namespace std::chrono_literals;
-
     auto builder = transactions::EscrowCreateBuilder{account, account, STAmount{XRP(1'000)}};
     builder.setBytecode(makeSlice(bytecode));
-    builder.setCancelAfter(
-        static_cast<std::uint32_t>(env.getCloseTime().time_since_epoch().count() + 100));
+    builder.setCancelAfter(closeTimeOffset(env, 100));
 
     return env.submit(builder, account, createFee(env, bytecode)).ter;
 }
@@ -59,7 +55,7 @@ fundedAccount(TxTest& env)
 // Footing for the rest: without this, "too big" and "malformed" are indistinguishable.
 TEST(BytecodeSize, TheBuildersProduceAModuleTheEngineAccepts)
 {
-    TxTest env;
+    auto env = TxTest{};
     auto const alice = fundedAccount(env);
 
     EXPECT_EQ(createEscrowWith(env, alice, codeHeavyModule(1'000)), tesSUCCESS);
@@ -68,7 +64,7 @@ TEST(BytecodeSize, TheBuildersProduceAModuleTheEngineAccepts)
 
 TEST(BytecodeSize, AModuleUnderTheLimitIsAccepted)
 {
-    TxTest env;
+    auto env = TxTest{};
     auto const alice = fundedAccount(env);
 
     auto const wasm = codeHeavyModule(90'000);
@@ -79,7 +75,7 @@ TEST(BytecodeSize, AModuleUnderTheLimitIsAccepted)
 
 TEST(BytecodeSize, AModuleOverTheLimitIsRefused)
 {
-    TxTest env;
+    auto env = TxTest{};
     auto const alice = fundedAccount(env);
 
     auto const wasm = codeHeavyModule(110'000);
@@ -92,7 +88,7 @@ TEST(BytecodeSize, AModuleOverTheLimitIsRefused)
 // does not walk around it.
 TEST(BytecodeSize, ADataSegmentCountsTowardTheLimit)
 {
-    TxTest env;
+    auto env = TxTest{};
     auto const alice = fundedAccount(env);
 
     auto const wasm = dataHeavyModule(110'000);
@@ -107,7 +103,7 @@ TEST(BytecodeSize, RaisingTheLimitAdmitsALargerModule)
 {
     auto fees = TestServiceRegistry::defaultFees();
     fees.bytecodeSizeLimit = kMaxBytecodeSizeLimit;
-    TxTest env{std::nullopt, fees};
+    auto env = TxTest{std::nullopt, fees};
     auto const alice = fundedAccount(env);
 
     auto const wasm = codeHeavyModule(150'000);
@@ -117,12 +113,16 @@ TEST(BytecodeSize, RaisingTheLimitAdmitsALargerModule)
     EXPECT_EQ(createEscrowWith(env, alice, wasm), tesSUCCESS);
 }
 
-// wasmparser defines `MAX_WASM_FUNCTION_SIZE` = 128 KiB, but nothing on this path enforces
-// it: a lone body of a million instructions is accepted. So `bytecodeSizeLimit` really is
-// the only bound, with no second line behind it. A failure here means one has appeared.
+// No per-function limit sits below the module limit: one function may occupy the entire
+// module. `wasmparser` defines `MAX_WASM_FUNCTION_SIZE` = 128 KiB, but nothing on this path
+// appears to enforce it — a lone body of a million instructions is accepted.
+//
+// So `bytecodeSizeLimit` is not defence in depth; it is the only bound on how much there is
+// to compile, and raising it raises the worst case with nothing behind it. A failure here
+// means a second limit has appeared, and that reasoning needs revisiting.
 TEST(BytecodeSize, ASingleFunctionBodyIsNotSeparatelyCapped)
 {
-    TxTest const env;
+    auto env = TxTest{};
     auto const wasm = codeHeavyModule(1'000'000);
     ASSERT_GT(wasm.size(), 128U * 1024U) << "the module must exceed MAX_WASM_FUNCTION_SIZE";
 

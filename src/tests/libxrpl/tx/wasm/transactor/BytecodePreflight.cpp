@@ -14,7 +14,6 @@
 #include <tx/wasm/fixtures/EscrowWasm.h>
 #include <tx/wasm/fixtures/WasmRun.h>
 
-#include <cstdint>
 #include <optional>
 #include <string>
 
@@ -29,13 +28,6 @@ struct BytecodePreflight : testing::Test
     Account const alice{"alice"};
     Account const carol{"carol"};
 
-    // Deadlines are relative to the environment's close time, which starts at genesis.
-    static std::uint32_t
-    after(TxTest const& env, std::uint32_t seconds)
-    {
-        return static_cast<std::uint32_t>(env.getCloseTime().time_since_epoch().count()) + seconds;
-    }
-
     // An `EscrowCreate` with everything a valid one needs, for callers to spoil one field at
     // a time. `cancelAfter` is set because without an expiry the transaction is refused for
     // that reason first, and every bytecode case would report `temBAD_EXPIRATION` instead of
@@ -45,16 +37,15 @@ struct BytecodePreflight : testing::Test
     {
         auto builder = transactions::EscrowCreateBuilder{alice, carol, STAmount{XRP(500)}};
         builder.setBytecode(makeSlice(bytecode));
-        builder.setCancelAfter(after(env, 100));
+        builder.setCancelAfter(closeTimeOffset(env, 100));
         return builder;
     }
 };
 
 TEST_F(BytecodePreflight, BytecodeIsRefusedWhileSmartEscrowIsDisabled)
 {
-    TxTest env{allFeatures() - featureSmartEscrow};
-    env.createAccount(alice, XRP(5'000));
-    env.createAccount(carol, XRP(5'000));
+    auto env = TxTest{allFeatures() - featureSmartEscrow};
+    createAccounts(env, XRP(5'000), alice, carol);
 
     auto const wasm = assembleWat(kReadsLedgerSqn);
     auto const fee = escrowCreateFee(env, wasm);
@@ -74,9 +65,8 @@ TEST_F(BytecodePreflight, AZeroSizeLimitDisablesUploadsRatherThanRejectingThem)
 {
     auto fees = TestServiceRegistry::defaultFees();
     fees.bytecodeSizeLimit = 0;
-    TxTest env{std::nullopt, fees};
-    env.createAccount(alice, XRP(5'000));
-    env.createAccount(carol, XRP(5'000));
+    auto env = TxTest{std::nullopt, fees};
+    createAccounts(env, XRP(5'000), alice, carol);
 
     auto const wasm = assembleWat(kReadsLedgerSqn);
     EXPECT_EQ(
@@ -88,9 +78,8 @@ TEST_F(BytecodePreflight, AZeroGasLimitDisablesUploads)
 {
     auto fees = TestServiceRegistry::defaultFees();
     fees.gasLimit = 0;
-    TxTest env{std::nullopt, fees};
-    env.createAccount(alice, XRP(5'000));
-    env.createAccount(carol, XRP(5'000));
+    auto env = TxTest{std::nullopt, fees};
+    createAccounts(env, XRP(5'000), alice, carol);
 
     auto const wasm = assembleWat(kReadsLedgerSqn);
     EXPECT_EQ(
@@ -100,9 +89,8 @@ TEST_F(BytecodePreflight, AZeroGasLimitDisablesUploads)
 
 TEST_F(BytecodePreflight, EmptyBytecodeIsRefused)
 {
-    TxTest env;
-    env.createAccount(alice, XRP(5'000));
-    env.createAccount(carol, XRP(5'000));
+    auto env = TxTest{};
+    createAccounts(env, XRP(5'000), alice, carol);
 
     EXPECT_EQ(
         env.submit(escrowCreate(env, Bytes{}), alice, escrowCreateFee(env, Bytes{})).ter,
@@ -113,9 +101,8 @@ TEST_F(BytecodePreflight, EmptyBytecodeIsRefused)
 // host function nobody serves.
 TEST_F(BytecodePreflight, BytecodeImportingAnUnknownHostFunctionIsRefused)
 {
-    TxTest env;
-    env.createAccount(alice, XRP(5'000));
-    env.createAccount(carol, XRP(5'000));
+    auto env = TxTest{};
+    createAccounts(env, XRP(5'000), alice, carol);
 
     auto const wasm = assembleWat(kImportsUnknownHostFunction);
     EXPECT_EQ(
@@ -125,22 +112,20 @@ TEST_F(BytecodePreflight, BytecodeImportingAnUnknownHostFunctionIsRefused)
 
 TEST_F(BytecodePreflight, DataWithoutBytecodeIsRefused)
 {
-    TxTest env;
-    env.createAccount(alice, XRP(5'000));
-    env.createAccount(carol, XRP(5'000));
+    auto env = TxTest{};
+    createAccounts(env, XRP(5'000), alice, carol);
 
     auto builder = transactions::EscrowCreateBuilder{alice, carol, STAmount{XRP(500)}};
     builder.setData(makeSlice(Bytes{0x41, 0x41, 0x41, 0x41}));
-    builder.setCancelAfter(after(env, 100));
+    builder.setCancelAfter(closeTimeOffset(env, 100));
 
     EXPECT_EQ(env.submit(builder, alice, XRPAmount{100'000}).ter, temMALFORMED);
 }
 
 TEST_F(BytecodePreflight, DataPastItsMaximumIsRefused)
 {
-    TxTest env;
-    env.createAccount(alice, XRP(5'000));
-    env.createAccount(carol, XRP(5'000));
+    auto env = TxTest{};
+    createAccounts(env, XRP(5'000), alice, carol);
 
     auto const wasm = assembleWat(kReadsLedgerSqn);
     auto builder = escrowCreate(env, wasm);
@@ -154,9 +139,8 @@ TEST_F(BytecodePreflight, DataPastItsMaximumIsRefused)
 // ones that look complete because they carry a `FinishAfter` or a condition.
 TEST_F(BytecodePreflight, BytecodeWithoutACancelTimeIsRefused)
 {
-    TxTest env;
-    env.createAccount(alice, XRP(5'000));
-    env.createAccount(carol, XRP(5'000));
+    auto env = TxTest{};
+    createAccounts(env, XRP(5'000), alice, carol);
 
     auto const wasm = assembleWat(kReadsLedgerSqn);
     auto const fee = escrowCreateFee(env, wasm);
@@ -170,7 +154,7 @@ TEST_F(BytecodePreflight, BytecodeWithoutACancelTimeIsRefused)
     EXPECT_EQ(env.submit(bare(), alice, fee).ter, temBAD_EXPIRATION);
 
     auto withFinish = bare();
-    withFinish.setFinishAfter(after(env, 2));
+    withFinish.setFinishAfter(closeTimeOffset(env, 2));
     EXPECT_EQ(env.submit(withFinish, alice, fee).ter, temBAD_EXPIRATION);
 }
 
@@ -178,9 +162,8 @@ TEST_F(BytecodePreflight, BytecodeWithoutACancelTimeIsRefused)
 // module that actually passes screening, which the old compiled fixtures stopped doing.
 TEST_F(BytecodePreflight, BytecodeWithACancelTimeIsAccepted)
 {
-    TxTest env;
-    env.createAccount(alice, XRP(5'000));
-    env.createAccount(carol, XRP(5'000));
+    auto env = TxTest{};
+    createAccounts(env, XRP(5'000), alice, carol);
 
     auto const wasm = assembleWat(kReadsLedgerSqn);
     EXPECT_EQ(
@@ -189,13 +172,12 @@ TEST_F(BytecodePreflight, BytecodeWithACancelTimeIsAccepted)
 
 TEST_F(BytecodePreflight, BytecodeWithAFinishAndCancelTimeIsAccepted)
 {
-    TxTest env;
-    env.createAccount(alice, XRP(5'000));
-    env.createAccount(carol, XRP(5'000));
+    auto env = TxTest{};
+    createAccounts(env, XRP(5'000), alice, carol);
 
     auto const wasm = assembleWat(kReadsLedgerSqn);
     auto builder = escrowCreate(env, wasm);
-    builder.setFinishAfter(after(env, 2));
+    builder.setFinishAfter(closeTimeOffset(env, 2));
 
     EXPECT_EQ(env.submit(builder, alice, escrowCreateFee(env, wasm)).ter, tesSUCCESS);
 }
@@ -206,8 +188,7 @@ TEST_F(BytecodePreflight, BytecodeWithAFinishAndCancelTimeIsAccepted)
 TEST_F(BytecodePreflight, AFeeOneDropShortIsRefused)
 {
     TxTest env;
-    env.createAccount(alice, XRP(5'000));
-    env.createAccount(carol, XRP(5'000));
+    createAccounts(env, XRP(5'000), alice, carol);
 
     auto const wasm = assembleWat(kReadsLedgerSqn);
     auto const fee = escrowCreateFee(env, wasm);

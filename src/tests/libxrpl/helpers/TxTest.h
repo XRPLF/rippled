@@ -165,6 +165,19 @@ struct TxResult
 };
 
 /**
+ * @brief Result of a transaction submission that has been closed into a ledger.
+ *
+ * `TxResult::metadata` is always `std::nullopt`, because metadata is only built for a view
+ * that is not open. This is what `TxTest::submitAndClose` returns instead: the result code
+ * paired with the metadata that closing produced.
+ */
+struct ClosedResult
+{
+    TER ter;                     ///< The transaction engine result code.
+    std::optional<TxMeta> meta;  ///< Metadata from the close, absent if none was produced.
+};
+
+/**
  * @brief A lightweight transaction testing harness.
  *
  * Unlike the JTx framework which requires a full Application and RPC layer,
@@ -235,19 +248,7 @@ public:
         [[nodiscard]] TxResult
         submit(T&& builder, Account const& signer)
     {
-        auto const& obj = builder.getSTObject();
-        auto accountId = obj[sfAccount];
-        // Only set sequence if not using a ticket (ticket sets sequence to 0)
-        if (!obj.isFieldPresent(sfTicketSequence))
-        {
-            builder.setSequence(getAccountRoot(accountId).getSequence());
-        }
-        else
-        {
-            builder.setSequence(0);
-        }
-        builder.setFee(XRPAmount(10));
-        return submit(builder.build(signer.pk(), signer.sk()).getSTTx());
+        return submit(std::forward<T>(builder), signer, XRPAmount{10});
     }
 
     /**
@@ -283,6 +284,31 @@ public:
         }
         builder.setFee(fee);
         return submit(builder.build(signer.pk(), signer.sk()).getSTTx());
+    }
+
+    /**
+     * @brief Submit a transaction, then close the ledger and return its metadata.
+     *
+     * Metadata comes into being at `close`, not at `submit` (see `close`), so any assertion
+     * about `sfGasUsed`, `sfVMReturnCode`, or a delivered amount needs this three-step
+     * sequence rather than `submit` alone. Closing also advances time by one close
+     * interval, which matters to a test sensitive to a `FinishAfter` or an expiry.
+     *
+     * @tparam T A type derived from TransactionBuilderBase.
+     * @param builder The transaction builder.
+     * @param signer The account to sign with.
+     * @param fee The fee to pay.
+     * @return The result code and the metadata produced by the close.
+     */
+    template <typename T>
+        requires std::
+            derived_from<std::decay_t<T>, transactions::TransactionBuilderBase<std::decay_t<T>>>
+        [[nodiscard]] ClosedResult
+        submitAndClose(T&& builder, Account const& signer, XRPAmount fee)
+    {
+        auto const result = submit(std::forward<T>(builder), signer, fee);
+        close();
+        return ClosedResult{.ter = result.ter, .meta = getMetadata(result.tx->getTransactionID())};
     }
 
     /**
@@ -462,5 +488,42 @@ private:
      */
     NetClock::time_point now_;
 };
+
+//------------------------------------------------------------------------------
+// TxTest free helpers
+//------------------------------------------------------------------------------
+
+/**
+ * @brief A ledger-close-time deadline `seconds` in the future.
+ *
+ * Time fields on the wire are `std::uint32_t` seconds since the Ripple epoch, while the
+ * environment reports a `NetClock::time_point`. Every `CancelAfter` / `FinishAfter` needs
+ * the same cast, and getting it wrong yields a deadline in the past — which a transactor
+ * reports as `temBAD_EXPIRATION`, a failure that looks like the case under test.
+ *
+ * @param env The environment whose close time the deadline is relative to.
+ * @param seconds How far past the current close time the deadline should sit.
+ * @return The deadline, as a transaction field expects it.
+ */
+[[nodiscard]] std::uint32_t
+closeTimeOffset(TxTest const& env, std::uint32_t seconds);
+
+/**
+ * @brief Create and fund several accounts with the same balance.
+ *
+ * @code
+ *     createAccounts(env, XRP(5'000), alice, carol);
+ * @endcode
+ *
+ * @param env The environment to create the accounts in.
+ * @param xrp The initial balance for each account.
+ * @param accounts The accounts to create.
+ */
+template <std::same_as<Account>... Accounts>
+void
+createAccounts(TxTest& env, XRPAmount xrp, Accounts const&... accounts)
+{
+    (env.createAccount(accounts, xrp), ...);
+}
 
 }  // namespace xrpl::test

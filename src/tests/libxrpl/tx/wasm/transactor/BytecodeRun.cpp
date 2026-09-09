@@ -44,14 +44,7 @@ struct BytecodeRun : testing::Test
     void
     SetUp() override
     {
-        env.createAccount(alice, XRP(5'000));
-        env.createAccount(carol, XRP(5'000));
-    }
-
-    std::uint32_t
-    now() const
-    {
-        return static_cast<std::uint32_t>(env.getCloseTime().time_since_epoch().count());
+        createAccounts(env, XRP(5'000), alice, carol);
     }
 
     std::uint32_t
@@ -73,9 +66,11 @@ struct BytecodeRun : testing::Test
 
         auto builder = transactions::EscrowCreateBuilder{alice, carol, STAmount{XRP(1'000)}};
         builder.setBytecode(makeSlice(wasm));
-        builder.setCancelAfter(now() + 1'000);
+        builder.setCancelAfter(closeTimeOffset(env, 1'000));
         if (withCondition)
+        {
             builder.setCondition(makeSlice(kCondition));
+        }
 
         auto const fee = escrowCreateFee(env, wasm);
         EXPECT_EQ(env.submit(builder, alice, fee).ter, tesSUCCESS);
@@ -83,13 +78,7 @@ struct BytecodeRun : testing::Test
         return Created{.seq = seq, .fee = fee};
     }
 
-    struct Finished
-    {
-        TER ter;
-        std::optional<TxMeta> meta;
-    };
-
-    [[nodiscard]] Finished
+    [[nodiscard]] ClosedResult
     finish(std::uint32_t seq, bool withFulfillment = false)
     {
         auto builder = transactions::EscrowFinishBuilder{carol, alice, seq};
@@ -103,9 +92,7 @@ struct BytecodeRun : testing::Test
             fee += env.getOpenLedger().fees().base * (32 + (kFulfillment.size() / 16));
         }
 
-        auto const result = env.submit(builder, carol, fee);
-        env.close();
-        return Finished{.ter = result.ter, .meta = env.getMetadata(result.tx->getTransactionID())};
+        return env.submitAndClose(builder, carol, fee);
     }
 
     bool
@@ -134,7 +121,9 @@ TEST_F(BytecodeRun, AContractRejectsUntilItsConditionHoldsThenReleases)
     EXPECT_EQ(rejected.meta->getAsObject().getFieldI32(sfVMReturnCode), 0);
 
     while (currentSeq() < threshold)
+    {
         env.close();
+    }
 
     auto const approved = finish(created.seq);
     EXPECT_EQ(approved.ter, tesSUCCESS);
@@ -160,7 +149,9 @@ TEST_F(BytecodeRun, TheBytecodeReserveIsHeldWhileTheEscrowLivesAndReleasedWhenIt
     EXPECT_EQ(env.getOwnerCount(alice), expected);
 
     while (currentSeq() < threshold)
+    {
         env.close();
+    }
     ASSERT_EQ(finish(created.seq).ter, tesSUCCESS);
 
     EXPECT_EQ(env.getOwnerCount(alice), 0U);
@@ -186,7 +177,9 @@ TEST_F(BytecodeRun, AConditionIsCheckedBeforeTheContractRuns)
     auto const created = createEscrow(wasm, /*withCondition*/ true);
 
     while (currentSeq() < threshold)
+    {
         env.close();
+    }
 
     EXPECT_EQ(finish(created.seq).ter, tecCRYPTOCONDITION_ERROR);
     EXPECT_TRUE(escrowExists(created.seq));

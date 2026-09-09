@@ -22,11 +22,13 @@ namespace xrpl::test {
 
 // A module of `instructionCount` `nop`s in a single function, doing nothing.
 //
-// One function however large, deliberately. wasmparser defines
-// `MAX_WASM_FUNCTION_SIZE` = 128 KiB, but nothing on this path enforces it: a single body
-// of a million instructions preflights clean (pinned by
-// `BytecodeSize.ASingleFunctionBodyIsNotSeparatelyCapped`). So there is no second limit to
-// design around, and splitting the `nop`s across functions would only obscure that.
+// All of them in one function, deliberately: there appears to be no per-function size limit
+// below the module limit, so one function may occupy the whole module. `wasmparser` defines
+// `MAX_WASM_FUNCTION_SIZE` = 128 KiB, which looks like such a limit, but a single body of a
+// million instructions preflights clean — pinned by
+// `BytecodeSize.ASingleFunctionBodyIsNotSeparatelyCapped`. Splitting the `nop`s across
+// functions would imply a constraint that is not there, and would make the byte count the
+// boundary tests depend on harder to predict.
 //
 // The returned module is a few dozen bytes larger than `instructionCount` (the sections
 // around the code). Callers that care about an exact total should measure `.size()` rather

@@ -33,16 +33,14 @@ struct GasFees : testing::Test
     void
     SetUp() override
     {
-        env.createAccount(alice, XRP(5'000));
-        env.createAccount(carol, XRP(5'000));
+        createAccounts(env, XRP(5'000), alice, carol);
 
         auto const wasm = assembleWat(kReadsLedgerSqn);
         escrowSeq = env.getAccountRoot(alice).getSequence();
 
         auto builder = transactions::EscrowCreateBuilder{alice, carol, STAmount{XRP(1'000)}};
         builder.setBytecode(makeSlice(wasm));
-        builder.setCancelAfter(
-            static_cast<std::uint32_t>(env.getCloseTime().time_since_epoch().count()) + 1'000);
+        builder.setCancelAfter(closeTimeOffset(env, 1'000));
 
         ASSERT_EQ(env.submit(builder, alice, escrowCreateFee(env, wasm)).ter, tesSUCCESS);
         env.close();
@@ -84,14 +82,12 @@ TEST_F(GasFees, OnlyTheGasActuallyUsedIsReported)
     auto builder = transactions::EscrowFinishBuilder{carol, alice, escrowSeq};
     builder.setGas(kBigAllowance);
 
-    auto const result = env.submit(builder, carol, escrowFinishFee(env, kBigAllowance));
+    auto const result = env.submitAndClose(builder, carol, escrowFinishFee(env, kBigAllowance));
     ASSERT_EQ(result.ter, tesSUCCESS);
-    env.close();
 
-    auto const meta = env.getMetadata(result.tx->getTransactionID());
-    ASSERT_TRUE(meta.has_value());
+    ASSERT_TRUE(result.meta.has_value());
     // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
-    auto const obj = meta->getAsObject();
+    auto const obj = result.meta->getAsObject();
     ASSERT_TRUE(obj.isFieldPresent(sfGasUsed));
 
     EXPECT_LT(obj.getFieldU32(sfGasUsed), kBigAllowance);

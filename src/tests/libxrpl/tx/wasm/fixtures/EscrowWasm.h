@@ -12,12 +12,6 @@
 namespace xrpl::test {
 
 // Contracts and fee arithmetic shared by the transactor-level escrow tests.
-//
-// The contracts are WAT rather than compiled hex on purpose. The suite this replaced
-// shipped hex built from C by an external toolchain, and when the engine moved to Rust and
-// began serving host functions from `host_lib` instead of `env`, every one of those
-// fixtures started failing import screening — with no way to regenerate them short of
-// installing a wasi-sdk. Text assembles here, so an ABI change is a one-line edit.
 
 // Reads the ledger sequence and returns 5. A minimal *working* contract: it makes a real
 // host call, so it exercises more than validation, but what it returns is uninteresting.
