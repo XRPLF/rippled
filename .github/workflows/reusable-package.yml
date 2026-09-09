@@ -209,6 +209,23 @@ jobs:
           }
           echo "package=${package}" >>"${GITHUB_OUTPUT}"
 
+      # Debian 11 went end-of-life on 2026-08-31
+      # (https://www.debian.org/News/2026/20260831) and its packages are
+      # already partly gone from deb.debian.org, so switch to the
+      # snapshot.debian.org entries the image ships commented out in its
+      # sources.list: they are pinned to the snapshot the image was built
+      # from, so they serve every version it needs and never go away.
+      # Snapshots keep their original, long-passed Valid-Until, hence the
+      # disabled check; the retries absorb snapshot.debian.org's throttling.
+      - name: Switch Debian 11 to snapshot.debian.org
+        if: ${{ matrix.image == 'debian:11' }}
+        run: |
+          sed -i 's|^deb |# deb |; s|^# deb http://snapshot|deb http://snapshot|' /etc/apt/sources.list
+          printf '%s\n' \
+              'Acquire::Check-Valid-Until "false";' \
+              'Acquire::Retries "3";' \
+              >/etc/apt/apt.conf.d/99snapshot
+
       - name: Install the DEB
         if: ${{ matrix.package_type == 'deb' }}
         env:
