@@ -244,12 +244,9 @@ online_delete=256
 /tmp/xrpld-integration/validators.txt
 
 [ips_fixed]
-127.0.0.1 51235
-127.0.0.1 51236
-127.0.0.1 51237
-127.0.0.1 51238
-127.0.0.1 51239
-127.0.0.1 51240
+{one "127.0.0.1 <port>" line for each port in 51235-51240 except this node's
+own 51234 + node_number — a node must not list itself as a fixed peer, so
+each config carries five lines, not six}
 
 [peer_private]
 1
@@ -478,7 +475,7 @@ Pre-configured datasources:
        ss -tlnp | grep ":$p " && echo "port $p in use"
    done
    ```
-2. Verify `[ips_fixed]` lists all 6 peer ports
+2. Verify `[ips_fixed]` lists the 5 other peer ports, and not the node's own
 3. Verify `validators.txt` has all 6 public keys
 4. Check node debug logs: `tail -50 /tmp/xrpld-integration/node1/debug.log`
 5. Ensure `[peer_private]` is set to `1` (prevents reaching out to public network)
