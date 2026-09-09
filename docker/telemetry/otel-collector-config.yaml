@@ -121,7 +121,7 @@ connectors:
 exporters:
   debug:
     verbosity: detailed
-  otlp/tempo:
+  otlp_grpc/tempo:
     endpoint: tempo:4317
     tls:
       insecure: true
@@ -144,7 +144,7 @@ service:
     traces:
       receivers: [otlp]
       processors: [resource/tier, resource/stripsdk, attributes/hash, batch]
-      exporters: [debug, otlp/tempo, span_metrics]
+      exporters: [debug, otlp_grpc/tempo, span_metrics]
     metrics:
       receivers: [span_metrics, statsd]
       processors: [resource/tier, resource/stripsdk]
