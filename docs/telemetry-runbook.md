@@ -111,7 +111,7 @@ Both set `[insight] server=otel` (native metrics → collector → Prometheus, w
 drives the dashboards) and `service_instance_id`, exposed by Prometheus as the
 `service_instance_id` label that the `$node` dashboard variable filters on. The
 mainnet config logs to `/var/log/xrpld/mainnet/debug.log` — the path
-the collector's filelog receiver tails for log-trace correlation.
+the collector's file_log receiver tails for log-trace correlation.
 
 Metrics begin flowing as soon as the node connects to peers (`server_state`
 ≥ `connected`); full ledger and consensus panels populate after sync
@@ -210,12 +210,12 @@ To return to local-only export, bring the stack up with just the base
 The prepared config **dual-exports**: data goes to both the local stack and
 Grafana Cloud, so the on-box backends remain a fallback. For cloud-only,
 remove the local exporters (`debug`, `otlp/tempo`, `prometheus`,
-`otlphttp/loki`) from the respective pipelines in
+`otlp_http/loki`) from the respective pipelines in
 `otel-collector-config.grafanacloud.yaml`, leaving only
-`otlphttp/grafanacloud`.
+`otlp_http/grafanacloud`.
 
 > **Note**: shipping logs to Grafana Cloud requires keeping xrpld file
-> logging on (at least `warning` level) so the collector's filelog receiver
+> logging on (at least `warning` level) so the collector's file_log receiver
 > has a `debug.log` to tail. Traces and metrics are unaffected by log level.
 
 ### Importing dashboards to Grafana Cloud
@@ -2843,7 +2843,7 @@ The sampled check is normally satisfied on a self-rooted consensus round — hea
 
 With all four satisfied, `info` is the minimum level at which the `log.trace_id_present` and `log.trace_id_cross_reference` checks pass by construction, and it is what the correlation-checking harnesses generate: the cfgs written by [run-full-validation.sh](../docker/telemetry/workload/run-full-validation.sh) and [integration-test.sh](../docker/telemetry/integration-test.sh) each set `enabled=1`, `trace_consensus=1` and `log_level info` together. `benchmark.sh` deliberately does not — it stays at `warning` to keep log I/O out of the overhead measurement, and it runs no correlation check. At `warning` and above that pair is suppressed and correlation becomes incidental — dependent on a `warn`-or-worse line happening to fire inside some active span.
 
-> **CI exercises both checks.** `log.trace_id_present` and `log.trace_id_cross_reference` are gated on every CI run — see [CI workflow](#ci-workflow) for the invocation and the per-leg diagnostics printed alongside them. Run the same thing locally after any change to log formatting, span activation, the `filelog` receiver or the Loki exporter:
+> **CI exercises both checks.** `log.trace_id_present` and `log.trace_id_cross_reference` are gated on every CI run — see [CI workflow](#ci-workflow) for the invocation and the per-leg diagnostics printed alongside them. Run the same thing locally after any change to log formatting, span activation, the `file_log` receiver or the Loki exporter:
 >
 > ```bash
 > docker/telemetry/workload/run-full-validation.sh --xrpld .build/xrpld
@@ -2864,7 +2864,7 @@ log_level RPCHandler debug
 
 ### Log Ingestion Pipeline
 
-Log files are ingested by the OTel Collector's `filelog` receiver, which tails `debug.log` files and parses them with a regex that extracts `timestamp`, `partition`, `severity`, `trace_id`, `span_id`, and `message` fields. Parsed entries are exported to Grafana Loki.
+Log files are ingested by the OTel Collector's `file_log` receiver, which tails `debug.log` files and parses them with a regex that extracts `timestamp`, `partition`, `severity`, `trace_id`, `span_id`, and `message` fields. Parsed entries are exported to Grafana Loki.
 
 The receiver tails `/var/log/xrpld/*/debug.log` inside the collector container. docker-compose bind-mounts the host log root there; the source defaults to the repo-relative `docker/telemetry/data/logs`, which the telemetry configs write to (`data/logs/<network>/debug.log`) and which needs no root. To tail logs from elsewhere, set `XRPLD_LOG_DIR` before `docker compose up` (the integration test does this to point at its own workdir). The single trailing `*` matches one per-network or per-node subdirectory.
 
@@ -2899,7 +2899,7 @@ after the selector and cannot be discovered by `label_values()`.
 
 # Logs from the last hour containing trace context. `partition`, `severity`, and
 # `trace_id` are already parsed into structured metadata by the collector's
-# filelog receiver, so re-extracting them with regexp is unnecessary work.
+# file_log receiver, so re-extracting them with regexp is unnecessary work.
 {service_name="xrpld"} | trace_id != ""
 
 # Count of traced vs untraced log lines
@@ -3614,9 +3614,9 @@ not a sign the cache is working.
 ### No logs in Loki
 
 - Verify the log file mount in docker-compose.yml points to the correct xrpld log directory (default source `docker/telemetry/data/logs`, or the `XRPLD_LOG_DIR` override) and that xrpld actually writes `debug.log` there
-- Check OTel Collector logs for filelog receiver errors: `docker compose logs otel-collector`
+- Check OTel Collector logs for file_log receiver errors: `docker compose logs otel-collector`
 - Verify Loki is running: `curl http://localhost:3100/ready`
-- Check the filelog receiver glob `/var/log/xrpld/*/debug.log` matches your log layout — the log file must sit one subdirectory below the mount root
+- Check the file_log receiver glob `/var/log/xrpld/*/debug.log` matches your log layout — the log file must sit one subdirectory below the mount root
 
 ## Performance Tuning
 
@@ -3920,12 +3920,12 @@ container as the main CI, so Conan and ccache hit the shared caches), and
   these checks are enabled: per-node counts of `debug.log` lines carrying the
   injected `trace_id`/`span_id` shape plus the severity mix, the container-side
   listing of `/var/log/xrpld` taken with the collector's own mounts and uid, the
-  `filelog` receiver's watched files, logs-pipeline warnings and internal
+  `file_log` receiver's watched files, logs-pipeline warnings and internal
   log-record counters, and Loki's entry counts for the stream selector with and
   without the line filter. The diagnostics are non-fatal by construction: each
   leg is isolated and a missing container or unreachable endpoint prints a note.
   Those two Loki entry counts are `sum(count_over_time(...))`, and the `sum()` is
-  load-bearing: the `filelog` receiver leaves `message` and `timestamp` as
+  load-bearing: the `file_log` receiver leaves `message` and `timestamp` as
   log-record attributes, Loki's OTLP path stores them as structured metadata, and
   structured metadata joins a metric query's label set — so an unaggregated
   `count_over_time` produces one series per log line and Loki answers `HTTP 400

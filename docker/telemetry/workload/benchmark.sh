@@ -189,7 +189,7 @@ start_cluster() {
 
     # Build per-node configs.
     for i in $(seq 1 "$NUM_NODES"); do
-        local node_dir="$WORKDIR/node$i"
+        local node_dir="$WORKDIR/bench-node-$i"
         mkdir -p "$node_dir/nudb" "$node_dir/db" ||
             cannot_measure "Could not create node$i directories under $node_dir"
 
@@ -361,7 +361,7 @@ stop_cluster() {
 
     log "Stopping cluster..."
     for i in $(seq 1 "$NUM_NODES"); do
-        local pidfile="$WORKDIR/node$i/xrpld.pid"
+        local pidfile="$WORKDIR/bench-node-$i/xrpld.pid"
         if [ -f "$pidfile" ]; then
             kill "$(cat "$pidfile")" 2>/dev/null || true
         fi
@@ -422,7 +422,7 @@ ws_endpoints() {
 node_pids_csv() {
     local i out="" pid
     for i in $(seq 1 "$NUM_NODES"); do
-        pid=$(cat "$WORKDIR/node$i/xrpld.pid" 2>/dev/null) || continue
+        pid=$(cat "$WORKDIR/bench-node-$i/xrpld.pid" 2>/dev/null) || continue
         [ -n "$pid" ] && out="$out,$pid"
     done
     printf '%s' "${out#,}"

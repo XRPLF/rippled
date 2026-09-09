@@ -32,7 +32,7 @@ run-full-validation.sh (shell orchestrator)
   |
   |-- docker-compose.workload.yaml
   |     |-- otel-collector (otlp receiver: traces + beast::insight metrics;
-  |     |                  filelog receiver: node debug.log -> Loki)
+  |     |                  file_log receiver: node debug.log -> Loki)
   |     |-- tempo (trace backend + TraceQL search API)
   |     |-- prometheus (metrics scraping)
   |     |-- loki (log aggregation for log-trace correlation)
@@ -458,7 +458,7 @@ its own `check_log_correlation()`, but no workflow runs that script.
 
 Correlation depends on four independent legs, and a failed check on its own names
 none of them: the node must write a `debug.log` line carrying trace ids, the
-collector container must see that file, its `filelog` receiver must parse and
+collector container must see that file, its `file_log` receiver must parse and
 export the line, and Loki must return it for the validator's LogQL.
 `run-full-validation.sh` prints a per-leg diagnostic after the suite whenever the
 Loki checks are enabled — per-node correlated-line counts and severity mix, the
@@ -467,7 +467,7 @@ internal log-record counters, and Loki's own entry counts for the selector with
 and without the line filter. Read that block first; it identifies the broken leg
 without reproducing anything.
 
-Those two entry counts **must** be wrapped in `sum()`. The `filelog` receiver's
+Those two entry counts **must** be wrapped in `sum()`. The `file_log` receiver's
 `regex_parser` leaves `message` and `timestamp` as log-record attributes, and
 Loki's OTLP path stores them as structured metadata that joins the label set of a
 metric query — so an unaggregated `count_over_time` returns one series per log
@@ -510,7 +510,7 @@ docker/telemetry/workload/run-full-validation.sh --xrpld .build/xrpld
 ```
 
 Re-run it after any change to log formatting, span activation, the collector's
-`filelog` receiver, or the Loki exporter.
+`file_log` receiver, or the Loki exporter.
 
 ### Pathfinding is not exercised
 

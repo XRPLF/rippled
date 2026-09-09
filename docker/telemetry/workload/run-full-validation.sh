@@ -266,7 +266,7 @@ mkdir -p "$WORKDIR" "$REPORT_DIR" || die "Could not create $WORKDIR and $REPORT_
 # Step 1: Start observability stack
 # ---------------------------------------------------------------------------
 log "Step 1: Starting observability stack..."
-# Point the collector's log mount at this run's workdir so the filelog
+# Point the collector's log mount at this run's workdir so the file_log
 # receiver tails the per-node debug.log files generated below.
 XRPLD_LOG_DIR="$WORKDIR" docker compose -f "$COMPOSE_FILE" up -d ||
     die "docker compose up failed for $COMPOSE_FILE — the observability stack did not start"
@@ -311,7 +311,7 @@ bash "$SCRIPT_DIR/generate-validator-keys.sh" "$XRPLD" "$NUM_NODES" "$WORKDIR" |
     die "generate-validator-keys.sh failed — no validator keys for the $NUM_NODES-node cluster"
 
 for i in $(seq 1 "$NUM_NODES"); do
-    NODE_DIR="$WORKDIR/node$i"
+    NODE_DIR="$WORKDIR/validator-$i"
     mkdir -p "$NODE_DIR/nudb" "$NODE_DIR/db" || die "Could not create node$i directories under $NODE_DIR"
 
     RPC_PORT=$((RPC_PORT_BASE + i - 1))
@@ -478,15 +478,15 @@ node_running() {
 report_stopped_nodes() {
     local i pid status
     for i in $(seq 1 "$NUM_NODES"); do
-        pid=$(cat "$WORKDIR/node$i/xrpld.pid" 2>/dev/null || echo "")
+        pid=$(cat "$WORKDIR/validator-$i/xrpld.pid" 2>/dev/null || echo "")
         [ -n "$pid" ] || continue
         node_running "$pid" && continue
         status=0
         wait "$pid" 2>/dev/null || status=$?
         warn "node$i (pid $pid) is not running — wait status $status"
-        if [ -s "$WORKDIR/node$i/stdout.log" ]; then
+        if [ -s "$WORKDIR/validator-$i/stdout.log" ]; then
             warn "node$i last output:"
-            tail -n 15 "$WORKDIR/node$i/stdout.log" | sed 's/^/      /' >&2
+            tail -n 15 "$WORKDIR/validator-$i/stdout.log" | sed 's/^/      /' >&2
         else
             warn "node$i wrote no stdout at all"
         fi
@@ -606,7 +606,7 @@ fi
 # ---------------------------------------------------------------------------
 # Log-trace correlation has four legs and a failed check names none of them:
 # the node must write a debug.log line carrying trace ids, the collector
-# container must see that file, its filelog receiver must parse and export the
+# container must see that file, its file_log receiver must parse and export the
 # line, and Loki must return it for the validator's own LogQL. Each leg below
 # reports what it observed, so a reader with only the CI log can tell which one
 # broke instead of guessing.
@@ -704,7 +704,7 @@ diag_node_logs() {
     local i log bytes total correlated sample
     echo "  [leg 1/4 node] debug.log lines matching '$DIAG_TRACE_RE'"
     for i in $(seq 1 "$NUM_NODES"); do
-        log="$WORKDIR/node$i/debug.log"
+        log="$WORKDIR/validator-$i/debug.log"
         if [ ! -f "$log" ]; then
             echo "    node$i: no debug.log at $log — the node never opened its log sink"
             continue
@@ -786,10 +786,10 @@ diag_collector_mount() {
         sed 's/^/      /' || echo "      (container-side listing failed)"
 }
 
-# Leg 3 — collector: did the filelog receiver parse and export those lines?
+# Leg 3 — collector: did the file_log receiver parse and export those lines?
 #
 # Two independent readings. The collector's own stderr names every file the
-# receiver opened and carries any filelog parse or Loki export error. Its
+# receiver opened and carries any file_log parse or Loki export error. Its
 # internal telemetry counts log records in and out: accepted>0 with sent=0 is
 # an export failure, accepted=0 while files are being watched is a parse
 # failure.
@@ -801,7 +801,7 @@ diag_collector_mount() {
 # exists; when it reports nothing matching, the leg says so.
 diag_collector_pipeline() {
     local cid img watched problems metrics
-    echo "  [leg 3/4 collector] filelog receiver state"
+    echo "  [leg 3/4 collector] file_log receiver state"
     if ! command -v docker >/dev/null 2>&1; then
         echo "    docker is not on PATH — leg skipped"
         return 0
@@ -822,12 +822,12 @@ diag_collector_pipeline() {
     # Second filter keys on the collector's own logs-pipeline markers so this
     # does not report warnings from the trace or metric pipelines. Nothing is
     # excluded beyond that: the collector's benign config-alias deprecation
-    # notices ("filelog" -> "file_log") do surface here, and suppressing lines
+    # notices ("file_log" -> "file_log") do surface here, and suppressing lines
     # because they are usually harmless is how a diagnostic hides the one that
     # was not.
     problems=$(diag_run docker logs "$cid" 2>&1 |
         grep -iE '(warn|error)' |
-        grep -iE 'filelog|fileconsumer|loki|signal": *"logs' |
+        grep -iE 'file_log|fileconsumer|loki|signal": *"logs' |
         tail -n 20 || true)
     if [ -n "$problems" ]; then
         echo "    logs-pipeline warnings and errors (last 20):"
@@ -869,7 +869,7 @@ diag_loki_stream() {
     [ -n "$selector" ] || selector="$DIAG_LOG_SELECTOR"
     [ -n "$correlation" ] || correlation="$DIAG_LOG_SELECTOR $DIAG_LOG_FILTER"
     # sum() is required, for the reason recorded at _log_loki_diagnostics in
-    # validate_telemetry.py: the filelog regex_parser leaves message/timestamp
+    # validate_telemetry.py: the file_log regex_parser leaves message/timestamp
     # as log-record attributes, Loki's OTLP path turns those into structured
     # metadata that joins a metric query's label set, so an unaggregated
     # count_over_time yields one series per log line and Loki rejects the query
@@ -1076,7 +1076,7 @@ echo "  xrpld nodes ($NUM_NODES) are running:"
 for i in $(seq 1 "$NUM_NODES"); do
     rpc=$((RPC_PORT_BASE + i - 1))
     ws=$((WS_PORT_BASE + i - 1))
-    pid=$(cat "$WORKDIR/node$i/xrpld.pid" 2>/dev/null || echo 'unknown')
+    pid=$(cat "$WORKDIR/validator-$i/xrpld.pid" 2>/dev/null || echo 'unknown')
     echo "    Node $i: RPC=$rpc WS=$ws PID=$pid"
 done
 echo ""

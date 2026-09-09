@@ -1680,7 +1680,7 @@ async def _log_loki_diagnostics(session: aiohttp.ClientSession, loki_url: str) -
             "Loki diagnostic: service_name values: %s", ", ".join(found) or "(none)"
         )
 
-    # sum() is load-bearing, not cosmetic. The filelog receiver's regex_parser
+    # sum() is load-bearing, not cosmetic. The file_log receiver's regex_parser
     # leaves message, timestamp, trace_id and span_id as log-record attributes,
     # and Loki's OTLP path stores those as structured metadata, which joins the
     # label set of a metric query. Because `message` and `timestamp` are unique

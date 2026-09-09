@@ -14,7 +14,12 @@
 #   {{RPC_PORT}}          — HTTP RPC port
 #   {{WS_PORT}}           — WebSocket port
 #   {{PEER_PORT}}         — Peer protocol port
-#   {{DATA_DIR}}          — Node data directory
+#   {{DATA_DIR}}          — Node data directory. Its last path segment must
+#                           equal service_instance_id below: the collector's
+#                           file_log receiver reads that segment off the log
+#                           file path and stamps it as the Loki label
+#                           service_instance_id, so a mismatch gives log lines
+#                           a node name no trace or metric shares.
 #   {{VALIDATION_SEED}}   — Validator seed from key generation
 #   {{VALIDATORS_FILE}}   — Path to shared validators.txt
 #   {{IPS_FIXED}}         — Peer addresses (one per line)
