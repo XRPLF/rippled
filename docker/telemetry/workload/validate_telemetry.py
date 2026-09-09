@@ -2300,6 +2300,48 @@ def _bounds_description(lo: float, hi: float | None, exclusive_lo: bool) -> str:
     return desc
 
 
+async def _poll_instant_query(
+    session: aiohttp.ClientSession,
+    prometheus_url: str,
+    query: str,
+    deadline: float,
+) -> list[dict[str, Any]]:
+    """Run an instant query, retrying until it returns series or time runs out.
+
+    A bounds check needs the sample value, so it cannot use the /api/v1/series
+    endpoint the metric checks poll. An instant query answers from the last
+    scrape, and a gauge that stops changing can fall out of it, so one attempt
+    is not enough to call the series absent.
+
+    Args:
+        session:        aiohttp client session.
+        prometheus_url: Prometheus API base URL.
+        query:          PromQL instant query.
+        deadline:       Monotonic deadline. Never slept past.
+
+    Returns:
+        The result list, empty if nothing appeared before the deadline.
+    """
+    while True:
+        async with session.get(
+            f"{prometheus_url}/api/v1/query", params={"query": query}
+        ) as resp:
+            data = await resp.json()
+            # An error is not "not yet": a bad query never becomes good, so
+            # retrying it only burns the whole deadline. Raise instead, and let
+            # the caller report it against the check's own name.
+            if data.get("status") != "success":
+                raise RuntimeError(
+                    "Prometheus rejected the query: "
+                    f"{data.get('error') or data.get('status')}"
+                )
+            results = data.get("data", {}).get("result", [])
+        remaining = deadline - time.monotonic()
+        if results or remaining <= 0:
+            return results
+        await asyncio.sleep(min(METRIC_POLL_INTERVAL_SEC, remaining))
+
+
 async def _check_parity_value(
     session: aiohttp.ClientSession,
     prometheus_url: str,
@@ -2323,18 +2365,20 @@ async def _check_parity_value(
     check_name = f"parity.value_sanity.{name}"
 
     try:
-        async with session.get(
-            f"{prometheus_url}/api/v1/query", params={"query": entry["query"]}
-        ) as resp:
-            data = await resp.json()
-            results = data.get("data", {}).get("result", [])
+        deadline = time.monotonic() + METRIC_POLL_TIMEOUT_SEC
+        results = await _poll_instant_query(
+            session, prometheus_url, entry["query"], deadline
+        )
 
         if not results:
             return CheckResult(
                 name=check_name,
                 category="parity",
                 passed=False,
-                message=f"{name}: no data returned from Prometheus",
+                message=(
+                    f"{name}: no data returned from Prometheus after "
+                    f"{METRIC_POLL_TIMEOUT_SEC:g}s"
+                ),
             )
 
         values: list[float] = []
