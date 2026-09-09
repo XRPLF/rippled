@@ -55,7 +55,7 @@ VaultCreate::checkExtraFeatures(PreflightContext const& ctx)
 std::uint32_t
 VaultCreate::getFlagsMask(PreflightContext const& ctx)
 {
-    if (ctx.rules.enabled(featureLendingProtocolV1_1))
+    if (ctx.rules.enabled(featureLendingProtocolV1_2))
         return tfVaultCreateMask;
 
     return tfVaultCreateMask | tfVaultOwnerCanBlockDeposit;
@@ -256,7 +256,7 @@ VaultCreate::doApply()
     if (tx.isFlag(tfVaultPrivate))
         vault->setFlag(lsfVaultPrivate);
 
-    if (view().rules().enabled(featureLendingProtocolV1_1) &&
+    if (view().rules().enabled(featureLendingProtocolV1_2) &&
         tx.isFlag(tfVaultOwnerCanBlockDeposit))
         vault->setFlag(lsfVaultOwnerCanBlockDeposit);
 

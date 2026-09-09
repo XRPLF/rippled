@@ -158,7 +158,7 @@ VaultDeposit::preclaim(PreclaimContext const& ctx)
         // LCOV_EXCL_STOP
     }
 
-    if (ctx.view.rules().enabled(featureLendingProtocolV1_1))
+    if (ctx.view.rules().enabled(featureLendingProtocolV1_2))
     {
         // Perform these checks early to avoid unnecessary processing
 

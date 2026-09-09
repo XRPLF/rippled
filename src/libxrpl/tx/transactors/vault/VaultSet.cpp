@@ -29,7 +29,7 @@ VaultSet::checkExtraFeatures(PreflightContext const& ctx)
 std::uint32_t
 VaultSet::getFlagsMask(PreflightContext const& ctx)
 {
-    if (ctx.rules.enabled(featureLendingProtocolV1_1))
+    if (ctx.rules.enabled(featureLendingProtocolV1_2))
         return tfVaultSetMask;
 
     // Add tfVaultDepositBlock and tfVaultDepositUnblock flags to indicate they are disabled
@@ -142,7 +142,7 @@ VaultSet::preclaim(PreclaimContext const& ctx)
         }
     }
 
-    if (ctx.view.rules().enabled(featureLendingProtocolV1_1))
+    if (ctx.view.rules().enabled(featureLendingProtocolV1_2))
     {
         // The Vault is not configured to support deposit blocking
         if (!vault->isFlag(lsfVaultOwnerCanBlockDeposit) &&
@@ -222,7 +222,7 @@ VaultSet::doApply()
         view().update(sleIssuance);
     }
 
-    if (view().rules().enabled(featureLendingProtocolV1_1))
+    if (view().rules().enabled(featureLendingProtocolV1_2))
     {
         if (tx.isFlag(tfVaultDepositBlock))
             vault->setFlag(lsfVaultDepositBlocked);

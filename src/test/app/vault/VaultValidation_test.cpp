@@ -166,11 +166,11 @@ private:
             env(tx, Ter{temINVALID_FLAG});
 
             {
-                env.disableFeature(featureLendingProtocolV1_1);
+                env.disableFeature(featureLendingProtocolV1_2);
                 auto [tx, keylet] = vault.create({.owner = owner, .asset = asset});
                 tx[sfFlags] = tfVaultOwnerCanBlockDeposit;
                 env(tx, Ter(temINVALID_FLAG));
-                env.enableFeature(featureLendingProtocolV1_1);
+                env.enableFeature(featureLendingProtocolV1_2);
             }
 
             {
@@ -479,18 +479,18 @@ private:
 
         testCase(
             [&](Env& env, Account const&, Account const& owner, Asset const& asset, Vault& vault) {
-                testcase("set flags fail without featureLendingProtocolV1_1");
+                testcase("set flags fail without featureLendingProtocolV1_2");
 
                 auto [tx, keylet] = vault.create({.owner = owner, .asset = asset});
 
                 {
-                    env.disableFeature(featureLendingProtocolV1_1);
+                    env.disableFeature(featureLendingProtocolV1_2);
                     env(vault.set({.owner = owner, .id = keylet.key, .flags = tfVaultDepositBlock}),
                         Ter(temINVALID_FLAG));
                     env(vault.set(
                             {.owner = owner, .id = keylet.key, .flags = tfVaultDepositUnblock}),
                         Ter(temINVALID_FLAG));
-                    env.enableFeature(featureLendingProtocolV1_1);
+                    env.enableFeature(featureLendingProtocolV1_2);
                 }
             });
 
@@ -1245,7 +1245,7 @@ private:
         {
             testcase(prefix + "block/unblock fails when amendment is disabled");
 
-            env.disableFeature(featureLendingProtocolV1_1);
+            env.disableFeature(featureLendingProtocolV1_2);
             auto const [tx, keylet] = vault.create(
                 {.owner = owner, .asset = asset, .flags = tfVaultOwnerCanBlockDeposit});
             env(tx, Ter(temINVALID_FLAG));
@@ -1254,7 +1254,7 @@ private:
             blockVault(temINVALID_FLAG, keylet);
             unblockVault(temINVALID_FLAG, keylet);
 
-            env.enableFeature(featureLendingProtocolV1_1);
+            env.enableFeature(featureLendingProtocolV1_2);
         }
 
         {
