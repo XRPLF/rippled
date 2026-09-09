@@ -105,7 +105,7 @@ The authoritative collector config lives in the repo at `docker/telemetry/otel-c
 
 ### 5.5.1 Development Configuration
 
-The development collector enables an OTLP receiver on both gRPC (`0.0.0.0:4317`) and HTTP (`0.0.0.0:4318`), a single `batch` processor (1s timeout, batch size 100), and two exporters: a `logging` exporter for console debugging and `otlp/tempo` (insecure) for trace visualization. The single `traces` pipeline wires receiver → batch → both exporters.
+The development collector enables an OTLP receiver on both gRPC (`0.0.0.0:4317`) and HTTP (`0.0.0.0:4318`), a single `batch` processor (1s timeout, batch size 100), and two exporters: a `logging` exporter for console debugging and `otlp_grpc/tempo` (insecure) for trace visualization. The single `traces` pipeline wires receiver → batch → both exporters.
 
 ### 5.5.2 Production Configuration
 
