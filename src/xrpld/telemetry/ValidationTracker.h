@@ -9,13 +9,15 @@
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/protocol/Protocol.h>
 
+#include <boost/smart_ptr/atomic_shared_ptr.hpp>
+#include <boost/smart_ptr/shared_ptr.hpp>
+
 #include <array>
 #include <atomic>
 #include <chrono>
 #include <cstddef>
 #include <cstdint>
 #include <deque>
-#include <memory>
 
 namespace xrpl::telemetry {
 
@@ -101,8 +103,10 @@ namespace xrpl::telemetry {
  * and the ledger master call them. reconcile() and the getters may be called
  * from any thread and any number of threads.
  * @note reconcile() and the getters share the published snapshot through an
- * atomic shared_ptr, which libstdc++ guards with a short internal spin. No
- * writer path touches it, so nothing a consensus thread calls can spin.
+ * atomic shared_ptr, which every implementation guards with a short internal
+ * spin. No writer path touches it, so nothing a consensus thread calls can
+ * spin. Boost's is used because Apple's libc++ has no std::atomic for a
+ * shared_ptr, so the std spelling does not compile there.
  * @note A writer whose ring is full discards the event and bumps
  * droppedEvents(). Counts are then low but never wrong.
  * @note Window edges are rounded to whole minutes, because counts are kept in
@@ -369,7 +373,7 @@ private:
          */
         LedgerIndex seq{0};
 
-        TimePoint at{};  ///< When the writer recorded it.
+        TimePoint at;  ///< When the writer recorded it.
     };
 
     /**
@@ -407,7 +411,7 @@ private:
             if (head - tail_.load(std::memory_order_acquire) >= kRingCapacity)
                 return false;
 
-            slots_[head & (kRingCapacity - 1)] = Slot{hash, seq, at};
+            slots_[head & (kRingCapacity - 1)] = Slot{.hash = hash, .seq = seq, .at = at};
             head_.store(head + 1, std::memory_order_release);
             return true;
         }
@@ -449,7 +453,7 @@ private:
      */
     struct LedgerEvent
     {
-        TimePoint recordTime{};        ///< Time the event was first recorded.
+        TimePoint recordTime;          ///< Time the event was first recorded.
         std::uint64_t minute{0};       ///< Minute bucket the event belongs to.
         bool weValidated{false};       ///< True if we sent a validation.
         bool networkValidated{false};  ///< True if network reached consensus.
@@ -620,7 +624,7 @@ private:
      * Set while a thread is inside reconcile(). A second caller sees it set
      * and returns rather than waiting.
      */
-    std::atomic_flag reducing_{};
+    std::atomic_flag reducing_;
 
     /**
      * Pending ledger events indexed by ledger hash. Touched only inside
@@ -692,7 +696,7 @@ private:
      * a reader that took the old one keeps it alive while it reads. Null until
      * the first reconcile().
      */
-    std::atomic<std::shared_ptr<Snapshot const>> published_;
+    boost::atomic_shared_ptr<Snapshot const> published_;
 
     /**
      * Lifetime count of agreements.

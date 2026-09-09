@@ -8,12 +8,13 @@
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/protocol/Protocol.h>
 
+#include <boost/smart_ptr/make_shared.hpp>
+
 #include <atomic>
 #include <chrono>
 #include <cstddef>
 #include <cstdint>
 #include <iterator>
-#include <memory>
 
 namespace xrpl::telemetry {
 
@@ -122,8 +123,10 @@ ValidationTracker::decidePending(TimePoint now)
     // Nothing can be repaired past the window, so the entry is dead weight.
     auto const cutoff = now - kLateRepairWindow;
     for (auto it = pending_.begin(); it != pending_.end();)
+    {
         it = (it->second.decided && it->second.recordTime < cutoff) ? pending_.erase(it)
                                                                     : std::next(it);
+    }
 }
 
 void
@@ -248,7 +251,7 @@ void
 ValidationTracker::publish()
 {
     published_.store(
-        std::make_shared<Snapshot const>(Snapshot{c1h_, c24h_, c7d_}), std::memory_order_release);
+        boost::make_shared<Snapshot const>(Snapshot{.w1h = c1h_, .w24h = c24h_, .w7d = c7d_}));
 }
 
 ValidationTracker::Snapshot
@@ -256,7 +259,7 @@ ValidationTracker::read() const
 {
     // Holding the shared_ptr keeps this snapshot alive for as long as the
     // caller needs it, so the reducer can never write the values being read.
-    auto const s = published_.load(std::memory_order_acquire);
+    auto const s = published_.load();
     return s ? *s : Snapshot{};
 }
 

@@ -503,6 +503,7 @@ TEST(TelemetryConfig, tls_missing_client_cert_file_throws)
     Section section = mtls::makeSection(true);
     section.set("use_tls", "1");
     section.set(mtls::keyEndpoint, mtls::httpsEndpoint);
+    section.set(mtls::keyMetricsEndpoint, mtls::metricsHttpsEndpoint);
     section.set(mtls::keyClientCert, absentCert);
     section.set(mtls::keyClientKey, mtls::writeCertFile(dir.file("k.pem")));
 
@@ -521,6 +522,7 @@ TEST(TelemetryConfig, tls_missing_client_key_file_throws)
     Section section = mtls::makeSection(true);
     section.set("use_tls", "1");
     section.set(mtls::keyEndpoint, mtls::httpsEndpoint);
+    section.set(mtls::keyMetricsEndpoint, mtls::metricsHttpsEndpoint);
     section.set(mtls::keyClientCert, mtls::writeCertFile(dir.file("c.pem")));
     section.set(mtls::keyClientKey, absentKey);
 
@@ -559,6 +561,7 @@ TEST(TelemetryConfig, tls_client_key_that_is_a_directory_throws)
     Section section = mtls::makeSection(true);
     section.set("use_tls", "1");
     section.set(mtls::keyEndpoint, mtls::httpsEndpoint);
+    section.set(mtls::keyMetricsEndpoint, mtls::metricsHttpsEndpoint);
     section.set(mtls::keyClientCert, mtls::writeCertFile(dir.file("c.pem")));
     section.set(mtls::keyClientKey, keyDir);
 

@@ -355,7 +355,7 @@ TEST(ValidationTracker, an_event_exactly_one_day_old_has_left_the_day_window)
     t.recordNetworkValidation(makeHash(21), 21);
     settle(t);
 
-    advance(std::chrono::minutes(24 * 60 - 1) - Tracker::gracePeriod());
+    advance(std::chrono::minutes((24 * 60) - 1) - Tracker::gracePeriod());
     t.reconcile();
     EXPECT_EQ(t.agreements24h(), 1u);
 
@@ -396,7 +396,7 @@ TEST(ValidationTracker, steady_traffic_across_the_grid_boundary_keeps_recent_cou
     // that was not cleared shows up when that bucket is subtracted.
     auto t = makeTracker();
 
-    constexpr std::uint64_t kMinutes = 2 * 7 * 24 * 60 + 5;
+    constexpr std::uint64_t kMinutes = (2 * 7 * 24 * 60) + 5;
     for (std::uint64_t i = 0; i < kMinutes; ++i)
     {
         t.recordOurValidation(makeHash(i), static_cast<LedgerIndex>(i));
@@ -532,7 +532,7 @@ TEST(ValidationTracker, a_burst_larger_than_one_ring_is_counted_in_full_when_dra
     {
         for (std::size_t i = 0; i < perBatch; ++i)
         {
-            auto const n = b * perBatch + i + 1;
+            auto const n = (b * perBatch) + i + 1;
             t.recordOurValidation(makeHash(n), static_cast<LedgerIndex>(n));
             t.recordNetworkValidation(makeHash(n), static_cast<LedgerIndex>(n));
         }
@@ -636,11 +636,14 @@ TEST(ValidationTracker, concurrent_reducer_entry_does_not_deadlock_or_double_cou
     advance(Tracker::gracePeriod() + std::chrono::seconds(1));
 
     std::vector<std::thread> readers;
+    readers.reserve(8);
     for (int i = 0; i < 8; ++i)
+    {
         readers.emplace_back([&t] {
             for (int j = 0; j < 500; ++j)
                 t.reconcile();
         });
+    }
     for (auto& r : readers)
         r.join();
 
