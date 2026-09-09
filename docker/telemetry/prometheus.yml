@@ -1,4 +1,4 @@
-# Prometheus configuration for scraping spanmetrics from OTel Collector.
+# Prometheus configuration for scraping span_metrics from OTel Collector.
 global:
   scrape_interval: 15s
   evaluation_interval: 15s

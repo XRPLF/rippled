@@ -364,7 +364,7 @@ alert catalogue, not here.
 ### 7.6.3 Writing New Rules: the metric name
 
 If you add a span-metric alert, the metric is **`span_calls_total`**. This stack
-sets the `spanmetrics` connector's `namespace: "span"`
+sets the `span_metrics` connector's `namespace: "span"`
 (`otel-collector-config.yaml:114`); the connector's own default namespace is
 **empty**, so without that setting the names would be the bare `calls_total` /
 `duration_milliseconds_*`. 7 of the 15 dashboards already query the `span_`

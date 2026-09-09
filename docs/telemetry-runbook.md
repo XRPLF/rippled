@@ -286,7 +286,7 @@ this span: count successes as total minus error, or filter on `status_code`.
 The three apply-pipeline spans (`tx.preflight`, `tx.preclaim`, `tx.transactor`)
 share a deterministic `trace_id` from `txID[0:16]`, so they group under one
 trace per transaction. The `stage` attribute (`preflight` / `preclaim` /
-`apply`) drives the collector spanmetrics `stage` dimension, giving per-stage
+`apply`) drives the collector span_metrics `stage` dimension, giving per-stage
 RED metrics on the _Transaction Overview_ dashboard.
 
 `current_ledger_seq` is the current (open/in-flight) ledger index a span acted on
@@ -1335,7 +1335,7 @@ sum by (stage) (rate(span_calls_total{span_name=~"tx.preflight|tx.preclaim|tx.tr
 > in `otel-collector-config.grafanacloud.yaml` — the base
 > `otel-collector-config.yaml` has no tail sampling at all, so a stock local
 > stack retains every trace. Where that Cloud policy is in force it applies to
-> the trace-storage branch only; spanmetrics run on a separate branch and still
+> the trace-storage branch only; span_metrics run on a separate branch and still
 > see 100% of spans, so the derived RED metrics stay exact either way.
 
 ### Transaction Queue Health
@@ -1571,7 +1571,7 @@ all its normal attributes, it just lacks a cross-node parent link.
 
 ## Prometheus Metrics (Spanmetrics)
 
-The OTel Collector's spanmetrics connector automatically derives RED (Rate, Errors, Duration) metrics from every span. No custom metrics code is needed in xrpld.
+The OTel Collector's span_metrics connector automatically derives RED (Rate, Errors, Duration) metrics from every span. No custom metrics code is needed in xrpld.
 
 ### Generated Metric Names
 
@@ -2164,7 +2164,7 @@ collector settings make it work, both already enabled:
 
 - `prometheus.resource_to_telemetry_conversion: enabled: true` promotes
   resource attributes to metric labels on the local scrape surface.
-- `spanmetrics.resource_metrics_key_attributes` lists the tier attributes so
+- `span_metrics.resource_metrics_key_attributes` lists the tier attributes so
   span-derived series stay grouped per node and tier.
 
 Traces and logs carry resource attributes natively; Grafana Cloud ingests all
