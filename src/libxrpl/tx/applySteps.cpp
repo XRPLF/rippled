@@ -328,9 +328,7 @@ preflight(
     // XRPL_ASSERT_IF in the PreflightContext constructor only fires in debug
     // builds; re-check the same invariant here so a release build can't
     // silently skip a proposed transaction's signature-presence checks
-    // outside of a dry run. Coverage is measured in Debug where the assert
-    // above aborts first, so the body of this defensive branch is
-    // unreachable there.
+    // outside of a dry run.
     if ((flags & TapProposal) != TapNone && (flags & TapDryRun) == TapNone)
     {
         // LCOV_EXCL_START
