@@ -107,6 +107,8 @@ def main() -> None:
     args = parser.parse_args()
     package_dir: Path = args.package_dir
 
+    # Deliberately not shared with publish_pkg.py, which ships standalone in the
+    # packaging image.
     rpms = sorted(path for path in package_dir.rglob("*.rpm") if path.is_file())
     # Signing nothing would otherwise look like a successful signing.
     assert rpms, f"no RPMs found in {package_dir}"
