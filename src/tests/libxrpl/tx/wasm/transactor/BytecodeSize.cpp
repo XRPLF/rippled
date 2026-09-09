@@ -113,7 +113,6 @@ TEST(BytecodeSize, RaisingTheLimitAdmitsALargerModule)
 // means a second limit has appeared, and that reasoning needs revisiting.
 TEST(BytecodeSize, ASingleFunctionBodyIsNotSeparatelyCapped)
 {
-    auto env = TxTest{};
     auto const wasm = codeHeavyModule(1'000'000);
     ASSERT_GT(wasm.size(), 128U * 1024U) << "the module must exceed MAX_WASM_FUNCTION_SIZE";
 
