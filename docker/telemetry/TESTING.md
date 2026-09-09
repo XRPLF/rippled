@@ -163,7 +163,7 @@ Run the integration test script:
 bash docker/telemetry/integration-test.sh
 ```
 
-It checks prerequisites, clears the previous run, brings up the observability stack, generates six validator key pairs and their node configs, starts the nodes, waits for consensus and then for a validated ledger, exercises RPC and submits a transaction, verifies traces in Tempo and both the spanmetrics and the StatsD-derived metrics in Prometheus, then prints a summary and leaves the stack running.
+It checks prerequisites, clears the previous run, brings up the observability stack, generates six validator key pairs and their node configs, starts the nodes, waits for consensus and then for a validated ledger, exercises RPC and submits a transaction, verifies traces in Tempo and both the span_metrics and the StatsD-derived metrics in Prometheus, then prints a summary and leaves the stack running.
 
 The script announces each step as it runs, so read its `Step N:` headers for the authoritative sequence — they are not restated here, because a numbered copy of them drifts as soon as a step is added.
 
@@ -413,7 +413,7 @@ Base URL: `http://localhost:9090`
 ```bash
 PROM="http://localhost:9090"
 
-# Span call counts (from spanmetrics connector)
+# Span call counts (from span_metrics connector)
 curl -s "$PROM/api/v1/query?query=traces_span_metrics_calls_total" |
     jq '.data.result[] | {span: .metric.span_name, count: .value[1]}'
 
@@ -492,13 +492,13 @@ Pre-configured datasources:
 
 ### Spanmetrics not appearing in Prometheus
 
-1. Verify otel-collector config has `spanmetrics` connector
+1. Verify otel-collector config has `span_metrics` connector
 2. Check that the metrics pipeline is configured:
    ```yaml
    service:
      pipelines:
        metrics:
-         receivers: [spanmetrics]
+         receivers: [span_metrics]
          exporters: [prometheus]
    ```
 3. Verify Prometheus can reach collector:

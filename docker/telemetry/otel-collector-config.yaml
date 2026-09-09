@@ -1,11 +1,11 @@
 # OpenTelemetry Collector configuration for xrpld development.
 #
 # Pipelines:
-#   traces: OTLP receiver -> batch processor -> debug + Tempo + spanmetrics
-#   metrics: StatsD receiver + spanmetrics connector -> Prometheus exporter
+#   traces: OTLP receiver -> batch processor -> debug + Tempo + span_metrics
+#   metrics: StatsD receiver + span_metrics connector -> Prometheus exporter
 #
 # xrpld sends traces via OTLP/HTTP to port 4318. The collector batches
-# them, forwards to Tempo, and derives RED metrics via the spanmetrics
+# them, forwards to Tempo, and derives RED metrics via the span_metrics
 # connector, which Prometheus scrapes on port 8889.
 #
 # xrpld's beast::insight framework sends StatsD UDP metrics to port 8125.
@@ -80,7 +80,7 @@ processors:
         action: hash
 
 connectors:
-  spanmetrics:
+  span_metrics:
     # Resource attributes that define the resource-metrics grouping key.
     # All resource attributes are propagated onto the output metrics
     # regardless; promotion to Prometheus labels is handled by the
@@ -144,8 +144,8 @@ service:
     traces:
       receivers: [otlp]
       processors: [resource/tier, resource/stripsdk, attributes/hash, batch]
-      exporters: [debug, otlp/tempo, spanmetrics]
+      exporters: [debug, otlp/tempo, span_metrics]
     metrics:
-      receivers: [spanmetrics, statsd]
+      receivers: [span_metrics, statsd]
       processors: [resource/tier, resource/stripsdk]
       exporters: [prometheus]
