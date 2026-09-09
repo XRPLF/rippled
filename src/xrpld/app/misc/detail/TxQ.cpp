@@ -807,9 +807,13 @@ TxQ::apply(
         {
             span.setAttribute(txq_span::attr::terCode, transToken(directApplied->ter).c_str());
             if (directApplied->applied)
+            {
                 span.setAttribute(txq_span::attr::txqStatus, txq_span::val::appliedDirect);
+            }
             else
+            {
                 span.setAttribute(txq_span::attr::txqStatus, txq_span::val::failed);
+            }
         }
         return *directApplied;
     }
