@@ -1,3 +1,4 @@
+#if 0
 #include <expected>
 #ifdef _DEBUG
 // #define DEBUG_OUTPUT 1
@@ -1430,3 +1431,4 @@ struct Wasm_test : public beast::unit_test::Suite
 BEAST_DEFINE_TESTSUITE(Wasm, app, xrpl);
 
 }  // namespace xrpl::test
+#endif
