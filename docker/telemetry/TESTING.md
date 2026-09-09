@@ -631,20 +631,22 @@ curl -sG "http://localhost:3100/loki/api/v1/query" \
 
 Expected: > 0 results.
 
-> **Use `service_name`, not `job`.** The collector's `resource/logs` processor
-> applies an `upsert` to **both** `service.name=xrpld` and `job=xrpld`
-> (`otel-collector-config.yaml:57-70`), and its comment says the `job` attribute
-> is there so operators can paste `{job="xrpld"}`. That does not work: on OTLP
-> ingest Loki promotes only an allow-listed set of resource attributes to indexed
-> stream labels (`service.name` → `service_name`, plus `service.namespace`,
+> **Use `service_name`, not `job`.** The local stack's `resource/logs` processor
+> sets one key, `service.name=xrpld` (`otel-collector-config.yaml:84-86`); its
+> comment there explains that a custom `job` attribute is not promoted to a
+> stream label and tells you to select on `service_name`. Only the Grafana Cloud
+> variant also sets `job=xrpld` (`otel-collector-config.grafanacloud.yaml:73-75`).
+> Either way `{job="xrpld"}` does not work as a selector: on OTLP ingest Loki
+> promotes only an allow-listed set of resource attributes to indexed stream
+> labels (`service.name` → `service_name`, plus `service.namespace`,
 > `service.instance.id`, `deployment.environment`, `k8s.*`, `cloud.*`), and `job`
 > is not on the list. This repo mounts no Loki config override — the `loki`
 > service runs the image's built-in `/etc/loki/local-config.yaml`
-> (`docker-compose.yml:75`) — so `job` lands in **structured metadata**, which
+> (`docker-compose.yml:116`) — so `job` lands in **structured metadata**, which
 > cannot be a stream selector. `{job="xrpld"}` therefore returns **zero results
 > with no error**, which reads exactly like "logs are not being ingested". If
 > this query is empty, check `{service_name="xrpld"}` before debugging the
-> pipeline. All 38 Loki queries in the shipped dashboards select on
+> pipeline. All 35 Loki queries in the shipped dashboards select on
 > `service_name`; none uses `job`.
 
 ### Step 4: Verify Grafana Tempo-to-Loki correlation

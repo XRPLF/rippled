@@ -985,7 +985,7 @@ flowchart TB
   (`tvc < minVal`) it returns early with no promotion — a built ledger that loses
   is abandoned ([LedgerMaster.cpp:980](../src/xrpld/app/ledger/detail/LedgerMaster.cpp#L980);
   [docs/consensus.md:50](consensus.md)). The `ledger.validate` span is emitted only
-  inside `checkAccept` ([LedgerMaster.cpp:987](../src/xrpld/app/ledger/detail/LedgerMaster.cpp#L987)).
+  inside `checkAccept` ([LedgerMaster.cpp:1003](../src/xrpld/app/ledger/detail/LedgerMaster.cpp#L1003)).
 - **validation-send guard**: broadcast only if
   `validating_ && isCompatible && !consensusFail && canValidateSeq(seq)` — silently
   suppressed for incompatible ledgers or an already-validated seq
@@ -1152,8 +1152,8 @@ are pending a code fix:
 - **`ledger.acquire` / `ledger.store` / `ledger.validate` are not reliably roots
   either.** All three use `SpanGuard::span`
   ([InboundLedger.cpp:113](../src/xrpld/app/ledger/detail/InboundLedger.cpp#L113),
-  [LedgerMaster.cpp:463](../src/xrpld/app/ledger/detail/LedgerMaster.cpp#L463),
-  [987](../src/xrpld/app/ledger/detail/LedgerMaster.cpp#L987)), which inherits the
+  [LedgerMaster.cpp:470](../src/xrpld/app/ledger/detail/LedgerMaster.cpp#L470),
+  [1003](../src/xrpld/app/ledger/detail/LedgerMaster.cpp#L1003)), which inherits the
   ambient span ([SpanGuard.cpp:233](../src/libxrpl/telemetry/SpanGuard.cpp#L233))
   rather than `freshRoot`
   ([245](../src/libxrpl/telemetry/SpanGuard.cpp#L245)) — the same defect as

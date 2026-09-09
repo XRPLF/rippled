@@ -734,13 +734,18 @@ flowchart LR
       absent or the context is invalid (`Log.cpp:310-318`)
 - [x] Loki ingests xrpld logs via OTel Collector filelog receiver —
       `otel-collector-config.yaml:38` (`filelog`); `loki` service in
-      `docker-compose.yml:71`
+      `docker-compose.yml:112`
 - [x] Grafana Tempo → Loki one-click correlation works —
       `provisioning/datasources/tempo.yaml:32` (`tracesToLogs`)
 - [x] Grafana Loki → Tempo reverse lookup works via derived field —
       `provisioning/datasources/loki.yaml:16` (`derivedFields`)
-- [ ] Integration test verifies trace_id presence in logs — implemented in the
-      Phase 10 harness, but CI runs it with `--skip-loki`, so it is not gated
+- [ ] Integration test verifies trace_id presence in logs — CI gates this
+      through the Phase 10 harness's `validate_telemetry.py`, whose
+      `log.trace_id_present` and `log.trace_id_cross_reference` checks run
+      because the workflow passes no `--skip-loki`. That harness and
+      `.github/workflows/telemetry-validation.yml` live on the Phase 10 branch,
+      not here. `docker/telemetry/integration-test.sh:79-126` carries a separate
+      trace_id-in-logs check that no workflow under `.github/workflows/` runs
 - [ ] No performance regression from trace_id injection (< 0.1% overhead) —
       needs the Phase 10 benchmark suite
 

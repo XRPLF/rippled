@@ -584,7 +584,7 @@ Fluentd or PerfLog change. Two pieces:
 > only an **allow-listed** set of resource attributes to indexed stream labels
 > (`service.name`, `service.namespace`, `service.instance.id`,
 > `deployment.environment`, the `k8s.*`/`cloud.*` keys); `job` is not on that
-> list, and this repo ships no Loki config override — `docker-compose.yml:75`
+> list, and this repo ships no Loki config override — `docker-compose.yml:116`
 > starts Loki with the image's built-in `/etc/loki/local-config.yaml`. `job`
 > therefore lands in **structured metadata**, which cannot appear in a stream
 > selector, so `{job="xrpld"}` returns an empty result rather than an error.

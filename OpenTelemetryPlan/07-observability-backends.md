@@ -507,7 +507,7 @@ These are journal (`debug.log`) lines, not PerfLog lines — see §7.7.2.
 > **allow-listed** set of resource attributes to indexed stream labels
 > (`service.name`, `service.namespace`, `service.instance.id`,
 > `deployment.environment`, `k8s.*`, `cloud.*`), and `job` is not on it. This
-> repo mounts no Loki config override (`docker-compose.yml:75` uses the image's
+> repo mounts no Loki config override (`docker-compose.yml:116` uses the image's
 > built-in `local-config.yaml`), so `job` lands in **structured metadata** —
 > queryable only with a `|` filter after a selector, never as the selector
 > itself. A `{job="xrpld"}` query returns empty with no error, which is why this

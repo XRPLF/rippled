@@ -150,7 +150,7 @@ Before Phases 1-9 can be considered production-ready, we need proof that:
     - HTTP: `rpc.http_request` → `rpc.process` → `rpc.command.*`
     - WebSocket: `rpc.ws_message` → `rpc.command.*` — **there is no
       `rpc.process` on the WS path**. `rpc.process` is created only in
-      `ServerHandler::processRequest()` (`ServerHandler.cpp:705`), reached from
+      `ServerHandler::processRequest()` (`ServerHandler.cpp:718`), reached from
       `processSession(Session, coro)`, i.e. HTTP only. Under WS-only load
       `rpc.process` never appears, and `rpc.command.*` parents directly to
       `rpc.ws_message`.
@@ -276,7 +276,8 @@ Before Phases 1-9 can be considered production-ready, we need proof that:
       (totals computed dynamically from `expected_spans.json` /
       `expected_metrics.json`, not the stale 16 / 22 figures)
 - [ ] Log-trace correlation validated end-to-end (Loki ↔ Tempo) — implemented,
-      but CI runs with `--skip-loki`, so it is not gated
+      and gated in CI: the workflow passes no `--skip-loki`, so
+      `validate_telemetry.py` builds and runs both log-correlation checks
 - [ ] All 14 harness-asserted Grafana dashboards render data (no empty panels);
       15 on disk
 - [ ] Benchmark shows < 3% CPU overhead, < 5MB memory overhead
