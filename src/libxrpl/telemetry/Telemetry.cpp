@@ -296,15 +296,8 @@ public:
         JLOG(journal_.info()) << "Telemetry starting: traces_endpoint=" << setup_.tracesEndpoint
                               << " sampling=" << setup_.samplingRatio;
 
-        // Configure OTLP HTTP exporter
-        otlp_http::OtlpHttpExporterOptions exporterOpts;
-        exporterOpts.url = setup_.tracesEndpoint;
-        if (setup_.useTls)
-        {
-            exporterOpts.ssl_ca_cert_path = setup_.tlsCertPath;
-        }
-
-        auto exporter = otlp_http::OtlpHttpExporterFactory::Create(exporterOpts);
+        auto exporter =
+            otlp_http::OtlpHttpExporterFactory::Create(makeTraceExporterOptions(setup_));
 
         // Configure batch processor
         trace_sdk::BatchSpanProcessorOptions processorOpts;
@@ -476,6 +469,22 @@ public:
 };
 
 }  // namespace
+
+opentelemetry::exporter::otlp::OtlpHttpExporterOptions
+makeTraceExporterOptions(Telemetry::Setup const& setup)
+{
+    otlp_http::OtlpHttpExporterOptions opts;
+    opts.url = setup.tracesEndpoint;
+    if (setup.useTls)
+    {
+        opts.ssl_ca_cert_path = setup.tlsCertPath;
+        // Present a client cert for mutual TLS. When both paths are
+        // empty the connection falls back to one-way (server) TLS.
+        opts.ssl_client_cert_path = setup.tlsClientCertPath;
+        opts.ssl_client_key_path = setup.tlsClientKeyPath;
+    }
+    return opts;
+}
 
 std::unique_ptr<Telemetry>
 makeTelemetry(Telemetry::Setup const& setup, beast::Journal journal)

@@ -12,12 +12,18 @@
 #include <xrpl/config/BasicConfig.h>
 #include <xrpl/telemetry/Telemetry.h>
 
+#include <cerrno>
 #include <chrono>
 #include <cstdint>
+#include <filesystem>
+#include <fstream>
+#include <ios>
 #include <limits>
 #include <optional>
 #include <stdexcept>
 #include <string>
+#include <string_view>
+#include <system_error>
 
 namespace xrpl::telemetry {
 
@@ -38,6 +44,8 @@ constexpr char const* serviceInstanceId = "service_instance_id";
 constexpr char const* tracesEndpoint = "traces_endpoint";
 constexpr char const* useTls = "use_tls";
 constexpr char const* tlsCaCert = "tls_ca_cert";
+constexpr char const* tlsClientCert = "tls_client_cert";
+constexpr char const* tlsClientKey = "tls_client_key";
 constexpr char const* batchSize = "batch_size";
 constexpr char const* batchDelayMs = "batch_delay_ms";
 constexpr char const* maxQueueSize = "max_queue_size";
@@ -152,6 +160,81 @@ networkTypeFromId(std::uint32_t networkId)
 }
 
 /**
+ * Throw unless the given path names a regular file this process can read.
+ *
+ * An empty path means the option is unset, which every caller allows. Opening
+ * the file proves it is present and that the read permission check passes,
+ * without loading any of its contents — one of these paths names a private key.
+ * Nothing here checks that the contents parse as PEM.
+ *
+ * A path that is not a regular file is rejected before the open, because
+ * opening a FIFO waits for a writer.
+ *
+ * @param path       Path taken from the config, possibly empty.
+ * @param configKey  Config key the path came from, named in the message. Not
+ * called `key`, which would hide the `key` namespace above.
+ * @throws std::runtime_error  If the path is non-empty and cannot be read.
+ */
+void
+requireReadableFile(std::string const& path, char const* configKey)
+{
+    if (path.empty())
+        return;
+
+    // Each branch sets the reason and stops. The two that come from the
+    // operating system reuse its message; the middle one has no errno to read.
+    std::error_code ec;
+    std::string reason;
+    auto const fileStatus = std::filesystem::status(path, ec);
+    if (ec)
+    {
+        reason = ec.message();
+    }
+    else if (!std::filesystem::is_regular_file(fileStatus))
+    {
+        reason = "not a regular file";
+    }
+    else if (std::ifstream const stream{path, std::ios::in}; !stream)
+    {
+        reason = std::error_code{errno, std::generic_category()}.message();
+    }
+
+    if (!reason.empty())
+    {
+        Throw<std::runtime_error>(
+            std::string{"[telemetry] "} + configKey + " cannot be read: " + path + " - " + reason);
+    }
+}
+
+/**
+ * Throw unless an endpoint URL is one the client certificate can be used on.
+ *
+ * The OTLP/HTTP exporter turns TLS on from the URL scheme alone, and matches
+ * "https:" exactly and case-sensitively. So a client certificate only reaches
+ * the collector on an https endpoint, and this check is what holds that
+ * invariant: with a client certificate configured, the endpoint is an https URL.
+ * "https://" is required in full, which is stricter than the exporter's own
+ * test, so anything this accepts the exporter also treats as TLS.
+ *
+ * @param endpoint   Endpoint URL from the config, or the built-in default.
+ * @param configKey  Config key the URL came from, named in the message.
+ * @throws std::runtime_error  If the URL does not begin with "https://".
+ */
+void
+requireHttpsEndpoint(std::string const& endpoint, char const* configKey)
+{
+    constexpr std::string_view kHttpsPrefix{"https://"};
+
+    if (std::string_view{endpoint}.starts_with(kHttpsPrefix))
+        return;
+
+    Throw<std::runtime_error>(
+        std::string("Invalid value '") + configKey + "' in " + kSectionLabel +
+        ": must start with '" + std::string{kHttpsPrefix} + "' when " + key::tlsClientCert +
+        " is set, but is '" + endpoint + "'.");
+}
+
+/**
  * Map a `consensus_trace_strategy` value onto its enumerator.
  *
  * Only the two documented spellings are accepted. A typo would otherwise pick
@@ -198,6 +281,62 @@ makeTelemetrySetup(
 
     setup.useTls = section.valueOr<int>(key::useTls, 0) != 0;
     setup.tlsCertPath = section.valueOr<std::string>(key::tlsCaCert, "");
+    setup.tlsClientCertPath = section.valueOr<std::string>(key::tlsClientCert, "");
+    setup.tlsClientKeyPath = section.valueOr<std::string>(key::tlsClientKey, "");
+
+    // The mutual TLS (mTLS) checks below are fatal, so gate them on the one
+    // thing this parser can know: `enabled` is 1. With `enabled` 0 a leftover
+    // cert line must never stop the node from booting.
+    //
+    // The predicate is only that config switch, not whether an exporter can
+    // exist. This file has no preprocessor guard, so both checks also run in a
+    // -Dtelemetry=OFF build, where makeTelemetry() returns the null
+    // implementation whatever `enabled` says.
+    if (setup.enabled)
+    {
+        // mTLS needs both the client certificate and its private key.
+        // Supplying only one fails later with a cryptic SSL handshake error, so
+        // reject the partial configuration here with an actionable message.
+        if (setup.tlsClientCertPath.empty() != setup.tlsClientKeyPath.empty())
+        {
+            Throw<std::runtime_error>(
+                "[telemetry] tls_client_cert and tls_client_key must be set together "
+                "(set both for mutual TLS, or neither for one-way TLS).");
+        }
+
+        // Still inside the enabled branch. mTLS only takes effect when TLS is
+        // on, so a client certificate set with use_tls=0 would be ignored and
+        // any exporter that did run would connect in plaintext. Reject that
+        // contradiction instead of failing open. tls_ca_cert is deliberately
+        // not checked this way.
+        if (!setup.tlsClientCertPath.empty() && !setup.useTls)
+        {
+            Throw<std::runtime_error>(
+                "[telemetry] tls_client_cert/tls_client_key require use_tls=1 "
+                "(set use_tls=1 to enable mutual TLS, or remove the cert paths).");
+        }
+
+        // Still inside the enabled branch, and checked before the files are
+        // opened so a scheme problem is not hidden behind a path problem. The
+        // exporter reads TLS off the endpoint scheme, so a client certificate is
+        // only presented on an https endpoint. tls_ca_cert is left out of this
+        // check: it only names a trust store, while a client certificate is this
+        // node's own identity and has to reach the collector to mean anything.
+        if (!setup.tlsClientCertPath.empty())
+            requireHttpsEndpoint(setup.tracesEndpoint, key::tracesEndpoint);
+
+        // Still inside the enabled branch. The exporter opens these files only
+        // when TLS is on, so check them only then: a bad path behind use_tls=0
+        // stops nothing. Checking here turns what would otherwise surface much
+        // later as an opaque handshake failure into a startup error naming the
+        // key. Each path is optional; an empty one is skipped.
+        if (setup.useTls)
+        {
+            requireReadableFile(setup.tlsCertPath, key::tlsCaCert);
+            requireReadableFile(setup.tlsClientCertPath, key::tlsClientCert);
+            requireReadableFile(setup.tlsClientKeyPath, key::tlsClientKey);
+        }
+    }
 
     // Head sampling is intentionally fixed at 1.0 (sample everything) and is
     // not read from config. A per-node ratio would let nodes make divergent
