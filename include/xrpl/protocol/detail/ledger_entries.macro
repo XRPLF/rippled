@@ -410,6 +410,7 @@ LEDGER_ENTRY(ltMPTOKEN_ISSUANCE, 0x007e, MPTokenIssuance, mpt_issuance, ({
     {sfAuditorEncryptionKey,     SoeOptional},
     {sfIssuerKeyEpoch,           SoeOptional},
     {sfAuditorKeyEpoch,          SoeOptional},
+    {sfInitialIssuerEncryptionKey, SoeOptional},
     {sfConfidentialOutstandingAmount, SoeDefault},
 }))
 
@@ -429,6 +430,9 @@ LEDGER_ENTRY(ltMPTOKEN, 0x007f, MPToken, mptoken, ({
     {sfConfidentialBalanceVersion,  SoeDefault},
     {sfIssuerEncryptedBalance,      SoeOptional},
     {sfAuditorEncryptedBalance,     SoeOptional},
+    {sfIssuerKeyMirrorEpoch,        SoeOptional},
+    {sfAuditorKeyMirrorEpoch,       SoeOptional},
+    {sfIssuerMirrorEncryptionKey,   SoeOptional},
     {sfHolderEncryptionKey,         SoeOptional},
 }))
 
