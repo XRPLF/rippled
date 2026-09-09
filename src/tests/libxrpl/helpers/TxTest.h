@@ -496,7 +496,7 @@ private:
 /**
  * @brief A ledger-close-time deadline `seconds` in the future.
  *
- * Time fields on the wire are `std::uint32_t` seconds since the Ripple epoch, while the
+ * Time fields on the wire are `std::uint32_t` seconds since the XRPL epoch, while the
  * environment reports a `NetClock::time_point`. Every `CancelAfter` / `FinishAfter` needs
  * the same cast, and getting it wrong yields a deadline in the past — which a transactor
  * reports as `temBAD_EXPIRATION`, a failure that looks like the case under test.
