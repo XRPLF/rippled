@@ -36,7 +36,6 @@
 #endif
 
 #include <memory>
-#include <string>
 #include <utility>
 
 namespace xrpl::telemetry {
