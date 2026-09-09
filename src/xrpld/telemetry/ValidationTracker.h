@@ -256,6 +256,25 @@ public:
     totalMissed() const;
 
     /**
+     * Agreements counted at first classification, never adjusted afterwards.
+     *
+     * @note Unlike totalAgreements(), this only ever rises. A late repair
+     * leaves it alone, so it can back a Prometheus counter, which must never
+     * decrease.
+     */
+    [[nodiscard]] std::uint64_t
+    totalAgreementsEver() const;
+
+    /**
+     * Misses counted at first classification, never adjusted afterwards.
+     *
+     * @note Unlike totalMissed(), this only ever rises. A miss that a late
+     * repair turns into an agreement stays counted here.
+     */
+    [[nodiscard]] std::uint64_t
+    totalMissedEver() const;
+
+    /**
      * Total validations this node sent.
      */
     [[nodiscard]] std::uint64_t
@@ -707,6 +726,18 @@ private:
      * Lifetime count of misses.
      */
     std::atomic<std::uint64_t> totalMissed_{0};
+
+    /**
+     * Agreements at first classification. Backs totalAgreementsEver(); a
+     * repair never touches it.
+     */
+    std::atomic<std::uint64_t> totalAgreementsGross_{0};
+
+    /**
+     * Misses at first classification. Backs totalMissedEver(); a repair never
+     * decrements it.
+     */
+    std::atomic<std::uint64_t> totalMissedGross_{0};
 
     /**
      * Lifetime count of validations this node sent.

@@ -8,11 +8,11 @@
 
 ### Related Plan Documents
 
-| Document                                                     | Relevance                                                     |
-| ------------------------------------------------------------ | ------------------------------------------------------------- |
-| [04-code-samples.md](./04-code-samples.md)                   | TraceContextPropagator (§4.4.2), RPC instrumentation (§4.5.3) |
-| [02-design-decisions.md](./02-design-decisions.md)           | W3C Trace Context (§2.5), span attributes (§2.4.2)            |
-| [06-implementation-phases.md](./06-implementation-phases.md) | Phase 2 tasks (§6.3), definition of done (§6.11.2)            |
+| Document                                                         | Relevance                                                                                                                        |
+| ---------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| [03-implementation-strategy.md](./03-implementation-strategy.md) | Code structure and instrumentation patterns (replaces the deleted `04-code-samples.md` §4.4.2 / §4.5.3, removed by `d6450631bf`) |
+| [02-design-decisions.md](./02-design-decisions.md)               | W3C Trace Context (§2.5), span attributes (§2.4.2)                                                                               |
+| [06-implementation-phases.md](./06-implementation-phases.md)     | Phase 2 tasks (§6.3), definition of done (§6.11.2)                                                                               |
 
 ---
 
@@ -111,7 +111,7 @@ These can be added later if dashboard queries specifically need them. The node h
 **Verification Checklist**:
 
 - [ ] `conan install . --build=missing -o telemetry=True` succeeds
-- [ ] `cmake --preset default -Dtelemetry=ON` configures correctly
+- [ ] `cmake -DCMAKE_TOOLCHAIN_FILE:FILEPATH=build/generators/conan_toolchain.cmake -Dtelemetry=ON ..` configures correctly (there is no `default` preset; Conan writes `conan-release`)
 - [ ] Build succeeds with telemetry ON
 - [ ] Build succeeds with telemetry OFF
 - [ ] Existing tests pass with telemetry ON

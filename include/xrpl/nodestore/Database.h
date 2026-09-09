@@ -9,14 +9,17 @@
 #include <xrpl/nodestore/Backend.h>
 #include <xrpl/nodestore/NodeObject.h>
 #include <xrpl/nodestore/Scheduler.h>
+#include <xrpl/nodestore/WriteStats.h>
 
 #include <atomic>
+#include <chrono>
 #include <condition_variable>
 #include <cstdint>
 #include <functional>
 #include <map>
 #include <memory>
 #include <mutex>
+#include <optional>
 #include <string>
 #include <utility>
 #include <vector>
@@ -83,6 +86,15 @@ public:
      */
     virtual std::int32_t
     getWriteLoad() const = 0;
+
+    /**
+     * Get backend write-path statistics, if the backend measures them.
+     *
+     * @return The statistics, or std::nullopt when the backend does not
+     *         measure its writes.
+     */
+    [[nodiscard]] virtual std::optional<WriteStats>
+    getWriteStats() const = 0;
 
     /**
      * Store the object.
@@ -173,13 +185,25 @@ public:
         return storeCount_;
     }
 
-    std::uint32_t
+    /**
+     * Total number of fetches attempted, whether or not they found anything.
+     *
+     * @return The running count for the lifetime of this process.
+     */
+    std::uint64_t
     getFetchTotalCount() const
     {
         return fetchTotalCount_;
     }
 
-    std::uint32_t
+    /**
+     * Number of fetches that found the object.
+     *
+     * Divide by getFetchTotalCount() to get the read hit rate.
+     *
+     * @return The running count for the lifetime of this process.
+     */
+    std::uint64_t
     getFetchHitCount() const
     {
         return fetchHitCount_;
@@ -191,7 +215,50 @@ public:
         return storeSz_;
     }
 
-    std::uint32_t
+    /**
+     * Cumulative time spent in backend fetches, in microseconds.
+     *
+     * Divide by getFetchTotalCount() to get the mean read latency. That mean
+     * is what separates a cold store from a warm one: a warm store reads in
+     * single-digit microseconds, a cold one in low hundreds.
+     *
+     * Accumulated in nanoseconds and converted here, so the total is exact to
+     * within one microsecond however fast the reads are. Truncated rather than
+     * rounded: reads totalling under a microsecond read as 0 until they sum
+     * past 1000 ns.
+     *
+     * @return The running microsecond total for the lifetime of this process.
+     */
+    std::uint64_t
+    getFetchDurationUs() const
+    {
+        return fetchDurationNs_ / kNanosecondsPerMicrosecond;
+    }
+
+    /**
+     * Cumulative time spent in backend stores, in microseconds.
+     *
+     * Divide by getStoreCount() to get the mean write latency. This includes
+     * any time the backend spent waiting for its own internal locks, so it is
+     * wall time per store, not service time.
+     *
+     * Same accumulate-in-nanoseconds, convert-on-read contract as
+     * getFetchDurationUs().
+     *
+     * @return The running microsecond total for the lifetime of this process.
+     */
+    std::uint64_t
+    getStoreDurationUs() const
+    {
+        return storeDurationNs_ / kNanosecondsPerMicrosecond;
+    }
+
+    /**
+     * Total payload bytes returned by successful fetches.
+     *
+     * @return The running byte total for the lifetime of this process.
+     */
+    std::uint64_t
     getFetchSize() const
     {
         return fetchSz_;
@@ -229,9 +296,6 @@ protected:
     Scheduler& scheduler_;
     int fdRequired_{0};
 
-    std::atomic<std::uint32_t> fetchHitCount_{0};
-    std::atomic<std::uint32_t> fetchSz_{0};
-
     // The default is XRP_LEDGER_EARLIEST_SEQ (32570) to match the XRP ledger
     // network's earliest allowed ledger sequence. Can be set through the
     // configuration file using the 'earliest_seq' field under the 'node_db'
@@ -253,24 +317,96 @@ protected:
         storeSz_ += sz;
     }
 
+    /**
+     * Add the wall time of one backend store to the cumulative total.
+     *
+     * Each concrete store path times only its backend call, so the total
+     * reflects disk work and excludes cache bookkeeping.
+     *
+     * Takes the raw duration rather than a converted integer, so every caller
+     * accumulates at the same resolution. See storeDurationNs_ for the
+     * accumulate-then-convert contract.
+     *
+     * @param elapsed Wall time of the completed backend store.
+     */
+    void
+    storeDurationStats(std::chrono::steady_clock::duration elapsed)
+    {
+        storeDurationNs_ += static_cast<std::uint64_t>(
+            std::chrono::duration_cast<std::chrono::nanoseconds>(elapsed).count());
+    }
+
     // Called by the public import function
     void
     importInternal(Backend& dstBackend, Database& srcDB);
 
+    /**
+     * Fold an imported database's read counters into this one's.
+     *
+     * @param fetches Number of completed fetches to add.
+     * @param hits Number of those fetches that found their object.
+     * @param durationUs Wall time of those fetches, in microseconds. Scaled up
+     *        to nanoseconds internally to match the accumulator's unit.
+     */
     void
-    updateFetchMetrics(uint64_t fetches, uint64_t hits, uint64_t duration)
+    updateFetchMetrics(uint64_t fetches, uint64_t hits, uint64_t durationUs)
     {
         fetchTotalCount_ += fetches;
         fetchHitCount_ += hits;
-        fetchDurationUs_ += duration;
+        fetchDurationNs_ += durationUs * kNanosecondsPerMicrosecond;
     }
 
 private:
     std::atomic<std::uint64_t> storeCount_{0};
     std::atomic<std::uint64_t> storeSz_{0};
     std::atomic<std::uint64_t> fetchTotalCount_{0};
-    std::atomic<std::uint64_t> fetchDurationUs_{0};
-    std::atomic<std::uint64_t> storeDurationUs_{0};
+
+    /**
+     * Fetches that found the object.
+     *
+     * 64-bit because a 32-bit counter wraps on a long-lived node, which
+     * silently corrupts the read hit rate.
+     */
+    std::atomic<std::uint64_t> fetchHitCount_{0};
+
+    /**
+     * Payload bytes returned by successful fetches.
+     *
+     * 64-bit for the same reason: at production read rates 32 bits wraps
+     * in under an hour.
+     */
+    std::atomic<std::uint64_t> fetchSz_{0};
+
+    /**
+     * Divisor converting the nanosecond accumulators to microseconds.
+     *
+     * Named rather than inline so the two accessors and updateFetchMetrics()
+     * cannot drift onto different scale factors.
+     */
+    static constexpr std::uint64_t kNanosecondsPerMicrosecond = 1000;
+
+    /**
+     * Wall time spent in backend fetches, in nanoseconds.
+     *
+     * Written by fetchNodeObject(), which times the whole fetch including a
+     * cache lookup that misses.
+     *
+     * Nanoseconds, the clock's own resolution, because a warm store answers a
+     * read in a few hundred of them. Accumulating here and converting once, in
+     * getFetchDurationUs(), keeps the total exact to within one microsecond
+     * regardless of how fast the reads are. A 64-bit nanosecond counter spans
+     * roughly 584 years, so it cannot wrap on any real node.
+     */
+    std::atomic<std::uint64_t> fetchDurationNs_{0};
+
+    /**
+     * Wall time spent in backend stores, in nanoseconds.
+     *
+     * Written by each concrete store path via storeDurationStats(), which
+     * times only the backend call. Nanoseconds for the same
+     * accumulate-then-convert reason as fetchDurationNs_.
+     */
+    std::atomic<std::uint64_t> storeDurationNs_{0};
 
     mutable std::mutex readLock_;
     std::condition_variable readCondVar_;

@@ -1,8 +1,55 @@
 {
   "annotations": {
-    "list": []
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": {
+          "type": "grafana",
+          "uid": "-- Grafana --"
+        },
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      },
+      {
+        "datasource": {
+          "type": "grafana",
+          "uid": "-- Grafana --"
+        },
+        "enable": true,
+        "hide": false,
+        "iconColor": "rgb(70, 70, 70)",
+        "name": "Perf Runs (JMeter)",
+        "target": {
+          "limit": 100,
+          "matchAny": false,
+          "tags": ["perf-iac", "jmeter"],
+          "type": "tags"
+        },
+        "type": "tags"
+      },
+      {
+        "datasource": {
+          "type": "grafana",
+          "uid": "-- Grafana --"
+        },
+        "enable": true,
+        "hide": false,
+        "iconColor": "rgb(15, 122, 102)",
+        "name": "Perf Runs (Locust)",
+        "target": {
+          "limit": 100,
+          "matchAny": false,
+          "tags": ["perf-iac", "locust"],
+          "type": "tags"
+        },
+        "type": "tags"
+      }
+    ]
   },
-  "description": "Client-facing RPC behavior and payment pathfinding cost on this node: request rates, response times and sizes, resource-limit warnings and drops, gRPC read-path load, and pathfinding request, compute, and discovery activity.",
+  "description": "What this shows: RPC request throughput and response timing, pathfinding cost, gRPC read traffic, and resource-manager enforcement for this node.  \u2014  Use it to: Watch client request load and cost, and confirm resource limits are protecting the node.",
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 1,
@@ -11,7 +58,7 @@
   "panels": [
     {
       "title": "RPC Request Rate [$xrpl_network_type]",
-      "description": "**What:** Rate of RPC requests handled, counting every HTTP and WebSocket call.\n**How it's computed:** Per-second rate of the RPC-requests counter over 5 minutes.\n**Reading it:** Tracks client demand on the node.\n**Healthy range:** workload-dependent.\n**Watch for:** Sudden sustained spikes (client surge or abusive polling) or a drop to zero (endpoint unavailable).\n**Source:** src/xrpld/rpc/detail/ServerHandler.cpp ServerHandler ctor",
+      "description": "###### What this is:\n*How many RPC requests the server counts per second.*\n\n###### How it's computed:\n*Per-second rate of the RPC request counter over 5 minutes, per node.*\n\n###### Reading it:\n*A steady line proportional to client demand; cross-checks the trace-based RPC dashboard.*\n\n###### Healthy range:\n*Workload-dependent; tracks client activity.*\n\n###### Watch for:\n*A sudden surge above baseline, consistent with a client flooding the RPC endpoint.*\n\n###### Keywords:\n- **RPC command / method** *(per node)* \u2014 a named API request served by the node (e.g. account_info, ledger, submit), the unit RPC panels break down by.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Recorded in xrpld code as a native metric (beast::insight); the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[ServerHandler.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/rpc/detail/ServerHandler.cpp)\n\n###### Function:\n`ServerHandler ctor`\n\n###### References:\n[RPC command / method](https://xrpl.org/docs/references/http-websocket-apis/public-api-methods) \u00b7 [Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#rpc-command-method)",
       "type": "stat",
       "gridPos": {
         "h": 10,
@@ -21,6 +68,7 @@
       },
       "options": {
         "tooltip": {
+          "maxHeight": 600,
           "mode": "multi",
           "sort": "desc"
         }
@@ -28,15 +76,15 @@
       "targets": [
         {
           "datasource": {
-            "type": "prometheus"
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "rate(rpc_requests_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[$__rate_interval])",
-          "interval": "15s",
-          "legendFormat": "Requests / Sec [{{service_instance_id}}]"
+          "expr": "label_replace(label_join(label_replace(rate(rpc_requests_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}[$__rate_interval]), \"series\", \"Requests / Sec\", \"\", \"\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(?:, )*(.*[^, ])(?:, )*\")"
         }
       ],
       "fieldConfig": {
         "defaults": {
+          "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
           "unit": "reqps"
         },
         "overrides": []
@@ -61,7 +109,7 @@
     },
     {
       "title": "RPC Response Time",
-      "description": "**What:** P95 and P50 of end-to-end RPC handler time (full HTTP handling, not just command execution).\n**How it's computed:** 95th and 50th percentiles over a 5-minute window.\n**Reading it:** Lower is better; P95 shows the slow tail.\n**Healthy range:** workload-dependent; most methods well under a second.\n**Watch for:** Rising P95 while request rate is flat (expensive queries or contention).\n**Source:** src/xrpld/rpc/detail/ServerHandler.cpp ServerHandler ctor",
+      "description": "###### What this is:\n*The 95th-percentile end-to-end RPC response time, including HTTP handling.*\n\n###### How it's computed:\n*95th-percentile of measured response times over 5 minutes, per node.*\n\n###### Reading it:\n*Lower is better; this is broader than command-only latency.*\n\n###### Healthy range:\n*A few to tens of milliseconds; workload-dependent.*\n\n###### Watch for:\n*A sustained climb, indicating handler overload or slow downstream work.*\n\n###### Keywords:\n- **RPC command / method** *(per node)* \u2014 a named API request served by the node (e.g. account_info, ledger, submit), the unit RPC panels break down by.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Recorded in xrpld code as a native metric (beast::insight); the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[ServerHandler.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/rpc/detail/ServerHandler.cpp)\n\n###### Function:\n`ServerHandler ctor`\n\n###### References:\n[RPC command / method](https://xrpl.org/docs/references/http-websocket-apis/public-api-methods) \u00b7 [Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#rpc-command-method)",
       "type": "timeseries",
       "gridPos": {
         "h": 10,
@@ -79,23 +127,15 @@
       "targets": [
         {
           "datasource": {
-            "type": "prometheus"
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "histogram_quantile(0.95, sum by (le, service_instance_id) (rate(rpc_time_milliseconds_bucket{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[5m])))",
-          "interval": "15s",
-          "legendFormat": "P95 Response Time [{{service_instance_id}}]"
-        },
-        {
-          "datasource": {
-            "type": "prometheus"
-          },
-          "expr": "histogram_quantile(0.5, sum by (le, service_instance_id) (rate(rpc_time_milliseconds_bucket{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[5m])))",
-          "interval": "15s",
-          "legendFormat": "P50 Response Time [{{service_instance_id}}]"
+          "expr": "label_replace(label_join(label_replace(histogram_quantile(0.95, sum by (le, service_instance_id, xrpl_branch, xrpl_node_role, xrpl_work_item) (rate(rpc_time_milliseconds_bucket{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}[5m]))), \"series\", \"P95 Response Time\", \"\", \"\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(?:, )*(.*[^, ])(?:, )*\")"
         }
       ],
       "fieldConfig": {
         "defaults": {
+          "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
           "unit": "ms",
           "custom": {
             "axisLabel": "Latency (ms)",
@@ -114,7 +154,7 @@
     },
     {
       "title": "RPC Response Size",
-      "description": "**⚠ Instrument mismatch — values unreliable.** Response size is recorded through the millisecond-scaled event histogram (rpc_size_bytes_bucket), so byte values saturate at the top time bucket (5000) and the percentiles are not true byte sizes. A dedicated byte-unit histogram is needed to fix this; tracked separately. Treat this panel as indicative only until then.\n\n**What:** P95 and P50 of RPC response payload size in bytes.\n**How it's computed:** 95th and 50th percentiles over the dashboard rate interval.\n**Reading it:** Larger responses cost more bandwidth and CPU to build.\n**Healthy range:** workload-dependent.\n**Watch for:** Large P95 (result-heavy queries such as broad account_tx, or API misuse).\n**Source:** src/xrpld/rpc/detail/ServerHandler.cpp ServerHandler ctor",
+      "description": "\u26a0 Instrument mismatch \u2014 values unreliable. Response size is recorded through the millisecond-scaled event histogram (rpc_size_bytes_bucket), so byte values saturate at the top time bucket (5000) and the percentiles are not true byte sizes. A dedicated byte-unit histogram is needed to fix this; tracked separately. Treat this panel as indicative only until then.\n\n###### What this is:\n*The 95th-percentile size of RPC response payloads in bytes.*\n\n###### How it's computed:\n*95th-percentile of response payload sizes over the dashboard rate interval, per node.*\n\n###### Reading it:\n*Smaller is cheaper; large responses cost bandwidth and memory.*\n\n###### Healthy range:\n*Workload-dependent; small for status queries, large for bulk data queries.*\n\n###### Watch for:\n*Growth in large responses, consistent with expensive queries or API misuse.*\n\n###### Keywords:\n- **RPC command / method** *(per node)* \u2014 a named API request served by the node (e.g. account_info, ledger, submit), the unit RPC panels break down by.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Recorded in xrpld code as a native metric (beast::insight); the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[ServerHandler.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/rpc/detail/ServerHandler.cpp)\n\n###### Function:\n`ServerHandler ctor`\n\n###### References:\n[RPC command / method](https://xrpl.org/docs/references/http-websocket-apis/public-api-methods) \u00b7 [Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#rpc-command-method)",
       "type": "timeseries",
       "gridPos": {
         "h": 10,
@@ -132,23 +172,15 @@
       "targets": [
         {
           "datasource": {
-            "type": "prometheus"
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "histogram_quantile(0.95, sum by (le, service_instance_id) (rate(rpc_size_bytes_bucket{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[5m])))",
-          "interval": "15s",
-          "legendFormat": "P95 Response Size [{{service_instance_id}}]"
-        },
-        {
-          "datasource": {
-            "type": "prometheus"
-          },
-          "expr": "histogram_quantile(0.5, sum by (le, service_instance_id) (rate(rpc_size_bytes_bucket{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[5m])))",
-          "interval": "15s",
-          "legendFormat": "P50 Response Size [{{service_instance_id}}]"
+          "expr": "label_replace(label_join(label_replace(histogram_quantile(0.95, sum by (le, service_instance_id, xrpl_branch, xrpl_node_role, xrpl_work_item) (rate(rpc_size_bytes_bucket{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}[5m]))), \"series\", \"P95 Response Size\", \"\", \"\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(?:, )*(.*[^, ])(?:, )*\")"
         }
       ],
       "fieldConfig": {
         "defaults": {
+          "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
           "unit": "decbytes",
           "custom": {
             "axisLabel": "Size (Bytes)",
@@ -167,7 +199,7 @@
     },
     {
       "title": "RPC Response Time Distribution",
-      "description": "**What:** RPC response-time spread shown as P50, P90, P95, and P99.\n**How it's computed:** Four quantiles of response time over a 5-minute window.\n**Reading it:** A wide gap between P50 and P99 signals a long latency tail.\n**Healthy range:** workload-dependent; quantiles clustered together.\n**Watch for:** P99 pulling far above P50 (bimodal latency or occasional very slow requests).\n**Source:** src/xrpld/rpc/detail/ServerHandler.cpp ServerHandler ctor",
+      "description": "###### What this is:\n*RPC response time at the 90th, 95th, and 99th percentiles together.*\n\n###### How it's computed:\n*Three response-time quantiles over 5 minutes, per node.*\n\n###### Reading it:\n*Lower is better; the gap between P90 and P99 shows the long tail.*\n\n###### Healthy range:\n*Percentiles clustered low; workload-dependent.*\n\n###### Watch for:\n*A widening P99, revealing long-tail or bimodal slow requests.*\n\n###### Keywords:\n- **RPC command / method** *(per node)* \u2014 a named API request served by the node (e.g. account_info, ledger, submit), the unit RPC panels break down by.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Recorded in xrpld code as a native metric (beast::insight); the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[ServerHandler.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/rpc/detail/ServerHandler.cpp)\n\n###### Function:\n`ServerHandler ctor`\n\n###### References:\n[RPC command / method](https://xrpl.org/docs/references/http-websocket-apis/public-api-methods) \u00b7 [Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#rpc-command-method)",
       "type": "timeseries",
       "gridPos": {
         "h": 10,
@@ -185,39 +217,29 @@
       "targets": [
         {
           "datasource": {
-            "type": "prometheus"
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "histogram_quantile(0.5, sum by (le, service_instance_id) (rate(rpc_time_milliseconds_bucket{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[5m])))",
-          "interval": "15s",
-          "legendFormat": "P50 [{{service_instance_id}}]"
+          "expr": "label_replace(label_join(label_replace(histogram_quantile(0.9, sum by (le, service_instance_id, xrpl_branch, xrpl_node_role, xrpl_work_item) (rate(rpc_time_milliseconds_bucket{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}[5m]))), \"series\", \"P90\", \"\", \"\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(?:, )*(.*[^, ])(?:, )*\")"
         },
         {
           "datasource": {
-            "type": "prometheus"
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "histogram_quantile(0.9, sum by (le, service_instance_id) (rate(rpc_time_milliseconds_bucket{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[5m])))",
-          "interval": "15s",
-          "legendFormat": "P90 [{{service_instance_id}}]"
+          "expr": "label_replace(label_join(label_replace(histogram_quantile(0.95, sum by (le, service_instance_id, xrpl_branch, xrpl_node_role, xrpl_work_item) (rate(rpc_time_milliseconds_bucket{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}[5m]))), \"series\", \"P95\", \"\", \"\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(?:, )*(.*[^, ])(?:, )*\")"
         },
         {
           "datasource": {
-            "type": "prometheus"
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "histogram_quantile(0.95, sum by (le, service_instance_id) (rate(rpc_time_milliseconds_bucket{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[5m])))",
-          "interval": "15s",
-          "legendFormat": "P95 [{{service_instance_id}}]"
-        },
-        {
-          "datasource": {
-            "type": "prometheus"
-          },
-          "expr": "histogram_quantile(0.99, sum by (le, service_instance_id) (rate(rpc_time_milliseconds_bucket{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[5m])))",
-          "interval": "15s",
-          "legendFormat": "P99 [{{service_instance_id}}]"
+          "expr": "label_replace(label_join(label_replace(histogram_quantile(0.99, sum by (le, service_instance_id, xrpl_branch, xrpl_node_role, xrpl_work_item) (rate(rpc_time_milliseconds_bucket{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}[5m]))), \"series\", \"P99\", \"\", \"\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(?:, )*(.*[^, ])(?:, )*\")"
         }
       ],
       "fieldConfig": {
         "defaults": {
+          "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
           "unit": "ms",
           "custom": {
             "axisLabel": "Latency (ms)",
@@ -249,7 +271,7 @@
     },
     {
       "title": "Resource Warnings Rate [$xrpl_network_type]",
-      "description": "**What:** Rate of resource-limit warnings raised when a peer or client exceeds its usage warning threshold.\n**How it's computed:** Per-second rate of the warn counter over 5 minutes.\n**Reading it:** Occasional warnings are normal under load; a rising rate flags aggressive clients.\n**Healthy range:** workload-dependent; low.\n**Watch for:** A climbing warning rate (clients approaching limits, a precursor to drops).\n**Source:** include/xrpl/resource/detail/Logic.h Logic::Stats ctor",
+      "description": "###### What this is:\n*How often the resource manager warns a peer or client for excessive usage, per second.*\n\n###### How it's computed:\n*Per-second rate of resource-warning events over 5 minutes, per node.*\n\n###### Reading it:\n*Green near zero, yellow above 0.1/sec, red above 1/sec.*\n\n###### Healthy range:\n*Near zero in normal operation.*\n\n###### Watch for:\n*A rising rate, consistent with aggressive clients that may need throttling.*\n\n###### Keywords:\n- **Resource drops / warnings** *(per node)* \u2014 the resource manager warning (then dropping/blocking) a peer or client for excessive usage.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Recorded in xrpld code as a native metric (beast::insight); the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[Logic.h](https://github.com/XRPLF/rippled/blob/develop/include/xrpl/resource/detail/Logic.h)\n\n###### Function:\n`Logic::Stats ctor`\n\n###### References:\n[Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#resource-drops-warnings)",
       "type": "stat",
       "gridPos": {
         "h": 10,
@@ -259,6 +281,7 @@
       },
       "options": {
         "tooltip": {
+          "maxHeight": 600,
           "mode": "multi",
           "sort": "desc"
         }
@@ -266,15 +289,15 @@
       "targets": [
         {
           "datasource": {
-            "type": "prometheus"
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "rate(warn_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[$__rate_interval])",
-          "interval": "15s",
-          "legendFormat": "Warnings / Sec [{{service_instance_id}}]"
+          "expr": "label_replace(label_join(label_replace(rate(warn_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}[$__rate_interval]), \"series\", \"Warnings / Sec\", \"\", \"\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(?:, )*(.*[^, ])(?:, )*\")"
         }
       ],
       "fieldConfig": {
         "defaults": {
+          "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
           "unit": "suffix: warnings/s",
           "thresholds": {
             "steps": [
@@ -302,7 +325,7 @@
     },
     {
       "title": "Resource Drops Rate [$xrpl_network_type]",
-      "description": "**What:** Rate of resource drops: consumers disconnected or blocked for excessive usage.\n**How it's computed:** Per-second rate of the drop counter over 5 minutes.\n**Reading it:** Non-zero means the node is actively rejecting abusive connections.\n**Healthy range:** at or near zero.\n**Watch for:** Sustained non-zero drops (ongoing abuse or a misbehaving client/peer being throttled).\n**Source:** include/xrpl/resource/detail/Logic.h Logic::Stats ctor",
+      "description": "###### What this is:\n*How often the resource manager drops or blocks a peer or client for abuse, per second.*\n\n###### How it's computed:\n*Per-second rate of resource-drop events over 5 minutes, per node.*\n\n###### Reading it:\n*Green near zero, yellow above 0.01/sec, red above 0.1/sec.*\n\n###### Healthy range:\n*Zero when no abusive consumers are present.*\n\n###### Watch for:\n*Non-zero values, meaning the node is actively rejecting abusive connections.*\n\n###### Keywords:\n- **Resource drops / warnings** *(per node)* \u2014 the resource manager warning (then dropping/blocking) a peer or client for excessive usage.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Recorded in xrpld code as a native metric (beast::insight); the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[Logic.h](https://github.com/XRPLF/rippled/blob/develop/include/xrpl/resource/detail/Logic.h)\n\n###### Function:\n`Logic::Stats ctor`\n\n###### References:\n[Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#resource-drops-warnings)",
       "type": "stat",
       "gridPos": {
         "h": 10,
@@ -312,6 +335,7 @@
       },
       "options": {
         "tooltip": {
+          "maxHeight": 600,
           "mode": "multi",
           "sort": "desc"
         }
@@ -319,15 +343,15 @@
       "targets": [
         {
           "datasource": {
-            "type": "prometheus"
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "rate(drop_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[$__rate_interval])",
-          "interval": "15s",
-          "legendFormat": "Drops / Sec [{{service_instance_id}}]"
+          "expr": "label_replace(label_join(label_replace(rate(drop_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}[$__rate_interval]), \"series\", \"Drops / Sec\", \"\", \"\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(?:, )*(.*[^, ])(?:, )*\")"
         }
       ],
       "fieldConfig": {
         "defaults": {
+          "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
           "unit": "suffix: drops/s",
           "thresholds": {
             "steps": [
@@ -355,7 +379,7 @@
     },
     {
       "title": "Pathfinding Fast Duration",
-      "description": "**What:** P95 and P50 execution time of the fast pathfinding search (simplified, favoring speed over completeness).\n**How it's computed:** 95th and 50th percentiles over a 5-minute window.\n**Reading it:** Lower is better; fast pathfinding should stay quick.\n**Healthy range:** workload-dependent; typically well below full pathfinding.\n**Watch for:** Rising fast-path latency (pathfinding load or complex order books).\n**Source:** src/xrpld/rpc/detail/PathRequestManager.h ctor",
+      "description": "###### What this is:\n*The 95th-percentile time of the fast pathfinding search.*\n\n###### How it's computed:\n*95th-percentile of fast pathfinding durations over 5 minutes, per node.*\n\n###### Reading it:\n*Lower is better; fast mode trades accuracy for speed.*\n\n###### Healthy range:\n*Typically a few to tens of milliseconds; workload-dependent.*\n\n###### Watch for:\n*A rising trend, indicating heavy pathfinding demand or an expensive order book.*\n\n###### Keywords:\n- **Pathfinding (fast / full)** *(per node)* \u2014 searching for payment paths through intermediaries; fast mode trades accuracy for speed, full is exhaustive.\n- **Order book** *(network-wide)* \u2014 the ledger's list of standing offers to trade a currency pair on the decentralized exchange.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Recorded in xrpld code as a native metric (beast::insight); the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[PathRequestManager.h](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/rpc/detail/PathRequestManager.h)\n\n###### Function:\n`ctor`\n\n###### References:\n[Pathfinding (fast / full)](https://xrpl.org/docs/concepts/tokens/fungible-tokens/paths) \u00b7 [Order book](https://xrpl.org/docs/concepts/tokens/decentralized-exchange) \u00b7 [Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#pathfinding-fast-full)",
       "type": "timeseries",
       "gridPos": {
         "h": 10,
@@ -373,23 +397,15 @@
       "targets": [
         {
           "datasource": {
-            "type": "prometheus"
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "histogram_quantile(0.95, sum by (le, service_instance_id) (rate(pathfind_fast_milliseconds_bucket{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[5m])))",
-          "interval": "15s",
-          "legendFormat": "P95 Fast Pathfind [{{service_instance_id}}]"
-        },
-        {
-          "datasource": {
-            "type": "prometheus"
-          },
-          "expr": "histogram_quantile(0.5, sum by (le, service_instance_id) (rate(pathfind_fast_milliseconds_bucket{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[5m])))",
-          "interval": "15s",
-          "legendFormat": "P50 Fast Pathfind [{{service_instance_id}}]"
+          "expr": "label_replace(label_join(label_replace(histogram_quantile(0.95, sum by (le, service_instance_id, xrpl_branch, xrpl_node_role, xrpl_work_item) (rate(pathfind_fast_milliseconds_bucket{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}[5m]))), \"series\", \"P95 Fast Pathfind\", \"\", \"\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(?:, )*(.*[^, ])(?:, )*\")"
         }
       ],
       "fieldConfig": {
         "defaults": {
+          "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
           "unit": "ms",
           "custom": {
             "axisLabel": "Duration (ms)",
@@ -408,7 +424,7 @@
     },
     {
       "title": "Pathfinding Full Duration",
-      "description": "**What:** P95 and P50 execution time of the full, exhaustive pathfinding search.\n**How it's computed:** 95th and 50th percentiles over a 5-minute window.\n**Reading it:** Full pathfinding is heavier and slower than fast mode.\n**Healthy range:** workload-dependent.\n**Watch for:** High or rising full-path latency (expensive path computation under subscription load).\n**Source:** src/xrpld/rpc/detail/PathRequestManager.h ctor",
+      "description": "###### What this is:\n*The 95th-percentile time of the full, exhaustive pathfinding search.*\n\n###### How it's computed:\n*95th-percentile of full pathfinding durations over 5 minutes, per node.*\n\n###### Reading it:\n*Lower is better; full mode is much more expensive than fast mode.*\n\n###### Healthy range:\n*Tens to hundreds of milliseconds; workload-dependent.*\n\n###### Watch for:\n*Sustained high durations, consistent with pathfinding-heavy clients straining the node.*\n\n###### Keywords:\n- **Pathfinding (fast / full)** *(per node)* \u2014 searching for payment paths through intermediaries; fast mode trades accuracy for speed, full is exhaustive.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Recorded in xrpld code as a native metric (beast::insight); the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[PathRequestManager.h](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/rpc/detail/PathRequestManager.h)\n\n###### Function:\n`ctor`\n\n###### References:\n[Pathfinding (fast / full)](https://xrpl.org/docs/concepts/tokens/fungible-tokens/paths) \u00b7 [Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#pathfinding-fast-full)",
       "type": "timeseries",
       "gridPos": {
         "h": 10,
@@ -426,23 +442,15 @@
       "targets": [
         {
           "datasource": {
-            "type": "prometheus"
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "histogram_quantile(0.95, sum by (le, service_instance_id) (rate(pathfind_full_milliseconds_bucket{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[5m])))",
-          "interval": "15s",
-          "legendFormat": "P95 Full Pathfind [{{service_instance_id}}]"
-        },
-        {
-          "datasource": {
-            "type": "prometheus"
-          },
-          "expr": "histogram_quantile(0.5, sum by (le, service_instance_id) (rate(pathfind_full_milliseconds_bucket{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[5m])))",
-          "interval": "15s",
-          "legendFormat": "P50 Full Pathfind [{{service_instance_id}}]"
+          "expr": "label_replace(label_join(label_replace(histogram_quantile(0.95, sum by (le, service_instance_id, xrpl_branch, xrpl_node_role, xrpl_work_item) (rate(pathfind_full_milliseconds_bucket{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}[5m]))), \"series\", \"P95 Full Pathfind\", \"\", \"\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(?:, )*(.*[^, ])(?:, )*\")"
         }
       ],
       "fieldConfig": {
         "defaults": {
+          "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
           "unit": "ms",
           "custom": {
             "axisLabel": "Duration (ms)",
@@ -474,7 +482,7 @@
     },
     {
       "title": "gRPC Request Rate by Method (Spans)",
-      "description": "**What:** Per-method gRPC call rate for the gRPC read API used by reporting and Clio.\n**How it's computed:** Per-second count of gRPC calls grouped by method.\n**Reading it:** Shows which gRPC methods are called and how often; only populated when the node serves gRPC.\n**Healthy range:** workload-dependent.\n**Watch for:** A single method spiking (heavy reporting load) or unexpected methods appearing.\n**Source:** src/xrpld/rpc/GRPCServer.cpp (gRPC method handlers)",
+      "description": "###### What this is:\n*How many gRPC calls of each method the node serves per second.*\n\n###### How it's computed:\n*Per-second rate of gRPC calls over 5 minutes, grouped by method and node.*\n\n###### Reading it:\n*Non-zero only when reporting/Clio-style clients use the gRPC API.*\n\n###### Healthy range:\n*Workload-dependent; zero without gRPC traffic.*\n\n###### Watch for:\n*A single method spiking, consistent with a heavy or misbehaving gRPC consumer.*\n\n###### Keywords:\n- **RPC command / method** *(per node)* \u2014 a named API request served by the node (e.g. account_info, ledger, submit), the unit RPC panels break down by.\n- **Clio / reporting client** *(per node)* \u2014 an external read-scaling service (Clio) that serves history/API queries, often via the gRPC interface.\n- **gRPC** *(per node)* \u2014 a binary RPC interface used mainly by reporting/Clio-style clients, separate from HTTP/WebSocket.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Recorded in code as a trace span, turned into a metric by the collector (SpanMetrics connector), then aggregated by the Grafana query.*\n\n###### Source:\n[GRPCServer.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/app/main/GRPCServer.cpp)\n\n###### Function:\n`GRPCServerImpl::CallData::process`\n\n###### References:\n[RPC command / method](https://xrpl.org/docs/references/http-websocket-apis/public-api-methods) \u00b7 [Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#rpc-command-method)",
       "type": "timeseries",
       "gridPos": {
         "h": 10,
@@ -492,15 +500,15 @@
       "targets": [
         {
           "datasource": {
-            "type": "prometheus"
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "sum by (method, service_instance_id) (rate(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", method=~\"$grpc_method\", span_name=~\"grpc\\\\..*\"}[$__rate_interval]))",
-          "interval": "15s",
-          "legendFormat": "{{method}} [{{service_instance_id}}]"
+          "expr": "label_replace(label_join(label_replace(sum by (method, service_instance_id, xrpl_branch, xrpl_node_role, xrpl_work_item) (rate(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", method=~\"$grpc_method\", span_name=~\"grpc\\\\..*\"}[$__rate_interval])), \"series\", \"$1\", \"method\", \"(.*)\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(?:, )*(.*[^, ])(?:, )*\")"
         }
       ],
       "fieldConfig": {
         "defaults": {
+          "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
           "unit": "suffix: calls/s",
           "custom": {
             "axisLabel": "Calls / Sec",
@@ -519,7 +527,7 @@
     },
     {
       "title": "gRPC Latency P95 by Method (Spans)",
-      "description": "**What:** P95 latency per gRPC method.\n**How it's computed:** 95th percentile of gRPC call duration per method over 5 minutes.\n**Reading it:** Identifies slow gRPC read paths.\n**Healthy range:** workload-dependent.\n**Watch for:** One method's P95 rising (expensive ledger reads or backend pressure).\n**Source:** src/xrpld/rpc/GRPCServer.cpp (gRPC method handlers)",
+      "description": "###### What this is:\n*The 95th-percentile latency of each gRPC method.*\n\n###### How it's computed:\n*95th-percentile of gRPC call durations over 5 minutes, grouped by method and node.*\n\n###### Reading it:\n*Lower is better; identifies slow gRPC read paths.*\n\n###### Healthy range:\n*Workload-dependent; scales with ledger data volume served.*\n\n###### Watch for:\n*A method whose latency climbs, indicating an expensive read path.*\n\n###### Keywords:\n- **gRPC** *(per node)* \u2014 a binary RPC interface used mainly by reporting/Clio-style clients, separate from HTTP/WebSocket.\n- **RPC command / method** *(per node)* \u2014 a named API request served by the node (e.g. account_info, ledger, submit), the unit RPC panels break down by.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Recorded in code as a trace span, turned into a metric by the collector (SpanMetrics connector), then aggregated by the Grafana query.*\n\n###### Source:\n[GRPCServer.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/app/main/GRPCServer.cpp)\n\n###### Function:\n`GRPCServerImpl::CallData::process`\n\n###### References:\n[RPC command / method](https://xrpl.org/docs/references/http-websocket-apis/public-api-methods) \u00b7 [Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#grpc)",
       "type": "timeseries",
       "gridPos": {
         "h": 10,
@@ -537,15 +545,15 @@
       "targets": [
         {
           "datasource": {
-            "type": "prometheus"
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "histogram_quantile(0.95, sum by (le, method, service_instance_id) (rate(span_duration_milliseconds_bucket{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", method=~\"$grpc_method\", span_name=~\"grpc\\\\..*\"}[5m])))",
-          "interval": "15s",
-          "legendFormat": "{{method}} [{{service_instance_id}}]"
+          "expr": "label_replace(label_join(label_replace(histogram_quantile(0.95, sum by (le, method, service_instance_id, xrpl_branch, xrpl_node_role, xrpl_work_item) (rate(span_duration_milliseconds_bucket{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", method=~\"$grpc_method\", span_name=~\"grpc\\\\..*\"}[5m]))), \"series\", \"$1\", \"method\", \"(.*)\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(?:, )*(.*[^, ])(?:, )*\")"
         }
       ],
       "fieldConfig": {
         "defaults": {
+          "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
           "unit": "ms",
           "custom": {
             "axisLabel": "Duration (ms)",
@@ -564,7 +572,7 @@
     },
     {
       "title": "gRPC Error Rate by Status (Spans)",
-      "description": "**What:** Rate of gRPC calls broken down by result status: success, error, resource-exhausted, failed-precondition.\n**How it's computed:** Per-second count of gRPC calls grouped by status.\n**Reading it:** Errors and resource-exhausted should be a small share.\n**Healthy range:** workload-dependent; mostly success.\n**Watch for:** Rising error or resource-exhausted rate (clients hitting limits or failing reads).\n**Source:** src/xrpld/rpc/GRPCServer.cpp (gRPC method handlers)",
+      "description": "###### What this is:\n*gRPC call rate broken down by outcome status (success or error).*\n\n###### How it's computed:\n*Per-second rate of gRPC calls over 5 minutes, grouped by status and node.*\n\n###### Reading it:\n*Success should dominate; the error rate should stay low.*\n\n###### Healthy range:\n*Workload-dependent; errors near the floor.*\n\n###### Watch for:\n*A rising error rate, indicating gRPC clients hitting failures.*\n\n###### Keywords:\n- **gRPC** *(per node)* \u2014 a binary RPC interface used mainly by reporting/Clio-style clients, separate from HTTP/WebSocket.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Recorded in code as a trace span, turned into a metric by the collector (SpanMetrics connector), then aggregated by the Grafana query.*\n\n###### Source:\n[GRPCServer.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/app/main/GRPCServer.cpp)\n\n###### Function:\n`GRPCServerImpl::CallData::process`\n\n###### References:\n[Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#grpc)",
       "type": "timeseries",
       "gridPos": {
         "h": 10,
@@ -582,15 +590,15 @@
       "targets": [
         {
           "datasource": {
-            "type": "prometheus"
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "sum by (grpc_status, service_instance_id) (rate(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", span_name=~\"grpc\\\\..*\", grpc_status!=\"\"}[$__rate_interval]))",
-          "interval": "15s",
-          "legendFormat": "{{grpc_status}} [{{service_instance_id}}]"
+          "expr": "label_replace(label_join(label_replace(sum by (grpc_status, service_instance_id, xrpl_branch, xrpl_node_role, xrpl_work_item) (rate(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", span_name=~\"grpc\\\\..*\", grpc_status!=\"\"}[$__rate_interval])), \"series\", \"$1\", \"grpc_status\", \"(.*)\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(?:, )*(.*[^, ])(?:, )*\")"
         }
       ],
       "fieldConfig": {
         "defaults": {
+          "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
           "unit": "suffix: calls/s",
           "custom": {
             "axisLabel": "Calls / Sec",
@@ -609,7 +617,7 @@
     },
     {
       "title": "Pathfinding Compute Duration (Spans)",
-      "description": "**What:** P95 and P50 of per-request path computation time.\n**How it's computed:** 95th and 50th percentiles of path-computation duration over 5 minutes.\n**Reading it:** Complements the fast/full timers with per-request visibility; populated under book/path RPC load.\n**Healthy range:** workload-dependent.\n**Watch for:** Rising compute time (complex paths or heavy pathfinding demand).\n**Source:** src/xrpld/rpc/detail/PathRequest.cpp PathRequest::doUpdate",
+      "description": "###### What this is:\n*The 95th-percentile time to compute paths for a single request.*\n\n###### How it's computed:\n*95th-percentile of path-computation durations over 5 minutes, per node.*\n\n###### Reading it:\n*Lower is better; complements the fast/full pathfinding timers with span-level detail.*\n\n###### Healthy range:\n*Workload-dependent; grows with order-book depth and request complexity.*\n\n###### Watch for:\n*A rising trend under pathfinding load, indicating expensive path computation.*\n\n###### Keywords:\n- **Batch vs single RPC** *(per node)* \u2014 whether an RPC request carried several commands (batch) or one (single); batch is used by bulk clients.\n- **Pathfinding (fast / full)** *(per node)* \u2014 searching for payment paths through intermediaries; fast mode trades accuracy for speed, full is exhaustive.\n- **Order book** *(network-wide)* \u2014 the ledger's list of standing offers to trade a currency pair on the decentralized exchange.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Recorded in code as a trace span, turned into a metric by the collector (SpanMetrics connector), then aggregated by the Grafana query.*\n\n###### Source:\n[PathRequest.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/rpc/detail/PathRequest.cpp)\n\n###### Function:\n`PathRequest::doUpdate`\n\n###### References:\n[Pathfinding (fast / full)](https://xrpl.org/docs/concepts/tokens/fungible-tokens/paths) \u00b7 [Order book](https://xrpl.org/docs/concepts/tokens/decentralized-exchange) \u00b7 [Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#batch-vs-single-rpc)",
       "type": "timeseries",
       "gridPos": {
         "h": 10,
@@ -627,23 +635,15 @@
       "targets": [
         {
           "datasource": {
-            "type": "prometheus"
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "histogram_quantile(0.95, sum by (le, service_instance_id) (rate(span_duration_milliseconds_bucket{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", span_name=\"pathfind.compute\"}[5m])))",
-          "interval": "15s",
-          "legendFormat": "P95 Compute [{{service_instance_id}}]"
-        },
-        {
-          "datasource": {
-            "type": "prometheus"
-          },
-          "expr": "histogram_quantile(0.50, sum by (le, service_instance_id) (rate(span_duration_milliseconds_bucket{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", span_name=\"pathfind.compute\"}[5m])))",
-          "interval": "15s",
-          "legendFormat": "P50 Compute [{{service_instance_id}}]"
+          "expr": "label_replace(label_join(label_replace(histogram_quantile(0.95, sum by (le, service_instance_id, xrpl_branch, xrpl_node_role, xrpl_work_item) (rate(span_duration_milliseconds_bucket{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", span_name=\"pathfind.compute\"}[5m]))), \"series\", \"P95 Compute\", \"\", \"\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(?:, )*(.*[^, ])(?:, )*\")"
         }
       ],
       "fieldConfig": {
         "defaults": {
+          "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
           "unit": "ms",
           "custom": {
             "axisLabel": "Duration (ms)",
@@ -662,7 +662,7 @@
     },
     {
       "title": "Pathfinding Request & Discovery Rate (Spans)",
-      "description": "**What:** Rate of client path requests and of path-discovery passes.\n**How it's computed:** Per-second count of path-request and path-discovery operations.\n**Reading it:** Shows pathfinding demand and the discovery cost driver for subscription-heavy nodes.\n**Healthy range:** workload-dependent.\n**Watch for:** Discovery rate climbing (subscription load driving repeated path discovery).\n**Source:** src/xrpld/rpc/handlers/orderbook/PathFind.cpp doPathFind; src/xrpld/rpc/detail/PathRequest.cpp PathRequest::findPaths",
+      "description": "###### What this is:\n*The rate of client path requests versus path-discovery passes.*\n\n###### How it's computed:\n*Per-second rates of path requests and discovery passes over 5 minutes, per node.*\n\n###### Reading it:\n*Discovery cost tracks request demand; useful for subscription-heavy nodes.*\n\n###### Healthy range:\n*Workload-dependent; both zero without pathfinding clients.*\n\n###### Watch for:\n*Discovery rate climbing out of proportion to requests, a cost driver for subscription-heavy nodes.*\n\n###### Keywords:\n- **Path request / discovery** *(per node)* \u2014 a client's ongoing pathfinding subscription (request) and the periodic path-refresh passes (discovery).\n- **Pathfinding (fast / full)** *(per node)* \u2014 searching for payment paths through intermediaries; fast mode trades accuracy for speed, full is exhaustive.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Recorded in code as a trace span, turned into a metric by the collector (SpanMetrics connector), then aggregated by the Grafana query.*\n\n###### Source:\n[PathFind.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/rpc/handlers/orderbook/PathFind.cpp) \u00b7 [PathRequest.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/rpc/detail/PathRequest.cpp)\n\n###### Function:\n`doPathFind ; PathRequest::findPaths`\n\n###### References:\n[Path request / discovery](https://xrpl.org/docs/references/http-websocket-apis/public-api-methods/path-and-order-book-methods/path_find) \u00b7 [Pathfinding (fast / full)](https://xrpl.org/docs/concepts/tokens/fungible-tokens/paths) \u00b7 [Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#path-request-discovery)",
       "type": "timeseries",
       "gridPos": {
         "h": 10,
@@ -680,23 +680,22 @@
       "targets": [
         {
           "datasource": {
-            "type": "prometheus"
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "sum by (service_instance_id) (rate(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", span_name=\"pathfind.request\"}[$__rate_interval]))",
-          "interval": "15s",
-          "legendFormat": "Requests / Sec [{{service_instance_id}}]"
+          "expr": "label_replace(label_join(label_replace(sum by (service_instance_id, xrpl_branch, xrpl_node_role, xrpl_work_item) (rate(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", span_name=\"pathfind.request\"}[$__rate_interval])), \"series\", \"Requests / Sec\", \"\", \"\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(?:, )*(.*[^, ])(?:, )*\")"
         },
         {
           "datasource": {
-            "type": "prometheus"
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "sum by (service_instance_id) (rate(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", span_name=\"pathfind.discover\"}[$__rate_interval]))",
-          "interval": "15s",
-          "legendFormat": "Discoveries / Sec [{{service_instance_id}}]"
+          "expr": "label_replace(label_join(label_replace(sum by (service_instance_id, xrpl_branch, xrpl_node_role, xrpl_work_item) (rate(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", span_name=\"pathfind.discover\"}[$__rate_interval])), \"series\", \"Discoveries / Sec\", \"\", \"\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(?:, )*(.*[^, ])(?:, )*\")"
         }
       ],
       "fieldConfig": {
         "defaults": {
+          "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
           "unit": "suffix: operations/s",
           "custom": {
             "axisLabel": "Operations / Sec",
@@ -719,6 +718,19 @@
   "templating": {
     "list": [
       {
+        "name": "DS_PROMETHEUS",
+        "type": "datasource",
+        "label": "Prometheus",
+        "query": "prometheus",
+        "regex": "",
+        "current": {},
+        "hide": 0,
+        "refresh": 1,
+        "includeAll": false,
+        "multi": false,
+        "options": []
+      },
+      {
         "name": "service_name",
         "label": "Service Name",
         "description": "Filter by service.name (e.g. xrpld, xrpld-validator)",
@@ -726,7 +738,7 @@
         "query": "label_values(service_name)",
         "datasource": {
           "type": "prometheus",
-          "uid": "prometheus"
+          "uid": "${DS_PROMETHEUS}"
         },
         "includeAll": true,
         "allValue": ".*",
@@ -741,12 +753,12 @@
       {
         "name": "deployment_environment",
         "label": "Environment",
-        "description": "Filter by deployment tier (local/ci/test/prod)",
+        "description": "Filter by deployment tier [local / ci / test / prod]",
         "type": "query",
         "query": "label_values(deployment_environment)",
         "datasource": {
           "type": "prometheus",
-          "uid": "prometheus"
+          "uid": "${DS_PROMETHEUS}"
         },
         "includeAll": true,
         "allValue": ".*",
@@ -761,12 +773,72 @@
       {
         "name": "xrpl_network_type",
         "label": "Network",
-        "description": "Filter by XRPL network (mainnet/testnet/devnet)",
+        "description": "Filter by XRPL network [mainnet / testnet / devnet / perf / unknown]",
         "type": "query",
         "query": "label_values(xrpl_network_type)",
         "datasource": {
           "type": "prometheus",
-          "uid": "prometheus"
+          "uid": "${DS_PROMETHEUS}"
+        },
+        "includeAll": true,
+        "allValue": ".*",
+        "current": {
+          "text": "All",
+          "value": "$__all"
+        },
+        "multi": true,
+        "refresh": 2,
+        "sort": 1
+      },
+      {
+        "name": "xrpl_work_item",
+        "label": "Work Item",
+        "description": "Filter by perf-iac work item / ticket (e.g. RIPD-7455)",
+        "type": "query",
+        "query": "label_values(xrpl_work_item)",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${DS_PROMETHEUS}"
+        },
+        "includeAll": true,
+        "allValue": ".*",
+        "current": {
+          "text": "All",
+          "value": "$__all"
+        },
+        "multi": true,
+        "refresh": 2,
+        "sort": 1
+      },
+      {
+        "name": "xrpl_branch",
+        "label": "Branch",
+        "description": "Filter by comparison side (baseline:<ref>:<commit> / test:<ref>:<commit>)",
+        "type": "query",
+        "query": "label_values(xrpl_branch)",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${DS_PROMETHEUS}"
+        },
+        "includeAll": true,
+        "allValue": ".*",
+        "current": {
+          "text": "All",
+          "value": "$__all"
+        },
+        "multi": true,
+        "refresh": 2,
+        "sort": 1
+      },
+      {
+        "name": "xrpl_node_role",
+        "label": "Node Role",
+        "description": "Filter by node role (validator / peer)",
+        "type": "query",
+        "query": "label_values(xrpl_node_role)",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${DS_PROMETHEUS}"
         },
         "includeAll": true,
         "allValue": ".*",
@@ -786,7 +858,7 @@
         "query": "label_values(target_info, service_instance_id)",
         "datasource": {
           "type": "prometheus",
-          "uid": "prometheus"
+          "uid": "${DS_PROMETHEUS}"
         },
         "includeAll": true,
         "allValue": ".*",
@@ -806,7 +878,7 @@
         "query": "label_values(span_calls_total{span_name=~\"grpc\\\\..*\"}, method)",
         "datasource": {
           "type": "prometheus",
-          "uid": "prometheus"
+          "uid": "${DS_PROMETHEUS}"
         },
         "includeAll": true,
         "allValue": ".*",
@@ -825,5 +897,6 @@
     "to": "now"
   },
   "title": "RPC & Pathfinding",
-  "uid": "rpc-pathfinding"
+  "uid": "rpc-pathfinding",
+  "refresh": "30s"
 }

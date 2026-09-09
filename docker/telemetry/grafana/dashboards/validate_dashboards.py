@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
-"""Dashboard lint: cumulative metrics must be rate()-wrapped; tier filters present."""
+"""Dashboard lint: cumulative metrics rate()-wrapped; tier filters; sane panel grid."""
 
 import json, re, sys
 from pathlib import Path
+
+GRID_COLUMNS = 24
 
 # Prometheus gauges that hold a CUMULATIVE total -> must be rate()/increase()-wrapped.
 CUMULATIVE_PREFIXES = (
@@ -38,6 +40,7 @@ NODESTORE_CUMULATIVE = (
     "node_read_bytes",
     "node_written_bytes",
     "node_reads_duration_us",
+    "node_writes_duration_us",
 )
 # state_accounting_*_duration are cumulative µs.
 STATE_DURATION = re.compile(r"state_accounting_\w+_duration")
@@ -56,6 +59,55 @@ def iter_panels(dash):
             yield sub
 
 
+def check_layout(path, dash):
+    """Duplicate panel ids and grid collisions -- both break Grafana's loader.
+
+    Grafana keys panels by id when it builds the dashboard model, so two panels
+    sharing an id make the load non-deterministic. Overlapping gridPos rectangles
+    have no valid layout. Only top-level panels are checked: panels nested inside
+    a collapsed row do not occupy the outer grid.
+    """
+    errs = []
+    top = dash.get("panels", []) or []
+
+    seen_ids = {}
+    for p in top:
+        pid = p.get("id")
+        if pid is None:
+            continue
+        if pid in seen_ids:
+            errs.append(
+                f"{path}: duplicate panel id {pid}: "
+                f"[{seen_ids[pid]}] and [{p.get('title', '<untitled>')}]"
+            )
+        else:
+            seen_ids[pid] = p.get("title", "<untitled>")
+
+    # Mark every grid cell each panel covers; a second claim on a cell is a collision.
+    owner = {}
+    for p in top:
+        g = p.get("gridPos") or {}
+        x, y = g.get("x", 0), g.get("y", 0)
+        w, h = g.get("w", 0), g.get("h", 0)
+        title = p.get("title", "<untitled>")
+        if x + w > GRID_COLUMNS:
+            errs.append(
+                f"{path} [{title}]: spans past the {GRID_COLUMNS}-column grid (x={x}, w={w})"
+            )
+        clashed = set()
+        for cy in range(y, y + h):
+            for cx in range(x, min(x + w, GRID_COLUMNS)):
+                prev = owner.get((cy, cx))
+                if prev is None:
+                    owner[(cy, cx)] = title
+                elif prev not in clashed:
+                    clashed.add(prev)
+                    errs.append(
+                        f"{path} [{title}]: grid overlap with [{prev}] at y={cy} x={cx}"
+                    )
+    return errs
+
+
 def expr_is_wrapped(expr):
     return (
         "rate(" in expr
@@ -71,6 +123,7 @@ def check(path, forbid_5m):
         dash = json.load(open(path))
     except Exception as e:
         return [f"{path}: INVALID JSON: {e}"]
+    errs += check_layout(path, dash)
     for p in iter_panels(dash):
         title = p.get("title", "<untitled>")
         for tg in p.get("targets", []) or []:

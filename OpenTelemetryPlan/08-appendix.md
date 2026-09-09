@@ -43,89 +43,35 @@
 | **LoadManager**   | Dynamic fee escalation based on network load                  |
 | **SHAMap**        | SHA-256 hash-based map (Merkle trie variant) for ledger state |
 
+### Phase 9–11 Terms
+
+| Term                        | Definition                                                                |
+| --------------------------- | ------------------------------------------------------------------------- |
+| **MetricsRegistry**         | Centralized class for OTel async gauge registrations (Phase 9)            |
+| **ObservableGauge**         | OTel Metrics SDK async instrument polled via callback at fixed intervals  |
+| **PeriodicMetricReader**    | OTel SDK component that invokes gauge callbacks at configurable intervals |
+| **CountedObject**           | xrpld template that tracks live instance counts via atomic counters       |
+| **TxQ**                     | Transaction queue managing fee escalation and ordering                    |
+| **Load Factor**             | Combined multiplier affecting transaction cost (local, cluster, network)  |
+| **OTel Collector Receiver** | Custom Go plugin that polls xrpld RPC and emits OTel metrics (Phase 11)   |
+
 ---
 
 ## 8.2 Span Hierarchy Visualization
 
-> **TxQ** = Transaction Queue
+The authoritative span-flow diagrams — a master overview plus per-stage
+flowcharts (ingress, the shared apply pipeline, the consensus round, ledger
+finalize, and the pathfinding / ledger-acquire side flows) — live in the operator
+runbook. They map every span onto the **real xrpld control flow and XRPL protocol
+order** (verified against code and `docs/consensus.md`, with file:line evidence),
+label every node and branch with the span that represents that state or
+transition, and call out where the OpenTelemetry span parent links diverge from
+that flow.
 
-```mermaid
-flowchart TB
-    subgraph trace["Trace: Transaction Lifecycle"]
-        rpc["rpc.request<br/>(entry point)"]
-        validate["tx.validate"]
-        relay["tx.relay<br/>(parent span)"]
+> **See**: [docs/telemetry-runbook.md § Protocol Span Flow](../docs/telemetry-runbook.md#protocol-span-flow).
 
-        subgraph peers["Peer Spans"]
-            p1["peer.send<br/>Peer A"]
-            p2["peer.send<br/>Peer B"]
-            p3["peer.send<br/>Peer C"]
-        end
-
-        subgraph pathfinding["PathFinding Spans"]
-            pathfind["pathfind.request"]
-            pathcomp["pathfind.compute"]
-        end
-
-        consensus["consensus.round"]
-        apply["tx.apply"]
-
-        subgraph txqueue["TxQ Spans"]
-            txq["txq.enqueue"]
-            txqApply["txq.apply"]
-        end
-
-        feeCalc["fee.escalate"]
-    end
-
-    subgraph validators["Validator Spans"]
-        valFetch["validator.list.fetch"]
-        valManifest["validator.manifest"]
-    end
-
-    rpc --> validate
-    rpc --> pathfind
-    pathfind --> pathcomp
-    validate --> relay
-    relay --> p1
-    relay --> p2
-    relay --> p3
-    p1 -.->|"context propagation"| consensus
-    consensus --> apply
-    apply --> txq
-    txq --> txqApply
-    txq --> feeCalc
-
-    style trace fill:#0f172a,stroke:#020617,color:#fff
-    style peers fill:#1e3a8a,stroke:#172554,color:#fff
-    style pathfinding fill:#134e4a,stroke:#0f766e,color:#fff
-    style txqueue fill:#064e3b,stroke:#047857,color:#fff
-    style validators fill:#4c1d95,stroke:#6d28d9,color:#fff
-    style rpc fill:#1d4ed8,stroke:#1e40af,color:#fff
-    style validate fill:#047857,stroke:#064e3b,color:#fff
-    style relay fill:#047857,stroke:#064e3b,color:#fff
-    style p1 fill:#0e7490,stroke:#155e75,color:#fff
-    style p2 fill:#0e7490,stroke:#155e75,color:#fff
-    style p3 fill:#0e7490,stroke:#155e75,color:#fff
-    style consensus fill:#fef3c7,stroke:#fde68a,color:#1e293b
-    style apply fill:#047857,stroke:#064e3b,color:#fff
-    style pathfind fill:#0e7490,stroke:#155e75,color:#fff
-    style pathcomp fill:#0e7490,stroke:#155e75,color:#fff
-    style txq fill:#047857,stroke:#064e3b,color:#fff
-    style txqApply fill:#047857,stroke:#064e3b,color:#fff
-    style feeCalc fill:#047857,stroke:#064e3b,color:#fff
-    style valFetch fill:#6d28d9,stroke:#4c1d95,color:#fff
-    style valManifest fill:#6d28d9,stroke:#4c1d95,color:#fff
-```
-
-**Reading the diagram:**
-
-- **rpc.request (blue, top)**: The entry point — every traced transaction starts as an RPC call; this root span is the parent of all downstream work.
-- **tx.validate and pathfind.request (green/teal, first fork)**: The RPC request fans out into transaction validation and, for cross-currency payments, a PathFinding branch (`pathfind.request` -> `pathfind.compute`).
-- **tx.relay -> Peer Spans (teal, middle)**: After validation, the transaction is relayed to peers A, B, and C in parallel; each `peer.send` is a sibling child span showing fan-out across the network.
-- **context propagation (dashed arrow)**: The dotted line from `peer.send Peer A` to `consensus.round` represents the trace context crossing a node boundary — the receiving validator picks up the same `trace_id` and continues the trace.
-- **consensus.round -> tx.apply -> TxQ Spans (green, lower)**: Once consensus accepts the transaction, it is applied to the ledger; the TxQ spans (`txq.enqueue`, `txq.apply`, `fee.escalate`) capture queue depth and fee escalation behavior.
-- **Validator Spans (purple, detached)**: `validator.list.fetch` and `validator.manifest` are independent workflows for UNL management — they run on their own traces and are linked to consensus via Span Links, not parent-child relationships.
+The full span inventory (names, attributes, parents as instrumented) is in
+[09-data-collection-reference.md §1](./09-data-collection-reference.md#1-opentelemetry-spans).
 
 ---
 
@@ -162,7 +108,8 @@ flowchart TB
 | ------- | ---------- | ------ | -------------------------------------------------------------- |
 | 1.0     | 2026-02-12 | -      | Initial implementation plan                                    |
 | 1.1     | 2026-02-13 | -      | Refactored into modular documents                              |
-| 1.2     | 2026-03-24 | -      | Review fixes: accuracy corrections, cross-document consistency |
+| 1.2     | 2026-03-09 | -      | Added Phases 9–11 (future enhancement plans)                   |
+| 1.3     | 2026-03-24 | -      | Review fixes: accuracy corrections, cross-document consistency |
 
 ---
 
@@ -186,15 +133,100 @@ flowchart TB
 
 ### Task Lists
 
-| Document                                                                   | Description                           |
-| -------------------------------------------------------------------------- | ------------------------------------- |
-| [Phase2_taskList.md](./Phase2_taskList.md)                                 | RPC layer trace instrumentation       |
-| [Phase3_taskList.md](./Phase3_taskList.md)                                 | Peer overlay & consensus tracing      |
-| [Phase4_taskList.md](./Phase4_taskList.md)                                 | Transaction lifecycle tracing         |
-| [Phase5_taskList.md](./Phase5_taskList.md)                                 | Ledger processing & advanced tracing  |
-| [Phase5_IntegrationTest_taskList.md](./Phase5_IntegrationTest_taskList.md) | Observability stack integration tests |
-| [Phase7_taskList.md](./Phase7_taskList.md)                                 | Native OTel metrics migration         |
-| [Phase8_taskList.md](./Phase8_taskList.md)                                 | Log-trace correlation                 |
+| Document                                                                   | Description                                    |
+| -------------------------------------------------------------------------- | ---------------------------------------------- |
+| [Phase2_taskList.md](./Phase2_taskList.md)                                 | RPC layer trace instrumentation                |
+| [Phase3_taskList.md](./Phase3_taskList.md)                                 | Peer overlay & consensus tracing               |
+| [Phase4_taskList.md](./Phase4_taskList.md)                                 | Transaction lifecycle tracing                  |
+| [Phase5_taskList.md](./Phase5_taskList.md)                                 | Ledger processing & advanced tracing           |
+| [Phase5_IntegrationTest_taskList.md](./Phase5_IntegrationTest_taskList.md) | Observability stack integration tests          |
+| [Phase7_taskList.md](./Phase7_taskList.md)                                 | Native OTel metrics migration                  |
+| [Phase8_taskList.md](./Phase8_taskList.md)                                 | Log-trace correlation                          |
+| [Phase9_taskList.md](./Phase9_taskList.md)                                 | Internal metric instrumentation gap fill       |
+| [Phase10_taskList.md](./Phase10_taskList.md)                               | Synthetic workload generation & validation     |
+| [Phase11_taskList.md](./Phase11_taskList.md)                               | Third-party data collection pipelines (future) |
+
+> **Only Phase 11 is still "future".** Phase 9 ships on
+> `pratik/otel-phase9-metric-gap-fill` (18 task entries, 9.1–9.17 plus 9.7a) and
+> Phase 10 on `pratik/otel-phase10-workload-validation` (7 tasks). Their task
+> lists are present on every branch from those points forward, so a reader on a
+> later branch sees plans that are already implemented, not proposals. Phase 11
+> (13 tasks) has no implementation branch.
+
+> **Note**: Phases 1 and 6 do not have separate task list files. Phase 1 tasks are documented in [06-implementation-phases.md §6.2](./06-implementation-phases.md). Phase 6 tasks are documented in [06-implementation-phases.md §6.7](./06-implementation-phases.md).
+
+---
+
+## 8.6 Phase 9–11 Cross-Reference Guide
+
+This guide maps Phase 9–11 content to its location across the documentation.
+
+### Phase 9: Internal Metric Instrumentation Gap Fill
+
+| Content                          | Location                                                                                                                         |
+| -------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| Plan & architecture              | [06-implementation-phases.md §6.8.2](./06-implementation-phases.md)                                                              |
+| Task list (18 entries, 9.1–9.17) | [Phase9_taskList.md](./Phase9_taskList.md)                                                                                       |
+| Metric definitions               | [09-data-collection-reference.md §5b](./09-data-collection-reference.md)                                                         |
+| New class: `MetricsRegistry`     | `src/xrpld/telemetry/MetricsRegistry.h/.cpp` — **shipped**                                                                       |
+| New dashboards (4)               | `fee-market`, `job-queue`, `peer-quality`, `validator-health` — **shipped**                                                      |
+| Updated dashboards (2)           | `node-health`, `rpc-performance`                                                                                                 |
+| Provisioned alert rules          | `docker/telemetry/grafana/provisioning/alerting/rules.yaml` — 13 rules in 5 groups ([07 §7.6.2](./07-observability-backends.md)) |
+
+> **Task numbering**: `Phase9_taskList.md` carries 18 `## Task 9.x` headings —
+> 9.1 through 9.17 plus the inserted 9.7a (`push_metrics.py` parity). The "10
+> tasks" figure in earlier revisions predates 9.7a and 9.11–9.17. Tasks 9.8 and
+> 9.11–9.13 together produce the four new dashboards; Task 9.17 (peer span
+> coverage) is explicitly **deferred to Phase 11**.
+
+**Metric categories**: NodeStore I/O, Cache Hit Rates, TxQ, PerfLog Per-RPC, PerfLog Per-Job, Counted Objects, Fee Escalation & Load Factors.
+
+### Phase 10: Synthetic Workload Generation & Telemetry Validation
+
+| Content              | Location                                                                 |
+| -------------------- | ------------------------------------------------------------------------ |
+| Plan & architecture  | [06-implementation-phases.md §6.8.3](./06-implementation-phases.md)      |
+| Task list (7 tasks)  | [Phase10_taskList.md](./Phase10_taskList.md)                             |
+| Branch               | `pratik/otel-phase10-workload-validation`                                |
+| Validation inventory | [09-data-collection-reference.md §5c](./09-data-collection-reference.md) |
+| Test harness         | `docker/telemetry/docker-compose.workload.yaml` (phase-10 branch)        |
+| CI workflow          | `.github/workflows/telemetry-validation.yml` (phase-10 branch)           |
+
+**Validates** (Phase-10 harness inventory): **40** span types, **67** unique
+required span attributes, **36** metric entries, **14** dashboards, log-trace
+correlation.
+
+> **These are the harness manifests' counts, and two of them lag the code.** The
+> manifests (`docker/telemetry/workload/expected_spans.json`,
+> `expected_metrics.json`) live only on the phase-10 branch. `expected_spans.json`
+> holds 40 span entries against the **41** span-name families the code emits
+> (`rpc.ws_upgrade` has no entry), and its own `total_unique_attributes: 58` field
+> is stale against the 67 attributes its per-span `required_attributes` lists
+> actually name. `expected_metrics.json` asserts 14 dashboard uids against the
+> **15** dashboard JSONs in `docker/telemetry/grafana/dashboards/`;
+> `log-derived-insights` is the unasserted one. The full emitted inventory is in
+> [09-data-collection-reference.md §1.1](./09-data-collection-reference.md#11-complete-span-inventory-41-spans)
+> and [§5c](./09-data-collection-reference.md#validated-telemetry-inventory).
+
+### Phase 11: Third-Party Data Collection Pipelines
+
+| Content                           | Location                                                                 |
+| --------------------------------- | ------------------------------------------------------------------------ |
+| Plan & architecture               | [06-implementation-phases.md §6.8.4](./06-implementation-phases.md)      |
+| Task list (13 tasks)              | [Phase11_taskList.md](./Phase11_taskList.md)                             |
+| External metric definitions (~30) | [09-data-collection-reference.md §5d](./09-data-collection-reference.md) |
+| Custom OTel Collector receiver    | `docker/telemetry/otel-rippled-receiver/` (planned)                      |
+| Prometheus alerting rules (11)    | [09-data-collection-reference.md §5d](./09-data-collection-reference.md) |
+| New dashboards (4)                | Validator Health, Network Topology, Fee Market (External), DEX & AMM     |
+
+> **Two of those names now collide with shipped Phase-9 boards.** Phase 9
+> already ships `validator-health` and `fee-market`, both built from the node's
+> **own** telemetry. The Phase-11 entries are the third-party-data variants
+> (network-wide validator agreement, external fee/DEX feeds via the custom
+> receiver). They need distinct uids, or they will overwrite the Phase-9 boards
+> on provisioning.
+
+**Consumer categories**: Exchanges, Payment Processors, DeFi/AMM, NFT Marketplaces, Analytics Providers, Wallets, Compliance, Academic Researchers, Institutional Custody, CBDC Bridge Operators.
 
 ---
 

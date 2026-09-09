@@ -3,6 +3,7 @@
 #include <xrpld/app/ledger/OpenLedger.h>
 #include <xrpld/app/main/Application.h>
 #include <xrpld/app/misc/detail/TxQSpanNames.h>
+#include <xrpld/telemetry/MetricsRegistry.h>
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/base_uint.h>
@@ -1318,6 +1319,8 @@ TxQ::apply(
             JLOG(j_.info()) << "Queue is full, and transaction " << transactionID
                             << " would kick a transaction from the same account (" << account
                             << ") out of the queue.";
+            if (auto* const metrics = app.getMetricsRegistry(); metrics != nullptr)
+                metrics->incrementTxqDropped("queue_full");
             return {telCAN_NOT_QUEUE_FULL, false};
         }
         auto const& endAccount = byAccount_.at(lastRIter->account);
@@ -1361,6 +1364,8 @@ TxQ::apply(
         {
             JLOG(j_.info()) << "Queue is full, and transaction " << transactionID
                             << " fee is lower than end item's account average fee";
+            if (auto* const metrics = app.getMetricsRegistry(); metrics != nullptr)
+                metrics->incrementTxqDropped("queue_full");
             return {telCAN_NOT_QUEUE_FULL, false};
         }
     }
@@ -1430,6 +1435,7 @@ TxQ::processClosedLedger(Application& app, ReadView const& view, bool timeLeap)
         maxSize_ = std::max(snapshot.txnsExpected * setup_.ledgersInQueue, setup_.queueSizeMin);
 
     // Remove any queued candidates whose LastLedgerSequence has gone by.
+    auto* const metrics = app.getMetricsRegistry();
     std::int64_t expiredCount = 0;
     for (auto candidateIter = byFee_.begin(); candidateIter != byFee_.end();)
     {
@@ -1437,6 +1443,10 @@ TxQ::processClosedLedger(Application& app, ReadView const& view, bool timeLeap)
         {
             byAccount_.at(candidateIter->account).dropPenalty = true;
             candidateIter = erase(candidateIter);
+            // Count each expired transaction: submitters who under-bid the
+            // escalating fee and were never included before expiry.
+            if (metrics != nullptr)
+                metrics->incrementTxqExpired();
             ++expiredCount;
         }
         else

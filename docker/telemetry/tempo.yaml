@@ -17,6 +17,14 @@ stream_over_http_enabled: true
 server:
   http_listen_port: 3200
 
+# Raise the TraceQL metrics query range limit. The default
+# query_frontend.metrics.max_duration is 3h, so a dashboard set to a longer
+# window (e.g. 6h/12h) fails with "range exceeds 3h0m0s". 168h matches the
+# search max_duration and gives dashboards generous headroom.
+query_frontend:
+  metrics:
+    max_duration: 168h
+
 distributor:
   receivers:
     otlp:
@@ -31,9 +39,11 @@ compactor:
   compaction:
     block_retention: 1h
 
-# Enable metrics generator for service graph and span metrics.
-# Produces RED metrics (rate, errors, duration) per service/span,
-# feeding Grafana's service map visualization.
+# Enable metrics generator for service graph, span metrics, and the
+# local-blocks processor. Produces RED metrics (rate, errors, duration) per
+# service/span for the service map, and keeps recent trace blocks queryable so
+# TraceQL metrics queries (quantile_over_time, count_over_time, etc. via
+# /api/metrics/query_range) work.
 metrics_generator:
   registry:
     external_labels:
@@ -44,6 +54,18 @@ metrics_generator:
     # to enable remote_write for service graph metrics:
     # remote_write:
     #   - url: http://prometheus:9090/api/v1/write
+  # Separate WAL the local-blocks processor flushes traces to for metrics
+  # queries. Required when flush_to_storage is true.
+  traces_storage:
+    path: /var/tempo/generator/traces
+  processor:
+    local_blocks:
+      # xrpld consensus/transaction spans are SPAN_KIND_INTERNAL. By default
+      # local-blocks keeps only server spans for TraceQL metrics, so attribute
+      # aggregations over internal spans return nothing. Keep all spans.
+      filter_server_spans: false
+      # Flush recent blocks to traces_storage so query_range can read them.
+      flush_to_storage: true
 
 overrides:
   defaults:
@@ -51,6 +73,7 @@ overrides:
       processors:
         - service-graphs
         - span-metrics
+        - local-blocks
 
 storage:
   trace:
