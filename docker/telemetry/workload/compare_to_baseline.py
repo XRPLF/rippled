@@ -282,6 +282,29 @@ def compute_delta(
     current = current_entry.get("value") if current_entry else None
     unit = (baseline_entry or current_entry or {}).get("unit", "")
 
+    # A unit change makes the two numbers incomparable, so subtracting them is
+    # meaningless: us -> ms reads as a 99.9% improvement and the gate passes.
+    # Fail instead, and name both units so the baseline can be refreshed.
+    baseline_unit = (baseline_entry or {}).get("unit", "")
+    current_unit = (current_entry or {}).get("unit", "")
+    if baseline_unit and current_unit and baseline_unit != current_unit:
+        pct_threshold, abs_threshold = resolve_thresholds(key, thresholds)
+        return MetricDelta(
+            key=key,
+            baseline=baseline,
+            current=current,
+            delta=None,
+            pct_change=None,
+            unit=f"{baseline_unit}->{current_unit}",
+            threshold_pct=pct_threshold,
+            threshold_abs=abs_threshold,
+            regressed=True,
+            note=(
+                f"unit changed: baseline is {baseline_unit}, current run is "
+                f"{current_unit} -- refresh the baseline instead of comparing"
+            ),
+        )
+
     if baseline is None and current is None:
         return _skip_delta(
             key, None, None, unit, thresholds, "no data (neither baseline nor current)"
@@ -358,6 +381,12 @@ def print_summary(deltas: list[MetricDelta]) -> None:
             "absolute bound alone where the baseline is not positive):"
         )
         _print_table(regressions)
+        # A regression can also be recorded with no delta at all -- a unit
+        # change makes the two numbers incomparable. That row prints as dashes,
+        # so name the reason here or the table looks like a bug.
+        for d in regressions:
+            if d.delta is None:
+                print(f"  {d.key}: {d.note}")
 
     if improvements:
         top = improvements[:5]
@@ -401,7 +430,12 @@ def write_report(
         "window": timings.get("window"),
         "profile": timings.get("profile"),
         "summary": {
+            # total is every key in the report, which is the UNION of the
+            # baseline and the current run -- not the baseline count. "compared"
+            # is the only number that says how much was actually gated: a delta
+            # exists only when both sides had a value.
             "total": len(deltas),
+            "compared": sum(1 for d in deltas if d.delta is not None),
             "regressions": len(regressions),
             "improvements": sum(
                 1

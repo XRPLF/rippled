@@ -156,6 +156,45 @@ class TestInputHandling(CheckerCase):
         self.assertEqual(code, 1, out)
         self.assertIn("valid JSON", out)
 
+    def test_non_object_top_level_fails_naming_the_input(self):
+        """Valid JSON of the wrong shape must be named, not raise a traceback.
+
+        A top-level null, list or number parses, so it reaches the first .get
+        and dies pointing at a line in the checker rather than at the file the
+        operator has to fix.
+        """
+        for rel, text in (
+            (BASELINE, "null"),
+            (THRESHOLDS, "[]"),
+            (METRICS, "5"),
+        ):
+            with self.subTest(input=rel):
+                self.setUp()
+                (self.tree / rel).write_text(text)
+                code, out = self.run_checker()
+                self.assertEqual(code, 1, out)
+                self.assertIn(rel, out)
+                self.assertIn("not an object", out)
+                self.assertNotIn("Traceback", out)
+
+    def test_non_object_metrics_map_fails_naming_the_input(self):
+        """A string 'metrics' is truthy, so it slips past the placeholder test.
+
+        Left unchecked it reports the string's own characters as gated keys,
+        which is worse than a crash: the advice is wrong rather than absent.
+        An empty map still has to pass, because that is the bootstrap state.
+        """
+        self.edit_json(BASELINE, lambda d: d.update(metrics="span.tx.process.p99"))
+        code, out = self.run_checker()
+        self.assertEqual(code, 1, out)
+        self.assertIn("'metrics' is str", out)
+        self.assertNotIn("Traceback", out)
+
+        self.setUp()
+        self.edit_json(BASELINE, lambda d: d.update(metrics={}))
+        code, out = self.run_checker()
+        self.assertEqual(code, 0, out)
+
 
 class TestRules(CheckerCase):
     """One case per rule, so a rule that stops flagging is caught."""
@@ -182,6 +221,40 @@ class TestRules(CheckerCase):
         code, out = self.run_checker()
         self.assertEqual(code, 1, out)
         self.assertIn("(rule B)", out)
+
+    def test_rule_b_names_the_unit_suffixed_key(self):
+        """The key it tells the operator to add must be the key the code reads.
+
+        The bound is stored as max_abs_increase_ms or _us. A message naming a
+        bare max_abs_increase sends the operator to add a key nothing reads, so
+        the gate keeps failing with no explanation. Both suffixes are covered,
+        because a test on the ms side alone passes on a hard-coded "_ms".
+        """
+        for group, suffix in (
+            ("span.ledger.build", "max_abs_increase_ms"),
+            ("job.transaction.queued", "max_abs_increase_us"),
+        ):
+            with self.subTest(group=group):
+                self.setUp()
+                self.edit_json(THRESHOLDS, lambda d: d["overrides"].pop(group))
+                code, out = self.run_checker()
+                self.assertEqual(code, 1, out)
+                self.assertIn("(rule B)", out)
+                self.assertIn(suffix, out)
+                self.assertNotIn("max_abs_increase =", out)
+
+    def test_non_numeric_threshold_is_reported_not_crashed(self):
+        """A hand-edited bound that is a string must be named, not raise."""
+        self.edit_json(
+            THRESHOLDS,
+            lambda d: d["overrides"]["span.ledger.build"]["p99"].update(
+                max_abs_increase_ms="5.5"
+            ),
+        )
+        code, out = self.run_checker()
+        self.assertEqual(code, 1, out)
+        self.assertIn("not a number", out)
+        self.assertNotIn("Traceback", out)
 
     def test_rule_c_flags_rounded_bound(self):
         """A bound rounded for readability is still not the derived bound."""
