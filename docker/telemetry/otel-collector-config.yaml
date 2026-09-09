@@ -121,7 +121,12 @@ exporters:
     resource_to_telemetry_conversion:
       enabled: true
 
+extensions:
+  health_check:
+    endpoint: 0.0.0.0:13133
+
 service:
+  extensions: [health_check]
   pipelines:
     traces:
       receivers: [otlp]
@@ -129,5 +134,8 @@ service:
       exporters: [debug, otlp/tempo, spanmetrics]
     metrics:
       receivers: [otlp, spanmetrics]
-      processors: [resource/tier, resource/stripsdk]
+      # batch keeps the OTLP metric path from exporting one request per
+      # instrument. It delays a sample by at most the batch timeout, which
+      # is well under the Prometheus scrape interval.
+      processors: [resource/tier, resource/stripsdk, batch]
       exporters: [prometheus]
