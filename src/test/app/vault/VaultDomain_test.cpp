@@ -23,6 +23,7 @@
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/Keylet.h>
+#include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/TER.h>
@@ -72,7 +73,10 @@ private:
         env(pay(issuer, charlie, asset(5)));
         env.close();
 
-        auto [tx, keylet] = vault.create({.owner = owner, .asset = asset, .flags = tfVaultPrivate});
+        auto [tx, keylet] = vault.create(
+            {.owner = owner,
+             .asset = asset,
+             .flags = tfVaultPrivate | tfVaultOwnerCanBlockDeposit});
         env(tx);
         env.close();
         BEAST_EXPECT(env.le(keylet));
@@ -95,6 +99,28 @@ private:
             auto tx = vault.set({.owner = owner, .id = keylet.key});
             tx[sfDomainID] = to_string(BaseUInt<256>(42ul));
             env(tx, Ter{tecOBJECT_NOT_FOUND});
+        }
+
+        {
+            testcase("blocking a private vault does not change lsfVaultPrivate flag");
+            auto tx = vault.set({.owner = owner, .id = keylet.key, .flags = tfVaultDepositBlock});
+            env(tx, Ter(tesSUCCESS));
+            auto const sleVault = env.le(keylet);
+            if (!BEAST_EXPECT(sleVault))
+                return;
+            BEAST_EXPECT(sleVault->isFlag(lsfVaultDepositBlocked));
+            BEAST_EXPECT(sleVault->isFlag(lsfVaultPrivate));
+        }
+
+        {
+            testcase("unblocking a private vault does not change lsfVaultPrivate flag");
+            auto tx = vault.set({.owner = owner, .id = keylet.key, .flags = tfVaultDepositUnblock});
+            env(tx, Ter(tesSUCCESS));
+            auto const sleVault = env.le(keylet);
+            if (!BEAST_EXPECT(sleVault))
+                return;
+            BEAST_EXPECT(!sleVault->isFlag(lsfVaultDepositBlocked));
+            BEAST_EXPECT(sleVault->isFlag(lsfVaultPrivate));
         }
 
         {

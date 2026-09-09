@@ -166,6 +166,14 @@ private:
             env(tx, Ter{temINVALID_FLAG});
 
             {
+                env.disableFeature(featureLendingProtocolV1_2);
+                auto [tx, keylet] = vault.create({.owner = owner, .asset = asset});
+                tx[sfFlags] = tfVaultOwnerCanBlockDeposit;
+                env(tx, Ter(temINVALID_FLAG));
+                env.enableFeature(featureLendingProtocolV1_2);
+            }
+
+            {
                 auto tx = vault.set({.owner = owner, .id = keylet.key});
                 tx[sfFlags] = tfClearDeepFreeze;
                 env(tx, Ter{temINVALID_FLAG});
@@ -471,13 +479,46 @@ private:
 
         testCase(
             [&](Env& env, Account const&, Account const& owner, Asset const& asset, Vault& vault) {
-                testcase("invalid set immutable flag");
+                testcase("set flags fail without featureLendingProtocolV1_2");
+
+                auto [tx, keylet] = vault.create({.owner = owner, .asset = asset});
+
+                {
+                    env.disableFeature(featureLendingProtocolV1_2);
+                    env(vault.set({.owner = owner, .id = keylet.key, .flags = tfVaultDepositBlock}),
+                        Ter(temINVALID_FLAG));
+                    env(vault.set(
+                            {.owner = owner, .id = keylet.key, .flags = tfVaultDepositUnblock}),
+                        Ter(temINVALID_FLAG));
+                    env.enableFeature(featureLendingProtocolV1_2);
+                }
+            });
+
+        testCase(
+            [&](Env& env, Account const&, Account const& owner, Asset const& asset, Vault& vault) {
+                testcase("invalid set flag combination");
 
                 auto [tx, keylet] = vault.create({.owner = owner, .asset = asset});
 
                 {
                     auto tx = vault.set({.owner = owner, .id = keylet.key});
-                    tx[sfFlags] = tfVaultPrivate;
+                    tx[sfFlags] = tfVaultDepositBlock | tfVaultDepositUnblock;
+                    env(tx, Ter(temINVALID_FLAG));
+                }
+            });
+
+        testCase(
+            [&](Env& env, Account const&, Account const& owner, Asset const& asset, Vault& vault) {
+                testcase("invalid set immutable flag");
+
+                auto [tx, keylet] = vault.create({.owner = owner, .asset = asset});
+                env(tx);
+
+                {
+                    auto tx = vault.set({.owner = owner, .id = keylet.key});
+                    // tfVaultPrivate aliases tfVaultDepositBlock (0x00010000). Use a
+                    // VaultCreate-only flag that VaultSet still rejects.
+                    tx[sfFlags] = tfVaultOwnerCanBlockDeposit;
                     env(tx, Ter(temINVALID_FLAG));
                 }
             });
@@ -1177,6 +1218,168 @@ private:
         }
     }
 
+    void
+    testVaultDepositBlockGeneral()
+    {
+        using namespace test::jtx;
+
+        Env env{*this};
+        Account const owner{"owner"};
+        Account const other{"other"};
+
+        env.fund(XRP(100'000'000), owner, other);
+        Vault vault{env};
+        PrettyAsset const asset = xrpIssue();
+        std::string const prefix = "VaultDepositBlock: ";
+
+        auto const blockVault = [&](TER expectedTer, Keylet const& keylet) {
+            env(vault.set({.owner = owner, .id = keylet.key, .flags = tfVaultDepositBlock}),
+                Ter(expectedTer));
+        };
+
+        auto const unblockVault = [&](TER expectedTer, Keylet const& keylet) {
+            env(vault.set({.owner = owner, .id = keylet.key, .flags = tfVaultDepositUnblock}),
+                Ter(expectedTer));
+        };
+
+        {
+            testcase(prefix + "block/unblock fails when amendment is disabled");
+
+            env.disableFeature(featureLendingProtocolV1_2);
+            auto const [tx, keylet] = vault.create(
+                {.owner = owner, .asset = asset, .flags = tfVaultOwnerCanBlockDeposit});
+            env(tx, Ter(temINVALID_FLAG));
+            env.close();
+
+            blockVault(temINVALID_FLAG, keylet);
+            unblockVault(temINVALID_FLAG, keylet);
+
+            env.enableFeature(featureLendingProtocolV1_2);
+        }
+
+        {
+            testcase(prefix + "block/unblock fails when vault is not configured");
+            auto const [tx, keylet] = vault.create({.owner = owner, .asset = asset});
+            env(tx);
+            env.close();
+
+            blockVault(tecNO_PERMISSION, keylet);
+            unblockVault(tecNO_PERMISSION, keylet);
+
+            env(vault.del({.owner = owner, .id = keylet.key}), Ter(tesSUCCESS));
+            env.close();
+        }
+
+        auto const [tx, keylet] =
+            vault.create({.owner = owner, .asset = asset, .flags = tfVaultOwnerCanBlockDeposit});
+        env(tx);
+        env.close();
+
+        {
+            testcase(prefix + "block/unblock succeeds");
+            env(vault.deposit({
+                    .depositor = owner,
+                    .id = keylet.key,
+                    .amount = XRP(10'000),
+                }),
+                Ter(tesSUCCESS));
+            env(vault.deposit({
+                    .depositor = other,
+                    .id = keylet.key,
+                    .amount = XRP(10'000),
+                }),
+                Ter(tesSUCCESS));
+
+            blockVault(tesSUCCESS, keylet);
+
+            env(vault.deposit({
+                    .depositor = owner,
+                    .id = keylet.key,
+                    .amount = XRP(10'000),
+                }),
+                Ter(tecNO_PERMISSION));
+
+            env(vault.deposit({
+                    .depositor = other,
+                    .id = keylet.key,
+                    .amount = XRP(10'000),
+                }),
+                Ter(tecNO_PERMISSION));
+
+            env(vault.withdraw({
+                    .depositor = owner,
+                    .id = keylet.key,
+                    .amount = XRP(10'000),
+                }),
+                Ter(tesSUCCESS));
+
+            env(vault.withdraw({
+                    .depositor = other,
+                    .id = keylet.key,
+                    .amount = XRP(10'000),
+                }),
+                Ter(tesSUCCESS));
+
+            unblockVault(tesSUCCESS, keylet);
+
+            env(vault.deposit({
+                    .depositor = owner,
+                    .id = keylet.key,
+                    .amount = XRP(10'000),
+                }),
+                Ter(tesSUCCESS));
+
+            env(vault.deposit({
+                    .depositor = other,
+                    .id = keylet.key,
+                    .amount = XRP(10'000),
+                }),
+                Ter(tesSUCCESS));
+
+            env(vault.withdraw({
+                    .depositor = owner,
+                    .id = keylet.key,
+                    .amount = XRP(10'000),
+                }),
+                Ter(tesSUCCESS));
+
+            env(vault.withdraw({
+                    .depositor = other,
+                    .id = keylet.key,
+                    .amount = XRP(10'000),
+                }),
+                Ter(tesSUCCESS));
+        }
+
+        {
+            testcase(prefix + "block/unblock fails when caller is not owner");
+
+            env(vault.set({.owner = other, .id = keylet.key, .flags = tfVaultDepositBlock}),
+                Ter(tecNO_PERMISSION));
+
+            blockVault(tesSUCCESS, keylet);
+
+            env(vault.set({.owner = other, .id = keylet.key, .flags = tfVaultDepositUnblock}),
+                Ter(tecNO_PERMISSION));
+
+            unblockVault(tesSUCCESS, keylet);
+        }
+
+        {
+            testcase(prefix + "unblock fails when vault is already unblocked");
+            unblockVault(tecNO_PERMISSION, keylet);
+        }
+
+        {
+            testcase(prefix + "block fails when vault is already blocked");
+            blockVault(tesSUCCESS, keylet);
+            blockVault(tecNO_PERMISSION, keylet);
+            unblockVault(tesSUCCESS, keylet);
+        }
+
+        env(vault.del({.owner = owner, .id = keylet.key}));
+    }
+
 public:
     void
     run() override
@@ -1187,6 +1390,7 @@ public:
         testCreateFailMPT();
         testVaultDeleteMemoData();
         testVaultCreateLEVersion();
+        testVaultDepositBlockGeneral();
 
         testVaultWithdrawPseudoAccountDestination(all_ - fixCleanup3_4_0);
         testVaultWithdrawPseudoAccountDestination(all_);
