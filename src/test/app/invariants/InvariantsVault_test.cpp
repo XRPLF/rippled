@@ -2250,7 +2250,7 @@ class InvariantsVault_test : public InvariantsBase
                     tx[sfAmount] = XRPAmount(10);
                     tx[sfFlags] = tfVaultDonate;
                 }},
-            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
             precloseXrp,
             TxAccount::A2);
 
@@ -2270,7 +2270,7 @@ class InvariantsVault_test : public InvariantsBase
                     tx[sfAmount] = XRPAmount(10);
                     tx[sfFlags] = tfVaultDonate;
                 }},
-            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
             precloseXrp,
             TxAccount::A2);
 
