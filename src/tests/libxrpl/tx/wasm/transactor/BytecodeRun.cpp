@@ -23,16 +23,12 @@
 namespace xrpl::test {
 namespace {
 
-// A contract deciding whether an escrow releases, end to end through the transactor.
-//
-// The other transactor files are about refusals. This one is about the feature working: a
-// predicate over ledger state that is false, then true, with the escrow surviving the
-// rejections and being destroyed on approval.
+// A contract deciding whether an escrow releases, end to end through the transactor. The
+// other transactor files are about refusals; this one is about the feature working.
 
 constexpr std::uint32_t kAllowance = 10'000;
 
-// The preimage-sha256 condition/fulfillment pair the Beast suite used. Copied rather than
-// shared because `src/test/jtx` is not linked here, and they are inert constants.
+// A preimage-sha256 pair, copied from jtx because `src/test/jtx` is not linked here.
 constexpr auto kFulfillment = std::array<std::uint8_t, 4>{{0xA0, 0x02, 0x80, 0x00}};
 constexpr auto kCondition = std::array<std::uint8_t, 39>{
     {0xA0, 0x25, 0x80, 0x20, 0xE3, 0xB0, 0xC4, 0x42, 0x98, 0xFC, 0x1C, 0x14, 0x9A,
@@ -120,15 +116,14 @@ struct BytecodeRun : testing::Test
     }
 };
 
-// The whole point of a programmable escrow: it refuses while its condition is false, and
-// releases once the ledger makes it true — without anyone resubmitting anything different.
+// The whole point: it refuses while its predicate is false and releases once the ledger
+// makes it true, with nothing resubmitted differently.
 TEST_F(BytecodeRun, AContractRejectsUntilItsConditionHoldsThenReleases)
 {
     auto const threshold = currentSeq() + 3;
     auto const wasm = assembleWat(gatedOnLedgerSqn(threshold));
     auto const created = createEscrow(wasm);
 
-    // Below the threshold: rejected, and the escrow survives to be tried again.
     ASSERT_LT(currentSeq(), threshold);
     auto const rejected = finish(created.seq);
     EXPECT_EQ(rejected.ter, tecBYTECODE_REJECTED);
@@ -141,7 +136,6 @@ TEST_F(BytecodeRun, AContractRejectsUntilItsConditionHoldsThenReleases)
     while (currentSeq() < threshold)
         env.close();
 
-    // At the threshold: approved, and the escrow is gone.
     auto const approved = finish(created.seq);
     EXPECT_EQ(approved.ter, tesSUCCESS);
     EXPECT_FALSE(escrowExists(created.seq)) << "an approved escrow must be destroyed";
@@ -153,7 +147,6 @@ TEST_F(BytecodeRun, AContractRejectsUntilItsConditionHoldsThenReleases)
     EXPECT_TRUE(meta.isFieldPresent(sfGasUsed));
 }
 
-// The reserve a contract costs is released with it.
 TEST_F(BytecodeRun, TheBytecodeReserveIsHeldWhileTheEscrowLivesAndReleasedWhenItGoes)
 {
     EXPECT_EQ(env.getOwnerCount(alice), 0U);
@@ -162,8 +155,7 @@ TEST_F(BytecodeRun, TheBytecodeReserveIsHeldWhileTheEscrowLivesAndReleasedWhenIt
     auto const wasm = assembleWat(gatedOnLedgerSqn(threshold));
     auto const created = createEscrow(wasm);
 
-    // One increment for the escrow, plus one per 500 bytes of contract
-    // (`calculateAdditionalReserve`).
+    // `calculateAdditionalReserve`: one increment for the escrow, plus one per 500 bytes.
     auto const expected = 1U + static_cast<std::uint32_t>(wasm.size() / 500);
     EXPECT_EQ(env.getOwnerCount(alice), expected);
 
@@ -174,8 +166,6 @@ TEST_F(BytecodeRun, TheBytecodeReserveIsHeldWhileTheEscrowLivesAndReleasedWhenIt
     EXPECT_EQ(env.getOwnerCount(alice), 0U);
 }
 
-// Creating a contract-bearing escrow costs the escrowed amount plus the fee, and the
-// destination is untouched until it releases.
 TEST_F(BytecodeRun, CreatingChargesTheAmountAndTheFee)
 {
     auto const before = env.getXrpBalance(alice);
@@ -187,8 +177,8 @@ TEST_F(BytecodeRun, CreatingChargesTheAmountAndTheFee)
     EXPECT_EQ(env.getXrpBalance(carol), XRP(5'000));
 }
 
-// A condition and a contract are both gates, and the condition is the outer one: without a
-// fulfillment the contract is never reached, even though it would have approved.
+// The condition is the outer gate: without a fulfillment the contract is never reached, even
+// though it would have approved.
 TEST_F(BytecodeRun, AConditionIsCheckedBeforeTheContractRuns)
 {
     auto const threshold = currentSeq() + 2;
@@ -201,7 +191,6 @@ TEST_F(BytecodeRun, AConditionIsCheckedBeforeTheContractRuns)
     EXPECT_EQ(finish(created.seq).ter, tecCRYPTOCONDITION_ERROR);
     EXPECT_TRUE(escrowExists(created.seq));
 
-    // With the fulfillment, both gates open.
     auto const approved = finish(created.seq, /*withFulfillment*/ true);
     EXPECT_EQ(approved.ter, tesSUCCESS);
     EXPECT_FALSE(escrowExists(created.seq));

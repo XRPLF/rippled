@@ -21,9 +21,7 @@
 namespace xrpl::test {
 namespace {
 
-// What a contract of a given size costs to submit: ten base fees plus five drops a byte
-// (`EscrowCreate::calculateBaseFee`). Paying it exactly keeps a size test failing on the
-// size rather than on the fee.
+// `EscrowCreate::calculateBaseFee`: ten base fees plus five drops a byte.
 XRPAmount
 createFee(TxTest const& env, Bytes const& bytecode)
 {
@@ -44,9 +42,7 @@ createEscrowWith(TxTest& env, Account const& account, Bytes const& bytecode)
     return env.submit(builder, account, createFee(env, bytecode)).ter;
 }
 
-// An account rich enough for the owner reserve a large contract demands: one increment per
-// 500 bytes (`calculateAdditionalReserve`), so 200 KB costs 401 increments — 802 XRP at the
-// default 2 XRP increment.
+// Rich enough for the owner reserve a 200 KB contract demands: 401 increments, 802 XRP.
 Account
 fundedAccount(TxTest& env)
 {
@@ -57,13 +53,10 @@ fundedAccount(TxTest& env)
 
 }  // namespace
 
-// The transactor screens `sfBytecode` against `bytecodeSizeLimit` before the module ever
-// reaches the engine. These pin that boundary, which is the one limit standing between an
-// attacker-chosen module size and the *unmetered* work of compiling it: nothing charges for
-// compilation, so size is the only thing bounding it.
+// The transactor screens `sfBytecode` against `bytecodeSizeLimit` before the module reaches
+// the engine. Compilation is unmetered, so that limit is the only thing bounding it.
 
-// The sweep's own footing: the builders have to produce something the engine accepts, or
-// every "too big" result below would be indistinguishable from "malformed".
+// Footing for the rest: without this, "too big" and "malformed" are indistinguishable.
 TEST(BytecodeSize, TheBuildersProduceAModuleTheEngineAccepts)
 {
     TxTest env;
@@ -95,9 +88,8 @@ TEST(BytecodeSize, AModuleOverTheLimitIsRefused)
     EXPECT_EQ(createEscrowWith(env, alice, wasm), temMALFORMED);
 }
 
-// The size that counts is the module's, not the code's: a module made large by a data
-// segment is screened the same way, so the limit cannot be walked around by moving the
-// bulk out of the code section.
+// The limit is on the module, not the code section — moving the bulk into a data segment
+// does not walk around it.
 TEST(BytecodeSize, ADataSegmentCountsTowardTheLimit)
 {
     TxTest env;
@@ -109,8 +101,8 @@ TEST(BytecodeSize, ADataSegmentCountsTowardTheLimit)
     EXPECT_EQ(createEscrowWith(env, alice, wasm), temMALFORMED);
 }
 
-// The limit is a fee setting, so it moves. Raising it has to actually admit the module it
-// now covers — otherwise some *other* cap is really in charge and the setting is decorative.
+// The limit is a fee setting, so it moves. If raising it admits nothing new, some other cap
+// is really in charge.
 TEST(BytecodeSize, RaisingTheLimitAdmitsALargerModule)
 {
     auto fees = TestServiceRegistry::defaultFees();
@@ -125,17 +117,9 @@ TEST(BytecodeSize, RaisingTheLimitAdmitsALargerModule)
     EXPECT_EQ(createEscrowWith(env, alice, wasm), tesSUCCESS);
 }
 
-// `bytecodeSizeLimit` is the **only** thing bounding how much there is to compile.
-//
-// wasmparser defines `MAX_WASM_FUNCTION_SIZE` = 128 KiB, so it would be reasonable to
-// assume a single function body is separately capped and that the size limit is a
-// belt-and-braces second line. It is not: nothing on this path enforces that constant, and
-// a lone body of a million instructions is accepted. Since compilation is unmetered — no
-// gas is charged for it, and it happens once to screen the `EscrowCreate` and again on
-// every `EscrowFinish` — the size limit is load-bearing on its own.
-//
-// If this ever starts failing, a second cap has appeared: good news, but the sweep above
-// stops being the whole story and this comment is wrong.
+// wasmparser defines `MAX_WASM_FUNCTION_SIZE` = 128 KiB, but nothing on this path enforces
+// it: a lone body of a million instructions is accepted. So `bytecodeSizeLimit` really is
+// the only bound, with no second line behind it. A failure here means one has appeared.
 TEST(BytecodeSize, ASingleFunctionBodyIsNotSeparatelyCapped)
 {
     TxTest const env;

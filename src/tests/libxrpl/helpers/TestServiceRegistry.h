@@ -182,13 +182,6 @@ class TestServiceRegistry : public ServiceRegistry
 public:
     /**
      * @brief The fee settings a test environment starts with.
-     *
-     * Public and static because `TxTest` seeds its **genesis ledger** from the same values.
-     * The two have to agree: a transactor reads its limits from the registry
-     * (`EscrowCreate` checks `bytecodeSizeLimit` via `ctx.registry.get().getFees()`) but
-     * `Transactor::calculateBaseFee` reads `view.fees()`. Seeding them separately once left
-     * `gasPrice` at 1'000'000 in the registry and 0 in the view, which silently collapsed
-     * `EscrowFinish`'s gas-allowance fee to a single drop.
      */
     static Fees
     defaultFees()
@@ -514,17 +507,6 @@ public:
 
     /**
      * @brief Override the fee settings the transactors see.
-     *
-     * For tests about a limit rather than about a transaction: `EscrowCreate` screens
-     * `sfBytecode` against `bytecodeSizeLimit` from here, so a size test sets it directly
-     * instead of standing up fee voting.
-     *
-     * @note This writes the `Fees` fields directly and so is **not** bounded by
-     *       `kMaxBytecodeSizeLimit` / `kMaxGasLimit`, which only constrain config parsing
-     *       (`Config.cpp`) and `FeeVoteImpl`. Do not use it to test behaviour above those
-     *       ceilings: no ledger can reach such a configuration, so any expectation set there
-     *       is unfalsifiable in production. Prefer `TxTest`'s constructor when the whole
-     *       environment wants one fee set, so the view and the registry stay in step.
      */
     void
     setFees(Fees const& fees)

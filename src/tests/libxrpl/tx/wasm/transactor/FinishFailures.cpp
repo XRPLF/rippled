@@ -22,9 +22,9 @@
 namespace xrpl::test {
 namespace {
 
-// The ways an `EscrowFinish` against a contract-bearing escrow fails, and what each one
-// reports. The distinctions matter to a client: a rejection, a fault, and running out of gas
-// are three different outcomes, and only one of them carries a return code.
+// The ways an `EscrowFinish` against a contract-bearing escrow fails, and what each reports.
+// A rejection, a fault, and running out of gas are three outcomes; only one carries a return
+// code.
 struct FinishFailures : testing::Test
 {
     TxTest env;
@@ -54,7 +54,6 @@ struct FinishFailures : testing::Test
         return seq;
     }
 
-    // An escrow with no contract at all, for the "gas without bytecode" case.
     std::uint32_t
     createPlainEscrow()
     {
@@ -63,8 +62,8 @@ struct FinishFailures : testing::Test
         auto const now = static_cast<std::uint32_t>(env.getCloseTime().time_since_epoch().count());
 
         auto builder = transactions::EscrowCreateBuilder{alice, carol, STAmount{XRP(500)}};
-        // A contract-free escrow needs a `FinishAfter` or a condition — `CancelAfter` alone
-        // is `temMALFORMED`, because nothing would ever release it.
+        // A contract-free escrow needs a `FinishAfter` or a condition; `CancelAfter` alone is
+        // `temMALFORMED`.
         builder.setFinishAfter(now + 1);
         builder.setCancelAfter(now + 1'000);
 
@@ -105,8 +104,7 @@ TEST_F(FinishFailures, FinishIsRefusedWhileSmartEscrowIsDisabled)
     EXPECT_EQ(disabled.submit(builder, carol, XRPAmount{100'000}).ter, temDISABLED);
 }
 
-// The allowance is bounded by the voted gas limit, so a contract cannot buy unbounded
-// execution by simply asking for it.
+// Execution cannot be bought unbounded just by asking for it.
 TEST_F(FinishFailures, AnAllowancePastTheGasLimitIsRefused)
 {
     auto fees = TestServiceRegistry::defaultFees();
@@ -119,9 +117,7 @@ TEST_F(FinishFailures, AnAllowancePastTheGasLimitIsRefused)
     EXPECT_EQ(env.submit(builder, carol, XRPAmount{10'000'000}).ter, temBAD_LIMIT);
 }
 
-// A zero gas limit turns the runtime off. The old Beast test had to hand-insert an escrow
-// ledger entry to reach this, because jtx cannot change its config mid-test; here the escrow
-// is created normally and the limit drops afterwards.
+// A zero gas limit turns the runtime off.
 TEST_F(FinishFailures, AZeroGasLimitDisablesFinishing)
 {
     auto const seq = createEscrow(kReadsLedgerSqn);
@@ -153,7 +149,7 @@ TEST_F(FinishFailures, AZeroAllowanceIsRefused)
     EXPECT_EQ(env.submit(builder, carol, XRPAmount{100'000}).ter, temBAD_LIMIT);
 }
 
-// The allowance is paid for up front, so under-paying is caught before anything runs.
+// The allowance is paid up front, so under-paying is caught before anything runs.
 TEST_F(FinishFailures, AFeeThatDoesNotCoverTheAllowanceIsRefused)
 {
     auto const seq = createEscrow(kReadsLedgerSqn);
@@ -163,7 +159,6 @@ TEST_F(FinishFailures, AFeeThatDoesNotCoverTheAllowanceIsRefused)
     EXPECT_EQ(finish(seq, kAllowance, fee).ter, telINSUF_FEE_P);
 }
 
-// Gas on an escrow that has no contract: the transaction is about a thing that isn't there.
 TEST_F(FinishFailures, GasAgainstAnEscrowWithoutBytecodeIsRefused)
 {
     auto const seq = createPlainEscrow();
@@ -172,12 +167,8 @@ TEST_F(FinishFailures, GasAgainstAnEscrowWithoutBytecodeIsRefused)
     EXPECT_EQ(finish(seq, kAllowance, escrowFinishFee(env, kAllowance)).ter, tefNO_BYTECODE);
 }
 
-// Running out of gas: essentially the whole allowance is consumed, and there is no return
-// code because the contract never reached a return.
-//
-// "Essentially" because the meter stops at the last instruction it could afford, which for
-// this loop leaves a few units unspent — the reported figure is what was really burned, not
-// the allowance rounded up. The band is what distinguishes this from a trap, which stops
+// A band rather than an equality: the meter stops at the last instruction it could afford,
+// leaving a few units unspent. That band is what separates this from a trap, which stops
 // early and reports a small fraction.
 TEST_F(FinishFailures, RunningOutOfGasConsumesEssentiallyTheWholeAllowanceAndReportsNoReturnCode)
 {
@@ -198,8 +189,7 @@ TEST_F(FinishFailures, RunningOutOfGasConsumesEssentiallyTheWholeAllowanceAndRep
     EXPECT_FALSE(meta.isFieldPresent(sfVMReturnCode));
 }
 
-// A trap is a fault, not a rejection: it reports the gas actually burned — less than the
-// whole allowance, which is what distinguishes it from running out — and no return code.
+// A trap is a fault, not a rejection: gas actually burned, and no return code.
 TEST_F(FinishFailures, ATrapReportsPartialGasAndNoReturnCode)
 {
     auto const seq = createEscrow(kTraps);

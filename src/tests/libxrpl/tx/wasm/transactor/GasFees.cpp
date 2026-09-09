@@ -17,13 +17,10 @@
 namespace xrpl::test {
 namespace {
 
-// The gas allowance is paid for in drops up front, and the conversion is the arithmetic most
-// likely to go wrong: allowance × gasPrice is a product of two 32-bit values, so a narrow
-// intermediate would wrap and let a large allowance be bought for almost nothing. These pin
-// that a big allowance costs a big fee.
+// allowance × gasPrice is a product of two 32-bit values, so a narrow intermediate would wrap
+// and let a large allowance be bought for almost nothing. These pin that it costs a big fee.
 
-// Close to the default gas limit of 1'000'000, so the product is as large as the transactor
-// will ever be asked to compute.
+// Near the default gas limit, so the product is as large as the transactor ever computes.
 constexpr std::uint32_t kBigAllowance = 996'433;
 
 struct GasFees : testing::Test
@@ -60,9 +57,8 @@ struct GasFees : testing::Test
     }
 };
 
-// The fee owed dwarfs the allowance's own magnitude, so a token payment cannot cover it. If
-// the product ever wrapped, this is the test that would notice: 30 drops would start
-// looking sufficient.
+// If the product ever wrapped, this is the test that notices: 30 drops would start looking
+// sufficient.
 TEST_F(GasFees, ALargeAllowanceCannotBeBoughtForAFewDrops)
 {
     auto const owed = escrowFinishFee(env, kBigAllowance);
@@ -76,15 +72,13 @@ TEST_F(GasFees, AFeeOneDropShortOfTheAllowanceIsRefused)
     EXPECT_EQ(finishPaying(escrowFinishFee(env, kBigAllowance) - XRPAmount{1}), telINSUF_FEE_P);
 }
 
-// And the exact fee is sufficient — otherwise the two refusals above would prove nothing,
-// since any fee at all might be being rejected.
+// Otherwise the two refusals above prove nothing: any fee at all might be rejected.
 TEST_F(GasFees, TheExactFeeIsAccepted)
 {
     EXPECT_EQ(finishPaying(escrowFinishFee(env, kBigAllowance)), tesSUCCESS);
 }
 
-// Only what the contract actually burned is charged against the allowance — asking for a
-// near-limit budget does not mean spending it.
+// Asking for a near-limit budget does not mean spending it.
 TEST_F(GasFees, OnlyTheGasActuallyUsedIsReported)
 {
     auto builder = transactions::EscrowFinishBuilder{carol, alice, escrowSeq};

@@ -1,7 +1,7 @@
 # WASM host-function tests — layering
 
-These tests are deliberately **layered**: each layer isolates one thing, so a failure points at
-one place instead of "somewhere in the stack." If a folder looks thin, the breadth it seems to be
+These tests are deliberately **layered**: each isolates one thing, so a failure points at one
+place instead of "somewhere in the stack." If a folder looks thin, the breadth it seems to be
 missing lives in a sibling layer.
 
 ## The layers
@@ -30,32 +30,31 @@ Run the C++ side with:
 | **No GTest** — the `xrpl.testkit.wasm` library | `WasmLedger` (real genesis ledger + the real host over it), `WasmRun` (WAT assembler), `NftSetup`, `FloatConstants`                                                                                                                                                                |
 | **GTest** → `xrpl_tests`                       | `RealHostFixture` (`: testing::Test, WasmLedger` + `expectValue`/`expectError`/`expectKeyletMatches`), `FloatFixture`, `NFTFixture`, `MockHostFunctions`, `WasmFixture`, `RealVmTest`, `HostContextFixture`, `EscrowWasm` (transactor contracts + fee arithmetic), `ModuleBuilder` |
 
-A benchmark wants a ledger and a host, not GTest's lifecycle. Both binaries link the library;
+The split exists because a benchmark wants a ledger and a host, not GTest's lifecycle:
 `xrpl.bench.wasm` links no GTest and no GMock at all.
 
 Setup steps in `WasmLedger` and `NftSetup` **throw** (`fixtureFailed`) rather than using `EXPECT_`.
-Not stylistic: an `EXPECT_` outside a running test is recorded and discarded, so a benchmark whose
-escrow was never created would still run its host call, take the not-found path, and report a
-cheap, plausible, completely wrong price. **If you add a setup step that can fail, throw.**
+An `EXPECT_` outside a running test is recorded and discarded, so a benchmark whose escrow was
+never created would still run its host call, take the not-found path, and report a cheap,
+plausible, completely wrong price. **If you add a setup step that can fail, throw.**
 
 ## Gas calibration
 
-The benchmarks that price these host functions live in `src/benchmarks/libxrpl/wasm/`, mirroring
-this tree one file per function, and have their own README. They link `xrpl.testkit.wasm` (above)
-for the ledger and host, and no test framework.
+The benchmarks pricing these host functions live in `src/benchmarks/libxrpl/wasm/`, mirroring this
+tree one file per function, with their own README.
 
 ## What `e2e/` covers — the rule
 
 **`e2e/` covers every marshalling shape and cross-call convention exactly once. It does not cover
 every function.** That is a completeness claim on the axis e2e uniquely tests, not a sample.
 
-`host_calls` pins what the bridge _asks_ with a _canned_ answer; `host_functions` pins what the
-real impl _answers_. The type system guarantees they agree on signatures. Nothing guarantees they
+`host_calls` pins what the bridge _asks_ with a canned answer; `host_functions` pins what the real
+impl _answers_. The type system guarantees they agree on signatures, but nothing guarantees they
 agree on **conventions** — units, endianness, buffer layout — because in neither test does a real
-guest write bytes a real host reads. That is exactly the `seq`-as-little-endian-region bug: every
-internal test passed, and it was caught by cross-checking the guest SDK.
+guest write bytes a real host reads. That is the `seq`-as-little-endian-region bug: every internal
+test passed, and it was caught by cross-checking the guest SDK.
 
-Convention mismatch is a property of a call's **shape**, not of the function. All 19 keylets share
+Convention mismatch is a property of a call's **shape**, not of the function — all 19 keylets share
 one shape, so a 19th keylet e2e proves nothing the 1st did. The inventory is meant to be exhaustive:
 
 | Shape / convention                        | Covered by                 | Why it is its own row                                    |
@@ -76,25 +75,17 @@ breadth lives in `host_functions/` and `host_calls/`, one case each.
 
 ## Out of scope
 
-**The guest SDK** (`xrpl-std` / `xrpl-escrow`, external `xrpl-wasm-stdlib` repo) is not exercised
-here — that is the SDK repo's own suite. These tests hand-write the ABI in WAT (raw imports,
-literal field codes, hand-built byte layouts), deliberately bypassing all SDK code. Agreement is
-verified _transitively_: the SDK repo tests the SDK against the ABI spec, this repo tests the host
-against the same spec. That would not catch a drift where both diverge on an ambiguous point;
-closing it needs a **cross-repo integration test** (compiled guests against a real host) in CI
-where the Rust→wasm toolchain exists.
+**The guest SDK** (`xrpl-std` / `xrpl-escrow`, external `xrpl-wasm-stdlib` repo) is the SDK repo's
+own suite. These tests hand-write the ABI in WAT (raw imports, literal field codes, hand-built byte
+layouts), deliberately bypassing all SDK code. Agreement is verified _transitively_: the SDK repo
+tests the SDK against the ABI spec, this repo tests the host against the same spec. That would not
+catch a drift where both diverge on an ambiguous point; closing it needs a **cross-repo integration
+test** (compiled guests against a real host) in CI, where the Rust→wasm toolchain exists.
 
-**Transactor-level (L5) tests** now live in `transactor/`, over `TxTest` — which runs the real
-pipeline (preflight → preclaim → doApply → invariants) without needing an `Application`. They
-cover what the earlier `EscrowSmart_test.cpp` did on Beast: `set_data` persistence through a
-`tecBYTECODE_REJECTED`, `sfGasUsed` / `sfVMReturnCode` in metadata, owner-reserve accounting for
-a bytecode-bearing escrow, the `bytecodeSizeLimit` boundary, and the gas-allowance fee.
+## Adding to `transactor/`
 
-Two things to know before adding to that folder:
+Things to know:
 
-- **Metadata only exists after `close()`.** `ApplyStateTable::apply` builds it for a view that is
-  not open, so `TxResult::metadata` from `submit` is always `nullopt`. The idiom is submit →
-  `close()` → `TxTest::getMetadata(txId)`.
 - **Fees live in two places and must agree.** A transactor reads its limits from the service
   registry (`ctx.registry.get().getFees()`), while `calculateBaseFee` reads `view.fees()`. Pass a
   `Fees` to `TxTest`'s constructor to set both; reach for `getServiceRegistry().setFees` only when
