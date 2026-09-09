@@ -568,7 +568,7 @@ check_span "peer.proposal.receive"
 check_span "peer.validation.receive"
 
 # ---------------------------------------------------------------------------
-# Step 10: Verify Prometheus spanmetrics
+# Step 10: Verify Prometheus span_metrics
 # ---------------------------------------------------------------------------
 log ""
 log "--- Spanmetrics ---"

@@ -163,7 +163,7 @@ Run the integration test script:
 bash docker/telemetry/integration-test.sh
 ```
 
-It checks prerequisites, clears the previous run, brings up the observability stack, generates six validator key pairs and their node configs, starts the nodes, waits for consensus and then for a validated ledger, exercises RPC and submits a transaction, verifies traces in Tempo and both the spanmetrics and the native `beast::insight` metrics that arrive over OTLP in Prometheus, checks that no StatsD listener is needed, then prints a summary and leaves the stack running.
+It checks prerequisites, clears the previous run, brings up the observability stack, generates six validator key pairs and their node configs, starts the nodes, waits for consensus and then for a validated ledger, exercises RPC and submits a transaction, verifies traces in Tempo and both the span_metrics and the native `beast::insight` metrics that arrive over OTLP in Prometheus, checks that no StatsD listener is needed, then prints a summary and leaves the stack running.
 
 The script announces each step as it runs, so read its `Step N:` headers for the authoritative sequence — they are not restated here, because a numbered copy of them drifts as soon as a step is added.
 
@@ -412,7 +412,7 @@ Base URL: `http://localhost:9090`
 ```bash
 PROM="http://localhost:9090"
 
-# Span call counts (from the spanmetrics connector). The span_ prefix is the
+# Span call counts (from the span_metrics connector). The span_ prefix is the
 # connector's `namespace: "span"` in otel-collector-config.yaml; drop that
 # setting and these become traces_span_metrics_*.
 curl -s "$PROM/api/v1/query?query=span_calls_total" |
@@ -493,13 +493,13 @@ Pre-configured datasources:
 
 ### Spanmetrics not appearing in Prometheus
 
-1. Verify otel-collector config has `spanmetrics` connector
+1. Verify otel-collector config has `span_metrics` connector
 2. Check that the metrics pipeline is configured:
    ```yaml
    service:
      pipelines:
        metrics:
-         receivers: [spanmetrics]
+         receivers: [span_metrics]
          exporters: [prometheus]
    ```
 3. Verify Prometheus can reach collector:
