@@ -387,13 +387,18 @@ makeTelemetrySetup(
         }
 
         // Still inside the enabled branch, and checked before the files are
-        // opened so a scheme problem is not hidden behind a path problem. The
-        // exporter reads TLS off the endpoint scheme, so a client certificate is
-        // only presented on an https endpoint. tls_ca_cert is left out of this
-        // check: it only names a trust store, while a client certificate is this
-        // node's own identity and has to reach the collector to mean anything.
+        // opened so a scheme problem is not hidden behind a path problem. Each
+        // exporter reads TLS off its own endpoint scheme, and both are handed
+        // the client certificate, so both endpoints have to be https. Checking
+        // only one leaves the other signal exporting in the clear without this
+        // node's identity. tls_ca_cert is left out of this check: it only names
+        // a trust store, while a client certificate is this node's own identity
+        // and has to reach the collector to mean anything.
         if (!setup.tlsClientCertPath.empty())
+        {
             requireHttpsEndpoint(setup.tracesEndpoint, key::tracesEndpoint);
+            requireHttpsEndpoint(setup.metricsEndpoint, key::metricsEndpoint);
+        }
 
         // Still inside the enabled branch. The exporter opens these files only
         // when TLS is on, so check them only then: a bad path behind use_tls=0
