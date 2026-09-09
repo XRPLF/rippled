@@ -549,6 +549,30 @@ mod tests {
         fn vault_keylet(&self, _account: &[u8], _seq: i32, _out: &mut [u8]) -> HostResult<usize> {
             unreachable!("no unit test in this module calls the host")
         }
+        fn sponsorship_keylet(
+            &self,
+            _sponsor: &[u8],
+            _sponsee: &[u8],
+            _out: &mut [u8],
+        ) -> HostResult<usize> {
+            unreachable!("no unit test in this module calls the host")
+        }
+        fn loan_broker_keylet(
+            &self,
+            _owner: &[u8],
+            _seq: i32,
+            _out: &mut [u8],
+        ) -> HostResult<usize> {
+            unreachable!("no unit test in this module calls the host")
+        }
+        fn loan_keylet(
+            &self,
+            _loan_broker_id: &[u8],
+            _loan_seq: i32,
+            _out: &mut [u8],
+        ) -> HostResult<usize> {
+            unreachable!("no unit test in this module calls the host")
+        }
         fn sha512_half(&self, _data: &[u8], _out: &mut [u8]) -> HostResult<usize> {
             unreachable!("no unit test in this module calls the host")
         }

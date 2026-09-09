@@ -337,6 +337,24 @@ public:
     }
 
     [[nodiscard]] [[nodiscard]] virtual std::expected<Bytes, HostFunctionError>
+    sponsorshipKeylet(AccountID const& sponsor, AccountID const& sponsee) const
+    {
+        return std::unexpected(HostFunctionError::Unimplemented);
+    }
+
+    [[nodiscard]] [[nodiscard]] virtual std::expected<Bytes, HostFunctionError>
+    loanBrokerKeylet(AccountID const& owner, std::uint32_t seq) const
+    {
+        return std::unexpected(HostFunctionError::Unimplemented);
+    }
+
+    [[nodiscard]] [[nodiscard]] virtual std::expected<Bytes, HostFunctionError>
+    loanKeylet(uint256 const& loanBrokerID, std::uint32_t loanSeq) const
+    {
+        return std::unexpected(HostFunctionError::Unimplemented);
+    }
+
+    [[nodiscard]] [[nodiscard]] virtual std::expected<Bytes, HostFunctionError>
     getNFT(AccountID const& account, uint256 const& nftId) const
     {
         return std::unexpected(HostFunctionError::Unimplemented);

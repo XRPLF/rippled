@@ -224,6 +224,15 @@ public:
     vaultKeylet(AccountID const& account, std::uint32_t seq) const override;
 
     std::expected<Bytes, HostFunctionError>
+    sponsorshipKeylet(AccountID const& sponsor, AccountID const& sponsee) const override;
+
+    std::expected<Bytes, HostFunctionError>
+    loanBrokerKeylet(AccountID const& owner, std::uint32_t seq) const override;
+
+    std::expected<Bytes, HostFunctionError>
+    loanKeylet(uint256 const& loanBrokerID, std::uint32_t loanSeq) const override;
+
+    std::expected<Bytes, HostFunctionError>
     getNFT(AccountID const& account, uint256 const& nftId) const override;
 
     std::expected<Bytes, HostFunctionError>

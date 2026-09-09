@@ -410,6 +410,28 @@ mod ffi {
         fn vault_keylet(self: &HostContext, account: &[u8], seq: i32, out: &mut [u8]) -> i32;
 
         #[namespace = "xrpl"]
+        #[cxx_name = "sponsorshipKeylet"]
+        fn sponsorship_keylet(
+            self: &HostContext,
+            sponsor: &[u8],
+            sponsee: &[u8],
+            out: &mut [u8],
+        ) -> i32;
+
+        #[namespace = "xrpl"]
+        #[cxx_name = "loanBrokerKeylet"]
+        fn loan_broker_keylet(self: &HostContext, owner: &[u8], seq: i32, out: &mut [u8]) -> i32;
+
+        #[namespace = "xrpl"]
+        #[cxx_name = "loanKeylet"]
+        fn loan_keylet(
+            self: &HostContext,
+            loan_broker_id: &[u8],
+            loan_seq: i32,
+            out: &mut [u8],
+        ) -> i32;
+
+        #[namespace = "xrpl"]
         #[cxx_name = "sha512Half"]
         fn sha512_half(self: &HostContext, data: &[u8], out: &mut [u8]) -> i32;
 
@@ -778,6 +800,28 @@ impl HostFunctions for CxxHost<'_> {
 
     fn vault_keylet(&self, account: &[u8], seq: i32, out: &mut [u8]) -> HostResult<usize> {
         bytes_written(self.ctx.vault_keylet(account, seq, out))
+    }
+
+    fn sponsorship_keylet(
+        &self,
+        sponsor: &[u8],
+        sponsee: &[u8],
+        out: &mut [u8],
+    ) -> HostResult<usize> {
+        bytes_written(self.ctx.sponsorship_keylet(sponsor, sponsee, out))
+    }
+
+    fn loan_broker_keylet(&self, owner: &[u8], seq: i32, out: &mut [u8]) -> HostResult<usize> {
+        bytes_written(self.ctx.loan_broker_keylet(owner, seq, out))
+    }
+
+    fn loan_keylet(
+        &self,
+        loan_broker_id: &[u8],
+        loan_seq: i32,
+        out: &mut [u8],
+    ) -> HostResult<usize> {
+        bytes_written(self.ctx.loan_keylet(loan_broker_id, loan_seq, out))
     }
 
     fn sha512_half(&self, data: &[u8], out: &mut [u8]) -> HostResult<usize> {
