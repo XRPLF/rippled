@@ -51,6 +51,8 @@ target_compile_options(
 
 target_link_libraries(xrpl.libpb PUBLIC protobuf::libprotobuf gRPC::grpc++)
 
+add_dependencies(tidy_prerequisites xrpl.libpb)
+
 # TODO: Clean up the number of library targets later.
 add_library(xrpl.imports.main INTERFACE)
 

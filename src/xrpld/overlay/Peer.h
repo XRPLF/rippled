@@ -20,8 +20,6 @@ class Charge;
 }  // namespace resource
 
 enum class ProtocolFeature {
-    ValidatorListPropagation,
-    ValidatorList2Propagation,
     LedgerReplay,
     LedgerNodeDepth,
 };

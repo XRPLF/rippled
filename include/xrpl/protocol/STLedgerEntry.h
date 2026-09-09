@@ -19,7 +19,7 @@ namespace xrpl {
 
 class Rules;
 namespace test {
-class Invariants_test;
+class InvariantsMisc_test;
 }  // namespace test
 
 class STLedgerEntry final : public STObject, public CountedObject<STLedgerEntry>
@@ -83,8 +83,8 @@ private:
     void
     setSLEType();
 
-    friend test::Invariants_test;  // this test wants access to the private
-                                   // type_
+    friend test::InvariantsMisc_test;  // this test wants access to the
+                                       // private type_
 
     STBase*
     copy(std::size_t n, void* buf) const override;

@@ -125,6 +125,7 @@ struct Keys
     static constexpr auto kMaximumTxnInLedger = "maximum_txn_in_ledger";
     static constexpr auto kMaximumTxnPerAccount = "maximum_txn_per_account";
     static constexpr auto kMemoryLevel = "memory_level";
+    static constexpr auto kMaxWaitingLedgers = "max_waiting_ledgers";
     static constexpr auto kMinLedgersToComputeSizeLimit = "min_ledgers_to_compute_size_limit";
     static constexpr auto kMinimumEscalationMultiplier = "minimum_escalation_multiplier";
     static constexpr auto kMinimumLastLedgerBuffer = "minimum_last_ledger_buffer";

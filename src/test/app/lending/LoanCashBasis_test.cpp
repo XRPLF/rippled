@@ -4,10 +4,12 @@
 #include <test/jtx/TestHelpers.h>
 #include <test/jtx/amount.h>
 #include <test/jtx/fee.h>
+#include <test/jtx/permissioned_domains.h>
 #include <test/jtx/ter.h>
 #include <test/jtx/vault.h>
 
 #include <xrpl/basics/Number.h>
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/chrono.h>
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/beast/utility/Zero.h>
@@ -25,6 +27,7 @@
 #include <chrono>
 #include <cstdint>
 #include <functional>
+#include <string>
 #include <tuple>
 
 namespace xrpl::test {
@@ -42,8 +45,9 @@ class LoanCashBasis_test : public LoanTestBase
 {
 private:
     // 1. LoanSet origination: Vault.AssetsTotal/LoanBroker.DebtTotal deltas,
-    // and the AssetsMaximum/DebtMaximum guards (which always check against
-    // principal + interestDue, regardless of the amendment).
+    // and the AssetsMaximum/DebtMaximum guards. Accrual AssetsMaximum still
+    // requires headroom for interestDue; cash-basis AssetsMaximum does not,
+    // because origination does not credit interest into AssetsTotal.
     void
     testCashBasisLoanSetOrigination()
     {
@@ -226,6 +230,10 @@ private:
             // Even far less headroom than interestDue still succeeds, since
             // cash-basis origination never adds interest to AssetsTotal.
             runVaultGuard(all_ | featureLendingProtocolV1_1, oneDrop, tesSUCCESS);
+            // Fully subscribed: AssetsTotal == AssetsMaximum. Accrual preclaim
+            // used to refuse this; origination must still succeed because it
+            // does not change AssetsTotal.
+            runVaultGuard(all_ | featureLendingProtocolV1_1, Number{0}, tesSUCCESS);
         }
 
         // DebtMaximum guard: cash-basis projects principal-only DebtTotal;
@@ -489,6 +497,252 @@ private:
         }
     }
 
+    // VaultSet must still succeed when cash-basis LoanPay has already pushed
+    // AssetsTotal above a nonzero AssetsMaximum. Before fixCleanup3_4_0,
+    // ValidVault rejects that with tecINVARIANT_FAILED even though
+    // VaultSet::doApply and the product rule allow the over-cap state when
+    // the excess is interest.
+    void
+    testVaultSetWhileAssetsTotalExceedsMaximum()
+    {
+        using namespace jtx;
+        using namespace loan;
+
+        PrettyAsset const xrpAsset{xrpIssue(), 1'000'000};
+        BrokerParameters const brokerParams{
+            .vaultDeposit = 1'000'000,
+            .debtMax = 0,
+            .coverRateMin = TenthBips32{0},
+            .coverDeposit = 0,
+            .managementFeeRate = TenthBips16{0},
+            .coverRateLiquidation = TenthBips32{0}};
+
+        auto run =
+            [&](FeatureBitset features, TER expectedOverCapSet, bool native, bool vaultPrivate) {
+                bool const fix340Enabled = features[fixCleanup3_4_0];
+                testcase(
+                    std::string("cash-basis: VaultSet while AssetsTotal exceeds AssetsMaximum") +
+                    (native ? " XRP" : " IOU") + (vaultPrivate ? " private" : "") +
+                    (fix340Enabled ? " (fixCleanup3_4_0)" : " (pre-fix)"));
+
+                Account const issuer{"issuer"};
+                Account const lender{"lender"};
+                Account const borrower{"borrower"};
+                Env env(*this, features);
+
+                BrokerParameters params = brokerParams;
+                if (vaultPrivate)
+                    params.vaultFlags = tfVaultPrivate;
+
+                PrettyAsset vaultAsset = xrpAsset;
+                if (native)
+                {
+                    env.fund(XRP(10'000'000), lender, borrower);
+                    env.close();
+                }
+                else
+                {
+                    vaultAsset = createFundedIouAsset(env, issuer, lender, borrower);
+                }
+
+                BrokerInfo const broker{createVaultAndBroker(env, vaultAsset, lender, params)};
+                auto const vaultBefore = env.le(broker.vaultKeylet());
+                BEAST_EXPECT(vaultBefore);
+                // One unit at the vault's asset scale so the stored cap is
+                // strictly above AssetsTotal (a smaller ULP rounds away).
+                // Cash-basis origination does not credit interest, so LoanSet
+                // still succeeds.
+                Number const slack{1, -static_cast<int>(vaultBefore->at(sfScale))};
+                Number const assetsMaximum = Number(vaultBefore->at(sfAssetsTotal)) + slack;
+
+                Vault const vault{env};
+                {
+                    auto tx = vault.set({.owner = lender, .id = broker.vaultID});
+                    tx[sfAssetsMaximum] = assetsMaximum;
+                    env(tx);
+                    env.close();
+                }
+
+                {
+                    auto tx = vault.set({.owner = lender, .id = broker.vaultID});
+                    tx[sfData] = "AA";
+                    env(tx, Ter(tesSUCCESS));
+                    env.close();
+                }
+
+                auto const brokerBeforeLoan = env.le(broker.brokerKeylet());
+                BEAST_EXPECT(brokerBeforeLoan);
+                auto const loanKeylet = keylet::loan(
+                    broker.brokerID, SeqProxy::rawSequence(brokerBeforeLoan->at(sfLoanSequence)));
+
+                LoanParameters const loanParams{
+                    .account = borrower,
+                    .counter = lender,
+                    .principalRequest = 12'000,
+                    .interest = TenthBips32{percentageToTenthBips(12)},
+                    .payTotal = 4,
+                    .payInterval = 600,
+                    .gracePd = 300,
+                };
+                env(loanParams(env, broker));
+                env.close();
+
+                auto const vaultAfterLoan = env.le(broker.vaultKeylet());
+                BEAST_EXPECT(vaultAfterLoan);
+                BEAST_EXPECT(vaultAfterLoan->at(sfAssetsTotal) <= assetsMaximum);
+
+                LoanState const state = getCurrentState(env, broker, loanKeylet);
+                STAmount const payment{
+                    vaultAsset,
+                    roundPeriodicPayment(vaultAsset, state.periodicPayment, state.loanScale) *
+                        Number{3, -1} * 5};
+                env(pay(borrower, loanKeylet.key, payment), Ter(tesSUCCESS));
+                env.close();
+
+                auto const vaultAboveMaximum = env.le(broker.vaultKeylet());
+                BEAST_EXPECT(vaultAboveMaximum);
+                BEAST_EXPECT(vaultAboveMaximum->at(sfAssetsTotal) > assetsMaximum);
+                BEAST_EXPECT(vaultAboveMaximum->at(sfAssetsMaximum) == assetsMaximum);
+
+                {
+                    auto tx = vault.set({.owner = lender, .id = broker.vaultID});
+                    tx[sfData] = "BB";
+                    env(tx, Ter(expectedOverCapSet));
+                    env.close();
+                }
+
+                if (vaultPrivate)
+                {
+                    pdomain::Credentials const credentials{
+                        {.issuer = lender, .credType = "credential"}};
+                    env(pdomain::setTx(lender, credentials));
+                    auto const domainId = pdomain::getNewDomain(env.meta());
+                    auto tx = vault.set({.owner = lender, .id = broker.vaultID});
+                    tx[sfDomainID] = to_string(domainId);
+                    env(tx, Ter(expectedOverCapSet));
+                    env.close();
+                }
+
+                if (!fix340Enabled)
+                    return;
+
+                {
+                    auto tx = vault.set({.owner = lender, .id = broker.vaultID});
+                    tx[sfAssetsMaximum] = assetsMaximum;
+                    env(tx, Ter(tecLIMIT_EXCEEDED));
+                    env.close();
+                }
+
+                {
+                    auto tx = vault.set({.owner = lender, .id = broker.vaultID});
+                    tx[sfAssetsMaximum] = Number{0};
+                    env(tx, Ter(tesSUCCESS));
+                    env.close();
+                }
+            };
+
+        FeatureBitset const withFix = all_ | featureLendingProtocolV1_1;
+        FeatureBitset const withoutFix = withFix - fixCleanup3_4_0;
+
+        run(withFix, tesSUCCESS, true, true);
+        run(withoutFix, tecINVARIANT_FAILED, true, true);
+        run(withFix, tesSUCCESS, false, false);
+        run(withoutFix, tecINVARIANT_FAILED, false, false);
+    }
+
+    void
+    testCashBasisLoanSetAfterInterestExceedsCap()
+    {
+        testcase("cash-basis: LoanSet after interest pushes AssetsTotal past AssetsMaximum");
+
+        using namespace jtx;
+        using namespace loan;
+
+        PrettyAsset const xrpAsset{xrpIssue(), 1'000'000};
+        BrokerParameters const brokerParams{
+            .vaultDeposit = 1'000'000,
+            .debtMax = 0,
+            .coverRateMin = TenthBips32{0},
+            .coverDeposit = 0,
+            .managementFeeRate = TenthBips16{0},
+            .coverRateLiquidation = TenthBips32{0}};
+
+        Account const lender{"lender"};
+        Account const borrower{"borrower"};
+        Env env(*this, all_ | featureLendingProtocolV1_1);
+        env.fund(XRP(10'000'000), lender, borrower);
+        env.close();
+
+        BrokerInfo const broker{createVaultAndBroker(env, xrpAsset, lender, brokerParams)};
+        auto const vaultBefore = env.le(broker.vaultKeylet());
+        BEAST_EXPECT(vaultBefore);
+        Number const assetsMaximum = Number(vaultBefore->at(sfAssetsTotal));
+
+        Vault const vault{env};
+        {
+            auto tx = vault.set({.owner = lender, .id = broker.vaultID});
+            tx[sfAssetsMaximum] = assetsMaximum;
+            env(tx);
+            env.close();
+        }
+
+        auto const brokerBeforeLoan = env.le(broker.brokerKeylet());
+        BEAST_EXPECT(brokerBeforeLoan);
+        auto const firstLoanKeylet = keylet::loan(
+            broker.brokerID, SeqProxy::rawSequence(brokerBeforeLoan->at(sfLoanSequence)));
+
+        Number const firstPrincipal = xrpAsset(12'000).value();
+        env(set(borrower, broker.brokerID, firstPrincipal),
+            kCounterparty(lender),
+            kInterestRate(TenthBips32{percentageToTenthBips(12)}),
+            kPaymentTotal(4),
+            kPaymentInterval(600),
+            Sig(sfCounterpartySignature, lender),
+            Fee(env.current()->fees().base * 2),
+            Ter(tesSUCCESS));
+        env.close();
+
+        auto const vaultAfterFirst = env.le(broker.vaultKeylet());
+        BEAST_EXPECT(vaultAfterFirst);
+        BEAST_EXPECT(vaultAfterFirst->at(sfAssetsTotal) == assetsMaximum);
+        BEAST_EXPECT(vaultAfterFirst->at(sfAssetsAvailable) == assetsMaximum - firstPrincipal);
+
+        LoanState const state = getCurrentState(env, broker, firstLoanKeylet);
+        STAmount const payment{
+            xrpAsset,
+            roundPeriodicPayment(xrpAsset, state.periodicPayment, state.loanScale) * Number{3, -1} *
+                5};
+        env(pay(borrower, firstLoanKeylet.key, payment), Ter(tesSUCCESS));
+        env.close();
+
+        auto const vaultAfterPay = env.le(broker.vaultKeylet());
+        BEAST_EXPECT(vaultAfterPay);
+        BEAST_EXPECT(vaultAfterPay->at(sfAssetsTotal) > assetsMaximum);
+        BEAST_EXPECT(vaultAfterPay->at(sfAssetsAvailable) > beast::kZero);
+
+        auto const brokerAfterPay = env.le(broker.brokerKeylet());
+        BEAST_EXPECT(brokerAfterPay);
+        auto const secondLoanKeylet = keylet::loan(
+            broker.brokerID, SeqProxy::rawSequence(brokerAfterPay->at(sfLoanSequence)));
+
+        Number const secondPrincipal = xrpAsset(1'000).value();
+        env(set(borrower, broker.brokerID, secondPrincipal),
+            kCounterparty(lender),
+            kInterestRate(TenthBips32{percentageToTenthBips(12)}),
+            kPaymentTotal(4),
+            kPaymentInterval(600),
+            Sig(sfCounterpartySignature, lender),
+            Fee(env.current()->fees().base * 2),
+            Ter(tesSUCCESS));
+        env.close();
+
+        auto const vaultAfterSecond = env.le(broker.vaultKeylet());
+        auto const secondLoan = env.le(secondLoanKeylet);
+        BEAST_EXPECT(vaultAfterSecond && secondLoan);
+        BEAST_EXPECT(vaultAfterSecond->at(sfAssetsTotal) == vaultAfterPay->at(sfAssetsTotal));
+        BEAST_EXPECT(secondLoan->at(sfPrincipalOutstanding) == secondPrincipal);
+    }
+
     // 3. LoanManage: impair, unimpair, and default.
     void
     testCashBasisLoanManage()
@@ -562,6 +816,7 @@ private:
             BEAST_EXPECT(vaultBeforeImpair);
             Number const lossBefore = vaultBeforeImpair->at(sfLossUnrealized);
 
+            advancePastDueDate(env, loanKeylet);
             env(manage(lender, loanKeylet.key, tfLoanImpair), Ter(tesSUCCESS));
             env.close();
 
@@ -612,6 +867,7 @@ private:
                 ? principalOutstanding
                 : totalValueOutstanding - managementFeeOutstanding;
 
+            advancePastDueDate(env, loanKeylet);
             env(manage(lender, loanKeylet.key, tfLoanImpair), Ter(tesSUCCESS));
             env.close();
 
@@ -822,12 +1078,17 @@ private:
         Number const managementFeeBeforeImpair = loanBeforeImpair->at(sfManagementFeeOutstanding);
         Number const expectedExposure = totalValueBeforeImpair - managementFeeBeforeImpair;
 
+        // With fixCleanup3_4_0, impairment is only allowed once the
+        // payment is late. After the earlier LoanPay the due date advanced by
+        // one interval, so use the current due date rather than startDate.
+        std::uint32_t const dueDateBeforeImpair = loanBeforeImpair->at(sfNextPaymentDueDate);
+        env.close(NetClock::time_point{NetClock::duration{dueDateBeforeImpair}} + 1s);
+
         env(manage(lender, loanKeylet.key, tfLoanImpair), Ter(tesSUCCESS));
         env.close();
 
-        LoanState const stateAtImpair = getCurrentState(env, broker, loanKeylet);
         env.close(
-            stateAtImpair.startDate + std::chrono::seconds(paymentInterval) +
+            NetClock::time_point{NetClock::duration{dueDateBeforeImpair}} +
             std::chrono::seconds(gracePeriod) + 60s);
 
         auto const vaultBeforeDefault = env.le(broker.vaultKeylet());
@@ -1006,6 +1267,8 @@ public:
     {
         testCashBasisLoanSetOrigination();
         testCashBasisLoanPay();
+        testVaultSetWhileAssetsTotalExceedsMaximum();
+        testCashBasisLoanSetAfterInterestExceedsCap();
         testCashBasisLoanManage();
         testLegacyVaultKeepsAccrualAfterAmendmentEnabled();
         testCashBasisEndToEndTrajectory();

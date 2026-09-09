@@ -29,6 +29,9 @@ namespace xrpl {
 [[nodiscard]] bool
 isGlobalFrozen(ReadView const& view, MPTIssue const& mptIssue);
 
+[[nodiscard]] bool
+isGlobalFrozen(SLE const& issuanceSle);
+
 /**
  * Returns true if @p account's MPToken for @p mptIssue carries the
  * individual-lock flag (lsfMPTLocked).
@@ -40,15 +43,47 @@ isGlobalFrozen(ReadView const& view, MPTIssue const& mptIssue);
  * receive tokens — it combines isIndividualFrozen, isGlobalFrozen, and
  * isVaultPseudoAccountFrozen into a single complete check.
  */
+
 [[nodiscard]] bool
 isIndividualFrozen(ReadView const& view, AccountID const& account, MPTIssue const& mptIssue);
 
+[[nodiscard]] bool
+isIndividualFrozen(SLE const& mptSle);
+
+/**
+ * Returns true if @p account cannot send or receive tokens of @p mptIssue
+ * because a freeze applies. This is the complete check callers should use
+ * before moving MPT value: it combines @ref isGlobalFrozen (issuance-level
+ * lock), @ref isIndividualFrozen (per-holder lock bit), and the transitive
+ * vault pseudo-account check (if @p mptIssue is a vault share, the underlying
+ * asset is checked, and so on recursively up to @c maxAssetCheckDepth).
+ *
+ * The @c SLE overload takes an already-loaded ltMPTOKEN or ltMPTOKEN_ISSUANCE
+ * ledger entry; for ltMPTOKEN it can skip the per-holder individual-lock lookup.
+ * @ref isAnyFrozen answers the same question for a set of accounts and returns true
+ * if the freeze applies to any of them.
+ *
+ * @param depth Current recursion depth for the vault-share walk. Callers
+ * outside this module should leave it at the default.
+ */
 [[nodiscard]] bool
 isFrozen(
     ReadView const& view,
     AccountID const& account,
     MPTIssue const& mptIssue,
     std::uint8_t depth = 0);
+
+/**
+ * SLE overload: pass an already-loaded ltMPTOKEN (holder row) or
+ * ltMPTOKEN_ISSUANCE to reuse it for the freeze checks and avoid re-reading
+ * the same object. For an ltMPTOKEN, @p sle is used directly for the
+ * individual-lock check and the issuance is read once for global-freeze and
+ * vault-pseudo-account. For an ltMPTOKEN_ISSUANCE, @p sle is used directly
+ * for global-freeze and vault-pseudo-account, and the caller's holder row is
+ * read for the individual-lock check.
+ */
+[[nodiscard]] bool
+isFrozen(ReadView const& view, AccountID const& account, SLE const& sle, std::uint8_t depth = 0);
 
 [[nodiscard]] bool
 isAnyFrozen(

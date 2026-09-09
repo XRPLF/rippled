@@ -28,6 +28,7 @@ class Xrpl(ConanFile):
     }
 
     requires = [
+        "corrosion/0.6.1",
         "ed25519/2015.03",
         "fast_float/8.2.10",
         "grpc/1.81.1",
