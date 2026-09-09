@@ -2958,6 +2958,10 @@ class LoanBroker_test : public beast::unit_test::Suite
         Account const alice{"alice"};
         Account const evan{"evan"};
 
+        // testableAmendments() includes Supported::No features, so all_ already
+        // has V1_2. Pre-amendment cases must subtract it.
+        FeatureBitset const preV12 = all_ - featureLendingProtocolV1_2;
+
         // Helper to set up a vault and broker for testing
         auto const setup = [&](Env& env) {
             Vault const vault{env};
@@ -3047,7 +3051,7 @@ class LoanBroker_test : public beast::unit_test::Suite
         // Pre-amendment: VaultID required on both create and update
         {
             testcase("LoanBrokerSet pre-amendment: VaultID required on update");
-            Env env(*this, all_);
+            Env env(*this, preV12);
             BEAST_EXPECT(!env.enabled(featureLendingProtocolV1_2));
             auto const [vaultID, brokerKL] = setup(env);
 
@@ -3067,7 +3071,7 @@ class LoanBroker_test : public beast::unit_test::Suite
         // Pre-amendment: mismatched VaultID on update → tecNO_PERMISSION
         {
             testcase("LoanBrokerSet pre-amendment: mismatched VaultID");
-            Env env(*this, all_);
+            Env env(*this, preV12);
 
             Vault const vault{env};
             env.fund(XRP(100'000), issuer, alice);
@@ -3101,7 +3105,7 @@ class LoanBroker_test : public beast::unit_test::Suite
         // Pre-amendment: non-existent vault on update → tecNO_ENTRY
         {
             testcase("LoanBrokerSet pre-amendment: non-existent vault on update");
-            Env env(*this, all_);
+            Env env(*this, preV12);
             auto const [vaultID, brokerKL] = setup(env);
 
             // Update with a VaultID that doesn't exist
@@ -3111,7 +3115,7 @@ class LoanBroker_test : public beast::unit_test::Suite
         // Pre-amendment: Create without VaultID → temINVALID
         {
             testcase("LoanBrokerSet pre-amendment: create requires VaultID");
-            Env env(*this, all_);
+            Env env(*this, preV12);
             env.fund(XRP(100'000), issuer, alice);
             env.close();
 
@@ -3121,7 +3125,7 @@ class LoanBroker_test : public beast::unit_test::Suite
         // Pre-amendment: immutable fields still rejected on update
         {
             testcase("LoanBrokerSet pre-amendment: immutable fields on update");
-            Env env(*this, all_);
+            Env env(*this, preV12);
             auto const [vaultID, brokerKL] = setup(env);
 
             env(set(alice, vaultID),
@@ -3133,7 +3137,7 @@ class LoanBroker_test : public beast::unit_test::Suite
         // Pre-amendment: zero VaultID on update → temINVALID
         {
             testcase("LoanBrokerSet pre-amendment: zero VaultID on update");
-            Env env(*this, all_);
+            Env env(*this, preV12);
             auto const [vaultID, brokerKL] = setup(env);
 
             env(set(alice, uint256{}), kLoanBrokerId(brokerKL.key), Ter(temINVALID));
