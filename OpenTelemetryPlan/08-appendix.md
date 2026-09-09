@@ -170,17 +170,18 @@ flowchart TB
 
 ### Plan Documents
 
-| Document                                                         | Description                                  |
-| ---------------------------------------------------------------- | -------------------------------------------- |
-| [OpenTelemetryPlan.md](./OpenTelemetryPlan.md)                   | Master overview and executive summary        |
-| [00-tracing-fundamentals.md](./00-tracing-fundamentals.md)       | Distributed tracing concepts and OTel primer |
-| [01-architecture-analysis.md](./01-architecture-analysis.md)     | xrpld architecture and trace points          |
-| [02-design-decisions.md](./02-design-decisions.md)               | SDK selection, exporters, span conventions   |
-| [03-implementation-strategy.md](./03-implementation-strategy.md) | Directory structure, performance analysis    |
-| [05-configuration-reference.md](./05-configuration-reference.md) | xrpld config, CMake, Collector configs       |
-| [06-implementation-phases.md](./06-implementation-phases.md)     | Timeline, tasks, risks, success metrics      |
-| [07-observability-backends.md](./07-observability-backends.md)   | Backend selection and architecture           |
-| [08-appendix.md](./08-appendix.md)                               | Glossary, references, version history        |
+| Document                                                         | Description                                        |
+| ---------------------------------------------------------------- | -------------------------------------------------- |
+| [OpenTelemetryPlan.md](./OpenTelemetryPlan.md)                   | Master overview and executive summary              |
+| [00-tracing-fundamentals.md](./00-tracing-fundamentals.md)       | Distributed tracing concepts and OTel primer       |
+| [01-architecture-analysis.md](./01-architecture-analysis.md)     | xrpld architecture and trace points                |
+| [02-design-decisions.md](./02-design-decisions.md)               | SDK selection, exporters, span conventions         |
+| [03-implementation-strategy.md](./03-implementation-strategy.md) | Directory structure, performance analysis          |
+| [05-configuration-reference.md](./05-configuration-reference.md) | xrpld config, CMake, Collector configs             |
+| [06-implementation-phases.md](./06-implementation-phases.md)     | Timeline, tasks, risks, success metrics            |
+| [07-observability-backends.md](./07-observability-backends.md)   | Backend selection and architecture                 |
+| [08-appendix.md](./08-appendix.md)                               | Glossary, references, version history              |
+| [secure-OTel.md](./secure-OTel.md)                               | Threat model and hardening (mTLS, peer validation) |
 
 ### Task Lists
 

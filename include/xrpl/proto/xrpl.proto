@@ -84,6 +84,25 @@ message TMPublicKey {
 // If you want to send an amount that is greater than any single address of yours
 // you must first combine coins from one address to another.
 
+// Trace context for OpenTelemetry distributed tracing across nodes.
+// Uses W3C Trace Context format internally.
+//
+// Field numbering note: this message is embedded as field 1001 on
+// TMTransaction, TMProposeSet, and TMValidation. Field numbers >= 1000
+// are reserved for optional, observability-only additions that must not
+// collide with protocol-semantic fields (which historically use 1-99).
+// Older peers that do not understand field 1001 will simply ignore it
+// per protobuf wire-format rules, preserving backwards compatibility.
+//
+// trace_state is reserved for future use. It is currently neither
+// populated on inject nor read on extract; consumers must not rely on it.
+message TraceContext {
+  optional bytes trace_id = 1;      // 16-byte trace identifier
+  optional bytes span_id = 2;       // 8-byte parent span identifier
+  optional uint32 trace_flags = 3;  // bit 0 = sampled
+  optional string trace_state = 4;  // RESERVED — see TraceContext header note
+}
+
 enum TransactionStatus {
   tsNEW = 1;        // origin node did/could not validate
   tsCURRENT = 2;    // scheduled to go in this ledger
@@ -100,6 +119,9 @@ message TMTransaction {
   required TransactionStatus status = 2;
   optional uint64 receiveTimestamp = 3;
   optional bool deferred = 4;  // not applied to open ledger
+
+  // Optional trace context for OpenTelemetry distributed tracing
+  optional TraceContext trace_context = 1001;
 }
 
 message TMTransactions {
@@ -148,6 +170,9 @@ message TMProposeSet {
 
   // Number of hops traveled
   optional uint32 hops = 12 [deprecated = true];
+
+  // Optional trace context for OpenTelemetry distributed tracing
+  optional TraceContext trace_context = 1001;
 }
 
 enum TxSetStatus {
@@ -185,6 +210,9 @@ message TMValidation {
 
   // Number of hops traveled
   optional uint32 hops = 3 [deprecated = true];
+
+  // Optional trace context for OpenTelemetry distributed tracing
+  optional TraceContext trace_context = 1001;
 }
 
 // An array of Endpoint messages

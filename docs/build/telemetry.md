@@ -20,6 +20,7 @@ This document explains how to build xrpld with OpenTelemetry distributed tracing
     - [Coroutine-aware context storage](#coroutine-aware-context-storage)
     - [Handing a span to a job](#handing-a-span-to-a-job)
     - [Why are unrelated spans in my trace?](#why-are-unrelated-spans-in-my-trace)
+    - [Injecting trace context into a protobuf message](#injecting-trace-context-into-a-protobuf-message)
 
 ## Overview
 
@@ -242,3 +243,17 @@ root and never adopts whatever span happened to be active. To move a span
 across a store boundary, keep it in a thread-free `SpanGuard` (or convert via
 `operator SpanGuard() &&`) rather than holding a `ScopedSpanGuard` across the
 boundary.
+
+### Injecting trace context into a protobuf message
+
+Pass the **whole message** to the injection helpers, never `*msg.mutable_trace_context()`.
+
+On a protobuf `optional` submessage, `mutable_` allocates the submessage and sets its has-bit, and that happens at the call site before the helper runs. A caller that dereferences it therefore puts an empty `TraceContext` on the wire whenever nothing is recorded, and every receiving peer takes its `has_trace_context()` branch to extract nothing from it. `trace_context` is field 1001, so the wasted bytes are a 2-byte tag plus a zero length.
+
+```cpp
+// Right: the helper decides whether the submessage is created at all.
+telemetry::injectSpanContext(span, msg);
+
+// Wrong: the submessage exists before the helper can decide anything.
+telemetry::injectSpanContext(span, *msg.mutable_trace_context());
+```

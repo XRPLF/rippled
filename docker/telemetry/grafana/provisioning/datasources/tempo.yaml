@@ -7,6 +7,7 @@
 # Each phase adds filters for the span attributes it introduces.
 # Base filters — node identity, service, span name, status.
 # RPC command, status, role filters.
+# Transaction hash, local/peer origin, status.
 
 apiVersion: 1
 
@@ -103,6 +104,22 @@ datasources:
             type: dynamic
           - id: rpc-role
             tag: rpc_role
+            operator: "="
+            scope: span
+            type: dynamic
+          # Transaction tracing filters
+          - id: tx-hash
+            tag: tx_hash
+            operator: "="
+            scope: span
+            type: static
+          - id: tx-origin
+            tag: local
+            operator: "="
+            scope: span
+            type: dynamic
+          - id: tx-status
+            tag: tx_status
             operator: "="
             scope: span
             type: dynamic

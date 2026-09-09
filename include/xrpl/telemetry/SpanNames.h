@@ -116,6 +116,33 @@ inline constexpr auto link = makeStr("link");
 namespace attr {
 inline constexpr auto networkId = join(join(seg::xrpl, seg::network), makeStr("id"));
 inline constexpr auto networkType = join(join(seg::xrpl, seg::network), makeStr("type"));
+
+/**
+ * Canonical shared attrs (rule 5 — <domain>_<field> underscore form).
+ *
+ * Per the naming convention header note: shared cross-span attribute
+ * keys use the underscore form, reserving the dotted xrpl.<domain>.<field>
+ * form for resource attributes set on the OTel resource at startup.
+ * Defined once here, aliased by domain-specific headers. These are
+ * literal underscore-joined names, not dot-joined via `join()`, since
+ * `join()` always inserts `.` between its arguments.
+ */
+inline constexpr auto txHash = makeStr("tx_hash");
+inline constexpr auto peerId = makeStr("peer_id");
+inline constexpr auto ledgerSeq = makeStr("ledger_seq");
+
+/**
+ * Shared "ledger being worked on" attrs — the open/tentative or in-flight
+ * consensus-build ledger a transaction is applied into, NOT an established or
+ * validated ledger (that is `ledgerSeq`, set on ledger.build / consensus.round).
+ * Named after the RPC field `ledger_current_index` and the `currentLedgerSeq`
+ * log usage. Reused by the tx lifecycle, apply-pipeline, and TxQ spans so a
+ * transaction's work can be correlated to the ledger it targeted.
+ * `currentLedgerHash` is the current view's parent-ledger hash, which equals the
+ * consensus.round deterministic trace-id seed on the consensus-build path.
+ */
+inline constexpr auto currentLedgerSeq = makeStr("current_ledger_seq");
+inline constexpr auto currentLedgerHash = makeStr("current_ledger_hash");
 }  // namespace attr
 
 // ===== Shared attribute values =============================================
