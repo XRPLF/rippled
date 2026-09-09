@@ -1,23 +1,21 @@
 #include <xrpl/basics/Slice.h>
 #include <xrpl/basics/strHex.h>
-#include <xrpl/protocol/Fees.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/SeqProxy.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxMeta.h>
-#include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/protocol_autogen/transactions/EscrowCreate.h>
 #include <xrpl/protocol_autogen/transactions/EscrowFinish.h>
 
 #include <gtest/gtest.h>
 #include <helpers/Account.h>
 #include <helpers/TxTest.h>
+#include <tx/wasm/fixtures/EscrowWasm.h>
 #include <tx/wasm/fixtures/WasmRun.h>
 
 #include <cstdint>
-#include <optional>
 #include <string>
 #include <string_view>
 
@@ -60,9 +58,7 @@ struct DataOnReject : testing::Test
         builder.setBytecode(makeSlice(wasm));
         builder.setCancelAfter(closeTimeOffset(env, 1'000));
 
-        auto const fee = (env.getOpenLedger().fees().base * 10) +
-            XRPAmount{static_cast<std::int64_t>(wasm.size()) * 5};
-        ASSERT_EQ(env.submit(builder, alice, fee).ter, tesSUCCESS);
+        ASSERT_EQ(env.submit(builder, alice, escrowCreateFee(env, wasm)).ter, tesSUCCESS);
         env.close();
     }
 
@@ -72,12 +68,7 @@ struct DataOnReject : testing::Test
         auto builder = transactions::EscrowFinishBuilder{alice, alice, escrowSeq};
         builder.setGas(kAllowance);
 
-        auto const& fees = env.getOpenLedger().fees();
-        auto const gasFee = XRPAmount{
-            static_cast<std::int64_t>(
-                (std::uint64_t{kAllowance} * fees.gasPrice) / microDropsPerDrop) +
-            1};
-        return env.submitAndClose(builder, alice, fees.base + gasFee);
+        return env.submitAndClose(builder, alice, escrowFinishFee(env, kAllowance));
     }
 };
 

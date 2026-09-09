@@ -3,7 +3,6 @@
 #include <xrpl/protocol/Fees.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/TER.h>
-#include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/protocol_autogen/transactions/EscrowCreate.h>
 #include <xrpl/tx/wasm/WasmCommon.h>
 #include <xrpl/tx/wasm/WasmVM.h>
@@ -12,21 +11,13 @@
 #include <helpers/Account.h>
 #include <helpers/TestServiceRegistry.h>
 #include <helpers/TxTest.h>
+#include <tx/wasm/fixtures/EscrowWasm.h>
 #include <tx/wasm/fixtures/ModuleBuilder.h>
 
-#include <cstdint>
 #include <optional>
 
 namespace xrpl::test {
 namespace {
-
-// `EscrowCreate::calculateBaseFee`: ten base fees plus five drops a byte.
-XRPAmount
-createFee(TxTest const& env, Bytes const& bytecode)
-{
-    return (env.getOpenLedger().fees().base * 10) +
-        XRPAmount{static_cast<std::int64_t>(bytecode.size()) * 5};
-}
 
 TER
 createEscrowWith(TxTest& env, Account const& account, Bytes const& bytecode)
@@ -35,7 +26,7 @@ createEscrowWith(TxTest& env, Account const& account, Bytes const& bytecode)
     builder.setBytecode(makeSlice(bytecode));
     builder.setCancelAfter(closeTimeOffset(env, 100));
 
-    return env.submit(builder, account, createFee(env, bytecode)).ter;
+    return env.submit(builder, account, escrowCreateFee(env, bytecode)).ter;
 }
 
 // Rich enough for the owner reserve a 200 KB contract demands: 401 increments, 802 XRP.
