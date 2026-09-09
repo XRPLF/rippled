@@ -505,7 +505,7 @@ The following data is explicitly **excluded** from telemetry collection:
 > 1. `PeerImp`'s constructor logs the peer's `remoteAddress_` — an `IP:port` —
 >    at `info` severity (`PeerImp.h:837-842`), and other overlay call sites log
 >    addresses too. These land in the ordinary `debug.log` stream.
-> 2. The collector's `filelog` receiver tails exactly that file
+> 2. The collector's `file_log` receiver tails exactly that file
 >    (`otel-collector-config.yaml:38-47`, `include: [/var/log/xrpld/*/debug.log]`)
 >    and the `logs` pipeline exports it to Loki (`:236-239`).
 >
@@ -515,7 +515,7 @@ The following data is explicitly **excluded** from telemetry collection:
 > fields — a `delete` action on an attribute key would not touch them.
 >
 > **The control points are therefore log-side, not trace-side:** Loki
-> retention and access control on the log store; the `filelog` receiver's
+> retention and access control on the log store; the `file_log` receiver's
 > `include` list (dropping it disables log↔trace correlation entirely); or a
 > collector-side transform on the log body. Do not describe the telemetry
 > pipeline as IP-free without qualifying it to traces.
@@ -875,7 +875,7 @@ rather than calling `GetSpan()`, so the common no-span path costs no heap
 allocation.
 
 Because the IDs land in the ordinary `debug.log` stream, correlation is
-end-to-end without touching PerfLog: the collector's `filelog` receiver parses
+end-to-end without touching PerfLog: the collector's `file_log` receiver parses
 `trace_id`/`span_id` as optional capture groups and ships the lines to Loki, and
 Grafana links both directions (Tempo `tracesToLogs` → Loki, Loki derived fields
 → Tempo). Details in [05 §5.8.5](./05-configuration-reference.md).

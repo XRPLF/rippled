@@ -49,6 +49,15 @@ the end of this test for which do and which do not.
 docker compose -f docker/telemetry/docker-compose.yml up -d
 ```
 
+The `xrpld-logdir-init` service creates `docker/telemetry/data/logs` and gives it
+to uid/gid 1000. If `id -u` on this host is not 1000, xrpld cannot write its log
+there and the log pipeline stays empty, so set the ids first:
+
+```bash
+XRPLD_UID=$(id -u) XRPLD_GID=$(id -g) \
+    docker compose -f docker/telemetry/docker-compose.yml up -d
+```
+
 Wait for services to be ready:
 
 ```bash
@@ -175,7 +184,7 @@ Run the integration test script:
 bash docker/telemetry/integration-test.sh
 ```
 
-It checks prerequisites, clears the previous run, brings up the observability stack, generates six validator key pairs and their node configs, starts the nodes, waits for consensus and then for a validated ledger, exercises RPC and submits a transaction, verifies traces in Tempo and both the spanmetrics and the StatsD-derived metrics in Prometheus, then prints a summary and leaves the stack running.
+It checks prerequisites, clears the previous run, brings up the observability stack, generates six validator key pairs and their node configs, starts the nodes, waits for consensus and then for a validated ledger, exercises RPC and submits a transaction, verifies traces in Tempo and both the spanmetrics and the native `beast::insight` metrics that arrive over OTLP in Prometheus, checks that no StatsD listener is needed, then prints a summary and leaves the stack running.
 
 The script announces each step as it runs, so read its `Step N:` headers for the authoritative sequence — they are not restated here, because a numbered copy of them drifts as soon as a step is added.
 
@@ -256,19 +265,18 @@ online_delete=256
 /tmp/xrpld-integration/validators.txt
 
 [ips_fixed]
-127.0.0.1 51235
-127.0.0.1 51236
-127.0.0.1 51237
-127.0.0.1 51238
-127.0.0.1 51239
-127.0.0.1 51240
+{one "127.0.0.1 <port>" line for each port in 51235-51240 except this node's
+own 51234 + node_number — a node must not list itself as a fixed peer, so
+each config carries five lines, not six}
 
 [peer_private]
 1
 
 [telemetry]
 enabled=1
+service_instance_id=Node-{N}
 traces_endpoint=http://localhost:4318/v1/traces
+metrics_endpoint=http://localhost:4318/v1/metrics
 batch_size=512
 batch_delay_ms=2000
 max_queue_size=2048
@@ -277,6 +285,10 @@ trace_transactions=1
 trace_consensus=1
 trace_peer=1
 trace_ledger=1
+
+[insight]
+server=otel
+endpoint=http://localhost:4318/v1/metrics
 
 [rpc_startup]
 { "command": "log_level", "severity": "warning" }
@@ -599,7 +611,7 @@ Expected: log lines with `trace_id=<32hex> span_id=<16hex>` between the
 severity code and the message. Example:
 
 ```
-2024-Jan-15 10:30:45.123456 UTC RPCHandler:NFO trace_id=abc123def456789012345678abcdef01 span_id=0123456789abcdef Calling server_info
+2024-Jan-15 10:30:45.123456789 UTC RPCHandler:NFO trace_id=abc123def456789012345678abcdef01 span_id=0123456789abcdef Calling server_info
 ```
 
 Lines emitted outside of an active span (background tasks, startup) will
@@ -610,41 +622,59 @@ NOT have trace context — this is expected.
 Extract a `trace_id` from the log and verify it exists in Tempo:
 
 ```bash
-TRACE_ID=$(grep -o 'trace_id=[a-f0-9]\{32\}' /path/to/debug.log | head -1 | cut -d= -f2)
+TRACE_ID=$(grep -m1 -o 'trace_id=[a-f0-9]\{32\}' /path/to/debug.log | cut -d= -f2)
 echo "Checking trace: $TRACE_ID"
 curl -s "http://localhost:3200/api/traces/$TRACE_ID" | jq '.batches | length'
 ```
 
 Expected result: `> 0` (the trace exists in Tempo).
+Tempo returns the trace in OTLP shape, so the array is `batches`, not `data`,
+and one trace can arrive as several batches.
 
 ### Step 3: Verify Loki log ingestion
 
-The OTel Collector's filelog receiver tails xrpld's debug.log and
+The OTel Collector's file_log receiver tails xrpld's debug.log and
 exports parsed entries to Loki. Verify Loki has received entries:
 
 ```bash
-# Query Loki for any xrpld logs
-curl -sG "http://localhost:3100/loki/api/v1/query" \
+# Query Loki for any xrpld logs in the last 10 minutes
+NOW_NS=$(($(date +%s) * 1000000000))
+curl -sG "http://localhost:3100/loki/api/v1/query_range" \
     --data-urlencode 'query={service_name="xrpld"}' \
-    --data-urlencode 'limit=5' | jq '.data.result | length'
+    --data-urlencode "start=$((NOW_NS - 600000000000))" \
+    --data-urlencode "end=${NOW_NS}" \
+    --data-urlencode 'limit=5' \
+    --data-urlencode 'direction=backward' |
+    jq '[.data.result[].values | length] | add // 0'
 ```
 
-Expected: > 0 results.
+Expected: > 0 log lines.
 
-> **Use `service_name`, not `job`.** The collector's `resource/logs` processor
-> applies an `upsert` to **both** `service.name=xrpld` and `job=xrpld`
-> (`otel-collector-config.yaml:57-70`), and its comment says the `job` attribute
-> is there so operators can paste `{job="xrpld"}`. That does not work: on OTLP
-> ingest Loki promotes only an allow-listed set of resource attributes to indexed
-> stream labels (`service.name` → `service_name`, plus `service.namespace`,
+Use `query_range`, not `query`. Loki rejects a bare log selector on the
+instant `/query` endpoint with HTTP 400 and a `text/plain` body
+("log queries are not supported as an instant query type"), so `jq` fails to
+parse it and the step never prints a number — even when ingestion is working.
+Only metric queries such as `sum(count_over_time(...))` are allowed there,
+which is why the validation scripts can use the instant endpoint.
+Timestamps are unix nanoseconds, matching `workload/validate_telemetry.py`.
+Counting `.data.result | length` would count streams, not log lines.
+
+> **Use `service_name`, not `job`.** The local stack's `resource/logs` processor
+> sets one key, `service.name=xrpld` (`otel-collector-config.yaml:84-86`); its
+> comment there explains that a custom `job` attribute is not promoted to a
+> stream label and tells you to select on `service_name`. Only the Grafana Cloud
+> variant also sets `job=xrpld` (`otel-collector-config.grafanacloud.yaml:73-75`).
+> Either way `{job="xrpld"}` does not work as a selector: on OTLP ingest Loki
+> promotes only an allow-listed set of resource attributes to indexed stream
+> labels (`service.name` → `service_name`, plus `service.namespace`,
 > `service.instance.id`, `deployment.environment`, `k8s.*`, `cloud.*`), and `job`
 > is not on the list. This repo mounts no Loki config override — the `loki`
 > service runs the image's built-in `/etc/loki/local-config.yaml`
-> (`docker-compose.yml:75`) — so `job` lands in **structured metadata**, which
+> (`docker-compose.yml:116`) — so `job` lands in **structured metadata**, which
 > cannot be a stream selector. `{job="xrpld"}` therefore returns **zero results
 > with no error**, which reads exactly like "logs are not being ingested". If
 > this query is empty, check `{service_name="xrpld"}` before debugging the
-> pipeline. All 38 Loki queries in the shipped dashboards select on
+> pipeline. All 35 Loki queries in the shipped dashboards select on
 > `service_name`; none uses `job`.
 
 ### Step 4: Verify Grafana Tempo-to-Loki correlation
@@ -700,9 +730,9 @@ Expected: > 0 results.
        ss -tlnp | grep ":$p " && echo "port $p in use"
    done
    ```
-2. Verify `[ips_fixed]` lists all 6 peer ports
+2. Verify `[ips_fixed]` lists the 5 other peer ports, and not the node's own
 3. Verify `validators.txt` has all 6 public keys
-4. Check node debug logs: `tail -50 /tmp/xrpld-integration/node1/debug.log`
+4. Check node debug logs: `tail -50 /tmp/xrpld-integration/Node-1/debug.log`
 5. Ensure `[peer_private]` is set to `1` (prevents reaching out to public network)
 
 ### Transaction not processing
@@ -735,15 +765,15 @@ Expected: > 0 results.
    The mount source defaults to the repo-relative `docker/telemetry/data/logs`
    (where the telemetry configs write). Override `XRPLD_LOG_DIR` to tail logs
    from another root.
-2. Check OTel Collector logs for filelog receiver errors:
+2. Check OTel Collector logs for file_log receiver errors:
    ```bash
-   docker compose -f docker/telemetry/docker-compose.yml logs otel-collector | grep -i "filelog\|loki\|error"
+   docker compose -f docker/telemetry/docker-compose.yml logs otel-collector | grep -i "file_log\|loki\|error"
    ```
 3. Verify Loki is running:
    ```bash
    curl -s http://localhost:3100/ready
    ```
-4. Verify the filelog receiver glob pattern matches your log files:
+4. Verify the file_log receiver glob pattern matches your log files:
    The default pattern is `/var/log/xrpld/*/debug.log`
 
 ### Grafana trace-log links not working

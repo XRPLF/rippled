@@ -410,7 +410,7 @@ How to correlate OpenTelemetry traces with existing xrpld observability.
 There is **one** collection agent, not three. Earlier drafts of this diagram
 routed logs through "Promtail/Fluentd" and metrics through a "StatsD Exporter";
 neither exists in this stack. Logs are read by the OTel Collector's own
-`filelog` receiver, and `beast::insight` metrics arrive at the same collector
+`file_log` receiver, and `beast::insight` metrics arrive at the same collector
 over OTLP (`[insight] server=otel`). The single-agent shape is the point: one
 process, one config file, one place to add redaction or tier tagging.
 
@@ -422,7 +422,7 @@ flowchart TB
         insight["Beast Insight + XRPL_METRIC_*<br/>native OTLP metrics"]
     end
 
-    otelc["OTel Collector<br/>receivers: otlp, filelog<br/>connector: spanmetrics<br/>3 pipelines"]
+    otelc["OTel Collector<br/>receivers: otlp, file_log<br/>connector: spanmetrics<br/>3 pipelines"]
 
     subgraph storage["Storage"]
         tempo[("Tempo")]
@@ -433,11 +433,11 @@ flowchart TB
     dashboards["Grafana<br/>Tempo to Loki via tracesToLogs<br/>Loki to Tempo via derived fields"]
 
     otel -->|"OTLP/HTTP :4318"| otelc
-    journal -->|"filelog tails<br/>/var/log/xrpld"| otelc
+    journal -->|"file_log tails<br/>/var/log/xrpld"| otelc
     insight -->|"OTLP/HTTP :4318"| otelc
 
     otelc -->|"otlp/tempo"| tempo
-    otelc -->|"otlphttp/loki"| loki
+    otelc -->|"otlp_http/loki"| loki
     otelc -->|"prometheus :8889"| prom
 
     tempo --> dashboards
@@ -459,7 +459,7 @@ flowchart TB
 **Reading the diagram:**
 
 - **xrpld Node (three signals, one transport)**: spans and metrics both leave over OTLP/HTTP on port 4318. Logs do not leave the node at all — the node just writes `debug.log`, and the journal sink prefixes `trace_id=`/`span_id=` whenever a span is active (`Log.cpp:304-338`).
-- **OTel Collector (single agent)**: an `otlp` receiver takes spans and metrics; a `filelog` receiver tails `/var/log/xrpld/*/debug.log` and regex-parses the trace/span IDs out of each line. A `spanmetrics` connector derives RED metrics from the trace stream and feeds them into the metrics pipeline. Three pipelines, three exporters — see [05 §5.5.1](./05-configuration-reference.md).
+- **OTel Collector (single agent)**: an `otlp` receiver takes spans and metrics; a `file_log` receiver tails `/var/log/xrpld/*/debug.log` and regex-parses the trace/span IDs out of each line. A `spanmetrics` connector derives RED metrics from the trace stream and feeds them into the metrics pipeline. Three pipelines, three exporters — see [05 §5.5.1](./05-configuration-reference.md).
 - **PerfLog is not in this picture.** It still writes `perf.log`, but nothing collects it and it carries no trace ID; the `setTraceId` hook once planned for it was never built ([02 §2.6.5](./02-design-decisions.md)).
 - **StatsD is not in this picture either.** It remains a supported `[insight] server=` choice, but selecting it takes metrics _out_ of this pipeline and requires a StatsD receiver you would have to add yourself — the compose file's StatsD port mapping is commented out.
 - **Grafana**: correlation is bidirectional and configured in the datasources, not in a bespoke panel — Tempo's `tracesToLogs` (`filterByTraceID: true`) jumps trace → logs, and `loki.yaml`'s derived fields jump log → trace.
@@ -471,7 +471,7 @@ flowchart TB
 | **Trace**       | `trace_id`            | Logs    | **Live.** Tempo `tracesToLogs`, `filterByTraceID: true`                                                                                                                                                                                                           |
 | **Trace**       | `tx_hash`             | —       | Live as a span attribute for search; **not** used as a cross-signal join key (`tags: []`)                                                                                                                                                                         |
 | **Trace**       | `ledger_seq`          | —       | Live as a span attribute; not a join key                                                                                                                                                                                                                          |
-| **Journal log** | `trace_id`, `span_id` | Traces  | **Live.** Emitted by `Log.cpp:304-338` into `debug.log`, parsed by the collector's `filelog` receiver, jumped via `loki.yaml` derived fields                                                                                                                      |
+| **Journal log** | `trace_id`, `span_id` | Traces  | **Live.** Emitted by `Log.cpp:304-338` into `debug.log`, parsed by the collector's `file_log` receiver, jumped via `loki.yaml` derived fields                                                                                                                     |
 | **PerfLog**     | `trace_id`            | Traces  | **Not implemented.** PerfLog output has no trace ID; the planned `setTraceId` hook was never built. Use the journal log instead                                                                                                                                   |
 | **Insight**     | `exemplar.trace_id`   | Traces  | **Not implemented.** No exemplar configuration exists anywhere in the code or collector config — no `exemplar_filter` on the SDK side, no `exemplarTraceIdDestinations` on the Prometheus datasource. Metric spike → trace jumps must be done by time range today |
 
@@ -507,7 +507,7 @@ These are journal (`debug.log`) lines, not PerfLog lines — see §7.7.2.
 > **allow-listed** set of resource attributes to indexed stream labels
 > (`service.name`, `service.namespace`, `service.instance.id`,
 > `deployment.environment`, `k8s.*`, `cloud.*`), and `job` is not on it. This
-> repo mounts no Loki config override (`docker-compose.yml:75` uses the image's
+> repo mounts no Loki config override (`docker-compose.yml:116` uses the image's
 > built-in `local-config.yaml`), so `job` lands in **structured metadata** —
 > queryable only with a `|` filter after a selector, never as the selector
 > itself. A `{job="xrpld"}` query returns empty with no error, which is why this
