@@ -23,8 +23,8 @@ inline constexpr std::uint32_t kMaxBytecodeSizeLimit{200'000};
 
 // The following default values of fee settings will seed into FeeSettings
 // and write to the ledger on featureSmartEscrow activation.
-inline constexpr std::uint32_t kDefaultGasLimit{1'000'000};
-inline constexpr std::uint32_t kDefaultBytecodeSizeLimit{100'000};
+inline constexpr std::uint32_t kDefaultGasLimit{400'000};
+inline constexpr std::uint32_t kDefaultBytecodeSizeLimit{50'000};
 inline constexpr std::uint32_t kDefaultGasPrice{1'000'000};
 
 /**
