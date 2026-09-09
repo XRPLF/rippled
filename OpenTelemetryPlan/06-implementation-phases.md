@@ -919,7 +919,7 @@ Alert Rules from External Dashboard**.
 
 ## 6.8.3 Phase 10: Synthetic Workload Generation & Telemetry Validation (Weeks 16-17)
 
-> **Status**: Implemented on this branch — `docker/telemetry/workload/` (24
+> **Status**: Implemented on this branch — `docker/telemetry/workload/` (25
 > files) and `.github/workflows/telemetry-validation.yml` are present here.
 > Upstream branches do not carry them, so the exit criteria below only hold from
 > `pratik/otel-phase10-workload-validation` onward.
@@ -1003,7 +1003,7 @@ flowchart LR
 
 - **Transaction submitter and RPC load generator** both use xrpld's native WebSocket command format (`{"command": ...}`) — not JSON-RPC format. Response data lives inside `"result"` with `"status"` at the top level.
 - **Node config** requires `[signing_support] true` for server-side signing, and `[ips]` (not `[ips_fixed]`) to ensure peer connections count in `peer_finder_active_*` metrics.
-- **Metric validation** uses the Prometheus `/api/v1/series` endpoint (not instant queries) to avoid false negatives from stale StatsD gauges. Every metric in `expected_metrics.json` must have > 0 series.
+- **Metric validation** uses the Prometheus `/api/v1/series` endpoint (not instant queries) which polls for late-populating series and ignores Prometheus's staleness horizon. Every metric in `expected_metrics.json` must have > 0 series.
 - **Gauge visibility**: the harness sets `[insight] server=otel` (`run-full-validation.sh`), so `beast::insight` gauges become OTel observable gauges whose callback is invoked on every collection cycle. A gauge that sits at 0 and never changes (e.g. `jobq_job_count`) therefore still reports, and `/api/v1/series` sees it.
 - **I/O latency fix**: `io_latency_sampler` emits unconditionally on first sample, then applies the 10 ms threshold. This ensures `ios_latency` is registered in Prometheus even in low-load CI environments.
 - **tx.receive span**: attribute keys are bare, not dotted — `suppressed` and `tx_status` (`TxSpanNames.h:71,75`). `suppressed` is set on both outcomes (`false` on the accepted path, `true` when the HashRouter suppresses), but `tx_status` is set **only** on the reject/known-bad/dropped paths, so it is absent on a successful receive. Assert on the attribute, not on span status.
@@ -1070,15 +1070,16 @@ See [Phase10_taskList.md](./Phase10_taskList.md) for the per-task breakdown.
 ### CI Deliverable (Task 10.6)
 
 The Phase 10 CI entry point is `.github/workflows/telemetry-validation.yml`
-(367 lines, on the Phase 10 branch). It runs three jobs — `linux-image-tag`,
+(on the Phase 10 branch). It runs three jobs — `linux-image-tag`,
 `build-xrpld`, `validate-telemetry` — and is triggered by `workflow_dispatch`
-plus `push` on `pratik/otel-phase*`, `feature/otel-*` and
-`feature/telemetry-*`. **There is no cron schedule**, so nothing runs this
-workflow on a timer.
+plus any `push` that touches one of the `paths` globs below. **There is no
+branch filter**: GitHub ANDs `branches` with `paths`, so a branch glob would
+decide validation by what a branch is called rather than by what it changed.
+**There is no cron schedule**, so nothing runs this workflow on a timer.
 
 > **Fixed — the `push` trigger's `paths` filter now covers the C++ telemetry
-> sources.** The branch filter is only half the trigger; `push` also carries a
-> `paths` filter, and it previously read:
+> sources.** The `push` trigger carries a `paths` filter, and it previously
+> read:
 >
 > ```yaml
 > paths:
@@ -1092,14 +1093,14 @@ workflow on a timer.
 > `include/xrpl/basics/Telemetry*.h` nor `src/xrpld/app/misc/Telemetry*` exists.
 > The telemetry code lives in `src/xrpld/telemetry/**` (9 files, including
 > `MetricsRegistry.cpp`), `src/libxrpl/telemetry/**` (7 files) and
-> `include/xrpl/telemetry/**` (10 files), none of which were listed.
+> `include/xrpl/telemetry/**` (13 files), none of which were listed.
 > Consequence at the time: a pure C++ telemetry change — new instrument,
 > renamed metric, changed span attribute — never triggered this workflow on
 > push; only edits under `docker/telemetry/**` or to the workflow file itself
 > did.
 >
-> The two dead globs have been replaced with the three real module directories,
-> so the filter now reads:
+> The two dead globs have been replaced with the real module directories, the
+> name-constant headers and the checkers, so the filter now reads:
 >
 > ```yaml
 > paths:
@@ -1107,15 +1108,22 @@ workflow on a timer.
 >   - "docker/telemetry/**"
 >   - "include/xrpl/telemetry/**"
 >   - "src/libxrpl/telemetry/**"
->   - "src/libxrpl/beast/insight/**"
 >   - "src/xrpld/telemetry/**"
+>   - "include/xrpl/beast/insight/**"
+>   - "src/libxrpl/beast/insight/**"
+>   - "**/*SpanNames.h"
+>   - "**/*MetricNames.h"
+>   - "src/tests/libxrpl/telemetry/**"
+>   - ".github/scripts/otel-naming/**"
+>   - ".github/scripts/telemetry/**"
 > ```
 >
 > `src/libxrpl/beast/insight/**` is included because it holds `OTelCollector.cpp`,
-> the `beast::insight` OTLP export path the harness depends on. Residual gap: the
-> instrumented call sites scattered through `src/xrpld/app/` are not listed, so a
-> change that only adds or moves a span at a call site does not trigger the
-> workflow on push. Those are reachable by manual dispatch.
+> the `beast::insight` OTLP export path the harness depends on. The `*SpanNames.h`
+> and `*MetricNames.h` globs cover the name constants wherever they sit, including
+> under `src/xrpld/app/`. Residual gap: an instrumented call site that adds or
+> moves a span without touching a name header does not trigger the workflow on
+> push. Those are reachable by manual dispatch.
 
 > **Caveat — four inert inputs (documented, not wired).** The workflow declares
 > five `workflow_dispatch` inputs, but only `run_benchmark` changes behaviour.
