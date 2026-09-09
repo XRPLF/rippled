@@ -172,7 +172,7 @@ Run the integration test script:
 bash docker/telemetry/integration-test.sh
 ```
 
-It checks prerequisites, clears the previous run, brings up the observability stack, generates six validator key pairs and their node configs, starts the nodes, waits for consensus and then for a validated ledger, exercises RPC and submits a transaction, verifies traces in Tempo and both the spanmetrics and the StatsD-derived metrics in Prometheus, then prints a summary and leaves the stack running.
+It checks prerequisites, clears the previous run, brings up the observability stack, generates six validator key pairs and their node configs, starts the nodes, waits for consensus and then for a validated ledger, exercises RPC and submits a transaction, verifies traces in Tempo and both the spanmetrics and the native `beast::insight` metrics that arrive over OTLP in Prometheus, checks that no StatsD listener is needed, then prints a summary and leaves the stack running.
 
 The script announces each step as it runs, so read its `Step N:` headers for the authoritative sequence — they are not restated here, because a numbered copy of them drifts as soon as a step is added.
 
@@ -253,19 +253,18 @@ online_delete=256
 /tmp/xrpld-integration/validators.txt
 
 [ips_fixed]
-127.0.0.1 51235
-127.0.0.1 51236
-127.0.0.1 51237
-127.0.0.1 51238
-127.0.0.1 51239
-127.0.0.1 51240
+{one "127.0.0.1 <port>" line for each port in 51235-51240 except this node's
+own 51234 + node_number — a node must not list itself as a fixed peer, so
+each config carries five lines, not six}
 
 [peer_private]
 1
 
 [telemetry]
 enabled=1
+service_instance_id=Node-{N}
 traces_endpoint=http://localhost:4318/v1/traces
+metrics_endpoint=http://localhost:4318/v1/metrics
 batch_size=512
 batch_delay_ms=2000
 max_queue_size=2048
@@ -274,6 +273,10 @@ trace_transactions=1
 trace_consensus=1
 trace_peer=1
 trace_ledger=1
+
+[insight]
+server=otel
+endpoint=http://localhost:4318/v1/metrics
 
 [rpc_startup]
 { "command": "log_level", "severity": "warning" }
@@ -578,7 +581,7 @@ Counting `.data.result | length` would count streams, not log lines.
        ss -tlnp | grep ":$p " && echo "port $p in use"
    done
    ```
-2. Verify `[ips_fixed]` lists all 6 peer ports
+2. Verify `[ips_fixed]` lists the 5 other peer ports, and not the node's own
 3. Verify `validators.txt` has all 6 public keys
 4. Check node debug logs: `tail -50 /tmp/xrpld-integration/Node-1/debug.log`
 5. Ensure `[peer_private]` is set to `1` (prevents reaching out to public network)
