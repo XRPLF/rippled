@@ -1197,6 +1197,21 @@ TRANSACTION(ttSPONSORSHIP_SET, 91, SponsorshipSet,
     {sfRemainingOwnerCountDelta, SoeOptional},
 }))
 
+#if TRANSACTION_INCLUDE
+#   include <xrpl/tx/transactors/token/ConfidentialMPTMirrorUpdate.h>
+#endif
+TRANSACTION(ttCONFIDENTIAL_MPT_MIRROR_UPDATE, 92, ConfidentialMPTMirrorUpdate,
+    Delegation::NotDelegable,
+    featureConfidentialMPTKeyRotation,
+    NoPriv,
+    ({
+    {sfMPTokenIssuanceID, SoeRequired},
+    {sfHolder, SoeOptional},
+    {sfIssuerEncryptedAmount, SoeOptional},
+    {sfAuditorEncryptedAmount, SoeOptional},
+    {sfZKProof, SoeRequired},
+}))
+
 /** This system-generated transaction type is used to update the status of the various amendments.
 
     For details, see: https://xrpl.org/amendments.html

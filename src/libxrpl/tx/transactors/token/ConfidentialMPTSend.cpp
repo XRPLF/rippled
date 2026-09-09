@@ -247,6 +247,17 @@ ConfidentialMPTSend::preclaim(PreclaimContext const& ctx)
         return tecNO_PERMISSION;
     }
 
+    // A send homomorphically updates the mirrors of both parties, so both must
+    // be encrypted under the currently registered keys. This also covers the
+    // auditor mirror a late-registered auditor key leaves missing, which the
+    // sanity check below would otherwise treat as impossible.
+    if (ctx.view.rules().enabled(featureConfidentialMPTKeyRotation) &&
+        (!areMirrorsCurrent(*sleIssuance, *sleSenderMPToken) ||
+         !areMirrorsCurrent(*sleIssuance, *sleDestinationMPToken)))
+    {
+        return tecNO_PERMISSION;
+    }
+
     // Sanity check: Both MPTokens' auditor fields must be present if auditing
     // is enabled
     if (requiresAuditor &&
