@@ -251,12 +251,12 @@ local stack and by CI. It carries **three** pipelines, not one:
 | --------- | --------------------- | ---------------------------------------------------------------- | ------------------------------------ |
 | `traces`  | `otlp`                | `resource/tier`, `resource/stripsdk`, `attributes/hash`, `batch` | `debug`, `otlp/tempo`, `spanmetrics` |
 | `metrics` | `otlp`, `spanmetrics` | `resource/tier`, `resource/stripsdk`, `batch`                    | `prometheus`                         |
-| `logs`    | `filelog`             | `resource/logs`, `resource/tier`, `resource/stripsdk`, `batch`   | `otlphttp/loki`                      |
+| `logs`    | `file_log`            | `resource/logs`, `resource/tier`, `resource/stripsdk`, `batch`   | `otlp_http/loki`                     |
 
 Component detail:
 
 - **Receivers.** `otlp` on gRPC `0.0.0.0:4317` and HTTP `0.0.0.0:4318` (both
-  traces and native metrics arrive on 4318). `filelog` tails
+  traces and native metrics arrive on 4318). `file_log` tails
   `/var/log/xrpld/*/debug.log` and runs a `regex_parser` that lifts
   `timestamp`, `partition`, `severity` and the optional `trace_id`/`span_id`
   emitted by the journal sink (§5.8.5).
@@ -282,7 +282,7 @@ Component detail:
   dimensions are promoted to labels (`command`, `rpc_status`, `tx_type`,
   `ter_result`, `stage`, `consensus_mode`, `outcome`, …).
 - **Exporters.** `debug` (console, `verbosity: detailed`), `otlp/tempo`
-  (`tempo:4317`, `tls.insecure: true`), `otlphttp/loki`
+  (`tempo:4317`, `tls.insecure: true`), `otlp_http/loki`
   (`http://loki:3100/otlp` — Loki 3.x native OTLP; the old `loki` exporter was
   removed in collector-contrib v0.147.0), and `prometheus` on
   `0.0.0.0:8889` with `resource_to_telemetry_conversion.enabled: true` so the
@@ -307,7 +307,7 @@ graph. The full delta:
 | `basicauth/grafanacloud` | `:29`  | Extension; instance id / API token from the container environment         |
 | `tail_sampling`          | `:60`  | One `probabilistic` policy at **0.5%**, `decision_wait: 10s`              |
 | `transform/cloudlabels`  | `:119` | Copies three resource attrs onto datapoint labels for Cloud (OTLP) ingest |
-| `otlphttp/grafanacloud`  | `:236` | Single OTLP/HTTP exporter fanning all three signals to Grafana Cloud      |
+| `otlp_http/grafanacloud` | `:236` | Single OTLP/HTTP exporter fanning all three signals to Grafana Cloud      |
 | `metrics_flush_interval` | `:136` | `spanmetrics` flushes every 15s instead of the 60s default                |
 
 | Removed by the overlay | Consequence                                                                  |
@@ -346,14 +346,14 @@ NetworkPolicy, peer trace-context validation) is covered in
 
 The authoritative development stack lives in the repo at `docker/telemetry/docker-compose.yml`. It brings up **six** services on a shared `xrpld-telemetry` bridge network. All images are pinned to exact tags.
 
-| Service          | Image                                          | Published ports        | Role                                                             |
-| ---------------- | ---------------------------------------------- | ---------------------- | ---------------------------------------------------------------- |
-| `otel-collector` | `otel/opentelemetry-collector-contrib:0.158.0` | `4317`, `4318`, `8889` | OTLP ingest, spanmetrics, filelog tail, Prometheus scrape target |
-| `tempo`          | `grafana/tempo:2.9.4`                          | `3200`                 | Trace storage and TraceQL                                        |
-| `loki`           | `grafana/loki:3.7.6`                           | `3100`                 | Log storage for log↔trace correlation                            |
-| `prometheus`     | `prom/prometheus:v3.13.2`                      | `9090`                 | Scrapes the collector's `:8889`                                  |
-| `grafana`        | `grafana/grafana:13.1.2`                       | `3000`                 | Dashboards + provisioned datasources/alerts, anonymous admin     |
-| `renderer`       | `grafana/grafana-image-renderer:v5.12.0`       | `8081`                 | Panel→PNG rendering for image export and alert screenshots       |
+| Service          | Image                                          | Published ports        | Role                                                              |
+| ---------------- | ---------------------------------------------- | ---------------------- | ----------------------------------------------------------------- |
+| `otel-collector` | `otel/opentelemetry-collector-contrib:0.158.0` | `4317`, `4318`, `8889` | OTLP ingest, spanmetrics, file_log tail, Prometheus scrape target |
+| `tempo`          | `grafana/tempo:2.9.4`                          | `3200`                 | Trace storage and TraceQL                                         |
+| `loki`           | `grafana/loki:3.7.6`                           | `3100`                 | Log storage for log↔trace correlation                             |
+| `prometheus`     | `prom/prometheus:v3.13.2`                      | `9090`                 | Scrapes the collector's `:8889`                                   |
+| `grafana`        | `grafana/grafana:13.1.2`                       | `3000`                 | Dashboards + provisioned datasources/alerts, anonymous admin      |
+| `renderer`       | `grafana/grafana-image-renderer:v5.12.0`       | `8081`                 | Panel→PNG rendering for image export and alert screenshots        |
 
 Two corrections to earlier drafts:
 
@@ -366,7 +366,7 @@ Two corrections to earlier drafts:
   port mapping or run `docker compose exec`.
 
 The collector also bind-mounts the xrpld log root read-only
-(`${XRPLD_LOG_DIR:-./data/logs}` → `/var/log/xrpld`) for the `filelog`
+(`${XRPLD_LOG_DIR:-./data/logs}` → `/var/log/xrpld`) for the `file_log`
 receiver, and the `grafana` service reads Slack/email alert secrets from an
 optional gitignored `.env.alerting`.
 
@@ -570,12 +570,12 @@ Fluentd or PerfLog change. Two pieces:
    allocation on the (common) no-span path. This is the ordinary `debug.log`
    stream — PerfLog is not involved, and the `setTraceId` hook described in
    earlier drafts was never built.
-2. **The collector ingests them.** The `filelog` receiver tails
+2. **The collector ingests them.** The `file_log` receiver tails
    `/var/log/xrpld/*/debug.log` and its `regex_parser` lifts `trace_id` and
    `span_id` as optional capture groups (§5.5.1). `resource/logs` applies an
    `upsert` of `service.name=xrpld`, which Loki promotes to the stream label
    `service_name`, so the canonical selector is **`{service_name="xrpld"}`**.
-   Logs land in Loki via `otlphttp/loki`.
+   Logs land in Loki via `otlp_http/loki`.
 
 > **Known issue — the collector's `job` upsert is ineffective for stream
 > selection.** `resource/logs` also applies an `upsert` of a `job=xrpld` attribute
