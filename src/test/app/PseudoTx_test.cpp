@@ -43,6 +43,12 @@ struct PseudoTx_test : public beast::unit_test::Suite
                 obj[sfReserveIncrement] = 0;
                 obj[sfReferenceFeeUnits] = 0;
             }
+            if (rules.enabled(featureSmartEscrow))
+            {
+                obj[sfGasLimit] = 0;
+                obj[sfBytecodeSizeLimit] = 0;
+                obj[sfGasPrice] = 0;
+            }
         });
 
         res.emplace_back(ttAMENDMENT, [&](auto& obj) {
@@ -107,7 +113,9 @@ struct PseudoTx_test : public beast::unit_test::Suite
         FeatureBitset const all{testableAmendments()};
         FeatureBitset const xrpFees{featureXRPFees};
 
+        testPrevented(all - featureXRPFees - featureSmartEscrow);
         testPrevented(all - featureXRPFees);
+        testPrevented(all - featureSmartEscrow);
         testPrevented(all);
         testAllowed();
     }

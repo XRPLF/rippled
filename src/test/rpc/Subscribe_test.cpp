@@ -514,6 +514,22 @@ public:
                 if (jv.isMember(jss::reserve_inc) != isFlagLedger)
                     return false;
 
+                if (env.closed()->rules().enabled(featureSmartEscrow))
+                {
+                    if (jv.isMember(jss::gas_limit) != isFlagLedger)
+                        return false;
+
+                    if (jv.isMember(jss::bytecode_size_limit) != isFlagLedger)
+                        return false;
+                }
+                else
+                {
+                    if (jv.isMember(jss::gas_limit))
+                        return false;
+
+                    if (jv.isMember(jss::bytecode_size_limit))
+                        return false;
+                }
                 return true;
             };
 
@@ -1976,7 +1992,8 @@ public:
         testTransactionsAPIv1();
         testTransactionsAPIv2();
         testManifests();
-        testValidations(all - xrpFees);
+        testValidations(all - featureXRPFees - featureSmartEscrow);
+        testValidations(all - featureSmartEscrow);
         testValidations(all);
         testSubErrors(true);
         testSubErrors(false);
