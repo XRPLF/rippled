@@ -75,11 +75,10 @@ getSHAMapNodeID(protocol::TMLedgerNode const& ledgerNode, SHAMapTreeNode const& 
     if (treeNode.isLeaf())
     {
         auto const key = leafKey(treeNode);
-        auto const expectedID = SHAMapNodeID::createID(static_cast<int>(nodeID->getDepth()), key);
         SOMETIMES(
-            nodeID->getNodeID() != expectedID.getNodeID(),
+            !nodeID->isPrefixOf(key),
             "xrpl::getSHAMapNodeID : legacy leaf ID inconsistent with key");
-        if (nodeID->getNodeID() != expectedID.getNodeID())
+        if (!nodeID->isPrefixOf(key))
             return std::nullopt;
     }
 

@@ -62,6 +62,15 @@ repos:
         types_or: [c++, c, proto]
         exclude: ^include/xrpl/protocol_autogen/(transactions|ledger_entries)/
 
+  - repo: local
+    hooks:
+      - id: cargo-fmt
+        name: cargo fmt
+        entry: cargo fmt --manifest-path crates/Cargo.toml --all
+        language: system
+        types: [rust]
+        pass_filenames: false # rustfmt formats the whole workspace
+
   - repo: https://github.com/BlankSpruce/gersemi-pre-commit
     rev: e98930bdc210d3387007f9252d8c1694ea7e410f # frozen: 0.27.7
     hooks:
@@ -73,10 +82,26 @@ repos:
       - id: prettier
         args: [--end-of-line=auto]
 
+  # Scoped to package/: the rest of the repo's Python has pre-existing findings,
+  # so widening these is its own change.
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: 7c55798a78262d14b2074abf623d8a992ebb70d4 # frozen: v0.16.2
+    hooks:
+      - id: ruff-check
+        args: [--fix]
+        files: ^package/.*\.py$
+
   - repo: https://github.com/psf/black-pre-commit-mirror
     rev: 4160603246a6b365d4a2af661c6d71b0a0f50478 # frozen: 26.5.1
     hooks:
       - id: black
+
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: 41e691678310dfd3833f7ab4e180ddb014310356 # frozen: v2.3.0
+    hooks:
+      - id: mypy
+        args: [--strict]
+        files: ^package/.*\.py$
 
   - repo: https://github.com/scop/pre-commit-shfmt
     rev: 05c1426671b9237fb5e1444dd63aa5731bec0dfb # frozen: v3.13.1-1

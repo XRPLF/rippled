@@ -5,8 +5,6 @@
 #include <xrpl/rdb/DBInit.h>
 #include <xrpl/rdb/DatabaseCon.h>
 
-#include <boost/format.hpp>  // IWYU pragma: keep
-
 #include <soci/into.h>
 
 #include <cstdint>
@@ -40,7 +38,7 @@ doVacuumDB(DatabaseCon::Setup const& setup, beast::Journal j)
     // Only the most trivial databases will fit in memory on typical
     // (recommended) hardware. Force temp files to be written to disk
     // regardless of the config settings.
-    session << boost::format(kCommonDbPragmaTemp) % "file";
+    session << commonDbPragmaTemp("file");
     session << "PRAGMA page_size;", soci::into(pageSize);
 
     std::cout << "VACUUM beginning. page_size: " << pageSize << std::endl;

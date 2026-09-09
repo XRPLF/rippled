@@ -10,8 +10,8 @@
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/LendingHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
+#include <xrpl/ledger/helpers/VaultHelpers.h>
 #include <xrpl/protocol/AccountID.h>
-#include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Protocol.h>
@@ -69,7 +69,7 @@ LoanBrokerSet::preflight(PreflightContext const& ctx)
     }
 
     // Amendment-specific field presence rules
-    if (ctx.rules.enabled(featureLendingProtocolV1_1))
+    if (ctx.rules.enabled(featureLendingProtocolV1_2))
     {
         if (isLoanBrokerUpdate)
         {
@@ -150,12 +150,12 @@ readVault(PreclaimContext const& ctx, AccountID const& account, uint256 const& i
 preclaimUpdate(PreclaimContext const& ctx, AccountID const& account, uint256 const& brokerID)
 {
     auto const& tx = ctx.tx;
-    bool const fixEnabled = ctx.view.rules().enabled(featureLendingProtocolV1_1);
+    bool const vaultIdOptional = ctx.view.rules().enabled(featureLendingProtocolV1_2);
 
     std::shared_ptr<SLE const> sleBroker;
     std::shared_ptr<SLE const> sleVault;
 
-    if (fixEnabled)
+    if (vaultIdOptional)
     {
         // Post-amendment: VaultID is not in the tx, read it from broker
         sleBroker = ctx.view.read(keylet::loanBroker(brokerID));
@@ -233,6 +233,20 @@ preclaimCreate(PreclaimContext const& ctx, AccountID const& account)
     if (!vault)
         return vault;
     auto const& sleVault = *vault;
+
+    // LP V1.1: only closed-ended vaults may host a loan broker. The
+    // lending protocol relies on the closed-ended Subscription /
+    // Investment / Redemption phase structure; attaching a broker to
+    // an open-ended vault has no well-defined lifecycle. VaultCreate
+    // stays unrestricted so existing open-ended flows keep working;
+    // the constraint is enforced here, at the point where the vault
+    // is first bound to the lending protocol.
+    if (ctx.view.rules().enabled(featureLendingProtocolV1_1) &&
+        getVaultKind(sleVault) != VaultKind::ClosedEnded)
+    {
+        JLOG(ctx.j.warn()) << "LoanBroker requires a closed-ended Vault.";
+        return std::unexpected(tecNO_PERMISSION);
+    }
 
     Asset const asset = sleVault->at(sfAsset);
     if (auto const ter = canAddHolding(ctx.view, asset))

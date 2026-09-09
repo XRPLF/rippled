@@ -72,11 +72,16 @@ DerivedData
 /.zed/
 
 # AI tools.
+# Shared/committable AI agent config (AGENTS.md, CLAUDE.md, GEMINI.md, .claude/settings.json,
+# tool-specific rules files, etc.) should be checked in — see CONTRIBUTING.md. Only the
+# personal/local variants below are ignored.
 /.agent
 /.agents
 /.augment
-/.claude
-/CLAUDE.md
+/.claude/settings.local.json
+AGENTS.override.md
+CLAUDE.local.md
+GEMINI.local.md
 
 # Python
 __pycache__
@@ -89,3 +94,6 @@ target/
 
 # clangd cache
 /.cache
+
+# Rust build directory
+crates/target

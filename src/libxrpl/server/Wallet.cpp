@@ -16,7 +16,6 @@
 #include <xrpl/rdb/SociDB.h>
 #include <xrpl/server/Manifest.h>
 
-#include <boost/format/free_funcs.hpp>
 #include <boost/optional/optional.hpp>  // IWYU pragma: keep
 
 #include <soci/blob-exchange.h>  // IWYU pragma: keep
@@ -30,6 +29,7 @@
 
 #include <array>
 #include <cstddef>
+#include <format>
 #include <functional>
 #include <memory>
 #include <string>
@@ -172,11 +172,10 @@ getNodeIdentity(soci::session& session)
     // If a valid identity wasn't found, we randomly generate a new one:
     auto [newpublicKey, newsecretKey] = randomKeyPair(KeyType::Secp256k1);
 
-    session << str(
-        boost::format(
-            "INSERT INTO NodeIdentity (PublicKey,PrivateKey) "
-            "VALUES ('%s','%s');") %
-        toBase58(TokenType::NodePublic, newpublicKey) %
+    session << std::format(
+        "INSERT INTO NodeIdentity (PublicKey,PrivateKey) "
+        "VALUES ('{}','{}');",
+        toBase58(TokenType::NodePublic, newpublicKey),
         toBase58(TokenType::NodePrivate, newsecretKey));
 
     return {newpublicKey, newsecretKey};
