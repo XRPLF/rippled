@@ -1,7 +1,5 @@
 #include <xrpl/beast/insight/StatsDCollector.h>
 
-#include <xrpl/beast/insight/Counter.h>
-#include <xrpl/beast/insight/Gauge.h>
 #include <xrpl/beast/net/IPEndpoint.h>
 #include <xrpl/beast/utility/Journal.h>
 
@@ -39,6 +37,7 @@ namespace beast::insight {
  *     "test",
  *     Journal(Journal::getNullSink()));
  * auto const gauge = collector->makeGauge("g");
+ * collector->onCollectionReady();  // Nothing is polled before this.
  * EXPECT_EQ(server.receive(std::chrono::seconds(10)), "test.g:0|g\n");
  *
  * // Edge case: nothing was sent, so the wait runs out and returns empty.
@@ -128,6 +127,10 @@ TEST(StatsDCollector, UntouchedGaugePublishesInitialZero)
     // Created and then left alone: no set(), no increment().
     auto const gauge = collector->makeGauge("untouched");
 
+    // A collector polls its metrics only after this. Without the call no tick
+    // ever flushes and every assertion below would hold for the wrong reason.
+    collector->onCollectionReady();
+
     EXPECT_EQ(server.receive(std::chrono::seconds(10)), std::string("test.untouched:0|g\n"));
 }
 
@@ -145,6 +148,10 @@ TEST(StatsDCollector, UntouchedCounterPublishesNothing)
 
     auto collector = StatsDCollector::make(address, "test", Journal(Journal::getNullSink()));
     auto const counter = collector->makeCounter("untouched");
+
+    // Same reason as above: polling must be on, or the empty result proves only
+    // that nothing was polled.
+    collector->onCollectionReady();
 
     // Three seconds spans several one-second flush ticks.
     EXPECT_EQ(server.receive(std::chrono::seconds(3)), std::string());
