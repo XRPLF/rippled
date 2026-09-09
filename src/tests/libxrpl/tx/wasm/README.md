@@ -6,28 +6,29 @@ missing lives in a sibling layer.
 
 ## The layers
 
-| Layer                                 | Location                                            | host | VM  | ledger | Answers                                                                             |
-| ------------------------------------- | --------------------------------------------------- | ---- | --- | ------ | ----------------------------------------------------------------------------------- |
-| Engine / gas / limits / ABI           | `crates/xrpl-wasm-vm`, `crates/xrpl-host-functions` | mock | ✓   | ✗      | gas, transfer budget, memory/field limits, preflight, VM limits, generated ABI      |
-| `host_context/` (`HostContextTest`)   | `.../host_context`                                  | mock | ✗   | ✗      | the `HostContext` marshalling shim alone (byte order, buffer sizing, `SField` xlat) |
-| `host_calls/` (`HostCallTest`)        | `.../host_calls`                                    | mock | ✓   | ✗      | per-function **wire contract** — what the host was asked, what came back            |
-| `host_functions/` (`RealHostFixture`) | `.../host_functions`                                | real | ✗   | real   | each function's **actual answer** vs. a real `TxTest` ledger                        |
-| `e2e/` (`RealVmTest`)                 | `.../e2e`                                           | real | ✓   | real   | **full-stack integration** — VM + `HostContext` + real impl + real ledger           |
+| Layer                                 | Location                                            | host | VM  | ledger | Answers                                                                                  |
+| ------------------------------------- | --------------------------------------------------- | ---- | --- | ------ | ---------------------------------------------------------------------------------------- |
+| Engine / gas / limits / ABI           | `crates/xrpl-wasm-vm`, `crates/xrpl-host-functions` | mock | ✓   | ✗      | gas, transfer budget, memory/field limits, preflight, VM limits, generated ABI           |
+| `host_context/` (`HostContextTest`)   | `.../host_context`                                  | mock | ✗   | ✗      | the `HostContext` marshalling shim alone (byte order, buffer sizing, `SField` xlat)      |
+| `host_calls/` (`HostCallTest`)        | `.../host_calls`                                    | mock | ✓   | ✗      | per-function **wire contract** — what the host was asked, what came back                 |
+| `host_functions/` (`RealHostFixture`) | `.../host_functions`                                | real | ✗   | real   | each function's **actual answer** vs. a real `TxTest` ledger                             |
+| `e2e/` (`RealVmTest`)                 | `.../e2e`                                           | real | ✓   | real   | **full-stack integration** — VM + `HostContext` + real impl + real ledger                |
+| `transactor/` (`TxTest`)              | `.../transactor`                                    | real | ✓   | real   | the **transactor** around a contract — fees, reserves, limits, what each failure reports |
 
 Run the C++ side with:
 
 ```bash
-./build/xrpl_tests --gtest_filter='*Impl.*:*Call.*:*E2e.*:WasmVMTest.*:WasmVMDeathTest.*:PreflightTest.*'
+./build/xrpl_tests --gtest_filter='*Impl.*:*Call.*:*E2e.*:WasmVMTest.*:WasmVMDeathTest.*:PreflightTest.*:BytecodeSize.*:BytecodePreflight.*:FinishFailures.*:BytecodeRun.*:GasFees.*:DataOnReject.*'
 ```
 
-(707 tests, 136 suites.) The engine-level coverage is Rust: `cd crates && cargo test`.
+(744 tests, 142 suites.) The engine-level coverage is Rust: `cd crates && cargo test`.
 
 ## `fixtures/` — split by whether it needs a test framework
 
-|                                                |                                                                                                                                                                                                             |
-| ---------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **No GTest** — the `xrpl.testkit.wasm` library | `WasmLedger` (real genesis ledger + the real host over it), `WasmRun` (WAT assembler), `NftSetup`, `FloatConstants`                                                                                         |
-| **GTest** → `xrpl_tests`                       | `RealHostFixture` (`: testing::Test, WasmLedger` + `expectValue`/`expectError`/`expectKeyletMatches`), `FloatFixture`, `NFTFixture`, `MockHostFunctions`, `WasmFixture`, `RealVmTest`, `HostContextFixture` |
+|                                                |                                                                                                                                                                                                                                                                                    |
+| ---------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **No GTest** — the `xrpl.testkit.wasm` library | `WasmLedger` (real genesis ledger + the real host over it), `WasmRun` (WAT assembler), `NftSetup`, `FloatConstants`                                                                                                                                                                |
+| **GTest** → `xrpl_tests`                       | `RealHostFixture` (`: testing::Test, WasmLedger` + `expectValue`/`expectError`/`expectKeyletMatches`), `FloatFixture`, `NFTFixture`, `MockHostFunctions`, `WasmFixture`, `RealVmTest`, `HostContextFixture`, `EscrowWasm` (transactor contracts + fee arithmetic), `ModuleBuilder` |
 
 A benchmark wants a ledger and a host, not GTest's lifecycle. Both binaries link the library;
 `xrpl.bench.wasm` links no GTest and no GMock at all.
@@ -83,8 +84,18 @@ against the same spec. That would not catch a drift where both diverge on an amb
 closing it needs a **cross-repo integration test** (compiled guests against a real host) in CI
 where the Rust→wasm toolchain exists.
 
-**Transactor-level (L5) tests** are deferred: the redesign does not yet wire `runEscrowWasm` into
-the `EscrowFinish` transactor, so there is no caller under `src/xrpld`. When it is wired, these
-need a home as C++ transactor tests over a real `Env` — `set_data` persistence (including on
-`tecBYTECODE_REJECTED`), `sfGasUsed` / `sfVMReturnCode` in transaction metadata, and owner-reserve
-accounting for a bytecode-bearing escrow. The layers here deliberately stop at the VM boundary.
+**Transactor-level (L5) tests** now live in `transactor/`, over `TxTest` — which runs the real
+pipeline (preflight → preclaim → doApply → invariants) without needing an `Application`. They
+cover what the earlier `EscrowSmart_test.cpp` did on Beast: `set_data` persistence through a
+`tecBYTECODE_REJECTED`, `sfGasUsed` / `sfVMReturnCode` in metadata, owner-reserve accounting for
+a bytecode-bearing escrow, the `bytecodeSizeLimit` boundary, and the gas-allowance fee.
+
+Two things to know before adding to that folder:
+
+- **Metadata only exists after `close()`.** `ApplyStateTable::apply` builds it for a view that is
+  not open, so `TxResult::metadata` from `submit` is always `nullopt`. The idiom is submit →
+  `close()` → `TxTest::getMetadata(txId)`.
+- **Fees live in two places and must agree.** A transactor reads its limits from the service
+  registry (`ctx.registry.get().getFees()`), while `calculateBaseFee` reads `view.fees()`. Pass a
+  `Fees` to `TxTest`'s constructor to set both; reach for `getServiceRegistry().setFees` only when
+  a limit has to change _after_ setup.

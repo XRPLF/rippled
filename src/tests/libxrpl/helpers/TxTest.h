@@ -4,12 +4,12 @@
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/chrono.h>
 #include <xrpl/beast/hash/uhash.h>
-#include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/Ledger.h>
 #include <xrpl/ledger/OpenView.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Fees.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/Rules.h>
 #include <xrpl/protocol/SField.h>
@@ -30,6 +30,7 @@
 #include <cmath>
 #include <concepts>
 #include <cstdint>
+#include <map>
 #include <memory>
 #include <optional>
 #include <stdexcept>
@@ -191,8 +192,16 @@ public:
      *
      * @param features Optional set of features to enable. If not specified,
      *                 uses all testable amendments.
+     * @param fees Optional fee settings. If not specified, uses
+     *             `TestServiceRegistry::defaultFees()`. Applied to **both** the genesis
+     *             ledger and the service registry, because transactors read limits from the
+     *             registry (`ctx.registry.get().getFees()`) while `calculateBaseFee` reads
+     *             `view.fees()` — a test whose fees disagree across the two is testing a
+     *             state no ledger can be in.
      */
-    explicit TxTest(std::optional<FeatureBitset> features = std::nullopt);
+    explicit TxTest(
+        std::optional<FeatureBitset> features = std::nullopt,
+        std::optional<Fees> fees = std::nullopt);
 
     /**
      * @brief Check if a feature is enabled.
@@ -242,6 +251,41 @@ public:
     }
 
     /**
+     * @brief Submit a transaction from a builder, paying an explicit fee.
+     *
+     * The overload above pays a flat 10 drops, which is below what some transactions
+     * require: an `EscrowCreate` carrying `sfBytecode` owes `base * 10 + 5 * bytecodeBytes`
+     * (`EscrowCreate::calculateBaseFee`), and an `EscrowFinish` carrying `sfGas` owes the
+     * allowance priced at `gasPrice`. Those submissions would fail on the fee rather than on
+     * whatever they meant to test.
+     *
+     * @tparam T A type derived from TransactionBuilderBase.
+     * @param builder The transaction builder.
+     * @param signer The account to sign with.
+     * @param fee The fee to pay.
+     * @return TxResult containing the result code, applied status, and metadata.
+     */
+    template <typename T>
+        requires std::
+            derived_from<std::decay_t<T>, transactions::TransactionBuilderBase<std::decay_t<T>>>
+        [[nodiscard]] TxResult
+        submit(T&& builder, Account const& signer, XRPAmount fee)
+    {
+        auto const& obj = builder.getSTObject();
+        auto accountId = obj[sfAccount];
+        if (!obj.isFieldPresent(sfTicketSequence))
+        {
+            builder.setSequence(getAccountRoot(accountId).getSequence());
+        }
+        else
+        {
+            builder.setSequence(0);
+        }
+        builder.setFee(fee);
+        return submit(builder.build(signer.pk(), signer.sk()).getSTTx());
+    }
+
+    /**
      * @brief Submit a transaction to the open ledger.
      *
      * Applies the transaction through the full transactor pipeline:
@@ -282,6 +326,28 @@ public:
     getAccountRoot(AccountID const& id) const;
 
     /**
+     * @brief Get an account's owner count.
+     * @param id The account ID.
+     * @return The number of ledger objects the account owns.
+     * @throws std::runtime_error if the account does not exist.
+     */
+    [[nodiscard]] std::uint32_t
+    getOwnerCount(AccountID const& id) const;
+
+    /**
+     * @brief Get an account's XRP balance.
+     *
+     * The IOU overload of `getBalance` covers trust lines; this covers the account's own
+     * drops, which is what a fee- or reserve-sensitive test needs to assert on.
+     *
+     * @param id The account ID.
+     * @return The balance in drops.
+     * @throws std::runtime_error if the account does not exist.
+     */
+    [[nodiscard]] XRPAmount
+    getXrpBalance(AccountID const& id) const;
+
+    /**
      * @brief Get the current open ledger view.
      * @return A mutable reference to the open ledger.
      */
@@ -307,9 +373,25 @@ public:
      *
      * Creates a new closed ledger from the current open ledger.
      * All pending transactions are re-applied in canonical order.
+     *
+     * @note This is where transaction **metadata** comes into being: it is only built for a
+     *       view that is not open (`ApplyStateTable::apply`), so `submit` cannot return any.
+     *       Each closed transaction's metadata is retained for `getMetadata`.
      */
     void
     close();
+
+    /**
+     * @brief Get the metadata of a transaction in the most recently closed ledger.
+     *
+     * Metadata is a property of a *closed* ledger, so the sequence is submit → `close` →
+     * `getMetadata`. Only the latest close is retained.
+     *
+     * @param txId The transaction's ID (`TxResult::tx->getTransactionID()`).
+     * @return The metadata, or `std::nullopt` if that transaction was not in the last close.
+     */
+    [[nodiscard]] std::optional<TxMeta>
+    getMetadata(uint256 const& txId) const;
 
     /**
      * @brief Advance time without closing the ledger.
@@ -345,9 +427,14 @@ public:
 
     /**
      * @brief Get the service registry.
+     *
+     * Returns the concrete test type so a test can reach its setters — `setFees` in
+     * particular, for the cases that need a limit to change *after* setup, which the
+     * constructor's `fees` parameter cannot express.
+     *
      * @return A reference to the service registry.
      */
-    ServiceRegistry&
+    TestServiceRegistry&
     getServiceRegistry()
     {
         return registry_;
@@ -364,6 +451,11 @@ private:
      * Transactions submitted to the open ledger, for canonical reordering on close.
      */
     std::vector<std::shared_ptr<STTx const>> pendingTxs_;
+
+    /**
+     * Metadata from the most recent close, keyed by transaction ID. Replaced each close.
+     */
+    std::map<uint256, TxMeta> closedMetadata_;
 
     /**
      * Current time (can be advanced arbitrarily for testing).

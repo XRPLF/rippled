@@ -143,9 +143,11 @@ Linear, at roughly **800 bytes per compile**. Within the suite this is why every
 7.9 GB at 25 repetitions, after which every later case in the binary failed to compile — 720 errored
 rows, all blaming cases that were innocent.
 
-**Outside the suite it is worth a look.** A validator compiles twice per programmable-escrow
-transaction against that same static engine. Whether that is unbounded growth in production depends
-on wasmi internals not checked here — this is the C++-visible symptom, not a diagnosis.
+**Outside the suite it is worth a look.** A validator compiles once to screen an `EscrowCreate`
+and again for every `EscrowFinish` that runs the contract — with no module cache between them, and
+once per apply attempt rather than once per transaction — all against that same static engine.
+Whether that is unbounded growth in production depends on wasmi internals not checked here (wasmi
+2.0.0, wasmparser 0.228): this is the C++-visible symptom, not a diagnosis.
 
 ## Gotchas, each of which has already cost someone an afternoon
 
