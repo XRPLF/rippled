@@ -163,7 +163,7 @@ Run the integration test script:
 bash docker/telemetry/integration-test.sh
 ```
 
-It checks prerequisites, clears the previous run, brings up the observability stack, generates six validator key pairs and their node configs, starts the nodes, waits for consensus and then for a validated ledger, exercises RPC and submits a transaction, verifies traces in Tempo and both the span_metrics and the StatsD-derived metrics in Prometheus, then prints a summary and leaves the stack running.
+It checks prerequisites, clears the previous run, brings up the observability stack, generates six validator key pairs and their node configs, starts the nodes, waits for consensus and then for a validated ledger, exercises RPC and submits a transaction, verifies traces in Tempo and both the span_metrics and the native `beast::insight` metrics that arrive over OTLP in Prometheus, checks that no StatsD listener is needed, then prints a summary and leaves the stack running.
 
 The script announces each step as it runs, so read its `Step N:` headers for the authoritative sequence — they are not restated here, because a numbered copy of them drifts as soon as a step is added.
 
@@ -253,7 +253,9 @@ each config carries five lines, not six}
 
 [telemetry]
 enabled=1
+service_instance_id=Node-{N}
 traces_endpoint=http://localhost:4318/v1/traces
+metrics_endpoint=http://localhost:4318/v1/metrics
 batch_size=512
 batch_delay_ms=2000
 max_queue_size=2048
@@ -264,11 +266,8 @@ trace_peer=1
 trace_ledger=1
 
 [insight]
-server=statsd
-address=127.0.0.1:8125
-prefix={the same prefix the [insight] block in integration-test.sh sets — it
-becomes the Prometheus metric-name prefix, so any other value renames every
-beast::insight metric}
+server=otel
+endpoint=http://localhost:4318/v1/metrics
 
 [rpc_startup]
 { "command": "log_level", "severity": "warning" }
@@ -413,22 +412,24 @@ Base URL: `http://localhost:9090`
 ```bash
 PROM="http://localhost:9090"
 
-# Span call counts (from span_metrics connector)
-curl -s "$PROM/api/v1/query?query=traces_span_metrics_calls_total" |
+# Span call counts (from the span_metrics connector). The span_ prefix is the
+# connector's `namespace: "span"` in otel-collector-config.yaml; drop that
+# setting and these become traces_span_metrics_*.
+curl -s "$PROM/api/v1/query?query=span_calls_total" |
     jq '.data.result[] | {span: .metric.span_name, count: .value[1]}'
 
 # Latency histogram
-curl -s "$PROM/api/v1/query?query=traces_span_metrics_duration_milliseconds_count" |
+curl -s "$PROM/api/v1/query?query=span_duration_milliseconds_count" |
     jq '.data.result[] | {span: .metric.span_name, count: .value[1]}'
 
 # RPC calls by command
-curl -s "$PROM/api/v1/query?query=traces_span_metrics_calls_total{span_name=~\"rpc.command.*\"}" |
+curl -s "$PROM/api/v1/query?query=span_calls_total{span_name=~\"rpc.command.*\"}" |
     jq '.data.result[] | {command: .metric.command, count: .value[1]}'
 
 # Deployment-tier labels present on metrics (set by the collector's
 # resource/tier processor and promoted via resource_to_telemetry_conversion).
 # Expect deployment_environment and xrpl_network_type on each series.
-curl -s "$PROM/api/v1/query?query=traces_span_metrics_calls_total" |
+curl -s "$PROM/api/v1/query?query=span_calls_total" |
     jq '.data.result[0].metric | {deployment_environment, xrpl_network_type, service_name}'
 ```
 

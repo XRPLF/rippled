@@ -24,6 +24,7 @@
 #include <string>
 #include <string_view>
 #include <system_error>
+#include <type_traits>
 
 namespace xrpl::telemetry {
 
@@ -42,6 +43,7 @@ constexpr char const* enabled = "enabled";
 constexpr char const* serviceName = "service_name";
 constexpr char const* serviceInstanceId = "service_instance_id";
 constexpr char const* tracesEndpoint = "traces_endpoint";
+constexpr char const* metricsEndpoint = "metrics_endpoint";
 constexpr char const* useTls = "use_tls";
 constexpr char const* tlsCaCert = "tls_ca_cert";
 constexpr char const* tlsClientCert = "tls_client_cert";
@@ -49,6 +51,8 @@ constexpr char const* tlsClientKey = "tls_client_key";
 constexpr char const* batchSize = "batch_size";
 constexpr char const* batchDelayMs = "batch_delay_ms";
 constexpr char const* maxQueueSize = "max_queue_size";
+constexpr char const* metricExportIntervalMs = "metric_export_interval_ms";
+constexpr char const* metricExportTimeoutMs = "metric_export_timeout_ms";
 constexpr char const* traceTransactions = "trace_transactions";
 constexpr char const* traceConsensus = "trace_consensus";
 constexpr char const* traceRpc = "trace_rpc";
@@ -68,9 +72,17 @@ constexpr char const* consensusTraceStrategy = "consensus_trace_strategy";
 namespace dflt {
 constexpr char const* serviceName = "xrpld";
 constexpr char const* tracesEndpoint = "http://localhost:4318/v1/traces";
+constexpr char const* metricsEndpoint = "http://localhost:4318/v1/metrics";
 constexpr std::uint32_t batchSize = 512u;
 constexpr std::uint32_t batchDelayMs = 5000u;
 constexpr std::uint32_t maxQueueSize = 2048u;
+
+/**
+ * The two metric cadence defaults name the constants in Telemetry.h, which the
+ * Setup members also use, so the numbers live in exactly one place.
+ */
+constexpr auto metricExportInterval = kDefaultMetricExportInterval;
+constexpr auto metricExportTimeout = kDefaultMetricExportTimeout;
 }  // namespace dflt
 
 /**
@@ -139,27 +151,6 @@ readBounded(
 }
 
 /**
- * Derive a human-readable network type label from the numeric network ID.
- * @param networkId  The network identifier from [network_id] config.
- * @return "mainnet", "testnet", "devnet", or "unknown" for other values.
- */
-[[nodiscard]] std::string
-networkTypeFromId(std::uint32_t networkId)
-{
-    switch (networkId)
-    {
-        case 0:
-            return "mainnet";
-        case 1:
-            return "testnet";
-        case 2:
-            return "devnet";
-        default:
-            return "unknown";
-    }
-}
-
-/**
  * Throw unless the given path names a regular file this process can read.
  *
  * An empty path means the option is unset, which every caller allows. Opening
@@ -203,6 +194,58 @@ requireReadableFile(std::string const& path, char const* configKey)
     {
         Throw<std::runtime_error>(
             std::string{"[telemetry] "} + configKey + " cannot be read: " + path + " - " + reason);
+    }
+}
+
+/**
+ * Read a millisecond duration from the config, naming the key on a bad value.
+ *
+ * Section::valueOr() reaches boost::lexical_cast with no try/catch, and
+ * boost::bad_lexical_cast derives from std::bad_cast rather than
+ * std::runtime_error. Without this wrapper an operator typo leaves
+ * Config::load() as a bare "bad cast" that names no key.
+ *
+ * Parsed into the signed representation of std::chrono::milliseconds so a
+ * negative value stays negative and the caller's range check can reject it.
+ * Parsing into an unsigned type instead would turn "-1000" into 4294966296.
+ *
+ * @param section    The [telemetry] section.
+ * @param configKey  Key to read, named in the message on failure.
+ * @param dflt       Duration used when the key is absent.
+ * @return The parsed duration, or dflt when the key is absent.
+ * @throws std::runtime_error  If the value is not a whole number that fits.
+ */
+std::chrono::milliseconds
+durationOr(Section const& section, char const* configKey, std::chrono::milliseconds dflt)
+{
+    using Rep = std::chrono::milliseconds::rep;
+    static_assert(std::is_signed_v<Rep>, "a negative value must survive the parse");
+
+    try
+    {
+        return std::chrono::milliseconds{section.valueOr<Rep>(configKey, dflt.count())};
+    }
+    catch (...)
+    {
+        Throw<std::runtime_error>(
+            std::string{"[telemetry] "} + configKey + " must be a whole number of milliseconds.");
+    }
+}
+
+/**
+ * Throw unless the given duration is greater than zero.
+ *
+ * @param value      Duration to check.
+ * @param configKey  Config key the duration came from, named in the message.
+ * @throws std::runtime_error  If the duration is zero or negative.
+ */
+void
+requirePositive(std::chrono::milliseconds value, char const* configKey)
+{
+    if (value <= std::chrono::milliseconds::zero())
+    {
+        Throw<std::runtime_error>(
+            std::string{"[telemetry] "} + configKey + " must be greater than 0 milliseconds.");
     }
 }
 
@@ -263,6 +306,31 @@ readConsensusTraceStrategy(std::string const& value)
 
 }  // namespace
 
+/**
+ * Derive a human-readable network type label from the numeric network ID.
+ *
+ * Declared in Telemetry.h; shared by the trace and metric export paths so
+ * both stamp the same xrpl.network.type resource attribute value.
+ *
+ * @param networkId  The network identifier from [network_id] config.
+ * @return "mainnet", "testnet", "devnet", or "unknown" for other values.
+ */
+std::string
+networkTypeFromId(std::uint32_t networkId)
+{
+    switch (networkId)
+    {
+        case 0:
+            return "mainnet";
+        case 1:
+            return "testnet";
+        case 2:
+            return "devnet";
+        default:
+            return "unknown";
+    }
+}
+
 Telemetry::Setup
 makeTelemetrySetup(
     Section const& section,
@@ -278,6 +346,8 @@ makeTelemetrySetup(
     setup.serviceInstanceId = section.valueOr<std::string>(key::serviceInstanceId, nodePublicKey);
 
     setup.tracesEndpoint = section.valueOr<std::string>(key::tracesEndpoint, dflt::tracesEndpoint);
+    setup.metricsEndpoint =
+        section.valueOr<std::string>(key::metricsEndpoint, dflt::metricsEndpoint);
 
     setup.useTls = section.valueOr<int>(key::useTls, 0) != 0;
     setup.tlsCertPath = section.valueOr<std::string>(key::tlsCaCert, "");
@@ -317,13 +387,18 @@ makeTelemetrySetup(
         }
 
         // Still inside the enabled branch, and checked before the files are
-        // opened so a scheme problem is not hidden behind a path problem. The
-        // exporter reads TLS off the endpoint scheme, so a client certificate is
-        // only presented on an https endpoint. tls_ca_cert is left out of this
-        // check: it only names a trust store, while a client certificate is this
-        // node's own identity and has to reach the collector to mean anything.
+        // opened so a scheme problem is not hidden behind a path problem. Each
+        // exporter reads TLS off its own endpoint scheme, and both are handed
+        // the client certificate, so both endpoints have to be https. Checking
+        // only one leaves the other signal exporting in the clear without this
+        // node's identity. tls_ca_cert is left out of this check: it only names
+        // a trust store, while a client certificate is this node's own identity
+        // and has to reach the collector to mean anything.
         if (!setup.tlsClientCertPath.empty())
+        {
             requireHttpsEndpoint(setup.tracesEndpoint, key::tracesEndpoint);
+            requireHttpsEndpoint(setup.metricsEndpoint, key::metricsEndpoint);
+        }
 
         // Still inside the enabled branch. The exporter opens these files only
         // when TLS is on, so check them only then: a bad path behind use_tls=0
@@ -359,6 +434,28 @@ makeTelemetrySetup(
             std::string("Invalid value '") + key::batchSize + "' in " + kSectionLabel +
             ": must not exceed '" + key::maxQueueSize + "' (" + std::to_string(setup.maxQueueSize) +
             ").");
+    }
+
+    setup.metricExportInterval =
+        durationOr(section, key::metricExportIntervalMs, dflt::metricExportInterval);
+    setup.metricExportTimeout =
+        durationOr(section, key::metricExportTimeoutMs, dflt::metricExportTimeout);
+
+    // Range-checked apart from the parse above, so each message names one
+    // problem. A negative value reaches here, and zero would make the exporting
+    // reader spin or cancel every export at once.
+    requirePositive(setup.metricExportInterval, key::metricExportIntervalMs);
+    requirePositive(setup.metricExportTimeout, key::metricExportTimeoutMs);
+
+    // The SDK's PeriodicExportingMetricReader wants the timeout strictly below
+    // the interval. It logs a warning and falls back to its own 60 s / 30 s
+    // defaults otherwise, so accepting the pair here would leave the node
+    // exporting on a cadence the operator never asked for. Reject it instead.
+    if (setup.metricExportTimeout >= setup.metricExportInterval)
+    {
+        Throw<std::runtime_error>(
+            std::string{"[telemetry] "} + key::metricExportTimeoutMs + " must be less than " +
+            key::metricExportIntervalMs + ".");
     }
 
     setup.networkId = networkId;

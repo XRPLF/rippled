@@ -316,7 +316,8 @@ public:
     ApplicationImp(
         std::unique_ptr<Config> config,
         std::unique_ptr<Logs> logs,
-        std::unique_ptr<TimeKeeper> timeKeeper)
+        std::unique_ptr<TimeKeeper> timeKeeper,
+        std::optional<std::string> const& nodePublicKey)
         : BasicApp(numberOfThreads(*config))
         , config_(std::move(config))
         , logs_(std::move(logs))
@@ -330,11 +331,15 @@ public:
                   *this,
                   logs_->journal("PerfLog"),
                   [this] { signalStop("PerfLog"); }))
+        // Telemetry publishes the MeterProvider on construction, so it must
+        // precede collectorManager_ below and every subsystem that creates an
+        // instrument. Its resource is immutable, so the instance id has to be
+        // supplied now; empty means this run reports none.
         , telemetry_(
               telemetry::makeTelemetry(
                   telemetry::makeTelemetrySetup(
                       config_->section("telemetry"),
-                      "",  // Updated later via setServiceInstanceId()
+                      nodePublicKey.value_or(""),
                       build_info::getVersionString(),
                       config_->networkId),
                   logs_->journal("Telemetry")))
@@ -342,6 +347,12 @@ public:
         , txMaster_(*this)
         , collectorManager_(makeCollectorManager(
               config_->section(Sections::kInsight),
+              // Fall back to [telemetry] service_name so metrics inherit the
+              // same service.name as traces when [insight] omits it. Network
+              // type is derived from [network_id] via the shared telemetry
+              // helper, keeping metrics and traces on one network label.
+              config_->section("telemetry").valueOr<std::string>("service_name", ""),
+              telemetry::networkTypeFromId(config_->networkId),
               logs_->journal("Collector")))
         , jobQueue_(
               std::make_unique<JobQueue>(
@@ -385,7 +396,7 @@ public:
               stopwatch(),
               logs_->journal("TaggedCache"))
         , cachedSLEs_(
-              "Cached SLEs",
+              "Cached_SLEs",
               0,
               std::chrono::minutes(1),
               stopwatch(),
@@ -507,6 +518,39 @@ public:
         //
 
         add(ledgerCleaner_.get());
+    }
+
+    /**
+     * Stop observing and stop telemetry before the members are destroyed.
+     *
+     * The metrics reader thread runs callbacks that read the services member
+     * destruction is about to tear down. telemetry_ is declared early because
+     * the collector needs its MeterProvider, so reverse-order member destruction
+     * would take it down last.
+     *
+     * run() does both on the normal path; this covers the paths that never
+     * reach it -- every `return false` in setup(), and the unit tests. Both
+     * calls are idempotent.
+     */
+    ~ApplicationImp() override
+    {
+        // A shutdown diagnostic must never terminate the process, and a
+        // destructor is implicitly noexcept.
+        try
+        {
+            collectorManager_->collector()->onCollectionStopping();
+            telemetry_->stop();
+        }
+        catch (std::exception const& e)
+        {
+            JLOG(journal_.error()) << "Error stopping telemetry: " << e.what();
+        }
+        catch (...)
+        {
+            // The callees reach third-party SDK code, which may throw something
+            // outside std::exception. Escaping here would terminate the process.
+            JLOG(journal_.error()) << "Error stopping telemetry: unknown exception";
+        }
     }
 
     //--------------------------------------------------------------------------
@@ -1161,9 +1205,8 @@ private:
      * global Telemetry instance is not yet live, and the first consensus
      * round runs inside setup().
      *
-     * @pre nodeIdentity_ is populated, so setServiceInstanceId() has
-     * already supplied the service.instance.id resource attribute
-     * (the Telemetry resource is fixed once start() builds it).
+     * The resource attributes, including service.instance.id, were supplied at
+     * construction.
      */
     void
     startTelemetry() const;
@@ -1265,11 +1308,8 @@ ApplicationImp::setup(boost::program_options::variables_map const& cmdline)
 
     nodeIdentity_ = getNodeIdentity(*this, cmdline);
 
-    // Now that the node identity is known, inject it into the telemetry
-    // resource attributes — but only if the user didn't already set a
-    // custom service_instance_id in [telemetry].  The Telemetry object
-    // was constructed with an empty serviceInstanceId because
-    // nodeIdentity_ is not available in the member initializer list.
+    // The metrics resource was fixed at construction, but the tracer resource is
+    // built by start() below, so a key minted just now can still reach spans.
     if (!config_->section("telemetry").exists("service_instance_id"))
         telemetry_->setServiceInstanceId(toBase58(TokenType::NodePublic, nodeIdentity_->first));
 
@@ -1445,6 +1485,12 @@ ApplicationImp::setup(boost::program_options::variables_map const& cmdline)
         *config_,
         collectorManager_->collector());
     add(*overlay_);  // add to PropertyStream
+
+    // Register the collector's observable instruments. Their callbacks run hook
+    // handlers that read ledgerMaster_, networkOPs_, the peer finder, the job
+    // queue and overlay_ -- the last of these to be built. Still before the
+    // first consensus round below, so that round is covered.
+    collectorManager_->collector()->onCollectionReady();
 
     // start first consensus round
     if (!networkOPs_->beginConsensus(ledgerMaster_->getClosedLedger()->header().hash, {}))
@@ -1662,6 +1708,11 @@ ApplicationImp::run()
     publisherManifests_->save(getWalletDB(), "PublisherManifests", [this](PublicKey const& pubKey) {
         return getValidators().trustedPublisher(pubKey);
     });
+
+    // Stop observing before any service below is stopped: the collector's gauge
+    // callbacks run hook handlers that read ledgerMaster_, networkOPs_, the peer
+    // finder, the job queue and overlay_. Returns once no callback is running.
+    collectorManager_->collector()->onCollectionStopping();
 
     // The order of these stop calls is delicate.
     // Re-ordering them risks undefined behavior.
@@ -2247,8 +2298,18 @@ makeApplication(
     std::unique_ptr<Logs> logs,
     std::unique_ptr<TimeKeeper> timeKeeper)
 {
+    return makeApplication(std::move(config), std::move(logs), std::move(timeKeeper), std::nullopt);
+}
+
+std::unique_ptr<Application>
+makeApplication(
+    std::unique_ptr<Config> config,
+    std::unique_ptr<Logs> logs,
+    std::unique_ptr<TimeKeeper> timeKeeper,
+    std::optional<std::string> const& nodePublicKey)
+{
     return std::make_unique<ApplicationImp>(
-        std::move(config), std::move(logs), std::move(timeKeeper));
+        std::move(config), std::move(logs), std::move(timeKeeper), nodePublicKey);
 }
 
 void

@@ -1,4 +1,5 @@
 #include <xrpld/app/main/Application.h>
+#include <xrpld/app/main/NodeIdentity.h>
 #include <xrpld/core/Config.h>
 #include <xrpld/core/TimeKeeper.h>
 #include <xrpld/rpc/RPCCall.h>
@@ -37,6 +38,7 @@
 #include <exception>
 #include <iostream>
 #include <memory>
+#include <optional>
 #include <ostream>
 #include <string>
 #include <vector>
@@ -805,6 +807,28 @@ run(int argc, char** argv)
         if (vm.contains("debug"))
             setDebugLogSink(logs->makeSink("Debug", beast::Severity::Trace));
 
+        // Telemetry needs the node public key at construction, so read it here
+        // where a config error can still be reported and the process can exit
+        // cleanly. getNodeIdentity() in setup() stays authoritative.
+        std::optional<std::string> nodePublicKey;
+        try
+        {
+            nodePublicKey = resolveNodePublicKey(*config, vm, logs->journal("Application"));
+        }
+        catch (std::exception const& e)
+        {
+            std::cerr << "Unable to start " << systemName() << ": " << e.what() << std::endl;
+            return -1;
+        }
+
+        if (!nodePublicKey)
+        {
+            JLOG(logs->journal("Application").warn())
+                << "Telemetry: no node identity available yet, so this run reports an empty "
+                   "service.instance.id. Set [telemetry] service_instance_id, or restart once "
+                   "the node key exists.";
+        }
+
         // Application construction runs member initializers that validate
         // config (for example the [telemetry] section) and can throw. A throw
         // from a member-initializer list cannot be recovered inside the
@@ -822,8 +846,8 @@ run(int argc, char** argv)
         std::unique_ptr<Application> app;
         try
         {
-            app =
-                makeApplication(std::move(config), std::move(logs), std::make_unique<TimeKeeper>());
+            app = makeApplication(
+                std::move(config), std::move(logs), std::make_unique<TimeKeeper>(), nodePublicKey);
         }
         catch (std::exception const& e)
         {

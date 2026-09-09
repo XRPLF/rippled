@@ -9,6 +9,7 @@
 #include <xrpl/beast/insight/Hook.h>
 #include <xrpl/beast/insight/HookImpl.h>
 #include <xrpl/beast/insight/Meter.h>
+#include <xrpl/beast/insight/Unit.h>
 
 #include <memory>
 #include <string>
@@ -56,10 +57,23 @@ public:
         return collector_->makeCounter(makeName(name));
     }
 
+    using Collector::makeEvent;
+
     Event
     makeEvent(std::string const& name) override
     {
         return collector_->makeEvent(makeName(name));
+    }
+
+    // Forwards the unit as well as the prefixed name. Without this override
+    // the base-class default would delegate to the single-argument overload
+    // above and silently drop the unit, which is how a byte-valued Event ends
+    // up declared as milliseconds -- call sites reach a collector through a
+    // Group, so this is the hop that actually matters.
+    Event
+    makeEvent(std::string const& name, Unit unit) override
+    {
+        return collector_->makeEvent(makeName(name), unit);
     }
 
     Gauge

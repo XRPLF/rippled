@@ -66,6 +66,8 @@ ignore:
   - "src/xrpld/telemetry/"
   - "src/libxrpl/telemetry/"
   - "include/xrpl/telemetry/"
+  - "src/libxrpl/beast/insight/OTelCollector.cpp"
+  - "include/xrpl/beast/insight/OTelCollector.h"
   # Per-module span-name and span-label constant headers: compile-time
   # constants only, colocated with their subsystem rather than under telemetry/.
   - "**/*SpanNames.h"

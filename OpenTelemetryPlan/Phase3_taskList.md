@@ -259,7 +259,7 @@ design.
 
 ## Task 3.8: Transaction Span Peer Version Attribute
 
-> **Source**: [External Dashboard Parity](../docs/superpowers/specs/2026-03-30-external-dashboard-parity-design.md) — adds peer version context inspired by the community [xrpl-validator-dashboard](https://github.com/realgrapedrop/xrpl-validator-dashboard).
+> **Source**: [External Dashboard Parity](./06-implementation-phases.md#appendix-external-dashboard-parity) — adds peer version context inspired by the community [xrpl-validator-dashboard](https://github.com/realgrapedrop/xrpl-validator-dashboard).
 >
 > **Upstream**: Phase 2 (RPC span infrastructure must exist).
 > **Downstream**: Phase 10 (validation checks for this attribute).

@@ -1,5 +1,9 @@
 #pragma once
 
+#ifdef XRPL_ENABLE_TELEMETRY
+#include <xrpl/telemetry/Telemetry.h>
+#endif
+
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/UnorderedContainers.h>
 #include <xrpl/basics/chrono.h>
@@ -708,6 +712,24 @@ struct Peer
     {
         return {};
     }
+
+#ifdef XRPL_ENABLE_TELEMETRY
+    /**
+     * Provide telemetry access for the Consensus template.
+     *
+     * The test Peer adaptor uses a static disabled NullTelemetry instance
+     * so that all shouldTrace*() checks return false and no spans are
+     * created during simulation tests. It is static because the shared
+     * disabled instance does not depend on any per-peer state.
+     */
+    static telemetry::Telemetry&
+    getTelemetry()
+    {
+        static auto tel = telemetry::makeTelemetry(
+            telemetry::Telemetry::Setup{}, beast::Journal{beast::Journal::getNullSink()});
+        return *tel;
+    }
+#endif
 
     // Share a message by broadcasting to all connected peers
     template <class M>
