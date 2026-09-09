@@ -27,6 +27,9 @@ TEST(FeeSettingsTests, BuilderSettersRoundTrip)
     auto const baseFeeDropsValue = canonical_AMOUNT();
     auto const reserveBaseDropsValue = canonical_AMOUNT();
     auto const reserveIncrementDropsValue = canonical_AMOUNT();
+    auto const gasLimitValue = canonical_UINT32();
+    auto const bytecodeSizeLimitValue = canonical_UINT32();
+    auto const gasPriceValue = canonical_UINT32();
     auto const previousTxnIDValue = canonical_UINT256();
     auto const previousTxnLgrSeqValue = canonical_UINT32();
 
@@ -40,6 +43,9 @@ TEST(FeeSettingsTests, BuilderSettersRoundTrip)
     builder.setBaseFeeDrops(baseFeeDropsValue);
     builder.setReserveBaseDrops(reserveBaseDropsValue);
     builder.setReserveIncrementDrops(reserveIncrementDropsValue);
+    builder.setGasLimit(gasLimitValue);
+    builder.setBytecodeSizeLimit(bytecodeSizeLimitValue);
+    builder.setGasPrice(gasPriceValue);
     builder.setPreviousTxnID(previousTxnIDValue);
     builder.setPreviousTxnLgrSeq(previousTxnLgrSeqValue);
 
@@ -109,6 +115,30 @@ TEST(FeeSettingsTests, BuilderSettersRoundTrip)
     }
 
     {
+        auto const& expected = gasLimitValue;
+        auto const actualOpt = entry.getGasLimit();
+        ASSERT_TRUE(actualOpt.has_value());
+        expectEqualField(expected, *actualOpt, "sfGasLimit");
+        EXPECT_TRUE(entry.hasGasLimit());
+    }
+
+    {
+        auto const& expected = bytecodeSizeLimitValue;
+        auto const actualOpt = entry.getBytecodeSizeLimit();
+        ASSERT_TRUE(actualOpt.has_value());
+        expectEqualField(expected, *actualOpt, "sfBytecodeSizeLimit");
+        EXPECT_TRUE(entry.hasBytecodeSizeLimit());
+    }
+
+    {
+        auto const& expected = gasPriceValue;
+        auto const actualOpt = entry.getGasPrice();
+        ASSERT_TRUE(actualOpt.has_value());
+        expectEqualField(expected, *actualOpt, "sfGasPrice");
+        EXPECT_TRUE(entry.hasGasPrice());
+    }
+
+    {
         auto const& expected = previousTxnIDValue;
         auto const actualOpt = entry.getPreviousTxnID();
         ASSERT_TRUE(actualOpt.has_value());
@@ -144,6 +174,9 @@ TEST(FeeSettingsTests, BuilderFromSleRoundTrip)
     auto const baseFeeDropsValue = canonical_AMOUNT();
     auto const reserveBaseDropsValue = canonical_AMOUNT();
     auto const reserveIncrementDropsValue = canonical_AMOUNT();
+    auto const gasLimitValue = canonical_UINT32();
+    auto const bytecodeSizeLimitValue = canonical_UINT32();
+    auto const gasPriceValue = canonical_UINT32();
     auto const previousTxnIDValue = canonical_UINT256();
     auto const previousTxnLgrSeqValue = canonical_UINT32();
 
@@ -156,6 +189,9 @@ TEST(FeeSettingsTests, BuilderFromSleRoundTrip)
     sle->at(sfBaseFeeDrops) = baseFeeDropsValue;
     sle->at(sfReserveBaseDrops) = reserveBaseDropsValue;
     sle->at(sfReserveIncrementDrops) = reserveIncrementDropsValue;
+    sle->at(sfGasLimit) = gasLimitValue;
+    sle->at(sfBytecodeSizeLimit) = bytecodeSizeLimitValue;
+    sle->at(sfGasPrice) = gasPriceValue;
     sle->at(sfPreviousTxnID) = previousTxnIDValue;
     sle->at(sfPreviousTxnLgrSeq) = previousTxnLgrSeqValue;
 
@@ -260,6 +296,45 @@ TEST(FeeSettingsTests, BuilderFromSleRoundTrip)
     }
 
     {
+        auto const& expected = gasLimitValue;
+
+        auto const fromSleOpt = entryFromSle.getGasLimit();
+        auto const fromBuilderOpt = entryFromBuilder.getGasLimit();
+
+        ASSERT_TRUE(fromSleOpt.has_value());
+        ASSERT_TRUE(fromBuilderOpt.has_value());
+
+        expectEqualField(expected, *fromSleOpt, "sfGasLimit");
+        expectEqualField(expected, *fromBuilderOpt, "sfGasLimit");
+    }
+
+    {
+        auto const& expected = bytecodeSizeLimitValue;
+
+        auto const fromSleOpt = entryFromSle.getBytecodeSizeLimit();
+        auto const fromBuilderOpt = entryFromBuilder.getBytecodeSizeLimit();
+
+        ASSERT_TRUE(fromSleOpt.has_value());
+        ASSERT_TRUE(fromBuilderOpt.has_value());
+
+        expectEqualField(expected, *fromSleOpt, "sfBytecodeSizeLimit");
+        expectEqualField(expected, *fromBuilderOpt, "sfBytecodeSizeLimit");
+    }
+
+    {
+        auto const& expected = gasPriceValue;
+
+        auto const fromSleOpt = entryFromSle.getGasPrice();
+        auto const fromBuilderOpt = entryFromBuilder.getGasPrice();
+
+        ASSERT_TRUE(fromSleOpt.has_value());
+        ASSERT_TRUE(fromBuilderOpt.has_value());
+
+        expectEqualField(expected, *fromSleOpt, "sfGasPrice");
+        expectEqualField(expected, *fromBuilderOpt, "sfGasPrice");
+    }
+
+    {
         auto const& expected = previousTxnIDValue;
 
         auto const fromSleOpt = entryFromSle.getPreviousTxnID();
@@ -351,6 +426,12 @@ TEST(FeeSettingsTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(entry.getReserveBaseDrops().has_value());
     EXPECT_FALSE(entry.hasReserveIncrementDrops());
     EXPECT_FALSE(entry.getReserveIncrementDrops().has_value());
+    EXPECT_FALSE(entry.hasGasLimit());
+    EXPECT_FALSE(entry.getGasLimit().has_value());
+    EXPECT_FALSE(entry.hasBytecodeSizeLimit());
+    EXPECT_FALSE(entry.getBytecodeSizeLimit().has_value());
+    EXPECT_FALSE(entry.hasGasPrice());
+    EXPECT_FALSE(entry.getGasPrice().has_value());
     EXPECT_FALSE(entry.hasPreviousTxnID());
     EXPECT_FALSE(entry.getPreviousTxnID().has_value());
     EXPECT_FALSE(entry.hasPreviousTxnLgrSeq());
