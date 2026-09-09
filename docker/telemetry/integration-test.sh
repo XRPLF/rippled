@@ -37,6 +37,10 @@ GENESIS_SEED="snoPBrXtMeMyMHUVTgbuqAfg1SUTb"
 DEST_ACCOUNT="" # Generated dynamically via wallet_propose
 TEMPO="http://localhost:3200"
 PROM="http://localhost:9090"
+LOKI="http://localhost:3100"
+# How long to wait for a log line to travel file -> file_log receiver -> batch
+# processor -> Loki. The batch timeout is 1s, so this is mostly ingestion slack.
+LOKI_INGEST_TIMEOUT=30
 
 # Counters for pass/fail
 PASS=0
@@ -88,7 +92,7 @@ check_log_correlation() {
     local sample_trace_id=""
 
     for i in $(seq 1 "$NUM_NODES"); do
-        local logfile="$WORKDIR/node$i/debug.log"
+        local logfile="$WORKDIR/Node-$i/debug.log"
         if [ ! -f "$logfile" ]; then
             continue
         fi
@@ -97,12 +101,17 @@ check_log_correlation() {
         matches=$(grep -c 'trace_id=[a-f0-9]\{32\} span_id=[a-f0-9]\{16\}' "$logfile") || matches=0
         total_matches=$((total_matches + matches))
         if [ -z "$sample_trace_id" ] && [ "$matches" -gt 0 ]; then
-            sample_trace_id=$(grep -o 'trace_id=[a-f0-9]\{32\}' "$logfile" | head -1 | cut -d= -f2)
+            # -m1 makes grep stop after the first match and exit normally.
+            # Piping into `head -1` instead closes the pipe under grep, and
+            # under `set -o pipefail` the resulting SIGPIPE (141) aborts the
+            # whole run. It only bites once the log is bigger than the pipe
+            # buffer, so it reads as a flaky test.
+            sample_trace_id=$(grep -m1 -o 'trace_id=[a-f0-9]\{32\}' "$logfile" | cut -d= -f2)
         fi
     done
 
     if [ "$files_scanned" -eq 0 ]; then
-        fail "Log correlation: no debug.log files found in $WORKDIR/node*/"
+        fail "Log correlation: no debug.log files found in $WORKDIR/Node-*/"
         return
     fi
 
@@ -123,14 +132,54 @@ check_log_correlation() {
         else
             fail "Log-Tempo cross-check: trace_id=$sample_trace_id NOT found in Tempo"
         fi
+
+        check_loki_ingestion "$sample_trace_id"
     fi
+}
+
+# Verify the log line actually reached Loki, not just the local file.
+#
+# Without this the log-correlation check passes on a stack whose log mount is
+# wrong or whose Loki exporter is broken, because reading the file and reading
+# Tempo both still work. This is the only assertion that exercises the
+# file_log -> Loki hop, so it is what makes the log pipeline tested rather than
+# merely configured.
+#
+# Uses /query_range, not /query: Loki rejects a bare log selector on the instant
+# endpoint with HTTP 400 and a text/plain body, so jq could never parse it.
+# Bounds are unix nanoseconds, matching workload/validate_telemetry.py.
+check_loki_ingestion() {
+    local trace_id="$1"
+    local lines=0
+    local start_ns end_ns
+
+    for attempt in $(seq 1 "$LOKI_INGEST_TIMEOUT"); do
+        end_ns=$(($(date +%s) * 1000000000))
+        # Look back over the whole run, not a fixed window: the entry carries
+        # the timestamp parsed out of the log line, not its ingestion time.
+        start_ns=$((end_ns - 86400000000000))
+        lines=$(curl -sfG "$LOKI/loki/api/v1/query_range" \
+            --data-urlencode "query={service_name=\"xrpld\"} |= \"$trace_id\"" \
+            --data-urlencode "start=$start_ns" \
+            --data-urlencode "end=$end_ns" \
+            --data-urlencode "limit=5" \
+            --data-urlencode "direction=backward" |
+            jq '[.data.result[].values | length] | add // 0' 2>/dev/null) || lines=0
+        if [ "${lines:-0}" -gt 0 ]; then
+            ok "Loki ingestion: trace_id=$trace_id found in Loki ($lines lines, attempt $attempt)"
+            return
+        fi
+        sleep 1
+    done
+
+    fail "Loki ingestion: trace_id=$trace_id never reached Loki after ${LOKI_INGEST_TIMEOUT}s"
 }
 
 cleanup() {
     log "Cleaning up..."
     # Kill xrpld nodes
     for i in $(seq 1 "$NUM_NODES"); do
-        local pidfile="$WORKDIR/node$i/xrpld.pid"
+        local pidfile="$WORKDIR/Node-$i/xrpld.pid"
         if [ -f "$pidfile" ]; then
             kill "$(cat "$pidfile")" 2>/dev/null || true
             rm -f "$pidfile"
@@ -171,7 +220,7 @@ log "All prerequisites met."
 # ---------------------------------------------------------------------------
 log "Cleaning previous run data..."
 for i in $(seq 1 "$NUM_NODES"); do
-    pidfile="$WORKDIR/node$i/xrpld.pid"
+    pidfile="$WORKDIR/Node-$i/xrpld.pid"
     if [ -f "$pidfile" ]; then
         kill "$(cat "$pidfile")" 2>/dev/null || true
     fi
@@ -233,6 +282,18 @@ for attempt in $(seq 1 30); do
     fi
     if [ "$attempt" -eq 30 ]; then
         die "Tempo not ready after 30s"
+    fi
+    sleep 1
+done
+
+log "Waiting for Loki to be ready..."
+for attempt in $(seq 1 60); do
+    if curl -sf "$LOKI/ready" >/dev/null 2>&1; then
+        log "Loki ready (attempt $attempt)."
+        break
+    fi
+    if [ "$attempt" -eq 60 ]; then
+        die "Loki not ready after 60s"
     fi
     sleep 1
 done
@@ -326,7 +387,7 @@ VALIDATORS_FILE="$WORKDIR/validators.txt"
 
 # Create per-node configs
 for i in $(seq 1 "$NUM_NODES"); do
-    NODE_DIR="$WORKDIR/node$i"
+    NODE_DIR="$WORKDIR/Node-$i"
     mkdir -p "$NODE_DIR/nudb" "$NODE_DIR/db"
 
     RPC_PORT=$((RPC_PORT_BASE + i - 1))
@@ -419,7 +480,7 @@ done
 log "Starting $NUM_NODES xrpld nodes..."
 
 for i in $(seq 1 "$NUM_NODES"); do
-    NODE_DIR="$WORKDIR/node$i"
+    NODE_DIR="$WORKDIR/Node-$i"
     "$XRPLD" --conf "$NODE_DIR/xrpld.cfg" --start >"$NODE_DIR/stdout.log" 2>&1 &
     echo $! >"$NODE_DIR/xrpld.pid"
     log "  Node $i started (PID $(cat "$NODE_DIR/xrpld.pid"))"
@@ -719,7 +780,7 @@ echo "  xrpld nodes (6) are running:"
 for i in $(seq 1 "$NUM_NODES"); do
     RPC_PORT=$((RPC_PORT_BASE + i - 1))
     PEER_PORT=$((PEER_PORT_BASE + i - 1))
-    echo "    Node $i: RPC=localhost:$RPC_PORT  Peer=:$PEER_PORT  PID=$(cat "$WORKDIR/node$i/xrpld.pid" 2>/dev/null || echo 'unknown')"
+    echo "    Node $i: RPC=localhost:$RPC_PORT  Peer=:$PEER_PORT  PID=$(cat "$WORKDIR/Node-$i/xrpld.pid" 2>/dev/null || echo 'unknown')"
 done
 echo ""
 echo "  To tear down:"
