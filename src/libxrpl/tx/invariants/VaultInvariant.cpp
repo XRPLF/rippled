@@ -684,10 +684,14 @@ ValidVault::finalize(
         return std::nullopt;
     }();
 
-    if (!beforeShares &&
-        (tx.getTxnType() == ttVAULT_DEPOSIT ||   //
-         tx.getTxnType() == ttVAULT_WITHDRAW ||  //
-         tx.getTxnType() == ttVAULT_CLAWBACK))
+    bool const isDonate = isVaultDonate(view.rules(), tx);
+    bool const shouldUpdateShares =
+        // Vault Asset donation is the only operation that can succeed without updating shares
+        ((tx.getTxnType() == ttVAULT_DEPOSIT && !isDonate) ||  //
+         tx.getTxnType() == ttVAULT_WITHDRAW ||                //
+         tx.getTxnType() == ttVAULT_CLAWBACK);
+
+    if (!beforeShares && shouldUpdateShares)
     {
         JLOG(j.fatal()) << "Invariant failed: vault operation succeeded "
                            "without updating shares";
@@ -946,34 +950,57 @@ ValidVault::finalize(
                     result = false;
                 }
 
-                auto const maybeAccDeltaShares = deltaShares(tx[sfAccount]);
-                if (!maybeAccDeltaShares)
+                // If assets are donated, check share invariants
+                if (isDonate)
                 {
-                    JLOG(j.fatal()) << "Invariant failed: deposit must change depositor shares";
-                    return false;  // That's all we can do
-                }
-                // We don't round shares, they are integral MPT
-                auto const& accountDeltaShares = *maybeAccDeltaShares;
-                if (accountDeltaShares.delta <= kZero)
-                {
-                    JLOG(j.fatal()) << "Invariant failed: deposit must increase depositor shares";
-                    result = false;
-                }
+                    auto const accountDeltaShares = deltaShares(tx[sfAccount]);
+                    if (accountDeltaShares)
+                    {
+                        JLOG(j.fatal()) <<  //
+                            "Invariant failed: donation must not change depositor shares";
+                        return false;  // That's all we can do
+                    }
 
-                auto const maybeVaultDeltaShares = deltaShares(afterVault.pseudoId);
-                if (!maybeVaultDeltaShares || maybeVaultDeltaShares->delta == kZero)
-                {
-                    JLOG(j.fatal()) << "Invariant failed: deposit must change vault shares";
-                    return false;  // That's all we can do
+                    auto const vaultDeltaShares = deltaShares(afterVault.pseudoId);
+                    if (vaultDeltaShares)
+                    {
+                        JLOG(j.fatal()) <<  //
+                            "Invariant failed: donation must not change vault shares";
+                        return false;  // That's all we can do
+                    }
                 }
-
-                // We don't round shares, they are integral MPT
-                auto const& vaultDeltaShares = *maybeVaultDeltaShares;
-                if (vaultDeltaShares.delta * -1 != accountDeltaShares.delta)
+                else
                 {
-                    JLOG(j.fatal()) << "Invariant failed: " <<  //
-                        "deposit must change depositor and vault shares by equal amount";
-                    result = false;
+                    auto const maybeAccDeltaShares = deltaShares(tx[sfAccount]);
+                    if (!maybeAccDeltaShares)
+                    {
+                        JLOG(j.fatal()) << "Invariant failed: deposit must change depositor shares";
+                        return false;  // That's all we can do
+                    }
+                    // We don't need to round shares, they are integral MPT
+                    auto const& accountDeltaShares = *maybeAccDeltaShares;
+                    if (accountDeltaShares.delta <= kZero)
+                    {
+                        JLOG(j.fatal())
+                            << "Invariant failed: deposit must increase depositor shares";
+                        result = false;
+                    }
+
+                    auto const maybeVaultDeltaShares = deltaShares(afterVault.pseudoId);
+                    if (!maybeVaultDeltaShares || maybeVaultDeltaShares->delta == kZero)
+                    {
+                        JLOG(j.fatal()) << "Invariant failed: deposit must change vault shares";
+                        return false;  // That's all we can do
+                    }
+
+                    // We don't need to round shares, they are integral MPT
+                    auto const& vaultDeltaShares = *maybeVaultDeltaShares;
+                    if (vaultDeltaShares.delta * -1 != accountDeltaShares.delta)
+                    {
+                        JLOG(j.fatal()) << "Invariant failed: " <<  //
+                            "deposit must change depositor and vault shares by equal amount";
+                        result = false;
+                    }
                 }
 
                 auto const assetTotalDelta = roundToAsset(
