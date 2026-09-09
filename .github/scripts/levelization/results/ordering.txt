@@ -207,6 +207,7 @@ xrpl.consensus > xrpl.basics
 xrpl.consensus > xrpl.json
 xrpl.consensus > xrpl.ledger
 xrpl.consensus > xrpl.protocol
+xrpl.consensus > xrpl.telemetry
 xrpl.core > xrpl.basics
 xrpl.core > xrpl.json
 xrpl.core > xrpl.protocol
@@ -324,4 +325,5 @@ xrpld.shamap > xrpl.nodestore
 xrpld.shamap > xrpl.protocol
 xrpld.shamap > xrpl.shamap
 xrpld.telemetry > xrpl.basics
+xrpld.telemetry > xrpl.consensus
 xrpld.telemetry > xrpl.telemetry

@@ -261,6 +261,7 @@ words:
   - queuable
   - Raphson
   - rcflags
+  - reparent
   - replayer
   - repodata
   - repomd

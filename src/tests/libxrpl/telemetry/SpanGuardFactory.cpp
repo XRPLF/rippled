@@ -1,10 +1,12 @@
 #include <xrpl/telemetry/SpanGuard.h>
+#include <xrpl/telemetry/SpanNames.h>
 
 #include <gtest/gtest.h>
 
 #include <cstdint>
 #include <exception>
 #include <stdexcept>
+#include <string>
 #include <utility>
 
 using namespace xrpl;
@@ -28,6 +30,11 @@ TEST(SpanGuardFactory, category_span_returns_null_when_disabled)
     auto span = SpanGuard::span(TraceCategory::Rpc, "rpc", "test");
     EXPECT_FALSE(span);
 
+    // Attribute keys use the underscore convention for span attributes (the
+    // dotted xrpl.<domain>. form is reserved for resource attributes). These
+    // rpc_* constants live in an xrpld-level header, so they are literals here;
+    // libxrpl-level headers such as ConsensusSpanNames.h can be included
+    // directly, as ConsensusSpanNames.cpp does.
     span.setAttribute("command", "test");
     span.setAttribute("rpc_status", "success");
 }
@@ -79,4 +86,30 @@ TEST(SpanGuardFactory, discard_safe_on_null)
     auto span = SpanGuard::span(TraceCategory::Transactions, "tx", "process");
     span.discard();
     EXPECT_FALSE(span);
+}
+
+TEST(SpanGuardFactory, consensus_close_time_attributes)
+{
+    // Verify the consensus attribute pattern compiles and doesn't crash with a
+    // null SpanGuard. Attribute keys/values use the underscore convention; the
+    // canonical consensus::span constants are defined in the xrpld-level
+    // ConsensusSpanNames.h, which a libxrpl test cannot include, so the keys are
+    // written as literals here.
+    {
+        auto span = telemetry::SpanGuard::span(
+            telemetry::TraceCategory::Consensus, telemetry::seg::consensus, "accept.apply");
+        span.setAttribute("ledger_seq", static_cast<int64_t>(42));
+        span.setAttribute("close_time_ripple_epoch_s", static_cast<int64_t>(780000000));
+        span.setAttribute("close_time_correct", true);
+        span.setAttribute("close_resolution_ms", static_cast<int64_t>(30000));
+        span.setAttribute("consensus_state", std::string("finished"));
+        span.setAttribute("proposing", true);
+        span.setAttribute("round_time_ms", static_cast<int64_t>(3500));
+    }
+    {
+        auto span = telemetry::SpanGuard::span(
+            telemetry::TraceCategory::Consensus, telemetry::seg::consensus, "accept.apply");
+        span.setAttribute("close_time_correct", false);
+        span.setAttribute("consensus_state", std::string("moved_on"));
+    }
 }
