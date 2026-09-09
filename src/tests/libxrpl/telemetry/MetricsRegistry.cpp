@@ -639,12 +639,22 @@ using namespace xrpl;
 namespace {
 
 /**
- * OTLP/HTTP endpoint passed to every start() call below. Nothing ever dials
- * it -- these tests exercise the no-op path -- it just has to be a plausible
- * URL. start() takes `std::string const&`, so call sites construct one from
- * this view rather than repeating the literal.
+ * OTLP/HTTP endpoint used by every start() call below. Nothing ever dials it
+ * -- these tests exercise the no-op path -- it just has to be a plausible URL.
+ * It reaches start() through @ref kTestStartOptions.
  */
 constexpr std::string_view kTestEndpoint{"http://localhost:4318/v1/metrics"};
+
+/**
+ * The only StartOptions field these tests need.
+ *
+ * start() takes the StartOptions aggregate, not a string. The other fields --
+ * resource identity, network id, TLS paths -- are never read on the no-op
+ * path, and their defaults already mean "unset". One shared value keeps all
+ * six call sites on the same endpoint.
+ */
+telemetry::MetricsRegistry::StartOptions const kTestStartOptions{
+    .endpoint = std::string{kTestEndpoint}};
 
 /**
  * Minimal mock ServiceRegistry for MetricsRegistry testing.
@@ -1123,7 +1133,7 @@ TEST_F(MetricsRegistryTest, disabled_lifecycle_never_consults_gauge_services)
     // registerPeerLedgerSupplyGauge() / registerSlotCensusGauge() /
     // registerAmendmentBlockGauge() / registerNodeStoreGauge() --
     // would run.
-    EXPECT_NO_THROW(registry.start("http://localhost:4318/v1/metrics"));
+    EXPECT_NO_THROW(registry.start(kTestStartOptions));
 
     // detachCallbacks() is the shutdown hook the real gauges honour. It must be
     // safe and idempotent even though there is nothing to detach.
@@ -1200,7 +1210,7 @@ TEST_F(MetricsRegistryTest, enabled_flag_alone_registers_no_gauges_when_compiled
     // getLoadManager()/getInboundLedgers()/getNodeFamily()/getJobQueue()/
     // getOverlay()/getAmendmentTable()/getNodeStore() and
     // throw std::logic_error.
-    EXPECT_NO_THROW(enabledRequest.start("http://localhost:4318/v1/metrics"));
+    EXPECT_NO_THROW(enabledRequest.start(kTestStartOptions));
     EXPECT_NO_THROW(enabledRequest.detachCallbacks());
     EXPECT_NO_THROW(enabledRequest.stop());
 
