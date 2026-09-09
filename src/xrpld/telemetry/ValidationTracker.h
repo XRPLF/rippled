@@ -9,53 +9,52 @@
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/protocol/Protocol.h>
 
+#include <boost/smart_ptr/atomic_shared_ptr.hpp>
+#include <boost/smart_ptr/shared_ptr.hpp>
+
+#include <array>
 #include <atomic>
 #include <chrono>
 #include <cstddef>
 #include <cstdint>
 #include <deque>
-#include <mutex>
 
 namespace xrpl::telemetry {
 
 /**
  * Tracks whether this validator's validations agree with network consensus,
- * maintaining rolling 1-hour and 24-hour windows plus lifetime totals.
+ * over rolling 1-hour, 24-hour and 7-day windows plus lifetime totals.
  *
- * The tracker operates by recording two independent events per ledger:
+ * Two independent events are recorded per ledger:
  *   1. "We validated" -- our node published a validation for a ledger hash.
- *   2. "Network validated" -- the network reached consensus on a ledger hash.
+ *   2. "Network validated" -- the network reached consensus on that hash.
  *
- * After a configurable grace period (kGracePeriod), the reconcile() method
- * compares the two flags.  If both are set the ledger is counted as an
- * "agreement"; otherwise it is a "miss".  A late-repair mechanism allows a
- * miss to be upgraded to an agreement if matching evidence arrives within
- * kLateRepairWindow.
+ * reconcile() compares the two flags once the grace period has passed. Both
+ * flags set is an agreement, anything else is a miss. A miss becomes an
+ * agreement if its other half arrives inside the late-repair window.
  *
- * Architecture / dependency diagram:
+ * The writer paths take no lock at all: each writer owns one ring, so the two
+ * never touch shared state. Everything a decision needs belongs to whichever
+ * thread is inside reconcile(), and a second caller returns instead of waiting.
+ * Readers take a copy of the snapshot the reducer published.
+ *
+ * Data flow:
  * @code
- *  +--------------------------+
- *  |   ConsensusAdapter /     |
- *  |   ValidatorSite          |
- *  |   (callers)              |
- *  +---+-------------+-------+
- *      |             |
- *      | recordOur   | recordNetwork
- *      | Validation  | Validation
- *      v             v
- *  +---------------------------+
- *  |   ValidationTracker       |
- *  |---------------------------|
- *  |  pending_  (hash_map)     |----> LedgerEvent per hash
- *  |  tallied_  (hash_set)     |----> hashes already counted
- *  |  window1h_ (deque)        |----> WindowEvent sliding window
- *  |  window24h_ (deque)       |----> WindowEvent sliding window
- *  |  atomic totals            |
- *  +---------------------------+
- *              |
- *              | reconcile() called periodically
- *              v
- *        agreement / miss counters updated
+ *   RCLConsensus::Adaptor::validate      LedgerMaster::setValidLedger
+ *              |                                     |
+ *      recordOurValidation()               recordNetworkValidation()
+ *              v                                     v
+ *        +------------+                       +--------------+
+ *        |  ourRing_  |                       | networkRing_ |
+ *        +------------+                       +--------------+
+ *               \                                    /
+ *                \--------- reconcile() ------------/
+ *                                |
+ *      pending_ --> one-minute buckets --> 1h / 24h / 7d counters
+ *                                |
+ *                        published_ snapshot
+ *                                |
+ *          agreementPct1h() / agreements24h() / missed7d() / ...
  * @endcode
  *
  * Usage -- basic recording and querying:
@@ -68,7 +67,7 @@ namespace xrpl::telemetry {
  *     // On network consensus:
  *     tracker.recordNetworkValidation(ledgerHash, seq);
  *
- *     // Periodically (e.g. every few seconds):
+ *     // Periodically (e.g. every ten seconds):
  *     tracker.reconcile();
  *
  *     // Query agreement percentage:
@@ -81,16 +80,37 @@ namespace xrpl::telemetry {
  *
  *     // Network validates first, our validation arrives late:
  *     tracker.recordNetworkValidation(hash, seq);
- *     tracker.reconcile();  // initially counted as a miss
+ *     tracker.reconcile();  // counted as a miss
  *
- *     // Late local validation arrives within repair window:
+ *     // Our validation arrives inside the repair window:
  *     tracker.recordOurValidation(hash, seq);
- *     tracker.reconcile();  // repaired to agreement
+ *     tracker.reconcile();  // repaired to an agreement
  * @endcode
  *
- * @note Thread-safety: all public methods are thread-safe. The pending_
- * map and sliding-window deques are protected by mutex_. Lifetime totals
- * use std::atomic for lock-free reads.
+ * Usage -- a test drives the clock so a window edge is reachable at once:
+ * @code
+ *     // A lambda with no captures converts to the function pointer NowFn wants.
+ *     static xrpl::telemetry::ValidationTracker::TimePoint fakeNow{};
+ *     xrpl::telemetry::ValidationTracker tracker([] { return fakeNow; });
+ *
+ *     tracker.recordOurValidation(hash, seq);
+ *     fakeNow += xrpl::telemetry::ValidationTracker::gracePeriod();
+ *     tracker.reconcile();  // decides the event without any waiting
+ * @endcode
+ *
+ * @note Thread-safety: every public method may be called concurrently. The
+ * two record methods each need a single writer thread, which is how consensus
+ * and the ledger master call them. reconcile() and the getters may be called
+ * from any thread and any number of threads.
+ * @note reconcile() and the getters share the published snapshot through an
+ * atomic shared_ptr, which every implementation guards with a short internal
+ * spin. No writer path touches it, so nothing a consensus thread calls can
+ * spin. Boost's is used because Apple's libc++ has no std::atomic for a
+ * shared_ptr, so the std spelling does not compile there.
+ * @note A writer whose ring is full discards the event and bumps
+ * droppedEvents(). Counts are then low but never wrong.
+ * @note Window edges are rounded to whole minutes, because counts are kept in
+ * one-minute buckets.
  */
 class ValidationTracker
 {
@@ -106,11 +126,19 @@ public:
     using TimePoint = Clock::time_point;
 
     /**
-     * Maximum number of pending (unreconciled + recently reconciled) events.
-     * Once the pending map passes this size, reconcile() drops the oldest
-     * reconciled events. Public so a test can size a fixture against it.
+     * Time source. A test supplies its own so it can reach a window edge
+     * without waiting for one.
      */
-    static constexpr std::size_t kMaxPendingEvents = 1000;
+    using NowFn = TimePoint (*)();
+
+    /**
+     * Construct a tracker reading time from the given source.
+     * @param now Function returning the current time. Defaults to the
+     * monotonic clock, so default construction works.
+     */
+    explicit ValidationTracker(NowFn now = &ValidationTracker::steadyNow) : now_(now)
+    {
+    }
 
     /**
      * Record that this node sent a validation for the given ledger.
@@ -129,10 +157,12 @@ public:
     recordNetworkValidation(uint256 const& ledgerHash, LedgerIndex seq);
 
     /**
-     * Reconcile pending ledger events whose grace period has elapsed.
-     * Should be called periodically (e.g. every few seconds). Moves
-     * reconciled events into the sliding windows and updates totals.
-     * Also performs late-repair and eviction of stale data.
+     * Drain both rings, decide every event past the grace period, retire
+     * expired buckets and publish a fresh snapshot, in that order.
+     *
+     * Call periodically, for example every ten seconds. Returns without doing
+     * anything if another thread is already inside, so a losing caller reads
+     * data at most one cycle old rather than blocking.
      */
     void
     reconcile();
@@ -173,37 +203,37 @@ public:
     /**
      * Number of agreements in the 1-hour window.
      */
-    [[nodiscard]] uint64_t
+    [[nodiscard]] std::uint64_t
     agreements1h() const;
 
     /**
      * Number of misses in the 1-hour window.
      */
-    [[nodiscard]] uint64_t
+    [[nodiscard]] std::uint64_t
     missed1h() const;
 
     /**
      * Number of agreements in the 24-hour window.
      */
-    [[nodiscard]] uint64_t
+    [[nodiscard]] std::uint64_t
     agreements24h() const;
 
     /**
      * Number of misses in the 24-hour window.
      */
-    [[nodiscard]] uint64_t
+    [[nodiscard]] std::uint64_t
     missed24h() const;
 
     /**
      * Number of agreements in the 7-day window.
      */
-    [[nodiscard]] uint64_t
+    [[nodiscard]] std::uint64_t
     agreements7d() const;
 
     /**
      * Number of misses in the 7-day window.
      */
-    [[nodiscard]] uint64_t
+    [[nodiscard]] std::uint64_t
     missed7d() const;
 
     /** @} */
@@ -216,91 +246,100 @@ public:
     /**
      * Total agreements since process start.
      */
-    [[nodiscard]] uint64_t
+    [[nodiscard]] std::uint64_t
     totalAgreements() const;
 
     /**
      * Total misses since process start.
      */
-    [[nodiscard]] uint64_t
+    [[nodiscard]] std::uint64_t
     totalMissed() const;
 
     /**
-     * Lifetime agreements counted at first classification only.
+     * Agreements counted at first classification, never adjusted afterwards.
      *
-     * @note Unlike totalAgreements(), this is strictly monotonic: it is
-     * incremented only when a ledger is first reconciled as an agreement and
-     * is never adjusted by a late repair. It backs the monotonic Prometheus
-     * counter validation_agreements_total. See the counting-semantics
-     * note in detail/ValidationTracker.cpp.
+     * @note Unlike totalAgreements(), this only ever rises. A late repair
+     * leaves it alone, so it can back a Prometheus counter, which must never
+     * decrease.
      */
-    [[nodiscard]] uint64_t
+    [[nodiscard]] std::uint64_t
     totalAgreementsEver() const;
 
     /**
-     * Lifetime misses counted at first classification only.
+     * Misses counted at first classification, never adjusted afterwards.
      *
-     * @note Unlike totalMissed(), this is strictly monotonic: it is
-     * incremented only when a ledger is first reconciled as a miss and is
-     * never decremented by a late repair. It backs the monotonic Prometheus
-     * counter validation_missed_total. See the counting-semantics note
-     * in detail/ValidationTracker.cpp.
+     * @note Unlike totalMissed(), this only ever rises. A miss that a late
+     * repair turns into an agreement stays counted here.
      */
-    [[nodiscard]] uint64_t
+    [[nodiscard]] std::uint64_t
     totalMissedEver() const;
 
     /**
      * Total validations this node sent.
      */
-    [[nodiscard]] uint64_t
+    [[nodiscard]] std::uint64_t
     totalValidationsSent() const;
 
     /**
      * Total network validations observed for comparison.
      */
-    [[nodiscard]] uint64_t
+    [[nodiscard]] std::uint64_t
     totalValidationsChecked() const;
 
     /**
-     * Number of ledgers currently held awaiting reconciliation.
-     *
-     * Never exceeds kMaxPendingEvents: the record methods enforce that bound
-     * as they insert, so the map stays bounded whether or not anything ever
-     * reconciles or reads it.
-     * @return Size of the pending map.
+     * Events a writer discarded because its ring was full.
+     * @return Lifetime count of discards across both rings. Non-zero means
+     * reconcile() is not being called often enough.
      */
-    [[nodiscard]] std::size_t
-    pendingCount() const;
+    [[nodiscard]] std::uint64_t
+    droppedEvents() const;
+
+    /** @} */
+
+    /**
+     * @name Bounds, exposed so a test states the same bound as the code
+     */
+    /** @{ */
+
+    /**
+     * Slots in each writer's ring.
+     */
+    static constexpr std::size_t
+    ringCapacity()
+    {
+        return kRingCapacity;
+    }
+
+    /**
+     * Delay before an event is decided, so both sides can arrive first.
+     */
+    static constexpr std::chrono::seconds
+    gracePeriod()
+    {
+        return kGracePeriod;
+    }
+
+    /**
+     * How long after a decision a miss can still become an agreement.
+     */
+    static constexpr std::chrono::minutes
+    lateRepairWindow()
+    {
+        return kLateRepairWindow;
+    }
 
     /** @} */
 
 private:
     /**
-     * Per-ledger tracking state held in the pending map.
+     * Slots per ring. A power of two, so the index is a mask rather than a
+     * division. 128 slots is about 8.5 minutes of ledgers at one every four
+     * seconds, against a normal drain gap of well under a minute.
      */
-    struct LedgerEvent
-    {
-        uint256 ledgerHash;             ///< Ledger hash being tracked.
-        LedgerIndex seq{0};             ///< Ledger sequence number.
-        TimePoint recordTime;           ///< Time the event was first recorded.
-        bool weValidated = false;       ///< True if we sent a validation.
-        bool networkValidated = false;  ///< True if network reached consensus.
-        bool reconciled = false;        ///< True once grace period elapsed.
-        bool agreed = false;            ///< True if both flags set at reconcile.
-    };
+    static constexpr std::size_t kRingCapacity = 128;
 
     /**
-     * Lightweight event stored in the sliding-window deques.
-     */
-    struct WindowEvent
-    {
-        TimePoint time;      ///< When the event was reconciled.
-        uint256 ledgerHash;  ///< Ledger hash for late-repair matching.
-        bool agreed{false};  ///< Whether this was an agreement.
-    };
-
-    /**
-     * Grace period before reconciling a ledger event.
+     * Grace period before deciding a ledger event.
      */
     static constexpr auto kGracePeriod = std::chrono::seconds(8);
 
@@ -308,6 +347,22 @@ private:
      * Window during which a missed event can be repaired.
      */
     static constexpr auto kLateRepairWindow = std::chrono::minutes(5);
+
+    /**
+     * One-minute buckets spanned by the short window.
+     */
+    static constexpr std::size_t kBuckets1h = 60;
+
+    /**
+     * One-minute buckets spanned by the long window.
+     */
+    static constexpr std::size_t kBuckets24h = 24 * 60;
+
+    /**
+     * One-minute buckets spanned by the extended window. Also the length of
+     * the bucket grid, so a slot is reused exactly seven days later.
+     */
+    static constexpr std::size_t kBuckets7d = 7 * 24 * 60;
 
     /**
      * Maximum number of ledger hashes remembered as already counted.
@@ -318,28 +373,281 @@ private:
     static constexpr std::size_t kMaxTalliedEvents = 10000;
 
     /**
-     * Duration of the short rolling window.
+     * Default time source.
+     * @return The monotonic clock's current time point.
      */
-    static constexpr auto kWindow1h = std::chrono::hours(1);
+    static TimePoint
+    steadyNow();
 
     /**
-     * Duration of the long rolling window.
+     * One recorded event as it travels from a writer to the reducer.
      */
-    static constexpr auto kWindow24h = std::chrono::hours(24);
+    struct Slot
+    {
+        uint256 hash;  ///< Ledger hash being reported.
+
+        /**
+         * Ledger sequence number as the caller gave it. Carried for
+         * diagnostics: the counters key on the hash, not the sequence.
+         */
+        LedgerIndex seq{0};
+
+        TimePoint at;  ///< When the writer recorded it.
+    };
 
     /**
-     * Duration of the extended rolling window (7 days).
+     * Single-producer, single-consumer ring of recorded events.
+     *
+     * The producer only advances head_ and the consumer only advances tail_,
+     * so a release store on one side and an acquire load on the other is
+     * enough: no compare-exchange, no retry loop, nothing to block on.
+     *
+     * @code
+     *     Ring r;
+     *     if (!r.push(hash, seq, now))
+     *         ;  // full, the caller drops the event
+     *     r.drain([](Slot const& s) { use(s); });
+     * @endcode
+     *
+     * @note Exactly one thread may push and exactly one may drain. Two
+     * pushers corrupt the ring.
      */
-    static constexpr auto kWindow7d = std::chrono::hours(168);
+    class Ring
+    {
+    public:
+        /**
+         * Add one event to the ring.
+         * @param hash Ledger hash to record.
+         * @param seq  Ledger sequence number.
+         * @param at   Time the producer observed the event.
+         * @return false when the ring is full, in which case nothing was
+         * stored and the caller must drop the event.
+         */
+        [[nodiscard]] bool
+        push(uint256 const& hash, LedgerIndex seq, TimePoint at)
+        {
+            auto const head = head_.load(std::memory_order_relaxed);
+            if (head - tail_.load(std::memory_order_acquire) >= kRingCapacity)
+                return false;
+
+            slots_[head & (kRingCapacity - 1)] = Slot{.hash = hash, .seq = seq, .at = at};
+            head_.store(head + 1, std::memory_order_release);
+            return true;
+        }
+
+        /**
+         * Hand every stored event to fn, oldest first, and free their slots.
+         * @param fn Callable taking Slot const&.
+         */
+        template <class Fn>
+        void
+        drain(Fn&& fn)
+        {
+            auto tail = tail_.load(std::memory_order_relaxed);
+            auto const head = head_.load(std::memory_order_acquire);
+            for (; tail != head; ++tail)
+                fn(slots_[tail & (kRingCapacity - 1)]);
+            tail_.store(tail, std::memory_order_release);
+        }
+
+    private:
+        /**
+         * Storage, indexed by head_ or tail_ masked to the capacity.
+         */
+        std::array<Slot, kRingCapacity> slots_{};
+
+        /**
+         * Count of events ever pushed. Only the producer writes it.
+         */
+        std::atomic<std::uint64_t> head_{0};
+
+        /**
+         * Count of events ever drained. Only the consumer writes it.
+         */
+        std::atomic<std::uint64_t> tail_{0};
+    };
 
     /**
-     * Protects pending_, tallied_, talliedOrder_, window1h_, window24h_,
-     * and window7d_.
+     * Per-ledger tracking state held in the pending map.
      */
-    mutable std::mutex mutex_;
+    struct LedgerEvent
+    {
+        TimePoint recordTime;          ///< Time the event was first recorded.
+        std::uint64_t minute{0};       ///< Minute bucket the event belongs to.
+        bool weValidated{false};       ///< True if we sent a validation.
+        bool networkValidated{false};  ///< True if network reached consensus.
+        bool decided{false};           ///< True once the grace period elapsed.
+        bool agreed{false};            ///< True if both flags were set.
+    };
 
     /**
-     * Pending ledger events indexed by ledger hash.
+     * Counts for one minute of the grid.
+     */
+    struct Bucket
+    {
+        std::uint32_t agreed{0};  ///< Agreements decided in this minute.
+        std::uint32_t total{0};   ///< Events decided in this minute.
+    };
+
+    /**
+     * Running counts for one rolling window.
+     */
+    struct WindowCount
+    {
+        std::uint64_t agreed{0};  ///< Agreements still inside the window.
+        std::uint64_t total{0};   ///< Events still inside the window.
+
+        /**
+         * Misses still inside the window.
+         * @return total minus agreed. Derived, so a repair only has to move
+         * agreed.
+         */
+        [[nodiscard]] std::uint64_t
+        missed() const
+        {
+            return total - agreed;
+        }
+    };
+
+    /**
+     * The nine numbers a reader wants, published as one value.
+     */
+    struct Snapshot
+    {
+        WindowCount w1h;   ///< 1-hour window counts.
+        WindowCount w24h;  ///< 24-hour window counts.
+        WindowCount w7d;   ///< 7-day window counts.
+    };
+
+    /**
+     * Convert a time point to its minute on the grid.
+     * @param t Time point to convert.
+     * @return Whole minutes since the clock's epoch.
+     */
+    static std::uint64_t
+    minuteOf(TimePoint t);
+
+    /**
+     * Agreement percentage for one window.
+     * @param w Window counts to divide.
+     * @return Percentage [0.0, 100.0], or 0.0 when the window is empty.
+     */
+    static double
+    pct(WindowCount const& w);
+
+    /**
+     * Oldest minute a window of the given length still covers.
+     * @param minute Newest minute recorded.
+     * @param span   Window length in minutes.
+     * @return That window's tail minute, floored at zero.
+     */
+    static std::uint64_t
+    oldestInWindow(std::uint64_t minute, std::size_t span);
+
+    /**
+     * The snapshot readers are currently seeing.
+     * @return A copy of the published snapshot, so all nine numbers come from
+     * one reconcile. All zeroes before the first reconcile() publishes.
+     */
+    [[nodiscard]] Snapshot
+    read() const;
+
+    /**
+     * Put the running counters into a fresh snapshot and publish it.
+     */
+    void
+    publish();
+
+    /**
+     * Move both rings' contents into pending_.
+     */
+    void
+    drainRings();
+
+    /**
+     * Fold one drained event into pending_.
+     * @param s    Slot the ring handed over.
+     * @param ours True if the event came from our own ring.
+     */
+    void
+    note(Slot const& s, bool ours);
+
+    /**
+     * Decide every pending event past the grace period, repair the ones whose
+     * other half arrived late, and drop entries too old to repair.
+     * @param now Current time point.
+     */
+    void
+    decidePending(TimePoint now);
+
+    /**
+     * Remember a ledger hash as counted, dropping the oldest remembered
+     * hash once kMaxTalliedEvents is reached.
+     * @param ledgerHash Hash of the ledger just counted into the totals.
+     */
+    void
+    noteTallied(uint256 const& ledgerHash);
+
+    /**
+     * Count one decided event in its own bucket and in all three windows.
+     * @param minute Bucket the event belongs to.
+     * @param agreed True to count it as an agreement.
+     */
+    void
+    addToWindows(std::uint64_t minute, bool agreed);
+
+    /**
+     * Turn one already-counted event from a miss into an agreement.
+     * @param minute Bucket the event was counted in.
+     */
+    void
+    repairInWindows(std::uint64_t minute);
+
+    /**
+     * Move each window's tail up to the given minute, subtracting whatever
+     * leaves. The 7-day tail also clears the bucket it passes, because that
+     * slot is about to be reused.
+     * @param minute Newest minute to account for.
+     */
+    void
+    advanceWindows(std::uint64_t minute);
+
+    /**
+     * Walk one window's tail forward, taking each passed bucket back out of
+     * that window's running counts.
+     * @param tail   The window's tail minute, advanced in place.
+     * @param target Minute to stop at, the oldest the window still covers.
+     * @param count  The window's running counts to subtract from.
+     * @param clear  True to zero each passed bucket, which only the 7-day
+     * tail does because it is the tail whose slot gets reused.
+     */
+    void
+    retireWindow(std::uint64_t& tail, std::uint64_t target, WindowCount& count, bool clear);
+
+    /**
+     * Time source, read on every write and by the reducer.
+     */
+    NowFn now_;
+
+    /**
+     * Events from our own validations. Pushed by the consensus thread.
+     */
+    Ring ourRing_;
+
+    /**
+     * Events from network consensus. Pushed by the ledger master thread.
+     */
+    Ring networkRing_;
+
+    /**
+     * Set while a thread is inside reconcile(). A second caller sees it set
+     * and returns rather than waiting.
+     */
+    std::atomic_flag reducing_;
+
+    /**
+     * Pending ledger events indexed by ledger hash. Touched only inside
+     * reconcile(), so it needs no synchronisation.
      */
     hash_map<uint256, LedgerEvent> pending_;
 
@@ -357,156 +665,94 @@ private:
     std::deque<uint256> talliedOrder_;
 
     /**
-     * Sliding window of reconciled events (last 1 hour).
+     * One-minute counts, indexed by minute modulo kBuckets7d.
      */
-    std::deque<WindowEvent> window1h_;
+    std::array<Bucket, kBuckets7d> buckets_{};
 
     /**
-     * Sliding window of reconciled events (last 24 hours).
+     * Running counts for the 1-hour window.
      */
-    std::deque<WindowEvent> window24h_;
+    WindowCount c1h_;
 
     /**
-     * Sliding window of reconciled events (last 7 days).
+     * Running counts for the 24-hour window.
      */
-    std::deque<WindowEvent> window7d_;
+    WindowCount c24h_;
 
     /**
-     * Lifetime count of agreements (net: incremented on agree, also on
-     * repair). May be read via totalAgreements(); feeds the windowed gauge.
+     * Running counts for the 7-day window.
      */
-    std::atomic<uint64_t> totalAgreements_{0};
+    WindowCount c7d_;
 
     /**
-     * Lifetime count of misses (net: incremented on miss, decremented on
-     * repair). NON-monotonic. May be read via totalMissed().
+     * Oldest minute the 1-hour window still counts.
      */
-    std::atomic<uint64_t> totalMissed_{0};
+    std::uint64_t tail1h_{0};
 
     /**
-     * Monotonic "gross" lifetime tallies for the Prometheus _total counters.
-     *
-     * Counting decision (initial-classification only): each reconciled
-     * ledger is counted exactly once, at its first classification, into
-     * exactly one of the two tallies below. A later late-repair
-     * (miss -> agreement) does NOT move either tally. This keeps both
-     * strictly monotonic (a Prometheus _total must never decrease) and
-     * additive: totalAgreementsGross_ + totalMissedGross_ == ledgers
-     * reconciled. The repaired/agreement view is still available from the
-     * windowed gauge (validation_agreement) and the net totals above.
+     * Oldest minute the 24-hour window still counts.
      */
+    std::uint64_t tail24h_{0};
 
     /**
-     * Monotonic lifetime initial agreements; backs
-     * validation_agreements_total. Never adjusted on repair.
+     * Oldest minute the 7-day window still counts.
      */
-    std::atomic<uint64_t> totalAgreementsGross_{0};
+    std::uint64_t tail7d_{0};
 
     /**
-     * Monotonic lifetime initial misses; backs validation_missed_total.
-     * Never decremented on repair.
+     * Newest minute written to the grid.
      */
-    std::atomic<uint64_t> totalMissedGross_{0};
+    std::uint64_t newestMinute_{0};
+
+    /**
+     * False until the first minute is recorded, which is when the tails and
+     * newestMinute_ get their starting value.
+     */
+    bool started_{false};
+
+    /**
+     * The snapshot readers see. The reducer swaps in a new one each cycle, and
+     * a reader that took the old one keeps it alive while it reads. Null until
+     * the first reconcile().
+     */
+    boost::atomic_shared_ptr<Snapshot const> published_;
+
+    /**
+     * Lifetime count of agreements.
+     */
+    std::atomic<std::uint64_t> totalAgreements_{0};
+
+    /**
+     * Lifetime count of misses.
+     */
+    std::atomic<std::uint64_t> totalMissed_{0};
+
+    /**
+     * Agreements at first classification. Backs totalAgreementsEver(); a
+     * repair never touches it.
+     */
+    std::atomic<std::uint64_t> totalAgreementsGross_{0};
+
+    /**
+     * Misses at first classification. Backs totalMissedEver(); a repair never
+     * decrements it.
+     */
+    std::atomic<std::uint64_t> totalMissedGross_{0};
 
     /**
      * Lifetime count of validations this node sent.
      */
-    std::atomic<uint64_t> totalValidationsSent_{0};
+    std::atomic<std::uint64_t> totalValidationsSent_{0};
 
     /**
      * Lifetime count of network validations observed.
      */
-    std::atomic<uint64_t> totalValidationsChecked_{0};
+    std::atomic<std::uint64_t> totalValidationsChecked_{0};
 
     /**
-     * Locate the pending event for a ledger, creating it on first sight.
-     * @param ledgerHash Hash of the ledger being recorded.
-     * @param seq        Ledger sequence number, stored only on creation.
-     * @return Pointer to the event, or nullptr for a ledger that already
-     * reached the totals and left pending_. The caller records nothing in
-     * that case.
-     * @note Called with mutex_ held.
+     * Lifetime count of events dropped by a full ring.
      */
-    [[nodiscard]] LedgerEvent*
-    pendingEvent(uint256 const& ledgerHash, LedgerIndex seq);
-
-    /**
-     * Remember a ledger hash as counted, dropping the oldest remembered
-     * hash once kMaxTalliedEvents is reached.
-     * @param ledgerHash Hash of the ledger just counted into the totals.
-     * @note Called with mutex_ held.
-     */
-    void
-    noteTallied(uint256 const& ledgerHash);
-
-    /**
-     * Remove entries older than their respective window durations.
-     * @param now Current time point.
-     */
-    void
-    evictStaleWindows(TimePoint now);
-
-    /**
-     * Remove reconciled pending entries older than the late-repair window.
-     * Also trims the map if it exceeds kMaxPendingEvents.
-     * @param now Current time point.
-     */
-    void
-    evictOldPending(TimePoint now);
-
-    /**
-     * Hold pending_ at kMaxPendingEvents by dropping its oldest entry.
-     *
-     * Called on the insert path, because that is the only place the bound can
-     * be guaranteed. reconcile() also prunes, but it runs only while the gauge
-     * callbacks are registered, which needs telemetry both compiled in and
-     * enabled -- so a node with telemetry off, or with [telemetry] enabled=0,
-     * would otherwise grow this map by one entry per validated ledger forever.
-     *
-     * Drops the oldest entry rather than the least useful one: the map is
-     * unordered, so this is a linear scan, but it runs at most once per
-     * recorded validation and only once the map is already full.
-     *
-     * An entry that has not been classified yet is classified before it is
-     * dropped, so the ledger it represents still reaches the agreement or miss
-     * totals. See classifyPending() for what that costs.
-     *
-     * @param justRecorded Hash inserted by the caller, kept even if the scan
-     *        finds it oldest (equal timestamps make that possible).
-     * @note Caller must hold mutex_.
-     */
-    void
-    boundPending(uint256 const& justRecorded);
-
-    /**
-     * Classify one pending event as an agreement or a miss, once.
-     *
-     * Marks the event reconciled, decides agreed from the two validation
-     * flags, moves the net and gross totals, and appends the event to all
-     * three sliding windows. Shared by reconcile(), which calls it once the
-     * grace period has elapsed, and by boundPending(), which calls it when it
-     * has to drop an entry that was never classified.
-     *
-     * A ledger reaches the totals exactly once, here. Classifying early -- as
-     * boundPending() must -- fixes the verdict on whichever flags have arrived,
-     * so a validation still in flight cannot complete or repair it.
-     *
-     * @param evt The pending event to classify; its reconciled and agreed
-     *        fields are set.
-     * @param now Timestamp recorded on the window entries.
-     * @note Caller must hold mutex_.
-     */
-    void
-    classifyPending(LedgerEvent& evt, TimePoint now);
-
-    /**
-     * Scan a window deque and flip the first non-agreed entry matching
-     * the given ledger hash to agreed.
-     * @param window  The sliding-window deque to repair.
-     * @param hash    Ledger hash to match.
-     */
-    static void
-    repairWindowEntry(std::deque<WindowEvent>& window, uint256 const& hash);
+    std::atomic<std::uint64_t> droppedEvents_{0};
 };
 
 }  // namespace xrpl::telemetry

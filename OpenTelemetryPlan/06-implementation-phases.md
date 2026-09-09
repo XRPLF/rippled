@@ -633,14 +633,14 @@ See [Phase7_taskList.md](./Phase7_taskList.md) for detailed per-task breakdown.
 
 ### Motivation
 
-xrpld's `beast::Journal` logs and OpenTelemetry traces are currently two disjoint observability signals. When investigating an issue, operators must manually correlate timestamps between log files and Tempo traces. Phase 8 bridges this gap by injecting trace context (`trace_id`, `span_id`) into every log line emitted within an active, sampled span, and ingesting those logs into Grafana Loki via the OTel Collector's filelog receiver.
+xrpld's `beast::Journal` logs and OpenTelemetry traces are currently two disjoint observability signals. When investigating an issue, operators must manually correlate timestamps between log files and Tempo traces. Phase 8 bridges this gap by injecting trace context (`trace_id`, `span_id`) into every log line emitted within an active, sampled span, and ingesting those logs into Grafana Loki via the OTel Collector's file_log receiver.
 
 #### Gains
 
 1. **One-click trace-to-log navigation** — Click a trace in Tempo and immediately see the corresponding log lines in Loki, filtered by `trace_id`.
 2. **Reverse lookup (log-to-trace)** — Loki derived fields make `trace_id` values clickable links back to Tempo.
 3. **Unified observability** — All three pillars (traces, metrics, logs) flow through the same OTel Collector pipeline and are visible in a single Grafana instance.
-4. **Zero new dependencies in xrpld** — Uses existing OTel SDK headers (`GetSpan`, `GetContext`) already linked in Phase 1.
+4. **Zero new dependencies in xrpld** — Uses existing OTel SDK headers (`RuntimeContext`, `SpanContext`) already linked in Phase 1.
 5. **Negligible overhead** — The implementation checks the thread-local context value directly, avoiding heap allocation on the no-span path (~15-20ns). On the active-span path, total cost is ~50ns per log call. At typical logging rates, overhead is negligible.
 
 #### Losses / Risks
@@ -651,32 +651,53 @@ xrpld's `beast::Journal` logs and OpenTelemetry traces are currently two disjoin
 
 #### Decision
 
-The correlation value far outweighs the risks. The log format change is backward-compatible (fields are appended only when a sampled span is active), and the filelog receiver regex is straightforward to maintain.
+The correlation value far outweighs the risks. The log format change is backward-compatible (fields are appended only when a sampled span is active), and the file_log receiver regex is straightforward to maintain.
 
 ### Architecture
 
 Phase 8 has two independent sub-phases that can be developed in parallel:
 
 - **Phase 8a (code change)**: Modify `Logs::format()` in `src/libxrpl/basics/Log.cpp` to append `trace_id=<hex32> span_id=<hex16>` when the current thread has an active OTel span. Guarded by `#ifdef XRPL_ENABLE_TELEMETRY`.
-- **Phase 8b (infra only)**: Add Loki to the Docker Compose stack, configure the OTel Collector's `filelog` receiver to tail xrpld's log file, parse out structured fields (timestamp, partition, severity, trace_id, span_id, message), and export to Loki via OTLP. Configure Grafana Tempo↔Loki bidirectional linking.
+- **Phase 8b (infra only)**: Add Loki to the Docker Compose stack, configure the OTel Collector's `file_log` receiver to tail xrpld's log file, parse out structured fields (timestamp, partition, severity, trace_id, span_id, message), and export to Loki via OTLP. Configure Grafana Tempo↔Loki bidirectional linking.
 
 #### Trace ID Injection Flow
 
 ```mermaid
 flowchart LR
     subgraph xrpld["xrpld process"]
-        JLOG["JLOG(j.info())"]
-        Format["Logs::format()"]
-        OTelCtx["OTel Context<br/>(thread-local)"]
+        JLOG["`**JLOG(j.info())**
+        a log call on some thread`"]
+        Format["`**Logs::format()**
+        builds the log line`"]
+        OTelCtx["`**OTel thread-local context**
+        RuntimeContext::GetCurrent()
+        GetValue(kSpanKey)`"]
         JLOG --> Format
-        OTelCtx -.->|"GetSpan()→GetContext()"| Format
+        OTelCtx -.->|"`GetContext()
+        if IsValid and IsSampled`"| Format
     end
 
-    subgraph output["Log Output"]
-        LogLine["2024-01-15T10:30:45.123Z<br/>LedgerMaster:NFO<br/>trace_id=abc123...<br/>span_id=def456...<br/>Validated ledger 42"]
+    subgraph output["Log output"]
+        LogLine["`2026-Jan-15 10:30:45.123456789 UTC
+        LedgerMaster:NFO
+        trace_id=abc123... span_id=def456...
+        Validated ledger 42`"]
     end
 
     Format --> LogLine
+
+    subgraph legend["Reading the diagram"]
+        direction LR
+        L1["`**Solid arrow**
+        happens on every log call`"]
+        L2["`**Dotted arrow**
+        only adds ids when a sampled span is active on this thread`"]
+        L3["`**kSpanKey lookup**
+        reads the context value directly, so the no-span path allocates nothing`"]
+    end
+
+    L1 ~~~ L2 ~~~ L3
+    output ~~~ legend
 
     style xrpld fill:#1a237e,stroke:#0d1642,color:#fff
     style output fill:#1b5e20,stroke:#0d3d14,color:#fff
@@ -691,16 +712,35 @@ flowchart LR
 ```mermaid
 flowchart LR
     subgraph collector["OTel Collector"]
-        FR["filelog receiver<br/>tails debug.log"]
-        RP["regex_parser<br/>extracts trace_id,<br/>span_id, severity"]
-        BP["batch processor"]
-        LE["otlp/loki exporter"]
+        FR["`**file_log receiver**
+        tails debug.log`"]
+        RP["`**regex_parser**
+        extracts timestamp, partition,
+        severity, trace_id, span_id`"]
+        BP["`**batch processor**`"]
+        LE["`**otlp_http/loki exporter**`"]
         FR --> RP --> BP --> LE
     end
 
-    LogFile["xrpld<br/>debug.log"] --> FR
-    LE --> Loki["Grafana Loki<br/>:3100"]
-    Loki <-->|"derivedFields ↔<br/>tracesToLogs"| Tempo["Grafana Tempo"]
+    LogFile["`**xrpld**
+    debug.log`"] --> FR
+    LE --> Loki["`**Grafana Loki**
+    :3100`"]
+    Loki <-->|"`derivedFields
+    tracesToLogs`"| Tempo["`**Grafana Tempo**`"]
+
+    subgraph legend["Reading the diagram"]
+        direction LR
+        L1["`**Solid arrow**
+        the path every log line takes`"]
+        L2["`**Double arrow**
+        Grafana links the two backends both ways: a trace jumps to its logs, a trace_id in a log jumps back to the trace`"]
+        L3["`**otlp_http, not otlp**
+        Loki is reached over OTLP/HTTP; the old dedicated loki exporter was removed upstream`"]
+    end
+
+    L1 ~~~ L2 ~~~ L3
+    collector ~~~ legend
 
     style collector fill:#e65100,stroke:#bf360c,color:#fff
     style FR fill:#f57c00,stroke:#e65100,color:#fff
@@ -718,7 +758,7 @@ flowchart LR
 | ---- | ---------------------------------------------- |
 | 8.1  | Inject trace_id into Logs::format()            |
 | 8.2  | Add Loki to Docker Compose stack               |
-| 8.3  | Add filelog receiver to OTel Collector         |
+| 8.3  | Add file_log receiver to OTel Collector        |
 | 8.4  | Configure Grafana trace-to-log correlation     |
 | 8.5  | Update integration tests                       |
 | 8.6  | Update documentation (runbook, reference docs) |
@@ -732,8 +772,8 @@ flowchart LR
 - [x] Log lines outside spans have no trace context (no empty fields) — the
       block reads the thread-local span key and appends nothing when it is
       absent or the context is invalid (`Log.cpp:310-318`)
-- [x] Loki ingests xrpld logs via OTel Collector filelog receiver —
-      `otel-collector-config.yaml:38` (`filelog`); `loki` service in
+- [x] Loki ingests xrpld logs via OTel Collector file_log receiver —
+      `otel-collector-config.yaml:38` (`file_log`); `loki` service in
       `docker-compose.yml:112`
 - [x] Grafana Tempo → Loki one-click correlation works —
       `provisioning/datasources/tempo.yaml:32` (`tracesToLogs`)

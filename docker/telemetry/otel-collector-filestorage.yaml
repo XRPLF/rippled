@@ -1,4 +1,4 @@
-# Collector overlay that persists filelog read offsets. Applied ONLY by the
+# Collector overlay that persists file_log read offsets. Applied ONLY by the
 # developer stack (docker/telemetry/docker-compose.yml), as a second --config
 # after otel-collector-config.yaml; the collector deep-merges the two.
 #
@@ -15,14 +15,14 @@
 # instead of re-reading debug.log from the top.
 
 extensions:
-  file_storage/filelog:
+  file_storage/file_log:
     directory: /var/lib/otelcol/file_storage
     create_directory: true
 
 receivers:
-  filelog:
-    storage: file_storage/filelog
+  file_log:
+    storage: file_storage/file_log
 
 # Lists are replaced rather than merged, so this must repeat the base entry.
 service:
-  extensions: [health_check, file_storage/filelog]
+  extensions: [health_check, file_storage/file_log]

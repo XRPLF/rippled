@@ -2805,7 +2805,7 @@ curl -sG http://localhost:9090/api/v1/query \
 When xrpld is built with `telemetry=ON`, log lines emitted within an active, sampled OpenTelemetry span automatically include `trace_id` and `span_id` fields:
 
 ```
-2024-Jan-15 10:30:45.123456 UTC LedgerMaster:NFO trace_id=abc123def456789012345678abcdef01 span_id=0123456789abcdef Validated ledger 42
+2024-Jan-15 10:30:45.123456789 UTC LedgerMaster:NFO trace_id=abc123def456789012345678abcdef01 span_id=0123456789abcdef Validated ledger 42
 ```
 
 This enables bidirectional navigation between logs and traces in Grafana:
@@ -2817,7 +2817,9 @@ This enables bidirectional navigation between logs and traces in Grafana:
 
 Log files are ingested by the OTel Collector's `file_log` receiver, which tails `debug.log` files and parses them with a regex that extracts `timestamp`, `partition`, `severity`, `trace_id`, `span_id`, and `message` fields. Parsed entries are exported to Grafana Loki.
 
-The receiver tails `/var/log/xrpld/*/debug.log` inside the collector container. docker-compose bind-mounts the host log root there; the source defaults to the repo-relative `docker/telemetry/data/logs`, which the telemetry configs write to (`data/logs/<network>/debug.log`) and which needs no root. To tail logs from elsewhere, set `XRPLD_LOG_DIR` before `docker compose up` (the integration test does this to point at its own workdir). The single trailing `*` matches one per-network or per-node subdirectory.
+The receiver tails `/var/log/xrpld/*/debug.log` inside the collector container. docker-compose bind-mounts the host log root there; the source defaults to the repo-relative `docker/telemetry/data/logs`, which the telemetry configs write to (`data/logs/<service_instance_id>/debug.log`). To tail logs from elsewhere, set `XRPLD_LOG_DIR` before `docker compose up` (the integration test does this to point at its own workdir). The single trailing `*` matches one per-node subdirectory.
+
+That subdirectory is load-bearing, not cosmetic. Docker creates a missing bind-mount source as root, and `Config::getDebugLogFile()` only warns when it cannot create the log directory, so a root-owned log root produces a healthy-looking node that writes no `debug.log` and an empty Loki with no error at any layer. The `xrpld-logdir-init` service creates the directory and hands it to `XRPLD_UID`/`XRPLD_GID` (default 1000) to prevent that. The receiver also lifts the subdirectory name onto the resource attribute `service.instance.id`, which Loki indexes as the label `service_instance_id`, so each emitter must name its log directory after its own `[telemetry] service_instance_id` or log lines carry a node name that no trace or metric shares.
 
 Each file is read from the beginning, because the receiver's own default (`end`) would skip anything a node wrote before the collector's first poll and would never read a log that has stopped being written to. Read offsets are held in memory by default, so a restarted collector re-reads the files it already ingested. The developer stack avoids that by layering `otel-collector-filestorage.yaml` as a second `--config`, which adds a `file_storage` extension that keeps the offsets on a named volume; a one-shot init service prepares that volume, because the collector runs as a non-root user and a fresh Docker volume is owned by root. Ephemeral stacks such as the workload validation harness create a fresh log directory per run, so they have nothing to resume from and deliberately omit the overlay.
 
