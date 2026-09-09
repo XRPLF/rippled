@@ -220,7 +220,7 @@ agree with the code. A CI check enforces this end to end.
    `validation_trusted` likewise). Defined once in the base `SpanNames.h`
    `namespace attr` block and re-exported (`using`) by each domain header.
 3. **Collision qualifier** → `<domain>_<field>`, only when a bare name would
-   collide with a DIFFERENT concept in the shared spanmetrics label space or with
+   collide with a DIFFERENT concept in the shared span_metrics label space or with
    the OTel-reserved `status` key (e.g. `rpc_status`, `grpc_status`,
    `consensus_phase`, `consensus_round`, `consensus_mode`). This disambiguates
    distinct concepts that share a word; it is NOT used to tag the same concept
