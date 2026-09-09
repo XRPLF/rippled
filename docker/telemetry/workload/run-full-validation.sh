@@ -80,6 +80,12 @@ NUM_NODES=5
 RPC_PORT_BASE=5005
 WS_PORT_BASE=6006
 PEER_PORT_BASE=51235
+
+# Hard ceiling on every RPC probe below. curl applies no overall timeout of its
+# own, so a node that accepts the connection and then stops answering parks the
+# poll loop for the rest of the run. The loops here count attempts, not seconds,
+# so without this their stated timeouts are not bounds at all.
+CURL_MAX_TIME="${CURL_MAX_TIME:-5}"
 # Inert: parsed from --rpc-rate/--rpc-duration/--tx-tps/--tx-duration and never
 # read again. Load shape comes from the workload profile instead. Kept because
 # the CI workflow still passes the four flags.
@@ -267,7 +273,7 @@ XRPLD_LOG_DIR="$WORKDIR" docker compose -f "$COMPOSE_FILE" up -d ||
 
 log "Waiting for OTel Collector..."
 for attempt in $(seq 1 30); do
-    status=$(curl -so /dev/null -w '%{http_code}' http://localhost:4318/ 2>/dev/null || echo 000)
+    status=$(curl -so /dev/null -w '%{http_code}' --max-time "$CURL_MAX_TIME" http://localhost:4318/ 2>/dev/null || echo 000)
     if [ "$status" != "000" ]; then
         ok "OTel Collector ready (attempt $attempt)"
         break
@@ -278,7 +284,7 @@ done
 
 log "Waiting for Tempo..."
 for attempt in $(seq 1 30); do
-    if curl -sf "http://localhost:3200/ready" >/dev/null 2>&1; then
+    if curl -sf --max-time "$CURL_MAX_TIME" "http://localhost:3200/ready" >/dev/null 2>&1; then
         ok "Tempo ready (attempt $attempt)"
         break
     fi
@@ -288,7 +294,7 @@ done
 
 log "Waiting for Prometheus..."
 for attempt in $(seq 1 30); do
-    if curl -sf "http://localhost:9090/-/healthy" >/dev/null 2>&1; then
+    if curl -sf --max-time "$CURL_MAX_TIME" "http://localhost:9090/-/healthy" >/dev/null 2>&1; then
         ok "Prometheus ready (attempt $attempt)"
         break
     fi
@@ -494,7 +500,7 @@ for attempt in $(seq 1 120); do
     laggards=""
     for i in $(seq 1 "$NUM_NODES"); do
         port=$((RPC_PORT_BASE + i - 1))
-        state=$(curl -sf "http://localhost:$port" \
+        state=$(curl -sf --max-time "$CURL_MAX_TIME" "http://localhost:$port" \
             -d '{"method":"server_info"}' 2>/dev/null |
             jq -r '.result.info.server_state' 2>/dev/null || echo "")
         if [ "$state" = "proposing" ]; then
@@ -552,7 +558,7 @@ echo ""
 # Wait for first validated ledger.
 log "Waiting for validated ledger..."
 for attempt in $(seq 1 60); do
-    val_seq=$(curl -sf "http://localhost:$RPC_PORT_BASE" \
+    val_seq=$(curl -sf --max-time "$CURL_MAX_TIME" "http://localhost:$RPC_PORT_BASE" \
         -d '{"method":"server_info"}' 2>/dev/null |
         jq -r '.result.info.validated_ledger.seq // 0' 2>/dev/null || echo 0)
     if [ "$val_seq" -gt 2 ] 2>/dev/null; then

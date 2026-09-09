@@ -1,11 +1,18 @@
 #!/usr/bin/env bash
 # benchmark.sh — Performance benchmark for rippled telemetry overhead.
 #
-# Runs two identical workloads against a rippled cluster:
+# Runs the same client workload twice against a rippled cluster:
 #   1. Baseline: telemetry disabled ([telemetry] enabled=0)
-#   2. Telemetry: full telemetry enabled (traces + StatsD + all categories)
+#   2. Telemetry: full telemetry enabled (traces + native OTel metrics)
 #
-# Compares CPU, memory, RPC latency, TPS, and consensus round time.
+# Both arms drive rpc_load_generator.py and tx_submitter.py at one fixed rate for
+# the whole sample window, so the delta is attributable to telemetry rather than
+# to a difference in offered load. The workload is not optional: with only the
+# sampler's own ~1 request/sec of server_info, the tx.*, txq.*, transactor-stage
+# and non-server_info rpc.command.* spans are never entered, and those are where
+# a per-operation span cost shows up. A pass on an idle cluster says nothing.
+#
+# Compares CPU, memory, RPC latency, TPS, and mean consensus round time.
 # Outputs a Markdown table with pass/fail against configured thresholds.
 #
 # Usage:
@@ -76,6 +83,30 @@ WORKDIR="/tmp/xrpld-benchmark"
 RESULTS_DIR="$SCRIPT_DIR/benchmark-results"
 RPC_PORT_BASE=5020
 PEER_PORT_BASE=51250
+# Above run-full-validation.sh's 6006.. so both harnesses can share a box.
+WS_PORT_BASE=6020
+
+# Head start the generators get before the sampler opens its window.
+# tx_submitter.py creates and funds eight accounts from genesis and then waits
+# for those payments to validate, so without a lead the first seconds of every
+# window carry no transaction load. Identical in both arms, so it cancels out.
+WORKLOAD_LEAD_SEC=20
+
+# One flat offered rate, not a workload-profiles.json profile: both arms must
+# issue the same work for the delta to mean anything, and a profile's phase
+# shaping only adds variance. Payment-only for the same reason -- a rejected
+# transaction costs a different amount of work than an applied one.
+WORKLOAD_RPC_RATE="${BENCH_RPC_RATE:-30}"
+WORKLOAD_TX_TPS="${BENCH_TX_TPS:-3}"
+
+# This arm's generator pids, reaped by wait_workload and killed by the trap.
+WORKLOAD_PIDS=()
+
+# Hard ceiling on every RPC probe below. curl applies no overall timeout of its
+# own, so a node that accepts the connection and then stops answering parks the
+# poll loop for the rest of the run. The loops here count attempts, not seconds,
+# so without this their stated timeouts are not bounds at all.
+CURL_MAX_TIME="${CURL_MAX_TIME:-5}"
 
 # ---------------------------------------------------------------------------
 # Argument parsing
@@ -121,8 +152,12 @@ done
 command -v jq >/dev/null 2>&1 || cannot_measure "jq not found"
 command -v bc >/dev/null 2>&1 || cannot_measure "bc not found"
 command -v curl >/dev/null 2>&1 || cannot_measure "curl not found"
+command -v python3 >/dev/null 2>&1 ||
+    cannot_measure "python3 not found (the load generators need it)"
+python3 -c 'import websockets' 2>/dev/null ||
+    cannot_measure "python3 'websockets' package not found -- pip install -r $SCRIPT_DIR/requirements.txt"
 
-mkdir -p "$RESULTS_DIR"
+mkdir -p "$RESULTS_DIR" || cannot_measure "Could not create the results directory $RESULTS_DIR"
 TIMESTAMP=$(date +%Y%m%d_%H%M%S)
 
 # ---------------------------------------------------------------------------
@@ -139,11 +174,14 @@ start_cluster() {
 
     log "Starting $NUM_NODES-node cluster ($label, telemetry=$telemetry_enabled)..."
 
-    rm -rf "$WORKDIR"
-    mkdir -p "$WORKDIR"
+    rm -rf "$WORKDIR" || cannot_measure "Could not clear the workdir $WORKDIR"
+    mkdir -p "$WORKDIR" || cannot_measure "Could not create the workdir $WORKDIR"
 
-    # Generate keys using first node.
-    bash "$SCRIPT_DIR/generate-validator-keys.sh" "$XRPLD" "$NUM_NODES" "$WORKDIR"
+    # Generate keys using a temporary standalone node. The helper fails through
+    # its own die(), which exits 1 -- the code this script reserves for a
+    # measured breach. Remap it, or a keygen failure reads as "too expensive".
+    bash "$SCRIPT_DIR/generate-validator-keys.sh" "$XRPLD" "$NUM_NODES" "$WORKDIR" ||
+        cannot_measure "generate-validator-keys.sh failed; no keys for the $NUM_NODES-node cluster"
 
     # Set before the spawn loop so a failure part-way through it still gets
     # cleaned up by the EXIT trap.
@@ -152,14 +190,27 @@ start_cluster() {
     # Build per-node configs.
     for i in $(seq 1 "$NUM_NODES"); do
         local node_dir="$WORKDIR/node$i"
-        mkdir -p "$node_dir/nudb" "$node_dir/db"
+        mkdir -p "$node_dir/nudb" "$node_dir/db" ||
+            cannot_measure "Could not create node$i directories under $node_dir"
 
         local rpc_port
         rpc_port=$((RPC_PORT_BASE + i - 1))
         local peer_port
         peer_port=$((PEER_PORT_BASE + i - 1))
+        local ws_port
+        ws_port=$((WS_PORT_BASE + i - 1))
+        # Split from the declaration on purpose: `local seed=$(...)` reports
+        # local's status, not jq's, so the guard below would never fire.
         local seed
-        seed=$(jq -r ".[$((i - 1))].seed" "$WORKDIR/validator-keys.json")
+        seed=$(jq -r ".[$((i - 1))].seed" "$WORKDIR/validator-keys.json") ||
+            cannot_measure "Could not read node$i's seed from $WORKDIR/validator-keys.json"
+        # jq prints "null" and exits 0 when the array is short, so the exit
+        # status alone does not catch a truncated key file.
+        case "$seed" in
+            "" | null)
+                cannot_measure "node$i has no seed in $WORKDIR/validator-keys.json"
+                ;;
+        esac
 
         # Build ips_fixed list.
         local ips_fixed=""
@@ -200,9 +251,13 @@ endpoint=http://localhost:4318/v1/metrics"
 enabled=0"
         fi
 
+        # No `|| cannot_measure` here: a guard after `<<EOCFG` is read as the
+        # heredoc's first line, so it lands in the config and never runs. The
+        # mkdir above already covers the only realistic failure.
         cat >"$node_dir/xrpld.cfg" <<EOCFG
 [server]
 port_rpc
+port_ws
 port_peer
 
 [port_rpc]
@@ -210,6 +265,15 @@ port = $rpc_port
 ip = 127.0.0.1
 admin = 127.0.0.1
 protocol = http
+
+# The generators speak WebSocket only. admin is required rather than cosmetic:
+# tx_submitter.py calls wallet_propose and submits with "secret". Declared in
+# BOTH arms, so the listener itself is not part of the measured delta.
+[port_ws]
+port = $ws_port
+ip = 127.0.0.1
+admin = 127.0.0.1
+protocol = ws
 
 [port_peer]
 port = $peer_port
@@ -268,7 +332,7 @@ EOCFG
             local port
             port=$((RPC_PORT_BASE + i - 1))
             local state
-            state=$(curl -sf "http://localhost:$port" \
+            state=$(curl -sf --max-time "$CURL_MAX_TIME" "http://localhost:$port" \
                 -d '{"method":"server_info"}' 2>/dev/null |
                 jq -r '.result.info.server_state' 2>/dev/null || echo "")
             if [ "$state" = "proposing" ]; then
@@ -324,7 +388,7 @@ stop_cluster() {
 # after argument parsing so the handler name always resolves. Without it, any
 # failure between start_cluster and stop_cluster leaks the xrpld children
 # along with their RPC ports (5020+) and peer ports (51250+).
-trap stop_cluster EXIT
+trap 'stop_workload; stop_cluster' EXIT
 
 # Build RPC ports CSV string.
 rpc_ports_csv() {
@@ -342,13 +406,101 @@ rpc_ports_csv() {
 # source came back empty (3). An all-zero or partial sample set clears every
 # threshold, so an incomplete leg aborts with "cannot measure" instead of being
 # compared and passed.
+# Echoes one ws:// endpoint per node, space separated.
+ws_endpoints() {
+    local i out=""
+    for i in $(seq 1 "$NUM_NODES"); do
+        out="$out ws://localhost:$((WS_PORT_BASE + i - 1))"
+    done
+    printf '%s' "${out# }"
+}
+
+# This cluster's xrpld pids, comma separated, for the sampler's process filter.
+# Without it the sampler matches every xrpld on the host: run-full-validation.sh
+# leaves five validation nodes running while these three start, so both arms
+# average eight processes and the delta is diluted away.
+node_pids_csv() {
+    local i out="" pid
+    for i in $(seq 1 "$NUM_NODES"); do
+        pid=$(cat "$WORKDIR/node$i/xrpld.pid" 2>/dev/null) || continue
+        [ -n "$pid" ] && out="$out,$pid"
+    done
+    printf '%s' "${out#,}"
+}
+
+# Starts this arm's generators, then waits out the funding lead so the sampler's
+# whole window is under load. Logs and JSON summaries go to RESULTS_DIR, not
+# WORKDIR: the next arm's start_cluster rm -rf's WORKDIR.
+start_workload() {
+    local label="$1"
+    local gen_duration=$((DURATION + WORKLOAD_LEAD_SEC))
+    local logdir="$RESULTS_DIR/workload-${TIMESTAMP}"
+    mkdir -p "$logdir" || cannot_measure "Could not create the workload log dir $logdir"
+
+    log "Starting workload ($label): ${WORKLOAD_RPC_RATE} rpc/s + ${WORKLOAD_TX_TPS} tps for ${gen_duration}s..."
+
+    # shellcheck disable=SC2046 # --endpoints takes a list; splitting is intended
+    python3 "$SCRIPT_DIR/rpc_load_generator.py" \
+        --endpoints $(ws_endpoints) \
+        --rate "$WORKLOAD_RPC_RATE" \
+        --duration "$gen_duration" \
+        --output "$logdir/$label-rpc.json" \
+        >"$logdir/$label-rpc.log" 2>&1 &
+    WORKLOAD_PIDS+=("$!")
+
+    python3 "$SCRIPT_DIR/tx_submitter.py" \
+        --endpoint "ws://localhost:$WS_PORT_BASE" \
+        --tps "$WORKLOAD_TX_TPS" \
+        --duration "$gen_duration" \
+        --weights '{"Payment": 100}' \
+        --output "$logdir/$label-tx.json" \
+        >"$logdir/$label-tx.log" 2>&1 &
+    WORKLOAD_PIDS+=("$!")
+
+    sleep "$WORKLOAD_LEAD_SEC"
+}
+
+# Reaps this arm's generators. A non-zero generator means the arms did not do
+# the same work, so nothing is attributable: "cannot measure", never "too slow".
+wait_workload() {
+    local label="$1"
+    local pid status=0
+    for pid in ${WORKLOAD_PIDS[@]+"${WORKLOAD_PIDS[@]}"}; do
+        wait "$pid" || status=$?
+    done
+    WORKLOAD_PIDS=()
+    [ "$status" -eq 0 ] ||
+        cannot_measure "$label workload generator exited $status; the arms did not do identical work -- see $RESULTS_DIR/workload-${TIMESTAMP}/"
+}
+
+# Kills any generator still running, so an aborted arm leaves no python3 holding
+# WebSocket connections. Guarded like stop_cluster's commands: this runs from the
+# EXIT trap, where an unguarded failure would discard the real exit status.
+stop_workload() {
+    local pid
+    for pid in ${WORKLOAD_PIDS[@]+"${WORKLOAD_PIDS[@]}"}; do
+        kill "$pid" 2>/dev/null || true
+    done
+    WORKLOAD_PIDS=()
+    return 0
+}
+
 collect_metrics() {
     local label="$1"
     local out_file="$2"
 
     local status=0
+    # An empty or short list would silently fall back to host-wide sampling,
+    # which is the outcome the pid argument exists to prevent.
+    local pids
+    pids=$(node_pids_csv)
+    local n_pids
+    n_pids=$(printf '%s' "$pids" | awk -F, '{print NF}')
+    [ "${n_pids:-0}" -eq "$NUM_NODES" ] ||
+        cannot_measure "$label: found $n_pids of $NUM_NODES node pids, so the sampler cannot be scoped to this cluster"
+
     bash "$SCRIPT_DIR/collect_system_metrics.sh" \
-        "$(rpc_ports_csv)" "$DURATION" "$out_file" || status=$?
+        "$(rpc_ports_csv)" "$DURATION" "$out_file" "$pids" || status=$?
     [ "$status" -eq 0 ] ||
         cannot_measure "$label metric collection failed (exit $status) — refusing to compare an incomplete run"
 
@@ -371,13 +523,17 @@ log "="
 # --- Baseline run ---
 BASELINE_FILE="$RESULTS_DIR/baseline-${TIMESTAMP}.json"
 start_cluster "0" "baseline"
+start_workload "baseline"
 collect_metrics "baseline" "$BASELINE_FILE"
+wait_workload "baseline"
 stop_cluster
 
 # --- Telemetry run ---
 TELEMETRY_FILE="$RESULTS_DIR/telemetry-${TIMESTAMP}.json"
 start_cluster "1" "telemetry"
+start_workload "telemetry"
 collect_metrics "telemetry" "$TELEMETRY_FILE"
+wait_workload "telemetry"
 stop_cluster
 
 # ---------------------------------------------------------------------------
@@ -522,7 +678,7 @@ cat >"$REPORT_FILE" <<EOMD
 impact could not be computed. Such rows count as failures.
 
 \`Consensus Round Mean\` is the mean inter-ledger interval derived from the
-collector's 5 s ledger-sequence samples, not a percentile.
+collector's 2 s ledger-sequence samples, not a percentile.
 
 ## Summary
 
