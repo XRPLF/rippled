@@ -70,8 +70,10 @@ jobs:
           files: |
             # These paths are unique to `on-pr.yml`.
             .github/scripts/levelization/**
+            .github/scripts/otel-naming/**
             .github/scripts/rename/**
             .github/workflows/reusable-check-levelization.yml
+            .github/workflows/reusable-check-otel-naming.yml
             .github/workflows/reusable-check-rename.yml
             .github/workflows/on-pr.yml
 
@@ -143,6 +145,11 @@ jobs:
     needs: should-run
     if: ${{ needs.should-run.outputs.go == 'true' }}
     uses: ./.github/workflows/reusable-check-levelization.yml
+
+  check-otel-naming:
+    needs: should-run
+    if: ${{ needs.should-run.outputs.go == 'true' }}
+    uses: ./.github/workflows/reusable-check-otel-naming.yml
 
   check-rename:
     needs: should-run
@@ -222,6 +229,7 @@ jobs:
     needs:
       - check-autogen
       - check-levelization
+      - check-otel-naming
       - check-rename
       - clang-tidy
       - build-test
