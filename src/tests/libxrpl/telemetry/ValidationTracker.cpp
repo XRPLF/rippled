@@ -1,6 +1,10 @@
 /**
  * @file ValidationTracker.cpp
  * Unit tests for xrpl::telemetry::ValidationTracker.
+ *
+ * The tracker reads time through an injected function, so every test places
+ * its events on a fake timeline. That is what makes a window edge, the grace
+ * period and a bucket boundary reachable without waiting for one.
  */
 
 #include <xrpld/telemetry/ValidationTracker.h>
@@ -10,351 +14,637 @@
 
 #include <gtest/gtest.h>
 
+#include <atomic>
 #include <chrono>
 #include <cstddef>
 #include <cstdint>
 #include <thread>
+#include <vector>
 
 using namespace xrpl;
 using namespace xrpl::telemetry;
 
+using Tracker = xrpl::telemetry::ValidationTracker;
+
+namespace {
+
 /**
- * Helper to create a unique uint256 from an integer seed.
+ * The fake current time. Every tracker built here reads it.
  */
-static uint256
+Tracker::TimePoint gNow{};
+
+/**
+ * Time source handed to the tracker under test.
+ */
+Tracker::TimePoint
+testNow()
+{
+    return gNow;
+}
+
+/**
+ * Move the fake clock forward.
+ */
+void
+advance(std::chrono::seconds by)
+{
+    gNow += by;
+}
+
+/**
+ * Build a tracker on a fresh timeline. The start point is far from the clock
+ * epoch so subtracting a window cannot go negative.
+ */
+Tracker
+makeTracker()
+{
+    gNow = Tracker::TimePoint{} + std::chrono::hours(1000);
+    return Tracker(&testNow);
+}
+
+/**
+ * Push the clock past the grace period and reconcile, which is what turns a
+ * recorded event into an agreement or a miss.
+ */
+void
+settle(Tracker& t)
+{
+    advance(Tracker::gracePeriod() + std::chrono::seconds(1));
+    t.reconcile();
+}
+
+/**
+ * Distinct ledger hash per integer seed.
+ */
+uint256
 makeHash(std::uint64_t n)
 {
     return uint256(n);
 }
 
-/**
- * Test fixture providing a fresh ValidationTracker per test.
- */
-class ValidationTrackerTest : public ::testing::Test
+}  // namespace
+
+// ---- pairing ---------------------------------------------------------------
+
+TEST(ValidationTracker, both_sides_within_grace_counts_one_agreement)
 {
-protected:
-    ValidationTracker tracker_;
-};
+    auto t = makeTracker();
+    t.recordOurValidation(makeHash(1), 1);
+    t.recordNetworkValidation(makeHash(1), 1);
+    settle(t);
 
-// ---------------------------------------------------------------
-// 1. Normal agreement
-//    Record both our validation and network validation for the
-//    same hash, then reconcile after the grace period elapses.
-// ---------------------------------------------------------------
-TEST_F(ValidationTrackerTest, NormalAgreement)
-{
-    auto const hash = makeHash(1);
-    LedgerIndex const seq = 100;
-
-    tracker_.recordOurValidation(hash, seq);
-    tracker_.recordNetworkValidation(hash, seq);
-
-    // Immediately after recording, nothing is reconciled yet
-    // (grace period has not elapsed).
-    tracker_.reconcile();
-    EXPECT_EQ(tracker_.totalValidationsSent(), 1u);
-    EXPECT_EQ(tracker_.totalValidationsChecked(), 1u);
-
-    // Wait for the grace period (8 seconds) to elapse, then reconcile.
-    std::this_thread::sleep_for(std::chrono::seconds(9));
-    tracker_.reconcile();
-
-    EXPECT_EQ(tracker_.totalAgreements(), 1u);
-    EXPECT_EQ(tracker_.totalMissed(), 0u);
-    EXPECT_EQ(tracker_.agreements1h(), 1u);
-    EXPECT_EQ(tracker_.missed1h(), 0u);
-    EXPECT_DOUBLE_EQ(tracker_.agreementPct1h(), 100.0);
+    EXPECT_EQ(t.agreements1h(), 1u);
+    EXPECT_EQ(t.missed1h(), 0u);
+    EXPECT_EQ(t.agreements24h(), 1u);
+    EXPECT_EQ(t.missed24h(), 0u);
+    EXPECT_EQ(t.agreements7d(), 1u);
+    EXPECT_EQ(t.missed7d(), 0u);
+    EXPECT_DOUBLE_EQ(t.agreementPct1h(), 100.0);
+    EXPECT_DOUBLE_EQ(t.agreementPct24h(), 100.0);
+    EXPECT_DOUBLE_EQ(t.agreementPct7d(), 100.0);
 }
 
-// ---------------------------------------------------------------
-// 2. Missed validation
-//    Only the network validates; we never do. After grace period
-//    the event should be reconciled as a miss.
-// ---------------------------------------------------------------
-TEST_F(ValidationTrackerTest, MissedValidation)
+TEST(ValidationTracker, only_our_side_counts_one_miss)
 {
-    auto const hash = makeHash(2);
-    LedgerIndex const seq = 200;
+    auto t = makeTracker();
+    t.recordOurValidation(makeHash(2), 2);
+    settle(t);
 
-    tracker_.recordNetworkValidation(hash, seq);
-
-    // Wait for grace period then reconcile.
-    std::this_thread::sleep_for(std::chrono::seconds(9));
-    tracker_.reconcile();
-
-    EXPECT_EQ(tracker_.totalAgreements(), 0u);
-    EXPECT_EQ(tracker_.totalMissed(), 1u);
-    EXPECT_EQ(tracker_.agreements1h(), 0u);
-    EXPECT_EQ(tracker_.missed1h(), 1u);
-    EXPECT_DOUBLE_EQ(tracker_.agreementPct1h(), 0.0);
+    EXPECT_EQ(t.agreements1h(), 0u);
+    EXPECT_EQ(t.missed1h(), 1u);
+    EXPECT_DOUBLE_EQ(t.agreementPct1h(), 0.0);
 }
 
-// ---------------------------------------------------------------
-// 3. Late repair
-//    Network validates first, grace period elapses (miss), then
-//    our validation arrives within the 5-minute repair window and
-//    the miss is flipped to an agreement.
-// ---------------------------------------------------------------
-TEST_F(ValidationTrackerTest, LateRepair)
+TEST(ValidationTracker, only_network_side_counts_one_miss)
 {
-    auto const hash = makeHash(3);
-    LedgerIndex const seq = 300;
+    auto t = makeTracker();
+    t.recordNetworkValidation(makeHash(3), 3);
+    settle(t);
 
-    // Network validates, but we do not (yet).
-    tracker_.recordNetworkValidation(hash, seq);
-
-    // Grace period elapses -- reconciled as a miss.
-    std::this_thread::sleep_for(std::chrono::seconds(9));
-    tracker_.reconcile();
-    EXPECT_EQ(tracker_.totalMissed(), 1u);
-    EXPECT_EQ(tracker_.totalAgreements(), 0u);
-    EXPECT_EQ(tracker_.missed1h(), 1u);
-
-    // Late arrival of our validation (within repair window).
-    tracker_.recordOurValidation(hash, seq);
-    tracker_.reconcile();
-
-    // Miss should be repaired to agreement.
-    EXPECT_EQ(tracker_.totalAgreements(), 1u);
-    EXPECT_EQ(tracker_.totalMissed(), 0u);
-    EXPECT_EQ(tracker_.agreements1h(), 1u);
-    EXPECT_EQ(tracker_.missed1h(), 0u);
-    EXPECT_DOUBLE_EQ(tracker_.agreementPct1h(), 100.0);
+    EXPECT_EQ(t.missed1h(), 1u);
+    EXPECT_EQ(t.agreements1h(), 0u);
 }
 
-// ---------------------------------------------------------------
-// 4. Empty window returns 0%
-//    When no events have been recorded the percentage methods
-//    must return 0.0, not NaN or any other value.
-// ---------------------------------------------------------------
-TEST_F(ValidationTrackerTest, EmptyWindowReturnsZero)
+TEST(ValidationTracker, inside_the_grace_period_nothing_is_counted)
 {
-    EXPECT_DOUBLE_EQ(tracker_.agreementPct1h(), 0.0);
-    EXPECT_DOUBLE_EQ(tracker_.agreementPct24h(), 0.0);
-    EXPECT_EQ(tracker_.agreements1h(), 0u);
-    EXPECT_EQ(tracker_.missed1h(), 0u);
-    EXPECT_EQ(tracker_.agreements24h(), 0u);
-    EXPECT_EQ(tracker_.missed24h(), 0u);
-    EXPECT_EQ(tracker_.totalAgreements(), 0u);
-    EXPECT_EQ(tracker_.totalMissed(), 0u);
-    EXPECT_EQ(tracker_.totalValidationsSent(), 0u);
-    EXPECT_EQ(tracker_.totalValidationsChecked(), 0u);
+    auto t = makeTracker();
+    t.recordOurValidation(makeHash(4), 4);
+    t.recordNetworkValidation(makeHash(4), 4);
+
+    // One second short of the grace period, so the pair is still undecided.
+    advance(Tracker::gracePeriod() - std::chrono::seconds(1));
+    t.reconcile();
+
+    EXPECT_EQ(t.agreements1h(), 0u);
+    EXPECT_EQ(t.missed1h(), 0u);
+    EXPECT_DOUBLE_EQ(t.agreementPct1h(), 0.0);
+
+    // The message counters do not wait for a decision.
+    EXPECT_EQ(t.totalValidationsSent(), 1u);
+    EXPECT_EQ(t.totalValidationsChecked(), 1u);
 }
 
-// ---------------------------------------------------------------
-// 5. Grace period boundary
-//    Events recorded less than 8 seconds ago must NOT be
-//    reconciled. Verify that an immediate reconcile is a no-op.
-// ---------------------------------------------------------------
-TEST_F(ValidationTrackerTest, GracePeriodBoundary)
+TEST(ValidationTracker, percentage_mixes_agreements_and_misses)
 {
-    auto const hash = makeHash(5);
-    LedgerIndex const seq = 500;
-
-    tracker_.recordOurValidation(hash, seq);
-    tracker_.recordNetworkValidation(hash, seq);
-
-    // Reconcile immediately -- grace period has not elapsed.
-    tracker_.reconcile();
-
-    // Nothing should be reconciled yet.
-    EXPECT_EQ(tracker_.totalAgreements(), 0u);
-    EXPECT_EQ(tracker_.totalMissed(), 0u);
-    EXPECT_EQ(tracker_.agreements1h(), 0u);
-    EXPECT_EQ(tracker_.missed1h(), 0u);
-
-    // Lifetime send/check counters should still be incremented.
-    EXPECT_EQ(tracker_.totalValidationsSent(), 1u);
-    EXPECT_EQ(tracker_.totalValidationsChecked(), 1u);
-}
-
-// ---------------------------------------------------------------
-// 6. Max pending events -- trimming
-//    Add more than kMaxPendingEvents (1000) events. After
-//    reconciliation and a second reconcile pass the pending map
-//    should be trimmed. Lifetime totals must remain consistent.
-// ---------------------------------------------------------------
-TEST_F(ValidationTrackerTest, MaxPendingEventsTrimming)
-{
-    constexpr std::size_t kCount = 1100;
-
-    for (std::size_t i = 0; i < kCount; ++i)
+    auto t = makeTracker();
+    for (std::uint64_t i = 0; i < 3; ++i)
     {
-        auto const hash = makeHash(i + 1);
-        auto const seq = static_cast<LedgerIndex>(i + 1);
-        tracker_.recordOurValidation(hash, seq);
-        tracker_.recordNetworkValidation(hash, seq);
+        t.recordOurValidation(makeHash(100 + i), static_cast<LedgerIndex>(100 + i));
+        t.recordNetworkValidation(makeHash(100 + i), static_cast<LedgerIndex>(100 + i));
+    }
+    t.recordOurValidation(makeHash(200), 200);
+    settle(t);
+
+    EXPECT_EQ(t.agreements1h(), 3u);
+    EXPECT_EQ(t.missed1h(), 1u);
+    EXPECT_NEAR(t.agreementPct1h(), 75.0, 1e-9);
+}
+
+// ---- an event is counted exactly once --------------------------------------
+
+TEST(ValidationTracker, a_decided_ledger_is_not_counted_twice)
+{
+    auto t = makeTracker();
+    t.recordOurValidation(makeHash(5), 5);
+    t.recordNetworkValidation(makeHash(5), 5);
+    settle(t);
+    EXPECT_EQ(t.agreements1h(), 1u);
+
+    // The same hash arrives again long after it was counted and evicted. It
+    // must not open a fresh pending entry and be counted a second time.
+    advance(Tracker::lateRepairWindow() + std::chrono::seconds(1));
+    t.reconcile();
+    t.recordOurValidation(makeHash(5), 5);
+    t.recordNetworkValidation(makeHash(5), 5);
+    settle(t);
+
+    EXPECT_EQ(t.agreements1h(), 1u);
+    EXPECT_EQ(t.missed1h(), 0u);
+}
+
+TEST(ValidationTracker, duplicate_recording_of_one_ledger_counts_one_agreement)
+{
+    auto t = makeTracker();
+
+    // Our side reports the same ledger twice before anything is decided.
+    t.recordOurValidation(makeHash(30), 30);
+    t.recordOurValidation(makeHash(30), 30);
+    t.recordNetworkValidation(makeHash(30), 30);
+    settle(t);
+
+    EXPECT_EQ(t.agreements1h(), 1u);
+    EXPECT_EQ(t.missed1h(), 0u);
+    EXPECT_EQ(t.totalAgreements(), 1u);
+    EXPECT_EQ(t.totalMissed(), 0u);
+}
+
+TEST(ValidationTracker, send_and_check_counters_count_messages_not_ledgers)
+{
+    auto t = makeTracker();
+    t.recordOurValidation(makeHash(31), 31);
+    t.recordNetworkValidation(makeHash(31), 31);
+    settle(t);
+    EXPECT_EQ(t.agreements1h(), 1u);
+
+    // The same ledger is reported again once it is past repair. Neither total
+    // moves, but both message counters do.
+    advance(Tracker::lateRepairWindow() + std::chrono::seconds(1));
+    t.reconcile();
+    t.recordOurValidation(makeHash(31), 31);
+    t.recordNetworkValidation(makeHash(31), 31);
+    settle(t);
+
+    EXPECT_EQ(t.agreements1h(), 1u);
+    EXPECT_EQ(t.missed1h(), 0u);
+    EXPECT_EQ(t.totalAgreements(), 1u);
+    EXPECT_EQ(t.totalMissed(), 0u);
+    EXPECT_EQ(t.totalValidationsSent(), 2u);
+    EXPECT_EQ(t.totalValidationsChecked(), 2u);
+}
+
+// ---- late repair -----------------------------------------------------------
+
+TEST(ValidationTracker, late_repair_turns_a_miss_into_an_agreement)
+{
+    auto t = makeTracker();
+    t.recordNetworkValidation(makeHash(6), 6);
+    settle(t);
+    EXPECT_EQ(t.missed1h(), 1u);
+    EXPECT_EQ(t.agreements1h(), 0u);
+
+    // Our own validation shows up inside the repair window.
+    advance(std::chrono::seconds(30));
+    t.recordOurValidation(makeHash(6), 6);
+    t.reconcile();
+
+    EXPECT_EQ(t.missed1h(), 0u);
+    EXPECT_EQ(t.agreements1h(), 1u);
+    EXPECT_DOUBLE_EQ(t.agreementPct1h(), 100.0);
+}
+
+TEST(ValidationTracker, late_repair_works_across_a_bucket_boundary)
+{
+    auto t = makeTracker();
+    t.recordNetworkValidation(makeHash(7), 7);
+    settle(t);
+    EXPECT_EQ(t.missed1h(), 1u);
+
+    // Cross into a later minute bucket before repairing, so the repair has to
+    // find the bucket the event was recorded in rather than the current one.
+    advance(std::chrono::seconds(120));
+    t.recordOurValidation(makeHash(7), 7);
+    t.reconcile();
+
+    EXPECT_EQ(t.missed1h(), 0u);
+    EXPECT_EQ(t.agreements1h(), 1u);
+    EXPECT_EQ(t.agreements7d(), 1u);
+    EXPECT_EQ(t.missed7d(), 0u);
+}
+
+TEST(ValidationTracker, repair_after_the_window_closes_is_ignored)
+{
+    auto t = makeTracker();
+    t.recordNetworkValidation(makeHash(8), 8);
+    settle(t);
+    EXPECT_EQ(t.missed1h(), 1u);
+
+    // Past the repair window, so the miss stands.
+    advance(Tracker::lateRepairWindow() + std::chrono::seconds(10));
+    t.recordOurValidation(makeHash(8), 8);
+    t.reconcile();
+
+    EXPECT_EQ(t.missed1h(), 1u);
+    EXPECT_EQ(t.agreements1h(), 0u);
+}
+
+// ---- window expiry ---------------------------------------------------------
+
+TEST(ValidationTracker, an_event_leaves_the_1h_window_but_stays_in_the_others)
+{
+    auto t = makeTracker();
+    t.recordOurValidation(makeHash(9), 9);
+    t.recordNetworkValidation(makeHash(9), 9);
+    settle(t);
+    EXPECT_EQ(t.agreements1h(), 1u);
+
+    advance(std::chrono::hours(1) + std::chrono::minutes(2));
+    t.reconcile();
+
+    EXPECT_EQ(t.agreements1h(), 0u);
+    EXPECT_EQ(t.agreements24h(), 1u);
+    EXPECT_EQ(t.agreements7d(), 1u);
+    EXPECT_DOUBLE_EQ(t.agreementPct1h(), 0.0);
+    EXPECT_DOUBLE_EQ(t.agreementPct24h(), 100.0);
+}
+
+TEST(ValidationTracker, an_event_leaves_the_24h_window_but_stays_in_7d)
+{
+    auto t = makeTracker();
+    t.recordOurValidation(makeHash(10), 10);
+    t.recordNetworkValidation(makeHash(10), 10);
+    settle(t);
+
+    advance(std::chrono::hours(24) + std::chrono::minutes(2));
+    t.reconcile();
+
+    EXPECT_EQ(t.agreements1h(), 0u);
+    EXPECT_EQ(t.agreements24h(), 0u);
+    EXPECT_EQ(t.agreements7d(), 1u);
+}
+
+TEST(ValidationTracker, an_event_leaves_every_window_after_7d)
+{
+    auto t = makeTracker();
+    t.recordOurValidation(makeHash(11), 11);
+    t.recordNetworkValidation(makeHash(11), 11);
+    settle(t);
+
+    advance(std::chrono::hours(168) + std::chrono::minutes(2));
+    t.reconcile();
+
+    EXPECT_EQ(t.agreements7d(), 0u);
+    EXPECT_EQ(t.missed7d(), 0u);
+    EXPECT_DOUBLE_EQ(t.agreementPct7d(), 0.0);
+}
+
+TEST(ValidationTracker, an_event_exactly_one_window_old_has_left_the_window)
+{
+    // The 1h window covers 60 minute buckets. An event 60 minutes old is out;
+    // 59 minutes old is still in. An off-by-one in the bound breaks one of
+    // these two checks.
+    auto t = makeTracker();
+    t.recordOurValidation(makeHash(20), 20);
+    t.recordNetworkValidation(makeHash(20), 20);
+    settle(t);
+    EXPECT_EQ(t.agreements1h(), 1u);
+
+    advance(std::chrono::minutes(59) - Tracker::gracePeriod());
+    t.reconcile();
+    EXPECT_EQ(t.agreements1h(), 1u);
+
+    advance(std::chrono::minutes(1));
+    t.reconcile();
+    EXPECT_EQ(t.agreements1h(), 0u);
+    EXPECT_EQ(t.agreements24h(), 1u);
+}
+
+TEST(ValidationTracker, an_event_exactly_one_day_old_has_left_the_day_window)
+{
+    auto t = makeTracker();
+    t.recordOurValidation(makeHash(21), 21);
+    t.recordNetworkValidation(makeHash(21), 21);
+    settle(t);
+
+    advance(std::chrono::minutes(24 * 60 - 1) - Tracker::gracePeriod());
+    t.reconcile();
+    EXPECT_EQ(t.agreements24h(), 1u);
+
+    advance(std::chrono::minutes(1));
+    t.reconcile();
+    EXPECT_EQ(t.agreements24h(), 0u);
+    EXPECT_EQ(t.agreements7d(), 1u);
+}
+
+TEST(ValidationTracker, a_gap_longer_than_the_7d_grid_does_not_resurrect_old_counts)
+{
+    auto t = makeTracker();
+    t.recordOurValidation(makeHash(12), 12);
+    t.recordNetworkValidation(makeHash(12), 12);
+    settle(t);
+    EXPECT_EQ(t.agreements7d(), 1u);
+
+    // Idle for more than one full trip around the bucket grid. Every bucket
+    // the new event reuses must be zeroed, not added to.
+    advance(std::chrono::hours(400));
+    t.recordOurValidation(makeHash(13), 13);
+    t.recordNetworkValidation(makeHash(13), 13);
+    settle(t);
+
+    EXPECT_EQ(t.agreements7d(), 1u);
+    EXPECT_EQ(t.missed7d(), 0u);
+    EXPECT_EQ(t.agreements1h(), 1u);
+}
+
+TEST(ValidationTracker, steady_traffic_across_the_grid_boundary_keeps_recent_counts)
+{
+    // Events every minute for slightly more than 14 days, so bucket slots get
+    // reused while the tracker is continuously busy. The "idle longer than the
+    // grid" fast path must not fire here: recent minutes are still valid data.
+    //
+    // Two full trips around the grid, so a slot that was reused is later
+    // retired. One trip only proves reuse happened; the miscount from a bucket
+    // that was not cleared shows up when that bucket is subtracted.
+    auto t = makeTracker();
+
+    constexpr std::uint64_t kMinutes = 2 * 7 * 24 * 60 + 5;
+    for (std::uint64_t i = 0; i < kMinutes; ++i)
+    {
+        t.recordOurValidation(makeHash(i), static_cast<LedgerIndex>(i));
+        t.recordNetworkValidation(makeHash(i), static_cast<LedgerIndex>(i));
+        advance(std::chrono::seconds(9));
+        t.reconcile();
+        advance(std::chrono::seconds(51));
     }
 
-    EXPECT_EQ(tracker_.totalValidationsSent(), kCount);
-    EXPECT_EQ(tracker_.totalValidationsChecked(), kCount);
-
-    // Wait for grace period so all events can be reconciled.
-    std::this_thread::sleep_for(std::chrono::seconds(9));
-    tracker_.reconcile();
-
-    // All events should be reconciled as agreements.
-    EXPECT_EQ(tracker_.totalAgreements(), kCount);
-    EXPECT_EQ(tracker_.totalMissed(), 0u);
-
-    // Reconcile again to trigger pending eviction / trimming.
-    // The pending map should be trimmed, but totals remain correct.
-    tracker_.reconcile();
-    EXPECT_EQ(tracker_.totalAgreements(), kCount);
-    EXPECT_EQ(tracker_.totalMissed(), 0u);
+    // One event per minute means each window holds exactly its own span, so
+    // these are exact, not "roughly". A bucket reused without being cleared
+    // would push them above the span.
+    EXPECT_EQ(t.agreements1h(), 60u);
+    EXPECT_EQ(t.missed1h(), 0u);
+    EXPECT_EQ(t.agreements24h(), 24u * 60u);
+    EXPECT_EQ(t.agreements7d(), 7u * 24u * 60u);
+    EXPECT_EQ(t.missed7d(), 0u);
 }
 
-// ---------------------------------------------------------------
-// 7. Multiple distinct ledgers -- mixed results
-//    Record a mix of agreements and misses to verify that window
-//    counts and percentages are computed correctly.
-// ---------------------------------------------------------------
-TEST_F(ValidationTrackerTest, MixedAgreementsAndMisses)
+// ---- lifetime totals -------------------------------------------------------
+
+TEST(ValidationTracker, lifetime_totals_survive_window_expiry)
 {
-    // 3 agreements: both sides validate.
-    for (int i = 1; i <= 3; ++i)
+    auto t = makeTracker();
+    t.recordOurValidation(makeHash(14), 14);
+    t.recordNetworkValidation(makeHash(14), 14);
+    t.recordOurValidation(makeHash(15), 15);
+    settle(t);
+    EXPECT_EQ(t.totalAgreements(), 1u);
+    EXPECT_EQ(t.totalMissed(), 1u);
+
+    advance(std::chrono::hours(200));
+    t.reconcile();
+
+    EXPECT_EQ(t.agreements7d(), 0u);
+    EXPECT_EQ(t.totalAgreements(), 1u);
+    EXPECT_EQ(t.totalMissed(), 1u);
+}
+
+TEST(ValidationTracker, a_repair_moves_a_lifetime_total_from_missed_to_agreed)
+{
+    auto t = makeTracker();
+    t.recordNetworkValidation(makeHash(16), 16);
+    settle(t);
+    EXPECT_EQ(t.totalMissed(), 1u);
+    EXPECT_EQ(t.totalAgreements(), 0u);
+
+    advance(std::chrono::seconds(20));
+    t.recordOurValidation(makeHash(16), 16);
+    t.reconcile();
+
+    EXPECT_EQ(t.totalMissed(), 0u);
+    EXPECT_EQ(t.totalAgreements(), 1u);
+}
+
+// ---- rings -----------------------------------------------------------------
+
+TEST(ValidationTracker, an_empty_tracker_reports_zero_everywhere)
+{
+    auto t = makeTracker();
+    EXPECT_EQ(t.agreements1h(), 0u);
+    EXPECT_EQ(t.missed1h(), 0u);
+    EXPECT_EQ(t.agreements24h(), 0u);
+    EXPECT_EQ(t.missed24h(), 0u);
+    EXPECT_EQ(t.agreements7d(), 0u);
+    EXPECT_EQ(t.missed7d(), 0u);
+    EXPECT_DOUBLE_EQ(t.agreementPct1h(), 0.0);
+    EXPECT_DOUBLE_EQ(t.agreementPct24h(), 0.0);
+    EXPECT_DOUBLE_EQ(t.agreementPct7d(), 0.0);
+    EXPECT_EQ(t.totalAgreements(), 0u);
+    EXPECT_EQ(t.totalMissed(), 0u);
+    EXPECT_EQ(t.totalValidationsSent(), 0u);
+    EXPECT_EQ(t.totalValidationsChecked(), 0u);
+    EXPECT_EQ(t.droppedEvents(), 0u);
+}
+
+TEST(ValidationTracker, a_full_ring_drops_and_counts_instead_of_blocking)
+{
+    auto t = makeTracker();
+
+    // One more than the ring holds, with no drain in between.
+    for (std::size_t i = 0; i < Tracker::ringCapacity() + 1; ++i)
+        t.recordOurValidation(makeHash(1000 + i), static_cast<LedgerIndex>(1000 + i));
+
+    EXPECT_EQ(t.droppedEvents(), 1u);
+
+    settle(t);
+    EXPECT_EQ(t.missed1h(), Tracker::ringCapacity());
+}
+
+TEST(ValidationTracker, a_drop_on_one_ring_leaves_the_other_alone)
+{
+    auto t = makeTracker();
+    for (std::size_t i = 0; i < Tracker::ringCapacity() + 4; ++i)
+        t.recordOurValidation(makeHash(2000 + i), static_cast<LedgerIndex>(2000 + i));
+    EXPECT_EQ(t.droppedEvents(), 4u);
+
+    t.recordNetworkValidation(makeHash(3000), 3000);
+    settle(t);
+
+    // The network ring was never full, so its event still missed normally:
+    // capacity misses from our ring, plus this one.
+    EXPECT_EQ(t.missed1h(), Tracker::ringCapacity() + 1);
+    EXPECT_EQ(t.droppedEvents(), 4u);
+}
+
+TEST(ValidationTracker, draining_frees_ring_space_again)
+{
+    auto t = makeTracker();
+    for (std::size_t i = 0; i < Tracker::ringCapacity(); ++i)
+        t.recordOurValidation(makeHash(4000 + i), static_cast<LedgerIndex>(4000 + i));
+    EXPECT_EQ(t.droppedEvents(), 0u);
+
+    t.reconcile();  // drains, decides nothing yet
+
+    for (std::size_t i = 0; i < Tracker::ringCapacity(); ++i)
+        t.recordOurValidation(makeHash(5000 + i), static_cast<LedgerIndex>(5000 + i));
+
+    EXPECT_EQ(t.droppedEvents(), 0u);
+}
+
+TEST(ValidationTracker, a_burst_larger_than_one_ring_is_counted_in_full_when_drained)
+{
+    // Pending events are bounded by the repair window, not by a count, so a
+    // burst several ring-loads long is counted in full as long as the reducer
+    // runs between loads.
+    auto t = makeTracker();
+
+    constexpr std::size_t kBatches = 4;
+    auto const perBatch = Tracker::ringCapacity();
+
+    for (std::size_t b = 0; b < kBatches; ++b)
     {
-        auto const hash = makeHash(static_cast<std::uint64_t>(i));
-        tracker_.recordOurValidation(hash, static_cast<LedgerIndex>(i));
-        tracker_.recordNetworkValidation(hash, static_cast<LedgerIndex>(i));
+        for (std::size_t i = 0; i < perBatch; ++i)
+        {
+            auto const n = b * perBatch + i + 1;
+            t.recordOurValidation(makeHash(n), static_cast<LedgerIndex>(n));
+            t.recordNetworkValidation(makeHash(n), static_cast<LedgerIndex>(n));
+        }
+        t.reconcile();
     }
 
-    // 2 misses: only network validates.
-    for (int i = 4; i <= 5; ++i)
+    settle(t);
+
+    auto const expected = kBatches * perBatch;
+    EXPECT_EQ(t.droppedEvents(), 0u);
+    EXPECT_EQ(t.agreements1h(), expected);
+    EXPECT_EQ(t.missed1h(), 0u);
+    EXPECT_EQ(t.totalAgreements(), expected);
+    EXPECT_EQ(t.totalValidationsSent(), expected);
+    EXPECT_EQ(t.totalValidationsChecked(), expected);
+}
+
+// ---- concurrency -----------------------------------------------------------
+
+TEST(ValidationTracker, two_producers_and_a_reducer_lose_nothing)
+{
+    // Real threads on the real code path. Each producer stays under the ring
+    // capacity between drains, so no drop is expected and every pair must be
+    // counted exactly once.
+    gNow = Tracker::TimePoint{} + std::chrono::hours(1000);
+    Tracker t(&testNow);
+
+    constexpr std::uint64_t kLedgers = 64;
+
+    std::thread ours([&t] {
+        for (std::uint64_t i = 0; i < kLedgers; ++i)
+            t.recordOurValidation(makeHash(6000 + i), static_cast<LedgerIndex>(6000 + i));
+    });
+    std::thread theirs([&t] {
+        for (std::uint64_t i = 0; i < kLedgers; ++i)
+            t.recordNetworkValidation(makeHash(6000 + i), static_cast<LedgerIndex>(6000 + i));
+    });
+    std::thread reader([&t] {
+        for (int i = 0; i < 200; ++i)
+        {
+            t.reconcile();
+            static_cast<void>(t.agreements1h());
+        }
+    });
+
+    ours.join();
+    theirs.join();
+    reader.join();
+
+    settle(t);
+    EXPECT_EQ(t.droppedEvents(), 0u);
+    EXPECT_EQ(t.agreements1h(), kLedgers);
+    EXPECT_EQ(t.missed1h(), 0u);
+}
+
+TEST(ValidationTracker, a_reader_runs_alongside_the_reducer_without_racing_it)
+{
+    // The production shape: one thread reconciles while another only reads the
+    // gauges. Every event is still counted once, and a reader never stops the
+    // reducer from finishing a cycle.
+    gNow = Tracker::TimePoint{} + std::chrono::hours(3000);
+    Tracker t(&testNow);
+
+    constexpr std::uint64_t kLedgers = 500;
+    std::atomic<bool> stop{false};
+
+    std::thread reader([&t, &stop] {
+        std::uint64_t seen = 0;
+        while (!stop.load(std::memory_order_relaxed))
+            seen += t.agreements1h() + t.missed1h() + t.agreements7d();
+        static_cast<void>(seen);
+    });
+
+    for (std::uint64_t i = 0; i < kLedgers; ++i)
     {
-        auto const hash = makeHash(static_cast<std::uint64_t>(i));
-        tracker_.recordNetworkValidation(hash, static_cast<LedgerIndex>(i));
+        t.recordOurValidation(makeHash(8000 + i), static_cast<LedgerIndex>(8000 + i));
+        t.recordNetworkValidation(makeHash(8000 + i), static_cast<LedgerIndex>(8000 + i));
+        advance(std::chrono::seconds(9));
+        t.reconcile();
     }
 
-    // Wait for grace period then reconcile.
-    std::this_thread::sleep_for(std::chrono::seconds(9));
-    tracker_.reconcile();
+    stop.store(true, std::memory_order_relaxed);
+    reader.join();
 
-    EXPECT_EQ(tracker_.totalAgreements(), 3u);
-    EXPECT_EQ(tracker_.totalMissed(), 2u);
-    EXPECT_EQ(tracker_.agreements1h(), 3u);
-    EXPECT_EQ(tracker_.missed1h(), 2u);
-
-    // 3 out of 5 = 60%
-    EXPECT_DOUBLE_EQ(tracker_.agreementPct1h(), 60.0);
+    EXPECT_EQ(t.droppedEvents(), 0u);
+    EXPECT_EQ(t.totalAgreements(), kLedgers);
+    EXPECT_EQ(t.totalMissed(), 0u);
+    EXPECT_EQ(t.missed1h(), 0u);
 }
 
-// ---------------------------------------------------------------
-// 8. Duplicate recording for same hash
-//    Recording the same hash multiple times should not create
-//    duplicate pending entries or double-count totals beyond the
-//    per-call increments.
-// ---------------------------------------------------------------
-TEST_F(ValidationTrackerTest, DuplicateRecordingSameHash)
+TEST(ValidationTracker, concurrent_reducer_entry_does_not_deadlock_or_double_count)
 {
-    auto const hash = makeHash(42);
-    LedgerIndex const seq = 42;
+    gNow = Tracker::TimePoint{} + std::chrono::hours(2000);
+    Tracker t(&testNow);
 
-    // Record our validation twice for the same hash.
-    tracker_.recordOurValidation(hash, seq);
-    tracker_.recordOurValidation(hash, seq);
-    tracker_.recordNetworkValidation(hash, seq);
-
-    // Each call increments the lifetime counter.
-    EXPECT_EQ(tracker_.totalValidationsSent(), 2u);
-    EXPECT_EQ(tracker_.totalValidationsChecked(), 1u);
-
-    // But only one pending event exists, so only one agreement.
-    std::this_thread::sleep_for(std::chrono::seconds(9));
-    tracker_.reconcile();
-
-    EXPECT_EQ(tracker_.totalAgreements(), 1u);
-    EXPECT_EQ(tracker_.totalMissed(), 0u);
-}
-
-// ---------------------------------------------------------------
-// 9. Only-we-validated scenario
-//    We validate but the network does not. After grace period
-//    this should be a miss (not an agreement).
-// ---------------------------------------------------------------
-TEST_F(ValidationTrackerTest, OnlyWeValidated)
-{
-    auto const hash = makeHash(99);
-    LedgerIndex const seq = 99;
-
-    tracker_.recordOurValidation(hash, seq);
-
-    std::this_thread::sleep_for(std::chrono::seconds(9));
-    tracker_.reconcile();
-
-    EXPECT_EQ(tracker_.totalAgreements(), 0u);
-    EXPECT_EQ(tracker_.totalMissed(), 1u);
-    EXPECT_EQ(tracker_.missed1h(), 1u);
-    EXPECT_DOUBLE_EQ(tracker_.agreementPct1h(), 0.0);
-}
-
-// ---------------------------------------------------------------
-// 10. A counted ledger is never counted twice
-//     reconcile() drops the oldest reconciled events once the
-//     pending map passes kMaxPendingEvents. A validation arriving
-//     for one of those ledgers afterwards must not reach the
-//     agreement or missed totals a second time.
-//
-//     Two hashes are made the oldest so the trim drops both:
-//       - evictedMiss  (network only) reconciles as a miss. Our late
-//         validation cannot repair an entry the trim dropped, so
-//         totalMissed staying at 1 proves the trim really dropped
-//         it. A fixture where the trim did not run would repair it
-//         and report 0 misses.
-//       - evictedAgreed (both sides) reconciles as an agreement.
-//         Re-recording both sides is what double-counts an
-//         agreement.
-// ---------------------------------------------------------------
-TEST_F(ValidationTrackerTest, CountedLedgerNotCountedTwice)
-{
-    // The trim drops the oldest reconciled entries first. Each pause makes
-    // the next record time strictly larger, so these two are the oldest.
-    auto const evictedMiss = makeHash(1);
-    tracker_.recordNetworkValidation(evictedMiss, 1);
-    std::this_thread::sleep_for(std::chrono::milliseconds(5));
-
-    auto const evictedAgreed = makeHash(2);
-    tracker_.recordOurValidation(evictedAgreed, 2);
-    tracker_.recordNetworkValidation(evictedAgreed, 2);
-    std::this_thread::sleep_for(std::chrono::milliseconds(5));
-
-    // Fill to three over the bound so the trim drops three entries: the two
-    // above plus one filler.
-    constexpr std::size_t kFill = ValidationTracker::kMaxPendingEvents + 1;
-    for (std::size_t i = 0; i < kFill; ++i)
+    for (std::uint64_t i = 0; i < 32; ++i)
     {
-        auto const hash = makeHash(i + 3);
-        auto const seq = static_cast<LedgerIndex>(i + 3);
-        tracker_.recordOurValidation(hash, seq);
-        tracker_.recordNetworkValidation(hash, seq);
+        t.recordOurValidation(makeHash(7000 + i), static_cast<LedgerIndex>(7000 + i));
+        t.recordNetworkValidation(makeHash(7000 + i), static_cast<LedgerIndex>(7000 + i));
     }
+    advance(Tracker::gracePeriod() + std::chrono::seconds(1));
 
-    std::this_thread::sleep_for(std::chrono::seconds(9));
-    tracker_.reconcile();
+    std::vector<std::thread> readers;
+    for (int i = 0; i < 8; ++i)
+        readers.emplace_back([&t] {
+            for (int j = 0; j < 500; ++j)
+                t.reconcile();
+        });
+    for (auto& r : readers)
+        r.join();
 
-    // Every filler plus evictedAgreed agrees; evictedMiss is the one miss.
-    EXPECT_EQ(tracker_.totalAgreements(), kFill + 1);
-    EXPECT_EQ(tracker_.totalMissed(), 1u);
-    EXPECT_EQ(tracker_.agreements1h(), kFill + 1);
-    EXPECT_EQ(tracker_.missed1h(), 1u);
-
-    // Validations arrive again for the two dropped ledgers.
-    tracker_.recordOurValidation(evictedMiss, 1);
-    tracker_.recordOurValidation(evictedAgreed, 2);
-    tracker_.recordNetworkValidation(evictedAgreed, 2);
-
-    // Long enough for a re-created pending entry to pass the grace period.
-    std::this_thread::sleep_for(std::chrono::seconds(9));
-    tracker_.reconcile();
-
-    // Both ledgers were already counted, so every total is unchanged.
-    EXPECT_EQ(tracker_.totalAgreements(), kFill + 1);
-    EXPECT_EQ(tracker_.totalMissed(), 1u);
-    EXPECT_EQ(tracker_.agreements1h(), kFill + 1);
-    EXPECT_EQ(tracker_.missed1h(), 1u);
-
-    // The send and check counters count messages, not ledgers, so the
-    // repeated validations do count towards them.
-    EXPECT_EQ(tracker_.totalValidationsSent(), kFill + 3);
-    EXPECT_EQ(tracker_.totalValidationsChecked(), kFill + 3);
+    EXPECT_EQ(t.agreements1h(), 32u);
+    EXPECT_EQ(t.missed1h(), 0u);
+    EXPECT_EQ(t.totalAgreements(), 32u);
 }

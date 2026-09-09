@@ -8,31 +8,122 @@
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/protocol/Protocol.h>
 
-#include <algorithm>
 #include <atomic>
+#include <chrono>
+#include <cstddef>
 #include <cstdint>
-#include <deque>
-#include <mutex>
-#include <ranges>
+#include <iterator>
+#include <memory>
 
 namespace xrpl::telemetry {
 
-ValidationTracker::LedgerEvent*
-ValidationTracker::pendingEvent(uint256 const& ledgerHash, LedgerIndex seq)
+ValidationTracker::TimePoint
+ValidationTracker::steadyNow()
 {
-    if (auto const it = pending_.find(ledgerHash); it != pending_.end())
-        return &it->second;
+    return Clock::now();
+}
 
-    // A hash in tallied_ already reached the totals and left pending_.
-    // Building a fresh record for it would count the same ledger twice.
-    if (tallied_.contains(ledgerHash))
-        return nullptr;
+// ---- writer side, called from consensus and ledger threads -----------------
 
-    auto& evt = pending_[ledgerHash];
-    evt.ledgerHash = ledgerHash;
-    evt.seq = seq;
-    evt.recordTime = Clock::now();
-    return &evt;
+void
+ValidationTracker::recordOurValidation(uint256 const& ledgerHash, LedgerIndex seq)
+{
+    totalValidationsSent_.fetch_add(1, std::memory_order_relaxed);
+
+    // The producer stamps the time. The grace period is measured from when the
+    // event happened, so stamping at drain time would smear it by a cycle.
+    if (!ourRing_.push(ledgerHash, seq, now_()))
+        droppedEvents_.fetch_add(1, std::memory_order_relaxed);
+}
+
+void
+ValidationTracker::recordNetworkValidation(uint256 const& ledgerHash, LedgerIndex seq)
+{
+    totalValidationsChecked_.fetch_add(1, std::memory_order_relaxed);
+
+    if (!networkRing_.push(ledgerHash, seq, now_()))
+        droppedEvents_.fetch_add(1, std::memory_order_relaxed);
+}
+
+// ---- reducer, called from the metrics reader -------------------------------
+
+void
+ValidationTracker::reconcile()
+{
+    if (reducing_.test_and_set(std::memory_order_acquire))
+        return;
+
+    auto const now = now_();
+    drainRings();
+    decidePending(now);
+    advanceWindows(minuteOf(now));
+    publish();
+
+    reducing_.clear(std::memory_order_release);
+}
+
+void
+ValidationTracker::drainRings()
+{
+    ourRing_.drain([this](Slot const& s) { note(s, true); });
+    networkRing_.drain([this](Slot const& s) { note(s, false); });
+}
+
+void
+ValidationTracker::note(Slot const& s, bool ours)
+{
+    auto const it = pending_.find(s.hash);
+    if (it == pending_.end())
+    {
+        // A hash already counted must not open a fresh entry, or the same
+        // ledger reaches the totals twice.
+        if (tallied_.contains(s.hash))
+            return;
+
+        auto& evt = pending_[s.hash];
+        evt.recordTime = s.at;
+        evt.minute = minuteOf(s.at);
+        (ours ? evt.weValidated : evt.networkValidated) = true;
+        return;
+    }
+
+    (ours ? it->second.weValidated : it->second.networkValidated) = true;
+}
+
+void
+ValidationTracker::decidePending(TimePoint now)
+{
+    for (auto& [hash, evt] : pending_)
+    {
+        if (!evt.decided)
+        {
+            if (now - evt.recordTime < kGracePeriod)
+                continue;
+
+            evt.decided = true;
+            evt.agreed = evt.weValidated && evt.networkValidated;
+            noteTallied(hash);
+            addToWindows(evt.minute, evt.agreed);
+            (evt.agreed ? totalAgreements_ : totalMissed_).fetch_add(1, std::memory_order_relaxed);
+        }
+        else if (
+            !evt.agreed && evt.weValidated && evt.networkValidated &&
+            now - evt.recordTime <= kLateRepairWindow)
+        {
+            // A miss whose other half arrived late. Only `agreed` moves; the
+            // total was already counted in this event's bucket.
+            evt.agreed = true;
+            repairInWindows(evt.minute);
+            totalMissed_.fetch_sub(1, std::memory_order_relaxed);
+            totalAgreements_.fetch_add(1, std::memory_order_relaxed);
+        }
+    }
+
+    // Nothing can be repaired past the window, so the entry is dead weight.
+    auto const cutoff = now - kLateRepairWindow;
+    for (auto it = pending_.begin(); it != pending_.end();)
+        it = (it->second.decided && it->second.recordTime < cutoff) ? pending_.erase(it)
+                                                                    : std::next(it);
 }
 
 void
@@ -49,243 +140,216 @@ ValidationTracker::noteTallied(uint256 const& ledgerHash)
     }
 }
 
-void
-ValidationTracker::recordOurValidation(uint256 const& ledgerHash, LedgerIndex seq)
-{
-    std::scoped_lock const lock(mutex_);
-    totalValidationsSent_.fetch_add(1, std::memory_order_relaxed);
-
-    // The counter above counts messages, so it also counts a ledger that is
-    // already tallied. Only the per-ledger record is skipped.
-    if (auto* const evt = pendingEvent(ledgerHash, seq))
-        evt->weValidated = true;
-}
+// ---- buckets and window counters ------------------------------------------
 
 void
-ValidationTracker::recordNetworkValidation(uint256 const& ledgerHash, LedgerIndex seq)
+ValidationTracker::addToWindows(std::uint64_t minute, bool agreed)
 {
-    std::scoped_lock const lock(mutex_);
-    totalValidationsChecked_.fetch_add(1, std::memory_order_relaxed);
+    advanceWindows(minute);
 
-    if (auto* const evt = pendingEvent(ledgerHash, seq))
-        evt->networkValidated = true;
-}
+    auto& b = buckets_[minute % kBuckets7d];
+    ++b.total;
+    if (agreed)
+        ++b.agreed;
 
-void
-ValidationTracker::reconcile()
-{
-    std::scoped_lock const lock(mutex_);
-    auto const now = Clock::now();
-
-    for (auto& [hash, evt] : pending_)
+    for (auto* w : {&c1h_, &c24h_, &c7d_})
     {
-        if (!evt.reconciled && (now - evt.recordTime) >= kGracePeriod)
-        {
-            // Initial reconciliation after grace period.
-            evt.reconciled = true;
-            evt.agreed = evt.weValidated && evt.networkValidated;
-            noteTallied(hash);
+        ++w->total;
+        if (agreed)
+            ++w->agreed;
+    }
+}
 
-            if (evt.agreed)
-            {
-                totalAgreements_.fetch_add(1, std::memory_order_relaxed);
-            }
-            else
-            {
-                totalMissed_.fetch_add(1, std::memory_order_relaxed);
-            }
+void
+ValidationTracker::repairInWindows(std::uint64_t minute)
+{
+    // No window tail check is needed: the repair window is shorter than the
+    // shortest window, so a repairable event is still inside all three.
+    static_assert(
+        kLateRepairWindow < std::chrono::minutes(kBuckets1h),
+        "a repairable event must still be inside the shortest window");
 
-            WindowEvent const we{.time = now, .ledgerHash = evt.ledgerHash, .agreed = evt.agreed};
-            window1h_.push_back(we);
-            window24h_.push_back(we);
-            window7d_.push_back(we);
-        }
-        else if (
-            evt.reconciled && !evt.agreed && evt.weValidated && evt.networkValidated &&
-            (now - evt.recordTime) <= kLateRepairWindow)
-        {
-            // Late repair: was a miss, now both flags set.
-            evt.agreed = true;
-            totalMissed_.fetch_sub(1, std::memory_order_relaxed);
-            totalAgreements_.fetch_add(1, std::memory_order_relaxed);
+    ++buckets_[minute % kBuckets7d].agreed;
+    ++c1h_.agreed;
+    ++c24h_.agreed;
+    ++c7d_.agreed;
+}
 
-            // Flip the corresponding window entries from miss to agreement.
-            repairWindowEntry(window1h_, evt.ledgerHash);
-            repairWindowEntry(window24h_, evt.ledgerHash);
-            repairWindowEntry(window7d_, evt.ledgerHash);
-        }
+void
+ValidationTracker::advanceWindows(std::uint64_t minute)
+{
+    if (!started_)
+    {
+        started_ = true;
+        tail1h_ = tail24h_ = tail7d_ = minute;
+        newestMinute_ = minute;
+        return;
     }
 
-    evictStaleWindows(now);
-    evictOldPending(now);
-}
+    if (minute <= newestMinute_)
+        return;
 
-void
-ValidationTracker::evictStaleWindows(TimePoint now)
-{
-    auto const cutoff1h = now - kWindow1h;
-    while (!window1h_.empty() && window1h_.front().time < cutoff1h)
-        window1h_.pop_front();
+    auto const previousNewest = newestMinute_;
+    newestMinute_ = minute;
 
-    auto const cutoff24h = now - kWindow24h;
-    while (!window24h_.empty() && window24h_.front().time < cutoff24h)
-        window24h_.pop_front();
-
-    auto const cutoff7d = now - kWindow7d;
-    while (!window7d_.empty() && window7d_.front().time < cutoff7d)
-        window7d_.pop_front();
-}
-
-void
-ValidationTracker::evictOldPending(TimePoint now)
-{
-    auto const cutoff = now - kLateRepairWindow;
-    std::erase_if(pending_, [cutoff](auto const& entry) {
-        return entry.second.reconciled && entry.second.recordTime < cutoff;
-    });
-
-    // Hard trim if still over limit. The pass above already removed every
-    // reconciled entry older than the late-repair window, so every candidate
-    // here is still repairable. Drop the oldest first: it has the least repair
-    // time left, so it loses the least. pending_ is unordered, so the oldest
-    // has to be searched for rather than found at an end.
-    while (pending_.size() > kMaxPendingEvents)
+    // Nothing was recorded for longer than the whole grid, so every bucket
+    // still holding a count is stale. Clear them together instead of one at a
+    // time. The comparison is against the last minute WRITTEN, not against a
+    // window tail: under steady traffic a tail always sits exactly one
+    // grid-length back, and comparing to it would wipe live data every minute
+    // once the grid fills.
+    if (minute - previousNewest >= kBuckets7d)
     {
-        auto oldest = pending_.end();
-        for (auto it = pending_.begin(); it != pending_.end(); ++it)
-        {
-            if (!it->second.reconciled)
-                continue;
-            if (oldest == pending_.end() || it->second.recordTime < oldest->second.recordTime)
-                oldest = it;
-        }
-
-        // Only unreconciled entries left. Dropping one would lose its ledger
-        // from the totals entirely, so the bound gives way instead.
-        if (oldest == pending_.end())
-            break;
-
-        pending_.erase(oldest);
+        buckets_.fill(Bucket{});
+        c1h_ = c24h_ = c7d_ = WindowCount{};
+        tail1h_ = tail24h_ = tail7d_ = minute;
+        return;
     }
+
+    retireWindow(tail1h_, oldestInWindow(minute, kBuckets1h), c1h_, false);
+    retireWindow(tail24h_, oldestInWindow(minute, kBuckets24h), c24h_, false);
+    retireWindow(tail7d_, oldestInWindow(minute, kBuckets7d), c7d_, true);
+}
+
+void
+ValidationTracker::retireWindow(
+    std::uint64_t& tail,
+    std::uint64_t target,
+    WindowCount& count,
+    bool clear)
+{
+    while (tail < target)
+    {
+        auto& b = buckets_[tail % kBuckets7d];
+        count.total -= b.total;
+        count.agreed -= b.agreed;
+        if (clear)
+            b = Bucket{};
+        ++tail;
+    }
+}
+
+std::uint64_t
+ValidationTracker::oldestInWindow(std::uint64_t minute, std::size_t span)
+{
+    return minute + 1 >= span ? minute + 1 - span : 0;
+}
+
+std::uint64_t
+ValidationTracker::minuteOf(TimePoint t)
+{
+    return static_cast<std::uint64_t>(
+        std::chrono::duration_cast<std::chrono::minutes>(t.time_since_epoch()).count());
+}
+
+// ---- snapshot publication and reads ---------------------------------------
+
+void
+ValidationTracker::publish()
+{
+    published_.store(
+        std::make_shared<Snapshot const>(Snapshot{c1h_, c24h_, c7d_}), std::memory_order_release);
+}
+
+ValidationTracker::Snapshot
+ValidationTracker::read() const
+{
+    // Holding the shared_ptr keeps this snapshot alive for as long as the
+    // caller needs it, so the reducer can never write the values being read.
+    auto const s = published_.load(std::memory_order_acquire);
+    return s ? *s : Snapshot{};
+}
+
+double
+ValidationTracker::pct(WindowCount const& w)
+{
+    if (w.total == 0)
+        return 0.0;
+    return (static_cast<double>(w.agreed) / static_cast<double>(w.total)) * 100.0;
 }
 
 double
 ValidationTracker::agreementPct1h() const
 {
-    std::scoped_lock const lock(mutex_);
-    if (window1h_.empty())
-        return 0.0;
-    auto const agreed = static_cast<double>(
-        std::ranges::count_if(window1h_, [](auto const& e) { return e.agreed; }));
-    return (agreed / static_cast<double>(window1h_.size())) * 100.0;
+    return pct(read().w1h);
 }
 
 double
 ValidationTracker::agreementPct24h() const
 {
-    std::scoped_lock const lock(mutex_);
-    if (window24h_.empty())
-        return 0.0;
-    auto const agreed = static_cast<double>(
-        std::ranges::count_if(window24h_, [](auto const& e) { return e.agreed; }));
-    return (agreed / static_cast<double>(window24h_.size())) * 100.0;
-}
-
-uint64_t
-ValidationTracker::agreements1h() const
-{
-    std::scoped_lock const lock(mutex_);
-    return static_cast<uint64_t>(
-        std::ranges::count_if(window1h_, [](auto const& e) { return e.agreed; }));
-}
-
-uint64_t
-ValidationTracker::missed1h() const
-{
-    std::scoped_lock const lock(mutex_);
-    return static_cast<uint64_t>(
-        std::ranges::count_if(window1h_, [](auto const& e) { return !e.agreed; }));
-}
-
-uint64_t
-ValidationTracker::agreements24h() const
-{
-    std::scoped_lock const lock(mutex_);
-    return static_cast<uint64_t>(
-        std::ranges::count_if(window24h_, [](auto const& e) { return e.agreed; }));
-}
-
-uint64_t
-ValidationTracker::missed24h() const
-{
-    std::scoped_lock const lock(mutex_);
-    return static_cast<uint64_t>(
-        std::ranges::count_if(window24h_, [](auto const& e) { return !e.agreed; }));
+    return pct(read().w24h);
 }
 
 double
 ValidationTracker::agreementPct7d() const
 {
-    std::scoped_lock const lock(mutex_);
-    if (window7d_.empty())
-        return 0.0;
-    auto const agreed = static_cast<double>(
-        std::ranges::count_if(window7d_, [](auto const& e) { return e.agreed; }));
-    return (agreed / static_cast<double>(window7d_.size())) * 100.0;
+    return pct(read().w7d);
 }
 
-uint64_t
+std::uint64_t
+ValidationTracker::agreements1h() const
+{
+    return read().w1h.agreed;
+}
+
+std::uint64_t
+ValidationTracker::missed1h() const
+{
+    return read().w1h.missed();
+}
+
+std::uint64_t
+ValidationTracker::agreements24h() const
+{
+    return read().w24h.agreed;
+}
+
+std::uint64_t
+ValidationTracker::missed24h() const
+{
+    return read().w24h.missed();
+}
+
+std::uint64_t
 ValidationTracker::agreements7d() const
 {
-    std::scoped_lock const lock(mutex_);
-    return static_cast<uint64_t>(
-        std::ranges::count_if(window7d_, [](auto const& e) { return e.agreed; }));
+    return read().w7d.agreed;
 }
 
-uint64_t
+std::uint64_t
 ValidationTracker::missed7d() const
 {
-    std::scoped_lock const lock(mutex_);
-    return static_cast<uint64_t>(
-        std::ranges::count_if(window7d_, [](auto const& e) { return !e.agreed; }));
+    return read().w7d.missed();
 }
 
-uint64_t
+std::uint64_t
 ValidationTracker::totalAgreements() const
 {
     return totalAgreements_.load(std::memory_order_relaxed);
 }
 
-uint64_t
+std::uint64_t
 ValidationTracker::totalMissed() const
 {
     return totalMissed_.load(std::memory_order_relaxed);
 }
 
-uint64_t
+std::uint64_t
 ValidationTracker::totalValidationsSent() const
 {
     return totalValidationsSent_.load(std::memory_order_relaxed);
 }
 
-uint64_t
+std::uint64_t
 ValidationTracker::totalValidationsChecked() const
 {
     return totalValidationsChecked_.load(std::memory_order_relaxed);
 }
 
-void
-ValidationTracker::repairWindowEntry(std::deque<WindowEvent>& window, uint256 const& hash)
+std::uint64_t
+ValidationTracker::droppedEvents() const
 {
-    // Scan backwards since late repairs target recently added entries.
-    for (auto& event : std::views::reverse(window))
-    {
-        if (!event.agreed && event.ledgerHash == hash)
-        {
-            event.agreed = true;
-            return;
-        }
-    }
+    return droppedEvents_.load(std::memory_order_relaxed);
 }
 
 }  // namespace xrpl::telemetry
