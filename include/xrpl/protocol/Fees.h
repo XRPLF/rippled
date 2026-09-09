@@ -14,12 +14,13 @@ inline constexpr std::uint32_t kFeeUnitsDeprecated = 10;
 constexpr std::uint32_t microDropsPerDrop{1'000'000};
 
 /**
- * Hard protocol ceilings on the Feature Extension fee settings. A voted value
- * can never exceed these, so `preflight`, which has no view, may bound against
- * them.
+ * Hard protocol ceilings and a floor on the Feature Extension fee settings.
+ * A voted value can never exceed these, so `preflight`, which has no view,
+ * may bound against them.
  */
 inline constexpr std::uint32_t kMaxGasLimit{2'000'000};
 inline constexpr std::uint32_t kMaxBytecodeSizeLimit{200'000};
+inline constexpr std::uint32_t kMinGasPrice{1'000};
 
 // The following default values of fee settings will seed into FeeSettings
 // and write to the ledger on featureSmartEscrow activation.

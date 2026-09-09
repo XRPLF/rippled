@@ -131,7 +131,8 @@ Change::preclaim(PreclaimContext const& ctx)
                     !ctx.tx.isFieldPresent(sfGasPrice))
                     return temMALFORMED;
                 if (ctx.tx[sfGasLimit] > kMaxGasLimit ||
-                    ctx.tx[sfBytecodeSizeLimit] > kMaxBytecodeSizeLimit)
+                    ctx.tx[sfBytecodeSizeLimit] > kMaxBytecodeSizeLimit ||
+                    ctx.tx[sfGasPrice] < kMinGasPrice)
                     return temBAD_FEE;
             }
             else

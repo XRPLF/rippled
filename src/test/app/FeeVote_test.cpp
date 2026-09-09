@@ -435,7 +435,7 @@ class FeeVote_test : public beast::unit_test::Suite
                 .reserveIncrementDrops = XRPAmount{50000},
                 .gasLimit = 100,
                 .bytecodeSizeLimit = 200,
-                .gasPrice = 300};
+                .gasPrice = 3000};
             // Test successful fee transaction with new fields
             auto feeTx = createFeeTx(ledger->rules(), ledger->seq(), fields);
 
@@ -471,14 +471,29 @@ class FeeVote_test : public beast::unit_test::Suite
                  .reserveIncrementDrops = XRPAmount{50000},
                  .gasLimit = kMaxGasLimit + 1,
                  .bytecodeSizeLimit = kMaxBytecodeSizeLimit,
-                 .gasPrice = 300});
+                 .gasPrice = 3000});
             testBadFields(
                 {.baseFeeDrops = XRPAmount{10},
                  .reserveBaseDrops = XRPAmount{200000},
                  .reserveIncrementDrops = XRPAmount{50000},
                  .gasLimit = kMaxGasLimit,
                  .bytecodeSizeLimit = kMaxBytecodeSizeLimit + 1,
-                 .gasPrice = 300});
+                 .gasPrice = 3000});
+            // gasPrice has a floor rather than a ceiling.
+            testBadFields(
+                {.baseFeeDrops = XRPAmount{10},
+                 .reserveBaseDrops = XRPAmount{200000},
+                 .reserveIncrementDrops = XRPAmount{50000},
+                 .gasLimit = kMaxGasLimit,
+                 .bytecodeSizeLimit = kMaxBytecodeSizeLimit,
+                 .gasPrice = kMinGasPrice - 1});
+            testBadFields(
+                {.baseFeeDrops = XRPAmount{10},
+                 .reserveBaseDrops = XRPAmount{200000},
+                 .reserveIncrementDrops = XRPAmount{50000},
+                 .gasLimit = kMaxGasLimit,
+                 .bytecodeSizeLimit = kMaxBytecodeSizeLimit,
+                 .gasPrice = 0});
         }
 
         // Test that the Smart Escrow fields are rejected if the
@@ -501,7 +516,7 @@ class FeeVote_test : public beast::unit_test::Suite
                 .reserveIncrementDrops = XRPAmount{50000},
                 .gasLimit = 100,
                 .bytecodeSizeLimit = 200,
-                .gasPrice = 300};
+                .gasPrice = 3000};
             // Test successful fee transaction with new fields
             auto feeTx = createFeeTx(ledger->rules(), ledger->seq(), fields, true);
 
@@ -1050,7 +1065,7 @@ class FeeVote_test : public beast::unit_test::Suite
             setup.ownerReserve = 7654321;
             setup.gasLimit = 100;
             setup.bytecodeSizeLimit = 200;
-            setup.gasPrice = 300;
+            setup.gasPrice = 3000;
             auto const [feeTx, ledger] = createFeeTxFromVoting(setup);
 
             checkFeeTx(setup, feeTx, ledger);
@@ -1063,7 +1078,7 @@ class FeeVote_test : public beast::unit_test::Suite
             setup.ownerReserve = 7654321;
             setup.gasLimit = 0;
             setup.bytecodeSizeLimit = 0;
-            setup.gasPrice = 300;
+            setup.gasPrice = 3000;
             auto const [feeTx, ledger] = createFeeTxFromVoting(setup);
 
             checkFeeTx(setup, feeTx, ledger);
@@ -1076,7 +1091,7 @@ class FeeVote_test : public beast::unit_test::Suite
             setup.ownerReserve = 7654321;
             setup.gasLimit = kMaxGasLimit + 1;
             setup.bytecodeSizeLimit = kMaxBytecodeSizeLimit + 1;
-            setup.gasPrice = 300;
+            setup.gasPrice = 3000;
             auto const [feeTx, ledger] = createFeeTxFromVoting(setup);
 
             setup.gasLimit = ledger->fees().gasLimit;
