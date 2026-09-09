@@ -22,6 +22,12 @@ inputs:
     description: "The sanitizers to enable."
     required: false
     default: ""
+  options:
+    description: >-
+      Extra Conan host options, space separated, each written without the
+      --options:host= prefix (for example "&:telemetry=True").
+    required: false
+    default: ""
 
 runs:
   using: composite
@@ -34,12 +40,20 @@ runs:
         BUILD_TYPE: ${{ inputs.build_type }}
         LOG_VERBOSITY: ${{ inputs.log_verbosity }}
         SANITIZERS: ${{ inputs.sanitizers }}
+        EXTRA_OPTIONS: ${{ inputs.options }}
       run: |
+        # Word splitting is intended here: each entry becomes its own flag, and
+        # an empty input expands to no flags at all.
+        extra_options=()
+        for option in ${EXTRA_OPTIONS}; do
+            extra_options+=("--options:host=${option}")
+        done
         conan install \
             --profile:all ci \
             --build="${BUILD_OPTION}" \
             --options:host='&:tests=True' \
             --options:host='&:xrpld=True' \
+            "${extra_options[@]}" \
             --settings:all build_type="${BUILD_TYPE}" \
             --conf:all tools.build:jobs=${BUILD_NPROC} \
             --conf:all tools.build:verbosity="${LOG_VERBOSITY}" \
