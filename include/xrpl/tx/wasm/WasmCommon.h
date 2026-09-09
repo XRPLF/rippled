@@ -56,6 +56,18 @@ enum class HostFunctionError : int32_t {
     InternalFatal = std::numeric_limits<int32_t>::min(),
 };
 
+// The verdict `floatCompare` answers, read as the placing of `x` against `y` — the one host
+// function whose success values are an enumeration rather than a count, a flag or a handle.
+//
+// Wire values shared with the guest, and the second declaration of
+// `xrpl_host_functions::FloatOrdering` — the ABI crate also links into the guest, so it
+// cannot depend on `cxx` and this cannot be generated from it. Append only, never renumber.
+enum class FloatOrdering : int32_t {
+    Equal = 0,
+    Greater = 1,
+    Less = 2,
+};
+
 template <typename T>
 struct WasmResult
 {
@@ -158,6 +170,12 @@ constexpr int32_t
 hfErrorToInt(HostFunctionError e)
 {
     return static_cast<int32_t>(e);
+}
+
+constexpr int32_t
+floatOrderingToInt(FloatOrdering o)
+{
+    return static_cast<int32_t>(o);
 }
 
 template <class Body>

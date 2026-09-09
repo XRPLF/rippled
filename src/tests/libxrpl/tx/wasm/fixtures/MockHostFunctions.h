@@ -369,7 +369,7 @@ struct MockHostFunctions : HostFunctions
         (const, override));
 
     MOCK_METHOD(
-        (std::expected<std::int32_t, HostFunctionError>),
+        (std::expected<FloatOrdering, HostFunctionError>),
         floatCompare,
         (Slice const& x, Slice const& y),
         (const, override));

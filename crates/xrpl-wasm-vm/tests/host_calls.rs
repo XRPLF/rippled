@@ -8,7 +8,7 @@ use support::{
     COMPLETED, EMPTY_REGION, FakeHost, ONE_PAGE, Trace, code, failure, import, module, run, status,
     traced,
 };
-use xrpl_host_functions::{HASH_LEN, HostError, TraceDataType};
+use xrpl_host_functions::{FloatOrdering, HASH_LEN, HostError, TraceDataType};
 use xrpl_wasm_vm::RunError;
 
 /// A value the host writes must be readable by the guest at the pointer it gave,
@@ -979,18 +979,60 @@ fn float_to_mant_exp_with_a_short_exponent_region_writes_neither() {
 
 /// A comparison that reads two float regions and returns a scalar verdict, no output
 /// region involved.
+///
+/// The host answers a [`FloatOrdering`]; the engine lowers it to its code and the guest
+/// reads that. Which of the three it is the engine has no opinion on.
 #[test]
 fn float_cmp_reads_both_and_returns_the_verdict() {
-    let host = FakeHost::new().answering_float_compare(Ok(-1));
+    let host = FakeHost::new().answering_float_compare(Ok(FloatOrdering::Less));
 
     let wat = module(
         &[import::FLOAT_CMP, ONE_PAGE],
         "(call $float_cmp (i32.const 0) (i32.const 8) (i32.const 8) (i32.const 8))",
     );
-    assert_eq!(status(&wat, &host), -1, "the comparison verdict");
+    assert_eq!(
+        status(&wat, &host),
+        FloatOrdering::Less.code(),
+        "the comparison verdict"
+    );
     assert_eq!(
         *host.float_compare_asked.borrow(),
         vec![(vec![0u8; 8], vec![0u8; 8])]
+    );
+}
+
+/// Every verdict lowers to its own code, so a guest reads the ordering the host named and
+/// not a sibling. `Less` is `2` rather than a negative, which is what keeps this loop from
+/// colliding with the error path the next test covers.
+#[test]
+fn every_float_cmp_verdict_reaches_the_guest_unchanged() {
+    for &verdict in FloatOrdering::ALL {
+        let host = FakeHost::new().answering_float_compare(Ok(verdict));
+
+        let wat = module(
+            &[import::FLOAT_CMP, ONE_PAGE],
+            "(call $float_cmp (i32.const 0) (i32.const 8) (i32.const 8) (i32.const 8))",
+        );
+        assert_eq!(status(&wat, &host), verdict.code(), "{verdict:?}");
+    }
+}
+
+/// The other half of that `i32`: a refused comparison is a negative code, which no verdict
+/// can be mistaken for.
+#[test]
+fn float_cmp_error_reaches_the_guest_as_a_negative_code() {
+    let host = FakeHost::new().answering_float_compare(Err(HostError::FloatInputMalformed));
+
+    let wat = module(
+        &[import::FLOAT_CMP, ONE_PAGE],
+        "(call $float_cmp (i32.const 0) (i32.const 8) (i32.const 8) (i32.const 8))",
+    );
+    let code = status(&wat, &host);
+    assert_eq!(code, HostError::FloatInputMalformed.code());
+    assert_eq!(
+        FloatOrdering::from_code(code),
+        None,
+        "an error code must not read back as a verdict"
     );
 }
 

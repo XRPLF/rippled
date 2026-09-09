@@ -30,7 +30,7 @@
 
 use std::any::Any;
 use std::panic::{AssertUnwindSafe, catch_unwind};
-use xrpl_host_functions::{HostError, HostFunctions, HostResult, TraceDataType};
+use xrpl_host_functions::{FloatOrdering, HostError, HostFunctions, HostResult, TraceDataType};
 use xrpl_wasm_vm::{CheckError, RunError, RunFailure, RunOutcome, check, run};
 
 /// [`guarded`] must be able to stop an unwind. Under `panic = "abort"` it cannot,
@@ -569,6 +569,18 @@ fn scalar(n: i32) -> HostResult<i32> {
     Ok(n)
 }
 
+/// A call whose answer is a named verdict rather than a bare scalar: [`scalar`]'s split
+/// first, then the code must name a variant.
+///
+/// **This is where the C++ side is held to the ABI.** `HostContext::floatCompare` lowers a
+/// `FloatOrdering` to its code as it crosses, so a value naming no variant is that
+/// declaration having drifted from this one — nothing a contract can act on, hence
+/// `InternalFatal` and a stopped run rather than a verdict the guest would read as one of
+/// the three.
+fn verdict(n: i32) -> HostResult<FloatOrdering> {
+    FloatOrdering::from_code(scalar(n)?).ok_or(HostError::InternalFatal)
+}
+
 impl HostFunctions for CxxHost<'_> {
     fn get_ledger_sqn(&self, out: &mut [u8]) -> HostResult<usize> {
         bytes_written(self.ctx.get_ledger_sqn(out))
@@ -859,8 +871,8 @@ impl HostFunctions for CxxHost<'_> {
         bytes_written(self.ctx.float_from_mant_exp(mantissa, exponent, mode, out))
     }
 
-    fn float_compare(&self, x: &[u8], y: &[u8]) -> HostResult<i32> {
-        scalar(self.ctx.float_compare(x, y))
+    fn float_compare(&self, x: &[u8], y: &[u8]) -> HostResult<FloatOrdering> {
+        verdict(self.ctx.float_compare(x, y))
     }
 
     fn float_add(&self, x: &[u8], y: &[u8], out: &mut [u8], mode: i32) -> HostResult<usize> {
@@ -1077,6 +1089,43 @@ mod tests {
         assert_eq!(crossed.gas_used, 900);
         assert_eq!(crossed.detail, "trap: unreachable");
         assert_eq!(crossed.result, 0, "a failed run returned no value");
+    }
+
+    /// The split every scalar answer crosses on: non-negative is the value, negative is
+    /// the code that names why there is none.
+    #[test]
+    fn a_scalar_splits_its_answer_from_its_error_on_the_sign() {
+        assert_eq!(scalar(0), Ok(0));
+        assert_eq!(scalar(7), Ok(7));
+        assert_eq!(scalar(-19), Err(HostError::FloatInputMalformed));
+    }
+
+    /// `float_cmp`'s three verdicts survive the crossing as themselves, which is the whole
+    /// reason the ABI declares them rather than passing an unexplained `i32`.
+    #[test]
+    fn every_verdict_crosses_back_as_itself() {
+        for &ordering in FloatOrdering::ALL {
+            assert_eq!(verdict(ordering.code()), Ok(ordering), "{ordering:?}");
+        }
+    }
+
+    /// **What the named result buys over a bare `i32`.** A code naming no variant is
+    /// `WasmCommon.h`'s `FloatOrdering` having drifted from the ABI's, and it is caught
+    /// here rather than handed to a contract that would read `3` as none of its three
+    /// branches. `0` is not in this set: it is `Equal`, not an absent answer.
+    #[test]
+    fn a_code_naming_no_verdict_is_internal_fatal() {
+        for code in [3, 4, 99, i32::MAX] {
+            assert_eq!(verdict(code), Err(HostError::InternalFatal), "code {code}");
+        }
+    }
+
+    /// An error still crosses as an error, and does not become the drift sentinel: the
+    /// sign is read before the code is matched against the variants.
+    #[test]
+    fn a_refused_comparison_keeps_its_own_error() {
+        assert_eq!(verdict(-19), Err(HostError::FloatInputMalformed));
+        assert_eq!(verdict(-1), Err(HostError::Unimplemented));
     }
 
     /// The `RunError` set as the test *expects* it, not as the conversion reports it:

@@ -347,7 +347,17 @@ invoke(Functor&& functor)
         return hfErrorToInt(value.error());
     }
 
-    return *value;
+    // Most bodies answer a bare scalar — a count, a flag, a slot index. `floatCompare`
+    // answers a named code instead (`FloatOrdering`), and a scoped enum will not convert
+    // on its own; both reach the contract as the same non-negative `i32`.
+    if constexpr (std::is_enum_v<std::remove_cvref_t<decltype(*value)>>)
+    {
+        return static_cast<std::int32_t>(*value);
+    }
+    else
+    {
+        return *value;
+    }
 }
 
 // A traced integer, which the guest sends as bytes rather than as a wasm scalar so that one

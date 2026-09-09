@@ -23,17 +23,44 @@ TEST_F(FloatCompareImpl, MalformedInputs)
 
 TEST_F(FloatCompareImpl, Less)
 {
-    expectValue(makeHost()->floatCompare(slice(FloatTest::kIntMin), slice(FloatTest::kIntZero)), 2);
+    expectValue(
+        makeHost()->floatCompare(slice(FloatTest::kIntMin), slice(FloatTest::kIntZero)),
+        FloatOrdering::Less);
 }
 
 TEST_F(FloatCompareImpl, Greater)
 {
-    expectValue(makeHost()->floatCompare(slice(FloatTest::kIntMax), slice(FloatTest::kIntZero)), 1);
+    expectValue(
+        makeHost()->floatCompare(slice(FloatTest::kIntMax), slice(FloatTest::kIntZero)),
+        FloatOrdering::Greater);
 }
 
 TEST_F(FloatCompareImpl, Equal)
 {
-    expectValue(makeHost()->floatCompare(slice(FloatTest::kOne), slice(FloatTest::kOne)), 0);
+    expectValue(
+        makeHost()->floatCompare(slice(FloatTest::kOne), slice(FloatTest::kOne)),
+        FloatOrdering::Equal);
+}
+
+// The wire codes a contract branches on, pinned as literals here because that is what the
+// guest compiles against. `FloatOrdering` is declared twice — here and as
+// `xrpl_host_functions::FloatOrdering`, which the ABI crate cannot generate from this one —
+// so each side pins its own numbers, as `HostFunctionError` already does.
+//
+// The non-negativity is the invariant rather than an accident of the numbering: a verdict
+// and an error code share one `i32`, split by sign, so `Less` is `2` and not `memcmp`'s
+// `-1`, which is `Unimplemented`.
+TEST_F(FloatCompareImpl, VerdictCodesAreTheOnesTheGuestReads)
+{
+    EXPECT_EQ(floatOrderingToInt(FloatOrdering::Equal), 0);
+    EXPECT_EQ(floatOrderingToInt(FloatOrdering::Greater), 1);
+    EXPECT_EQ(floatOrderingToInt(FloatOrdering::Less), 2);
+
+    for (auto const verdict : {FloatOrdering::Equal, FloatOrdering::Greater, FloatOrdering::Less})
+    {
+        EXPECT_GE(floatOrderingToInt(verdict), 0);
+        EXPECT_NE(floatOrderingToInt(verdict), hfErrorToInt(HostFunctionError::Unimplemented));
+    }
 }
 
 // A non-canonical encoding of 10 (mantissa 100000, exponent -4) is normalized on decode, so
@@ -42,7 +69,9 @@ TEST_F(FloatCompareImpl, NonCanonicalNormalizes)
 {
     Bytes const nonCanonicalTen{
         0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x86, 0xA0, 0xFF, 0xFF, 0xFF, 0xFC};
-    expectValue(makeHost()->floatCompare(slice(nonCanonicalTen), slice(FloatTest::kTen)), 0);
+    expectValue(
+        makeHost()->floatCompare(slice(nonCanonicalTen), slice(FloatTest::kTen)),
+        FloatOrdering::Equal);
 }
 
 }  // namespace xrpl::test

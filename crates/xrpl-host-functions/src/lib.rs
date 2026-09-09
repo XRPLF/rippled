@@ -5,17 +5,14 @@
 //! wasm engine registers from.
 //!
 //! The split: hand-written here is the vocabulary the declarations are written in —
-//! [`HostError`], [`TraceDataType`], [`HostResult`], [`HASH_LEN`] — and everything
-//! derived from the declarations is generated. The expansion names nothing this file
-//! does not, so the two sides meet only in the block below.
+//! [`HostError`], [`TraceDataType`], [`FloatOrdering`], [`HostResult`], [`HASH_LEN`] —
+//! and everything derived from the declarations is generated. The expansion names
+//! nothing this file does not, so the two sides meet only in the block below.
 //!
 //! Three items cross that split the other way, named by the expansion but by no
 //! declaration: [`WasmValType`], which the derived wasm signatures are spelled in,
 //! and `FromWasmRegion`/`FromWasmScalar`, which `wasmi_glue!` builds a marshalled
 //! argument through.
-//!
-//! So this file is lists — error codes, trace data types, functions. The `macro_rules!`
-//! that expand the first two into enums live in `macros.rs`.
 
 #![no_std]
 
@@ -74,6 +71,15 @@ trace_data_types! {
     AsText = 7,
 }
 
+float_orderings! {
+    /// `x` and `y` are the same value.
+    Equal = 0,
+    /// `x` is the greater of the two.
+    Greater = 1,
+    /// `x` is the lesser of the two.
+    Less = 2,
+}
+
 /// The wasm module name a guest imports these functions under:
 /// `(import "host_lib" "ldgr_index" …)`.
 pub const HOST_MODULE: &str = "host_lib";
@@ -120,7 +126,8 @@ pub trait FromWasmScalar {
 // marshalled.** `&[u8]`/`&str` and `&mut [u8]` are `(ptr, len)` pairs, `TraceDataType`
 // is an `i32` code the engine names before a host sees it, and **`u32` is four
 // little-endian bytes in a region**, not a scalar, which is how the guest SDK passes a
-// sequence number.
+// sequence number. A result is `usize` for the length of what was written to an output
+// region, `i32` or `FloatOrdering` for the answer itself, or `()` for none.
 host_functions! {
     /// The sequence number of the ledger being built, as 4 little-endian bytes.
     #[gas = 60]
@@ -510,11 +517,16 @@ host_functions! {
         mode: i32,
     ) -> HostResult<usize>;
 
-    /// Compares floats `x` and `y`, returning a negative, zero, or positive scalar as
-    /// `x` is less than, equal to, or greater than `y`.
+    /// Compares floats `x` and `y`, answering the [`FloatOrdering`] that places `x`
+    /// against `y`.
+    ///
+    /// The only declaration whose result is a named type rather than a bare scalar. It
+    /// reaches the guest as the variant's [`code`](FloatOrdering::code) — `0` equal, `1`
+    /// `x` greater, `2` `x` lesser — and **not** in `memcmp`'s signed convention, since
+    /// the wire's negative range is [`HostError`]'s; see [`FloatOrdering`].
     #[gas = 80]
     #[wasm_name = "float_cmp"]
-    fn float_compare(&self, x: &[u8], y: &[u8]) -> HostResult<i32>;
+    fn float_compare(&self, x: &[u8], y: &[u8]) -> HostResult<FloatOrdering>;
 
     /// The float sum `x + y` under rounding `mode`.
     #[gas = 160]

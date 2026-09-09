@@ -1,5 +1,5 @@
-//! The `macro_rules!` behind the two hand-listed enums, [`crate::HostError`] and
-//! [`crate::TraceDataType`].
+//! The `macro_rules!` behind the three hand-listed enums, [`crate::HostError`],
+//! [`crate::TraceDataType`] and [`crate::FloatOrdering`].
 //!
 //! Each takes one list of `Variant = code,` and expands the enum together with the
 //! `ALL`/`code`/`from_code` set that must not fall behind it. The lists themselves stay
@@ -94,6 +94,55 @@ macro_rules! trace_data_types {
             pub const fn from_code(code: i32) -> Option<TraceDataType> {
                 match code {
                     $($code => Some(TraceDataType::$variant),)+
+                    _ => None,
+                }
+            }
+        }
+    };
+}
+
+/// Declares [`crate::FloatOrdering`] from one list, so `FloatOrdering::ALL`,
+/// `FloatOrdering::code` and `FloatOrdering::from_code` cannot fall behind the
+/// variants — the reason the two macros above are written this way.
+macro_rules! float_orderings {
+    ($($(#[$doc:meta])* $variant:ident = $code:literal,)+) => {
+        /// The verdict [`HostFunctions::float_compare`] answers, read as the placing of
+        /// `x` against `y`.
+        ///
+        /// **Not C's `memcmp` convention**, and the sign is why: the wire's negative range
+        /// belongs to [`HostError`], so a comparison cannot spell "less" as a negative
+        /// without colliding with a code like `FloatInputMalformed`. Every variant is
+        /// therefore non-negative, and a guest branches on the value rather than its sign.
+        ///
+        /// The discriminants are wire values shared with the guest stdlib: append only,
+        /// never renumber. As with [`TraceDataType`], the host side needs a second
+        /// declaration — `cxx` cannot be a dependency here — so `WasmCommon.h` declares
+        /// the same three codes for C++.
+        #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+        #[repr(i32)]
+        pub enum FloatOrdering {
+            $($(#[$doc])* $variant = $code,)+
+        }
+
+        impl FloatOrdering {
+            /// Every verdict a comparison may answer, in code order.
+            pub const ALL: &'static [FloatOrdering] = &[$(FloatOrdering::$variant,)+];
+
+            /// The non-negative wire value that names this verdict.
+            #[inline]
+            pub const fn code(self) -> i32 {
+                self as i32
+            }
+
+            /// The verdict `code` names, or `None`.
+            ///
+            /// `None` is not a comparison a guest can act on: a total order has exactly
+            /// these three outcomes, so any other non-negative value is the host
+            /// contradicting the ABI. Negative values go the same way, being errors
+            /// rather than verdicts.
+            pub const fn from_code(code: i32) -> Option<FloatOrdering> {
+                match code {
+                    $($code => Some(FloatOrdering::$variant),)+
                     _ => None,
                 }
             }
