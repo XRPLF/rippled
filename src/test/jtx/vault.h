@@ -7,6 +7,7 @@
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Keylet.h>
+#include <xrpl/protocol/Protocol.h>
 
 #include <chrono>
 #include <cstdint>
@@ -32,6 +33,8 @@ struct Vault
         std::optional<std::uint32_t> subscriptionDate =
             std::nullopt;  // NOLINT(readability-redundant-member-init)
         std::optional<std::uint32_t> redemptionDate =
+            std::nullopt;  // NOLINT(readability-redundant-member-init)
+        std::optional<VaultVersion> leVersion =
             std::nullopt;  // NOLINT(readability-redundant-member-init)
     };
 

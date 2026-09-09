@@ -13,7 +13,7 @@ To build from source instead, see [BUILD.md](../BUILD.md).
 
 Packages are published to four channels:
 
-- `stable` - the latest production release
+- `stable` - production releases
 - `rc` - release candidates
 - `beta` - beta builds
 - `develop` - every push to the [`develop` branch](https://github.com/XRPLF/rippled/tree/develop)

@@ -16,23 +16,7 @@ let
     exec ${pkgs.python3}/bin/python3 ${llvmPackages.clang-unwrapped}/bin/run-clang-tidy "$@"
   '';
 
-  # rust-overlay's toolchain propagates the *default* stdenv.cc onto the PATH (so
-  # cargo has a linker). That default may be different from the clang we pin here,
-  # so it shadows our clang and the build can silently use a different compiler
-  # version. Drop that cc from every propagation channel instead of pinning a
-  # replacement: the toolchain then carries no compiler and cargo just uses the
-  # active shell's stdenv cc. Must cover all channels — rust-overlay uses both
-  # propagatedBuildInputs and depsHostHostPropagated.
-  rustToolchainBase = pkgs.rust-bin.fromRustupToolchainFile ../rust-toolchain.toml;
-  rustToolchain =
-    let
-      defaultCc = pkgs.stdenv.cc; # default compiler from nixpkgs stdenv
-      withoutDefaultCc = builtins.filter (dep: (dep.outPath or "") != defaultCc.outPath);
-    in
-    rustToolchainBase.overrideAttrs (old: {
-      propagatedBuildInputs = withoutDefaultCc (old.propagatedBuildInputs or [ ]);
-      depsHostHostPropagated = withoutDefaultCc (old.depsHostHostPropagated or [ ]);
-    });
+  rust = import ./rust.nix { inherit pkgs; };
 
   # Nix wraps its toolchain so that binaries are exposed only under unsuffixed
   # names (gcc, g++, clang-tidy, ...). Several tools probe for a
@@ -108,41 +92,38 @@ in
     mkGcov
     ;
 
-  commonPackages = with pkgs; [
-    clangToolLinks
-    runClangTidyLink
-    ccache
-    clangbuildanalyzer
-    clangTools
-    cmake
-    conan
-    curlMinimal # needed for codecov/codecov-action
-    doxygen
-    file # needed for cpack in Clio
-    gcovr
-    gh
-    git
-    git-cliff
-    git-lfs
-    gnumake
-    gnupg # needed for signing commits & codecov/codecov-action
-    graphviz
-    less # needed for git diff
-    mold
-    nettools # provides netstat, used to debug failures in CI
-    ninja
-    patchelf
-    perl # needed for openssl
-    pkg-config
-    pre-commit
-    python3
-    runClangTidy
-    vim
-    zip
-    # Rust packages
-    cargo-audit
-    cargo-llvm-cov
-    cargo-nextest
-    rustToolchain
-  ];
+  commonPackages =
+    (with pkgs; [
+      clangToolLinks
+      runClangTidyLink
+      ccache
+      clangbuildanalyzer
+      clangTools
+      cmake
+      conan
+      curlMinimal # needed for codecov/codecov-action
+      doxygen
+      file # needed for cpack in Clio
+      gcovr
+      gh
+      git
+      git-cliff
+      git-lfs
+      gnumake
+      gnupg # needed for signing commits & codecov/codecov-action
+      graphviz
+      less # needed for git diff
+      mold
+      nettools # provides netstat, used to debug failures in CI
+      ninja
+      patchelf
+      perl # needed for openssl
+      pkg-config
+      pre-commit
+      python3
+      runClangTidy
+      vim
+      zip
+    ])
+    ++ rust.packages;
 }

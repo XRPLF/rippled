@@ -5,8 +5,9 @@
 #include <xrpld/rpc/CTID.h>
 #include <xrpld/rpc/Context.h>
 #include <xrpld/rpc/DeliveredAmount.h>
-#include <xrpld/rpc/MPTokenIssuanceID.h>
 #include <xrpld/rpc/Status.h>
+#include <xrpld/rpc/detail/RPCHelpers.h>
+#include <xrpld/rpc/detail/SyntheticFields.h>
 
 #include <xrpl/basics/Blob.h>
 #include <xrpl/basics/RangeSet.h>
@@ -18,7 +19,6 @@
 #include <xrpl/core/NetworkIDService.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/ErrorCodes.h>
-#include <xrpl/protocol/NFTSyntheticSerializer.h>
 #include <xrpl/protocol/RPCErr.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STBase.h>
@@ -253,9 +253,7 @@ populateJsonResponse(
             if (meta)
             {
                 response[jss::meta] = meta->getJson(JsonOptions::Values::None);
-                insertDeliveredAmount(response[jss::meta], context, result.txn, *meta);
-                rpc::insertNFTSyntheticInJson(response, sttx, *meta);
-                rpc::insertMPTokenIssuanceID(response[jss::meta], sttx, *meta);
+                rpc::insertAllSyntheticInJson(response[jss::meta], context, sttx, *meta);
             }
         }
         response[jss::validated] = result.validated;

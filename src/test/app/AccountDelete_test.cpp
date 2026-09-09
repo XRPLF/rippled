@@ -29,6 +29,8 @@
 #include <xrpl/basics/chrono.h>
 #include <xrpl/basics/strHex.h>
 #include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/json/to_string.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
@@ -67,7 +69,8 @@ private:
         // We can't use env.meta() here, because meta() doesn't include
         // delivered_amount.
         env.close();
-        json::Value const meta = env.rpc("tx", txHash)[jss::result][jss::meta];
+        json::Value const txResult = env.rpc("tx", txHash)[jss::result];
+        json::Value const meta = txResult[jss::meta];
 
         // Expect there to be a DeliveredAmount field.
         if (!BEAST_EXPECT(meta.isMember(sfDeliveredAmount.jsonName)))
@@ -78,6 +81,21 @@ private:
         json::Value const jsonExpect{amount.getJson(JsonOptions::Values::None)};
         BEAST_EXPECT(meta[sfDeliveredAmount.jsonName] == jsonExpect);
         BEAST_EXPECT(meta[jss::delivered_amount] == jsonExpect);
+
+        // The `ledger` RPC (with expanded transactions) should also report
+        // delivered_amount for this transaction, matching the `tx` RPC.
+        json::Value ledgerParams;
+        ledgerParams[jss::ledger_index] = txResult[jss::ledger_index].asUInt();
+        ledgerParams[jss::transactions] = true;
+        ledgerParams[jss::expand] = true;
+
+        auto const ledgerResult = env.rpc("json", "ledger", to_string(ledgerParams));
+        auto const& ledgerTx = ledgerResult[jss::result][jss::ledger][jss::transactions][0u];
+        BEAST_EXPECT(ledgerTx[jss::hash].asString() == txHash);
+
+        json::Value const& ledgerMeta = ledgerTx[jss::metaData];
+        BEAST_EXPECT(ledgerMeta[sfDeliveredAmount.jsonName] == jsonExpect);
+        BEAST_EXPECT(ledgerMeta[jss::delivered_amount] == jsonExpect);
     }
 
     // Helper function to create a payment channel.

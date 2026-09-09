@@ -92,6 +92,26 @@ enum class HashPrefix : std::uint32_t {
      * Batch
      */
     Batch = detail::makeHashPrefix('B', 'C', 'H'),
+
+    /**
+     * inner transaction to sign as the counterparty
+     */
+    CounterpartyTxSign = detail::makeHashPrefix('C', 'P', 'T'),
+
+    /**
+     * inner transaction to multi-sign as the counterparty
+     */
+    CounterpartyTxMultiSign = detail::makeHashPrefix('C', 'P', 'M'),
+
+    /**
+     * inner transaction to sign as the sponsor
+     */
+    SponsorTxSign = detail::makeHashPrefix('S', 'P', 'N'),
+
+    /**
+     * inner transaction to multi-sign as the sponsor
+     */
+    SponsorTxMultiSign = detail::makeHashPrefix('S', 'P', 'M'),
 };
 
 template <class Hasher>

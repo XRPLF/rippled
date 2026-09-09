@@ -17,6 +17,8 @@ ProtectHome=true
 PrivateTmp=true
 User=xrpld
 Group=xrpld
+# xrpld.tmpfiles creates these at install and boot; these recreate them on
+# every start, so a removed directory does not stop the service.
 StateDirectory=xrpld
 StateDirectoryMode=0750
 LogsDirectory=xrpld

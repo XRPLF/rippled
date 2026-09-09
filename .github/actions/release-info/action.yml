@@ -9,7 +9,7 @@ outputs:
     description: "The release channel this build belongs to."
     value: ${{ steps.release_info.outputs.channel }}
   pkg_release:
-    description: "The package release number: 1 for a tag, the run number otherwise."
+    description: "The package release number: 1 for a tag, <run number>.<commit date>git<short commit hash> otherwise."
     value: ${{ steps.release_info.outputs.pkg_release }}
 
 runs:
@@ -41,4 +41,4 @@ runs:
 
     - name: Determine release channel and package release
       id: release_info
-      uses: XRPLF/actions/release-info@7f956517847fb9e0b56070f72e1280f4e7404a09
+      uses: XRPLF/actions/release-info@7cc0e4a8d9d0b838f92c48d312856b190341bbba
