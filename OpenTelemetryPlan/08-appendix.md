@@ -194,6 +194,7 @@ flowchart TB
 | [Phase5_taskList.md](./Phase5_taskList.md)                                 | Ledger processing & advanced tracing  |
 | [Phase5_IntegrationTest_taskList.md](./Phase5_IntegrationTest_taskList.md) | Observability stack integration tests |
 | [Phase7_taskList.md](./Phase7_taskList.md)                                 | Native OTel metrics migration         |
+| [Phase8_taskList.md](./Phase8_taskList.md)                                 | Log-trace correlation                 |
 
 ---
 

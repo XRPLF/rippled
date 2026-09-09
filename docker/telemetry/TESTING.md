@@ -45,6 +45,15 @@ the end of this test for which do and which do not.
 docker compose -f docker/telemetry/docker-compose.yml up -d
 ```
 
+The `xrpld-logdir-init` service creates `docker/telemetry/data/logs` and gives it
+to uid/gid 1000. If `id -u` on this host is not 1000, xrpld cannot write its log
+there and the log pipeline stays empty, so set the ids first:
+
+```bash
+XRPLD_UID=$(id -u) XRPLD_GID=$(id -g) \
+    docker compose -f docker/telemetry/docker-compose.yml up -d
+```
+
 Wait for services to be ready:
 
 ```bash
@@ -449,6 +458,103 @@ Pre-configured datasources:
 
 - **Tempo**: Trace data at `http://tempo:3200`
 - **Prometheus**: Metrics at `http://prometheus:9090`
+- **Loki**: Log data at `http://loki:3100` (via Grafana Explore)
+
+---
+
+## Test 3: Log-Trace Correlation
+
+xrpld injects `trace_id` and `span_id` into its log output when
+a log line is emitted within an active OTel span. This test verifies the
+end-to-end log-trace correlation pipeline.
+
+### Step 1: Verify trace_id in log output
+
+After running Test 1 or Test 2 (which generate RPC spans), check the
+xrpld debug.log for trace context:
+
+```bash
+grep 'trace_id=[a-f0-9]\{32\} span_id=[a-f0-9]\{16\}' /path/to/debug.log
+```
+
+Expected: log lines with `trace_id=<32hex> span_id=<16hex>` between the
+severity code and the message. Example:
+
+```
+2024-Jan-15 10:30:45.123456789 UTC RPCHandler:NFO trace_id=abc123def456789012345678abcdef01 span_id=0123456789abcdef Calling server_info
+```
+
+Lines emitted outside of an active span (background tasks, startup) will
+NOT have trace context — this is expected.
+
+### Step 2: Cross-check trace_id in Tempo
+
+Extract a `trace_id` from the log and verify it exists in Tempo:
+
+```bash
+TRACE_ID=$(grep -m1 -o 'trace_id=[a-f0-9]\{32\}' /path/to/debug.log | cut -d= -f2)
+echo "Checking trace: $TRACE_ID"
+curl -s "http://localhost:3200/api/traces/$TRACE_ID" | jq '.batches | length'
+```
+
+Expected result: `> 0` (the trace exists in Tempo).
+Tempo returns the trace in OTLP shape, so the array is `batches`, not `data`,
+and one trace can arrive as several batches.
+
+### Step 3: Verify Loki log ingestion
+
+The OTel Collector's file_log receiver tails xrpld's debug.log and
+exports parsed entries to Loki. Verify Loki has received entries:
+
+```bash
+# Query Loki for any xrpld logs in the last 10 minutes
+NOW_NS=$(($(date +%s) * 1000000000))
+curl -sG "http://localhost:3100/loki/api/v1/query_range" \
+    --data-urlencode 'query={service_name="xrpld"}' \
+    --data-urlencode "start=$((NOW_NS - 600000000000))" \
+    --data-urlencode "end=${NOW_NS}" \
+    --data-urlencode 'limit=5' \
+    --data-urlencode 'direction=backward' |
+    jq '[.data.result[].values | length] | add // 0'
+```
+
+Expected: > 0 log lines.
+
+Use `query_range`, not `query`. Loki rejects a bare log selector on the
+instant `/query` endpoint with HTTP 400 and a `text/plain` body
+("log queries are not supported as an instant query type"), so `jq` fails to
+parse it and the step never prints a number — even when ingestion is working.
+Only metric queries such as `sum(count_over_time(...))` are allowed there,
+which is why the validation scripts can use the instant endpoint.
+Timestamps are unix nanoseconds, matching `workload/validate_telemetry.py`.
+Counting `.data.result | length` would count streams, not log lines.
+
+### Step 4: Verify Grafana Tempo-to-Loki correlation
+
+1. Open Grafana at http://localhost:3000
+2. Navigate to **Explore** -> select **Tempo** datasource
+3. Search for a trace (e.g., operation `rpc.command.server_info`)
+4. Click **"Logs for this trace"** in the trace detail view
+5. Verify that Loki log lines appear, filtered by the trace's `trace_id`
+
+### Step 5: Verify Grafana Loki-to-Tempo correlation
+
+1. In Grafana **Explore**, select **Loki** datasource
+2. Query: `{service_name="xrpld"} |= "trace_id="`
+3. In the log results, click the **TraceID** derived field link
+4. Verify it navigates to the full trace in Tempo
+
+### Expected results
+
+| Check                          | Expected                                 |
+| ------------------------------ | ---------------------------------------- |
+| `trace_id=` in debug.log       | Present in log lines within active spans |
+| `span_id=` in debug.log        | Present alongside trace_id               |
+| Logs without active span       | No trace_id/span_id fields               |
+| trace_id in Tempo              | Matches a valid trace                    |
+| Loki log ingestion             | Logs visible via LogQL                   |
+| Tempo -> Loki "Logs for trace" | Shows correlated log lines               |
+| Loki -> Tempo TraceID link     | Navigates to correct trace               |
 
 ---
 
@@ -477,7 +583,7 @@ Pre-configured datasources:
    ```
 2. Verify `[ips_fixed]` lists the 5 other peer ports, and not the node's own
 3. Verify `validators.txt` has all 6 public keys
-4. Check node debug logs: `tail -50 /tmp/xrpld-integration/node1/debug.log`
+4. Check node debug logs: `tail -50 /tmp/xrpld-integration/Node-1/debug.log`
 5. Ensure `[peer_private]` is set to `1` (prevents reaching out to public network)
 
 ### Transaction not processing
@@ -490,6 +596,47 @@ Pre-configured datasources:
    ```
 2. Check submit response for error codes
 3. In standalone mode, remember to call `ledger_accept` after submitting
+
+### No trace_id in log output
+
+1. Verify xrpld was built with `telemetry=ON` (`-Dtelemetry=ON` in CMake)
+2. Verify `enabled=1` in the `[telemetry]` config section
+3. Log lines only contain trace context when emitted inside an active span.
+   Background logs (startup, periodic tasks outside spans) will not have
+   `trace_id`/`span_id`.
+4. Ensure the trace category is enabled (e.g., `trace_rpc=1` for RPC logs)
+
+### No logs in Loki
+
+1. Verify the log file mount in docker-compose.yml:
+   ```yaml
+   volumes:
+     - ${XRPLD_LOG_DIR:-./data/logs}:/var/log/xrpld:ro
+   ```
+   The mount source defaults to the repo-relative `docker/telemetry/data/logs`
+   (where the telemetry configs write). Override `XRPLD_LOG_DIR` to tail logs
+   from another root.
+2. Check OTel Collector logs for file_log receiver errors:
+   ```bash
+   docker compose -f docker/telemetry/docker-compose.yml logs otel-collector | grep -i "file_log\|loki\|error"
+   ```
+3. Verify Loki is running:
+   ```bash
+   curl -s http://localhost:3100/ready
+   ```
+4. Verify the file_log receiver glob pattern matches your log files:
+   The default pattern is `/var/log/xrpld/*/debug.log`
+
+### Grafana trace-log links not working
+
+1. Verify `tracesToLogs` is configured in the Tempo datasource provisioning
+   (`docker/telemetry/grafana/provisioning/datasources/tempo.yaml`)
+2. Verify `derivedFields` is configured in the Loki datasource provisioning
+   (`docker/telemetry/grafana/provisioning/datasources/loki.yaml`)
+3. Restart Grafana after changing provisioning files:
+   ```bash
+   docker compose -f docker/telemetry/docker-compose.yml restart grafana
+   ```
 
 ### Spanmetrics not appearing in Prometheus
 
