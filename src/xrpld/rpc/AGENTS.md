@@ -1,5 +1,5 @@
 # AGENTS.md — rpc
 
-See the repo-level [AGENTS.md](../../../AGENTS.md) for general build/test/style guidance, including the [API Changelog](../../../AGENTS.md#api-changelog) rule, and [README.md](./README.md) for the RPC subsystem design.
+See the repo-level [AGENTS.md](../../../AGENTS.md) for general build/test/style guidance, and [README.md](./README.md) for the RPC subsystem design.
 
-A change to a public RPC method's behavior (new/changed/removed fields, parameters, or error conditions) is exactly the kind of API-visible change that rule covers — use `### Additions`, `### Deprecations`, etc. under `## Unreleased` as appropriate.
+Any change to publicly-visible API behavior — RPC/WebSocket fields, parameters, or error conditions, or transaction/signing behavior surfaced through the API even from outside this directory — needs an entry in [`API-CHANGELOG.md`](../../../API-CHANGELOG.md) under `## Unreleased` (`### Additions`, `### Deprecations`, etc. as appropriate).

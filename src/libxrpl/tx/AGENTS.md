@@ -12,10 +12,6 @@ When adding a new amendment or transaction type, check its interaction with: inv
 
 New (or deleted) invariant checks must be amendment-gated: they introduce (or remove) a way for a transaction to fail, and an un-gated change risks validators disagreeing on a transaction's result, i.e. a network fork.
 
-## Gating amendment-dependent code
+See [transactors/AGENTS.md](./transactors/AGENTS.md) for conventions on writing the amendment-gated code itself.
 
-Prefer a single amendment-enabled block and a single disabled block over scattering `rules.enabled(...)` checks through a function, even if the two blocks are similar.
-
-When a file or function checks more than one amendment, name local enablement booleans per-amendment (e.g. `fix340Enabled` for `fixCleanup3_4_0`), not a generic `fixEnabled` — it becomes ambiguous once a second amendment is checked in the same scope.
-
-Only use `UNREACHABLE` for genuinely impossible paths, not to avoid writing a test for one that's reachable but rare. When a branch marked `UNREACHABLE` is excluded from coverage, wrap it in `LCOV_EXCL_START`/`LCOV_EXCL_STOP`.
+A change to transaction/signing behavior that's visible through the public API also needs an `API-CHANGELOG.md` entry — see [../../xrpld/rpc/AGENTS.md](../../xrpld/rpc/AGENTS.md) for the full rule.
