@@ -5,7 +5,7 @@
 #
 # This is a separate workflow from the main CI. It runs:
 #   - On manual dispatch (workflow_dispatch)
-#   - On pushes to telemetry-related branches
+#   - On any push that touches one of the paths globs below
 #
 # The workflow is intentionally heavyweight (builds rippled, starts Docker
 # services, runs a multi-node cluster) — it validates the full telemetry
@@ -420,22 +420,51 @@ jobs:
               cat "$TIMINGS" >>"$GITHUB_STEP_SUMMARY"
               echo '```' >>"$GITHUB_STEP_SUMMARY"
           elif [ -f "$REGRESSION" ]; then
-              REGR_COUNT=$(jq -e '.summary.regressions' "$REGRESSION") || REGR_COUNT=0
-              IMPR_COUNT=$(jq -e '.summary.improvements' "$REGRESSION") || IMPR_COUNT=0
-              TOTAL=$(jq -e '.summary.total' "$REGRESSION") || TOTAL=0
-              echo "| Stat | Count |" >>"$GITHUB_STEP_SUMMARY"
-              echo "|------|-------|" >>"$GITHUB_STEP_SUMMARY"
-              echo "| Metrics compared | $TOTAL |" >>"$GITHUB_STEP_SUMMARY"
-              echo "| Regressions | $REGR_COUNT |" >>"$GITHUB_STEP_SUMMARY"
-              echo "| Improvements | $IMPR_COUNT |" >>"$GITHUB_STEP_SUMMARY"
-              echo "" >>"$GITHUB_STEP_SUMMARY"
-              if [ "$REGR_COUNT" -gt 0 ]; then
-                  echo "### Regressions" >>"$GITHUB_STEP_SUMMARY"
+              # Existence is not readability: a truncated report satisfies -f,
+              # and the `|| =0` fallbacks below would then render a clean table
+              # of zeros for a run that compared nothing. Same trap the note
+              # above the baseline parse warns about, so check the shape first.
+              SUMMARY_OK=$(jq -r 'if (.summary | type) == "object" then "yes" else "no" end' \
+                  "$REGRESSION" 2>/dev/null) || SUMMARY_OK=no
+              if [ "$SUMMARY_OK" != "yes" ]; then
+                  echo "## Regression Gate: report unreadable" >>"$GITHUB_STEP_SUMMARY"
                   echo "" >>"$GITHUB_STEP_SUMMARY"
-                  echo "| Metric | Baseline | Current | Δ | % | Unit |" >>"$GITHUB_STEP_SUMMARY"
-                  echo "|--------|---------:|--------:|--:|--:|------|" >>"$GITHUB_STEP_SUMMARY"
-                  jq -r '.metrics[] | select(.regressed) | "| \(.key) | \(.baseline) | \(.current) | \(.delta) | \(.pct_change)% | \(.unit) |"' \
-                      "$REGRESSION" >>"$GITHUB_STEP_SUMMARY"
+                  echo "\`$REGRESSION\` exists but carries no \`summary\` object, so no" \
+                      "table can be rendered. The pass/fail above still comes from the" \
+                      "comparator's exit code." >>"$GITHUB_STEP_SUMMARY"
+                  echo "::error::Regression report is present but has no summary object"
+              else
+                  # No `jq -e`: it exits non-zero when a field is legitimately 0 or
+                  # false, which the fallbacks would silently turn into 0 as well.
+                  REGR_COUNT=$(jq -r '.summary.regressions // 0' "$REGRESSION")
+                  IMPR_COUNT=$(jq -r '.summary.improvements // 0' "$REGRESSION")
+                  TOTAL=$(jq -r '.summary.total // 0' "$REGRESSION")
+                  MISSING_COUNT=$(jq -r '.summary.missing_in_current // 0' "$REGRESSION")
+                  COMPARED=$(jq -r '.summary.compared // 0' "$REGRESSION")
+                  # `total` is every key in the report, i.e. the union of the
+                  # baseline and this run, so it is not what was gated. The
+                  # comparator reports `compared` for that; do not derive it from
+                  # total minus missing, because a key can also be skipped for
+                  # being new or for having no data on either side.
+                  echo "| Stat | Count |" >>"$GITHUB_STEP_SUMMARY"
+                  echo "|------|-------|" >>"$GITHUB_STEP_SUMMARY"
+                  echo "| Metrics in report | $TOTAL |" >>"$GITHUB_STEP_SUMMARY"
+                  echo "| Metrics compared | $COMPARED |" >>"$GITHUB_STEP_SUMMARY"
+                  echo "| Not captured this run | $MISSING_COUNT |" >>"$GITHUB_STEP_SUMMARY"
+                  echo "| Regressions | $REGR_COUNT |" >>"$GITHUB_STEP_SUMMARY"
+                  echo "| Improvements | $IMPR_COUNT |" >>"$GITHUB_STEP_SUMMARY"
+                  echo "" >>"$GITHUB_STEP_SUMMARY"
+                  if [ "$MISSING_COUNT" -gt 0 ]; then
+                      echo "::warning::$MISSING_COUNT baseline metric(s) were not captured this run, so they were not gated"
+                  fi
+                  if [ "$REGR_COUNT" -gt 0 ]; then
+                      echo "### Regressions" >>"$GITHUB_STEP_SUMMARY"
+                      echo "" >>"$GITHUB_STEP_SUMMARY"
+                      echo "| Metric | Baseline | Current | Δ | % | Unit |" >>"$GITHUB_STEP_SUMMARY"
+                      echo "|--------|---------:|--------:|--:|--:|------|" >>"$GITHUB_STEP_SUMMARY"
+                      jq -r '.metrics[] | select(.regressed) | "| \(.key) | \(.baseline) | \(.current) | \(.delta) | \(.pct_change)% | \(.unit) |"' \
+                          "$REGRESSION" >>"$GITHUB_STEP_SUMMARY"
+                  fi
               fi
           fi
 

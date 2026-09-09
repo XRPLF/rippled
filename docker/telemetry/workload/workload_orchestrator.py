@@ -436,9 +436,16 @@ async def run_phase(
     tasks = _launch_phase_tasks(phase, endpoints, report_dir, prefix)
 
     if not tasks:
-        logger.warning(
-            "Phase %d: %s — no workload configured, skipping", phase_idx + 1, name
+        # An error, not a warning. The exit gate is built from phase errors and
+        # from error RATES, and both rates short-circuit to 0.0 when nothing was
+        # sent -- so a profile with a mistyped key ("rpcs", "RPC") would produce
+        # no traffic at all and still exit 0.
+        message = (
+            f"phase {phase_idx + 1} '{name}' configures no workload: "
+            "it declares neither 'rpc' nor 'tx'"
         )
+        logger.error("%s", message)
+        result.errors.append(message)
         return result
 
     for label, report_path, task in tasks:

@@ -111,7 +111,7 @@ Both set `[insight] server=otel` (native metrics → collector → Prometheus, w
 drives the dashboards) and `service_instance_id`, exposed by Prometheus as the
 `service_instance_id` label that the `$node` dashboard variable filters on. The
 mainnet config logs to `/var/log/xrpld/mainnet/debug.log` — the path
-the collector's filelog receiver tails for log-trace correlation.
+the collector's file_log receiver tails for log-trace correlation.
 
 Metrics begin flowing as soon as the node connects to peers (`server_state`
 ≥ `connected`); full ledger and consensus panels populate after sync
@@ -210,12 +210,12 @@ To return to local-only export, bring the stack up with just the base
 The prepared config **dual-exports**: data goes to both the local stack and
 Grafana Cloud, so the on-box backends remain a fallback. For cloud-only,
 remove the local exporters (`debug`, `otlp/tempo`, `prometheus`,
-`otlphttp/loki`) from the respective pipelines in
+`otlp_http/loki`) from the respective pipelines in
 `otel-collector-config.grafanacloud.yaml`, leaving only
-`otlphttp/grafanacloud`.
+`otlp_http/grafanacloud`.
 
 > **Note**: shipping logs to Grafana Cloud requires keeping xrpld file
-> logging on (at least `warning` level) so the collector's filelog receiver
+> logging on (at least `warning` level) so the collector's file_log receiver
 > has a `debug.log` to tail. Traces and metrics are unaffected by log level.
 
 ### Importing dashboards to Grafana Cloud
@@ -995,7 +995,7 @@ flowchart TB
   (`tvc < minVal`) it returns early with no promotion — a built ledger that loses
   is abandoned ([LedgerMaster.cpp:980](../src/xrpld/app/ledger/detail/LedgerMaster.cpp#L980);
   [docs/consensus.md:50](consensus.md)). The `ledger.validate` span is emitted only
-  inside `checkAccept` ([LedgerMaster.cpp:987](../src/xrpld/app/ledger/detail/LedgerMaster.cpp#L987)).
+  inside `checkAccept` ([LedgerMaster.cpp:1003](../src/xrpld/app/ledger/detail/LedgerMaster.cpp#L1003)).
 - **validation-send guard**: broadcast only if
   `validating_ && isCompatible && !consensusFail && canValidateSeq(seq)` — silently
   suppressed for incompatible ledgers or an already-validated seq
@@ -1162,8 +1162,8 @@ are pending a code fix:
 - **`ledger.acquire` / `ledger.store` / `ledger.validate` are not reliably roots
   either.** All three use `SpanGuard::span`
   ([InboundLedger.cpp:113](../src/xrpld/app/ledger/detail/InboundLedger.cpp#L113),
-  [LedgerMaster.cpp:463](../src/xrpld/app/ledger/detail/LedgerMaster.cpp#L463),
-  [987](../src/xrpld/app/ledger/detail/LedgerMaster.cpp#L987)), which inherits the
+  [LedgerMaster.cpp:470](../src/xrpld/app/ledger/detail/LedgerMaster.cpp#L470),
+  [1003](../src/xrpld/app/ledger/detail/LedgerMaster.cpp#L1003)), which inherits the
   ambient span ([SpanGuard.cpp:233](../src/libxrpl/telemetry/SpanGuard.cpp#L233))
   rather than `freshRoot`
   ([245](../src/libxrpl/telemetry/SpanGuard.cpp#L245)) — the same defect as
@@ -2840,7 +2840,7 @@ curl -sG http://localhost:9090/api/v1/query \
 When xrpld is built with `telemetry=ON`, log lines emitted within an active, sampled OpenTelemetry span automatically include `trace_id` and `span_id` fields:
 
 ```
-2024-Jan-15 10:30:45.123456 UTC LedgerMaster:NFO trace_id=abc123def456789012345678abcdef01 span_id=0123456789abcdef Validated ledger 42
+2024-Jan-15 10:30:45.123456789 UTC LedgerMaster:NFO trace_id=abc123def456789012345678abcdef01 span_id=0123456789abcdef Validated ledger 42
 ```
 
 This enables bidirectional navigation between logs and traces in Grafana:
@@ -2876,7 +2876,7 @@ The sampled check is normally satisfied on a self-rooted consensus round — hea
 
 With all four satisfied, `info` is the minimum level at which the `log.trace_id_present` and `log.trace_id_cross_reference` checks pass by construction, and it is what the correlation-checking harnesses generate: the cfgs written by [run-full-validation.sh](../docker/telemetry/workload/run-full-validation.sh) and [integration-test.sh](../docker/telemetry/integration-test.sh) each set `enabled=1`, `trace_consensus=1` and `log_level info` together. `benchmark.sh` deliberately does not — it stays at `warning` to keep log I/O out of the overhead measurement, and it runs no correlation check. At `warning` and above that pair is suppressed and correlation becomes incidental — dependent on a `warn`-or-worse line happening to fire inside some active span.
 
-> **CI exercises both checks.** `log.trace_id_present` and `log.trace_id_cross_reference` are gated on every CI run — see [CI workflow](#ci-workflow) for the invocation and the per-leg diagnostics printed alongside them. Run the same thing locally after any change to log formatting, span activation, the `filelog` receiver or the Loki exporter:
+> **CI exercises both checks.** `log.trace_id_present` and `log.trace_id_cross_reference` are gated on every CI run — see [CI workflow](#ci-workflow) for the invocation and the per-leg diagnostics printed alongside them. Run the same thing locally after any change to log formatting, span activation, the `file_log` receiver or the Loki exporter:
 >
 > ```bash
 > docker/telemetry/workload/run-full-validation.sh --xrpld .build/xrpld
@@ -2886,7 +2886,7 @@ With all four satisfied, `info` is the minimum level at which the `log.trace_id_
 
 `debug` does correlate strictly more: it additionally brings in [`BuildLedger.cpp:81`](../src/xrpld/app/ledger/detail/BuildLedger.cpp#L81) (inside the `ledger.build` `ScopedSpanGuard` at [:55](../src/xrpld/app/ledger/detail/BuildLedger.cpp#L55), once per ledger close) and [`RPCHandler.cpp:188`](../src/xrpld/rpc/detail/RPCHandler.cpp#L188) (inside the `rpc.command.*` `ScopedSpanGuard` at [:168](../src/xrpld/rpc/detail/RPCHandler.cpp#L168), once per RPC command), giving broader multi-subsystem coverage.
 
-But raising the **base** level to `debug` puts synchronous log I/O inside `ledger.build`, `consensus.accept` (including [RCLConsensus.cpp:663](../src/xrpld/app/consensus/RCLConsensus.cpp#L663), which logs **per transaction**) and `tx.apply` — precisely the spans whose p50/p95/p99 latencies `regression-metrics.json` gates. A baseline captured at `debug` bakes that log I/O into the latency numbers permanently, turning the regression gate into a measurement of its own configuration.
+But raising the **base** level to `debug` puts synchronous log I/O inside `ledger.build`, `consensus.accept` (including [RCLConsensus.cpp:715](../src/xrpld/app/consensus/RCLConsensus.cpp#L715), which logs **per transaction**) and `tx.apply` — precisely the spans whose p50/p95/p99 latencies `regression-metrics.json` gates. A baseline captured at `debug` bakes that log I/O into the latency numbers permanently, turning the regression gate into a measurement of its own configuration.
 
 So if you need the broader coverage, enable it **per partition** rather than globally, and only **after** a baseline has been captured at the harness's normal level:
 
@@ -2897,9 +2897,11 @@ log_level RPCHandler debug
 
 ### Log Ingestion Pipeline
 
-Log files are ingested by the OTel Collector's `filelog` receiver, which tails `debug.log` files and parses them with a regex that extracts `timestamp`, `partition`, `severity`, `trace_id`, `span_id`, and `message` fields. Parsed entries are exported to Grafana Loki.
+Log files are ingested by the OTel Collector's `file_log` receiver, which tails `debug.log` files and parses them with a regex that extracts `timestamp`, `partition`, `severity`, `trace_id`, `span_id`, and `message` fields. Parsed entries are exported to Grafana Loki.
 
-The receiver tails `/var/log/xrpld/*/debug.log` inside the collector container. docker-compose bind-mounts the host log root there; the source defaults to the repo-relative `docker/telemetry/data/logs`, which the telemetry configs write to (`data/logs/<network>/debug.log`) and which needs no root. To tail logs from elsewhere, set `XRPLD_LOG_DIR` before `docker compose up` (the integration test does this to point at its own workdir). The single trailing `*` matches one per-network or per-node subdirectory.
+The receiver tails `/var/log/xrpld/*/debug.log` inside the collector container. docker-compose bind-mounts the host log root there; the source defaults to the repo-relative `docker/telemetry/data/logs`, which the telemetry configs write to (`data/logs/<service_instance_id>/debug.log`). To tail logs from elsewhere, set `XRPLD_LOG_DIR` before `docker compose up` (the integration test does this to point at its own workdir). The single trailing `*` matches one per-node subdirectory.
+
+That subdirectory is load-bearing, not cosmetic. Docker creates a missing bind-mount source as root, and `Config::getDebugLogFile()` only warns when it cannot create the log directory, so a root-owned log root produces a healthy-looking node that writes no `debug.log` and an empty Loki with no error at any layer. The `xrpld-logdir-init` service creates the directory and hands it to `XRPLD_UID`/`XRPLD_GID` (default 1000) to prevent that. The receiver also lifts the subdirectory name onto the resource attribute `service.instance.id`, which Loki indexes as the label `service_instance_id`, so each emitter must name its log directory after its own `[telemetry] service_instance_id` or log lines carry a node name that no trace or metric shares.
 
 Each file is read from the beginning, because the receiver's own default (`end`) would skip anything a node wrote before the collector's first poll and would never read a log that has stopped being written to. Read offsets are held in memory by default, so a restarted collector re-reads the files it already ingested. The developer stack avoids that by layering `otel-collector-filestorage.yaml` as a second `--config`, which adds a `file_storage` extension that keeps the offsets on a named volume; a one-shot init service prepares that volume, because the collector runs as a non-root user and a fresh Docker volume is owned by root. Ephemeral stacks such as the workload validation harness create a fresh log directory per run, so they have nothing to resume from and deliberately omit the overlay.
 
@@ -2932,7 +2934,7 @@ after the selector and cannot be discovered by `label_values()`.
 
 # Logs from the last hour containing trace context. `partition`, `severity`, and
 # `trace_id` are already parsed into structured metadata by the collector's
-# filelog receiver, so re-extracting them with regexp is unnecessary work.
+# file_log receiver, so re-extracting them with regexp is unnecessary work.
 {service_name="xrpld"} | trace_id != ""
 
 # Count of traced vs untraced log lines
@@ -3647,9 +3649,9 @@ not a sign the cache is working.
 ### No logs in Loki
 
 - Verify the log file mount in docker-compose.yml points to the correct xrpld log directory (default source `docker/telemetry/data/logs`, or the `XRPLD_LOG_DIR` override) and that xrpld actually writes `debug.log` there
-- Check OTel Collector logs for filelog receiver errors: `docker compose logs otel-collector`
+- Check OTel Collector logs for file_log receiver errors: `docker compose logs otel-collector`
 - Verify Loki is running: `curl http://localhost:3100/ready`
-- Check the filelog receiver glob `/var/log/xrpld/*/debug.log` matches your log layout — the log file must sit one subdirectory below the mount root
+- Check the file_log receiver glob `/var/log/xrpld/*/debug.log` matches your log layout — the log file must sit one subdirectory below the mount root
 
 ### Diagnosing slow/stuck fresh sync
 
@@ -4954,12 +4956,12 @@ container as the main CI, so Conan and ccache hit the shared caches), and
   these checks are enabled: per-node counts of `debug.log` lines carrying the
   injected `trace_id`/`span_id` shape plus the severity mix, the container-side
   listing of `/var/log/xrpld` taken with the collector's own mounts and uid, the
-  `filelog` receiver's watched files, logs-pipeline warnings and internal
+  `file_log` receiver's watched files, logs-pipeline warnings and internal
   log-record counters, and Loki's entry counts for the stream selector with and
   without the line filter. The diagnostics are non-fatal by construction: each
   leg is isolated and a missing container or unreachable endpoint prints a note.
   Those two Loki entry counts are `sum(count_over_time(...))`, and the `sum()` is
-  load-bearing: the `filelog` receiver leaves `message` and `timestamp` as
+  load-bearing: the `file_log` receiver leaves `message` and `timestamp` as
   log-record attributes, Loki's OTLP path stores them as structured metadata, and
   structured metadata joins a metric query's label set — so an unaggregated
   `count_over_time` produces one series per log line and Loki answers `HTTP 400

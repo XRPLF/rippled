@@ -4,6 +4,20 @@
 # Uses a temporary standalone xrpld instance to call `validation_create` RPC
 # for each node. Outputs a JSON file mapping node index to seed + public key.
 #
+# Production does this differently, and deliberately not the way this script
+# does. There, `validator-keys-tool` runs `create_keys` once to make a master
+# key that never leaves the operator's custody, then `create_token` to mint a
+# revocable `[validator_token]` for the node; rotating a node means minting a
+# new token, not moving the master key. This harness uses `validation_create`
+# instead, which puts the seed itself in `[validation_seed]` on the node.
+#
+# That is safe here only because the cluster is disposable: the keys are made on
+# the same machine that runs the nodes, into a temp workdir that the next run
+# deletes, so there is no custody boundary for the two-step split to protect.
+# The tool is also not present on this path -- it is built only with
+# `-Dvalidator_keys=ON`, which the telemetry CI job does not pass. Do not copy
+# this script's approach to a node holding a key you care about.
+#
 # Usage:
 #   ./generate-validator-keys.sh <xrpld_binary> <num_nodes> <output_dir>
 #
@@ -58,6 +72,12 @@ TEMP_DIR="$(mktemp -d)"
 TEMP_PORT=5099
 TEMP_CFG="$TEMP_DIR/xrpld.cfg"
 
+# Hard ceiling on every RPC probe below. curl applies no overall timeout of its
+# own, so a node that accepts the connection and then stops answering parks the
+# poll loop for the rest of the run. The loops here count attempts, not seconds,
+# so without this their stated timeouts are not bounds at all.
+CURL_MAX_TIME="${CURL_MAX_TIME:-5}"
+
 log "Starting temporary xrpld for key generation (port $TEMP_PORT)..."
 
 cat >"$TEMP_CFG" <<EOCFG
@@ -98,7 +118,7 @@ trap cleanup_temp EXIT
 
 # Wait for RPC to become available
 for attempt in $(seq 1 30); do
-    if curl -sf "http://localhost:$TEMP_PORT" \
+    if curl -sf --max-time "$CURL_MAX_TIME" "http://localhost:$TEMP_PORT" \
         -d '{"method":"server_info"}' >/dev/null 2>&1; then
         log "Temporary xrpld RPC ready (attempt $attempt)."
         break
@@ -118,7 +138,7 @@ KEYS_JSON="["
 VALIDATORS_TXT="[validators]"
 
 for i in $(seq 1 "$NUM_NODES"); do
-    result=$(curl -sf "http://localhost:$TEMP_PORT" \
+    result=$(curl -sf --max-time "$CURL_MAX_TIME" "http://localhost:$TEMP_PORT" \
         -d '{"method":"validation_create"}')
     seed=$(echo "$result" | jq -r '.result.validation_seed')
     pubkey=$(echo "$result" | jq -r '.result.validation_public_key')

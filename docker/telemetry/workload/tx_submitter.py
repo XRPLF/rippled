@@ -192,6 +192,8 @@ class TxStats:
         total_errors:    Transactions that returned an error engine_result.
         by_type:         Per-transaction-type count of submissions.
         errors_by_type:  Per-transaction-type count of errors.
+        setup_failed:    True if account setup never produced enough funded
+                         accounts, so the timed loop never ran.
     """
 
     total_submitted: int = 0
@@ -199,6 +201,7 @@ class TxStats:
     total_errors: int = 0
     by_type: dict[str, int] = field(default_factory=dict)
     errors_by_type: dict[str, int] = field(default_factory=dict)
+    setup_failed: bool = False
 
     def record(self, tx_type: str, success: bool) -> None:
         """Record the result of a transaction submission."""
@@ -223,6 +226,7 @@ class TxStats:
             ),
             "by_type": self.by_type,
             "errors_by_type": self.errors_by_type,
+            "setup_failed": self.setup_failed,
         }
 
 
@@ -978,6 +982,10 @@ async def run_submitter(
                 len(accounts),
                 len(created),
             )
+            # The caller turns this into a non-zero exit. Without it a funding
+            # failure looks like a clean run of zero transactions, and the run
+            # only fails later as "spans missing", which points nowhere.
+            stats.setup_failed = True
             return stats
 
         logger.info(
@@ -1078,6 +1086,12 @@ def main() -> None:
         try:
             custom = json.loads(args.weights)
             weights = {k: int(v) for k, v in custom.items()}
+            if not weights or sum(weights.values()) <= 0:
+                logger.error(
+                    "Invalid --weights: the values must sum to more than 0, got %s",
+                    weights,
+                )
+                sys.exit(1)
             logger.info("Using custom weights: %s", weights)
         except (json.JSONDecodeError, ValueError) as exc:
             logger.error("Invalid --weights JSON: %s", exc)
@@ -1100,6 +1114,11 @@ def main() -> None:
         with open(args.output, "w") as f:
             json.dump(summary, f, indent=2)
         logger.info("Summary written to %s", args.output)
+
+    # After the report is written, so the failure is still diagnosable.
+    if stats.setup_failed:
+        logger.error("Account setup failed; no transactions were submitted.")
+        sys.exit(1)
 
 
 if __name__ == "__main__":

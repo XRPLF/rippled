@@ -996,7 +996,7 @@ Phase 8 injects OTel trace context into xrpld's `Logs::format()` output, enablin
 Example:
 
 ```
-2024-Jan-15 10:30:45.123456 UTC LedgerMaster:NFO trace_id=abc123def456789012345678abcdef01 span_id=0123456789abcdef Validated ledger 42
+2024-Jan-15 10:30:45.123456789 UTC LedgerMaster:NFO trace_id=abc123def456789012345678abcdef01 span_id=0123456789abcdef Validated ledger 42
 ```
 
 - **`trace_id=<hex32>`** — 32-character lowercase hex trace identifier. Links to the distributed trace in Tempo.
@@ -1010,10 +1010,10 @@ The trace context injection is implemented in `Logs::format()` (`src/libxrpl/bas
 ### Log Ingestion Pipeline
 
 ```
-xrpld debug.log -> OTel Collector filelog receiver -> regex_parser -> Loki exporter -> Grafana Loki
+xrpld debug.log -> OTel Collector file_log receiver -> regex_parser -> Loki exporter -> Grafana Loki
 ```
 
-The OTel Collector's `filelog` receiver tails `debug.log` files and uses a `regex_parser` operator to extract structured fields:
+The OTel Collector's `file_log` receiver tails `debug.log` files and uses a `regex_parser` operator to extract structured fields:
 
 | Field       | Type     | Description                                              |
 | ----------- | -------- | -------------------------------------------------------- |
@@ -1033,7 +1033,7 @@ Bidirectional linking between logs and traces is configured via Grafana datasour
 
 ### Loki Backend
 
-Grafana Loki (v3.7.6) serves as the log storage backend. It receives log entries from the OTel Collector's `otlphttp/loki` exporter via the native OTLP endpoint at `http://loki:3100/otlp`.
+Grafana Loki (v3.7.6) serves as the log storage backend. It receives log entries from the OTel Collector's `otlp_http/loki` exporter via the native OTLP endpoint at `http://loki:3100/otlp`.
 
 ### LogQL Query Examples
 

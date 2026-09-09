@@ -25,7 +25,7 @@
       "required_attributes": [],
       "config_flag": "trace_rpc",
       "optional": true,
-      "note": "HTTP-only. Created solely in ServerHandler::processRequest() (ServerHandler.cpp:705), which is reached only from processSession(Session, coro) (ServerHandler.cpp:646) — the HTTP/JSON-RPC path that roots rpc.http_request at ServerHandler.cpp:640-641. The WebSocket path (processSession(WSSession, coro, jv), ServerHandler.cpp:467) never calls processRequest, so this span never appears under a WebSocket request. It does still appear under this harness, 5 traces on a normal run, because run-full-validation.sh polls each node over HTTP with curl (:449, :502) and those requests take the HTTP path. Note that the harness does speak HTTP: a reader concluding this span is unreachable here would go looking for a way to add HTTP traffic that already exists."
+      "note": "HTTP-only. Created solely in ServerHandler::processRequest() (ServerHandler.cpp:718), which is reached only from processSession(Session, coro) (ServerHandler.cpp:646) — the HTTP/JSON-RPC path that roots rpc.http_request at ServerHandler.cpp:640-641. The WebSocket path (processSession(WSSession, coro, jv), ServerHandler.cpp:467) never calls processRequest, so this span never appears under a WebSocket request. It does still appear under this harness, 5 traces on a normal run, because run-full-validation.sh polls each node over HTTP with curl (:449, :502) and those requests take the HTTP path. Note that the harness does speak HTTP: a reader concluding this span is unreachable here would go looking for a way to add HTTP traffic that already exists."
     },
     {
       "name": "rpc.command.*",
@@ -242,7 +242,7 @@
         "resolution_direction"
       ],
       "config_flag": "trace_consensus",
-      "note": "Also carries close_time_correct, close_resolution_ms, consensus_state, proposing, round_time_ms, tx_count. Emits a tx.included span EVENT per transaction in the accepted set (RCLConsensus.cpp:666, with a tx_id attribute), which validate_telemetry.py cannot assert (no event support)."
+      "note": "Also carries close_time_correct, close_resolution_ms, consensus_state, proposing, round_time_ms, tx_count. Emits a tx.included span EVENT per transaction in the accepted set (RCLConsensus.cpp:720, with a tx_id attribute), which validate_telemetry.py cannot assert (no event support)."
     },
     {
       "name": "consensus.validation.send",
@@ -449,7 +449,7 @@
       "required_attributes": ["pathfind_fast"],
       "config_flag": "trace_rpc",
       "optional": true,
-      "note": "Created by PathRequest::doUpdate (PathRequest.cpp:749-750), which the harness never reaches: pathfinding is disabled on every harness node, so no PathRequest is ever constructed. Config.cpp:725-726 sets pathSearchMax to 0 when a [validation_seed] or [validator_token] section is present, run-full-validation.sh writes [validation_seed] for every node (:308) and has no [path_search*] override, and doRipplePathFind then returns rpcNOT_SUPPORTED at RipplePathFind.cpp:48-49 — above the request-construction branches and below the pathfind.request span guard at :35. Liquidity is not the reason and never was: the call is refused before any path search is attempted, so the outcome does not depend on what the ledger holds. There is a second, independent reason: the harness sends no path-finding RPC at all, since rpc_load_generator.py carries no ripple_path_find weight. Enabling this span therefore needs BOTH a [path_search_max] override (or a non-validator node) in run-full-validation.sh AND the load restored — see the workload README section 'Pathfinding is not exercised'."
+      "note": "Created by PathRequest::doUpdate (PathRequest.cpp:749-750), which the harness never reaches: pathfinding is disabled on every harness node, so no PathRequest is ever constructed. Config.cpp:725-726 sets pathSearchMax to 0 when a [validation_seed] or [validator_token] section is present, run-full-validation.sh writes [validation_seed] for every node and has no [path_search*] override, and doRipplePathFind then returns RpcNotSupported at RipplePathFind.cpp:59-60 — above the request-construction branches and below the pathfind.request span guard at :35. Liquidity is not the reason and never was: the call is refused before any path search is attempted, so the outcome does not depend on what the ledger holds. There is a second, independent reason: the harness sends no path-finding RPC at all, since rpc_load_generator.py carries no ripple_path_find weight. Enabling this span therefore needs BOTH a [path_search_max] override (or a non-validator node) in run-full-validation.sh AND the load restored — see the workload README section 'Pathfinding is not exercised'."
     },
     {
       "name": "pathfind.discover",
@@ -467,7 +467,7 @@
       "required_attributes": ["pathfind_ledger_index", "pathfind_num_requests"],
       "config_flag": "trace_rpc",
       "optional": true,
-      "note": "Async recomputation at ledger close. PathRequestManager::updateAll emits the span only when requests_ is non-empty (PathRequestManager.cpp:88-95), so it needs a live path_find subscription. On the harness requests_ can never become non-empty at all: the only two insertPathRequest call sites are makePathRequest (:268) and makeLegacyPathRequest (:296), and both handlers return rpcNOT_SUPPORTED first because pathfinding is disabled on every node (PathFind.cpp:39, RipplePathFind.cpp:48; see the pathfind.compute entry above for the config chain)."
+      "note": "Async recomputation at ledger close. PathRequestManager::updateAll emits the span only when requests_ is non-empty (PathRequestManager.cpp:88-95), so it needs a live path_find subscription. On the harness requests_ can never become non-empty at all: the only two insertPathRequest call sites are makePathRequest (:268) and makeLegacyPathRequest (:296), and both handlers return RpcNotSupported first because pathfinding is disabled on every node (PathFind.cpp:50-51, RipplePathFind.cpp:59; see the pathfind.compute entry above for the config chain)."
     },
     {
       "name": "grpc.*",
@@ -485,7 +485,7 @@
       "child": "rpc.process",
       "description": "WebSocket message contains processing span",
       "skip": true,
-      "skip_reason": "This relationship does not exist in the code: rpc.process is created only in ServerHandler::processRequest() (ServerHandler.cpp:705), reached only from processSession(Session, coro) (ServerHandler.cpp:646) — the HTTP/JSON-RPC path. The WebSocket path (processSession(WSSession, coro, jv), ServerHandler.cpp:467) never calls processRequest, so rpc.process is never emitted at all under the WebSocket-only harness. The earlier diagnosis (cross-thread context loss needing a C++ fix) was wrong: rpc.ws_message is a deliberate freshRoot (ServerHandler.cpp:473-474) so each WS message is its own trace rather than nesting under a span leaked on a reused coroutine worker. Nothing to fix."
+      "skip_reason": "This relationship does not exist in the code: rpc.process is created only in ServerHandler::processRequest() (ServerHandler.cpp:718), reached only from processSession(Session, coro) (ServerHandler.cpp:646) — the HTTP/JSON-RPC path. The WebSocket path (processSession(WSSession, coro, jv), ServerHandler.cpp:467) never calls processRequest, so rpc.process is never emitted at all under the WebSocket-only harness. The earlier diagnosis (cross-thread context loss needing a C++ fix) was wrong: rpc.ws_message is a deliberate freshRoot (ServerHandler.cpp:473-474) so each WS message is its own trace rather than nesting under a span leaked on a reused coroutine worker. Nothing to fix."
     },
     {
       "parent": "rpc.ws_message",
@@ -517,7 +517,7 @@
       "child": "pathfind.compute",
       "description": "Pathfind request contains the compute sub-span",
       "skip": true,
-      "skip_reason": "Real relationship (pathfind.compute is created inside PathRequest::doUpdate at PathRequest.cpp:749-750, under the pathfind.request scope), but the child never exists on the harness because pathfinding is disabled on every node: Config.cpp:725-726 zeroes pathSearchMax whenever a [validation_seed] or [validator_token] section is present, run-full-validation.sh writes [validation_seed] for all five nodes (:308) with no [path_search*] override, and doRipplePathFind returns rpcNOT_SUPPORTED at RipplePathFind.cpp:48-49 before constructing a PathRequest. The parent would appear anyway if the RPC were issued, because its ScopedSpanGuard is created at RipplePathFind.cpp:35, above that guard; but rpc_load_generator.py carries no ripple_path_find weight, so not even the parent appears and both ends of this relationship are absent. Liquidity has nothing to do with it — the earlier 'no liquidity, returns before computing' reason was wrong, because no path search is attempted at all. Asserting this relationship needs the load restored AND a [path_search_max] override (or a non-validator node) in run-full-validation.sh."
+      "skip_reason": "Real relationship (pathfind.compute is created inside PathRequest::doUpdate at PathRequest.cpp:749-750, under the pathfind.request scope), but the child never exists on the harness because pathfinding is disabled on every node: Config.cpp:725-726 zeroes pathSearchMax whenever a [validation_seed] or [validator_token] section is present, run-full-validation.sh writes [validation_seed] for all five nodes with no [path_search*] override, and doRipplePathFind returns RpcNotSupported at RipplePathFind.cpp:59-60 before constructing a PathRequest. The parent would appear anyway if the RPC were issued, because its ScopedSpanGuard is created at RipplePathFind.cpp:35, above that guard; but rpc_load_generator.py carries no ripple_path_find weight, so not even the parent appears and both ends of this relationship are absent. Liquidity has nothing to do with it — the earlier 'no liquidity, returns before computing' reason was wrong, because no path search is attempted at all. Asserting this relationship needs the load restored AND a [path_search_max] override (or a non-validator node) in run-full-validation.sh."
     },
     {
       "parent": "ledger.acquire",
@@ -547,7 +547,7 @@
       "child": "pathfind.discover",
       "description": "The path computation contains the discovery pass.",
       "skip": true,
-      "skip_reason": "Real relationship with BOTH ends absent, for the reason given in full on the pathfind.compute entry above: pathfinding is disabled on every harness node because Config.cpp:725-726 zeroes pathSearchMax whenever a [validation_seed] section is present, run-full-validation.sh writes one for all five nodes (:308) with no [path_search_max] override, so doRipplePathFind returns rpcNOT_SUPPORTED before any PathRequest is constructed -- and the harness sends no path-finding RPC at all either. Asserting this needs both blockers lifted, which is a workload and node-config change rather than a harness one. Listed here so that the pathfinding family is fully accounted for rather than partly silent.",
+      "skip_reason": "Real relationship with BOTH ends absent, for the reason given in full on the pathfind.compute entry above: pathfinding is disabled on every harness node because Config.cpp:725-726 zeroes pathSearchMax whenever a [validation_seed] section is present, run-full-validation.sh writes one for all five nodes with no [path_search_max] override, so doRipplePathFind returns RpcNotSupported before any PathRequest is constructed -- and the harness sends no path-finding RPC at all either. Asserting this needs both blockers lifted, which is a workload and node-config change rather than a harness one. Listed here so that the pathfinding family is fully accounted for rather than partly silent.",
       "added": "Closes the declared-but-unlisted gap"
     },
     {

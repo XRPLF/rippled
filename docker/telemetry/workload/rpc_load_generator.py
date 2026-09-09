@@ -770,6 +770,12 @@ def main() -> None:
         try:
             custom = json.loads(args.weights)
             weights = {k: int(v) for k, v in custom.items()}
+            if not weights or sum(weights.values()) <= 0:
+                logger.error(
+                    "Invalid --weights: the values must sum to more than 0, got %s",
+                    weights,
+                )
+                sys.exit(1)
             logger.info("Using custom weights: %s", weights)
         except (json.JSONDecodeError, ValueError) as exc:
             logger.error("Invalid --weights JSON: %s", exc)

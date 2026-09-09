@@ -949,7 +949,7 @@ TEST_F(MetricsRegistryTest, disabled_start_stop)
     telemetry::MetricsRegistry registry(false, mockApp_, j_);
 
     // start() and stop() should be no-ops when disabled.
-    registry.start(std::string{kTestEndpoint});
+    registry.start(kTestStartOptions);
     registry.stop();
 
     // Double stop should be safe.
@@ -970,8 +970,9 @@ TEST_F(MetricsRegistryTest, disabled_start_stop)
 // (src/tests/libxrpl/CMakeLists.txt:117-126 -- the `else()` branch; when it is
 // ON the .cpp needs concrete xrpld types such as LedgerMaster, TxQ, NetworkOPs,
 // Overlay and node_store::Database, which a standalone GTest binary cannot
-// link). Both start() and startAsyncGauges() therefore compile here to their
-// `#else` branch, which only (void)-casts its arguments. So these tests pin the
+// link). Both start() and startAsyncGauges() have a single definition whose
+// whole body sits inside #ifdef XRPL_ENABLE_TELEMETRY, so here they compile to
+// an empty body with a [[maybe_unused]] parameter. So these tests pin the
 // API SURFACE -- that both entry points exist, are callable in either order,
 // and leave the object usable -- and NOT the gauge behaviour. Real coverage of
 // "gauges observe values only after startAsyncGauges()" is unreachable from
@@ -989,7 +990,7 @@ TEST_F(MetricsRegistryTest, async_gauges_start_after_start_is_safe)
     telemetry::MetricsRegistry registry(false, mockApp_, j_);
 
     // The documented order: provider/sync instruments first, gauges second.
-    registry.start(std::string{kTestEndpoint});
+    registry.start(kTestStartOptions);
     registry.startAsyncGauges();
 
     // State: the enable flag is untouched by either phase. Exact value, not
@@ -1019,7 +1020,7 @@ TEST_F(MetricsRegistryTest, async_gauges_before_start_does_not_break_start)
     EXPECT_EQ(registry.isEnabled(), false);
 
     // Phase 1 still works afterwards, so the bad call left no state behind.
-    registry.start(std::string{kTestEndpoint});
+    registry.start(kTestStartOptions);
     registry.recordJobQueued("ledgerData", "ProcessLData");
     EXPECT_EQ(registry.isEnabled(), false);
 
@@ -1040,7 +1041,7 @@ TEST_F(MetricsRegistryTest, async_gauges_respect_the_compile_time_guard)
     // return.
     EXPECT_EQ(registry.isEnabled(), true);
 
-    EXPECT_NO_THROW(registry.start(std::string{kTestEndpoint}));
+    EXPECT_NO_THROW(registry.start(kTestStartOptions));
     EXPECT_NO_THROW(registry.startAsyncGauges());
     EXPECT_NO_THROW(registry.stop());
 
@@ -1050,7 +1051,7 @@ TEST_F(MetricsRegistryTest, async_gauges_respect_the_compile_time_guard)
 TEST_F(MetricsRegistryTest, disabled_recording_methods)
 {
     telemetry::MetricsRegistry registry(false, mockApp_, j_);
-    registry.start(std::string{kTestEndpoint});
+    registry.start(kTestStartOptions);
 
     // All recording methods should be no-ops (not crash).
     registry.recordRpcStarted("server_info");
@@ -1068,7 +1069,7 @@ TEST_F(MetricsRegistryTest, destructor_calls_stop)
     {
         // Let the destructor handle cleanup.
         telemetry::MetricsRegistry registry(false, mockApp_, j_);
-        registry.start(std::string{kTestEndpoint});
+        registry.start(kTestStartOptions);
     }
     // If we get here without crash, the destructor handled stop.
 }
