@@ -13,7 +13,6 @@ on:
       - "!nix/docker/README.md"
       - "!nix/devshell.nix"
       - "!nix/check-tools/*.txt"
-      - "bin/check-tools.sh"
       - "bin/default-loader-path.sh"
       - "bin/install-sanitizer-libs.sh"
   pull_request:
@@ -26,7 +25,6 @@ on:
       - "!nix/docker/README.md"
       - "!nix/devshell.nix"
       - "!nix/check-tools/*.txt"
-      - "bin/check-tools.sh"
       - "bin/default-loader-path.sh"
       - "bin/install-sanitizer-libs.sh"
   workflow_dispatch:
