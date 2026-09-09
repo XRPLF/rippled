@@ -72,7 +72,7 @@ repos:
         pass_filenames: false # rustfmt formats the whole workspace
       - id: check-coverage-attrs
         name: check Rust coverage attributes
-        entry: ./bin/pre-commit/check_coverage_attrs.py
+        entry: ./bin/pre-commit/check_rust_coverage_attrs.py
         language: python
         files: ^crates/.*\.rs$
 
