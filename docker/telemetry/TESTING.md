@@ -163,7 +163,7 @@ Run the integration test script:
 bash docker/telemetry/integration-test.sh
 ```
 
-It checks prerequisites, clears the previous run, brings up the observability stack, generates six validator key pairs and their node configs, starts the nodes, waits for consensus and then for a validated ledger, exercises RPC and submits a transaction, verifies traces in Tempo and both the spanmetrics and the StatsD-derived metrics in Prometheus, then prints a summary and leaves the stack running.
+It checks prerequisites, clears the previous run, brings up the observability stack, generates six validator key pairs and their node configs, starts the nodes, waits for consensus and then for a validated ledger, exercises RPC and submits a transaction, verifies traces in Tempo and both the spanmetrics and the native `beast::insight` metrics that arrive over OTLP in Prometheus, checks that no StatsD listener is needed, then prints a summary and leaves the stack running.
 
 The script announces each step as it runs, so read its `Step N:` headers for the authoritative sequence — they are not restated here, because a numbered copy of them drifts as soon as a step is added.
 
@@ -256,7 +256,9 @@ online_delete=256
 
 [telemetry]
 enabled=1
+service_instance_id=Node-{N}
 traces_endpoint=http://localhost:4318/v1/traces
+metrics_endpoint=http://localhost:4318/v1/metrics
 batch_size=512
 batch_delay_ms=2000
 max_queue_size=2048
@@ -265,6 +267,10 @@ trace_transactions=1
 trace_consensus=1
 trace_peer=1
 trace_ledger=1
+
+[insight]
+server=otel
+endpoint=http://localhost:4318/v1/metrics
 
 [rpc_startup]
 { "command": "log_level", "severity": "warning" }
