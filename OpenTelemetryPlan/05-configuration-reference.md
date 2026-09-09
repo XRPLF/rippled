@@ -247,11 +247,11 @@ The authoritative collector config lives in the repo at `docker/telemetry/otel-c
 `docker/telemetry/otel-collector-config.yaml` is the base config used by the
 local stack and by CI. It carries **three** pipelines, not one:
 
-| Pipeline  | Receivers             | Processors                                                       | Exporters                            |
-| --------- | --------------------- | ---------------------------------------------------------------- | ------------------------------------ |
-| `traces`  | `otlp`                | `resource/tier`, `resource/stripsdk`, `attributes/hash`, `batch` | `debug`, `otlp/tempo`, `spanmetrics` |
-| `metrics` | `otlp`, `spanmetrics` | `resource/tier`, `resource/stripsdk`, `batch`                    | `prometheus`                         |
-| `logs`    | `file_log`            | `resource/logs`, `resource/tier`, `resource/stripsdk`, `batch`   | `otlp_http/loki`                     |
+| Pipeline  | Receivers              | Processors                                                       | Exporters                                  |
+| --------- | ---------------------- | ---------------------------------------------------------------- | ------------------------------------------ |
+| `traces`  | `otlp`                 | `resource/tier`, `resource/stripsdk`, `attributes/hash`, `batch` | `debug`, `otlp_grpc/tempo`, `span_metrics` |
+| `metrics` | `otlp`, `span_metrics` | `resource/tier`, `resource/stripsdk`, `batch`                    | `prometheus`                               |
+| `logs`    | `file_log`             | `resource/logs`, `resource/tier`, `resource/stripsdk`, `batch`   | `otlp_http/loki`                           |
 
 Component detail:
 
@@ -267,12 +267,12 @@ Component detail:
   `service.name` and `job` — only the former becomes a Loki stream label, see
   the known issue in §5.8.5); `attributes/hash` (hashes
   `pathfind_source_account` and `pathfind_dest_account`).
-- **Connector.** `spanmetrics` with `namespace: "span"`
+- **Connector.** `span_metrics` with `namespace: "span"`
   (`otel-collector-config.yaml:114`) — this is why the derived RED metrics are
   `span_calls_total` / `span_duration_milliseconds_*`. The connector's own
   default namespace is **empty**, so without this setting the names would be
   the bare `calls_total` / `duration_milliseconds_*`. The
-  `traces_spanmetrics_*` family is **not** the connector's default and is not
+  `traces_span_metrics_*` family is **not** the connector's default and is not
   produced here at all — it comes from a different producer, Tempo's
   `metrics_generator` `span-metrics` processor (`tempo.yaml:75`), whose
   `remote_write` is commented out in this repo (see §5.8.6). Histogram
@@ -281,7 +281,7 @@ Component detail:
   boundaries for consensus and `ledger.acquire`. ~25 low-cardinality
   dimensions are promoted to labels (`command`, `rpc_status`, `tx_type`,
   `ter_result`, `stage`, `consensus_mode`, `outcome`, …).
-- **Exporters.** `debug` (console, `verbosity: detailed`), `otlp/tempo`
+- **Exporters.** `debug` (console, `verbosity: detailed`), `otlp_grpc/tempo`
   (`tempo:4317`, `tls.insecure: true`), `otlp_http/loki`
   (`http://loki:3100/otlp` — Loki 3.x native OTLP; the old `loki` exporter was
   removed in collector-contrib v0.147.0), and `prometheus` on

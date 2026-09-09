@@ -1,12 +1,12 @@
 # OpenTelemetry Collector configuration for xrpld development.
 #
 # Pipelines:
-#   traces: OTLP receiver -> batch processor -> debug + Tempo + spanmetrics
-#   metrics: OTLP receiver + spanmetrics connector -> Prometheus exporter
+#   traces: OTLP receiver -> batch processor -> debug + Tempo + span_metrics
+#   metrics: OTLP receiver + span_metrics connector -> Prometheus exporter
 #   logs:   file_log receiver -> batch processor -> otlp_http/Loki
 #
 # xrpld sends traces via OTLP/HTTP to port 4318. The collector batches
-# them, forwards to Tempo, and derives RED metrics via the spanmetrics
+# them, forwards to Tempo, and derives RED metrics via the span_metrics
 # connector, which Prometheus scrapes on port 8889.
 #
 # xrpld sends beast::insight metrics natively via OTLP/HTTP to port 4318
@@ -147,7 +147,7 @@ processors:
         action: hash
 
 connectors:
-  spanmetrics:
+  span_metrics:
     namespace: "span"
     # Resource attributes that define the resource-metrics grouping key.
     # All resource attributes are propagated onto the output metrics
@@ -240,7 +240,7 @@ connectors:
 exporters:
   debug:
     verbosity: detailed
-  otlp/tempo:
+  otlp_grpc/tempo:
     endpoint: tempo:4317
     tls:
       insecure: true
@@ -268,9 +268,9 @@ service:
     traces:
       receivers: [otlp]
       processors: [resource/tier, resource/stripsdk, attributes/hash, batch]
-      exporters: [debug, otlp/tempo, spanmetrics]
+      exporters: [debug, otlp_grpc/tempo, span_metrics]
     metrics:
-      receivers: [otlp, spanmetrics]
+      receivers: [otlp, span_metrics]
       # batch keeps the OTLP metric path from exporting one request per
       # instrument. It delays a sample by at most the batch timeout, which
       # is well under the Prometheus scrape interval.
