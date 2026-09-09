@@ -1,0 +1,397 @@
+#pragma once
+
+/**
+ * Abstract interface for OpenTelemetry distributed tracing.
+ *
+ * Provides the Telemetry base class that all components use to create trace
+ * spans. Two concrete implementations exist, selected at construction time
+ * by makeTelemetry():
+ *
+ * - TelemetryImpl (Telemetry.cpp): real OTel SDK integration, compiled
+ * only when XRPL_ENABLE_TELEMETRY is defined and enabled at runtime.
+ * - NullTelemetry (NullTelemetry.cpp): no-op stub used when telemetry is
+ * disabled at compile time or runtime.
+ *
+ * Inheritance / dependency diagram:
+ *
+ * +--------------------+
+ * |    Telemetry       |  (abstract, this file)
+ * |  <<interface>>     |
+ * +---------+----------+
+ * |
+ * +---------+-----------+-------------------+
+ * |                     |                   |
+ * +---+------------+  +-----+---------+  +------+----------+
+ * | TelemetryImpl  |  | NullTelemetry |  | NullTelemetryOtel|
+ * | (Telemetry.cpp)|  |(NullTelemetry |  | (Telemetry.cpp)  |
+ * | OTel SDK       |  | .cpp)         |  | noop w/ OTel API |
+ * +----------------+  +---------------+  +------------------+
+ *
+ * The Setup struct holds all configuration parsed from the [telemetry]
+ * section of xrpld.cfg. See TelemetryConfig.cpp for the parser and
+ * cfg/xrpld-example.cfg for the available options.
+ *
+ * OTel SDK headers are conditionally included behind XRPL_ENABLE_TELEMETRY
+ * so that builds without telemetry have zero dependency on opentelemetry-cpp.
+ *
+ * Usage examples:
+ *
+ * 1. Root span at a subsystem entry point (typical usage):
+ * @code
+ * // In an RPC handler dispatch:
+ * auto guard = SpanGuard::span(TraceCategory::Rpc, "rpc", commandName);
+ * guard.setAttribute("command", commandName);
+ * // ... process request
+ * // guard destructor automatically ends the span on scope exit
+ * @endcode
+ *
+ * 2. Child span for a sub-operation (cross-scope):
+ * @code
+ * auto parent = SpanGuard::span(TraceCategory::Transactions, "tx", "process");
+ * {
+ * auto child = parent.childSpan("tx.apply");
+ * child.setAttribute("tx_type", txType);
+ * // child ends here
+ * }
+ * // parent continues, then ends here
+ * @endcode
+ *
+ * 3. Cross-thread context propagation:
+ * @code
+ * // Thread A: take a handle to the parent span's own context
+ * auto ctx = parentGuard.spanContext();
+ *
+ * // Thread B: create child span with explicit parent
+ * auto child = SpanGuard::childSpan("async.work", ctx);
+ * @endcode
+ *
+ * @note Thread safety: The Telemetry interface is safe for concurrent reads
+ * (isEnabled, shouldTrace*, getTracer, startSpan) after start() completes.
+ * setServiceInstanceId() must be called before start() and is not thread-safe.
+ * The OTel SDK's TracerProvider and Tracer are internally thread-safe.
+ */
+
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/config/BasicConfig.h>
+
+#include <atomic>
+#include <chrono>
+#include <cstdint>
+#include <memory>
+#include <string>
+
+#ifdef XRPL_ENABLE_TELEMETRY
+#include <opentelemetry/context/context.h>
+#include <opentelemetry/nostd/shared_ptr.h>
+#include <opentelemetry/trace/span.h>
+#include <opentelemetry/trace/span_metadata.h>
+#include <opentelemetry/trace/tracer.h>
+
+// std::string_view appears only in the telemetry-enabled declarations below.
+#include <string_view>
+#endif
+
+namespace xrpl::telemetry {
+
+#ifdef XRPL_ENABLE_TELEMETRY
+/**
+ * OTel instrumentation scope (tracer) name. Identifies this library as the
+ * source of spans; distinct from the `service.name` resource attribute
+ * (Setup::serviceName), which is config-overridable.
+ */
+inline constexpr std::string_view kTracerName{"xrpld"};
+#endif
+
+class Telemetry
+{
+    /**
+     * Global singleton pointer, set by start()/stop() in the active
+     * implementation. Allows SpanGuard factory methods to access the
+     * Telemetry instance without callers passing it explicitly.
+     *
+     * Atomic with acquire/release ordering: start()/stop() store on
+     * the initialization thread, factory methods load on worker threads.
+     * @see setInstance(), getInstance()
+     */
+    inline static std::atomic<Telemetry*> instance{nullptr};
+
+public:
+    /**
+     * Get the global Telemetry instance.
+     * @return Pointer to the active instance, or nullptr if not started.
+     */
+    [[nodiscard]] static Telemetry*
+    getInstance()
+    {
+        return instance.load(std::memory_order_acquire);
+    }
+
+    /**
+     * Set the global Telemetry instance.
+     * Called by start()/stop() in concrete implementations.
+     * Tests can call this with a mock to override the global instance.
+     * @param t  Pointer to the Telemetry instance, or nullptr to clear.
+     */
+    static void
+    setInstance(Telemetry* t)
+    {
+        instance.store(t, std::memory_order_release);
+    }
+
+    /**
+     * Configuration parsed from the [telemetry] section of xrpld.cfg.
+     *
+     * All fields have sensible defaults so the section can be minimal
+     * or omitted entirely. See TelemetryConfig.cpp for the parser.
+     */
+    struct Setup
+    {
+        /**
+         * Master switch: true to enable tracing at runtime.
+         */
+        bool enabled = false;
+
+        /**
+         * OTel resource attribute `service.name`.
+         */
+        std::string serviceName = "xrpld";
+
+        /**
+         * OTel resource attribute `service.version` (set from BuildInfo).
+         */
+        std::string serviceVersion;
+
+        /**
+         * OTel resource attribute `service.instance.id` (defaults to node
+         * public key).
+         */
+        std::string serviceInstanceId;
+
+        /**
+         * Full OTLP/HTTP URL where spans are sent, including the signal path.
+         * Used verbatim: no other endpoint is derived from it.
+         */
+        std::string tracesEndpoint = "http://localhost:4318/v1/traces";
+
+        /**
+         * Whether to use TLS for the exporter connection.
+         */
+        bool useTls = false;
+
+        /**
+         * Path to a CA certificate bundle for TLS verification.
+         */
+        std::string tlsCertPath;
+
+        /**
+         * Head-based sampling ratio. Intentionally fixed at 1.0 (sample
+         * everything) and NOT read from config. A per-node ratio would let
+         * nodes make divergent keep/drop decisions for the same distributed
+         * trace, producing broken/partial traces. The ratio sampler is wrapped
+         * in a ParentBasedSampler (see Telemetry.cpp) so spans inheriting a
+         * remote parent honor the upstream sampled flag. Volume reduction is
+         * delegated to the collector's tail sampling; for node-local post-hoc
+         * dropping see SpanGuard::discard().
+         */
+        static constexpr double samplingRatio = 1.0;
+
+        /**
+         * Maximum number of spans per batch export.
+         */
+        std::uint32_t batchSize = 512;
+
+        /**
+         * Delay between batch exports.
+         */
+        std::chrono::milliseconds batchDelay = std::chrono::milliseconds{5000};
+
+        /**
+         * Maximum number of spans queued before dropping.
+         */
+        std::uint32_t maxQueueSize = 2048;
+
+        /**
+         * Network identifier, added as an OTel resource attribute.
+         */
+        std::uint32_t networkId = 0;
+
+        /**
+         * Network type label (e.g. "mainnet", "testnet", "devnet").
+         */
+        std::string networkType = "mainnet";
+
+        /**
+         * Enable tracing for transaction processing.
+         */
+        bool traceTransactions = true;
+
+        /**
+         * Enable tracing for consensus rounds.
+         */
+        bool traceConsensus = true;
+
+        /**
+         * Enable tracing for RPC request handling.
+         */
+        bool traceRpc = true;
+
+        /**
+         * Enable tracing for peer-to-peer messages (enabled by default;
+         * high volume).
+         */
+        bool tracePeer = true;
+
+        /**
+         * Enable tracing for ledger close/accept.
+         */
+        bool traceLedger = true;
+    };
+
+    virtual ~Telemetry() = default;
+
+    /**
+     * Update the service instance ID (OTel resource attribute
+     * `service.instance.id`).
+     *
+     * Must be called before start(). The node public key is not available
+     * when Telemetry is constructed (during the ApplicationImp member
+     * initializer list), so this setter allows Application::setup() to
+     * inject the identity once nodeIdentity_ is known.
+     *
+     * @param id  The node's base58-encoded public key or custom identifier.
+     */
+    virtual void
+    setServiceInstanceId([[maybe_unused]] std::string const& id)
+    {
+        // Default no-op for NullTelemetry implementations.
+    }
+
+    /**
+     * Initialize the tracing pipeline (exporter, processor, provider).
+     * Call after construction.
+     */
+    virtual void
+    start() = 0;
+
+    /**
+     * Flush pending spans and shut down the tracing pipeline.
+     * Call before destruction.
+     */
+    virtual void
+    stop() = 0;
+
+    /**
+     * @return true if this instance is actively exporting spans.
+     */
+    [[nodiscard]] virtual bool
+    isEnabled() const = 0;
+
+    /**
+     * @return true if transaction processing should be traced.
+     */
+    [[nodiscard]] virtual bool
+    shouldTraceTransactions() const = 0;
+
+    /**
+     * @return true if consensus rounds should be traced.
+     */
+    [[nodiscard]] virtual bool
+    shouldTraceConsensus() const = 0;
+
+    /**
+     * @return true if RPC request handling should be traced.
+     */
+    [[nodiscard]] virtual bool
+    shouldTraceRpc() const = 0;
+
+    /**
+     * @return true if peer-to-peer messages should be traced.
+     */
+    [[nodiscard]] virtual bool
+    shouldTracePeer() const = 0;
+
+    /**
+     * @return true if ledger close/accept should be traced.
+     */
+    [[nodiscard]] virtual bool
+    shouldTraceLedger() const = 0;
+
+#ifdef XRPL_ENABLE_TELEMETRY
+    /**
+     * Get or create a named tracer instance.
+     *
+     * @param name  Tracer name used to identify the instrumentation library.
+     * @return A shared pointer to the Tracer.
+     */
+    [[nodiscard]] virtual opentelemetry::nostd::shared_ptr<opentelemetry::trace::Tracer>
+    getTracer(std::string_view name = kTracerName) = 0;
+
+    /**
+     * Start a new span on the current thread's context.
+     *
+     * The span becomes a child of the current active span (if any) via
+     * OpenTelemetry's context propagation.
+     *
+     * @param name  Span name (typically "rpc.command.<cmd>").
+     * @param kind  The span kind (defaults to kInternal). Possible values:
+     * - kInternal: default, in-process operation
+     * - kServer:   incoming synchronous request (e.g. RPC)
+     * - kClient:   outgoing synchronous request
+     * - kProducer: async message send (e.g. peer broadcast)
+     * - kConsumer: async message receive
+     * @return A shared pointer to the new Span.
+     */
+    [[nodiscard]] virtual opentelemetry::nostd::shared_ptr<opentelemetry::trace::Span>
+    startSpan(
+        std::string_view name,
+        opentelemetry::trace::SpanKind kind = opentelemetry::trace::SpanKind::kInternal) = 0;
+
+    /**
+     * Start a new span with an explicit parent context.
+     *
+     * Use this overload when the parent span is not on the current
+     * thread's context stack (e.g. cross-thread trace propagation).
+     *
+     * @param name           Span name.
+     * @param parentContext  The parent span's context.
+     * @param kind           The span kind (defaults to kInternal).
+     * @return A shared pointer to the new Span.
+     */
+    [[nodiscard]] virtual opentelemetry::nostd::shared_ptr<opentelemetry::trace::Span>
+    startSpan(
+        std::string_view name,
+        opentelemetry::context::Context const& parentContext,
+        opentelemetry::trace::SpanKind kind = opentelemetry::trace::SpanKind::kInternal) = 0;
+#endif
+};
+
+/**
+ * Create a Telemetry instance.
+ *
+ * Returns a TelemetryImpl when setup.enabled is true, or a
+ * NullTelemetry no-op stub otherwise.
+ *
+ * @param setup    Configuration from the [telemetry] config section.
+ * @param journal  Journal for log output during initialization.
+ */
+std::unique_ptr<Telemetry>
+makeTelemetry(Telemetry::Setup const& setup, beast::Journal journal);
+
+/**
+ * Parse the [telemetry] config section into a Setup struct.
+ *
+ * @param section        The [telemetry] config section.
+ * @param nodePublicKey  Node public key, used as default instance ID.
+ * @param version        Build version string.
+ * @param networkId      Network identifier from [network_id] config
+ * (0 = mainnet, 1 = testnet, 2 = devnet).
+ * @return A populated Setup struct with defaults for missing values.
+ */
+Telemetry::Setup
+makeTelemetrySetup(
+    Section const& section,
+    std::string const& nodePublicKey,
+    std::string const& version,
+    std::uint32_t networkId);
+
+}  // namespace xrpl::telemetry

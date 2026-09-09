@@ -138,7 +138,7 @@ Span naming follows a hierarchical `<component>.<operation>` convention (e.g., `
 
 ## 3. Implementation Strategy
 
-The telemetry code is organized under `include/xrpl/telemetry/` for headers and `src/libxrpl/telemetry/` for implementation. Key principles include RAII-based span management via `SpanGuard`, conditional compilation with `XRPL_ENABLE_TELEMETRY`, and minimal runtime overhead through batch processing and efficient sampling.
+The telemetry code is organized under `include/xrpl/telemetry/` for headers and `src/libxrpl/telemetry/` for implementation. Key principles include RAII-based span management via `SpanGuard` (with `discard()` for dropping unwanted spans), a `FilteringSpanProcessor` that intercepts `OnEnd()` to prevent discarded spans from entering the export pipeline, conditional compilation with `XRPL_ENABLE_TELEMETRY`, and minimal runtime overhead through batch processing and efficient sampling.
 
 Performance optimization strategies include head sampling fixed at 100% (intentionally not configurable, so trace keep/drop decisions stay coherent across nodes), tail-based sampling at the collector for errors and slow traces to reduce volume, batch export to reduce network overhead, and conditional instrumentation that compiles to no-ops when disabled.
 
