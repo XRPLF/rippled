@@ -4,13 +4,13 @@ This file provides guidance to AI coding agents (Claude Code, and other AGENTS.m
 
 ## Build
 
-Required on Linux/macOS: use the Nix devshell, which sets up the compiler, Conan, ccache, and (optionally) Rust automatically.
+Recommended on Linux/macOS: the Nix devshell sets up the compiler, Conan, ccache, and (optionally) Rust automatically.
 
 ```bash
 nix develop
 ```
 
-For alternate devshell variants (specific compiler, no-compiler, coverage), see [docs/build/nix.md](./docs/build/nix.md). For the manual build steps, CMake options, and protocol codegen commands, see [BUILD.md](./BUILD.md) (`## Steps`, `## Options`, `## Code generation`).
+Not required — contributors can use their own toolchain/build flow instead. For alternate devshell variants (specific compiler, no-compiler, coverage), see [docs/build/nix.md](./docs/build/nix.md). For manual (non-Nix) build steps, CMake options, and protocol codegen commands, see [BUILD.md](./BUILD.md) (`## Steps`, `## Options`, `## Code generation`).
 
 Rust crate tests (independent of the CMake build): `cargo test --manifest-path crates/Cargo.toml --workspace` (CI uses `cargo nextest`).
 
@@ -33,10 +33,8 @@ New file placement and header levelization: see [CONTRIBUTING.md](./CONTRIBUTING
 
 ## Architecture
 
-Paths below reflect the current layout; update this section if modularization moves a subsystem to a different directory.
+See [ARCHITECTURE.md](./ARCHITECTURE.md) for the directory-by-directory map of the codebase.
 
-- `include/xrpl/` + `src/libxrpl/` — the core protocol library: ledger, shamap, consensus, crypto, json, resource, nodestore, rdb, peerfinder, and `tx/` (transaction application: `Transactor.cpp`, `applySteps.cpp`, invariants, payment paths — see [src/libxrpl/tx/AGENTS.md](./src/libxrpl/tx/AGENTS.md) for amendment-gating conventions). `tx/transactors/` has one file per transaction type, grouped by subsystem: `escrow/`, `vault/`, `lending/`, `sponsor/`, `nft/`, `token/` (MPT), `payment_channel/`, `permissioned_domain/`, `dex/`, `oracle/`, `did/`, `credentials/`, `bridge/`, `check/`, `delegate/`, `account/`, `system/`.
-- `src/xrpld/` — the server application built on top of `libxrpl`: `app`, `core`, `overlay` (P2P networking), `peerfinder`, `perflog`, `rpc`, `shamap`. `main` builds an `ApplicationImp` implementing `Application`; most components hold a reference to it (`app_`), giving broad cross-component access — expect to trace call chains through `Application&`.
-- `src/test/` — unit tests mirroring the subsystems above, plus `jtx/` (the transaction-building test DSL — e.g. `jtx/escrow.h`, `jtx/vault.h`, `jtx/sponsor.h`, `jtx/permissioned_dex.h`) and `unit_test/` (the custom test framework itself, derived from Beast).
-- `src/tests/` — unit tests for `libxrpl` written in `gtest`, gradually replacing the `src/test` equivalents.
-- `crates/` — a Rust workspace (only built with `-Dxrpld -Drust=ON`) bridged into C++ via `cxxbridge`/the `cxx` crate; currently just a `hello_world` interop scaffold. Requires the Rust toolchain pinned in `rust-toolchain.toml` (the Nix devshell provides it automatically).
+## Keeping docs current
+
+When you add or change a convention, or touch a subsystem that has its own `AGENTS.md`, `README.md`, or `ARCHITECTURE.md`, update that documentation in the same change rather than leaving it stale.
