@@ -194,7 +194,7 @@ requireReadableFile(std::string const& path, char const* configKey)
     {
         reason = "not a regular file";
     }
-    else if (std::ifstream stream{path, std::ios::in}; !stream)
+    else if (std::ifstream const stream{path, std::ios::in}; !stream)
     {
         reason = std::error_code{errno, std::generic_category()}.message();
     }
