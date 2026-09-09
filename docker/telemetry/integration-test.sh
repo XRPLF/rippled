@@ -206,8 +206,9 @@ cleanup() {
     done
     # Also kill any straggling xrpld processes from our workdir
     pkill -f "$WORKDIR" 2>/dev/null || true
-    # Stop docker stack
-    docker compose -f "$COMPOSE_FILE" down 2>/dev/null || true
+    # Stop docker stack. -v also drops the tempo-data volume: plain `down`
+    # keeps it, and retained traces would then answer a later run's searches.
+    docker compose -f "$COMPOSE_FILE" down -v 2>/dev/null || true
     # Remove workdir
     rm -rf "$WORKDIR"
     log "Cleanup complete."
@@ -249,6 +250,10 @@ pkill -f "$WORKDIR" 2>/dev/null || true
 pkill -f "xrpld-telemetry.cfg" 2>/dev/null || true
 sleep 2
 rm -rf "$WORKDIR"
+# A run that reached the summary left the stack up, so nothing has torn it
+# down. Do it here, with -v: Tempo's traces and Prometheus' samples must not
+# survive into this run, or an assertion can pass on the previous run's data.
+docker compose -f "$COMPOSE_FILE" down -v 2>/dev/null || true
 mkdir -p "$WORKDIR"
 
 # ---------------------------------------------------------------------------
@@ -684,7 +689,7 @@ log "--- Log-Trace Correlation ---"
 check_log_correlation
 
 # ---------------------------------------------------------------------------
-# Step 10: Verify Prometheus spanmetrics
+# Step 10: Verify Prometheus span_metrics
 # ---------------------------------------------------------------------------
 log ""
 log "--- Spanmetrics ---"

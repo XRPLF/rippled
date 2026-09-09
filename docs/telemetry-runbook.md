@@ -102,7 +102,7 @@ All spans instrumented in xrpld, grouped by subsystem:
 The three apply-pipeline spans (`tx.preflight`, `tx.preclaim`, `tx.transactor`)
 share a deterministic `trace_id` from `txID[0:16]`, so they group under one
 trace per transaction. The `stage` attribute (`preflight` / `preclaim` /
-`apply`) drives the collector spanmetrics `stage` dimension, giving per-stage
+`apply`) drives the collector span_metrics `stage` dimension, giving per-stage
 RED metrics on the _Transaction Overview_ dashboard.
 
 `current_ledger_seq` is the current (open/in-flight) ledger index a span acted on
@@ -274,11 +274,11 @@ sum by (stage) (rate(span_calls_total{span_name=~"tx.preflight|tx.preclaim|tx.tr
 > stage rather than on a single aggregate so the failing stage is obvious.
 
 > **Sampling caveat**: these stage metrics are span-derived, so they count only
-> the spans the collector's spanmetrics connector sees. Head sampling at the node
+> the spans the collector's span_metrics connector sees. Head sampling at the node
 > is fixed at 1.0 and is not configurable (`Telemetry.h`), and the shipped
 > collector pipeline has no tail sampling, so today nothing is dropped and the
 > counts are absolute. Volume reduction is delegated to the collector: adding a
-> tail-sampling processor to the traces pipeline puts it ahead of the spanmetrics
+> tail-sampling processor to the traces pipeline puts it ahead of the span_metrics
 > connector, and these metrics would then undercount proportionally — treat them
 > as relative trends in that case. Native StatsD metrics are never sampled.
 
@@ -495,7 +495,7 @@ all its normal attributes, it just lacks a cross-node parent link.
 
 ## Prometheus Metrics (Spanmetrics)
 
-The OTel Collector's spanmetrics connector automatically derives RED (Rate, Errors, Duration) metrics from every span. No custom metrics code is needed in xrpld.
+The OTel Collector's span_metrics connector automatically derives RED (Rate, Errors, Duration) metrics from every span. No custom metrics code is needed in xrpld.
 
 ### Generated Metric Names
 
@@ -691,7 +691,7 @@ collector settings make it work, both already enabled:
 
 - `prometheus.resource_to_telemetry_conversion: enabled: true` promotes
   resource attributes to metric labels on the local scrape surface.
-- `spanmetrics.resource_metrics_key_attributes` lists the tier attributes so
+- `span_metrics.resource_metrics_key_attributes` lists the tier attributes so
   span-derived series stay grouped per node and tier.
 
 Traces and logs carry resource attributes natively; Grafana Cloud ingests all
