@@ -3442,8 +3442,7 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
         auto const sleMPToken = env.le(mptokenID);
         BEAST_EXPECT(sleMPToken && sleMPToken->isFieldPresent(sfRecoveryKey));
         BEAST_EXPECT(sleMPToken && !sleMPToken->isFieldPresent(sfIssuerKeyMirrorEpoch));
-        BEAST_EXPECT(
-            mptAlice.getDecryptedBalance(bob, MPTTester::holderEncryptedSpending) == 100);
+        BEAST_EXPECT(mptAlice.getDecryptedBalance(bob, MPTTester::holderEncryptedSpending) == 100);
     }
 
     void

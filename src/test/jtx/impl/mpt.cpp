@@ -2016,6 +2016,9 @@ MPTTester::recover(MPTConfidentialRecover const& arg, std::source_location const
     Buffer recoveryPubKey;
     if (arg.recoveryPrivKey)
     {
+        if (arg.recoveryPrivKey->size() != kEcPrivKeyLength)
+            Throw<std::runtime_error>("Invalid recovery private key length");
+
         // Derive public key from private key
         secp256k1_pubkey pubKey;
         if (secp256k1_ec_pubkey_create(secp256k1Context(), &pubKey, arg.recoveryPrivKey->data()) ==

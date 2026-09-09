@@ -21,7 +21,7 @@ class ConfidentialMPTRecoverBalanceBuilder;
  * Type: ttCONFIDENTIAL_MPT_RECOVER_BALANCE (92)
  * Delegable: Delegation::Delegable
  * Amendment: featureConfidentialMPTKeyRotation
- * Privileges: NoPriv
+ * Privileges: Privilege::NoPriv
  *
  * Immutable wrapper around STTx providing type-safe field access.
  * Use ConfidentialMPTRecoverBalanceBuilder to construct new transactions.

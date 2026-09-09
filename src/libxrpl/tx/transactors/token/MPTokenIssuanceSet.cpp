@@ -154,6 +154,14 @@ MPTokenIssuanceSet::preflight(PreflightContext const& ctx)
     if (hasRecoveryKey && !isValidCompressedECPoint(ctx.tx[sfRecoveryKey]))
         return temMALFORMED;
 
+    // TEMPORARY: The holder encryption key and the recovery key select mutually
+    // exclusive modes; doApply would otherwise silently prefer the recovery key
+    // and ignore the holder encryption key. Reject the ambiguous combination.
+    // TODO: Remove when ConfidentialMPTHolderKeyUpdate is implemented
+    if (ctx.rules.enabled(featureConfidentialMPTKeyRotation) && hasHolderElGamalKey &&
+        hasRecoveryKey)
+        return temMALFORMED;
+
     return tesSUCCESS;
 }
 
@@ -288,14 +296,16 @@ MPTokenIssuanceSet::preclaim(PreclaimContext const& ctx)
     }
     else
     {
-        // Pre-ConfidentialMPTKeyRotation amendment, the encryption keys can not be updated.
-        // cannot update issuer public key
+        // Pre-ConfidentialMPTKeyRotation amendment, the encryption keys can not
+        // be updated. Overwriting an already-present key is a rotation attempt,
+        // which is only detectable here (not in preflight), so the amendment
+        // gate reports temDISABLED.
         if (txHasIssuerKey && sleHasIssuerKey)
-            return tecNO_PERMISSION;
+            return temDISABLED;
 
         // cannot update auditor public key
         if (txHasAuditorKey && sleHasAuditorKey)
-            return tecNO_PERMISSION;  // LCOV_EXCL_LINE
+            return temDISABLED;  // LCOV_EXCL_LINE
     }
 
     auto const enablesConfidentialBalance =
