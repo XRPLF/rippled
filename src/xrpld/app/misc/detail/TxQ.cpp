@@ -561,19 +561,19 @@ TxQApplyImpl::processAccountTxs()
        is at least 10 * the base fee, and fees exceed
        this amount, the transaction can't be queued.
 
-             Currently typical fees are several orders
-             of magnitude smaller than any current or expected
-             future reserve. This calculation is simpler than
-             trying to figure out the potential changes to
-             the ownerCount that may occur to the account
-             as a result of these transactions, and removes
-             any need to account for other transactions that
-             may affect the owner count while these are queued.
+       Currently typical fees are several orders
+       of magnitude smaller than any current or expected
+       future reserve. This calculation is simpler than
+       trying to figure out the potential changes to
+       the ownerCount that may occur to the account
+       as a result of these transactions, and removes
+       any need to account for other transactions that
+       may affect the owner count while these are queued.
 
-               However, in case the account reserve is on a
-               comparable scale to the base fee, ignore the
-               reserve. Only check the account balance.accountKey
-            */
+       However, in case the account reserve is on a
+       comparable scale to the base fee, ignore the
+       reserve. Only check the account balance
+    */
     auto const reserve = view_.fees().reserve;
     auto const base = view_.fees().base;
     if (totalFee >= balance || (reserve > 10 * base && totalFee >= reserve))
@@ -1457,11 +1457,7 @@ TxQApplyImpl::apply()
     std::scoped_lock const lock(txq_.mutex_);
     txqLock_ = lock;
 
-    auto res = applyImpl();
-    if (res.ter != terQUEUED)
-        return res;
-
-    return res;
+    return applyImpl();
 }
 
 std::optional<ApplyResult>
