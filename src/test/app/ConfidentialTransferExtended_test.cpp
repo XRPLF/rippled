@@ -660,85 +660,86 @@ class ConfidentialTransferExtended_test : public ConfidentialTransferTestBase
         Account const carol("carol");
 
         for (bool const withFix : {true, false})
-        for (bool const carolConverts : {false, true})
-        {
-            Env env{
-                *this,
-                withFix ? features | fixCleanup3_5_0 : features - fixCleanup3_5_0};
-
-            MPTTester mptAlice(env, alice, {.holders = {bob, carol}});
-            mptAlice.create({.flags = kMptDexFlags | tfMPTCanHoldConfidentialBalance});
-            mptAlice.authorize({.account = bob});
-            mptAlice.authorize({.account = carol});
-            mptAlice.pay(alice, bob, 1'000);
-            mptAlice.pay(alice, carol, 100);
-
-            mptAlice.generateKeyPair(alice);
-            mptAlice.set({.account = alice, .issuerPubKey = mptAlice.getPubKey(alice)});
-
-            // bob is the sole LP, so withdrawing all of his LPTokens zeroes
-            // LPTokenBalance and deletes the AMM in that same transaction.
-            AMM amm(env, bob, XRP(100), mptAlice(100));
-            Account const ammHolder("amm", amm.ammAccount());
-            BEAST_EXPECT(amm.ammExists());
-            BEAST_EXPECT(mptAlice.getBalance(ammHolder) == 100);
-
-            // The AMM pseudo-account cannot initialize confidential state:
-            // confidential transactions must be signed by sfAccount and it
-            // has no signing key.
-            BEAST_EXPECT(!mptAlice.getEncryptedBalance(ammHolder, MPTTester::holderEncryptedInbox));
-            BEAST_EXPECT(
-                !mptAlice.getEncryptedBalance(ammHolder, MPTTester::holderEncryptedSpending));
-            BEAST_EXPECT(
-                !mptAlice.getEncryptedBalance(ammHolder, MPTTester::issuerEncryptedBalance));
-            BEAST_EXPECT(
-                !mptAlice.getEncryptedBalance(ammHolder, MPTTester::auditorEncryptedBalance));
-
-            if (carolConverts)
+            for (bool const carolConverts : {false, true})
             {
-                mptAlice.generateKeyPair(carol);
-                mptAlice.convert(
-                    {.account = carol, .amt = 1, .holderPubKey = mptAlice.getPubKey(carol)});
-                env.close();
-            }
+                Env env{*this, withFix ? features | fixCleanup3_5_0 : features - fixCleanup3_5_0};
 
-            BEAST_EXPECT(mptAlice.getIssuanceConfidentialBalance() == (carolConverts ? 1 : 0));
+                MPTTester mptAlice(env, alice, {.holders = {bob, carol}});
+                mptAlice.create({.flags = kMptDexFlags | tfMPTCanHoldConfidentialBalance});
+                mptAlice.authorize({.account = bob});
+                mptAlice.authorize({.account = carol});
+                mptAlice.pay(alice, bob, 1'000);
+                mptAlice.pay(alice, carol, 100);
 
-            if (carolConverts && !withFix)
-            {
-                amm.withdrawAll(bob, std::nullopt, Ter(tecINVARIANT_FAILED));
-                env.close();
+                mptAlice.generateKeyPair(alice);
+                mptAlice.set({.account = alice, .issuerPubKey = mptAlice.getPubKey(alice)});
 
-                // bob cannot close his position: the pool, his LPTokens and
-                // the AMM object all survive the failed withdrawal.
+                // bob is the sole LP, so withdrawing all of his LPTokens zeroes
+                // LPTokenBalance and deletes the AMM in that same transaction.
+                AMM amm(env, bob, XRP(100), mptAlice(100));
+                Account const ammHolder("amm", amm.ammAccount());
                 BEAST_EXPECT(amm.ammExists());
                 BEAST_EXPECT(mptAlice.getBalance(ammHolder) == 100);
 
-                // A partial withdrawal still succeeds, because it never
-                // erases the MPToken -- bob can drain the pool down to a
-                // residual amount but can never close his position. Withdraw
-                // half of his actual LPToken balance; a fixed token count
-                // would round the MPT side of the pool to zero and be
-                // rejected as a one-sided withdrawal.
-                auto const bobLPTokens = amm.getLPTokensBalance(bob.id());
-                amm.withdraw(bob, IOUAmount{bobLPTokens.mantissa() / 2, bobLPTokens.exponent()});
-                env.close();
-                BEAST_EXPECT(amm.ammExists());
-                BEAST_EXPECT(mptAlice.getBalance(ammHolder) > 0);
-            }
-            else
-            {
-                // With the fix, carol's confidential balance is irrelevant to
-                // an AMM she has no stake in: bob closes his position and the
-                // AMM and its MPToken are erased.
-                amm.withdrawAll(bob);
-                env.close();
-
-                BEAST_EXPECT(!amm.ammExists());
+                // The AMM pseudo-account cannot initialize confidential state:
+                // confidential transactions must be signed by sfAccount and it
+                // has no signing key.
                 BEAST_EXPECT(
-                    env.le(keylet::mptoken(mptAlice.issuanceID(), amm.ammAccount())) == nullptr);
+                    !mptAlice.getEncryptedBalance(ammHolder, MPTTester::holderEncryptedInbox));
+                BEAST_EXPECT(
+                    !mptAlice.getEncryptedBalance(ammHolder, MPTTester::holderEncryptedSpending));
+                BEAST_EXPECT(
+                    !mptAlice.getEncryptedBalance(ammHolder, MPTTester::issuerEncryptedBalance));
+                BEAST_EXPECT(
+                    !mptAlice.getEncryptedBalance(ammHolder, MPTTester::auditorEncryptedBalance));
+
+                if (carolConverts)
+                {
+                    mptAlice.generateKeyPair(carol);
+                    mptAlice.convert(
+                        {.account = carol, .amt = 1, .holderPubKey = mptAlice.getPubKey(carol)});
+                    env.close();
+                }
+
+                BEAST_EXPECT(mptAlice.getIssuanceConfidentialBalance() == (carolConverts ? 1 : 0));
+
+                if (carolConverts && !withFix)
+                {
+                    amm.withdrawAll(bob, std::nullopt, Ter(tecINVARIANT_FAILED));
+                    env.close();
+
+                    // bob cannot close his position: the pool, his LPTokens and
+                    // the AMM object all survive the failed withdrawal.
+                    BEAST_EXPECT(amm.ammExists());
+                    BEAST_EXPECT(mptAlice.getBalance(ammHolder) == 100);
+
+                    // A partial withdrawal still succeeds, because it never
+                    // erases the MPToken -- bob can drain the pool down to a
+                    // residual amount but can never close his position. Withdraw
+                    // half of his actual LPToken balance; a fixed token count
+                    // would round the MPT side of the pool to zero and be
+                    // rejected as a one-sided withdrawal.
+                    auto const bobLPTokens = amm.getLPTokensBalance(bob.id());
+                    amm.withdraw(
+                        bob, IOUAmount{bobLPTokens.mantissa() / 2, bobLPTokens.exponent()});
+                    env.close();
+                    BEAST_EXPECT(amm.ammExists());
+                    BEAST_EXPECT(mptAlice.getBalance(ammHolder) > 0);
+                }
+                else
+                {
+                    // With the fix, carol's confidential balance is irrelevant to
+                    // an AMM she has no stake in: bob closes his position and the
+                    // AMM and its MPToken are erased.
+                    amm.withdrawAll(bob);
+                    env.close();
+
+                    BEAST_EXPECT(!amm.ammExists());
+                    BEAST_EXPECT(
+                        env.le(keylet::mptoken(mptAlice.issuanceID(), amm.ammAccount())) ==
+                        nullptr);
+                }
             }
-        }
     }
 
     // Exercises every Confidential Transfer transaction type (MPTokenIssuanceSet,
