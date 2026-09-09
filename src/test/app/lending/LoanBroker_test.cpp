@@ -1917,6 +1917,68 @@ class LoanBroker_test : public beast::unit_test::Suite
     }
 
     void
+    testLoanBrokerDeleteDeletedLineIOU(
+        FeatureBitset features,
+        bool clearDefaultRipple,
+        TER expected)
+    {
+        testcase << "LoanBrokerDelete - IOU line deleted before payout, issuer "
+                 << (clearDefaultRipple ? "without" : "with") << " DefaultRipple "
+                 << (features[fixCleanup3_4_0] ? "post-fix" : "pre-fix");
+        using namespace jtx;
+        using namespace loan_broker;
+
+        Account const issuer{"issuer"};
+        Account const alice{"alice"};
+
+        Env env(*this, features);
+        env.fund(XRP(10'000), issuer, alice);
+        env.close();
+        env(fset(issuer, asfDefaultRipple));
+        env.close();
+
+        PrettyAsset const usd{issuer["USD"]};
+        Issue const usdIssue = usd.raw().get<Issue>();
+        env(trust(alice, usd(10'000)));
+        env.close();
+        env(pay(issuer, alice, usd(600)));
+        env.close();
+
+        Vault const vault{env};
+        auto const [createTx, vaultKeylet] = vault.create({.owner = alice, .asset = usd});
+        env(createTx);
+        env.close();
+        env(vault.deposit({.depositor = alice, .id = vaultKeylet.key, .amount = usd(500)}));
+        env.close();
+
+        auto const brokerKeylet =
+            keylet::loanBroker(alice.id(), SeqProxy::rawSequence(env.seq(alice)));
+        env(set(alice, vaultKeylet.key));
+        env.close();
+        env(coverDeposit(alice, brokerKeylet.key, usd(100).value()));
+        env.close();
+
+        // Alice spent her whole balance, so zeroing the limit deletes her line.
+        // The cover payout would have to recreate it.
+        env(trust(alice, usd(0)));
+        env.close();
+        BEAST_EXPECT(!env.le(keylet::trustLine(alice.id(), usdIssue)));
+
+        if (clearDefaultRipple)
+        {
+            env(fclear(issuer, asfDefaultRipple));
+            env.close();
+        }
+
+        env(del(alice, brokerKeylet.key), Ter(expected));
+        env.close();
+
+        BEAST_EXPECT((env.le(brokerKeylet) == nullptr) == isTesSuccess(expected));
+        if (isTesSuccess(expected))
+            BEAST_EXPECT(env.balance(alice, usd) == usd(100));
+    }
+
+    void
     testLoanBrokerDeleteRequireAuthMPT(FeatureBitset features, bool ownerAuthorized)
     {
         testcase << "LoanBrokerDelete - auth-required broker pseudo-account MPT "
@@ -3101,6 +3163,10 @@ public:
 
         testLoanBrokerDeleteNoRippleIOU(all_);
         testLoanBrokerDeleteNoRippleIOU(all_ - fixCleanup3_4_0);
+
+        testLoanBrokerDeleteDeletedLineIOU(all_, true, terNO_RIPPLE);
+        testLoanBrokerDeleteDeletedLineIOU(all_ - fixCleanup3_4_0, true, tesSUCCESS);
+        testLoanBrokerDeleteDeletedLineIOU(all_, false, tesSUCCESS);
 
         // featureMPTokensV2 independently makes ValidMPTTransfer enforcing,
         // but it's Supported::No (never enabled on real networks); exclude
