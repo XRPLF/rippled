@@ -99,17 +99,12 @@ EscrowFinish::preflight(PreflightContext const& ctx)
 
     if (auto const allowance = ctx.tx[~sfGas]; allowance)
     {
-        auto const fees(ctx.registry.get().getFees());
-        if (fees.gasLimit == 0)
-        {
-            JLOG(ctx.j.debug()) << "WASM runtime deactivated by fee voting";
-            return temTEMP_DISABLED;
-        }
+        // Protocol ceiling only; `preflight` has no view.
         if (*allowance == 0)
         {
             return temBAD_LIMIT;
         }
-        if (*allowance > fees.gasLimit)
+        if (*allowance > kMaxGasLimit)
         {
             JLOG(ctx.j.debug()) << "Gas too large: " << *allowance;
             return temBAD_LIMIT;
@@ -265,6 +260,20 @@ EscrowFinish::preclaim(PreclaimContext const& ctx)
                 {
                     JLOG(ctx.j.debug()) << "Bytecode requires Gas";
                     return tefBYTECODE_NOT_INCLUDED;
+                }
+
+                // Earliest step with a view. A `tem` here still claims no fee.
+                auto const& fees = ctx.view.fees();
+                if (isBytecodeExecutionDisabled(fees))
+                {
+                    JLOG(ctx.j.debug()) << "WASM runtime deactivated by fee voting";
+                    return temTEMP_DISABLED;
+                }
+
+                if (ctx.tx[sfGas] > fees.gasLimit)
+                {
+                    JLOG(ctx.j.debug()) << "Gas over voted limit: " << ctx.tx[sfGas];
+                    return temBAD_LIMIT;
                 }
             }
             else

@@ -12,6 +12,7 @@
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Concepts.h>
 #include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Fees.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/Keylet.h>
@@ -273,6 +274,27 @@ escrowUnlockApplyHelper<MPTIssue>(
         ctx.view.rules().enabled(fixTokenEscrowV1) ? amount : finalAmt,
         journal);
 }
+
+/**
+ * Smart escrow kill switches, driven by the voted FeeSettings.
+ *
+ * Zeroing `bytecodeSizeLimit` stops new uploads while leaving existing escrows
+ * finishable without forcing holders to wait for `CancelAfter`.
+ * Zeroing `gasLimit` stops both.
+ */
+/** @{ */
+inline bool
+isBytecodeUploadDisabled(Fees const& fees)
+{
+    return fees.bytecodeSizeLimit == 0 || fees.gasLimit == 0;
+}
+
+inline bool
+isBytecodeExecutionDisabled(Fees const& fees)
+{
+    return fees.gasLimit == 0;
+}
+/** @} */
 
 template <class T>
 static int32_t

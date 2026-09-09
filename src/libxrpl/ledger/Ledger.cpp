@@ -611,15 +611,13 @@ Ledger::setup()
                 auto const bytecodeSizeLimit = sle->at(~sfBytecodeSizeLimit);
                 auto const gasPrice = sle->at(~sfGasPrice);
 
-                auto assign = [](std::uint32_t& dest, std::optional<std::uint32_t> const& src) {
-                    if (src)
-                    {
-                        dest = src.value();
-                    }
-                };
-                assign(fees_.gasLimit, gasLimit);
-                assign(fees_.bytecodeSizeLimit, bytecodeSizeLimit);
-                assign(fees_.gasPrice, gasPrice);
+                // Absent resolves to the protocol constants.
+                if (rules_.enabled(featureSmartEscrow))
+                {
+                    fees_.gasLimit = gasLimit.value_or(kDefaultGasLimit);
+                    fees_.bytecodeSizeLimit = bytecodeSizeLimit.value_or(kDefaultBytecodeSizeLimit);
+                    fees_.gasPrice = gasPrice.value_or(kDefaultGasPrice);
+                }
                 extensionFees = gasLimit || bytecodeSizeLimit || gasPrice;
             }
             if (oldFees && newFees)

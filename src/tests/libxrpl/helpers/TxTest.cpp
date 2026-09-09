@@ -73,9 +73,9 @@ TxTest::TxTest(std::optional<FeatureBitset> features)
         XRPAmount{10},
         XRPAmount{10000000},
         XRPAmount{2000000},
-        0,
-        0,
-        0};
+        kDefaultGasLimit,
+        kDefaultBytecodeSizeLimit,
+        kDefaultGasPrice};
 
     // Create a genesis ledger as the base
     closedLedger_ = std::make_shared<Ledger>(

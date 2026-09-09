@@ -174,6 +174,30 @@ Change::preCompute()
     XRPL_ASSERT(accountID_ == beast::kZero, "xrpl::Change::preCompute : zero account");
 }
 
+void
+Change::seedExtensionFees()
+{
+    auto const k = keylet::feeSettings();
+
+    SLE::pointer feeObject = view().peek(k);
+
+    if (!feeObject)
+    {
+        feeObject = std::make_shared<SLE>(k);
+        view().insert(feeObject);
+    }
+
+    // Compile-time constants, never `FeeSetup`: every node applies this
+    // pseudo-transaction, so reading local config here would diverge.
+    feeObject->at(sfGasLimit) = kDefaultGasLimit;
+    feeObject->at(sfBytecodeSizeLimit) = kDefaultBytecodeSizeLimit;
+    feeObject->at(sfGasPrice) = kDefaultGasPrice;
+
+    view().update(feeObject);
+
+    JLOG(j_.info()) << "Feature Extension fees seeded on SmartEscrow activation";
+}
+
 TER
 Change::applyAmendment()
 {
@@ -252,6 +276,9 @@ Change::applyAmendment()
                              << " activated: server blocked.";
             ctx_.registry.get().getOPs().setAmendmentBlocked();
         }
+
+        if (amendment == featureSmartEscrow)
+            seedExtensionFees();
     }
 
     if (newMajorities.empty())
