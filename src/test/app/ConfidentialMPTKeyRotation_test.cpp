@@ -1198,6 +1198,32 @@ class ConfidentialMPTKeyRotation_test : public ConfidentialTransferTestBase
             BEAST_EXPECT(mptAlice.checkMirrorEpochs(bob, std::nullopt, 2u));
         }
 
+        // A holder who initialized after a rotation is clawed back successfully, and
+        // the issuer mirror is updated to the current epoch.
+        {
+            Env env{*this, features};
+            MPTTester mptAlice(env, alice, {.holders = {bob}});
+            setupConfidentialIssuance(mptAlice, alice, {bob}, {}, clawbackFlags);
+            mptAlice.set({.account = alice, .issuerPubKey = mptAlice.getPubKey(alice)});
+
+            // Rotate the issuer key five times, issuance's issuer epoch is 5.
+            for (int i = 0; i < 5; ++i)
+            {
+                mptAlice.generateKeyPair(alice);
+                mptAlice.set({.account = alice, .issuerPubKey = mptAlice.getPubKey(alice)});
+            }
+
+            mptAlice.convert({
+                .account = bob,
+                .amt = 50,
+                .holderPubKey = mptAlice.getPubKey(bob),
+            });
+            BEAST_EXPECT(mptAlice.checkMirrorEpochs(bob, 5u, std::nullopt));
+
+            mptAlice.confidentialClaw({.account = alice, .holder = bob, .amt = 50});
+            BEAST_EXPECT(mptAlice.checkMirrorEpochs(bob, 5u, std::nullopt));
+        }
+
         // Clawback is not blocked on
         // a stale issuer mirror. For now the proof cannot verify: it is checked
         // against the key registered on the issuance, while the mirror is still
