@@ -1532,6 +1532,38 @@ public:
             BEAST_EXPECT(jrr[jss::error] == "domainMalformed");
             BEAST_EXPECT(jrr[jss::error_message] == "Unable to parse domain.");
         }
+
+        // Well-formed domain that does not exist in the ledger.
+        {
+            json::Value jvParams;
+            jvParams[jss::ledger_index] = "validated";
+            jvParams[jss::taker_pays][jss::currency] = "USD";
+            jvParams[jss::taker_pays][jss::issuer] = gw.human();
+            jvParams[jss::taker_gets][jss::currency] = "EUR";
+            jvParams[jss::taker_gets][jss::issuer] = gw.human();
+            jvParams[jss::domain] = std::string(64, 'A');
+            auto const jrr = env.rpc("json", "book_offers", to_string(jvParams))[jss::result];
+            BEAST_EXPECT(jrr[jss::error] == "objectNotFound");
+            BEAST_EXPECT(jrr[jss::error_message] == "Domain not found.");
+        }
+
+        // An all-zero domain is well-formed hex but can never name an object.
+        // Both ledger views are covered: a validated ledger reaches
+        // Ledger::read, which treats a zero key as UNREACHABLE, so dropping
+        // the isZero() guard in doBookOffers aborts on this case.
+        for (auto const* ledgerIndex : {"validated", "current"})
+        {
+            json::Value jvParams;
+            jvParams[jss::ledger_index] = ledgerIndex;
+            jvParams[jss::taker_pays][jss::currency] = "USD";
+            jvParams[jss::taker_pays][jss::issuer] = gw.human();
+            jvParams[jss::taker_gets][jss::currency] = "EUR";
+            jvParams[jss::taker_gets][jss::issuer] = gw.human();
+            jvParams[jss::domain] = std::string(64, '0');
+            auto const jrr = env.rpc("json", "book_offers", to_string(jvParams))[jss::result];
+            BEAST_EXPECT(jrr[jss::error] == "objectNotFound");
+            BEAST_EXPECT(jrr[jss::error_message] == "Domain not found.");
+        }
     }
 
     void
@@ -1660,6 +1692,22 @@ public:
             auto jv = wsc->invoke("book_offers", jvParams);
             auto jrr = jv[jss::result];
             checkBookOffers(jrr);
+        }
+
+        // book_offers: an unknown domain is rejected rather than silently
+        // returning an empty book
+        {
+            json::Value jvParams;
+            jvParams[jss::taker] = env.master.human();
+            jvParams[jss::taker_pays][jss::currency] = "XRP";
+            jvParams[jss::ledger_index] = "validated";
+            jvParams[jss::taker_gets][jss::currency] = "USD";
+            jvParams[jss::taker_gets][jss::issuer] = gw.human();
+            jvParams[jss::domain] = std::string(64, 'A');
+
+            auto const jrr = env.rpc("json", "book_offers", to_string(jvParams))[jss::result];
+            BEAST_EXPECT(jrr[jss::error] == "objectNotFound");
+            BEAST_EXPECT(jrr[jss::error_message] == "Domain not found.");
         }
 
         // subscribe to domain book should return domain offer
