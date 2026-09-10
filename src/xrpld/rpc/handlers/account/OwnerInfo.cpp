@@ -10,9 +10,7 @@
 
 #include <optional>
 #include <string>
-
 namespace xrpl {
-
 // {
 //   'ident' : <indent>,
 // }
@@ -23,7 +21,15 @@ doOwnerInfo(rpc::JsonContext& context)
     {
         return rpc::missingFieldError(jss::account);
     }
+    if (context.params.isMember(jss::account) && !context.params[jss::account].isString())
+    {
+        return RPC::invalidFieldError(jss::account);
+    }
 
+    if (context.params.isMember(jss::ident) && !context.params[jss::ident].isString())
+    {
+        return RPC::invalidFieldError(jss::ident);
+    }
     std::string const strIdent = context.params.isMember(jss::account)
         ? context.params[jss::account].asString()
         : context.params[jss::ident].asString();
