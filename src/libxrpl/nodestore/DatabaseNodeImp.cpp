@@ -25,11 +25,14 @@ DatabaseNodeImp::store(NodeObjectType type, Blob&& data, uint256 const& hash, st
 
     auto obj = NodeObject::createObject(type, std::move(data), hash);
 
-    // Time only the backend call. The cache work below is not disk work and
-    // would blur the write latency signal.
+    // Time only the backend write, which is the disk work. The cache work below
+    // is not disk work and would blur the write latency signal. One clock pair
+    // per stored object, accumulated into an atomic that the metrics gauge reads
+    // on its own schedule, so nothing is added to the read path or per tree
+    // node.
     auto const begin = std::chrono::steady_clock::now();
     backend_->store(obj);
-    storeDurationStats(std::chrono::steady_clock::now() - begin);
+    recordStoreDuration(std::chrono::steady_clock::now() - begin);
 
     if (cache_)
     {

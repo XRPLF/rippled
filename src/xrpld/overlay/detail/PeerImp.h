@@ -9,6 +9,7 @@
 #include <xrpld/overlay/Squelch.h>
 #include <xrpld/overlay/detail/OverlayImpl.h>
 #include <xrpld/overlay/detail/ProtocolVersion.h>
+#include <xrpld/telemetry/MetricNames.h>
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/Number.h>
@@ -34,6 +35,7 @@
 #include <xrpl/server/Handoff.h>
 #include <xrpl/server/Manifest.h>
 #include <xrpl/shamap/SHAMapNodeID.h>
+#include <xrpl/telemetry/SpanGuard.h>
 
 #include <boost/circular_buffer.hpp>
 #include <boost/endian/conversion.hpp>
@@ -54,6 +56,7 @@
 #include <queue>
 #include <shared_mutex>
 #include <string>
+#include <string_view>
 #include <type_traits>
 #include <utility>
 #include <vector>
@@ -188,6 +191,30 @@ private:
     // post duplicate fail() calls) when several queued requests cross
     // kDropThreshold before the first fail() lands on the strand.
     std::atomic<bool> chargeDisconnectFired_{false};
+
+    /**
+     * Why this connection is being torn down, as a stable slug for the
+     * `peer_disconnect_total` counter's `reason` label.
+     *
+     * Set by the site that decides to disconnect and read once by close(),
+     * which is the single funnel every teardown passes through. Recording at
+     * close() rather than at each decision site is what makes the count equal
+     * the real disconnect count: several sites call fail() and then close(),
+     * and close() itself already self-guards on the socket being open.
+     *
+     * First writer wins, so a reason is never overwritten by a later, less
+     * specific one on the same teardown. Defaults to "unknown" so a path that
+     * reaches close() without setting a reason still produces a series rather
+     * than vanishing.
+     *
+     * @note Only ever touched on the strand (or, for the charge path, behind
+     *       the chargeDisconnectFired_ latch), so it needs no lock.
+     * @note The value is always one of a fixed set of literals in this file --
+     *       never peer-supplied data -- so the label's cardinality is bounded
+     *       by the code.
+     */
+    char const* disconnectReason_{telemetry::lval::disconnect::unknown};
+
     std::shared_ptr<peer_finder::Slot> const slot_;
     boost::beast::multi_buffer readBuffer_;
     http_request_type request_;
@@ -490,6 +517,46 @@ public:
     }
 
 private:
+    /**
+     * Records why this connection is closing, first writer wins.
+     *
+     * @param reason Stable slug from the fixed set used in PeerImp.cpp.
+     *
+     * @note Not a metric emit. close() does the single emit per teardown; this
+     *       only carries the cause to it, so a site that decides to disconnect
+     *       and a site that performs it stay separate.
+     */
+    void
+    setDisconnectReason(char const* reason) noexcept
+    {
+        // Only the first cause is kept: fail() sites frequently run before
+        // close(), and a later generic reason must not mask the real one.
+        if (disconnectReason_ == std::string_view{telemetry::lval::disconnect::unknown})
+            disconnectReason_ = reason;
+    }
+
+    /**
+     * Emits the serve-refusal counter for one request this node would not
+     * answer.
+     *
+     * This is the supply side of the sync exchange: what this node refuses to
+     * serve its peers. Nothing measured it before, so a node shedding every
+     * ledger request looked identical to one being asked for nothing.
+     *
+     * @param request Which request kind was refused: "ledger", "txset",
+     *        "object" or "fetchpack".
+     * @param reason Why it was refused, from the fixed slug set in PeerImp.cpp.
+     *
+     * @note Cold relative to the message loop: one call per refused request,
+     *       and never inside the per-tree-node loop of processLedgerRequest.
+     * @note Both labels are code literals, never peer-supplied data, so
+     *       cardinality is bounded at compile time.
+     * @note No-op when telemetry is compiled out or disabled; the macro
+     *       carries that guard.
+     */
+    void
+    reportServeRefusal(char const* request, char const* reason);
+
     void
     close();
 
@@ -700,6 +767,49 @@ private:
     processLedgerRequest(
         std::shared_ptr<protocol::TMGetLedger> const& m,
         std::vector<SHAMapNodeID> nodeIDs);
+
+    /**
+     * Start the `ledger.serve` span for one incoming ledger-data request.
+     *
+     * This is the supply side of somebody else's sync: this worker is what a
+     * syncing peer waits on, and nothing measured how long it takes or whether
+     * it produced anything at all. A fresh trace root, because the request
+     * arrives from the wire on a shared `JtLedgerReq` worker whose ambient span
+     * is unrelated.
+     *
+     * @param itype The protobuf `TMLedgerInfoType` the peer requested, used to
+     *        stamp `object_type`. Taken as an int so the shared naming rule
+     *        needs no protobuf dependency.
+     * @return An active span guard, or a null guard when telemetry is disabled
+     *         or the ledger trace category is off.
+     *
+     * @note One call per request, never inside the per-tree-node reply loop.
+     */
+    [[nodiscard]] telemetry::SpanGuard
+    startServeSpan(int itype) const;
+
+    /**
+     * End the `ledger.serve` span, stamping what the request produced.
+     *
+     * Called from a scope-exit guard in processLedgerRequest, which is what
+     * makes it exactly-once across that function's eight exits without
+     * repeating an emit per branch — and what stops an exit added later from
+     * silently forgetting to record one.
+     *
+     * Both recorded values are READ from state that already exists at every
+     * exit rather than accumulated: `ledgerData` is the reply itself, so its
+     * node count is the served-node count and is zero on all seven refusal
+     * paths. The per-node assembly loop is therefore untouched.
+     *
+     * @param span       The span to finish; a null guard is a no-op.
+     * @param ledgerData The reply as assembled so far, empty on a refusal.
+     *
+     * @note noexcept: it runs from a scope-exit guard, so it must not throw
+     *       even when the function body leaves by exception. Every call it
+     *       makes is itself noexcept.
+     */
+    static void
+    finishServeSpan(telemetry::SpanGuard& span, protocol::TMLedgerData const& ledgerData) noexcept;
 
     /**
      * Record the OTel metrics for one completed `TMGetObjectByHash` request.

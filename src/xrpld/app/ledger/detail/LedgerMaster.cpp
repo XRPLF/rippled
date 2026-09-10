@@ -18,6 +18,12 @@
 #include <xrpld/overlay/Overlay.h>
 #include <xrpld/overlay/Peer.h>
 #include <xrpld/rpc/detail/PathRequestManager.h>
+#include <xrpld/telemetry/MetricMacros.h>
+#ifdef XRPL_ENABLE_TELEMETRY
+// The metric-name constants are named only as macro arguments, which the
+// macros drop when telemetry is compiled out.
+#include <xrpld/telemetry/MetricNames.h>
+#endif
 #include <xrpld/telemetry/MetricsRegistry.h>
 
 #include <xrpl/basics/Log.h>
@@ -69,22 +75,37 @@
 #include <algorithm>
 #include <atomic>
 #include <chrono>
+#include <cstddef>
 #include <cstdint>
 #include <cstdlib>
 #include <exception>
 #include <functional>
 #include <iostream>
 #include <iterator>
+#include <limits>
 #include <map>
 #include <memory>
 #include <mutex>
 #include <optional>
 #include <ostream>
 #include <sstream>
+#include <string_view>
 #include <utility>
 #include <vector>
 
 namespace xrpl {
+
+// Full span names for the per-ledger trace join (see
+// LedgerMaster::makeLedgerTraceSpan). SpanGuard::hashSpan() takes ONE complete
+// span name, unlike SpanGuard::span(), which takes a prefix and a suffix — so
+// the joined form is needed. Composed here from the authoritative `op::`
+// suffixes in LedgerSpanNames.h rather than written out, so the wire span names
+// stay "ledger.validate" / "ledger.store" by construction and no new string
+// literal exists anywhere.
+static constexpr auto kLedgerValidateSpan =
+    telemetry::join(telemetry::seg::ledger, telemetry::ledger_span::op::validate);
+static constexpr auto kLedgerStoreSpan =
+    telemetry::join(telemetry::seg::ledger, telemetry::ledger_span::op::store);
 
 // Don't catch up more than 100 ledgers (cannot exceed 256)
 static constexpr int kMaxLedgerGap{100};
@@ -144,6 +165,34 @@ LedgerMaster::LedgerMaster(
           app_.getJournal("TaggedCache"))
     , stats_([this] { collectMetrics(); }, collector)
 {
+}
+
+telemetry::SpanGuard
+LedgerMaster::makeLedgerTraceSpan(
+    std::string_view const name,
+    uint256 const& ledgerHash,
+    std::uint32_t const seq)
+{
+    using namespace telemetry;
+
+    // The join: hashSpan derives the trace id from ledgerHash[0:16], so every
+    // stage that passes the same ledger hash lands in the same trace with no
+    // context propagation between the threads. See the header for why.
+    auto span =
+        SpanGuard::hashSpan(TraceCategory::Ledger, name, ledgerHash.data(), ledgerHash.kBytes);
+
+    // Guarded so the hash-to-string conversion is skipped entirely when the
+    // span is null (telemetry off, or ledger tracing disabled).
+    if (span)
+    {
+        // ledger_hash is the join key, so it is recorded on every stage: it is
+        // what an operator searches by to pull up the whole trace for one
+        // ledger, and it is how a reader confirms two spans really are the same
+        // ledger rather than a trace-id coincidence.
+        span.setAttribute(ledger_span::attr::ledgerHash, to_string(ledgerHash).c_str());
+        span.setAttribute(ledger_span::attr::ledgerSeq, static_cast<std::int64_t>(seq));
+    }
+    return span;
 }
 
 LedgerIndex
@@ -467,9 +516,11 @@ bool
 LedgerMaster::storeLedger(std::shared_ptr<Ledger const> ledger)
 {
     using namespace telemetry;
-    auto storeSpan = SpanGuard::span(TraceCategory::Ledger, seg::ledger, ledger_span::op::store);
-    storeSpan.setAttribute(
-        ledger_span::attr::ledgerSeq, static_cast<int64_t>(ledger->header().seq));
+    // Same ledger-hash join as ledger.validate: persisting a ledger is part of
+    // that ledger's story, so a slow store shows up in the same trace as the
+    // acquire that fetched it rather than as an unrelated one-span trace.
+    auto storeSpan =
+        makeLedgerTraceSpan(kLedgerStoreSpan, ledger->header().hash, ledger->header().seq);
 
     bool const validated = ledger->header().validated;
     // Returns true if we already had the ledger
@@ -985,12 +1036,65 @@ LedgerMaster::checkAccept(std::shared_ptr<Ledger const> const& ledger)
     auto validations = app_.getValidators().negativeUNLFilter(
         app_.getValidations().getTrustedForLedger(ledger->header().hash, ledger->header().seq));
     auto const tvc = validations.size();
+
+    // --- Sync diagnostics: snapshot the pre-accept quorum gate --------------
+    // Stored before the shortfall check, so a node that keeps failing the gate
+    // still reports both numbers. That is the case these signals exist for:
+    // the tally alone cannot say whether validations are accumulating toward
+    // quorum (slow) or plateaued below it (stuck) without the target beside it.
+    // Two relaxed stores, once per validated ledger, not in a loop.
+    lastTrustedTally_.store(static_cast<std::int64_t>(tvc), std::memory_order_relaxed);
+
+    // ValidatorList disables quorum by returning SIZE_MAX, which getNeededValidations
+    // passes straight through. That value must not be cast to int64_t: it would wrap
+    // to -1 and make the tally look like it exceeds the target on a node that can
+    // never validate. The disabled state is published as int64 max instead, so the
+    // target reads far above any tally.
+    lastQuorumTarget_.store(
+        minVal == std::numeric_limits<std::size_t>::max() ? std::numeric_limits<std::int64_t>::max()
+                                                          : static_cast<std::int64_t>(minVal),
+        std::memory_order_relaxed);
+
     if (tvc < minVal)  // nothing we can do
     {
         JLOG(journal_.trace()) << "Only " << tvc << " validations for " << ledger->header().hash;
+
+        // Trusted validations did not reach quorum, so this ledger will not be
+        // declared validated. The trace line above is the only other record
+        // of this gate, and trace level is off on an ordinary node, which
+        // leaves a node that peers and receives validations yet never
+        // validates indistinguishable from an idle one. One macro call at the
+        // gate, never in a loop.
+        //
+        // Emitted while mutex_ is held. That is unavoidable here (the gate and
+        // its early return are inside the locked section) and consistent with
+        // the telemetry this function already emits under the same lock -- the
+        // ledger.validate span below, and the validation tracker reached
+        // through setValidLedger. It cannot deadlock against the metrics poll:
+        // every accessor the sync gauges read is a lock-free atomic load, so no
+        // OTel callback ever acquires mutex_.
+        XRPL_METRIC_COUNTER_INC_LABELED(
+            app_,
+            telemetry::metric::ledgerQuorumShortfallTotal,
+            "Pre-accept gate rejections because trusted validations were below quorum",
+            {{telemetry::label::stage, std::string(telemetry::lval::quorum_shortfall::preAccept)}});
         return;
     }
 
+    // The gate passed, so this node now has a fully-validated ledger. Record how
+    // long that took, exactly once per process: a fresh node that never gets
+    // here keeps reporting 0, which is the diagnostic reading. Writing under
+    // mutex_ makes the once-only check exclusive without a compare-exchange.
+    if (timeToFirstValidatedUs_.load(std::memory_order_relaxed) == 0)
+    {
+        auto const elapsed = std::chrono::duration_cast<std::chrono::microseconds>(
+            std::chrono::steady_clock::now() - startTime_);
+        // Clamp to 1: a 0 would be indistinguishable from "never reached".
+        timeToFirstValidatedUs_.store(
+            std::max<std::int64_t>(1, elapsed.count()), std::memory_order_relaxed);
+    }
+
+    using namespace telemetry;
     // Scoped so ledger.validate measures only the promotion itself. The
     // flag-ledger upgrade-warning check below runs on one ledger in 256 and
     // reads every trusted validation of the parent, so leaving it inside would
@@ -998,11 +1102,11 @@ LedgerMaster::checkAccept(std::shared_ptr<Ledger const> const& ledger)
     // promoting a ledger. tryAdvance() stays inside: it only sets a flag and
     // posts a job, so it adds no measurable time.
     {
-        using namespace telemetry;
+        // Keyed on the ledger hash so the acceptance decision joins the same trace
+        // as that ledger's acquire and store spans, even though all three run on
+        // different threads. ledger_seq and ledger_hash come from the helper.
         auto validateSpan =
-            SpanGuard::span(TraceCategory::Ledger, seg::ledger, ledger_span::op::validate);
-        validateSpan.setAttribute(
-            ledger_span::attr::ledgerSeq, static_cast<int64_t>(ledger->header().seq));
+            makeLedgerTraceSpan(kLedgerValidateSpan, ledger->header().hash, ledger->header().seq);
         validateSpan.setAttribute(ledger_span::attr::validations, static_cast<int64_t>(tvc));
 
         JLOG(journal_.info()) << "Advancing accepted ledger to " << ledger->header().seq

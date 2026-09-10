@@ -4,6 +4,12 @@
 #include <xrpld/app/misc/SHAMapStore.h>
 #include <xrpld/app/rdb/backend/SQLiteDatabase.h>
 #include <xrpld/core/Config.h>
+#include <xrpld/telemetry/MetricMacros.h>
+#ifdef XRPL_ENABLE_TELEMETRY
+// The metric-name constants are named only as macro arguments, which the
+// macros drop when telemetry is compiled out.
+#include <xrpld/telemetry/MetricNames.h>
+#endif
 
 #include <xrpl/basics/ByteUtilities.h>
 #include <xrpl/basics/FileUtilities.h>
@@ -301,6 +307,16 @@ SHAMapStoreImp::copyNode(std::uint64_t& nodeCount, SHAMapTreeNode const& node)
         dbRotating_->store(NodeObjectType::AccountNode, std::move(s.modData()), hash, 0);
         JLOG(journal_.warn()) << "copyNode: re-stored node missing from both backends, hash="
                               << hash << " type=" << static_cast<int>(node.getType());
+        // One extra write per rescued node, on top of the whole-state-map walk
+        // the rotation already performs. Rotation-time writes compete with sync
+        // I/O, and this branch was warn-log-only, so the volume was invisible
+        // unless an operator was reading logs. The node hash is deliberately NOT
+        // a label: it is unbounded runtime data and would mint one series per
+        // node. Correlate a spike against the log line by node and time.
+        XRPL_METRIC_COUNTER_INC(
+            app_,
+            telemetry::metric::rotationCopyNodeRestoreTotal,
+            "Nodes re-stored during rotation because they were missing from both backends");
     }
     if ((++nodeCount % checkHealthInterval_) == 0u)
     {

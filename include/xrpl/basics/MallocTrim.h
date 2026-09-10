@@ -8,7 +8,10 @@
 
 namespace xrpl {
 
-// cSpell:ignore ptmalloc
+// cSpell:ignore ptmalloc statm
+// "statm" is the /proc/self/statm filename the RSS readings come from; it is a
+// kernel path, not prose, so it cannot be respelled. Same directive as the two
+// MallocTrim .cpp files.
 
 // -----------------------------------------------------------------------------
 // Allocator interaction note:
@@ -66,6 +69,19 @@ struct MallocTrimReport
  *
  * @note Intended for use after operations that free significant memory (e.g.,
  *       cache sweeps, ledger cleanup, online delete). Consider rate limiting.
+ *
+ * @note Every report field is populated on every call, whatever the journal's
+ *       severity. Only the diagnostic JLOG is severity-gated. Measuring costs
+ *       about 6 us (two /proc/self/statm reads and two getrusage calls) against
+ *       a trim that costs milliseconds on a large heap, so callers on a cold
+ *       path -- the cache sweep is the intended one -- can record the numbers
+ *       unconditionally. A caller on a hot path should not use this function at
+ *       all rather than expect the measurement to disappear.
+ *
+ * @note `minfltDelta` covers the trim call ONLY. It shows that the trim itself
+ *       faults; it does NOT capture the faults later taken when the caches
+ *       refill and touch the pages the trim returned. Do not read it as the
+ *       total cost of trimming.
  */
 MallocTrimReport
 mallocTrim(std::string_view tag, beast::Journal journal);

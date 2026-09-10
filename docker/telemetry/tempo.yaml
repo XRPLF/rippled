@@ -82,3 +82,68 @@ storage:
       path: /var/tempo/wal
     local:
       path: /var/tempo/blocks
+    block:
+      # Give the highest-value span attributes their own Parquet columns so
+      # TraceQL scopes a search to one ledger without scanning the generic
+      # attribute list. Tempo indexes every attribute for search regardless;
+      # a dedicated column only changes the cost of filtering on it.
+      #
+      # ledger_hash is here rather than in the collector's spanmetrics
+      # `dimensions:` on purpose: it is a per-ledger value, so as a metric
+      # dimension it would mint one series per ledger acquired (unbounded
+      # cardinality). As a trace column it gives the same per-ledger lookup at
+      # zero metric cost -- which is how a single stuck or abandoned
+      # ledger.acquire is found: {name="ledger.acquire" && span.outcome=
+      # "abandoned" && span.ledger_hash="<hash>"}.
+      #
+      # txset_hash and remote_endpoint are here for the same reason and by the
+      # same rule: a tx-set root hash is one value per consensus round and a
+      # peer endpoint is one value per address dialled, so either as a
+      # spanmetrics dimension would mint an unbounded number of metric series.
+      # As trace columns they answer the per-object questions the metrics
+      # cannot -- which proposed set stalled a round:
+      #   {name="txset.acquire" && span.outcome="timeout" &&
+      #    span.txset_hash="<hash>"}
+      # and which peer a dial keeps failing against:
+      #   {name="peer.dial" && span.outcome="tcp_fail" &&
+      #    span.remote_endpoint="10.0.0.5:51235"}
+      #
+      # missing_nodes, served_nodes and duration_ms are deliberately NOT given
+      # columns. They are unbounded integers, so they are useless as equality
+      # filters; Tempo indexes every attribute for search regardless, so they
+      # remain queryable by range (e.g. span.missing_nodes > 0) at no
+      # storage cost, which is how they are actually read.
+      #
+      # The txset.acquire `round.request` event attributes get no column either,
+      # and cannot: this Tempo (2.9.4, docker-compose.yml) queries them via
+      # event:name / event.<attr>, but a dedicated column accepts only
+      # scope: span or scope: resource -- never event. Those event filters
+      # therefore scan rather than index, which is fine for the per-span lookup
+      # they are used for; do not add an event-scoped column to the list below.
+      #
+      # The ledger_hash column below carries a second job as of the per-ledger
+      # trace join, which is why it stays the highest-value column here.
+      # Every span for one ledger -- ledger.acquire, consensus.validation.accept,
+      # ledger.validate, ledger.store -- now derives its TRACE ID from that same
+      # ledger hash, so the whole story of one slow ledger is one trace:
+      #   {span.ledger_hash="<hash>"}
+      # returns all of them across the three threads that produced them. The
+      # column is what makes that lookup cheap; it also stays the way a reader
+      # confirms two spans really are the same ledger rather than a trace-id
+      # coincidence, since the attribute holds the full 32 bytes while the trace
+      # id is only the leading 16.
+      #
+      # validation_status and accept_gated get no column: both are small closed
+      # value sets promoted to spanmetrics dimensions instead (see the collector
+      # configs), so the aggregate question is answered by a metric query and no
+      # per-value trace lookup is needed.
+      parquet_dedicated_columns:
+        - name: ledger_hash
+          type: string
+          scope: span
+        - name: txset_hash
+          type: string
+          scope: span
+        - name: remote_endpoint
+          type: string
+          scope: span

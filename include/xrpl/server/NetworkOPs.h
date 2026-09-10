@@ -111,10 +111,37 @@ public:
      */
     [[nodiscard]] virtual std::chrono::microseconds
     getServerStateDurationUs() const = 0;
+    /**
+     * Microseconds from process start until the node first reached FULL.
+     *
+     * Zero while the node has not completed initial sync yet, so a value that
+     * stays at zero is itself the signal that sync never finished. Once set it
+     * never changes: this is the one-shot time-to-first-FULL, not the time in
+     * the current state. Same value as `initial_sync_duration_us` in
+     * server_info, exposed as a lightweight accessor so metrics can read it
+     * without building the full server_info JSON on every collection tick.
+     *
+     * @return Microseconds to first FULL, or 0 if not yet reached.
+     */
+    [[nodiscard]] virtual std::uint64_t
+    getInitialSyncDurationUs() const = 0;
     [[nodiscard]] virtual std::string
     strOperatingMode(OperatingMode const mode, bool const admin = false) const = 0;
     [[nodiscard]] virtual std::string
     strOperatingMode(bool const admin = false) const = 0;
+    /**
+     * How far this node's validated ledger trails the network's.
+     *
+     * The network target is the highest ledger sequence any connected peer
+     * reports holding; the result is that target minus our own validated
+     * sequence, floored at zero. Zero therefore means either "at the tip" or
+     * "no peer has told us about a newer ledger", which on a node with no
+     * peers is the same thing.
+     *
+     * @return Ledgers behind the network, 0 when at or ahead of the tip.
+     */
+    [[nodiscard]] virtual std::uint32_t
+    getLedgersBehindNetwork() const = 0;
 
     //--------------------------------------------------------------------------
     //

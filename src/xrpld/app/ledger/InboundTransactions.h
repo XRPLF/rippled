@@ -37,14 +37,27 @@ public:
     /**
      * Find and return a transaction set, or nullptr if it is missing.
      *
+     * Called once per peer proposal, so the same round asks for the same set
+     * many times over.
+     *
      * @param setHash The transaction set ID (digest of the SHAMap root node).
      * @param acquire Whether to fetch the transaction set from the network if
      * it is missing.
+     * @param roundParentHash Parent-ledger hash of the consensus round making
+     * this request, recorded on the fetch's trace so a fetch can be tied to the
+     * round(s) that wanted it. Ignored, and may be zero, when acquire is false:
+     * that path never starts a fetch.
+     * @param roundLedgerSeq Sequence of the ledger that round is building.
+     * Ignored, and may be zero, on the same condition.
      * @return The transaction set with ID setHash, or nullptr if it is
      * missing.
      */
     virtual std::shared_ptr<SHAMap>
-    getSet(uint256 const& setHash, bool acquire) = 0;
+    getSet(
+        uint256 const& setHash,
+        bool acquire,
+        uint256 const& roundParentHash,
+        std::uint32_t roundLedgerSeq) = 0;
 
     /**
      * Add a transaction set from a LedgerData message.

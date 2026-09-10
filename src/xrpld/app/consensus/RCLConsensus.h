@@ -148,6 +148,29 @@ class RCLConsensus
          */
         telemetry::SpanContext acceptSpanContext_;
 
+        /**
+         * Identity of the round currently starting: its parent-ledger hash and
+         * the sequence of the ledger it is building.
+         *
+         *  Passed to InboundTransactions::getSet() so a tx-set fetch's span can
+         *  name the round(s) that asked for it. The same hash is recorded on
+         *  consensus.round as consensus_ledger_id, which is what joins the two.
+         *
+         *  Written by preStartRound() UNCONDITIONALLY, not by
+         *  startRoundTracing(), which returns early when consensus tracing is
+         *  off: the fetch's event must still name the round when only
+         *  trace_ledger is on. No atomics needed -- both writer and reader
+         *  (acquireTxSet) run on the consensus thread under RCLConsensus::mutex_.
+         *
+         * @note Stale after a mid-round wrong-ledger switch: handleWrongLedger()
+         *       re-enters startRoundInternal() directly, which never reaches
+         *       preStartRound(), so a fetch begun after the switch records the
+         *       pre-switch round. Pre-existing for consensus spans generally;
+         *       not made worse here.
+         */
+        uint256 roundParentHash_;
+        std::uint32_t roundLedgerSeq_{0};
+
     public:
         using Ledger_t = RCLCxLedger;
         using NodeID_t = NodeID;

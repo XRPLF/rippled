@@ -5,10 +5,12 @@ Usage: check_otel_naming.py
 This script takes no parameters and can be called from any directory inside the
 repository (it locates the repo root via `git rev-parse`).
 
-Enforces the OpenTelemetry span-attribute naming convention documented in
-CONTRIBUTING.md ("Telemetry span attribute naming") across every layer of the
-telemetry pipeline. The `*SpanNames.h` constants are the single source of truth
-(L1); every other layer must agree with them.
+Enforces the OpenTelemetry naming conventions documented in CONTRIBUTING.md
+("Telemetry span attribute naming" and "Telemetry metric naming") across every
+layer of the telemetry pipeline. The `*SpanNames.h` constants are the single
+source of truth for span attributes (L1) and the `*MetricNames.h` constants for
+metric names and label keys (L1-metrics); every other layer must agree with
+them.
 
 Design principles
 -----------------
@@ -52,6 +54,10 @@ Layers
                  RULE_E_DOC_ROOTS)
   L6 metrics   : MetricsRegistry.cpp instrument labels          (native-metric
                  label keys, a valid dashboard-label source besides L1)
+  L1-metrics   : src/**/*MetricNames.h, include/**/*MetricNames.h (ground truth
+                 for metric instrument names, label keys and bounded values)
+  L7 workload  : docker/telemetry/workload/expected_metrics.json  (asserted
+                 metric names)
 
 Rules (each FAILS the build, when its inputs are present)
 ---------------------------------------------------------
@@ -84,6 +90,24 @@ Rules (each FAILS the build, when its inputs are present)
      key-scoped marker (RULE_E_MARKER_SYNTAX), which exempts ONLY the keys it
      lists on the line it appears on -- any other dotted token on that same line
      still fails.
+  I  No string literals as METRIC instrument names or label keys. The mirror of
+     Rule F for metrics: the name passed to an XRPL_METRIC_* macro or to a
+     meter->Create* factory, and the label KEYS in its label set, must reference
+     a *MetricNames.h constant. Label VALUES are exempt (runtime data), as are
+     the descriptions, *MetricNames.h itself, MetricMacros.h, and test files.
+     Scoped by metric FAMILY (first underscore segment) so the metric surface
+     can be converted subsystem by subsystem -- declaring a constant for a
+     family opts that family into enforcement. See Rule L.
+  J  Metric instrument names follow the naming and suffix conventions:
+     lower_snake_case, no xrpld_/xrpl_ prefix (the exporter adds it), a counter
+     ends in _total, a histogram ends in _us/_ms/_seconds, and a gauge does not
+     end in _total. The instrument KIND is read from the emit site, never
+     guessed from words in the name.
+  K  Every metric named in expected_metrics.json resolves to a *MetricNames.h
+     constant, so a rename in code cannot leave the workload validator
+     asserting a name nothing emits. PromQL selectors and exporter-appended
+     histogram suffixes are normalized away first; groups fed by another emit
+     path (statsd_*, spanmetrics) are out of scope.
 
 Warnings (printed, but do NOT fail the build)
 ----------------------------------------------
@@ -99,6 +123,10 @@ Warnings (printed, but do NOT fail the build)
      exemption). Warnings, not failures, because presence-gating must keep
      working on partial branches -- but the skip is now visible instead of
      silent.
+  L  A literal metric name in a family that has no *MetricNames.h constants
+     yet. Rule I's ratchet defers these rather than failing the build on the
+     whole pre-existing metric surface at once; the warning is what keeps the
+     outstanding conversion work visible instead of silently accepted.
   M  A constant DEFINED in a *SpanNames.h that no code references — the reverse
      of every rule above, which all start from a consumer. Constants referenced
      only by test code are reported separately. A warning because a constant may
@@ -186,12 +214,22 @@ TRACEQL_SCOPE = re.compile(r"^(?:span|resource|event|link|instrumentation_scope)
 # label set — they are not labels and must not license a dashboard filter.
 METRIC_LABEL_MAP = re.compile(r"\{\{(.*?)\}\}", re.DOTALL)
 # One key inside such a map: a string literal, or a `kFooLabel` constant name
-# resolved through LABEL_CONST_DEF. Inside the map, each pair opens with `{`,
-# except the first, whose `{` was consumed by the map's own `{{`.
+# resolved through LABEL_CONST_DEF. A label set is a nested initializer list
+# (`{{"a", x}, {"b", y}}`), so inside the map each pair opens with `{` except
+# the first, whose `{` was consumed by the map's own `{{` — hence the `^`
+# alternative. Matching only the doubled-brace form would derive just the first
+# label of every multi-label instrument, silently under-deriving the L6 key set
+# and making Rule D reject a dashboard that queries a label the code genuinely
+# emits.
 METRIC_LABEL = re.compile(r'(?:^|\{)\s*"([a-z_][a-z0-9_]*)"\s*,')
 METRIC_LABEL_CONST = re.compile(r"(?:^|\{)\s*(k[A-Za-z0-9_]*)\s*,")
 # A label-key constant definition, with or without `inline`:
 # `constexpr char kHandlerLabel[] = "handler";`
+#
+# This resolves the flat `k`-prefixed per-subsystem header style. The
+# `namespace label` style used by MetricNames.h is covered separately, by
+# metric_constants(), because those identifiers are not `k`-prefixed and are
+# referenced at call sites as `label::jobType` — see metric_label_names().
 LABEL_CONST_DEF = re.compile(
     r'(?:inline\s+)?constexpr\s+char\s+(k[A-Za-z0-9_]*)\s*\[\s*\]\s*=\s*"([a-z_][a-z0-9_]*)"'
 )
@@ -505,6 +543,24 @@ def main() -> None:
     run_rule_c_tempo(root, l1_keys, report)
     run_rule_d_dashboards(root, l1_keys, metric_labels, report)
     run_rule_e_docs(root, l1_keys, report)
+
+    # --- Metric rules I/J/K --------------------------------------------------
+    # The metric-name counterpart of the span rules above. Rule I is the mirror
+    # of Rule F (no literals at an emit site) and, like it, runs
+    # unconditionally because it is purely syntactic. Rules J and K are
+    # presence-gated on *MetricNames.h existing.
+    l1_metric_names, l1_metric_labels, _ = metric_constants(root)
+    if find_metricname_headers(root):
+        report.ok(
+            f"L1-metrics: {len(l1_metric_names)} instrument name(s) and "
+            f"{len(l1_metric_labels)} label key(s) from "
+            f"{len(find_metricname_headers(root))} *MetricNames.h header(s)"
+        )
+    else:
+        report.skip("L1-metrics", "no *MetricNames.h present")
+    run_rule_i_metric_literals(root, report)
+    run_rule_j_metric_suffixes(root, report)
+    run_rule_k_expected_metrics(root, report)
 
     report.render_and_exit()
 
@@ -1009,10 +1065,23 @@ def metric_label_names(root: Path) -> Set[str]:
     `counter->Add(1, {{"job_type", value}})` in MetricsRegistry.cpp. These are
     a valid source of dashboard labels distinct from span attributes (L1).
 
+    Collects both the first label of a set and every subsequent one, so a
+    multi-label instrument such as `{{"from", a}, {"to", b}}` contributes ALL
+    of its keys.
+
     A label key may be written inline as a string literal or hoisted into a
     named constant (`constexpr char kHandlerLabel[] = "handler";`, then
     `{{kHandlerLabel, value}}`). Both forms are collected, and the constants
-    may be declared in a header, so headers are scanned as well as sources."""
+    may be declared in a header, so headers are scanned as well as sources.
+
+    Also includes the keys declared as constants in `*MetricNames.h`
+    (L1-metrics), because Rule I requires call sites to reference a constant
+    rather than a literal — so once a subsystem is converted, its label keys no
+    longer appear as literals anywhere and a literal-only scan would
+    under-derive the set and make Rule D reject a dashboard querying a label
+    the code really emits. That covers the `namespace label` header style,
+    whose identifiers are not `k`-prefixed and so are invisible to
+    LABEL_CONST_DEF; the two derivations are complementary."""
     labels: Set[str] = set()
     # Constant name -> label string, gathered across every scanned file so a
     # `{{kFooLabel, ...}}` call site resolves even when the definition lives in
@@ -1037,7 +1106,107 @@ def metric_label_names(root: Path) -> Set[str]:
                     labels |= set(METRIC_LABEL.findall(label_map))
                     used_constants |= set(METRIC_LABEL_CONST.findall(label_map))
     labels |= {constants[name] for name in used_constants if name in constants}
+    labels |= metric_constants(root)[1]
     return labels
+
+
+# ---------------------------------------------------------------------------
+# L1-metrics: parse *MetricNames.h into the authoritative metric-name/label set
+# ---------------------------------------------------------------------------
+
+# A metric-name constant definition: `inline constexpr char NAME[] = "wire";`.
+# The metric headers use `constexpr char[]` rather than the `makeStr`/StaticStr
+# DSL the span headers use, because the OTel C++ API takes nostd::string_view,
+# which constructs from `char const*` but NOT from std::string_view.
+METRIC_CONST_DEF = re.compile(
+    r"inline\s+constexpr\s+char\s+(\w+)\s*\[\s*\]\s*=\s*\"([^\"]*)\"\s*;"
+)
+
+
+def find_metricname_headers(root: Path) -> List[Path]:
+    """Every `*MetricNames.h` in the tree (the metric-side counterpart of
+    `find_spanname_headers`)."""
+    return sorted(
+        p
+        for p in list((root / "src").rglob("*MetricNames.h"))
+        + list((root / "include").rglob("*MetricNames.h"))
+        if p.is_file()
+    )
+
+
+def metric_constants(root: Path) -> Tuple[Set[str], Set[str], Set[str]]:
+    """Return (instrument_names, label_keys, label_values) declared across the
+    `*MetricNames.h` headers, split by which namespace block each constant sits
+    in: `namespace metric` -> instrument names, `namespace label` -> label keys,
+    `namespace lval` -> bounded label values.
+
+    Comments are stripped first, so an illustrative `@code` example in a doc
+    comment cannot seed the authoritative set (same reasoning as
+    `strip_comments` for L1 spans).
+
+    Two header styles are recognised, because both are in use:
+
+    * Namespaced: constants sit inside `namespace metric` / `label` / `lval`,
+      and the enclosing namespace decides the bucket.
+    * Flat `k`-prefixed: a header with no such namespaces names the role in the
+      identifier instead -- `kLabelFoo` is a label key, `kResultFoo` and
+      `kReasonFoo` are label values. Used by the per-subsystem headers.
+
+    A constant that neither sits in one of the three namespaces nor carries a
+    recognised prefix is ignored rather than guessed at, keeping the derivation
+    conservative in the same direction as L1."""
+    names: Set[str] = set()
+    keys: Set[str] = set()
+    values: Set[str] = set()
+    for h in find_metricname_headers(root):
+        text = strip_comments(read_source(h))
+        flat = text
+        for ns, bucket in (
+            ("metric", names),
+            ("label", keys),
+            ("lval", values),
+        ):
+            for block in namespace_spans(text, ns):
+                for m in METRIC_CONST_DEF.finditer(block):
+                    bucket.add(m.group(2))
+                # Remove the block before the flat pass below, so the
+                # enclosing namespace stays the only thing that decides a
+                # namespaced constant's bucket. Without this, a `kLabel`-style
+                # identifier written inside `namespace metric` lands in both
+                # `names` and `keys`, and an instrument name silently becomes
+                # an allowed label key for Rule D.
+                flat = flat.replace(block, "", 1)
+        # Flat style: classify by identifier prefix. Only constants outside the
+        # namespaced blocks reach here, so a namespaced header is unaffected.
+        for m in METRIC_CONST_DEF.finditer(flat):
+            ident, value = m.group(1), m.group(2)
+            if ident.startswith("kLabel"):
+                keys.add(value)
+            elif ident.startswith(("kResult", "kReason")):
+                values.add(value)
+    return names, keys, values
+
+
+def namespace_spans(text: str, want: str) -> List[str]:
+    """Return the body text of each `namespace <want> { ... }` block, brace
+    matched so nested namespaces (e.g. `lval::dns_resolve`) are contained in
+    their parent's span. Generalizes `attr_namespace_spans`, which is hardcoded
+    to `attr`."""
+    spans: List[str] = []
+    for opener in NS_OPEN.finditer(text):
+        if opener.group(1).split("::")[-1] != want:
+            continue
+        i = opener.end()
+        depth, start = 1, i
+        while i < len(text) and depth > 0:
+            c = text[i]
+            if c == "{":
+                depth += 1
+            elif c == "}":
+                depth -= 1
+            i += 1
+        spans.append(text[start : i - 1])
+    return spans
 
 
 # Identity labels stamped by EXTERNAL infrastructure the OTel pipeline in this
@@ -1439,6 +1608,455 @@ def run_rule_e_docs(root: Path, l1_keys: Set[str], report: Report) -> None:
                 "required doc(s) absent"
             )
         report.ok(note + ")")
+
+
+# ---------------------------------------------------------------------------
+# Metric rules I / J / K
+# ---------------------------------------------------------------------------
+
+# A metric emit site whose name argument must be a constant. Two families:
+#   * the XRPL_METRIC_* call-site macros, where arg0 is the app/registry and
+#     arg1 is the instrument name;
+#   * the OTel meter factories, where arg0 is the instrument name.
+# Matching the macro by name (rather than by receiver, as CALLSITE does) is
+# sufficient because the XRPL_METRIC_ prefix is unambiguous in this repo.
+METRIC_MACRO_CALL = re.compile(r"\bXRPL_METRIC_([A-Z_]+)\s*\(")
+METRIC_FACTORY_CALL = re.compile(
+    r"\bCreate(?:UInt64|Int64|Double)"
+    r"(?:Counter|UpDownCounter|Histogram|Gauge|ObservableGauge|"
+    r"ObservableCounter|ObservableUpDownCounter)\s*\("
+)
+# A `{ KEY , ...` label pair opener inside an already-isolated argument list.
+# KEY is what Rule I checks; the VALUE after the comma is exempt (runtime data).
+METRIC_PAIR_KEY = re.compile(r"\{\s*(\"(?:[^\"\\]|\\.)*\"|[A-Za-z_][\w:]*)\s*,")
+
+# The unit/kind suffix convention every instrument name must satisfy (Rule J).
+# A cumulative counter reads correctly under rate() only if a reader can tell it
+# from a gauge, and a duration is ambiguous unless it carries its unit -- the
+# OTel `unit` argument is not surfaced on the Prometheus metric name.
+METRIC_COUNTER_SUFFIX = "_total"
+METRIC_DURATION_SUFFIXES = ("_us", "_ms", "_seconds")
+
+
+def metric_calls(text: str):
+    """Yield (kind, name_index, arglist, lineno) for every metric emit site.
+
+    `kind` is the macro suffix (e.g. `COUNTER_INC_LABELED`) for a macro call, or
+    the factory method name for a `meter->Create*` call. `name_index` is which
+    top-level argument holds the instrument name."""
+    for m in METRIC_MACRO_CALL.finditer(text):
+        arglist = balanced_arglist(text, m.end())
+        yield m.group(1), 1, arglist, text.count("\n", 0, m.start()) + 1
+    for m in METRIC_FACTORY_CALL.finditer(text):
+        arglist = balanced_arglist(text, m.end())
+        name = m.group(0).rstrip("( \t\n")
+        yield name, 0, arglist, text.count("\n", 0, m.start()) + 1
+
+
+def balanced_arglist(text: str, start: int) -> str:
+    """Return the argument-list text of a call whose '(' ends at `start`-1,
+    balancing nesting and ignoring parens inside string literals."""
+    i, depth, in_str, esc = start, 1, False, False
+    while i < len(text) and depth > 0:
+        c = text[i]
+        if in_str:
+            if esc:
+                esc = False
+            elif c == "\\":
+                esc = True
+            elif c == '"':
+                in_str = False
+        elif c == '"':
+            in_str = True
+        elif c == "(":
+            depth += 1
+        elif c == ")":
+            depth -= 1
+        i += 1
+    return text[start : i - 1]
+
+
+def run_rule_i_metric_literals(root: Path, report: Report) -> None:
+    """Rule I: no string literal as a metric instrument NAME or label KEY.
+
+    The metric-side mirror of Rule F. An instrument name or label key passed to
+    an `XRPL_METRIC_*` macro or to a `meter->Create*` factory must reference a
+    `*MetricNames.h` constant, so a rename is one edit instead of six and a typo
+    is a compile error instead of a metric that silently never appears.
+
+    Exempt, for the same reasons Rule F exempts them:
+      * label VALUES -- the argument after a label key is runtime data;
+      * the instrument DESCRIPTION -- prose, not naming surface;
+      * `*MetricNames.h` itself -- that is where the strings are defined;
+      * `MetricMacros.h` -- the macro definitions, whose `(name)` is a parameter;
+      * test code -- tests pass arbitrary literals to exercise the API, and
+        asserting on a literal is what proves a constant's value is unchanged.
+
+    Scope -- a RATCHET, not a flag day. The rule fires only on a metric whose
+    FAMILY already has constants declared in a `*MetricNames.h` (matched on the
+    name's first underscore segment, e.g. `sync_`, `jobq_`, `unl_`). The metric
+    surface predates this rule by many phases, and failing the build on ~27
+    pre-existing instruments at once would force one un-reviewable mega-change.
+    Declaring a constant for a family is what opts that family in, so:
+      * a NEW metric in an already-converted family is caught immediately;
+      * a literal left behind in a family being converted is caught;
+      * an untouched legacy family stays green until someone converts it, at
+        which point the whole family is enforced.
+    A literal whose family has no constants at all is reported as a Rule L
+    warning instead (non-fatal), so the remaining work stays visible.
+
+    Presence-gated on `*MetricNames.h` existing at all; with no metric header
+    in the tree the rule has no families to enforce and is skipped."""
+    if not find_metricname_headers(root):
+        report.skip("I", "no *MetricNames.h present")
+        return
+    names, keys, _ = metric_constants(root)
+    owned = metric_prefixes(names)
+    found = False
+    deferred: List[Tuple[str, str]] = []
+
+    def report_literal(rel: object, lineno: int, token: str, wire: str) -> None:
+        nonlocal found
+        # A label key is enforced once ANY label-key constant exists, because
+        # the label vocabulary is shared across families -- `outcome` means the
+        # same thing everywhere, so there is no per-family ratchet for it.
+        in_scope = (
+            any(wire.startswith(p) for p in owned) if token.startswith("name") else True
+        )
+        if in_scope:
+            found = True
+            report.violation(
+                "I", f"{rel}:{lineno}", token, "use a *MetricNames.h constant"
+            )
+        else:
+            deferred.append((f"{rel}:{lineno}", token))
+
+    for path in sorted(iter_sources(root)):
+        if path.name.endswith("MetricNames.h") or path.name == "MetricMacros.h":
+            continue
+        if is_test_path(path):
+            continue
+        text = strip_comments(read_source(path))
+        rel = path.relative_to(root)
+        for kind, name_idx, arglist, lineno in metric_calls(text):
+            args = split_top_level_args(arglist)
+            if len(args) > name_idx:
+                lit = STRING_LITERAL.search(args[name_idx])
+                if lit:
+                    report_literal(
+                        rel, lineno, f'name "{lit.group(1)}" ({kind})', lit.group(1)
+                    )
+            # Label KEYS live in the label-set initializer, e.g.
+            # `{{"outcome", v}, {"reason", w}}`. Scanned over the WHOLE argument
+            # list rather than per split argument, because
+            # `split_top_level_args` balances only parentheses -- a brace-
+            # enclosed label set contains top-level commas and would be split
+            # apart mid-pair, hiding every key from the pattern.
+            #
+            # Scanning the whole list is safe: METRIC_PAIR_KEY requires an
+            # opening `{` before the key, which the instrument name and the
+            # description never have. Only the key position is checked; the
+            # VALUE after it is runtime data and exempt.
+            if keys:
+                for pm in METRIC_PAIR_KEY.finditer(arglist):
+                    key = pm.group(1)
+                    if not key.startswith('"'):
+                        continue
+                    report_literal(rel, lineno, f"label {key} ({kind})", key.strip('"'))
+    for loc, token in deferred:
+        report.warning("L", loc, token, "metric family not yet converted")
+    if not found:
+        report.ok("I: no string-literal names/label keys in converted metric families")
+
+
+def instrument_kinds(root: Path, wire_by_symbol: Dict[str, str]) -> Dict[str, Set[str]]:
+    """Map each declared instrument's WIRE name to the set of OTel instrument
+    kinds its emit sites actually create it with.
+
+    The kind is what decides which suffix is correct, so it must be read from
+    the emit site rather than guessed from the name -- guessing from words like
+    "latency" or "us" mislabels a multi-series gauge whose units live in its
+    label VALUES (e.g. `nodestore_state` observing `write_mean_us`), which is
+    a legitimate shape, not a violation.
+
+    A SET rather than one kind per name, because one wire name created through
+    two different factories is itself the defect worth reporting: the SDK would
+    export two instruments under one name and the collector would see whichever
+    arrived last. Recording only the last kind visited hid exactly that case.
+
+    Values are drawn from `counter`, `histogram`, `gauge`, `updown`. A name whose
+    emit site is not found is absent from the result, so Rule J checks only the
+    shape-independent rules for it."""
+    kinds: Dict[str, Set[str]] = {}
+    for path in iter_sources(root):
+        if path.name == "MetricMacros.h" or path.name.endswith("MetricNames.h"):
+            continue
+        if is_test_path(path):
+            continue
+        text = strip_comments(read_source(path))
+        for kind, name_idx, arglist, _ in metric_calls(text):
+            args = split_top_level_args(arglist)
+            if len(args) <= name_idx:
+                continue
+            arg = args[name_idx].strip()
+            lit = re.fullmatch(r'"((?:[^"\\]|\\.)*)"', arg)
+            if lit:
+                wire: Optional[str] = lit.group(1)
+            else:
+                ident = IDENTIFIER_ARG.match(arg)
+                wire = (
+                    wire_by_symbol.get(ident.group(1).split("::")[-1])
+                    if ident
+                    else None
+                )
+            if wire is None:
+                continue
+            classified = classify_instrument_kind(kind)
+            # `other` is the sentinel for a macro that is not an instrument
+            # factory. Adding it would let a future non-instrument
+            # `XRPL_METRIC_*` macro turn a correctly named metric into
+            # "created as counter and other", a conflict message that reads as
+            # nonsense. Dropping it keeps the sentinel doing exactly what it did
+            # before: matching no shape rule.
+            if classified != "other":
+                kinds.setdefault(wire, set()).add(classified)
+    return kinds
+
+
+def classify_instrument_kind(kind: str) -> str:
+    """Normalise a macro suffix (`COUNTER_INC_LABELED`) or a factory method
+    name (`CreateInt64ObservableGauge`) to one of counter/histogram/gauge/
+    updown. Order matters: `UpDown` and `Observable` are checked before the
+    bare `Counter` substring they both contain."""
+    if "HISTOGRAM" in kind or "Histogram" in kind:
+        return "histogram"
+    if "UPDOWN" in kind or "UpDown" in kind:
+        return "updown"
+    if "GAUGE" in kind or "Gauge" in kind:
+        return "gauge"
+    if "COUNTER" in kind or "Counter" in kind:
+        return "counter"
+    return "other"
+
+
+def symbol_wire_names(root: Path) -> Dict[str, str]:
+    """Map each `*MetricNames.h` constant's C++ symbol name to its wire string,
+    so an emit site referencing `metric::dnsResolveTotal` can be resolved back
+    to `dns_resolve_total`."""
+    out: Dict[str, str] = {}
+    for h in find_metricname_headers(root):
+        for m in METRIC_CONST_DEF.finditer(strip_comments(read_source(h))):
+            out[m.group(1)] = m.group(2)
+    return out
+
+
+def run_rule_j_metric_suffixes(root: Path, report: Report) -> None:
+    """Rule J: instrument names follow the naming and unit/kind suffix rules.
+
+    Checked against the `namespace metric` constants in `*MetricNames.h`, which
+    Rule I makes the only place an instrument name can be spelled. Enforced:
+
+      * lower_snake_case (same shape as Rule G for span attributes);
+      * no `xrpld_`/`xrpl_` prefix -- the Prometheus exporter adds the namespace
+        itself, so a name carrying it would emit `xrpld_xrpld_*` on the wire;
+      * a monotonic COUNTER ends in `_total`, so `rate()` over it reads
+        correctly and a reader can tell it from a gauge;
+      * a HISTOGRAM ends in `_us`, `_ms` or `_seconds`: histograms in this repo
+        are all durations, and the OTel `unit` argument is not surfaced on the
+        Prometheus metric name, so an unlabelled duration is ambiguous;
+      * a GAUGE does not end in `_total`, which is reserved for counters.
+
+    The instrument KIND comes from the emit site (see `instrument_kinds`), not
+    from words in the name, so a multi-series gauge that carries its units in
+    its label values is not mistaken for a mis-suffixed duration.
+
+    Presence-gated: skipped when no `*MetricNames.h` exists."""
+    if not find_metricname_headers(root):
+        report.skip("J", "no *MetricNames.h present")
+        return
+    names, _, _ = metric_constants(root)
+    if not names:
+        report.skip("J", "no metric instrument-name constants declared")
+        return
+    kinds = instrument_kinds(root, symbol_wire_names(root))
+    found = False
+
+    def flag(name: str, expected: str) -> None:
+        nonlocal found
+        found = True
+        report.violation("J", "*MetricNames.h", name, expected)
+
+    for name in sorted(names):
+        if not SNAKE_SEGMENT.match(name):
+            flag(name, "must be lower_snake_case")
+            continue
+        if name.startswith(("xrpld_", "xrpl_")):
+            flag(name, "drop the prefix; the exporter adds it")
+            continue
+        found_kinds = kinds.get(name) or set()
+        if len(found_kinds) > 1:
+            # One wire name created through two factories exports two
+            # instruments under one name; no suffix can be right for both, so
+            # report the conflict itself rather than picking one arbitrarily.
+            flag(name, f"created as {' and '.join(sorted(found_kinds))}; pick one kind")
+            continue
+        kind = next(iter(found_kinds), None)
+        if kind == "counter" and not name.endswith(METRIC_COUNTER_SUFFIX):
+            flag(name, "counter must end in _total")
+        elif kind == "histogram" and not name.endswith(METRIC_DURATION_SUFFIXES):
+            flag(name, "histogram needs _us/_ms/_seconds suffix")
+        elif kind == "gauge" and name.endswith(METRIC_COUNTER_SUFFIX):
+            flag(name, "_total is reserved for counters")
+    if not found:
+        report.ok(f"J: {len(names)} metric instrument name(s) follow the naming rules")
+
+
+def run_rule_k_expected_metrics(root: Path, report: Report) -> None:
+    """Rule K: every metric named in the workload's `expected_metrics.json`
+    exists as a `namespace metric` constant.
+
+    The layer that cannot reference a C++ constant, so it is validated against
+    one instead. This is the check that catches the failure mode this rule set
+    exists for: a metric renamed in code while the workload validator still
+    asserts on the old name, which fails as "metric never appeared" at runtime
+    rather than at review time.
+
+    Scope. Only groups whose metrics come from the OTel instrument API are
+    checked. The file also inventories `beast::insight` statsd gauges/counters
+    (`statsd_gauges`, `statsd_counters`) and collector-derived spanmetrics, whose
+    names are minted by a different emit path -- `formatName()` lowercasing an
+    insight metric, or the spanmetrics connector -- and so have no
+    `*MetricNames.h` constant to resolve to by design. Checking them would fail
+    the build on metrics this convention does not govern. Within the OTel groups
+    the family ratchet still applies, so an unconverted family is out of scope
+    too. Presence-gated on both layers."""
+    path = root / "docker" / "telemetry" / "workload" / "expected_metrics.json"
+    if not path.is_file():
+        report.skip("K", "expected_metrics.json not present")
+        return
+    if not find_metricname_headers(root):
+        report.skip("K", "no *MetricNames.h to validate against")
+        return
+    names, _, _ = metric_constants(root)
+    try:
+        doc = json.loads(read_source(path))
+    except json.JSONDecodeError as exc:
+        report.violation("K", str(path.relative_to(root)), str(exc), "valid JSON")
+        return
+    declared = {
+        base_metric_name(e) for e in expected_metric_names(doc, NON_OTEL_METRIC_GROUPS)
+    }
+    # Only entries inside a metric FAMILY the constants already own are checked.
+    # Anything else in the file predates *MetricNames.h, so demanding a constant
+    # for it would fail the build on unrelated pre-existing metrics rather than
+    # on the drift this rule targets.
+    owned = metric_prefixes(names)
+    unknown = sorted(
+        n for n in declared if n not in names and any(n.startswith(p) for p in owned)
+    )
+    for n in unknown:
+        report.violation(
+            "K",
+            str(path.relative_to(root)),
+            n,
+            "no matching *MetricNames.h constant",
+        )
+    if not unknown:
+        checked = sum(1 for n in declared if n in names)
+        report.ok(f"K: {checked} expected-metric name(s) resolve to constants")
+
+
+# Suffixes the Prometheus exporter appends to a histogram instrument. The
+# instrument name declared in code is the stem, so they are stripped before the
+# constant lookup.
+HISTOGRAM_SUFFIXES = ("_bucket", "_count", "_sum")
+
+
+def base_metric_name(entry: str) -> str:
+    """Reduce an `expected_metrics.json` entry to the bare instrument name.
+
+    Entries are written the way an operator would query them, not the way the
+    code declares them, so two forms have to be normalized away:
+      * a PromQL label selector -- `sync_state{metric="ledgers_behind"}`;
+      * an exporter-appended histogram suffix -- `..._ms_bucket`/`_count`/`_sum`,
+        which the SDK adds and the code never names.
+    Without this the rule would reject every entry in the file, which is a
+    checker bug rather than a naming violation."""
+    name = entry.split("{", 1)[0].strip()
+    for suffix in HISTOGRAM_SUFFIXES:
+        if name.endswith(suffix):
+            return name[: -len(suffix)]
+    return name
+
+
+def metric_prefixes(names: Set[str]) -> Set[str]:
+    """The first underscore-delimited segment of each declared instrument name,
+    e.g. {`sync_`, `jobq_`, `unl_`}. Used by Rule K to decide whether an entry
+    in `expected_metrics.json` belongs to a family this repo's constants own --
+    so the rule flags a stale name inside a converted family without demanding a
+    constant for every unrelated metric in the file."""
+    return {n.split("_", 1)[0] + "_" for n in names if "_" in n}
+
+
+# Groups in expected_metrics.json whose names are NOT minted by the OTel
+# instrument API, and therefore have no *MetricNames.h constant by design:
+#   statsd_gauges / statsd_counters -- beast::insight metrics, whose wire names
+#     come from formatName() lowercasing an insight metric path;
+#   spanmetrics -- synthesised by the collector's spanmetrics connector from
+#     span names, not declared in C++ at all;
+#   job_queue_per_type_gauges -- beast::insight gauges in the "jobq" group,
+#     created per job type by JobTypeData's constructor, so the wire name embeds
+#     a job-type name and there is no declared instrument to point at. This
+#     group needs the exemption only because the jobq_ FAMILY became owned when
+#     jobq_saturation was declared in MetricNames.h: Rule K checks a name only
+#     when its family is owned, so before that these entries were skipped for
+#     the accidental reason that nothing in the family was declared. Declaring
+#     constants for them is not an option -- there is one triple per job type,
+#     minted at runtime.
+NON_OTEL_METRIC_GROUPS = frozenset(
+    {
+        "statsd_gauges",
+        "statsd_counters",
+        "spanmetrics",
+        "job_queue_per_type_gauges",
+    }
+)
+
+
+def expected_metric_names(
+    doc: object, skip_groups: frozenset = frozenset()
+) -> Set[str]:
+    """Collect metric names from `expected_metrics.json`.
+
+    The file groups metrics by source (`spanmetrics`, `statsd_gauges`,
+    `phase9_nodestore`, ...), each group holding a `metrics` LIST OF STRINGS
+    alongside a prose `description`. Both that shape and a
+    `[{"metric": "..."}]` shape are accepted, and the walk is generic, so a
+    layout change degrades to "checks fewer names" rather than silently
+    checking none. `description` is skipped explicitly -- it is prose, and
+    letting it through would feed whole sentences to the family match.
+
+    `skip_groups` drops whole top-level groups (see NON_OTEL_METRIC_GROUPS)."""
+    out: Set[str] = set()
+
+    def walk(node: object, in_metrics: bool = False) -> None:
+        if isinstance(node, dict):
+            for key, val in node.items():
+                if key == "description" or key in skip_groups:
+                    continue
+                if key in ("metric", "name") and isinstance(val, str):
+                    out.add(val)
+                else:
+                    walk(val, in_metrics or key == "metrics")
+        elif isinstance(node, list):
+            for item in node:
+                if in_metrics and isinstance(item, str):
+                    out.add(item)
+                else:
+                    walk(item, in_metrics)
+
+    walk(doc)
+    return out
 
 
 if __name__ == "__main__":

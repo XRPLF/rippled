@@ -12,6 +12,12 @@
 #include <xrpld/overlay/Message.h>
 #include <xrpld/overlay/Overlay.h>
 #include <xrpld/overlay/PeerSet.h>
+#include <xrpld/telemetry/MetricMacros.h>
+#ifdef XRPL_ENABLE_TELEMETRY
+// The metric-name constants are named only as macro arguments, which the
+// macros drop when telemetry is compiled out.
+#include <xrpld/telemetry/MetricNames.h>
+#endif
 
 #include <xrpl/basics/Blob.h>
 #include <xrpl/basics/Log.h>
@@ -31,22 +37,24 @@
 #include <xrpl/protocol/SystemParameters.h>  // IWYU pragma: keep
 #include <xrpl/protocol/jss.h>
 #include <xrpl/resource/Fees.h>
+#include <xrpl/shamap/SHAMapMissingNode.h>
 #include <xrpl/shamap/SHAMapNodeID.h>
 #include <xrpl/shamap/SHAMapSyncFilter.h>
 #include <xrpl/telemetry/SpanGuard.h>
-#include <xrpl/telemetry/SpanNames.h>
 
 #include <boost/iterator/function_output_iterator.hpp>
 
 #include <xrpl.pb.h>
 
 #include <algorithm>
+#include <atomic>
 #include <chrono>
 #include <cstddef>
 #include <cstdint>
 #include <exception>
 #include <memory>
 #include <mutex>
+#include <optional>
 #include <random>
 #include <sstream>
 #include <string>
@@ -103,16 +111,28 @@ InboundLedger::init(ScopedLockType& collectionLock)
     collectionLock.unlock();
 
     // Span the acquire lifecycle so back-fill / fork-recovery cost is
-    // observable. Finalized in done() with the outcome and timeout count.
+    // observable. Finalized by finalizeAcquireSpan() on whichever exit this
+    // acquire takes, including the destructor.
     {
         using namespace telemetry;
         // acquireSpan_ is emplaced here but reset() on a JtLedgerData worker
         // thread. A SpanGuard is thread-free (owns no thread-local Scope), so it
         // can be created here and destroyed on the worker with no scope to strip.
+        // hashSpan, not span: the trace id is derived from hash_[0:16], so this
+        // acquire lands in the same trace as the ledger.validate,
+        // ledger.store and consensus.validation.accept spans for the same
+        // ledger, which run on other threads. One trace then shows whether a
+        // slow ledger was slow to fetch, to be accepted, or to be stored. The
+        // phase children below inherit this trace id automatically.
         acquireSpan_.emplace(
-            SpanGuard::span(TraceCategory::Ledger, seg::ledger, ledger_span::op::acquire));
+            SpanGuard::hashSpan(
+                TraceCategory::Ledger, ledger_span::acquireFull, hash_.data(), hash_.kBytes));
         if (*acquireSpan_)
         {
+            // The hash is the one identity known at every acquire's start (a
+            // by-hash fetch begins with seq_ == 0), so it is what makes a
+            // still-running or abandoned fetch identifiable in a trace search.
+            acquireSpan_->setAttribute(ledger_span::attr::ledgerHash, to_string(hash_).c_str());
             acquireSpan_->setAttribute(ledger_span::attr::ledgerSeq, static_cast<int64_t>(seq_));
             // Map the acquire reason to its span-attribute value. A switch
             // keeps the mapping flat and exhaustive over the Reason enum.
@@ -134,10 +154,33 @@ InboundLedger::init(ScopedLockType& collectionLock)
 
     tryDB(app_.getNodeFamily().db());
     if (failed_)
+    {
+        // tryDB proved the ledger can never be acquired. This exit never
+        // reaches done(), so finalize here or the span would carry no outcome.
+        finalizeAcquireSpan(/*mayReadPeerCount=*/true);
         return;
+    }
+
+    // Whether the local node store already held the whole ledger. Emitted once
+    // per new acquire (init() runs exactly once), never per node, so the cost is
+    // a single labelled counter Add. This is what separates disk-bound sync
+    // ("everything was local, we are just slow to read it") from peer-bound sync
+    // ("nothing was local, every node must come over the wire").
+    XRPL_METRIC_COUNTER_INC_LABELED(
+        app_,
+        telemetry::metric::syncAcquireSourceTotal,
+        "Ledger acquires by where the data came from",
+        {{telemetry::label::source,
+          std::string(
+              complete_ ? telemetry::lval::acquire_source::local
+                        : telemetry::lval::acquire_source::network)}});
 
     if (!complete_)
     {
+        // Open the span for whichever phase the local lookup left outstanding,
+        // so the phase timeline starts at the same instant the network fetch
+        // does rather than at the first reply.
+        syncPhaseSpans();
         addPeers();
         queueJob(sl);
         return;
@@ -145,6 +188,12 @@ InboundLedger::init(ScopedLockType& collectionLock)
 
     JLOG(journal_.debug()) << "Acquiring ledger we already have in "
                            << " local store. " << hash_;
+
+    // The local store already had everything, so the fetch is over here and
+    // never goes through done(). Finalize now: the span's duration then covers
+    // only the store read, not the storeLedger/checkAccept work below.
+    finalizeAcquireSpan(/*mayReadPeerCount=*/true);
+
     XRPL_ASSERT(
         ledger_->header().seq < kXrpLedgerEarliestFees || ledger_->read(keylet::feeSettings()),
         "xrpl::InboundLedger::init : valid ledger fees");
@@ -166,6 +215,42 @@ InboundLedger::init(ScopedLockType& collectionLock)
     // Check if this could be a newer fully-validated ledger
     if (reason_ == Reason::CONSENSUS)
         app_.getLedgerMaster().checkAccept(ledger_);
+}
+
+int
+InboundLedger::getMissingNodeCount(SHAMapType type) const noexcept
+{
+    return (type == SHAMapType::TRANSACTION ? missingTxNodes_ : missingStateNodes_)
+        .load(std::memory_order_relaxed);
+}
+
+std::size_t
+InboundLedger::getReceivedDataDepth() const noexcept
+{
+    return receivedDataDepth_.load(std::memory_order_relaxed);
+}
+
+void
+InboundLedger::refreshMissingNodeCounts() noexcept
+{
+    if (haveState_)
+        missingStateNodes_.store(0, std::memory_order_relaxed);
+    if (haveTransactions_)
+        missingTxNodes_.store(0, std::memory_order_relaxed);
+}
+
+void
+InboundLedger::clearMissingNodeCounts() noexcept
+{
+    // Unconditional, unlike refreshMissingNodeCounts(): this runs when the
+    // acquire is over, however it ended. A timed-out or failed acquire never
+    // sets the have-tree flags, so the flag-guarded refresh above would leave
+    // its last sweep count latched. The gauge maxes over every acquire still in
+    // the collection, and eviction waits on a one-minute grace plus the sweep
+    // interval, so a latched count would report a finished node as stuck for
+    // minutes -- inverting the one signal that separates stuck from slow.
+    missingStateNodes_.store(0, std::memory_order_relaxed);
+    missingTxNodes_.store(0, std::memory_order_relaxed);
 }
 
 std::size_t
@@ -228,25 +313,10 @@ InboundLedger::~InboundLedger()
         // so it is counted apart from a cheap abort that had nothing yet.
         app_.getAcquireStats().recordAbort(haveHeader_ || haveState_ || haveTransactions_);
 
-        // Mark the span so an abandoned acquisition is distinguishable from one
-        // that was still in flight when the trace was read. Without this the
-        // span still ends (the guard's destructor calls End()) but carries only
-        // the attributes set at construction, and the collector's spanmetrics
-        // `outcome` dimension has nothing to group these under.
-        //
-        // peer_count is deliberately NOT recorded here, unlike done(): reading
-        // it goes through getPeerCount() -> app_.getOverlay(), and a destructor
-        // must not depend on Overlay still existing. InboundLedgers::stop()
-        // normally clears the map while Overlay is alive, but a shared_ptr held
-        // past that point would destroy this object after Overlay is gone.
-        if (acquireSpan_ && *acquireSpan_)
-        {
-            using namespace telemetry;
-            acquireSpan_->setAttribute(
-                ledger_span::attr::outcome, std::string_view(ledger_span::val::aborted));
-            acquireSpan_->setAttribute(
-                ledger_span::attr::timeouts, static_cast<int64_t>(timeouts_));
-        }
+        // Activate the still-open span so this abort line carries its trace_id,
+        // which is what links the abandoned span to the reason it was dropped.
+        // Non-owning and popped at the end of this block, before the span ends.
+        auto acquireActivation = telemetry::activateIfLive(acquireSpan_);
 
         JLOG(journal_.debug()) << "Acquire " << hash_ << " abort "
                                << ((timeouts_ == 0) ? std::string()
@@ -254,6 +324,15 @@ InboundLedger::~InboundLedger()
                                                        std::to_string(timeouts_) + " "))
                                << stats_.get();
     }
+
+    // Last exit. A fetch dropped here (swept for making no progress, or torn
+    // down at shutdown) reached no result, so this is what stamps
+    // outcome=abandoned instead of exporting a span with no outcome at all.
+    // Already-finalized acquires are untouched -- the helper is idempotent.
+    // The peer count is not read here: this destructor can run under the
+    // InboundLedgers collection lock, and getPeerCount() would take the Overlay
+    // lock underneath it.
+    finalizeAcquireSpan(/*mayReadPeerCount=*/false);
 }
 
 static std::vector<uint256>
@@ -395,6 +474,10 @@ InboundLedger::tryDB(node_store::Database& srcDB)
         }
     }
 
+    // A tree satisfied from the local store never ran a sweep, so publish its
+    // zero here rather than leaving the gauge on a stale count.
+    refreshMissingNodeCounts();
+
     if (haveTransactions_ && haveState_)
     {
         JLOG(journal_.debug()) << "Had everything locally";
@@ -431,6 +514,10 @@ InboundLedger::onTimer(bool wasProgress, ScopedLockType&)
         {
             JLOG(journal_.warn()) << timeouts_ << " timeouts for ledger " << hash_;
         }
+        // Record WHY before done() finalizes the spans. failed_ alone reads as
+        // "the data was bad"; this path is "no peer supplied it in time", and
+        // any phase still open is stamped `timeout` because of this flag.
+        timedOut_ = true;
         failed_ = true;
         done();
         return;
@@ -444,6 +531,16 @@ InboundLedger::onTimer(bool wasProgress, ScopedLockType&)
 
         std::size_t const pc = getPeerCount();
         JLOG(journal_.debug()) << "No progress(" << pc << ") for ledger " << hash_;
+
+        // A timeout with no node received since the previous one means this
+        // acquire is stalled. Fires on the acquire timer (once every 3 s at
+        // most), not on any per-node path, so one counter Add here is free.
+        // A climbing rate here alongside a flat missing-node count is the
+        // signature of a sync that will never complete.
+        XRPL_METRIC_COUNTER_INC(
+            app_,
+            telemetry::metric::syncAcquireNoProgressTotal,
+            "Ledger-acquire timeouts where no new node arrived");
 
         // addPeers triggers if the reason is not HISTORY
         // So if the reason IS HISTORY, need to trigger after we add
@@ -481,6 +578,199 @@ InboundLedger::pmDowncast()
 }
 
 void
+InboundLedger::beginPhaseSpan(
+    std::optional<telemetry::SpanGuard>& span,
+    std::string_view name) noexcept
+{
+    // Already open, or there is no parent to hang it on. The second case is
+    // also the disabled path: with telemetry off acquireSpan_ is inactive, so
+    // no phase span is ever created and this whole feature costs one branch.
+    if (span || !acquireSpan_ || !*acquireSpan_)
+        return;
+
+    // Parented through the acquire span's OWN captured context, not the
+    // thread's ambient context: a phase can open on a JtLedgerData worker where
+    // the ambient context is unrelated, and childSpan(name) would then attach
+    // it to whatever happened to be active there.
+    auto child = telemetry::SpanGuard::childSpan(name, acquireSpan_->spanContext());
+    if (!child)
+        return;
+    // The identity every phase shares with its parent, so a phase span found
+    // on its own in a search still says which ledger it belongs to.
+    child.setAttribute(telemetry::ledger_span::attr::ledgerHash, to_string(hash_).c_str());
+    if (seq_ != 0)
+    {
+        child.setAttribute(
+            telemetry::ledger_span::attr::ledgerSeq, static_cast<std::int64_t>(seq_));
+    }
+    span.emplace(std::move(child));
+}
+
+void
+InboundLedger::endPhaseSpan(
+    std::optional<telemetry::SpanGuard>& span,
+    bool complete,
+    std::optional<int> missingNodes) noexcept
+{
+    // Idempotent: the handle is cleared below, so a second call finds nothing
+    // and cannot overwrite the outcome the real phase end recorded.
+    if (!span)
+        return;
+
+    // Wrapped because ~InboundLedger reaches this through
+    // finalizeAcquireSpan(): an exception escaping a destructor during
+    // unwinding would terminate the process.
+    try
+    {
+        if (*span)
+        {
+            using namespace telemetry;
+            // Same shared rule for every phase, so no phase can mislabel its
+            // own end and a phase still open when the acquire dies reports
+            // `timeout` (budget gone) or `abandoned` (swept) rather than
+            // nothing at all.
+            span->setAttribute(
+                ledger_span::attr::outcome,
+                ledger_span::phaseOutcome(failed_, complete, timedOut_));
+            span->setAttribute(ledger_span::attr::timedOut, timedOut_);
+            // The count the phase's last getMissingNodes() sweep already
+            // produced -- read, never recomputed, so no second tree walk. A
+            // non-zero value on a timed-out phase is the "peers are not serving
+            // this tree" signature.
+            if (missingNodes)
+            {
+                span->setAttribute(
+                    ledger_span::attr::missingNodes, static_cast<std::int64_t>(*missingNodes));
+            }
+        }
+    }
+    catch (...)  // NOLINT(bugprone-empty-catch)
+    {
+        // Telemetry must never break an acquire. A span missing one attribute
+        // is still worth exporting, so fall through and end it below.
+    }
+
+    // End the span outside the try so it happens on every path, and
+    // unconditionally so it never leaks even when it was inactive.
+    span.reset();
+}
+
+void
+InboundLedger::syncPhaseSpans() noexcept
+{
+    // Nothing to parent to: telemetry off, ledger category disabled, or the
+    // acquire already finalized. One branch on the disabled path.
+    if (!acquireSpan_ || !*acquireSpan_)
+        return;
+
+    using namespace telemetry;
+
+    // The header gates both trees, so it is the only phase that can be open
+    // before there is anything else to fetch.
+    if (!haveHeader_)
+    {
+        beginPhaseSpan(headerSpan_, ledger_span::acquireHeader);
+        return;
+    }
+    // The header arrived. Close its span with no missing-node count -- a header
+    // is a single object, not a tree.
+    endPhaseSpan(headerSpan_, /*complete=*/true, /*missingNodes=*/std::nullopt);
+
+    // Both trees are fetched concurrently once their root hashes are known, so
+    // both spans can be open at once. Each closes when its own tree completes,
+    // which is what lets a trace show the state tree still running long after
+    // the transaction tree finished -- the normal shape of a fresh sync.
+    if (haveState_)
+    {
+        endPhaseSpan(asTreeSpan_, /*complete=*/true, getMissingNodeCount(SHAMapType::STATE));
+    }
+    else
+    {
+        beginPhaseSpan(asTreeSpan_, ledger_span::acquireAsTree);
+    }
+
+    if (haveTransactions_)
+    {
+        endPhaseSpan(txTreeSpan_, /*complete=*/true, getMissingNodeCount(SHAMapType::TRANSACTION));
+    }
+    else
+    {
+        beginPhaseSpan(txTreeSpan_, ledger_span::acquireTxTree);
+    }
+}
+
+void
+InboundLedger::finalizeAcquireSpan(bool mayReadPeerCount) noexcept
+{
+    // Close any phase still open BEFORE the parent ends, so no child span
+    // outlives its parent. A phase open at this point is one that never
+    // finished: it takes `timeout` when the retry budget ran out and
+    // `abandoned` when the acquire was swept, which is exactly the case these
+    // spans exist to show. Each carries the last missing-node count its own
+    // sweep produced, so a stuck phase reports how much it was still waiting
+    // for.
+    // Ahead of the acquire-span check below because each is independently
+    // idempotent: on a second call they are already empty, and when telemetry
+    // is off they were never created.
+    endPhaseSpan(headerSpan_, haveHeader_, std::nullopt);
+    endPhaseSpan(asTreeSpan_, haveState_, getMissingNodeCount(SHAMapType::STATE));
+    endPhaseSpan(txTreeSpan_, haveTransactions_, getMissingNodeCount(SHAMapType::TRANSACTION));
+
+    // Idempotent: the handle is cleared below, so a later exit finds nothing to
+    // finalize and cannot overwrite the outcome the real exit recorded.
+    if (!acquireSpan_)
+        return;
+
+    // The attribute writes are wrapped because the destructor is one of the
+    // callers: an exception escaping there during unwinding would terminate the
+    // process. Each setAttribute is itself noexcept today; the try is the
+    // structural guarantee that stays correct if that ever changes.
+    try
+    {
+        if (*acquireSpan_)
+        {
+            using namespace telemetry;
+            // Derived from this acquire's own flags by the shared rule, so no
+            // call site can mislabel an exit and every exit gets an outcome.
+            // Neither flag set means the fetch was dropped while in flight.
+            acquireSpan_->setAttribute(
+                ledger_span::attr::outcome, ledger_span::acquireOutcome(failed_, complete_));
+            acquireSpan_->setAttribute(
+                ledger_span::attr::timeouts, static_cast<int64_t>(timeouts_));
+            // Read here rather than by the caller: getPeerCount() walks the
+            // peer set and takes the Overlay lock for each one, so it must not
+            // run for an acquire that is not recording a span.
+            if (mayReadPeerCount)
+            {
+                acquireSpan_->setAttribute(
+                    ledger_span::attr::peerCount, static_cast<int64_t>(getPeerCount()));
+            }
+            // A by-hash acquire starts with seq_ == 0 and learns the sequence
+            // only when the header arrives, so re-stamp it here. OTel
+            // attributes are last-write-wins, so this replaces the placeholder
+            // 0 set at init() and lets the trace be found by ledger number.
+            if (seq_ != 0)
+            {
+                acquireSpan_->setAttribute(
+                    ledger_span::attr::ledgerSeq, static_cast<int64_t>(seq_));
+            }
+        }
+    }
+    catch (...)  // NOLINT(bugprone-empty-catch)
+    {
+        // Telemetry must never break an acquire, and this also runs from the
+        // destructor. A span missing one attribute is still worth exporting, so
+        // fall through and end it below.
+    }
+
+    // End the span, outside the try so it happens on every path. Unconditional
+    // so the span never leaks even when it was inactive, and so this helper is
+    // exactly-once: a later exit sees an empty handle and returns above.
+    // ~SpanGuard is implicitly noexcept, so this cannot throw out of here.
+    acquireSpan_.reset();
+}
+
+void
 InboundLedger::recordCompletionOnce()
 {
     // A failed or still-running acquisition is not a completion. Checked here
@@ -508,6 +798,10 @@ InboundLedger::done()
     signaled_ = true;
     touch();
 
+    // The acquire is over on every path through here, so the missing-node
+    // counts must stop being reported. See clearMissingNodeCounts().
+    clearMissingNodeCounts();
+
     // done() is the funnel every peer-driven outcome passes through, but not
     // every outcome: init() can satisfy an acquisition from the local store
     // and return without reaching here. Both call the same idempotent helper
@@ -515,36 +809,12 @@ InboundLedger::done()
     // excluded; the give-up path counts those itself.
     recordCompletionOnce();
 
-    // Finalize the acquire span with the outcome, timeout count, and peer
-    // count. Keep it active as the ambient context across the finalize and
-    // the outcome log below so that log line carries the span's trace_id.
-    // The activation is non-owning; acquireSpan_ still owns the span. The
-    // activation pops at the end of this block (restoring the prior context)
-    // while acquireSpan_ is still alive, then reset() ends the span.
+    // Keep the span active as the ambient context across the outcome log so
+    // that line carries the span's trace_id. The activation is non-owning;
+    // acquireSpan_ still owns the span. It pops at the end of this block, while
+    // the span is still alive, and only then is the span finalized and ended.
     {
         auto acquireActivation = telemetry::activateIfLive(acquireSpan_);
-        if (acquireSpan_ && *acquireSpan_)
-        {
-            using namespace telemetry;
-            acquireSpan_->setAttribute(
-                ledger_span::attr::outcome,
-                failed_ ? std::string_view(ledger_span::val::failed)
-                        : std::string_view(ledger_span::val::complete));
-            acquireSpan_->setAttribute(
-                ledger_span::attr::timeouts, static_cast<int64_t>(timeouts_));
-            acquireSpan_->setAttribute(
-                ledger_span::attr::peerCount, static_cast<int64_t>(getPeerCount()));
-
-            // Only the failure path gets an Error status. Success is left Unset
-            // rather than Ok: per the OpenTelemetry spec, Ok is reserved for an
-            // application deliberately asserting verified success, and
-            // instrumentation should not set it. The abort path in the
-            // destructor is also left Unset, because a clean shutdown clears
-            // every in-flight acquisition and would otherwise report an error
-            // on every stop.
-            if (failed_)
-                acquireSpan_->setError("ledger acquisition gave up");
-        }
 
         JLOG(journal_.debug()) << "Acquire " << hash_ << (failed_ ? " fail " : " ")
                                << ((timeouts_ == 0) ? std::string()
@@ -553,9 +823,7 @@ InboundLedger::done()
                                << stats_.get();
         // acquireActivation pops here, before the span is ended below.
     }
-    // End the acquire span after its outcome log. Unconditional so the span
-    // never leaks even when it was inactive.
-    acquireSpan_.reset();
+    finalizeAcquireSpan(/*mayReadPeerCount=*/true);
 
     XRPL_ASSERT(complete_ || failed_, "xrpl::InboundLedger::done : complete or failed");
 
@@ -622,6 +890,13 @@ InboundLedger::trigger(std::shared_ptr<Peer> const& peer, TriggerReason reason)
         }
         stream << ss.str();
     }
+
+    // Open the span for whatever phase is now outstanding. Placed here, at the
+    // top of the one function every progress point funnels through (a reply, a
+    // timeout, a newly added peer), so a phase span exists for the whole time
+    // that phase is being requested. Idempotent, so repeated triggers within
+    // one phase do nothing.
+    syncPhaseSpans();
 
     if (!haveHeader_)
     {
@@ -754,6 +1029,12 @@ InboundLedger::trigger(std::shared_ptr<Peer> const& peer, TriggerReason reason)
             auto nodes = ledger_->stateMap().getMissingNodes(kMissingNodesFind, &filter);
             sl.lock();
 
+            // Publish the outstanding count for the telemetry gauge. The sweep
+            // above already produced it, so this is one relaxed atomic store per
+            // sweep and never per tree node -- getMissingNodes() walks thousands
+            // of nodes internally and must stay free of metric work.
+            missingStateNodes_.store(static_cast<int>(nodes.size()), std::memory_order_relaxed);
+
             // Make sure nothing happened while we released the lock
             if (!failed_ && !complete_ && !haveState_)
             {
@@ -822,6 +1103,10 @@ InboundLedger::trigger(std::shared_ptr<Peer> const& peer, TriggerReason reason)
 
             auto nodes = ledger_->txMap().getMissingNodes(kMissingNodesFind, &filter);
 
+            // Same contract as the state-tree store above: one atomic store per
+            // sweep, outside the per-node walk.
+            missingTxNodes_.store(static_cast<int>(nodes.size()), std::memory_order_relaxed);
+
             if (nodes.empty())
             {
                 if (!ledger_->txMap().isValid())
@@ -857,6 +1142,12 @@ InboundLedger::trigger(std::shared_ptr<Peer> const& peer, TriggerReason reason)
             }
         }
     }
+
+    // A tree may have completed in the blocks above without the whole acquire
+    // completing (the usual shape: the small transaction tree finishes long
+    // before the state tree). Close that phase now so its span duration is the
+    // real fetch time rather than stretching to the next trigger.
+    syncPhaseSpans();
 
     if (complete_ || failed_)
     {
@@ -946,6 +1237,17 @@ InboundLedger::takeHeader(std::string_view data)
 
     if (ledger_->header().accountHash.isZero())
         haveState_ = true;
+
+    // An empty tree is complete on arrival of the header, with no sweep to
+    // publish its count.
+    refreshMissingNodeCounts();
+
+    // The header phase ends exactly here, and the tree phases become openable
+    // for the first time -- until now their root hashes were unknown. Doing it
+    // here rather than at the next trigger() is what keeps the header span's
+    // duration equal to the real header wait, which on a fresh node is the
+    // first thing that can stall.
+    syncPhaseSpans();
 
     ledger_->txMap().setSynching();
     ledger_->stateMap().setSynching();
@@ -1059,6 +1361,17 @@ InboundLedger::receiveNode(
         {
             haveState_ = true;
         }
+
+        // The tree finished on this batch, so the last sweep's count is now
+        // stale. Publishing 0 here is what stops a completed acquire from
+        // reading as a permanently stuck one. Outside the per-node loop above.
+        refreshMissingNodeCounts();
+
+        // This is the batch that completed a tree, so close that phase's span
+        // here. Without it the phase would stay open until the next trigger()
+        // and its duration would absorb the wait for the other tree. Outside
+        // the per-node loop above, so it runs once per completing batch.
+        syncPhaseSpans();
 
         if (haveTransactions_ && haveState_)
         {
@@ -1187,6 +1500,17 @@ InboundLedger::gotData(
         return false;
 
     receivedData_.emplace_back(peer, data);
+    // Mirror the depth for the telemetry gauge, which must not take this lock.
+    receivedDataDepth_.store(receivedData_.size(), std::memory_order_relaxed);
+
+    // A peer just answered, so this acquire is making progress even if its turn
+    // to apply the data has not come up yet. Without this the sweeper's one
+    // minute idle test measures the wait for a JtLedgerData slot rather than
+    // real inactivity, and deletes fetches that are still being served: on a
+    // fresh mainnet sync that produced 490 abandoned acquires against zero
+    // expired retry budgets, because only the constructor, update() and done()
+    // ever refreshed the timestamp.
+    touch();
 
     if (receiveDispatched_)
         return false;
@@ -1267,11 +1591,7 @@ InboundLedger::processData(std::shared_ptr<Peer> peer, protocol::TMLedgerData co
             return -1;
         }
 
-        if (san.isUseful())
-            progress_ = true;
-
-        stats_ += san;
-        return san.getGood();
+        return recordBatchOutcome(san);
     }
 
     if ((packet.type() == protocol::liTX_NODE) || (packet.type() == protocol::liAS_NODE))
@@ -1297,14 +1617,46 @@ InboundLedger::processData(std::shared_ptr<Peer> peer, protocol::TMLedgerData co
         // discarding everything because one node in an otherwise-good packet was bad.
         // Note: Peer charges for invalid/malformed data are issued from within receiveNode at the
         // exact failure site, so the peer is only charged for problems they are responsible for.
-        if (san.isUseful())
-            progress_ = true;
-
-        stats_ += san;
-        return san.getGood();
+        return recordBatchOutcome(san);
     }
 
     return -1;
+}
+
+int
+InboundLedger::recordBatchOutcome(SHAMapAddNode const& san)
+{
+    if (san.isUseful())
+        progress_ = true;
+
+    stats_ += san;
+
+#ifdef XRPL_ENABLE_TELEMETRY
+    // Emit the tallies the trace log above already printed. receiveNode() walks
+    // every node in the packet, so these MUST stay out here: the loop has
+    // finished and the tallies are aggregated, giving at most three counter Adds
+    // per received packet rather than per node. The split is what separates real
+    // progress (good) from wasted bandwidth (duplicate) and a misbehaving peer
+    // (invalid) -- traffic-level metrics show all three as healthy throughput.
+    //
+    // The helper and its calls exist only to report these counters, so they are
+    // compiled out along with the counters themselves.
+    auto const emit = [this](char const* outcome, int count) {
+        if (count <= 0)
+            return;
+        XRPL_METRIC_COUNTER_ADD_LABELED(
+            app_,
+            telemetry::metric::syncAddnodeTotal,
+            "SHAMap nodes received during ledger acquire, by outcome",
+            static_cast<std::uint64_t>(count),
+            {{telemetry::label::outcome, std::string(outcome)}});
+    };
+    emit(telemetry::lval::addnode::good, san.getGood());
+    emit(telemetry::lval::addnode::duplicate, san.getDuplicate());
+    emit(telemetry::lval::addnode::invalid, san.getBad());
+#endif
+
+    return san.getGood();
 }
 
 namespace detail {
@@ -1407,10 +1759,13 @@ InboundLedger::runData()
             if (receivedData_.empty())
             {
                 receiveDispatched_ = false;
+                receivedDataDepth_.store(0, std::memory_order_relaxed);
                 break;
             }
 
             data.swap(receivedData_);
+            // The stash was just drained into `data`; keep the mirror in step.
+            receivedDataDepth_.store(receivedData_.size(), std::memory_order_relaxed);
         }
 
         for (auto& entry : data)

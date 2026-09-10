@@ -195,6 +195,10 @@ Database::importInternal(Backend& dstBackend, Database& srcDB)
     Batch batch;
     batch.reserve(kBatchWritePreallocationSize);
     auto storeBatch = [&, fname = __func__]() {
+        // One clock sample per batch, not per object: the loop below walks
+        // every object in the batch and must stay free of timing work.
+        auto const begin{std::chrono::steady_clock::now()};
+
         try
         {
             dstBackend.storeBatch(batch);
@@ -204,6 +208,10 @@ Database::importInternal(Backend& dstBackend, Database& srcDB)
             JLOG(j_.error()) << "Exception caught in function " << fname << ". Error: " << e.what();
             return;
         }
+
+        // Only a batch that actually reached the backend contributes, so a
+        // failed write does not read as a fast one.
+        recordStoreDuration(std::chrono::steady_clock::now() - begin);
 
         std::uint64_t sz{0};
         for (auto const& nodeObject : batch)

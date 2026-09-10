@@ -539,7 +539,9 @@ class JobQueue_test : public beast::unit_test::Suite
         // Every one of these must defer: the limit is already reached.
         int const extra = 4;
         for (int i = 0; i < extra; ++i)
+        {
             BEAST_EXPECT(fixture.queue.addJob(JtPack, "GaugeDefer", blockingJob));
+        }
 
         // Exact values, not bounds: `running` equals the type's limit and
         // `deferred` equals the number of submissions beyond it. Both are

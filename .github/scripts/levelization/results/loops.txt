@@ -14,5 +14,5 @@ Loop: xrpld.overlay xrpld.rpc
   xrpld.rpc ~= xrpld.overlay
 
 Loop: xrpld.overlay xrpld.telemetry
-  xrpld.telemetry ~= xrpld.overlay
+  xrpld.overlay > xrpld.telemetry
 

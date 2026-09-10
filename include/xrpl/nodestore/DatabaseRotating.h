@@ -5,6 +5,7 @@
 #include <xrpl/nodestore/Database.h>
 #include <xrpl/nodestore/Scheduler.h>
 
+#include <cstdint>
 #include <functional>
 #include <memory>
 #include <string>
@@ -54,6 +55,38 @@ public:
      */
     virtual void
     setRotationInFlight(bool inFlight) = 0;
+
+    /**
+     * Whether an online-delete rotation is in progress right now.
+     *
+     * A rotation's extra writes only happen inside this window, so a panel
+     * reading the copy-forward total needs this to know when to expect it to
+     * move. Outside the window a flat total is correct, not a broken signal.
+     *
+     * @return true between the cache-freshen phase starting and rotate()
+     *         completing.
+     */
+    [[nodiscard]] virtual bool
+    isRotationInFlight() const = 0;
+
+    /**
+     * Nodes copied forward from the archive backend into the writable one
+     * during rotation windows, since this process started.
+     *
+     * These are writes an ordinary fetch would not have performed: the archive
+     * is about to be deleted, so a body it served has to be rewritten to
+     * survive. The count therefore scales with how much of the archive is read
+     * during a rotation, which is why it appears only on a populated,
+     * already-rotated online_delete database.
+     *
+     * Cumulative for the lifetime of the process, deliberately: the per-rotation
+     * tally that `rotate()` logs is reset on every swap, and a counter that goes
+     * backwards cannot be rated. A panel takes the rate of this instead.
+     *
+     * @return Monotonic count of copy-forward writes.
+     */
+    [[nodiscard]] virtual std::uint64_t
+    copyForwardTotal() const = 0;
 };
 
 }  // namespace xrpl::node_store

@@ -3,6 +3,7 @@
 #include <xrpld/app/misc/ValidatorList.h>
 #include <xrpld/app/misc/ValidatorSite.h>
 #include <xrpld/overlay/Cluster.h>
+#include <xrpld/overlay/Overlay.h>
 #include <xrpld/overlay/detail/ConnectAttempt.h>
 #include <xrpld/overlay/detail/Handshake.h>
 #include <xrpld/overlay/detail/PeerImp.h>
@@ -13,6 +14,8 @@
 #include <xrpld/rpc/ServerHandler.h>
 #include <xrpld/rpc/handlers/admin/status/GetCounts.h>
 #include <xrpld/rpc/json_body.h>
+#include <xrpld/telemetry/MetricMacros.h>
+#include <xrpld/telemetry/MetricNames.h>
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/Resolver.h>
@@ -79,6 +82,7 @@
 #include <exception>
 #include <functional>
 #include <iomanip>
+#include <limits>
 #include <memory>
 #include <mutex>
 #include <optional>
@@ -229,18 +233,26 @@ OverlayImpl::onHandoff(
 
     JLOG(journal.debug()) << "Peer connection upgrade from " << remoteEndpoint;
 
+    // From here on every exit is a terminal outcome for one inbound peer
+    // attempt, so each reports exactly once. The two returns above are not
+    // peer attempts at all (a handled HTTP request, and a request that never
+    // asked to upgrade), which is why they are not counted.
     error_code ec;
     auto const localEndpoint(streamPtr->next_layer().socket().local_endpoint(ec));
     if (ec)
     {
         JLOG(journal.debug()) << remoteEndpoint << " failed: " << ec.message();
+        reportAcceptOutcome(telemetry::lval::peer_accept::localEndpointFail);
         return handoff;
     }
 
     auto consumer =
         resourceManager_.newInboundEndpoint(beast::IPAddressConversion::fromAsio(remoteEndpoint));
     if (consumer.disconnect(journal))
+    {
+        reportAcceptOutcome(telemetry::lval::peer_accept::resourceLimit);
         return handoff;
+    }
 
     auto const [slot, result] = peerFinder_->newInboundSlot(
         beast::IPAddressConversion::fromAsio(localEndpoint),
@@ -251,6 +263,7 @@ OverlayImpl::onHandoff(
         // connection refused either IP limit exceeded or self-connect
         handoff.moved = false;
         JLOG(journal.debug()) << "Peer " << remoteEndpoint << " refused, " << to_string(result);
+        reportAcceptOutcome(telemetry::lval::peer_accept::noSlot);
         return handoff;
     }
 
@@ -265,6 +278,7 @@ OverlayImpl::onHandoff(
             handoff.moved = false;
             handoff.response = makeRedirectResponse(slot, request, remoteEndpoint.address());
             handoff.keepAlive = beast::rfc2616::isKeepAlive(request);
+            reportAcceptOutcome(telemetry::lval::peer_accept::notPeerRequest);
             return handoff;
         }
     }
@@ -277,6 +291,7 @@ OverlayImpl::onHandoff(
         handoff.response = makeErrorResponse(
             slot, request, remoteEndpoint.address(), "Unable to agree on a protocol version");
         handoff.keepAlive = false;
+        reportAcceptOutcome(telemetry::lval::peer_accept::protocolMismatch);
         return handoff;
     }
 
@@ -288,6 +303,7 @@ OverlayImpl::onHandoff(
         handoff.response =
             makeErrorResponse(slot, request, remoteEndpoint.address(), "Incorrect security cookie");
         handoff.keepAlive = false;
+        reportAcceptOutcome(telemetry::lval::peer_accept::badCookie);
         return handoff;
     }
 
@@ -317,6 +333,7 @@ OverlayImpl::onHandoff(
                 handoff.moved = false;
                 handoff.response = makeRedirectResponse(slot, request, remoteEndpoint.address());
                 handoff.keepAlive = false;
+                reportAcceptOutcome(telemetry::lval::peer_accept::slotRefused);
                 return handoff;
             }
         }
@@ -346,6 +363,10 @@ OverlayImpl::onHandoff(
             peer->run();
         }
         handoff.moved = true;
+
+        // Only after run() is the peer genuinely accepted. Anything that threw
+        // above is reported as a handshake error by the catch below instead.
+        reportAcceptOutcome(telemetry::lval::peer_accept::accepted);
         return handoff;
     }
     catch (std::exception const& e)
@@ -357,6 +378,7 @@ OverlayImpl::onHandoff(
         handoff.moved = false;
         handoff.response = makeErrorResponse(slot, request, remoteEndpoint.address(), e.what());
         handoff.keepAlive = false;
+        reportAcceptOutcome(telemetry::lval::peer_accept::handshakeError);
         return handoff;
     }
 }
@@ -540,9 +562,16 @@ OverlayImpl::start()
         bootstrapIps.emplace_back("hub.xrpl-commons.org 51235");
     }
 
+    // Timestamp the resolve request so the handler can report how long the
+    // whole batch resolve took for each name it reports back.
+    auto const bootstrapDnsStart = std::chrono::steady_clock::now();
+
     resolver_.resolve(
         bootstrapIps,
-        [this](std::string const& name, std::vector<beast::ip::Endpoint> const& addresses) {
+        [this, bootstrapDnsStart](
+            std::string const& name, std::vector<beast::ip::Endpoint> const& addresses) {
+            reportDnsResolve(bootstrapDnsStart, !addresses.empty());
+
             std::vector<std::string> ips;
             ips.reserve(addresses.size());
             for (auto const& addr : addresses)
@@ -565,9 +594,14 @@ OverlayImpl::start()
     // Add the ips_fixed from the xrpld.cfg file
     if (!app_.config().standalone() && !app_.config().ipsFixed.empty())
     {
+        auto const fixedDnsStart = std::chrono::steady_clock::now();
+
         resolver_.resolve(
             app_.config().ipsFixed,
-            [this](std::string const& name, std::vector<beast::ip::Endpoint> const& addresses) {
+            [this, fixedDnsStart](
+                std::string const& name, std::vector<beast::ip::Endpoint> const& addresses) {
+                reportDnsResolve(fixedDnsStart, !addresses.empty());
+
                 std::vector<beast::ip::Endpoint> ips;
                 ips.reserve(addresses.size());
 
@@ -592,6 +626,106 @@ OverlayImpl::start()
     list_.emplace(timer.get(), timer);
     timer_ = timer;
     timer->asyncWait();
+}
+
+// Not static: the metric macros below read the app_ member. With telemetry
+// compiled out they expand to nothing, so the body touches no member and
+// clang-tidy sees a method that could be static.
+// NOLINTBEGIN(readability-convert-member-functions-to-static)
+void
+OverlayImpl::reportDnsResolve(std::chrono::steady_clock::time_point start, bool resolved)
+{
+    // Elapsed time is computed inline, not in a named local, so nothing is
+    // left unused when the macros compile away. Microseconds are converted to
+    // fractional milliseconds: `duration<double, std::milli>` would put a
+    // comma in a non-variadic macro argument, which the preprocessor splits.
+    XRPL_METRIC_HISTOGRAM_RECORD(
+        app_,
+        telemetry::metric::dnsResolveLatencyMs,
+        "Time taken to resolve a configured peer hostname, in milliseconds",
+        std::chrono::duration_cast<std::chrono::microseconds>(
+            std::chrono::steady_clock::now() - start)
+                .count() /
+            1000.0);
+
+    XRPL_METRIC_COUNTER_INC_LABELED(
+        app_,
+        telemetry::metric::dnsResolveTotal,
+        "Peer hostname resolutions, by outcome",
+        {{telemetry::label::outcome,
+          std::string(
+              resolved ? telemetry::lval::dns_resolve::resolved
+                       : telemetry::lval::dns_resolve::empty)}});
+}
+// NOLINTEND(readability-convert-member-functions-to-static)
+
+// Not static: the metric macros below read the app_ member. With telemetry
+// compiled out they expand to nothing, so the body touches no member and
+// clang-tidy sees a method that could be static.
+// NOLINTBEGIN(readability-convert-member-functions-to-static)
+void
+OverlayImpl::reportAcceptOutcome(char const* outcome)
+{
+    XRPL_METRIC_COUNTER_INC_LABELED(
+        app_,
+        telemetry::metric::peerAcceptTotal,
+        "Inbound peer connection attempts, by terminal outcome",
+        {{telemetry::label::outcome, std::string(outcome)}});
+}
+// NOLINTEND(readability-convert-member-functions-to-static)
+
+PeerLedgerSupply
+OverlayImpl::getPeerLedgerSupply(std::uint32_t validatedSeq) const
+{
+    PeerLedgerSupply supply;
+
+    // Tracked separately from supply.supplyMinSeq so the "nothing reported
+    // yet" case stays distinguishable: a peer set that genuinely serves from
+    // sequence 0 and a peer set that has said nothing must not both read 0.
+    // Only a peer that reported anything can lower this.
+    auto lowest = std::numeric_limits<std::uint32_t>::max();
+
+    // The next sequence this node must acquire. Widened before the increment
+    // so it cannot wrap to 0 at the top of the sequence space, which would
+    // silently turn "needs the next ledger" into "needs the genesis ledger".
+    // On a node with no validated ledger yet this is 1, which is correct.
+    auto const neededSeq = static_cast<std::uint64_t>(validatedSeq) + 1;
+
+    // getActivePeers() takes the overlay lock, copies the list and releases
+    // it, so the per-peer reads below hold no overlay lock.
+    for (auto const& peer : getActivePeers())
+    {
+        std::uint32_t minSeq = 0;
+        std::uint32_t maxSeq = 0;
+        peer->ledgerRange(minSeq, maxSeq);
+
+        // A peer that has not sent mtSTATUS_CHANGE yet reports [0, 0]. It
+        // supplies nothing, so it must not be counted as serving and must not
+        // pull the reported window down to zero.
+        if (maxSeq == 0)
+            continue;
+
+        ++supply.peersReporting;
+
+        if (validatedSeq >= minSeq && validatedSeq <= maxSeq)
+            ++supply.peersServingValidated;
+
+        if (neededSeq >= static_cast<std::uint64_t>(minSeq) &&
+            neededSeq <= static_cast<std::uint64_t>(maxSeq))
+        {
+            ++supply.peersServingNext;
+        }
+
+        lowest = std::min(lowest, minSeq);
+        supply.supplyMaxSeq = std::max(supply.supplyMaxSeq, static_cast<std::int64_t>(maxSeq));
+    }
+
+    // Convert the sentinel explicitly. Casting the unsigned max would produce
+    // 4294967295, which a dashboard would plot as a real sequence.
+    if (supply.peersReporting > 0)
+        supply.supplyMinSeq = static_cast<std::int64_t>(lowest);
+
+    return supply;
 }
 
 void

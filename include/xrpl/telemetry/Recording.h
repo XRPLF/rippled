@@ -17,6 +17,7 @@
  *          |
  *          +-- Stopwatch    (a clock read nobody reads when off)
  *          +-- Counter<T>   (an atomic nobody reads when off)
+ *          +-- Mirror<T>    (a value kept only to be reported)
  *
  * @note A no-op method does NOT skip evaluation of its arguments.
  *  `counter.add(expensiveCount())` still calls `expensiveCount()` when
@@ -29,8 +30,8 @@
  *  to keep those types out of call sites.
  *
  * @note Thread safety: `Counter` is safe to update from any thread.
- *  `Stopwatch` is not synchronized; guard it the same way you guard the state
- *  it sits beside.
+ *  `Stopwatch` and `Mirror` are not synchronized; guard them the same way you
+ *  guard the state they sit beside.
  *
  *  Usage:
  *  @code
@@ -62,6 +63,7 @@
 
 #include <chrono>
 #include <cstdint>
+#include <type_traits>
 
 // Counter names std::atomic only when telemetry is compiled in, so guarding
 // the include keeps misc-include-cleaner from seeing an unused one.
@@ -191,6 +193,100 @@ public:
     {
 #ifdef XRPL_ENABLE_TELEMETRY
         return value_.load(std::memory_order_relaxed);
+#else
+        return T{};
+#endif
+    }
+
+    // NOLINTEND(readability-convert-member-functions-to-static)
+};
+
+/**
+ * A value kept only so that a change in it can be reported.
+ *
+ *  The common shape is compare-then-store: read whether the incoming value
+ *  differs from the last one, store it, and report an event only on a
+ *  change. `changedTo()` does all three in one call and answers false when
+ *  telemetry is compiled out, so the reporting branch is never taken.
+ *
+ * @tparam T  The mirrored value's type. Must be equality-comparable,
+ *  default-constructible and copyable.
+ *
+ * @note Holds a plain T, not an atomic, and is therefore not synchronized.
+ *  Guard it exactly the way you guard the state it sits beside. A value that
+ *  is read from another thread -- a gauge callback, for instance -- must stay
+ *  an atomic of its own; Mirror is not a substitute for one.
+ */
+template <class T>
+class Mirror
+{
+    // A non-copyable T would make Mirror itself copyable in one build and not
+    // the other: with telemetry compiled in it inherits T's deleted copy, and
+    // compiled out it is an empty type with all four operations implicit. That
+    // is the per-configuration difference these types exist to avoid, so the
+    // requirement is enforced rather than only documented. store() assigns to
+    // value_, so a copyable T is needed regardless.
+    static_assert(
+        std::is_copy_constructible_v<T> && std::is_copy_assignable_v<T>,
+        "Mirror<T> requires a copyable T, so that its own copy semantics do not "
+        "depend on whether telemetry is compiled in");
+
+#ifdef XRPL_ENABLE_TELEMETRY
+    /**
+     * The last value stored.
+     */
+    T value_{};
+#endif
+
+public:
+    // These read value_ when telemetry is compiled in and touch no member
+    // when it is not, so clang-tidy asks for them to be static. Making them
+    // static would give the two builds different signatures.
+    // NOLINTBEGIN(readability-convert-member-functions-to-static)
+
+    /**
+     * Store a value. A no-op, with no storage, when off.
+     *
+     * @param value  The value to remember.
+     */
+    void
+    store([[maybe_unused]] T const& value) noexcept
+    {
+#ifdef XRPL_ENABLE_TELEMETRY
+        value_ = value;
+#endif
+    }
+
+    /**
+     * Store a value and say whether it differed from the previous one.
+     *
+     * @param value  The value to compare against the stored one and then store.
+     *
+     * @return True only when telemetry is compiled in AND the value changed.
+     *  False when compiled out, so a caller's reporting branch never runs.
+     */
+    [[nodiscard]] bool
+    changedTo([[maybe_unused]] T const& value) noexcept
+    {
+#ifdef XRPL_ENABLE_TELEMETRY
+        bool const changed = value_ != value;
+        value_ = value;
+        return changed;
+#else
+        return false;
+#endif
+    }
+
+    /**
+     * The last value stored.
+     *
+     * @return The stored value, or T{} when telemetry is compiled out.
+     */
+    [[nodiscard]] T
+    load() const noexcept
+    {
+#ifdef XRPL_ENABLE_TELEMETRY
+        return value_;
 #else
         return T{};
 #endif
