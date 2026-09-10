@@ -353,7 +353,7 @@ The authoritative development stack lives in the repo at `docker/telemetry/docke
 | `loki`           | `grafana/loki:3.7.6`                           | `3100`                 | Log storage for log↔trace correlation                             |
 | `prometheus`     | `prom/prometheus:v3.13.2`                      | `9090`                 | Scrapes the collector's `:8889`                                   |
 | `grafana`        | `grafana/grafana:13.1.2`                       | `3000`                 | Dashboards + provisioned datasources/alerts, anonymous admin      |
-| `renderer`       | `grafana/grafana-image-renderer:v5.12.0`       | `8081`                 | Panel→PNG rendering for image export and alert screenshots        |
+| `renderer`       | `grafana/grafana-image-renderer:v5.12.0`       | none                   | Panel→PNG rendering for image export and alert screenshots        |
 
 Two corrections to earlier drafts:
 
