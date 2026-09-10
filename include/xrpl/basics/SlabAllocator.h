@@ -3,11 +3,11 @@
 #pragma once
 
 #include <xrpl/basics/ByteUtilities.h>
-#include <xrpl/beast/type_name.h>
 #include <xrpl/beast/utility/instrumentation.h>
 
 #include <boost/align.hpp>
 #include <boost/container/static_vector.hpp>
+#include <boost/core/demangle.hpp>
 #include <boost/predef.h>
 
 #include <algorithm>
@@ -16,6 +16,7 @@
 #include <cstring>
 #include <mutex>
 #include <stdexcept>
+#include <typeinfo>
 #include <vector>
 
 #if BOOST_OS_LINUX
@@ -335,7 +336,8 @@ public:
                 }) != cfg.end())
         {
             throw std::runtime_error(
-                "SlabAllocatorSet<" + beast::typeName<Type>() + ">: duplicate slab size");
+                "SlabAllocatorSet<" + boost::core::demangle(typeid(Type).name()) +
+                ">: duplicate slab size");
         }
 
         for (auto const& c : cfg)

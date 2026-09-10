@@ -1,15 +1,16 @@
 #pragma once
 
 #include <xrpl/basics/contract.h>
-#include <xrpl/beast/type_name.h>
 #include <xrpl/protocol/SOTemplate.h>
 
 #include <boost/container/flat_map.hpp>
+#include <boost/core/demangle.hpp>
 
 #include <algorithm>
 #include <cstddef>
 #include <forward_list>
 #include <stdexcept>
+#include <typeinfo>
 #include <utility>
 #include <vector>
 
@@ -84,7 +85,7 @@ public:
      * Derived classes will load the object with all the known formats.
      */
 private:
-    KnownFormats() : name_(beast::typeName<Derived>())
+    KnownFormats() : name_(boost::core::demangle(typeid(Derived).name()))
     {
     }
 
