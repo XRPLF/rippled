@@ -197,12 +197,20 @@ protected:
     struct LoanParameters
     {
         // The account submitting the transaction. May be borrower or broker.
+        // In the two-step flow this is always the borrower (named in the
+        // Borrower field); the broker owner (`counter`) submits the proposal.
         jtx::Account account;
         // The counterparty. Should be the other of borrower or broker.
         jtx::Account counter;
         // Whether the counterparty is specified in the `counterparty` field, or
         // only signs.
         bool counterpartyExplicit = true;
+        // Which creation flow to use. Defaults to the immediate one-step flow.
+        LoanFlow flow = LoanFlow::OneStep;
+        // The StartDate for the two-step flow proposal. Must be in the future
+        // (relative to the ledger that processes the LoanAccept). Ignored by
+        // the one-step flow, which always uses the ledger close time.
+        std::optional<std::uint32_t> startDate = std::nullopt;
         Number principalRequest;
         // NOLINTBEGIN(readability-redundant-member-init)
         std::optional<STAmount> setFee = std::nullopt;
@@ -228,17 +236,36 @@ protected:
             using namespace jtx;
             using namespace jtx::loan;
 
+            bool const twoStep = flow == LoanFlow::TwoStep;
+
+            // In the two-step flow the broker owner (`counter`) submits the
+            // proposal naming the borrower (`account`); in the one-step flow
+            // the submitter is `account` and the counterparty signs.
             JTx jt{loan::set(
-                account,
+                twoStep ? counter : account,
                 broker.brokerID,
                 broker.asset(principalRequest).number(),
                 flags.value_or(0))};
 
-            Sig(sfCounterpartySignature, counter)(env, jt);
+            if (twoStep)
+            {
+                if (!startDate.has_value())
+                {
+                    throw std::logic_error(
+                        "LoanParameters::operator(): two-step flow requires "
+                        "startDate");
+                }
+                kBorrower(account)(env, jt);
+                kStartDate(startDate.value())(env, jt);
+            }
+            else
+            {
+                Sig(sfCounterpartySignature, counter)(env, jt);
+            }
 
             Fee{setFee.value_or(env.current()->fees().base * 2)}(env, jt);
 
-            if (counterpartyExplicit)
+            if (!twoStep && counterpartyExplicit)
                 kCounterparty(counter)(env, jt);
             if (originationFee)
                 kLoanOriginationFee(broker.asset(*originationFee).number())(env, jt);
@@ -894,6 +921,24 @@ protected:
             env.journal));
     }
 
+    // Activates a pending loan created by the two-step flow by submitting a
+    // LoanAccept from the borrower, then advances the ledger. A no-op for the
+    // one-step flow, which creates the loan active. After this call the loan is
+    // active in both flows, so downstream assertions can be shared.
+    static void
+    acceptPendingLoan(jtx::Env& env, LoanParameters const& loanParams, Keylet const& loanKeylet)
+    {
+        using namespace jtx;
+
+        if (loanParams.flow != LoanFlow::TwoStep)
+            return;
+
+        // In the two-step flow `account` is the borrower, who must submit the
+        // LoanAccept to activate the pending loan.
+        env(loan::accept(loanParams.account, loanKeylet.key));
+        env.close();
+    }
+
     std::optional<std::tuple<BrokerInfo, Keylet, jtx::Account>>
     createLoan(
         jtx::Env& env,
@@ -959,9 +1004,24 @@ protected:
             return std::nullopt;
         Keylet const& loanKeylet = *loanKeyletOpt;
 
-        env(loanParams(env, broker));
+        // In the two-step flow the proposal needs a StartDate comfortably in the
+        // future so the LoanAccept (submitted one ledger close later) does not
+        // treat the proposal as expired. Default it here when the caller has not
+        // supplied one, since it must be relative to the current ledger time.
+        LoanParameters effectiveParams = loanParams;
+        if (effectiveParams.flow == LoanFlow::TwoStep && !effectiveParams.startDate)
+        {
+            using namespace std::chrono_literals;
+            effectiveParams.startDate = (env.now() + 1h).time_since_epoch().count();
+        }
+
+        env(effectiveParams(env, broker));
 
         env.close();
+
+        // In the two-step flow the LoanSet only proposes the loan; the borrower
+        // must accept it to make it active. No-op for the one-step flow.
+        acceptPendingLoan(env, effectiveParams, loanKeylet);
 
         return std::make_tuple(broker, loanKeylet, pseudoAcct);
     }
@@ -1414,7 +1474,8 @@ protected:
         // The end of life callback is expected to take the loan to 0 payments
         // remaining, one way or another
         std::function<void(Keylet const& loanKeylet, VerifyLoanStatus const& verifyLoanStatus)>
-            toEndOfLife)
+            toEndOfLife,
+        LoanFlow flow = LoanFlow::OneStep)
     {
         auto const [keylet, loanSequence] = [&]() {
             auto const brokerSle = env.le(keylet::loanBroker(broker.brokerID));
@@ -1469,11 +1530,20 @@ protected:
 
         auto const borrowerOwnerCount = env.ownerCount(borrower);
 
+        bool const twoStep = flow == LoanFlow::TwoStep;
+        // The two-step proposal needs a StartDate comfortably in the future so
+        // the LoanAccept (submitted one ledger close later) does not treat the
+        // proposal as expired. The actual StartDate is read back from the loan
+        // after creation.
+        auto const proposedStartDate = (env.now() + 1h).time_since_epoch().count();
+
         auto const loanSetFee = env.current()->fees().base * 2;
         LoanParameters const loanParams{
             .account = borrower,
             .counter = lender,
             .counterpartyExplicit = false,
+            .flow = flow,
+            .startDate = twoStep ? std::optional<std::uint32_t>{proposedStartDate} : std::nullopt,
             .principalRequest = loanAmount,
             .setFee = loanSetFee,
             .originationFee = 1,
@@ -1500,12 +1570,29 @@ protected:
         auto const borrowerStartbalance = env.balance(borrower, broker.asset);
 
         auto createJtx = loanParams(env, broker);
-        // Successfully create a Loan
+        // Successfully create a Loan. In the two-step flow this only proposes
+        // the loan; the borrower accepts it below to activate it.
         env(createJtx);
 
         env.close();
 
-        auto const startDate = env.current()->header().parentCloseTime.time_since_epoch().count();
+        // In the two-step flow the borrower must accept the proposal to
+        // activate the loan; no-op for the one-step flow.
+        acceptPendingLoan(env, loanParams, keylet);
+
+        // One-step loans start at the ledger close time; two-step loans start
+        // at the StartDate named in the proposal. Read it from the ledger for
+        // the two-step flow so the remaining checks are flow-agnostic.
+        std::uint32_t startDate = 0;
+        if (twoStep)
+        {
+            if (auto const loan = env.le(keylet); BEAST_EXPECT(loan))
+                startDate = loan->at(sfStartDate);
+        }
+        else
+        {
+            startDate = env.current()->header().parentCloseTime.time_since_epoch().count();
+        }
 
         if (auto const brokerSle = env.le(keylet::loanBroker(broker.brokerID));
             BEAST_EXPECT(brokerSle))
@@ -1518,7 +1605,11 @@ protected:
             PrettyAmount adjustment = broker.asset(0);
             if (broker.asset.native())
             {
-                adjustment = 2 * env.current()->fees().base;
+                // One-step: the borrower submits (and pays for) the LoanSet
+                // (2x base fee). Two-step: the borrower only submits the
+                // LoanAccept (1x base fee); the broker owner pays for the
+                // proposal.
+                adjustment = (twoStep ? 1 : 2) * env.current()->fees().base;
             }
 
             BEAST_EXPECT(
@@ -1742,7 +1833,8 @@ protected:
         std::array<TAsset, NAsset> const& assets,
         BrokerInfo const& broker,
         Number const& loanAmount,
-        int interestExponent)
+        int interestExponent,
+        LoanFlow flow = LoanFlow::OneStep)
     {
         using namespace jtx;
         using namespace lending;
@@ -2548,7 +2640,8 @@ protected:
             broker,
             pseudoAcct,
             tfLoanOverpayment,
-            defaultImmediately(lsfLoanOverpayment));
+            defaultImmediately(lsfLoanOverpayment),
+            flow);
 
         lifecycle(
             caseLabel,
@@ -2562,7 +2655,8 @@ protected:
             broker,
             pseudoAcct,
             0,
-            defaultImmediately(0));
+            defaultImmediately(0),
+            flow);
 
         lifecycle(
             caseLabel,
@@ -2576,7 +2670,8 @@ protected:
             broker,
             pseudoAcct,
             tfLoanOverpayment,
-            defaultImmediately(lsfLoanOverpayment, false));
+            defaultImmediately(lsfLoanOverpayment, false),
+            flow);
 
         lifecycle(
             caseLabel,
@@ -2590,7 +2685,8 @@ protected:
             broker,
             pseudoAcct,
             0,
-            defaultImmediately(0, false));
+            defaultImmediately(0, false),
+            flow);
 
         lifecycle(
             caseLabel,
@@ -2604,7 +2700,8 @@ protected:
             broker,
             pseudoAcct,
             0,
-            fullPayment(0));
+            fullPayment(0),
+            flow);
 
         lifecycle(
             caseLabel,
@@ -2618,7 +2715,8 @@ protected:
             broker,
             pseudoAcct,
             tfLoanOverpayment,
-            fullPayment(lsfLoanOverpayment));
+            fullPayment(lsfLoanOverpayment),
+            flow);
 
         lifecycle(
             caseLabel,
@@ -2632,7 +2730,8 @@ protected:
             broker,
             pseudoAcct,
             0,
-            combineAllPayments(0));
+            combineAllPayments(0),
+            flow);
 
         lifecycle(
             caseLabel,
@@ -2646,7 +2745,8 @@ protected:
             broker,
             pseudoAcct,
             tfLoanOverpayment,
-            combineAllPayments(lsfLoanOverpayment));
+            combineAllPayments(lsfLoanOverpayment),
+            flow);
 
         lifecycle(
             caseLabel,
@@ -2950,7 +3050,8 @@ protected:
                 // Can't impair or default a paid off loan
                 env(manage(lender, loanKeylet.key, tfLoanImpair), Ter(tecNO_PERMISSION));
                 env(manage(lender, loanKeylet.key, tfLoanDefault), Ter(tecNO_PERMISSION));
-            });
+            },
+            flow);
 
 #if LOAN_TODO
         // TODO

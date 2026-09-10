@@ -383,6 +383,30 @@ public:
     {
         return this->sle_->isFieldPresent(sfRedemptionDate);
     }
+
+    /**
+     * @brief Get sfAssetsReserved (SoeDefault)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_NUMBER::type::value_type>
+    getAssetsReserved() const
+    {
+        if (hasAssetsReserved())
+            return this->sle_->at(sfAssetsReserved);
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfAssetsReserved is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasAssetsReserved() const
+    {
+        return this->sle_->isFieldPresent(sfAssetsReserved);
+    }
 };
 
 /**
@@ -645,6 +669,17 @@ public:
     setRedemptionDate(std::decay_t<typename SF_UINT32::type::value_type> const& value)
     {
         object_[sfRedemptionDate] = value;
+        return *this;
+    }
+
+    /**
+     * @brief Set sfAssetsReserved (SoeDefault)
+     * @return Reference to this builder for method chaining.
+     */
+    VaultBuilder&
+    setAssetsReserved(std::decay_t<typename SF_NUMBER::type::value_type> const& value)
+    {
+        object_[sfAssetsReserved] = value;
         return *this;
     }
 

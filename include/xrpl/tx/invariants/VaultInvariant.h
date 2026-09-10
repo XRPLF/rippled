@@ -31,6 +31,8 @@ namespace xrpl {
  * - loss unrealized does not exceed the difference between assets total and
  *   assets available
  * - assets available do not exceed assets total
+ * - assets reserved is non-negative
+ * - sum of assets available and reserved does not exceed assets total
  * - vault deposit increases assets and share issuance, and adds to:
  *   total assets, assets available, shares outstanding
  * - vault withdrawal and clawback reduce assets and share issuance, and
@@ -68,6 +70,7 @@ class ValidVault
         Number assetsAvailable = 0;
         Number assetsMaximum = 0;
         Number lossUnrealized = 0;
+        Number assetsReserved = 0;
         std::optional<std::uint8_t> vaultKind;
         std::optional<std::uint32_t> subscriptionDate;
         std::optional<std::uint32_t> redemptionDate;

@@ -971,6 +971,7 @@ TRANSACTION(ttLOAN_SET, 80, LoanSet,
     ({
     {sfLoanBrokerID, SoeRequired},
     {sfData, SoeOptional},
+    {sfBorrower, SoeOptional},
     {sfCounterparty, SoeOptional},
     {sfCounterpartySignature, SoeOptional},
     {sfLoanOriginationFee, SoeOptional},
@@ -986,6 +987,7 @@ TRANSACTION(ttLOAN_SET, 80, LoanSet,
     {sfPaymentTotal, SoeOptional},
     {sfPaymentInterval, SoeOptional},
     {sfGracePeriod, SoeOptional},
+    {sfStartDate, SoeOptional},
 }))
 
 /** This transaction deletes an existing Loan */
@@ -994,7 +996,9 @@ TRANSACTION(ttLOAN_SET, 80, LoanSet,
 #endif
 TRANSACTION(ttLOAN_DELETE, 81, LoanDelete,
     ({
+        .delegable = Delegation::NotDelegable,
         .amendment = featureLendingProtocol,
+        .privileges = Privilege::MayModifyVault,
     }),
     ({
     {sfLoanID, SoeRequired},
@@ -1011,6 +1015,20 @@ TRANSACTION(ttLOAN_MANAGE, 82, LoanManage,
         // transaction can succeed without options, essentially making it
         // a noop.
         .privileges = Privilege::MayModifyVault,
+    }),
+    ({
+    {sfLoanID, SoeRequired},
+}))
+
+/** The Borrower uses this transaction to accept a pending Loan. */
+#if TRANSACTION_INCLUDE
+#   include <xrpl/tx/transactors/lending/LoanAccept.h>
+#endif
+TRANSACTION(ttLOAN_ACCEPT, 83, LoanAccept,
+    ({
+        .delegable = Delegation::NotDelegable,
+        .amendment = featureLendingProtocolV1_1,
+        .privileges = Privilege::MayAuthorizeMpt | Privilege::MustModifyVault, 
     }),
     ({
     {sfLoanID, SoeRequired},
