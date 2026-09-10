@@ -216,6 +216,38 @@ getIniFileSection(IniFileSections& secSource, std::string const& strSection)
     return nullptr;
 }
 
+// Strip a trailing, unescaped '#' comment from a single-line section value.
+// parseIniFile() only discards whole-line comments (lines that begin with
+// '#'), so a value such as "1  # note" is otherwise passed verbatim to
+// lexicalCast and throws beast::BadLexicalCast, aborting startup. This mirrors
+// the inline-comment handling BasicConfig::Section::append already performs for
+// key=value sections (including escaped "\#"). See issue #7545.
+static void
+removeTrailingComment(std::string& value)
+{
+    auto pos = value.find('#');
+    while (pos != std::string::npos)
+    {
+        if (pos == 0)
+        {
+            value.clear();
+            return;
+        }
+        if (value[pos - 1] == '\\')
+        {
+            // escaped '#': drop the backslash, keep the '#', keep scanning
+            value.erase(pos - 1, 1);
+            pos = value.find('#', pos);
+        }
+        else
+        {
+            value.erase(pos);
+            boost::algorithm::trim(value);
+            return;
+        }
+    }
+}
+
 bool
 getSingleSection(
     IniFileSections& secSource,
@@ -228,6 +260,7 @@ getSingleSection(
     if ((pmtEntries != nullptr) && pmtEntries->size() == 1)
     {
         strValue = (*pmtEntries)[0];
+        removeTrailingComment(strValue);
         return true;
     }
 
