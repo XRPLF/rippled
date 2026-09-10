@@ -662,17 +662,17 @@ Timestamps are unix nanoseconds, matching `workload/validate_telemetry.py`.
 Counting `.data.result | length` would count streams, not log lines.
 
 > **Use `service_name`, not `job`.** The local stack's `resource/logs` processor
-> sets one key, `service.name=xrpld` (`otel-collector-config.yaml:84-86`); its
+> sets one key, `service.name=xrpld`, in `otel-collector-config.yaml`; its
 > comment there explains that a custom `job` attribute is not promoted to a
 > stream label and tells you to select on `service_name`. Only the Grafana Cloud
-> variant also sets `job=xrpld` (`otel-collector-config.grafanacloud.yaml:73-75`).
+> variant also sets `job=xrpld`, in `otel-collector-config.grafanacloud.yaml`.
 > Either way `{job="xrpld"}` does not work as a selector: on OTLP ingest Loki
 > promotes only an allow-listed set of resource attributes to indexed stream
 > labels (`service.name` → `service_name`, plus `service.namespace`,
 > `service.instance.id`, `deployment.environment`, `k8s.*`, `cloud.*`), and `job`
 > is not on the list. This repo mounts no Loki config override — the `loki`
 > service runs the image's built-in `/etc/loki/local-config.yaml`
-> (`docker-compose.yml:116`) — so `job` lands in **structured metadata**, which
+> named in `docker-compose.yml` — so `job` lands in **structured metadata**, which
 > cannot be a stream selector. `{job="xrpld"}` therefore returns **zero results
 > with no error**, which reads exactly like "logs are not being ingested". If
 > this query is empty, check `{service_name="xrpld"}` before debugging the
