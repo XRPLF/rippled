@@ -3,6 +3,9 @@
 #include <test/jtx/utility.h>
 
 #include <xrpld/core/Config.h>
+#include <xrpld/rpc/MethodNames.h>
+#include <xrpld/rpc/RPCCall.h>
+#include <xrpld/rpc/detail/Handler.h>
 
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/json/json_reader.h>
@@ -12,11 +15,14 @@
 
 #include <boost/algorithm/string/replace.hpp>
 
+#include <algorithm>
+#include <array>
 #include <cstdint>
 #include <cstring>
 #include <initializer_list>
 #include <memory>
 #include <string>
+#include <string_view>
 #include <typeinfo>
 #include <vector>
 
@@ -5923,10 +5929,68 @@ public:
         }
     }
 
+    // The command-line table and the dispatch table must agree.
+    //
+    // Forwards: every name the command line accepts must reach a handler at the
+    // version the command-line client requests. Merely existing in the dispatch
+    // table is not enough, because a handler whose API range excludes
+    // kApiCommandLineVersion would parse the command and then answer
+    // RpcUnknownCommand.
+    //
+    // Backwards: a handler that claims a command-line form must have one, and
+    // one that denies it must not, so that Handler::hasCommandLineForm cannot go
+    // stale.
+    //
+    // Three command-line names are exempt from the forward check because they
+    // are wrappers that forward a caller-supplied method rather than naming one
+    // themselves, so they have no handler of their own.
+    void
+    testCommandLineTableMatchesHandlers()
+    {
+        testcase("Command-line and dispatch tables agree");
+
+        static constexpr std::array kWrappers{
+            rpc::method::kInternal, rpc::method::kJson, rpc::method::kJson2};
+
+        auto const commandLine = commandLineMethodNames();
+        auto const handlers = rpc::getHandlerNames();
+        BEAST_EXPECT(!commandLine.empty());
+        BEAST_EXPECT(!handlers.empty());
+
+        // The command-line client always requests this version, so this is the
+        // only version at which its commands have to be dispatchable. Beta
+        // methods are off: a command must work against a stock server.
+        auto const handlerFor = [](std::string_view name) {
+            return rpc::getHandler(rpc::kApiCommandLineVersion, false, name);
+        };
+
+        for (auto const& name : commandLine)
+        {
+            if (std::ranges::find(kWrappers, name) != kWrappers.end())
+                continue;
+
+            auto const* handler = handlerFor(name);
+            if (BEAST_EXPECTS(handler != nullptr, std::string{name}))
+                BEAST_EXPECTS(handler->hasCommandLineForm, std::string{name});
+        }
+
+        for (auto const& name : handlers)
+        {
+            auto const* handler = handlerFor(name);
+            bool const claimsCommandLine = handler != nullptr && handler->hasCommandLineForm;
+
+            // Both name lists are sorted, so a binary search suffices.
+            BEAST_EXPECTS(
+                claimsCommandLine == std::ranges::binary_search(commandLine, name),
+                std::string{name});
+        }
+    }
+
     void
     run() override
     {
         forAllApiVersions([this](unsigned apiVersion) { testRPCCall(apiVersion); });
+        testCommandLineTableMatchesHandlers();
     }
 };
 

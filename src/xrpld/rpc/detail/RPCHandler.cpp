@@ -23,6 +23,7 @@
 #include <cstdint>
 #include <exception>
 #include <string>
+#include <string_view>
 
 namespace xrpl::rpc {
 
@@ -153,9 +154,8 @@ fillHandler(JsonContext& context, Handler const*& result)
     return RpcSuccess;
 }
 
-template <class Object, class Method>
 Status
-callMethod(JsonContext& context, Method method, std::string const& name, Object& result)
+callMethod(JsonContext& context, Handler::Method method, std::string_view name, json::Value& result)
 {
     static std::atomic<std::uint64_t> kRequestId{0};
     auto& perfLog = context.app.getPerfLog();
@@ -163,7 +163,8 @@ callMethod(JsonContext& context, Method method, std::string const& name, Object&
     try
     {
         perfLog.rpcStart(name, curId);
-        auto v = context.app.getJobQueue().makeLoadEvent(JtGeneric, "cmd:" + name);
+        auto v =
+            context.app.getJobQueue().makeLoadEvent(JtGeneric, std::string{"cmd:"}.append(name));
 
         auto start = std::chrono::system_clock::now();
         auto ret = method(context, result);
@@ -199,32 +200,28 @@ doCommand(rpc::JsonContext& context, json::Value& result)
         return error;
     }
 
-    if (auto method = handler->valueMethod)
+    // No null check on the method: every entry in the dispatch table carries
+    // one, which a static_assert there enforces at compile time.
+    if (!context.headers.user.empty() || !context.headers.forwardedFor.empty())
     {
-        if (!context.headers.user.empty() || !context.headers.forwardedFor.empty())
-        {
-            JLOG(context.j.debug())
-                << "start command: " << handler->name << ", user: " << context.headers.user
-                << ", forwarded for: " << context.headers.forwardedFor;
+        JLOG(context.j.debug()) << "start command: " << handler->name
+                                << ", user: " << context.headers.user
+                                << ", forwarded for: " << context.headers.forwardedFor;
 
-            auto ret = callMethod(context, method, handler->name, result);
+        auto const ret = callMethod(context, handler->valueMethod, handler->name, result);
 
-            JLOG(context.j.debug())
-                << "finish command: " << handler->name << ", user: " << context.headers.user
-                << ", forwarded for: " << context.headers.forwardedFor;
+        JLOG(context.j.debug()) << "finish command: " << handler->name
+                                << ", user: " << context.headers.user
+                                << ", forwarded for: " << context.headers.forwardedFor;
 
-            return ret;
-        }
-
-        auto ret = callMethod(context, method, handler->name, result);
         return ret;
     }
 
-    return RpcUnknownCommand;
+    return callMethod(context, handler->valueMethod, handler->name, result);
 }
 
 Role
-roleRequired(unsigned int version, bool betaEnabled, std::string const& method)
+roleRequired(unsigned int version, bool betaEnabled, std::string_view method)
 {
     auto handler = rpc::getHandler(version, betaEnabled, method);
 

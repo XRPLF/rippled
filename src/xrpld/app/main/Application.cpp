@@ -35,6 +35,7 @@
 #include <xrpld/rpc/RPCHandler.h>
 #include <xrpld/rpc/Role.h>
 #include <xrpld/rpc/ServerHandler.h>
+#include <xrpld/rpc/detail/Handler.h>
 #include <xrpld/rpc/detail/PathRequestManager.h>
 #include <xrpld/rpc/detail/Pathfinder.h>
 #include <xrpld/shamap/NodeFamily.h>
@@ -320,6 +321,7 @@ public:
               perf::makePerfLog(
                   perf::setupPerfLog(config_->section(Sections::kPerf), config_->configDir),
                   *this,
+                  rpc::getHandlerNames(),
                   logs_->journal("PerfLog"),
                   [this] { signalStop("PerfLog"); }))
         , txMaster_(*this)

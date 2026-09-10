@@ -82,7 +82,6 @@ test.app > xrpl.tx
 test.basics > test.jtx
 test.basics > xrpl.basics
 test.basics > xrpl.core
-test.basics > xrpld.rpc
 test.basics > xrpl.json
 test.basics > xrpl.protocol
 test.beast > xrpl.basics
@@ -286,10 +285,10 @@ xrpld.perflog > xrpl.basics
 xrpld.perflog > xrpl.config
 xrpld.perflog > xrpl.core
 xrpld.perflog > xrpld.app
-xrpld.perflog > xrpld.rpc
 xrpld.perflog > xrpl.json
 xrpld.perflog > xrpl.nodestore
 xrpld.perflog > xrpl.protocol
+xrpld.perflog > xrpl.server
 xrpld.rpc > xrpl.basics
 xrpld.rpc > xrpl.config
 xrpld.rpc > xrpl.core
