@@ -8,9 +8,7 @@
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/LendingHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
-#include <xrpl/ledger/helpers/VaultHelpers.h>
 #include <xrpl/protocol/Asset.h>
-#include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
@@ -146,20 +144,6 @@ LoanBrokerSet::preclaim(PreclaimContext const& ctx)
     }
     else
     {
-        // LP V1.1: only closed-ended vaults may host a loan broker. The
-        // lending protocol relies on the closed-ended Subscription /
-        // Investment / Redemption phase structure; attaching a broker to
-        // an open-ended vault has no well-defined lifecycle. VaultCreate
-        // stays unrestricted so existing open-ended flows keep working;
-        // the constraint is enforced here, at the point where the vault
-        // is first bound to the lending protocol.
-        if (ctx.view.rules().enabled(featureLendingProtocolV1_1) &&
-            getVaultKind(sleVault) != VaultKind::ClosedEnded)
-        {
-            JLOG(ctx.j.warn()) << "LoanBroker requires a closed-ended Vault.";
-            return tecNO_PERMISSION;
-        }
-
         if (auto const ter = canAddHolding(ctx.view, asset))
             return ter;
 

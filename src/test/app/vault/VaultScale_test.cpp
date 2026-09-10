@@ -22,7 +22,6 @@
 #include <xrpl/ledger/OpenView.h>
 #include <xrpl/ledger/Sandbox.h>
 #include <xrpl/protocol/Asset.h>
-#include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/Keylet.h>
@@ -72,12 +71,7 @@ private:
 
         auto testCase = [&, this](
                             std::uint8_t scale, std::function<void(Env & env, Data data)> test) {
-            // These scale-focused tests build an open-ended vault and
-            // exercise deposit/withdraw/clawback (with one test also
-            // attaching a loan broker). featureLendingProtocolV1_1 adds a
-            // closed-ended vault gate on LoanBrokerSet::preclaim and is
-            // orthogonal to what this suite asserts, so strip it here.
-            Env env{*this, testableAmendments() - featureLendingProtocolV1_1};
+            Env env{*this, testableAmendments()};
             Account const owner{"owner"};
             Account const issuer{"issuer"};
             Account const depositor{"depositor"};

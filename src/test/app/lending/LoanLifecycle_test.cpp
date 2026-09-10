@@ -353,11 +353,7 @@ private:
             auto const& asset = debtMaximumRequest.asset();
             auto const initialVault = asset(debtMaximumRequest * 100);
 
-            // Under featureLendingProtocolV1_1 LoanBrokerSet::preclaim
-            // only accepts closed-ended vaults, so build one and advance
-            // past SubscriptionDate before creating broker/loan.
-            auto [tx, vaultKeylet, subscriptionDate] =
-                vault.createClosedEnded({.owner = broker, .asset = asset});
+            auto [tx, vaultKeylet] = vault.create({.owner = broker, .asset = asset});
             env(tx, txFee);
             env.close();
 
@@ -365,8 +361,6 @@ private:
                     {.depositor = depositor, .id = vaultKeylet.key, .amount = initialVault}),
                 txFee);
             env.close();
-
-            vault.closePastSubscription(subscriptionDate);
 
             auto const brokerKeylet =
                 keylet::loanBroker(broker.id(), SeqProxy::rawSequence(env.seq(broker)));

@@ -20,7 +20,6 @@
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Keylet.h>
-#include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/Rules.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STLedgerEntry.h>
@@ -32,7 +31,6 @@
 #include <xrpl/tx/Transactor.h>
 #include <xrpl/tx/applySteps.h>
 
-#include <chrono>
 #include <cstdint>
 #include <initializer_list>
 #include <memory>
@@ -183,17 +181,10 @@ InvariantsBase::createLoanBroker(
 {
     using namespace jtx;
 
-    // Under featureLendingProtocolV1_1 LoanBrokerSet::preclaim only
-    // accepts closed-ended vaults. Build one with a comfortable
-    // subscription window; LoanBrokerSet itself is not phase-gated,
-    // so leaving the vault in the Subscription phase is fine here.
+    // Create vault
     uint256 vaultID;
     Vault const vault{env};
-    auto [tx, vKeylet, _] = vault.createClosedEnded(
-        {.owner = a,
-         .asset = asset,
-         .subscriptionOffset = std::chrono::seconds{60},
-         .investmentWindow = std::chrono::seconds{kMinInvestmentPeriod + 1'000'000u}});
+    auto [tx, vKeylet] = vault.create({.owner = a, .asset = asset});
     env(tx);
     BEAST_EXPECT(env.le(vKeylet));
 
