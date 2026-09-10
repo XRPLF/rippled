@@ -98,7 +98,6 @@ let
     tools = [ "run-clang-tidy" ];
   };
 
-  leanToolchain = pkgs.callPackage ./lean4.nix { };
 in
 {
   inherit
@@ -106,7 +105,6 @@ in
     llvmVersion
     gccPackage
     llvmPackages
-    leanToolchain
     mkVersionedToolLinks
     mkGcov
     ;

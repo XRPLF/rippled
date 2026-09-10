@@ -6,7 +6,6 @@ let
     gccVersion
     llvmVersion
     llvmPackages
-    leanToolchain
     mkVersionedToolLinks
     mkGcov
     ;
@@ -157,7 +156,7 @@ rec {
     versionedTools = gccVersionedTools;
     extraPackages = [
       customGccGcov
-      leanToolchain
+      pkgs.lean4
     ];
   };
 
