@@ -160,7 +160,11 @@ ValidatorSite::load(
     {
         try
         {
-            sites_.emplace_back(uri);
+            // This is not super efficient, but it doesn't happen often.
+            bool found = std::ranges::any_of(
+                sites_, [&uri](auto const& site) { return site.loadedResource->uri == uri; });
+            if (!found)
+                sites_.emplace_back(uri);
         }
         catch (std::exception const& e)
         {
@@ -221,7 +225,17 @@ ValidatorSite::setTimer(
     std::scoped_lock<std::mutex> const& siteLock,
     std::scoped_lock<std::mutex> const& stateLock)
 {
-    auto next = std::ranges::min_element(
+    if (!sites_.empty() &&  //
+        std::ranges::all_of(
+            sites_, [](auto const& site) { return site.lastRefreshStatus.has_value(); }))
+    {
+        // If all of the sites have been handled at least once (including
+        // errors and timeouts), call missingSite, which will load the cache
+        // files for any lists that are still unavailable.
+        missingSite(siteLock);
+    }
+
+    auto const next = std::ranges::min_element(
         sites_, [](Site const& a, Site const& b) { return a.nextRefresh < b.nextRefresh; });
 
     if (next != sites_.end())
@@ -332,7 +346,7 @@ ValidatorSite::onRequestTimeout(std::size_t siteIdx, error_code const& ec)
         // processes a network error. Usually, this function runs first,
         // but on extremely rare occasions, the response handler can run
         // first, which will leave activeResource empty.
-        auto const& site = sites_[siteIdx];
+        auto& site = sites_[siteIdx];
         if (site.activeResource)
         {
             JLOG(j_.warn()) << "Request for " << site.activeResource->uri << " took too long";
@@ -342,6 +356,9 @@ ValidatorSite::onRequestTimeout(std::size_t siteIdx, error_code const& ec)
             JLOG(j_.error()) << "Request took too long, but a response has "
                                 "already been processed";
         }
+        if (!site.lastRefreshStatus)
+            site.lastRefreshStatus.emplace(
+                Site::Status{clock_type::now(), ListDisposition::Invalid, "timeout"});
     }
 
     std::scoped_lock const lockState{stateMutex_};
