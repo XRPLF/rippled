@@ -16,6 +16,7 @@
 #include <xrpl/shamap/SHAMapMissingNode.h>
 #include <xrpl/shamap/SHAMapTreeNode.h>
 
+#include <atomic>
 #include <condition_variable>
 #include <cstddef>
 #include <cstdint>
@@ -40,7 +41,7 @@ class SHAMapSyncFilter;
 /**
  * Describes the current state of a given SHAMap
  */
-enum class SHAMapState {
+enum class SHAMapState : std::uint8_t {
     /**
      * The map is in flux and objects can be added and removed.
      *
@@ -120,16 +121,43 @@ private:
      */
     std::uint32_t cowid_ = 1;
 
+    // ledgerSeq_, state_ and full_ are touched on the nodestore fetch path and on a
+    // getMissingNodes() walk, neither of which may block, so pin them lock-free.
+    static_assert(std::atomic<std::uint32_t>::is_always_lock_free);
+    static_assert(std::atomic<SHAMapState>::is_always_lock_free);
+    static_assert(std::atomic<bool>::is_always_lock_free);
+
     /**
      * The sequence of the ledger that this map references, if any.
+     *
+     * Written when a map's ledger sequence is established (Ledger::setFull(),
+     * InboundLedger) while a nodestore reader thread reads it. Relaxed either
+     * way: it only serves as a lookup hint for a nodestore keyed by hash, so
+     * it orders nothing else.
      */
-    std::uint32_t ledgerSeq_ = 0;
+    std::atomic<std::uint32_t> ledgerSeq_ = 0;
 
     SHAMapTreeNodePtr root_;
-    mutable SHAMapState state_;
+
+    /**
+     * The map's state.
+     *
+     * A getMissingNodes() walk writes it, through clearSynching(), while whatever
+     * drives the acquisition reads it. Nothing here requires the caller to hold a
+     * lock across the walk, and the acquisition code does not, so this is atomic
+     * rather than guarded.
+     */
+    std::atomic<SHAMapState> state_;
     SHAMapType const type_;
-    bool backed_ = true;         // Map is backed by the database
-    mutable bool full_ = false;  // Map is believed complete in database
+    bool backed_ = true;  // Map is backed by the database
+
+    /**
+     * Map is believed complete in database.
+     *
+     * finishFetch() clears it on whichever nodestore reader thread completes a
+     * read - several at once for the reads a getMissingNodes() walk posts.
+     */
+    mutable std::atomic<bool> full_ = false;
 
 public:
     /**
@@ -375,16 +403,33 @@ public:
         SHAMapTreeNodePtr treeNode,
         SHAMapSyncFilter const* filter);
 
-    // status functions
     void
     setImmutable();
-    bool
+
+    /**
+     * Whether the map's hash is fixed while nodes may still be added to it.
+     *
+     * @return Whether the map is being synced against a hash it was given.
+     */
+    [[nodiscard]] bool
     isSynching() const;
     void
     setSynching();
     void
     clearSynching();
-    bool
+
+    /**
+     * Whether the map can still be the map it claims to be.
+     *
+     * Not "complete" and not "self-consistent": a map that is merely missing
+     * nodes is valid, and stays valid until something proves the tree it is
+     * syncing against cannot exist. Only the map itself reaches that
+     * verdict, and only from a node the hashes it was given cannot
+     * accommodate.
+     *
+     * @return Whether the map has not been proven impossible.
+     */
+    [[nodiscard]] bool
     isValid() const;
 
     // caution: otherMap must be accessed only by this function
@@ -423,6 +468,36 @@ private:
     using SharedPtrNodeStack = std::stack<std::pair<SHAMapTreeNodePtr, SHAMapNodeID>>;
     using DeltaRef =
         std::pair<boost::intrusive_ptr<SHAMapItem const>, boost::intrusive_ptr<SHAMapItem const>>;
+
+    /**
+     * The sequence of the ledger this map references, read atomically.
+     *
+     * @return The sequence, or zero if the map references no ledger.
+     */
+    [[nodiscard]] std::uint32_t
+    ledgerSeq() const;
+
+    /**
+     * The current state, read atomically.
+     *
+     * Orders state_ alone. The tree's nodes are still mutated without
+     * ordering guarantees, so this says nothing about whether the rest of
+     * the map is safe to read concurrently.
+     *
+     * @return The state as of the call, which a concurrent walk may
+     *         already have moved past.
+     */
+    [[nodiscard]] SHAMapState
+    state() const;
+
+    /**
+     * Record that the map is provably not the one it claims to be.
+     *
+     * Private because only the map itself can prove that, from a node that
+     * contradicts the hashes it is syncing against.
+     */
+    void
+    setInvalid();
 
     // tree node cache operations
     SHAMapTreeNodePtr
@@ -639,44 +714,62 @@ private:
 inline void
 SHAMap::setFull()
 {
-    full_ = true;
+    full_.store(true, std::memory_order_release);
 }
 
 inline void
 SHAMap::setLedgerSeq(std::uint32_t lseq)
 {
-    ledgerSeq_ = lseq;
+    ledgerSeq_.store(lseq, std::memory_order_relaxed);
+}
+
+inline std::uint32_t
+SHAMap::ledgerSeq() const
+{
+    return ledgerSeq_.load(std::memory_order_relaxed);
+}
+
+inline SHAMapState
+SHAMap::state() const
+{
+    return state_.load(std::memory_order_acquire);
 }
 
 inline void
 SHAMap::setImmutable()
 {
-    XRPL_ASSERT(state_ != SHAMapState::Invalid, "xrpl::SHAMap::setImmutable : state is valid");
-    state_ = SHAMapState::Immutable;
+    XRPL_ASSERT(isValid(), "xrpl::SHAMap::setImmutable : state is valid");
+    state_.store(SHAMapState::Immutable, std::memory_order_release);
 }
 
 inline bool
 SHAMap::isSynching() const
 {
-    return state_ == SHAMapState::Synching;
+    return state() == SHAMapState::Synching;
 }
 
 inline void
 SHAMap::setSynching()
 {
-    state_ = SHAMapState::Synching;
+    state_.store(SHAMapState::Synching, std::memory_order_release);
 }
 
 inline void
 SHAMap::clearSynching()
 {
-    state_ = SHAMapState::Modifying;
+    state_.store(SHAMapState::Modifying, std::memory_order_release);
 }
 
 inline bool
 SHAMap::isValid() const
 {
-    return state_ != SHAMapState::Invalid;
+    return state() != SHAMapState::Invalid;
+}
+
+inline void
+SHAMap::setInvalid()
+{
+    state_.store(SHAMapState::Invalid, std::memory_order_release);
 }
 
 inline void
