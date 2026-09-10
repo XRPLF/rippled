@@ -75,3 +75,4 @@ jobs:
         run: |
           python3 docker/telemetry/workload/test_validate_telemetry.py
           python3 docker/telemetry/workload/test_capture_timings.py
+          python3 docker/telemetry/workload/test_tx_submitter.py

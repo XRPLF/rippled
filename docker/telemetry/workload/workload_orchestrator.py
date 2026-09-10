@@ -56,11 +56,16 @@ PROFILES_FILE = SCRIPT_DIR / "workload-profiles.json"
 # Wall-clock allowance for a generator on top of its phase's configured
 # duration. It has to cover the work the generators do outside their timed
 # loop: tx_submitter.py creates and funds 8 accounts (~25 WebSocket round
-# trips) and then waits a fixed 10s for those funding transactions to
-# validate, and both generators drain in-flight requests while shutting down.
+# trips), then polls the ledger until those funding transactions validate, and
+# both generators drain in-flight requests while shutting down.
 # A generator that outruns this is killed and the phase records the timeout as
 # an error, so one wedged process cannot stall the whole profile.
-SUBPROCESS_GRACE_SEC = 90.0
+#
+# The funding wait is the largest term and it can run twice, so this must stay
+# above 2 x tx_submitter.FUNDING_CONFIRM_TIMEOUT_SEC (2 x 30s) plus the round
+# trips. Otherwise a slow fund is killed here and reported as a timeout, which
+# points at the orchestrator rather than at the funding it actually was.
+SUBPROCESS_GRACE_SEC = 120.0
 
 # How long to keep reading a killed process's output before giving up on it.
 SUBPROCESS_DRAIN_TIMEOUT_SEC = 10.0
@@ -264,24 +269,60 @@ async def run_subprocess(
 # ---------------------------------------------------------------------------
 
 
+def _write_generator_log(
+    report_path: Path, label: str, returncode: int, stdout: str, stderr: str
+) -> None:
+    """Save a generator's full output beside its JSON report.
+
+    Only the last 200 characters of stderr reach the phase error, and stdout was
+    dropped entirely, so a setup failure inside a generator left nothing to read
+    in CI. Written on success too, because the warnings that explain a thin run
+    appear on runs that still pass.
+
+    Args:
+        report_path: The generator's JSON report path; the log sits next to it.
+        label:       "rpc" or "tx".
+        returncode:  Subprocess exit code.
+        stdout:      Captured stdout text.
+        stderr:      Captured stderr text.
+    """
+    log_path = report_path.with_suffix(".log")
+    try:
+        with open(log_path, "w") as f:
+            f.write(f"=== {label} generator exited with {returncode} ===\n")
+            f.write("--- stdout ---\n")
+            f.write(stdout)
+            f.write("\n--- stderr ---\n")
+            f.write(stderr)
+            f.write("\n")
+    except OSError as exc:
+        # Losing the log must not fail the phase; it is a diagnostic aid.
+        logger.warning("Failed to write %s generator log %s: %s", label, log_path, exc)
+
+
 def _collect_task_result(
     label: str,
     returncode: int,
+    stdout: str,
     stderr: str,
     report_path: Path,
     result: PhaseResult,
 ) -> None:
     """Process the result of a completed subprocess task.
 
-    Reads the JSON report file (if it exists) and records any errors.
+    Reads the JSON report file (if it exists), saves the generator's full
+    output, and records any errors.
 
     Args:
         label:       "rpc" or "tx".
         returncode:  Subprocess exit code.
+        stdout:      Captured stdout text.
         stderr:      Captured stderr text.
         report_path: Path to the JSON report file.
         result:      PhaseResult to update.
     """
+    _write_generator_log(report_path, label, returncode, stdout, stderr)
+
     if report_path.exists():
         try:
             with open(report_path) as f:
@@ -384,6 +425,8 @@ def _launch_phase_tasks(
     if rpc_cfg:
         rpc_out = report_dir / f"{prefix}-rpc.json"
         rpc_out.unlink(missing_ok=True)
+        # Same reason as the report: a stale log must not read as this run's.
+        rpc_out.with_suffix(".log").unlink(missing_ok=True)
         cmd = _build_rpc_cmd(endpoints, rpc_cfg, duration, rpc_out)
         task = asyncio.create_task(run_subprocess(cmd, f"RPC [{name}]", timeout))
         tasks.append(("rpc", rpc_out, task))
@@ -392,6 +435,8 @@ def _launch_phase_tasks(
     if tx_cfg:
         tx_out = report_dir / f"{prefix}-tx.json"
         tx_out.unlink(missing_ok=True)
+        # Same reason as the report: a stale log must not read as this run's.
+        tx_out.with_suffix(".log").unlink(missing_ok=True)
         cmd = _build_tx_cmd(endpoints[0], tx_cfg, duration, tx_out)
         task = asyncio.create_task(run_subprocess(cmd, f"TX [{name}]", timeout))
         tasks.append(("tx", tx_out, task))
@@ -449,8 +494,8 @@ async def run_phase(
         return result
 
     for label, report_path, task in tasks:
-        returncode, _stdout, stderr = await task
-        _collect_task_result(label, returncode, stderr, report_path, result)
+        returncode, stdout, stderr = await task
+        _collect_task_result(label, returncode, stdout, stderr, report_path, result)
 
     result.actual_sec = time.monotonic() - t0
     logger.info(
