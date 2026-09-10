@@ -29,14 +29,14 @@ namespace xrpl::resource {
 class Logic
 {
 private:
-    using clock_type = Stopwatch;
-    using Imports = hash_map<std::string, Import>;
-    using Table = hash_map<Key, Entry, Key::Hasher, Key::KeyEqual>;
+    using ClockType = Stopwatch;
+    using Imports = HashMap<std::string, Import>;
+    using Table = HashMap<Key, Entry, Key::Hasher, Key::KeyEqual>;
     using EntryIntrusiveList = beast::List<Entry>;
 
     struct Stats
     {
-        Stats(beast::insight::Collector::ptr const& collector)
+        Stats(beast::insight::Collector::Ptr const& collector)
         {
             warn = collector->makeMeter("warn");
             drop = collector->makeMeter("drop");
@@ -76,10 +76,7 @@ private:
 
     //--------------------------------------------------------------------------
 public:
-    Logic(
-        beast::insight::Collector::ptr const& collector,
-        clock_type& clock,
-        beast::Journal journal)
+    Logic(beast::insight::Collector::Ptr const& collector, ClockType& clock, beast::Journal journal)
         : stats_(collector), clock_(clock), journal_(journal)
     {
     }
@@ -198,7 +195,7 @@ public:
     json::Value
     getJson(int threshold)
     {
-        clock_type::time_point const now(clock_.now());
+        ClockType::time_point const now(clock_.now());
 
         json::Value ret(json::ValueType::Object);
         std::scoped_lock const _(lock_);
@@ -243,7 +240,7 @@ public:
     Gossip
     exportConsumers()
     {
-        clock_type::time_point const now(clock_.now());
+        ClockType::time_point const now(clock_.now());
 
         Gossip gossip;
         std::scoped_lock const _(lock_);
@@ -454,7 +451,7 @@ public:
             context = " (" + context + ")";
 
         std::scoped_lock const _(lock_);
-        clock_type::time_point const now(clock_.now());
+        ClockType::time_point const now(clock_.now());
         int const balance(entry.add(fee.cost(), now));
         JLOG(kGetStream(fee.cost(), journal_)) << "Charging " << entry << " for " << fee << context;
         return disposition(balance);
@@ -491,7 +488,7 @@ public:
 
         std::scoped_lock const _(lock_);
         bool drop(false);
-        clock_type::time_point const now(clock_.now());
+        ClockType::time_point const now(clock_.now());
         int const balance(entry.balance(now));
         if (balance >= kDropThreshold)
         {
@@ -519,7 +516,7 @@ public:
 
     static void
     writeList(
-        clock_type::time_point const now,
+        ClockType::time_point const now,
         beast::PropertyStream::Set& items,
         EntryIntrusiveList& list)
     {
@@ -538,7 +535,7 @@ public:
     void
     onWrite(beast::PropertyStream::Map& map)
     {
-        clock_type::time_point const now(clock_.now());
+        ClockType::time_point const now(clock_.now());
 
         std::scoped_lock const _(lock_);
 

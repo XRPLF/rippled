@@ -31,13 +31,13 @@ public:
     public:
         // set on construct
         InboundLedger::Reason reason;
-        uint256 finishHash;
+        UInt256 finishHash;
         std::uint32_t totalLedgers;  // including the start and the finish
 
         // to be updated
         std::uint32_t finishSeq = 0;
-        std::vector<uint256> skipList;  // including the finishHash
-        uint256 startHash;
+        std::vector<UInt256> skipList;  // including the finishHash
+        UInt256 startHash;
         std::uint32_t startSeq = 0;
         bool full = false;
 
@@ -49,7 +49,7 @@ public:
          */
         TaskParameter(
             InboundLedger::Reason r,
-            uint256 const& finishLedgerHash,
+            UInt256 const& finishLedgerHash,
             std::uint32_t totalNumLedgers);
 
         /**
@@ -62,7 +62,7 @@ public:
          *         true on success
          */
         bool
-        update(uint256 const& hash, std::uint32_t seq, std::vector<uint256> const& sList);
+        update(UInt256 const& hash, std::uint32_t seq, std::vector<UInt256> const& sList);
 
         /**
          * check if this task can be merged into an existing task
@@ -129,14 +129,14 @@ private:
      * @param sList  skip list
      */
     void
-    updateSkipList(uint256 const& hash, std::uint32_t seq, std::vector<uint256> const& sList);
+    updateSkipList(UInt256 const& hash, std::uint32_t seq, std::vector<UInt256> const& sList);
 
     /**
      * Notify this task (by a LedgerDeltaAcquire subtask) that a delta is ready
      * @param deltaHash  ledger hash of the delta
      */
     void
-    deltaReady(uint256 const& deltaHash);
+    deltaReady(UInt256 const& deltaHash);
 
     /**
      * Trigger another round

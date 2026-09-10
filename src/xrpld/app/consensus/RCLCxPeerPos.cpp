@@ -18,7 +18,7 @@ namespace xrpl {
 RCLCxPeerPos::RCLCxPeerPos(
     PublicKey const& publicKey,
     Slice const& signature,
-    uint256 const& suppression,
+    UInt256 const& suppression,
     Proposal const& proposal)  // trivially copyable
     : publicKey_(publicKey), suppression_(suppression), proposal_(proposal)
 {
@@ -49,10 +49,10 @@ RCLCxPeerPos::getJson() const
     return ret;
 }
 
-uint256
+UInt256
 proposalUniqueId(
-    uint256 const& proposeHash,
-    uint256 const& previousLedger,
+    UInt256 const& proposeHash,
+    UInt256 const& previousLedger,
     std::uint32_t proposeSeq,
     NetClock::time_point closeTime,
     Slice const& publicKey,

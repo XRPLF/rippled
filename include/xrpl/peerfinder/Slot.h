@@ -15,7 +15,7 @@ namespace xrpl::peer_finder {
 class Slot
 {
 public:
-    using ptr = std::shared_ptr<Slot>;
+    using Ptr = std::shared_ptr<Slot>;
 
     enum class State { Accept, Connect, Connected, Active, Closing };
 

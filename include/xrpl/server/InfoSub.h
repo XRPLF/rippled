@@ -92,9 +92,9 @@ public:
 
     // VFALCO TODO Standardize on the names of weak / strong pointer type
     // aliases.
-    using wptr = std::weak_ptr<InfoSub>;
+    using Wptr = std::weak_ptr<InfoSub>;
 
-    using ref = std::shared_ptr<InfoSub> const&;
+    using Ref = std::shared_ptr<InfoSub> const&;
 
     using Consumer = resource::Consumer;
 
@@ -112,18 +112,18 @@ public:
         // you get transactions as they occur or once their
         // results are confirmed
         virtual void
-        subAccount(ref ispListener, hash_set<AccountID> const& vnaAccountIDs, bool realTime) = 0;
+        subAccount(Ref ispListener, HashSet<AccountID> const& vnaAccountIDs, bool realTime) = 0;
 
         // for normal use, removes from InfoSub and server
         virtual void
-        unsubAccount(ref isplistener, hash_set<AccountID> const& vnaAccountIDs, bool realTime) = 0;
+        unsubAccount(Ref isplistener, HashSet<AccountID> const& vnaAccountIDs, bool realTime) = 0;
 
         // for use during InfoSub destruction
         // Removes only from the server
         virtual void
         unsubAccountInternal(
             std::uint64_t uListener,
-            hash_set<AccountID> const& vnaAccountIDs,
+            HashSet<AccountID> const& vnaAccountIDs,
             bool realTime) = 0;
 
         /**
@@ -132,7 +132,7 @@ public:
          * @return rpcSUCCESS if successful, otherwise an error code
          */
         virtual ErrorCodeI
-        subAccountHistory(ref ispListener, AccountID const& account) = 0;
+        subAccountHistory(Ref ispListener, AccountID const& account) = 0;
 
         /**
          * unsubscribe an account's transactions
@@ -143,7 +143,7 @@ public:
          * transactions.
          */
         virtual void
-        unsubAccountHistory(ref ispListener, AccountID const& account, bool historyOnly) = 0;
+        unsubAccountHistory(Ref ispListener, AccountID const& account, bool historyOnly) = 0;
 
         virtual void
         unsubAccountHistoryInternal(
@@ -175,35 +175,35 @@ public:
         virtual void
         scheduleAccountCleanup(
             std::uint64_t seq,
-            hash_set<AccountID> rtAccounts,
-            hash_set<AccountID> normalAccounts,
-            hash_set<AccountID> historyAccounts) = 0;
+            HashSet<AccountID> rtAccounts,
+            HashSet<AccountID> normalAccounts,
+            HashSet<AccountID> historyAccounts) = 0;
 
         // VFALCO TODO Document the bool return value
         virtual bool
-        subLedger(ref ispListener, json::Value& jvResult) = 0;
+        subLedger(Ref ispListener, json::Value& jvResult) = 0;
         virtual bool
         unsubLedger(std::uint64_t uListener) = 0;
 
         virtual bool
-        subBookChanges(ref ispListener) = 0;
+        subBookChanges(Ref ispListener) = 0;
         virtual bool
         unsubBookChanges(std::uint64_t uListener) = 0;
 
         virtual bool
-        subManifests(ref ispListener) = 0;
+        subManifests(Ref ispListener) = 0;
         virtual bool
         unsubManifests(std::uint64_t uListener) = 0;
         virtual void
         pubManifest(Manifest const&) = 0;
 
         virtual bool
-        subServer(ref ispListener, json::Value& jvResult, bool admin) = 0;
+        subServer(Ref ispListener, json::Value& jvResult, bool admin) = 0;
         virtual bool
         unsubServer(std::uint64_t uListener) = 0;
 
         virtual bool
-        subBook(ref ispListener, Book const&) = 0;
+        subBook(Ref ispListener, Book const&) = 0;
 
         /**
          * Remove a book subscription for a live subscriber.
@@ -223,7 +223,7 @@ public:
          * partially-destroyed object.
          */
         virtual bool
-        unsubBook(ref ispListener, Book const&) = 0;
+        unsubBook(Ref ispListener, Book const&) = 0;
 
         /**
          * Remove a book subscription during InfoSub teardown.
@@ -243,22 +243,22 @@ public:
         unsubBookInternal(std::uint64_t uListener, Book const&) = 0;
 
         virtual bool
-        subTransactions(ref ispListener) = 0;
+        subTransactions(Ref ispListener) = 0;
         virtual bool
         unsubTransactions(std::uint64_t uListener) = 0;
 
         virtual bool
-        subRTTransactions(ref ispListener) = 0;
+        subRTTransactions(Ref ispListener) = 0;
         virtual bool
         unsubRTTransactions(std::uint64_t uListener) = 0;
 
         virtual bool
-        subValidations(ref ispListener) = 0;
+        subValidations(Ref ispListener) = 0;
         virtual bool
         unsubValidations(std::uint64_t uListener) = 0;
 
         virtual bool
-        subPeerStatus(ref ispListener) = 0;
+        subPeerStatus(Ref ispListener) = 0;
 
         virtual bool
         unsubPeerStatus(std::uint64_t uListener) = 0;
@@ -266,7 +266,7 @@ public:
         pubPeerStatus(std::function<json::Value(void)> const&) = 0;
 
         virtual bool
-        subConsensus(ref ispListener) = 0;
+        subConsensus(Ref ispListener) = 0;
         virtual bool
         unsubConsensus(std::uint64_t uListener) = 0;
 
@@ -277,7 +277,7 @@ public:
         virtual pointer
         findRpcSub(std::string const& strUrl) = 0;
         virtual pointer
-        addRpcSub(std::string const& strUrl, ref rspEntry) = 0;
+        addRpcSub(std::string const& strUrl, Ref rspEntry) = 0;
         virtual bool
         tryRemoveRpcSub(std::string const& strUrl) = 0;
 
@@ -338,8 +338,8 @@ public:
      */
     [[nodiscard]] bool
     tryReserveAccountSubscriptions(
-        hash_set<AccountID> const& proposedAccounts,
-        hash_set<AccountID> const& normalAccounts,
+        HashSet<AccountID> const& proposedAccounts,
+        HashSet<AccountID> const& normalAccounts,
         std::size_t cap);
 
     /**
@@ -421,12 +421,12 @@ protected:
 private:
     Consumer consumer_;
     Source& source_;
-    hash_set<AccountID> realTimeSubscriptions_;
-    hash_set<AccountID> normalSubscriptions_;
+    HashSet<AccountID> realTimeSubscriptions_;
+    HashSet<AccountID> normalSubscriptions_;
     std::shared_ptr<InfoSubRequest> request_;
     std::uint64_t seq_;
-    hash_set<AccountID> accountHistorySubscriptions_;
-    hash_set<Book> bookSubscriptions_;
+    HashSet<AccountID> accountHistorySubscriptions_;
+    HashSet<Book> bookSubscriptions_;
     unsigned int apiVersion_ = 0;
 
     static int

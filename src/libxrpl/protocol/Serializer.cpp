@@ -170,7 +170,7 @@ Serializer::chop(int bytes)
     return true;
 }
 
-uint256
+UInt256
 Serializer::getSHA512Half() const
 {
     return sha512Half(makeSlice(data_));

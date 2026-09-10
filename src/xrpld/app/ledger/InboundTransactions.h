@@ -25,7 +25,7 @@ class Application;
 class InboundTransactions
 {
 public:
-    using clock_type = beast::AbstractClock<std::chrono::steady_clock>;
+    using ClockType = beast::AbstractClock<std::chrono::steady_clock>;
 
     InboundTransactions() = default;
     InboundTransactions(InboundTransactions const&) = delete;
@@ -44,7 +44,7 @@ public:
      * missing.
      */
     virtual std::shared_ptr<SHAMap>
-    getSet(uint256 const& setHash, bool acquire) = 0;
+    getSet(UInt256 const& setHash, bool acquire) = 0;
 
     /**
      * Add a transaction set from a LedgerData message.
@@ -55,7 +55,7 @@ public:
      */
     virtual void
     gotData(
-        uint256 const& setHash,
+        UInt256 const& setHash,
         std::shared_ptr<Peer> peer,
         std::shared_ptr<protocol::TMLedgerData> message) = 0;
 
@@ -68,7 +68,7 @@ public:
      * or constructed by ourself during consensus.
      */
     virtual void
-    giveSet(uint256 const& setHash, std::shared_ptr<SHAMap> const& set, bool acquired) = 0;
+    giveSet(UInt256 const& setHash, std::shared_ptr<SHAMap> const& set, bool acquired) = 0;
 
     /**
      * Informs the container if a new consensus round
@@ -83,7 +83,7 @@ public:
 std::unique_ptr<InboundTransactions>
 makeInboundTransactions(
     Application& app,
-    beast::insight::Collector::ptr const& collector,
+    beast::insight::Collector::Ptr const& collector,
     std::function<void(std::shared_ptr<SHAMap> const&, bool)> gotSet);
 
 }  // namespace xrpl

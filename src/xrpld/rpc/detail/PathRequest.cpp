@@ -375,7 +375,7 @@ PathRequest::parseJson(json::Value const& jvParams)
             }
             else
             {
-                uint192 u;
+                UInt192 u;
                 if (!c[jss::mpt_issuance_id].isString() ||
                     !u.parseHex(c[jss::mpt_issuance_id].asString()))
                 {
@@ -470,7 +470,7 @@ PathRequest::parseJson(json::Value const& jvParams)
 
     if (jvParams.isMember(jss::domain))
     {
-        uint256 num;
+        UInt256 num;
         if (!jvParams[jss::domain].isString() || !num.parseHex(jvParams[jss::domain].asString()))
         {
             jvStatus_ = rpcError(RpcDomainMalformed);
@@ -509,7 +509,7 @@ PathRequest::doAborting() const
 std::unique_ptr<Pathfinder> const&
 PathRequest::getPathFinder(
     std::shared_ptr<AssetCache> const& cache,
-    hash_map<PathAsset, std::unique_ptr<Pathfinder>>& currencyMap,
+    HashMap<PathAsset, std::unique_ptr<Pathfinder>>& currencyMap,
     PathAsset const& currency,
     STAmount const& dstAmount,
     int const level,
@@ -587,7 +587,7 @@ PathRequest::findPaths(
     }
 
     auto const dstAmount = convertAmount(saDstAmount_, convertAll_);
-    hash_map<PathAsset, std::unique_ptr<Pathfinder>> currencyMap;
+    HashMap<PathAsset, std::unique_ptr<Pathfinder>> currencyMap;
     for (auto const& asset : sourceAssets)
     {
         if (continueCallback && !continueCallback())

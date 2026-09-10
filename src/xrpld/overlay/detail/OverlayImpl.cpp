@@ -135,11 +135,11 @@ OverlayImpl::Timer::asyncWait()
     timer.async_wait(
         boost::asio::bind_executor(
             overlay_.strand_,
-            [self = shared_from_this()](error_code const& ec) { self->onTimer(ec); }));
+            [self = shared_from_this()](ErrorCode const& ec) { self->onTimer(ec); }));
 }
 
 void
-OverlayImpl::Timer::onTimer(error_code ec)
+OverlayImpl::Timer::onTimer(ErrorCode ec)
 {
     if (ec || stopping)
     {
@@ -172,7 +172,7 @@ OverlayImpl::OverlayImpl(
     Resolver& resolver,
     boost::asio::io_context& ioContext,
     BasicConfig const& config,
-    beast::insight::Collector::ptr const& collector)
+    beast::insight::Collector::Ptr const& collector)
     : app_(app)
     , ioContext_(ioContext)
     , work_(std::in_place, boost::asio::make_work_guard(ioContext_))
@@ -210,9 +210,9 @@ OverlayImpl::OverlayImpl(
 
 Handoff
 OverlayImpl::onHandoff(
-    std::unique_ptr<stream_type>&& streamPtr,
-    http_request_type&& request,
-    endpoint_type remoteEndpoint)
+    std::unique_ptr<StreamType>&& streamPtr,
+    HttpRequestType&& request,
+    EndpointType remoteEndpoint)
 {
     auto const id = nextId_++;
     auto peerJournal = app_.getJournal("Peer");
@@ -229,7 +229,7 @@ OverlayImpl::onHandoff(
 
     JLOG(journal.debug()) << "Peer connection upgrade from " << remoteEndpoint;
 
-    error_code ec;
+    ErrorCode ec;
     auto const localEndpoint(streamPtr->next_layer().socket().local_endpoint(ec));
     if (ec)
     {
@@ -364,7 +364,7 @@ OverlayImpl::onHandoff(
 //------------------------------------------------------------------------------
 
 bool
-OverlayImpl::isPeerUpgrade(http_request_type const& request)
+OverlayImpl::isPeerUpgrade(HttpRequestType const& request)
 {
     if (!isUpgrade(request))
         return false;
@@ -383,8 +383,8 @@ OverlayImpl::makePrefix(std::uint32_t id)
 std::shared_ptr<Writer>
 OverlayImpl::makeRedirectResponse(
     std::shared_ptr<peer_finder::Slot> const& slot,
-    http_request_type const& request,
-    address_type remoteAddress)
+    HttpRequestType const& request,
+    AddressType remoteAddress)
 {
     boost::beast::http::response<JsonBody> msg;
     msg.version(request.version());
@@ -410,8 +410,8 @@ OverlayImpl::makeRedirectResponse(
 std::shared_ptr<Writer>
 OverlayImpl::makeErrorResponse(
     std::shared_ptr<peer_finder::Slot> const& slot,
-    http_request_type const& request,
-    address_type remoteAddress,
+    HttpRequestType const& request,
+    AddressType remoteAddress,
     std::string const& text)
 {
     boost::beast::http::response<boost::beast::http::empty_body> msg;
@@ -656,7 +656,7 @@ OverlayImpl::activate(std::shared_ptr<PeerImp> const& peer)
 }
 
 void
-OverlayImpl::onPeerDeactivate(Peer::id_t id)
+OverlayImpl::onPeerDeactivate(Peer::IdT id)
 {
     std::scoped_lock const lock(mutex_);
     ids_.erase(id);
@@ -908,7 +908,7 @@ OverlayImpl::json()
 }
 
 bool
-OverlayImpl::processCrawl(http_request_type const& req, Handoff& handoff)
+OverlayImpl::processCrawl(HttpRequestType const& req, Handoff& handoff)
 {
     if (req.target() != "/crawl" || setup_.crawlOptions == crawl_options::kDisabled)
         return false;
@@ -944,7 +944,7 @@ OverlayImpl::processCrawl(http_request_type const& req, Handoff& handoff)
 }
 
 bool
-OverlayImpl::processValidatorList(http_request_type const& req, Handoff& handoff)
+OverlayImpl::processValidatorList(HttpRequestType const& req, Handoff& handoff)
 {
     // If the target is in the form "/vl/<validator_list_public_key>",
     // return the most recent validator list for that key.
@@ -1008,7 +1008,7 @@ OverlayImpl::processValidatorList(http_request_type const& req, Handoff& handoff
 }
 
 bool
-OverlayImpl::processHealth(http_request_type const& req, Handoff& handoff)
+OverlayImpl::processHealth(HttpRequestType const& req, Handoff& handoff)
 {
     if (req.target() != "/health")
         return false;
@@ -1112,7 +1112,7 @@ OverlayImpl::processHealth(http_request_type const& req, Handoff& handoff)
 }
 
 bool
-OverlayImpl::processRequest(http_request_type const& req, Handoff& handoff)
+OverlayImpl::processRequest(HttpRequestType const& req, Handoff& handoff)
 {
     // Take advantage of || short-circuiting
     return processCrawl(req, handoff) || processValidatorList(req, handoff) ||
@@ -1132,7 +1132,7 @@ OverlayImpl::getActivePeers() const
 
 Overlay::PeerSequence
 OverlayImpl::getActivePeers(
-    std::set<Peer::id_t> const& toSkip,
+    std::set<Peer::IdT> const& toSkip,
     std::size_t& active,
     std::size_t& disabled,
     std::size_t& enabledInSkip) const
@@ -1176,7 +1176,7 @@ OverlayImpl::checkTracking(std::uint32_t index)
 }
 
 std::shared_ptr<Peer>
-OverlayImpl::findPeerByShortID(Peer::id_t const& id) const
+OverlayImpl::findPeerByShortID(Peer::IdT const& id) const
 {
     std::scoped_lock const lock(mutex_);
     auto const iter = ids_.find(id);
@@ -1211,8 +1211,8 @@ OverlayImpl::broadcast(protocol::TMProposeSet const& m)
     forEach([&](std::shared_ptr<PeerImp> const& p) { p->send(sm); });
 }
 
-std::set<Peer::id_t>
-OverlayImpl::relay(protocol::TMProposeSet const& m, uint256 const& uid, PublicKey const& validator)
+std::set<Peer::IdT>
+OverlayImpl::relay(protocol::TMProposeSet const& m, UInt256 const& uid, PublicKey const& validator)
 {
     if (auto const toSkip = app_.getHashRouter().shouldRelay(uid))
     {
@@ -1233,8 +1233,8 @@ OverlayImpl::broadcast(protocol::TMValidation const& m)
     forEach([sm](std::shared_ptr<PeerImp> const& p) { p->send(sm); });
 }
 
-std::set<Peer::id_t>
-OverlayImpl::relay(protocol::TMValidation const& m, uint256 const& uid, PublicKey const& validator)
+std::set<Peer::IdT>
+OverlayImpl::relay(protocol::TMValidation const& m, UInt256 const& uid, PublicKey const& validator)
 {
     if (auto const toSkip = app_.getHashRouter().shouldRelay(uid))
     {
@@ -1265,7 +1265,7 @@ OverlayImpl::getManifestsMessage()
         {
             PublicKey masterKey;
             std::string serialized;
-            uint256 hash;
+            UInt256 hash;
         };
         std::vector<CachedManifest> cached;
         app_.getValidatorManifests().forEachManifest(
@@ -1325,9 +1325,9 @@ OverlayImpl::getManifestsMessage()
 
 void
 OverlayImpl::relay(
-    uint256 const& hash,
+    UInt256 const& hash,
     std::optional<std::reference_wrapper<protocol::TMTransaction>> tx,
-    std::set<Peer::id_t> const& toSkip)
+    std::set<Peer::IdT> const& toSkip)
 {
     bool relay = tx.has_value();
     if (relay)
@@ -1503,7 +1503,7 @@ makeSquelchMessage(PublicKey const& validator, bool squelch, uint32_t squelchDur
 }
 
 void
-OverlayImpl::unsquelch(PublicKey const& validator, Peer::id_t id) const
+OverlayImpl::unsquelch(PublicKey const& validator, Peer::IdT id) const
 {
     if (auto peer = findPeerByShortID(id); peer)
     {
@@ -1514,7 +1514,7 @@ OverlayImpl::unsquelch(PublicKey const& validator, Peer::id_t id) const
 }
 
 void
-OverlayImpl::squelch(PublicKey const& validator, Peer::id_t id, uint32_t squelchDuration) const
+OverlayImpl::squelch(PublicKey const& validator, Peer::IdT id, uint32_t squelchDuration) const
 {
     if (auto peer = findPeerByShortID(id); peer)
     {
@@ -1524,9 +1524,9 @@ OverlayImpl::squelch(PublicKey const& validator, Peer::id_t id, uint32_t squelch
 
 void
 OverlayImpl::updateSlotAndSquelch(
-    uint256 const& key,
+    UInt256 const& key,
     PublicKey const& validator,
-    std::set<Peer::id_t>&& peers,
+    std::set<Peer::IdT>&& peers,
     protocol::MessageType type)
 {
     if (!slots_.baseSquelchReady())
@@ -1554,9 +1554,9 @@ OverlayImpl::updateSlotAndSquelch(
 
 void
 OverlayImpl::updateSlotAndSquelch(
-    uint256 const& key,
+    UInt256 const& key,
     PublicKey const& validator,
-    Peer::id_t peer,
+    Peer::IdT peer,
     protocol::MessageType type)
 {
     if (!slots_.baseSquelchReady())
@@ -1581,7 +1581,7 @@ OverlayImpl::updateSlotAndSquelch(
 }
 
 void
-OverlayImpl::deletePeer(Peer::id_t id)
+OverlayImpl::deletePeer(Peer::IdT id)
 {
     if (!strand_.running_in_this_thread())
     {
@@ -1726,7 +1726,7 @@ makeOverlay(
     Resolver& resolver,
     boost::asio::io_context& ioContext,
     BasicConfig const& config,
-    beast::insight::Collector::ptr const& collector)
+    beast::insight::Collector::Ptr const& collector)
 {
     return std::make_unique<OverlayImpl>(
         app, setup, serverHandler, resourceManager, resolver, ioContext, config, collector);

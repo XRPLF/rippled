@@ -275,7 +275,7 @@ public:
     //--------------------------------------------------------------------------
 
     Status
-    fetch(uint256 const& hash, std::shared_ptr<NodeObject>* pObject) override
+    fetch(UInt256 const& hash, std::shared_ptr<NodeObject>* pObject) override
     {
         XRPL_ASSERT(db, "xrpl::node_store::RocksDBBackend::fetch : non-null database");
         pObject->reset();

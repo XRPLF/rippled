@@ -368,7 +368,7 @@ TEST(AccountSet, WalletID)
 
     std::string_view const locator =
         "9633EC8AF54F16B5286DB1D7B519EF49EEFC050C0C8AC4384F1D88ACD1BFDF05";
-    uint256 locatorHash{};
+    UInt256 locatorHash{};
     EXPECT_TRUE(locatorHash.parseHex(locator));
 
     // Set the wallet locator
@@ -400,7 +400,7 @@ TEST(AccountSet, EmailHash)
     env.close();
 
     std::string_view const mh = "5F31A79367DC3137FADA860C05742EE6";
-    uint128 emailHash{};
+    UInt128 emailHash{};
     EXPECT_TRUE(emailHash.parseHex(mh));
 
     // Set the email hash

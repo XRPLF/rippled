@@ -580,10 +580,10 @@ public:
         env(payChan(becky, alice, XRP(1000), 100s, becky.pk()));
 
         // Mint NFTs, for each account
-        uint256 const aliceNFtokenID = token::getNextID(env, alice, 0, tfTransferable);
+        UInt256 const aliceNFtokenID = token::getNextID(env, alice, 0, tfTransferable);
         env(token::mint(alice, 0), Txflags(tfTransferable));
 
-        uint256 const beckyNFtokenID = token::getNextID(env, becky, 0, tfTransferable);
+        UInt256 const beckyNFtokenID = token::getNextID(env, becky, 0, tfTransferable);
         env(token::mint(becky, 0), Txflags(tfTransferable));
 
         // NFT Offers, for each other's NFTs

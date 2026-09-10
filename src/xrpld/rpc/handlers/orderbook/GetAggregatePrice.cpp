@@ -51,7 +51,7 @@ using Prices = bimap<multiset_of<std::uint32_t, std::greater<>>, multiset_of<STA
 static void
 iteratePriceData(
     rpc::JsonContext& context,
-    SLE::const_ref sle,
+    SLE::ConstRef sle,
     std::function<bool(STObject const&)> const& f)
 {
     static constexpr std::uint8_t kMaxHistory = 3;
@@ -87,7 +87,7 @@ iteratePriceData(
         if (++history > kMaxHistory)
             return;
 
-        uint256 const prevTx = chain->getFieldH256(sfPreviousTxnID);
+        UInt256 const prevTx = chain->getFieldH256(sfPreviousTxnID);
         std::uint32_t const prevSeq = chain->getFieldU32(sfPreviousTxnLgrSeq);
 
         auto const ledger = context.ledgerMaster.getLedgerBySeq(prevSeq);

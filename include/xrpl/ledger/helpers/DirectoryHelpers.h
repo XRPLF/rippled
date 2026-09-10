@@ -23,10 +23,10 @@ template <class V, class N>
 bool
 internalDirNext(
     V& view,
-    uint256 const& root,
+    UInt256 const& root,
     std::shared_ptr<N>& page,
     unsigned int& index,
-    uint256& entry)
+    UInt256& entry)
     requires(std::is_same_v<std::remove_cv_t<N>, SLE> && std::is_base_of_v<ReadView, V>)
 {
     auto const& svIndexes = page->getFieldV256(sfIndexes);
@@ -69,10 +69,10 @@ template <class V, class N>
 bool
 internalDirFirst(
     V& view,
-    uint256 const& root,
+    UInt256 const& root,
     std::shared_ptr<N>& page,
     unsigned int& index,
-    uint256& entry)
+    UInt256& entry)
     requires(std::is_same_v<std::remove_cv_t<N>, SLE> && std::is_base_of_v<ReadView, V>)
 {
     if constexpr (std::is_const_v<N>)
@@ -113,18 +113,18 @@ internalDirFirst(
 bool
 cdirFirst(
     ReadView const& view,
-    uint256 const& root,
+    UInt256 const& root,
     SLE::const_pointer& page,
     unsigned int& index,
-    uint256& entry);
+    UInt256& entry);
 
 bool
 dirFirst(
     ApplyView& view,
-    uint256 const& root,
+    UInt256 const& root,
     SLE::pointer& page,
     unsigned int& index,
-    uint256& entry);
+    UInt256& entry);
 /** @} */
 
 /** @{ */
@@ -146,25 +146,25 @@ dirFirst(
 bool
 cdirNext(
     ReadView const& view,
-    uint256 const& root,
+    UInt256 const& root,
     SLE::const_pointer& page,
     unsigned int& index,
-    uint256& entry);
+    UInt256& entry);
 
 bool
 dirNext(
     ApplyView& view,
-    uint256 const& root,
+    UInt256 const& root,
     SLE::pointer& page,
     unsigned int& index,
-    uint256& entry);
+    UInt256& entry);
 /** @} */
 
 /**
  * Iterate all items in the given directory.
  */
 void
-forEachItem(ReadView const& view, Keylet const& root, std::function<void(SLE::const_ref)> const& f);
+forEachItem(ReadView const& view, Keylet const& root, std::function<void(SLE::ConstRef)> const& f);
 
 /**
  * Iterate all items after an item in the given directory.
@@ -177,16 +177,16 @@ bool
 forEachItemAfter(
     ReadView const& view,
     Keylet const& root,
-    uint256 const& after,
+    UInt256 const& after,
     std::uint64_t const hint,
     unsigned int limit,
-    std::function<bool(SLE::const_ref)> const& f);
+    std::function<bool(SLE::ConstRef)> const& f);
 
 /**
  * Iterate all items in an account's owner directory.
  */
 inline void
-forEachItem(ReadView const& view, AccountID const& id, std::function<void(SLE::const_ref)> const& f)
+forEachItem(ReadView const& view, AccountID const& id, std::function<void(SLE::ConstRef)> const& f)
 {
     forEachItem(view, keylet::ownerDir(id), f);
 }
@@ -202,10 +202,10 @@ inline bool
 forEachItemAfter(
     ReadView const& view,
     AccountID const& id,
-    uint256 const& after,
+    UInt256 const& after,
     std::uint64_t const hint,
     unsigned int limit,
-    std::function<bool(SLE::const_ref)> const& f)
+    std::function<bool(SLE::ConstRef)> const& f)
 {
     return forEachItemAfter(view, keylet::ownerDir(id), after, hint, limit, f);
 }
@@ -220,7 +220,7 @@ dirIsEmpty(ReadView const& view, Keylet const& k);
 /**
  * Returns a function that sets the owner on a directory SLE
  */
-[[nodiscard]] std::function<void(SLE::ref)>
+[[nodiscard]] std::function<void(SLE::Ref)>
 describeOwnerDir(AccountID const& account);
 
 }  // namespace xrpl

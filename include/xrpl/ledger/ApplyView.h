@@ -140,8 +140,8 @@ private:
     dirAdd(
         bool preserveOrder,
         Keylet const& directory,
-        uint256 const& key,
-        std::function<void(SLE::ref)> const& describe);
+        UInt256 const& key,
+        std::function<void(SLE::Ref)> const& describe);
 
 public:
     ApplyView() = default;
@@ -189,7 +189,7 @@ public:
      *     The key is no longer associated with the SLE.
      */
     virtual void
-    erase(SLE::ref sle) = 0;
+    erase(SLE::Ref sle) = 0;
 
     /**
      * Insert a new state SLE
@@ -211,7 +211,7 @@ public:
      * @note The key is taken from the SLE
      */
     virtual void
-    insert(SLE::ref sle) = 0;
+    insert(SLE::Ref sle) = 0;
 
     /**
      * Indicate changes to a peeked SLE
@@ -231,7 +231,7 @@ public:
      */
     /** @{ */
     virtual void
-    update(SLE::ref sle) = 0;
+    update(SLE::Ref sle) = 0;
 
     //--------------------------------------------------------------------------
 
@@ -326,7 +326,7 @@ public:
     dirAppend(
         Keylet const& directory,
         Keylet const& key,
-        std::function<void(SLE::ref)> const& describe)
+        std::function<void(SLE::Ref)> const& describe)
     {
         if (key.type != ltOFFER)
         {
@@ -365,8 +365,8 @@ public:
     std::optional<std::uint64_t>
     dirInsert(
         Keylet const& directory,
-        uint256 const& key,
-        std::function<void(SLE::ref)> const& describe)
+        UInt256 const& key,
+        std::function<void(SLE::Ref)> const& describe)
     {
         return dirAdd(false, directory, key, describe);
     }
@@ -375,7 +375,7 @@ public:
     dirInsert(
         Keylet const& directory,
         Keylet const& key,
-        std::function<void(SLE::ref)> const& describe)
+        std::function<void(SLE::Ref)> const& describe)
     {
         return dirAdd(false, directory, key.key, describe);
     }
@@ -399,7 +399,7 @@ public:
      */
     /** @{ */
     bool
-    dirRemove(Keylet const& directory, std::uint64_t page, uint256 const& key, bool keepRoot);
+    dirRemove(Keylet const& directory, std::uint64_t page, UInt256 const& key, bool keepRoot);
 
     bool
     dirRemove(Keylet const& directory, std::uint64_t page, Keylet const& key, bool keepRoot)
@@ -412,7 +412,7 @@ public:
      * Remove the specified directory, invoking the callback for every node.
      */
     bool
-    dirDelete(Keylet const& directory, std::function<void(uint256 const&)> const&);
+    dirDelete(Keylet const& directory, std::function<void(UInt256 const&)> const&);
 
     /**
      * Remove the specified directory, if it is empty.
@@ -459,20 +459,20 @@ std::uint64_t
 createRoot(
     ApplyView& view,
     Keylet const& directory,
-    uint256 const& key,
-    std::function<void(SLE::ref)> const& describe);
+    UInt256 const& key,
+    std::function<void(SLE::Ref)> const& describe);
 
 auto
-findPreviousPage(ApplyView& view, Keylet const& directory, SLE::ref start);
+findPreviousPage(ApplyView& view, Keylet const& directory, SLE::Ref start);
 
 std::uint64_t
 insertKey(
     ApplyView& view,
-    SLE::ref node,
+    SLE::Ref node,
     std::uint64_t page,
     bool preserveOrder,
     STVector256& indexes,
-    uint256 const& key);
+    UInt256 const& key);
 
 std::optional<std::uint64_t>
 insertPage(
@@ -480,10 +480,10 @@ insertPage(
     std::uint64_t page,
     SLE::pointer node,
     std::uint64_t nextPage,
-    SLE::ref next,
-    uint256 const& key,
+    SLE::Ref next,
+    UInt256 const& key,
     Keylet const& directory,
-    std::function<void(SLE::ref)> const& describe);
+    std::function<void(SLE::Ref)> const& describe);
 
 }  // namespace directory
 }  // namespace xrpl

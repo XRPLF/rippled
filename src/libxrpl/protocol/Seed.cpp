@@ -35,7 +35,7 @@ Seed::Seed(Slice const& slice)
     std::memcpy(buf_.data(), slice.data(), buf_.size());
 }
 
-Seed::Seed(uint128 const& seed)
+Seed::Seed(UInt128 const& seed)
 {
     if (seed.size() != buf_.size())
         logicError("Seed::Seed: invalid size");
@@ -57,9 +57,9 @@ randomSeed()
 Seed
 generateSeed(std::string const& passPhrase)
 {
-    sha512_half_hasher_s h;
+    Sha512HalfHasherS h;
     h(passPhrase.data(), passPhrase.size());
-    auto const digest = sha512_half_hasher::result_type(h);
+    auto const digest = Sha512HalfHasher::result_type(h);
     return Seed({digest.data(), 16});
 }
 
@@ -90,7 +90,7 @@ parseGenericSeed(std::string const& str, bool rfc1751)
     }
 
     {
-        uint128 seed;
+        UInt128 seed;
 
         if (seed.parseHex(str))
             return Seed{Slice(seed.data(), seed.size())};
@@ -105,7 +105,7 @@ parseGenericSeed(std::string const& str, bool rfc1751)
         if (RFC1751::getKeyFromEnglish(key, str) == 1)
         {
             Blob const blob(key.rbegin(), key.rend());
-            return Seed{uint128::fromRaw(blob)};
+            return Seed{UInt128::fromRaw(blob)};
         }
     }
 

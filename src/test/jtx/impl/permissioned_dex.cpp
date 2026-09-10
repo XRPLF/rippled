@@ -15,7 +15,7 @@
 
 namespace xrpl::test::jtx {
 
-uint256
+UInt256
 setupDomain(
     jtx::Env& env,
     std::vector<jtx::Account> const& accounts,

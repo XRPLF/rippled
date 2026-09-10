@@ -30,7 +30,7 @@ namespace xrpl {
 namespace detail {
 
 std::string
-fmtdur(typename clock_type::duration const& d)
+fmtdur(typename ClockType::duration const& d)
 {
     using namespace std::chrono;
     auto const ms = duration_cast<milliseconds>(d);
@@ -60,33 +60,32 @@ Results::add(SuiteResults const& r)
     total += r.total;
     cases += r.cases;
     failed += r.failed;
-    auto const elapsed = clock_type::now() - r.start;
+    auto const elapsed = ClockType::now() - r.start;
     if (elapsed >= std::chrono::seconds{1})
     {
         // NOLINTNEXTLINE(modernize-use-ranges)
         auto const iter = std::lower_bound(
-            top.begin(),
-            top.end(),
-            elapsed,
-            [](run_time const& t1, clock_type::duration const& t2) { return t1.second > t2; });
+            top.begin(), top.end(), elapsed, [](RunTime const& t1, ClockType::duration const& t2) {
+                return t1.second > t2;
+            });
 
         if (iter != top.end())
         {
             if (top.size() == kMaxTop && iter == top.end() - 1)
             {
                 // avoid invalidating the iterator
-                *iter = run_time{static_string{static_string::string_view_type{r.name}}, elapsed};
+                *iter = RunTime{StaticString{StaticString::string_view_type{r.name}}, elapsed};
             }
             else
             {
                 if (top.size() == kMaxTop)
                     top.resize(top.size() - 1);
-                top.emplace(iter, static_string{static_string::string_view_type{r.name}}, elapsed);
+                top.emplace(iter, StaticString{StaticString::string_view_type{r.name}}, elapsed);
             }
         }
         else if (top.size() < kMaxTop)
         {
-            top.emplace_back(static_string{static_string::string_view_type{r.name}}, elapsed);
+            top.emplace_back(StaticString{StaticString::string_view_type{r.name}}, elapsed);
         }
     }
 }
@@ -100,9 +99,9 @@ Results::merge(Results const& r)
     failed += r.failed;
 
     // combine the two top collections
-    boost::container::static_vector<run_time, 2 * kMaxTop> topResult;
+    boost::container::static_vector<RunTime, 2 * kMaxTop> topResult;
     topResult.resize(top.size() + r.top.size());
-    std::ranges::merge(top, r.top, topResult.begin(), [](run_time const& t1, run_time const& t2) {
+    std::ranges::merge(top, r.top, topResult.begin(), [](RunTime const& t1, RunTime const& t2) {
         return t1.second > t2.second;
     });
 
@@ -125,7 +124,7 @@ Results::print(S& s)
             s << std::setw(8) << fmtdur(dur) << " " << name << '\n';
     }
 
-    auto const elapsed = clock_type::now() - start;
+    auto const elapsed = ClockType::now() - start;
     s << fmtdur(elapsed) << ", " << Amount{suites, "suite"} << ", " << Amount{cases, "case"} << ", "
       << Amount{total, "test"} << " total, " << Amount{failed, "failure"} << std::endl;
 }

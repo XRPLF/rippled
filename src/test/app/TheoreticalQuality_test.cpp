@@ -115,7 +115,7 @@ struct RippleCalcTestParams
 // and initial balance
 class RandomAccountParams
 {
-    beast::xor_shift_engine engine_;
+    beast::XorShiftEngine engine_;
     std::uint32_t const trustAmount_;
     // Balance to set if an account redeems into another account. Otherwise
     // the balance will be zero. Since we are testing quality measures, the

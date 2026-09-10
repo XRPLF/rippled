@@ -27,7 +27,7 @@ namespace xrpl::test::jtx::pdomain {
 // helpers
 // Make json for PermissionedDomainSet transaction
 json::Value
-setTx(AccountID const& account, Credentials const& credentials, std::optional<uint256> domain)
+setTx(AccountID const& account, Credentials const& credentials, std::optional<UInt256> domain)
 {
     json::Value jv;
     jv[sfTransactionType] = jss::PermissionedDomainSet;
@@ -49,7 +49,7 @@ setTx(AccountID const& account, Credentials const& credentials, std::optional<ui
 
 // Make json for PermissionedDomainDelete transaction
 json::Value
-deleteTx(AccountID const& account, uint256 const& domain)
+deleteTx(AccountID const& account, UInt256 const& domain)
 {
     json::Value jv{json::ValueType::Object};
     jv[sfTransactionType] = jss::PermissionedDomainDelete;
@@ -59,10 +59,10 @@ deleteTx(AccountID const& account, uint256 const& domain)
 }
 
 // Get PermissionedDomain objects by type from account_objects rpc call
-std::map<uint256, json::Value>
+std::map<UInt256, json::Value>
 getObjects(Account const& account, Env& env, bool withType)
 {
-    std::map<uint256, json::Value> ret;
+    std::map<UInt256, json::Value> ret;
     json::Value params;
     params[jss::account] = account.human();
     if (withType)
@@ -84,7 +84,7 @@ getObjects(Account const& account, Env& env, bool withType)
             continue;
         }
 
-        uint256 index;
+        UInt256 index;
         std::ignore = index.parseHex(object[jss::index].asString());
         ret[index] = object;
     }
@@ -94,7 +94,7 @@ getObjects(Account const& account, Env& env, bool withType)
 
 // Check if ledger object is there
 bool
-objectExists(uint256 const& objID, Env& env)
+objectExists(UInt256 const& objID, Env& env)
 {
     json::Value params;
     params[jss::index] = to_string(objID);
@@ -148,10 +148,10 @@ sortCredentials(Credentials const& input)
     return {credentialsSet.begin(), credentialsSet.end()};
 }
 
-uint256
+UInt256
 getNewDomain(std::shared_ptr<STObject const> const& meta)
 {
-    uint256 ret;
+    UInt256 ret;
     auto metaJson = meta->getJson(JsonOptions::Values::None);
     json::Value a(json::ValueType::Array);
     a = metaJson["AffectedNodes"];

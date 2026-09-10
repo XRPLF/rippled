@@ -18,7 +18,7 @@ namespace xrpl::ledger_entries {
 // builder's STObject and the wrapper's SLE.
 TEST(MPTokenTests, BuilderSettersRoundTrip)
 {
-    uint256 const index{1u};
+    UInt256 const index{1u};
 
     auto const accountValue = canonical_ACCOUNT();
     auto const mPTokenIssuanceIDValue = canonical_UINT192();
@@ -165,7 +165,7 @@ TEST(MPTokenTests, BuilderSettersRoundTrip)
 // from that SLE, build a new wrapper, and verify all fields (and validate()).
 TEST(MPTokenTests, BuilderFromSleRoundTrip)
 {
-    uint256 const index{2u};
+    UInt256 const index{2u};
 
     auto const accountValue = canonical_ACCOUNT();
     auto const mPTokenIssuanceIDValue = canonical_UINT192();
@@ -367,7 +367,7 @@ TEST(MPTokenTests, BuilderFromSleRoundTrip)
 // 3) Verify wrapper throws when constructed from wrong ledger entry type.
 TEST(MPTokenTests, WrapperThrowsOnWrongEntryType)
 {
-    uint256 const index{3u};
+    UInt256 const index{3u};
 
     // Build a valid ledger entry of a different type
     // Ticket requires: Account, OwnerNode, TicketSequence, PreviousTxnID, PreviousTxnLgrSeq
@@ -386,7 +386,7 @@ TEST(MPTokenTests, WrapperThrowsOnWrongEntryType)
 // 4) Verify builder throws when constructed from wrong ledger entry type.
 TEST(MPTokenTests, BuilderThrowsOnWrongEntryType)
 {
-    uint256 const index{4u};
+    UInt256 const index{4u};
 
     // Build a valid ledger entry of a different type
     TicketBuilder wrongBuilder{
@@ -403,7 +403,7 @@ TEST(MPTokenTests, BuilderThrowsOnWrongEntryType)
 // 5) Build with only required fields and verify optional fields return nullopt.
 TEST(MPTokenTests, OptionalFieldsReturnNullopt)
 {
-    uint256 const index{3u};
+    UInt256 const index{3u};
 
     auto const accountValue = canonical_ACCOUNT();
     auto const mPTokenIssuanceIDValue = canonical_UINT192();

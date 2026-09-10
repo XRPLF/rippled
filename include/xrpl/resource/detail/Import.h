@@ -26,7 +26,7 @@ struct Import
     }
 
     // When the imported data expires
-    clock_type::time_point whenExpires;
+    ClockType::time_point whenExpires;
 
     // List of remote entries
     std::vector<Item> items;

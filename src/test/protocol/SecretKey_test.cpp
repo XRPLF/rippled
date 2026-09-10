@@ -33,7 +33,7 @@ class SecretKey_test : public beast::unit_test::Suite
     };
 
 public:
-    using blob = std::vector<std::uint8_t>;
+    using Blob = std::vector<std::uint8_t>;
 
     // Ensure that verification does the right thing with
     // respect to the matrix of canonicality variables.
@@ -73,7 +73,7 @@ public:
             0x89, 0x1C, 0x60, 0xBA, 0x63, 0x74, 0x44, 0xF7, 0x1A, 0x12, 0x9E, 0x47,
             0x13, 0x5D, 0x36, 0xD9, 0x2A, 0xFD, 0x39, 0xB8, 0x56, 0x60, 0x1A, 0x01};
 
-        auto const digest = uint256::fromVoid(digestData.data());
+        auto const digest = UInt256::fromVoid(digestData.data());
 
         PublicKey const pk{makeSlice(pkData)};
         SecretKey const sk{makeSlice(skData)};
@@ -116,7 +116,7 @@ public:
 
             for (std::size_t j = 0; j < 32; j++)
             {
-                uint256 digest;
+                UInt256 digest;
                 beast::rngfill(digest.data(), digest.size(), cryptoPrng());
 
                 auto sig = signDigest(pk, sk, digest);

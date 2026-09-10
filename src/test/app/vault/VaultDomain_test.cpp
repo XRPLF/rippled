@@ -496,7 +496,7 @@ private:
         env.close();
 
         auto const [vaultAccount, issuanceId] =
-            [&env, keylet = keylet, this]() -> std::tuple<AccountID, uint192> {
+            [&env, keylet = keylet, this]() -> std::tuple<AccountID, UInt192> {
             auto const vault = env.le(keylet);
             BEAST_EXPECT(vault != nullptr);
             return {vault->at(sfAccount), vault->at(sfShareMPTID)};

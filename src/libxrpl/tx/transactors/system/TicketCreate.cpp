@@ -135,7 +135,7 @@ TicketCreate::doApply()
 }
 
 void
-TicketCreate::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
+TicketCreate::visitInvariantEntry(bool, SLE::ConstRef, SLE::ConstRef)
 {
     // No transaction-specific invariants yet (future work).
 }

@@ -215,13 +215,13 @@ class InvariantsEscrowNFT_test : public InvariantsBase
         testcase << "NFTokenPage";
 
         // lambda that returns an STArray of NFTokenIDs.
-        uint256 const firstNFTID(
+        UInt256 const firstNFTID(
             "0000000000000000000000000000000000000001FFFFFFFFFFFFFFFF00000000");
         auto makeNFTokenIDs = [&firstNFTID](unsigned int nftCount) {
             SOTemplate const* nfTokenTemplate =
                 InnerObjectFormats::getInstance().findSOTemplateBySField(sfNFToken);
 
-            uint256 nftID(firstNFTID);
+            UInt256 nftID(firstNFTID);
             STArray ret;
             for (int i = 0; i < nftCount; ++i)
             {

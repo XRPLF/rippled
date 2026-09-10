@@ -40,7 +40,7 @@ struct JsonContext;
  */
 template <class T>
 Status
-getLedger(T& ledger, uint256 const& ledgerHash, Context const& context);
+getLedger(T& ledger, UInt256 const& ledgerHash, Context const& context);
 
 /**
  * @brief Retrieves a ledger by its sequence index.

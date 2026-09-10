@@ -128,7 +128,7 @@ backend=sqlite
 class FileCfgGuard : public xrpl::detail::FileDirGuard
 {
 private:
-    path dataDir_;
+    Path dataDir_;
 
     bool rmDataDir_{false};
 
@@ -137,10 +137,10 @@ private:
 public:
     FileCfgGuard(
         beast::unit_test::Suite& test,
-        path subDir,
-        path const& dbPath,
-        path const& configFile,
-        path const& validatorsFile,
+        Path subDir,
+        Path const& dbPath,
+        Path const& configFile,
+        Path const& validatorsFile,
         bool useCounter = true,
         std::string confContents = "")
         : FileDirGuard(
@@ -153,7 +153,7 @@ public:
         , dataDir_(dbPath)
     {
         if (dbPath.empty())
-            dataDir_ = subdir() / path(Config::kDatabaseDirName);
+            dataDir_ = subdir() / Path(Config::kDatabaseDirName);
 
         rmDataDir_ = !exists(dataDir_);
         config_.setup(
@@ -241,13 +241,13 @@ class ValidatorsTxtGuard : public detail::FileDirGuard
 public:
     ValidatorsTxtGuard(
         beast::unit_test::Suite& test,
-        path subDir,
-        path const& validatorsFileName,
+        Path subDir,
+        Path const& validatorsFileName,
         bool useCounter = true)
         : FileDirGuard(
               test,
               std::move(subDir),
-              path(validatorsFileName.empty() ? Config::kValidatorsFileName : validatorsFileName),
+              Path(validatorsFileName.empty() ? Config::kValidatorsFileName : validatorsFileName),
               valFileContents(),
               useCounter)
     {
@@ -272,7 +272,7 @@ public:
 class Config_test final : public TestSuite
 {
 private:
-    using path = std::filesystem::path;
+    using Path = std::filesystem::path;
 
 public:
     void
@@ -320,7 +320,7 @@ port_wss_admin
             // Use a temporary directory for testing.
             TempDir const td;
             current_path(td.path());
-            path const f = td.file(std::string{configFile});
+            Path const f = td.file(std::string{configFile});
             std::ofstream o(f.string());
             o << detail::configContents("", "");
             o.close();
@@ -357,7 +357,7 @@ port_wss_admin
                 setenv("XDG_CONFIG_HOME", tc.path().c_str(), 1);
 
                 // Create the config file in '${XDG_CONFIG_HOME}/[systemName]'.
-                path p = tc.file(systemName());
+                Path p = tc.file(systemName());
                 create_directory(p);
                 p = tc.file(systemName() + "/" + std::string{configFile});
                 std::ofstream o(p.string());
@@ -390,7 +390,7 @@ port_wss_admin
 
                 // Create the config file in '${HOME}/.config/[systemName]'.
                 std::string s = ".config";
-                path p = tc.file(s);
+                Path p = tc.file(s);
                 create_directory(p);
                 s += "/" + systemName();
                 p = tc.file(s);
@@ -429,8 +429,8 @@ port_wss_admin
             constexpr char const* cc = "[database_path]\n{}\n";
 
             auto const cwd = current_path();
-            path const dataDirRel("test_data_dir");
-            path const dataDirAbs(cwd / dataDirRel);
+            Path const dataDirRel("test_data_dir");
+            Path const dataDirAbs(cwd / dataDirRel);
             {
                 // Dummy test - do we get back what we put in
                 Config c;
@@ -456,8 +456,8 @@ port_wss_admin
             // read from file absolute path
             auto const cwd = current_path();
             detail::DirGuard const g0(*this, "test_db");
-            path const dataDirRel("test_data_dir");
-            path const dataDirAbs(cwd / g0.subdir() / dataDirRel);
+            Path const dataDirRel("test_data_dir");
+            Path const dataDirAbs(cwd / g0.subdir() / dataDirRel);
             detail::FileCfgGuard const g(
                 *this, g0.subdir(), dataDirAbs, Config::kConfigFileName, "", false);
             auto const& c(g.config());
@@ -470,7 +470,7 @@ port_wss_admin
             std::string const dbPath("my_db");
             detail::FileCfgGuard const g(*this, "test_db", dbPath, Config::kConfigFileName, "");
             auto const& c(g.config());
-            std::string const nativeDbPath = absolute(path(dbPath)).string();
+            std::string const nativeDbPath = absolute(Path(dbPath)).string();
             BEAST_EXPECT(g.dataDirExists());
             BEAST_EXPECT(g.configFileExists());
             BEAST_EXPECT(c.legacy(Sections::kDatabasePath) == nativeDbPath);
@@ -480,7 +480,7 @@ port_wss_admin
             detail::FileCfgGuard const g(*this, "test_db", "", Config::kConfigFileName, "");
             auto const& c(g.config());
             std::string const nativeDbPath =
-                absolute(g.subdir() / path(Config::kDatabaseDirName)).string();
+                absolute(g.subdir() / Path(Config::kDatabaseDirName)).string();
             BEAST_EXPECT(g.dataDirExists());
             BEAST_EXPECT(g.configFileExists());
             BEAST_EXPECT(c.legacy(Sections::kDatabasePath) == nativeDbPath);
@@ -622,7 +622,7 @@ main
         {
             // load should throw for invalid [validators_file]
             detail::ValidatorsTxtGuard const vtg(*this, "test_cfg", "validators.cfg");
-            path const invalidFile = current_path() / vtg.subdir();
+            Path const invalidFile = current_path() / vtg.subdir();
             constexpr char const* cc = "[validators_file]\n{}\n";
             std::string error;
             auto const expectedError =

@@ -103,9 +103,9 @@ private:
     // most accounts are not going to have any entries (estimated over 90%), so
     // vectors will not need to be created for them. This should lead to far
     // less memory usage overall.
-    hash_map<AccountKey, std::shared_ptr<std::vector<PathFindTrustLine>>, AccountKey::Hash> lines_;
+    HashMap<AccountKey, std::shared_ptr<std::vector<PathFindTrustLine>>, AccountKey::Hash> lines_;
     std::size_t totalLineCount_ = 0;
-    hash_map<AccountID, std::shared_ptr<std::vector<PathFindMPT>>> mpts_;
+    HashMap<AccountID, std::shared_ptr<std::vector<PathFindMPT>>> mpts_;
 };
 
 }  // namespace xrpl

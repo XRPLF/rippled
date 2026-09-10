@@ -28,14 +28,14 @@ namespace xrpl {
 class LockedSociSession
 {
 public:
-    using mutex = std::recursive_mutex;
+    using Mutex = std::recursive_mutex;
 
 private:
     std::shared_ptr<soci::session> session_;
-    std::unique_lock<mutex> lock_;
+    std::unique_lock<Mutex> lock_;
 
 public:
-    LockedSociSession(std::shared_ptr<soci::session> it, mutex& m)
+    LockedSociSession(std::shared_ptr<soci::session> it, Mutex& m)
         : session_(std::move(it)), lock_(m)
     {
     }
@@ -220,7 +220,7 @@ private:
         }
     }
 
-    LockedSociSession::mutex lock_;
+    LockedSociSession::Mutex lock_;
 
     // checkpointer may outlive the DatabaseCon when the checkpointer jobQueue
     // callback locks a weak pointer and the DatabaseCon is then destroyed. In

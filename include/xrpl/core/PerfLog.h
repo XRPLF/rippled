@@ -30,13 +30,13 @@ namespace perf {
 class PerfLog
 {
 public:
-    using steady_clock = std::chrono::steady_clock;
-    using system_clock = std::chrono::system_clock;
-    using steady_time_point = std::chrono::time_point<steady_clock>;
-    using system_time_point = std::chrono::time_point<system_clock>;
-    using seconds = std::chrono::seconds;
-    using milliseconds = std::chrono::milliseconds;
-    using microseconds = std::chrono::microseconds;
+    using SteadyClock = std::chrono::steady_clock;
+    using SystemClock = std::chrono::system_clock;
+    using SteadyTimePoint = std::chrono::time_point<SteadyClock>;
+    using SystemTimePoint = std::chrono::time_point<SystemClock>;
+    using Seconds = std::chrono::seconds;
+    using Milliseconds = std::chrono::milliseconds;
+    using Microseconds = std::chrono::microseconds;
 
     /**
      * Configuration from [perf] section of xrpld.cfg.
@@ -45,7 +45,7 @@ public:
     {
         std::filesystem::path perfLog;
         // log_interval is in milliseconds to support faster testing.
-        milliseconds logInterval{seconds(1)};
+        Milliseconds logInterval{Seconds(1)};
     };
 
     virtual ~PerfLog() = default;
@@ -104,7 +104,7 @@ public:
      * @param instance JobQueue worker thread instance
      */
     virtual void
-    jobStart(JobType const type, microseconds dur, steady_time_point startTime, int instance) = 0;
+    jobStart(JobType const type, Microseconds dur, SteadyTimePoint startTime, int instance) = 0;
 
     /**
      * Log job finishing
@@ -114,7 +114,7 @@ public:
      * @param instance Jobqueue worker thread instance
      */
     virtual void
-    jobFinish(JobType const type, microseconds dur, int instance) = 0;
+    jobFinish(JobType const type, Microseconds dur, int instance) = 0;
 
     /**
      * Render performance counters in Json

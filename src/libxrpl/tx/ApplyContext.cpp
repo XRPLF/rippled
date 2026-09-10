@@ -20,7 +20,7 @@ namespace xrpl {
 ApplyContext::ApplyContext(
     ServiceRegistry& registry,
     OpenView& base,
-    std::optional<uint256 const> const& parentBatchId,
+    std::optional<UInt256 const> const& parentBatchId,
     STTx const& tx,
     TER preclaimResult,
     XRPAmount baseFee,
@@ -62,7 +62,7 @@ ApplyContext::size()
 
 void
 ApplyContext::visit(
-    std::function<void(uint256 const&, bool, SLE::const_ref, SLE::const_ref)> const& func)
+    std::function<void(UInt256 const&, bool, SLE::ConstRef, SLE::ConstRef)> const& func)
 {
     view_->visit(base_, func);  // NOLINT(bugprone-unchecked-optional-access)
 }

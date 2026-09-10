@@ -61,7 +61,7 @@ public:
      * `true` won't cause harm, but it may be
      * sub-optimal.
      */
-    using modify_type = std::function<bool(OpenView&, beast::Journal)>;
+    using ModifyType = std::function<bool(OpenView&, beast::Journal)>;
 
     OpenLedger() = delete;
     OpenLedger(OpenLedger const&) = delete;
@@ -121,7 +121,7 @@ public:
      * @return `true` if the open view was changed
      */
     bool
-    modify(modify_type const& f);
+    modify(ModifyType const& f);
 
     /**
      * Accept a new ledger.
@@ -167,7 +167,7 @@ public:
         OrderedTxs& retries,
         ApplyFlags flags,
         std::string_view suffix = "",
-        modify_type const& f = {});
+        ModifyType const& f = {});
 
 private:
     /**

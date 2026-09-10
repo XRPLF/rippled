@@ -57,15 +57,15 @@ class ValidatorSite
     friend class Work;
 
 private:
-    using error_code = boost::system::error_code;
-    using clock_type = std::chrono::system_clock;
-    using endpoint_type = boost::asio::ip::tcp::endpoint;
+    using ErrorCode = boost::system::error_code;
+    using ClockType = std::chrono::system_clock;
+    using EndpointType = boost::asio::ip::tcp::endpoint;
 
     struct Site
     {
         struct Status
         {
-            clock_type::time_point refreshed;
+            ClockType::time_point refreshed;
             ListDisposition disposition;
             std::string message;
         };
@@ -100,9 +100,9 @@ private:
 
         unsigned short redirCount{0};
         std::chrono::minutes refreshInterval;
-        clock_type::time_point nextRefresh;
+        ClockType::time_point nextRefresh;
         std::optional<Status> lastRefreshStatus;
-        endpoint_type lastRequestEndpoint;
+        EndpointType lastRequestEndpoint;
         bool lastRequestSuccessful{false};
     };
 
@@ -116,7 +116,7 @@ private:
 
     std::condition_variable cv_;
     std::weak_ptr<detail::Work> work_;
-    boost::asio::basic_waitable_timer<clock_type> timer_;
+    boost::asio::basic_waitable_timer<ClockType> timer_;
 
     // A list is currently being fetched from a site
     std::atomic<bool> fetching_;
@@ -210,13 +210,13 @@ private:
      * request took too long
      */
     void
-    onRequestTimeout(std::size_t siteIdx, error_code const& ec);
+    onRequestTimeout(std::size_t siteIdx, ErrorCode const& ec);
 
     /**
      * Fetch site whose time has come
      */
     void
-    onTimer(std::size_t siteIdx, error_code const& ec);
+    onTimer(std::size_t siteIdx, ErrorCode const& ec);
 
     /**
      * Store latest list fetched from site
@@ -224,8 +224,8 @@ private:
     void
     onSiteFetch(
         boost::system::error_code const& ec,
-        endpoint_type const& endpoint,
-        detail::response_type const& res,
+        EndpointType const& endpoint,
+        detail::ResponseType const& res,
         std::size_t siteIdx);
 
     /**
@@ -260,7 +260,7 @@ private:
      */
     std::shared_ptr<Site::Resource>
     processRedirect(
-        detail::response_type const& res,
+        detail::ResponseType const& res,
         std::size_t siteIdx,
         std::scoped_lock<std::mutex> const&);
 

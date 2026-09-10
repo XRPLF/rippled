@@ -42,10 +42,10 @@ template <class Handler, class Impl>
 class BaseHTTPPeer : public IOList::Work, public Session
 {
 protected:
-    using clock_type = std::chrono::system_clock;
-    using error_code = boost::system::error_code;
-    using endpoint_type = boost::asio::ip::tcp::endpoint;
-    using yield_context = boost::asio::yield_context;
+    using ClockType = std::chrono::system_clock;
+    using ErrorCode = boost::system::error_code;
+    using EndpointType = boost::asio::ip::tcp::endpoint;
+    using YieldContext = boost::asio::yield_context;
 
     static constexpr auto kBufferSize = 4 * 1024;    // size of read/write buffer
     static constexpr auto kTimeoutSeconds = 30;      // max seconds without completing a message
@@ -67,14 +67,14 @@ protected:
     Handler& handler_;
     boost::asio::executor_work_guard<boost::asio::executor> work_;
     boost::asio::strand<boost::asio::executor> strand_;
-    endpoint_type remoteAddress_;
+    EndpointType remoteAddress_;
     beast::Journal const journal_;
 
     std::string id_;
     std::size_t nid_;
 
     boost::asio::streambuf readBuf_;
-    http_request_type message_;
+    HttpRequestType message_;
     std::vector<Buffer> wq_;
     std::vector<Buffer> wq2_;
     std::mutex mutex_;
@@ -95,7 +95,7 @@ public:
         Handler& handler,
         boost::asio::executor const& executor,
         beast::Journal journal,
-        endpoint_type remoteAddress,
+        EndpointType remoteAddress,
         ConstBufferSequence const& buffers);
 
     ~BaseHTTPPeer() override;
@@ -117,7 +117,7 @@ protected:
     }
 
     void
-    fail(error_code ec, char const* what);
+    fail(ErrorCode ec, char const* what);
 
     void
     startTimer();
@@ -129,13 +129,13 @@ protected:
     onTimer();
 
     void
-    doRead(yield_context doYield);
+    doRead(YieldContext doYield);
 
     void
-    onWrite(error_code const& ec, std::size_t bytesTransferred);
+    onWrite(ErrorCode const& ec, std::size_t bytesTransferred);
 
     void
-    doWriter(std::shared_ptr<Writer> const& writer, bool keepAlive, yield_context doYield);
+    doWriter(std::shared_ptr<Writer> const& writer, bool keepAlive, YieldContext doYield);
 
     virtual void
     doRequest() = 0;
@@ -163,7 +163,7 @@ protected:
         return beast::IPAddressConversion::fromAsio(remoteAddress_);
     }
 
-    http_request_type&
+    HttpRequestType&
     request() override
     {
         return message_;
@@ -194,7 +194,7 @@ BaseHTTPPeer<Handler, Impl>::BaseHTTPPeer(
     Handler& handler,
     boost::asio::executor const& executor,
     beast::Journal journal,
-    endpoint_type remoteAddress,
+    EndpointType remoteAddress,
     ConstBufferSequence const& buffers)
     : port_(port)
     , handler_(handler)
@@ -234,7 +234,7 @@ BaseHTTPPeer<Handler, Impl>::close()
 
 template <class Handler, class Impl>
 void
-BaseHTTPPeer<Handler, Impl>::fail(error_code ec, char const* what)
+BaseHTTPPeer<Handler, Impl>::fail(ErrorCode ec, char const* what)
 {
     if (!ec_ && ec != boost::asio::error::operation_aborted)
     {
@@ -275,10 +275,10 @@ BaseHTTPPeer<Handler, Impl>::onTimer()
 
 template <class Handler, class Impl>
 void
-BaseHTTPPeer<Handler, Impl>::doRead(yield_context doYield)
+BaseHTTPPeer<Handler, Impl>::doRead(YieldContext doYield)
 {
     complete_ = false;
-    error_code ec;
+    ErrorCode ec;
     startTimer();
     boost::beast::http::async_read(impl().stream_, readBuf_, message_, doYield[ec]);
     cancelTimer();
@@ -295,7 +295,7 @@ BaseHTTPPeer<Handler, Impl>::doRead(yield_context doYield)
 // The write queue must not be empty upon entry.
 template <class Handler, class Impl>
 void
-BaseHTTPPeer<Handler, Impl>::onWrite(error_code const& ec, std::size_t bytesTransferred)
+BaseHTTPPeer<Handler, Impl>::onWrite(ErrorCode const& ec, std::size_t bytesTransferred)
 {
     cancelTimer();
     if (ec == boost::beast::error::timeout)
@@ -322,7 +322,7 @@ BaseHTTPPeer<Handler, Impl>::onWrite(error_code const& ec, std::size_t bytesTran
             bind_executor(
                 strand_,
                 [self = impl().shared_from_this()](
-                    error_code const& ec, std::size_t bytesTransferred) {
+                    ErrorCode const& ec, std::size_t bytesTransferred) {
                     self->onWrite(ec, bytesTransferred);
                 }));
     }
@@ -330,7 +330,7 @@ BaseHTTPPeer<Handler, Impl>::onWrite(error_code const& ec, std::size_t bytesTran
         return;
     if (graceful_)
         return doClose();
-    util::spawn(strand_, [self = impl().shared_from_this()](yield_context doYield) {
+    util::spawn(strand_, [self = impl().shared_from_this()](YieldContext doYield) {
         self->doRead(doYield);
     });
 }
@@ -340,13 +340,13 @@ void
 BaseHTTPPeer<Handler, Impl>::doWriter(
     std::shared_ptr<Writer> const& writer,
     bool keepAlive,
-    yield_context doYield)
+    YieldContext doYield)
 {
     std::function<void(void)> resume;
     {
         auto const p = impl().shared_from_this();
         resume = std::function<void(void)>([this, p, writer, keepAlive]() {
-            util::spawn(strand_, [p, writer, keepAlive](yield_context doYield) {
+            util::spawn(strand_, [p, writer, keepAlive](YieldContext doYield) {
                 p->doWriter(writer, keepAlive, doYield);
             });
         });
@@ -356,7 +356,7 @@ BaseHTTPPeer<Handler, Impl>::doWriter(
     {
         if (!writer->prepare(kBufferSize, resume))
             return;
-        error_code ec;
+        ErrorCode ec;
         auto const bytesTransferred = boost::asio::async_write(
             impl().stream_, writer->data(), boost::asio::transfer_at_least(1), doYield[ec]);
         if (ec)
@@ -369,7 +369,7 @@ BaseHTTPPeer<Handler, Impl>::doWriter(
     if (!keepAlive)
         return doClose();
 
-    util::spawn(strand_, [self = impl().shared_from_this()](yield_context doYield) {
+    util::spawn(strand_, [self = impl().shared_from_this()](YieldContext doYield) {
         self->doRead(doYield);
     });
 }
@@ -392,9 +392,9 @@ BaseHTTPPeer<Handler, Impl>::write(void const* buf, std::size_t bytes)
         if (!strand_.running_in_this_thread())
         {
             return post(
-                strand_, [self = impl().shared_from_this()] { self->onWrite(error_code{}, 0); });
+                strand_, [self = impl().shared_from_this()] { self->onWrite(ErrorCode{}, 0); });
         }
-        return onWrite(error_code{}, 0);
+        return onWrite(ErrorCode{}, 0);
     }
 }
 
@@ -403,7 +403,7 @@ void
 BaseHTTPPeer<Handler, Impl>::write(std::shared_ptr<Writer> const& writer, bool keepAlive)
 {
     util::spawn(
-        strand_, [self = impl().shared_from_this(), writer, keepAlive](yield_context doYield) {
+        strand_, [self = impl().shared_from_this(), writer, keepAlive](YieldContext doYield) {
             self->doWriter(writer, keepAlive, doYield);
         });
 }
@@ -438,7 +438,7 @@ BaseHTTPPeer<Handler, Impl>::complete()
     }
 
     // keep-alive
-    util::spawn(strand_, [self = impl().shared_from_this()](yield_context doYield) {
+    util::spawn(strand_, [self = impl().shared_from_this()](YieldContext doYield) {
         self->doRead(doYield);
     });
 }

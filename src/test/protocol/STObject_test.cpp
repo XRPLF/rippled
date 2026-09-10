@@ -100,7 +100,7 @@ public:
 
         unexpected(!object1.isFieldPresent(sfTestH256), "STObject Error 2");
 
-        unexpected(object1.getFieldH256(sfTestH256) != uint256(), "STObject error 3");
+        unexpected(object1.getFieldH256(sfTestH256) != UInt256(), "STObject error 3");
 
         if (object1.getSerializer() == object2.getSerializer())
         {
@@ -151,7 +151,7 @@ public:
         }
 
         {
-            std::vector<uint256> uints;
+            std::vector<UInt256> uints;
             uints.reserve(5);
             for (int i = 0; i < uints.capacity(); ++i)
             {
@@ -365,10 +365,10 @@ public:
             STObject st(sfGeneric);
             st[sfAmount] = STAmount{};
             st[sfAccount] = AccountID{};
-            st[sfDigest] = uint256{};
+            st[sfDigest] = UInt256{};
             [&](STAmount) {}(st[sfAmount]);
             [&](AccountID) {}(st[sfAccount]);
-            [&](uint256) {}(st[sfDigest]);
+            [&](UInt256) {}(st[sfDigest]);
         }
 
         // STBlob and slice
@@ -420,7 +420,7 @@ public:
         {
             auto const& sf = sfIndexes;
             STObject st(sfGeneric);
-            std::vector<uint256> v;
+            std::vector<UInt256> v;
             v.emplace_back(1);
             v.emplace_back(2);
             st[sf] = v;
@@ -430,7 +430,7 @@ public:
             BEAST_EXPECT(cst[~sf]->size() == 2);  // NOLINT(bugprone-unchecked-optional-access)
             BEAST_EXPECT(cst[sf][0] == 1);
             BEAST_EXPECT(cst[sf][1] == 2);
-            static_assert(std::is_same_v<decltype(cst[sfIndexes]), std::vector<uint256> const&>);
+            static_assert(std::is_same_v<decltype(cst[sfIndexes]), std::vector<UInt256> const&>);
         }
 
         // Default by reference field
@@ -450,20 +450,20 @@ public:
             BEAST_EXPECT(cst[sf1].empty());
             BEAST_EXPECT(!cst[~sf2]);
             BEAST_EXPECT(cst[sf3].empty());
-            std::vector<uint256> v;
+            std::vector<UInt256> v;
             v.emplace_back(1);
             st[sf1] = v;
             BEAST_EXPECT(cst[sf1].size() == 1);
-            BEAST_EXPECT(cst[sf1][0] == uint256{1});
+            BEAST_EXPECT(cst[sf1][0] == UInt256{1});
             st[sf2] = v;
             BEAST_EXPECT(cst[sf2].size() == 1);
-            BEAST_EXPECT(cst[sf2][0] == uint256{1});
+            BEAST_EXPECT(cst[sf2][0] == UInt256{1});
             st[~sf2] = std::nullopt;
             BEAST_EXPECT(!st[~sf2]);
             st[sf3] = v;
             BEAST_EXPECT(cst[sf3].size() == 1);
-            BEAST_EXPECT(cst[sf3][0] == uint256{1});
-            st[sf3] = std::vector<uint256>{};
+            BEAST_EXPECT(cst[sf3][0] == UInt256{1});
+            st[sf3] = std::vector<UInt256>{};
             BEAST_EXPECT(cst[sf3].empty());
         }
     }  // namespace xrpl

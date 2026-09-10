@@ -64,7 +64,7 @@ copyUInt32(std::uint8_t* out, std::uint32_t v)
     *out = v & 0xff;
 }
 
-uint256
+UInt256
 deriveDeterministicRootKey(Seed const& seed)
 {
     // We fill this buffer with the seed and append a 32-bit "counter"
@@ -121,10 +121,10 @@ deriveDeterministicRootKey(Seed const& seed)
 class Generator
 {
 private:
-    uint256 root_;
+    UInt256 root_;
     std::array<std::uint8_t, 33> generator_{};
 
-    [[nodiscard]] uint256
+    [[nodiscard]] UInt256
     calculateTweak(std::uint32_t seq) const
     {
         // We fill the buffer with the generator, the provided sequence
@@ -205,7 +205,7 @@ public:
 }  // namespace detail
 
 Buffer
-signDigest(PublicKey const& pk, SecretKey const& sk, uint256 const& digest)
+signDigest(PublicKey const& pk, SecretKey const& sk, UInt256 const& digest)
 {
     if (publicKeyType(pk.slice()) != KeyType::Secp256k1)
         logicError("sign: secp256k1 required for digest signing");
@@ -243,9 +243,9 @@ sign(PublicKey const& pk, SecretKey const& sk, Slice const& m)
             return b;
         }
         case KeyType::Secp256k1: {
-            sha512_half_hasher h;
+            Sha512HalfHasher h;
             h(m.data(), m.size());
-            auto const digest = sha512_half_hasher::result_type(h);
+            auto const digest = Sha512HalfHasher::result_type(h);
 
             secp256k1_ecdsa_signature sigImp;
             if (secp256k1_ecdsa_sign(

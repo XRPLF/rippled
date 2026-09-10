@@ -57,7 +57,7 @@ public:
      * @param nodeHash Hash of missing node to report in throw.
      */
     virtual void
-    missingNodeAcquireBySeq(std::uint32_t refNum, uint256 const& nodeHash) = 0;
+    missingNodeAcquireBySeq(std::uint32_t refNum, UInt256 const& nodeHash) = 0;
 
     /**
      * Acquire ledger that has a missing node by ledger hash
@@ -66,7 +66,7 @@ public:
      * @param refNum Ledger sequence with missing node.
      */
     virtual void
-    missingNodeAcquireByHash(uint256 const& refHash, std::uint32_t refNum) = 0;
+    missingNodeAcquireByHash(UInt256 const& refHash, std::uint32_t refNum) = 0;
 
     virtual void
     reset() = 0;

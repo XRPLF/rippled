@@ -11,10 +11,10 @@ namespace xrpl {
 
 namespace detail {
 
-using seed_pair = std::pair<std::uint64_t, std::uint64_t>;
+using SeedPair = std::pair<std::uint64_t, std::uint64_t>;
 
 template <bool = true>
-seed_pair
+SeedPair
 makeSeedPair() noexcept
 {
     struct StateT
@@ -71,7 +71,7 @@ template <class HashAlgorithm = beast::Xxhasher>
 class HardenedHash
 {
 private:
-    detail::seed_pair seeds_{detail::makeSeedPair<>()};
+    detail::SeedPair seeds_{detail::makeSeedPair<>()};
 
 public:
     using result_type = HashAlgorithm::result_type;

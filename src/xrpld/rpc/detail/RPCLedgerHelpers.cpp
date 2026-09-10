@@ -51,7 +51,7 @@ ledgerFromHash(
     Context const& context,
     json::StaticString const fieldName)
 {
-    uint256 ledgerHash;
+    UInt256 ledgerHash;
     if (!ledgerHash.parseHex(hash.asString()))
         return {RpcInvalidParams, expectedFieldMessage(fieldName, "hex string")};
     return getLedger(ledger, ledgerHash, context);
@@ -190,7 +190,7 @@ ledgerFromSpecifier(
     switch (ledgerCase)
     {
         case LedgerCase::kHash: {
-            if (auto hash = uint256::fromVoidChecked(specifier.hash()))
+            if (auto hash = UInt256::fromVoidChecked(specifier.hash()))
             {
                 return getLedger(ledger, *hash, context);
             }
@@ -224,7 +224,7 @@ ledgerFromSpecifier(
 
 template <class T>
 Status
-getLedger(T& ledger, uint256 const& ledgerHash, Context const& context)
+getLedger(T& ledger, UInt256 const& ledgerHash, Context const& context)
 {
     ledger = context.ledgerMaster.getLedgerByHash(ledgerHash);
     if (ledger == nullptr)
@@ -329,7 +329,7 @@ template Status
 getLedger<>(std::shared_ptr<ReadView const>&, LedgerShortcut shortcut, Context const&);
 
 template Status
-getLedger<>(std::shared_ptr<ReadView const>&, uint256 const&, Context const&);
+getLedger<>(std::shared_ptr<ReadView const>&, UInt256 const&, Context const&);
 
 // explicit instantiation of ledgerFromSpecifier
 template Status

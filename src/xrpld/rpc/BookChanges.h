@@ -49,7 +49,7 @@ computeBookChanges(std::shared_ptr<L const> const& lpAccepted)
             STAmount,                 // low rate
             STAmount,                 // open rate
             STAmount,                 // close rate
-            std::optional<uint256>>>  // optional: domain id
+            std::optional<UInt256>>>  // optional: domain id
         tally;
 
     // Accumulating volume can exceed what the asset can represent, and the two
@@ -182,7 +182,7 @@ computeBookChanges(std::shared_ptr<L const> const& lpAccepted)
                 ss << p << "|" << g;
             }
 
-            std::optional<uint256> const domain = finalFields[~sfDomainID];
+            std::optional<UInt256> const domain = finalFields[~sfDomainID];
 
             std::string const key{ss.str()};
 
@@ -273,7 +273,7 @@ computeBookChanges(std::shared_ptr<L const> const& lpAccepted)
         inner[jss::open] = to_string(std::get<4>(entry.second).iou());
         inner[jss::close] = to_string(std::get<5>(entry.second).iou());
 
-        std::optional<uint256> const domain = std::get<6>(entry.second);
+        std::optional<UInt256> const domain = std::get<6>(entry.second);
         if (domain)
             inner[jss::domain] = to_string(*domain);
     }

@@ -223,7 +223,7 @@ VaultCreate::doApply()
     // Post-fixCleanup3_2_0: surface the vault pseudo's holding (MPToken
     // for MPT, RippleState for IOU) on the share via sfReferenceHolding.
     // XRP underlyings leave it unset.
-    auto const referenceHolding = [&]() -> std::optional<uint256> {
+    auto const referenceHolding = [&]() -> std::optional<UInt256> {
         if (!view().rules().enabled(fixCleanup3_2_0) || asset.native())
             return std::nullopt;
         return asset.holds<MPTIssue>()
@@ -314,7 +314,7 @@ VaultCreate::doApply()
 }
 
 void
-VaultCreate::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
+VaultCreate::visitInvariantEntry(bool, SLE::ConstRef, SLE::ConstRef)
 {
     // No transaction-specific invariants yet (future work).
 }

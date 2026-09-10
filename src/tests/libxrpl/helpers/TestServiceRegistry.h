@@ -90,7 +90,7 @@ class TestServiceRegistry : public ServiceRegistry
         stopwatch(),
         logs_.journal("TaggedCache")};
     PendingSaves pendingSaves_;
-    std::optional<uint256> trapTxID_;
+    std::optional<UInt256> trapTxID_;
 
 public:
     TestServiceRegistry() = default;
@@ -251,7 +251,7 @@ public:
         throw std::logic_error("TestServiceRegistry::getInboundTransactions() not implemented");
     }
 
-    TaggedCache<uint256, AcceptedLedger>&
+    TaggedCache<UInt256, AcceptedLedger>&
     getAcceptedLedgerCache() override
     {
         throw std::logic_error("TestServiceRegistry::getAcceptedLedgerCache() not implemented");
@@ -362,7 +362,7 @@ public:
         return logs_;
     }
 
-    std::optional<uint256> const&
+    std::optional<UInt256> const&
     getTrapTxID() const override
     {
         return trapTxID_;

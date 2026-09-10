@@ -41,7 +41,7 @@ public:
     doApply() override;
 
     void
-    visitInvariantEntry(bool isDelete, SLE::const_ref before, SLE::const_ref after) override;
+    visitInvariantEntry(bool isDelete, SLE::ConstRef before, SLE::ConstRef after) override;
 
     [[nodiscard]] bool
     finalizeInvariants(
@@ -52,7 +52,7 @@ public:
         beast::Journal const& j) override;
 
     // Public to support unit tests.
-    static uint256
+    static UInt256
     createNFTokenID(
         std::uint16_t flags,
         std::uint16_t fee,

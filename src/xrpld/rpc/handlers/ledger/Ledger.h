@@ -24,7 +24,7 @@ struct JsonContext;
 
 // ledger [id|index|current|closed] [full]
 // {
-//    ledger: 'current' | 'closed' | <uint256> | <number>,  // optional
+//    ledger: 'current' | 'closed' | <UInt256> | <number>,  // optional
 //    full: true | false    // optional, defaults to false.
 // }
 

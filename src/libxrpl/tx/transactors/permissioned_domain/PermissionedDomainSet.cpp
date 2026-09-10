@@ -138,7 +138,7 @@ PermissionedDomainSet::doApply()
 }
 
 void
-PermissionedDomainSet::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
+PermissionedDomainSet::visitInvariantEntry(bool, SLE::ConstRef, SLE::ConstRef)
 {
     // No transaction-specific invariants yet (future work).
 }

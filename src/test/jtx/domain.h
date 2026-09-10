@@ -13,10 +13,10 @@ namespace xrpl::test::jtx {
 class Domain
 {
 private:
-    uint256 v_;
+    UInt256 v_;
 
 public:
-    explicit Domain(uint256 const& v) : v_(v)
+    explicit Domain(UInt256 const& v) : v_(v)
     {
     }
 

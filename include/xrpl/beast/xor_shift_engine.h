@@ -94,6 +94,6 @@ XorShiftEngine<Unused>::murmurhash3(result_type x) -> result_type
  * http://xorshift.di.unimi.it/xorshift128plus.c
  * does not accept seed==0
  */
-using xor_shift_engine = detail::XorShiftEngine<>;
+using XorShiftEngine = detail::XorShiftEngine<>;
 
 }  // namespace beast

@@ -44,8 +44,8 @@ getAccountObjects(
     ReadView const& ledger,
     AccountID const& account,
     std::optional<std::vector<LedgerEntryType>> const& typeFilter,
-    uint256 dirIndex,
-    uint256 entryIndex,
+    UInt256 dirIndex,
+    UInt256 entryIndex,
     std::uint32_t const limit,
     std::optional<bool> const sponsoredFilter,
     json::Value& jvResult)
@@ -352,8 +352,8 @@ doAccountObjects(rpc::JsonContext& context)
     if (auto err = readLimitField(limit, rpc::tuning::kAccountObjects, context))
         return *err;
 
-    uint256 dirIndex;
-    uint256 entryIndex;
+    UInt256 dirIndex;
+    UInt256 entryIndex;
     if (params.isMember(jss::marker))
     {
         auto const& marker = params[jss::marker];

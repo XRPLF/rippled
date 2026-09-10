@@ -22,7 +22,7 @@ bool
 accountInDomain(ReadView const& view, AccountID const& account, Domain const& domainID)
 {
     // Avoid constructing a zero-key PermissionedDomain keylet.
-    // keylet::permissionedDomain(uint256) uses the DomainID as the ledger key.
+    // keylet::permissionedDomain(UInt256) uses the DomainID as the ledger key.
     if (view.rules().enabled(fixCleanup3_2_0) && domainID == beast::kZero)
     {
         // LCOV_EXCL_START
@@ -56,7 +56,7 @@ accountInDomain(ReadView const& view, AccountID const& account, Domain const& do
 bool
 offerInDomain(
     ReadView const& view,
-    uint256 const& offerID,
+    UInt256 const& offerID,
     Domain const& domainID,
     beast::Journal j)
 {

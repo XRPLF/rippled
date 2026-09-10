@@ -20,7 +20,7 @@ template <class Protocol = boost::asio::ip::tcp>
 class Checker
 {
 private:
-    using error_code = boost::system::error_code;
+    using ErrorCode = boost::system::error_code;
 
     struct BasicAsyncOp : boost::intrusive::list_base_hook<
                               boost::intrusive::link_mode<boost::intrusive::normal_link>>
@@ -31,17 +31,17 @@ private:
         stop() = 0;
 
         virtual void
-        operator()(error_code const& ec) = 0;
+        operator()(ErrorCode const& ec) = 0;
     };
 
     template <class Handler>
     struct AsyncOp : BasicAsyncOp
     {
-        using socket_type = Protocol::socket;
-        using endpoint_type = Protocol::endpoint;
+        using SocketType = Protocol::socket;
+        using EndpointType = Protocol::endpoint;
 
         Checker& checker;
-        socket_type socket;
+        SocketType socket;
         Handler handler;
 
         AsyncOp(Checker& owner, boost::asio::io_context& ioContext, Handler&& handler);
@@ -55,18 +55,18 @@ private:
         stop() override;
 
         void
-        operator()(error_code const& ec) override;  // NOLINT(readability-identifier-naming)
+        operator()(ErrorCode const& ec) override;  // NOLINT(readability-identifier-naming)
     };
 
     //--------------------------------------------------------------------------
 
-    using list_type =
+    using ListType =
         boost::intrusive::make_list<BasicAsyncOp, boost::intrusive::constant_time_size<true>>::type;
 
     std::mutex mutex_;
     std::condition_variable cond_;
     boost::asio::io_context& ioContext_;
-    list_type list_;
+    ListType list_;
     bool stop_ = false;
 
 public:
@@ -129,14 +129,14 @@ template <class Handler>
 void
 Checker<Protocol>::AsyncOp<Handler>::stop()
 {
-    error_code ec;
+    ErrorCode ec;
     socket.cancel(ec);
 }
 
 template <class Protocol>
 template <class Handler>
 void
-Checker<Protocol>::AsyncOp<Handler>::operator()(error_code const& ec)
+Checker<Protocol>::AsyncOp<Handler>::operator()(ErrorCode const& ec)
 {
     handler(ec);
 }
@@ -189,7 +189,7 @@ Checker<Protocol>::asyncConnect(beast::ip::Endpoint const& endpoint, Handler&& h
     }
     op->socket.async_connect(
         beast::IPAddressConversion::toAsioEndpoint(endpoint),
-        [op](error_code const& ec) { (*op)(ec); });
+        [op](ErrorCode const& ec) { (*op)(ec); });
 }
 
 template <class Protocol>

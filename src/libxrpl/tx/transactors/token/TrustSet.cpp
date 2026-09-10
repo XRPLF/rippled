@@ -376,8 +376,8 @@ TrustSet::doApply()
         std::uint32_t uHighQualityOut = 0;
         auto const& uLowAccountID = !bHigh ? accountID_ : uDstAccountID;
         auto const& uHighAccountID = bHigh ? accountID_ : uDstAccountID;
-        SLE::ref sleLowAccount = !bHigh ? sle : sleDst;
-        SLE::ref sleHighAccount = bHigh ? sle : sleDst;
+        SLE::Ref sleLowAccount = !bHigh ? sle : sleDst;
+        SLE::Ref sleHighAccount = bHigh ? sle : sleDst;
 
         //
         // Balances
@@ -748,7 +748,7 @@ TrustSet::doApply()
 }
 
 void
-TrustSet::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
+TrustSet::visitInvariantEntry(bool, SLE::ConstRef, SLE::ConstRef)
 {
     // No transaction-specific invariants yet (future work).
 }

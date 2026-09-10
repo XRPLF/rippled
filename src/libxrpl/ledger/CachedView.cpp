@@ -27,7 +27,7 @@ CachedViewImpl::read(Keylet const& k) const
     bool cacheHit = false;
     bool baseRead = false;
 
-    auto const digest = [&]() -> std::optional<uint256> {
+    auto const digest = [&]() -> std::optional<UInt256> {
         {
             std::scoped_lock const lock(mutex_);
             auto const iter = map_.find(k.key);

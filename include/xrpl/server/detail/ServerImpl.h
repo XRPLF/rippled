@@ -73,7 +73,7 @@ template <class Handler>
 class ServerImpl : public Server
 {
 private:
-    using clock_type = std::chrono::system_clock;
+    using ClockType = std::chrono::system_clock;
 
     static constexpr auto kHistorySize = 100;
 

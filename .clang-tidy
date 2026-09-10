@@ -90,6 +90,10 @@ CheckOptions:
   readability-identifier-naming.ClassCase: CamelCase
   readability-identifier-naming.StructCase: CamelCase
   readability-identifier-naming.UnionCase: CamelCase
+  readability-identifier-naming.TypeAliasCase: CamelCase
+  readability-identifier-naming.TypedefCase: CamelCase
+  readability-identifier-naming.TypeAliasIgnoredRegexp: "^(allocator_type|argument_type|char_type|const_buffers_type|const_iterator|const_local_iterator|const_pointer|const_reference|const_reverse_iterator|const_void_pointer|difference_type|duration|element_type|executor_type|first_argument_type|hasher|insert_return_type|int_type|is_always_equal|is_avalanching|is_deferred|is_transparent|iterator|iterator_category|iterator_concept|key_compare|key_equal|key_type|local_iterator|lowest_layer_type|mapped_type|mutable_buffers_type|native_handle_type|next_layer_type|node_type|off_type|other|period|pointer|pos_type|propagate_on_container_copy_assignment|propagate_on_container_move_assignment|propagate_on_container_swap|rebind|reference|rep|result_type|reverse_iterator|second_argument_type|size_type|state_type|time_point|traits_type|type|value_compare|value_type|void_pointer)$"
+  readability-identifier-naming.TypedefIgnoredRegexp: "^(allocator_type|argument_type|char_type|const_buffers_type|const_iterator|const_local_iterator|const_pointer|const_reference|const_reverse_iterator|const_void_pointer|difference_type|duration|element_type|executor_type|first_argument_type|hasher|insert_return_type|int_type|is_always_equal|is_avalanching|is_deferred|is_transparent|iterator|iterator_category|iterator_concept|key_compare|key_equal|key_type|local_iterator|lowest_layer_type|mapped_type|mutable_buffers_type|native_handle_type|next_layer_type|node_type|off_type|other|period|pointer|pos_type|propagate_on_container_copy_assignment|propagate_on_container_move_assignment|propagate_on_container_swap|rebind|reference|rep|result_type|reverse_iterator|second_argument_type|size_type|state_type|time_point|traits_type|type|value_compare|value_type|void_pointer)$"
   readability-identifier-naming.EnumCase: CamelCase
   readability-identifier-naming.EnumConstantCase: CamelCase
   readability-identifier-naming.ScopedEnumConstantCase: CamelCase
@@ -122,5 +126,5 @@ CheckOptions:
   readability-identifier-naming.GlobalFunctionIgnoredRegexp: "^(to_string|hash_append|tuple_hash)$"
 
 HeaderFilterRegex: '^.*/(tests?|xrpl|xrpld)/.*\.(h|hpp|ipp)$'
-ExcludeHeaderFilterRegex: '^.*/protocol_autogen/.*\.(h|hpp)$'
+ExcludeHeaderFilterRegex: '^.*/protocol_autogen/.*\.(h|hpp)$|^.*\.pb\.h$'
 WarningsAsErrors: "*"

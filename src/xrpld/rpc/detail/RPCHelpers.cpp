@@ -46,7 +46,7 @@
 namespace xrpl::rpc {
 
 std::uint64_t
-getStartHint(SLE::const_ref sle, AccountID const& accountID)
+getStartHint(SLE::ConstRef sle, AccountID const& accountID)
 {
     if (sle->getType() == ltRIPPLE_STATE)
     {
@@ -67,7 +67,7 @@ getStartHint(SLE::const_ref sle, AccountID const& accountID)
 }
 
 bool
-isRelatedToAccount(ReadView const& ledger, SLE::const_ref sle, AccountID const& accountID)
+isRelatedToAccount(ReadView const& ledger, SLE::ConstRef sle, AccountID const& accountID)
 {
     if (sle->getType() == ltRIPPLE_STATE)
     {
@@ -100,17 +100,17 @@ isRelatedToAccount(ReadView const& ledger, SLE::const_ref sle, AccountID const& 
     return false;
 }
 
-hash_set<AccountID>
+HashSet<AccountID>
 parseAccountIds(json::Value const& jvArray)
 {
-    hash_set<AccountID> result;
+    HashSet<AccountID> result;
     for (auto const& jv : jvArray)
     {
         if (!jv.isString())
-            return hash_set<AccountID>();
+            return HashSet<AccountID>();
         auto const id = parseBase58<AccountID>(jv.asString());
         if (!id)
-            return hash_set<AccountID>();
+            return HashSet<AccountID>();
         result.insert(*id);
     }
     return result;
@@ -158,21 +158,21 @@ parseXrplLibSeed(json::Value const& value)
 std::optional<Seed>
 getSeedFromRPC(json::Value const& params, json::Value& error)
 {
-    using string_to_seed_t = std::function<std::optional<Seed>(std::string const&)>;
-    using seed_match_t = std::pair<char const*, string_to_seed_t>;
+    using StringToSeedT = std::function<std::optional<Seed>(std::string const&)>;
+    using SeedMatchT = std::pair<char const*, StringToSeedT>;
 
-    static seed_match_t const kSeedTypes[]{
+    static SeedMatchT const kSeedTypes[]{
         {jss::passphrase.cStr(), [](std::string const& s) { return parseGenericSeed(s); }},
         {jss::seed.cStr(), [](std::string const& s) { return parseBase58<Seed>(s); }},
         {jss::seed_hex.cStr(), [](std::string const& s) {
-             uint128 i;
+             UInt128 i;
              if (i.parseHex(s))
                  return std::optional<Seed>(Slice(i.data(), i.size()));
              return std::optional<Seed>{};
          }}};
 
     // Identify which seed type is in use.
-    seed_match_t const* seedType = nullptr;
+    SeedMatchT const* seedType = nullptr;
     int count = 0;
     for (auto const& t : kSeedTypes)
     {

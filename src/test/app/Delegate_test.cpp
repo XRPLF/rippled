@@ -625,7 +625,7 @@ class Delegate_test : public beast::unit_test::Suite
             auto const delegateKey = keylet::delegate(alice.id(), bob.id());
             BEAST_EXPECT(env.closed()->exists(delegateKey));
 
-            auto hasKey = [](xrpl::Dir const& dir, uint256 const& key) {
+            auto hasKey = [](xrpl::Dir const& dir, UInt256 const& key) {
                 return std::any_of(  // NOLINT(modernize-use-ranges)
                     dir.begin(), dir.end(), [&](auto const& sle) { return sle->key() == key; });
             };
@@ -674,7 +674,7 @@ class Delegate_test : public beast::unit_test::Suite
             auto const delegateKey = keylet::delegate(alice.id(), bob.id());
             BEAST_EXPECT(env.closed()->exists(delegateKey));
 
-            auto hasKey = [](xrpl::Dir const& dir, uint256 const& key) {
+            auto hasKey = [](xrpl::Dir const& dir, UInt256 const& key) {
                 return std::any_of(  // NOLINT(modernize-use-ranges)
                     dir.begin(), dir.end(), [&](auto const& sle) { return sle->key() == key; });
             };
@@ -743,7 +743,7 @@ class Delegate_test : public beast::unit_test::Suite
             auto const aliceBobKey = keylet::delegate(alice.id(), bob.id());
             auto const carolBobKey = keylet::delegate(carol.id(), bob.id());
 
-            auto hasKey = [](xrpl::Dir const& dir, uint256 const& key) {
+            auto hasKey = [](xrpl::Dir const& dir, UInt256 const& key) {
                 return std::any_of(  // NOLINT(modernize-use-ranges)
                     dir.begin(), dir.end(), [&](auto const& sle) { return sle->key() == key; });
             };
@@ -1174,11 +1174,11 @@ class Delegate_test : public beast::unit_test::Suite
 
             // sfDomainID is not in the PaymentMint or PaymentBurn template.
             env(pay(gw, alice, usd(100)),
-                Domain(uint256{1}),
+                Domain(UInt256{1}),
                 delegate::As(bob),
                 Ter(terNO_DELEGATE_PERMISSION));
             env(pay(alice, gw, usd(50)),
-                Domain(uint256{1}),
+                Domain(UInt256{1}),
                 delegate::As(bob),
                 Ter(terNO_DELEGATE_PERMISSION));
         }
@@ -2584,7 +2584,7 @@ class Delegate_test : public beast::unit_test::Suite
         // non-delegable tx are not included.
         // NFTokenMint, NFTokenBurn, NFTokenCreateOffer, NFTokenCancelOffer,
         // NFTokenAcceptOffer are not included, they are tested separately.
-        std::unordered_map<std::string, uint256> txRequiredFeatures{
+        std::unordered_map<std::string, UInt256> txRequiredFeatures{
             {"AMMClawback", featureAMMClawback},
             {"AMMCreate", featureAMM},
             {"AMMDeposit", featureAMM},

@@ -122,7 +122,7 @@ ValidatorList::PublisherListStats::mergeDispositions(PublisherListStats const& s
 
 ValidatorList::MessageWithHash::MessageWithHash(
     std::shared_ptr<Message> const& message,
-    uint256 hash,
+    UInt256 hash,
     std::size_t num)
     : message(message), hash(hash), numVLs(num)
 {
@@ -287,7 +287,7 @@ ValidatorList::load(
 }
 
 std::filesystem::path
-ValidatorList::getCacheFileName(ValidatorList::scoped_lock const&, PublicKey const& pubKey) const
+ValidatorList::getCacheFileName(ValidatorList::ScopedLock const&, PublicKey const& pubKey) const
 {
     return dataPath_ / (kFilePrefix + strHex(pubKey));
 }
@@ -364,7 +364,7 @@ ValidatorList::buildFileData(
 }
 
 void
-ValidatorList::cacheValidatorFile(ValidatorList::scoped_lock const& lock, PublicKey const& pubKey)
+ValidatorList::cacheValidatorFile(ValidatorList::ScopedLock const& lock, PublicKey const& pubKey)
     const
 {
     if (dataPath_.empty())
@@ -752,7 +752,7 @@ ValidatorList::broadcastBlobs(
     PublicKey const& publisherKey,
     ValidatorList::PublisherListCollection const& lists,
     std::size_t maxSequence,
-    uint256 const& hash,
+    UInt256 const& hash,
     Overlay& overlay,
     HashRouter& hashRouter,
     beast::Journal j)
@@ -808,7 +808,7 @@ ValidatorList::applyListsAndBroadcast(
     std::uint32_t version,
     std::vector<ValidatorBlobInfo> const& blobs,
     std::string siteUri,
-    uint256 const& hash,
+    UInt256 const& hash,
     Overlay& overlay,
     HashRouter& hashRouter,
     NetworkOPs& networkOPs)
@@ -869,7 +869,7 @@ ValidatorList::applyLists(
     std::uint32_t version,
     std::vector<ValidatorBlobInfo> const& blobs,
     std::string siteUri,
-    std::optional<uint256> const& hash /* = {} */)
+    std::optional<UInt256> const& hash /* = {} */)
 {
     if (std::count(std::begin(kSupportedListVersions), std::end(kSupportedListVersions), version) !=
         1)
@@ -945,7 +945,7 @@ ValidatorList::updatePublisherList(
     PublicKey const& pubKey,
     PublisherList const& current,
     std::vector<PublicKey> const& oldList,
-    ValidatorList::scoped_lock const&)
+    ValidatorList::ScopedLock const&)
 {
     // Update keyListings_ for added and removed keys
     std::vector<PublicKey> const& publisherList = current.list;
@@ -1016,8 +1016,8 @@ ValidatorList::applyList(
     std::string const& signature,
     std::uint32_t version,
     std::string siteUri,
-    std::optional<uint256> const& hash,
-    ValidatorList::scoped_lock const& lock)
+    std::optional<UInt256> const& hash,
+    ValidatorList::ScopedLock const& lock)
 {
     using namespace std::string_literals;
 
@@ -1240,7 +1240,7 @@ ValidatorList::loadLists()
 // contain the default-constructed public keys
 std::pair<ListDisposition, std::optional<PublicKey>>
 ValidatorList::verify(
-    ValidatorList::scoped_lock const& lock,
+    ValidatorList::ScopedLock const& lock,
     json::Value& list,
     Manifest manifest,
     std::string const& blob,
@@ -1343,7 +1343,7 @@ ValidatorList::listed(PublicKey const& identity) const
 }
 
 bool
-ValidatorList::trusted(ValidatorList::shared_lock const&, PublicKey const& identity) const
+ValidatorList::trusted(ValidatorList::SharedLock const&, PublicKey const& identity) const
 {
     auto const pubKey = validatorManifests_.getMasterKey(identity);
     return trustedMasterKeys_.contains(pubKey);
@@ -1368,7 +1368,7 @@ ValidatorList::getListedKey(PublicKey const& identity) const
 }
 
 std::optional<PublicKey>
-ValidatorList::getTrustedKey(ValidatorList::shared_lock const&, PublicKey const& identity) const
+ValidatorList::getTrustedKey(ValidatorList::SharedLock const&, PublicKey const& identity) const
 {
     auto pubKey = validatorManifests_.getMasterKey(identity);
     if (trustedMasterKeys_.contains(pubKey))
@@ -1401,7 +1401,7 @@ ValidatorList::localPublicKey() const
 
 bool
 ValidatorList::removePublisherList(
-    ValidatorList::scoped_lock const&,
+    ValidatorList::ScopedLock const&,
     PublicKey const& publisherKey,
     PublisherStatus reason)
 {
@@ -1437,7 +1437,7 @@ ValidatorList::removePublisherList(
 }
 
 std::size_t
-ValidatorList::count(ValidatorList::shared_lock const&) const
+ValidatorList::count(ValidatorList::SharedLock const&) const
 {
     return publisherLists_.size() + static_cast<size_t>(!localPublisherList_.list.empty());
 }
@@ -1450,7 +1450,7 @@ ValidatorList::count() const
 }
 
 std::optional<TimeKeeper::time_point>
-ValidatorList::expires(ValidatorList::shared_lock const&) const
+ValidatorList::expires(ValidatorList::SharedLock const&) const
 {
     std::optional<TimeKeeper::time_point> res{};
     for (auto const& [_, collection] : publisherLists_)
@@ -1656,7 +1656,7 @@ ValidatorList::forEachAvailable(
         std::map<std::size_t, ValidatorBlobInfo> const& blobInfos,
         PublicKey const& pubKey,
         std::size_t maxSequence,
-        uint256 const& hash)> func) const
+        UInt256 const& hash)> func) const
 {
     std::shared_lock const readLock{mutex_};
 
@@ -1798,7 +1798,7 @@ ValidatorList::calculateQuorum(
 
 TrustChanges
 ValidatorList::updateTrusted(
-    hash_set<NodeID> const& seenValidators,
+    HashSet<NodeID> const& seenValidators,
     NetClock::time_point closeTime,
     NetworkOPs& ops,
     Overlay& overlay,
@@ -1946,7 +1946,7 @@ ValidatorList::updateTrusted(
             if (negativeUNL_.contains(k))
                 --effectiveUnlSize;
         }
-        hash_set<NodeID> negUnlNodeIDs;
+        HashSet<NodeID> negUnlNodeIDs;
         for (auto const& k : negativeUNL_)
         {
             negUnlNodeIDs.emplace(calcNodeID(k));
@@ -1978,7 +1978,7 @@ ValidatorList::updateTrusted(
     return trustChanges;
 }
 
-hash_set<PublicKey>
+HashSet<PublicKey>
 ValidatorList::getTrustedMasterKeys() const
 {
     std::shared_lock const readLock{mutex_};
@@ -1992,7 +1992,7 @@ ValidatorList::getListThreshold() const
     return listThreshold_;
 }
 
-hash_set<PublicKey>
+HashSet<PublicKey>
 ValidatorList::getNegativeUNL() const
 {
     std::shared_lock const readLock{mutex_};
@@ -2000,7 +2000,7 @@ ValidatorList::getNegativeUNL() const
 }
 
 void
-ValidatorList::setNegativeUNL(hash_set<PublicKey> const& negUnl)
+ValidatorList::setNegativeUNL(HashSet<PublicKey> const& negUnl)
 {
     std::scoped_lock const lock{mutex_};
     negativeUNL_ = negUnl;

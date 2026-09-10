@@ -24,7 +24,7 @@
 namespace xrpl {
 
 void
-ValidAMM::visitEntry(bool isDelete, SLE::const_ref before, SLE::const_ref after)
+ValidAMM::visitEntry(bool isDelete, SLE::ConstRef before, SLE::ConstRef after)
 {
     if (isDelete)
     {

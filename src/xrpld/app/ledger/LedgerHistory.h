@@ -25,7 +25,7 @@ namespace xrpl {
 class LedgerHistory
 {
 public:
-    LedgerHistory(beast::insight::Collector::ptr const& collector, Application& app);
+    LedgerHistory(beast::insight::Collector::Ptr const& collector, Application& app);
 
     /**
      * Track a ledger
@@ -78,7 +78,7 @@ public:
      * Report that we have locally built a particular ledger
      */
     void
-    builtLedger(std::shared_ptr<Ledger const> const&, uint256 const& consensusHash, json::Value);
+    builtLedger(std::shared_ptr<Ledger const> const&, UInt256 const& consensusHash, json::Value);
 
     /**
      * Report that we have validated a particular ledger
@@ -86,7 +86,7 @@ public:
     void
     validatedLedger(
         std::shared_ptr<Ledger const> const&,
-        std::optional<uint256> const& consensusHash);
+        std::optional<UInt256> const& consensusHash);
 
     /**
      * Repair a hash to index mapping
@@ -116,12 +116,12 @@ private:
     handleMismatch(
         LedgerHash const& built,
         LedgerHash const& valid,
-        std::optional<uint256> const& builtConsensusHash,
-        std::optional<uint256> const& validatedConsensusHash,
+        std::optional<UInt256> const& builtConsensusHash,
+        std::optional<UInt256> const& validatedConsensusHash,
         json::Value const& consensus);
 
     Application& app_;
-    beast::insight::Collector::ptr collector_;
+    beast::insight::Collector::Ptr collector_;
     beast::insight::Counter mismatchCounter_;
 
     using LedgersByHash = TaggedCache<LedgerHash, Ledger const>;
@@ -137,9 +137,9 @@ private:
         // Hash of the validated ledger
         std::optional<LedgerHash> validated;
         // Hash of locally accepted consensus transaction set
-        std::optional<uint256> builtConsensusHash;
+        std::optional<UInt256> builtConsensusHash;
         // Hash of validated consensus transaction set
-        std::optional<uint256> validatedConsensusHash;
+        std::optional<UInt256> validatedConsensusHash;
         // Consensus metadata of built ledger
         std::optional<json::Value> consensus;
     };

@@ -13,13 +13,13 @@
 
 namespace xrpl {
 
-hash_set<PathAsset>
+HashSet<PathAsset>
 accountSourceAssets(
     AccountID const& account,
     std::shared_ptr<AssetCache> const& lrCache,
     bool includeXRP)
 {
-    hash_set<PathAsset> assets;
+    HashSet<PathAsset> assets;
 
     // YYY Only bother if they are above reserve
     if (includeXRP)
@@ -57,13 +57,13 @@ accountSourceAssets(
     return assets;
 }
 
-hash_set<PathAsset>
+HashSet<PathAsset>
 accountDestAssets(
     AccountID const& account,
     std::shared_ptr<AssetCache> const& lrCache,
     bool includeXRP)
 {
-    hash_set<PathAsset> assets;
+    HashSet<PathAsset> assets;
 
     if (includeXRP)
         assets.insert(xrpCurrency());

@@ -975,7 +975,7 @@ createMPToken(
     ApplyView& view,
     MPTID const& mptIssuanceID,
     AccountID const& account,
-    SLE::ref sponsorSle,
+    SLE::Ref sponsorSle,
     std::uint32_t const flags)
 {
     auto const mptokenKey = keylet::mptoken(mptIssuanceID, account);
@@ -1004,7 +1004,7 @@ checkCreateMPT(
     xrpl::ApplyView& view,
     xrpl::MPTIssue const& mptIssue,
     xrpl::AccountID const& holder,
-    SLE::ref sponsorSle,
+    SLE::Ref sponsorSle,
     std::uint32_t flags,
     beast::Journal j)
 {

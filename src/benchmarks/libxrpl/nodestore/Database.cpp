@@ -36,7 +36,7 @@ struct RunState
     std::unique_ptr<DatabaseHarness> harness;
     Batch present;                     // prefix-1 objects, eligible to be stored
     Batch recent;                      // prefix-1 objects in the "future" key space
-    std::vector<uint256> missing;      // prefix-2 keys that are never stored
+    std::vector<UInt256> missing;      // prefix-2 keys that are never stored
     std::vector<std::size_t> shuffle;  // [0, poolSize) permutation for random-like access
     std::size_t avgPayload = 0;        // mean getData().size() over `present`
 };

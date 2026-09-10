@@ -27,17 +27,17 @@ namespace xrpl::test::csf {
 class Scheduler
 {
 public:
-    using clock_type = beast::ManualClock<std::chrono::steady_clock>;
+    using ClockType = beast::ManualClock<std::chrono::steady_clock>;
 
-    using duration = clock_type::duration;
+    using duration = ClockType::duration;
 
-    using time_point = clock_type::time_point;
+    using time_point = ClockType::time_point;
 
 private:
-    using by_when_hook =
+    using ByWhenHook =
         boost::intrusive::set_base_hook<boost::intrusive::link_mode<boost::intrusive::normal_link>>;
 
-    struct Event : by_when_hook
+    struct Event : ByWhenHook
     {
         time_point when;
 
@@ -89,14 +89,14 @@ private:
     class QueueType
     {
     private:
-        using by_when_set = boost::intrusive::
+        using ByWhenSet = boost::intrusive::
             make_multiset<Event, boost::intrusive::constant_time_size<false>>::type;
         // alloc_ is owned by the scheduler
         boost::container::pmr::monotonic_buffer_resource* alloc_;
-        by_when_set byWhen_;
+        ByWhenSet byWhen_;
 
     public:
-        using iterator = by_when_set::iterator;
+        using iterator = ByWhenSet::iterator;
 
         QueueType(QueueType const&) = delete;
         QueueType&
@@ -116,7 +116,7 @@ private:
         end();
 
         template <class Handler>
-        by_when_set::iterator
+        ByWhenSet::iterator
         emplace(time_point when, Handler&& h);
 
         iterator
@@ -127,7 +127,7 @@ private:
     QueueType queue_;
 
     // Aged containers that rely on this clock take a non-const reference =(
-    mutable clock_type clock_;
+    mutable ClockType clock_;
 
 public:
     Scheduler(Scheduler const&) = delete;
@@ -139,7 +139,7 @@ public:
     /**
      * Return the clock. (aged_containers want a non-const ref =(
      */
-    clock_type&
+    ClockType&
     clock() const;
 
     /**
@@ -300,16 +300,16 @@ Scheduler::QueueType::end() -> iterator
 
 template <class Handler>
 inline auto
-Scheduler::QueueType::emplace(time_point when, Handler&& h) -> by_when_set::iterator
+Scheduler::QueueType::emplace(time_point when, Handler&& h) -> ByWhenSet::iterator
 {
-    using event_type = EventImpl<std::decay_t<Handler>>;
-    auto const p = alloc_->allocate(sizeof(event_type));
-    auto& e = *new (p) event_type(when, std::forward<Handler>(h));
+    using EventType = EventImpl<std::decay_t<Handler>>;
+    auto const p = alloc_->allocate(sizeof(EventType));
+    auto& e = *new (p) EventType(when, std::forward<Handler>(h));
     return byWhen_.insert(e);
 }
 
 inline auto
-Scheduler::QueueType::erase(iterator iter) -> by_when_set::iterator
+Scheduler::QueueType::erase(iterator iter) -> ByWhenSet::iterator
 {
     auto& e = *iter;
     auto next = byWhen_.erase(iter);
@@ -343,7 +343,7 @@ inline Scheduler::Scheduler() : queue_(&alloc_)
 }
 
 inline auto
-Scheduler::clock() const -> clock_type&
+Scheduler::clock() const -> ClockType&
 {
     return clock_;
 }

@@ -253,16 +253,16 @@ public:
 
             env.require(Balance(bob, usd(1500)));
             env.require(Balance(bob, eur(900)));
-            env.require(offers(bob, 1));
+            env.require(Offers(bob, 1));
             env.require(Owners(bob, 3));
 
             env.require(Balance(alice, usd(2503)));
             env.require(Balance(alice, eur(1100)));
             auto const numAOffers = 2000 + 100 + 1000 + 1 - ((2 * 100) + (2 * 199) + 1 + 1);
-            env.require(offers(alice, numAOffers));
+            env.require(Offers(alice, numAOffers));
             env.require(Owners(alice, numAOffers + 2));
 
-            env.require(offers(carol, 0));
+            env.require(Offers(carol, 0));
         }
         {
             Env env(*this, features);
@@ -324,16 +324,16 @@ public:
 
             env.require(Balance(bob, usd(1509)));
             env.require(Balance(bob, eur(900)));
-            env.require(offers(bob, 1));
+            env.require(Offers(bob, 1));
             env.require(Owners(bob, 3));
 
             env.require(Balance(alice, usd(2494)));
             env.require(Balance(alice, eur(1100)));
             auto const numAOffers = 1 + 2000 + 100 + 1000 + 1 - (1 + (2 * 100) + (2 * 199) + 1 + 1);
-            env.require(offers(alice, numAOffers));
+            env.require(Offers(alice, numAOffers));
             env.require(Owners(alice, numAOffers + 2));
 
-            env.require(offers(carol, 0));
+            env.require(Offers(carol, 0));
         }
     }
 

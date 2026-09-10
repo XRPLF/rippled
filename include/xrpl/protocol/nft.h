@@ -36,7 +36,7 @@ constexpr std::uint16_t const kFlagTransferable = 0x0008;
 constexpr std::uint16_t const kFlagMutable = 0x0010;
 
 inline std::uint16_t
-getFlags(uint256 const& id)
+getFlags(UInt256 const& id)
 {
     std::uint16_t flags = 0;
     memcpy(&flags, id.begin(), 2);
@@ -44,7 +44,7 @@ getFlags(uint256 const& id)
 }
 
 inline std::uint16_t
-getTransferFee(uint256 const& id)
+getTransferFee(UInt256 const& id)
 {
     std::uint16_t fee = 0;
     memcpy(&fee, id.begin() + 2, 2);
@@ -52,7 +52,7 @@ getTransferFee(uint256 const& id)
 }
 
 inline std::uint32_t
-getSequence(uint256 const& id)
+getSequence(UInt256 const& id)
 {
     std::uint32_t seq = 0;
     memcpy(&seq, id.begin() + 28, 4);
@@ -84,7 +84,7 @@ cipheredTaxon(std::uint32_t tokenSeq, Taxon taxon)
 }
 
 inline Taxon
-getTaxon(uint256 const& id)
+getTaxon(UInt256 const& id)
 {
     std::uint32_t taxon = 0;
     memcpy(&taxon, id.begin() + 24, 4);
@@ -96,7 +96,7 @@ getTaxon(uint256 const& id)
 }
 
 inline AccountID
-getIssuer(uint256 const& id)
+getIssuer(UInt256 const& id)
 {
     return AccountID::fromVoid(id.data() + 4);
 }

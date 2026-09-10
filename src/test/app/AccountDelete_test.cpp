@@ -289,7 +289,7 @@ public:
             env(offer(alice, gw["USD"](1), XRP(1)));
             env.close();
         }
-        env.require(offers(alice, 45));
+        env.require(Offers(alice, 45));
 
         // Close enough ledgers to be able to delete alice's account.
         incLgrSeqForAccDel(env, alice);
@@ -337,8 +337,8 @@ public:
             env(offer(becky, gw["USD"](1), XRP(1)));
             env.close();
         }
-        env.require(offers(alice, 200));
-        env.require(offers(becky, 200));
+        env.require(Offers(alice, 200));
+        env.require(Offers(becky, 200));
 
         // Close enough ledgers to be able to delete alice's and becky's
         // accounts.
@@ -348,7 +348,7 @@ public:
         // alice writes a check to becky.  Until that check is cashed or
         // canceled it will prevent alice's and becky's accounts from being
         // deleted.
-        uint256 const checkId = keylet::check(alice, SeqProxy::rawSequence(env.seq(alice))).key;
+        UInt256 const checkId = keylet::check(alice, SeqProxy::rawSequence(env.seq(alice))).key;
         env(check::create(alice, becky, XRP(1)));
         env.close();
 
@@ -543,10 +543,10 @@ public:
         env(acctdelete(alice, gw), Fee(acctDelFee), Ter(tefTOO_BIG));
 
         // Cancel one of alice's offers.  Then the account delete can succeed.
-        env.require(offers(alice, kOfferCount));
+        env.require(Offers(alice, kOfferCount));
         env(offerCancel(alice, offerSeq0));
         env.close();
-        env.require(offers(alice, kOfferCount - 1));
+        env.require(Offers(alice, kOfferCount - 1));
 
         // alice successfully deletes her account.
         auto const alicePreDelBal{env.balance(alice)};

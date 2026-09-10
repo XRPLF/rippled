@@ -372,13 +372,13 @@ Handler const kHandlerArray[]{
 class HandlerTable
 {
 private:
-    using handler_table_t = std::multimap<std::string, Handler>;
+    using HandlerTableT = std::multimap<std::string, Handler>;
 
     // Use with equal_range to enforce that API range of a newly added handler
     // does not overlap with API range of an existing handler with same name
     [[nodiscard]] static bool
     overlappingApiVersion(
-        std::pair<handler_table_t::iterator, handler_table_t::iterator> range,
+        std::pair<HandlerTableT::iterator, HandlerTableT::iterator> range,
         unsigned minVer,
         unsigned maxVer)
     {
@@ -450,7 +450,7 @@ public:
     }
 
 private:
-    handler_table_t table_;
+    HandlerTableT table_;
 
     template <class HandlerImpl>
     void

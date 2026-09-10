@@ -28,9 +28,9 @@ namespace xrpl::peer_finder {
 std::unique_ptr<Manager>
 makeManager(
     boost::asio::io_context& ioContext,
-    clock_type& clock,
+    ClockType& clock,
     beast::Journal journal,
     Store& store,
-    beast::insight::Collector::ptr const& collector);
+    beast::insight::Collector::Ptr const& collector);
 
 }  // namespace xrpl::peer_finder

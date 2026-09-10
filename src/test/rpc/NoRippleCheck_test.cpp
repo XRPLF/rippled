@@ -293,9 +293,9 @@ class NoRippleCheckLimits_test : public beast::unit_test::Suite
             // if we go above the warning threshold, reset
             if (c.balance() > kWarningThreshold)
             {
-                using ct = beast::AbstractClock<steady_clock>;
+                using Ct = beast::AbstractClock<steady_clock>;
                 c.entry().localBalance =
-                    DecayingSample<kDecayWindowSeconds, ct>{steady_clock::now()};
+                    DecayingSample<kDecayWindowSeconds, Ct>{steady_clock::now()};
             }
         };
 

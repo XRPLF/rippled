@@ -20,7 +20,7 @@ using namespace std::chrono_literals;
 
 TimeoutCounter::TimeoutCounter(
     Application& app,
-    uint256 const& hash,
+    UInt256 const& hash,
     std::chrono::milliseconds interval,
     QueueJobParameter&& jobParameter,
     beast::Journal journal)

@@ -242,7 +242,7 @@ private:
         }
     }
 
-    // VFALCO TODO This should return std::optional<uint256>
+    // VFALCO TODO This should return std::optional<UInt256>
     LedgerHash
     getLedgerHash(std::shared_ptr<ReadView const>& ledger, LedgerIndex index)
     {

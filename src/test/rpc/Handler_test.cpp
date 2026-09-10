@@ -40,7 +40,7 @@ class Handler_test : public beast::unit_test::Suite
     auto
     time(std::size_t n, auto f, auto prng) -> auto
     {
-        using clock = std::chrono::steady_clock;
+        using Clock = std::chrono::steady_clock;
         assert(n > 0);
         double sum = 0;
         double sumSquared = 0;
@@ -75,8 +75,8 @@ class Handler_test : public beast::unit_test::Suite
 
         double const meanSquared = (sum * sum) / (j * j);
         return std::make_tuple(
-            clock::duration{static_cast<long>(sum / j)},
-            clock::duration{static_cast<long>(std::sqrt((sumSquared / j) - meanSquared))},
+            Clock::duration{static_cast<long>(sum / j)},
+            Clock::duration{static_cast<long>(std::sqrt((sumSquared / j) - meanSquared))},
             j);
     }
 

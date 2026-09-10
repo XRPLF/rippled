@@ -81,7 +81,7 @@ enum JobType {
 class Job : public CountedObject<Job>
 {
 public:
-    using clock_type = std::chrono::steady_clock;
+    using ClockType = std::chrono::steady_clock;
 
     /**
      * Default constructor.
@@ -112,7 +112,7 @@ public:
     /**
      * Returns the time when the job was queued.
      */
-    [[nodiscard]] clock_type::time_point const&
+    [[nodiscard]] ClockType::time_point const&
     queueTime() const;
 
     void
@@ -135,7 +135,7 @@ private:
     std::function<void()> job_;
     std::shared_ptr<LoadEvent> loadEvent_;
     std::string name_;
-    clock_type::time_point queueTime_;
+    ClockType::time_point queueTime_;
 };
 
 using JobCounter = ClosureCounter<void>;

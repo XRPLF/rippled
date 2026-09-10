@@ -274,7 +274,7 @@ class FeeVote_test : public beast::unit_test::Suite
                 kCreateGenesis,
                 Rules{env.app().config().features},
                 env.app().config().fees.toFees(),
-                std::vector<uint256>{},
+                std::vector<UInt256>{},
                 env.app().getNodeFamily());
 
             // Create the next ledger to apply transaction to
@@ -304,7 +304,7 @@ class FeeVote_test : public beast::unit_test::Suite
                 kCreateGenesis,
                 Rules{env.app().config().features},
                 env.app().config().fees.toFees(),
-                std::vector<uint256>{},
+                std::vector<UInt256>{},
                 env.app().getNodeFamily());
 
             // Create the next ledger to apply transaction to
@@ -337,7 +337,7 @@ class FeeVote_test : public beast::unit_test::Suite
                 kCreateGenesis,
                 Rules{env.app().config().features},
                 env.app().config().fees.toFees(),
-                std::vector<uint256>{},
+                std::vector<UInt256>{},
                 env.app().getNodeFamily());
 
             // Create the next ledger to apply transaction to
@@ -359,7 +359,7 @@ class FeeVote_test : public beast::unit_test::Suite
                 kCreateGenesis,
                 Rules{env.app().config().features},
                 env.app().config().fees.toFees(),
-                std::vector<uint256>{},
+                std::vector<UInt256>{},
                 env.app().getNodeFamily());
 
             // Create the next ledger to apply transaction to
@@ -386,7 +386,7 @@ class FeeVote_test : public beast::unit_test::Suite
             kCreateGenesis,
             Rules{env.app().config().features},
             env.app().config().fees.toFees(),
-            std::vector<uint256>{},
+            std::vector<UInt256>{},
             env.app().getNodeFamily());
 
         // Create the next ledger to apply transaction to
@@ -425,7 +425,7 @@ class FeeVote_test : public beast::unit_test::Suite
             kCreateGenesis,
             Rules{env.app().config().features},
             env.app().config().fees.toFees(),
-            std::vector<uint256>{},
+            std::vector<UInt256>{},
             env.app().getNodeFamily());
 
         ledger = std::make_shared<Ledger>(*ledger, env.app().getTimeKeeper().closeTime());
@@ -473,7 +473,7 @@ class FeeVote_test : public beast::unit_test::Suite
             kCreateGenesis,
             Rules{env.app().config().features},
             env.app().config().fees.toFees(),
-            std::vector<uint256>{},
+            std::vector<UInt256>{},
             env.app().getNodeFamily());
 
         ledger = std::make_shared<Ledger>(*ledger, env.app().getTimeKeeper().closeTime());
@@ -504,7 +504,7 @@ class FeeVote_test : public beast::unit_test::Suite
             kCreateGenesis,
             Rules{env.app().config().features},
             env.app().config().fees.toFees(),
-            std::vector<uint256>{},
+            std::vector<UInt256>{},
             env.app().getNodeFamily());
 
         ledger = std::make_shared<Ledger>(*ledger, env.app().getTimeKeeper().closeTime());
@@ -550,7 +550,7 @@ class FeeVote_test : public beast::unit_test::Suite
             kCreateGenesis,
             Rules{env.app().config().features},
             env.app().config().fees.toFees(),
-            std::vector<uint256>{},
+            std::vector<UInt256>{},
             env.app().getNodeFamily());
 
         ledger = std::make_shared<Ledger>(*ledger, env.app().getTimeKeeper().closeTime());
@@ -591,7 +591,7 @@ class FeeVote_test : public beast::unit_test::Suite
                 kCreateGenesis,
                 Rules{env.app().config().features},
                 env.app().config().fees.toFees(),
-                std::vector<uint256>{},
+                std::vector<UInt256>{},
                 env.app().getNodeFamily());
 
             auto sec = randomSecretKey();
@@ -621,7 +621,7 @@ class FeeVote_test : public beast::unit_test::Suite
                 kCreateGenesis,
                 Rules{env.app().config().features},
                 env.app().config().fees.toFees(),
-                std::vector<uint256>{},
+                std::vector<UInt256>{},
                 env.app().getNodeFamily());
 
             auto sec = randomSecretKey();
@@ -666,7 +666,7 @@ class FeeVote_test : public beast::unit_test::Suite
             kCreateGenesis,
             Rules{env.app().config().features},
             env.app().config().fees.toFees(),
-            std::vector<uint256>{},
+            std::vector<UInt256>{},
             env.app().getNodeFamily());
 
         // doVoting requires a flag ledger (every 256th ledger)

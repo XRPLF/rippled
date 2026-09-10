@@ -324,7 +324,7 @@ private:
         using namespace test::jtx;
 
         auto readReferenceHolding = [&](Env const& env,
-                                        Keylet const& vaultKeylet) -> std::optional<uint256> {
+                                        Keylet const& vaultKeylet) -> std::optional<UInt256> {
             auto const sleVault = env.le(vaultKeylet);
             if (!sleVault)
                 return std::nullopt;

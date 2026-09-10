@@ -15,29 +15,29 @@ template <class Container>
 class ConstContainer
 {
 private:
-    using cont_type = Container;
+    using ContType = Container;
 
-    cont_type cont_;
+    ContType cont_;
 
 protected:
-    cont_type&
+    ContType&
     cont()
     {
         return cont_;
     }
 
-    [[nodiscard]] cont_type const&
+    [[nodiscard]] ContType const&
     cont() const
     {
         return cont_;
     }
 
 public:
-    using value_type = cont_type::value_type;
-    using size_type = cont_type::size_type;
-    using difference_type = cont_type::difference_type;
-    using iterator = cont_type::const_iterator;
-    using const_iterator = cont_type::const_iterator;
+    using value_type = ContType::value_type;
+    using size_type = ContType::size_type;
+    using difference_type = ContType::difference_type;
+    using iterator = ContType::const_iterator;
+    using const_iterator = ContType::const_iterator;
 
     /**
      * Returns `true` if the container is empty.

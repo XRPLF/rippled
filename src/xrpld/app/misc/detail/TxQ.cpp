@@ -387,7 +387,7 @@ TxQ::canBeHeld(
     STTx const& tx,
     ApplyFlags const flags,
     OpenView const& view,
-    SLE::const_ref sleAccount,
+    SLE::ConstRef sleAccount,
     AccountMap::iterator const& accountIter,
     std::optional<TxQAccount::TxMap::iterator> const& replacementIter,
     std::scoped_lock<std::mutex> const& lock)
@@ -1587,7 +1587,7 @@ TxQ::accept(Application& app, OpenView& view)
 //
 // Acquires a lock and calls the implementation.
 SeqProxy
-TxQ::nextQueuableSeq(SLE::const_ref sleAccount) const
+TxQ::nextQueuableSeq(SLE::ConstRef sleAccount) const
 {
     std::scoped_lock const lock(mutex_);
     return nextQueuableSeqImpl(sleAccount, lock);
@@ -1600,7 +1600,7 @@ TxQ::nextQueuableSeq(SLE::const_ref sleAccount) const
 // sequence number, that is not used by a transaction in the queue, must
 // be found and returned.
 SeqProxy
-TxQ::nextQueuableSeqImpl(SLE::const_ref sleAccount, std::scoped_lock<std::mutex> const&) const
+TxQ::nextQueuableSeqImpl(SLE::ConstRef sleAccount, std::scoped_lock<std::mutex> const&) const
 {
     // If the account is not in the ledger or a non-account was passed
     // then return zero.  We have no idea.

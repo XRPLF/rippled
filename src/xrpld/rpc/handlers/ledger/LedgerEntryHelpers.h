@@ -176,10 +176,10 @@ requiredUInt32(
 }
 
 template <>
-inline std::optional<uint256>
+inline std::optional<UInt256>
 parse(json::Value const& param)
 {
-    uint256 uNodeIndex;
+    UInt256 uNodeIndex;
     if (!param.isString() || !uNodeIndex.parseHex(param.asString()))
     {
         return std::nullopt;
@@ -188,20 +188,20 @@ parse(json::Value const& param)
     return uNodeIndex;
 }
 
-inline std::expected<uint256, json::Value>
+inline std::expected<UInt256, json::Value>
 requiredUInt256(
     json::Value const& params,
     json::StaticString const fieldName,
     std::string const& err)
 {
-    return required<uint256>(params, fieldName, err, "Hash256");
+    return required<UInt256>(params, fieldName, err, "Hash256");
 }
 
 template <>
-inline std::optional<uint192>
+inline std::optional<UInt192>
 parse(json::Value const& param)
 {
-    uint192 field;
+    UInt192 field;
     if (!param.isString() || !field.parseHex(param.asString()))
     {
         return std::nullopt;
@@ -210,13 +210,13 @@ parse(json::Value const& param)
     return field;
 }
 
-inline std::expected<uint192, json::Value>
+inline std::expected<UInt192, json::Value>
 requiredUInt192(
     json::Value const& params,
     json::StaticString const fieldName,
     std::string const& err)
 {
-    return required<uint192>(params, fieldName, err, "Hash192");
+    return required<UInt192>(params, fieldName, err, "Hash192");
 }
 
 template <>

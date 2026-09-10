@@ -18,7 +18,7 @@
 
 namespace xrpl::peer_finder {
 
-Bootcache::Bootcache(Store& store, clock_type& clock, beast::Journal journal)
+Bootcache::Bootcache(Store& store, ClockType& clock, beast::Journal journal)
     : store_(store), clock_(clock), journal_(journal), whenUpdate_(clock_.now())
 
 {
@@ -35,7 +35,7 @@ Bootcache::empty() const
     return map_.empty();
 }
 
-Bootcache::map_type::size_type
+Bootcache::MapType::size_type
 Bootcache::size() const
 {
     return map_.size();

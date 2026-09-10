@@ -30,12 +30,12 @@ Paths::operator()(Env& env, JTx& jt) const
     auto const to = env.lookup(jv[jss::Destination].asString());
     auto const amount = amountFromJson(sfAmount, jv[jss::Amount]);
 
-    std::optional<uint256> domain;
+    std::optional<UInt256> domain;
     if (jv.isMember(sfDomainID.jsonName))
     {
         if (!jv[sfDomainID.jsonName].isString())
             return;
-        uint256 num;
+        UInt256 num;
         auto const s = jv[sfDomainID.jsonName].asString();
         if (num.parseHex(s))
             domain = num;

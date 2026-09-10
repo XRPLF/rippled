@@ -20,11 +20,11 @@
 
 namespace xrpl {
 
-using socket_type = boost::beast::tcp_stream;
-using stream_type = boost::beast::ssl_stream<socket_type>;
-using request_type = boost::beast::http::request<boost::beast::http::empty_body>;
-using http_request_type = boost::beast::http::request<boost::beast::http::dynamic_body>;
-using http_response_type = boost::beast::http::response<boost::beast::http::dynamic_body>;
+using SocketType = boost::beast::tcp_stream;
+using StreamType = boost::beast::ssl_stream<SocketType>;
+using RequestType = boost::beast::http::request<boost::beast::http::empty_body>;
+using HttpRequestType = boost::beast::http::request<boost::beast::http::dynamic_body>;
+using HttpResponseType = boost::beast::http::response<boost::beast::http::dynamic_body>;
 
 /**
  * Computes a shared value based on the SSL connection state.
@@ -36,8 +36,8 @@ using http_response_type = boost::beast::http::response<boost::beast::http::dyna
  * @param ssl the SSL/TLS connection state.
  * @return A 256-bit value on success; an unseated optional otherwise.
  */
-std::optional<uint256>
-makeSharedValue(stream_type& ssl, beast::Journal journal);
+std::optional<UInt256>
+makeSharedValue(StreamType& ssl, beast::Journal journal);
 
 /**
  * Insert fields headers necessary for upgrading the link to the peer protocol.
@@ -45,7 +45,7 @@ makeSharedValue(stream_type& ssl, beast::Journal journal);
 void
 buildHandshake(
     boost::beast::http::fields& h,
-    uint256 const& sharedValue,
+    UInt256 const& sharedValue,
     std::optional<std::uint32_t> networkID,
     beast::ip::Address publicIp,
     beast::ip::Address remoteIp,
@@ -66,7 +66,7 @@ buildHandshake(
 PublicKey
 verifyHandshake(
     boost::beast::http::fields const& headers,
-    uint256 const& sharedValue,
+    UInt256 const& sharedValue,
     std::optional<std::uint32_t> networkID,
     beast::ip::Address publicIp,
     beast::ip::Address remote,
@@ -84,7 +84,7 @@ verifyHandshake(
  * feature is enabled
  * @return http request with empty body
  */
-request_type
+RequestType
 makeRequest(
     bool crawlPublic,
     bool comprEnabled,
@@ -105,13 +105,13 @@ makeRequest(
  * @param app Application's reference to access some common properties
  * @return http response
  */
-http_response_type
+HttpResponseType
 makeResponse(
     bool crawlPublic,
-    http_request_type const& req,
+    HttpRequestType const& req,
     beast::ip::Address publicIp,
     beast::ip::Address remoteIp,
-    uint256 const& sharedValue,
+    UInt256 const& sharedValue,
     std::optional<std::uint32_t> networkID,
     ProtocolVersion version,
     Application& app);
@@ -231,7 +231,7 @@ makeFeaturesRequestHeader(
  */
 std::string
 makeFeaturesResponseHeader(
-    http_request_type const& headers,
+    HttpRequestType const& headers,
     bool comprEnabled,
     bool ledgerReplayEnabled,
     bool txReduceRelayEnabled,

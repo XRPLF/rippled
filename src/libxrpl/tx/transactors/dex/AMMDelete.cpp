@@ -65,7 +65,7 @@ AMMDelete::doApply()
 }
 
 void
-AMMDelete::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
+AMMDelete::visitInvariantEntry(bool, SLE::ConstRef, SLE::ConstRef)
 {
     // No transaction-specific invariants yet (future work).
 }

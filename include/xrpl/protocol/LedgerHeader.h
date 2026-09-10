@@ -31,10 +31,10 @@ struct LedgerHeader
     //
 
     // Closed means "tx set already determined"
-    uint256 hash = beast::kZero;
-    uint256 txHash = beast::kZero;
-    uint256 accountHash = beast::kZero;
-    uint256 parentHash = beast::kZero;
+    UInt256 hash = beast::kZero;
+    UInt256 txHash = beast::kZero;
+    UInt256 accountHash = beast::kZero;
+    UInt256 parentHash = beast::kZero;
 
     XRPAmount drops = beast::kZero;
 
@@ -84,7 +84,7 @@ deserializePrefixedHeader(Slice data, bool hasHash = false);
 /**
  * Calculate the hash of a ledger header.
  */
-uint256
+UInt256
 calculateLedgerHash(LedgerHeader const& info);
 
 }  // namespace xrpl

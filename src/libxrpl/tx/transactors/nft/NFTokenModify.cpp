@@ -60,14 +60,14 @@ NFTokenModify::preclaim(PreclaimContext const& ctx)
 TER
 NFTokenModify::doApply()
 {
-    uint256 const nftokenID = ctx_.tx[sfNFTokenID];
+    UInt256 const nftokenID = ctx_.tx[sfNFTokenID];
     AccountID const owner = ctx_.tx[ctx_.tx.isFieldPresent(sfOwner) ? sfOwner : sfAccount];
 
     return nft::changeTokenURI(view(), owner, nftokenID, ctx_.tx[~sfURI]);
 }
 
 void
-NFTokenModify::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
+NFTokenModify::visitInvariantEntry(bool, SLE::ConstRef, SLE::ConstRef)
 {
     // No transaction-specific invariants yet (future work).
 }

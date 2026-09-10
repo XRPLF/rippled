@@ -53,25 +53,25 @@ public:
     [[nodiscard]] SLE::const_pointer
     read(Keylet const& k) const override;
 
-    [[nodiscard]] std::unique_ptr<SlesType::iter_base>
+    [[nodiscard]] std::unique_ptr<SlesType::IterBase>
     slesBegin() const override;
 
-    [[nodiscard]] std::unique_ptr<SlesType::iter_base>
+    [[nodiscard]] std::unique_ptr<SlesType::IterBase>
     slesEnd() const override;
 
-    [[nodiscard]] std::unique_ptr<SlesType::iter_base>
-    slesUpperBound(uint256 const& key) const override;
+    [[nodiscard]] std::unique_ptr<SlesType::IterBase>
+    slesUpperBound(UInt256 const& key) const override;
 
-    [[nodiscard]] std::unique_ptr<TxsType::iter_base>
+    [[nodiscard]] std::unique_ptr<TxsType::IterBase>
     txsBegin() const override;
 
-    [[nodiscard]] std::unique_ptr<TxsType::iter_base>
+    [[nodiscard]] std::unique_ptr<TxsType::IterBase>
     txsEnd() const override;
 
     [[nodiscard]] bool
     txExists(key_type const& key) const override;
 
-    [[nodiscard]] tx_type
+    [[nodiscard]] TxType
     txRead(key_type const& key) const override;
 
     // ApplyView
@@ -83,24 +83,24 @@ public:
     peek(Keylet const& k) override;
 
     void
-    erase(SLE::ref sle) override;
+    erase(SLE::Ref sle) override;
 
     void
-    insert(SLE::ref sle) override;
+    insert(SLE::Ref sle) override;
 
     void
-    update(SLE::ref sle) override;
+    update(SLE::Ref sle) override;
 
     // RawView
 
     void
-    rawErase(SLE::ref sle) override;
+    rawErase(SLE::Ref sle) override;
 
     void
-    rawInsert(SLE::ref sle) override;
+    rawInsert(SLE::Ref sle) override;
 
     void
-    rawReplace(SLE::ref sle) override;
+    rawReplace(SLE::Ref sle) override;
 
     void
     rawDestroyXRP(XRPAmount const& feeDrops) override;

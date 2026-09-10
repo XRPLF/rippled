@@ -19,11 +19,11 @@
 #ifdef _MSC_VER
 #pragma message("Using boost::multiprecision::uint128_t and int128_t")
 #include <boost/multiprecision/cpp_int.hpp>
-using uint128_t = boost::multiprecision::uint128_t;
-using int128_t = boost::multiprecision::int128_t;
+using UInt128T = boost::multiprecision::uint128_t;
+using Int128T = boost::multiprecision::int128_t;
 #else   // !defined(_MSC_VER)
-using uint128_t = __uint128_t;
-using int128_t = __int128_t;
+using UInt128T = __uint128_t;
+using Int128T = __int128_t;
 #endif  // !defined(_MSC_VER)
 
 namespace xrpl {
@@ -162,7 +162,7 @@ Number::setMantissaScale(MantissaRange::MantissaScale scale)
 // Derived from Hacker's Delight Second Edition Chapter 10
 // by Henry S. Warren, Jr.
 static inline unsigned
-divu10(uint128_t& u)
+divu10(UInt128T& u)
 {
     // q = u * 0.75
     auto q = (u >> 1) + (u >> 2);
@@ -184,7 +184,7 @@ divu10(uint128_t& u)
 }
 
 template <class T>
-concept UnsignedMantissa = std::is_unsigned_v<T> || std::is_same_v<T, uint128_t>;
+concept UnsignedMantissa = std::is_unsigned_v<T> || std::is_same_v<T, UInt128T>;
 
 /**
  * Guard
@@ -223,13 +223,13 @@ class Number::Guard
     std::uint8_t sbit_ : 1 {0};  // the sign of the guard digits
 
 public:
-    internalrep const minMantissa;
-    internalrep const maxMantissa;
+    InternalRep const minMantissa;
+    InternalRep const maxMantissa;
     MantissaRange::CuspRoundingFix const cuspRoundingFix;
 
     explicit Guard(
-        internalrep const& minMantissa,
-        internalrep const& maxMantissa,
+        InternalRep const& minMantissa,
+        InternalRep const& maxMantissa,
         MantissaRange::CuspRoundingFix cuspRoundingFix)
         : minMantissa(minMantissa), maxMantissa(maxMantissa), cuspRoundingFix(cuspRoundingFix)
     {
@@ -414,7 +414,7 @@ Number::Guard::doDropDigit(T& mantissa, int& exponent) noexcept
 // Use the divu10 optimization for uint128s
 template <>
 void
-Number::Guard::doDropDigit<uint128_t>(uint128_t& mantissa, int& exponent) noexcept
+Number::Guard::doDropDigit<UInt128T>(UInt128T& mantissa, int& exponent) noexcept
 {
     // The following is optimization for:
     // push(static_cast<unsigned>(mantissa % 10));
@@ -698,7 +698,7 @@ Number::Guard::doRound(rep& drops, std::string location) const
     {
         if (drops >= kMaxRep)
         {
-            static_assert(sizeof(internalrep) == sizeof(rep));
+            static_assert(sizeof(InternalRep) == sizeof(rep));
             // This should be impossible, because it's impossible to represent
             // "kMaxRep + 0.6" in Number, regardless of the scale. There aren't
             // enough digits available. You'd either get a mantissa of "kMaxRep"
@@ -721,7 +721,7 @@ Number::Guard::doRound(rep& drops, std::string location) const
 // negative, returns the positive value. This takes a little extra work because
 // converting std::numeric_limits<std::int64_t>::min() flirts with UB, and can
 // vary across compilers.
-Number::internalrep
+Number::InternalRep
 Number::externalToInternal(rep mantissa)
 {
     // If the mantissa is already positive, just return it
@@ -736,8 +736,8 @@ Number::externalToInternal(rep mantissa)
     // int128_t, negate that, and cast it back down to the internalrep
     // In practice, this is only going to cover the case of
     // std::numeric_limits<rep>::min().
-    int128_t const temp = mantissa;
-    return static_cast<internalrep>(-temp);
+    Int128T const temp = mantissa;
+    return static_cast<InternalRep>(-temp);
 }
 
 Number
@@ -834,12 +834,12 @@ doNormalize(
 
 template <>
 void
-Number::normalize<uint128_t>(
+Number::normalize<UInt128T>(
     bool& negative,
-    uint128_t& mantissa,
+    UInt128T& mantissa,
     int& exponent,
-    internalrep const& minMantissa,
-    internalrep const& maxMantissa,
+    InternalRep const& minMantissa,
+    InternalRep const& maxMantissa,
     MantissaRange::CuspRoundingFix cuspRoundingFix)
 {
     // Not used by every compiler version, and thus not necessarily
@@ -855,8 +855,8 @@ Number::normalize<unsigned long long>(
     bool& negative,
     unsigned long long& mantissa,
     int& exponent,
-    internalrep const& minMantissa,
-    internalrep const& maxMantissa,
+    InternalRep const& minMantissa,
+    InternalRep const& maxMantissa,
     MantissaRange::CuspRoundingFix cuspRoundingFix)
 {
     // Not used by every compiler version, and thus not necessarily
@@ -872,8 +872,8 @@ Number::normalize<unsigned long>(
     bool& negative,
     unsigned long& mantissa,
     int& exponent,
-    internalrep const& minMantissa,
-    internalrep const& maxMantissa,
+    InternalRep const& minMantissa,
+    InternalRep const& maxMantissa,
     MantissaRange::CuspRoundingFix cuspRoundingFix)
 {
     doNormalize(negative, mantissa, exponent, minMantissa, maxMantissa, cuspRoundingFix, false);
@@ -942,11 +942,11 @@ Number::operator+=(Number const& y)
     // Need to use uint128_t, because large mantissas can overflow when added
     // together.
     bool xn = negative_;
-    uint128_t xm = mantissa_;
+    UInt128T xm = mantissa_;
     auto xe = exponent_;
 
     bool const yn = y.negative_;
-    uint128_t ym = y.mantissa_;
+    UInt128T ym = y.mantissa_;
     auto ye = y.exponent_;
     Guard g(kRange);
 
@@ -960,7 +960,7 @@ Number::operator+=(Number const& y)
     // Bring the exponents of both values into agreement, so the mantissas are on the same scale
     //   and can be added directly together.
 
-    auto const upperLimit = static_cast<uint128_t>(g.minMantissa) * 1000;
+    auto const upperLimit = static_cast<UInt128T>(g.minMantissa) * 1000;
     // For the "adjust" lambda
     // expandM / expandE: The values for which the mantissa will be expanded, and the exponent
     //  decreased to match. Mantissa won't be expanded beyond upperLimit.
@@ -968,7 +968,7 @@ Number::operator+=(Number const& y)
     // shrinkM / shrinkE: The values for which the mantissa will be shrunk, and exponent increased
     //  to match, if necessary.
     auto const adjust = [&g, &upperLimit](
-                            uint128_t& expandM, int& expandE, uint128_t& shrinkM, int& shrinkE) {
+                            UInt128T& expandM, int& expandE, UInt128T& shrinkM, int& shrinkE) {
         XRPL_ASSERT(shrinkE < expandE, "xrpl::Number::operator+= : exponents ordered correctly");
         // Adjust up and down until the exponents match
         if (g.cuspRoundingFix == MantissaRange::CuspRoundingFix::Enabled330)
@@ -1122,7 +1122,7 @@ Number::operator+=(Number const& y)
         cuspRoundingFix,
         cuspRoundingFix == MantissaRange::CuspRoundingFix::Enabled330 && !g.empty());
     negative_ = xn;
-    mantissa_ = static_cast<internalrep>(xm);
+    mantissa_ = static_cast<InternalRep>(xm);
     exponent_ = xe;
     XRPL_ASSERT(isnormal(), "xrpl::Number::operator+= : result is normal");
     return *this;
@@ -1146,15 +1146,15 @@ Number::operator*=(Number const& y)
 
     bool const xn = negative_;
     int const xs = xn ? -1 : 1;
-    internalrep xm = mantissa_;
+    InternalRep xm = mantissa_;
     auto xe = exponent_;
 
     bool const yn = y.negative_;
     int const ys = yn ? -1 : 1;
-    internalrep const ym = y.mantissa_;
+    InternalRep const ym = y.mantissa_;
     auto ye = y.exponent_;
 
-    auto zm = uint128_t(xm) * uint128_t(ym);
+    auto zm = UInt128T(xm) * UInt128T(ym);
     auto ze = xe + ye;
     auto zs = xs * ys;
     bool zn = (zs == -1);
@@ -1171,7 +1171,7 @@ Number::operator*=(Number const& y)
         g.doDropDigit(zm, ze);
     }
 
-    xm = static_cast<internalrep>(zm);
+    xm = static_cast<InternalRep>(zm);
     xe = ze;
     g.doRoundUp(zn, xm, xe, "Number::multiplication overflow : exponent is " + std::to_string(xe));
     negative_ = zn;
@@ -1208,7 +1208,7 @@ Number::operator/=(Number const& y)
     int const ds = (dp ? -1 : 1);
     // Create the denominator as 128-bit unsigned, since that's what we
     // need to work with.
-    auto const dm = static_cast<uint128_t>(y.mantissa_);
+    auto const dm = static_cast<UInt128T>(y.mantissa_);
     auto const de = y.exponent_;
 
     auto const& range = kRange.get();
@@ -1275,9 +1275,9 @@ Number::operator/=(Number const& y)
     // Stage 1: Do the initial division with a factor of 10^17.
     auto constexpr factorExponent = 17;
 
-    uint128_t constexpr f = kPowerOfTen[factorExponent];
+    UInt128T constexpr f = kPowerOfTen[factorExponent];
 
-    auto const numerator = uint128_t(nm) * f;
+    auto const numerator = UInt128T(nm) * f;
 
     auto zm = numerator / dm;
     auto ze = ne - de - factorExponent;
@@ -1317,7 +1317,7 @@ Number::operator/=(Number const& y)
         // If remainder is zero, we can skip this stage entirely because
         // the first stage gave an exact answer.
         auto constexpr correctionExponent = 5;
-        uint128_t constexpr correctionFactor = kPowerOfTen[correctionExponent];
+        UInt128T constexpr correctionFactor = kPowerOfTen[correctionExponent];
         static_assert(factorExponent + correctionExponent == 22);
 
         auto const remainder = (numerator % dm);
@@ -1355,7 +1355,7 @@ Number::operator/=(Number const& y)
     }
     doNormalize(zp, zm, ze, minMantissa, maxMantissa, cuspRoundingFix, dropped);
     negative_ = zp;
-    mantissa_ = static_cast<internalrep>(zm);
+    mantissa_ = static_cast<InternalRep>(zm);
     exponent_ = ze;
     XRPL_ASSERT_PARTS(isnormal(), "xrpl::Number::operator/=", "result is normalized");
 

@@ -75,7 +75,7 @@ public:
      *                 never null.
      */
     virtual void
-    visitEntry(bool isDelete, SLE::const_ref before, SLE::const_ref after) = 0;
+    visitEntry(bool isDelete, SLE::ConstRef before, SLE::ConstRef after) = 0;
 
     /**
      * @brief Called after all entries have been visited.

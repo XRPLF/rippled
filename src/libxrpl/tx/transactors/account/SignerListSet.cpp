@@ -406,7 +406,7 @@ SignerListSet::writeSignersToSLE(SLE::pointer const& ledgerEntry, std::uint32_t 
 }
 
 void
-SignerListSet::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
+SignerListSet::visitInvariantEntry(bool, SLE::ConstRef, SLE::ConstRef)
 {
     // No transaction-specific invariants yet (future work).
 }

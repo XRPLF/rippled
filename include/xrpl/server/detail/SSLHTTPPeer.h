@@ -24,16 +24,16 @@ class SSLHTTPPeer : public BaseHTTPPeer<Handler, SSLHTTPPeer<Handler>>,
 {
 private:
     friend class BaseHTTPPeer<Handler, SSLHTTPPeer>;
-    using socket_type = boost::asio::ip::tcp::socket;
-    using middle_type = boost::beast::tcp_stream;
-    using stream_type = boost::beast::ssl_stream<middle_type>;
-    using endpoint_type = boost::asio::ip::tcp::endpoint;
-    using yield_context = boost::asio::yield_context;
-    using error_code = boost::system::error_code;
+    using SocketType = boost::asio::ip::tcp::socket;
+    using MiddleType = boost::beast::tcp_stream;
+    using StreamType = boost::beast::ssl_stream<MiddleType>;
+    using EndpointType = boost::asio::ip::tcp::endpoint;
+    using YieldContext = boost::asio::yield_context;
+    using ErrorCode = boost::system::error_code;
 
-    std::unique_ptr<stream_type> streamPtr_;
-    stream_type& stream_;
-    socket_type& socket_;
+    std::unique_ptr<StreamType> streamPtr_;
+    StreamType& stream_;
+    SocketType& socket_;
 
 public:
     template <class ConstBufferSequence>
@@ -42,9 +42,9 @@ public:
         Handler& handler,
         boost::asio::io_context& ioc,
         beast::Journal journal,
-        endpoint_type remoteAddress,
+        EndpointType remoteAddress,
         ConstBufferSequence const& buffers,
-        middle_type&& stream);
+        MiddleType&& stream);
 
     void
     run();
@@ -54,7 +54,7 @@ public:
 
 private:
     void
-    doHandshake(yield_context doYield);
+    doHandshake(YieldContext doYield);
 
     void
     doRequest() override;
@@ -63,7 +63,7 @@ private:
     doClose() override;
 
     void
-    onShutdown(error_code ec);
+    onShutdown(ErrorCode ec);
 };
 
 //------------------------------------------------------------------------------
@@ -75,9 +75,9 @@ SSLHTTPPeer<Handler>::SSLHTTPPeer(
     Handler& handler,
     boost::asio::io_context& ioc,
     beast::Journal journal,
-    endpoint_type remoteAddress,
+    EndpointType remoteAddress,
     ConstBufferSequence const& buffers,
-    middle_type&& stream)
+    MiddleType&& stream)
     : BaseHTTPPeer<Handler, SSLHTTPPeer>(
           port,
           handler,
@@ -85,7 +85,7 @@ SSLHTTPPeer<Handler>::SSLHTTPPeer(
           journal,
           remoteAddress,
           buffers)
-    , streamPtr_(std::make_unique<stream_type>(middle_type(std::move(stream)), *port.context))
+    , streamPtr_(std::make_unique<StreamType>(MiddleType(std::move(stream)), *port.context))
     , stream_(*streamPtr_)
     , socket_(stream_.next_layer().socket())
 {
@@ -99,12 +99,12 @@ SSLHTTPPeer<Handler>::run()
     if (!this->handler_.onAccept(this->session(), this->remoteAddress_))
     {
         util::spawn(
-            this->strand_, [self = this->shared_from_this()](yield_context) { self->doClose(); });
+            this->strand_, [self = this->shared_from_this()](YieldContext) { self->doClose(); });
         return;
     }
     if (!socket_.is_open())
         return;
-    util::spawn(this->strand_, [self = this->shared_from_this()](yield_context doYield) {
+    util::spawn(this->strand_, [self = this->shared_from_this()](YieldContext doYield) {
         self->doHandshake(doYield);
     });
 }
@@ -125,13 +125,13 @@ SSLHTTPPeer<Handler>::websocketUpgrade()
 
 template <class Handler>
 void
-SSLHTTPPeer<Handler>::doHandshake(yield_context doYield)
+SSLHTTPPeer<Handler>::doHandshake(YieldContext doYield)
 {
     boost::system::error_code ec;
     stream_.set_verify_mode(boost::asio::ssl::verify_none);
     this->startTimer();
     this->readBuf_.consume(
-        stream_.async_handshake(stream_type::server, this->readBuf_.data(), doYield[ec]));
+        stream_.async_handshake(StreamType::server, this->readBuf_.data(), doYield[ec]));
     this->cancelTimer();
     if (ec == boost::beast::error::timeout)
         return this->onTimer();
@@ -142,7 +142,7 @@ SSLHTTPPeer<Handler>::doHandshake(yield_context doYield)
         this->port().protocol.count("https") > 0;
     if (http)
     {
-        util::spawn(this->strand_, [self = this->shared_from_this()](yield_context doYield) {
+        util::spawn(this->strand_, [self = this->shared_from_this()](YieldContext doYield) {
             self->doRead(doYield);
         });
         return;
@@ -172,12 +172,12 @@ SSLHTTPPeer<Handler>::doClose()
     this->startTimer();
     stream_.async_shutdown(bind_executor(
         this->strand_,
-        [self = this->shared_from_this()](error_code const& ec) { self->onShutdown(ec); }));
+        [self = this->shared_from_this()](ErrorCode const& ec) { self->onShutdown(ec); }));
 }
 
 template <class Handler>
 void
-SSLHTTPPeer<Handler>::onShutdown(error_code ec)
+SSLHTTPPeer<Handler>::onShutdown(ErrorCode ec)
 {
     this->cancelTimer();
 

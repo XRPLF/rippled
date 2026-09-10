@@ -59,34 +59,34 @@ template <
     class T,
     bool IsKeyCache = false,
     class SharedWeakUnionPointerType = SharedWeakCachePointer<T>,
-    class SharedPointerType = std::shared_ptr<T>,
+    class SharedPointer = std::shared_ptr<T>,
     class Hash = HardenedHash<>,
     class KeyEqual = std::equal_to<Key>,
     class Mutex = std::recursive_mutex>
 class TaggedCache
 {
 public:
-    using mutex_type = Mutex;
+    using MutexType = Mutex;
     using key_type = Key;
     using mapped_type = T;
-    using clock_type = beast::AbstractClock<std::chrono::steady_clock>;
-    using shared_weak_combo_pointer_type = SharedWeakUnionPointerType;
-    using shared_pointer_type = SharedPointerType;
+    using ClockType = beast::AbstractClock<std::chrono::steady_clock>;
+    using SharedWeakComboPointerType = SharedWeakUnionPointerType;
+    using SharedPointerType = SharedPointer;
 
 public:
     TaggedCache(
         std::string const& name,
         int size,
-        clock_type::duration expiration,
-        clock_type& clock,
+        ClockType::duration expiration,
+        ClockType& clock,
         beast::Journal journal,
-        beast::insight::Collector::ptr const& collector = beast::insight::NullCollector::make());
+        beast::insight::Collector::Ptr const& collector = beast::insight::NullCollector::make());
 
 public:
     /**
      * Return the clock associated with the cache.
      */
-    clock_type&
+    ClockType&
     clock();
 
     /**
@@ -239,7 +239,7 @@ public:
     bool
     retrieve(key_type const& key, T& data);
 
-    mutex_type&
+    MutexType&
     peekMutex();
 
     std::vector<key_type>
@@ -265,7 +265,7 @@ public:
 
 private:
     SharedPointerType
-    initialFetch(key_type const& key, std::scoped_lock<mutex_type> const& l);
+    initialFetch(key_type const& key, std::scoped_lock<MutexType> const& l);
 
     void
     collectMetrics();
@@ -277,7 +277,7 @@ private:
         Stats(
             std::string const& prefix,
             Handler const& handler,
-            beast::insight::Collector::ptr const& collector)
+            beast::insight::Collector::Ptr const& collector)
             : hook(collector->makeHook(handler))
             , size(collector->makeGauge(prefix, "size"))
             , hitRate(collector->makeGauge(prefix, "hit_rate"))
@@ -296,14 +296,14 @@ private:
     class KeyOnlyEntry
     {
     public:
-        clock_type::time_point lastAccess;
+        ClockType::time_point lastAccess;
 
-        explicit KeyOnlyEntry(clock_type::time_point const& lastAccess) : lastAccess(lastAccess)
+        explicit KeyOnlyEntry(ClockType::time_point const& lastAccess) : lastAccess(lastAccess)
         {
         }
 
         void
-        touch(clock_type::time_point const& now)
+        touch(ClockType::time_point const& now)
         {
             lastAccess = now;
         }
@@ -312,10 +312,10 @@ private:
     class ValueEntry
     {
     public:
-        shared_weak_combo_pointer_type ptr;
-        clock_type::time_point lastAccess;
+        SharedWeakComboPointerType ptr;
+        ClockType::time_point lastAccess;
 
-        ValueEntry(clock_type::time_point const& lastAccess, shared_pointer_type const& ptr)
+        ValueEntry(ClockType::time_point const& lastAccess, SharedPointerType const& ptr)
             : ptr(ptr), lastAccess(lastAccess)
         {
         }
@@ -343,7 +343,7 @@ private:
             return ptr.lock();
         }
         void
-        touch(clock_type::time_point const& now)
+        touch(ClockType::time_point const& now)
         {
             lastAccess = now;
         }
@@ -351,35 +351,35 @@ private:
 
     using Entry = std::conditional_t<IsKeyCache, KeyOnlyEntry, ValueEntry>;
 
-    using KeyOnlyCacheType = hardened_partitioned_hash_map<key_type, KeyOnlyEntry, Hash, KeyEqual>;
+    using KeyOnlyCacheType = HardenedPartitionedHashMap<key_type, KeyOnlyEntry, Hash, KeyEqual>;
 
-    using KeyValueCacheType = hardened_partitioned_hash_map<key_type, ValueEntry, Hash, KeyEqual>;
+    using KeyValueCacheType = HardenedPartitionedHashMap<key_type, ValueEntry, Hash, KeyEqual>;
 
-    using cache_type = hardened_partitioned_hash_map<key_type, Entry, Hash, KeyEqual>;
+    using CacheType = HardenedPartitionedHashMap<key_type, Entry, Hash, KeyEqual>;
 
     [[nodiscard]] std::thread
     sweepHelper(
-        clock_type::time_point const& whenExpire,
-        [[maybe_unused]] clock_type::time_point const& now,
-        KeyValueCacheType::map_type& partition,
+        ClockType::time_point const& whenExpire,
+        [[maybe_unused]] ClockType::time_point const& now,
+        KeyValueCacheType::MapType& partition,
         SweptPointersVector& stuffToSweep,
         std::atomic<int>& allRemovals,
         std::scoped_lock<std::recursive_mutex> const&);
 
     [[nodiscard]] std::thread
     sweepHelper(
-        clock_type::time_point const& whenExpire,
-        clock_type::time_point const& now,
-        KeyOnlyCacheType::map_type& partition,
+        ClockType::time_point const& whenExpire,
+        ClockType::time_point const& now,
+        KeyOnlyCacheType::MapType& partition,
         SweptPointersVector&,
         std::atomic<int>& allRemovals,
         std::scoped_lock<std::recursive_mutex> const&);
 
     beast::Journal journal_;
-    clock_type& clock_;
+    ClockType& clock_;
     Stats stats_;
 
-    mutex_type mutable mutex_;
+    MutexType mutable mutex_;
 
     // Used for logging
     std::string name_;
@@ -388,11 +388,11 @@ private:
     int const targetSize_;
 
     // Desired maximum cache age
-    clock_type::duration const targetAge_;
+    ClockType::duration const targetAge_;
 
     // Number of items cached
     int cacheCount_{0};
-    cache_type cache_;  // Hold strong reference to recent objects
+    CacheType cache_;  // Hold strong reference to recent objects
     std::uint64_t hits_{0};
     std::uint64_t misses_{0};
 };

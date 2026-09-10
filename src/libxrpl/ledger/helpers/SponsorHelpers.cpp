@@ -113,7 +113,7 @@ getTxReserveSponsor(ReadView const& view, STTx const& tx)
 }
 
 std::expected<SLE::pointer, TER>
-getEffectiveTxReserveSponsor(ApplyViewContext ctx, SLE::const_ref accountSle)
+getEffectiveTxReserveSponsor(ApplyViewContext ctx, SLE::ConstRef accountSle)
 {
     // A reserve sponsor only covers tx.Account's own objects.
     if (ctx.view.rules().enabled(fixCleanup3_2_0))
@@ -136,7 +136,7 @@ getEffectiveTxReserveSponsor(ApplyViewContext ctx, SLE::const_ref accountSle)
 }
 
 std::optional<AccountID>
-getLedgerEntryReserveSponsorID(SLE::const_ref sle, SF_ACCOUNT const& field)
+getLedgerEntryReserveSponsorID(SLE::ConstRef sle, SF_ACCOUNT const& field)
 {
     XRPL_ASSERT(
         (sle &&
@@ -150,7 +150,7 @@ getLedgerEntryReserveSponsorID(SLE::const_ref sle, SF_ACCOUNT const& field)
 }
 
 SLE::pointer
-getLedgerEntryReserveSponsor(ApplyView& view, SLE::const_ref sle, SF_ACCOUNT const& field)
+getLedgerEntryReserveSponsor(ApplyView& view, SLE::ConstRef sle, SF_ACCOUNT const& field)
 {
     auto const sponsorID = getLedgerEntryReserveSponsorID(sle, field);
     if (sponsorID)
@@ -164,7 +164,7 @@ getLedgerEntryReserveSponsor(ApplyView& view, SLE::const_ref sle, SF_ACCOUNT con
 }
 
 void
-addSponsorToLedgerEntry(SLE::ref sle, SLE::const_ref sponsorSle, SF_ACCOUNT const& field)
+addSponsorToLedgerEntry(SLE::Ref sle, SLE::ConstRef sponsorSle, SF_ACCOUNT const& field)
 {
     XRPL_ASSERT(
         (sle->getType() == ltRIPPLE_STATE && (field == sfHighSponsor || field == sfLowSponsor)) ||
@@ -181,7 +181,7 @@ addSponsorToLedgerEntry(SLE::ref sle, SLE::const_ref sponsorSle, SF_ACCOUNT cons
 }
 
 void
-addSponsorToLedgerEntry(ApplyViewContext ctx, SLE::ref sle, SF_ACCOUNT const& field)
+addSponsorToLedgerEntry(ApplyViewContext ctx, SLE::Ref sle, SF_ACCOUNT const& field)
 {
     // getTxReserveSponsor yields a null pointer when the tx is not
     // reserve-sponsored, so addSponsorToLedgerEntry becomes a no-op then. The
@@ -197,7 +197,7 @@ addSponsorToLedgerEntry(ApplyViewContext ctx, SLE::ref sle, SF_ACCOUNT const& fi
 }
 
 void
-removeSponsorFromLedgerEntry(SLE::ref sle, SF_ACCOUNT const& field)
+removeSponsorFromLedgerEntry(SLE::Ref sle, SF_ACCOUNT const& field)
 {
     XRPL_ASSERT(
         (sle->getType() == ltRIPPLE_STATE && (field == sfHighSponsor || field == sfLowSponsor)) ||

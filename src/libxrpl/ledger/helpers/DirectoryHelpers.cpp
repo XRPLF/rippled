@@ -18,10 +18,10 @@ namespace xrpl {
 bool
 dirFirst(
     ApplyView& view,
-    uint256 const& root,
+    UInt256 const& root,
     SLE::pointer& page,
     unsigned int& index,
-    uint256& entry)
+    UInt256& entry)
 {
     return detail::internalDirFirst(view, root, page, index, entry);
 }
@@ -29,10 +29,10 @@ dirFirst(
 bool
 dirNext(
     ApplyView& view,
-    uint256 const& root,
+    UInt256 const& root,
     SLE::pointer& page,
     unsigned int& index,
-    uint256& entry)
+    UInt256& entry)
 {
     return detail::internalDirNext(view, root, page, index, entry);
 }
@@ -40,10 +40,10 @@ dirNext(
 bool
 cdirFirst(
     ReadView const& view,
-    uint256 const& root,
+    UInt256 const& root,
     SLE::const_pointer& page,
     unsigned int& index,
-    uint256& entry)
+    UInt256& entry)
 {
     return detail::internalDirFirst(view, root, page, index, entry);
 }
@@ -51,16 +51,16 @@ cdirFirst(
 bool
 cdirNext(
     ReadView const& view,
-    uint256 const& root,
+    UInt256 const& root,
     SLE::const_pointer& page,
     unsigned int& index,
-    uint256& entry)
+    UInt256& entry)
 {
     return detail::internalDirNext(view, root, page, index, entry);
 }
 
 void
-forEachItem(ReadView const& view, Keylet const& root, std::function<void(SLE::const_ref)> const& f)
+forEachItem(ReadView const& view, Keylet const& root, std::function<void(SLE::ConstRef)> const& f)
 {
     XRPL_ASSERT(root.type == ltDIR_NODE, "xrpl::forEachItem : valid root type");
 
@@ -87,10 +87,10 @@ bool
 forEachItemAfter(
     ReadView const& view,
     Keylet const& root,
-    uint256 const& after,
+    UInt256 const& after,
     std::uint64_t const hint,
     unsigned int limit,
-    std::function<bool(SLE::const_ref)> const& f)
+    std::function<bool(SLE::ConstRef)> const& f)
 {
     XRPL_ASSERT(root.type == ltDIR_NODE, "xrpl::forEachItemAfter : valid root type");
 
@@ -176,10 +176,10 @@ dirIsEmpty(ReadView const& view, Keylet const& k)
     return sleNode->getFieldU64(sfIndexNext) == 0;
 }
 
-std::function<void(SLE::ref)>
+std::function<void(SLE::Ref)>
 describeOwnerDir(AccountID const& account)
 {
-    return [account](SLE::ref sle) { (*sle)[sfOwner] = account; };
+    return [account](SLE::Ref sle) { (*sle)[sfOwner] = account; };
 }
 
 }  // namespace xrpl

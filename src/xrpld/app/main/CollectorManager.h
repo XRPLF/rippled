@@ -18,10 +18,10 @@ class CollectorManager
 public:
     virtual ~CollectorManager() = default;
 
-    virtual beast::insight::Collector::ptr const&
+    virtual beast::insight::Collector::Ptr const&
     collector() = 0;
 
-    virtual beast::insight::Group::ptr const&
+    virtual beast::insight::Group::Ptr const&
     group(std::string const& name) = 0;
 };
 
