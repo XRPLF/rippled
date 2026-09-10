@@ -18,6 +18,7 @@
 #include <xrpl.pb.h>
 
 #include <algorithm>
+#include <chrono>
 #include <cstddef>
 #include <exception>
 #include <memory>
@@ -26,22 +27,18 @@
 
 namespace xrpl {
 
-using namespace std::chrono_literals;
-
-// Timeout interval in milliseconds
-constexpr auto kTxAcquireTimeout = 250ms;
-
 static constexpr auto kNormTimeouts = 4;
 static constexpr auto kMaxTimeouts = 20;
 
 TransactionAcquire::TransactionAcquire(
     Application& app,
     uint256 const& hash,
-    std::unique_ptr<PeerSet> peerSet)
+    std::unique_ptr<PeerSet> peerSet,
+    std::chrono::milliseconds retryInterval)
     : TimeoutCounter(
           app,
           hash,
-          kTxAcquireTimeout,
+          retryInterval,
           {.jobType = JtTxnData, .jobName = "TxAcq", .jobLimit = {}},
           app.getJournal("TransactionAcquire"))
     , peerSet_(std::move(peerSet))
@@ -79,7 +76,7 @@ TransactionAcquire::done()
 }
 
 void
-TransactionAcquire::onTimer(bool progress, ScopedLockType& psl)
+TransactionAcquire::onTimer(bool progress, ScopedLockType&)
 {
     if (timeouts_ > kMaxTimeouts)
     {
