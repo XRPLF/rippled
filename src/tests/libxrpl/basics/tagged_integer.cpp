@@ -105,7 +105,7 @@ static_assert(
 
 using TagInt = TaggedInteger<std::int32_t, Tag1>;
 
-TEST(tagged_integer, comparison_operators)
+TEST(TaggedInteger, comparison_operators)
 {
     TagInt const zero(0);
     TagInt const one(1);
@@ -131,7 +131,7 @@ TEST(tagged_integer, comparison_operators)
     EXPECT_FALSE(one <= zero);
 }
 
-TEST(tagged_integer, increment_decrement_operators)
+TEST(TaggedInteger, increment_decrement_operators)
 {
     TagInt const zero(0);
     TagInt const one(1);
@@ -146,7 +146,7 @@ TEST(tagged_integer, increment_decrement_operators)
     EXPECT_EQ(a, zero);
 }
 
-TEST(tagged_integer, arithmetic_operators)
+TEST(TaggedInteger, arithmetic_operators)
 {
     TagInt const a{-2};
     EXPECT_EQ(+a, TagInt{-2});
@@ -166,7 +166,7 @@ TEST(tagged_integer, arithmetic_operators)
     EXPECT_EQ((TagInt{16} >> TagInt{2}), TagInt{4});
 }
 
-TEST(tagged_integer, assignment_operators)
+TEST(TaggedInteger, assignment_operators)
 {
     TagInt a{-2};
     TagInt b{0};
