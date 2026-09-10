@@ -797,13 +797,10 @@ flow(
      *   TakerPays. We reverse pays and gets because during crossing
      *   we are taking, therefore the owner must deliver the full TakerPays and
      *   the entire TakerGets doesn't have to be spent.
-     *   Pre-fixFillOrKill amendment code fails if the entire TakerGets
-     *   is not spent. fixFillOrKill addresses this issue.
      * 2. If tfSell is also set then the owner must spend the entire TakerGets
      *   even if it means obtaining more than TakerPays. Since the pays and gets
      *   are reversed, the owner must send the entire TakerGets.
      */
-    bool const fillOrKillEnabled = baseView.rules().enabled(fixFillOrKill);
 
     if (actualOut != outReq)
     {
@@ -819,13 +816,9 @@ flow(
         }
         if (!partialPayment)
         {
-            // If we're offerCrossing a !partialPayment, then we're handling tfFillOrKill.
-            // Pre-fixFillOrKill amendment:
-            //   That case is handled below; not here.
-            // fixFillOrKill amendment:
-            //   That case is handled here if tfSell is also not set; i.e, case 1.
-            if (offerCrossing == OfferCrossing::No ||
-                (fillOrKillEnabled && offerCrossing != OfferCrossing::Sell))
+            // If partialPayment is false, the caller requires full outReq (payments, or FillOrKill
+            // offers).
+            if (offerCrossing != OfferCrossing::Sell)
             {
                 return {tecPATH_PARTIAL, actualIn, actualOut, std::move(ofrsToRmOnFail)};
             }
@@ -835,16 +828,10 @@ flow(
             return {tecPATH_DRY, std::move(ofrsToRmOnFail)};
         }
     }
-    if (offerCrossing != OfferCrossing::No &&
-        (!partialPayment && (!fillOrKillEnabled || offerCrossing == OfferCrossing::Sell)))
+    if (!partialPayment && offerCrossing == OfferCrossing::Sell)
     {
         // If we're offer crossing and partialPayment is *not* true, then
-        // we're handling a FillOrKill offer.  In this case remainingIn must
-        // be zero (all funds must be consumed) or else we kill the offer.
-        // Pre-fixFillOrKill amendment:
-        //   Handles both cases 1. and 2.
-        // fixFillOrKill amendment:
-        //   Handles 2. 1. is handled above and falls through for tfSell.
+        // we're handling a FillOrKill offer.
         XRPL_ASSERT(remainingIn, "xrpl::flow : nonzero remainingIn");
         if (remainingIn && *remainingIn != beast::kZero)
             return {tecPATH_PARTIAL, actualIn, actualOut, std::move(ofrsToRmOnFail)};
