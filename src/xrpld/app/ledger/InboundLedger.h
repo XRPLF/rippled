@@ -79,7 +79,13 @@ public:
     update(std::uint32_t seq);
 
     /**
-     * Returns true if we got all the data.
+     * Whether the acquisition succeeded and its ledger has been settled.
+     *
+     * Not merely "we got all the data": done() makes the ledger immutable
+     * before setting this, so a caller that sees it may use the ledger
+     * without checking anything else about it.
+     *
+     * @return Whether the ledger is complete and settled.
      */
     bool
     isComplete() const
@@ -158,8 +164,13 @@ protected:
     trigger(std::shared_ptr<Peer> const& peer, TriggerReason reason);
 
     /**
-     * Settle the acquisition and signal whatever is waiting on it. Runs at most
-     * once. Call under mtx_, which the flags written here require.
+     * Settle the acquisition, publish its outcome, and signal whatever is
+     * waiting on it. Runs at most once.
+     *
+     * Settling comes first: isComplete() is read without mtx_, so an
+     * outcome published before the ledger is immutable could be acted on
+     * while the ledger is still mutable. Call under mtx_, which the flags
+     * written here require.
      */
     void
     done();
