@@ -158,8 +158,6 @@ TEST_F(BytecodePreflight, BytecodeWithoutACancelTimeIsRefused)
     EXPECT_EQ(env.submit(withFinish, alice, fee).ter, temBAD_EXPIRATION);
 }
 
-// The success side, and the reason this file could not exist before: these cases need a
-// module that actually passes screening, which the old compiled fixtures stopped doing.
 TEST_F(BytecodePreflight, BytecodeWithACancelTimeIsAccepted)
 {
     auto env = TxTest{};

@@ -24,14 +24,6 @@ inline constexpr auto kReadsLedgerSqn = std::string_view{R"wat(
     (i32.const 5)))
 )wat"};
 
-// Returns 0, which `EscrowFinish` reads as a contract-defined rejection.
-inline constexpr auto kRejects = std::string_view{R"wat(
-(module
-  (memory (export "memory") 1)
-  (func (export "escrow_finish") (result i32)
-    (i32.const 0)))
-)wat"};
-
 // Traps. A fault rather than a rejection: no return code, and nothing it wrote survives.
 inline constexpr auto kTraps = std::string_view{R"wat(
 (module

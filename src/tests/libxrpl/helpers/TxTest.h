@@ -240,37 +240,19 @@ public:
      * @tparam T A type derived from TransactionBuilderBase.
      * @param builder The transaction builder.
      * @param signer The account to sign with.
+     * @param fee The fee to pay. The 10 drop default is below what some transactions
+     *            require: an `EscrowCreate` carrying `sfBytecode` owes
+     *            `base * 10 + 5 * bytecodeBytes` (`EscrowCreate::calculateBaseFee`), and an
+     *            `EscrowFinish` carrying `sfGas` owes the allowance priced at `gasPrice`.
+     *            Those submissions would fail on the fee rather than on whatever they meant
+     *            to test, so they must pass one explicitly.
      * @return TxResult containing the result code, applied status, and metadata.
      */
     template <typename T>
         requires std::
             derived_from<std::decay_t<T>, transactions::TransactionBuilderBase<std::decay_t<T>>>
         [[nodiscard]] TxResult
-        submit(T&& builder, Account const& signer)
-    {
-        return submit(std::forward<T>(builder), signer, XRPAmount{10});
-    }
-
-    /**
-     * @brief Submit a transaction from a builder, paying an explicit fee.
-     *
-     * The overload above pays a flat 10 drops, which is below what some transactions
-     * require: an `EscrowCreate` carrying `sfBytecode` owes `base * 10 + 5 * bytecodeBytes`
-     * (`EscrowCreate::calculateBaseFee`), and an `EscrowFinish` carrying `sfGas` owes the
-     * allowance priced at `gasPrice`. Those submissions would fail on the fee rather than on
-     * whatever they meant to test.
-     *
-     * @tparam T A type derived from TransactionBuilderBase.
-     * @param builder The transaction builder.
-     * @param signer The account to sign with.
-     * @param fee The fee to pay.
-     * @return TxResult containing the result code, applied status, and metadata.
-     */
-    template <typename T>
-        requires std::
-            derived_from<std::decay_t<T>, transactions::TransactionBuilderBase<std::decay_t<T>>>
-        [[nodiscard]] TxResult
-        submit(T&& builder, Account const& signer, XRPAmount fee)
+        submit(T&& builder, Account const& signer, XRPAmount fee = XRPAmount{10})
     {
         auto const& obj = builder.getSTObject();
         auto accountId = obj[sfAccount];
@@ -297,14 +279,14 @@ public:
      * @tparam T A type derived from TransactionBuilderBase.
      * @param builder The transaction builder.
      * @param signer The account to sign with.
-     * @param fee The fee to pay.
+     * @param fee The fee to pay; see `submit` for when the default is not enough.
      * @return The result code and the metadata produced by the close.
      */
     template <typename T>
         requires std::
             derived_from<std::decay_t<T>, transactions::TransactionBuilderBase<std::decay_t<T>>>
         [[nodiscard]] ClosedResult
-        submitAndClose(T&& builder, Account const& signer, XRPAmount fee)
+        submitAndClose(T&& builder, Account const& signer, XRPAmount fee = XRPAmount{10})
     {
         auto const result = submit(std::forward<T>(builder), signer, fee);
         close();
