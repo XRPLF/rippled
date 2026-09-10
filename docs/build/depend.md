@@ -82,7 +82,7 @@ conan install \
   --settings build_type=Release \
   ../submodules/rippled
 cmake \
-  -DCMAKE_TOOLCHAIN_FILE=build/generators/conan_toolchain.cmake \
+  -DCMAKE_TOOLCHAIN_FILE=generators/conan_toolchain.cmake \
   -DCMAKE_BUILD_TYPE=Release \
   ..
 cmake --build . --parallel
