@@ -929,10 +929,13 @@ private:
             env.close();
         };
 
+        // fixCleanup3_5_0 must be disabled alongside fixCleanup3_4_0 to reproduce the bug: its
+        // Downward payout rounding floors the last-share withdrawal onto a representable amount,
+        // which keeps the invariant satisfied even without the fixCleanup3_4_0 clamp.
         testcase(
             "bug: VaultWithdraw permanently locks a large IOU vault "
             "(pre-fixCleanup3_4_0)");
-        runScenario(all_ - fixCleanup3_4_0, tecINVARIANT_FAILED);
+        runScenario(all_ - fixCleanup3_4_0 - fixCleanup3_5_0, tecINVARIANT_FAILED);
         testcase(
             "bug: VaultWithdraw no longer locks a large IOU vault "
             "(post-fixCleanup3_4_0)");

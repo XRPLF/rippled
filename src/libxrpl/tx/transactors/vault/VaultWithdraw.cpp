@@ -82,6 +82,7 @@ VaultWithdraw::preclaim(PreclaimContext const& ctx)
     auto const fix320Enabled = ctx.view.rules().enabled(fixCleanup3_2_0);
     auto const fix330Enabled = ctx.view.rules().enabled(fixCleanup3_3_0);
     auto const fix340Enabled = ctx.view.rules().enabled(fixCleanup3_4_0);
+    auto const fix350Enabled = ctx.view.rules().enabled(fixCleanup3_5_0);
 
     auto const vault = ctx.view.read(keylet::vault(ctx.tx[sfVaultID]));
     if (!vault)
@@ -165,8 +166,14 @@ VaultWithdraw::preclaim(PreclaimContext const& ctx)
         auto const waiveUnrealizedLoss = shouldWaiveWithdrawal(ctx.view, account, sleIssuance);
         try
         {
-            auto const maybeAssets =
-                sharesToAssetsWithdraw(vault, sleIssuance, amount, waiveUnrealizedLoss);
+            // Match the Downward payout rounding used in doApply so the limit
+            // check estimates the same asset amount the withdrawal will pay.
+            auto const maybeAssets = sharesToAssetsWithdraw(
+                vault,
+                sleIssuance,
+                amount,
+                waiveUnrealizedLoss,
+                fix350Enabled ? Number::RoundingMode::Downward : Number::RoundingMode::ToNearest);
             if (!maybeAssets)
                 return tefINTERNAL;  // LCOV_EXCL_LINE
 
@@ -278,6 +285,7 @@ TER
 VaultWithdraw::doApply()
 {
     bool const fix340Enabled = view().rules().enabled(fixCleanup3_4_0);
+    bool const fix350Enabled = view().rules().enabled(fixCleanup3_5_0);
     auto const vault = view().peek(keylet::vault(ctx_.tx[sfVaultID]));
     auto applyViewContext = ctx_.getApplyViewContext();
     if (!vault)
@@ -311,6 +319,16 @@ VaultWithdraw::doApply()
     // We waive the unrealized-loss subtraction in this case to avoid user withdrawing all of their
     // shares but keeping future value in the vault.
     auto const waiveUnrealizedLoss = shouldWaiveWithdrawal(view(), accountID_, sleIssuance);
+
+    // Post-fixCleanup3_5_0: round the assets paid to the withdrawing shareholder Downward, so they
+    // receive at most the fair value of the shares they burn. Round-to-nearest could round the
+    // payout above that value, dropping the assets-per-share price and diluting the shareholders
+    // who remain. For an IOU the fixCleanup3_4_0 clamp below re-floors the payout to the
+    // sfAssetsTotal grid; the Downward mode is load-bearing for integral (XRP/MPT) assets, which
+    // clampToAssetsTotalScale returns unchanged.
+    auto const withdrawRounding =
+        fix350Enabled ? Number::RoundingMode::Downward : Number::RoundingMode::ToNearest;
+
     // Number arithmetic can throw overflow_error when Scale and totals are large. Caught below.
     try
     {
@@ -342,8 +360,8 @@ VaultWithdraw::doApply()
                 return tecPRECISION_LOSS;
             // Convert shares back to assets so the payout matches the shares actually burned, not
             // the requested amount. The extra would otherwise be paid from the vault for free.
-            auto const maybeAssets =
-                sharesToAssetsWithdraw(vault, sleIssuance, sharesRedeemed, waiveUnrealizedLoss);
+            auto const maybeAssets = sharesToAssetsWithdraw(
+                vault, sleIssuance, sharesRedeemed, waiveUnrealizedLoss, withdrawRounding);
             if (!maybeAssets)
                 return tecINTERNAL;  // LCOV_EXCL_LINE
             assetsWithdrawn = *maybeAssets;
@@ -353,8 +371,8 @@ VaultWithdraw::doApply()
             // Fixed shares, variable assets. No round-trip: the share count is exactly what the
             // caller specified; only the payout amount is derived.
             sharesRedeemed = amount;
-            auto const maybeAssets =
-                sharesToAssetsWithdraw(vault, sleIssuance, sharesRedeemed, waiveUnrealizedLoss);
+            auto const maybeAssets = sharesToAssetsWithdraw(
+                vault, sleIssuance, sharesRedeemed, waiveUnrealizedLoss, withdrawRounding);
             if (!maybeAssets)
                 return tecINTERNAL;  // LCOV_EXCL_LINE
             assetsWithdrawn = *maybeAssets;
