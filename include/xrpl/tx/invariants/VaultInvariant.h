@@ -46,6 +46,9 @@ namespace xrpl {
  * - vault withdrawal may not succeed when the vault phase is Investment
  * - closed-ended loan origination (ttLOAN_SET) may only succeed when the
  *   vault phase is Investment
+ * - from fixCleanup3_5_0 onward, at most one ltVAULT may be erased, it must be
+ *   the one identified by a ttVAULT_DELETE transaction's VaultID, and that
+ *   transaction must not leave any other vault created or modified
  *
  * Immutability of VaultKind, SubscriptionDate and RedemptionDate is enforced
  * by NoModifiedUnmodifiableFields (see InvariantCheck.cpp). From
@@ -100,6 +103,10 @@ private:
     std::vector<Shares> afterMPTs_;
     std::vector<Vault> beforeVault_;
     std::vector<Shares> beforeMPTs_;
+    // Pre-state of the vaults erased by this transaction. A subset of
+    // beforeVault_, which holds the pre-state of every touched vault and so
+    // cannot on its own tell a deleted vault from a modified one.
+    std::vector<Vault> deletedVault_;
     std::unordered_map<uint256, DeltaInfo> deltas_;
 
     /**

@@ -108,6 +108,8 @@ ValidVault::visitEntry(bool isDelete, SLE::const_ref before, SLE::const_ref afte
         {
             case ltVAULT:
                 beforeVault_.push_back(Vault::make(*before));
+                if (isDelete)
+                    deletedVault_.push_back(beforeVault_.back());
                 break;
             case ltMPTOKEN_ISSUANCE:
                 // At this moment we have no way of telling if this object holds
@@ -418,6 +420,7 @@ ValidVault::finalize(
 {
     bool const enforce = view.rules().enabled(featureSingleAssetVault);
     bool const fix340Enabled = view.rules().enabled(fixCleanup3_4_0);
+    bool const fix350Enabled = view.rules().enabled(fixCleanup3_5_0);
 
     if (!isTesSuccess(ret))
         return true;  // Do not perform checks
@@ -445,6 +448,16 @@ ValidVault::finalize(
             "xrpl::ValidVault::finalize : illegal vault transaction "
             "invariant");
         return !enforce;  // Also not a vault operation
+    }
+
+    // Counted explicitly, and ahead of the check below, which conflates
+    // deletions with modifications. Bounding the deletions on their own keeps
+    // the rule auditable here rather than as a consequence of how beforeVault_
+    // happens to be populated, and matches ValidLoan and ValidLoanBroker.
+    if (fix350Enabled && deletedVault_.size() > 1)
+    {
+        JLOG(j.fatal()) << "Invariant failed: more than one vault deleted";
+        return false;  // That's all we can do here
     }
 
     if (beforeVault_.size() > 1 || afterVault_.size() > 1)
@@ -516,6 +529,16 @@ ValidVault::finalize(
             result = false;
         }
 
+        // The vault erased must be the one the transaction names. Reaching here
+        // means txnType is ttVAULT_DELETE, so sfVaultID is present. Checked last
+        // so that the more specific diagnostics above are reported first.
+        if (fix350Enabled && beforeVault.key != keylet::vault(tx[sfVaultID]).key)
+        {
+            JLOG(j.fatal()) << "Invariant failed: deleted vault does not match "
+                               "the VaultID in the transaction";
+            result = false;
+        }
+
         return result;
     }
     if (txnType == ttVAULT_DELETE)
@@ -524,6 +547,20 @@ ValidVault::finalize(
                            "deleting a vault";
         XRPL_ASSERT(enforce, "xrpl::ValidVault::finalize : vault deletion invariant");
         return !enforce;  // That's all we can do here
+    }
+
+    // Reaching here means a vault survives the transaction, so any vault erased
+    // alongside it must be a different one. The single-vault check above counts
+    // beforeVault_ and afterVault_ separately and so cannot see this pairing,
+    // which would otherwise leave the checks below comparing the pre-state of
+    // the erased vault against the post-state of the surviving one. Checked
+    // before the assert that follows, which covers the same pairing but only in
+    // debug builds.
+    if (fix350Enabled && !deletedVault_.empty())
+    {
+        JLOG(j.fatal()) << "Invariant failed: vault deletion must not "
+                           "create or modify another vault";
+        return false;  // That's all we can do here
     }
 
     // Note, `afterVault_.empty()` is handled above
