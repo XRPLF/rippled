@@ -39,12 +39,12 @@ TEST(TransactionsLoanBrokerSetTests, BuilderSettersRoundTrip)
 
     LoanBrokerSetBuilder builder{
         accountValue,
-        vaultIDValue,
         sequenceValue,
         feeValue
     };
 
     // Set optional fields
+    builder.setVaultID(vaultIDValue);
     builder.setLoanBrokerID(loanBrokerIDValue);
     builder.setData(dataValue);
     builder.setManagementFeeRate(managementFeeRateValue);
@@ -67,13 +67,15 @@ TEST(TransactionsLoanBrokerSetTests, BuilderSettersRoundTrip)
     EXPECT_EQ(tx.getFee(), feeValue);
 
     // Verify required fields
+    // Verify optional fields
     {
         auto const& expected = vaultIDValue;
-        auto const actual = tx.getVaultID();
-        expectEqualField(expected, actual, "sfVaultID");
+        auto const actualOpt = tx.getVaultID();
+        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfVaultID should be present";
+        expectEqualField(expected, *actualOpt, "sfVaultID");
+        EXPECT_TRUE(tx.hasVaultID());
     }
 
-    // Verify optional fields
     {
         auto const& expected = loanBrokerIDValue;
         auto const actualOpt = tx.getLoanBrokerID();
@@ -149,11 +151,11 @@ TEST(TransactionsLoanBrokerSetTests, BuilderFromStTxRoundTrip)
     // Build an initial transaction
     LoanBrokerSetBuilder initialBuilder{
         accountValue,
-        vaultIDValue,
         sequenceValue,
         feeValue
     };
 
+    initialBuilder.setVaultID(vaultIDValue);
     initialBuilder.setLoanBrokerID(loanBrokerIDValue);
     initialBuilder.setData(dataValue);
     initialBuilder.setManagementFeeRate(managementFeeRateValue);
@@ -177,13 +179,14 @@ TEST(TransactionsLoanBrokerSetTests, BuilderFromStTxRoundTrip)
     EXPECT_EQ(rebuiltTx.getFee(), feeValue);
 
     // Verify required fields
+    // Verify optional fields
     {
         auto const& expected = vaultIDValue;
-        auto const actual = rebuiltTx.getVaultID();
-        expectEqualField(expected, actual, "sfVaultID");
+        auto const actualOpt = rebuiltTx.getVaultID();
+        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfVaultID should be present";
+        expectEqualField(expected, *actualOpt, "sfVaultID");
     }
 
-    // Verify optional fields
     {
         auto const& expected = loanBrokerIDValue;
         auto const actualOpt = rebuiltTx.getLoanBrokerID();
@@ -269,11 +272,9 @@ TEST(TransactionsLoanBrokerSetTests, OptionalFieldsReturnNullopt)
     auto const feeValue = canonical_AMOUNT();
 
     // Transaction-specific required field values
-    auto const vaultIDValue = canonical_UINT256();
 
     LoanBrokerSetBuilder builder{
         accountValue,
-        vaultIDValue,
         sequenceValue,
         feeValue
     };
@@ -283,6 +284,8 @@ TEST(TransactionsLoanBrokerSetTests, OptionalFieldsReturnNullopt)
     auto tx = builder.build(publicKey, secretKey);
 
     // Verify optional fields are not present
+    EXPECT_FALSE(tx.hasVaultID());
+    EXPECT_FALSE(tx.getVaultID().has_value());
     EXPECT_FALSE(tx.hasLoanBrokerID());
     EXPECT_FALSE(tx.getLoanBrokerID().has_value());
     EXPECT_FALSE(tx.hasData());
