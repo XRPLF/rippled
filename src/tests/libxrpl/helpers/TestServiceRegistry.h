@@ -8,7 +8,6 @@
 #include <xrpl/core/NetworkIDService.h>
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/PendingSaves.h>
-#include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/server/LoadFeeTrack.h>
 
