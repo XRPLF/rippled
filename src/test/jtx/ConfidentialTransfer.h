@@ -124,6 +124,87 @@ protected:
         return proof;
     }
 
+    // Forges a ConvertBack proof (compact sigma + single bulletproof) whose
+    // sigma component claims claimedBalance (which may be wrong) while binding
+    // to the real pedersen commitment and encrypted spending balance
+    // ciphertext already on the ledger. The bulletproof component is built
+    // from realBalance so it stays honest.
+    // mpt_get_convert_back_proof does not allow to build a proof whose amount
+    // exceeds the holder's claimed balance.
+    static Buffer
+    getForgedConvertBackProof(
+        test::jtx::MPTTester& mpt,
+        test::jtx::Account const& holder,
+        uint64_t claimedBalance,
+        uint64_t realBalance,
+        uint64_t amt,
+        Buffer const& pedersenCommitment,
+        Buffer const& encryptedSpendingBalance,
+        Buffer const& pcBlindingFactor,
+        uint256 const& contextHash)
+    {
+        if (pedersenCommitment.size() != kCompressedEcPointLength)
+            Throw<std::runtime_error>("getForgedConvertBackProof: bad pedersenCommitment length");
+        if (encryptedSpendingBalance.size() != kEcGamalEncryptedTotalLength)
+        {
+            Throw<std::runtime_error>(
+                "getForgedConvertBackProof: bad encryptedSpendingBalance length");
+        }
+        if (amt > realBalance)
+            Throw<std::runtime_error>("getForgedConvertBackProof: amt exceeds realBalance");
+
+        auto* const ctx = mpt_secp256k1_context();
+        auto const holderPubKey = requireOptional(mpt.getPubKey(holder), "Missing holder pubkey");
+        auto const holderPrivKey =
+            requireOptional(mpt.getPrivKey(holder), "Missing holder privkey");
+
+        secp256k1_pubkey pkHolder;
+        if (secp256k1_ec_pubkey_parse(
+                ctx, &pkHolder, holderPubKey.data(), kCompressedEcPointLength) != 1)
+            Throw<std::runtime_error>("Failed to parse holder's public key");
+
+        secp256k1_pubkey pcB;
+        if (secp256k1_ec_pubkey_parse(
+                ctx, &pcB, pedersenCommitment.data(), kCompressedEcPointLength) != 1)
+            Throw<std::runtime_error>("Failed to parse pedersen commitment");
+
+        secp256k1_pubkey b1, b2;
+        if (secp256k1_ec_pubkey_parse(
+                ctx, &b1, encryptedSpendingBalance.data(), kCompressedEcPointLength) != 1 ||
+            secp256k1_ec_pubkey_parse(
+                ctx,
+                &b2,
+                encryptedSpendingBalance.data() + kCompressedEcPointLength,
+                kCompressedEcPointLength) != 1)
+            Throw<std::runtime_error>("Failed to parse balance ciphertext");
+
+        Buffer sigmaProof(SECP256K1_COMPACT_CONVERTBACK_PROOF_SIZE);
+        if (secp256k1_compact_convertback_prove(
+                ctx,
+                sigmaProof.data(),
+                claimedBalance,
+                holderPrivKey.data(),
+                pcBlindingFactor.data(),
+                &pkHolder,
+                &b1,
+                &b2,
+                &pcB,
+                contextHash.data()) != 1)
+            Throw<std::runtime_error>("Failed to generate convertback sigma proof");
+
+        auto const forgedBulletproof =
+            getForgedSingleBulletproof(realBalance - amt, pcBlindingFactor, contextHash);
+
+        Buffer proof(kEcConvertBackProofLength);
+        std::memcpy(proof.data(), sigmaProof.data(), SECP256K1_COMPACT_CONVERTBACK_PROOF_SIZE);
+        std::memcpy(
+            proof.data() + SECP256K1_COMPACT_CONVERTBACK_PROOF_SIZE,
+            forgedBulletproof.data(),
+            kEcSingleBulletproofLength);
+
+        return proof;
+    }
+
     // Get a bad ciphertext with valid structure but cryptographic invalid for
     // testing purposes. For preflight test purposes.
     static Buffer const&
@@ -346,6 +427,111 @@ protected:
             };
         }
     };
+
+    // Forges a ConfidentialMPTSend proof (compact sigma + double bulletproof)
+    // for setup.sendAmount against setup's real balance commitment/ciphertext.
+    // mpt_get_confidential_send_proof does not allow to build a proof whose amount
+    // exceeds the sender's claimed balance.
+    static Buffer
+    getForgedSendProof(
+        test::jtx::MPTTester& mpt,
+        test::jtx::Env& env,
+        test::jtx::Account const& sender,
+        test::jtx::Account const& dest,
+        ConfidentialSendSetup const& setup)
+    {
+        auto* const ctx = mpt_secp256k1_context();
+
+        secp256k1_pubkey c1;
+        std::vector<secp256k1_pubkey> c2Vec(setup.recipients.size());
+        std::vector<secp256k1_pubkey> pkVec(setup.recipients.size());
+        for (std::size_t i = 0; i < setup.recipients.size(); ++i)
+        {
+            auto const& r = setup.recipients[i];
+            if (i == 0 &&
+                secp256k1_ec_pubkey_parse(
+                    ctx, &c1, r.encryptedAmount.data(), kCompressedEcPointLength) != 1)
+                Throw<std::runtime_error>("Failed to parse C1");
+            if (secp256k1_ec_pubkey_parse(
+                    ctx,
+                    &c2Vec[i],
+                    r.encryptedAmount.data() + kCompressedEcPointLength,
+                    kCompressedEcPointLength) != 1)
+                Throw<std::runtime_error>("Failed to parse C2");
+            if (secp256k1_ec_pubkey_parse(
+                    ctx, &pkVec[i], r.publicKey.data(), kCompressedEcPointLength) != 1)
+                Throw<std::runtime_error>("Failed to parse recipient pubkey");
+        }
+
+        secp256k1_pubkey pkSender, pcAmount, pcBalance, b1, b2;
+        if (secp256k1_ec_pubkey_parse(
+                ctx, &pkSender, setup.senderPubKey.data(), kCompressedEcPointLength) != 1 ||
+            secp256k1_ec_pubkey_parse(
+                ctx, &pcAmount, setup.amountCommitment.data(), kCompressedEcPointLength) != 1 ||
+            secp256k1_ec_pubkey_parse(
+                ctx, &pcBalance, setup.balanceCommitment.data(), kCompressedEcPointLength) != 1 ||
+            secp256k1_ec_pubkey_parse(
+                ctx, &b1, setup.prevEncryptedSpending.data(), kCompressedEcPointLength) != 1 ||
+            secp256k1_ec_pubkey_parse(
+                ctx,
+                &b2,
+                setup.prevEncryptedSpending.data() + kCompressedEcPointLength,
+                kCompressedEcPointLength) != 1)
+            Throw<std::runtime_error>("Failed to parse commitments/ciphertext");
+
+        Buffer const senderPrivKey =
+            requireOptional(mpt.getPrivKey(sender), "Missing sender privkey");
+        auto const ctxHash = getSendContextHash(
+            sender.id(), mpt.issuanceID(), env.seq(sender), dest.id(), setup.version);
+
+        Buffer sigmaProof(SECP256K1_COMPACT_STANDARD_PROOF_SIZE);
+        if (secp256k1_compact_standard_prove(
+                ctx,
+                sigmaProof.data(),
+                setup.sendAmount,
+                setup.prevSpending,
+                setup.blindingFactor.data(),
+                senderPrivKey.data(),
+                setup.balanceBlindingFactor.data(),
+                setup.recipients.size(),
+                &c1,
+                c2Vec.data(),
+                pkVec.data(),
+                &pcAmount,
+                &pkSender,
+                &pcBalance,
+                &b1,
+                &b2,
+                ctxHash.data()) != 1)
+            Throw<std::runtime_error>("Failed to generate sigma proof");
+
+        // Wraps (mod 2^64) for overdrafts, unlike the ledger's own homomorphic
+        // commitment subtraction (mod the curve order) — that mismatch is
+        // exactly what makes the forged proof fail verification.
+        // Computed without a wrapping `uint64` subtract: Clang UBSan treats
+        // unsigned overflow as fatal (see incrementConfidentialVersion).
+        std::uint64_t const remaining = setup.sendAmount <= setup.prevSpending
+            ? setup.prevSpending - setup.sendAmount
+            : ~setup.sendAmount + setup.prevSpending + 1;
+
+        Buffer negAmountBf(kEcBlindingFactorLength);
+        Buffer remainingBf(kEcBlindingFactorLength);
+        secp256k1_mpt_scalar_negate(negAmountBf.data(), setup.amountBlindingFactor.data());
+        secp256k1_mpt_scalar_add(
+            remainingBf.data(), setup.balanceBlindingFactor.data(), negAmountBf.data());
+
+        auto const forgedBulletproof = getForgedBulletproof(
+            {setup.sendAmount, remaining}, {setup.amountBlindingFactor, remainingBf}, ctxHash);
+
+        Buffer combinedProof(kEcSendProofLength);
+        std::memcpy(combinedProof.data(), sigmaProof.data(), SECP256K1_COMPACT_STANDARD_PROOF_SIZE);
+        std::memcpy(
+            combinedProof.data() + SECP256K1_COMPACT_STANDARD_PROOF_SIZE,
+            forgedBulletproof.data(),
+            kEcDoubleBulletproofLength);
+
+        return combinedProof;
+    }
 
     // Helper that wraps the boilerplate setup: Env + MPT creation, funding, key
     // generation, and seeding each holder with a confidential balance.
