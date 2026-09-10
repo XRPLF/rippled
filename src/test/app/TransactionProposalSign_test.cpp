@@ -152,9 +152,22 @@ struct TransactionProposalSign_test : public beast::unit_test::Suite
         }
 
         {
+            // Non-empty but unparseable SigningPubKey — rejected by
+            // preflight's stateless key-format check before any ledger
+            // fetch happens.
+            json::Value jv = proposal::sign(env, ceo, target, ticketSeq, target, ceo);
+            jv[sfProposalSignature.jsonName][jss::SigningPubKey] = "00";
+            env(jv, Ter(temMALFORMED));
+            env.close();
+        }
+
+        {
+            // A broken signature reaches preclaim (preflight only checks
+            // fields are non-empty and the key parses) and fails there
+            // with the claimed-fee code the rest of preclaim uses.
             json::Value jv = proposal::sign(env, ceo, target, ticketSeq, target, ceo);
             jv[sfProposalSignature.jsonName][jss::TxnSignature] = "00";
-            env(jv, Ter(temBAD_SIGNATURE));
+            env(jv, Ter(tecNO_PERMISSION));
             env.close();
         }
     }
@@ -470,7 +483,7 @@ struct TransactionProposalSign_test : public beast::unit_test::Suite
         // The proposal expired one second after creation and default close
         // interval is 5s, so it is now terminal. Preclaim must short-circuit
         // before signature verification, so a garbage TxnSignature that would
-        // otherwise be rejected with temBAD_SIGNATURE still triggers cleanup
+        // otherwise be rejected with tecNO_PERMISSION still triggers cleanup
         // and returns tecEXPIRED (On-Chain Cosigner spec §6.3.2.2).
         {
             json::Value jv = proposal::sign(env, ceo, target, ticketSeq, target, ceo);
@@ -525,7 +538,7 @@ struct TransactionProposalSign_test : public beast::unit_test::Suite
         {
             json::Value jv = proposal::sign(env, ceo, target, ticketSeq, target, ceo);
             jv[sfProposalSignature.jsonName][jss::TxnSignature] = std::string(128, 'A');
-            env(jv, Ter(temBAD_SIGNATURE));
+            env(jv, Ter(tecNO_PERMISSION));
             env.close();
         }
 
@@ -922,6 +935,53 @@ struct TransactionProposalSign_test : public beast::unit_test::Suite
     }
 
     void
+    testBatchInnerFromUncreatedAccount(FeatureBitset features)
+    {
+        testcase("batch inner from an account an earlier inner creates");
+
+        using namespace jtx;
+        using namespace std::chrono_literals;
+
+        Env env{*this, features};
+
+        Account const outer{"outer"};
+        Account const dest{"dest"};
+        Account const fresh{"fresh"};  // never funded: the batch creates it
+        env.fund(XRP(10000), outer, dest);
+        env.close();
+        BEAST_EXPECT(!env.le(keylet::account(fresh.id())));
+
+        std::uint32_t const ticketSeq = proposal::createTicket(env, outer);
+        json::Value const proposedTx = proposal::unsignedBatch(
+            env,
+            outer,
+            ticketSeq,
+            tfAllOrNothing,
+            {proposal::innerTx(pay(outer, fresh, XRP(1000)), env.seq(outer)),
+             proposal::innerTx(pay(fresh, dest, XRP(1)), env.current()->seq())},
+            /*numSigners=*/1);
+
+        env(proposal::create(outer, proposedTx, proposal::expiration(env, 100s)));
+        env.close();
+
+        // Batch::checkBatchSign authorizes an inner from a not-yet-created
+        // account with that account's own master key
+        // (permitUncreatedAccount=true), so this is a contribution the
+        // completed Batch will accept and it must be recordable here.
+        env(proposal::sign(env, outer, outer, ticketSeq, fresh, fresh));
+        env.close();
+
+        auto const sle = proposal::entry(env, outer, ticketSeq);
+        if (!BEAST_EXPECT(sle))
+            return;
+        auto const stored = sle->getFieldObject(sfProposedTransaction);
+        BEAST_EXPECT(stored.isFieldPresent(sfBatchSigners));
+        auto const& batchSigners = stored.getFieldArray(sfBatchSigners);
+        BEAST_EXPECT(batchSigners.size() == 1);
+        BEAST_EXPECT(batchSigners[0].getAccountID(sfAccount) == fresh.id());
+    }
+
+    void
     run() override
     {
         using namespace jtx;
@@ -945,6 +1005,7 @@ struct TransactionProposalSign_test : public beast::unit_test::Suite
         testPhantomMultiSigner(all);
         testSingleSignModeConflicts(all);
         testBatchInnerMultiSignAccumulate(all);
+        testBatchInnerFromUncreatedAccount(all);
     }
 };
 

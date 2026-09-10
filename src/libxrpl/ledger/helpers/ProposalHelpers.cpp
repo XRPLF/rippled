@@ -43,16 +43,16 @@ innerTxn(STObject const& wrapper)
     return wrapper.getFieldObject(sfRawTransaction);
 }
 
-bool
-isOuterSigningFor(STObject const& proposedTx, AccountID const& signingFor)
+// The account authorized to sign for `tx` on the ordinary submit path: its
+// Delegate if permission delegation is in use, otherwise its Account. Mirrors
+// STTx::getInitiator so that a contribution recorded here matches the
+// signature Transactor::checkSign will later look for.
+AccountID
+initiator(STObject const& tx)
 {
-    // A payload with sfDelegate has handed authority to the Delegate: the
-    // Delegate signs, the Account itself no longer can. Mirrors the check in
-    // Transactor::checkSign so that a contribution recorded here matches the
-    // signature the ordinary submit path will later look for.
-    if (proposedTx.isFieldPresent(sfDelegate))
-        return signingFor == proposedTx.getAccountID(sfDelegate);
-    return signingFor == proposedTx.getAccountID(sfAccount);
+    if (tx.isFieldPresent(sfDelegate))
+        return tx.getAccountID(sfDelegate);
+    return tx.getAccountID(sfAccount);
 }
 
 STObject*
@@ -212,6 +212,12 @@ deleteProposal(ApplyView& view, SLE::pointer const& sleProposal, beast::Journal 
 }
 
 bool
+isOuterSigningFor(STObject const& proposedTx, AccountID const& signingFor)
+{
+    return signingFor == initiator(proposedTx);
+}
+
+bool
 isRequiredSigningFor(STObject const& proposedTx, AccountID const& signingFor)
 {
     if (isOuterSigningFor(proposedTx, signingFor))
@@ -221,12 +227,15 @@ isRequiredSigningFor(STObject const& proposedTx, AccountID const& signingFor)
         !proposedTx.isFieldPresent(sfRawTransactions))
         return false;
 
+    // A delegated inner is signed by the Delegate, not by the Account; the
+    // Account itself is not a required signer in that case. Mirrors
+    // Batch::preflightSigValidated, which reads the required signer from
+    // STTx::getInitiator().
     auto const outer = proposedTx.getAccountID(sfAccount);
     return std::ranges::any_of(proposedTx.getFieldArray(sfRawTransactions), [&](auto const& inner) {
         auto const tx = innerTxn(inner);
-        return signingFor != outer &&
-            ((tx.isFieldPresent(sfAccount) && tx.getAccountID(sfAccount) == signingFor) ||
-             (tx.isFieldPresent(sfDelegate) && tx.getAccountID(sfDelegate) == signingFor));
+        auto const innerInitiator = initiator(tx);
+        return signingFor != outer && signingFor == innerInitiator;
     });
 }
 
@@ -246,6 +255,9 @@ signingData(
     {
         STTx stx{STObject{proposedTx}};
 
+        // Batch inner: build the XLS-56 BatchSigner payload. The outer
+        // account of a Batch signs the standard multi-sign payload and
+        // falls through to the branch below.
         if (stx.getTxnType() == ttBATCH && !forOuter)
         {
             Serializer msg;
@@ -276,7 +288,12 @@ signingData(
             return s;
         }
 
-        return buildMultiSigningData(stx, signerAccount);
+        // Multi-sign of an ordinary transaction (or the outer of a Batch,
+        // which is authorized on the same standard payload as an ordinary
+        // multi-sign, see checkMultiSign path in Transactor).
+        // SignatureRole::Transaction always maps to HashPrefix::TxMultiSign,
+        // both with and without fixSignaturePrefixes.
+        return buildMultiSigningData(stx, signerAccount, HashPrefix::TxMultiSign);
     }
     catch (std::exception const&)
     {

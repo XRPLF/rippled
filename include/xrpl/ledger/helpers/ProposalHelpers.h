@@ -125,6 +125,21 @@ bool
 isRequiredSigningFor(STObject const& proposedTx, AccountID const& signingFor);
 
 /**
+ * Whether SigningFor names the account authorized to sign at the proposed
+ * transaction's own top level — its Delegate if permission delegation is
+ * used, otherwise its Account. Mirrors STTx::getInitiator so a contribution
+ * recorded on-ledger matches the signature Transactor::checkSign will later
+ * look for on the ordinary submit path.
+ *
+ * The proposed transaction's target account must exist (verified at
+ * TransactionProposalCreate time), so a signer for this role can never be
+ * a phantom (uncreated) account. Inner-batch participants can be, which is
+ * why the two are distinguished.
+ */
+bool
+isOuterSigningFor(STObject const& proposedTx, AccountID const& signingFor);
+
+/**
  * The blob ProposalSignature.TxnSignature must be valid over for this
  * SigningFor / signer pair. Ordinary (and Batch outer-account) contributions
  * use the standard single- or multi-sign payload; Batch participant

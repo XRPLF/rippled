@@ -28,8 +28,8 @@ namespace {
 
 // ProposalSignature.SigningPubKey must currently authorize signerAccount:
 // the account's master key (unless disabled), its regular key, or — for a
-// phantom multi-signer — the master key of an account that is not in the
-// ledger. Mirrors Transactor::checkSign / checkMultiSign key-binding.
+// phantom signer — the master key of an account that is not in the ledger.
+// Mirrors Transactor::checkSign / checkMultiSign key-binding.
 TER
 checkSignerKey(
     ReadView const& view,
@@ -38,13 +38,13 @@ checkSignerKey(
     bool const permitPhantom,
     beast::Journal j)
 {
-    // Defensive: preclaim already ran verify(), which fails on an unparseable
-    // key, so a caller from that path never reaches this branch.
+    // Defensive: preflight already rejected an unparseable key
+    // (temMALFORMED), so a caller from that path never reaches this branch.
     // LCOV_EXCL_START
     if (!publicKeyType(signingPubKey))
     {
         JLOG(j.debug()) << "TransactionProposalSign: unknown key type.";
-        return temBAD_SIGNATURE;
+        return tecNO_PERMISSION;
     }
     // LCOV_EXCL_STOP
 
@@ -55,11 +55,15 @@ checkSignerKey(
     {
         if (!sleSigner)
         {
+            // A batch inner may originate from an account an earlier inner
+            // creates; that phantom account can only be authorized by its
+            // own master key. Mirrors Batch::checkBatchSign's
+            // permitUncreatedAccount=true call into Transactor::checkSign.
             if (permitPhantom)
                 return tesSUCCESS;
-            // Single-sign path: signerAccount is SigningFor, which is the
-            // proposed transaction's target and was verified to exist at
-            // TransactionProposalCreate time.
+            // Outer / non-batch single-sign path: signerAccount is
+            // SigningFor, which is the proposed transaction's target and
+            // was verified to exist at TransactionProposalCreate time.
             return tecNO_PERMISSION;  // LCOV_EXCL_LINE
         }
         if (sleSigner->isFlag(lsfDisableMaster))
@@ -83,6 +87,7 @@ checkSignerKey(
 TER
 checkAuthorized(
     ReadView const& view,
+    STObject const& proposedTx,
     AccountID const& signingFor,
     STObject const& proposalSignature,
     beast::Journal j)
@@ -93,8 +98,11 @@ checkAuthorized(
 
     if (singleSign)
     {
-        return checkSignerKey(
-            view, signingFor, makeSlice(signingPubKey), /*permitPhantom=*/false, j);
+        // Outer target account must exist (verified at Create time). A
+        // batch inner participant may be a phantom account authorized by
+        // its own master key, so permit that in the batch-inner case only.
+        auto const permitPhantom = !proposal::isOuterSigningFor(proposedTx, signingFor);
+        return checkSignerKey(view, signingFor, makeSlice(signingPubKey), permitPhantom, j);
     }
 
     auto const sleList = view.read(keylet::signerList(signingFor));
@@ -131,10 +139,19 @@ TransactionProposalSign::preflight(PreflightContext const& ctx)
     }
 
     auto const proposalSignature = ctx.tx.getFieldObject(sfProposalSignature);
-    if (proposalSignature.getFieldVL(sfSigningPubKey).empty() ||
-        proposalSignature.getFieldVL(sfTxnSignature).empty())
+    auto const signingPubKey = proposalSignature.getFieldVL(sfSigningPubKey);
+    if (signingPubKey.empty() || proposalSignature.getFieldVL(sfTxnSignature).empty())
     {
         JLOG(ctx.j.debug()) << "TransactionProposalSign: empty key or signature.";
+        return temMALFORMED;
+    }
+
+    // Stateless parseability check on the signing key: preclaim's verify()
+    // requires a well-formed key anyway, and doing it here spares any
+    // ledger fetch when the contribution is obviously malformed.
+    if (!publicKeyType(makeSlice(signingPubKey)))
+    {
+        JLOG(ctx.j.debug()) << "TransactionProposalSign: unknown key type.";
         return temMALFORMED;
     }
 
@@ -174,17 +191,26 @@ TransactionProposalSign::preclaim(PreclaimContext const& ctx)
     if (!data)
     {
         // LCOV_EXCL_START
+        // Defensive: proposedTx was validated at TransactionProposalCreate,
+        // so failing to interpret it here means the stored ledger entry is
+        // malformed — an internal invariant violation, not a caller error.
         JLOG(ctx.j.debug()) << "TransactionProposalSign: cannot build signing data.";
-        return temMALFORMED;
+        return tefINTERNAL;
         // LCOV_EXCL_STOP
     }
 
-    if (!publicKeyType(makeSlice(signingPubKey)) ||
-        !verify(PublicKey(makeSlice(signingPubKey)), data->slice(), makeSlice(txnSignature)))
+    // publicKeyType() was validated in preflight; verify() rejects a bad
+    // signature. A caller cannot make it here with an invalid signature.
+    if (!verify(PublicKey(makeSlice(signingPubKey)), data->slice(), makeSlice(txnSignature)))
     {
+        // The submitted TransactionProposalSign is well-formed and the
+        // proposal exists; the contribution just isn't authorized to be
+        // recorded, so this is a claimed-fee protocol-level failure rather
+        // than a temMALFORMED / temBAD_SIGNATURE that would prevent relay
+        // of the outer transaction itself (whose own signature is valid).
         JLOG(ctx.j.debug()) << "TransactionProposalSign: invalid signature "
                                "over the proposed transaction.";
-        return temBAD_SIGNATURE;
+        return tecNO_PERMISSION;
     }
 
     if (!proposal::isRequiredSigningFor(proposedTx, signingFor))
@@ -194,7 +220,8 @@ TransactionProposalSign::preclaim(PreclaimContext const& ctx)
         return tecNO_PERMISSION;
     }
 
-    if (auto const ret = checkAuthorized(ctx.view, signingFor, proposalSignature, ctx.j);
+    if (auto const ret =
+            checkAuthorized(ctx.view, proposedTx, signingFor, proposalSignature, ctx.j);
         !isTesSuccess(ret))
         return ret;
 
