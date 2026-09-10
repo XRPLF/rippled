@@ -1097,6 +1097,30 @@ public:
                                    << "; size after: " << cachedSLEs_.size();
         }
 
+        // Read the runtime gate rather than the config value so the admin
+        // shed RPC toggle takes effect here.
+        if (SHAMap::shedEnabled())
+        {
+            // shedCold changes which nodes are resident, not the map's content,
+            // so the const_cast is sound.
+            try
+            {
+                if (auto const validated = getLedgerMaster().getValidatedLedger())
+                {
+                    auto& stateMap = const_cast<SHAMap&>(validated->stateMap());
+                    std::size_t const dropped =
+                        stateMap.shedCold(static_cast<unsigned>(config_->shedMinDepth));
+                    JLOG(journal_.debug())
+                        << "SHAMap shedCold on ledger " << validated->header().seq << ": dropped "
+                        << dropped << " resident subtrees";
+                }
+            }
+            catch (std::exception const& e)
+            {
+                JLOG(journal_.warn()) << "SHAMap shedCold failed: " << e.what();
+            }
+        }
+
         mallocTrim("doSweep", journal_);
 
         // Set timer to do another sweep later.
@@ -1214,6 +1238,13 @@ ApplicationImp::setup(boost::program_options::variables_map const& cmdline)
 
     // Optionally turn off logging to console.
     logs_->silent(config_->silent());
+
+    SHAMap::setShedEnabled(config_->shedColdSubtrees);
+    if (config_->shedColdSubtrees)
+    {
+        JLOG(journal_.warn()) << "SHAMap cold subtree shedding enabled (shed_min_depth "
+                              << config_->shedMinDepth << ")";
+    }
 
     if (!initRelationalDatabase() || !initNodeStore())
         return false;

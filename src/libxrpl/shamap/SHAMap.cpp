@@ -26,10 +26,13 @@
 
 #include <boost/smart_ptr/intrusive_ptr.hpp>
 
+#include <atomic>
+#include <chrono>
 #include <cstdint>
 #include <exception>
 #include <functional>
 #include <memory>
+#include <shared_mutex>
 #include <stack>
 #include <stdexcept>
 #include <string>
@@ -39,6 +42,21 @@
 #include <vector>
 
 namespace xrpl {
+
+std::atomic<bool> SHAMap::shedEnabled_{false};
+std::shared_mutex SHAMap::shedMutex_;
+
+void
+SHAMap::setShedEnabled(bool enabled)
+{
+    shedEnabled_.store(enabled, std::memory_order_relaxed);
+}
+
+bool
+SHAMap::shedEnabled()
+{
+    return shedEnabled_.load(std::memory_order_relaxed);
+}
 
 [[nodiscard]] intr_ptr::SharedPtr<SHAMapLeafNode>
 makeTypedLeaf(SHAMapNodeType type, boost::intrusive_ptr<SHAMapItem const> item, std::uint32_t owner)
@@ -434,6 +452,10 @@ SHAMap::belowHelper(
     unsigned int branch,
     BelowDirection direction) const
 {
+    // The descent below adopts bare child pointers; hold the shed guard so a
+    // concurrent shedCold cannot free one first.
+    auto const shedLock = shedReadGuard();
+
     if (node->isLeaf())
     {
         auto n = intr_ptr::staticPointerCast<SHAMapLeafNode>(node);
@@ -1096,6 +1118,69 @@ SHAMap::walkSubTree(bool doWrite, NodeObjectType t)
     root_ = std::move(node);
 
     return flushed;
+}
+
+void
+SHAMap::shedInner(
+    intr_ptr::SharedPtr<SHAMapInnerNode> const& node,
+    unsigned depth,
+    unsigned minDepth,
+    std::size_t& dropped)
+{
+    // A dirty node's subtree may not be on disk yet, so never shed its children.
+    bool const dropHere = (node->cowid() == 0) && (depth >= minDepth);
+
+    for (int branch = 0; branch < kBranchFactor; ++branch)
+    {
+        if (node->isEmptyBranch(branch))
+            continue;
+
+        // getChild does not fault; a null child is already lazy.
+        SHAMapTreeNodePtr child = node->getChild(branch);
+        if (!child)
+            continue;
+
+        // Recurse first so the leaf-heavy bottom is shed before this level.
+        if (child->isInner())
+            shedInner(
+                intr_ptr::staticPointerCast<SHAMapInnerNode>(child), depth + 1, minDepth, dropped);
+
+        // `child` keeps the subtree alive across the drop.
+        if (dropHere && node->dropChild(branch))
+            ++dropped;
+    }
+}
+
+std::size_t
+SHAMap::shedCold(unsigned minDepth)
+{
+    if (!backed_ || (state_ != SHAMapState::Immutable))
+    {
+        JLOG(journal_.debug()) << "shedCold: skipped (backed=" << backed_
+                               << ", state=" << static_cast<int>(state_) << ")";
+        return 0;
+    }
+
+    if (!root_ || root_->isLeaf())
+    {
+        JLOG(journal_.debug()) << "shedCold: skipped (no shed-eligible root)";
+        return 0;
+    }
+
+    // Exclude guarded bare-pointer readers for the whole walk.
+    std::unique_lock<std::shared_mutex> const shedLock(shedMutex_);
+
+    auto const started = std::chrono::steady_clock::now();
+    std::size_t dropped = 0;
+    shedInner(intr_ptr::staticPointerCast<SHAMapInnerNode>(root_), 0, minDepth, dropped);
+    auto const elapsedMs = std::chrono::duration_cast<std::chrono::milliseconds>(
+                               std::chrono::steady_clock::now() - started)
+                               .count();
+
+    // Warn level so each pass shows in default logs.
+    JLOG(journal_.warn()) << "shedCold: dropped " << dropped << " resident subtrees (minDepth "
+                          << minDepth << ") in " << elapsedMs << "ms (writer-locked)";
+    return dropped;
 }
 
 void
