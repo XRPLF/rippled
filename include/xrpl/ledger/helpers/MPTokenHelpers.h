@@ -312,12 +312,22 @@ checkCreateMPT(
 //
 //------------------------------------------------------------------------------
 
-// MaximumAmount doesn't exceed 2**63-1
+/**
+ * MaximumAmount doesn't exceed 2**63-1
+ */
 std::int64_t
 maxMPTAmount(SLE const& sleIssuance);
 
-// OutstandingAmount may overflow and available amount might be negative.
-// But available amount is always <= |MaximumAmount - OutstandingAmount|.
+/**
+ * std::nullopt if the issuance doesn't exist.
+ */
+std::optional<std::int64_t>
+maxMPTAmount(ReadView const& view, MPTID const& mptID);
+
+/**
+ * OutstandingAmount may overflow and available amount might be negative.
+ * But available amount is always <= |MaximumAmount - OutstandingAmount|.
+ */
 std::int64_t
 availableMPTAmount(SLE const& sleIssuance);
 
@@ -331,7 +341,12 @@ availableMPTAmount(ReadView const& view, MPTID const& mptID);
  * directSendNoFee transactions that bypass the payment engine.
  * 2.  **accountSend & Payment Engine (Overflow: Yes):** A temporary overflow
  * check when `OutstandingAmount > UINT64_MAX`. This higher threshold is used
- * for `accountSend` and payments processed via the payment engine.
+ * for `accountSend` and payments processed via the payment engine, whose
+ * reverse pass may issue before it redeems.
+ *
+ * In both cases a single `sendAmount > MaximumAmount` is rejected. Such a send
+ * can never settle: redemptions within the transaction are bounded by the
+ * outstanding amount, so the final OutstandingAmount would exceed the cap.
  */
 bool
 isMPTOverflow(
