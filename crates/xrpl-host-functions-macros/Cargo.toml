@@ -16,3 +16,6 @@ proc-macro2 = "1"
 # the library build graph.
 [dev-dependencies]
 xrpl-host-functions.path = "../xrpl-host-functions"
+
+[lints]
+workspace = true

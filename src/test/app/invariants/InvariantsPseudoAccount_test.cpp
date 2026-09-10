@@ -7,18 +7,23 @@
 #include <test/jtx/pay.h>
 #include <test/jtx/trust.h>
 #include <test/jtx/vault.h>
+#include <test/unit_test/SuiteJournal.h>
 
 #include <xrpl/basics/Number.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/beast/utility/Journal.h>
 #include <xrpl/ledger/ApplyView.h>
+#include <xrpl/ledger/OpenView.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/Keylet.h>
 #include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/Rules.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STObject.h>
@@ -28,6 +33,7 @@
 #include <xrpl/protocol/TxFormats.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/ApplyContext.h>
+#include <xrpl/tx/Transactor.h>
 #include <xrpl/tx/applySteps.h>
 
 #include <array>
@@ -43,6 +49,8 @@ namespace xrpl::test {
 
 class InvariantsPseudoAccount_test : public InvariantsBase
 {
+    FeatureBitset const all_{test::jtx::testableAmendments()};
+
     void
     testValidPseudoAccounts()
     {
@@ -445,6 +453,281 @@ class InvariantsPseudoAccount_test : public InvariantsBase
                 STTx{ttLOAN_BROKER_SET, [](STObject& tx) {}},
                 {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
                 createLoanBroker);
+
+            // Deleting the IOU holding while leaving the broker unchanged must
+            // still expose CoverAvailable exceeding the now-zero balance: the
+            // broker is discovered through the deleted trust line. XRP has no
+            // holding SLE, while deleting an MPToken triggers other invariants,
+            // so IOU isolates this check. Verify that fixCleanup3_1_3 gates it
+            // by expecting failure only when the amendment is enabled.
+            if (assetType == Asset::IOU)
+            {
+                Keylet brokerKeylet = keylet::amendments();
+                Preclose const createBrokerWithCover =
+                    [&, this](Account const& alice, Account const& issuer, Env& env) {
+                        auto const asset = setupAsset(alice, issuer, env);
+                        brokerKeylet = this->createLoanBroker(alice, env, asset);
+                        if (!BEAST_EXPECT(env.le(brokerKeylet)))
+                            return false;
+                        env(loan_broker::coverDeposit(alice, brokerKeylet.key, asset(10)));
+                        env.close();
+                        return BEAST_EXPECT(env.le(brokerKeylet));
+                    };
+
+                Precheck const deleteHolding =
+                    [&](Account const&, Account const&, ApplyContext& ac) {
+                        if (brokerKeylet.type != ltLOAN_BROKER)
+                            return false;
+                        // Read (don't touch) the broker so it is only found via
+                        // the deleted holding, not as a modified entry.
+                        auto const sleBroker = ac.view().read(brokerKeylet);
+                        if (!BEAST_EXPECT(sleBroker))
+                            return false;
+                        auto const pseudoAccountID = sleBroker->at(sfAccount);
+
+                        // Erase every holding in the pseudo-account directory
+                        // and the directory root itself, mirroring a bug that
+                        // removed the cover holding without zeroing
+                        // CoverAvailable. Removing the root also keeps the
+                        // zero-OwnerCount directory check from firing first.
+                        auto sleDir = ac.view().peek(keylet::ownerDir(pseudoAccountID));
+                        if (!BEAST_EXPECT(sleDir))
+                            return false;
+                        for (auto const& index : sleDir->getFieldV256(sfIndexes))
+                        {
+                            if (auto holding = ac.view().peek(keylet::unchecked(index)))
+                            {
+                                ac.view().erase(holding);
+                            }
+                        }
+                        ac.view().erase(sleDir);
+                        return true;
+                    };
+
+                // With fixCleanup3_1_3: the invariant fires.
+                doInvariantCheck(
+                    makeEnv(all_),
+                    {{"Loan Broker cover available is greater than pseudo-account asset balance"}},
+                    deleteHolding,
+                    XRPAmount{},
+                    STTx{ttACCOUNT_SET, [](STObject&) {}},
+                    {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
+                    createBrokerWithCover);
+
+                // Without fixCleanup3_1_3: the same state is silently accepted.
+                doInvariantCheck(
+                    makeEnv(all_ - fixCleanup3_1_3),
+                    {},
+                    deleteHolding,
+                    XRPAmount{},
+                    STTx{ttACCOUNT_SET, [](STObject&) {}},
+                    {tesSUCCESS, tesSUCCESS},
+                    createBrokerWithCover);
+            }
+
+            // A LoanBroker may only be removed by ttLOAN_BROKER_DELETE. Erase
+            // the broker in the apply view under a non-delete tx type and
+            // expect the deletion-tx invariant to fire.
+            doInvariantCheck(
+                {{"Loan Broker deleted by a transaction other than LoanBrokerDelete"}},
+                [&](Account const&, Account const&, ApplyContext& ac) {
+                    if (loanBrokerKeylet.type != ltLOAN_BROKER)
+                        return false;
+                    auto sleBroker = ac.view().peek(loanBrokerKeylet);
+                    if (!BEAST_EXPECT(sleBroker))
+                        return false;
+                    ac.view().erase(sleBroker);
+                    return true;
+                },
+                XRPAmount{},
+                STTx{ttACCOUNT_SET, [](STObject&) {}},
+                {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
+                createLoanBroker);
+        }
+
+        // A LoanBrokerDelete must not remove a broker whose pre-transaction
+        // DebtTotal is non-zero. visitEntry captures `before` from the parent
+        // view, so the DebtTotal must be seeded in the OpenView before the
+        // ApplyContext is constructed; a Precheck modification would only
+        // land in the applyView (visible as `after`) and would leave `before`
+        // at the createLoanBroker-produced zero.
+        {
+            Env env{*this};
+            Account const a1{"A1"};
+            Account const a2{"A2"};
+            env.fund(XRP(1000), a1, a2);
+            env.close();
+
+            PrettyAsset const xrpAsset{xrpIssue(), 1'000'000};
+            auto const brokerKeylet = createLoanBroker(a1, env, xrpAsset);
+            if (!BEAST_EXPECT(env.le(brokerKeylet)))
+                return;
+            env.close();
+
+            OpenView ov{*env.current()};
+
+            // Seed a non-zero DebtTotal in the base view so `before` at
+            // visitEntry time reports it.
+            {
+                auto const sleBrokerRead = ov.read(brokerKeylet);
+                if (!BEAST_EXPECT(sleBrokerRead))
+                    return;
+                auto sleBroker = std::make_shared<SLE>(*sleBrokerRead);
+                sleBroker->at(sfDebtTotal) = Number(1);
+                ov.rawReplace(sleBroker);
+            }
+
+            STTx const tx{ttLOAN_BROKER_DELETE, [](STObject&) {}};
+            test::StreamSink sink{beast::Severity::Warning};
+            beast::Journal const jlog{sink};
+            ApplyContext ac{
+                env.app(), ov, tx, tesSUCCESS, env.current()->fees().base, TapNone, jlog};
+            CurrentTransactionRulesGuard const rulesGuard(ov.rules());
+
+            auto sleBroker = ac.view().peek(brokerKeylet);
+            if (!BEAST_EXPECT(sleBroker))
+                return;
+            ac.view().erase(sleBroker);
+
+            auto transactor = makeTransactor(ac);
+            if (!BEAST_EXPECT(transactor))
+                return;
+            TER const result = transactor->checkInvariants(
+                tesSUCCESS, XRPAmount{}, Transactor::InvariantScope::Full);
+            BEAST_EXPECT(result == tecINVARIANT_FAILED);
+            BEAST_EXPECT(
+                sink.messages().str().contains("Loan Broker deleted with non-zero debt total"));
+        }
+
+        // Residual DebtTotal dust that rounds to zero at the vault asset's
+        // scale must not trip the invariant: LoanBrokerDelete::preclaim
+        // deliberately permits it, so the invariant must not be stricter.
+        // Other invariants may still object to a hand-erased broker, so only
+        // the absence of the DebtTotal complaint is asserted.
+        {
+            Env env{*this};
+            Account const a1{"A1"};
+            Account const a2{"A2"};
+            env.fund(XRP(1000), a1, a2);
+            env.close();
+
+            PrettyAsset const xrpAsset{xrpIssue(), 1'000'000};
+            auto const brokerKeylet = createLoanBroker(a1, env, xrpAsset);
+            if (!BEAST_EXPECT(env.le(brokerKeylet)))
+                return;
+            env.close();
+
+            OpenView ov{*env.current()};
+
+            // A thousandth of a drop: non-zero, but zero once quantized to XRP.
+            {
+                auto const sleBrokerRead = ov.read(brokerKeylet);
+                if (!BEAST_EXPECT(sleBrokerRead))
+                    return;
+                auto sleBroker = std::make_shared<SLE>(*sleBrokerRead);
+                sleBroker->at(sfDebtTotal) = Number(1, -3);
+                ov.rawReplace(sleBroker);
+            }
+
+            STTx const tx{ttLOAN_BROKER_DELETE, [](STObject&) {}};
+            test::StreamSink sink{beast::Severity::Warning};
+            beast::Journal const jlog{sink};
+            ApplyContext ac{
+                env.app(), ov, tx, tesSUCCESS, env.current()->fees().base, TapNone, jlog};
+            CurrentTransactionRulesGuard const rulesGuard(ov.rules());
+
+            auto sleBroker = ac.view().peek(brokerKeylet);
+            if (!BEAST_EXPECT(sleBroker))
+                return;
+            ac.view().erase(sleBroker);
+
+            auto transactor = makeTransactor(ac);
+            if (!BEAST_EXPECT(transactor))
+                return;
+            [[maybe_unused]] TER const result = transactor->checkInvariants(
+                tesSUCCESS, XRPAmount{}, Transactor::InvariantScope::Full);
+            BEAST_EXPECT(
+                !sink.messages().str().contains("Loan Broker deleted with non-zero debt total"));
+        }
+
+        // A LoanBrokerDelete must not remove a broker whose pre-transaction
+        // OwnerCount is non-zero. DebtTotal is left at zero so the earlier
+        // check passes and the OwnerCount check is what fires.
+        {
+            Env env{*this};
+            Account const a1{"A1"};
+            Account const a2{"A2"};
+            env.fund(XRP(1000), a1, a2);
+            env.close();
+
+            PrettyAsset const xrpAsset{xrpIssue(), 1'000'000};
+            auto const brokerKeylet = createLoanBroker(a1, env, xrpAsset);
+            if (!BEAST_EXPECT(env.le(brokerKeylet)))
+                return;
+            env.close();
+
+            OpenView ov{*env.current()};
+
+            {
+                auto const sleBrokerRead = ov.read(brokerKeylet);
+                if (!BEAST_EXPECT(sleBrokerRead))
+                    return;
+                auto sleBroker = std::make_shared<SLE>(*sleBrokerRead);
+                sleBroker->at(sfOwnerCount) = 1;
+                ov.rawReplace(sleBroker);
+            }
+
+            STTx const tx{ttLOAN_BROKER_DELETE, [](STObject&) {}};
+            test::StreamSink sink{beast::Severity::Warning};
+            beast::Journal const jlog{sink};
+            ApplyContext ac{
+                env.app(), ov, tx, tesSUCCESS, env.current()->fees().base, TapNone, jlog};
+            CurrentTransactionRulesGuard const rulesGuard(ov.rules());
+
+            auto sleBroker = ac.view().peek(brokerKeylet);
+            if (!BEAST_EXPECT(sleBroker))
+                return;
+            ac.view().erase(sleBroker);
+
+            auto transactor = makeTransactor(ac);
+            if (!BEAST_EXPECT(transactor))
+                return;
+            TER const result = transactor->checkInvariants(
+                tesSUCCESS, XRPAmount{}, Transactor::InvariantScope::Full);
+            BEAST_EXPECT(result == tecINVARIANT_FAILED);
+            BEAST_EXPECT(
+                sink.messages().str().contains("Loan Broker deleted with non-zero owner count"));
+        }
+
+        // Only one LoanBroker may be deleted per transaction. Create two
+        // brokers under different owners, then erase both in the apply view
+        // and expect the multi-deletion invariant to fire.
+        {
+            Keylet loanBrokerKeylet1 = keylet::amendments();
+            Keylet loanBrokerKeylet2 = keylet::amendments();
+            Preclose const createTwoBrokers = [&, this](
+                                                  Account const& a1, Account const& a2, Env& env) {
+                PrettyAsset const xrpAsset{xrpIssue(), 1'000'000};
+                loanBrokerKeylet1 = this->createLoanBroker(a1, env, xrpAsset);
+                loanBrokerKeylet2 = this->createLoanBroker(a2, env, xrpAsset);
+                return BEAST_EXPECT(env.le(loanBrokerKeylet1) && env.le(loanBrokerKeylet2));
+            };
+
+            doInvariantCheck(
+                {{"more than one Loan Broker deleted in a single transaction"}},
+                [&](Account const&, Account const&, ApplyContext& ac) {
+                    auto sle1 = ac.view().peek(loanBrokerKeylet1);
+                    auto sle2 = ac.view().peek(loanBrokerKeylet2);
+                    if (!BEAST_EXPECT(sle1 && sle2))
+                        return false;
+                    ac.view().erase(sle1);
+                    ac.view().erase(sle2);
+                    return true;
+                },
+                XRPAmount{},
+                STTx{ttLOAN_BROKER_DELETE, [](STObject&) {}},
+                {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
+                createTwoBrokers);
         }
     }
 
