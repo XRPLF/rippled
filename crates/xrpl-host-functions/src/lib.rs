@@ -9,6 +9,11 @@
 //! derived from the declarations is generated. The expansion names nothing this file
 //! does not, so the two sides meet only in the block below.
 //!
+//! Three items cross that split the other way, named by the expansion but by no
+//! declaration: [`WasmValType`], which the derived wasm signatures are spelled in,
+//! and `FromWasmRegion`/`FromWasmScalar`, which `wasmi_glue!` builds a marshalled
+//! argument through.
+//!
 //! So this file is lists — error codes, trace data types, functions. The `macro_rules!`
 //! that expand the first two into enums live in `macros.rs`.
 
@@ -69,6 +74,53 @@ trace_data_types! {
     AsText = 7,
 }
 
+/// The wasm module name a guest imports these functions under:
+/// `(import "host_lib" "ldgr_index" …)`.
+pub const HOST_MODULE: &str = "host_lib";
+
+/// A wasm value type, as many of them as this ABI uses — the vocabulary the
+/// generated wasm signatures are spelled in, which an engine maps to its own value
+/// types once.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum WasmValType {
+    I32,
+    I64,
+}
+
+/// Builds the argument an engine marshals a `(ptr, len)` region into: a declared
+/// `&[u8]`, `&str`, `u32` or `&mut [u8]`. Nothing is checked here — the pair
+/// arrives as the guest sent it, and refusing a malformed region is the engine's
+/// business.
+///
+/// **Kept apart from [`FromWasmScalar`]** rather than folded into one trait with
+/// an associated wasm type, for the diagnostic: the mistake worth catching is an
+/// arity one — a declared `u32` is a region, not a code — and as two traits that
+/// lands as an unsatisfied bound at the offending argument type rather than an
+/// `i32`-against-`(i32, i32)` mismatch at the macro call.
+#[cfg(feature = "wasmi_glue")]
+pub trait FromWasmRegion {
+    fn from_wasm(ptr: i32, len: i32) -> Self;
+}
+
+/// Builds the argument an engine marshals a single `i32` code into: the declared
+/// `TraceDataType`. [`FromWasmRegion`] says why the two are separate traits.
+#[cfg(feature = "wasmi_glue")]
+pub trait FromWasmScalar {
+    fn from_wasm(code: i32) -> Self;
+}
+
+// Two rules hold over every declaration below, and neither is visible at any one of
+// them. They are what lets the wasm signature be read off the declaration.
+//
+// **Declaration order is wasm parameter order.** So `mode` comes after `out` in the
+// float functions, and `data_type` between `trace`'s two regions: the wire's order,
+// not the one a Rust signature would choose.
+//
+// **`i32` and `i64` are the wasm scalars, spelled as themselves; every other type is
+// marshalled.** `&[u8]`/`&str` and `&mut [u8]` are `(ptr, len)` pairs, `TraceDataType`
+// is an `i32` code the engine names before a host sees it, and **`u32` is four
+// little-endian bytes in a region**, not a scalar, which is how the guest SDK passes a
+// sequence number.
 host_functions! {
     /// The sequence number of the ledger being built, as 4 little-endian bytes.
     #[gas = 60]
@@ -209,10 +261,10 @@ host_functions! {
     fn amm_keylet(&self, asset1: &[u8], asset2: &[u8], out: &mut [u8]) -> HostResult<usize>;
 
     /// The 32-byte keylet of a `Check`, computed from a 20-byte account id and its
-    /// sequence number. `seq` is the guest's `u32` carried as its `i32` bit pattern.
+    /// sequence number.
     #[gas = 350]
     #[wasm_name = "check_id"]
-    fn check_keylet(&self, account: &[u8], seq: i32, out: &mut [u8]) -> HostResult<usize>;
+    fn check_keylet(&self, account: &[u8], seq: u32, out: &mut [u8]) -> HostResult<usize>;
 
     /// The 32-byte keylet of a `Credential`, computed from the 20-byte subject and
     /// issuer account ids and a credential-type byte string.
@@ -254,11 +306,10 @@ host_functions! {
     fn did_keylet(&self, account: &[u8], out: &mut [u8]) -> HostResult<usize>;
 
     /// The 32-byte keylet of an `Escrow`, computed from the 20-byte owner account and
-    /// its sequence number. `seq` is the guest's `u32` carried as its `i32` bit
-    /// pattern.
+    /// its sequence number.
     #[gas = 350]
     #[wasm_name = "escrow_id"]
-    fn escrow_keylet(&self, account: &[u8], seq: i32, out: &mut [u8]) -> HostResult<usize>;
+    fn escrow_keylet(&self, account: &[u8], seq: u32, out: &mut [u8]) -> HostResult<usize>;
 
     /// The 32-byte keylet of a `RippleState` (trust line), computed from two 20-byte
     /// account ids and a 20-byte currency.
@@ -273,14 +324,13 @@ host_functions! {
     ) -> HostResult<usize>;
 
     /// The 32-byte keylet of an `MPTokenIssuance`, computed from the 20-byte issuer
-    /// account and its sequence number. `seq` is the guest's `u32` carried as its `i32`
-    /// bit pattern.
+    /// account and its sequence number.
     #[gas = 350]
     #[wasm_name = "mpt_issuance_id"]
     fn mptoken_issuance_keylet(
         &self,
         issuer: &[u8],
-        seq: i32,
+        seq: u32,
         out: &mut [u8],
     ) -> HostResult<usize>;
 
@@ -291,52 +341,48 @@ host_functions! {
     fn mptoken_keylet(&self, mptid: &[u8], holder: &[u8], out: &mut [u8]) -> HostResult<usize>;
 
     /// The 32-byte keylet of an `NFTokenOffer`, computed from the 20-byte owner account
-    /// and its sequence number. `seq` is the guest's `u32` carried as its `i32` bit
-    /// pattern.
+    /// and its sequence number.
     #[gas = 350]
     #[wasm_name = "nft_offer_id"]
     fn nftoken_offer_keylet(
         &self,
         account: &[u8],
-        seq: i32,
+        seq: u32,
         out: &mut [u8],
     ) -> HostResult<usize>;
 
     /// The 32-byte keylet of an `Offer`, computed from the 20-byte owner account and
-    /// its sequence number. `seq` is the guest's `u32` carried as its `i32` bit
-    /// pattern.
+    /// its sequence number.
     #[gas = 350]
     #[wasm_name = "offer_id"]
-    fn offer_keylet(&self, account: &[u8], seq: i32, out: &mut [u8]) -> HostResult<usize>;
+    fn offer_keylet(&self, account: &[u8], seq: u32, out: &mut [u8]) -> HostResult<usize>;
 
     /// The 32-byte keylet of an `Oracle`, computed from the 20-byte owner account and
-    /// its document id. `doc_id` is the guest's `u32` carried as its `i32` bit pattern.
+    /// its document id.
     #[gas = 350]
     #[wasm_name = "oracle_id"]
-    fn oracle_keylet(&self, account: &[u8], doc_id: i32, out: &mut [u8]) -> HostResult<usize>;
+    fn oracle_keylet(&self, account: &[u8], doc_id: u32, out: &mut [u8]) -> HostResult<usize>;
 
     /// The 32-byte keylet of a `PayChannel`, computed from the 20-byte source account,
-    /// the 20-byte destination account, and the channel's sequence number. `seq` is the
-    /// guest's `u32` carried as its `i32` bit pattern.
+    /// the 20-byte destination account, and the channel's sequence number.
     #[gas = 350]
     #[wasm_name = "paychan_id"]
     fn paychannel_keylet(
         &self,
         account: &[u8],
         destination: &[u8],
-        seq: i32,
+        seq: u32,
         out: &mut [u8],
     ) -> HostResult<usize>;
 
     /// The 32-byte keylet of a `PermissionedDomain`, computed from the 20-byte owner
-    /// account and its sequence number. `seq` is the guest's `u32` carried as its `i32`
-    /// bit pattern.
+    /// account and its sequence number.
     #[gas = 350]
     #[wasm_name = "permissioned_domain_id"]
     fn permissioned_domain_keylet(
         &self,
         account: &[u8],
-        seq: i32,
+        seq: u32,
         out: &mut [u8],
     ) -> HostResult<usize>;
 
@@ -346,17 +392,16 @@ host_functions! {
     fn signer_list_keylet(&self, account: &[u8], out: &mut [u8]) -> HostResult<usize>;
 
     /// The 32-byte keylet of a `Ticket`, computed from the 20-byte owner account and
-    /// its ticket sequence number. `seq` is the guest's `u32` carried as its `i32` bit
-    /// pattern.
+    /// its ticket sequence number.
     #[gas = 350]
     #[wasm_name = "ticket_id"]
-    fn ticket_keylet(&self, account: &[u8], seq: i32, out: &mut [u8]) -> HostResult<usize>;
+    fn ticket_keylet(&self, account: &[u8], seq: u32, out: &mut [u8]) -> HostResult<usize>;
 
     /// The 32-byte keylet of a `Vault`, computed from the 20-byte owner account and its
-    /// sequence number. `seq` is the guest's `u32` carried as its `i32` bit pattern.
+    /// sequence number.
     #[gas = 350]
     #[wasm_name = "vault_id"]
-    fn vault_keylet(&self, account: &[u8], seq: i32, out: &mut [u8]) -> HostResult<usize>;
+    fn vault_keylet(&self, account: &[u8], seq: u32, out: &mut [u8]) -> HostResult<usize>;
 
     /// The XRPL `sha512Half` of `data`: the first [`HASH_LEN`] bytes of its SHA-512.
     #[gas = 2000]
@@ -368,14 +413,9 @@ host_functions! {
     /// The one declaration whose wasm function has **no result**: this node's own log
     /// is its only effect, so a guest is told nothing. An `Err` from a host therefore
     /// reaches it in no form, and only the host-fatal ones do anything at all.
-    ///
-    /// It is also the one declaration that is **not** the wasm parameter order.
-    /// `data_type` is the third wasm parameter, between the two regions, because that
-    /// is where the guest stdlib declares it; `register.rs` takes the arguments in wasm
-    /// order and calls this in declaration order.
     #[gas = 30]
     #[wasm_name = "trace"]
-    fn trace(&self, msg: &str, data: &[u8], data_type: TraceDataType) -> HostResult<()>;
+    fn trace(&self, msg: &str, data_type: TraceDataType, data: &[u8]) -> HostResult<()>;
 
     /// Stores `data` as the current object's data field, replacing whatever was there,
     /// and returns the number of bytes stored; `DataFieldTooLarge` if it exceeds the
@@ -424,29 +464,29 @@ host_functions! {
     /// A float built from the signed integer `x` under rounding `mode`.
     #[gas = 100]
     #[wasm_name = "float_from_int"]
-    fn float_from_int(&self, x: i64, mode: i32, out: &mut [u8]) -> HostResult<usize>;
+    fn float_from_int(&self, x: i64, out: &mut [u8], mode: i32) -> HostResult<usize>;
 
     /// A float built from the unsigned integer in the 8-byte region `x` under rounding
     /// `mode`.
     #[gas = 130]
     #[wasm_name = "float_from_uint"]
-    fn float_from_uint(&self, x: &[u8], mode: i32, out: &mut [u8]) -> HostResult<usize>;
+    fn float_from_uint(&self, x: &[u8], out: &mut [u8], mode: i32) -> HostResult<usize>;
 
     /// A float built from the serialized `STAmount` in `amount` under rounding `mode`.
     #[gas = 150]
     #[wasm_name = "float_from_stamount"]
-    fn float_from_stamount(&self, amount: &[u8], mode: i32, out: &mut [u8]) -> HostResult<usize>;
+    fn float_from_stamount(&self, amount: &[u8], out: &mut [u8], mode: i32) -> HostResult<usize>;
 
     /// A float built from the serialized `STNumber` in `number` under rounding `mode`.
     #[gas = 150]
     #[wasm_name = "float_from_stnumber"]
-    fn float_from_stnumber(&self, number: &[u8], mode: i32, out: &mut [u8]) -> HostResult<usize>;
+    fn float_from_stnumber(&self, number: &[u8], out: &mut [u8], mode: i32) -> HostResult<usize>;
 
     /// The float `x` rounded to a signed integer under rounding `mode`, as eight
     /// little-endian bytes.
     #[gas = 130]
     #[wasm_name = "float_to_int"]
-    fn float_to_int(&self, x: &[u8], mode: i32, out: &mut [u8]) -> HostResult<usize>;
+    fn float_to_int(&self, x: &[u8], out: &mut [u8], mode: i32) -> HostResult<usize>;
 
     /// The float `x` split into its mantissa (eight little-endian bytes) and its exponent
     /// (four little-endian bytes), each written to its own output region.
@@ -466,8 +506,8 @@ host_functions! {
         &self,
         mantissa: i64,
         exponent: i32,
-        mode: i32,
         out: &mut [u8],
+        mode: i32,
     ) -> HostResult<usize>;
 
     /// Compares floats `x` and `y`, returning a negative, zero, or positive scalar as
@@ -479,25 +519,25 @@ host_functions! {
     /// The float sum `x + y` under rounding `mode`.
     #[gas = 160]
     #[wasm_name = "float_add"]
-    fn float_add(&self, x: &[u8], y: &[u8], mode: i32, out: &mut [u8]) -> HostResult<usize>;
+    fn float_add(&self, x: &[u8], y: &[u8], out: &mut [u8], mode: i32) -> HostResult<usize>;
 
     /// The float difference `x - y` under rounding `mode`.
     #[gas = 160]
     #[wasm_name = "float_sub"]
-    fn float_subtract(&self, x: &[u8], y: &[u8], mode: i32, out: &mut [u8]) -> HostResult<usize>;
+    fn float_subtract(&self, x: &[u8], y: &[u8], out: &mut [u8], mode: i32) -> HostResult<usize>;
 
     /// The float product `x * y` under rounding `mode`.
     #[gas = 300]
     #[wasm_name = "float_mult"]
-    fn float_multiply(&self, x: &[u8], y: &[u8], mode: i32, out: &mut [u8]) -> HostResult<usize>;
+    fn float_multiply(&self, x: &[u8], y: &[u8], out: &mut [u8], mode: i32) -> HostResult<usize>;
 
     /// The float quotient `x / y` under rounding `mode`.
     #[gas = 300]
     #[wasm_name = "float_div"]
-    fn float_divide(&self, x: &[u8], y: &[u8], mode: i32, out: &mut [u8]) -> HostResult<usize>;
+    fn float_divide(&self, x: &[u8], y: &[u8], out: &mut [u8], mode: i32) -> HostResult<usize>;
 
     /// The float `x` raised to the power `n` under rounding `mode`.
     #[gas = 5500]
     #[wasm_name = "float_pow"]
-    fn float_power(&self, x: &[u8], n: i32, mode: i32, out: &mut [u8]) -> HostResult<usize>;
+    fn float_power(&self, x: &[u8], n: i32, out: &mut [u8], mode: i32) -> HostResult<usize>;
 }

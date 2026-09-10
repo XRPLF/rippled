@@ -17,14 +17,13 @@ struct NftokenOfferKeyletCall : HostContextTest
     Bytes const accountBytes{0x61, 0x62, 0x63, 0x64, 0x65, 0x66, 0x67, 0x68, 0x69, 0x6a,
                              0x6b, 0x6c, 0x6d, 0x6e, 0x6f, 0x70, 0x71, 0x72, 0x73, 0x74};
     AccountID const account = AccountID::fromVoid(accountBytes.data());
-    std::int32_t const seq = 13579;
+    std::uint32_t const seq = 13579;
 };
 
 TEST_F(NftokenOfferKeyletCall, AccountAndSeqAreForwardedKeyletIsWritten)
 {
     Bytes const keylet(32, 0xab);
-    EXPECT_CALL(host, nftokenOfferKeylet(account, static_cast<std::uint32_t>(seq)))
-        .WillOnce(testing::Return(keylet));
+    EXPECT_CALL(host, nftokenOfferKeylet(account, seq)).WillOnce(testing::Return(keylet));
 
     OutRegion out{32};
     EXPECT_EQ(
@@ -35,7 +34,7 @@ TEST_F(NftokenOfferKeyletCall, AccountAndSeqAreForwardedKeyletIsWritten)
 
 TEST_F(NftokenOfferKeyletCall, HostErrorBecomesContractReturnValue)
 {
-    EXPECT_CALL(host, nftokenOfferKeylet(account, static_cast<std::uint32_t>(seq)))
+    EXPECT_CALL(host, nftokenOfferKeylet(account, seq))
         .WillOnce(testing::Return(std::unexpected(HostFunctionError::LedgerObjNotFound)));
 
     OutRegion out{32};
@@ -79,7 +78,7 @@ TEST_F(NftokenOfferKeyletCall, EmptyAccountIsRefusedWithoutAskingHost)
 
 TEST_F(NftokenOfferKeyletCall, HostExceptionBecomesInternalFatalAndIsLogged)
 {
-    EXPECT_CALL(host, nftokenOfferKeylet(account, static_cast<std::uint32_t>(seq)))
+    EXPECT_CALL(host, nftokenOfferKeylet(account, seq))
         .WillOnce(testing::Throw(std::runtime_error{"nftoken offer keylet came apart"}));
 
     OutRegion out{32};
@@ -95,8 +94,7 @@ TEST_F(NftokenOfferKeyletCall, HostExceptionBecomesInternalFatalAndIsLogged)
 TEST_F(NftokenOfferKeyletCall, ShortOutRegionWritesNothingAndReturnsTrueLength)
 {
     Bytes const keylet(32, 0xab);
-    EXPECT_CALL(host, nftokenOfferKeylet(account, static_cast<std::uint32_t>(seq)))
-        .WillOnce(testing::Return(keylet));
+    EXPECT_CALL(host, nftokenOfferKeylet(account, seq)).WillOnce(testing::Return(keylet));
 
     OutRegion out{keylet.size() - 1};
     EXPECT_EQ(
@@ -108,8 +106,7 @@ TEST_F(NftokenOfferKeyletCall, ShortOutRegionWritesNothingAndReturnsTrueLength)
 TEST_F(NftokenOfferKeyletCall, OutRegionOfExactSizeIsWritten)
 {
     Bytes const keylet(32, 0xab);
-    EXPECT_CALL(host, nftokenOfferKeylet(account, static_cast<std::uint32_t>(seq)))
-        .WillOnce(testing::Return(keylet));
+    EXPECT_CALL(host, nftokenOfferKeylet(account, seq)).WillOnce(testing::Return(keylet));
 
     OutRegion out{keylet.size()};
     EXPECT_EQ(
@@ -120,8 +117,7 @@ TEST_F(NftokenOfferKeyletCall, OutRegionOfExactSizeIsWritten)
 
 TEST_F(NftokenOfferKeyletCall, EmptyResultAnswersZeroAndWritesNothing)
 {
-    EXPECT_CALL(host, nftokenOfferKeylet(account, static_cast<std::uint32_t>(seq)))
-        .WillOnce(testing::Return(Bytes{}));
+    EXPECT_CALL(host, nftokenOfferKeylet(account, seq)).WillOnce(testing::Return(Bytes{}));
 
     OutRegion out{32};
     EXPECT_EQ(hostContext.nftokenOfferKeylet(bytesOf(accountBytes), seq, out.slice()), 0);

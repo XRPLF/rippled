@@ -1,4 +1,6 @@
 mod errors;
+mod glue;
+mod lowering;
 mod parsed_host_function;
 
 use std::collections::HashSet;
@@ -25,7 +27,7 @@ use parsed_host_function::ParsedHostFunction;
 ///
 /// # What it generates
 ///
-/// Three items, in the scope the block is written in:
+/// Four items, in the scope the block is written in:
 ///
 /// - `pub trait HostFunctions`: one method per declaration, emitted verbatim —
 ///   receiver, parameters, return type and doc comment exactly as written. An
@@ -33,19 +35,30 @@ use parsed_host_function::ParsedHostFunction;
 ///   mention it.
 /// - `pub enum HostFunctionSpec`: one variant per declaration, named by
 ///   PascalCasing the function name (`get_ledger_sqn` becomes `GetLedgerSqn`) and
-///   carrying that declaration's doc comment. Its `const fn wasm_name` and
-///   `const fn gas` are the ABI metadata, and `ALL` is every variant in
-///   declaration order — what a wasm engine iterates to build its import table.
+///   carrying that declaration's doc comment. Its `const fn wasm_name`, `gas`,
+///   `wasm_params` and `wasm_result` are the ABI metadata, and `ALL` is every
+///   variant in declaration order — what a wasm engine iterates to build its
+///   import table.
 /// - `struct HostFnSpec`: private, one row of that metadata table. It exists only
-///   so `wasm_name` and `gas` read from a single `match` over the declarations,
-///   and never appears in a signature a caller can name.
+///   so those accessors read from a single `match` over the declarations, and
+///   never appears in a signature a caller can name.
+/// - `macro_rules! wasmi_glue`: the registration for a wasmi engine, emitted as a
+///   macro rather than as code because it names an engine this crate must not
+///   depend on. Inert until expanded — see its own documentation.
 ///
-/// The expansion introduces no other name and reaches for none: the only paths in
-/// it are `Self::Variant` and whatever the declarations themselves spell. So the
-/// block compiles wherever the types it names — `HostResult` above — resolve.
+/// The wasm signature is derived from the declared types rather than stated a
+/// second time: `i32` and `i64` are the wasm scalars spelled as themselves, every
+/// other parameter type is marshalled through a `(ptr, len)` pair or an `i32`
+/// code, and the result comes from the `HostResult<T>` success type. The glue is
+/// generated from that same derivation, so the closure a guest links against and
+/// the signature it is screened by are one statement.
+///
+/// Outside the glue's body the expansion builds only `Self::Variant` and
+/// `WasmValType` paths, so the block compiles wherever the types it names —
+/// `HostResult` and `WasmValType` — resolve.
 ///
 /// ```
-/// use xrpl_host_functions::HostResult;
+/// use xrpl_host_functions::{HostResult, WasmValType};
 /// use xrpl_host_functions_macros::host_functions;
 ///
 /// host_functions! {
@@ -76,11 +89,32 @@ use parsed_host_function::ParsedHostFunction;
 ///     HostFunctionSpec::ALL,
 ///     &[HostFunctionSpec::GetLedgerSqn, HostFunctionSpec::TraceNum],
 /// );
+///
+/// // So is the wasm signature: `out: &mut [u8]` is the pair `(ptr, len)`, and
+/// // `HostResult<usize>` answers the length written to it.
+/// assert_eq!(
+///     HostFunctionSpec::GetLedgerSqn.wasm_params(),
+///     &[WasmValType::I32, WasmValType::I32],
+/// );
+/// assert_eq!(
+///     HostFunctionSpec::GetLedgerSqn.wasm_result(),
+///     Some(WasmValType::I32),
+/// );
+///
+/// // `trace_num` answers nothing at all, so its import has no result.
+/// assert_eq!(
+///     HostFunctionSpec::TraceNum.wasm_params(),
+///     &[WasmValType::I32, WasmValType::I32, WasmValType::I64],
+/// );
+/// assert_eq!(HostFunctionSpec::TraceNum.wasm_result(), None);
 /// ```
 ///
-/// A declaration must be a plain `fn` taking `&self` and returning
-/// `HostResult<T>`, with no body and no generics: it maps to exactly one wasm
-/// import signature. Two declarations may not share a `wasm_name`, nor collapse to
+/// A declaration must be a plain `fn` taking `&self`, with no body and no
+/// generics: it maps to exactly one wasm import signature. Its parameters must be
+/// `i32`, `i64`, `u32`, `&[u8]`, `&mut [u8]`, `&str` or `TraceDataType`, and it
+/// must return `HostResult<usize>` if it writes an output region,
+/// `HostResult<i32>` if it answers a value directly, or `HostResult<()>` if it
+/// answers nothing. Two declarations may not share a `wasm_name`, nor collapse to
 /// the same PascalCase variant.
 #[proc_macro]
 pub fn host_functions(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
@@ -90,6 +124,19 @@ pub fn host_functions(input: proc_macro::TokenStream) -> proc_macro::TokenStream
 }
 
 fn expand(input: TokenStream) -> syn::Result<TokenStream> {
+    let functions = parse_block(input)?;
+    let abi = abi_items(&functions);
+    let glue = glue::wasmi_glue(&functions);
+
+    Ok(quote! {
+        #abi
+        #glue
+    })
+}
+
+/// Every declaration in the block, parsed and checked against each other, or
+/// every mistake in it.
+fn parse_block(input: TokenStream) -> syn::Result<Vec<ParsedHostFunction>> {
     let HostFunctionsInput { functions } = parse2(input)?;
 
     let mut parsed = Vec::with_capacity(functions.len());
@@ -107,7 +154,7 @@ fn expand(input: TokenStream) -> syn::Result<TokenStream> {
         return Err(error);
     }
 
-    Ok(generate(&parsed))
+    Ok(parsed)
 }
 
 /// Names two declarations may not share, because the generated code would then
@@ -141,7 +188,9 @@ fn collisions(functions: &[ParsedHostFunction]) -> Vec<syn::Error> {
     errors
 }
 
-fn generate(functions: &[ParsedHostFunction]) -> TokenStream {
+/// The ABI itself: the trait a host implements and the table everything else
+/// reads. `glue::wasmi_glue` is the other half of the expansion.
+fn abi_items(functions: &[ParsedHostFunction]) -> TokenStream {
     let trait_methods = functions.iter().map(ParsedHostFunction::trait_method);
     let variants = functions
         .iter()
@@ -181,14 +230,16 @@ fn generate(functions: &[ParsedHostFunction]) -> TokenStream {
             #(#trait_methods)*
         }
 
-        /// One row of the ABI table: what [`HostFunctionSpec::wasm_name`] and
-        /// [`HostFunctionSpec::gas`] read from.
+        /// One row of the ABI table: what [`HostFunctionSpec`]'s accessors
+        /// read from.
         ///
-        /// Private, and the only reason it exists is to keep both of them fed
+        /// Private, and the only reason it exists is to keep all of them fed
         /// from a single `match` over the declarations.
         struct HostFnSpec {
             name: &'static str,
             gas: u64,
+            wasm_params: &'static [WasmValType],
+            wasm_result: Option<WasmValType>,
         }
 
         /// Identifies one host function, and is the compile-time source of its
@@ -234,6 +285,25 @@ fn generate(functions: &[ParsedHostFunction]) -> TokenStream {
             pub const fn gas(self) -> u64 {
                 self.spec().gas
             }
+
+            /// The wasm parameters this function is imported with, in wire
+            /// order — the list a guest's import must match, which the
+            /// declaration's own parameter list is not: a declared parameter
+            /// marshalled through a `(ptr, len)` region is two of these.
+            ///
+            /// Usable in `const` context, so import lists can be built at
+            /// compile time.
+            pub const fn wasm_params(self) -> &'static [WasmValType] {
+                self.spec().wasm_params
+            }
+
+            /// The wasm result this function answers with, or `None` for the
+            /// one whose whole effect is on the host. An `i32` where there is
+            /// one, whether the host answered a value or the length of what it
+            /// wrote — the wire does not distinguish those.
+            pub const fn wasm_result(self) -> Option<WasmValType> {
+                self.spec().wasm_result
+            }
         }
     }
 }
@@ -265,10 +335,10 @@ mod tests {
     fn reports_mistakes_from_every_function() {
         let error = expand(quote! {
             #[wasm_name = "ldgr_index"]
-            fn get_ledger_sqn(&self) -> HostResult<[u8; 4]>;
+            fn get_ledger_sqn(&self, out: &mut [u8]) -> HostResult<usize>;
 
             #[gas = 2000]
-            fn sha512_half(&self, data: &[u8]) -> HostResult<[u8; 32]>;
+            fn sha512_half(&self, data: &[u8], out: &mut [u8]) -> HostResult<usize>;
         })
         .expect_err("expected parsing to fail");
 
@@ -292,12 +362,19 @@ mod tests {
         error.into_iter().map(|error| error.to_string()).collect()
     }
 
+    /// The ABI half of the expansion alone: the glue's body is written against
+    /// another crate entirely, so the tests below about what the expansion may
+    /// name are not about it.
+    fn abi_expansion(input: TokenStream) -> String {
+        abi_items(&parse_block(input).expect("the block should parse")).to_string()
+    }
+
     #[test]
     fn generates_the_trait_the_enum_and_the_table() {
         let generated = expand(quote! {
             #[gas = 60]
             #[wasm_name = "ldgr_index"]
-            fn get_ledger_sqn(&self) -> HostResult<[u8; 4]>;
+            fn get_ledger_sqn(&self, out: &mut [u8]) -> HostResult<usize>;
 
             #[gas = 500]
             #[wasm_name = "trace_num"]
@@ -308,41 +385,54 @@ mod tests {
 
         for expected in [
             "pub trait HostFunctions",
-            "fn get_ledger_sqn (& self) -> HostResult < [u8 ; 4] > ;",
+            "fn get_ledger_sqn (& self , out : & mut [u8]) -> HostResult < usize > ;",
             "fn trace_num (& self , msg : & str , number : i64) -> HostResult < () > ;",
             "pub enum HostFunctionSpec { GetLedgerSqn , TraceNum , }",
             "pub const ALL : & 'static [Self] = & [Self :: GetLedgerSqn , Self :: TraceNum ,]",
             // The table's row type is generated too, and stays private.
-            "struct HostFnSpec { name : & 'static str , gas : u64 , }",
+            "struct HostFnSpec { name : & 'static str , gas : u64 , \
+             wasm_params : & 'static [WasmValType] , wasm_result : Option < WasmValType > , }",
             "const fn spec (self) -> HostFnSpec",
-            "Self :: GetLedgerSqn => HostFnSpec { name : \"ldgr_index\" , gas : 60u64 }",
+            // Two wasm parameters for the one declared region, and a result for
+            // the length written to it.
+            "Self :: GetLedgerSqn => HostFnSpec { name : \"ldgr_index\" , gas : 60u64 , \
+             wasm_params : & [WasmValType :: I32 , WasmValType :: I32] , \
+             wasm_result : Some (WasmValType :: I32) , }",
+            "Self :: TraceNum => HostFnSpec { name : \"trace_num\" , gas : 500u64 , \
+             wasm_params : & [WasmValType :: I32 , WasmValType :: I32 , WasmValType :: I64] , \
+             wasm_result : None , }",
             "pub const fn wasm_name (self) -> & 'static str",
             "pub const fn gas (self) -> u64",
+            "pub const fn wasm_params (self) -> & 'static [WasmValType]",
+            "pub const fn wasm_result (self) -> Option < WasmValType >",
+            // The fourth item; its contents are `glue`'s own tests.
+            "macro_rules ! wasmi_glue",
         ] {
             assert!(generated.contains(expected), "missing {expected:?}");
         }
     }
 
-    /// The expansion stands alone: every name in it is either generated here or
-    /// written in the declarations, so it cannot depend on the crate it lands in.
+    /// The ABI reaches for nothing outside the crate it lands in, which is what
+    /// lets that crate stay zero-dependency and link into the guest. The glue is
+    /// not held to this — its body names one engine throughout, and `glue`'s own
+    /// tests pin that instead.
     #[test]
     fn names_no_crate_of_its_own() {
-        let generated = expand(quote! {
+        let generated = abi_expansion(quote! {
             #[gas = 60]
             #[wasm_name = "ldgr_index"]
-            fn get_ledger_sqn(&self) -> HostResult<[u8; 4]>;
-        })
-        .unwrap()
-        .to_string();
+            fn get_ledger_sqn(&self, out: &mut [u8]) -> HostResult<usize>;
+        });
 
         assert!(!generated.contains("xrpl_host_functions"), "{generated}");
 
-        // `Self::Variant` is the only path the expansion may build: anything else
-        // would reach out of the generated code. Doc comments spell paths without
-        // spaces (`Self::ALL`), so they do not match.
+        // Two roots and no others: `Self::Variant` and `WasmValType::I32`.
+        // Doc comments spell paths without spaces (`Self::ALL`), so they do not
+        // match.
         for (index, _) in generated.match_indices(" :: ") {
+            let prefix = &generated[..index];
             assert!(
-                generated[..index].ends_with("Self"),
+                prefix.ends_with("Self") || prefix.ends_with("WasmValType"),
                 "path out of the expansion at {index}: {generated}"
             );
         }
@@ -352,13 +442,11 @@ mod tests {
     /// become part of the ABI crate's public surface.
     #[test]
     fn keeps_the_table_row_private() {
-        let generated = expand(quote! {
+        let generated = abi_expansion(quote! {
             #[gas = 60]
             #[wasm_name = "ldgr_index"]
-            fn get_ledger_sqn(&self) -> HostResult<[u8; 4]>;
-        })
-        .unwrap()
-        .to_string();
+            fn get_ledger_sqn(&self, out: &mut [u8]) -> HostResult<usize>;
+        });
 
         assert!(!generated.contains("pub struct HostFnSpec"), "{generated}");
         assert!(!generated.contains("pub const fn spec"), "{generated}");
@@ -389,11 +477,11 @@ mod tests {
         let messages = messages(quote! {
             #[gas = 60]
             #[wasm_name = "a"]
-            fn get_ledger_sqn(&self) -> HostResult<[u8; 4]>;
+            fn get_ledger_sqn(&self) -> HostResult<i32>;
 
             #[gas = 70]
             #[wasm_name = "b"]
-            fn get_ledger__sqn(&self) -> HostResult<[u8; 4]>;
+            fn get_ledger__sqn(&self) -> HostResult<i32>;
         });
 
         assert_eq!(messages.len(), 1, "{messages:?}");
