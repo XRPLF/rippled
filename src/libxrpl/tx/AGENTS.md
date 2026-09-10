@@ -1,7 +1,5 @@
 # AGENTS.md — tx
 
-See the repo-level [AGENTS.md](../../../AGENTS.md) for general build/test/style guidance.
-
 ## When an amendment is required
 
 A change needs an amendment if it affects transaction processing, ledger objects, or anything else about the binary format or hash of the ledger. An amendment is optional if a change only affects what transactions get proposed for consensus (e.g. fee escalation). Otherwise, don't use one.

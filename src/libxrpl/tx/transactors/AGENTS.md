@@ -1,7 +1,5 @@
 # AGENTS.md — transactors
 
-See [tx/AGENTS.md](../AGENTS.md) for amendment-gating conventions that apply to all transactors, and the repo-level [AGENTS.md](../../../../AGENTS.md) for general guidance.
-
 Prefer a single object-level invariant over duplicating the same delta/balance check in every transactor that touches an object — e.g. one invariant asserting a Vault's pseudo-account balance and `assetsAvailable` always move together, rather than repeating that check in `VaultDeposit`, `VaultWithdraw`, `VaultClawback`, `LoanSet`, etc.
 
 ## Gating amendment-dependent code
