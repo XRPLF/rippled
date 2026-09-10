@@ -18,6 +18,7 @@
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Concepts.h>
 #include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Fees.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/MPTIssue.h>
@@ -31,6 +32,8 @@
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/Transactor.h>
 
+#include <cstdint>
+#include <optional>
 #include <system_error>
 #include <variant>
 
@@ -83,7 +86,29 @@ EscrowFinish::preflight(PreflightContext const& ctx)
     // If you specify a condition, then you must also specify
     // a fulfillment.
     if (static_cast<bool>(cb) != static_cast<bool>(fb))
+    {
+        JLOG(ctx.j.debug()) << "Condition != Fulfillment";
         return temMALFORMED;
+    }
+
+    if (auto const allowance = ctx.tx[~sfGas]; allowance)
+    {
+        auto const fees(ctx.registry.get().getFees());
+        if (fees.gasLimit == 0)
+        {
+            JLOG(ctx.j.debug()) << "WASM runtime deactivated by fee voting";
+            return temTEMP_DISABLED;
+        }
+        if (*allowance == 0)
+        {
+            return temBAD_LIMIT;
+        }
+        if (*allowance > fees.gasLimit)
+        {
+            JLOG(ctx.j.debug()) << "Gas too large: " << *allowance;
+            return temBAD_LIMIT;
+        }
+    }
 
     return tesSUCCESS;
 }
@@ -132,7 +157,15 @@ EscrowFinish::calculateBaseFee(ReadView const& view, STTx const& tx)
     {
         extraFee += view.fees().base * (32 + (fb->size() / 16));
     }
-
+    if (std::optional<uint64_t> const allowance = tx[~sfGas]; allowance)
+    {
+        // The extra fee is the allowance in drops, rounded up to the nearest
+        // whole drop.
+        // Integer math rounds down by default, so we add 1 to round up.
+        uint64_t const allowanceFee =
+            (((*allowance) * view.fees().gasPrice) / microDropsPerDrop) + 1;
+        extraFee += allowanceFee;
+    }
     return Transactor::calculateBaseFee(view, tx) + extraFee;
 }
 
@@ -208,26 +241,51 @@ EscrowFinish::preclaim(PreclaimContext const& ctx)
             return err;
     }
 
-    if (ctx.view.rules().enabled(featureTokenEscrow))
+    if (ctx.view.rules().enabled(featureTokenEscrow) ||
+        ctx.view.rules().enabled(featureSmartEscrow))
     {
+        // this check is done in doApply before this amendment is enabled
         auto const seqProxy = SeqProxy::rawSequence(ctx.tx[sfOfferSequence]);
         auto const k = keylet::escrow(ctx.tx[sfOwner], seqProxy);
         auto const slep = ctx.view.read(k);
         if (!slep)
             return tecNO_TARGET;
 
-        AccountID const dest = (*slep)[sfDestination];
-        STAmount const amount = (*slep)[sfAmount];
-
-        if (!isXRP(amount))
+        if (ctx.view.rules().enabled(featureSmartEscrow))
         {
-            if (auto const ret = std::visit(
-                    [&]<typename T>(T const&) {
-                        return escrowFinishPreclaimHelper<T>(ctx, dest, amount);
-                    },
-                    amount.asset().value());
-                !isTesSuccess(ret))
-                return ret;
+            if (slep->isFieldPresent(sfBytecode))
+            {
+                if (!ctx.tx.isFieldPresent(sfGas))
+                {
+                    JLOG(ctx.j.debug()) << "Bytecode requires Gas";
+                    return tefBYTECODE_NOT_INCLUDED;
+                }
+            }
+            else
+            {
+                if (ctx.tx.isFieldPresent(sfGas))
+                {
+                    JLOG(ctx.j.debug()) << "Bytecode not present, "
+                                           "Gas present";
+                    return tefNO_BYTECODE;
+                }
+            }
+        }
+        if (ctx.view.rules().enabled(featureTokenEscrow))
+        {
+            AccountID const dest = (*slep)[sfDestination];
+            STAmount const amount = (*slep)[sfAmount];
+
+            if (!isXRP(amount))
+            {
+                if (auto const ret = std::visit(
+                        [&]<typename T>(T const&) {
+                            return escrowFinishPreclaimHelper<T>(ctx, dest, amount);
+                        },
+                        amount.asset().value());
+                    !isTesSuccess(ret))
+                    return ret;
+            }
         }
     }
     return tesSUCCESS;
@@ -241,7 +299,8 @@ EscrowFinish::doApply()
     auto const slep = ctx_.view().peek(k);
     if (!slep)
     {
-        if (ctx_.view().rules().enabled(featureTokenEscrow))
+        if (ctx_.view().rules().enabled(featureTokenEscrow) ||
+            ctx_.view().rules().enabled(featureSmartEscrow))
             return tecINTERNAL;  // LCOV_EXCL_LINE
 
         return tecNO_TARGET;
@@ -258,6 +317,20 @@ EscrowFinish::doApply()
     // Too late: can't execute after the cancel time
     if ((*slep)[~sfCancelAfter] && after(now, (*slep)[sfCancelAfter]))
         return tecNO_PERMISSION;
+
+    AccountID const destID = (*slep)[sfDestination];
+    auto const sled = ctx_.view().peek(keylet::account(destID));
+    if (ctx_.view().rules().enabled(featureSmartEscrow))
+    {
+        // NOTE: Escrow payments cannot be used to fund accounts.
+        if (!sled)
+            return tecNO_DST;
+
+        if (auto err =
+                verifyDepositPreauth(ctx_.tx, ctx_.view(), accountID_, destID, sled, ctx_.journal);
+            !isTesSuccess(err))
+            return err;
+    }
 
     // Check cryptocondition fulfillment
     {
@@ -312,16 +385,33 @@ EscrowFinish::doApply()
             return tecCRYPTOCONDITION_ERROR;
     }
 
-    // NOTE: Escrow payments cannot be used to fund accounts.
-    AccountID const destID = (*slep)[sfDestination];
-    auto const sled = ctx_.view().peek(keylet::account(destID));
-    if (!sled)
-        return tecNO_DST;
+    if (!ctx_.view().rules().enabled(featureSmartEscrow))
+    {
+        // NOTE: Escrow payments cannot be used to fund accounts.
+        if (!sled)
+            return tecNO_DST;
 
-    if (auto err =
-            verifyDepositPreauth(ctx_.tx, ctx_.view(), accountID_, destID, sled, ctx_.journal);
-        !isTesSuccess(err))
-        return err;
+        if (auto err =
+                verifyDepositPreauth(ctx_.tx, ctx_.view(), accountID_, destID, sled, ctx_.journal);
+            !isTesSuccess(err))
+            return err;
+    }
+
+    // Execute custom release function
+    if ((*slep)[~sfBytecode])
+    {
+        // TODO(SmartEscrow): run the escrow's contract here once the WASM
+        // engine lands. That change also brings with it the reporting the run
+        // produces - the gas it consumed and the code it returned, in the
+        // transaction metadata - and the tecBYTECODE_REJECTED result that lets
+        // a rejected escrow survive with the data the contract wrote.
+        //
+        // Until then an escrow carrying bytecode can be created, funded and
+        // cancelled, but not finished. Reachable only under featureSmartEscrow,
+        // which is Supported::No.
+        JLOG(j_.debug()) << "EscrowFinish: no WASM engine to run the escrow's bytecode";
+        return tecFAILED_PROCESSING;
+    }
 
     AccountID const account = (*slep)[sfAccount];
 
@@ -349,13 +439,15 @@ EscrowFinish::doApply()
         }
     }
 
+    auto const reserveToSubtract = calculateAdditionalReserve((*slep)[~sfBytecode]);
+
     // Delivery can auto-create the destination's holding; the removed escrow
     // must not be counted against its reserve. The two share a reserve payer
     // for a self-escrow, or when one sponsor covers both.
     bool const recycleReserve =
         ctx_.view().rules().enabled(featureSponsor) || ctx_.view().rules().enabled(fixCleanup3_4_0);
     if (recycleReserve)
-        decreaseOwnerCountForObject(ctx_.view(), account, slep, 1, ctx_.journal);
+        decreaseOwnerCountForObject(ctx_.view(), account, slep, reserveToSubtract, ctx_.journal);
 
     STAmount const amount = slep->getFieldAmount(sfAmount);
     // Transfer amount to destination
@@ -407,7 +499,7 @@ EscrowFinish::doApply()
     ctx_.view().update(sled);
 
     if (!recycleReserve)
-        decreaseOwnerCountForObject(ctx_.view(), account, slep, 1, ctx_.journal);
+        decreaseOwnerCountForObject(ctx_.view(), account, slep, reserveToSubtract, ctx_.journal);
 
     // Remove escrow from ledger
     ctx_.view().erase(slep);
