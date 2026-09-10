@@ -375,9 +375,7 @@ parseDirectoryNode(
         return parseObjectID(params, fieldName);
     }
 
-    if (params.isMember(jss::sub_index) &&
-        (!params[jss::sub_index].isConvertibleTo(json::ValueType::UInt) ||
-         params[jss::sub_index].isBool()))
+    if (params.isMember(jss::sub_index) && ((!params[jss::sub_index].isUInt() && !(params[jss::sub_index].isInt() && params[jss::sub_index].asInt() >= 0)) || params[jss::sub_index].isBool()))
     {
         return ledger_entry_helpers::invalidFieldError(
             "malformedRequest", jss::sub_index, "number");
