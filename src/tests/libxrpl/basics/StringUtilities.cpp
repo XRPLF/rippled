@@ -5,7 +5,11 @@
 
 #include <gtest/gtest.h>
 
+#include <array>
+#include <cstdint>
+#include <optional>
 #include <string>
+#include <string_view>
 
 namespace xrpl {
 
@@ -46,242 +50,245 @@ TEST_F(StringUtilitiesTest, un_hex)
     testUnHexFailure("XRP");
 }
 
-TEST_F(StringUtilitiesTest, parse_url)
+// Everything a URL is expected to parse into. The components a case does not
+// mention default to "absent", so each row lists only what it is about.
+struct ParseUrlCase
 {
-    // Expected passes.
-    {
-        ParsedUrl pUrl;
-        EXPECT_TRUE(parseUrl(pUrl, "scheme://"));
-        EXPECT_EQ(pUrl.scheme, "scheme");
-        EXPECT_TRUE(pUrl.username.empty());
-        EXPECT_TRUE(pUrl.password.empty());
-        EXPECT_TRUE(pUrl.domain.empty());
-        EXPECT_FALSE(pUrl.port);
-        // RFC 3986:
-        // > In general, a URI that uses the generic syntax for authority
-        //   with an empty path should be normalized to a path of "/".
-        // Do we want to normalize paths?
-        EXPECT_TRUE(pUrl.path.empty());
-    }
+    std::string_view name;
+    std::string_view url;
+    std::string_view scheme;
+    std::string_view username = {};          // NOLINT(readability-redundant-member-init)
+    std::string_view password = {};          // NOLINT(readability-redundant-member-init)
+    std::string_view domain = {};            // NOLINT(readability-redundant-member-init)
+    std::optional<std::uint16_t> port = {};  // NOLINT(readability-redundant-member-init)
+    std::string_view path = {};              // NOLINT(readability-redundant-member-init)
+};
 
+constexpr auto kParseUrlCases = std::to_array<ParseUrlCase>({
+    // RFC 3986:
+    // > In general, a URI that uses the generic syntax for authority
+    //   with an empty path should be normalized to a path of "/".
+    // Do we want to normalize paths? Today an absent path stays absent.
     {
-        ParsedUrl pUrl;
-        EXPECT_TRUE(parseUrl(pUrl, "scheme:///"));
-        EXPECT_EQ(pUrl.scheme, "scheme");
-        EXPECT_TRUE(pUrl.username.empty());
-        EXPECT_TRUE(pUrl.password.empty());
-        EXPECT_TRUE(pUrl.domain.empty());
-        EXPECT_FALSE(pUrl.port);
-        EXPECT_EQ(pUrl.path, "/");
-    }
+        .name = "scheme_only",
+        .url = "scheme://",
+        .scheme = "scheme",
+    },
+    {
+        .name = "empty_authority_with_root_path",
+        .url = "scheme:///",
+        .scheme = "scheme",
+        .path = "/",
+    },
+    {
+        .name = "lowercase_scheme",
+        .url = "lower://domain",
+        .scheme = "lower",
+        .domain = "domain",
+    },
+    {
+        .name = "uppercase_scheme_is_lowercased",
+        .url = "UPPER://domain:234/",
+        .scheme = "upper",
+        .domain = "domain",
+        .port = 234,
+        .path = "/",
+    },
+    {
+        .name = "mixed_case_scheme_is_lowercased",
+        .url = "Mixed://domain/path",
+        .scheme = "mixed",
+        .domain = "domain",
+        .path = "/path",
+    },
+    {
+        .name = "bracketed_ipv6_keeps_its_port",
+        .url = "scheme://[::1]:123/path",
+        .scheme = "scheme",
+        .domain = "::1",
+        .port = 123,
+        .path = "/path",
+    },
+    {
+        .name = "username_and_password_with_port",
+        .url = "scheme://user:pass@domain:123/abc:321",
+        .scheme = "scheme",
+        .username = "user",
+        .password = "pass",
+        .domain = "domain",
+        .port = 123,
+        .path = "/abc:321",
+    },
+    {
+        .name = "username_only_with_port",
+        .url = "scheme://user@domain:123/abc:321",
+        .scheme = "scheme",
+        .username = "user",
+        .domain = "domain",
+        .port = 123,
+        .path = "/abc:321",
+    },
+    {
+        .name = "password_only_with_port",
+        .url = "scheme://:pass@domain:123/abc:321",
+        .scheme = "scheme",
+        .password = "pass",
+        .domain = "domain",
+        .port = 123,
+        .path = "/abc:321",
+    },
+    {
+        .name = "no_credentials_with_port",
+        .url = "scheme://domain:123/abc:321",
+        .scheme = "scheme",
+        .domain = "domain",
+        .port = 123,
+        .path = "/abc:321",
+    },
+    {
+        .name = "username_and_password_without_port",
+        .url = "scheme://user:pass@domain/abc:321",
+        .scheme = "scheme",
+        .username = "user",
+        .password = "pass",
+        .domain = "domain",
+        .path = "/abc:321",
+    },
+    {
+        .name = "username_only_without_port",
+        .url = "scheme://user@domain/abc:321",
+        .scheme = "scheme",
+        .username = "user",
+        .domain = "domain",
+        .path = "/abc:321",
+    },
+    {
+        .name = "password_only_without_port",
+        .url = "scheme://:pass@domain/abc:321",
+        .scheme = "scheme",
+        .password = "pass",
+        .domain = "domain",
+        .path = "/abc:321",
+    },
+    {
+        .name = "no_credentials_without_port",
+        .url = "scheme://domain/abc:321",
+        .scheme = "scheme",
+        .domain = "domain",
+        .path = "/abc:321",
+    },
+    {
+        .name = "empty_authority_with_file_path",
+        .url = "scheme:///path/to/file",
+        .scheme = "scheme",
+        .path = "/path/to/file",
+    },
+    // The '@' separating credentials from the domain is the first one, so a
+    // later '@' belongs to the path.
+    {
+        .name = "at_sign_in_path_with_credentials",
+        .url = "scheme://user:pass@domain/path/with/an@sign",
+        .scheme = "scheme",
+        .username = "user",
+        .password = "pass",
+        .domain = "domain",
+        .path = "/path/with/an@sign",
+    },
+    {
+        .name = "at_sign_in_path_without_credentials",
+        .url = "scheme://domain/path/with/an@sign",
+        .scheme = "scheme",
+        .domain = "domain",
+        .path = "/path/with/an@sign",
+    },
+    // A port with no domain in front of it is not recognised as a port at all;
+    // the whole ":999" becomes the domain.
+    {
+        .name = "port_without_domain_is_taken_as_domain",
+        .url = "scheme://:999/",
+        .scheme = "scheme",
+        .domain = ":999",
+        .path = "/",
+    },
+    // An unbracketed IPv6 address is parsed as an address, not as host:port, so
+    // the trailing ":1234" is folded into the address itself.
+    {
+        .name = "unbracketed_ipv6_absorbs_the_trailing_port",
+        .url = "http://::1:1234/validators",
+        .scheme = "http",
+        .domain = "::0.1.18.52",
+        .path = "/validators",
+    },
+});
 
-    {
-        ParsedUrl pUrl;
-        EXPECT_TRUE(parseUrl(pUrl, "lower://domain"));
-        EXPECT_EQ(pUrl.scheme, "lower");
-        EXPECT_TRUE(pUrl.username.empty());
-        EXPECT_TRUE(pUrl.password.empty());
-        EXPECT_EQ(pUrl.domain, "domain");
-        EXPECT_FALSE(pUrl.port);
-        EXPECT_TRUE(pUrl.path.empty());
-    }
+class ParseUrlTest : public ::testing::TestWithParam<ParseUrlCase>
+{
+};
 
-    {
-        ParsedUrl pUrl;
-        EXPECT_TRUE(parseUrl(pUrl, "UPPER://domain:234/"));
-        EXPECT_EQ(pUrl.scheme, "upper");
-        EXPECT_TRUE(pUrl.username.empty());
-        EXPECT_TRUE(pUrl.password.empty());
-        EXPECT_EQ(pUrl.domain, "domain");
-        EXPECT_EQ(*pUrl.port, 234);  // NOLINT(bugprone-unchecked-optional-access)
-        EXPECT_EQ(pUrl.path, "/");
-    }
+TEST_P(ParseUrlTest, splits_url_into_components)
+{
+    auto const& testCase = GetParam();
 
-    {
-        ParsedUrl pUrl;
-        EXPECT_TRUE(parseUrl(pUrl, "Mixed://domain/path"));
-        EXPECT_EQ(pUrl.scheme, "mixed");
-        EXPECT_TRUE(pUrl.username.empty());
-        EXPECT_TRUE(pUrl.password.empty());
-        EXPECT_EQ(pUrl.domain, "domain");
-        EXPECT_FALSE(pUrl.port);
-        EXPECT_EQ(pUrl.path, "/path");
-    }
+    ParsedUrl parsed;
+    ASSERT_TRUE(parseUrl(parsed, std::string{testCase.url}));
 
-    {
-        ParsedUrl pUrl;
-        EXPECT_TRUE(parseUrl(pUrl, "scheme://[::1]:123/path"));
-        EXPECT_EQ(pUrl.scheme, "scheme");
-        EXPECT_TRUE(pUrl.username.empty());
-        EXPECT_TRUE(pUrl.password.empty());
-        EXPECT_EQ(pUrl.domain, "::1");
-        EXPECT_EQ(*pUrl.port, 123);  // NOLINT(bugprone-unchecked-optional-access)
-        EXPECT_EQ(pUrl.path, "/path");
-    }
+    EXPECT_EQ(parsed.scheme, testCase.scheme);
+    EXPECT_EQ(parsed.username, testCase.username);
+    EXPECT_EQ(parsed.password, testCase.password);
+    EXPECT_EQ(parsed.domain, testCase.domain);
+    EXPECT_EQ(parsed.port, testCase.port);
+    EXPECT_EQ(parsed.path, testCase.path);
+}
 
-    {
-        ParsedUrl pUrl;
-        EXPECT_TRUE(parseUrl(pUrl, "scheme://user:pass@domain:123/abc:321"));
-        EXPECT_EQ(pUrl.scheme, "scheme");
-        EXPECT_EQ(pUrl.username, "user");
-        EXPECT_EQ(pUrl.password, "pass");
-        EXPECT_EQ(pUrl.domain, "domain");
-        EXPECT_EQ(*pUrl.port, 123);  // NOLINT(bugprone-unchecked-optional-access)
-        EXPECT_EQ(pUrl.path, "/abc:321");
-    }
+INSTANTIATE_TEST_SUITE_P(
+    StringUtilities,
+    ParseUrlTest,
+    ::testing::ValuesIn(kParseUrlCases),
+    [](::testing::TestParamInfo<ParseUrlCase> const& info) {
+        return std::string{info.param.name};
+    });
 
-    {
-        ParsedUrl pUrl;
-        EXPECT_TRUE(parseUrl(pUrl, "scheme://user@domain:123/abc:321"));
-        EXPECT_EQ(pUrl.scheme, "scheme");
-        EXPECT_EQ(pUrl.username, "user");
-        EXPECT_TRUE(pUrl.password.empty());
-        EXPECT_EQ(pUrl.domain, "domain");
-        EXPECT_EQ(*pUrl.port, 123);  // NOLINT(bugprone-unchecked-optional-access)
-        EXPECT_EQ(pUrl.path, "/abc:321");
-    }
+struct ParseUrlFailureCase
+{
+    std::string_view name;
+    std::string_view url;
+};
 
-    {
-        ParsedUrl pUrl;
-        EXPECT_TRUE(parseUrl(pUrl, "scheme://:pass@domain:123/abc:321"));
-        EXPECT_EQ(pUrl.scheme, "scheme");
-        EXPECT_TRUE(pUrl.username.empty());
-        EXPECT_EQ(pUrl.password, "pass");
-        EXPECT_EQ(pUrl.domain, "domain");
-        EXPECT_EQ(*pUrl.port, 123);  // NOLINT(bugprone-unchecked-optional-access)
-        EXPECT_EQ(pUrl.path, "/abc:321");
-    }
+constexpr auto kParseUrlFailureCases = std::to_array<ParseUrlFailureCase>({
+    {.name = "empty", .url = ""},
+    {.name = "no_scheme_separator", .url = "nonsense"},
+    {.name = "empty_scheme", .url = "://"},
+    {.name = "empty_scheme_with_path", .url = ":///"},
+    {.name = "port_one_above_the_16_bit_range", .url = "scheme://user:pass@domain:65536/abc:321"},
+    {.name = "port_far_above_the_16_bit_range", .url = "UPPER://domain:23498765/"},
+    {.name = "port_zero", .url = "UPPER://domain:0/"},
+    {.name = "port_with_a_plus_sign", .url = "UPPER://domain:+7/"},
+    {.name = "negative_port", .url = "UPPER://domain:-7234/"},
+    {.name = "port_of_punctuation", .url = "UPPER://domain:@#$56!/"},
+});
 
-    {
-        ParsedUrl pUrl;
-        EXPECT_TRUE(parseUrl(pUrl, "scheme://domain:123/abc:321"));
-        EXPECT_EQ(pUrl.scheme, "scheme");
-        EXPECT_TRUE(pUrl.username.empty());
-        EXPECT_TRUE(pUrl.password.empty());
-        EXPECT_EQ(pUrl.domain, "domain");
-        EXPECT_EQ(*pUrl.port, 123);  // NOLINT(bugprone-unchecked-optional-access)
-        EXPECT_EQ(pUrl.path, "/abc:321");
-    }
+class ParseUrlFailureTest : public ::testing::TestWithParam<ParseUrlFailureCase>
+{
+};
 
-    {
-        ParsedUrl pUrl;
-        EXPECT_TRUE(parseUrl(pUrl, "scheme://user:pass@domain/abc:321"));
-        EXPECT_EQ(pUrl.scheme, "scheme");
-        EXPECT_EQ(pUrl.username, "user");
-        EXPECT_EQ(pUrl.password, "pass");
-        EXPECT_EQ(pUrl.domain, "domain");
-        EXPECT_FALSE(pUrl.port);
-        EXPECT_EQ(pUrl.path, "/abc:321");
-    }
+TEST_P(ParseUrlFailureTest, rejects_url)
+{
+    ParsedUrl parsed;
+    EXPECT_FALSE(parseUrl(parsed, std::string{GetParam().url}));
+}
 
-    {
-        ParsedUrl pUrl;
-        EXPECT_TRUE(parseUrl(pUrl, "scheme://user@domain/abc:321"));
-        EXPECT_EQ(pUrl.scheme, "scheme");
-        EXPECT_EQ(pUrl.username, "user");
-        EXPECT_TRUE(pUrl.password.empty());
-        EXPECT_EQ(pUrl.domain, "domain");
-        EXPECT_FALSE(pUrl.port);
-        EXPECT_EQ(pUrl.path, "/abc:321");
-    }
+INSTANTIATE_TEST_SUITE_P(
+    StringUtilities,
+    ParseUrlFailureTest,
+    ::testing::ValuesIn(kParseUrlFailureCases),
+    [](::testing::TestParamInfo<ParseUrlFailureCase> const& info) {
+        return std::string{info.param.name};
+    });
 
-    {
-        ParsedUrl pUrl;
-        EXPECT_TRUE(parseUrl(pUrl, "scheme://:pass@domain/abc:321"));
-        EXPECT_EQ(pUrl.scheme, "scheme");
-        EXPECT_TRUE(pUrl.username.empty());
-        EXPECT_EQ(pUrl.password, "pass");
-        EXPECT_EQ(pUrl.domain, "domain");
-        EXPECT_FALSE(pUrl.port);
-        EXPECT_EQ(pUrl.path, "/abc:321");
-    }
-
-    {
-        ParsedUrl pUrl;
-        EXPECT_TRUE(parseUrl(pUrl, "scheme://domain/abc:321"));
-        EXPECT_EQ(pUrl.scheme, "scheme");
-        EXPECT_TRUE(pUrl.username.empty());
-        EXPECT_TRUE(pUrl.password.empty());
-        EXPECT_EQ(pUrl.domain, "domain");
-        EXPECT_FALSE(pUrl.port);
-        EXPECT_EQ(pUrl.path, "/abc:321");
-    }
-
-    {
-        ParsedUrl pUrl;
-        EXPECT_TRUE(parseUrl(pUrl, "scheme:///path/to/file"));
-        EXPECT_EQ(pUrl.scheme, "scheme");
-        EXPECT_TRUE(pUrl.username.empty());
-        EXPECT_TRUE(pUrl.password.empty());
-        EXPECT_TRUE(pUrl.domain.empty());
-        EXPECT_FALSE(pUrl.port);
-        EXPECT_EQ(pUrl.path, "/path/to/file");
-    }
-
-    {
-        ParsedUrl pUrl;
-        EXPECT_TRUE(parseUrl(pUrl, "scheme://user:pass@domain/path/with/an@sign"));
-        EXPECT_EQ(pUrl.scheme, "scheme");
-        EXPECT_EQ(pUrl.username, "user");
-        EXPECT_EQ(pUrl.password, "pass");
-        EXPECT_EQ(pUrl.domain, "domain");
-        EXPECT_FALSE(pUrl.port);
-        EXPECT_EQ(pUrl.path, "/path/with/an@sign");
-    }
-
-    {
-        ParsedUrl pUrl;
-        EXPECT_TRUE(parseUrl(pUrl, "scheme://domain/path/with/an@sign"));
-        EXPECT_EQ(pUrl.scheme, "scheme");
-        EXPECT_TRUE(pUrl.username.empty());
-        EXPECT_TRUE(pUrl.password.empty());
-        EXPECT_EQ(pUrl.domain, "domain");
-        EXPECT_FALSE(pUrl.port);
-        EXPECT_EQ(pUrl.path, "/path/with/an@sign");
-    }
-
-    {
-        ParsedUrl pUrl;
-        EXPECT_TRUE(parseUrl(pUrl, "scheme://:999/"));
-        EXPECT_EQ(pUrl.scheme, "scheme");
-        EXPECT_TRUE(pUrl.username.empty());
-        EXPECT_TRUE(pUrl.password.empty());
-        EXPECT_EQ(pUrl.domain, ":999");
-        EXPECT_FALSE(pUrl.port);
-        EXPECT_EQ(pUrl.path, "/");
-    }
-
-    {
-        ParsedUrl pUrl;
-        EXPECT_TRUE(parseUrl(pUrl, "http://::1:1234/validators"));
-        EXPECT_EQ(pUrl.scheme, "http");
-        EXPECT_TRUE(pUrl.username.empty());
-        EXPECT_TRUE(pUrl.password.empty());
-        EXPECT_EQ(pUrl.domain, "::0.1.18.52");
-        EXPECT_FALSE(pUrl.port);
-        EXPECT_EQ(pUrl.path, "/validators");
-    }
-
-    // Expected fails.
-    {
-        ParsedUrl pUrl;
-        EXPECT_FALSE(parseUrl(pUrl, ""));
-        EXPECT_FALSE(parseUrl(pUrl, "nonsense"));
-        EXPECT_FALSE(parseUrl(pUrl, "://"));
-        EXPECT_FALSE(parseUrl(pUrl, ":///"));
-        EXPECT_FALSE(parseUrl(pUrl, "scheme://user:pass@domain:65536/abc:321"));
-        EXPECT_FALSE(parseUrl(pUrl, "UPPER://domain:23498765/"));
-        EXPECT_FALSE(parseUrl(pUrl, "UPPER://domain:0/"));
-        EXPECT_FALSE(parseUrl(pUrl, "UPPER://domain:+7/"));
-        EXPECT_FALSE(parseUrl(pUrl, "UPPER://domain:-7234/"));
-        EXPECT_FALSE(parseUrl(pUrl, "UPPER://domain:@#$56!/"));
-    }
-
-    {
-        std::string const strUrl("s://" + std::string(8192, ':'));
-        ParsedUrl pUrl;
-        EXPECT_FALSE(parseUrl(pUrl, strUrl));
-    }
+TEST_F(StringUtilitiesTest, parse_url_rejects_an_overlong_authority)
+{
+    ParsedUrl parsed;
+    EXPECT_FALSE(parseUrl(parsed, "s://" + std::string(8192, ':')));
 }
 
 TEST_F(StringUtilitiesTest, to_string)
@@ -290,7 +297,7 @@ TEST_F(StringUtilitiesTest, to_string)
     EXPECT_EQ(result, "hello");
 }
 
-TEST_F(StringUtilitiesTest, trimWhitespace)
+TEST_F(StringUtilitiesTest, trim_whitespace)
 {
     EXPECT_EQ(trimWhitespace(""), "");
     EXPECT_EQ(trimWhitespace("   "), "");
@@ -303,7 +310,7 @@ TEST_F(StringUtilitiesTest, trimWhitespace)
     EXPECT_EQ(trimWhitespace("  a b\tc  "), "a b\tc");
 }
 
-TEST_F(StringUtilitiesTest, toLower)
+TEST_F(StringUtilitiesTest, to_lower)
 {
     EXPECT_EQ(toLower(""), "");
     EXPECT_EQ(toLower("ABC"), "abc");
@@ -318,7 +325,7 @@ TEST_F(StringUtilitiesTest, toLower)
 // Both helpers are documented as depending only on their input. Guard that by
 // checking the bytes just outside ASCII, which a locale-aware isspace/tolower
 // could classify differently.
-TEST_F(StringUtilitiesTest, trimAndLowerIgnoreLocale)
+TEST_F(StringUtilitiesTest, trim_and_lower_ignore_locale)
 {
     // 0xA0 is NO-BREAK SPACE in Latin-1 and is whitespace to some locales.
     std::string const nbsp("\xA0", 1);

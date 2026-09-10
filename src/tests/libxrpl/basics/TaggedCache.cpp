@@ -10,237 +10,259 @@
 #include <gtest/gtest.h>
 #include <helpers/TestSink.h>
 
+#include <chrono>
 #include <memory>
 #include <string>
 #include <utility>
 
 namespace xrpl {
 
-/*
-I guess you can put some items in, make sure they're still there. Let some
-time pass, make sure they're gone. Keep a strong pointer to one of them, make
-sure you can still find it even after time passes. Create two objects with
-the same key, canonicalize them both and make sure you get the same object.
-Put an object in but keep a strong pointer to it, advance the clock a lot,
-then canonicalize a new object with the same key, make sure you get the
-original object.
-*/
-
-TEST(TaggedCacheTest, tagged_cache)
+struct TaggedCacheTest : public ::testing::Test
 {
-    using namespace std::chrono_literals;
-    beast::Journal const journal{TestSink::instance()};
-
-    TestStopwatch clock;
-    clock.set(0);
-
     using Key = LedgerIndex;
     using Value = std::string;
     using Cache = TaggedCache<Key, Value>;
 
-    Cache c("test", 1, 1s, clock, journal);
+    // A single `++clock` plus a sweep is enough to age any entry out.
+    static constexpr std::chrono::seconds kExpiration{1};
+    static constexpr int kTargetSize = 1;
 
-    // Insert an item, retrieve it, and age it so it gets purged.
-    {
-        EXPECT_EQ(c.getCacheSize(), 0);
-        EXPECT_EQ(c.getTrackSize(), 0);
-        EXPECT_FALSE(c.insert(1, "one"));
-        EXPECT_EQ(c.getCacheSize(), 1);
-        EXPECT_EQ(c.getTrackSize(), 1);
+    beast::Journal const journal{TestSink::instance()};
+    TestStopwatch clock;  ///< ManualClock starts at zero
+    Cache cache{"test", kTargetSize, kExpiration, clock, journal};
+};
 
-        {
-            std::string s;
-            EXPECT_TRUE(c.retrieve(1, s));
-            EXPECT_EQ(s, "one");
-        }
+TEST_F(TaggedCacheTest, insert_then_retrieve)
+{
+    EXPECT_EQ(cache.getCacheSize(), 0);
+    EXPECT_EQ(cache.getTrackSize(), 0);
 
-        ++clock;
-        c.sweep();
-        EXPECT_EQ(c.getCacheSize(), 0);
-        EXPECT_EQ(c.getTrackSize(), 0);
-    }
+    EXPECT_FALSE(cache.insert(1, "one"));
+    EXPECT_EQ(cache.getCacheSize(), 1);
+    EXPECT_EQ(cache.getTrackSize(), 1);
 
-    // Insert an item, maintain a strong pointer, age it, and
-    // verify that the entry still exists.
-    {
-        EXPECT_FALSE(c.insert(2, "two"));
-        EXPECT_EQ(c.getCacheSize(), 1);
-        EXPECT_EQ(c.getTrackSize(), 1);
+    std::string retrieved;
+    EXPECT_TRUE(cache.retrieve(1, retrieved));
+    EXPECT_EQ(retrieved, "one");
+}
 
-        {
-            auto p = c.fetch(2);
-            EXPECT_NE(p, nullptr);
-            ++clock;
-            c.sweep();
-            EXPECT_EQ(c.getCacheSize(), 0);
-            EXPECT_EQ(c.getTrackSize(), 1);
-        }
+TEST_F(TaggedCacheTest, sweep_purges_an_aged_entry)
+{
+    EXPECT_FALSE(cache.insert(1, "one"));
 
-        // Make sure its gone now that our reference is gone
-        ++clock;
-        c.sweep();
-        EXPECT_EQ(c.getCacheSize(), 0);
-        EXPECT_EQ(c.getTrackSize(), 0);
-    }
+    ++clock;
+    cache.sweep();
 
-    // Insert the same key/value pair and make sure we get the same result
-    {
-        EXPECT_FALSE(c.insert(3, "three"));
+    EXPECT_EQ(cache.getCacheSize(), 0);
+    EXPECT_EQ(cache.getTrackSize(), 0);
+}
 
-        {
-            auto const p1 = c.fetch(3);
-            auto p2 = std::make_shared<Value>("three");
-            c.canonicalizeReplaceClient(3, p2);
-            EXPECT_EQ(p1.get(), p2.get());
-        }
-        ++clock;
-        c.sweep();
-        EXPECT_EQ(c.getCacheSize(), 0);
-        EXPECT_EQ(c.getTrackSize(), 0);
-    }
-
-    // Put an object in but keep a strong pointer to it, advance the clock a
-    // lot, then canonicalize a new object with the same key, make sure you
-    // get the original object.
-    {
-        // Put an object in
-        EXPECT_FALSE(c.insert(4, "four"));
-        EXPECT_EQ(c.getCacheSize(), 1);
-        EXPECT_EQ(c.getTrackSize(), 1);
-
-        {
-            // Keep a strong pointer to it
-            auto const p1 = c.fetch(4);
-            EXPECT_NE(p1, nullptr);
-            EXPECT_EQ(c.getCacheSize(), 1);
-            EXPECT_EQ(c.getTrackSize(), 1);
-            // Advance the clock a lot
-            ++clock;
-            c.sweep();
-            EXPECT_EQ(c.getCacheSize(), 0);
-            EXPECT_EQ(c.getTrackSize(), 1);
-            // Canonicalize a new object with the same key
-            auto p2 = std::make_shared<std::string>("four");
-            EXPECT_TRUE(c.canonicalizeReplaceClient(4, p2));
-            EXPECT_EQ(c.getCacheSize(), 1);
-            EXPECT_EQ(c.getTrackSize(), 1);
-            // Make sure we get the original object
-            EXPECT_EQ(p1.get(), p2.get());
-        }
-
-        ++clock;
-        c.sweep();
-        EXPECT_EQ(c.getCacheSize(), 0);
-        EXPECT_EQ(c.getTrackSize(), 0);
-    }
+TEST_F(TaggedCacheTest, sweep_keeps_tracking_an_entry_a_caller_still_holds)
+{
+    EXPECT_FALSE(cache.insert(2, "two"));
+    EXPECT_EQ(cache.getCacheSize(), 1);
+    EXPECT_EQ(cache.getTrackSize(), 1);
 
     {
-        EXPECT_FALSE(c.insert(5, "five"));
-        EXPECT_EQ(c.getCacheSize(), 1);
-        EXPECT_EQ(c.size(), 1);
-
-        {
-            auto const p1 = c.fetch(5);
-            EXPECT_NE(p1, nullptr);
-            EXPECT_EQ(c.getCacheSize(), 1);
-            EXPECT_EQ(c.size(), 1);
-
-            // Advance the clock a lot
-            ++clock;
-            c.sweep();
-            EXPECT_EQ(c.getCacheSize(), 0);
-            EXPECT_EQ(c.size(), 1);
-
-            auto p2 = std::make_shared<std::string>("five_2");
-            EXPECT_TRUE(c.canonicalizeReplaceCache(5, p2));
-            EXPECT_EQ(c.getCacheSize(), 1);
-            EXPECT_EQ(c.size(), 1);
-            // Make sure the caller's original pointer is unchanged
-            EXPECT_NE(p1.get(), p2.get());
-            EXPECT_EQ(*p2, "five_2");
-
-            auto const p3 = c.fetch(5);
-            EXPECT_NE(p3, nullptr);
-            EXPECT_EQ(p3.get(), p2.get());
-            EXPECT_NE(p3.get(), p1.get());
-        }
+        // Scope is load-bearing: the entry survives the sweep only while this
+        // pointer is alive.
+        auto held = cache.fetch(2);
+        EXPECT_NE(held, nullptr);
 
         ++clock;
-        c.sweep();
-        EXPECT_EQ(c.getCacheSize(), 0);
-        EXPECT_EQ(c.size(), 0);
+        cache.sweep();
+        EXPECT_EQ(cache.getCacheSize(), 0);
+        EXPECT_EQ(cache.getTrackSize(), 1);
     }
+
+    ++clock;
+    cache.sweep();
+    EXPECT_EQ(cache.getCacheSize(), 0);
+    EXPECT_EQ(cache.getTrackSize(), 0);
+}
+
+TEST_F(TaggedCacheTest, canonicalize_replace_client_hands_back_the_cached_object)
+{
+    EXPECT_FALSE(cache.insert(3, "three"));
 
     {
-        struct MyRefCountObject : IntrusiveRefCounts
-        {
-            std::string data;
+        // Scope is load-bearing: both pointers must die before the sweep below.
+        auto const cached = cache.fetch(3);
+        auto candidate = std::make_shared<Value>("three");
+        cache.canonicalizeReplaceClient(3, candidate);
 
-            // Needed to support weak intrusive pointers
-            virtual void
-            partialDestructor()
-            {
-            }
+        EXPECT_EQ(cached.get(), candidate.get());
+    }
 
-            MyRefCountObject() = default;
-            explicit MyRefCountObject(std::string data) : data(std::move(data))
-            {
-            }
+    // Canonicalizing left no lingering reference, so the entry still ages out.
+    ++clock;
+    cache.sweep();
+    EXPECT_EQ(cache.getCacheSize(), 0);
+    EXPECT_EQ(cache.getTrackSize(), 0);
+}
 
-            bool
-            operator==(std::string const& other) const
-            {
-                return data == other;
-            }
-        };
+TEST_F(TaggedCacheTest, canonicalize_replace_client_revives_a_swept_entry)
+{
+    EXPECT_FALSE(cache.insert(4, "four"));
+    EXPECT_EQ(cache.getCacheSize(), 1);
+    EXPECT_EQ(cache.getTrackSize(), 1);
 
-        using IntrPtrCache = TaggedCache<
-            Key,
-            MyRefCountObject,
-            /*IsKeyCache*/ false,
-            intr_ptr::SharedWeakUnionPtr<MyRefCountObject>,
-            intr_ptr::SharedPtr<MyRefCountObject>>;
-
-        IntrPtrCache intrPtrCache("IntrPtrTest", 1, 1s, clock, journal);
-
-        intrPtrCache.canonicalizeReplaceCache(1, intr_ptr::makeShared<MyRefCountObject>("one"));
-        EXPECT_EQ(intrPtrCache.getCacheSize(), 1);
-        EXPECT_EQ(intrPtrCache.size(), 1);
-
-        {
-            {
-                intrPtrCache.canonicalizeReplaceCache(
-                    1, intr_ptr::makeShared<MyRefCountObject>("one_replaced"));
-
-                auto p = intrPtrCache.fetch(1);
-                EXPECT_EQ(*p, "one_replaced");
-
-                // Advance the clock a lot
-                ++clock;
-                intrPtrCache.sweep();
-                EXPECT_EQ(intrPtrCache.getCacheSize(), 0);
-                EXPECT_EQ(intrPtrCache.size(), 1);
-
-                intrPtrCache.canonicalizeReplaceCache(
-                    1, intr_ptr::makeShared<MyRefCountObject>("one_replaced_2"));
-
-                auto p2 = intrPtrCache.fetch(1);
-                EXPECT_EQ(*p2, "one_replaced_2");
-
-                intrPtrCache.del(1, true);
-            }
-
-            intrPtrCache.canonicalizeReplaceCache(
-                1, intr_ptr::makeShared<MyRefCountObject>("one_replaced_3"));
-            auto p3 = intrPtrCache.fetch(1);
-            EXPECT_EQ(*p3, "one_replaced_3");
-        }
+    {
+        // Scope is load-bearing: the final sweep must see nothing held.
+        auto const held = cache.fetch(4);
+        EXPECT_NE(held, nullptr);
+        // Fetching does not disturb the counts.
+        EXPECT_EQ(cache.getCacheSize(), 1);
+        EXPECT_EQ(cache.getTrackSize(), 1);
 
         ++clock;
-        intrPtrCache.sweep();
-        EXPECT_EQ(intrPtrCache.getCacheSize(), 0);
-        EXPECT_EQ(intrPtrCache.size(), 0);
+        cache.sweep();
+        EXPECT_EQ(cache.getCacheSize(), 0);
+        EXPECT_EQ(cache.getTrackSize(), 1);
+
+        auto candidate = std::make_shared<Value>("four");
+        EXPECT_TRUE(cache.canonicalizeReplaceClient(4, candidate));
+        EXPECT_EQ(cache.getCacheSize(), 1);
+        EXPECT_EQ(cache.getTrackSize(), 1);
+
+        EXPECT_EQ(held.get(), candidate.get());
     }
+
+    ++clock;
+    cache.sweep();
+    EXPECT_EQ(cache.getCacheSize(), 0);
+    EXPECT_EQ(cache.getTrackSize(), 0);
+}
+
+TEST_F(TaggedCacheTest, canonicalize_replace_cache_installs_the_new_object)
+{
+    EXPECT_FALSE(cache.insert(5, "five"));
+    EXPECT_EQ(cache.getCacheSize(), 1);
+    EXPECT_EQ(cache.size(), 1);
+
+    {
+        // Scope is load-bearing: the final sweep must see nothing held.
+        auto const held = cache.fetch(5);
+        EXPECT_NE(held, nullptr);
+        // Fetching does not disturb the counts.
+        EXPECT_EQ(cache.getCacheSize(), 1);
+        EXPECT_EQ(cache.size(), 1);
+
+        ++clock;
+        cache.sweep();
+        EXPECT_EQ(cache.getCacheSize(), 0);
+        EXPECT_EQ(cache.size(), 1);
+
+        auto replacement = std::make_shared<Value>("five_2");
+        EXPECT_TRUE(cache.canonicalizeReplaceCache(5, replacement));
+        EXPECT_EQ(cache.getCacheSize(), 1);
+        EXPECT_EQ(cache.size(), 1);
+
+        // Unlike ReplaceClient, the caller's object wins and the old one is
+        // left untouched in the caller's hands.
+        EXPECT_NE(held.get(), replacement.get());
+        EXPECT_EQ(*replacement, "five_2");
+
+        auto const refetched = cache.fetch(5);
+        EXPECT_NE(refetched, nullptr);
+        EXPECT_EQ(refetched.get(), replacement.get());
+        EXPECT_NE(refetched.get(), held.get());
+    }
+
+    ++clock;
+    cache.sweep();
+    EXPECT_EQ(cache.getCacheSize(), 0);
+    EXPECT_EQ(cache.size(), 0);
+}
+
+namespace {
+
+struct TestRefCountObject : IntrusiveRefCounts
+{
+    std::string data;
+
+    // Needed to support weak intrusive pointers
+    virtual void
+    partialDestructor()
+    {
+    }
+
+    TestRefCountObject() = default;
+    explicit TestRefCountObject(std::string data) : data(std::move(data))
+    {
+    }
+
+    bool
+    operator==(std::string const& other) const
+    {
+        return data == other;
+    }
+};
+
+}  // namespace
+
+struct IntrusiveTaggedCacheTest : public TaggedCacheTest
+{
+    using IntrPtrCache = TaggedCache<
+        Key,
+        TestRefCountObject,
+        /*IsKeyCache*/ false,
+        intr_ptr::SharedWeakUnionPtr<TestRefCountObject>,
+        intr_ptr::SharedPtr<TestRefCountObject>>;
+
+    IntrPtrCache intrPtrCache{"IntrPtrTest", kTargetSize, kExpiration, clock, journal};
+};
+
+TEST_F(IntrusiveTaggedCacheTest, canonicalize_replace_cache_replaces_the_entry)
+{
+    intrPtrCache.canonicalizeReplaceCache(1, intr_ptr::makeShared<TestRefCountObject>("one"));
+    EXPECT_EQ(intrPtrCache.getCacheSize(), 1);
+    EXPECT_EQ(intrPtrCache.size(), 1);
+
+    intrPtrCache.canonicalizeReplaceCache(
+        1, intr_ptr::makeShared<TestRefCountObject>("one_replaced"));
+    EXPECT_EQ(*intrPtrCache.fetch(1), "one_replaced");
+}
+
+TEST_F(IntrusiveTaggedCacheTest, canonicalize_replace_cache_replaces_a_swept_entry)
+{
+    intrPtrCache.canonicalizeReplaceCache(1, intr_ptr::makeShared<TestRefCountObject>("one"));
+
+    // Load-bearing: without this the sweep drops the entry and size() is 0.
+    auto const held = intrPtrCache.fetch(1);
+
+    ++clock;
+    intrPtrCache.sweep();
+    EXPECT_EQ(intrPtrCache.getCacheSize(), 0);
+    EXPECT_EQ(intrPtrCache.size(), 1);
+
+    intrPtrCache.canonicalizeReplaceCache(
+        1, intr_ptr::makeShared<TestRefCountObject>("one_replaced_2"));
+    EXPECT_EQ(*intrPtrCache.fetch(1), "one_replaced_2");
+}
+
+TEST_F(IntrusiveTaggedCacheTest, an_entry_can_be_reinserted_after_del)
+{
+    intrPtrCache.canonicalizeReplaceCache(1, intr_ptr::makeShared<TestRefCountObject>("one"));
+    intrPtrCache.del(1, true);
+
+    intrPtrCache.canonicalizeReplaceCache(
+        1, intr_ptr::makeShared<TestRefCountObject>("one_replaced_3"));
+    EXPECT_EQ(*intrPtrCache.fetch(1), "one_replaced_3");
+}
+
+TEST_F(IntrusiveTaggedCacheTest, sweep_empties_the_cache_once_nothing_is_held)
+{
+    intrPtrCache.canonicalizeReplaceCache(1, intr_ptr::makeShared<TestRefCountObject>("one"));
+
+    ++clock;
+    intrPtrCache.sweep();
+    EXPECT_EQ(intrPtrCache.getCacheSize(), 0);
+
+    ++clock;
+    intrPtrCache.sweep();
+    EXPECT_EQ(intrPtrCache.getCacheSize(), 0);
+    EXPECT_EQ(intrPtrCache.size(), 0);
 }
 
 }  // namespace xrpl

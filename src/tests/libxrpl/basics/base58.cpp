@@ -159,14 +159,20 @@ randomBigInt(std::uint8_t minSize = 1, std::uint8_t maxSize = 5)
 }
 }  // namespace multiprecision_utils
 
-TEST(Base58Test, multiprecision)
+struct Base58MultiprecisionTest : public ::testing::Test
+{
+    static constexpr std::size_t kIters = 100000;
+
+    // Copied, as the original test did, so each case advances its own engine.
+    std::mt19937 eng{randEngine()};
+    std::uniform_int_distribution<std::uint64_t> dist;
+    std::uniform_int_distribution<std::uint64_t> dist1{1};
+};
+
+TEST_F(Base58MultiprecisionTest, div_rem_matches_boost)
 {
     using namespace boost::multiprecision;
 
-    constexpr std::size_t kIters = 100000;
-    auto eng = randEngine();
-    std::uniform_int_distribution<std::uint64_t> dist;
-    std::uniform_int_distribution<std::uint64_t> dist1(1);
     for (auto i = 0uz; i < kIters; ++i)
     {
         std::uint64_t const d = dist(eng);
@@ -185,6 +191,12 @@ TEST(Base58Test, multiprecision)
         EXPECT_EQ(refMod.convert_to<std::uint64_t>(), mod);
         EXPECT_EQ(foundDiv, refDiv);
     }
+}
+
+TEST_F(Base58MultiprecisionTest, add_matches_boost)
+{
+    using namespace boost::multiprecision;
+
     for (auto i = 0uz; i < kIters; ++i)
     {
         std::uint64_t const d = dist(eng);
@@ -204,6 +216,12 @@ TEST(Base58Test, multiprecision)
         auto const foundAdd = multiprecision_utils::toBoostMP(bigInt);
         EXPECT_EQ(refAdd, foundAdd);
     }
+}
+
+TEST_F(Base58MultiprecisionTest, add_reports_overflow)
+{
+    using namespace boost::multiprecision;
+
     for (auto i = 0uz; i < kIters; ++i)
     {
         std::uint64_t const d = dist1(eng);
@@ -221,6 +239,12 @@ TEST(Base58Test, multiprecision)
         auto const foundAdd = multiprecision_utils::toBoostMP(bigInt);
         EXPECT_NE(refAdd, foundAdd);
     }
+}
+
+TEST_F(Base58MultiprecisionTest, mul_matches_boost)
+{
+    using namespace boost::multiprecision;
+
     for (auto i = 0uz; i < kIters; ++i)
     {
         std::uint64_t const d = dist(eng);
@@ -239,6 +263,12 @@ TEST(Base58Test, multiprecision)
         auto const foundMul = multiprecision_utils::toBoostMP(bigInt);
         EXPECT_EQ(refMul, foundMul);
     }
+}
+
+TEST_F(Base58MultiprecisionTest, mul_reports_input_too_large)
+{
+    using namespace boost::multiprecision;
+
     for (auto i = 0uz; i < kIters; ++i)
     {
         std::uint64_t const d = dist1(eng);
@@ -257,9 +287,13 @@ TEST(Base58Test, multiprecision)
     }
 }
 
-TEST(Base58Test, fast_matches_ref)
+// b58_fast must agree with the reference implementation for both raw and
+// token-framed data, in each direction.
+struct Base58FastMatchesRefTest : public ::testing::Test
 {
-    auto testRawEncode = [&](std::span<std::uint8_t> const& b256Data) {
+    static void
+    testRawEncode(std::span<std::uint8_t> const& b256Data)
+    {
         std::array<std::uint8_t, 64> b58ResultBuf[2];
         std::array<std::span<std::uint8_t>, 2> b58Result;
 
@@ -330,10 +364,11 @@ TEST(Base58Test, fast_matches_ref)
                 printAsInt(b256Result[0], b256Result[1]);
             }
         }
-    };
+    }
 
-    auto testTokenEncode = [&](xrpl::TokenType const tokType,
-                               std::span<std::uint8_t> const& b256Data) {
+    static void
+    testTokenEncode(xrpl::TokenType const tokType, std::span<std::uint8_t> const& b256Data)
+    {
         std::array<std::uint8_t, 64> b58ResultBuf[2];
         std::array<std::span<std::uint8_t>, 2> b58Result;
 
@@ -403,15 +438,19 @@ TEST(Base58Test, fast_matches_ref)
                 printAsInt(b256Result[0], b256Result[1]);
             }
         }
-    };
+    }
 
-    auto testIt = [&](xrpl::TokenType const tokType, std::span<std::uint8_t> const& b256Data) {
+    static void
+    testIt(xrpl::TokenType const tokType, std::span<std::uint8_t> const& b256Data)
+    {
         testRawEncode(b256Data);
         testTokenEncode(tokType, b256Data);
-    };
+    }
+};
 
-    // test every token type with data where every byte is the same and the
-    // bytes range from 0-255
+TEST_F(Base58FastMatchesRefTest, every_token_type_over_every_byte_value)
+{
+    // Data where every byte is the same, for byte values 0-255.
     for (int i = 0; i < kNumTokenTypeIndexes; ++i)
     {
         std::array<std::uint8_t, 128> b256DataBuf{};
@@ -422,9 +461,12 @@ TEST(Base58Test, fast_matches_ref)
             testIt(tokType, std::span(b256DataBuf.data(), tokSize));
         }
     }
+}
 
-    // test with random data
+TEST_F(Base58FastMatchesRefTest, random_data)
+{
     constexpr std::size_t kIters = 100000;
+
     for (auto i = 0uz; i < kIters; ++i)
     {
         std::array<std::uint8_t, 128> b256DataBuf{};
