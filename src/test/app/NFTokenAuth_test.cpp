@@ -95,10 +95,20 @@ public:
             env(token::acceptBuyOffer(a2, buyIdx), Ter(tecNO_AUTH));
             env.close();
         }
+        else if (features[fixCleanup3_5_0])
+        {
+            // Old behavior allowed selling tokens and receiving IOUs without
+            // authorization. The ValidTrustLineAuth invariant (enforced under
+            // fixCleanup3_5_0) backstops the missing transactor check.
+            env(token::acceptBuyOffer(a2, buyIdx), Ter(tecINVARIANT_FAILED));
+            env.close();
+
+            BEAST_EXPECT(env.balance(a2, usd) == usd(0));
+        }
         else
         {
-            // Old behavior: it is possible to sell tokens and receive IOUs
-            // without the authorization
+            // Legacy behavior: it is possible to sell tokens
+            // and receive IOUs without the authorization.
             env(token::acceptBuyOffer(a2, buyIdx));
             env.close();
 
@@ -141,13 +151,22 @@ public:
 
         if (features[fixEnforceNFTokenTrustlineV2])
         {
-            // test: check that buyer can't make an offer even with balance
-            env(token::createOffer(a1, nftID, usd(10)), token::Owner(a2), Ter(tecNO_AUTH));
+            // test: check that buyer can't make an offer even with balance.
+            // Under fixCleanup3_5_0 the unauthorized balance reads as zero
+            // in accountFunds, so the funding check fires first.
+            env(token::createOffer(a1, nftID, usd(10)),
+                token::Owner(a2),
+                Ter(features[fixCleanup3_5_0] ? tecUNFUNDED_OFFER : tecNO_AUTH));
+        }
+        else if (features[fixCleanup3_5_0])
+        {
+            // The unauthorized balance no longer funds the offer.
+            env(token::createOffer(a1, nftID, usd(10)), token::Owner(a2), Ter(tecUNFUNDED_OFFER));
         }
         else
         {
-            // old behavior: can create an offer if balance allows, regardless
-            // ot authorization
+            // Legacy behavior: can create an offer if balance allows,
+            // regardless of authorization.
             env(token::createOffer(a1, nftID, usd(10)), token::Owner(a2));
         }
     }
@@ -203,8 +222,11 @@ public:
         env.app().getOpenLedger().modify(unauthTrustline);
         if (features[fixEnforceNFTokenTrustlineV2])
         {
-            // test: check that offer can't be accepted even with balance
-            env(token::acceptBuyOffer(a2, buyIdx), Ter(tecNO_AUTH));
+            // test: check that offer can't be accepted even with balance.
+            // Under fixCleanup3_5_0 the buyer's unauthorized balance reads
+            // as zero, so the funding check fires before the auth check.
+            env(token::acceptBuyOffer(a2, buyIdx),
+                Ter(features[fixCleanup3_5_0] ? tecINSUFFICIENT_FUNDS : tecNO_AUTH));
         }
     }
 
@@ -276,12 +298,26 @@ public:
             env(token::createOffer(a2, nftID, usd(10)), Txflags(tfSellNFToken));
             env.close();
 
-            // Old behavior: it is possible to sell NFT and receive IOUs
-            // without the authorization
-            env(token::acceptSellOffer(a1, sellIdx));
-            env.close();
+            if (features[fixCleanup3_5_0])
+            {
+                // Old behavior allowed selling the NFT and receiving IOUs
+                // without authorization. The ValidTrustLineAuth invariant
+                // (enforced under fixCleanup3_5_0) backstops the missing
+                // transactor check.
+                env(token::acceptSellOffer(a1, sellIdx), Ter(tecINVARIANT_FAILED));
+                env.close();
 
-            BEAST_EXPECT(env.balance(a2, usd) == usd(10));
+                BEAST_EXPECT(env.balance(a2, usd) == usd(0));
+            }
+            else
+            {
+                // Legacy behavior: it is possible to sell the
+                // NFT and receive IOUs without the authorization.
+                env(token::acceptSellOffer(a1, sellIdx));
+                env.close();
+
+                BEAST_EXPECT(env.balance(a2, usd) == usd(10));
+            }
         }
     }
 
@@ -323,7 +359,10 @@ public:
         env.app().getOpenLedger().modify(unauthTrustline);
         if (features[fixEnforceNFTokenTrustlineV2])
         {
-            env(token::acceptSellOffer(a1, sellIdx), Ter(tecNO_AUTH));
+            // Under fixCleanup3_5_0 the buyer's unauthorized balance reads
+            // as zero, so the funding check fires before the auth check.
+            env(token::acceptSellOffer(a1, sellIdx),
+                Ter(features[fixCleanup3_5_0] ? tecINSUFFICIENT_FUNDS : tecNO_AUTH));
         }
     }
 
@@ -381,9 +420,22 @@ public:
             env(token::brokerOffers(broker, buyIdx, sellIdx));
             env.close();
         }
+        else if (features[fixCleanup3_5_0])
+        {
+            // Old behavior allowed the broker to receive IOUs without
+            // authorization. The ValidTrustLineAuth invariant (enforced under
+            // fixCleanup3_5_0) backstops the missing transactor check.
+            env(token::brokerOffers(broker, buyIdx, sellIdx),
+                token::BrokerFee(usd(1)),
+                Ter(tecINVARIANT_FAILED));
+            env.close();
+
+            BEAST_EXPECT(env.balance(broker, usd) == usd(0));
+        }
         else
         {
-            // Old behavior: broker can receive IOUs without the authorization
+            // Legacy behavior: the broker can receive IOUs
+            // without the authorization.
             env(token::brokerOffers(broker, buyIdx, sellIdx), token::BrokerFee(usd(1)));
             env.close();
 
@@ -443,10 +495,12 @@ public:
 
         if (features[fixEnforceNFTokenTrustlineV2])
         {
-            // test: G1 requires authorization of A2
+            // test: G1 requires authorization of A2. Under fixCleanup3_5_0
+            // the buyer's unauthorized balance reads as zero, so the funding
+            // check fires before the auth check.
             env(token::brokerOffers(broker, buyIdx, sellIdx),
                 token::BrokerFee(usd(1)),
-                Ter(tecNO_AUTH));
+                Ter(features[fixCleanup3_5_0] ? tecINSUFFICIENT_FUNDS : tecNO_AUTH));
             env.close();
         }
     }
@@ -516,14 +570,26 @@ public:
             env(token::brokerOffers(broker, buyIdx, sellIdx), Ter(tecNO_AUTH));
             env.close();
         }
+        else if (features[fixCleanup3_5_0])
+        {
+            // Old behavior allowed the unauthorized seller to receive IOUs.
+            // The ValidTrustLineAuth invariant (enforced under
+            // fixCleanup3_5_0) backstops the missing transactor check.
+            env(token::brokerOffers(broker, buyIdx, sellIdx),
+                token::BrokerFee(usd(1)),
+                Ter(tecINVARIANT_FAILED));
+            env.close();
+
+            BEAST_EXPECT(env.balance(a2, usd) == usd(0));
+        }
         else
         {
-            // Old behavior: broker can receive IOUs without the authorization
+            // Legacy behavior: the unauthorized seller can
+            // receive IOUs.
             env(token::brokerOffers(broker, buyIdx, sellIdx), token::BrokerFee(usd(1)));
             env.close();
 
             BEAST_EXPECT(env.balance(a2, usd) == usd(10));
-            return;
         }
     }
 
@@ -570,9 +636,20 @@ public:
             env(token::acceptSellOffer(a2, sellIdx), Ter(tecNO_AUTH));
             env.close();
         }
+        else if (features[fixCleanup3_5_0])
+        {
+            // Old behavior allowed the unauthorized minter to receive the
+            // transfer fee. The ValidTrustLineAuth invariant (enforced under
+            // fixCleanup3_5_0) backstops the missing transactor check.
+            env(token::acceptSellOffer(a2, sellIdx), Ter(tecINVARIANT_FAILED));
+            env.close();
+
+            BEAST_EXPECT(env.balance(minter, usd) == usd(0));
+        }
         else
         {
-            // Old behavior: can sell for USD. Minter can receive tokens
+            // Legacy behavior: can sell for USD. Minter can
+            // receive tokens.
             env(token::acceptSellOffer(a2, sellIdx));
             env.close();
 
@@ -586,7 +663,15 @@ public:
         using namespace test::jtx;
         static FeatureBitset const kAll{testableAmendments()};
 
-        static std::array const kFeatures = {kAll - fixEnforceNFTokenTrustlineV2, kAll};
+        // Four configurations: true legacy behavior (neither fix), the
+        // ValidTrustLineAuth invariant and accountHolds backstops alone
+        // (fixCleanup3_5_0 without the transactor-level fix), the
+        // transactor-level fix alone, and current behavior (both).
+        static std::array const kFeatures = {
+            kAll - fixEnforceNFTokenTrustlineV2 - fixCleanup3_5_0,
+            kAll - fixEnforceNFTokenTrustlineV2,
+            kAll - fixCleanup3_5_0,
+            kAll};
 
         for (auto const feature : kFeatures)
         {

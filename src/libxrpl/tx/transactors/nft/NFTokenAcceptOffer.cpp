@@ -151,17 +151,25 @@ NFTokenAcceptOffer::preclaim(PreclaimContext const& ctx)
                 return tecINSUFFICIENT_PAYMENT;
 
             // Check if broker is allowed to receive the fee with these IOUs.
-            if (!brokerFee->native() && ctx.view.rules().enabled(fixEnforceNFTokenTrustlineV2))
+            // fixCleanup3_5_0 only adds the LPToken pool-asset check inside
+            // checkTrustlineAuthorized; everything else in these helpers
+            // stays gated on its own amendment internally.
+            if (!brokerFee->native() &&
+                (ctx.view.rules().enabled(fixEnforceNFTokenTrustlineV2) ||
+                 ctx.view.rules().enabled(fixCleanup3_5_0)))
             {
                 auto res = nft::checkTrustlineAuthorized(
                     ctx.view, ctx.tx[sfAccount], ctx.j, brokerFee->asset().get<Issue>());
                 if (!isTesSuccess(res))
                     return res;
 
-                res = nft::checkTrustlineDeepFrozen(
-                    ctx.view, ctx.tx[sfAccount], ctx.j, brokerFee->asset().get<Issue>());
-                if (!isTesSuccess(res))
-                    return res;
+                if (ctx.view.rules().enabled(fixEnforceNFTokenTrustlineV2))
+                {
+                    res = nft::checkTrustlineDeepFrozen(
+                        ctx.view, ctx.tx[sfAccount], ctx.j, brokerFee->asset().get<Issue>());
+                    if (!isTesSuccess(res))
+                        return res;
+                }
             }
         }
     }
@@ -195,15 +203,22 @@ NFTokenAcceptOffer::preclaim(PreclaimContext const& ctx)
         // own currency
         auto const needed = bo->at(sfAmount);
 
-        if (accountFunds(ctx.view, (*bo)[sfOwner], needed, FreezeHandling::ZeroIfFrozen, ctx.j) <
-            needed)
+        if (accountFunds(
+                ctx.view,
+                (*bo)[sfOwner],
+                needed,
+                FreezeHandling::ZeroIfFrozen,
+                AuthHandling::ZeroIfUnauthorized,
+                ctx.j) < needed)
             return tecINSUFFICIENT_FUNDS;
 
         // Check that the account accepting the buy offer (he's selling the NFT)
         // is allowed to receive IOUs. Also check that this offer's creator is
         // authorized. But we need to exclude the case when the transaction is
         // created by the broker.
-        if (ctx.view.rules().enabled(fixEnforceNFTokenTrustlineV2) && !needed.native())
+        if ((ctx.view.rules().enabled(fixEnforceNFTokenTrustlineV2) ||
+             ctx.view.rules().enabled(fixCleanup3_5_0)) &&
+            !needed.native())
         {
             auto res = nft::checkTrustlineAuthorized(
                 ctx.view, bo->at(sfOwner), ctx.j, needed.asset().get<Issue>());
@@ -217,10 +232,13 @@ NFTokenAcceptOffer::preclaim(PreclaimContext const& ctx)
                 if (!isTesSuccess(res))
                     return res;
 
-                res = nft::checkTrustlineDeepFrozen(
-                    ctx.view, ctx.tx[sfAccount], ctx.j, needed.asset().get<Issue>());
-                if (!isTesSuccess(res))
-                    return res;
+                if (ctx.view.rules().enabled(fixEnforceNFTokenTrustlineV2))
+                {
+                    res = nft::checkTrustlineDeepFrozen(
+                        ctx.view, ctx.tx[sfAccount], ctx.j, needed.asset().get<Issue>());
+                    if (!isTesSuccess(res))
+                        return res;
+                }
             }
         }
     }
@@ -265,15 +283,20 @@ NFTokenAcceptOffer::preclaim(PreclaimContext const& ctx)
             // cover what the buyer will pay, which doesn't make sense, causes
             // an unnecessary tec, and is also resolved with this amendment.
             if (accountFunds(
-                    ctx.view, ctx.tx[sfAccount], needed, FreezeHandling::ZeroIfFrozen, ctx.j) <
-                needed)
+                    ctx.view,
+                    ctx.tx[sfAccount],
+                    needed,
+                    FreezeHandling::ZeroIfFrozen,
+                    AuthHandling::ZeroIfUnauthorized,
+                    ctx.j) < needed)
                 return tecINSUFFICIENT_FUNDS;
         }
 
         // Make sure that we are allowed to hold what the taker will pay us.
         if (!needed.native())
         {
-            if (ctx.view.rules().enabled(fixEnforceNFTokenTrustlineV2))
+            if (ctx.view.rules().enabled(fixEnforceNFTokenTrustlineV2) ||
+                ctx.view.rules().enabled(fixCleanup3_5_0))
             {
                 auto res = nft::checkTrustlineAuthorized(
                     ctx.view, (*so)[sfOwner], ctx.j, needed.asset().get<Issue>());
@@ -321,17 +344,21 @@ NFTokenAcceptOffer::preclaim(PreclaimContext const& ctx)
             return tecNO_LINE;
 
         // Check that the issuer is allowed to receive IOUs.
-        if (ctx.view.rules().enabled(fixEnforceNFTokenTrustlineV2))
+        if (ctx.view.rules().enabled(fixEnforceNFTokenTrustlineV2) ||
+            ctx.view.rules().enabled(fixCleanup3_5_0))
         {
             auto res = nft::checkTrustlineAuthorized(
                 ctx.view, nftMinter, ctx.j, amount.asset().get<Issue>());
             if (!isTesSuccess(res))
                 return res;
 
-            res = nft::checkTrustlineDeepFrozen(
-                ctx.view, nftMinter, ctx.j, amount.asset().get<Issue>());
-            if (!isTesSuccess(res))
-                return res;
+            if (ctx.view.rules().enabled(fixEnforceNFTokenTrustlineV2))
+            {
+                res = nft::checkTrustlineDeepFrozen(
+                    ctx.view, nftMinter, ctx.j, amount.asset().get<Issue>());
+                if (!isTesSuccess(res))
+                    return res;
+            }
         }
     }
 
@@ -354,9 +381,14 @@ NFTokenAcceptOffer::pay(AccountID const& from, AccountID const& to, STAmount con
     // just confirm that the end state is OK.
     if (!isTesSuccess(result))
         return result;
-    if (accountFunds(view(), from, amount, FreezeHandling::ZeroIfFrozen, j_).signum() < 0)
+    // IgnoreAuth: these are negative-balance consistency guards, and zeroing
+    // an unauthorized line's balance would mask a real negative.
+    if (accountFunds(
+            view(), from, amount, FreezeHandling::ZeroIfFrozen, AuthHandling::IgnoreAuth, j_)
+            .signum() < 0)
         return tecINSUFFICIENT_FUNDS;
-    if (accountFunds(view(), to, amount, FreezeHandling::ZeroIfFrozen, j_).signum() < 0)
+    if (accountFunds(view(), to, amount, FreezeHandling::ZeroIfFrozen, AuthHandling::IgnoreAuth, j_)
+            .signum() < 0)
         return tecINSUFFICIENT_FUNDS;
     return tesSUCCESS;
 }

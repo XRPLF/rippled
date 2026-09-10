@@ -883,10 +883,13 @@ private:
             AMM amm(env, alice_, XRP(10), gw_["USD"](10), Ter(tesSUCCESS));
             env.close();
 
-            if (features[featureAMMClawback] || features[fixCleanup3_3_0])
+            if (features[featureAMMClawback] || features[fixCleanup3_3_0] ||
+                features[fixCleanup3_5_0])
             {
                 // bob_ can not deposit XRP because he's not authorized to
-                // hold the paired token gw_["USD"].
+                // hold the paired token gw_["USD"]. fixCleanup3_5_0 added
+                // the same rejection because the LPToken gained by the
+                // deposit is a claim on both pool assets.
                 amm.deposit(
                     bob_, XRP(10), std::nullopt, std::nullopt, std::nullopt, Ter(tecNO_AUTH));
             }

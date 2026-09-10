@@ -5,6 +5,7 @@
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/Sandbox.h>
+#include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/AMMHelpers.h>
 #include <xrpl/ledger/helpers/RippleStateHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
@@ -133,6 +134,21 @@ AMMBid::preclaim(PreclaimContext const& ctx)
     {
         JLOG(ctx.j.debug()) << "AMM Bid: account is not LP.";
         return tecAMM_INVALID_TOKENS;
+    }
+
+    // Holding the auction slot entails being refunded LPTokens when outbid,
+    // and an LPToken carries exposure to both of the AMM's pool assets; see
+    // checkLPTokenAuthorization. So post fixCleanup3_5_0 the slot may only
+    // be held by an account authorized for both.
+    if (ctx.view.rules().enabled(fixCleanup3_5_0))
+    {
+        if (auto const ter = checkLPTokenAuthorization(
+                ctx.view, ctx.tx[sfAccount], ammSle->getAccountID(sfAccount));
+            !isTesSuccess(ter))
+        {
+            JLOG(ctx.j.debug()) << "AMM Bid: account is not authorized for the AMM's assets.";
+            return ter;
+        }
     }
 
     auto const bidMin = ctx.tx[~sfBidMin];
@@ -347,6 +363,24 @@ applyBid(ApplyContext& ctx, Sandbox& sb, AccountID const& account, beast::Journa
                 << "AMM Bid: refund exceeds payPrice " << refund << " " << *payPrice;
             return {tecINTERNAL, false};
         }
+
+        // The refund is an LPToken delivery, so the previous owner must
+        // still be authorized for both pool assets (a slot acquired before
+        // fixCleanup3_5_0 predates the preclaim check above). Reject the
+        // bid cleanly rather than trip the ValidTrustLineAuth invariant;
+        // the slot then simply runs out its remaining time.
+        if (sb.rules().enabled(fixCleanup3_5_0))
+        {
+            if (auto const ter = checkLPTokenAuthorization(
+                    sb, auctionSlot[sfAccount], ammSle->getAccountID(sfAccount));
+                !isTesSuccess(ter))
+            {
+                JLOG(ctx.journal.debug()) << "AMM Bid: previous owner is not authorized to be "
+                                             "refunded the LPTokens.";
+                return {ter, false};
+            }
+        }
+
         res = accountSend(
             sb, account, auctionSlot[sfAccount], toSTAmount(lpTokens.asset(), refund), ctx.journal);
         if (!isTesSuccess(res))
