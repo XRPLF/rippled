@@ -42,6 +42,38 @@ class TransactionHistory_test : public beast::unit_test::Suite
             BEAST_EXPECT(result[jss::error] == "noPermission");
             BEAST_EXPECT(result[jss::status] == "error");
         }
+
+        {
+            // a malformed start must report invalidParams, not internal
+            json::Value objStart{json::ValueType::Object};
+            objStart["nope"] = 0;
+            json::Value arrStart{json::ValueType::Array};
+            arrStart.append(0);
+
+            // Note that a whole number beyond the range of a uint, e.g.
+            // 4294967296, is rejected by the json parser itself, so it never
+            // reaches the handler and is not covered here.
+            boost::container::static_vector<json::Value, 9> const badStarts{
+                json::Value{-1},     // negative
+                json::Value{"abc"},  // not a number
+                json::Value{"5"},    // numeric, but a string
+                json::Value{1.5},    // not a whole number
+                json::Value{1e30},   // beyond the range of a uint
+                json::Value{true},   // bool
+                json::Value{},       // null
+                objStart,
+                arrStart,
+            };
+
+            for (auto const& badStart : badStarts)
+            {
+                json::Value params{json::ValueType::Object};
+                params[jss::start] = badStart;
+                auto const result = env.client().invoke("tx_history", params)[jss::result];
+                BEAST_EXPECT(result[jss::error] == "invalidParams");
+                BEAST_EXPECT(result[jss::status] == "error");
+            }
+        }
     }
 
     void
