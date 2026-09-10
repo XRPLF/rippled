@@ -265,6 +265,9 @@ public:
      * //////////////    END OF TEMPORARY CODE BLOCK    /////////////////////
      */
 
+    // Enable enhanced squelching of unique untrusted validator messages
+    bool vpReduceRelayEnhancedSquelchEnable = false;
+
     // Transaction reduce-relay feature
     bool txReduceRelayEnable = false;
     // If tx reduce-relay feature is disabled

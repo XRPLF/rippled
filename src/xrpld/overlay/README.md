@@ -233,7 +233,7 @@ synchronization software. For more on this topic, please visit [ntp.org](http://
 The mandatory `Public-Key` field identifies the sending server's public key,
 encoded in base58 using the standard encoding for node public keys.
 
-See: https://xrpl.org/base58-encodings.html
+See: <https://xrpl.org/base58-encodings.html>
 
 | Field Name      |      Request       |      Response      |
 | --------------- | :----------------: | :----------------: |
@@ -277,7 +277,7 @@ The field can take two values:
 - **`Private`**: The server's IP address and port should not be included in
   crawl reports. _This is the default, if the field is omitted._
 
-For more on the Peer Crawler, please visit https://xrpl.org/peer-crawler.html.
+For more on the Peer Crawler, please visit <https://xrpl.org/peer-crawler.html>.
 
 | Field Name      |      Request       |      Response      |
 | --------------- | :----------------: | :----------------: |
@@ -354,9 +354,52 @@ transferred between A and B and will not be able to intelligently tamper with th
 message stream between Alice and Bob, although she may be still be able to inject
 delays or terminate the link.
 
-# XRPL clustering
+## Peer-to-Peer Traffic Routing
 
-A cluster consists of more than one XRPL server under common
+### Squelching
+
+Validator Squelching is a network feature that reduces redundant message traffic by intelligently selecting a small subset of peers to listen to for each validator. Messages from non-selected peers are temporarily ignored, or "squelched." This process significantly cuts down on processing overhead and provides dynamic fault tolerance by allowing the network to ignore misbehaving peers without a permanent ban. The system continuously re-evaluates peer performance to adapt to changing network conditions.
+
+### Components
+
+The squelching architecture is built on five key classes:
+
+- `SquelchStore.h`: A low-level, timed key-value store that maps a validator to its squelch expiration timestamp.
+
+- `Slot.h/Slot`: Manages the state for a single validator, tracking all peers that relay its messages. It operates in a Counting state to gather peer performance data and a Selected state after choosing the best peers and squelching the rest. It handles peer disconnections and idleness to keep the selection optimal.
+
+- `Slot.h/Slots`: The central container that manages all active Slot instances. It applies different policies for trusted and untrusted validators, evaluates candidates for the limited untrusted slots, and runs periodic cleanup routines.
+
+- `OverlayImpl.h`: Integrates the squelching system with the network, capturing events and dispatching them to the Slots container in a thread-safe manner.
+
+- `PeerImp.h` - Handles squelch messages, and calls `OverlayImpl.h` when it received proposal or validation messages.
+
+### Component Dependency
+
+The component dependencies follow a clear hierarchy from the network layer down to individual peers:
+
+- `OverlayImpl`: The top-level component that owns a single instance of Slots, and a currently connected Peers.
+- `Slots`: This central orchestrator owns and manages a collection of many Slot instances.
+- `Slot`: Each Slot represents a single validator and manages the state of all PeerImp instances that relay messages for it.
+- `PeerImp`: Represents a connected peer and owns its own instance of SquelchStore to manage its local squelch state for various validators.
+
+### The Squelching Lifecycle
+
+When a message from a validator arrives, it is dispatched to the appropriate Slot. The Slot, initially in a Counting state, tracks message volume from each peer. Once enough data is gathered, it triggers a selection, randomly choosing a small number of the best-performing peers. The Slot then instructs a SquelchHandler to squelch all non-selected peers for a calculated duration and transitions to a Selected state. The system continuously monitors for network changes, such as a selected peer disconnecting, which causes the Slot to reset to the Counting state and begin a new evaluation.
+
+### Trusted vs. Untrusted Validators
+
+The system applies different policies based on validator trust status:
+
+- **Trusted Validators**: Are granted a Slot immediately to optimize traffic from known-good sources.
+
+- **Untrusted Validators**: Are handled more cautiously, especially when the Enhanced Squelching feature is enabled. They must compete for a fixed number of limited slots by first proving their reliability in a "consideration pool." Validators that fail to gain a slot or become idle are aggressively squelched across all peers. This can also be triggered by a network-wide consensus to ignore a specific untrusted validator.
+
+This dual-policy approach optimizes trusted traffic while robustly protecting the network from potentially malicious or unknown validators.
+
+## XRP Ledger Clustering
+
+A cluster consists of more than one XRP Ledger server under common
 administration that share load information, distribute cryptography
 operations, and provide greater response consistency.
 
@@ -366,7 +409,7 @@ Cluster nodes share information about their internal load status. Cluster
 nodes do not have to verify the cryptographic signatures on messages
 received from other cluster nodes.
 
-## Configuration
+### Configuration
 
 A server's public key can be determined from the output of the `server_info`
 command. The key is in the `pubkey_node` value, and is a text string
@@ -392,7 +435,7 @@ New spokes can be added as follows:
 - Restart each hub, one by one
 - Restart the spoke
 
-## Transaction Behavior
+### Transaction Behavior
 
 When a transaction is received from a cluster member, several normal checks
 are bypassed:
@@ -408,7 +451,7 @@ does not meet its current relay fee. It is preferable to keep the cluster
 in agreement and permit confirmation from one cluster member to more
 reliably indicate the transaction's acceptance by the cluster.
 
-## Server Load Information
+### Server Load Information
 
 Cluster members exchange information on their server's load level. The load
 level is essentially the amount by which the normal fee levels are multiplied
@@ -419,7 +462,7 @@ fee, is the highest of its local load level, the network load level, and the
 cluster load level. The cluster load level is the median load level reported
 by a cluster member.
 
-## Gossip
+### Gossip
 
 Gossip is the mechanism by which cluster members share information about
 endpoints (typically IPv4 addresses) that are imposing unusually high load
@@ -434,7 +477,7 @@ the servers in a cluster. With gossip, if he chooses to use the same IP
 address to impose load on more than one server, he will find that the amount
 of load he can impose before getting disconnected is much lower.
 
-## Monitoring
+### Monitoring
 
 The `peers` command will report on the status of the cluster. The `cluster`
 object will contain one entry for each member of the cluster (either configured
