@@ -1,0 +1,11 @@
+# Devnet validator list configuration.
+#
+# Uses the Devnet validator list publisher operated by Ripple.
+# This fetches the current set of trusted validators for the
+# XRP Ledger Devnet automatically.
+
+[validator_list_sites]
+https://vl.devnet.rippletest.net
+
+[validator_list_keys]
+EDBB54B0D9AEE071BB37784AF5A9E7CC49AC7A0EFCE868C54532BCB966B9CFC13B

@@ -1,0 +1,28 @@
+# Compose override — enable Grafana Cloud export at runtime.
+#
+# Layer this on top of the base stack to swap the collector onto the
+# Grafana Cloud dual-export config and inject the OTLP credentials. The
+# base docker-compose.yml is unchanged, so plain `up` stays local-only.
+#
+# Usage:
+#   1. Put your three Grafana Cloud values in docker/telemetry/.env.grafanacloud
+#      (template: .env.grafanacloud.example). That file is gitignored.
+#   2. Bring the stack up with BOTH compose files:
+#        docker compose -f docker/telemetry/docker-compose.yml \
+#                       -f docker/telemetry/docker-compose.grafanacloud.yaml up -d
+#   3. To go back to local-only, bring the stack up with just the base file.
+#
+# Log mount: inherited from the base compose (./data/logs -> /var/log/xrpld).
+# Both nodes' xrpld cfgs write to docker/telemetry/data/logs/<net>/debug.log,
+# so no per-box remap is needed here.
+
+services:
+  otel-collector:
+    volumes:
+      # Mount the Grafana Cloud collector config over the default path
+      # (replaces local-only config for this run; file on disk untouched).
+      - ./otel-collector-config.grafanacloud.yaml:/etc/otel-collector-config.yaml:ro
+    # Secrets from the env file, injected as container env and
+    # resolved by the collector via ${env:...}.
+    env_file:
+      - .env.grafanacloud

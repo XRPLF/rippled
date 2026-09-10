@@ -1,0 +1,125 @@
+#pragma once
+
+/**
+ * Utilities for trace context propagation across nodes.
+ *
+ * Provides serialization/deserialization of OTel trace context to/from
+ * Protocol Buffer TraceContext messages (P2P cross-node propagation).
+ * Wired into the P2P message flow via PropagationHelpers.h for
+ * TMTransaction, TMProposeSet, and TMValidation messages.
+ *
+ * Only compiled when XRPL_ENABLE_TELEMETRY is defined.
+ *
+ * @see PropagationHelpers.h (high-level inject helpers),
+ * TxTracing.h (transaction receive-side extraction),
+ * ConsensusReceiveTracing.h (proposal/validation receive-side).
+ */
+
+#ifdef XRPL_ENABLE_TELEMETRY
+
+#include <xrpl/proto/xrpl.pb.h>
+#include <xrpl/telemetry/TraceContextValidation.h>
+
+#include <opentelemetry/context/context.h>
+#include <opentelemetry/nostd/shared_ptr.h>
+#include <opentelemetry/nostd/span.h>
+#include <opentelemetry/trace/context.h>
+#include <opentelemetry/trace/default_span.h>
+#include <opentelemetry/trace/span.h>
+#include <opentelemetry/trace/span_context.h>
+#include <opentelemetry/trace/span_id.h>
+#include <opentelemetry/trace/span_metadata.h>
+#include <opentelemetry/trace/trace_flags.h>
+#include <opentelemetry/trace/trace_id.h>
+
+#include <cstdint>
+
+namespace xrpl::telemetry {
+
+/**
+ * Extract OTel context from a protobuf TraceContext message.
+ *
+ * @param proto  The protobuf TraceContext received from a peer.
+ * @return An OTel Context with the extracted parent span, or an empty
+ * context if the protobuf fields are missing or invalid.
+ */
+[[nodiscard]] inline opentelemetry::context::Context
+extractFromProtobuf(protocol::TraceContext const& proto)
+{
+    namespace trace = opentelemetry::trace;
+
+    // Reject malformed or all-zero ids from the peer before trusting
+    // them as a parent. See TraceContextValidation.h.
+    if (!isValidTraceContext(proto))
+    {
+        return opentelemetry::context::Context{};
+    }
+
+    auto const* rawTraceId = reinterpret_cast<std::uint8_t const*>(proto.trace_id().data());
+    auto const* rawSpanId = reinterpret_cast<std::uint8_t const*>(proto.span_id().data());
+    trace::TraceId const traceId(
+        opentelemetry::nostd::span<std::uint8_t const, 16>(rawTraceId, 16));
+    trace::SpanId const spanId(opentelemetry::nostd::span<std::uint8_t const, 8>(rawSpanId, 8));
+    trace::TraceFlags const flags(
+        proto.has_trace_flags() ? static_cast<std::uint8_t>(proto.trace_flags())
+                                : static_cast<std::uint8_t>(0));
+
+    trace::SpanContext const spanCtx(traceId, spanId, flags, /* remote = */ true);
+
+    return opentelemetry::context::Context{}.SetValue(
+        trace::kSpanKey,
+        opentelemetry::nostd::shared_ptr<trace::Span>(new trace::DefaultSpan(spanCtx)));
+}
+
+/**
+ * Inject the current span's trace context into a protobuf TraceContext.
+ *
+ * @param ctx    The OTel context containing the span to propagate.
+ * @param proto  The protobuf TraceContext to populate.
+ */
+inline void
+injectToProtobuf(opentelemetry::context::Context const& ctx, protocol::TraceContext& proto)
+{
+    namespace trace = opentelemetry::trace;
+
+    auto const span = trace::GetSpan(ctx);
+    if (!span)
+        return;
+
+    auto const& spanCtx = span->GetContext();
+    if (!spanCtx.IsValid())
+        return;
+
+    // Serialize trace_id (16 bytes)
+    auto const& traceId = spanCtx.trace_id();
+    proto.set_trace_id(traceId.Id().data(), trace::TraceId::kSize);
+
+    // Serialize span_id (8 bytes)
+    auto const& spanId = spanCtx.span_id();
+    proto.set_span_id(spanId.Id().data(), trace::SpanId::kSize);
+
+    // Serialize flags
+    proto.set_trace_flags(spanCtx.trace_flags().flags());
+
+    /**
+     * TODO: wire `trace_state` (protobuf TraceContext field 4) through
+     * inject and extract. It is neither written here nor read by
+     * extractFromProtobuf above, so the field is inert on the wire.
+     *
+     * Two uses are intended. One is W3C tracestate vendor-specific
+     * key-value pairs, for cross-vendor propagation. The other is an
+     * authenticated token. Today a peer's trace context is
+     * unauthenticated input: extractFromProtobuf only checks that the ids
+     * are well formed (16-byte trace_id, 8-byte span_id, neither
+     * all-zero) before using them as a parent, so the ids are a hint
+     * rather than trusted provenance. A token the receiver could verify
+     * would let it decide whether to adopt a peer's context at all. That
+     * needs a shared verification key, a canonical form to sign, and a
+     * defined policy for peers that send no token. None of that exists
+     * yet, which is why the field stays unpopulated.
+     */
+}
+
+}  // namespace xrpl::telemetry
+
+#endif  // XRPL_ENABLE_TELEMETRY

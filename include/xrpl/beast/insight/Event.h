@@ -3,6 +3,7 @@
 #include <xrpl/beast/insight/EventImpl.h>
 
 #include <chrono>
+#include <cstdint>
 #include <memory>
 #include <utility>
 
@@ -49,6 +50,24 @@ public:
         using namespace std::chrono;
         if (impl_)
             impl_->notify(ceil<value_type>(value));
+    }
+
+    /**
+     * Push a raw integral sample.
+     *
+     * For Events whose unit is not a duration, such as a byte count. The
+     * value is stored in the same integral field the duration overload uses
+     * and is interpreted per the Event's unit by the backend.
+     *
+     * Prefer this over constructing an `Event::value_type` at the call site:
+     * wrapping a byte count in a `std::chrono::milliseconds` compiles, but
+     * reads as a duration to everything downstream.
+     */
+    void
+    notify(std::uint64_t value) const
+    {
+        if (impl_)
+            impl_->notify(value_type{value});
     }
 
     [[nodiscard]] std::shared_ptr<EventImpl> const&

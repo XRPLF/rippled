@@ -21,6 +21,11 @@ set_target_properties(
 )
 # Lets test sources include the shared helpers as <helpers/...>.
 target_include_directories(xrpl_tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+# Some headers under test live in src/xrpld/ rather than in libxrpl (for
+# example app/ledger/AcquireStats.h and telemetry/ValidationTracker.h), so put
+# src/ on the include path to reach them as <xrpld/...>. This is unconditional
+# because header-only ones are testable in every build, telemetry or not.
+target_include_directories(xrpl_tests PRIVATE ${CMAKE_SOURCE_DIR}/src)
 target_link_libraries(xrpl_tests PRIVATE GTest::gtest GTest::gmock xrpl.libxrpl)
 
 # One source subdirectory per module. Network unit tests are currently not
@@ -31,6 +36,7 @@ set(test_modules
     consensus
     crypto
     json
+    ledger
     nodestore
     peerfinder
     protocol
@@ -39,6 +45,7 @@ set(test_modules
     tx
     protocol_autogen
     server
+    telemetry
 )
 if(NOT WIN32)
     list(APPEND test_modules net)
@@ -87,5 +94,51 @@ target_sources(xrpl_tests PRIVATE ${csf_sources})
 if(verify_headers)
     verify_target_headers(xrpl_tests "${CMAKE_CURRENT_SOURCE_DIR}")
 endif()
+
+# The telemetry test module exercises SpanGuard/Telemetry, which link against
+# the OpenTelemetry SDK when the telemetry build option is enabled.
+if(telemetry)
+    # The SpanGuardScope tests drive an InMemorySpanExporter to read exported
+    # spans (test-only; production never uses it). The Conan package ships
+    # libopentelemetry_exporter_in_memory.a but declares the component with no
+    # libs, so neither the umbrella target nor opentelemetry-cpp::exporter_in_memory
+    # puts the archive on the link line. Locate it by path and link it BEFORE
+    # the umbrella so its undefined SDK references resolve against the umbrella.
+    find_library(
+        OTEL_IN_MEMORY_EXPORTER_LIB
+        NAMES opentelemetry_exporter_in_memory
+        HINTS "${opentelemetry-cpp_PACKAGE_FOLDER_RELEASE}/lib"
+        REQUIRED
+    )
+    target_link_libraries(
+        xrpl_tests
+        PRIVATE
+            "${OTEL_IN_MEMORY_EXPORTER_LIB}"
+            opentelemetry-cpp::opentelemetry-cpp
+    )
+else()
+    # MetricsRegistry lives in xrpld; compile its .cpp directly into the test
+    # target so the no-op path can be tested without linking all of xrpld.
+    # When telemetry=ON, XRPL_ENABLE_TELEMETRY is globally defined and the
+    # .cpp pulls in xrpld symbols we cannot satisfy here.
+    target_sources(
+        xrpl_tests
+        PRIVATE ${CMAKE_SOURCE_DIR}/src/xrpld/telemetry/MetricsRegistry.cpp
+    )
+endif()
+
+# ValidationTracker lives in src/xrpld/ (not libxrpl), so we compile its
+# implementation directly into the test binary and put src/ on the include path
+# so its tests can reach <xrpld/telemetry/...> headers.
+#
+# Both are unconditional: the class carries no telemetry guards, so its tests
+# compile and run in every build. Gating them would leave the test file (which
+# is likewise unguarded) without the header it includes and without the
+# definitions it calls.
+target_include_directories(xrpl_tests PRIVATE ${CMAKE_SOURCE_DIR}/src)
+target_sources(
+    xrpl_tests
+    PRIVATE ${CMAKE_SOURCE_DIR}/src/xrpld/telemetry/detail/ValidationTracker.cpp
+)
 
 gtest_discover_tests(xrpl_tests DISCOVERY_TIMEOUT 60)

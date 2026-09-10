@@ -58,3 +58,17 @@ ignore:
   - "src/tests/"
   - "include/xrpl/beast/test/"
   - "include/xrpl/beast/unit_test/"
+  # Telemetry modules. Telemetry compiles in by default (conanfile.py,
+  # CMakeLists.txt), but the unit-test suite never starts an exporter, so these
+  # files record no coverage. This block belongs on the earliest branch that
+  # adds telemetry code — codecov config only flows child-ward, so an ignore
+  # added on a later branch can never cover the branches before it.
+  - "src/xrpld/telemetry/"
+  - "src/libxrpl/telemetry/"
+  - "include/xrpl/telemetry/"
+  - "src/libxrpl/beast/insight/OTelCollector.cpp"
+  - "include/xrpl/beast/insight/OTelCollector.h"
+  # Per-module span-name and span-label constant headers: compile-time
+  # constants only, colocated with their subsystem rather than under telemetry/.
+  - "**/*SpanNames.h"
+  - "**/*SpanLabels.h"

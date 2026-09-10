@@ -373,6 +373,97 @@ run-clang-tidy -p build -quiet -fix -format -allow-no-checks src tests
 
 `-format` reformats the fixed code with [`.clang-format`](./.clang-format); without it the fixes are inserted in LLVM style and the `clang-format` hook rewrites them afterwards.
 
+## Telemetry span attribute naming
+
+OpenTelemetry span attribute keys follow these rules so they stay consistent
+across the code, the OTel collector, Tempo, Grafana dashboards, and docs. The
+constants in the `*SpanNames.h` headers are the single source of truth; every
+other layer must match them. A CI check enforces this end to end.
+
+1. Per-span unique attribute: bare field name — allowed when the field is
+   recorded by a single span/workflow, so the span name already supplies the
+   domain (e.g. `command`, `local`, `version` on `rpc.command` / `tx.process`).
+2. Shared attribute (same concept on more than one span): ONE key, reused
+   verbatim on every span that records it — the span name tells the occurrences
+   apart, so no per-emitter prefix is added. Pick the name by the field's
+   meaning: a property of a domain object keeps that object's bare field name
+   (`ledger_hash`, `ledger_seq`, `tx_hash`, `peer_id`, `full_validation`); a
+   field already qualified by a sub-kind keeps that qualifier on every emitter
+   (`proposal_trusted` on both `consensus.proposal.receive` and
+   `peer.proposal.receive`; `validation_trusted` likewise). Define it once in
+   the base `SpanNames.h` `namespace attr` block and re-export (`using`) it from
+   each domain header, so all emitters share the exact string.
+3. Collision qualifier: `<domain>_<field>` — only when a bare name would collide
+   with a DIFFERENT concept in the shared spanmetrics label space, or with the
+   OTel-reserved `status` key (e.g. `rpc_status`, `grpc_status`,
+   `consensus_phase`, `consensus_round`). This disambiguates distinct concepts
+   that share a word; it is NOT used to tag the same concept with the workflow
+   that emitted it — that is rule 2 (one shared name).
+4. Resource attribute: dotted `xrpl.<subsystem>.<field>` — reserved ONLY for
+   process/network identity set once at startup (`xrpl.network.id`,
+   `xrpl.network.type`). Never use the dotted `xrpl.` form for span attributes.
+5. Span names use `<subsystem>[.<component>]` (dotted). Only attribute _keys_
+   follow rules 1–4.
+
+All attribute keys are `lower_snake_case` (lowercase letters, digits, and
+underscores; each dot-separated segment of a resource key likewise). No
+camelCase, uppercase, or spaces.
+
+Standard OpenTelemetry semantic-convention keys keep their canonical dotted
+form (e.g. `service.*` resource attributes, `http.*` span attributes); the
+"no dotted form" rule above applies to xrpl-custom keys, not to OTel-standard
+conventions.
+
+Always reference the `*SpanNames.h` constants for attribute keys and span
+names — never pass a string literal as a key or as a `span`/`childSpan` name
+argument. (Attribute _values_ may be runtime data.)
+
+These rules are enforced by `.github/scripts/otel-naming/check_otel_naming.py`,
+run in CI on every pull request. The check derives the set of valid keys
+directly from the `*SpanNames.h` constants and the resource attributes the code
+registers, so there is no separate list to keep in sync. It cross-validates the
+collector, Tempo, dashboards, and docs against those keys, and each rule runs
+only when the file it needs is present — so it works whether telemetry changes
+land in one pull request or several. Run it locally with:
+
+```
+python .github/scripts/otel-naming/check_otel_naming.py
+```
+
+### Naming a wrong form in prose (`otel-naming:allow-dotted`)
+
+The doc rule (E) flags any dotted `` `xrpl.<domain>.<field>` `` key in the
+telemetry docs, because a reader copies those keys straight into a TraceQL or
+PromQL query. A doc that _teaches_ the convention, or records a rename, has to be
+able to name the wrong form as a counter-example. That mention is opted out with
+a marker naming exactly the keys the line is allowed to mention:
+
+```markdown
+Use `tx_hash`, not `xrpl.tx.hash`.
+<!-- otel-naming:allow-dotted: xrpl.tx.hash -->
+```
+
+- The marker applies to **its own line only**, and exempts **only the keys it
+  lists** (comma- and/or space-separated, backticks optional). A dotted key on a
+  marked line that the marker does not name still fails, so an exemption cannot
+  quietly widen when someone edits the line later.
+- A marker with no key list exempts nothing and reports a warning; so does a
+  marker naming a key the line no longer mentions (a stale exemption).
+- Never use it to keep a real attribute table dotted. If the doc publishes a key
+  an operator is meant to query, fix the key — the marker is for mentions, not
+  for published attributes.
+
+See [.github/scripts/otel-naming/README.md](.github/scripts/otel-naming/README.md)
+for the full rule list.
+
+## Adding a new OTel metric
+
+See `src/xrpld/telemetry/MetricMacros.h` for the call-site macros covering every
+OTel instrument kind (Counter, UpDownCounter, Histogram, Gauge, and their
+Observable/async counterparts) and the "Adding a New Metric" section in
+[docs/telemetry-runbook.md](docs/telemetry-runbook.md) for the walkthrough and a
+need-to-macro lookup table.
+
 ## Contracts and instrumentation
 
 We are using [Antithesis](https://antithesis.com/) for continuous fuzzing,

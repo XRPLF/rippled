@@ -58,3 +58,18 @@ tools.info.package_id:confs+=["user.package:cppstd_version"]
 {# Scoped to boost/* since it is the only gap. #}
 boost/*:MACOSX_DEPLOYMENT_TARGET={{ min_macos_version }}
 {% endif %}
+{% if compiler == "gcc" and compiler_version < 13 %}
+tools.build:cxxflags+=['-Wno-restrict']
+{% endif %}
+{% if os == "Windows" %}
+# opentelemetry-cpp's recipe removes the `shared` option on Windows and never
+# sets BUILD_SHARED_LIBS, so its upstream CMake defaults the protobuf-generated
+# `opentelemetry_proto` target to a DLL (opentelemetry_proto.dll). The rest of
+# the project links statically and nothing deploys that DLL next to the
+# executables, so the telemetry unit test fails to start with
+# STATUS_DLL_NOT_FOUND (0xC0000135). Force the dependency to build fully static
+# so no runtime DLL is produced. The conf is folded into the package id so a
+# fresh static binary is built instead of reusing a previously cached one.
+opentelemetry-cpp/*:tools.cmake.cmaketoolchain:extra_variables={"BUILD_SHARED_LIBS": "OFF"}
+opentelemetry-cpp/*:tools.info.package_id:confs+=["tools.cmake.cmaketoolchain:extra_variables"]
+{% endif %}

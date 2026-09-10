@@ -1,4 +1,5 @@
 #include <xrpld/app/main/Application.h>
+#include <xrpld/app/main/NodeIdentity.h>
 #include <xrpld/core/Config.h>
 #include <xrpld/core/TimeKeeper.h>
 #include <xrpld/rpc/RPCCall.h>
@@ -12,6 +13,7 @@
 #include <xrpl/beast/net/IPEndpoint.h>
 #include <xrpl/beast/unit_test/suite_info.h>
 #include <xrpl/beast/utility/Journal.h>
+#include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/config/Constants.h>
 #include <xrpl/core/StartUpType.h>
 #include <xrpl/git/Git.h>
@@ -36,6 +38,7 @@
 #include <exception>
 #include <iostream>
 #include <memory>
+#include <optional>
 #include <ostream>
 #include <string>
 #include <vector>
@@ -804,8 +807,58 @@ run(int argc, char** argv)
         if (vm.contains("debug"))
             setDebugLogSink(logs->makeSink("Debug", beast::Severity::Trace));
 
-        auto app =
-            makeApplication(std::move(config), std::move(logs), std::make_unique<TimeKeeper>());
+        // Telemetry needs the node public key at construction, so read it here
+        // where a config error can still be reported and the process can exit
+        // cleanly. getNodeIdentity() in setup() stays authoritative.
+        std::optional<std::string> nodePublicKey;
+        try
+        {
+            nodePublicKey = resolveNodePublicKey(*config, vm, logs->journal("Application"));
+        }
+        catch (std::exception const& e)
+        {
+            std::cerr << "Unable to start " << systemName() << ": " << e.what() << std::endl;
+            return -1;
+        }
+
+        if (!nodePublicKey)
+        {
+            JLOG(logs->journal("Application").warn())
+                << "Telemetry: no node identity available yet, so this run reports an empty "
+                   "service.instance.id. Set [telemetry] service_instance_id, or restart once "
+                   "the node key exists.";
+        }
+
+        // Application construction runs member initializers that validate
+        // config (for example the [telemetry] section) and can throw. A throw
+        // from a member-initializer list cannot be recovered inside the
+        // constructor, so catch it here. Left uncaught it reaches
+        // std::terminate, whose default handler prints a C++ terminate dump
+        // and raises SIGABRT, leaving a core file where the system allows one;
+        // the catch replaces that with two operator-readable lines on stderr
+        // and a non-zero exit status.
+        //
+        // Only the construction is covered. The [telemetry] section is parsed
+        // near the top of the member list, before the job queue and node store
+        // are built, so unwinding that throw destroys very little. setup() is
+        // left outside deliberately: it starts subsystems whose shutdown order
+        // is delicate, and only the normal stop sequence gets that order right.
+        std::unique_ptr<Application> app;
+        try
+        {
+            app = makeApplication(
+                std::move(config), std::move(logs), std::make_unique<TimeKeeper>(), nodePublicKey);
+        }
+        catch (std::exception const& e)
+        {
+            std::cerr << "Unable to start " << systemName() << ": " << e.what() << std::endl;
+            std::cerr << "Fix the reported problem and start again." << std::endl;
+            return -1;
+        }
+
+        // Construction succeeded, so app holds an object: makeApplication never
+        // returns null and the catch above is the only other way out.
+        XRPL_ASSERT(app, "xrpl::run : non-null application");
 
         if (!app->setup(vm))
             return -1;

@@ -27,8 +27,12 @@ file(
     src/*.cpp
     src/*.md
     Builds/*.md
-    *.md
 )
+# Add only top-level .md files (README, CONTRIBUTING, etc.) without
+# recursing into dot-directories like .claude/ whose files are not
+# valid Doxygen/CMake sources.
+file(GLOB doxygen_top_md CONFIGURE_DEPENDS "*.md")
+list(APPEND doxygen_input ${doxygen_top_md})
 list(APPEND doxygen_input external/README.md)
 set(dependencies "${doxygen_input}" "${doxyfile}")
 
