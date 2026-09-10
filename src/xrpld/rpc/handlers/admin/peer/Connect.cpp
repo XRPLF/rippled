@@ -31,6 +31,12 @@ doConnect(rpc::JsonContext& context)
     if (!context.params.isMember(jss::ip))
         return rpc::missingFieldError(jss::ip);
 
+    // Without this, asString() below throws for an array or an object, and
+    // silently stringifies every scalar into something that cannot parse as an
+    // address.
+    if (!context.params[jss::ip].isString())
+        return RPC::expectedFieldError(jss::ip, "a string");
+
     if (context.params.isMember(jss::port) &&
         !context.params[jss::port].isConvertibleTo(json::ValueType::Int))
     {
