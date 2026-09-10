@@ -6,6 +6,7 @@
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/chrono.h>
+#include <xrpl/basics/contract.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/ApplyView.h>
@@ -76,7 +77,22 @@ buildLedgerImpl(
     XRPL_ASSERT(
         built->header().seq < kXrpLedgerEarliestFees || built->read(keylet::feeSettings()),
         "xrpl::buildLedgerImpl : valid ledger fees");
-    built->setAccepted(closeTime, closeResolution, closeTimeCorrect);
+    // Built locally; see Ledger::setImmutable(). built's txMap_ is fresh and its stateMap_ is a
+    // snapshot of the parent's, which carries Invalid over, so an invalid parent is the only way
+    // this can fail - and reaching that needs a corrupt local nodestore rather than a peer, since a
+    // parent's root hashes are ones this node already adopted.
+    //
+    // logicError() rather than UNREACHABLE(), deliberately: this runs on the consensus hot path and
+    // so aborts a Release build, which is the harsher of the two tiers. It is chosen because a
+    // still-mutable ledger aborts a Release build anyway a moment later, at
+    // LedgerMaster::switchLCL() or LedgerHolder::set(), where the cause is no longer visible.
+    // Contrast loadLedgerFromFile(), which runs once at startup and can still return.
+    if (!built->setAccepted(closeTime, closeResolution, closeTimeCorrect))
+    {
+        // LCOV_EXCL_START
+        logicError("buildLedgerImpl: accepted ledger map is invalid");
+        // LCOV_EXCL_STOP
+    }
 
     return built;
 }

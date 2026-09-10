@@ -113,7 +113,19 @@ InboundLedger::init(ScopedLockType& collectionLock)
     XRPL_ASSERT(
         ledger_->header().seq < kXrpLedgerEarliestFees || ledger_->read(keylet::feeSettings()),
         "xrpl::InboundLedger::init : valid ledger fees");
-    ledger_->setImmutable();
+    // tryDB() verified both maps before setting complete_ and mtx_ has been held since, so
+    // nothing can have invalidated them.
+    if (!ledger_->setImmutable())
+    {
+        // LCOV_EXCL_START
+        // Recorded before the UNREACHABLE, which continues in a Release build, and paired with
+        // done() for the same reason as the tryDB() failure above.
+        failed_ = true;
+        done();
+        UNREACHABLE("xrpl::InboundLedger::init : map is invalid");
+        return;
+        // LCOV_EXCL_STOP
+    }
 
     if (reason_ == Reason::HISTORY)
         return;
@@ -329,12 +341,20 @@ InboundLedger::tryDB(node_store::Database& srcDB)
 
     if (haveTransactions_ && haveState_)
     {
-        JLOG(journal_.debug()) << "Had everything locally";
-        complete_ = true;
         XRPL_ASSERT(
             ledger_->header().seq < kXrpLedgerEarliestFees || ledger_->read(keylet::feeSettings()),
             "xrpl::InboundLedger::tryDB : valid ledger fees");
-        ledger_->setImmutable();
+        // Settled before complete_ is published, so a caller that reads the flag never sees a
+        // ledger this function has not finished with.
+        if (!ledger_->setImmutable())
+        {
+            JLOG(journal_.warn()) << "Ledger " << hash_ << " found locally is invalid";
+            failed_ = true;
+            return;
+        }
+
+        JLOG(journal_.debug()) << "Had everything locally";
+        complete_ = true;
     }
 }
 
@@ -420,6 +440,40 @@ InboundLedger::done()
     signaled_ = true;
     touch();
 
+    // Settled before the outcome below is logged or acted on, so nothing reports a ledger this
+    // function has since refused.
+    if (complete_ && !failed_ && ledger_)
+    {
+        XRPL_ASSERT(
+            ledger_->header().seq < kXrpLedgerEarliestFees || ledger_->read(keylet::feeSettings()),
+            "xrpl::InboundLedger::done : valid ledger fees");
+        // Recovers rather than asserting: peer data produces this verdict, so a caller cannot know
+        // its map is still sound, and an abort here would be one a peer could ask for. Best-effort
+        // even so: setInvalid() outranks Immutable, so a walk that reaches the verdict after both
+        // maps have been settled leaves an immutable ledger with an invalid map. It narrows the
+        // window rather than closing it.
+        if (!ledger_->setImmutable())
+        {
+            JLOG(journal_.warn()) << "Acquired ledger " << hash_ << " is invalid";
+            // Withdrawn as well as failed, so a caller that already read complete_ - or that checks
+            // it before failed_ - cannot go on treating this ledger as delivered.
+            complete_ = false;
+            failed_ = true;
+        }
+        else
+        {
+            switch (reason_)
+            {
+                case Reason::HISTORY:
+                    app_.getInboundLedgers().onLedgerFetched();
+                    break;
+                default:
+                    app_.getLedgerMaster().storeLedger(ledger_);
+                    break;
+            }
+        }
+    }
+
     JLOG(journal_.debug()) << "Acquire " << hash_ << (failed_ ? " fail " : " ")
                            << ((timeouts_ == 0)
                                    ? std::string()
@@ -428,24 +482,7 @@ InboundLedger::done()
 
     XRPL_ASSERT(complete_ || failed_, "xrpl::InboundLedger::done : complete or failed");
 
-    if (complete_ && !failed_ && ledger_)
-    {
-        XRPL_ASSERT(
-            ledger_->header().seq < kXrpLedgerEarliestFees || ledger_->read(keylet::feeSettings()),
-            "xrpl::InboundLedger::done : valid ledger fees");
-        ledger_->setImmutable();
-        switch (reason_)
-        {
-            case Reason::HISTORY:
-                app_.getInboundLedgers().onLedgerFetched();
-                break;
-            default:
-                app_.getLedgerMaster().storeLedger(ledger_);
-                break;
-        }
-    }
-
-    // We hold the PeerSet lock, so must dispatch
+    // mtx_ is held, so this may only post the work rather than do it.
     app_.getJobQueue().addJob(JtLedgerData, "AcqDone", [self = shared_from_this()]() {
         if (self->complete_ && !self->failed_)
         {
@@ -733,7 +770,8 @@ InboundLedger::trigger(std::shared_ptr<Peer> const& peer, TriggerReason reason)
     {
         JLOG(journal_.debug()) << "Done:" << (complete_ ? " complete" : "")
                                << (failed_ ? " failed " : " ") << ledger_->header().seq;
-        sl.unlock();
+        // Called with mtx_ still held, so the flags done() writes are not written unlocked; mtx_
+        // is recursive, so a caller that already holds it further up is unaffected.
         done();
     }
 }

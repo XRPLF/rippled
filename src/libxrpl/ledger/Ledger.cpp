@@ -202,7 +202,14 @@ Ledger::Ledger(
     }
 
     stateMap_.flushDirty(NodeObjectType::AccountNode);
-    setImmutable();
+    // Built locally; see Ledger::setImmutable(). Failed deterministically rather than handing back
+    // a mutable ledger that would abort later at a site that cannot explain why; logicError() logs.
+    if (!setImmutable())
+    {
+        // LCOV_EXCL_START
+        logicError("Ledger::Ledger(CreateGenesisT, ...): genesis ledger map is invalid");
+        // LCOV_EXCL_STOP
+    }
 }
 
 Ledger::Ledger(
@@ -213,7 +220,7 @@ Ledger::Ledger(
     Fees const& fees,
     Family& family,
     beast::Journal j)
-    : immutable_(true)
+    : immutable_(false)
     , txMap_(SHAMapType::TRANSACTION, info.txHash, family)
     , stateMap_(SHAMapType::STATE, info.accountHash, family)
     , fees_(fees)
@@ -236,8 +243,20 @@ Ledger::Ledger(
         JLOG(j.warn()) << "Don't have state data root for ledger" << header_.seq;
     }
 
-    txMap_.setImmutable();
-    stateMap_.setImmutable();
+    // Loaded locally; see Ledger::setImmutable().
+    if (setMapsImmutable())
+    {
+        immutable_ = true;
+    }
+    else
+    {
+        // LCOV_EXCL_START
+        JLOG(j.error()) << "Invalid map for ledger " << header_.seq;
+        UNREACHABLE("xrpl::Ledger::Ledger(LedgerHeader const&, ...) : map is invalid");
+        // Treat it as a damaged ledger: the code below recomputes the hash and re-acquires.
+        loaded = false;
+        // LCOV_EXCL_STOP
+    }
 
     if (!setup())
         loaded = false;
@@ -308,27 +327,51 @@ Ledger::Ledger(
     setup();
 }
 
-void
+bool
 Ledger::setImmutable(bool rehash)
 {
-    // Force update, since this is the only
-    // place the hash transitions to valid
-    if (!immutable_ && rehash)
+    // A map found structurally invalid during sync must never be made immutable: isValid() tests
+    // only for Invalid, and an immutable ledger is treated as persistable. Asked before anything is
+    // written, so a refusal leaves the header exactly as it was rather than half relabelled.
+    if (!mapsValid())
+        return false;
+
+    // Read here but written to the header below, once the maps are settled: getHash() can unshare a
+    // dirty tree, so it has to run while the map is still mutable, while a write to the header must
+    // wait until both maps have made it. Skipped once the ledger is immutable, since its maps can
+    // no longer change.
+    bool const deriveMapHashes = !immutable_ && rehash;
+    uint256 const txHash = deriveMapHashes ? txMap_.getHash().asUInt256() : uint256{};
+    uint256 const accountHash = deriveMapHashes ? stateMap_.getHash().asUInt256() : uint256{};
+
+    // Both were valid at the check above, but a concurrent walk can invalidate one in between (see
+    // SHAMap::state_), so the result is checked rather than assumed. Best-effort by nature: the
+    // guard narrows the window, it does not close it, since setInvalid() outranks Immutable and can
+    // land after both maps have been settled.
+    bool const bothImmutable = setMapsImmutable();
+    SOMETIMES(!bothImmutable, "xrpl::Ledger::setImmutable : map invalidated while going immutable");
+    if (!bothImmutable)
+        return false;
+
+    // Written only now, so losing the race above leaves the header describing what the ledger was
+    // built from rather than a map that has since been abandoned. Forced rather than conditional,
+    // since this is the only place the hash transitions to valid.
+    if (deriveMapHashes)
     {
-        header_.txHash = txMap_.getHash().asUInt256();
-        header_.accountHash = stateMap_.getHash().asUInt256();
+        header_.txHash = txHash;
+        header_.accountHash = accountHash;
     }
 
     if (rehash)
         header_.hash = calculateLedgerHash(header_);
 
+    // Set last, so isImmutable() never reports a ledger whose maps are not both immutable.
     immutable_ = true;
-    txMap_.setImmutable();
-    stateMap_.setImmutable();
     setup();
+    return true;
 }
 
-void
+bool
 Ledger::setAccepted(
     NetClock::time_point closeTime,
     NetClock::duration closeResolution,
@@ -340,7 +383,17 @@ Ledger::setAccepted(
     header_.closeTime = closeTime;
     header_.closeTimeResolution = closeResolution;
     header_.closeFlags = correctCloseTime ? 0 : kSLcfNoConsensusTime;
-    setImmutable();
+    // Built locally; see Ledger::setImmutable().
+    if (!setImmutable())
+    {
+        // LCOV_EXCL_START
+        JLOG(j_.error()) << "Invalid map for accepted ledger " << header_.seq;
+        UNREACHABLE("xrpl::Ledger::setAccepted : map is invalid");
+        return false;
+        // LCOV_EXCL_STOP
+    }
+
+    return true;
 }
 
 bool

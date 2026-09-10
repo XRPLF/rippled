@@ -257,13 +257,43 @@ public:
         header_.validated = true;
     }
 
-    void
+    /**
+     * Mark this ledger as accepted and attempt to make it immutable.
+     *
+     * The close-time fields are recorded before the maps are settled, since the
+     * ledger hash covers them.
+     *
+     * @param closeTime The consensus-agreed close time.
+     * @param closeResolution The close time resolution.
+     * @param correctCloseTime Whether consensus agreed on the close time; if
+     *        false, kSLcfNoConsensusTime is recorded in closeFlags instead.
+     * @return What setImmutable() returned, so false means the ledger must be
+     *         discarded rather than retried.
+     */
+    [[nodiscard]] bool
     setAccepted(
         NetClock::time_point closeTime,
         NetClock::duration closeResolution,
         bool correctCloseTime);
 
-    void
+    /**
+     * Mark this ledger as immutable, so it can no longer be modified.
+     *
+     * A ledger built or loaded locally cannot have an invalid map, since only a
+     * map syncing against hashes from outside can be proven impossible (see
+     * SHAMap::addKnownNode), so a caller on such a path may treat a false return
+     * as a broken internal invariant. A caller assembling a ledger from peer data
+     * may not: for it, false is an outcome a peer can produce.
+     *
+     * @param rehash Whether to recompute the ledger hash from the header fields.
+     *        The transaction and account hashes are recomputed from the maps too,
+     *        but only the first time.
+     * @return false if either map is Invalid, leaving the immutable flag unset and
+     *         the header untouched. A map invalidated partway through can still
+     *         leave the other one immutable, so a false return means the ledger
+     *         must be discarded rather than retried.
+     */
+    [[nodiscard]] bool
     setImmutable(bool rehash = true);
 
     bool
@@ -272,16 +302,28 @@ public:
         return immutable_;
     }
 
-    /*  Mark this ledger as "should be full".
+    /**
+     * Whether neither map has been found invalid.
+     *
+     * Read by whatever assembles the ledger, which cannot tell a map that
+     * is merely incomplete from one that has been abandoned by looking at
+     * what a walk returned. See SHAMap::isValid().
+     *
+     * @return Whether both maps can still be the maps the header names.
+     */
+    [[nodiscard]] bool
+    mapsValid() const
+    {
+        return txMap_.isValid() && stateMap_.isValid();
+    }
 
-        "Full" is metadata property of the ledger, it indicates
-        that the local server wants all the corresponding nodes
-        in durable storage.
-
-        This is marked `const` because it reflects metadata
-        and not data that is in common with other nodes on the
-        network.
-    */
+    /**
+     * Mark this ledger as "should be full", indicating that the local server
+     * wants all the corresponding nodes in durable storage.
+     *
+     * Const because it reflects metadata, not data this ledger shares with
+     * other nodes on the network.
+     */
     void
     setFull() const
     {
@@ -420,6 +462,24 @@ private:
      */
     static std::pair<std::shared_ptr<STTx const>, std::shared_ptr<STObject const>>
     deserializeTxPlusMeta(SHAMapItem const& item);
+
+    /**
+     * Make both maps immutable, without short-circuiting.
+     *
+     * A concurrent walk can invalidate one map after the other is settled,
+     * so both calls are always made rather than one guarding the other:
+     * each map becomes Immutable or stays Invalid on its own, and neither
+     * is left mid-sync because the other refused.
+     *
+     * @return Whether both maps are immutable.
+     */
+    [[nodiscard]] bool
+    setMapsImmutable()
+    {
+        bool const txImmutable = txMap_.setImmutable();
+        bool const stateImmutable = stateMap_.setImmutable();
+        return txImmutable && stateImmutable;
+    }
 
     bool immutable_;
 
