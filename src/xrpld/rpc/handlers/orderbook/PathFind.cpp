@@ -35,7 +35,9 @@ doPathFind(rpc::JsonContext& context)
     if (sSubCommand == "create")
     {
         context.loadType = resource::kFeeHeavyBurdenRpc;
-        context.infoSub->clearRequest();
+        // Do not clearRequest() before makePathRequest: on validation failure
+        // the existing session must be preserved. makePathRequest only calls
+        // setRequest() on success, which replaces the old session atomically.
         return context.app.getPathRequestManager().makePathRequest(
             context.infoSub, lpLedger, context.params);
     }
