@@ -97,7 +97,6 @@ let
     version = llvmVersion;
     tools = [ "run-clang-tidy" ];
   };
-
 in
 {
   inherit
