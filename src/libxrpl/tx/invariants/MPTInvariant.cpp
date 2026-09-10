@@ -87,17 +87,25 @@ ValidMPTIssuance::visitEntry(bool isDelete, SLE::const_ref before, SLE::const_re
             if (fix320Enabled && after->isFieldPresent(sfReferenceHolding))
                 referenceHoldingSetOnCreate_ = true;
         }
-        else if (fix320Enabled)
+        else
         {
-            // Modified issuance: detect any change to sfReferenceHolding.
-            bool const beforePresent = before->isFieldPresent(sfReferenceHolding);
-            bool const afterPresent = after->isFieldPresent(sfReferenceHolding);
-            if (beforePresent != afterPresent ||
-                (afterPresent &&
-                 before->getFieldH256(sfReferenceHolding) !=
-                     after->getFieldH256(sfReferenceHolding)))
+            // lsfMPTLocked is the only issuance flag with a legal clear path
+            // (tfMPTUnlock); the rest are fixed at creation or set-once.
+            issuanceFlagsCleared_ |=
+                before->getFieldU32(sfFlags) & ~after->getFieldU32(sfFlags) & ~lsfMPTLocked;
+
+            if (fix320Enabled)
             {
-                referenceHoldingMutated_ = true;
+                // Modified issuance: detect any change to sfReferenceHolding.
+                bool const beforePresent = before->isFieldPresent(sfReferenceHolding);
+                bool const afterPresent = after->isFieldPresent(sfReferenceHolding);
+                if (beforePresent != afterPresent ||
+                    (afterPresent &&
+                     before->getFieldH256(sfReferenceHolding) !=
+                         after->getFieldH256(sfReferenceHolding)))
+                {
+                    referenceHoldingMutated_ = true;
+                }
             }
         }
     }
@@ -192,6 +200,15 @@ ValidMPTIssuance::finalize(
         }
         if (!invariantPasses)
             return false;
+    }
+
+    // Post-fixCleanup3_4_0: no transaction may clear an issuance flag other
+    // than lsfMPTLocked, so downstream code can trust set-once flags (for
+    // example a vault relies on lsfMPTCanTransfer staying set on its asset).
+    if (rules.enabled(fixCleanup3_4_0) && issuanceFlagsCleared_ != 0)
+    {
+        JLOG(j.fatal()) << "Invariant failed: immutable MPTokenIssuance flag cleared";
+        return false;
     }
 
     if (isTesSuccess(result) || (mptV2Enabled && result == tecINCOMPLETE))
