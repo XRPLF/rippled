@@ -226,6 +226,8 @@ enum TERcodes : TERUnderlyingType {
     terNO_DELEGATE_PERMISSION,  // Delegate does not have permission
     terLOCKED,                  // MPT is locked
     terNO_PERMISSION,           // No permission but retry
+    terTICKET_RESERVED,         // Ticket is reserved and cannot be consumed
+                                // until the reservation is released
 };
 
 //------------------------------------------------------------------------------

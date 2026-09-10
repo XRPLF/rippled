@@ -1,10 +1,17 @@
 #pragma once
 
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/ledger/ApplyView.h>
+#include <xrpl/ledger/ReadView.h>
 #include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STObject.h>
+#include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFormats.h>
 
 #include <cstdint>
+#include <optional>
 
 namespace xrpl::proposal {
 
@@ -31,30 +38,21 @@ proposalOwnerCount(STObject const& proposedTx)
 }
 
 /**
- * Whether the proposed transaction is itself a proposal transaction, which
- * would nest one proposal inside another.
- *
- * TODO: cover ttTRANSACTION_PROPOSAL_SIGN and ttTRANSACTION_PROPOSAL_CANCEL
- * once those transactions exist.
- */
-inline bool
-isProposalTx(STObject const& proposedTx)
-{
-    return proposedTx.getFieldU16(sfTransactionType) == ttTRANSACTION_PROPOSAL_CREATE;
-}
-
-/**
  * Whether the proposed transaction is independently submittable through the
- * ordinary multi-sign path: not a nested proposal, not a pseudo-transaction,
- * not itself flagged as someone else's inner batch transaction, and — if it
- * is a Batch — none of its own inner transactions is a nested proposal or a
- * pseudo-transaction either. A Batch inner transaction cannot itself be
- * pseudo (preflight0 rejects the pseudo/tfInnerBatchTxn combination
- * generically), but that guard lives outside this feature, so it is checked
- * again here rather than relied upon.
+ * ordinary multi-sign path: not a proposal transaction itself, not a
+ * pseudo-transaction, not itself flagged as someone else's inner batch
+ * transaction, and — if it is a Batch — every one of its own inner
+ * transactions carries a TransactionType and is neither a proposal, a
+ * pseudo-transaction, nor a nested Batch. A Batch inner transaction cannot
+ * lack a TransactionType, be pseudo, or be a nested Batch (STTx construction
+ * rejects a typeless inner and an inner Batch, and preflight0 rejects the
+ * pseudo/tfInnerBatchTxn combination), but those guards live outside this
+ * feature, so they are checked again here rather than relied upon.
+ *
+ * TODO: cover ttTRANSACTION_PROPOSAL_SIGN once that transaction exists.
  */
 bool
-isValidProposal(STObject const& proposedTx);
+isValidProposalTxnType(STObject const& proposedTx);
 
 /**
  * Whether the proposed transaction carries any signature field.
@@ -83,5 +81,84 @@ hasEmptySigningPubKey(STObject const& proposedTx)
     return proposedTx.isFieldPresent(sfSigningPubKey) &&
         proposedTx.getFieldVL(sfSigningPubKey).empty();
 }
+
+/**
+ * Whether the proposal is terminal (On-Chain Cosigner spec §4.5). A terminal proposal can
+ * never complete: it stops accepting signatures and anyone may delete it.
+ *
+ * A proposal is terminal when either:
+ * - its Expiration has passed (the parent ledger closed at or after it), or
+ * - the proposed transaction carries a LastLedgerSequence and the current
+ *   ledger sequence is strictly greater than it. This mirrors the ordinary
+ *   transactor's tefMAX_LEDGER rule: at view.seq() == LastLedgerSequence the
+ *   payload can still be submitted in the current ledger, so the proposal is
+ *   still live.
+ *
+ * @param view The ledger the deciding transaction is being applied to.
+ * @param expiration The proposal's Expiration field.
+ * @param proposedTx The proposal's ProposedTransaction field.
+ */
+bool
+isTerminal(
+    ReadView const& view,
+    std::optional<std::uint32_t> expiration,
+    STObject const& proposedTx);
+
+/**
+ * Delete a TransactionProposal ledger entry.
+ *
+ * Removes the entry from its Owner's directory, releases the reserve the
+ * proposal holds against the Owner, and erases the entry. Shared by every
+ * deletion path the spec defines (On-Chain Cosigner spec §4.5): automatic cleanup when the
+ * proposed transaction's TicketSequence is consumed, and the
+ * TransactionProposalCancel / TransactionProposalSign cleanup paths once
+ * those transactions exist.
+ *
+ * The release goes through decreaseOwnerCountForObject, so it follows the
+ * sfSponsor an entry created with reserve sponsorship carries: the reserve is
+ * returned to whoever was holding it, the Owner or that sponsor.
+ *
+ * @param view The apply view for making changes
+ * @param sleProposal The TransactionProposal ledger entry to delete
+ * @param j Journal for logging
+ * @return tesSUCCESS, tecINTERNAL for an invalid entry, or tefBAD_LEDGER if
+ *         the ledger contradicts the entry
+ */
+TER
+deleteProposal(ApplyView& view, SLE::pointer const& sleProposal, beast::Journal j);
+
+/**
+ * Whether tx carries the same payload as a proposal's stored
+ * ProposedTransaction (On-Chain Cosigner spec §4.2.1).
+ *
+ * The payload is every field fixed at creation — everything except the
+ * signature containers the proposal lets evolve (TxnSignature, Signers,
+ * BatchSigners, CounterpartySignature, SponsorSignature) and SigningPubKey,
+ * which is stored empty and filled only if the target signs with its own
+ * key. So the completed transaction matches no matter which mix of collected
+ * or off-ledger signatures it carries. Any change to a non-signature
+ * field results in a false-return value.
+ *
+ * @param proposedTx The proposal's ProposedTransaction field.
+ * @param tx The transaction to compare, typically an STTx.
+ */
+bool
+payloadMatches(STObject const& proposedTx, STObject const& tx);
+
+/**
+ * Whether tx may consume its Ticket.
+ *
+ * While a proposal keyed to the Ticket exists, the target's Ticket is
+ * reserved: only the proposal's own proposed transaction may spend it
+ * (On-Chain Cosigner spec §4.2.1), so that unrelated target-account activity cannot
+ * invalidate the proposal while signatures are being collected.
+ * TransactionProposalCancel is not allowed through: it deletes the
+ * reservation without consuming the ticket.
+ *
+ * @param view The ledger containing the Ticket and any reservation.
+ * @param tx The transaction attempting to consume that ticket.
+ */
+bool
+canConsumeTicket(ReadView const& view, STTx const& tx);
 
 }  // namespace xrpl::proposal
