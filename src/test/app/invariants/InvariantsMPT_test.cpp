@@ -1563,12 +1563,90 @@ class InvariantsMPT_test : public InvariantsBase
             precloseOrphan);
     }
 
+    // changes_ is keyed by MPTokenIssuanceID, so every holder of an issuance
+    // shares one entry. Erasing a funded MPToken alongside an empty one must
+    // still be caught regardless of the order the two are visited in.
+    void
+    testDeleteWithBalanceTwoHolders()
+    {
+        using namespace test::jtx;
+        testcase << "MPToken deleted with non-zero balance, two holders";
+
+        MPTID mptID;
+        Account const carol{"carol"};
+
+        Precheck const eraseBoth = [&](Account const&, Account const& a2, ApplyContext& ac) {
+            auto sleA2 = ac.view().peek(keylet::mptoken(mptID, a2.id()));
+            auto sleCarol = ac.view().peek(keylet::mptoken(mptID, carol.id()));
+            if (!sleA2 || !sleCarol)
+                return false;
+            ac.view().erase(sleA2);
+            ac.view().erase(sleCarol);
+            return true;
+        };
+
+        // Baseline: a single funded MPToken erased on its own.
+        {
+            auto const preclose = [&](Account const& a1, Account const& a2, Env& env) -> bool {
+                env.fund(XRP(1'000), carol);
+                MPTTester mpt(env, a1, {.holders = {a2, carol}, .fund = false});
+                mpt.create({.flags = tfMPTCanTransfer});
+                mptID = mpt.issuanceID();
+                mpt.authorize({.account = a2});
+                mpt.authorize({.account = carol});
+                mpt.pay(a1, a2, 100);
+                return true;
+            };
+
+            doInvariantCheck(
+                {{"MPToken deleted with non-zero balance"}},
+                [&](Account const&, Account const& a2, ApplyContext& ac) {
+                    auto sleA2 = ac.view().peek(keylet::mptoken(mptID, a2.id()));
+                    if (!sleA2)
+                        return false;
+                    ac.view().erase(sleA2);
+                    return true;
+                },
+                XRPAmount{},
+                STTx{ttACCOUNT_SET, [](STObject&) {}},
+                {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
+                preclose);
+        }
+
+        // Whichever of the two keys sorts last is visited last, so funding
+        // each holder in turn guarantees one run where the funded MPToken is
+        // visited first and an empty sibling follows it.
+        for (bool const fundCarol : {false, true})
+        {
+            auto const preclose = [&, fundCarol](
+                                      Account const& a1, Account const& a2, Env& env) -> bool {
+                env.fund(XRP(1'000), carol);
+                MPTTester mpt(env, a1, {.holders = {a2, carol}, .fund = false});
+                mpt.create({.flags = tfMPTCanTransfer});
+                mptID = mpt.issuanceID();
+                mpt.authorize({.account = a2});
+                mpt.authorize({.account = carol});
+                mpt.pay(a1, fundCarol ? carol : a2, 100);
+                return true;
+            };
+
+            doInvariantCheck(
+                {{"MPToken deleted with non-zero balance"}},
+                eraseBoth,
+                XRPAmount{},
+                STTx{ttACCOUNT_SET, [](STObject&) {}},
+                {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
+                preclose);
+        }
+    }
+
 public:
     void
     run() override
     {
         testConfidentialMPTTransfer();
         testMPT();
+        testDeleteWithBalanceTwoHolders();
     }
 };
 

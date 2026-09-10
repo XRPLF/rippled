@@ -569,9 +569,15 @@ ValidConfidentialMPToken::visitEntry(
             // for every legitimate drain-then-erase within one doApply.
             // Both are recorded here because visitEntry has no access to the
             // rules; finalize picks the one the amendment calls for.
-            changes_[id].deletedWithBalanceBefore = before->getFieldU64(sfMPTAmount) > 0;
-            if (after)
-                changes_[id].deletedWithBalanceAfter = after->getFieldU64(sfMPTAmount) > 0;
+            //
+            // changes_ is keyed by issuance, so sibling holders erased by the
+            // same transaction share this entry. Only ever set these, never
+            // clear them, or an empty sibling visited later would mask a
+            // funded MPToken.
+            if (before->getFieldU64(sfMPTAmount) > 0)
+                changes_[id].deletedWithBalanceBefore = true;
+            if (after && after->getFieldU64(sfMPTAmount) > 0)
+                changes_[id].deletedWithBalanceAfter = true;
 
             if (before->isFieldPresent(sfConfidentialBalanceSpending) ||
                 before->isFieldPresent(sfConfidentialBalanceInbox) ||
