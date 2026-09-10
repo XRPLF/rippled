@@ -352,7 +352,7 @@ Quality::ceilOut(TAmounts<In, Out> const& amount, Out const& limit) const
     static constexpr Amounts (Quality::*kCeilOutFnPtr)(Amounts const&, STAmount const&) const =
         &Quality::ceilOut;
 
-    return ceil_TAmounts_helper(amount, limit, amount.out, kCeilOutFnPtr);
+    return ceilTAmountsHelper(amount, limit, amount.out, kCeilOutFnPtr);
 }
 
 template <class In, class Out>
