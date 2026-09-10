@@ -594,7 +594,63 @@ public:
     static internalrep
     externalToInternal(rep mantissa);
 
+    /**
+     * Normalize raw (mantissa, exponent) integers directly to a target range.
+     *
+     * This is the construction-time counterpart of the member overload above.
+     * Callers that hold raw integers (e.g. IOUAmount) and want them in a
+     * narrow range would otherwise build a Number (one normalize pass to the
+     * default kRange) and then call the member normalizeToRange (a second pass
+     * down to the narrow range). This overload does a single pass: it converts
+     * the signed mantissa to its internal magnitude and normalizes straight to
+     * [MinMantissa, MaxMantissa], building no intermediate Number.
+     *
+     * Data flow (single pass), contrasted with the old two-pass path:
+     *
+     *     two-pass:  (m,e) --build Number--> [kRange/Large] --member--> [Min,Max]
+     *     one-pass:  (m,e) -------------- normalize --------------> [Min,Max]
+     *
+     * @tparam MinMantissa  Lower bound of the target mantissa range; must be a
+     *                      positive power of ten.
+     * @tparam MaxMantissa  Upper bound; must equal MinMantissa * 10 - 1.
+     * @tparam T            Result mantissa type, int64_t or uint64_t. Defaults
+     *                      to the type of MinMantissa.
+     * @param mantissa      Raw signed mantissa (sign is extracted internally).
+     * @param exponent      Raw exponent.
+     * @return  The normalized (mantissa, exponent) pair in the target range.
+     *          A zero mantissa is returned as {mantissa=0, exponent=0, negative=false}.
+     * @note  The result is bit-identical to the two-pass path: an intermediate
+     *        pass to a strictly wider range cannot change the final
+     *        narrower-range result.
+     * @note  Thread-safety: reads the thread-local rounding mode only; holds no
+     *        shared state of its own. Safe to call concurrently.
+     *
+     * Example (IOU range, 10^15 .. 10^16-1):
+     * @code
+     *     auto [m, e] = Number::normalizeToRange<1'000'000'000'000'000,
+     *                                            9'999'999'999'999'999>(1, 0);
+     *     // m == 1'000'000'000'000'000, e == -15
+     * @endcode
+     */
+    template <
+        auto MinMantissa,
+        auto MaxMantissa,
+        Integral64 T = std::decay_t<decltype(MinMantissa)>>
+    [[nodiscard]]
+    static std::pair<T, int>
+    normalizeToRange(rep mantissa, int exponent);
+
 private:
+    // Shared implementation for both normalizeToRange overloads. Takes the sign
+    // and internal (uint64) magnitude already separated, normalizes in place to
+    // [MinMantissa, MaxMantissa], and returns the signed (mantissa, exponent).
+    template <
+        auto MinMantissa,
+        auto MaxMantissa,
+        Integral64 T = std::decay_t<decltype(MinMantissa)>>
+    static std::pair<T, int>
+    normalizeToRangeImpl(bool negative, internalrep mantissa, int exponent);
+
     static thread_local RoundingMode mode;
     // The available ranges for mantissa
 
@@ -839,7 +895,7 @@ Number::isnormal() const noexcept
 
 template <auto MinMantissa, auto MaxMantissa, Integral64 T>
 std::pair<T, int>
-Number::normalizeToRange() const
+Number::normalizeToRangeImpl(bool negative, internalrep mantissa, int exponent)
 {
     static_assert(std::is_same_v<T, std::uint64_t> || std::is_same_v<T, std::int64_t>);
     static_assert(std::is_same_v<T, std::decay_t<decltype(MinMantissa)>>);
@@ -851,10 +907,6 @@ Number::normalizeToRange() const
     static_assert(isPowerOfTen(kMIN));
     static_assert(kMAX % 10 == 9);
     static_assert((kMAX + 1) / 10 == kMIN);
-
-    bool negative = negative_;
-    internalrep mantissa = mantissa_;
-    int exponent = exponent_;
 
     if constexpr (std::is_unsigned_v<T>)
     {
@@ -870,6 +922,26 @@ Number::normalizeToRange() const
 
     auto const sign = negative ? -1 : 1;
     return std::make_pair(static_cast<T>(sign * mantissa), exponent);
+}
+
+template <auto MinMantissa, auto MaxMantissa, Integral64 T>
+std::pair<T, int>
+Number::normalizeToRange() const
+{
+    // Forward this Number's already-separated internal components to the shared
+    // implementation. Passing mantissa_ (which may exceed kMaxRep in the Large
+    // range) through unchanged keeps the result byte-identical to before.
+    return normalizeToRangeImpl<MinMantissa, MaxMantissa, T>(negative_, mantissa_, exponent_);
+}
+
+template <auto MinMantissa, auto MaxMantissa, Integral64 T>
+std::pair<T, int>
+Number::normalizeToRange(rep mantissa, int exponent)
+{
+    // Separate sign and magnitude from the raw signed mantissa, then normalize
+    // straight to the target range in a single pass (no intermediate Number).
+    return normalizeToRangeImpl<MinMantissa, MaxMantissa, T>(
+        mantissa < 0, externalToInternal(mantissa), exponent);
 }
 
 constexpr Number
