@@ -1023,6 +1023,18 @@ InboundLedger::receiveNode(
         return;
     }
 
+    // A concurrent trigger() can walk this map with mtx_ released (see the AS-node
+    // getMissingNodes() call above) and invalidate it there; addKnownNode() then reports every
+    // node in a packet already in flight a duplicate rather than invalid (see
+    // SHAMap::addKnownNode), so isSynching() alone cannot tell that apart from this packet
+    // finishing the map. Not this packet's fault, so nothing is charged.
+    if (!map.isValid())
+    {
+        failed_ = true;
+        done();
+        return;
+    }
+
     if (!map.isSynching())
     {
         if (packet.type() == protocol::liTX_NODE)
