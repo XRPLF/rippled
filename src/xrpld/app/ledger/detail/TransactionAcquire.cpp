@@ -192,8 +192,29 @@ TransactionAcquire::takeNodes(
     std::vector<std::pair<SHAMapNodeID, SHAMapTreeNodePtr>> data,
     std::shared_ptr<Peer> const& peer)
 {
-    ScopedLockType const sl(mtx_);
+    ScopedLockType sl(mtx_);
 
+    auto const san = takeNodesLocked(std::move(data), peer, sl);
+
+    // Recorded here rather than on each of takeNodesLocked()'s exits, several of which stop the
+    // batch early: a batch that advanced the map must keep the next timer tick from counting a
+    // timeout against it, and nothing in the compiler would catch an exit that forgot to say so.
+    //
+    // Useful rather than good: a batch of nothing but duplicates advanced nothing, so it records no
+    // progress even though it was not the sender's fault. That costs retry budget on the ordinary
+    // second responder to a fan-out and nothing else.
+    if (san.isUseful())
+        progress_ = true;
+
+    return san;
+}
+
+SHAMapAddNode
+TransactionAcquire::takeNodesLocked(
+    std::vector<std::pair<SHAMapNodeID, SHAMapTreeNodePtr>> data,
+    std::shared_ptr<Peer> const& peer,
+    ScopedLockType&)
+{
     if (complete_)
     {
         JLOG(journal_.trace()) << "TX set complete";
@@ -205,6 +226,10 @@ TransactionAcquire::takeNodes(
         JLOG(journal_.trace()) << "TX set failed";
         return SHAMapAddNode();
     }
+
+    // Accumulated across the batch, so a packet ending in one bad node still counts the nodes
+    // hooked in ahead of it, as InboundLedger::receiveNode() already does.
+    SHAMapAddNode san;
 
     try
     {
@@ -220,36 +245,45 @@ TransactionAcquire::takeNodes(
                 if (haveRoot_)
                 {
                     JLOG(journal_.debug()) << "Got root TXS node, already have it";
+                    san.incDuplicate();
+                    continue;
                 }
-                else if (!map_->addRootNode(SHAMapHash{hash_}, std::move(d.second), nullptr)
-                              .isGood())
+
+                auto const result =
+                    map_->addRootNode(SHAMapHash{hash_}, std::move(d.second), nullptr);
+                san += result;
+
+                if (!result.isGood())
                 {
                     JLOG(journal_.warn()) << "TX acquire got bad root node for TX set " << hash_
                                           << " from peer " << peer->id();
-                    return SHAMapAddNode::invalid();
+                    return san;
                 }
-                else
-                {
-                    haveRoot_ = true;
-                }
+
+                haveRoot_ = true;
+                continue;
             }
-            else if (!map_->addKnownNode(d.first, std::move(d.second), &sf).isGood())
+
+            auto const result = map_->addKnownNode(d.first, std::move(d.second), &sf);
+            san += result;
+
+            if (!result.isGood())
             {
                 JLOG(journal_.warn()) << "TX acquire got bad non-root node " << d.first
                                       << " for TX set " << hash_ << " from peer " << peer->id();
-                return SHAMapAddNode::invalid();
+                return san;
             }
         }
 
         trigger(peer);
-        progress_ = true;
-        return SHAMapAddNode::useful();
+        return san;
     }
     catch (std::exception const& ex)
     {
         JLOG(journal_.error()) << "Peer " << peer->id()
                                << " sent us junky transaction node data: " << ex.what();
-        return SHAMapAddNode::invalid();
+        san.incInvalid();
+        return san;
     }
 }
 
