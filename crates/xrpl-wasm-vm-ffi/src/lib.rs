@@ -27,6 +27,7 @@
 //! `deny(unreachable_pub)`: cxx's expansion is `pub` throughout by necessity, leaving
 //! the lint nothing but generated code to fire on.
 #![deny(rustdoc::broken_intra_doc_links)]
+#![cfg_attr(coverage_nightly, feature(coverage_attribute))]
 
 use std::any::Any;
 use std::panic::{AssertUnwindSafe, catch_unwind};
@@ -1045,6 +1046,7 @@ impl From<&CheckError> for ffi::CheckStatus {
 /// binary link at all: the C++ side of the bridge exists only in the CMake build, so
 /// a test that called one would fail to link rather than fail.
 #[cfg(test)]
+#[cfg_attr(coverage_nightly, coverage(off))]
 mod tests {
     use super::*;
 

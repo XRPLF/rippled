@@ -255,6 +255,7 @@ fn is_named(ty: &Type, name: &str) -> bool {
 }
 
 #[cfg(test)]
+#[cfg_attr(coverage_nightly, coverage(off))]
 mod tests {
     use super::*;
     use syn::parse_quote;

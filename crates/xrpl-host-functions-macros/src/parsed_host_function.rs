@@ -504,6 +504,7 @@ fn path_name(attr: &Attribute) -> String {
 }
 
 #[cfg(test)]
+#[cfg_attr(coverage_nightly, coverage(off))]
 mod tests {
     use super::*;
     use syn::{Expr, ExprLit, Lit, parse_quote};

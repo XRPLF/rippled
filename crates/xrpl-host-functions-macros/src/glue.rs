@@ -234,6 +234,7 @@ fn rust_type(val_type: WasmValType) -> TokenStream {
 }
 
 #[cfg(test)]
+#[cfg_attr(coverage_nightly, coverage(off))]
 mod tests {
     use super::*;
     use proc_macro2::{Delimiter, Group, TokenTree};
