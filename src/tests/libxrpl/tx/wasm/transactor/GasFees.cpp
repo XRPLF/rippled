@@ -33,6 +33,7 @@ struct GasFees : testing::Test
     void
     SetUp() override
     {
+        testing::Test::SetUp();
         createAccounts(env, XRP(5'000), alice, carol);
 
         auto const wasm = assembleWat(kReadsLedgerSqn);

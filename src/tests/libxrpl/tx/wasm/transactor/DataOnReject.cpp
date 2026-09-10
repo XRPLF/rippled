@@ -49,6 +49,7 @@ struct DataOnReject : testing::Test
     void
     SetUp() override
     {
+        testing::Test::SetUp();
         env.createAccount(alice, XRP(5'000));
 
         auto const wasm = assembleWat(kWritesThenRejects);

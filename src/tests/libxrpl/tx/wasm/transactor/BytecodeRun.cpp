@@ -41,8 +41,7 @@ struct BytecodeRun : testing::Test
     Account const alice{"alice"};
     Account const carol{"carol"};
 
-    void
-    SetUp() override
+    BytecodeRun()
     {
         createAccounts(env, XRP(5'000), alice, carol);
     }

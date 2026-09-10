@@ -31,8 +31,7 @@ struct FinishFailures : testing::Test
     Account const alice{"alice"};
     Account const carol{"carol"};
 
-    void
-    SetUp() override
+    FinishFailures()
     {
         createAccounts(env, XRP(5'000), alice, carol);
     }
