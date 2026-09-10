@@ -279,19 +279,19 @@ public:
     /**
      * Mark this ledger as immutable, so it can no longer be modified.
      *
-     * A ledger built or loaded locally cannot have an invalid map, since only a
-     * map syncing against hashes from outside can be proven impossible (see
-     * SHAMap::addKnownNode), so a caller on such a path may treat a false return
-     * as a broken internal invariant. A caller assembling a ledger from peer data
-     * may not: for it, false is an outcome a peer can produce.
+     * A locally built or loaded ledger can never fail this call: only a map
+     * syncing against externally supplied hashes can become Invalid (see
+     * SHAMap::addKnownNode). A ledger assembled from peer data can fail it;
+     * there, false is an expected outcome, not an internal invariant break.
      *
-     * @param rehash Whether to recompute the ledger hash from the header fields.
-     *        The transaction and account hashes are recomputed from the maps too,
-     *        but only the first time.
-     * @return false if either map is Invalid, leaving the immutable flag unset and
-     *         the header untouched. A map invalidated partway through can still
-     *         leave the other one immutable, so a false return means the ledger
-     *         must be discarded rather than retried.
+     * @param rehash Whether to recompute the ledger hash from the header
+     *        fields. The transaction and account hashes are recomputed from
+     *        the maps too, but only the first time and only if the header
+     *        did not supply them.
+     * @return false if either map is Invalid, leaving the immutable flag
+     *         unset and the header untouched. A map invalidated partway
+     *         through can still leave the other one immutable, so false means
+     *         the ledger must be discarded rather than retried.
      */
     [[nodiscard]] bool
     setImmutable(bool rehash = true);
@@ -482,6 +482,17 @@ private:
     }
 
     bool immutable_;
+
+    /**
+     * Whether the header's transaction and account hashes came from outside and
+     * so must not be derived from the maps.
+     *
+     * True only for a ledger built from a header, whose maps are then
+     * synced against the hashes it carries. Deriving them would turn a
+     * ledger verified against a hash we asked for into one that is merely
+     * self-consistent. Fixed at construction, unlike immutable_.
+     */
+    bool const mapHashesFromHeader_ = false;
 
     // A SHAMap containing the transactions associated with this ledger.
     SHAMap mutable txMap_;
