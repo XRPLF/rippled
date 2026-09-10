@@ -331,8 +331,10 @@ preflight(
     // outside of a dry run.
     if ((flags & TapProposal) != TapNone && (flags & TapDryRun) == TapNone)
     {
+        // LCOV_EXCL_START
         JLOG(j.fatal()) << "apply (preflight): TapProposal set without TapDryRun.";
         return {pfCtx, {tefEXCEPTION, TxConsequences{tx}}};
+        // LCOV_EXCL_STOP
     }
 
     try
@@ -360,8 +362,10 @@ preflight(
     // See the comment in the other preflight() overload above.
     if ((flags & TapProposal) != TapNone && (flags & TapDryRun) == TapNone)
     {
+        // LCOV_EXCL_START
         JLOG(j.fatal()) << "apply (preflight): TapProposal set without TapDryRun.";
         return {pfCtx, {tefEXCEPTION, TxConsequences{tx}}};
+        // LCOV_EXCL_STOP
     }
 
     try
@@ -384,16 +388,16 @@ invokeCheckPermission(ReadView const& view, STTx const& tx)
             return Transactor::invokeCheckPermission<T>(view, tx);
         });
     }
+    // LCOV_EXCL_START
     catch (UnknownTxnType const& e)
     {
         // Should never happen
-        // LCOV_EXCL_START
         JLOG(debugLog().fatal()) << "Unknown transaction type in invokeCheckPermission: "
                                  << e.txnType;
         UNREACHABLE("xrpl::invokeCheckPermission : unknown transaction type");
         return temUNKNOWN;
-        // LCOV_EXCL_STOP
     }
+    // LCOV_EXCL_STOP
 }
 
 PreclaimResult

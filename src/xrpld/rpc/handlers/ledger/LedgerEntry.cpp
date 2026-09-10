@@ -758,7 +758,7 @@ parseTransactionProposal(
     [[maybe_unused]] unsigned const apiVersion)
 {
     if (!params.isObject())
-        return parseObjectID(params, fieldName, "hex string");
+        return parseObjectID(params, fieldName);
 
     auto const targetID =
         ledger_entry_helpers::requiredAccountID(params, jss::account, "malformedAddress");
