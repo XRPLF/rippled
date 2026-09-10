@@ -21,6 +21,7 @@
 #include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/XRPAmount.h>
+#include <xrpl/protocol/jss.h>
 
 #include <cstdint>
 #include <exception>
@@ -738,6 +739,78 @@ public:
             {
                 std::string const expected = "'1.e3' is not a number";
                 BEAST_EXPECT(e.what() == expected);
+            }
+        }
+
+        {
+            testcase("parse json (iou)");
+
+            Issue const usd(Currency(0x5553440000000000), AccountID(0x4985601));
+
+            auto const parse = [&usd](std::string const& value) {
+                json::Value jv;
+                jv[jss::currency] = to_string(usd.currency);
+                jv[jss::issuer] = to_string(usd.account);
+                jv[jss::value] = value;
+                return amountFromJson(sfGeneric, jv);
+            };
+
+            BEAST_EXPECT(parse("1000") == STAmount(usd, 1000));
+            BEAST_EXPECT(parse("-1000") == STAmount(usd, -1000));
+
+            // The same numbers, written with enough trailing zeros to push the
+            // digit string past INT64_MAX
+            BEAST_EXPECT(parse("1000.0000000000000000") == STAmount(usd, 1000));
+            BEAST_EXPECT(parse("-1000.0000000000000000") == STAmount(usd, -1000));
+            BEAST_EXPECT(parse("10.000000000000000000") == STAmount(usd, 10));
+            BEAST_EXPECT(parse("1.0000000000000000000") == STAmount(usd, 1));
+            BEAST_EXPECT(parse("-1.0000000000000000000") == STAmount(usd, -1));
+
+            // Digits an IOU cannot hold are rounded away
+            BEAST_EXPECT(parse("12345678901234567") == STAmount(usd, 1234567890123457ull, 1));
+            BEAST_EXPECT(parse("10000000000000000000") == STAmount(usd, 1000000000000000ull, 4));
+            BEAST_EXPECT(parse("9999999999999999999") == STAmount(usd, 1000000000000000ull, 4));
+            BEAST_EXPECT(parse("18446744073709551615") == STAmount(usd, 1844674407370955ull, 4));
+            BEAST_EXPECT(
+                parse("-18446744073709551615") == STAmount(usd, 1844674407370955ull, 4, true));
+
+            BEAST_EXPECT(parse("9223372036854775807") == STAmount(usd, 9223372036854776ull, 3));
+            BEAST_EXPECT(parse("9223372036854775808") == STAmount(usd, 9223372036854776ull, 3));
+            BEAST_EXPECT(!parse("9223372036854775808").negative());
+
+            try
+            {
+                auto _ = parse("18446744073709551616");
+                BEAST_EXPECT(false);
+            }
+            catch (std::bad_cast const&)
+            {
+                BEAST_EXPECT(true);
+            }
+
+            try
+            {
+                auto _ = parse("18446744073709551615e77");
+                BEAST_EXPECT(false);
+            }
+            catch (std::overflow_error const&)
+            {
+                BEAST_EXPECT(true);
+            }
+
+            BEAST_EXPECT(amountFromString(usd, "-1000.0000000000000000").getText() == "-1000");
+            BEAST_EXPECT(
+                amountFromString(usd, "18446744073709551615") ==
+                STAmount(usd, 1844674407370955ull, 4));
+
+            try
+            {
+                auto _ = amountFromJson(sfNumber, "10000000000000000000");
+                BEAST_EXPECT(false);
+            }
+            catch (std::runtime_error const&)
+            {
+                BEAST_EXPECT(true);
             }
         }
     }
