@@ -247,7 +247,7 @@ class TestRules(CheckerCase):
         """A hand-edited bound that is a string must be named, not raise."""
         self.edit_json(
             THRESHOLDS,
-            lambda d: d["overrides"]["span.ledger.build"]["p99"].update(
+            lambda d: d["overrides"]["span.ledger.build"]["p95"].update(
                 max_abs_increase_ms="5.5"
             ),
         )
