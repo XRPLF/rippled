@@ -2,6 +2,8 @@
 
 #include <xrpld/app/main/Application.h>
 
+#include <xrpl/basics/Mutex.hpp>
+#include <xrpl/basics/TaggedCache.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/insight/Collector.h>
 #include <xrpl/beast/insight/Counter.h>
@@ -13,6 +15,7 @@
 
 #include <map>
 #include <memory>
+#include <mutex>
 #include <optional>
 
 namespace xrpl {
@@ -35,13 +38,14 @@ public:
     insert(std::shared_ptr<Ledger const> const& ledger, bool validated);
 
     /**
-     * Get the ledgers_by_hash cache hit rate
+     * Get the byHash cache hit rate
      * @return the hit rate
      */
     float
     getCacheHitRate()
     {
-        return ledgersByHash_.getHitRate();
+        auto lockedMaps = ledgerMaps_.lock();
+        return lockedMaps->byHash->getHitRate();
     }
 
     /**
@@ -70,7 +74,11 @@ public:
     void
     sweep()
     {
-        ledgersByHash_.sweep();
+        auto* const byHash = [this] {
+            auto lockedMaps = ledgerMaps_.lock();
+            return lockedMaps->byHash.get();
+        }();
+        byHash->sweep();
         consensusValidated_.sweep();
     }
 
@@ -124,9 +132,15 @@ private:
     beast::insight::Collector::ptr collector_;
     beast::insight::Counter mismatchCounter_;
 
-    using LedgersByHash = TaggedCache<LedgerHash, Ledger const>;
+    struct LedgerMaps
+    {
+        using LedgersByHash = TaggedCache<LedgerHash, Ledger const>;
 
-    LedgersByHash ledgersByHash_;
+        std::unique_ptr<LedgersByHash> byHash;
+        std::map<LedgerIndex, LedgerHash> byIndex;  // validated ledgers
+    };
+
+    xrpl::Mutex<LedgerMaps, std::recursive_mutex> ledgerMaps_;
 
     // Maps ledger indexes to the corresponding hashes
     // For debug and logging purposes
@@ -145,9 +159,6 @@ private:
     };
     using ConsensusValidated = TaggedCache<LedgerIndex, CvEntry>;
     ConsensusValidated consensusValidated_;
-
-    // Maps ledger indexes to the corresponding hash.
-    std::map<LedgerIndex, LedgerHash> ledgersByIndex_;  // validated ledgers
 
     beast::Journal j_;
 };

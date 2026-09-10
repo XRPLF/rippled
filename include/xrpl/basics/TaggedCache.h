@@ -153,6 +153,24 @@ private:
         Policy policy,
         Callback&& replaceCallback = nullptr);
 
+    /**
+     * canonicalizeImpl variant for callers that already hold `mutex_`.
+     *
+     * The unnamed `scoped_lock<mutex_type> const&` parameter is proof of
+     * ownership; this overload does not acquire the lock. Use it from other
+     * methods (e.g. fetchAndModify) that need to compose canonicalize with
+     * additional work under a single critical section, without relying on
+     * recursive-mutex re-entry.
+     */
+    template <class Policy, class Callback = std::nullptr_t>
+    bool
+    canonicalizeImpl(
+        std::scoped_lock<mutex_type> const&,
+        key_type const& key,
+        CanonicalizeClientPointerType<Policy> data,
+        Policy policy,
+        Callback&& replaceCallback = nullptr);
+
 public:
     /**
      * Replace aliased objects with originals.
@@ -239,9 +257,6 @@ public:
     bool
     retrieve(key_type const& key, T& data);
 
-    mutex_type&
-    peekMutex();
-
     std::vector<key_type>
     getKeys() const;
 
@@ -262,6 +277,22 @@ public:
     SharedPointerType
     fetch(key_type const& digest, Handler const& h);
     // End CachedSLEs functions.
+
+    /**
+     * Fetch or create an entry and execute a callback while holding the lock.
+     *
+     * The entry for the given key is fetched from the cache or created if it
+     * doesn't exist. The callback is then invoked with a reference to the
+     * entry while the cache mutex is still held, allowing safe modification
+     * of the cached object.
+     *
+     * @param key The key to fetch or create
+     * @param callback Function to call with the entry under lock.
+     *                 Signature: void(T&)
+     */
+    template <class Callback>
+    void
+    fetchAndModify(key_type const& key, Callback&& callback);
 
 private:
     SharedPointerType
