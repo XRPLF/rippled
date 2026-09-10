@@ -1036,6 +1036,78 @@ public:
     }
 
     void
+    testCanDeleteInvalidParams()
+    {
+        // Regression test for issue #6749:
+        // non-uint, non-string values for can_delete must return
+        // rpcINVALID_PARAMS instead of throwing Json::LogicError
+        // (which was caught as rpcINTERNAL).
+        testcase("can_delete invalid param types");
+        using namespace jtx;
+
+        Env env(*this, envconfig(advisoryDelete));
+
+        // boolean true
+        {
+            Json::Value jvParams;
+            jvParams[jss::can_delete] = true;
+            auto const result = env.rpc("json", "can_delete", to_string(jvParams));
+            BEAST_EXPECT(bad(result, rpcINVALID_PARAMS));
+        }
+
+        // boolean false
+        {
+            Json::Value jvParams;
+            jvParams[jss::can_delete] = false;
+            auto const result = env.rpc("json", "can_delete", to_string(jvParams));
+            BEAST_EXPECT(bad(result, rpcINVALID_PARAMS));
+        }
+
+        // null
+        {
+            Json::Value jvParams;
+            jvParams[jss::can_delete] = Json::nullValue;
+            auto const result = env.rpc("json", "can_delete", to_string(jvParams));
+            BEAST_EXPECT(bad(result, rpcINVALID_PARAMS));
+        }
+
+        // array
+        {
+            Json::Value jvParams;
+            jvParams[jss::can_delete] = Json::arrayValue;
+            auto const result = env.rpc("json", "can_delete", to_string(jvParams));
+            BEAST_EXPECT(bad(result, rpcINVALID_PARAMS));
+        }
+
+        // object
+        {
+            Json::Value jvParams;
+            jvParams[jss::can_delete] = Json::objectValue;
+            auto const result = env.rpc("json", "can_delete", to_string(jvParams));
+            BEAST_EXPECT(bad(result, rpcINVALID_PARAMS));
+        }
+
+        // negative int — Json::Reader parses integer literals as intValue;
+        // negative values must be rejected
+        {
+            Json::Value jvParams;
+            jvParams[jss::can_delete] = -1;
+            auto const result = env.rpc("json", "can_delete", to_string(jvParams));
+            BEAST_EXPECT(bad(result, rpcINVALID_PARAMS));
+        }
+
+        // positive int literal — Json::Reader parses values <= maxInt as
+        // intValue (not uintValue); must be accepted as a valid ledger seq
+        {
+            Json::Value jvParams;
+            jvParams[jss::can_delete] = 1000000;
+            auto const result = env.rpc("json", "can_delete", to_string(jvParams));
+            BEAST_EXPECT(!RPC::contains_error(result[jss::result]));
+            BEAST_EXPECT(result[jss::result][jss::can_delete] == 1000000);
+        }
+    }
+
+    void
     testCanDelete()
     {
         testcase("online_delete with advisory_delete");
@@ -1925,6 +1997,7 @@ public:
         testConfig();
         testClear();
         testAutomatic();
+        testCanDeleteInvalidParams();
         testCanDelete();
         testRotate();
         testLedgerGaps();
