@@ -521,6 +521,9 @@ public:
 
                     if (jv.isMember(jss::bytecode_size_limit) != isFlagLedger)
                         return false;
+
+                    if (jv.isMember(jss::gas_price) != isFlagLedger)
+                        return false;
                 }
                 else
                 {
@@ -528,6 +531,9 @@ public:
                         return false;
 
                     if (jv.isMember(jss::bytecode_size_limit))
+                        return false;
+
+                    if (jv.isMember(jss::gas_price))
                         return false;
                 }
                 return true;
