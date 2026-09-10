@@ -93,8 +93,13 @@ InboundLedger::init(ScopedLockType& collectionLock)
     collectionLock.unlock();
 
     tryDB(app_.getNodeFamily().db());
+    // Matches checkLocal(): without done() this object never signals, so logFailure() never runs
+    // and the hash never lands in recentFailures_.
     if (failed_)
+    {
+        done();
         return;
+    }
 
     if (!complete_)
     {
@@ -493,6 +498,8 @@ InboundLedger::trigger(std::shared_ptr<Peer> const& peer, TriggerReason reason)
         if (failed_)
         {
             JLOG(journal_.warn()) << " failed local for " << hash_;
+            // See init() for why done() must be called here rather than just returning.
+            done();
             return;
         }
     }
