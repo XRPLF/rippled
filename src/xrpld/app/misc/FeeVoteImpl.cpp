@@ -184,7 +184,10 @@ FeeVoteImpl::doValidation(Fees const& lastFees, Rules const& rules, STValidation
                 "bytecode size limit",
                 sfBytecodeSizeLimit);
         }
-        vote(lastFees.gasPrice, target_.gasPrice, "gas price", sfGasPrice);
+        if (target_.gasPrice >= kMinGasPrice)
+        {
+            vote(lastFees.gasPrice, target_.gasPrice, "gas price", sfGasPrice);
+        }
     }
 }
 
@@ -205,9 +208,10 @@ FeeVoteImpl::doVoting(
 
     detail::VotableValue incReserveVote(lastClosedLedger->fees().increment, target_.ownerReserve);
 
-    auto validOrCurrent = [](std::uint32_t target, std::uint32_t max, std::uint32_t current) {
-        return target <= max ? target : current;
-    };
+    auto validOrCurrent =
+        [](std::uint32_t target, std::uint32_t max, std::uint32_t current, std::uint32_t min = 0) {
+            return (target <= max && target >= min) ? target : current;
+        };
 
     detail::VotableValue gasLimitVote(
         lastClosedLedger->fees().gasLimit,
@@ -220,7 +224,13 @@ FeeVoteImpl::doVoting(
             kMaxBytecodeSizeLimit,
             lastClosedLedger->fees().bytecodeSizeLimit));
 
-    detail::VotableValue gasPriceVote(lastClosedLedger->fees().gasPrice, target_.gasPrice);
+    detail::VotableValue gasPriceVote(
+        lastClosedLedger->fees().gasPrice,
+        validOrCurrent(
+            target_.gasPrice,
+            std::numeric_limits<std::uint32_t>::max(),
+            lastClosedLedger->fees().gasPrice,
+            kMinGasPrice));
 
     auto const& rules = lastClosedLedger->rules();
     if (rules.enabled(featureXRPFees))
@@ -297,10 +307,11 @@ FeeVoteImpl::doVoting(
         auto doVote = [](std::shared_ptr<STValidation> const& val,
                          detail::VotableValue<std::uint32_t>& value,
                          SF_UINT32 const& sfield,
-                         std::uint32_t maxValue) {
+                         std::uint32_t maxValue,
+                         std::uint32_t minValue = 0) {
             if (auto const field = ~val->at(~sfield); field)
             {
-                if (field.value() <= maxValue)
+                if (field.value() <= maxValue && field.value() >= minValue)
                 {
                     value.addVote(field.value());
                 }
@@ -321,7 +332,12 @@ FeeVoteImpl::doVoting(
                 continue;
             doVote(val, gasLimitVote, sfGasLimit, kMaxGasLimit);
             doVote(val, bytecodeSizeLimitVote, sfBytecodeSizeLimit, kMaxBytecodeSizeLimit);
-            doVote(val, gasPriceVote, sfGasPrice, std::numeric_limits<std::uint32_t>::max());
+            doVote(
+                val,
+                gasPriceVote,
+                sfGasPrice,
+                std::numeric_limits<std::uint32_t>::max(),
+                kMinGasPrice);
         }
     }
 

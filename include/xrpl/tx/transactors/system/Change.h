@@ -52,6 +52,13 @@ private:
     TER
     applyFee();
 
+    /**
+     * Seed the default Feature Extension fee settings on `featureSmartEscrow`
+     * activation.
+     */
+    void
+    seedExtensionFees();
+
     TER
     applyUNLModify();
 };

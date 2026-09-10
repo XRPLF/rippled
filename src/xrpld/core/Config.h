@@ -69,17 +69,17 @@ struct FeeSetup
     /**
      * The gas limit for Feature Extensions.
      */
-    std::uint32_t gasLimit{1'000'000};
+    std::uint32_t gasLimit{kDefaultGasLimit};
 
     /**
      * The bytecode size limit for Feature Extensions.
      */
-    std::uint32_t bytecodeSizeLimit{100'000};
+    std::uint32_t bytecodeSizeLimit{kDefaultBytecodeSizeLimit};
 
     /**
      * The price of 1 WASM gas, in micro-drops.
      */
-    std::uint32_t gasPrice{1'000'000};
+    std::uint32_t gasPrice{kDefaultGasPrice};
 
     /* (Remember to update the example cfg files when changing any of these
      * values.) */
@@ -90,7 +90,8 @@ struct FeeSetup
     [[nodiscard]] Fees
     toFees() const
     {
-        return Fees{referenceFee, accountReserve, ownerReserve};
+        return Fees{
+            referenceFee, accountReserve, ownerReserve, gasLimit, bytecodeSizeLimit, gasPrice};
     }
 };
 

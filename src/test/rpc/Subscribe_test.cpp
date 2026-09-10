@@ -29,6 +29,7 @@
 #include <xrpl/json/to_string.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Fees.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/KeyType.h>
 #include <xrpl/protocol/PublicKey.h>
@@ -431,7 +432,19 @@ public:
     {
         using namespace jtx;
 
-        Env env{*this, singleThreadIo(envconfig(validator, "")), features};
+        // doValidation only writes a fee field when its target differs from the
+        // ledger's current value, so a node with nothing to change emits
+        // nothing. Vote for limits other than the ones already in force, so
+        // the extension fields actually appear on the flag ledger.
+        auto voteDifferentLimits = [](std::unique_ptr<Config> cfg) {
+            auto& voting = cfg->section(Sections::kVoting);
+            voting.set(Keys::kGasLimit, std::to_string(kDefaultGasLimit - 1000));
+            voting.set(Keys::kBytecodeSizeLimit, std::to_string(kDefaultBytecodeSizeLimit - 1000));
+            voting.set(Keys::kGasPrice, std::to_string(kDefaultGasPrice - 1000));
+
+            return cfg;
+        };
+        Env env{*this, singleThreadIo(voteDifferentLimits(envconfig(validator, ""))), features};
         auto& cfg = env.app().config();
         if (!BEAST_EXPECT(cfg.section(Sections::kValidationSeed).empty()))
             return;
@@ -521,6 +534,9 @@ public:
 
                     if (jv.isMember(jss::bytecode_size_limit) != isFlagLedger)
                         return false;
+
+                    if (jv.isMember(jss::gas_price) != isFlagLedger)
+                        return false;
                 }
                 else
                 {
@@ -528,6 +544,9 @@ public:
                         return false;
 
                     if (jv.isMember(jss::bytecode_size_limit))
+                        return false;
+
+                    if (jv.isMember(jss::gas_price))
                         return false;
                 }
                 return true;

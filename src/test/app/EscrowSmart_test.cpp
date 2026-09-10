@@ -14,7 +14,6 @@
 #include <test/jtx/fee.h>
 #include <test/jtx/mpt.h>
 #include <test/jtx/multisign.h>
-#include <test/jtx/noop.h>
 #include <test/jtx/offer.h>
 #include <test/jtx/pay.h>
 #include <test/jtx/permissioned_domains.h>
@@ -27,14 +26,12 @@
 
 #include <xrpld/core/Config.h>
 
-#include <xrpl/basics/StringUtilities.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/strHex.h>
 #include <xrpl/beast/unit_test/suite.h>
-#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/config/Constants.h>
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/core/StartUpType.h>
-#include <xrpl/ledger/OpenView.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Fees.h>
 #include <xrpl/protocol/Indexes.h>
@@ -45,9 +42,11 @@
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/XRPAmount.h>
+#include <xrpl/tx/applySteps.h>
 
 #include <cstdint>
 #include <exception>
+#include <map>
 #include <memory>
 #include <optional>
 #include <source_location>
@@ -56,6 +55,21 @@
 #include <vector>
 
 namespace xrpl::test {
+
+// The limits live in FeeSettings, so a non-default value has to be voted in:
+// set [voting] (Config::fees would not work) and run past the flag ledger.
+static std::unique_ptr<Config>
+votingConfig(std::map<std::string, std::string> voting)
+{
+    return jtx::makeConfig({}, std::move(voting));
+}
+
+static void
+awaitFeeVote(jtx::Env& env)
+{
+    for (auto i = env.current()->seq(); i <= 257; ++i)
+        env.close();
+}
 
 struct EscrowSmart_test : public beast::unit_test::Suite
 {
@@ -97,13 +111,8 @@ struct EscrowSmart_test : public beast::unit_test::Suite
 
         {
             // Bytecode > max length
-            Env env(
-                *this,
-                envconfig([](std::unique_ptr<Config> cfg) {
-                    cfg->fees.bytecodeSizeLimit = 10;  // 10 bytes
-                    return cfg;
-                }),
-                features);
+            Env env(*this, votingConfig({{Keys::kBytecodeSizeLimit, "10"}}), features);
+            awaitFeeVote(env);
             XRPAmount const txnFees = env.current()->fees().base + 1000;
             // create escrow
             env.fund(XRP(5000), alice, carol);
@@ -121,57 +130,57 @@ struct EscrowSmart_test : public beast::unit_test::Suite
         }
 
         {
-            // compute limit set to 0
-            Env env(
-                *this,
-                envconfig([](std::unique_ptr<Config> cfg) {
-                    // WASM runtime disabled
-                    cfg->fees.gasLimit = 0;
-                    return cfg;
-                }),
-                features);
-            XRPAmount const txnFees = env.current()->fees().base + 1000;
-            // create escrow
+            // Gas is not a field of EscrowCreate: rejected by the format check
+            // before any limit is consulted.
+            Env env(*this, features);
             env.fund(XRP(5000), alice, carol);
 
-            auto const escrowCreate = escrow::create(alice, carol, XRP(500));
-
-            env(escrowCreate,
+            env(escrow::create(alice, carol, XRP(500)),
                 escrow::Bytecode(kLedgerSqnWasmHex),
                 escrow::kCancelTime(env.now() + 100s),
                 escrow::Gas(100),
-                Fee(txnFees),
+                Fee(XRP(1)),
                 Ter(temMALFORMED));
             env.close();
         }
 
         {
-            // size limit set to 0
-            Env env(
-                *this,
-                envconfig([](std::unique_ptr<Config> cfg) {
-                    cfg->fees.bytecodeSizeLimit = 0;  // WASM upload disabled
-                    return cfg;
-                }),
-                features);
-            XRPAmount const txnFees = env.current()->fees().base + 1000;
-            // create escrow
+            // The other half of isBytecodeUploadDisabled: zeroing the gas
+            // limit must stop new uploads too, not just execution.
+            Env env(*this, votingConfig({{Keys::kGasLimit, "0"}}), features);
+            awaitFeeVote(env);
+            env.fund(XRP(5000), alice, carol);
+
+            env(escrow::create(alice, carol, XRP(500)),
+                escrow::Bytecode(kLedgerSqnWasmHex),
+                escrow::kCancelTime(env.now() + 100s),
+                Fee(XRP(1)),
+                Ter(temTEMP_DISABLED));
+            env.close();
+        }
+
+        {
+            // Voting the size limit to zero stops new uploads.
+            Env env(*this, votingConfig({{Keys::kBytecodeSizeLimit, "0"}}), features);
+            awaitFeeVote(env);
             env.fund(XRP(5000), alice, carol);
 
             auto const escrowCreate = escrow::create(alice, carol, XRP(500));
 
-            // 2-byte string
+            // Not valid WASM: pins that the disabled check fires before the
+            // module is compiled.
             env(escrowCreate,
                 escrow::Bytecode("AA"),
                 escrow::kCancelTime(env.now() + 100s),
-                Fee(txnFees),
+                Fee(XRP(1)),
                 Ter(temTEMP_DISABLED));
             env.close();
 
+            // And a genuinely valid module is refused for the same reason.
             env(escrowCreate,
                 escrow::Bytecode(kLedgerSqnWasmHex),
                 escrow::kCancelTime(env.now() + 100s),
-                Fee(txnFees),
+                Fee(XRP(1)),
                 Ter(temTEMP_DISABLED));
             env.close();
         }
@@ -382,76 +391,72 @@ struct EscrowSmart_test : public beast::unit_test::Suite
         }
 
         {
-            // Gas > max compute limit
-            Env env(
-                *this,
-                envconfig([](std::unique_ptr<Config> cfg) {
-                    cfg->fees.gasLimit = 1'000;  // in gas
-                    return cfg;
-                }),
-                features);
+            // Above the protocol ceiling: preflight rejects it before the
+            // escrow is looked up, so no escrow, fee or vote is needed.
+            Env env(*this, features);
             env.fund(XRP(5000), alice, carol);
-            // Run past the flag ledger so that a Fee change vote occurs and
-            // updates FeeSettings. (It also activates all supported
-            // amendments.)
-            for (auto i = env.current()->seq(); i <= 257; ++i)
-                env.close();
 
-            auto const allowance = 1'001;
-            env(escrow::finish(carol, alice, 1),
-                Fee(env.current()->fees().base + allowance),
-                escrow::Gas(allowance),
+            env(escrow::finish(carol, alice, 1), escrow::Gas(kMaxGasLimit + 1), Ter(temBAD_LIMIT));
+        }
+
+        {
+            // Above the voted limit but under the ceiling. The escrow must exist,
+            // since preclaim reads it before checking the allowance.
+            Env env(*this, features);
+            env.fund(XRP(5000), alice, carol);
+
+            auto const seq = env.seq(alice);
+            auto const create = env.jt(
+                escrow::create(alice, carol, XRP(500)),
+                escrow::Bytecode(kLedgerSqnWasmHex),
+                escrow::kCancelTime(env.now() + 100s));
+            env(escrow::create(alice, carol, XRP(500)),
+                escrow::Bytecode(kLedgerSqnWasmHex),
+                escrow::kCancelTime(env.now() + 100s),
+                Fee(xrpl::calculateBaseFee(*env.current(), *create.stx)));
+            env.close();
+
+            env(escrow::finish(carol, alice, seq),
+                escrow::Gas(kDefaultGasLimit + 1),
+                Fee(XRP(1)),
                 Ter(temBAD_LIMIT));
         }
 
         {
-            // WASM compute disabled
-            using namespace test::jtx;
-            using namespace std::chrono;
-            Env env{*this, envconfig([](std::unique_ptr<Config> cfg) {
-                        cfg->fees.gasLimit = 0;
-                        return cfg;
-                    })};
+            // Both rungs of the kill switch from one starting state. Zeroing
+            // bytecodeSizeLimit stops uploads but must leave an existing escrow
+            // finishable -- a graceful drain. Zeroing gasLimit stops both.
+            auto runLadder = [&](char const* key, TER expected) {
+                Env env(*this, votingConfig({{key, "0"}}), features);
+                Account const alice{"alice"};
+                Account const carol{"carol"};
+                env.fund(XRP(5000), alice, carol);
+                env.close();
 
-            Account const alice{"alice"};
-            env.fund(XRP(1000), alice);
-            env.close();
+                // Create before the vote lands. CancelAfter must outlast
+                // awaitFeeVote, which advances a flag-ledger interval.
+                auto const seq = env.seq(alice);
+                env(escrow::create(alice, carol, XRP(500)),
+                    escrow::Bytecode(kLedgerSqnWasmHex),
+                    escrow::kCancelTime(env.now() + 100000s),
+                    Fee(XRP(1)));
+                env.close();
+                BEAST_EXPECT(env.ownerCount(alice) > 0);
 
-            auto const seq = env.seq(alice);
-            auto const keylet = keylet::escrow(alice.id(), SeqProxy::rawSequence(seq));
-            env(noop(alice));  // to align sequence numbers
+                awaitFeeVote(env);
 
-            // This adds the Escrow ledger object by hand, bypassing normal
-            // transaction processing This is necessary because the config
-            // cannot be updated in the middle of a test, and we cannot easily
-            // create a Smart Escrow while the compute limit is set to 0
-            env.app().getOpenLedger().modify([&](OpenView& view, beast::Journal j) {
-                auto sle = std::make_shared<SLE>(keylet);
+                env(escrow::finish(carol, alice, seq),
+                    escrow::Gas(1000),
+                    Fee(XRP(1)),
+                    Ter(expected));
+            };
 
-                sle->setAccountID(sfAccount, alice.id());
-                sle->setFieldAmount(sfAmount, XRP(100));
-                sle->setFieldU32(sfCancelAfter, 110);
-                sle->setAccountID(sfDestination, alice.id());
-                sle->setFieldVL(sfBytecode, strUnHex(kLedgerSqnWasmHex).value());
-                sle->setFieldU32(sfFlags, 0);
-                sle->setFieldU64(sfOwnerNode, 0);
-                uint256 tmp;
-                BEAST_EXPECT(tmp.parseHex(
-                    "F63D1A452A96C19EFD77901FB37D236C59EAA746771A6"
-                    "85D1BBA57A2238B9401"));
-                sle->setFieldH256(sfPreviousTxnID, tmp);
-                sle->setFieldU32(sfPreviousTxnLgrSeq, 4);
-                sle->setFieldU32(sfSequence, seq);
+            // Uploads off: the existing escrow still finishes. The contract
+            // returns success at this ledger height, so the escrow is removed.
+            runLadder(Keys::kBytecodeSizeLimit, tesSUCCESS);
 
-                view.rawInsert(sle);
-                return true;
-            });
-            BEAST_EXPECT(env.le(keylet));
-
-            env(escrow::finish(alice, alice, seq),
-                escrow::Gas(1000),
-                Fee(env.current()->fees().base + 1000),
-                Ter(temTEMP_DISABLED));
+            // Execution off: the same escrow cannot be finished at all.
+            runLadder(Keys::kGasLimit, temTEMP_DISABLED);
         }
 
         Env env(*this, features);
@@ -577,6 +582,8 @@ struct EscrowSmart_test : public beast::unit_test::Suite
         // getLedgerSqn() >= 5}
         std::uint32_t const allowance = 467;
         auto escrowCreate = escrow::create(alice, carol, XRP(1000));
+        // Ask production rather than mirroring the formula: a hand-copied one
+        // agrees with the implementation when it is wrong.
         auto [createFee, finishFee] = [&]() {
             Env const env(*this, features);
             auto createFee = env.current()->fees().base * 10 + kLedgerSqnWasmHex.size() / 2 * 5;
@@ -886,7 +893,9 @@ struct EscrowSmart_test : public beast::unit_test::Suite
 
             auto const allowance = 1420;
             XRPAmount const finishFee = env.current()->fees().base +
-                (allowance * env.current()->fees().gasPrice) / microDropsPerDrop + 1;
+                (static_cast<uint64_t>(allowance) * env.current()->fees().gasPrice) /
+                    microDropsPerDrop +
+                1;
 
             // FinishAfter time hasn't passed
             env(escrow::finish(alice, alice, seq),
@@ -936,19 +945,11 @@ struct EscrowSmart_test : public beast::unit_test::Suite
         }();
 
         {
-            // ensure fees don't overflow
+            // bigAllowance would wrap the drops charge in 32 bits, so vote the
+            // gas limit up to the ceiling.
             Env env(
-                *this,
-                envconfig([](std::unique_ptr<Config> cfg) {
-                    cfg->fees.gasPrice = 1'000'000;  // in gas
-                    return cfg;
-                }),
-                features);
-            // Run past the flag ledger so that a Fee change vote occurs and
-            // updates FeeSettings. (It also activates all supported
-            // amendments.)
-            for (auto i = env.current()->seq(); i <= 257; ++i)
-                env.close();
+                *this, votingConfig({{Keys::kGasLimit, std::to_string(kMaxGasLimit)}}), features);
+            awaitFeeVote(env);
 
             // create escrow
             env.fund(XRP(5000), alice, carol);
@@ -966,9 +967,13 @@ struct EscrowSmart_test : public beast::unit_test::Suite
                 env.require(Balance(carol, XRP(5000)));
                 env.close();
 
-                auto const bigAllowance = 996'433;
+                // Derived from the limit in force, so a repricing does not
+                // silently weaken the test.
+                auto const bigAllowance = env.current()->fees().gasLimit - 1;
                 uint64_t const partialFeeCalc =
-                    ((static_cast<uint64_t>(bigAllowance) * 1'000'000) / microDropsPerDrop) + 1;
+                    ((static_cast<uint64_t>(bigAllowance) * env.current()->fees().gasPrice) /
+                     microDropsPerDrop) +
+                    1;
                 auto finishFee = env.current()->fees().base + partialFeeCalc;
                 BEAST_EXPECT(finishFee.drops() > bigAllowance);
 
@@ -1021,7 +1026,11 @@ struct EscrowSmart_test : public beast::unit_test::Suite
         Account const carol{"carol"};
 
         {
-            Env env(*this, features);
+            // This contract exercises every host function, so it needs an
+            // allowance above the default limit; vote the limit up.
+            Env env(
+                *this, votingConfig({{Keys::kGasLimit, std::to_string(kMaxGasLimit)}}), features);
+            awaitFeeVote(env);
             // create escrow
             env.fund(XRP(5000), alice, carol);
             auto const seq = env.seq(alice);
@@ -1045,7 +1054,9 @@ struct EscrowSmart_test : public beast::unit_test::Suite
 
                 auto const allowance = 1'000'000;
                 XRPAmount const finishFee = env.current()->fees().base +
-                    (allowance * env.current()->fees().gasPrice) / microDropsPerDrop + 1;
+                    (static_cast<uint64_t>(allowance) * env.current()->fees().gasPrice) /
+                        microDropsPerDrop +
+                    1;
 
                 // FinishAfter time hasn't passed
                 env(escrow::finish(carol, alice, seq),
@@ -1168,7 +1179,9 @@ struct EscrowSmart_test : public beast::unit_test::Suite
 
                 auto const allowance = 184'375;
                 auto const finishFee = env.current()->fees().base +
-                    (allowance * env.current()->fees().gasPrice) / microDropsPerDrop + 1;
+                    (static_cast<uint64_t>(allowance) * env.current()->fees().gasPrice) /
+                        microDropsPerDrop +
+                    1;
                 env(escrow::finish(carol, alice, seq), escrow::Gas(allowance), Fee(finishFee));
                 env.close();
 
@@ -1192,26 +1205,27 @@ struct EscrowSmart_test : public beast::unit_test::Suite
         using namespace std::chrono;
         using namespace wasm_constants;
 
-        enum class ExpectedStatus { Success, Malformed, Crash };
+        enum class ExpectedStatus { Success, Malformed };
 
         auto runTest = [&](std::vector<uint8_t> const& wasm,
                            std::optional<uint32_t> sizeLimit,
                            ExpectedStatus expectedStatus,
                            std::source_location const& loc = std::source_location::current()) {
+            // No sizeLimit means "leave it at the default"; voting costs a
+            // flag ledger, so only vote when a case asks for a limit.
             auto makeEnv = [&]() -> Env {
                 if (sizeLimit)
                 {
                     return Env(
                         *this,
-                        envconfig([&sizeLimit](std::unique_ptr<Config> cfg) {
-                            cfg->fees.bytecodeSizeLimit = *sizeLimit;
-                            return cfg;
-                        }),
+                        votingConfig({{Keys::kBytecodeSizeLimit, std::to_string(*sizeLimit)}}),
                         features);
                 }
                 return Env(*this, features);
             };
             Env env = makeEnv();
+            if (sizeLimit)
+                awaitFeeVote(env);
 
             auto const alice = Account("alice");
             env.fund(XRP(1'000'000), alice);
@@ -1226,25 +1240,11 @@ struct EscrowSmart_test : public beast::unit_test::Suite
                     Fee(env.current()->fees().base * 10 + wasmHex.size() / 2 * 5),
                     Ter(expectedStatus == ExpectedStatus::Success ? TER{tesSUCCESS}
                                                                   : TER{temMALFORMED}));
-                if (expectedStatus == ExpectedStatus::Crash)
-                {
-                    fail("Expected crash", loc.file_name(), loc.line());
-                }
-                else
-                {
-                    pass();
-                }
+                pass();
             }
             catch (std::exception const& e)
             {
-                if (expectedStatus == ExpectedStatus::Crash)
-                {
-                    pass();
-                }
-                else
-                {
-                    fail(e.what(), loc.file_name(), loc.line());
-                }
+                fail(e.what(), loc.file_name(), loc.line());
             }
         };
 
@@ -1258,49 +1258,44 @@ struct EscrowSmart_test : public beast::unit_test::Suite
             ExpectedStatus expected;
         };
 
+        // Sizes straddle the two real bounds: the default voted limit
+        // (kDefaultBytecodeSizeLimit) when no sizeLimit is given, and the
+        // protocol ceiling (kMaxBytecodeSizeLimit) when one is.
         std::vector<TestCase> const testCases = {
             // Code blob tests
             {.type = TestCase::BlobType::Code,
-             .size = 99'950,
+             .size = kDefaultBytecodeSizeLimit - 50,
              .sizeLimit = std::nullopt,
-             .expected = ExpectedStatus::Success},  // just under 100kb
+             .expected = ExpectedStatus::Success},  // just under the default
             {.type = TestCase::BlobType::Code,
-             .size = 99'955,
+             .size = kDefaultBytecodeSizeLimit + 50,
              .sizeLimit = std::nullopt,
-             .expected = ExpectedStatus::Malformed},  // just over 100kb
+             .expected = ExpectedStatus::Malformed},  // just over the default
             {.type = TestCase::BlobType::Code,
-             .size = 200'000,
-             .sizeLimit = 10'000'000,
-             .expected = ExpectedStatus::Success},  // ~200kb
+             .size = kMaxBytecodeSizeLimit - 50,
+             .sizeLimit = kMaxBytecodeSizeLimit,
+             .expected = ExpectedStatus::Success},  // just under the ceiling
             {.type = TestCase::BlobType::Code,
-             .size = 490'000,
-             .sizeLimit = 10'000'000,
-             .expected = ExpectedStatus::Success},  // just under 1MB JSON
-            {.type = TestCase::BlobType::Code,
-             .size = 999'999,
-             .sizeLimit = 10'000'000,
-             .expected = ExpectedStatus::Crash},  // just over 1MB JSON
+             .size = kMaxBytecodeSizeLimit + 50,
+             .sizeLimit = kMaxBytecodeSizeLimit,
+             .expected = ExpectedStatus::Malformed},  // over the ceiling
             // Data blob tests
             {.type = TestCase::BlobType::Data,
-             .size = 99'939,
+             .size = kDefaultBytecodeSizeLimit - 61,
              .sizeLimit = std::nullopt,
-             .expected = ExpectedStatus::Success},  // just under 100kb
+             .expected = ExpectedStatus::Success},  // just under the default
             {.type = TestCase::BlobType::Data,
-             .size = 99'941,
+             .size = kDefaultBytecodeSizeLimit + 59,
              .sizeLimit = std::nullopt,
-             .expected = ExpectedStatus::Malformed},  // just over 100kb
+             .expected = ExpectedStatus::Malformed},  // just over the default
             {.type = TestCase::BlobType::Data,
-             .size = 200'000,
-             .sizeLimit = 10'000'000,
-             .expected = ExpectedStatus::Success},  // ~200kb
+             .size = kMaxBytecodeSizeLimit - 61,
+             .sizeLimit = kMaxBytecodeSizeLimit,
+             .expected = ExpectedStatus::Success},  // just under the ceiling
             {.type = TestCase::BlobType::Data,
-             .size = 490'000,
-             .sizeLimit = 10'000'000,
-             .expected = ExpectedStatus::Success},  // just under 1MB JSON
-            {.type = TestCase::BlobType::Data,
-             .size = 999'950,
-             .sizeLimit = 10'000'000,
-             .expected = ExpectedStatus::Crash},  // just over 1MB JSON
+             .size = kMaxBytecodeSizeLimit + 59,
+             .sizeLimit = kMaxBytecodeSizeLimit,
+             .expected = ExpectedStatus::Malformed},  // over the ceiling
         };
 
         for (auto const& tc : testCases)
@@ -1309,6 +1304,61 @@ struct EscrowSmart_test : public beast::unit_test::Suite
                                                                   : generateDataBlob(tc.size);
             runTest(wasm, tc.sizeLimit, tc.expected);
         }
+    }
+
+    // Admission must depend only on the ledger's voted FeeSettings. Both runs
+    // start from an identical genesis; one then sets a FeeSetup that would
+    // reject every transaction below, if anything still read it.
+    void
+    testLimitsIgnoreLocalConfig(FeatureBitset features)
+    {
+        testcase("Limits come from the ledger, not local config");
+
+        using namespace jtx;
+        using namespace std::chrono;
+
+        auto run = [&](bool hostile) {
+            Env env(*this, features);
+            if (hostile)
+            {
+                // A 1-byte module cap and a 1-gas compute cap: under the old
+                // config-driven checks every transaction below would have been
+                // rejected here and accepted by a stock node.
+                auto& cfgFees = env.app().config().fees;
+                cfgFees.gasLimit = 1;
+                cfgFees.bytecodeSizeLimit = 1;
+                cfgFees.gasPrice = 999'999'999;
+            }
+
+            Account const alice{"alice"};
+            Account const carol{"carol"};
+            env.fund(XRP(5000), alice, carol);
+            env.close();
+
+            // The module is arbitrary: any the engine accepts and that returns
+            // true will do, so both runs reach the same ledger.
+            // kTable0ElementsHex is simply the smallest such fixture.
+            auto const seq = env.seq(alice);
+            env(escrow::create(alice, carol, XRP(500)),
+                escrow::Bytecode(kTable0ElementsHex),
+                escrow::kCancelTime(env.now() + 100s),
+                Fee(env.current()->fees().base * 10 + 5 * (kTable0ElementsHex.size() / 2)));
+            env.close();
+
+            std::uint32_t const allowance = 100'000;
+            env(escrow::finish(carol, alice, seq), escrow::Gas(allowance), Fee(XRP(1)));
+            env.close();
+
+            return std::make_pair(env.closed()->header().hash, env.ownerCount(alice));
+        };
+
+        auto const hostile = run(true);
+        auto const stock = run(false);
+
+        BEAST_EXPECTS(
+            hostile.first == stock.first,
+            to_string(hostile.first) + " != " + to_string(stock.first));
+        BEAST_EXPECT(hostile.second == stock.second);
     }
 
     void
@@ -1343,6 +1393,7 @@ struct EscrowSmart_test : public beast::unit_test::Suite
         // be accepted. The >1MB cases also abort the run: the harness cannot carry
         // a log message that large (multi_runner.cpp:398, recvdSize == 1).
         // testLargeWasmModules(features);
+        testLimitsIgnoreLocalConfig(features);
     }
 
 public:
