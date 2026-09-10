@@ -204,6 +204,16 @@ Ledger::Ledger(
             sle->at(sfBytecodeSizeLimit) = fees.bytecodeSizeLimit;
             sle->at(sfGasPrice) = fees.gasPrice;
         }
+        else
+        {
+            // This ledger does not carry the gas settings, so it must not
+            // report them either. Otherwise a node reads its own config back
+            // as though the network had agreed to it, and never votes for the
+            // values it wants.
+            fees_.gasLimit = 0;
+            fees_.bytecodeSizeLimit = 0;
+            fees_.gasPrice = 0;
+        }
         rawInsert(sle);
     }
 

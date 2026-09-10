@@ -90,7 +90,11 @@ struct FeeSetup
     [[nodiscard]] Fees
     toFees() const
     {
-        return Fees{referenceFee, accountReserve, ownerReserve};
+        Fees fees{referenceFee, accountReserve, ownerReserve};
+        fees.gasLimit = gasLimit;
+        fees.bytecodeSizeLimit = bytecodeSizeLimit;
+        fees.gasPrice = gasPrice;
+        return fees;
     }
 };
 

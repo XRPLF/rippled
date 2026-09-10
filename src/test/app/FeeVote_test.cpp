@@ -936,6 +936,59 @@ class FeeVote_test : public beast::unit_test::Suite
     }
 
     void
+    testGenesisFeeSettings()
+    {
+        testcase("genesis FeeSettings carries the configured gas settings");
+
+        using namespace jtx;
+
+        Env env(*this, testableAmendments());
+        auto const& cfg = env.app().config().fees;
+        BEAST_EXPECT(cfg.gasLimit != 0 && cfg.bytecodeSizeLimit != 0 && cfg.gasPrice != 0);
+
+        auto const genesisWith = [&](std::vector<uint256> const& amendments) {
+            return std::make_shared<Ledger>(
+                kCreateGenesis,
+                Rules{env.app().config().features},
+                cfg.toFees(),
+                amendments,
+                env.app().getNodeFamily());
+        };
+
+        {
+            // With the amendment, the operator's configuration becomes the
+            // network's starting point.
+            auto const ledger = genesisWith({featureSmartEscrow});
+            auto const sle = ledger->read(keylet::feeSettings());
+            if (BEAST_EXPECT(sle))
+            {
+                BEAST_EXPECT(sle->getFieldU32(sfGasLimit) == cfg.gasLimit);
+                BEAST_EXPECT(sle->getFieldU32(sfBytecodeSizeLimit) == cfg.bytecodeSizeLimit);
+                BEAST_EXPECT(sle->getFieldU32(sfGasPrice) == cfg.gasPrice);
+            }
+            BEAST_EXPECT(ledger->fees().gasLimit == cfg.gasLimit);
+            BEAST_EXPECT(ledger->fees().bytecodeSizeLimit == cfg.bytecodeSizeLimit);
+            BEAST_EXPECT(ledger->fees().gasPrice == cfg.gasPrice);
+        }
+
+        {
+            // Without it, the entry carries nothing and the ledger reports
+            // nothing, so the node still has something to vote for.
+            auto const ledger = genesisWith({});
+            auto const sle = ledger->read(keylet::feeSettings());
+            if (BEAST_EXPECT(sle))
+            {
+                BEAST_EXPECT(!sle->isFieldPresent(sfGasLimit));
+                BEAST_EXPECT(!sle->isFieldPresent(sfBytecodeSizeLimit));
+                BEAST_EXPECT(!sle->isFieldPresent(sfGasPrice));
+            }
+            BEAST_EXPECT(ledger->fees().gasLimit == 0);
+            BEAST_EXPECT(ledger->fees().bytecodeSizeLimit == 0);
+            BEAST_EXPECT(ledger->fees().gasPrice == 0);
+        }
+    }
+
+    void
     testDoVotingSmartEscrow()
     {
         testcase("doVoting with Smart Escrow");
@@ -1098,6 +1151,7 @@ class FeeVote_test : public beast::unit_test::Suite
         testSingleInvalidTransaction();
         testDoValidation();
         testDoVoting();
+        testGenesisFeeSettings();
         testDoVotingSmartEscrow();
     }
 };
