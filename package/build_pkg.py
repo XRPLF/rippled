@@ -19,7 +19,7 @@ from pathlib import Path
 # This script lives in the repository it packages.
 SRC_DIR = Path(__file__).resolve().parents[1]
 
-PRE_RELEASE = re.compile(r"^(b0|b[1-9][0-9]*|rc[0-9]+)(\+.*)?$")
+PRE_RELEASE = re.compile(r"^(b|rc)(0|[1-9][0-9]*)(\+.*)?$")
 
 # Files both packaging systems consume, staged under the same names.
 STAGED_FROM_BUILD = ("xrpld", "validator-keys", "validator-keys-LICENSE")
@@ -133,6 +133,14 @@ def stage_common(build_dir: Path, dest: Path) -> None:
         shutil.copy2(build_dir / name, dest / name)
     for source, name in STAGED_FROM_SRC.items():
         shutil.copy2(SRC_DIR / source, dest / name)
+
+
+def stage_units(dest: Path) -> None:
+    """Copy the systemd, sysusers, tmpfiles and logrotate files into dest.
+
+    Each format wants them somewhere else: rpmbuild reads them from SOURCES,
+    debhelper from debian/.
+    """
     for name in STAGED_UNITS:
         shutil.copy2(SRC_DIR / "package" / "shared" / name, dest / name)
 
@@ -146,6 +154,7 @@ def build_rpm(build_dir: Path, *, version: str, pkg_release: str) -> None:
     spec = topdir / "SPECS" / "xrpld.spec"
     shutil.copy2(SRC_DIR / "package" / "rpm" / "xrpld.spec", spec)
     stage_common(build_dir, topdir / "SOURCES")
+    stage_units(topdir / "SOURCES")
 
     run(
         "rpmbuild",
@@ -178,8 +187,7 @@ def build_deb(
     shutil.copytree(SRC_DIR / "package" / "debian", staging / "debian")
 
     # debhelper picks these up from debian/ automatically.
-    for name in STAGED_UNITS:
-        shutil.copy2(staging / name, staging / "debian" / name)
+    stage_units(staging / "debian")
 
     date = datetime.fromtimestamp(epoch, timezone.utc).strftime(
         "%a, %d %b %Y %H:%M:%S %z"
@@ -192,8 +200,6 @@ def build_deb(
          -- XRPL Foundation <contact@xrplf.org>  {date}
         """)
     (staging / "debian" / "changelog").write_text(changelog)
-
-    (staging / "debian" / "rules").chmod(0o755)
 
     run("dpkg-buildpackage", "-b", "--no-sign", "-d", cwd=staging)
 

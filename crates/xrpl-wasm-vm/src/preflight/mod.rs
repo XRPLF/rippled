@@ -226,6 +226,7 @@ pub(crate) fn entry_point_fault(found: Option<ExternType>, name: &str) -> String
 /// text *entry point* — `check` and `run` take binaries — and a `cfg(test)` caller
 /// cannot give it one.
 #[cfg(test)]
+#[cfg_attr(coverage_nightly, coverage(off))]
 mod tests {
     use super::signature::registered_type;
     use super::*;
