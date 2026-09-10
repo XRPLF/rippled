@@ -336,8 +336,14 @@ FeeVoteImpl::doVoting(
     auto const seq = lastClosedLedger->header().seq + 1;
 
     // add transactions to our position
-    if (baseFeeChanged || baseReserveChanged || incReserveChanged || gasLimitChanged ||
-        bytecodeSizeLimitChanged || gasPriceChanged)
+    //
+    // The gas votes only count once the amendment is on. Before it is, the
+    // ledger reports zero for all three while the config targets are
+    // non-zero, so they would report a change on every flag ledger and have
+    // us emit a SetFee that carries no gas fields and changes nothing.
+    if (baseFeeChanged || baseReserveChanged || incReserveChanged ||
+        (rules.enabled(featureSmartEscrow) &&
+         (gasLimitChanged || bytecodeSizeLimitChanged || gasPriceChanged)))
     {
         JLOG(journal_.warn()) << "We are voting for a fee change: " << baseFee << "/" << baseReserve
                               << "/" << incReserve;

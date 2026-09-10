@@ -989,6 +989,71 @@ class FeeVote_test : public beast::unit_test::Suite
     }
 
     void
+    testDoVotingNoChangePreSmartEscrow()
+    {
+        testcase("doVoting votes for nothing before Smart Escrow");
+
+        using namespace jtx;
+
+        // A ledger from before the amendment reports zero for all three gas
+        // settings, while the config targets are non-zero by default. Those
+        // three must not count as a change, or every node emits a SetFee on
+        // every flag ledger for as long as the amendment is off.
+        Env env(*this, testableAmendments() - featureSmartEscrow);
+
+        FeeSetup setup;
+        setup.referenceFee = UNIT_TEST_REFERENCE_FEE;
+        setup.accountReserve = 200'000'000;
+        setup.ownerReserve = 50'000'000;
+        BEAST_EXPECT(setup.gasLimit != 0);
+        BEAST_EXPECT(setup.bytecodeSizeLimit != 0);
+        BEAST_EXPECT(setup.gasPrice != 0);
+
+        // The three-argument Fees leaves the gas settings at zero, which is
+        // what Ledger::setup() reads back from a pre-amendment FeeSettings.
+        Fees const ledgerFees{setup.referenceFee, setup.accountReserve, setup.ownerReserve};
+
+        auto feeVote = makeFeeVote(setup, env.app().getJournal("FeeVote"));
+        auto ledger = std::make_shared<Ledger>(
+            kCreateGenesis,
+            Rules{env.app().config().features},
+            ledgerFees,
+            std::vector<uint256>{},
+            env.app().getNodeFamily());
+
+        for (int i = 0; i < 256 - 1; ++i)
+        {
+            ledger = std::make_shared<Ledger>(*ledger, env.app().getTimeKeeper().closeTime());
+        }
+        BEAST_EXPECT(ledger->isFlagLedger());
+        BEAST_EXPECT(ledger->fees().gasLimit == 0);
+
+        std::vector<std::shared_ptr<STValidation>> validations;
+        for (int i = 0; i < 5; i++)
+        {
+            auto sec = randomSecretKey();
+            auto pub = derivePublicKey(KeyType::Secp256k1, sec);
+
+            auto val = std::make_shared<STValidation>(
+                env.app().getTimeKeeper().now(), pub, sec, calcNodeID(pub), [&](STValidation& v) {
+                    v.setFieldU32(sfLedgerSequence, ledger->seq());
+                    // Everyone is content with the fees as they stand.
+                    v.setFieldAmount(sfBaseFeeDrops, XRPAmount{setup.referenceFee});
+                    v.setFieldAmount(sfReserveBaseDrops, XRPAmount{setup.accountReserve});
+                    v.setFieldAmount(sfReserveIncrementDrops, XRPAmount{setup.ownerReserve});
+                });
+            if ((i % 2) != 0)
+                val->setTrusted();
+            validations.push_back(val);
+        }
+
+        auto txSet = std::make_shared<SHAMap>(SHAMapType::TRANSACTION, env.app().getNodeFamily());
+        feeVote->doVoting(ledger, validations, txSet);
+
+        BEAST_EXPECT(getTxs(txSet).empty());
+    }
+
+    void
     testDoVotingSmartEscrow()
     {
         testcase("doVoting with Smart Escrow");
@@ -1152,6 +1217,7 @@ class FeeVote_test : public beast::unit_test::Suite
         testDoValidation();
         testDoVoting();
         testGenesisFeeSettings();
+        testDoVotingNoChangePreSmartEscrow();
         testDoVotingSmartEscrow();
     }
 };
