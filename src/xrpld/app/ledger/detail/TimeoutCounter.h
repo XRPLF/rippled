@@ -4,6 +4,7 @@
 
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/Journal.h>
+#include <xrpl/beast/utility/WrappedSink.h>
 #include <xrpl/core/Job.h>
 
 #include <boost/asio/basic_waitable_timer.hpp>
@@ -117,6 +118,7 @@ protected:
     // Used in this class for access to boost::asio::io_context and
     // xrpl::Overlay. Used in subtypes for the kitchen sink.
     Application& app_;
+    beast::WrappedSink sink_;
     beast::Journal journal_;
     mutable std::recursive_mutex mtx_;
 
