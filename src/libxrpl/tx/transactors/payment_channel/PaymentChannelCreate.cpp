@@ -1,18 +1,25 @@
 #include <xrpl/tx/transactors/payment_channel/PaymentChannelCreate.h>
 
 #include <xrpl/basics/chrono.h>
+#include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
+#include <xrpl/ledger/helpers/EscrowHelpers.h>
+#include <xrpl/ledger/helpers/PaymentChannelHelpers.h>
 #include <xrpl/ledger/helpers/SponsorHelpers.h>
+#include <xrpl/ledger/helpers/TokenHelpers.h>
+#include <xrpl/protocol/Concepts.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Keylet.h>
 #include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/PublicKey.h>
+#include <xrpl/protocol/Rate.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STLedgerEntry.h>
@@ -23,6 +30,7 @@
 #include <xrpl/tx/applySteps.h>
 
 #include <memory>
+#include <variant>
 
 namespace xrpl {
 
@@ -51,14 +59,40 @@ namespace xrpl {
 TxConsequences
 PaymentChannelCreate::makeTxConsequences(PreflightContext const& ctx)
 {
-    return TxConsequences{ctx.tx, ctx.tx[sfAmount].xrp()};
+    return TxConsequences{ctx.tx, isXRP(ctx.tx[sfAmount]) ? ctx.tx[sfAmount].xrp() : beast::kZero};
+}
+
+bool
+PaymentChannelCreate::checkExtraFeatures(PreflightContext const& ctx)
+{
+    // Only require featureMPTokensV1 when the channel amount is an MPT and
+    // fixCleanup3_2_0 is active; XRP/IOU channels are unaffected by this gate.
+    if (ctx.rules.enabled(fixCleanup3_2_0) && ctx.tx[sfAmount].holds<MPTIssue>())
+        return ctx.rules.enabled(featureMPTokensV1);
+    return true;
 }
 
 NotTEC
 PaymentChannelCreate::preflight(PreflightContext const& ctx)
 {
-    if (!isXRP(ctx.tx[sfAmount]) || (ctx.tx[sfAmount] <= beast::kZero))
+    auto const amount = ctx.tx[sfAmount];
+    if (!isXRP(amount))
+    {
+        if (!ctx.rules.enabled(featureTokenPaychan))
+            return temBAD_AMOUNT;
+
+        if (auto const ret = std::visit(
+                [&]<typename T>(T const&) {
+                    return payChanAmountPreflightHelper<T>(ctx.rules, amount);
+                },
+                amount.asset().value());
+            !isTesSuccess(ret))
+            return ret;
+    }
+    else if (amount <= beast::kZero)
+    {
         return temBAD_AMOUNT;
+    }
 
     if (ctx.tx[sfAccount] == ctx.tx[sfDestination])
         return temDST_IS_SRC;
@@ -77,6 +111,8 @@ PaymentChannelCreate::preclaim(PreclaimContext const& ctx)
     if (!sle)
         return terNO_ACCOUNT;
 
+    auto const amount = ctx.tx[sfAmount];
+
     // Check reserve and funds availability
     if (!ctx.view.rules().enabled(featureSponsor))
     {
@@ -86,15 +122,15 @@ PaymentChannelCreate::preclaim(PreclaimContext const& ctx)
         if (balance < reserve)
             return tecINSUFFICIENT_RESERVE;
 
-        if (balance < reserve + ctx.tx[sfAmount])
+        if (isXRP(amount) && balance < reserve + ctx.tx[sfAmount])
             return tecUNFUNDED;
     }
 
-    auto const dst = ctx.tx[sfDestination];
+    auto const dest = ctx.tx[sfDestination];
 
     {
         // Check destination account
-        auto const sled = ctx.view.read(keylet::account(dst));
+        auto const sled = ctx.view.read(keylet::account(dest));
         if (!sled)
             return tecNO_DST;
 
@@ -115,6 +151,17 @@ PaymentChannelCreate::preclaim(PreclaimContext const& ctx)
             return tecNO_PERMISSION;
     }
 
+    if (!isXRP(amount))
+    {
+        if (auto const ret = std::visit(
+                [&]<typename T>(T const&) {
+                    return escrowLockPreclaimHelper<T>(ctx.view, account, dest, amount, ctx.j);
+                },
+                amount.asset().value());
+            !isTesSuccess(ret))
+            return ret;
+    }
+
     return tesSUCCESS;
 }
 
@@ -122,6 +169,7 @@ TER
 PaymentChannelCreate::doApply()
 {
     auto const account = ctx_.tx[sfAccount];
+    auto const amount = ctx_.tx[sfAmount];
     auto const sle = ctx_.view().peek(keylet::account(account));
     if (!sle)
         return tefINTERNAL;  // LCOV_EXCL_LINE
@@ -159,25 +207,28 @@ PaymentChannelCreate::doApply()
         // - unsponsored: 1  — source owes reserve including the new increment.
         auto const sourceReserve = accountReserve(
             ctx_.view(), sle, j_, {.ownerCountDelta = getTxReserveSponsorID(ctx_.tx) ? 0 : 1});
-        if (preFeeBalance_ - ctx_.tx[sfAmount].xrp() < sourceReserve)
+        // Token channels lock no XRP, so only a native amount reduces the
+        // source's spendable balance.
+        auto const lockedXrp = isXRP(amount) ? amount.xrp() : XRPAmount{0};
+        if (preFeeBalance_ - lockedXrp < sourceReserve)
             return tecUNFUNDED;
     }
 
-    auto const dst = ctx_.tx[sfDestination];
+    auto const dest = ctx_.tx[sfDestination];
 
     // Create PayChan in ledger.
     //
     // Note that we use the value from the sequence or ticket as the
     // payChan sequence.  For more explanation see comments in SeqProxy.h.
-    Keylet const payChanKeylet = keylet::payChannel(account, dst, ctx_.tx.getSeqProxy());
+    Keylet const payChanKeylet = keylet::payChannel(account, dest, ctx_.tx.getSeqProxy());
     auto const slep = std::make_shared<SLE>(payChanKeylet);
 
     // Funds held in this channel
-    (*slep)[sfAmount] = ctx_.tx[sfAmount];
+    (*slep)[sfAmount] = amount;
     // Amount channel has already paid
-    (*slep)[sfBalance] = ctx_.tx[sfAmount].zeroed();
+    (*slep)[sfBalance] = amount.zeroed();
     (*slep)[sfAccount] = account;
-    (*slep)[sfDestination] = dst;
+    (*slep)[sfDestination] = dest;
     (*slep)[sfSettleDelay] = ctx_.tx[sfSettleDelay];
     (*slep)[sfPublicKey] = ctx_.tx[sfPublicKey];
     (*slep)[~sfCancelAfter] = ctx_.tx[~sfCancelAfter];
@@ -186,6 +237,13 @@ PaymentChannelCreate::doApply()
     if (ctx_.view().rules().enabled(fixIncludeKeyletFields))
     {
         (*slep)[sfSequence] = ctx_.tx.getSeqProxy().value();
+    }
+
+    if (ctx_.view().rules().enabled(featureTokenPaychan) && !isXRP(amount))
+    {
+        auto const xferRate = transferRate(ctx_.view(), amount);
+        if (xferRate != kParityRate)
+            (*slep)[sfTransferRate] = xferRate.value;
     }
 
     ctx_.view().insert(slep);
@@ -202,14 +260,39 @@ PaymentChannelCreate::doApply()
     // Add PayChan to the recipient's owner directory
     {
         auto const page =
-            ctx_.view().dirInsert(keylet::ownerDir(dst), payChanKeylet, describeOwnerDir(dst));
+            ctx_.view().dirInsert(keylet::ownerDir(dest), payChanKeylet, describeOwnerDir(dest));
         if (!page)
             return tecDIR_FULL;  // LCOV_EXCL_LINE
         (*slep)[sfDestinationNode] = *page;
     }
 
+    // Add PayChan to the issuer's owner directory, if applicable
+    auto const& issuer = amount.getIssuer();
+    if (!isXRP(amount) && issuer != accountID_ && issuer != dest && !amount.holds<MPTIssue>())
+    {
+        auto page = ctx_.view().dirInsert(
+            keylet::ownerDir(issuer), payChanKeylet, describeOwnerDir(issuer));
+        if (!page)
+            return tecDIR_FULL;  // LCOV_EXCL_LINE
+        (*slep)[sfIssuerNode] = *page;
+    }
+
     // Deduct owner's balance, increment owner count
-    (*sle)[sfBalance] = (*sle)[sfBalance] - ctx_.tx[sfAmount];
+    if (isXRP(amount))
+    {
+        (*sle)[sfBalance] = (*sle)[sfBalance] - amount;
+    }
+    else
+    {
+        if (auto const ret = std::visit(
+                [&]<typename T>(T const&) {
+                    return escrowLockApplyHelper<T>(ctx_.view(), issuer, accountID_, amount, j_);
+                },
+                amount.asset().value());
+            !isTesSuccess(ret))
+            return ret;
+    }
+
     increaseOwnerCount(ctx_.getApplyViewContext(), sle, 1, ctx_.journal);
     addSponsorToLedgerEntry(ctx_.getApplyViewContext(), slep);
     ctx_.view().update(sle);
