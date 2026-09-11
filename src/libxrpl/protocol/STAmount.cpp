@@ -1541,11 +1541,19 @@ mulRoundImpl(STAmount const& v1, STAmount const& v2, Asset const& asset, bool ro
 
     bool const resultNegative = v1.negative() != v2.negative();
 
-    if (asset.holds<MPTIssue>() && isFeatureEnabled(featureMPTokensV2, false))
+    // The legacy path below assumes 16-digit mantissas. An MPT mantissa is the
+    // raw 63-bit balance, so any MPT operand (not just an MPT result) can
+    // overflow it: a large MPT amount times an IOU-shaped rate into an XRP or
+    // IOU result is the offer-crossing remainder and partial-fill case. Use
+    // Number arithmetic under MPTokensV2 whenever an MPT is involved.
+    //
+    // Outside a transaction (no current rules, e.g. pathfinding) default to
+    // the Number path: an MPT operand can only reach here through MPT
+    // offers or AMMs, which require MPTokensV2, so this keeps RPC quotes on
+    // the same arithmetic as the transaction they describe.
+    if (isFeatureEnabled(featureMPTokensV2, /*resultIfNoRules*/ true) &&
+        (asset.holds<MPTIssue>() || v1.holds<MPTIssue>() || v2.holds<MPTIssue>()))
     {
-        // MPT DEX can combine 63-bit MPT amounts with IOU-shaped transfer
-        // rates. Use Number arithmetic under MPTokensV2 so the rounded
-        // operation is not limited by the legacy uint64_t scaled mantissa.
         Number result;
         {
             NumberRoundModeGuard const operationRound(roundMode(resultNegative, roundUp));
@@ -1643,7 +1651,10 @@ divRoundImpl(STAmount const& num, STAmount const& den, Asset const& asset, bool 
 
     bool const resultNegative = (num.negative() != den.negative());
 
-    if (asset.holds<MPTIssue>() && isFeatureEnabled(featureMPTokensV2, false))
+    // See mulRoundImpl: any MPT operand, not just an MPT result, and the
+    // Number path when there are no current rules.
+    if (isFeatureEnabled(featureMPTokensV2, /*resultIfNoRules*/ true) &&
+        (asset.holds<MPTIssue>() || num.holds<MPTIssue>() || den.holds<MPTIssue>()))
     {
         // Match the multiply path above: Number performs the rounded
         // operation, then STAmount materializes the final MPT amount using the
