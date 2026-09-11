@@ -444,6 +444,12 @@ port = $PEER_PORT
 ip = 0.0.0.0
 protocol = peer
 
+# A private id, so telemetry stamps xrpl.network.type=unknown. The config
+# default is id 0, which maps to "mainnet" -- this cluster's spans and metrics
+# would then share dashboard series with real mainnet data.
+[network_id]
+1025
+
 [node_db]
 type=NuDB
 path=$NODE_DIR/nudb
@@ -479,7 +485,6 @@ trace_transactions=1
 trace_consensus=1
 trace_peer=1
 trace_ledger=1
-metrics_endpoint=http://localhost:4318/v1/metrics
 
 [insight]
 # server=otel is the only load-bearing key here -- it selects OTelCollector so
