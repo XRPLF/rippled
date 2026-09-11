@@ -1,6 +1,7 @@
 #include <xrpl/protocol/STValidation.h>
 
 #include <xrpl/basics/Blob.h>
+#include <xrpl/basics/Log.h>
 #include <xrpl/basics/Slice.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/chrono.h>
@@ -15,6 +16,7 @@
 #include <xrpl/protocol/Serializer.h>
 
 #include <cstddef>
+#include <exception>
 #include <utility>
 
 namespace xrpl {
@@ -108,11 +110,42 @@ STValidation::isValid() const noexcept
             publicKeyType(getSignerPublic()) == KeyType::Secp256k1,
             "xrpl::STValidation::isValid : valid key type");
 
-        valid_ = verifyDigest(
-            getSignerPublic(),
-            getSigningHash(),
-            makeSlice(getFieldVL(sfSignature)),
-            (getFlags() & kVfFullyCanonicalSig) != 0u);
+        // Log that the signature was never checked, so an operator does not
+        // read this as a bad key. The log is guarded because it can throw too.
+        auto reportUncheckable = [this](char const* reason) noexcept {
+            try
+            {
+                JLOG(debugLog().error())
+                    << "Cannot check the signature of the validation for ledger " << getLedgerHash()
+                    << ": " << reason;
+            }
+            catch (...)  // NOLINT(bugprone-empty-catch)
+            {
+                // Nothing can be reported when reporting is what failed.
+            }
+        };
+
+        // The signing hash re-serializes the fields, which can fail. This
+        // function is noexcept, so report the validation as invalid instead of
+        // throwing. valid_ stays unset, so a later call checks again.
+        try
+        {
+            valid_ = verifyDigest(
+                getSignerPublic(),
+                getSigningHash(),
+                makeSlice(getFieldVL(sfSignature)),
+                (getFlags() & kVfFullyCanonicalSig) != 0u);
+        }
+        catch (std::exception const& e)
+        {
+            reportUncheckable(e.what());
+            return false;
+        }
+        catch (...)
+        {
+            reportUncheckable("unknown exception");
+            return false;
+        }
     }
 
     return valid_.value();
