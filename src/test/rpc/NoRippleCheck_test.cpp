@@ -130,7 +130,12 @@ class NoRippleCheck_test : public beast::unit_test::Suite
             auto const result = env.rpc("json", "noripple_check", to_string(params))[jss::result];
             BEAST_EXPECT(result[jss::error] == "actMalformed");
             BEAST_EXPECT(result[jss::error_message] == "Account malformed.");
+            // The changelog promises malformed-account responses carry
+            // neither `transactions` nor any ledger metadata.
             BEAST_EXPECT(!result.isMember(jss::transactions));
+            BEAST_EXPECT(!result.isMember(jss::ledger_hash));
+            BEAST_EXPECT(!result.isMember(jss::ledger_index));
+            BEAST_EXPECT(!result.isMember(jss::validated));
         }
 
         {
