@@ -37,6 +37,10 @@ override_dh_shlibdeps:
 	for binary in xrpld validator-keys; do \
 		needed=$$(readelf --dyn-syms --wide $$binary \
 			| grep -o 'GLIBC_[0-9.]*' | sed 's/GLIBC_//' | sort -uV | tail -1); \
+		if [ -z "$$needed" ]; then \
+			echo "$$binary: no GLIBC_ symbol versions read, cannot check LIBC_MIN" >&2; \
+			exit 1; \
+		fi; \
 		if dpkg --compare-versions "$$needed" gt "$(LIBC_MIN)"; then \
 			echo "$$binary needs glibc $$needed, above LIBC_MIN $(LIBC_MIN)" >&2; \
 			exit 1; \

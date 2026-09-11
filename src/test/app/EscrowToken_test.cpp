@@ -952,6 +952,99 @@ struct EscrowToken_test : public beast::unit_test::Suite
     }
 
     void
+    testIOUCancelReserveRecycle(FeatureBitset features)
+    {
+        testcase("IOU Cancel Reserve Recycle");
+        using namespace jtx;
+        using namespace std::literals;
+
+        // Escrowing the whole IOU balance lets the owner delete the now-zero
+        // trust line, so cancelling has to re-create it: one object destroyed,
+        // one created, and the reserve requirement unchanged.
+        Env env{*this, features};
+        bool const fixEnabled = env.current()->rules().enabled(fixCleanup3_4_0);
+
+        auto const baseFee = env.current()->fees().base;
+        auto const alice = Account("alice");
+        auto const bob = Account("bob");
+        auto const gw = Account("gw");
+        auto const usd = gw["USD"];
+
+        env.fund(XRP(10'000), alice, bob, gw);
+        env.close();
+
+        env(fset(gw, asfAllowTrustLineLocking));
+        env.close();
+
+        env.trust(usd(10'000), alice);
+        env.close();
+
+        env(pay(gw, alice, usd(10'000)));
+        env.close();
+        BEAST_EXPECT(env.ownerCount(alice) == 1);
+
+        auto const cancelAfter = env.now() + 100s;
+        auto const seq = env.seq(alice);
+        env(escrow::create(alice, bob, usd(10'000)),
+            escrow::kFinishTime(env.now() + 1s),
+            escrow::kCancelTime(cancelAfter),
+            Fee(baseFee));
+        env.close();
+        BEAST_EXPECT(env.ownerCount(alice) == 2);
+
+        auto const trustLineKey = keylet::trustLine(alice.id(), gw.id(), usd.currency);
+        env(trust(alice, usd(0)));
+        env.close();
+        BEAST_EXPECT(!env.current()->exists(trustLineKey));
+        BEAST_EXPECT(env.ownerCount(alice) == 1);
+
+        // Leave alice holding the reserve for exactly one owned object. That
+        // is the escrow now and the re-created trust line after the cancel.
+        auto const oneObject = env.current()->fees().accountReserve(1, 1);
+        auto const twoObjects = env.current()->fees().accountReserve(2, 1);
+        auto const balance = env.balance(alice).value().xrp();
+        auto const feeCushion = baseFee.drops() * 20;
+        env(pay(alice, bob, drops(balance.drops() - oneObject.drops() - feeCushion)));
+        env.close();
+        BEAST_EXPECT(env.balance(alice).value().xrp() >= oneObject);
+        BEAST_EXPECT(env.balance(alice).value().xrp() < twoObjects);
+
+        for (; env.now() < cancelAfter; env.close())
+        {
+        }
+        env.close();
+        env.close();
+
+        auto const expectedResult = fixEnabled ? Ter(tesSUCCESS) : Ter(tecNO_LINE_INSUF_RESERVE);
+        env(escrow::cancel(alice, alice, seq), Fee(baseFee), expectedResult);
+        env.close();
+
+        auto const escrowKey = keylet::escrow(alice.id(), SeqProxy::rawSequence(seq));
+        if (fixEnabled)
+        {
+            BEAST_EXPECT(!env.le(escrowKey));
+            BEAST_EXPECT(env.current()->exists(trustLineKey));
+            BEAST_EXPECT(env.balance(alice, usd) == usd(10'000));
+            BEAST_EXPECT(env.ownerCount(alice) == 1);
+        }
+        else
+        {
+            // The tec keeps the escrow, so one more owner reserve lets the
+            // retry through.
+            BEAST_EXPECT(env.le(escrowKey) != nullptr);
+            BEAST_EXPECT(!env.current()->exists(trustLineKey));
+            BEAST_EXPECT(env.ownerCount(alice) == 1);
+
+            env(pay(bob, alice, drops(twoObjects.drops() - oneObject.drops())));
+            env.close();
+            env(escrow::cancel(alice, alice, seq), Fee(baseFee), Ter(tesSUCCESS));
+            env.close();
+            BEAST_EXPECT(!env.le(escrowKey));
+            BEAST_EXPECT(env.balance(alice, usd) == usd(10'000));
+        }
+    }
+
+    void
     testIOUBalances(FeatureBitset features)
     {
         testcase("IOU Balances");
@@ -4250,6 +4343,8 @@ public:
         }
         testMPTSplitEscrowTransferFee(all - fixCleanup3_4_0);
         testMPTSplitEscrowTransferFee(all);
+        testIOUCancelReserveRecycle(all - fixCleanup3_4_0);
+        testIOUCancelReserveRecycle(all);
     }
 };
 
