@@ -24,6 +24,7 @@
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/Transactor.h>
+#include <xrpl/tx/helpers/PreflightHelpers.h>
 #include <xrpl/tx/transactors/dex/AMMWithdraw.h>
 
 #include <cstdint>
@@ -91,7 +92,7 @@ AMMClawback::preflight(PreflightContext const& ctx)
         return temBAD_AMOUNT;
     }
 
-    if (clawAmount && *clawAmount <= beast::kZero)
+    if (clawAmount && !isPositiveAmount(*clawAmount))
         return temBAD_AMOUNT;
 
     return tesSUCCESS;

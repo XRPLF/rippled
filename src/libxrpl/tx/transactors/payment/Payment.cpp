@@ -440,8 +440,8 @@ Payment::preclaim(PreclaimContext const& ctx)
     {
         STPathSet const& paths = ctx.tx.getFieldPathSet(sfPaths);
 
-        if (paths.size() > kMaxPathSize || std::ranges::any_of(paths, [](STPath const& path) {
-                return path.size() > kMaxPathLength;
+        if (!checkSize(paths, kMaxPathSize) || std::ranges::any_of(paths, [](STPath const& path) {
+                return !checkSize(path, kMaxPathLength);
             }))
         {
             // Open view: the soft tel (unchanged). Inner batch txns are claimed

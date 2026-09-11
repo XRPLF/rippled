@@ -35,6 +35,7 @@
 #include <xrpl/tx/ApplyContext.h>
 #include <xrpl/tx/SignerEntries.h>
 #include <xrpl/tx/Transactor.h>
+#include <xrpl/tx/helpers/PreflightHelpers.h>
 #include <xrpl/tx/paths/Flow.h>
 #include <xrpl/tx/paths/detail/Steps.h>
 
@@ -1369,8 +1370,8 @@ XChainCreateBridge::preflight(PreflightContext const& ctx)
     }
 
     if (minAccountCreate &&
-        ((!isXRP(*minAccountCreate) || minAccountCreate->signum() <= 0) ||
-         !isXRP(bridgeSpec.lockingChainIssue()) || !isXRP(bridgeSpec.issuingChainIssue())))
+        (!isPositiveXRPAmount(*minAccountCreate) || !isXRP(bridgeSpec.lockingChainIssue()) ||
+         !isXRP(bridgeSpec.issuingChainIssue())))
     {
         return temXCHAIN_BRIDGE_BAD_MIN_ACCOUNT_CREATE_AMOUNT;
     }
@@ -1540,8 +1541,8 @@ BridgeModify::preflight(PreflightContext const& ctx)
     }
 
     if (minAccountCreate &&
-        ((!isXRP(*minAccountCreate) || minAccountCreate->signum() <= 0) ||
-         !isXRP(bridgeSpec.lockingChainIssue()) || !isXRP(bridgeSpec.issuingChainIssue())))
+        (!isPositiveXRPAmount(*minAccountCreate) || !isXRP(bridgeSpec.lockingChainIssue()) ||
+         !isXRP(bridgeSpec.issuingChainIssue())))
     {
         return temXCHAIN_BRIDGE_BAD_MIN_ACCOUNT_CREATE_AMOUNT;
     }
