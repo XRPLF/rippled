@@ -13,7 +13,10 @@
 
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/ledger/helpers/AMMHelpers.h>
+#include <xrpl/protocol/AmountConversions.h>
 #include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/XRPAmount.h>
@@ -2714,6 +2717,142 @@ class AMMClawback_test : public beast::unit_test::Suite
     }
 
     void
+    testClawbackBypassesReserve(FeatureBitset features)
+    {
+        // Clawback must not fail the holder-side reserve check: a holder could
+        // otherwise veto it by omitting the paired trustline. AMMWithdraw still
+        // enforces the check. Pre-fixCleanup3_4_0 the holder's reserve was
+        // compared against max(issuer pre-fee, holder current) XRP, so the
+        // clawback was blocked when neither balance covered it.
+        testcase("test clawback bypasses recipient reserve");
+        using namespace jtx;
+
+        Env env(*this, features);
+        Account const gw{"gateway"};
+        Account const carol{"carol"};
+        Account const alice{"alice"};
+
+        auto const usd = gw["USD"];
+        auto const eur = gw["EUR"];
+        auto const baseFee = env.current()->fees().base;
+
+        env.fund(XRP(1'000'000), carol);
+        // Low XRP so the legacy issuer-balance check cannot pass.
+        env.fund(env.current()->fees().accountReserve(0, 1) + baseFee * 10, gw);
+        // Reserve for the USD trustline and LP token trustline.
+        env.fund(env.current()->fees().accountReserve(2, 1) + baseFee * 5, alice);
+        env.close();
+
+        env(fset(gw, asfAllowTrustLineClawback));
+        env.close();
+
+        env.trust(usd(1'000'000), carol);
+        env.trust(eur(1'000'000), carol);
+        env(pay(gw, carol, usd(100'000)));
+        env(pay(gw, carol, eur(100'000)));
+        env.close();
+        AMM amm(env, carol, usd(1'000), eur(1'000), Ter(tesSUCCESS));
+        env.close();
+
+        // alice holds a USD trustline and LP tokens, but no EUR trustline.
+        env.trust(usd(100'000), alice);
+        env(pay(gw, alice, usd(1'000)));
+        env.close();
+        amm.deposit(alice, usd(100));
+
+        BEAST_EXPECT(env.ownerCount(alice) == 2);
+        // alice cannot afford a third owner object.
+        BEAST_EXPECT(env.balance(alice) < STAmount(env.current()->fees().accountReserve(3, 1)));
+
+        // AMMWithdraw still enforces the reserve check.
+        amm.withdraw(
+            WithdrawArg{
+                .account = alice, .asset1Out = eur(1), .err = Ter(tecINSUFFICIENT_RESERVE)});
+        BEAST_EXPECT(env.ownerCount(alice) == 2);
+
+        if (features[fixCleanup3_4_0])
+        {
+            // Reserve check skipped; the paired EUR returns to alice on a
+            // newly created EUR trustline.
+            env(amm::ammClawback(gw, alice, usd, eur, usd(10)), Ter(tesSUCCESS));
+            env.close();
+
+            BEAST_EXPECT(env.le(keylet::trustLine(alice.id(), eur.issue())));
+            BEAST_EXPECT(env.balance(alice, eur) > eur(0));
+            BEAST_EXPECT(env.ownerCount(alice) == 3);
+        }
+        else
+        {
+            // Legacy path: the check runs against max(issuer, holder) XRP,
+            // neither of which covers a third owner object.
+            env(amm::ammClawback(gw, alice, usd, eur, usd(10)), Ter(tecINSUFFICIENT_RESERVE));
+            env.close();
+            BEAST_EXPECT(env.ownerCount(alice) == 2);
+        }
+    }
+
+    void
+    testExactLPTokenEquality(FeatureBitset features)
+    {
+        using namespace jtx;
+
+        if (!features[fixAMMv1_3] || !features[fixAMMClawbackRounding])
+            return;
+
+        testcase("test exact LP token equality boundary");
+
+        Env env(*this, features);
+        Account const gw{"gateway"}, alice{"alice"}, bob{"bob"};
+        env.fund(XRP(100000), gw, alice, bob);
+        env.close();
+        env(fset(gw, asfAllowTrustLineClawback));
+        env.close();
+
+        auto const usd = gw["USD"];
+        env.trust(usd(100000), alice);
+        env(pay(gw, alice, usd(50000)));
+        env.trust(usd(100000), bob);
+        env(pay(gw, bob, usd(40000)));
+        env.close();
+
+        // bob keeps alice from being the sole LP, otherwise the clawback
+        // first rewrites the AMM's LP balance to alice's tokens and the
+        // boundary is no longer distinguishable.
+        AMM amm(env, alice, XRP(2), usd(1));
+        amm.deposit(alice, IOUAmount{1'876123487565916, -15});
+        amm.deposit(bob, IOUAmount{1'000'000});
+
+        auto const [amountBalance, amount2Balance, lptAMMBalance] = amm.balances(usd, XRP);
+        auto const aliceLP = amm.getLPTokensBalance(alice);
+        auto const holderLPTokens = STAmount{aliceLP, amm.lptIssue()};
+        BEAST_EXPECT(lptAMMBalance > holderLPTokens);
+
+        // Clawing alice's pro-rata share lands the transactor's computed LP
+        // amount exactly on her balance.
+        auto const amount = toSTAmount(usd, Number{amountBalance} * holderLPTokens / lptAMMBalance);
+        BEAST_EXPECT(
+            toSTAmount(lptAMMBalance.asset(), lptAMMBalance * (Number{amount} / amountBalance)) ==
+            holderLPTokens);
+
+        env(amm::ammClawback(gw, alice, usd, XRP, amount));
+        env.close();
+
+        auto const aliceLPAfter = amm.getLPTokensBalance(alice);
+        if (features[fixCleanup3_4_0])
+        {
+            // Equality takes the withdraw-all path, redeeming alice's tokens
+            // exactly.
+            BEAST_EXPECT(aliceLPAfter == IOUAmount(0));
+        }
+        else
+        {
+            // The fall-through re-rounds the LP amount against the much
+            // larger pool balance, leaving alice with dust.
+            BEAST_EXPECT(aliceLPAfter != IOUAmount(0) && aliceLPAfter < aliceLP);
+        }
+    }
+
+    void
     run() override
     {
         // For now, just disable SAV entirely, which locks in the small Number
@@ -2746,6 +2885,8 @@ class AMMClawback_test : public beast::unit_test::Suite
             testAssetFrozen(features);
             testSingleDepositAndClawback(features);
             testLastHolderLPTokenBalance(features);
+            testClawbackBypassesReserve(features);
+            testExactLPTokenEquality(features);
         }
     }
 };

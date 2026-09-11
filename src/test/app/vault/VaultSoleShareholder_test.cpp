@@ -13,6 +13,7 @@
 
 #include <xrpl/basics/Number.h>
 #include <xrpl/basics/base_uint.h>
+#include <xrpl/basics/chrono.h>
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/json/json_forwards.h>
@@ -133,6 +134,7 @@ private:
 
         {
             using namespace loan;
+            using namespace std::chrono_literals;
             env(set(f.borrower, f.brokerID, kStuckPrincipal),
                 Sig(sfCounterpartySignature, f.lender),
                 kPaymentTotal(kStuckPayTotal),
@@ -140,6 +142,15 @@ private:
                 Fee(env.current()->fees().base * 2),
                 Ter(tesSUCCESS));
             env.close();
+
+            // Impairment requires the payment to be late, so advance past
+            // the due date before impairing.
+            auto const loanSle = env.le(*f.loanKeylet);
+            if (!BEAST_EXPECT(loanSle))
+                return f;
+            std::uint32_t const dueDate = loanSle->at(sfNextPaymentDueDate);
+            env.close(NetClock::time_point{NetClock::duration{dueDate}} + 1s);
+
             env(manage(f.lender, f.loanKeylet->key, tfLoanImpair), Ter(tesSUCCESS));
             env.close();
         }
@@ -464,7 +475,10 @@ private:
             "Vault withdraw: sole-shareholder partial fixed-shares uses "
             "full-price rate (fixCleanup3_2_0)");
 
-        Env env(*this, all_ | fixCleanup3_2_0);
+        // Strip featureLendingProtocolV1_1: setupStuckDepositor builds an
+        // open-ended vault and this test asserts amendment-independent
+        // withdrawal invariants (see the note on run()).
+        Env env(*this, (all_ - featureLendingProtocolV1_1) | fixCleanup3_2_0);
         auto const f = setupStuckDepositor(env);
         if (!f.vaultKeylet || !f.asset || f.sharesLender == 0)
         {
@@ -551,7 +565,8 @@ private:
             "Vault withdraw: sole shareholder fully exits after impaired "
             "loan is repaid (fixCleanup3_2_0)");
 
-        Env env(*this, all_ | fixCleanup3_2_0);
+        // Strip featureLendingProtocolV1_1 as above.
+        Env env(*this, (all_ - featureLendingProtocolV1_1) | fixCleanup3_2_0);
         auto const f = setupStuckDepositor(env);
         if (!f.vaultKeylet || !f.asset || !f.loanKeylet || f.sharesLender == 0)
         {
@@ -588,7 +603,14 @@ private:
         BEAST_EXPECT(retainedShares == f.sharesLender - 750'018'750);
 
         // Borrower repays the loan in full (pays more than the outstanding
-        // total; the loan transactor caps the receivable).
+        // total each time; the loan transactor caps the receivable). The
+        // loan is still overdue from the impairment setup, so the first
+        // (and only remaining, since kStuckPayTotal == 2) outstanding
+        // installment must be caught up with a late payment before the
+        // final regular payment can close the loan out.
+        env(pay(f.borrower, loanKey.key, asset(kStuckPrincipal * 2), tfLoanLatePayment),
+            Ter(tesSUCCESS));
+        env.close();
         env(pay(f.borrower, loanKey.key, asset(kStuckPrincipal * 2)), Ter(tesSUCCESS));
         env.close();
 
@@ -639,12 +661,20 @@ public:
     void
     run() override
     {
-        testWithdrawSoleShareholderFixedAssetExit(all_ - fixCleanup3_2_0);
-        testWithdrawSoleShareholderFixedAssetExit(all_);
-        testWithdrawSoleShareholderFullSharesRejected(all_ - fixCleanup3_2_0);
-        testWithdrawSoleShareholderFullSharesRejected(all_);
-        testWithdrawSoleShareholderCleanVaultUnaffected(all_ - fixCleanup3_2_0);
-        testWithdrawSoleShareholderCleanVaultUnaffected(all_);
+        // These sole-shareholder exit scenarios build an open-ended vault
+        // and drive it through deposits, a loan broker, an impaired loan
+        // and finally a withdrawal by the last shareholder. Under
+        // featureLendingProtocolV1_1 LoanBrokerSet::preclaim rejects
+        // brokers attached to open-ended vaults, so this suite runs with
+        // the amendment stripped; the invariants asserted here are
+        // amendment-independent.
+        auto const legacy = all_ - featureLendingProtocolV1_1;
+        testWithdrawSoleShareholderFixedAssetExit(legacy - fixCleanup3_2_0);
+        testWithdrawSoleShareholderFixedAssetExit(legacy);
+        testWithdrawSoleShareholderFullSharesRejected(legacy - fixCleanup3_2_0);
+        testWithdrawSoleShareholderFullSharesRejected(legacy);
+        testWithdrawSoleShareholderCleanVaultUnaffected(legacy - fixCleanup3_2_0);
+        testWithdrawSoleShareholderCleanVaultUnaffected(legacy);
         testWithdrawSoleShareholderPartialFixedSharesUsesFullPrice();
         testWithdrawSoleShareholderLoanRepaymentExit();
     }

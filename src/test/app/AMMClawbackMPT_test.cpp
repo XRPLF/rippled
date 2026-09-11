@@ -2199,6 +2199,89 @@ class AMMClawbackMPT_test : public beast::unit_test::Suite
     }
 
     void
+    testClawbackBypassesReserve(FeatureBitset features)
+    {
+        // Same as the IOU case, but the paired asset is an MPT alice does not
+        // hold yet. The reserve check is skipped on the clawback path while
+        // createMPToken() still runs, so alice's MPToken is created even though
+        // neither she nor the low-XRP issuer can cover the owner reserve.
+        testcase("test clawback bypasses recipient reserve (MPT)");
+        using namespace jtx;
+
+        Env env(*this, features);
+        Account const gw{"gateway"};    // IOU issuer + claw authority, low XRP
+        Account const gw2{"gateway2"};  // MPT issuer of the paired asset
+        Account const carol{"carol"};
+        Account const alice{"alice"};
+
+        auto const usd = gw["USD"];
+        auto const baseFee = env.current()->fees().base;
+
+        env.fund(XRP(1'000'000), gw2, carol);
+        // Low XRP so the legacy issuer-balance check cannot pass.
+        env.fund(env.current()->fees().accountReserve(0, 1) + baseFee * 10, gw);
+        // Reserve for the USD trustline and LP token trustline.
+        env.fund(env.current()->fees().accountReserve(2, 1) + baseFee * 5, alice);
+        env.close();
+
+        env(fset(gw, asfAllowTrustLineClawback));
+        env.close();
+
+        // The paired MPT: transferable so an AMM can hold it, and no
+        // RequireAuth so createMPToken()'s WeakAuth check passes.
+        MPT const btc = MPTTester(
+            {.env = env,
+             .issuer = gw2,
+             .holders = {carol},
+             .pay = 1'000'000,
+             .flags = kMptDexFlags});
+
+        env.trust(usd(1'000'000), carol);
+        env(pay(gw, carol, usd(100'000)));
+        env.close();
+        AMM amm(env, carol, usd(1'000), btc(1'000), Ter(tesSUCCESS));
+        env.close();
+
+        // alice holds a USD trustline and LP tokens, but no BTC MPToken.
+        env.trust(usd(100'000), alice);
+        env(pay(gw, alice, usd(1'000)));
+        env.close();
+        amm.deposit(alice, usd(100));
+
+        BEAST_EXPECT(env.ownerCount(alice) == 2);
+        BEAST_EXPECT(!env.le(keylet::mptoken(btc.issuanceID, alice.id())));
+
+        // AMMWithdraw still enforces the reserve check.
+        amm.withdrawAll(alice, std::nullopt, Ter(tecINSUFFICIENT_RESERVE));
+        BEAST_EXPECT(!env.le(keylet::mptoken(btc.issuanceID, alice.id())));
+        BEAST_EXPECT(env.ownerCount(alice) == 2);
+        // alice cannot afford a third owner object.
+        BEAST_EXPECT(env.balance(alice) < STAmount(env.current()->fees().accountReserve(3, 1)));
+
+        if (features[fixCleanup3_4_0])
+        {
+            // Reserve check skipped; the paired BTC returns to alice on a
+            // newly created MPToken.
+            env(amm::ammClawback(gw, alice, usd, btc, usd(10)), Ter(tesSUCCESS));
+            env.close();
+
+            BEAST_EXPECT(env.le(keylet::mptoken(btc.issuanceID, alice.id())));
+            BEAST_EXPECT(env.balance(alice, btc) > btc(0));
+            BEAST_EXPECT(env.ownerCount(alice) == 3);
+        }
+        else
+        {
+            // Legacy path: the check runs against max(issuer, holder) XRP,
+            // neither of which covers a third owner object.
+            env(amm::ammClawback(gw, alice, usd, btc, usd(10)), Ter(tecINSUFFICIENT_RESERVE));
+            env.close();
+
+            BEAST_EXPECT(!env.le(keylet::mptoken(btc.issuanceID, alice.id())));
+            BEAST_EXPECT(env.ownerCount(alice) == 2);
+        }
+    }
+
+    void
     run() override
     {
         FeatureBitset const all{jtx::testableAmendments() | fixAMMClawbackRounding};
@@ -2225,6 +2308,8 @@ class AMMClawbackMPT_test : public beast::unit_test::Suite
             featureLendingProtocol);
         testLastHolderLPTokenBalance(all - fixAMMClawbackRounding);
         testClawAssetCheck(all);
+        testClawbackBypassesReserve(all);
+        testClawbackBypassesReserve(all - fixCleanup3_4_0);
     }
 };
 

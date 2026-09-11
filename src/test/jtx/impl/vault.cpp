@@ -3,17 +3,22 @@
 #include <test/jtx/Env.h>
 
 #include <xrpl/basics/base_uint.h>
+#include <xrpl/basics/chrono.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Keylet.h>
+#include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STBase.h>
 #include <xrpl/protocol/SeqProxy.h>
 #include <xrpl/protocol/jss.h>
 
+#include <chrono>
+#include <cstdint>
 #include <optional>
 #include <tuple>
+#include <utility>
 
 namespace xrpl::test::jtx {
 
@@ -34,7 +39,30 @@ Vault::create(CreateArgs const& args) const
         jv[sfSubscriptionDate] = *args.subscriptionDate;
     if (args.redemptionDate)
         jv[sfRedemptionDate] = *args.redemptionDate;
+    if (args.leVersion)
+        jv[sfLEVersion] = std::to_underlying(*args.leVersion);
     return {jv, keylet};
+}
+
+std::tuple<json::Value, Keylet, NetClock::time_point>
+Vault::createClosedEnded(CreateClosedEndedArgs const& args) const
+{
+    auto const sub = env.now() + args.subscriptionOffset;
+    auto const red = sub + args.investmentWindow;
+    auto [jv, keylet] = create(
+        {.owner = args.owner,
+         .asset = args.asset,
+         .flags = args.flags,
+         .vaultKind = std::to_underlying(VaultKind::ClosedEnded),
+         .subscriptionDate = static_cast<std::uint32_t>(sub.time_since_epoch().count()),
+         .redemptionDate = static_cast<std::uint32_t>(red.time_since_epoch().count())});
+    return {jv, keylet, sub};
+}
+
+void
+Vault::closePastSubscription(NetClock::time_point subscriptionDate) const
+{
+    env.close(subscriptionDate + std::chrono::seconds{1});
 }
 
 json::Value

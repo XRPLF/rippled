@@ -309,6 +309,11 @@ LEDGER_ENTRY(ltFEE_SETTINGS, 0x0073, FeeSettings, fee, ({
     {sfBaseFeeDrops,           SoeOptional},
     {sfReserveBaseDrops,       SoeOptional},
     {sfReserveIncrementDrops,  SoeOptional},
+    // Smart Escrow fields
+    {sfGasLimit,               SoeOptional},
+    {sfBytecodeSizeLimit,      SoeOptional},
+    {sfGasPrice,               SoeOptional},
+
     {sfPreviousTxnID,          SoeOptional},
     {sfPreviousTxnLgrSeq,      SoeOptional},
 }))
@@ -339,6 +344,8 @@ LEDGER_ENTRY(ltESCROW, 0x0075, Escrow, escrow, ({
     {sfCondition,            SoeOptional},
     {sfCancelAfter,          SoeOptional},
     {sfFinishAfter,          SoeOptional},
+    {sfBytecode,             SoeOptional},
+    {sfData,                 SoeOptional},
     {sfSourceTag,            SoeOptional},
     {sfDestinationTag,       SoeOptional},
     {sfOwnerNode,            SoeRequired},
@@ -408,6 +415,8 @@ LEDGER_ENTRY(ltMPTOKEN_ISSUANCE, 0x007e, MPTokenIssuance, mpt_issuance, ({
     {sfReferenceHolding,         SoeOptional},
     {sfIssuerEncryptionKey,      SoeOptional},
     {sfAuditorEncryptionKey,     SoeOptional},
+    {sfIssuerKeyEpoch,           SoeOptional},
+    {sfAuditorKeyEpoch,          SoeOptional},
     {sfConfidentialOutstandingAmount, SoeDefault},
 }))
 

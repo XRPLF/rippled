@@ -21,6 +21,7 @@
 #include <test/jtx/trust.h>
 #include <test/jtx/txflags.h>
 
+#include <xrpl/basics/Slice.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/beast/utility/Journal.h>
@@ -179,7 +180,10 @@ class PermissionedDEX_test : public beast::unit_test::Suite
     void
     testOfferCreate(FeatureBitset features)
     {
-        testcase("OfferCreate");
+        bool const fixEnabled = features[fixCleanup3_4_0];
+
+        testcase << "OfferCreate"
+                 << (fixEnabled ? " (Cleanup3_4_0 enabled)" : " (Cleanup3_4_0 disabled)");
 
         // test preflight
         {
@@ -273,8 +277,10 @@ class PermissionedDEX_test : public beast::unit_test::Suite
             // time advance
             env.close(std::chrono::seconds(20));
 
-            // devin cannot create offer with expired cred
-            env(offer(devin, XRP(10), USD(10)), Domain(domainID), Ter(tecNO_PERMISSION));
+            // Devin cannot create offer with expired cred. After fixCleanup3_4_0,
+            // doApply deletes the expired credential SLE and returns tecEXPIRED.
+            TER const expectedExpiredCredTer = fixEnabled ? tecEXPIRED : tecNO_PERMISSION;
+            env(offer(devin, XRP(10), USD(10)), Domain(domainID), Ter(expectedExpiredCredTer));
             env.close();
         }
 
@@ -1510,7 +1516,9 @@ class PermissionedDEX_test : public beast::unit_test::Suite
         env.close(std::chrono::seconds(100));
 
         // Confirm devin can no longer create domain offers.
-        env(offer(devin, XRP(1), USD(1)), Domain(domainID), Ter(tecNO_PERMISSION));
+        // After fixCleanup3_4_0, OfferCreate deletes the expired credential and
+        // returns tecEXPIRED (covered in depth by testExpiredCredentialCleanup).
+        env(offer(devin, XRP(1), USD(1)), Domain(domainID), Ter(tecEXPIRED));
         env.close();
 
         // The hybrid offer must still exist in the open book after expiry.
@@ -1633,6 +1641,202 @@ class PermissionedDEX_test : public beast::unit_test::Suite
         BEAST_EXPECT(!offerExists(env, bob, aliceOfferSeq));
         BEAST_EXPECT(!offerExists(env, bob, bobOfferSeq));
         BEAST_EXPECT(!offerExists(env, bob, carolOfferSeq));
+    }
+
+    void
+    testExpiredCredentialCleanup(FeatureBitset features)
+    {
+        bool const fixEnabled = features[fixCleanup3_4_0];
+
+        testcase << "Expired credential cleanup"
+                 << (fixEnabled ? " (Cleanup3_4_0 enabled)" : " (Cleanup3_4_0 disabled)");
+
+        TER const expectedExpiredCredTer = fixEnabled ? tecEXPIRED : tecNO_PERMISSION;
+
+        auto const fundAccount =
+            [](Env& env, Account const& account, Account const& gw, IOU const& usd) {
+                env.fund(XRP(1000), account);
+                env.close();
+                env.trust(usd(1000), account);
+                env.close();
+                env(pay(gw, account, usd(100)));
+                env.close();
+            };
+
+        auto const fundDevin = [&](Env& env, Account const& gw, IOU const& usd) {
+            Account const devin("devin");
+            fundAccount(env, devin, gw, usd);
+            return devin;
+        };
+
+        auto const createExpiringCredential = [](Env& env,
+                                                 Account const& subject,
+                                                 Account const& issuer,
+                                                 std::string const& credType) {
+            auto jv = credentials::create(subject, issuer, credType);
+            uint32_t const t = env.current()->header().parentCloseTime.time_since_epoch().count();
+            jv[sfExpiration.jsonName] = t + 20;
+            env(jv);
+            env(credentials::accept(subject, issuer, credType));
+            env.close();
+
+            return keylet::credential(subject.id(), issuer.id(), makeSlice(credType));
+        };
+
+        auto const expectExpiredCredentialState = [&](Env const& env, Keylet const& credKey) {
+            if (fixEnabled)
+            {
+                BEAST_EXPECT(!env.le(credKey));
+            }
+            else
+            {
+                BEAST_EXPECT(env.le(credKey));
+            }
+        };
+
+        // A payment referencing a non-existent domain is rejected in preclaim.
+        {
+            Env env(*this, features);
+            auto const& [gw, domainOwner, alice, bob, carol, USD, domainID, credType] =
+                PermissionedDEX(env);
+
+            uint256 const badDomain{
+                "F10D0CC9A0F9A3CBF585B80BE09A186483668FDBDD39AA7E3370F3649CE134"
+                "E5"};
+
+            env(offer(bob, XRP(10), USD(10)), Domain(domainID));
+            env.close();
+
+            env(pay(alice, bob, USD(10)),
+                Path(~USD),
+                Sendmax(XRP(10)),
+                Domain(badDomain),
+                Ter(tecNO_PERMISSION));
+            env.close();
+        }
+
+        // OfferCreate with an expired credential.
+        {
+            Env env(*this, features);
+            auto const& [gw, domainOwner, alice, bob, carol, USD, domainID, credType] =
+                PermissionedDEX(env);
+
+            Account const devin = fundDevin(env, gw, USD);
+            auto const credKey = createExpiringCredential(env, devin, domainOwner, credType);
+            BEAST_EXPECT(env.le(credKey));  // credential exists before expiry
+
+            env.close(std::chrono::seconds(20));
+
+            env(offer(devin, XRP(10), USD(10)), Domain(domainID), Ter(expectedExpiredCredTer));
+            env.close();
+
+            expectExpiredCredentialState(env, credKey);
+        }
+
+        // Payment where the sender's credential is expired.
+        {
+            Env env(*this, features);
+            auto const& [gw, domainOwner, alice, bob, carol, USD, domainID, credType] =
+                PermissionedDEX(env);
+
+            Account const devin = fundDevin(env, gw, USD);
+            auto const credKey = createExpiringCredential(env, devin, domainOwner, credType);
+
+            auto const bobOfferSeq{env.seq(bob)};
+            auto const bobCredKey =
+                keylet::credential(bob.id(), domainOwner.id(), makeSlice(credType));
+            env(offer(bob, XRP(10), USD(10)), Domain(domainID));
+            env.close();
+
+            BEAST_EXPECT(env.le(credKey));
+            BEAST_EXPECT(env.le(bobCredKey));
+            BEAST_EXPECT(offerExists(env, bob, bobOfferSeq));
+
+            env.close(std::chrono::seconds(20));
+
+            env(pay(devin, alice, USD(10)),
+                Path(~USD),
+                Sendmax(XRP(10)),
+                Domain(domainID),
+                Ter(expectedExpiredCredTer));
+            env.close();
+
+            expectExpiredCredentialState(env, credKey);
+            BEAST_EXPECT(env.le(bobCredKey));
+            BEAST_EXPECT(offerExists(env, bob, bobOfferSeq));
+        }
+
+        // Payment where the destination's credential is expired.
+        {
+            Env env(*this, features);
+            auto const& [gw, domainOwner, alice, bob, carol, USD, domainID, credType] =
+                PermissionedDEX(env);
+
+            Account const devin = fundDevin(env, gw, USD);
+            auto const credKey = createExpiringCredential(env, devin, domainOwner, credType);
+
+            auto const bobOfferSeq{env.seq(bob)};
+            auto const bobCredKey =
+                keylet::credential(bob.id(), domainOwner.id(), makeSlice(credType));
+            env(offer(bob, XRP(10), USD(10)), Domain(domainID));
+            env.close();
+
+            BEAST_EXPECT(env.le(credKey));
+            BEAST_EXPECT(env.le(bobCredKey));
+            BEAST_EXPECT(offerExists(env, bob, bobOfferSeq));
+
+            env.close(std::chrono::seconds(20));
+
+            env(pay(alice, devin, USD(10)),
+                Path(~USD),
+                Sendmax(XRP(10)),
+                Domain(domainID),
+                Ter(expectedExpiredCredTer));
+            env.close();
+
+            expectExpiredCredentialState(env, credKey);
+            BEAST_EXPECT(env.le(bobCredKey));
+            BEAST_EXPECT(offerExists(env, bob, bobOfferSeq));
+        }
+
+        // Payment where both sender and destination credentials are expired.
+        {
+            Env env(*this, features);
+            auto const& [gw, domainOwner, alice, bob, carol, USD, domainID, credType] =
+                PermissionedDEX(env);
+
+            Account const devin = fundDevin(env, gw, USD);
+            Account const erin("erin");
+            fundAccount(env, erin, gw, USD);
+
+            auto const devinCredKey = createExpiringCredential(env, devin, domainOwner, credType);
+            auto const erinCredKey = createExpiringCredential(env, erin, domainOwner, credType);
+
+            auto const bobOfferSeq{env.seq(bob)};
+            auto const bobCredKey =
+                keylet::credential(bob.id(), domainOwner.id(), makeSlice(credType));
+            env(offer(bob, XRP(10), USD(10)), Domain(domainID));
+            env.close();
+
+            BEAST_EXPECT(env.le(devinCredKey));
+            BEAST_EXPECT(env.le(erinCredKey));
+            BEAST_EXPECT(env.le(bobCredKey));
+            BEAST_EXPECT(offerExists(env, bob, bobOfferSeq));
+
+            env.close(std::chrono::seconds(20));
+
+            env(pay(devin, erin, USD(10)),
+                Path(~USD),
+                Sendmax(XRP(10)),
+                Domain(domainID),
+                Ter(expectedExpiredCredTer));
+            env.close();
+
+            expectExpiredCredentialState(env, devinCredKey);
+            expectExpiredCredentialState(env, erinCredKey);
+            BEAST_EXPECT(env.le(bobCredKey));
+            BEAST_EXPECT(offerExists(env, bob, bobOfferSeq));
+        }
     }
 
     void
@@ -2209,6 +2413,7 @@ public:
         // Test domain offer (w/o hybrid)
         testOfferCreate(all);
         testOfferCreate(all - fixCleanup3_2_0);
+        testOfferCreate(all - fixCleanup3_4_0);
         testPayment(all);
         testPayment(all - fixCleanup3_2_0);
         testBookStep(all);
@@ -2219,6 +2424,8 @@ public:
         testAmmQualityNotLeaked(all);
         testAmmQualityNotLeaked(all - fixCleanup3_3_0);
         testAutoBridge(all);
+        testExpiredCredentialCleanup(all);
+        testExpiredCredentialCleanup(all - fixCleanup3_4_0);
 
         // Test hybrid offers
         testHybridOfferCreate(all);

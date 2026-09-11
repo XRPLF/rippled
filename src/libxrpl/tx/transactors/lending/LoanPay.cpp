@@ -7,7 +7,6 @@
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/json/to_string.h>
 #include <xrpl/ledger/ReadView.h>
-#include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/LendingHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/AccountID.h>
@@ -134,10 +133,13 @@ LoanPay::calculateBaseFee(ReadView const& view, STTx const& tx)
         return normalCost;
     }
 
-    if (hasExpired(view, loanSle->at(sfNextPaymentDueDate)))
+    if (isPaymentLate(view, loanSle))
     {
         // If the payment is late, and the late payment flag is not set, it'll
-        // fail
+        // fail. Uses isPaymentLate() so the fee matches apply at the exact
+        // NextPaymentDueDate boundary (Exclusive once fixCleanup3_4_0 is
+        // enabled): a catch-up at that instant can still process up to
+        // kLoanMaximumPaymentsPerTransaction payments.
         return normalCost;
     }
 

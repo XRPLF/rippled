@@ -1,13 +1,18 @@
 #include <xrpl/tx/invariants/LoanBrokerInvariant.h>
 
 #include <xrpl/basics/Log.h>
+#include <xrpl/basics/Number.h>
 #include <xrpl/beast/utility/Journal.h>
+#include <xrpl/beast/utility/Zero.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/helpers/LendingHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
+#include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STNumber.h>  // IWYU pragma: keep
 #include <xrpl/protocol/STTx.h>
@@ -22,6 +27,24 @@ namespace xrpl {
 void
 ValidLoanBroker::visitEntry(bool isDelete, SLE::const_ref before, SLE::const_ref after)
 {
+    // Track LoanBroker deletions so finalize() can enforce:
+    //   (a) only ttLOAN_BROKER_DELETE removes a broker
+    //   (b) at most one broker is removed per transaction
+    //   (c) DebtTotal and OwnerCount were zero before deletion
+    // `before` is the pre-transaction state, which is what
+    // LoanBrokerDelete::preclaim reads. Erased trust lines and MPTokens need no
+    // special handling here: the `if (after)` branch below already records them.
+    if (isDelete && before && before->getType() == ltLOAN_BROKER)
+    {
+        if (deletedBroker_)
+        {
+            multipleBrokerDeletions_ = true;
+        }
+        else
+        {
+            deletedBroker_ = before;
+        }
+    }
     if (after)
     {
         if (after->getType() == ltLOAN_BROKER)
@@ -99,6 +122,64 @@ ValidLoanBroker::finalize(
     // Loan Brokers will not exist on ledger if the Lending Protocol amendment
     // is not enabled, so there's no need to check it.
 
+    // Deletion invariants (featureLendingProtocolV1_1). At most one
+    // LoanBroker may be removed per transaction, and only by
+    // ttLOAN_BROKER_DELETE, and only when its pre-state OwnerCount is zero and
+    // its pre-state DebtTotal is zero to the precision of the vault asset. The
+    // DebtTotal check complements ValidLoan's
+    // LoanBrokerDelete-must-not-touch-any-loan rule: even a broker that has
+    // finished paying off every loan may still hold non-zero exposure until
+    // its LoanBrokerCoverWithdraw settles, and neither state is safe to
+    // delete.
+    if (view.rules().enabled(featureLendingProtocolV1_1))
+    {
+        if (multipleBrokerDeletions_)
+        {
+            JLOG(j.fatal())
+                << "Invariant failed: more than one Loan Broker deleted in a single transaction";
+            return false;
+        }
+        if (deletedBroker_)
+        {
+            if (tx.getTxnType() != ttLOAN_BROKER_DELETE)
+            {
+                JLOG(j.fatal()) << "Invariant failed: " <<  //
+                    "Loan Broker deleted by a transaction other than LoanBrokerDelete";
+                return false;
+            }
+            // Mirror LoanBrokerDelete::preclaim, which accepts a DebtTotal
+            // that rounds to zero at the vault's AssetsTotal scale rather than
+            // requiring an exact zero. Requiring more here would turn a
+            // transaction the transactor deliberately permits into an
+            // invariant failure.
+            if (auto const debtTotal = deletedBroker_->at(sfDebtTotal); debtTotal != beast::kZero)
+            {
+                // The erased broker is also collected in brokers_, and that
+                // loop reports a missing vault, so no separate diagnostic is
+                // needed here. Without a vault there is no scale to round at,
+                // so the residue cannot be excused as dust.
+                auto const vault = view.read(keylet::vault(deletedBroker_->at(sfVaultID)));
+                if (!vault ||
+                    roundToAsset(
+                        Asset{vault->at(sfAsset)},
+                        debtTotal,
+                        getAssetsTotalScale(vault),
+                        Number::RoundingMode::TowardsZero) != beast::kZero)
+                {
+                    JLOG(j.fatal())
+                        << "Invariant failed: Loan Broker deleted with non-zero debt total";
+                    return false;
+                }
+            }
+            if (deletedBroker_->at(sfOwnerCount) != 0)
+            {
+                JLOG(j.fatal())
+                    << "Invariant failed: Loan Broker deleted with non-zero owner count";
+                return false;
+            }
+        }
+    }
+
     for (auto const& line : lines_)
     {
         for (auto const& field : {&sfLowLimit, &sfHighLimit})
@@ -142,7 +223,6 @@ ValidLoanBroker::finalize(
 
         auto const& before = broker.brokerBefore;
 
-        // https://github.com/Tapanito/XRPL-Standards/blob/xls-66-lending-protocol/XLS-0066d-lending-protocol/README.md#3123-invariants
         // If `LoanBroker.OwnerCount = 0` the `DirectoryNode` will have at most
         // one node (the root), which will only hold entries for `RippleState`
         // or `MPToken` objects.

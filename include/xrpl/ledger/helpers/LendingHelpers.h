@@ -324,6 +324,12 @@ computeFullPaymentInterest(
     std::uint32_t startDate,
     TenthBips32 closeInterestRate);
 
+// Returns true if the loan's next payment is late per protocol rules. The
+// boundary is amendment-gated: with fixCleanup3_4_0 the due date must be
+// strictly in the past, otherwise the exact due-date instant counts as late.
+[[nodiscard]] bool
+isPaymentLate(ReadView const& view, SLE::const_ref loanSle);
+
 // Deltas applied to Vault.AssetsTotal and LoanBroker.DebtTotal at a single
 // accounting touch point (origination, payment, impair/unimpair/default).
 struct AccountingDeltas

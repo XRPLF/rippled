@@ -10,14 +10,17 @@
 #include <test/jtx/vault.h>
 #include <test/unit_test/SuiteJournal.h>
 
+#include <xrpl/basics/Number.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/OpenView.h>
+#include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Keylet.h>
+#include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/Rules.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STLedgerEntry.h>
@@ -29,6 +32,8 @@
 #include <xrpl/tx/Transactor.h>
 #include <xrpl/tx/applySteps.h>
 
+#include <chrono>
+#include <cstdint>
 #include <initializer_list>
 #include <memory>
 #include <source_location>
@@ -178,10 +183,17 @@ InvariantsBase::createLoanBroker(
 {
     using namespace jtx;
 
-    // Create vault
+    // Under featureLendingProtocolV1_1 LoanBrokerSet::preclaim only
+    // accepts closed-ended vaults. Build one with a comfortable
+    // subscription window; LoanBrokerSet itself is not phase-gated,
+    // so leaving the vault in the Subscription phase is fine here.
     uint256 vaultID;
     Vault const vault{env};
-    auto [tx, vKeylet] = vault.create({.owner = a, .asset = asset});
+    auto [tx, vKeylet, _] = vault.createClosedEnded(
+        {.owner = a,
+         .asset = asset,
+         .subscriptionOffset = std::chrono::seconds{60},
+         .investmentWindow = std::chrono::seconds{kMinInvestmentPeriod + 1'000'000u}});
     env(tx);
     BEAST_EXPECT(env.le(vKeylet));
 
@@ -195,6 +207,35 @@ InvariantsBase::createLoanBroker(
     env(set(a, vaultID), Fee(kIncrement));
 
     return loanBrokerKeylet;
+}
+
+SLE::pointer
+InvariantsBase::makeLoanSle(
+    uint256 const& loanBrokerID,
+    std::uint32_t loanSeq,
+    AccountID const& borrower)
+{
+    auto sleLoan =
+        std::make_shared<SLE>(keylet::loan(loanBrokerID, SeqProxy::rawSequence(loanSeq)));
+    // SoeRequired fields.
+    sleLoan->at(sfLoanBrokerID) = loanBrokerID;
+    sleLoan->at(sfLoanSequence) = loanSeq;
+    sleLoan->at(sfBorrower) = borrower;
+    sleLoan->at(sfStartDate) = 0u;
+    sleLoan->at(sfPaymentInterval) = 1u;
+    sleLoan->at(sfPeriodicPayment) = Number(1);
+    // SoeDefault fields, materialized so that an invariant reading them through
+    // at() does not throw on this hand-built entry.
+    sleLoan->at(sfLoanServiceFee) = Number(0);
+    sleLoan->at(sfLatePaymentFee) = Number(0);
+    sleLoan->at(sfClosePaymentFee) = Number(0);
+    sleLoan->at(sfPrincipalOutstanding) = Number(0);
+    sleLoan->at(sfTotalValueOutstanding) = Number(0);
+    sleLoan->at(sfManagementFeeOutstanding) = Number(0);
+    sleLoan->setFieldU32(sfPaymentRemaining, 0);
+    sleLoan->makeFieldPresent(sfOwnerNode);
+    sleLoan->makeFieldPresent(sfLoanBrokerNode);
+    return sleLoan;
 }
 
 }  // namespace xrpl::test

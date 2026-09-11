@@ -5,6 +5,7 @@
 #include <test/jtx/envconfig.h>
 #include <test/jtx/fee.h>
 #include <test/jtx/last_ledger_sequence.h>
+#include <test/jtx/mpt.h>
 #include <test/jtx/noop.h>
 #include <test/jtx/offer.h>
 #include <test/jtx/pay.h>
@@ -20,6 +21,7 @@
 #include <xrpl/json/to_string.h>
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/jss.h>
 
 #include <memory>
@@ -256,6 +258,102 @@ class LedgerRPC_test : public beast::unit_test::Suite
         BEAST_EXPECT(jrr[jss::ledger].isMember(jss::accountState));
         BEAST_EXPECT(jrr[jss::ledger][jss::accountState].isArray());
         BEAST_EXPECT(jrr[jss::ledger][jss::accountState].size() == 3u);
+    }
+
+    void
+    testLedgerOwnerFundsMPTOffer()
+    {
+        testcase("Ledger owner_funds with MPT offer");
+        using namespace test::jtx;
+
+        Env env{*this};
+        Account const gw{"gateway"};
+        Account const alice{"alice"};
+        auto const usd = gw["USD"];
+
+        env.fund(XRP(10'000), gw, alice);
+        env.close();
+        env.trust(usd(1'000), alice);
+        env(pay(gw, alice, usd(100)));
+        MPTTester mpt(
+            {.env = env,
+             .issuer = gw,
+             .holders = {alice},
+             .pay = 100,
+             .flags = tfMPTRequireAuth | kMptDexFlags,
+             .authHolder = true,
+             .close = false});
+        MPT const mptAsset = mpt;
+        env.close();
+
+        env(noop(alice));
+        // These offers differ only by TakerGets asset type. Omitting
+        // owner_funds serializes the tx JSON without computing offer balances;
+        // owner_funds=true asks LedgerToJson to compute accountFunds(TakerGets)
+        // for both offers, which is where IOU and MPT used to diverge.
+        env(offer(alice, XRP(10), usd(10)));
+        env(offer(alice, XRP(10), mptAsset(10)));
+        // The MPT offer was created while authorized. Unauthorizing in the
+        // same ledger makes owner_funds depend on AuthHandling::IgnoreAuth.
+        mpt.authorize({.account = gw, .holder = alice, .flags = tfMPTUnauthorize});
+        env(noop(alice));
+        env.close();
+
+        auto const ledgerHash = to_string(env.closed()->header().hash);
+
+        auto const getTransactions = [&](bool includeOwnerFunds) {
+            json::Value params;
+            params[jss::ledger_hash] = ledgerHash;
+            params[jss::transactions] = true;
+            params[jss::expand] = true;
+            // The baseline omits owner_funds, which the RPC treats as false.
+            // Setting it true requests the same ledger, but asks the ledger
+            // serializer to add owner_funds to offer transactions in that
+            // ledger's transaction array.
+            if (includeOwnerFunds)
+                params[jss::owner_funds] = true;
+
+            auto const result = env.rpc("json", "ledger", to_string(params))[jss::result];
+            BEAST_EXPECT(!result.isMember(jss::error));
+            BEAST_EXPECT(result[jss::ledger][jss::transactions].isArray());
+            return result[jss::ledger][jss::transactions];
+        };
+
+        auto const findOffer = [](json::Value const& txs, bool mpt) -> json::Value const* {
+            for (auto i = 0u; i < txs.size(); ++i)
+            {
+                auto const& tx = txs[i].isMember(jss::tx_json) ? txs[i][jss::tx_json] : txs[i];
+                if (tx[jss::TransactionType] == jss::OfferCreate &&
+                    tx[jss::TakerGets].isMember(jss::mpt_issuance_id) == mpt)
+                {
+                    return &txs[i];
+                }
+            }
+            return nullptr;
+        };
+
+        // Baseline: same ledger request without owner_funds fields.
+        auto const baseline = getTransactions(false);
+        BEAST_EXPECT(baseline.size() == 5u);
+        BEAST_EXPECT(findOffer(baseline, false) != nullptr);
+        BEAST_EXPECT(findOffer(baseline, true) != nullptr);
+
+        // Same ledger request with owner_funds added to eligible offer txs.
+        auto const withOwnerFunds = getTransactions(true);
+        // Requesting owner_funds must not change which ledger transactions are
+        // returned, even when one offer's TakerGets is MPT.
+        BEAST_EXPECT(withOwnerFunds.size() == baseline.size());
+
+        // The IOU offer is the control case for expected owner_funds output.
+        auto const* iouOfferTx = findOffer(withOwnerFunds, false);
+        if (BEAST_EXPECT(iouOfferTx != nullptr))
+            BEAST_EXPECT((*iouOfferTx)[jss::owner_funds] == "100");
+
+        // MPT owner_funds should match the IOU behavior, even though Alice is
+        // unauthorized by the ledger snapshot used for serialization.
+        auto const* mptOfferTx = findOffer(withOwnerFunds, true);
+        if (BEAST_EXPECT(mptOfferTx != nullptr))
+            BEAST_EXPECT((*mptOfferTx)[jss::owner_funds] == "100");
     }
 
     /**
@@ -719,6 +817,7 @@ public:
         testLedgerFull();
         testLedgerFullNonAdmin();
         testLedgerAccounts();
+        testLedgerOwnerFundsMPTOffer();
         testLookupLedger();
         testNoQueue();
         testQueue();

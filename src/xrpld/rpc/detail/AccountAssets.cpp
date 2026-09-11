@@ -49,7 +49,7 @@ accountSourceAssets(
     {
         for (auto const& rspEntry : *mpts)
         {
-            if (!rspEntry.isZeroBalance() && !rspEntry.isMaxedOut())
+            if (rspEntry.canSend(account))
                 assets.insert(rspEntry.getMptID());
         }
     }
@@ -86,8 +86,10 @@ accountDestAssets(
     {
         for (auto const& rspEntry : *mpts)
         {
-            if (rspEntry.isZeroBalance() && !rspEntry.isMaxedOut())
-                assets.insert(rspEntry.getMptID());
+            // Any cached MPT entry means this account already has an issuance
+            // or MPToken object. A maxed-out issuance does not prevent
+            // receiving existing MPT from another holder.
+            assets.insert(rspEntry.getMptID());
         }
     }
 

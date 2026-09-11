@@ -1,7 +1,7 @@
 #[===================================================================[
    Linux packaging support: 'package' target.
 
-   The packaging script (package/build_pkg.sh) installs to FHS-standard
+   The packaging script (package/build_pkg.py) installs to FHS-standard
    paths (/usr/bin, /etc/xrpld, etc.) regardless of CMAKE_INSTALL_PREFIX,
    so no prefix guard is needed here.
 #]===================================================================]
@@ -38,19 +38,20 @@ if(NOT TARGET validator-keys)
     return()
 endif()
 
-set(package_env
-    SRC_DIR=${CMAKE_SOURCE_DIR}
-    BUILD_DIR=${CMAKE_BINARY_DIR}
-    PKG_RELEASE=${pkg_release}
-)
+if(DPKG_BUILDPACKAGE_EXECUTABLE)
+    set(pkg_type deb)
+else()
+    set(pkg_type rpm)
+endif()
 
 add_custom_target(
     package
     COMMAND
-        ${CMAKE_COMMAND} -E env ${package_env}
-        ${CMAKE_SOURCE_DIR}/package/build_pkg.sh
+        ${CMAKE_SOURCE_DIR}/package/build_pkg.py --package-type=${pkg_type}
+        --build-dir=${CMAKE_BINARY_DIR} --pkg-release=${pkg_release}
+        --channel=UNRELEASED
     WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
     DEPENDS xrpld validator-keys
-    COMMENT "Building Linux package (deb/rpm inferred from host tooling)"
+    COMMENT "Building Linux ${pkg_type} package"
     VERBATIM
 )
