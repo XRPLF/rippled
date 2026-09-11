@@ -420,34 +420,15 @@ protected:
 
     // Create an issuance that can hold confidential balances, with the listed
     // holders funded and authorized, and a key pair generated for the issuer,
-    // every holder, and every extra key owner (an auditor, say). The keys are
-    // generated but not registered on the issuance: callers that care about key
-    // epochs need to control when that happens.
+    // every holder, and every extra key owner. The keys are
+    // generated but not registered.
     static void
     setupConfidentialIssuance(
         test::jtx::MPTTester& mpt,
         test::jtx::Account const& issuer,
         std::vector<test::jtx::Account> const& holders,
         std::vector<test::jtx::Account> const& keyOwners = {},
-        std::uint32_t flags = tfMPTCanTransfer | tfMPTCanHoldConfidentialBalance)
-    {
-        using namespace test::jtx;
-        mpt.create({
-            .ownerCount = 1,
-            .flags = flags,
-        });
-
-        for (auto const& holder : holders)
-        {
-            mpt.authorize({.account = holder});
-            mpt.pay(issuer, holder, 100);
-            mpt.generateKeyPair(holder);
-        }
-
-        mpt.generateKeyPair(issuer);
-        for (auto const& keyOwner : keyOwners)
-            mpt.generateKeyPair(keyOwner);
-    }
+        std::uint32_t flags = tfMPTCanTransfer | tfMPTCanHoldConfidentialBalance);
 
     // Set up an MPT environment suitable for batch testing.
     // alice is issuer; bob has 'bobAmt' in confidential spending; carol has
