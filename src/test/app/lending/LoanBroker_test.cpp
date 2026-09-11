@@ -1800,7 +1800,6 @@ class LoanBroker_test : public beast::unit_test::Suite
 
             mptt.authorize({.account = alice});
             mptt.authorize({.account = carol});
-            env.close();
             env(pay(issuer, alice, mpt(100'000)));
             env(pay(issuer, carol, mpt(100)));
             env.close();
@@ -1809,7 +1808,6 @@ class LoanBroker_test : public beast::unit_test::Suite
             // convert into confidential form.
             mptt.generateKeyPair(issuer);
             mptt.set({.account = issuer, .issuerPubKey = mptt.getPubKey(issuer)});
-            env.close();
 
             Vault const vault{env};
             auto [tx, vaultKeylet] = vault.create({.owner = alice, .asset = mpt});
@@ -1853,7 +1851,6 @@ class LoanBroker_test : public beast::unit_test::Suite
             {
                 mptt.generateKeyPair(carol);
                 mptt.convert({.account = carol, .amt = 1, .holderPubKey = mptt.getPubKey(carol)});
-                env.close();
             }
 
             BEAST_EXPECT(mptt.getIssuanceConfidentialBalance() == (carolConverts ? 1 : 0));

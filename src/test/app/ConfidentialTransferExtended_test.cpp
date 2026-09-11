@@ -700,7 +700,6 @@ class ConfidentialTransferExtended_test : public ConfidentialTransferTestBase
                     mptAlice.generateKeyPair(carol);
                     mptAlice.convert(
                         {.account = carol, .amt = 1, .holderPubKey = mptAlice.getPubKey(carol)});
-                    env.close();
                 }
 
                 BEAST_EXPECT(mptAlice.getIssuanceConfidentialBalance() == (carolConverts ? 1 : 0));
