@@ -422,7 +422,7 @@ protected:
     // holders funded and authorized, and a key pair generated for the issuer,
     // every holder, and every extra key owner. The keys are
     // generated but not registered.
-    static void
+    void
     setupConfidentialIssuance(
         test::jtx::MPTTester& mpt,
         test::jtx::Account const& issuer,
