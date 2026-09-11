@@ -1,9 +1,12 @@
 #include <test/jtx/Env.h>
 #include <test/jtx/WSClient.h>
 #include <test/jtx/amount.h>
+#include <test/jtx/batch.h>
 #include <test/jtx/domain.h>
 #include <test/jtx/envconfig.h>
+#include <test/jtx/escrow.h>
 #include <test/jtx/fee.h>
+#include <test/jtx/mpt.h>
 #include <test/jtx/offer.h>
 #include <test/jtx/owners.h>  // IWYU pragma: keep
 #include <test/jtx/paths.h>
@@ -32,11 +35,14 @@
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/KeyType.h>
 #include <xrpl/protocol/PublicKey.h>
+#include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STValidation.h>
 #include <xrpl/protocol/SecretKey.h>
 #include <xrpl/protocol/Seed.h>
 #include <xrpl/protocol/SeqProxy.h>
 #include <xrpl/protocol/TxFlags.h>
+#include <xrpl/protocol/UintTypes.h>
+#include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/protocol/tokens.h>
 #include <xrpl/server/LoadFeeTrack.h>
@@ -645,6 +651,42 @@ public:
                 BEAST_EXPECT(jr[jss::error] == "actMalformed");
                 BEAST_EXPECT(jr[jss::error_message] == "Account malformed.");
             }
+        }
+
+        for (auto const& nonArray : nonArrays)
+        {
+            json::Value jv;
+            jv[jss::mpt_issuances] = nonArray;
+            auto jr = wsc->invoke(method, jv)[jss::result];
+            BEAST_EXPECT(jr[jss::error] == "invalidParams");
+            BEAST_EXPECT(jr[jss::error_message] == "Invalid parameters.");
+        }
+
+        {
+            json::Value jv;
+            jv[jss::mpt_issuances] = json::ValueType::Array;
+            jv[jss::mpt_issuances][0u] = 1;
+            auto jr = wsc->invoke(method, jv)[jss::result];
+            BEAST_EXPECT(jr[jss::error] == "invalidParams");
+            BEAST_EXPECT(jr[jss::error_message] == "Invalid parameters.");
+        }
+
+        {
+            json::Value jv;
+            jv[jss::mpt_issuances] = json::ValueType::Array;
+            jv[jss::mpt_issuances][0u] = "not-an-mpt-issuance-id";
+            auto jr = wsc->invoke(method, jv)[jss::result];
+            BEAST_EXPECT(jr[jss::error] == "invalidParams");
+            BEAST_EXPECT(jr[jss::error_message] == "Invalid parameters.");
+        }
+
+        {
+            json::Value jv;
+            jv[jss::mpt_issuances] = json::ValueType::Array;
+            jv[jss::mpt_issuances][0u] = "0123456789ABCDEF";
+            auto jr = wsc->invoke(method, jv)[jss::result];
+            BEAST_EXPECT(jr[jss::error] == "invalidParams");
+            BEAST_EXPECT(jr[jss::error_message] == "Invalid parameters.");
         }
 
         for (auto const& nonArray : nonArrays)
@@ -1616,6 +1658,38 @@ public:
         return jv;
     }
 
+    // Build `count` distinct, valid MPT issuance id strings the same cheap way
+    // as makeAccountStrings: by incrementing an MPTID. doSubscribe only parses
+    // these (it does not require the issuances to exist in the ledger), and
+    // parseMPTIssuanceIDs dedups into a hash_set, so distinctness is what makes
+    // the cap arithmetic exact.
+    static std::vector<std::string>
+    makeMPTIssuanceStrings(std::size_t count, std::uint32_t seed = 1)
+    {
+        std::vector<std::string> out;
+        out.reserve(count);
+        // Start at `seed` so separate calls produce non-overlapping ranges.
+        MPTID id{static_cast<std::uint64_t>(seed)};
+        for (std::size_t i = 0; i < count; ++i)
+        {
+            out.push_back(to_string(id));
+            ++id;
+        }
+        return out;
+    }
+
+    // Append the given issuance ids as a jss::mpt_issuances array onto a fresh
+    // subscribe request object.
+    static json::Value
+    mptIssuancesRequest(std::vector<std::string> const& mptIDs)
+    {
+        json::Value jv{json::ValueType::Object};
+        jv[jss::mpt_issuances] = json::ValueType::Array;
+        for (auto const& id : mptIDs)
+            jv[jss::mpt_issuances].append(id);
+        return jv;
+    }
+
     // A single, valid XRP/USD order book request, as one entry of a
     // jss::books array.
     static json::Value
@@ -1843,6 +1917,149 @@ public:
     }
 
     void
+    testMPTCapRejects()
+    {
+        // MPT issuance subscriptions are per-connection tracked state, so they
+        // are bounded by the same cap as the account branches. A request that
+        // alone exceeds the cap is rejected with the cap error, and nothing is
+        // recorded. (Pre-fix the mpt_issuances branch skipped the cap check
+        // entirely, so a client could hold unbounded issuance subscriptions.)
+        testcase("mpt_issuances cap rejects an over-cap request");
+
+        using namespace jtx;
+        Env env{*this, envconfig(cappedConfig(5))};
+        auto wsc = makeWSClient(env.app().config());
+
+        // Six issuances against a cap of five: rejected.
+        {
+            auto const jr = wsc->invoke(
+                "subscribe", mptIssuancesRequest(makeMPTIssuanceStrings(6)))[jss::result];
+            BEAST_EXPECT(jr[jss::error] == "invalidParams");
+            BEAST_EXPECT(jr[jss::error_message] == "Too many subscriptions for this connection.");
+        }
+
+        // The rejected request reserved nothing: a five-issuance request (the
+        // cap exactly) still fits. If the rejected one had leaked entries this
+        // would be rejected too.
+        {
+            auto const r = wsc->invoke("subscribe", mptIssuancesRequest(makeMPTIssuanceStrings(5)));
+            BEAST_EXPECTS(r[jss::status] == "success", to_string(r));
+        }
+    }
+
+    void
+    testMPTReSubscribeNotOvercounted()
+    {
+        // Like the account branches, the MPT charge counts only NET-NEW
+        // issuances: re-subscribing issuances already held adds no tracked
+        // state, so it must be admitted even sitting exactly at the cap.
+        testcase("mpt_issuances re-subscribe at the cap is not over-counted");
+
+        using namespace jtx;
+        Env env{*this, envconfig(cappedConfig(5))};
+        auto wsc = makeWSClient(env.app().config());
+
+        // Fill the cap exactly with five distinct issuances.
+        auto const five = makeMPTIssuanceStrings(5);
+        {
+            auto const r = wsc->invoke("subscribe", mptIssuancesRequest(five));
+            BEAST_EXPECTS(r[jss::status] == "success", to_string(r));
+        }
+
+        // Re-subscribe the same five: net-new is zero, so it stays within the
+        // cap and must succeed.
+        {
+            auto const r = wsc->invoke("subscribe", mptIssuancesRequest(five));
+            BEAST_EXPECTS(r[jss::status] == "success", to_string(r));
+        }
+
+        // A single net-new issuance on top of a full cap IS rejected.
+        {
+            auto const jr = wsc->invoke(
+                "subscribe", mptIssuancesRequest(makeMPTIssuanceStrings(1, 100)))[jss::result];
+            BEAST_EXPECT(jr[jss::error] == "invalidParams");
+            BEAST_EXPECT(jr[jss::error_message] == "Too many subscriptions for this connection.");
+        }
+    }
+
+    void
+    testMPTSharesCapWithAccounts()
+    {
+        // The cap is one budget over all tracked kinds, so MPT issuances and
+        // accounts consume the same allowance in either order.
+        testcase("mpt_issuances and accounts share one cap");
+
+        using namespace jtx;
+
+        // Accounts first, then MPTs: 3 + 3 over a cap of 5 is rejected.
+        {
+            Env env{*this, envconfig(cappedConfig(5))};
+            auto wsc = makeWSClient(env.app().config());
+
+            auto const r = wsc->invoke("subscribe", accountsRequest(makeAccountStrings(3)));
+            BEAST_EXPECTS(r[jss::status] == "success", to_string(r));
+
+            auto const jr = wsc->invoke(
+                "subscribe", mptIssuancesRequest(makeMPTIssuanceStrings(3)))[jss::result];
+            BEAST_EXPECT(jr[jss::error] == "invalidParams");
+            BEAST_EXPECT(jr[jss::error_message] == "Too many subscriptions for this connection.");
+
+            // Two more issuances do fit the remaining allowance.
+            auto const r2 =
+                wsc->invoke("subscribe", mptIssuancesRequest(makeMPTIssuanceStrings(2)));
+            BEAST_EXPECTS(r2[jss::status] == "success", to_string(r2));
+        }
+
+        // MPTs first, then accounts: the tally MPTs contribute is what rejects
+        // the accounts, proving mptSubscriptions_ is part of the count and not
+        // just checked against it.
+        {
+            Env env{*this, envconfig(cappedConfig(5))};
+            auto wsc = makeWSClient(env.app().config());
+
+            auto const r = wsc->invoke("subscribe", mptIssuancesRequest(makeMPTIssuanceStrings(5)));
+            BEAST_EXPECTS(r[jss::status] == "success", to_string(r));
+
+            auto const jr =
+                wsc->invoke("subscribe", accountsRequest(makeAccountStrings(1)))[jss::result];
+            BEAST_EXPECT(jr[jss::error] == "invalidParams");
+            BEAST_EXPECT(jr[jss::error_message] == "Too many subscriptions for this connection.");
+        }
+    }
+
+    void
+    testMPTUnsubscribeFreesCap()
+    {
+        // Unsubscribing releases the allowance: after dropping the issuances,
+        // the same connection can subscribe a fresh batch. Guards against a
+        // reserve that is never given back (which would turn the cap into a
+        // permanent per-connection budget).
+        testcase("mpt_issuances unsubscribe frees cap allowance");
+
+        using namespace jtx;
+        Env env{*this, envconfig(cappedConfig(5))};
+        auto wsc = makeWSClient(env.app().config());
+
+        auto const five = makeMPTIssuanceStrings(5);
+        {
+            auto const r = wsc->invoke("subscribe", mptIssuancesRequest(five));
+            BEAST_EXPECTS(r[jss::status] == "success", to_string(r));
+        }
+
+        {
+            auto const r = wsc->invoke("unsubscribe", mptIssuancesRequest(five));
+            BEAST_EXPECTS(r[jss::status] == "success", to_string(r));
+        }
+
+        // The cap is free again, so a disjoint batch of five is admitted.
+        {
+            auto const r =
+                wsc->invoke("subscribe", mptIssuancesRequest(makeMPTIssuanceStrings(5, 100)));
+            BEAST_EXPECTS(r[jss::status] == "success", to_string(r));
+        }
+    }
+
+    void
     testAsyncTeardownDoesNotStall()
     {
         // Test C (core regression): disconnecting a connection with many
@@ -1965,6 +2182,275 @@ public:
     }
 
     void
+    testSubMPT()
+    {
+        // subscribe to multiple MPTs
+        testcase("SubMPT");
+        using namespace jtx;
+        using namespace std::chrono_literals;
+
+        Env env(*this);
+
+        Account const alice{"alice"};
+        Account const bob{"bob"};
+        Account const carol{"carol"};
+        Account const dan{"dan"};
+
+        auto wsc = makeWSClient(env.app().config());
+
+        MPTTester mptAlice(env, alice, {.holders = {bob}});
+        MPTTester mptCarol(env, carol, {.holders = {dan}});
+
+        // Transfer fee is 10%
+        mptAlice.create(
+            {.transferFee = 10'000, .ownerCount = 1, .flags = tfMPTCanTransfer | tfMPTCanLock});
+        mptCarol.create({.ownerCount = 1, .flags = tfMPTCanTransfer});
+
+        json::Value stream;
+        stream = json::ValueType::Object;
+        stream[jss::mpt_issuances] = json::ValueType::Array;
+        stream[jss::mpt_issuances].append(to_string(mptAlice.issuanceID()));
+        stream[jss::mpt_issuances].append(to_string(mptCarol.issuanceID()));
+        auto jv = wsc->invoke("subscribe", stream);
+        BEAST_EXPECT(jv[jss::status] == "success");
+
+        // bob create MPToken
+        mptAlice.authorize({.account = bob});
+        BEAST_EXPECT(wsc->findMsg(5s, [&](auto const& jv) {
+            return jv[jss::engine_result] == "tesSUCCESS" &&
+                jv[jss::transaction][jss::Account] == bob.human() &&
+                jv[jss::transaction][jss::Flags] == 0 &&
+                jv[jss::transaction][sfMPTokenIssuanceID.jsonName] ==
+                to_string(mptAlice.issuanceID()) &&
+                jv[jss::transaction][jss::TransactionType] == "MPTokenAuthorize" &&
+                jv[jss::type] == "mptTransaction";
+        }));
+
+        // dan create MPToken
+        mptCarol.authorize({.account = dan});
+        BEAST_EXPECT(wsc->findMsg(5s, [&](auto const& jv) {
+            return jv[jss::engine_result] == "tesSUCCESS" &&
+                jv[jss::transaction][jss::Account] == dan.human() &&
+                jv[jss::transaction][jss::Flags] == 0 &&
+                jv[jss::transaction][sfMPTokenIssuanceID.jsonName] ==
+                to_string(mptCarol.issuanceID()) &&
+                jv[jss::transaction][jss::Sequence] == 5 &&
+                jv[jss::transaction][jss::TransactionType] == "MPTokenAuthorize" &&
+                jv[jss::type] == "mptTransaction";
+        }));
+
+        // subscribe stream sees alice's MPT
+        mptAlice.pay(alice, bob, 2000);
+        BEAST_EXPECT(wsc->findMsg(5s, [&](auto const& jv) {
+            return jv[jss::engine_result] == "tesSUCCESS" &&
+                jv[jss::transaction][jss::Account] == alice.human() &&
+                jv[jss::transaction][jss::Amount][jss::mpt_issuance_id] ==
+                to_string(mptAlice.issuanceID()) &&
+                jv[jss::transaction][jss::Amount][jss::value] == "2000" &&
+                jv[jss::transaction][jss::DeliverMax][jss::mpt_issuance_id] ==
+                to_string(mptAlice.issuanceID()) &&
+                jv[jss::transaction][jss::DeliverMax][jss::value] == "2000" &&
+                jv[jss::transaction][jss::Destination] == bob.human() &&
+                jv[jss::transaction][jss::Flags] == tfFullyCanonicalSig &&
+                jv[jss::transaction][jss::TransactionType] == "Payment" &&
+                jv[jss::type] == "mptTransaction";
+        }));
+
+        // subscribe stream sees carol's MPT
+        mptCarol.pay(carol, dan, 1000);
+        BEAST_EXPECT(wsc->findMsg(5s, [&](auto const& jv) {
+            return jv[jss::engine_result] == "tesSUCCESS" &&
+                jv[jss::transaction][jss::Account] == carol.human() &&
+                jv[jss::transaction][jss::Amount][jss::mpt_issuance_id] ==
+                to_string(mptCarol.issuanceID()) &&
+                jv[jss::transaction][jss::Amount][jss::value] == "1000" &&
+                jv[jss::transaction][jss::DeliverMax][jss::mpt_issuance_id] ==
+                to_string(mptCarol.issuanceID()) &&
+                jv[jss::transaction][jss::DeliverMax][jss::value] == "1000" &&
+                jv[jss::transaction][jss::Destination] == dan.human() &&
+                jv[jss::transaction][jss::Flags] == tfFullyCanonicalSig &&
+                jv[jss::transaction][jss::Sequence] == 6 &&
+                jv[jss::transaction][jss::TransactionType] == "Payment" &&
+                jv[jss::type] == "mptTransaction";
+        }));
+
+        // subscribe stream sees alice's MPT lock
+        mptAlice.set({.account = alice, .flags = tfMPTLock});
+        BEAST_EXPECT(wsc->findMsg(5s, [&](auto const& jv) {
+            return jv[jss::engine_result] == "tesSUCCESS" &&
+                jv[jss::transaction][jss::Account] == alice.human() &&
+                jv[jss::transaction][jss::Flags] == tfMPTLock &&
+                jv[jss::transaction][sfMPTokenIssuanceID.jsonName] ==
+                to_string(mptAlice.issuanceID()) &&
+                jv[jss::transaction][jss::TransactionType] == "MPTokenIssuanceSet" &&
+                jv[jss::type] == "mptTransaction";
+        }));
+
+        // subscribe stream sees alice's MPT unlock
+        mptAlice.set({.account = alice, .flags = tfMPTUnlock});
+        BEAST_EXPECT(wsc->findMsg(5s, [&](auto const& jv) {
+            return jv[jss::engine_result] == "tesSUCCESS" &&
+                jv[jss::transaction][jss::Account] == alice.human() &&
+                jv[jss::transaction][jss::Flags] == tfMPTUnlock &&
+                jv[jss::transaction][sfMPTokenIssuanceID.jsonName] ==
+                to_string(mptAlice.issuanceID()) &&
+                jv[jss::transaction][jss::TransactionType] == "MPTokenIssuanceSet" &&
+                jv[jss::type] == "mptTransaction";
+        }));
+
+        // unsub alice's MPT from the stream
+        json::Value unsubStream;
+        unsubStream = json::ValueType::Object;
+        unsubStream[jss::mpt_issuances] = json::ValueType::Array;
+        unsubStream[jss::mpt_issuances].append(to_string(mptAlice.issuanceID()));
+        auto unsubJv = wsc->invoke("unsubscribe", unsubStream);
+        BEAST_EXPECT(unsubJv[jss::status] == "success");
+
+        // bob pays alice, this txn should no longer be sent by the stream
+        mptAlice.pay(bob, alice, 500);
+
+        // we don't expect to find alice's mpt in the stream
+        BEAST_EXPECT(!wsc->findMsg(5s, [&](auto const& jv) {
+            return jv[jss::transaction][jss::Amount][jss::mpt_issuance_id] ==
+                to_string(mptAlice.issuanceID()) &&
+                jv[jss::transaction][jss::Amount][jss::value] == "500";
+        }));
+
+        // this txn should be seen
+        mptCarol.pay(dan, carol, 100);
+
+        // only carol's MPT txn will be seen
+        BEAST_EXPECT(wsc->findMsg(5s, [&](auto const& jv) {
+            return jv[jss::engine_result] == "tesSUCCESS" &&
+                jv[jss::transaction][jss::Account] == dan.human() &&
+                jv[jss::transaction][jss::Amount][jss::mpt_issuance_id] ==
+                to_string(mptCarol.issuanceID()) &&
+                jv[jss::transaction][jss::Amount][jss::value] == "100" &&
+                jv[jss::transaction][jss::DeliverMax][jss::mpt_issuance_id] ==
+                to_string(mptCarol.issuanceID()) &&
+                jv[jss::transaction][jss::DeliverMax][jss::value] == "100" &&
+                jv[jss::transaction][jss::Destination] == carol.human() &&
+                jv[jss::transaction][jss::Flags] == tfFullyCanonicalSig &&
+                jv[jss::transaction][jss::TransactionType] == "Payment" &&
+                jv[jss::type] == "mptTransaction";
+        }));
+    }
+
+    void
+    testSubMPTBatch()
+    {
+        // MPTs destroyed by the inner transactions of a Batch are still seen by
+        // the stream. An MPTokenIssuance entry does not carry its own issuance
+        // id, so this exercises deriving the id from the metadata.
+        testcase("SubMPT batch");
+        using namespace jtx;
+        using namespace std::chrono_literals;
+
+        Env env(*this);
+
+        Account const alice{"alice"};
+
+        auto wsc = makeWSClient(env.app().config());
+
+        // A Batch requires at least two inner transactions, so destroy two
+        // issuances at once.
+        MPTTester mptAlice1(env, alice, MPTInit{});
+        mptAlice1.create({.ownerCount = 1});
+        auto const mptID1 = mptAlice1.issuanceID();
+
+        MPTTester mptAlice2(env, alice, MPTInit{.fund = false});
+        mptAlice2.create({.ownerCount = 2});
+        auto const mptID2 = mptAlice2.issuanceID();
+
+        json::Value stream;
+        stream = json::ValueType::Object;
+        stream[jss::mpt_issuances] = json::ValueType::Array;
+        stream[jss::mpt_issuances].append(to_string(mptID1));
+        stream[jss::mpt_issuances].append(to_string(mptID2));
+        auto const jv = wsc->invoke("subscribe", stream);
+        BEAST_EXPECT(jv[jss::status] == "success");
+
+        // destroy both issuances from inside a Batch
+        auto const seq = env.seq(alice);
+        auto const batchFee = batch::calcBatchFee(env, 0, 2);
+        env(batch::outer(alice, seq, batchFee, tfAllOrNothing),
+            batch::Inner(mptAlice1.destroyJV({.issuer = alice, .id = mptID1}), seq + 1),
+            batch::Inner(mptAlice2.destroyJV({.issuer = alice, .id = mptID2}), seq + 2));
+        env.close();
+
+        // each inner transaction is published on the stream for its own issuance
+        for (auto const& mptID : {mptID1, mptID2})
+        {
+            BEAST_EXPECT(wsc->findMsg(5s, [&](auto const& jv) {
+                return jv[jss::engine_result] == "tesSUCCESS" &&
+                    jv[jss::transaction][jss::Account] == alice.human() &&
+                    jv[jss::transaction][sfMPTokenIssuanceID.jsonName] == to_string(mptID) &&
+                    jv[jss::transaction][jss::TransactionType] == "MPTokenIssuanceDestroy" &&
+                    jv[jss::type] == "mptTransaction";
+            }));
+        }
+
+        // the outer Batch transaction is not itself published on the stream;
+        // only the inner transactions touch the issuances
+        BEAST_EXPECT(!wsc->findMsg(1s, [](auto const& jv) {
+            return jv[jss::transaction][jss::TransactionType] == "Batch";
+        }));
+
+        json::Value unsubStream;
+        unsubStream = json::ValueType::Object;
+        unsubStream[jss::mpt_issuances] = json::ValueType::Array;
+        unsubStream[jss::mpt_issuances].append(to_string(mptID1));
+        unsubStream[jss::mpt_issuances].append(to_string(mptID2));
+        BEAST_EXPECT(wsc->invoke("unsubscribe", unsubStream)[jss::status] == "success");
+    }
+
+    void
+    testSubMPTAmountFields()
+    {
+        testcase("SubMPT amount fields");
+        using namespace jtx;
+        using namespace std::chrono_literals;
+
+        Env env(*this);
+        Account const alice{"alice"};
+        Account const bob{"bob"};
+        Account const carol{"carol"};
+
+        MPTTester mpt(env, alice, {.holders = {bob, carol}});
+        mpt.create({.pay = {{{bob}, 100}}, .flags = kMptDexFlags | tfMPTCanEscrow});
+
+        auto wsc = makeWSClient(env.app().config());
+        auto const subscribed =
+            wsc->invoke("subscribe", mptIssuancesRequest({to_string(mpt.issuanceID())}));
+        BEAST_EXPECT(subscribed[jss::status] == "success");
+
+        auto expectTransaction = [&](std::string const& type) {
+            BEAST_EXPECT(wsc->findMsg(5s, [&](auto const& jv) {
+                return jv[jss::engine_result] == "tesSUCCESS" &&
+                    jv[jss::transaction][jss::TransactionType] == type &&
+                    jv[jss::type] == "mptTransaction";
+            }));
+        };
+
+        // Created offers carry the issuance only inside their amount fields.
+        env(offer(bob, XRP(10), mpt(10)));
+        env.close();
+        expectTransaction("OfferCreate");
+
+        env(offer(carol, mpt(5), XRP(10)));
+        env.close();
+        expectTransaction("OfferCreate");
+
+        // Escrow entries similarly carry the issuance in sfAmount.
+        auto const baseFee = env.current()->fees().base;
+        env(escrow::create(bob, carol, mpt(10)),
+            escrow::kFinishTime(env.now() + 1s),
+            Fee(baseFee * 150));
+        env.close();
+        expectTransaction("EscrowCreate");
+    }
+
+    void
     run() override
     {
         using namespace test::jtx;
@@ -1985,6 +2471,9 @@ public:
         testSubBookChanges();
         testNFToken(all);
         testNFToken(all - featureNFTokenMintOffer);
+        testSubMPT();
+        testSubMPTBatch();
+        testSubMPTAmountFields();
         testAsyncTeardownDoesNotStall();
         testResubscribeAfterDisconnect();
         testSubscriptionCapRejects();
@@ -1993,6 +2482,10 @@ public:
         testMultiFieldNoPartialSubscribe();
         testHistoryReSubscribeNotOvercounted();
         testHistoryCapRejectsNetNew();
+        testMPTCapRejects();
+        testMPTReSubscribeNotOvercounted();
+        testMPTSharesCapWithAccounts();
+        testMPTUnsubscribeFreesCap();
     }
 };
 

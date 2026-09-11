@@ -1,10 +1,12 @@
 #include <xrpl/server/InfoSub.h>
 
 #include <xrpl/basics/Log.h>
+#include <xrpl/basics/UnorderedContainers.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Book.h>
+#include <xrpl/protocol/UintTypes.h>
 #include <xrpl/resource/Consumer.h>
 
 #include <cstddef>
@@ -40,6 +42,22 @@ safeUnsub(std::uint64_t seq, F&& f, beast::Journal j) noexcept
     {
         JLOG(j.warn()) << "~InfoSub[seq=" << seq << "]: cleanup step failed: unknown exception";
     }
+}
+
+// Number of requested entries not already tracked in `existing`. Only these are
+// charged against the cap, so re-subscribing entries a connection already holds
+// is free.
+template <typename T>
+[[nodiscard]] std::size_t
+countNew(hash_set<T> const& requested, hash_set<T> const& existing)
+{
+    std::size_t fresh = 0;
+    for (auto const& entry : requested)
+    {
+        if (!existing.contains(entry))
+            ++fresh;
+    }
+    return fresh;
 }
 
 }  // namespace
@@ -83,6 +101,11 @@ InfoSub::~InfoSub()
     safeUnsub(seq_, [&] { source_.unsubValidations(seq_); }, j);
     safeUnsub(seq_, [&] { source_.unsubPeerStatus(seq_); }, j);
     safeUnsub(seq_, [&] { source_.unsubConsensus(seq_); }, j);
+
+    // MPT subscriptions are torn down in one bulk call keyed on seq_, so the
+    // server-side lock is taken once rather than per issuance.
+    if (!mptSubscriptions_.empty())
+        safeUnsub(seq_, [&] { source_.unsubMPTInternal(seq_, mptSubscriptions_); }, j);
 
     // Book subscriptions are torn down inline here, keyed on seq_, rather than
     // through the chunked account cleanup below. The book set is not capped, so
@@ -146,15 +169,20 @@ InfoSub::onSendEmpty()
 }
 
 std::size_t
+InfoSub::subscriptionCount(scoped_lock const&) const
+{
+    return normalSubscriptions_.size() + realTimeSubscriptions_.size() +
+        accountHistorySubscriptions_.size() + mptSubscriptions_.size();
+}
+
+std::size_t
 InfoSub::totalSubscriptionCount() const
 {
-    // Hold lock_ for the whole read so the three sets cannot be mutated
+    // Hold lock_ for the whole read so the counted sets cannot be mutated
     // mid-count by a concurrent (un)subscribe on this connection.
     std::scoped_lock const sl(lock_);
 
-    // Combined tally the per-connection cap is enforced against.
-    return normalSubscriptions_.size() + realTimeSubscriptions_.size() +
-        accountHistorySubscriptions_.size();
+    return subscriptionCount(sl);
 }
 
 bool
@@ -166,29 +194,27 @@ InfoSub::tryReserveAccountSubscriptions(
     // One lock hold covers the count, the check and the insert.
     std::scoped_lock const sl(lock_);
 
-    // Entries not already tracked; re-subscribing held accounts is not charged.
-    auto const countNew = [](hash_set<AccountID> const& requested,
-                             hash_set<AccountID> const& existing) {
-        std::size_t fresh = 0;
-        for (auto const& account : requested)
-        {
-            if (!existing.contains(account))
-                ++fresh;
-        }
-        return fresh;
-    };
-
     std::size_t const additional = countNew(proposedAccounts, realTimeSubscriptions_) +
         countNew(normalAccounts, normalSubscriptions_);
 
-    std::size_t const current = normalSubscriptions_.size() + realTimeSubscriptions_.size() +
-        accountHistorySubscriptions_.size();
-
-    if (exceedsSubscriptionCap(current, additional, cap))
+    if (exceedsSubscriptionCap(subscriptionCount(sl), additional, cap))
         return false;
 
     realTimeSubscriptions_.insert(proposedAccounts.begin(), proposedAccounts.end());
     normalSubscriptions_.insert(normalAccounts.begin(), normalAccounts.end());
+    return true;
+}
+
+bool
+InfoSub::tryReserveMPTSubscriptions(hash_set<MPTID> const& mptIDs, std::size_t cap)
+{
+    // One lock hold covers the count, the check and the insert.
+    std::scoped_lock const sl(lock_);
+
+    if (exceedsSubscriptionCap(subscriptionCount(sl), countNew(mptIDs, mptSubscriptions_), cap))
+        return false;
+
+    mptSubscriptions_.insert(mptIDs.begin(), mptIDs.end());
     return true;
 }
 
@@ -286,6 +312,22 @@ InfoSub::getApiVersion() const noexcept
 {
     XRPL_ASSERT(apiVersion_ > 0, "xrpl::InfoSub::getApiVersion : valid API version");
     return apiVersion_;
+}
+
+void
+InfoSub::insertSubMPTInfo(MPTID const& mptID)
+{
+    std::scoped_lock const sl(lock_);
+
+    mptSubscriptions_.insert(mptID);
+}
+
+void
+InfoSub::deleteSubMPTInfo(MPTID const& mptID)
+{
+    std::scoped_lock const sl(lock_);
+
+    mptSubscriptions_.erase(mptID);
 }
 
 }  // namespace xrpl

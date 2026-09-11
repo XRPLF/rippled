@@ -12,6 +12,7 @@
 #include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/UintTypes.h>
 
 #include <boost/container/flat_set.hpp>
 
@@ -114,6 +115,9 @@ public:
     {
         parentBatchID_ = id;
     }
+
+    [[nodiscard]] boost::container::flat_set<MPTID>
+    getAffectedMPTs() const;
 
 private:
     uint256 transactionID_;

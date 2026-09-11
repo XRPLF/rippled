@@ -104,6 +104,7 @@
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/TxFormats.h>
+#include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/Units.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/protocol/jss.h>
@@ -158,9 +159,10 @@ namespace xrpl {
 
 /**
  * Concrete NetworkOPs: server sequencer, network tracker, and owner of all
- * client subscription state (accounts, books, streams). Subscriptions use three
- * independent non-recursive locks (accountLock_, bookLock_, streamLock_); see
- * their declarations for the locking and deferred-destruction rules.
+ * client subscription state (accounts, books, MPTs, streams). Subscriptions use
+ * four independent non-recursive locks (accountLock_, bookLock_, mptLock_,
+ * streamLock_); see their declarations for the locking and deferred-destruction
+ * rules.
  */
 class NetworkOPsImp final : public NetworkOPs
 {
@@ -571,6 +573,13 @@ public:
     unsubAccountInternal(std::uint64_t seq, hash_set<AccountID> const& vnaAccountIDs, bool rt)
         override;
 
+    void
+    subMPT(InfoSub::ref ispListener, hash_set<MPTID> const& mptIDs) override;
+    void
+    unsubMPT(InfoSub::ref ispListener, hash_set<MPTID> const& mptIDs) override;
+    void
+    unsubMPTInternal(std::uint64_t seq, hash_set<MPTID> const& mptIDs) override;
+
     ErrorCodeI
     subAccountHistory(InfoSub::ref ispListener, AccountID const& account) override;
     void
@@ -733,7 +742,8 @@ private:
         TER result,
         bool validated,
         std::shared_ptr<ReadView const> const& ledger,
-        std::optional<std::reference_wrapper<TxMeta const>> meta);
+        std::optional<std::reference_wrapper<TxMeta const>> meta,
+        std::string const& type = "transaction");
 
     void
     pubValidatedTransaction(
@@ -800,6 +810,10 @@ private:
     pubServer();
     void
     pubConsensus(ConsensusPhase phase);
+    void
+    pubMPTTransaction(
+        std::shared_ptr<ReadView const> const& ledger,
+        AcceptedLedgerTx const& transaction);
 
     std::string
     getHostId(bool forAdmin);
@@ -808,6 +822,7 @@ private:
     using SubMapType = hash_map<std::uint64_t, InfoSub::wptr>;
     using SubInfoMapType = hash_map<AccountID, SubMapType>;
     using subRpcMapType = hash_map<std::string, InfoSub::pointer>;
+    using SubMPTInfoMapType = hash_map<MPTID, SubMapType>;
 
     /*
      * With a validated ledger to separate history and future, the node
@@ -929,16 +944,18 @@ private:
 
     // Independent lock domains so a long cleanup/publish on one does not stall
     // the others. Hold at most one at a time; if ever more, order: accountLock_,
-    // bookLock_, streamLock_.
+    // bookLock_, mptLock_, streamLock_.
     //
-    // Deferred-destruction rule (non-recursive mutexes): under bookLock_ or
-    // streamLock_, never let the last InfoSub pointer die inside the lock -
-    // ~InfoSub re-acquires it via unsub* -> self-deadlock. Publishers collect the
-    // locked pointers in a vector declared before the lock and destruct after
-    // release (see pubServer / pubBookTransaction). accountLock_ is exempt:
-    // ~InfoSub offloads account teardown to scheduleAccountCleanup.
+    // Deferred-destruction rule (non-recursive mutexes): under bookLock_,
+    // mptLock_, or streamLock_, never let the last InfoSub pointer die inside the
+    // lock - ~InfoSub re-acquires it via unsub* -> self-deadlock. Publishers
+    // collect the locked pointers in a container declared before the lock and
+    // destruct after release (see pubServer / pubBookTransaction /
+    // pubMPTTransaction). accountLock_ is exempt: ~InfoSub offloads account
+    // teardown to scheduleAccountCleanup.
     std::mutex accountLock_;  ///< Guards subAccount_, subRTAccount_, subAccountHistory_.
     std::mutex bookLock_;     ///< Guards subBook_.
+    std::mutex mptLock_;      ///< Guards subMPT_.
     std::mutex streamLock_;   ///< Guards streamMaps_[] and rpcSubMap_.
 
     std::atomic<OperatingMode> mode_;
@@ -975,7 +992,8 @@ private:
 
     SubInfoMapType subAccount_;
     SubInfoMapType subRTAccount_;
-    SubBookMapType subBook_;  ///< Guarded by bookLock_.
+    SubBookMapType subBook_;    ///< Guarded by bookLock_.
+    SubMPTInfoMapType subMPT_;  ///< Guarded by mptLock_.
 
     subRpcMapType rpcSubMap_;
 
@@ -3462,7 +3480,8 @@ NetworkOPsImp::transJson(
     TER result,
     bool validated,
     std::shared_ptr<ReadView const> const& ledger,
-    std::optional<std::reference_wrapper<TxMeta const>> meta)
+    std::optional<std::reference_wrapper<TxMeta const>> meta,
+    std::string const& type)
 {
     json::Value jvObj(json::ValueType::Object);
     std::string sToken;
@@ -3470,7 +3489,7 @@ NetworkOPsImp::transJson(
 
     transResultInfo(result, sToken, sHuman);
 
-    jvObj[jss::type] = "transaction";
+    jvObj[jss::type] = type;
     // NOTE jvObj is not a finished object for either API version. After
     // it's populated, we need to finish it for a specific API version. This is
     // done in a loop, near the end of this function.
@@ -3624,6 +3643,7 @@ NetworkOPsImp::pubValidatedTransaction(
         pubBookTransaction(transaction, jvObj);
 
     pubAccountTransaction(ledger, transaction, last);
+    pubMPTTransaction(ledger, transaction);
 }
 
 void
@@ -4113,6 +4133,131 @@ NetworkOPsImp::scheduleAccountCleanup(
                 JLOG(journal_.error()) << "SubCleanup[seq=" << seq << "]: unknown exception";
             }
         });
+}
+
+void
+NetworkOPsImp::pubMPTTransaction(
+    std::shared_ptr<ReadView const> const& ledger,
+    AcceptedLedgerTx const& transaction)
+{
+    hash_set<InfoSub::pointer> notify;
+    auto const& stTxn = transaction.getTxn();
+
+    {
+        std::scoped_lock const sl(mptLock_);
+
+        if (subMPT_.empty())
+            return;
+
+        // getAffectedMPTs derives the issuance id for MPTokenIssuance entries
+        // from the metadata, so it also covers transactions whose top-level
+        // STTx carries no MPTokenIssuanceID, such as the inner transactions
+        // of a Batch.
+        auto const affectedMPTs = transaction.getMeta().getAffectedMPTs();
+
+        for (auto const& affectedMPT : affectedMPTs)
+        {
+            if (auto simiIt = subMPT_.find(affectedMPT); simiIt != subMPT_.end())
+            {
+                auto it = simiIt->second.begin();
+                while (it != simiIt->second.end())
+                {
+                    InfoSub::pointer const p = it->second.lock();
+
+                    if (p)
+                    {
+                        notify.insert(p);
+                        ++it;
+                    }
+                    else
+                    {
+                        it = simiIt->second.erase(it);
+                    }
+                }
+            }
+        }
+    }
+
+    if (notify.empty())
+        return;
+
+    // Create two different Json objects, for different API versions
+    auto const metaRef = std::ref(transaction.getMeta());
+    auto const trResult = transaction.getResult();
+    MultiApiJson jvObj = transJson(stTxn, trResult, true, ledger, metaRef, "mptTransaction");
+
+    for (InfoSub::ref isrListener : notify)
+    {
+        jvObj.visit(isrListener->getApiVersion(), [&](json::Value const& jv) {
+            isrListener->send(jv, true);
+        });
+    }
+}
+
+void
+NetworkOPsImp::subMPT(InfoSub::ref isrListener, hash_set<MPTID> const& mptIDs)
+{
+    for (auto const& mptID : mptIDs)
+    {
+        JLOG(journal_.trace()) << "subMPT: MPT: " << to_string(mptID);
+
+        isrListener->insertSubMPTInfo(mptID);
+    }
+
+    std::scoped_lock const sl(mptLock_);
+
+    for (auto const& mptID : mptIDs)
+    {
+        auto simIterator = subMPT_.find(mptID);
+        if (simIterator == subMPT_.end())
+        {
+            // Not found, note that account has a new single listener.
+            SubMapType usisElement;
+            usisElement[isrListener->getSeq()] = isrListener;
+            subMPT_.insert(simIterator, make_pair(mptID, usisElement));
+        }
+        else
+        {
+            // Found, note that the account has another listener.
+            simIterator->second[isrListener->getSeq()] = isrListener;
+        }
+    }
+}
+
+void
+NetworkOPsImp::unsubMPT(InfoSub::ref isrListener, hash_set<MPTID> const& mptIDs)
+{
+    for (auto const& mptID : mptIDs)
+    {
+        // Remove from the InfoSub
+        isrListener->deleteSubMPTInfo(mptID);
+    }
+
+    // Remove from the server
+    unsubMPTInternal(isrListener->getSeq(), mptIDs);
+}
+
+void
+NetworkOPsImp::unsubMPTInternal(std::uint64_t uSeq, hash_set<MPTID> const& mptIDs)
+{
+    std::scoped_lock const sl(mptLock_);
+
+    for (auto const& mptID : mptIDs)
+    {
+        auto simIterator = subMPT_.find(mptID);
+
+        if (simIterator != subMPT_.end())
+        {
+            // Found
+            simIterator->second.erase(uSeq);
+
+            if (simIterator->second.empty())
+            {
+                // Don't need hash entry.
+                subMPT_.erase(simIterator);
+            }
+        }
+    }
 }
 
 void
