@@ -266,8 +266,10 @@ trace_peer=1
 trace_ledger=1
 
 [insight]
+# server=otel is the only load-bearing key here -- it selects OTelCollector.
+# The export endpoint comes from [telemetry] metrics_endpoint, and [insight]'s
+# own service_instance_id/service_name keys are ignored.
 server=otel
-endpoint=http://localhost:4318/v1/metrics
 
 [rpc_startup]
 { "command": "log_level", "severity": "warning" }
