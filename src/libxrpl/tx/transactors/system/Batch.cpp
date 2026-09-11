@@ -21,6 +21,7 @@
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/Transactor.h>
 #include <xrpl/tx/applySteps.h>
+#include <xrpl/tx/helpers/PreflightHelpers.h>
 
 #include <algorithm>
 #include <bit>
@@ -236,7 +237,7 @@ Batch::preflight(PreflightContext const& ctx)
     }
 
     if (ctx.tx.isFieldPresent(sfBatchSigners) &&
-        ctx.tx.getFieldArray(sfBatchSigners).size() > kMaxBatchSigners)
+        !checkSize(ctx.tx.getFieldArray(sfBatchSigners), kMaxBatchSigners))
     {
         JLOG(ctx.j.debug()) << "BatchTrace[" << parentBatchId << "]:"
                             << "signers array exceeds " << kMaxBatchSigners << " entries.";

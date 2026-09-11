@@ -20,6 +20,7 @@
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/ApplyContext.h>
 #include <xrpl/tx/Transactor.h>
+#include <xrpl/tx/helpers/PreflightHelpers.h>
 
 #include <chrono>
 #include <cstddef>
@@ -46,7 +47,7 @@ OracleSet::preflight(PreflightContext const& ctx)
     auto const& dataSeries = ctx.tx.getFieldArray(sfPriceDataSeries);
     if (dataSeries.empty())
         return temARRAY_EMPTY;
-    if (dataSeries.size() > kMaxOracleDataSeries)
+    if (!checkSize(dataSeries, kMaxOracleDataSeries))
         return temARRAY_TOO_LARGE;
 
     auto isInvalidLength = [&](auto const& sField, std::size_t length) {

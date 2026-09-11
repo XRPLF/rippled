@@ -2,7 +2,6 @@
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/Number.h>
-#include <xrpl/beast/utility/Zero.h>
 #include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/CredentialHelpers.h>
@@ -20,6 +19,7 @@
 #include <xrpl/protocol/Units.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/Transactor.h>
+#include <xrpl/tx/helpers/PreflightHelpers.h>
 
 namespace xrpl {
 
@@ -36,11 +36,11 @@ LoanBrokerCoverWithdraw::checkExtraFeatures(PreflightContext const& ctx)
 NotTEC
 LoanBrokerCoverWithdraw::preflight(PreflightContext const& ctx)
 {
-    if (ctx.tx[sfLoanBrokerID] == beast::kZero)
+    if (isZeroId(ctx.tx[sfLoanBrokerID]))
         return temINVALID;
 
     auto const dstAmount = ctx.tx[sfAmount];
-    if (dstAmount <= beast::kZero)
+    if (!isPositiveAmount(dstAmount))
         return temBAD_AMOUNT;
 
     if (!isLegalNet(dstAmount))
@@ -48,7 +48,7 @@ LoanBrokerCoverWithdraw::preflight(PreflightContext const& ctx)
 
     if (auto const destination = ctx.tx[~sfDestination])
     {
-        if (*destination == beast::kZero)
+        if (isZeroId(*destination))
         {
             return temMALFORMED;
         }

@@ -15,6 +15,7 @@
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/Transactor.h>
+#include <xrpl/tx/helpers/PreflightHelpers.h>
 
 namespace xrpl {
 
@@ -27,11 +28,11 @@ LoanBrokerCoverDeposit::checkExtraFeatures(PreflightContext const& ctx)
 NotTEC
 LoanBrokerCoverDeposit::preflight(PreflightContext const& ctx)
 {
-    if (ctx.tx[sfLoanBrokerID] == beast::kZero)
+    if (isZeroId(ctx.tx[sfLoanBrokerID]))
         return temINVALID;
 
     auto const dstAmount = ctx.tx[sfAmount];
-    if (dstAmount <= beast::kZero)
+    if (!isPositiveAmount(dstAmount))
         return temBAD_AMOUNT;
 
     if (!isLegalNet(dstAmount))

@@ -1,7 +1,6 @@
 #include <xrpl/tx/transactors/token/MPTokenIssuanceCreate.h>
 
 #include <xrpl/beast/utility/Journal.h>
-#include <xrpl/beast/utility/Zero.h>
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
@@ -20,6 +19,7 @@
 #include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/Transactor.h>
+#include <xrpl/tx/helpers/PreflightHelpers.h>
 
 #include <cstdint>
 #include <expected>
@@ -93,7 +93,7 @@ MPTokenIssuanceCreate::preflight(PreflightContext const& ctx)
 
     if (auto const domain = ctx.tx[~sfDomainID])
     {
-        if (*domain == beast::kZero)
+        if (isZeroId(*domain))
             return temMALFORMED;
 
         // Domain present implies that MPTokenIssuance is not public

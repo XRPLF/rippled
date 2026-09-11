@@ -15,6 +15,7 @@
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/Transactor.h>
+#include <xrpl/tx/helpers/PreflightHelpers.h>
 
 #include <algorithm>
 namespace xrpl {
@@ -24,7 +25,7 @@ NFTokenCancelOffer::preflight(PreflightContext const& ctx)
 {
     auto const& offerIds = ctx.tx[sfNFTokenOffers];
 
-    if (offerIds.empty() || (offerIds.size() > kMaxTokenOfferCancelCount))
+    if (!checkSizeAndNonEmpty(offerIds, kMaxTokenOfferCancelCount))
         return temMALFORMED;
 
     // Zero offer IDs cannot be passed as ledger entry keys.

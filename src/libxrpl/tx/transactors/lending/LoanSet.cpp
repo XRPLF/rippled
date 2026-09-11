@@ -29,6 +29,7 @@
 #include <xrpl/protocol/Units.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/Transactor.h>
+#include <xrpl/tx/helpers/PreflightHelpers.h>
 
 #include <cstddef>
 #include <cstdint>
@@ -146,7 +147,7 @@ LoanSet::preflight(PreflightContext const& ctx)
             return *ret;
     }
 
-    if (auto const brokerID = ctx.tx[~sfLoanBrokerID]; brokerID && *brokerID == beast::kZero)
+    if (auto const brokerID = ctx.tx[~sfLoanBrokerID]; brokerID && isZeroId(*brokerID))
         return temINVALID;
 
     return tesSUCCESS;
