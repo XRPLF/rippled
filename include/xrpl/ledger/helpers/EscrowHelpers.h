@@ -25,6 +25,8 @@
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/UintTypes.h>
 
+#include <cstdint>
+
 namespace xrpl {
 
 template <ValidIssueType T>
@@ -270,6 +272,21 @@ escrowUnlockApplyHelper<MPTIssue>(
         finalAmt,
         ctx.view.rules().enabled(fixTokenEscrowV1) ? amount : finalAmt,
         journal);
+}
+
+/**
+ * Owner count an escrow costs.
+ *
+ *  An escrow carrying bytecode costs one increment per 500 bytes beyond the
+ *  first 500, on top of the single increment every escrow costs.
+ */
+template <class T>
+int32_t
+calculateAdditionalReserve(T const& finishFunction)
+{
+    if (!finishFunction)
+        return 1;
+    return 1 + (finishFunction->size() / 500);
 }
 
 }  // namespace xrpl
