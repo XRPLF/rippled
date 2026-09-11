@@ -82,7 +82,12 @@ curl -s http://localhost:5005 \
 
 ### Step 4: Submit a transaction
 
-Close the ledger first (required in standalone mode):
+Close the ledger to drive a simulated consensus round — that round is what
+produces the `consensus.*` spans. It is not required for `submit` itself:
+standalone puts the node in `OperatingMode::FULL` at startup
+(`NetworkOPsImp::setStandAlone()`), and the one validated-ledger-age gate on
+the submit path is skipped when `config.standalone()` is set
+(`checkTxJsonFields()` in `src/xrpld/rpc/detail/TransactionSign.cpp`).
 
 ```bash
 curl -s http://localhost:5005 -d '{"method":"ledger_accept"}'
@@ -98,7 +103,7 @@ curl -s http://localhost:5005 -d '{
     "tx_json": {
       "TransactionType": "Payment",
       "Account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
-      "Destination": "rPMh7Pi9ct699iZUTWzJaUMR1o42VEfGqF",
+      "Destination": "rN7n7otQDd6FczFgLdSqtcsAUxDkw6fzRH",
       "Amount": "10000000"
     }
   }]
@@ -106,6 +111,12 @@ curl -s http://localhost:5005 -d '{
 ```
 
 Expected result: `"tesSUCCESS"`.
+
+The destination does not have to exist yet. 10 XRP is exactly the default base
+reserve (`FeeSetup::accountReserve` in `src/xrpld/core/Config.h`), so the
+payment creates and funds the account. `integration-test.sh` does not hardcode
+a destination at all — it calls `wallet_propose` and uses the `account_id` that
+comes back.
 
 Close the ledger again to finalize:
 
@@ -123,7 +134,7 @@ Or open Grafana Explore with Tempo datasource: http://localhost:3000
 
 ```bash
 # Kill xrpld (Ctrl+C or)
-kill $(pgrep -f 'xrpld.*xrpld-telemetry')
+pkill -f 'xrpld --conf docker/telemetry/xrpld-telemetry\.cfg'
 
 # Stop observability stack
 docker compose -f docker/telemetry/docker-compose.yml down
@@ -132,21 +143,70 @@ docker compose -f docker/telemetry/docker-compose.yml down
 rm -rf docker/telemetry/data/
 ```
 
+The pattern is anchored on the whole `--conf <path>` argument with the `.`
+escaped, so it matches this node and not another xrpld run or an editor whose
+command line happens to name the same file. `pkill` is also a no-op when
+nothing matches, where `kill $(pgrep ...)` errors out with no arguments.
+
 ### Expected spans (standalone mode)
 
-| Span Name                                                                                                  | Expected | Notes                                             |
-| ---------------------------------------------------------------------------------------------------------- | -------- | ------------------------------------------------- |
-| `rpc.http_request`                                                                                         | Yes      | Every HTTP RPC call                               |
-| `rpc.process`                                                                                              | Yes      | Every RPC processing                              |
-| `rpc.command.server_info`                                                                                  | Yes      | server_info RPC                                   |
-| `rpc.command.server_state`                                                                                 | Yes      | server_state RPC                                  |
-| `rpc.command.ledger`                                                                                       | Yes      | ledger RPC                                        |
-| `rpc.command.submit`                                                                                       | Yes      | submit RPC                                        |
-| `rpc.command.ledger_accept`                                                                                | Yes      | ledger_accept RPC                                 |
-| `tx.process`                                                                                               | Yes      | Transaction submission                            |
-| `tx.receive`                                                                                               | No       | No peers in standalone                            |
-| `consensus.round`, `.phase.open`, `.ledger_close`, `.accept`, `.accept.apply`                              | Yes      | `ledger_accept` drives a simulated round          |
-| `consensus.establish`, `.update_positions`, `.check`, `.proposal.*`, `.validation.receive`, `.mode_change` | No       | `simulate` jumps straight to `Accepted`; no peers |
+| Span Name                                                                     | Expected | Notes                                      |
+| ----------------------------------------------------------------------------- | -------- | ------------------------------------------ |
+| `rpc.http_request`                                                            | Yes      | Every HTTP RPC call                        |
+| `rpc.process`                                                                 | Yes      | Every RPC processing                       |
+| `rpc.command.server_info`                                                     | Yes      | server_info RPC                            |
+| `rpc.command.server_state`                                                    | Yes      | server_state RPC                           |
+| `rpc.command.ledger`                                                          | Yes      | ledger RPC                                 |
+| `rpc.command.submit`                                                          | Yes      | submit RPC                                 |
+| `rpc.command.ledger_accept`                                                   | Yes      | ledger_accept RPC                          |
+| `rpc.ws_upgrade`, `rpc.ws_message`                                            | No       | Need a WebSocket client                    |
+| `tx.process`                                                                  | Yes      | Transaction submission                     |
+| `tx.preflight`, `tx.preclaim`, `tx.transactor`                                | Yes      | Apply stages of the Payment                |
+| `tx.apply`                                                                    | Yes      | Ledger build applies the tx set            |
+| `tx.receive`                                                                  | No       | No peers in standalone                     |
+| `txq.enqueue`, `txq.apply_direct`                                             | Yes      | `TxQ::apply` on the submit path            |
+| `txq.accept`, `txq.cleanup`                                                   | Yes      | Run on every ledger close                  |
+| `txq.accept_tx`, `txq.batch_clear`                                            | No       | Nothing is ever queued here                |
+| `ledger.build`, `ledger.store`                                                | Yes      | `buildLCL` builds, then stores             |
+| `ledger.validate`                                                             | No       | `checkAccept` is unreachable in standalone |
+| `consensus.round`, `.phase.open`, `.ledger_close`, `.accept`, `.accept.apply` | Yes      | `ledger_accept` drives a simulated round   |
+| `consensus.mode_change`                                                       | Yes      | Fires once per round start                 |
+| `consensus.establish`, `.update_positions`, `.check`                          | No       | `phaseEstablish()` never runs              |
+| `consensus.proposal.send`, `.validation.send`                                 | No       | The config carries no validator key        |
+| `consensus.proposal.receive`, `.validation.receive`                           | No       | No peers                                   |
+| `peer.proposal.receive`, `peer.validation.receive`                            | No       | No peers                                   |
+| `pathfind.*`                                                                  | No       | No path request, no path subscription      |
+| `grpc.*`                                                                      | No       | No `[port_grpc]` in the config             |
+
+Four of the "No" rows have a reason worth spelling out.
+
+- `ledger.validate` belongs to `LedgerMaster::checkAccept`, and standalone never
+  reaches it: `consensusBuilt` returns early when standalone, and `switchLCL`
+  takes its standalone branch instead of calling `checkAccept`. That
+  `getNeededValidations()` returns 0 in standalone is therefore not enough on its
+  own.
+- `consensus.establish`, `.update_positions` and `.check` are started from
+  `phaseEstablish()`. `simulate` does call `closeLedger({})` — which is exactly
+  why `.phase.open` and `.ledger_close` do fire — and then sets the phase to
+  `Accepted` itself, so `phaseEstablish()` is never entered.
+- `.proposal.send` and `.validation.send` are absent for a different reason
+  again: `xrpld-telemetry.cfg` carries no `validation_seed` or
+  `validator_token`, so `preStartRound` leaves `validating_` false. The node
+  observes rather than proposes, and `validate()` — the owner of
+  `.validation.send` — is never called.
+- `pathfind.update_all` is emitted only while at least one path subscription is
+  active, and this test makes no `path_find` or `ripple_path_find` call.
+
+`.mode_change` is in the "Yes" rows because it does not depend on the mode
+actually changing. `startRoundInternal` calls `mode_.set()`, `MonitoredMode::set`
+calls `onModeChange` with no equality test, and `onModeChange` creates the span
+before the `before != after` check — that check guards only the censorship-detector
+reset.
+
+One `consensus.round` span reaches Tempo, not two. `roundSpan_` is reset only at
+the top of the next `startRoundTracing()`, so after the two `ledger_accept` calls
+the first round's span has ended and been exported while the second is still open.
+Only ended spans are exported.
 
 ---
 
@@ -165,7 +225,7 @@ bash docker/telemetry/integration-test.sh
 
 It checks prerequisites, clears the previous run, brings up the observability stack, generates six validator key pairs and their node configs, starts the nodes, waits for consensus and then for a validated ledger, exercises RPC and submits a transaction, verifies traces in Tempo and both the span_metrics and the StatsD-derived metrics in Prometheus, then prints a summary and leaves the stack running.
 
-The script announces each step as it runs, so read its `Step N:` headers for the authoritative sequence — they are not restated here, because a numbered copy of them drifts as soon as a step is added.
+The authoritative sequence is the 14 `# Step N:` banner comments in the script source, so read the file rather than the console — none of the script's 48 runtime `log` lines print a step number. The sequence is not restated here, because a numbered copy of it drifts as soon as a step is added.
 
 Its Tempo checks cover the RPC, transaction, consensus, ledger and peer span categories from a fixed list, which is narrower than the loop in the "Verification Queries" section below.
 
@@ -331,7 +391,7 @@ curl -s http://localhost:5005 -d '{
     "tx_json": {
       "TransactionType": "Payment",
       "Account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
-      "Destination": "rPMh7Pi9ct699iZUTWzJaUMR1o42VEfGqF",
+      "Destination": "rN7n7otQDd6FczFgLdSqtcsAUxDkw6fzRH",
       "Amount": "10000000"
     }
   }]
@@ -340,9 +400,13 @@ curl -s http://localhost:5005 -d '{
 
 Expected result: `"tesSUCCESS"`, the same as Test 1 Step 4.
 
-Wait 15 seconds for consensus and batch export.
+Wait 15 seconds for the consensus round and the trace batch export. Prometheus
+needs longer: `integration-test.sh` waits a further 20 s before its span_metrics
+queries and another 20 s before its StatsD queries, so 35 s and 55 s after the
+submit. Querying the metrics block at 15 s returns no series, which looks like a
+broken pipeline and is not one.
 
-#### Step 8: Verify in Tempo
+#### Step 8: Verify in Tempo and Prometheus
 
 See the "Verification Queries" section below.
 
@@ -383,28 +447,75 @@ Attributes are deliberately not repeated here. Keeping a second copy is how this
 
 Base URL: `http://localhost:3200`
 
+Run `RUN_START=$(date +%s)` **before** starting xrpld (Test 1 Step 2, Test 2
+Step 5), in the same shell you will run the block below in. Tempo keeps blocks
+for `block_retention` (`tempo.yaml`, 1h) on a named volume, so a search with no
+time bound is answered by the previous run's traces.
+
 ```bash
 TEMPO="http://localhost:3200"
+
+# Refuse to run unbounded rather than report a previous run's traces.
+: "${RUN_START:?record RUN_START=\$(date +%s) before starting xrpld}"
 
 # List all services
 curl -s "$TEMPO/api/v2/search/tag/resource.service.name/values" | jq '.tagValues[].value'
 
-# Query traces by operation
-for op in "rpc.http_request" "rpc.ws_upgrade" "rpc.ws_message" "rpc.process" \
+# Count traces per span name. Test 1 produces a subset of this list — read it
+# against the "Expected spans (standalone mode)" table above, not as pass/fail.
+#
+# -G is required: it moves the urlencoded parameters into the query string.
+# Without it curl POSTs them as a request body, Tempo answers 200 and ignores
+# the query, and every span name comes back non-zero. start/end bound the
+# search to this run; the end margin covers spans exported while the query is
+# in flight.
+for op in "rpc.http_request" "rpc.process" \
     "rpc.command.server_info" "rpc.command.server_state" "rpc.command.ledger" \
+    "rpc.command.submit" "rpc.command.ledger_accept" \
     "tx.process" "tx.receive" "tx.apply" \
-    "consensus.proposal.send" "consensus.ledger_close" \
+    "tx.preflight" "tx.preclaim" "tx.transactor" \
+    "txq.enqueue" "txq.apply_direct" "txq.accept" "txq.cleanup" \
+    "consensus.round" "consensus.phase.open" "consensus.ledger_close" \
+    "consensus.establish" "consensus.update_positions" "consensus.check" \
     "consensus.accept" "consensus.accept.apply" \
-    "consensus.validation.send" \
+    "consensus.proposal.send" "consensus.validation.send" \
+    "consensus.mode_change" \
+    "consensus.proposal.receive" "consensus.validation.receive" \
     "ledger.build" "ledger.validate" "ledger.store" \
     "peer.proposal.receive" "peer.validation.receive"; do
-    count=$(curl -s "$TEMPO/api/search" \
+    count=$(curl -sfG "$TEMPO/api/search" \
         --data-urlencode "q={resource.service.name=\"xrpld\" && name=\"$op\"}" \
+        --data-urlencode "start=$RUN_START" \
+        --data-urlencode "end=$(($(date +%s) + 60))" \
         --data-urlencode "limit=5" |
         jq '.traces | length')
     printf "%-35s %s traces\n" "$op" "$count"
 done
 ```
+
+Eight more span families exist but need a trigger neither test performs, so they
+are counted separately — a zero here is the expected answer, not a failure.
+`rpc.ws_*` need a WebSocket client, the `pathfind.*` family needs a `path_find`
+or `ripple_path_find` call, and the two `txq` names need a transaction sitting in
+the queue.
+
+```bash
+for op in "rpc.ws_upgrade" "rpc.ws_message" \
+    "pathfind.request" "pathfind.compute" "pathfind.discover" "pathfind.update_all" \
+    "txq.accept_tx" "txq.batch_clear"; do
+    count=$(curl -sfG "$TEMPO/api/search" \
+        --data-urlencode "q={resource.service.name=\"xrpld\" && name=\"$op\"}" \
+        --data-urlencode "start=$RUN_START" \
+        --data-urlencode "end=$(($(date +%s) + 60))" \
+        --data-urlencode "limit=5" |
+        jq '.traces | length')
+    printf "%-35s %s traces\n" "$op" "$count"
+done
+```
+
+The remaining family is `grpc.<method>`, whose span name is the gRPC method, so
+it has no fixed string to query and needs a `[port_grpc]` stanza neither test
+configures.
 
 ### Prometheus API
 
@@ -477,7 +588,11 @@ Pre-configured datasources:
 2. Verify `[ips_fixed]` lists the 5 other peer ports, and not the node's own
 3. Verify `validators.txt` has all 6 public keys
 4. Check node debug logs: `tail -50 /tmp/xrpld-integration/node1/debug.log`
-5. Ensure `[peer_private]` is set to `1` (prevents reaching out to public network)
+5. Ensure `[peer_private]` is set to `1`. In `src/libxrpl/peerfinder/Config.cpp`
+   it sets both `autoConnect = !standalone && !peerPrivate` and
+   `wantIncoming = (!config.peerPrivate) && (port != 0)`, so it stops the node
+   reaching out to the public network **and** stops it accepting inbound peers.
+   The nodes here find each other through `[ips_fixed]`, which is unaffected.
 
 ### Transaction not processing
 
