@@ -3,8 +3,6 @@
 #include <test/jtx/Account.h>
 #include <test/jtx/mpt.h>
 
-#include <xrpl/protocol/TxFlags.h>
-
 #include <cstdint>
 #include <vector>
 
