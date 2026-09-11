@@ -302,12 +302,12 @@ NotTEC
 checkEncryptedAmountFormat(STObject const& object);
 
 /**
- * @brief Reports whether a holder's issuer mirror is encrypted under the
+ * @brief Checks whether a holder's issuer mirror is encrypted under the
  * issuance's currently registered issuer key.
  *
- * An absent mirror epoch means epoch 0, matching the issuance convention. A
- * holder with no issuer mirror at all is not current: there is nothing for a
- * later re-encryption to anchor on.
+ * Verifies that the holder's issuer mirror epoch matches the active issuer key
+ * epoch on the issuance. An absent mirror epoch defaults to epoch 0. A holder without an issuer
+ * mirror is considered stale, as there is no key anchor for future re-encryptions.
  *
  * @param issuance The MPTokenIssuance ledger object.
  * @param mptoken  The holder's MPToken ledger object.
@@ -317,13 +317,12 @@ checkEncryptedAmountFormat(STObject const& object);
 isIssuerMirrorCurrent(STObject const& issuance, STObject const& mptoken);
 
 /**
- * @brief Reports whether a holder's auditor mirror is encrypted under the
+ * @brief Checks whether a holder's auditor mirror is encrypted under the
  * issuance's currently registered auditor key.
  *
- * An issuance with no auditor key requires no auditor mirror, so the holder is
- * trivially current. Once an auditor key is configured the mirror must also be
- * present: a key registered after the holder initialized confidential state
- * leaves them with no auditor mirror at all.
+ * Verifies that the holder's auditor mirror epoch matches the active auditor key
+ * epoch on the issuance. An absent mirror epoch defaults to epoch 0. An issuance
+ * without an auditor key requires no auditor mirror and is considered current.
  *
  * @param issuance The MPTokenIssuance ledger object.
  * @param mptoken  The holder's MPToken ledger object.
@@ -333,13 +332,12 @@ isIssuerMirrorCurrent(STObject const& issuance, STObject const& mptoken);
 isAuditorMirrorCurrent(STObject const& issuance, STObject const& mptoken);
 
 /**
- * @brief Reports whether every mirror a holder is required to have is encrypted
+ * @brief Checks whether each mirror a holder is required to have is encrypted
  * under the issuance's currently registered ElGamal keys.
  *
- * A transaction that homomorphically combines a new ciphertext into an existing
- * mirror requires that mirror to be current. The new ciphertext is encrypted
- * under the registered key, so combining it into a mirror left behind by a key
- * rotation would produce a ciphertext that no party can decrypt.
+ * Verifies that both the issuer mirror and the auditor mirror (if required)
+ * are current. This serves as a combined check, ensuring all necessary
+ * holder mirror epochs match the active key epochs on the issuance.
  *
  * @param issuance The MPTokenIssuance ledger object.
  * @param mptoken  The holder's MPToken ledger object.
@@ -347,6 +345,18 @@ isAuditorMirrorCurrent(STObject const& issuance, STObject const& mptoken);
  */
 [[nodiscard]] bool
 areMirrorsCurrent(STObject const& issuance, STObject const& mptoken);
+
+/**
+ * @brief Set the holder's MPToken mirror epochs to match the issuance's current key epochs.
+ *
+ * Call this after writing mirror ciphertexts under the issuance's currently
+ * registered keys, so that the mirrors read as current afterwards.
+ *
+ * @param issuance The MPTokenIssuance ledger object.
+ * @param mptoken  The holder's MPToken ledger entry to update.
+ */
+void
+setMirrorEpochs(STObject const& issuance, STObject& mptoken);
 
 /**
  * @brief Verifies revealed amount encryptions for all recipients.

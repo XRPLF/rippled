@@ -420,6 +420,19 @@ areMirrorsCurrent(STObject const& issuance, STObject const& mptoken)
     return isIssuerMirrorCurrent(issuance, mptoken) && isAuditorMirrorCurrent(issuance, mptoken);
 }
 
+void
+setMirrorEpochs(STObject const& issuance, STObject& mptoken)
+{
+    if (auto const epoch = issuance[~sfIssuerKeyEpoch].value_or(0); epoch != 0)
+        mptoken[sfIssuerKeyMirrorEpoch] = epoch;
+
+    if (mptoken.isFieldPresent(sfAuditorEncryptedBalance))
+    {
+        if (auto const epoch = issuance[~sfAuditorKeyEpoch].value_or(0); epoch != 0)
+            mptoken[sfAuditorKeyMirrorEpoch] = epoch;
+    }
+}
+
 TER
 verifySchnorrProof(Slice const& pubKeySlice, Slice const& proofSlice, uint256 const& contextHash)
 {

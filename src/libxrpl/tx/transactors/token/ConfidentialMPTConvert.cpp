@@ -345,16 +345,7 @@ ConfidentialMPTConvert::doApply()
 
         // Initialize key epochs when registering the keys.
         if (view().rules().enabled(featureConfidentialMPTKeyRotation))
-        {
-            if (auto const epoch = (*sleIssuance)[~sfIssuerKeyEpoch].valueOr(0); epoch != 0)
-                (*sleMptoken)[sfIssuerKeyMirrorEpoch] = epoch;
-
-            if (auditorEc)
-            {
-                if (auto const epoch = (*sleIssuance)[~sfAuditorKeyEpoch].valueOr(0); epoch != 0)
-                    (*sleMptoken)[sfAuditorKeyMirrorEpoch] = epoch;
-            }
-        }
+            setMirrorEpochs(*sleIssuance, *sleMptoken);
 
         // Spending balance starts at zero. Must use canonical zero encryption
         // (deterministic ciphertext) so the ledger state is reproducible.
