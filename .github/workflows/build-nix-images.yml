@@ -5,15 +5,13 @@ on:
     branches:
       - develop
     paths:
-      - ".github/workflows/build-nix-images.yml"
       - "flake.nix"
       - "flake.lock"
       - "rust-toolchain.toml"
       - "nix/**"
       - "!nix/docker/README.md"
       - "!nix/devshell.nix"
-      - "!nix/check-tools/*.txt"
-      - "bin/check-tools.sh"
+      - "!nix/check-tools/**"
       - "bin/default-loader-path.sh"
       - "bin/install-sanitizer-libs.sh"
   pull_request:
@@ -25,7 +23,7 @@ on:
       - "nix/**"
       - "!nix/docker/README.md"
       - "!nix/devshell.nix"
-      - "!nix/check-tools/*.txt"
+      - "!nix/check-tools/**"
       - "bin/check-tools.sh"
       - "bin/default-loader-path.sh"
       - "bin/install-sanitizer-libs.sh"

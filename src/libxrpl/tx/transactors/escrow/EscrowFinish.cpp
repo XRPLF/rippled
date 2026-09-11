@@ -65,7 +65,13 @@ checkCondition(Slice f, Slice c)
 bool
 EscrowFinish::checkExtraFeatures(PreflightContext const& ctx)
 {
-    return !ctx.tx.isFieldPresent(sfCredentialIDs) || ctx.rules.enabled(featureCredentials);
+    if (ctx.tx.isFieldPresent(sfCredentialIDs) && !ctx.rules.enabled(featureCredentials))
+        return false;
+
+    if (ctx.tx.isFieldPresent(sfGas) && !ctx.rules.enabled(featureSmartEscrow))
+        return false;
+
+    return true;
 }
 
 NotTEC
