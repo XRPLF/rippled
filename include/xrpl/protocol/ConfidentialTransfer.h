@@ -6,6 +6,7 @@
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STInteger.h>  // IWYU pragma: keep
+#include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/UintTypes.h>
@@ -314,7 +315,7 @@ checkEncryptedAmountFormat(STObject const& object);
  * @return true if the MPToken's issuer mirror is current. false if stale.
  */
 [[nodiscard]] bool
-isIssuerMirrorCurrent(STObject const& issuance, STObject const& mptoken);
+isIssuerMirrorCurrent(SLE const& issuance, SLE const& mptoken);
 
 /**
  * @brief Checks whether a holder's auditor mirror is encrypted under the
@@ -329,7 +330,7 @@ isIssuerMirrorCurrent(STObject const& issuance, STObject const& mptoken);
  * @return true if the auditor mirror is current or not required.
  */
 [[nodiscard]] bool
-isAuditorMirrorCurrent(STObject const& issuance, STObject const& mptoken);
+isAuditorMirrorCurrent(SLE const& issuance, SLE const& mptoken);
 
 /**
  * @brief Checks whether each mirror a holder is required to have is encrypted
@@ -344,7 +345,7 @@ isAuditorMirrorCurrent(STObject const& issuance, STObject const& mptoken);
  * @return true if the required mirrors are current.
  */
 [[nodiscard]] bool
-areMirrorsCurrent(STObject const& issuance, STObject const& mptoken);
+areMirrorsCurrent(SLE const& issuance, SLE const& mptoken);
 
 /**
  * @brief Set the holder's MPToken mirror epochs to match the issuance's current key epochs.
@@ -356,7 +357,7 @@ areMirrorsCurrent(STObject const& issuance, STObject const& mptoken);
  * @param mptoken  The holder's MPToken ledger entry to update.
  */
 void
-setMirrorEpochs(STObject const& issuance, STObject& mptoken);
+setMirrorEpochs(SLE const& issuance, SLE& mptoken);
 
 /**
  * @brief Verifies revealed amount encryptions for all recipients.

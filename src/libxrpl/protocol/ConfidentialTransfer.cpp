@@ -6,9 +6,11 @@
 #include <xrpl/basics/contract.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STBlob.h>
+#include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/UintTypes.h>
@@ -398,15 +400,27 @@ checkEncryptedAmountFormat(STObject const& object)
 }
 
 bool
-isIssuerMirrorCurrent(STObject const& issuance, STObject const& mptoken)
+isIssuerMirrorCurrent(SLE const& issuance, SLE const& mptoken)
 {
+    XRPL_ASSERT(
+        issuance.getType() == ltMPTOKEN_ISSUANCE,
+        "xrpl::isIssuerMirrorCurrent : issuance MPTokenIssuance object");
+    XRPL_ASSERT(
+        mptoken.getType() == ltMPTOKEN, "xrpl::isIssuerMirrorCurrent : mptoken MPToken object");
+
     return mptoken.isFieldPresent(sfIssuerEncryptedBalance) &&
         mptoken[~sfIssuerKeyMirrorEpoch].value_or(0) == issuance[~sfIssuerKeyEpoch].value_or(0);
 }
 
 bool
-isAuditorMirrorCurrent(STObject const& issuance, STObject const& mptoken)
+isAuditorMirrorCurrent(SLE const& issuance, SLE const& mptoken)
 {
+    XRPL_ASSERT(
+        issuance.getType() == ltMPTOKEN_ISSUANCE,
+        "xrpl::isAuditorMirrorCurrent : issuance MPTokenIssuance object");
+    XRPL_ASSERT(
+        mptoken.getType() == ltMPTOKEN, "xrpl::isAuditorMirrorCurrent : mptoken MPToken object");
+
     if (!issuance.isFieldPresent(sfAuditorEncryptionKey))
         return true;
 
@@ -415,14 +429,19 @@ isAuditorMirrorCurrent(STObject const& issuance, STObject const& mptoken)
 }
 
 bool
-areMirrorsCurrent(STObject const& issuance, STObject const& mptoken)
+areMirrorsCurrent(SLE const& issuance, SLE const& mptoken)
 {
     return isIssuerMirrorCurrent(issuance, mptoken) && isAuditorMirrorCurrent(issuance, mptoken);
 }
 
 void
-setMirrorEpochs(STObject const& issuance, STObject& mptoken)
+setMirrorEpochs(SLE const& issuance, SLE& mptoken)
 {
+    XRPL_ASSERT(
+        issuance.getType() == ltMPTOKEN_ISSUANCE,
+        "xrpl::setMirrorEpochs : issuance MPTokenIssuance object");
+    XRPL_ASSERT(mptoken.getType() == ltMPTOKEN, "xrpl::setMirrorEpochs : mptoken MPToken object");
+
     if (auto const epoch = issuance[~sfIssuerKeyEpoch].value_or(0); epoch != 0)
         mptoken[sfIssuerKeyMirrorEpoch] = epoch;
 
