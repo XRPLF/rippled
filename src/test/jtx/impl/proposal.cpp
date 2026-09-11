@@ -181,8 +181,32 @@ sign(
         Throw<std::runtime_error>("proposal::sign: no such proposal");
 
     STObject const proposedTx = sle->getFieldObject(sfProposedTransaction);
-    auto const data =
-        xrpl::proposal::signingData(proposedTx, signingFor.id(), signer.id(), signer.pk().slice());
+
+    // Resolve any Counterparty this proposed transaction infers from the
+    // ledger (see TransactionProposalSign::preclaim). The jtx helper mirrors
+    // the transactor's routing so a test can hand-roll a Sign against a
+    // LoanSet without sfCounterparty and still produce the right payload.
+    auto const implicitCounterparty = [&]() -> std::optional<AccountID> {
+        if (proposedTx.getFieldU16(sfTransactionType) != ttLOAN_SET)
+            return std::nullopt;
+        if (proposedTx.isFieldPresent(sfCounterparty))
+            return std::nullopt;
+        if (!proposedTx.isFieldPresent(sfLoanBrokerID))
+            return std::nullopt;
+        auto const broker =
+            env.current()->read(keylet::loanBroker(proposedTx.getFieldH256(sfLoanBrokerID)));
+        if (!broker)
+            return std::nullopt;
+        return broker->getAccountID(sfOwner);
+    }();
+
+    auto const data = xrpl::proposal::signingData(
+        proposedTx,
+        signingFor.id(),
+        signer.id(),
+        signer.pk().slice(),
+        env.current()->rules(),
+        implicitCounterparty);
     if (!data)
         Throw<std::runtime_error>("proposal::sign: cannot build signing data");
 

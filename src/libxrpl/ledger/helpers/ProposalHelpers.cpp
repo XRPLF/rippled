@@ -15,6 +15,7 @@
 #include <xrpl/protocol/Keylet.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/Protocol.h>
+#include <xrpl/protocol/Rules.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STArray.h>
 #include <xrpl/protocol/STLedgerEntry.h>
@@ -211,31 +212,118 @@ deleteProposal(ApplyView& view, SLE::pointer const& sleProposal, beast::Journal 
     return tesSUCCESS;
 }
 
-bool
-isOuterSigningFor(STObject const& proposedTx, AccountID const& signingFor)
+std::optional<SignatureRole>
+auxiliaryRole(
+    STObject const& proposedTx,
+    AccountID const& signingFor,
+    std::optional<AccountID> const& implicitCounterparty)
 {
-    return signingFor == initiator(proposedTx);
+    // The initiator's contribution is a Transaction role, which is expressed
+    // by "no auxiliary role" so the two never both hold.
+    if (signingFor == initiator(proposedTx))
+        return std::nullopt;
+
+    // A LoanSet without sfCounterparty defaults to LoanBroker.Owner
+    // (XLS-66 §3.8). Callers resolve the fallback account against the ledger
+    // and pass it in as implicitCounterparty; the helper itself is stateless.
+    auto const explicitCounter = proposedTx[~sfCounterparty];
+    auto const effectiveCounter = explicitCounter ? explicitCounter : implicitCounterparty;
+    if (effectiveCounter && *effectiveCounter == signingFor)
+        return SignatureRole::Counterparty;
+
+    if (auto const sponsor = proposedTx[~sfSponsor]; sponsor && *sponsor == signingFor)
+        return SignatureRole::Sponsor;
+
+    return std::nullopt;
 }
 
 bool
-isRequiredSigningFor(STObject const& proposedTx, AccountID const& signingFor)
+isOuterSigningFor(
+    STObject const& proposedTx,
+    AccountID const& signingFor,
+    std::optional<AccountID> const& implicitCounterparty)
 {
-    if (isOuterSigningFor(proposedTx, signingFor))
+    // A contribution for the proposed transaction itself: its initiator
+    // (Account or Delegate), or an outer Counterparty / Sponsor co-signature.
+    // Not an inner Batch participant — those go in sfBatchSigners.
+    return signingFor == initiator(proposedTx) ||
+        auxiliaryRole(proposedTx, signingFor, implicitCounterparty).has_value();
+}
+
+bool
+hasAmbiguousOuterRole(
+    STObject const& proposedTx,
+    AccountID const& signingFor,
+    std::optional<AccountID> const& implicitCounterparty)
+{
+    std::size_t roles = 0;
+    if (signingFor == initiator(proposedTx))
+        ++roles;
+
+    auto const explicitCounter = proposedTx[~sfCounterparty];
+    auto const effectiveCounter = explicitCounter ? explicitCounter : implicitCounterparty;
+    if (effectiveCounter && *effectiveCounter == signingFor)
+        ++roles;
+
+    if (auto const sponsor = proposedTx[~sfSponsor]; sponsor && *sponsor == signingFor)
+        ++roles;
+
+    return roles > 1;
+}
+
+bool
+isRequiredSigningFor(
+    STObject const& proposedTx,
+    AccountID const& signingFor,
+    std::optional<AccountID> const& implicitCounterparty)
+{
+    if (isOuterSigningFor(proposedTx, signingFor, implicitCounterparty))
         return true;
 
     if (proposedTx.getFieldU16(sfTransactionType) != ttBATCH ||
         !proposedTx.isFieldPresent(sfRawTransactions))
         return false;
 
-    // A delegated inner is signed by the Delegate, not by the Account; the
-    // Account itself is not a required signer in that case. Mirrors
-    // Batch::preflightSigValidated, which reads the required signer from
-    // STTx::getInitiator().
+    // A batch inner participant is any account whose signature the batch's
+    // own submit-time check requires, minus the outer account (which never
+    // appears in BatchSigners). Mirrors Batch::preflightSigValidated's
+    // requiredSigners assembly:
+    //   - each inner's initiator (Delegate if permission delegation is in
+    //     use, otherwise Account) — a delegated inner is signed by the
+    //     Delegate, not the Account holder;
+    //   - each inner's sfCounterparty when the transaction type has one.
+    //
+    // The only in-tree tx type that carries sfCounterparty is LoanSet, and
+    // it is currently listed in Batch::kDisabledTxTypes, so the inner
+    // counterparty branch below is unreachable through today's amendment
+    // set. It is retained to stay in lockstep with Batch's own gate: if a
+    // future amendment permits inner LoanSet (or introduces another
+    // counterparty-carrying inner tx type), cosign routes those signatures
+    // to BatchSigners the same way Batch requires them at submit.
+    //
+    // Inner sfSponsor is deliberately not recognized here. Batch's own
+    // requiredSigners assembly gates the sponsor on
+    // rb.isFieldPresent(sfSponsorSignature); a proposal inner is stored in
+    // unsigned canonical form and never carries that field, so the batch's
+    // own submit-time check would not require the sponsor as a batch
+    // signer either. In v1 cosign therefore handles inner reserve
+    // sponsorship the pre-funded way: the sponsor establishes the
+    // sponsorship SLE ahead of time via SponsorshipTransfer, and no
+    // TransactionProposalSign is collected for the sponsor role at the
+    // inner level. Co-signed inner sponsorship (a sponsor who signs both
+    // the inner Sponsor payload and the batch payload) would require a
+    // second signature slot per contribution and is deferred to a
+    // follow-up amendment.
     auto const outer = proposedTx.getAccountID(sfAccount);
     return std::ranges::any_of(proposedTx.getFieldArray(sfRawTransactions), [&](auto const& inner) {
         auto const tx = innerTxn(inner);
-        auto const innerInitiator = initiator(tx);
-        return signingFor != outer && signingFor == innerInitiator;
+        if (signingFor == outer)
+            return false;
+        if (signingFor == initiator(tx))
+            return true;
+        if (auto const counter = tx[~sfCounterparty]; counter && *counter == signingFor)
+            return true;
+        return false;
     });
 }
 
@@ -244,10 +332,13 @@ signingData(
     STObject const& proposedTx,
     AccountID const& signingFor,
     AccountID const& signerAccount,
-    Slice const& signingPubKey)
+    Slice const& signingPubKey,
+    Rules const& rules,
+    std::optional<AccountID> const& implicitCounterparty)
 {
     auto const singleSign = signerAccount == signingFor;
-    auto const forOuter = isOuterSigningFor(proposedTx, signingFor);
+    auto const forOuter = isOuterSigningFor(proposedTx, signingFor, implicitCounterparty);
+    auto const auxRole = auxiliaryRole(proposedTx, signingFor, implicitCounterparty);
 
     // Hash the same canonical STTx the ordinary submit path will verify, not
     // the untyped nested object stored on the proposal.
@@ -279,21 +370,37 @@ signingData(
             return msg;
         }
 
+        // Outer level: initiator, or Counterparty / Sponsor co-signer. The
+        // role's HashPrefix binds the signature to the slot it is being
+        // collected for once fixCleanup3_4_0 is enabled — before it, every
+        // role signs the same bytes, which is the pre-fix behavior of every
+        // multi-role transaction on the ordinary submit path.
+        auto const role = auxRole.value_or(SignatureRole::Transaction);
+        auto const prefix = signingPrefix(role, !singleSign, rules);
+
         if (singleSign)
         {
-            stx.setFieldVL(sfSigningPubKey, signingPubKey);
+            // Only the initiator's single-sign publishes its key into the
+            // proposed transaction's top-level sfSigningPubKey. A
+            // Counterparty / Sponsor single-sign's key lives inside its own
+            // signature slot; the outer sfSigningPubKey stays empty (as
+            // unsigned canonical form leaves it) and the aux slot itself is
+            // excluded by addWithoutSigningFields because sfCounterpartySignature
+            // and sfSponsorSignature are both SField::kNotSigning.
+            if (role == SignatureRole::Transaction)
+                stx.setFieldVL(sfSigningPubKey, signingPubKey);
             Serializer s;
-            s.add32(HashPrefix::TxSign);
+            s.add32(prefix);
             stx.addWithoutSigningFields(s);
             return s;
         }
 
-        // Multi-sign of an ordinary transaction (or the outer of a Batch,
-        // which is authorized on the same standard payload as an ordinary
-        // multi-sign, see checkMultiSign path in Transactor).
-        // SignatureRole::Transaction always maps to HashPrefix::TxMultiSign,
-        // both with and without fixSignaturePrefixes.
-        return buildMultiSigningData(stx, signerAccount, HashPrefix::TxMultiSign);
+        // Multi-sign of the outer transaction (initiator, or a Counterparty /
+        // Sponsor whose slot itself carries a Signers array). Payload is the
+        // same across roles apart from the role prefix — see checkMultiSign
+        // for the Transaction path and checkSign's aux-signature branch for
+        // the role-slot paths.
+        return buildMultiSigningData(stx, signerAccount, prefix);
     }
     catch (std::exception const&)
     {
@@ -308,13 +415,40 @@ TER
 recordContribution(
     STObject& proposedTx,
     AccountID const& signingFor,
-    STObject const& proposalSignature)
+    STObject const& proposalSignature,
+    std::optional<AccountID> const& implicitCounterparty)
 {
     auto const singleSign = proposalSignature.getAccountID(sfAccount) == signingFor;
-    auto const forOuter = isOuterSigningFor(proposedTx, signingFor);
+    auto const forOuter = isOuterSigningFor(proposedTx, signingFor, implicitCounterparty);
 
     if (forOuter)
+    {
+        // Counterparty and Sponsor contributions land in their own top-level
+        // slots (sfCounterpartySignature / sfSponsorSignature), which share
+        // the sfBatchSigner inner-object schema: SigningPubKey / TxnSignature
+        // / Signers all optional. recordIntoSigners is agnostic to which
+        // slot object it is writing into, so the same duplicate / mode-
+        // conflict / oversize checks apply to every role.
+        auto const auxRole = auxiliaryRole(proposedTx, signingFor, implicitCounterparty);
+        if (auxRole)
+        {
+            SField const* slotField = signatureField(*auxRole);
+            XRPL_ASSERT(
+                slotField != nullptr,
+                "xrpl::proposal::recordContribution : aux role has signature field");
+            auto slot = proposedTx.isFieldPresent(*slotField)
+                ? proposedTx.getFieldObject(*slotField)
+                : STObject::makeInnerObject(*slotField);
+            if (auto const ret = recordIntoSigners(slot, proposalSignature, singleSign);
+                !isTesSuccess(ret))
+                return ret;
+            proposedTx.setFieldObject(*slotField, slot);
+            return tesSUCCESS;
+        }
+        // Initiator (Account / Delegate) contribution: written into the
+        // outer Signers array or top-level SigningPubKey / TxnSignature.
         return recordIntoSigners(proposedTx, proposalSignature, singleSign);
+    }
 
     auto batchSigners = proposedTx.isFieldPresent(sfBatchSigners)
         ? proposedTx.getFieldArray(sfBatchSigners)
