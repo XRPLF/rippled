@@ -59,6 +59,32 @@ public:
     }
 
     /**
+     * @brief Get sfDestinationTag (SoeOptional)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_UINT32::type::value_type>
+    getDestinationTag() const
+    {
+        if (hasDestinationTag())
+        {
+            return this->tx_->at(sfDestinationTag);
+        }
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfDestinationTag is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasDestinationTag() const
+    {
+        return this->tx_->isFieldPresent(sfDestinationTag);
+    }
+
+    /**
      * @brief Get sfAmount (SoeRequired)
      * @note This field supports MPT (Multi-Purpose Token) amounts.
      * @return The field value.
@@ -149,29 +175,55 @@ public:
     }
 
     /**
-     * @brief Get sfDestinationTag (SoeOptional)
+     * @brief Get sfBytecode (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT32::type::value_type>
-    getDestinationTag() const
+    protocol_autogen::Optional<SF_VL::type::value_type>
+    getBytecode() const
     {
-        if (hasDestinationTag())
+        if (hasBytecode())
         {
-            return this->tx_->at(sfDestinationTag);
+            return this->tx_->at(sfBytecode);
         }
         return std::nullopt;
     }
 
     /**
-     * @brief Check if sfDestinationTag is present.
+     * @brief Check if sfBytecode is present.
      * @return True if the field is present, false otherwise.
      */
     [[nodiscard]]
     bool
-    hasDestinationTag() const
+    hasBytecode() const
     {
-        return this->tx_->isFieldPresent(sfDestinationTag);
+        return this->tx_->isFieldPresent(sfBytecode);
+    }
+
+    /**
+     * @brief Get sfData (SoeOptional)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_VL::type::value_type>
+    getData() const
+    {
+        if (hasData())
+        {
+            return this->tx_->at(sfData);
+        }
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfData is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasData() const
+    {
+        return this->tx_->isFieldPresent(sfData);
     }
 };
 
@@ -233,6 +285,17 @@ public:
     }
 
     /**
+     * @brief Set sfDestinationTag (SoeOptional)
+     * @return Reference to this builder for method chaining.
+     */
+    EscrowCreateBuilder&
+    setDestinationTag(std::decay_t<typename SF_UINT32::type::value_type> const& value)
+    {
+        object_[sfDestinationTag] = value;
+        return *this;
+    }
+
+    /**
      * @brief Set sfAmount (SoeRequired)
      * @note This field supports MPT (Multi-Purpose Token) amounts.
      * @return Reference to this builder for method chaining.
@@ -278,13 +341,24 @@ public:
     }
 
     /**
-     * @brief Set sfDestinationTag (SoeOptional)
+     * @brief Set sfBytecode (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     EscrowCreateBuilder&
-    setDestinationTag(std::decay_t<typename SF_UINT32::type::value_type> const& value)
+    setBytecode(std::decay_t<typename SF_VL::type::value_type> const& value)
     {
-        object_[sfDestinationTag] = value;
+        object_[sfBytecode] = value;
+        return *this;
+    }
+
+    /**
+     * @brief Set sfData (SoeOptional)
+     * @return Reference to this builder for method chaining.
+     */
+    EscrowCreateBuilder&
+    setData(std::decay_t<typename SF_VL::type::value_type> const& value)
+    {
+        object_[sfData] = value;
         return *this;
     }
 
