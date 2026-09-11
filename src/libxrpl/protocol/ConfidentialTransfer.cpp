@@ -421,9 +421,6 @@ isAuditorMirrorCurrent(SLE const& issuance, SLE const& mptoken)
     XRPL_ASSERT(
         mptoken.getType() == ltMPTOKEN, "xrpl::isAuditorMirrorCurrent : mptoken MPToken object");
 
-    // If the issuance registers the auditor key later, the holder's auditor mirror is considered
-    // stale. This is expected because the holder's mirror can be migrated through another
-    // transaction ConfidentialMPTMirrorUpdate, this will be in a separate PR.
     if (!issuance.isFieldPresent(sfAuditorEncryptionKey))
         return true;
 
