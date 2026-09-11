@@ -63,7 +63,7 @@ ConfidentialMPTRecoverBalance::preflight(PreflightContext const& ctx)
 XRPAmount
 ConfidentialMPTRecoverBalance::calculateBaseFee(ReadView const& view, STTx const& tx)
 {
-    return Transactor::calculateBaseFee(view, tx, kConfidentialFeeMultiplier + 1);
+    return Transactor::calculateBaseFee(view, tx, kConfidentialFeeMultiplier);
 }
 
 TER

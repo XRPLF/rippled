@@ -3141,7 +3141,6 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
             .account = alice,
             .holder = bob,
             .recoveryPrivKey = recoveryKey.second,  // recovery private key
-            .fee = XRPAmount(110),  // Fee multiplier is 11 (kConfidentialFeeMultiplier + 1)
         });
 
         // Verify holder encryption key has been updated to recovery key
@@ -3188,7 +3187,6 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
             jv[sfMPTokenIssuanceID.jsonName] = to_string(mptAlice.issuanceID());
             jv[sfConfidentialBalanceSpending.jsonName] = strHex(getTrivialCiphertext());
             jv[sfZKProof.jsonName] = strHex(getTrivialCiphertext());
-            jv[jss::Fee] = 110;
 
             env(jv, Ter(temDISABLED));
         }
@@ -3287,7 +3285,6 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
             jv[sfMPTokenIssuanceID.jsonName] = to_string(mptAlice.issuanceID());
             jv[sfConfidentialBalanceSpending.jsonName] = strHex(getTrivialCiphertext());
             jv[sfZKProof.jsonName] = strHex(getTrivialCiphertext());
-            jv[jss::Fee] = 110;
 
             env(jv, Ter(tecOBJECT_NOT_FOUND));
         }
@@ -3324,7 +3321,6 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
             jv[sfMPTokenIssuanceID.jsonName] = to_string(mptAlice.issuanceID());
             jv[sfConfidentialBalanceSpending.jsonName] = strHex(getTrivialCiphertext());
             jv[sfZKProof.jsonName] = strHex(getTrivialCiphertext());
-            jv[jss::Fee] = "110";
 
             env(jv, Ter(tecNO_PERMISSION));
         }
@@ -3351,7 +3347,6 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
             jv[sfMPTokenIssuanceID.jsonName] = to_string(mptAlice.issuanceID());
             jv[sfConfidentialBalanceSpending.jsonName] = strHex(getTrivialCiphertext());
             jv[sfZKProof.jsonName] = strHex(getTrivialCiphertext());
-            jv[jss::Fee] = "110";
 
             env(jv, Ter(tecNO_PERMISSION));
         }
@@ -3431,7 +3426,6 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
             .account = alice,
             .holder = bob,
             .recoveryPrivKey = recoveryKey.second,
-            .fee = XRPAmount{110},
             .err = tecNO_PERMISSION,
         });
 
