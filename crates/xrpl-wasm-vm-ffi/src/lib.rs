@@ -531,6 +531,17 @@ struct CxxHost<'a> {
     ctx: &'a ffi::HostContext,
 }
 
+/// The error a negative code names, or `InternalFatal`.
+///
+/// **The one place the fallback is decided**, and this crate is where it belongs: a
+/// code outside the ABI is xrpld's `HostFunctionError` list having outrun this one,
+/// which only the crossing can see. A host answering something the ABI does not
+/// define has not served the call, whatever it meant by it, so the run stops on the
+/// one code that says so rather than on a neighbouring condition.
+fn host_error(n: i32) -> HostError {
+    HostError::from_code(n).unwrap_or(HostError::InternalFatal)
+}
+
 /// A byte-producing call's answer: the value's true length, or its error code.
 ///
 /// The conversion *is* the sign test — it fails on exactly the negative values — so
@@ -540,7 +551,7 @@ struct CxxHost<'a> {
 /// involved — `i32`, `Result`, `HostError` — is foreign to this crate, so the orphan
 /// rule forbids the impl.
 fn bytes_written(n: i32) -> HostResult<usize> {
-    usize::try_from(n).map_err(|_| HostError::from_code(n))
+    usize::try_from(n).map_err(|_| host_error(n))
 }
 
 /// The ABI's data type as the shared enum C++ was given a definition of.
@@ -564,7 +575,7 @@ fn crossed(data_type: TraceDataType) -> ffi::TraceDataType {
 /// a non-negative value is that answer, a negative one its error code.
 fn scalar(n: i32) -> HostResult<i32> {
     if n < 0 {
-        return Err(HostError::from_code(n));
+        return Err(host_error(n));
     }
     Ok(n)
 }
@@ -577,7 +588,7 @@ fn scalar(n: i32) -> HostResult<i32> {
 /// declaration having drifted from this one — nothing a contract can act on, hence
 /// `InternalFatal` and a stopped run rather than a verdict the guest would read as one of
 /// the three.
-fn verdict(n: i32) -> HostResult<FloatOrdering> {
+fn float_ordering(n: i32) -> HostResult<FloatOrdering> {
     FloatOrdering::from_code(scalar(n)?).ok_or(HostError::InternalFatal)
 }
 
@@ -872,7 +883,7 @@ impl HostFunctions for CxxHost<'_> {
     }
 
     fn float_compare(&self, x: &[u8], y: &[u8]) -> HostResult<FloatOrdering> {
-        verdict(self.ctx.float_compare(x, y))
+        float_ordering(self.ctx.float_compare(x, y))
     }
 
     fn float_add(&self, x: &[u8], y: &[u8], out: &mut [u8], mode: i32) -> HostResult<usize> {
@@ -1091,6 +1102,31 @@ mod tests {
         assert_eq!(crossed.result, 0, "a failed run returned no value");
     }
 
+    /// Every code a guest can be handed comes back as the error that produced it, so a
+    /// caller reading a negative return value recovers the condition and not a
+    /// neighbouring one.
+    #[test]
+    fn every_wire_code_crosses_back_as_its_error() {
+        for &error in HostError::ALL {
+            assert_eq!(host_error(error.code()), error, "{error:?}");
+        }
+    }
+
+    /// A code from outside the set is `InternalFatal`, which is the fallback this crate
+    /// owns rather than one the ABI enum supplies.
+    ///
+    /// `-21` is the code xrpld would append next, so it is the one that decides whether a
+    /// list this crate has not caught up with reaches a guest or stops the run. `i32::MIN +
+    /// 1` is next to the sentinel and unassigned, which is what makes the sentinel a value
+    /// rather than a range. A non-negative code is not an error at all and goes the same
+    /// way, this being reached only once the sign has been read.
+    #[test]
+    fn a_code_outside_the_set_is_internal_fatal() {
+        for code in [-21, i32::MIN + 1, 0, 1, i32::MAX] {
+            assert_eq!(host_error(code), HostError::InternalFatal, "{code}");
+        }
+    }
+
     /// The split every scalar answer crosses on: non-negative is the value, negative is
     /// the code that names why there is none.
     #[test]
@@ -1105,7 +1141,11 @@ mod tests {
     #[test]
     fn every_verdict_crosses_back_as_itself() {
         for &ordering in FloatOrdering::ALL {
-            assert_eq!(verdict(ordering.code()), Ok(ordering), "{ordering:?}");
+            assert_eq!(
+                float_ordering(ordering.code()),
+                Ok(ordering),
+                "{ordering:?}"
+            );
         }
     }
 
@@ -1116,7 +1156,11 @@ mod tests {
     #[test]
     fn a_code_naming_no_verdict_is_internal_fatal() {
         for code in [3, 4, 99, i32::MAX] {
-            assert_eq!(verdict(code), Err(HostError::InternalFatal), "code {code}");
+            assert_eq!(
+                float_ordering(code),
+                Err(HostError::InternalFatal),
+                "code {code}"
+            );
         }
     }
 
@@ -1124,8 +1168,8 @@ mod tests {
     /// sign is read before the code is matched against the variants.
     #[test]
     fn a_refused_comparison_keeps_its_own_error() {
-        assert_eq!(verdict(-19), Err(HostError::FloatInputMalformed));
-        assert_eq!(verdict(-1), Err(HostError::Unimplemented));
+        assert_eq!(float_ordering(-19), Err(HostError::FloatInputMalformed));
+        assert_eq!(float_ordering(-1), Err(HostError::Unimplemented));
     }
 
     /// The `RunError` set as the test *expects* it, not as the conversion reports it:

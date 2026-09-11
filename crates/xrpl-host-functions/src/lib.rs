@@ -16,13 +16,22 @@
 
 #![no_std]
 
-#[macro_use]
-mod macros;
-
 // Not re-exported: the ABI is declared once, here, and this is the only call site.
-use xrpl_host_functions_macros::host_functions;
+use xrpl_host_functions_macros::{coded_enum, host_functions};
 
-host_errors! {
+/// Error codes a host function may return.
+///
+/// Every code is negative, which is what lets a failure and an answer share one
+/// `i32` on the wire. Every one but `InternalFatal` is also a code some contract
+/// may read: that one names a condition with no number a contract can act on, so
+/// it stops the run instead of reaching a guest.
+///
+/// [`ALL`](Self::ALL) is what makes the split between the two checkable. A wasm
+/// engine's choice between handing a code to the guest and trapping on it is a
+/// decision per variant, so the test that checks it iterates this and a code added
+/// to the ABI cannot slip past.
+#[coded_enum]
+pub enum HostError {
     Unimplemented = -1,
     FieldNotFound = -2,
     BufferTooSmall = -3,
@@ -54,7 +63,18 @@ pub type HostResult<T> = Result<T, HostError>;
 /// A `sha512Half` digest: the first 32 bytes of a SHA-512, as XRPL uses it.
 pub const HASH_LEN: usize = 32;
 
-trace_data_types! {
+/// How [`HostFunctions::trace`] is to read its data buffer.
+///
+/// The discriminants are wire values shared with the guest stdlib: append only,
+/// never renumber. They start at 1, so a zeroed argument names no type rather than
+/// the first one.
+///
+/// This is the declaration a guest and a host both compile against. The host side
+/// needs a second one — `cxx` cannot be a dependency here, since this crate also
+/// links into the guest — so `xrpl-wasm-vm-ffi` declares a shared enum for C++ and
+/// converts, exhaustively, from this.
+#[coded_enum]
+pub enum TraceDataType {
     /// 8 little-endian bytes, rendered as a signed decimal.
     Int64 = 1,
     /// 8 little-endian bytes, rendered as an unsigned decimal.
@@ -71,7 +91,20 @@ trace_data_types! {
     AsText = 7,
 }
 
-float_orderings! {
+/// The verdict [`HostFunctions::float_compare`] answers, read as the placing of
+/// `x` against `y`.
+///
+/// **Not C's `memcmp` convention**, and the sign is why: the wire's negative range
+/// belongs to [`HostError`], so a comparison cannot spell "less" as a negative
+/// without colliding with a code like `FloatInputMalformed`. Every variant is
+/// therefore non-negative, and a guest branches on the value rather than its sign.
+///
+/// The discriminants are wire values shared with the guest stdlib: append only,
+/// never renumber. As with [`TraceDataType`], the host side needs a second
+/// declaration — `cxx` cannot be a dependency here — so `WasmCommon.h` declares the
+/// same three codes for C++.
+#[coded_enum]
+pub enum FloatOrdering {
     /// `x` and `y` are the same value.
     Equal = 0,
     /// `x` is the greater of the two.

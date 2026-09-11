@@ -1124,7 +1124,7 @@ fn no_float_ordering_collides_with_an_error_code() {
 
     // The collision the sign rule exists to prevent: `memcmp`'s "less" is `-1`, a code this
     // ABI has already spent.
-    assert_eq!(HostError::from_code(-1), HostError::Unimplemented);
+    assert_eq!(HostError::from_code(-1), Some(HostError::Unimplemented));
     assert_eq!(FloatOrdering::from_code(-1), None);
 }
 
