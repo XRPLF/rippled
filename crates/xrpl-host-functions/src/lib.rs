@@ -5,27 +5,24 @@
 //! wasm engine registers from.
 //!
 //! The split: hand-written here is the vocabulary the declarations are written in —
-//! [`HostError`], [`TraceDataType`], [`HostResult`], [`HASH_LEN`] — and everything
-//! derived from the declarations is generated. The expansion names nothing this file
-//! does not, so the two sides meet only in the block below.
+//! [`HostError`], [`TraceDataType`], [`FloatOrdering`], [`HostResult`], [`HASH_LEN`] —
+//! and everything derived from the declarations is generated. The expansion names
+//! nothing this file does not, so the two sides meet only in the block below.
 //!
 //! Three items cross that split the other way, named by the expansion but by no
 //! declaration: [`WasmValType`], which the derived wasm signatures are spelled in,
 //! and `FromWasmRegion`/`FromWasmScalar`, which `wasmi_glue!` builds a marshalled
 //! argument through.
-//!
-//! So this file is lists — error codes, trace data types, functions. The `macro_rules!`
-//! that expand the first two into enums live in `macros.rs`.
 
 #![no_std]
 
-#[macro_use]
-mod macros;
-
 // Not re-exported: the ABI is declared once, here, and this is the only call site.
-use xrpl_host_functions_macros::host_functions;
+use xrpl_host_functions_macros::{coded_enum, host_functions};
 
-host_errors! {
+/// Error codes a host function may return. Every code is negative, which is what lets
+/// a failure and an answer share one `i32` on the wire.
+#[coded_enum]
+pub enum HostError {
     Unimplemented = -1,
     FieldNotFound = -2,
     BufferTooSmall = -3,
@@ -57,7 +54,12 @@ pub type HostResult<T> = Result<T, HostError>;
 /// A `sha512Half` digest: the first 32 bytes of a SHA-512, as XRPL uses it.
 pub const HASH_LEN: usize = 32;
 
-trace_data_types! {
+/// How [`HostFunctions::trace`] is to read its data buffer. Wire values shared with the
+/// guest stdlib: append only, never renumber, and starting at 1 so a zeroed argument
+/// names no type. `xrpl-wasm-vm-ffi` holds the second declaration, the one C++ compiles
+/// against — this crate links into the guest too, so it cannot depend on `cxx`.
+#[coded_enum]
+pub enum TraceDataType {
     /// 8 little-endian bytes, rendered as a signed decimal.
     Int64 = 1,
     /// 8 little-endian bytes, rendered as an unsigned decimal.
@@ -72,6 +74,17 @@ trace_data_types! {
     AsHex = 6,
     /// Bytes rendered verbatim as text.
     AsText = 7,
+}
+
+/// The verdict [`HostFunctions::float_compare`] answers, read as the placing of `x`
+/// against `y`. **Not C's `memcmp` convention**: the wire's negative range belongs to
+/// [`HostError`], so every code here is non-negative — append only, never renumber.
+/// `WasmCommon.h` holds the second declaration, as [`TraceDataType`] has one.
+#[coded_enum]
+pub enum FloatOrdering {
+    Equal = 0,
+    Greater = 1,
+    Less = 2,
 }
 
 /// The wasm module name a guest imports these functions under:
@@ -120,7 +133,8 @@ pub trait FromWasmScalar {
 // marshalled.** `&[u8]`/`&str` and `&mut [u8]` are `(ptr, len)` pairs, `TraceDataType`
 // is an `i32` code the engine names before a host sees it, and **`u32` is four
 // little-endian bytes in a region**, not a scalar, which is how the guest SDK passes a
-// sequence number.
+// sequence number. A result is `usize` for the length of what was written to an output
+// region, `i32` or `FloatOrdering` for the answer itself, or `()` for none.
 host_functions! {
     /// The sequence number of the ledger being built, as 4 little-endian bytes.
     #[gas = 60]
@@ -510,11 +524,11 @@ host_functions! {
         mode: i32,
     ) -> HostResult<usize>;
 
-    /// Compares floats `x` and `y`, returning a negative, zero, or positive scalar as
-    /// `x` is less than, equal to, or greater than `y`.
+    /// Compares floats `x` and `y`, answering the [`FloatOrdering`] that places `x`
+    /// against `y`. Reaches the guest as that variant's code, **not `memcmp`'s sign**.
     #[gas = 80]
     #[wasm_name = "float_cmp"]
-    fn float_compare(&self, x: &[u8], y: &[u8]) -> HostResult<i32>;
+    fn float_compare(&self, x: &[u8], y: &[u8]) -> HostResult<FloatOrdering>;
 
     /// The float sum `x + y` under rounding `mode`.
     #[gas = 160]

@@ -256,7 +256,7 @@ floatFromMantExpImpl(int64_t mantissa, int32_t exponent, int32_t mode)
     }
 }
 
-std::expected<int32_t, HostFunctionError>
+std::expected<FloatOrdering, HostFunctionError>
 floatCompareImpl(Slice const& x, Slice const& y)
 {
     try
@@ -271,10 +271,10 @@ floatCompareImpl(Slice const& x, Slice const& y)
         if (!yy)
             return std::unexpected(HostFunctionError::FloatInputMalformed);
         if (*xx < *yy)
-            return 2;
+            return FloatOrdering::Less;
         if (*xx == *yy)
-            return 0;
-        return 1;
+            return FloatOrdering::Equal;
+        return FloatOrdering::Greater;
     }
     // LCOV_EXCL_START
     catch (...)
@@ -459,7 +459,7 @@ WasmHostFunctionsImpl::floatFromMantExp(int64_t mantissa, int32_t exponent, int3
     return wasm_float::floatFromMantExpImpl(mantissa, exponent, mode);
 }
 
-std::expected<int32_t, HostFunctionError>
+std::expected<FloatOrdering, HostFunctionError>
 WasmHostFunctionsImpl::floatCompare(Slice const& x, Slice const& y) const
 {
     return wasm_float::floatCompareImpl(x, y);

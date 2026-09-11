@@ -12,7 +12,7 @@
 //!   little-endian bytes, which is how the guest SDK passes a sequence number.
 //! - **`usize` and `i32` results are the same on the wire and not
 //!   interchangeable**: the first is the length of what was written to an output
-//!   region, the second the answer itself.
+//!   region, the second the answer itself — as is `FloatOrdering`, a third spelling.
 //!
 //! Matching is on types as they are spelled — a proc macro resolves nothing, so
 //! `type Bytes = u32; … x: Bytes` is unrecognizable — but on a path's last
@@ -54,7 +54,9 @@ pub(crate) enum ResultType {
     /// the engine turns into the wire's `i32` or into `BufferTooSmall` /
     /// `DataFieldTooLarge`. Never itself the wire type.
     BufferLength,
-    /// `i32`: the answer, from a function that writes no region.
+    /// `i32` or `FloatOrdering`: the answer, from a function that writes no region.
+    /// One variant for both — one wire result, and the declared type still reaches the
+    /// trait verbatim.
     Value,
     /// `()`: no wasm result at all — the call's whole effect is on the host, and
     /// an `Err` reaches the guest in no form.
@@ -182,8 +184,9 @@ impl ResultType {
     /// refuses it against its own span.
     pub(crate) fn parse(success: &Type) -> syn::Result<Self> {
         const ALLOWED: &str = "a host function must return `HostResult<usize>` for a value it \
-                               writes to an output region, `HostResult<i32>` for one it answers \
-                               directly, or `HostResult<()>` for none at all";
+                               writes to an output region, `HostResult<i32>` or \
+                               `HostResult<FloatOrdering>` for one it answers directly, or \
+                               `HostResult<()>` for none at all";
 
         if let Type::Tuple(tuple) = success
             && tuple.elems.is_empty()
@@ -193,7 +196,7 @@ impl ResultType {
 
         match last_path_segment(success) {
             Some(name) if name == "usize" => Ok(Self::BufferLength),
-            Some(name) if name == "i32" => Ok(Self::Value),
+            Some(name) if name == "i32" || name == "FloatOrdering" => Ok(Self::Value),
             _ => Err(syn::Error::new_spanned(success, ALLOWED)),
         }
     }
@@ -394,13 +397,14 @@ mod tests {
         }
     }
 
-    /// The three success types, and the wasm result each becomes. `usize` and
-    /// `i32` agree on the wire and are separate rows.
+    /// The declared success types, and the wasm result each becomes. `usize` and `i32`
+    /// agree on the wire and are separate rows; `FloatOrdering` shares `i32`'s.
     #[test]
     fn lowers_every_success_type() {
-        let mapping: [(Type, ResultType, Option<WasmValType>); 3] = [
+        let mapping: [(Type, ResultType, Option<WasmValType>); 4] = [
             (parse_quote!(usize), ResultType::BufferLength, Some(I32)),
             (parse_quote!(i32), ResultType::Value, Some(I32)),
+            (parse_quote!(FloatOrdering), ResultType::Value, Some(I32)),
             (parse_quote!(()), ResultType::Nothing, None),
         ];
 

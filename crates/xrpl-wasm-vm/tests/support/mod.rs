@@ -10,7 +10,7 @@
 use std::cell::RefCell;
 use std::collections::HashMap;
 
-use xrpl_host_functions::{HostError, HostFunctions, HostResult, TraceDataType};
+use xrpl_host_functions::{FloatOrdering, HostError, HostFunctions, HostResult, TraceDataType};
 use xrpl_wasm_vm::{RunFailure, RunOutcome};
 
 /// The entry point every test module exports.
@@ -364,7 +364,7 @@ pub struct FakeHost {
     /// Every `(mantissa, exponent, mode)` `float_from_mant_exp` was asked for.
     pub float_from_mant_exp_asked: RefCell<Vec<(i64, i32, i32)>>,
     /// What `float_compare` answers, whatever floats it is given.
-    pub float_compare_answer: HostResult<i32>,
+    pub float_compare_answer: HostResult<FloatOrdering>,
     /// Every `(x, y)` `float_compare` was asked for.
     pub float_compare_asked: RefCell<Vec<(Vec<u8>, Vec<u8>)>>,
     /// Every `(x, y, mode)` the four binary float operators were asked for, tagged by
@@ -484,7 +484,7 @@ impl Default for FakeHost {
             float_mant_exp_answer: (vec![0u8; 8], vec![0u8; 4]),
             float_to_mant_exp_asked: RefCell::new(Vec::new()),
             float_from_mant_exp_asked: RefCell::new(Vec::new()),
-            float_compare_answer: Ok(0),
+            float_compare_answer: Ok(FloatOrdering::Equal),
             float_compare_asked: RefCell::new(Vec::new()),
             float_binary_ops_asked: RefCell::new(Vec::new()),
             float_unary_ops_asked: RefCell::new(Vec::new()),
@@ -839,7 +839,7 @@ impl FakeHost {
         self
     }
 
-    pub fn answering_float_compare(mut self, answer: HostResult<i32>) -> FakeHost {
+    pub fn answering_float_compare(mut self, answer: HostResult<FloatOrdering>) -> FakeHost {
         self.float_compare_answer = answer;
         self
     }
@@ -1352,7 +1352,7 @@ impl HostFunctions for FakeHost {
         self.float_answer.fill(out)
     }
 
-    fn float_compare(&self, x: &[u8], y: &[u8]) -> HostResult<i32> {
+    fn float_compare(&self, x: &[u8], y: &[u8]) -> HostResult<FloatOrdering> {
         self.float_compare_asked
             .borrow_mut()
             .push((x.to_vec(), y.to_vec()));

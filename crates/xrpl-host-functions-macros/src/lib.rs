@@ -1,3 +1,4 @@
+mod enums;
 mod errors;
 mod glue;
 mod lowering;
@@ -113,12 +114,54 @@ use parsed_host_function::ParsedHostFunction;
 /// generics: it maps to exactly one wasm import signature. Its parameters must be
 /// `i32`, `i64`, `u32`, `&[u8]`, `&mut [u8]`, `&str` or `TraceDataType`, and it
 /// must return `HostResult<usize>` if it writes an output region,
-/// `HostResult<i32>` if it answers a value directly, or `HostResult<()>` if it
-/// answers nothing. Two declarations may not share a `wasm_name`, nor collapse to
-/// the same PascalCase variant.
+/// `HostResult<i32>` or `HostResult<FloatOrdering>` if it answers a value directly,
+/// or `HostResult<()>` if it answers nothing. Two declarations may not share a
+/// `wasm_name`, nor collapse to the same PascalCase variant.
 #[proc_macro]
 pub fn host_functions(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     expand(input.into())
+        .unwrap_or_else(syn::Error::into_compile_error)
+        .into()
+}
+
+/// Declares an enum of wire codes, together with the `ALL`, `code` and
+/// `from_code` set that must not fall behind its variants.
+///
+/// The enum is written as an ordinary one — its own doc comment, its own
+/// visibility, one `Variant = code,` per line — and the attribute supplies the
+/// derives and the `#[repr(i32)]` that `code` casts through. Rust cannot enumerate
+/// an enum's variants, so `ALL` is the only complete set a test can iterate.
+///
+/// A variant carries no data and states its code as an integer literal, since that
+/// literal is also the pattern `from_code` matches it by. What an unnamed code means
+/// is the caller's to decide, being a different condition per enum.
+///
+/// ```
+/// use xrpl_host_functions_macros::coded_enum;
+///
+/// /// How a trace buffer is to be read.
+/// #[coded_enum]
+/// pub enum TraceDataType {
+///     /// 8 little-endian bytes, rendered as a signed decimal.
+///     Int64 = 1,
+///     /// A 20-byte account ID, rendered as base58.
+///     Account = 4,
+/// }
+///
+/// assert_eq!(TraceDataType::Account.code(), 4);
+/// assert_eq!(TraceDataType::from_code(4), Some(TraceDataType::Account));
+/// assert_eq!(TraceDataType::from_code(2), None);
+/// assert_eq!(
+///     TraceDataType::ALL,
+///     &[TraceDataType::Int64, TraceDataType::Account],
+/// );
+/// ```
+#[proc_macro_attribute]
+pub fn coded_enum(
+    args: proc_macro::TokenStream,
+    item: proc_macro::TokenStream,
+) -> proc_macro::TokenStream {
+    enums::expand(args.into(), item.into())
         .unwrap_or_else(syn::Error::into_compile_error)
         .into()
 }

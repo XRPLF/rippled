@@ -614,7 +614,9 @@ impl HostFunctionBodies for Bodies {
     ) -> CallResult<i32> {
         let memory = guest_memory(caller)?;
         let host = caller.data().host;
-        Ok(host.float_compare(x.read(memory)?, y.read(memory)?)?)
+        // `FloatOrdering`'s codes are non-negative, which is what lets the verdict share
+        // this `i32` with a negative `HostError`.
+        Ok(host.float_compare(x.read(memory)?, y.read(memory)?)?.code())
     }
 
     fn float_add(

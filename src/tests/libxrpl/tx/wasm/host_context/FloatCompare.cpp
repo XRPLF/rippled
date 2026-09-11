@@ -24,9 +24,24 @@ struct FloatCompareCall : HostContextTest
 TEST_F(FloatCompareCall, XAndYAreForwardedResultReturnedDirectly)
 {
     EXPECT_CALL(host, floatCompare(BytesAre("cmp-x"), BytesAre("cmp-yy")))
-        .WillOnce(testing::Return(1));
+        .WillOnce(testing::Return(FloatOrdering::Greater));
 
-    EXPECT_EQ(hostContext.floatCompare(bytesOf(x), bytesOf(y)), 1);
+    EXPECT_EQ(
+        hostContext.floatCompare(bytesOf(x), bytesOf(y)),
+        floatOrderingToInt(FloatOrdering::Greater));
+}
+
+// This layer is where `FloatOrdering` stops being a type and becomes the `i32` a contract
+// reads. Every variant, so a mis-lowered one cannot hide behind a sibling.
+TEST_F(FloatCompareCall, EveryVerdictIsLoweredToItsWireCode)
+{
+    for (auto const verdict : {FloatOrdering::Equal, FloatOrdering::Greater, FloatOrdering::Less})
+    {
+        EXPECT_CALL(host, floatCompare(BytesAre("cmp-x"), BytesAre("cmp-yy")))
+            .WillOnce(testing::Return(verdict));
+
+        EXPECT_EQ(hostContext.floatCompare(bytesOf(x), bytesOf(y)), floatOrderingToInt(verdict));
+    }
 }
 
 TEST_F(FloatCompareCall, HostErrorBecomesContractReturnValue)
@@ -56,9 +71,12 @@ TEST_F(FloatCompareCall, HostExceptionBecomesInternalFatalAndIsLogged)
 TEST_F(FloatCompareCall, OddSizedOperandReachesHostUnchanged)
 {
     Bytes const oddX{0x2a};
-    EXPECT_CALL(host, floatCompare(testing::_, BytesAre("cmp-yy"))).WillOnce(testing::Return(0));
+    EXPECT_CALL(host, floatCompare(testing::_, BytesAre("cmp-yy")))
+        .WillOnce(testing::Return(FloatOrdering::Equal));
 
-    EXPECT_EQ(hostContext.floatCompare(bytesOf(oddX), bytesOf(y)), 0);
+    EXPECT_EQ(
+        hostContext.floatCompare(bytesOf(oddX), bytesOf(y)),
+        floatOrderingToInt(FloatOrdering::Equal));
 }
 
 }  // namespace xrpl::test

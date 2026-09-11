@@ -1,14 +1,17 @@
 //! Exercises the API that `host_functions!` generates, not the macro itself:
 //! the `HostFunctions` trait is implementable and callable both directly and
-//! through `&dyn`, and the generated `HostFunctionSpec` and `TraceDataType`
-//! tables agree with the declarations in `src/lib.rs`. The macro's own parsing
-//! and diagnostics are covered by the unit tests in `xrpl-host-functions-macros`.
+//! through `&dyn`, and the generated `HostFunctionSpec` table and the hand-listed
+//! `TraceDataType` / `FloatOrdering` enums agree with the declarations in
+//! `src/lib.rs`. The macro's own parsing and diagnostics are covered by the unit
+//! tests in `xrpl-host-functions-macros`.
 
 use std::cell::RefCell;
+use std::cmp::Ordering;
 use std::collections::HashSet;
 
 use xrpl_host_functions::{
-    HASH_LEN, HostError, HostFunctionSpec, HostFunctions, HostResult, TraceDataType, WasmValType,
+    FloatOrdering, HASH_LEN, HostError, HostFunctionSpec, HostFunctions, HostResult, TraceDataType,
+    WasmValType,
 };
 
 /// Records what it was asked to do; enough to prove the trait is usable.
@@ -520,12 +523,18 @@ impl HostFunctions for FakeHost {
         put(out, &[mantissa as u8])
     }
 
-    /// Reads two floats and returns a scalar; `InvalidParams` if either is empty.
-    fn float_compare(&self, x: &[u8], y: &[u8]) -> HostResult<i32> {
-        if x.is_empty() || y.is_empty() {
+    /// Reads two floats and answers a [`FloatOrdering`]; `InvalidParams` if either is
+    /// empty. First bytes only — what matters is that the verdict is a named variant.
+    fn float_compare(&self, x: &[u8], y: &[u8]) -> HostResult<FloatOrdering> {
+        let (Some(x), Some(y)) = (x.first(), y.first()) else {
             return Err(HostError::InvalidParams);
-        }
-        Ok(i32::from(x[0]) - i32::from(y[0]))
+        };
+
+        Ok(match x.cmp(y) {
+            Ordering::Equal => FloatOrdering::Equal,
+            Ordering::Greater => FloatOrdering::Greater,
+            Ordering::Less => FloatOrdering::Less,
+        })
     }
 
     /// A binary float operator; `InvalidParams` if either operand is empty.
@@ -807,7 +816,14 @@ fn the_trait_is_implementable() {
     let mut exp = [0u8; 4];
     assert_eq!(host.float_to_mant_exp(&[3; 8], &mut mant, &mut exp), Ok(2));
     assert_eq!(host.float_from_mant_exp(5, 0, &mut out, 0), Ok(1));
-    assert_eq!(host.float_compare(&[9; 8], &[4; 8]), Ok(5));
+    assert_eq!(
+        host.float_compare(&[9; 8], &[4; 8]),
+        Ok(FloatOrdering::Greater)
+    );
+    assert_eq!(
+        host.float_compare(&[4; 8], &[9; 8]),
+        Ok(FloatOrdering::Less)
+    );
     assert_eq!(
         host.float_compare(&[], &[4; 8]),
         Err(HostError::InvalidParams)
@@ -1073,6 +1089,41 @@ fn every_trace_data_type_survives_the_wire() {
 fn an_unnamed_trace_data_type_code_is_refused() {
     for code in [0, -1, 8, i32::MAX, i32::MIN] {
         assert_eq!(TraceDataType::from_code(code), None, "code {code}");
+    }
+}
+
+/// `float_cmp`'s verdicts are what a guest branches on, so they are pinned as literals
+/// here; `ALL` is in code order, so the round trip pins the discriminants too. Zero is
+/// `Equal`, not reserved as in [`TraceDataType`]: a comparison always has an answer.
+#[test]
+fn every_float_ordering_survives_the_wire() {
+    let codes: Vec<i32> = FloatOrdering::ALL.iter().map(|o| o.code()).collect();
+
+    assert_eq!(codes, [0, 1, 2]);
+    for &ordering in FloatOrdering::ALL {
+        assert_eq!(FloatOrdering::from_code(ordering.code()), Some(ordering));
+    }
+}
+
+/// **The property that keeps a verdict from being read as a failure.** A verdict and an
+/// error code share one `i32`, split by sign, so no ordering may be negative however the
+/// enum is extended — `Less` is `2`, not `memcmp`'s `-1`, which is `Unimplemented`.
+#[test]
+fn no_float_ordering_collides_with_an_error_code() {
+    for &ordering in FloatOrdering::ALL {
+        assert!(ordering.code() >= 0, "{ordering:?} is negative");
+    }
+
+    assert_eq!(HostError::from_code(-1), Some(HostError::Unimplemented));
+    assert_eq!(FloatOrdering::from_code(-1), None);
+}
+
+/// A value no variant names is refused rather than rounded to a neighbouring verdict: a
+/// total order has exactly three outcomes, and the negative codes are `HostError`'s.
+#[test]
+fn an_unnamed_float_ordering_code_is_refused() {
+    for code in [-1, 3, 5, i32::MAX, i32::MIN] {
+        assert_eq!(FloatOrdering::from_code(code), None, "code {code}");
     }
 }
 
