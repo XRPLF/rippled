@@ -123,6 +123,12 @@ Change::preclaim(PreclaimContext const& ctx)
                     ctx.tx.isFieldPresent(sfReserveIncrementDrops))
                     return temDISABLED;
             }
+            // The ttFEE transaction format defines these fields as optional,
+            // but they are unconditionally forbidden until FeeVoteImpl is
+            // updated to populate them (SmartEscrow behavioral port).
+            if (ctx.tx.isFieldPresent(sfGasLimit) || ctx.tx.isFieldPresent(sfBytecodeSizeLimit) ||
+                ctx.tx.isFieldPresent(sfGasPrice))
+                return temDISABLED;
             return tesSUCCESS;
         case ttAMENDMENT:
         case ttUNL_MODIFY:
