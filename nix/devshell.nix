@@ -147,7 +147,7 @@ rec {
     versionedTools = clangVersionedTools;
   };
 
-  # The gcc shell plus the Lean4 formal veficiation toolchain
+  # The gcc shell plus the Lean4 formal verification toolchain
   formal-verification = makeShell {
     shellName = "formal-verification";
     stdenv = customGccStdenv;
