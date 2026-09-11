@@ -68,7 +68,6 @@ doNoRippleCheck(rpc::JsonContext& context)
     }
     auto const accountID{id.value()};
 
-    // check role param
     if (!params.isMember(jss::role))
         return rpc::missingFieldError(jss::role);
 
@@ -91,11 +90,7 @@ doNoRippleCheck(rpc::JsonContext& context)
     if (auto err = readLimitField(limit, rpc::tuning::kNoRippleCheck, context))
         return *err;
 
-    // check transactions param
-    // The document[https://xrpl.org/noripple_check.html#noripple_check] states
-    // that transactions params is a boolean value, however, assigning any
-    // string value works. Do not allow this. This check is for api Version 2
-    // onwards only
+    // API v1 silently accepts any string as `transactions`; v2+ enforces bool.
     if (context.apiVersion > 1u && params.isMember(jss::transactions) &&
         !params[jss::transactions].isBool())
     {
@@ -106,7 +101,6 @@ doNoRippleCheck(rpc::JsonContext& context)
     if (params.isMember(jss::transactions))
         transactions = params[jss::transactions].asBool();
 
-    // lookup ledger via params
     std::shared_ptr<ReadView const> ledger;
     auto result = rpc::lookupLedger(ledger, context);
     if (!ledger)
