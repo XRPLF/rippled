@@ -12,9 +12,7 @@
 //!   little-endian bytes, which is how the guest SDK passes a sequence number.
 //! - **`usize` and `i32` results are the same on the wire and not
 //!   interchangeable**: the first is the length of what was written to an output
-//!   region, the second the answer itself. `FloatOrdering` is a third spelling of the
-//!   second, so that `float_cmp`'s three verdicts are named in the declaration rather
-//!   than left as an unexplained `i32`.
+//!   region, the second the answer itself — as is `FloatOrdering`, a third spelling.
 //!
 //! Matching is on types as they are spelled — a proc macro resolves nothing, so
 //! `type Bytes = u32; … x: Bytes` is unrecognizable — but on a path's last
@@ -57,8 +55,8 @@ pub(crate) enum ResultType {
     /// `DataFieldTooLarge`. Never itself the wire type.
     BufferLength,
     /// `i32` or `FloatOrdering`: the answer, from a function that writes no region.
-    /// The two are one variant because they are one wire result — the declared type is
-    /// what a host implements, and only the body knows which it is lowering.
+    /// One variant for both — one wire result, and the declared type still reaches the
+    /// trait verbatim.
     Value,
     /// `()`: no wasm result at all — the call's whole effect is on the host, and
     /// an `Err` reaches the guest in no form.
@@ -198,10 +196,6 @@ impl ResultType {
 
         match last_path_segment(success) {
             Some(name) if name == "usize" => Ok(Self::BufferLength),
-            // `FloatOrdering` joins `i32` rather than earning a variant: both are the
-            // answer itself and both lower to `i32`, so nothing downstream needs to tell
-            // them apart. The declaration keeps the distinction, being emitted verbatim
-            // into the trait, and the body spends one `.code()` lowering it.
             Some(name) if name == "i32" || name == "FloatOrdering" => Ok(Self::Value),
             _ => Err(syn::Error::new_spanned(success, ALLOWED)),
         }
@@ -403,9 +397,8 @@ mod tests {
         }
     }
 
-    /// The declared success types, and the wasm result each becomes. `usize` and
-    /// `i32` agree on the wire and are separate rows; `FloatOrdering` is `i32`'s row
-    /// under another spelling, which is the whole of its cost here.
+    /// The declared success types, and the wasm result each becomes. `usize` and `i32`
+    /// agree on the wire and are separate rows; `FloatOrdering` shares `i32`'s.
     #[test]
     fn lowers_every_success_type() {
         let mapping: [(Type, ResultType, Option<WasmValType>); 4] = [

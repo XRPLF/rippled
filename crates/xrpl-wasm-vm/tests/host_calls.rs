@@ -977,11 +977,8 @@ fn float_to_mant_exp_with_a_short_exponent_region_writes_neither() {
     assert_eq!(status(&wat, &host), 0, "neither region should be written");
 }
 
-/// A comparison that reads two float regions and returns a scalar verdict, no output
-/// region involved.
-///
-/// The host answers a [`FloatOrdering`]; the engine lowers it to its code and the guest
-/// reads that. Which of the three it is the engine has no opinion on.
+/// A comparison that reads two float regions and answers with no output region involved:
+/// the host's [`FloatOrdering`] reaches the guest as its code.
 #[test]
 fn float_cmp_reads_both_and_returns_the_verdict() {
     let host = FakeHost::new().answering_float_compare(Ok(FloatOrdering::Less));
@@ -1002,8 +999,7 @@ fn float_cmp_reads_both_and_returns_the_verdict() {
 }
 
 /// Every verdict lowers to its own code, so a guest reads the ordering the host named and
-/// not a sibling. `Less` is `2` rather than a negative, which is what keeps this loop from
-/// colliding with the error path the next test covers.
+/// not a sibling.
 #[test]
 fn every_float_cmp_verdict_reaches_the_guest_unchanged() {
     for &verdict in FloatOrdering::ALL {

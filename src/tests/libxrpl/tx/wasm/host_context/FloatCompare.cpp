@@ -31,9 +31,8 @@ TEST_F(FloatCompareCall, XAndYAreForwardedResultReturnedDirectly)
         floatOrderingToInt(FloatOrdering::Greater));
 }
 
-// The verdict the host names is lowered to its wire code and nothing else — this layer is
-// where `FloatOrdering` stops being a type and becomes the `i32` a contract reads. Every
-// variant, so a mis-lowered one cannot hide behind a sibling that happens to be right.
+// This layer is where `FloatOrdering` stops being a type and becomes the `i32` a contract
+// reads. Every variant, so a mis-lowered one cannot hide behind a sibling.
 TEST_F(FloatCompareCall, EveryVerdictIsLoweredToItsWireCode)
 {
     for (auto const verdict : {FloatOrdering::Equal, FloatOrdering::Greater, FloatOrdering::Less})

@@ -82,14 +82,11 @@ fn every_wire_code_round_trips_back_to_its_error() {
     }
 }
 
-/// A code from outside the set names no error here, and is not rounded to a
-/// neighboring one. What it means instead is the crossing's to decide, and
-/// `xrpl-wasm-vm-ffi`'s `host_error` is where it does.
+/// A code from outside the set names no error and is not rounded to a neighbouring one;
+/// what it means instead is the crossing's to decide, in `xrpl-wasm-vm-ffi`'s `host_error`.
 ///
-/// `-21` is the code xrpld would append next, so it is the one that decides whether a
-/// list this crate has not caught up with is read as an error at all. `i32::MIN + 1` is
-/// next to the sentinel and unassigned, which is what makes the sentinel a value rather
-/// than a range. Success is not an error and goes the same way.
+/// `-21` is the code xrpld would append next; `i32::MIN + 1` is next to the sentinel and
+/// unassigned, which is what makes the sentinel a value rather than a range.
 #[test]
 fn a_code_outside_the_set_names_no_error() {
     for code in [-21, i32::MIN + 1, 0, 1, i32::MAX] {

@@ -614,9 +614,8 @@ impl HostFunctionBodies for Bodies {
     ) -> CallResult<i32> {
         let memory = guest_memory(caller)?;
         let host = caller.data().host;
-        // The one body whose host answers a named code rather than a bare scalar, so the
-        // one that lowers it here. `FloatOrdering`'s codes are non-negative, which is what
-        // lets a verdict share this `i32` with a negative `HostError`.
+        // `FloatOrdering`'s codes are non-negative, which is what lets the verdict share
+        // this `i32` with a negative `HostError`.
         Ok(host.float_compare(x.read(memory)?, y.read(memory)?)?.code())
     }
 

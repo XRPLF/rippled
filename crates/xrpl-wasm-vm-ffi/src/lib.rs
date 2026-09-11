@@ -533,11 +533,9 @@ struct CxxHost<'a> {
 
 /// The error a negative code names, or `InternalFatal`.
 ///
-/// **The one place the fallback is decided**, and this crate is where it belongs: a
-/// code outside the ABI is xrpld's `HostFunctionError` list having outrun this one,
-/// which only the crossing can see. A host answering something the ABI does not
-/// define has not served the call, whatever it meant by it, so the run stops on the
-/// one code that says so rather than on a neighbouring condition.
+/// **The one place the fallback is decided.** A code outside the ABI is xrpld's
+/// `HostFunctionError` list having outrun this one — the call was not served, whatever
+/// the host meant by it, so the run stops on the one code that says so.
 fn host_error(n: i32) -> HostError {
     HostError::from_code(n).unwrap_or(HostError::InternalFatal)
 }
@@ -580,14 +578,12 @@ fn scalar(n: i32) -> HostResult<i32> {
     Ok(n)
 }
 
-/// A call whose answer is a named verdict rather than a bare scalar: [`scalar`]'s split
-/// first, then the code must name a variant.
+/// A call whose answer is a named verdict: [`scalar`]'s split first, then the code must
+/// name a variant.
 ///
-/// **This is where the C++ side is held to the ABI.** `HostContext::floatCompare` lowers a
-/// `FloatOrdering` to its code as it crosses, so a value naming no variant is that
-/// declaration having drifted from this one — nothing a contract can act on, hence
-/// `InternalFatal` and a stopped run rather than a verdict the guest would read as one of
-/// the three.
+/// **This is where the C++ side is held to the ABI.** A code naming no variant is
+/// `WasmCommon.h`'s `FloatOrdering` having drifted from this one — nothing a contract can
+/// act on, hence `InternalFatal` and a stopped run.
 fn float_ordering(n: i32) -> HostResult<FloatOrdering> {
     FloatOrdering::from_code(scalar(n)?).ok_or(HostError::InternalFatal)
 }
@@ -1102,9 +1098,8 @@ mod tests {
         assert_eq!(crossed.result, 0, "a failed run returned no value");
     }
 
-    /// Every code a guest can be handed comes back as the error that produced it, so a
-    /// caller reading a negative return value recovers the condition and not a
-    /// neighbouring one.
+    /// Every code a guest can be handed comes back as the error that produced it, not as
+    /// a neighbouring one.
     #[test]
     fn every_wire_code_crosses_back_as_its_error() {
         for &error in HostError::ALL {
@@ -1112,14 +1107,11 @@ mod tests {
         }
     }
 
-    /// A code from outside the set is `InternalFatal`, which is the fallback this crate
-    /// owns rather than one the ABI enum supplies.
+    /// A code from outside the set is `InternalFatal`, the fallback this crate owns.
     ///
-    /// `-21` is the code xrpld would append next, so it is the one that decides whether a
-    /// list this crate has not caught up with reaches a guest or stops the run. `i32::MIN +
-    /// 1` is next to the sentinel and unassigned, which is what makes the sentinel a value
-    /// rather than a range. A non-negative code is not an error at all and goes the same
-    /// way, this being reached only once the sign has been read.
+    /// `-21` is the code xrpld would append next; `i32::MIN + 1` is next to the sentinel
+    /// and unassigned, which is what makes the sentinel a value rather than a range. The
+    /// non-negative codes reach here only once the sign has been read elsewhere.
     #[test]
     fn a_code_outside_the_set_is_internal_fatal() {
         for code in [-21, i32::MIN + 1, 0, 1, i32::MAX] {
@@ -1136,8 +1128,7 @@ mod tests {
         assert_eq!(scalar(-19), Err(HostError::FloatInputMalformed));
     }
 
-    /// `float_cmp`'s three verdicts survive the crossing as themselves, which is the whole
-    /// reason the ABI declares them rather than passing an unexplained `i32`.
+    /// `float_cmp`'s three verdicts survive the crossing as themselves.
     #[test]
     fn every_verdict_crosses_back_as_itself() {
         for &ordering in FloatOrdering::ALL {
@@ -1149,10 +1140,9 @@ mod tests {
         }
     }
 
-    /// **What the named result buys over a bare `i32`.** A code naming no variant is
-    /// `WasmCommon.h`'s `FloatOrdering` having drifted from the ABI's, and it is caught
-    /// here rather than handed to a contract that would read `3` as none of its three
-    /// branches. `0` is not in this set: it is `Equal`, not an absent answer.
+    /// **Where the two `FloatOrdering` declarations are held together**, rather than a
+    /// contract being handed a `3` that matches none of its three branches. `0` is not in
+    /// this set: it is `Equal`, not an absent answer.
     #[test]
     fn a_code_naming_no_verdict_is_internal_fatal() {
         for code in [3, 4, 99, i32::MAX] {

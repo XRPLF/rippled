@@ -19,17 +19,8 @@
 // Not re-exported: the ABI is declared once, here, and this is the only call site.
 use xrpl_host_functions_macros::{coded_enum, host_functions};
 
-/// Error codes a host function may return.
-///
-/// Every code is negative, which is what lets a failure and an answer share one
-/// `i32` on the wire. Every one but `InternalFatal` is also a code some contract
-/// may read: that one names a condition with no number a contract can act on, so
-/// it stops the run instead of reaching a guest.
-///
-/// [`ALL`](Self::ALL) is what makes the split between the two checkable. A wasm
-/// engine's choice between handing a code to the guest and trapping on it is a
-/// decision per variant, so the test that checks it iterates this and a code added
-/// to the ABI cannot slip past.
+/// Error codes a host function may return. Every code is negative, which is what lets
+/// a failure and an answer share one `i32` on the wire.
 #[coded_enum]
 pub enum HostError {
     Unimplemented = -1,
@@ -63,16 +54,10 @@ pub type HostResult<T> = Result<T, HostError>;
 /// A `sha512Half` digest: the first 32 bytes of a SHA-512, as XRPL uses it.
 pub const HASH_LEN: usize = 32;
 
-/// How [`HostFunctions::trace`] is to read its data buffer.
-///
-/// The discriminants are wire values shared with the guest stdlib: append only,
-/// never renumber. They start at 1, so a zeroed argument names no type rather than
-/// the first one.
-///
-/// This is the declaration a guest and a host both compile against. The host side
-/// needs a second one — `cxx` cannot be a dependency here, since this crate also
-/// links into the guest — so `xrpl-wasm-vm-ffi` declares a shared enum for C++ and
-/// converts, exhaustively, from this.
+/// How [`HostFunctions::trace`] is to read its data buffer. Wire values shared with the
+/// guest stdlib: append only, never renumber, and starting at 1 so a zeroed argument
+/// names no type. `xrpl-wasm-vm-ffi` holds the second declaration, the one C++ compiles
+/// against — this crate links into the guest too, so it cannot depend on `cxx`.
 #[coded_enum]
 pub enum TraceDataType {
     /// 8 little-endian bytes, rendered as a signed decimal.
@@ -91,25 +76,14 @@ pub enum TraceDataType {
     AsText = 7,
 }
 
-/// The verdict [`HostFunctions::float_compare`] answers, read as the placing of
-/// `x` against `y`.
-///
-/// **Not C's `memcmp` convention**, and the sign is why: the wire's negative range
-/// belongs to [`HostError`], so a comparison cannot spell "less" as a negative
-/// without colliding with a code like `FloatInputMalformed`. Every variant is
-/// therefore non-negative, and a guest branches on the value rather than its sign.
-///
-/// The discriminants are wire values shared with the guest stdlib: append only,
-/// never renumber. As with [`TraceDataType`], the host side needs a second
-/// declaration — `cxx` cannot be a dependency here — so `WasmCommon.h` declares the
-/// same three codes for C++.
+/// The verdict [`HostFunctions::float_compare`] answers, read as the placing of `x`
+/// against `y`. **Not C's `memcmp` convention**: the wire's negative range belongs to
+/// [`HostError`], so every code here is non-negative — append only, never renumber.
+/// `WasmCommon.h` holds the second declaration, as [`TraceDataType`] has one.
 #[coded_enum]
 pub enum FloatOrdering {
-    /// `x` and `y` are the same value.
     Equal = 0,
-    /// `x` is the greater of the two.
     Greater = 1,
-    /// `x` is the lesser of the two.
     Less = 2,
 }
 
@@ -551,12 +525,7 @@ host_functions! {
     ) -> HostResult<usize>;
 
     /// Compares floats `x` and `y`, answering the [`FloatOrdering`] that places `x`
-    /// against `y`.
-    ///
-    /// The only declaration whose result is a named type rather than a bare scalar. It
-    /// reaches the guest as the variant's [`code`](FloatOrdering::code) — `0` equal, `1`
-    /// `x` greater, `2` `x` lesser — and **not** in `memcmp`'s signed convention, since
-    /// the wire's negative range is [`HostError`]'s; see [`FloatOrdering`].
+    /// against `y`. Reaches the guest as that variant's code, **not `memcmp`'s sign**.
     #[gas = 80]
     #[wasm_name = "float_cmp"]
     fn float_compare(&self, x: &[u8], y: &[u8]) -> HostResult<FloatOrdering>;

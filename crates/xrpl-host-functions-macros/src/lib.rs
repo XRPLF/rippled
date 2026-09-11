@@ -114,9 +114,9 @@ use parsed_host_function::ParsedHostFunction;
 /// generics: it maps to exactly one wasm import signature. Its parameters must be
 /// `i32`, `i64`, `u32`, `&[u8]`, `&mut [u8]`, `&str` or `TraceDataType`, and it
 /// must return `HostResult<usize>` if it writes an output region,
-/// `HostResult<i32>` if it answers a value directly, or `HostResult<()>` if it
-/// answers nothing. Two declarations may not share a `wasm_name`, nor collapse to
-/// the same PascalCase variant.
+/// `HostResult<i32>` or `HostResult<FloatOrdering>` if it answers a value directly,
+/// or `HostResult<()>` if it answers nothing. Two declarations may not share a
+/// `wasm_name`, nor collapse to the same PascalCase variant.
 #[proc_macro]
 pub fn host_functions(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     expand(input.into())
@@ -129,17 +129,12 @@ pub fn host_functions(input: proc_macro::TokenStream) -> proc_macro::TokenStream
 ///
 /// The enum is written as an ordinary one — its own doc comment, its own
 /// visibility, one `Variant = code,` per line — and the attribute supplies the
-/// derives, the `#[repr(i32)]` that `code` casts through, and an `impl` holding:
-///
-/// - `ALL`: every variant in declaration order. Rust cannot enumerate an enum's
-///   variants, so this is the only complete set a test can iterate, and it is
-///   complete by construction.
-/// - `code`: the wire value naming a variant.
-/// - `from_code`: the variant a wire value names, or `None`. What an unnamed code
-///   means is left to the caller, being a different condition per enum.
+/// derives and the `#[repr(i32)]` that `code` casts through. Rust cannot enumerate
+/// an enum's variants, so `ALL` is the only complete set a test can iterate.
 ///
 /// A variant carries no data and states its code as an integer literal, since that
-/// literal is also the pattern `from_code` matches it by.
+/// literal is also the pattern `from_code` matches it by. What an unnamed code means
+/// is the caller's to decide, being a different condition per enum.
 ///
 /// ```
 /// use xrpl_host_functions_macros::coded_enum;

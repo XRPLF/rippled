@@ -56,12 +56,10 @@ enum class HostFunctionError : int32_t {
     InternalFatal = std::numeric_limits<int32_t>::min(),
 };
 
-// The verdict `floatCompare` answers, read as the placing of `x` against `y` — the one host
-// function whose success values are an enumeration rather than a count, a flag or a handle.
-//
-// Wire values shared with the guest, and the second declaration of
-// `xrpl_host_functions::FloatOrdering` — the ABI crate also links into the guest, so it
-// cannot depend on `cxx` and this cannot be generated from it. Append only, never renumber.
+// The verdict `floatCompare` answers, read as the placing of `x` against `y`. Wire values
+// shared with the guest: append only, never renumber, never negative — a verdict and a
+// `HostFunctionError` share one `i32`, split by sign. The second declaration of
+// `xrpl_host_functions::FloatOrdering`, which links into the guest and so cannot use `cxx`.
 enum class FloatOrdering : int32_t {
     Equal = 0,
     Greater = 1,

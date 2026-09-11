@@ -1,13 +1,9 @@
 //! `#[coded_enum]`: an enum of wire codes, and the `ALL`/`code`/`from_code` set
 //! that must not fall behind its variants.
 //!
-//! One list is what makes `ALL` complete. Rust cannot enumerate an enum's
-//! variants — an exhaustive `match` forces an arm per variant but gives nothing to
-//! iterate — so a hand-written `ALL` beside a hand-written enum could only be kept
-//! in step by review, and `ALL`'s whole purpose is to be the set a test can trust.
-//! A variant added to the enum gains its `ALL` entry and its `from_code` arm by
-//! construction. `HostFunctionSpec::ALL` is complete the same way, from the
-//! `host_functions!` block.
+//! Rust cannot enumerate an enum's variants — an exhaustive `match` forces an arm per
+//! variant but gives nothing to iterate — so `ALL` is trustworthy only by being
+//! generated from them, as `HostFunctionSpec::ALL` is from the `host_functions!` block.
 
 use proc_macro2::TokenStream;
 use quote::quote;
@@ -37,7 +33,7 @@ pub(crate) fn expand(args: TokenStream, item: TokenStream) -> syn::Result<TokenS
     let vis = &item.vis;
     let name = &item.ident;
     let declarations = item.variants.iter();
-    let idents = variants.iter().map(|variant| variant.ident);
+    let identifiers = variants.iter().map(|variant| variant.ident);
     let arms = variants.iter().map(|variant| {
         let (ident, code) = (variant.ident, variant.code);
         quote! { #code => Some(Self::#ident) }
@@ -54,7 +50,7 @@ pub(crate) fn expand(args: TokenStream, item: TokenStream) -> syn::Result<TokenS
         impl #name {
             /// Every variant, in declaration order — the whole set, and whole by
             /// construction.
-            pub const ALL: &'static [Self] = &[#(Self::#idents,)*];
+            pub const ALL: &'static [Self] = &[#(Self::#identifiers,)*];
 
             /// The wire value that names this variant.
             #[inline]
@@ -62,10 +58,8 @@ pub(crate) fn expand(args: TokenStream, item: TokenStream) -> syn::Result<TokenS
                 self as i32
             }
 
-            /// The variant `code` names, or `None` if no variant does.
-            ///
-            /// What an unnamed code means is left to the caller, being a different
-            /// condition per enum.
+            /// The variant `code` names, or `None` if no variant does — what an
+            /// unnamed code means is the caller's to decide.
             pub const fn from_code(code: i32) -> Option<Self> {
                 match code {
                     #(#arms,)*
@@ -130,9 +124,8 @@ fn code_of(variant: &Variant) -> syn::Result<&Expr> {
     Ok(code)
 }
 
-/// `-2147483648` and `7`, but not `i32::MIN` or `1 + 1`: the discriminant is
-/// emitted into pattern position unchanged, where an expression is either a
-/// different meaning or no meaning at all.
+/// `-2147483648` and `7`, but not `i32::MIN` or `1 + 1`: the discriminant is emitted
+/// into pattern position unchanged, where an expression means something else or nothing.
 fn is_integer_literal(code: &Expr) -> bool {
     match code {
         Expr::Lit(ExprLit {
@@ -181,9 +174,8 @@ mod tests {
         }
     }
 
-    /// The visibility is the caller's: these enums are the ABI crate's public
-    /// vocabulary, and a `pub` the macro supplied would be one the declaration
-    /// could not take back.
+    /// The visibility is the caller's: a `pub` the macro supplied would be one the
+    /// declaration could not take back.
     #[test]
     fn keeps_the_declared_visibility() {
         assert!(
@@ -212,8 +204,8 @@ mod tests {
         assert!(messages[0].contains("missing `= <code>`"), "{messages:?}");
     }
 
-    /// Both halves of what a code must be: a plain integer, and the only thing the
-    /// variant carries.
+    /// The two shapes a code is tempting to write as and cannot be: a constant's
+    /// path, and arithmetic.
     #[test]
     fn rejects_a_code_that_is_not_an_integer_literal() {
         let messages = messages(quote! {

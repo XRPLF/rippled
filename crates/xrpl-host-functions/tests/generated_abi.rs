@@ -523,10 +523,8 @@ impl HostFunctions for FakeHost {
         put(out, &[mantissa as u8])
     }
 
-    /// Reads two floats and answers a [`FloatOrdering`] code; `InvalidParams` if either
-    /// is empty. Compares first bytes, which is enough for the shape — what matters here
-    /// is that a verdict crosses as `FloatOrdering`'s code and not as a sign, so the
-    /// mapping from Rust's `Ordering` is spelled out rather than arithmetic on the bytes.
+    /// Reads two floats and answers a [`FloatOrdering`]; `InvalidParams` if either is
+    /// empty. First bytes only — what matters is that the verdict is a named variant.
     fn float_compare(&self, x: &[u8], y: &[u8]) -> HostResult<FloatOrdering> {
         let (Some(x), Some(y)) = (x.first(), y.first()) else {
             return Err(HostError::InvalidParams);
@@ -1094,12 +1092,9 @@ fn an_unnamed_trace_data_type_code_is_refused() {
     }
 }
 
-/// The last of the wire vocabulary, and the same change-detector argument: `float_cmp`'s
-/// verdicts are what a guest branches on, so they are pinned as literals here. `ALL` is in
-/// code order, so the round trip pins the discriminants and not just the membership.
-///
-/// Zero is `Equal` rather than unused, unlike [`TraceDataType`]: a comparison always has an
-/// answer, so there is no "named nothing" to reserve it for.
+/// `float_cmp`'s verdicts are what a guest branches on, so they are pinned as literals
+/// here; `ALL` is in code order, so the round trip pins the discriminants too. Zero is
+/// `Equal`, not reserved as in [`TraceDataType`]: a comparison always has an answer.
 #[test]
 fn every_float_ordering_survives_the_wire() {
     let codes: Vec<i32> = FloatOrdering::ALL.iter().map(|o| o.code()).collect();
@@ -1110,27 +1105,21 @@ fn every_float_ordering_survives_the_wire() {
     }
 }
 
-/// **The property that keeps a verdict from being read as a failure.** `float_cmp` returns
-/// a verdict and an error code down the same `i32`, and the split is the sign — so no
-/// ordering may be negative, however the enum is later extended.
-///
-/// `Less` is the one this is really about: it is `2`, not `memcmp`'s `-1`, which is
-/// [`HostError::Unimplemented`]'s code.
+/// **The property that keeps a verdict from being read as a failure.** A verdict and an
+/// error code share one `i32`, split by sign, so no ordering may be negative however the
+/// enum is extended — `Less` is `2`, not `memcmp`'s `-1`, which is `Unimplemented`.
 #[test]
 fn no_float_ordering_collides_with_an_error_code() {
     for &ordering in FloatOrdering::ALL {
         assert!(ordering.code() >= 0, "{ordering:?} is negative");
     }
 
-    // The collision the sign rule exists to prevent: `memcmp`'s "less" is `-1`, a code this
-    // ABI has already spent.
     assert_eq!(HostError::from_code(-1), Some(HostError::Unimplemented));
     assert_eq!(FloatOrdering::from_code(-1), None);
 }
 
 /// A value no variant names is refused rather than rounded to a neighbouring verdict: a
-/// total order has exactly three outcomes, so anything else is a host contradicting the
-/// ABI. The negative codes are `HostError`'s and are not verdicts either.
+/// total order has exactly three outcomes, and the negative codes are `HostError`'s.
 #[test]
 fn an_unnamed_float_ordering_code_is_refused() {
     for code in [-1, 3, 5, i32::MAX, i32::MIN] {

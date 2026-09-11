@@ -42,14 +42,10 @@ TEST_F(FloatCompareImpl, Equal)
         FloatOrdering::Equal);
 }
 
-// The wire codes a contract branches on, pinned as literals here because that is what the
-// guest compiles against. `FloatOrdering` is declared twice — here and as
-// `xrpl_host_functions::FloatOrdering`, which the ABI crate cannot generate from this one —
-// so each side pins its own numbers, as `HostFunctionError` already does.
-//
-// The non-negativity is the invariant rather than an accident of the numbering: a verdict
-// and an error code share one `i32`, split by sign, so `Less` is `2` and not `memcmp`'s
-// `-1`, which is `Unimplemented`.
+// The wire codes a contract branches on, pinned as literals because that is what the guest
+// compiles against — `FloatOrdering` is declared twice, so each side pins its own numbers
+// as `HostFunctionError` already does. Non-negativity is the invariant, not an accident of
+// the numbering: `Less` is `2`, not `memcmp`'s `-1`, which is `Unimplemented`.
 TEST_F(FloatCompareImpl, VerdictCodesAreTheOnesTheGuestReads)
 {
     EXPECT_EQ(floatOrderingToInt(FloatOrdering::Equal), 0);
