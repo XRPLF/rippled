@@ -272,6 +272,370 @@ INSTANTIATE_TEST_SUITE_P(
     ::testing::Values(kBackedMode, kUnbackedMode),
     shamapBackingModeName);
 
+// Exercises the traversal stacks built by belowHelper. Each stack entry pairs a node with the ID
+// naming its position, and SHAMap asserts that pairing on every push, so these traversals fail
+// loudly in a Debug build if a node ID is ever derived from the wrong branch.
+class SHAMapTraversal : public ::testing::Test
+{
+protected:
+    beast::Journal const j_{TestSink::instance()};
+
+    // Keys that share a long prefix and then fan out across distinct branches, so the deeper inner
+    // nodes have several children and traversal must descend many levels.
+    static std::vector<uint256>
+    deepFanOutKeys()
+    {
+        std::vector<uint256> keys;
+        for (unsigned int branch = 0; branch < SHAMap::kBranchFactor; ++branch)
+        {
+            // Vary the 6th nibble, keeping the first five identical.
+            auto text = std::string("abcde") + "0123456789abcdef"[branch];
+            text.append(64 - text.size(), '7');
+            keys.emplace_back(std::string_view{text});
+        }
+        return keys;
+    }
+
+    // Keys that share all 63 leading nibbles and fan out only at the last one, so the tree is a
+    // chain of single-child inner nodes down to depth 63 with the leaves as siblings at depth 64.
+    // This exercises kLeafDepth directly, unlike deepFanOutKeys() above, whose fan-out at the 6th
+    // nibble keeps the tree only about 6 levels deep.
+    static std::vector<uint256>
+    deepFanOutKeysAtLeafDepth()
+    {
+        std::vector<uint256> keys;
+        for (unsigned int branch = 0; branch < SHAMap::kBranchFactor; ++branch)
+        {
+            auto text = std::string(63, 'a') + "0123456789abcdef"[branch];
+            keys.emplace_back(std::string_view{text});
+        }
+        return keys;
+    }
+
+    static void
+    fillMap(SHAMap& map, std::vector<uint256> const& keys)
+    {
+        map.setUnbacked();
+        for (auto const& k : keys)
+        {
+            Buffer vuc{32};
+            std::fill_n(vuc.data(), vuc.size(), std::uint8_t{1});
+            EXPECT_TRUE(
+                map.addItem(SHAMapNodeType::TnAccountState, makeShamapitem(k, std::move(vuc))));
+            map.invariants();
+        }
+    }
+};
+
+TEST_F(SHAMapTraversal, forward_iteration_visits_every_key_in_order)
+{
+    tests::TestNodeFamily f{j_};
+    auto keys = deepFanOutKeys();
+    SHAMap map{SHAMapType::FREE, f};
+    fillMap(map, keys);
+
+    std::ranges::sort(keys);
+    std::vector<uint256> visited;
+    for (auto const& item : map)
+        visited.push_back(item.key());
+
+    EXPECT_EQ(visited, keys);
+}
+
+TEST_F(SHAMapTraversal, upper_bound_walks_the_whole_map)
+{
+    tests::TestNodeFamily f{j_};
+    auto keys = deepFanOutKeys();
+    SHAMap map{SHAMapType::FREE, f};
+    fillMap(map, keys);
+    std::ranges::sort(keys);
+
+    // upperBound from each key must land on its successor, driving belowHelper across every
+    // subtree.
+    for (std::size_t k = 0; k + 1 < keys.size(); ++k)
+    {
+        auto it = map.upperBound(keys[k]);
+        ASSERT_NE(it, map.end()) << "no successor for key " << k;
+        EXPECT_EQ(it->key(), keys[k + 1]) << "wrong successor for key " << k;
+    }
+    EXPECT_EQ(map.upperBound(keys.back()), map.end());
+}
+
+TEST_F(SHAMapTraversal, lower_bound_walks_the_whole_map)
+{
+    tests::TestNodeFamily f{j_};
+    auto keys = deepFanOutKeys();
+    SHAMap map{SHAMapType::FREE, f};
+    fillMap(map, keys);
+    std::ranges::sort(keys);
+
+    // lowerBound is the reverse direction: belowHelper descends to the greatest key below a
+    // subtree.
+    for (std::size_t k = 1; k < keys.size(); ++k)
+    {
+        auto it = map.lowerBound(keys[k]);
+        ASSERT_NE(it, map.end()) << "no predecessor for key " << k;
+        EXPECT_EQ(it->key(), keys[k - 1]) << "wrong predecessor for key " << k;
+    }
+    EXPECT_EQ(map.lowerBound(keys.front()), map.end());
+}
+
+TEST_F(SHAMapTraversal, bounds_agree_with_iteration_for_absent_keys)
+{
+    tests::TestNodeFamily f{j_};
+    auto keys = deepFanOutKeys();
+    SHAMap map{SHAMapType::FREE, f};
+    fillMap(map, keys);
+    std::ranges::sort(keys);
+
+    // Probe keys that are not in the map, so the traversal starts mid-tree rather than at a leaf.
+    for (unsigned char const c : {0x00, 0x40, 0x80, 0xc0, 0xff})
+    {
+        uint256 probe;
+        std::fill_n(probe.begin(), probe.size(), c);
+
+        auto const expectedUpper = std::ranges::upper_bound(keys, probe);
+        auto const upper = map.upperBound(probe);
+        if (expectedUpper == keys.end())
+        {
+            EXPECT_EQ(upper, map.end()) << "probe " << static_cast<unsigned>(c);
+        }
+        else
+        {
+            ASSERT_NE(upper, map.end()) << "probe " << static_cast<unsigned>(c);
+            EXPECT_EQ(upper->key(), *expectedUpper) << "probe " << static_cast<unsigned>(c);
+        }
+
+        auto const lowerCount = std::ranges::lower_bound(keys, probe) - keys.begin();
+        auto const lower = map.lowerBound(probe);
+        if (lowerCount == 0)
+        {
+            EXPECT_EQ(lower, map.end()) << "probe " << static_cast<unsigned>(c);
+        }
+        else
+        {
+            ASSERT_NE(lower, map.end()) << "probe " << static_cast<unsigned>(c);
+            EXPECT_EQ(lower->key(), keys[lowerCount - 1]) << "probe " << static_cast<unsigned>(c);
+        }
+    }
+}
+
+TEST_F(SHAMapTraversal, iteration_survives_deletions)
+{
+    tests::TestNodeFamily f{j_};
+    auto keys = deepFanOutKeys();
+    SHAMap map{SHAMapType::FREE, f};
+    fillMap(map, keys);
+    std::ranges::sort(keys);
+
+    // Deleting every other key drops the fan-out node's branch count from 16 to 8, never the 1
+    // that would make delItem collapse it into a leaf. So this pins that iteration survives
+    // deletions that reshape the map without collapsing any inner node; the case that does
+    // collapse one is iteration_survives_a_collapsed_inner_node below.
+    for (std::size_t k = 0; k < keys.size(); k += 2)
+    {
+        ASSERT_TRUE(map.delItem(keys[k]));
+        map.invariants();
+    }
+
+    std::vector<uint256> expected;
+    for (std::size_t k = 1; k < keys.size(); k += 2)
+        expected.push_back(keys[k]);
+
+    std::vector<uint256> visited;
+    for (auto const& item : map)
+        visited.push_back(item.key());
+    EXPECT_EQ(visited, expected);
+
+    for (std::size_t k = 0; k + 1 < expected.size(); ++k)
+    {
+        auto it = map.upperBound(expected[k]);
+        ASSERT_NE(it, map.end());
+        EXPECT_EQ(it->key(), expected[k + 1]);
+    }
+}
+
+TEST_F(SHAMapTraversal, iteration_survives_a_collapsed_inner_node)
+{
+    tests::TestNodeFamily f{j_};
+    SHAMap map{SHAMapType::FREE, f};
+
+    // One key in a separate subtree, diverging from the fan-out group at the very first nibble, so
+    // it survives untouched while the fan-out group below is collapsed.
+    auto const sentinel = uint256{std::string_view{std::string(64, '0')}};
+
+    auto fanOutKeys = deepFanOutKeysAtLeafDepth();
+    fillMap(map, fanOutKeys);
+    Buffer vuc{32};
+    std::fill_n(vuc.data(), vuc.size(), std::uint8_t{1});
+    ASSERT_TRUE(
+        map.addItem(SHAMapNodeType::TnAccountState, makeShamapitem(sentinel, std::move(vuc))));
+    map.invariants();
+
+    std::ranges::sort(fanOutKeys);
+
+    // Delete all but the last fan-out key. The fan-out node's branch count drops to 1 on the final
+    // delete, which delItem collapses by pulling the sole remaining leaf up in its place; every
+    // ancestor above it has exactly one child by construction, so each of those also drops to
+    // branch count 1 and collapses in turn, all the way up to (but not including) the root. That
+    // final delete replaces the entire 63-level chain with the root pointing straight at the one
+    // remaining leaf, so the surviving traversal stack is rebuilt over a drastically different tree
+    // shape, not just missing one inner node.
+    for (std::size_t k = 0; k + 1 < fanOutKeys.size(); ++k)
+    {
+        ASSERT_TRUE(map.delItem(fanOutKeys[k]));
+        map.invariants();
+    }
+
+    std::vector<uint256> const expected{sentinel, fanOutKeys.back()};
+    std::vector<uint256> visited;
+    for (auto const& item : map)
+        visited.push_back(item.key());
+    EXPECT_EQ(visited, expected);
+
+    auto it = map.upperBound(sentinel);
+    ASSERT_NE(it, map.end());
+    EXPECT_EQ(it->key(), fanOutKeys.back());
+    EXPECT_EQ(map.upperBound(fanOutKeys.back()), map.end());
+}
+
+// The tests below mirror the ones above but use deepFanOutKeysAtLeafDepth(), whose keys share all
+// 63 leading nibbles and fan out only at the last one. That puts the leaves at depth
+// SHAMap::kLeafDepth, so these traversals walk a chain of single-child inner nodes all the way down
+// and exercise the kLeafDepth guards that deepFanOutKeys() alone (fanning out at the 6th nibble)
+// never reaches.
+
+TEST_F(SHAMapTraversal, forward_iteration_visits_every_key_in_order_at_leaf_depth)
+{
+    tests::TestNodeFamily f{j_};
+    auto keys = deepFanOutKeysAtLeafDepth();
+    SHAMap map{SHAMapType::FREE, f};
+    fillMap(map, keys);
+
+    std::ranges::sort(keys);
+    std::vector<uint256> visited;
+    for (auto const& item : map)
+        visited.push_back(item.key());
+
+    EXPECT_EQ(visited, keys);
+}
+
+TEST_F(SHAMapTraversal, upper_bound_walks_the_whole_map_at_leaf_depth)
+{
+    tests::TestNodeFamily f{j_};
+    auto keys = deepFanOutKeysAtLeafDepth();
+    SHAMap map{SHAMapType::FREE, f};
+    fillMap(map, keys);
+    std::ranges::sort(keys);
+
+    // upperBound from each key must land on its successor, driving belowHelper down to depth
+    // kLeafDepth for every subtree.
+    for (std::size_t k = 0; k + 1 < keys.size(); ++k)
+    {
+        auto it = map.upperBound(keys[k]);
+        ASSERT_NE(it, map.end()) << "no successor for key " << k;
+        EXPECT_EQ(it->key(), keys[k + 1]) << "wrong successor for key " << k;
+    }
+    EXPECT_EQ(map.upperBound(keys.back()), map.end());
+}
+
+TEST_F(SHAMapTraversal, lower_bound_walks_the_whole_map_at_leaf_depth)
+{
+    tests::TestNodeFamily f{j_};
+    auto keys = deepFanOutKeysAtLeafDepth();
+    SHAMap map{SHAMapType::FREE, f};
+    fillMap(map, keys);
+    std::ranges::sort(keys);
+
+    // lowerBound is the reverse direction: belowHelper descends to depth kLeafDepth to find the
+    // greatest key below a subtree.
+    for (std::size_t k = 1; k < keys.size(); ++k)
+    {
+        auto it = map.lowerBound(keys[k]);
+        ASSERT_NE(it, map.end()) << "no predecessor for key " << k;
+        EXPECT_EQ(it->key(), keys[k - 1]) << "wrong predecessor for key " << k;
+    }
+    EXPECT_EQ(map.lowerBound(keys.front()), map.end());
+}
+
+TEST_F(SHAMapTraversal, bounds_agree_with_iteration_for_absent_keys_at_leaf_depth)
+{
+    tests::TestNodeFamily f{j_};
+    auto keys = deepFanOutKeysAtLeafDepth();
+    SHAMap map{SHAMapType::FREE, f};
+    fillMap(map, keys);
+    std::ranges::sort(keys);
+
+    // The keys fill all 16 branches of the last nibble, so an absent key must diverge from the
+    // shared 'a' prefix earlier than that. Diverging at increasingly deep nibbles forces
+    // walkTowardsKey to descend through more single-child inner nodes before it finds the empty
+    // branch, right up to the one just above kLeafDepth.
+    for (unsigned int const divergeAt : {0u, 31u, 61u, 62u})
+    {
+        auto text = std::string(divergeAt, 'a') + "b";
+        text.append(64 - text.size(), '0');
+        uint256 const probe{std::string_view{text}};
+
+        auto const expectedUpper = std::ranges::upper_bound(keys, probe);
+        auto const upper = map.upperBound(probe);
+        if (expectedUpper == keys.end())
+        {
+            EXPECT_EQ(upper, map.end()) << "divergeAt " << divergeAt;
+        }
+        else
+        {
+            ASSERT_NE(upper, map.end()) << "divergeAt " << divergeAt;
+            EXPECT_EQ(upper->key(), *expectedUpper) << "divergeAt " << divergeAt;
+        }
+
+        auto const lowerCount = std::ranges::lower_bound(keys, probe) - keys.begin();
+        auto const lower = map.lowerBound(probe);
+        if (lowerCount == 0)
+        {
+            EXPECT_EQ(lower, map.end()) << "divergeAt " << divergeAt;
+        }
+        else
+        {
+            ASSERT_NE(lower, map.end()) << "divergeAt " << divergeAt;
+            EXPECT_EQ(lower->key(), keys[lowerCount - 1]) << "divergeAt " << divergeAt;
+        }
+    }
+}
+
+TEST_F(SHAMapTraversal, iteration_survives_deletions_at_leaf_depth)
+{
+    tests::TestNodeFamily f{j_};
+    auto keys = deepFanOutKeysAtLeafDepth();
+    SHAMap map{SHAMapType::FREE, f};
+    fillMap(map, keys);
+    std::ranges::sort(keys);
+
+    // Deleting every other key drops the fan-out node's branch count from 16 to 8, the same
+    // non-collapsing case as iteration_survives_deletions above, but reached by descending through
+    // a chain of single-child inner nodes down to kLeafDepth instead of a shallow one.
+    for (std::size_t k = 0; k < keys.size(); k += 2)
+    {
+        ASSERT_TRUE(map.delItem(keys[k]));
+        map.invariants();
+    }
+
+    std::vector<uint256> expected;
+    for (std::size_t k = 1; k < keys.size(); k += 2)
+        expected.push_back(keys[k]);
+
+    std::vector<uint256> visited;
+    for (auto const& item : map)
+        visited.push_back(item.key());
+    EXPECT_EQ(visited, expected);
+
+    for (std::size_t k = 0; k + 1 < expected.size(); ++k)
+    {
+        auto it = map.upperBound(expected[k]);
+        ASSERT_NE(it, map.end());
+        EXPECT_EQ(it->key(), expected[k + 1]);
+    }
+}
+
 class SHAMapPathProof : public ::testing::Test
 {
 protected:
