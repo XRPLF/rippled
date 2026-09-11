@@ -77,6 +77,9 @@ DerivedData
 /.augment
 /.claude
 /CLAUDE.md
+/.claude/settings.local.json
+AGENTS.override.md
+CLAUDE.local.md
 
 # Python
 __pycache__
