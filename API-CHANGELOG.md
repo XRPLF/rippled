@@ -29,6 +29,7 @@ Version 3.4.0 is not yet released. These changes are available in the 3.4.0 beta
 ### Additions in 3.4.0
 
 - `ledger`: `nftoken_id`, `nftoken_ids`, and `offer_id` are now included in transaction metadata when transactions are expanded (`expand`, or admin-only `full`), matching the `tx`, `account_tx`, and `subscribe` (`transactions` stream) responses. ([#5706](https://github.com/XRPLF/rippled/pull/5706))
+- `ledger_entry`: Add full support for checks, NFT offers, payment channels, and signer lists. ([#6319](https://github.com/XRPLF/rippled/pull/6319))
 
 ### Bugfixes in 3.4.0
 
