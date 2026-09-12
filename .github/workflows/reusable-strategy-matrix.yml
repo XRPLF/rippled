@@ -39,4 +39,9 @@ jobs:
           # labeled "Ready to merge" or "Full CI build". Any other event (merge
           # queue, push, schedule, manual dispatch) runs the full matrix.
           GENERATE_MINIMAL: ${{ (github.event_name == 'pull_request' && !contains(github.event.pull_request.labels.*.name, 'Ready to merge') && !contains(github.event.pull_request.labels.*.name, 'Full CI build')) && '--minimal' || '' }}
-        run: ./generate.py ${GENERATE_CONFIG} ${GENERATE_MINIMAL} >>"${GITHUB_OUTPUT}"
+          # Configs flagged "extended" in the JSON are too expensive to run per
+          # pull request, so only the nightly schedule adds them. A manual run
+          # counts as well, because otherwise the only way to exercise one is to
+          # wait for the night.
+          GENERATE_EXTENDED: ${{ (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') && '--extended' || '' }}
+        run: ./generate.py ${GENERATE_CONFIG} ${GENERATE_MINIMAL} ${GENERATE_EXTENDED} >>"${GITHUB_OUTPUT}"
