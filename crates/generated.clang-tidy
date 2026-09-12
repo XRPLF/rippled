@@ -1,0 +1,10 @@
+---
+# Neutralizes clang-tidy for the corrosion/cxxbridge-generated C++. Copied into
+# the crates build directory by crates/CMakeLists.txt, next to the generated
+# sources, so clang-tidy picks it up instead of the top-level configuration.
+#
+# One check is kept enabled to avoid clang-tidy's "no checks enabled" error.
+Checks: "-*,google-readability-todo"
+WarningsAsErrors: ""
+HeaderFilterRegex: ""
+InheritParentConfig: false

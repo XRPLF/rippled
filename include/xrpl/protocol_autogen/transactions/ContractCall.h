@@ -21,7 +21,7 @@ class ContractCallBuilder;
  * Type: ttCONTRACT_CALL (97)
  * Delegable: Delegation::Delegable
  * Amendment: featureSmartContract
- * Privileges: NoPriv
+ * Privileges: Privilege::NoPriv
  *
  * Immutable wrapper around STTx providing type-safe field access.
  * Use ContractCallBuilder to construct new transactions.

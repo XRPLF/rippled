@@ -3,6 +3,7 @@
 #include <xrpl/protocol/Rules.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFormats.h>
+#include <xrpl/protocol/TxSettings.h>
 
 #include <optional>
 #include <string>
@@ -27,8 +28,6 @@ enum GranularEmitableType : std::uint32_t {
 #undef EMITABLE
 #pragma pop_macro("EMITABLE")
 };
-
-enum Emittance { emitable, notEmitable };
 
 class Emitable
 {

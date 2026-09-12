@@ -9,7 +9,11 @@
 #include <xrpld/rpc/Status.h>
 #include <xrpld/rpc/detail/Tuning.h>
 
+#include <xrpl/basics/Blob.h>
+#include <xrpl/basics/Slice.h>
+#include <xrpl/basics/StringUtilities.h>
 #include <xrpl/basics/base_uint.h>
+#include <xrpl/basics/strHex.h>
 #include <xrpl/beast/core/LexicalCast.h>
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/beast/utility/instrumentation.h>
@@ -28,6 +32,7 @@
 
 #include <cstdint>
 #include <expected>
+#include <format>
 #include <memory>
 
 namespace xrpl::rpc {
@@ -331,6 +336,13 @@ getLedger<>(std::shared_ptr<ReadView const>&, LedgerShortcut shortcut, Context c
 template Status
 getLedger<>(std::shared_ptr<ReadView const>&, uint256 const&, Context const&);
 
+// explicit instantiation of ledgerFromSpecifier
+template Status
+ledgerFromSpecifier<>(
+    std::shared_ptr<ReadView const>&,
+    org::xrpl::rpc::v1::LedgerSpecifier const&,
+    Context const&);
+
 // The previous version of the lookupLedger command would accept the
 // "ledger_index" argument as a string and silently treat it as a request to
 // return the current ledger which, while not strictly wrong, could cause a lot
@@ -520,10 +532,10 @@ injectSLE(json::Value& jv, SLE const& sle)
             auto const& hash = sle.getFieldH128(sfEmailHash);
             Blob const b(hash.begin(), hash.end());
             std::string md5 = strHex(makeSlice(b));
-            boost::to_lower(md5);
+            md5 = toLower(md5);
             // VFALCO TODO Give a name to this constant and move it
             //             to a more visible location.
-            jv[jss::urlgravatar] = str(boost::format("https://www.gravatar.com/avatar/%s") % md5);
+            jv[jss::urlgravatar] = std::format("https://www.gravatar.com/avatar/{}", md5);
         }
     }
     else

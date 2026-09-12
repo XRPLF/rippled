@@ -8,6 +8,7 @@
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/MPTokenHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
+#include <xrpl/ledger/helpers/VaultHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Feature.h>
@@ -41,6 +42,11 @@ VaultCreate::checkExtraFeatures(PreflightContext const& ctx)
         return false;
 
     if (ctx.tx.isFieldPresent(sfDomainID) && !ctx.rules.enabled(featurePermissionedDomains))
+        return false;
+
+    if (!ctx.rules.enabled(featureLendingProtocolV1_1) &&
+        (ctx.tx.isFieldPresent(sfVaultKind) || ctx.tx.isFieldPresent(sfSubscriptionDate) ||
+         ctx.tx.isFieldPresent(sfRedemptionDate)))
         return false;
 
     return true;
@@ -99,6 +105,22 @@ VaultCreate::preflight(PreflightContext const& ctx)
             return temMALFORMED;
     }
 
+    if (!isValidVaultKind(ctx.tx))
+        return temMALFORMED;
+    auto const kind = getVaultKind(ctx.tx);
+    auto const hasSubscription = ctx.tx.isFieldPresent(sfSubscriptionDate);
+    auto const hasRedemption = ctx.tx.isFieldPresent(sfRedemptionDate);
+    auto const isClosedEnded = kind == VaultKind::ClosedEnded;
+    if (!isClosedEnded && (hasSubscription || hasRedemption))
+        return temMALFORMED;
+    if (isClosedEnded)
+    {
+        if (!hasSubscription || !hasRedemption)
+            return temMALFORMED;
+        if (!isValidClosedEndedGap(ctx.tx[sfSubscriptionDate], ctx.tx[sfRedemptionDate]))
+            return temMALFORMED;
+    }
+
     return tesSUCCESS;
 }
 
@@ -135,6 +157,16 @@ VaultCreate::preclaim(PreclaimContext const& ctx)
     if (auto const accountId = pseudoAccountAddress(ctx.view, keylet::vault(account, sequence).key);
         accountId == beast::kZero)
         return terADDRESS_COLLISION;
+
+    // preflight enforces red >= sub + kMinInvestmentPeriod for closed-ended
+    // vaults, so a past RedemptionDate always implies a strictly-earlier,
+    // equally-past SubscriptionDate. The RedemptionDate arm below is therefore
+    // defensive: it cannot be the sole cause of tecEXPIRED. It is kept to
+    // preserve the invariant locally in case the preflight gap check is ever
+    // weakened.
+    if (hasExpired(ctx.view, ctx.tx[~sfSubscriptionDate]) ||
+        hasExpired(ctx.view, ctx.tx[~sfRedemptionDate]))
+        return tecEXPIRED;
 
     return tesSUCCESS;
 }
@@ -242,7 +274,17 @@ VaultCreate::doApply()
     if (scale != 0u)
         vault->at(sfScale) = scale;
     if (view().rules().enabled(featureLendingProtocolV1_1))
+    {
         vault->at(sfLEVersion) = std::to_underlying(VaultVersion::CashBasis);
+
+        auto const kind = getVaultKind(tx);
+        vault->at(sfVaultKind) = std::to_underlying(kind);
+        if (kind == VaultKind::ClosedEnded)
+        {
+            vault->at(sfSubscriptionDate) = tx[sfSubscriptionDate];
+            vault->at(sfRedemptionDate) = tx[sfRedemptionDate];
+        }
+    }
     view().insert(vault);
 
     // Explicitly create MPToken for the vault owner

@@ -23,8 +23,6 @@
 #include <xrpl/rdb/DatabaseCon.h>
 #include <xrpl/server/Wallet.h>
 
-#include <boost/algorithm/string/trim.hpp>
-
 #include <cstddef>
 #include <cstdint>
 #include <exception>
@@ -277,7 +275,7 @@ loadValidatorToken(std::vector<std::string> const& blob, beast::Journal journal)
                 [](std::size_t init, std::string const& s) { return init + s.size(); }));
 
         for (auto const& line : blob)
-            tokenStr += boost::algorithm::trim_copy(line);
+            tokenStr += trimWhitespace(line);
 
         tokenStr = base64Decode(tokenStr);
 
@@ -653,7 +651,7 @@ ManifestCache::load(
                 [](std::size_t init, std::string const& s) { return init + s.size(); }));
 
         for (auto const& line : configRevocation)
-            revocationStr += boost::algorithm::trim_copy(line);
+            revocationStr += trimWhitespace(line);
 
         auto mo = deserializeManifest(base64Decode(revocationStr));
 

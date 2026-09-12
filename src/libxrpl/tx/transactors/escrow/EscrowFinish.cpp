@@ -151,6 +151,9 @@ EscrowFinish::preflightSigValidated(PreflightContext const& ctx)
         }
     }
 
+    if (auto const err = credentials::checkFields(ctx.tx, ctx.rules, ctx.j); !isTesSuccess(err))
+        return err;
+
     return tesSUCCESS;
 }
 
@@ -231,7 +234,7 @@ escrowFinishPreclaimHelper<MPTIssue>(
         return ter;
 
     // If the issuer has frozen the destination, return tecLOCKED
-    if (isFrozen(ctx.view, dest, mptIssue))
+    if (isFrozen(ctx.view, dest, *sleIssuance))
         return tecLOCKED;
 
     return tesSUCCESS;
@@ -492,14 +495,12 @@ EscrowFinish::doApply()
 
     auto const reserveToSubtract = calculateAdditionalReserve((*slep)[~sfBytecode]);
 
-    // With the Sponsor amendment, release the escrow reserve before delivery.
-    // Token delivery can auto-create a destination holding, and the same
-    // sponsor (or the same account, for a self-escrow) may cover both the
-    // escrow being removed and the holding being created. Without the
-    // amendment, keep the legacy order: releasing early changes the reserve
-    // arithmetic for self-escrows and would break consensus if not gated.
-    bool const sponsorEnabled = ctx_.view().rules().enabled(featureSponsor);
-    if (sponsorEnabled)
+    // Delivery can auto-create the destination's holding; the removed escrow
+    // must not be counted against its reserve. The two share a reserve payer
+    // for a self-escrow, or when one sponsor covers both.
+    bool const recycleReserve =
+        ctx_.view().rules().enabled(featureSponsor) || ctx_.view().rules().enabled(fixCleanup3_4_0);
+    if (recycleReserve)
         decreaseOwnerCountForObject(ctx_.view(), account, slep, reserveToSubtract, ctx_.journal);
 
     STAmount const amount = slep->getFieldAmount(sfAmount);
@@ -551,8 +552,7 @@ EscrowFinish::doApply()
 
     ctx_.view().update(sled);
 
-    // Adjust source owner count (legacy position, pre-Sponsor)
-    if (!sponsorEnabled)
+    if (!recycleReserve)
         decreaseOwnerCountForObject(ctx_.view(), account, slep, reserveToSubtract, ctx_.journal);
 
     // Remove escrow from ledger

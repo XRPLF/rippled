@@ -188,20 +188,28 @@ private:
             {features});
 
         // tfPassive -- place the offer without crossing it.
-        testAMM(
-            [&](AMM& ammAlice, Env& env) {
-                // Carol creates a passive offer that could cross AMM.
-                // Carol's offer should stay in the ledger.
-                auto const& btc = MPT(ammAlice[1]);
-                env(offer(carol_, XRP(100), btc(100), tfPassive));
-                env.close();
-                BEAST_EXPECT(ammAlice.expectBalances(XRP(10'100), btc(10'000), ammAlice.tokens()));
-                BEAST_EXPECT(expectOffers(env, carol_, 1, {{{XRP(100), btc(100)}}}));
-            },
-            {{XRP(10'100), gAmmmpt(10'000)}},
-            0,
-            std::nullopt,
-            {features});
+        {
+            Env env{*this, features};
+            fund(env, gw_, {alice_, carol_}, XRP(30'000'000));
+
+            MPTTester const btc(
+                {.env = env,
+                 .issuer = gw_,
+                 .holders = {alice_, carol_},
+                 .pay = 30'000'000,
+                 .flags = kMptDexFlags});
+
+            AMM const ammAlice(env, alice_, XRP(10'100'000), btc(10'000'000));
+
+            // Scale the exact-quality fixture up so the visual relationship
+            // stays clear: the passive CLOB offer has the same 1:1 quality as
+            // the generated AMM offer, so it should not cross.
+            env(offer(carol_, XRP(100'000), btc(100'000), tfPassive));
+            env.close();
+            BEAST_EXPECT(
+                ammAlice.expectBalances(XRP(10'100'000), btc(10'000'000), ammAlice.tokens()));
+            BEAST_EXPECT(expectOffers(env, carol_, 1, {{{XRP(100'000), btc(100'000)}}}));
+        }
 
         // tfPassive -- cross only offers of better quality.
         testAMM(
@@ -1084,9 +1092,9 @@ private:
 
         // AMM is consumed up to the first cam Offer quality
         BEAST_EXPECT(ammCarol.expectBalances(
-            aBux(3'093'541'659'651'604), bBux(3'200'215'509'984'418), ammCarol.tokens()));
+            aBux(3'093'541'659'651'603), bBux(3'200'215'509'984'419), ammCarol.tokens()));
         BEAST_EXPECT(expectOffers(
-            env, cam, 1, {{Amounts{bBux(200'215'509'984'418), aBux(200'215'509'984'419)}}}));
+            env, cam, 1, {{Amounts{bBux(200'215'509'984'419), aBux(200'215'509'984'419)}}}));
     }
 
     void
@@ -1241,7 +1249,7 @@ private:
         BEAST_EXPECT(sa == XRP(100'000'000));
         // Bob gets ~99.99e12ETH. This is the amount Bob
         // can get out of AMM for 100,000,000XRP.
-        BEAST_EXPECT(equal(da, eth(99'999'900'000'100)));
+        BEAST_EXPECT(equal(da, eth(99'999'900'000'099)));
     }
 
     // carol holds ETH, sells ETH for XRP
@@ -1502,6 +1510,96 @@ private:
             BEAST_EXPECT(equal(da, sendAmt));
             BEAST_EXPECT(equal(sa, hkdG1(10'000'000)));
             BEAST_EXPECT(same(st, stpath(ipe(MPT(hkdG2)))));
+        }
+    }
+
+    void
+    pathFindMPTAMMExecutableSourceAmount()
+    {
+        testcase("Path Find: MPT AMM source amount is executable");
+        using namespace jtx;
+
+        auto const checkQuote = [&](std::int64_t usdPool,
+                                    std::int64_t eurPool,
+                                    std::int64_t deliverAmount,
+                                    std::int64_t expectedSourceAmount) {
+            Env env = pathTestEnv();
+            env.fund(XRP(30'000), gw_, alice_, bob_, carol_);
+            env.close();
+
+            MPTTester const usd(
+                {.env = env,
+                 .issuer = gw_,
+                 .holders = {alice_, bob_, carol_},
+                 .pay = usdPool,
+                 .flags = kMptDexFlags});
+
+            MPTTester const eur(
+                {.env = env,
+                 .issuer = gw_,
+                 .holders = {alice_, bob_, carol_},
+                 .pay = eurPool,
+                 .flags = kMptDexFlags});
+
+            AMM const ammCarol(env, carol_, usd(usdPool), eur(eurPool));
+            env.close();
+
+            STPathSet st;
+            STAmount sa, da;
+            auto const deliver = eur(deliverAmount);
+            std::tie(st, sa, da) = findPaths(
+                env,
+                alice_,
+                bob_,
+                deliver,
+                std::nullopt,
+                usd.issuanceID(),
+                std::nullopt,
+                std::nullopt);
+
+            // Each quote must execute when used as an exact-output SendMax.
+            BEAST_EXPECT(equal(da, deliver));
+            BEAST_EXPECT(equal(sa, usd(expectedSourceAmount)));
+            BEAST_EXPECT(!st.empty());
+
+            auto const before = eur.getBalance(bob_);
+            env(pay(alice_, bob_, deliver),
+                Json(jss::Paths, st.getJson(JsonOptions::Values::None)),
+                Sendmax(sa),
+                Txflags(tfNoRippleDirect));
+            BEAST_EXPECT(eur.getBalance(bob_) == before + deliverAmount);
+        };
+
+        struct TestCase
+        {
+            std::int64_t usdPool;
+            std::int64_t eurPool;
+            std::int64_t deliverAmount;
+            std::int64_t expectedSourceAmount;
+        };
+
+        // Cover the original 2:1 pool and the same pool scaled down by 1000.
+        // clang-format off
+        TestCase const testCases[] = {
+            {.usdPool = 2'000'000, .eurPool = 1'000'000, .deliverAmount = 1,     .expectedSourceAmount = 3},
+            {.usdPool = 2'000'000, .eurPool = 1'000'000, .deliverAmount = 2,     .expectedSourceAmount = 5},
+            {.usdPool = 2'000'000, .eurPool = 1'000'000, .deliverAmount = 10,    .expectedSourceAmount = 21},
+            {.usdPool = 2'000'000, .eurPool = 1'000'000, .deliverAmount = 100,   .expectedSourceAmount = 201},
+            {.usdPool = 2'000'000, .eurPool = 1'000'000, .deliverAmount = 1'000, .expectedSourceAmount = 2'003},
+            {.usdPool = 2'000,     .eurPool = 1'000,     .deliverAmount = 1,     .expectedSourceAmount = 3},
+            {.usdPool = 2'000,     .eurPool = 1'000,     .deliverAmount = 2,     .expectedSourceAmount = 5},
+            {.usdPool = 2'000,     .eurPool = 1'000,     .deliverAmount = 10,    .expectedSourceAmount = 21},
+            {.usdPool = 2'000,     .eurPool = 1'000,     .deliverAmount = 100,   .expectedSourceAmount = 223},
+        };
+        // clang-format on
+
+        for (auto const& testCase : testCases)
+        {
+            checkQuote(
+                testCase.usdPool,
+                testCase.eurPool,
+                testCase.deliverAmount,
+                testCase.expectedSourceAmount);
         }
     }
 
@@ -3583,6 +3681,7 @@ private:
         pathFind01();
         pathFind02();
         pathFind06();
+        pathFindMPTAMMExecutableSourceAmount();
     }
 
     void

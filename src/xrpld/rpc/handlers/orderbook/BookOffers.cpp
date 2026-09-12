@@ -22,6 +22,7 @@
 #include <xrpl/resource/Fees.h>
 #include <xrpl/server/NetworkOPs.h>
 
+#include <format>
 #include <memory>
 #include <optional>
 
@@ -32,7 +33,7 @@ validateTakerJSON(json::Value const& taker, json::StaticString const& name)
 {
     if (!taker.isMember(jss::currency) && !taker.isMember(jss::mpt_issuance_id))
     {
-        return rpc::missingFieldError((boost::format("%s.currency") % name.cStr()).str());
+        return rpc::missingFieldError(std::format("{}.currency", name.cStr()));
     }
 
     if (taker.isMember(jss::mpt_issuance_id) &&
@@ -44,8 +45,7 @@ validateTakerJSON(json::Value const& taker, json::StaticString const& name)
     if ((taker.isMember(jss::currency) && !taker[jss::currency].isString()) ||
         (taker.isMember(jss::mpt_issuance_id) && !taker[jss::mpt_issuance_id].isString()))
     {
-        return rpc::expectedFieldError(
-            (boost::format("%s.currency") % name.cStr()).str(), "string");
+        return rpc::expectedFieldError(std::format("{}.currency", name.cStr()), "string");
     }
 
     return std::nullopt;
@@ -70,10 +70,9 @@ parseTakerAssetJSON(
 
         if (!toCurrency(issue.currency, taker[jss::currency].asString()))
         {
-            JLOG(j.info()) << boost::format("Bad %s currency.") % name.cStr();
+            JLOG(j.info()) << std::format("Bad {} currency.", name.cStr());
             return rpc::makeError(
-                assetError,
-                (boost::format("Invalid field '%s.currency', bad currency.") % name.cStr()).str());
+                assetError, std::format("Invalid field '{}.currency', bad currency.", name.cStr()));
         }
         asset = issue;
     }
@@ -83,8 +82,7 @@ parseTakerAssetJSON(
         if (!mptid.parseHex(taker[jss::mpt_issuance_id].asString()))
         {
             return rpc::makeError(
-                assetError,
-                (boost::format("Invalid field '%s.mpt_issuance_id'") % name.cStr()).str());
+                assetError, std::format("Invalid field '{}.mpt_issuance_id'", name.cStr()));
         }
         asset = mptid;
     }
@@ -113,24 +111,21 @@ parseTakerIssuerJSON(
         {
             if (!taker[jss::issuer].isString())
             {
-                return rpc::expectedFieldError(
-                    (boost::format("%s.issuer") % name.cStr()).str(), "string");
+                return rpc::expectedFieldError(std::format("{}.issuer", name.cStr()), "string");
             }
 
             if (!toIssuer(issue.account, taker[jss::issuer].asString()))
             {
                 return rpc::makeError(
                     issuerError,
-                    (boost::format("Invalid field '%s.issuer', bad issuer.") % name.cStr()).str());
+                    std::format("Invalid field '{}.issuer', bad issuer.", name.cStr()));
             }
 
             if (issue.account == noAccount())
             {
                 return rpc::makeError(
                     issuerError,
-                    (boost::format("Invalid field '%s.issuer', bad issuer account one.") %
-                     name.cStr())
-                        .str());
+                    std::format("Invalid field '{}.issuer', bad issuer account one.", name.cStr()));
             }
         }
         else
@@ -142,19 +137,17 @@ parseTakerIssuerJSON(
         {
             return rpc::makeError(
                 issuerError,
-                (boost::format(
-                     "Unneeded field '%s.issuer' for XRP currency "
-                     "specification.") %
-                 name.cStr())
-                    .str());
+                std::format(
+                    "Unneeded field '{}.issuer' for XRP currency "
+                    "specification.",
+                    name.cStr()));
         }
 
         if (!isXRP(issue.currency) && isXRP(issue.account))
         {
             return rpc::makeError(
                 issuerError,
-                (boost::format("Invalid field '%s.issuer', expected non-XRP issuer.") % name.cStr())
-                    .str());
+                std::format("Invalid field '{}.issuer', expected non-XRP issuer.", name.cStr()));
         }
     }
 

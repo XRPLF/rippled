@@ -21,7 +21,7 @@ class SetFeeBuilder;
  * Type: ttFEE (101)
  * Delegable: Delegation::NotDelegable
  * Amendment: uint256{}
- * Privileges: NoPriv
+ * Privileges: Privilege::NoPriv
  *
  * Immutable wrapper around STTx providing type-safe field access.
  * Use SetFeeBuilder to construct new transactions.

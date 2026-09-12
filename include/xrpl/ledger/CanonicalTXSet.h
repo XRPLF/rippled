@@ -59,12 +59,6 @@ private:
             return lhs.txId_ == rhs.txId_;
         }
 
-        friend bool
-        operator!=(Key const& lhs, Key const& rhs)
-        {
-            return !(lhs == rhs);
-        }
-
         [[nodiscard]] uint256 const&
         getAccount() const
         {

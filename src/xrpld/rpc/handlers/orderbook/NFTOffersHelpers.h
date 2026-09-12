@@ -93,6 +93,17 @@ enumerateNFTOffers(rpc::JsonContext& context, uint256 const& nftId, Keylet const
         if (!sle || nftId != sle->getFieldH256(sfNFTokenID))
             return rpcError(RpcInvalidParams);
 
+        // Reject a marker that references an offer on the opposite side
+        // (buy vs. sell) of the directory being enumerated.  Without this
+        // check the marker's node hint points into the other directory, so
+        // forEachItemAfter never finds `startAfter` and instead scans every
+        // page of `directory` before returning invalidParams -- turning an
+        // O(1) rejection into an O(directory size) walk.
+        auto const offerDir =
+            sle->isFlag(lsfSellNFToken) ? keylet::nftSells(nftId) : keylet::nftBuys(nftId);
+        if (directory.key != offerDir.key)
+            return rpcError(RpcInvalidParams);
+
         startHint = sle->getFieldU64(sfNFTokenOfferNode);
         appendNftOfferJson(context.app, sle, jsonOffers);
         offers.reserve(reserve);

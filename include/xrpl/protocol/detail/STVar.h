@@ -152,10 +152,4 @@ operator==(STVar const& lhs, STVar const& rhs)
     return lhs.get().isEquivalent(rhs.get());
 }
 
-inline bool
-operator!=(STVar const& lhs, STVar const& rhs)
-{
-    return !(lhs == rhs);
-}
-
 }  // namespace xrpl::detail

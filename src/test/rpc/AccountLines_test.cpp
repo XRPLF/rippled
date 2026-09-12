@@ -95,6 +95,24 @@ public:
         BEAST_EXPECT(ledger3Info.seq == 3);
 
         {
+            // test peer non-string
+            auto testInvalidPeerParam = [&](auto const& param) {
+                json::Value params;
+                params[jss::account] = alice.human();
+                params[jss::peer] = param;
+                auto jrr = env.rpc("json", "account_lines", to_string(params))[jss::result];
+                BEAST_EXPECT(jrr[jss::error] == "invalidParams");
+                BEAST_EXPECT(jrr[jss::error_message] == "Invalid field 'peer'.");
+            };
+
+            testInvalidPeerParam(1);
+            testInvalidPeerParam(1.1);
+            testInvalidPeerParam(true);
+            testInvalidPeerParam(json::Value(json::ValueType::Null));
+            testInvalidPeerParam(json::Value(json::ValueType::Object));
+            testInvalidPeerParam(json::Value(json::ValueType::Array));
+        }
+        {
             // alice is funded but has no lines.  An empty array is returned.
             json::Value params;
             params[jss::account] = alice.human();
@@ -775,6 +793,35 @@ public:
         LedgerHeader const ledger3Info = env.closed()->header();
         BEAST_EXPECT(ledger3Info.seq == 3);
 
+        {
+            // test peer non-string
+            auto testInvalidPeerParam = [&](auto const& param) {
+                json::Value params;
+                params[jss::account] = alice.human();
+                params[jss::peer] = param;
+
+                json::Value request;
+                request[jss::method] = "account_lines";
+                request[jss::jsonrpc] = "2.0";
+                request[jss::ripplerpc] = "2.0";
+                request[jss::id] = 5;
+                request[jss::params] = params;
+
+                auto const lines = env.rpc("json2", to_string(request));
+                BEAST_EXPECT(lines[jss::error][jss::error] == "invalidParams");
+                BEAST_EXPECT(lines[jss::error][jss::message] == "Invalid field 'peer'.");
+                BEAST_EXPECT(lines.isMember(jss::jsonrpc) && lines[jss::jsonrpc] == "2.0");
+                BEAST_EXPECT(lines.isMember(jss::ripplerpc) && lines[jss::ripplerpc] == "2.0");
+                BEAST_EXPECT(lines.isMember(jss::id) && lines[jss::id] == 5);
+            };
+
+            testInvalidPeerParam(1);
+            testInvalidPeerParam(1.1);
+            testInvalidPeerParam(true);
+            testInvalidPeerParam(json::Value(json::ValueType::Null));
+            testInvalidPeerParam(json::Value(json::ValueType::Object));
+            testInvalidPeerParam(json::Value(json::ValueType::Array));
+        }
         {
             // alice is funded but has no lines.  An empty array is returned.
             json::Value params;

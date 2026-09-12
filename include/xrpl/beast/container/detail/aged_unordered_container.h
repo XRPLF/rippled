@@ -1340,28 +1340,6 @@ public:
                OtherAllocator> const& other) const
         requires MaybeMulti;
 
-    template <
-        bool OtherIsMulti,
-        bool OtherIsMap,
-        class OtherKey,
-        class OtherT,
-        class OtherDuration,
-        class OtherHash,
-        class OtherAllocator>
-    bool
-    operator!=(AgedUnorderedContainer<
-               OtherIsMulti,
-               OtherIsMap,
-               OtherKey,
-               OtherT,
-               OtherDuration,
-               OtherHash,
-               KeyEqual,
-               OtherAllocator> const& other) const
-    {
-        return !(this->operator==(other));
-    }
-
 private:
     bool
     wouldExceed(size_type additional) const

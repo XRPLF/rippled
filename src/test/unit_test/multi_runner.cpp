@@ -7,7 +7,6 @@
 #include <boost/interprocess/creation_tags.hpp>
 #include <boost/interprocess/detail/os_file_functions.hpp>
 #include <boost/interprocess/shared_memory_object.hpp>
-#include <boost/lexical_cast.hpp>
 
 #include <algorithm>
 #include <cassert>
@@ -36,7 +35,7 @@ fmtdur(typename clock_type::duration const& d)
     using namespace std::chrono;
     auto const ms = duration_cast<milliseconds>(d);
     if (ms < seconds{1})
-        return boost::lexical_cast<std::string>(ms.count()) + "ms";
+        return std::to_string(ms.count()) + "ms";
     std::stringstream ss;
     ss << std::fixed << std::setprecision(1) << (ms.count() / 1000.) << "s";
     return ss.str();

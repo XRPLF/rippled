@@ -19,9 +19,6 @@
 #include <xrpl/nodestore/detail/DecodedBlob.h>
 #include <xrpl/nodestore/detail/EncodedBlob.h>
 
-#include <boost/filesystem/operations.hpp>
-#include <boost/filesystem/path.hpp>
-
 #include <rocksdb/advanced_options.h>
 #include <rocksdb/cache.h>
 #include <rocksdb/compression_type.h>
@@ -37,6 +34,7 @@
 
 #include <atomic>
 #include <cstddef>
+#include <filesystem>
 #include <functional>
 #include <memory>
 #include <stdexcept>
@@ -262,8 +260,8 @@ public:
             db.reset();
             if (deletePath_)
             {
-                boost::filesystem::path const dir = name;
-                boost::filesystem::remove_all(dir);
+                std::filesystem::path const dir = name;
+                std::filesystem::remove_all(dir);
             }
         }
     }

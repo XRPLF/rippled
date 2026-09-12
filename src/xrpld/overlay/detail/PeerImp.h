@@ -623,8 +623,6 @@ public:
     void
     onMessage(std::shared_ptr<protocol::TMHaveTransactionSet> const& m);
     void
-    onMessage(std::shared_ptr<protocol::TMValidatorList> const& m);
-    void
     onMessage(std::shared_ptr<protocol::TMValidatorListCollection> const& m);
     void
     onMessage(std::shared_ptr<protocol::TMValidation> const& m);

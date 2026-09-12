@@ -115,9 +115,6 @@ public:
     bool
     operator==(STPathElement const& t) const;
 
-    bool
-    operator!=(STPathElement const& t) const;
-
 private:
     static std::size_t
     getHash(STPathElement const& element);
@@ -430,12 +427,6 @@ STPathElement::operator==(STPathElement const& t) const
 {
     return (type_ & TypeAccount) == (t.type_ & TypeAccount) && hashValue_ == t.hashValue_ &&
         accountID_ == t.accountID_ && assetID_ == t.assetID_ && issuerID_ == t.issuerID_;
-}
-
-inline bool
-STPathElement::operator!=(STPathElement const& t) const
-{
-    return !operator==(t);
 }
 
 // ------------ STPath ------------

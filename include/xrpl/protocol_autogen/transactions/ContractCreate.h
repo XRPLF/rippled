@@ -21,7 +21,7 @@ class ContractCreateBuilder;
  * Type: ttCONTRACT_CREATE (92)
  * Delegable: Delegation::Delegable
  * Amendment: featureSmartContract
- * Privileges: CreatePseudoAcct
+ * Privileges: Privilege::CreatePseudoAcct
  *
  * Immutable wrapper around STTx providing type-safe field access.
  * Use ContractCreateBuilder to construct new transactions.

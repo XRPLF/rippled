@@ -15,24 +15,28 @@ on:
 
       # Keep the paths below in sync with those in `on-pr.yml`.
       - ".github/actions/build-deps/**"
-      - ".github/actions/generate-version/**"
+      - ".github/actions/release-info/**"
       - ".github/actions/setup-conan/**"
+      - ".github/actions/setup-nix-env/**"
       - ".github/scripts/strategy-matrix/**"
       - ".github/workflows/reusable-build-test-config.yml"
       - ".github/workflows/reusable-build-test.yml"
       - ".github/workflows/reusable-check-autogen.yml"
       - ".github/workflows/reusable-clang-tidy.yml"
       - ".github/workflows/reusable-package.yml"
+      - ".github/workflows/reusable-rust.yml"
       - ".github/workflows/reusable-strategy-matrix.yml"
       - ".github/workflows/reusable-test.yml"
       - ".github/workflows/reusable-upload-recipe.yml"
       - ".clang-tidy"
       - ".codecov.yml"
+      - "bin/check-nix-store-refs.sh"
       - "bin/check-tools.sh"
       - "bin/default-loader-path.sh"
       - "cfg/**"
       - "cmake/**"
       - "conan/**"
+      - "crates/**"
       - "external/**"
       - "include/**"
       - "src/**"
@@ -40,6 +44,9 @@ on:
       - "CMakeLists.txt"
       - "conanfile.py"
       - "conan.lock"
+      - "flake.lock"
+      - "flake.nix"
+      - "nix/**"
       - "LICENSE.md"
       - "package/**"
       - "README.md"
@@ -96,6 +103,11 @@ jobs:
     secrets:
       CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
+  rust:
+    uses: ./.github/workflows/reusable-rust.yml
+    secrets:
+      CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+
   upload-recipe:
     needs: build-test
     # Only run when pushing to the develop branch.
@@ -108,3 +120,11 @@ jobs:
   package:
     needs: build-test
     uses: ./.github/workflows/reusable-package.yml
+    with:
+      # Packages are built on every trigger; only develop pushes in XRPLF/rippled
+      # publish them, matching upload-recipe above.
+      publish: ${{ github.repository == 'XRPLF/rippled' && github.event_name == 'push' && github.ref == 'refs/heads/develop' }}
+    secrets:
+      remote_username: ${{ secrets.NEXUS_REMOTE_USERNAME }}
+      remote_password: ${{ secrets.NEXUS_REMOTE_PASSWORD }}
+      signing_key: ${{ secrets.NEXUS_PACKAGES_PRIVATE_KEY }}

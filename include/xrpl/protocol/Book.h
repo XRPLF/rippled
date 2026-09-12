@@ -133,7 +133,7 @@ private:
     using id_hash_type = boost::base_from_member<std::hash<xrpl::MPTID>, 0>;
 
 public:
-    explicit hash() = default;
+    hash() = default;
 
     using value_type = std::size_t;
     using argument_type = xrpl::MPTIssue;
@@ -160,7 +160,7 @@ private:
     mptissue_hasher mMptissueHasher_;
 
 public:
-    explicit hash() = default;
+    hash() = default;
 
     value_type
     operator()(argument_type const& asset) const
@@ -227,7 +227,7 @@ struct hash<xrpl::Issue> : std::hash<xrpl::Issue>
 template <>
 struct hash<xrpl::MPTIssue> : std::hash<xrpl::MPTIssue>
 {
-    explicit hash() = default;
+    hash() = default;
 
     using Base = std::hash<xrpl::MPTIssue>;
 };
@@ -235,7 +235,7 @@ struct hash<xrpl::MPTIssue> : std::hash<xrpl::MPTIssue>
 template <>
 struct hash<xrpl::Asset> : std::hash<xrpl::Asset>
 {
-    explicit hash() = default;
+    hash() = default;
 
     using Base = std::hash<xrpl::Asset>;
 };

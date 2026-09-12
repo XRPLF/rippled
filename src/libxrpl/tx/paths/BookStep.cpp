@@ -44,7 +44,9 @@
 #include <numeric>
 #include <optional>
 #include <sstream>
+#include <stdexcept>
 #include <string>
+#include <string_view>
 #include <type_traits>
 #include <utility>
 #include <variant>
@@ -653,7 +655,15 @@ limitStepIn(
         // under an amendment.
         ofrAmt = offer.limitIn(ofrAmt, inLmt, /* roundUp */ false);
         stpAmt.out = ofrAmt.out;
-        ownerGives = mulRatio(ofrAmt.out, transferRateOut, QUALITY_ONE, /*roundUp*/ false);
+        // Round up for MPT output so the offer owner pays the full
+        // ceil(amount × rate) fee, matching direct Payment semantics.  IOU uses
+        // floating-point arithmetic so the floor/ceil distinction is sub-epsilon
+        // there; preserve the historical false to avoid changing IOU behavior.
+        ownerGives = mulRatio(
+            ofrAmt.out,
+            transferRateOut,
+            QUALITY_ONE,
+            /*roundUp*/ std::is_same_v<TOut, MPTAmount>);
     }
 }
 
@@ -672,7 +682,11 @@ limitStepOut(
     if (limit < stpAmt.out)
     {
         stpAmt.out = limit;
-        ownerGives = mulRatio(stpAmt.out, transferRateOut, QUALITY_ONE, /*roundUp*/ false);
+        ownerGives = mulRatio(
+            stpAmt.out,
+            transferRateOut,
+            QUALITY_ONE,
+            /*roundUp*/ std::is_same_v<TOut, MPTAmount>);
         ofrAmt = offer.limitOut(
             ofrAmt,
             stpAmt.out,
@@ -727,17 +741,20 @@ BookStep<TIn, TOut, TDerived>::forEachOffer(
         bool const isAssetInMPT = assetIn.holds<MPTIssue>();
         auto const& owner = offer.owner();
 
-        if (isAssetInMPT)
-        {
-            // Create MPToken for the offer's owner. No need to check
-            // for the reserve since the offer is removed if it is consumed.
-            // Therefore, the owner count remains the same.
-            if (auto const err = checkCreateMPT(sb, assetIn.get<MPTIssue>(), owner, {}, j_);
-                !isTesSuccess(err))
+        auto removeOffer = [&](std::string_view logMessage = {}) {
+            auto const key = offer.key();
+            if (!logMessage.empty())
             {
-                return true;
+                JLOG(j_.trace()) << logMessage << (key ? " " + to_string(*key) : "");
             }
-        }
+            if (key)
+                offers.permRmOffer(*key);
+            if (!offerAttempted)
+            {
+                // Change quality only if no previous offers were tried.
+                ofrQ = std::nullopt;
+            }
+        };
 
         // It shouldn't matter from auth point of view whether it's sb
         // or afView. Amendment guard this change just in case.
@@ -745,17 +762,15 @@ BookStep<TIn, TOut, TDerived>::forEachOffer(
         // Make sure offer owner has authorization to own Assets from issuer
         // and MPT assets can be traded/transferred.
         // An account can always own XRP or their own Assets.
-        if (!isTesSuccess(requireAuth(applyView, assetIn, owner)) || !checkMPTDEX(sb, owner))
+        // Missing MPTokens are allowed during offer discovery; they are
+        // created later if the offer is actually consumed.
+        auto const authType = isAssetInMPT ? AuthType::WeakAuth : AuthType::Legacy;
+        if (!isTesSuccess(requireAuth(applyView, assetIn, owner, authType)) ||
+            !checkMPTDEX(sb, owner))
         {
             // Offer owner not authorized to hold IOU/MPT from issuer.
             // Remove this offer even if no crossing occurs.
-            if (auto const key = offer.key())
-                offers.permRmOffer(*key);
-            if (!offerAttempted)
-            {
-                // Change quality only if no previous offers were tried.
-                ofrQ = std::nullopt;
-            }
+            removeOffer();
             // Returning true causes offers.step() to delete the offer.
             return true;
         }
@@ -768,52 +783,88 @@ BookStep<TIn, TOut, TDerived>::forEachOffer(
             static_cast<TDerived const*>(this)->getOfrOutRate(prevStep_, owner, strandDst_, trOut));
 
         auto ofrAmt = offer.amount();
-        TAmounts stpAmt{mulRatio(ofrAmt.in, ofrInRate, QUALITY_ONE, /*roundUp*/ true), ofrAmt.out};
-
-        // owner pays the transfer fee.
-        auto ownerGives = mulRatio(ofrAmt.out, ofrOutRate, QUALITY_ONE, /*roundUp*/ false);
-
-        auto const funds = offer.isFunded()
-            ? ownerGives  // Offer owner is issuer; they have unlimited funds
-            : offers.ownerFunds();
-
-        // Only if CLOB offer
-        if (funds < ownerGives)
+        TAmounts stpAmt{ofrAmt.in, ofrAmt.out};
+        auto ownerGives = ofrAmt.out;
+        try
         {
-            // We already know offer.owner()!=offer.issueOut().account
-            ownerGives = funds;
-            stpAmt.out = mulRatio(ownerGives, QUALITY_ONE, ofrOutRate, /*roundUp*/ false);
-
-            // It turns out we can prevent order book blocking by (strictly)
-            // rounding down the ceil_out() result.  This adjustment changes
-            // transaction outcomes, so it must be made under an amendment.
-            ofrAmt = offer.limitOut(ofrAmt, stpAmt.out, /*roundUp*/ false);
-
+            // All arithmetic in this block runs before the offer is consumed.
+            // A crafted MPTokensV2 offer can overflow while transfer rates or
+            // crossing limits are applied; remove that unusable offer instead
+            // of letting it persist as a tecINTERNAL source.
             stpAmt.in = mulRatio(ofrAmt.in, ofrInRate, QUALITY_ONE, /*roundUp*/ true);
-        }
 
-        // Limit offer's input if MPT, BookStep is the first step (an issuer
-        // is making a cross-currency payment), and this offer is not owned
-        // by the issuer. Otherwise, OutstandingAmount may overflow.
-        auto const& issuer = assetIn.getIssuer();
-        if (isAssetInMPT && !prevStep_ && offer.owner() != issuer)
-        {
-            // Funds available to issue
-            auto const available = toAmount<TIn>(accountFunds(
-                sb,
-                issuer,
-                assetIn,  // STAmount{0}, but the default is not used
-                FreezeHandling::IgnoreFreeze,
-                AuthHandling::IgnoreAuth,
-                j_));
-            if (stpAmt.in > available)
+            // owner pays the transfer fee.
+            ownerGives = mulRatio(
+                ofrAmt.out,
+                ofrOutRate,
+                QUALITY_ONE,
+                /*roundUp*/ std::is_same_v<TOut, MPTAmount>);
+
+            auto const funds = offer.isFunded()
+                ? ownerGives  // Offer owner is issuer; they have unlimited funds
+                : offers.ownerFunds();
+
+            // Only if CLOB offer
+            if (funds < ownerGives)
             {
-                limitStepIn(offer, ofrAmt, stpAmt, ownerGives, ofrInRate, ofrOutRate, available);
-            }
-        }
+                // We already know offer.owner()!=offer.issueOut().account
+                ownerGives = funds;
+                stpAmt.out = mulRatio(ownerGives, QUALITY_ONE, ofrOutRate, /*roundUp*/ false);
 
-        offerAttempted = true;
-        return callback(offer, ofrAmt, stpAmt, ownerGives, ofrInRate, ofrOutRate);
+                // It turns out we can prevent order book blocking by (strictly)
+                // rounding down the ceil_out() result.  This adjustment changes
+                // transaction outcomes, so it must be made under an amendment.
+                ofrAmt = offer.limitOut(ofrAmt, stpAmt.out, /*roundUp*/ false);
+
+                stpAmt.in = mulRatio(ofrAmt.in, ofrInRate, QUALITY_ONE, /*roundUp*/ true);
+            }
+
+            // Limit offer's input if MPT, BookStep is the first step (an issuer
+            // is making a cross-currency payment), and this offer is not owned
+            // by the issuer. Otherwise, OutstandingAmount may overflow.
+            auto const& issuer = assetIn.getIssuer();
+            if (isAssetInMPT && !prevStep_ && offer.owner() != issuer)
+            {
+                // Funds available to issue
+                auto const available = toAmount<TIn>(accountFunds(
+                    sb,
+                    issuer,
+                    assetIn,  // STAmount{0}, but the default is not used
+                    FreezeHandling::IgnoreFreeze,
+                    AuthHandling::IgnoreAuth,
+                    j_));
+                if (stpAmt.in > available)
+                {
+                    limitStepIn(
+                        offer, ofrAmt, stpAmt, ownerGives, ofrInRate, ofrOutRate, available);
+                }
+            }
+
+            offerAttempted = true;
+            return callback(offer, ofrAmt, stpAmt, ownerGives, ofrInRate, ofrOutRate);
+        }
+        catch (std::overflow_error const&)
+        {
+            if (sb.rules().enabled(featureMPTokensV2))
+            {
+                SOMETIMES(
+                    true,
+                    "BookStep::forEachOffer removed MPT offer after "
+                    "overflow during crossing");
+                removeOffer("Removing offer with overflowing amount calculation");
+                return true;
+            }
+            // An overflow can only be produced by a crafted MPT offer, and MPT
+            // offers require featureMPTokensV2 (enforced at OfferCreate
+            // preflight). So the amendment is always enabled when we get here
+            // and this legacy re-throw is unreachable in practice.
+            // LCOV_EXCL_START
+            XRPL_ASSERT(
+                sb.rules().enabled(featureMPTokensV2),
+                "xrpl::BookStep::forEachOffer : overflow implies MPTokensV2");
+            throw;
+            // LCOV_EXCL_STOP
+        }
     };
 
     // At any payment engine iteration, AMM offer can only be consumed once.
@@ -873,6 +924,22 @@ BookStep<TIn, TOut, TDerived>::consumeOffer(
     // The offer owner gets the ofrAmt. The difference between ofrAmt and
     // stepAmt is a transfer fee that goes to book_.in.account
     {
+        if constexpr (std::is_same_v<TIn, MPTAmount>)
+        {
+            // If the offer's TakerPays asset is an MPT, the offer owner must
+            // hold an MPToken to receive it. Create one here if it doesn't
+            // already exist.
+            if (auto const err = checkCreateMPT(sb, book_.in.get<MPTIssue>(), offer.owner(), j_);
+                !isTesSuccess(err))
+            {
+                // checkCreateMPT only fails on tecDIR_FULL (its source line is
+                // itself LCOV-excluded) or a missing offer-owner account, which
+                // cannot happen since that account owns the offer being
+                // consumed. Defensive and unreachable in practice.
+                Throw<FlowException>(err);  // LCOV_EXCL_LINE
+            }
+        }
+
         auto const dr = offer.send(
             sb, book_.in.getIssuer(), offer.owner(), toSTAmount(ofrAmt.in, book_.in), j_);
         if (!isTesSuccess(dr))
@@ -1043,6 +1110,13 @@ BookStep<TIn, TOut, TDerived>::revImp(
         auto ofrAdjAmt = ofrAmt;
         auto stpAdjAmt = stpAmt;
         auto ownerGivesAdj = ownerGives;
+        // This reduction can overflow via the transfer-rate mulRatio() on a
+        // 63-bit MPT amount (IOU rescales instead of throwing, and XRP stays
+        // under the int64 limit, so only MPT reaches it today), but
+        // savedIns/savedOuts are not updated until after it succeeds. The outer
+        // execOffer() catch can therefore remove the offer under
+        // featureMPTokensV2 (legacy propagate-the-exception behavior otherwise)
+        // without rolling back local state.
         limitStepOut(
             offer,
             ofrAdjAmt,
@@ -1144,12 +1218,25 @@ BookStep<TIn, TOut, TDerived>::fwdImp(
         auto stpAdjAmt = stpAmt;
         auto ownerGivesAdj = ownerGives;
 
+        // limitStepIn()/limitStepOut() can throw std::overflow_error from the
+        // transfer-rate mulRatio() on a 63-bit MPT amount. (IOUAmount::mulRatio
+        // rescales rather than throwing, and XRP amounts/rates stay under the
+        // int64 limit, so in practice only MPT reaches this today.) execOffer()
+        // catches it: under featureMPTokensV2 the offending offer is removed;
+        // otherwise the legacy behavior (propagate the exception) is preserved.
+        // Keep candidate accumulator changes local until those calls succeed so
+        // the catch path does not observe partially updated state. Re-sum the
+        // staged sets to preserve historical flat_multiset summing behavior.
+        auto savedInsAdj = savedIns;
+        auto savedOutsAdj = savedOuts;
+        auto resultAdj = result;
         typename boost::container::flat_multiset<TOut>::const_iterator lastOut;
+
         if (stpAmt.in <= remainingIn)
         {
-            savedIns.insert(stpAmt.in);
-            lastOut = savedOuts.insert(stpAmt.out);
-            result = TAmounts<TIn, TOut>(sum(savedIns), sum(savedOuts));
+            savedInsAdj.insert(stpAmt.in);
+            lastOut = savedOutsAdj.insert(stpAmt.out);
+            resultAdj = TAmounts<TIn, TOut>(sum(savedInsAdj), sum(savedOutsAdj));
             // consume the offer even if stepAmt.in == remainingIn
             processMore = true;
         }
@@ -1163,15 +1250,15 @@ BookStep<TIn, TOut, TDerived>::fwdImp(
                 transferRateIn,
                 transferRateOut,
                 remainingIn);
-            savedIns.insert(remainingIn);
-            lastOut = savedOuts.insert(stpAdjAmt.out);
-            result.out = sum(savedOuts);
-            result.in = in;
+            savedInsAdj.insert(remainingIn);
+            lastOut = savedOutsAdj.insert(stpAdjAmt.out);
+            resultAdj.out = sum(savedOutsAdj);
+            resultAdj.in = in;
 
             processMore = false;
         }
 
-        if (result.out > cache_->out && result.in <= cache_->in)
+        if (resultAdj.out > cache_->out && resultAdj.in <= cache_->in)
         {
             // The step produced more output in the forward pass than the
             // reverse pass while consuming the same input (or less). If we
@@ -1181,8 +1268,8 @@ BookStep<TIn, TOut, TDerived>::fwdImp(
             // input provided in the forward step and produce the output
             // requested from the reverse step.
             auto const lastOutAmt = *lastOut;
-            savedOuts.erase(lastOut);
-            auto const remainingOut = cache_->out - sum(savedOuts);
+            savedOutsAdj.erase(lastOut);
+            auto const remainingOut = cache_->out - sum(savedOutsAdj);
             auto ofrAdjAmtRev = ofrAmt;
             auto stpAdjAmtRev = stpAmt;
             auto ownerGivesAdjRev = ownerGives;
@@ -1197,13 +1284,13 @@ BookStep<TIn, TOut, TDerived>::fwdImp(
 
             if (stpAdjAmtRev.in == remainingIn)
             {
-                result.in = in;
-                result.out = cache_->out;
+                resultAdj.in = in;
+                resultAdj.out = cache_->out;
 
-                savedIns.clear();
-                savedIns.insert(result.in);
-                savedOuts.clear();
-                savedOuts.insert(result.out);
+                savedInsAdj.clear();
+                savedInsAdj.insert(resultAdj.in);
+                savedOutsAdj.clear();
+                savedOutsAdj.insert(resultAdj.out);
 
                 ofrAdjAmt = ofrAdjAmtRev;
                 stpAdjAmt.in = remainingIn;
@@ -1214,10 +1301,15 @@ BookStep<TIn, TOut, TDerived>::fwdImp(
             {
                 // This is (likely) a problem case, and will be caught
                 // with later checks
-                savedOuts.insert(lastOutAmt);
+                savedOutsAdj.insert(lastOutAmt);
             }
         }
 
+        // Commit the staged accounting only after limitStepIn()/limitStepOut()
+        // have succeeded.
+        savedIns = std::move(savedInsAdj);
+        savedOuts = std::move(savedOutsAdj);
+        result = resultAdj;
         remainingIn = in - result.in;
         this->consumeOffer(sb, offer, ofrAdjAmt, stpAdjAmt, ownerGivesAdj);
 
@@ -1408,6 +1500,13 @@ template <class TIn, class TOut, class TDerived>
 bool
 BookStep<TIn, TOut, TDerived>::checkMPTDEX(ReadView const& view, AccountID const& owner) const
 {
+    // Offer-owner locks on book_.in and book_.out are handled by the
+    // liquidity sources before an offer reaches this point. OfferStream
+    // filters CLOB offers through the assetIn deep-freeze check and the
+    // assetOut owner-funds check using FreezeHandling::ZeroIfFrozen, while
+    // AMMLiquidity gets pool balances through ammAccountHolds(), which zeroes
+    // locked holdings. This method only enforces MPT trade and transfer
+    // permissions.
     if (!isTesSuccess(canTrade(view, book_.in)) || !isTesSuccess(canTrade(view, book_.out)))
         return false;
 
@@ -1421,14 +1520,8 @@ BookStep<TIn, TOut, TDerived>::checkMPTDEX(ReadView const& view, AccountID const
             // Offer's owner is an issuer
             if (asset.getIssuer() == owner)
                 return true;
-            // The previous step could be MPTEndpointStep with non issuer account or
-            // BookStep. Fail both if in asset is locked. In the former case it is holder
-            // to locked holder transfer. In the latter case it is not possible to tell if
-            // it is issuer to holder or holder to holder transfer.
-            if (isFrozen(view, owner, book_.in.get<MPTIssue>()))
-                return false;
-            // Previous step is BookStep. BookStep only sends if CanTransfer is
-            // set and not locked or the offer is owned by an issuer
+            // Previous BookStep already enforced transferability for the asset
+            // it sends to this offer.
             if (prevStep_->bookStepBook())
                 return true;
             // Previous step is MPTEndpointStep and offer's owner is not an

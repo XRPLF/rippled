@@ -21,7 +21,7 @@ class VaultCreateBuilder;
  * Type: ttVAULT_CREATE (65)
  * Delegable: Delegation::NotDelegable
  * Amendment: featureSingleAssetVault
- * Privileges: CreatePseudoAcct | CreateMptIssuance | MustModifyVault
+ * Privileges: Privilege::CreatePseudoAcct | Privilege::CreateMptIssuance | Privilege::MustModifyVault
  *
  * Immutable wrapper around STTx providing type-safe field access.
  * Use VaultCreateBuilder to construct new transactions.
@@ -214,6 +214,84 @@ public:
     {
         return this->tx_->isFieldPresent(sfScale);
     }
+
+    /**
+     * @brief Get sfVaultKind (SoeOptional)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_UINT8::type::value_type>
+    getVaultKind() const
+    {
+        if (hasVaultKind())
+        {
+            return this->tx_->at(sfVaultKind);
+        }
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfVaultKind is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasVaultKind() const
+    {
+        return this->tx_->isFieldPresent(sfVaultKind);
+    }
+
+    /**
+     * @brief Get sfSubscriptionDate (SoeOptional)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_UINT32::type::value_type>
+    getSubscriptionDate() const
+    {
+        if (hasSubscriptionDate())
+        {
+            return this->tx_->at(sfSubscriptionDate);
+        }
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfSubscriptionDate is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasSubscriptionDate() const
+    {
+        return this->tx_->isFieldPresent(sfSubscriptionDate);
+    }
+
+    /**
+     * @brief Get sfRedemptionDate (SoeOptional)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_UINT32::type::value_type>
+    getRedemptionDate() const
+    {
+        if (hasRedemptionDate())
+        {
+            return this->tx_->at(sfRedemptionDate);
+        }
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfRedemptionDate is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasRedemptionDate() const
+    {
+        return this->tx_->isFieldPresent(sfRedemptionDate);
+    }
 };
 
 /**
@@ -335,6 +413,39 @@ public:
     setScale(std::decay_t<typename SF_UINT8::type::value_type> const& value)
     {
         object_[sfScale] = value;
+        return *this;
+    }
+
+    /**
+     * @brief Set sfVaultKind (SoeOptional)
+     * @return Reference to this builder for method chaining.
+     */
+    VaultCreateBuilder&
+    setVaultKind(std::decay_t<typename SF_UINT8::type::value_type> const& value)
+    {
+        object_[sfVaultKind] = value;
+        return *this;
+    }
+
+    /**
+     * @brief Set sfSubscriptionDate (SoeOptional)
+     * @return Reference to this builder for method chaining.
+     */
+    VaultCreateBuilder&
+    setSubscriptionDate(std::decay_t<typename SF_UINT32::type::value_type> const& value)
+    {
+        object_[sfSubscriptionDate] = value;
+        return *this;
+    }
+
+    /**
+     * @brief Set sfRedemptionDate (SoeOptional)
+     * @return Reference to this builder for method chaining.
+     */
+    VaultCreateBuilder&
+    setRedemptionDate(std::decay_t<typename SF_UINT32::type::value_type> const& value)
+    {
+        object_[sfRedemptionDate] = value;
         return *this;
     }
 

@@ -1,7 +1,9 @@
-#include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/protocol/Emitable.h>
+
+#include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Permissions.h>
+#include <xrpl/protocol/TxSettings.h>
 #include <xrpl/protocol/jss.h>
 
 namespace xrpl {
@@ -10,13 +12,18 @@ Emitable::Emitable()
 {
     emitableTx_ = {
 #pragma push_macro("TRANSACTION")
+#pragma push_macro("UNWRAP")
 #undef TRANSACTION
+#undef UNWRAP
 
-#define TRANSACTION(tag, value, name, delegatable, amendment, permissions, emitable, fields) \
-    {value, emitable},
+#define UNWRAP(...) __VA_ARGS__
+#define TRANSACTION(tag, value, name, settings, fields) \
+    {value, (TxSettings UNWRAP settings).emittance},
 #include <xrpl/protocol/detail/transactions.macro>
 
 #undef TRANSACTION
+#undef UNWRAP
+#pragma pop_macro("UNWRAP")
 #pragma pop_macro("TRANSACTION")
     };
 
@@ -146,7 +153,7 @@ Emitable::isEmitable(std::uint32_t const& emitableValue) const
     //         return false;
     // }
 
-    if (it != emitableTx_.end() && it->second == Emittance::notEmitable)
+    if (it != emitableTx_.end() && it->second == Emittance::NotEmitable)
         return false;
 
     return true;

@@ -7,6 +7,7 @@
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/Rules.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STArray.h>
 #include <xrpl/protocol/STLedgerEntry.h>
@@ -18,8 +19,13 @@
 namespace xrpl {
 
 void
-ValidPermissionedDEX::visitEntry(bool isDelete, SLE::const_ref before, SLE::const_ref after)
+ValidPermissionedDEX::visitEntry(bool isDelete, SLE::const_ref, SLE::const_ref after)
 {
+    // Post-fixCleanup3_4_0: skip when after is null (defensive).
+    // Pre-amendment: original after-only path via the `if (after && ...)` checks below.
+    if (isFeatureEnabled(fixCleanup3_4_0) && !after)
+        return;
+
     auto trackDomain = [this, isDelete](uint256 const& domain) {
         domainsOld_.insert(domain);
         if (!isDelete)

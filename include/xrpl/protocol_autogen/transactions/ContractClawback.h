@@ -21,7 +21,7 @@ class ContractClawbackBuilder;
  * Type: ttCONTRACT_CLAWBACK (95)
  * Delegable: Delegation::Delegable
  * Amendment: featureSmartContract
- * Privileges: NoPriv
+ * Privileges: Privilege::NoPriv
  *
  * Immutable wrapper around STTx providing type-safe field access.
  * Use ContractClawbackBuilder to construct new transactions.

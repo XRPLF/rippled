@@ -1,7 +1,8 @@
 # check-tools snapshots
 
 These files capture the output of [`bin/check-tools.sh`](../../bin/check-tools.sh)
-— the versions of the development tooling — in each Nix environment:
+— the version and resolved store path of each development tool — in each Nix
+environment:
 
 | File                   | Environment                          |
 | ---------------------- | ------------------------------------ |
@@ -17,9 +18,13 @@ So if you change the environment (bump the image tag in
 and commit the affected snapshots.
 
 Each snapshot is `check-tools.sh` stdout with the git-clone connectivity check
-skipped (`CHECK_TOOLS_SKIP_CLONE=1`), so it contains only deterministic version
-data. On macOS the dev-shell greeting that `nix develop` prints first is dropped
-with `sed -n '/^Detected OS:/,$p'`.
+skipped (`CHECK_TOOLS_SKIP_CLONE=1`), so it is deterministic for a given
+environment. On macOS the dev-shell greeting that `nix develop` prints first is
+dropped with `sed -n '/^Detected OS:/,$p'`.
+
+The store paths carry their derivation hash, so they change whenever a tool is
+rebuilt — a `flake.lock` update generally rewrites most of them even when no
+version moves. That is deliberate: it makes tooling changes visible in review.
 
 ## Regenerating
 

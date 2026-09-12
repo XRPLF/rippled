@@ -21,7 +21,7 @@ class ContractDeleteBuilder;
  * Type: ttCONTRACT_DELETE (94)
  * Delegable: Delegation::Delegable
  * Amendment: featureSmartContract
- * Privileges: MustDeleteAcct
+ * Privileges: Privilege::MustDeleteAcct
  *
  * Immutable wrapper around STTx providing type-safe field access.
  * Use ContractDeleteBuilder to construct new transactions.

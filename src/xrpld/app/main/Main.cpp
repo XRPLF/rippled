@@ -6,6 +6,7 @@
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/SlabAllocator.h>
+#include <xrpl/basics/StringUtilities.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/core/CurrentThreadName.h>
 #include <xrpl/beast/net/IPEndpoint.h>
@@ -21,7 +22,6 @@
 
 #include <boost/algorithm/string/classification.hpp>
 #include <boost/algorithm/string/split.hpp>
-#include <boost/algorithm/string/trim.hpp>
 #include <boost/process/v1/args.hpp>
 #include <boost/process/v1/child.hpp>  // IWYU pragma: keep
 #include <boost/process/v1/exe.hpp>
@@ -211,7 +211,7 @@ public:
         boost::split(v, patterns, boost::algorithm::is_any_of(","));
         selectors_.reserve(v.size());
         std::ranges::for_each(v, [this](std::string s) {
-            boost::trim(s);
+            s = trimWhitespace(s);
             if (selectors_.empty() || !s.empty())
                 selectors_.emplace_back(beast::unit_test::Selector::ModeT::Automatch, s);
         });
@@ -614,7 +614,7 @@ run(int argc, char** argv)
                 std::vector<std::uint32_t> result;
                 for (auto& s : strVec)
                 {
-                    boost::trim(s);
+                    s = trimWhitespace(s);
                     if (!s.empty())
                         result.push_back(std::stoi(s));
                 }

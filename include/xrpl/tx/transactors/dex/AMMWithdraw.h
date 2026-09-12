@@ -109,6 +109,11 @@ public:
      * @param lpTokens current LPT balance
      * @param lpTokensWithdraw amount of tokens to withdraw
      * @param tfee trading fee in basis points
+     * @param freezeHandling whether a frozen balance is reported as zero
+     * @param authHandling whether an unauthorized MPT balance is reported as
+     *        zero
+     * @param reserveHandling whether the recipient owner-reserve check is
+     *        enforced when a trustline or MPToken has to be auto-created
      * @param withdrawAll if withdrawing all lptokens
      * @param priorBalance balance before fees
      * @return
@@ -118,6 +123,7 @@ public:
         Sandbox& view,
         SLE const& ammSle,
         AccountID const account,
+        std::optional<AccountID> const& clawbackIssuer,
         AccountID const& ammAccount,
         STAmount const& amountBalance,
         STAmount const& amount2Balance,
@@ -127,6 +133,7 @@ public:
         std::uint16_t tfee,
         FreezeHandling freezeHandling,
         AuthHandling authHandling,
+        ReserveHandling reserveHandling,
         WithdrawAll withdrawAll,
         XRPAmount const& priorBalance,
         beast::Journal const& journal);
@@ -138,12 +145,22 @@ public:
      * @param view
      * @param ammSle AMM ledger entry
      * @param ammAccount AMM account
+     * @param clawbackIssuer when set (AMMClawback path), the issuer performing
+     *        the clawback. A recreated MPToken is only auto-authorized when the
+     *        asset's issuer matches this account, so a clawback cannot grant
+     *        authorization on behalf of a different (paired-asset) issuer.
+     * @param account LP account
      * @param amountBalance current LP asset1 balance
      * @param amountWithdraw asset1 withdraw amount
      * @param amount2Withdraw asset2 withdraw amount
      * @param lpTokensAMMBalance current AMM LPT balance
      * @param lpTokensWithdraw amount of lptokens to withdraw
      * @param tfee trading fee in basis points
+     * @param freezeHandling whether a frozen balance is reported as zero
+     * @param authHandling whether an unauthorized MPT balance is reported as
+     *        zero
+     * @param reserveHandling whether the recipient owner-reserve check is
+     *        enforced when a trustline or MPToken has to be auto-created
      * @param withdrawAll if withdraw all lptokens
      * @param priorBalance balance before fees
      * @return
@@ -153,6 +170,7 @@ public:
         Sandbox& view,
         SLE const& ammSle,
         AccountID const& ammAccount,
+        std::optional<AccountID> const& clawbackIssuer,
         AccountID const& account,
         STAmount const& amountBalance,
         STAmount const& amountWithdraw,
@@ -162,6 +180,7 @@ public:
         std::uint16_t tfee,
         FreezeHandling freezeHandling,
         AuthHandling authHandling,
+        ReserveHandling reserveHandling,
         WithdrawAll withdrawAll,
         XRPAmount const& priorBalance,
         beast::Journal const& journal);

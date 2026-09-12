@@ -4,6 +4,7 @@
 #include <xrpl/protocol/Rules.h>
 #include <xrpl/protocol/SOTemplate.h>
 #include <xrpl/protocol/TxFormats.h>
+#include <xrpl/protocol/TxSettings.h>
 
 #include <cstdint>
 #include <functional>
@@ -38,11 +39,6 @@ enum GranularPermissionType : std::uint32_t {
 #pragma pop_macro("GRANULAR_PERMISSION")
 };
 
-// Injected bare enumerators (xrpl::delegable / xrpl::notDelegable) are required by preprocessor
-// tricks in tests and macro-generated code; enum class would break that.
-// NOLINTNEXTLINE(cppcoreguidelines-use-enum-class)
-enum Delegation { Delegable, NotDelegable };
-
 class Permission
 {
 private:
@@ -65,7 +61,7 @@ private:
     struct TxDelegationEntry
     {
         uint256 amendment;
-        Delegation delegable{NotDelegable};
+        Delegation delegable{Delegation::NotDelegable};
     };
 
     std::unordered_set<TxType> granularTxTypes_;

@@ -4,33 +4,13 @@
 
 ## Minimum Requirements
 
-See [System Requirements](https://xrpl.org/system-requirements.html).
+For the hardware needed to run a node, see
+[System Requirements](https://xrpl.org/system-requirements.html).
 
-Building xrpld generally requires Git, Python, Conan, CMake, and a C++
-compiler.
-
-- [Python](https://www.python.org/downloads/)
-- [Conan](https://conan.io/downloads.html)
-- [CMake](https://cmake.org/download/)
-
-You can verify that the required tools are installed and runnable with:
-
-```bash
-./bin/check-tools.sh
-```
-
-`xrpld` is written in the C++23 dialect. The [tested compiler versions][cpp23-support] are:
-
-| Compiler    | Version         |
-| ----------- | --------------- |
-| GCC         | 15.2            |
-| Clang       | 22              |
-| Apple Clang | 21              |
-| MSVC        | 19.44[^windows] |
+For the software needed to build xrpld, see the
+[environment setup guide](./docs/build/environment.md).
 
 ## Operating Systems
-
-Please see the [environment setup guide](./docs/build/environment.md) for detailed instructions for all platforms.
 
 ### Linux
 
@@ -47,9 +27,8 @@ CI testing is done in macOS 26 (Tahoe), but the build defaults `CMAKE_OSX_DEPLOY
 
 ### Windows
 
-Windows is used by some engineers for development only.
-
-[^windows]: Windows is not recommended for production use.
+Windows is used by some engineers for development only, and is not recommended
+for production use.
 
 ## Steps
 
@@ -74,37 +53,25 @@ releases](https://github.com/XRPLF/rippled/releases).
 
 ### Set Up Conan
 
-After you have a [C++ development environment](./docs/build/environment.md) ready with Git, Python,
-Conan, CMake, and a C++ compiler, you may need to set up your Conan profile.
-
-These instructions assume a basic familiarity with Conan and CMake. If you are
-unfamiliar with Conan, then please read [this crash course](./docs/build/conan.md) or the official
-[Getting Started][conan-getting-started] walkthrough.
-
-#### Profiles
-
-We recommend that you install our Conan profiles:
+Once your [development environment](./docs/build/environment.md) is ready, set
+Conan up for this repository:
 
 ```bash
-conan config install conan/profiles/ -tf $(conan config home)/profiles/
+./conan/init.sh
 ```
 
-You can check your Conan profile by running:
+That installs our [`global.conf`](./conan/global.conf), our Conan
+[profiles](./conan/profiles), and the `xrplf` remote that hosts some of our
+dependencies. It honours `CONAN_HOME` and never deletes an existing Conan home,
+so it is safe to re-run — it only overwrites the files it manages.
 
-```bash
-conan profile show
-```
+> [!TIP]
+> In the [Nix development shell](./docs/build/nix.md#conan-configuration) this is
+> already done for you: the script runs on entry.
 
-If the default profile is not suitable for your environment, you can create a custom profile and pass it to Conan.
-More information on customizing Conan can be found in the [Advanced Conan configuration](./docs/build/advanced_conan.md).
-
-#### Add xrplf remote
-
-Run the following command to add the `xrplf` remote, which hosts some of our dependencies:
-
-```bash
-conan remote add --index 0 --force xrplf https://conan.xrplf.org/repository/conan/
-```
+You can inspect the resulting profile with `conan profile show`. If it is not
+suitable for your environment, create a custom profile and pass it to Conan — see
+[Advanced Conan configuration](./docs/build/advanced_conan.md).
 
 ### Set Up Ccache
 
@@ -269,9 +236,13 @@ which is only enabled when the `coverage` option is set, e.g. with
 Prerequisites for the coverage report:
 
 - [gcovr tool][gcovr] (can be installed e.g. with [pip][python-pip])
-- `gcov` for GCC (installed with the compiler by default) or
-- `llvm-cov` for Clang (installed with the compiler by default)
+- `gcov` for GCC or `llvm-cov` for Clang, usually installed with the compiler
 - `Debug` build type
+
+> [!NOTE]
+> Clang coverage is not available in the [Nix development shell](./docs/build/nix.md#building-xrpld-in-the-nix-shell):
+> its `clang` shells do not ship `llvm-cov`. Use a `gcc` shell instead (`.#gcc`,
+> or `.#gcc-plain` on Linux), which provides a `gcov` matching its compiler.
 
 A coverage report is created when the following steps are completed, in order:
 
@@ -333,6 +304,7 @@ See [Sanitizers docs](./docs/build/sanitizers.md) for more details.
 | ---------------- | ------------- | ----------------------------------------------------------------------------- |
 | `assert`         | OFF           | Force enabling assertions.                                                    |
 | `coverage`       | OFF           | Prepare the coverage report.                                                  |
+| `rust`           | OFF           | Build the Rust crates and the C++ code that depends on them.                  |
 | `tests`          | OFF           | Build tests.                                                                  |
 | `unity`          | OFF           | Configure a unity build.                                                      |
 | `verify_headers` | ON            | Make the `verify-headers` target available to compile each header on its own. |
@@ -344,6 +316,30 @@ See [Sanitizers docs](./docs/build/sanitizers.md) for more details.
 memory) since they concatenate sources into fewer translation units. Non-unity
 builds may be faster for incremental builds, and can be helpful for detecting
 `#include` omissions.
+
+### Rust crates
+
+The Rust crates in `crates/` are only part of the build when `rust` is ON. With
+`-Drust=OFF` (the default) the `crates` directory is not added to the build, no
+cxxbridge bindings are generated, and the C++ tests that exercise the Rust
+interop are not compiled — so no Rust toolchain is needed. CI builds always pass
+`-Drust=ON`.
+
+With `-Drust=ON` you need one extra dependency: a Rust toolchain (`cargo`,
+`rustc`) matching the channel pinned in
+[`rust-toolchain.toml`](./rust-toolchain.toml), which compiles the crates and
+generates the cxxbridge bindings. It is provided by the
+[Nix development shell](./docs/build/nix.md), so `-Drust=ON` works there without
+any extra setup; otherwise install it as described in
+[Rust](./docs/build/environment.md#rust).
+
+The crates also have their own Rust unit tests. Those are run with `cargo` and
+need only the Rust toolchain, independently of CMake and of the `rust` option
+(CI runs them with `cargo nextest`):
+
+```bash
+cargo test --manifest-path crates/Cargo.toml --workspace
+```
 
 ### Verifying headers
 
@@ -389,10 +385,14 @@ After any updates or changes to dependencies, you may need to do the following:
 4. [Regenerate lockfile](./docs/build/advanced_conan.md#conan-lockfile).
 5. Re-run [conan install](#build-and-test).
 
+If you are using the Nix development shell, whether prebuilt Conan binaries apply
+depends on your platform — see
+[Prebuilt packages](./docs/build/nix.md#prebuilt-packages).
+
 #### ERROR: Package not resolved
 
 If you're seeing an error like `ERROR: Package 'snappy/1.1.10' not resolved: Unable to find 'snappy/1.1.10#968fef506ff261592ec30c574d4a7809%1756234314.246' in remotes.`,
-please [add `xrplf` remote](#add-xrplf-remote) or re-run `conan export` for [patched recipes](./docs/build/advanced_conan.md#patched-recipes).
+please [set Conan up](#set-up-conan) so the `xrplf` remote is configured, or re-run `conan export` for [patched recipes](./docs/build/advanced_conan.md#patched-recipes).
 
 ### `protobuf/port_def.inc` file not found
 
@@ -412,7 +412,6 @@ For example, if you want to build Debug:
 1. For conan install, pass `--settings build_type=Debug`
 2. For cmake, pass `-DCMAKE_BUILD_TYPE=Debug`
 
-[cpp23-support]: https://en.cppreference.com/w/cpp/compiler_support/23
 [conan-getting-started]: https://docs.conan.io/en/latest/getting_started.html
 [unity-build]: https://en.wikipedia.org/wiki/Unity_build
 [gcovr]: https://gcovr.com/en/stable/getting-started.html

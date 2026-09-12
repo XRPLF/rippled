@@ -124,12 +124,6 @@ public:
     }
 
     friend constexpr bool
-    operator!=(SeqProxy lhs, SeqProxy rhs)
-    {
-        return !(lhs == rhs);
-    }
-
-    friend constexpr bool
     operator<(SeqProxy lhs, SeqProxy rhs)
     {
         if (lhs.type_ != rhs.type_)
