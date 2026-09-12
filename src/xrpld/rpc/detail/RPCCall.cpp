@@ -119,6 +119,15 @@ private:
         return true;
     }
 
+    // Rejects a missing/non-string amount, a non-decimal string, and "0".
+    // `!toUInt64("0")` is false because optional{0} is engaged.
+    static bool
+    channelAmountMalformed(json::Value const& amount)
+    {
+        auto const optDrops = amount.isString() ? toUInt64(amount.asString()) : std::nullopt;
+        return !optDrops || *optDrops == 0;
+    }
+
     // Build a object { "currency" : "XYZ", "issuer" : "rXYX" }
     static json::Value
     jvParseCurrencyIssuer(std::string const& strCurrencyIssuer)
@@ -790,7 +799,7 @@ private:
             index++;
         }
 
-        if (!jvParams[index].isString() || !toUInt64(jvParams[index].asString()))
+        if (channelAmountMalformed(jvParams[index]))
             return rpcError(RpcChannelAmtMalformed);
         jvRequest[jss::amount] = jvParams[index];
 
@@ -821,7 +830,7 @@ private:
         }
         jvRequest[jss::channel_id] = jvParams[1u].asString();
 
-        if (!jvParams[2u].isString() || !toUInt64(jvParams[2u].asString()))
+        if (channelAmountMalformed(jvParams[2u]))
             return rpcError(RpcChannelAmtMalformed);
         jvRequest[jss::amount] = jvParams[2u];
 
@@ -1720,8 +1729,8 @@ rpcClient(
             }
             else if (jvRequest.isArray())
             {
-                for (json::UInt i = 0; i < jvRequest.size(); ++i)
-                    jvParams.append(jvRequest[i]);
+                for (auto const& param : jvRequest)
+                    jvParams.append(param);
             }
 
             {
