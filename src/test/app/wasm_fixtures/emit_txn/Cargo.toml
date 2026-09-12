@@ -15,7 +15,7 @@ opt-level = 's'
 panic = "abort"
 
 [dependencies]
-xrpl-wasm-std = { git = "https://github.com/Transia-RnD/craft.git", branch = "dangell/smart-contracts", package = "xrpl-wasm-std" }
+xrpl-wasm-std = { git = "https://github.com/Transia-RnD/craft.git", rev = "ffbe88da26df27e59a72b6202883f42f696933cc", package = "xrpl-wasm-std" }
 
 [profile.dev]
 panic = "abort"

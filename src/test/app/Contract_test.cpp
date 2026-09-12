@@ -57,9 +57,14 @@
 #include <test/jtx/utility.h>
 
 #include <xrpl/json/to_string.h>
+#include <xrpl/ledger/helpers/ContractUtils.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/digest.h>
 #include <xrpl/protocol/jss.h>
+
+#include <iostream>
+#include <map>
+#include <string_view>
 
 namespace xrpl {
 namespace test {
@@ -510,21 +515,10 @@ class Contract_test : public beast::unit_test::Suite
             env.fund(XRP(10'000), alice);
             env.close();
 
-            env(contract::create(alice, BaseContractWasm),
-                contract::add_function("func1", {}),
-                contract::add_function("func2", {}),
-                contract::add_function("func3", {}),
-                contract::add_function("func4", {}),
-                contract::add_function("func5", {}),
-                contract::add_function("func6", {}),
-                contract::add_function("func7", {}),
-                contract::add_function("func8", {}),
-                contract::add_function("func9", {}),
-                contract::add_function("func10", {}),
-                contract::add_function("func11", {}),
-                contract::add_function("func12", {}),
-                contract::add_function("func13", {}),
-                Ter(temARRAY_TOO_LARGE));
+            auto jt = env.jt(contract::create(alice, BaseContractWasm));
+            for (std::size_t i = 0; i <= ::xrpl::contract::maxContractFunctions; ++i)
+                contract::add_function("func" + std::to_string(i), {})(env, jt);
+            env(jt, Ter(temARRAY_TOO_LARGE));
         }
 
         // temREDUNDANT: Duplicate function name
@@ -1490,37 +1484,23 @@ class Contract_test : public beast::unit_test::Suite
     }
 
     std::string
-    loadContractWasmStr(std::string const& contract_name = "")
+    loadContractWasmStr(std::string const& contract_name)
     {
-        std::string const& dir = "e2e-tests";
-        std::string const name = "/Users/darkmatter/projects/ledger-works/xrpl-wasm-std/" + dir +
-            "/" + contract_name + "/target/wasm32v1-none/release/" + contract_name + ".wasm";
-        if (!boost::filesystem::exists(name))
+        static std::map<std::string, std::string_view> const fixtures{
+            {"contract_data", kContractDataWasmHex},
+            {"emit_txn", kEmitTxnWasmHex},
+            {"events", kEventsWasmHex},
+            {"function_params", kFunctionParamsWasmHex},
+            {"instance_params_other", kInstanceParamsOtherWasmHex},
+            {"instance_params_uint", kInstanceParamsUintWasmHex},
+        };
+        auto const it = fixtures.find(contract_name);
+        if (it == fixtures.end())
         {
-            std::cout << "File does not exist: " << name << "\n";
+            std::cout << "No wasm fixture for contract: " << contract_name << "\n";
             return "";
         }
-
-        std::ifstream file(name, std::ios::binary);
-
-        if (!file)
-        {
-            std::cout << "Failed to open file: " << name << "\n";
-            return "";
-        }
-
-        // Read the file into a vector
-        std::vector<char> const buffer(
-            (std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
-
-        // Check if the buffer is empty
-        if (buffer.empty())
-        {
-            std::cout << "File is empty or could not be read properly.\n";
-            return "";
-        }
-
-        return strHex(buffer);
+        return std::string{it->second};
     }
 
     void

@@ -155,3 +155,15 @@ extern std::string const kOpcReservedHex;
 
 extern std::string const kImpExpHex;
 extern std::string const kUpdateDataWasmHex;
+
+extern std::string const kEventsWasmHex;
+
+extern std::string const kContractDataWasmHex;
+
+extern std::string const kEmitTxnWasmHex;
+
+extern std::string const kFunctionParamsWasmHex;
+
+extern std::string const kInstanceParamsOtherWasmHex;
+
+extern std::string const kInstanceParamsUintWasmHex;

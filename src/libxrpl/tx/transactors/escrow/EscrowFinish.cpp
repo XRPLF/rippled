@@ -116,9 +116,6 @@ EscrowFinish::preflight(PreflightContext const& ctx)
         }
     }
 
-    if (auto const err = credentials::checkFields(ctx.tx, ctx.j); !isTesSuccess(err))
-        return err;
-
     return tesSUCCESS;
 }
 

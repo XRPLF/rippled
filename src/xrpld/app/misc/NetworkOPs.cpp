@@ -2575,7 +2575,11 @@ NetworkOPsImp::pubConsensus(ConsensusPhase phase)
 void
 NetworkOPsImp::pubContractEvent(std::string const& name, STJson const& event)
 {
-    std::lock_guard const sl(subLock_);
+    // Hold each locked subscriber alive until after streamLock_ is released:
+    // ~InfoSub re-acquires streamLock_ and would self-deadlock.
+    std::vector<InfoSub::pointer> toRelease;
+
+    std::scoped_lock const sl(streamLock_);
 
     auto& streamMap = streamMaps_[SContractEvents];
     if (!streamMap.empty())
@@ -2590,6 +2594,7 @@ NetworkOPsImp::pubContractEvent(std::string const& name, STJson const& event)
             if (auto p = i->second.lock())
             {
                 p->send(jvObj, true);
+                toRelease.push_back(std::move(p));
                 ++i;
             }
             else
@@ -4783,7 +4788,7 @@ NetworkOPsImp::unsubConsensus(std::uint64_t uSeq)
 bool
 NetworkOPsImp::subContractEvent(InfoSub::ref isrListener)
 {
-    std::lock_guard const sl(subLock_);
+    std::scoped_lock const sl(streamLock_);
     return streamMaps_[SContractEvents].emplace(isrListener->getSeq(), isrListener).second;
 }
 
@@ -4791,8 +4796,8 @@ NetworkOPsImp::subContractEvent(InfoSub::ref isrListener)
 bool
 NetworkOPsImp::unsubContractEvent(std::uint64_t uSeq)
 {
-    std::lock_guard const sl(subLock_);
-    return streamMaps_[SContractEvents].erase(uSeq);
+    std::scoped_lock const sl(streamLock_);
+    return streamMaps_[SContractEvents].erase(uSeq) != 0u;
 }
 
 InfoSub::pointer

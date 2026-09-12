@@ -864,15 +864,16 @@ parseContractSource(
         return parseObjectID(params, fieldName);
     }
 
-    auto const id = LedgerEntryHelpers::requiredAccountID(params, jss::owner, "malformedOwner");
+    auto const id = ledger_entry_helpers::requiredAccountID(params, jss::owner, "malformedOwner");
     if (!id)
         return std::unexpected(id.error());
 
-    auto const seq = LedgerEntryHelpers::requiredUInt32(params, jss::seq, "malformedRequest");
+    auto const seq = ledger_entry_helpers::requiredUInt32(params, jss::seq, "malformedRequest");
     if (!seq)
         return std::unexpected(seq.error());
 
-    return keylet::vault(*id, *seq).key;
+    auto const seqProxy = SeqProxy::rawSequence(*seq);
+    return keylet::vault(*id, seqProxy).key;
 }
 
 static std::expected<uint256, json::Value>
@@ -886,15 +887,16 @@ parseContract(
         return parseObjectID(params, fieldName);
     }
 
-    auto const id = LedgerEntryHelpers::requiredAccountID(params, jss::owner, "malformedOwner");
+    auto const id = ledger_entry_helpers::requiredAccountID(params, jss::owner, "malformedOwner");
     if (!id)
         return std::unexpected(id.error());
 
-    auto const seq = LedgerEntryHelpers::requiredUInt32(params, jss::seq, "malformedRequest");
+    auto const seq = ledger_entry_helpers::requiredUInt32(params, jss::seq, "malformedRequest");
     if (!seq)
         return std::unexpected(seq.error());
 
-    return keylet::vault(*id, *seq).key;
+    auto const seqProxy = SeqProxy::rawSequence(*seq);
+    return keylet::vault(*id, seqProxy).key;
 }
 
 static std::expected<uint256, json::Value>
@@ -908,15 +910,16 @@ parseContractData(
         return parseObjectID(params, fieldName);
     }
 
-    auto const id = LedgerEntryHelpers::requiredAccountID(params, jss::owner, "malformedOwner");
+    auto const id = ledger_entry_helpers::requiredAccountID(params, jss::owner, "malformedOwner");
     if (!id)
         return std::unexpected(id.error());
 
-    auto const seq = LedgerEntryHelpers::requiredUInt32(params, jss::seq, "malformedRequest");
+    auto const seq = ledger_entry_helpers::requiredUInt32(params, jss::seq, "malformedRequest");
     if (!seq)
         return std::unexpected(seq.error());
 
-    return keylet::vault(*id, *seq).key;
+    auto const seqProxy = SeqProxy::rawSequence(*seq);
+    return keylet::vault(*id, seqProxy).key;
 }
 
 struct LedgerEntry

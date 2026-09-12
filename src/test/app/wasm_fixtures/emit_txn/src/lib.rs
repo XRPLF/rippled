@@ -6,10 +6,11 @@ extern crate std;
 use xrpl_wasm_std::core::current_tx::contract_call::{ContractCall, get_current_contract_call};
 use xrpl_wasm_std::core::current_tx::traits::TransactionCommonFields;
 use xrpl_wasm_std::core::submit::inner_objects::build_memo;
-use xrpl_wasm_std::core::transaction_types::TT_PAYMENT;
 use xrpl_wasm_std::core::types::account_id::AccountID;
 use xrpl_wasm_std::host::{add_txn_field, build_txn, emit_built_txn};
 use xrpl_wasm_std::sfield;
+
+const TT_PAYMENT: i32 = 0;
 
 // ============================================================================
 // Constants
