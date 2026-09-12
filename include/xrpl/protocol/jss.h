@@ -297,6 +297,7 @@ JSS(ident);                          // in: AccountCurrencies, AccountInfo, Owne
 JSS(ignore_default);                 // in: AccountLines
 JSS(in);                             // out: OverlayImpl
 JSS(inLedger);                       // out: tx/Transaction
+JSS(in_queue);                       // out: inject
 JSS(inbound);                        // out: PeerImp
 JSS(index);                          // in: LedgerEntry
                                      // out: STLedgerEntry, LedgerEntry, TxHistory, LedgerData
