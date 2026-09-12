@@ -311,6 +311,144 @@ class Beneficiary_test : public beast::unit_test::Suite
         env.close();
     }
 
+    // checkSingleSign tries the regular key before the beneficiary, so a
+    // signature the regular-key case accepts is the owner's own activity and
+    // must reset the timer, even when the same account is also the beneficiary.
+    void
+    testRegularKeyThatIsAlsoTheBeneficiary(FeatureBitset features)
+    {
+        testcase("a regular key that is also the beneficiary");
+        using namespace jtx;
+
+        Env env{*this, features};
+        Account const alice{"alice"}, bob{"bob"}, carol{"carol"};
+        env.fund(XRP(10000), alice, bob, carol);
+        env.close();
+
+        std::uint32_t const timeLock = 3600;
+        env(set(alice, bob, timeLock));
+        env.close();
+
+        // Naming the same account in both places is the ordinary case: the heir
+        // holds a key the owner also uses day to day.
+        env(regkey(alice, bob));
+        env.close();
+
+        env.close(std::chrono::seconds(timeLock * 2));
+
+        auto const before = stamp(env, alice);
+        BEAST_EXPECT(before);
+
+        // Authorized on the regular-key case, so this is the owner transacting.
+        env(pay(alice, carol, XRP(1)), Sig(bob));
+        env.close();
+        auto const after = stamp(env, alice);
+        BEAST_EXPECT(after && before && *after > *before);
+
+        // Alice rotates the regular key away from Bob, signing with the key she
+        // still holds. The designation is untouched, so the time lock must run
+        // again from here before Bob's signature is accepted on its strength.
+        env(regkey(alice, carol), Sig(bob));
+        env.close();
+        BEAST_EXPECT((*env.le(keylet::account(alice.id())))[~sfRegularKey] == carol.id());
+
+        env(pay(alice, carol, XRP(1)), Sig(bob), Ter(tefBAD_AUTH));
+        env.close();
+    }
+
+    // The spec states the timestamp records "a successfully applied
+    // transaction" in 3.2 and "any transaction they sign" in 3.4. A tec result
+    // is applied to the ledger, charges a fee and consumes a sequence, and is
+    // proof the owner is present and signing, so it must hold the beneficiary
+    // off.
+    void
+    testFailedTransactionIsStillTheOwnerSigning(FeatureBitset features)
+    {
+        testcase("a tec result is still the owner signing");
+        using namespace jtx;
+
+        Env env{*this, features};
+        Account const alice{"alice"}, bob{"bob"}, carol{"carol"};
+        env.fund(XRP(10000), alice, bob, carol);
+        env.close();
+
+        env(set(alice, bob, 3600));
+        env.close();
+        env.close(std::chrono::seconds(4000));
+
+        auto const before = stamp(env, alice);
+        BEAST_EXPECT(before);
+
+        // Alice is present and signing; the payment simply fails.
+        env(pay(alice, carol, XRP(1000000)), Ter(tecUNFUNDED_PAYMENT));
+        env.close();
+
+        auto const after = stamp(env, alice);
+        BEAST_EXPECT(after && before && *after > *before);
+
+        env(pay(alice, carol, XRP(1)), Sig(bob), Ter(tefBAD_AUTH));
+        env.close();
+    }
+
+    // Named in the spec's test plan as still to write.
+    void
+    testBeneficiaryClearsItsOwnDesignation(FeatureBitset features)
+    {
+        testcase("the beneficiary clears the designation out from under itself");
+        using namespace jtx;
+
+        Env env{*this, features};
+        Account const alice{"alice"}, bob{"bob"}, carol{"carol"};
+        env.fund(XRP(10000), alice, bob, carol);
+        env.close();
+
+        env(set(alice, bob, 3600));
+        env.close();
+        env.close(std::chrono::seconds(4000));
+
+        // Bob may sign anything the owner could, including this.
+        env(clear(alice), Sig(bob));
+        env.close();
+
+        BEAST_EXPECT(!exists(env, alice));
+        BEAST_EXPECT(!stamp(env, alice));
+        BEAST_EXPECT(ownerCount(env, alice) == 0);
+
+        // Having removed the designation, Bob is just another key.
+        env(pay(alice, carol, XRP(1)), Sig(bob), Ter(tefBAD_AUTH));
+        env.close();
+    }
+
+    // Named in the spec's test plan as still to write. Signing for an account
+    // never required the signer's own account to exist, so deleting the
+    // beneficiary account does not disturb the designation.
+    void
+    testBeneficiaryAccountDeleted(FeatureBitset features)
+    {
+        testcase("the beneficiary account is deleted");
+        using namespace jtx;
+
+        Env env{*this, features};
+        Account const alice{"alice"}, bob{"bob"}, sink{"sink"};
+        env.fund(XRP(10000), alice, bob, sink);
+        env.close();
+
+        env(set(alice, bob, 3600));
+        env.close();
+
+        incLgrSeqForAccDel(env, bob);
+        env(acctdelete(bob, sink), Fee(drops(env.current()->fees().increment)));
+        env.close();
+        BEAST_EXPECT(!env.le(keylet::account(bob.id())));
+
+        // The designation still names Bob and is untouched.
+        BEAST_EXPECT(exists(env, alice));
+
+        env.close(std::chrono::seconds(4000));
+        env(pay(alice, sink, XRP(1)), Sig(bob));
+        env.close();
+    }
+
     // The whole point of the mechanism: using the account holds it off.
     void
     testActivityResetsTheTimer(FeatureBitset features)
@@ -476,6 +614,10 @@ public:
         testBeneficiarySigningDoesNotResetTheTimer(all);
         testOwnerReclaims(all);
         testRegularKeyOwnerNotLockedOut(all);
+        testRegularKeyThatIsAlsoTheBeneficiary(all);
+        testFailedTransactionIsStillTheOwnerSigning(all);
+        testBeneficiaryClearsItsOwnDesignation(all);
+        testBeneficiaryAccountDeleted(all);
         testActivityResetsTheTimer(all);
         testIncomingIsNotActivity(all);
         testUnrelatedAccountUnstamped(all);

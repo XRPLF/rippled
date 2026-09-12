@@ -41,6 +41,21 @@ ValidBeneficiary::visitEntry(bool isDelete, SLE::const_ref before, SLE::const_re
         return (*sle)[~sfLastInteraction];
     };
 
+    // The amendment adds a signing path and never edits an account's own key
+    // settings. Replacing a key is what revision 1 did, and what locked a live
+    // owner out of an account they still held a key for.
+    if (before && after && before->getType() == ltACCOUNT_ROOT &&
+        after->getType() == ltACCOUNT_ROOT)
+    {
+        if ((*before)[~sfRegularKey] != (*after)[~sfRegularKey] ||
+            before->isFlag(lsfDisableMaster) != after->isFlag(lsfDisableMaster))
+            keySettingsChanged_ = true;
+    }
+
+    if ((before && before->getType() == ltSIGNER_LIST) ||
+        (after && after->getType() == ltSIGNER_LIST))
+        keySettingsChanged_ = true;
+
     if (after && after->getType() == ltACCOUNT_ROOT)
     {
         auto const wasStamped = before ? stamp(before) : std::nullopt;
@@ -98,6 +113,13 @@ ValidBeneficiary::finalize(
                     << tx.getTxnType();
                 return false;
         }
+    }
+
+    if (keySettingsChanged_ && tx.getTxnType() == ttBENEFICIARY_SET)
+    {
+        JLOG(j.fatal()) << "Invariant failed: a beneficiary designation changed an account's key "
+                           "settings";
+        return false;
     }
 
     for (auto const& [before, after] : entries_)

@@ -194,6 +194,46 @@ class InvariantsBeneficiary_test : public InvariantsBase
             designate);
     }
 
+    // Revision 1 of this proposal replaced the account's regular key, which
+    // could lock out a live owner who signed with one. Nothing in this revision
+    // writes a key setting, and the invariant says so.
+    void
+    testKeySettingsUntouched()
+    {
+        testcase("a designation never changes an account's key settings");
+        using namespace jtx;
+
+        doInvariantCheck(
+            {{"a beneficiary designation changed an account's key settings"}},
+            [](Account const& a1, Account const& a2, ApplyContext& ac) {
+                auto sle = ac.view().peek(keylet::account(a1.id()));
+                if (!sle)
+                    return false;
+                sle->setAccountID(sfRegularKey, a2.id());
+                ac.view().update(sle);
+                return true;
+            },
+            XRPAmount{},
+            STTx{ttBENEFICIARY_SET, [](STObject&) {}},
+            {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
+            designate);
+
+        doInvariantCheck(
+            {{"a beneficiary designation changed an account's key settings"}},
+            [](Account const& a1, Account const&, ApplyContext& ac) {
+                auto sle = ac.view().peek(keylet::account(a1.id()));
+                if (!sle)
+                    return false;
+                sle->setFieldU32(sfFlags, sle->getFieldU32(sfFlags) | lsfDisableMaster);
+                ac.view().update(sle);
+                return true;
+            },
+            XRPAmount{},
+            STTx{ttBENEFICIARY_SET, [](STObject&) {}},
+            {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
+            designate);
+    }
+
 public:
     void
     run() override
@@ -202,6 +242,7 @@ public:
         testFieldBounds();
         testTimerNeverGoesBackwards();
         testDeletedByWrongTransaction();
+        testKeySettingsUntouched();
     }
 };
 

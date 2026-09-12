@@ -888,11 +888,26 @@ Transactor::signedByBeneficiary() const
     if (signingPubKey.empty() || !publicKeyType(makeSlice(signingPubKey)))
         return false;
 
+    auto const idSigner = calcAccountID(PublicKey(makeSlice(signingPubKey)));
+
+    auto const sleAccount = view().read(keylet::account(accountID_));
+    if (!sleAccount)
+        return false;  // LCOV_EXCL_LINE
+
+    // checkSingleSign tries the regular key and the master key before the
+    // beneficiary, so a signature either of those accepts is the owner's own
+    // activity even when the same account is also named as the beneficiary.
+    if ((*sleAccount)[~sfRegularKey] == idSigner)
+        return false;
+
+    if (!sleAccount->isFlag(lsfDisableMaster) && idSigner == accountID_)
+        return false;
+
     auto const sle = view().read(keylet::beneficiary(accountID_));
     if (!sle)
         return false;
 
-    return (*sle)[sfBeneficiary] == calcAccountID(PublicKey(makeSlice(signingPubKey)));
+    return (*sle)[sfBeneficiary] == idSigner;
 }
 
 TER
@@ -1415,6 +1430,15 @@ Transactor::reset(XRPAmount fee)
 
     if (isTesSuccess(ter))
     {
+        // The fee and the sequence survive the discard because the transaction
+        // was applied to the ledger. The owner's timestamp belongs with them:
+        // a tec is still the account signing, and a discarded one would let the
+        // beneficiary in while the owner is demonstrably present.
+        if (view().rules().enabled(featureBeneficiary) &&
+            txnAcct->isFieldPresent(sfLastInteraction) && !signedByBeneficiary())
+            txnAcct->setFieldU32(
+                sfLastInteraction, view().parentCloseTime().time_since_epoch().count());
+
         view().update(txnAcct);
         if (payerSle != txnAcct)
             view().update(payerSle);

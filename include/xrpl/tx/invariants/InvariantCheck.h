@@ -458,6 +458,7 @@ class ValidBeneficiary
 
     bool deleted_ = false;
     bool stampWentBackwards_ = false;
+    bool keySettingsChanged_ = false;
 
 public:
     void
