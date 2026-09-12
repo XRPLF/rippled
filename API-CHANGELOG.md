@@ -32,6 +32,7 @@ Version 3.4.0 is not yet released. These changes are available in the 3.4.0 beta
 
 ### Bugfixes in 3.4.0
 
+- `channel_authorize`, `channel_verify`: `amount` `"0"` now returns `channelAmtMalformed` instead of succeeding. Zero-drop authorizations cannot be claimed on-chain (`PaymentChannelClaim` already rejects amounts ≤ zero). ([#6846](https://github.com/XRPLF/rippled/pull/6846))
 - `sign`, `sign_for`, `submit`: `signature_target` now returns `invalidParams` unless it names `CounterpartySignature` or `SponsorSignature`. It previously accepted any inner object field, such as `Book` or `NFToken`, and signed into it.
 - `sign`, `sign_for`, `submit`, `submit_multisigned`: With `fixCleanup3_4_0` enabled, a signature in `CounterpartySignature` or `SponsorSignature` covers a different prefix than the transaction's own signature, so a signature can no longer be moved from one of those roles into another. Clients that build these signatures themselves must use the new prefixes: `CPT` and `CPM` (single- and multi-signing) for `CounterpartySignature`, and `SPN` and `SPM` for `SponsorSignature`.
 - `get_aggregate_price`: Duplicate entries in the `oracles` request array are now ignored. [#6586](https://github.com/XRPLF/rippled/pull/6586)
