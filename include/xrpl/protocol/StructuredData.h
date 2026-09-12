@@ -57,6 +57,11 @@ constexpr std::size_t kMaxSchemaDepth = 8;
  * code is a known SchemaType, every array code is followed by an
  * element type, every tupleOpen has a matching tupleClose, and nesting
  * does not exceed kMaxSchemaDepth.
+ *
+ * An array element type must also read at least one data byte. A
+ * zero-width element (an empty tuple, or a tuple of empty tuples) would
+ * let the one-byte element count buy up to 255 replays of it without
+ * consuming input, and nesting arrays would multiply that per level.
  */
 [[nodiscard]] bool
 isWellFormedSchema(Slice schema);

@@ -55,6 +55,7 @@
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/SeqProxy.h>
 #include <xrpl/protocol/Serializer.h>
+#include <xrpl/protocol/StructuredData.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/TxFormats.h>
@@ -7887,6 +7888,136 @@ class MPToken_test : public beast::unit_test::Suite
         }
     }
 
+    void
+    testStructuredDataAdversarial(FeatureBitset features)
+    {
+        testcase("adversarial Schema for MPTStructuredData");
+
+        using namespace test::jtx;
+        Account const alice("alice");
+
+        // An array replays its element type once per element. An element that
+        // reads no data would let the one-byte count buy up to 255 replays at
+        // no cost in input, and nesting arrays would multiply that per level.
+        // Within the field limits this reached ~30M steps per validation, run
+        // at preflight, at preclaim and again in the invariant.
+        std::string hostileSchema = sd({0x20, 0x20, 0x20, 0x30});
+        for (int i = 0; i < 125; ++i)
+            hostileSchema += sd({0x30, 0x31});
+        hostileSchema += sd({0x31});
+        BEAST_EXPECT(hostileSchema.size() <= kMaxSchemaLength);
+
+        std::string hostileRecord = sd({0x1F});
+        for (int i = 0; i < 31; ++i)
+        {
+            hostileRecord += sd({0x1F});
+            for (int k = 0; k < 31; ++k)
+                hostileRecord += sd({0xFF});
+        }
+        BEAST_EXPECT(hostileRecord.size() <= kMaxMpTokenMetadataLength);
+
+        // Rejected on create, with and without the record that drives it
+        {
+            Env env{*this, features};
+            MPTTester mptAlice(env, alice);
+            mptAlice.create({.ownerCount = 0, .schema = hostileSchema, .err = temMALFORMED});
+            mptAlice.create(
+                {.ownerCount = 0,
+                 .metadata = hostileRecord,
+                 .schema = hostileSchema,
+                 .err = temMALFORMED});
+
+            // The smallest form of the same trick
+            mptAlice.create(
+                {.ownerCount = 0, .schema = sd({0x20, 0x30, 0x31}), .err = temMALFORMED});
+            mptAlice.create(
+                {.ownerCount = 0,
+                 .schema = sd({0x20, 0x30, 0x30, 0x31, 0x30, 0x31, 0x31}),
+                 .err = temMALFORMED});
+            mptAlice.create(
+                {.ownerCount = 0, .schema = sd({0x20, 0x20, 0x30, 0x31}), .err = temMALFORMED});
+        }
+
+        // Rejected on set, so it cannot be attached to an existing issuance
+        {
+            Env env{*this, features};
+            MPTTester mptAlice(env, alice);
+            mptAlice.create({.ownerCount = 1});
+            mptAlice.set({.account = alice, .schema = hostileSchema, .err = temMALFORMED});
+        }
+
+        // An array of a tuple that does read data stays legal
+        {
+            Env env{*this, features};
+            MPTTester mptAlice(env, alice);
+            // ((),u8)[] holding two elements
+            std::string const nested = sd({0x20, 0x30, 0x30, 0x31, 0x02, 0x31});
+            mptAlice.create(
+                {.ownerCount = 1, .metadata = sd({0x02, 0x07, 0x09}), .schema = nested});
+            BEAST_EXPECT(mptAlice.checkSchema(nested));
+        }
+
+        // Nesting stops at kMaxSchemaDepth
+        {
+            Env env{*this, features};
+            MPTTester mptAlice(env, alice);
+            std::string atCap;
+            for (std::size_t i = 0; i < kMaxSchemaDepth; ++i)
+                atCap += sd({0x20});
+            std::string const overCap = atCap + sd({0x20, 0x02});
+            atCap += sd({0x02});
+
+            // Eight nested arrays, each holding one element, then a u8
+            std::string record;
+            for (std::size_t i = 0; i < kMaxSchemaDepth; ++i)
+                record += sd({0x01});
+            record += sd({0x07});
+            mptAlice.create({.ownerCount = 0, .schema = overCap, .err = temMALFORMED});
+
+            mptAlice.create({.ownerCount = 1, .metadata = record, .schema = atCap});
+            BEAST_EXPECT(mptAlice.checkSchema(atCap));
+        }
+
+        // The record must be consumed exactly: no trailing bytes, no truncation
+        {
+            Env env{*this, features};
+            MPTTester mptAlice(env, alice);
+            std::string const u32 = sd({0x04});
+            mptAlice.create(
+                {.ownerCount = 0,
+                 .metadata = sd({0x00, 0x00, 0x00, 0x01, 0x00}),
+                 .schema = u32,
+                 .err = temMALFORMED});
+            mptAlice.create(
+                {.ownerCount = 0,
+                 .metadata = sd({0x00, 0x00, 0x01}),
+                 .schema = u32,
+                 .err = temMALFORMED});
+            mptAlice.create(
+                {.ownerCount = 1, .metadata = sd({0x00, 0x00, 0x00, 0x01}), .schema = u32});
+        }
+
+        // tifMPTMetadata at create freezes the pair. Declaring a Schema under
+        // it without a record leaves an issuance whose record can never be
+        // written: the layout is fixed and every write to either field is
+        // refused for the life of the issuance.
+        {
+            Env env{*this, features};
+            MPTTester mptAlice(env, alice);
+            std::string const u32 = sd({0x04});
+            mptAlice.create({.ownerCount = 1, .schema = u32, .immutableFlags = tifMPTMetadata});
+            BEAST_EXPECT(mptAlice.checkSchema(u32));
+            BEAST_EXPECT(!mptAlice.isMetadataPresent());
+
+            mptAlice.set(
+                {.account = alice,
+                 .metadata = sd({0x00, 0x00, 0x00, 0x01}),
+                 .err = tecNO_PERMISSION});
+            mptAlice.set({.account = alice, .schema = std::string{}, .err = tecNO_PERMISSION});
+            BEAST_EXPECT(!mptAlice.isMetadataPresent());
+        }
+    }
+
 public:
     void
     run() override
@@ -7970,6 +8101,7 @@ public:
         // Structured data (MPTStructuredData)
         testStructuredDataValidation(all);
         testStructuredData(all);
+        testStructuredDataAdversarial(all);
 
         // Dynamic MPT
         testInvalidCreateDynamic(all);

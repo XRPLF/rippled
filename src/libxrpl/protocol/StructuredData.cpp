@@ -87,9 +87,10 @@ readVLPrefix(Cursor& dc)
 // Walk one type starting at sc.i, advancing sc past it. When dc is
 // non-null, consume the matching data. Re-invoked per array element
 // with a reset schema cursor so the element type is applied count
-// times against a single data cursor.
+// times against a single data cursor. When consumes is non-null, it is
+// set to true if this type reads at least one data byte.
 bool
-parseType(Cursor& sc, Cursor* dc, std::size_t depth)
+parseType(Cursor& sc, Cursor* dc, std::size_t depth, bool* consumes = nullptr)
 {
     if (sc.remaining() < 1)
         return false;
@@ -97,6 +98,8 @@ parseType(Cursor& sc, Cursor* dc, std::size_t depth)
 
     if (auto const width = fixedWidth(code))
     {
+        if (consumes)
+            *consumes = true;
         if (dc)
         {
             if (dc->remaining() < *width)
@@ -112,6 +115,8 @@ parseType(Cursor& sc, Cursor* dc, std::size_t depth)
     {
         case SchemaType::str:
         case SchemaType::bin: {
+            if (consumes)
+                *consumes = true;
             if (dc)
             {
                 auto const len = readVLPrefix(*dc);
@@ -125,10 +130,18 @@ parseType(Cursor& sc, Cursor* dc, std::size_t depth)
         case SchemaType::array: {
             if (depth + 1 > kMaxSchemaDepth)
                 return false;
+            if (consumes)
+                *consumes = true;  // the element count byte
             // Validate the element type once (schema-only) and record
             // its extent, then replay it per element against the data.
             std::size_t const elemBegin = sc.i;
-            if (!parseType(sc, nullptr, depth + 1))
+            bool elementConsumes = false;
+            if (!parseType(sc, nullptr, depth + 1, &elementConsumes))
+                return false;
+            // An element that reads no data would let the one-byte count
+            // buy up to 255 replays of it at no cost in input, and nesting
+            // would multiply that per level.
+            if (!elementConsumes)
                 return false;
             if (dc)
             {
@@ -157,7 +170,7 @@ parseType(Cursor& sc, Cursor* dc, std::size_t depth)
                     ++sc.i;
                     return true;
                 }
-                if (!parseType(sc, dc, depth + 1))
+                if (!parseType(sc, dc, depth + 1, consumes))
                     return false;
             }
         }

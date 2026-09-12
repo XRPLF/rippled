@@ -5,8 +5,10 @@
 
 #include <gtest/gtest.h>
 
+#include <chrono>
 #include <cstdint>
 #include <initializer_list>
+#include <iostream>
 #include <string>
 #include <vector>
 
@@ -184,4 +186,80 @@ TEST(StructuredData, malformedSchemaNeverMatches)
     EXPECT_FALSE(dataMatchesSchema(slice(bytes({0x00})), slice(bytes({0x00}))));
     EXPECT_FALSE(dataMatchesSchema(slice(bytes({0x20})), slice(bytes({0x00}))));
     EXPECT_FALSE(dataMatchesSchema(slice(bytes({0x30, 0x02})), slice(bytes({0x01}))));
+}
+
+// An array replays its element type once per element, and a tuple costs one
+// parse per member. An element type that reads no data therefore multiplies
+// work without consuming input: the one-byte count buys up to 255 replays of
+// an arbitrarily wide zero-width tuple, and nesting multiplies again. Such a
+// schema is malformed, so the amplification is unreachable.
+TEST(StructuredData, zeroWidthArrayElementIsMalformed)
+{
+    // array of empty tuple
+    EXPECT_FALSE(isWellFormedSchema(slice(bytes({0x20, 0x30, 0x31}))));
+    // array of a tuple containing only empty tuples
+    EXPECT_FALSE(isWellFormedSchema(slice(bytes({0x20, 0x30, 0x30, 0x31, 0x30, 0x31, 0x31}))));
+    // array of array of empty tuple: rejected at the inner array
+    EXPECT_FALSE(isWellFormedSchema(slice(bytes({0x20, 0x20, 0x30, 0x31}))));
+
+    // An empty tuple that is not an array element stays well-formed: walked
+    // once, it multiplies nothing.
+    EXPECT_TRUE(isWellFormedSchema(slice(bytes({0x30, 0x31}))));
+    EXPECT_TRUE(dataMatchesSchema(slice(bytes({0x30, 0x31})), Slice{}));
+
+    // A tuple that reads data is a legal element however deeply it nests.
+    EXPECT_TRUE(
+        isWellFormedSchema(slice(bytes({0x20, 0x30, 0x30, 0x31, 0x02, 0x31}))));  // ((),u8)[]
+}
+
+// The worst case a 256-byte schema and 1024-byte record can express must stay
+// cheap enough for preflight, preclaim and the invariant to each run it on
+// every node. Before the zero-width element rule this pair validated in 0.6s.
+TEST(StructuredData, hostileSchemaIsRejectedAndCheap)
+{
+    // 3 nested arrays around a tuple of 125 empty tuples: 255 schema bytes.
+    std::vector<std::uint8_t> schema{0x20, 0x20, 0x20, 0x30};
+    for (int i = 0; i < 125; ++i)
+        schema = schema + bytes({0x30, 0x31});
+    schema = schema + bytes({0x31});
+    ASSERT_LE(schema.size(), kMaxSchemaLength);
+
+    // Outer count 31, each element an array of 31 arrays of 255 empty tuples.
+    std::vector<std::uint8_t> data{31};
+    for (int i = 0; i < 31; ++i)
+    {
+        data = data + bytes({31});
+        for (int k = 0; k < 31; ++k)
+            data = data + bytes({255});
+    }
+    ASSERT_LE(data.size(), kMaxMpTokenMetadataLength);
+
+    EXPECT_FALSE(isWellFormedSchema(slice(schema)));
+
+    auto const t0 = std::chrono::steady_clock::now();
+    EXPECT_FALSE(dataMatchesSchema(slice(schema), slice(data)));
+    auto const elapsed =
+        std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now() - t0)
+            .count();
+    // Generous: the rejection is structural, so this is microseconds. The
+    // bound exists to fail loudly if amplification is reintroduced.
+    EXPECT_LT(elapsed, 50000) << "validation took " << elapsed << "us";
+}
+
+// The legal worst case: every array element reads at least one byte, so the
+// number of element replays is bounded by the record length.
+TEST(StructuredData, legalWorstCaseIsCheap)
+{
+    // u8[] filling the record: 255 elements, one byte each.
+    auto const schema = bytes({0x20, 0x02});
+    std::vector<std::uint8_t> data{255};
+    for (int i = 0; i < 255; ++i)
+        data = data + bytes({0x07});
+
+    auto const t0 = std::chrono::steady_clock::now();
+    EXPECT_TRUE(dataMatchesSchema(slice(schema), slice(data)));
+    auto const elapsed =
+        std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now() - t0)
+            .count();
+    EXPECT_LT(elapsed, 50000) << "validation took " << elapsed << "us";
 }
