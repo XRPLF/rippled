@@ -60,6 +60,11 @@ def get_cmake_args(build_type: str, extra_args: str) -> str:
 # Every config must declare 'minimal'. Minimal configs form the reduced matrix
 # built for pull requests by default; the full matrix adds the rest.
 #
+# A Linux config may instead declare 'extended'. Neither the minimal nor the full
+# matrix includes such a config; only the extended matrix does, which the nightly
+# schedule and a manual run ask for. Use it for a config too expensive to run per
+# pull request. It is Linux only because nothing else needs it yet.
+#
 # Configs may also opt into 'benchmark' to smoke-run the benchmarks, or carry a
 # 'package' map to be packaged as well. Note that either applies to every entry
 # a config expands into, so only set them on configs that expand to a single
@@ -94,6 +99,7 @@ class LinuxConfig:
     build_type: list[str]
     arch: list[str]
     minimal: bool
+    extended: bool = False
     benchmark: bool = False  # if true, smoke-run the benchmarks after testing
     sanitizers: list[str] = dataclasses.field(default_factory=list)
     suffix: str = ""
@@ -215,18 +221,30 @@ _ARCHS: dict[str, Architecture] = {
 }
 
 
-def expand_linux_matrix(linux: LinuxFile, minimal: bool) -> list[MatrixEntry]:
+def expand_linux_matrix(
+    linux: LinuxFile, minimal: bool, extended: bool = False
+) -> list[MatrixEntry]:
     """Expand a LinuxFile into a flat list of matrix entries.
 
     Each config entry is expanded over the cross-product of its
     compiler, build_type, sanitizers, and architecture lists. When 'minimal' is
     true, only configs flagged as minimal are included.
+
+    @param linux The parsed linux.json.
+    @param minimal Emit only the configs flagged 'minimal'.
+    @param extended Emit the configs flagged 'extended'. Both the minimal and
+        the full matrix leave those out, so this is the only way to get them.
+    @return One entry per combination the surviving configs expand into.
+    @note Do not set both 'minimal' and 'extended'. The command line rejects the
+        pair, but a direct caller gets the minimal matrix rather than an error.
     """
     entries: list[MatrixEntry] = []
 
     for distro, configs in linux.configs.items():
         for cfg in configs:
             if minimal and not cfg.minimal:
+                continue
+            if not extended and cfg.extended:
                 continue
             # An empty sanitizers list means "one entry with no sanitizer".
             effective_sanitizers = cfg.sanitizers or [""]
@@ -367,12 +385,25 @@ if __name__ == "__main__":
         help="Emit the Linux packaging matrix instead of the build/test matrix.",
         action="store_true",
     )
-    parser.add_argument(
+    # Each flag picks a matrix size, and the sizes nest: minimal is a subset of
+    # the full matrix, which is a subset of extended. So one flag narrows and the
+    # other widens the same default, and asking for both has no answer. Argparse
+    # rejects the pair rather than letting the filters intersect into a surprise.
+    size = parser.add_mutually_exclusive_group()
+    size.add_argument(
         "-m",
         "--minimal",
         help="Emit only the minimal matrix (the configs flagged 'minimal'), "
         "used for pull requests by default. If omitted, the full matrix is "
         "emitted.",
+        action="store_true",
+    )
+    size.add_argument(
+        "-x",
+        "--extended",
+        help="Emit the extended matrix: the full one plus the configs flagged "
+        "'extended', which no other matrix includes. Used for the nightly "
+        "schedule and for a manual run.",
         action="store_true",
     )
     args = parser.parse_args()
@@ -388,7 +419,7 @@ if __name__ == "__main__":
     else:
         if args.config in ("linux", None):
             matrix += expand_linux_matrix(
-                LinuxFile.load(THIS_DIR / "linux.json"), args.minimal
+                LinuxFile.load(THIS_DIR / "linux.json"), args.minimal, args.extended
             )
         if args.config in ("macos", None):
             matrix += expand_platform_matrix(
