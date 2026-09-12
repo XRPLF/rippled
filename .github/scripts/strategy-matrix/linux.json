@@ -17,7 +17,6 @@
         "minimal": true,
         "benchmark": true
       },
-
       {
         "compiler": ["gcc"],
         "build_type": ["Release"],
@@ -30,7 +29,6 @@
         "arch": ["arm64"],
         "minimal": false
       },
-
       {
         "compiler": ["gcc", "clang"],
         "build_type": ["Debug", "Release"],
@@ -38,7 +36,6 @@
         "minimal": false,
         "sanitizers": ["address", "undefinedbehavior"]
       },
-
       {
         "compiler": ["clang"],
         "build_type": ["Debug"],
@@ -62,9 +59,21 @@
         "minimal": false,
         "suffix": "unity",
         "extra_cmake_args": "-Dunity=ON"
+      },
+      {
+        "compiler": ["gcc"],
+        "build_type": ["Release"],
+        "arch": ["amd64"],
+        "minimal": false,
+        "suffix": "supported",
+        "force_supported": true,
+        "extra_cmake_args": "-Dvalidator_keys=ON",
+        "package": {
+          "type": "deb",
+          "image": "ghcr.io/xrplf/xrpld/packaging-debian:sha-49cdc10"
+        }
       }
     ],
-
     "debian": [
       {
         "compiler": ["gcc"],
@@ -78,7 +87,6 @@
         }
       }
     ],
-
     "rhel": [
       {
         "compiler": ["gcc"],

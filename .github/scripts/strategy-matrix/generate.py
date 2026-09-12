@@ -81,6 +81,8 @@ class LinuxConfig:
     suffix: str = ""
     extra_cmake_args: str = ""
     package: PackageConfig | None = None  # set to also package this config
+    # Flip every amendment to Supported::Yes before building (perf/test only).
+    force_supported: bool = False
 
     def __post_init__(self) -> None:
         if isinstance(self.package, dict):
@@ -168,6 +170,7 @@ class MatrixEntry:
     image: str = ""  # container image; empty for macOS/Windows (runs natively)
     compiler: str = ""  # compiler name ("gcc" or "clang"); empty for macOS/Windows
     toolchain: str = ""  # "nix" for the flake's CI environment; see PlatformConfig
+    force_supported: bool = False  # flip amendments to Supported::Yes before build
 
 
 @dataclasses.dataclass
@@ -233,6 +236,7 @@ def expand_linux_matrix(linux: LinuxFile, minimal: bool) -> list[MatrixEntry]:
                         architecture=arch_info,
                         sanitizers=sanitizer,
                         compiler=compiler,
+                        force_supported=cfg.force_supported,
                     )
                 )
 
