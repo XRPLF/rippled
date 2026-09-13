@@ -1,5 +1,8 @@
 #include <test/jtx/paychan.h>
 
+#include <test/jtx/Account.h>
+#include <test/jtx/Env.h>
+
 #include <xrpl/basics/Buffer.h>
 #include <xrpl/basics/Slice.h>
 #include <xrpl/basics/base_uint.h>
@@ -12,11 +15,13 @@
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/PayChan.h>
 #include <xrpl/protocol/PublicKey.h>
+#include <xrpl/protocol/Rate.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/SecretKey.h>
 #include <xrpl/protocol/SeqProxy.h>
 #include <xrpl/protocol/Serializer.h>
+#include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/jss.h>
 
 #include <cstdint>
@@ -39,6 +44,7 @@ create(
 {
     json::Value jv;
     jv[jss::TransactionType] = jss::PaymentChannelCreate;
+    jv[jss::Flags] = tfFullyCanonicalSig;
     jv[jss::Account] = to_string(account);
     jv[jss::Destination] = to_string(to);
     jv[jss::Amount] = amount.getJson(JsonOptions::Values::None);
@@ -60,6 +66,7 @@ fund(
 {
     json::Value jv;
     jv[jss::TransactionType] = jss::PaymentChannelFund;
+    jv[jss::Flags] = tfFullyCanonicalSig;
     jv[jss::Account] = to_string(account);
     jv[sfChannel.fieldName] = to_string(channel);
     jv[jss::Amount] = amount.getJson(JsonOptions::Values::None);
@@ -79,6 +86,7 @@ claim(
 {
     json::Value jv;
     jv[jss::TransactionType] = jss::PaymentChannelClaim;
+    jv[jss::Flags] = tfFullyCanonicalSig;
     jv[jss::Account] = to_string(account);
     jv["Channel"] = to_string(channel);
     if (amount)
@@ -133,8 +141,18 @@ signClaimAuth(
     STAmount const& authAmt)
 {
     Serializer msg;
-    serializePayChanAuthorization(msg, channel, authAmt.xrp());
+    serializePayChanAuthorization(msg, channel, authAmt);
     return sign(pk, sk, msg.slice());
+}
+
+Rate
+rate(Env& env, Account const& account, Account const& dest, std::uint32_t const& seq)
+{
+    auto const sle =
+        env.le(keylet::payChannel(account.id(), dest.id(), SeqProxy::rawSequence(seq)));
+    if (sle->isFieldPresent(sfTransferRate))
+        return xrpl::Rate((*sle)[sfTransferRate]);
+    return Rate{0};
 }
 
 }  // namespace xrpl::test::jtx::paychan

@@ -4,14 +4,17 @@
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/helpers/CredentialHelpers.h>
+#include <xrpl/ledger/helpers/EscrowHelpers.h>
 #include <xrpl/ledger/helpers/PaymentChannelHelpers.h>
 #include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Concepts.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Keylet.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/PayChan.h>
 #include <xrpl/protocol/PublicKey.h>
+#include <xrpl/protocol/Rate.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STLedgerEntry.h>
@@ -24,6 +27,7 @@
 
 #include <cstdint>
 #include <optional>
+#include <variant>
 
 namespace xrpl {
 
@@ -46,11 +50,19 @@ PaymentChannelClaim::preflight(PreflightContext const& ctx)
         return temMALFORMED;
 
     auto const bal = ctx.tx[~sfBalance];
-    if (bal && (!isXRP(*bal) || *bal <= beast::kZero))
+    if (bal && *bal <= beast::kZero)
         return temBAD_AMOUNT;
 
     auto const amt = ctx.tx[~sfAmount];
-    if (amt && (!isXRP(*amt) || *amt <= beast::kZero))
+    if (amt && *amt <= beast::kZero)
+        return temBAD_AMOUNT;
+
+    if (((bal && !isXRP(*bal)) || (amt && !isXRP(*amt))) && !ctx.rules.enabled(featureTokenPaychan))
+        return temBAD_AMOUNT;
+
+    // Both bal and amt must reference the same asset before comparing,
+    // otherwise STAmount comparison throws.
+    if (bal && amt && bal->asset() != amt->asset())
         return temBAD_AMOUNT;
 
     if (bal && amt && *bal > *amt)
@@ -70,8 +82,8 @@ PaymentChannelClaim::preflight(PreflightContext const& ctx)
         // The signature isn't needed if txAccount == src, but if it's
         // present, check it
 
-        auto const reqBalance = bal->xrp();
-        auto const authAmt = amt ? amt->xrp() : reqBalance;
+        auto const reqBalance = *bal;
+        auto const authAmt = amt ? *amt : reqBalance;
 
         if (reqBalance > authAmt)
             return temBAD_AMOUNT;
@@ -96,12 +108,45 @@ PaymentChannelClaim::preflight(PreflightContext const& ctx)
 TER
 PaymentChannelClaim::preclaim(PreclaimContext const& ctx)
 {
-    if (!ctx.view.rules().enabled(featureCredentials))
-        return Transactor::preclaim(ctx);
+    if (ctx.view.rules().enabled(featureCredentials))
+    {
+        if (auto const err = credentials::valid(ctx.tx, ctx.view, ctx.tx[sfAccount], ctx.j);
+            !isTesSuccess(err))
+            return err;
+    }
 
-    if (auto const err = credentials::valid(ctx.tx, ctx.view, ctx.tx[sfAccount], ctx.j);
-        !isTesSuccess(err))
-        return err;
+    if (ctx.view.rules().enabled(featureTokenPaychan))
+    {
+        Keylet const k{ltPAYCHAN, ctx.tx[sfChannel]};
+        auto const slep = ctx.view.read(k);
+        if (!slep)
+            return tecNO_TARGET;
+
+        AccountID const dest = (*slep)[sfDestination];
+        auto const& chanFunds = slep->getFieldAmount(sfAmount);
+
+        if (auto const bal = ctx.tx[~sfBalance])
+        {
+            // The requested balance (and optional amount) must match the
+            // channel's asset; otherwise STAmount comparisons/subtractions
+            // in doApply would throw on mismatched issues.
+            if (bal->asset() != chanFunds.asset())
+                return tecWRONG_ASSET;
+            if (auto const amt = ctx.tx[~sfAmount]; amt && amt->asset() != chanFunds.asset())
+                return tecWRONG_ASSET;
+        }
+
+        if (!isXRP(chanFunds) && ctx.tx.isFieldPresent(sfBalance))
+        {
+            if (auto const ret = std::visit(
+                    [&]<typename T>(T const&) {
+                        return escrowUnlockPreclaimHelper<T>(ctx.view, dest, chanFunds);
+                    },
+                    chanFunds.asset().value());
+                !isTesSuccess(ret))
+                return ret;
+        }
+    }
 
     return tesSUCCESS;
 }
@@ -116,25 +161,35 @@ PaymentChannelClaim::doApply()
 
     AccountID const src = (*slep)[sfAccount];
     AccountID const dst = (*slep)[sfDestination];
-    AccountID const txAccount = ctx_.tx[sfAccount];
 
     auto const curExpiration = (*slep)[~sfExpiration];
     if (isChannelExpired(ctx_.view(), (*slep)[~sfCancelAfter]) ||
         isChannelExpired(ctx_.view(), curExpiration))
     {
-        return closeChannel(slep, ctx_.view(), k.key, ctx_.registry.get().getJournal("View"));
+        return closeChannel(
+            slep,
+            ctx_.getApplyViewContext(),
+            k.key,
+            accountID_,
+            ctx_.registry.get().getJournal("View"));
     }
 
-    if (txAccount != src && txAccount != dst)
+    if (accountID_ != src && accountID_ != dst)
         return tecNO_PERMISSION;
 
     if (ctx_.tx[~sfBalance])
     {
-        auto const chanBalance = slep->getFieldAmount(sfBalance).xrp();
-        auto const chanFunds = slep->getFieldAmount(sfAmount).xrp();
-        auto const reqBalance = ctx_.tx[sfBalance].xrp();
+        auto const chanBalance = slep->getFieldAmount(sfBalance);
+        auto const chanFunds = slep->getFieldAmount(sfAmount);
+        auto const reqBalance = ctx_.tx[sfBalance];
 
-        if (txAccount == dst && !ctx_.tx[~sfSignature])
+        // Asset consistency between the requested balance/amount and the
+        // channel was validated in preclaim.
+        XRPL_ASSERT(
+            reqBalance.asset() == chanFunds.asset(),
+            "xrpl::PaymentChannelClaim::doApply : balance matches channel asset");
+
+        if (accountID_ == dst && !ctx_.tx[~sfSignature])
         {
             return ctx_.view().rules().enabled(fixCleanup3_2_0) ? TER{tecNO_PERMISSION}
                                                                 : TER{temBAD_SIGNATURE};
@@ -164,22 +219,56 @@ PaymentChannelClaim::doApply()
             return tecNO_DST;
 
         if (auto err =
-                verifyDepositPreauth(ctx_.tx, ctx_.view(), txAccount, dst, sled, ctx_.journal);
+                verifyDepositPreauth(ctx_.tx, ctx_.view(), accountID_, dst, sled, ctx_.journal);
             !isTesSuccess(err))
             return err;
 
         (*slep)[sfBalance] = ctx_.tx[sfBalance];
-        XRPAmount const reqDelta = reqBalance - chanBalance;
+        STAmount const reqDelta = reqBalance - chanBalance;
         XRPL_ASSERT(
             reqDelta >= beast::kZero, "xrpl::PaymentChannelClaim::doApply : minimum balance delta");
-        (*sled)[sfBalance] = (*sled)[sfBalance] + reqDelta;
+
+        // Transfer amount to destination
+        if (isXRP(reqDelta))
+        {
+            (*sled)[sfBalance] = (*sled)[sfBalance] + reqDelta;
+        }
+        else
+        {
+            if (!ctx_.view().rules().enabled(featureTokenPaychan))
+                return temDISABLED;
+
+            Rate lockedRate = slep->isFieldPresent(sfTransferRate)
+                ? xrpl::Rate(slep->getFieldU32(sfTransferRate))
+                : kParityRate;
+            auto const& issuer = reqDelta.getIssuer();
+            bool const createAsset = dst == accountID_;
+            if (auto const ret = std::visit(
+                    [&]<typename T>(T const&) {
+                        return escrowUnlockApplyHelper<T>(
+                            ctx_.getApplyViewContext(),
+                            lockedRate,
+                            sled,
+                            preFeeBalance_,
+                            reqDelta,
+                            issuer,
+                            src,
+                            dst,
+                            createAsset,
+                            j_);
+                    },
+                    reqDelta.asset().value());
+                !isTesSuccess(ret))
+                return ret;
+        }
+
         ctx_.view().update(sled);
         ctx_.view().update(slep);
     }
 
     if (ctx_.tx.isFlag(tfRenew))
     {
-        if (src != txAccount)
+        if (src != accountID_)
             return tecNO_PERMISSION;
         (*slep)[~sfExpiration] = std::nullopt;
         ctx_.view().update(slep);
@@ -188,8 +277,15 @@ PaymentChannelClaim::doApply()
     if (ctx_.tx.isFlag(tfClose))
     {
         // Channel will close immediately if dry or the receiver closes
-        if (dst == txAccount || (*slep)[sfBalance] == (*slep)[sfAmount])
-            return closeChannel(slep, ctx_.view(), k.key, ctx_.registry.get().getJournal("View"));
+        if (dst == accountID_ || (*slep)[sfBalance] == (*slep)[sfAmount])
+        {
+            return closeChannel(
+                slep,
+                ctx_.getApplyViewContext(),
+                k.key,
+                accountID_,
+                ctx_.registry.get().getJournal("View"));
+        }
 
         auto const settleExpiration = saturatingAdd(
             ctx_.view().rules(),

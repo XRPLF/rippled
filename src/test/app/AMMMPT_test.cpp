@@ -4308,7 +4308,7 @@ private:
                         settleDelay,
                         pk,
                         cancelAfter),
-                    Ter(telENV_RPC_FAILED));
+                    Ter(tecNO_PERMISSION));
 
                 env(create(carol_, ammAlice.ammAccount(), XRP(1'000), settleDelay, pk, cancelAfter),
                     Ter(tecNO_PERMISSION));
