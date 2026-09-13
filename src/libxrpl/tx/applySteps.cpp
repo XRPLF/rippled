@@ -191,6 +191,9 @@ invokePreclaim(PreclaimContext const& ctx)
                         if (NotTEC const result = T::checkSign(ctx))
                             return result;
 
+                        if (NotTEC const result = Transactor::checkFirewall(ctx))
+                            return result;
+
                         return tesSUCCESS;
                     }())
                     return preSigResult;

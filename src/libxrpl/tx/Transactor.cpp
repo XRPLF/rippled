@@ -20,6 +20,7 @@
 #include <xrpl/ledger/helpers/SponsorHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Firewall.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/Permissions.h>
@@ -1047,6 +1048,66 @@ Transactor::checkSign(PreclaimContext const& ctx)
     auto const idAccount = ctx.tx.isFieldPresent(sfDelegate) ? ctx.tx.getAccountID(sfDelegate)
                                                              : ctx.tx.getAccountID(sfAccount);
     return checkSign(ctx.view, ctx.flags, ctx.parentBatchId, idAccount, ctx.tx, ctx.j);
+}
+
+NotTEC
+Transactor::checkFirewall(PreclaimContext const& ctx)
+{
+    if (!ctx.view.rules().enabled(featureFirewall))
+        return tesSUCCESS;
+
+    auto const account = ctx.tx.getAccountID(sfAccount);
+    auto const sleFirewall = ctx.view.read(keylet::firewall(account));
+    if (!sleFirewall)
+        return tesSUCCESS;
+
+    if (sleFirewall->isFieldPresent(sfMaxFee) &&
+        ctx.tx.getFieldAmount(sfFee) > sleFirewall->getFieldAmount(sfMaxFee))
+    {
+        JLOG(ctx.j.trace()) << "Firewall: the fee exceeds the firewall's MaxFee";
+        return tefFIREWALL_BLOCK;
+    }
+
+    switch (firewallAction(ctx.tx.getTxnType()))
+    {
+        case FirewallAction::Allow:
+            return tesSUCCESS;
+
+        case FirewallAction::Block:
+            JLOG(ctx.j.trace()) << "Firewall: transaction type " << ctx.tx.getTxnType()
+                                << " is blocked while a firewall is set";
+            return tefFIREWALL_BLOCK;
+
+        case FirewallAction::Check:
+            break;
+    }
+
+    // A payment to itself, or one carrying paths, can deliver to an account the
+    // preauthorization check below would not see.
+    if (ctx.tx.getTxnType() == ttPAYMENT &&
+        (ctx.tx.getAccountID(sfDestination) == account || ctx.tx.isFieldPresent(sfPaths)))
+    {
+        JLOG(ctx.j.trace()) << "Firewall: a self payment or a payment with paths is blocked";
+        return tefFIREWALL_BLOCK;
+    }
+
+    if (!ctx.tx.isFieldPresent(sfDestination))
+    {
+        JLOG(ctx.j.trace()) << "Firewall: a checked transaction without a destination is blocked";
+        return tefFIREWALL_BLOCK;
+    }
+
+    if (!ctx.view.exists(
+            keylet::withdrawPreauth(
+                account,
+                ctx.tx.getAccountID(sfDestination),
+                ctx.tx[~sfDestinationTag].value_or(0))))
+    {
+        JLOG(ctx.j.trace()) << "Firewall: the destination is not preauthorized";
+        return tefFIREWALL_BLOCK;
+    }
+
+    return tesSUCCESS;
 }
 
 NotTEC

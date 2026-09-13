@@ -10,6 +10,7 @@
 #include <xrpl/tx/invariants/BallotInvariant.h>
 #include <xrpl/tx/invariants/CouponInvariant.h>
 #include <xrpl/tx/invariants/DirectoryInvariant.h>
+#include <xrpl/tx/invariants/FirewallInvariant.h>
 #include <xrpl/tx/invariants/FreezeInvariant.h>
 #include <xrpl/tx/invariants/LoanBrokerInvariant.h>
 #include <xrpl/tx/invariants/LoanInvariant.h>
@@ -535,6 +536,7 @@ using InvariantChecks = std::tuple<
     NFTokenCountTracking,
     ValidClawback,
     ValidMPTIssuance,
+    ValidFirewall,
     ValidPermissionedDomain,
     ValidRepo,
     ValidPermissionedDEX,

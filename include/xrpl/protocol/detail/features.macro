@@ -162,3 +162,4 @@ XRPL_FEATURE(OfferQualifiers,             Supported::Yes, VoteBehavior::DefaultN
 XRPL_FEATURE(Subscription,                Supported::No,  VoteBehavior::DefaultNo)
 XRPL_FEATURE(Repo,                        Supported::No,  VoteBehavior::DefaultNo)
 XRPL_FEATURE(Beneficiary,                 Supported::No,  VoteBehavior::DefaultNo)
+XRPL_FEATURE(Firewall,                    Supported::No,  VoteBehavior::DefaultNo)

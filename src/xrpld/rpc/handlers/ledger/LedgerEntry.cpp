@@ -285,6 +285,49 @@ parseRepo(
 }
 
 static std::expected<uint256, json::Value>
+parseFirewall(
+    json::Value const& params,
+    json::StaticString const fieldName,
+    [[maybe_unused]] unsigned const apiVersion)
+{
+    // A firewall is keyed by the account it protects, so an account string is
+    // enough to name one.
+    if (auto const account = ledger_entry_helpers::parse<AccountID>(params))
+        return keylet::firewall(*account).key;
+
+    return ledger_entry_helpers::invalidFieldError("malformedAddress", fieldName, "AccountID");
+}
+
+static std::expected<uint256, json::Value>
+parseWithdrawPreauth(
+    json::Value const& params,
+    json::StaticString const fieldName,
+    [[maybe_unused]] unsigned const apiVersion)
+{
+    if (!params.isObject())
+    {
+        return parseObjectID(params, fieldName);
+    }
+
+    auto const owner =
+        ledger_entry_helpers::requiredAccountID(params, jss::owner, "malformedOwner");
+    if (!owner)
+        return std::unexpected(owner.error());
+
+    auto const authorized =
+        ledger_entry_helpers::requiredAccountID(params, jss::authorized, "malformedAuthorized");
+    if (!authorized)
+        return std::unexpected(authorized.error());
+
+    std::uint32_t const dtag =
+        params.isMember(jss::destination_tag) && params[jss::destination_tag].isIntegral()
+        ? params[jss::destination_tag].asUInt()
+        : 0;
+
+    return keylet::withdrawPreauth(*owner, *authorized, dtag).key;
+}
+
+static std::expected<uint256, json::Value>
 parseDelegate(
     json::Value const& params,
     json::StaticString const fieldName,

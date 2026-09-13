@@ -912,6 +912,22 @@ LEDGER_ENTRY(ltBENEFICIARY, 0x0099, Beneficiary, beneficiary, ({
     {sfPreviousTxnID,        SoeRequired},
     {sfPreviousTxnLgrSeq,    SoeRequired},
 }))
+LEDGER_ENTRY(ltFIREWALL, 0x009A, Firewall, firewall, ({
+    {sfOwner,                SoeRequired},
+    {sfCounterparty,         SoeRequired},
+    {sfMaxFee,               SoeOptional},
+    {sfOwnerNode,            SoeRequired},
+    {sfPreviousTxnID,        SoeRequired},
+    {sfPreviousTxnLgrSeq,    SoeRequired},
+}))
+LEDGER_ENTRY_DUPLICATE(ltWITHDRAW_PREAUTH, 0x009B, WithdrawPreauth, withdraw_preauth, ({
+    {sfAccount,              SoeRequired},
+    {sfAuthorize,            SoeRequired},
+    {sfDestinationTag,       SoeOptional},
+    {sfOwnerNode,            SoeRequired},
+    {sfPreviousTxnID,        SoeRequired},
+    {sfPreviousTxnLgrSeq,    SoeRequired},
+}))
 
 #undef EXPAND
 #undef LEDGER_ENTRY_DUPLICATE
