@@ -14,17 +14,20 @@ namespace xrpl::test {
 using namespace jtx;
 
 /**
- * Tests for `Overlay::limit()`, the configured peer allowance.
+ * Tests for `Overlay::limit()`, the configured peer allowance reported once
+ * `OverlayImpl::start()` applies the computed `peer_finder::Config`.
  *
- * The value feeds `ApplicationImp::fdRequired()`, which reserves two file
- * descriptors per allowed peer at startup, so an understated limit leaves the
- * process short of descriptors and an overstated one can push the required
- * count past the system limit and abort startup.
+ * `ApplicationImp::fdRequired()` runs before `OverlayImpl::start()` does, so it
+ * always sees the peer finder manager's default-constructed configuration and
+ * never this value; `Overlay::limit()` instead surfaces through the PeerFinder
+ * property stream and other post-startup callers.
  *
- * A unit test configuration declares its peer port as zero and never binds
- * one, so incoming connections are disabled throughout and every limit here is
- * an outbound-only allowance. The inbound cases live alongside
- * `peer_finder::Config::makeConfig`, which takes the port as a parameter.
+ * `jtx::Env` runs standalone, and `ServerHandler` strips the `peer` protocol
+ * from every configured port under `config.standalone()`, so the peer port
+ * declared here is never bound and incoming connections are disabled
+ * throughout; every limit in this suite is an outbound-only allowance. The
+ * inbound cases live alongside `peer_finder::Config::makeConfig`, which takes
+ * the port as a parameter.
  */
 class OverlayLimit_test : public beast::unit_test::Suite
 {
