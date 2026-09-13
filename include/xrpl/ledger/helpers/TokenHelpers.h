@@ -4,6 +4,7 @@
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/helpers/TokenIssuanceHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Issue.h>
@@ -391,7 +392,8 @@ directSendNoFee(
     AccountID const& uReceiverID,
     STAmount const& saAmount,
     bool bCheckIssuer,
-    beast::Journal j);
+    beast::Journal j,
+    EnforceSupplyCap enforceSupplyCap = EnforceSupplyCap::Yes);
 
 /**
  * Calls static accountSendIOU if saAmount represents Issue.

@@ -378,6 +378,7 @@ enum TECcodes : TERUnderlyingType {
     tecOUT_OF_GAS = 201,
     tecBYTECODE_REJECTED = 202,
     tecINVALID_PARAMETERS = 203,
+    tecSUPPLY_EXCEEDED = 204,
 };
 
 //------------------------------------------------------------------------------

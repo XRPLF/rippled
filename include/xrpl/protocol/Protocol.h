@@ -392,6 +392,20 @@ constexpr std::size_t kMaxWasmDataLength = 1 * 1024;  // 1KB
 constexpr std::size_t kWasmTransferLimit = 1 << 20;  // 1MB
 
 /**
+ * Maximum MaximumAmount of a TokenIssuance, in base units (10^15). Bounded
+ * to what Number/STAmount arithmetic represents exactly, so the supply-cap
+ * comparison can never be affected by mantissa rounding.
+ */
+constexpr std::uint64_t kMaxTokenIssuanceAmount = 1'000'000'000'000'000ull;
+static_assert(kMaxTokenIssuanceAmount <= kMaxMpTokenAmount);
+
+/**
+ * Maximum TokenScale of a TokenIssuance: 10^scale must stay in exact int64
+ * range. 10^19 > 2^63-1 > 10^18
+ */
+constexpr std::uint8_t kMaxTokenIssuanceScale = 18;
+
+/**
  * A ledger index.
  */
 using LedgerIndex = std::uint32_t;

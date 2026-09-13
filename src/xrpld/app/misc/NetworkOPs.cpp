@@ -5199,7 +5199,7 @@ NetworkOPsImp::getBookPage(
     MetaView lesActive(lpLedger, tapNONE, true);
     OrderBookIterator obIterator(lesActive, book);
 
-    auto const rate = transferRate(lesActive, book.out.account);
+    auto const rate = transferRate(lesActive, Issue{book.out.currency, book.out.account});
 
     bool const bGlobalFreeze =
         lesActive.isGlobalFrozen(book.out.account) || lesActive.isGlobalFrozen(book.in.account);

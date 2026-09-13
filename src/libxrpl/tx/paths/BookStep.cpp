@@ -11,6 +11,7 @@
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/MPTokenHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
+#include <xrpl/ledger/helpers/TokenIssuanceHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Book.h>
@@ -1482,7 +1483,7 @@ BookStep<TIn, TOut, TDerived>::rate(
         [&](Issue const& issue) -> Rate {
             if (isXRP(issue.account) || issue.account == dstAccount)
                 return kParityRate;
-            return transferRate(view, issue.account);
+            return transferRate(view, issue);
         },
         [&](MPTIssue const& mptIssue) -> Rate {
             // For MPT, parity applies only when this asset is the final strand

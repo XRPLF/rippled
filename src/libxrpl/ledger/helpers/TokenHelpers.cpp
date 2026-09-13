@@ -11,6 +11,7 @@
 #include <xrpl/ledger/helpers/MPTokenHelpers.h>
 #include <xrpl/ledger/helpers/RippleStateHelpers.h>
 #include <xrpl/ledger/helpers/SponsorHelpers.h>
+#include <xrpl/ledger/helpers/TokenIssuanceHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Concepts.h>
@@ -47,7 +48,9 @@ bool
 isGlobalFrozen(ReadView const& view, Asset const& asset)
 {
     return asset.visit(
-        [&](Issue const& issue) { return isGlobalFrozen(view, issue.getIssuer()); },
+        [&](Issue const& issue) {
+            return isGlobalFrozen(view, issue.getIssuer()) || isTokenLocked(view, issue);
+        },
         [&](MPTIssue const& issue) { return isGlobalFrozen(view, issue); });
 }
 
@@ -430,7 +433,10 @@ accountHolds(
         {
             return amount;
         }
-        auto const available = availableMPTAmount(*issuance);
+        auto available = availableMPTAmount(*issuance);
+        // A bound issuance shares its cap with the IOU side.
+        if (auto const headroom = mptBoundHeadroom(view, issuance))
+            available = std::min(available, *headroom);
         if (!mptokensV2)
             return STAmount{mptIssue, available};
         return view.balanceHookMPT(issuer, mptIssue, available);
@@ -504,6 +510,11 @@ accountFunds(
 {
     XRPL_ASSERT(saDefault.holds<Issue>(), "xrpl::accountFunds: saDefault holds Issue");
 
+    // Note: a capped issuer's funds are NOT clamped to the supply headroom
+    // here. Funds readings must stay stable across a transaction (deferred
+    // credits) or partially-crossed issuer offers read as never-funded and
+    // are removed; the supply cap is enforced at the credit choke point
+    // instead, which fails an over-cap crossing outright.
     if (!saDefault.native() && saDefault.getIssuer() == id)
         return saDefault;
 
@@ -538,7 +549,7 @@ Rate
 transferRate(ReadView const& view, Asset const& asset)
 {
     return asset.visit(
-        [&](Issue const& issue) { return transferRate(view, issue.getIssuer()); },
+        [&](Issue const& issue) { return transferRate(view, issue); },
         [&](MPTIssue const& issue) { return transferRate(view, issue.getMptID()); });
 }
 
@@ -688,7 +699,8 @@ directSendNoFeeIOU(
     STAmount const& saAmount,
     bool bCheckIssuer,
     SLE::ref sponsorSle,
-    beast::Journal j)
+    beast::Journal j,
+    EnforceSupplyCap enforceSupplyCap = EnforceSupplyCap::Yes)
 {
     AccountID const& issuer = saAmount.getIssuer();
     Currency const& currency = saAmount.get<Issue>().currency;
@@ -711,6 +723,12 @@ directSendNoFeeIOU(
     XRPL_ASSERT(
         !isXRP(uReceiverID) && uReceiverID != noAccount(),
         "xrpl::directSendNoFeeIOU : receiver is not XRP");
+
+    // Supply accounting: every trust-line balance move funnels through here.
+    if (auto const ter =
+            adjustTokenIssuance(view, uSenderID, uReceiverID, saAmount, enforceSupplyCap, j);
+        !isTesSuccess(ter))
+        return ter;
 
     // If the line exists, modify it accordingly.
     if (auto const sleRippleState = view.peek(index))
@@ -866,12 +884,28 @@ directSendNoLimitIOU(
 
     // Calculate the amount to transfer accounting
     // for any transfer fees if the fee is not waived:
-    saActual = (waiveFee == WaiveTransferFee::Yes) ? saAmount
-                                                   : multiply(saAmount, transferRate(view, issuer));
+    saActual = (waiveFee == WaiveTransferFee::Yes)
+        ? saAmount
+        : multiply(saAmount, transferRate(view, saAmount.get<Issue>()));
 
     JLOG(j.debug()) << "directSendNoLimitIOU> " << to_string(uSenderID) << " - > "
                     << to_string(uReceiverID) << " : deliver=" << saAmount.getFullText()
                     << " cost=" << saActual.getFullText();
+
+    if (view.rules().enabled(featureTokenIssuance))
+    {
+        // Redeem from the sender before issuing to the receiver so a capped
+        // currency never transiently exceeds its supply cap in transit.
+        TER terResult = directSendNoFeeIOU(view, uSenderID, issuer, saActual, true, sponsorSle, j);
+
+        if (tesSUCCESS == terResult)
+        {
+            terResult =
+                directSendNoFeeIOU(view, issuer, uReceiverID, saAmount, true, sponsorSle, j);
+        }
+
+        return terResult;
+    }
 
     TER terResult = directSendNoFeeIOU(view, issuer, uReceiverID, saAmount, true, sponsorSle, j);
 
@@ -938,7 +972,7 @@ directSendNoLimitMultiIOU(
         // for any transfer fees if the fee is not waived:
         STAmount const actualSend = (waiveFee == WaiveTransferFee::Yes)
             ? amount
-            : multiply(amount, transferRate(view, issuer));
+            : multiply(amount, transferRate(view, amount.get<Issue>()));
         actual += actualSend;
         takeFromSender += actualSend;
 
@@ -1233,6 +1267,9 @@ directSendNoFeeMPT(
             if (isMPTOverflow(amt, outstanding, maxAmount, AllowMPTOverflow::Yes))
                 return tecPATH_DRY;
         }
+        // A bound issuance shares its cap with the IOU side.
+        if (auto const headroom = mptBoundHeadroom(view, sleIssuance); headroom && amt > *headroom)
+            return tecSUPPLY_EXCEEDED;
         (*sleIssuance)[sfOutstandingAmount] += amt;
         view.update(sleIssuance);
     }
@@ -1525,11 +1562,13 @@ directSendNoFee(
     AccountID const& uReceiverID,
     STAmount const& saAmount,
     bool bCheckIssuer,
-    beast::Journal j)
+    beast::Journal j,
+    EnforceSupplyCap enforceSupplyCap)
 {
     return saAmount.asset().visit(
         [&](Issue const&) {
-            return directSendNoFeeIOU(view, uSenderID, uReceiverID, saAmount, bCheckIssuer, {}, j);
+            return directSendNoFeeIOU(
+                view, uSenderID, uReceiverID, saAmount, bCheckIssuer, {}, j, enforceSupplyCap);
         },
         [&](MPTIssue const&) {
             XRPL_ASSERT(!bCheckIssuer, "xrpl::directSendNoFee : not checking issuer");

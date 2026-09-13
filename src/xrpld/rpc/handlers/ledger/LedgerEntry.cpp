@@ -565,6 +565,41 @@ parseMPTokenIssuance(
 }
 
 static std::expected<uint256, json::Value>
+parseTokenIssuance(
+    json::Value const& params,
+    json::StaticString const fieldName,
+    [[maybe_unused]] unsigned const apiVersion)
+{
+    if (!params.isObject())
+    {
+        return parseObjectID(params, fieldName);
+    }
+
+    if (auto const value = ledger_entry_helpers::hasRequired(params, {jss::issuer, jss::currency});
+        !value)
+    {
+        return std::unexpected(value.error());
+    }
+
+    auto const issuer = ledger_entry_helpers::parse<AccountID>(params[jss::issuer]);
+    if (!issuer)
+    {
+        return ledger_entry_helpers::invalidFieldError(
+            "malformedAddress", jss::issuer, "AccountID");
+    }
+
+    Currency currency;
+    if (!params[jss::currency].isString() || params[jss::currency] == "" ||
+        !toCurrency(currency, params[jss::currency].asString()))
+    {
+        return ledger_entry_helpers::invalidFieldError(
+            "malformedCurrency", jss::currency, "Currency");
+    }
+
+    return keylet::tokenIssuance(*issuer, currency).key;
+}
+
+static std::expected<uint256, json::Value>
 parseNFTokenOffer(
     json::Value const& params,
     json::StaticString const fieldName,

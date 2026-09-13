@@ -1320,3 +1320,37 @@ TRANSACTION(ttPASSKEY_LIST_SET, 103, PasskeyListSet,
     ({
     {sfPasskeys, SoeRequired},
 }))
+TRANSACTION(ttTOKEN_ISSUANCE_CREATE, 104, TokenIssuanceCreate,
+    ({
+        .amendment = featureTokenIssuance,
+        .privileges = Privilege::CreateTokenIssuance,
+    }),
+    ({
+    {sfCurrency, SoeRequired},
+    {sfMaximumAmount, SoeOptional},
+    {sfTokenScale, SoeOptional},
+    {sfMPTokenIssuanceID, SoeOptional},
+    {sfTransferFee, SoeOptional},
+    {sfMPTokenMetadata, SoeOptional},
+}))
+TRANSACTION(ttTOKEN_ISSUANCE_SET, 105, TokenIssuanceSet,
+    ({.amendment = featureTokenIssuance}),
+    ({
+    {sfCurrency, SoeRequired},
+    {sfMPTokenIssuanceID, SoeOptional},
+    {sfTransferFee, SoeOptional},
+    {sfMPTokenMetadata, SoeOptional},
+}))
+TRANSACTION(ttTOKEN_ISSUANCE_DESTROY, 106, TokenIssuanceDestroy,
+    ({
+        .amendment = featureTokenIssuance,
+        .privileges = Privilege::DestroyTokenIssuance,
+    }),
+    ({
+    {sfCurrency, SoeRequired},
+}))
+TRANSACTION(ttTOKEN_CONVERT, 107, TokenConvert,
+    ({.amendment = featureTokenIssuance}),
+    ({
+    {sfAmount, SoeRequired, SoeMptSupported},
+}))

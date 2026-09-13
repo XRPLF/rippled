@@ -105,6 +105,7 @@ enum class LedgerNameSpace : std::uint16_t {
     Loan = 'L',
     PasskeyList = 'k',
     Sponsorship = '>',
+    TokenIssuance = 'F',
 
     ContractSource = 'Z',
     Contract = 'c',
@@ -562,6 +563,12 @@ Keylet
 mptokenIssuance(MPTID const& issuanceID) noexcept
 {
     return {ltMPTOKEN_ISSUANCE, indexHash(LedgerNameSpace::MPTokenIssuance, issuanceID)};
+}
+
+Keylet
+tokenIssuance(AccountID const& issuer, Currency const& currency) noexcept
+{
+    return {ltTOKEN_ISSUANCE, indexHash(LedgerNameSpace::TokenIssuance, issuer, currency)};
 }
 
 Keylet

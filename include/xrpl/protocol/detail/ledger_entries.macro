@@ -412,6 +412,7 @@ LEDGER_ENTRY(ltMPTOKEN_ISSUANCE, 0x007e, MPTokenIssuance, mpt_issuance, ({
     {sfLockedAmount,             SoeOptional},
     {sfMPTokenMetadata,          SoeOptional},
     {sfMPTokenSchema,            SoeOptional},
+    {sfTokenIssuanceID,          SoeOptional},
     {sfPreviousTxnID,            SoeRequired},
     {sfPreviousTxnLgrSeq,        SoeRequired},
     {sfDomainID,                 SoeOptional},
@@ -700,6 +701,23 @@ LEDGER_ENTRY(ltPASSKEY_LIST, 0x0091, PasskeyList, passkey_list, ({
     {sfOwnerNode,            SoeRequired},
     {sfOwner,                SoeRequired},
     {sfPasskeys,             SoeRequired},
+}))
+
+/** A ledger object which describes an IOU token issuance.
+    \sa keylet::tokenIssuance
+ */
+LEDGER_ENTRY(ltTOKEN_ISSUANCE, 0x0092, TokenIssuance, token_issuance, ({
+    {sfIssuer,               SoeRequired},
+    {sfCurrency,             SoeRequired},
+    {sfMaximumAmount,        SoeOptional},
+    {sfIssuedAmount,         SoeDefault},
+    {sfTokenScale,           SoeDefault},
+    {sfMPTokenIssuanceID,    SoeOptional},
+    {sfTransferFee,          SoeOptional},
+    {sfMPTokenMetadata,      SoeOptional},
+    {sfOwnerNode,            SoeRequired},
+    {sfPreviousTxnID,        SoeRequired},
+    {sfPreviousTxnLgrSeq,    SoeRequired},
 }))
 
 #undef EXPAND

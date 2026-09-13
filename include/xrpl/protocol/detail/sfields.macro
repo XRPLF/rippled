@@ -479,3 +479,7 @@ UNTYPED_SFIELD(sfPasskeySignature,       OBJECT,    43, SField::kSmdDefault, SFi
 UNTYPED_SFIELD(sfPasskey,                OBJECT,    44)
 UNTYPED_SFIELD(sfPasskeys,               ARRAY,     36)
 TYPED_SFIELD(sfMPTokenSchema,            VL,     53)
+TYPED_SFIELD(sfTokenScale,               UINT8,      7)
+TYPED_SFIELD(sfTokenIssuanceID,          UINT256,   44)
+TYPED_SFIELD(sfIssuedAmount,             NUMBER,     18, SField::kSmdNeedsAsset | SField::kSmdDefault)
+TYPED_SFIELD(sfCurrency,                 CURRENCY,   3)
