@@ -15,31 +15,9 @@
  * #   include <xrpl/tx/transactors/HEADER.h>
  * #endif
  *
- * `settings` is a parenthesized brace-init-list for xrpl::TxSettings, declared
- * in <xrpl/protocol/TxSettings.h>:
- *
- *     struct TxSettings
- *     {
- *         Delegation delegable{Delegation::NotDelegable};
- *         uint256 amendment{};
- *         Privilege privileges{Privilege::NoPriv};
- *     };
- *
- * Name only the settings that differ from those defaults, in declaration
- * order; use `({})` when none of them do:
- *
- *     ({.delegable = Delegation::Delegable, .amendment = featureFoo})
- *
- * You must use designated initializers, as shown above. Positional
- * initialization such as `({Delegation::NotDelegable})` is not supported,
- * because the code generator reads these settings by member name.
- *
- * The `privileges` setting is a bitfield defining which operations the
- * transaction can perform. The values are defined in TxSettings.h and
- * enforced in InvariantCheck.cpp.
- *
- * A consumer that only needs some of the settings can unwrap the blob with
- * `#define UNWRAP(...) __VA_ARGS__` and write `TxSettings UNWRAP settings`.
+ * The `privileges` parameter of the TRANSACTION macro is a bitfield
+ * defining which operations the transaction can perform.
+ * The values are defined and used in InvariantCheck.cpp
  */
 
 /** This transaction type executes a payment. */
@@ -1132,6 +1110,17 @@ TRANSACTION(ttSPONSORSHIP_SET, 91, SponsorshipSet,
     {sfFeeAmountDelta, SoeOptional},
     {sfMaxFee, SoeOptional},
     {sfRemainingOwnerCountDelta, SoeOptional},
+}))
+
+/** This transaction claws back tokens locked in a payment channel. */
+#if TRANSACTION_INCLUDE
+#   include <xrpl/tx/transactors/payment_channel/PaymentChannelClawback.h>
+#endif
+TRANSACTION(ttPAYCHAN_CLAWBACK, 92, PaymentChannelClawback,
+    ({.delegable = Delegation::Delegable, .amendment = featureTokenPaychan}),
+    ({
+    {sfChannel, SoeRequired},
+    {sfAmount, SoeOptional, SoeMptSupported},
 }))
 
 /** This system-generated transaction type is used to update the status of the various amendments.
