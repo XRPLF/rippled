@@ -176,6 +176,136 @@ public:
     {
         return this->tx_->isFieldPresent(sfLPTokenIn);
     }
+
+    /**
+     * @brief Get sfCurveType (SoeOptional)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_UINT8::type::value_type>
+    getCurveType() const
+    {
+        if (hasCurveType())
+        {
+            return this->tx_->at(sfCurveType);
+        }
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfCurveType is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasCurveType() const
+    {
+        return this->tx_->isFieldPresent(sfCurveType);
+    }
+
+    /**
+     * @brief Get sfPositionID (SoeOptional)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_UINT256::type::value_type>
+    getPositionID() const
+    {
+        if (hasPositionID())
+        {
+            return this->tx_->at(sfPositionID);
+        }
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfPositionID is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasPositionID() const
+    {
+        return this->tx_->isFieldPresent(sfPositionID);
+    }
+
+    /**
+     * @brief Get sfPositionLiquidity (SoeOptional)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_UINT64::type::value_type>
+    getPositionLiquidity() const
+    {
+        if (hasPositionLiquidity())
+        {
+            return this->tx_->at(sfPositionLiquidity);
+        }
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfPositionLiquidity is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasPositionLiquidity() const
+    {
+        return this->tx_->isFieldPresent(sfPositionLiquidity);
+    }
+
+    /**
+     * @brief Get sfBinID (SoeOptional)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_INT32::type::value_type>
+    getBinID() const
+    {
+        if (hasBinID())
+        {
+            return this->tx_->at(sfBinID);
+        }
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfBinID is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasBinID() const
+    {
+        return this->tx_->isFieldPresent(sfBinID);
+    }
+
+    /**
+     * @brief Get sfShares (SoeOptional)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_UINT64::type::value_type>
+    getShares() const
+    {
+        if (hasShares())
+        {
+            return this->tx_->at(sfShares);
+        }
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfShares is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasShares() const
+    {
+        return this->tx_->isFieldPresent(sfShares);
+    }
 };
 
 /**
@@ -291,6 +421,61 @@ public:
     setLPTokenIn(std::decay_t<typename SF_AMOUNT::type::value_type> const& value)
     {
         object_[sfLPTokenIn] = value;
+        return *this;
+    }
+
+    /**
+     * @brief Set sfCurveType (SoeOptional)
+     * @return Reference to this builder for method chaining.
+     */
+    AMMWithdrawBuilder&
+    setCurveType(std::decay_t<typename SF_UINT8::type::value_type> const& value)
+    {
+        object_[sfCurveType] = value;
+        return *this;
+    }
+
+    /**
+     * @brief Set sfPositionID (SoeOptional)
+     * @return Reference to this builder for method chaining.
+     */
+    AMMWithdrawBuilder&
+    setPositionID(std::decay_t<typename SF_UINT256::type::value_type> const& value)
+    {
+        object_[sfPositionID] = value;
+        return *this;
+    }
+
+    /**
+     * @brief Set sfPositionLiquidity (SoeOptional)
+     * @return Reference to this builder for method chaining.
+     */
+    AMMWithdrawBuilder&
+    setPositionLiquidity(std::decay_t<typename SF_UINT64::type::value_type> const& value)
+    {
+        object_[sfPositionLiquidity] = value;
+        return *this;
+    }
+
+    /**
+     * @brief Set sfBinID (SoeOptional)
+     * @return Reference to this builder for method chaining.
+     */
+    AMMWithdrawBuilder&
+    setBinID(std::decay_t<typename SF_INT32::type::value_type> const& value)
+    {
+        object_[sfBinID] = value;
+        return *this;
+    }
+
+    /**
+     * @brief Set sfShares (SoeOptional)
+     * @return Reference to this builder for method chaining.
+     */
+    AMMWithdrawBuilder&
+    setShares(std::decay_t<typename SF_UINT64::type::value_type> const& value)
+    {
+        object_[sfShares] = value;
         return *this;
     }
 

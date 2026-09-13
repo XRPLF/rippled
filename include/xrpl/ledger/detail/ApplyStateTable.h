@@ -74,6 +74,9 @@ public:
     [[nodiscard]] std::optional<key_type>
     succ(ReadView const& base, key_type const& key, std::optional<key_type> const& last) const;
 
+    [[nodiscard]] std::optional<key_type>
+    pred(ReadView const& base, key_type const& key, std::optional<key_type> const& first) const;
+
     [[nodiscard]] SLE::const_pointer
     read(ReadView const& base, Keylet const& k) const;
 

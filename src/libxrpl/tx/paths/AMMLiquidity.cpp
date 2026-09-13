@@ -7,11 +7,14 @@
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/helpers/AMMCurve.h>
 #include <xrpl/ledger/helpers/AMMHelpers.h>
+#include <xrpl/protocol/AMMCore.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/IOUAmount.h>
+#include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/MPTAmount.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/Quality.h>
@@ -25,6 +28,7 @@
 #include <exception>
 #include <optional>
 #include <stdexcept>
+#include <utility>
 
 namespace xrpl {
 
@@ -36,7 +40,9 @@ AMMLiquidity<TIn, TOut>::AMMLiquidity(
     Asset const& in,
     Asset const& out,
     AMMContext& ammContext,
-    beast::Journal j)
+    beast::Journal j,
+    std::uint8_t curveType,
+    std::shared_ptr<SLE const> ammSle)
     : ammContext_(ammContext)
     , ammAccountID_(ammAccountID)
     , tradingFee_(tradingFee)
@@ -44,6 +50,9 @@ AMMLiquidity<TIn, TOut>::AMMLiquidity(
     , assetOut_(out)
     , initialBalances_{fetchBalances(view)}
     , j_(j)
+    , curveType_(curveType)
+    , ammSle_(std::move(ammSle))
+    , ammID_(keylet::amm(in, out, curveType).key)
 {
 }
 
@@ -62,15 +71,18 @@ AMMLiquidity<TIn, TOut>::fetchBalances(ReadView const& view) const
 
 template <typename TIn, typename TOut>
 TAmounts<TIn, TOut>
-AMMLiquidity<TIn, TOut>::generateFibSeqOffer(TAmounts<TIn, TOut> const& balances) const
+AMMLiquidity<TIn, TOut>::generateFibSeqOffer(
+    ReadView const& view,
+    TAmounts<TIn, TOut> const& balances) const
 {
     TAmounts<TIn, TOut> cur{};
+    CurveContext const cctx{.view = &view, .ammID = &ammID_};
 
     cur.in = toAmount<TIn>(
         getAsset(balances.in),
         kInitialFibSeqPct * initialBalances_.in,
         Number::RoundingMode::Upward);
-    cur.out = swapAssetIn(initialBalances_, cur.in, tradingFee_);
+    cur.out = curveSwapIn(initialBalances_, cur.in, tradingFee_, curveType_, curveParams(), cctx);
 
     if (ammContext_.curIters() == 0)
         return cur;
@@ -94,7 +106,7 @@ AMMLiquidity<TIn, TOut>::generateFibSeqOffer(TAmounts<TIn, TOut> const& balances
     if (cur.out >= balances.out)
         Throw<std::overflow_error>("AMMLiquidity: generateFibSeqOffer exceeds the balance");
 
-    cur.in = swapAssetOut(balances, cur.out, tradingFee_);
+    cur.in = curveSwapOut(balances, cur.out, tradingFee_, curveType_, curveParams(), cctx);
 
     return cur;
 }
@@ -133,13 +145,62 @@ maxOut(T const& out, Asset const& asset)
 
 template <typename TIn, typename TOut>
 std::optional<AMMOffer<TIn, TOut>>
-AMMLiquidity<TIn, TOut>::maxOffer(TAmounts<TIn, TOut> const& balances) const
+AMMLiquidity<TIn, TOut>::maxOffer(
+    ReadView const& view,
+    TAmounts<TIn, TOut> const& balances,
+    Rules const& rules) const
 {
-    auto const out = maxOut<TOut>(balances.out, assetOut());
+    CurveContext const cctx{.view = &view, .ammID = &ammID_};
+
+    auto out = maxOut<TOut>(balances.out, assetOut());
+
+    // Audit #19: for CL, cap the advertised output at what the current
+    // tick range can deliver. Without this cap, curveSwapOut walks
+    // across multiple tick crossings to satisfy the 99%-of-reserves
+    // target, and the resulting offer's quality is a *blended* average
+    // across ranges of different liquidity depths. BookStep then picks
+    // by that blended quality, mispricing the AMM against CLOB and
+    // against itself when multi-path routing is involved. Capping at
+    // the within-range max makes each AMMOffer carry the marginal
+    // quality of its own range; BookStep iterates naturally across
+    // ranges as the tick state advances.
+    //
+    // Same reasoning for binned: cap at the active bin's output
+    // reserve so the offer's quality reflects that single bin's price.
+    // BookStep iterates and pulls the next bin's offer on the next
+    // call as sfActiveBinID advances.
+    if (curveType_ == CtConcentratedLiquidity && curveParams())
+    {
+        bool const zeroForOne = assetIn_ < assetOut_;
+        auto const withinRange =
+            maxClOutputWithinCurrentRange(view, ammID_, *curveParams(), zeroForOne);
+        if (withinRange && *withinRange > Number{0})
+        {
+            auto const cap =
+                toAmount<TOut>(assetOut(), *withinRange, Number::RoundingMode::Downward);
+            if (cap < out)
+                out = cap;
+        }
+    }
+    else if (curveType_ == CtBinned && curveParams())
+    {
+        bool const inIsAsset0 = assetIn_ < assetOut_;
+        auto const atBin = maxBinnedOutputAtActiveBin(view, ammID_, *curveParams(), inIsAsset0);
+        if (atBin && *atBin > Number{0})
+        {
+            auto const cap = toAmount<TOut>(assetOut(), *atBin, Number::RoundingMode::Downward);
+            if (cap < out)
+                out = cap;
+        }
+    }
+
     if (out <= TOut{0} || out >= balances.out)
         return std::nullopt;
     return AMMOffer<TIn, TOut>(
-        *this, {swapAssetOut(balances, out, tradingFee_), out}, balances, Quality{balances});
+        *this,
+        {curveSwapOut(balances, out, tradingFee_, curveType_, curveParams(), cctx), out},
+        balances,
+        Quality{balances});
 }
 
 template <typename TIn, typename TOut>
@@ -183,9 +244,18 @@ AMMLiquidity<TIn, TOut>::getOffer(ReadView const& view, std::optional<Quality> c
     auto offer = [&]() -> std::optional<AMMOffer<TIn, TOut>> {
         try
         {
+            // Binned: always use the per-bin-capped maxOffer path. The
+            // Fib sequence model assumes a continuous curve where bigger
+            // offers have monotonically worse quality; bins are stepped
+            // (each bin is its own quality level), so Fib-style
+            // iteration produces blended-quality offers BookStep can't
+            // route correctly. Per-bin-capped offers let BookStep
+            // iterate one bin at a time as activeBinID advances.
+            if (curveType_ == CtBinned)
+                return maxOffer(view, balances, view.rules());
             if (ammContext_.multiPath())
             {
-                auto const amounts = generateFibSeqOffer(balances);
+                auto const amounts = generateFibSeqOffer(view, balances);
                 if (clobQuality && Quality{amounts} < clobQuality)
                     return std::nullopt;
                 return AMMOffer<TIn, TOut>(*this, amounts, balances, Quality{amounts});
@@ -197,7 +267,7 @@ AMMLiquidity<TIn, TOut>::getOffer(ReadView const& view, std::optional<Quality> c
                 // changed in BookStep per either deliver amount limit, or
                 // sendmax, or available output or input funds. Might return
                 // nullopt if the pool is small.
-                return maxOffer(balances);
+                return maxOffer(view, balances, view.rules());
             }
             if (auto const amounts =
                     changeSpotPriceQuality(balances, *clobQuality, tradingFee_, view.rules(), j_))
@@ -206,7 +276,7 @@ AMMLiquidity<TIn, TOut>::getOffer(ReadView const& view, std::optional<Quality> c
             }
             if (view.rules().enabled(fixAMMv1_2))
             {
-                if (auto const maxAMMOffer = maxOffer(balances);
+                if (auto const maxAMMOffer = maxOffer(view, balances, view.rules());
                     maxAMMOffer && Quality{maxAMMOffer->amount()} > *clobQuality)
                     return maxAMMOffer;
             }
@@ -214,7 +284,6 @@ AMMLiquidity<TIn, TOut>::getOffer(ReadView const& view, std::optional<Quality> c
         catch (std::overflow_error const& e)
         {
             JLOG(j_.error()) << "AMMLiquidity::getOffer overflow " << e.what();
-
             return std::nullopt;
         }
         catch (std::exception const& e)

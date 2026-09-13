@@ -72,14 +72,81 @@ public:
     }
 
     /**
-     * @brief Get sfTradingFee (SoeRequired)
-     * @return The field value.
+     * @brief Get sfTradingFee (SoeOptional)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    SF_UINT16::type::value_type
+    protocol_autogen::Optional<SF_UINT16::type::value_type>
     getTradingFee() const
     {
-        return this->tx_->at(sfTradingFee);
+        if (hasTradingFee())
+        {
+            return this->tx_->at(sfTradingFee);
+        }
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfTradingFee is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasTradingFee() const
+    {
+        return this->tx_->isFieldPresent(sfTradingFee);
+    }
+
+    /**
+     * @brief Get sfCurveType (SoeOptional)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_UINT8::type::value_type>
+    getCurveType() const
+    {
+        if (hasCurveType())
+        {
+            return this->tx_->at(sfCurveType);
+        }
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfCurveType is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasCurveType() const
+    {
+        return this->tx_->isFieldPresent(sfCurveType);
+    }
+
+    /**
+     * @brief Get sfAmplification (SoeOptional)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_UINT32::type::value_type>
+    getAmplification() const
+    {
+        if (hasAmplification())
+        {
+            return this->tx_->at(sfAmplification);
+        }
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfAmplification is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasAmplification() const
+    {
+        return this->tx_->isFieldPresent(sfAmplification);
     }
 };
 
@@ -98,19 +165,17 @@ public:
      * @param account The account initiating the transaction.
      * @param asset The sfAsset field value.
      * @param asset2 The sfAsset2 field value.
-     * @param tradingFee The sfTradingFee field value.
      * @param sequence Optional sequence number for the transaction.
      * @param fee Optional fee for the transaction.
      */
     AMMVoteBuilder(SF_ACCOUNT::type::value_type account,
-                     std::decay_t<typename SF_ISSUE::type::value_type> const& asset,                     std::decay_t<typename SF_ISSUE::type::value_type> const& asset2,                     std::decay_t<typename SF_UINT16::type::value_type> const& tradingFee,                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
+                     std::decay_t<typename SF_ISSUE::type::value_type> const& asset,                     std::decay_t<typename SF_ISSUE::type::value_type> const& asset2,                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
                     std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt
 )
         : TransactionBuilderBase<AMMVoteBuilder>(ttAMM_VOTE, account, sequence, fee)
     {
         setAsset(asset);
         setAsset2(asset2);
-        setTradingFee(tradingFee);
     }
 
     /**
@@ -156,13 +221,35 @@ public:
     }
 
     /**
-     * @brief Set sfTradingFee (SoeRequired)
+     * @brief Set sfTradingFee (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     AMMVoteBuilder&
     setTradingFee(std::decay_t<typename SF_UINT16::type::value_type> const& value)
     {
         object_[sfTradingFee] = value;
+        return *this;
+    }
+
+    /**
+     * @brief Set sfCurveType (SoeOptional)
+     * @return Reference to this builder for method chaining.
+     */
+    AMMVoteBuilder&
+    setCurveType(std::decay_t<typename SF_UINT8::type::value_type> const& value)
+    {
+        object_[sfCurveType] = value;
+        return *this;
+    }
+
+    /**
+     * @brief Set sfAmplification (SoeOptional)
+     * @return Reference to this builder for method chaining.
+     */
+    AMMVoteBuilder&
+    setAmplification(std::decay_t<typename SF_UINT32::type::value_type> const& value)
+    {
+        object_[sfAmplification] = value;
         return *this;
     }
 

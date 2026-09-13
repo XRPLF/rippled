@@ -1306,6 +1306,7 @@ public:
              .minParams = 1,
              .maxParams = 8},
             {.name = "amm_info", .parse = &RPCParser::parseAsIs, .minParams = 1, .maxParams = 2},
+            {.name = "amm_ticks", .parse = &RPCParser::parseAsIs, .minParams = 1, .maxParams = 2},
             {.name = "vault_info", .parse = &RPCParser::parseVault, .minParams = 1, .maxParams = 2},
             {.name = "book_changes",
              .parse = &RPCParser::parseLedgerId,

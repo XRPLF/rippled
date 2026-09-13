@@ -32,17 +32,21 @@ TEST(TransactionsAMMVoteTests, BuilderSettersRoundTrip)
     auto const assetValue = canonical_ISSUE();
     auto const asset2Value = canonical_ISSUE();
     auto const tradingFeeValue = canonical_UINT16();
+    auto const curveTypeValue = canonical_UINT8();
+    auto const amplificationValue = canonical_UINT32();
 
     AMMVoteBuilder builder{
         accountValue,
         assetValue,
         asset2Value,
-        tradingFeeValue,
         sequenceValue,
         feeValue
     };
 
     // Set optional fields
+    builder.setTradingFee(tradingFeeValue);
+    builder.setCurveType(curveTypeValue);
+    builder.setAmplification(amplificationValue);
 
     auto tx = builder.build(publicKey, secretKey);
 
@@ -71,13 +75,31 @@ TEST(TransactionsAMMVoteTests, BuilderSettersRoundTrip)
         expectEqualField(expected, actual, "sfAsset2");
     }
 
+    // Verify optional fields
     {
         auto const& expected = tradingFeeValue;
-        auto const actual = tx.getTradingFee();
-        expectEqualField(expected, actual, "sfTradingFee");
+        auto const actualOpt = tx.getTradingFee();
+        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfTradingFee should be present";
+        expectEqualField(expected, *actualOpt, "sfTradingFee");
+        EXPECT_TRUE(tx.hasTradingFee());
     }
 
-    // Verify optional fields
+    {
+        auto const& expected = curveTypeValue;
+        auto const actualOpt = tx.getCurveType();
+        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfCurveType should be present";
+        expectEqualField(expected, *actualOpt, "sfCurveType");
+        EXPECT_TRUE(tx.hasCurveType());
+    }
+
+    {
+        auto const& expected = amplificationValue;
+        auto const actualOpt = tx.getAmplification();
+        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfAmplification should be present";
+        expectEqualField(expected, *actualOpt, "sfAmplification");
+        EXPECT_TRUE(tx.hasAmplification());
+    }
+
 }
 
 // 2 & 4) Start from an STTx, construct a builder from it, build a new wrapper,
@@ -97,17 +119,21 @@ TEST(TransactionsAMMVoteTests, BuilderFromStTxRoundTrip)
     auto const assetValue = canonical_ISSUE();
     auto const asset2Value = canonical_ISSUE();
     auto const tradingFeeValue = canonical_UINT16();
+    auto const curveTypeValue = canonical_UINT8();
+    auto const amplificationValue = canonical_UINT32();
 
     // Build an initial transaction
     AMMVoteBuilder initialBuilder{
         accountValue,
         assetValue,
         asset2Value,
-        tradingFeeValue,
         sequenceValue,
         feeValue
     };
 
+    initialBuilder.setTradingFee(tradingFeeValue);
+    initialBuilder.setCurveType(curveTypeValue);
+    initialBuilder.setAmplification(amplificationValue);
 
     auto initialTx = initialBuilder.build(publicKey, secretKey);
 
@@ -137,13 +163,28 @@ TEST(TransactionsAMMVoteTests, BuilderFromStTxRoundTrip)
         expectEqualField(expected, actual, "sfAsset2");
     }
 
+    // Verify optional fields
     {
         auto const& expected = tradingFeeValue;
-        auto const actual = rebuiltTx.getTradingFee();
-        expectEqualField(expected, actual, "sfTradingFee");
+        auto const actualOpt = rebuiltTx.getTradingFee();
+        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfTradingFee should be present";
+        expectEqualField(expected, *actualOpt, "sfTradingFee");
     }
 
-    // Verify optional fields
+    {
+        auto const& expected = curveTypeValue;
+        auto const actualOpt = rebuiltTx.getCurveType();
+        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfCurveType should be present";
+        expectEqualField(expected, *actualOpt, "sfCurveType");
+    }
+
+    {
+        auto const& expected = amplificationValue;
+        auto const actualOpt = rebuiltTx.getAmplification();
+        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfAmplification should be present";
+        expectEqualField(expected, *actualOpt, "sfAmplification");
+    }
+
 }
 
 // 3) Verify wrapper throws when constructed from wrong transaction type.
@@ -174,5 +215,41 @@ TEST(TransactionsAMMVoteTests, BuilderThrowsOnWrongTxType)
     EXPECT_THROW(AMMVoteBuilder{wrongTx.getSTTx()}, std::runtime_error);
 }
 
+// 5) Build with only required fields and verify optional fields return nullopt.
+TEST(TransactionsAMMVoteTests, OptionalFieldsReturnNullopt)
+{
+    // Generate a deterministic keypair for signing
+    auto const [publicKey, secretKey] =
+        generateKeyPair(KeyType::Secp256k1, generateSeed("testAMMVoteNullopt"));
+
+    // Common transaction fields
+    auto const accountValue = calcAccountID(publicKey);
+    std::uint32_t const sequenceValue = 3;
+    auto const feeValue = canonical_AMOUNT();
+
+    // Transaction-specific required field values
+    auto const assetValue = canonical_ISSUE();
+    auto const asset2Value = canonical_ISSUE();
+
+    AMMVoteBuilder builder{
+        accountValue,
+        assetValue,
+        asset2Value,
+        sequenceValue,
+        feeValue
+    };
+
+    // Do NOT set optional fields
+
+    auto tx = builder.build(publicKey, secretKey);
+
+    // Verify optional fields are not present
+    EXPECT_FALSE(tx.hasTradingFee());
+    EXPECT_FALSE(tx.getTradingFee().has_value());
+    EXPECT_FALSE(tx.hasCurveType());
+    EXPECT_FALSE(tx.getCurveType().has_value());
+    EXPECT_FALSE(tx.hasAmplification());
+    EXPECT_FALSE(tx.getAmplification().has_value());
+}
 
 }

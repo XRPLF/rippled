@@ -157,3 +157,4 @@ XRPL_FEATURE(TokenIssuance,               Supported::No,  VoteBehavior::DefaultN
 XRPL_FEATURE(VaultContinuousAccrual,      Supported::Yes, VoteBehavior::DefaultNo)
 XRPL_FEATURE(CouponPayments,              Supported::Yes, VoteBehavior::DefaultNo)
 XRPL_FEATURE(ConfidentialVoting,          Supported::Yes, VoteBehavior::DefaultNo)
+XRPL_FEATURE(AMMCurves,                   Supported::Yes, VoteBehavior::DefaultNo)

@@ -50,6 +50,9 @@ public:
     [[nodiscard]] std::optional<key_type>
     succ(key_type const& key, std::optional<key_type> const& last = std::nullopt) const override;
 
+    [[nodiscard]] std::optional<key_type>
+    pred(key_type const& key, std::optional<key_type> const& first = std::nullopt) const override;
+
     [[nodiscard]] SLE::const_pointer
     read(Keylet const& k) const override;
 

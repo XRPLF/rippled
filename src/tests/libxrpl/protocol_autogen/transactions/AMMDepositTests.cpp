@@ -36,6 +36,10 @@ TEST(TransactionsAMMDepositTests, BuilderSettersRoundTrip)
     auto const ePriceValue = canonical_AMOUNT();
     auto const lPTokenOutValue = canonical_AMOUNT();
     auto const tradingFeeValue = canonical_UINT16();
+    auto const curveTypeValue = canonical_UINT8();
+    auto const tickLowerValue = canonical_INT32();
+    auto const tickUpperValue = canonical_INT32();
+    auto const binIDValue = canonical_INT32();
 
     AMMDepositBuilder builder{
         accountValue,
@@ -51,6 +55,10 @@ TEST(TransactionsAMMDepositTests, BuilderSettersRoundTrip)
     builder.setEPrice(ePriceValue);
     builder.setLPTokenOut(lPTokenOutValue);
     builder.setTradingFee(tradingFeeValue);
+    builder.setCurveType(curveTypeValue);
+    builder.setTickLower(tickLowerValue);
+    builder.setTickUpper(tickUpperValue);
+    builder.setBinID(binIDValue);
 
     auto tx = builder.build(publicKey, secretKey);
 
@@ -120,6 +128,38 @@ TEST(TransactionsAMMDepositTests, BuilderSettersRoundTrip)
         EXPECT_TRUE(tx.hasTradingFee());
     }
 
+    {
+        auto const& expected = curveTypeValue;
+        auto const actualOpt = tx.getCurveType();
+        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfCurveType should be present";
+        expectEqualField(expected, *actualOpt, "sfCurveType");
+        EXPECT_TRUE(tx.hasCurveType());
+    }
+
+    {
+        auto const& expected = tickLowerValue;
+        auto const actualOpt = tx.getTickLower();
+        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfTickLower should be present";
+        expectEqualField(expected, *actualOpt, "sfTickLower");
+        EXPECT_TRUE(tx.hasTickLower());
+    }
+
+    {
+        auto const& expected = tickUpperValue;
+        auto const actualOpt = tx.getTickUpper();
+        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfTickUpper should be present";
+        expectEqualField(expected, *actualOpt, "sfTickUpper");
+        EXPECT_TRUE(tx.hasTickUpper());
+    }
+
+    {
+        auto const& expected = binIDValue;
+        auto const actualOpt = tx.getBinID();
+        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfBinID should be present";
+        expectEqualField(expected, *actualOpt, "sfBinID");
+        EXPECT_TRUE(tx.hasBinID());
+    }
+
 }
 
 // 2 & 4) Start from an STTx, construct a builder from it, build a new wrapper,
@@ -143,6 +183,10 @@ TEST(TransactionsAMMDepositTests, BuilderFromStTxRoundTrip)
     auto const ePriceValue = canonical_AMOUNT();
     auto const lPTokenOutValue = canonical_AMOUNT();
     auto const tradingFeeValue = canonical_UINT16();
+    auto const curveTypeValue = canonical_UINT8();
+    auto const tickLowerValue = canonical_INT32();
+    auto const tickUpperValue = canonical_INT32();
+    auto const binIDValue = canonical_INT32();
 
     // Build an initial transaction
     AMMDepositBuilder initialBuilder{
@@ -158,6 +202,10 @@ TEST(TransactionsAMMDepositTests, BuilderFromStTxRoundTrip)
     initialBuilder.setEPrice(ePriceValue);
     initialBuilder.setLPTokenOut(lPTokenOutValue);
     initialBuilder.setTradingFee(tradingFeeValue);
+    initialBuilder.setCurveType(curveTypeValue);
+    initialBuilder.setTickLower(tickLowerValue);
+    initialBuilder.setTickUpper(tickUpperValue);
+    initialBuilder.setBinID(binIDValue);
 
     auto initialTx = initialBuilder.build(publicKey, secretKey);
 
@@ -221,6 +269,34 @@ TEST(TransactionsAMMDepositTests, BuilderFromStTxRoundTrip)
         auto const actualOpt = rebuiltTx.getTradingFee();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfTradingFee should be present";
         expectEqualField(expected, *actualOpt, "sfTradingFee");
+    }
+
+    {
+        auto const& expected = curveTypeValue;
+        auto const actualOpt = rebuiltTx.getCurveType();
+        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfCurveType should be present";
+        expectEqualField(expected, *actualOpt, "sfCurveType");
+    }
+
+    {
+        auto const& expected = tickLowerValue;
+        auto const actualOpt = rebuiltTx.getTickLower();
+        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfTickLower should be present";
+        expectEqualField(expected, *actualOpt, "sfTickLower");
+    }
+
+    {
+        auto const& expected = tickUpperValue;
+        auto const actualOpt = rebuiltTx.getTickUpper();
+        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfTickUpper should be present";
+        expectEqualField(expected, *actualOpt, "sfTickUpper");
+    }
+
+    {
+        auto const& expected = binIDValue;
+        auto const actualOpt = rebuiltTx.getBinID();
+        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfBinID should be present";
+        expectEqualField(expected, *actualOpt, "sfBinID");
     }
 
 }
@@ -292,6 +368,14 @@ TEST(TransactionsAMMDepositTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(tx.getLPTokenOut().has_value());
     EXPECT_FALSE(tx.hasTradingFee());
     EXPECT_FALSE(tx.getTradingFee().has_value());
+    EXPECT_FALSE(tx.hasCurveType());
+    EXPECT_FALSE(tx.getCurveType().has_value());
+    EXPECT_FALSE(tx.hasTickLower());
+    EXPECT_FALSE(tx.getTickLower().has_value());
+    EXPECT_FALSE(tx.hasTickUpper());
+    EXPECT_FALSE(tx.getTickUpper().has_value());
+    EXPECT_FALSE(tx.hasBinID());
+    EXPECT_FALSE(tx.getBinID().has_value());
 }
 
 }

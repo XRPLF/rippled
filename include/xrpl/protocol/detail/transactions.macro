@@ -374,6 +374,7 @@ TRANSACTION(ttAMM_CLAWBACK, 31, AMMClawback,
     {sfAsset, SoeRequired, SoeMptSupported},
     {sfAsset2, SoeRequired, SoeMptSupported},
     {sfAmount, SoeOptional, SoeMptSupported},
+    {sfCurveType, SoeOptional},
 }))
 
 /** This transaction type creates an AMM instance */
@@ -390,6 +391,10 @@ TRANSACTION(ttAMM_CREATE, 35, AMMCreate,
     {sfAmount, SoeRequired, SoeMptSupported},
     {sfAmount2, SoeRequired, SoeMptSupported},
     {sfTradingFee, SoeRequired},
+    {sfCurveType, SoeOptional},
+    {sfFeeTier, SoeOptional},
+    {sfAmplification, SoeOptional},
+    {sfBinStep, SoeOptional},
 }))
 
 /** This transaction type deposits into an AMM instance */
@@ -406,6 +411,10 @@ TRANSACTION(ttAMM_DEPOSIT, 36, AMMDeposit,
     {sfEPrice, SoeOptional},
     {sfLPTokenOut, SoeOptional},
     {sfTradingFee, SoeOptional},
+    {sfCurveType, SoeOptional},
+    {sfTickLower, SoeOptional},
+    {sfTickUpper, SoeOptional},
+    {sfBinID, SoeOptional},
 }))
 
 /** This transaction type withdraws from an AMM instance */
@@ -425,6 +434,11 @@ TRANSACTION(ttAMM_WITHDRAW, 37, AMMWithdraw,
     {sfAmount2, SoeOptional, SoeMptSupported},
     {sfEPrice, SoeOptional},
     {sfLPTokenIn, SoeOptional},
+    {sfCurveType, SoeOptional},
+    {sfPositionID, SoeOptional},
+    {sfPositionLiquidity, SoeOptional},
+    {sfBinID, SoeOptional},
+    {sfShares, SoeOptional},
 }))
 
 /** This transaction type votes for the trading fee */
@@ -436,7 +450,9 @@ TRANSACTION(ttAMM_VOTE, 38, AMMVote,
     ({
     {sfAsset, SoeRequired, SoeMptSupported},
     {sfAsset2, SoeRequired, SoeMptSupported},
-    {sfTradingFee, SoeRequired},
+    {sfTradingFee, SoeOptional},
+    {sfCurveType, SoeOptional},
+    {sfAmplification, SoeOptional},
 }))
 
 /** This transaction type bids for the auction slot */
@@ -448,6 +464,7 @@ TRANSACTION(ttAMM_BID, 39, AMMBid,
     ({
     {sfAsset, SoeRequired, SoeMptSupported},
     {sfAsset2, SoeRequired, SoeMptSupported},
+    {sfCurveType, SoeOptional},
     {sfBidMin, SoeOptional},
     {sfBidMax, SoeOptional},
     {sfAuthAccounts, SoeOptional},
@@ -466,6 +483,7 @@ TRANSACTION(ttAMM_DELETE, 40, AMMDelete,
     ({
     {sfAsset, SoeRequired, SoeMptSupported},
     {sfAsset2, SoeRequired, SoeMptSupported},
+    {sfCurveType, SoeOptional},
 }))
 
 /** This transactions creates a crosschain sequence number */
@@ -1450,4 +1468,33 @@ TRANSACTION(ttBALLOT_DELETE, 116, BallotDelete,
     ({.amendment = featureConfidentialVoting}),
     ({
     {sfBallotID, SoeRequired},
+}))
+TRANSACTION(ttAMM_COLLECT_FEES, 117, AMMCollectFees,
+    ({.delegable = Delegation::Delegable, .amendment = featureAMMCurves}),
+    ({
+    {sfAsset, SoeRequired, SoeMptSupported},
+    {sfAsset2, SoeRequired, SoeMptSupported},
+    {sfCurveType, SoeOptional},
+    {sfPositionID, SoeOptional},
+    {sfBinID, SoeOptional},
+}))
+TRANSACTION(ttAMM_POSITION_TRANSFER, 118, AMMPositionTransfer,
+    ({.delegable = Delegation::Delegable, .amendment = featureAMMCurves}),
+    ({
+    {sfDestination, SoeRequired},
+    {sfPositionID, SoeRequired},
+}))
+TRANSACTION(ttAMM_BIN_CREATE, 119, AMMBinCreate,
+    ({.delegable = Delegation::Delegable, .amendment = featureAMMCurves, .privileges = Privilege::CreateMptIssuance}),
+    ({
+    {sfAsset, SoeRequired, SoeMptSupported},
+    {sfAsset2, SoeRequired, SoeMptSupported},
+    {sfBinID, SoeRequired},
+}))
+TRANSACTION(ttAMM_BIN_DESTROY, 120, AMMBinDestroy,
+    ({.delegable = Delegation::Delegable, .amendment = featureAMMCurves, .privileges = Privilege::DestroyMptIssuance}),
+    ({
+    {sfAsset, SoeRequired, SoeMptSupported},
+    {sfAsset2, SoeRequired, SoeMptSupported},
+    {sfBinID, SoeRequired},
 }))

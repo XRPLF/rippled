@@ -117,6 +117,7 @@ transResults()
         MAKE_ERROR(tecBALLOT_NOT_OPEN,               "The ballot voting window has not opened yet."),
         MAKE_ERROR(tecBALLOT_EXISTS,                 "The issuance already has an open ballot."),
         MAKE_ERROR(tecBALLOT_BAD_OPTIONS,            "The vector does not match the ballot's option count."),
+        MAKE_ERROR(tecAMM_TICK_CAP_HIT,              "AMM swap hit the per-swap tick-crossing cap (defensive; not reachable via normal Payment routing)."),
 
         MAKE_ERROR(tefALREADY,                     "The exact transaction was already in this ledger."),
         MAKE_ERROR(tefBAD_ADD_AUTH,                "Not authorized to add account."),

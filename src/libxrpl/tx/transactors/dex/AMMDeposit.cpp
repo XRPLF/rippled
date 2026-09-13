@@ -5,8 +5,11 @@
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/Sandbox.h>
+#include <xrpl/ledger/helpers/AMMCurve.h>
 #include <xrpl/ledger/helpers/AMMHelpers.h>
+#include <xrpl/ledger/helpers/AMMTickMath.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
+#include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/ledger/helpers/MPTokenHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/AMMCore.h>
@@ -14,19 +17,24 @@
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/STNumber.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/Transactor.h>
+#include <xrpl/tx/transactors/token/MPTokenIssuanceCreate.h>
 
 #include <bit>
 #include <cstdint>
 #include <exception>
+#include <limits>
+#include <memory>
 #include <optional>
 #include <stdexcept>
 #include <utility>
@@ -171,6 +179,82 @@ AMMDeposit::preflight(PreflightContext const& ctx)
         return temBAD_FEE;
     }
 
+    auto const curveType = ctx.tx[~sfCurveType].value_or(std::uint8_t(CtConstantProduct));
+
+    if (curveType == CtConcentratedLiquidity)
+    {
+        if (!ctx.rules.enabled(featureAMMCurves))
+            return temDISABLED;
+
+        // CL deposits only support tfTwoAsset and tfSingleAsset
+        if ((flags & tfDepositSubTx) != tfTwoAsset && (flags & tfDepositSubTx) != tfSingleAsset)
+        {
+            JLOG(ctx.j.debug()) << "AMM Deposit: invalid flags for CL pool.";
+            return temMALFORMED;
+        }
+
+        auto const tickLower = ctx.tx[~sfTickLower];
+        auto const tickUpper = ctx.tx[~sfTickUpper];
+        if (!tickLower || !tickUpper)
+        {
+            JLOG(ctx.j.debug()) << "AMM Deposit: tick bounds required for CL pool.";
+            return temMALFORMED;
+        }
+        if (*tickLower >= *tickUpper)
+        {
+            JLOG(ctx.j.debug()) << "AMM Deposit: tickLower must be less than tickUpper.";
+            return temMALFORMED;
+        }
+        // Global tick-range bounds can be checked here without the pool
+        // SLE; per-pool alignment to sfTickSpacing is checked at apply
+        // time (it depends on the pool's fee tier).
+        if (*tickLower < minTick || *tickUpper > maxTick)
+        {
+            JLOG(ctx.j.debug()) << "AMM Deposit: tick out of global range.";
+            return temMALFORMED;
+        }
+    }
+    else if (curveType == CtBinned)
+    {
+        if (!ctx.rules.enabled(featureAMMCurves))
+            return temDISABLED;
+
+        // Binned deposits require tfTwoAsset (single-sided deferred).
+        if ((flags & tfDepositSubTx) != tfTwoAsset)
+        {
+            JLOG(ctx.j.debug()) << "AMM Deposit: binned requires tfTwoAsset.";
+            return temMALFORMED;
+        }
+
+        auto const binID = ctx.tx[~sfBinID];
+        if (!binID)
+        {
+            JLOG(ctx.j.debug()) << "AMM Deposit: BinID required for binned pool.";
+            return temMALFORMED;
+        }
+        if (*binID < minBinID || *binID > maxBinID)
+        {
+            JLOG(ctx.j.debug()) << "AMM Deposit: BinID out of bounds.";
+            return temMALFORMED;
+        }
+        if (ctx.tx.isFieldPresent(sfTickLower) || ctx.tx.isFieldPresent(sfTickUpper))
+        {
+            JLOG(ctx.j.debug()) << "AMM Deposit: tick fields not allowed for binned pool.";
+            return temMALFORMED;
+        }
+    }
+    else
+    {
+        // Non-CL/non-Binned pools must not have tick or bin fields
+        if (ctx.tx.isFieldPresent(sfTickLower) || ctx.tx.isFieldPresent(sfTickUpper) ||
+            ctx.tx.isFieldPresent(sfBinID))
+        {
+            JLOG(ctx.j.debug())
+                << "AMM Deposit: range/bin fields not allowed for non-CL/Binned pool.";
+            return temMALFORMED;
+        }
+    }
+
     return tesSUCCESS;
 }
 
@@ -179,7 +263,9 @@ AMMDeposit::preclaim(PreclaimContext const& ctx)
 {
     auto const accountID = ctx.tx[sfAccount];
 
-    auto const ammSle = ctx.view.read(keylet::amm(ctx.tx[sfAsset], ctx.tx[sfAsset2]));
+    auto const curveType = ctx.tx.isFieldPresent(sfCurveType) ? ctx.tx.getFieldU8(sfCurveType)
+                                                              : std::uint8_t(CtConstantProduct);
+    auto const ammSle = ctx.view.read(keylet::amm(ctx.tx[sfAsset], ctx.tx[sfAsset2], curveType));
     if (!ammSle)
     {
         JLOG(ctx.j.debug()) << "AMM Deposit: Invalid asset pair.";
@@ -211,15 +297,23 @@ AMMDeposit::preclaim(PreclaimContext const& ctx)
     }
     else
     {
-        if (lptAMMBalance == beast::kZero)
-            return tecAMM_EMPTY;
-        if (amountBalance <= beast::kZero || amount2Balance <= beast::kZero ||
-            lptAMMBalance < beast::kZero)
+        // CL and Binned pools have no fungible LP token supply —
+        // ownership is per-position / per-bin. LPTokenBalance is always
+        // zero for these curves; reserves grow from per-bin or
+        // per-position deposits, not from a synthetic LP share. Skip
+        // the AMM_EMPTY guard.
+        if (curveType != CtConcentratedLiquidity && curveType != CtBinned)
         {
-            // LCOV_EXCL_START
-            JLOG(ctx.j.debug()) << "AMM Deposit: reserves or tokens balance is zero.";
-            return tecINTERNAL;
-            // LCOV_EXCL_STOP
+            if (lptAMMBalance == beast::kZero)
+                return tecAMM_EMPTY;
+            if (amountBalance <= beast::kZero || amount2Balance <= beast::kZero ||
+                lptAMMBalance < beast::kZero)
+            {
+                // LCOV_EXCL_START
+                JLOG(ctx.j.debug()) << "AMM Deposit: reserves or tokens balance is zero.";
+                return tecINTERNAL;
+                // LCOV_EXCL_STOP
+            }
         }
     }
 
@@ -416,7 +510,9 @@ AMMDeposit::applyGuts(Sandbox& sb)
     auto const amount2 = ctx_.tx[~sfAmount2];
     auto const ePrice = ctx_.tx[~sfEPrice];
     auto const lpTokensDeposit = ctx_.tx[~sfLPTokenOut];
-    auto ammSle = sb.peek(keylet::amm(ctx_.tx[sfAsset], ctx_.tx[sfAsset2]));
+    auto const curveType = ctx_.tx.isFieldPresent(sfCurveType) ? ctx_.tx.getFieldU8(sfCurveType)
+                                                               : std::uint8_t(CtConstantProduct);
+    auto ammSle = sb.peek(keylet::amm(ctx_.tx[sfAsset], ctx_.tx[sfAsset2], curveType));
     if (!ammSle)
         return {tecINTERNAL, false};  // LCOV_EXCL_LINE
     auto const ammAccountID = (*ammSle)[sfAccount];
@@ -435,6 +531,410 @@ AMMDeposit::applyGuts(Sandbox& sb)
     auto const tfee = (lptAMMBalance == beast::kZero)
         ? ctx_.tx[~sfTradingFee].value_or(0)
         : getTradingFee(ctx_.view(), *ammSle, accountID_);
+
+    // Concentrated Liquidity deposits create positions
+    if (curveType == CtConcentratedLiquidity)
+    {
+        auto const tickLower = ctx_.tx[~sfTickLower];
+        auto const tickUpper = ctx_.tx[~sfTickUpper];
+        auto const subTxTypeCL = ctx_.tx.getFlags() & tfDepositSubTx;
+        auto const isSingleAsset = (subTxTypeCL & tfSingleAsset) != 0u;
+
+        if (!tickLower || !tickUpper)
+            return {temMALFORMED, false};
+        if (*tickLower >= *tickUpper)
+            return {temMALFORMED, false};
+
+        if (isSingleAsset)
+        {
+            if (!amount)
+                return {temMALFORMED, false};
+        }
+        else
+        {
+            if (!amount || !amount2)
+                return {temMALFORMED, false};
+        }
+
+        if (!ammSle->isFieldPresent(sfTickSpacing))
+            return {tecINTERNAL, false};
+
+        auto const tickSpacing = static_cast<std::int32_t>(ammSle->getFieldU16(sfTickSpacing));
+        if (!isValidTick(*tickLower, tickSpacing) || !isValidTick(*tickUpper, tickSpacing))
+            return {temMALFORMED, false};
+
+        auto const currentTick = ammSle->getFieldI32(sfCurrentTick);
+        auto const sqrtPriceCurrent = tickToSqrtPrice(currentTick);
+        auto const sqrtPriceLower = tickToSqrtPrice(*tickLower);
+        auto const sqrtPriceUpper = tickToSqrtPrice(*tickUpper);
+
+        // Determine which pool asset corresponds to Amount/Amount2
+        auto const asset1 = ctx_.tx[sfAsset];
+        auto const asset2 = ctx_.tx[sfAsset2];
+
+        Number liquidity;
+        STAmount depositAmt0;
+        STAmount depositAmt1;
+
+        if (currentTick < *tickLower)
+        {
+            // Only token0 needed
+            if (isSingleAsset && amount->asset() != asset1)
+                return {tecAMM_FAILED, false};
+            Number const amt0{*amount};
+            liquidity = amt0 * sqrtPriceLower * sqrtPriceUpper / (sqrtPriceUpper - sqrtPriceLower);
+            // For out-of-range, back-computation equals user amount
+            depositAmt0 = *amount;
+            depositAmt1 = STAmount{asset2, 0};
+        }
+        else if (currentTick >= *tickUpper)
+        {
+            // Only token1 needed
+            if (isSingleAsset)
+            {
+                if (amount->asset() != asset2)
+                    return {tecAMM_FAILED, false};
+                Number const amt1{*amount};
+                liquidity = amt1 / (sqrtPriceUpper - sqrtPriceLower);
+                depositAmt1 = *amount;
+            }
+            else
+            {
+                Number const amt1{*amount2};
+                liquidity = amt1 / (sqrtPriceUpper - sqrtPriceLower);
+                depositAmt1 = *amount2;
+            }
+            depositAmt0 = STAmount{asset1, 0};
+        }
+        else
+        {
+            // Both tokens needed — single asset not allowed in-range
+            if (isSingleAsset)
+                return {tecAMM_FAILED, false};
+
+            Number const amt0{*amount};
+            Number const amt1{*amount2};
+            auto const l0 =
+                amt0 * sqrtPriceCurrent * sqrtPriceUpper / (sqrtPriceUpper - sqrtPriceCurrent);
+            auto const l1 = amt1 / (sqrtPriceCurrent - sqrtPriceLower);
+            liquidity = std::min(l0, l1);
+            // The binding constraint's amount is fully used; the other
+            // is scaled by the ratio of liquidity values
+            if (l0 <= l1)
+            {
+                depositAmt0 = *amount;
+                auto const frac = l0 / l1;
+                depositAmt1 = getRoundedAsset(sb.rules(), *amount2, frac, IsDeposit::Yes);
+            }
+            else
+            {
+                depositAmt1 = *amount2;
+                auto const frac = l1 / l0;
+                depositAmt0 = getRoundedAsset(sb.rules(), *amount, frac, IsDeposit::Yes);
+            }
+        }
+
+        if (liquidity <= Number{0})
+            return {tecAMM_FAILED, false};
+
+        auto const int64Max = Number(std::numeric_limits<std::int64_t>::max());
+        if (liquidity > int64Max)
+            return {tecAMM_FAILED, false};
+
+        auto const liqU64 = static_cast<std::uint64_t>(static_cast<std::int64_t>(liquidity));
+
+        // Transfer only the actual computed amounts, not user maximums
+        if (depositAmt0 > beast::kZero)
+        {
+            if (auto const ter =
+                    accountSend(sb, accountID_, ammAccountID, depositAmt0, ctx_.journal);
+                !isTesSuccess(ter))
+                return {ter, false};
+        }
+        if (depositAmt1 > beast::kZero)
+        {
+            if (auto const ter =
+                    accountSend(sb, accountID_, ammAccountID, depositAmt1, ctx_.journal);
+                !isTesSuccess(ter))
+                return {ter, false};
+        }
+
+        auto const posKeylet =
+            keylet::ammPosition(ammSle->key(), accountID_, ctx_.tx.getSeqProxy().value());
+        auto posSle = std::make_shared<SLE>(posKeylet);
+        // Read the pool's current fee-growth globals so the new
+        // position/tick snapshots are seeded correctly. Without this,
+        // a new position would claim all historical fees accumulated
+        // in its range (per the v3 fee-growth-inside formula).
+        auto const fgg0 = Number{ammSle->getFieldNumber(sfFeeGrowthGlobal0)};
+        auto const fgg1 = Number{ammSle->getFieldNumber(sfFeeGrowthGlobal1)};
+
+        (*posSle)[sfAccount] = accountID_;
+        (*posSle)[sfAMMID] = ammSle->key();
+        posSle->setFieldI32(sfTickLower, *tickLower);
+        posSle->setFieldI32(sfTickUpper, *tickUpper);
+        posSle->setFieldU64(sfPositionLiquidity, liqU64);
+        // Initial fee-growth-inside snapshot must reflect the current
+        // value at deposit time. We compute feeGrowthInside the same
+        // way AMMCollectFees does (using the per-side tick outsides
+        // we're about to write), but at deposit time the position
+        // spans no swap history yet, so feeGrowthInside == 0 for any
+        // valid (lower, upper, current) configuration if we set the
+        // outsides per v3 convention below. Hence both lasts start at 0.
+        posSle->setFieldNumber(sfFeeGrowthInsideLast0, STNumber{sfFeeGrowthInsideLast0, Number{0}});
+        posSle->setFieldNumber(sfFeeGrowthInsideLast1, STNumber{sfFeeGrowthInsideLast1, Number{0}});
+        posSle->setFieldAmount(sfTokensOwed0, STAmount{asset1, 0});
+        posSle->setFieldAmount(sfTokensOwed1, STAmount{asset2, 0});
+        sb.insert(posSle);
+
+        auto const page =
+            sb.dirInsert(keylet::ownerDir(accountID_), posKeylet, describeOwnerDir(accountID_));
+        if (!page)
+            return {tecDIR_FULL, false};
+        (*posSle)[sfOwnerNode] = *page;
+        sb.update(posSle);
+
+        // Create or update tick entries for the position boundaries.
+        // Per Uniswap v3, when a tick is first initialised its
+        // feeGrowthOutside snapshot is taken under the convention that
+        // "all prior fee growth happened on the side currentTick is on
+        // now". So: if tick <= currentTick, all prior growth is below
+        // → feeGrowthOutside = feeGrowthGlobal. Else 0.
+        for (auto const tick : {*tickLower, *tickUpper})
+        {
+            auto const tickKeylet = keylet::ammTick(ammSle->key(), tick);
+            auto tickSle = sb.peek(tickKeylet);
+            bool const newlyInitialised = !tickSle;
+            if (newlyInitialised)
+            {
+                tickSle = std::make_shared<SLE>(tickKeylet);
+                (*tickSle)[sfAMMID] = ammSle->key();
+                tickSle->setFieldI32(sfTickIndex, tick);
+                tickSle->setFieldU64(sfLiquidityNet, 0);
+                tickSle->setFieldU64(sfLiquidityGross, 0);
+                bool const belowCurrent = tick <= currentTick;
+                tickSle->setFieldNumber(
+                    sfFeeGrowthOutside0,
+                    STNumber{sfFeeGrowthOutside0, belowCurrent ? fgg0 : Number{0}});
+                tickSle->setFieldNumber(
+                    sfFeeGrowthOutside1,
+                    STNumber{sfFeeGrowthOutside1, belowCurrent ? fgg1 : Number{0}});
+                tickSle->setFieldU64(sfOwnerNode, 0);
+                sb.insert(tickSle);
+                // Mirror the initialise into the tick bitmap so the
+                // bit-scan path in findNextTick can locate this tick
+                // without a SHAMap pred/succ descent.
+                if (auto const ter = setTickBitmap(sb, ammSle->key(), tick, ctx_.journal);
+                    !isTesSuccess(ter))
+                    return {ter, false};
+            }
+            auto gross = tickSle->getFieldU64(sfLiquidityGross);
+            gross += liqU64;
+            tickSle->setFieldU64(sfLiquidityGross, gross);
+            // liquidityNet: +liq at lower tick, -liq at upper tick
+            auto net = static_cast<std::int64_t>(tickSle->getFieldU64(sfLiquidityNet));
+            net += (tick == *tickLower) ? static_cast<std::int64_t>(liqU64)
+                                        : -static_cast<std::int64_t>(liqU64);
+            tickSle->setFieldU64(sfLiquidityNet, static_cast<std::uint64_t>(net));
+            sb.update(tickSle);
+        }
+
+        if (currentTick >= *tickLower && currentTick < *tickUpper)
+        {
+            auto activeLiq = ammSle->getFieldU64(sfActiveLiquidity);
+            activeLiq += liqU64;
+            ammSle->setFieldU64(sfActiveLiquidity, activeLiq);
+        }
+
+        // Track outstanding positions on the AMM SLE so AMMDelete can
+        // reject removal while obligations remain (tecHAS_OBLIGATIONS).
+        ammSle->setFieldU32(sfPositionCount, ammSle->getFieldU32(sfPositionCount) + 1);
+
+        increaseOwnerCount(sb, accountID_, std::nullopt, 1, ctx_.journal);
+        sb.update(ammSle);
+        return {tesSUCCESS, true};
+    }
+
+    // Binned deposits add reserves to a single bin SLE; per-LP claim is
+    // tracked via a ltAMM_BIN_HOLDING record (Phase 5 will migrate to
+    // MPT shares for native composability).
+    if (curveType == CtBinned)
+    {
+        auto const binIDOpt = ctx_.tx[~sfBinID];
+        if (!binIDOpt)
+            return {temMALFORMED, false};
+        auto const binID = *binIDOpt;
+        if (binID < minBinID || binID > maxBinID)
+            return {temMALFORMED, false};
+        if (!amount || !amount2)
+            return {temMALFORMED, false};
+
+        // Canonical asset ordering — sfAsset on the AMM SLE is the
+        // lex-smaller asset (asset0). The tx fields may be in either
+        // order; bin reserves are always stored as (asset0, asset1) in
+        // canonical order regardless of tx ordering.
+        auto const ammAsset0 = (*ammSle)[sfAsset];
+        bool const txInOrder = (amount->asset() == ammAsset0);
+        auto const deposit0 = txInOrder ? *amount : *amount2;
+        auto const deposit1 = txInOrder ? *amount2 : *amount;
+
+        // The bin must already exist — AMMBinCreate is responsible for
+        // provisioning bins (and their MPT issuances). This separates
+        // the MPT-create privilege from the deposit path so the latter
+        // stays under MayAuthorizeMpt.
+        auto const binKeylet = keylet::ammBin(ammSle->key(), binID);
+        auto binSle = sb.peek(binKeylet);
+        if (!binSle)
+        {
+            JLOG(j_.error()) << "AMM Deposit: bin " << binID
+                             << " not provisioned. Submit AMMBinCreate first.";
+            return {tecNO_ENTRY, false};
+        }
+
+        // Compute share allocation. First deposit seeds the bin and gets
+        // baseline shares == amount's numeric drops value. Subsequent
+        // deposits get proportional to existing outstanding shares.
+        auto const reserve0Before = binSle->getFieldAmount(sfReserve0);
+        auto const reserve1Before = binSle->getFieldAmount(sfReserve1);
+        auto const outstandingBefore = binSle->getFieldU64(sfOutstandingAmount);
+
+        std::uint64_t newShares = 0;
+        if (outstandingBefore == 0)
+        {
+            // First deposit: shares = sqrt(amount0 * amount1) (CP-style
+            // initial seeding, avoids gaming via lopsided deposits).
+            Number const product = Number{deposit0} * Number{deposit1};
+            if (product <= Number{0})
+                return {tecAMM_FAILED, false};
+            auto const seed = static_cast<std::int64_t>(root2(product));
+            if (seed <= 0)
+                return {tecAMM_FAILED, false};
+            newShares = static_cast<std::uint64_t>(seed);
+        }
+        else
+        {
+            // Proportional: newShares = (deposit0 / reserve0) * outstanding.
+            // Must match the asset1 side too: depositor must contribute
+            // both sides in the bin's current ratio or be rounded down.
+            auto const r0 = Number{reserve0Before};
+            auto const r1 = Number{reserve1Before};
+            if (r0 == Number{0} || r1 == Number{0})
+                return {tecINTERNAL, false};
+            auto const frac0 = Number{deposit0} / r0;
+            auto const frac1 = Number{deposit1} / r1;
+            // Use the smaller of the two fractions — proportional deposit
+            // is capped by the less-supplied side. This stops a depositor
+            // from claiming shares against the larger side alone.
+            auto const frac = std::min(frac0, frac1);
+            auto const proportional = frac * Number{static_cast<std::int64_t>(outstandingBefore)};
+            if (proportional <= Number{0})
+                return {tecAMM_FAILED, false};
+            newShares = static_cast<std::uint64_t>(static_cast<std::int64_t>(proportional));
+        }
+
+        // Transfer assets from LP to AMM (use canonical-order amounts).
+        if (auto const ter = accountSend(sb, accountID_, ammAccountID, deposit0, ctx_.journal);
+            !isTesSuccess(ter))
+            return {ter, false};
+        if (auto const ter = accountSend(sb, accountID_, ammAccountID, deposit1, ctx_.journal);
+            !isTesSuccess(ter))
+            return {ter, false};
+
+        // Mint the bin's MPT shares to the LP. AMMBinCreate provisioned
+        // the issuance; here we ensure the LP holds it (authorize via
+        // the reserve-exempt helper) then increment their balance +
+        // the issuance's OutstandingAmount in lock-step.
+        auto const mptIssuanceID = binSle->getFieldH192(sfMPTokenIssuanceID);
+        if (!sb.exists(keylet::mptoken(mptIssuanceID, accountID_)))
+        {
+            if (auto const err = authorizeAMMIssuedMPT(
+                    ApplyViewContext{sb, ctx_.tx},
+                    preFeeBalance_,
+                    mptIssuanceID,
+                    accountID_,
+                    ctx_.journal);
+                !isTesSuccess(err))
+                return {err, false};
+        }
+        {
+            auto mptokenSle = sb.peek(keylet::mptoken(mptIssuanceID, accountID_));
+            auto mptIssuanceSle = sb.peek(keylet::mptokenIssuance(mptIssuanceID));
+            if (!mptokenSle || !mptIssuanceSle)
+                return {tecINTERNAL, false};
+            auto const prevHolder = mptokenSle->getFieldU64(sfMPTAmount);
+            (*mptokenSle)[sfMPTAmount] = prevHolder + newShares;
+            sb.update(mptokenSle);
+            auto const prevOut = mptIssuanceSle->getFieldU64(sfOutstandingAmount);
+            (*mptIssuanceSle)[sfOutstandingAmount] = prevOut + newShares;
+            sb.update(mptIssuanceSle);
+        }
+
+        // Update bin reserves and outstanding shares.
+        binSle->setFieldAmount(sfReserve0, reserve0Before + deposit0);
+        binSle->setFieldAmount(sfReserve1, reserve1Before + deposit1);
+        binSle->setFieldU64(sfOutstandingAmount, outstandingBefore + newShares);
+        sb.update(binSle);
+
+        // Find or create LP's snapshot record. The MPT balance (just
+        // minted above) is the authoritative share quantity; this SLE
+        // only stores the feeGrowth snapshot used by AMMCollectFees.
+        // The reserve-exemption rule applies here too: holding-SLE
+        // creation increments owner count, so we adjust -1 to keep
+        // bin participation reserve-free.
+        auto const holdingKeylet = keylet::ammBinHolding(ammSle->key(), accountID_, binID);
+        auto holdingSle = sb.peek(holdingKeylet);
+        Number const fg0Now = Number{binSle->getFieldNumber(sfFeeGrowthBin0)};
+        Number const fg1Now = Number{binSle->getFieldNumber(sfFeeGrowthBin1)};
+
+        if (!holdingSle)
+        {
+            holdingSle = std::make_shared<SLE>(holdingKeylet);
+            (*holdingSle)[sfAccount] = accountID_;
+            (*holdingSle)[sfAMMID] = ammSle->key();
+            holdingSle->setFieldI32(sfBinID, binID);
+            holdingSle->setFieldNumber(
+                sfFeeGrowthInsideLast0, STNumber{sfFeeGrowthInsideLast0, fg0Now});
+            holdingSle->setFieldNumber(
+                sfFeeGrowthInsideLast1, STNumber{sfFeeGrowthInsideLast1, fg1Now});
+            sb.insert(holdingSle);
+            auto const page = sb.dirInsert(
+                keylet::ownerDir(accountID_), holdingKeylet, describeOwnerDir(accountID_));
+            if (!page)
+                return {tecDIR_FULL, false};
+            (*holdingSle)[sfOwnerNode] = *page;
+            increaseOwnerCount(sb, accountID_, std::nullopt, 1, ctx_.journal);
+            // Snapshot SLE is reserve-exempt — same rationale as the
+            // AMM-issued MPT it tracks (both exist purely to support
+            // AMM accounting). Helper compensates the owner-count++.
+            exemptAMMOwnedSLE(sb, accountID_, ctx_.journal);
+        }
+        else
+        {
+            // Re-deposit: advance snapshot. Any fees accrued before
+            // this deposit are forfeited — LP should collect first.
+            holdingSle->setFieldNumber(
+                sfFeeGrowthInsideLast0, STNumber{sfFeeGrowthInsideLast0, fg0Now});
+            holdingSle->setFieldNumber(
+                sfFeeGrowthInsideLast1, STNumber{sfFeeGrowthInsideLast1, fg1Now});
+        }
+        sb.update(holdingSle);
+
+        // If this is the first time the bin gets shares (outstanding
+        // was zero) AND the AMM's current activeBinID points at an
+        // empty/non-existent bin, move activeBinID here so the
+        // invariant's "active bin has liquidity" check passes.
+        if (outstandingBefore == 0)
+        {
+            auto const activeNow = ammSle->getFieldI32(sfActiveBinID);
+            auto const activeBinSle = sb.read(keylet::ammBin(ammSle->key(), activeNow));
+            bool const activeIsEmpty =
+                !activeBinSle || activeBinSle->getFieldU64(sfOutstandingAmount) == 0;
+            if (activeIsEmpty)
+                ammSle->setFieldI32(sfActiveBinID, binID);
+        }
+        sb.update(ammSle);
+        return {tesSUCCESS, true};
+    }
 
     auto const subTxType = ctx_.tx.getFlags() & tfDepositSubTx;
 

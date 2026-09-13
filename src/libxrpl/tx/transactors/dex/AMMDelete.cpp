@@ -4,6 +4,7 @@
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/ledger/Sandbox.h>
 #include <xrpl/ledger/helpers/AMMHelpers.h>
+#include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/protocol/AMMCore.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
@@ -14,6 +15,9 @@
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/Transactor.h>
+
+#include <cstdint>
+#include <memory>
 
 namespace xrpl {
 
@@ -36,7 +40,9 @@ AMMDelete::preflight(PreflightContext const& ctx)
 TER
 AMMDelete::preclaim(PreclaimContext const& ctx)
 {
-    auto const ammSle = ctx.view.read(keylet::amm(ctx.tx[sfAsset], ctx.tx[sfAsset2]));
+    auto const curveType = ctx.tx.isFieldPresent(sfCurveType) ? ctx.tx.getFieldU8(sfCurveType)
+                                                              : std::uint8_t(CtConstantProduct);
+    auto const ammSle = ctx.view.read(keylet::amm(ctx.tx[sfAsset], ctx.tx[sfAsset2], curveType));
     if (!ammSle)
     {
         JLOG(ctx.j.debug()) << "AMM Delete: Invalid asset pair.";
@@ -46,6 +52,36 @@ AMMDelete::preclaim(PreclaimContext const& ctx)
     auto const lpTokensBalance = (*ammSle)[sfLPTokenBalance];
     if (lpTokensBalance != beast::kZero)
         return tecAMM_NOT_EMPTY;
+
+    // ConcentratedLiquidity pools have no fungible LP token supply, so
+    // the LPTokenBalance check above is a no-op for them. Reject delete
+    // while any positions still reference the pool — otherwise the
+    // pool's outstanding ltAMM_POSITION and ltAMM_TICK SLEs (plus the
+    // asset balances on the AMM's trustlines that back them) would
+    // orphan.
+    if (curveType == CtConcentratedLiquidity &&
+        ammSle->getFieldU32(sfPositionCount) > 0)
+        return tecHAS_OBLIGATIONS;
+
+    // Binned pools: refuse delete while any bin SLE still exists. The
+    // bin SLEs own per-bin MPT issuance references; deleting the AMM
+    // without first running AMMBinDestroy on every bin would orphan
+    // issuance SLEs and leave LPs holding MPTokens against a deleted
+    // issuer account. Caller must AMMWithdraw all positions, then
+    // AMMBinDestroy each bin, then AMMDelete.
+    if (curveType == CtBinned)
+    {
+        bool anyBin = false;
+        forEachItem(ctx.view, ammSle->getAccountID(sfAccount),
+            [&](std::shared_ptr<SLE const> const& s) {
+                if (anyBin)
+                    return;
+                if (s && s->getType() == ltAMM_BIN)
+                    anyBin = true;
+            });
+        if (anyBin)
+            return tecHAS_OBLIGATIONS;
+    }
 
     return tesSUCCESS;
 }
@@ -57,7 +93,9 @@ AMMDelete::doApply()
     // as we go on processing transactions.
     Sandbox sb(&ctx_.view());
 
-    auto const ter = deleteAMMAccount(sb, ctx_.tx[sfAsset], ctx_.tx[sfAsset2], j_);
+    auto const curveType =
+        ctx_.tx.isFieldPresent(sfCurveType) ? ctx_.tx.getFieldU8(sfCurveType) : std::uint8_t(0);
+    auto const ter = deleteAMMAccount(sb, ctx_.tx[sfAsset], ctx_.tx[sfAsset2], j_, curveType);
     if (isTesSuccess(ter) || ter == tecINCOMPLETE)
         sb.apply(ctx_.rawView());
 

@@ -6,8 +6,11 @@
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/Sandbox.h>
+#include <xrpl/ledger/helpers/AMMCurve.h>
 #include <xrpl/ledger/helpers/AMMHelpers.h>
+#include <xrpl/ledger/helpers/AMMTickMath.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
+#include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/ledger/helpers/MPTokenHelpers.h>
 #include <xrpl/ledger/helpers/RippleStateHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
@@ -24,6 +27,7 @@
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/STNumber.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
@@ -78,7 +82,12 @@ AMMWithdraw::preflight(PreflightContext const& ctx)
     //   Amount and Amount2
     //   Amount and LPTokens
     //   Amount and EPrice
-    if (std::popcount(flags & tfWithdrawSubTx) != 1)
+    // Binned partial-withdraw uses sfShares with no sub-tx flag —
+    // exempt this case from the popcount==1 check that other curves use.
+    auto const earlyCurveType = ctx.tx[~sfCurveType].value_or(std::uint8_t(CtConstantProduct));
+    bool const isBinnedPartial = (earlyCurveType == CtBinned) && ctx.tx.isFieldPresent(sfShares) &&
+        ((flags & tfWithdrawSubTx) == 0);
+    if (!isBinnedPartial && std::popcount(flags & tfWithdrawSubTx) != 1)
     {
         JLOG(ctx.j.debug()) << "AMM Withdraw: invalid flags.";
         return temMALFORMED;
@@ -166,6 +175,89 @@ AMMWithdraw::preflight(PreflightContext const& ctx)
         }
     }
 
+    auto const curveType = ctx.tx[~sfCurveType].value_or(std::uint8_t(CtConstantProduct));
+
+    if (curveType == CtConcentratedLiquidity)
+    {
+        if (!ctx.rules.enabled(featureAMMCurves))
+            return temDISABLED;
+
+        // CL withdrawals only support tfWithdrawAll
+        if ((flags & tfWithdrawSubTx) != tfWithdrawAll)
+        {
+            JLOG(ctx.j.debug()) << "AMM Withdraw: invalid flags for CL pool.";
+            return temMALFORMED;
+        }
+
+        // Position ID is required for CL withdrawal
+        if (!ctx.tx.isFieldPresent(sfPositionID))
+        {
+            JLOG(ctx.j.debug()) << "AMM Withdraw: position ID required for CL pool.";
+            return temMALFORMED;
+        }
+
+        // CL withdrawal must not have amount/ePrice/lpTokens fields
+        if (amount || amount2 || ePrice || lpTokens)
+        {
+            JLOG(ctx.j.debug()) << "AMM Withdraw: amount fields not allowed for CL.";
+            return temMALFORMED;
+        }
+    }
+    else if (curveType == CtBinned)
+    {
+        if (!ctx.rules.enabled(featureAMMCurves))
+            return temDISABLED;
+
+        // Binned withdrawals: tfWithdrawAll (burn all) OR sfShares
+        // (partial burn — specifies how many shares to redeem).
+        bool const isAll = (flags & tfWithdrawSubTx) == tfWithdrawAll;
+        bool const hasShares = ctx.tx.isFieldPresent(sfShares);
+        if (isAll == hasShares)
+        {
+            JLOG(ctx.j.debug())
+                << "AMM Withdraw: binned needs exactly one of tfWithdrawAll or sfShares.";
+            return temMALFORMED;
+        }
+        if (isAll && (flags & tfWithdrawSubTx) != tfWithdrawAll)
+        {
+            JLOG(ctx.j.debug()) << "AMM Withdraw: invalid flags for binned pool.";
+            return temMALFORMED;
+        }
+
+        if (!ctx.tx.isFieldPresent(sfBinID))
+        {
+            JLOG(ctx.j.debug()) << "AMM Withdraw: BinID required for binned pool.";
+            return temMALFORMED;
+        }
+        if (amount || amount2 || ePrice || lpTokens)
+        {
+            JLOG(ctx.j.debug()) << "AMM Withdraw: amount fields not allowed for binned.";
+            return temMALFORMED;
+        }
+        if (hasShares && ctx.tx.getFieldU64(sfShares) == 0)
+        {
+            JLOG(ctx.j.debug()) << "AMM Withdraw: Shares must be non-zero.";
+            return temMALFORMED;
+        }
+        auto const binID = ctx.tx.getFieldI32(sfBinID);
+        if (binID < minBinID || binID > maxBinID)
+        {
+            JLOG(ctx.j.debug()) << "AMM Withdraw: BinID out of bounds.";
+            return temMALFORMED;
+        }
+    }
+    else
+    {
+        // Non-CL/non-Binned pools must not have position or bin fields
+        if (ctx.tx.isFieldPresent(sfPositionID) || ctx.tx.isFieldPresent(sfPositionLiquidity) ||
+            ctx.tx.isFieldPresent(sfBinID))
+        {
+            JLOG(ctx.j.debug()) << "AMM Withdraw: position/bin fields not allowed "
+                                   "for non-CL/Binned pool.";
+            return temMALFORMED;
+        }
+    }
+
     return tesSUCCESS;
 }
 
@@ -185,7 +277,9 @@ AMMWithdraw::preclaim(PreclaimContext const& ctx)
 {
     auto const accountID = ctx.tx[sfAccount];
 
-    auto const ammSle = ctx.view.read(keylet::amm(ctx.tx[sfAsset], ctx.tx[sfAsset2]));
+    auto const curveType = ctx.tx.isFieldPresent(sfCurveType) ? ctx.tx.getFieldU8(sfCurveType)
+                                                              : std::uint8_t(CtConstantProduct);
+    auto const ammSle = ctx.view.read(keylet::amm(ctx.tx[sfAsset], ctx.tx[sfAsset2], curveType));
     if (!ammSle)
     {
         JLOG(ctx.j.debug()) << "AMM Withdraw: Invalid asset pair.";
@@ -206,15 +300,18 @@ AMMWithdraw::preclaim(PreclaimContext const& ctx)
     if (!expected)
         return expected.error();
     auto const [amountBalance, amount2Balance, lptAMMBalance] = *expected;
-    if (lptAMMBalance == beast::kZero)
-        return tecAMM_EMPTY;
-    if (amountBalance <= beast::kZero || amount2Balance <= beast::kZero ||
-        lptAMMBalance < beast::kZero)
+    if (curveType != CtConcentratedLiquidity && curveType != CtBinned)
     {
-        // LCOV_EXCL_START
-        JLOG(ctx.j.debug()) << "AMM Withdraw: reserves or tokens balance is zero.";
-        return tecINTERNAL;
-        // LCOV_EXCL_STOP
+        if (lptAMMBalance == beast::kZero)
+            return tecAMM_EMPTY;
+        if (amountBalance <= beast::kZero || amount2Balance <= beast::kZero ||
+            lptAMMBalance < beast::kZero)
+        {
+            // LCOV_EXCL_START
+            JLOG(ctx.j.debug()) << "AMM Withdraw: reserves or tokens balance is zero.";
+            return tecINTERNAL;
+            // LCOV_EXCL_STOP
+        }
     }
 
     auto const ammAccountID = ammSle->getAccountID(sfAccount);
@@ -277,39 +374,88 @@ AMMWithdraw::preclaim(PreclaimContext const& ctx)
     if (auto const ter = checkAmount(amount2, amount2Balance))
         return ter;
 
-    auto const lpTokens = ammLPHolds(ctx.view, *ammSle, ctx.tx[sfAccount], ctx.j);
-    auto const lpTokensWithdraw = tokensWithdraw(lpTokens, ctx.tx[~sfLPTokenIn], ctx.tx.getFlags());
-
-    if (lpTokens <= beast::kZero)
+    if (curveType == CtConcentratedLiquidity)
     {
-        JLOG(ctx.j.debug()) << "AMM Withdraw: tokens balance is zero.";
-        return tecAMM_BALANCE;
+        // Validate position exists and is owned by caller
+        auto const positionID = ctx.tx[sfPositionID];
+        auto const posSle = ctx.view.read(keylet::ammPosition(positionID));
+        if (!posSle)
+        {
+            JLOG(ctx.j.debug()) << "AMM Withdraw: position not found.";
+            return tecNO_ENTRY;
+        }
+        if ((*posSle)[sfAccount] != accountID)
+        {
+            JLOG(ctx.j.debug()) << "AMM Withdraw: not position owner.";
+            return tecNO_PERMISSION;
+        }
+        // Validate partial withdrawal amount
+        if (ctx.tx.isFieldPresent(sfPositionLiquidity))
+        {
+            auto const withdrawLiq = ctx.tx.getFieldU64(sfPositionLiquidity);
+            auto const posLiq = posSle->getFieldU64(sfPositionLiquidity);
+            if (withdrawLiq == 0 || withdrawLiq > posLiq)
+            {
+                JLOG(ctx.j.debug()) << "AMM Withdraw: invalid position liquidity.";
+                return temMALFORMED;
+            }
+        }
     }
-
-    if (lpTokensWithdraw && lpTokensWithdraw->asset() != lpTokens.asset())
+    else if (curveType == CtBinned)
     {
-        JLOG(ctx.j.debug()) << "AMM Withdraw: invalid LPTokens.";
-        return temBAD_AMM_TOKENS;
+        // Validate the bin exists and the LP holds at least one MPT
+        // share for it. MPT balance is authoritative; the snapshot SLE
+        // is auto-created on demand by AMMCollectFees so its absence
+        // here is not an error.
+        auto const binID = ctx.tx.getFieldI32(sfBinID);
+        auto const binSle = ctx.view.read(keylet::ammBin(ammSle->key(), binID));
+        if (!binSle)
+            return tecNO_ENTRY;
+        auto const mptId = binSle->getFieldH192(sfMPTokenIssuanceID);
+        auto const mptokenSle = ctx.view.read(keylet::mptoken(mptId, accountID));
+        if (!mptokenSle)
+            return tecNO_ENTRY;
+        if (mptokenSle->getFieldU64(sfMPTAmount) == 0)
+            return tecAMM_FAILED;
     }
-
-    if (lpTokensWithdraw && *lpTokensWithdraw > lpTokens)
+    else
     {
-        JLOG(ctx.j.debug()) << "AMM Withdraw: invalid tokens.";
-        return tecAMM_INVALID_TOKENS;
-    }
+        // LP token validation for non-CL/non-Binned pools
+        auto const lpTokens = ammLPHolds(ctx.view, *ammSle, ctx.tx[sfAccount], ctx.j);
+        auto const lpTokensWithdraw =
+            tokensWithdraw(lpTokens, ctx.tx[~sfLPTokenIn], ctx.tx.getFlags());
 
-    if (auto const ePrice = ctx.tx[~sfEPrice]; ePrice && ePrice->asset() != lpTokens.asset())
-    {
-        JLOG(ctx.j.debug()) << "AMM Withdraw: invalid EPrice.";
-        return temBAD_AMM_TOKENS;
-    }
+        if (lpTokens <= beast::kZero)
+        {
+            JLOG(ctx.j.debug()) << "AMM Withdraw: tokens balance is zero.";
+            return tecAMM_BALANCE;
+        }
 
-    if ((ctx.tx.getFlags() & (tfLPToken | tfWithdrawAll)) != 0u)
-    {
-        if (auto const ter = checkAmount(amountBalance, amountBalance))
-            return ter;
-        if (auto const ter = checkAmount(amount2Balance, amount2Balance))
-            return ter;
+        if (lpTokensWithdraw && lpTokensWithdraw->asset() != lpTokens.asset())
+        {
+            JLOG(ctx.j.debug()) << "AMM Withdraw: invalid LPTokens.";
+            return temBAD_AMM_TOKENS;
+        }
+
+        if (lpTokensWithdraw && *lpTokensWithdraw > lpTokens)
+        {
+            JLOG(ctx.j.debug()) << "AMM Withdraw: invalid tokens.";
+            return tecAMM_INVALID_TOKENS;
+        }
+
+        if (auto const ePrice = ctx.tx[~sfEPrice]; ePrice && ePrice->asset() != lpTokens.asset())
+        {
+            JLOG(ctx.j.debug()) << "AMM Withdraw: invalid EPrice.";
+            return temBAD_AMM_TOKENS;
+        }
+
+        if ((ctx.tx.getFlags() & (tfLPToken | tfWithdrawAll)) != 0u)
+        {
+            if (auto const ter = checkAmount(amountBalance, amountBalance))
+                return ter;
+            if (auto const ter = checkAmount(amount2Balance, amount2Balance))
+                return ter;
+        }
     }
 
     return tesSUCCESS;
@@ -340,23 +486,30 @@ AMMWithdraw::applyGuts(Sandbox& sb)
     auto const amount = ctx_.tx[~sfAmount];
     auto const amount2 = ctx_.tx[~sfAmount2];
     auto const ePrice = ctx_.tx[~sfEPrice];
-    auto ammSle = sb.peek(keylet::amm(ctx_.tx[sfAsset], ctx_.tx[sfAsset2]));
+    auto const curveType = ctx_.tx.isFieldPresent(sfCurveType) ? ctx_.tx.getFieldU8(sfCurveType)
+                                                               : std::uint8_t(CtConstantProduct);
+    auto ammSle = sb.peek(keylet::amm(ctx_.tx[sfAsset], ctx_.tx[sfAsset2], curveType));
     if (!ammSle)
         return {tecINTERNAL, false};  // LCOV_EXCL_LINE
     auto const ammAccountID = (*ammSle)[sfAccount];
     auto const accountSle = sb.read(keylet::account(ammAccountID));
     if (!accountSle)
         return {tecINTERNAL, false};  // LCOV_EXCL_LINE
-    auto const lpTokens = ammLPHolds(ctx_.view(), *ammSle, ctx_.tx[sfAccount], ctx_.journal);
-    auto const lpTokensWithdraw =
-        tokensWithdraw(lpTokens, ctx_.tx[~sfLPTokenIn], ctx_.tx.getFlags());
-
-    // Due to rounding, the LPTokenBalance of the last LP
-    // might not match the LP's trustline balance
-    if (sb.rules().enabled(fixAMMv1_1))
+    // CL and Binned pools don't use fungible LP tokens — skip LP token
+    // operations and go straight to position-based / bin-based withdrawal
+    if (curveType != CtConcentratedLiquidity && curveType != CtBinned)
     {
-        if (auto const res = verifyAndAdjustLPTokenBalance(sb, lpTokens, ammSle, accountID_); !res)
-            return {res.error(), false};
+        // Due to rounding, the LPTokenBalance of the last LP
+        // might not match the LP's trustline balance
+        if (sb.rules().enabled(fixAMMv1_1))
+        {
+            auto const lpTokensCheck =
+                ammLPHolds(ctx_.view(), *ammSle, ctx_.tx[sfAccount], ctx_.journal);
+            if (auto const res =
+                    verifyAndAdjustLPTokenBalance(sb, lpTokensCheck, ammSle, accountID_);
+                !res)
+                return {res.error(), false};
+        }
     }
 
     auto const tfee = getTradingFee(ctx_.view(), *ammSle, accountID_);
@@ -374,6 +527,436 @@ AMMWithdraw::applyGuts(Sandbox& sb)
     if (!expected)
         return {expected.error(), false};
     auto const [amountBalance, amount2Balance, lptAMMBalance] = *expected;
+
+    // Concentrated Liquidity withdrawals operate on positions
+    if (curveType == CtConcentratedLiquidity)
+    {
+        auto const positionID = ctx_.tx[sfPositionID];
+        auto posSle = sb.peek(keylet::ammPosition(positionID));
+        if (!posSle)
+            return {tecNO_ENTRY, false};
+
+        auto const currentTick = ammSle->getFieldI32(sfCurrentTick);
+        auto const tickLower = posSle->getFieldI32(sfTickLower);
+        auto const tickUpper = posSle->getFieldI32(sfTickUpper);
+        auto const posLiquidity = posSle->getFieldU64(sfPositionLiquidity);
+
+        // Determine withdrawal amount: partial or full
+        auto const isPartial = ctx_.tx.isFieldPresent(sfPositionLiquidity);
+        auto const withdrawLiq =
+            isPartial ? ctx_.tx.getFieldU64(sfPositionLiquidity) : posLiquidity;
+
+        if (withdrawLiq == 0)
+            return {tecAMM_FAILED, false};
+
+        auto const sqrtPriceCurrent = tickToSqrtPrice(currentTick);
+        auto const sqrtPriceLower = tickToSqrtPrice(tickLower);
+        auto const sqrtPriceUpper = tickToSqrtPrice(tickUpper);
+        Number const liq{static_cast<std::int64_t>(withdrawLiq)};
+
+        // Compute withdrawal amounts from position geometry
+        auto const asset1 = ctx_.tx[sfAsset];
+        auto const asset2 = ctx_.tx[sfAsset2];
+        STAmount withdrawAmt0;
+        STAmount withdrawAmt1;
+
+        if (currentTick < tickLower)
+        {
+            // Position is entirely token0
+            auto const frac =
+                liq * (sqrtPriceUpper - sqrtPriceLower) / (sqrtPriceLower * sqrtPriceUpper);
+            if (frac <= Number{0})
+                return {tecAMM_FAILED, false};
+            withdrawAmt0 = getRoundedAsset(
+                sb.rules(), amountBalance, frac / Number{amountBalance}, IsDeposit::No);
+            withdrawAmt1 = STAmount{asset2, 0};
+        }
+        else if (currentTick >= tickUpper)
+        {
+            // Position is entirely token1
+            auto const amt1 = liq * (sqrtPriceUpper - sqrtPriceLower);
+            if (amt1 <= Number{0})
+                return {tecAMM_FAILED, false};
+            withdrawAmt0 = STAmount{asset1, 0};
+            withdrawAmt1 = getRoundedAsset(
+                sb.rules(), amount2Balance, amt1 / Number{amount2Balance}, IsDeposit::No);
+        }
+        else
+        {
+            // Position spans current price — both tokens
+            auto const amt0Num =
+                liq * (sqrtPriceUpper - sqrtPriceCurrent) / (sqrtPriceCurrent * sqrtPriceUpper);
+            auto const amt1Num = liq * (sqrtPriceCurrent - sqrtPriceLower);
+            if (amt0Num <= Number{0} && amt1Num <= Number{0})
+                return {tecAMM_FAILED, false};
+            if (amt0Num > Number{0})
+            {
+                withdrawAmt0 = getRoundedAsset(
+                    sb.rules(), amountBalance, amt0Num / Number{amountBalance}, IsDeposit::No);
+            }
+            else
+            {
+                withdrawAmt0 = STAmount{asset1, 0};
+            }
+            if (amt1Num > Number{0})
+            {
+                withdrawAmt1 = getRoundedAsset(
+                    sb.rules(), amount2Balance, amt1Num / Number{amount2Balance}, IsDeposit::No);
+            }
+            else
+            {
+                withdrawAmt1 = STAmount{asset2, 0};
+            }
+        }
+
+        // Transfer withdrawal amounts from AMM to user
+        if (withdrawAmt0 > beast::kZero)
+        {
+            if (auto const ter = accountSend(
+                    sb,
+                    ammAccountID,
+                    accountID_,
+                    withdrawAmt0,
+                    ctx_.journal,
+                    {},
+                    WaiveTransferFee::Yes);
+                !isTesSuccess(ter))
+                return {ter, false};
+        }
+        if (withdrawAmt1 > beast::kZero)
+        {
+            if (auto const ter = accountSend(
+                    sb,
+                    ammAccountID,
+                    accountID_,
+                    withdrawAmt1,
+                    ctx_.journal,
+                    {},
+                    WaiveTransferFee::Yes);
+                !isTesSuccess(ter))
+                return {ter, false};
+        }
+
+        // Update tick entries
+        for (auto const tick : {tickLower, tickUpper})
+        {
+            auto const tickKeylet = keylet::ammTick(ammSle->key(), tick);
+            auto tickSle = sb.peek(tickKeylet);
+            if (!tickSle)
+                continue;
+
+            auto gross = tickSle->getFieldU64(sfLiquidityGross);
+            if (gross >= withdrawLiq)
+            {
+                gross -= withdrawLiq;
+            }
+            else
+            {
+                gross = 0;
+            }
+            tickSle->setFieldU64(sfLiquidityGross, gross);
+
+            auto net = static_cast<std::int64_t>(tickSle->getFieldU64(sfLiquidityNet));
+            net -= (tick == tickLower) ? static_cast<std::int64_t>(withdrawLiq)
+                                       : -static_cast<std::int64_t>(withdrawLiq);
+            tickSle->setFieldU64(sfLiquidityNet, static_cast<std::uint64_t>(net));
+
+            if (gross == 0)
+            {
+                // No positions reference this tick — delete it and clear
+                // its bit in the per-256-tick presence bitmap.
+                sb.erase(tickSle);
+                if (auto const ter = clearTickBitmap(sb, ammSle->key(), tick, ctx_.journal);
+                    !isTesSuccess(ter))
+                    return {ter, false};
+            }
+            else
+            {
+                sb.update(tickSle);
+            }
+        }
+
+        // Update active liquidity if current tick is in position range
+        if (currentTick >= tickLower && currentTick < tickUpper)
+        {
+            auto activeLiq = ammSle->getFieldU64(sfActiveLiquidity);
+            if (activeLiq >= withdrawLiq)
+            {
+                activeLiq -= withdrawLiq;
+            }
+            else
+            {
+                activeLiq = 0;
+            }
+            ammSle->setFieldU64(sfActiveLiquidity, activeLiq);
+        }
+
+        if (isPartial)
+        {
+            // Partial withdrawal: reduce position liquidity
+            posSle->setFieldU64(sfPositionLiquidity, posLiquidity - withdrawLiq);
+            sb.update(posSle);
+        }
+        else
+        {
+            // Full withdrawal: delete position and clean up
+            auto const ownerDirKeylet = keylet::ownerDir(accountID_);
+            auto const ownerNode = posSle->getFieldU64(sfOwnerNode);
+            if (!sb.dirRemove(ownerDirKeylet, ownerNode, posSle->key(), true))
+            {
+                JLOG(j_.error()) << "AMM Withdraw: failed to remove position "
+                                    "from owner directory.";
+                return {tecINTERNAL, false};
+            }
+            sb.erase(posSle);
+            decreaseOwnerCount(sb, accountID_, std::nullopt, 1, ctx_.journal);
+
+            // Decrement outstanding-position counter on the AMM SLE.
+            auto const positions = ammSle->getFieldU32(sfPositionCount);
+            ammSle->setFieldU32(sfPositionCount, positions > 0 ? positions - 1 : 0);
+        }
+
+        sb.update(ammSle);
+        return {tesSUCCESS, true};
+    }
+
+    // Binned withdrawals: tfWithdrawAll burns the LP's full holding;
+    // sfShares burns the specified amount and prorates reserve return.
+    if (curveType == CtBinned)
+    {
+        auto const binIDOpt = ctx_.tx[~sfBinID];
+        if (!binIDOpt)
+        {
+            JLOG(j_.error()) << "Binned withdraw: missing sfBinID";
+            return {temMALFORMED, false};
+        }
+        auto const binID = *binIDOpt;
+
+        auto const binKeylet = keylet::ammBin(ammSle->key(), binID);
+        auto binSle = sb.peek(binKeylet);
+        if (!binSle)
+        {
+            JLOG(j_.error()) << "Binned withdraw: bin SLE missing";
+            return {tecNO_ENTRY, false};
+        }
+
+        // MPT balance is authoritative for share count. An LP who
+        // received bin MPTs via transfer can redeem them here without
+        // ever calling AMMDeposit — their snapshot SLE is created on
+        // first AMMCollectFees with snapshot=now (transferred holders
+        // forfeit past fees; collect before transferring to keep them).
+        auto const mptIssuanceID = binSle->getFieldH192(sfMPTokenIssuanceID);
+        auto mptokenSle = sb.peek(keylet::mptoken(mptIssuanceID, accountID_));
+        if (!mptokenSle)
+        {
+            JLOG(j_.error()) << "Binned withdraw: LP holds no MPT for bin " << binID;
+            return {tecNO_ENTRY, false};
+        }
+        auto const lpShares = mptokenSle->getFieldU64(sfMPTAmount);
+        if (lpShares == 0)
+        {
+            JLOG(j_.error()) << "Binned withdraw: LP MPT balance zero";
+            return {tecAMM_FAILED, false};
+        }
+
+        // Determine how many shares to burn.
+        auto const isFullBurn = (ctx_.tx.getFlags() & tfWithdrawAll) == tfWithdrawAll;
+        std::uint64_t sharesToBurn = lpShares;
+        if (!isFullBurn)
+        {
+            sharesToBurn = ctx_.tx.getFieldU64(sfShares);
+            if (sharesToBurn == 0 || sharesToBurn > lpShares)
+                return {tecAMM_BALANCE, false};
+        }
+
+        // Snapshot SLE may or may not exist (auto-created by collect or
+        // deposit; missing if LP received MPT via transfer with no
+        // subsequent collect). Keep it around for future collects on
+        // any remaining shares; if LP burns all, delete it.
+        auto const holdingKeylet = keylet::ammBinHolding(ammSle->key(), accountID_, binID);
+        auto holdingSle = sb.peek(holdingKeylet);
+
+        auto const outstanding = binSle->getFieldU64(sfOutstandingAmount);
+        if (outstanding == 0)
+        {
+            JLOG(j_.error()) << "Binned withdraw: outstanding zero";
+            return {tecINTERNAL, false};
+        }
+        auto const reserve0 = binSle->getFieldAmount(sfReserve0);
+        auto const reserve1 = binSle->getFieldAmount(sfReserve1);
+
+        // Auto-collect accrued fees BEFORE burning shares so the LP
+        // doesn't silently forfeit them. fee_owed = lpShares ×
+        // (feeGrowth_now − snapshot). Computed against the full pre-burn
+        // share balance, then snapshot advances to "now" before the burn.
+        // If no snapshot SLE exists (rare — the LP received the MPT via
+        // transfer and never collected or deposited), treat snapshot as
+        // "now" and skip the auto-collect for this withdrawal — they
+        // never had a claim on prior fees.
+        Number const fg0Now = Number{binSle->getFieldNumber(sfFeeGrowthBin0)};
+        Number const fg1Now = Number{binSle->getFieldNumber(sfFeeGrowthBin1)};
+        if (holdingSle)
+        {
+            Number const fg0Last = Number{holdingSle->getFieldNumber(sfFeeGrowthInsideLast0)};
+            Number const fg1Last = Number{holdingSle->getFieldNumber(sfFeeGrowthInsideLast1)};
+            Number const sharesN{static_cast<std::int64_t>(lpShares)};
+            Number const owed0 = sharesN * (fg0Now - fg0Last);
+            Number const owed1 = sharesN * (fg1Now - fg1Last);
+            // Cap each side at the bin's actual reserve before scaling
+            // the redemption math (defensive — accumulator drift would
+            // otherwise let withdraw overdraw the bin).
+            auto const feeAmt0 = owed0 > Number{0} ? toSTAmount(reserve0.asset(), owed0)
+                                                   : STAmount{reserve0.asset(), 0};
+            auto const feeAmt1 = owed1 > Number{0} ? toSTAmount(reserve1.asset(), owed1)
+                                                   : STAmount{reserve1.asset(), 0};
+            if (feeAmt0 > beast::kZero && feeAmt0 <= reserve0)
+            {
+                if (auto const ter =
+                        accountSend(sb, ammAccountID, accountID_, feeAmt0, ctx_.journal);
+                    !isTesSuccess(ter))
+                    return {ter, false};
+                binSle->setFieldAmount(sfReserve0, reserve0 - feeAmt0);
+            }
+            if (feeAmt1 > beast::kZero && feeAmt1 <= reserve1)
+            {
+                if (auto const ter =
+                        accountSend(sb, ammAccountID, accountID_, feeAmt1, ctx_.journal);
+                    !isTesSuccess(ter))
+                    return {ter, false};
+                binSle->setFieldAmount(sfReserve1, reserve1 - feeAmt1);
+            }
+            // Advance snapshot to now — fees for any remaining shares
+            // accrue from this point forward.
+            holdingSle->setFieldNumber(
+                sfFeeGrowthInsideLast0, STNumber{sfFeeGrowthInsideLast0, fg0Now});
+            holdingSle->setFieldNumber(
+                sfFeeGrowthInsideLast1, STNumber{sfFeeGrowthInsideLast1, fg1Now});
+            sb.update(holdingSle);
+        }
+
+        // Re-read reserves — auto-collect above may have decremented
+        // them. Proportional redemption against the burned shares is
+        // computed against the post-fee reserves.
+        auto const reserve0AfterFees = binSle->getFieldAmount(sfReserve0);
+        auto const reserve1AfterFees = binSle->getFieldAmount(sfReserve1);
+        auto const frac = Number{static_cast<std::int64_t>(sharesToBurn)} /
+            Number{static_cast<std::int64_t>(outstanding)};
+        auto const out0Number = Number{reserve0AfterFees} * frac;
+        auto const out1Number = Number{reserve1AfterFees} * frac;
+        auto const out0 = toSTAmount(reserve0AfterFees.asset(), out0Number);
+        auto const out1 = toSTAmount(reserve1AfterFees.asset(), out1Number);
+
+        // Send reserves back to LP.
+        if (out0 > beast::kZero)
+        {
+            if (auto const ter = accountSend(sb, ammAccountID, accountID_, out0, ctx_.journal);
+                !isTesSuccess(ter))
+            {
+                JLOG(j_.error()) << "Binned withdraw: accountSend out0 failed " << ter;
+                return {ter, false};
+            }
+        }
+        if (out1 > beast::kZero)
+        {
+            if (auto const ter = accountSend(sb, ammAccountID, accountID_, out1, ctx_.journal);
+                !isTesSuccess(ter))
+            {
+                JLOG(j_.error()) << "Binned withdraw: accountSend out1 failed " << ter;
+                return {ter, false};
+            }
+        }
+
+        // Update bin reserves (against the post-auto-collect values).
+        binSle->setFieldAmount(sfReserve0, reserve0AfterFees - out0);
+        binSle->setFieldAmount(sfReserve1, reserve1AfterFees - out1);
+        binSle->setFieldU64(sfOutstandingAmount, outstanding - sharesToBurn);
+
+        // Burn the LP's MPT shares (decrement holder balance and the
+        // issuance's outstanding amount). MPT is the authoritative
+        // share record; the holding SLE only carries the per-LP
+        // feeGrowth snapshot.
+        {
+            auto mptIssuanceSle = sb.peek(keylet::mptokenIssuance(mptIssuanceID));
+            if (!mptIssuanceSle)
+                return {tecINTERNAL, false};
+            (*mptokenSle)[sfMPTAmount] = lpShares - sharesToBurn;
+            sb.update(mptokenSle);
+            auto const issOut = mptIssuanceSle->getFieldU64(sfOutstandingAmount);
+            (*mptIssuanceSle)[sfOutstandingAmount] =
+                issOut >= sharesToBurn ? issOut - sharesToBurn : 0;
+            sb.update(mptIssuanceSle);
+        }
+
+        // Snapshot SLE: keep it as long as the LP retains any shares
+        // (so future collects on the residual stake work). Delete on
+        // full burn to free the directory slot. Owner-count is already
+        // net-zero from the create-time exemption, so no adjustment on
+        // delete either.
+        auto const remainingShares = lpShares - sharesToBurn;
+        if (remainingShares == 0 && holdingSle)
+        {
+            auto const ownerDirKeylet = keylet::ownerDir(accountID_);
+            auto const ownerNode = holdingSle->getFieldU64(sfOwnerNode);
+            if (!sb.dirRemove(ownerDirKeylet, ownerNode, holdingSle->key(), true))
+            {
+                JLOG(j_.error()) << "AMM Withdraw: failed to remove bin holding "
+                                    "from owner directory.";
+                return {tecINTERNAL, false};
+            }
+            sb.erase(holdingSle);
+        }
+
+        // Keep the bin SLE even on full drain — it owns the MPT
+        // issuance reference that future re-deposits need. Empty bins
+        // are still iterable but contribute zero liquidity.
+        sb.update(binSle);
+
+        // If this bin was the active one and is now empty, move the
+        // activeBinID to the NEAREST non-empty bin in bin-ID distance
+        // — preserves the "current price" semantic. Scanning in
+        // owner-directory order would pick an arbitrary survivor.
+        if (binSle->getFieldU64(sfOutstandingAmount) == 0)
+        {
+            auto const currentActive = ammSle->getFieldI32(sfActiveBinID);
+            if (currentActive == binID)
+            {
+                std::optional<std::int32_t> nearest;
+                std::int64_t nearestDistance = 0;
+                forEachItem(sb, ammAccountID, [&](std::shared_ptr<SLE const> const& s) {
+                    if (!s || s->getType() != ltAMM_BIN)
+                        return;
+                    if (!s->isFieldPresent(sfAMMID) || s->getFieldH256(sfAMMID) != ammSle->key())
+                        return;
+                    if (s->getFieldU64(sfOutstandingAmount) == 0)
+                        return;
+                    auto const candidate = s->getFieldI32(sfBinID);
+                    auto const dist = std::abs(
+                        static_cast<std::int64_t>(candidate) - static_cast<std::int64_t>(binID));
+                    // On ties prefer the higher bin (price going up
+                    // mid-trade is the conservative choice for a
+                    // depleted-asset0 bin; symmetric on the other
+                    // side. Pure tiebreaker; rare in practice).
+                    if (!nearest || dist < nearestDistance ||
+                        (dist == nearestDistance && candidate > *nearest))
+                    {
+                        nearest = candidate;
+                        nearestDistance = dist;
+                    }
+                });
+                if (nearest)
+                    ammSle->setFieldI32(sfActiveBinID, *nearest);
+            }
+        }
+
+        sb.update(ammSle);
+        return {tesSUCCESS, true};
+    }
+
+    // Non-CL path: compute LP token state
+    auto const lpTokens = ammLPHolds(ctx_.view(), *ammSle, ctx_.tx[sfAccount], ctx_.journal);
+    auto const lpTokensWithdraw =
+        tokensWithdraw(lpTokens, ctx_.tx[~sfLPTokenIn], ctx_.tx.getFlags());
+
     auto const subTxType = ctx_.tx.getFlags() & tfWithdrawSubTx;
 
     auto dispatchToWithdraw = [&,
@@ -472,7 +1055,7 @@ AMMWithdraw::applyGuts(Sandbox& sb)
     }
 
     auto const res = deleteAMMAccountIfEmpty(
-        sb, ammSle, newLPTokenBalance, ctx_.tx[sfAsset], ctx_.tx[sfAsset2], j_);
+        sb, ammSle, newLPTokenBalance, ctx_.tx[sfAsset], ctx_.tx[sfAsset2], j_, curveType);
     // LCOV_EXCL_START
     if (!res.second)
         return {res.first, false};
@@ -874,13 +1457,14 @@ AMMWithdraw::deleteAMMAccountIfEmpty(
     STAmount const& lpTokenBalance,
     Asset const& asset1,
     Asset const& asset2,
-    beast::Journal const& journal)
+    beast::Journal const& journal,
+    std::uint8_t curveType)
 {
     TER ter;
     bool updateBalance = true;
     if (lpTokenBalance == beast::kZero)
     {
-        ter = deleteAMMAccount(sb, asset1, asset2, journal);
+        ter = deleteAMMAccount(sb, asset1, asset2, journal, curveType);
         if (!isTesSuccess(ter) && ter != tecINCOMPLETE)
             return {ter, false};  // LCOV_EXCL_LINE
 

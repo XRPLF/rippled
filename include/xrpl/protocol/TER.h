@@ -384,6 +384,13 @@ enum TECcodes : TERUnderlyingType {
     tecBALLOT_NOT_OPEN = 207,
     tecBALLOT_EXISTS = 208,
     tecBALLOT_BAD_OPTIONS = 209,
+    // Audit #20: surfaced when a CL swap loop exhausts the per-call
+    // maxTickCrossings budget. POST-AUDIT-#19: BookStep now iterates per
+    // tick range and never crosses >1000 ticks in one applySwap call, so
+    // this code is not reachable through normal Payment routing. It
+    // remains the contract for direct curve callers and as a safety net
+    // for any future code path that bypasses #19's iteration model.
+    tecAMM_TICK_CAP_HIT = 210,
 };
 
 //------------------------------------------------------------------------------
