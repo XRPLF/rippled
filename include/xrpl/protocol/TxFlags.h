@@ -97,7 +97,9 @@ inline constexpr FlagValue tfUniversalMask = ~tfUniversal;
         TF_FLAG(tfImmediateOrCancel, 0x00020000)                                                                                                               \
         TF_FLAG(tfFillOrKill, 0x00040000)                                                                                                                      \
         TF_FLAG(tfSell, 0x00080000)                                                                                                                            \
-        TF_FLAG(tfHybrid, 0x00100000),                                                                                                                         \
+        TF_FLAG(tfHybrid, 0x00100000) \
+        TF_FLAG(tfAllOrNone, 0x00200000) \
+        TF_FLAG(tfPostOnly, 0x00400000), \
         MASK_ADJ(0))                                                                                                                                           \
                                                                                                                                                                \
     TRANSACTION(Payment,                                                                                                                                       \

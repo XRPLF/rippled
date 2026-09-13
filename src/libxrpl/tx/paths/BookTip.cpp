@@ -22,10 +22,14 @@ BookTip::step(beast::Journal j)
     {
         if (entry_)
         {
-            offerDelete(view_, entry_, j);
+            // A skipped (kept) contingent offer must stay on the book; only
+            // delete offers that were stepped past after being consumed.
+            if (!keepCurrent_)
+                offerDelete(view_, entry_, j);
             entry_ = nullptr;
         }
     }
+    keepCurrent_ = false;
 
     for (;;)
     {
@@ -42,6 +46,25 @@ BookTip::step(beast::Journal j)
 
         if (dirFirst(view_, *firstPage, dir, di, index_))
         {
+            // Iterate past offers kept on the book earlier in this walk;
+            // they are not deleted, so they still head their directory.
+            bool exhausted = false;
+            while (kept_.contains(index_))
+            {
+                if (!dirNext(view_, *firstPage, dir, di, index_))
+                {
+                    exhausted = true;
+                    break;
+                }
+            }
+            if (exhausted)
+            {
+                // Only kept offers remain in this directory: advance the
+                // cursor past it without deleting anything.
+                book_ = *firstPage;
+                continue;
+            }
+
             dir_ = dir->key();
             entry_ = view_.peek(keylet::offer(index_));
             quality_ = Quality(getQuality(*firstPage));

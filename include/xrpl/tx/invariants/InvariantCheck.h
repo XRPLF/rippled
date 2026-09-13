@@ -293,6 +293,27 @@ public:
 };
 
 /**
+ * @brief Invariant: contingent offers honor their execution floor.
+ *
+ * An offer carrying lsfAllOrNone must be consumed in its entirety or not at
+ * all: a modification that leaves the offer present but reduces its TakerGets
+ * is a partial fill, which is forbidden. An offer carrying sfMinQuantity must
+ * never be reduced by less than min(sfMinQuantity, its prior remaining size)
+ * in one transaction.
+ */
+class ValidContingentOffers
+{
+    bool bad_ = false;
+
+public:
+    void
+    visitEntry(bool, SLE::const_ref, SLE::const_ref);
+
+    [[nodiscard]] bool
+    finalize(STTx const&, TER const, XRPAmount const, ReadView const&, beast::Journal const&) const;
+};
+
+/**
  * @brief Invariant: an escrow entry must take a value between 0 and
  *                   kInitialXRP drops exclusive.
  */
@@ -468,6 +489,7 @@ using InvariantChecks = std::tuple<
     NoDeepFreezeTrustLinesWithoutFreeze,
     TransfersNotFrozen,
     NoBadOffers,
+    ValidContingentOffers,
     NoZeroEscrow,
     ValidPaymentChannel,
     ValidNewAccountRoot,

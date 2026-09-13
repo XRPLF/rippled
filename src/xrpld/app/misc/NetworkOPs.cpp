@@ -5088,6 +5088,14 @@ NetworkOPsImp::getBookPage(
 
                 json::Value jvOffer = sleOffer->getJson(JsonOptions::Values::None);
 
+                // Contingent offers cannot be taken to arbitrary depth, so
+                // they are marked explicitly: clients must exclude them from
+                // quoted/takeable depth.
+                if (sleOffer->isFlag(lsfAllOrNone))
+                    jvOffer[jss::all_or_none] = true;
+                if (sleOffer->isFieldPresent(sfMinQuantity))
+                    sleOffer->getFieldAmount(sfMinQuantity).setJson(jvOffer[jss::min_quantity]);
+
                 STAmount saTakerGetsFunded;
                 STAmount saOwnerFundsLimit = saOwnerFunds;
                 Rate offerRate = kParityRate;
@@ -5256,6 +5264,14 @@ NetworkOPsImp::getBookPage(
             }
 
             json::Value jvOffer = sleOffer->getJson(JsonOptions::Values::None);
+
+            // Contingent offers cannot be taken to arbitrary depth, so they
+            // are marked explicitly: clients must exclude them from
+            // quoted/takeable depth.
+            if (sleOffer->isFlag(lsfAllOrNone))
+                jvOffer[jss::all_or_none] = true;
+            if (sleOffer->isFieldPresent(sfMinQuantity))
+                sleOffer->getFieldAmount(sfMinQuantity).setJson(jvOffer[jss::min_quantity]);
 
             STAmount saTakerGetsFunded;
             STAmount saOwnerFundsLimit = saOwnerFunds;

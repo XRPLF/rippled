@@ -10,6 +10,7 @@
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Concepts.h>
 #include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/Quality.h>
 #include <xrpl/protocol/Rules.h>
 #include <xrpl/protocol/SField.h>
@@ -119,6 +120,28 @@ public:
     key() const
     {
         return entry_->key();
+    }
+
+    /**
+     * Returns true if the offer is all-or-none: it must be consumed in its
+     * entirety or not at all (see lsfAllOrNone).
+     */
+    [[nodiscard]] bool
+    isAllOrNone() const
+    {
+        return entry_ && entry_->isFlag(lsfAllOrNone);
+    }
+
+    /**
+     * Returns the offer's minimum executable quantity (sfMinQuantity,
+     * denominated in TakerGets), capped at the offer's remaining size.
+     */
+    [[nodiscard]] std::optional<TOut>
+    minQuantity() const
+    {
+        if (!entry_ || !entry_->isFieldPresent(sfMinQuantity))
+            return std::nullopt;
+        return std::min(toAmount<TOut>(entry_->getFieldAmount(sfMinQuantity)), amounts_.out);
     }
 
     [[nodiscard]] Asset const&

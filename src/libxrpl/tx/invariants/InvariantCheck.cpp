@@ -321,6 +321,60 @@ NoBadOffers::finalize(
 //------------------------------------------------------------------------------
 
 void
+ValidContingentOffers::visitEntry(bool isDelete, SLE::const_ref before, SLE::const_ref after)
+{
+    // Only a modification (present before and after) can violate a floor.
+    // A full consumption deletes the offer; an untouched offer is unchanged.
+    if (isDelete || !before || !after)
+        return;
+
+    if (after->getType() != ltOFFER)
+        return;
+
+    // A partial fill reduces TakerGets; an all-or-none offer must not be
+    // reduced while it remains on the ledger.
+    if (after->isFlag(lsfAllOrNone))
+    {
+        if ((*before)[sfTakerGets] != (*after)[sfTakerGets])
+            bad_ = true;
+        return;
+    }
+
+    // A minimum-quantity offer may be reduced, but never by less than
+    // min(sfMinQuantity, its prior remaining size).
+    if (after->isFieldPresent(sfMinQuantity))
+    {
+        STAmount const beforeGets = (*before)[sfTakerGets];
+        STAmount const afterGets = (*after)[sfTakerGets];
+        if (beforeGets == afterGets)
+            return;
+        STAmount const reduction = beforeGets - afterGets;
+        STAmount const floor = std::min((*after)[sfMinQuantity], beforeGets);
+        if (reduction < floor)
+            bad_ = true;
+    }
+}
+
+bool
+ValidContingentOffers::finalize(
+    STTx const&,
+    TER const,
+    XRPAmount const,
+    ReadView const&,
+    beast::Journal const& j) const
+{
+    if (bad_)
+    {
+        JLOG(j.fatal()) << "Invariant failed: contingent offer reduced below its floor";
+        return false;
+    }
+
+    return true;
+}
+
+//------------------------------------------------------------------------------
+
+void
 NoZeroEscrow::visitEntry(bool isDelete, SLE::const_ref before, SLE::const_ref after)
 {
     auto isBad = [](STAmount const& amount) {

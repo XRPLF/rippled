@@ -28,6 +28,10 @@ Version 3.4.0 is not yet released. These changes are available in the 3.4.0 beta
 
 ### Additions in 3.4.0
 
+- `book_offers`, `account_offers`: With the `OfferQualifiers` amendment, an offer entry may now include `all_or_none: true` (the offer carries the `lsfAllOrNone` flag) and/or `min_quantity` (the offer's `MinQuantity` amount). These mark execution-qualified ("contingent") offers that cannot be taken to arbitrary depth; clients should exclude them from quoted/takeable depth. The `OfferCreate` transaction gains the `tfAllOrNone` and `tfPostOnly` flags and an optional `MinQuantity` field, and a marketable `tfPostOnly` offer is rejected with the new `tecWOULD_CROSS` result.
+
+- `account_tx`: Added an optional `delegate` request object to filter delegated transactions. The object requires `delegate_filter`, which must be either `actor` for transactions owned by the requested account but signed by another account, or `authorizer` for transactions signed by the requested account on behalf of another account. The optional `counter_party` account narrows the results to a specific signer/delegate for `actor` or a specific owner/delegator for `authorizer`. Malformed `delegate`, `delegate_filter`, and `counter_party` values return standard invalid field errors, and invalid account IDs return `actMalformed`.
+  When paginating delegate-filtered queries, a marker from a delegate-filtered query includes a `delegate` flag and is only valid for follow-up requests that also supply `delegate` (mixing marker conventions returns `invalidParams`). Because filtering is applied after the ledger scan, a page may contain fewer results than `limit` (possibly zero) while still returning a marker, so callers must continue until no marker is present.
 - `ledger`: `nftoken_id`, `nftoken_ids`, and `offer_id` are now included in transaction metadata when transactions are expanded (`expand`, or admin-only `full`), matching the `tx`, `account_tx`, and `subscribe` (`transactions` stream) responses. ([#5706](https://github.com/XRPLF/rippled/pull/5706))
 
 ### Bugfixes in 3.4.0

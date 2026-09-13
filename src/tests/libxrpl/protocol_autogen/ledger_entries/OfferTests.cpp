@@ -32,6 +32,7 @@ TEST(OfferTests, BuilderSettersRoundTrip)
     auto const expirationValue = canonical_UINT32();
     auto const domainIDValue = canonical_UINT256();
     auto const additionalBooksValue = canonical_ARRAY();
+    auto const minQuantityValue = canonical_AMOUNT();
 
     OfferBuilder builder{
         accountValue,
@@ -48,6 +49,7 @@ TEST(OfferTests, BuilderSettersRoundTrip)
     builder.setExpiration(expirationValue);
     builder.setDomainID(domainIDValue);
     builder.setAdditionalBooks(additionalBooksValue);
+    builder.setMinQuantity(minQuantityValue);
 
     builder.setLedgerIndex(index);
     builder.setFlags(0x1u);
@@ -136,6 +138,14 @@ TEST(OfferTests, BuilderSettersRoundTrip)
         EXPECT_TRUE(entry.hasAdditionalBooks());
     }
 
+    {
+        auto const& expected = minQuantityValue;
+        auto const actualOpt = entry.getMinQuantity();
+        ASSERT_TRUE(actualOpt.has_value());
+        expectEqualField(expected, *actualOpt, "sfMinQuantity");
+        EXPECT_TRUE(entry.hasMinQuantity());
+    }
+
     EXPECT_TRUE(entry.hasLedgerIndex());
     auto const ledgerIndex = entry.getLedgerIndex();
     ASSERT_TRUE(ledgerIndex.has_value());
@@ -161,6 +171,7 @@ TEST(OfferTests, BuilderFromSleRoundTrip)
     auto const expirationValue = canonical_UINT32();
     auto const domainIDValue = canonical_UINT256();
     auto const additionalBooksValue = canonical_ARRAY();
+    auto const minQuantityValue = canonical_AMOUNT();
 
     auto sle = std::make_shared<SLE>(Offer::entryType, index);
 
@@ -176,6 +187,7 @@ TEST(OfferTests, BuilderFromSleRoundTrip)
     sle->at(sfExpiration) = expirationValue;
     sle->at(sfDomainID) = domainIDValue;
     sle->setFieldArray(sfAdditionalBooks, additionalBooksValue);
+    sle->at(sfMinQuantity) = minQuantityValue;
 
     OfferBuilder builderFromSle{sle};
     EXPECT_TRUE(builderFromSle.validate());
@@ -315,6 +327,19 @@ TEST(OfferTests, BuilderFromSleRoundTrip)
         expectEqualField(expected, *fromBuilderOpt, "sfAdditionalBooks");
     }
 
+    {
+        auto const& expected = minQuantityValue;
+
+        auto const fromSleOpt = entryFromSle.getMinQuantity();
+        auto const fromBuilderOpt = entryFromBuilder.getMinQuantity();
+
+        ASSERT_TRUE(fromSleOpt.has_value());
+        ASSERT_TRUE(fromBuilderOpt.has_value());
+
+        expectEqualField(expected, *fromSleOpt, "sfMinQuantity");
+        expectEqualField(expected, *fromBuilderOpt, "sfMinQuantity");
+    }
+
     EXPECT_EQ(entryFromSle.getKey(), index);
     EXPECT_EQ(entryFromBuilder.getKey(), index);
 }
@@ -391,5 +416,7 @@ TEST(OfferTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(entry.getDomainID().has_value());
     EXPECT_FALSE(entry.hasAdditionalBooks());
     EXPECT_FALSE(entry.getAdditionalBooks().has_value());
+    EXPECT_FALSE(entry.hasMinQuantity());
+    EXPECT_FALSE(entry.getMinQuantity().has_value());
 }
 }

@@ -282,13 +282,14 @@ private:
     // callback is called with the offer SLE, taker pays, taker gets.
     // If callback returns false, don't process any more offers.
     // Return the unfunded, bad offers and the number of offers consumed.
-    template <class Callback>
+    template <class Callback, class CanFullyConsume>
     std::pair<boost::container::flat_set<uint256>, std::uint32_t>
     forEachOffer(
         PaymentSandbox& sb,
         ApplyView& afView,
         DebtDirection prevStepDebtDir,
-        Callback& callback) const;
+        Callback& callback,
+        CanFullyConsume&& canFullyConsume) const;
 
     // Offer is either TOffer or AMMOffer
     template <template <typename, typename> typename Offer>
@@ -361,6 +362,14 @@ public:
         std::optional<Quality>&,
         FlowOfferStream<TIn, TOut>&,
         bool) const
+    {
+        return false;
+    }
+
+    // Payments never consume contingent (all-or-none) offers; those are
+    // offer-crossing-only.
+    [[nodiscard]] bool
+    allowsContingentOffers() const
     {
         return false;
     }
@@ -453,6 +462,14 @@ public:
         , defaultPath_(ctx.isDefaultPath)
         , qualityThreshold_(getQuality(ctx.limitQuality))
     {
+    }
+
+    // Offer crossing is the only context that consumes contingent (all-or-none)
+    // offers, and only when the taker can take them in full.
+    [[nodiscard]] bool
+    allowsContingentOffers() const
+    {
+        return true;
     }
 
     template <template <typename, typename> typename Offer>
@@ -755,13 +772,14 @@ limitStepOut(
 }
 
 template <class TIn, class TOut, class TDerived>
-template <class Callback>
+template <class Callback, class CanFullyConsume>
 std::pair<boost::container::flat_set<uint256>, std::uint32_t>
 BookStep<TIn, TOut, TDerived>::forEachOffer(
     PaymentSandbox& sb,
     ApplyView& afView,
     DebtDirection prevStepDir,
-    Callback& callback) const
+    Callback& callback,
+    CanFullyConsume&& canFullyConsume) const
 {
     // Charge the offer owner, not the sender
     // Charge a fee even if the owner is the same as the issuer
@@ -863,8 +881,11 @@ BookStep<TIn, TOut, TDerived>::forEachOffer(
                 ? ownerGives  // Offer owner is issuer; they have unlimited funds
                 : offers.ownerFunds();
 
+            // True if the offer cannot deliver its full amount (under-funded).
+            bool const offerFundsLimited = funds < ownerGives;
+
             // Only if CLOB offer
-            if (funds < ownerGives)
+            if (offerFundsLimited)
             {
                 // We already know offer.owner()!=offer.issueOut().account
                 ownerGives = funds;
@@ -896,6 +917,74 @@ BookStep<TIn, TOut, TDerived>::forEachOffer(
                 {
                     limitStepIn(
                         offer, ofrAmt, stpAmt, ownerGives, ofrInRate, ofrOutRate, available);
+                }
+            }
+
+            // Contingent offers (all-or-none, or carrying a minimum-quantity
+            // floor) participate only on an offer-crossing strand and only when
+            // the whole offer (all-or-none) or at least the floor (minimum
+            // quantity) can change hands. When they do not participate there are
+            // two distinct outcomes, and conflating them lets an under-funded
+            // contingent offer block the book forever:
+            //
+            //   * Under-funded: the offer's owner cannot deliver its own
+            //     all-or-none size or minimum-quantity floor, so no taker can
+            //     ever consume it. It is reaped like any other unfunded offer
+            //     (permRmOffer + delete on advance) rather than left resting.
+            //   * Fully fundable, taker too small: the offer can be satisfied,
+            //     the current taker just isn't large enough. It is kept on the
+            //     book so a later, larger taker can take it; the walk trades
+            //     through it to worse-priced liquidity.
+            //
+            // A payment strand consumes no contingent offer, but must keep them
+            // (they remain valid for offer-crossing strands). Resetting ofrQ
+            // (when nothing has been attempted at this quality) lets the walk
+            // continue past the skipped offer without deadlocking on it.
+            auto const minQty = offer.minQuantity();
+            if (offer.isAllOrNone() || minQty)
+            {
+                auto const keep = [&]() {
+                    offers.keepCurrentOffer();
+                    if (!offerAttempted)
+                        ofrQ = std::nullopt;
+                    return true;
+                };
+                auto const reap = [&]() {
+                    if (auto const key = offer.key())
+                        offers.permRmOffer(*key);
+                    if (!offerAttempted)
+                        ofrQ = std::nullopt;
+                    return true;
+                };
+
+                if (!static_cast<TDerived const*>(this)->allowsContingentOffers())
+                    return keep();
+
+                if (offer.isAllOrNone())
+                {
+                    // stpAmt already reflects funds-limiting; when limited below
+                    // the offer's full size the owner cannot deliver the whole
+                    // offer, which all-or-none requires.
+                    if (offerFundsLimited)
+                        return reap();
+                    if (!canFullyConsume(stpAmt))
+                        return keep();
+                }
+                else  // minimum-quantity
+                {
+                    if (stpAmt.out < *minQty)
+                        // Funds- or issuer-limited below the offer's own floor:
+                        // the owner can never deliver the floor.
+                        return reap();
+
+                    // The owner can deliver the floor; participate only if the
+                    // taker's demand covers it. Scale the step amounts down to the
+                    // floor and apply the same demand test used for all-or-none.
+                    auto const floorOfrAmt = offer.limitOut(ofrAmt, *minQty, /*roundUp*/ true);
+                    TAmounts const floorStpAmt{
+                        mulRatio(floorOfrAmt.in, ofrInRate, QUALITY_ONE, /*roundUp*/ true), *minQty};
+                    if (!canFullyConsume(floorStpAmt))
+                        return keep();
                 }
             }
 
@@ -1225,7 +1314,13 @@ BookStep<TIn, TOut, TDerived>::revImp(
                 return prevStep_->debtDirection(sb, StrandDirection::Reverse);
             return DebtDirection::Issues;
         }();
-        auto const r = forEachOffer(sb, afView, prevStepDebtDir, eachOffer);
+        // A contingent offer can be taken only if the remaining output demand
+        // covers the tested amounts (the whole offer for all-or-none, the
+        // floor for minimum-quantity).
+        auto const canFullyConsume = [&](TAmounts<TIn, TOut> const& stpAmt) {
+            return stpAmt.out <= remainingOut;
+        };
+        auto const r = forEachOffer(sb, afView, prevStepDebtDir, eachOffer, canFullyConsume);
         boost::container::flat_set<uint256> const toRm = std::move(std::get<0>(r));
         std::uint32_t const offersConsumed = std::get<1>(r);
         offersUsed_ = offersConsumed;
@@ -1405,7 +1500,13 @@ BookStep<TIn, TOut, TDerived>::fwdImp(
                 return prevStep_->debtDirection(sb, StrandDirection::Forward);
             return DebtDirection::Issues;
         }();
-        auto const r = forEachOffer(sb, afView, prevStepDebtDir, eachOffer);
+        // A contingent offer can be taken only if the remaining input demand
+        // covers the tested amounts (the whole offer for all-or-none, the
+        // floor for minimum-quantity).
+        auto const canFullyConsume = [&](TAmounts<TIn, TOut> const& stpAmt) {
+            return stpAmt.in <= remainingIn;
+        };
+        auto const r = forEachOffer(sb, afView, prevStepDebtDir, eachOffer, canFullyConsume);
         boost::container::flat_set<uint256> const toRm = std::move(std::get<0>(r));
         std::uint32_t const offersConsumed = std::get<1>(r);
         offersUsed_ = offersConsumed;

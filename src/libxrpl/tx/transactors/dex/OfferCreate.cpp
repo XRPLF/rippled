@@ -79,13 +79,17 @@ OfferCreate::checkExtraFeatures(PreflightContext const& ctx)
 std::uint32_t
 OfferCreate::getFlagsMask(PreflightContext const& ctx)
 {
-    // The tfOfferCreateMask is built assuming that PermissionedDEX is
-    // enabled
-    if (ctx.rules.enabled(featurePermissionedDEX))
-        return tfOfferCreateMask;
-    // If PermissionedDEX is not enabled, add tfHybrid to the mask,
-    // indicating it is not allowed.
-    return tfOfferCreateMask | tfHybrid;
+    // The tfOfferCreateMask is built assuming that all OfferCreate flags are
+    // enabled; disallowed flags are added back into the mask per-amendment.
+    std::uint32_t mask = tfOfferCreateMask;
+    // If PermissionedDEX is not enabled, tfHybrid is not allowed.
+    if (!ctx.rules.enabled(featurePermissionedDEX))
+        mask |= tfHybrid;
+    // If OfferQualifiers is not enabled, the execution-qualifier flags are not
+    // allowed.
+    if (!ctx.rules.enabled(featureOfferQualifiers))
+        mask |= tfAllOrNone | tfPostOnly;
+    return mask;
 }
 
 NotTEC
@@ -110,6 +114,37 @@ OfferCreate::preflight(PreflightContext const& ctx)
     {
         JLOG(j.debug()) << "Malformed transaction: both IoC and FoK set.";
         return temINVALID_FLAG;
+    }
+
+    // featureOfferQualifiers execution qualifiers.
+    bool const bAllOrNone(tx.isFlag(tfAllOrNone));
+    bool const bPostOnly(tx.isFlag(tfPostOnly));
+
+    // sfMinQuantity is a field, not a flag, so it is gated explicitly.
+    if (tx.isFieldPresent(sfMinQuantity) && !ctx.rules.enabled(featureOfferQualifiers))
+        return temDISABLED;
+
+    // Immediate-all-or-none is exactly FillOrKill; use that instead.
+    if (bAllOrNone && (bImmediateOrCancel || bFillOrKill))
+    {
+        JLOG(j.debug()) << "Malformed transaction: AllOrNone with IoC/FoK.";
+        return temINVALID_FLAG;
+    }
+
+    // Post-only never removes liquidity, so it cannot combine with flags that
+    // require taking it.
+    if (bPostOnly && (bImmediateOrCancel || bFillOrKill || tx.isFlag(tfSell)))
+    {
+        JLOG(j.debug()) << "Malformed transaction: PostOnly with IoC/FoK/Sell.";
+        return temINVALID_FLAG;
+    }
+
+    // AllOrNone is MinQuantity pinned to the full size; specifying both is
+    // redundant and disallowed.
+    if (bAllOrNone && tx.isFieldPresent(sfMinQuantity))
+    {
+        JLOG(j.debug()) << "Malformed transaction: AllOrNone with MinQuantity.";
+        return temMALFORMED;
     }
 
     bool const bHaveExpiration(tx.isFieldPresent(sfExpiration));
@@ -141,6 +176,18 @@ OfferCreate::preflight(PreflightContext const& ctx)
     {
         JLOG(j.debug()) << "Malformed offer: bad amount";
         return temBAD_OFFER;
+    }
+
+    // MinQuantity is a floor on TakerGets: it must be denominated in the
+    // TakerGets asset, be positive, and not exceed the offered TakerGets.
+    if (auto const minQty = tx[~sfMinQuantity])
+    {
+        if (minQty->asset() != saTakerGets.asset() || *minQty <= beast::kZero ||
+            *minQty > saTakerGets)
+        {
+            JLOG(j.debug()) << "Malformed offer: bad MinQuantity";
+            return temMALFORMED;
+        }
     }
 
     auto const& uPaysIssuerID = saTakerPays.getIssuer();
@@ -484,9 +531,12 @@ OfferCreate::flowCross(
             accountID_,
             accountID_,
             paths,
-            true,                           // default path
-            !ctx_.tx.isFlag(tfFillOrKill),  // partial payment
-            true,                           // owner pays transfer fee
+            true,  // default path
+            // AllOrNone crosses all-or-nothing on entry, exactly like
+            // FillOrKill: either the whole offer crosses now or nothing does
+            // (and, for AllOrNone, the whole offer then rests).
+            !(ctx_.tx.isFlag(tfFillOrKill) || ctx_.tx.isFlag(tfAllOrNone)),
+            true,  // owner pays transfer fee
             offerCrossing,
             threshold,
             sendMax,
@@ -650,6 +700,10 @@ OfferCreate::applyGuts(Sandbox& sb, Sandbox& sbCancel)
     bool const bFillOrKill(ctx_.tx.isFlag(tfFillOrKill));
     bool const bSell(ctx_.tx.isFlag(tfSell));
     bool const bHybrid(ctx_.tx.isFlag(tfHybrid));
+    bool const bAllOrNone(ctx_.tx.isFlag(tfAllOrNone));
+    // Post-only guarantees the offer never removes liquidity: a marketable
+    // offer is rejected with tecWOULD_CROSS.
+    bool const bPostOnly(ctx_.tx.isFlag(tfPostOnly));
 
     auto saTakerPays = ctx_.tx[sfTakerPays];
     auto saTakerGets = ctx_.tx[sfTakerGets];
@@ -772,8 +826,29 @@ OfferCreate::applyGuts(Sandbox& sb, Sandbox& sbCancel)
         PaymentSandbox psbCancelFlow{&sbCancel};
 
         std::tie(result, placeOffer) = flowCross(psbFlow, psbCancelFlow, takerAmount, domainID);
-        psbFlow.apply(sb);
+
+        // A minimum-quantity offer executes on entry only if at least the
+        // floor (in TakerGets terms) crosses immediately. A partial cross
+        // below the floor is discarded — the crossing sandbox is dropped —
+        // and the whole offer rests instead, still carrying the floor. A
+        // full cross is never discarded (the floor is a bound on partial
+        // executions, not on complete ones).
+        bool restWholeMinQty = false;
+        if (auto const minQty = ctx_.tx[~sfMinQuantity]; minQty && isTesSuccess(result) &&
+            placeOffer != takerAmount && placeOffer.in > kZero && placeOffer.out > kZero)
+        {
+            STAmount const crossedGets = takerAmount.in - placeOffer.in;
+            restWholeMinQty = crossedGets < *minQty;
+        }
+
+        if (!restWholeMinQty)
+            psbFlow.apply(sb);
         psbCancelFlow.apply(sbCancel);
+        if (restWholeMinQty)
+        {
+            JLOG(j_.trace()) << "MinQuantity floor not met on entry; resting whole offer";
+            placeOffer = takerAmount;
+        }
 
         // We expect the implementation of cross to succeed
         // or give a tec.
@@ -807,6 +882,17 @@ OfferCreate::applyGuts(Sandbox& sb, Sandbox& sbCancel)
 
         if (takerAmount != placeOffer)
             crossed = true;
+
+        // A post-only offer must never remove liquidity. If any crossing
+        // occurred, the offer was marketable against funded liquidity (the
+        // flow engine only consumes funded offers), so reject without placing.
+        // Returning false applies sbCancel, discarding the crossing and
+        // charging only the fee.
+        if (bPostOnly && crossed)
+        {
+            JLOG(j_.trace()) << "Post-only offer would cross";
+            return {tecWOULD_CROSS, false};
+        }
 
         // The offer that we need to place after offer crossing should
         // never be negative. If it is, something went very very wrong.
@@ -991,6 +1077,10 @@ OfferCreate::applyGuts(Sandbox& sb, Sandbox& sbCancel)
         sleOffer->setFlag(lsfPassive);
     if (bSell)
         sleOffer->setFlag(lsfSell);
+    if (bAllOrNone)
+        sleOffer->setFlag(lsfAllOrNone);
+    if (auto const minQty = ctx_.tx[~sfMinQuantity])
+        sleOffer->setFieldAmount(sfMinQuantity, *minQty);
     if (domainID)
         sleOffer->setFieldH256(sfDomainID, *domainID);
 
