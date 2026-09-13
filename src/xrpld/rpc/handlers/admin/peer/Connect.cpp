@@ -21,15 +21,15 @@ namespace xrpl {
 // }
 // XXX Might allow domain for manual connections.
 json::Value
-doConnect(RPC::JsonContext& context)
+doConnect(rpc::JsonContext& context)
 {
     if (context.app.config().standalone())
     {
-        return RPC::makeError(RpcNotSynced);
+        return rpc::makeError(RpcNotSynced);
     }
 
     if (!context.params.isMember(jss::ip))
-        return RPC::missingFieldError(jss::ip);
+        return rpc::missingFieldError(jss::ip);
 
     if (context.params.isMember(jss::port) &&
         !context.params[jss::port].isConvertibleTo(json::ValueType::Int))
@@ -49,12 +49,12 @@ doConnect(RPC::JsonContext& context)
     }
 
     auto const ipStr = context.params[jss::ip].asString();
-    auto ip = beast::IP::Endpoint::fromString(ipStr);
+    auto ip = beast::ip::Endpoint::fromString(ipStr);
 
     if (!isUnspecified(ip))
         context.app.getOverlay().connect(ip.atPort(iPort));
 
-    return RPC::makeObjectValue(
+    return rpc::makeObjectValue(
         "attempting connection to IP:" + ipStr + " port: " + std::to_string(iPort));
 }
 

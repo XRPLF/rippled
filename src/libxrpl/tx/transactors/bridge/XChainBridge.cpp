@@ -864,7 +864,7 @@ applyClaimAttestations(
             return std::unexpected(tecXCHAIN_NO_CLAIM_ID);
 
         // Add claims that are part of the signer's list to the "claims" vector
-        std::vector<Attestations::AttestationClaim> atts;
+        std::vector<attestations::AttestationClaim> atts;
         atts.reserve(std::distance(attBegin, attEnd));
         for (auto att = attBegin; att != attEnd; ++att)
         {
@@ -1042,7 +1042,7 @@ applyCreateAccountAttestations(
                 return std::unexpected(tecINSUFFICIENT_RESERVE);
         }
 
-        std::vector<Attestations::AttestationCreateAccount> atts;
+        std::vector<attestations::AttestationCreateAccount> atts;
         atts.reserve(std::distance(attBegin, attEnd));
         for (auto att = attBegin; att != attEnd; ++att)
         {
@@ -1160,8 +1160,8 @@ std::optional<TAttestation>
 toClaim(STTx const& tx)
 {
     static_assert(
-        std::is_same_v<TAttestation, Attestations::AttestationClaim> ||
-        std::is_same_v<TAttestation, Attestations::AttestationCreateAccount>);
+        std::is_same_v<TAttestation, attestations::AttestationClaim> ||
+        std::is_same_v<TAttestation, attestations::AttestationCreateAccount>);
 
     try
     {
@@ -1301,10 +1301,10 @@ attestationDoApply(ApplyContext& ctx)
     auto const& [srcChain, signersList, quorum, thisDoor, bridgeK] = scopeResult.value();
 
     static_assert(
-        std::is_same_v<TAttestation, Attestations::AttestationClaim> ||
-        std::is_same_v<TAttestation, Attestations::AttestationCreateAccount>);
+        std::is_same_v<TAttestation, attestations::AttestationClaim> ||
+        std::is_same_v<TAttestation, attestations::AttestationCreateAccount>);
 
-    if constexpr (std::is_same_v<TAttestation, Attestations::AttestationClaim>)
+    if constexpr (std::is_same_v<TAttestation, attestations::AttestationClaim>)
     {
         return applyClaimAttestations(
             ctx.view(),
@@ -1317,7 +1317,7 @@ attestationDoApply(ApplyContext& ctx)
             quorum,
             ctx.journal);
     }
-    else if constexpr (std::is_same_v<TAttestation, Attestations::AttestationCreateAccount>)
+    else if constexpr (std::is_same_v<TAttestation, attestations::AttestationCreateAccount>)
     {
         return applyCreateAccountAttestations(
             ctx.view(),
@@ -2067,19 +2067,19 @@ XChainCreateClaimID::doApply()
 NotTEC
 XChainAddClaimAttestation::preflight(PreflightContext const& ctx)
 {
-    return attestationPreflight<Attestations::AttestationClaim>(ctx);
+    return attestationPreflight<attestations::AttestationClaim>(ctx);
 }
 
 TER
 XChainAddClaimAttestation::preclaim(PreclaimContext const& ctx)
 {
-    return attestationPreclaim<Attestations::AttestationClaim>(ctx);
+    return attestationPreclaim<attestations::AttestationClaim>(ctx);
 }
 
 TER
 XChainAddClaimAttestation::doApply()
 {
-    return attestationDoApply<Attestations::AttestationClaim>(ctx_);
+    return attestationDoApply<attestations::AttestationClaim>(ctx_);
 }
 
 //------------------------------------------------------------------------------
@@ -2087,19 +2087,19 @@ XChainAddClaimAttestation::doApply()
 NotTEC
 XChainAddAccountCreateAttestation::preflight(PreflightContext const& ctx)
 {
-    return attestationPreflight<Attestations::AttestationCreateAccount>(ctx);
+    return attestationPreflight<attestations::AttestationCreateAccount>(ctx);
 }
 
 TER
 XChainAddAccountCreateAttestation::preclaim(PreclaimContext const& ctx)
 {
-    return attestationPreclaim<Attestations::AttestationCreateAccount>(ctx);
+    return attestationPreclaim<attestations::AttestationCreateAccount>(ctx);
 }
 
 TER
 XChainAddAccountCreateAttestation::doApply()
 {
-    return attestationDoApply<Attestations::AttestationCreateAccount>(ctx_);
+    return attestationDoApply<attestations::AttestationCreateAccount>(ctx_);
 }
 
 //------------------------------------------------------------------------------

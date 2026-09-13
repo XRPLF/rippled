@@ -17,21 +17,33 @@ URL:      https://github.com/XRPLF/rippled
 ExclusiveArch: x86_64 aarch64
 BuildRequires: systemd-rpm-macros
 
-%undefine _debugsource_packages
-%debug_package
-# Intentionally trade larger RPM artifacts for faster package validation.
-%global _binary_payload w.ufdio
-%global _find_debuginfo_dwz_opts %{nil}
-
-%build_mtime_policy clamp_to_source_date_epoch
-
+# These have to precede %%debug_package: it opens the debuginfo subpackage, and
+# any tag after it is silently dropped from the main package.
 %{?systemd_requires}
 %{?sysusers_requires_compat}
+
+%undefine _debugsource_packages
+%debug_package
+# Level 3 rather than the el9 default of 19: it shrinks the multi-gigabyte
+# debuginfo package roughly fourfold in about a second, where 19 would spend
+# minutes on it.
+%global _binary_payload w3.zstdio
+%global _find_debuginfo_dwz_opts %{nil}
+
+# Reproducibility: the first two take their value from the SOURCE_DATE_EPOCH
+# build_pkg.py exports. Without these the header records the wall clock and the
+# build container's hostname, so two builds of the same commit differ.
+%global clamp_mtime_to_source_date_epoch 1
+%global use_source_date_epoch_as_buildtime 1
+%global _buildhost xrplf.org
+
 
 %description
 xrpld is the reference implementation of the XRP Ledger protocol. It
 participates in the peer-to-peer XRP Ledger network, processes
 transactions, and maintains the ledger database.
+This package also includes the validator-keys tool for validator key
+management.
 
 %prep
 :
@@ -41,6 +53,7 @@ transactions, and maintains the ledger database.
 
 %install
 install -Dm0755 %{_sourcedir}/xrpld                %{buildroot}%{_bindir}/%{name}
+install -Dm0755 %{_sourcedir}/validator-keys       %{buildroot}%{_bindir}/validator-keys
 install -Dm0644 %{_sourcedir}/xrpld.cfg            %{buildroot}%{_sysconfdir}/%{name}/xrpld.cfg
 install -Dm0644 %{_sourcedir}/validators.txt       %{buildroot}%{_sysconfdir}/%{name}/validators.txt
 
@@ -48,7 +61,7 @@ install -Dm0644 %{_sourcedir}/validators.txt       %{buildroot}%{_sysconfdir}/%{
 install -Dm0644 %{_sourcedir}/xrpld.service        %{buildroot}%{_unitdir}/xrpld.service
 install -Dm0644 %{_sourcedir}/xrpld.sysusers       %{buildroot}%{_sysusersdir}/xrpld.conf
 install -Dm0644 %{_sourcedir}/xrpld.tmpfiles       %{buildroot}%{_tmpfilesdir}/xrpld.conf
-install -Dm0644 /dev/null %{buildroot}%{_presetdir}/50-xrpld.preset
+install -d %{buildroot}%{_presetdir}
 cat >%{buildroot}%{_presetdir}/50-xrpld.preset <<'EOF'
 enable xrpld.service
 EOF
@@ -59,6 +72,8 @@ install -Dm0644 %{_sourcedir}/xrpld.logrotate      %{buildroot}%{_sysconfdir}/lo
 # Docs
 install -Dm0644 %{_sourcedir}/LICENSE.md %{buildroot}%{_docdir}/%{name}/LICENSE.md
 install -Dm0644 %{_sourcedir}/README.md  %{buildroot}%{_docdir}/%{name}/README.md
+# Upstream notice for the bundled validator-keys tool.
+install -Dm0644 %{_sourcedir}/validator-keys-LICENSE %{buildroot}%{_docdir}/%{name}/validator-keys-LICENSE
 
 # Legacy compatibility for pre-FHS package layouts.
 # TODO: remove after rippled fully deprecated.
@@ -69,7 +84,7 @@ ln -s %{_bindir}/%{name} %{buildroot}/usr/local/bin/rippled
 %sysusers_create_package %{name} %{_sourcedir}/xrpld.sysusers
 
 %post
-systemd-tmpfiles --create %{_tmpfilesdir}/xrpld.conf || :
+%tmpfiles_create_package %{name} %{_sourcedir}/xrpld.tmpfiles
 %systemd_post xrpld.service
 
 %preun
@@ -79,12 +94,15 @@ systemd-tmpfiles --create %{_tmpfilesdir}/xrpld.conf || :
 %systemd_postun xrpld.service
 
 %files
+%attr(0755,root,root) %dir %{_docdir}/%{name}
 %license %{_docdir}/%{name}/LICENSE.md
+%license %{_docdir}/%{name}/validator-keys-LICENSE
 %doc %{_docdir}/%{name}/README.md
 
-%dir %{_sysconfdir}/%{name}
+%attr(0755,root,root) %dir %{_sysconfdir}/%{name}
 
 %{_bindir}/%{name}
+%{_bindir}/validator-keys
 
 %config(noreplace) %{_sysconfdir}/%{name}/xrpld.cfg
 %config(noreplace) %{_sysconfdir}/%{name}/validators.txt
@@ -92,7 +110,7 @@ systemd-tmpfiles --create %{_tmpfilesdir}/xrpld.conf || :
 
 
 %{_unitdir}/xrpld.service
-%{_presetdir}/50-xrpld.preset
+%attr(0644,root,root) %{_presetdir}/50-xrpld.preset
 %{_sysusersdir}/xrpld.conf
 %{_tmpfilesdir}/xrpld.conf
 %ghost %dir /var/lib/xrpld

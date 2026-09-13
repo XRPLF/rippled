@@ -1,5 +1,6 @@
 #include <xrpl/server/Port.h>
 
+#include <xrpl/basics/StringUtilities.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/basics/safe_cast.h>
 #include <xrpl/beast/core/LexicalCast.h>
@@ -9,7 +10,6 @@
 #include <xrpl/config/Constants.h>
 
 #include <boost/algorithm/string/predicate.hpp>
-#include <boost/algorithm/string/trim.hpp>
 #include <boost/asio/ip/address.hpp>
 #include <boost/asio/ip/impl/network_v4.ipp>
 #include <boost/asio/ip/impl/network_v6.ipp>
@@ -98,7 +98,7 @@ populate(
 
     while (std::getline(ss, ip, ','))
     {
-        boost::algorithm::trim(ip);
+        ip = trimWhitespace(ip);
         bool v4 = false;
         boost::asio::ip::network_v4 v4Net;
         boost::asio::ip::network_v6 v6Net;
@@ -107,7 +107,7 @@ populate(
         {
             // First, check to see if 0.0.0.0 or ipv6 equivalent was configured,
             // which means all IP addresses.
-            auto const addr = beast::IP::Endpoint::fromStringChecked(ip);
+            auto const addr = beast::ip::Endpoint::fromStringChecked(ip);
             if (addr)
             {
                 if (isUnspecified(*addr))

@@ -12,7 +12,7 @@
 #include <ostream>
 #include <string>
 
-namespace xrpl::Resource {
+namespace xrpl::resource {
 
 using clock_type = beast::AbstractClock<std::chrono::steady_clock>;
 
@@ -91,4 +91,4 @@ operator<<(std::ostream& os, Entry const& v)
     return os;
 }
 
-}  // namespace xrpl::Resource
+}  // namespace xrpl::resource

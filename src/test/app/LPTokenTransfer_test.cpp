@@ -4,6 +4,7 @@
 #include <test/jtx/TestHelpers.h>
 #include <test/jtx/amount.h>
 #include <test/jtx/check.h>
+#include <test/jtx/mpt.h>
 #include <test/jtx/offer.h>
 #include <test/jtx/owners.h>  // IWYU pragma: keep
 #include <test/jtx/pay.h>
@@ -17,8 +18,11 @@
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/SeqProxy.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
+
+#include <cstdint>
 
 namespace xrpl::test {
 
@@ -310,7 +314,7 @@ class LPTokenTransfer_test : public jtx::AMMTest
 
         // carol_ can always create a check with lptoken that has frozen
         // token
-        uint256 const carolChkId{keylet::check(carol_, env.seq(carol_)).key};
+        uint256 const carolChkId{keylet::check(carol_, SeqProxy::rawSequence(env.seq(carol_))).key};
         env(check::create(carol_, bob_, STAmount{lpIssue, 10}));
         env.close();
 
@@ -327,7 +331,7 @@ class LPTokenTransfer_test : public jtx::AMMTest
         env.close();
 
         // bob_ creates a check
-        uint256 const bobChkId{keylet::check(bob_, env.seq(bob_)).key};
+        uint256 const bobChkId{keylet::check(bob_, SeqProxy::rawSequence(env.seq(bob_))).key};
         env(check::create(bob_, carol_, STAmount{lpIssue, 10}));
         env.close();
 
@@ -359,7 +363,8 @@ class LPTokenTransfer_test : public jtx::AMMTest
         env.close();
 
         // bob_ creates a sell offer for lptoken
-        uint256 const sellOfferIndex = keylet::nftokenOffer(bob_, env.seq(bob_)).key;
+        uint256 const sellOfferIndex =
+            keylet::nftokenOffer(bob_, SeqProxy::rawSequence(env.seq(bob_))).key;
         env(token::createOffer(bob_, nftID, STAmount{lpIssue, 10}), Txflags(tfSellNFToken));
         env.close();
 
@@ -420,7 +425,8 @@ class LPTokenTransfer_test : public jtx::AMMTest
             env.close();
 
             // bob_ creates a buy offer with lptoken despite bob_'s USD is frozen
-            uint256 const buyOfferIndex = keylet::nftokenOffer(bob_, env.seq(bob_)).key;
+            uint256 const buyOfferIndex =
+                keylet::nftokenOffer(bob_, SeqProxy::rawSequence(env.seq(bob_))).key;
             env(token::createOffer(bob_, nftID, STAmount{lpIssue, 10}), token::Owner(carol_));
             env.close();
 
@@ -428,6 +434,136 @@ class LPTokenTransfer_test : public jtx::AMMTest
             env(token::acceptBuyOffer(carol_, buyOfferIndex));
             env.close();
         }
+    }
+
+    void
+    testMPTCanTransferDirectStep(FeatureBitset features)
+    {
+        testcase("MPT CanTransfer DirectStep");
+
+        using namespace jtx;
+
+        // An MPT can only be an AMM pool asset once featureMPTokensV2 is
+        // enabled, so this behavior is only meaningful when V2 is present, and
+        // is independent of fixFrozenLPTokenTransfer.
+        if (!features[featureMPTokensV2])
+            return;
+
+        // gw issues an MPT used as one of the AMM pool assets. gw (the MPT
+        // issuer) seeds the pool and hands LP tokens to alice. Transferring LP
+        // tokens between two non-issuer holders is only permitted when the
+        // pool MPT allows transfers (lsfMPTCanTransfer); issuer-involving
+        // transfers are always permitted. The check fires on the redeem step
+        // against the AMM account via canTransferLPToken().
+        auto testLPTokenTransfer = [&](std::uint32_t mptFlags, bool poolXrpToBtc) {
+            Env env{*this, features};
+            env.fund(XRP(30'000), gw_, alice_, bob_);
+            env.close();
+
+            // gw is the MPT issuer, so it may seed the pool regardless of
+            // whether the MPT permits third-party transfers.
+            MPT const btc = MPTTester(
+                {.env = env, .issuer = gw_, .holders = {alice_}, .pay = 1'000, .flags = mptFlags});
+
+            auto const asset1 = poolXrpToBtc ? XRP(10'000) : btc(10'000);
+            auto const asset2 = poolXrpToBtc ? btc(10'000) : XRP(10'000);
+            AMM const amm(env, gw_, asset1, asset2);
+            auto const lpIssue = amm.lptIssue();
+
+            env.trust(STAmount{lpIssue, 100'000}, alice_);
+            env.trust(STAmount{lpIssue, 100'000}, bob_);
+            env.close();
+
+            // Issuer-involving LP token transfer is always allowed (gw is the
+            // pool MPT's issuer), even when the MPT lacks CanTransfer.
+            env(pay(gw_, alice_, STAmount{lpIssue, 1'000}));
+            env.close();
+
+            // Transfer between two non-issuer holders is allowed only if the
+            // pool MPT has CanTransfer set; otherwise the redeem step against
+            // the AMM account blocks it with tecNO_AUTH.
+            if ((mptFlags & tfMPTCanTransfer) != 0u)
+            {
+                env(pay(alice_, bob_, STAmount{lpIssue, 100}));
+            }
+            else
+            {
+                env(pay(alice_, bob_, STAmount{lpIssue, 100}), Ter(tecNO_AUTH));
+            }
+            env.close();
+        };
+
+        // Pool MPT without CanTransfer blocks third-party LP token transfers.
+        testLPTokenTransfer(tfMPTCanTrade, true);
+        testLPTokenTransfer(tfMPTCanTrade, false);
+
+        // Pool MPT with CanTransfer allows them.
+        testLPTokenTransfer(tfMPTCanTrade | tfMPTCanTransfer, true);
+        testLPTokenTransfer(tfMPTCanTrade | tfMPTCanTransfer, false);
+    }
+
+    void
+    testMPTCanTransferOffer(FeatureBitset features)
+    {
+        testcase("MPT CanTransfer Offer");
+
+        using namespace jtx;
+
+        if (!features[featureMPTokensV2])
+            return;
+
+        // Parity with frozen LP tokens for the order book: a non-transferable
+        // pool MPT makes the LP token un-spendable (canTransferLPToken zeroes
+        // the spendable balance in accountHolds, just as isLPTokenFrozen does),
+        // so an offer to sell it cannot be funded - the same tecUNFUNDED_OFFER
+        // outcome as freezing a pool asset (see testOfferCreation).
+        auto testLPTokenTransfer = [&](std::uint32_t mptFlags, bool poolXrpToBtc) {
+            Env env{*this, features};
+            env.fund(XRP(30'000), gw_, carol_);
+            env.close();
+
+            MPT const btc = MPTTester(
+                {.env = env, .issuer = gw_, .holders = {carol_}, .pay = 1'000, .flags = mptFlags});
+
+            auto const asset1 = poolXrpToBtc ? XRP(10'000) : btc(10'000);
+            auto const asset2 = poolXrpToBtc ? btc(10'000) : XRP(10'000);
+            AMM const amm(env, gw_, asset1, asset2);
+            auto const lpIssue = amm.lptIssue();
+
+            env.trust(STAmount{lpIssue, 100'000}, carol_);
+            env.close();
+
+            // gw (the pool MPT issuer) seeds carol_ with LP tokens; issuer
+            // involving transfers are always allowed.
+            env(pay(gw_, carol_, STAmount{lpIssue, 1'000}));
+            env.close();
+
+            // carol_ tries to create an offer to sell the LP token.
+            if ((mptFlags & tfMPTCanTransfer) != 0u)
+            {
+                env(offer(carol_, XRP(10), STAmount{lpIssue, 10}), Txflags(tfPassive));
+                env.close();
+                BEAST_EXPECT(expectOffers(env, carol_, 1));
+            }
+            else
+            {
+                // Non-transferable pool MPT => LP token un-spendable => the
+                // sell offer is unfunded, just as if a pool asset were frozen.
+                env(offer(carol_, XRP(10), STAmount{lpIssue, 10}),
+                    Txflags(tfPassive),
+                    Ter(tecUNFUNDED_OFFER));
+                env.close();
+                BEAST_EXPECT(expectOffers(env, carol_, 0));
+            }
+        };
+
+        // Pool MPT without CanTransfer: LP token sell offer is unfunded.
+        testLPTokenTransfer(tfMPTCanTrade, true);
+        testLPTokenTransfer(tfMPTCanTrade, false);
+
+        // Pool MPT with CanTransfer: LP token sell offer is created.
+        testLPTokenTransfer(tfMPTCanTrade | tfMPTCanTransfer, true);
+        testLPTokenTransfer(tfMPTCanTrade | tfMPTCanTransfer, false);
     }
 
 public:
@@ -444,6 +580,8 @@ public:
             testOfferCrossing(features);
             testCheck(features);
             testNFTOffers(features);
+            testMPTCanTransferDirectStep(features);
+            testMPTCanTransferOffer(features);
         }
     }
 };

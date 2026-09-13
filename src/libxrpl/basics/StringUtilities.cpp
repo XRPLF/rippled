@@ -5,15 +5,15 @@
 #include <xrpl/beast/net/IPEndpoint.h>
 
 #include <boost/algorithm/hex.hpp>
-#include <boost/algorithm/string/case_conv.hpp>
-#include <boost/algorithm/string/trim.hpp>
 #include <boost/regex/v5/regbase.hpp>
 #include <boost/regex/v5/regex.hpp>
 #include <boost/regex/v5/regex_match.hpp>
 
+#include <algorithm>
 #include <cstdint>
 #include <iterator>
 #include <optional>
+#include <ranges>
 #include <string>
 #include <string_view>
 
@@ -67,14 +67,14 @@ parseUrl(ParsedUrl& pUrl, std::string const& strUrl)
     }
 
     pUrl.scheme = smMatch[1];
-    boost::algorithm::to_lower(pUrl.scheme);
+    pUrl.scheme = toLower(pUrl.scheme);
     pUrl.username = smMatch[2];
     pUrl.password = smMatch[3];
     std::string const domain = smMatch[4];
     // We need to use Endpoint to parse the domain to
     // strip surrounding brackets from IPv6 addresses,
     // e.g. [::1] => ::1.
-    auto const result = beast::IP::Endpoint::fromStringChecked(domain);
+    auto const result = beast::ip::Endpoint::fromStringChecked(domain);
     pUrl.domain = result ? result->address().to_string() : domain;
     std::string const port = smMatch[5];
     if (!port.empty())
@@ -93,10 +93,42 @@ parseUrl(ParsedUrl& pUrl, std::string const& strUrl)
     return true;
 }
 
+namespace {
+
+// Deliberately not std::isspace / std::tolower: those consult the current C
+// locale, so the same input could trim or fold differently depending on
+// process-wide state set by something else entirely. Everything these helpers
+// are used on (config keys and values, URL schemes, hex digests) is ASCII, and
+// the callers want a fixed answer, so spell the ASCII rules out.
+
+constexpr bool
+isAsciiSpace(char c)
+{
+    return c == ' ' || c == '\t' || c == '\n' || c == '\v' || c == '\f' || c == '\r';
+}
+
+constexpr char
+toAsciiLower(char c)
+{
+    return (c >= 'A' && c <= 'Z') ? static_cast<char>(c - 'A' + 'a') : c;
+}
+
+}  // namespace
+
 std::string
 trimWhitespace(std::string str)
 {
-    boost::trim(str);
+    auto const end = std::ranges::find_if_not(str | std::views::reverse, isAsciiSpace).base();
+    str.erase(end, str.end());
+    str.erase(str.begin(), std::ranges::find_if_not(str, isAsciiSpace));
+
+    return str;
+}
+
+std::string
+toLower(std::string str)
+{
+    std::ranges::transform(str, str.begin(), toAsciiLower);
     return str;
 }
 

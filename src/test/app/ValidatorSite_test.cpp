@@ -15,13 +15,12 @@
 #include <xrpl/protocol/jss.h>
 
 #include <boost/algorithm/string/join.hpp>
-#include <boost/filesystem/directory.hpp>
-#include <boost/filesystem/operations.hpp>
 #include <boost/range/adaptor/transformed.hpp>
 
 #include <date/date.h>
 
 #include <chrono>
+#include <filesystem>
 #include <fstream>
 #include <memory>
 #include <ostream>
@@ -704,7 +703,7 @@ public:
                   .effectiveOverlap = detail::kDefaultEffectiveOverlap,
                   .expectedRefreshMin = 60 * 24}});  // max of 24 hours
         }
-        using namespace boost::filesystem;
+        using namespace std::filesystem;
         for (auto const& file : directory_iterator(good.subdir()))
         {
             remove_all(file);

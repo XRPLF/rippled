@@ -24,7 +24,7 @@ signClaimAttestation(
     std::uint64_t claimID,
     std::optional<AccountID> const& dst)
 {
-    auto const toSign = Attestations::AttestationClaim::message(
+    auto const toSign = attestations::AttestationClaim::message(
         bridge, sendingAccount, sendingAmount, rewardAccount, wasLockingChainSend, claimID, dst);
     return sign(pk, sk, makeSlice(toSign));
 }
@@ -42,7 +42,7 @@ signCreateAccountAttestation(
     std::uint64_t createCount,
     AccountID const& dst)
 {
-    auto const toSign = Attestations::AttestationCreateAccount::message(
+    auto const toSign = attestations::AttestationCreateAccount::message(
         bridge,
         sendingAccount,
         sendingAmount,

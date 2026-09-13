@@ -8,7 +8,7 @@
 #include <string>
 #include <utility>
 
-namespace xrpl::PeerFinder {
+namespace xrpl::peer_finder {
 
 class SourceStringsImp : public SourceStrings
 {
@@ -33,9 +33,9 @@ public:
         results.addresses.reserve(strings_.size());
         for (auto const& str : strings_)
         {
-            beast::IP::Endpoint ep(beast::IP::Endpoint::fromString(str));
+            beast::ip::Endpoint ep(beast::ip::Endpoint::fromString(str));
             if (isUnspecified(ep))
-                ep = beast::IP::Endpoint::fromString(str);
+                ep = beast::ip::Endpoint::fromString(str);
             if (!isUnspecified(ep))
                 results.addresses.push_back(ep);
         }
@@ -54,4 +54,4 @@ SourceStrings::make(std::string const& name, Strings const& strings)
     return std::make_shared<SourceStringsImp>(name, strings);
 }
 
-}  // namespace xrpl::PeerFinder
+}  // namespace xrpl::peer_finder

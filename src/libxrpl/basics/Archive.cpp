@@ -2,22 +2,20 @@
 
 #include <xrpl/basics/contract.h>
 
-#include <boost/filesystem/operations.hpp>
-#include <boost/filesystem/path.hpp>
-
 #include <archive.h>
 #include <archive_entry.h>
 
 #include <cstddef>
+#include <filesystem>
 #include <memory>
 #include <stdexcept>
 
 namespace xrpl {
 
 void
-extractTarLz4(boost::filesystem::path const& src, boost::filesystem::path const& dst)
+extractTarLz4(std::filesystem::path const& src, std::filesystem::path const& dst)
 {
-    if (!is_regular_file(src))
+    if (!std::filesystem::is_regular_file(src))
         Throw<std::runtime_error>("Invalid source file");
 
     using archive_ptr = std::unique_ptr<struct archive, void (*)(struct archive*)>;

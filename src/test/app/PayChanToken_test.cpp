@@ -25,6 +25,7 @@
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/SeqProxy.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/UintTypes.h>
@@ -1316,10 +1317,12 @@ struct PayChanToken_test : public beast::unit_test::Suite
                 (*env.meta())[sfTransactionResult] == static_cast<std::uint8_t>(tesSUCCESS));
             env.close();
 
-            auto const ab = env.le(keylet::payChannel(alice.id(), bob.id(), aseq));
+            auto const ab =
+                env.le(keylet::payChannel(alice.id(), bob.id(), SeqProxy::rawSequence(aseq)));
             BEAST_EXPECT(ab);
 
-            auto const bc = env.le(keylet::payChannel(bob.id(), carol.id(), bseq));
+            auto const bc =
+                env.le(keylet::payChannel(bob.id(), carol.id(), SeqProxy::rawSequence(bseq)));
             BEAST_EXPECT(bc);
 
             {
@@ -1351,8 +1354,10 @@ struct PayChanToken_test : public beast::unit_test::Suite
             auto const chanAb = paychan::channel(alice, bob, aseq);
             env(paychan::claim(alice, chanAb, usd(1'000), usd(1'000)), Txflags(tfClose));
             {
-                BEAST_EXPECT(!env.le(keylet::payChannel(alice.id(), bob.id(), aseq)));
-                BEAST_EXPECT(env.le(keylet::payChannel(bob.id(), carol.id(), bseq)));
+                BEAST_EXPECT(
+                    !env.le(keylet::payChannel(alice.id(), bob.id(), SeqProxy::rawSequence(aseq))));
+                BEAST_EXPECT(
+                    env.le(keylet::payChannel(bob.id(), carol.id(), SeqProxy::rawSequence(bseq))));
 
                 xrpl::Dir const aod(*env.current(), keylet::ownerDir(alice.id()));
                 BEAST_EXPECT(std::distance(aod.begin(), aod.end()) == 1);
@@ -1381,8 +1386,10 @@ struct PayChanToken_test : public beast::unit_test::Suite
             auto const chanBc = paychan::channel(bob, carol, bseq);
             env(paychan::claim(bob, chanBc, usd(1'000), usd(1'000)), Txflags(tfClose));
             {
-                BEAST_EXPECT(!env.le(keylet::payChannel(alice.id(), bob.id(), aseq)));
-                BEAST_EXPECT(!env.le(keylet::payChannel(bob.id(), carol.id(), bseq)));
+                BEAST_EXPECT(
+                    !env.le(keylet::payChannel(alice.id(), bob.id(), SeqProxy::rawSequence(aseq))));
+                BEAST_EXPECT(
+                    !env.le(keylet::payChannel(bob.id(), carol.id(), SeqProxy::rawSequence(bseq))));
 
                 xrpl::Dir const aod(*env.current(), keylet::ownerDir(alice.id()));
                 BEAST_EXPECT(std::distance(aod.begin(), aod.end()) == 1);
@@ -1433,7 +1440,8 @@ struct PayChanToken_test : public beast::unit_test::Suite
                 Ter(tecNO_PERMISSION));
             env.close();
 
-            auto const ag = env.le(keylet::payChannel(alice.id(), gw.id(), aseq));
+            auto const ag =
+                env.le(keylet::payChannel(alice.id(), gw.id(), SeqProxy::rawSequence(aseq)));
             BEAST_EXPECT(ag);
 
             {
@@ -1454,7 +1462,8 @@ struct PayChanToken_test : public beast::unit_test::Suite
             auto const chanAg = paychan::channel(alice, gw, aseq);
             env(paychan::claim(alice, chanAg, usd(1'000), usd(1'000)), Txflags(tfClose));
             {
-                BEAST_EXPECT(!env.le(keylet::payChannel(alice.id(), gw.id(), aseq)));
+                BEAST_EXPECT(
+                    !env.le(keylet::payChannel(alice.id(), gw.id(), SeqProxy::rawSequence(aseq))));
 
                 xrpl::Dir const aod(*env.current(), keylet::ownerDir(alice.id()));
                 BEAST_EXPECT(std::distance(aod.begin(), aod.end()) == 1);
@@ -3930,10 +3939,12 @@ struct PayChanToken_test : public beast::unit_test::Suite
                 (*env.meta())[sfTransactionResult] == static_cast<std::uint8_t>(tesSUCCESS));
             env.close();
 
-            auto const ab = env.le(keylet::payChannel(alice.id(), bob.id(), aseq));
+            auto const ab =
+                env.le(keylet::payChannel(alice.id(), bob.id(), SeqProxy::rawSequence(aseq)));
             BEAST_EXPECT(ab);
 
-            auto const bc = env.le(keylet::payChannel(bob.id(), carol.id(), bseq));
+            auto const bc =
+                env.le(keylet::payChannel(bob.id(), carol.id(), SeqProxy::rawSequence(bseq)));
             BEAST_EXPECT(bc);
 
             {
@@ -3958,8 +3969,10 @@ struct PayChanToken_test : public beast::unit_test::Suite
             auto const chanAb = paychan::channel(alice, bob, aseq);
             env(paychan::claim(alice, chanAb, mpt(1'000), mpt(1'000)), Txflags(tfClose));
             {
-                BEAST_EXPECT(!env.le(keylet::payChannel(alice.id(), bob.id(), aseq)));
-                BEAST_EXPECT(env.le(keylet::payChannel(bob.id(), carol.id(), bseq)));
+                BEAST_EXPECT(
+                    !env.le(keylet::payChannel(alice.id(), bob.id(), SeqProxy::rawSequence(aseq))));
+                BEAST_EXPECT(
+                    env.le(keylet::payChannel(bob.id(), carol.id(), SeqProxy::rawSequence(bseq))));
 
                 xrpl::Dir const aod(*env.current(), keylet::ownerDir(alice.id()));
                 BEAST_EXPECT(std::distance(aod.begin(), aod.end()) == 1);
@@ -3981,8 +3994,10 @@ struct PayChanToken_test : public beast::unit_test::Suite
             auto const chanBc = paychan::channel(bob, carol, bseq);
             env(paychan::claim(bob, chanBc, mpt(1'000), mpt(1'000)), Txflags(tfClose));
             {
-                BEAST_EXPECT(!env.le(keylet::payChannel(alice.id(), bob.id(), aseq)));
-                BEAST_EXPECT(!env.le(keylet::payChannel(bob.id(), carol.id(), bseq)));
+                BEAST_EXPECT(
+                    !env.le(keylet::payChannel(alice.id(), bob.id(), SeqProxy::rawSequence(aseq))));
+                BEAST_EXPECT(
+                    !env.le(keylet::payChannel(bob.id(), carol.id(), SeqProxy::rawSequence(bseq))));
 
                 xrpl::Dir const aod(*env.current(), keylet::ownerDir(alice.id()));
                 BEAST_EXPECT(std::distance(aod.begin(), aod.end()) == 1);

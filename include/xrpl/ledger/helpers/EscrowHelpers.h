@@ -3,6 +3,7 @@
 #include <xrpl/basics/Log.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/Zero.h>
+#include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
@@ -17,6 +18,7 @@
 #include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/Keylet.h>
 #include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/MPTAmount.h>
 #include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/Rate.h>
 #include <xrpl/protocol/SField.h>
@@ -165,11 +167,11 @@ escrowLockPreclaimHelper<MPTIssue>(
         return ter;
 
     // If the issuer has frozen the account, return tecLOCKED
-    if (isFrozen(view, account, mptIssue))
+    if (isFrozen(view, account, *sleIssuance))
         return tecLOCKED;
 
     // If the issuer has frozen the destination, return tecLOCKED
-    if (isFrozen(view, dest, mptIssue))
+    if (isFrozen(view, dest, *sleIssuance))
         return tecLOCKED;
 
     // If the mpt cannot be transferred, return tecNO_AUTH
@@ -304,7 +306,7 @@ escrowUnlockPreclaimHelper<MPTIssue>(
         return ter;
 
     // If the issuer has frozen the account, return tecLOCKED
-    if (checkFreeze && isFrozen(view, account, mptIssue))
+    if (checkFreeze && isFrozen(view, account, *sleIssuance))
         return tecLOCKED;
 
     return tesSUCCESS;
@@ -529,10 +531,25 @@ escrowUnlockApplyHelper<MPTIssue>(
     auto finalAmt = amount;
     if ((!senderIssuer && !receiverIssuer) && lockedRate != kParityRate)
     {
-        // compute transfer fee, if any
-        auto const xferFee = amount.value() - divideRound(amount, lockedRate, amount.asset(), true);
-        // compute balance to transfer
-        finalAmt = amount.value() - xferFee;
+        if (ctx.view.rules().enabled(fixCleanup3_4_0))
+        {
+            XRPL_ASSERT(
+                lockedRate >= kParityRate,
+                "xrpl::escrowUnlockApplyHelper<MPTIssue> : lockedRate is at least parity");
+            // MPTs are integral, so round the delivered amount down and
+            // charge any fractional transfer fee to the escrowed amount.
+            auto const delivered =
+                mulRatio(amount.mpt(), kParityRate.value, lockedRate.value, false);
+            finalAmt = STAmount(amount.asset(), delivered.value());
+        }
+        else
+        {
+            // compute transfer fee, if any
+            auto const xferFee =
+                amount.value() - divideRound(amount, lockedRate, amount.asset(), true);
+            // compute balance to transfer
+            finalAmt = amount.value() - xferFee;
+        }
     }
     return unlockEscrowMPT(
         ctx.view,

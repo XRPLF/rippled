@@ -24,7 +24,7 @@
 #include <string>
 #include <utility>
 
-namespace xrpl::Resource {
+namespace xrpl::resource {
 
 class ResourceManagerTest : public ::testing::Test
 {
@@ -68,13 +68,13 @@ protected:
         {
             Gossip::Item item;
             item.balance = 100 + randInt(499);
-            beast::IP::AddressV4::bytes_type const d = {{
+            beast::ip::AddressV4::bytes_type const d = {{
                 192,
                 0,
                 2,
                 static_cast<std::uint8_t>(v + i),
             }};
-            item.address = beast::IP::Endpoint{beast::IP::AddressV4{d}};
+            item.address = beast::ip::Endpoint{beast::ip::AddressV4{d}};
             gossip.items.push_back(std::move(item));
         }
         return gossip;
@@ -86,7 +86,7 @@ TEST_F(ResourceManagerTest, limited_warn_drop)
     TestLogic logic{j_};
 
     Charge const fee{kDropThreshold + 1};
-    beast::IP::Endpoint const addr{beast::IP::Endpoint::fromString("192.0.2.2")};
+    beast::ip::Endpoint const addr{beast::ip::Endpoint::fromString("192.0.2.2")};
 
     {
         Consumer c{logic.newInboundEndpoint(addr)};
@@ -158,7 +158,7 @@ TEST_F(ResourceManagerTest, unlimited_warn_drop)
     TestLogic logic{j_};
 
     Charge const fee{kDropThreshold + 1};
-    beast::IP::Endpoint const addr{beast::IP::Endpoint::fromString("192.0.2.2")};
+    beast::ip::Endpoint const addr{beast::ip::Endpoint::fromString("192.0.2.2")};
     Consumer c{logic.newUnlimitedEndpoint(addr)};
 
     // Create load until we get a warning
@@ -185,7 +185,7 @@ TEST_F(ResourceManagerTest, charges)
     TestLogic logic{j_};
 
     {
-        beast::IP::Endpoint const address{beast::IP::Endpoint::fromString("192.0.2.1")};
+        beast::ip::Endpoint const address{beast::ip::Endpoint::fromString("192.0.2.1")};
         Consumer c{logic.newInboundEndpoint(address)};
         Charge const fee{1000};
         JLOG(j_.info()) << "Charging " << c.toString() << " " << fee << " per second";
@@ -199,7 +199,7 @@ TEST_F(ResourceManagerTest, charges)
     }
 
     {
-        beast::IP::Endpoint const address{beast::IP::Endpoint::fromString("192.0.2.2")};
+        beast::ip::Endpoint const address{beast::ip::Endpoint::fromString("192.0.2.2")};
         Consumer c{logic.newInboundEndpoint(address)};
         Charge const fee{1000};
         JLOG(j_.info()) << "Charging " << c.toString() << " " << fee << " per second";
@@ -230,16 +230,16 @@ TEST_F(ResourceManagerTest, import)
     Gossip g;
     Gossip::Item item;
     item.balance = 100;
-    beast::IP::AddressV4::bytes_type const d = {{
+    beast::ip::AddressV4::bytes_type const d = {{
         192,
         0,
         2,
         1,
     }};
-    item.address = beast::IP::Endpoint{beast::IP::AddressV4{d}};
+    item.address = beast::ip::Endpoint{beast::ip::AddressV4{d}};
     g.items.push_back(std::move(item));
 
     logic.importConsumers("g", g);
 }
 
-}  // namespace xrpl::Resource
+}  // namespace xrpl::resource

@@ -21,7 +21,7 @@ namespace xrpl {
 class ReadView;
 class Transaction;
 
-namespace RPC {
+namespace rpc {
 
 struct JsonContext;
 
@@ -172,8 +172,8 @@ ledgerFromSpecifier(
  *         On failure, contains a json::Value describing the error.
  */
 std::expected<std::shared_ptr<Ledger const>, json::Value>
-getOrAcquireLedger(RPC::JsonContext const& context);
+getOrAcquireLedger(rpc::JsonContext const& context);
 
-}  // namespace RPC
+}  // namespace rpc
 
 }  // namespace xrpl

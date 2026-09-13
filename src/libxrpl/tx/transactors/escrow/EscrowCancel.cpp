@@ -14,6 +14,7 @@
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/SeqProxy.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/Transactor.h>
@@ -33,7 +34,8 @@ EscrowCancel::preclaim(PreclaimContext const& ctx)
 {
     if (ctx.view.rules().enabled(featureTokenEscrow))
     {
-        auto const k = keylet::escrow(ctx.tx[sfOwner], ctx.tx[sfOfferSequence]);
+        auto const seqProxy = SeqProxy::rawSequence(ctx.tx[sfOfferSequence]);
+        auto const k = keylet::escrow(ctx.tx[sfOwner], seqProxy);
         auto const slep = ctx.view.read(k);
         if (!slep)
             return tecNO_TARGET;
@@ -58,7 +60,8 @@ EscrowCancel::preclaim(PreclaimContext const& ctx)
 TER
 EscrowCancel::doApply()
 {
-    auto const k = keylet::escrow(ctx_.tx[sfOwner], ctx_.tx[sfOfferSequence]);
+    auto const seqProxy = SeqProxy::rawSequence(ctx_.tx[sfOfferSequence]);
+    auto const k = keylet::escrow(ctx_.tx[sfOwner], seqProxy);
     auto const slep = ctx_.view().peek(k);
     if (!slep)
     {
@@ -107,6 +110,12 @@ EscrowCancel::doApply()
     auto const sle = ctx_.view().peek(keylet::account(account));
     STAmount const amount = slep->getFieldAmount(sfAmount);
 
+    // The return can re-create a holding the owner deleted while the escrow
+    // was pending; the removed escrow must not be counted against its reserve.
+    bool const recycleReserve = ctx_.view().rules().enabled(fixCleanup3_4_0);
+    if (recycleReserve)
+        decreaseOwnerCountForObject(ctx_.view(), sle, slep, 1, ctx_.journal);
+
     // Transfer amount back to the owner
     if (isXRP(amount))
     {
@@ -150,7 +159,8 @@ EscrowCancel::doApply()
         }
     }
 
-    decreaseOwnerCountForObject(ctx_.view(), sle, slep, 1, ctx_.journal);
+    if (!recycleReserve)
+        decreaseOwnerCountForObject(ctx_.view(), sle, slep, 1, ctx_.journal);
 
     // Remove escrow from ledger
     ctx_.view().erase(slep);

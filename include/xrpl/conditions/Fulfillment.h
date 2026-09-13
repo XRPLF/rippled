@@ -93,12 +93,6 @@ operator==(Fulfillment const& lhs, Fulfillment const& rhs)
         lhs.fingerprint() == rhs.fingerprint();
 }
 
-inline bool
-operator!=(Fulfillment const& lhs, Fulfillment const& rhs)
-{
-    return !(lhs == rhs);
-}
-
 /**
  * Determine whether the given fulfillment and condition match
  */

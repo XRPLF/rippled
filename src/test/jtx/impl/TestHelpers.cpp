@@ -39,6 +39,7 @@
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STParsedJSON.h>
 #include <xrpl/protocol/STPathSet.h>
+#include <xrpl/protocol/SeqProxy.h>
 #include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/protocol/jss.h>
@@ -254,10 +255,10 @@ findPathsRequest(
     using namespace jtx;
 
     auto& app = env.app();
-    Resource::Charge loadType = Resource::kFeeReferenceRpc;
-    Resource::Consumer c;
+    resource::Charge loadType = resource::kFeeReferenceRpc;
+    resource::Consumer c;
 
-    RPC::JsonContext context{
+    rpc::JsonContext context{
         {.j = env.journal,
          .app = app,
          .loadType = loadType,
@@ -267,7 +268,7 @@ findPathsRequest(
          .role = Role::USER,
          .coro = {},
          .infoSub = {},
-         .apiVersion = RPC::kApiVersionIfUnspecified},
+         .apiVersion = rpc::kApiVersionIfUnspecified},
         {},
         {}};
 
@@ -295,7 +296,7 @@ findPathsRequest(
     app.getJobQueue().postCoro(JtClient, "RPC-Client", [&](auto const& coro) {
         context.params = std::move(params);
         context.coro = coro;
-        RPC::doCommand(context, result);
+        rpc::doCommand(context, result);
         g.signal();
     });
 
@@ -692,7 +693,7 @@ issueHelperMPT(IssuerArgs const& args)
 /* LoanBroker */
 /******************************************************************************/
 
-namespace loanBroker {
+namespace loan_broker {
 
 json::Value
 set(AccountID const& account, uint256 const& vaultId, uint32_t flags)
@@ -758,7 +759,7 @@ coverClawback(AccountID const& account, std::uint32_t flags)
     return jv;
 }
 
-}  // namespace loanBroker
+}  // namespace loan_broker
 
 /* Loan */
 /******************************************************************************/

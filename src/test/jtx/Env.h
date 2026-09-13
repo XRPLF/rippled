@@ -1081,7 +1081,7 @@ Env::rpc(
     Args&&... args)
 {
     return doRpc(
-        RPC::kApiCommandLineVersion,
+        rpc::kApiCommandLineVersion,
         std::vector<std::string>{cmd, std::forward<Args>(args)...},
         headers);
 }

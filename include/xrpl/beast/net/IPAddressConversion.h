@@ -4,7 +4,7 @@
 
 #include <boost/asio.hpp>
 
-namespace beast::IP {
+namespace beast::ip {
 
 /**
  * Convert to Endpoint.
@@ -32,7 +32,7 @@ toAsioAddress(Endpoint const& endpoint);
 boost::asio::ip::tcp::endpoint
 toAsioEndpoint(Endpoint const& endpoint);
 
-}  // namespace beast::IP
+}  // namespace beast::ip
 
 namespace beast {
 
@@ -41,25 +41,25 @@ struct IPAddressConversion
 {
     explicit IPAddressConversion() = default;
 
-    static IP::Endpoint
+    static ip::Endpoint
     fromAsio(boost::asio::ip::address const& address)
     {
-        return IP::fromAsio(address);
+        return ip::fromAsio(address);
     }
-    static IP::Endpoint
+    static ip::Endpoint
     fromAsio(boost::asio::ip::tcp::endpoint const& endpoint)
     {
-        return IP::fromAsio(endpoint);
+        return ip::fromAsio(endpoint);
     }
     static boost::asio::ip::address
-    toAsioAddress(IP::Endpoint const& address)
+    toAsioAddress(ip::Endpoint const& address)
     {
-        return IP::toAsioAddress(address);
+        return ip::toAsioAddress(address);
     }
     static boost::asio::ip::tcp::endpoint
-    toAsioEndpoint(IP::Endpoint const& address)
+    toAsioEndpoint(ip::Endpoint const& address)
     {
-        return IP::toAsioEndpoint(address);
+        return ip::toAsioEndpoint(address);
     }
 };
 

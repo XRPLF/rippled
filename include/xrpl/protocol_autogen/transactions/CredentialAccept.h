@@ -21,7 +21,7 @@ class CredentialAcceptBuilder;
  * Type: ttCREDENTIAL_ACCEPT (59)
  * Delegable: Delegation::Delegable
  * Amendment: featureCredentials
- * Privileges: NoPriv
+ * Privileges: Privilege::NoPriv
  *
  * Immutable wrapper around STTx providing type-safe field access.
  * Use CredentialAcceptBuilder to construct new transactions.

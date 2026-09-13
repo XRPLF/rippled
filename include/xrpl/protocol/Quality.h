@@ -75,13 +75,6 @@ operator==(TAmounts<In, Out> const& lhs, TAmounts<In, Out> const& rhs) noexcept
     return lhs.in == rhs.in && lhs.out == rhs.out;
 }
 
-template <class In, class Out>
-bool
-operator!=(TAmounts<In, Out> const& lhs, TAmounts<In, Out> const& rhs) noexcept
-{
-    return !(lhs == rhs);
-}
-
 //------------------------------------------------------------------------------
 
 // XRPL specific constant used for parsing qualities and other things
@@ -269,12 +262,6 @@ public:
     operator==(Quality const& lhs, Quality const& rhs) noexcept
     {
         return lhs.value_ == rhs.value_;
-    }
-
-    friend bool
-    operator!=(Quality const& lhs, Quality const& rhs) noexcept
-    {
-        return !(lhs == rhs);
     }
 
     friend std::ostream&

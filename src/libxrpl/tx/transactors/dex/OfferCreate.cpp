@@ -11,6 +11,7 @@
 #include <xrpl/ledger/Sandbox.h>
 #include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
+#include <xrpl/ledger/helpers/CredentialHelpers.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/ledger/helpers/MPTokenHelpers.h>
 #include <xrpl/ledger/helpers/OfferHelpers.h>
@@ -34,6 +35,7 @@
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STPathSet.h>
 #include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/SeqProxy.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/UintTypes.h>
@@ -241,8 +243,31 @@ OfferCreate::preclaim(PreclaimContext const& ctx)
     // is part of the domain
     if (ctx.tx.isFieldPresent(sfDomainID))
     {
-        if (!permissioned_dex::accountInDomain(ctx.view, id, ctx.tx[sfDomainID]))
-            return tecNO_PERMISSION;
+        if (ctx.view.rules().enabled(fixCleanup3_4_0))
+        {
+            auto const domainID = ctx.tx[sfDomainID];
+            auto const sleDomain = ctx.view.read(keylet::permissionedDomain(domainID));
+            if (!sleDomain)
+                return tecNO_PERMISSION;
+
+            // Domain owner is always considered in the domain, no credential check
+            // needed. For all other accounts, use validDomain which detects expired
+            // credentials. Suppress tecEXPIRED here so doApply can run and delete
+            // the expired credential SLEs from the ledger.
+            if (sleDomain->getAccountID(sfOwner) != id)
+            {
+                // validDomain returns tecNO_AUTH when no matching credential is
+                // found. Map it to tecNO_PERMISSION to preserve existing behavior.
+                if (auto const err = credentials::validDomain(ctx.view, domainID, id);
+                    !isTesSuccess(err) && err != tecEXPIRED)
+                    return tecNO_PERMISSION;
+            }
+        }
+        else
+        {
+            if (!permissioned_dex::accountInDomain(ctx.view, id, ctx.tx[sfDomainID]))
+                return tecNO_PERMISSION;
+        }
     }
 
     if (auto const ter = canTrade(ctx.view, saTakerPays.asset()); !isTesSuccess(ter))
@@ -634,7 +659,7 @@ OfferCreate::applyGuts(Sandbox& sb, Sandbox& sbCancel)
 
     // Note that we use the value from the sequence or ticket as the
     // offer sequence.  For more explanation see comments in SeqProxy.h.
-    auto const offerSequence = ctx_.tx.getSeqValue();
+    auto const offerSequence = ctx_.tx.getSeqProxy();
 
     // This is the original rate of the offer, and is the rate at which
     // it will be placed, even if crossing offers change the amounts that
@@ -648,7 +673,8 @@ OfferCreate::applyGuts(Sandbox& sb, Sandbox& sbCancel)
     // Process a cancellation request that's passed along with an offer.
     if (cancelSequence)
     {
-        auto const sleCancel = sb.peek(keylet::offer(accountID_, *cancelSequence));
+        auto const seqProxy = SeqProxy::rawSequence(*cancelSequence);
+        auto const sleCancel = sb.peek(keylet::offer(accountID_, seqProxy));
 
         // It's not an error to not find the offer to cancel: it might have
         // been consumed or removed. If it is found, however, it's an error
@@ -670,6 +696,7 @@ OfferCreate::applyGuts(Sandbox& sb, Sandbox& sbCancel)
     }
 
     bool crossed = false;
+    bool const mptV2 = ctx_.view().rules().enabled(featureMPTokensV2);
 
     if (isTesSuccess(result))
     {
@@ -692,7 +719,12 @@ OfferCreate::applyGuts(Sandbox& sb, Sandbox& sbCancel)
             if (sle && sle->isFieldPresent(sfTickSize))
                 uTickSize = std::min(uTickSize, (*sle)[sfTickSize]);
         }
-        if (uTickSize < Quality::kMaxTickSize)
+        // Quality's ctor is the same getRate() call that produced uRate, and
+        // round() maps zero to zero, so an unrepresentable quality would make
+        // divide() below throw (tefEXCEPTION). Skip the rounding instead: the
+        // offer still crosses, and any residual is stopped before placement.
+        bool const unrepresentableRate = mptV2 && uRate == 0;
+        if (uTickSize < Quality::kMaxTickSize && !unrepresentableRate)
         {
             auto const rate = Quality{saTakerGets, saTakerPays}.round(uTickSize).rate();
 
@@ -839,6 +871,20 @@ OfferCreate::applyGuts(Sandbox& sb, Sandbox& sbCancel)
         return {tesSUCCESS, true};
     }
 
+    // The remainder rests at uRate, the original pre-crossing rate. A zero
+    // rate (quality not representable) puts it in the directory whose index
+    // equals getBookBase(book), and BookTip scans keys strictly greater, so it
+    // could never be crossed while holding the owner's reserve. Don't place
+    // it; anything that crossed is kept, and a fully crossed offer has already
+    // returned above. Gated to preserve pre-amendment behavior.
+    if (mptV2 && uRate == 0)
+    {
+        JLOG(j_.debug()) << "Unrepresentable quality: remainder not placed";
+        if (!crossed)
+            return {tecKILLED, false};
+        return {tesSUCCESS, true};
+    }
+
     auto const sleCreator = sb.peek(keylet::account(accountID_));
     if (!sleCreator)
         return {tefINTERNAL, false};
@@ -933,7 +979,7 @@ OfferCreate::applyGuts(Sandbox& sb, Sandbox& sbCancel)
 
     auto sleOffer = std::make_shared<SLE>(offerIndex);
     sleOffer->setAccountID(sfAccount, accountID_);
-    sleOffer->setFieldU32(sfSequence, offerSequence);
+    sleOffer->setFieldU32(sfSequence, offerSequence.value());
     sleOffer->setFieldH256(sfBookDirectory, dir.key);
     sleOffer->setFieldAmount(sfTakerPays, saTakerPays);
     sleOffer->setFieldAmount(sfTakerGets, saTakerGets);
@@ -978,6 +1024,27 @@ OfferCreate::applyGuts(Sandbox& sb, Sandbox& sbCancel)
 TER
 OfferCreate::doApply()
 {
+    // If a DomainID is present, verify the account is still in the domain and
+    // delete any expired credential SLEs. This must happen before the Sandboxes
+    // are created: if we return a tec error, the engine applies sbCancel (not
+    // sb) to rawView, so deletions made inside sb would be lost. Deletions made
+    // directly to ctx_.view() here are preserved regardless of which branch
+    // applyGuts takes.
+    if (ctx_.tx.isFieldPresent(sfDomainID) && ctx_.view().rules().enabled(fixCleanup3_4_0))
+    {
+        auto const domainID = ctx_.tx[sfDomainID];
+        auto const sleDomain = ctx_.view().read(keylet::permissionedDomain(domainID));
+        if (!sleDomain)
+            return tecINTERNAL;  // LCOV_EXCL_LINE
+
+        if (sleDomain->getAccountID(sfOwner) != accountID_)
+        {
+            if (auto const err = verifyValidDomain(ctx_.view(), accountID_, domainID, j_);
+                !isTesSuccess(err))
+                return err;
+        }
+    }
+
     // This is the ledger view that we work against. Transactions are applied
     // as we go on processing transactions.
     Sandbox sb(&ctx_.view());

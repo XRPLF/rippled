@@ -26,7 +26,7 @@ public:
      * @param journal Destination for logging output.
      */
     static std::shared_ptr<StatsDCollector>
-    make(IP::Endpoint const& address, std::string const& prefix, Journal journal);
+    make(ip::Endpoint const& address, std::string const& prefix, Journal journal);
 };
 
 }  // namespace beast::insight

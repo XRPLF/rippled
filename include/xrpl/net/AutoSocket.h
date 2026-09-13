@@ -67,16 +67,16 @@ public:
         return socket_->next_layer();
     }
 
-    beast::IP::Endpoint
+    beast::ip::Endpoint
     localEndpoint()
     {
-        return beast::IP::fromAsio(lowestLayer().local_endpoint());
+        return beast::ip::fromAsio(lowestLayer().local_endpoint());
     }
 
-    beast::IP::Endpoint
+    beast::ip::Endpoint
     remoteEndpoint()
     {
-        return beast::IP::fromAsio(lowestLayer().remote_endpoint());
+        return beast::ip::fromAsio(lowestLayer().remote_endpoint());
     }
 
     lowest_layer_type&

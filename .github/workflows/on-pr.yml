@@ -77,23 +77,28 @@ jobs:
 
             # Keep the paths below in sync with those in `on-trigger.yml`.
             .github/actions/build-deps/**
-            .github/actions/generate-version/**
+            .github/actions/release-info/**
             .github/actions/setup-conan/**
+            .github/actions/setup-nix-env/**
             .github/scripts/strategy-matrix/**
             .github/workflows/reusable-build-test-config.yml
             .github/workflows/reusable-build-test.yml
+            .github/workflows/reusable-check-autogen.yml
             .github/workflows/reusable-clang-tidy.yml
             .github/workflows/reusable-package.yml
+            .github/workflows/reusable-rust.yml
             .github/workflows/reusable-strategy-matrix.yml
             .github/workflows/reusable-test.yml
             .github/workflows/reusable-upload-recipe.yml
             .clang-tidy
             .codecov.yml
+            bin/check-nix-store-refs.sh
             bin/check-tools.sh
             bin/default-loader-path.sh
             cfg/**
             cmake/**
             conan/**
+            crates/**
             external/**
             include/**
             src/**
@@ -101,6 +106,9 @@ jobs:
             CMakeLists.txt
             conanfile.py
             conan.lock
+            flake.lock
+            flake.nix
+            nix/**
             LICENSE.md
             package/**
             README.md
@@ -125,6 +133,11 @@ jobs:
           cat "${GITHUB_OUTPUT}"
     outputs:
       go: ${{ steps.go.outputs.go == 'true' }}
+
+  check-autogen:
+    needs: should-run
+    if: ${{ needs.should-run.outputs.go == 'true' }}
+    uses: ./.github/workflows/reusable-check-autogen.yml
 
   check-levelization:
     needs: should-run
@@ -159,6 +172,13 @@ jobs:
       # other accounts will not have access to our remote cache storage.
       ccache_enabled: ${{ github.repository_owner == 'XRPLF' }}
       os: ${{ matrix.os }}
+    secrets:
+      CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+
+  rust:
+    needs: should-run
+    if: ${{ needs.should-run.outputs.go == 'true' }}
+    uses: ./.github/workflows/reusable-rust.yml
     secrets:
       CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
@@ -200,10 +220,12 @@ jobs:
   passed:
     if: failure() || cancelled()
     needs:
+      - check-autogen
       - check-levelization
       - check-rename
       - clang-tidy
       - build-test
+      - rust
       - package
       - upload-recipe
       - notify-clio
