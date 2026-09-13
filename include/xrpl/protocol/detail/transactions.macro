@@ -1413,3 +1413,41 @@ TRANSACTION(ttCOUPON_PAY, 112, CouponPay,
     {sfMPTokenIssuanceID, SoeRequired},
     {sfAmount, SoeRequired, SoeMptSupported},
 }))
+TRANSACTION(ttBALLOT_CREATE, 113, BallotCreate,
+    ({.amendment = featureConfidentialVoting}),
+    ({
+    {sfMPTokenIssuanceID, SoeOptional},
+    {sfDomainID, SoeOptional},
+    {sfDigest, SoeRequired},
+    {sfURI, SoeOptional},
+    {sfOptionCount, SoeRequired},
+    {sfTallyPublicKey, SoeRequired},
+    {sfAuditorEncryptionKey, SoeOptional},
+    {sfOpenTime, SoeRequired},
+    {sfCloseTime, SoeRequired},
+    {sfZKProof, SoeRequired},
+}))
+TRANSACTION(ttBALLOT_CAST_VOTE, 114, BallotCastVote,
+    ({.amendment = featureConfidentialVoting}),
+    ({
+    {sfBallotID, SoeRequired},
+    {sfEncryptedVotes, SoeRequired},
+    {sfAuditorEncryptedVotes, SoeOptional},
+    {sfVoterPublicKey, SoeOptional},
+    {sfVoterEncryptedVotes, SoeOptional},
+    {sfZKProof, SoeRequired},
+    {sfBlindingFactor, SoeRequired},
+    {sfCredentialIDs, SoeOptional},
+}))
+TRANSACTION(ttBALLOT_FINALIZE, 115, BallotFinalize,
+    ({.amendment = featureConfidentialVoting}),
+    ({
+    {sfBallotID, SoeRequired},
+    {sfResults, SoeRequired},
+    {sfZKProof, SoeRequired},
+}))
+TRANSACTION(ttBALLOT_DELETE, 116, BallotDelete,
+    ({.amendment = featureConfidentialVoting}),
+    ({
+    {sfBallotID, SoeRequired},
+}))

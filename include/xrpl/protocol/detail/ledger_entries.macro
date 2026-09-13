@@ -423,6 +423,7 @@ LEDGER_ENTRY(ltMPTOKEN_ISSUANCE, 0x007e, MPTokenIssuance, mpt_issuance, ({
     {sfIssuerKeyEpoch,           SoeOptional},
     {sfAuditorKeyEpoch,          SoeOptional},
     {sfConfidentialOutstandingAmount, SoeDefault},
+    {sfBallotID,                 SoeOptional},  // ConfidentialVoting: the issuance's open ballot, if any
 }))
 
 /** A ledger object which tracks MPToken
@@ -445,6 +446,8 @@ LEDGER_ENTRY(ltMPTOKEN, 0x007f, MPToken, mptoken, ({
     {sfRedemptionAfter,             SoeDefault},
     {sfCouponAccrued,               SoeOptional},
     {sfCouponIndex,                 SoeOptional},
+    {sfVoteLockedAmount,            SoeOptional},  // ConfidentialVoting: locked while a ballot is open
+    {sfBallotID,                    SoeOptional},  // ConfidentialVoting: the ballot holding the lock
 }))
 
 /** A ledger object which tracks Oracle
@@ -759,6 +762,48 @@ LEDGER_ENTRY(ltCOUPON_SCHEDULE, 0x0093, CouponSchedule, coupon_schedule, ({
     {sfExpiration,           SoeOptional},
     {sfCallNoticePeriod,     SoeOptional},
     {sfEarliestCallTime,     SoeOptional},
+}))
+
+/** A ledger object representing a confidential ballot with a homomorphically
+    encrypted tally.
+
+    \sa keylet::ballot
+ */
+LEDGER_ENTRY(ltBALLOT, 0x0094, Ballot, ballot, ({
+    {sfOwner,                SoeRequired},
+    {sfSequence,             SoeRequired},
+    {sfMPTokenIssuanceID,    SoeOptional},  // token mode (one-of with sfDomainID)
+    {sfDomainID,             SoeOptional},  // credential mode (one-of)
+    {sfDigest,               SoeRequired},  // hash of the off-ledger ballot document
+    {sfURI,                  SoeOptional},
+    {sfOptionCount,          SoeRequired},
+    {sfTallyPublicKey,       SoeRequired},
+    {sfAuditorEncryptionKey, SoeOptional},  // optional auditor ElGamal key
+    {sfEncryptedTally,       SoeRequired},  // one ElGamal ciphertext per option
+    {sfOpenTime,             SoeRequired},
+    {sfCloseTime,            SoeRequired},
+    {sfVoteCount,            SoeDefault},
+    {sfResults,              SoeOptional},  // plaintext counts, present after finalize
+    {sfOwnerNode,            SoeRequired},
+    {sfPreviousTxnID,        SoeRequired},
+    {sfPreviousTxnLgrSeq,    SoeRequired},
+}))
+
+/** A ledger object recording a single voter's cast on a Ballot.
+
+    \sa keylet::ballotVote
+ */
+LEDGER_ENTRY(ltBALLOT_VOTE, 0x0095, BallotVote, ballot_vote, ({
+    {sfAccount,               SoeRequired},  // voter
+    {sfBallotID,              SoeRequired},
+    {sfBallotWeight,          SoeRequired},
+    {sfEncryptedVotes,        SoeRequired},  // vote vector under the tally key
+    {sfAuditorEncryptedVotes, SoeOptional},  // present iff the ballot has an auditor key
+    {sfVoterPublicKey,        SoeOptional},  // present iff lsfVoterRecoverable
+    {sfVoterEncryptedVotes,   SoeOptional},  // present iff lsfVoterRecoverable
+    {sfOwnerNode,             SoeRequired},
+    {sfPreviousTxnID,         SoeRequired},
+    {sfPreviousTxnLgrSeq,     SoeRequired},
 }))
 
 #undef EXPAND

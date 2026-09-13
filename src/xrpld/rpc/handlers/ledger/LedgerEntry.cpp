@@ -544,6 +544,51 @@ parseLoan(
 }
 
 static std::expected<uint256, json::Value>
+parseBallot(
+    json::Value const& params,
+    json::StaticString const fieldName,
+    [[maybe_unused]] unsigned const apiVersion)
+{
+    if (!params.isObject())
+    {
+        return parseObjectID(params, fieldName, "hex string");
+    }
+
+    auto const owner =
+        ledger_entry_helpers::requiredAccountID(params, jss::owner, "malformedOwner");
+    if (!owner)
+        return std::unexpected(owner.error());
+    auto const seq = ledger_entry_helpers::requiredUInt32(params, jss::seq, "malformedSeq");
+    if (!seq)
+        return std::unexpected(seq.error());
+
+    return keylet::ballot(*owner, *seq).key;
+}
+
+static std::expected<uint256, json::Value>
+parseBallotVote(
+    json::Value const& params,
+    json::StaticString const fieldName,
+    [[maybe_unused]] unsigned const apiVersion)
+{
+    if (!params.isObject())
+    {
+        return parseObjectID(params, fieldName, "hex string");
+    }
+
+    auto const ballotID =
+        ledger_entry_helpers::requiredUInt256(params, jss::ballot_id, "malformedBallotID");
+    if (!ballotID)
+        return std::unexpected(ballotID.error());
+    auto const account =
+        ledger_entry_helpers::requiredAccountID(params, jss::account, "malformedAccount");
+    if (!account)
+        return std::unexpected(account.error());
+
+    return keylet::ballotVote(*ballotID, *account).key;
+}
+
+static std::expected<uint256, json::Value>
 parseMPToken(
     json::Value const& params,
     json::StaticString const fieldName,

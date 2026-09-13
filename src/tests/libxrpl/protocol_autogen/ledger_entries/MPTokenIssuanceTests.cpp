@@ -30,6 +30,7 @@ TEST(MPTokenIssuanceTests, BuilderSettersRoundTrip)
     auto const lockedAmountValue = canonical_UINT64();
     auto const mPTokenMetadataValue = canonical_VL();
     auto const mPTokenSchemaValue = canonical_VL();
+    auto const tokenIssuanceIDValue = canonical_UINT256();
     auto const previousTxnIDValue = canonical_UINT256();
     auto const previousTxnLgrSeqValue = canonical_UINT32();
     auto const domainIDValue = canonical_UINT256();
@@ -40,6 +41,7 @@ TEST(MPTokenIssuanceTests, BuilderSettersRoundTrip)
     auto const issuerKeyEpochValue = canonical_UINT32();
     auto const auditorKeyEpochValue = canonical_UINT32();
     auto const confidentialOutstandingAmountValue = canonical_UINT64();
+    auto const ballotIDValue = canonical_UINT256();
 
     MPTokenIssuanceBuilder builder{
         issuerValue,
@@ -56,6 +58,7 @@ TEST(MPTokenIssuanceTests, BuilderSettersRoundTrip)
     builder.setLockedAmount(lockedAmountValue);
     builder.setMPTokenMetadata(mPTokenMetadataValue);
     builder.setMPTokenSchema(mPTokenSchemaValue);
+    builder.setTokenIssuanceID(tokenIssuanceIDValue);
     builder.setDomainID(domainIDValue);
     builder.setImmutableFlags(immutableFlagsValue);
     builder.setReferenceHolding(referenceHoldingValue);
@@ -64,6 +67,7 @@ TEST(MPTokenIssuanceTests, BuilderSettersRoundTrip)
     builder.setIssuerKeyEpoch(issuerKeyEpochValue);
     builder.setAuditorKeyEpoch(auditorKeyEpochValue);
     builder.setConfidentialOutstandingAmount(confidentialOutstandingAmountValue);
+    builder.setBallotID(ballotIDValue);
 
     builder.setLedgerIndex(index);
     builder.setFlags(0x1u);
@@ -159,6 +163,14 @@ TEST(MPTokenIssuanceTests, BuilderSettersRoundTrip)
     }
 
     {
+        auto const& expected = tokenIssuanceIDValue;
+        auto const actualOpt = entry.getTokenIssuanceID();
+        ASSERT_TRUE(actualOpt.has_value());
+        expectEqualField(expected, *actualOpt, "sfTokenIssuanceID");
+        EXPECT_TRUE(entry.hasTokenIssuanceID());
+    }
+
+    {
         auto const& expected = domainIDValue;
         auto const actualOpt = entry.getDomainID();
         ASSERT_TRUE(actualOpt.has_value());
@@ -222,6 +234,14 @@ TEST(MPTokenIssuanceTests, BuilderSettersRoundTrip)
         EXPECT_TRUE(entry.hasConfidentialOutstandingAmount());
     }
 
+    {
+        auto const& expected = ballotIDValue;
+        auto const actualOpt = entry.getBallotID();
+        ASSERT_TRUE(actualOpt.has_value());
+        expectEqualField(expected, *actualOpt, "sfBallotID");
+        EXPECT_TRUE(entry.hasBallotID());
+    }
+
     EXPECT_TRUE(entry.hasLedgerIndex());
     auto const ledgerIndex = entry.getLedgerIndex();
     ASSERT_TRUE(ledgerIndex.has_value());
@@ -245,6 +265,7 @@ TEST(MPTokenIssuanceTests, BuilderFromSleRoundTrip)
     auto const lockedAmountValue = canonical_UINT64();
     auto const mPTokenMetadataValue = canonical_VL();
     auto const mPTokenSchemaValue = canonical_VL();
+    auto const tokenIssuanceIDValue = canonical_UINT256();
     auto const previousTxnIDValue = canonical_UINT256();
     auto const previousTxnLgrSeqValue = canonical_UINT32();
     auto const domainIDValue = canonical_UINT256();
@@ -255,6 +276,7 @@ TEST(MPTokenIssuanceTests, BuilderFromSleRoundTrip)
     auto const issuerKeyEpochValue = canonical_UINT32();
     auto const auditorKeyEpochValue = canonical_UINT32();
     auto const confidentialOutstandingAmountValue = canonical_UINT64();
+    auto const ballotIDValue = canonical_UINT256();
 
     auto sle = std::make_shared<SLE>(MPTokenIssuance::entryType, index);
 
@@ -268,6 +290,7 @@ TEST(MPTokenIssuanceTests, BuilderFromSleRoundTrip)
     sle->at(sfLockedAmount) = lockedAmountValue;
     sle->at(sfMPTokenMetadata) = mPTokenMetadataValue;
     sle->at(sfMPTokenSchema) = mPTokenSchemaValue;
+    sle->at(sfTokenIssuanceID) = tokenIssuanceIDValue;
     sle->at(sfPreviousTxnID) = previousTxnIDValue;
     sle->at(sfPreviousTxnLgrSeq) = previousTxnLgrSeqValue;
     sle->at(sfDomainID) = domainIDValue;
@@ -278,6 +301,7 @@ TEST(MPTokenIssuanceTests, BuilderFromSleRoundTrip)
     sle->at(sfIssuerKeyEpoch) = issuerKeyEpochValue;
     sle->at(sfAuditorKeyEpoch) = auditorKeyEpochValue;
     sle->at(sfConfidentialOutstandingAmount) = confidentialOutstandingAmountValue;
+    sle->at(sfBallotID) = ballotIDValue;
 
     MPTokenIssuanceBuilder builderFromSle{sle};
     EXPECT_TRUE(builderFromSle.validate());
@@ -427,6 +451,19 @@ TEST(MPTokenIssuanceTests, BuilderFromSleRoundTrip)
     }
 
     {
+        auto const& expected = tokenIssuanceIDValue;
+
+        auto const fromSleOpt = entryFromSle.getTokenIssuanceID();
+        auto const fromBuilderOpt = entryFromBuilder.getTokenIssuanceID();
+
+        ASSERT_TRUE(fromSleOpt.has_value());
+        ASSERT_TRUE(fromBuilderOpt.has_value());
+
+        expectEqualField(expected, *fromSleOpt, "sfTokenIssuanceID");
+        expectEqualField(expected, *fromBuilderOpt, "sfTokenIssuanceID");
+    }
+
+    {
         auto const& expected = domainIDValue;
 
         auto const fromSleOpt = entryFromSle.getDomainID();
@@ -530,6 +567,19 @@ TEST(MPTokenIssuanceTests, BuilderFromSleRoundTrip)
         expectEqualField(expected, *fromBuilderOpt, "sfConfidentialOutstandingAmount");
     }
 
+    {
+        auto const& expected = ballotIDValue;
+
+        auto const fromSleOpt = entryFromSle.getBallotID();
+        auto const fromBuilderOpt = entryFromBuilder.getBallotID();
+
+        ASSERT_TRUE(fromSleOpt.has_value());
+        ASSERT_TRUE(fromBuilderOpt.has_value());
+
+        expectEqualField(expected, *fromSleOpt, "sfBallotID");
+        expectEqualField(expected, *fromBuilderOpt, "sfBallotID");
+    }
+
     EXPECT_EQ(entryFromSle.getKey(), index);
     EXPECT_EQ(entryFromBuilder.getKey(), index);
 }
@@ -606,6 +656,8 @@ TEST(MPTokenIssuanceTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(entry.getMPTokenMetadata().has_value());
     EXPECT_FALSE(entry.hasMPTokenSchema());
     EXPECT_FALSE(entry.getMPTokenSchema().has_value());
+    EXPECT_FALSE(entry.hasTokenIssuanceID());
+    EXPECT_FALSE(entry.getTokenIssuanceID().has_value());
     EXPECT_FALSE(entry.hasDomainID());
     EXPECT_FALSE(entry.getDomainID().has_value());
     EXPECT_FALSE(entry.hasImmutableFlags());
@@ -622,5 +674,7 @@ TEST(MPTokenIssuanceTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(entry.getAuditorKeyEpoch().has_value());
     EXPECT_FALSE(entry.hasConfidentialOutstandingAmount());
     EXPECT_FALSE(entry.getConfidentialOutstandingAmount().has_value());
+    EXPECT_FALSE(entry.hasBallotID());
+    EXPECT_FALSE(entry.getBallotID().has_value());
 }
 }

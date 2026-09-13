@@ -16,6 +16,7 @@
 #include <cstdint>
 #include <limits>
 #include <optional>
+#include <vector>
 
 namespace xrpl {
 
@@ -431,6 +432,90 @@ verifyConvertBackProof(
     Slice const& spendingBalance,
     Slice const& balanceCommitment,
     uint64_t amount,
+    uint256 const& contextHash);
+
+/**
+ * @brief Generates the context hash for a BallotCastVote transaction.
+ *
+ * Binds the cast's range proof to this specific transaction, preventing
+ * proof reuse across ballots or accounts.
+ *
+ * @param account  The voter's account ID.
+ * @param ballotID The target ballot's ledger index.
+ * @param sequence The transaction sequence number or ticket number.
+ * @return A 256-bit context hash unique to this cast.
+ */
+uint256
+getBallotCastContextHash(AccountID const& account, uint256 const& ballotID, std::uint32_t sequence);
+
+/**
+ * @brief Generates the context hash for a BallotFinalize transaction.
+ *
+ * Binds each per-option decryption-correctness proof to this specific
+ * finalize transaction.
+ *
+ * @param account  The tally authority's account ID.
+ * @param ballotID The target ballot's ledger index.
+ * @param sequence The transaction sequence number or ticket number.
+ * @return A 256-bit context hash unique to this finalize.
+ */
+uint256
+getBallotFinalizeContextHash(
+    AccountID const& account,
+    uint256 const& ballotID,
+    std::uint32_t sequence);
+
+/**
+ * @brief Verifies an aggregated Bulletproof range proof over ballot option
+ * commitments.
+ *
+ * Proves that every one of the N per-option values committed in
+ * @p commitments lies in the non-negative range, so a vote cannot subtract
+ * weight from a disliked option. Thin wrapper over
+ * mpt_verify_aggregated_bulletproof.
+ *
+ * @param proof       The serialized aggregated Bulletproof.
+ * @param commitments One 33-byte Pedersen commitment per option.
+ * @param contextHash The 256-bit context hash binding the proof.
+ * @return tesSUCCESS if the proof is valid, or an error code otherwise.
+ */
+TER
+verifyBallotRangeProof(
+    Slice const& proof,
+    std::vector<Slice> const& commitments,
+    uint256 const& contextHash);
+
+/**
+ * @brief Verifies the ciphertext-commitment linkage for one ballot option.
+ *
+ * Proves that the option's ElGamal ciphertext(s) encrypt the same value that
+ * its Pedersen commitment commits to, and that every mirror ciphertext (tally,
+ * optional auditor, optional voter) encrypts that same value under shared
+ * randomness. Combined with the aggregated range proof over the commitment,
+ * this pins the tally update to a non-negative value the voter cannot forge —
+ * the verifiable-encryption guarantee a vote needs because it encrypts under
+ * the tally key, which the voter does not own.
+ *
+ * Wraps secp256k1_compact_standard_verify. The balance-linkage terms of that
+ * relation are neutralized with a canonical witness (sk_A = 1, rho_b = 1), so
+ * pk_A = G, PC_b = H and B1 = B2 = G are reconstructed identically here and by
+ * the prover, and only the 192-byte proof is carried on the wire.
+ *
+ * @param pubKeys     The n mirror public keys, tally key first (33 bytes each).
+ * @param c1          The shared ElGamal C1 component (33 bytes).
+ * @param c2PerKey    The n ElGamal C2 components, one per mirror key (33 bytes).
+ * @param commitment  The option's Pedersen commitment PC_m (33 bytes).
+ * @param proof       The 192-byte compact sigma linkage proof.
+ * @param contextHash The 256-bit context hash binding the proof.
+ * @return tesSUCCESS if the linkage holds, or an error code otherwise.
+ */
+TER
+verifyBallotVoteLinkage(
+    std::vector<Slice> const& pubKeys,
+    Slice const& c1,
+    std::vector<Slice> const& c2PerKey,
+    Slice const& commitment,
+    Slice const& proof,
     uint256 const& contextHash);
 
 }  // namespace xrpl

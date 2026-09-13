@@ -409,6 +409,29 @@ accountHolds(
         view, account, issue.currency, issue.account, zeroIfFrozen, j, includeFullBalance);
 }
 
+// ConfidentialVoting: amount locked on an MPToken while a ballot it voted on is
+// still open. The lock keys off the ballot's CloseTime, so it releases
+// automatically once the voting window ends, with no cleanup transaction.
+static std::uint64_t
+activeVoteLock(ReadView const& view, std::shared_ptr<SLE const> const& sleMpt)
+{
+    if (!view.rules().enabled(featureConfidentialVoting) ||
+        !sleMpt->isFieldPresent(sfVoteLockedAmount) || !sleMpt->isFieldPresent(sfBallotID))
+    {
+        return 0;
+    }
+
+    auto const sleBallot = view.read(keylet::ballot((*sleMpt)[sfBallotID]));
+    if (!sleBallot)
+        return 0;  // ballot deleted; lock no longer applies
+
+    auto const closeTime = (*sleBallot)[sfCloseTime];
+    if (view.parentCloseTime().time_since_epoch().count() >= closeTime)
+        return 0;  // window closed; lock released
+
+    return (*sleMpt)[sfVoteLockedAmount];
+}
+
 STAmount
 accountHolds(
     ReadView const& view,
@@ -473,6 +496,20 @@ accountHolds(
             if (sleIssuance && sleIssuance->isFlag(lsfMPTRequireAuth) &&
                 !sleMpt->isFlag(lsfMPTAuthorized))
                 amount.clear(mptIssue);
+        }
+
+        // Reduce spendable balance by any active vote lock (token-mode ballots).
+        // FullBalance requests (e.g. accounting/display) see the raw balance.
+        if (includeFullBalance != SpendableHandling::FullBalance)
+        {
+            if (auto const locked = activeVoteLock(view, sleMpt); locked > 0)
+            {
+                auto const cur = amount.mpt().value();  // std::int64_t
+                auto const lockedSigned = static_cast<std::int64_t>(locked);
+                amount = STAmount{
+                    mptIssue,
+                    static_cast<std::uint64_t>(cur > lockedSigned ? cur - lockedSigned : 0)};
+            }
         }
     }
 

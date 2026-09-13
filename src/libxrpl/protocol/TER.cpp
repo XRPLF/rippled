@@ -112,6 +112,11 @@ transResults()
         MAKE_ERROR(tecBYTECODE_REJECTED,             "The custom WASM code that was run rejected your transaction."),
         MAKE_ERROR(tecINVALID_PARAMETERS,            "Contract parameters do not match the expected ABI."),
         MAKE_ERROR(tecSUPPLY_EXCEEDED,               "The transaction would exceed the token's maximum supply."),
+        MAKE_ERROR(tecBALLOT_CLOSED,                 "The ballot voting window has closed."),
+        MAKE_ERROR(tecBALLOT_VOTED,                  "The account has already voted on this ballot."),
+        MAKE_ERROR(tecBALLOT_NOT_OPEN,               "The ballot voting window has not opened yet."),
+        MAKE_ERROR(tecBALLOT_EXISTS,                 "The issuance already has an open ballot."),
+        MAKE_ERROR(tecBALLOT_BAD_OPTIONS,            "The vector does not match the ballot's option count."),
 
         MAKE_ERROR(tefALREADY,                     "The exact transaction was already in this ledger."),
         MAKE_ERROR(tefBAD_ADD_AUTH,                "Not authorized to add account."),

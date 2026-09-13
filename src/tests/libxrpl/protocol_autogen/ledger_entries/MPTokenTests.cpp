@@ -33,8 +33,11 @@ TEST(MPTokenTests, BuilderSettersRoundTrip)
     auto const issuerEncryptedBalanceValue = canonical_VL();
     auto const auditorEncryptedBalanceValue = canonical_VL();
     auto const holderEncryptionKeyValue = canonical_VL();
+    auto const redemptionAfterValue = canonical_UINT32();
     auto const couponAccruedValue = canonical_AMOUNT();
     auto const couponIndexValue = canonical_AMOUNT();
+    auto const voteLockedAmountValue = canonical_UINT64();
+    auto const ballotIDValue = canonical_UINT256();
 
     MPTokenBuilder builder{
         accountValue,
@@ -52,8 +55,11 @@ TEST(MPTokenTests, BuilderSettersRoundTrip)
     builder.setIssuerEncryptedBalance(issuerEncryptedBalanceValue);
     builder.setAuditorEncryptedBalance(auditorEncryptedBalanceValue);
     builder.setHolderEncryptionKey(holderEncryptionKeyValue);
+    builder.setRedemptionAfter(redemptionAfterValue);
     builder.setCouponAccrued(couponAccruedValue);
     builder.setCouponIndex(couponIndexValue);
+    builder.setVoteLockedAmount(voteLockedAmountValue);
+    builder.setBallotID(ballotIDValue);
 
     builder.setLedgerIndex(index);
     builder.setFlags(0x1u);
@@ -159,6 +165,14 @@ TEST(MPTokenTests, BuilderSettersRoundTrip)
     }
 
     {
+        auto const& expected = redemptionAfterValue;
+        auto const actualOpt = entry.getRedemptionAfter();
+        ASSERT_TRUE(actualOpt.has_value());
+        expectEqualField(expected, *actualOpt, "sfRedemptionAfter");
+        EXPECT_TRUE(entry.hasRedemptionAfter());
+    }
+
+    {
         auto const& expected = couponAccruedValue;
         auto const actualOpt = entry.getCouponAccrued();
         ASSERT_TRUE(actualOpt.has_value());
@@ -172,6 +186,22 @@ TEST(MPTokenTests, BuilderSettersRoundTrip)
         ASSERT_TRUE(actualOpt.has_value());
         expectEqualField(expected, *actualOpt, "sfCouponIndex");
         EXPECT_TRUE(entry.hasCouponIndex());
+    }
+
+    {
+        auto const& expected = voteLockedAmountValue;
+        auto const actualOpt = entry.getVoteLockedAmount();
+        ASSERT_TRUE(actualOpt.has_value());
+        expectEqualField(expected, *actualOpt, "sfVoteLockedAmount");
+        EXPECT_TRUE(entry.hasVoteLockedAmount());
+    }
+
+    {
+        auto const& expected = ballotIDValue;
+        auto const actualOpt = entry.getBallotID();
+        ASSERT_TRUE(actualOpt.has_value());
+        expectEqualField(expected, *actualOpt, "sfBallotID");
+        EXPECT_TRUE(entry.hasBallotID());
     }
 
     EXPECT_TRUE(entry.hasLedgerIndex());
@@ -200,8 +230,11 @@ TEST(MPTokenTests, BuilderFromSleRoundTrip)
     auto const issuerEncryptedBalanceValue = canonical_VL();
     auto const auditorEncryptedBalanceValue = canonical_VL();
     auto const holderEncryptionKeyValue = canonical_VL();
+    auto const redemptionAfterValue = canonical_UINT32();
     auto const couponAccruedValue = canonical_AMOUNT();
     auto const couponIndexValue = canonical_AMOUNT();
+    auto const voteLockedAmountValue = canonical_UINT64();
+    auto const ballotIDValue = canonical_UINT256();
 
     auto sle = std::make_shared<SLE>(MPToken::entryType, index);
 
@@ -218,8 +251,11 @@ TEST(MPTokenTests, BuilderFromSleRoundTrip)
     sle->at(sfIssuerEncryptedBalance) = issuerEncryptedBalanceValue;
     sle->at(sfAuditorEncryptedBalance) = auditorEncryptedBalanceValue;
     sle->at(sfHolderEncryptionKey) = holderEncryptionKeyValue;
+    sle->at(sfRedemptionAfter) = redemptionAfterValue;
     sle->at(sfCouponAccrued) = couponAccruedValue;
     sle->at(sfCouponIndex) = couponIndexValue;
+    sle->at(sfVoteLockedAmount) = voteLockedAmountValue;
+    sle->at(sfBallotID) = ballotIDValue;
 
     MPTokenBuilder builderFromSle{sle};
     EXPECT_TRUE(builderFromSle.validate());
@@ -385,6 +421,19 @@ TEST(MPTokenTests, BuilderFromSleRoundTrip)
     }
 
     {
+        auto const& expected = redemptionAfterValue;
+
+        auto const fromSleOpt = entryFromSle.getRedemptionAfter();
+        auto const fromBuilderOpt = entryFromBuilder.getRedemptionAfter();
+
+        ASSERT_TRUE(fromSleOpt.has_value());
+        ASSERT_TRUE(fromBuilderOpt.has_value());
+
+        expectEqualField(expected, *fromSleOpt, "sfRedemptionAfter");
+        expectEqualField(expected, *fromBuilderOpt, "sfRedemptionAfter");
+    }
+
+    {
         auto const& expected = couponAccruedValue;
 
         auto const fromSleOpt = entryFromSle.getCouponAccrued();
@@ -408,6 +457,32 @@ TEST(MPTokenTests, BuilderFromSleRoundTrip)
 
         expectEqualField(expected, *fromSleOpt, "sfCouponIndex");
         expectEqualField(expected, *fromBuilderOpt, "sfCouponIndex");
+    }
+
+    {
+        auto const& expected = voteLockedAmountValue;
+
+        auto const fromSleOpt = entryFromSle.getVoteLockedAmount();
+        auto const fromBuilderOpt = entryFromBuilder.getVoteLockedAmount();
+
+        ASSERT_TRUE(fromSleOpt.has_value());
+        ASSERT_TRUE(fromBuilderOpt.has_value());
+
+        expectEqualField(expected, *fromSleOpt, "sfVoteLockedAmount");
+        expectEqualField(expected, *fromBuilderOpt, "sfVoteLockedAmount");
+    }
+
+    {
+        auto const& expected = ballotIDValue;
+
+        auto const fromSleOpt = entryFromSle.getBallotID();
+        auto const fromBuilderOpt = entryFromBuilder.getBallotID();
+
+        ASSERT_TRUE(fromSleOpt.has_value());
+        ASSERT_TRUE(fromBuilderOpt.has_value());
+
+        expectEqualField(expected, *fromSleOpt, "sfBallotID");
+        expectEqualField(expected, *fromBuilderOpt, "sfBallotID");
     }
 
     EXPECT_EQ(entryFromSle.getKey(), index);
@@ -488,9 +563,15 @@ TEST(MPTokenTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(entry.getAuditorEncryptedBalance().has_value());
     EXPECT_FALSE(entry.hasHolderEncryptionKey());
     EXPECT_FALSE(entry.getHolderEncryptionKey().has_value());
+    EXPECT_FALSE(entry.hasRedemptionAfter());
+    EXPECT_FALSE(entry.getRedemptionAfter().has_value());
     EXPECT_FALSE(entry.hasCouponAccrued());
     EXPECT_FALSE(entry.getCouponAccrued().has_value());
     EXPECT_FALSE(entry.hasCouponIndex());
     EXPECT_FALSE(entry.getCouponIndex().has_value());
+    EXPECT_FALSE(entry.hasVoteLockedAmount());
+    EXPECT_FALSE(entry.getVoteLockedAmount().has_value());
+    EXPECT_FALSE(entry.hasBallotID());
+    EXPECT_FALSE(entry.getBallotID().has_value());
 }
 }

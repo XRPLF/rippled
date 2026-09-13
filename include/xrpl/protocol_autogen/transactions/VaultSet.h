@@ -135,6 +135,84 @@ public:
     {
         return this->tx_->isFieldPresent(sfData);
     }
+
+    /**
+     * @brief Get sfDepositFee (SoeOptional)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_UINT32::type::value_type>
+    getDepositFee() const
+    {
+        if (hasDepositFee())
+        {
+            return this->tx_->at(sfDepositFee);
+        }
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfDepositFee is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasDepositFee() const
+    {
+        return this->tx_->isFieldPresent(sfDepositFee);
+    }
+
+    /**
+     * @brief Get sfRedemptionFee (SoeOptional)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_UINT32::type::value_type>
+    getRedemptionFee() const
+    {
+        if (hasRedemptionFee())
+        {
+            return this->tx_->at(sfRedemptionFee);
+        }
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfRedemptionFee is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasRedemptionFee() const
+    {
+        return this->tx_->isFieldPresent(sfRedemptionFee);
+    }
+
+    /**
+     * @brief Get sfRedemptionPeriod (SoeOptional)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_UINT32::type::value_type>
+    getRedemptionPeriod() const
+    {
+        if (hasRedemptionPeriod())
+        {
+            return this->tx_->at(sfRedemptionPeriod);
+        }
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfRedemptionPeriod is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasRedemptionPeriod() const
+    {
+        return this->tx_->isFieldPresent(sfRedemptionPeriod);
+    }
 };
 
 /**
@@ -222,6 +300,39 @@ public:
     setData(std::decay_t<typename SF_VL::type::value_type> const& value)
     {
         object_[sfData] = value;
+        return *this;
+    }
+
+    /**
+     * @brief Set sfDepositFee (SoeOptional)
+     * @return Reference to this builder for method chaining.
+     */
+    VaultSetBuilder&
+    setDepositFee(std::decay_t<typename SF_UINT32::type::value_type> const& value)
+    {
+        object_[sfDepositFee] = value;
+        return *this;
+    }
+
+    /**
+     * @brief Set sfRedemptionFee (SoeOptional)
+     * @return Reference to this builder for method chaining.
+     */
+    VaultSetBuilder&
+    setRedemptionFee(std::decay_t<typename SF_UINT32::type::value_type> const& value)
+    {
+        object_[sfRedemptionFee] = value;
+        return *this;
+    }
+
+    /**
+     * @brief Set sfRedemptionPeriod (SoeOptional)
+     * @return Reference to this builder for method chaining.
+     */
+    VaultSetBuilder&
+    setRedemptionPeriod(std::decay_t<typename SF_UINT32::type::value_type> const& value)
+    {
+        object_[sfRedemptionPeriod] = value;
         return *this;
     }
 

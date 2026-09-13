@@ -18,7 +18,7 @@ class PasskeyListSetBuilder;
 /**
  * @brief Transaction: PasskeyListSet
  *
- * Type: ttPASSKEY_LIST_SET (92)
+ * Type: ttPASSKEY_LIST_SET (103)
  * Delegable: Delegation::Delegable
  * Amendment: featurePasskey
  * Privileges: Privilege::NoPriv

@@ -234,6 +234,30 @@ public:
     }
 
     /**
+     * @brief Get sfTokenIssuanceID (SoeOptional)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_UINT256::type::value_type>
+    getTokenIssuanceID() const
+    {
+        if (hasTokenIssuanceID())
+            return this->sle_->at(sfTokenIssuanceID);
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfTokenIssuanceID is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasTokenIssuanceID() const
+    {
+        return this->sle_->isFieldPresent(sfTokenIssuanceID);
+    }
+
+    /**
      * @brief Get sfPreviousTxnID (SoeRequired)
      * @return The field value.
      */
@@ -446,6 +470,30 @@ public:
     {
         return this->sle_->isFieldPresent(sfConfidentialOutstandingAmount);
     }
+
+    /**
+     * @brief Get sfBallotID (SoeOptional)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_UINT256::type::value_type>
+    getBallotID() const
+    {
+        if (hasBallotID())
+            return this->sle_->at(sfBallotID);
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfBallotID is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasBallotID() const
+    {
+        return this->sle_->isFieldPresent(sfBallotID);
+    }
 };
 
 /**
@@ -607,6 +655,17 @@ public:
     }
 
     /**
+     * @brief Set sfTokenIssuanceID (SoeOptional)
+     * @return Reference to this builder for method chaining.
+     */
+    MPTokenIssuanceBuilder&
+    setTokenIssuanceID(std::decay_t<typename SF_UINT256::type::value_type> const& value)
+    {
+        object_[sfTokenIssuanceID] = value;
+        return *this;
+    }
+
+    /**
      * @brief Set sfPreviousTxnID (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
@@ -713,6 +772,17 @@ public:
     setConfidentialOutstandingAmount(std::decay_t<typename SF_UINT64::type::value_type> const& value)
     {
         object_[sfConfidentialOutstandingAmount] = value;
+        return *this;
+    }
+
+    /**
+     * @brief Set sfBallotID (SoeOptional)
+     * @return Reference to this builder for method chaining.
+     */
+    MPTokenIssuanceBuilder&
+    setBallotID(std::decay_t<typename SF_UINT256::type::value_type> const& value)
+    {
+        object_[sfBallotID] = value;
         return *this;
     }
 

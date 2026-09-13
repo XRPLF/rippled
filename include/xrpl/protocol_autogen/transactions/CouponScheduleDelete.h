@@ -18,7 +18,7 @@ class CouponScheduleDeleteBuilder;
 /**
  * @brief Transaction: CouponScheduleDelete
  *
- * Type: ttCOUPON_SCHEDULE_DELETE (94)
+ * Type: ttCOUPON_SCHEDULE_DELETE (110)
  * Delegable: Delegation::NotDelegable
  * Amendment: featureCouponPayments
  * Privileges: Privilege::NoPriv

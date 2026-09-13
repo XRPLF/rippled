@@ -379,6 +379,11 @@ enum TECcodes : TERUnderlyingType {
     tecBYTECODE_REJECTED = 202,
     tecINVALID_PARAMETERS = 203,
     tecSUPPLY_EXCEEDED = 204,
+    tecBALLOT_CLOSED = 205,
+    tecBALLOT_VOTED = 206,
+    tecBALLOT_NOT_OPEN = 207,
+    tecBALLOT_EXISTS = 208,
+    tecBALLOT_BAD_OPTIONS = 209,
 };
 
 //------------------------------------------------------------------------------

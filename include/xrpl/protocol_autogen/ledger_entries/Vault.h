@@ -479,6 +479,174 @@ public:
     {
         return this->sle_->isFieldPresent(sfRedemptionDate);
     }
+
+    /**
+     * @brief Get sfDealingInterval (SoeDefault)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_UINT32::type::value_type>
+    getDealingInterval() const
+    {
+        if (hasDealingInterval())
+            return this->sle_->at(sfDealingInterval);
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfDealingInterval is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasDealingInterval() const
+    {
+        return this->sle_->isFieldPresent(sfDealingInterval);
+    }
+
+    /**
+     * @brief Get sfDealingWindow (SoeDefault)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_UINT32::type::value_type>
+    getDealingWindow() const
+    {
+        if (hasDealingWindow())
+            return this->sle_->at(sfDealingWindow);
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfDealingWindow is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasDealingWindow() const
+    {
+        return this->sle_->isFieldPresent(sfDealingWindow);
+    }
+
+    /**
+     * @brief Get sfStruckPrice (SoeDefault)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_NUMBER::type::value_type>
+    getStruckPrice() const
+    {
+        if (hasStruckPrice())
+            return this->sle_->at(sfStruckPrice);
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfStruckPrice is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasStruckPrice() const
+    {
+        return this->sle_->isFieldPresent(sfStruckPrice);
+    }
+
+    /**
+     * @brief Get sfStruckUntil (SoeDefault)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_UINT32::type::value_type>
+    getStruckUntil() const
+    {
+        if (hasStruckUntil())
+            return this->sle_->at(sfStruckUntil);
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfStruckUntil is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasStruckUntil() const
+    {
+        return this->sle_->isFieldPresent(sfStruckUntil);
+    }
+
+    /**
+     * @brief Get sfDepositFee (SoeDefault)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_UINT32::type::value_type>
+    getDepositFee() const
+    {
+        if (hasDepositFee())
+            return this->sle_->at(sfDepositFee);
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfDepositFee is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasDepositFee() const
+    {
+        return this->sle_->isFieldPresent(sfDepositFee);
+    }
+
+    /**
+     * @brief Get sfRedemptionFee (SoeDefault)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_UINT32::type::value_type>
+    getRedemptionFee() const
+    {
+        if (hasRedemptionFee())
+            return this->sle_->at(sfRedemptionFee);
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfRedemptionFee is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasRedemptionFee() const
+    {
+        return this->sle_->isFieldPresent(sfRedemptionFee);
+    }
+
+    /**
+     * @brief Get sfRedemptionPeriod (SoeDefault)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_UINT32::type::value_type>
+    getRedemptionPeriod() const
+    {
+        if (hasRedemptionPeriod())
+            return this->sle_->at(sfRedemptionPeriod);
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfRedemptionPeriod is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasRedemptionPeriod() const
+    {
+        return this->sle_->isFieldPresent(sfRedemptionPeriod);
+    }
 };
 
 /**
@@ -785,6 +953,83 @@ public:
     setRedemptionDate(std::decay_t<typename SF_UINT32::type::value_type> const& value)
     {
         object_[sfRedemptionDate] = value;
+        return *this;
+    }
+
+    /**
+     * @brief Set sfDealingInterval (SoeDefault)
+     * @return Reference to this builder for method chaining.
+     */
+    VaultBuilder&
+    setDealingInterval(std::decay_t<typename SF_UINT32::type::value_type> const& value)
+    {
+        object_[sfDealingInterval] = value;
+        return *this;
+    }
+
+    /**
+     * @brief Set sfDealingWindow (SoeDefault)
+     * @return Reference to this builder for method chaining.
+     */
+    VaultBuilder&
+    setDealingWindow(std::decay_t<typename SF_UINT32::type::value_type> const& value)
+    {
+        object_[sfDealingWindow] = value;
+        return *this;
+    }
+
+    /**
+     * @brief Set sfStruckPrice (SoeDefault)
+     * @return Reference to this builder for method chaining.
+     */
+    VaultBuilder&
+    setStruckPrice(std::decay_t<typename SF_NUMBER::type::value_type> const& value)
+    {
+        object_[sfStruckPrice] = value;
+        return *this;
+    }
+
+    /**
+     * @brief Set sfStruckUntil (SoeDefault)
+     * @return Reference to this builder for method chaining.
+     */
+    VaultBuilder&
+    setStruckUntil(std::decay_t<typename SF_UINT32::type::value_type> const& value)
+    {
+        object_[sfStruckUntil] = value;
+        return *this;
+    }
+
+    /**
+     * @brief Set sfDepositFee (SoeDefault)
+     * @return Reference to this builder for method chaining.
+     */
+    VaultBuilder&
+    setDepositFee(std::decay_t<typename SF_UINT32::type::value_type> const& value)
+    {
+        object_[sfDepositFee] = value;
+        return *this;
+    }
+
+    /**
+     * @brief Set sfRedemptionFee (SoeDefault)
+     * @return Reference to this builder for method chaining.
+     */
+    VaultBuilder&
+    setRedemptionFee(std::decay_t<typename SF_UINT32::type::value_type> const& value)
+    {
+        object_[sfRedemptionFee] = value;
+        return *this;
+    }
+
+    /**
+     * @brief Set sfRedemptionPeriod (SoeDefault)
+     * @return Reference to this builder for method chaining.
+     */
+    VaultBuilder&
+    setRedemptionPeriod(std::decay_t<typename SF_UINT32::type::value_type> const& value)
+    {
+        object_[sfRedemptionPeriod] = value;
         return *this;
     }
 

@@ -145,6 +145,7 @@ JSS(avg_bps_recv);                // out: Peers
 JSS(avg_bps_sent);                // out: Peers
 JSS(balance);                     // out: AccountLines
 JSS(balances);                    // out: GatewayBalances
+JSS(ballot_id);                   // in: LedgerEntry
 JSS(base);                        // out: LogLevel
 JSS(base_asset);                  // in: get_aggregate_price
 JSS(base_fee);                    // out: NetworkOPs

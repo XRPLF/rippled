@@ -12,6 +12,7 @@
 #include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/UintTypes.h>
+#include <xrpl/protocol/digest.h>
 
 #include <openssl/rand.h>
 #include <utility/mpt_utility.h>
@@ -20,6 +21,7 @@
 #include <secp256k1.h>
 #include <secp256k1_mpt.h>
 
+#include <array>
 #include <cstddef>
 #include <cstdint>
 #include <cstring>
@@ -543,6 +545,120 @@ verifyConvertBackProof(
             balanceCommitment.data(),
             amount,
             contextHash.data()) != 0)
+    {
+        return tecBAD_PROOF;
+    }
+
+    return tesSUCCESS;
+}
+
+uint256
+getBallotCastContextHash(AccountID const& account, uint256 const& ballotID, std::uint32_t sequence)
+{
+    // Domain-separated from other confidential context hashes by a distinct tag.
+    return sha512Half(std::uint16_t(0x4243) /* 'BC' */, account, ballotID, sequence);
+}
+
+uint256
+getBallotFinalizeContextHash(
+    AccountID const& account,
+    uint256 const& ballotID,
+    std::uint32_t sequence)
+{
+    return sha512Half(std::uint16_t(0x4246) /* 'BF' */, account, ballotID, sequence);
+}
+
+TER
+verifyBallotRangeProof(
+    Slice const& proof,
+    std::vector<Slice> const& commitments,
+    uint256 const& contextHash)
+{
+    std::vector<std::uint8_t const*> ptrs;
+    ptrs.reserve(commitments.size());
+    for (auto const& c : commitments)
+    {
+        if (c.size() != kEcPedersenCommitmentLength)
+            return tecINTERNAL;  // LCOV_EXCL_LINE
+        ptrs.push_back(c.data());
+    }
+
+    if (mpt_verify_aggregated_bulletproof(
+            proof.data(), proof.size(), ptrs.data(), ptrs.size(), contextHash.data()) != 0)
+    {
+        return tecBAD_PROOF;
+    }
+
+    return tesSUCCESS;
+}
+
+TER
+verifyBallotVoteLinkage(
+    std::vector<Slice> const& pubKeys,
+    Slice const& c1,
+    std::vector<Slice> const& c2PerKey,
+    Slice const& commitment,
+    Slice const& proof,
+    uint256 const& contextHash)
+{
+    auto const n = pubKeys.size();
+    if (n == 0 || n > 3 || c2PerKey.size() != n)
+        return tecINTERNAL;  // LCOV_EXCL_LINE
+    if (proof.size() != kEcSendSigmaProofLength)
+        return tecBAD_PROOF;
+    if (c1.size() != kEcCiphertextComponentLength ||
+        commitment.size() != kEcPedersenCommitmentLength)
+        return tecBAD_PROOF;
+
+    auto* const ctx = secp256k1Context();
+
+    secp256k1_pubkey c1Pt;
+    if (secp256k1_ec_pubkey_parse(ctx, &c1Pt, c1.data(), c1.size()) != 1)
+        return tecBAD_PROOF;
+
+    std::vector<secp256k1_pubkey> c2Pts(n);
+    std::vector<secp256k1_pubkey> pkPts(n);
+    for (std::size_t i = 0; i < n; ++i)
+    {
+        if (c2PerKey[i].size() != kEcCiphertextComponentLength ||
+            pubKeys[i].size() != kEcPubKeyLength)
+            return tecBAD_PROOF;
+        if (secp256k1_ec_pubkey_parse(ctx, &c2Pts[i], c2PerKey[i].data(), c2PerKey[i].size()) != 1)
+            return tecBAD_PROOF;
+        if (secp256k1_ec_pubkey_parse(ctx, &pkPts[i], pubKeys[i].data(), pubKeys[i].size()) != 1)
+            return tecBAD_PROOF;
+    }
+
+    secp256k1_pubkey pcm;
+    if (secp256k1_ec_pubkey_parse(ctx, &pcm, commitment.data(), commitment.size()) != 1)
+        return tecBAD_PROOF;
+
+    // Canonical vacuous balance witness: sk_A = 1 makes pk_A = B1 = B2 = G, and
+    // rho_b = 1 with b = 0 makes PC_b = H. Both sides derive these identically,
+    // so nothing balance-related is carried on the wire and the terms constrain
+    // nothing about the vote.
+    std::array<std::uint8_t, kEcScalarLength> one{};
+    one[kEcScalarLength - 1] = 1;
+    secp256k1_pubkey pkA;
+    if (secp256k1_ec_pubkey_create(ctx, &pkA, one.data()) != 1)
+        return tecINTERNAL;  // LCOV_EXCL_LINE
+    secp256k1_pubkey pcb;
+    if (secp256k1_mpt_get_h_generator(ctx, &pcb) != 1)
+        return tecINTERNAL;  // LCOV_EXCL_LINE
+
+    if (secp256k1_compact_standard_verify(
+            ctx,
+            proof.data(),
+            n,
+            &c1Pt,
+            c2Pts.data(),
+            pkPts.data(),
+            &pcm,
+            &pkA,
+            &pcb,
+            &pkA,  // B1 = G
+            &pkA,  // B2 = G
+            contextHash.data()) != 1)
     {
         return tecBAD_PROOF;
     }
