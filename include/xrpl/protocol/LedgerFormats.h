@@ -211,7 +211,10 @@ enum LedgerEntryType : std::uint16_t {
                                                                                                                                    \
     LEDGER_OBJECT(Ballot,                                                                                                          \
         LSF_FLAG(lsfBallotFinalized, 0x00000001)                /* True, results have been published */                            \
-        LSF_FLAG(lsfVoterRecoverable, 0x00000002))              /* True, casts carry a voter self-recovery vector */
+        LSF_FLAG(lsfVoterRecoverable, 0x00000002))              /* True, casts carry a voter self-recovery vector */        \
+                                                                                                                                   \
+    LEDGER_OBJECT(Subscription,                                                                                                    \
+        LSF_FLAG(lsfSingleUse, 0x00010000))                     /* True, delete on first successful claim */
 
 // clang-format on
 

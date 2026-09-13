@@ -1499,3 +1499,29 @@ TRANSACTION(ttAMM_BIN_DESTROY, 120, AMMBinDestroy,
     {sfAsset2, SoeRequired, SoeMptSupported},
     {sfBinID, SoeRequired},
 }))
+TRANSACTION(ttSUBSCRIPTION_SET, 121, SubscriptionSet,
+    ({.delegable = Delegation::Delegable, .amendment = featureSubscription}),
+    ({
+    {sfDestination, SoeOptional},
+    {sfAmount, SoeRequired, SoeMptSupported},
+    {sfFrequency, SoeOptional},
+    {sfStartTime, SoeOptional},
+    {sfExpiration, SoeOptional},
+    {sfDestinationTag, SoeOptional},
+    {sfSubscriptionID, SoeOptional},
+}))
+TRANSACTION(ttSUBSCRIPTION_CANCEL, 122, SubscriptionCancel,
+    ({.delegable = Delegation::Delegable, .amendment = featureSubscription}),
+    ({
+    {sfSubscriptionID, SoeRequired},
+}))
+TRANSACTION(ttSUBSCRIPTION_CLAIM, 123, SubscriptionClaim,
+    ({
+        .delegable = Delegation::Delegable,
+        .amendment = featureSubscription,
+        .privileges = Privilege::MayCreateMpt,
+    }),
+    ({
+    {sfAmount, SoeRequired, SoeMptSupported},
+    {sfSubscriptionID, SoeRequired},
+}))

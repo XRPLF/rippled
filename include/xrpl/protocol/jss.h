@@ -47,6 +47,7 @@ JSS(Destination);                 // in: TransactionSign; field.
 JSS(EPrice);                      // in: AMM Deposit option
 JSS(Fee);                         // in/out: TransactionSign; field.
 JSS(Flags);                       // in/out: TransactionSign; field.
+JSS(Frequency);                   // in: Subscription transactions
 JSS(Holder);                      // field.
 JSS(Invalid);                     //
 JSS(Issuer);                      // in: Credential transactions
@@ -81,6 +82,7 @@ JSS(Signer);                      // field.
 JSS(Signers);                     // field.
 JSS(SigningPubKey);               // field.
 JSS(Subject);                     // in: Credential transactions
+JSS(SubscriptionID);              // in: Subscription transactions
 JSS(TakerGets);                   // field.
 JSS(TakerPays);                   // field.
 JSS(TradingFee);                  // in/out: AMM trading fee

@@ -865,6 +865,21 @@ LEDGER_ENTRY(ltAMM_BIN_HOLDING, 0x0097, AMMBinHolding, amm_bin_holding, ({
     {sfFeeGrowthInsideLast1, SoeRequired},
     {sfOwnerNode,            SoeRequired},
 }))
+LEDGER_ENTRY(ltSUBSCRIPTION, 0x008A, Subscription, subscription, ({
+    {sfPreviousTxnID,        SoeRequired},
+    {sfPreviousTxnLgrSeq,    SoeRequired},
+    {sfSequence,             SoeRequired},
+    {sfOwnerNode,            SoeRequired},
+    {sfAccount,              SoeRequired},
+    {sfDestination,          SoeRequired},
+    {sfDestinationTag,       SoeOptional},
+    {sfAmount,               SoeRequired},
+    {sfBalance,              SoeRequired},
+    {sfFrequency,            SoeRequired},
+    {sfNextClaimTime,        SoeRequired},
+    {sfExpiration,           SoeOptional},
+    {sfDestinationNode,      SoeRequired},
+}))
 
 #undef EXPAND
 #undef LEDGER_ENTRY_DUPLICATE

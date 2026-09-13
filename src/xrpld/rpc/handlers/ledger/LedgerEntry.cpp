@@ -908,6 +908,32 @@ parseSponsorship(
 }
 
 static std::expected<uint256, json::Value>
+parseSubscription(
+    json::Value const& params,
+    json::StaticString const fieldName,
+    [[maybe_unused]] unsigned const apiVersion)
+{
+    if (!params.isObject())
+        return parseObjectID(params, fieldName);
+
+    auto const account =
+        ledger_entry_helpers::requiredAccountID(params, jss::account, "malformedAccount");
+    if (!account)
+        return std::unexpected(account.error());
+
+    auto const destination =
+        ledger_entry_helpers::requiredAccountID(params, jss::destination, "malformedDestination");
+    if (!destination)
+        return std::unexpected(destination.error());
+
+    auto const seq = ledger_entry_helpers::requiredUInt32(params, jss::seq, "malformedRequest");
+    if (!seq)
+        return std::unexpected(seq.error());
+
+    return keylet::subscription(*account, *destination, *seq).key;
+}
+
+static std::expected<uint256, json::Value>
 parseTicket(
     json::Value const& params,
     json::StaticString const fieldName,
