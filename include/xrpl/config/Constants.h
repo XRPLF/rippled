@@ -11,6 +11,7 @@ struct Sections
     static constexpr auto kCompression = "compression";
     static constexpr auto kCrawl = "crawl";
     static constexpr auto kDatabasePath = "database_path";
+    static constexpr auto kDatagramMonitor = "datagram_monitor";
     static constexpr auto kDebugLogfile = "debug_logfile";
     static constexpr auto kElbSupport = "elb_support";
     static constexpr auto kFeatures = "features";
