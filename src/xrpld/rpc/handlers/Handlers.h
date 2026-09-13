@@ -41,6 +41,8 @@ doConnect(rpc::JsonContext&);
 json::Value
 doConsensusInfo(rpc::JsonContext&);
 json::Value
+doContractInfo(rpc::JsonContext&);
+json::Value
 doDepositAuthorized(rpc::JsonContext&);
 json::Value
 doFeature(rpc::JsonContext&);

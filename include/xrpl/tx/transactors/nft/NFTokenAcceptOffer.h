@@ -26,9 +26,6 @@ private:
     TER
     bridgeOffers(SLE::ref buy, SLE::ref sell);
 
-    TER
-    transferNFToken(AccountID const& buyer, AccountID const& seller, uint256 const& nfTokenID);
-
 public:
     static constexpr auto kConsequencesFactory = ConsequencesFactoryType::Normal;
 

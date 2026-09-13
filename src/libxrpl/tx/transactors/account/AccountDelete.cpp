@@ -26,6 +26,7 @@
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/Transactor.h>
 #include <xrpl/tx/transactors/account/SignerListSet.h>
+#include <xrpl/tx/transactors/contract/ContractDelete.h>
 #include <xrpl/tx/transactors/delegate/DelegateSet.h>
 #include <xrpl/tx/transactors/did/DIDDelete.h>
 #include <xrpl/tx/transactors/oracle/OracleDelete.h>
@@ -185,6 +186,18 @@ removeDelegateFromLedger(
     return DelegateSet::deleteDelegate(view, sleDel, j);
 }
 
+TER
+removeContractFromLedger(
+    ServiceRegistry&,
+    ApplyView& view,
+    AccountID const& account,
+    uint256 const& /*delIndex*/,
+    std::shared_ptr<SLE> const& sleDel,
+    beast::Journal j)
+{
+    return ContractDelete::deleteContract(view, sleDel, account, j);
+}
+
 // Return nullptr if the LedgerEntryType represents an obligation that can't
 // be deleted.  Otherwise return the pointer to the function that can delete
 // the non-obligation
@@ -211,6 +224,8 @@ nonObligationDeleter(LedgerEntryType t)
             return removeCredentialFromLedger;
         case ltDELEGATE:
             return removeDelegateFromLedger;
+        case ltCONTRACT:
+            return removeContractFromLedger;
         default:
             return nullptr;
     }

@@ -11,6 +11,11 @@ namespace xrpl {
 enum class Delegation { Delegable, NotDelegable };
 
 /**
+ * Whether a smart contract may emit a transaction of this type.
+ */
+enum class Emittance { Emitable, NotEmitable };
+
+/**
  * Operations a transaction is permitted to perform, as a bitfield.
  *
  * These are declared per-transaction in transactions.macro (via
@@ -91,6 +96,11 @@ struct TxSettings
      * Operations this transaction is permitted to perform.
      */
     Privilege privileges{Privilege::NoPriv};
+
+    /**
+     * Whether a smart contract may emit this transaction.
+     */
+    Emittance emittance{Emittance::Emitable};
 };
 
 }  // namespace xrpl

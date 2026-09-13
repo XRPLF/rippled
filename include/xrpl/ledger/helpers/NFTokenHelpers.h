@@ -16,6 +16,7 @@
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/XRPAmount.h>
+#include <xrpl/protocol/nft.h>
 
 #include <cstddef>
 #include <cstdint>
@@ -160,5 +161,13 @@ checkTrustlineDeepFrozen(
     AccountID const id,
     beast::Journal const j,
     Issue const& issue);
+
+TER
+transferNFToken(
+    ApplyView& view,
+    AccountID const& buyer,
+    AccountID const& seller,
+    uint256 const& nftokenID,
+    beast::Journal j);
 
 }  // namespace xrpl::nft

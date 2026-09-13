@@ -21,8 +21,11 @@
 #include <xrpl/protocol/STBitString.h>
 #include <xrpl/protocol/STBlob.h>
 #include <xrpl/protocol/STCurrency.h>
+#include <xrpl/protocol/STData.h>
+#include <xrpl/protocol/STDataType.h>
 #include <xrpl/protocol/STInteger.h>
 #include <xrpl/protocol/STIssue.h>
+#include <xrpl/protocol/STJson.h>
 #include <xrpl/protocol/STNumber.h>
 #include <xrpl/protocol/STPathSet.h>
 #include <xrpl/protocol/STVector256.h>
@@ -645,6 +648,20 @@ STObject::getAccountID(SField const& field) const
     return getFieldByValue<STAccount>(field);
 }
 
+STData
+STObject::getFieldData(SField const& field) const
+{
+    static STData const empty{field};
+    return getFieldByConstRef<STData>(field, empty);
+}
+
+STDataType
+STObject::getFieldDataType(SField const& field) const
+{
+    static STDataType const empty{field};
+    return getFieldByConstRef<STDataType>(field, empty);
+}
+
 Blob
 STObject::getFieldVL(SField const& field) const
 {
@@ -705,6 +722,13 @@ STObject::getFieldNumber(SField const& field) const
     return getFieldByConstRef<STNumber>(field, kEmpty);
 }
 
+STJson const&
+STObject::getFieldJson(SField const& field) const
+{
+    static STJson const empty{field};
+    return getFieldByConstRef<STJson>(field, empty);
+}
+
 void
 STObject::set(std::unique_ptr<STBase> v)
 {
@@ -725,6 +749,72 @@ STObject::set(STBase&& v)
             Throw<std::runtime_error>("missing field in templated STObject");
         v_.emplace_back(std::move(v));
     }
+}
+
+void
+STObject::addFieldFromSlice(SField const& sfield, Slice const& data)
+{
+    SerialIter sit(data.data(), data.size());
+    std::unique_ptr<STBase> element;
+
+    switch (sfield.fieldType)
+    {
+        case STI_AMOUNT:
+            element = std::make_unique<STAmount>(sit, sfield);
+            break;
+        case STI_ACCOUNT:
+            element = std::make_unique<STAccount>(sit, sfield);
+            break;
+        case STI_UINT8:
+            element = std::make_unique<STUInt8>(sit, sfield);
+            break;
+        case STI_UINT16:
+            element = std::make_unique<STUInt16>(sit, sfield);
+            break;
+        case STI_UINT32:
+            element = std::make_unique<STUInt32>(sit, sfield);
+            break;
+        case STI_UINT64:
+            element = std::make_unique<STUInt64>(sit, sfield);
+            break;
+        case STI_UINT128:
+            element = std::make_unique<STUInt128>(sit, sfield);
+            break;
+        case STI_UINT160:
+            element = std::make_unique<STUInt160>(sit, sfield);
+            break;
+        case STI_UINT192:
+            element = std::make_unique<STUInt192>(sit, sfield);
+            break;
+        case STI_UINT256:
+            element = std::make_unique<STUInt256>(sit, sfield);
+            break;
+        case STI_VECTOR256:
+            element = std::make_unique<STVector256>(sit, sfield);
+            break;
+        case STI_VL:
+            element = std::make_unique<STBlob>(sit, sfield);
+            break;
+        case STI_CURRENCY:
+            element = std::make_unique<STCurrency>(sit, sfield);
+            break;
+        case STI_ISSUE:
+            element = std::make_unique<STIssue>(sit, sfield);
+            break;
+        case STI_PATHSET:
+            element = std::make_unique<STPathSet>(sit, sfield);
+            break;
+        case STI_ARRAY:
+            element = std::make_unique<STArray>(sit, sfield);
+            break;
+        case STI_OBJECT:
+            element = std::make_unique<STObject>(sit, sfield, 0);
+            break;
+        default:
+            throw std::runtime_error("Unsupported SField type");
+    }
+
+    this->set(std::move(element));
 }
 
 void
@@ -837,6 +927,12 @@ STObject::setFieldArray(SField const& field, STArray const& v)
 
 void
 STObject::setFieldObject(SField const& field, STObject const& v)
+{
+    setFieldUsingAssignment(field, v);
+}
+
+void
+STObject::setFieldJson(SField const& field, STJson const& v)
 {
     setFieldUsingAssignment(field, v);
 }

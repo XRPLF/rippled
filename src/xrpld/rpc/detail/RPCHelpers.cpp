@@ -14,6 +14,8 @@
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/core/ServiceRegistry.h>
+#include <xrpl/ledger/View.h>
+#include <xrpl/ledger/helpers/NFTokenHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/ErrorCodes.h>
@@ -29,7 +31,10 @@
 #include <xrpl/protocol/Seed.h>
 #include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/jss.h>
+#include <xrpl/protocol/nftPageMask.h>
 #include <xrpl/protocol/tokens.h>
+#include <xrpl/rdb/RelationalDatabase.h>
+#include <xrpl/resource/Fees.h>
 
 #include <boost/algorithm/string/predicate.hpp>
 

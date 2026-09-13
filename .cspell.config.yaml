@@ -7,6 +7,8 @@ ignorePaths:
   - cmake/**
   - LICENSE.md
   - .clang-tidy
+  - src/test/app/wasm_fixtures/**/*.wat
+  - src/test/app/wasm_fixtures/*.c
   - nix/check-tools/*.txt # generated, and full of Nix store hashes
 language: en
 allowCompoundWords: true # TODO (#6334)
@@ -68,6 +70,7 @@ words:
   - Btrfs
   - Buildx
   - canonicality
+  - cdylib
   - canonicalised
   - cctools
   - changespq
@@ -114,7 +117,7 @@ words:
   - dsymutil
   - dxrpl
   - elgamal
-  - enabled
+  - emittance
   - enablerepo
   - endmacro
   - envrc
@@ -306,7 +309,9 @@ words:
   - statsd
   - STATSDCOLLECTOR
   - stissue
+  - stjson
   - stnum
+  - stnumber
   - stobj
   - stobject
   - stpath
@@ -376,6 +381,7 @@ words:
   - xbridge
   - xchain
   - xcrun
+  - xfloat
   - ximinez
   - XMACRO
   - xored

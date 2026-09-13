@@ -4,6 +4,8 @@
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/NFTokenHelpers.h>
+#include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAccount.h>  // IWYU pragma: keep
 #include <xrpl/protocol/STLedgerEntry.h>
@@ -49,6 +51,10 @@ NFTokenCreateOffer::preflight(PreflightContext const& ctx)
 TER
 NFTokenCreateOffer::preclaim(PreclaimContext const& ctx)
 {
+    auto const sle = ctx.view.read(keylet::account(ctx.tx[sfAccount]));
+    auto const balance = sle ? (*sle)[sfBalance] : XRPAmount{0};
+    JLOG(ctx.j.error()) << "NFTokenCreateOffer::preclaim.Balance: " << balance;
+
     if (hasExpired(ctx.view, ctx.tx[~sfExpiration]))
         return tecEXPIRED;
 

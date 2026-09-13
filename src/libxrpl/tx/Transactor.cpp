@@ -1285,6 +1285,23 @@ removeDeletedTrustLines(
     }
 }
 
+static void
+modifyWasmDataFields(
+    ApplyView& view,
+    std::vector<std::pair<uint256, SLE::const_pointer>> const& wasmObjects,
+    beast::Journal viewJ)
+{
+    for (auto const& [index, after] : wasmObjects)
+    {
+        if (auto const sle = view.peek(keylet::escrow(index)))
+        {
+            auto const data = after->getFieldVL(sfData);
+            sle->setFieldVL(sfData, data);
+            view.update(sle);
+        }
+    }
+}
+
 /**
  * Reset the context, discarding any changes made and adjust the fee.
  *
@@ -1337,6 +1354,8 @@ Transactor::reset(XRPAmount fee)
     }
 
     // balance should have already been checked in checkFee / preFlight.
+    // For batch/inner transactions (fee == 0), the balance can
+    // legitimately be zero (e.g. contract pseudo-accounts).
     XRPL_ASSERT(
         (fee == beast::kZero || balance != beast::kZero) && (!view().open() || balance >= fee),
         "xrpl::Transactor::reset : valid balance");
@@ -1452,6 +1471,10 @@ Transactor::processPersistentChanges(TER result, XRPAmount fee)
             types.insert(ltNFTOKEN_OFFER);
             types.insert(ltCREDENTIAL);
         }
+        else if (ter == tecBYTECODE_REJECTED)
+        {
+            types.insert(ltESCROW);
+        }
         return types;
     };
 
@@ -1461,10 +1484,11 @@ Transactor::processPersistentChanges(TER result, XRPAmount fee)
     auto const typesToCollect = typesForResult(result);
 
     std::map<LedgerEntryType, std::vector<uint256>> deletedObjects;
+    std::map<LedgerEntryType, std::vector<std::pair<uint256, SLE::const_pointer>>> modifiedObjects;
     if (!typesToCollect.empty())
     {
         ctx_.visit(
-            [&typesToCollect, &deletedObjects](
+            [&typesToCollect, &deletedObjects, &modifiedObjects](
                 uint256 const& index, bool isDelete, SLE::const_ref before, SLE::const_ref after) {
                 if (isDelete)
                 {
@@ -1487,6 +1511,16 @@ Transactor::processPersistentChanges(TER result, XRPAmount fee)
                             deletedObjects[type].push_back(index);
                         }
                     }
+                }
+                else if (after)
+                {
+                    // Collect modified escrows so that data written by a
+                    // rejected WASM execution can be re-applied after the
+                    // context is reset.
+                    auto const type = after->getType();
+                    if (typesToCollect.contains(type) && type == ltESCROW &&
+                        after->isFieldPresent(sfData))
+                        modifiedObjects[type].emplace_back(index, after);
                 }
             });
     }
@@ -1524,6 +1558,24 @@ Transactor::processPersistentChanges(TER result, XRPAmount fee)
                     break;
                 case ltCREDENTIAL:
                     removeExpiredCredentials(view(), ids, viewJ);
+                    break;
+                // LCOV_EXCL_START
+                default:
+                    UNREACHABLE(
+                        "xrpl::Transactor::processPersistentChanges() : "
+                        "unexpected type");
+                    break;
+                    // LCOV_EXCL_STOP
+            }
+        }
+        for (auto const& [type, ids] : modifiedObjects)
+        {
+            if (ids.empty() || !typesToApply.contains(type))
+                continue;
+            switch (type)
+            {
+                case ltESCROW:
+                    modifyWasmDataFields(view(), ids, viewJ);
                     break;
                 // LCOV_EXCL_START
                 default:
@@ -1613,7 +1665,8 @@ Transactor::operator()()
         }
         else if (
             (result == tecOVERSIZE) || (result == tecKILLED) || (result == tecINCOMPLETE) ||
-            (result == tecEXPIRED) || (isTecClaimHardFail(result, view().flags())))
+            (result == tecEXPIRED) || (result == tecBYTECODE_REJECTED) ||
+            (isTecClaimHardFail(result, view().flags())))
         {
             // This is and must remain the only place where `canApplyTmp` can change from false to
             // true. Changing from true to false is no problem.
@@ -1626,6 +1679,7 @@ Transactor::operator()()
                             TER result,
                             bool canApply,
                             std::optional<TxMeta>&& metadata = std::nullopt) -> ApplyResult {
+        ctx_.finalize();
         JLOG(j_.trace()) << (canApply ? "applied " : "not applied ") << transToken(result);
         return {result, canApply, std::move(metadata)};
     };
@@ -1683,6 +1737,67 @@ Transactor::operator()()
 
     // Once we call apply, we will no longer be able to look at view()
     metadata = ctx_.apply(result);
+
+    // Apply the transactions a smart contract emitted, all or nothing.
+    if (metadata && !ctx_.getEmittedTxns().empty())
+    {
+        OpenView emittedTxnsView(kBatchView, ctx_.openView());
+        auto const parentBatchId = ctx_.tx.getTransactionID();
+
+        auto applyOneTransaction = [this, &parentBatchId, &emittedTxnsView](STTx const& tx) {
+            OpenView perTxBatchView(kBatchView, emittedTxnsView);
+
+            auto const ret = xrpl::apply(
+                ctx_.registry, perTxBatchView, parentBatchId, tx, TapBatch, ctx_.journal);
+            XRPL_ASSERT(
+                ret.applied == (isTesSuccess(ret.ter) || isTecClaim(ret.ter)),
+                "xrpl::Transactor::operator() : emitted transaction applied iff tes or tec");
+
+            JLOG(ctx_.journal.debug())
+                << "BatchTrace[" << parentBatchId << "]: " << tx.getTransactionID() << " "
+                << (ret.applied ? "applied" : "failure") << ": " << transToken(ret.ter);
+
+            if (ret.applied && (isTesSuccess(ret.ter) || isTecClaim(ret.ter)))
+                perTxBatchView.apply(emittedTxnsView);
+
+            return ret;
+        };
+
+        bool emitResult = true;
+        auto emittedTxns = ctx_.getEmittedTxns();
+        while (!emittedTxns.empty())
+        {
+            auto txn = emittedTxns.front();
+            emittedTxns.pop();
+            if (!isTesSuccess(applyOneTransaction(*txn).ter))
+                emitResult = false;
+        }
+
+        if (emitResult)
+        {
+            emittedTxnsView.apply(ctx_.openView());
+        }
+        else
+        {
+            // Roll back to the fee claim; the emitted set failed.
+            result = tecBYTECODE_REJECTED;
+            auto const resetResult = reset(fee);
+            if (!isTesSuccess(resetResult.first))
+                result = resetResult.first;
+            fee = resetResult.second;
+
+            // Only protocol invariants apply once the effects are rolled back.
+            if (isTesSuccess(result) || isTecClaim(result))
+                result = checkInvariants(result, fee, InvariantScope::ProtocolOnly);
+            if (!isTecClaim(result) && !isTesSuccess(result))
+                return logger(result, false);
+
+            // reset() discarded the earlier fee destruction.
+            if (!view().open() && fee != beast::kZero)
+                ctx_.destroyXRP(fee);
+            metadata = ctx_.apply(result);
+        }
+    }
 
     if ((ctx_.flags() & TapDryRun) != 0u)
         return logger(result, false, std::move(metadata));

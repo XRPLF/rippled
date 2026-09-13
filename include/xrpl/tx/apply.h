@@ -13,6 +13,8 @@
 
 namespace xrpl {
 
+class Application;
+
 class HashRouter;
 class ServiceRegistry;
 
@@ -115,6 +117,22 @@ apply(
     STTx const& tx,
     ApplyFlags flags,
     beast::Journal journal);
+
+/**
+ * Apply a transaction that is part of a batch.
+ *
+ * @param parentBatchId The ID of the enclosing `Batch` transaction.
+ *
+ * @see apply
+ */
+ApplyResult
+apply(
+    ServiceRegistry& registry,
+    OpenView& view,
+    uint256 const& parentBatchId,
+    STTx const& tx,
+    ApplyFlags flags,
+    beast::Journal j);
 
 /**
  * Enum class for return value from `applyTransaction`

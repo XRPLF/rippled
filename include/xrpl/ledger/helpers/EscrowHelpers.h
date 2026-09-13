@@ -25,6 +25,8 @@
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/UintTypes.h>
 
+#include <cstdint>
+
 namespace xrpl {
 
 template <ValidIssueType T>
@@ -270,6 +272,20 @@ escrowUnlockApplyHelper<MPTIssue>(
         finalAmt,
         ctx.view.rules().enabled(fixTokenEscrowV1) ? amount : finalAmt,
         journal);
+}
+
+// calculateAdditionalReserve computes the owner count impact of an Escrow.
+// An escrow without a FinishFunction costs 1 reserve. With a FinishFunction,
+// each additional 500 bytes beyond the first 500 adds another reserve slot.
+template <class T>
+static int32_t
+calculateAdditionalReserve(T const& finishFunction)
+{
+    if (!finishFunction)
+        return 1;
+    // First 500 bytes included in the normal reserve
+    // Each additional 500 bytes requires an additional reserve
+    return 1 + (finishFunction->size() / 500);
 }
 
 }  // namespace xrpl

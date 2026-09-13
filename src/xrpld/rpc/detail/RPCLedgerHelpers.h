@@ -174,6 +174,9 @@ ledgerFromSpecifier(
 std::expected<std::shared_ptr<Ledger const>, json::Value>
 getOrAcquireLedger(rpc::JsonContext const& context);
 
+void
+injectSLE(json::Value& jv, SLE const& sle);
+
 }  // namespace rpc
 
 }  // namespace xrpl

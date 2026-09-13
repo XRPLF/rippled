@@ -237,6 +237,12 @@ page(Keylet const& root, std::uint64_t const index = 0) noexcept
 Keylet
 escrow(AccountID const& src, SeqProxy const& seq) noexcept;
 
+inline Keylet
+escrow(uint256 const& key) noexcept
+{
+    return {ltESCROW, key};
+}
+
 /**
  * A PaymentChannel
  */
@@ -386,6 +392,22 @@ permissionedDomain(AccountID const& account, SeqProxy const& seq) noexcept;
 
 Keylet
 permissionedDomain(uint256 const& domainID) noexcept;
+
+Keylet
+contractSource(uint256 const& contractHash) noexcept;
+
+Keylet
+contract(uint256 const& contractHash, AccountID const& owner, std::uint32_t seq) noexcept;
+
+inline Keylet
+contract(uint256 const& contractID)
+{
+    return {ltCONTRACT, contractID};
+}
+
+Keylet
+contractData(AccountID const& owner, AccountID const& contractAccount) noexcept;
+
 }  // namespace keylet
 
 // Everything below is deprecated and should be removed in favor of keylets:

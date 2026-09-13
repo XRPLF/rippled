@@ -38,20 +38,40 @@ ApplyContext::ApplyContext(
     XRPL_ASSERT(
         parentBatchId.has_value() == ((flags_ & TapBatch) == TapBatch),
         "Parent Batch ID should be set if batch apply flag is set");
-    view_.emplace(&base_, flags_);
+    view_.emplace(&base_.view(), flags_);
 }
 
 void
 ApplyContext::discard()
 {
-    view_.emplace(&base_, flags_);
+    base_.discard();
+    view_.emplace(&base_.view(), flags_);
+}
+
+void
+ApplyContext::finalize()
+{
+    base_.commit();
+    view_.emplace(&base_.view(), flags_);
 }
 
 std::optional<TxMeta>
 ApplyContext::apply(TER ter)
 {
+    // tecINTERNAL reports an xrpld bug, not a result: nothing the VM recorded
+    // before we hit it belongs in the metadata.
+    if (ter != tecINTERNAL)
+    {
+        if (vmReturnCode_.has_value())
+        {
+            // NOLINTNEXTLINE(bugprone-unchecked-optional-access) view_ emplaced in constructor
+            view_->setVMReturnCode(*vmReturnCode_);
+        }
+        // NOLINTNEXTLINE(bugprone-unchecked-optional-access) view_ emplaced in constructor
+        view_->setGasUsed(gasUsed_);
+    }
     // NOLINTNEXTLINE(bugprone-unchecked-optional-access) view_ emplaced in constructor
-    return view_->apply(base_, tx, ter, parentBatchId_, (flags_ & TapDryRun) != 0u, journal);
+    return view_->apply(base_.view(), tx, ter, parentBatchId_, (flags_ & TapDryRun) != 0u, journal);
 }
 
 std::size_t
@@ -64,7 +84,7 @@ void
 ApplyContext::visit(
     std::function<void(uint256 const&, bool, SLE::const_ref, SLE::const_ref)> const& func)
 {
-    view_->visit(base_, func);  // NOLINT(bugprone-unchecked-optional-access)
+    view_->visit(base_.view(), func);  // NOLINT(bugprone-unchecked-optional-access)
 }
 
 }  // namespace xrpl

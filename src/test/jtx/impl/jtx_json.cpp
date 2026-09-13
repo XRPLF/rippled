@@ -15,7 +15,7 @@ namespace xrpl::test::jtx {
 
 Json::Json(std::string const& s)
 {
-    if (!json::Reader().parse(s, jv_))
+    if (!::json::Reader().parse(s, jv_))
         Throw<ParseError>("bad json");
 }
 
@@ -23,7 +23,7 @@ Json::Json(char const* s) : Json(std::string(s))
 {
 }
 
-Json::Json(json::Value jv) : jv_(std::move(jv))
+Json::Json(::json::Value jv) : jv_(std::move(jv))
 {
 }
 

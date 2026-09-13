@@ -148,6 +148,7 @@ Handler const kHandlerArray[]{
      .valueMethod = byRef(&doConsensusInfo),
      .role = Role::ADMIN,
      .condition = Condition::NoCondition},
+    {"contract_info", byRef(&doContractInfo), Role::USER, Condition::NoCondition},
     {.name = "deposit_authorized",
      .valueMethod = byRef(&doDepositAuthorized),
      .role = Role::USER,

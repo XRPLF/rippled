@@ -1,0 +1,26 @@
+[package]
+name = "instance_params_uint"
+version = "0.1.0"
+edition = "2024"
+description = ""
+license = "MIT"
+
+[workspace]
+
+[lib]
+crate-type = ["cdylib"]
+
+[profile.release]
+opt-level = "z"         # Most aggressive size optimization
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = true            # Remove debug symbols
+debug = false           # Disable debug info generation
+overflow-checks = false # Disable overflow checks (use cautiously)
+
+[profile.dev]
+panic = "unwind"
+
+[dependencies]
+xrpl-wasm-stdlib = { git = "https://github.com/ripple/xrpl-wasm-stdlib.git", rev = "bd44875189fff1ae1c4ae740331d2366cb014cc0", package = "xrpl-wasm-stdlib" }

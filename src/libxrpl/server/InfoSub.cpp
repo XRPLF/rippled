@@ -83,6 +83,7 @@ InfoSub::~InfoSub()
     safeUnsub(seq_, [&] { source_.unsubValidations(seq_); }, j);
     safeUnsub(seq_, [&] { source_.unsubPeerStatus(seq_); }, j);
     safeUnsub(seq_, [&] { source_.unsubConsensus(seq_); }, j);
+    safeUnsub(seq_, [&] { source_.unsubContractEvent(seq_); }, j);
 
     // Book subscriptions are torn down inline here, keyed on seq_, rather than
     // through the chunked account cleanup below. The book set is not capped, so

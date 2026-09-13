@@ -17,6 +17,7 @@
 #include <xrpl/protocol/STBitString.h>
 #include <xrpl/protocol/STCurrency.h>
 #include <xrpl/protocol/STIssue.h>
+#include <xrpl/protocol/STJson.h>
 #include <xrpl/protocol/STPathSet.h>
 #include <xrpl/protocol/STVector256.h>
 #include <xrpl/protocol/Serializer.h>
@@ -232,6 +233,10 @@ public:
     getFieldI32(SField const& field) const;
     [[nodiscard]] AccountID
     getAccountID(SField const& field) const;
+    STData
+    getFieldData(SField const& field) const;
+    STDataType
+    getFieldDataType(SField const& field) const;
 
     [[nodiscard]] Blob
     getFieldVL(SField const& field) const;
@@ -250,6 +255,8 @@ public:
     getFieldCurrency(SField const& field) const;
     [[nodiscard]] STNumber const&
     getFieldNumber(SField const& field) const;
+    STJson const&
+    getFieldJson(SField const& field) const;
 
     /**
      * Get the value of a field.
@@ -364,6 +371,9 @@ public:
     set(STBase&& v);
 
     void
+    addFieldFromSlice(SField const& sfield, Slice const& data);
+
+    void
     setFieldU8(SField const& field, unsigned char);
     void
     setFieldU16(SField const& field, std::uint16_t);
@@ -403,6 +413,8 @@ public:
     setFieldArray(SField const& field, STArray const& v);
     void
     setFieldObject(SField const& field, STObject const& v);
+    void
+    setFieldJson(SField const& field, STJson const& v);
 
     template <class Tag>
     void

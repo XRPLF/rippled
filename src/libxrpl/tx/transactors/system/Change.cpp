@@ -9,6 +9,7 @@
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/AmendmentTable.h>
 #include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Fees.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/PublicKey.h>
@@ -123,12 +124,22 @@ Change::preclaim(PreclaimContext const& ctx)
                     ctx.tx.isFieldPresent(sfReserveIncrementDrops))
                     return temDISABLED;
             }
-            // The ttFEE transaction format defines these fields as optional,
-            // but they are unconditionally forbidden until FeeVoteImpl is
-            // updated to populate them (SmartEscrow behavioral port).
-            if (ctx.tx.isFieldPresent(sfGasLimit) || ctx.tx.isFieldPresent(sfBytecodeSizeLimit) ||
-                ctx.tx.isFieldPresent(sfGasPrice))
-                return temDISABLED;
+            if (ctx.view.rules().enabled(featureSmartEscrow))
+            {
+                if (!ctx.tx.isFieldPresent(sfGasLimit) ||
+                    !ctx.tx.isFieldPresent(sfBytecodeSizeLimit) ||
+                    !ctx.tx.isFieldPresent(sfGasPrice))
+                    return temMALFORMED;
+                if (ctx.tx[sfGasLimit] > kMaxGasLimit ||
+                    ctx.tx[sfBytecodeSizeLimit] > kMaxBytecodeSizeLimit)
+                    return temBAD_FEE;
+            }
+            else
+            {
+                if (ctx.tx.isFieldPresent(sfGasLimit) ||
+                    ctx.tx.isFieldPresent(sfBytecodeSizeLimit) || ctx.tx.isFieldPresent(sfGasPrice))
+                    return temDISABLED;
+            }
             return tesSUCCESS;
         case ttAMENDMENT:
         case ttUNL_MODIFY:
@@ -289,6 +300,12 @@ Change::applyFee()
         set(feeObject, ctx_.tx, sfReferenceFeeUnits);
         set(feeObject, ctx_.tx, sfReserveBase);
         set(feeObject, ctx_.tx, sfReserveIncrement);
+    }
+    if (view().rules().enabled(featureSmartEscrow))
+    {
+        set(feeObject, ctx_.tx, sfGasLimit);
+        set(feeObject, ctx_.tx, sfBytecodeSizeLimit);
+        set(feeObject, ctx_.tx, sfGasPrice);
     }
 
     view().update(feeObject);

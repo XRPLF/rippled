@@ -168,6 +168,35 @@ InnerObjectFormats::InnerObjectFormats()
             {sfTxnSignature, SoeOptional},
             {sfSigners, SoeOptional},
         });
+
+    add(sfFunction.jsonName,
+        sfFunction.getCode(),
+        {
+            {sfFunctionName, SoeRequired},
+            {sfParameters, SoeOptional},
+        });
+
+    add(sfInstanceParameter.jsonName,
+        sfInstanceParameter.getCode(),
+        {
+            {sfParameterFlag, SoeRequired},
+            {sfParameterType, SoeRequired},
+        });
+
+    add(sfInstanceParameterValue.jsonName,
+        sfInstanceParameterValue.getCode(),
+        {
+            {sfParameterFlag, SoeRequired},
+            {sfParameterValue, SoeRequired},
+        });
+
+    add(sfParameter.jsonName,
+        sfParameter.getCode(),
+        {
+            {sfParameterFlag, SoeOptional},
+            {sfParameterType, SoeOptional},
+            {sfParameterValue, SoeOptional},
+        });
 }
 
 InnerObjectFormats const&

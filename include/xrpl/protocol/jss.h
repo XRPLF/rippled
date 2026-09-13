@@ -189,6 +189,7 @@ JSS(confidential_balance_inbox);  // out: mpt_holders (confidential MPT)
 JSS(confidential_balance_spending);  // out: mpt_holders (confidential MPT)
 JSS(confidential_balance_version);   // out: mpt_holders (confidential MPT)
 JSS(consensus);                      // out: NetworkOPs, LedgerConsensus
+JSS(contract_account);               // out: ContractInfo
 JSS(converge_time);                  // out: NetworkOPs
 JSS(converge_time_s);                // out: NetworkOPs
 JSS(cookie);                         // out: NetworkOPs
@@ -252,6 +253,9 @@ JSS(expected_date);                  // out: any (warnings)
 JSS(expected_date_UTC);              // out: any (warnings)
 JSS(expected_ledger_size);           // out: TxQ
 JSS(expiration);                     // out: AccountOffers, AccountChannels, ValidatorList, amm_info
+JSS(gas_limit);                      // out: NetworkOPs
+JSS(bytecode_size_limit);            // out: NetworkOPs
+JSS(gas_price);                      // out: NetworkOPs
 JSS(fail_hard);                      // in: Sign, Submit
 JSS(failed);                         // out: InboundLedger
 JSS(feature);                        // in: Feature
@@ -278,6 +282,8 @@ JSS(frozen_balances);                // out: GatewayBalances
 JSS(full);                           // in: LedgerClearer, handlers/Ledger
 JSS(full_reply);                     // out: PathFind
 JSS(fullbelow_size);                 // out: GetCounts
+JSS(function);                       // in: ContractInfo
+JSS(functions);                      // out: ContractInfo
 JSS(git);                            // out: server_info
 JSS(good);                           // out: RPCVersion
 JSS(hash);                           // out: NetworkOPs, InboundLedger, LedgerToJson, STTx; field
@@ -561,6 +567,7 @@ JSS(size);                        // out: get_aggregate_price
 JSS(snapshot);                    // in: Subscribe
 JSS(source_account);              // in: PathRequest, RipplePathFind
 JSS(source_amount);               // in: PathRequest, RipplePathFind
+JSS(source_code_uri);             // out: ContractInfo
 JSS(source_currencies);           // in: PathRequest, RipplePathFind
 JSS(source_tag);                  // out: AccountChannels
 JSS(sponsee);                     // in: LedgerEntry
@@ -661,6 +668,7 @@ JSS(url);                         // in/out: Subscribe, Unsubscribe
 JSS(url_password);                // in: Subscribe
 JSS(url_username);                // in: Subscribe
 JSS(urlgravatar);                 //
+JSS(user_data);                   // out: ContractInfo
 JSS(username);                    // in: Subscribe
 JSS(validated);                   // out: NetworkOPs, RPCHelpers, AccountTx*, Tx
 JSS(validator_list_expires);      // out: NetworkOps, ValidatorList

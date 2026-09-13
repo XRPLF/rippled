@@ -23,6 +23,7 @@
  *         Delegation delegable{Delegation::NotDelegable};
  *         uint256 amendment{};
  *         Privilege privileges{Privilege::NoPriv};
+ *         Emittance emittance{Emittance::Emitable};
  *     };
  *
  * Name only the settings that differ from those defaults, in declaration
@@ -122,7 +123,9 @@ TRANSACTION(ttESCROW_CANCEL, 4, EscrowCancel, ({.delegable = Delegation::Delegab
 #   include <xrpl/tx/transactors/account/SetRegularKey.h>
 #endif
 TRANSACTION(ttREGULAR_KEY_SET, 5, SetRegularKey,
-    ({}),
+    ({
+        .emittance = Emittance::NotEmitable,
+    }),
     ({
     {sfRegularKey, SoeOptional},
 }))
@@ -170,7 +173,9 @@ TRANSACTION(ttTICKET_CREATE, 10, TicketCreate, ({.delegable = Delegation::Delega
 #   include <xrpl/tx/transactors/account/SignerListSet.h>
 #endif
 TRANSACTION(ttSIGNER_LIST_SET, 12, SignerListSet,
-    ({}),
+    ({
+        .emittance = Emittance::NotEmitable,
+    }),
     ({
     {sfSignerQuorum, SoeRequired},
     {sfSignerEntries, SoeOptional},
@@ -248,7 +253,12 @@ TRANSACTION(ttCHECK_CANCEL, 18, CheckCancel, ({.delegable = Delegation::Delegabl
 #if TRANSACTION_INCLUDE
 #   include <xrpl/tx/transactors/payment/DepositPreauth.h>
 #endif
-TRANSACTION(ttDEPOSIT_PREAUTH, 19, DepositPreauth, ({.delegable = Delegation::Delegable}), ({
+TRANSACTION(ttDEPOSIT_PREAUTH, 19, DepositPreauth,
+    ({
+        .delegable = Delegation::Delegable,
+        .emittance = Emittance::NotEmitable,
+    }),
+    ({
     {sfAuthorize, SoeOptional},
     {sfUnauthorize, SoeOptional},
     {sfAuthorizeCredentials, SoeOptional},
@@ -272,6 +282,7 @@ TRANSACTION(ttTRUST_SET, 20, TrustSet, ({.delegable = Delegation::Delegable}), (
 TRANSACTION(ttACCOUNT_DELETE, 21, AccountDelete,
     ({
         .privileges = Privilege::MustDeleteAcct,
+        .emittance = Emittance::NotEmitable,
     }),
     ({
     {sfDestination, SoeRequired},
@@ -761,6 +772,7 @@ TRANSACTION(ttPERMISSIONED_DOMAIN_DELETE, 63, PermissionedDomainDelete,
 TRANSACTION(ttDELEGATE_SET, 64, DelegateSet,
     ({
         .amendment = featurePermissionDelegationV1_1,
+        .emittance = Emittance::NotEmitable,
     }),
     ({
     {sfAuthorize, SoeRequired},
@@ -875,6 +887,7 @@ TRANSACTION(ttVAULT_CLAWBACK, 70, VaultClawback,
 TRANSACTION(ttBATCH, 71, Batch,
     ({
         .amendment = featureBatchV1_1,
+        .emittance = Emittance::NotEmitable,
     }),
     ({
     {sfRawTransactions, SoeRequired},
@@ -1134,6 +1147,105 @@ TRANSACTION(ttSPONSORSHIP_SET, 91, SponsorshipSet,
     {sfRemainingOwnerCountDelta, SoeOptional},
 }))
 
+/** This transaction type creates the smart contract. */
+#if TRANSACTION_INCLUDE
+#   include <xrpl/tx/transactors/contract/ContractCreate.h>
+#endif
+TRANSACTION(ttCONTRACT_CREATE, 92, ContractCreate,
+    ({
+        .delegable = Delegation::Delegable,
+        .amendment = featureSmartContract,
+        .privileges = Privilege::CreatePseudoAcct,
+    }),
+    ({
+    {sfContractCode, SoeOptional},
+    {sfContractHash, SoeOptional},
+    {sfFunctions, SoeOptional},
+    {sfInstanceParameters, SoeOptional},
+    {sfInstanceParameterValues, SoeOptional},
+    {sfURI, SoeOptional},
+}))
+
+/** This transaction type modifies the smart contract. */
+#if TRANSACTION_INCLUDE
+#   include <xrpl/tx/transactors/contract/ContractModify.h>
+#endif
+TRANSACTION(ttCONTRACT_MODIFY, 93, ContractModify,
+    ({
+        .delegable = Delegation::Delegable,
+        .amendment = featureSmartContract,
+    }),
+    ({
+    {sfContractAccount, SoeOptional},
+    {sfOwner, SoeOptional},
+    {sfContractCode, SoeOptional},
+    {sfContractHash, SoeOptional},
+    {sfFunctions, SoeOptional},
+    {sfInstanceParameters, SoeOptional},
+    {sfInstanceParameterValues, SoeOptional},
+    {sfURI, SoeOptional},
+}))
+
+/** This transaction type deletes the smart contract. */
+#if TRANSACTION_INCLUDE
+#   include <xrpl/tx/transactors/contract/ContractDelete.h>
+#endif
+TRANSACTION(ttCONTRACT_DELETE, 94, ContractDelete,
+    ({
+        .delegable = Delegation::Delegable,
+        .amendment = featureSmartContract,
+        .privileges = Privilege::MustDeleteAcct,
+    }),
+    ({
+    {sfContractAccount, SoeRequired},
+}))
+
+/** This transaction type claws back funds from the contract. */
+#if TRANSACTION_INCLUDE
+#   include <xrpl/tx/transactors/contract/ContractClawback.h>
+#endif
+TRANSACTION(ttCONTRACT_CLAWBACK, 95, ContractClawback,
+    ({
+        .delegable = Delegation::Delegable,
+        .amendment = featureSmartContract,
+    }),
+    ({
+    {sfContractAccount, SoeOptional},
+    {sfAmount, SoeRequired, SoeMptSupported},
+}))
+
+/** This transaction type deletes user data. */
+#if TRANSACTION_INCLUDE
+#   include <xrpl/tx/transactors/contract/ContractUserDelete.h>
+#endif
+TRANSACTION(ttCONTRACT_USER_DELETE, 96, ContractUserDelete,
+    ({
+        .delegable = Delegation::Delegable,
+        .amendment = featureSmartContract,
+        .emittance = Emittance::NotEmitable,
+    }),
+    ({
+    {sfContractAccount, SoeRequired},
+    {sfGas, SoeRequired},
+}))
+
+/** This transaction type calls the smart contract. */
+#if TRANSACTION_INCLUDE
+#   include <xrpl/tx/transactors/contract/ContractCall.h>
+#endif
+TRANSACTION(ttCONTRACT_CALL, 97, ContractCall,
+    ({
+        .delegable = Delegation::Delegable,
+        .amendment = featureSmartContract,
+        .emittance = Emittance::NotEmitable,
+    }),
+    ({
+    {sfContractAccount, SoeRequired},
+    {sfFunctionName, SoeRequired},
+    {sfParameters, SoeOptional},
+    {sfGas, SoeRequired},
+}))
+
 /** This system-generated transaction type is used to update the status of the various amendments.
 
     For details, see: https://xrpl.org/amendments.html
@@ -1142,7 +1254,9 @@ TRANSACTION(ttSPONSORSHIP_SET, 91, SponsorshipSet,
 #   include <xrpl/tx/transactors/system/Change.h>
 #endif
 TRANSACTION(ttAMENDMENT, 100, EnableAmendment,
-    ({}),
+    ({
+        .emittance = Emittance::NotEmitable,
+    }),
     ({
     {sfLedgerSequence, SoeRequired},
     {sfAmendment, SoeRequired},
@@ -1152,7 +1266,9 @@ TRANSACTION(ttAMENDMENT, 100, EnableAmendment,
     For details, see: https://xrpl.org/fee-voting.html
  */
 TRANSACTION(ttFEE, 101, SetFee,
-    ({}),
+    ({
+        .emittance = Emittance::NotEmitable,
+    }),
     ({
     {sfLedgerSequence, SoeOptional},
     // Old version uses raw numbers
@@ -1175,7 +1291,9 @@ TRANSACTION(ttFEE, 101, SetFee,
     For details, see: https://xrpl.org/negative-unl.html
  */
 TRANSACTION(ttUNL_MODIFY, 102, UNLModify,
-    ({}),
+    ({
+        .emittance = Emittance::NotEmitable,
+    }),
     ({
     {sfUNLModifyDisabling, SoeRequired},
     {sfLedgerSequence, SoeRequired},

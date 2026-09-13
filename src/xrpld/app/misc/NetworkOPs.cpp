@@ -657,6 +657,12 @@ public:
     subConsensus(InfoSub::ref ispListener) override;
     bool
     unsubConsensus(std::uint64_t uListener) override;
+    bool
+    subContractEvent(InfoSub::ref ispListener) override;
+    bool
+    unsubContractEvent(std::uint64_t uListener) override;
+    void
+    pubContractEvent(std::string const& name, STJson const& event) override;
 
     InfoSub::pointer
     findRpcSub(std::string const& strUrl) override;
@@ -1009,6 +1015,7 @@ private:
         SPeerStatus,      // Peer status changes.
         SConsensusPhase,  // Consensus phase
         SBookChanges,     // Per-ledger order book changes
+        SContractEvents,  // Contract events
         SLastEntry        // Any new entry must be ADDED ABOVE this one
     };
 
@@ -2628,6 +2635,39 @@ NetworkOPsImp::pubConsensus(ConsensusPhase phase)
 }
 
 void
+NetworkOPsImp::pubContractEvent(std::string const& name, STJson const& event)
+{
+    // Hold each locked subscriber alive until after streamLock_ is released:
+    // ~InfoSub re-acquires streamLock_ and would self-deadlock.
+    std::vector<InfoSub::pointer> toRelease;
+
+    std::scoped_lock const sl(streamLock_);
+
+    auto& streamMap = streamMaps_[SContractEvents];
+    if (!streamMap.empty())
+    {
+        json::Value jvObj(json::ValueType::Object);
+        jvObj[jss::type] = "contractEvent";
+        jvObj[jss::name] = name;
+        jvObj[jss::data] = event.getJson(JsonOptions::Values::None);
+
+        for (auto i = streamMap.begin(); i != streamMap.end();)
+        {
+            if (auto p = i->second.lock())
+            {
+                p->send(jvObj, true);
+                toRelease.push_back(std::move(p));
+                ++i;
+            }
+            else
+            {
+                i = streamMap.erase(i);
+            }
+        }
+    }
+}
+
+void
 NetworkOPsImp::pubValidation(std::shared_ptr<STValidation> const& val)
 {
     // Hold each locked subscriber alive until after streamLock_ is released; a
@@ -2707,6 +2747,15 @@ NetworkOPsImp::pubValidation(std::shared_ptr<STValidation> const& val)
         if (auto const reserveIncXRP = ~val->at(~sfReserveIncrementDrops);
             reserveIncXRP && reserveIncXRP->native())
             jvObj[jss::reserve_inc] = reserveIncXRP->xrp().jsonClipped();
+
+        if (auto const gasLimit = ~val->at(~sfGasLimit); gasLimit)
+            jvObj[jss::gas_limit] = *gasLimit;
+
+        if (auto const bytecodeSizeLimit = ~val->at(~sfBytecodeSizeLimit); bytecodeSizeLimit)
+            jvObj[jss::bytecode_size_limit] = *bytecodeSizeLimit;
+
+        if (auto const gasPrice = ~val->at(~sfGasPrice); gasPrice)
+            jvObj[jss::gas_price] = *gasPrice;
 
         // NOTE Use MultiApiJson to publish two slightly different JSON objects
         // for consumers supporting different API versions
@@ -3175,11 +3224,18 @@ NetworkOPsImp::getServerInfo(bool human, bool admin, bool counters)
         l[jss::seq] = json::UInt(lpClosed->header().seq);
         l[jss::hash] = to_string(lpClosed->header().hash);
 
+        bool const smartEscrowEnabled = lpClosed->rules().enabled(featureSmartEscrow);
         if (!human)
         {
             l[jss::base_fee] = baseFee.jsonClipped();
             l[jss::reserve_base] = lpClosed->fees().reserve.jsonClipped();
             l[jss::reserve_inc] = lpClosed->fees().increment.jsonClipped();
+            if (smartEscrowEnabled)
+            {
+                l[jss::gas_limit] = lpClosed->fees().gasLimit;
+                l[jss::bytecode_size_limit] = lpClosed->fees().bytecodeSizeLimit;
+                l[jss::gas_price] = lpClosed->fees().gasPrice;
+            }
             l[jss::close_time] =
                 json::Value::UInt(lpClosed->header().closeTime.time_since_epoch().count());
         }
@@ -3188,6 +3244,12 @@ NetworkOPsImp::getServerInfo(bool human, bool admin, bool counters)
             l[jss::base_fee_xrp] = baseFee.decimalXRP();
             l[jss::reserve_base_xrp] = lpClosed->fees().reserve.decimalXRP();
             l[jss::reserve_inc_xrp] = lpClosed->fees().increment.decimalXRP();
+            if (smartEscrowEnabled)
+            {
+                l[jss::gas_limit] = lpClosed->fees().gasLimit;
+                l[jss::bytecode_size_limit] = lpClosed->fees().bytecodeSizeLimit;
+                l[jss::gas_price] = lpClosed->fees().gasPrice;
+            }
 
             if (auto const closeOffset = registry_.get().getTimeKeeper().closeOffset();
                 std::abs(closeOffset.count()) >= 60)
@@ -3416,6 +3478,12 @@ NetworkOPsImp::publishLedgerStreams(
         jvObj[jss::fee_base] = lpAccepted->fees().base.jsonClipped();
         jvObj[jss::reserve_base] = lpAccepted->fees().reserve.jsonClipped();
         jvObj[jss::reserve_inc] = lpAccepted->fees().increment.jsonClipped();
+        if (lpAccepted->rules().enabled(featureSmartEscrow))
+        {
+            jvObj[jss::gas_limit] = lpAccepted->fees().gasLimit;
+            jvObj[jss::bytecode_size_limit] = lpAccepted->fees().bytecodeSizeLimit;
+            jvObj[jss::gas_price] = lpAccepted->fees().gasPrice;
+        }
 
         jvObj[jss::txn_count] = json::UInt(alpAccepted->size());
 
@@ -4614,6 +4682,12 @@ NetworkOPsImp::subLedger(InfoSub::ref isrListener, json::Value& jvResult)
         jvResult[jss::reserve_base] = lpClosed->fees().reserve.jsonClipped();
         jvResult[jss::reserve_inc] = lpClosed->fees().increment.jsonClipped();
         jvResult[jss::network_id] = registry_.get().getNetworkIDService().getNetworkID();
+        if (lpClosed->rules().enabled(featureSmartEscrow))
+        {
+            jvResult[jss::gas_limit] = lpClosed->fees().gasLimit;
+            jvResult[jss::bytecode_size_limit] = lpClosed->fees().bytecodeSizeLimit;
+            jvResult[jss::gas_price] = lpClosed->fees().gasPrice;
+        }
     }
 
     if ((mode_ >= OperatingMode::SYNCING) && !isNeedNetworkLedger())
@@ -4782,6 +4856,22 @@ NetworkOPsImp::unsubConsensus(std::uint64_t uSeq)
 {
     std::scoped_lock const sl(streamLock_);
     return streamMaps_[SConsensusPhase].erase(uSeq) != 0u;
+}
+
+// <-- bool: true=added, false=already there
+bool
+NetworkOPsImp::subContractEvent(InfoSub::ref isrListener)
+{
+    std::scoped_lock const sl(streamLock_);
+    return streamMaps_[SContractEvents].emplace(isrListener->getSeq(), isrListener).second;
+}
+
+// <-- bool: true=erased, false=was not there
+bool
+NetworkOPsImp::unsubContractEvent(std::uint64_t uSeq)
+{
+    std::scoped_lock const sl(streamLock_);
+    return streamMaps_[SContractEvents].erase(uSeq) != 0u;
 }
 
 InfoSub::pointer

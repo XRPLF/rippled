@@ -377,6 +377,7 @@ enum TECcodes : TERUnderlyingType {
     tecNO_SPONSOR_PERMISSION = 200,
     tecOUT_OF_GAS = 201,
     tecBYTECODE_REJECTED = 202,
+    tecINVALID_PARAMETERS = 203,
 };
 
 //------------------------------------------------------------------------------

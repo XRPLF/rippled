@@ -590,6 +590,30 @@ public:
     {
         return this->sle_->isFieldPresent(sfLoanBrokerID);
     }
+
+    /**
+     * @brief Get sfContractID (SoeOptional)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_UINT256::type::value_type>
+    getContractID() const
+    {
+        if (hasContractID())
+            return this->sle_->at(sfContractID);
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfContractID is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasContractID() const
+    {
+        return this->sle_->isFieldPresent(sfContractID);
+    }
 };
 
 /**
@@ -923,6 +947,17 @@ public:
     setLoanBrokerID(std::decay_t<typename SF_UINT256::type::value_type> const& value)
     {
         object_[sfLoanBrokerID] = value;
+        return *this;
+    }
+
+    /**
+     * @brief Set sfContractID (SoeOptional)
+     * @return Reference to this builder for method chaining.
+     */
+    AccountRootBuilder&
+    setContractID(std::decay_t<typename SF_UINT256::type::value_type> const& value)
+    {
+        object_[sfContractID] = value;
         return *this;
     }
 
