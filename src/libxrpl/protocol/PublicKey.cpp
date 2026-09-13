@@ -23,6 +23,18 @@
 #include <ostream>
 #include <string>
 
+extern "C" {
+#include "api.h"
+}
+
+#ifndef CRYPTO_PUBLICKEYBYTES
+#define CRYPTO_PUBLICKEYBYTES pqcrystals_dilithium2_PUBLICKEYBYTES
+#endif
+
+#ifndef crypto_sign_verify
+#define crypto_sign_verify pqcrystals_dilithium2_ref_verify
+#endif
+
 namespace xrpl {
 
 std::ostream&
@@ -184,12 +196,14 @@ PublicKey::PublicKey(Slice const& slice)
 
     if (!publicKeyType(slice))
         logicError("PublicKey::PublicKey invalid type");
-    std::memcpy(buf_, slice.data(), kSize);
+    size_ = slice.size();
+    std::memcpy(buf_, slice.data(), size_);
 }
 
-PublicKey::PublicKey(PublicKey const& other)
+PublicKey::PublicKey(PublicKey const& other) : size_(other.size_)
 {
-    std::memcpy(buf_, other.buf_, kSize);
+    if (size_)
+        std::memcpy(buf_, other.buf_, size_);
 }
 
 PublicKey&
@@ -197,7 +211,9 @@ PublicKey::operator=(PublicKey const& other)
 {
     if (this != &other)
     {
-        std::memcpy(buf_, other.buf_, kSize);
+        size_ = other.size_;
+        if (size_)
+            std::memcpy(buf_, other.buf_, size_);
     }
 
     return *this;
@@ -216,6 +232,10 @@ publicKeyType(Slice const& slice)
         if (slice[0] == kEcCompressedPrefixEvenY || slice[0] == kEcCompressedPrefixOddY)
             return KeyType::Secp256k1;
     }
+    else if (slice.size() == CRYPTO_PUBLICKEYBYTES)
+    {
+        return KeyType::Dilithium;
+    }
 
     return std::nullopt;
 }
@@ -227,45 +247,69 @@ verifyDigest(
     Slice const& sig,
     bool mustBeFullyCanonical) noexcept
 {
-    if (publicKeyType(publicKey) != KeyType::Secp256k1)
-        logicError("sign: secp256k1 required for digest signing");
-    auto const canonicality = ecdsaCanonicality(sig);
-    if (!canonicality)
-        return false;
-    if (mustBeFullyCanonical && (*canonicality != ECDSACanonicality::FullyCanonical))
+    auto const type = publicKeyType(publicKey);
+    if (!type)
         return false;
 
-    secp256k1_pubkey pubkeyImp;
-    if (secp256k1_ec_pubkey_parse(
-            secp256k1Context(),
-            &pubkeyImp,
-            reinterpret_cast<unsigned char const*>(publicKey.data()),
-            publicKey.size()) != 1)
-        return false;
-
-    secp256k1_ecdsa_signature sigImp;
-    if (secp256k1_ecdsa_signature_parse_der(
-            secp256k1Context(),
-            &sigImp,
-            reinterpret_cast<unsigned char const*>(sig.data()),
-            sig.size()) != 1)
-        return false;
-    if (*canonicality != ECDSACanonicality::FullyCanonical)
+    switch (*type)
     {
-        secp256k1_ecdsa_signature sigNorm;
-        if (secp256k1_ecdsa_signature_normalize(secp256k1Context(), &sigNorm, &sigImp) != 1)
+        case KeyType::Secp256k1: {
+            auto const canonicality = ecdsaCanonicality(sig);
+            if (!canonicality)
+                return false;
+            if (mustBeFullyCanonical &&
+                (*canonicality != ECDSACanonicality::FullyCanonical))
+                return false;
+
+            secp256k1_pubkey pubkeyImp;
+            if (secp256k1_ec_pubkey_parse(
+                    secp256k1Context(),
+                    &pubkeyImp,
+                    reinterpret_cast<unsigned char const*>(publicKey.data()),
+                    publicKey.size()) != 1)
+                return false;
+
+            secp256k1_ecdsa_signature sigImp;
+            if (secp256k1_ecdsa_signature_parse_der(
+                    secp256k1Context(),
+                    &sigImp,
+                    reinterpret_cast<unsigned char const*>(sig.data()),
+                    sig.size()) != 1)
+                return false;
+            if (*canonicality != ECDSACanonicality::FullyCanonical)
+            {
+                secp256k1_ecdsa_signature sigNorm;
+                if (secp256k1_ecdsa_signature_normalize(
+                        secp256k1Context(), &sigNorm, &sigImp) != 1)
+                    return false;
+                return secp256k1_ecdsa_verify(
+                           secp256k1Context(),
+                           &sigNorm,
+                           reinterpret_cast<unsigned char const*>(digest.data()),
+                           &pubkeyImp) == 1;
+            }
+            return secp256k1_ecdsa_verify(
+                       secp256k1Context(),
+                       &sigImp,
+                       reinterpret_cast<unsigned char const*>(digest.data()),
+                       &pubkeyImp) == 1;
+        }
+        case KeyType::Dilithium: {
+            uint8_t ctx[] = {};
+            size_t ctxlen = 0;
+            // Verify the digest data directly
+            return crypto_sign_verify(
+                       sig.data(),
+                       sig.size(),
+                       reinterpret_cast<unsigned char const*>(digest.data()),
+                       digest.size(),
+                       ctx,
+                       ctxlen,
+                       publicKey.data()) == 0;
+        }
+        default:
             return false;
-        return secp256k1_ecdsa_verify(
-                   secp256k1Context(),
-                   &sigNorm,
-                   reinterpret_cast<unsigned char const*>(digest.data()),
-                   &pubkeyImp) == 1;
     }
-    return secp256k1_ecdsa_verify(
-               secp256k1Context(),
-               &sigImp,
-               reinterpret_cast<unsigned char const*>(digest.data()),
-               &pubkeyImp) == 1;
 }
 
 bool
@@ -287,6 +331,12 @@ verify(PublicKey const& publicKey, Slice const& m, Slice const& sig) noexcept
             // so when verifying the signature, we need to
             // first strip that prefix.
             return ed25519_sign_open(m.data(), m.size(), publicKey.data() + 1, sig.data()) == 0;
+        }
+        else if (*type == KeyType::Dilithium)
+        {
+            uint8_t ctx[] = {};
+            size_t ctxlen = 0;
+            return crypto_sign_verify(sig.data(), sig.size(), m.data(), m.size(), ctx, ctxlen, publicKey.data()) == 0;
         }
     }
     return false;

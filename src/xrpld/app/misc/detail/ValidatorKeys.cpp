@@ -27,17 +27,34 @@ ValidatorKeys::ValidatorKeys(Config const& config, beast::Journal j)
 
     if (config.exists(Sections::kValidatorToken))
     {
+        // Read key type from config, default to secp256k1 for tokens
+        KeyType keyType = KeyType::Secp256k1;
+        if (config.exists(Sections::kValidatorKeyType))
+        {
+            auto const keyTypeStr = config.section(Sections::kValidatorKeyType).lines().front();
+            auto const parsedKeyType = keyTypeFromString(keyTypeStr);
+            if (!parsedKeyType)
+            {
+                configInvalid_ = true;
+                JLOG(j.fatal()) << "Invalid key type specified in ["
+                                << Sections::kValidatorKeyType << "]: " << keyTypeStr;
+                return;
+            }
+            keyType = *parsedKeyType;
+        }
+
         // token is non-const so it can be moved from
         if (auto token = loadValidatorToken(config.section(Sections::kValidatorToken).lines()))
         {
-            auto const pk = derivePublicKey(KeyType::Secp256k1, token->validationSecret);
+            auto const pk = derivePublicKey(keyType, token->validationSecret);
             auto const m = deserializeManifest(base64Decode(token->manifest));
-
             if (!m || pk != m->signingKey)
             {
                 configInvalid_ = true;
                 JLOG(j.fatal()) << "Invalid token specified in [" << Sections::kValidatorToken
-                                << "]";
+                                << "] PublicKey: " << toBase58(TokenType::NodePublic, pk)
+                                << " KeyType: " << keyType
+                                << " Manifest: " << (m ? to_string(*m) : "null");
             }
             else
             {
@@ -50,7 +67,8 @@ ValidatorKeys::ValidatorKeys(Config const& config, beast::Journal j)
         else
         {
             configInvalid_ = true;
-            JLOG(j.fatal()) << "Invalid token specified in [" << Sections::kValidatorToken << "]";
+            JLOG(j.fatal()) << "Could not load token specified in ["
+                            << Sections::kValidatorToken << "]";
         }
     }
     else if (config.exists(Sections::kValidationSeed))
@@ -64,8 +82,25 @@ ValidatorKeys::ValidatorKeys(Config const& config, beast::Journal j)
         }
         else
         {
-            SecretKey const sk = generateSecretKey(KeyType::Secp256k1, *seed);
-            PublicKey const pk = derivePublicKey(KeyType::Secp256k1, sk);
+            // Read key type from config, default to secp256k1
+            KeyType keyType = KeyType::Secp256k1;
+            if (config.exists(Sections::kValidatorKeyType))
+            {
+                auto const keyTypeStr =
+                    config.section(Sections::kValidatorKeyType).lines().front();
+                auto const parsedKeyType = keyTypeFromString(keyTypeStr);
+                if (!parsedKeyType)
+                {
+                    configInvalid_ = true;
+                    JLOG(j.fatal()) << "Invalid key type specified in ["
+                                    << Sections::kValidatorKeyType << "]: " << keyTypeStr;
+                    return;
+                }
+                keyType = *parsedKeyType;
+            }
+
+            SecretKey const sk = generateSecretKey(keyType, *seed);
+            PublicKey const pk = derivePublicKey(keyType, sk);
             keys.emplace(pk, pk, sk);
             nodeID = calcNodeID(pk);
             sequence = 0;

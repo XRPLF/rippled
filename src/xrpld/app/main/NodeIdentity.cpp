@@ -44,8 +44,24 @@ getNodeIdentity(Application& app, boost::program_options::variables_map const& c
 
     if (seed)
     {
-        auto secretKey = generateSecretKey(KeyType::Secp256k1, *seed);
-        auto publicKey = derivePublicKey(KeyType::Secp256k1, secretKey);
+        // Read key type from config, default to secp256k1
+        KeyType keyType = KeyType::Secp256k1;
+        if (app.config().exists(Sections::kValidatorKeyType))
+        {
+            auto const keyTypeStr =
+                app.config().section(Sections::kValidatorKeyType).lines().front();
+            auto const parsedKeyType = keyTypeFromString(keyTypeStr);
+            if (!parsedKeyType)
+            {
+                Throw<std::runtime_error>(
+                    std::string("Invalid key type specified in [") +
+                    Sections::kValidatorKeyType + "]: " + keyTypeStr);
+            }
+            keyType = *parsedKeyType;
+        }
+
+        auto secretKey = generateSecretKey(keyType, *seed);
+        auto publicKey = derivePublicKey(keyType, secretKey);
 
         return {publicKey, secretKey};
     }

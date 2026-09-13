@@ -70,6 +70,7 @@ target_link_libraries(
         Xrpl::syslibs
         secp256k1::secp256k1
         wasmi::wasmi
+        NIH::dilithium2_ref
         xrpl.libpb
         xxHash::xxhash
         $<$<BOOL:${voidstar}>:antithesis-sdk-cpp>

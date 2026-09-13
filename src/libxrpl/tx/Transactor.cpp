@@ -55,6 +55,14 @@
 #include <utility>
 #include <vector>
 
+extern "C" {
+#include "api.h"
+}
+
+#ifndef DILITHIUM_PK_SIZE
+#define DILITHIUM_PK_SIZE pqcrystals_dilithium2_PUBLICKEYBYTES
+#endif
+
 namespace xrpl {
 
 /**

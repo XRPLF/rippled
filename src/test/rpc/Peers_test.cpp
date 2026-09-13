@@ -35,7 +35,8 @@ class Peers_test : public beast::unit_test::Suite
         std::unordered_map<std::string, std::string> nodes;
         for (auto i = 0; i < 3; ++i)
         {
-            auto kp = generateKeyPair(KeyType::Secp256k1, generateSeed("seed" + std::to_string(i)));
+            auto kp = generateKeyPair(
+                KeyType::Dilithium, generateSeed("seed" + std::to_string(i)));
 
             std::string const name = "Node " + std::to_string(i);
 

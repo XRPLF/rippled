@@ -24,7 +24,8 @@ validationSeed(json::Value const& params)
 }
 
 // {
-//   secret: <string>   // optional
+//   secret:   <string>  // optional
+//   key_type: <string>  // optional: "secp256k1", "ed25519", or "dilithium"
 // }
 //
 // This command requires Role::ADMIN access because it makes
@@ -39,10 +40,22 @@ doValidationCreate(rpc::JsonContext& context)
     if (!seed)
         return rpcError(RpcBadSeed);
 
-    auto const privateKey = generateSecretKey(KeyType::Secp256k1, *seed);
+    // Default to dilithium for new validator keys, but allow callers to
+    // request a legacy keytype during the rolling-upgrade transition.
+    KeyType keyType = KeyType::Dilithium;
+    if (context.params.isMember(jss::key_type))
+    {
+        auto const parsed =
+            keyTypeFromString(context.params[jss::key_type].asString());
+        if (!parsed)
+            return rpcError(RpcBadKeyType);
+        keyType = *parsed;
+    }
+
+    auto const privateKey = generateSecretKey(keyType, *seed);
 
     obj[jss::validation_public_key] =
-        toBase58(TokenType::NodePublic, derivePublicKey(KeyType::Secp256k1, privateKey));
+        toBase58(TokenType::NodePublic, derivePublicKey(keyType, privateKey));
 
     obj[jss::validation_private_key] = toBase58(TokenType::NodePrivate, privateKey);
 

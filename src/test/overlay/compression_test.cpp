@@ -421,10 +421,54 @@ public:
     }
 
     void
+    testMessageSizeLimit()
+    {
+        testcase("Message Size Limit");
+
+        auto thresh = beast::Severity::Info;
+        auto logs = std::make_unique<Logs>(thresh);
+
+        // Test message just under 64MB limit (close to 64MB)
+        // Each ledger data entry is approximately 122 bytes
+        // So ~500,000 entries should give us close to 61MB
+        {
+            auto ledgerData = buildLedgerData(500000, *logs);
+            Message m(*ledgerData, protocol::mtLEDGER_DATA);
+            auto const msgSize = Message::messageSize(*ledgerData);
+
+            // Verify message is under limit
+            BEAST_EXPECT(msgSize < kMaximumMessageSize);
+
+            auto& buffer = m.getBuffer(Compressed::On);
+            boost::beast::multi_buffer buffers;
+            buffers.commit(boost::asio::buffer_copy(
+                buffers.prepare(buffer.size()), boost::asio::buffer(buffer)));
+
+            boost::system::error_code ec;
+            auto header = xrpl::detail::parseMessageHeader(
+                ec, buffers.data(), buffer.size());
+
+            // Message should be accepted (no error)
+            BEAST_EXPECT(!ec);
+            BEAST_EXPECT(header);
+            if (header)
+            {
+                BEAST_EXPECT(header->payloadWireSize <= kMaximumMessageSize);
+                BEAST_EXPECT(header->uncompressedSize <= kMaximumMessageSize);
+            }
+        }
+
+        // The message_size error is enforced in invokeProtocolMessage
+        // when processing the full message. That check happens at:
+        // ProtocolMessage.h:343-348
+    }
+
+    void
     run() override
     {
         testProtocol();
         testHandshake();
+        testMessageSizeLimit();
     }
 };
 

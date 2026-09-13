@@ -289,7 +289,14 @@ ValidatorList::load(
 std::filesystem::path
 ValidatorList::getCacheFileName(ValidatorList::scoped_lock const&, PublicKey const& pubKey) const
 {
-    return dataPath_ / (kFilePrefix + strHex(pubKey));
+    // Hash the public key to avoid filename length issues with large keys
+    // (e.g., Dilithium keys are ~2592 bytes, which would create filenames
+    // exceeding filesystem limits when hex-encoded)
+    sha256_hasher h;
+    h(pubKey.data(), pubKey.size());
+    auto const hash = sha256_hasher::result_type(h);
+
+    return dataPath_ / (kFilePrefix + strHex(hash));
 }
 
 // static
@@ -1247,7 +1254,12 @@ ValidatorList::verify(
     std::string const& signature)
 {
     if (!publisherLists_.contains(manifest.masterKey))
+    {
+        JLOG(j_.warn())
+            << "UNL manifest is signed by an unrecognized publisher key: "
+            << strHex(manifest.masterKey);
         return {ListDisposition::Untrusted, {}};
+    }
 
     PublicKey masterPubKey = manifest.masterKey;
     auto const revoked = manifest.revoked();
@@ -1271,12 +1283,28 @@ ValidatorList::verify(
 
     auto const sig = strUnHex(signature);
     auto const data = base64Decode(blob);
-    if (!sig || !xrpl::verify(*signingKey, makeSlice(data), makeSlice(*sig)))
+    if (!sig)
+    {
+        JLOG(j_.warn())
+            << "Invalid signature format in manifest from publisher: "
+            << strHex(masterPubKey);
         return {ListDisposition::Invalid, masterPubKey};
+    }
+
+    if (!xrpl::verify(*signingKey, makeSlice(data), makeSlice(*sig)))
+    {
+        JLOG(j_.warn()) << "Invalid signature in manifest from publisher: "
+                        << strHex(masterPubKey);
+        return {ListDisposition::Invalid, masterPubKey};
+    }
 
     json::Reader r;
     if (!r.parse(data, list))
+    {
+        JLOG(j_.warn()) << "Invalid JSON in validator list from publisher: "
+                        << strHex(masterPubKey);
         return {ListDisposition::Invalid, masterPubKey};
+    }
 
     if (list.isMember(jss::sequence) && list[jss::sequence].isInt() &&
         list.isMember(jss::expiration) && list[jss::expiration].isInt() &&
@@ -1327,6 +1355,8 @@ ValidatorList::verify(
     }
     else
     {
+        JLOG(j_.warn()) << "Invalid JSON in validator list from publisher: "
+                        << strHex(masterPubKey);
         return {ListDisposition::Invalid, masterPubKey};
     }
 
@@ -1909,6 +1939,12 @@ ValidatorList::updateTrusted(
         }
     }
 
+    JLOG(j_.debug()) << trustedMasterKeys_.size() << " trusted validators "
+                     << " remain after removing those no longer eligible";
+
+    JLOG(j_.debug()) << "Re-evaluating " << keyListings_.size()
+                     << " listed validators for inclusion in the trusted set";
+
     for (auto const& val : keyListings_)
     {
         if (val.second >= listThreshold_ && !validatorManifests_.revoked(val.first) &&
@@ -1972,6 +2008,12 @@ ValidatorList::updateTrusted(
     if ((!publisherLists_.empty() || !localPublisherList_.list.empty()) && unlSize == 0)
     {
         // No validators. Lock down.
+        JLOG(j_.warn()) << "No trusted validators available. Locking down UNL: "
+                        << unlSize << " trusted validators."
+                        << publisherLists_.size()
+                        << " publisher lists configured."
+                        << localPublisherList_.list.size()
+                        << " local static keys configured.";
         ops.setUNLBlocked();
     }
 

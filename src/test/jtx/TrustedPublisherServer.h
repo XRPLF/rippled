@@ -137,11 +137,11 @@ public:
     }
 
     static Validator
-    randomValidator()
+    randomValidator(KeyType type = KeyType::Secp256k1)
     {
-        auto const secret = randomSecretKey();
-        auto const masterPublic = derivePublicKey(KeyType::Ed25519, secret);
-        auto const signingKeys = randomKeyPair(KeyType::Secp256k1);
+        auto const secret = randomSecretKey(type);
+        auto const masterPublic = derivePublicKey(type, secret);
+        auto const signingKeys = randomKeyPair(type);
         return {
             .masterPublic = masterPublic,
             .signingPublic = signingKeys.first,
@@ -163,17 +163,18 @@ public:
         bool useSSL = false,
         int version = 1,
         bool immediateStart = true,
-        int sequence = 1)
+        int sequence = 1,
+        KeyType keyType = KeyType::Secp256k1)
         : sock_{ioc}
         , ep_{boost::asio::ip::make_address(xrpl::test::getEnvLocalhostAddr()),
               // 0 means let OS pick the port based on what's available
               0}
         , acceptor_{ioc}
         , useSSL_{useSSL}
-        , publisherSecret_{randomSecretKey()}
-        , publisherPublic_{derivePublicKey(KeyType::Ed25519, publisherSecret_)}
+        , publisherSecret_{randomSecretKey(keyType)}
+        , publisherPublic_{derivePublicKey(keyType, publisherSecret_)}
     {
-        auto const keys = randomKeyPair(KeyType::Secp256k1);
+        auto const keys = randomKeyPair(keyType);
         auto const manifest =
             makeManifestString(publisherPublic_, publisherSecret_, keys.first, keys.second, 1);
 
@@ -707,10 +708,11 @@ makeTrustedPublisherServer(
     bool useSSL = false,
     int version = 1,
     bool immediateStart = true,
-    int sequence = 1)
+    int sequence = 1,
+    KeyType keyType = KeyType::Secp256k1)
 {
     auto const r = std::make_shared<TrustedPublisherServer>(
-        ioc, validators, validUntil, futures, useSSL, version, sequence);
+        ioc, validators, validUntil, futures, useSSL, version, immediateStart, sequence, keyType);
     if (immediateStart)
         r->start();
     return r;

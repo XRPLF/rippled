@@ -977,12 +977,38 @@ RCLConsensus::Adaptor::preStartRound(RCLCxLedger const& prevLgr, hash_set<NodeID
     if (validating_ && !app_.config().standalone() && (app_.getValidators().count() != 0u))
     {
         auto const when = app_.getValidators().expires();
+        auto const now = app_.getTimeKeeper().now();
 
-        if (!when || *when < app_.getTimeKeeper().now())
+        if (when)
         {
+            JLOG(j_.debug()) << "Validator list expires at: "
+                             << when->time_since_epoch().count()
+                             << ", time_until_expiry="
+                             << std::chrono::duration_cast<std::chrono::seconds>(*when - now).count()
+                             << " seconds";
+        }
+
+        if (!when || *when < now)
+        {
+            if (!when)
+            {
+                JLOG(j_.debug()) << "Validator list has no expiration time set";
+            }
+            else
+            {
+                JLOG(j_.debug()) << "Validator list has expired. "
+                                 << "Expired "
+                                 << std::chrono::duration_cast<std::chrono::seconds>(now - *when).count()
+                                 << " seconds ago";
+            }
+
             JLOG(j_.error()) << "Voluntarily bowing out of consensus process "
                                 "because of an expired validator list.";
             validating_ = false;
+        }
+        else
+        {
+            JLOG(j_.debug()) << "Validator list is valid and not expired";
         }
     }
 
