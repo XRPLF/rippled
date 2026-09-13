@@ -1246,6 +1246,17 @@ TRANSACTION(ttCONTRACT_CALL, 97, ContractCall,
     {sfGas, SoeRequired},
 }))
 
+/** This transaction claws back tokens held in a payment channel. */
+#if TRANSACTION_INCLUDE
+#   include <xrpl/tx/transactors/payment_channel/PaymentChannelClawback.h>
+#endif
+TRANSACTION(ttPAYCHAN_CLAWBACK, 98, PaymentChannelClawback,
+    ({.delegable = Delegation::Delegable, .amendment = featureTokenPaychan}),
+    ({
+    {sfChannel, SoeRequired},
+    {sfAmount, SoeOptional, SoeMptSupported},
+}))
+
 /** This system-generated transaction type is used to update the status of the various amendments.
 
     For details, see: https://xrpl.org/amendments.html
