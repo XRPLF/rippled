@@ -237,4 +237,14 @@ sha512HalfS(Args const&... args)
     return static_cast<sha512_half_hasher_s::result_type>(h);
 }
 
+template <class... Args>
+sha256_hasher::result_type
+sha256(Args const&... args)
+{
+    xrpl::sha256_hasher h;
+    using beast::hash_append;
+    hash_append(h, args...);
+    return static_cast<typename sha256_hasher::result_type>(h);
+}
+
 }  // namespace xrpl

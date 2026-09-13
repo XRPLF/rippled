@@ -693,6 +693,13 @@ LEDGER_ENTRY(ltSPONSORSHIP, 0x0090, Sponsorship, sponsorship, ({
     {sfOwnerNode,            SoeRequired},
     {sfSponseeNode,          SoeRequired},
 }))
+LEDGER_ENTRY(ltPASSKEY_LIST, 0x0091, PasskeyList, passkey_list, ({
+    {sfPreviousTxnID,        SoeRequired},
+    {sfPreviousTxnLgrSeq,    SoeRequired},
+    {sfOwnerNode,            SoeRequired},
+    {sfOwner,                SoeRequired},
+    {sfPasskeys,             SoeRequired},
+}))
 
 #undef EXPAND
 #undef LEDGER_ENTRY_DUPLICATE

@@ -1310,3 +1310,11 @@ TRANSACTION(ttUNL_MODIFY, 102, UNLModify,
     {sfLedgerSequence, SoeRequired},
     {sfUNLModifyValidator, SoeRequired},
 }))
+TRANSACTION(ttPASSKEY_LIST_SET, 103, PasskeyListSet,
+    ({
+        .delegable = Delegation::Delegable,
+        .amendment = featurePasskey,
+    }),
+    ({
+    {sfPasskeys, SoeRequired},
+}))

@@ -13,10 +13,16 @@
 
 #include <boost/multiprecision/number.hpp>
 
+#include <openssl/bn.h>
+#include <openssl/ec.h>
+#include <openssl/ecdsa.h>
+#include <openssl/obj_mac.h>
+
 #include <ed25519.h>
 #include <secp256k1.h>
 
 #include <algorithm>
+#include <array>
 #include <cstdint>
 #include <cstring>
 #include <optional>
@@ -187,10 +193,10 @@ ed25519Canonical(Slice const& sig)
 
 PublicKey::PublicKey(Slice const& slice)
 {
-    if (slice.size() < kSize)
+    if (slice.size() > kMaxSize)
     {
         logicError(
-            "PublicKey::PublicKey - Input slice cannot be an undersized "
+            "PublicKey::PublicKey - Input slice cannot be an oversized "
             "buffer");
     }
 
@@ -236,6 +242,9 @@ publicKeyType(Slice const& slice)
     {
         return KeyType::Dilithium;
     }
+
+    if (slice.size() == 65 && slice[0] == 0xF6)
+        return KeyType::P256;
 
     return std::nullopt;
 }
@@ -312,6 +321,128 @@ verifyDigest(
     }
 }
 
+struct ECDSASignature
+{
+    std::array<uint8_t, 32> r;
+    std::array<uint8_t, 32> s;
+};
+
+static std::optional<ECDSASignature>
+parseDERSignature(Slice const& derSig) noexcept
+{
+    if (derSig.size() < 8)
+        return std::nullopt;
+
+    uint8_t const* data = derSig.data();
+    size_t offset = 0;
+
+    // Check sequence tag
+    if (data[offset++] != 0x30)
+        return std::nullopt;
+
+    // Skip total length
+    offset++;
+
+    // Parse R
+    if (data[offset++] != 0x02)
+        return std::nullopt;
+    uint8_t rLen = data[offset++];
+    if (offset + rLen >= derSig.size())
+        return std::nullopt;
+
+    ECDSASignature result{};
+
+    // Copy R, handling leading zeros
+    int rStart = (rLen > 32 && data[offset] == 0x00) ? 1 : 0;
+    int rCopyLen = std::min(32, static_cast<int>(rLen - rStart));
+    std::memcpy(result.r.data() + (32 - rCopyLen), data + offset + rStart, rCopyLen);
+    offset += rLen;
+
+    // Parse S
+    if (data[offset++] != 0x02)
+        return std::nullopt;
+    uint8_t sLen = data[offset++];
+    if (offset + sLen > derSig.size())
+        return std::nullopt;
+
+    // Copy S, handling leading zeros
+    int sStart = (sLen > 32 && data[offset] == 0x00) ? 1 : 0;
+    int sCopyLen = std::min(32, static_cast<int>(sLen - sStart));
+    std::memcpy(result.s.data() + (32 - sCopyLen), data + offset + sStart, sCopyLen);
+
+    return result;
+}
+
+static bool
+verifyP256ECDSA(
+    uint8_t const* hash,
+    size_t hashLen,
+    uint8_t const* r,
+    size_t rLen,
+    uint8_t const* s,
+    size_t sLen,
+    uint8_t const* x,
+    size_t xLen,
+    uint8_t const* y,
+    size_t yLen) noexcept
+{
+    if (hashLen != 32 || rLen > 32 || sLen > 32 || xLen > 32 || yLen > 32)
+        return false;
+
+    // Create curve object
+    EC_GROUP* group = EC_GROUP_new_by_curve_name(NID_X9_62_prime256v1);
+    if (!group)
+        return false;
+
+    // Set group to EC_KEY
+    EC_KEY* key = EC_KEY_new();
+    if (!key)
+    {
+        EC_GROUP_free(group);
+        return false;
+    }
+    EC_KEY_set_group(key, group);
+
+    // Restore public key point from coordinates
+    EC_POINT* point = EC_POINT_new(group);
+    BIGNUM* bnX = BN_bin2bn(x, xLen, nullptr);
+    BIGNUM* bnY = BN_bin2bn(y, yLen, nullptr);
+
+    bool success = false;
+    if (point && bnX && bnY &&
+        EC_POINT_set_affine_coordinates_GFp(group, point, bnX, bnY, nullptr) == 1 &&
+        EC_KEY_set_public_key(key, point) == 1)
+    {
+        // Pack r/s into ECDSA_SIG structure
+        ECDSA_SIG* sig = ECDSA_SIG_new();
+        BIGNUM* bnR = BN_bin2bn(r, rLen, nullptr);
+        BIGNUM* bnS = BN_bin2bn(s, sLen, nullptr);
+
+        if (sig && bnR && bnS && ECDSA_SIG_set0(sig, bnR, bnS) == 1)
+        {
+            // Verify (ECDSA_SIG_set0 takes ownership of bnR, bnS)
+            int verified = ECDSA_do_verify(hash, hashLen, sig, key);
+            success = (verified == 1);
+            bnR = nullptr;  // ownership transferred
+            bnS = nullptr;  // ownership transferred
+        }
+
+        ECDSA_SIG_free(sig);
+        if (bnR)
+            BN_free(bnR);
+        if (bnS)
+            BN_free(bnS);
+    }
+
+    EC_POINT_free(point);
+    BN_free(bnX);
+    BN_free(bnY);
+    EC_KEY_free(key);
+    EC_GROUP_free(group);
+
+    return success;
+}
+
 bool
 verify(PublicKey const& publicKey, Slice const& m, Slice const& sig) noexcept
 {
@@ -337,6 +468,37 @@ verify(PublicKey const& publicKey, Slice const& m, Slice const& sig) noexcept
             uint8_t ctx[] = {};
             size_t ctxlen = 0;
             return crypto_sign_verify(sig.data(), sig.size(), m.data(), m.size(), ctx, ctxlen, publicKey.data()) == 0;
+        }
+        if (*type == KeyType::P256)
+        {
+            // Parse DER signature to extract r and s values
+            auto parsedSig = parseDERSignature(sig);
+            if (!parsedSig)
+                return false;
+
+            // Hash the message with SHA-256 (P-256 uses ECDSA-SHA256)
+            auto hash = sha256(m);
+
+            // We internally prefix P-256 keys with a prefix byte
+            // so strip it to get the raw public key coordinates
+            if (publicKey.size() != 65)  // 1 prefix + 32-byte x + 32-byte y
+                return false;
+
+            // Extract x and y coordinates (skip prefix byte)
+            uint8_t const* xCoord = publicKey.data() + 1;
+            uint8_t const* yCoord = publicKey.data() + 33;
+
+            return verifyP256ECDSA(
+                hash.data(),
+                hash.size(),
+                parsedSig->r.data(),
+                32,  // r component
+                parsedSig->s.data(),
+                32,  // s component
+                xCoord,
+                32,  // x coordinate
+                yCoord,
+                32);  // y coordinate
         }
     }
     return false;

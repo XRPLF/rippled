@@ -41,6 +41,7 @@ namespace xrpl {
  *     secp256k1
  *     ed25519
  *     dilithium
+ *     p256
  *
  * secp256k1 public keys consist of a 33 byte
  * compressed public key, with the lead byte equal
@@ -57,9 +58,10 @@ class PublicKey
 protected:
     // Minimum / standard public key size (secp256k1, ed25519).
     static constexpr std::size_t kSize = 33;
-    // Buffer sized for the largest supported key (dilithium = 1312 bytes).
-    // Actual length is tracked in size_.
-    std::uint8_t buf_[1312]{};
+    // Buffer sized for the largest supported key (dilithium = 1312 bytes;
+    // uncompressed p256 = 65 bytes). Actual length is tracked in size_.
+    static constexpr std::size_t kMaxSize = 1312;
+    std::uint8_t buf_[kMaxSize]{};
     std::size_t size_ = 0;
 
 public:
@@ -137,7 +139,7 @@ operator<<(std::ostream& os, PublicKey const& pk);
 inline bool
 operator==(PublicKey const& lhs, PublicKey const& rhs)
 {
-    return std::memcmp(lhs.data(), rhs.data(), rhs.size()) == 0;
+    return lhs.size() == rhs.size() && std::memcmp(lhs.data(), rhs.data(), rhs.size()) == 0;
 }
 
 inline bool

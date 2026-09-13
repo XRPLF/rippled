@@ -721,6 +721,15 @@ parseRippleState(
 }
 
 static std::expected<uint256, json::Value>
+parsePasskeyList(
+    json::Value const& params,
+    json::StaticString const fieldName,
+    [[maybe_unused]] unsigned const apiVersion)
+{
+    return parseObjectID(params, fieldName, "hex string");
+}
+
+static std::expected<uint256, json::Value>
 parseSignerList(
     json::Value const& params,
     json::StaticString const fieldName,

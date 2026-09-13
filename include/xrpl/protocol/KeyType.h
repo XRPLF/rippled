@@ -9,6 +9,7 @@ enum class KeyType {
     Secp256k1 = 0,
     Ed25519 = 1,
     Dilithium = 2,
+    P256 = 3,
 };
 
 inline std::optional<KeyType>
@@ -22,6 +23,9 @@ keyTypeFromString(std::string const& s)
 
     if (s == "dilithium")
         return KeyType::Dilithium;
+
+    if (s == "p256")
+        return KeyType::P256;
 
     return {};
 }
@@ -37,6 +41,9 @@ to_string(KeyType type)
 
     if (type == KeyType::Dilithium)
         return "dilithium";
+
+    if (type == KeyType::P256)
+        return "p256";
 
     return "INVALID";
 }

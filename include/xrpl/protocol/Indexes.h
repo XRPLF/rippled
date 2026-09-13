@@ -408,6 +408,8 @@ contract(uint256 const& contractID)
 Keylet
 contractData(AccountID const& owner, AccountID const& contractAccount) noexcept;
 
+Keylet
+passkeyList(AccountID const& account) noexcept;
 }  // namespace keylet
 
 // Everything below is deprecated and should be removed in favor of keylets:

@@ -153,6 +153,22 @@ InnerObjectFormats::InnerObjectFormats()
             {sfBookNode, SoeRequired},
         });
 
+    add(sfPasskey.jsonName,
+        sfPasskey.getCode(),
+        {
+            {sfPasskeyID, SoeRequired},
+            {sfPublicKey, SoeRequired},
+        });
+
+    add(sfPasskeySignature.jsonName,
+        sfPasskeySignature.getCode(),
+        {
+            {sfPasskeyID, SoeRequired},
+            {sfAuthenticatorData, SoeRequired},
+            {sfClientDataJSON, SoeRequired},
+            {sfSignature, SoeRequired},
+        });
+
     add(sfCounterpartySignature.jsonName,
         sfCounterpartySignature.getCode(),
         {
