@@ -1525,3 +1525,35 @@ TRANSACTION(ttSUBSCRIPTION_CLAIM, 123, SubscriptionClaim,
     {sfAmount, SoeRequired, SoeMptSupported},
     {sfSubscriptionID, SoeRequired},
 }))
+TRANSACTION(ttREPO_CREATE, 124, RepoCreate,
+    ({.delegable = Delegation::Delegable, .amendment = featureRepo}),
+    ({
+    {sfCounterparty,         SoeRequired},
+    {sfCollateralAmount,     SoeRequired, SoeMptSupported},
+    {sfPurchasePrice,        SoeRequired, SoeMptSupported},
+    {sfInterestRate,         SoeRequired},
+    {sfExpiration,           SoeRequired},
+    {sfMaturityDate,         SoeRequired},
+    {sfGracePeriod,          SoeRequired},
+    {sfData,                 SoeOptional},
+}))
+TRANSACTION(ttREPO_ACCEPT, 125, RepoAccept,
+    ({.delegable = Delegation::Delegable, .amendment = featureRepo}),
+    ({
+    {sfRepoID,               SoeRequired},
+}))
+TRANSACTION(ttREPO_CANCEL, 126, RepoCancel,
+    ({.delegable = Delegation::Delegable, .amendment = featureRepo}),
+    ({
+    {sfRepoID,               SoeRequired},
+}))
+TRANSACTION(ttREPO_CLOSE, 127, RepoClose,
+    ({.delegable = Delegation::Delegable, .amendment = featureRepo}),
+    ({
+    {sfRepoID,               SoeRequired},
+}))
+TRANSACTION(ttREPO_DEFAULT, 128, RepoDefault,
+    ({.delegable = Delegation::Delegable, .amendment = featureRepo}),
+    ({
+    {sfRepoID,               SoeRequired},
+}))

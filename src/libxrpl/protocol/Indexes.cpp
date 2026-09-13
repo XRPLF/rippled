@@ -119,6 +119,7 @@ enum class LedgerNameSpace : std::uint16_t {
     Ballot = 'y',
     BallotVote = 'v',
     Subscription = 'w',
+    Repo = 'M',
 
     // No longer used or supported. Left here to reserve the space to avoid accidental reuse.
     Generator [[deprecated]] = 'g',
@@ -838,6 +839,12 @@ Keylet
 subscription(AccountID const& account, AccountID const& dest, std::uint32_t seq) noexcept
 {
     return {ltSUBSCRIPTION, indexHash(LedgerNameSpace::Subscription, account, dest, seq)};
+}
+
+Keylet
+repo(AccountID const& seller, SeqProxy const& seq) noexcept
+{
+    return {ltREPO, indexHash(LedgerNameSpace::Repo, seller, seq.value())};
 }
 
 }  // namespace keylet

@@ -261,6 +261,30 @@ parseCredential(
 }
 
 static std::expected<uint256, json::Value>
+parseRepo(
+    json::Value const& params,
+    json::StaticString const fieldName,
+    [[maybe_unused]] unsigned const apiVersion)
+{
+    if (!params.isObject())
+    {
+        return parseObjectID(params, fieldName);
+    }
+
+    auto const seller =
+        ledger_entry_helpers::requiredAccountID(params, jss::account, "malformedAddress");
+    if (!seller)
+        return std::unexpected(seller.error());
+
+    if (!params.isMember(jss::seq) || !params[jss::seq].isIntegral())
+    {
+        return ledger_entry_helpers::invalidFieldError("malformedRequest", jss::seq, "number");
+    }
+
+    return keylet::repo(*seller, SeqProxy::rawSequence(params[jss::seq].asUInt())).key;
+}
+
+static std::expected<uint256, json::Value>
 parseDelegate(
     json::Value const& params,
     json::StaticString const fieldName,

@@ -155,6 +155,10 @@ XRPNotCreated::visitEntry(bool isDelete, SLE::const_ref before, SLE::const_ref a
                 if (isXRP((*before)[sfAmount]))
                     drops_ -= (*before)[sfAmount].xrp().drops();
                 break;
+            case ltREPO:
+                if (isXRP((*before)[sfCollateralAmount]))
+                    drops_ -= (*before)[sfCollateralAmount].xrp().drops();
+                break;
             case ltSPONSORSHIP:
                 if (before->isFieldPresent(sfFeeAmount))
                 {
@@ -188,6 +192,10 @@ XRPNotCreated::visitEntry(bool isDelete, SLE::const_ref before, SLE::const_ref a
         case ltESCROW:
             if (!isDelete && isXRP((*after)[sfAmount]))
                 drops_ += (*after)[sfAmount].xrp().drops();
+            break;
+        case ltREPO:
+            if (!isDelete && isXRP((*after)[sfCollateralAmount]))
+                drops_ += (*after)[sfCollateralAmount].xrp().drops();
             break;
         case ltSPONSORSHIP:
             if (!isDelete && after->isFieldPresent(sfFeeAmount))

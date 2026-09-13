@@ -119,6 +119,8 @@ transResults()
         MAKE_ERROR(tecBALLOT_BAD_OPTIONS,            "The vector does not match the ballot's option count."),
         MAKE_ERROR(tecAMM_TICK_CAP_HIT,              "AMM swap hit the per-swap tick-crossing cap (defensive; not reachable via normal Payment routing)."),
         MAKE_ERROR(tecWOULD_CROSS,                   "Post-only offer would cross."),
+        MAKE_ERROR(tecREPO_ACTIVE,                   "The repo has already been accepted."),
+        MAKE_ERROR(tecREPO_PENDING,                  "The repo has not been accepted yet."),
 
         MAKE_ERROR(tefALREADY,                     "The exact transaction was already in this ledger."),
         MAKE_ERROR(tefBAD_ADD_AUTH,                "Not authorized to add account."),

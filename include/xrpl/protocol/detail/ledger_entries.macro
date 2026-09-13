@@ -880,6 +880,24 @@ LEDGER_ENTRY(ltSUBSCRIPTION, 0x008A, Subscription, subscription, ({
     {sfExpiration,           SoeOptional},
     {sfDestinationNode,      SoeRequired},
 }))
+LEDGER_ENTRY(ltREPO, 0x0098, Repo, repo, ({
+    {sfAccount,              SoeRequired},
+    {sfCounterparty,         SoeRequired},
+    {sfCollateralAmount,     SoeRequired, SoeMptSupported},
+    {sfPurchasePrice,        SoeRequired, SoeMptSupported},
+    {sfInterestRate,         SoeRequired},
+    {sfExpiration,           SoeRequired},
+    {sfStartDate,            SoeOptional},
+    {sfMaturityDate,         SoeRequired},
+    {sfGracePeriod,          SoeRequired},
+    {sfTransferRate,         SoeOptional},
+    {sfData,                 SoeOptional},
+    {sfOwnerNode,            SoeRequired},
+    {sfDestinationNode,      SoeRequired},
+    {sfIssuerNode,           SoeOptional},
+    {sfPreviousTxnID,        SoeRequired},
+    {sfPreviousTxnLgrSeq,    SoeRequired},
+}))
 
 #undef EXPAND
 #undef LEDGER_ENTRY_DUPLICATE

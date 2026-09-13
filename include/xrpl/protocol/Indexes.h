@@ -439,6 +439,18 @@ vault(uint256 const& vaultKey)
 Keylet
 loanBroker(AccountID const& owner, SeqProxy const& seq) noexcept;
 
+/**
+ * A repurchase agreement, keyed by the seller and the creating sequence.
+ */
+Keylet
+repo(AccountID const& seller, SeqProxy const& seq) noexcept;
+
+inline Keylet
+repo(uint256 const& repoID)
+{
+    return {ltREPO, repoID};
+}
+
 inline Keylet
 loanBroker(uint256 const& key)
 {
