@@ -85,6 +85,7 @@ jobs:
               -Dtests=ON \
               -Dwerr=ON \
               -Dxrpld=ON \
+              -Dvalidator_keys=ON \
               -Dverify_headers=ON \
               -Drust=ON \
               ..
