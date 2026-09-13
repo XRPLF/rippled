@@ -204,6 +204,20 @@ private:
             }
         }
 
+        {
+            // A key migrated from a publisher whose manifests carried the list
+            // sequence continues from that sequence.
+            auto const kp2 = generateKeyPair(KeyType::Ed25519, randomSeed());
+            auto keys = SigningKeys(KeyType::Ed25519, kp2.second, 2026091301);
+            auto const token = keys.createValidatorToken(KeyType::Ed25519);
+            if (BEAST_EXPECT(token))
+            {
+                auto const m = deserializeManifest(base64Decode(token->manifest));
+                BEAST_EXPECT(m && m->sequence == 2026091302);
+                BEAST_EXPECT(keys.sequence() == 2026091302);
+            }
+        }
+
         auto const keyType = KeyType::Ed25519;
         auto const kp = generateKeyPair(keyType, randomSeed());
 
