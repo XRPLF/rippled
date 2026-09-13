@@ -442,6 +442,7 @@ LEDGER_ENTRY(ltMPTOKEN, 0x007f, MPToken, mptoken, ({
     {sfIssuerEncryptedBalance,      SoeOptional},
     {sfAuditorEncryptedBalance,     SoeOptional},
     {sfHolderEncryptionKey,         SoeOptional},
+    {sfRedemptionAfter,             SoeDefault},
 }))
 
 /** A ledger object which tracks Oracle
@@ -516,13 +517,24 @@ LEDGER_ENTRY(ltVAULT, 0x0084, Vault, vault, ({
     {sfAssetsAvailable,      SoeDefault},
     {sfAssetsMaximum,        SoeDefault},
     {sfLossUnrealized,       SoeDefault},
+    {sfUnearnedInterest,     SoeDefault},
+    {sfAccrualRate,          SoeDefault},
+    {sfLastAccrualTime,      SoeDefault},
     {sfShareMPTID,           SoeRequired},
     {sfWithdrawalPolicy,     SoeRequired},
+    {sfAccountingMethod,     SoeDefault},
     {sfScale,                SoeDefault},
     {sfLEVersion,            SoeDefault},
     {sfVaultKind,            SoeDefault},
     {sfSubscriptionDate,     SoeOptional},
     {sfRedemptionDate,       SoeOptional},
+    {sfDealingInterval,      SoeDefault},
+    {sfDealingWindow,        SoeDefault},
+    {sfStruckPrice,          SoeDefault},
+    {sfStruckUntil,          SoeDefault},
+    {sfDepositFee,           SoeDefault},
+    {sfRedemptionFee,        SoeDefault},
+    {sfRedemptionPeriod,     SoeDefault},
     // no SharesTotal ever (use MPTIssuance.sfOutstandingAmount)
     // no PermissionedDomainID ever (use MPTIssuance.sfDomainID)
 }))

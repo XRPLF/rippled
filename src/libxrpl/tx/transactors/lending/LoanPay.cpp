@@ -9,6 +9,7 @@
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/helpers/LendingHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
+#include <xrpl/ledger/helpers/VaultHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Feature.h>
@@ -413,6 +414,32 @@ LoanPay::doApply()
         return LoanPaymentType::Regular;
     }();
 
+    // An accrual vault has already recognized part of this period's interest by
+    // the clock. Capture what the clock earned, and the period's whole schedule,
+    // before loanMakePayment moves the loan on.
+    bool const accrualVault = view.rules().enabled(featureVaultContinuousAccrual) &&
+        getAccountingMethod(vaultSle) == kVaultAccountingAccrual;
+    Number rateBefore{};
+    Number periodScheduled{};
+    Number recognizedPeriod{};
+    if (accrualVault)
+    {
+        TenthBips32 const interestRate{loanSle->at(sfInterestRate)};
+        rateBefore = loanAccrualRate(loanSle->at(sfPrincipalOutstanding), interestRate);
+
+        std::uint32_t const interval = loanSle->at(sfPaymentInterval);
+        periodScheduled = rateBefore * Number{interval};
+
+        std::uint32_t const nextDue = loanSle->at(sfNextPaymentDueDate);
+        std::uint32_t const prevDue = nextDue > interval ? nextDue - interval : 0;
+        auto const now = view.parentCloseTime().time_since_epoch().count();
+        Number const earned =
+            rateBefore * Number{now > prevDue ? static_cast<std::uint32_t>(now) - prevDue : 0};
+        // Late payments are capped at the schedule: the vault never recognizes
+        // more than the period was ever going to earn.
+        recognizedPeriod = earned >= periodScheduled ? periodScheduled : earned;
+    }
+
     std::expected<LoanPaymentParts, TER> const paymentParts =
         loanMakePayment(asset, view, loanSle, brokerSle, amount, paymentType, j_);
 
@@ -453,7 +480,28 @@ LoanPay::doApply()
         // LCOV_EXCL_STOP
     }
 
-    auto const [assetsTotalDelta, debtTotalDelta] = loanPaymentDeltas(vaultSle, *paymentParts);
+    auto const [rawAssetsTotalDelta, debtTotalDelta] = loanPaymentDeltas(vaultSle, *paymentParts);
+
+    // Settle at the rate that was in force over the period just ended, then take
+    // the loan's new rate. The interest the clock already recognized is not
+    // credited again: doing so double-counts on every on-time payment.
+    Number assetsTotalDelta = rawAssetsTotalDelta;
+    if (accrualVault)
+    {
+        accrueVault(view, vaultSle);
+        assetsTotalDelta = rawAssetsTotalDelta - recognizedPeriod;
+
+        Number const stillUnrecognized = periodScheduled - recognizedPeriod;
+        auto unearnedProxy = vaultSle->at(sfUnearnedInterest);
+        unearnedProxy =
+            *unearnedProxy > stillUnrecognized ? *unearnedProxy - stillUnrecognized : Number{};
+
+        TenthBips32 const interestRate{loanSle->at(sfInterestRate)};
+        Number const rateAfter = loanAccrualRate(loanSle->at(sfPrincipalOutstanding), interestRate);
+        auto rateProxy = vaultSle->at(sfAccrualRate);
+        Number const nextRate = *rateProxy + rateAfter - rateBefore;
+        rateProxy = nextRate > Number{} ? nextRate : Number{};
+    }
 
     JLOG(j_.debug()) << "Loan Pay: principal paid: " << paymentParts->principalPaid
                      << ", interest paid: " << paymentParts->interestPaid

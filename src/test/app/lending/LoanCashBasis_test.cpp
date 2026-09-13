@@ -63,7 +63,8 @@ private:
             .coverRateMin = TenthBips32{0},
             .coverDeposit = 0,
             .managementFeeRate = TenthBips16{0},
-            .coverRateLiquidation = TenthBips32{0}};
+            .coverRateLiquidation = TenthBips32{0},
+            .accountingMethod = kVaultAccountingCash};
 
         Number const principalRequest{10'000};
         TenthBips32 const interestRate{percentageToTenthBips(10)};
@@ -273,7 +274,8 @@ private:
             .coverRateMin = TenthBips32{0},
             .coverDeposit = 0,
             .managementFeeRate = TenthBips16{0},
-            .coverRateLiquidation = TenthBips32{0}};
+            .coverRateLiquidation = TenthBips32{0},
+            .accountingMethod = kVaultAccountingCash};
 
         Number const principalRequest{12'000};
         TenthBips32 const interestRate{percentageToTenthBips(12)};
@@ -515,7 +517,8 @@ private:
             .coverRateMin = TenthBips32{0},
             .coverDeposit = 0,
             .managementFeeRate = TenthBips16{0},
-            .coverRateLiquidation = TenthBips32{0}};
+            .coverRateLiquidation = TenthBips32{0},
+            .accountingMethod = kVaultAccountingCash};
 
         auto run =
             [&](FeatureBitset features, TER expectedOverCapSet, bool native, bool vaultPrivate) {
@@ -665,7 +668,8 @@ private:
             .coverRateMin = TenthBips32{0},
             .coverDeposit = 0,
             .managementFeeRate = TenthBips16{0},
-            .coverRateLiquidation = TenthBips32{0}};
+            .coverRateLiquidation = TenthBips32{0},
+            .accountingMethod = kVaultAccountingCash};
 
         Account const lender{"lender"};
         Account const borrower{"borrower"};
@@ -758,7 +762,8 @@ private:
             .coverRateMin = TenthBips32{percentageToTenthBips(10)},
             .coverDeposit = 5'000,
             .managementFeeRate = TenthBips16{0},
-            .coverRateLiquidation = TenthBips32{percentageToTenthBips(25)}};
+            .coverRateLiquidation = TenthBips32{percentageToTenthBips(25)},
+            .accountingMethod = kVaultAccountingCash};
 
         Number const principalRequest{10'000};
         TenthBips32 const interestRate{percentageToTenthBips(12)};
@@ -952,7 +957,8 @@ private:
             .coverRateMin = TenthBips32{percentageToTenthBips(10)},
             .coverDeposit = 5'000,
             .managementFeeRate = TenthBips16{0},
-            .coverRateLiquidation = TenthBips32{percentageToTenthBips(25)}};
+            .coverRateLiquidation = TenthBips32{percentageToTenthBips(25)},
+            .accountingMethod = kVaultAccountingCash};
 
         Number const principalRequest{10'000};
         TenthBips32 const interestRate{percentageToTenthBips(12)};
@@ -1145,7 +1151,9 @@ private:
 
         PrettyAsset const xrpAsset{xrpIssue(), 1'000'000};
         BrokerParameters const brokerParams{
-            .vaultDeposit = 100'000, .managementFeeRate = TenthBips16{0}};
+            .vaultDeposit = 100'000,
+            .managementFeeRate = TenthBips16{0},
+            .accountingMethod = kVaultAccountingCash};
 
         Env env(*this, all_ | featureLendingProtocolV1_1);
 

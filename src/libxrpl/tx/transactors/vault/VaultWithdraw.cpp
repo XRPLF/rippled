@@ -97,6 +97,14 @@ VaultWithdraw::preclaim(PreclaimContext const& ctx)
         }
     }
 
+    // A rolling vault deals only inside its window.
+    if (ctx.view.rules().enabled(featureVaultContinuousAccrual) &&
+        !inDealingWindow(ctx.view, vault))
+    {
+        JLOG(ctx.j.debug()) << "VaultWithdraw: vault is outside its dealing window.";
+        return tecTOO_SOON;
+    }
+
     auto const amount = ctx.tx[sfAmount];
     auto const vaultAsset = vault->at(sfAsset);
     auto const vaultShare = vault->at(sfShareMPTID);
@@ -166,7 +174,7 @@ VaultWithdraw::preclaim(PreclaimContext const& ctx)
         try
         {
             auto const maybeAssets =
-                sharesToAssetsWithdraw(vault, sleIssuance, amount, waiveUnrealizedLoss);
+                sharesToAssetsWithdraw(ctx.view, vault, sleIssuance, amount, waiveUnrealizedLoss);
             if (!maybeAssets)
                 return tefINTERNAL;  // LCOV_EXCL_LINE
 
@@ -305,6 +313,11 @@ VaultWithdraw::doApply()
 
     MPTIssue const share{mptIssuanceID};
     STAmount sharesRedeemed = {share};
+    // The first deal of a window fixes the price every deal in that window
+    // converts at, so a participant early in a long window cannot capture a loan
+    // payment that lands later in it.
+    strikeWindowPrice(view(), vault, sleIssuance);
+
     STAmount assetsWithdrawn;
 
     // When the user is the sole shareholder they own both the available and future value.
@@ -330,7 +343,7 @@ VaultWithdraw::doApply()
                 view().rules().enabled(fixCleanup3_4_0) ? TruncateShares::Yes : TruncateShares::No;
             {
                 auto const maybeShares = assetsToSharesWithdraw(
-                    vault, sleIssuance, amount, truncate, waiveUnrealizedLoss);
+                    view(), vault, sleIssuance, amount, truncate, waiveUnrealizedLoss);
                 if (!maybeShares)
                     return tecINTERNAL;  // LCOV_EXCL_LINE
                 sharesRedeemed = *maybeShares;
@@ -342,8 +355,8 @@ VaultWithdraw::doApply()
                 return tecPRECISION_LOSS;
             // Convert shares back to assets so the payout matches the shares actually burned, not
             // the requested amount. The extra would otherwise be paid from the vault for free.
-            auto const maybeAssets =
-                sharesToAssetsWithdraw(vault, sleIssuance, sharesRedeemed, waiveUnrealizedLoss);
+            auto const maybeAssets = sharesToAssetsWithdraw(
+                view(), vault, sleIssuance, sharesRedeemed, waiveUnrealizedLoss);
             if (!maybeAssets)
                 return tecINTERNAL;  // LCOV_EXCL_LINE
             assetsWithdrawn = *maybeAssets;
@@ -353,8 +366,8 @@ VaultWithdraw::doApply()
             // Fixed shares, variable assets. No round-trip: the share count is exactly what the
             // caller specified; only the payout amount is derived.
             sharesRedeemed = amount;
-            auto const maybeAssets =
-                sharesToAssetsWithdraw(vault, sleIssuance, sharesRedeemed, waiveUnrealizedLoss);
+            auto const maybeAssets = sharesToAssetsWithdraw(
+                view(), vault, sleIssuance, sharesRedeemed, waiveUnrealizedLoss);
             if (!maybeAssets)
                 return tecINTERNAL;  // LCOV_EXCL_LINE
             assetsWithdrawn = *maybeAssets;
@@ -394,7 +407,7 @@ VaultWithdraw::doApply()
         // backing value. Reject rather than burn shares for a zero payout. The fixed-assets branch
         // above has already rejected zero via the sharesRedeemed check.
         if (amount.asset() == share && assetsWithdrawn == beast::kZero &&
-            assetsTotalForWithdrawal(vault, waiveUnrealizedLoss) != beast::kZero)
+            assetsTotalForWithdrawal(view(), vault, waiveUnrealizedLoss) != beast::kZero)
         {
             JLOG(j_.debug()) << "VaultWithdraw: fixed-share withdrawal rounds to zero assets";
             return tecPRECISION_LOSS;
@@ -538,6 +551,42 @@ VaultWithdraw::doApply()
     }
     else
     {
+        // The redemption fee is taken from the assets out and stays in the vault,
+        // lifting the holders who remain. It is waived for a sole shareholder and
+        // for a final withdrawal, neither of which leaves anyone to lift, and with
+        // a redemption period set it applies only while the holder is inside it.
+        // Rounded up so the rounding never favours the leaver over the stayers.
+        if (view().rules().enabled(featureVaultContinuousAccrual) &&
+            waiveUnrealizedLoss == WaiveUnrealizedLoss::No)
+        {
+            std::uint32_t const feeRate = vault->at(sfRedemptionFee);
+            bool charge = feeRate != 0;
+            if (charge)
+            {
+                if (std::uint32_t const period = vault->at(sfRedemptionPeriod); period != 0)
+                {
+                    auto const sleMpt = view().read(keylet::mptoken(mptIssuanceID, accountID_));
+                    std::uint32_t const redeemAfter =
+                        sleMpt ? sleMpt->at(sfRedemptionAfter) : std::uint32_t{0};
+                    auto const now = view().header().parentCloseTime.time_since_epoch().count();
+                    charge = now < redeemAfter;
+                }
+            }
+
+            if (charge)
+            {
+                auto const fee = STAmount{
+                    assetsWithdrawn.asset(),
+                    roundToAsset(
+                        assetsWithdrawn.asset(),
+                        tenthBipsOfValue(Number{assetsWithdrawn}, TenthBips32{feeRate}),
+                        scale(assetsWithdrawn, assetsWithdrawn.asset()),
+                        Number::RoundingMode::Upward)};
+                if (fee < assetsWithdrawn)
+                    assetsWithdrawn -= fee;
+            }
+        }
+
         // Debit both rails by the same delta so sfAssetsTotal and sfAssetsAvailable stay in step,
         // as required by the ValidVault invariant.
         assetsTotal -= assetsWithdrawn;

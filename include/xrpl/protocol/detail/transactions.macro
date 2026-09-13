@@ -802,6 +802,12 @@ TRANSACTION(ttVAULT_CREATE, 65, VaultCreate,
     {sfVaultKind, SoeOptional},
     {sfSubscriptionDate, SoeOptional},
     {sfRedemptionDate, SoeOptional},
+    {sfDealingInterval, SoeOptional},
+    {sfDealingWindow, SoeOptional},
+    {sfDepositFee, SoeOptional},
+    {sfRedemptionFee, SoeOptional},
+    {sfRedemptionPeriod, SoeOptional},
+    {sfAccountingMethod, SoeOptional},
 }))
 
 /** This transaction updates a single asset vault. */
@@ -818,6 +824,9 @@ TRANSACTION(ttVAULT_SET, 66, VaultSet,
     {sfAssetsMaximum, SoeOptional},
     {sfDomainID, SoeOptional},
     {sfData, SoeOptional},
+    {sfDepositFee, SoeOptional},
+    {sfRedemptionFee, SoeOptional},
+    {sfRedemptionPeriod, SoeOptional},
 }))
 
 /** This transaction deletes a single asset vault. */

@@ -7,6 +7,7 @@
 #include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/CredentialHelpers.h>
 #include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/LedgerFormats.h>  // IWYU pragma: keep
 #include <xrpl/protocol/Protocol.h>
@@ -24,8 +25,72 @@
 
 namespace xrpl {
 
+[[nodiscard]] Number
+vaultAccruedInterest(ReadView const& view, SLE::const_ref vault)
+{
+    Number const unearned = vault->at(sfUnearnedInterest);
+    if (unearned <= Number{})
+        return Number{};
+
+    Number const rate = vault->at(sfAccrualRate);
+    if (rate <= Number{})
+        return Number{};
+
+    // A rate that was never stamped has no measurable elapsed period; accruing
+    // from the epoch would recognize the whole budget at once.
+    std::uint32_t const stamped = vault->at(sfLastAccrualTime);
+    if (stamped == 0)
+        return Number{};
+
+    auto const now = view.parentCloseTime().time_since_epoch().count();
+    if (now <= stamped)
+        return Number{};
+
+    // Round down: never recognize more than certainly earned.
+    NumberRoundModeGuard const guard(Number::RoundingMode::Downward);
+    Number const earned = rate * Number{now - stamped};
+    return earned >= unearned ? unearned : earned;
+}
+
+void
+accrueVault(ApplyView& view, SLE::ref vault)
+{
+    Number const earned = vaultAccruedInterest(view, vault);
+    if (earned > Number{})
+    {
+        vault->at(sfAssetsTotal) += earned;
+        vault->at(sfUnearnedInterest) -= earned;
+    }
+    vault->at(sfLastAccrualTime) = view.parentCloseTime().time_since_epoch().count();
+}
+
+/* The vault's assets including interest earned since the last settlement.
+ *
+ * sfAssetsTotal only holds interest that has been recognized, so between loan
+ * events it lags by the amount accrued since sfLastAccrualTime. Pricing adds
+ * that back rather than writing it, which keeps sfAssetsTotal equal to the
+ * vault's cash-plus-receivables and leaves the deposit/withdraw invariants
+ * (which require sfAssetsTotal to move only with the vault balance) intact.
+ *
+ * Before featureLendingProtocolV1_1 the whole of a loan's interest is
+ * recognized at origination, so sfAssetsTotal stands alone.
+ */
+static Number
+netAssetsTotal(ReadView const& view, SLE::const_ref vault)
+{
+    Number const assetTotal = vault->at(sfAssetsTotal);
+    if (!view.rules().enabled(featureLendingProtocolV1_1))
+        return assetTotal;
+
+    return assetTotal + vaultAccruedInterest(view, vault);
+}
+
 [[nodiscard]] std::optional<STAmount>
-assetsToSharesDeposit(SLE::const_ref vault, SLE::const_ref issuance, STAmount const& assets)
+assetsToSharesDeposit(
+    ReadView const& view,
+    SLE::const_ref vault,
+    SLE::const_ref issuance,
+    STAmount const& assets)
 {
     XRPL_ASSERT(!assets.negative(), "xrpl::assetsToSharesDeposit : non-negative assets");
     XRPL_ASSERT(
@@ -34,9 +99,13 @@ assetsToSharesDeposit(SLE::const_ref vault, SLE::const_ref issuance, STAmount co
     if (assets.negative() || assets.asset() != vault->at(sfAsset))
         return std::nullopt;  // LCOV_EXCL_LINE
 
-    Number const assetTotal = vault->at(sfAssetsTotal);
+    // Inside a struck window every deal converts at the one price.
+    if (auto const struck = struckPriceInForce(view, vault))
+        return STAmount{vault->at(sfShareMPTID), (Number{assets} / *struck).truncate()};
+
+    Number const assetTotal = netAssetsTotal(view, vault);
     STAmount shares{vault->at(sfShareMPTID)};
-    if (assetTotal == 0)
+    if (assetTotal <= Number{})
     {
         return STAmount{
             shares.asset(),
@@ -49,7 +118,11 @@ assetsToSharesDeposit(SLE::const_ref vault, SLE::const_ref issuance, STAmount co
 }
 
 [[nodiscard]] std::optional<STAmount>
-sharesToAssetsDeposit(SLE::const_ref vault, SLE::const_ref issuance, STAmount const& shares)
+sharesToAssetsDeposit(
+    ReadView const& view,
+    SLE::const_ref vault,
+    SLE::const_ref issuance,
+    STAmount const& shares)
 {
     XRPL_ASSERT(!shares.negative(), "xrpl::sharesToAssetsDeposit : non-negative shares");
     XRPL_ASSERT(
@@ -58,9 +131,12 @@ sharesToAssetsDeposit(SLE::const_ref vault, SLE::const_ref issuance, STAmount co
     if (shares.negative() || shares.asset() != vault->at(sfShareMPTID))
         return std::nullopt;  // LCOV_EXCL_LINE
 
-    Number const assetTotal = vault->at(sfAssetsTotal);
+    if (auto const struck = struckPriceInForce(view, vault))
+        return STAmount{vault->at(sfAsset), Number{shares} * *struck};
+
+    Number const assetTotal = netAssetsTotal(view, vault);
     STAmount assets{vault->at(sfAsset)};
-    if (assetTotal == 0)
+    if (assetTotal <= Number{})
     {
         return STAmount{
             assets.asset(), shares.mantissa(), shares.exponent() - vault->at(sfScale), false};
@@ -131,9 +207,9 @@ clampToAssetsTotalScale(SLE::const_ref vault, STAmount const& delta)
 }
 
 [[nodiscard]] Number
-assetsTotalForWithdrawal(SLE::const_ref vault, WaiveUnrealizedLoss waive)
+assetsTotalForWithdrawal(ReadView const& view, SLE::const_ref vault, WaiveUnrealizedLoss waive)
 {
-    Number assetTotal = vault->at(sfAssetsTotal);
+    Number assetTotal = netAssetsTotal(view, vault);
     if (waive == WaiveUnrealizedLoss::No)
         assetTotal -= vault->at(sfLossUnrealized);
     return assetTotal;
@@ -149,6 +225,7 @@ debitIsNonZeroDust(Asset const& asset, Number const& total, Number const& amount
 
 [[nodiscard]] std::optional<STAmount>
 assetsToSharesWithdraw(
+    ReadView const& view,
     SLE::const_ref vault,
     SLE::const_ref issuance,
     STAmount const& assets,
@@ -162,9 +239,17 @@ assetsToSharesWithdraw(
     if (assets.negative() || assets.asset() != vault->at(sfAsset))
         return std::nullopt;  // LCOV_EXCL_LINE
 
-    Number const assetTotal = assetsTotalForWithdrawal(vault, waive);
+    if (auto const struck = struckPriceInForce(view, vault))
+    {
+        Number struckShares = Number{assets} / *struck;
+        if (truncate == TruncateShares::Yes)
+            struckShares = struckShares.truncate();
+        return STAmount{vault->at(sfShareMPTID), struckShares};
+    }
+
+    Number const assetTotal = assetsTotalForWithdrawal(view, vault, waive);
     STAmount shares{vault->at(sfShareMPTID)};
-    if (assetTotal == 0)
+    if (assetTotal <= Number{})
         return shares;
     Number const shareTotal = issuance->at(sfOutstandingAmount);
     Number result = (shareTotal * assets) / assetTotal;
@@ -176,6 +261,7 @@ assetsToSharesWithdraw(
 
 [[nodiscard]] std::optional<STAmount>
 sharesToAssetsWithdraw(
+    ReadView const& view,
     SLE::const_ref vault,
     SLE::const_ref issuance,
     STAmount const& shares,
@@ -188,9 +274,12 @@ sharesToAssetsWithdraw(
     if (shares.negative() || shares.asset() != vault->at(sfShareMPTID))
         return std::nullopt;  // LCOV_EXCL_LINE
 
-    Number const assetTotal = assetsTotalForWithdrawal(vault, waive);
+    if (auto const struck = struckPriceInForce(view, vault))
+        return STAmount{vault->at(sfAsset), Number{shares} * *struck};
+
+    Number const assetTotal = assetsTotalForWithdrawal(view, vault, waive);
     STAmount assets{vault->at(sfAsset)};
-    if (assetTotal == 0)
+    if (assetTotal <= Number{})
         return assets;
     Number const shareTotal = issuance->at(sfOutstandingAmount);
     assets = (assetTotal * shares) / shareTotal;
@@ -242,10 +331,130 @@ decodeVaultKind(std::optional<std::uint8_t> vaultKind)
 {
     if (vaultKind && *vaultKind == std::to_underlying(VaultKind::ClosedEnded))
         return VaultKind::ClosedEnded;
+    if (vaultKind && *vaultKind == std::to_underlying(VaultKind::Rolling))
+        return VaultKind::Rolling;
     return VaultKind::OpenEnded;
 }
 
 }  // namespace
+
+namespace {
+
+/**
+ * Seconds from the first window's open to this close time, or nullopt when the
+ * vault is not rolling or the first window has not opened yet.
+ */
+[[nodiscard]] std::optional<std::uint64_t>
+sinceFirstWindow(ReadView const& view, SLE::const_ref vault)
+{
+    if (decodeVaultKind(vault->at(~sfVaultKind)) != VaultKind::Rolling)
+        return std::nullopt;
+
+    auto const start = vault->at(~sfSubscriptionDate);
+    auto const interval = vault->at(~sfDealingInterval);
+    if (!start || !interval || *interval == 0)
+        return std::nullopt;
+
+    auto const now = view.header().parentCloseTime.time_since_epoch().count();
+    if (now < *start)
+        return std::nullopt;
+
+    return static_cast<std::uint64_t>(now) - static_cast<std::uint64_t>(*start);
+}
+
+}  // namespace
+
+[[nodiscard]] bool
+inDealingWindow(ReadView const& view, SLE::const_ref vault)
+{
+    XRPL_ASSERT(vault && vault->getType() == ltVAULT, "xrpl::inDealingWindow : valid Vault sle");
+
+    if (decodeVaultKind(vault->at(~sfVaultKind)) != VaultKind::Rolling)
+        return true;
+
+    auto const elapsed = sinceFirstWindow(view, vault);
+    if (!elapsed)
+        return false;
+
+    return *elapsed % vault->at(sfDealingInterval) < vault->at(sfDealingWindow);
+}
+
+[[nodiscard]] std::uint32_t
+dealingWindowEnd(ReadView const& view, SLE::const_ref vault)
+{
+    XRPL_ASSERT(vault && vault->getType() == ltVAULT, "xrpl::dealingWindowEnd : valid Vault sle");
+
+    auto const elapsed = sinceFirstWindow(view, vault);
+    if (!elapsed)
+        return 0;
+
+    std::uint64_t const interval = vault->at(sfDealingInterval);
+    std::uint64_t const opened = *elapsed - (*elapsed % interval);
+    return static_cast<std::uint32_t>(
+        vault->at(sfSubscriptionDate) + opened + vault->at(sfDealingWindow));
+}
+
+[[nodiscard]] std::uint8_t
+getAccountingMethod(SLE::const_ref vault)
+{
+    XRPL_ASSERT(
+        vault && vault->getType() == ltVAULT, "xrpl::getAccountingMethod : valid Vault sle");
+
+    if (auto const method = vault->at(~sfAccountingMethod))
+        return *method;
+
+    return vault->at(sfLEVersion) == std::to_underlying(VaultVersion::CashBasis)
+        ? kVaultAccountingCash
+        : kVaultAccountingLegacy;
+}
+
+[[nodiscard]] std::optional<Number>
+struckPriceInForce(ReadView const& view, SLE::const_ref vault)
+{
+    XRPL_ASSERT(vault && vault->getType() == ltVAULT, "xrpl::struckPriceInForce : valid Vault sle");
+
+    if (decodeVaultKind(vault->at(~sfVaultKind)) != VaultKind::Rolling)
+        return std::nullopt;
+    if (!inDealingWindow(view, vault))
+        return std::nullopt;
+
+    // A stamp from an earlier window does not govern this one.
+    if (vault->at(sfStruckUntil) != dealingWindowEnd(view, vault))
+        return std::nullopt;
+
+    Number const price = vault->at(sfStruckPrice);
+    if (price <= Number{})
+        return std::nullopt;
+
+    return price;
+}
+
+void
+strikeWindowPrice(ApplyView& view, SLE::ref vault, SLE::const_ref issuance)
+{
+    XRPL_ASSERT(vault && vault->getType() == ltVAULT, "xrpl::strikeWindowPrice : valid Vault sle");
+
+    if (decodeVaultKind(vault->at(~sfVaultKind)) != VaultKind::Rolling)
+        return;
+    if (!inDealingWindow(view, vault))
+        return;
+
+    auto const windowEnd = dealingWindowEnd(view, vault);
+    if (vault->at(sfStruckUntil) == windowEnd)
+        return;  // already struck for this window
+
+    Number const shareTotal = issuance->at(sfOutstandingAmount);
+    if (shareTotal <= Number{})
+        return;  // no shares yet, so nothing to price against
+
+    Number const assetTotal = netAssetsTotal(view, vault) - vault->at(sfLossUnrealized);
+    if (assetTotal <= Number{})
+        return;
+
+    vault->at(sfStruckPrice) = assetTotal / shareTotal;
+    vault->at(sfStruckUntil) = windowEnd;
+    view.update(vault);
+}
 
 [[nodiscard]] VaultKind
 getVaultKind(SLE::const_ref vault)
@@ -267,7 +476,8 @@ isValidVaultKind(STTx const& tx)
     if (!kindField)
         return true;
     return *kindField == std::to_underlying(VaultKind::OpenEnded) ||
-        *kindField == std::to_underlying(VaultKind::ClosedEnded);
+        *kindField == std::to_underlying(VaultKind::ClosedEnded) ||
+        *kindField == std::to_underlying(VaultKind::Rolling);
 }
 
 [[nodiscard]] bool

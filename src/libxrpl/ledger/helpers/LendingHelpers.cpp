@@ -286,9 +286,48 @@ loanOriginationExceedsVaultMaximum(
     return accrual::loanOriginationExceedsVaultMaximum(vaultMaximum, vaultTotal, interestDue);
 }
 
+namespace continuous_accrual {
+
+/*
+ * Under continuous accrual the vault has recognized this loan's interest only
+ * as far as the clock has reached, so the paper loss is the principal plus that
+ * much interest, and neither of the other two formulas gives it: cash basis
+ * books principal alone and leaves recognized interest inside NAV, while Legacy
+ * books the loan's whole remaining interest, which was never recognized.
+ *
+ * A loan can only be impaired once it is late, and lateness means the period has
+ * fully elapsed, so the recognized amount has already saturated at the period's
+ * whole schedule. That makes the exposure a function of the loan alone, and
+ * identical whether it is being booked on impair or reversed on unimpair.
+ */
 Number
 loanVaultExposure(SLE::const_ref vaultSle, SLE::const_ref loanSle)
 {
+    TenthBips32 const interestRate{loanSle->at(sfInterestRate)};
+    Number const rate = loanAccrualRate(loanSle->at(sfPrincipalOutstanding), interestRate);
+    std::uint32_t const interval = loanSle->at(sfPaymentInterval);
+
+    // Round the interest term to the scale the vault stores its loss at, so the
+    // amount booked on impair is the amount reversed on unimpair. The other two
+    // formulas return the principal alone, which is already representable.
+    Asset const vaultAsset = vaultSle->at(sfAsset);
+    Number const recognized = roundToAsset(
+        vaultAsset,
+        rate * Number{interval},
+        getAssetsTotalScale(vaultSle),
+        Number::RoundingMode::Downward);
+
+    return Number{loanSle->at(sfPrincipalOutstanding)} + recognized;
+}
+
+}  // namespace continuous_accrual
+
+Number
+loanVaultExposure(SLE::const_ref vaultSle, SLE::const_ref loanSle)
+{
+    if (getAccountingMethod(vaultSle) == kVaultAccountingAccrual)
+        return continuous_accrual::loanVaultExposure(vaultSle, loanSle);
+
     return cashBasisEnabled(vaultSle) ? cash_basis::loanVaultExposure(loanSle)
                                       : accrual::loanVaultExposure(loanSle);
 }

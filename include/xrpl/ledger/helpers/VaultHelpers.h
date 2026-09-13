@@ -1,6 +1,7 @@
 #pragma once
 
 #include <xrpl/basics/Number.h>
+#include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Asset.h>
@@ -16,20 +17,111 @@
 namespace xrpl {
 
 class STTx;
+/**
+ * Interest the vault's loans have earned since sfLastAccrualTime, capped by
+ * the sfUnearnedInterest budget still left to recognize.
+ *
+ * sfAssetsTotal is only credited when a loan event settles the vault, so
+ * between those events it lags by this amount. Adding it back at read time
+ * recognizes interest continuously as it is earned, without writing to
+ * sfAssetsTotal outside the loan transactions.
+ *
+ * Returns zero when nothing is accruing — no rate, no budget left, or a vault
+ * created before featureLendingProtocolV1_1.
+ */
+[[nodiscard]] Number
+vaultAccruedInterest(ReadView const& view, SLE::const_ref vault);
+
+/**
+ * Whether a rolling vault is inside a dealing window at this close time.
+ *
+ * A rolling vault deals in [SubscriptionDate + k * DealingInterval,
+ * SubscriptionDate + k * DealingInterval + DealingWindow) for integer k >= 0.
+ * Returns true for any vault that is not rolling, which has no windows to be
+ * outside of, and false before the first window opens.
+ */
+[[nodiscard]] bool
+inDealingWindow(ReadView const& view, SLE::const_ref vault);
+
+/**
+ * End of the dealing window containing this close time.
+ *
+ * Only meaningful when inDealingWindow is true for a rolling vault; it is the
+ * sfStruckUntil written when a window's price is struck.
+ */
+[[nodiscard]] std::uint32_t
+dealingWindowEnd(ReadView const& view, SLE::const_ref vault);
+
+/**
+ * The price every deal in the current window converts at, in vault asset per
+ * share, or nullopt when no struck price governs this ledger.
+ *
+ * Returns a price only for a rolling vault inside a window whose sfStruckUntil
+ * matches that window's end. Accrual continues underneath it: the dealing price
+ * is frozen for the window, the accounting is not.
+ */
+/**
+ * The interest recognition method of a vault.
+ *
+ * Returns sfAccountingMethod where it is present. A vault created before
+ * featureVaultContinuousAccrual carries no such field, so the method is derived
+ * from its schema version instead: CashBasis recognizes interest as it is
+ * collected, and anything older is Legacy, which recognizes a loan's whole-life
+ * interest at origination. Every vault that exists today therefore resolves
+ * without being touched.
+ */
+[[nodiscard]] std::uint8_t
+getAccountingMethod(SLE::const_ref vault);
+
+[[nodiscard]] std::optional<Number>
+struckPriceInForce(ReadView const& view, SLE::const_ref vault);
+
+/**
+ * Strike the price for the current window if it has not been struck yet.
+ *
+ * Called by the first deposit or withdrawal of a window. Does nothing for a
+ * vault that is not rolling, outside a window, or where this window's price is
+ * already struck, so it is safe to call unconditionally.
+ */
+void
+strikeWindowPrice(ApplyView& view, SLE::ref vault, SLE::const_ref issuance);
+
+/**
+ * Credit interest earned since the last settlement into sfAssetsTotal, draw
+ * it out of the sfUnearnedInterest budget, and stamp the current close time.
+ *
+ * Must be called before adjusting sfAccrualRate, so the elapsed period is
+ * charged at the rate that was in effect over it. Only the ttLOAN_*
+ * transactions may call this: ValidVault requires sfAssetsTotal to move with
+ * the vault balance on deposit and withdraw, which settling would violate.
+ * Pricing does not need it — the conversion helpers add elapsed interest
+ * themselves.
+ */
+void
+accrueVault(ApplyView& view, SLE::ref vault);
 
 /**
  * From the perspective of a vault, return the number of shares to give
  * depositor when they offer a fixed amount of assets. Note, since shares are
  * MPT, this number is integral and always truncated in this calculation.
  *
- * @param vault The vault SLE.
- * @param issuance The MPTokenIssuance SLE for the vault's shares.
- * @param assets The amount of assets to convert.
- *
- * @return The number of shares, or nullopt on error.
+ * /**
+ * * From the perspective of a vault, return the number of shares to give
+ * * depositor when they offer a fixed amount of assets. Note, since shares are
+ * * MPT, this number is integral and always truncated in this calculation.
+ * *
+ * * @param vault The vault SLE.
+ * * @param issuance The MPTokenIssuance SLE for the vault's shares.
+ * * @param assets The amount of assets to convert.
+ * *
+ * * @return The number of shares, or nullopt on error.
  */
 [[nodiscard]] std::optional<STAmount>
-assetsToSharesDeposit(SLE::const_ref vault, SLE::const_ref issuance, STAmount const& assets);
+assetsToSharesDeposit(
+    ReadView const& view,
+    SLE::const_ref vault,
+    SLE::const_ref issuance,
+    STAmount const& assets);
 
 /**
  * From the perspective of a vault, return the number of assets to take from
@@ -43,7 +135,11 @@ assetsToSharesDeposit(SLE::const_ref vault, SLE::const_ref issuance, STAmount co
  * @return The number of assets, or nullopt on error.
  */
 [[nodiscard]] std::optional<STAmount>
-sharesToAssetsDeposit(SLE::const_ref vault, SLE::const_ref issuance, STAmount const& shares);
+sharesToAssetsDeposit(
+    ReadView const& view,
+    SLE::const_ref vault,
+    SLE::const_ref issuance,
+    STAmount const& shares);
 
 /**
  * Adjusts a requested asset change (`delta`) to match the decimal scale of the
@@ -91,11 +187,12 @@ enum class WaiveUnrealizedLoss : bool { No = false, Yes = true };
  * unrealized loss is waived. Used by assetsToSharesWithdraw and
  * sharesToAssetsWithdraw as the numerator of the share/asset exchange rate.
  *
+ * @param view The ledger view, for interest accrued since the last settlement.
  * @param vault The vault SLE.
  * @param waive Whether to skip subtracting the unrealized loss.
  */
 [[nodiscard]] Number
-assetsTotalForWithdrawal(SLE::const_ref vault, WaiveUnrealizedLoss waive);
+assetsTotalForWithdrawal(ReadView const& view, SLE::const_ref vault, WaiveUnrealizedLoss waive);
 
 /**
  * Returns true if debiting `amount` from `total` (the current value of a
@@ -131,6 +228,7 @@ debitIsNonZeroDust(Asset const& asset, Number const& total, Number const& amount
  */
 [[nodiscard]] std::optional<STAmount>
 assetsToSharesWithdraw(
+    ReadView const& view,
     SLE::const_ref vault,
     SLE::const_ref issuance,
     STAmount const& assets,
@@ -152,6 +250,7 @@ assetsToSharesWithdraw(
  */
 [[nodiscard]] std::optional<STAmount>
 sharesToAssetsWithdraw(
+    ReadView const& view,
     SLE::const_ref vault,
     SLE::const_ref issuance,
     STAmount const& shares,

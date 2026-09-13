@@ -691,6 +691,18 @@ LoanSet::doApply()
     loan->at(sfPaymentRemaining) = paymentTotal;
     view.insert(loan);
 
+    // An accrual vault recognizes this loan's interest over its life rather than
+    // at origination. Settle first, so the period just ended is charged at the
+    // rate that was in force over it, then take on the new loan's budget and
+    // rate. AssetsTotal is untouched here: nothing has been earned yet.
+    if (view.rules().enabled(featureVaultContinuousAccrual) &&
+        getAccountingMethod(vaultSle) == kVaultAccountingAccrual)
+    {
+        accrueVault(view, vaultSle);
+        vaultSle->at(sfUnearnedInterest) += state.interestDue;
+        vaultSle->at(sfAccrualRate) += loanAccrualRate(principalRequested, interestRate);
+    }
+
     // Update the balances in the vault
     vaultAvailableProxy -= principalRequested;
     vaultTotalProxy += assetsTotalDelta;

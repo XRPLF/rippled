@@ -49,6 +49,12 @@ VaultCreate::checkExtraFeatures(PreflightContext const& ctx)
          ctx.tx.isFieldPresent(sfRedemptionDate)))
         return false;
 
+    if (!ctx.rules.enabled(featureVaultContinuousAccrual) &&
+        (ctx.tx.isFieldPresent(sfDealingInterval) || ctx.tx.isFieldPresent(sfDealingWindow) ||
+         ctx.tx.isFieldPresent(sfDepositFee) || ctx.tx.isFieldPresent(sfRedemptionFee) ||
+         ctx.tx.isFieldPresent(sfRedemptionPeriod) || ctx.tx.isFieldPresent(sfAccountingMethod)))
+        return false;
+
     return true;
 }
 
@@ -111,7 +117,8 @@ VaultCreate::preflight(PreflightContext const& ctx)
     auto const hasSubscription = ctx.tx.isFieldPresent(sfSubscriptionDate);
     auto const hasRedemption = ctx.tx.isFieldPresent(sfRedemptionDate);
     auto const isClosedEnded = kind == VaultKind::ClosedEnded;
-    if (!isClosedEnded && (hasSubscription || hasRedemption))
+    auto const isRolling = kind == VaultKind::Rolling;
+    if (!isClosedEnded && !isRolling && (hasSubscription || hasRedemption))
         return temMALFORMED;
     if (isClosedEnded)
     {
@@ -120,6 +127,35 @@ VaultCreate::preflight(PreflightContext const& ctx)
         if (!isValidClosedEndedGap(ctx.tx[sfSubscriptionDate], ctx.tx[sfRedemptionDate]))
             return temMALFORMED;
     }
+
+    auto const hasInterval = ctx.tx.isFieldPresent(sfDealingInterval);
+    auto const hasWindow = ctx.tx.isFieldPresent(sfDealingWindow);
+    if (!isRolling && (hasInterval || hasWindow))
+        return temMALFORMED;
+    if (isRolling)
+    {
+        // A rolling vault deals in a window that reopens every DealingInterval;
+        // SubscriptionDate is when the first one opens. RedemptionDate belongs
+        // to the closed-ended structure and has no meaning here.
+        if (!hasSubscription || hasRedemption || !hasInterval || !hasWindow)
+            return temMALFORMED;
+        if (ctx.tx[sfDealingWindow] == 0 || ctx.tx[sfDealingWindow] >= ctx.tx[sfDealingInterval])
+            return temMALFORMED;
+    }
+
+    // Legacy is never assigned to a new vault: it recognizes a loan's whole-life
+    // interest at origination, which is the defect this amendment closes.
+    if (auto const method = ctx.tx[~sfAccountingMethod];
+        method && (*method == kVaultAccountingLegacy || *method > kVaultAccountingAccrual))
+        return temMALFORMED;
+
+    // A redemption period without a fee to gate would never be read.
+    if (ctx.tx.isFieldPresent(sfRedemptionPeriod) && !ctx.tx.isFieldPresent(sfRedemptionFee))
+        return temMALFORMED;
+
+    if (ctx.tx[~sfDepositFee].value_or(0) > kMaxVaultFee ||
+        ctx.tx[~sfRedemptionFee].value_or(0) > kMaxVaultFee)
+        return temMALFORMED;
 
     return tesSUCCESS;
 }
@@ -284,6 +320,23 @@ VaultCreate::doApply()
             vault->at(sfSubscriptionDate) = tx[sfSubscriptionDate];
             vault->at(sfRedemptionDate) = tx[sfRedemptionDate];
         }
+        else if (kind == VaultKind::Rolling)
+        {
+            vault->at(sfSubscriptionDate) = tx[sfSubscriptionDate];
+            vault->at(sfDealingInterval) = tx[sfDealingInterval];
+            vault->at(sfDealingWindow) = tx[sfDealingWindow];
+        }
+
+        // Accrual is the default: it is the model the users of this protocol
+        // report under. Cash basis stays available on request.
+        vault->at(sfAccountingMethod) = tx[~sfAccountingMethod].value_or(kVaultAccountingAccrual);
+
+        if (tx.isFieldPresent(sfDepositFee))
+            vault->at(sfDepositFee) = tx[sfDepositFee];
+        if (tx.isFieldPresent(sfRedemptionFee))
+            vault->at(sfRedemptionFee) = tx[sfRedemptionFee];
+        if (tx.isFieldPresent(sfRedemptionPeriod))
+            vault->at(sfRedemptionPeriod) = tx[sfRedemptionPeriod];
     }
     view().insert(vault);
 
