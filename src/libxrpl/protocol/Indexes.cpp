@@ -120,6 +120,7 @@ enum class LedgerNameSpace : std::uint16_t {
     BallotVote = 'v',
     Subscription = 'w',
     Repo = 'M',
+    Beneficiary = 'j',
 
     // No longer used or supported. Left here to reserve the space to avoid accidental reuse.
     Generator [[deprecated]] = 'g',
@@ -368,6 +369,12 @@ Keylet
 sponsorship(AccountID const& sponsor, AccountID const& sponsee) noexcept
 {
     return {ltSPONSORSHIP, indexHash(LedgerNameSpace::Sponsorship, sponsor, sponsee)};
+}
+
+Keylet
+beneficiary(AccountID const& account) noexcept
+{
+    return {ltBENEFICIARY, indexHash(LedgerNameSpace::Beneficiary, account)};
 }
 
 Keylet

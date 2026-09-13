@@ -910,6 +910,22 @@ parseSignerList(
 }
 
 static std::expected<uint256, json::Value>
+parseBeneficiary(
+    json::Value const& params,
+    json::StaticString const fieldName,
+    [[maybe_unused]] unsigned const apiVersion)
+{
+    // One designation per account, so the account alone identifies the entry.
+    auto const account = ledger_entry_helpers::parse<AccountID>(params);
+    if (!account)
+    {
+        return ledger_entry_helpers::invalidFieldError("malformedAddress", fieldName, "AccountID");
+    }
+
+    return keylet::beneficiary(*account).key;
+}
+
+static std::expected<uint256, json::Value>
 parseSponsorship(
     json::Value const& params,
     json::StaticString const fieldName,

@@ -899,5 +899,19 @@ LEDGER_ENTRY(ltREPO, 0x0098, Repo, repo, ({
     {sfPreviousTxnLgrSeq,    SoeRequired},
 }))
 
+/** A designation of an account to receive this account's regular key after a
+    period of inactivity.
+
+    \sa keylet::beneficiary
+ */
+LEDGER_ENTRY(ltBENEFICIARY, 0x0099, Beneficiary, beneficiary, ({
+    {sfAccount,              SoeRequired},
+    {sfBeneficiary,          SoeRequired},
+    {sfTimeLock,             SoeRequired},
+    {sfOwnerNode,            SoeRequired},
+    {sfPreviousTxnID,        SoeRequired},
+    {sfPreviousTxnLgrSeq,    SoeRequired},
+}))
+
 #undef EXPAND
 #undef LEDGER_ENTRY_DUPLICATE

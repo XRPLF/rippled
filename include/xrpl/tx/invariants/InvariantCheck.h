@@ -480,6 +480,42 @@ private:
 };
 // additional invariant checks can be declared above and then added to this
 // tuple
+/**
+ * @brief Invariant: a beneficiary designation is well formed and paired with
+ * its timestamp.
+ *
+ * The following checks are made for every transaction:
+ *  - An account has a Beneficiary entry if and only if its AccountRoot carries
+ *    sfLastInteraction.
+ *  - The entry's Account is never equal to its Beneficiary, and TimeLock is
+ *    neither zero nor above kMaxBeneficiaryTimeLock.
+ *  - The entry's Account never changes after creation.
+ *  - A Beneficiary entry is deleted only by BeneficiarySet.
+ *  - sfLastInteraction never moves backwards.
+ */
+class ValidBeneficiary
+{
+    // <before, after>. before is unseated when the entry is being created.
+    std::vector<std::pair<SLE::const_pointer, SLE::const_pointer>> entries_;
+
+    // The accounts whose designation appeared or vanished this transaction, and
+    // the accounts whose sfLastInteraction did, so the two sets can be compared.
+    std::set<AccountID> designationAdded_;
+    std::set<AccountID> designationRemoved_;
+    std::set<AccountID> stampAdded_;
+    std::set<AccountID> stampRemoved_;
+
+    bool deleted_ = false;
+    bool stampWentBackwards_ = false;
+
+public:
+    void
+    visitEntry(bool, SLE::const_ref, SLE::const_ref);
+
+    [[nodiscard]] bool
+    finalize(STTx const&, TER const, XRPAmount const, ReadView const&, beast::Journal const&);
+};
+
 using InvariantChecks = std::tuple<
     TransactionFeeCheck,
     AccountRootsNotDeleted,
@@ -520,7 +556,8 @@ using InvariantChecks = std::tuple<
     SponsorshipAccountCountMatchesField,
     ValidTokenIssuance,
     ValidCouponSchedule,
-    ValidBallot>;
+    ValidBallot,
+    ValidBeneficiary>;
 
 /**
  * @brief get a tuple of all invariant checks

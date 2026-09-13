@@ -886,6 +886,23 @@ Transactor::preCompute()
     XRPL_ASSERT(accountID_ != beast::kZero, "xrpl::Transactor::preCompute : nonzero account");
 }
 
+bool
+Transactor::signedByBeneficiary() const
+{
+    auto const& signingPubKey = ctx_.tx.getSigningPubKey();
+
+    // Multi-signed transactions carry no signing key here and never reach the
+    // beneficiary path, which is single-sign only.
+    if (signingPubKey.empty() || !publicKeyType(makeSlice(signingPubKey)))
+        return false;
+
+    auto const sle = view().read(keylet::beneficiary(accountID_));
+    if (!sle)
+        return false;
+
+    return (*sle)[sfBeneficiary] == calcAccountID(PublicKey(makeSlice(signingPubKey)));
+}
+
 TER
 Transactor::apply()
 {
@@ -915,6 +932,15 @@ Transactor::apply()
 
         if (sle->isFieldPresent(sfAccountTxnID))
             sle->setFieldH256(sfAccountTxnID, ctx_.tx.getTransactionID());
+
+        // The field is present only while a beneficiary designation exists, and
+        // it records the owner's own activity: a transaction the beneficiary
+        // signed must not reset the timer, or the beneficiary's first
+        // transaction would shut the door behind it.
+        if (view().rules().enabled(featureBeneficiary) && sle->isFieldPresent(sfLastInteraction) &&
+            !signedByBeneficiary())
+            sle->setFieldU32(
+                sfLastInteraction, view().parentCloseTime().time_since_epoch().count());
 
         view().update(sle);
     }
@@ -1070,6 +1096,26 @@ Transactor::checkSingleSign(
                 });
             if (hasMatchingPasskey)
                 return tesSUCCESS;
+        }
+    }
+
+    // Signed by the beneficiary, once the account has been silent for the
+    // designated period. The designation is a second regular key that only
+    // starts working after the time lock, so the owner is never displaced and
+    // nothing about the account's own keys changes.
+    if (view.rules().enabled(featureBeneficiary))
+    {
+        if (auto const sle = view.read(keylet::beneficiary(idAccount));
+            sle && (*sle)[sfBeneficiary] == idSigner)
+        {
+            auto const last = (*sleAccount)[~sfLastInteraction];
+            auto const now = view.parentCloseTime().time_since_epoch().count();
+            if (last && now >= *last && now - *last >= (*sle)[sfTimeLock])
+                return tesSUCCESS;
+
+            JLOG(j.trace()) << "checkSingleSign: the account is not yet silent enough for its "
+                               "beneficiary to sign";
+            return tefBAD_AUTH;
         }
     }
 

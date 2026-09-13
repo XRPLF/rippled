@@ -375,6 +375,13 @@ public:
         beast::Journal j);
 
 protected:
+    /**
+     * Whether this transaction was signed by the account's beneficiary rather
+     * than by one of the account's own keys.
+     */
+    bool
+    signedByBeneficiary() const;
+
     TER
     apply();
 

@@ -212,6 +212,12 @@ Keylet
 sponsorship(AccountID const& sponsor, AccountID const& sponsee) noexcept;
 
 /**
+ * An account's beneficiary designation. One per account.
+ */
+Keylet
+beneficiary(AccountID const& account) noexcept;
+
+/**
  * A Check
  */
 /**

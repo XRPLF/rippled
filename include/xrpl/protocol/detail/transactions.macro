@@ -1557,3 +1557,9 @@ TRANSACTION(ttREPO_DEFAULT, 128, RepoDefault,
     ({
     {sfRepoID,               SoeRequired},
 }))
+TRANSACTION(ttBENEFICIARY_SET, 129, BeneficiarySet,
+    ({.amendment = featureBeneficiary}),
+    ({
+    {sfBeneficiary, SoeOptional},
+    {sfTimeLock, SoeOptional},
+}))
