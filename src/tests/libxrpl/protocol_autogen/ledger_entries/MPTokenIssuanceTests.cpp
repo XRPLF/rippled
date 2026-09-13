@@ -29,6 +29,7 @@ TEST(MPTokenIssuanceTests, BuilderSettersRoundTrip)
     auto const outstandingAmountValue = canonical_UINT64();
     auto const lockedAmountValue = canonical_UINT64();
     auto const mPTokenMetadataValue = canonical_VL();
+    auto const mPTokenSchemaValue = canonical_VL();
     auto const previousTxnIDValue = canonical_UINT256();
     auto const previousTxnLgrSeqValue = canonical_UINT32();
     auto const domainIDValue = canonical_UINT256();
@@ -54,6 +55,7 @@ TEST(MPTokenIssuanceTests, BuilderSettersRoundTrip)
     builder.setMaximumAmount(maximumAmountValue);
     builder.setLockedAmount(lockedAmountValue);
     builder.setMPTokenMetadata(mPTokenMetadataValue);
+    builder.setMPTokenSchema(mPTokenSchemaValue);
     builder.setDomainID(domainIDValue);
     builder.setImmutableFlags(immutableFlagsValue);
     builder.setReferenceHolding(referenceHoldingValue);
@@ -149,6 +151,14 @@ TEST(MPTokenIssuanceTests, BuilderSettersRoundTrip)
     }
 
     {
+        auto const& expected = mPTokenSchemaValue;
+        auto const actualOpt = entry.getMPTokenSchema();
+        ASSERT_TRUE(actualOpt.has_value());
+        expectEqualField(expected, *actualOpt, "sfMPTokenSchema");
+        EXPECT_TRUE(entry.hasMPTokenSchema());
+    }
+
+    {
         auto const& expected = domainIDValue;
         auto const actualOpt = entry.getDomainID();
         ASSERT_TRUE(actualOpt.has_value());
@@ -234,6 +244,7 @@ TEST(MPTokenIssuanceTests, BuilderFromSleRoundTrip)
     auto const outstandingAmountValue = canonical_UINT64();
     auto const lockedAmountValue = canonical_UINT64();
     auto const mPTokenMetadataValue = canonical_VL();
+    auto const mPTokenSchemaValue = canonical_VL();
     auto const previousTxnIDValue = canonical_UINT256();
     auto const previousTxnLgrSeqValue = canonical_UINT32();
     auto const domainIDValue = canonical_UINT256();
@@ -256,6 +267,7 @@ TEST(MPTokenIssuanceTests, BuilderFromSleRoundTrip)
     sle->at(sfOutstandingAmount) = outstandingAmountValue;
     sle->at(sfLockedAmount) = lockedAmountValue;
     sle->at(sfMPTokenMetadata) = mPTokenMetadataValue;
+    sle->at(sfMPTokenSchema) = mPTokenSchemaValue;
     sle->at(sfPreviousTxnID) = previousTxnIDValue;
     sle->at(sfPreviousTxnLgrSeq) = previousTxnLgrSeqValue;
     sle->at(sfDomainID) = domainIDValue;
@@ -399,6 +411,19 @@ TEST(MPTokenIssuanceTests, BuilderFromSleRoundTrip)
 
         expectEqualField(expected, *fromSleOpt, "sfMPTokenMetadata");
         expectEqualField(expected, *fromBuilderOpt, "sfMPTokenMetadata");
+    }
+
+    {
+        auto const& expected = mPTokenSchemaValue;
+
+        auto const fromSleOpt = entryFromSle.getMPTokenSchema();
+        auto const fromBuilderOpt = entryFromBuilder.getMPTokenSchema();
+
+        ASSERT_TRUE(fromSleOpt.has_value());
+        ASSERT_TRUE(fromBuilderOpt.has_value());
+
+        expectEqualField(expected, *fromSleOpt, "sfMPTokenSchema");
+        expectEqualField(expected, *fromBuilderOpt, "sfMPTokenSchema");
     }
 
     {
@@ -579,6 +604,8 @@ TEST(MPTokenIssuanceTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(entry.getLockedAmount().has_value());
     EXPECT_FALSE(entry.hasMPTokenMetadata());
     EXPECT_FALSE(entry.getMPTokenMetadata().has_value());
+    EXPECT_FALSE(entry.hasMPTokenSchema());
+    EXPECT_FALSE(entry.getMPTokenSchema().has_value());
     EXPECT_FALSE(entry.hasDomainID());
     EXPECT_FALSE(entry.getDomainID().has_value());
     EXPECT_FALSE(entry.hasImmutableFlags());

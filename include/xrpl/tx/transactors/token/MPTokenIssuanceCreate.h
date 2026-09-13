@@ -31,6 +31,7 @@ struct MPTCreateArgs
     std::optional<std::uint8_t> assetScale = std::nullopt;
     std::optional<std::uint16_t> transferFee = std::nullopt;
     std::optional<Slice> const& metadata{};
+    std::optional<Slice> const& schema{};
     std::optional<uint256> domainId = std::nullopt;
     std::optional<std::uint32_t> immutableFlags = std::nullopt;
     // Set only by callers that issue an MPT representing a wrapped asset

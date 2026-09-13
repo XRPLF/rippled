@@ -152,3 +152,4 @@ XRPL_FEATURE(ConfidentialMPTKeyRotation,  Supported::No,  VoteBehavior::DefaultN
 XRPL_FEATURE(TokenPaychan,                Supported::Yes, VoteBehavior::DefaultNo)
 XRPL_FEATURE(Quantum,                     Supported::Yes, VoteBehavior::DefaultNo)
 XRPL_FEATURE(Passkey,                     Supported::Yes, VoteBehavior::DefaultNo)
+XRPL_FEATURE(MPTStructuredData,           Supported::Yes, VoteBehavior::DefaultNo)

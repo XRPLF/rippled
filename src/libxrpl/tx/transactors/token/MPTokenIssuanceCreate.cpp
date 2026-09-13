@@ -15,6 +15,7 @@
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/StructuredData.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/UintTypes.h>
@@ -40,6 +41,9 @@ MPTokenIssuanceCreate::checkExtraFeatures(PreflightContext const& ctx)
 
     if (ctx.tx.isFlag(tfMPTCanHoldConfidentialBalance) &&
         !ctx.rules.enabled(featureConfidentialTransfer))
+        return false;
+
+    if (ctx.tx.isFieldPresent(sfMPTokenSchema) && !ctx.rules.enabled(featureMPTStructuredData))
         return false;
 
     // can not set tifMPTCanHoldConfidentialBalance without featureConfidentialTransfer
@@ -101,9 +105,18 @@ MPTokenIssuanceCreate::preflight(PreflightContext const& ctx)
             return temMALFORMED;
     }
 
-    if (auto const metadata = ctx.tx[~sfMPTokenMetadata])
+    auto const metadata = ctx.tx[~sfMPTokenMetadata];
+    if (metadata && (metadata->empty() || metadata->length() > kMaxMpTokenMetadataLength))
+        return temMALFORMED;
+
+    // A Schema types the Metadata. Declaring one without Metadata is allowed:
+    // the layout is fixed now and the record written by a later Set.
+    if (auto const schema = ctx.tx[~sfMPTokenSchema])
     {
-        if (metadata->empty() || metadata->length() > kMaxMpTokenMetadataLength)
+        if (schema->empty() || schema->size() > kMaxSchemaLength || !isWellFormedSchema(*schema))
+            return temMALFORMED;
+
+        if (metadata && !dataMatchesSchema(*schema, *metadata))
             return temMALFORMED;
     }
 
@@ -173,6 +186,9 @@ MPTokenIssuanceCreate::create(
         if (args.metadata)
             (*mptIssuance)[sfMPTokenMetadata] = *args.metadata;
 
+        if (args.schema)
+            (*mptIssuance)[sfMPTokenSchema] = *args.schema;
+
         if (args.domainId)
             (*mptIssuance)[sfDomainID] = *args.domainId;
 
@@ -222,6 +238,7 @@ MPTokenIssuanceCreate::doApply()
             .assetScale = tx[~sfAssetScale],
             .transferFee = tx[~sfTransferFee],
             .metadata = tx[~sfMPTokenMetadata],
+            .schema = tx[~sfMPTokenSchema],
             .domainId = tx[~sfDomainID],
             .immutableFlags = tx[~sfImmutableFlags],
         });

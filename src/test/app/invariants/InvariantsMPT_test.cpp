@@ -1565,10 +1565,62 @@ class InvariantsMPT_test : public InvariantsBase
 
 public:
     void
+    testMPTStructuredData()
+    {
+        testcase("MPT structured data");
+        using namespace jtx;
+
+        // str, u16, u32, u64 and a record that matches it
+        std::string const schema{"\x0E\x03\x04\x05", 4};
+        std::string const record = std::string{"\x09", 1} + "912828YK0" +
+            std::string{"\x01\xA9", 2} + std::string{"\x71\x3F\xB3\x00", 4} +
+            std::string{"\x00\x00\x00\x00\x00\x0F\x42\x40", 8};
+
+        // Initialize with a placeholder value because there's no default ctor
+        Keylet issuanceKeylet = keylet::amendments();
+        auto const preclose = Preclose{[&, this](Account const& a, Account const&, Env& env) {
+            MPTTester mpt(env, a, kMptInitNoFund);
+            mpt.create({.metadata = record, .schema = schema});
+            issuanceKeylet = keylet::mptokenIssuance(mpt.issuanceID());
+            return BEAST_EXPECT(env.le(issuanceKeylet));
+        }};
+
+        auto const corrupt = [&](std::function<void(SLE::pointer&)> const& mod) {
+            return [&, mod](Account const&, Account const&, ApplyContext& ac) {
+                auto sle = ac.view().peek(issuanceKeylet);
+                if (!sle)
+                    return false;
+                mod(sle);
+                ac.view().update(sle);
+                return true;
+            };
+        };
+
+        // Metadata corrupted to bytes that do not decode against the Schema
+        doInvariantCheck(
+            {{"does not decode against its Schema"}},
+            corrupt([](SLE::pointer& sle) { sle->setFieldVL(sfMPTokenMetadata, Blob{0x00}); }),
+            XRPAmount{},
+            STTx{ttACCOUNT_SET, [](STObject&) {}},
+            {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
+            preclose);
+
+        // Schema corrupted to a malformed descriptor
+        doInvariantCheck(
+            {{"carries a malformed Schema"}},
+            corrupt([](SLE::pointer& sle) { sle->setFieldVL(sfMPTokenSchema, Blob{0x20}); }),
+            XRPAmount{},
+            STTx{ttACCOUNT_SET, [](STObject&) {}},
+            {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
+            preclose);
+    }
+
+    void
     run() override
     {
         testConfidentialMPTTransfer();
         testMPT();
+        testMPTStructuredData();
     }
 };
 

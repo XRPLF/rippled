@@ -14,6 +14,7 @@
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/StructuredData.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/XRPAmount.h>
@@ -27,6 +28,9 @@ namespace xrpl {
 bool
 MPTokenIssuanceSet::checkExtraFeatures(PreflightContext const& ctx)
 {
+    if (ctx.tx.isFieldPresent(sfMPTokenSchema) && !ctx.rules.enabled(featureMPTStructuredData))
+        return false;
+
     return !ctx.tx.isFieldPresent(sfDomainID) ||
         (ctx.rules.enabled(featurePermissionedDomains) &&
          ctx.rules.enabled(featureSingleAssetVault));
@@ -46,7 +50,9 @@ MPTokenIssuanceSet::preflight(PreflightContext const& ctx)
     auto const metadata = ctx.tx[~sfMPTokenMetadata];
     auto const transferFee = ctx.tx[~sfTransferFee];
     auto const immutableFlags = ctx.tx[~sfImmutableFlags];
-    auto const isMutate = (enableFlags != 0u) || metadata || transferFee || immutableFlags;
+    auto const schema = ctx.tx[~sfMPTokenSchema];
+    auto const isMutate =
+        (enableFlags != 0u) || metadata || transferFee || immutableFlags || schema;
     auto const hasIssuerElGamalKey = ctx.tx.isFieldPresent(sfIssuerEncryptionKey);
     auto const hasAuditorElGamalKey = ctx.tx.isFieldPresent(sfAuditorEncryptionKey);
 
@@ -88,6 +94,16 @@ MPTokenIssuanceSet::preflight(PreflightContext const& ctx)
             return temMALFORMED;
     }
 
+    if (schema)
+    {
+        // A Schema mutates the issuance itself: no Holder, no flags.
+        if (hasHolder)
+            return temMALFORMED;
+
+        if ((txFlags & tfUniversalMask) != 0u)
+            return temMALFORMED;
+    }
+
     if (ctx.rules.enabled(featureDynamicMPT))
     {
         // Holder field is not allowed when mutating MPTokenIssuance
@@ -106,6 +122,11 @@ MPTokenIssuanceSet::preflight(PreflightContext const& ctx)
             return temBAD_TRANSFER_FEE;
 
         if (metadata && metadata->length() > kMaxMpTokenMetadataLength)
+            return temMALFORMED;
+
+        // An empty Schema deletes the field; any other Schema must be usable.
+        if (schema && !schema->empty() &&
+            (schema->size() > kMaxSchemaLength || !isWellFormedSchema(*schema)))
             return temMALFORMED;
 
         // If the immutable flags field is included, at least one flag must be
@@ -205,8 +226,26 @@ MPTokenIssuanceSet::preclaim(PreclaimContext const& ctx)
             return tecNO_PERMISSION;
     }
 
-    if (isImmutable(lsifMPTMetadata) && ctx.tx.isFieldPresent(sfMPTokenMetadata))
+    // lsifMPTMetadata freezes the typed content as a unit: changing the Schema
+    // reinterprets the Metadata, so neither moves once it is set.
+    if (isImmutable(lsifMPTMetadata) &&
+        (ctx.tx.isFieldPresent(sfMPTokenMetadata) || ctx.tx.isFieldPresent(sfMPTokenSchema)))
         return tecNO_PERMISSION;
+
+    // Whatever this transaction leaves behind must agree: the resulting
+    // Metadata decodes against the resulting Schema.
+    {
+        auto const schema = ctx.tx.isFieldPresent(sfMPTokenSchema)
+            ? ctx.tx[~sfMPTokenSchema]
+            : (*sleMptIssuance)[~sfMPTokenSchema];
+        auto const metadata = ctx.tx.isFieldPresent(sfMPTokenMetadata)
+            ? ctx.tx[~sfMPTokenMetadata]
+            : (*sleMptIssuance)[~sfMPTokenMetadata];
+
+        if (schema && !schema->empty() && metadata && !metadata->empty() &&
+            !dataMatchesSchema(*schema, *metadata))
+            return tecNO_PERMISSION;
+    }
 
     if (auto const fee = ctx.tx[~sfTransferFee])
     {
@@ -408,6 +447,18 @@ MPTokenIssuanceSet::doApply()
         else
         {
             sle->setFieldVL(sfMPTokenMetadata, *metadata);
+        }
+    }
+
+    if (auto const schema = ctx_.tx[~sfMPTokenSchema])
+    {
+        if (schema->empty())
+        {
+            sle->makeFieldAbsent(sfMPTokenSchema);
+        }
+        else
+        {
+            sle->setFieldVL(sfMPTokenSchema, *schema);
         }
     }
 

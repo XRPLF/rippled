@@ -411,6 +411,7 @@ LEDGER_ENTRY(ltMPTOKEN_ISSUANCE, 0x007e, MPTokenIssuance, mpt_issuance, ({
     {sfOutstandingAmount,        SoeRequired},
     {sfLockedAmount,             SoeOptional},
     {sfMPTokenMetadata,          SoeOptional},
+    {sfMPTokenSchema,            SoeOptional},
     {sfPreviousTxnID,            SoeRequired},
     {sfPreviousTxnLgrSeq,        SoeRequired},
     {sfDomainID,                 SoeOptional},
