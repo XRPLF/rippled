@@ -101,6 +101,10 @@ protected:
         TenthBips32 coverRateLiquidation = percentageToTenthBips(25);
         std::string data = {};  // NOLINT(readability-redundant-member-init)
         std::uint32_t flags = 0;
+        // VaultCreate flags (e.g. tfVaultPrivate). Distinct from `flags`,
+        // which are passed to LoanBrokerSet.
+        std::optional<std::uint32_t> vaultFlags =
+            std::nullopt;  // NOLINT(readability-redundant-member-init)
         // If set, the vault is created with this sfScale value. Useful for
         // tests that need finer loanScale to exercise rounding edge cases.
         std::optional<std::uint8_t> vaultScale =
@@ -115,8 +119,8 @@ protected:
         std::uint32_t subscriptionOffset = 60;
         // Seconds between SubscriptionDate and RedemptionDate. Must be >= kMinInvestmentPeriod, <
         // kMaxInvestmentPeriod, and generous enough to fit any loan schedule the test runs
-        // (finalPayment must be strictly before RedemptionDate). Default sized to comfortably
-        // exceed any schedule realistic tests are likely to configure.
+        // (finalPayment must precede RedemptionDate by at least kLoanRedemptionBuffer). Default
+        // sized to comfortably exceed any schedule realistic tests are likely to configure.
         std::uint32_t redemptionOffset = 10u * 365u * 24u * 60u * 60u;
         // When true, createVaultAndBroker skips its automatic clock advance past SubscriptionDate.
         // Useful for tests that need to observe the vault while it is still in the Subscription
@@ -526,6 +530,7 @@ protected:
         auto [tx, vaultKeylet] = vault.create(
             {.owner = lender,
              .asset = asset,
+             .flags = params.vaultFlags,
              .vaultKind = effectiveVaultKind == VaultKind::OpenEnded
                  ? std::optional<std::uint8_t>{}
                  : std::optional<std::uint8_t>{std::to_underlying(effectiveVaultKind)},

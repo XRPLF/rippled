@@ -184,6 +184,8 @@ addEmptyHolding(
     auto const mpt = ctx.view.peek(keylet::mptokenIssuance(mptID));
     if (!mpt)
         return tefINTERNAL;  // LCOV_EXCL_LINE
+    // Unlike IOU addEmptyHolding (post-fixCleanup3_4_0), a locked issuance is
+    // still rejected before the "MPToken already exists" short circuit.
     if (mpt->isFlag(lsfMPTLocked))
         return tefINTERNAL;  // LCOV_EXCL_LINE
     if (ctx.view.peek(keylet::mptoken(mptID, accountID)))

@@ -1246,7 +1246,7 @@ removeExpiredNFTokenOffers(
 }
 
 static void
-removeDeletedCredentials(ApplyView& view, std::vector<uint256> const& creds, beast::Journal viewJ)
+removeExpiredCredentials(ApplyView& view, std::vector<uint256> const& creds, beast::Journal viewJ)
 {
     for (auto const& index : creds)
     {
@@ -1255,7 +1255,7 @@ removeDeletedCredentials(ApplyView& view, std::vector<uint256> const& creds, bea
             if (auto const ter = credentials::deleteSLE(view, sle, viewJ); !isTesSuccess(ter))
             {
                 JLOG(viewJ.error())
-                    << "removeDeletedCredentials: failed to delete credential. Err: "
+                    << "removeExpiredCredentials: failed to delete expired credential. Err: "
                     << transToken(ter);
             }
         }
@@ -1437,8 +1437,7 @@ Transactor::processPersistentChanges(TER result, XRPAmount fee)
     //        should be used, making it possible to do more useful work
     //        when transactions fail with a `tec` code.
 
-    auto typesForResult = [credentialCleanup =
-                               view().rules().enabled(fixCleanup3_4_0)](TER const ter) {
+    auto typesForResult = [](TER const ter) {
         std::unordered_set<LedgerEntryType> types;
         if ((ter == tecOVERSIZE) || (ter == tecKILLED))
         {
@@ -1447,11 +1446,6 @@ Transactor::processPersistentChanges(TER result, XRPAmount fee)
         else if (ter == tecINCOMPLETE)
         {
             types.insert(ltRIPPLE_STATE);
-            // A bounded pseudo-account credential cleanup (VaultDelete /
-            // LoanBrokerDelete) persists its partial credential deletions so a
-            // later transaction can resume.
-            if (credentialCleanup)
-                types.insert(ltCREDENTIAL);
         }
         else if (ter == tecEXPIRED)
         {
@@ -1529,7 +1523,7 @@ Transactor::processPersistentChanges(TER result, XRPAmount fee)
                     removeDeletedTrustLines(view(), ids, viewJ);
                     break;
                 case ltCREDENTIAL:
-                    removeDeletedCredentials(view(), ids, viewJ);
+                    removeExpiredCredentials(view(), ids, viewJ);
                     break;
                 // LCOV_EXCL_START
                 default:

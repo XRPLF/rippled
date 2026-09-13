@@ -8,6 +8,9 @@ cxx = { version = "1.0.198", features = ["c++20"] }
 [workspace.package]
 edition = "2024"
 
+[workspace.lints.rust]
+unexpected_cfgs = { level = "warn", check-cfg = [ 'cfg(coverage)', 'cfg(coverage_nightly)' ] }
+
 [profile.release]
 opt-level = 3
 overflow-checks = true
