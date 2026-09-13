@@ -374,6 +374,7 @@ JSS(load_factor_local);           // out: NetworkOPs
 JSS(load_factor_net);             // out: NetworkOPs
 JSS(load_factor_server);          // out: NetworkOPs
 JSS(load_fee);                    // out: LoadFeeTrackImp, NetworkOPs
+JSS(coupon_schedule_id);          // in: LedgerEntry
 JSS(loan_broker_id);              // in: LedgerEntry
 JSS(loan_seq);                    // in: LedgerEntry
 JSS(local);                       // out: resource/Logic.h

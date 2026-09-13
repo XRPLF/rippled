@@ -480,6 +480,25 @@ parseLedgerHashes(
 }
 
 static std::expected<uint256, json::Value>
+parseCouponSchedule(
+    json::Value const& params,
+    json::StaticString const fieldName,
+    [[maybe_unused]] unsigned const apiVersion)
+{
+    if (!params.isObject())
+    {
+        return parseObjectID(params, fieldName);
+    }
+
+    auto const issuanceID =
+        ledger_entry_helpers::requiredUInt192(params, jss::mpt_issuance_id, "malformedRequest");
+    if (!issuanceID)
+        return std::unexpected(issuanceID.error());
+
+    return keylet::couponSchedule(*issuanceID).key;
+}
+
+static std::expected<uint256, json::Value>
 parseLoanBroker(
     json::Value const& params,
     json::StaticString const fieldName,

@@ -33,6 +33,8 @@ TEST(MPTokenTests, BuilderSettersRoundTrip)
     auto const issuerEncryptedBalanceValue = canonical_VL();
     auto const auditorEncryptedBalanceValue = canonical_VL();
     auto const holderEncryptionKeyValue = canonical_VL();
+    auto const couponAccruedValue = canonical_AMOUNT();
+    auto const couponIndexValue = canonical_AMOUNT();
 
     MPTokenBuilder builder{
         accountValue,
@@ -50,6 +52,8 @@ TEST(MPTokenTests, BuilderSettersRoundTrip)
     builder.setIssuerEncryptedBalance(issuerEncryptedBalanceValue);
     builder.setAuditorEncryptedBalance(auditorEncryptedBalanceValue);
     builder.setHolderEncryptionKey(holderEncryptionKeyValue);
+    builder.setCouponAccrued(couponAccruedValue);
+    builder.setCouponIndex(couponIndexValue);
 
     builder.setLedgerIndex(index);
     builder.setFlags(0x1u);
@@ -154,6 +158,22 @@ TEST(MPTokenTests, BuilderSettersRoundTrip)
         EXPECT_TRUE(entry.hasHolderEncryptionKey());
     }
 
+    {
+        auto const& expected = couponAccruedValue;
+        auto const actualOpt = entry.getCouponAccrued();
+        ASSERT_TRUE(actualOpt.has_value());
+        expectEqualField(expected, *actualOpt, "sfCouponAccrued");
+        EXPECT_TRUE(entry.hasCouponAccrued());
+    }
+
+    {
+        auto const& expected = couponIndexValue;
+        auto const actualOpt = entry.getCouponIndex();
+        ASSERT_TRUE(actualOpt.has_value());
+        expectEqualField(expected, *actualOpt, "sfCouponIndex");
+        EXPECT_TRUE(entry.hasCouponIndex());
+    }
+
     EXPECT_TRUE(entry.hasLedgerIndex());
     auto const ledgerIndex = entry.getLedgerIndex();
     ASSERT_TRUE(ledgerIndex.has_value());
@@ -180,6 +200,8 @@ TEST(MPTokenTests, BuilderFromSleRoundTrip)
     auto const issuerEncryptedBalanceValue = canonical_VL();
     auto const auditorEncryptedBalanceValue = canonical_VL();
     auto const holderEncryptionKeyValue = canonical_VL();
+    auto const couponAccruedValue = canonical_AMOUNT();
+    auto const couponIndexValue = canonical_AMOUNT();
 
     auto sle = std::make_shared<SLE>(MPToken::entryType, index);
 
@@ -196,6 +218,8 @@ TEST(MPTokenTests, BuilderFromSleRoundTrip)
     sle->at(sfIssuerEncryptedBalance) = issuerEncryptedBalanceValue;
     sle->at(sfAuditorEncryptedBalance) = auditorEncryptedBalanceValue;
     sle->at(sfHolderEncryptionKey) = holderEncryptionKeyValue;
+    sle->at(sfCouponAccrued) = couponAccruedValue;
+    sle->at(sfCouponIndex) = couponIndexValue;
 
     MPTokenBuilder builderFromSle{sle};
     EXPECT_TRUE(builderFromSle.validate());
@@ -360,6 +384,32 @@ TEST(MPTokenTests, BuilderFromSleRoundTrip)
         expectEqualField(expected, *fromBuilderOpt, "sfHolderEncryptionKey");
     }
 
+    {
+        auto const& expected = couponAccruedValue;
+
+        auto const fromSleOpt = entryFromSle.getCouponAccrued();
+        auto const fromBuilderOpt = entryFromBuilder.getCouponAccrued();
+
+        ASSERT_TRUE(fromSleOpt.has_value());
+        ASSERT_TRUE(fromBuilderOpt.has_value());
+
+        expectEqualField(expected, *fromSleOpt, "sfCouponAccrued");
+        expectEqualField(expected, *fromBuilderOpt, "sfCouponAccrued");
+    }
+
+    {
+        auto const& expected = couponIndexValue;
+
+        auto const fromSleOpt = entryFromSle.getCouponIndex();
+        auto const fromBuilderOpt = entryFromBuilder.getCouponIndex();
+
+        ASSERT_TRUE(fromSleOpt.has_value());
+        ASSERT_TRUE(fromBuilderOpt.has_value());
+
+        expectEqualField(expected, *fromSleOpt, "sfCouponIndex");
+        expectEqualField(expected, *fromBuilderOpt, "sfCouponIndex");
+    }
+
     EXPECT_EQ(entryFromSle.getKey(), index);
     EXPECT_EQ(entryFromBuilder.getKey(), index);
 }
@@ -438,5 +488,9 @@ TEST(MPTokenTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(entry.getAuditorEncryptedBalance().has_value());
     EXPECT_FALSE(entry.hasHolderEncryptionKey());
     EXPECT_FALSE(entry.getHolderEncryptionKey().has_value());
+    EXPECT_FALSE(entry.hasCouponAccrued());
+    EXPECT_FALSE(entry.getCouponAccrued().has_value());
+    EXPECT_FALSE(entry.hasCouponIndex());
+    EXPECT_FALSE(entry.getCouponIndex().has_value());
 }
 }

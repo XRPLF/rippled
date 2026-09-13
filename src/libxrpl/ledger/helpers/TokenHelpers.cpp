@@ -8,6 +8,7 @@
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
+#include <xrpl/ledger/helpers/CouponHelpers.h>
 #include <xrpl/ledger/helpers/MPTokenHelpers.h>
 #include <xrpl/ledger/helpers/RippleStateHelpers.h>
 #include <xrpl/ledger/helpers/SponsorHelpers.h>
@@ -1278,6 +1279,11 @@ directSendNoFeeMPT(
         auto const mptokenID = keylet::mptoken(mptID.key, uSenderID);
         if (auto sle = view.peek(mptokenID))
         {
+            // Coupons accrue against units held, so settle before they change.
+            if (auto const ter = couponSettleIfScheduled(view, sleIssuance, sle, j);
+                !isTesSuccess(ter))
+                return ter;
+
             auto const senderBalance = sle->getFieldU64(sfMPTAmount);
             if (senderBalance < amt)
                 return tecINSUFFICIENT_FUNDS;
@@ -1308,6 +1314,11 @@ directSendNoFeeMPT(
         auto const mptokenID = keylet::mptoken(mptID.key, uReceiverID);
         if (auto sle = view.peek(mptokenID))
         {
+            // Coupons accrue against units held, so settle before they change.
+            if (auto const ter = couponSettleIfScheduled(view, sleIssuance, sle, j);
+                !isTesSuccess(ter))
+                return ter;
+
             if (view.rules().enabled(featureMPTokensV2))
             {
                 if ((*sle)[sfMPTAmount] > (std::numeric_limits<std::uint64_t>::max() - amt))

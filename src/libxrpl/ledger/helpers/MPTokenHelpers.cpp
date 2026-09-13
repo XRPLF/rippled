@@ -8,6 +8,7 @@
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
+#include <xrpl/ledger/helpers/CouponHelpers.h>
 #include <xrpl/ledger/helpers/CredentialHelpers.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/ledger/helpers/SponsorHelpers.h>
@@ -873,6 +874,14 @@ unlockEscrowMPT(
             return tecOBJECT_NOT_FOUND;
         }  // LCOV_EXCL_STOP
 
+        // Coupons accrue against units held, so settle before they change.
+        if (sender != receiver)
+        {
+            if (auto const ter = couponSettleIfScheduled(view, sleIssuance, sle, j);
+                !isTesSuccess(ter))
+                return ter;
+        }
+
         auto current = sle->getFieldU64(sfMPTAmount);
         auto delta = netAmount.mpt().value();
 
@@ -919,6 +928,13 @@ unlockEscrowMPT(
         JLOG(j.error()) << "unlockEscrowMPT: MPToken not found for " << sender;
         return tecOBJECT_NOT_FOUND;
     }  // LCOV_EXCL_STOP
+
+    // Coupons accrue against units held, so settle before they change.
+    if (sender != receiver)
+    {
+        if (auto const ter = couponSettleIfScheduled(view, sleIssuance, sle, j); !isTesSuccess(ter))
+            return ter;
+    }
 
     if (!sle->isFieldPresent(sfLockedAmount))
     {  // LCOV_EXCL_START

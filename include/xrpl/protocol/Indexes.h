@@ -397,6 +397,15 @@ loan(uint256 const& key)
 }
 
 Keylet
+couponSchedule(uint192 const& mptIssuanceID) noexcept;
+
+inline Keylet
+couponSchedule(uint256 const& scheduleKey)
+{
+    return {ltCOUPON_SCHEDULE, scheduleKey};
+}
+
+Keylet
 permissionedDomain(AccountID const& account, SeqProxy const& seq) noexcept;
 
 Keylet

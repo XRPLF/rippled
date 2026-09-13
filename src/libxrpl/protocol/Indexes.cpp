@@ -106,6 +106,7 @@ enum class LedgerNameSpace : std::uint16_t {
     PasskeyList = 'k',
     Sponsorship = '>',
     TokenIssuance = 'F',
+    CouponSchedule = 'J',
 
     ContractSource = 'Z',
     Contract = 'c',
@@ -605,6 +606,12 @@ Keylet
 loan(uint256 const& loanBrokerID, SeqProxy const& loanSeq) noexcept
 {
     return loan(indexHash(LedgerNameSpace::Loan, loanBrokerID, loanSeq.value()));
+}
+
+Keylet
+couponSchedule(uint192 const& mptIssuanceID) noexcept
+{
+    return couponSchedule(indexHash(LedgerNameSpace::CouponSchedule, mptIssuanceID));
 }
 
 Keylet

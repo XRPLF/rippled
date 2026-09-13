@@ -155,3 +155,4 @@ XRPL_FEATURE(Passkey,                     Supported::Yes, VoteBehavior::DefaultN
 XRPL_FEATURE(MPTStructuredData,           Supported::Yes, VoteBehavior::DefaultNo)
 XRPL_FEATURE(TokenIssuance,               Supported::No,  VoteBehavior::DefaultNo)
 XRPL_FEATURE(VaultContinuousAccrual,      Supported::Yes, VoteBehavior::DefaultNo)
+XRPL_FEATURE(CouponPayments,              Supported::Yes, VoteBehavior::DefaultNo)

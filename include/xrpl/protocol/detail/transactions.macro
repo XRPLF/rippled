@@ -1363,3 +1363,53 @@ TRANSACTION(ttTOKEN_CONVERT, 107, TokenConvert,
     ({
     {sfAmount, SoeRequired, SoeMptSupported},
 }))
+TRANSACTION(ttCOUPON_SCHEDULE_CREATE, 108, CouponScheduleCreate,
+    ({
+        .delegable = Delegation::NotDelegable,
+        .amendment = featureCouponPayments,
+    }),
+    ({
+    {sfMPTokenIssuanceID, SoeRequired},
+    {sfCouponAsset, SoeRequired, SoeMptSupported},
+    {sfCouponAmount, SoeOptional, SoeMptSupported},
+    {sfCouponInterval, SoeOptional},
+    {sfFirstCouponTime, SoeOptional},
+    {sfExpiration, SoeOptional},
+    {sfCallNoticePeriod, SoeOptional},
+    {sfEarliestCallTime, SoeOptional},
+}))
+TRANSACTION(ttCOUPON_SCHEDULE_SET, 109, CouponScheduleSet,
+    ({
+        .delegable = Delegation::NotDelegable,
+        .amendment = featureCouponPayments,
+    }),
+    ({
+    {sfMPTokenIssuanceID, SoeRequired},
+    {sfExpiration, SoeRequired},
+}))
+TRANSACTION(ttCOUPON_SCHEDULE_DELETE, 110, CouponScheduleDelete,
+    ({
+        .delegable = Delegation::NotDelegable,
+        .amendment = featureCouponPayments,
+    }),
+    ({
+    {sfMPTokenIssuanceID, SoeRequired},
+}))
+TRANSACTION(ttCOUPON_CLAIM, 111, CouponClaim,
+    ({
+        .delegable = Delegation::Delegable,
+        .amendment = featureCouponPayments,
+    }),
+    ({
+    {sfMPTokenIssuanceID, SoeRequired},
+    {sfAmount, SoeOptional, SoeMptSupported},
+}))
+TRANSACTION(ttCOUPON_PAY, 112, CouponPay,
+    ({
+        .delegable = Delegation::NotDelegable,
+        .amendment = featureCouponPayments,
+    }),
+    ({
+    {sfMPTokenIssuanceID, SoeRequired},
+    {sfAmount, SoeRequired, SoeMptSupported},
+}))

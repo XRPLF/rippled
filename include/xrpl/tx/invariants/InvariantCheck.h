@@ -7,6 +7,7 @@
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/invariants/AMMInvariant.h>
+#include <xrpl/tx/invariants/CouponInvariant.h>
 #include <xrpl/tx/invariants/DirectoryInvariant.h>
 #include <xrpl/tx/invariants/FreezeInvariant.h>
 #include <xrpl/tx/invariants/LoanBrokerInvariant.h>
@@ -490,7 +491,8 @@ using InvariantChecks = std::tuple<
     ObjectHasPseudoAccount,
     SponsorshipOwnerCountsMatch,
     SponsorshipAccountCountMatchesField,
-    ValidTokenIssuance>;
+    ValidTokenIssuance,
+    ValidCouponSchedule>;
 
 /**
  * @brief get a tuple of all invariant checks
