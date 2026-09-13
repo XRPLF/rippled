@@ -865,6 +865,42 @@ class InvariantsVault_test : public InvariantsBase
             precloseXrp,
             TxAccount::A2);
 
+        // The cap check has two post-fixCleanup3_4_0 triggers: the transaction
+        // supplied sfAssetsMaximum, or the cap changed. The case above covers
+        // the cap-changed one (its ttVAULT_SET carries no fields). This covers
+        // the other: the cap is left alone at 30 XRP and the transaction
+        // carries sfAssetsMaximum, so only the isFieldPresent disjunct can
+        // fire. AssetsTotal is pushed past the cap here rather than in
+        // preclose because VaultSet::doApply refuses to set a cap below
+        // AssetsTotal, so the over-cap state is only reachable by fabrication.
+        // Raising AssetsTotal also trips the "must not change assets
+        // outstanding" check, hence two expected messages.
+        Number const vaultCap = XRP(30).number();
+        doInvariantCheck(
+            {"set must not change assets outstanding",
+             "set assets outstanding must not exceed assets maximum"},
+            [&](Account const& a1, Account const& a2, ApplyContext& ac) {
+                auto const keylet = keylet::vault(a1.id(), SeqProxy::rawSequence(ac.view().seq()));
+                return kAdjust(ac.view(), keylet, kArgs(a2.id(), 0, [&](Adjustments& sample) {
+                                   sample.assetsTotal = XRP(1).value().xrp().drops();
+                               }));
+            },
+            XRPAmount{},
+            STTx{ttVAULT_SET, [&](STObject& tx) { tx[sfAssetsMaximum] = vaultCap; }},
+            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            [&](Account const& a1, Account const& a2, Env& env) -> bool {
+                env.fund(XRP(1000), a3, a4);
+                Vault const vault{env};
+                auto [tx, keylet] = vault.create({.owner = a1, .asset = xrpIssue()});
+                tx[sfAssetsMaximum] = vaultCap;
+                env(tx);
+                env(vault.deposit({.depositor = a1, .id = keylet.key, .amount = XRP(10)}));
+                env(vault.deposit({.depositor = a2, .id = keylet.key, .amount = XRP(10)}));
+                env(vault.deposit({.depositor = a3, .id = keylet.key, .amount = XRP(10)}));
+                return true;
+            },
+            TxAccount::A2);
+
         doInvariantCheck(
             {"assets maximum must not be negative"},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
@@ -2758,13 +2794,15 @@ class InvariantsVault_test : public InvariantsBase
                     "RedemptionDate";
 
         // A newly-created loan against a closed-ended vault must satisfy StartDate +
-        // PaymentInterval * PaymentRemaining < RedemptionDate. LoanSet::preclaim enforces the same
-        // bound; this test synthesises an invalid loan directly in the ApplyView so the invariant
-        // catches it even when preclaim is bypassed.
+        // PaymentInterval * PaymentRemaining + kLoanRedemptionBuffer <= RedemptionDate.
+        // LoanSet::preclaim enforces the same bound; this test synthesises a loan whose
+        // final payment is still before RedemptionDate (so the old unbuffered check would
+        // pass) but inside the buffer zone.
         Keylet closedEndedBrokerKeylet = keylet::amendments();
         std::uint32_t closedEndedRed = 0;
         doInvariantCheck(
-            {"closed-ended loan final payment must precede RedemptionDate"},
+            {"closed-ended loan final payment must precede RedemptionDate by at least "
+             "kLoanRedemptionBuffer"},
             [&](Account const& a1, Account const&, ApplyContext& ac) {
                 // Touch the vault so ValidVault::finalizeLoanSet sees an
                 // entry in afterVault_; the vault is in Investment, so
@@ -2781,15 +2819,14 @@ class InvariantsVault_test : public InvariantsBase
                     return false;
                 std::uint32_t const loanSeq = sleBroker->at(sfLoanSequence);
 
-                // Synthesize a Loan whose final scheduled payment lands
-                // exactly at RedemptionDate: StartDate = red, interval = 60,
-                // remaining = 1 => red + 60 >= red.
+                // Final payment at RedemptionDate - (kLoanRedemptionBuffer - 1): still
+                // strictly before RedemptionDate, but inside the buffer.
                 auto sleLoan = makeLoanSle(closedEndedBrokerKeylet.key, loanSeq, a1.id());
                 sleLoan->at(sfLoanBrokerID) = closedEndedBrokerKeylet.key;
                 sleLoan->at(sfLoanSequence) = loanSeq;
                 sleLoan->at(sfBorrower) = a1.id();
-                sleLoan->at(sfStartDate) = closedEndedRed;
-                sleLoan->at(sfPaymentInterval) = 60;
+                sleLoan->at(sfStartDate) = closedEndedRed - kLoanRedemptionBuffer;
+                sleLoan->at(sfPaymentInterval) = 1;
                 sleLoan->at(sfPaymentRemaining) = 1;
                 sleLoan->at(sfTotalValueOutstanding) = Number(100);
                 sleLoan->at(sfPeriodicPayment) = Number(1);

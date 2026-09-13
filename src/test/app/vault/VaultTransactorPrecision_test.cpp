@@ -92,9 +92,14 @@ class VaultTransactorPrecision_test : public VaultPrecisionFixture
             if (before.sharesTotal == Number{0})
                 continue;
             Number const shareValue = (before.assetsTotal * sharesMinted) / before.sharesTotal;
+            // The depositor is never charged more than the shares they received are worth.
             BEAST_EXPECTS(
-                shareValue <= tDelta,
-                "amount=" + std::to_string(amount) + " shareValue > assetsTaken");
+                tDelta <= shareValue,
+                "amount=" + std::to_string(amount) + " assetsTaken > shareValue");
+            // Discount is strictly less than one ULP of the new AssetsTotal
+            BEAST_EXPECTS(
+                shareValue - tDelta < oneUnit(asset.raw(), after.assetsTotal),
+                "amount=" + std::to_string(amount) + " discount is not below one unit");
         }
 
         {
