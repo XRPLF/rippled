@@ -81,9 +81,7 @@ TxTest::TxTest(std::optional<FeatureBitset> features, std::optional<Fees> feesOv
     // Create rules with the specified features
     rules_.emplace(featureSet_);
 
-    // One fee set for both the view and the registry.
     Fees const fees = feesOverride.value_or(TestServiceRegistry::defaultFees());
-    registry_.setFees(fees);
 
     // Create a genesis ledger as the base
     closedLedger_ = std::make_shared<Ledger>(
@@ -216,6 +214,16 @@ TxTest::close()
 
     auto newLedger = std::make_shared<Ledger>(prevLedger, ledgerCloseTime);
 
+    if (pendingFees_)
+    {
+        auto sle = std::make_shared<SLE>(*newLedger->read(keylet::feeSettings()));
+        sle->at(sfGasLimit) = pendingFees_->gasLimit;
+        sle->at(sfBytecodeSizeLimit) = pendingFees_->bytecodeSizeLimit;
+        sle->at(sfGasPrice) = pendingFees_->gasPrice;
+        newLedger->rawReplace(sle);
+        pendingFees_.reset();
+    }
+
     CanonicalTXSet txSet(prevLedger.header().hash);
     for (auto const& tx : pendingTxs_)
         txSet.insert(tx);
@@ -292,6 +300,12 @@ TxTest::getBalance(AccountID const& account, IOU const& iou) const
     if (account > iou.issue().account)
         balance.negate();
     return balance;
+}
+
+void
+TxTest::setFees(Fees const& fees)
+{
+    pendingFees_ = fees;
 }
 
 }  // namespace xrpl::test
