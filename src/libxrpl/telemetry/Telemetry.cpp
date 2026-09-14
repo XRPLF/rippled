@@ -729,9 +729,9 @@ noopMeter(std::string_view name)
 {
     // One provider for the process: it holds a single inert meter, so nothing
     // is gained by building another.
-    static auto const provider = opentelemetry::nostd::shared_ptr<metrics_api::MeterProvider>(
+    static auto const kProvider = opentelemetry::nostd::shared_ptr<metrics_api::MeterProvider>(
         new metrics_api::NoopMeterProvider());
-    return provider->GetMeter(std::string(name), std::string(kMeterVersion));
+    return kProvider->GetMeter(std::string(name), std::string(kMeterVersion));
 }
 
 opentelemetry::exporter::otlp::OtlpHttpExporterOptions
