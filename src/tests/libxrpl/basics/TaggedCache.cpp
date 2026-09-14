@@ -243,4 +243,36 @@ TEST(TaggedCacheTest, tagged_cache)
     }
 }
 
+TEST(TaggedCacheTest, lock_hold_peak_records_getkeys_and_sweep_then_resets)
+{
+    using namespace std::chrono_literals;
+    beast::Journal const journal{TestSink::instance()};
+    TestStopwatch clock;
+    clock.set(0);
+
+    using Cache = TaggedCache<LedgerIndex, std::string>;
+    Cache c("peak", 0, 1s, clock, journal);
+
+    // Nothing has held the lock yet.
+    EXPECT_EQ(c.takeLockHoldPeak(), 0ns);
+
+    // Enough entries that copying every key takes a measurable time.
+    for (LedgerIndex i = 0; i < 200'000; ++i)
+        c.insert(i, "v");
+
+    auto const keys = c.getKeys();
+    ASSERT_EQ(keys.size(), 200'000u);
+    auto const afterGetKeys = c.takeLockHoldPeak();
+    EXPECT_GT(afterGetKeys, 0ns);
+    // take() is destructive: the next read starts from zero.
+    EXPECT_EQ(c.takeLockHoldPeak(), 0ns);
+
+    // A sweep that expires everything also holds the lock over every entry.
+    ++clock;
+    ++clock;
+    c.sweep();
+    EXPECT_GT(c.takeLockHoldPeak(), 0ns);
+    EXPECT_EQ(c.getTrackSize(), 0);
+}
+
 }  // namespace xrpl
