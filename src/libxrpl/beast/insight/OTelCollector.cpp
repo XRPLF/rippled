@@ -512,17 +512,25 @@ public:
 
     /**
      * @brief Register a hook for periodic invocation.
-     * @param hook  Pointer to the hook to register.
+     *
+     * Takes the owning shared_ptr so the list can store a weak reference.
+     * Called from makeHook() rather than the hook's constructor, because a
+     * weak_ptr cannot be formed until the shared_ptr owns the object.
+     *
+     * @param hook  Owning pointer to the hook to register.
      */
     void
-    addHook(OTelHookImpl* hook);
+    addHook(std::shared_ptr<OTelHookImpl> const& hook);
 
     /**
-     * @brief Unregister a hook.
-     * @param hook  Pointer to the hook to unregister.
+     * @brief Drop entries for hooks that have been destroyed.
+     *
+     * Called from ~OTelHookImpl. The dying hook's weak_ptr has already
+     * expired by then, so the entry is identified by expiry rather than by
+     * address.
      */
     void
-    removeHook(OTelHookImpl* hook);
+    removeExpiredHooks();
 
     /**
      * @brief Invoke all registered hooks.
@@ -600,8 +608,16 @@ private:
 
     /**
      * Registered hooks called during observable callbacks.
+     *
+     * Weak, not owning, and not raw. callHooks() must invoke handlers with
+     * mutex_ released, because a handler may drop the last reference to a
+     * hook and ~OTelHookImpl re-acquires mutex_. A raw pointer copied out of
+     * this list could therefore be dangling by the time it is dereferenced.
+     * Locking a weak_ptr instead keeps the hook alive for exactly the
+     * duration of its own handler call, and an already-destroyed hook is
+     * skipped rather than followed.
      */
-    std::vector<OTelHookImpl*> hooks_;
+    std::vector<std::weak_ptr<OTelHookImpl>> hooks_;
 
     /**
      * Registered gauges read during observable callbacks.
@@ -637,12 +653,14 @@ private:
 OTelHookImpl::OTelHookImpl(HandlerType handler, std::shared_ptr<OTelCollectorImp> impl)
     : impl_(std::move(impl)), handler_(std::move(handler))
 {
-    impl_->addHook(this);
+    // Registration happens in OTelCollectorImp::makeHook(), not here: the
+    // list holds weak references, and no weak_ptr to this object exists
+    // until the owning shared_ptr does.
 }
 
 OTelHookImpl::~OTelHookImpl()
 {
-    impl_->removeHook(this);
+    impl_->removeExpiredHooks();
 }
 
 void
@@ -852,7 +870,9 @@ OTelCollectorImp::~OTelCollectorImp()
 Hook
 OTelCollectorImp::makeHook(HookImpl::HandlerType const& handler)
 {
-    return Hook(std::make_shared<OTelHookImpl>(handler, shared_from_this()));
+    auto hook = std::make_shared<OTelHookImpl>(handler, shared_from_this());
+    addHook(hook);
+    return Hook(hook);
 }
 
 Counter
@@ -886,17 +906,17 @@ OTelCollectorImp::makeMeter(std::string const& name)
 }
 
 void
-OTelCollectorImp::addHook(OTelHookImpl* hook)
+OTelCollectorImp::addHook(std::shared_ptr<OTelHookImpl> const& hook)
 {
     std::scoped_lock const lock(mutex_);
-    hooks_.push_back(hook);
+    hooks_.emplace_back(hook);
 }
 
 void
-OTelCollectorImp::removeHook(OTelHookImpl* hook)
+OTelCollectorImp::removeExpiredHooks()
 {
     std::scoped_lock const lock(mutex_);
-    std::erase(hooks_, hook);
+    std::erase_if(hooks_, [](std::weak_ptr<OTelHookImpl> const& hook) { return hook.expired(); });
 }
 
 void
@@ -913,15 +933,22 @@ OTelCollectorImp::callHooks()
 
     // Copy the hook list under the lock, then invoke handlers outside it.
     // A handler may drop the last reference to an OTelHookImpl, whose
-    // destructor calls removeHook() and re-acquires mutex_; invoking
-    // handlers while holding the (non-recursive) lock would deadlock.
-    std::vector<OTelHookImpl*> hooks;
+    // destructor re-acquires mutex_; invoking handlers while holding the
+    // (non-recursive) lock would deadlock.
+    std::vector<std::weak_ptr<OTelHookImpl>> hooks;
     {
         std::scoped_lock const lock(mutex_);
         hooks = hooks_;
     }
-    for (auto* hook : hooks)
-        hook->callHandler();
+
+    // Locking each entry keeps that hook alive across its own handler call,
+    // so releasing mutex_ above cannot leave a dangling reference. A hook
+    // destroyed since the snapshot was taken locks to null and is skipped.
+    for (auto const& weakHook : hooks)
+    {
+        if (auto const hook = weakHook.lock())
+            hook->callHandler();
+    }
 }
 
 void

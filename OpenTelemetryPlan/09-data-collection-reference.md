@@ -2046,10 +2046,12 @@ query, an alert — matches nothing and should be pointed at the live keys above
 
 | Dashboard          | UID                         | Data Source | Key Panels                                                             |
 | ------------------ | --------------------------- | ----------- | ---------------------------------------------------------------------- |
-| Validator Health   | `validator-health`          | Prometheus  | Server state timeline, proposer count, converge time, amendment voting |
+| Validator Health   | `validator-health-external` | Prometheus  | Server state timeline, proposer count, converge time, amendment voting |
 | Network Topology   | `xrpld-network-topology`    | Prometheus  | Peer count, version distribution, latency distribution, diverged peers |
 | Fee Market (Ext)   | `xrpld-fee-market-external` | Prometheus  | Fee levels, queue depth, load factor breakdown, escalation timeline    |
 | DEX & AMM Overview | `xrpld-dex-amm`             | Prometheus  | AMM TVL, order book depth, spread trends, trading fee revenue          |
+
+Grafana keys a dashboard by its UID, so two dashboards sharing one UID overwrite each other — whichever the provisioner loads last wins, and it does so silently. Phase 9 already ships `validator-health` (the row above), so the Phase 11 dashboard uses `validator-health-external`, the same way Fee Market is disambiguated as `xrpld-fee-market-external`. `OpenTelemetryPlan/Phase11_taskList.md` § Task 11.9 carries the same rule and the filename that goes with it.
 
 ### Prometheus Alerting Rules (Phase 11)
 

@@ -78,6 +78,7 @@
 #include <opentelemetry/context/context.h>
 #include <opentelemetry/exporters/otlp/otlp_http_metric_exporter_factory.h>
 #include <opentelemetry/exporters/otlp/otlp_http_metric_exporter_options.h>
+#include <opentelemetry/metrics/noop.h>
 #include <opentelemetry/metrics/observer_result.h>
 #include <opentelemetry/nostd/shared_ptr.h>
 #include <opentelemetry/nostd/variant.h>
@@ -154,7 +155,8 @@ addHistogramView(
 
     auto selector = metric_sdk::InstrumentSelectorFactory::Create(
         metric_sdk::InstrumentType::kHistogram, name, "");
-    auto meterSelector = metric_sdk::MeterSelectorFactory::Create("xrpld", "1.0.0", "");
+    auto meterSelector = metric_sdk::MeterSelectorFactory::Create(
+        std::string(xrpl::telemetry::kMeterName), std::string(xrpl::telemetry::kMeterVersion), "");
     auto view =
         metric_sdk::ViewFactory::Create(name, "", metric_sdk::AggregationType::kHistogram, config);
 
@@ -188,22 +190,13 @@ namespace xrpl::telemetry {
 MetricsRegistry::MetricsRegistry(
     [[maybe_unused]] bool enabled,
     [[maybe_unused]] ServiceRegistry& app,
-    [[maybe_unused]] beast::Journal journal)
+    [[maybe_unused]] beast::Journal journal,
+    [[maybe_unused]] Options const& options)
     : enabled_(enabled)
 #ifdef XRPL_ENABLE_TELEMETRY
     , app_(app)
     , journal_(journal)
 #endif
-{
-}
-
-MetricsRegistry::~MetricsRegistry()
-{
-    stop();
-}
-
-void
-MetricsRegistry::start([[maybe_unused]] StartOptions const& options)
 {
 #ifdef XRPL_ENABLE_TELEMETRY
     if (!enabled_)
@@ -218,19 +211,60 @@ MetricsRegistry::start([[maybe_unused]] StartOptions const& options)
                           << ", nodeId=" << options.nodeId << ", networkId=" << options.networkId
                           << ", useTls=" << options.useTls;
 
-    // Rule for anything added below: this phase may create only instruments
-    // whose recording is PUSHED from app code -- counters and histograms. An
-    // instrument registered here is live immediately, and the reader thread
-    // may invoke a registered callback before the rest of the Application is
-    // built, so any observable whose callback reads an Application service
-    // belongs in startAsyncGauges(), not here. That includes observable
-    // COUNTERS, not just gauges: jq_trans_overflow_total was created here and
-    // its callback read getOverlay(), which asserts overlay_ is non-null.
-    initExporterAndProvider(options);
-    initSyncInstruments();
+    // A broken pipeline must not stop the node. The SDK is third-party code,
+    // so the catch-all is deliberate, as in ~ApplicationImp.
+    try
+    {
+        initExporterAndProvider(options);
+
+        // Rule for anything added below: the constructor may create only
+        // instruments whose recording is PUSHED from app code -- counters and
+        // histograms. An instrument registered here is live immediately, and
+        // the reader thread may invoke a registered callback before the rest
+        // of the Application is built, so any observable whose callback reads
+        // an Application service belongs in startAsyncGauges(), not here.
+        // That includes observable COUNTERS, not just gauges:
+        // jq_trans_overflow_total was created here and its callback read
+        // getOverlay(), which asserts overlay_ is non-null.
+        initSyncInstruments();
+    }
+    catch (std::exception const& e)
+    {
+        disablePipeline(e.what());
+        return;
+    }
+    catch (...)
+    {
+        disablePipeline("unknown exception");
+        return;
+    }
 
     JLOG(journal_.info()) << "MetricsRegistry: provider and instruments ready";
 #endif  // XRPL_ENABLE_TELEMETRY
+}
+
+#ifdef XRPL_ENABLE_TELEMETRY
+void
+MetricsRegistry::disablePipeline(std::string_view reason)
+{
+    provider_.reset();
+    // meter_ becomes a no-op meter, which keeps the invariant the
+    // XRPL_METRIC_* macros rely on: an enabled registry always has a meter,
+    // so every call site gets an instrument (a no-op one here) with no check
+    // of its own. Through the base pointer, as Telemetry::getMeter() does:
+    // the no-op provider's override hides the base class's defaulted overload.
+    opentelemetry::nostd::shared_ptr<opentelemetry::metrics::MeterProvider> const noop(
+        new opentelemetry::metrics::NoopMeterProvider());
+    meter_ = noop->GetMeter(std::string(kMeterName), std::string(kMeterVersion));
+    JLOG(journal_.error()) << "MetricsRegistry: metrics pipeline failed to initialise, "
+                              "continuing without native metrics: "
+                           << reason;
+}
+#endif  // XRPL_ENABLE_TELEMETRY
+
+MetricsRegistry::~MetricsRegistry()
+{
+    stop();
 }
 
 void
@@ -240,14 +274,27 @@ MetricsRegistry::startAsyncGauges()
     if (!enabled_)
         return;
 
-    // A mis-ordered call must not crash: without a meter there is nothing to
-    // create instruments on, so registration is skipped entirely.
-    if (!meter_)
+    // One arm per life. A second call would create a second set of
+    // same-named instruments, and a call after stop() would register on a
+    // provider that is gone. Checked before the pipeline, so a call after
+    // stop() is reported as what it is and not as a build failure.
+    if (phase_ != Phase::Ready)
     {
         JLOG(journal_.warn()) << "MetricsRegistry: startAsyncGauges() called "
-                                 "before start(); no gauges registered";
+                              << (phase_ == Phase::Stopped ? "after stop()" : "twice")
+                              << "; ignored";
         return;
     }
+
+    // The pipeline failed to build: the meter is a no-op, so registering
+    // gauges on it would only log a success that is not one.
+    if (!provider_)
+    {
+        JLOG(journal_.warn()) << "MetricsRegistry: startAsyncGauges() without a pipeline; "
+                                 "no gauges registered";
+        return;
+    }
+    phase_ = Phase::GaugesArmed;
 
     registerAsyncGauges();
 
@@ -257,7 +304,7 @@ MetricsRegistry::startAsyncGauges()
 
 #ifdef XRPL_ENABLE_TELEMETRY
 void
-MetricsRegistry::initExporterAndProvider(StartOptions const& options)
+MetricsRegistry::initExporterAndProvider(Options const& options)
 {
     // Configure OTLP/HTTP metric exporter. The TLS settings come from the one
     // [telemetry] block that also drives the trace exporter in Telemetry.cpp,
@@ -357,7 +404,7 @@ MetricsRegistry::initExporterAndProvider(StartOptions const& options)
     provider_->AddMetricReader(std::move(reader));
 
     // Get a meter for all xrpld instruments.
-    meter_ = provider_->GetMeter("xrpld", "1.0.0");
+    meter_ = provider_->GetMeter(std::string(kMeterName), std::string(kMeterVersion));
 }
 
 void
@@ -415,6 +462,9 @@ void
 MetricsRegistry::stop()
 {
 #ifdef XRPL_ENABLE_TELEMETRY
+    // Idempotent: the destructor calls this after run() or the Application
+    // destructor already did.
+    phase_ = Phase::Stopped;
     if (!provider_)
         return;
 
