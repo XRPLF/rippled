@@ -1460,7 +1460,7 @@ ApplicationImp::setup(boost::program_options::variables_map const& cmdline)
     // xrpl.node.id always carries the node public key. Unlike
     // service_instance_id it is not configurable, so traces and metrics keep a
     // stable per-node key whatever [telemetry] says.
-    telemetry_->setNodeId(toBase58(TokenType::NodePublic, nodeIdentity_->first));
+    telemetry_->setNodeId(toBase58(TokenType::NodePublic, nodeIdentity_.first));
 
     // Start tracing here, not in start(). Spans are emitted during the rest of
     // setup() — the first consensus round in beginConsensus() below — and are
