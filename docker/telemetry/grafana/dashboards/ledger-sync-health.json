@@ -5180,7 +5180,7 @@
         "type": "prometheus",
         "uid": "${DS_PROMETHEUS}"
       },
-      "description": "###### What this is:\n*Median and 95th-percentile consensus round duration, from the same native histogram as the heatmap beside it.*\n\n###### How it's computed:\n*Quantiles over the consensus_round_duration_ms buckets. The heatmap shows the whole shape; these two lines are the trend an alert can be written against.*\n\n###### Reading it:\n*P50 is the typical round and should sit near the network's close interval. The gap between P50 and P95 is the tail: a small gap means rounds are uniform, a wide one means some rounds are much slower than the rest.*\n\n###### Healthy range:\n*P50 around 3-4 s, P95 within a couple of seconds of it.*\n\n###### Watch for:\n*P95 climbing while P50 stays flat \u2014 a minority of rounds are stalling, which is the early form of the problem the heatmap shows later as a second band. Both rising together is the whole network slowing rather than this node.*\n\n###### Keywords:\n- **Consensus round duration** *(per node)* \u2014 wall-clock time from the start of a consensus round to its accepted ledger, as this node measured it.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Computed in xrpld code (call-site metric macro, OpenTelemetry SDK) and exported as a metric; the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[RCLConsensus.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/app/consensus/RCLConsensus.cpp)\n\n###### Function:\n`RCLConsensus::Adaptor::makeAcceptSpan`\n\n###### References:\n[Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#consensus-round-duration)",
+      "description": "###### What this is:\n*p95 wall-clock seconds spent in each online-delete rotation phase, broken down by `stage`. Recorded from `SHAMapStoreImp::RotationPhase`'s destructor at the end of every rotation phase.*\n\n###### What to look for:\n* `freshen.keys` p95 in seconds means the tree-node cache mutex was held across a `getKeys()` copy for that long \u2014 every SHAMap fetch during that window waited.\n* `copy` p95 approaching the rotation cadence means the state-map walk is no longer converging inside its own interval.\n\n###### Source:\n`SHAMapStoreImp.cpp` \u2014 `SHAMapStoreImp::run` and `RotationPhase`\n\n###### Keywords:\nRotation phase duration, online-delete, freshen.keys, rotation stall",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -5190,7 +5190,7 @@
             "axisBorderShow": false,
             "axisCenteredZero": false,
             "axisColorMode": "text",
-            "axisLabel": "Round duration",
+            "axisLabel": "Phase duration (s)",
             "axisPlacement": "auto",
             "barAlignment": 0,
             "barWidthFactor": 0.6,
@@ -5280,7 +5280,7 @@
         "type": "prometheus",
         "uid": "${DS_PROMETHEUS}"
       },
-      "description": "###### What this is:\n*Median and 95th-percentile consensus round duration, from the same native histogram as the heatmap beside it.*\n\n###### How it's computed:\n*Quantiles over the consensus_round_duration_ms buckets. The heatmap shows the whole shape; these two lines are the trend an alert can be written against.*\n\n###### Reading it:\n*P50 is the typical round and should sit near the network's close interval. The gap between P50 and P95 is the tail: a small gap means rounds are uniform, a wide one means some rounds are much slower than the rest.*\n\n###### Healthy range:\n*P50 around 3-4 s, P95 within a couple of seconds of it.*\n\n###### Watch for:\n*P95 climbing while P50 stays flat \u2014 a minority of rounds are stalling, which is the early form of the problem the heatmap shows later as a second band. Both rising together is the whole network slowing rather than this node.*\n\n###### Keywords:\n- **Consensus round duration** *(per node)* \u2014 wall-clock time from the start of a consensus round to its accepted ledger, as this node measured it.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Computed in xrpld code (call-site metric macro, OpenTelemetry SDK) and exported as a metric; the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[RCLConsensus.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/app/consensus/RCLConsensus.cpp)\n\n###### Function:\n`RCLConsensus::Adaptor::makeAcceptSpan`\n\n###### References:\n[Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#consensus-round-duration)",
+      "description": "###### What this is:\n*Longest single hold of a `TaggedCache::mutex_` since the previous collection tick, in microseconds. One series each for the tree-node cache and the FullBelow cache, observed on the `cache_metrics` gauge.*\n\n###### What to look for:\n* A multi-second peak in `treenode_lock_hold_peak_us` is the mutex hold that froze every SHAMap fetch job.\n* Correlate with the `nodestore.rotate.freshen.keys` span and the `rotating` log line \u2014 a rotation is the usual cause.\n\n###### Source:\n`TaggedCache.ipp` \u2014 `noteLockHold`, `takeLockHoldPeak`; observed by `MetricsRegistry::observeCacheLockHoldPeaks`\n\n###### Keywords:\nTaggedCache lock hold, TreeNodeCache, FullBelowCache, rotation stall",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -5290,7 +5290,7 @@
             "axisBorderShow": false,
             "axisCenteredZero": false,
             "axisColorMode": "text",
-            "axisLabel": "Round duration",
+            "axisLabel": "Lock hold (us)",
             "axisPlacement": "auto",
             "barAlignment": 0,
             "barWidthFactor": 0.6,

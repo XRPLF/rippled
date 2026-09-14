@@ -3,6 +3,7 @@
 
 #include <xrpld/app/ledger/TransactionMaster.h>
 #include <xrpld/app/misc/SHAMapStore.h>
+#include <xrpld/app/misc/SHAMapStoreSpanNames.h>
 #include <xrpld/app/rdb/backend/SQLiteDatabase.h>
 #include <xrpld/core/Config.h>
 #include <xrpld/telemetry/MetricMacros.h>
@@ -34,6 +35,8 @@
 #include <xrpl/server/State.h>
 #include <xrpl/shamap/SHAMapMissingNode.h>
 #include <xrpl/shamap/SHAMapTreeNode.h>
+#include <xrpl/telemetry/SpanGuard.h>
+#include <xrpl/telemetry/SpanNames.h>
 
 #include <boost/algorithm/string/predicate.hpp>
 
@@ -440,7 +443,8 @@ SHAMapStoreImp::run()
                     rotating = false;
                 }
             };
-            RotationOutcome outcome{rotateSpan, rotating_, std::nullopt};
+            RotationOutcome outcome{
+                .span = rotateSpan, .rotating = rotating_, .exit = std::nullopt};
             rotating_ = true;
 
             auto const exitFor = [](HealthResult r) {
@@ -456,7 +460,7 @@ SHAMapStoreImp::run()
                                   << "s. Complete ledgers: " << ledgerMaster_->getCompleteLedgers();
 
             {
-                RotationPhase phase(*this, ns::phase::clearPrior, lv::clearPrior);
+                RotationPhase const phase(*this, ns::phase::clearPrior, lv::clearPrior);
                 clearPrior(lastRotated);
             }
             if (auto const r = healthWait(); r != HealthResult::KeepGoing)
@@ -529,13 +533,13 @@ SHAMapStoreImp::run()
 
             JLOG(journal_.trace()) << "Making a new backend";
             auto newBackend = [&] {
-                RotationPhase phase(*this, ns::phase::newBackend, lv::newBackend);
+                RotationPhase const phase(*this, ns::phase::newBackend, lv::newBackend);
                 return makeBackendRotating();
             }();
             JLOG(journal_.debug()) << validatedSeq << " new backend " << newBackend->getName();
 
             {
-                RotationPhase phase(*this, ns::phase::clearCaches, lv::clearCaches);
+                RotationPhase const phase(*this, ns::phase::clearCaches, lv::clearCaches);
                 clearCaches(validatedSeq);
             }
             if (auto const r = healthWait(); r != HealthResult::KeepGoing)

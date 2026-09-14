@@ -22,17 +22,20 @@
 #include <xrpl/shamap/SHAMapTreeNode.h>
 #include <xrpl/shamap/TreeNodeCache.h>
 #include <xrpl/telemetry/SpanGuard.h>
+#include <xrpl/telemetry/SpanNames.h>
 
 #include <algorithm>
 #include <atomic>
 #include <chrono>
 #include <condition_variable>
+#include <cstddef>
 #include <cstdint>
 #include <functional>
 #include <memory>
 #include <mutex>
 #include <optional>
 #include <string>
+#include <string_view>
 #include <thread>
 
 namespace xrpl {
@@ -223,7 +226,9 @@ private:
 
         ~RotationPhase()
         {
-            auto const seconds =
+            // [[maybe_unused]] so a -DXRPL_ENABLE_TELEMETRY=0 build (macro
+            // expands to `do {} while (false)`) keeps compiling under -Werror.
+            [[maybe_unused]] auto const seconds =
                 std::chrono::duration<double>(std::chrono::steady_clock::now() - start_).count();
             XRPL_METRIC_HISTOGRAM_RECORD_LABELED(
                 owner_.app_,

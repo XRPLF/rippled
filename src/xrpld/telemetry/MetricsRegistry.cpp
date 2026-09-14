@@ -838,7 +838,7 @@ MetricsRegistry::registerCacheHitRateGauge()
 
                 // Longest TaggedCache mutex hold since the last tick.
                 // Split out to keep this callback under the 80-line limit.
-                self->observeCacheLockHoldPeaks(result, app);
+                MetricsRegistry::observeCacheLockHoldPeaks(result, app);
             }
             catch (...)  // NOLINT(bugprone-empty-catch)
             {
@@ -851,7 +851,7 @@ MetricsRegistry::registerCacheHitRateGauge()
 void
 MetricsRegistry::observeCacheLockHoldPeaks(
     opentelemetry::metrics::ObserverResult& result,
-    ServiceRegistry& app) const
+    ServiceRegistry& app)
 {
     auto const tnPeak = app.getNodeFamily().getTreeNodeCache()->takeLockHoldPeak();
     opentelemetry::nostd::get<

@@ -172,6 +172,7 @@
 #ifdef XRPL_ENABLE_TELEMETRY
 #include <opentelemetry/metrics/meter.h>
 #include <opentelemetry/metrics/meter_provider.h>
+#include <opentelemetry/metrics/observer_result.h>
 #include <opentelemetry/nostd/shared_ptr.h>
 #include <opentelemetry/nostd/unique_ptr.h>
 #include <opentelemetry/sdk/metrics/meter_provider.h>
@@ -1295,11 +1296,11 @@ private:
     /**
      * Observe the two TaggedCache lock-hold peaks onto the cache_metrics
      * gauge. Split out to keep registerCacheHitRateGauge's callback under
-     * the 80-line limit.
+     * the 80-line limit. Static because it touches neither instance state
+     * nor telemetry members — it reads through the passed app reference.
      */
-    void
-    observeCacheLockHoldPeaks(opentelemetry::metrics::ObserverResult& result, ServiceRegistry& app)
-        const;
+    static void
+    observeCacheLockHoldPeaks(opentelemetry::metrics::ObserverResult& result, ServiceRegistry& app);
     void
     registerTxqGauge();
     void
