@@ -1,17 +1,33 @@
 #include <tools/validator-keys/ListSigning.h>
 
 #include <xrpl/basics/FileUtilities.h>
+#include <xrpl/basics/Slice.h>
 #include <xrpl/basics/StringUtilities.h>
 #include <xrpl/basics/base64.h>
 #include <xrpl/basics/chrono.h>
+#include <xrpl/basics/strHex.h>
+#include <xrpl/json/json_forwards.h>
 #include <xrpl/json/json_reader.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/protocol/PublicKey.h>
+#include <xrpl/protocol/SecretKey.h>
 #include <xrpl/protocol/jss.h>
+#include <xrpl/server/Manifest.h>
 
 #include <boost/algorithm/string.hpp>
 
 #include <algorithm>
 #include <chrono>
+#include <cstddef>
+#include <cstdint>
+#include <filesystem>
+#include <optional>
 #include <set>
+#include <stdexcept>
+#include <string>
+#include <system_error>
+#include <utility>
+#include <vector>
 
 namespace xrpl {
 
@@ -98,7 +114,7 @@ checkedList(std::string canonical, json::Value const& jv)
         if (!effective)
             throw std::runtime_error(integerError(jss::effective, 0));
         if (*effective >= list.expiration)
-            throw std::runtime_error("\"effective\" must be earlier than \"expiration\"");
+            throw std::runtime_error(R"("effective" must be earlier than "expiration")");
         list.effective = effective;
     }
 
@@ -115,8 +131,10 @@ checkedList(std::string canonical, json::Value const& jv)
         auto const keyText = entry[jss::validation_public_key].asString();
         auto const key = parseHexKey(keyText);
         if (!key)
+        {
             throw std::runtime_error(
                 "\"validation_public_key\" is not a hex public key: " + keyText);
+        }
 
         if (entry.isMember(jss::manifest))
         {
@@ -129,8 +147,7 @@ checkedList(std::string canonical, json::Value const& jv)
                 throw std::runtime_error("\"manifest\" belongs to another key than " + keyText);
         }
 
-        if (std::find(list.validators.begin(), list.validators.end(), *key) !=
-            list.validators.end())
+        if (std::ranges::find(list.validators, *key) != list.validators.end())
             throw std::runtime_error("\"validators\" lists " + keyText + " more than once");
         list.validators.push_back(*key);
     }
@@ -195,11 +212,17 @@ canonicalJson(std::string const& text)
         {
             out += c;
             if (escaped)
+            {
                 escaped = false;
+            }
             else if (c == '\\')
+            {
                 escaped = true;
+            }
             else if (c == '"')
+            {
                 inString = false;
+            }
             continue;
         }
         if (c == '/' && i + 1 < text.size() && text[i + 1] == '/')
@@ -290,16 +313,20 @@ makeSignedList(
             !boost::iequals(existing[jss::public_key].asString(), strHex(masterKey)))
             throw std::runtime_error("The list to append to belongs to another master key");
         if (existing[jss::blobs_v2].size() >= kMaxBlobs)
+        {
             throw std::runtime_error(
                 "The list to append to already holds " + std::to_string(kMaxBlobs) + " blobs");
+        }
 
         jv[jss::blobs_v2] = existing[jss::blobs_v2];
         if (existing[jss::manifest].asString() != manifestBase64)
         {
             if (!resign)
+            {
                 throw std::runtime_error(
                     "The list to append to was signed under another manifest and its blobs "
                     "need signing again");
+            }
             for (auto& entry : jv[jss::blobs_v2])
             {
                 if (!entry.isObject() || !entry.isMember(jss::blob) || !entry[jss::blob].isString())
@@ -373,7 +400,7 @@ verifyList(
     if (!list.isMember(jss::public_key) || !list[jss::public_key].isString() ||
         !list.isMember(jss::manifest) || !list[jss::manifest].isString())
     {
-        fail("\"public_key\" and \"manifest\" must be strings");
+        fail(R"("public_key" and "manifest" must be strings)");
         return report;
     }
 
@@ -414,10 +441,13 @@ verifyList(
             !list.isMember(jss::signature) || !list[jss::signature].isString() ||
             list.isMember(jss::blobs_v2))
         {
-            fail("a version 1 list needs \"blob\" and \"signature\" and no \"blobs_v2\"");
+            fail(R"(a version 1 list needs "blob" and "signature" and no "blobs_v2")");
             return report;
         }
-        entries.push_back({list[jss::blob].asString(), list[jss::signature].asString(), {}});
+        entries.push_back(
+            {.blob = list[jss::blob].asString(),
+             .signature = list[jss::signature].asString(),
+             .manifest = {}});
     }
     else
     {
@@ -427,7 +457,7 @@ verifyList(
         {
             fail(
                 "a version 2 list needs 1 to " + std::to_string(kMaxBlobs) +
-                " \"blobs_v2\" entries and no top-level \"blob\"");
+                R"( "blobs_v2" entries and no top-level "blob")");
             return report;
         }
         for (auto const& entry : list[jss::blobs_v2])
@@ -445,7 +475,9 @@ verifyList(
             if (entry.isMember(jss::manifest))
                 entryManifest = entry[jss::manifest].asString();
             entries.push_back(
-                {entry[jss::blob].asString(), entry[jss::signature].asString(), entryManifest});
+                {.blob = entry[jss::blob].asString(),
+                 .signature = entry[jss::signature].asString(),
+                 .manifest = entryManifest});
         }
     }
 
@@ -466,11 +498,17 @@ verifyList(
         {
             auto m = parseManifest(*entry.manifest);
             if (!m || m->masterKey != manifest->masterKey)
+            {
                 fail(where + ": its \"manifest\" is not this publisher's");
+            }
             else if (m->revoked() || !m->signingKey)
+            {
                 fail(where + ": its \"manifest\" revokes the publisher's master key");
+            }
             else if (m->sequence > manifest->sequence)
+            {
                 manifest = std::move(m);
+            }
         }
 
         auto const sig = strUnHex(entry.signature);

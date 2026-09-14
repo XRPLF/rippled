@@ -1,19 +1,43 @@
 #include <tools/validator-keys/SigningKeys.h>
 
+#include <xrpl/basics/Blob.h>
 #include <xrpl/basics/FileUtilities.h>
+#include <xrpl/basics/Slice.h>
 #include <xrpl/basics/StringUtilities.h>
 #include <xrpl/basics/base64.h>
+#include <xrpl/basics/strHex.h>
+#include <xrpl/json/json_forwards.h>
 #include <xrpl/json/json_reader.h>
+#include <xrpl/json/json_value.h>
 #include <xrpl/json/to_string.h>
 #include <xrpl/protocol/HashPrefix.h>
+#include <xrpl/protocol/KeyType.h>
+#include <xrpl/protocol/PublicKey.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STObject.h>
+#include <xrpl/protocol/SecretKey.h>
+#include <xrpl/protocol/Seed.h>
 #include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/Sign.h>
+#include <xrpl/protocol/tokens.h>
+#include <xrpl/server/Manifest.h>
 
 #include <boost/algorithm/string.hpp>
 
+#include <algorithm>
 #include <array>
+#include <cstddef>
+#include <cstdint>
+#include <filesystem>
 #include <fstream>
+#include <ios>
 #include <limits>
+#include <optional>
+#include <stdexcept>
+#include <string>
+#include <system_error>
+#include <utility>
+#include <vector>
 
 namespace xrpl {
 
@@ -36,13 +60,13 @@ sameSecret(SecretKey const& a, SecretKey const& b)
 }
 
 // The bytes both the signing key and the master key sign.
-std::string
-signingData(STObject const& st)
+Blob
+signingBytes(STObject const& st)
 {
     Serializer s;
     s.add32(HashPrefix::Manifest);
     st.addWithoutSigningFields(s);
-    return strHex(s.peekData());
+    return s.peekData();
 }
 
 }  // namespace
@@ -99,16 +123,19 @@ SigningKeys::operator==(SigningKeys const& rhs) const
         return false;
     if (!pending_)
         return true;
-    if (pending_->keyType != rhs.pending_->keyType ||
-        pending_->signer.index() != rhs.pending_->signer.index())
+    auto const& pending = *pending_;
+    auto const& other = *rhs.pending_;
+    if (pending.signingKey != other.signingKey ||
+        pending.generated.has_value() != other.generated.has_value())
         return false;
-    if (auto const* secret = std::get_if<SecretKey>(&pending_->signer))
-        return sameSecret(*secret, std::get<SecretKey>(rhs.pending_->signer));
-    return std::get<PublicKey>(pending_->signer) == std::get<PublicKey>(rhs.pending_->signer);
+    if (!pending.generated || !other.generated)
+        return true;
+    return pending.generated->keyType == other.generated->keyType &&
+        sameSecret(pending.generated->secretKey, other.generated->secretKey);
 }
 
 SigningKeys
-SigningKeys::make_SigningKeys(std::filesystem::path const& keyFile)
+SigningKeys::makeSigningKeys(std::filesystem::path const& keyFile)
 {
     std::error_code ec;
     auto const text = getFileContents(ec, keyFile, kMaxKeyFileBytes);
@@ -126,8 +153,10 @@ SigningKeys::make_SigningKeys(std::filesystem::path const& keyFile)
     for (auto const* field : kRequiredFields)
     {
         if (!jKeys.isMember(field))
+        {
             throw std::runtime_error(
                 "Key file '" + keyFile.string() + "' is missing \"" + field + "\" field");
+        }
     }
 
     auto const invalidField = [&keyFile, &jKeys](std::string const& field) {
@@ -153,16 +182,20 @@ SigningKeys::make_SigningKeys(std::filesystem::path const& keyFile)
         if (jKeys["secret_key"].asString() == "external")
         {
             if (!jKeys.isMember("public_key"))
+            {
                 throw std::runtime_error(
                     "Key file '" + keyFile.string() + "' is missing \"public_key\" field");
+            }
             auto const pubKey =
                 parseBase58<PublicKey>(TokenType::NodePublic, jKeys["public_key"].asString());
             if (!pubKey)
                 throw invalidField("public_key");
             if (*keyType != *publicKeyType(*pubKey))
+            {
                 throw std::runtime_error(
                     "Key file '" + keyFile.string() +
-                    "' has a \"key_type\" that does not match \"public_key\"");
+                    R"(' has a "key_type" that does not match "public_key")");
+            }
             return SigningKeys(*keyType, *pubKey, tokenSequence, revoked);
         }
         auto const secret =
@@ -195,25 +228,30 @@ SigningKeys::make_SigningKeys(std::filesystem::path const& keyFile)
     if (hasSecret || hasSigningKey)
     {
         if (hasSecret && hasSigningKey)
+        {
             throw std::runtime_error(
                 "Key file '" + keyFile.string() +
-                "' has both \"pending_token_secret\" and \"pending_signing_key\"");
-        if (!jKeys.isMember("pending_key_type"))
-            throw std::runtime_error(
-                "Key file '" + keyFile.string() + "' is missing \"pending_key_type\" field");
-        auto const pendingKeyType = keyTypeFromString(jKeys["pending_key_type"].asString());
-        if (!pendingKeyType)
-            throw invalidField("pending_key_type");
-
+                R"(' has both "pending_token_secret" and "pending_signing_key")");
+        }
         if (hasSecret)
         {
+            if (!jKeys.isMember("pending_key_type"))
+            {
+                throw std::runtime_error(
+                    "Key file '" + keyFile.string() + "' is missing \"pending_key_type\" field");
+            }
+            auto const pendingKeyType = keyTypeFromString(jKeys["pending_key_type"].asString());
+            if (!pendingKeyType)
+                throw invalidField("pending_key_type");
             if (!jKeys["pending_token_secret"].isString())
                 throw invalidField("pending_token_secret");
             auto const secret = parseBase58<SecretKey>(
                 TokenType::NodePrivate, jKeys["pending_token_secret"].asString());
             if (!secret)
                 throw invalidField("pending_token_secret");
-            keys.pending_ = Pending{*pendingKeyType, *secret};
+            keys.pending_ = Pending{
+                .signingKey = derivePublicKey(*pendingKeyType, *secret),
+                .generated = GeneratedKey{.keyType = *pendingKeyType, .secretKey = *secret}};
         }
         else
         {
@@ -223,7 +261,7 @@ SigningKeys::make_SigningKeys(std::filesystem::path const& keyFile)
                 TokenType::NodePublic, jKeys["pending_signing_key"].asString());
             if (!signingKey)
                 throw invalidField("pending_signing_key");
-            keys.pending_ = Pending{*pendingKeyType, *signingKey};
+            keys.pending_ = Pending{.signingKey = *signingKey, .generated = std::nullopt};
         }
     }
 
@@ -248,12 +286,15 @@ SigningKeys::writeToFile(std::filesystem::path const& keyFile) const
         jv["manifest"] = strHex(makeSlice(manifest_));
     if (pending_)
     {
-        jv["pending_key_type"] = to_string(pending_->keyType);
-        if (auto const* secret = std::get_if<SecretKey>(&pending_->signer))
-            jv["pending_token_secret"] = toBase58(TokenType::NodePrivate, *secret);
+        if (auto const& generated = pending_->generated)
+        {
+            jv["pending_key_type"] = to_string(generated->keyType);
+            jv["pending_token_secret"] = toBase58(TokenType::NodePrivate, generated->secretKey);
+        }
         else
-            jv["pending_signing_key"] =
-                toBase58(TokenType::NodePublic, std::get<PublicKey>(pending_->signer));
+        {
+            jv["pending_signing_key"] = toBase58(TokenType::NodePublic, pending_->signingKey);
+        }
     }
 
     std::error_code ec;
@@ -337,22 +378,31 @@ SigningKeys::storeManifest(STObject const& st)
 std::string
 SigningKeys::startToken(KeyType const& keyType, std::optional<PublicKey> const& externalSigningKey)
 {
+    if (externalSigningKey)
+    {
+        if (*externalSigningKey == keys_.publicKey)
+            throw std::runtime_error("The signing key must differ from the master key");
+        return strHex(
+            startPending(Pending{.signingKey = *externalSigningKey, .generated = std::nullopt}));
+    }
+
+    auto const secret = generateSecretKey(keyType, randomSeed());
+    return strHex(startPending(
+        Pending{
+            .signingKey = derivePublicKey(keyType, secret),
+            .generated = GeneratedKey{.keyType = keyType, .secretKey = secret}}));
+}
+
+Blob
+SigningKeys::startPending(Pending const& pending)
+{
     if (revoked_)
         throw std::runtime_error(kRevokedError);
     if (tokenSequence_ >= std::numeric_limits<std::uint32_t>::max() - 1)
         throw std::runtime_error(kExhaustedError);
 
-    if (externalSigningKey)
-    {
-        if (*externalSigningKey == keys_.publicKey)
-            throw std::runtime_error("The signing key must differ from the master key");
-        pending_ = Pending{*publicKeyType(*externalSigningKey), *externalSigningKey};
-        return signingData(partialManifest(tokenSequence_ + 1, *externalSigningKey));
-    }
-
-    auto const secret = generateSecretKey(keyType, randomSeed());
-    pending_ = Pending{keyType, secret};
-    return signingData(partialManifest(tokenSequence_ + 1, derivePublicKey(keyType, secret)));
+    pending_ = pending;
+    return signingBytes(partialManifest(tokenSequence_ + 1, pending.signingKey));
 }
 
 SigningKeys::Finished
@@ -365,28 +415,34 @@ SigningKeys::finishToken(Blob const& masterSig, std::optional<Blob> const& signi
 
     auto const pending = *pending_;
     std::optional<SecretKey> secret;
-    PublicKey signingKey = [&] {
-        if (auto const* s = std::get_if<SecretKey>(&pending.signer))
-        {
-            secret = *s;
-            return derivePublicKey(pending.keyType, *s);
-        }
-        return std::get<PublicKey>(pending.signer);
-    }();
+    if (pending.generated)
+        secret = pending.generated->secretKey;
+    return Finished{.manifest = finishPending(pending, masterSig, signingSig), .secret = secret};
+}
 
-    STObject st = partialManifest(tokenSequence_ + 1, signingKey);
-    if (secret)
+std::string
+SigningKeys::finishPending(
+    Pending const& pending,
+    Blob const& masterSig,
+    std::optional<Blob> const& signingSig)
+{
+    STObject st = partialManifest(tokenSequence_ + 1, pending.signingKey);
+    if (auto const& generated = pending.generated)
     {
         if (signingSig)
+        {
             throw std::runtime_error(
                 "The pending token's signing key is in this key file; pass one signature");
-        xrpl::sign(st, HashPrefix::Manifest, pending.keyType, *secret);
+        }
+        xrpl::sign(st, HashPrefix::Manifest, generated->keyType, generated->secretKey);
     }
     else
     {
         if (!signingSig)
+        {
             throw std::runtime_error(
                 "The pending token's signing key is external; pass its signature too");
+        }
         st[sfSignature] = makeSlice(*signingSig);
     }
     st[sfMasterSignature] = makeSlice(masterSig);
@@ -395,7 +451,7 @@ SigningKeys::finishToken(Blob const& masterSig, std::optional<Blob> const& signi
     ++tokenSequence_;
     pending_.reset();
 
-    return Finished{base64Encode(manifest_.data(), manifest_.size()), secret};
+    return base64Encode(manifest_.data(), manifest_.size());
 }
 
 ValidatorToken
@@ -404,15 +460,20 @@ SigningKeys::createToken(KeyType const& keyType)
     if (!keys_.secretKey)
         throw std::runtime_error("This key file cannot be used to sign tokens.");
 
-    auto const data = startToken(keyType);
-    auto const finished = finishToken(*strUnHex(signHex(data)));
-    return ValidatorToken{finished.manifest, *finished.secret};
+    auto const secret = generateSecretKey(keyType, randomSeed());
+    Pending const pending{
+        .signingKey = derivePublicKey(keyType, secret),
+        .generated = GeneratedKey{.keyType = keyType, .secretKey = secret}};
+    auto const data = startPending(pending);
+    return ValidatorToken{
+        .manifest = finishPending(pending, masterSign(makeSlice(data)), std::nullopt),
+        .validationSecret = secret};
 }
 
 std::string
 SigningKeys::startRevoke() const
 {
-    return signingData(partialRevocation());
+    return strHex(signingBytes(partialRevocation()));
 }
 
 std::string
@@ -442,29 +503,33 @@ SigningKeys::revoke()
     if (!keys_.secretKey)
         throw std::runtime_error("This key file cannot be used to sign tokens.");
 
-    return finishRevoke(*strUnHex(signHex(startRevoke())));
+    return finishRevoke(masterSign(makeSlice(signingBytes(partialRevocation()))));
+}
+
+Blob
+SigningKeys::masterSign(Slice const& data) const
+{
+    if (!keys_.secretKey)
+        throw std::runtime_error(kNoSecretError);
+
+    auto const sig = xrpl::sign(keys_.publicKey, *keys_.secretKey, data);
+    return Blob(sig.begin(), sig.end());
 }
 
 std::string
 SigningKeys::sign(std::string const& data) const
 {
-    if (!keys_.secretKey)
-        throw std::runtime_error(kNoSecretError);
-
-    return strHex(xrpl::sign(keys_.publicKey, *keys_.secretKey, makeSlice(data)));
+    return strHex(masterSign(makeSlice(data)));
 }
 
 std::string
 SigningKeys::signHex(std::string data) const
 {
-    if (!keys_.secretKey)
-        throw std::runtime_error(kNoSecretError);
-
     boost::algorithm::trim(data);
     auto const blob = strUnHex(data);
     if (!blob)
         throw std::runtime_error("Could not decode hex string: " + data);
-    return strHex(xrpl::sign(keys_.publicKey, *keys_.secretKey, makeSlice(*blob)));
+    return strHex(masterSign(makeSlice(*blob)));
 }
 
 std::string
@@ -478,8 +543,10 @@ void
 SigningKeys::domain(std::string d)
 {
     if (!d.empty() && !isProperlyFormedTomlDomain(d))
+    {
         throw std::runtime_error(
             "The domain field must use the '[host.][subdomain.]domain.tld' format");
+    }
 
     domain_ = std::move(d);
 }

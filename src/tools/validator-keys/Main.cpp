@@ -1,12 +1,20 @@
+#include <xrpl/basics/Slice.h>
+#include <xrpl/basics/StringUtilities.h>
 #include <xrpl/protocol/KeyType.h>
+#include <xrpl/protocol/PublicKey.h>
+#include <xrpl/protocol/tokens.h>
 
 #include <boost/program_options.hpp>
 
 #include <tools/validator-keys/Commands.h>
 
 #include <cstdlib>
+#include <exception>
 #include <filesystem>
 #include <iostream>
+#include <stdexcept>
+#include <string>
+#include <vector>
 
 // LCOV_EXCL_START
 namespace {
@@ -130,13 +138,13 @@ main(int argc, char** argv)
         return EXIT_FAILURE;
     }
 
-    if (vm.count("version"))
+    if (vm.contains("version"))
     {
         std::cout << "validator-keys version " << getVersionString() << std::endl;
         return EXIT_SUCCESS;
     }
 
-    if (vm.count("help") || !vm.count("command"))
+    if (vm.contains("help") || !vm.contains("command"))
     {
         printHelp(general);
         return EXIT_SUCCESS;
@@ -150,31 +158,33 @@ main(int argc, char** argv)
     try
     {
         ToolOptions options;
-        options.keyFile = vm.count("keyfile") ? vm["keyfile"].as<std::string>() : defaultKeyFile;
+        options.keyFile = vm.contains("keyfile") ? vm["keyfile"].as<std::string>() : defaultKeyFile;
 
-        if (vm.count("token-key-type"))
+        if (vm.contains("token-key-type"))
         {
             auto const keyType = xrpl::keyTypeFromString(vm["token-key-type"].as<std::string>());
             if (!keyType)
+            {
                 throw std::runtime_error(
                     "Unknown key type: " + vm["token-key-type"].as<std::string>());
+            }
             options.tokenKeyType = *keyType;
         }
-        if (vm.count("signing-key"))
+        if (vm.contains("signing-key"))
             options.signingKey = publicKeyOption(vm["signing-key"].as<std::string>());
-        if (vm.count("token-file"))
+        if (vm.contains("token-file"))
             options.tokenFile = vm["token-file"].as<std::string>();
-        if (vm.count("manifest-file"))
+        if (vm.contains("manifest-file"))
             options.manifestFile = vm["manifest-file"].as<std::string>();
-        if (vm.count("out"))
+        if (vm.contains("out"))
             options.outFile = vm["out"].as<std::string>();
-        if (vm.count("list-version"))
+        if (vm.contains("list-version"))
             options.listVersion = vm["list-version"].as<unsigned>();
-        if (vm.count("append"))
+        if (vm.contains("append"))
             options.appendFile = vm["append"].as<std::string>();
-        if (vm.count("validators"))
+        if (vm.contains("validators"))
             options.validatorsFile = vm["validators"].as<std::string>();
-        if (vm.count("expected-key"))
+        if (vm.contains("expected-key"))
             options.expectedKey = publicKeyOption(vm["expected-key"].as<std::string>());
 
         return runCommand(

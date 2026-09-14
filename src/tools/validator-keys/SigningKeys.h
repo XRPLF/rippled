@@ -1,6 +1,7 @@
 #pragma once
 
 #include <xrpl/basics/Blob.h>
+#include <xrpl/basics/Slice.h>
 #include <xrpl/protocol/KeyType.h>
 #include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/STObject.h>
@@ -11,7 +12,6 @@
 #include <filesystem>
 #include <optional>
 #include <string>
-#include <variant>
 #include <vector>
 
 namespace xrpl {
@@ -54,13 +54,19 @@ private:
         }
     };
 
-    // A token started and not yet finished: the key type of its signing key
-    // and either that key's secret, generated here, or its public key when an
-    // external signer holds it.
-    struct Pending
+    // A signing key generated here, kept until its token is finished.
+    struct GeneratedKey
     {
         KeyType keyType;
-        std::variant<SecretKey, PublicKey> signer;
+        SecretKey secretKey;
+    };
+
+    // A token started and not yet finished: its signing key and, unless an
+    // external signer holds that key, the key generated here.
+    struct Pending
+    {
+        PublicKey signingKey;
+        std::optional<GeneratedKey> generated;
     };
 
     KeyType const keyType_;
@@ -110,7 +116,7 @@ public:
      *         manifest is not a valid manifest for this key
      */
     static SigningKeys
-    make_SigningKeys(std::filesystem::path const& keyFile);
+    makeSigningKeys(std::filesystem::path const& keyFile);
 
     ~SigningKeys() = default;
     SigningKeys(SigningKeys const&) = default;
@@ -172,7 +178,7 @@ public:
     /**
      * Returns the bytes a master signature over a revocation covers, as hex.
      */
-    std::string
+    [[nodiscard]] std::string
     startRevoke() const;
 
     /**
@@ -198,7 +204,7 @@ public:
      *
      * @throws std::runtime_error if the master key is external
      */
-    std::string
+    [[nodiscard]] std::string
     sign(std::string const& data) const;
 
     /**
@@ -209,16 +215,16 @@ public:
      * @throws std::runtime_error if the data is not hex or the master key is
      *         external
      */
-    std::string
+    [[nodiscard]] std::string
     signHex(std::string data) const;
 
     /**
      * The string a domain attestation signs, for the domain of this key.
      */
-    std::string
+    [[nodiscard]] std::string
     attestationData() const;
 
-    PublicKey const&
+    [[nodiscard]] PublicKey const&
     publicKey() const
     {
         return keys_.publicKey;
@@ -227,19 +233,19 @@ public:
     /**
      * True when the master secret is in the key file.
      */
-    bool
+    [[nodiscard]] bool
     hasSecret() const
     {
         return keys_.secretKey.has_value();
     }
 
-    bool
+    [[nodiscard]] bool
     revoked() const
     {
         return revoked_;
     }
 
-    std::string const&
+    [[nodiscard]] std::string const&
     domain() const
     {
         return domain_;
@@ -256,24 +262,49 @@ public:
     /**
      * The last manifest generated, serialized; empty if none.
      */
-    std::vector<std::uint8_t> const&
+    [[nodiscard]] std::vector<std::uint8_t> const&
     manifest() const
     {
         return manifest_;
     }
 
-    std::uint32_t
+    [[nodiscard]] std::uint32_t
     sequence() const
     {
         return tokenSequence_;
     }
 
 private:
-    STObject
+    [[nodiscard]] STObject
     partialManifest(std::uint32_t sequence, PublicKey const& signingKey) const;
 
-    STObject
+    [[nodiscard]] STObject
     partialRevocation() const;
+
+    /**
+     * Fixes the next manifest for @p pending and returns the bytes both its
+     * signatures cover.
+     */
+    Blob
+    startPending(Pending const& pending);
+
+    /**
+     * Assembles and stores the manifest of @p pending from its signatures and
+     * returns it as base64.
+     */
+    std::string
+    finishPending(
+        Pending const& pending,
+        Blob const& masterSig,
+        std::optional<Blob> const& signingSig);
+
+    /**
+     * Signs bytes with the master key.
+     *
+     * @throws std::runtime_error if the master key is external
+     */
+    [[nodiscard]] Blob
+    masterSign(Slice const& data) const;
 
     void
     storeManifest(STObject const& st);

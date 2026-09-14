@@ -1,18 +1,40 @@
 #include <tools/validator-keys/Commands.h>
 
+#include <xrpl/basics/Blob.h>
 #include <xrpl/basics/FileUtilities.h>
+#include <xrpl/basics/Slice.h>
 #include <xrpl/basics/StringUtilities.h>
 #include <xrpl/basics/base64.h>
+#include <xrpl/basics/contract.h>
+#include <xrpl/basics/strHex.h>
 #include <xrpl/beast/core/SemanticVersion.h>
 #include <xrpl/json/json_reader.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/protocol/KeyType.h>
+#include <xrpl/protocol/PublicKey.h>
+#include <xrpl/protocol/SecretKey.h>
+#include <xrpl/protocol/tokens.h>
+#include <xrpl/server/Manifest.h>
 
 #include <boost/preprocessor/stringize.hpp>
 
 #include <tools/validator-keys/ListSigning.h>
 #include <tools/validator-keys/SigningKeys.h>
 
+#include <algorithm>
 #include <array>
+#include <cstddef>
+#include <cstdlib>
+#include <filesystem>
 #include <fstream>
+#include <ios>
+#include <optional>
+#include <ostream>
+#include <stdexcept>
+#include <string>
+#include <system_error>
+#include <utility>
+#include <vector>
 
 namespace xrpl::tools {
 
@@ -56,26 +78,27 @@ struct Context
  */
 class Output
 {
-    std::optional<std::filesystem::path> file_;
+    // Empty when the result goes to the output stream.
+    std::filesystem::path file_;
     std::ofstream stream_;
     std::ostream& out_;
     bool written_ = false;
 
 public:
     Output(std::optional<std::filesystem::path> const& file, std::ostream& out)
-        : file_(file), out_(out)
+        : file_(file.value_or(std::filesystem::path{})), out_(out)
     {
-        if (file_)
+        if (!file_.empty())
         {
-            if (std::filesystem::is_symlink(*file_))
-                throw std::runtime_error("Refusing to write through a symlink: " + file_->string());
-            stream_.open(*file_, std::ios_base::trunc);
+            if (std::filesystem::is_symlink(file_))
+                throw std::runtime_error("Refusing to write through a symlink: " + file_.string());
+            stream_.open(file_, std::ios_base::trunc);
             if (stream_.fail())
-                throw std::runtime_error("Cannot open output file: " + file_->string());
+                throw std::runtime_error("Cannot open output file: " + file_.string());
             // A token holds a secret: restrict the file before anything is written.
             std::error_code ec;
             std::filesystem::permissions(
-                *file_,
+                file_,
                 std::filesystem::perms::owner_read | std::filesystem::perms::owner_write,
                 ec);
         }
@@ -83,11 +106,11 @@ public:
 
     ~Output()
     {
-        if (file_ && !written_)
+        if (!file_.empty() && !written_)
         {
             stream_.close();
             std::error_code ec;
-            std::filesystem::remove(*file_, ec);
+            std::filesystem::remove(file_, ec);
         }
     }
 
@@ -103,7 +126,7 @@ public:
         for (std::size_t i = 0; i < body.size(); i += kBlockLineLength)
             text.append(body, i, kBlockLineLength).push_back('\n');
 
-        if (!file_)
+        if (file_.empty())
         {
             out_ << "Update xrpld.cfg file with these values and restart xrpld:\n\n"
                  << text << std::endl;
@@ -115,7 +138,7 @@ public:
     void
     json(json::Value const& jv)
     {
-        if (!file_)
+        if (file_.empty())
         {
             out_ << jv.toStyledString() << std::endl;
             return;
@@ -130,10 +153,12 @@ private:
         stream_ << text;
         stream_.close();
         if (stream_.fail())
+        {
             throw std::runtime_error(  // LCOV_EXCL_LINE
-                "Cannot write output file: " + file_->string());  // LCOV_EXCL_LINE
+                "Cannot write output file: " + file_.string());  // LCOV_EXCL_LINE
+        }
         written_ = true;
-        out_ << what << " written to " << file_->string() << "\n";
+        out_ << what << " written to " << file_.string() << "\n";
     }
 };
 
@@ -206,7 +231,7 @@ storedNotice(std::filesystem::path const& keyFile, std::ostream& out)
 SigningKeys
 loadUnrevoked(std::filesystem::path const& keyFile)
 {
-    auto keys = SigningKeys::make_SigningKeys(keyFile);
+    auto keys = SigningKeys::makeSigningKeys(keyFile);
     if (keys.revoked())
         throw std::runtime_error("Operation error: The specified master key has been revoked!");
     return keys;
@@ -216,21 +241,31 @@ void
 warnRevocation(SigningKeys const& keys, std::ostream& err)
 {
     if (keys.revoked())
+    {
         err << "WARNING: Validator keys have already been revoked!\n\n";
+    }
     else
+    {
         err << "WARNING: This will revoke your validator keys!\n\n";
+    }
 }
 
 void
 emitFinished(SigningKeys const& keys, SigningKeys::Finished const& finished, Output& output)
 {
     if (finished.secret)
+    {
         output.block(
             "validator_token",
             nodePublic(keys),
-            tokenToBase64(ValidatorToken{finished.manifest, *finished.secret}));
+            tokenToBase64(
+                ValidatorToken{
+                    .manifest = finished.manifest, .validationSecret = *finished.secret}));
+    }
     else
+    {
         output.block("validator_manifest", nodePublic(keys), finished.manifest);
+    }
 }
 
 void
@@ -271,7 +306,10 @@ cmdCreateExternal(Args const& args, Context& ctx)
 {
     refuseExisting(ctx.options.keyFile);
     auto const publicKey = parsePublicKey(args[0]);
-    SigningKeys const keys(*publicKeyType(publicKey), publicKey);
+    auto const keyType = publicKeyType(publicKey);
+    if (!keyType)
+        logicError("create_external: public key without a key type");  // LCOV_EXCL_LINE
+    SigningKeys const keys(*keyType, publicKey);
     keys.writeToFile(ctx.options.keyFile);
     storedNotice(ctx.options.keyFile, ctx.out);
     return EXIT_SUCCESS;
@@ -281,7 +319,7 @@ int
 cmdCreateToken(Args const&, Context& ctx)
 {
     Output output(ctx.options.outFile, ctx.out);
-    auto keys = SigningKeys::make_SigningKeys(ctx.options.keyFile);
+    auto keys = SigningKeys::makeSigningKeys(ctx.options.keyFile);
     auto const token = keys.createToken(ctx.options.tokenKeyType);
     keys.writeToFile(ctx.options.keyFile);
     output.block("validator_token", nodePublic(keys), tokenToBase64(token));
@@ -291,7 +329,7 @@ cmdCreateToken(Args const&, Context& ctx)
 int
 cmdStartToken(Args const&, Context& ctx)
 {
-    auto keys = SigningKeys::make_SigningKeys(ctx.options.keyFile);
+    auto keys = SigningKeys::makeSigningKeys(ctx.options.keyFile);
     auto const data = keys.startToken(ctx.options.tokenKeyType, ctx.options.signingKey);
     keys.writeToFile(ctx.options.keyFile);
     ctx.out << data << std::endl;
@@ -302,7 +340,7 @@ int
 cmdFinishToken(Args const& args, Context& ctx)
 {
     Output output(ctx.options.outFile, ctx.out);
-    auto keys = SigningKeys::make_SigningKeys(ctx.options.keyFile);
+    auto keys = SigningKeys::makeSigningKeys(ctx.options.keyFile);
     std::optional<Blob> signingSig;
     if (args.size() == 2)
         signingSig = decodeSignature(args[1]);
@@ -315,7 +353,7 @@ cmdFinishToken(Args const& args, Context& ctx)
 int
 cmdRevokeKeys(Args const&, Context& ctx)
 {
-    auto keys = SigningKeys::make_SigningKeys(ctx.options.keyFile);
+    auto keys = SigningKeys::makeSigningKeys(ctx.options.keyFile);
     warnRevocation(keys, ctx.err);
     auto const revocation = keys.revoke();
     keys.writeToFile(ctx.options.keyFile);
@@ -326,7 +364,7 @@ cmdRevokeKeys(Args const&, Context& ctx)
 int
 cmdStartRevokeKeys(Args const&, Context& ctx)
 {
-    auto const keys = SigningKeys::make_SigningKeys(ctx.options.keyFile);
+    auto const keys = SigningKeys::makeSigningKeys(ctx.options.keyFile);
     warnRevocation(keys, ctx.err);
     ctx.out << keys.startRevoke() << std::endl;
     return EXIT_SUCCESS;
@@ -335,7 +373,7 @@ cmdStartRevokeKeys(Args const&, Context& ctx)
 int
 cmdFinishRevokeKeys(Args const& args, Context& ctx)
 {
-    auto keys = SigningKeys::make_SigningKeys(ctx.options.keyFile);
+    auto keys = SigningKeys::makeSigningKeys(ctx.options.keyFile);
     warnRevocation(keys, ctx.err);
     auto const revocation = keys.finishRevoke(decodeSignature(args[0]));
     keys.writeToFile(ctx.options.keyFile);
@@ -404,7 +442,7 @@ sign(std::string const& data, bool hex, Context& ctx)
 {
     if (data.empty())
         throw std::runtime_error("Syntax error: Must specify data string to sign");
-    auto const keys = SigningKeys::make_SigningKeys(ctx.options.keyFile);
+    auto const keys = SigningKeys::makeSigningKeys(ctx.options.keyFile);
     if (keys.revoked())
         ctx.err << "WARNING: Validator keys have been revoked!\n\n";
     ctx.out << (hex ? keys.signHex(data) : keys.sign(data)) << std::endl;
@@ -426,7 +464,7 @@ cmdSignHex(Args const& args, Context& ctx)
 int
 cmdShowManifest(Args const& args, Context& ctx)
 {
-    auto const keys = SigningKeys::make_SigningKeys(ctx.options.keyFile);
+    auto const keys = SigningKeys::makeSigningKeys(ctx.options.keyFile);
     auto const& m = keys.manifest();
     if (m.empty())
     {
@@ -448,8 +486,9 @@ cmdShowManifest(Args const& args, Context& ctx)
     throw std::runtime_error("Unknown encoding '" + args[0] + "'");
 }
 
-// The manifest a list is signed under when the signing key is external.
-Manifest
+// The manifest a list is signed under when the signing key is external, and
+// the signing key it delegates to.
+std::pair<Manifest, PublicKey>
 loadSigningManifest(Context const& ctx, char const* command)
 {
     if (!ctx.options.manifestFile)
@@ -457,7 +496,8 @@ loadSigningManifest(Context const& ctx, char const* command)
     auto manifest = loadManifestFile(*ctx.options.manifestFile);
     if (manifest.revoked() || !manifest.signingKey)
         throw std::runtime_error("The manifest is revoked");
-    return manifest;
+    auto const signingKey = *manifest.signingKey;
+    return {std::move(manifest), signingKey};
 }
 
 void
@@ -515,12 +555,12 @@ cmdStartSignList(Args const& args, Context& ctx)
 int
 cmdFinishSignList(Args const& args, Context& ctx)
 {
-    auto const manifest = loadSigningManifest(ctx, "finish_sign_list");
+    auto const [manifest, signingKey] = loadSigningManifest(ctx, "finish_sign_list");
     Output output(ctx.options.outFile, ctx.out);
 
     auto const list = loadUnsignedList(args[1]);
     auto const sig = decodeSignature(args[0]);
-    if (!verify(*manifest.signingKey, makeSlice(list.canonical), makeSlice(sig)))
+    if (!verify(signingKey, makeSlice(list.canonical), makeSlice(sig)))
         throw std::runtime_error("The signature does not verify under the manifest's signing key");
 
     emitSignedList(
@@ -550,24 +590,24 @@ struct Command
 };
 
 constexpr std::array<Command, 18> kCommands{{
-    {"create_keys", 0, 0, cmdCreateKeys},
-    {"create_external", 1, 1, cmdCreateExternal},
-    {"create_token", 0, 0, cmdCreateToken},
-    {"start_token", 0, 0, cmdStartToken},
-    {"finish_token", 1, 2, cmdFinishToken},
-    {"revoke_keys", 0, 0, cmdRevokeKeys},
-    {"start_revoke_keys", 0, 0, cmdStartRevokeKeys},
-    {"finish_revoke_keys", 1, 1, cmdFinishRevokeKeys},
-    {"set_domain", 1, 1, cmdSetDomain},
-    {"clear_domain", 0, 0, cmdClearDomain},
-    {"attest_domain", 0, 0, cmdAttestDomain},
-    {"sign", 1, 1, cmdSign},
-    {"sign_hex", 1, 1, cmdSignHex},
-    {"show_manifest", 1, 1, cmdShowManifest},
-    {"sign_list", 1, 1, cmdSignList},
-    {"start_sign_list", 1, 1, cmdStartSignList},
-    {"finish_sign_list", 2, 2, cmdFinishSignList},
-    {"verify_list", 1, 1, cmdVerifyList},
+    {.name = "create_keys", .minArgs = 0, .maxArgs = 0, .run = cmdCreateKeys},
+    {.name = "create_external", .minArgs = 1, .maxArgs = 1, .run = cmdCreateExternal},
+    {.name = "create_token", .minArgs = 0, .maxArgs = 0, .run = cmdCreateToken},
+    {.name = "start_token", .minArgs = 0, .maxArgs = 0, .run = cmdStartToken},
+    {.name = "finish_token", .minArgs = 1, .maxArgs = 2, .run = cmdFinishToken},
+    {.name = "revoke_keys", .minArgs = 0, .maxArgs = 0, .run = cmdRevokeKeys},
+    {.name = "start_revoke_keys", .minArgs = 0, .maxArgs = 0, .run = cmdStartRevokeKeys},
+    {.name = "finish_revoke_keys", .minArgs = 1, .maxArgs = 1, .run = cmdFinishRevokeKeys},
+    {.name = "set_domain", .minArgs = 1, .maxArgs = 1, .run = cmdSetDomain},
+    {.name = "clear_domain", .minArgs = 0, .maxArgs = 0, .run = cmdClearDomain},
+    {.name = "attest_domain", .minArgs = 0, .maxArgs = 0, .run = cmdAttestDomain},
+    {.name = "sign", .minArgs = 1, .maxArgs = 1, .run = cmdSign},
+    {.name = "sign_hex", .minArgs = 1, .maxArgs = 1, .run = cmdSignHex},
+    {.name = "show_manifest", .minArgs = 1, .maxArgs = 1, .run = cmdShowManifest},
+    {.name = "sign_list", .minArgs = 1, .maxArgs = 1, .run = cmdSignList},
+    {.name = "start_sign_list", .minArgs = 1, .maxArgs = 1, .run = cmdStartSignList},
+    {.name = "finish_sign_list", .minArgs = 2, .maxArgs = 2, .run = cmdFinishSignList},
+    {.name = "verify_list", .minArgs = 1, .maxArgs = 1, .run = cmdVerifyList},
 }};
 
 }  // namespace
@@ -593,14 +633,14 @@ runCommand(
     std::ostream& out,
     std::ostream& err)
 {
-    auto const it = std::find_if(
-        kCommands.begin(), kCommands.end(), [&](Command const& c) { return command == c.name; });
+    auto const it =
+        std::ranges::find_if(kCommands, [&](Command const& c) { return command == c.name; });
     if (it == kCommands.end())
         throw std::runtime_error("Unknown command: " + command);
     if (args.size() < it->minArgs || args.size() > it->maxArgs)
         throw std::runtime_error("Syntax error: Wrong number of arguments");
 
-    Context ctx{options, out, err};
+    Context ctx{.options = options, .out = out, .err = err};
     return it->run(args, ctx);
 }
 

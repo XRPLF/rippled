@@ -13,8 +13,11 @@
 
 #include <filesystem>
 #include <functional>
+#include <optional>
 #include <sstream>
+#include <stdexcept>
 #include <string>
+#include <utility>
 #include <vector>
 
 namespace xrpl::tools::test {
@@ -35,7 +38,7 @@ run(std::string const& command, std::vector<std::string> const& args, ToolOption
     std::ostringstream out;
     std::ostringstream err;
     int const rc = runCommand(command, args, options, out, err);
-    return {rc, out.str(), err.str()};
+    return {.rc = rc, .out = out.str(), .err = err.str()};
 }
 
 /**
@@ -87,6 +90,19 @@ sameSecret(SecretKey const& a, SecretKey const& b)
 }
 
 /**
+ * The value a test relies on being present; an empty optional fails the test
+ * with an exception at the line that expected it.
+ */
+template <class T>
+T
+required(std::optional<T> value)
+{
+    if (!value)
+        throw std::runtime_error("required value is missing");
+    return std::move(*value);
+}
+
+/**
  * A publisher: master keys and the token carrying its ed25519 signing key.
  */
 struct Publisher
@@ -94,10 +110,12 @@ struct Publisher
     SigningKeys keys{KeyType::Ed25519};
     ValidatorToken token;
     Manifest manifest;
+    PublicKey signingKey;
 
     Publisher()
         : token(keys.createToken(KeyType::Ed25519))
-        , manifest(*deserializeManifest(base64Decode(token.manifest)))
+        , manifest(required(deserializeManifest(base64Decode(token.manifest))))
+        , signingKey(required(manifest.signingKey))
     {
     }
 };
@@ -132,11 +150,11 @@ unsignedListText(
     bool first = true;
     for (auto const& v : validators)
     {
-        auto const m = deserializeManifest(base64Decode(v.manifest));
+        auto const m = required(deserializeManifest(base64Decode(v.manifest)));
         text += first ? "\n" : ",\n";
         first = false;
-        text += "    {\"validation_public_key\": \"" + strHex(m->masterKey) +
-            "\", \"manifest\": \"" + v.manifest + "\"}";
+        text += R"(    {"validation_public_key": ")" + strHex(m.masterKey) + R"(", "manifest": ")" +
+            v.manifest + "\"}";
     }
     text += "\n  ]\n}\n";
     return text;
