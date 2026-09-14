@@ -24,13 +24,13 @@
 
 #include <boost/algorithm/string.hpp>
 
+#include <tools/validator-keys/OwnerOnlyFile.h>
+
 #include <algorithm>
 #include <array>
 #include <cstddef>
 #include <cstdint>
 #include <filesystem>
-#include <fstream>
-#include <ios>
 #include <limits>
 #include <optional>
 #include <stdexcept>
@@ -290,35 +290,16 @@ SigningKeys::writeToFile(std::filesystem::path const& keyFile) const
     std::error_code ec;
     if (auto const parent = keyFile.parent_path(); !parent.empty())
     {
-        fs::create_directories(parent, ec);
+        // A directory made here is the owner's alone.
+        if (fs::create_directories(parent, ec) && !ec)
+            fs::permissions(parent, fs::perms::owner_all, ec);
         if (ec || !fs::is_directory(parent))
             throw std::runtime_error("Cannot create directory: " + parent.string());
     }
 
-    // Write beside the key file, restrict it to the owner, then replace the
-    // key file in one step.
-    auto const temp = fs::path(keyFile.string() + ".tmp");
-    if (fs::is_symlink(temp))
-        throw std::runtime_error("Refusing to write through a symlink: " + temp.string());
-    {
-        std::ofstream o(temp, std::ios_base::trunc);
-        if (!o.fail())
-            fs::permissions(temp, fs::perms::owner_read | fs::perms::owner_write, ec);
-        if (!ec)
-            o << jv.toStyledString();
-        o.close();
-        if (ec || o.fail())
-        {
-            fs::remove(temp, ec);
-            throw std::runtime_error("Cannot write key file: " + keyFile.string());
-        }
-    }
-    fs::rename(temp, keyFile, ec);
-    if (ec)
-    {
-        fs::remove(temp, ec);
-        throw std::runtime_error("Cannot write key file: " + keyFile.string());
-    }
+    OwnerOnlyFile file(keyFile, "key file");
+    file.write(jv.toStyledString());
+    file.commit();
 }
 
 STObject

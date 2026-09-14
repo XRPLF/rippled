@@ -19,6 +19,7 @@
 #include <boost/preprocessor/stringize.hpp>
 
 #include <tools/validator-keys/ListSigning.h>
+#include <tools/validator-keys/OwnerOnlyFile.h>
 #include <tools/validator-keys/SigningKeys.h>
 
 #include <algorithm>
@@ -26,8 +27,7 @@
 #include <cstddef>
 #include <cstdlib>
 #include <filesystem>
-#include <fstream>
-#include <ios>
+#include <memory>
 #include <optional>
 #include <ostream>
 #include <stdexcept>
@@ -72,58 +72,50 @@ struct Context
 };
 
 /**
- * Where a command's result goes: the output file named by `--out`, opened
- * before the command changes any state so an unwritable path fails first, or
- * the output stream. A file that receives nothing is removed again.
+ * Where a command's result goes: the file named by `--out`, replaced whole
+ * once the command has succeeded, or the output stream. The file is prepared
+ * before the command changes any state so an unwritable path fails first.
  */
 class Output
 {
-    // Empty when the result goes to the output stream.
-    std::filesystem::path file_;
-    std::ofstream stream_;
+    // Null when the result goes to the output stream.
+    std::unique_ptr<OwnerOnlyFile> file_;
     std::ostream& out_;
-    bool written_ = false;
 
 public:
-    Output(std::optional<std::filesystem::path> const& file, std::ostream& out)
-        : file_(file.value_or(std::filesystem::path{})), out_(out)
+    /**
+     * @param inputs Files the command reads besides those in the options;
+     *        `--out` may not name any input, since the output replaces it.
+     */
+    // A result that only goes to the output stream.
+    explicit Output(std::ostream& out) : out_(out)
     {
-        if (!file_.empty())
-        {
-            if (std::filesystem::is_symlink(file_))
-                throw std::runtime_error("Refusing to write through a symlink: " + file_.string());
-            stream_.open(file_, std::ios_base::trunc);
-            if (stream_.fail())
-                throw std::runtime_error("Cannot open output file: " + file_.string());
-            // A token holds a secret: restrict the file before anything is written.
-            std::error_code ec;
-            std::filesystem::permissions(
-                file_,
-                std::filesystem::perms::owner_read | std::filesystem::perms::owner_write,
-                ec);
-            if (ec)
-            {
-                stream_.close();                     // LCOV_EXCL_LINE
-                std::filesystem::remove(file_, ec);  // LCOV_EXCL_LINE
-                throw std::runtime_error(  // LCOV_EXCL_LINE
-                    "Cannot restrict output file: " + file_.string());  // LCOV_EXCL_LINE
-            }
-        }
     }
 
-    ~Output()
+    Output(Context const& ctx, std::vector<std::filesystem::path> const& inputs = {})
+        : out_(ctx.out)
     {
-        if (!file_.empty() && !written_)
-        {
-            stream_.close();
-            std::error_code ec;
-            std::filesystem::remove(file_, ec);
-        }
-    }
+        auto const& options = ctx.options;
+        if (!options.outFile)
+            return;
 
-    Output(Output const&) = delete;
-    Output&
-    operator=(Output const&) = delete;
+        std::vector<std::filesystem::path> read(inputs);
+        read.push_back(options.keyFile);
+        for (auto const& file :
+             {options.tokenFile, options.manifestFile, options.appendFile, options.validatorsFile})
+        {
+            if (file)
+                read.push_back(*file);
+        }
+        for (auto const& file : read)
+        {
+            std::error_code ec;
+            if (std::filesystem::equivalent(file, *options.outFile, ec))
+                throw std::runtime_error("--out names an input file: " + options.outFile->string());
+        }
+
+        file_ = std::make_unique<OwnerOnlyFile>(*options.outFile, "output file");
+    }
 
     // A config block in 72-character lines.
     void
@@ -133,7 +125,7 @@ public:
         for (std::size_t i = 0; i < body.size(); i += kBlockLineLength)
             text.append(body, i, kBlockLineLength).push_back('\n');
 
-        if (file_.empty())
+        if (!file_)
         {
             out_ << "Update xrpld.cfg file with these values and restart xrpld:\n\n"
                  << text << std::endl;
@@ -145,7 +137,7 @@ public:
     void
     json(json::Value const& jv)
     {
-        if (file_.empty())
+        if (!file_)
         {
             out_ << jv.toStyledString() << std::endl;
             return;
@@ -157,15 +149,9 @@ private:
     void
     write(std::string const& text, std::string const& what)
     {
-        stream_ << text;
-        stream_.close();
-        if (stream_.fail())
-        {
-            throw std::runtime_error(  // LCOV_EXCL_LINE
-                "Cannot write output file: " + file_.string());  // LCOV_EXCL_LINE
-        }
-        written_ = true;
-        out_ << what << " written to " << file_.string() << "\n";
+        file_->write(text);
+        file_->commit();
+        out_ << what << " written to " << file_->target().string() << "\n";
     }
 };
 
@@ -325,7 +311,7 @@ cmdCreateExternal(Args const& args, Context& ctx)
 int
 cmdCreateToken(Args const&, Context& ctx)
 {
-    Output output(ctx.options.outFile, ctx.out);
+    Output output(ctx);
     auto keys = SigningKeys::makeSigningKeys(ctx.options.keyFile);
     auto const token = keys.createToken(ctx.options.tokenKeyType);
     keys.writeToFile(ctx.options.keyFile);
@@ -346,7 +332,7 @@ cmdStartToken(Args const&, Context& ctx)
 int
 cmdFinishToken(Args const& args, Context& ctx)
 {
-    Output output(ctx.options.outFile, ctx.out);
+    Output output(ctx);
     auto keys = SigningKeys::makeSigningKeys(ctx.options.keyFile);
     std::optional<Blob> signingSig;
     if (args.size() == 2)
@@ -364,7 +350,7 @@ cmdRevokeKeys(Args const&, Context& ctx)
     warnRevocation(keys, ctx.err);
     auto const revocation = keys.revoke();
     keys.writeToFile(ctx.options.keyFile);
-    Output(std::nullopt, ctx.out).block("validator_key_revocation", nodePublic(keys), revocation);
+    Output(ctx.out).block("validator_key_revocation", nodePublic(keys), revocation);
     return EXIT_SUCCESS;
 }
 
@@ -384,14 +370,14 @@ cmdFinishRevokeKeys(Args const& args, Context& ctx)
     warnRevocation(keys, ctx.err);
     auto const revocation = keys.finishRevoke(decodeSignature(args[0]));
     keys.writeToFile(ctx.options.keyFile);
-    Output(std::nullopt, ctx.out).block("validator_key_revocation", nodePublic(keys), revocation);
+    Output(ctx.out).block("validator_key_revocation", nodePublic(keys), revocation);
     return EXIT_SUCCESS;
 }
 
 int
 setDomain(std::string const& domain, Context& ctx)
 {
-    Output output(ctx.options.outFile, ctx.out);
+    Output output(ctx);
     auto keys = loadUnrevoked(ctx.options.keyFile);
 
     if (domain == keys.domain())
@@ -529,7 +515,7 @@ cmdSignList(Args const& args, Context& ctx)
 {
     if (!ctx.options.tokenFile)
         throw std::runtime_error("sign_list needs --token-file");
-    Output output(ctx.options.outFile, ctx.out);
+    Output output(ctx, {args[0]});
 
     auto const token = loadTokenFile(*ctx.options.tokenFile);
     auto const manifest = deserializeManifest(base64Decode(token.manifest));
@@ -563,7 +549,7 @@ int
 cmdFinishSignList(Args const& args, Context& ctx)
 {
     auto const [manifest, signingKey] = loadSigningManifest(ctx, "finish_sign_list");
-    Output output(ctx.options.outFile, ctx.out);
+    Output output(ctx, {args[1]});
 
     auto const list = loadUnsignedList(args[1]);
     auto const sig = decodeSignature(args[0]);

@@ -145,6 +145,10 @@ TEST_F(SigningKeysTest, write_to_file_errors)
     auto const nested = dir_.file("a/b/c/validator_keys.json");
     keys.writeToFile(nested);
     EXPECT_TRUE(keys == SigningKeys::makeSigningKeys(nested));
+    EXPECT_EQ(
+        std::filesystem::status(std::filesystem::path(nested).parent_path()).permissions() &
+            (std::filesystem::perms::group_all | std::filesystem::perms::others_all),
+        std::filesystem::perms::none);
 
     // The parent path is a file
     auto const blocked = std::filesystem::path(keyFile_.string() + "/keys.json");

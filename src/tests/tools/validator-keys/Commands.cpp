@@ -184,7 +184,15 @@ TEST_F(CommandsTest, create_token)
     unwritable.outFile = file("missing/token.txt");
     EXPECT_EQ(
         commandError("create_token", {}, unwritable),
-        "Cannot open output file: " + unwritable.outFile->string());
+        "Cannot write output file: " + unwritable.outFile->string());
+    EXPECT_EQ(keys(options_).sequence(), 2u);
+
+    // The output may not replace the key file
+    ToolOptions aliased = options_;
+    aliased.outFile = options_.keyFile;
+    EXPECT_EQ(
+        commandError("create_token", {}, aliased),
+        "--out names an input file: " + options_.keyFile.string());
     EXPECT_EQ(keys(options_).sequence(), 2u);
 
     {
@@ -410,7 +418,22 @@ TEST_F(CommandsTest, list_commands)
         bad.outFile = file("missing/vl.json");
         EXPECT_EQ(
             commandError("sign_list", {unsignedList.string()}, bad),
-            "Cannot open output file: " + bad.outFile->string());
+            "Cannot write output file: " + bad.outFile->string());
+
+        // The output may not replace the list it signs
+        bad.outFile = unsignedList;
+        EXPECT_EQ(
+            commandError("sign_list", {unsignedList.string()}, bad),
+            "--out names an input file: " + unsignedList.string());
+
+        // A failed command leaves an existing output as it was
+        bad.outFile = file("kept.json");
+        writeFile(*bad.outFile, "previous");
+        EXPECT_EQ(
+            commandError("sign_list", {file("missing.json").string()}, bad),
+            "Failed to open file: " + file("missing.json").string());
+        EXPECT_EQ(readFile(*bad.outFile), "previous");
+        EXPECT_FALSE(std::filesystem::exists(file("kept.json.tmp")));
     }
     EXPECT_EQ(
         commandError("verify_list", {file("missing.json").string()}, verifier),

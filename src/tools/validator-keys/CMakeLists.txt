@@ -6,7 +6,7 @@ include(GNUInstallDirs)
 add_library(xrpl.validator-keys STATIC)
 target_sources(
     xrpl.validator-keys
-    PRIVATE Commands.cpp ListSigning.cpp SigningKeys.cpp
+    PRIVATE Commands.cpp ListSigning.cpp OwnerOnlyFile.cpp SigningKeys.cpp
 )
 target_include_directories(
     xrpl.validator-keys
