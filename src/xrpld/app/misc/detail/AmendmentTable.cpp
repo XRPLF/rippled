@@ -73,7 +73,7 @@ parseSection(Section const& section)
 
         UInt256 id;
 
-        if (!id.parseHex(match[1]))
+        if (!id.parseHex(match[1].str()))
         {
             Throw<std::runtime_error>(
                 std::format("Invalid amendment ID '{}' in [{}]", match[1].str(), section.name()));

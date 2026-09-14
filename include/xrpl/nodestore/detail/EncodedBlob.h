@@ -1,5 +1,6 @@
 #pragma once
 
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/nodestore/NodeObject.h>
 
@@ -38,11 +39,6 @@ namespace xrpl::node_store {
 class EncodedBlob
 {
     /**
-     * The 32-byte key of the serialized object.
-     */
-    std::array<std::uint8_t, 32> key_{};
-
-    /**
      * A pre-allocated buffer for the serialized object.
      *
      * The buffer is large enough for the 9 byte prefix and at least
@@ -65,6 +61,11 @@ class EncodedBlob
      */
     std::uint8_t* const ptr_;
 
+    /**
+     * The 32-byte key of the serialized object.
+     */
+    uint256 key_;
+
 public:
     explicit EncodedBlob(std::shared_ptr<NodeObject> const& obj)
         : size_([&obj]() {
@@ -76,11 +77,12 @@ public:
             return obj->getData().size() + 9;
         }())
         , ptr_((size_ <= payload_.size()) ? payload_.data() : new std::uint8_t[size_])
+        , key_(obj->getHash())
     {
         std::fill_n(ptr_, 8, std::uint8_t{0});
         ptr_[8] = static_cast<std::uint8_t>(obj->getType());
+
         std::copy_n(obj->getData().data(), obj->getData().size(), ptr_ + 9);
-        std::copy_n(obj->getHash().data(), obj->getHash().size(), key_.data());
     }
 
     ~EncodedBlob()
@@ -95,10 +97,10 @@ public:
             delete[] ptr_;
     }
 
-    [[nodiscard]] void const*
+    [[nodiscard]] uint256 const&
     getKey() const noexcept
     {
-        return static_cast<void const*>(key_.data());
+        return key_;
     }
 
     [[nodiscard]] std::size_t

@@ -461,8 +461,8 @@ private:
 
                 // Invalid tokens
                 {
-                    auto const mpt1 = MPTIssue{MPTID(0xabc)};
-                    auto const mpt2 = MPTIssue{MPTID(0xdef)};
+                    auto const mpt1 = MPTIssue{MPTID{0xabc}};
+                    auto const mpt2 = MPTIssue{MPTID{0xdef}};
                     ammAlice.deposit(
                         alice_,
                         1'000,

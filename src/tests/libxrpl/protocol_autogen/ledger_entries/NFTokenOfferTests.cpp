@@ -18,7 +18,7 @@ namespace xrpl::ledger_entries {
 // builder's STObject and the wrapper's SLE.
 TEST(NFTokenOfferTests, BuilderSettersRoundTrip)
 {
-    UInt256 const index{1u};
+    constexpr UInt256 index{1};
 
     auto const ownerValue = canonical_ACCOUNT();
     auto const nFTokenIDValue = canonical_UINT256();
@@ -121,7 +121,7 @@ TEST(NFTokenOfferTests, BuilderSettersRoundTrip)
 // from that SLE, build a new wrapper, and verify all fields (and validate()).
 TEST(NFTokenOfferTests, BuilderFromSleRoundTrip)
 {
-    UInt256 const index{2u};
+    constexpr UInt256 index{2};
 
     auto const ownerValue = canonical_ACCOUNT();
     auto const nFTokenIDValue = canonical_UINT256();
@@ -257,7 +257,7 @@ TEST(NFTokenOfferTests, BuilderFromSleRoundTrip)
 // 3) Verify wrapper throws when constructed from wrong ledger entry type.
 TEST(NFTokenOfferTests, WrapperThrowsOnWrongEntryType)
 {
-    UInt256 const index{3u};
+    constexpr UInt256 index{3};
 
     // Build a valid ledger entry of a different type
     // Ticket requires: Account, OwnerNode, TicketSequence, PreviousTxnID, PreviousTxnLgrSeq
@@ -276,7 +276,7 @@ TEST(NFTokenOfferTests, WrapperThrowsOnWrongEntryType)
 // 4) Verify builder throws when constructed from wrong ledger entry type.
 TEST(NFTokenOfferTests, BuilderThrowsOnWrongEntryType)
 {
-    UInt256 const index{4u};
+    constexpr UInt256 index{4};
 
     // Build a valid ledger entry of a different type
     TicketBuilder wrongBuilder{
@@ -293,7 +293,7 @@ TEST(NFTokenOfferTests, BuilderThrowsOnWrongEntryType)
 // 5) Build with only required fields and verify optional fields return nullopt.
 TEST(NFTokenOfferTests, OptionalFieldsReturnNullopt)
 {
-    UInt256 const index{3u};
+    constexpr UInt256 index{3};
 
     auto const ownerValue = canonical_ACCOUNT();
     auto const nFTokenIDValue = canonical_UINT256();

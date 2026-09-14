@@ -58,6 +58,8 @@ using namespace jtx;
 
 class PermissionedDEX_test : public beast::unit_test::Suite
 {
+    UInt256 const badDomain_{"F10D0CC9A0F9A3CBF585B80BE09A186483668FDBDD39AA7E3370F3649CE134E5"};
+
     [[nodiscard]] static bool
     offerExists(Env const& env, Account const& account, std::uint32_t offerSeq)
     {
@@ -289,11 +291,7 @@ class PermissionedDEX_test : public beast::unit_test::Suite
             Env env(*this, features);
             auto const& [gw, domainOwner, alice, bob, carol, USD, domainID, credType] =
                 PermissionedDEX(env);
-            UInt256 const badDomain{
-                "F10D0CC9A0F9A3CBF585B80BE09A186483668FDBDD39AA7E3370F3649CE134"
-                "E5"};
-
-            env(offer(bob, XRP(10), USD(10)), Domain(badDomain), Ter(tecNO_PERMISSION));
+            env(offer(bob, XRP(10), USD(10)), Domain(badDomain_), Ter(tecNO_PERMISSION));
             env.close();
         }
 
@@ -438,14 +436,11 @@ class PermissionedDEX_test : public beast::unit_test::Suite
             Env env(*this, features);
             auto const& [gw, domainOwner, alice, bob, carol, USD, domainID, credType] =
                 PermissionedDEX(env);
-            UInt256 const badDomain{
-                "F10D0CC9A0F9A3CBF585B80BE09A186483668FDBDD39AA7E3370F3649CE134"
-                "E5"};
 
             env(pay(bob, alice, USD(10)),
                 Path(~USD),
                 Sendmax(XRP(10)),
-                Domain(badDomain),
+                Domain(badDomain_),
                 Ter(tecNO_PERMISSION));
             env.close();
         }
@@ -1700,17 +1695,13 @@ class PermissionedDEX_test : public beast::unit_test::Suite
             auto const& [gw, domainOwner, alice, bob, carol, USD, domainID, credType] =
                 PermissionedDEX(env);
 
-            UInt256 const badDomain{
-                "F10D0CC9A0F9A3CBF585B80BE09A186483668FDBDD39AA7E3370F3649CE134"
-                "E5"};
-
             env(offer(bob, XRP(10), USD(10)), Domain(domainID));
             env.close();
 
             env(pay(alice, bob, USD(10)),
                 Path(~USD),
                 Sendmax(XRP(10)),
-                Domain(badDomain),
+                Domain(badDomain_),
                 Ter(tecNO_PERMISSION));
             env.close();
         }

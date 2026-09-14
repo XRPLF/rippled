@@ -9,7 +9,9 @@
 #include <xrpl/protocol/Serializer.h>
 
 #include <cstddef>
+#include <cstdint>
 #include <format>
+#include <span>
 #include <stdexcept>
 #include <utility>
 
@@ -17,7 +19,7 @@ namespace xrpl {
 
 STVector256::STVector256(SerialIter& sit, SField const& name) : STBase(name)
 {
-    auto const slice = sit.getSlice(sit.getVLDataLength());
+    auto slice = sit.getSlice(sit.getVLDataLength());
 
     if (slice.size() % UInt256::size() != 0)
     {
@@ -25,12 +27,14 @@ STVector256::STVector256(SerialIter& sit, SField const& name) : STBase(name)
             std::format("Bad serialization for STVector256: {}", slice.size()));
     }
 
-    auto const cnt = slice.size() / UInt256::size();
+    value_.reserve(slice.size() / UInt256::size());
 
-    value_.reserve(cnt);
-
-    for (std::size_t i = 0; i != cnt; ++i)
-        value_.push_back(UInt256::fromRaw(slice.substr(i * UInt256::size(), UInt256::size())));
+    while (!slice.empty())
+    {
+        value_.emplace_back(
+            std::span<std::uint8_t const, UInt256::size()>{slice.data(), UInt256::size()});
+        slice += UInt256::size();
+    }
 }
 
 STBase*

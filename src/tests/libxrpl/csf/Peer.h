@@ -946,7 +946,7 @@ struct Peer
         // In the future, consider taking peer dominant ledger if no validations
         // yet
         Ledger::ID bestLCL = validations.getPreferred(lastClosedLedger, earliestAllowedSeq());
-        if (bestLCL == Ledger::ID{0})
+        if (bestLCL == Ledger::ID{})
             bestLCL = lastClosedLedger.id();
 
         issue(StartRound{.bestLedger = bestLCL, .prevLedger = lastClosedLedger});

@@ -185,8 +185,9 @@ getBookBase(Book const& book)
 UInt256
 getQualityNext(UInt256 const& uBase)
 {
-    static constexpr UInt256 kNextQuality(
-        "0000000000000000000000000000000000000000000000010000000000000000");
+    static constexpr UInt256 kNextQuality{
+        "0000000000000000000000000000000000000000000000010000000000000000"};
+
     return uBase + kNextQuality;
 }
 
@@ -429,9 +430,9 @@ payChannel(AccountID const& src, AccountID const& dst, SeqProxy const& seq) noex
 Keylet
 nftokenPageMin(AccountID const& owner)
 {
-    std::array<std::uint8_t, 32> buf{};
-    std::memcpy(buf.data(), owner.data(), owner.size());
-    return {ltNFTOKEN_PAGE, UInt256::fromRaw(buf)};
+    std::array<std::uint8_t, UInt256::size()> buf{};
+    std::ranges::copy(owner, buf.begin());
+    return {ltNFTOKEN_PAGE, UInt256{buf}};
 }
 
 Keylet

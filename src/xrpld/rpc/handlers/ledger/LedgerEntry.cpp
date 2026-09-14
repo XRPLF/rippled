@@ -1059,7 +1059,7 @@ doLedgerEntryGrpc(rpc::GRPCContext<org::xrpl::rpc::v1::GetLedgerEntryRequest>& c
         return {response, errorStatus};
     }
 
-    auto const key = UInt256::fromVoidChecked(request.key());
+    auto const key = UInt256::fromRaw(request.key());
     if (!key)
     {
         grpc::Status const errorStatus{grpc::StatusCode::INVALID_ARGUMENT, "index malformed"};

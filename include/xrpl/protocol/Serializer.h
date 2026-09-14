@@ -596,7 +596,7 @@ template <std::size_t Bits, class Tag>
 BaseUInt<Bits, Tag>
 SerialIter::getBitString()
 {
-    auto const n = Bits / 8;
+    constexpr auto n = BaseUInt<Bits, Tag>::size();
 
     if (remain_ < n)
         Throw<std::runtime_error>("invalid SerialIter getBitString");
@@ -607,7 +607,7 @@ SerialIter::getBitString()
     used_ += n;
     remain_ -= n;
 
-    return BaseUInt<Bits, Tag>::fromVoid(x);
+    return BaseUInt<Bits, Tag>{std::span<std::uint8_t const, n>{x, n}};
 }
 
 }  // namespace xrpl

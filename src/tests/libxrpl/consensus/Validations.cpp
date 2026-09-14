@@ -857,7 +857,7 @@ TEST(ValidationsTest, acquire_validated_ledger)
     // Validation is available
     EXPECT_TRUE(harness.vals().numTrustedForLedger(ID{2}) == 1);
     // but ledger based data is not
-    EXPECT_TRUE(harness.vals().getNodesAfter(kGenesisLedger, ID{0}) == 0);
+    EXPECT_TRUE(harness.vals().getNodesAfter(kGenesisLedger, ID{}) == 0);
     // Initial preferred branch falls back to the ledger we are trying to
     // acquire
     EXPECT_TRUE(harness.vals().getPreferred(kGenesisLedger) == std::make_pair(Seq{2}, ID{2}));
@@ -870,7 +870,7 @@ TEST(ValidationsTest, acquire_validated_ledger)
     // Create the ledger
     Ledger const ledgerAB = h["ab"];
     // Now it should be available
-    EXPECT_TRUE(harness.vals().getNodesAfter(kGenesisLedger, ID{0}) == 1);
+    EXPECT_TRUE(harness.vals().getNodesAfter(kGenesisLedger, ID{}) == 1);
 
     // Create a validation that is not available
     harness.clock().advance(5s);

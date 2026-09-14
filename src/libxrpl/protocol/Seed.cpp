@@ -104,8 +104,9 @@ parseGenericSeed(std::string const& str, bool rfc1751)
         std::string key;
         if (RFC1751::getKeyFromEnglish(key, str) == 1)
         {
-            Blob const blob(key.rbegin(), key.rend());
-            return Seed{UInt128::fromRaw(blob)};
+            std::array<std::uint8_t, UInt128::size()> bytes{};
+            std::ranges::reverse_copy(key, bytes.begin());
+            return Seed{UInt128{bytes}};
         }
     }
 

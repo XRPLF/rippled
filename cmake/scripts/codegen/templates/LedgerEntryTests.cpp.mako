@@ -31,7 +31,7 @@ namespace xrpl::ledger_entries {
 // builder's STObject and the wrapper's SLE.
 TEST(${name}Tests, BuilderSettersRoundTrip)
 {
-    UInt256 const index{1u};
+    constexpr UInt256 index{1};
 
 % for field in fields:
     auto const ${field["paramName"]}Value = ${canonical_expr(field)};
@@ -85,7 +85,7 @@ TEST(${name}Tests, BuilderSettersRoundTrip)
 // from that SLE, build a new wrapper, and verify all fields (and validate()).
 TEST(${name}Tests, BuilderFromSleRoundTrip)
 {
-    UInt256 const index{2u};
+    constexpr UInt256 index{2};
 
 % for field in fields:
     auto const ${field["paramName"]}Value = ${canonical_expr(field)};
@@ -146,7 +146,7 @@ TEST(${name}Tests, BuilderFromSleRoundTrip)
 // 3) Verify wrapper throws when constructed from wrong ledger entry type.
 TEST(${name}Tests, WrapperThrowsOnWrongEntryType)
 {
-    UInt256 const index{3u};
+    constexpr UInt256 index{3};
 
     // Build a valid ledger entry of a different type
     // Ticket requires: Account, OwnerNode, TicketSequence, PreviousTxnID, PreviousTxnLgrSeq
@@ -177,7 +177,7 @@ TEST(${name}Tests, WrapperThrowsOnWrongEntryType)
 // 4) Verify builder throws when constructed from wrong ledger entry type.
 TEST(${name}Tests, BuilderThrowsOnWrongEntryType)
 {
-    UInt256 const index{4u};
+    constexpr UInt256 index{4};
 
     // Build a valid ledger entry of a different type
 % if wrong_le_include == "Ticket":
@@ -207,7 +207,7 @@ TEST(${name}Tests, BuilderThrowsOnWrongEntryType)
 // 5) Build with only required fields and verify optional fields return nullopt.
 TEST(${name}Tests, OptionalFieldsReturnNullopt)
 {
-    UInt256 const index{3u};
+    constexpr UInt256 index{3};
 
 % for field in required_fields:
     auto const ${field["paramName"]}Value = ${canonical_expr(field)};

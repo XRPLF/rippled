@@ -133,10 +133,9 @@ OrderBookDBImpl::update(std::shared_ptr<ReadView const> const& ledger)
 
                 if (sle->isFieldPresent(sfTakerPaysCurrency))
                 {
-                    Issue issue;
-                    issue.currency = sle->getFieldH160(sfTakerPaysCurrency);
-                    issue.account = sle->getFieldH160(sfTakerPaysIssuer);
-                    book.in = issue;
+                    book.in = Issue{
+                        Currency{sle->getFieldH160(sfTakerPaysCurrency)},
+                        AccountID{sle->getFieldH160(sfTakerPaysIssuer)}};
                 }
                 else
                 {
@@ -145,12 +144,12 @@ OrderBookDBImpl::update(std::shared_ptr<ReadView const> const& ledger)
                         "OrderBookDB::update, must be TakerPaysMPT");
                     book.in = sle->getFieldH192(sfTakerPaysMPT);
                 }
+
                 if (sle->isFieldPresent(sfTakerGetsCurrency))
                 {
-                    Issue issue;
-                    issue.currency = sle->getFieldH160(sfTakerGetsCurrency);
-                    issue.account = sle->getFieldH160(sfTakerGetsIssuer);
-                    book.out = issue;
+                    book.out = Issue{
+                        Currency{sle->getFieldH160(sfTakerGetsCurrency)},
+                        AccountID{sle->getFieldH160(sfTakerGetsIssuer)}};
                 }
                 else
                 {
