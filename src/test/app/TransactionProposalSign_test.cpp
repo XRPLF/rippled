@@ -24,6 +24,7 @@
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/HashPrefix.h>
 #include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STArray.h>
@@ -80,8 +81,11 @@ struct TransactionProposalSign_test : public beast::unit_test::Suite
             signerAccount.id(),
             signingKey.pk().slice(),
             env.current()->rules());
-        if (!BEAST_EXPECT(data))
+        if (!data.has_value())
+        {
+            BEAST_EXPECT(false);
             return {};
+        }
         auto const sig = xrpl::sign(signingKey.pk(), signingKey.sk(), data->slice());
 
         json::Value jv;

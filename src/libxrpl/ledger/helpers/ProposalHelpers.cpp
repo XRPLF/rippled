@@ -10,7 +10,6 @@
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Batch.h>
-#include <xrpl/protocol/HashPrefix.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Keylet.h>
 #include <xrpl/protocol/LedgerFormats.h>
@@ -28,6 +27,7 @@
 #include <xrpl/protocol/TxFormats.h>
 
 #include <algorithm>
+#include <cstddef>
 #include <cstdint>
 #include <exception>
 #include <optional>
