@@ -9,3 +9,6 @@ xrpl-host-functions = { path = "../xrpl-host-functions", features = ["wasmi_glue
 
 [dev-dependencies]
 wat = "1"
+
+[lints]
+workspace = true

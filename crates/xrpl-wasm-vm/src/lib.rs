@@ -14,6 +14,7 @@
     clippy::cast_sign_loss,
     clippy::cast_lossless
 )]
+#![cfg_attr(coverage_nightly, feature(coverage_attribute))]
 
 mod abi;
 mod args;

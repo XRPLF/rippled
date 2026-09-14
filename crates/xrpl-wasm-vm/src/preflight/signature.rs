@@ -91,6 +91,7 @@ fn as_str(val_type: ValType) -> &'static str {
 /// `CheckError` a refusal becomes and where this rule sits among the other three
 /// are the parent's tests.
 #[cfg(test)]
+#[cfg_attr(coverage_nightly, coverage(off))]
 mod tests {
     use super::*;
 

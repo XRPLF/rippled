@@ -72,7 +72,7 @@ TRANSACTION(ttESCROW_CREATE, 1, EscrowCreate, ({.delegable = Delegation::Delegab
     {sfCancelAfter, SoeOptional},
     {sfFinishAfter, SoeOptional},
     {sfBytecode, SoeOptional},
-    {sfData,           SoeOptional},
+    {sfData, SoeOptional},
 }))
 
 /** This transaction type completes an existing escrow. */

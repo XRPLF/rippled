@@ -39,6 +39,8 @@ Vault::create(CreateArgs const& args) const
         jv[sfSubscriptionDate] = *args.subscriptionDate;
     if (args.redemptionDate)
         jv[sfRedemptionDate] = *args.redemptionDate;
+    if (args.leVersion)
+        jv[sfLEVersion] = std::to_underlying(*args.leVersion);
     return {jv, keylet};
 }
 
