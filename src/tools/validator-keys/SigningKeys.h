@@ -166,12 +166,12 @@ public:
      * @param masterSig Master signature over the bytes `startValidatorToken`
      *                  returned
      *
-     * @return The token, or nullopt if the keys are revoked
+     * @return The token
      *
-     * @throws std::runtime_error if no such token is pending or the
-     *         signature does not verify
+     * @throws std::runtime_error if the keys are revoked, no such token is
+     *         pending, or the signature does not verify
      */
-    std::optional<ValidatorToken>
+    ValidatorToken
     finishToken(Blob const& masterSig);
 
     /**
@@ -181,12 +181,12 @@ public:
      *                  returned
      * @param signingSig Signing-key signature over the same bytes
      *
-     * @return The base64 manifest, or nullopt if the keys are revoked
+     * @return The base64 manifest
      *
-     * @throws std::runtime_error if no such token is pending or a signature
-     *         does not verify
+     * @throws std::runtime_error if the keys are revoked, no such token is
+     *         pending, or a signature does not verify
      */
-    std::optional<std::string>
+    std::string
     finishExternalToken(Blob const& masterSig, Blob const& signingSig);
 
     /**

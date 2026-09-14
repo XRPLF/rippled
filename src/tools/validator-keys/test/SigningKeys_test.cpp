@@ -1,10 +1,13 @@
 #include <xrpl/basics/StringUtilities.h>
 #include <xrpl/basics/base64.h>
+#include <xrpl/json/json_reader.h>
 #include <xrpl/protocol/HashPrefix.h>
 #include <xrpl/protocol/Sign.h>
 
 #include <tools/validator-keys/SigningKeys.h>
 #include <tools/validator-keys/test/KeyFileGuard.h>
+
+#include <fstream>
 
 namespace xrpl {
 
@@ -565,13 +568,10 @@ private:
                     continue;
                 auto const token = keys.finishToken(*sigBlob);
 
-                if (!BEAST_EXPECT(token))
-                    continue;
-
-                auto const tokenPublicKey = derivePublicKey(tokenKeyType, token->validationSecret);
+                auto const tokenPublicKey = derivePublicKey(tokenKeyType, token.validationSecret);
 
                 STObject st(sfGeneric);
-                auto const manifest = xrpl::base64Decode(token->manifest);
+                auto const manifest = xrpl::base64Decode(token.manifest);
                 SerialIter sit(manifest.data(), manifest.size());
                 st.set(sit);
 
@@ -717,9 +717,7 @@ private:
                     return;
 
                 // Overwrite file with new sequence
-                auto const token = keys.finishToken(*sigBlob);
-                if (!BEAST_EXPECT(token))
-                    return;
+                keys.finishToken(*sigBlob);
                 BEAST_EXPECT(keys != fileKeys);
                 keys.writeToFile(keyFile);
             }
@@ -729,6 +727,258 @@ private:
                 BEAST_EXPECT(keys == fileKeys);
             }
         }
+    }
+
+    void
+    testKeyFileFields()
+    {
+        testcase("Key File Fields");
+
+        using namespace boost::filesystem;
+
+        path const subdir = "test_key_file";
+        KeyFileGuard const g(*this, subdir.string());
+        path const keyFile = subdir / "validator_keys.json";
+
+        auto const kp = generateKeyPair(KeyType::Ed25519, randomSeed());
+        auto const base = [&kp]() {
+            json::Value jv;
+            jv["key_type"] = "ed25519";
+            jv["secret_key"] = toBase58(TokenType::NodePrivate, kp.second);
+            jv["token_sequence"] = 1;
+            jv["revoked"] = false;
+            return jv;
+        };
+        auto const invalid = [&keyFile](json::Value const& jv, std::string const& field) {
+            return "Key file '" + keyFile.string() + "' contains invalid \"" + field +
+                "\" field: " + jv[field].toStyledString();
+        };
+
+        for (auto const field :
+             {"domain",
+              "manifest",
+              "pending_token_secret",
+              "pending_signing_key",
+              "pending_key_type"})
+        {
+            auto jv = base();
+            jv[field] = 1;
+            testKeyFile(keyFile, jv, invalid(jv, field));
+        }
+        for (auto const field :
+             {"manifest", "pending_token_secret", "pending_signing_key", "pending_key_type"})
+        {
+            auto jv = base();
+            jv[field] = "not valid";
+            testKeyFile(keyFile, jv, invalid(jv, field));
+        }
+        {
+            auto jv = base();
+            jv["manifest"] = "";
+            testKeyFile(keyFile, jv, invalid(jv, "manifest"));
+        }
+        {
+            // An external key whose key_type disagrees with its public key
+            auto jv = base();
+            jv["secret_key"] = "external";
+            jv["public_key"] = toBase58(TokenType::NodePublic, kp.first);
+            jv["key_type"] = "secp256k1";
+            testKeyFile(
+                keyFile,
+                jv,
+                "Key file '" + keyFile.string() +
+                    "' has a \"key_type\" that does not match \"public_key\"");
+        }
+    }
+
+    void
+    testVerifyManifest()
+    {
+        testcase("Verify Manifest");
+
+        using namespace boost::filesystem;
+
+        path const subdir = "test_key_file";
+        KeyFileGuard const g(*this, subdir.string());
+        path const keyFile = subdir / "validator_keys.json";
+
+        auto expectBadManifest = [this, &keyFile](json::Value const& jv) {
+            std::ofstream o(keyFile.string(), std::ios_base::trunc);
+            o << jv.toStyledString();
+            o.close();
+            try
+            {
+                SigningKeys::make_SigningKeys(keyFile).manifest();
+                fail();
+            }
+            catch (std::runtime_error const& e)
+            {
+                BEAST_EXPECT(e.what() == std::string("Manifest is not properly signed"));
+            }
+        };
+
+        SigningKeys keys(KeyType::Ed25519);
+        keys.createValidatorToken(KeyType::Ed25519);
+        auto const tokenManifest = strHex(makeSlice(keys.manifest()));
+        keys.writeToFile(keyFile);
+        json::Value jv;
+        {
+            std::ifstream in(keyFile.string());
+            json::Reader reader;
+            reader.parse(in, jv);
+        }
+
+        // A token manifest on revoked keys
+        jv["revoked"] = true;
+        expectBadManifest(jv);
+
+        // A revocation manifest on keys that are not revoked
+        SigningKeys revoked(KeyType::Ed25519);
+        revoked.revoke();
+        jv["revoked"] = false;
+        jv["manifest"] = strHex(makeSlice(revoked.manifest()));
+        expectBadManifest(jv);
+
+        // A token manifest of another key
+        jv["manifest"] = tokenManifest;
+        jv["secret_key"] = toBase58(
+            TokenType::NodePrivate, generateKeyPair(KeyType::Ed25519, randomSeed()).second);
+        expectBadManifest(jv);
+    }
+
+    void
+    testExternalSigningKey()
+    {
+        testcase("External Signing Key");
+
+        using namespace boost::filesystem;
+
+        path const subdir = "test_key_file";
+        KeyFileGuard const g(*this, subdir.string());
+        path const keyFile = subdir / "validator_keys.json";
+
+        // The master key is in software here; the signing key is held elsewhere.
+        SigningKeys const signer(KeyType::Ed25519);
+        SigningKeys keys(KeyType::Ed25519);
+
+        auto const start = keys.startValidatorToken(KeyType::Ed25519, signer.publicKey());
+        BEAST_EXPECT(start);
+        // The pending signing key survives a round trip through the key file
+        keys.writeToFile(keyFile);
+        auto fileKeys = SigningKeys::make_SigningKeys(keyFile);
+        BEAST_EXPECT(keys == fileKeys);
+
+        auto const masterSig = *strUnHex(keys.signHex(*start));
+        auto const signingSig = *strUnHex(signer.signHex(*start));
+        auto const manifest =
+            deserializeManifest(base64Decode(fileKeys.finishExternalToken(masterSig, signingSig)));
+        BEAST_EXPECT(manifest && manifest->verify());
+        BEAST_EXPECT(manifest && manifest->signingKey == signer.publicKey());
+        BEAST_EXPECT(manifest && manifest->sequence == 1);
+        BEAST_EXPECT(fileKeys.sequence() == 1);
+
+        // Both signatures must be right
+        try
+        {
+            keys.finishExternalToken(masterSig, masterSig);
+            fail();
+        }
+        catch (std::runtime_error const& e)
+        {
+            BEAST_EXPECT(e.what() == std::string("Manifest is not properly signed"));
+        }
+        // Nothing pending
+        try
+        {
+            SigningKeys(KeyType::Ed25519).finishExternalToken(masterSig, signingSig);
+            fail();
+        }
+        catch (std::runtime_error const& e)
+        {
+            BEAST_EXPECT(
+                e.what() == std::string("No pending token with an external signing key to finish"));
+        }
+        // Revoked keys finish nothing
+        keys.revoke();
+        BEAST_EXPECT(!keys.startValidatorToken(KeyType::Ed25519, signer.publicKey()));
+        for (auto const external : {false, true})
+        {
+            try
+            {
+                if (external)
+                    keys.finishExternalToken(masterSig, signingSig);
+                else
+                    keys.finishToken(masterSig);
+                fail();
+            }
+            catch (std::runtime_error const& e)
+            {
+                BEAST_EXPECT(e.what() == std::string("Validator keys have been revoked."));
+            }
+        }
+    }
+
+    void
+    testDomainAndHex()
+    {
+        testcase("Domain and Hex");
+
+        SigningKeys keys(KeyType::Ed25519);
+        auto expectError = [this, &keys](std::string const& domain, std::string const& expected) {
+            try
+            {
+                keys.domain(domain);
+                fail(expected);
+            }
+            catch (std::runtime_error const& e)
+            {
+                BEAST_EXPECT(e.what() == expected);
+            }
+        };
+        expectError("a.b", "The domain must be between 4 and 128 characters long.");
+        expectError(
+            std::string(126, 'a') + ".com",
+            "The domain must be between 4 and 128 characters long.");
+        expectError(
+            "-bad.example", "The domain field must use the '[host.][subdomain.]domain.tld' format");
+        keys.domain("good.example");
+        BEAST_EXPECT(keys.domain() == "good.example");
+
+        try
+        {
+            keys.signHex("zz");
+            fail();
+        }
+        catch (std::runtime_error const& e)
+        {
+            BEAST_EXPECT(e.what() == std::string("Could not decode hex string: zz"));
+        }
+    }
+
+    void
+    testKeyFileGuard()
+    {
+        testcase("Key File Guard");
+
+        using namespace boost::filesystem;
+
+        path const subdir = "test_key_file";
+        {
+            KeyFileGuard const g(*this, subdir.string());
+            // A second guard for the same directory cannot set up
+            try
+            {
+                KeyFileGuard const again(*this, subdir.string());
+                fail();
+            }
+            catch (std::runtime_error const& e)
+            {
+                BEAST_EXPECT(e.what() == "Cannot create directory: " + subdir.string());
+            }
+            // The directory disappearing early is only logged at teardown
+            remove_all(subdir);
+        }
+        BEAST_EXPECT(!exists(subdir));
     }
 
 public:
@@ -746,6 +996,11 @@ public:
         testExternalCreateValidatorToken();
         testExternalRevoke();
         testExternalWriteToFile();
+        testKeyFileFields();
+        testVerifyManifest();
+        testExternalSigningKey();
+        testDomainAndHex();
+        testKeyFileGuard();
     }
 };
 

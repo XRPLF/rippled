@@ -868,7 +868,6 @@ private:
         BEAST_EXPECT(toSign);
         auto const manifest = master.finishExternalToken(
             *strUnHex(master.signHex(*toSign)), *strUnHex(external.signHex(*toSign)));
-        BEAST_EXPECT(manifest);
         master.writeToFile(publisher.keyFile);
 
         ToolOptions hardware;
@@ -876,7 +875,7 @@ private:
         hardware.manifestFile = subdir / "manifest.txt";
         {
             std::ofstream o(hardware.manifestFile->string());
-            o << *manifest << "\n";
+            o << manifest << "\n";
         }
         run("start_sign_list",
             {unsignedList.string()},
@@ -895,6 +894,174 @@ private:
             "The signature does not verify under the manifest's signing key");
         run("finish_sign_list", {external.signHex(bytes), unsignedList.string()}, hardware, "");
         BEAST_EXPECT(run("verify_list", {hardware.outFile->string()}, verifier, "") == 0);
+
+        // finish_sign_list appends to a version 2 list
+        {
+            ToolOptions append = hardware;
+            append.listVersion = 2;
+            append.appendFile = v2.outFile;
+            append.outFile = subdir / "vl2c.json";
+            run("finish_sign_list", {external.signHex(bytes), unsignedList.string()}, append, "");
+            BEAST_EXPECT(run("verify_list", {append.outFile->string()}, verifier, "") == 0);
+        }
+        run("finish_sign_list",
+            {external.signHex(bytes), unsignedList.string()},
+            publisher,
+            "finish_sign_list needs --manifest-file");
+
+        // The signed list goes to stdout without --out
+        {
+            coutCapture.str("");
+            ToolOptions stdoutSigner = signer;
+            stdoutSigner.outFile.reset();
+            run("sign_list", {unsignedList.string()}, stdoutSigner, "");
+            BEAST_EXPECT(coutCapture.str().find("\"public_key\"") != std::string::npos);
+        }
+        // Output paths that cannot be opened
+        {
+            ToolOptions bad = signer;
+            bad.outFile = subdir / "missing" / "vl.json";
+            run("sign_list",
+                {unsignedList.string()},
+                bad,
+                "Cannot open output file: " + bad.outFile->string());
+            ToolOptions badToken = publisher;
+            badToken.outFile = subdir / "missing" / "token.txt";
+            run("create_token",
+                {},
+                badToken,
+                "Cannot open output file: " + badToken.outFile->string());
+        }
+        // verify_list input problems
+        run("verify_list",
+            {(subdir / "missing.json").string()},
+            verifier,
+            "Failed to open file: " + (subdir / "missing.json").string());
+        {
+            path const notJson = subdir / "not.json";
+            std::ofstream o(notJson.string());
+            o << "nope\n";
+            o.close();
+            run("verify_list",
+                {notJson.string()},
+                verifier,
+                "Not a JSON document: " + notJson.string());
+        }
+        // Tokens that cannot sign a list: an invalid manifest, a secret of another key
+        auto writeToken = [](path const& file, ValidatorToken const& token) {
+            std::ofstream o(file.string());
+            o << "[validator_token]\n" << tokenToBase64(token) << "\n";
+        };
+        {
+            ToolOptions badManifest = signer;
+            badManifest.tokenFile = subdir / "bad-manifest-token.txt";
+            writeToken(
+                *badManifest.tokenFile,
+                ValidatorToken{"AAAA", generateSecretKey(KeyType::Ed25519, randomSeed())});
+            run("sign_list",
+                {unsignedList.string()},
+                badManifest,
+                "The token's manifest is not valid");
+
+            ToolOptions wrongSecret = signer;
+            wrongSecret.tokenFile = subdir / "wrong-secret-token.txt";
+            writeToken(
+                *wrongSecret.tokenFile,
+                ValidatorToken{manifest, generateSecretKey(KeyType::Ed25519, randomSeed())});
+            run("sign_list",
+                {unsignedList.string()},
+                wrongSecret,
+                "The token's secret does not match its manifest");
+        }
+        // A revoked manifest signs nothing
+        {
+            SigningKeys revokedKeys(KeyType::Ed25519);
+            ToolOptions revoked = hardware;
+            revoked.manifestFile = subdir / "revoked-manifest.txt";
+            std::ofstream o(revoked.manifestFile->string());
+            o << revokedKeys.revoke() << "\n";
+            o.close();
+            run("start_sign_list", {unsignedList.string()}, revoked, "The manifest is revoked");
+            run("finish_sign_list",
+                {external.signHex(bytes), unsignedList.string()},
+                revoked,
+                "The manifest is revoked");
+        }
+    }
+
+    void
+    testDomainCommands()
+    {
+        testcase("Domain Commands");
+
+        std::stringstream coutCapture;
+        CoutRedirect coutRedirect{coutCapture};
+
+        using namespace boost::filesystem;
+
+        path const subdir = "test_key_file";
+        KeyFileGuard const g(*this, subdir.string());
+        ToolOptions options = toolOptions(subdir / "validator_keys.json");
+
+        auto run = [this](
+                       std::string const& command,
+                       std::vector<std::string> const& args,
+                       ToolOptions const& options,
+                       std::string const& expectedError) {
+            try
+            {
+                runCommand(command, args, options);
+                BEAST_EXPECTS(expectedError.empty(), "expected: " + expectedError);
+            }
+            catch (std::exception const& e)
+            {
+                BEAST_EXPECTS(e.what() == expectedError, e.what());
+            }
+        };
+
+        run("create_keys", {}, options, "");
+        // No manifest yet
+        coutCapture.str("");
+        run("show_manifest", {"hex"}, options, "");
+        BEAST_EXPECT(coutCapture.str().find("unavailable") != std::string::npos);
+
+        run("clear_domain", {}, options, "");  // already clear
+        run("set_domain", {"validator.example.com"}, options, "");
+        run("set_domain", {"validator.example.com"}, options, "");  // already set
+        run("attest_domain", {}, options, "");
+        coutCapture.str("");
+        run("show_manifest", {"base64"}, options, "");
+        BEAST_EXPECT(coutCapture.str().find("(Base64)") != std::string::npos);
+        coutCapture.str("");
+        run("show_manifest", {"hex"}, options, "");
+        BEAST_EXPECT(coutCapture.str().find("(Hex)") != std::string::npos);
+
+        // The token sequence is exhausted
+        {
+            auto const kp = generateKeyPair(KeyType::Ed25519, randomSeed());
+            SigningKeys(KeyType::Ed25519, kp.second, std::numeric_limits<std::uint32_t>::max() - 1)
+                .writeToFile(options.keyFile);
+            run("set_domain",
+                {"other.example.com"},
+                options,
+                "Maximum number of tokens have already been generated.\n"
+                "Revoke validator keys if previous token has been compromised.");
+        }
+
+        // Revoked keys refuse domain work and tokens
+        ToolOptions revoked = toolOptions(subdir / "revoked.json");
+        run("create_keys", {}, revoked, "");
+        run("revoke_keys", {}, revoked, "");
+        std::string const revokedError =
+            "Operation error: The specified master key has been revoked!";
+        run("set_domain", {"validator.example.com"}, revoked, revokedError);
+        run("attest_domain", {}, revoked, revokedError);
+        run("finish_token", {"00"}, revoked, "Validator keys have been revoked.");
+        run("finish_token", {"00", "00"}, revoked, "Validator keys have been revoked.");
+        run("finish_token",
+            {"00", "00"},
+            options,
+            "No pending token with an external signing key to finish");
     }
 
 public:
@@ -913,6 +1080,7 @@ public:
         testHexSign();
         testRunCommand();
         testListCommands();
+        testDomainCommands();
     }
 };
 

@@ -95,7 +95,8 @@ signList(UnsignedList const& list, PublicKey const& signingKey, SecretKey const&
  * Version 1 is `{blob, manifest, public_key, signature, version}`. Version 2
  * carries the blob and signature inside `blobs_v2`; when @p append is given it
  * must be a version 2 document for the same master key and the new blob is
- * added to it.
+ * added to it. Blobs signed under an earlier manifest keep that manifest in
+ * their entry.
  *
  * @throws std::runtime_error if @p append is not a version 2 document for
  *         @p masterKey or already holds the maximum number of blobs

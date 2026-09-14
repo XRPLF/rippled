@@ -265,42 +265,27 @@ finishToken(std::vector<std::string> const& signatures, ToolOptions const& optio
 
     auto keys = SigningKeys::make_SigningKeys(options.keyFile);
 
-    if (keys.revoked())
-        throw std::runtime_error("Validator keys have been revoked.");
-
     auto const masterSig = decodeSignature(signatures.at(0));
 
     if (signatures.size() == 2)
     {
-        auto const signingSig = decodeSignature(signatures.at(1));
-        auto const manifest = keys.finishExternalToken(masterSig, signingSig);
-        if (!manifest)
-            throw std::runtime_error("Validator keys have been revoked.");
-
+        auto const manifest =
+            keys.finishExternalToken(masterSig, decodeSignature(signatures.at(1)));
         keys.writeToFile(options.keyFile);
-
         emitBlock(
             "validator_manifest",
             toBase58(TokenType::NodePublic, keys.publicKey()),
-            *manifest,
+            manifest,
             options.outFile);
         return;
     }
 
     auto const token = keys.finishToken(masterSig);
-
-    if (!token)
-        throw std::runtime_error(
-            "Maximum number of tokens have already been generated.\n"
-            "Revoke validator keys if previous token has been compromised.");
-
-    // Update key file with new token sequence
     keys.writeToFile(options.keyFile);
-
     emitBlock(
         "validator_token",
         toBase58(TokenType::NodePublic, keys.publicKey()),
-        tokenToBase64(*token),
+        tokenToBase64(token),
         options.outFile);
 }
 
@@ -908,5 +893,5 @@ main(int argc, char** argv)
     }
 
     return EXIT_SUCCESS;
-    // LCOV_EXCL_STOP
 }
+// LCOV_EXCL_STOP

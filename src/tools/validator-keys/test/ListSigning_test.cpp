@@ -159,8 +159,15 @@ private:
             "{\"sequence\": 1, \"effective\": 1000, \"expiration\": 1000, \"validators\": []}",
             "\"effective\" must be earlier than \"expiration\"");
         expectError(
+            "{\"sequence\": 1, \"effective\": \"x\", \"expiration\": 1000, \"validators\": []}",
+            "\"effective\" must be an unsigned integer");
+        expectError(
             "{\"sequence\": 1, \"expiration\": 1000, \"validators\": []}",
             "\"validators\" must be a non-empty array");
+        expectError(
+            "{\"sequence\": 1, \"expiration\": 1000, \"validators\": [{\"validation_public_key\": "
+            "\"zz\"}]}",
+            "\"validation_public_key\" is not a hex public key: zz");
         expectError(
             "{\"sequence\": 1, \"expiration\": 1000, \"validators\": [{}]}",
             "every validator needs a \"validation_public_key\" string");
@@ -186,6 +193,11 @@ private:
                 "[{\"validation_public_key\": \"" +
                 strHex(key) + "\", \"manifest\": \"AAAA\"}]}";
             expectError(text, "\"manifest\" does not verify for " + strHex(key));
+            auto const notString =
+                "{\"sequence\": 1, \"expiration\": 1000, \"validators\": "
+                "[{\"validation_public_key\": \"" +
+                strHex(key) + "\", \"manifest\": 5}]}";
+            expectError(notString, "\"manifest\" must be a base64 string for " + strHex(key));
         }
     }
 
@@ -247,6 +259,40 @@ private:
             auto const result = verifyList(v2b, std::nullopt, std::nullopt, now);
             BEAST_EXPECTS(result.ok, to_string(result.report));
             BEAST_EXPECT(result.report["blobs"][1u][jss::effective].asUInt() == now + 200);
+        }
+
+        try
+        {
+            makeSignedList(
+                publisher.token.manifest,
+                publisher.manifest.masterKey,
+                list,
+                signature,
+                3,
+                std::nullopt);
+            fail();
+        }
+        catch (std::runtime_error const& e)
+        {
+            BEAST_EXPECT(e.what() == std::string("Unsupported list version"));
+        }
+
+        // Append after the signing key rotated: the earlier blobs keep their manifest
+        {
+            SigningKeys rotated = publisher.keys;
+            auto const token2 = *rotated.createValidatorToken(KeyType::Ed25519);
+            auto const manifest2 = *deserializeManifest(base64Decode(token2.manifest));
+            auto const sig2 = signList(later, *manifest2.signingKey, token2.validationSecret);
+            auto const v2c =
+                makeSignedList(token2.manifest, manifest2.masterKey, later, sig2, 2, v2b);
+            BEAST_EXPECT(v2c[jss::blobs_v2].size() == 3);
+            BEAST_EXPECT(v2c[jss::manifest].asString() == token2.manifest);
+            BEAST_EXPECT(
+                v2c[jss::blobs_v2][0u][jss::manifest].asString() == publisher.token.manifest);
+            BEAST_EXPECT(!v2c[jss::blobs_v2][2u].isMember(jss::manifest));
+            auto const result = verifyList(v2c, std::nullopt, std::nullopt, now);
+            BEAST_EXPECTS(result.ok, to_string(result.report));
+            BEAST_EXPECT(result.report["manifest_sequence"].asUInt() == 2);
         }
 
         // Append refuses the wrong shape, another publisher, and a full list
@@ -415,6 +461,99 @@ private:
                 std::nullopt,
                 now,
                 "\"manifest\" does not deserialize and verify");
+
+            expectError(
+                json::Value(json::ValueType::Array),
+                std::nullopt,
+                std::nullopt,
+                now,
+                "the list is not a JSON object");
+            {
+                auto bad = good;
+                bad[jss::public_key] = 1;
+                expectError(
+                    bad,
+                    std::nullopt,
+                    std::nullopt,
+                    now,
+                    "\"public_key\" and \"manifest\" must be strings");
+            }
+            {
+                // A revoked publisher
+                SigningKeys revoked(KeyType::Ed25519);
+                auto bad = good;
+                bad[jss::manifest] = revoked.revoke();
+                bad[jss::public_key] = strHex(revoked.publicKey());
+                expectError(
+                    bad, std::nullopt, std::nullopt, now, "the publisher's master key is revoked");
+            }
+            {
+                // A blob that parses as JSON but is not a list; the signature fails too
+                auto bad = good;
+                bad[jss::blob] = base64Encode("{}");
+                expectError(
+                    bad,
+                    std::nullopt,
+                    std::nullopt,
+                    now,
+                    "blob 0: \"sequence\" must be a positive integer");
+            }
+
+            // Version 2 structure
+            auto const v2 = makeSignedList(
+                publisher.token.manifest,
+                publisher.manifest.masterKey,
+                list,
+                signature,
+                2,
+                std::nullopt);
+            std::string const v2Shape =
+                "a version 2 list needs 1 to 5 \"blobs_v2\" entries and no top-level \"blob\"";
+            {
+                auto bad = v2;
+                bad[jss::blobs_v2] = json::Value(json::ValueType::Array);
+                expectError(bad, std::nullopt, std::nullopt, now, v2Shape);
+            }
+            {
+                auto bad = v2;
+                bad[jss::blob] = "x";
+                expectError(bad, std::nullopt, std::nullopt, now, v2Shape);
+            }
+            {
+                auto bad = v2;
+                bad[jss::blobs_v2][0u].removeMember(jss::signature);
+                expectError(
+                    bad,
+                    std::nullopt,
+                    std::nullopt,
+                    now,
+                    "every \"blobs_v2\" entry needs \"blob\" and \"signature\"");
+            }
+            {
+                auto bad = v2;
+                bad[jss::blobs_v2][0u][jss::manifest] = 5;
+                expectError(
+                    bad,
+                    std::nullopt,
+                    std::nullopt,
+                    now,
+                    "a \"blobs_v2\" entry's \"manifest\" must be a string");
+            }
+            {
+                Publisher const other;
+                auto bad = v2;
+                bad[jss::blobs_v2][0u][jss::manifest] = other.token.manifest;
+                expectError(
+                    bad,
+                    std::nullopt,
+                    std::nullopt,
+                    now,
+                    "a \"blobs_v2\" entry's \"manifest\" is not this publisher's");
+                // The publisher's own manifest in an entry is accepted
+                auto fine = v2;
+                fine[jss::blobs_v2][0u][jss::manifest] = publisher.token.manifest;
+                BEAST_EXPECT(verifyList(fine, std::nullopt, std::nullopt, now).ok);
+            }
         }
     }
 
@@ -470,6 +609,21 @@ private:
         catch (std::runtime_error const& e)
         {
             BEAST_EXPECT(e.what() == "Not a validator token: " + manifestFile.string());
+        }
+        {
+            path const bad = subdir / "bad-manifest.txt";
+            std::ofstream o(bad.string());
+            o << "AAAA\n";
+            o.close();
+            try
+            {
+                loadManifestFile(bad);
+                fail();
+            }
+            catch (std::runtime_error const& e)
+            {
+                BEAST_EXPECT(e.what() == "Not a valid manifest: " + bad.string());
+            }
         }
         try
         {

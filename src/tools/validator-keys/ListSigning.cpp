@@ -276,6 +276,15 @@ makeSignedList(
             throw std::runtime_error(
                 "The list to append to already holds " + std::to_string(kMaxBlobs) + " blobs");
         jv = existing;
+        // Blobs signed under an earlier manifest keep it, so they still verify
+        // once the top-level manifest names the current signing key.
+        auto const previous = existing.isMember(jss::manifest) && existing[jss::manifest].isString()
+            ? existing[jss::manifest].asString()
+            : std::string();
+        if (!previous.empty() && previous != manifestBase64)
+            for (auto& entry : jv[jss::blobs_v2])
+                if (!entry.isMember(jss::manifest))
+                    entry[jss::manifest] = previous;
     }
     else
     {
@@ -361,8 +370,14 @@ verifyList(
     if (expectedKey && *expectedKey != manifest->masterKey)
         fail("the master key is not the expected key");
 
-    // The blobs of either version as (blob, signature) pairs.
-    std::vector<std::pair<std::string, std::string>> blobs;
+    // The blobs of either version, each with the signing key it was signed under.
+    struct BlobEntry
+    {
+        std::string blob;
+        std::string signature;
+        PublicKey signingKey;
+    };
+    std::vector<BlobEntry> blobs;
     if (*version == 1)
     {
         if (!list.isMember(jss::blob) || !list[jss::blob].isString() ||
@@ -372,7 +387,8 @@ verifyList(
             fail("a version 1 list needs \"blob\" and \"signature\" and no \"blobs_v2\"");
             return result;
         }
-        blobs.emplace_back(list[jss::blob].asString(), list[jss::signature].asString());
+        blobs.push_back(
+            {list[jss::blob].asString(), list[jss::signature].asString(), *manifest->signingKey});
     }
     else
     {
@@ -393,6 +409,7 @@ verifyList(
                 fail("every \"blobs_v2\" entry needs \"blob\" and \"signature\"");
                 return result;
             }
+            auto signingKey = *manifest->signingKey;
             if (entry.isMember(jss::manifest))
             {
                 if (!entry[jss::manifest].isString())
@@ -401,23 +418,26 @@ verifyList(
                     return result;
                 }
                 auto const m = parseManifest(entry[jss::manifest].asString());
-                if (!m || m->masterKey != manifest->masterKey)
+                if (!m || m->masterKey != manifest->masterKey || !m->signingKey)
                     fail("a \"blobs_v2\" entry's \"manifest\" is not this publisher's");
+                else
+                    signingKey = *m->signingKey;
             }
-            blobs.emplace_back(entry[jss::blob].asString(), entry[jss::signature].asString());
+            blobs.push_back(
+                {entry[jss::blob].asString(), entry[jss::signature].asString(), signingKey});
         }
     }
 
     result.report["blobs"] = json::Value(json::ValueType::Array);
     std::size_t index = 0;
-    for (auto const& [blob, signature] : blobs)
+    for (auto const& [blob, signature, signingKey] : blobs)
     {
         auto const where = "blob " + std::to_string(index++);
         json::Value entry(json::ValueType::Object);
 
         auto const sig = strUnHex(signature);
         auto const data = base64Decode(blob);
-        if (!sig || !verify(*manifest->signingKey, makeSlice(data), makeSlice(*sig)))
+        if (!sig || !verify(signingKey, makeSlice(data), makeSlice(*sig)))
             fail(where + ": the signature does not verify under the signing key");
 
         std::optional<UnsignedList> parsed;

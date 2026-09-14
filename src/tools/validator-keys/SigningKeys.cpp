@@ -255,7 +255,7 @@ SigningKeys::verifyManifest() const
         fail();
 
     auto const pk = get<PublicKey>(st, sfPublicKey);
-    if (!pk || !verify(st, HashPrefix::Manifest, *pk, sfMasterSignature))
+    if (!pk || *pk != keys_.publicKey || !verify(st, HashPrefix::Manifest, *pk, sfMasterSignature))
         fail();
 }
 
@@ -355,11 +355,11 @@ SigningKeys::startValidatorToken(
         generatePartialManifest(tokenSequence_ + 1, keys_.publicKey, tokenPublic, domain_));
 }
 
-std::optional<ValidatorToken>
+ValidatorToken
 SigningKeys::finishToken(Blob const& masterSig)
 {
     if (revoked())
-        return std::nullopt;
+        throw std::runtime_error("Validator keys have been revoked.");
 
     if (!pendingTokenSecret_ || !pendingKeyType_)
         throw std::runtime_error("No pending token to finish");
@@ -379,11 +379,11 @@ SigningKeys::finishToken(Blob const& masterSig)
     return ValidatorToken{xrpl::base64Encode(manifest_.data(), manifest_.size()), tokenSecret};
 }
 
-std::optional<std::string>
+std::string
 SigningKeys::finishExternalToken(Blob const& masterSig, Blob const& signingSig)
 {
     if (revoked())
-        return std::nullopt;
+        throw std::runtime_error("Validator keys have been revoked.");
 
     if (!pendingSigningKey_)
         throw std::runtime_error("No pending token with an external signing key to finish");

@@ -18,15 +18,16 @@ private:
     path subDir_;
     beast::unit_test::Suite& test_;
 
-    auto
+    void
     rmDir(path const& toRm)
     {
-        if (is_directory(toRm))
-            remove_all(toRm);
+        boost::system::error_code ec;
+        if (is_directory(toRm, ec))
+            remove_all(toRm, ec);
         else
             test_.log << "Expected " << toRm.string() << " to be an existing directory."
                       << std::endl;
-    };
+    }
 
 public:
     KeyFileGuard(beast::unit_test::Suite& test, std::string const& subDir)
@@ -43,17 +44,7 @@ public:
     }
     ~KeyFileGuard()
     {
-        try
-        {
-            using namespace boost::filesystem;
-
-            rmDir(subDir_);
-        }
-        catch (std::exception& e)
-        {
-            // if we throw here, just let it die.
-            test_.log << "Error in ~KeyFileGuard: " << e.what() << std::endl;
-        };
+        rmDir(subDir_);
     }
 };
 
