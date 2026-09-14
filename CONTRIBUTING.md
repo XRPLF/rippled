@@ -92,7 +92,8 @@ If you create new source files, they must be organized as follows:
 - If the files are in any of the `libxrpl` modules, the headers (`.h`) must go
   under `include/xrpl`, and source (`.cpp`) files must go under
   `src/libxrpl`.
-- All other non-test files must go under `src/xrpld`.
+- All other non-test files must go under `src/xrpld`, except a standalone tool
+  built as its own binary on top of `libxrpl`, which goes under `src/tools`.
 - New test source files should use `gtest` and go under `src/tests`, unless that isn't possible, in which case they should use our legacy test framework and go under `src/test`.
 - All benchmark source files must go under `src/benchmarks`.
 

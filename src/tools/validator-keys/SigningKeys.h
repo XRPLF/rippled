@@ -7,17 +7,12 @@
 #include <xrpl/protocol/SecretKey.h>
 #include <xrpl/server/Manifest.h>
 
-#include <algorithm>
 #include <cstdint>
+#include <filesystem>
 #include <optional>
 #include <string>
+#include <variant>
 #include <vector>
-
-namespace boost {
-namespace filesystem {
-class path;
-}
-}  // namespace boost
 
 namespace xrpl {
 
@@ -29,13 +24,17 @@ tokenToBase64(ValidatorToken const& token);
 
 /**
  * The master key of a validator or a validator-list publisher, as stored in
- * the key file, with the manifest, token and revocation operations that the
- * master key signs.
+ * the key file, with the manifests, tokens and revocations the master key
+ * signs.
+ *
+ * A manifest is made in two steps so the master signature can come from a
+ * signer outside this process: `startToken` fixes the manifest's contents and
+ * returns the bytes to sign, `finishToken` takes the signature back. When the
+ * master secret is in the key file, `createToken` does both. A revocation
+ * follows the same two steps.
  *
  * The secret key is optional. When it is absent the key file was created with
- * `create_external` and every master signature comes from an external signer:
- * the `start*` methods return the bytes to sign as hex and the `finish*`
- * methods take the signature back.
+ * `create_external` and the master key never signs inside this process.
  */
 class SigningKeys
 {
@@ -55,20 +54,34 @@ private:
         }
     };
 
+    // A token started and not yet finished: the key type of its signing key
+    // and either that key's secret, generated here, or its public key when an
+    // external signer holds it.
+    struct Pending
+    {
+        KeyType keyType;
+        std::variant<SecretKey, PublicKey> signer;
+    };
+
     KeyType const keyType_;
     Keys const keys_;
     std::vector<std::uint8_t> manifest_;
     std::uint32_t tokenSequence_;
     bool revoked_;
     std::string domain_;
-    // A token started with `startValidatorToken` and not yet finished. Only
-    // one of the two is set: the software signing key generated for the
-    // token, or the external signing key the token will delegate to.
-    mutable std::optional<SecretKey> pendingTokenSecret_;
-    mutable std::optional<PublicKey> pendingSigningKey_;
-    mutable std::optional<KeyType> pendingKeyType_;
+    std::optional<Pending> pending_;
 
 public:
+    /**
+     * The result of finishing a token: the manifest and, when the signing key
+     * was generated here, its secret.
+     */
+    struct Finished
+    {
+        std::string manifest;
+        std::optional<SecretKey> secret;
+    };
+
     explicit SigningKeys(KeyType const& keyType);
 
     SigningKeys(
@@ -93,127 +106,77 @@ public:
      *
      * @param keyFile Path to JSON key file
      *
-     * @throws std::runtime_error if file content is invalid
+     * @throws std::runtime_error if file content is invalid or the stored
+     *         manifest is not a valid manifest for this key
      */
     static SigningKeys
-    make_SigningKeys(boost::filesystem::path const& keyFile);
+    make_SigningKeys(std::filesystem::path const& keyFile);
 
     ~SigningKeys() = default;
     SigningKeys(SigningKeys const&) = default;
     SigningKeys&
     operator=(SigningKeys const&) = delete;
 
-    inline bool
-    operator==(SigningKeys const& rhs) const
-    {
-        return revoked_ == rhs.revoked_ && keyType_ == rhs.keyType_ &&
-            tokenSequence_ == rhs.tokenSequence_ && keys_.publicKey == rhs.keys_.publicKey &&
-            keys_.secretKey.has_value() == rhs.keys_.secretKey.has_value() &&
-            (!keys_.secretKey ||
-             std::equal(
-                 keys_.secretKey->begin(), keys_.secretKey->end(), rhs.keys_.secretKey->begin()));
-    }
+    bool
+    operator==(SigningKeys const& rhs) const;
 
     /**
-     * Writes the keys to a JSON key file.
+     * Writes the keys to a JSON key file readable by its owner only. The file
+     * is replaced whole, so a failed write leaves the previous content.
      *
      * @param keyFile Path to file to write
      *
-     * @note Overwrites an existing key file
-     *
-     * @throws std::runtime_error if unable to create the parent directory
+     * @throws std::runtime_error if the file cannot be written
      */
     void
-    writeToFile(boost::filesystem::path const& keyFile) const;
+    writeToFile(std::filesystem::path const& keyFile) const;
 
     /**
-     * Returns a validator token for the next sequence.
+     * Starts a token: fixes the next manifest's contents and returns the
+     * bytes both its signatures cover, as hex.
+     *
+     * With @p externalSigningKey the token delegates to that key and its
+     * signature must come from outside too; otherwise a signing key of
+     * @p keyType is generated and kept pending until `finishToken`.
+     *
+     * @throws std::runtime_error if the keys are revoked, the sequence is
+     *         exhausted, or the external signing key is the master key
+     */
+    std::string
+    startToken(
+        KeyType const& keyType = KeyType::Secp256k1,
+        std::optional<PublicKey> const& externalSigningKey = std::nullopt);
+
+    /**
+     * Finishes the pending token with the master signature and, when the
+     * signing key is external, the signing key's signature over the same
+     * bytes.
+     *
+     * @throws std::runtime_error if no token is pending, a needed signature is
+     *         missing, or the manifest does not verify
+     */
+    Finished
+    finishToken(Blob const& masterSig, std::optional<Blob> const& signingSig = std::nullopt);
+
+    /**
+     * Makes a token signed with the master secret in this key file.
      *
      * @param keyType Key type of the token's signing key
      *
-     * @return The token, or nullopt if the keys are revoked or the sequence is
-     *         exhausted
-     *
-     * @throws std::runtime_error if the master key is external
-     */
-    std::optional<ValidatorToken>
-    createValidatorToken(KeyType const& keyType = KeyType::Secp256k1);
-
-    /**
-     * Starts a token whose master signature comes from an external signer.
-     *
-     * When @p externalSigningKey is set, the token delegates to that key and
-     * its signature must also come from the external signer, so the returned
-     * bytes are signed twice: once by the signing key and once by the master
-     * key. Otherwise a software signing key is generated and kept pending in
-     * the key file until `finishToken`.
-     *
-     * @param keyType Key type of a generated signing key; ignored when
-     *                @p externalSigningKey is set
-     * @param externalSigningKey Signing key held by the external signer
-     *
-     * @return The hex bytes to sign, or nullopt if the keys are revoked or
-     *         the sequence is exhausted
-     */
-    std::optional<std::string>
-    startValidatorToken(
-        KeyType const& keyType = KeyType::Secp256k1,
-        std::optional<PublicKey> const& externalSigningKey = std::nullopt) const;
-
-    /**
-     * Finishes a token started with a generated signing key.
-     *
-     * @param masterSig Master signature over the bytes `startValidatorToken`
-     *                  returned
-     *
-     * @return The token
-     *
-     * @throws std::runtime_error if the keys are revoked, no such token is
-     *         pending, or the signature does not verify
+     * @throws std::runtime_error if the master key is external, the keys are
+     *         revoked, or the sequence is exhausted
      */
     ValidatorToken
-    finishToken(Blob const& masterSig);
+    createToken(KeyType const& keyType = KeyType::Secp256k1);
 
     /**
-     * Finishes a token started with an external signing key.
-     *
-     * @param masterSig Master signature over the bytes `startValidatorToken`
-     *                  returned
-     * @param signingSig Signing-key signature over the same bytes
-     *
-     * @return The base64 manifest
-     *
-     * @throws std::runtime_error if the keys are revoked, no such token is
-     *         pending, or a signature does not verify
-     */
-    std::string
-    finishExternalToken(Blob const& masterSig, Blob const& signingSig);
-
-    /**
-     * Revokes the keys.
-     *
-     * @return The base64 revocation manifest
-     *
-     * @throws std::runtime_error if the master key is external
-     */
-    std::string
-    revoke();
-
-    /**
-     * Starts a revocation whose master signature comes from an external
-     * signer.
-     *
-     * @return The hex bytes to sign
+     * Returns the bytes a master signature over a revocation covers, as hex.
      */
     std::string
     startRevoke() const;
 
     /**
-     * Finishes a revocation.
-     *
-     * @param masterSig Master signature over the bytes `startRevoke` returned
-     *
-     * @return The base64 revocation manifest
+     * Records the revocation and returns the base64 revocation manifest.
      *
      * @throws std::runtime_error if the signature does not verify
      */
@@ -221,9 +184,15 @@ public:
     finishRevoke(Blob const& masterSig);
 
     /**
-     * Signs a string with the master key.
+     * Revokes the keys with the master secret in this key file.
      *
-     * @param data String to sign
+     * @throws std::runtime_error if the master key is external
+     */
+    std::string
+    revoke();
+
+    /**
+     * Signs a string with the master key.
      *
      * @return The hex signature
      *
@@ -235,18 +204,20 @@ public:
     /**
      * Signs hex-encoded bytes with the master key.
      *
-     * @param data Hex string; decoded to raw bytes before signing
-     *
      * @return The hex signature
      *
-     * @throws std::runtime_error if the master key is external
+     * @throws std::runtime_error if the data is not hex or the master key is
+     *         external
      */
     std::string
     signHex(std::string data) const;
 
     /**
-     * Returns the public key.
+     * The string a domain attestation signs, for the domain of this key.
      */
+    std::string
+    attestationData() const;
+
     PublicKey const&
     publicKey() const
     {
@@ -254,17 +225,20 @@ public:
     }
 
     /**
-     * Returns true if the keys are revoked.
+     * True when the master secret is in the key file.
      */
+    bool
+    hasSecret() const
+    {
+        return keys_.secretKey.has_value();
+    }
+
     bool
     revoked() const
     {
         return revoked_;
     }
 
-    /**
-     * Returns the domain associated with this key, if any.
-     */
     std::string const&
     domain() const
     {
@@ -272,35 +246,22 @@ public:
     }
 
     /**
-     * Sets the domain associated with this key.
+     * Sets the domain the next manifest carries.
+     *
+     * @throws std::runtime_error if the domain is not well formed
      */
     void
     domain(std::string d);
 
     /**
-     * Checks the stored manifest.
-     *
-     * @throws std::runtime_error if the manifest is malformed or not signed
-     *         correctly
+     * The last manifest generated, serialized; empty if none.
      */
-    void
-    verifyManifest() const;
-
-    /**
-     * Returns the last manifest generated, if available.
-     */
-    std::vector<std::uint8_t>
+    std::vector<std::uint8_t> const&
     manifest() const
     {
-        if (!manifest_.empty())
-            verifyManifest();
-
         return manifest_;
     }
 
-    /**
-     * Returns the sequence number of the last manifest generated.
-     */
     std::uint32_t
     sequence() const
     {
@@ -308,11 +269,17 @@ public:
     }
 
 private:
-    void
-    setManifest(STObject const& st);
+    STObject
+    partialManifest(std::uint32_t sequence, PublicKey const& signingKey) const;
+
+    STObject
+    partialRevocation() const;
 
     void
-    clearPending() const;
+    storeManifest(STObject const& st);
+
+    void
+    checkManifest() const;
 };
 
 }  // namespace xrpl

@@ -1,18 +1,18 @@
 # Validator Keys Tool Guide
 
 This guide explains how to set up a validator so its public key does not have to
-change if the rippled config and/or server are compromised.
+change if the xrpld config and/or server are compromised.
 
 A validator uses a public/private key pair. The validator is identified by the
 public key. The private key should be tightly controlled. It is used to:
 
-- sign tokens authorizing a rippled server to run as the validator identified
+- sign tokens authorizing a xrpld server to run as the validator identified
   by this public key.
 - sign revocations indicating that the private key has been compromised and
   the validator public key should no longer be trusted.
 
 Each new token invalidates all previous tokens for the validator public key.
-The current token needs to be present in the rippled config file.
+The current token needs to be present in the xrpld config file.
 
 Servers that trust the validator will adapt automatically when the token
 changes.
@@ -63,12 +63,12 @@ Sample output:
   VUSmEydzBpMjFlcTNNWXl3TFZKWm5GT3I3QzBrdzJBaVR6U0NqSXpkaXRROD0ifQ==
 ```
 
-For a new validator, add the [validator_token] value to the rippled config file.
+For a new validator, add the [validator_token] value to the xrpld config file.
 For a pre-existing validator, replace the old [validator_token] value with the
 newly generated one. A valid config file may only contain one [validator_token]
 value. After the config is updated, restart xrpld.
 
-There is a hard limit of 4,294,967,293 tokens that can be generated for a given
+There is a hard limit of 4,294,967,294 tokens that can be generated for a given
 validator key pair.
 
 ## Key Revocation
@@ -150,6 +150,15 @@ manifest without a secret:
   $ validator-keys finish_token <master signature> <signing signature>
 ```
 
+A secp256k1 signature from an external signer must be in the fully canonical
+form a server accepts (a low `S` value in the DER encoding); the tool rejects
+any other form. An ed25519 signature has one form.
+
+`set_domain` on an external master key stores the domain for the next token
+made with `start_token` and `finish_token`, and `attest_domain` then prints the
+bytes of the attestation for the external signer; the hex signature is the
+attestation.
+
 For testing without a hardware signer, a second key file can stand in for it:
 
 ```
@@ -167,8 +176,10 @@ that manifest and the signing key, so a publisher's setup is:
   $ validator-keys create_token --token-key-type ed25519 --out publisher-token.txt
 ```
 
-`--token-key-type ed25519` matches what hardware signers support. `--out`
-writes the token to a file readable only by its owner instead of printing it.
+`--token-key-type ed25519` matches what hardware signers support; it is for a
+publisher's signing key only, since xrpld loads secp256k1 tokens from
+`[validator_token]` and no other. `--out` writes the token to a file readable
+only by its owner instead of printing it.
 
 The manifest's sequence is `token_sequence` in the key file. A server keeps
 the highest sequence it has seen for a master key, so a key migrated from

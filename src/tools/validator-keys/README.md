@@ -10,11 +10,13 @@ packages as `/usr/bin/validator-keys`.
 
 ## Build
 
-Configure with `-Dvalidator_keys=ON` and build the `validator-keys` target:
+Configure with `-Dvalidator_keys=ON` and build the `validator-keys` target. With
+`-Dtests=ON` the gtest suites under `src/tests/tools/validator-keys` build as
+`validator_keys_tests`:
 
 ```
-cmake --build . --target validator-keys
-./validator-keys --unittest
+cmake --build . --target validator-keys validator_keys_tests
+./validator_keys_tests
 ```
 
 ## Guide
