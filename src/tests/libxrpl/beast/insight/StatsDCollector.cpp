@@ -1,7 +1,5 @@
 #include <xrpl/beast/insight/StatsDCollector.h>
 
-#include <xrpl/beast/insight/Counter.h>
-#include <xrpl/beast/insight/Gauge.h>
 #include <xrpl/beast/net/IPEndpoint.h>
 #include <xrpl/beast/utility/Journal.h>
 
