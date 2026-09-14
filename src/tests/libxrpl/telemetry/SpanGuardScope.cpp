@@ -41,7 +41,6 @@
 #include <opentelemetry/exporters/memory/in_memory_span_exporter_factory.h>
 #include <opentelemetry/metrics/meter.h>
 #include <opentelemetry/metrics/meter_provider.h>
-#include <opentelemetry/metrics/noop.h>
 #include <opentelemetry/nostd/shared_ptr.h>
 #include <opentelemetry/nostd/variant.h>
 #include <opentelemetry/sdk/resource/resource.h>
