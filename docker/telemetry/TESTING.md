@@ -68,11 +68,20 @@ curl -sf http://localhost:3200/ready >/dev/null && echo "tempo ready"
 
 ### Step 2: Start xrpld in standalone mode
 
+`xrpld-telemetry.cfg` is a Devnet config whose `[node_db]`, `[database_path]` and `[debug_logfile]` all resolve under `docker/telemetry/data`. Standalone builds its own private chain, so pointing it at that store leaves one NuDB holding two unrelated chains. This is the same rule stated for the key-generation node in Test 2, and the reason the sibling mainnet config keeps its store under `data/mainnet/`. Give standalone its own prefix:
+
 ```bash
-.build/xrpld --conf docker/telemetry/xrpld-telemetry.cfg -a --start
+sed -e 's|^path=docker/telemetry/data/nudb$|path=docker/telemetry/data/standalone/nudb|' \
+    -e 's|^docker/telemetry/data$|docker/telemetry/data/standalone|' \
+    -e 's|^data/logs/xrpld-devnet/debug.log$|data/logs/xrpld-standalone/debug.log|' \
+    docker/telemetry/xrpld-telemetry.cfg >/tmp/xrpld-standalone.cfg
+
+.build/xrpld --conf /tmp/xrpld-standalone.cfg -a --start
 ```
 
 Wait a few seconds for the node to initialize.
+
+> Separating the store is required whether or not `--start` is passed. `--start` selects `StartUpType::Fresh`, but the default `Normal` reaches `startGenesisLedger()` through the same branch chain in `ApplicationImp::setup`, so every standalone run writes a genesis ledger into whichever store the config names. Dropping the flag does not avoid it; only a separate path does. `--start` additionally seeds the amendments this build desires into that genesis ledger.
 
 ### Step 3: Exercise RPC spans
 
