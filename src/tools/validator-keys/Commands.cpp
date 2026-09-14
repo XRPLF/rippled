@@ -281,7 +281,7 @@ emitAttestation(SigningKeys const& keys, Context& ctx)
     if (keys.domain().empty())
     {
         ctx.out << "No attestation is necessary if no domain is specified!\n"
-                   "If you have an attestation in your xrpl-ledger.toml\n"
+                   "If you have an attestation in your xrp-ledger.toml\n"
                    "you should remove it at this time.\n";
         return;
     }
