@@ -106,6 +106,27 @@ inline constexpr std::array kMillisecondBuckets{
     120'000.0};
 
 /**
+ * Bucket edges, in seconds, for `rotation_phase_duration_seconds`.
+ *
+ * Measured 2026-09-13 on aws-dev-xrpl-1: freshen.keys 5-6 s, freshen.fetch
+ * ~3 min, copy ~10 min, whole rotation 13-17 min. The 1 s floor sits under
+ * the lock hold; 3600 s leaves headroom above a slow rotation.
+ */
+inline constexpr std::array kRotationPhaseSecondsBuckets{
+    1.0,
+    5.0,
+    10.0,
+    30.0,
+    60.0,
+    120.0,
+    300.0,
+    600.0,
+    900.0,
+    1'200.0,
+    1'800.0,
+    3'600.0};
+
+/**
  * Bucket edges, in bytes, for `beast::insight` Events whose samples are
  * sizes rather than durations. Currently only the RPC response size.
  *

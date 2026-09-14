@@ -233,6 +233,15 @@ addRoundDurationHistogramView(metric_sdk::ViewRegistry& views, std::string const
          120'000.0});
 }
 
+void
+addRotationPhaseHistogramView(metric_sdk::ViewRegistry& views, std::string const& name)
+{
+    addHistogramView(
+        views,
+        name,
+        xrpl::telemetry::buckets::toVector(xrpl::telemetry::buckets::kRotationPhaseSecondsBuckets));
+}
+
 }  // namespace
 
 #endif  // XRPL_ENABLE_TELEMETRY
@@ -374,6 +383,10 @@ MetricsRegistry::initExporterAndProvider(StartOptions const& options)
     // Millisecond-scale: recorded at the RCLConsensus call site, so only the
     // view is declared here (see the constant's comment).
     addRoundDurationHistogramView(*views, kConsensusRoundDurationMs);
+
+    // Recorded at its SHAMapStoreImp RotationPhase destructor, only the view
+    // lives here. Seconds ladder from HistogramBuckets.h.
+    addRotationPhaseHistogramView(*views, metric::rotationPhaseDurationSeconds);
 
     // Recorded at its PeerImp.cpp call site, not created here, so the name
     // comes from the shared constant both sites use.

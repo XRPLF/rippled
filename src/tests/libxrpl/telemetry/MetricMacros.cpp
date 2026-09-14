@@ -463,6 +463,20 @@ histogramCountAndSum(CollectedMetrics const& data, std::string const& metric)
 }
 
 /**
+ * Labelled overload: reads count and sum for the series carrying `labels`.
+ */
+[[nodiscard]] std::pair<std::uint64_t, double>
+histogramCountAndSum(
+    CollectedMetrics const& data,
+    std::string const& metric,
+    otel_sdk::PointAttributes const& labels)
+{
+    auto const& point = data.at(metric).at(labels);
+    auto const& hist = opentelemetry::nostd::get<otel_sdk::HistogramPointData>(point);
+    return {hist.count_, opentelemetry::nostd::get<double>(hist.sum_)};
+}
+
+/**
  * Fetches a real (non-noop) meter from whatever provider is globally
  * installed -- inside a test this is the ScopedBareProvider's SDK provider.
  */
@@ -3314,6 +3328,42 @@ TEST(MetricMacros, sweep_and_rotation_metrics_emit_nothing_when_registry_disable
     // Cause, not just state: the isEnabled() gate short-circuited before any
     // macro asked for a meter, so no instrument was ever created.
     EXPECT_EQ(app.registry().meterCalls(), 0);
+}
+
+TEST(MetricMacros, rotation_phase_duration_seconds_keys_series_on_stage)
+{
+    CollectingProvider const provider;
+    FakeApp app;
+    wire(app, /*enabled=*/true, provider.meter());
+
+    // Mirrors SHAMapStoreImp::RotationPhase::~RotationPhase: one Record per
+    // phase end, labelled by the stage name. Values in seconds.
+    auto const record = [&app](char const* stage, double seconds) {
+        XRPL_METRIC_HISTOGRAM_RECORD_LABELED(
+            app,
+            telemetry::metric::rotationPhaseDurationSeconds,
+            "Wall-clock seconds spent in one online-delete rotation phase",
+            seconds,
+            {{telemetry::label::stage, std::string(stage)}});
+    };
+    record(telemetry::lval::rotation_phase::copy, 611.0);
+    record(telemetry::lval::rotation_phase::freshenKeys, 5.3);
+    record(telemetry::lval::rotation_phase::freshenKeys, 6.0);
+
+    auto const data = provider.collect();
+    ASSERT_EQ(data.at("rotation_phase_duration_seconds").size(), 2u);
+    {
+        auto const [count, sum] =
+            histogramCountAndSum(data, "rotation_phase_duration_seconds", attrs("stage", "copy"));
+        EXPECT_EQ(count, 1u);
+        EXPECT_DOUBLE_EQ(sum, 611.0);
+    }
+    {
+        auto const [count, sum] = histogramCountAndSum(
+            data, "rotation_phase_duration_seconds", attrs("stage", "freshen.keys"));
+        EXPECT_EQ(count, 2u);
+        EXPECT_DOUBLE_EQ(sum, 11.3);
+    }
 }
 
 #endif  // XRPL_ENABLE_TELEMETRY
