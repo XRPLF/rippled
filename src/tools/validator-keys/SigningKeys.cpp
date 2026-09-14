@@ -269,17 +269,18 @@ SigningKeys::writeToFile(std::filesystem::path const& keyFile) const
     auto const temp = fs::path(keyFile.string() + ".tmp");
     {
         std::ofstream o(temp, std::ios_base::trunc);
-        o << jv.toStyledString();
+        if (!o.fail())
+            fs::permissions(temp, fs::perms::owner_read | fs::perms::owner_write, ec);
+        if (!ec)
+            o << jv.toStyledString();
         o.close();
-        if (o.fail())
+        if (ec || o.fail())
         {
             fs::remove(temp, ec);
             throw std::runtime_error("Cannot write key file: " + keyFile.string());
         }
     }
-    fs::permissions(temp, fs::perms::owner_read | fs::perms::owner_write, ec);
-    if (!ec)
-        fs::rename(temp, keyFile, ec);
+    fs::rename(temp, keyFile, ec);
     if (ec)
     {
         fs::remove(temp, ec);

@@ -9,6 +9,7 @@
 
 #include <boost/algorithm/string.hpp>
 
+#include <algorithm>
 #include <chrono>
 #include <set>
 
@@ -85,9 +86,10 @@ checkedList(std::string canonical, json::Value const& jv)
         throw std::runtime_error(integerError(jss::sequence, 1));
     list.sequence = *sequence;
 
+    // A server takes a missing effective time as 0 and needs expiration after it.
     auto const expiration = listInteger(jv, jss::expiration);
-    if (!expiration)
-        throw std::runtime_error(integerError(jss::expiration, 0));
+    if (!expiration || *expiration == 0)
+        throw std::runtime_error(integerError(jss::expiration, 1));
     list.expiration = *expiration;
 
     if (jv.isMember(jss::effective))
@@ -127,6 +129,9 @@ checkedList(std::string canonical, json::Value const& jv)
                 throw std::runtime_error("\"manifest\" belongs to another key than " + keyText);
         }
 
+        if (std::find(list.validators.begin(), list.validators.end(), *key) !=
+            list.validators.end())
+            throw std::runtime_error("\"validators\" lists " + keyText + " more than once");
         list.validators.push_back(*key);
     }
 

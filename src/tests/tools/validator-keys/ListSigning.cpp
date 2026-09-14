@@ -124,7 +124,7 @@ TEST_F(ListSigningTest, parse_unsigned_list)
     }
 
     std::string const sequenceError = "\"sequence\" must be an integer from 1 to 2147483647";
-    std::string const expirationError = "\"expiration\" must be an integer from 0 to 2147483647";
+    std::string const expirationError = "\"expiration\" must be an integer from 1 to 2147483647";
     EXPECT_EQ(errorOfParse("{\"expiration\": 1, \"validators\": []}"), sequenceError);
     EXPECT_EQ(
         errorOfParse("{\"sequence\": 0, \"expiration\": 1, \"validators\": []}"), sequenceError);
@@ -136,6 +136,17 @@ TEST_F(ListSigningTest, parse_unsigned_list)
     EXPECT_EQ(errorOfParse("{\"sequence\": 1, \"validators\": []}"), expirationError);
     EXPECT_EQ(
         errorOfParse("{\"sequence\": 1, \"expiration\": -1, \"validators\": []}"), expirationError);
+    EXPECT_EQ(
+        errorOfParse("{\"sequence\": 1, \"expiration\": 0, \"validators\": []}"), expirationError);
+    {
+        auto twice = validators;
+        twice.push_back(validators[0]);
+        auto const key =
+            strHex(deserializeManifest(base64Decode(validators[0].manifest))->masterKey);
+        EXPECT_EQ(
+            errorOfParse(unsignedListText(twice, 1, 1000)),
+            "\"validators\" lists " + key + " more than once");
+    }
     EXPECT_EQ(
         errorOfParse(
             "{\"sequence\": 1, \"effective\": 1000, \"expiration\": 1000, \"validators\": []}"),

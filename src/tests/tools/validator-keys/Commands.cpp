@@ -155,6 +155,15 @@ TEST_F(CommandsTest, create_token)
         std::filesystem::perms::none);
     EXPECT_EQ(keys(options).sequence(), 2u);
 
+    // A symlink is not written through
+    ToolOptions linked = options;
+    linked.outFile = file("link.txt");
+    std::filesystem::create_symlink(file("elsewhere.txt"), *linked.outFile);
+    EXPECT_EQ(
+        commandError("create_token", {}, linked),
+        "Refusing to write through a symlink: " + linked.outFile->string());
+    EXPECT_EQ(keys(options).sequence(), 2u);
+
     // An unwritable output path fails before the sequence is consumed
     ToolOptions unwritable = options;
     unwritable.outFile = file("missing/token.txt");

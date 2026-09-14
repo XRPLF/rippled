@@ -67,9 +67,17 @@ public:
     {
         if (file_)
         {
+            if (std::filesystem::is_symlink(*file_))
+                throw std::runtime_error("Refusing to write through a symlink: " + file_->string());
             stream_.open(*file_, std::ios_base::trunc);
             if (stream_.fail())
                 throw std::runtime_error("Cannot open output file: " + file_->string());
+            // A token holds a secret: restrict the file before anything is written.
+            std::error_code ec;
+            std::filesystem::permissions(
+                *file_,
+                std::filesystem::perms::owner_read | std::filesystem::perms::owner_write,
+                ec);
         }
     }
 
@@ -87,8 +95,7 @@ public:
     Output&
     operator=(Output const&) = delete;
 
-    // A config block in 72-character lines; a file gets owner-only permissions
-    // because a token holds a secret.
+    // A config block in 72-character lines.
     void
     block(std::string const& section, std::string const& publicKey, std::string const& body)
     {
@@ -103,9 +110,6 @@ public:
             return;
         }
         write(text, "[" + section + "]");
-        std::error_code ec;
-        std::filesystem::permissions(
-            *file_, std::filesystem::perms::owner_read | std::filesystem::perms::owner_write, ec);
     }
 
     void
