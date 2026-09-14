@@ -90,6 +90,15 @@ processors:
         type: probabilistic
         probabilistic:
           sampling_percentage: 0.5
+      # A rotation happens every ~2 h and is the trace that proves a
+      # full->syncing flap. Keep every one; children arrive first, so match
+      # on the family prefix rather than the root name.
+      - name: keep-rotation-traces
+        type: ottl_condition
+        ottl_condition:
+          error_mode: ignore
+          span:
+            - 'IsMatch(name, "^nodestore\\.rotate")'
   resource/logs:
     attributes:
       - key: service.name
