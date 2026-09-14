@@ -24,7 +24,6 @@
 #include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/Quality.h>
 #include <xrpl/protocol/Rate.h>
-#include <xrpl/protocol/Rules.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/TER.h>
@@ -344,8 +343,7 @@ public:
         Quality const& ofrQ,
         DebtDirection prevStepDir,
         WaiveTransferFee waiveFee,
-        OfferType,
-        Rules const&) const
+        OfferType) const
     {
         // Charge the offer owner, not the sender
         // Charge a fee even if the owner is the same as the issuer
@@ -516,8 +514,7 @@ public:
         Quality const& ofrQ,
         DebtDirection prevStepDir,
         WaiveTransferFee waiveFee,
-        OfferType offerType,
-        Rules const& rules) const
+        OfferType offerType) const
     {
         // Offer x-ing does not charge a transfer fee when the offer's owner
         // is the same as the strand dst. It is important that
@@ -529,10 +526,6 @@ public:
         // Single path AMM offer has to factor in the transfer in rate
         // when calculating the upper bound quality and the quality function
         // because single path AMM's offer quality is not constant.
-        if (!rules.enabled(fixAMMv1_1))
-        {
-            return ofrQ;
-        }
         if (offerType == OfferType::Clob ||
             (this->ammLiquidity_ && this->ammLiquidity_->multiPath()))
         {
@@ -584,7 +577,7 @@ BookStep<TIn, TOut, TDerived>::qualityUpperBound(ReadView const& v, DebtDirectio
                                                                         : WaiveTransferFee::No;
 
     Quality const q = static_cast<TDerived const*>(this)->adjustQualityWithFees(
-        v, std::get<Quality>(*res), prevStepDir, waiveFee, std::get<OfferType>(*res), v.rules());
+        v, std::get<Quality>(*res), prevStepDir, waiveFee, std::get<OfferType>(*res));
     return {q, dir};
 }
 
@@ -603,7 +596,7 @@ BookStep<TIn, TOut, TDerived>::getQualityFunc(ReadView const& v, DebtDirection p
     {
         auto static const kQOne = Quality{STAmount::kURateOne};
         auto const q = static_cast<TDerived const*>(this)->adjustQualityWithFees(
-            v, kQOne, prevStepDir, WaiveTransferFee::Yes, OfferType::Amm, v.rules());
+            v, kQOne, prevStepDir, WaiveTransferFee::Yes, OfferType::Amm);
         if (q == kQOne)
             return {res, dir};
         QualityFunction qf{q, QualityFunction::CLOBLikeTag{}};
@@ -618,8 +611,7 @@ BookStep<TIn, TOut, TDerived>::getQualityFunc(ReadView const& v, DebtDirection p
                             // always has quality set
         prevStepDir,
         WaiveTransferFee::No,
-        OfferType::Clob,
-        v.rules());
+        OfferType::Clob);
     return {QualityFunction{q, QualityFunction::CLOBLikeTag{}}, dir};
 }
 
@@ -876,7 +868,7 @@ BookStep<TIn, TOut, TDerived>::forEachOffer(
         // If offer crossing then use either LOB quality or nullopt
         // to prevent AMM being blocked by a lower quality LOB.
         auto const qualityThreshold = [&]() -> std::optional<Quality> {
-            if (sb.rules().enabled(fixAMMv1_1) && lobQuality)
+            if (lobQuality)
                 return static_cast<TDerived const*>(this)->qualityThreshold(*lobQuality);
             return lobQuality;
         }();
@@ -1006,7 +998,7 @@ BookStep<TIn, TOut, TDerived>::tip(ReadView const& view) const
     // as the result a LOB offer is partially crossed, and it might take a few
     // iterations to fully cross the offer.
     auto const qualityThreshold = [&]() -> std::optional<Quality> {
-        if (view.rules().enabled(fixAMMv1_1) && lobQuality)
+        if (lobQuality)
             return static_cast<TDerived const*>(this)->qualityThreshold(*lobQuality);
         return std::nullopt;
     }();

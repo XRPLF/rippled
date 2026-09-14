@@ -3047,7 +3047,7 @@ private:
                 ammAlice.deposit(carol_, 1'000'000'000'000);
                 ammAlice.withdraw(
                     carol_, MPT(ammAlice[1])(100'000000), std::nullopt, IOUAmount{520, 0});
-                if (!env.enabled(fixAMMv1_1) && !env.enabled(fixAMMv1_3))
+                if (!env.enabled(fixAMMv1_3))
                 {
                     BEAST_EXPECT(
                         ammAlice.expectBalances(
@@ -3056,16 +3056,7 @@ private:
                             IOUAmount{10'153'846'15384616, -2}) &&
                         ammAlice.expectLPTokens(carol_, IOUAmount{153'846'15384616, -2}));
                 }
-                else if (env.enabled(fixAMMv1_1) && !env.enabled(fixAMMv1_3))
-                {
-                    BEAST_EXPECT(
-                        ammAlice.expectBalances(
-                            XRP(11'000'000000),
-                            MPT(ammAlice[1])(9372781065),
-                            IOUAmount{10'153'846'15384616, -2}) &&
-                        ammAlice.expectLPTokens(carol_, IOUAmount{153'846'15384616, -2}));
-                }
-                else if (env.enabled(fixAMMv1_3))
+                else
                 {
                     BEAST_EXPECT(
                         ammAlice.expectBalances(
@@ -3080,14 +3071,14 @@ private:
             {{XRP(10'000'000'000), gAmmmpt(10'000'000'000)}},
             0,
             std::nullopt,
-            {all, all - fixAMMv1_3, all - fixAMMv1_1 - fixAMMv1_3});
+            {all, all - fixAMMv1_3});
 
         // Withdraw with EPrice limit. AssetOut is 0.
         testAMM(
             [&](AMM& ammAlice, Env& env) {
                 ammAlice.deposit(carol_, 1'000'000'000'000);
                 ammAlice.withdraw(carol_, MPT(ammAlice[1])(0), std::nullopt, IOUAmount{520, 0});
-                if (!env.enabled(fixAMMv1_1) && !env.enabled(fixAMMv1_3))
+                if (!env.enabled(fixAMMv1_3))
                 {
                     BEAST_EXPECT(
                         ammAlice.expectBalances(
@@ -3096,16 +3087,7 @@ private:
                             IOUAmount{10'153'846'15384616, -2}) &&
                         ammAlice.expectLPTokens(carol_, IOUAmount{153'846'15384616, -2}));
                 }
-                else if (env.enabled(fixAMMv1_1) && !env.enabled(fixAMMv1_3))
-                {
-                    BEAST_EXPECT(
-                        ammAlice.expectBalances(
-                            XRP(11'000'000000),
-                            MPT(ammAlice[1])(9372781065),
-                            IOUAmount{10'153'846'15384616, -2}) &&
-                        ammAlice.expectLPTokens(carol_, IOUAmount{153'846'15384616, -2}));
-                }
-                else if (env.enabled(fixAMMv1_3))
+                else
                 {
                     BEAST_EXPECT(
                         ammAlice.expectBalances(
@@ -3120,7 +3102,7 @@ private:
             {{XRP(10'000'000'000), gAmmmpt(10'000'000'000)}},
             0,
             std::nullopt,
-            {all, all - fixAMMv1_3, all - fixAMMv1_1 - fixAMMv1_3});
+            {all, all - fixAMMv1_3});
 
         // IOU/MPT combination + transfer fee
         {
@@ -6985,14 +6967,7 @@ private:
             env(offer(carol_, USD(0.49), btc(1)));
             env.close();
 
-            if (!features[fixAMMv1_1] && !features[fixAMMv1_3])
-            {
-                BEAST_EXPECT(amm.expectBalances(btc(200'000), USD(100'000), amm.tokens()));
-                BEAST_EXPECT(expectOffers(env, alice_, 1, {{Amounts{btc(1), USD(0.01)}}}));
-                BEAST_EXPECT(expectOffers(env, carol_, 1, {{Amounts{USD(0.49), btc(1)}}}));
-            }
-
-            if (features[fixAMMv1_1] && features[fixAMMv1_3])
+            if (features[fixAMMv1_3])
             {
                 BEAST_EXPECT(amm.expectBalances(btc(200'001), USD(99'999.51), amm.tokens()));
                 BEAST_EXPECT(expectOffers(env, alice_, 1, {{Amounts{btc(1), USD(0.01)}}}));
@@ -7019,14 +6994,7 @@ private:
             env(offer(carol_, XRP(0.49), btc(1)));
             env.close();
 
-            if (!features[fixAMMv1_1] && !features[fixAMMv1_3])
-            {
-                BEAST_EXPECT(amm.expectBalances(btc(200'000), XRP(100'000), amm.tokens()));
-                BEAST_EXPECT(expectOffers(env, alice_, 1, {{Amounts{btc(1), XRP(0.01)}}}));
-                BEAST_EXPECT(expectOffers(env, carol_, 1, {{Amounts{XRP(0.49), btc(1)}}}));
-            }
-
-            if (features[fixAMMv1_1] && features[fixAMMv1_3])
+            if (features[fixAMMv1_3])
             {
                 BEAST_EXPECT(amm.expectBalances(btc(200'001), XRP(99'999.51), amm.tokens()));
                 BEAST_EXPECT(expectOffers(env, alice_, 1, {{Amounts{btc(1), XRP(0.01)}}}));
@@ -7572,7 +7540,7 @@ private:
         testAMMID();
         testSelection(all);
         testMalformed();
-        testFixAMMOfferBlockedByLOB(all - fixAMMv1_1 - fixAMMv1_3);
+        testFixAMMOfferBlockedByLOB(all - fixAMMv1_3);
         testFixAMMOfferBlockedByLOB(all);
         testLPTokenBalance(all);
         testLPTokenBalance(all - fixAMMv1_3);
