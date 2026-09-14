@@ -108,6 +108,29 @@ SEQ_CONSUMING_RESULTS = frozenset({"tesSUCCESS", "terQUEUED"})
 # it triggers within a few seconds, well before the periodic refresh below.
 SEQ_REFETCH_AFTER_FAILURES = 5
 
+# How long account setup waits for the funding transactions to be validated,
+# and how often it re-reads the ledger while waiting. A fixed sleep cannot work
+# here: the txq-burst phase escalates the open-ledger fee on purpose, so funding
+# can sit in the TxQ for several ledger closes.
+#
+# Setup can wait twice -- once after the first submit, once after the retry --
+# so the ceiling is 2x this. It must stay inside the orchestrator's
+# SUBPROCESS_GRACE_SEC or a slow fund is killed as a timeout instead of being
+# reported as a funding failure. At a ~4s close, 30s is about 7 closes, and a
+# funding transaction paying FUNDING_FEE_MULTIPLIER times the open-ledger fee
+# should clear the next one.
+FUNDING_CONFIRM_TIMEOUT_SEC = 30.0
+FUNDING_POLL_INTERVAL_SEC = 2.0
+
+# Multiple of the current open-ledger fee paid for funding transactions.
+# Genesis holds every drop, so overpaying costs nothing and keeps funding ahead
+# of the load the workload phases create deliberately.
+FUNDING_FEE_MULTIPLIER = 20
+
+# Fee used when the fee RPC reports no usable open-ledger fee. Well above the
+# 10-drop base fee, so funding still clears a mildly loaded queue.
+FUNDING_FEE_FALLBACK_DROPS = 1000
+
 # How often the submission loop re-reads every account's sequence from the
 # ledger, to stay close to sequences other submitters have advanced.
 SEQ_REFRESH_INTERVAL_S = 10.0
@@ -338,16 +361,23 @@ async def fund_account(
     ws: websockets.ClientConnection,
     dest: Account,
     genesis_seq: int,
+    fee_drops: int,
 ) -> tuple[bool, int]:
-    """Fund a test account from genesis.
+    """Submit a funding Payment to a test account from genesis.
+
+    The returned flag means the submit was accepted, not that the account
+    exists. Only a ledger read proves that, so callers must confirm with
+    wait_for_funding rather than trusting this result.
 
     Args:
         ws:          Open WebSocket connection.
         dest:        Destination account to fund.
         genesis_seq: Current genesis account sequence number.
+        fee_drops:   Fee to pay, in drops. Set explicitly so funding is not
+                     queued behind the load a workload phase creates.
 
     Returns:
-        Tuple of (funded: bool, next_genesis_sequence: int). The sequence is
+        Tuple of (submitted: bool, next_genesis_sequence: int). The sequence is
         unchanged when the ledger did not consume it.
     """
     resp = await ws_request(
@@ -361,6 +391,7 @@ async def fund_account(
                 "Destination": dest.account,
                 "Amount": FUND_AMOUNT,
                 "Sequence": genesis_seq,
+                "Fee": str(fee_drops),
             },
         },
     )
@@ -403,6 +434,97 @@ async def get_account_sequence(ws: websockets.ClientConnection, account: str) ->
         )
         return 0
     return resp["account_data"].get("Sequence", 0)
+
+
+async def get_open_ledger_fee(ws: websockets.ClientConnection) -> int:
+    """Read the current open-ledger fee in drops.
+
+    Returns FUNDING_FEE_FALLBACK_DROPS when the fee RPC reports no usable
+    value. The lookup only sizes the funding fee, so a missing field must not
+    stop funding being attempted.
+
+    Args:
+        ws: Open WebSocket connection.
+
+    Returns:
+        Open-ledger fee in drops, or the fallback.
+    """
+    resp = await ws_request(ws, "fee")
+    raw = resp.get("drops", {}).get("open_ledger_fee")
+    try:
+        fee = int(raw)  # type: ignore[arg-type]
+    except (TypeError, ValueError):
+        logger.warning(
+            "fee RPC reported no usable open_ledger_fee (%r); using %d drops",
+            raw,
+            FUNDING_FEE_FALLBACK_DROPS,
+        )
+        return FUNDING_FEE_FALLBACK_DROPS
+    return fee if fee > 0 else FUNDING_FEE_FALLBACK_DROPS
+
+
+async def wait_for_funding(
+    ws: websockets.ClientConnection,
+    accounts: list[Account],
+    timeout_sec: float = FUNDING_CONFIRM_TIMEOUT_SEC,
+    poll_sec: float = FUNDING_POLL_INTERVAL_SEC,
+) -> int:
+    """Poll the ledger until every account has a sequence number.
+
+    Sets ``sequence`` and ``funded`` from what the ledger reports, so a queued
+    or dropped funding transaction can never leave an account marked usable.
+    Returns as soon as every account confirms, so a healthy cluster pays no
+    waiting cost.
+
+    Args:
+        ws:          Open WebSocket connection.
+        accounts:    Accounts whose funding was submitted.
+        timeout_sec: Give up after this long. The generator runs under a phase
+                     budget, so an unbounded wait would be killed as a timeout
+                     and point at the wrong component.
+        poll_sec:    Delay between rounds.
+
+    Returns:
+        Number of accounts confirmed on the ledger.
+    """
+    deadline = time.monotonic() + timeout_sec
+    pending = list(accounts)
+
+    while True:
+        still_pending: list[Account] = []
+        for acct in pending:
+            try:
+                seq = await get_account_sequence(ws, acct.account)
+            except Exception as exc:  # noqa: BLE001 - a read failure is a retry
+                logger.warning("  Failed to read sequence for %s: %s", acct.name, exc)
+                seq = 0
+            if seq > 0:
+                acct.sequence = seq
+                acct.funded = True
+                logger.info("  %s funded, sequence %d", acct.name, seq)
+            else:
+                still_pending.append(acct)
+
+        pending = still_pending
+        confirmed = sum(1 for acct in accounts if acct.funded)
+        if not pending:
+            return confirmed
+
+        if time.monotonic() >= deadline:
+            for acct in pending:
+                acct.funded = False
+                logger.warning(
+                    "  %s never got a ledger sequence — treating as unfunded",
+                    acct.name,
+                )
+            return confirmed
+
+        logger.info(
+            "Waiting for %d of %d accounts to be funded...",
+            len(pending),
+            len(accounts),
+        )
+        await asyncio.sleep(poll_sec)
 
 
 # ---------------------------------------------------------------------------
@@ -681,8 +803,10 @@ async def setup_accounts(
 ) -> list[Account]:
     """Create and fund test accounts from genesis.
 
-    Generates NUM_TEST_ACCOUNTS accounts via wallet_propose, then funds
-    each with FUND_AMOUNT XRP from genesis.
+    Generates NUM_TEST_ACCOUNTS accounts via wallet_propose, then funds each
+    with FUND_AMOUNT XRP from genesis. Funding is confirmed against the ledger,
+    not from the submit result, and the accounts that did not confirm are
+    resubmitted once.
 
     Args:
         ws: Open WebSocket connection to a rippled node.
@@ -704,42 +828,44 @@ async def setup_accounts(
     genesis_seq = await get_account_sequence(ws, GENESIS_ACCOUNT)
     logger.info("Genesis sequence: %d", genesis_seq)
 
-    # Fund all accounts.
-    logger.info("Funding test accounts...")
+    # Fund all accounts. An explicit fee keeps the funding Payments ahead of
+    # the load a phase creates on purpose; without it they queue behind it.
+    fee_drops = await get_open_ledger_fee(ws) * FUNDING_FEE_MULTIPLIER
+    logger.info("Funding test accounts (fee %d drops)...", fee_drops)
     for acct in accounts:
-        acct.funded, genesis_seq = await fund_account(ws, acct, genesis_seq)
-        if acct.funded:
-            logger.info("  Funded %s", acct.name)
-        else:
-            logger.warning("  Failed to fund %s", acct.name)
+        submitted, genesis_seq = await fund_account(ws, acct, genesis_seq, fee_drops)
+        if not submitted:
+            logger.warning("  Failed to submit funding for %s", acct.name)
 
-    # Wait for funding transactions to be validated.
-    logger.info("Waiting 10s for funding transactions to validate...")
-    await asyncio.sleep(10)
+    confirmed = await wait_for_funding(ws, accounts)
 
-    # Refresh sequence numbers, and confirm funding against the ledger rather
-    # than trusting the submit result. get_account_sequence returns 0 when
-    # account_info reports no account_data, which means the account root was
-    # never created; a sequence we cannot read also makes the account
-    # unusable, so either way it must not be submitted from.
-    for acct in accounts:
-        try:
-            acct.sequence = await get_account_sequence(ws, acct.account)
-        except Exception as exc:
-            logger.warning("  Failed to get sequence for %s: %s", acct.name, exc)
-        if acct.sequence > 0:
-            logger.info("  %s sequence: %d", acct.name, acct.sequence)
-        else:
-            acct.funded = False
-            logger.warning(
-                "  %s has no ledger sequence — treating as unfunded", acct.name
+    # One retry round. A queued funding transaction can be dropped, and
+    # consumes_sequence has already advanced the local genesis sequence past it,
+    # so re-read genesis from the ledger first. Retrying on the drifted counter
+    # would put every resubmit on a future sequence and fund nothing.
+    if confirmed < MIN_FUNDED_ACCOUNTS:
+        unfunded = [acct for acct in accounts if not acct.funded]
+        genesis_seq = await get_account_sequence(ws, GENESIS_ACCOUNT)
+        fee_drops = await get_open_ledger_fee(ws) * FUNDING_FEE_MULTIPLIER
+        logger.warning(
+            "Only %d of %d accounts funded; retrying %d from genesis sequence "
+            "%d at %d drops",
+            confirmed,
+            len(accounts),
+            len(unfunded),
+            genesis_seq,
+            fee_drops,
+        )
+        for acct in unfunded:
+            submitted, genesis_seq = await fund_account(
+                ws, acct, genesis_seq, fee_drops
             )
+            if not submitted:
+                logger.warning("  Retry failed to submit funding for %s", acct.name)
+        await wait_for_funding(ws, unfunded)
+        confirmed = sum(1 for acct in accounts if acct.funded)
 
-    logger.info(
-        "Funded %d of %d created accounts",
-        sum(1 for a in accounts if a.funded),
-        len(accounts),
-    )
+    logger.info("Funded %d of %d created accounts", confirmed, len(accounts))
     return accounts
 
 

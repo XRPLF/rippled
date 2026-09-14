@@ -175,18 +175,21 @@ makeApplication(
     std::unique_ptr<TimeKeeper> timeKeeper);
 
 /**
- * Construct the application with a known node public key.
+ * Construct the application with a known node identity.
  *
  * Telemetry builds its resource attributes during construction and they are
- * immutable, so the base58 node public key must be supplied here. Pass
- * std::nullopt when it is unknown; that run reports no instance id. See
- * resolveNodePublicKey().
+ * immutable, so the node keypair must be supplied here. See
+ * resolveNodeIdentity(), which decides it from the config and command line
+ * alone; setup() then persists it.
+ *
+ * The three-argument overload above mints a keypair, which is what a test
+ * Application and a standalone run get anyway.
  */
 std::unique_ptr<Application>
 makeApplication(
     std::unique_ptr<Config> config,
     std::unique_ptr<Logs> logs,
     std::unique_ptr<TimeKeeper> timeKeeper,
-    std::optional<std::string> const& nodePublicKey);
+    std::pair<PublicKey, SecretKey> const& resolvedIdentity);
 
 }  // namespace xrpl

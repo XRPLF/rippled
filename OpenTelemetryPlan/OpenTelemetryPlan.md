@@ -166,11 +166,11 @@ Configuration is handled through the `[telemetry]` section in `xrpld.cfg` with o
 
 Endpoints are spread across **three** keys in two sections, not one "traces and metrics" pair:
 
-| Signal                                               | Key                            | Default                            | Source                      |
-| ---------------------------------------------------- | ------------------------------ | ---------------------------------- | --------------------------- |
-| Traces                                               | `[telemetry] endpoint`         | `http://localhost:4318/v1/traces`  | `TelemetryConfig.cpp:36,61` |
-| Native metrics (`XRPL_METRIC_*` / `MetricsRegistry`) | `[telemetry] metrics_endpoint` | `http://localhost:4318/v1/metrics` | `Application.cpp:1670`      |
-| `beast::insight` metrics (`server=otel`)             | `[insight] endpoint`           | `http://localhost:4318/v1/metrics` | `CollectorManager.cpp:50`   |
+| Signal                                               | Key                            | Default                            | Source                                              |
+| ---------------------------------------------------- | ------------------------------ | ---------------------------------- | --------------------------------------------------- |
+| Traces                                               | `[telemetry] endpoint`         | `http://localhost:4318/v1/traces`  | `TelemetryConfig.cpp:36,61`                         |
+| Native metrics (`XRPL_METRIC_*` / `MetricsRegistry`) | `[telemetry] metrics_endpoint` | `http://localhost:4318/v1/metrics` | `makeMetricsRegistryOptions()` in `Application.cpp` |
+| `beast::insight` metrics (`server=otel`)             | `[insight] endpoint`           | `http://localhost:4318/v1/metrics` | `CollectorManager.cpp:50`                           |
 
 `[telemetry]` itself has exactly **one** `endpoint` key, and it is traces-only.
 

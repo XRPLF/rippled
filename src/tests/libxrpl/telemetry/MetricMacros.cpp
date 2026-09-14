@@ -9,7 +9,7 @@
  * These tests exercise the macros against a bare SDK MeterProvider (no
  * OTLP exporter, no network, no background thread), the same technique
  * GetMeter.cpp uses. The macros are duck-typed: they only ever call
- * app.getMetricsRegistry(), then isEnabled() and meter() on the result.
+ * app.getMetricsRegistry(), then recording() and meter() on the result.
  * The tests therefore drive them through a tiny FakeApp/FakeMetricsRegistry
  * pair instead of the real telemetry::MetricsRegistry, whose enabled-path
  * .cpp drags xrpld link dependencies (LedgerMaster, TxQ, NetworkOPs, ...)
@@ -63,7 +63,7 @@ namespace {
 
 /**
  * Duck-typed stand-in for telemetry::MetricsRegistry. The macros only
- * ever call isEnabled() and meter() on the registry pointer, so this
+ * ever call recording() and meter() on the registry pointer, so this
  * minimal type is all they need -- and it links without pulling in the
  * real MetricsRegistry.cpp's xrpld dependencies.
  */
@@ -78,7 +78,19 @@ public:
     configure(bool enabled, opentelemetry::nostd::shared_ptr<opentelemetry::metrics::Meter> meter)
     {
         enabled_ = enabled;
+        stopped_ = false;
         meter_ = std::move(meter);
+    }
+
+    /**
+     * Simulate MetricsRegistry::stop(): the recording gate flips closed even
+     * while enabled_ stays true, matching the real class where a call after
+     * stop() must not touch the SDK instrument cache.
+     */
+    void
+    stop() noexcept
+    {
+        stopped_ = true;
     }
 
     /**
@@ -97,6 +109,16 @@ public:
         return enabled_;
     }
 
+    /**
+     * Mirrors MetricsRegistry::recording(): the macros consult this instead of
+     * isEnabled() so a stopped registry records nothing.
+     */
+    [[nodiscard]] bool
+    recording() const noexcept
+    {
+        return enabled_ && !stopped_;
+    }
+
     [[nodiscard]] opentelemetry::nostd::shared_ptr<opentelemetry::metrics::Meter>
     meter() const noexcept
     {
@@ -106,9 +128,15 @@ public:
 
 private:
     /**
-     * Master enable flag the macro consults via isEnabled().
+     * Master enable flag; recording() folds it in.
      */
     bool enabled_ = true;
+
+    /**
+     * Set by stop() to model the real registry's post-shutdown state:
+     * enabled_ stays true but recording() flips to false.
+     */
+    bool stopped_ = false;
 
     /**
      * Meter handed to the macro; sourced from a bare SDK provider.
@@ -489,7 +517,7 @@ wire(FakeApp& app, bool enabled)
  * CollectingProvider so the recorded values are collectable.
  *
  * @param app      The duck-typed app the macros will be driven through.
- * @param enabled  What the macros' isEnabled() gate will observe.
+ * @param enabled  What the macros' recording() gate will observe.
  * @param meter    The meter the macros will create their instruments on.
  */
 void
@@ -635,11 +663,33 @@ TEST(MetricMacros, observable_counter_and_updown_register_do_not_crash)
     EXPECT_EQ(app.registry().meterCalls(), 2);
 }
 
+TEST(MetricMacros, stopped_registry_records_nothing)
+{
+    ScopedBareProvider const bareProvider;
+    FakeApp app;
+    wire(app, /*enabled=*/true);
+
+    // Simulate MetricsRegistry::stop(): recording() flips closed even while
+    // isEnabled() stays true, because the OTel provider is torn down in
+    // stop() and a Record on a stale SDK instrument would deref a dangling
+    // AggregationConfig for a first-seen attribute set.
+    app.registry().stop();
+    ASSERT_TRUE(app.registry().isEnabled());
+    ASSERT_FALSE(app.registry().recording());
+
+    XRPL_METRIC_COUNTER_INC(
+        app, "test_macro_stopped_counter_total", "Counter after stop() must be inert");
+
+    // The recording() gate short-circuits before the create-once static path
+    // runs, so meter() is never consulted.
+    EXPECT_EQ(app.registry().meterCalls(), 0);
+}
+
 TEST(MetricMacros, disabled_registry_is_noop)
 {
     ScopedBareProvider const bareProvider;
     FakeApp app;
-    // enabled=false: the macro's isEnabled() gate short-circuits before it
+    // enabled=false: the macro's recording() gate short-circuits before it
     // ever touches meter(), so nothing is created or recorded.
     wire(app, /*enabled=*/false);
 
@@ -1024,7 +1074,7 @@ TEST(MetricMacros, sync_diagnostics_metrics_emit_nothing_when_registry_disabled)
     // Nothing else leaked in either: the collection is completely empty.
     EXPECT_EQ(data.size(), 0u);
 
-    // Cause, not just state: the isEnabled() gate short-circuited before the
+    // Cause, not just state: the recording() gate short-circuited before the
     // macro ever asked for a meter.
     EXPECT_EQ(app.registry().meterCalls(), 0);
 }
@@ -1266,7 +1316,7 @@ TEST(MetricMacros, state_changes_total_emits_nothing_when_registry_disabled)
     EXPECT_EQ(data.count("state_changes_total"), 0u);
     EXPECT_EQ(data.size(), 0u);
 
-    // Cause, not just state: the isEnabled() gate short-circuited before the
+    // Cause, not just state: the recording() gate short-circuited before the
     // macro asked for a meter.
     EXPECT_EQ(app.registry().meterCalls(), 0);
 }
@@ -1617,7 +1667,7 @@ TEST(MetricMacros, acquire_counters_emit_nothing_when_registry_disabled)
     EXPECT_EQ(data.count("sync_addnode_total"), 0u);
     EXPECT_EQ(data.size(), 0u);
 
-    // Cause, not just state: the isEnabled() gate short-circuited before the
+    // Cause, not just state: the recording() gate short-circuited before the
     // macros asked for a meter.
     EXPECT_EQ(app.registry().meterCalls(), 0);
 }
@@ -2599,7 +2649,7 @@ TEST(MetricMacros, sync_supply_counters_emit_nothing_when_registry_disabled)
     EXPECT_EQ(data.count("ledger_jump_total"), 0u);
     EXPECT_EQ(data.size(), 0u);
 
-    // Cause, not just state: the isEnabled() gate short-circuited before the
+    // Cause, not just state: the recording() gate short-circuited before the
     // macros asked for a meter, so no instrument was created either.
     EXPECT_EQ(app.registry().meterCalls(), 0);
 }
@@ -2721,7 +2771,7 @@ TEST(MetricMacros, ledger_replay_counters_emit_nothing_when_disabled)
     EXPECT_EQ(data.count("ledger_replay_outcome_total"), 0u);
     EXPECT_EQ(data.size(), 0u);
 
-    // Cause, not just state: the isEnabled() gate short-circuited before the
+    // Cause, not just state: the recording() gate short-circuited before the
     // macros ever asked for a meter, so no instrument was created.
     EXPECT_EQ(app.registry().meterCalls(), 0);
 }
@@ -2942,7 +2992,7 @@ TEST(MetricMacros, consensus_round_duration_emits_nothing_when_registry_disabled
     // State: no series at all under that name, and nothing else leaked in.
     EXPECT_EQ(data.count("consensus_round_duration_ms"), 0u);
     EXPECT_EQ(data.size(), 0u);
-    // Cause, not just state: the isEnabled() gate short-circuited before the
+    // Cause, not just state: the recording() gate short-circuited before the
     // macro ever asked for a meter.
     EXPECT_EQ(app.registry().meterCalls(), 0);
 }

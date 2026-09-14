@@ -103,6 +103,7 @@
 #include <chrono>
 #include <cstddef>
 #include <cstdint>
+#include <exception>
 #include <limits>
 #include <memory>
 #include <sstream>
@@ -167,7 +168,8 @@ addHistogramView(
 
     auto selector = metric_sdk::InstrumentSelectorFactory::Create(
         metric_sdk::InstrumentType::kHistogram, name, "");
-    auto meterSelector = metric_sdk::MeterSelectorFactory::Create("xrpld", "1.0.0", "");
+    auto meterSelector = metric_sdk::MeterSelectorFactory::Create(
+        std::string(xrpl::telemetry::kMeterName), std::string(xrpl::telemetry::kMeterVersion), "");
     auto view =
         metric_sdk::ViewFactory::Create(name, "", metric_sdk::AggregationType::kHistogram, config);
 
@@ -251,22 +253,13 @@ namespace xrpl::telemetry {
 MetricsRegistry::MetricsRegistry(
     [[maybe_unused]] bool enabled,
     [[maybe_unused]] ServiceRegistry& app,
-    [[maybe_unused]] beast::Journal journal)
+    [[maybe_unused]] beast::Journal journal,
+    [[maybe_unused]] Options const& options)
     : enabled_(enabled)
 #ifdef XRPL_ENABLE_TELEMETRY
     , app_(app)
     , journal_(journal)
 #endif
-{
-}
-
-MetricsRegistry::~MetricsRegistry()
-{
-    stop();
-}
-
-void
-MetricsRegistry::start([[maybe_unused]] StartOptions const& options)
 {
 #ifdef XRPL_ENABLE_TELEMETRY
     if (!enabled_)
@@ -281,19 +274,56 @@ MetricsRegistry::start([[maybe_unused]] StartOptions const& options)
                           << ", nodeId=" << options.nodeId << ", networkId=" << options.networkId
                           << ", useTls=" << options.useTls;
 
-    // Rule for anything added below: this phase may create only instruments
-    // whose recording is PUSHED from app code -- counters and histograms. An
-    // instrument registered here is live immediately, and the reader thread
-    // may invoke a registered callback before the rest of the Application is
-    // built, so any observable whose callback reads an Application service
-    // belongs in startAsyncGauges(), not here. That includes observable
-    // COUNTERS, not just gauges: jq_trans_overflow_total was created here and
-    // its callback read getOverlay(), which asserts overlay_ is non-null.
-    initExporterAndProvider(options);
-    initSyncInstruments();
+    // A broken pipeline must not stop the node. The SDK is third-party code,
+    // so the catch-all is deliberate, as in ~ApplicationImp.
+    try
+    {
+        initExporterAndProvider(options);
+
+        // Rule for anything added below: the constructor may create only
+        // instruments whose recording is PUSHED from app code -- counters and
+        // histograms. An instrument registered here is live immediately, and
+        // the reader thread may invoke a registered callback before the rest
+        // of the Application is built, so any observable whose callback reads
+        // an Application service belongs in startAsyncGauges(), not here.
+        // That includes observable COUNTERS, not just gauges:
+        // jq_trans_overflow_total was created here and its callback read
+        // getOverlay(), which asserts overlay_ is non-null.
+        initSyncInstruments();
+    }
+    catch (std::exception const& e)
+    {
+        disablePipeline(e.what());
+        return;
+    }
+    catch (...)
+    {
+        disablePipeline("unknown exception");
+        return;
+    }
 
     JLOG(journal_.info()) << "MetricsRegistry: provider and instruments ready";
 #endif  // XRPL_ENABLE_TELEMETRY
+}
+
+#ifdef XRPL_ENABLE_TELEMETRY
+void
+MetricsRegistry::disablePipeline(std::string_view reason)
+{
+    provider_.reset();
+    // A no-op meter keeps the invariant the XRPL_METRIC_* macros rely on: an
+    // enabled registry always has a meter, so every call site gets an inert
+    // instrument here with no check of its own.
+    meter_ = noopMeter(kMeterName);
+    JLOG(journal_.error()) << "MetricsRegistry: metrics pipeline failed to initialise, "
+                              "continuing without native metrics: "
+                           << reason;
+}
+#endif  // XRPL_ENABLE_TELEMETRY
+
+MetricsRegistry::~MetricsRegistry()
+{
+    stop();
 }
 
 void
@@ -303,14 +333,30 @@ MetricsRegistry::startAsyncGauges()
     if (!enabled_)
         return;
 
-    // A mis-ordered call must not crash: without a meter there is nothing to
-    // create instruments on, so registration is skipped entirely.
-    if (!meter_)
+    // One arm per life. A second call would create a second set of
+    // same-named instruments, and a call after stop() would register on a
+    // provider that is gone. Checked before the pipeline, so a call after
+    // stop() is reported as what it is and not as a build failure.
+    auto const currentPhase = phase_.load(std::memory_order_relaxed);
+    if (currentPhase != Phase::Ready)
     {
         JLOG(journal_.warn()) << "MetricsRegistry: startAsyncGauges() called "
-                                 "before start(); no gauges registered";
+                              << (currentPhase == Phase::Stopped ? "after stop()" : "twice")
+                              << "; ignored";
         return;
     }
+
+    // The pipeline failed to build: the meter is a no-op, so registering
+    // gauges on it would only log a success that is not one. phase_ stays
+    // at Ready, so a second call lands here again and logs the same message.
+    // Idempotent.
+    if (!provider_)
+    {
+        JLOG(journal_.warn()) << "MetricsRegistry: startAsyncGauges() without a pipeline; "
+                                 "no gauges registered";
+        return;
+    }
+    phase_.store(Phase::GaugesArmed, std::memory_order_relaxed);
 
     registerAsyncGauges();
 
@@ -320,7 +366,7 @@ MetricsRegistry::startAsyncGauges()
 
 #ifdef XRPL_ENABLE_TELEMETRY
 void
-MetricsRegistry::initExporterAndProvider(StartOptions const& options)
+MetricsRegistry::initExporterAndProvider(Options const& options)
 {
     // Configure OTLP/HTTP metric exporter. The TLS settings come from the one
     // [telemetry] block that also drives the trace exporter in Telemetry.cpp,
@@ -484,7 +530,7 @@ MetricsRegistry::initExporterAndProvider(StartOptions const& options)
     provider_->AddMetricReader(std::move(reader));
 
     // Get a meter for all xrpld instruments.
-    meter_ = provider_->GetMeter("xrpld", "1.0.0");
+    meter_ = provider_->GetMeter(std::string(kMeterName), std::string(kMeterVersion));
 }
 
 void
@@ -546,6 +592,12 @@ void
 MetricsRegistry::stop()
 {
 #ifdef XRPL_ENABLE_TELEMETRY
+    // Store Stopped with release ordering BEFORE the pipeline goes away.
+    // Every recording thread reads phase_ through recording() with acquire
+    // ordering, so any record that has not yet passed the gate will see
+    // Stopped and skip. Idempotent: destructor calls this after run() or
+    // ~ApplicationImp already did.
+    phase_.store(Phase::Stopped, std::memory_order_release);
     if (!provider_)
         return;
 
@@ -558,11 +610,23 @@ MetricsRegistry::stop()
     // to detach first.
     callbacksDetached_.store(true, std::memory_order_release);
 
+    // meter_ is left alone on purpose. Job threads are still running here and
+    // may be inside a macro, so writing meter_ would race with their read.
+    // The recording() gate is what keeps them off the dying pipeline: only the
+    // macros read meter_, and none of them does so once phase_ is Stopped.
+    //
     // SDK teardown order: Shutdown() stops the PeriodicExportingMetricReader
     // thread (so no further gauge callbacks fire) and performs the final
     // collect-and-export drain itself. The trailing ForceFlush() is a
     // redundant safety net (a no-op once the reader is shut down), then
     // reset() destroys the provider.
+    //
+    // provider_.reset() destroys MeterProvider -> MeterContext -> ViewRegistry
+    // -> each View -> its shared_ptr<AggregationConfig>. Live SDK
+    // SyncMetricStorage instances cached in call-site statics still hold a
+    // raw AggregationConfig pointer; a Record with a NEW attribute set after
+    // this point would fire the factory lambda and deref that dangling
+    // pointer, and a late meter()->CreateXxx would return null.
     provider_->Shutdown();
     provider_->ForceFlush();
     provider_.reset();
@@ -579,7 +643,7 @@ void
 MetricsRegistry::recordRpcStarted([[maybe_unused]] std::string_view method)
 {
 #ifdef XRPL_ENABLE_TELEMETRY
-    if (!enabled_ || !rpcStartedCounter_)
+    if (!recording() || !rpcStartedCounter_)
         return;
     rpcStartedCounter_->Add(1, {{"method", std::string(method)}});
 #endif
@@ -591,7 +655,7 @@ MetricsRegistry::recordRpcFinished(
     [[maybe_unused]] std::int64_t durationUs)
 {
 #ifdef XRPL_ENABLE_TELEMETRY
-    if (!enabled_ || !rpcFinishedCounter_)
+    if (!recording() || !rpcFinishedCounter_)
         return;
     rpcFinishedCounter_->Add(1, {{"method", std::string(method)}});
     if (rpcDurationHistogram_)
@@ -610,7 +674,7 @@ MetricsRegistry::recordRpcErrored(
     [[maybe_unused]] std::int64_t durationUs)
 {
 #ifdef XRPL_ENABLE_TELEMETRY
-    if (!enabled_ || !rpcErroredCounter_)
+    if (!recording() || !rpcErroredCounter_)
         return;
     rpcErroredCounter_->Add(1, {{"method", std::string(method)}});
     if (rpcDurationHistogram_)
@@ -633,7 +697,7 @@ MetricsRegistry::recordJobQueued(
     [[maybe_unused]] std::string_view jobName)
 {
 #ifdef XRPL_ENABLE_TELEMETRY
-    if (!enabled_ || !jobQueuedCounter_)
+    if (!recording() || !jobQueuedCounter_)
         return;
     jobQueuedCounter_->Add(
         1,
@@ -649,7 +713,7 @@ MetricsRegistry::recordJobStarted(
     [[maybe_unused]] std::int64_t queuedDurUs)
 {
 #ifdef XRPL_ENABLE_TELEMETRY
-    if (!enabled_ || !jobStartedCounter_)
+    if (!recording() || !jobStartedCounter_)
         return;
     // Build the attribute pair once: both the counter and the histogram
     // must carry the identical label set or they cannot be joined.
@@ -676,7 +740,7 @@ MetricsRegistry::recordJobFinished(
     [[maybe_unused]] std::int64_t runningDurUs)
 {
 #ifdef XRPL_ENABLE_TELEMETRY
-    if (!enabled_ || !jobFinishedCounter_)
+    if (!recording() || !jobFinishedCounter_)
         return;
     std::string const handler(sanitiseHandler(jobName));
     jobFinishedCounter_->Add(
@@ -2459,7 +2523,7 @@ void
 MetricsRegistry::incrementLedgersClosed()
 {
 #ifdef XRPL_ENABLE_TELEMETRY
-    if (enabled_ && ledgersClosedCounter_)
+    if (recording() && ledgersClosedCounter_)
         ledgersClosedCounter_->Add(1);
 #endif
 }
@@ -2468,7 +2532,7 @@ void
 MetricsRegistry::incrementValidationsSent()
 {
 #ifdef XRPL_ENABLE_TELEMETRY
-    if (enabled_ && validationsSentCounter_)
+    if (recording() && validationsSentCounter_)
         validationsSentCounter_->Add(1);
 #endif
 }
@@ -2477,7 +2541,7 @@ void
 MetricsRegistry::incrementValidationsChecked()
 {
 #ifdef XRPL_ENABLE_TELEMETRY
-    if (enabled_ && validationsCheckedCounter_)
+    if (recording() && validationsCheckedCounter_)
         validationsCheckedCounter_->Add(1);
 #endif
 }
@@ -2486,7 +2550,7 @@ void
 MetricsRegistry::incrementLedgerHistoryMismatch(std::string_view reason)
 {
 #ifdef XRPL_ENABLE_TELEMETRY
-    if (enabled_ && ledgerHistoryMismatchCounter_)
+    if (recording() && ledgerHistoryMismatchCounter_)
         ledgerHistoryMismatchCounter_->Add(1, {{"reason", std::string(reason)}});
 #endif
 }
@@ -2495,7 +2559,7 @@ void
 MetricsRegistry::incrementTxqExpired()
 {
 #ifdef XRPL_ENABLE_TELEMETRY
-    if (enabled_ && txqExpiredCounter_)
+    if (recording() && txqExpiredCounter_)
         txqExpiredCounter_->Add(1);
 #endif
 }
@@ -2504,7 +2568,7 @@ void
 MetricsRegistry::incrementTxqDropped(std::string_view reason)
 {
 #ifdef XRPL_ENABLE_TELEMETRY
-    if (enabled_ && txqDroppedCounter_)
+    if (recording() && txqDroppedCounter_)
         txqDroppedCounter_->Add(1, {{"reason", std::string(reason)}});
 #endif
 }

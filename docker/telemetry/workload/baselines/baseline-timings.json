@@ -1,89 +1,87 @@
 {
-  "captured_at": "2026-08-26T11:54:41Z",
-  "git_sha": "8418d474a7a63aa981a4854aa94388a556517b0d",
+  "captured_at": "2026-09-10T18:05:00Z",
+  "git_sha": "a0385c53cb8f1e9ab77379b5584367a92d0a9014",
   "metrics": {
     "job.acceptLedger.queued.p95": {
       "unit": "us",
-      "value": 166.13636363636323
+      "value": 95.58333333333331
     },
     "job.acceptLedger.running.p95": {
       "unit": "us",
-      "value": 6142.857142857149
+      "value": 15967.741935483866
     },
     "job.transaction.queued.p95": {
       "unit": "us",
-      "value": 426.19047619047586
+      "value": 403.74177631578937
     },
     "job.transaction.running.p95": {
       "unit": "us",
-      "value": 599.9999999999986
+      "value": 376.7512077294688
     },
     "span.consensus.accept.p50": {
       "unit": "ms",
-      "value": 0.5287356321839081
+      "value": 1.4363636363636365
     },
     "span.consensus.accept.p95": {
       "unit": "ms",
-      "value": 8.969696969696969
+      "value": 8.811111111111114
     },
     "span.consensus.accept.p99": {
       "unit": "ms",
-      "value": 20.800000000000026
+      "value": 20.928571428571445
     },
     "span.consensus.ledger_close.p95": {
       "unit": "ms",
-      "value": 0.7829999999999997
+      "value": 0.6749999999999998
     },
     "span.consensus.ledger_close.p99": {
       "unit": "ms",
-      "value": 2.0299999999999896
+      "value": 3.049999999999991
     },
     "span.ledger.build.p95": {
       "unit": "ms",
-      "value": 4.53333333333333
-    },
-    "span.ledger.build.p99": {
-      "unit": "ms",
-      "value": 9.109090909090913
+      "value": 4.7714285714285705
     },
     "span.ledger.validate.p50": {
       "unit": "ms",
-      "value": 0.06471894002114831
+      "value": 0.059761904761904766
     },
     "span.rpc.ws_message.p50": {
       "unit": "ms",
-      "value": 0.16003451676528602
+      "value": 0.16282758747645082
     },
     "span.rpc.ws_message.p95": {
       "unit": "ms",
-      "value": 0.6977397260273974
+      "value": 0.8122454466253443
     },
     "span.rpc.ws_message.p99": {
       "unit": "ms",
-      "value": 0.9757123287671235
+      "value": 0.9872660098522166
     },
     "span.tx.apply.p95": {
       "unit": "ms",
-      "value": 3.524999999999999
+      "value": 4.639716312056738
     },
     "span.tx.apply.p99": {
       "unit": "ms",
-      "value": 5.066666666666704
+      "value": 4.9733333333333345
     },
     "span.tx.process.p50": {
       "unit": "ms",
-      "value": 0.20062219789579117
+      "value": 0.21390674968918655
     },
     "span.tx.process.p95": {
       "unit": "ms",
-      "value": 0.6100467289719625
+      "value": 0.49949970576841685
     },
     "span.tx.process.p99": {
       "unit": "ms",
-      "value": 2.758787878787877
+      "value": 0.9939697679594013
     }
   },
   "profile": "full-validation",
   "schema_version": 1,
+  "source_runs": [34495527952, 34505215266, 34507425933],
+  "statistic": "median of three clean full-validation runs",
   "window": "3m"
 }

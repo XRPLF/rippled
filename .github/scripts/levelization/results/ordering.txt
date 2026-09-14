@@ -203,6 +203,7 @@ tests.libxrpl > xrpl.nodestore
 tests.libxrpl > xrpl.peerfinder
 tests.libxrpl > xrpl.protocol
 tests.libxrpl > xrpl.protocol_autogen
+tests.libxrpl > xrpl.rdb
 tests.libxrpl > xrpl.resource
 tests.libxrpl > xrpl.server
 tests.libxrpl > xrpl.shamap

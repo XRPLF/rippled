@@ -214,8 +214,10 @@ services:
       # Shared secret for the JWT-authenticated render requests Grafana 13
       # sends. Must match GF_RENDERING_RENDERER_TOKEN on the grafana service.
       - AUTH_TOKEN=${GF_RENDERING_RENDERER_TOKEN:-xrpld-local-render}
-    ports:
-      - "8081:8081" # Renderer HTTP endpoint (called by grafana)
+    # No `ports:` on purpose. Grafana reaches this over the compose network at
+    # http://renderer:8081, so publishing 8081 on the host adds nothing the
+    # stack needs. AUTH_TOKEN above is the only guard on the endpoint, and its
+    # default is a fixed string in this file, so keep the service off the host.
     networks:
       - xrpld-telemetry
 # Named volume for Tempo trace storage (WAL and compacted blocks).
