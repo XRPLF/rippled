@@ -807,26 +807,19 @@ run(int argc, char** argv)
         if (vm.contains("debug"))
             setDebugLogSink(logs->makeSink("Debug", beast::Severity::Trace));
 
-        // Telemetry needs the node public key at construction, so read it here
-        // where a config error can still be reported and the process can exit
-        // cleanly. getNodeIdentity() in setup() stays authoritative.
-        std::optional<std::string> nodePublicKey;
+        // Telemetry stamps the node public key into resources it builds during
+        // construction, so the identity is decided here, where a malformed
+        // [node_seed] can still be reported and the process can exit cleanly.
+        // setup() persists it; see getNodeIdentity().
+        std::optional<std::pair<PublicKey, SecretKey>> nodeIdentity;
         try
         {
-            nodePublicKey = resolveNodePublicKey(*config, vm, logs->journal("Application"));
+            nodeIdentity = resolveNodeIdentity(*config, vm, logs->journal("Application"));
         }
         catch (std::exception const& e)
         {
             std::cerr << "Unable to start " << systemName() << ": " << e.what() << std::endl;
             return -1;
-        }
-
-        if (!nodePublicKey)
-        {
-            JLOG(logs->journal("Application").warn())
-                << "Telemetry: no node identity available yet, so this run reports an empty "
-                   "service.instance.id. Set [telemetry] service_instance_id, or restart once "
-                   "the node key exists.";
         }
 
         // Application construction runs member initializers that validate
@@ -848,7 +841,7 @@ run(int argc, char** argv)
         try
         {
             app = makeApplication(
-                std::move(config), std::move(logs), std::make_unique<TimeKeeper>(), nodePublicKey);
+                std::move(config), std::move(logs), std::make_unique<TimeKeeper>(), *nodeIdentity);
         }
         catch (std::exception const& e)
         {

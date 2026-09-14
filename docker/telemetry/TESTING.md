@@ -299,14 +299,14 @@ protocol = peer
 
 [node_db]
 type=NuDB
-path=/tmp/xrpld-integration/node{N}/nudb
+path=/tmp/xrpld-integration/Node-{N}/nudb
 online_delete=256
 
 [database_path]
-/tmp/xrpld-integration/node{N}/db
+/tmp/xrpld-integration/Node-{N}/db
 
 [debug_logfile]
-/tmp/xrpld-integration/node{N}/debug.log
+/tmp/xrpld-integration/Node-{N}/debug.log
 
 [validation_seed]
 {seed from step 2}
@@ -337,11 +337,13 @@ trace_peer=1
 trace_ledger=1
 
 [insight]
+# server=otel is the only load-bearing key here -- it selects OTelCollector.
+# The export endpoint comes from [telemetry] metrics_endpoint, and [insight]'s
+# own service_instance_id/service_name keys are ignored.
 server=otel
-endpoint=http://localhost:4318/v1/metrics
 
 [rpc_startup]
-{ "command": "log_level", "severity": "warning" }
+{ "command": "log_level", "severity": "info" }
 
 [ssl_verify]
 0
@@ -354,6 +356,16 @@ without the stanza every span and metric this local cluster emits is stamped
 mainnet data. Only 0, 1 and 2 have names, so a private id is stamped
 `xrpl.network.type=unknown`. That is the value to select in the dashboards'
 Network Type filter when looking at this cluster.
+
+The per-node directory name must equal `[telemetry] service_instance_id`: the
+collector reads the node name off the log file's path and stamps it as the Loki
+label `service_instance_id`, so a mismatch leaves the logs labelled with a node
+name that no trace or metric shares.
+
+`log_level` is `info`, not `warning`. A log line carries trace context only when
+it is emitted inside an active span, and the pair that reliably carries it — the
+`CNF Val` / `CNF buildLCL` branches inside the consensus accept span, one of
+which fires for every accepted ledger — logs at `info`.
 
 #### Step 4: Create validators.txt
 
@@ -689,8 +701,14 @@ Expected: log lines with `trace_id=<32hex> span_id=<16hex>` between the
 severity code and the message. Example:
 
 ```
-2024-Jan-15 10:30:45.123456789 UTC RPCHandler:NFO trace_id=abc123def456789012345678abcdef01 span_id=0123456789abcdef Calling server_info
+2024-Jan-15 10:30:45.123456789 UTC RPCHandler:DBG trace_id=abc123def456789012345678abcdef01 span_id=0123456789abcdef RPC call server_info completed in 0.000123seconds
 ```
+
+That example is a Test 1 line. `xrpld-telemetry.cfg` logs at `debug`, so the
+in-span RPC statement above appears. Test 2's nodes log at `info`, which
+suppresses it — there, look for the `CNF Val` / `CNF buildLCL` lines from the
+consensus accept span instead. Either carries trace context; only the message
+differs.
 
 Lines emitted outside of an active span (background tasks, startup) will
 NOT have trace context — this is expected.
@@ -733,9 +751,9 @@ Use `query_range`, not `query`. Loki rejects a bare log selector on the
 instant `/query` endpoint with HTTP 400 and a `text/plain` body
 ("log queries are not supported as an instant query type"), so `jq` fails to
 parse it and the step never prints a number — even when ingestion is working.
-Only metric queries such as `sum(count_over_time(...))` are allowed there,
-which is why the validation scripts can use the instant endpoint.
-Timestamps are unix nanoseconds, matching `workload/validate_telemetry.py`.
+Only metric queries such as `sum(count_over_time(...))` are allowed there, so a
+check that needs a count rather than the lines themselves can use the instant
+endpoint. `query_range` timestamps are unix nanoseconds.
 Counting `.data.result | length` would count streams, not log lines.
 
 > **Use `service_name`, not `job`.** The local stack's `resource/logs` processor
@@ -763,7 +781,7 @@ Counting `.data.result | length` would count streams, not log lines.
 1. Open Grafana at http://localhost:3000
 2. Navigate to **Explore** -> select **Tempo** datasource
 3. Search for a trace (e.g., operation `rpc.command.server_info`)
-4. Click **"Logs for this trace"** in the trace detail view
+4. Expand a span and click **"Logs for this span"** in its **Links** row
 5. Verify that Loki log lines appear, filtered by the trace's `trace_id`
 
 ### Step 5: Verify Grafana Loki-to-Tempo correlation
@@ -775,15 +793,15 @@ Counting `.data.result | length` would count streams, not log lines.
 
 ### Expected results
 
-| Check                          | Expected                                 |
-| ------------------------------ | ---------------------------------------- |
-| `trace_id=` in debug.log       | Present in log lines within active spans |
-| `span_id=` in debug.log        | Present alongside trace_id               |
-| Logs without active span       | No trace_id/span_id fields               |
-| trace_id in Tempo              | Matches a valid trace                    |
-| Loki log ingestion             | Logs visible via LogQL                   |
-| Tempo -> Loki "Logs for trace" | Shows correlated log lines               |
-| Loki -> Tempo TraceID link     | Navigates to correct trace               |
+| Check                       | Expected                                 |
+| --------------------------- | ---------------------------------------- |
+| `trace_id=` in debug.log    | Present in log lines within active spans |
+| `span_id=` in debug.log     | Present alongside trace_id               |
+| Logs without active span    | No trace_id/span_id fields               |
+| trace_id in Tempo           | Matches a valid trace                    |
+| Loki log ingestion          | Logs visible via LogQL                   |
+| Tempo -> Loki span log link | Shows correlated log lines               |
+| Loki -> Tempo TraceID link  | Navigates to correct trace               |
 
 ---
 
