@@ -549,17 +549,25 @@ public:
 
     /**
      * @brief Register a gauge for observable callback reading.
-     * @param gauge  Pointer to the gauge to register.
+     *
+     * Takes the owning shared_ptr so the list can store a weak reference.
+     * Called from makeGauge() rather than the gauge's constructor, because a
+     * weak_ptr cannot be formed until the shared_ptr owns the object.
+     *
+     * @param gauge  Owning pointer to the gauge to register.
      */
     void
-    addGauge(OTelGaugeImpl* gauge);
+    addGauge(std::shared_ptr<OTelGaugeImpl> const& gauge);
 
     /**
-     * @brief Unregister a gauge.
-     * @param gauge  Pointer to the gauge to unregister.
+     * @brief Drop entries for gauges that have been destroyed.
+     *
+     * Called from ~OTelGaugeImpl. The dying gauge's weak_ptr has already
+     * expired by then, so the entry is identified by expiry rather than by
+     * address.
      */
     void
-    removeGauge(OTelGaugeImpl* gauge);
+    removeExpiredGauges();
     /** @} */
 
     /**
@@ -621,8 +629,17 @@ private:
 
     /**
      * Registered gauges read during observable callbacks.
+     *
+     * Weak for the same reason as hooks_. onCollectionReady() and
+     * onCollectionStopping() snapshot this list and then call arm()/disarm()
+     * with mutex_ released, because both enter the SDK's observable registry
+     * lock. A raw pointer copied out of the list could be dangling by then,
+     * since ~OTelGaugeImpl only re-acquires mutex_ to prune its own entry.
+     * Locking a weak_ptr keeps the gauge alive for exactly the duration of
+     * that arm or disarm call, and one destroyed since the snapshot is
+     * skipped rather than followed.
      */
-    std::vector<OTelGaugeImpl*> gauges_;
+    std::vector<std::weak_ptr<OTelGaugeImpl>> gauges_;
 
     /**
      * @brief Shortest gap between two hook invocations.
@@ -717,7 +734,8 @@ OTelEventImpl::notify(value_type const& value)
 OTelGaugeImpl::OTelGaugeImpl(std::string name, std::shared_ptr<OTelCollectorImp> const& collector)
     : name_(std::move(name)), collector_(collector)
 {
-    collector_->addGauge(this);
+    // Registration happens in makeGauge(), not here: no weak_ptr to this
+    // object exists until the owning shared_ptr does.
 }
 
 void
@@ -767,7 +785,7 @@ OTelGaugeImpl::~OTelGaugeImpl()
     // callback for this instrument is in flight — removal is synchronous.
     // A no-op when never armed, or already disarmed at shutdown.
     disarm();
-    collector_->removeGauge(this);
+    collector_->removeExpiredGauges();
 }
 
 void
@@ -896,7 +914,9 @@ OTelCollectorImp::makeEvent(std::string const& name, Unit unit)
 Gauge
 OTelCollectorImp::makeGauge(std::string const& name)
 {
-    return Gauge(std::make_shared<OTelGaugeImpl>(formatName(name), shared_from_this()));
+    auto gauge = std::make_shared<OTelGaugeImpl>(formatName(name), shared_from_this());
+    addGauge(gauge);
+    return Gauge(gauge);
 }
 
 Meter
@@ -952,17 +972,18 @@ OTelCollectorImp::callHooks()
 }
 
 void
-OTelCollectorImp::addGauge(OTelGaugeImpl* gauge)
+OTelCollectorImp::addGauge(std::shared_ptr<OTelGaugeImpl> const& gauge)
 {
     std::scoped_lock const lock(mutex_);
-    gauges_.push_back(gauge);
+    gauges_.emplace_back(gauge);
 }
 
 void
-OTelCollectorImp::removeGauge(OTelGaugeImpl* gauge)
+OTelCollectorImp::removeExpiredGauges()
 {
     std::scoped_lock const lock(mutex_);
-    std::erase(gauges_, gauge);
+    std::erase_if(
+        gauges_, [](std::weak_ptr<OTelGaugeImpl> const& gauge) { return gauge.expired(); });
 }
 
 void
@@ -972,15 +993,24 @@ OTelCollectorImp::onCollectionReady()
     // observable registry lock, and the reader thread takes that lock before
     // calling callHooks(), which wants mutex_. callHooks() copies its hook list
     // for the same reason.
-    std::vector<OTelGaugeImpl*> gauges;
+    std::vector<std::weak_ptr<OTelGaugeImpl>> gauges;
     {
         std::scoped_lock const lock(mutex_);
         gauges = gauges_;
     }
 
     std::size_t armed = 0;
-    for (auto* gauge : gauges)
+    std::size_t live = 0;
+    for (auto const& weakGauge : gauges)
     {
+        // Locking keeps this gauge alive across its own arm() call. One
+        // destroyed since the snapshot locks to null and is skipped, and is
+        // not counted in the total below: it has no metric to register.
+        auto const gauge = weakGauge.lock();
+        if (!gauge)
+            continue;
+        ++live;
+
         // Telemetry must never stop the node, so one bad instrument costs only
         // its own metric.
         try
@@ -1001,8 +1031,7 @@ OTelCollectorImp::onCollectionReady()
 
     if (auto stream = journal_.info())
     {
-        stream << "OTelCollector: registered " << armed << " of " << gauges.size()
-               << " observable gauges";
+        stream << "OTelCollector: registered " << armed << " of " << live << " observable gauges";
     }
 }
 
@@ -1011,17 +1040,26 @@ OTelCollectorImp::onCollectionStopping()
 {
     // Same lock discipline as onCollectionReady(): snapshot, then act outside
     // the lock, because disarm() enters the SDK's observable registry lock.
-    std::vector<OTelGaugeImpl*> gauges;
+    std::vector<std::weak_ptr<OTelGaugeImpl>> gauges;
     {
         std::scoped_lock const lock(mutex_);
         gauges = gauges_;
     }
 
-    for (auto* gauge : gauges)
-        gauge->disarm();
+    // Locking keeps each gauge alive across its own disarm() call. One already
+    // destroyed disarmed itself in ~OTelGaugeImpl, so skipping it is correct.
+    std::size_t disarmed = 0;
+    for (auto const& weakGauge : gauges)
+    {
+        if (auto const gauge = weakGauge.lock())
+        {
+            gauge->disarm();
+            ++disarmed;
+        }
+    }
 
     if (auto stream = journal_.info())
-        stream << "OTelCollector: stopped observing " << gauges.size() << " gauges";
+        stream << "OTelCollector: stopped observing " << disarmed << " gauges";
 }
 
 opentelemetry::nostd::shared_ptr<metrics_api::Meter> const&
