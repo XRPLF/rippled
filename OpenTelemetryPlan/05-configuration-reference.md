@@ -25,32 +25,31 @@ The authoritative `[telemetry]` example lives in `cfg/xrpld-example.cfg`. Teleme
 >
 > - **Traces**: the tracer resource is built in `Telemetry::start()`
 >   (`Telemetry.cpp:380-387`), which runs after `ApplicationImp::setup()` has
->   called `setServiceInstanceId()` (`Application.cpp:1323`) with the Base58
+>   called `setServiceInstanceId()` (in `ApplicationImp::setup()`) with the Base58
 >   node public key. An unset key therefore still yields the node key. The
 >   `spanmetrics` connector derives `span_calls_total` /
 >   `span_duration_milliseconds_*` from those spans, so span metrics inherit
 >   the correct id too.
 > - **Native `XRPL_METRIC_*` metrics** build their **own** MeterProvider
->   resource in `MetricsRegistry::initExporterAndProvider()`
->   (`MetricsRegistry.cpp:280`, `:296-304`, provider created at `:339`), and
->   `ApplicationImp::startTelemetry()` supplies the id with an explicit node-key
->   fallback (`Application.cpp:1674-1679`: read the config key, and
->   `if (instanceId.empty() && nodeIdentity_)` substitute
->   `toBase58(TokenType::NodePublic, …)`). By then `setup()` has resolved
->   `nodeIdentity_` (`Application.cpp:1315`), so these metrics carry the node
->   key even with the config key unset.
+>   resource in `MetricsRegistry::initExporterAndProvider()`, called from the
+>   registry's constructor. `makeMetricsRegistryOptions()` in `Application.cpp`
+>   supplies the id: the config key when set, else the node public key that
+>   `Main.cpp` resolves before `ApplicationImp` is constructed (the same source
+>   `Telemetry`'s own metrics resource uses). On a first boot with no node key
+>   yet, both `service_instance_id` and `xrpl.node.id` are left off until the
+>   next restart.
 > - **`beast::insight` metrics** are the exception. They use the **global**
 >   MeterProvider, whose resource is built in the `TelemetryImpl`
 >   **constructor** (`Telemetry.cpp:321-338`, `initMetrics()` at `:447`),
 >   because insight instruments are created eagerly in subsystem constructors
->   and would otherwise bind to the noop provider forever. At that point
->   `serviceInstanceId` is still `""` (`Application.cpp:348` passes an empty
->   node key), and the code comment at `Telemetry.cpp:333-336` states plainly
+>   and would otherwise bind to the noop provider forever. The constructor
+>   receives the key `Main.cpp` resolved, which is empty when no key exists
+>   yet, and the code comment in `TelemetryImpl::initMetrics()` states plainly
 >   that the later setter "cannot change this immutable resource". Worse,
->   `initMetrics()` sets the attribute **unconditionally**
->   (`Telemetry.cpp:488`), so the resource carries `service.instance.id=""`
->   rather than omitting it — whereas `MetricsRegistry` guards the same write
->   with `if (!instanceId.empty())` (`MetricsRegistry.cpp:302-303`).
+>   `initMetrics()` sets the attribute **unconditionally**, so on such a run
+>   the resource carries `service.instance.id=""` rather than omitting it —
+>   whereas `MetricsRegistry` guards the same write with
+>   `if (!options.serviceInstanceId.empty())` in `MetricsRegistry::initExporterAndProvider()`.
 >
 > Result: with `service_instance_id` unset, `beast::insight` metrics — and only
 > those — export with an empty `service.instance.id`. Every shipped Grafana
@@ -70,7 +69,7 @@ The authoritative `[telemetry]` example lives in `cfg/xrpld-example.cfg`. Teleme
 | -------------------------- | ------ | ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `enabled`                  | 0 or 1 | `0`                                | Enable/disable telemetry                                                                                                                                                                         |
 | `traces_endpoint`          | string | `http://localhost:4318/v1/traces`  | OTLP/HTTP collector endpoint for **traces**                                                                                                                                                      |
-| `metrics_endpoint`         | string | `http://localhost:4318/v1/metrics` | OTLP/HTTP collector endpoint for the native metrics pipeline (`MetricsRegistry`). Read in `Application.cpp:1670`                                                                                 |
+| `metrics_endpoint`         | string | `http://localhost:4318/v1/metrics` | OTLP/HTTP collector endpoint for the native metrics pipeline (`MetricsRegistry`). Read by `makeMetricsRegistryOptions()` in `Application.cpp`                                                    |
 | `use_tls`                  | 0 or 1 | `0`                                | Enable TLS for exporter connection                                                                                                                                                               |
 | `tls_ca_cert`              | string | `""`                               | Path to CA certificate file                                                                                                                                                                      |
 | `tls_client_cert`          | string | `""`                               | Client cert (PEM) for mTLS; empty = one-way; if `enabled=1`, needs key + `use_tls=1` or startup fails                                                                                            |
@@ -119,7 +118,7 @@ the corresponding subsystems are instrumented:
 
 The parser `makeTelemetrySetup()` in `src/libxrpl/telemetry/TelemetryConfig.cpp` reads the `[telemetry]` `Section` and populates a `Telemetry::Setup` struct, applying the defaults listed in Section 5.1.2 via `section.valueOr(...)`. It takes `serviceInstanceId` from the `nodePublicKey` argument when the key is absent, applies one unconditional `traces_endpoint` default (`dflt::tracesEndpoint`) — the parser has no notion of exporter type — and leaves the sampling ratio at its fixed 1.0 default (a `static constexpr` member, so there is nothing to parse). It also rejects two contradictory mTLS configurations outright (`tls_client_cert` without `tls_client_key`, and either without `use_tls=1`) rather than failing open at handshake time.
 
-`metrics_endpoint` reaches `MetricsRegistry` by a second route: `ApplicationImp::startTelemetry()` reads it from the same `Section` and passes it to `MetricsRegistry::start()`, because `Telemetry` does not expose the `Setup` it parsed. Both metric exporters resolve to that one key:
+`metrics_endpoint` reaches `MetricsRegistry` by a second route: `makeMetricsRegistryOptions()` in `Application.cpp` reads it from the same `Section` and passes it to the registry's constructor, because `Telemetry` does not expose the `Setup` it parsed. Both metric exporters resolve to that one key:
 
 | Metric source                              | Exporter built by                            | URL comes from                                                       |
 | ------------------------------------------ | -------------------------------------------- | -------------------------------------------------------------------- |
@@ -134,20 +133,17 @@ Setting `traces_endpoint` therefore moves traces only; both metric pipelines fol
 
 ### 5.3.1 ApplicationImp Changes
 
-> **Deferred identity**: The node public key (`nodeIdentity_`) is not
-> available during `ApplicationImp`'s member initializer list — it is
-> resolved later in `setup()`. The `Telemetry` object is therefore
-> constructed with an empty `serviceInstanceId` and patched via
-> `setServiceInstanceId()` once `setup()` has called `getNodeIdentity()`.
-> **This patch reaches traces only.** The **global** MeterProvider resource —
-> the one `beast::insight` metrics use — is already frozen by then (§5.1.1), so
-> those metrics keep whatever `service_instance_id` the config supplied (`""`
-> if it supplied none). Native `XRPL_METRIC_*` metrics do not go through this
-> patch at all: `startTelemetry()` re-reads the config key and applies its own
-> node-key fallback when building `MetricsRegistry`'s separate resource
-> (`Application.cpp:1674-1679`).
+> **Identity at construction**: `Main.cpp` resolves the node public key with
+> `resolveNodePublicKey()` before `ApplicationImp` is built and passes it to
+> the constructor, so both metric resources — the **global** MeterProvider the
+> `beast::insight` metrics use, and `MetricsRegistry`'s separate one — carry it
+> from the start. `getNodeIdentity()` in `setup()` stays authoritative; when it
+> mints a key that did not exist at construction (a first boot), it patches the
+> tracer via `setServiceInstanceId()`. **That patch reaches traces only**: both
+> metric resources are frozen once their providers are built, so on that one
+> run the metrics report without a node id until the next restart.
 
-`ApplicationImp` (in `src/xrpld/app/main/Application.cpp`) owns a `std::unique_ptr<telemetry::Telemetry> telemetry_`. It is built in the member initializer list via `makeTelemetry(makeTelemetrySetup(...))` with an empty `serviceInstanceId`, then patched in `setup()` by calling `setServiceInstanceId()` with the Base58 node public key (unless the user supplied a custom `service_instance_id`). `start()` and `run()` forward to `telemetry_->start()` / `telemetry_->stop()`, and `getTelemetry()` returns the owned instance.
+`ApplicationImp` (in `src/xrpld/app/main/Application.cpp`) owns a `std::unique_ptr<telemetry::Telemetry> telemetry_` and, declared right after it, a `std::unique_ptr<telemetry::MetricsRegistry> metricsRegistry_`. Both are built in the member initializer list, before every subsystem, from the node key `Main.cpp` resolved (empty on a first boot). `setup()` patches the tracer via `setServiceInstanceId()` if `getNodeIdentity()` minted a new key, starts tracing with `startTelemetry()` before the first consensus round, and arms the registry's observable gauges with `startTelemetryGauges()` once `overlay_` exists. `run()` stops both observers before any service, then stops telemetry last; `~ApplicationImp` repeats those stops for the paths that never reach `run()`. `getTelemetry()` and `getMetricsRegistry()` return the owned instances.
 
 ### 5.3.2 ServiceRegistry Interface Addition
 

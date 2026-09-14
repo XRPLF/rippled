@@ -65,7 +65,7 @@ public:
 
     /**
      * Number of times meter() has been consulted, so a test can assert the
-     * create-once (call_once) and disabled-gating behavior exactly.
+     * create-once (function-local static) and disabled-gating behavior exactly.
      */
     [[nodiscard]] int
     meterCalls() const noexcept
@@ -202,7 +202,7 @@ TEST(MetricMacros, counter_inc_creates_once_and_does_not_crash)
             app, "test_macro_counter_total", "Test counter for macro unit test");
     }
 
-    // Create-once proof: std::call_once consults meter() exactly once across
+    // Create-once proof: the function-local static consults meter() exactly once across
     // the three calls at this site, then reuses the cached instrument handle.
     EXPECT_EQ(app.registry().meterCalls(), 1);
 }

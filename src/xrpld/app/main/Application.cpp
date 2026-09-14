@@ -144,6 +144,65 @@ namespace xrpl {
 static void
 fixConfigPorts(Config& config, Endpoints const& endpoints);
 
+/**
+ * Read the native metrics pipeline settings from [telemetry] and [network_id].
+ *
+ * The identity and TLS values must match what makeTelemetrySetup() gives the
+ * trace pipeline, or this node reports two identities. Telemetry does not
+ * expose the Setup it parsed, so those keys are read here a second time. The
+ * export cadence is the registry's own (10 s) and is not read from config.
+ *
+ * @param config        The loaded server config.
+ * @param nodePublicKey Node key resolved in Main.cpp; empty on a first boot.
+ * @return Options for MetricsRegistry's constructor.
+ */
+static telemetry::MetricsRegistry::Options
+makeMetricsRegistryOptions(Config const& config, std::optional<std::string> const& nodePublicKey)
+{
+    auto const& section = config.section("telemetry");
+    telemetry::MetricsRegistry::Options options;
+
+    // metrics_endpoint is a full URL of its own, not a host to be joined. The
+    // default is the one Telemetry::Setup carries, so both pipelines fall back
+    // to the same collector.
+    options.endpoint = telemetry::Telemetry::Setup{}.metricsEndpoint;
+    set(options.endpoint, "metrics_endpoint", section);
+
+    // Same default and same key as makeTelemetrySetup(), so traces and
+    // metrics carry one service.name. systemName() is "xrpld".
+    options.serviceName = systemName();
+    set(options.serviceName, "service_name", section);
+
+    // Not from config: the build's version, the same source the trace
+    // resource takes it from.
+    options.serviceVersion = build_info::getVersionString();
+
+    // service_instance_id is the label every dashboard filters $node on.
+    // xrpl.node.id carries the same key and cannot be overridden by config.
+    // Both come from the key Main.cpp resolved before construction, the same
+    // source Telemetry's own metrics resource uses.
+    set(options.serviceInstanceId, "service_instance_id", section);
+    if (options.serviceInstanceId.empty())
+        options.serviceInstanceId = nodePublicKey.value_or("");
+    options.nodeId = nodePublicKey.value_or("");
+
+    // xrpl.network.id, and the xrpl.network.type label the registry derives
+    // from it. Without this the collector's insert rule fills in its own
+    // default and a devnet node reports mainnet on this pipeline.
+    options.networkId = config.networkId;
+
+    // The exporter connection reads the same four TLS keys the trace exporter
+    // does, so one [telemetry] block covers both signals. use_tls is an int
+    // compared to 0, matching makeTelemetrySetup().
+    int useTls = 0;
+    set(useTls, "use_tls", section);
+    options.useTls = useTls != 0;
+    set(options.tlsCaCertPath, "tls_ca_cert", section);
+    set(options.tlsClientCertPath, "tls_client_cert", section);
+    set(options.tlsClientKeyPath, "tls_client_key", section);
+    return options;
+}
+
 // VFALCO TODO Move the function definitions into the class declaration
 class ApplicationImp : public Application, public BasicApp
 {
@@ -225,7 +284,10 @@ public:
     std::unique_ptr<telemetry::Telemetry> telemetry_;
     /**
      * OTel metrics registry for gap-fill metrics (counters, histograms,
-     * observable gauges). Created after telemetry_ during setup().
+     * observable gauges). Its constructor builds the pipeline and every
+     * synchronous instrument, so it must stay declared after telemetry_ and
+     * before every subsystem that records a metric. Declaration order is the
+     * whole guarantee. Gauges are armed later by startTelemetryGauges().
      */
     std::unique_ptr<telemetry::MetricsRegistry> metricsRegistry_;
     Application::MutexType masterMutex_;
@@ -361,14 +423,16 @@ public:
                       build_info::getVersionString(),
                       config_->networkId),
                   logs_->journal("Telemetry")))
-        // Built here, not in setup(): getMetricsRegistry() is read from the job
-        // queue and io threads, which are already running, so assigning the
-        // handle later would race with those reads.
+        // Built here, not in setup(), for two reasons: getMetricsRegistry() is
+        // read from job-queue and io threads that are already running, and the
+        // constructor creates every synchronous instrument, which must happen
+        // before any subsystem below can record one.
         , metricsRegistry_(
               std::make_unique<telemetry::MetricsRegistry>(
                   telemetry_->isEnabled(),
                   *this,
-                  logs_->journal("MetricsRegistry")))
+                  logs_->journal("MetricsRegistry"),
+                  makeMetricsRegistryOptions(*config_, nodePublicKey)))
 
         , txMaster_(*this)
         , collectorManager_(makeCollectorManager(
@@ -547,16 +611,16 @@ public:
     }
 
     /**
-     * Stop observing and stop telemetry before the members are destroyed.
+     * Stop both observers and stop telemetry before the members are destroyed.
      *
-     * The metrics reader thread runs callbacks that read the services member
-     * destruction is about to tear down. telemetry_ is declared early because
-     * the collector needs its MeterProvider, so reverse-order member destruction
-     * would take it down last.
+     * The insight collector and the metrics registry each own a reader thread
+     * whose callbacks read the services member destruction is about to tear
+     * down. Both are declared early, so reverse-order destruction would take
+     * them down last.
      *
-     * run() does both on the normal path; this covers the paths that never
-     * reach it -- every `return false` in setup(), and the unit tests. Both
-     * calls are idempotent.
+     * run() does all of this on the normal path; this covers the paths that
+     * never reach it -- every `return false` in setup(), and the unit tests.
+     * Every call here is idempotent.
      */
     ~ApplicationImp() override
     {
@@ -565,6 +629,7 @@ public:
         try
         {
             collectorManager_->collector()->onCollectionStopping();
+            stopMetricsRegistry();
             telemetry_->stop();
         }
         catch (std::exception const& e)
@@ -1235,30 +1300,18 @@ private:
     startGenesisLedger();
 
     /**
-     * Start the tracing pipeline and the metrics provider and synchronous
-     * instruments. First of the two telemetry startup phases.
+     * Start the tracing pipeline.
      *
-     * Called once from setup(), immediately after metricsRegistry_ is
-     * constructed. Starting here (rather than in start()) guarantees the OTel
-     * MeterProvider is live before any metric-emitting code runs — including
-     * the first consensus round, which records a mode-transition counter, and
-     * the startup RPCs, whose PerfLog instrumentation records a call-site
-     * metric. A call-site metric macro caches its instrument on first use via
-     * std::call_once; if that first use happens while the meter is still
-     * empty, the instrument latches null for the process lifetime and the
-     * metric silently never records.
+     * Called once from setup(), after the node identity is known and before
+     * beginConsensus() emits the first spans. SpanGuard drops a span whenever
+     * the global Telemetry instance is not yet live, so this cannot wait for
+     * start().
      *
-     * Rule for keeping this call site valid: only telemetry work that reads
-     * NO application subsystem may run here. That holds today — this phase
-     * uses the config strings and creates only push-model counters and
-     * histograms, which app code records into once it is ready. Anything that
-     * registers a callback reading a subsystem must go in
-     * startTelemetryGauges() instead, because a callback registered here can
-     * fire on the metrics reader thread while the rest of the application is
-     * still being built.
+     * The metrics pipeline is not started here: metricsRegistry_'s constructor
+     * built it, so its instruments exist before any subsystem does.
      *
-     * The resource attributes, including service.instance.id, were supplied at
-     * construction.
+     * @pre nodeIdentity_ is populated, so setServiceInstanceId() has already
+     * supplied the tracer's service.instance.id.
      */
     void
     startTelemetry() const;
@@ -1270,20 +1323,26 @@ private:
      * Registering an observable instrument arms the metrics reader thread to
      * invoke its callback, and those callbacks read application services —
      * getOverlay() asserts overlay_ is non-null, and an assert is not caught
-     * by the callbacks' own try/catch — so this cannot run as early as
-     * startTelemetry().
+     * by the callbacks' own try/catch — so this cannot run at construction.
      *
-     * @pre startTelemetry() has run, and every service the callbacks read is
-     * constructed. overlay_ is the binding one: the rest (networkOPs_,
-     * ledgerMaster_, openLedger_, txQ_, nodeStore_, nodeFamily_,
-     * validators_, acceptedLedgerCache_, cachedSLEs_, acquireStats_,
-     * timeKeeper_, relationalDatabase_, inboundLedgers_, feeTrack_) are
-     * already live by the time startTelemetry() is callable, and
-     * overlay_ is the only one built after it. See
+     * @pre Every service the callbacks read is constructed. overlay_ is the
+     * binding one: the rest (networkOPs_, ledgerMaster_, openLedger_, txQ_,
+     * nodeStore_, nodeFamily_, validators_, acceptedLedgerCache_,
+     * cachedSLEs_, acquireStats_, timeKeeper_, relationalDatabase_,
+     * inboundLedgers_, feeTrack_) are built earlier in setup(). See
      * MetricsRegistry::startAsyncGauges() for the full list.
      */
     void
     startTelemetryGauges() const;
+
+    /**
+     * Stop the metrics registry: detach its gauge callbacks and join its
+     * reader thread. Idempotent. Called from run() before any observed
+     * service stops, and again from ~ApplicationImp for the paths that never
+     * reach run().
+     */
+    void
+    stopMetricsRegistry() const;
 
     std::shared_ptr<Ledger>
     getLastFullLedger();
@@ -1392,21 +1451,20 @@ ApplicationImp::setup(boost::program_options::variables_map const& cmdline)
     // stable per-node key whatever [telemetry] says.
     telemetry_->setNodeId(toBase58(TokenType::NodePublic, nodeIdentity_->first));
 
-    // Start telemetry here, not in start(). Spans and metrics are both emitted
-    // during the rest of setup() — the first consensus round in
-    // beginConsensus() below emits spans and records the process's only
-    // operating-mode transition — and both are dropped unless the pipeline is
-    // already live.
+    // Start tracing here, not in start(). Spans are emitted during the rest of
+    // setup() — the first consensus round in beginConsensus() below — and are
+    // dropped unless the global Telemetry instance is already live.
     //
     // The position is bounded on both sides:
     //  - After initRelationalDatabase(): the wallet DB must exist for the node
     //    identity above, and a DB failure aborts setup(), so starting earlier
-    //    would export a partial stream for a run that never comes up.
-    //  - Before beginConsensus(): that call emits the first consensus spans
-    //    and the only mode-transition counter increment.
+    //    would export a partial trace stream for a run that never comes up.
+    //  - Before beginConsensus(): that call emits the first consensus spans.
     //
-    // Only the observable instruments have to wait for their subsystems; they
-    // are registered separately by startTelemetryGauges() once overlay_ exists.
+    // Metrics need nothing here: metricsRegistry_'s constructor built the
+    // pipeline and the synchronous instruments before any subsystem existed.
+    // Only the observable instruments wait for their subsystems; they are
+    // registered by startTelemetryGauges() once overlay_ exists.
     startTelemetry();
 
     if (validatorKeys_.keys)
@@ -1723,67 +1781,23 @@ ApplicationImp::start(bool withTimers)
 void
 ApplicationImp::startTelemetry() const
 {
-    // Start tracing first so subsequent startup/early activity can be traced.
     telemetry_->start();
-
-    // Start the metrics pipeline after telemetry. Everything below is read
-    // from [telemetry] here because Telemetry does not expose the Setup it
-    // parsed. Every value must match what makeTelemetrySetup() gave the trace
-    // pipeline above, or this node reports two identities.
-    if (metricsRegistry_)
-    {
-        auto const& section = config_->section("telemetry");
-
-        telemetry::MetricsRegistry::StartOptions options;
-
-        // metrics_endpoint is a full URL of its own, not a host to be joined.
-        options.endpoint = "http://localhost:4318/v1/metrics";
-        set(options.endpoint, "metrics_endpoint", section);
-
-        // Same default and same key as makeTelemetrySetup(), so traces and
-        // metrics carry one service.name. systemName() is "xrpld".
-        options.serviceName = systemName();
-        set(options.serviceName, "service_name", section);
-
-        // Not from config: the build's version, the same source the trace
-        // resource takes it from at construction.
-        options.serviceVersion = build_info::getVersionString();
-
-        // The MeterProvider Resource carries service_instance_id, which
-        // Prometheus turns into the label every dashboard filters $node on.
-        set(options.serviceInstanceId, "service_instance_id", section);
-        if (options.serviceInstanceId.empty() && nodeIdentity_)
-            options.serviceInstanceId = toBase58(TokenType::NodePublic, nodeIdentity_->first);
-
-        // The node public key also goes on its own resource attribute,
-        // xrpl.node.id, which config cannot override.
-        if (nodeIdentity_)
-            options.nodeId = toBase58(TokenType::NodePublic, nodeIdentity_->first);
-
-        // xrpl.network.id, and the xrpl.network.type label the registry
-        // derives from it. Without this the collector's insert rule fills in
-        // its own default and a devnet node reports mainnet on this pipeline.
-        options.networkId = config_->networkId;
-
-        // The exporter connection reads the same four TLS keys the trace
-        // exporter does, so one [telemetry] block covers both signals. use_tls
-        // is an int compared to 0, matching makeTelemetrySetup().
-        int useTls = 0;
-        set(useTls, "use_tls", section);
-        options.useTls = useTls != 0;
-        set(options.tlsCaCertPath, "tls_ca_cert", section);
-        set(options.tlsClientCertPath, "tls_client_cert", section);
-        set(options.tlsClientKeyPath, "tls_client_key", section);
-
-        metricsRegistry_->start(options);
-    }
 }
 
 void
 ApplicationImp::startTelemetryGauges() const
 {
-    if (metricsRegistry_)
-        metricsRegistry_->startAsyncGauges();
+    metricsRegistry_->startAsyncGauges();
+}
+
+void
+ApplicationImp::stopMetricsRegistry() const
+{
+    // stop() detaches the callbacks and then shuts the provider down, which
+    // joins the reader thread, so once it returns no callback is running or
+    // can start. The cost is that metrics recorded after this point are not
+    // exported.
+    metricsRegistry_->stop();
 }
 
 void
@@ -1858,31 +1872,18 @@ ApplicationImp::run()
         return getValidators().trustedPublisher(pubKey);
     });
 
-    // Stop observing before any service below is stopped: the collector's gauge
-    // callbacks run hook handlers that read ledgerMaster_, networkOPs_, the peer
-    // finder, the job queue and overlay_. Returns once no callback is running.
+    // Both observers stop before any service below is stopped. The collector's
+    // gauge callbacks run hook handlers that read ledgerMaster_, networkOPs_,
+    // the peer finder, the job queue and overlay_; the registry's callbacks
+    // run on the OTel reader thread and read nodeStore_, overlay_, networkOPs_,
+    // loadManager_, ledgerMaster, inboundLedgers and more. Each call returns
+    // once no callback is running or can start.
     collectorManager_->collector()->onCollectionStopping();
+    stopMetricsRegistry();
 
     // The order of these stop calls is delicate.
     // Re-ordering them risks undefined behavior.
     loadManager_->stop();
-
-    // Stop the metrics pipeline BEFORE any service its callbacks read. Those
-    // callbacks run on the OTel reader thread and touch nodeStore_, overlay_,
-    // networkOPs_, ledgerMaster, inboundLedgers and more, so a tick arriving
-    // after one of them has stopped would read dangling state.
-    //
-    // detachCallbacks() alone would not be enough: it flips a flag that each
-    // callback checks on entry, which leaves a callback that is already past
-    // that check running. stop() shuts the provider down, which joins the
-    // reader thread, so once it returns no callback is running or can start.
-    // The cost is that metrics recorded during the remaining shutdown steps
-    // are not exported.
-    if (metricsRegistry_)
-    {
-        metricsRegistry_->detachCallbacks();
-        metricsRegistry_->stop();
-    }
 
     shaMapStore_->stop();
     jobQueue_->stop();
