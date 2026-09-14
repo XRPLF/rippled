@@ -101,6 +101,13 @@ public:
                 file_,
                 std::filesystem::perms::owner_read | std::filesystem::perms::owner_write,
                 ec);
+            if (ec)
+            {
+                stream_.close();                     // LCOV_EXCL_LINE
+                std::filesystem::remove(file_, ec);  // LCOV_EXCL_LINE
+                throw std::runtime_error(  // LCOV_EXCL_LINE
+                    "Cannot restrict output file: " + file_.string());  // LCOV_EXCL_LINE
+            }
         }
     }
 

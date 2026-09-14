@@ -69,10 +69,9 @@ protected:
     }
 
     [[nodiscard]] std::string
-    invalidField(json::Value const& jv, std::string const& field) const
+    invalidField(std::string const& field) const
     {
-        return "Key file '" + keyFile_.string() + "' contains invalid \"" + field +
-            "\" field: " + jv[field].toStyledString();
+        return "Key file '" + keyFile_.string() + "' contains invalid \"" + field + "\" field";
     }
 
     static json::Value
@@ -171,6 +170,13 @@ TEST_F(SigningKeysTest, write_to_file_errors)
         errorOf([&] { keys.writeToFile(inSealed); }),
         "Cannot write key file: " + inSealed.string());
     std::filesystem::permissions(sealed, std::filesystem::perms::owner_all);
+
+    // The temporary beside the key file is a symlink
+    auto const linked = std::filesystem::path(dir_.file("linked.json"));
+    std::filesystem::create_symlink(dir_.file("elsewhere.json"), linked.string() + ".tmp");
+    EXPECT_EQ(
+        errorOf([&] { keys.writeToFile(linked); }),
+        "Refusing to write through a symlink: " + linked.string() + ".tmp");
 }
 
 TEST_F(SigningKeysTest, key_file_fields)
@@ -193,19 +199,19 @@ TEST_F(SigningKeysTest, key_file_fields)
             "Key file '" + keyFile_.string() + "' is missing \"" + field + "\" field");
         jv[field] = "dummy";
     }
-    EXPECT_EQ(loadError(jv), invalidField(jv, "key_type"));
+    EXPECT_EQ(loadError(jv), invalidField("key_type"));
 
     auto const kp = generateKeyPair(KeyType::Ed25519, randomSeed());
     jv["key_type"] = "ed25519";
-    EXPECT_EQ(loadError(jv), invalidField(jv, "token_sequence"));
+    EXPECT_EQ(loadError(jv), invalidField("token_sequence"));
     jv["token_sequence"] = -1;
-    EXPECT_EQ(loadError(jv), invalidField(jv, "token_sequence"));
+    EXPECT_EQ(loadError(jv), invalidField("token_sequence"));
     jv["token_sequence"] = true;
-    EXPECT_EQ(loadError(jv), invalidField(jv, "token_sequence"));
+    EXPECT_EQ(loadError(jv), invalidField("token_sequence"));
     jv["token_sequence"] = json::UInt(kMaxSequence);
-    EXPECT_EQ(loadError(jv), invalidField(jv, "revoked"));
+    EXPECT_EQ(loadError(jv), invalidField("revoked"));
     jv["revoked"] = false;
-    EXPECT_EQ(loadError(jv), invalidField(jv, "secret_key"));
+    EXPECT_EQ(loadError(jv), invalidField("secret_key"));
     jv["secret_key"] = toBase58(TokenType::NodePrivate, kp.second);
     EXPECT_EQ(loadError(jv), "");
 
@@ -223,19 +229,19 @@ TEST_F(SigningKeysTest, key_file_fields)
         {
             bad["pending_key_type"] = "ed25519";
         }
-        EXPECT_EQ(loadError(bad), invalidField(bad, field)) << field;
+        EXPECT_EQ(loadError(bad), invalidField(field)) << field;
     }
     for (auto const* field : {"manifest", "pending_token_secret", "pending_signing_key"})
     {
         auto bad = baseKeyFile(kp.second);
         bad[field] = "not valid";
         bad["pending_key_type"] = "ed25519";
-        EXPECT_EQ(loadError(bad), invalidField(bad, field)) << field;
+        EXPECT_EQ(loadError(bad), invalidField(field)) << field;
     }
     {
         auto bad = baseKeyFile(kp.second);
         bad["manifest"] = "";
-        EXPECT_EQ(loadError(bad), invalidField(bad, "manifest"));
+        EXPECT_EQ(loadError(bad), invalidField("manifest"));
     }
     {
         auto bad = baseKeyFile(kp.second);
@@ -251,7 +257,7 @@ TEST_F(SigningKeysTest, key_file_fields)
             loadError(bad),
             "Key file '" + keyFile_.string() + "' is missing \"pending_key_type\" field");
         bad["pending_key_type"] = "dummy";
-        EXPECT_EQ(loadError(bad), invalidField(bad, "pending_key_type"));
+        EXPECT_EQ(loadError(bad), invalidField("pending_key_type"));
         bad["pending_key_type"] = "ed25519";
         bad["pending_signing_key"] = toBase58(TokenType::NodePublic, kp.first);
         EXPECT_EQ(
@@ -272,7 +278,7 @@ TEST_F(SigningKeysTest, external_key_file_fields)
     EXPECT_EQ(
         loadError(jv), "Key file '" + keyFile_.string() + "' is missing \"public_key\" field");
     jv["public_key"] = "dummy public";
-    EXPECT_EQ(loadError(jv), invalidField(jv, "public_key"));
+    EXPECT_EQ(loadError(jv), invalidField("public_key"));
     jv["public_key"] = toBase58(TokenType::NodePublic, kp.first);
     jv["key_type"] = "secp256k1";
     EXPECT_EQ(

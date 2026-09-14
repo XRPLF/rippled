@@ -159,10 +159,10 @@ SigningKeys::makeSigningKeys(std::filesystem::path const& keyFile)
         }
     }
 
-    auto const invalidField = [&keyFile, &jKeys](std::string const& field) {
+    // The value is not repeated: it may be a secret.
+    auto const invalidField = [&keyFile](std::string const& field) {
         return std::runtime_error(
-            "Key file '" + keyFile.string() + "' contains invalid \"" + field +
-            "\" field: " + jKeys[field].toStyledString());
+            "Key file '" + keyFile.string() + "' contains invalid \"" + field + "\" field");
     };
 
     auto const keyType = keyTypeFromString(jKeys["key_type"].asString());
@@ -308,6 +308,8 @@ SigningKeys::writeToFile(std::filesystem::path const& keyFile) const
     // Write beside the key file, restrict it to the owner, then replace the
     // key file in one step.
     auto const temp = fs::path(keyFile.string() + ".tmp");
+    if (fs::is_symlink(temp))
+        throw std::runtime_error("Refusing to write through a symlink: " + temp.string());
     {
         std::ofstream o(temp, std::ios_base::trunc);
         if (!o.fail())
