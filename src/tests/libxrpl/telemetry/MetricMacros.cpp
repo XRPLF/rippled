@@ -60,7 +60,19 @@ public:
     configure(bool enabled, opentelemetry::nostd::shared_ptr<opentelemetry::metrics::Meter> meter)
     {
         enabled_ = enabled;
+        stopped_ = false;
         meter_ = std::move(meter);
+    }
+
+    /**
+     * Simulate MetricsRegistry::stop(): the recording gate flips closed even
+     * while enabled_ stays true, matching the real class where a call after
+     * stop() must not touch the SDK instrument cache.
+     */
+    void
+    stop() noexcept
+    {
+        stopped_ = true;
     }
 
     /**
@@ -79,6 +91,16 @@ public:
         return enabled_;
     }
 
+    /**
+     * Mirrors MetricsRegistry::recording(): the macros consult this instead of
+     * isEnabled() so a stopped registry records nothing.
+     */
+    [[nodiscard]] bool
+    recording() const noexcept
+    {
+        return enabled_ && !stopped_;
+    }
+
     [[nodiscard]] opentelemetry::nostd::shared_ptr<opentelemetry::metrics::Meter>
     meter() const noexcept
     {
@@ -91,6 +113,12 @@ private:
      * Master enable flag the macro consults via isEnabled().
      */
     bool enabled_ = true;
+
+    /**
+     * Set by stop() to model the real registry's post-shutdown state:
+     * enabled_ stays true but recording() flips to false.
+     */
+    bool stopped_ = false;
 
     /**
      * Meter handed to the macro; sourced from a bare SDK provider.
@@ -318,6 +346,28 @@ TEST(MetricMacros, observable_counter_and_updown_register_do_not_crash)
 
     // Two observable registrations, each consulting meter() once.
     EXPECT_EQ(app.registry().meterCalls(), 2);
+}
+
+TEST(MetricMacros, stopped_registry_records_nothing)
+{
+    ScopedBareProvider const bareProvider;
+    FakeApp app;
+    wire(app, /*enabled=*/true);
+
+    // Simulate MetricsRegistry::stop(): recording() flips closed even while
+    // isEnabled() stays true, because the OTel provider is torn down in
+    // stop() and a Record on a stale SDK instrument would deref a dangling
+    // AggregationConfig for a first-seen attribute set.
+    app.registry().stop();
+    ASSERT_TRUE(app.registry().isEnabled());
+    ASSERT_FALSE(app.registry().recording());
+
+    XRPL_METRIC_COUNTER_INC(
+        app, "test_macro_stopped_counter_total", "Counter after stop() must be inert");
+
+    // The recording() gate short-circuits before the create-once static path
+    // runs, so meter() is never consulted.
+    EXPECT_EQ(app.registry().meterCalls(), 0);
 }
 
 TEST(MetricMacros, disabled_registry_is_noop)

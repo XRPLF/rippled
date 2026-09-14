@@ -461,6 +461,11 @@ public:
     /**
      * Flush pending metrics and shut down the pipeline.
      *
+     * Stores `Phase::Stopped` first so `recording()` reads false on every
+     * later record call, then destroys the SDK provider. meter_ is not
+     * touched: record threads may still be running, and the gate is what
+     * keeps them off the dying pipeline. Idempotent.
+     *
      * @pre `detachCallbacks()` should have been called earlier in the
      * shutdown sequence; otherwise there is a narrow race between
      * the final reader-thread tick and the destruction of
@@ -476,6 +481,28 @@ public:
     isEnabled() const noexcept
     {
         return enabled_;
+    }
+
+    /**
+     * @return true when a record call is safe to run.
+     *
+     * False when the registry is disabled, or after stop() has torn down the
+     * export pipeline. After stop() the SDK's SyncMetricStorage still holds a
+     * raw pointer to an AggregationConfig owned by a destroyed View, so a
+     * record with a first-seen attribute set would fire the factory lambda
+     * and deref that dangling pointer. Every XRPL_METRIC_* macro reads this
+     * once before touching an instrument.
+     *
+     * One acquire atomic load in the hot path.
+     */
+    [[nodiscard]] bool
+    recording() const noexcept
+    {
+#ifdef XRPL_ENABLE_TELEMETRY
+        return enabled_ && phase_.load(std::memory_order_acquire) != Phase::Stopped;
+#else
+        return enabled_;
+#endif
     }
 
     // -----------------------------------------------------------------
@@ -849,11 +876,11 @@ public:
      * counters/histograms can be declared at their call site instead of as
      * MetricsRegistry members.
      *
-     * Invariant: never empty while isEnabled() is true. The constructor sets
+     * Invariant: never empty while recording() is true. The constructor sets
      * it to the real meter, or to a no-op meter when the pipeline failed to
-     * build, so a call site creates its instrument with no check of its own.
-     * Empty only when the registry is disabled, which the macros gate on
-     * first.
+     * build, and never writes it again, so reads need no lock. After stop()
+     * the meter's SDK context is gone; the macros gate on recording() first,
+     * so no caller reaches it then.
      *
      * @return The shared Meter.
      */
@@ -950,13 +977,18 @@ private:
      * Where the registry is in its life. Construction ends in `Ready`;
      * startAsyncGauges() moves to `GaugesArmed`; stop() to `Stopped`. A call
      * that does not fit the current phase logs a warning and does nothing.
+     *
+     * After `Stopped` the SDK pipeline is gone. recording() reads false, so
+     * no macro touches meter_ or a cached instrument.
      */
     enum class Phase { Ready, GaugesArmed, Stopped };
 
     /**
-     * Current phase; written only from the Application lifecycle thread.
+     * Current phase. Written from the Application lifecycle thread with
+     * release ordering; read from record threads via `recording()` with
+     * acquire ordering, so no record starts once stop() has stored `Stopped`.
      */
-    Phase phase_{Phase::Ready};
+    std::atomic<Phase> phase_{Phase::Ready};
 
     /**
      * Set by detachCallbacks() during shutdown so every ObservableGauge

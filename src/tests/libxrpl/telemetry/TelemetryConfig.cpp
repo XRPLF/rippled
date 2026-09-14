@@ -322,6 +322,18 @@ TEST(TelemetryConfig, parse_empty_section)
     EXPECT_TRUE(setup.traceLedger);
 }
 
+TEST(TelemetryConfig, empty_service_instance_id_falls_back_to_node_key)
+{
+    // An empty value is indistinguishable from an unset key on the metrics
+    // side (makeMetricsRegistryOptions falls back to the node key), so the
+    // trace side must do the same. Without this fallback traces stamp "" while
+    // metrics stamp the node key and every $node filter shows half the series.
+    Section section;
+    section.set("service_instance_id", "");
+    auto const setup = telemetry::makeTelemetrySetup(section, "nHUtest123", "2.0.0", 0);
+    EXPECT_EQ(setup.serviceInstanceId, "nHUtest123");
+}
+
 TEST(TelemetryConfig, parse_full_section)
 {
     // The CA path has to name a real file: with enabled=1 and use_tls=1 the
