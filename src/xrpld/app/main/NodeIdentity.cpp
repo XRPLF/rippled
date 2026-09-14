@@ -4,15 +4,11 @@
 #include <xrpld/core/Config.h>
 
 #include <xrpl/basics/Log.h>
-#include <xrpl/basics/contract.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/config/Constants.h>
 #include <xrpl/core/StartUpType.h>
-#include <xrpl/protocol/KeyType.h>
 #include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/SecretKey.h>
-#include <xrpl/protocol/Seed.h>
-#include <xrpl/protocol/tokens.h>
 #include <xrpl/rdb/DBInit.h>
 #include <xrpl/rdb/DatabaseCon.h>
 #include <xrpl/server/Wallet.h>
@@ -23,7 +19,6 @@
 #include <exception>
 #include <filesystem>
 #include <optional>
-#include <stdexcept>
 #include <string>
 #include <system_error>
 #include <utility>
@@ -31,53 +26,6 @@
 namespace xrpl {
 
 namespace {
-
-/**
- * The seed a configured `[node_seed]` or `--nodeid` names.
- *
- * @param config  The server configuration.
- * @param cmdline The command line parameters passed into the application.
- * @return The seed, or std::nullopt when neither is configured.
- * @throws std::runtime_error if the configured value is malformed.
- */
-std::optional<Seed>
-configuredSeed(Config const& config, boost::program_options::variables_map const& cmdline)
-{
-    if (cmdline.contains("nodeid"))
-    {
-        auto seed = parseGenericSeed(cmdline["nodeid"].as<std::string>(), false);
-        if (!seed)
-            Throw<std::runtime_error>("Invalid 'nodeid' in command line");
-        return seed;
-    }
-
-    if (config.exists(Sections::kNodeSeed))
-    {
-        auto const& lines = config.section(Sections::kNodeSeed).lines();
-        auto seed = lines.empty() ? std::nullopt : parseBase58<Seed>(lines.front());
-        if (!seed)
-        {
-            Throw<std::runtime_error>(
-                std::string("Invalid [") + Sections::kNodeSeed + "] in configuration file");
-        }
-        return seed;
-    }
-
-    return std::nullopt;
-}
-
-/**
- * The keypair a seed defines.
- *
- * @param seed The configured seed.
- * @return The derived secp256k1 keypair.
- */
-std::pair<PublicKey, SecretKey>
-keysFromSeed(Seed const& seed)
-{
-    auto const secretKey = generateSecretKey(KeyType::Secp256k1, seed);
-    return {derivePublicKey(KeyType::Secp256k1, secretKey), secretKey};
-}
 
 /**
  * The stored identity, read without creating or modifying anything.
@@ -138,22 +86,28 @@ resolveNodeIdentity(
     boost::program_options::variables_map const& cmdline,
     beast::Journal journal)
 {
-    // A configured seed decides the identity outright, and nothing is stored.
-    if (auto const seed = configuredSeed(config, cmdline))
-        return keysFromSeed(*seed);
+    // Marshal Config and the cmdline into the libxrpl-level primitives the
+    // decision helpers take. Keeping the decision in libxrpl lets its tests
+    // cover every branch without an xrpld Config.
+    std::optional<std::string> cmdlineSeed;
+    if (cmdline.contains("nodeid"))
+        cmdlineSeed = cmdline["nodeid"].as<std::string>();
 
-    // --newnodeid discards whatever is stored, so mint now; getNodeIdentity()
-    // clears the old row and stores this pair.
-    if (!cmdline.contains("newnodeid"))
+    std::optional<std::string> configSeedLine;
+    if (config.exists(Sections::kNodeSeed))
     {
-        if (auto const stored = storedIdentity(config, journal))
-            return *stored;
+        auto const& lines = config.section(Sections::kNodeSeed).lines();
+        // Present-but-empty stays as an empty string, so parseNodeIdentitySeed
+        // throws the same "invalid [node_seed]" error the old code did.
+        configSeedLine = lines.empty() ? std::string{} : lines.front();
     }
 
-    // Nothing to read: a first boot, or a standalone run's temporary database.
-    // Mint here so telemetry has an identity from construction; setup()
-    // persists this pair if there is a database to hold it.
-    return randomKeyPair(KeyType::Secp256k1);
+    auto const seed = parseNodeIdentitySeed(cmdlineSeed, configSeedLine);
+    bool const newNodeId = cmdline.contains("newnodeid");
+
+    // storedIdentity() catches its own exceptions and returns std::nullopt on
+    // any read failure, so a wallet that will not open collapses into "mint".
+    return selectNodeIdentity(seed, newNodeId, [&] { return storedIdentity(config, journal); });
 }
 
 std::pair<PublicKey, SecretKey>
