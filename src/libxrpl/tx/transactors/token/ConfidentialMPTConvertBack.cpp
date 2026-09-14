@@ -7,6 +7,7 @@
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/ConfidentialTransfer.h>
+#include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/Protocol.h>
@@ -193,6 +194,14 @@ ConfidentialMPTConvertBack::preclaim(PreclaimContext const& ctx)
     if (!sleMptoken->isFieldPresent(sfHolderEncryptionKey) ||
         !sleMptoken->isFieldPresent(sfConfidentialBalanceSpending) ||
         !sleMptoken->isFieldPresent(sfIssuerEncryptedBalance))
+    {
+        return tecNO_PERMISSION;
+    }
+
+    // Converting back homomorphically subtracts from the holder's mirrors, so
+    // those mirrors must be current.
+    if (ctx.view.rules().enabled(featureConfidentialMPTKeyRotation) &&
+        !areMirrorsCurrent(*sleIssuance, *sleMptoken))
     {
         return tecNO_PERMISSION;
     }
