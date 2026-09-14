@@ -272,6 +272,12 @@ inline constexpr char amendmentBlock[] = "amendment_block";
  * Wall-clock duration of a completed consensus round.
  */
 inline constexpr char consensusRoundDurationMs[] = "consensus_round_duration_ms";
+/**
+ * Rounds where the network's preferred ledger differed from ours. One
+ * increment per transition into WrongLedger, labelled with the mode being
+ * left. WrongLedger itself is therefore never a value of the label.
+ */
+inline constexpr char consensusViewChangeTotal[] = "consensus_view_change_total";
 
 // ===== Sweep: what the periodic cache sweep costs ============================
 //
@@ -442,6 +448,10 @@ inline constexpr char direction[] = "direction";
  * Which kind of peer data request is being described.
  */
 inline constexpr char request[] = "request";
+/**
+ * Consensus mode being left when a view change is counted.
+ */
+inline constexpr char consensusMode[] = "consensus_mode";
 
 }  // namespace label
 

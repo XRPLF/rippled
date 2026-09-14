@@ -819,6 +819,46 @@ Writing a tree node back to storage from memory because it could not be found in
 
 **See also:** [Rotation window](#rotation-window) · [Copy-forward write](#copy-forward-write) · [Missing SHAMap node](#missing-shamap-node)
 
+<a id="rotation-phase"></a>
+
+### Rotation phase
+
+One named step inside a rotation window. Splitting the window into named phases matters because the parts have very different costs and only one of them explains a process-wide stall: the step that copies every key of the tree-node cache under the cache's mutex. Timing each phase individually keeps the stall separable from the walk that precedes it and from the throttled waits interleaved with both. A phase whose duration reaches seconds while others stay short is the one that held the lock.
+
+**Scope:** per node — measured on and specific to this individual server.
+
+**See also:** [Rotation window](#rotation-window) · [Cache lock hold](#cache-lock-hold)
+
+<a id="cache-lock-hold"></a>
+
+### Cache lock hold
+
+The longest interval the internal mutex of one of this node's caches was held by a single operation, taken since the last time this measurement was read. The cache exposes the peak so the pipeline can read it periodically and reset. It matters because every operation that fetches a value from the same cache waits for the whole hold, so a multi-second peak is a whole-process pause, not a slow cache. A hold that lasts long enough to cross the operating-mode watchdog will cause a mode demotion and back-recovery.
+
+**Scope:** per node — measured on and specific to this individual server.
+
+**See also:** [Rotation phase](#rotation-phase) · [Job stall](#job-stall)
+
+<a id="job-stall"></a>
+
+### Job stall
+
+A worker-pool job whose run time reached the same threshold the load monitor uses to warn about a slow job. Counted so the pool's own view of "one of my jobs took too long" reaches the pipeline as data rather than only as log text. Several distinct job kinds crossing the threshold in the same minute means the workers were not slow individually — the whole pool was waiting for one thing, which is the signature of a shared blocker such as a cache lock hold.
+
+**Scope:** per node — measured on and specific to this individual server.
+
+**See also:** [Cache lock hold](#cache-lock-hold) · [View change](#view-change)
+
+<a id="view-change"></a>
+
+### View change
+
+The moment this node's chosen previous ledger disagrees with the ledger the trusted validators actually preferred. It is not a fault by itself — networks legitimately have brief disagreements — but on a healthy node it is rare, and when it happens together with a whole-pool stall it is the mechanism by which a stall becomes an operating-mode demotion: the pool was too busy to keep up, so the network's view moved past this node's view. Counted per transition, and marked on the round trace as an event so a single trace shows the point the disagreement was detected.
+
+**Scope:** per node — measured on and specific to this individual server.
+
+**See also:** [Rotation window](#rotation-window) · [Job stall](#job-stall) · [Operating mode (server state)](#operating-mode-server-state)
+
 <a id="operating-mode-server-state"></a>
 
 ### Operating mode / server state

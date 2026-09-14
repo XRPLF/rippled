@@ -3819,19 +3819,28 @@ Read the **Back-fill & persistence** row.
 |                                                             |                                                                                                                                                                             | no series at all on either query                                | `online_delete` is not configured on this node, which is **not** the same as rotation costing nothing — rule the whole rotation hypothesis out and move on                                                                                                                                                                                   |
 |                                                             |                                                                                                                                                                             | copy-forward writes while the flag reads 0                      | the window flag leaked; treat the rate as unattributed rather than concluding rotation is cheap                                                                                                                                                                                                                                              |
 | _Rotation Node Re-Store Rate_                               | flat at zero                                                                                                                                                                | any sustained rate                                              | an earlier rotation removed the only on-disk copy of clean nodes the current state map still reaches. Two consequences: each rescue is an extra write competing with sync, and without it the node would later hit an unresolvable missing-node error. Get the hashes from the `copyNode` warning in Loki — they are deliberately not labels |
+| _Rotation Phase Duration (p95 by stage)_                    | `freshen.keys` p95 well under one second on an idle node; other stages proportional to state-map size                                                                       | `freshen.keys` p95 in seconds                                   | the tree-node cache mutex is being held across the getKeys() copy for that long; every job that fetches a SHAMap node during that window waits, and a `full`->`syncing` flap is likely for the round that overlaps it                                                                                                                        |
+|                                                             |                                                                                                                                                                             | `copy` p95 approaching the rotation cadence                     | the state-map walk is not converging inside its own interval; the next rotation will overlap this one                                                                                                                                                                                                                                        |
+| _Cache Lock Hold Peak (us)_                                 | zero on an idle node; sub-millisecond values during a sweep                                                                                                                 | multi-second peak                                               | the `TaggedCache` for either the tree-node cache or the FullBelow cache held its mutex that long across `getKeys()` or `sweep()`. Correlate with the `rotating` log line and the `nodestore.rotate.freshen.keys` span: a rotation is the usual cause                                                                                         |
+| _Job Stalls ≥1 s (Count By Job Type)_                       | zero, or a very small count on a healthy busy node                                                                                                                          | several distinct job types crossing the bar in the same minute  | the whole worker pool froze at the same instant. This is a process-wide stall, not a per-type slowdown; the rotation spans point at what caused it                                                                                                                                                                                           |
 
-> **Scope of the rotation-window flag.** `rotation_state{metric="in_flight"}` is
-> set immediately before `freshenCaches()` and cleared by `RotationExposureGuard`
-> on scope exit, so it brackets only the freshen/swap phase — deliberately, since
-> its purpose is the copy-forward exposure window. It therefore **cannot** tell
-> you whether rotation is saturating the node. Measured on
-> `devnet-otel-usw2-01/02` (`online_delete=256`, ~47.4M state nodes): the flag
-> averaged 0.159 / 0.135 over 9 h while the node was actually inside a rotation
-> ~93% of wall clock, because the dominant `visitNodes` copy phase (median 651 s
-> of an ~785 s cycle) emits no signal at all. Read at face value the row above
-> says "healthy" on a node that is rotation-bound. Until the copy phase is
-> instrumented (RIPD-7144), the only way to measure occupancy is the
-> `rotating validatedSeq` / `copied ledger` / `new backend` log triplet.
+> **Proving a rotation stall from telemetry.** For a suspected rotation-driven
+> `full`->`syncing` flap on a node with `online_delete` configured:
+>
+> 1. Locate the flap time from `increase(state_changes_total{from="full",to="syncing"}[1m])`.
+> 2. In the same minute check `increase(jobq_stall_total[1m]) > 0` — a rotation stall
+>    lifts several distinct `job_type` values simultaneously.
+> 3. Look at `cache_metrics{metric="treenode_lock_hold_peak_us"}`. A value in
+>    the millions in the flap minute is the mutex hold that froze every job.
+> 4. In Tempo, `{ name = "nodestore.rotate.freshen.keys" }` in a +/- 2 min window: its
+>    span's start and end must bracket the stalled `consensus.*.receive` spans.
+> 5. `increase(consensus_view_change_total[1m])` should rise by one (once WP-B6's
+>    view-change counter is wired), and the `consensus.round` trace of that
+>    minute carries a `view.change` event.
+>
+> If step 4 has no span, check `trace_ledger=1` in `[telemetry]` and that the
+> Cloud collector carries the `keep-rotation-traces` policy — the 0.5% probabilistic
+> sampler would otherwise drop most rotations.
 
 **Conclusion:** the tree-node cache sits one layer **above** the node store, so a
 miss here is what produces a node-store read there; reading the two together is
