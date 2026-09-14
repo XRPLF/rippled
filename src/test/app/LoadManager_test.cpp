@@ -1,6 +1,11 @@
+#include <test/jtx/Env.h>
+#include <test/jtx/envconfig.h>
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/server/LoadFeeTrack.h>
+#include <xrpld/app/main/LoadManager.h>
 #include <cstdint>
+#include <chrono>
+#include <thread>
 
 namespace xrpl {
 
@@ -117,6 +122,55 @@ public:
     }
 
     void
+    testLoadManagerLoop()
+    {
+        testcase("LoadManager loop raises and decays load_factor_local");
+
+        using namespace test::jtx;
+        using namespace std::chrono_literals;
+
+        Env env(*this, envconfig());
+
+        // Stop the real LoadManager thread so we can drive the fee track
+        // manually without races. On stock code the fee adjustment block
+        // is outside the while loop and never fires during normal operation,
+        // so getFeeTrack().getLocalFee() stays at kNormalFee (256) regardless.
+        env.app().getLoadManager().stop();
+
+        auto& feeTrack = env.app().getFeeTrack();
+
+        // Confirm baseline
+        BEAST_EXPECT(feeTrack.getLocalFee() == kNormalFee);
+        BEAST_EXPECT(!feeTrack.isLoadedLocal());
+
+        // raiseLocalFee() requires two consecutive calls (hysteresis guard).
+        // This is the exact sequence LoadManager::run() executes each tick
+        // when the job queue is overloaded.
+        BEAST_EXPECT(!feeTrack.raiseLocalFee());   // tick 1: count=1, no change
+        BEAST_EXPECT(feeTrack.raiseLocalFee());    // tick 2: count=2, fee raised
+        BEAST_EXPECT(feeTrack.getLocalFee() > kNormalFee);
+        BEAST_EXPECT(feeTrack.isLoadedLocal());
+
+        // Now simulate the LoadManager loop calling lowerLocalFee() each tick
+        // until the fee decays back to baseline. On stock code this block
+        // never runs during normal operation so the fee would stay elevated.
+        bool decayed = false;
+        for (int i = 0; i < 100; ++i)
+        {
+            feeTrack.lowerLocalFee();
+            if (feeTrack.getLocalFee() == kNormalFee)
+            {
+                decayed = true;
+                break;
+            }
+        }
+
+        BEAST_EXPECT(decayed);
+        BEAST_EXPECT(feeTrack.getLocalFee() == kNormalFee);
+        BEAST_EXPECT(!feeTrack.isLoadedLocal());
+    }
+
+    void
     run() override
     {
         testRaiseHysteresis();
@@ -124,6 +178,7 @@ public:
         testLowerAtBaselineIsNoop();
         testRaiseResetsOnLower();
         testIsLoadedLocal();
+        testLoadManagerLoop();
     }
 };
 
