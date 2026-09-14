@@ -3834,9 +3834,8 @@ Read the **Back-fill & persistence** row.
 >    the millions in the flap minute is the mutex hold that froze every job.
 > 4. In Tempo, `{ name = "nodestore.rotate.freshen.keys" }` in a +/- 2 min window: its
 >    span's start and end must bracket the stalled `consensus.*.receive` spans.
-> 5. `increase(consensus_view_change_total[1m])` should rise by one (once WP-B6's
->    view-change counter is wired), and the `consensus.round` trace of that
->    minute carries a `view.change` event.
+> 5. `increase(consensus_view_change_total[1m])` should rise by one, and the
+>    `consensus.round` trace of that minute carries a `view.change` event.
 >
 > If step 4 has no span, check `trace_ledger=1` in `[telemetry]` and that the
 > Cloud collector carries the `keep-rotation-traces` policy — the 0.5% probabilistic
