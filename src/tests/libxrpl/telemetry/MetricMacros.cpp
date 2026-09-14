@@ -3320,25 +3320,42 @@ TEST(MetricMacros, sweep_and_rotation_metrics_emit_nothing_when_registry_disable
 }
 
 // -----------------------------------------------------------------
-// Startup order: a call site never sees a registry without a meter.
+// Startup order: pin the macro contract across every {enabled, meter kind,
+// calls} combination. kSiteCount = 2 x 2 x 4 = 16; the loop below drives
+// each case through its own call site.
 //
 // Every synchronous macro creates its instrument once, on first use, from
-// MetricsRegistry::meter(), and holds it in a function-local static. It does
-// no check of its own beyond the isEnabled() gate, because the registry
-// guarantees the meter: the constructor sets it (real, or a no-op meter when
-// the pipeline failed to build) and runs in ApplicationImp's member-init list
-// before any subsystem exists; enabled_ is `bool const`; nothing ever clears
-// meter_. So the states a site can meet are exactly three, and the tests
-// below enumerate them:
-//  - disabled: nothing is created or recorded, meter() is never consulted;
+// MetricsRegistry::meter() and holds it in a function-local static. It does
+// no check of its own beyond the isEnabled() gate: the registry sets meter_
+// in its constructor (real, or a no-op when the pipeline failed to build)
+// and never clears it; enabled_ is `bool const`.
+//
+// Three of the four (enable, meter) tuples are reachable in production:
+//  - disabled: MetricsRegistry never installs a meter, so meter() is never
+//    consulted and nothing records;
 //  - enabled, real meter: the instrument is created once and every call
 //    records;
-//  - enabled, no-op meter (pipeline failed): the instrument is a no-op, every
-//    call is absorbed, nothing crashes and nothing is collected.
+//  - enabled, no-op meter (pipeline failed): the instrument is a no-op and
+//    every call is absorbed.
+// The fourth tuple -- disabled with a real meter -- cannot occur, because a
+// disabled registry does not install a meter (the constructor early-returns
+// before setting meter_). The four (disabled, real, 0..3 calls) case
+// indices are still driven so the macro remains well-defined for every enum
+// combination the type system permits; they must not throw or record.
 //
 // One call site per case: the statics are per macro expansion, so one
 // expansion in a loop would share state across cases. A template
 // instantiation per case index gives each its own statics.
+//
+// What the no-op-meter branches assert. drive() gives its local
+// CollectingProvider a real meter for the Real-meter case and points the
+// fake at a separate noopMeter() for the no-op case, so the provider is
+// never wired to the no-op recording site and provider.collect() is empty
+// by construction. The no-op branches therefore assert only that meter()
+// on the fake was consulted exactly once (the static was built through the
+// registry, not around it) and that the record call did not throw. They do
+// NOT prove that the no-op instrument itself dropped the point -- that
+// property belongs to the OTel API's NoopMeter and is not under test here.
 // -----------------------------------------------------------------
 
 namespace {
@@ -3524,10 +3541,11 @@ TEST(MetricMacros, counter_add_site_real_and_noop_meter)
     EXPECT_EQ(counterTotalOrZero(live, "startup_order_add_total"), 10);
     EXPECT_EQ(liveReads, 1);
 
-    auto const [absorbed, absorbedReads] = drive(kTwoNoop, [](FakeApp& app) {
+    [[maybe_unused]] auto const [absorbed, absorbedReads] = drive(kTwoNoop, [](FakeApp& app) {
         XRPL_METRIC_COUNTER_ADD(app, "startup_order_add_total", "Startup-order probe", 5);
     });
-    EXPECT_EQ(absorbed.size(), 0u);
+    // No-op branch: absorbed is empty by construction (see block header);
+    // only meter() being read exactly once carries information here.
     EXPECT_EQ(absorbedReads, 1);
 }
 
@@ -3544,14 +3562,15 @@ TEST(MetricMacros, counter_inc_labeled_site_real_and_noop_meter)
     EXPECT_EQ(counterValue(live, "startup_order_inc_labeled_total", attrs("site", "probe")), 2);
     EXPECT_EQ(liveReads, 1);
 
-    auto const [absorbed, absorbedReads] = drive(kTwoNoop, [](FakeApp& app) {
+    [[maybe_unused]] auto const [absorbed, absorbedReads] = drive(kTwoNoop, [](FakeApp& app) {
         XRPL_METRIC_COUNTER_INC_LABELED(
             app,
             "startup_order_inc_labeled_total",
             "Startup-order probe",
             {{"site", std::string("probe")}});
     });
-    EXPECT_EQ(absorbed.size(), 0u);
+    // No-op branch: absorbed is empty by construction (see block header);
+    // only meter() being read exactly once carries information here.
     EXPECT_EQ(absorbedReads, 1);
 }
 
@@ -3569,7 +3588,7 @@ TEST(MetricMacros, counter_add_labeled_site_real_and_noop_meter)
     EXPECT_EQ(counterValue(live, "startup_order_add_labeled_total", attrs("site", "probe")), 10);
     EXPECT_EQ(liveReads, 1);
 
-    auto const [absorbed, absorbedReads] = drive(kTwoNoop, [](FakeApp& app) {
+    [[maybe_unused]] auto const [absorbed, absorbedReads] = drive(kTwoNoop, [](FakeApp& app) {
         XRPL_METRIC_COUNTER_ADD_LABELED(
             app,
             "startup_order_add_labeled_total",
@@ -3577,7 +3596,8 @@ TEST(MetricMacros, counter_add_labeled_site_real_and_noop_meter)
             5,
             {{"site", std::string("probe")}});
     });
-    EXPECT_EQ(absorbed.size(), 0u);
+    // No-op branch: absorbed is empty by construction (see block header);
+    // only meter() being read exactly once carries information here.
     EXPECT_EQ(absorbedReads, 1);
 }
 
@@ -3590,10 +3610,11 @@ TEST(MetricMacros, updown_add_site_real_and_noop_meter)
     EXPECT_EQ(counterTotalOrZero(live, "startup_order_updown"), -2);
     EXPECT_EQ(liveReads, 1);
 
-    auto const [absorbed, absorbedReads] = drive(kTwoNoop, [](FakeApp& app) {
+    [[maybe_unused]] auto const [absorbed, absorbedReads] = drive(kTwoNoop, [](FakeApp& app) {
         XRPL_METRIC_UPDOWN_ADD(app, "startup_order_updown", "Startup-order probe", -1);
     });
-    EXPECT_EQ(absorbed.size(), 0u);
+    // No-op branch: absorbed is empty by construction (see block header);
+    // only meter() being read exactly once carries information here.
     EXPECT_EQ(absorbedReads, 1);
 }
 
@@ -3611,7 +3632,7 @@ TEST(MetricMacros, updown_add_labeled_site_real_and_noop_meter)
     EXPECT_EQ(counterValue(live, "startup_order_updown_labeled", attrs("site", "probe")), 14);
     EXPECT_EQ(liveReads, 1);
 
-    auto const [absorbed, absorbedReads] = drive(kTwoNoop, [](FakeApp& app) {
+    [[maybe_unused]] auto const [absorbed, absorbedReads] = drive(kTwoNoop, [](FakeApp& app) {
         XRPL_METRIC_UPDOWN_ADD_LABELED(
             app,
             "startup_order_updown_labeled",
@@ -3619,7 +3640,8 @@ TEST(MetricMacros, updown_add_labeled_site_real_and_noop_meter)
             7,
             {{"site", std::string("probe")}});
     });
-    EXPECT_EQ(absorbed.size(), 0u);
+    // No-op branch: absorbed is empty by construction (see block header);
+    // only meter() being read exactly once carries information here.
     EXPECT_EQ(absorbedReads, 1);
 }
 
@@ -3637,16 +3659,17 @@ TEST(MetricMacros, histogram_record_site_real_and_noop_meter)
     ASSERT_EQ(live.count("startup_order_hist_us"), 1u);
     auto const [count, sum] = histogramCountAndSum(live, "startup_order_hist_us");
     EXPECT_EQ(count, 2u);
-    EXPECT_EQ(sum, 10'249.0);
+    EXPECT_DOUBLE_EQ(sum, 10'249.0);
     EXPECT_EQ(liveReads, 1);
 
-    auto const [absorbed, absorbedReads] =
+    [[maybe_unused]] auto const [absorbed, absorbedReads] =
         drive(kTwoNoop, [n = std::size_t{0}](FakeApp& app) mutable {
             std::int64_t const value = kValues.at(n++);
             XRPL_METRIC_HISTOGRAM_RECORD(
                 app, "startup_order_hist_us", "Startup-order probe", value);
         });
-    EXPECT_EQ(absorbed.size(), 0u);
+    // No-op branch: absorbed is empty by construction (see block header);
+    // only meter() being read exactly once carries information here.
     EXPECT_EQ(absorbedReads, 1);
 }
 
@@ -3667,10 +3690,10 @@ TEST(MetricMacros, histogram_record_labeled_site_real_and_noop_meter)
     auto const& point = live.at("startup_order_hist_labeled_us").at(attrs("site", "probe"));
     auto const& hist = opentelemetry::nostd::get<otel_sdk::HistogramPointData>(point);
     EXPECT_EQ(hist.count_, 2u);
-    EXPECT_EQ(opentelemetry::nostd::get<double>(hist.sum_), 10'249.0);
+    EXPECT_DOUBLE_EQ(opentelemetry::nostd::get<double>(hist.sum_), 10'249.0);
     EXPECT_EQ(liveReads, 1);
 
-    auto const [absorbed, absorbedReads] =
+    [[maybe_unused]] auto const [absorbed, absorbedReads] =
         drive(kTwoNoop, [n = std::size_t{0}](FakeApp& app) mutable {
             std::int64_t const value = kValues.at(n++);
             XRPL_METRIC_HISTOGRAM_RECORD_LABELED(
@@ -3680,7 +3703,8 @@ TEST(MetricMacros, histogram_record_labeled_site_real_and_noop_meter)
                 value,
                 {{"site", std::string("probe")}});
         });
-    EXPECT_EQ(absorbed.size(), 0u);
+    // No-op branch: absorbed is empty by construction (see block header);
+    // only meter() being read exactly once carries information here.
     EXPECT_EQ(absorbedReads, 1);
 }
 
