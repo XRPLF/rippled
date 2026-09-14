@@ -10,3 +10,6 @@ crate-type = ["staticlib", "rlib"]
 cxx.workspace = true
 xrpl-host-functions = { path = "../xrpl-host-functions" }
 xrpl-wasm-vm = { path = "../xrpl-wasm-vm" }
+
+[lints]
+workspace = true

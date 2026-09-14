@@ -237,6 +237,7 @@ AMMClawback::applyGuts(Sandbox& sb)
                 0,
                 FreezeHandling::IgnoreFreeze,
                 AuthHandling::IgnoreAuth,
+                ReserveHandling::IgnoreReserve,
                 WithdrawAll::Yes,
                 preFeeBalance_,
                 ctx_.journal);
@@ -345,6 +346,7 @@ AMMClawback::equalWithdrawMatchingOneAmount(
             0,
             FreezeHandling::IgnoreFreeze,
             AuthHandling::IgnoreAuth,
+            ReserveHandling::IgnoreReserve,
             WithdrawAll::Yes,
             preFeeBalance_,
             ctx_.journal);
@@ -385,6 +387,7 @@ AMMClawback::equalWithdrawMatchingOneAmount(
             0,
             FreezeHandling::IgnoreFreeze,
             AuthHandling::IgnoreAuth,
+            ReserveHandling::IgnoreReserve,
             WithdrawAll::No,
             preFeeBalance_,
             ctx_.journal);
@@ -406,6 +409,7 @@ AMMClawback::equalWithdrawMatchingOneAmount(
         0,
         FreezeHandling::IgnoreFreeze,
         AuthHandling::IgnoreAuth,
+        ReserveHandling::IgnoreReserve,
         WithdrawAll::No,
         preFeeBalance_,
         ctx_.journal);

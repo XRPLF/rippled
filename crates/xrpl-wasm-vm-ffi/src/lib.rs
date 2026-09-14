@@ -27,6 +27,7 @@
 //! `deny(unreachable_pub)`: cxx's expansion is `pub` throughout by necessity, leaving
 //! the lint nothing but generated code to fire on.
 #![deny(rustdoc::broken_intra_doc_links)]
+#![cfg_attr(coverage_nightly, feature(coverage_attribute))]
 
 use std::any::Any;
 use std::panic::{AssertUnwindSafe, catch_unwind};
@@ -105,6 +106,9 @@ mod ffi {
         /// not a fault in the module — which is why it is a status of its own
         /// rather than one more way a contract can be malformed.
         Panic,
+        /// An import of a host function typed as something other than what the
+        /// engine registers it as.
+        Signature,
     }
 
     /// A check's verdict. No cost, because nothing was executed.
@@ -300,7 +304,7 @@ mod ffi {
 
         #[namespace = "xrpl"]
         #[cxx_name = "checkKeylet"]
-        fn check_keylet(self: &HostContext, account: &[u8], seq: i32, out: &mut [u8]) -> i32;
+        fn check_keylet(self: &HostContext, account: &[u8], seq: u32, out: &mut [u8]) -> i32;
 
         #[namespace = "xrpl"]
         #[cxx_name = "credentialKeylet"]
@@ -336,7 +340,7 @@ mod ffi {
 
         #[namespace = "xrpl"]
         #[cxx_name = "escrowKeylet"]
-        fn escrow_keylet(self: &HostContext, account: &[u8], seq: i32, out: &mut [u8]) -> i32;
+        fn escrow_keylet(self: &HostContext, account: &[u8], seq: u32, out: &mut [u8]) -> i32;
 
         #[namespace = "xrpl"]
         #[cxx_name = "trustLineKeylet"]
@@ -353,7 +357,7 @@ mod ffi {
         fn mptoken_issuance_keylet(
             self: &HostContext,
             issuer: &[u8],
-            seq: i32,
+            seq: u32,
             out: &mut [u8],
         ) -> i32;
 
@@ -366,17 +370,17 @@ mod ffi {
         fn nftoken_offer_keylet(
             self: &HostContext,
             account: &[u8],
-            seq: i32,
+            seq: u32,
             out: &mut [u8],
         ) -> i32;
 
         #[namespace = "xrpl"]
         #[cxx_name = "offerKeylet"]
-        fn offer_keylet(self: &HostContext, account: &[u8], seq: i32, out: &mut [u8]) -> i32;
+        fn offer_keylet(self: &HostContext, account: &[u8], seq: u32, out: &mut [u8]) -> i32;
 
         #[namespace = "xrpl"]
         #[cxx_name = "oracleKeylet"]
-        fn oracle_keylet(self: &HostContext, account: &[u8], doc_id: i32, out: &mut [u8]) -> i32;
+        fn oracle_keylet(self: &HostContext, account: &[u8], doc_id: u32, out: &mut [u8]) -> i32;
 
         #[namespace = "xrpl"]
         #[cxx_name = "paychannelKeylet"]
@@ -384,7 +388,7 @@ mod ffi {
             self: &HostContext,
             account: &[u8],
             destination: &[u8],
-            seq: i32,
+            seq: u32,
             out: &mut [u8],
         ) -> i32;
 
@@ -393,7 +397,7 @@ mod ffi {
         fn permissioned_domain_keylet(
             self: &HostContext,
             account: &[u8],
-            seq: i32,
+            seq: u32,
             out: &mut [u8],
         ) -> i32;
 
@@ -403,11 +407,11 @@ mod ffi {
 
         #[namespace = "xrpl"]
         #[cxx_name = "ticketKeylet"]
-        fn ticket_keylet(self: &HostContext, account: &[u8], seq: i32, out: &mut [u8]) -> i32;
+        fn ticket_keylet(self: &HostContext, account: &[u8], seq: u32, out: &mut [u8]) -> i32;
 
         #[namespace = "xrpl"]
         #[cxx_name = "vaultKeylet"]
-        fn vault_keylet(self: &HostContext, account: &[u8], seq: i32, out: &mut [u8]) -> i32;
+        fn vault_keylet(self: &HostContext, account: &[u8], seq: u32, out: &mut [u8]) -> i32;
 
         #[namespace = "xrpl"]
         #[cxx_name = "sponsorshipKeylet"]
@@ -420,14 +424,14 @@ mod ffi {
 
         #[namespace = "xrpl"]
         #[cxx_name = "loanBrokerKeylet"]
-        fn loan_broker_keylet(self: &HostContext, owner: &[u8], seq: i32, out: &mut [u8]) -> i32;
+        fn loan_broker_keylet(self: &HostContext, owner: &[u8], seq: u32, out: &mut [u8]) -> i32;
 
         #[namespace = "xrpl"]
         #[cxx_name = "loanKeylet"]
         fn loan_keylet(
             self: &HostContext,
             loan_broker_id: &[u8],
-            loan_seq: i32,
+            loan_seq: u32,
             out: &mut [u8],
         ) -> i32;
 
@@ -690,7 +694,7 @@ impl HostFunctions for CxxHost<'_> {
         bytes_written(self.ctx.amm_keylet(asset1, asset2, out))
     }
 
-    fn check_keylet(&self, account: &[u8], seq: i32, out: &mut [u8]) -> HostResult<usize> {
+    fn check_keylet(&self, account: &[u8], seq: u32, out: &mut [u8]) -> HostResult<usize> {
         bytes_written(self.ctx.check_keylet(account, seq, out))
     }
 
@@ -729,7 +733,7 @@ impl HostFunctions for CxxHost<'_> {
         bytes_written(self.ctx.did_keylet(account, out))
     }
 
-    fn escrow_keylet(&self, account: &[u8], seq: i32, out: &mut [u8]) -> HostResult<usize> {
+    fn escrow_keylet(&self, account: &[u8], seq: u32, out: &mut [u8]) -> HostResult<usize> {
         bytes_written(self.ctx.escrow_keylet(account, seq, out))
     }
 
@@ -749,7 +753,7 @@ impl HostFunctions for CxxHost<'_> {
     fn mptoken_issuance_keylet(
         &self,
         issuer: &[u8],
-        seq: i32,
+        seq: u32,
         out: &mut [u8],
     ) -> HostResult<usize> {
         bytes_written(self.ctx.mptoken_issuance_keylet(issuer, seq, out))
@@ -759,15 +763,15 @@ impl HostFunctions for CxxHost<'_> {
         bytes_written(self.ctx.mptoken_keylet(mptid, holder, out))
     }
 
-    fn nftoken_offer_keylet(&self, account: &[u8], seq: i32, out: &mut [u8]) -> HostResult<usize> {
+    fn nftoken_offer_keylet(&self, account: &[u8], seq: u32, out: &mut [u8]) -> HostResult<usize> {
         bytes_written(self.ctx.nftoken_offer_keylet(account, seq, out))
     }
 
-    fn offer_keylet(&self, account: &[u8], seq: i32, out: &mut [u8]) -> HostResult<usize> {
+    fn offer_keylet(&self, account: &[u8], seq: u32, out: &mut [u8]) -> HostResult<usize> {
         bytes_written(self.ctx.offer_keylet(account, seq, out))
     }
 
-    fn oracle_keylet(&self, account: &[u8], doc_id: i32, out: &mut [u8]) -> HostResult<usize> {
+    fn oracle_keylet(&self, account: &[u8], doc_id: u32, out: &mut [u8]) -> HostResult<usize> {
         bytes_written(self.ctx.oracle_keylet(account, doc_id, out))
     }
 
@@ -775,7 +779,7 @@ impl HostFunctions for CxxHost<'_> {
         &self,
         account: &[u8],
         destination: &[u8],
-        seq: i32,
+        seq: u32,
         out: &mut [u8],
     ) -> HostResult<usize> {
         bytes_written(self.ctx.paychannel_keylet(account, destination, seq, out))
@@ -784,7 +788,7 @@ impl HostFunctions for CxxHost<'_> {
     fn permissioned_domain_keylet(
         &self,
         account: &[u8],
-        seq: i32,
+        seq: u32,
         out: &mut [u8],
     ) -> HostResult<usize> {
         bytes_written(self.ctx.permissioned_domain_keylet(account, seq, out))
@@ -794,11 +798,11 @@ impl HostFunctions for CxxHost<'_> {
         bytes_written(self.ctx.signer_list_keylet(account, out))
     }
 
-    fn ticket_keylet(&self, account: &[u8], seq: i32, out: &mut [u8]) -> HostResult<usize> {
+    fn ticket_keylet(&self, account: &[u8], seq: u32, out: &mut [u8]) -> HostResult<usize> {
         bytes_written(self.ctx.ticket_keylet(account, seq, out))
     }
 
-    fn vault_keylet(&self, account: &[u8], seq: i32, out: &mut [u8]) -> HostResult<usize> {
+    fn vault_keylet(&self, account: &[u8], seq: u32, out: &mut [u8]) -> HostResult<usize> {
         bytes_written(self.ctx.vault_keylet(account, seq, out))
     }
 
@@ -811,14 +815,14 @@ impl HostFunctions for CxxHost<'_> {
         bytes_written(self.ctx.sponsorship_keylet(sponsor, sponsee, out))
     }
 
-    fn loan_broker_keylet(&self, owner: &[u8], seq: i32, out: &mut [u8]) -> HostResult<usize> {
+    fn loan_broker_keylet(&self, owner: &[u8], seq: u32, out: &mut [u8]) -> HostResult<usize> {
         bytes_written(self.ctx.loan_broker_keylet(owner, seq, out))
     }
 
     fn loan_keylet(
         &self,
         loan_broker_id: &[u8],
-        loan_seq: i32,
+        loan_seq: u32,
         out: &mut [u8],
     ) -> HostResult<usize> {
         bytes_written(self.ctx.loan_keylet(loan_broker_id, loan_seq, out))
@@ -828,7 +832,7 @@ impl HostFunctions for CxxHost<'_> {
         bytes_written(self.ctx.sha512_half(data, out))
     }
 
-    fn trace(&self, msg: &str, data: &[u8], data_type: TraceDataType) -> HostResult<()> {
+    fn trace(&self, msg: &str, data_type: TraceDataType, data: &[u8]) -> HostResult<()> {
         self.ctx.trace(msg, data, crossed(data_type));
         Ok(())
     }
@@ -861,23 +865,23 @@ impl HostFunctions for CxxHost<'_> {
         bytes_written(self.ctx.get_nft_sequence(nft_id, out))
     }
 
-    fn float_from_int(&self, x: i64, mode: i32, out: &mut [u8]) -> HostResult<usize> {
+    fn float_from_int(&self, x: i64, out: &mut [u8], mode: i32) -> HostResult<usize> {
         bytes_written(self.ctx.float_from_int(x, mode, out))
     }
 
-    fn float_from_uint(&self, x: &[u8], mode: i32, out: &mut [u8]) -> HostResult<usize> {
+    fn float_from_uint(&self, x: &[u8], out: &mut [u8], mode: i32) -> HostResult<usize> {
         bytes_written(self.ctx.float_from_uint(x, mode, out))
     }
 
-    fn float_from_stamount(&self, amount: &[u8], mode: i32, out: &mut [u8]) -> HostResult<usize> {
+    fn float_from_stamount(&self, amount: &[u8], out: &mut [u8], mode: i32) -> HostResult<usize> {
         bytes_written(self.ctx.float_from_stamount(amount, mode, out))
     }
 
-    fn float_from_stnumber(&self, number: &[u8], mode: i32, out: &mut [u8]) -> HostResult<usize> {
+    fn float_from_stnumber(&self, number: &[u8], out: &mut [u8], mode: i32) -> HostResult<usize> {
         bytes_written(self.ctx.float_from_stnumber(number, mode, out))
     }
 
-    fn float_to_int(&self, x: &[u8], mode: i32, out: &mut [u8]) -> HostResult<usize> {
+    fn float_to_int(&self, x: &[u8], out: &mut [u8], mode: i32) -> HostResult<usize> {
         bytes_written(self.ctx.float_to_int(x, mode, out))
     }
 
@@ -894,8 +898,8 @@ impl HostFunctions for CxxHost<'_> {
         &self,
         mantissa: i64,
         exponent: i32,
-        mode: i32,
         out: &mut [u8],
+        mode: i32,
     ) -> HostResult<usize> {
         bytes_written(self.ctx.float_from_mant_exp(mantissa, exponent, mode, out))
     }
@@ -904,23 +908,23 @@ impl HostFunctions for CxxHost<'_> {
         scalar(self.ctx.float_compare(x, y))
     }
 
-    fn float_add(&self, x: &[u8], y: &[u8], mode: i32, out: &mut [u8]) -> HostResult<usize> {
+    fn float_add(&self, x: &[u8], y: &[u8], out: &mut [u8], mode: i32) -> HostResult<usize> {
         bytes_written(self.ctx.float_add(x, y, mode, out))
     }
 
-    fn float_subtract(&self, x: &[u8], y: &[u8], mode: i32, out: &mut [u8]) -> HostResult<usize> {
+    fn float_subtract(&self, x: &[u8], y: &[u8], out: &mut [u8], mode: i32) -> HostResult<usize> {
         bytes_written(self.ctx.float_subtract(x, y, mode, out))
     }
 
-    fn float_multiply(&self, x: &[u8], y: &[u8], mode: i32, out: &mut [u8]) -> HostResult<usize> {
+    fn float_multiply(&self, x: &[u8], y: &[u8], out: &mut [u8], mode: i32) -> HostResult<usize> {
         bytes_written(self.ctx.float_multiply(x, y, mode, out))
     }
 
-    fn float_divide(&self, x: &[u8], y: &[u8], mode: i32, out: &mut [u8]) -> HostResult<usize> {
+    fn float_divide(&self, x: &[u8], y: &[u8], out: &mut [u8], mode: i32) -> HostResult<usize> {
         bytes_written(self.ctx.float_divide(x, y, mode, out))
     }
 
-    fn float_power(&self, x: &[u8], n: i32, mode: i32, out: &mut [u8]) -> HostResult<usize> {
+    fn float_power(&self, x: &[u8], n: i32, out: &mut [u8], mode: i32) -> HostResult<usize> {
         bytes_written(self.ctx.float_power(x, n, mode, out))
     }
 }
@@ -1074,6 +1078,7 @@ impl From<&CheckError> for ffi::CheckStatus {
         match error {
             CheckError::Compile(_) => ffi::CheckStatus::Compile,
             CheckError::Import(_) => ffi::CheckStatus::Import,
+            CheckError::Signature(_) => ffi::CheckStatus::Signature,
             CheckError::EntryPoint(_) => ffi::CheckStatus::EntryPoint,
             CheckError::Memory(_) => ffi::CheckStatus::Memory,
             CheckError::Table(_) => ffi::CheckStatus::Table,
@@ -1085,6 +1090,7 @@ impl From<&CheckError> for ffi::CheckStatus {
 /// binary link at all: the C++ side of the bridge exists only in the CMake build, so
 /// a test that called one would fail to link rather than fail.
 #[cfg(test)]
+#[cfg_attr(coverage_nightly, coverage(off))]
 mod tests {
     use super::*;
 
@@ -1281,6 +1287,7 @@ mod tests {
         vec![
             CheckError::Compile(String::new()),
             CheckError::Import(String::new()),
+            CheckError::Signature(String::new()),
             CheckError::EntryPoint(String::new()),
             CheckError::Memory(String::new()),
             CheckError::Table(String::new()),

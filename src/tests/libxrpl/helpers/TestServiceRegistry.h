@@ -179,6 +179,10 @@ private:
  */
 class TestServiceRegistry : public ServiceRegistry
 {
+public:
+    /**
+     * @brief The fee settings a test environment starts with.
+     */
     static Fees
     defaultFees()
     {
@@ -189,6 +193,7 @@ class TestServiceRegistry : public ServiceRegistry
         return fees;
     }
 
+private:
     TestLogs logs_{beast::Severity::Warning};
     boost::asio::io_context ioContext_;
     TestFamily family_{logs_.journal("TestFamily")};
@@ -498,6 +503,15 @@ public:
     getFees() const override
     {
         return fees_;
+    }
+
+    /**
+     * @brief Override the fee settings the transactors see.
+     */
+    void
+    setFees(Fees const& fees)
+    {
+        fees_ = fees;
     }
 
     // Temporary: Get the underlying Application

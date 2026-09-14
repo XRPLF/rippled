@@ -17,14 +17,13 @@ struct VaultKeyletCall : HostContextTest
     Bytes const accountBytes{0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a,
                              0x0b, 0x0c, 0x0d, 0x0e, 0x0f, 0x10, 0x11, 0x12, 0x13, 0x14};
     AccountID const account = AccountID::fromVoid(accountBytes.data());
-    std::int32_t const seq = 12345;
+    std::uint32_t const seq = 12345;
 };
 
 TEST_F(VaultKeyletCall, AccountAndSeqAreForwardedKeyletIsWritten)
 {
     Bytes const keylet(32, 0xab);
-    EXPECT_CALL(host, vaultKeylet(account, static_cast<std::uint32_t>(seq)))
-        .WillOnce(testing::Return(keylet));
+    EXPECT_CALL(host, vaultKeylet(account, seq)).WillOnce(testing::Return(keylet));
 
     OutRegion out{32};
     EXPECT_EQ(
@@ -35,7 +34,7 @@ TEST_F(VaultKeyletCall, AccountAndSeqAreForwardedKeyletIsWritten)
 
 TEST_F(VaultKeyletCall, HostErrorBecomesContractReturnValue)
 {
-    EXPECT_CALL(host, vaultKeylet(account, static_cast<std::uint32_t>(seq)))
+    EXPECT_CALL(host, vaultKeylet(account, seq))
         .WillOnce(testing::Return(std::unexpected(HostFunctionError::LedgerObjNotFound)));
 
     OutRegion out{32};
@@ -79,7 +78,7 @@ TEST_F(VaultKeyletCall, EmptyAccountIsRefusedWithoutAskingHost)
 
 TEST_F(VaultKeyletCall, HostExceptionBecomesInternalFatalAndIsLogged)
 {
-    EXPECT_CALL(host, vaultKeylet(account, static_cast<std::uint32_t>(seq)))
+    EXPECT_CALL(host, vaultKeylet(account, seq))
         .WillOnce(testing::Throw(std::runtime_error{"vault keylet came apart"}));
 
     OutRegion out{32};
@@ -95,8 +94,7 @@ TEST_F(VaultKeyletCall, HostExceptionBecomesInternalFatalAndIsLogged)
 TEST_F(VaultKeyletCall, ShortOutRegionWritesNothingAndReturnsTrueLength)
 {
     Bytes const keylet(32, 0xab);
-    EXPECT_CALL(host, vaultKeylet(account, static_cast<std::uint32_t>(seq)))
-        .WillOnce(testing::Return(keylet));
+    EXPECT_CALL(host, vaultKeylet(account, seq)).WillOnce(testing::Return(keylet));
 
     OutRegion out{keylet.size() - 1};
     EXPECT_EQ(
@@ -108,8 +106,7 @@ TEST_F(VaultKeyletCall, ShortOutRegionWritesNothingAndReturnsTrueLength)
 TEST_F(VaultKeyletCall, OutRegionOfExactSizeIsWritten)
 {
     Bytes const keylet(32, 0xab);
-    EXPECT_CALL(host, vaultKeylet(account, static_cast<std::uint32_t>(seq)))
-        .WillOnce(testing::Return(keylet));
+    EXPECT_CALL(host, vaultKeylet(account, seq)).WillOnce(testing::Return(keylet));
 
     OutRegion out{keylet.size()};
     EXPECT_EQ(
@@ -120,8 +117,7 @@ TEST_F(VaultKeyletCall, OutRegionOfExactSizeIsWritten)
 
 TEST_F(VaultKeyletCall, EmptyResultAnswersZeroAndWritesNothing)
 {
-    EXPECT_CALL(host, vaultKeylet(account, static_cast<std::uint32_t>(seq)))
-        .WillOnce(testing::Return(Bytes{}));
+    EXPECT_CALL(host, vaultKeylet(account, seq)).WillOnce(testing::Return(Bytes{}));
 
     OutRegion out{32};
     EXPECT_EQ(hostContext.vaultKeylet(bytesOf(accountBytes), seq, out.slice()), 0);

@@ -118,8 +118,8 @@ TEST_F(LedgerObjNestedFieldCall, EmptyResultAnswersZeroAndWritesNothing)
     EXPECT_FALSE(out.wasWritten());
 }
 
-// `cacheIdx` crosses to the host as its own `std::int32_t`, unlike a keylet method's `seq`:
-// no cast to an unsigned bit pattern, so 0 and a negative slot both cross unchanged.
+// `cacheIdx` is signed the whole way to the host, so 0 and a negative slot both cross
+// unchanged.
 TEST_F(LedgerObjNestedFieldCall, ZeroCacheIdxArrivesAtHostUnchanged)
 {
     Bytes const value{1, 2, 3};

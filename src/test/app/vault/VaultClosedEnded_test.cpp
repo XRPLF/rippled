@@ -81,7 +81,7 @@ private:
 
         /*
          * Valid closed-ended creation with a comfortably interior gap (well above
-         * MIN_INVESTMENT_PERIOD and well below MAX_INVESTMENT_PERIOD).
+         * kMinInvestmentPeriod and well below kMaxInvestmentPeriod).
          */
         withEnv(testableAmendments(), [&](Env& env, Account const& owner, Vault& vault) {
             auto const sub = env.now().time_since_epoch().count() + 60;
@@ -145,7 +145,7 @@ private:
         });
 
         /*
-         * Gap smaller than MIN_INVESTMENT_PERIOD => temMALFORMED. Includes the SubscriptionDate >=
+         * Gap smaller than kMinInvestmentPeriod => temMALFORMED. Includes the SubscriptionDate >=
          * RedemptionDate degenerate cases: the red == sub boundary and the strictly-reversed red <
          * sub case, the latter yielding a negative signed int64 gap that is caught by the
          * sub-minimum branch of the gap check.
@@ -206,8 +206,9 @@ private:
             env(tx, Ter{temMALFORMED});
         });
 
-        // Happy path: gap exactly equal to MIN_INVESTMENT_PERIOD is accepted (lower bound is
-        // inclusive).
+        // Happy path: gap exactly equal to kMinInvestmentPeriod is accepted (lower bound is
+        // inclusive). A min-gap vault can originate a minimum-interval loan; see
+        // LoanSet_test::testLoanSetClosedEnded.
         withEnv(testableAmendments(), [&](Env& env, Account const& owner, Vault& vault) {
             auto const sub = env.now().time_since_epoch().count() + 60;
             auto const red = sub + minPeriod;
@@ -547,7 +548,7 @@ private:
 
         Asset const asset = xrpIssue();
         // Widen the Investment window so a single-payment loan (min payment
-        // interval kMinPaymentInterval = 60s) fits before RedemptionDate.
+        // interval 60s plus kLoanRedemptionBuffer) fits before RedemptionDate.
         auto const [vault, keylet, sub, red] =
             makeClosedEndedVault(env, owner, asset, 60u, kMinInvestmentPeriod + 3600u);
 
@@ -627,7 +628,7 @@ private:
         auto const closedEnded = std::to_underlying(VaultKind::ClosedEnded);
         Asset const asset = xrpIssue();
         // Widen the Investment window so a single-payment loan (min payment interval
-        // kMinPaymentInterval = 60s) fits before RedemptionDate with headroom.
+        // 60s plus kLoanRedemptionBuffer) fits before RedemptionDate with headroom.
         auto const [vault, keylet, sub, red] =
             makeClosedEndedVault(env, owner, asset, 300u, kMinInvestmentPeriod + 3600u);
 
