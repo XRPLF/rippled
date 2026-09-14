@@ -80,9 +80,11 @@
 #include <xrpl/protocol/BuildInfo.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>  // IWYU pragma: keep
+#include <xrpl/protocol/KeyType.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/STParsedJSON.h>
+#include <xrpl/protocol/SecretKey.h>
 #include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/SystemParameters.h>  // IWYU pragma: keep
 #include <xrpl/protocol/jss.h>
@@ -220,6 +222,13 @@ public:
 
     beast::Journal journal_;
     std::unique_ptr<perf::PerfLog> perfLog_;
+    /**
+     * This node's keypair, resolved before construction by
+     * resolveNodeIdentity() and persisted by setup(). Declared before
+     * telemetry_ because that builds resource attributes from it, and they are
+     * immutable once built.
+     */
+    std::pair<PublicKey, SecretKey> nodeIdentity_;
     std::unique_ptr<telemetry::Telemetry> telemetry_;
     Application::MutexType masterMutex_;
 
@@ -236,7 +245,6 @@ public:
     NodeCache tempNodeCache_;
     CachedSLEs cachedSLEs_;
     std::unique_ptr<NetworkIDService> networkIDService_;
-    std::optional<std::pair<PublicKey, SecretKey>> nodeIdentity_;
     ValidatorKeys const validatorKeys_;
 
     std::unique_ptr<resource::Manager> resourceManager_;
@@ -317,7 +325,7 @@ public:
         std::unique_ptr<Config> config,
         std::unique_ptr<Logs> logs,
         std::unique_ptr<TimeKeeper> timeKeeper,
-        std::optional<std::string> const& nodePublicKey)
+        std::pair<PublicKey, SecretKey> const& resolvedIdentity)
         : BasicApp(numberOfThreads(*config))
         , config_(std::move(config))
         , logs_(std::move(logs))
@@ -331,15 +339,16 @@ public:
                   *this,
                   logs_->journal("PerfLog"),
                   [this] { signalStop("PerfLog"); }))
+        , nodeIdentity_(resolvedIdentity)
         // Telemetry publishes the MeterProvider on construction, so it must
         // precede collectorManager_ below and every subsystem that creates an
         // instrument. Its resource is immutable, so the instance id has to be
-        // supplied now; empty means this run reports none.
+        // supplied now, from the identity resolved above.
         , telemetry_(
               telemetry::makeTelemetry(
                   telemetry::makeTelemetrySetup(
                       config_->section("telemetry"),
-                      nodePublicKey.value_or(""),
+                      toBase58(TokenType::NodePublic, nodeIdentity_.first),
                       build_info::getVersionString(),
                       config_->networkId),
                   logs_->journal("Telemetry")))
@@ -619,10 +628,7 @@ public:
     std::pair<PublicKey, SecretKey> const&
     nodeIdentity() override
     {
-        if (nodeIdentity_)
-            return *nodeIdentity_;
-
-        logicError("Accessing Application::nodeIdentity() before it is initialized.");
+        return nodeIdentity_;
     }
 
     std::optional<PublicKey const>
@@ -1306,12 +1312,15 @@ ApplicationImp::setup(boost::program_options::variables_map const& cmdline)
         return false;
     }
 
-    nodeIdentity_ = getNodeIdentity(*this, cmdline);
+    // Persist the identity resolved before construction, or adopt the one the
+    // wallet already holds. Telemetry is already reporting the resolved key.
+    nodeIdentity_ = getNodeIdentity(*this, cmdline, nodeIdentity_);
 
     // The metrics resource was fixed at construction, but the tracer resource is
-    // built by start() below, so a key minted just now can still reach spans.
+    // built by start() below, so the stored key still reaches spans if it
+    // differs from the resolved one.
     if (!config_->section("telemetry").exists("service_instance_id"))
-        telemetry_->setServiceInstanceId(toBase58(TokenType::NodePublic, nodeIdentity_->first));
+        telemetry_->setServiceInstanceId(toBase58(TokenType::NodePublic, nodeIdentity_.first));
 
     // Start telemetry here, not in start(). Spans are emitted during the rest
     // of setup() — the first consensus round in beginConsensus() below — and
@@ -2298,7 +2307,13 @@ makeApplication(
     std::unique_ptr<Logs> logs,
     std::unique_ptr<TimeKeeper> timeKeeper)
 {
-    return makeApplication(std::move(config), std::move(logs), std::move(timeKeeper), std::nullopt);
+    // No identity supplied, so mint one. setup() stores it if the wallet holds
+    // none, which is what a standalone run and a test Application do anyway.
+    return makeApplication(
+        std::move(config),
+        std::move(logs),
+        std::move(timeKeeper),
+        randomKeyPair(KeyType::Secp256k1));
 }
 
 std::unique_ptr<Application>
@@ -2306,10 +2321,10 @@ makeApplication(
     std::unique_ptr<Config> config,
     std::unique_ptr<Logs> logs,
     std::unique_ptr<TimeKeeper> timeKeeper,
-    std::optional<std::string> const& nodePublicKey)
+    std::pair<PublicKey, SecretKey> const& nodeIdentity)
 {
     return std::make_unique<ApplicationImp>(
-        std::move(config), std::move(logs), std::move(timeKeeper), nodePublicKey);
+        std::move(config), std::move(logs), std::move(timeKeeper), nodeIdentity);
 }
 
 void

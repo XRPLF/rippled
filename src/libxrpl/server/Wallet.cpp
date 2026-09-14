@@ -171,6 +171,16 @@ readNodeIdentity(soci::session& session)
     return std::nullopt;
 }
 
+void
+storeNodeIdentity(soci::session& session, std::pair<PublicKey, SecretKey> const& keys)
+{
+    session << std::format(
+        "INSERT INTO NodeIdentity (PublicKey,PrivateKey) "
+        "VALUES ('{}','{}');",
+        toBase58(TokenType::NodePublic, keys.first),
+        toBase58(TokenType::NodePrivate, keys.second));
+}
+
 std::pair<PublicKey, SecretKey>
 getNodeIdentity(soci::session& session)
 {
@@ -178,15 +188,9 @@ getNodeIdentity(soci::session& session)
         return *stored;
 
     // If a valid identity wasn't found, we randomly generate a new one:
-    auto [newpublicKey, newsecretKey] = randomKeyPair(KeyType::Secp256k1);
-
-    session << std::format(
-        "INSERT INTO NodeIdentity (PublicKey,PrivateKey) "
-        "VALUES ('{}','{}');",
-        toBase58(TokenType::NodePublic, newpublicKey),
-        toBase58(TokenType::NodePrivate, newsecretKey));
-
-    return {newpublicKey, newsecretKey};
+    auto const keys = randomKeyPair(KeyType::Secp256k1);
+    storeNodeIdentity(session, keys);
+    return keys;
 }
 
 std::unordered_set<PeerReservation, beast::Uhash<>, KeyEqual>

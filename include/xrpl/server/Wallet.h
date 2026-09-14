@@ -103,6 +103,22 @@ std::optional<std::pair<PublicKey, SecretKey>>
 readNodeIdentity(soci::session& session);
 
 /**
+ * Persist a keypair as this node's identity.
+ *
+ * Write-only counterpart of readNodeIdentity(). The caller must have found the
+ * table empty: this inserts a row without clearing, so storing twice leaves two
+ * and readNodeIdentity() then returns whichever the query yields first.
+ *
+ * Exists because xrpld resolves its identity before the Application, and so
+ * before any database, is built; setup() persists that keypair here.
+ *
+ * @param session Session with the database.
+ * @param keys    The keypair to store.
+ */
+void
+storeNodeIdentity(soci::session& session, std::pair<PublicKey, SecretKey> const& keys);
+
+/**
  * Returns a stable public and private key for this node.
  *
  * The node's public identity is defined by a secp256k1 keypair

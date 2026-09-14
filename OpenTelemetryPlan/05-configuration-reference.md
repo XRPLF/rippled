@@ -62,13 +62,17 @@ The parser `makeTelemetrySetup()` in `src/libxrpl/telemetry/TelemetryConfig.cpp`
 
 ### 5.3.1 ApplicationImp Changes
 
-> **Deferred identity**: The node public key (`nodeIdentity_`) is not
-> available during `ApplicationImp`'s member initializer list — it is
-> resolved later in `setup()`. The `Telemetry` object is therefore
-> constructed with an empty `serviceInstanceId` and patched via
-> `setServiceInstanceId()` once `setup()` has called `getNodeIdentity()`.
+> **Identity before construction**: telemetry stamps the node public key into
+> resources that are immutable once built, and it builds them during
+> `ApplicationImp`'s member initializer list. So `Main.cpp` calls
+> `resolveNodeIdentity()` first, from the config and command line alone, and
+> passes the keypair to `makeApplication()`. It never comes back empty: a
+> configured `[node_seed]` decides it, else the wallet database supplies it if
+> one already exists, else it is minted. `ApplicationImp::setup()` then calls
+> `getNodeIdentity()`, which stores that keypair when the wallet holds none and
+> otherwise adopts what the wallet holds.
 
-`ApplicationImp` (in `src/xrpld/app/main/Application.cpp`) owns a `std::unique_ptr<telemetry::Telemetry> telemetry_`. It is built in the member initializer list via `makeTelemetry(makeTelemetrySetup(...))` with an empty `serviceInstanceId`, then patched in `setup()` by calling `setServiceInstanceId()` with the Base58 node public key (unless the user supplied a custom `service_instance_id`). `start()` and `run()` forward to `telemetry_->start()` / `telemetry_->stop()`, and `getTelemetry()` returns the owned instance.
+`ApplicationImp` (in `src/xrpld/app/main/Application.cpp`) owns a `std::pair<PublicKey, SecretKey> nodeIdentity_`, declared before `std::unique_ptr<telemetry::Telemetry> telemetry_` so the resource can be built from it. `telemetry_` is built in the member initializer list via `makeTelemetry(makeTelemetrySetup(...))` with that key as `serviceInstanceId` (unless the user supplied a custom `service_instance_id`). `setup()` still calls `setServiceInstanceId()`, which now matters only where the stored key differs from the resolved one, and reaches the tracer resource alone. `start()` and `run()` forward to `telemetry_->start()` / `telemetry_->stop()`, and `getTelemetry()` returns the owned instance.
 
 ### 5.3.2 ServiceRegistry Interface Addition
 
