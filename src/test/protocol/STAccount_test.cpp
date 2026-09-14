@@ -63,7 +63,7 @@ struct STAccount_test : public beast::unit_test::Suite
             STAccount const zeroAcct{sfAccount, AccountID{}};
             BEAST_EXPECT(zeroAcct.getText() == "rrrrrrrrrrrrrrrrrrrrrhoLvTp");
             BEAST_EXPECT(!zeroAcct.isDefault());
-            BEAST_EXPECT(zeroAcct.value() == AccountID{0});
+            BEAST_EXPECT(zeroAcct.value() == AccountID{});
             BEAST_EXPECT(!zeroAcct.isEquivalent(defaultAcct));
             BEAST_EXPECT(!zeroAcct.isEquivalent(sfAcct));
             {

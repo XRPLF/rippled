@@ -1,5 +1,3 @@
-
-
 #include <test/jtx/Account.h>
 #include <test/jtx/Env.h>
 #include <test/jtx/amount.h>
@@ -21,6 +19,7 @@
 #include <xrpl/basics/chrono.h>
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/beast/utility/Journal.h>
+#include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ApplyViewImpl.h>
@@ -42,27 +41,39 @@
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/UintTypes.h>
 
+#include <array>
 #include <chrono>
+#include <cstddef>
 #include <cstdint>
 #include <memory>
 #include <optional>
 #include <type_traits>
+#include <utility>
 #include <vector>
 
 namespace xrpl::test {
 
 class View_test : public beast::unit_test::Suite
 {
+    // Every key used in this file, precomputed: kKeys[i] is the uint256 with
+    // numeric value i. Test ids are small integers, so a table indexed at
+    // run time keeps integer-to-key conversion in one place and lets every
+    // key be a compile-time constant.
+    static constexpr auto kKeys = []<std::size_t... I>(std::index_sequence<I...>) {
+        return std::array{uint256{I}...};
+    }(std::make_index_sequence<256>{});
+
     // Convert a small integer to a key
     static Keylet
-    k(std::uint64_t id)
+    k(std::size_t id)
     {
-        return Keylet{ltACCOUNT_ROOT, uint256(id)};
+        XRPL_ASSERT(id < kKeys.size(), "xrpl::test::View_test::k : id in range");
+        return Keylet{ltACCOUNT_ROOT, kKeys[id]};
     }
 
     // Create SLE with key and payload
     static SLE::pointer
-    sle(std::uint64_t id, std::uint32_t seq = 1)
+    sle(std::size_t id, std::uint32_t seq = 1)
     {
         auto const le = std::make_shared<SLE>(k(id));
         le->setFieldU32(sfSequence, seq);
@@ -90,8 +101,7 @@ class View_test : public beast::unit_test::Suite
     {
         openLedger.modify([](OpenView& view, beast::Journal) {
             // HACK!
-            std::optional<uint256> next;
-            next.emplace(0);
+            std::optional<uint256> next(uint256{});
             for (;;)
             {
                 next = view.succ(*next);
@@ -107,8 +117,7 @@ class View_test : public beast::unit_test::Suite
     wipe(Ledger& ledger)
     {
         // HACK!
-        std::optional<uint256> next;
-        next.emplace(0);
+        std::optional<uint256> next{uint256{}};
         for (;;)
         {
             next = ledger.succ(*next);
@@ -120,7 +129,7 @@ class View_test : public beast::unit_test::Suite
 
     // Test succ correctness
     void
-    succ(ReadView const& v, std::uint32_t id, std::optional<std::uint32_t> answer)
+    succ(ReadView const& v, std::size_t id, std::optional<std::size_t> answer)
     {
         auto const next = v.succ(k(id).key);
         if (answer)
@@ -397,17 +406,17 @@ class View_test : public beast::unit_test::Suite
     sles(ReadView const& ledger)
     {
         std::vector<uint256> v;
-        v.reserve(32);
         for (auto const& sle : ledger.sles)
             v.push_back(sle->key());
         return v;
     }
 
+    // Convert a list of small integers to a list of keys
     template <class... Args>
     static std::vector<uint256>
     list(Args... args)
     {
-        return std::vector<uint256>({uint256(args)...});
+        return {k(args).key...};
     }
 
     void
@@ -427,7 +436,7 @@ class View_test : public beast::unit_test::Suite
         auto const ledger =
             std::make_shared<Ledger>(*genesis, env.app().getTimeKeeper().closeTime());
 
-        auto setup = [&ledger](std::vector<int> const& vec) {
+        auto setup = [&ledger](std::vector<std::size_t> const& vec) {
             wipe(*ledger);
             for (auto x : vec)
             {
@@ -439,20 +448,20 @@ class View_test : public beast::unit_test::Suite
             BEAST_EXPECT(sles(*ledger) == list(1, 2, 3));
             auto e = ledger->stateMap().end();
             auto b1 = ledger->stateMap().begin();
-            BEAST_EXPECT(ledger->stateMap().lowerBound(uint256(1)) == e);
-            BEAST_EXPECT(ledger->stateMap().lowerBound(uint256(2)) == b1);
+            BEAST_EXPECT(ledger->stateMap().lowerBound(k(1).key) == e);
+            BEAST_EXPECT(ledger->stateMap().lowerBound(k(2).key) == b1);
             ++b1;
-            BEAST_EXPECT(ledger->stateMap().lowerBound(uint256(3)) == b1);
+            BEAST_EXPECT(ledger->stateMap().lowerBound(k(3).key) == b1);
             ++b1;
-            BEAST_EXPECT(ledger->stateMap().lowerBound(uint256(4)) == b1);
-            BEAST_EXPECT(ledger->stateMap().lowerBound(uint256(5)) == b1);
+            BEAST_EXPECT(ledger->stateMap().lowerBound(k(4).key) == b1);
+            BEAST_EXPECT(ledger->stateMap().lowerBound(k(5).key) == b1);
             b1 = ledger->stateMap().begin();
-            BEAST_EXPECT(ledger->stateMap().upperBound(uint256(0)) == b1);
+            BEAST_EXPECT(ledger->stateMap().upperBound(k(0).key) == b1);
             ++b1;
-            BEAST_EXPECT(ledger->stateMap().upperBound(uint256(1)) == b1);
+            BEAST_EXPECT(ledger->stateMap().upperBound(k(1).key) == b1);
             ++b1;
-            BEAST_EXPECT(ledger->stateMap().upperBound(uint256(2)) == b1);
-            BEAST_EXPECT(ledger->stateMap().upperBound(uint256(3)) == e);
+            BEAST_EXPECT(ledger->stateMap().upperBound(k(2).key) == b1);
+            BEAST_EXPECT(ledger->stateMap().upperBound(k(3).key) == e);
         }
 
         {
@@ -460,77 +469,77 @@ class View_test : public beast::unit_test::Suite
             BEAST_EXPECT(sles(*ledger) == list(2, 4, 6));
             auto e = ledger->stateMap().end();
             auto b1 = ledger->stateMap().begin();
-            BEAST_EXPECT(ledger->stateMap().lowerBound(uint256(1)) == e);
-            BEAST_EXPECT(ledger->stateMap().lowerBound(uint256(2)) == e);
-            BEAST_EXPECT(ledger->stateMap().lowerBound(uint256(3)) == b1);
-            BEAST_EXPECT(ledger->stateMap().lowerBound(uint256(4)) == b1);
+            BEAST_EXPECT(ledger->stateMap().lowerBound(k(1).key) == e);
+            BEAST_EXPECT(ledger->stateMap().lowerBound(k(2).key) == e);
+            BEAST_EXPECT(ledger->stateMap().lowerBound(k(3).key) == b1);
+            BEAST_EXPECT(ledger->stateMap().lowerBound(k(4).key) == b1);
             ++b1;
-            BEAST_EXPECT(ledger->stateMap().lowerBound(uint256(5)) == b1);
-            BEAST_EXPECT(ledger->stateMap().lowerBound(uint256(6)) == b1);
+            BEAST_EXPECT(ledger->stateMap().lowerBound(k(5).key) == b1);
+            BEAST_EXPECT(ledger->stateMap().lowerBound(k(6).key) == b1);
             ++b1;
-            BEAST_EXPECT(ledger->stateMap().lowerBound(uint256(7)) == b1);
+            BEAST_EXPECT(ledger->stateMap().lowerBound(k(7).key) == b1);
             b1 = ledger->stateMap().begin();
-            BEAST_EXPECT(ledger->stateMap().upperBound(uint256(1)) == b1);
+            BEAST_EXPECT(ledger->stateMap().upperBound(k(1).key) == b1);
             ++b1;
-            BEAST_EXPECT(ledger->stateMap().upperBound(uint256(2)) == b1);
-            BEAST_EXPECT(ledger->stateMap().upperBound(uint256(3)) == b1);
+            BEAST_EXPECT(ledger->stateMap().upperBound(k(2).key) == b1);
+            BEAST_EXPECT(ledger->stateMap().upperBound(k(3).key) == b1);
             ++b1;
 
-            BEAST_EXPECT(ledger->stateMap().upperBound(uint256(4)) == b1);
-            BEAST_EXPECT(ledger->stateMap().upperBound(uint256(5)) == b1);
-            BEAST_EXPECT(ledger->stateMap().upperBound(uint256(6)) == e);
-            BEAST_EXPECT(ledger->stateMap().upperBound(uint256(7)) == e);
+            BEAST_EXPECT(ledger->stateMap().upperBound(k(4).key) == b1);
+            BEAST_EXPECT(ledger->stateMap().upperBound(k(5).key) == b1);
+            BEAST_EXPECT(ledger->stateMap().upperBound(k(6).key) == e);
+            BEAST_EXPECT(ledger->stateMap().upperBound(k(7).key) == e);
         }
         {
             setup({2, 3, 5, 6, 10, 15});
             BEAST_EXPECT(sles(*ledger) == list(2, 3, 5, 6, 10, 15));
             auto e = ledger->stateMap().end();
             auto b = ledger->stateMap().begin();
-            BEAST_EXPECT(ledger->stateMap().lowerBound(uint256(1)) == e);
-            BEAST_EXPECT(ledger->stateMap().lowerBound(uint256(2)) == e);
-            BEAST_EXPECT(ledger->stateMap().lowerBound(uint256(3)) == b);
+            BEAST_EXPECT(ledger->stateMap().lowerBound(k(1).key) == e);
+            BEAST_EXPECT(ledger->stateMap().lowerBound(k(2).key) == e);
+            BEAST_EXPECT(ledger->stateMap().lowerBound(k(3).key) == b);
             ++b;
-            BEAST_EXPECT(ledger->stateMap().lowerBound(uint256(4)) == b);
-            BEAST_EXPECT(ledger->stateMap().lowerBound(uint256(5)) == b);
+            BEAST_EXPECT(ledger->stateMap().lowerBound(k(4).key) == b);
+            BEAST_EXPECT(ledger->stateMap().lowerBound(k(5).key) == b);
             ++b;
-            BEAST_EXPECT(ledger->stateMap().lowerBound(uint256(6)) == b);
+            BEAST_EXPECT(ledger->stateMap().lowerBound(k(6).key) == b);
             ++b;
-            BEAST_EXPECT(ledger->stateMap().lowerBound(uint256(7)) == b);
-            BEAST_EXPECT(ledger->stateMap().lowerBound(uint256(8)) == b);
-            BEAST_EXPECT(ledger->stateMap().lowerBound(uint256(9)) == b);
-            BEAST_EXPECT(ledger->stateMap().lowerBound(uint256(10)) == b);
+            BEAST_EXPECT(ledger->stateMap().lowerBound(k(7).key) == b);
+            BEAST_EXPECT(ledger->stateMap().lowerBound(k(8).key) == b);
+            BEAST_EXPECT(ledger->stateMap().lowerBound(k(9).key) == b);
+            BEAST_EXPECT(ledger->stateMap().lowerBound(k(10).key) == b);
             ++b;
-            BEAST_EXPECT(ledger->stateMap().lowerBound(uint256(11)) == b);
-            BEAST_EXPECT(ledger->stateMap().lowerBound(uint256(12)) == b);
-            BEAST_EXPECT(ledger->stateMap().lowerBound(uint256(13)) == b);
-            BEAST_EXPECT(ledger->stateMap().lowerBound(uint256(14)) == b);
-            BEAST_EXPECT(ledger->stateMap().lowerBound(uint256(15)) == b);
+            BEAST_EXPECT(ledger->stateMap().lowerBound(k(11).key) == b);
+            BEAST_EXPECT(ledger->stateMap().lowerBound(k(12).key) == b);
+            BEAST_EXPECT(ledger->stateMap().lowerBound(k(13).key) == b);
+            BEAST_EXPECT(ledger->stateMap().lowerBound(k(14).key) == b);
+            BEAST_EXPECT(ledger->stateMap().lowerBound(k(15).key) == b);
             ++b;
-            BEAST_EXPECT(ledger->stateMap().lowerBound(uint256(16)) == b);
+            BEAST_EXPECT(ledger->stateMap().lowerBound(k(16).key) == b);
             b = ledger->stateMap().begin();
-            BEAST_EXPECT(ledger->stateMap().upperBound(uint256(0)) == b);
-            BEAST_EXPECT(ledger->stateMap().upperBound(uint256(1)) == b);
+            BEAST_EXPECT(ledger->stateMap().upperBound(k(0).key) == b);
+            BEAST_EXPECT(ledger->stateMap().upperBound(k(1).key) == b);
             ++b;
-            BEAST_EXPECT(ledger->stateMap().upperBound(uint256(2)) == b);
+            BEAST_EXPECT(ledger->stateMap().upperBound(k(2).key) == b);
             ++b;
-            BEAST_EXPECT(ledger->stateMap().upperBound(uint256(3)) == b);
-            BEAST_EXPECT(ledger->stateMap().upperBound(uint256(4)) == b);
+            BEAST_EXPECT(ledger->stateMap().upperBound(k(3).key) == b);
+            BEAST_EXPECT(ledger->stateMap().upperBound(k(4).key) == b);
             ++b;
-            BEAST_EXPECT(ledger->stateMap().upperBound(uint256(5)) == b);
+            BEAST_EXPECT(ledger->stateMap().upperBound(k(5).key) == b);
             ++b;
-            BEAST_EXPECT(ledger->stateMap().upperBound(uint256(6)) == b);
-            BEAST_EXPECT(ledger->stateMap().upperBound(uint256(7)) == b);
-            BEAST_EXPECT(ledger->stateMap().upperBound(uint256(8)) == b);
-            BEAST_EXPECT(ledger->stateMap().upperBound(uint256(9)) == b);
+            BEAST_EXPECT(ledger->stateMap().upperBound(k(6).key) == b);
+            BEAST_EXPECT(ledger->stateMap().upperBound(k(7).key) == b);
+            BEAST_EXPECT(ledger->stateMap().upperBound(k(8).key) == b);
+            BEAST_EXPECT(ledger->stateMap().upperBound(k(9).key) == b);
             ++b;
-            BEAST_EXPECT(ledger->stateMap().upperBound(uint256(10)) == b);
-            BEAST_EXPECT(ledger->stateMap().upperBound(uint256(11)) == b);
-            BEAST_EXPECT(ledger->stateMap().upperBound(uint256(12)) == b);
-            BEAST_EXPECT(ledger->stateMap().upperBound(uint256(13)) == b);
-            BEAST_EXPECT(ledger->stateMap().upperBound(uint256(14)) == b);
+            BEAST_EXPECT(ledger->stateMap().upperBound(k(10).key) == b);
+            BEAST_EXPECT(ledger->stateMap().upperBound(k(11).key) == b);
+            BEAST_EXPECT(ledger->stateMap().upperBound(k(12).key) == b);
+            BEAST_EXPECT(ledger->stateMap().upperBound(k(13).key) == b);
+            BEAST_EXPECT(ledger->stateMap().upperBound(k(14).key) == b);
             ++b;
-            BEAST_EXPECT(ledger->stateMap().upperBound(uint256(15)) == e);
-            BEAST_EXPECT(ledger->stateMap().upperBound(uint256(16)) == e);
+            BEAST_EXPECT(ledger->stateMap().upperBound(k(15).key) == e);
+            BEAST_EXPECT(ledger->stateMap().upperBound(k(16).key) == e);
         }
         {
             // some full trees, some empty trees, etc
@@ -580,42 +589,42 @@ class View_test : public beast::unit_test::Suite
                     100));
             auto b = ledger->stateMap().begin();
             auto e = ledger->stateMap().end();
-            BEAST_EXPECT(ledger->stateMap().lowerBound(uint256(0)) == e);
-            BEAST_EXPECT(ledger->stateMap().lowerBound(uint256(1)) == b);
-            BEAST_EXPECT(ledger->stateMap().lowerBound(uint256(5))->key() == uint256(4));
-            BEAST_EXPECT(ledger->stateMap().lowerBound(uint256(15))->key() == uint256(14));
-            BEAST_EXPECT(ledger->stateMap().lowerBound(uint256(16))->key() == uint256(15));
-            BEAST_EXPECT(ledger->stateMap().lowerBound(uint256(19))->key() == uint256(16));
-            BEAST_EXPECT(ledger->stateMap().lowerBound(uint256(20))->key() == uint256(16));
-            BEAST_EXPECT(ledger->stateMap().lowerBound(uint256(24))->key() == uint256(20));
-            BEAST_EXPECT(ledger->stateMap().lowerBound(uint256(31))->key() == uint256(30));
-            BEAST_EXPECT(ledger->stateMap().lowerBound(uint256(32))->key() == uint256(30));
-            BEAST_EXPECT(ledger->stateMap().lowerBound(uint256(40))->key() == uint256(39));
-            BEAST_EXPECT(ledger->stateMap().lowerBound(uint256(47))->key() == uint256(46));
-            BEAST_EXPECT(ledger->stateMap().lowerBound(uint256(48))->key() == uint256(47));
-            BEAST_EXPECT(ledger->stateMap().lowerBound(uint256(64))->key() == uint256(48));
+            BEAST_EXPECT(ledger->stateMap().lowerBound(k(0).key) == e);
+            BEAST_EXPECT(ledger->stateMap().lowerBound(k(1).key) == b);
+            BEAST_EXPECT(ledger->stateMap().lowerBound(k(5).key)->key() == k(4).key);
+            BEAST_EXPECT(ledger->stateMap().lowerBound(k(15).key)->key() == k(14).key);
+            BEAST_EXPECT(ledger->stateMap().lowerBound(k(16).key)->key() == k(15).key);
+            BEAST_EXPECT(ledger->stateMap().lowerBound(k(19).key)->key() == k(16).key);
+            BEAST_EXPECT(ledger->stateMap().lowerBound(k(20).key)->key() == k(16).key);
+            BEAST_EXPECT(ledger->stateMap().lowerBound(k(24).key)->key() == k(20).key);
+            BEAST_EXPECT(ledger->stateMap().lowerBound(k(31).key)->key() == k(30).key);
+            BEAST_EXPECT(ledger->stateMap().lowerBound(k(32).key)->key() == k(30).key);
+            BEAST_EXPECT(ledger->stateMap().lowerBound(k(40).key)->key() == k(39).key);
+            BEAST_EXPECT(ledger->stateMap().lowerBound(k(47).key)->key() == k(46).key);
+            BEAST_EXPECT(ledger->stateMap().lowerBound(k(48).key)->key() == k(47).key);
+            BEAST_EXPECT(ledger->stateMap().lowerBound(k(64).key)->key() == k(48).key);
 
-            BEAST_EXPECT(ledger->stateMap().lowerBound(uint256(90))->key() == uint256(66));
-            BEAST_EXPECT(ledger->stateMap().lowerBound(uint256(96))->key() == uint256(66));
-            BEAST_EXPECT(ledger->stateMap().lowerBound(uint256(100))->key() == uint256(66));
+            BEAST_EXPECT(ledger->stateMap().lowerBound(k(90).key)->key() == k(66).key);
+            BEAST_EXPECT(ledger->stateMap().lowerBound(k(96).key)->key() == k(66).key);
+            BEAST_EXPECT(ledger->stateMap().lowerBound(k(100).key)->key() == k(66).key);
 
-            BEAST_EXPECT(ledger->stateMap().upperBound(uint256(0))->key() == uint256(1));
-            BEAST_EXPECT(ledger->stateMap().upperBound(uint256(5))->key() == uint256(6));
-            BEAST_EXPECT(ledger->stateMap().upperBound(uint256(15))->key() == uint256(16));
-            BEAST_EXPECT(ledger->stateMap().upperBound(uint256(16))->key() == uint256(20));
-            BEAST_EXPECT(ledger->stateMap().upperBound(uint256(18))->key() == uint256(20));
-            BEAST_EXPECT(ledger->stateMap().upperBound(uint256(20))->key() == uint256(25));
-            BEAST_EXPECT(ledger->stateMap().upperBound(uint256(31))->key() == uint256(32));
-            BEAST_EXPECT(ledger->stateMap().upperBound(uint256(32))->key() == uint256(33));
-            BEAST_EXPECT(ledger->stateMap().upperBound(uint256(47))->key() == uint256(48));
-            BEAST_EXPECT(ledger->stateMap().upperBound(uint256(48))->key() == uint256(66));
-            BEAST_EXPECT(ledger->stateMap().upperBound(uint256(53))->key() == uint256(66));
-            BEAST_EXPECT(ledger->stateMap().upperBound(uint256(66))->key() == uint256(100));
-            BEAST_EXPECT(ledger->stateMap().upperBound(uint256(70))->key() == uint256(100));
-            BEAST_EXPECT(ledger->stateMap().upperBound(uint256(85))->key() == uint256(100));
-            BEAST_EXPECT(ledger->stateMap().upperBound(uint256(98))->key() == uint256(100));
-            BEAST_EXPECT(ledger->stateMap().upperBound(uint256(100)) == e);
-            BEAST_EXPECT(ledger->stateMap().upperBound(uint256(155)) == e);
+            BEAST_EXPECT(ledger->stateMap().upperBound(k(0).key)->key() == k(1).key);
+            BEAST_EXPECT(ledger->stateMap().upperBound(k(5).key)->key() == k(6).key);
+            BEAST_EXPECT(ledger->stateMap().upperBound(k(15).key)->key() == k(16).key);
+            BEAST_EXPECT(ledger->stateMap().upperBound(k(16).key)->key() == k(20).key);
+            BEAST_EXPECT(ledger->stateMap().upperBound(k(18).key)->key() == k(20).key);
+            BEAST_EXPECT(ledger->stateMap().upperBound(k(20).key)->key() == k(25).key);
+            BEAST_EXPECT(ledger->stateMap().upperBound(k(31).key)->key() == k(32).key);
+            BEAST_EXPECT(ledger->stateMap().upperBound(k(32).key)->key() == k(33).key);
+            BEAST_EXPECT(ledger->stateMap().upperBound(k(47).key)->key() == k(48).key);
+            BEAST_EXPECT(ledger->stateMap().upperBound(k(48).key)->key() == k(66).key);
+            BEAST_EXPECT(ledger->stateMap().upperBound(k(53).key)->key() == k(66).key);
+            BEAST_EXPECT(ledger->stateMap().upperBound(k(66).key)->key() == k(100).key);
+            BEAST_EXPECT(ledger->stateMap().upperBound(k(70).key)->key() == k(100).key);
+            BEAST_EXPECT(ledger->stateMap().upperBound(k(85).key)->key() == k(100).key);
+            BEAST_EXPECT(ledger->stateMap().upperBound(k(98).key)->key() == k(100).key);
+            BEAST_EXPECT(ledger->stateMap().upperBound(k(100).key) == e);
+            BEAST_EXPECT(ledger->stateMap().upperBound(k(155).key) == e);
         }
     }
 
@@ -651,15 +660,15 @@ class View_test : public beast::unit_test::Suite
             view.rawInsert(sle(5));
             BEAST_EXPECT(sles(view) == list(2, 3, 4, 5));
             auto b = view.sles.begin();
-            BEAST_EXPECT(view.sles.upperBound(uint256(1)) == b);
+            BEAST_EXPECT(view.sles.upperBound(k(1).key) == b);
             ++b;
-            BEAST_EXPECT(view.sles.upperBound(uint256(2)) == b);
+            BEAST_EXPECT(view.sles.upperBound(k(2).key) == b);
             ++b;
-            BEAST_EXPECT(view.sles.upperBound(uint256(3)) == b);
+            BEAST_EXPECT(view.sles.upperBound(k(3).key) == b);
             ++b;
-            BEAST_EXPECT(view.sles.upperBound(uint256(4)) == b);
+            BEAST_EXPECT(view.sles.upperBound(k(4).key) == b);
             ++b;
-            BEAST_EXPECT(view.sles.upperBound(uint256(5)) == b);
+            BEAST_EXPECT(view.sles.upperBound(k(5).key) == b);
         }
         {
             setup123();
@@ -670,14 +679,14 @@ class View_test : public beast::unit_test::Suite
             view.rawInsert(sle(5));
             BEAST_EXPECT(sles(view) == list(3, 4, 5));
             auto b = view.sles.begin();
-            BEAST_EXPECT(view.sles.upperBound(uint256(1)) == b);
-            BEAST_EXPECT(view.sles.upperBound(uint256(2)) == b);
+            BEAST_EXPECT(view.sles.upperBound(k(1).key) == b);
+            BEAST_EXPECT(view.sles.upperBound(k(2).key) == b);
             ++b;
-            BEAST_EXPECT(view.sles.upperBound(uint256(3)) == b);
+            BEAST_EXPECT(view.sles.upperBound(k(3).key) == b);
             ++b;
-            BEAST_EXPECT(view.sles.upperBound(uint256(4)) == b);
+            BEAST_EXPECT(view.sles.upperBound(k(4).key) == b);
             ++b;
-            BEAST_EXPECT(view.sles.upperBound(uint256(5)) == b);
+            BEAST_EXPECT(view.sles.upperBound(k(5).key) == b);
         }
         {
             setup123();
@@ -689,13 +698,13 @@ class View_test : public beast::unit_test::Suite
             view.rawInsert(sle(5));
             BEAST_EXPECT(sles(view) == list(4, 5));
             auto b = view.sles.begin();
-            BEAST_EXPECT(view.sles.upperBound(uint256(1)) == b);
-            BEAST_EXPECT(view.sles.upperBound(uint256(2)) == b);
-            BEAST_EXPECT(view.sles.upperBound(uint256(3)) == b);
+            BEAST_EXPECT(view.sles.upperBound(k(1).key) == b);
+            BEAST_EXPECT(view.sles.upperBound(k(2).key) == b);
+            BEAST_EXPECT(view.sles.upperBound(k(3).key) == b);
             ++b;
-            BEAST_EXPECT(view.sles.upperBound(uint256(4)) == b);
+            BEAST_EXPECT(view.sles.upperBound(k(4).key) == b);
             ++b;
-            BEAST_EXPECT(view.sles.upperBound(uint256(5)) == b);
+            BEAST_EXPECT(view.sles.upperBound(k(5).key) == b);
         }
         {
             setup123();
@@ -706,14 +715,14 @@ class View_test : public beast::unit_test::Suite
             BEAST_EXPECT(sles(view) == list(1, 2, 4, 5));
             auto b = view.sles.begin();
             ++b;
-            BEAST_EXPECT(view.sles.upperBound(uint256(1)) == b);
+            BEAST_EXPECT(view.sles.upperBound(k(1).key) == b);
             ++b;
-            BEAST_EXPECT(view.sles.upperBound(uint256(2)) == b);
-            BEAST_EXPECT(view.sles.upperBound(uint256(3)) == b);
+            BEAST_EXPECT(view.sles.upperBound(k(2).key) == b);
+            BEAST_EXPECT(view.sles.upperBound(k(3).key) == b);
             ++b;
-            BEAST_EXPECT(view.sles.upperBound(uint256(4)) == b);
+            BEAST_EXPECT(view.sles.upperBound(k(4).key) == b);
             ++b;
-            BEAST_EXPECT(view.sles.upperBound(uint256(5)) == b);
+            BEAST_EXPECT(view.sles.upperBound(k(5).key) == b);
         }
         {
             setup123();
@@ -729,12 +738,12 @@ class View_test : public beast::unit_test::Suite
             BEAST_EXPECT(sles(view) == list(1, 2));
             auto b = view.sles.begin();
             ++b;
-            BEAST_EXPECT(view.sles.upperBound(uint256(1)) == b);
+            BEAST_EXPECT(view.sles.upperBound(k(1).key) == b);
             ++b;
-            BEAST_EXPECT(view.sles.upperBound(uint256(2)) == b);
-            BEAST_EXPECT(view.sles.upperBound(uint256(3)) == b);
-            BEAST_EXPECT(view.sles.upperBound(uint256(4)) == b);
-            BEAST_EXPECT(view.sles.upperBound(uint256(5)) == b);
+            BEAST_EXPECT(view.sles.upperBound(k(2).key) == b);
+            BEAST_EXPECT(view.sles.upperBound(k(3).key) == b);
+            BEAST_EXPECT(view.sles.upperBound(k(4).key) == b);
+            BEAST_EXPECT(view.sles.upperBound(k(5).key) == b);
 
             view.rawInsert(sle(5));
             view.rawInsert(sle(4));
@@ -742,15 +751,15 @@ class View_test : public beast::unit_test::Suite
             BEAST_EXPECT(sles(view) == list(1, 2, 3, 4, 5));
             b = view.sles.begin();
             ++b;
-            BEAST_EXPECT(view.sles.upperBound(uint256(1)) == b);
+            BEAST_EXPECT(view.sles.upperBound(k(1).key) == b);
             ++b;
-            BEAST_EXPECT(view.sles.upperBound(uint256(2)) == b);
+            BEAST_EXPECT(view.sles.upperBound(k(2).key) == b);
             ++b;
-            BEAST_EXPECT(view.sles.upperBound(uint256(3)) == b);
+            BEAST_EXPECT(view.sles.upperBound(k(3).key) == b);
             ++b;
-            BEAST_EXPECT(view.sles.upperBound(uint256(4)) == b);
+            BEAST_EXPECT(view.sles.upperBound(k(4).key) == b);
             ++b;
-            BEAST_EXPECT(view.sles.upperBound(uint256(5)) == b);
+            BEAST_EXPECT(view.sles.upperBound(k(5).key) == b);
         }
     }
 

@@ -8,6 +8,7 @@
 #include <array>
 #include <cstddef>
 #include <cstdint>
+#include <span>
 #include <type_traits>
 
 namespace xrpl {
@@ -182,7 +183,7 @@ public:
     operator result_type() noexcept
     {
         auto const digest = sha512_hasher::result_type(h_);
-        return result_type::fromVoid(digest.data());
+        return result_type{std::span{digest}.first<result_type::size()>()};
     }
 
 private:

@@ -61,14 +61,22 @@ parseBase58(std::string const& s);
 /**
  * A special account that's used as the "issuer" for XRP.
  */
-AccountID const&
-xrpAccount();
+constexpr inline AccountID const&
+xrpAccount() noexcept
+{
+    static constexpr AccountID kAccount(beast::kZero);
+    return kAccount;
+}
 
 /**
  * A placeholder for empty accounts.
  */
-AccountID const&
-noAccount();
+constexpr inline AccountID const&
+noAccount() noexcept
+{
+    static constexpr AccountID kAccount = xrpAccount().next();
+    return kAccount;
+}
 
 /**
  * Convert hex or base58 string to AccountID.
@@ -80,10 +88,10 @@ bool
 toIssuer(AccountID&, std::string const&);
 
 // DEPRECATED Should be checking the currency or native flag
-inline bool
-isXRP(AccountID const& c)
+constexpr inline bool
+isXRP(AccountID const& c) noexcept
 {
-    return c == beast::kZero;
+    return c == xrpAccount();
 }
 
 // DEPRECATED

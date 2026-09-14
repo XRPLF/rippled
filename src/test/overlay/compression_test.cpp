@@ -240,7 +240,7 @@ public:
         ledgerData->set_requestcookie(123456789);
         ledgerData->set_error(protocol::TMReplyError::reNO_LEDGER);
         ledgerData->mutable_nodes()->Reserve(n);
-        uint256 parentHash(0);
+        uint256 parentHash{};
 
         NetClock::duration const resolution{10};
         NetClock::time_point ct{resolution};

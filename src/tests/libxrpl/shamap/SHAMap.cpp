@@ -23,6 +23,7 @@
 #include <array>
 #include <cstddef>
 #include <cstdint>
+#include <initializer_list>
 #include <memory>
 #include <string>
 #include <string_view>
@@ -90,6 +91,39 @@ inline bool
 operator!=(SHAMapItem const& a, SHAMapItem const& b)
 {
     return a.key() != b.key();
+}
+
+// Key construction helpers. Keys in these tests are described by their nibbles (nibble 0 is the
+// most significant), so build them by filling every byte and then overwriting the nibbles that
+// matter, rather than by assembling and parsing a hex string.
+
+/** A key whose every byte is `b`. */
+static uint256
+filledKey(unsigned char b)
+{
+    uint256 k;
+    std::fill_n(k.begin(), k.size(), b);
+    return k;
+}
+
+/** `k` with nibble `i` (0 = most significant) set to `v`; every other nibble unchanged. */
+static uint256
+withNibble(uint256 k, unsigned int i, unsigned int v)
+{
+    auto& byte = k.begin()[i / 2];
+    byte = (i % 2 == 0) ? static_cast<unsigned char>((byte & 0x0f) | (v << 4))
+                        : static_cast<unsigned char>((byte & 0xf0) | v);
+    return k;
+}
+
+/** `k` with its leading nibbles replaced by `nibbles`, in order. */
+static uint256
+withPrefix(uint256 k, std::initializer_list<unsigned int> nibbles)
+{
+    unsigned int i = 0;
+    for (auto const v : nibbles)
+        k = withNibble(k, i++, v);
+    return k;
 }
 
 struct SHAMapBackingMode
@@ -285,14 +319,13 @@ protected:
     static std::vector<uint256>
     deepFanOutKeys()
     {
+        // Nibbles 0-4 are "abcde", the 6th nibble varies by branch, and every nibble after it
+        // is '7'.
+        auto const base = withPrefix(filledKey(0x77), {0xa, 0xb, 0xc, 0xd, 0xe});
+
         std::vector<uint256> keys;
         for (unsigned int branch = 0; branch < SHAMap::kBranchFactor; ++branch)
-        {
-            // Vary the 6th nibble, keeping the first five identical.
-            auto text = std::string("abcde") + "0123456789abcdef"[branch];
-            text.append(64 - text.size(), '7');
-            keys.emplace_back(std::string_view{text});
-        }
+            keys.push_back(withNibble(base, 5, branch));
         return keys;
     }
 
@@ -303,12 +336,11 @@ protected:
     static std::vector<uint256>
     deepFanOutKeysAtLeafDepth()
     {
+        auto const base = filledKey(0xaa);
+
         std::vector<uint256> keys;
         for (unsigned int branch = 0; branch < SHAMap::kBranchFactor; ++branch)
-        {
-            auto text = std::string(63, 'a') + "0123456789abcdef"[branch];
-            keys.emplace_back(std::string_view{text});
-        }
+            keys.push_back(withNibble(base, SHAMap::kLeafDepth - 1u, branch));
         return keys;
     }
 
@@ -391,8 +423,7 @@ TEST_F(SHAMapTraversal, bounds_agree_with_iteration_for_absent_keys)
     // Probe keys that are not in the map, so the traversal starts mid-tree rather than at a leaf.
     for (unsigned char const c : {0x00, 0x40, 0x80, 0xc0, 0xff})
     {
-        uint256 probe;
-        std::fill_n(probe.begin(), probe.size(), c);
+        uint256 const probe = filledKey(c);
 
         auto const expectedUpper = std::ranges::upper_bound(keys, probe);
         auto const upper = map.upperBound(probe);
@@ -421,13 +452,12 @@ TEST_F(SHAMapTraversal, bounds_agree_with_iteration_for_absent_keys)
 
     // Probe keys that land on a leaf and require the leaf-pop-and-resume case. Keys share
     // "abcde" as a prefix and vary the 6th nibble, so a probe that shares the full prefix
-    // but differs in the padding hits a leaf from either side: '0' padded with '0' lands below
-    // the first key, and 'f' padded with 'f' lands above the last.
-    for (char const nibble : {'0', 'f'})
+    // but differs in the padding hits a leaf from either side: nibble 0 padded with 0 lands
+    // below the first key, and nibble f padded with f lands above the last.
+    for (unsigned int const nibble : {0x0u, 0xfu})
     {
-        auto text = std::string("abcde") + nibble;
-        text.append(64 - text.size(), nibble);
-        uint256 const probe{std::string_view{text}};
+        auto const fill = static_cast<unsigned char>(nibble * 0x11);
+        uint256 const probe = withPrefix(filledKey(fill), {0xa, 0xb, 0xc, 0xd, 0xe, nibble});
 
         auto const expectedUpper = std::ranges::upper_bound(keys, probe);
         auto const upper = map.upperBound(probe);
@@ -467,8 +497,7 @@ TEST_F(SHAMapTraversal, bounds_on_empty_map_return_end)
     EXPECT_EQ(map.upperBound(uint256{}), map.end());
     EXPECT_EQ(map.lowerBound(uint256{}), map.end());
 
-    uint256 probe;
-    std::fill_n(probe.begin(), probe.size(), std::uint8_t{0xff});
+    uint256 const probe = filledKey(0xff);
     EXPECT_EQ(map.upperBound(probe), map.end());
     EXPECT_EQ(map.lowerBound(probe), map.end());
 }
@@ -543,7 +572,7 @@ TEST_F(SHAMapTraversal, iteration_survives_a_collapsed_inner_node)
 
     // One key in a separate subtree, diverging from the fan-out group at the very first nibble, so
     // it survives untouched while the fan-out group below is collapsed.
-    auto const sentinel = uint256{std::string_view{std::string(64, '0')}};
+    auto const sentinel = uint256{};
 
     auto fanOutKeys = deepFanOutKeysAtLeafDepth();
     fillMap(map, fanOutKeys);
@@ -653,13 +682,16 @@ TEST_F(SHAMapTraversal, bounds_agree_with_iteration_for_absent_keys_at_leaf_dept
     // branch, right up to the one just above kLeafDepth.
     for (unsigned int const divergeAt : {0u, 31u, 61u, 62u})
     {
-        // '9' sorts below the shared 'a' prefix and 'b' above it, so the probe lands under or
-        // over the whole key block -- driving belowHelper's First and Last descents respectively.
-        for (char const nibble : {'9', 'b'})
+        // The shared 'a' prefix up to (not including) divergeAt, zeros after it.
+        uint256 prefix = filledKey(0x00);
+        for (unsigned int i = 0; i < divergeAt; ++i)
+            prefix = withNibble(prefix, i, 0xa);
+
+        // 9 sorts below the shared 'a' prefix and b above it, so the probe lands under or over
+        // the whole key block -- driving belowHelper's First and Last descents respectively.
+        for (unsigned int const nibble : {0x9u, 0xbu})
         {
-            auto text = std::string(divergeAt, 'a') + nibble;
-            text.append(64 - text.size(), '0');
-            uint256 const probe{std::string_view{text}};
+            uint256 const probe = withNibble(prefix, divergeAt, nibble);
 
             auto const expectedUpper = std::ranges::upper_bound(keys, probe);
             auto const upper = map.upperBound(probe);
@@ -740,13 +772,12 @@ TEST_F(SHAMapPathProof, verify_proof_path)
     uint256 rootHash;
     std::vector<Blob> goodPath;
 
-    static constexpr unsigned char kFirstKey = 1;
     static constexpr unsigned char kKeyCount = 100;
-    static constexpr unsigned char kLastKey = kKeyCount - 1;
+    static constexpr auto kFirstKey = uint256{1};
+    static constexpr auto kLastKey = uint256{kKeyCount - 1};
 
-    for (unsigned char c = kFirstKey; c < kKeyCount; ++c)
+    for (auto k = kFirstKey; k <= kLastKey; ++k)
     {
-        uint256 k(c);
         map.addItem(SHAMapNodeType::TnAccountState, makeShamapitem(k, Slice{k.data(), k.size()}));
         map.invariants();
 
@@ -760,16 +791,15 @@ TEST_F(SHAMapPathProof, verify_proof_path)
         auto& proofPath = *path;
 
         EXPECT_TRUE(map.verifyProofPath(root, k, proofPath));
-        if (c == kFirstKey)
+        if (k == kFirstKey)
         {
             // extra node
             proofPath.insert(proofPath.begin(), proofPath.front());
             EXPECT_FALSE(map.verifyProofPath(root, k, proofPath));
             // wrong key
-            uint256 const wrongKey(c + 1);
-            EXPECT_FALSE(map.getProofPath(wrongKey));
+            EXPECT_FALSE(map.getProofPath(k.next()));
         }
-        if (c == kLastKey)
+        if (k == kLastKey)
         {
             key = k;
             rootHash = root;
@@ -811,8 +841,9 @@ TEST_F(SHAMapPathProof, legitimate_deep_path_is_sixty_five_elements)
     SHAMap map{SHAMapType::FREE, f};
     map.setUnbacked();
 
-    auto const kA = uint256{std::string_view{std::string(63, 'a') + "1"}};
-    auto const kB = uint256{std::string_view{std::string(63, 'a') + "2"}};
+    // 63 nibbles of 'a', then 1 and 2 respectively.
+    auto const kA = withNibble(filledKey(0xaa), SHAMap::kLeafDepth - 1u, 1);
+    auto const kB = withNibble(filledKey(0xaa), SHAMap::kLeafDepth - 1u, 2);
 
     for (auto const& k : {kA, kB})
     {

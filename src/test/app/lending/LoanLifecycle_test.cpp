@@ -236,6 +236,7 @@ private:
                 BEAST_EXPECT(types[type] == 1);
             }
         }
+
         auto const loanID = [&]() {
             json::Value params(json::ValueType::Object);
             params[jss::account] = lender.human();
@@ -274,12 +275,13 @@ private:
 
             return loan["index"].asString();
         }();
-        auto const loanKeylet{keylet::loan(uint256{std::string_view(loanID)})};
 
-        env.close(startDate);
+        if (uint256 id; BEAST_EXPECT(id.parseHex(loanID))) {
+            env.close(startDate);
 
-        // Make a payment
-        env(pay(lender, loanKeylet.key, broker.asset(1000)));
+            // Make a payment
+            env(pay(lender, keylet::loan(id).key, broker.asset(1000)));
+        }
     }
 
     void

@@ -257,7 +257,7 @@ Oracle::set(UpdateArg const& arg)
         if (std::holds_alternative<std::uint32_t>(*arg.lastUpdateTime))
         {
             jv[jss::LastUpdateTime] =
-                to_string(kTestStartTime.count() + std::get<std::uint32_t>(*arg.lastUpdateTime));
+                std::to_string(kTestStartTime.count() + std::get<std::uint32_t>(*arg.lastUpdateTime));
         }
         else
         {
@@ -266,7 +266,7 @@ Oracle::set(UpdateArg const& arg)
     }
     else
     {
-        jv[jss::LastUpdateTime] = to_string(
+        jv[jss::LastUpdateTime] = std::to_string(
             duration_cast<seconds>(env_.current()->header().closeTime.time_since_epoch()).count() +
             kEpochOffset.count());
     }

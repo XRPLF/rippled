@@ -151,13 +151,14 @@ public:
         }
 
         {
-            std::vector<uint256> uints;
-            uints.reserve(5);
-            for (int i = 0; i < uints.capacity(); ++i)
-            {
-                uints.emplace_back(i);
-            }
-            object1.setFieldV256(sfTestV256, STVector256(uints));
+            object1.setFieldV256(sfTestV256, STVector256([]() {
+                                     std::vector<uint256> uints(5);
+
+                                     for (std::size_t i = 1; i != uints.size(); ++i)
+                                         uints[i] = uints[i - 1].next();
+
+                                     return uints;
+                                 }()));
 
             Serializer s;
             object1.add(s);
@@ -421,15 +422,15 @@ public:
             auto const& sf = sfIndexes;
             STObject st(sfGeneric);
             std::vector<uint256> v;
-            v.emplace_back(1);
-            v.emplace_back(2);
+            v.emplace_back(uint256{1});
+            v.emplace_back(uint256{2});
             st[sf] = v;
             st[sf] = std::move(v);
             auto const& cst = st;
             BEAST_EXPECT(cst[sf].size() == 2);
             BEAST_EXPECT(cst[~sf]->size() == 2);  // NOLINT(bugprone-unchecked-optional-access)
-            BEAST_EXPECT(cst[sf][0] == 1);
-            BEAST_EXPECT(cst[sf][1] == 2);
+            BEAST_EXPECT(cst[sf][0] == uint256{1});
+            BEAST_EXPECT(cst[sf][1] == uint256{2});
             static_assert(std::is_same_v<decltype(cst[sfIndexes]), std::vector<uint256> const&>);
         }
 
@@ -451,7 +452,7 @@ public:
             BEAST_EXPECT(!cst[~sf2]);
             BEAST_EXPECT(cst[sf3].empty());
             std::vector<uint256> v;
-            v.emplace_back(1);
+            v.emplace_back(uint256{1});
             st[sf1] = v;
             BEAST_EXPECT(cst[sf1].size() == 1);
             BEAST_EXPECT(cst[sf1][0] == uint256{1});

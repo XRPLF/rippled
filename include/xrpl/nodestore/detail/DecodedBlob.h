@@ -1,8 +1,10 @@
 #pragma once
 
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/nodestore/NodeObject.h>
 
 #include <memory>
+#include <optional>
 
 namespace xrpl::node_store {
 
@@ -23,7 +25,7 @@ public:
     /**
      * Construct the decoded blob from raw data.
      */
-    DecodedBlob(void const* key, void const* value, int valueBytes);
+    DecodedBlob(std::optional<uint256> key, void const* value, int valueBytes);
 
     /**
      * Determine if the decoding was successful.
@@ -43,10 +45,10 @@ public:
 private:
     bool success_{false};
 
-    void const* key_;
+    uint256 key_;
     NodeObjectType objectType_{NodeObjectType::Unknown};
     unsigned char const* objectData_{nullptr};
-    int dataBytes_;
+    int dataBytes_ = 0;
 };
 
 }  // namespace xrpl::node_store

@@ -2300,7 +2300,7 @@ protected:
             verifyLoanStatus(state);
 
             // Send some bogus pay transactions
-            env(pay(borrower, keylet::loan(uint256(0)).key, broker.asset(10), txFlags),
+            env(pay(borrower, keylet::loan(uint256{0}).key, broker.asset(10), txFlags),
                 Ter(temINVALID));
             // broker.asset(80) is less than a single payment, but all these
             // checks fail before that matters

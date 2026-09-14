@@ -9,12 +9,15 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
+#include <algorithm>
 #include <array>
 #include <cassert>
 #include <complex>
 #include <cstddef>
 #include <cstdint>
 #include <iterator>
+#include <ranges>
+#include <span>
 #include <stdexcept>
 #include <string>
 #include <string_view>
@@ -54,75 +57,67 @@ struct Nonhash
 struct BaseUintTest : public ::testing::Test
 {
     using BaseUInt96 = BaseUInt<96>;
-    static_assert(std::is_copy_constructible_v<BaseUInt96>);
-    static_assert(std::is_copy_assignable_v<BaseUInt96>);
 
+private:
+    using HexPair = std::pair<std::string_view, std::string_view>;
+
+    template <std::size_t Bits>
+    static void
+    testComparisons(std::span<HexPair const> cases)
+    {
+        auto checkedLoad = [](xrpl::BaseUInt<Bits>& value, std::string_view str) {
+            auto const success = value.parseHex(str);
+            EXPECT_TRUE(success) << str;
+            return success;
+        };
+
+        for (auto const& [smallerText, largerText] : cases)
+        {
+            xrpl::BaseUInt<Bits> smaller, larger;
+
+            if (!checkedLoad(smaller, smallerText) || !checkedLoad(larger, largerText))
+                continue;
+
+            // For code readability, we want to use general boolean
+            // expectations instead of specific EXPECT_LT etc.
+            EXPECT_TRUE(smaller < larger);
+            EXPECT_TRUE(smaller <= larger);
+            EXPECT_TRUE(smaller != larger);
+            EXPECT_FALSE(smaller == larger);
+            EXPECT_FALSE(smaller > larger);
+            EXPECT_FALSE(smaller >= larger);
+            EXPECT_FALSE(larger < smaller);
+            EXPECT_FALSE(larger <= smaller);
+            EXPECT_TRUE(larger != smaller);
+            EXPECT_FALSE(larger == smaller);
+            EXPECT_TRUE(larger > smaller);
+            EXPECT_TRUE(larger >= smaller);
+            EXPECT_TRUE(smaller == smaller);
+            EXPECT_TRUE(larger == larger);
+        }
+    }
+
+public:
     static void
     testComparisons()
     {
-        using HexPair = std::pair<std::string_view, std::string_view>;
+        testComparisons<64>(std::to_array<HexPair>({
+            {"0000000000000000", "0000000000000001"},
+            {"0000000000000000", "ffffffffffffffff"},
+            {"1234567812345678", "2345678923456789"},
+            {"8000000000000000", "8000000000000001"},
+            {"aaaaaaaaaaaaaaa9", "aaaaaaaaaaaaaaaa"},
+            {"fffffffffffffffe", "ffffffffffffffff"},
+        }));
 
-        {
-            static constexpr auto kTestArgs = std::to_array<HexPair>({
-                {"0000000000000000", "0000000000000001"},
-                {"0000000000000000", "ffffffffffffffff"},
-                {"1234567812345678", "2345678923456789"},
-                {"8000000000000000", "8000000000000001"},
-                {"aaaaaaaaaaaaaaa9", "aaaaaaaaaaaaaaaa"},
-                {"fffffffffffffffe", "ffffffffffffffff"},
-            });
-
-            for (auto const& [smallerText, largerText] : kTestArgs)
-            {
-                xrpl::BaseUInt<64> const smaller{smallerText}, larger{largerText};
-                // For code readability, we want to use general boolean
-                // expectations instead of specific EXPECT_LT etc.
-                EXPECT_TRUE(smaller < larger);
-                EXPECT_TRUE(smaller <= larger);
-                EXPECT_TRUE(smaller != larger);
-                EXPECT_FALSE(smaller == larger);
-                EXPECT_FALSE(smaller > larger);
-                EXPECT_FALSE(smaller >= larger);
-                EXPECT_FALSE(larger < smaller);
-                EXPECT_FALSE(larger <= smaller);
-                EXPECT_TRUE(larger != smaller);
-                EXPECT_FALSE(larger == smaller);
-                EXPECT_TRUE(larger > smaller);
-                EXPECT_TRUE(larger >= smaller);
-                EXPECT_TRUE(smaller == smaller);
-                EXPECT_TRUE(larger == larger);
-            }
-        }
-
-        {
-            static constexpr auto kTestArgs = std::to_array<HexPair>({
-                {"000000000000000000000000", "000000000000000000000001"},
-                {"000000000000000000000000", "ffffffffffffffffffffffff"},
-                {"0123456789ab0123456789ab", "123456789abc123456789abc"},
-                {"555555555555555555555555", "55555555555a555555555555"},
-                {"aaaaaaaaaaaaaaa9aaaaaaaa", "aaaaaaaaaaaaaaaaaaaaaaaa"},
-                {"fffffffffffffffffffffffe", "ffffffffffffffffffffffff"},
-            });
-
-            for (auto const& [smallerText, largerText] : kTestArgs)
-            {
-                xrpl::BaseUInt<96> const smaller{smallerText}, larger{largerText};
-                EXPECT_TRUE(smaller < larger);
-                EXPECT_TRUE(smaller <= larger);
-                EXPECT_TRUE(smaller != larger);
-                EXPECT_FALSE(smaller == larger);
-                EXPECT_FALSE(smaller > larger);
-                EXPECT_FALSE(smaller >= larger);
-                EXPECT_FALSE(larger < smaller);
-                EXPECT_FALSE(larger <= smaller);
-                EXPECT_TRUE(larger != smaller);
-                EXPECT_FALSE(larger == smaller);
-                EXPECT_TRUE(larger > smaller);
-                EXPECT_TRUE(larger >= smaller);
-                EXPECT_TRUE(smaller == smaller);
-                EXPECT_TRUE(larger == larger);
-            }
-        }
+        testComparisons<96>(std::to_array<HexPair>({
+            {"000000000000000000000000", "000000000000000000000001"},
+            {"000000000000000000000000", "ffffffffffffffffffffffff"},
+            {"0123456789ab0123456789ab", "123456789abc123456789abc"},
+            {"555555555555555555555555", "55555555555a555555555555"},
+            {"aaaaaaaaaaaaaaa9aaaaaaaa", "aaaaaaaaaaaaaaaaaaaaaaaa"},
+            {"fffffffffffffffffffffffe", "ffffffffffffffffffffffff"},
+        }));
     }
 };
 
@@ -130,67 +125,24 @@ using BaseUintDeathTest = BaseUintTest;
 
 TEST_F(BaseUintDeathTest, from_raw_size_mismatch)
 {
-    // ENABLE_VOIDSTAR is a debug build, but does not crash on failed asserts. Rather than twist
-    // these tests into knots to make them work, just skip them.
-#ifdef ENABLE_VOIDSTAR
-    GTEST_SKIP() << "ENABLE_VOIDSTAR is a debug build, but does not crash on failed asserts.";
-#else
-    auto smallConstruct = [] {
-        // Container smaller than the base_uint (8 bytes vs 12 bytes for
-        // test96). Only the first 8 bytes are copied; the remaining 4 bytes
-        // stay zero.
-        Blob const tooSmall{1, 2, 3, 4, 5, 6, 7, 8};
-        BaseUInt96 const result = BaseUInt96::fromRaw(tooSmall);
-        auto const resultText = to_string(result);
-        EXPECT_EQ(resultText, "010203040506070800000000") << resultText;
-    };
-    EXPECT_DEBUG_DEATH(smallConstruct(), "input size match");
+    // High-bit bytes throughout so that a sign-extension mistake on a
+    // char-typed source would be visible.
+    static constexpr std::array<std::uint8_t, 12> kBytes = {
+        0x80, 0x81, 0x82, 0x83, 0x84, 0x85, 0x86, 0x87, 0x88, 0x89, 0x8A, 0x8B};
 
-    auto largeConstruct = [] {
-        // Container larger than the base_uint (16 bytes vs 12 bytes for
-        // test96). Only the first 12 bytes are copied; the extra bytes are
-        // ignored.
-        Blob const tooBig{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16};
-        BaseUInt96 const result = BaseUInt96::fromRaw(tooBig);
-        auto const resultText = to_string(result);
-        EXPECT_EQ(resultText, "0102030405060708090A0B0C") << resultText;
-    };
-    EXPECT_DEBUG_DEATH(largeConstruct(), "input size match");
+    for (std::size_t i = 0; i <= kBytes.size(); ++i)
+    {
+        auto const input = std::span{kBytes}.first(i);
+        auto const val = BaseUInt96::fromRaw(input);
 
-    auto smallCopy = [] {
-        // Container smaller than the base_uint (8 bytes vs 12 bytes for
-        // test96). Only the first 8 bytes are copied; the remaining 4 bytes
-        // stay zero.
-        Blob const tooSmall{1, 2, 3, 4, 5, 6, 7, 8};
-        BaseUInt96 result{};
-        --result;
+        EXPECT_EQ(val.has_value(), i == BaseUInt96::size()) << i;
+
+        if (val)
         {
-            auto const originalText = to_string(result);
-            EXPECT_EQ(originalText, "FFFFFFFFFFFFFFFFFFFFFFFF") << originalText;
+            EXPECT_TRUE(std::ranges::equal(*val, input));
+            EXPECT_EQ(BaseUInt96::fromRaw(std::string{input.begin(), input.end()}), val);
         }
-        result = tooSmall;
-        auto const resultText = to_string(result);
-        EXPECT_EQ(resultText, "010203040506070800000000") << resultText;
-    };
-    EXPECT_DEBUG_DEATH(smallCopy(), "input size match");
-
-    auto const largeCopy = [] {
-        // Container larger than the base_uint (16 bytes vs 12 bytes for
-        // test96). Only the first 12 bytes are copied; the extra bytes are
-        // ignored.
-        Blob const tooBig{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16};
-        BaseUInt96 result{};
-        --result;
-        {
-            auto const originalText = to_string(result);
-            EXPECT_EQ(originalText, "FFFFFFFFFFFFFFFFFFFFFFFF") << originalText;
-        }
-        result = tooBig;
-        auto const resultText = to_string(result);
-        EXPECT_EQ(resultText, "0102030405060708090A0B0C") << resultText;
-    };
-    EXPECT_DEBUG_DEATH(largeCopy(), "input size match");
-#endif
+    }
 }
 
 TEST_F(BaseUintTest, base_uint)
@@ -203,12 +155,10 @@ TEST_F(BaseUintTest, base_uint)
     // used to verify set insertion (hashing required)
     std::unordered_set<BaseUInt96, HardenedHash<>> uset;
 
-    Blob const raw{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12};
-    EXPECT_EQ(BaseUInt96::kBytes, raw.size());
+    BaseUInt96 const ascending{
+        std::to_array<std::uint8_t>({1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12})};
 
-    BaseUInt96 ascending = BaseUInt96::fromRaw(raw);
     uset.insert(ascending);
-    EXPECT_EQ(raw.size(), ascending.size());
     EXPECT_EQ(to_string(ascending), "0102030405060708090A0B0C");
     EXPECT_EQ(toShortString(ascending), "01020304...");
     EXPECT_EQ(*ascending.data(), 1);
@@ -225,9 +175,9 @@ TEST_F(BaseUintTest, base_uint)
     // back into another base_uint (rehashed) for comparison with the original
     Nonhash<96> hasher{};
     hash_append(hasher, ascending);
-    BaseUInt96 const rehashed =
-        BaseUInt96::fromRaw(std::vector<std::uint8_t>(hasher.data.begin(), hasher.data.end()));
-    EXPECT_EQ(rehashed, ascending);
+
+    // Exercises the fixed-extent constructor from a std::array.
+    EXPECT_EQ(BaseUInt96{hasher.data}, ascending);
 
     BaseUInt96 complement{~ascending};
     uset.insert(complement);
@@ -271,14 +221,11 @@ TEST_F(BaseUintTest, base_uint)
 
         BaseUInt96 const bracedZero{};
         EXPECT_EQ(bracedZero, zero) << to_string(bracedZero);
-
-        BaseUInt96 const zeroFromUInt{0u};
-        EXPECT_EQ(zeroFromUInt, zero) << to_string(zeroFromUInt);
     }
 
     BaseUInt96 counter{zero};
     counter++;
-    EXPECT_EQ(counter, BaseUInt96(1));
+    EXPECT_EQ(counter, zero.next());
     counter--;
     EXPECT_EQ(counter, beast::kZero);
     EXPECT_EQ(counter, zero);
@@ -341,65 +288,57 @@ TEST_F(BaseUintTest, base_uint)
         EXPECT_EQ(to_string(parsed), s1);
     }
 
-    // Constexpr constructors
+    // Compile-time construction
+    static_assert(BaseUInt96{}.signum() == 0);
+    static_assert(BaseUInt96{"0"}.signum() == 0);
+    static_assert(BaseUInt96{"000000000000000000000000"}.signum() == 0);
+    static_assert(BaseUInt96{"000000000000000000000001"}.signum() == 1);
+    static_assert(BaseUInt96{"800000000000000000000000"}.signum() == 1);
+
+    // The string_view constructor is consteval, so malformed input is a
+    // compile-time error rather than an exception. The runtime parser
+    // rejects the same inputs and leaves the object untouched.
     {
-        static_assert(BaseUInt96{}.signum() == 0);
-        static_assert(BaseUInt96("0").signum() == 0);
-        static_assert(BaseUInt96("000000000000000000000000").signum() == 0);
-        static_assert(BaseUInt96("000000000000000000000001").signum() == 1);
-        static_assert(BaseUInt96("800000000000000000000000").signum() == 1);
+        std::string const tooShort(23, '7');
+        BaseUInt96 t96;
+        EXPECT_FALSE(t96.parseHex(tooShort));
+        EXPECT_EQ(t96, BaseUInt96{});
+    }
+    {
+        std::string badCharacter(23, '7');
+        badCharacter.push_back('G');
+        BaseUInt96 t96;
+        EXPECT_FALSE(t96.parseHex(badCharacter));
+        EXPECT_EQ(t96, BaseUInt96{});
+    }
 
-        // Using the constexpr constructor in a non-constexpr context
-        // with an error in the parsing throws an exception.
-        {
-            // Invalid length for string. The vector keeps this out of a constant
-            // expression, so the constructor throws instead of failing to compile.
-            auto tooShort = [] {
-                std::vector<char> const str(23, '7');
-                std::string_view const sView(str.data(), str.size());
-                [[maybe_unused]] BaseUInt96 const t96(sView);
-            };
-            EXPECT_THAT(
-                tooShort,
-                ::testing::ThrowsMessage<std::invalid_argument>("invalid length for hex string"));
-        }
-        {
-            // Invalid character in string.
-            auto badCharacter = [] {
-                std::vector<char> str(23, '7');
-                str.push_back('G');
-                std::string_view const sView(str.data(), str.size());
-                [[maybe_unused]] BaseUInt96 const t96(sView);
-            };
-            EXPECT_THAT(
-                badCharacter, ::testing::ThrowsMessage<std::range_error>("invalid hex character"));
-        }
-
-        // Verify that constexpr base_uints interpret a string the same
+    {
+        // Verify that consteval construction interprets a string the same
         // way parseHex() does.
         struct StrBaseUInt
         {
-            char const* const str;
-            BaseUInt96 tst;
+            std::string_view str;
+            BaseUInt96 value;
 
-            constexpr StrBaseUInt(char const* s) : str(s), tst(s)
+            consteval StrBaseUInt(char const* s) : str(s), value(str)
             {
             }
         };
-        constexpr auto kTestCases = std::to_array<StrBaseUInt>({
+
+        constexpr StrBaseUInt kTestCases[] = {
             "000000000000000000000000",
             "000000000000000000000001",
             "fedcba9876543210ABCDEF91",
             "19FEDCBA0123456789abcdef",
             "800000000000000000000000",
             "fFfFfFfFfFfFfFfFfFfFfFfF",
-        });
+        };
 
-        for (StrBaseUInt const& expectedByte : kTestCases)
+        for (StrBaseUInt const& testCase : kTestCases)
         {
             BaseUInt96 t96;
-            EXPECT_TRUE(t96.parseHex(expectedByte.str));
-            EXPECT_EQ(t96, expectedByte.tst);
+            EXPECT_TRUE(t96.parseHex(testCase.str)) << testCase.str;
+            EXPECT_EQ(t96, testCase.value);
         }
     }
 }

@@ -431,16 +431,16 @@ class ConfidentialTransferExtended_test : public ConfidentialTransferTestBase
                  {.account = carol, .payAmount = 100, .convertAmount = 50}}};
             auto& mpt = confEnv.mpt;
 
-            std::vector<std::string> tooManyCredentials;
-            tooManyCredentials.reserve(9);
-            for (int i = 0; i < 9; ++i)
-                tooManyCredentials.push_back(to_string(uint256(i)));
-
             mpt.send({
                 .account = carol,
                 .dest = bob,
                 .amt = 10,
-                .credentials = tooManyCredentials,
+                .credentials = [] {
+                    std::vector<std::string> v;
+                    for (int i = 0; i < 9; ++i)
+                        v.push_back(std::string(63, '0') + static_cast<char>('0' + i));
+                    return v;
+                }(),
                 .err = temMALFORMED,
             });
         }
@@ -484,7 +484,7 @@ class ConfidentialTransferExtended_test : public ConfidentialTransferTestBase
                  {.account = carol, .payAmount = 100, .convertAmount = 50}}};
             auto& mpt = confEnv.mpt;
 
-            std::string const fakeCredIdx = to_string(uint256(999));
+            std::string const fakeCredIdx = to_string(uint256{999});
             mpt.send({
                 .account = carol,
                 .dest = bob,

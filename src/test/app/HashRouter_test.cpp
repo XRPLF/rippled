@@ -6,6 +6,7 @@
 #include <xrpl/config/Constants.h>
 #include <xrpl/core/HashRouter.h>
 
+
 #include <chrono>
 #include <cstdint>
 #include <exception>
@@ -38,9 +39,9 @@ class HashRouter_test : public beast::unit_test::Suite
         HashRouterFlags const key2(HashRouterFlags::PRIVATE2);
         HashRouterFlags const key3(HashRouterFlags::PRIVATE3);
 
-        auto const ukey1 = uint256{static_cast<std::uint64_t>(key1)};
-        auto const ukey2 = uint256{static_cast<std::uint64_t>(key2)};
-        auto const ukey3 = uint256{static_cast<std::uint64_t>(key3)};
+        uint256 const ukey1{std::to_underlying(key1)};
+        uint256 const ukey2{std::to_underlying(key2)};
+        uint256 const ukey3{std::to_underlying(key3)};
 
         // t=0
         router.setFlags(ukey1, HashRouterFlags::PRIVATE1);
@@ -81,10 +82,10 @@ class HashRouter_test : public beast::unit_test::Suite
         HashRouterFlags const key3(HashRouterFlags::PRIVATE3);
         HashRouterFlags const key4(HashRouterFlags::PRIVATE4);
 
-        auto const ukey1 = uint256{static_cast<std::uint64_t>(key1)};
-        auto const ukey2 = uint256{static_cast<std::uint64_t>(key2)};
-        auto const ukey3 = uint256{static_cast<std::uint64_t>(key3)};
-        auto const ukey4 = uint256{static_cast<std::uint64_t>(key4)};
+        uint256 const ukey1{std::to_underlying(key1)};
+        uint256 const ukey2{std::to_underlying(key2)};
+        uint256 const ukey3{std::to_underlying(key3)};
+        uint256 const ukey4{std::to_underlying(key4)};
 
         BEAST_EXPECT(key1 != key2 && key2 != key3 && key3 != key4);
 
@@ -162,10 +163,11 @@ class HashRouter_test : public beast::unit_test::Suite
         TestStopwatch stopwatch;
         HashRouter router(getSetup(2s, 1s), stopwatch);
 
-        uint256 const key1(1);
-        uint256 const key2(2);
-        uint256 const key3(3);
-        uint256 const key4(4);
+        uint256 const key1{1};
+        uint256 const key2{2};
+        uint256 const key3{3};
+        uint256 const key4{4};
+
         BEAST_EXPECT(key1 != key2 && key2 != key3 && key3 != key4);
 
         HashRouterFlags flags(HashRouterFlags::BAD);  // This value is ignored
@@ -191,7 +193,7 @@ class HashRouter_test : public beast::unit_test::Suite
         TestStopwatch stopwatch;
         HashRouter router(getSetup(2s, 1s), stopwatch);
 
-        uint256 const key1(1);
+        uint256 const key1{1};
         BEAST_EXPECT(router.setFlags(key1, HashRouterFlags::PRIVATE1));
         BEAST_EXPECT(!router.setFlags(key1, HashRouterFlags::PRIVATE1));
         BEAST_EXPECT(router.setFlags(key1, HashRouterFlags::PRIVATE2));
@@ -205,7 +207,7 @@ class HashRouter_test : public beast::unit_test::Suite
         TestStopwatch stopwatch;
         HashRouter router(getSetup(50s, 1s), stopwatch);
 
-        uint256 const key1(1);
+        uint256 const key1{1};
 
         std::optional<std::set<HashRouter::PeerShortID>> peers;
 
@@ -248,7 +250,7 @@ class HashRouter_test : public beast::unit_test::Suite
         using namespace std::chrono_literals;
         TestStopwatch stopwatch;
         HashRouter router(getSetup(5s, 1s), stopwatch);
-        uint256 const key(1);
+        uint256 const key{1};
         HashRouter::PeerShortID const peer = 1;
         HashRouterFlags flags = HashRouterFlags::UNDEFINED;
 

@@ -27,7 +27,7 @@
 namespace xrpl {
 
 RCLValidatedLedger::RCLValidatedLedger(MakeGenesis)
-    : ledgerID_{0}, ledgerSeq_{0}, j_{beast::Journal::getNullSink()}
+    : ledgerSeq_{0}, j_{beast::Journal::getNullSink()}
 {
 }
 
@@ -84,7 +84,7 @@ RCLValidatedLedger::operator[](Seq const& s) const -> ID
                     << " from ledger hash=" << ledgerID_ << " seq=" << ledgerSeq_
                     << " (available: " << minSeq() << "-" << seq() << ")";
     // Default ID that is less than all others
-    return ID{0};
+    return {};
 }
 
 // Return the sequence number of the earliest possible mismatching ancestor

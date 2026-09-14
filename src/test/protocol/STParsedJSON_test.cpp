@@ -17,6 +17,8 @@
 #include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/jss.h>
 
+#include <boost/algorithm/string/case_conv.hpp>
+
 #include <algorithm>
 #include <array>
 #include <cstddef>
@@ -364,404 +366,49 @@ class STParsedJSON_test : public beast::unit_test::Suite
         }
     }
 
+    template <class Field, class T>
     void
-    testUInt128()
+    testHashField(Field const& field, T const& value)
+    {
+        auto const parse = [&](json::Value const& v) {
+            json::Value j;
+            j[field] = v;
+            return STParsedJSONObject("Test", j).object;
+        };
+
+        auto const expectValue = [&](json::Value const& v, T const& expected) {
+            auto const obj = parse(v);
+            BEAST_EXPECT(obj && obj->isFieldPresent(field) && (*obj)[field] == expected);
+        };
+
+        auto const expectFail = [&](json::Value const& v) { BEAST_EXPECT(!parse(v)); };
+
+        std::string const hex = to_string(value);  // upper-case, exactly 2 * T::size() chars
+
+        expectValue(hex, value);
+        expectValue(boost::to_lower_copy(hex), value);
+        expectValue("", T{});
+        expectFail(hex.substr(0, hex.size() - 1));  // odd length
+        expectFail("nothexstring");
+        expectFail("01234567");                     // too short
+        expectFail(hex + "00");                     // too long
+        expectFail(json::Value(json::ValueType::Array));
+        expectFail(json::Value(json::ValueType::Object));
+    }
+
+    void
+    testBaseUIntFields()
     {
         testcase("UInt128");
-        {
-            json::Value j;
-            j[sfEmailHash] = "0123456789ABCDEF0123456789ABCDEF";
-            STParsedJSONObject obj("Test", j);
-            BEAST_EXPECT(obj.object.has_value());
-            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
-            BEAST_EXPECT(obj.object->isFieldPresent(sfEmailHash));
-            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
-            BEAST_EXPECT(obj.object->getFieldH128(sfEmailHash).size() == 16);
-            std::array<uint8_t, 16> const expected = {
-                0x01,
-                0x23,
-                0x45,
-                0x67,
-                0x89,
-                0xAB,
-                0xCD,
-                0xEF,
-                0x01,
-                0x23,
-                0x45,
-                0x67,
-                0x89,
-                0xAB,
-                0xCD,
-                0xEF};
-            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
-            BEAST_EXPECT(obj.object->getFieldH128(sfEmailHash) == uint128::fromRaw(expected));
-        }
-
-        // Valid lowercase hex string for UInt128
-        {
-            json::Value j;
-            j[sfEmailHash] = "0123456789abcdef0123456789abcdef";
-            STParsedJSONObject obj("Test", j);
-            BEAST_EXPECT(obj.object.has_value());
-            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
-            BEAST_EXPECT(obj.object->isFieldPresent(sfEmailHash));
-            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
-            BEAST_EXPECT(obj.object->getFieldH128(sfEmailHash).size() == 16);
-        }
-
-        // Empty string for UInt128 (should be valid, all zero)
-        {
-            json::Value j;
-            j[sfEmailHash] = "";
-            STParsedJSONObject obj("Test", j);
-            BEAST_EXPECT(obj.object.has_value());
-            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
-            BEAST_EXPECT(obj.object->isFieldPresent(sfEmailHash));
-            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
-            auto const& h128 = obj.object->getFieldH128(sfEmailHash);
-            BEAST_EXPECT(h128.size() == 16);
-            bool const allZero = std::ranges::all_of(h128, [](auto b) { return b == 0; });
-            BEAST_EXPECT(allZero);
-        }
-
-        // Odd-length hex string for UInt128 (should fail)
-        {
-            json::Value j;
-            j[sfEmailHash] = "0123456789ABCDEF0123456789ABCDE";
-            STParsedJSONObject const obj("Test", j);
-            BEAST_EXPECT(!obj.object.has_value());
-        }
-
-        // Non-hex string for UInt128 (should fail)
-        {
-            json::Value j;
-            j[sfEmailHash] = "nothexstring";
-            STParsedJSONObject const obj("Test", j);
-            BEAST_EXPECT(!obj.object.has_value());
-        }
-
-        // Hex string too short for UInt128 (should fail)
-        {
-            json::Value j;
-            j[sfEmailHash] = "01234567";
-            STParsedJSONObject const obj("Test", j);
-            BEAST_EXPECT(!obj.object.has_value());
-        }
-
-        // Hex string too long for UInt128 (should fail)
-        {
-            json::Value j;
-            j[sfEmailHash] = "0123456789ABCDEF0123456789ABCDEF00";
-            STParsedJSONObject const obj("Test", j);
-            BEAST_EXPECT(!obj.object.has_value());
-        }
-
-        // Array value for UInt128 (should fail)
-        {
-            json::Value j;
-            j[sfEmailHash] = json::Value(json::ValueType::Array);
-            STParsedJSONObject const obj("Test", j);
-            BEAST_EXPECT(!obj.object.has_value());
-        }
-
-        // Object value for UInt128 (should fail)
-        {
-            json::Value j;
-            j[sfEmailHash] = json::Value(json::ValueType::Object);
-            STParsedJSONObject const obj("Test", j);
-            BEAST_EXPECT(!obj.object.has_value());
-        }
-    }
-
-    void
-    testUInt160()
-    {
+        testHashField(sfEmailHash, uint128{"0123456789ABCDEF0123456789ABCDEF"});
         testcase("UInt160");
-        {
-            json::Value j;
-            j[sfTakerPaysCurrency] = "0123456789ABCDEF0123456789ABCDEF01234567";
-            STParsedJSONObject obj("Test", j);
-            BEAST_EXPECT(obj.object.has_value());
-            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
-            BEAST_EXPECT(obj.object->isFieldPresent(sfTakerPaysCurrency));
-            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
-            BEAST_EXPECT(obj.object->getFieldH160(sfTakerPaysCurrency).size() == 20);
-            std::array<uint8_t, 20> const expected = {0x01, 0x23, 0x45, 0x67, 0x89, 0xAB, 0xCD,
-                                                      0xEF, 0x01, 0x23, 0x45, 0x67, 0x89, 0xAB,
-                                                      0xCD, 0xEF, 0x01, 0x23, 0x45, 0x67};
-            BEAST_EXPECT(
-                // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
-                obj.object->getFieldH160(sfTakerPaysCurrency) == uint160::fromRaw(expected));
-        }
-        // Valid lowercase hex string for UInt160
-        {
-            json::Value j;
-            j[sfTakerPaysCurrency] = "0123456789abcdef0123456789abcdef01234567";
-            STParsedJSONObject obj("Test", j);
-            BEAST_EXPECT(obj.object.has_value());
-            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
-            BEAST_EXPECT(obj.object->isFieldPresent(sfTakerPaysCurrency));
-            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
-            BEAST_EXPECT(obj.object->getFieldH160(sfTakerPaysCurrency).size() == 20);
-        }
-
-        // Empty string for UInt160 (should be valid, all zero)
-        {
-            json::Value j;
-            j[sfTakerPaysCurrency] = "";
-            STParsedJSONObject obj("Test", j);
-            BEAST_EXPECT(obj.object.has_value());
-            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
-            BEAST_EXPECT(obj.object->isFieldPresent(sfTakerPaysCurrency));
-            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
-            auto const& h160 = obj.object->getFieldH160(sfTakerPaysCurrency);
-            BEAST_EXPECT(h160.size() == 20);
-            bool const allZero = std::ranges::all_of(h160, [](auto b) { return b == 0; });
-            BEAST_EXPECT(allZero);
-        }
-
-        // Non-hex string for UInt160 (should fail)
-        {
-            json::Value j;
-            j[sfTakerPaysCurrency] = "nothexstring";
-            STParsedJSONObject const obj("Test", j);
-            BEAST_EXPECT(!obj.object.has_value());
-        }
-
-        // Hex string too short for UInt160 (should fail)
-        {
-            json::Value j;
-            j[sfTakerPaysCurrency] = "01234567";
-            STParsedJSONObject const obj("Test", j);
-            BEAST_EXPECT(!obj.object.has_value());
-        }
-
-        // Hex string too long for UInt160 (should fail)
-        {
-            json::Value j;
-            j[sfTakerPaysCurrency] = "0123456789ABCDEF0123456789ABCDEF0123456789";
-            STParsedJSONObject const obj("Test", j);
-            BEAST_EXPECT(!obj.object.has_value());
-        }
-
-        // Array value for UInt160 (should fail)
-        {
-            json::Value j;
-            j[sfTakerPaysCurrency] = json::Value(json::ValueType::Array);
-            STParsedJSONObject const obj("Test", j);
-            BEAST_EXPECT(!obj.object.has_value());
-        }
-
-        // Object value for UInt160 (should fail)
-        {
-            json::Value j;
-            j[sfTakerPaysCurrency] = json::Value(json::ValueType::Object);
-            STParsedJSONObject const obj("Test", j);
-            BEAST_EXPECT(!obj.object.has_value());
-        }
-    }
-
-    void
-    testUInt192()
-    {
+        testHashField(sfTakerPaysCurrency, uint160{"0123456789ABCDEF0123456789ABCDEF01234567"});
         testcase("UInt192");
-        {
-            json::Value j;
-            j[sfMPTokenIssuanceID] = "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF";
-            STParsedJSONObject obj("Test", j);
-            BEAST_EXPECT(obj.object.has_value());
-            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
-            BEAST_EXPECT(obj.object->isFieldPresent(sfMPTokenIssuanceID));
-            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
-            BEAST_EXPECT(obj.object->getFieldH192(sfMPTokenIssuanceID).size() == 24);
-            std::array<uint8_t, 24> const expected = {
-                0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
-                0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
-            BEAST_EXPECT(
-                // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
-                obj.object->getFieldH192(sfMPTokenIssuanceID) == uint192::fromRaw(expected));
-        }
-
-        // Valid lowercase hex string for UInt192
-        {
-            json::Value j;
-            j[sfMPTokenIssuanceID] = "ffffffffffffffffffffffffffffffffffffffffffffffff";
-            STParsedJSONObject obj("Test", j);
-            BEAST_EXPECT(obj.object.has_value());
-            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
-            BEAST_EXPECT(obj.object->isFieldPresent(sfMPTokenIssuanceID));
-            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
-            BEAST_EXPECT(obj.object->getFieldH192(sfMPTokenIssuanceID).size() == 24);
-        }
-
-        // Empty string for UInt192 (should be valid, all zero)
-        {
-            json::Value j;
-            j[sfMPTokenIssuanceID] = "";
-            STParsedJSONObject obj("Test", j);
-            BEAST_EXPECT(obj.object.has_value());
-            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
-            BEAST_EXPECT(obj.object->isFieldPresent(sfMPTokenIssuanceID));
-            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
-            auto const& h192 = obj.object->getFieldH192(sfMPTokenIssuanceID);
-            BEAST_EXPECT(h192.size() == 24);
-            bool const allZero = std::ranges::all_of(h192, [](auto b) { return b == 0; });
-            BEAST_EXPECT(allZero);
-        }
-
-        // Odd-length hex string for UInt192 (should fail)
-        {
-            json::Value j;
-            j[sfMPTokenIssuanceID] = "0123456789ABCDEF0123456789ABCDEF0123456789ABCDE";
-            STParsedJSONObject const obj("Test", j);
-            BEAST_EXPECT(!obj.object.has_value());
-        }
-
-        // Non-hex string for UInt192 (should fail)
-        {
-            json::Value j;
-            j[sfMPTokenIssuanceID] = "nothexstring";
-            STParsedJSONObject const obj("Test", j);
-            BEAST_EXPECT(!obj.object.has_value());
-        }
-
-        // Hex string too short for UInt192 (should fail)
-        {
-            json::Value j;
-            j[sfMPTokenIssuanceID] = "01234567";
-            STParsedJSONObject const obj("Test", j);
-            BEAST_EXPECT(!obj.object.has_value());
-        }
-
-        // Hex string too long for UInt192 (should fail)
-        {
-            json::Value j;
-            j[sfMPTokenIssuanceID] = "0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF00";
-            STParsedJSONObject const obj("Test", j);
-            BEAST_EXPECT(!obj.object.has_value());
-        }
-
-        // Array value for UInt192 (should fail)
-        {
-            json::Value j;
-            j[sfMPTokenIssuanceID] = json::Value(json::ValueType::Array);
-            STParsedJSONObject const obj("Test", j);
-            BEAST_EXPECT(!obj.object.has_value());
-        }
-
-        // Object value for UInt192 (should fail)
-        {
-            json::Value j;
-            j[sfMPTokenIssuanceID] = json::Value(json::ValueType::Object);
-            STParsedJSONObject const obj("Test", j);
-            BEAST_EXPECT(!obj.object.has_value());
-        }
-    }
-
-    void
-    testUInt256()
-    {
+        testHashField(sfMPTokenIssuanceID, uint192{"FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF"});
         testcase("UInt256");
-        // Test with valid hex string for UInt256
-        {
-            json::Value j;
-            j[sfLedgerHash] =
-                "0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCD"
-                "EF";
-            STParsedJSONObject obj("Test", j);
-            BEAST_EXPECT(obj.object.has_value());
-            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
-            BEAST_EXPECT(obj.object->isFieldPresent(sfLedgerHash));
-            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
-            BEAST_EXPECT(obj.object->getFieldH256(sfLedgerHash).size() == 32);
-            std::array<uint8_t, 32> const expected = {
-                0x01, 0x23, 0x45, 0x67, 0x89, 0xAB, 0xCD, 0xEF, 0x01, 0x23, 0x45,
-                0x67, 0x89, 0xAB, 0xCD, 0xEF, 0x01, 0x23, 0x45, 0x67, 0x89, 0xAB,
-                0xCD, 0xEF, 0x01, 0x23, 0x45, 0x67, 0x89, 0xAB, 0xCD, 0xEF};
-            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
-            BEAST_EXPECT(obj.object->getFieldH256(sfLedgerHash) == uint256::fromRaw(expected));
-        }
-        // Valid lowercase hex string for UInt256
-        {
-            json::Value j;
-            j[sfLedgerHash] =
-                "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcd"
-                "ef";
-            STParsedJSONObject obj("Test", j);
-            BEAST_EXPECT(obj.object.has_value());
-            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
-            BEAST_EXPECT(obj.object->isFieldPresent(sfLedgerHash));
-            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
-            BEAST_EXPECT(obj.object->getFieldH256(sfLedgerHash).size() == 32);
-        }
-
-        // Empty string for UInt256 (should be valid, all zero)
-        {
-            json::Value j;
-            j[sfLedgerHash] = "";
-            STParsedJSONObject obj("Test", j);
-            BEAST_EXPECT(obj.object.has_value());
-            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
-            BEAST_EXPECT(obj.object->isFieldPresent(sfLedgerHash));
-            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
-            auto const& h256 = obj.object->getFieldH256(sfLedgerHash);
-            BEAST_EXPECT(h256.size() == 32);
-            bool const allZero = std::ranges::all_of(h256, [](auto b) { return b == 0; });
-            BEAST_EXPECT(allZero);
-        }
-
-        // Odd-length hex string for UInt256 (should fail)
-        {
-            json::Value j;
-            j[sfLedgerHash] =
-                "0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCD"
-                "E";
-            STParsedJSONObject const obj("Test", j);
-            BEAST_EXPECT(!obj.object.has_value());
-        }
-
-        // Non-hex string for UInt256 (should fail)
-        {
-            json::Value j;
-            j[sfLedgerHash] = "nothexstring";
-            STParsedJSONObject const obj("Test", j);
-            BEAST_EXPECT(!obj.object.has_value());
-        }
-
-        // Hex string too short for UInt256 (should fail)
-        {
-            json::Value j;
-            j[sfLedgerHash] = "01234567";
-            STParsedJSONObject const obj("Test", j);
-            BEAST_EXPECT(!obj.object.has_value());
-        }
-
-        // Hex string too long for UInt256 (should fail)
-        {
-            json::Value j;
-            j[sfLedgerHash] =
-                "0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCD"
-                "EF00";
-            STParsedJSONObject const obj("Test", j);
-            BEAST_EXPECT(!obj.object.has_value());
-        }
-
-        // Array value for UInt256 (should fail)
-        {
-            json::Value j;
-            j[sfLedgerHash] = json::Value(json::ValueType::Array);
-            STParsedJSONObject const obj("Test", j);
-            BEAST_EXPECT(!obj.object.has_value());
-        }
-
-        // Object value for UInt256 (should fail)
-        {
-            json::Value j;
-            j[sfLedgerHash] = json::Value(json::ValueType::Object);
-            STParsedJSONObject const obj("Test", j);
-            BEAST_EXPECT(!obj.object.has_value());
-        }
+        testHashField(
+            sfLedgerHash,
+            uint256{"0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF"});
     }
 
     void
@@ -2590,10 +2237,7 @@ class STParsedJSON_test : public beast::unit_test::Suite
         testUInt16();
         testUInt32();
         testUInt64();
-        testUInt128();
-        testUInt160();
-        testUInt192();
-        testUInt256();
+        testBaseUIntFields();
         testInt32();
         testBlob();
         testVector256();

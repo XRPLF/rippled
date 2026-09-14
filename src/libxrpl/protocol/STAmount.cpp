@@ -147,12 +147,12 @@ STAmount::STAmount(SerialIter& sit, SField const& name) : STBase(name)
     }
 
     Issue issue;
-    issue.currency = sit.get160();
+    issue.currency = Currency{sit.get160()};
 
     if (isXRP(issue.currency))
         Throw<std::runtime_error>("invalid native currency");
 
-    issue.account = sit.get160();
+    issue.account = AccountID{sit.get160()};
 
     if (isXRP(issue.account))
         Throw<std::runtime_error>("invalid native account");

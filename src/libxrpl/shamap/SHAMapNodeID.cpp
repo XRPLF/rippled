@@ -9,6 +9,7 @@
 #include <algorithm>
 #include <cstddef>
 #include <optional>
+#include <span>
 #include <stdexcept>
 #include <string>
 
@@ -128,14 +129,15 @@ deserializeSHAMapNodeID(void const* data, std::size_t size)
 {
     std::optional<SHAMapNodeID> ret;
 
-    if (size == 33)
+    if (size == uint256::size() + 1)
     {
-        unsigned int const depth = *(static_cast<unsigned char const*>(data) + 32);
-        if (depth <= SHAMap::kLeafDepth)
+        std::span const bytes{static_cast<unsigned char const*>(data), size};
+
+        if (unsigned int const depth = bytes[uint256::size()]; depth <= SHAMap::kLeafDepth)
         {
             // Reject a serialized ID carrying bits below its own depth. Checked before
-            // constructing, since the constructor asserts that same property.
-            if (auto const id = uint256::fromVoid(data); isPrefixOfAtDepth(id, depth, id))
+            // constructing the node, since the constructor asserts that same property.
+            if (uint256 const id{bytes.first<uint256::size()>()}; isPrefixOfAtDepth(id, depth, id))
                 ret.emplace(depth, id);
         }
     }

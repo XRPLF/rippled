@@ -93,7 +93,7 @@ private:
         {
             testcase("private vault cannot set non-existing domain");
             auto tx = vault.set({.owner = owner, .id = keylet.key});
-            tx[sfDomainID] = to_string(BaseUInt<256>(42ul));
+            tx[sfDomainID] = to_string(uint256{42});
             env(tx, Ter{tecOBJECT_NOT_FOUND});
         }
 

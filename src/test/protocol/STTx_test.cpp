@@ -1391,7 +1391,7 @@ public:
 
             // Make an STObject that nests objects ten levels deep.  There's
             // a minimum transaction size we must meet, so include a hash256.
-            uint256 const hash{42u};
+            uint256 const hash{42};
             auto inner = std::make_unique<STObject>(recurse, sfTransactionMetaData);
             inner->setFieldH256(sfTransactionHash, hash);
 
@@ -1453,7 +1453,7 @@ public:
             // Make an STObject that nests ten levels deep alternating objects
             // and arrays.  Include a hash256 to meet the minimum transaction
             // size.
-            uint256 const hash{42u};
+            uint256 const hash{42};
             STObject inner = {recurse, sfTransactionMetaData};
             inner.setFieldH256(sfTransactionHash, hash);
 

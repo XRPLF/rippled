@@ -144,7 +144,7 @@ STPathSet::STPathSet(SerialIter& sit, SField const& name) : STBase(name)
             AccountID issuer;
 
             if (hasAccount)
-                account = sit.get160();
+                account = AccountID{sit.get160()};
 
             if (hasCurrency && hasMPT)
             {
@@ -153,13 +153,13 @@ STPathSet::STPathSet(SerialIter& sit, SField const& name) : STBase(name)
             }
 
             if (hasCurrency)
-                asset = Currency::fromRaw(sit.get160());
+                asset = Currency{sit.get160()};
 
             if (hasMPT)
                 asset = sit.get192();
 
             if (hasIssuer)
-                issuer = sit.get160();
+                issuer = AccountID{sit.get160()};
 
             path.emplace_back(account, asset, issuer, hasCurrency || hasMPT);
         }

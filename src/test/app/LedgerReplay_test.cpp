@@ -857,7 +857,7 @@ struct LedgerReplayer_test : public beast::unit_test::Suite
             auto request = std::make_shared<protocol::TMProofPathRequest>();
             request->set_type(protocol::TMLedgerMapType::lmACCOUNT_STATE);
             request->set_key(keylet::skip().key.data(), keylet::skip().key.size());
-            uint256 hash(1234567);
+            uint256 const hash{1234567};
             request->set_ledgerhash(hash.data(), hash.size());
             auto reply = std::make_shared<protocol::TMProofPathResponse>(
                 server.msgHandler.processProofPathRequest(request));
@@ -874,7 +874,8 @@ struct LedgerReplayer_test : public beast::unit_test::Suite
             auto reply = std::make_shared<protocol::TMProofPathResponse>(
                 server.msgHandler.processProofPathRequest(request));
             BEAST_EXPECT(!reply->has_error());
-            BEAST_EXPECT(server.msgHandler.processProofPathResponse(reply) == ReplayMsgStatus::Ok);
+            auto resp = server.msgHandler.processProofPathResponse(reply);
+            BEAST_EXPECT(resp == ReplayMsgStatus::Ok);
 
             {
                 // bad reply: invalid hash/key sizes
@@ -966,7 +967,7 @@ struct LedgerReplayer_test : public beast::unit_test::Suite
             BEAST_EXPECT(
                 server.msgHandler.processReplayDeltaResponse(reply) == ReplayMsgStatus::BadData);
             // request, wrong hash
-            uint256 hash(1234567);
+            uint256 const hash{1234567};
             request->set_ledgerhash(hash.data(), hash.size());
             reply = std::make_shared<protocol::TMReplayDeltaResponse>(
                 server.msgHandler.processReplayDeltaRequest(request));
@@ -1095,24 +1096,27 @@ struct LedgerReplayer_test : public beast::unit_test::Suite
     {
         testcase("TaskParameter");
 
-        auto makeSkipList = [](int count) -> std::vector<uint256> {
+        auto const makeSkipList = [](std::size_t count) {
             std::vector<uint256> sList;
             sList.reserve(count);
-            for (int i = 0; i < count; ++i)
-                sList.emplace_back(i);
+
+            uint256 id{};
+            for (std::size_t i = 0; i != count; ++i, ++id)
+                sList.push_back(id);
+
             return sList;
         };
 
-        LedgerReplayTask::TaskParameter tp10(InboundLedger::Reason::GENERIC, uint256(10), 10);
-        BEAST_EXPECT(!tp10.update(uint256(777), 5, makeSkipList(10)));
-        BEAST_EXPECT(!tp10.update(uint256(10), 5, makeSkipList(8)));
-        BEAST_EXPECT(tp10.update(uint256(10), 10, makeSkipList(10)));
+        LedgerReplayTask::TaskParameter tp10(InboundLedger::Reason::GENERIC, uint256{10}, 10);
+        BEAST_EXPECT(!tp10.update(uint256{777}, 5, makeSkipList(10)));
+        BEAST_EXPECT(!tp10.update(uint256{10}, 5, makeSkipList(8)));
+        BEAST_EXPECT(tp10.update(uint256{10}, 10, makeSkipList(10)));
 
         // can merge to self
         BEAST_EXPECT(tp10.canMergeInto(tp10));
 
         // smaller task
-        LedgerReplayTask::TaskParameter tp9(InboundLedger::Reason::GENERIC, uint256(9), 9);
+        LedgerReplayTask::TaskParameter tp9(InboundLedger::Reason::GENERIC, uint256{9}, 9);
 
         BEAST_EXPECT(tp9.canMergeInto(tp10));
         BEAST_EXPECT(!tp10.canMergeInto(tp9));
@@ -1127,14 +1131,14 @@ struct LedgerReplayer_test : public beast::unit_test::Suite
         tp9.reason = InboundLedger::Reason::GENERIC;
         BEAST_EXPECT(tp9.canMergeInto(tp10));
 
-        tp9.finishHash = uint256(1234);
+        tp9.finishHash = uint256{1234};
         BEAST_EXPECT(!tp9.canMergeInto(tp10));
-        tp9.finishHash = uint256(9);
+        tp9.finishHash = uint256{9};
         BEAST_EXPECT(tp9.canMergeInto(tp10));
 
         // larger task
-        LedgerReplayTask::TaskParameter tp20(InboundLedger::Reason::GENERIC, uint256(20), 20);
-        BEAST_EXPECT(tp20.update(uint256(20), 20, makeSkipList(20)));
+        LedgerReplayTask::TaskParameter tp20(InboundLedger::Reason::GENERIC, uint256{20}, 20);
+        BEAST_EXPECT(tp20.update(uint256{20}, 20, makeSkipList(20)));
         BEAST_EXPECT(tp10.canMergeInto(tp20));
         BEAST_EXPECT(tp9.canMergeInto(tp20));
         BEAST_EXPECT(!tp20.canMergeInto(tp10));
@@ -1368,7 +1372,7 @@ struct LedgerReplayer_test : public beast::unit_test::Suite
         auto skipList = net.client.findSkipListAcquire(finalHash);
 
         std::uint8_t payload[55] = {0x6A, 0x09, 0xE6, 0x67, 0xF3, 0xBC, 0xC9, 0x08, 0xB2};
-        auto item = makeShamapitem(uint256(12345), Slice(payload, sizeof(payload)));
+        auto item = makeShamapitem(uint256{12345}, Slice(payload, sizeof(payload)));
         skipList->processData(l->seq(), item);
 
         std::vector<TaskStatus> const deltaStatuses;

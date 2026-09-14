@@ -1415,17 +1415,18 @@ public:
         Account const alice{"alice", KeyType::Ed25519};
         env.fund(XRP(1000), alice);
         env.close();
-        uint8_t tag1[] = {0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x01, 0x02, 0x03,
-                          0x04, 0x05, 0x06, 0x07, 0x08, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06,
-                          0x07, 0x08, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08};
-
-        uint8_t tag2[] = "hello world some ascii 32b long";  // including 1 byte for NUL
-
-        uint256 bogieTag = xrpl::BaseUInt<256>::fromVoid(tag1);
-        uint256 demonTag = xrpl::BaseUInt<256>::fromVoid(tag2);
 
         // Attach phantom signers to alice and use them for a transaction.
-        env(signers(alice, 1, {{bogie_, 1, bogieTag}, {demon_, 1, demonTag}}));
+        // The tags are arbitrary strings without meaning for this test.
+        env(signers(
+            alice,
+            1,
+            {{bogie_,
+              1,
+              uint256{"FABC2EB666E9B9D7A8E897E1AC446E13CE3189A9D81554AC5F46B0B159932CB3"}},
+             {demon_,
+              1,
+              uint256{"7DA3B4CC19DFE4269C95F9A9B8923BBEE3F4DC4EB9D6D503DD0CA10191C2D5C0"}}}));
         env.close();
         env.require(Owners(alice, 1));
 
