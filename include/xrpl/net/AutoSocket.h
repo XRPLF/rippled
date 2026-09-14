@@ -28,6 +28,7 @@ public:
     using EndpointType = boost::asio::ip::tcp::socket::endpoint_type;
     using SocketPtr = std::unique_ptr<SslSocket>;
     using PlainSocket = SslSocket::next_layer_type;
+    // NOLINTNEXTLINE(readability-identifier-naming) -- asio stream layer concept name
     using lowest_layer_type = SslSocket::lowest_layer_type;
     using HandshakeType = SslSocket::handshake_type;
     using ErrorCode = boost::system::error_code;
