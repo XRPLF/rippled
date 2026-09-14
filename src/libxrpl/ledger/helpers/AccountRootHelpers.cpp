@@ -28,7 +28,6 @@
 #include <limits>
 #include <memory>
 #include <optional>
-#include <set>
 #include <stdexcept>
 #include <vector>
 
@@ -515,8 +514,8 @@ pseudoAccountAddress(ReadView const& view, uint256 const& pseudoOwnerKey)
 }
 
 // Pseudo-account designator fields MUST be maintained by including the
-// SField::sMD_PseudoAccount flag in the SField definition. (Don't forget to
-// "| SField::sMD_Default"!) The fields do NOT need to be amendment-gated,
+// SField::kSmdPseudoAccount flag in the SField definition. (Don't forget to
+// "| SField::kSmdDefault"!) The fields do NOT need to be amendment-gated,
 // since a non-active amendment will not set any field, by definition.
 // Specific properties of a pseudo-account are NOT checked here, that's what
 // InvariantCheck is for.
@@ -547,18 +546,14 @@ getPseudoAccountFields()
 }
 
 [[nodiscard]] bool
-isPseudoAccount(SLE::const_pointer sleAcct, std::set<SField const*> const& pseudoFieldFilter)
+isPseudoAccount(SLE::const_pointer sleAcct)
 {
-    auto const& fields = getPseudoAccountFields();
-
     // Intentionally use defensive coding here because it's cheap and makes the
     // semantics of true return value clean.
     return sleAcct && sleAcct->getType() == ltACCOUNT_ROOT &&
-        std::count_if(
-            fields.begin(), fields.end(), [&sleAcct, &pseudoFieldFilter](SField const* sf) -> bool {
-                return sleAcct->isFieldPresent(*sf) &&
-                    (pseudoFieldFilter.empty() || pseudoFieldFilter.contains(sf));
-            }) > 0;
+        std::ranges::any_of(getPseudoAccountFields(), [&sleAcct](SField const* sf) {
+               return sleAcct->isFieldPresent(*sf);
+           });
 }
 
 std::expected<SLE::pointer, TER>

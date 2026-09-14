@@ -1,3 +1,5 @@
+#![cfg_attr(coverage_nightly, feature(coverage_attribute))]
+
 mod errors;
 mod glue;
 mod lowering;
@@ -323,6 +325,7 @@ impl Parse for HostFunctionsInput {
 }
 
 #[cfg(test)]
+#[cfg_attr(coverage_nightly, coverage(off))]
 mod tests {
     use super::*;
 

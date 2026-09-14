@@ -18,6 +18,7 @@
 //! that expand the first two into enums live in `macros.rs`.
 
 #![no_std]
+#![cfg_attr(coverage_nightly, feature(coverage_attribute))]
 
 #[macro_use]
 mod macros;

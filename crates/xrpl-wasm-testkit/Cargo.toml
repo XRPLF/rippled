@@ -10,3 +10,6 @@ crate-type = ["staticlib", "rlib"]
 cxx.workspace = true
 wat = "1"
 xrpl-host-functions = { path = "../xrpl-host-functions" }
+
+[lints]
+workspace = true

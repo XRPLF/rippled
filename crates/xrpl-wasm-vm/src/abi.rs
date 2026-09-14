@@ -337,6 +337,7 @@ pub(crate) fn write_mant_exp(
 }
 
 #[cfg(test)]
+#[cfg_attr(coverage_nightly, coverage(off))]
 mod tests {
     use super::*;
     use crate::vm::TRANSFER_LIMIT_BYTES;

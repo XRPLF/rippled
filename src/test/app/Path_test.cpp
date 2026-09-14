@@ -147,7 +147,8 @@ public:
         STAmount const& saDstAmount,
         std::optional<STAmount> const& saSendMax = std::nullopt,
         std::optional<Currency> const& saSrcCurrency = std::nullopt,
-        std::optional<uint256> const& domain = std::nullopt)
+        std::optional<uint256> const& domain = std::nullopt,
+        std::optional<AccountID> const& saSrcIssuer = std::nullopt)
     {
         using namespace jtx;
 
@@ -181,6 +182,10 @@ public:
             auto& sc = params[jss::source_currencies] = json::ValueType::Array;
             json::Value j = json::ValueType::Object;
             j[jss::currency] = to_string(saSrcCurrency.value());
+            // Optional issuer for tests that need to exercise
+            // source_currencies entries more precisely than currency alone.
+            if (saSrcIssuer)
+                j[jss::issuer] = toBase58(*saSrcIssuer);
             sc.append(j);
         }
         if (domain)
@@ -209,10 +214,11 @@ public:
         STAmount const& saDstAmount,
         std::optional<STAmount> const& saSendMax = std::nullopt,
         std::optional<Currency> const& saSrcCurrency = std::nullopt,
-        std::optional<uint256> const& domain = std::nullopt)
+        std::optional<uint256> const& domain = std::nullopt,
+        std::optional<AccountID> const& saSrcIssuer = std::nullopt)
     {
-        json::Value result =
-            findPathsRequest(env, src, dst, saDstAmount, saSendMax, saSrcCurrency, domain);
+        json::Value result = findPathsRequest(
+            env, src, dst, saDstAmount, saSendMax, saSrcCurrency, domain, saSrcIssuer);
         BEAST_EXPECT(!result.isMember(jss::error));
 
         STAmount da;
@@ -323,6 +329,53 @@ public:
         });
         BEAST_EXPECT(g.waitFor(5s));
         BEAST_EXPECT(result.isMember(jss::error));
+    }
+
+    void
+    sourceCurrencyIssuerSelection()
+    {
+        testcase("source currency issuer selection");
+        using namespace jtx;
+
+        Env env = pathTestEnv();
+        auto const alice = Account("alice");
+        auto const bob = Account("bob");
+        auto const gateway = Account("gateway");
+
+        env.fund(XRP(10000), alice, bob, gateway);
+        env.close();
+
+        auto const usd = gateway["USD"];
+        env.trust(usd(600), alice);
+        env.trust(usd(700), bob);
+        env.trust(alice["USD"](700), bob);
+        env(pay(gateway, alice, usd(70)));
+        env(pay(gateway, bob, usd(50)));
+        env.close();
+
+        // Ask for USD from an explicit source issuer while send_max is
+        // Alice-issued USD. The parser should choose gateway-issued USD
+        // because gateway is the issuer in source_currencies.
+        //
+        // The Alice/Bob trust line is intentional: if Alice-issued USD is also
+        // considered as a source asset, pathfinding can produce an additional
+        // alternative. The single expected alternative below verifies that only
+        // the explicit issuer is selected.
+        auto const result = findPathsRequest(
+            env,
+            alice,
+            bob,
+            bob["USD"](-1),
+            alice["USD"](100).value(),
+            usd.currency,
+            std::nullopt,
+            gateway.id());
+        auto const& alternatives = result[jss::alternatives];
+        BEAST_EXPECT(alternatives.size() == 1);
+        auto const sa = amountFromJson(sfGeneric, alternatives[0u][jss::source_amount]);
+        auto const da = amountFromJson(sfGeneric, alternatives[0u][jss::destination_amount]);
+        BEAST_EXPECTS(equal(sa, usd(100)), sa.getFullText());
+        BEAST_EXPECTS(equal(da, bob["USD"](100)), da.getFullText());
     }
 
     void
@@ -1968,6 +2021,7 @@ public:
     run() override
     {
         sourceCurrenciesLimit();
+        sourceCurrencyIssuerSelection();
         noDirectPathNoIntermediaryNoAlternatives();
         directPathNoIntermediary();
         paymentAutoPathFind();
