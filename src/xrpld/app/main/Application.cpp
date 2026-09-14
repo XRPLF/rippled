@@ -1453,8 +1453,11 @@ ApplicationImp::setup(boost::program_options::variables_map const& cmdline)
 
     // The metrics resource was fixed at construction, but the tracer resource is
     // built by start() below, so the stored key still reaches spans if it
-    // differs from the resolved one.
-    if (!config_->section("telemetry").exists("service_instance_id"))
+    // differs from the resolved one. Treat an empty configured value as absent,
+    // matching makeMetricsRegistryOptions() and makeTelemetrySetup(), so the
+    // trace side does not keep an empty instance id while the metrics side
+    // holds the node key.
+    if (config_->section("telemetry").valueOr<std::string>("service_instance_id", "").empty())
         telemetry_->setServiceInstanceId(toBase58(TokenType::NodePublic, nodeIdentity_.first));
 
     // xrpl.node.id always carries the node public key. Unlike

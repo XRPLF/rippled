@@ -96,9 +96,16 @@
  * MetricsRegistry::meter(). The registry builds that meter in its
  * constructor, before any subsystem exists, and guarantees it is never
  * empty while the registry is enabled (a no-op meter stands in if the
- * pipeline failed to build). So a call site holds a valid instrument from
- * its first call and needs no check of its own; the only branch on the
- * hot path is the isEnabled() gate.
+ * pipeline failed to build, and again after stop()). So a call site holds
+ * a valid instrument from its first call and needs no check of its own.
+ * The only branch on the hot path is the recording() gate, which is false
+ * once stop() has torn the pipeline down; without that gate a Record on a
+ * stale SDK instrument would deref a dangling AggregationConfig.
+ *
+ * @note Static-init safety: Meter::CreateXxx is declared noexcept in the
+ * OTel API (opentelemetry/metrics/meter.h), so the function-local static
+ * that caches the instrument cannot throw during first-call construction.
+ * A throw there would call std::terminate.
  *
  * @note The OBSERVABLE registration macros are the opposite: call them
  * EAGERLY, exactly once, from constructor/init code -- never from a hot
@@ -136,7 +143,7 @@
 #define XRPL_METRIC_COUNTER_INC(app, name, description)                                     \
     do                                                                                      \
     {                                                                                       \
-        if (auto* xrpl_mr_ = (app).getMetricsRegistry(); xrpl_mr_ && xrpl_mr_->isEnabled()) \
+        if (auto* xrpl_mr_ = (app).getMetricsRegistry(); xrpl_mr_ && xrpl_mr_->recording()) \
         {                                                                                   \
             static auto const xrpl_counter_ =                                               \
                 xrpl_mr_->meter()->CreateUInt64Counter((name), (description));              \
@@ -151,7 +158,7 @@
 #define XRPL_METRIC_COUNTER_INC_LABELED(app, name, description, ...)                        \
     do                                                                                      \
     {                                                                                       \
-        if (auto* xrpl_mr_ = (app).getMetricsRegistry(); xrpl_mr_ && xrpl_mr_->isEnabled()) \
+        if (auto* xrpl_mr_ = (app).getMetricsRegistry(); xrpl_mr_ && xrpl_mr_->recording()) \
         {                                                                                   \
             static auto const xrpl_counter_ =                                               \
                 xrpl_mr_->meter()->CreateUInt64Counter((name), (description));              \
@@ -164,7 +171,7 @@
 #define XRPL_METRIC_COUNTER_ADD(app, name, description, amount)                             \
     do                                                                                      \
     {                                                                                       \
-        if (auto* xrpl_mr_ = (app).getMetricsRegistry(); xrpl_mr_ && xrpl_mr_->isEnabled()) \
+        if (auto* xrpl_mr_ = (app).getMetricsRegistry(); xrpl_mr_ && xrpl_mr_->recording()) \
         {                                                                                   \
             static auto const xrpl_counter_ =                                               \
                 xrpl_mr_->meter()->CreateUInt64Counter((name), (description));              \
@@ -177,7 +184,7 @@
 #define XRPL_METRIC_COUNTER_ADD_LABELED(app, name, description, amount, ...)                \
     do                                                                                      \
     {                                                                                       \
-        if (auto* xrpl_mr_ = (app).getMetricsRegistry(); xrpl_mr_ && xrpl_mr_->isEnabled()) \
+        if (auto* xrpl_mr_ = (app).getMetricsRegistry(); xrpl_mr_ && xrpl_mr_->recording()) \
         {                                                                                   \
             static auto const xrpl_counter_ =                                               \
                 xrpl_mr_->meter()->CreateUInt64Counter((name), (description));              \
@@ -194,7 +201,7 @@
 #define XRPL_METRIC_UPDOWN_ADD(app, name, description, amount)                              \
     do                                                                                      \
     {                                                                                       \
-        if (auto* xrpl_mr_ = (app).getMetricsRegistry(); xrpl_mr_ && xrpl_mr_->isEnabled()) \
+        if (auto* xrpl_mr_ = (app).getMetricsRegistry(); xrpl_mr_ && xrpl_mr_->recording()) \
         {                                                                                   \
             static auto const xrpl_updown_ =                                                \
                 xrpl_mr_->meter()->CreateInt64UpDownCounter((name), (description));         \
@@ -207,7 +214,7 @@
 #define XRPL_METRIC_UPDOWN_ADD_LABELED(app, name, description, amount, ...)                 \
     do                                                                                      \
     {                                                                                       \
-        if (auto* xrpl_mr_ = (app).getMetricsRegistry(); xrpl_mr_ && xrpl_mr_->isEnabled()) \
+        if (auto* xrpl_mr_ = (app).getMetricsRegistry(); xrpl_mr_ && xrpl_mr_->recording()) \
         {                                                                                   \
             static auto const xrpl_updown_ =                                                \
                 xrpl_mr_->meter()->CreateInt64UpDownCounter((name), (description));         \
@@ -218,7 +225,7 @@
 #define XRPL_METRIC_HISTOGRAM_RECORD(app, name, description, value)                            \
     do                                                                                         \
     {                                                                                          \
-        if (auto* xrpl_mr_ = (app).getMetricsRegistry(); xrpl_mr_ && xrpl_mr_->isEnabled())    \
+        if (auto* xrpl_mr_ = (app).getMetricsRegistry(); xrpl_mr_ && xrpl_mr_->recording())    \
         {                                                                                      \
             static auto const xrpl_hist_ =                                                     \
                 xrpl_mr_->meter()->CreateDoubleHistogram((name), (description));               \
@@ -231,7 +238,7 @@
 #define XRPL_METRIC_HISTOGRAM_RECORD_LABELED(app, name, description, value, ...)             \
     do                                                                                       \
     {                                                                                        \
-        if (auto* xrpl_mr_ = (app).getMetricsRegistry(); xrpl_mr_ && xrpl_mr_->isEnabled())  \
+        if (auto* xrpl_mr_ = (app).getMetricsRegistry(); xrpl_mr_ && xrpl_mr_->recording())  \
         {                                                                                    \
             static auto const xrpl_hist_ =                                                   \
                 xrpl_mr_->meter()->CreateDoubleHistogram((name), (description));             \
@@ -257,7 +264,7 @@
 #define XRPL_METRIC_GAUGE_RECORD(app, name, description, value)                                 \
     do                                                                                          \
     {                                                                                           \
-        if (auto* xrpl_mr_ = (app).getMetricsRegistry(); xrpl_mr_ && xrpl_mr_->isEnabled())     \
+        if (auto* xrpl_mr_ = (app).getMetricsRegistry(); xrpl_mr_ && xrpl_mr_->recording())     \
         {                                                                                       \
             static auto const xrpl_gauge_ =                                                     \
                 xrpl_mr_->meter()->CreateDoubleGauge((name), (description));                    \
@@ -269,7 +276,7 @@
 #define XRPL_METRIC_GAUGE_RECORD_LABELED(app, name, description, value, ...)                 \
     do                                                                                       \
     {                                                                                        \
-        if (auto* xrpl_mr_ = (app).getMetricsRegistry(); xrpl_mr_ && xrpl_mr_->isEnabled())  \
+        if (auto* xrpl_mr_ = (app).getMetricsRegistry(); xrpl_mr_ && xrpl_mr_->recording())  \
         {                                                                                    \
             static auto const xrpl_gauge_ =                                                  \
                 xrpl_mr_->meter()->CreateDoubleGauge((name), (description));                 \
@@ -317,7 +324,7 @@
 #define XRPL_METRIC_OBSERVABLE_GAUGE_REGISTER(app, name, description, valueFn)              \
     do                                                                                      \
     {                                                                                       \
-        if (auto* xrpl_mr_ = (app).getMetricsRegistry(); xrpl_mr_ && xrpl_mr_->isEnabled()) \
+        if (auto* xrpl_mr_ = (app).getMetricsRegistry(); xrpl_mr_ && xrpl_mr_->recording()) \
         {                                                                                   \
             auto xrpl_m_ = xrpl_mr_->meter();                                               \
             auto* xrpl_fn_ = new std::function<int64_t()>(valueFn);                         \
@@ -342,7 +349,7 @@
 #define XRPL_METRIC_OBSERVABLE_COUNTER_REGISTER(app, name, description, valueFn)            \
     do                                                                                      \
     {                                                                                       \
-        if (auto* xrpl_mr_ = (app).getMetricsRegistry(); xrpl_mr_ && xrpl_mr_->isEnabled()) \
+        if (auto* xrpl_mr_ = (app).getMetricsRegistry(); xrpl_mr_ && xrpl_mr_->recording()) \
         {                                                                                   \
             auto xrpl_m_ = xrpl_mr_->meter();                                               \
             auto* xrpl_fn_ = new std::function<int64_t()>(valueFn);                         \
@@ -367,7 +374,7 @@
 #define XRPL_METRIC_OBSERVABLE_UPDOWN_REGISTER(app, name, description, valueFn)                   \
     do                                                                                            \
     {                                                                                             \
-        if (auto* xrpl_mr_ = (app).getMetricsRegistry(); xrpl_mr_ && xrpl_mr_->isEnabled())       \
+        if (auto* xrpl_mr_ = (app).getMetricsRegistry(); xrpl_mr_ && xrpl_mr_->recording())       \
         {                                                                                         \
             auto xrpl_m_ = xrpl_mr_->meter();                                                     \
             auto* xrpl_fn_ = new std::function<int64_t()>(valueFn);                               \

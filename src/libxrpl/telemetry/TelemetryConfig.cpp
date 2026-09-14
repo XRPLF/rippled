@@ -343,7 +343,13 @@ makeTelemetrySetup(
     setup.enabled = section.valueOr<int>(key::enabled, 0) != 0;
     setup.serviceName = section.valueOr<std::string>(key::serviceName, dflt::serviceName);
     setup.serviceVersion = version;
+    // Match makeMetricsRegistryOptions() in Application.cpp: an empty
+    // configured value is treated as absent and falls back to the node key,
+    // so traces and metrics stamp the same identity. Otherwise one node
+    // reports two identities and every $node filter shows half the series.
     setup.serviceInstanceId = section.valueOr<std::string>(key::serviceInstanceId, nodePublicKey);
+    if (setup.serviceInstanceId.empty())
+        setup.serviceInstanceId = nodePublicKey;
 
     setup.tracesEndpoint = section.valueOr<std::string>(key::tracesEndpoint, dflt::tracesEndpoint);
     setup.metricsEndpoint =
