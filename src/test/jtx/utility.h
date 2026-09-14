@@ -84,4 +84,4 @@ fillSeq(json::Value& jv, ReadView const& view);
  */
 json::Value
 cmdToJSONRPC(std::vector<std::string> const& args, beast::Journal j, unsigned int apiVersion);
-}  // namespace xrpl::test::jtx
+}

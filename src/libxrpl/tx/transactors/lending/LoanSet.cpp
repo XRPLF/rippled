@@ -75,7 +75,7 @@ LoanSet::preflight(PreflightContext const& ctx)
     if (tx.isFlag(tfInnerBatchTxn) && ctx.rules.enabled(featureBatchV1_1) &&
         !tx.isFieldPresent(sfCounterparty))
     {
-        auto const parentBatchId = ctx.parentBatchId.value_or(uint256{0});
+        auto const parentBatchId = ctx.parentBatchId.value_or(beast::kZero);
         JLOG(ctx.j.debug()) << "BatchTrace[" << parentBatchId << "]: "
                             << "no Counterparty for inner LoanSet transaction.";
         return temBAD_SIGNER;

@@ -88,7 +88,7 @@ private:
         /**
          * Parent ledger id
          */
-        ID parentID{0};
+        ID parentID{};
 
         /**
          * Parent ledger close time

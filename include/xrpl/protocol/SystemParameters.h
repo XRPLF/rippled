@@ -14,7 +14,7 @@ namespace xrpl {
 // Various protocol and system specific constant globals.
 
 /* The name of the system. */
-static inline std::string const&
+inline std::string const&
 systemName()
 {
     static std::string const kName = "xrpld";
@@ -52,11 +52,10 @@ isLegalAmountSigned(XRPAmount const& amount)
 }
 
 /* The currency code for the native currency. */
-static inline std::string const&
+inline std::string
 systemCurrencyCode()
 {
-    static std::string const kCode = "XRP";
-    return kCode;
+    return "XRP";
 }
 
 /**

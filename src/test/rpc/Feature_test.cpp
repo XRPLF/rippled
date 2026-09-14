@@ -121,7 +121,7 @@ class Feature_test : public beast::unit_test::Suite
         }
 
         // Test an arbitrary unknown feature
-        uint256 const zero{0};
+        uint256 const zero{};
         BEAST_EXPECT(featureToName(zero) == to_string(zero));
         BEAST_EXPECT(
             featureToName(zero) ==

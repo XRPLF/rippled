@@ -555,7 +555,7 @@ transactionPreProcessImpl(
         {
             auto const networkId = app.getNetworkIDService().getNetworkID();
             if (networkId > 1024)
-                txJson[jss::NetworkID] = to_string(networkId);
+                txJson[jss::NetworkID] = std::to_string(networkId);
         }
     }
 

@@ -261,7 +261,7 @@ Ledger::Ledger(Ledger const& prevLedger, NetClock::time_point closeTime)
 {
     header_.seq = prevLedger.header_.seq + 1;
     header_.parentCloseTime = prevLedger.header_.closeTime;
-    header_.hash = prevLedger.header().hash + uint256(1);
+    header_.hash = prevLedger.header().hash.next();
     header_.drops = prevLedger.header().drops;
     header_.closeTimeResolution = prevLedger.header_.closeTimeResolution;
     header_.parentHash = prevLedger.header().hash;

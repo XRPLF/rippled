@@ -42,11 +42,6 @@ public:
     {
         testcase("secp256k1: canonicality");
 
-        std::array<std::uint8_t, 32> const digestData{
-            0x34, 0xC1, 0x90, 0x28, 0xC8, 0x0D, 0x21, 0xF3, 0xF4, 0x8C, 0x93,
-            0x54, 0x89, 0x5F, 0x8D, 0x5B, 0xF0, 0xD5, 0xEE, 0x7F, 0xF4, 0x57,
-            0x64, 0x7C, 0xF6, 0x55, 0xF5, 0x53, 0x0A, 0x30, 0x22, 0xA7};
-
         std::array<std::uint8_t, 33> const pkData{
             0x02, 0x50, 0x96, 0xEB, 0x12, 0xD3, 0xE9, 0x24, 0x23, 0x4E, 0x71,
             0x62, 0x36, 0x9C, 0x11, 0xD8, 0xBF, 0x87, 0x7E, 0xDA, 0x23, 0x87,
@@ -73,27 +68,13 @@ public:
             0x89, 0x1C, 0x60, 0xBA, 0x63, 0x74, 0x44, 0xF7, 0x1A, 0x12, 0x9E, 0x47,
             0x13, 0x5D, 0x36, 0xD9, 0x2A, 0xFD, 0x39, 0xB8, 0x56, 0x60, 0x1A, 0x01};
 
-        auto const digest = uint256::fromVoid(digestData.data());
+        constexpr uint256 digest{"34C19028C80D21F3F48C9354895F8D5BF0D5EE7FF457647CF655F5530A3022A7"};
 
         PublicKey const pk{makeSlice(pkData)};
         SecretKey const sk{makeSlice(skData)};
 
-        {
-            auto const canonicality = ecdsaCanonicality(makeSlice(sig));
-            BEAST_EXPECT(canonicality);
-
-            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
-            BEAST_EXPECT(*canonicality == ECDSACanonicality::FullyCanonical);
-        }
-
-        {
-            auto const canonicality = ecdsaCanonicality(makeSlice(non));
-            BEAST_EXPECT(canonicality);
-
-            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
-            BEAST_EXPECT(*canonicality != ECDSACanonicality::FullyCanonical);
-        }
-
+        BEAST_EXPECT(ecdsaCanonicality(makeSlice(sig)) == ECDSACanonicality::FullyCanonical);
+        BEAST_EXPECT(ecdsaCanonicality(makeSlice(non)) == ECDSACanonicality::Canonical);
         BEAST_EXPECT(verifyDigest(pk, digest, makeSlice(sig), false));
         BEAST_EXPECT(verifyDigest(pk, digest, makeSlice(sig), true));
         BEAST_EXPECT(verifyDigest(pk, digest, makeSlice(non), false));

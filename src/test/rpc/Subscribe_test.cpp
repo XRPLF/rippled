@@ -1577,18 +1577,15 @@ public:
     // strings MUST be distinct for the cap arithmetic to be exact; incrementing
     // guarantees distinctness without deriving `count` keypairs.
     static std::vector<std::string>
-    makeAccountStrings(std::size_t count, std::uint32_t seed = 1)
+    makeAccountStrings(std::size_t count, AccountID start = AccountID{1})
     {
         std::vector<std::string> out;
         out.reserve(count);
-        // Start at `seed` so separate calls produce non-overlapping ranges,
-        // letting a test subscribe disjoint batches across requests.
-        AccountID id{static_cast<std::uint64_t>(seed)};
+        // Callers choose `start` beyond any previous batch so separate calls
+        // produce non-overlapping ranges, letting a test subscribe disjoint
+        // batches across requests.
         for (std::size_t i = 0; i < count; ++i)
-        {
-            out.push_back(toBase58(id));
-            ++id;
-        }
+            out.push_back(toBase58(start++));
         return out;
     }
 
@@ -1747,8 +1744,8 @@ public:
         // accounts_proposed (3, evaluated first, would subscribe) +
         // accounts (3): combined 6 exceeds the cap of 5, so the request is
         // rejected. The proposed branch must not have leaked its 3 entries.
-        json::Value req = accountsProposedRequest(makeAccountStrings(3, 1));
-        for (auto const& a : makeAccountStrings(3, 100))
+        json::Value req = accountsProposedRequest(makeAccountStrings(3));
+        for (auto const& a : makeAccountStrings(3, AccountID{100}))
             req[jss::accounts].append(a);
         {
             auto const jr = wsc->invoke("subscribe", req)[jss::result];
@@ -1760,7 +1757,7 @@ public:
         // connection's count is already 3 and this 3-account request would be
         // rejected (3 + 3 > 5). With no leak the count is 0 and it succeeds.
         {
-            auto const r = wsc->invoke("subscribe", accountsRequest(makeAccountStrings(3, 200)));
+            auto const r = wsc->invoke("subscribe", accountsRequest(makeAccountStrings(3, AccountID{200})));
             BEAST_EXPECTS(r[jss::status] == "success", to_string(r));
         }
     }
@@ -1877,7 +1874,7 @@ public:
         {
             auto wscBulk = makeWSClient(env.app().config());
             auto const r =
-                wscBulk->invoke("subscribe", accountsRequest(makeAccountStrings(kBulk, 10)));
+                wscBulk->invoke("subscribe", accountsRequest(makeAccountStrings(kBulk, AccountID{10})));
             BEAST_EXPECTS(r[jss::status] == "success", to_string(r));
             // Destroying the client closes the WS connection, which destroys
             // the server-side InfoSub and posts the chunked async cleanup job.
@@ -1931,7 +1928,7 @@ public:
         // to a bulk set so its deferred cleanup is non-trivial and races with B.
         {
             auto wscA = makeWSClient(env.app().config());
-            auto bulk = makeAccountStrings(2000, 10);
+            auto bulk = makeAccountStrings(2000, AccountID{10});
             bulk.push_back(alice.human());
             auto const r = wscA->invoke("subscribe", accountsRequest(bulk));
             BEAST_EXPECTS(r[jss::status] == "success", to_string(r));

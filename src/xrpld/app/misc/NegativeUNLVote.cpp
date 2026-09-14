@@ -25,6 +25,7 @@
 #include <memory>
 #include <mutex>
 #include <optional>
+#include <span>
 #include <vector>
 
 namespace xrpl {
@@ -142,16 +143,14 @@ NegativeUNLVote::choose(uint256 const& randomPadData, std::vector<NodeID> const&
 {
     XRPL_ASSERT(!candidates.empty(), "xrpl::NegativeUNLVote::choose : non-empty input");
     static_assert(NodeID::kBytes <= uint256::kBytes);
-    NodeID const randomPad = NodeID::fromVoid(randomPadData.data());
-    NodeID txNodeID = candidates[0];
-    for (int j = 1; j < candidates.size(); ++j)
-    {
-        if ((candidates[j] ^ randomPad) < (txNodeID ^ randomPad))
-        {
-            txNodeID = candidates[j];
-        }
-    }
-    return txNodeID;
+
+    NodeID const randomPad{
+        std::span<unsigned char const, uint256::size()>{randomPadData}.first<NodeID::size()>()};
+
+    return *std::min_element(
+        candidates.begin(), candidates.end(), [&randomPad](NodeID const& a, NodeID const& b) {
+            return (a ^ randomPad) < (b ^ randomPad);
+        });
 }
 
 std::optional<hash_map<NodeID, std::uint32_t>>

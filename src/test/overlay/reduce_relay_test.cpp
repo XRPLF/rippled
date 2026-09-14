@@ -1357,19 +1357,18 @@ vp_base_squelch_max_selected_peers=2
             network_.reset();
             // update message count for the same peer/validator
             std::int16_t const nMessages = 5;
-            for (int i = 0; i < nMessages; i++)
+            // hash of the last message; the duplicate below re-sends it
+            auto const key = uint256{nMessages - 1};
+            for (uint256 hash{}; hash <= key; ++hash)
             {
-                uint256 const key(i);
                 network_.overlay().updateSlotAndSquelch(
-                    key, network_.validator(0), 0, [&](PublicKey const&, PeerWPtr, std::uint32_t) {
-                    });
+                    hash, network_.validator(0), 0, [&](PublicKey const&, PeerWPtr, std::uint32_t) {});
             }
             auto peers = network_.overlay().getPeers(network_.validator(0));
             // first message changes Slot state to Counting and is not counted,
             // hence '-1'.
             BEAST_EXPECT(std::get<1>(peers[0]) == (nMessages - 1));
             // add duplicate
-            uint256 const key(nMessages - 1);
             network_.overlay().updateSlotAndSquelch(
                 key, network_.validator(0), 0, [&](PublicKey const&, PeerWPtr, std::uint32_t) {});
             // confirm the same number of messages
@@ -1410,20 +1409,17 @@ vp_base_squelch_max_selected_peers=2
             auto run = [&](int npeers) {
                 handler.maxDuration = 0;
                 reduce_relay::Slots<ManualClock> slots(env_.app(), handler, env_.app().config());
-                // 1st message from a new peer switches the slot
-                // to counting state and resets the counts of all peers +
-                // MAX_MESSAGE_THRESHOLD + 1 messages to reach the threshold
-                // and switch the slot's state to peer selection.
+
+                // Each message needs a distinct hash so the slot's internal hash
+                // router accepts it; a counter is enough.
+                uint256 hash{};
+
                 for (int m = 1; m <= reduce_relay::kMaxMessageThreshold + 2; m++)
                 {
                     for (int peer = 0; peer < npeers; peer++)
                     {
-                        // make unique message hash to make the
-                        // slot's internal hash router accept the message
-                        std::uint64_t const mid = (m * 1000) + peer;
-                        uint256 const message{mid};
                         slots.updateSlotAndSquelch(
-                            message, validator, peer, protocol::MessageType::mtVALIDATION);
+                            ++hash, validator, peer, protocol::MessageType::mtVALIDATION);
                     }
                 }
                 // make Slot's internal hash router expire all messages

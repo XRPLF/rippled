@@ -80,10 +80,10 @@ BookDirs::const_iterator::operator++()
     XRPL_ASSERT(index_ != kZero, "xrpl::BookDirs::const_iterator::operator++ : nonzero index");
     if (!cdirNext(*view_, curKey_, sle_, entry_, index_))
     {
-        if (index_ == 0)
+        if (index_ == kZero)
             curKey_ = view_->succ(++curKey_, nextQuality_).value_or(kZero);
 
-        if (index_ != 0 || curKey_ == kZero)
+        if (index_ != kZero || curKey_ == kZero)
         {
             curKey_ = key_;
             entry_ = 0;

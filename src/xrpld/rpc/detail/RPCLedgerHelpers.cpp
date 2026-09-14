@@ -190,7 +190,7 @@ ledgerFromSpecifier(
     switch (ledgerCase)
     {
         case LedgerCase::kHash: {
-            if (auto hash = uint256::fromVoidChecked(specifier.hash()))
+            if (auto hash = uint256::fromRaw(specifier.hash()))
             {
                 return getLedger(ledger, *hash, context);
             }

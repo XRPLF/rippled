@@ -183,7 +183,7 @@ private:
             {
                 testcase(prefix + " fail to set domain on public vault");
                 auto tx = vault.set({.owner = owner, .id = keylet.key});
-                tx[sfDomainID] = to_string(BaseUInt<256>(42ul));
+                tx[sfDomainID] = to_string(uint256{42});
                 env(tx, Ter{tecNO_PERMISSION});
                 env.close();
             }

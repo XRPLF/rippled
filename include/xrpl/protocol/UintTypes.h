@@ -61,26 +61,40 @@ using Domain = BaseUInt<256>;
 /**
  * XRP currency.
  */
-Currency const&
-xrpCurrency();
+constexpr inline Currency const&
+xrpCurrency() noexcept
+{
+    static constexpr Currency const kCurrency(beast::kZero);
+    return kCurrency;
+}
 
 /**
  * A placeholder for empty currencies.
  */
-Currency const&
-noCurrency();
+constexpr inline Currency const&
+noCurrency() noexcept
+{
+    static constexpr Currency const kCurrency(xrpCurrency().next());
+    return kCurrency;
+}
 
 /**
  * We deliberately disallow the currency that looks like "XRP" because too
  * many people were using it instead of the correct XRP currency.
+ *
+ * Note that this doesn't catch "xRP" or "xrp" or other case variations.
  */
-Currency const&
-badCurrency();
-
-inline bool
-isXRP(Currency const& c)
+constexpr inline Currency const&
+badCurrency() noexcept
 {
-    return c == beast::kZero;
+    static constexpr Currency kCurrency{"0000000000000000000000005852500000000000"};
+    return kCurrency;
+}
+
+constexpr inline bool
+isXRP(Currency const& c) noexcept
+{
+    return c == xrpCurrency();
 }
 
 /**
@@ -98,7 +112,7 @@ to_string(Currency const& c);
  *       to rewrite some unit test code.
  */
 bool
-toCurrency(Currency&, std::string const&);
+toCurrency(Currency&, std::string_view);
 
 /**
  * Tries to convert a string to a Currency, returns noCurrency() on failure.
@@ -108,7 +122,7 @@ toCurrency(Currency&, std::string const&);
  *       everywhere and may mean having to rewrite some unit test code.
  */
 Currency
-toCurrency(std::string const&);
+toCurrency(std::string_view);
 
 inline std::ostream&
 operator<<(std::ostream& os, Currency const& x)

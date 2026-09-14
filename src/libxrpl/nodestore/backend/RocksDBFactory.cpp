@@ -291,7 +291,7 @@ public:
 
         if (getStatus.ok())
         {
-            DecodedBlob decoded(hash.data(), string.data(), string.size());
+            DecodedBlob decoded(hash, string.data(), string.size());
 
             if (decoded.wasOk())
             {

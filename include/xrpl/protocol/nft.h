@@ -8,6 +8,7 @@
 
 #include <cstdint>
 #include <cstring>
+#include <span>
 
 namespace xrpl::nft {
 
@@ -98,7 +99,8 @@ getTaxon(uint256 const& id)
 inline AccountID
 getIssuer(uint256 const& id)
 {
-    return AccountID::fromVoid(id.data() + 4);
+    return AccountID{
+        std::span<unsigned char const, uint256::size()>{id}.subspan<4, AccountID::size()>()};
 }
 
 }  // namespace xrpl::nft

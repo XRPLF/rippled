@@ -102,7 +102,7 @@ class PermissionedDomains_test : public beast::unit_test::Suite
         env.fund(XRP(1000), alice);
         pdomain::Credentials const credentials{{.issuer = alice, .credType = "first credential"}};
         env(pdomain::setTx(alice, credentials), Ter(temDISABLED));
-        env(pdomain::deleteTx(alice, uint256(75)), Ter(temDISABLED));
+        env(pdomain::deleteTx(alice, uint256{75}), Ter(temDISABLED));
     }
 
     // Verify that bad inputs fail for each of create new and update
@@ -391,10 +391,10 @@ class PermissionedDomains_test : public beast::unit_test::Suite
         env(pdomain::setTx(alice[2], credentials1, domain2), Ter(tecNO_PERMISSION));
 
         // Update a uint256(0) domain
-        env(pdomain::setTx(alice[0], credentials1, uint256(0)), Ter(temMALFORMED));
+        env(pdomain::setTx(alice[0], credentials1, uint256{0}), Ter(temMALFORMED));
 
         // Update non-existent domain
-        env(pdomain::setTx(alice[0], credentials1, uint256(75)), Ter(tecNO_ENTRY));
+        env(pdomain::setTx(alice[0], credentials1, uint256{75}), Ter(tecNO_ENTRY));
 
         // Wrong flag
         env(pdomain::setTx(alice[0], credentials1), Txflags(tfClawTwoAssets), Ter(temINVALID_FLAG));
@@ -452,16 +452,16 @@ class PermissionedDomains_test : public beast::unit_test::Suite
         env(pdomain::deleteTx(bob, domain), Ter(tecNO_PERMISSION));
 
         // Delete a non-existent domain.
-        env(pdomain::deleteTx(alice, uint256(75)), Ter(tecNO_ENTRY));
+        env(pdomain::deleteTx(alice, uint256{75}), Ter(tecNO_ENTRY));
 
         // Test bad fee
-        env(pdomain::deleteTx(alice, uint256(75)), Ter(temBAD_FEE), Fee(1, true));
+        env(pdomain::deleteTx(alice, uint256{75}), Ter(temBAD_FEE), Fee(1, true));
 
         // Wrong flag
         env(pdomain::deleteTx(alice, domain), Ter(temINVALID_FLAG), Txflags(tfClawTwoAssets));
 
         // Delete a zero domain.
-        env(pdomain::deleteTx(alice, uint256(0)), Ter(temMALFORMED));
+        env(pdomain::deleteTx(alice, uint256{0}), Ter(temMALFORMED));
 
         // Make sure owner count reflects the existing domain.
         BEAST_EXPECT(env.ownerCount(alice) == 1);

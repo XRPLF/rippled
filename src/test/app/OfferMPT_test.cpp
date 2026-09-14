@@ -6168,16 +6168,10 @@ public:
         // The type tag is a front prefix and the domain is a 32-byte suffix, so a
         // domain'd book must (a) stay distinct from its public counterpart and
         // (b) preserve the mixed-branch tag distinction that the public case has.
-        AccountID issuerX, issuerY, iouIssuer;
-        Currency currency;
-        BEAST_EXPECT(issuerX.parseHex("1111111111111111111111111111111111111111"));
-        BEAST_EXPECT(issuerY.parseHex("2222222222222222222222222222222222222222"));
-        BEAST_EXPECT(currency.parseHex("3333333333333333333333333333333333333333"));
-        BEAST_EXPECT(iouIssuer.parseHex("4444444444444444444444444444444444444444"));
-
-        uint256 const domainA = uint256::fromVoid(
-            "\xDD\xDD\xDD\xDD\xDD\xDD\xDD\xDD\xDD\xDD\xDD\xDD\xDD\xDD\xDD\xDD"
-            "\xDD\xDD\xDD\xDD\xDD\xDD\xDD\xDD\xDD\xDD\xDD\xDD\xDD\xDD\xDD\xDD");
+        constexpr AccountID issuerX{1};
+        constexpr AccountID iouIssuer{2};
+        constexpr Currency currency{3};
+        constexpr uint256 domainA{4};
 
         Asset const mptX{MPTIssue{1u, issuerX}};
         Asset const iou{Issue{currency, iouIssuer}};
