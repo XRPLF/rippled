@@ -57,7 +57,6 @@ repos:
         name: "fix gtest names: CamelCase suite, snake_case test case"
         entry: ./bin/pre-commit/fix_gtest_names.py
         language: python
-        additional_dependencies: [inflection==0.5.1]
         types_or: [c++, c]
 
   - repo: https://github.com/pre-commit/mirrors-clang-format

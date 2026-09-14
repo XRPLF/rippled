@@ -55,7 +55,7 @@ def test_camel_case_conversion() -> None:
 
 
 def test_camel_case_leaves_acronyms_alone() -> None:
-    # `inflection.camelize` would give `ShaMapTest` / `ParseStatmRsSkB` here.
+    # A snake_case round-trip would give `ShaMapTest` / `ParseStatmRsSkB` here.
     assert camel_case("SHAMapTest") == "SHAMapTest"
     assert camel_case("parseStatmRSSkB") == "ParseStatmRSSkB"
     assert camel_case("XRPAmount") == "XRPAmount"

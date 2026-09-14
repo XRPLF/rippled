@@ -8,8 +8,8 @@ CamelCase, the test-case name is snake_case.
 
 The gtest `DISABLED_` prefix is kept verbatim on either name.
 
-Test-case names are converted with `inflection`, which folds acronyms the way a
-reader expects: `SetAndResetAccountTxnID` -> `set_and_reset_account_txn_id`, not
+Both conversions fold acronyms the way a reader expects:
+`SetAndResetAccountTxnID` -> `set_and_reset_account_txn_id`, not
 `set_and_reset_account_txn_i_d`.
 
 The first argument of `TEST_F`, `TEST_P`, `TYPED_TEST` and `TYPED_TEST_P` is a
@@ -24,8 +24,6 @@ import re
 import sys
 from collections import Counter
 from pathlib import Path
-
-import inflection
 
 # A test-case definition, `MACRO(SuiteOrFixture, TestName)`, anchored at the
 # start of a line so that commented-out definitions and project macros that
@@ -42,6 +40,9 @@ FIXTURE_MACROS = ("TEST_F", "TEST_P", "TYPED_TEST", "TYPED_TEST_P")
 
 DISABLED = "DISABLED_"
 
+ACRONYM_BOUNDARY = re.compile(r"([A-Z]+)([A-Z][a-z])")
+WORD_BOUNDARY = re.compile(r"([a-z\d])([A-Z])")
+
 
 def _split_disabled(name: str) -> tuple[str, str]:
     """Splits off gtest's `DISABLED_` prefix, which is kept verbatim."""
@@ -51,18 +52,23 @@ def _split_disabled(name: str) -> tuple[str, str]:
 
 
 def snake_case(name: str) -> str:
-    """Returns the name in snake_case."""
+    """Returns the name in snake_case, leaving acronyms whole.
+
+    `SetAndResetAccountTxnID` -> `set_and_reset_account_txn_id`,
+    `parseStatRSSkB` -> `parse_stat_rs_sk_b`.
+    """
     prefix, core = _split_disabled(name)
-    return prefix + inflection.underscore(core)
+    core = ACRONYM_BOUNDARY.sub(r"\1_\2", core)
+    return prefix + WORD_BOUNDARY.sub(r"\1_\2", core).lower()
 
 
 def camel_case(name: str) -> str:
     """Returns the name in CamelCase, capitalizing each underscored word.
 
-    Only the letters that have to change are touched, so acronyms survive:
-    `inflection.camelize` would turn `SHAMapTest` into `ShaMapTest`, whereas
-    here it is already CamelCase and stays put. `json_value` -> `JsonValue`,
-    `parseStatmRSSkB` -> `ParseStatmRSSkB`.
+    Only the letters that have to change are touched, so acronyms survive: a
+    conversion that went via snake_case would turn `SHAMapTest` into
+    `ShaMapTest`, whereas here it is already CamelCase and stays put.
+    `json_value` -> `JsonValue`, `parseStatRSSkB` -> `ParseStatRSSkB`.
     """
     prefix, core = _split_disabled(name)
     return prefix + "".join(w[:1].upper() + w[1:] for w in core.split("_") if w)
