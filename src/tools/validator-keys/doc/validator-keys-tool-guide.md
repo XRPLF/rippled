@@ -6,7 +6,7 @@ change if the xrpld config and/or server are compromised.
 A validator uses a public/private key pair. The validator is identified by the
 public key. The private key should be tightly controlled. It is used to:
 
-- sign tokens authorizing a xrpld server to run as the validator identified
+- sign tokens authorizing an xrpld server to run as the validator identified
   by this public key.
 - sign revocations indicating that the private key has been compromised and
   the validator public key should no longer be trusted.
