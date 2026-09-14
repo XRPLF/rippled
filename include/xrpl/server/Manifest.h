@@ -22,6 +22,8 @@
 
 namespace xrpl {
 
+class STObject;
+
 /*
     Validator key manifests
     -----------------------
@@ -295,6 +297,56 @@ deserializeManifest(
     return deserializeManifest(makeSlice(v), journal);
 }
 /** @} */
+
+/**
+ * The fields of a manifest before it is signed: @p masterKey delegates to
+ * @p signingKey at @p sequence, with an optional domain.
+ *
+ * Both signatures cover @ref manifestSigningData of the returned object. Set
+ * them as sfSignature and sfMasterSignature, then serialize.
+ */
+STObject
+makeManifestFields(
+    PublicKey const& masterKey,
+    PublicKey const& signingKey,
+    std::uint32_t sequence,
+    std::string const& domain = {});
+
+/**
+ * The fields of a revocation before it is signed: @p masterKey at the
+ * largest sequence, with no signing key.
+ */
+STObject
+makeRevocationFields(PublicKey const& masterKey);
+
+/**
+ * The bytes a manifest's signatures cover: HashPrefix::Manifest followed by
+ * the fields without the signatures.
+ */
+Blob
+manifestSigningData(STObject const& fields);
+
+/**
+ * A manifest signed by both keys.
+ *
+ * @return The serialized manifest, as `Manifest::serialized` holds it
+ */
+std::string
+makeManifest(
+    PublicKey const& masterKey,
+    SecretKey const& masterSecret,
+    PublicKey const& signingKey,
+    SecretKey const& signingSecret,
+    std::uint32_t sequence,
+    std::string const& domain = {});
+
+/**
+ * A revocation of @p masterKey signed by it.
+ *
+ * @return The serialized manifest, as `Manifest::serialized` holds it
+ */
+std::string
+makeRevocation(PublicKey const& masterKey, SecretKey const& masterSecret);
 
 inline bool
 operator==(Manifest const& lhs, Manifest const& rhs)

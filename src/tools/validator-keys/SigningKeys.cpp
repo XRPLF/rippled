@@ -59,16 +59,6 @@ sameSecret(SecretKey const& a, SecretKey const& b)
     return std::equal(a.begin(), a.end(), b.begin());
 }
 
-// The bytes both the signing key and the master key sign.
-Blob
-signingBytes(STObject const& st)
-{
-    Serializer s;
-    s.add32(HashPrefix::Manifest);
-    st.addWithoutSigningFields(s);
-    return s.peekData();
-}
-
 }  // namespace
 
 std::string
@@ -334,22 +324,13 @@ SigningKeys::writeToFile(std::filesystem::path const& keyFile) const
 STObject
 SigningKeys::partialManifest(std::uint32_t sequence, PublicKey const& signingKey) const
 {
-    STObject st(sfGeneric);
-    st[sfSequence] = sequence;
-    st[sfPublicKey] = keys_.publicKey;
-    st[sfSigningPubKey] = signingKey;
-    if (!domain_.empty())
-        st[sfDomain] = makeSlice(domain_);
-    return st;
+    return makeManifestFields(keys_.publicKey, signingKey, sequence, domain_);
 }
 
 STObject
 SigningKeys::partialRevocation() const
 {
-    STObject st(sfGeneric);
-    st[sfSequence] = std::numeric_limits<std::uint32_t>::max();
-    st[sfPublicKey] = keys_.publicKey;
-    return st;
+    return makeRevocationFields(keys_.publicKey);
 }
 
 void
@@ -404,7 +385,7 @@ SigningKeys::startPending(Pending const& pending)
         throw std::runtime_error(kExhaustedError);
 
     pending_ = pending;
-    return signingBytes(partialManifest(tokenSequence_ + 1, pending.signingKey));
+    return manifestSigningData(partialManifest(tokenSequence_ + 1, pending.signingKey));
 }
 
 SigningKeys::Finished
@@ -475,7 +456,7 @@ SigningKeys::createToken(KeyType const& keyType)
 std::string
 SigningKeys::startRevoke() const
 {
-    return strHex(signingBytes(partialRevocation()));
+    return strHex(manifestSigningData(partialRevocation()));
 }
 
 std::string
@@ -505,7 +486,7 @@ SigningKeys::revoke()
     if (!keys_.secretKey)
         throw std::runtime_error("This key file cannot be used to sign tokens.");
 
-    return finishRevoke(masterSign(makeSlice(signingBytes(partialRevocation()))));
+    return finishRevoke(masterSign(makeSlice(manifestSigningData(partialRevocation()))));
 }
 
 Blob

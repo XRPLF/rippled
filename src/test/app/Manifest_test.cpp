@@ -106,75 +106,25 @@ public:
         }
     }
 
-    static std::string
-    makeManifestString(
-        PublicKey const& pk,
-        SecretKey const& sk,
-        PublicKey const& spk,
-        SecretKey const& ssk,
-        int seq)
-    {
-        STObject st(sfGeneric);
-        st[sfSequence] = seq;
-        st[sfPublicKey] = pk;
-        st[sfSigningPubKey] = spk;
-
-        // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
-        sign(st, HashPrefix::Manifest, *publicKeyType(spk), ssk);
-
-        // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
-        sign(st, HashPrefix::Manifest, *publicKeyType(pk), sk, sfMasterSignature);
-
-        Serializer s;
-        st.add(s);
-
-        return base64Encode(std::string(static_cast<char const*>(s.data()), s.size()));
-    }
-
     std::string
     makeRevocationString(SecretKey const& sk, KeyType type, bool invalidSig = false)
     {
-        auto const pk = derivePublicKey(type, sk);
-
-        STObject st(sfGeneric);
-        st[sfSequence] = std::numeric_limits<std::uint32_t>::max();
-        st[sfPublicKey] = pk;
-
-        sign(
-            st, HashPrefix::Manifest, type, invalidSig ? randomSecretKey() : sk, sfMasterSignature);
-        BEAST_EXPECT(invalidSig ^ verify(st, HashPrefix::Manifest, pk, sfMasterSignature));
-
-        Serializer s;
-        st.add(s);
-
-        return base64Encode(std::string(static_cast<char const*>(s.data()), s.size()));
+        return base64Encode(buildRevocation(sk, type, invalidSig).serialized);
     }
 
     Manifest
-    makeRevocation(SecretKey const& sk, KeyType type, bool invalidSig = false)
+    buildRevocation(SecretKey const& sk, KeyType type, bool invalidSig = false)
     {
         auto const pk = derivePublicKey(type, sk);
-
-        STObject st(sfGeneric);
-        st[sfSequence] = std::numeric_limits<std::uint32_t>::max();
-        st[sfPublicKey] = pk;
-
-        sign(
-            st, HashPrefix::Manifest, type, invalidSig ? randomSecretKey() : sk, sfMasterSignature);
-        BEAST_EXPECT(invalidSig ^ verify(st, HashPrefix::Manifest, pk, sfMasterSignature));
-
-        Serializer s;
-        st.add(s);
-
-        std::string const m(static_cast<char const*>(s.data()), s.size());
-        if (auto r = deserializeManifest(m))
-            return std::move(*r);
-        Throw<std::runtime_error>("Could not create a revocation manifest");
-        return *deserializeManifest(std::string{});  // Silence compiler warning.
+        auto m = deserializeManifest(makeRevocation(pk, invalidSig ? randomSecretKey() : sk));
+        if (!m)
+            Throw<std::runtime_error>("Could not create a revocation manifest");
+        BEAST_EXPECT(invalidSig ^ m->verify());
+        return std::move(*m);
     }
 
     Manifest
-    makeManifest(
+    buildManifest(
         SecretKey const& sk,
         KeyType type,
         SecretKey const& ssk,
@@ -184,27 +134,12 @@ public:
     {
         auto const pk = derivePublicKey(type, sk);
         auto const spk = derivePublicKey(stype, ssk);
-
-        STObject st(sfGeneric);
-        st[sfSequence] = seq;
-        st[sfPublicKey] = pk;
-        st[sfSigningPubKey] = spk;
-
-        sign(st, HashPrefix::Manifest, stype, ssk);
-        BEAST_EXPECT(verify(st, HashPrefix::Manifest, spk));
-
-        sign(
-            st, HashPrefix::Manifest, type, invalidSig ? randomSecretKey() : sk, sfMasterSignature);
-        BEAST_EXPECT(invalidSig ^ verify(st, HashPrefix::Manifest, pk, sfMasterSignature));
-
-        Serializer s;
-        st.add(s);
-
-        std::string const m(static_cast<char const*>(s.data()), s.size());
-        if (auto r = deserializeManifest(m))
-            return std::move(*r);
-        Throw<std::runtime_error>("Could not create a manifest");
-        return *deserializeManifest(std::string{});  // Silence compiler warning.
+        auto m = deserializeManifest(
+            makeManifest(pk, invalidSig ? randomSecretKey() : sk, spk, ssk, seq));
+        if (!m)
+            Throw<std::runtime_error>("Could not create a manifest");
+        BEAST_EXPECT(invalidSig ^ m->verify());
+        return std::move(*m);
     }
 
     static Manifest
@@ -311,7 +246,8 @@ public:
                 auto const pk = derivePublicKey(KeyType::Ed25519, sk);
                 auto const kp = randomKeyPair(KeyType::Secp256k1);
 
-                std::string const cfgManifest = makeManifestString(pk, sk, kp.first, kp.second, 0);
+                std::string const cfgManifest =
+                    base64Encode(makeManifest(pk, sk, kp.first, kp.second, 0));
 
                 BEAST_EXPECT(
                     loaded.load(*dbCon, "ValidatorManifests", cfgManifest, emptyRevocation));
@@ -330,7 +266,7 @@ public:
                 auto const pk = derivePublicKey(keyType, sk);
                 auto const kp = randomKeyPair(KeyType::Secp256k1);
                 std::vector<std::string> const nonRevocation = {
-                    makeManifestString(pk, sk, kp.first, kp.second, 0)};
+                    base64Encode(makeManifest(pk, sk, kp.first, kp.second, 0))};
 
                 BEAST_EXPECT(
                     !loaded.load(*dbCon, "ValidatorManifests", emptyManifest, nonRevocation));
@@ -359,7 +295,7 @@ public:
         auto const sk = randomSecretKey();
         auto const pk = derivePublicKey(KeyType::Ed25519, sk);
         auto const kp = randomKeyPair(KeyType::Secp256k1);
-        auto const m = makeManifest(sk, KeyType::Ed25519, kp.second, KeyType::Secp256k1, 0);
+        auto const m = buildManifest(sk, KeyType::Ed25519, kp.second, KeyType::Secp256k1, 0);
 
         STObject st(sfGeneric);
         st[sfSequence] = 0;
@@ -397,7 +333,7 @@ public:
         BEAST_EXPECT(
             ManifestDisposition::Accepted ==
             cache.applyManifest(
-                makeManifest(sk, KeyType::Ed25519, kp0.second, KeyType::Secp256k1, 0),
+                buildManifest(sk, KeyType::Ed25519, kp0.second, KeyType::Secp256k1, 0),
                 ManifestRateLimitCapPolicy::Capped));
         BEAST_EXPECT(cache.getSigningKey(pk) == kp0.first);
         BEAST_EXPECT(cache.getMasterKey(kp0.first) == pk);
@@ -410,7 +346,7 @@ public:
         BEAST_EXPECT(
             ManifestDisposition::Accepted ==
             cache.applyManifest(
-                makeManifest(sk, KeyType::Ed25519, kp1.second, KeyType::Secp256k1, 1),
+                buildManifest(sk, KeyType::Ed25519, kp1.second, KeyType::Secp256k1, 1),
                 ManifestRateLimitCapPolicy::Capped));
         BEAST_EXPECT(cache.getSigningKey(pk) == kp1.first);
         BEAST_EXPECT(cache.getMasterKey(kp1.first) == pk);
@@ -421,7 +357,7 @@ public:
         BEAST_EXPECT(
             ManifestDisposition::BadEphemeralKey ==
             cache.applyManifest(
-                makeManifest(sk, KeyType::Ed25519, kp1.second, KeyType::Secp256k1, 2),
+                buildManifest(sk, KeyType::Ed25519, kp1.second, KeyType::Secp256k1, 2),
                 ManifestRateLimitCapPolicy::Capped));
         BEAST_EXPECT(cache.getSigningKey(pk) == kp1.first);
         BEAST_EXPECT(cache.getMasterKey(kp1.first) == pk);
@@ -433,7 +369,7 @@ public:
         BEAST_EXPECT(
             ManifestDisposition::Accepted ==
             cache.applyManifest(
-                makeRevocation(sk, KeyType::Ed25519), ManifestRateLimitCapPolicy::Capped));
+                buildRevocation(sk, KeyType::Ed25519), ManifestRateLimitCapPolicy::Capped));
         BEAST_EXPECT(cache.revoked(pk));
         BEAST_EXPECT(cache.getSigningKey(pk) == pk);
         BEAST_EXPECT(cache.getMasterKey(kp0.first) == kp0.first);
@@ -877,27 +813,27 @@ public:
             auto const kpA0 = randomKeyPair(KeyType::Secp256k1);
             auto const kpA1 = randomKeyPair(KeyType::Secp256k1);
             auto const sA0 =
-                makeManifest(skA, KeyType::Ed25519, kpA0.second, KeyType::Secp256k1, 0);
+                buildManifest(skA, KeyType::Ed25519, kpA0.second, KeyType::Secp256k1, 0);
             auto const sA1 =
-                makeManifest(skA, KeyType::Ed25519, kpA1.second, KeyType::Secp256k1, 1);
+                buildManifest(skA, KeyType::Ed25519, kpA1.second, KeyType::Secp256k1, 1);
             auto const sA2 =
-                makeManifest(skA, KeyType::Ed25519, kpA1.second, KeyType::Secp256k1, 2);
-            auto const sAMax = makeRevocation(skA, KeyType::Ed25519);
+                buildManifest(skA, KeyType::Ed25519, kpA1.second, KeyType::Secp256k1, 2);
+            auto const sAMax = buildRevocation(skA, KeyType::Ed25519);
 
             auto const skB = randomSecretKey();
             auto const kpB0 = randomKeyPair(KeyType::Secp256k1);
             auto const kpB1 = randomKeyPair(KeyType::Secp256k1);
             auto const kpB2 = randomKeyPair(KeyType::Secp256k1);
             auto const sB0 =
-                makeManifest(skB, KeyType::Ed25519, kpB0.second, KeyType::Secp256k1, 0);
-            auto const sB1 = makeManifest(
+                buildManifest(skB, KeyType::Ed25519, kpB0.second, KeyType::Secp256k1, 0);
+            auto const sB1 = buildManifest(
                 skB,
                 KeyType::Ed25519,
                 kpB1.second,
                 KeyType::Secp256k1,
                 1,
                 true);  // invalidSig
-            auto const sB2 = makeManifest(skB, KeyType::Ed25519, kpB2.second, KeyType::Ed25519, 2);
+            auto const sB2 = buildManifest(skB, KeyType::Ed25519, kpB2.second, KeyType::Ed25519, 2);
 
             auto const fake = sB2.serialized + '\0';
 
@@ -962,7 +898,7 @@ public:
                 cache.applyManifest(clone(sB2), ManifestRateLimitCapPolicy::Capped) ==
                 ManifestDisposition::Accepted);
 
-            auto const sC0 = makeManifest(
+            auto const sC0 = buildManifest(
                 kpB2.second, KeyType::Ed25519, randomSecretKey(), KeyType::Ed25519, 47);
             BEAST_EXPECT(
                 cache.applyManifest(clone(sC0), ManifestRateLimitCapPolicy::Capped) ==

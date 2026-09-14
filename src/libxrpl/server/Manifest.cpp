@@ -17,6 +17,7 @@
 #include <xrpl/protocol/SOTemplate.h>
 #include <xrpl/protocol/STExchange.h>
 #include <xrpl/protocol/STObject.h>
+#include <xrpl/protocol/SecretKey.h>
 #include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/Sign.h>
 #include <xrpl/protocol/tokens.h>
@@ -258,6 +259,76 @@ Manifest::getMasterSignature() const
     SerialIter sit(serialized.data(), serialized.size());
     st.set(sit);
     return st.getFieldVL(sfMasterSignature);
+}
+
+STObject
+makeManifestFields(
+    PublicKey const& masterKey,
+    PublicKey const& signingKey,
+    std::uint32_t sequence,
+    std::string const& domain)
+{
+    STObject st(sfGeneric);
+    st[sfSequence] = sequence;
+    st[sfPublicKey] = masterKey;
+    st[sfSigningPubKey] = signingKey;
+    if (!domain.empty())
+        st[sfDomain] = makeSlice(domain);
+    return st;
+}
+
+STObject
+makeRevocationFields(PublicKey const& masterKey)
+{
+    STObject st(sfGeneric);
+    st[sfSequence] = std::numeric_limits<std::uint32_t>::max();
+    st[sfPublicKey] = masterKey;
+    return st;
+}
+
+Blob
+manifestSigningData(STObject const& fields)
+{
+    Serializer s;
+    s.add32(HashPrefix::Manifest);
+    fields.addWithoutSigningFields(s);
+    return s.peekData();
+}
+
+namespace {
+
+std::string
+serializeManifest(STObject const& st)
+{
+    Serializer s;
+    st.add(s);
+    return std::string(static_cast<char const*>(s.data()), s.size());
+}
+
+}  // namespace
+
+std::string
+makeManifest(
+    PublicKey const& masterKey,
+    SecretKey const& masterSecret,
+    PublicKey const& signingKey,
+    SecretKey const& signingSecret,
+    std::uint32_t sequence,
+    std::string const& domain)
+{
+    auto st = makeManifestFields(masterKey, signingKey, sequence, domain);
+    auto const data = manifestSigningData(st);
+    set(st, sfSignature, sign(signingKey, signingSecret, makeSlice(data)));
+    set(st, sfMasterSignature, sign(masterKey, masterSecret, makeSlice(data)));
+    return serializeManifest(st);
+}
+
+std::string
+makeRevocation(PublicKey const& masterKey, SecretKey const& masterSecret)
+{
+    auto st = makeRevocationFields(masterKey);
+    set(st, sfMasterSignature, sign(masterKey, masterSecret, makeSlice(manifestSigningData(st))));
+    return serializeManifest(st);
 }
 
 std::optional<ValidatorToken>
