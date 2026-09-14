@@ -1,10 +1,9 @@
 #pragma once
 
-#include <xrpld/consensus/Validations.h>
-
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/chrono.h>
 #include <xrpl/beast/utility/Journal.h>
+#include <xrpl/consensus/Validations.h>
 #include <xrpl/ledger/Ledger.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/PublicKey.h>

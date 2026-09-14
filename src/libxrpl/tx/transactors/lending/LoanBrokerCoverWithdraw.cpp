@@ -5,6 +5,7 @@
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
+#include <xrpl/ledger/helpers/CredentialHelpers.h>
 #include <xrpl/ledger/helpers/LendingHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/Feature.h>
@@ -25,7 +26,11 @@ namespace xrpl {
 bool
 LoanBrokerCoverWithdraw::checkExtraFeatures(PreflightContext const& ctx)
 {
-    return checkLendingProtocolDependencies(ctx.rules, ctx.tx);
+    if (!checkLendingProtocolDependencies(ctx.rules, ctx.tx))
+        return false;
+
+    return !ctx.tx.isFieldPresent(sfCredentialIDs) ||
+        (ctx.rules.enabled(featureCredentials) && ctx.rules.enabled(fixCleanup3_4_0));
 }
 
 NotTEC
@@ -49,6 +54,9 @@ LoanBrokerCoverWithdraw::preflight(PreflightContext const& ctx)
         }
     }
 
+    if (auto const err = credentials::checkFields(ctx.tx, ctx.rules, ctx.j); !isTesSuccess(err))
+        return err;
+
     return tesSUCCESS;
 }
 
@@ -57,6 +65,7 @@ LoanBrokerCoverWithdraw::preclaim(PreclaimContext const& ctx)
 {
     auto const fix320Enabled = ctx.view.rules().enabled(fixCleanup3_2_0);
     auto const fix330Enabled = ctx.view.rules().enabled(fixCleanup3_3_0);
+    auto const fix340Enabled = ctx.view.rules().enabled(fixCleanup3_4_0);
     auto const& tx = ctx.tx;
 
     auto const account = tx[sfAccount];
@@ -109,6 +118,12 @@ LoanBrokerCoverWithdraw::preclaim(PreclaimContext const& ctx)
     if (auto const ret = canTransfer(ctx.view, vaultAsset, pseudoAccountID, dstAcct, waive))
         return ret;
 
+    // Validate credentials (if any) before canWithdraw, since canWithdraw may
+    // call credentials::authorizedDepositPreauth which assumes credentials
+    // already exist.
+    if (auto const err = credentials::valid(ctx.tx, ctx.view, account, ctx.j); !isTesSuccess(err))
+        return err;
+
     // Withdrawal to a 3rd party destination account is essentially a transfer.
     // Enforce all the usual asset transfer checks.
     AuthType authType = AuthType::WeakAuth;
@@ -125,6 +140,12 @@ LoanBrokerCoverWithdraw::preclaim(PreclaimContext const& ctx)
     // Destination MPToken must exist (if asset is an MPT)
     if (auto const ter = requireAuth(ctx.view, vaultAsset, dstAcct, authType))
         return ter;
+
+    if (fix340Enabled && account == dstAcct && !holdingExists(ctx.view, dstAcct, vaultAsset))
+    {
+        if (auto const ter = canAddHolding(ctx.view, vaultAsset); !isTesSuccess(ter))
+            return ter;
+    }
 
     if (fix330Enabled)
     {

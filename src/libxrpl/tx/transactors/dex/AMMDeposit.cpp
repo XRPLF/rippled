@@ -28,6 +28,7 @@
 #include <cstdint>
 #include <exception>
 #include <optional>
+#include <stdexcept>
 #include <utility>
 
 namespace xrpl {
@@ -437,11 +438,10 @@ AMMDeposit::applyGuts(Sandbox& sb)
 
     auto const subTxType = ctx_.tx.getFlags() & tfDepositSubTx;
 
-    auto const [result, newLPTokenBalance] = [&,
-                                              &amountBalance = amountBalance,
-                                              &amount2Balance = amount2Balance,
-                                              &lptAMMBalance =
-                                                  lptAMMBalance]() -> std::pair<TER, STAmount> {
+    auto dispatchToDeposit = [&,
+                              &amountBalance = amountBalance,
+                              &amount2Balance = amount2Balance,
+                              &lptAMMBalance = lptAMMBalance]() -> std::pair<TER, STAmount> {
         if (subTxType & tfTwoAsset)
         {
             return equalDepositLimit(
@@ -493,6 +493,28 @@ AMMDeposit::applyGuts(Sandbox& sb)
         JLOG(j_.error()) << "AMM Deposit: invalid options.";
         return std::make_pair(tecINTERNAL, STAmount{});
         // LCOV_EXCL_STOP
+    };
+
+    auto const [result, newLPTokenBalance] = [&]() -> std::pair<TER, STAmount> {
+        try
+        {
+            return dispatchToDeposit();
+        }
+        catch (std::runtime_error const& e)
+        {
+            REACHABLE("xrpl::AMMDeposit::applyGuts : deposit amount out of range reached");
+            // A deposit whose solved amount exceeds the integral asset's range
+            // throws while converting to STAmount: past int64max
+            // Number::operator rep() throws std::overflow_error; above the asset
+            // maximum STAmount::canonicalize throws std::runtime_error. Fail
+            // cleanly with a tec rather than letting it escape doApply as
+            // tefEXCEPTION. Any other exception is left to propagate.
+            // Gated by fixCleanup3_4_0 to preserve the legacy result pre-amendment.
+            if (!sb.rules().enabled(fixCleanup3_4_0))
+                throw;  // LCOV_EXCL_LINE - preserve legacy tefEXCEPTION
+            JLOG(j_.error()) << "AMMDeposit: deposit amount out of range " << e.what();
+            return std::make_pair(tecAMM_FAILED, STAmount{});
+        }
     }();
 
     if (isTesSuccess(result))

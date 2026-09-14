@@ -21,8 +21,6 @@
 #include <xrpld/app/misc/ValidatorList.h>
 #include <xrpld/app/misc/make_NetworkOPs.h>
 #include <xrpld/app/rdb/backend/SQLiteDatabase.h>
-#include <xrpld/consensus/ConsensusParms.h>
-#include <xrpld/consensus/ConsensusTypes.h>
 #include <xrpld/core/Config.h>
 #include <xrpld/overlay/Cluster.h>
 #include <xrpld/overlay/ClusterNode.h>
@@ -30,9 +28,8 @@
 #include <xrpld/overlay/predicates.h>
 #include <xrpld/rpc/BookChanges.h>
 #include <xrpld/rpc/CTID.h>
-#include <xrpld/rpc/DeliveredAmount.h>
-#include <xrpld/rpc/MPTokenIssuanceID.h>
 #include <xrpld/rpc/ServerHandler.h>
+#include <xrpld/rpc/detail/SyntheticFields.h>
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/ToString.h>
@@ -54,6 +51,8 @@
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/beast/utility/rngfill.h>
 #include <xrpl/config/Constants.h>
+#include <xrpl/consensus/ConsensusParms.h>
+#include <xrpl/consensus/ConsensusTypes.h>
 #include <xrpl/core/ClosureCounter.h>
 #include <xrpl/core/HashRouter.h>
 #include <xrpl/core/Job.h>
@@ -74,10 +73,11 @@
 #include <xrpl/ledger/OpenView.h>
 #include <xrpl/ledger/OrderBookDB.h>
 #include <xrpl/ledger/ReadView.h>
-#include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
+#include <xrpl/ledger/helpers/MPTokenHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/AmountConversions.h>
 #include <xrpl/protocol/ApiVersion.h>
 #include <xrpl/protocol/Book.h>
 #include <xrpl/protocol/BuildInfo.h>
@@ -85,10 +85,12 @@
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Fees.h>
 #include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/KeyType.h>
 #include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/MPTAmount.h>
+#include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/MultiApiJson.h>
-#include <xrpl/protocol/NFTSyntheticSerializer.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/RPCErr.h>
@@ -1341,7 +1343,7 @@ NetworkOPsImp::processClusterTimer()
             n.set_nodename(node.name());
     });
 
-    Resource::Gossip const gossip = registry_.get().getResourceManager().exportConsumers();
+    resource::Gossip const gossip = registry_.get().getResourceManager().exportConsumers();
     for (auto& item : gossip.items)
     {
         protocol::TMLoadSource& node = *cluster.add_loadsources();
@@ -1461,11 +1463,17 @@ NetworkOPsImp::preProcessTransaction(std::shared_ptr<Transaction>& transaction)
 
     // NOTE ximinez - I think this check is redundant,
     // but I'm not 100% sure yet.
-    // If so, only cost is looking up HashRouter flags.
-    auto const [validity, reason] =
-        checkValidity(registry_.get().getHashRouter(), sttx, view->rules());
-    XRPL_ASSERT(
-        validity == Validity::Valid, "xrpl::NetworkOPsImp::processTransaction : valid validity");
+    //
+    // For an ordinary transaction it is: the relay and submit paths have
+    // already run checkValidity, so this costs a HashRouter lookup. It is not
+    // redundant for a role-signature transaction while fixCleanup3_4_0 is
+    // activating. Those paths verify against the validated rules, which lag
+    // the open ledger rules used here, and checkValidity scopes a cached
+    // verdict to the rules that reached it, so this call can verify the
+    // signature again and come to a different answer. SigBad is therefore
+    // reachable, and the handler below is the correct response to it.
+    auto const& viewRules = view->rules();
+    auto const [validity, reason] = checkValidity(registry_.get().getHashRouter(), sttx, viewRules);
 
     // Not concerned with local checks at this point.
     if (validity == Validity::SigBad)
@@ -1473,7 +1481,15 @@ NetworkOPsImp::preProcessTransaction(std::shared_ptr<Transaction>& transaction)
         JLOG(journal_.info()) << "Transaction has bad signature: " << reason;
         transaction->setStatus(TransStatus::INVALID);
         transaction->setResult(temBAD_SIGNATURE);
-        registry_.get().getHashRouter().setFlags(transaction->getID(), HashRouterFlags::BAD);
+        // See the matching guard in PeerImp::checkTransaction: only cache
+        // BAD for a role-signature transaction once fixCleanup3_4_0 is
+        // enabled on this node. Remove together with the amendment.
+        if (viewRules.enabled(fixCleanup3_4_0) ||
+            (!sttx.isFieldPresent(sfSponsorSignature) &&
+             !sttx.isFieldPresent(sfCounterpartySignature)))
+        {
+            registry_.get().getHashRouter().setFlags(transaction->getID(), HashRouterFlags::BAD);
+        }
         return false;
     }
 
@@ -2640,7 +2656,7 @@ NetworkOPsImp::pubValidation(std::shared_ptr<STValidation> const& val)
         // for consumers supporting different API versions
         MultiApiJson multiObj{jvObj};
         multiObj.visit(
-            RPC::kApiVersion<1>,  //
+            rpc::kApiVersion<1>,  //
             [](json::Value& jvTx) {
                 // Type conversion for older API versions to string
                 if (jvTx.isMember(jss::ledger_index))
@@ -2848,7 +2864,7 @@ NetworkOPsImp::getServerInfo(bool human, bool admin, bool counters)
     if (!registry_.get().getApp().config().serverDomain.empty())
         info[jss::server_domain] = registry_.get().getApp().config().serverDomain;
 
-    info[jss::build_version] = BuildInfo::getVersionString();
+    info[jss::build_version] = build_info::getVersionString();
 
     info[jss::server_state] = strOperatingMode(admin);
 
@@ -3358,7 +3374,7 @@ NetworkOPsImp::publishLedgerStreams(
 
     if (!streamMaps_[SBookChanges].empty())
     {
-        json::Value const jvObj = xrpl::RPC::computeBookChanges(lpAccepted);
+        json::Value const jvObj = xrpl::rpc::computeBookChanges(lpAccepted);
 
         auto it = streamMaps_[SBookChanges].begin();
         while (it != streamMaps_[SBookChanges].end())
@@ -3482,9 +3498,7 @@ NetworkOPsImp::transJson(
     if (meta)
     {
         jvObj[jss::meta] = meta->get().getJson(JsonOptions::Values::None);
-        RPC::insertDeliveredAmount(jvObj[jss::meta], *ledger, transaction, meta->get());
-        RPC::insertNFTSyntheticInJson(jvObj, transaction, meta->get());
-        RPC::insertMPTokenIssuanceID(jvObj[jss::meta], transaction, meta->get());
+        rpc::insertAllSyntheticInJson(jvObj[jss::meta], *ledger, transaction, meta->get());
     }
 
     // add CTID where the needed data for it exists
@@ -3496,7 +3510,7 @@ NetworkOPsImp::transJson(
         if (transaction->isFieldPresent(sfNetworkID))
             netID = transaction->getFieldU32(sfNetworkID);
 
-        if (std::optional<std::string> ctid = RPC::encodeCTID(ledger->header().seq, txnSeq, netID);
+        if (std::optional<std::string> ctid = rpc::encodeCTID(ledger->header().seq, txnSeq, netID);
             ctid)
             jvObj[jss::ctid] = *ctid;
     }
@@ -3547,7 +3561,7 @@ NetworkOPsImp::transJson(
     forAllApiVersions(
         multiObj.visit(),  //
         [&]<unsigned Version>(json::Value& jvTx, std::integral_constant<unsigned, Version>) {
-            RPC::insertDeliverMax(jvTx[jss::transaction], transaction->getTxnType(), Version);
+            rpc::insertDeliverMax(jvTx[jss::transaction], transaction->getTxnType(), Version);
 
             if constexpr (Version > 1)
             {
@@ -4140,7 +4154,7 @@ NetworkOPsImp::addAccountHistoryJob(SubAccountHistoryInfoWeak subInfo)
             if (accountId == kGenesisAccountId)
             {
                 auto stx = tx->getSTransaction();
-                if (stx->getAccountID(sfAccount) == accountId && stx->getSeqValue() == 1)
+                if (stx->getAccountID(sfAccount) == accountId && stx->getSeqProxy().value() == 1)
                     return true;
             }
 
@@ -4216,7 +4230,7 @@ NetworkOPsImp::addAccountHistoryJob(SubAccountHistoryInfoWeak subInfo)
             int feeChargeCount = 0;
             if (auto sptr = subInfo.sinkWptr.lock(); sptr)
             {
-                sptr->getConsumer().charge(Resource::kFeeMediumBurdenRpc);
+                sptr->getConsumer().charge(resource::kFeeMediumBurdenRpc);
                 ++feeChargeCount;
             }
             else
@@ -4817,8 +4831,7 @@ NetworkOPsImp::getBookPage(
 
     ReadView const& view = *lpLedger;
 
-    bool const bGlobalFreeze =
-        isGlobalFrozen(view, book.out.getIssuer()) || isGlobalFrozen(view, book.in.getIssuer());
+    bool const bGlobalFreeze = isGlobalFrozen(view, book.out) || isGlobalFrozen(view, book.in);
 
     bool bDone = false;
     bool bDirectAdvance = true;
@@ -4828,7 +4841,7 @@ NetworkOPsImp::getBookPage(
     unsigned int uBookEntry = 0;
     STAmount saDirRate;
 
-    auto const rate = transferRate(view, book.out.getIssuer());
+    auto const rate = transferRate(view, book.out);
     auto viewJ = registry_.get().getJournal("View");
 
     while (!bDone && iLimit-- > 0)
@@ -4877,12 +4890,37 @@ NetworkOPsImp::getBookPage(
                 auto const& saTakerPays = sleOffer->getFieldAmount(sfTakerPays);
                 STAmount saOwnerFunds;
                 bool firstOwnerOffer(true);
+                auto foundBalance = [&]() {
+                    auto umBalanceEntry = umBalance.find(uOfferOwnerID);
+                    if (umBalanceEntry == umBalance.end())
+                        return false;
+
+                    // Found in running balance table.
+                    saOwnerFunds = umBalanceEntry->second;
+                    firstOwnerOffer = false;
+                    return true;
+                };
 
                 if (book.out.getIssuer() == uOfferOwnerID)
                 {
-                    // If an offer is selling issuer's own IOUs, it is fully
-                    // funded.
-                    saOwnerFunds = saTakerGets;
+                    book.out.visit(
+                        [&](Issue const&) {
+                            // If an offer is selling issuer's own IOUs, it is
+                            // fully funded.
+                            saOwnerFunds = saTakerGets;
+                        },
+                        [&](MPTIssue const& issue) {
+                            // MPT issuers have bounded self-issuance. Use the
+                            // running balance table so multiple issuer-owned
+                            // offers share the same remaining issuance
+                            // headroom.
+                            if (!foundBalance())
+                            {
+                                // Did not find balance in table.
+
+                                saOwnerFunds = issuerFundsToSelfIssue(view, issue);
+                            }
+                        });
                 }
                 else if (bGlobalFreeze)
                 {
@@ -4892,15 +4930,7 @@ NetworkOPsImp::getBookPage(
                 }
                 else
                 {
-                    auto umBalanceEntry = umBalance.find(uOfferOwnerID);
-                    if (umBalanceEntry != umBalance.end())
-                    {
-                        // Found in running balance table.
-
-                        saOwnerFunds = umBalanceEntry->second;
-                        firstOwnerOffer = false;
-                    }
-                    else
+                    if (!foundBalance())
                     {
                         // Did not find balance in table.
 
@@ -4936,7 +4966,28 @@ NetworkOPsImp::getBookPage(
                 {
                     // Need to charge a transfer fee to offer owner.
                     offerRate = rate;
-                    saOwnerFundsLimit = divide(saOwnerFunds, offerRate);
+                    // Why MPT does not use divide(): divide() is built for an
+                    // IOU mantissa, which is always normalized into
+                    // [1e15, 1e16]. An MPT mantissa is the raw int64 balance,
+                    // and divide() scales the numerator by 1e17, so a balance
+                    // over ~1.8e17 leaves uint64 range and throws -- failing
+                    // the whole RPC rather than this one offer.
+                    //
+                    // Why mulRatio is safe: it evaluates in 128 bits, and here
+                    // it cannot overflow either. offerRate is
+                    // 1e9 + 10'000 * TransferFee, so this branch runs only with
+                    // offerRate > kParityRate, making the quotient smaller than
+                    // saOwnerFunds. Rounded down, so reported liquidity is
+                    // never overstated.
+                    saOwnerFundsLimit = saOwnerFunds.holds<MPTIssue>()
+                        ? toSTAmount(
+                              mulRatio(
+                                  saOwnerFunds.mpt(),
+                                  kParityRate.value,
+                                  offerRate.value,
+                                  /*roundUp*/ false),
+                              saOwnerFunds.asset())
+                        : divide(saOwnerFunds, offerRate);
                 }
 
                 if (saOwnerFundsLimit >= saTakerGets)
@@ -4993,6 +5044,8 @@ NetworkOPsImp::getBookPage(
 
 // This is the new code that uses the book iterators
 // It has temporarily been disabled
+// If this path is re-enabled, add MPT support mirroring the functional
+// getBookPage() implementation above.
 
 void
 NetworkOPsImp::getBookPage(

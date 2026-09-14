@@ -1,11 +1,10 @@
 #pragma once
 
-#include <xrpld/consensus/ConsensusProposal.h>
-
 #include <xrpl/basics/Slice.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/chrono.h>
 #include <xrpl/beast/hash/hash_append.h>
+#include <xrpl/consensus/ConsensusProposal.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/HashPrefix.h>
 #include <xrpl/protocol/PublicKey.h>

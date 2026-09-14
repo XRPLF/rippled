@@ -8,7 +8,7 @@
  * Versioning information for this build.
  */
 // VFALCO The namespace is deprecated
-namespace xrpl::BuildInfo {
+namespace xrpl::build_info {
 
 /**
  * Server version.
@@ -84,4 +84,4 @@ isXrpldVersion(std::uint64_t version);
 bool
 isNewerVersion(std::uint64_t version);
 
-}  // namespace xrpl::BuildInfo
+}  // namespace xrpl::build_info

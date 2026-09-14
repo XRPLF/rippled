@@ -6,15 +6,15 @@
 
 namespace xrpl {
 
-namespace RPC {
+namespace rpc {
 struct JsonContext;
-}  // namespace RPC
+}  // namespace rpc
 
 json::Value
-doStop(RPC::JsonContext& context)
+doStop(rpc::JsonContext& context)
 {
     context.app.signalStop("RPC");
-    return RPC::makeObjectValue(systemName() + " server stopping");
+    return rpc::makeObjectValue(systemName() + " server stopping");
 }
 
 }  // namespace xrpl

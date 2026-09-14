@@ -6,13 +6,12 @@
 #include <xrpl/core/StartUpType.h>
 #include <xrpl/rdb/SociDB.h>
 
-#include <boost/filesystem/path.hpp>
-
 #include <soci/statement.h>
 
 #include <array>
 #include <cstddef>
 #include <cstdint>
+#include <filesystem>
 #include <functional>
 #include <memory>
 #include <mutex>
@@ -80,7 +79,7 @@ public:
 
         StartUpType startUp = StartUpType::Normal;
         bool standAlone = false;
-        boost::filesystem::path dataDir;
+        std::filesystem::path dataDir;
         // Indicates whether or not to return the `globalPragma`
         // from commonPragma()
         bool useGlobalPragma = false;
@@ -143,7 +142,7 @@ public:
 
     template <std::size_t N, std::size_t M>
     DatabaseCon(
-        boost::filesystem::path const& dataDir,
+        std::filesystem::path const& dataDir,
         std::string const& dbName,
         std::array<std::string, N> const& pragma,
         std::array<char const*, M> const& initSQL,
@@ -155,7 +154,7 @@ public:
     // Use this constructor to setup checkpointing
     template <std::size_t N, std::size_t M>
     DatabaseCon(
-        boost::filesystem::path const& dataDir,
+        std::filesystem::path const& dataDir,
         std::string const& dbName,
         std::array<std::string, N> const& pragma,
         std::array<char const*, M> const& initSQL,
@@ -190,7 +189,7 @@ private:
 
     template <std::size_t N, std::size_t M>
     DatabaseCon(
-        boost::filesystem::path const& pPath,
+        std::filesystem::path const& pPath,
         std::vector<std::string> const* commonPragma,
         std::array<std::string, N> const& pragma,
         std::array<char const*, M> const& initSQL,

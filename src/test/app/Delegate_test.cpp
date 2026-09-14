@@ -47,6 +47,7 @@
 #include <xrpl/protocol/SecretKey.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
+#include <xrpl/protocol/TxSettings.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/protocol/jss.h>
 
@@ -2718,19 +2719,24 @@ class Delegate_test : public beast::unit_test::Suite
 
         std::size_t delegableCount = 0;
 
+#pragma push_macro("UNWRAP")
+#undef UNWRAP
 #pragma push_macro("TRANSACTION")
 #undef TRANSACTION
 
-#define TRANSACTION(tag, value, name, txDelegable, ...) \
-    if (txDelegable == xrpl::Delegable)                 \
-    {                                                   \
-        delegableCount++;                               \
+#define UNWRAP(...) __VA_ARGS__
+#define TRANSACTION(tag, value, name, settings, ...)                                 \
+    if ((xrpl::TxSettings UNWRAP settings).delegable == xrpl::Delegation::Delegable) \
+    {                                                                                \
+        delegableCount++;                                                            \
     }
 
 #include <xrpl/protocol/detail/transactions.macro>
 
 #undef TRANSACTION
 #pragma pop_macro("TRANSACTION")
+#undef UNWRAP
+#pragma pop_macro("UNWRAP")
 
         // ====================================================================
         // IMPORTANT NOTICE:
@@ -2824,15 +2830,15 @@ class Delegate_test : public beast::unit_test::Suite
                 auto [createTx, keylet] = vault.create({.owner = alice, .asset = xrpIssue()});
                 env(createTx);
 
-                env(loanBroker::set(alice, keylet.key), delegate::As(bob), Ter(temINVALID));
-                env(loanBroker::del(alice, keylet.key), delegate::As(bob), Ter(temINVALID));
-                env(loanBroker::coverDeposit(alice, keylet.key, XRP(1)),
+                env(loan_broker::set(alice, keylet.key), delegate::As(bob), Ter(temINVALID));
+                env(loan_broker::del(alice, keylet.key), delegate::As(bob), Ter(temINVALID));
+                env(loan_broker::coverDeposit(alice, keylet.key, XRP(1)),
                     delegate::As(bob),
                     Ter(temINVALID));
-                env(loanBroker::coverWithdraw(alice, keylet.key, XRP(1)),
+                env(loan_broker::coverWithdraw(alice, keylet.key, XRP(1)),
                     delegate::As(bob),
                     Ter(temINVALID));
-                env(loanBroker::coverClawback(alice), delegate::As(bob), Ter(temINVALID));
+                env(loan_broker::coverClawback(alice), delegate::As(bob), Ter(temINVALID));
 
                 env(loan::set(alice, keylet.key, Number(100)), delegate::As(bob), Ter(temINVALID));
                 env(loan::manage(alice, keylet.key, 0), delegate::As(bob), Ter(temINVALID));

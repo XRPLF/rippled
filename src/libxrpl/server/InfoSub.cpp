@@ -128,7 +128,7 @@ InfoSub::~InfoSub()
         j);
 }
 
-Resource::Consumer&
+resource::Consumer&
 InfoSub::getConsumer()
 {
     return consumer_;

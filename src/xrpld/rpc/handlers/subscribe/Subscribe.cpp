@@ -47,7 +47,7 @@ wouldExceedSubscriptionCap(InfoSub::ref ispSub, std::size_t additional, std::siz
 }  // namespace
 
 json::Value
-doSubscribe(RPC::JsonContext& context)
+doSubscribe(rpc::JsonContext& context)
 {
     InfoSub::pointer ispSub;
     json::Value jvResult(json::ValueType::Object);
@@ -99,7 +99,7 @@ doSubscribe(RPC::JsonContext& context)
             }
             catch (std::runtime_error const& ex)
             {
-                return RPC::makeParamError(ex.what());
+                return rpc::makeParamError(ex.what());
             }
         }
         else
@@ -214,7 +214,7 @@ doSubscribe(RPC::JsonContext& context)
         if (!context.params[accountsProposed].isArray())
             return rpcError(RpcInvalidParams);
 
-        proposedIds = RPC::parseAccountIds(context.params[accountsProposed]);
+        proposedIds = rpc::parseAccountIds(context.params[accountsProposed]);
         if (proposedIds.empty())
             return rpcError(RpcActMalformed);
     }
@@ -224,7 +224,7 @@ doSubscribe(RPC::JsonContext& context)
         if (!context.params[jss::accounts].isArray())
             return rpcError(RpcInvalidParams);
 
-        accountIds = RPC::parseAccountIds(context.params[jss::accounts]);
+        accountIds = rpc::parseAccountIds(context.params[jss::accounts]);
         if (accountIds.empty())
             return rpcError(RpcActMalformed);
     }
@@ -234,7 +234,7 @@ doSubscribe(RPC::JsonContext& context)
         // Atomic check-and-reserve, so two concurrent requests sharing this
         // InfoSub (admin subscribe-by-url) cannot both pass the cap check.
         if (!ispSub->tryReserveAccountSubscriptions(proposedIds, accountIds, subscriptionCap))
-            return RPC::makeParamError("Too many subscriptions for this connection.");
+            return rpc::makeParamError("Too many subscriptions for this connection.");
     }
 
     if (hasProposed)
@@ -251,7 +251,7 @@ doSubscribe(RPC::JsonContext& context)
         if (!context.app.config().useTxTables())
             return rpcError(RpcNotEnabled);
 
-        context.loadType = Resource::kFeeMediumBurdenRpc;
+        context.loadType = resource::kFeeMediumBurdenRpc;
         auto const& req = context.params[jss::account_history_tx_stream];
         if (!req.isMember(jss::account) || !req[jss::account].isString())
             return rpcError(RpcInvalidParams);
@@ -265,7 +265,7 @@ doSubscribe(RPC::JsonContext& context)
         // a concurrent race adds at most one entry, so the overshoot is trivial.
         std::size_t const historyCharge = ispSub->hasAccountHistorySubscription(*id) ? 0 : 1;
         if (wouldExceedSubscriptionCap(ispSub, historyCharge, subscriptionCap))
-            return RPC::makeParamError("Too many subscriptions for this connection.");
+            return rpc::makeParamError("Too many subscriptions for this connection.");
 
         if (auto result = context.netOps.subAccountHistory(ispSub, *id); result != RpcSuccess)
         {
@@ -295,11 +295,11 @@ doSubscribe(RPC::JsonContext& context)
 
             Book book;
 
-            if (auto const err = RPC::parseSubUnsubJson(book.in, j, jss::taker_pays, context.j);
+            if (auto const err = rpc::parseSubUnsubJson(book.in, j, jss::taker_pays, context.j);
                 err != RpcSuccess)
                 return rpcError(err);
 
-            if (auto const err = RPC::parseSubUnsubJson(book.out, j, jss::taker_gets, context.j);
+            if (auto const err = rpc::parseSubUnsubJson(book.out, j, jss::taker_gets, context.j);
                 err != RpcSuccess)
                 return rpcError(err);
 
@@ -350,7 +350,7 @@ doSubscribe(RPC::JsonContext& context)
             if ((j.isMember(jss::snapshot) && j[jss::snapshot].asBool()) ||
                 (j.isMember(jss::state_now) && j[jss::state_now].asBool()))
             {
-                context.loadType = Resource::kFeeMediumBurdenRpc;
+                context.loadType = resource::kFeeMediumBurdenRpc;
                 std::shared_ptr<ReadView const> lpLedger =
                     context.app.getLedgerMaster().getPublishedLedger();
                 if (lpLedger)
@@ -364,7 +364,7 @@ doSubscribe(RPC::JsonContext& context)
                             field == jss::asks ? reversed(book) : book,
                             takerID ? *takerID : noAccount(),
                             false,
-                            RPC::Tuning::kBookOffers.rDefault,
+                            rpc::tuning::kBookOffers.rDefault,
                             jvMarker,
                             jvOffers);
 

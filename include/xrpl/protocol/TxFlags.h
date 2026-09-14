@@ -425,8 +425,7 @@ inline constexpr FlagValue tfDepositSubTx =
     ASF_FLAG(asfDefaultRipple, 8)                 \
     ASF_FLAG(asfDepositAuth, 9)                   \
     ASF_FLAG(asfAuthorizedNFTokenMinter, 10)      \
-    /*  11 is reserved for Hooks amendment */     \
-    /* ASF_FLAG(asfTshCollect, 11) */             \
+    /*  11 is unused */                           \
     ASF_FLAG(asfDisallowIncomingNFTokenOffer, 12) \
     ASF_FLAG(asfDisallowIncomingCheck, 13)        \
     ASF_FLAG(asfDisallowIncomingPayChan, 14)      \

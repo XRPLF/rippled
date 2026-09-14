@@ -28,16 +28,16 @@ namespace xrpl {
 //   signature: signature to verify
 // }
 json::Value
-doChannelVerify(RPC::JsonContext& context)
+doChannelVerify(rpc::JsonContext& context)
 {
     auto const& params(context.params);
     for (auto const& p : {jss::public_key, jss::channel_id, jss::amount, jss::signature})
     {
         if (!params.isMember(p))
-            return RPC::missingFieldError(p);
+            return rpc::missingFieldError(p);
     }
 
-    context.loadType = Resource::kFeeHeavyBurdenRpc;
+    context.loadType = resource::kFeeHeavyBurdenRpc;
 
     std::optional<PublicKey> pk;
     {

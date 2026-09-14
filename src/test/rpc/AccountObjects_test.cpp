@@ -28,6 +28,7 @@
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/Seed.h>
+#include <xrpl/protocol/SeqProxy.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/protocol/nft.h>
@@ -1546,7 +1547,7 @@ public:
             env(check::create(owner, dest, XRP(1)));
             env.close();
 
-            auto const checkId = keylet::check(owner, checkSeq);
+            auto const checkId = keylet::check(owner, SeqProxy::rawSequence(checkSeq));
             if (!BEAST_EXPECT(env.le(checkId)))
                 return;
 

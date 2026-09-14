@@ -53,6 +53,7 @@
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STPathSet.h>
 #include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/SeqProxy.h>
 #include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
@@ -788,7 +789,7 @@ class MPToken_test : public beast::unit_test::Suite
 
             // locks up bob's mptoken again
             mptAlice.set({.account = alice, .holder = bob, .flags = tfMPTLock});
-            if (!features[featureSingleAssetVault])
+            if (!features[featureSingleAssetVault] && !features[fixCleanup3_4_0])
             {
                 // Delete bob's mptoken even though it is locked
                 mptAlice.authorize({.account = bob, .flags = tfMPTUnauthorize});
@@ -2385,7 +2386,7 @@ class MPToken_test : public beast::unit_test::Suite
                 env.submit(tx);
                 env.close();
 
-                auto const checkKeylet = keylet::check(alice.id(), checkSeq);
+                auto const checkKeylet = keylet::check(alice.id(), SeqProxy::rawSequence(checkSeq));
                 auto const sleCheck = env.le(checkKeylet);
                 BEAST_EXPECT((sleCheck != nullptr) == !bad.negative);
                 if (sleCheck && !bad.negative)
@@ -2413,7 +2414,7 @@ class MPToken_test : public beast::unit_test::Suite
                 env.submit(tx);
                 env.close();
 
-                auto const checkKeylet = keylet::check(alice.id(), checkSeq);
+                auto const checkKeylet = keylet::check(alice.id(), SeqProxy::rawSequence(checkSeq));
                 BEAST_EXPECT((env.le(checkKeylet) != nullptr) == !bad.negative);
                 if (!bad.negative)
                 {
@@ -2441,7 +2442,7 @@ class MPToken_test : public beast::unit_test::Suite
                 env.submit(tx);
                 env.close();
 
-                auto const checkKeylet = keylet::check(alice.id(), checkSeq);
+                auto const checkKeylet = keylet::check(alice.id(), SeqProxy::rawSequence(checkSeq));
                 BEAST_EXPECT((env.le(checkKeylet) != nullptr) == !bad.negative);
                 if (!bad.negative)
                 {
@@ -2472,7 +2473,7 @@ class MPToken_test : public beast::unit_test::Suite
                 env.submit(tx);
                 env.close();
 
-                auto const checkKeylet = keylet::check(alice.id(), checkSeq);
+                auto const checkKeylet = keylet::check(alice.id(), SeqProxy::rawSequence(checkSeq));
                 BEAST_EXPECT((env.le(checkKeylet) != nullptr) == !bad.negative);
                 if (!bad.negative)
                 {
@@ -2501,7 +2502,7 @@ class MPToken_test : public beast::unit_test::Suite
                     env.jt(
                         check::cash(
                             bob,
-                            keylet::check(alice.id(), checkSeq).key,
+                            keylet::check(alice.id(), SeqProxy::rawSequence(checkSeq)).key,
                             STAmount{issue, std::uint64_t{1}})),
                     sfAmount,
                     badCashAmount,
@@ -2510,7 +2511,8 @@ class MPToken_test : public beast::unit_test::Suite
                 tx.ter = bad.holderSourcePreFixTer;
                 env.submit(tx);
                 env.close();
-                BEAST_EXPECT(env.le(keylet::check(alice.id(), checkSeq)) != nullptr);
+                BEAST_EXPECT(
+                    env.le(keylet::check(alice.id(), SeqProxy::rawSequence(checkSeq))) != nullptr);
                 BEAST_EXPECT(
                     (env.balance(alice, issue).value() == STAmount{MPTAmount{10'000}, issue}));
                 BEAST_EXPECT(
@@ -2534,7 +2536,7 @@ class MPToken_test : public beast::unit_test::Suite
                     env.jt(
                         check::cash(
                             bob,
-                            keylet::check(alice.id(), checkSeq).key,
+                            keylet::check(alice.id(), SeqProxy::rawSequence(checkSeq)).key,
                             STAmount{issue, std::uint64_t{1}})),
                     sfAmount,
                     badCashAmount,
@@ -2562,7 +2564,9 @@ class MPToken_test : public beast::unit_test::Suite
                 tx.ter = bad.negative ? TER{temBAD_AMOUNT} : TER{tecINSUFFICIENT_FUNDS};
                 env.submit(tx);
                 env.close();
-                BEAST_EXPECT(env.le(keylet::escrow(alice.id(), escrowSeq)) == nullptr);
+                BEAST_EXPECT(
+                    env.le(keylet::escrow(alice.id(), SeqProxy::rawSequence(escrowSeq))) ==
+                    nullptr);
             }
             {
                 Env env{*this, withFix};
@@ -2963,7 +2967,7 @@ class MPToken_test : public beast::unit_test::Suite
                 auto const issue = makeIssue(env);
 
                 auto const badAmount = badMPTAmount(issue, bad);
-                uint256 const fakeVaultId = keylet::vault(gw.id(), 1).key;
+                uint256 const fakeVaultId = keylet::vault(gw.id(), SeqProxy::rawSequence(1)).key;
                 auto tx = withNonCanonicalMPTAmount(
                     env.jt(
                         Vault::clawback(
@@ -6561,7 +6565,7 @@ class MPToken_test : public beast::unit_test::Suite
             auto const mpt = mptTester["MPT"];
             mptTester.authorize({.account = alice});
 
-            uint256 const checkId{keylet::check(gw, env.seq(gw)).key};
+            uint256 const checkId{keylet::check(gw, SeqProxy::rawSequence(env.seq(gw))).key};
 
             env(check::create(gw, alice, mpt(100)), Ter(temDISABLED));
             env.close();
@@ -6582,7 +6586,7 @@ class MPToken_test : public beast::unit_test::Suite
             mptTester.authorize({.account = alice});
             mptTester.pay(gw, alice, 50);
 
-            uint256 const checkId{keylet::check(alice, env.seq(alice)).key};
+            uint256 const checkId{keylet::check(alice, SeqProxy::rawSequence(env.seq(alice))).key};
 
             // can create
             env(check::create(alice, carol, mpt(100)));
@@ -6612,7 +6616,7 @@ class MPToken_test : public beast::unit_test::Suite
                  .flags = tfMPTCanTransfer | tfMPTCanTrade});
             auto const mpt = mptTester["MPT"];
 
-            uint256 const checkId{keylet::check(gw, env.seq(gw)).key};
+            uint256 const checkId{keylet::check(gw, SeqProxy::rawSequence(env.seq(gw))).key};
 
             // can create
             env(check::create(gw, alice, mpt(200)));
@@ -6766,7 +6770,7 @@ class MPToken_test : public beast::unit_test::Suite
                 {.env = env, .issuer = gw, .holders = {alice, carol}, .flags = tfMPTCanTrade});
 
             // src is issuer
-            uint256 checkId{keylet::check(gw, env.seq(gw)).key};
+            uint256 checkId{keylet::check(gw, SeqProxy::rawSequence(env.seq(gw))).key};
 
             // can create
             env(check::create(gw, alice, mpt(100)));
@@ -6780,7 +6784,7 @@ class MPToken_test : public beast::unit_test::Suite
             BEAST_EXPECT(env.balance(gw, mpt) == mpt(-100));
 
             // dst is issuer
-            checkId = keylet::check(alice, env.seq(alice)).key;
+            checkId = keylet::check(alice, SeqProxy::rawSequence(env.seq(alice))).key;
 
             // can create
             env(check::create(alice, gw, mpt(100)));
@@ -6794,13 +6798,13 @@ class MPToken_test : public beast::unit_test::Suite
             BEAST_EXPECT(env.balance(gw, mpt) == mpt(0));
 
             // neither src nor dst is issuer, can't create
-            checkId = keylet::check(alice, env.seq(alice)).key;
+            checkId = keylet::check(alice, SeqProxy::rawSequence(env.seq(alice))).key;
             env(check::create(alice, carol, mpt(100)), Ter(tecNO_AUTH));
             env.close();
 
             // can create now
             mpt.set({.account = gw, .flags = tfMPTSetCanTransfer});
-            checkId = keylet::check(alice, env.seq(alice)).key;
+            checkId = keylet::check(alice, SeqProxy::rawSequence(env.seq(alice))).key;
             env(check::create(alice, carol, mpt(100)));
             env.close();
             env(pay(gw, alice, mpt(10)));
@@ -6824,7 +6828,7 @@ class MPToken_test : public beast::unit_test::Suite
                  .pay = 10,
                  .flags = tfMPTCanTransfer});
 
-            uint256 const checkId{keylet::check(alice, env.seq(alice)).key};
+            uint256 const checkId{keylet::check(alice, SeqProxy::rawSequence(env.seq(alice))).key};
 
             // can create
             env(check::create(alice, carol, mpt(100)));
@@ -6898,7 +6902,7 @@ class MPToken_test : public beast::unit_test::Suite
             env.fund(XRP(1'000), alice, carol);
 
             // src is issuer
-            uint256 const checkId{keylet::check(alice, env.seq(alice)).key};
+            uint256 const checkId{keylet::check(alice, SeqProxy::rawSequence(env.seq(alice))).key};
 
             // can create
             env(check::create(alice, carol, mpt(100)));
@@ -6926,7 +6930,7 @@ class MPToken_test : public beast::unit_test::Suite
             auto const mpt = mptTester["MPT"];
             mptTester.authorize({.account = alice});
 
-            uint256 const checkId{keylet::check(gw, env.seq(gw)).key};
+            uint256 const checkId{keylet::check(gw, SeqProxy::rawSequence(env.seq(gw))).key};
 
             env(check::create(gw, alice, mpt(100)));
             env.close();
@@ -7653,6 +7657,56 @@ class MPToken_test : public beast::unit_test::Suite
             0, tecNO_PERMISSION, tecNO_PERMISSION, tecNO_PERMISSION, tecNO_PERMISSION);
     }
 
+    void
+    testLockedMPTokenDestroyedIssuance(FeatureBitset features)
+    {
+        testcase("Locked MPToken with destroyed issuance");
+
+        using namespace test::jtx;
+        Account const alice("alice");  // issuer
+        Account const bob("bob");      // holder
+
+        Env env{*this, features};
+        env.fund(XRP(1'000), alice, bob);
+        env.close();
+        MPTTester mptAlice(
+            {.env = env, .issuer = alice, .holders = {bob}, .flags = kMptDexFlags | tfMPTCanLock});
+
+        // alice locks bob's mptoken individually
+        mptAlice.set({.account = alice, .holder = bob, .flags = tfMPTLock});
+
+        // alice destroys her issuance. This succeeds: MPTokenIssuanceDestroy
+        // only requires that the issuance has no outstanding balance; it does
+        // not require that all holder MPTokens have been deleted first.
+        mptAlice.destroy({.ownerCount = 0});
+
+        if (!features[featureSingleAssetVault] || features[fixCleanup3_4_0])
+        {
+            // pre SAV or post Cleanup340 amendment: bob deletes the dangling locked MPToken
+            mptAlice.authorize({.account = bob, .holderCount = 0, .flags = tfMPTUnauthorize});
+            BEAST_EXPECT(ownerCount(env, bob) == 0);
+        }
+        else
+        {
+            // bob cannot delete his locked MPToken, even though the issuance
+            // no longer exists.
+            mptAlice.authorize(
+                {.account = bob, .flags = tfMPTUnauthorize, .err = tecNO_PERMISSION});
+
+            // and the lock can never be cleared, because unlocking
+            // requires the (destroyed) issuance
+            mptAlice.set(
+                {.account = alice,
+                 .holder = bob,
+                 .flags = tfMPTUnlock,
+                 .err = tecOBJECT_NOT_FOUND});
+
+            // the dangling locked MPToken survives
+            BEAST_EXPECT(env.current()->exists(keylet::mptoken(mptAlice.issuanceID(), bob.id())));
+            BEAST_EXPECT(ownerCount(env, bob) == 1);
+        }
+    }
+
 public:
     void
     run() override
@@ -7699,7 +7753,9 @@ public:
         testSetValidation(all - featurePermissionedDomains);
         testSetValidation(all);
 
+        testSetEnabled(all - featureSingleAssetVault - fixCleanup3_4_0);
         testSetEnabled(all - featureSingleAssetVault);
+        testSetEnabled(all - fixCleanup3_4_0);
         testSetEnabled(all);
 
         // MPT clawback
@@ -7766,6 +7822,10 @@ public:
 
         // Fixes
         testFixDoubleOwnerCount(all);
+        testLockedMPTokenDestroyedIssuance(all);
+        testLockedMPTokenDestroyedIssuance(all - fixCleanup3_4_0);
+        testLockedMPTokenDestroyedIssuance(all - featureSingleAssetVault);
+        testLockedMPTokenDestroyedIssuance(all - featureSingleAssetVault - fixCleanup3_4_0);
     }
 };
 

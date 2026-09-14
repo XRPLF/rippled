@@ -8,7 +8,7 @@
 #include <cstdint>
 #include <memory>
 
-// VFALCO NOTE Intentionally not in the NodeStore namespace
+// VFALCO NOTE Intentionally not in the node_store namespace
 
 namespace xrpl {
 
