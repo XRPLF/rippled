@@ -4,8 +4,6 @@
 #include <xrpl/server/LoadFeeTrack.h>
 #include <xrpld/app/main/LoadManager.h>
 #include <cstdint>
-#include <chrono>
-#include <thread>
 
 namespace xrpl {
 
