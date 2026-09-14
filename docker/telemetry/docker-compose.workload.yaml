@@ -11,7 +11,7 @@
 # run-full-validation.sh starts NUM_NODES (default 5) xrpld instances on
 # 127.0.0.1, each with a cfg it generates inline, peered to each other via
 # [ips_fixed]. They reach the collector through the published ports below and
-# write their logs into the bind-mounted workdir for the filelog receiver.
+# write their logs into the bind-mounted workdir for the file_log receiver.
 #
 # Usage:
 #   # Start the telemetry backend on its own:
@@ -47,7 +47,7 @@ services:
       - "13133:13133" # Health check
     volumes:
       - ./otel-collector-config.yaml:/etc/otel-collector-config.yaml:ro
-      # Mount the validation workdir so the filelog receiver can tail node
+      # Mount the validation workdir so the file_log receiver can tail node
       # logs. run-full-validation.sh sets XRPLD_LOG_DIR to its workdir; the
       # default matches that workdir so a bare `docker compose up` also works.
       - ${XRPLD_LOG_DIR:-/tmp/xrpld-validation}:/var/log/xrpld:ro

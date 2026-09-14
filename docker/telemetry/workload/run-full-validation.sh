@@ -80,6 +80,12 @@ NUM_NODES=5
 RPC_PORT_BASE=5005
 WS_PORT_BASE=6006
 PEER_PORT_BASE=51235
+
+# Hard ceiling on every RPC probe below. curl applies no overall timeout of its
+# own, so a node that accepts the connection and then stops answering parks the
+# poll loop for the rest of the run. The loops here count attempts, not seconds,
+# so without this their stated timeouts are not bounds at all.
+CURL_MAX_TIME="${CURL_MAX_TIME:-5}"
 # Inert: parsed from --rpc-rate/--rpc-duration/--tx-tps/--tx-duration and never
 # read again. Load shape comes from the workload profile instead. Kept because
 # the CI workflow still passes the four flags.
@@ -260,14 +266,14 @@ mkdir -p "$WORKDIR" "$REPORT_DIR" || die "Could not create $WORKDIR and $REPORT_
 # Step 1: Start observability stack
 # ---------------------------------------------------------------------------
 log "Step 1: Starting observability stack..."
-# Point the collector's log mount at this run's workdir so the filelog
+# Point the collector's log mount at this run's workdir so the file_log
 # receiver tails the per-node debug.log files generated below.
 XRPLD_LOG_DIR="$WORKDIR" docker compose -f "$COMPOSE_FILE" up -d ||
     die "docker compose up failed for $COMPOSE_FILE — the observability stack did not start"
 
 log "Waiting for OTel Collector..."
 for attempt in $(seq 1 30); do
-    status=$(curl -so /dev/null -w '%{http_code}' http://localhost:4318/ 2>/dev/null || echo 000)
+    status=$(curl -so /dev/null -w '%{http_code}' --max-time "$CURL_MAX_TIME" http://localhost:4318/ 2>/dev/null || echo 000)
     if [ "$status" != "000" ]; then
         ok "OTel Collector ready (attempt $attempt)"
         break
@@ -278,7 +284,7 @@ done
 
 log "Waiting for Tempo..."
 for attempt in $(seq 1 30); do
-    if curl -sf "http://localhost:3200/ready" >/dev/null 2>&1; then
+    if curl -sf --max-time "$CURL_MAX_TIME" "http://localhost:3200/ready" >/dev/null 2>&1; then
         ok "Tempo ready (attempt $attempt)"
         break
     fi
@@ -288,7 +294,7 @@ done
 
 log "Waiting for Prometheus..."
 for attempt in $(seq 1 30); do
-    if curl -sf "http://localhost:9090/-/healthy" >/dev/null 2>&1; then
+    if curl -sf --max-time "$CURL_MAX_TIME" "http://localhost:9090/-/healthy" >/dev/null 2>&1; then
         ok "Prometheus ready (attempt $attempt)"
         break
     fi
@@ -305,7 +311,7 @@ bash "$SCRIPT_DIR/generate-validator-keys.sh" "$XRPLD" "$NUM_NODES" "$WORKDIR" |
     die "generate-validator-keys.sh failed — no validator keys for the $NUM_NODES-node cluster"
 
 for i in $(seq 1 "$NUM_NODES"); do
-    NODE_DIR="$WORKDIR/node$i"
+    NODE_DIR="$WORKDIR/validator-$i"
     mkdir -p "$NODE_DIR/nudb" "$NODE_DIR/db" || die "Could not create node$i directories under $NODE_DIR"
 
     RPC_PORT=$((RPC_PORT_BASE + i - 1))
@@ -472,15 +478,15 @@ node_running() {
 report_stopped_nodes() {
     local i pid status
     for i in $(seq 1 "$NUM_NODES"); do
-        pid=$(cat "$WORKDIR/node$i/xrpld.pid" 2>/dev/null || echo "")
+        pid=$(cat "$WORKDIR/validator-$i/xrpld.pid" 2>/dev/null || echo "")
         [ -n "$pid" ] || continue
         node_running "$pid" && continue
         status=0
         wait "$pid" 2>/dev/null || status=$?
         warn "node$i (pid $pid) is not running — wait status $status"
-        if [ -s "$WORKDIR/node$i/stdout.log" ]; then
+        if [ -s "$WORKDIR/validator-$i/stdout.log" ]; then
             warn "node$i last output:"
-            tail -n 15 "$WORKDIR/node$i/stdout.log" | sed 's/^/      /' >&2
+            tail -n 15 "$WORKDIR/validator-$i/stdout.log" | sed 's/^/      /' >&2
         else
             warn "node$i wrote no stdout at all"
         fi
@@ -494,7 +500,7 @@ for attempt in $(seq 1 120); do
     laggards=""
     for i in $(seq 1 "$NUM_NODES"); do
         port=$((RPC_PORT_BASE + i - 1))
-        state=$(curl -sf "http://localhost:$port" \
+        state=$(curl -sf --max-time "$CURL_MAX_TIME" "http://localhost:$port" \
             -d '{"method":"server_info"}' 2>/dev/null |
             jq -r '.result.info.server_state' 2>/dev/null || echo "")
         if [ "$state" = "proposing" ]; then
@@ -552,7 +558,7 @@ echo ""
 # Wait for first validated ledger.
 log "Waiting for validated ledger..."
 for attempt in $(seq 1 60); do
-    val_seq=$(curl -sf "http://localhost:$RPC_PORT_BASE" \
+    val_seq=$(curl -sf --max-time "$CURL_MAX_TIME" "http://localhost:$RPC_PORT_BASE" \
         -d '{"method":"server_info"}' 2>/dev/null |
         jq -r '.result.info.validated_ledger.seq // 0' 2>/dev/null || echo 0)
     if [ "$val_seq" -gt 2 ] 2>/dev/null; then
@@ -600,7 +606,7 @@ fi
 # ---------------------------------------------------------------------------
 # Log-trace correlation has four legs and a failed check names none of them:
 # the node must write a debug.log line carrying trace ids, the collector
-# container must see that file, its filelog receiver must parse and export the
+# container must see that file, its file_log receiver must parse and export the
 # line, and Loki must return it for the validator's own LogQL. Each leg below
 # reports what it observed, so a reader with only the CI log can tell which one
 # broke instead of guessing.
@@ -698,7 +704,7 @@ diag_node_logs() {
     local i log bytes total correlated sample
     echo "  [leg 1/4 node] debug.log lines matching '$DIAG_TRACE_RE'"
     for i in $(seq 1 "$NUM_NODES"); do
-        log="$WORKDIR/node$i/debug.log"
+        log="$WORKDIR/validator-$i/debug.log"
         if [ ! -f "$log" ]; then
             echo "    node$i: no debug.log at $log — the node never opened its log sink"
             continue
@@ -780,10 +786,10 @@ diag_collector_mount() {
         sed 's/^/      /' || echo "      (container-side listing failed)"
 }
 
-# Leg 3 — collector: did the filelog receiver parse and export those lines?
+# Leg 3 — collector: did the file_log receiver parse and export those lines?
 #
 # Two independent readings. The collector's own stderr names every file the
-# receiver opened and carries any filelog parse or Loki export error. Its
+# receiver opened and carries any file_log parse or Loki export error. Its
 # internal telemetry counts log records in and out: accepted>0 with sent=0 is
 # an export failure, accepted=0 while files are being watched is a parse
 # failure.
@@ -795,7 +801,7 @@ diag_collector_mount() {
 # exists; when it reports nothing matching, the leg says so.
 diag_collector_pipeline() {
     local cid img watched problems metrics
-    echo "  [leg 3/4 collector] filelog receiver state"
+    echo "  [leg 3/4 collector] file_log receiver state"
     if ! command -v docker >/dev/null 2>&1; then
         echo "    docker is not on PATH — leg skipped"
         return 0
@@ -816,12 +822,12 @@ diag_collector_pipeline() {
     # Second filter keys on the collector's own logs-pipeline markers so this
     # does not report warnings from the trace or metric pipelines. Nothing is
     # excluded beyond that: the collector's benign config-alias deprecation
-    # notices ("filelog" -> "file_log") do surface here, and suppressing lines
+    # notices ("file_log" -> "file_log") do surface here, and suppressing lines
     # because they are usually harmless is how a diagnostic hides the one that
     # was not.
     problems=$(diag_run docker logs "$cid" 2>&1 |
         grep -iE '(warn|error)' |
-        grep -iE 'filelog|fileconsumer|loki|signal": *"logs' |
+        grep -iE 'file_log|fileconsumer|loki|signal": *"logs' |
         tail -n 20 || true)
     if [ -n "$problems" ]; then
         echo "    logs-pipeline warnings and errors (last 20):"
@@ -863,7 +869,7 @@ diag_loki_stream() {
     [ -n "$selector" ] || selector="$DIAG_LOG_SELECTOR"
     [ -n "$correlation" ] || correlation="$DIAG_LOG_SELECTOR $DIAG_LOG_FILTER"
     # sum() is required, for the reason recorded at _log_loki_diagnostics in
-    # validate_telemetry.py: the filelog regex_parser leaves message/timestamp
+    # validate_telemetry.py: the file_log regex_parser leaves message/timestamp
     # as log-record attributes, Loki's OTLP path turns those into structured
     # metadata that joins a metric query's label set, so an unaggregated
     # count_over_time yields one series per log line and Loki rejects the query
@@ -1070,7 +1076,7 @@ echo "  xrpld nodes ($NUM_NODES) are running:"
 for i in $(seq 1 "$NUM_NODES"); do
     rpc=$((RPC_PORT_BASE + i - 1))
     ws=$((WS_PORT_BASE + i - 1))
-    pid=$(cat "$WORKDIR/node$i/xrpld.pid" 2>/dev/null || echo 'unknown')
+    pid=$(cat "$WORKDIR/validator-$i/xrpld.pid" 2>/dev/null || echo 'unknown')
     echo "    Node $i: RPC=$rpc WS=$ws PID=$pid"
 done
 echo ""

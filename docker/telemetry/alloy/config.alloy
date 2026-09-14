@@ -17,6 +17,15 @@
 // See docker/telemetry/otel-collector-config.grafanacloud.yaml for the
 // authoritative collector equivalent; keep the dimension list in sync with it.
 //
+// Logs are tailed here too, so all three signals leave a node through one
+// exporter with one resource identity. The reference collector reads the log
+// file with otelcol's own filelog receiver; Alloy's equivalent
+// (otelcol.receiver.filelog) is still public-preview and refuses to load
+// without --stability.level=public-preview on the alloy service, so the Loki
+// source components are used instead and bridged into OTLP by
+// otelcol.receiver.loki. Every component below is generally-available, so the
+// service needs no extra flag.
+//
 // PIPELINE
 //
 //   HOST / SYSTEMD METRICS:
@@ -28,6 +37,15 @@
 //                                                 └─▶ processor.batch ◀───────┘
 //                                                          │ traces + metrics
 //                                                          ▼
+//                                                 exporter.otlphttp (GC OTLP gateway)
+//
+//   xrpld LOGS (debug.log):
+//     file_match ─▶ loki.source.file ─▶ loki.process ─▶ receiver.loki
+//                                       (parse+label)         │ OTLP logs
+//                                                             ▼
+//                                        processor.transform.tier ─▶ processor.batch
+//                                                                          │
+//                                                                          ▼
 //                                                 exporter.otlphttp (GC OTLP gateway)
 //
 // The Grafana Cloud OTLP gateway converts OTLP resource attributes to
@@ -44,11 +62,20 @@
 //   GRAFANACLOUD_OTLP_URL    OTLP/HTTP gateway URL, including the /otlp path
 //   GRAFANACLOUD_OTLP_USER   OTLP basic-auth username (numeric stack id)
 //   GRAFANACLOUD_OTLP_KEY    OTLP basic-auth password (access token)
-//   XRPLD_HOST_LABEL         host label for this node's scraped metrics
+//   XRPLD_HOST_LABEL         host label for this node's scraped metrics, and
+//                            the service.instance.id stamped on its logs. It
+//                            must equal the node's [telemetry]
+//                            service_instance_id, or logs carry a node name
+//                            that no trace or metric shares and nothing joins.
+// Optional:
+//   XRPLD_LOG_GLOB           debug.log path to tail. Defaults to
+//                            /space/xrpld/log/debug.log, the devnet layout.
 //
 // PER-DEPLOYMENT EDITS: the deployment.environment and xrpl.network.type tier
 // values in otelcol.processor.transform are literals (OTTL cannot read env
-// vars) -- edit them to match this node's tier and network.
+// vars) -- edit them to match this node's tier and network. The log path is the
+// exception: it is built in River, where sys.env does expand, and concatenated
+// into the OTTL statement.
 
 logging {
   level = "info"
@@ -134,6 +161,68 @@ otelcol.receiver.otlp "xrpld" {
 //   * xrpl.network.type -> set only when absent (don't overwrite the node's
 //     own value). OTTL `where ... == nil` gives insert (not upsert) semantics.
 //   * telemetry.sdk.* -> deleted (SDK noise).
+// ===========================================================================
+// xrpld LOGS  (debug.log --> OTLP gateway)
+// ===========================================================================
+
+// Tail the node's debug.log. devnet writes a single flat file
+// (/space/xrpld/log/debug.log) rather than the per-node subdirectory the docker
+// stack uses, so identity cannot be read off the path here -- it comes from
+// XRPLD_HOST_LABEL below. Override XRPLD_LOG_GLOB for a different layout.
+local.file_match "xrpld_logs" {
+  path_targets = [{
+    __path__ = coalesce(sys.env("XRPLD_LOG_GLOB"), "/space/xrpld/log/debug.log"),
+  }]
+}
+
+loki.source.file "xrpld_logs" {
+  targets    = local.file_match.xrpld_logs.targets
+  forward_to = [loki.process.xrpld_logs.receiver]
+}
+
+// Parse the line Logs::format() emits:
+//   YYYY-Mmm-DD HH:MM:SS.fffffffff UTC <partition>:<severity> [trace_id=... span_id=...] <message>
+// The `partition:` prefix is omitted when the partition is empty, so that group
+// is optional, and trace_id/span_id are present only for a sampled span.
+loki.process "xrpld_logs" {
+  forward_to = [otelcol.receiver.loki.xrpld.receiver]
+
+  stage.regex {
+    expression = "^(?P<log_time>\\S+\\s+\\S+)\\s+\\S+\\s+(?:(?P<partition>\\S+):)?(?P<severity>\\S+)\\s+(?:trace_id=(?P<trace_id>[a-f0-9]+)\\s+span_id=(?P<span_id>[a-f0-9]+)\\s+)?"
+  }
+
+  // Use the node's own timestamp, not ingest time, or a log line cannot be
+  // lined up with the span it belongs to. The node emits nanosecond precision;
+  // the fractional part of this layout accepts any number of digits.
+  stage.timestamp {
+    source   = "log_time"
+    format   = "2006-Jan-02 15:04:05.999999999"
+    location = "UTC"
+  }
+
+  // A regex capture stays in the pipeline's extracted map and never reaches the
+  // entry unless a stage attaches it. Structured metadata keeps these queryable
+  // without making any of them an indexed label.
+  stage.structured_metadata {
+    values = {
+      partition = "",
+      severity  = "",
+      trace_id  = "",
+      span_id   = "",
+    }
+  }
+}
+
+// Bridge the Loki entries into OTLP so logs use the same exporter, and get the
+// same resource identity, as traces and metrics. Note this receiver produces an
+// EMPTY resource and puts everything on the log record, so the resource
+// attributes are set in processor.transform below.
+otelcol.receiver.loki "xrpld" {
+  output {
+    logs = [otelcol.processor.transform.tier.input]
+  }
+}
+
 otelcol.processor.transform "tier" {
   error_mode = "ignore"
 
@@ -166,6 +255,40 @@ otelcol.processor.transform "tier" {
     ]
   }
 
+  // Logs use `log` context, not `resource`, for two reasons: receiver.loki
+  // hands over an empty resource, and the fields to promote (severity, trace
+  // ids) live on the record. Each Alloy instance serves one node, so writing a
+  // resource attribute from a record is unambiguous here.
+  //
+  // service.instance.id is concatenated in from XRPLD_HOST_LABEL because OTTL
+  // has no env() converter. Loki promotes only an allow-listed set of RESOURCE
+  // attributes to indexed stream labels, and service.instance.id is on that
+  // list, so it arrives as the label service_instance_id that the dashboards
+  // filter on. Setting it as a record attribute instead would make it
+  // structured metadata, which cannot be used in a {...} stream selector.
+  log_statements {
+    context = "log"
+    statements = [
+      "set(resource.attributes[\"service.instance.id\"], \"" + coalesce(sys.env("XRPLD_HOST_LABEL"), "unknown") + "\")",
+      `set(resource.attributes["service.name"], "xrpld")`,
+      `set(resource.attributes["deployment.environment"], "prod")`,
+      `set(resource.attributes["xrpl.network.type"], "mainnet") where resource.attributes["xrpl.network.type"] == nil`,
+      // Promote the parsed fields onto the first-class OTLP record fields, so
+      // Grafana links a log line to its trace natively instead of re-parsing
+      // the body. The guards matter: most lines are emitted outside a sampled
+      // span and must keep an empty trace id rather than an invalid one.
+      `set(severity_text, attributes["severity"]) where attributes["severity"] != nil`,
+      `set(trace_id.string, attributes["trace_id"]) where attributes["trace_id"] != nil`,
+      `set(span_id.string, attributes["span_id"]) where attributes["span_id"] != nil`,
+      // Drop the bridge's own bookkeeping so it does not become structured
+      // metadata on every line.
+      `delete_key(attributes, "filename")`,
+      `delete_key(attributes, "loki.attribute.labels")`,
+      `delete_key(attributes, "log.file.path")`,
+      `delete_key(attributes, "log.file.name")`,
+    ]
+  }
+
   output {
     // Traces fan out: to the batch/gateway path AND into the spanmetrics
     // connector so the RED metrics are derived from the same tagged spans.
@@ -175,6 +298,7 @@ otelcol.processor.transform "tier" {
     ]
     // Native metrics go straight to the batch/gateway path.
     metrics = [otelcol.processor.batch.xrpld.input]
+    logs    = [otelcol.processor.batch.xrpld.input]
   }
 }
 
@@ -264,6 +388,7 @@ otelcol.processor.batch "xrpld" {
   output {
     traces  = [otelcol.exporter.otlphttp.grafanacloud.input]
     metrics = [otelcol.exporter.otlphttp.grafanacloud.input]
+    logs    = [otelcol.exporter.otlphttp.grafanacloud.input]
   }
 }
 

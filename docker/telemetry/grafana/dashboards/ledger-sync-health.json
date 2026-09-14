@@ -2006,7 +2006,7 @@
           "instant": true
         }
       ],
-      "title": "Acquire Stalls — No Progress (Count) [$xrpl_network_type]",
+      "title": "Acquire Stalls \u2014 No Progress (Count) [$xrpl_network_type]",
       "type": "bargauge",
       "repeat": "xrpl_network_type",
       "repeatDirection": "h",
@@ -5100,6 +5100,279 @@
         }
       ],
       "title": "Trusted Validation Accept Rate by Status",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "description": "###### What this is:\n*Count of ledger-acquire timeouts where not a single new node arrived since the previous timeout.*\n\n###### How it's computed:\n*count of sync_acquire_no_progress_total, incremented on each acquire timeout whose progress flag was false. The acquire timer fires every 3 seconds at most.*\n\n###### Reading it:\n*Zero means every timeout window saw at least some new data. Any sustained count means acquires are repeatedly timing out with nothing received.*\n\n###### Healthy range:\n*0 on a synced node; brief non-zero bursts during initial sync are normal.*\n\n###### Watch for:\n*A sustained count together with a flat Missing SHAMap Nodes panel: the node is asking and no peer is answering. Check peer count and whether any peer holds the ledger range being requested.*\n\n###### Keywords:\n- **Acquire stall** *(per node)* \u2014 an acquire timeout in which no new SHAMap node was received, so the acquire made no progress at all.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Computed in xrpld code (call-site metric macro, OpenTelemetry SDK) and exported as a metric; the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[InboundLedger.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/app/ledger/detail/InboundLedger.cpp)\n\n###### Function:\n`InboundLedger::onTimer`\n\n###### References:\n[Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#acquire-stall)",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "displayName": "Acquire Stalls ${__field.labels.xrpl_ident}",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "unit": "short",
+          "decimals": 0
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 10,
+        "w": 12,
+        "x": 12,
+        "y": 226
+      },
+      "id": 73,
+      "options": {
+        "displayMode": "gradient",
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": false
+        },
+        "maxVizHeight": 300,
+        "minVizHeight": 16,
+        "minVizWidth": 8,
+        "namePlacement": "left",
+        "orientation": "horizontal",
+        "reduceOptions": {
+          "calcs": ["lastNotNull"],
+          "fields": "",
+          "values": false
+        },
+        "showUnfilled": true,
+        "sizing": "manual",
+        "valueMode": "color"
+      },
+      "pluginVersion": "13.2.0-28926505616",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "label_replace(label_join(label_replace(increase(jobq_stall_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}[$__range]), \"series\", \"Stalls\", \"\", \"\")), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(?:, )*(.*[^, ])(?:, )*\")",
+          "refId": "A",
+          "instant": true
+        }
+      ],
+      "title": "Job Stalls \u22651 s (Count By Job Type) [$xrpl_network_type]",
+      "type": "bargauge",
+      "repeat": "xrpl_network_type",
+      "repeatDirection": "h",
+      "maxPerRow": 2
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "description": "###### What this is:\n*p95 wall-clock seconds spent in each online-delete rotation phase, broken down by `stage`. Recorded from `SHAMapStoreImp::RotationPhase`'s destructor at the end of every rotation phase.*\n\n###### What to look for:\n* `freshen.keys` p95 in seconds means the tree-node cache mutex was held across a `getKeys()` copy for that long \u2014 every SHAMap fetch during that window waited.\n* `copy` p95 approaching the rotation cadence means the state-map walk is no longer converging inside its own interval.\n\n###### Source:\n`SHAMapStoreImp.cpp` \u2014 `SHAMapStoreImp::run` and `RotationPhase`\n\n###### Keywords:\nRotation phase duration, online-delete, freshen.keys, rotation stall",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "Phase duration (s)",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "showValues": false,
+            "spanNulls": 1800000,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "unit": "s",
+          "displayName": "${__field.labels.series} ${__field.labels.stage} ${__field.labels.xrpl_ident}"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 10,
+        "w": 12,
+        "x": 0,
+        "y": 429
+      },
+      "id": 74,
+      "options": {
+        "annotations": {
+          "clustering": -1,
+          "multiLane": false
+        },
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "enableFacetedFilter": false,
+          "overflow": "ellipsis",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "maxHeight": 600,
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "pluginVersion": "13.2.0-28926505616",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "label_replace(label_join(label_replace(histogram_quantile(0.95, sum by (le, stage, service_instance_id, xrpl_branch, xrpl_work_item) (rate(rotation_phase_duration_seconds_bucket{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}[$__rate_interval]))), \"series\", \"P95 rotation phase\", \"\", \"\")), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(?:, )*(.*[^, ])(?:, )*\")",
+          "refId": "A"
+        }
+      ],
+      "title": "Rotation Phase Duration (p95 by stage)",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "description": "###### What this is:\n*Longest single hold of a `TaggedCache::mutex_` since the previous collection tick, in microseconds. One series each for the tree-node cache and the FullBelow cache, observed on the `cache_metrics` gauge.*\n\n###### What to look for:\n* A multi-second peak in `treenode_lock_hold_peak_us` is the mutex hold that froze every SHAMap fetch job.\n* Correlate with the `nodestore.rotate.freshen.keys` span and the `rotating` log line \u2014 a rotation is the usual cause.\n\n###### Source:\n`TaggedCache.ipp` \u2014 `noteLockHold`, `takeLockHoldPeak`; observed by `MetricsRegistry::observeCacheLockHoldPeaks`\n\n###### Keywords:\nTaggedCache lock hold, TreeNodeCache, FullBelowCache, rotation stall",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "Lock hold (us)",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "showValues": false,
+            "spanNulls": 1800000,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "displayName": "${__field.labels.series} ${__field.labels.metric} ${__field.labels.xrpl_ident}",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "unit": "\u00b5s"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 10,
+        "w": 12,
+        "x": 0,
+        "y": 439
+      },
+      "id": 75,
+      "options": {
+        "annotations": {
+          "clustering": -1,
+          "multiLane": false
+        },
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "enableFacetedFilter": false,
+          "overflow": "ellipsis",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "maxHeight": 600,
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "pluginVersion": "13.2.0-28926505616",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "label_replace(label_join(label_replace(cache_metrics{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", metric=~\"treenode_lock_hold_peak_us|fullbelow_lock_hold_peak_us\"}, \"series\", \"Lock hold\", \"\", \"\")), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(?:, )*(.*[^, ])(?:, )*\")",
+          "refId": "A"
+        }
+      ],
+      "title": "Cache Lock Hold Peak (\u00b5s)",
       "type": "timeseries"
     }
   ],

@@ -38,11 +38,13 @@ receivers:
         endpoint: 0.0.0.0:4317
       http:
         endpoint: 0.0.0.0:4318
-  filelog:
+  file_log:
     include:
       - /var/log/xrpld/*/debug.log
-    # Stamp each record with its source path so per-node identity can be derived
-    # from it below.
+    # Needed to recover which node a line came from. The subdirectory name is
+    # the only per-node signal in the log stream: Logs::format() writes
+    # trace_id and span_id but no node identity. Emitters name the directory
+    # after their own service_instance_id so the two agree.
     include_file_path: true
     operators:
       - type: regex_parser
@@ -51,21 +53,26 @@ receivers:
           parse_from: attributes.timestamp
           layout: "%Y-%b-%d %H:%M:%S.%f"
           location: UTC
-      # Derive per-node identity from the log path. By convention the directory
-      # basename is the node's service_instance_id
-      # (/var/log/xrpld/xrpld-mainnet/debug.log), so promote it to the
-      # service.instance.id resource attribute. Without this the logs pipeline
-      # carries no service_instance_id label while the metrics pipeline does, so
-      # the dashboards' $node filter matches nothing for logs while still working
-      # for metrics -- a partial failure that reads as "no logs" rather than as a
-      # misconfiguration. Both node configs name their log directory after their
-      # service_instance_id for exactly this reason.
+      # Lift the per-node directory out of the file path and onto the
+      # RESOURCE. include_file_path alone is not enough: it produces a log
+      # RECORD attribute, and on OTLP ingest Loki promotes only an allow-list
+      # of RESOURCE attributes to indexed stream labels. A record attribute
+      # becomes structured metadata, which cannot be used in a {...} selector.
+      # service.instance.id is on that allow-list and arrives as the LogQL
+      # label service_instance_id, which is the label the dashboards filter on.
+      # Dotted keys need bracket syntax; dot notation would be read as a
+      # nested traversal and match nothing.
       - type: regex_parser
         parse_from: attributes["log.file.path"]
-        regex: '/xrpld/(?P<node_instance>[^/]+)/debug\.log$'
+        parse_to: attributes
+        regex: "^/var/log/xrpld/(?P<node_dir>[^/]+)/"
       - type: move
-        from: attributes.node_instance
+        from: attributes.node_dir
         to: resource["service.instance.id"]
+      # Drop the raw path once the node name is on the resource. Keeping it
+      # would add a structured-metadata field to every line for no benefit.
+      - type: remove
+        field: attributes["log.file.path"]
 
 processors:
   batch:
@@ -83,6 +90,15 @@ processors:
         type: probabilistic
         probabilistic:
           sampling_percentage: 0.5
+      # A rotation happens every ~2 h and is the trace that proves a
+      # full->syncing flap. Keep every one; children arrive first, so match
+      # on the family prefix rather than the root name.
+      - name: keep-rotation-traces
+        type: ottl_condition
+        ottl_condition:
+          error_mode: ignore
+          span:
+            - 'IsMatch(name, "^nodestore\\.rotate")'
   resource/logs:
     attributes:
       - key: service.name
@@ -264,7 +280,7 @@ exporters:
     endpoint: tempo:4317
     tls:
       insecure: true
-  otlphttp/loki:
+  otlp_http/loki:
     endpoint: http://loki:3100/otlp
   prometheus:
     endpoint: 0.0.0.0:8889
@@ -277,7 +293,7 @@ exporters:
   # Single OTLP/HTTP exporter to Grafana Cloud. The gateway fans the three
   # signals out to hosted Tempo (traces), Mimir/Prometheus (metrics), and
   # Loki (logs). Retry + queue guard against transient gateway errors.
-  otlphttp/grafanacloud:
+  otlp_http/grafanacloud:
     endpoint: ${env:GRAFANA_CLOUD_OTLP_ENDPOINT}
     auth:
       authenticator: basicauth/grafanacloud
@@ -290,7 +306,7 @@ service:
   extensions: [health_check, basicauth/grafanacloud]
   pipelines:
     # Each pipeline keeps its local exporter(s) AND adds Grafana Cloud.
-    # For cloud-only, drop debug/otlp/tempo, prometheus, and otlphttp/loki
+    # For cloud-only, drop debug/otlp/tempo, prometheus, and otlp_http/loki
     # from the respective exporter lists.
     # 100% of spans feed the spanmetrics connector so span-derived RED
     # metrics stay exact. No tail sampling on this branch.
@@ -303,7 +319,7 @@ service:
     traces/store:
       receivers: [otlp]
       processors: [tail_sampling, resource/tier, resource/stripsdk, batch]
-      exporters: [otlp/tempo, otlphttp/grafanacloud]
+      exporters: [otlp/tempo, otlp_http/grafanacloud]
     # The local Prometheus scrape promotes tier/instance resource attrs to
     # labels via resource_to_telemetry_conversion; Grafana Cloud (OTLP) does
     # not, so it runs a separate pipeline that copies them onto datapoint
@@ -317,8 +333,8 @@ service:
       receivers: [otlp, spanmetrics]
       processors:
         [resource/tier, resource/stripsdk, transform/cloudlabels, batch]
-      exporters: [otlphttp/grafanacloud]
+      exporters: [otlp_http/grafanacloud]
     logs:
-      receivers: [filelog]
+      receivers: [file_log]
       processors: [resource/logs, resource/tier, resource/stripsdk, batch]
-      exporters: [otlphttp/loki, otlphttp/grafanacloud]
+      exporters: [otlp_http/loki, otlp_http/grafanacloud]

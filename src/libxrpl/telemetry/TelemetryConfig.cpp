@@ -8,13 +8,16 @@
  * See cfg/xrpld-example.cfg for the full list of available options.
  */
 
-#include <xrpl/basics/FileUtilities.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/config/BasicConfig.h>
 #include <xrpl/telemetry/Telemetry.h>
 
+#include <cerrno>
 #include <chrono>
 #include <cstdint>
+#include <filesystem>
+#include <fstream>
+#include <ios>
 #include <limits>
 #include <optional>
 #include <stdexcept>
@@ -148,12 +151,15 @@ readBounded(
 }
 
 /**
- * Throw unless the given path names a file this process can read.
+ * Throw unless the given path names a regular file this process can read.
  *
- * An empty path means the option is unset, which every caller allows. Reading
- * the file proves it is both present and readable; testing existence alone
- * would miss a permissions problem. The contents are discarded — nothing here
- * checks that they parse as PEM.
+ * An empty path means the option is unset, which every caller allows. Opening
+ * the file proves it is present and that the read permission check passes,
+ * without loading any of its contents — one of these paths names a private key.
+ * Nothing here checks that the contents parse as PEM.
+ *
+ * A path that is not a regular file is rejected before the open, because
+ * opening a FIFO waits for a writer.
  *
  * @param path       Path taken from the config, possibly empty.
  * @param configKey  Config key the path came from, named in the message. Not
@@ -166,13 +172,28 @@ requireReadableFile(std::string const& path, char const* configKey)
     if (path.empty())
         return;
 
+    // Each branch sets the reason and stops. The two that come from the
+    // operating system reuse its message; the middle one has no errno to read.
     std::error_code ec;
-    getFileContents(ec, path);
+    std::string reason;
+    auto const fileStatus = std::filesystem::status(path, ec);
     if (ec)
     {
+        reason = ec.message();
+    }
+    else if (!std::filesystem::is_regular_file(fileStatus))
+    {
+        reason = "not a regular file";
+    }
+    else if (std::ifstream const stream{path, std::ios::in}; !stream)
+    {
+        reason = std::error_code{errno, std::generic_category()}.message();
+    }
+
+    if (!reason.empty())
+    {
         Throw<std::runtime_error>(
-            std::string{"[telemetry] "} + configKey + " cannot be read: " + path + " - " +
-            ec.message());
+            std::string{"[telemetry] "} + configKey + " cannot be read: " + path + " - " + reason);
     }
 }
 
@@ -322,7 +343,13 @@ makeTelemetrySetup(
     setup.enabled = section.valueOr<int>(key::enabled, 0) != 0;
     setup.serviceName = section.valueOr<std::string>(key::serviceName, dflt::serviceName);
     setup.serviceVersion = version;
+    // Match makeMetricsRegistryOptions() in Application.cpp: an empty
+    // configured value is treated as absent and falls back to the node key,
+    // so traces and metrics stamp the same identity. Otherwise one node
+    // reports two identities and every $node filter shows half the series.
     setup.serviceInstanceId = section.valueOr<std::string>(key::serviceInstanceId, nodePublicKey);
+    if (setup.serviceInstanceId.empty())
+        setup.serviceInstanceId = nodePublicKey;
 
     setup.tracesEndpoint = section.valueOr<std::string>(key::tracesEndpoint, dflt::tracesEndpoint);
     setup.metricsEndpoint =
@@ -366,13 +393,18 @@ makeTelemetrySetup(
         }
 
         // Still inside the enabled branch, and checked before the files are
-        // opened so a scheme problem is not hidden behind a path problem. The
-        // exporter reads TLS off the endpoint scheme, so a client certificate is
-        // only presented on an https endpoint. tls_ca_cert is left out of this
-        // check: it only names a trust store, while a client certificate is this
-        // node's own identity and has to reach the collector to mean anything.
+        // opened so a scheme problem is not hidden behind a path problem. Each
+        // exporter reads TLS off its own endpoint scheme, and both are handed
+        // the client certificate, so both endpoints have to be https. Checking
+        // only one leaves the other signal exporting in the clear without this
+        // node's identity. tls_ca_cert is left out of this check: it only names
+        // a trust store, while a client certificate is this node's own identity
+        // and has to reach the collector to mean anything.
         if (!setup.tlsClientCertPath.empty())
+        {
             requireHttpsEndpoint(setup.tracesEndpoint, key::tracesEndpoint);
+            requireHttpsEndpoint(setup.metricsEndpoint, key::metricsEndpoint);
+        }
 
         // Still inside the enabled branch. The exporter opens these files only
         // when TLS is on, so check them only then: a bad path behind use_tls=0

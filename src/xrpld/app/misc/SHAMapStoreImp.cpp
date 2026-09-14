@@ -1,7 +1,9 @@
+// cspell:ignore ISTOGRAM Wreturn
 #include <xrpld/app/misc/SHAMapStoreImp.h>
 
 #include <xrpld/app/ledger/TransactionMaster.h>
 #include <xrpld/app/misc/SHAMapStore.h>
+#include <xrpld/app/misc/SHAMapStoreSpanNames.h>
 #include <xrpld/app/rdb/backend/SQLiteDatabase.h>
 #include <xrpld/core/Config.h>
 #include <xrpld/telemetry/MetricMacros.h>
@@ -33,6 +35,8 @@
 #include <xrpl/server/State.h>
 #include <xrpl/shamap/SHAMapMissingNode.h>
 #include <xrpl/shamap/SHAMapTreeNode.h>
+#include <xrpl/telemetry/SpanGuard.h>
+#include <xrpl/telemetry/SpanNames.h>
 
 #include <boost/algorithm/string/predicate.hpp>
 
@@ -403,6 +407,51 @@ SHAMapStoreImp::run()
         // will delete up to (not including) lastRotated
         if (readyToRotate)
         {
+            namespace ns = telemetry::nodestore_span;
+            namespace lv = telemetry::lval::rotation_phase;
+
+            // One trace per rotation. A fresh root: the SHAMapStore thread has
+            // no ambient span. Every phase below is a child through the
+            // thread's scope.
+            auto rotateSpan = telemetry::ScopedSpanGuard::freshRoot(
+                telemetry::TraceCategory::Ledger, telemetry::seg::nodestore, ns::op::rotate);
+            rotateSpan.setAttribute(ns::attr::ledgerSeq, static_cast<std::int64_t>(validatedSeq));
+            rotateSpan.setAttribute(ns::attr::lastRotated, static_cast<std::int64_t>(lastRotated));
+
+            // Stamp the outcome exactly once, on whichever exit runs first.
+            // The destructor asserts an exit was named: any exit without one
+            // is a new return path that forgot to. RAII so throw/continue paths
+            // still record the outcome.
+            struct RotationOutcome
+            {
+                telemetry::ScopedSpanGuard& span;
+                bool& rotating;
+                std::optional<ns::RotationExit> exit;
+                void
+                finish(ns::RotationExit e) noexcept
+                {
+                    if (exit)
+                        return;
+                    exit = e;
+                    span.setAttribute(ns::attr::outcome, ns::rotationOutcome(e));
+                }
+                ~RotationOutcome()
+                {
+                    XRPL_ASSERT(
+                        exit.has_value(),
+                        "xrpl::SHAMapStoreImp::run : rotation exit named an outcome");
+                    rotating = false;
+                }
+            };
+            RotationOutcome outcome{
+                .span = rotateSpan, .rotating = rotating_, .exit = std::nullopt};
+            rotating_ = true;
+
+            auto const exitFor = [](HealthResult r) {
+                return r == HealthResult::Stopping ? ns::RotationExit::Stopping
+                                                   : ns::RotationExit::Expired;
+            };
+
             JLOG(journal_.warn()) << "rotating  validatedSeq " << validatedSeq << " lastRotated "
                                   << lastRotated << " deleteInterval " << deleteInterval_
                                   << " canDelete_ " << canDelete_ << " state "
@@ -410,15 +459,16 @@ SHAMapStoreImp::run()
                                   << ledgerMaster_->getValidatedLedgerAge().count()
                                   << "s. Complete ledgers: " << ledgerMaster_->getCompleteLedgers();
 
-            clearPrior(lastRotated);
-            switch (healthWait())
             {
-                case HealthResult::Stopping:
+                RotationPhase const phase(*this, ns::phase::clearPrior, lv::clearPrior);
+                clearPrior(lastRotated);
+            }
+            if (auto const r = healthWait(); r != HealthResult::KeepGoing)
+            {
+                outcome.finish(exitFor(r));
+                if (r == HealthResult::Stopping)
                     return;
-                case HealthResult::Expired:
-                    continue;
-                case HealthResult::KeepGoing:
-                    break;
+                continue;
             }
 
             JLOG(journal_.debug()) << "copying ledger " << validatedSeq;
@@ -426,26 +476,27 @@ SHAMapStoreImp::run()
 
             try
             {
+                RotationPhase phase(*this, ns::phase::copy, lv::copy);
                 validatedLedger->stateMap().snapShot(false)->visitNodes(
                     [this, &nodeCount](SHAMapTreeNode const& node) {
                         return copyNode(nodeCount, node);
                     });
+                phase.setAttribute(ns::attr::nodeCount, static_cast<std::int64_t>(nodeCount));
             }
             catch (SHAMapMissingNode const& e)
             {
                 JLOG(journal_.error())
                     << "Missing node while copying ledger before rotate: " << e.what();
+                outcome.finish(ns::RotationExit::MissingNode);
                 continue;
             }
 
-            switch (healthWait())
+            if (auto const r = healthWait(); r != HealthResult::KeepGoing)
             {
-                case HealthResult::Stopping:
+                outcome.finish(exitFor(r));
+                if (r == HealthResult::Stopping)
                     return;
-                case HealthResult::Expired:
-                    continue;
-                case HealthResult::KeepGoing:
-                    break;
+                continue;
             }
             // Only log if we completed without a "health" abort
             JLOG(journal_.debug())
@@ -470,50 +521,59 @@ SHAMapStoreImp::run()
 
             JLOG(journal_.debug()) << "freshening caches";
             freshenCaches();
-            switch (healthWait())
+            if (auto const r = healthWait(); r != HealthResult::KeepGoing)
             {
-                case HealthResult::Stopping:
+                outcome.finish(exitFor(r));
+                if (r == HealthResult::Stopping)
                     return;
-                case HealthResult::Expired:
-                    continue;
-                case HealthResult::KeepGoing:
-                    break;
+                continue;
             }
             // Only log if we completed without a "health" abort
             JLOG(journal_.debug()) << validatedSeq << " freshened caches";
 
             JLOG(journal_.trace()) << "Making a new backend";
-            auto newBackend = makeBackendRotating();
+            auto newBackend = [&] {
+                RotationPhase const phase(*this, ns::phase::newBackend, lv::newBackend);
+                return makeBackendRotating();
+            }();
             JLOG(journal_.debug()) << validatedSeq << " new backend " << newBackend->getName();
 
-            clearCaches(validatedSeq);
-            switch (healthWait())
             {
-                case HealthResult::Stopping:
+                RotationPhase const phase(*this, ns::phase::clearCaches, lv::clearCaches);
+                clearCaches(validatedSeq);
+            }
+            if (auto const r = healthWait(); r != HealthResult::KeepGoing)
+            {
+                outcome.finish(exitFor(r));
+                if (r == HealthResult::Stopping)
                     return;
-                case HealthResult::Expired:
-                    continue;
-                case HealthResult::KeepGoing:
-                    break;
+                continue;
             }
 
             lastRotated = validatedSeq;
 
-            dbRotating_->rotate(
-                std::move(newBackend),
-                [&](std::string const& writableName, std::string const& archiveName) {
-                    SavedState savedState;
-                    savedState.writableDb = writableName;
-                    savedState.archiveDb = archiveName;
-                    savedState.lastRotated = lastRotated;
-                    stateDb_.setState(savedState);
+            {
+                RotationPhase phase(*this, ns::phase::swap, lv::swap);
+                dbRotating_->rotate(
+                    std::move(newBackend),
+                    [&](std::string const& writableName, std::string const& archiveName) {
+                        SavedState savedState;
+                        savedState.writableDb = writableName;
+                        savedState.archiveDb = archiveName;
+                        savedState.lastRotated = lastRotated;
+                        stateDb_.setState(savedState);
 
-                    clearCaches(validatedSeq);
-                });
+                        clearCaches(validatedSeq);
+                    });
+                phase.setAttribute(
+                    ns::attr::copyForwards,
+                    static_cast<std::int64_t>(dbRotating_->copyForwardTotal()));
+            }
 
             JLOG(journal_.warn()) << "finished rotation. validatedSeq: " << validatedSeq
                                   << ", lastRotated: " << lastRotated
                                   << ". Complete ledgers: " << ledgerMaster_->getCompleteLedgers();
+            outcome.finish(ns::RotationExit::Complete);
         }
     }
 }
@@ -822,8 +882,28 @@ SHAMapStoreImp::healthWait()
         return true;
     };
 
+    std::optional<RotationPhase> waitPhase;
     while (!stop_ && !healthy() && index < circuitBreaker)
     {
+        // Only inside a rotation: the pre-rotation healthWait() at the top of
+        // run() must not open a root span of its own.
+        if (rotating_ && !waitPhase)
+        {
+            waitPhase.emplace(
+                *this,
+                telemetry::nodestore_span::phase::healthWait,
+                telemetry::lval::rotation_phase::healthWait);
+        }
+        if (waitPhase)
+        {
+            waitPhase->setAttribute(
+                telemetry::nodestore_span::attr::serverMode,
+                app_.getOPs().strOperatingMode(mode, false).c_str());
+            waitPhase->setAttribute(
+                telemetry::nodestore_span::attr::missingLedgers,
+                static_cast<std::int64_t>(numMissing));
+        }
+
         // Future-proofing: this value shouldn't change while we are sleeping, but grab it while we
         // have the lock in case it does.
         auto const lowerBound = lastGoodValidatedLedger_;

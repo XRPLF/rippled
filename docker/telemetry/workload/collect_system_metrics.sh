@@ -6,10 +6,17 @@
 # Used by benchmark.sh for baseline vs telemetry comparison.
 #
 # Usage:
-#   ./collect_system_metrics.sh <rpc_ports_csv> <duration_seconds> <output_file>
+#   ./collect_system_metrics.sh <rpc_ports_csv> <duration_seconds> <output_file> [pids_csv]
+#
+# pids_csv narrows process sampling to exactly those pids. Without it the scope
+# is every xrpld on the host, which averages in any other cluster's nodes and
+# reports the largest of them as the RSS peak. benchmark.sh passes its own pids
+# because run-full-validation.sh leaves five validation nodes running while the
+# benchmark's three start, and diluting the arms alike hides the delta.
 #
 # Example:
 #   ./collect_system_metrics.sh "5005,5006,5007" 300 /tmp/metrics-baseline.json
+#   ./collect_system_metrics.sh "5020,5021,5022" 120 /tmp/m.json "8801,8802,8803"
 #
 # Output JSON format:
 #   {
@@ -54,6 +61,7 @@ usage() {
     echo "  rpc_ports_csv     Comma-separated RPC ports (e.g., 5005,5006,5007)"
     echo "  duration_seconds  How long to collect metrics"
     echo "  output_file       Path to write JSON results"
+    echo "  pids_csv          Optional: sample only these pids, not every host xrpld"
     exit 1
 }
 
@@ -64,16 +72,33 @@ fi
 RPC_PORTS_CSV="$1"
 DURATION="$2"
 OUTPUT_FILE="$3"
+PIDS_CSV="${4:-}"
+
+# Reject a malformed pid list rather than silently sampling the whole host,
+# which is the outcome this argument exists to prevent.
+case "$PIDS_CSV" in
+    '') ;;
+    *[!0-9,]*) die "pids_csv must be a comma-separated list of pids, got '$PIDS_CSV'" ;;
+esac
 
 IFS=',' read -ra RPC_PORTS <<<"$RPC_PORTS_CSV"
-SAMPLE_INTERVAL=5
+
+# consensus_round_mean_ms below counts DISTINCT ledger sequences seen by this
+# loop, so it cannot resolve a close interval shorter than SAMPLE_INTERVAL. At
+# 5 s it read back 5000 ms for every close time from 2 s to 5 s, so a 10%
+# regression measured 0% and the benchmark's 1% consensus gate could never fire.
+# 2 s is the close-time floor itself (ledgerMinClose, ConsensusParms.h:93), which
+# is enough: measured against this file's own arithmetic, a 10% regression shows
+# up as at least 9.3% anywhere in the 2 s to 5 s band. 1 s only doubles the
+# probe load for slightly worse numbers.
+SAMPLE_INTERVAL=2
 
 # Hard ceiling on every RPC probe below. curl applies no overall timeout of its
 # own, so a node that accepts the connection and then stops answering — what a
 # stalled job queue looks like from outside — parks the sampling loop for the
-# rest of the run. 5 s is one sample interval and some thousands of times a
-# healthy server_info, so it bounds a wedged node's cost to one lost sample
-# while never truncating a real reply. A probe that hits the ceiling exits
+# rest of the run. 5 s is some thousands of times a healthy server_info, so it
+# bounds a wedged node's cost to a couple of lost samples while never
+# truncating a real reply. A probe that hits the ceiling exits
 # non-zero and is therefore skipped rather than recorded, which is the same
 # rule the latency loop already applies to a refused connection; if every
 # probe hits it, the empty file trips the placeholder warning below.
@@ -175,21 +200,31 @@ for sample in $(seq 1 "$SAMPLES"); do
     # and -C matches nothing. "rippled" is accepted alongside "xrpld" so a
     # rename of the binary cannot silently zero the collector.
     #
-    # Scope is the whole host, as it always was: a second xrpld from another
-    # checkout is sampled too. Only run a benchmark on a box with one cluster.
+    # Scope is the pid list when one was given, and the whole host otherwise.
+    # Host scope averages in any other cluster's xrpld and reports the largest
+    # of them as the RSS peak, which reads as noise against a 5 MB threshold.
     #
     # A %cpu of exactly 0.0 is a real reading and is counted — dropping idle
     # samples would inflate the average — while non-numeric output is
     # rejected by the pattern. An RSS of 0 is not a live process, so it
     # contributes no memory sample; counting it would leave the file non-empty
     # and mark a dead cluster's 0 MB peak as a complete measurement.
-    ps -eo %cpu=,rss=,args= |
-        awk -v cpu_file="$CPU_FILE" -v mem_file="$MEM_FILE" '
-            $3 !~ /(^|\/)(xrpld|rippled)$/ { next }
-            $1 ~ /^[0-9]+(\.[0-9]+)?$/ { cpu_sum += $1; cpu_n++ }
-            $2 ~ /^[0-9]+$/ && $2 + 0 > 0 { printf("%.2f\n", $2 / 1024) >> mem_file }
-            END { if (cpu_n > 0) printf("%.2f\n", cpu_sum / cpu_n) >> cpu_file }
-        ' || die "process sampling failed on sample $sample/$SAMPLES"
+    ps -eo pid=,%cpu=,rss=,args= |
+        awk -v cpu_file="$CPU_FILE" -v mem_file="$MEM_FILE" -v pids="$PIDS_CSV" '
+            BEGIN { if (pids != "") { n = split(pids, a, ","); for (i = 1; i <= n; i++) want[a[i]] = 1 } }
+            pids != "" && !($1 in want) { next }
+            pids == "" && $4 !~ /(^|\/)(xrpld|rippled)$/ { next }
+            $2 ~ /^[0-9]+(\.[0-9]+)?$/ { cpu_sum += $2; cpu_n++ }
+            $3 ~ /^[0-9]+$/ && $3 + 0 > 0 { printf("%.2f\n", $3 / 1024) >> mem_file }
+            END {
+                # With an explicit pid list the expected count is known, so a
+                # dead node is detectable. Without it, exit 1 would fire on any
+                # host with no xrpld at all, which the empty-file check below
+                # already reports.
+                if (pids != "" && cpu_n != n) exit 1
+                if (cpu_n > 0) printf("%.2f\n", cpu_sum / cpu_n) >> cpu_file
+            }
+        ' || die "process sampling failed on sample $sample/$SAMPLES: expected $(echo "$PIDS_CSV" | tr -cd , | wc -c)+1 live pids"
 
     # Collect RPC latency from each node. Only a successful call is a latency
     # measurement: a refused connection returns in well under a millisecond,
@@ -310,12 +345,15 @@ else
     METRICS_COMPLETE=false
 fi
 
-# Mean inter-ledger interval in ms: DURATION / (distinct ledgers - 1) * 1000.
+# Mean inter-ledger interval in ms: ELAPSED / (distinct ledgers - 1) * 1000.
 #
-# This is a MEAN, not a percentile — the JSON key says so. It is also aliased
-# by the sample loop: LEDGER_FILE gets one sequence per sample, so at a
-# SAMPLE_INTERVAL of 5 s the series cannot resolve a close interval faster
-# than that (a ~4 s close is invisible). Read it as a coarse trend only.
+# ELAPSED, not DURATION: DURATION is what the caller asked for, while the loop
+# also spends time on its own probes, so it always runs longer. TPS above uses
+# ELAPSED for the same reason.
+#
+# This is a MEAN, not a percentile — the JSON key says so. It still cannot
+# resolve a close interval at or below SAMPLE_INTERVAL, because LEDGER_FILE
+# gets at most one sequence per sample. Read it as a coarse trend.
 if [ -s "$LEDGER_FILE" ]; then
     UNIQUE_LEDGERS=$(sort -u "$LEDGER_FILE" | wc -l)
     # The > 1 test also keeps the divisor below at 1 or more.
@@ -328,7 +366,7 @@ if [ -s "$LEDGER_FILE" ]; then
         # sampling loop and the CPU average, so computing this with awk removes
         # the failure path rather than reporting it. The divisor is >= 1 by the
         # test above.
-        CONSENSUS_MEAN=$(awk -v d="$DURATION" -v u="$UNIQUE_LEDGERS" \
+        CONSENSUS_MEAN=$(awk -v d="$ELAPSED" -v u="$UNIQUE_LEDGERS" \
             'BEGIN { printf "%.0f", d * 1000 / (u - 1) }')
     else
         warn "Ledger seq never advanced ($UNIQUE_LEDGERS distinct); consensus_round_mean_ms is a 0 placeholder"

@@ -113,21 +113,26 @@ private:
             txJson[sfTransactionType] = "AccountSet";
             txJson[sfAccount] = borrower.human();
 
-            auto const borrowerSignParams = [&]() {
-                json::Value params{json::ValueType::Object};
-                params[jss::passphrase] = borrowerPass;
-                params[jss::key_type] = "ed25519";
-                params[jss::signature_target] = "Destination";
-                params[jss::tx_json] = txJson;
-                return params;
-            }();
-            auto const jSignBorrower = env.rpc("json", "sign", to_string(borrowerSignParams));
-            BEAST_EXPECT(
-                jSignBorrower.isMember(jss::result) &&
-                jSignBorrower[jss::result].isMember(jss::error) &&
-                jSignBorrower[jss::result][jss::error] == "invalidParams" &&
-                jSignBorrower[jss::result].isMember(jss::error_message) &&
-                jSignBorrower[jss::result][jss::error_message] == "Destination");
+            // "Destination" is not an inner object at all. "Book" is one, but
+            // it holds no transaction signature, so it is not a target either.
+            for (char const* target : {"Destination", "Book", "Signer"})
+            {
+                auto const borrowerSignParams = [&]() {
+                    json::Value params{json::ValueType::Object};
+                    params[jss::passphrase] = borrowerPass;
+                    params[jss::key_type] = "ed25519";
+                    params[jss::signature_target] = target;
+                    params[jss::tx_json] = txJson;
+                    return params;
+                }();
+                auto const jSignBorrower = env.rpc("json", "sign", to_string(borrowerSignParams));
+                BEAST_EXPECT(
+                    jSignBorrower.isMember(jss::result) &&
+                    jSignBorrower[jss::result].isMember(jss::error) &&
+                    jSignBorrower[jss::result][jss::error] == "invalidParams" &&
+                    jSignBorrower[jss::result].isMember(jss::error_message) &&
+                    jSignBorrower[jss::result][jss::error_message] == target);
+            }
         }
         {
             testcase("RPC LoanSet - sign and submit borrower initiated");

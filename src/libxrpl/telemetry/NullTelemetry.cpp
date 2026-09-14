@@ -25,7 +25,6 @@
 #ifdef XRPL_ENABLE_TELEMETRY
 #include <opentelemetry/context/context.h>
 #include <opentelemetry/metrics/meter.h>
-#include <opentelemetry/metrics/noop.h>
 #include <opentelemetry/nostd/shared_ptr.h>
 #include <opentelemetry/trace/noop.h>
 #include <opentelemetry/trace/span.h>
@@ -36,7 +35,6 @@
 #endif
 
 #include <memory>
-#include <string>
 #include <utility>
 
 namespace xrpl::telemetry {
@@ -142,11 +140,11 @@ public:
     }
 
     opentelemetry::nostd::shared_ptr<opentelemetry::metrics::Meter>
-    getMeter(std::string_view) override
+    getMeter(std::string_view name) override
     {
-        static auto noopMeter = opentelemetry::nostd::shared_ptr<opentelemetry::metrics::Meter>(
-            new opentelemetry::metrics::NoopMeter());
-        return noopMeter;
+        // Route through the shared helper so the meter identity (name +
+        // kMeterVersion) matches every other noop path in the process.
+        return noopMeter(name);
     }
 #endif
 };

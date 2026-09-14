@@ -279,6 +279,12 @@ inline constexpr auto acceptGated = makeStr("accept_gated");
 inline constexpr auto prevLedgerPrefix = makeStr("prev_ledger_prefix");
 inline constexpr auto positionHashPrefix = makeStr("position_hash_prefix");
 /**
+ * "net_ledger_prefix" — first 16 hex chars of the ledger the network
+ * preferred when this node's differed. Paired with prev_ledger_prefix on
+ * the view.change event.
+ */
+inline constexpr auto netLedgerPrefix = makeStr("net_ledger_prefix");
+/**
  * "consensus_state" — domain-qualified (collides with other domains' state).
  */
 inline constexpr auto consensusState = makeStr("consensus_state");
@@ -384,6 +390,14 @@ inline constexpr auto phaseRecovery = join(makeStr("phase"), makeStr("recovery")
 inline constexpr auto outcomeYes = join(makeStr("outcome"), makeStr("yes"));
 inline constexpr auto outcomeMovedOn = join(makeStr("outcome"), makeStr("moved_on"));
 inline constexpr auto outcomeExpired = join(makeStr("outcome"), makeStr("expired"));
+
+/**
+ * "view.change" — fired on consensus.round when getPrevLedger sees the
+ * network's preferred ledger differ from ours. Carries prev_ledger_prefix
+ * and net_ledger_prefix so a single trace shows which ledger this node
+ * was on and which one the network preferred.
+ */
+inline constexpr auto viewChange = join(makeStr("view"), makeStr("change"));
 }  // namespace event
 
 // ===== Attribute values ======================================================

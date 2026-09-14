@@ -91,6 +91,8 @@ cmake --build . --target xrpld
 
 Conan also writes a `conan-release` CMake preset, so `cmake --preset conan-release -Dtelemetry=ON` works instead of the explicit toolchain line. There is no preset named `default`.
 
+Both telemetry flags are the current default, so omitting them still gives you an instrumented build. Pass them anyway, so the build stays instrumented wherever the default moves.
+
 ### 4. Run against a live network
 
 Two ready-made configs connect a tracking node (no validator credentials) to a
@@ -109,7 +111,7 @@ Both set `[insight] server=otel` (native metrics → collector → Prometheus, w
 drives the dashboards) and `service_instance_id`, exposed by Prometheus as the
 `service_instance_id` label that the `$node` dashboard variable filters on. The
 mainnet config logs to `/var/log/xrpld/mainnet/debug.log` — the path
-the collector's filelog receiver tails for log-trace correlation.
+the collector's file_log receiver tails for log-trace correlation.
 
 Metrics begin flowing as soon as the node connects to peers (`server_state`
 ≥ `connected`); full ledger and consensus panels populate after sync
@@ -208,12 +210,12 @@ To return to local-only export, bring the stack up with just the base
 The prepared config **dual-exports**: data goes to both the local stack and
 Grafana Cloud, so the on-box backends remain a fallback. For cloud-only,
 remove the local exporters (`debug`, `otlp/tempo`, `prometheus`,
-`otlphttp/loki`) from the respective pipelines in
+`otlp_http/loki`) from the respective pipelines in
 `otel-collector-config.grafanacloud.yaml`, leaving only
-`otlphttp/grafanacloud`.
+`otlp_http/grafanacloud`.
 
 > **Note**: shipping logs to Grafana Cloud requires keeping xrpld file
-> logging on (at least `warning` level) so the collector's filelog receiver
+> logging on (at least `warning` level) so the collector's file_log receiver
 > has a `debug.log` to tail. Traces and metrics are unaffected by log level.
 
 ### Importing dashboards to Grafana Cloud
@@ -284,7 +286,7 @@ this span: count successes as total minus error, or filter on `status_code`.
 The three apply-pipeline spans (`tx.preflight`, `tx.preclaim`, `tx.transactor`)
 share a deterministic `trace_id` from `txID[0:16]`, so they group under one
 trace per transaction. The `stage` attribute (`preflight` / `preclaim` /
-`apply`) drives the collector spanmetrics `stage` dimension, giving per-stage
+`apply`) drives the collector span_metrics `stage` dimension, giving per-stage
 RED metrics on the _Transaction Overview_ dashboard.
 
 `current_ledger_seq` is the current (open/in-flight) ledger index a span acted on
@@ -993,7 +995,7 @@ flowchart TB
   (`tvc < minVal`) it returns early with no promotion — a built ledger that loses
   is abandoned ([LedgerMaster.cpp:980](../src/xrpld/app/ledger/detail/LedgerMaster.cpp#L980);
   [docs/consensus.md:50](consensus.md)). The `ledger.validate` span is emitted only
-  inside `checkAccept` ([LedgerMaster.cpp:987](../src/xrpld/app/ledger/detail/LedgerMaster.cpp#L987)).
+  inside `checkAccept` ([LedgerMaster.cpp:1003](../src/xrpld/app/ledger/detail/LedgerMaster.cpp#L1003)).
 - **validation-send guard**: broadcast only if
   `validating_ && isCompatible && !consensusFail && canValidateSeq(seq)` — silently
   suppressed for incompatible ledgers or an already-validated seq
@@ -1160,8 +1162,8 @@ are pending a code fix:
 - **`ledger.acquire` / `ledger.store` / `ledger.validate` are not reliably roots
   either.** All three use `SpanGuard::span`
   ([InboundLedger.cpp:113](../src/xrpld/app/ledger/detail/InboundLedger.cpp#L113),
-  [LedgerMaster.cpp:463](../src/xrpld/app/ledger/detail/LedgerMaster.cpp#L463),
-  [987](../src/xrpld/app/ledger/detail/LedgerMaster.cpp#L987)), which inherits the
+  [LedgerMaster.cpp:470](../src/xrpld/app/ledger/detail/LedgerMaster.cpp#L470),
+  [1003](../src/xrpld/app/ledger/detail/LedgerMaster.cpp#L1003)), which inherits the
   ambient span ([SpanGuard.cpp:233](../src/libxrpl/telemetry/SpanGuard.cpp#L233))
   rather than `freshRoot`
   ([245](../src/libxrpl/telemetry/SpanGuard.cpp#L245)) — the same defect as
@@ -1341,7 +1343,7 @@ sum by (stage) (rate(span_calls_total{span_name=~"tx.preflight|tx.preclaim|tx.tr
 > in `otel-collector-config.grafanacloud.yaml` — the base
 > `otel-collector-config.yaml` has no tail sampling at all, so a stock local
 > stack retains every trace. Where that Cloud policy is in force it applies to
-> the trace-storage branch only; spanmetrics run on a separate branch and still
+> the trace-storage branch only; span_metrics run on a separate branch and still
 > see 100% of spans, so the derived RED metrics stay exact either way.
 
 ### Transaction Queue Health
@@ -1577,7 +1579,7 @@ all its normal attributes, it just lacks a cross-node parent link.
 
 ## Prometheus Metrics (Spanmetrics)
 
-The OTel Collector's spanmetrics connector automatically derives RED (Rate, Errors, Duration) metrics from every span. No custom metrics code is needed in xrpld.
+The OTel Collector's span_metrics connector automatically derives RED (Rate, Errors, Duration) metrics from every span. No custom metrics code is needed in xrpld.
 
 ### Generated Metric Names
 
@@ -2195,7 +2197,7 @@ collector settings make it work, both already enabled:
 
 - `prometheus.resource_to_telemetry_conversion: enabled: true` promotes
   resource attributes to metric labels on the local scrape surface.
-- `spanmetrics.resource_metrics_key_attributes` lists the tier attributes so
+- `span_metrics.resource_metrics_key_attributes` lists the tier attributes so
   span-derived series stay grouped per node and tier.
 
 Traces and logs carry resource attributes natively; Grafana Cloud ingests all
@@ -2838,7 +2840,7 @@ curl -sG http://localhost:9090/api/v1/query \
 When xrpld is built with `telemetry=ON`, log lines emitted within an active, sampled OpenTelemetry span automatically include `trace_id` and `span_id` fields:
 
 ```
-2024-Jan-15 10:30:45.123456 UTC LedgerMaster:NFO trace_id=abc123def456789012345678abcdef01 span_id=0123456789abcdef Validated ledger 42
+2024-Jan-15 10:30:45.123456789 UTC LedgerMaster:NFO trace_id=abc123def456789012345678abcdef01 span_id=0123456789abcdef Validated ledger 42
 ```
 
 This enables bidirectional navigation between logs and traces in Grafana:
@@ -2874,7 +2876,7 @@ The sampled check is normally satisfied on a self-rooted consensus round — hea
 
 With all four satisfied, `info` is the minimum level at which the `log.trace_id_present` and `log.trace_id_cross_reference` checks pass by construction, and it is what the correlation-checking harnesses generate: the cfgs written by [run-full-validation.sh](../docker/telemetry/workload/run-full-validation.sh) and [integration-test.sh](../docker/telemetry/integration-test.sh) each set `enabled=1`, `trace_consensus=1` and `log_level info` together. `benchmark.sh` deliberately does not — it stays at `warning` to keep log I/O out of the overhead measurement, and it runs no correlation check. At `warning` and above that pair is suppressed and correlation becomes incidental — dependent on a `warn`-or-worse line happening to fire inside some active span.
 
-> **CI exercises both checks.** `log.trace_id_present` and `log.trace_id_cross_reference` are gated on every CI run — see [CI workflow](#ci-workflow) for the invocation and the per-leg diagnostics printed alongside them. Run the same thing locally after any change to log formatting, span activation, the `filelog` receiver or the Loki exporter:
+> **CI exercises both checks.** `log.trace_id_present` and `log.trace_id_cross_reference` are gated on every CI run — see [CI workflow](#ci-workflow) for the invocation and the per-leg diagnostics printed alongside them. Run the same thing locally after any change to log formatting, span activation, the `file_log` receiver or the Loki exporter:
 >
 > ```bash
 > docker/telemetry/workload/run-full-validation.sh --xrpld .build/xrpld
@@ -2884,7 +2886,7 @@ With all four satisfied, `info` is the minimum level at which the `log.trace_id_
 
 `debug` does correlate strictly more: it additionally brings in [`BuildLedger.cpp:81`](../src/xrpld/app/ledger/detail/BuildLedger.cpp#L81) (inside the `ledger.build` `ScopedSpanGuard` at [:55](../src/xrpld/app/ledger/detail/BuildLedger.cpp#L55), once per ledger close) and [`RPCHandler.cpp:188`](../src/xrpld/rpc/detail/RPCHandler.cpp#L188) (inside the `rpc.command.*` `ScopedSpanGuard` at [:168](../src/xrpld/rpc/detail/RPCHandler.cpp#L168), once per RPC command), giving broader multi-subsystem coverage.
 
-But raising the **base** level to `debug` puts synchronous log I/O inside `ledger.build`, `consensus.accept` (including [RCLConsensus.cpp:663](../src/xrpld/app/consensus/RCLConsensus.cpp#L663), which logs **per transaction**) and `tx.apply` — precisely the spans whose p50/p95/p99 latencies `regression-metrics.json` gates. A baseline captured at `debug` bakes that log I/O into the latency numbers permanently, turning the regression gate into a measurement of its own configuration.
+But raising the **base** level to `debug` puts synchronous log I/O inside `ledger.build`, `consensus.accept` (including [RCLConsensus.cpp:715](../src/xrpld/app/consensus/RCLConsensus.cpp#L715), which logs **per transaction**) and `tx.apply` — precisely the spans whose p50/p95/p99 latencies `regression-metrics.json` gates. A baseline captured at `debug` bakes that log I/O into the latency numbers permanently, turning the regression gate into a measurement of its own configuration.
 
 So if you need the broader coverage, enable it **per partition** rather than globally, and only **after** a baseline has been captured at the harness's normal level:
 
@@ -2895,9 +2897,11 @@ log_level RPCHandler debug
 
 ### Log Ingestion Pipeline
 
-Log files are ingested by the OTel Collector's `filelog` receiver, which tails `debug.log` files and parses them with a regex that extracts `timestamp`, `partition`, `severity`, `trace_id`, `span_id`, and `message` fields. Parsed entries are exported to Grafana Loki.
+Log files are ingested by the OTel Collector's `file_log` receiver, which tails `debug.log` files and parses them with a regex that extracts `timestamp`, `partition`, `severity`, `trace_id`, `span_id`, and `message` fields. Parsed entries are exported to Grafana Loki.
 
-The receiver tails `/var/log/xrpld/*/debug.log` inside the collector container. docker-compose bind-mounts the host log root there; the source defaults to the repo-relative `docker/telemetry/data/logs`, which the telemetry configs write to (`data/logs/<network>/debug.log`) and which needs no root. To tail logs from elsewhere, set `XRPLD_LOG_DIR` before `docker compose up` (the integration test does this to point at its own workdir). The single trailing `*` matches one per-network or per-node subdirectory.
+The receiver tails `/var/log/xrpld/*/debug.log` inside the collector container. docker-compose bind-mounts the host log root there; the source defaults to the repo-relative `docker/telemetry/data/logs`, which the telemetry configs write to (`data/logs/<service_instance_id>/debug.log`). To tail logs from elsewhere, set `XRPLD_LOG_DIR` before `docker compose up` (the integration test does this to point at its own workdir). The single trailing `*` matches one per-node subdirectory.
+
+That subdirectory is load-bearing, not cosmetic. Docker creates a missing bind-mount source as root, and `Config::getDebugLogFile()` only warns when it cannot create the log directory, so a root-owned log root produces a healthy-looking node that writes no `debug.log` and an empty Loki with no error at any layer. The `xrpld-logdir-init` service creates the directory and hands it to `XRPLD_UID`/`XRPLD_GID` (default 1000) to prevent that. The receiver also lifts the subdirectory name onto the resource attribute `service.instance.id`, which Loki indexes as the label `service_instance_id`, so each emitter must name its log directory after its own `[telemetry] service_instance_id` or log lines carry a node name that no trace or metric shares.
 
 Each file is read from the beginning, because the receiver's own default (`end`) would skip anything a node wrote before the collector's first poll and would never read a log that has stopped being written to. Read offsets are held in memory by default, so a restarted collector re-reads the files it already ingested. The developer stack avoids that by layering `otel-collector-filestorage.yaml` as a second `--config`, which adds a `file_storage` extension that keeps the offsets on a named volume; a one-shot init service prepares that volume, because the collector runs as a non-root user and a fresh Docker volume is owned by root. Ephemeral stacks such as the workload validation harness create a fresh log directory per run, so they have nothing to resume from and deliberately omit the overlay.
 
@@ -2930,7 +2934,7 @@ after the selector and cannot be discovered by `label_values()`.
 
 # Logs from the last hour containing trace context. `partition`, `severity`, and
 # `trace_id` are already parsed into structured metadata by the collector's
-# filelog receiver, so re-extracting them with regexp is unnecessary work.
+# file_log receiver, so re-extracting them with regexp is unnecessary work.
 {service_name="xrpld"} | trace_id != ""
 
 # Count of traced vs untraced log lines
@@ -3645,9 +3649,9 @@ not a sign the cache is working.
 ### No logs in Loki
 
 - Verify the log file mount in docker-compose.yml points to the correct xrpld log directory (default source `docker/telemetry/data/logs`, or the `XRPLD_LOG_DIR` override) and that xrpld actually writes `debug.log` there
-- Check OTel Collector logs for filelog receiver errors: `docker compose logs otel-collector`
+- Check OTel Collector logs for file_log receiver errors: `docker compose logs otel-collector`
 - Verify Loki is running: `curl http://localhost:3100/ready`
-- Check the filelog receiver glob `/var/log/xrpld/*/debug.log` matches your log layout — the log file must sit one subdirectory below the mount root
+- Check the file_log receiver glob `/var/log/xrpld/*/debug.log` matches your log layout — the log file must sit one subdirectory below the mount root
 
 ### Diagnosing slow/stuck fresh sync
 
@@ -3815,19 +3819,27 @@ Read the **Back-fill & persistence** row.
 |                                                             |                                                                                                                                                                             | no series at all on either query                                | `online_delete` is not configured on this node, which is **not** the same as rotation costing nothing — rule the whole rotation hypothesis out and move on                                                                                                                                                                                   |
 |                                                             |                                                                                                                                                                             | copy-forward writes while the flag reads 0                      | the window flag leaked; treat the rate as unattributed rather than concluding rotation is cheap                                                                                                                                                                                                                                              |
 | _Rotation Node Re-Store Rate_                               | flat at zero                                                                                                                                                                | any sustained rate                                              | an earlier rotation removed the only on-disk copy of clean nodes the current state map still reaches. Two consequences: each rescue is an extra write competing with sync, and without it the node would later hit an unresolvable missing-node error. Get the hashes from the `copyNode` warning in Loki — they are deliberately not labels |
+| _Rotation Phase Duration (p95 by stage)_                    | `freshen.keys` p95 well under one second on an idle node; other stages proportional to state-map size                                                                       | `freshen.keys` p95 in seconds                                   | the tree-node cache mutex is being held across the getKeys() copy for that long; every job that fetches a SHAMap node during that window waits, and a `full`->`syncing` flap is likely for the round that overlaps it                                                                                                                        |
+|                                                             |                                                                                                                                                                             | `copy` p95 approaching the rotation cadence                     | the state-map walk is not converging inside its own interval; the next rotation will overlap this one                                                                                                                                                                                                                                        |
+| _Cache Lock Hold Peak (us)_                                 | zero on an idle node; sub-millisecond values during a sweep                                                                                                                 | multi-second peak                                               | the `TaggedCache` for either the tree-node cache or the FullBelow cache held its mutex that long across `getKeys()` or `sweep()`. Correlate with the `rotating` log line and the `nodestore.rotate.freshen.keys` span: a rotation is the usual cause                                                                                         |
+| _Job Stalls ≥1 s (Count By Job Type)_                       | zero, or a very small count on a healthy busy node                                                                                                                          | several distinct job types crossing the bar in the same minute  | the whole worker pool froze at the same instant. This is a process-wide stall, not a per-type slowdown; the rotation spans point at what caused it                                                                                                                                                                                           |
 
-> **Scope of the rotation-window flag.** `rotation_state{metric="in_flight"}` is
-> set immediately before `freshenCaches()` and cleared by `RotationExposureGuard`
-> on scope exit, so it brackets only the freshen/swap phase — deliberately, since
-> its purpose is the copy-forward exposure window. It therefore **cannot** tell
-> you whether rotation is saturating the node. Measured on
-> `devnet-otel-usw2-01/02` (`online_delete=256`, ~47.4M state nodes): the flag
-> averaged 0.159 / 0.135 over 9 h while the node was actually inside a rotation
-> ~93% of wall clock, because the dominant `visitNodes` copy phase (median 651 s
-> of an ~785 s cycle) emits no signal at all. Read at face value the row above
-> says "healthy" on a node that is rotation-bound. Until the copy phase is
-> instrumented (RIPD-7144), the only way to measure occupancy is the
-> `rotating validatedSeq` / `copied ledger` / `new backend` log triplet.
+> **Proving a rotation stall from telemetry.** For a suspected rotation-driven
+> `full`->`syncing` flap on a node with `online_delete` configured:
+>
+> 1. Locate the flap time from `increase(state_changes_total{from="full",to="syncing"}[1m])`.
+> 2. In the same minute check `increase(jobq_stall_total[1m]) > 0` — a rotation stall
+>    lifts several distinct `job_type` values simultaneously.
+> 3. Look at `cache_metrics{metric="treenode_lock_hold_peak_us"}`. A value in
+>    the millions in the flap minute is the mutex hold that froze every job.
+> 4. In Tempo, `{ name = "nodestore.rotate.freshen.keys" }` in a +/- 2 min window: its
+>    span's start and end must bracket the stalled `consensus.*.receive` spans.
+> 5. `increase(consensus_view_change_total[1m])` should rise by one, and the
+>    `consensus.round` trace of that minute carries a `view.change` event.
+>
+> If step 4 has no span, check `trace_ledger=1` in `[telemetry]` and that the
+> Cloud collector carries the `keep-rotation-traces` policy — the 0.5% probabilistic
+> sampler would otherwise drop most rotations.
 
 **Conclusion:** the tree-node cache sits one layer **above** the node store, so a
 miss here is what produces a node-store read there; reading the two together is
@@ -4669,7 +4681,7 @@ conan install .. --output-folder . --build missing -o telemetry=False --settings
 cmake -DCMAKE_TOOLCHAIN_FILE:FILEPATH=build/generators/conan_toolchain.cmake -DCMAKE_BUILD_TYPE=Release -Dtelemetry=OFF ..
 ```
 
-Pass the flag explicitly rather than omitting it — an omitted flag resolves to whatever
+Both flags are needed. Pass each explicitly rather than omitting it — an omitted flag resolves to whatever
 the build's current default is. That default is `ON` on the telemetry branches so CI
 compiles the instrumented paths, and `OFF` once the feature is merged; `-Dtelemetry=OFF`
 is correct either way. `-DXRPL_ENABLE_TELEMETRY=OFF` does **not** work: that name is only
@@ -4952,12 +4964,12 @@ container as the main CI, so Conan and ccache hit the shared caches), and
   these checks are enabled: per-node counts of `debug.log` lines carrying the
   injected `trace_id`/`span_id` shape plus the severity mix, the container-side
   listing of `/var/log/xrpld` taken with the collector's own mounts and uid, the
-  `filelog` receiver's watched files, logs-pipeline warnings and internal
+  `file_log` receiver's watched files, logs-pipeline warnings and internal
   log-record counters, and Loki's entry counts for the stream selector with and
   without the line filter. The diagnostics are non-fatal by construction: each
   leg is isolated and a missing container or unreachable endpoint prints a note.
   Those two Loki entry counts are `sum(count_over_time(...))`, and the `sum()` is
-  load-bearing: the `filelog` receiver leaves `message` and `timestamp` as
+  load-bearing: the `file_log` receiver leaves `message` and `timestamp` as
   log-record attributes, Loki's OTLP path stores them as structured metadata, and
   structured metadata joins a metric query's label set — so an unaggregated
   `count_over_time` produces one series per log line and Loki answers `HTTP 400

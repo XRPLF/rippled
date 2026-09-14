@@ -7,6 +7,7 @@
 #include <xrpl/core/PeerReservationTable.h>
 #include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/SecretKey.h>
+#include <xrpl/protocol/Seed.h>
 #include <xrpl/rdb/DatabaseCon.h>
 #include <xrpl/server/Manifest.h>
 
@@ -84,6 +85,46 @@ void
 addValidatorManifest(soci::session& session, std::string const& serialized);
 
 /**
+ * The seed a configured [node_seed] or --nodeid names.
+ *
+ * The command-line value wins when both are set. A cmdline value is parsed
+ * with parseGenericSeed(rfc1751=false); a config value is parsed as Base58
+ * only. Empty inputs count as supplied-but-invalid and throw.
+ *
+ * @param cmdlineSeed The --nodeid value, or std::nullopt when not passed.
+ * @param configSeed  The first line of [node_seed], or std::nullopt when the
+ *                    section is absent. An empty section is passed as "".
+ * @return The parsed seed, or std::nullopt when neither is set.
+ * @throws std::runtime_error if the value present is malformed.
+ */
+[[nodiscard]] std::optional<Seed>
+parseNodeIdentitySeed(
+    std::optional<std::string> const& cmdlineSeed,
+    std::optional<std::string> const& configSeed);
+
+/**
+ * Pick this node's keypair from a pre-parsed seed and a stored-key reader.
+ *
+ * A configured seed wins outright and the reader is not consulted. When
+ * newNodeId is set, mint a fresh pair and skip the reader too. Otherwise
+ * consult the reader; return its pair if it has one, else mint.
+ *
+ * Lifting the decision out of the Application layer lets libxrpl-level
+ * tests drive every branch without an xrpld Config.
+ *
+ * @param configuredSeed Seed from parseNodeIdentitySeed(), or std::nullopt.
+ * @param newNodeId      True when --newnodeid was passed.
+ * @param readStored     Callable that returns the wallet's stored pair, or
+ *                       std::nullopt when nothing is stored.
+ * @return This node's keypair.
+ */
+[[nodiscard]] std::pair<PublicKey, SecretKey>
+selectNodeIdentity(
+    std::optional<Seed> const& configuredSeed,
+    bool newNodeId,
+    std::function<std::optional<std::pair<PublicKey, SecretKey>>()> const& readStored);
+
+/**
  * Delete any saved public/private key associated with this node.
  */
 void
@@ -101,6 +142,22 @@ clearNodeIdentity(soci::session& session);
  */
 std::optional<std::pair<PublicKey, SecretKey>>
 readNodeIdentity(soci::session& session);
+
+/**
+ * Persist a keypair as this node's identity.
+ *
+ * Write-only counterpart of readNodeIdentity(). The caller must have found the
+ * table empty: this inserts a row without clearing, so storing twice leaves two
+ * and readNodeIdentity() then returns whichever the query yields first.
+ *
+ * Exists because xrpld resolves its identity before the Application, and so
+ * before any database, is built; setup() persists that keypair here.
+ *
+ * @param session Session with the database.
+ * @param keys    The keypair to store.
+ */
+void
+storeNodeIdentity(soci::session& session, std::pair<PublicKey, SecretKey> const& keys);
 
 /**
  * Returns a stable public and private key for this node.

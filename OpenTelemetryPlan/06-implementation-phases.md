@@ -633,14 +633,14 @@ See [Phase7_taskList.md](./Phase7_taskList.md) for detailed per-task breakdown.
 
 ### Motivation
 
-xrpld's `beast::Journal` logs and OpenTelemetry traces are currently two disjoint observability signals. When investigating an issue, operators must manually correlate timestamps between log files and Tempo traces. Phase 8 bridges this gap by injecting trace context (`trace_id`, `span_id`) into every log line emitted within an active, sampled span, and ingesting those logs into Grafana Loki via the OTel Collector's filelog receiver.
+xrpld's `beast::Journal` logs and OpenTelemetry traces are currently two disjoint observability signals. When investigating an issue, operators must manually correlate timestamps between log files and Tempo traces. Phase 8 bridges this gap by injecting trace context (`trace_id`, `span_id`) into every log line emitted within an active, sampled span, and ingesting those logs into Grafana Loki via the OTel Collector's file_log receiver.
 
 #### Gains
 
 1. **One-click trace-to-log navigation** — Click a trace in Tempo and immediately see the corresponding log lines in Loki, filtered by `trace_id`.
 2. **Reverse lookup (log-to-trace)** — Loki derived fields make `trace_id` values clickable links back to Tempo.
 3. **Unified observability** — All three pillars (traces, metrics, logs) flow through the same OTel Collector pipeline and are visible in a single Grafana instance.
-4. **Zero new dependencies in xrpld** — Uses existing OTel SDK headers (`GetSpan`, `GetContext`) already linked in Phase 1.
+4. **Zero new dependencies in xrpld** — Uses existing OTel SDK headers (`RuntimeContext`, `SpanContext`) already linked in Phase 1.
 5. **Negligible overhead** — The implementation checks the thread-local context value directly, avoiding heap allocation on the no-span path (~15-20ns). On the active-span path, total cost is ~50ns per log call. At typical logging rates, overhead is negligible.
 
 #### Losses / Risks
@@ -651,32 +651,53 @@ xrpld's `beast::Journal` logs and OpenTelemetry traces are currently two disjoin
 
 #### Decision
 
-The correlation value far outweighs the risks. The log format change is backward-compatible (fields are appended only when a sampled span is active), and the filelog receiver regex is straightforward to maintain.
+The correlation value far outweighs the risks. The log format change is backward-compatible (fields are appended only when a sampled span is active), and the file_log receiver regex is straightforward to maintain.
 
 ### Architecture
 
 Phase 8 has two independent sub-phases that can be developed in parallel:
 
 - **Phase 8a (code change)**: Modify `Logs::format()` in `src/libxrpl/basics/Log.cpp` to append `trace_id=<hex32> span_id=<hex16>` when the current thread has an active OTel span. Guarded by `#ifdef XRPL_ENABLE_TELEMETRY`.
-- **Phase 8b (infra only)**: Add Loki to the Docker Compose stack, configure the OTel Collector's `filelog` receiver to tail xrpld's log file, parse out structured fields (timestamp, partition, severity, trace_id, span_id, message), and export to Loki via OTLP. Configure Grafana Tempo↔Loki bidirectional linking.
+- **Phase 8b (infra only)**: Add Loki to the Docker Compose stack, configure the OTel Collector's `file_log` receiver to tail xrpld's log file, parse out structured fields (timestamp, partition, severity, trace_id, span_id, message), and export to Loki via OTLP. Configure Grafana Tempo↔Loki bidirectional linking.
 
 #### Trace ID Injection Flow
 
 ```mermaid
 flowchart LR
     subgraph xrpld["xrpld process"]
-        JLOG["JLOG(j.info())"]
-        Format["Logs::format()"]
-        OTelCtx["OTel Context<br/>(thread-local)"]
+        JLOG["`**JLOG(j.info())**
+        a log call on some thread`"]
+        Format["`**Logs::format()**
+        builds the log line`"]
+        OTelCtx["`**OTel thread-local context**
+        RuntimeContext::GetCurrent()
+        GetValue(kSpanKey)`"]
         JLOG --> Format
-        OTelCtx -.->|"GetSpan()→GetContext()"| Format
+        OTelCtx -.->|"`GetContext()
+        if IsValid and IsSampled`"| Format
     end
 
-    subgraph output["Log Output"]
-        LogLine["2024-01-15T10:30:45.123Z<br/>LedgerMaster:NFO<br/>trace_id=abc123...<br/>span_id=def456...<br/>Validated ledger 42"]
+    subgraph output["Log output"]
+        LogLine["`2026-Jan-15 10:30:45.123456789 UTC
+        LedgerMaster:NFO
+        trace_id=abc123... span_id=def456...
+        Validated ledger 42`"]
     end
 
     Format --> LogLine
+
+    subgraph legend["Reading the diagram"]
+        direction LR
+        L1["`**Solid arrow**
+        happens on every log call`"]
+        L2["`**Dotted arrow**
+        only adds ids when a sampled span is active on this thread`"]
+        L3["`**kSpanKey lookup**
+        reads the context value directly, so the no-span path allocates nothing`"]
+    end
+
+    L1 ~~~ L2 ~~~ L3
+    output ~~~ legend
 
     style xrpld fill:#1a237e,stroke:#0d1642,color:#fff
     style output fill:#1b5e20,stroke:#0d3d14,color:#fff
@@ -691,16 +712,35 @@ flowchart LR
 ```mermaid
 flowchart LR
     subgraph collector["OTel Collector"]
-        FR["filelog receiver<br/>tails debug.log"]
-        RP["regex_parser<br/>extracts trace_id,<br/>span_id, severity"]
-        BP["batch processor"]
-        LE["otlp/loki exporter"]
+        FR["`**file_log receiver**
+        tails debug.log`"]
+        RP["`**regex_parser**
+        extracts timestamp, partition,
+        severity, trace_id, span_id`"]
+        BP["`**batch processor**`"]
+        LE["`**otlp_http/loki exporter**`"]
         FR --> RP --> BP --> LE
     end
 
-    LogFile["xrpld<br/>debug.log"] --> FR
-    LE --> Loki["Grafana Loki<br/>:3100"]
-    Loki <-->|"derivedFields ↔<br/>tracesToLogs"| Tempo["Grafana Tempo"]
+    LogFile["`**xrpld**
+    debug.log`"] --> FR
+    LE --> Loki["`**Grafana Loki**
+    :3100`"]
+    Loki <-->|"`derivedFields
+    tracesToLogs`"| Tempo["`**Grafana Tempo**`"]
+
+    subgraph legend["Reading the diagram"]
+        direction LR
+        L1["`**Solid arrow**
+        the path every log line takes`"]
+        L2["`**Double arrow**
+        Grafana links the two backends both ways: a trace jumps to its logs, a trace_id in a log jumps back to the trace`"]
+        L3["`**otlp_http, not otlp**
+        Loki is reached over OTLP/HTTP; the old dedicated loki exporter was removed upstream`"]
+    end
+
+    L1 ~~~ L2 ~~~ L3
+    collector ~~~ legend
 
     style collector fill:#e65100,stroke:#bf360c,color:#fff
     style FR fill:#f57c00,stroke:#e65100,color:#fff
@@ -718,7 +758,7 @@ flowchart LR
 | ---- | ---------------------------------------------- |
 | 8.1  | Inject trace_id into Logs::format()            |
 | 8.2  | Add Loki to Docker Compose stack               |
-| 8.3  | Add filelog receiver to OTel Collector         |
+| 8.3  | Add file_log receiver to OTel Collector        |
 | 8.4  | Configure Grafana trace-to-log correlation     |
 | 8.5  | Update integration tests                       |
 | 8.6  | Update documentation (runbook, reference docs) |
@@ -732,15 +772,20 @@ flowchart LR
 - [x] Log lines outside spans have no trace context (no empty fields) — the
       block reads the thread-local span key and appends nothing when it is
       absent or the context is invalid (`Log.cpp:310-318`)
-- [x] Loki ingests xrpld logs via OTel Collector filelog receiver —
-      `otel-collector-config.yaml:38` (`filelog`); `loki` service in
-      `docker-compose.yml:71`
+- [x] Loki ingests xrpld logs via OTel Collector file_log receiver —
+      `otel-collector-config.yaml:38` (`file_log`); `loki` service in
+      `docker-compose.yml:112`
 - [x] Grafana Tempo → Loki one-click correlation works —
       `provisioning/datasources/tempo.yaml:32` (`tracesToLogs`)
 - [x] Grafana Loki → Tempo reverse lookup works via derived field —
       `provisioning/datasources/loki.yaml:16` (`derivedFields`)
-- [ ] Integration test verifies trace_id presence in logs — implemented in the
-      Phase 10 harness, but CI runs it with `--skip-loki`, so it is not gated
+- [ ] Integration test verifies trace_id presence in logs — CI gates this
+      through the Phase 10 harness's `validate_telemetry.py`, whose
+      `log.trace_id_present` and `log.trace_id_cross_reference` checks run
+      because the workflow passes no `--skip-loki`. That harness and
+      `.github/workflows/telemetry-validation.yml` live on the Phase 10 branch,
+      not here. `docker/telemetry/integration-test.sh:79-126` carries a separate
+      trace_id-in-logs check that no workflow under `.github/workflows/` runs
 - [ ] No performance regression from trace_id injection (< 0.1% overhead) —
       needs the Phase 10 benchmark suite
 
@@ -919,7 +964,7 @@ Alert Rules from External Dashboard**.
 
 ## 6.8.3 Phase 10: Synthetic Workload Generation & Telemetry Validation (Weeks 16-17)
 
-> **Status**: Implemented on this branch — `docker/telemetry/workload/` (24
+> **Status**: Implemented on this branch — `docker/telemetry/workload/` (25
 > files) and `.github/workflows/telemetry-validation.yml` are present here.
 > Upstream branches do not carry them, so the exit criteria below only hold from
 > `pratik/otel-phase10-workload-validation` onward.
@@ -1003,7 +1048,7 @@ flowchart LR
 
 - **Transaction submitter and RPC load generator** both use xrpld's native WebSocket command format (`{"command": ...}`) — not JSON-RPC format. Response data lives inside `"result"` with `"status"` at the top level.
 - **Node config** requires `[signing_support] true` for server-side signing, and `[ips]` (not `[ips_fixed]`) to ensure peer connections count in `peer_finder_active_*` metrics.
-- **Metric validation** uses the Prometheus `/api/v1/series` endpoint (not instant queries) to avoid false negatives from stale StatsD gauges. Every metric in `expected_metrics.json` must have > 0 series.
+- **Metric validation** uses the Prometheus `/api/v1/series` endpoint (not instant queries) which polls for late-populating series and ignores Prometheus's staleness horizon. Every metric in `expected_metrics.json` must have > 0 series.
 - **Gauge visibility**: the harness sets `[insight] server=otel` (`run-full-validation.sh`), so `beast::insight` gauges become OTel observable gauges whose callback is invoked on every collection cycle. A gauge that sits at 0 and never changes (e.g. `jobq_job_count`) therefore still reports, and `/api/v1/series` sees it.
 - **I/O latency fix**: `io_latency_sampler` emits unconditionally on first sample, then applies the 10 ms threshold. This ensures `ios_latency` is registered in Prometheus even in low-load CI environments.
 - **tx.receive span**: attribute keys are bare, not dotted — `suppressed` and `tx_status` (`TxSpanNames.h:71,75`). `suppressed` is set on both outcomes (`false` on the accepted path, `true` when the HashRouter suppresses), but `tx_status` is set **only** on the reject/known-bad/dropped paths, so it is absent on a successful receive. Assert on the attribute, not on span status.
@@ -1070,15 +1115,16 @@ See [Phase10_taskList.md](./Phase10_taskList.md) for the per-task breakdown.
 ### CI Deliverable (Task 10.6)
 
 The Phase 10 CI entry point is `.github/workflows/telemetry-validation.yml`
-(367 lines, on the Phase 10 branch). It runs three jobs — `linux-image-tag`,
+(on the Phase 10 branch). It runs three jobs — `linux-image-tag`,
 `build-xrpld`, `validate-telemetry` — and is triggered by `workflow_dispatch`
-plus `push` on `pratik/otel-phase*`, `feature/otel-*` and
-`feature/telemetry-*`. **There is no cron schedule**, so nothing runs this
-workflow on a timer.
+plus any `push` that touches one of the `paths` globs below. **There is no
+branch filter**: GitHub ANDs `branches` with `paths`, so a branch glob would
+decide validation by what a branch is called rather than by what it changed.
+**There is no cron schedule**, so nothing runs this workflow on a timer.
 
 > **Fixed — the `push` trigger's `paths` filter now covers the C++ telemetry
-> sources.** The branch filter is only half the trigger; `push` also carries a
-> `paths` filter, and it previously read:
+> sources.** The `push` trigger carries a `paths` filter, and it previously
+> read:
 >
 > ```yaml
 > paths:
@@ -1092,14 +1138,14 @@ workflow on a timer.
 > `include/xrpl/basics/Telemetry*.h` nor `src/xrpld/app/misc/Telemetry*` exists.
 > The telemetry code lives in `src/xrpld/telemetry/**` (9 files, including
 > `MetricsRegistry.cpp`), `src/libxrpl/telemetry/**` (7 files) and
-> `include/xrpl/telemetry/**` (10 files), none of which were listed.
+> `include/xrpl/telemetry/**` (13 files), none of which were listed.
 > Consequence at the time: a pure C++ telemetry change — new instrument,
 > renamed metric, changed span attribute — never triggered this workflow on
 > push; only edits under `docker/telemetry/**` or to the workflow file itself
 > did.
 >
-> The two dead globs have been replaced with the three real module directories,
-> so the filter now reads:
+> The two dead globs have been replaced with the real module directories, the
+> name-constant headers and the checkers, so the filter now reads:
 >
 > ```yaml
 > paths:
@@ -1107,15 +1153,22 @@ workflow on a timer.
 >   - "docker/telemetry/**"
 >   - "include/xrpl/telemetry/**"
 >   - "src/libxrpl/telemetry/**"
->   - "src/libxrpl/beast/insight/**"
 >   - "src/xrpld/telemetry/**"
+>   - "include/xrpl/beast/insight/**"
+>   - "src/libxrpl/beast/insight/**"
+>   - "**/*SpanNames.h"
+>   - "**/*MetricNames.h"
+>   - "src/tests/libxrpl/telemetry/**"
+>   - ".github/scripts/otel-naming/**"
+>   - ".github/scripts/telemetry/**"
 > ```
 >
 > `src/libxrpl/beast/insight/**` is included because it holds `OTelCollector.cpp`,
-> the `beast::insight` OTLP export path the harness depends on. Residual gap: the
-> instrumented call sites scattered through `src/xrpld/app/` are not listed, so a
-> change that only adds or moves a span at a call site does not trigger the
-> workflow on push. Those are reachable by manual dispatch.
+> the `beast::insight` OTLP export path the harness depends on. The `*SpanNames.h`
+> and `*MetricNames.h` globs cover the name constants wherever they sit, including
+> under `src/xrpld/app/`. Residual gap: an instrumented call site that adds or
+> moves a span without touching a name header does not trigger the workflow on
+> push. Those are reachable by manual dispatch.
 
 > **Caveat — four inert inputs (documented, not wired).** The workflow declares
 > five `workflow_dispatch` inputs, but only `run_benchmark` changes behaviour.

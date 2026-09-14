@@ -9,7 +9,7 @@
  * These tests exercise the macros against a bare SDK MeterProvider (no
  * OTLP exporter, no network, no background thread), the same technique
  * GetMeter.cpp uses. The macros are duck-typed: they only ever call
- * app.getMetricsRegistry(), then isEnabled() and meter() on the result.
+ * app.getMetricsRegistry(), then recording() and meter() on the result.
  * The tests therefore drive them through a tiny FakeApp/FakeMetricsRegistry
  * pair instead of the real telemetry::MetricsRegistry, whose enabled-path
  * .cpp drags xrpld link dependencies (LedgerMaster, TxQ, NetworkOPs, ...)
@@ -32,6 +32,7 @@
 #include <gtest/gtest.h>
 #include <opentelemetry/metrics/meter.h>
 #include <opentelemetry/metrics/meter_provider.h>
+#include <opentelemetry/metrics/noop.h>
 #include <opentelemetry/metrics/observer_result.h>
 #include <opentelemetry/metrics/provider.h>
 #include <opentelemetry/nostd/shared_ptr.h>
@@ -45,8 +46,10 @@
 #include <opentelemetry/sdk/metrics/metric_reader.h>
 
 #include <algorithm>
+#include <array>
 #include <atomic>
 #include <chrono>
+#include <cstddef>
 #include <cstdint>
 #include <map>
 #include <memory>
@@ -60,7 +63,7 @@ namespace {
 
 /**
  * Duck-typed stand-in for telemetry::MetricsRegistry. The macros only
- * ever call isEnabled() and meter() on the registry pointer, so this
+ * ever call recording() and meter() on the registry pointer, so this
  * minimal type is all they need -- and it links without pulling in the
  * real MetricsRegistry.cpp's xrpld dependencies.
  */
@@ -75,12 +78,24 @@ public:
     configure(bool enabled, opentelemetry::nostd::shared_ptr<opentelemetry::metrics::Meter> meter)
     {
         enabled_ = enabled;
+        stopped_ = false;
         meter_ = std::move(meter);
     }
 
     /**
+     * Simulate MetricsRegistry::stop(): the recording gate flips closed even
+     * while enabled_ stays true, matching the real class where a call after
+     * stop() must not touch the SDK instrument cache.
+     */
+    void
+    stop() noexcept
+    {
+        stopped_ = true;
+    }
+
+    /**
      * Number of times meter() has been consulted, so a test can assert the
-     * create-once (call_once) and disabled-gating behavior exactly.
+     * create-once (function-local static) and disabled-gating behavior exactly.
      */
     [[nodiscard]] int
     meterCalls() const noexcept
@@ -94,6 +109,16 @@ public:
         return enabled_;
     }
 
+    /**
+     * Mirrors MetricsRegistry::recording(): the macros consult this instead of
+     * isEnabled() so a stopped registry records nothing.
+     */
+    [[nodiscard]] bool
+    recording() const noexcept
+    {
+        return enabled_ && !stopped_;
+    }
+
     [[nodiscard]] opentelemetry::nostd::shared_ptr<opentelemetry::metrics::Meter>
     meter() const noexcept
     {
@@ -103,9 +128,15 @@ public:
 
 private:
     /**
-     * Master enable flag the macro consults via isEnabled().
+     * Master enable flag; recording() folds it in.
      */
     bool enabled_ = true;
+
+    /**
+     * Set by stop() to model the real registry's post-shutdown state:
+     * enabled_ stays true but recording() flips to false.
+     */
+    bool stopped_ = false;
 
     /**
      * Meter handed to the macro; sourced from a bare SDK provider.
@@ -486,7 +517,7 @@ wire(FakeApp& app, bool enabled)
  * CollectingProvider so the recorded values are collectable.
  *
  * @param app      The duck-typed app the macros will be driven through.
- * @param enabled  What the macros' isEnabled() gate will observe.
+ * @param enabled  What the macros' recording() gate will observe.
  * @param meter    The meter the macros will create their instruments on.
  */
 void
@@ -514,7 +545,7 @@ TEST(MetricMacros, counter_inc_creates_once_and_does_not_crash)
             app, "test_macro_counter_total", "Test counter for macro unit test");
     }
 
-    // Create-once proof: std::call_once consults meter() exactly once across
+    // Create-once proof: the function-local static consults meter() exactly once across
     // the three calls at this site, then reuses the cached instrument handle.
     EXPECT_EQ(app.registry().meterCalls(), 1);
 }
@@ -632,11 +663,33 @@ TEST(MetricMacros, observable_counter_and_updown_register_do_not_crash)
     EXPECT_EQ(app.registry().meterCalls(), 2);
 }
 
+TEST(MetricMacros, stopped_registry_records_nothing)
+{
+    ScopedBareProvider const bareProvider;
+    FakeApp app;
+    wire(app, /*enabled=*/true);
+
+    // Simulate MetricsRegistry::stop(): recording() flips closed even while
+    // isEnabled() stays true, because the OTel provider is torn down in
+    // stop() and a Record on a stale SDK instrument would deref a dangling
+    // AggregationConfig for a first-seen attribute set.
+    app.registry().stop();
+    ASSERT_TRUE(app.registry().isEnabled());
+    ASSERT_FALSE(app.registry().recording());
+
+    XRPL_METRIC_COUNTER_INC(
+        app, "test_macro_stopped_counter_total", "Counter after stop() must be inert");
+
+    // The recording() gate short-circuits before the create-once static path
+    // runs, so meter() is never consulted.
+    EXPECT_EQ(app.registry().meterCalls(), 0);
+}
+
 TEST(MetricMacros, disabled_registry_is_noop)
 {
     ScopedBareProvider const bareProvider;
     FakeApp app;
-    // enabled=false: the macro's isEnabled() gate short-circuits before it
+    // enabled=false: the macro's recording() gate short-circuits before it
     // ever touches meter(), so nothing is created or recorded.
     wire(app, /*enabled=*/false);
 
@@ -1021,7 +1074,7 @@ TEST(MetricMacros, sync_diagnostics_metrics_emit_nothing_when_registry_disabled)
     // Nothing else leaked in either: the collection is completely empty.
     EXPECT_EQ(data.size(), 0u);
 
-    // Cause, not just state: the isEnabled() gate short-circuited before the
+    // Cause, not just state: the recording() gate short-circuited before the
     // macro ever asked for a meter.
     EXPECT_EQ(app.registry().meterCalls(), 0);
 }
@@ -1263,7 +1316,7 @@ TEST(MetricMacros, state_changes_total_emits_nothing_when_registry_disabled)
     EXPECT_EQ(data.count("state_changes_total"), 0u);
     EXPECT_EQ(data.size(), 0u);
 
-    // Cause, not just state: the isEnabled() gate short-circuited before the
+    // Cause, not just state: the recording() gate short-circuited before the
     // macro asked for a meter.
     EXPECT_EQ(app.registry().meterCalls(), 0);
 }
@@ -1614,7 +1667,7 @@ TEST(MetricMacros, acquire_counters_emit_nothing_when_registry_disabled)
     EXPECT_EQ(data.count("sync_addnode_total"), 0u);
     EXPECT_EQ(data.size(), 0u);
 
-    // Cause, not just state: the isEnabled() gate short-circuited before the
+    // Cause, not just state: the recording() gate short-circuited before the
     // macros asked for a meter.
     EXPECT_EQ(app.registry().meterCalls(), 0);
 }
@@ -2596,7 +2649,7 @@ TEST(MetricMacros, sync_supply_counters_emit_nothing_when_registry_disabled)
     EXPECT_EQ(data.count("ledger_jump_total"), 0u);
     EXPECT_EQ(data.size(), 0u);
 
-    // Cause, not just state: the isEnabled() gate short-circuited before the
+    // Cause, not just state: the recording() gate short-circuited before the
     // macros asked for a meter, so no instrument was created either.
     EXPECT_EQ(app.registry().meterCalls(), 0);
 }
@@ -2718,7 +2771,7 @@ TEST(MetricMacros, ledger_replay_counters_emit_nothing_when_disabled)
     EXPECT_EQ(data.count("ledger_replay_outcome_total"), 0u);
     EXPECT_EQ(data.size(), 0u);
 
-    // Cause, not just state: the isEnabled() gate short-circuited before the
+    // Cause, not just state: the recording() gate short-circuited before the
     // macros ever asked for a meter, so no instrument was created.
     EXPECT_EQ(app.registry().meterCalls(), 0);
 }
@@ -2914,7 +2967,7 @@ TEST(MetricMacros, consensus_round_duration_records_exact_values)
     ASSERT_EQ(data.at("consensus_round_duration_ms").size(), 1u);
     EXPECT_TRUE(data.at("consensus_round_duration_ms").begin()->first.empty());
 
-    // One call site, three records: created once via std::call_once, then reused.
+    // One call site, three records: created once (function-local static), then reused.
     EXPECT_EQ(app.registry().meterCalls(), 1);
 }
 
@@ -2939,7 +2992,7 @@ TEST(MetricMacros, consensus_round_duration_emits_nothing_when_registry_disabled
     // State: no series at all under that name, and nothing else leaked in.
     EXPECT_EQ(data.count("consensus_round_duration_ms"), 0u);
     EXPECT_EQ(data.size(), 0u);
-    // Cause, not just state: the isEnabled() gate short-circuited before the
+    // Cause, not just state: the recording() gate short-circuited before the
     // macro ever asked for a meter.
     EXPECT_EQ(app.registry().meterCalls(), 0);
 }
@@ -3314,6 +3367,395 @@ TEST(MetricMacros, sweep_and_rotation_metrics_emit_nothing_when_registry_disable
     // Cause, not just state: the isEnabled() gate short-circuited before any
     // macro asked for a meter, so no instrument was ever created.
     EXPECT_EQ(app.registry().meterCalls(), 0);
+}
+
+// -----------------------------------------------------------------
+// Startup order: pin the macro contract across every {enabled, meter kind,
+// calls} combination. kSiteCount = 2 x 2 x 4 = 16; the loop below drives
+// each case through its own call site.
+//
+// Every synchronous macro creates its instrument once, on first use, from
+// MetricsRegistry::meter() and holds it in a function-local static. It does
+// no check of its own beyond the isEnabled() gate: the registry sets meter_
+// in its constructor (real, or a no-op when the pipeline failed to build)
+// and never clears it; enabled_ is `bool const`.
+//
+// Three of the four (enable, meter) tuples are reachable in production:
+//  - disabled: MetricsRegistry never installs a meter, so meter() is never
+//    consulted and nothing records;
+//  - enabled, real meter: the instrument is created once and every call
+//    records;
+//  - enabled, no-op meter (pipeline failed): the instrument is a no-op and
+//    every call is absorbed.
+// The fourth tuple -- disabled with a real meter -- cannot occur, because a
+// disabled registry does not install a meter (the constructor early-returns
+// before setting meter_). The four (disabled, real, 0..3 calls) case
+// indices are still driven so the macro remains well-defined for every enum
+// combination the type system permits; they must not throw or record.
+//
+// One call site per case: the statics are per macro expansion, so one
+// expansion in a loop would share state across cases. A template
+// instantiation per case index gives each its own statics.
+//
+// What the no-op-meter branches assert. drive() gives its local
+// CollectingProvider a real meter for the Real-meter case and points the
+// fake at a separate noopMeter() for the no-op case, so the provider is
+// never wired to the no-op recording site and provider.collect() is empty
+// by construction. The no-op branches therefore assert only that meter()
+// on the fake was consulted exactly once (the static was built through the
+// registry, not around it) and that the record call did not throw. They do
+// NOT prove that the no-op instrument itself dropped the point -- that
+// property belongs to the OTel API's NoopMeter and is not under test here.
+// -----------------------------------------------------------------
+
+namespace {
+
+/**
+ * What the registry hands a call site.
+ */
+enum class MeterKind { Real, Noop };
+
+/**
+ * One case: the registry's fixed enable flag, the meter it holds, and how many
+ * times the site is called.
+ */
+struct Site
+{
+    bool enabled;
+    MeterKind meter;
+    std::size_t calls;
+};
+
+/**
+ * Calls run 0..kMaxCalls, so "never", "once" and "several" are all covered.
+ */
+constexpr std::size_t kMaxCalls = 3;
+constexpr std::size_t kCallCounts = kMaxCalls + 1;
+
+/**
+ * 2 enable flags x 2 meter kinds x kCallCounts.
+ */
+constexpr std::size_t kSiteCount = 2 * 2 * kCallCounts;
+
+/**
+ * Decode a case index: `calls` in the low digit, the meter kind next, the
+ * enable flag on top. Indices 0..kSiteCount-1 map one-to-one onto the cases.
+ */
+[[nodiscard]] constexpr Site
+siteFor(std::size_t index)
+{
+    return Site{
+        .enabled = (index / (2 * kCallCounts)) != 0,
+        .meter = ((index / kCallCounts) % 2) != 0 ? MeterKind::Noop : MeterKind::Real,
+        .calls = index % kCallCounts};
+}
+
+/**
+ * Records that must land: every call, but only for an enabled site with a real
+ * meter. A disabled site never creates an instrument; a no-op meter absorbs
+ * every record.
+ */
+[[nodiscard]] constexpr std::int64_t
+expectedRecords(Site const& site)
+{
+    return (site.enabled && site.meter == MeterKind::Real) ? static_cast<std::int64_t>(site.calls)
+                                                           : 0;
+}
+
+/**
+ * Times meter() may be consulted: once for an enabled site that was called at
+ * all (the static is built on the first call), never otherwise.
+ */
+[[nodiscard]] constexpr int
+expectedMeterCalls(Site const& site)
+{
+    return (site.enabled && site.calls > 0) ? 1 : 0;
+}
+
+// The encoding really enumerates the space: 15 is enabled, no-op meter, 3
+// calls; 11 is enabled, real meter, 3 calls; 0 is disabled, real, 0 calls;
+// 8 is enabled, real, 0 calls.
+static_assert(
+    siteFor(15).enabled && siteFor(15).meter == MeterKind::Noop && siteFor(15).calls == 3);
+static_assert(expectedRecords(siteFor(15)) == 0 && expectedMeterCalls(siteFor(15)) == 1);
+static_assert(
+    siteFor(11).enabled && siteFor(11).meter == MeterKind::Real && siteFor(11).calls == 3);
+static_assert(expectedRecords(siteFor(11)) == 3 && expectedMeterCalls(siteFor(11)) == 1);
+static_assert(!siteFor(0).enabled && siteFor(0).meter == MeterKind::Real && siteFor(0).calls == 0);
+static_assert(expectedRecords(siteFor(0)) == 0 && expectedMeterCalls(siteFor(0)) == 0);
+static_assert(siteFor(8).enabled && siteFor(8).calls == 0);
+static_assert(expectedRecords(siteFor(8)) == 0 && expectedMeterCalls(siteFor(8)) == 0);
+static_assert(expectedRecords(siteFor(3)) == 0 && expectedMeterCalls(siteFor(3)) == 0);  // disabled
+
+/**
+ * Human-readable case for the assertion message, so a red names the case that
+ * broke rather than an index.
+ */
+[[nodiscard]] std::string
+describe(Site const& site)
+{
+    return std::string(site.enabled ? "enabled" : "disabled") +
+        (site.meter == MeterKind::Real ? ", real meter, " : ", no-op meter, ") +
+        std::to_string(site.calls) + " call(s)";
+}
+
+/**
+ * The meter the registry hands out when its pipeline failed to build: the OTel
+ * API's own no-op, exactly what MetricsRegistry's constructor falls back to.
+ */
+[[nodiscard]] opentelemetry::nostd::shared_ptr<opentelemetry::metrics::Meter>
+noopMeter()
+{
+    // Through the base pointer: the no-op provider's override hides the base
+    // class's defaulted GetMeter overload.
+    opentelemetry::nostd::shared_ptr<opentelemetry::metrics::MeterProvider> const noop(
+        new opentelemetry::metrics::NoopMeterProvider());
+    return noop->GetMeter("xrpld_test", "1.0.0");
+}
+
+/**
+ * Drive one call site (`hit`, a single macro expansion) through a case and
+ * return what the collecting provider saw and how often meter() was read.
+ */
+template <typename Hit>
+[[nodiscard]] std::pair<CollectedMetrics, int>
+drive(Site const& site, Hit&& hit)
+{
+    CollectingProvider const provider;
+    FakeApp app;
+    app.registry().configure(
+        site.enabled, site.meter == MeterKind::Real ? provider.meter() : noopMeter());
+
+    for (std::size_t i = 0; i < site.calls; ++i)
+        hit(app);
+    return {provider.collect(), app.registry().meterCalls()};
+}
+
+/**
+ * Counter total, with an absent metric read as 0. A case that never recorded
+ * must compare against an expected 0, not throw on the lookup.
+ */
+[[nodiscard]] std::int64_t
+counterTotalOrZero(CollectedMetrics const& data, std::string const& metric)
+{
+    return data.contains(metric) ? counterValue(data, metric, {}) : 0;
+}
+
+constexpr char const* kOrderCounter = "startup_order_probe_total";
+
+/**
+ * Case I through its own call site: each instantiation owns its own static.
+ * Asserts the exact record total and the exact number of meter() reads.
+ */
+template <std::size_t I>
+void
+checkCounterSite()
+{
+    Site const site = siteFor(I);
+    auto const [data, meterCalls] = drive(site, [](FakeApp& app) {
+        XRPL_METRIC_COUNTER_INC(app, kOrderCounter, "Startup-order probe counter");
+    });
+    EXPECT_EQ(counterTotalOrZero(data, kOrderCounter), expectedRecords(site))
+        << "case " << I << ": " << describe(site);
+    EXPECT_EQ(meterCalls, expectedMeterCalls(site)) << "case " << I << ": " << describe(site);
+}
+
+/**
+ * The two cases every instrument kind is checked against: a real meter (two
+ * calls, exact values) and the no-op meter (two calls, nothing collected).
+ */
+constexpr Site kTwoReal{.enabled = true, .meter = MeterKind::Real, .calls = 2};
+constexpr Site kTwoNoop{.enabled = true, .meter = MeterKind::Noop, .calls = 2};
+
+}  // namespace
+
+// All 16 cases, each through its own call site. Enabled with a real meter must
+// record every call and read meter() exactly once; enabled with the no-op
+// meter must record nothing, crash nowhere, and still read meter() once;
+// disabled must never read meter() at all.
+TEST(MetricMacros, counter_site_creates_once_and_records_only_with_a_real_meter)
+{
+    []<std::size_t... I>(std::index_sequence<I...>) {
+        (checkCounterSite<I>(), ...);
+    }(std::make_index_sequence<kSiteCount>{});
+}
+
+// Each synchronous instrument kind is its own macro body with its own static,
+// so each gets the real-meter case and the no-op-meter case, at two call sites.
+
+TEST(MetricMacros, counter_add_site_real_and_noop_meter)
+{
+    auto const [live, liveReads] = drive(kTwoReal, [](FakeApp& app) {
+        XRPL_METRIC_COUNTER_ADD(app, "startup_order_add_total", "Startup-order probe", 5);
+    });
+    EXPECT_EQ(counterTotalOrZero(live, "startup_order_add_total"), 10);
+    EXPECT_EQ(liveReads, 1);
+
+    [[maybe_unused]] auto const [absorbed, absorbedReads] = drive(kTwoNoop, [](FakeApp& app) {
+        XRPL_METRIC_COUNTER_ADD(app, "startup_order_add_total", "Startup-order probe", 5);
+    });
+    // No-op branch: absorbed is empty by construction (see block header);
+    // only meter() being read exactly once carries information here.
+    EXPECT_EQ(absorbedReads, 1);
+}
+
+TEST(MetricMacros, counter_inc_labeled_site_real_and_noop_meter)
+{
+    auto const [live, liveReads] = drive(kTwoReal, [](FakeApp& app) {
+        XRPL_METRIC_COUNTER_INC_LABELED(
+            app,
+            "startup_order_inc_labeled_total",
+            "Startup-order probe",
+            {{"site", std::string("probe")}});
+    });
+    ASSERT_EQ(live.count("startup_order_inc_labeled_total"), 1u);
+    EXPECT_EQ(counterValue(live, "startup_order_inc_labeled_total", attrs("site", "probe")), 2);
+    EXPECT_EQ(liveReads, 1);
+
+    [[maybe_unused]] auto const [absorbed, absorbedReads] = drive(kTwoNoop, [](FakeApp& app) {
+        XRPL_METRIC_COUNTER_INC_LABELED(
+            app,
+            "startup_order_inc_labeled_total",
+            "Startup-order probe",
+            {{"site", std::string("probe")}});
+    });
+    // No-op branch: absorbed is empty by construction (see block header);
+    // only meter() being read exactly once carries information here.
+    EXPECT_EQ(absorbedReads, 1);
+}
+
+TEST(MetricMacros, counter_add_labeled_site_real_and_noop_meter)
+{
+    auto const [live, liveReads] = drive(kTwoReal, [](FakeApp& app) {
+        XRPL_METRIC_COUNTER_ADD_LABELED(
+            app,
+            "startup_order_add_labeled_total",
+            "Startup-order probe",
+            5,
+            {{"site", std::string("probe")}});
+    });
+    ASSERT_EQ(live.count("startup_order_add_labeled_total"), 1u);
+    EXPECT_EQ(counterValue(live, "startup_order_add_labeled_total", attrs("site", "probe")), 10);
+    EXPECT_EQ(liveReads, 1);
+
+    [[maybe_unused]] auto const [absorbed, absorbedReads] = drive(kTwoNoop, [](FakeApp& app) {
+        XRPL_METRIC_COUNTER_ADD_LABELED(
+            app,
+            "startup_order_add_labeled_total",
+            "Startup-order probe",
+            5,
+            {{"site", std::string("probe")}});
+    });
+    // No-op branch: absorbed is empty by construction (see block header);
+    // only meter() being read exactly once carries information here.
+    EXPECT_EQ(absorbedReads, 1);
+}
+
+TEST(MetricMacros, updown_add_site_real_and_noop_meter)
+{
+    // Negative amounts, so the live total also proves the UpDownCounter path.
+    auto const [live, liveReads] = drive(kTwoReal, [](FakeApp& app) {
+        XRPL_METRIC_UPDOWN_ADD(app, "startup_order_updown", "Startup-order probe", -1);
+    });
+    EXPECT_EQ(counterTotalOrZero(live, "startup_order_updown"), -2);
+    EXPECT_EQ(liveReads, 1);
+
+    [[maybe_unused]] auto const [absorbed, absorbedReads] = drive(kTwoNoop, [](FakeApp& app) {
+        XRPL_METRIC_UPDOWN_ADD(app, "startup_order_updown", "Startup-order probe", -1);
+    });
+    // No-op branch: absorbed is empty by construction (see block header);
+    // only meter() being read exactly once carries information here.
+    EXPECT_EQ(absorbedReads, 1);
+}
+
+TEST(MetricMacros, updown_add_labeled_site_real_and_noop_meter)
+{
+    auto const [live, liveReads] = drive(kTwoReal, [](FakeApp& app) {
+        XRPL_METRIC_UPDOWN_ADD_LABELED(
+            app,
+            "startup_order_updown_labeled",
+            "Startup-order probe",
+            7,
+            {{"site", std::string("probe")}});
+    });
+    ASSERT_EQ(live.count("startup_order_updown_labeled"), 1u);
+    EXPECT_EQ(counterValue(live, "startup_order_updown_labeled", attrs("site", "probe")), 14);
+    EXPECT_EQ(liveReads, 1);
+
+    [[maybe_unused]] auto const [absorbed, absorbedReads] = drive(kTwoNoop, [](FakeApp& app) {
+        XRPL_METRIC_UPDOWN_ADD_LABELED(
+            app,
+            "startup_order_updown_labeled",
+            "Startup-order probe",
+            7,
+            {{"site", std::string("probe")}});
+    });
+    // No-op branch: absorbed is empty by construction (see block header);
+    // only meter() being read exactly once carries information here.
+    EXPECT_EQ(absorbedReads, 1);
+}
+
+TEST(MetricMacros, histogram_record_site_real_and_noop_meter)
+{
+    // Distinct values per call. The value is taken outside the macro because
+    // the macro evaluates its value argument only when it records, so a side
+    // effect inside it would be skipped on a call that does not record.
+    static constexpr std::array<std::int64_t, 2> kValues{250, 9'999};
+
+    auto const [live, liveReads] = drive(kTwoReal, [n = std::size_t{0}](FakeApp& app) mutable {
+        std::int64_t const value = kValues.at(n++);
+        XRPL_METRIC_HISTOGRAM_RECORD(app, "startup_order_hist_us", "Startup-order probe", value);
+    });
+    ASSERT_EQ(live.count("startup_order_hist_us"), 1u);
+    auto const [count, sum] = histogramCountAndSum(live, "startup_order_hist_us");
+    EXPECT_EQ(count, 2u);
+    EXPECT_DOUBLE_EQ(sum, 10'249.0);
+    EXPECT_EQ(liveReads, 1);
+
+    [[maybe_unused]] auto const [absorbed, absorbedReads] =
+        drive(kTwoNoop, [n = std::size_t{0}](FakeApp& app) mutable {
+            std::int64_t const value = kValues.at(n++);
+            XRPL_METRIC_HISTOGRAM_RECORD(
+                app, "startup_order_hist_us", "Startup-order probe", value);
+        });
+    // No-op branch: absorbed is empty by construction (see block header);
+    // only meter() being read exactly once carries information here.
+    EXPECT_EQ(absorbedReads, 1);
+}
+
+TEST(MetricMacros, histogram_record_labeled_site_real_and_noop_meter)
+{
+    static constexpr std::array<std::int64_t, 2> kValues{250, 9'999};
+
+    auto const [live, liveReads] = drive(kTwoReal, [n = std::size_t{0}](FakeApp& app) mutable {
+        std::int64_t const value = kValues.at(n++);  // see the unlabeled test
+        XRPL_METRIC_HISTOGRAM_RECORD_LABELED(
+            app,
+            "startup_order_hist_labeled_us",
+            "Startup-order probe",
+            value,
+            {{"site", std::string("probe")}});
+    });
+    ASSERT_EQ(live.count("startup_order_hist_labeled_us"), 1u);
+    auto const& point = live.at("startup_order_hist_labeled_us").at(attrs("site", "probe"));
+    auto const& hist = opentelemetry::nostd::get<otel_sdk::HistogramPointData>(point);
+    EXPECT_EQ(hist.count_, 2u);
+    EXPECT_DOUBLE_EQ(opentelemetry::nostd::get<double>(hist.sum_), 10'249.0);
+    EXPECT_EQ(liveReads, 1);
+
+    [[maybe_unused]] auto const [absorbed, absorbedReads] =
+        drive(kTwoNoop, [n = std::size_t{0}](FakeApp& app) mutable {
+            std::int64_t const value = kValues.at(n++);
+            XRPL_METRIC_HISTOGRAM_RECORD_LABELED(
+                app,
+                "startup_order_hist_labeled_us",
+                "Startup-order probe",
+                value,
+                {{"site", std::string("probe")}});
+        });
+    // No-op branch: absorbed is empty by construction (see block header);
+    // only meter() being read exactly once carries information here.
+    EXPECT_EQ(absorbedReads, 1);
 }
 
 #endif  // XRPL_ENABLE_TELEMETRY

@@ -107,7 +107,7 @@ TEST(NodeIdResource, set_node_id_on_disabled_path_is_inert)
     EXPECT_FALSE(telemetry->shouldTraceConsensus());
     EXPECT_FALSE(telemetry->shouldTracePeer());
     EXPECT_FALSE(telemetry->shouldTraceLedger());
-    EXPECT_EQ(telemetry->getConsensusTraceStrategy(), "deterministic");
+    EXPECT_EQ(telemetry->getConsensusTraceStrategy(), ConsensusTraceStrategy::Deterministic);
 }
 
 #ifdef XRPL_ENABLE_TELEMETRY

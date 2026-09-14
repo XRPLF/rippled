@@ -20,17 +20,17 @@
  *     real producer, xrpl::to_string(RangeSet), rather than restating its
  *     format.
  *
- *  4. The no-op / telemetry-disabled path — construction, the two-phase
- *     start() / startAsyncGauges() / stop() lifecycle, and the synchronous
- *     record*() methods. Guarded, because
- *     when XRPL_ENABLE_TELEMETRY is defined MetricsRegistry.cpp is not
- *     compiled into this binary (see src/tests/libxrpl/CMakeLists.txt) and
- *     its out-of-line symbols are unresolvable here.
+ *  4. The no-op / telemetry-disabled path — construction (which is where the
+ *     pipeline and the synchronous instruments are built), startAsyncGauges(),
+ *     stop(), and the synchronous record*() methods. Guarded, because when
+ *     XRPL_ENABLE_TELEMETRY is
+ *     defined MetricsRegistry.cpp is not compiled into this binary (see
+ *     src/tests/libxrpl/CMakeLists.txt) and its out-of-line symbols are
+ *     unresolvable here.
  *
  *  Tests cover:
  *  - Construction with telemetry disabled (no-op behavior).
- *  - The two-phase start() / startAsyncGauges() / stop() lifecycle when
- *    disabled.
+ *  - The startAsyncGauges() / stop() lifecycle when disabled.
  *  - Synchronous instrument recording methods do not crash when disabled.
  *  - Double stop() is safe.
  *  - Destructor handles cleanup without crash.
@@ -639,12 +639,21 @@ using namespace xrpl;
 namespace {
 
 /**
- * OTLP/HTTP endpoint passed to every start() call below. Nothing ever dials
- * it -- these tests exercise the no-op path -- it just has to be a plausible
- * URL. start() takes `std::string const&`, so call sites construct one from
- * this view rather than repeating the literal.
+ * OTLP/HTTP endpoint given to every registry below. Nothing ever dials it
+ * -- these tests exercise the no-op path -- it just has to be a plausible URL.
+ * It reaches the constructor through @ref kTestOptions.
  */
 constexpr std::string_view kTestEndpoint{"http://localhost:4318/v1/metrics"};
+
+/**
+ * The only Options field these tests need.
+ *
+ * The constructor takes the Options aggregate, not a string. The other fields
+ * -- resource identity, network id, TLS paths -- are never read on the no-op
+ * path, and their defaults already mean "unset". One shared value keeps every
+ * construction on the same endpoint.
+ */
+telemetry::MetricsRegistry::Options const kTestOptions{.endpoint = std::string{kTestEndpoint}};
 
 /**
  * Minimal mock ServiceRegistry for MetricsRegistry testing.
@@ -930,16 +939,15 @@ protected:
 TEST_F(MetricsRegistryTest, disabled_construction)
 {
     // Construct with enabled=false; should be a no-op.
-    telemetry::MetricsRegistry const registry(false, mockApp_, j_);
+    telemetry::MetricsRegistry const registry(false, mockApp_, j_, kTestOptions);
     EXPECT_FALSE(registry.isEnabled());
 }
 
-TEST_F(MetricsRegistryTest, disabled_start_stop)
+TEST_F(MetricsRegistryTest, disabled_construct_stop)
 {
-    telemetry::MetricsRegistry registry(false, mockApp_, j_);
+    telemetry::MetricsRegistry registry(false, mockApp_, j_, kTestOptions);
 
-    // start() and stop() should be no-ops when disabled.
-    registry.start(std::string{kTestEndpoint});
+    // stop() should be a no-op when disabled.
     registry.stop();
 
     // Double stop should be safe.
@@ -947,47 +955,41 @@ TEST_F(MetricsRegistryTest, disabled_start_stop)
 }
 
 // ---------------------------------------------------------------------------
-// The two-phase startup split: start() then startAsyncGauges().
+// The two startup phases: construction, then startAsyncGauges().
 //
-// Why the split exists: start() reads only config strings, while the
-// observable-instrument callbacks registered by startAsyncGauges() read live
-// Application services (getOverlay() asserts overlay_ is non-null). The split
-// lets the meter go live before the first consensus round records its
-// mode-transition counter, while the callbacks still wait for the subsystems.
+// Why two phases: the constructor needs only config strings, so it can run in
+// the Application's member-init list, before any subsystem that records a
+// metric exists. The observable-instrument callbacks registered by
+// startAsyncGauges() read live Application services (getOverlay() asserts
+// overlay_ is non-null), so they wait until those services are built.
 //
 // SCOPE OF THESE TESTS -- read before adding to them. MetricsRegistry.cpp is
 // compiled into this binary ONLY when telemetry is OFF
-// (src/tests/libxrpl/CMakeLists.txt:117-126 -- the `else()` branch; when it is
-// ON the .cpp needs concrete xrpld types such as LedgerMaster, TxQ, NetworkOPs,
+// (src/tests/libxrpl/CMakeLists.txt -- the `else()` branch; when it is ON the
+// .cpp needs concrete xrpld types such as LedgerMaster, TxQ, NetworkOPs,
 // Overlay and node_store::Database, which a standalone GTest binary cannot
-// link). Both start() and startAsyncGauges() therefore compile here to their
-// `#else` branch, which only (void)-casts its arguments. So these tests pin the
-// API SURFACE -- that both entry points exist, are callable in either order,
-// and leave the object usable -- and NOT the gauge behaviour. Real coverage of
-// "gauges observe values only after startAsyncGauges()" is unreachable from
-// this target; it needs the enabled path plus an in-memory metric reader.
-//
-// Two properties the production code does NOT have, so nothing below asserts
-// them: startAsyncGauges() has no idempotency guard (a second call on the
-// enabled path would create a second set of same-named instruments), and
-// callbacksDetached_ is one-way, so detachCallbacks() followed by
-// startAsyncGauges() would register permanently-dead instruments.
+// link). The constructor body and startAsyncGauges() sit inside
+// #ifdef XRPL_ENABLE_TELEMETRY, so here they compile to empty bodies. So these
+// tests pin the API SURFACE -- that the entry points exist, are callable in
+// the documented order, and leave the object usable -- and NOT the gauge
+// behaviour. Real coverage of "gauges observe values only after
+// startAsyncGauges()" is unreachable from this target; it needs the enabled
+// path plus an in-memory metric reader.
 // ---------------------------------------------------------------------------
 
-TEST_F(MetricsRegistryTest, async_gauges_start_after_start_is_safe)
+TEST_F(MetricsRegistryTest, async_gauges_after_construction_is_safe)
 {
-    telemetry::MetricsRegistry registry(false, mockApp_, j_);
+    telemetry::MetricsRegistry registry(false, mockApp_, j_, kTestOptions);
 
-    // The documented order: provider/sync instruments first, gauges second.
-    registry.start(std::string{kTestEndpoint});
+    // The documented order: instruments at construction, gauges second.
     registry.startAsyncGauges();
 
     // State: the enable flag is untouched by either phase. Exact value, not
     // merely "falsy" -- a phase that flipped it would be a real defect.
     EXPECT_EQ(registry.isEnabled(), false);
 
-    // Synchronous recording must work off phase 1 alone. This is the whole
-    // point of the split: nothing here needs the gauges to be registered.
+    // Synchronous recording must work off construction alone. Nothing here
+    // needs the gauges to be registered.
     registry.recordRpcStarted("server_info");
     registry.recordRpcFinished("server_info", 1000);
 
@@ -995,42 +997,35 @@ TEST_F(MetricsRegistryTest, async_gauges_start_after_start_is_safe)
     EXPECT_EQ(registry.isEnabled(), false);
 }
 
-TEST_F(MetricsRegistryTest, async_gauges_before_start_does_not_break_start)
+TEST_F(MetricsRegistryTest, async_gauges_twice_is_safe)
 {
-    telemetry::MetricsRegistry registry(false, mockApp_, j_);
+    telemetry::MetricsRegistry registry(false, mockApp_, j_, kTestOptions);
 
-    // Negative path: the mis-ordered call, gauges before the provider exists.
-    // In THIS build it reaches the (void)-cast stub, so what is actually
-    // proven is only that the entry point tolerates being called first and
-    // leaves the object usable -- not that the enabled path's `if (!meter_)`
-    // guard works, since that guard is inside #ifdef XRPL_ENABLE_TELEMETRY and
-    // is not compiled here.
+    // A second arm must be a no-op, not a second set of instruments. On the
+    // enabled path the Phase guard logs and returns; here the stub returns.
+    registry.startAsyncGauges();
     registry.startAsyncGauges();
     EXPECT_EQ(registry.isEnabled(), false);
 
-    // Phase 1 still works afterwards, so the bad call left no state behind.
-    registry.start(std::string{kTestEndpoint});
     registry.recordJobQueued("ledgerData", "ProcessLData");
-    EXPECT_EQ(registry.isEnabled(), false);
-
     registry.stop();
 }
 
 TEST_F(MetricsRegistryTest, async_gauges_respect_the_compile_time_guard)
 {
-    // Constructed with enabled=true, which on the enabled path would register
-    // instruments for real. In this build XRPL_ENABLE_TELEMETRY is undefined,
-    // so both phases compile to the (void)-cast stub branch and neither
-    // touches the mock -- every MockServiceRegistry accessor throws, so a
-    // callback that actually ran would surface as a thrown exception here.
-    telemetry::MetricsRegistry registry(true, mockApp_, j_);
+    // Constructed with enabled=true, which on the enabled path would build the
+    // pipeline and register instruments for real. In this build
+    // XRPL_ENABLE_TELEMETRY is undefined, so both phases compile to the stub
+    // branch and neither touches the mock -- every MockServiceRegistry
+    // accessor throws, so a callback that actually ran would surface as a
+    // thrown exception here.
+    telemetry::MetricsRegistry registry(true, mockApp_, j_, kTestOptions);
 
     // Cause, not just state: the flag really is true, so the no-op below is
     // attributable to the compile-time guard and not to an early enabled_
     // return.
     EXPECT_EQ(registry.isEnabled(), true);
 
-    EXPECT_NO_THROW(registry.start(std::string{kTestEndpoint}));
     EXPECT_NO_THROW(registry.startAsyncGauges());
     EXPECT_NO_THROW(registry.stop());
 
@@ -1039,8 +1034,7 @@ TEST_F(MetricsRegistryTest, async_gauges_respect_the_compile_time_guard)
 
 TEST_F(MetricsRegistryTest, disabled_recording_methods)
 {
-    telemetry::MetricsRegistry registry(false, mockApp_, j_);
-    registry.start(std::string{kTestEndpoint});
+    telemetry::MetricsRegistry registry(false, mockApp_, j_, kTestOptions);
 
     // All recording methods should be no-ops (not crash).
     registry.recordRpcStarted("server_info");
@@ -1057,8 +1051,7 @@ TEST_F(MetricsRegistryTest, destructor_calls_stop)
 {
     {
         // Let the destructor handle cleanup.
-        telemetry::MetricsRegistry registry(false, mockApp_, j_);
-        registry.start(std::string{kTestEndpoint});
+        telemetry::MetricsRegistry const registry(false, mockApp_, j_, kTestOptions);
     }
     // If we get here without crash, the destructor handled stop.
 }
@@ -1103,7 +1096,7 @@ TEST_F(MetricsRegistryTest, disabled_build_exposes_no_meter_accessor)
 
     // The enable flag is still queryable and reports exactly false -- the class
     // is a no-op, not an absent type.
-    telemetry::MetricsRegistry const registry(false, mockApp_, j_);
+    telemetry::MetricsRegistry const registry(false, mockApp_, j_, kTestOptions);
     EXPECT_FALSE(registry.isEnabled());
 }
 
@@ -1113,9 +1106,9 @@ TEST_F(MetricsRegistryTest, disabled_build_exposes_no_meter_accessor)
 // so reaching the end without an exception proves no callback ran.
 TEST_F(MetricsRegistryTest, disabled_lifecycle_never_consults_gauge_services)
 {
-    telemetry::MetricsRegistry registry(false, mockApp_, j_);
+    telemetry::MetricsRegistry registry(false, mockApp_, j_, kTestOptions);
 
-    // start() is where registerAsyncGauges() -- and with it
+    // startAsyncGauges() is where registerAsyncGauges() -- and with it
     // registerUnlQuorumGauge() / registerClockSkewGauge() /
     // registerSyncStateGauge() / registerStallEventsCounter() /
     // registerSyncAcquireGauge() / registerCacheHitRateDetailGauge() /
@@ -1123,14 +1116,14 @@ TEST_F(MetricsRegistryTest, disabled_lifecycle_never_consults_gauge_services)
     // registerPeerLedgerSupplyGauge() / registerSlotCensusGauge() /
     // registerAmendmentBlockGauge() / registerNodeStoreGauge() --
     // would run.
-    EXPECT_NO_THROW(registry.start("http://localhost:4318/v1/metrics"));
+    EXPECT_NO_THROW(registry.startAsyncGauges());
 
     // detachCallbacks() is the shutdown hook the real gauges honour. It must be
     // safe and idempotent even though there is nothing to detach.
     EXPECT_NO_THROW(registry.detachCallbacks());
     EXPECT_NO_THROW(registry.detachCallbacks());
 
-    // Still disabled after a full start(): start() must not flip the flag.
+    // Still disabled after startAsyncGauges(): it must not flip the flag.
     EXPECT_FALSE(registry.isEnabled());
 
     EXPECT_NO_THROW(registry.stop());
@@ -1178,12 +1171,12 @@ TEST_F(MetricsRegistryTest, disabled_lifecycle_never_consults_gauge_services)
 // Even asking for enabled=true registers no sync-diagnostics gauge on a
 // telemetry-off build. isEnabled() faithfully echoes the constructor argument
 // (the flag lives outside the #ifdef), so the flag alone does NOT prove the
-// gauges are inert -- the mock does: a full start()/stop() cycle with
+// gauges are inert -- the mock does: a full startAsyncGauges()/stop() cycle with
 // enabled=true still consults no service, so no callback was ever registered.
 // Asserts the exact flag value on BOTH construction paths.
 TEST_F(MetricsRegistryTest, enabled_flag_alone_registers_no_gauges_when_compiled_out)
 {
-    telemetry::MetricsRegistry enabledRequest(true, mockApp_, j_);
+    telemetry::MetricsRegistry enabledRequest(true, mockApp_, j_, kTestOptions);
 
     // The flag is echoed back exactly, true not false: it is a plain member,
     // not gated on XRPL_ENABLE_TELEMETRY.
@@ -1200,12 +1193,12 @@ TEST_F(MetricsRegistryTest, enabled_flag_alone_registers_no_gauges_when_compiled
     // getLoadManager()/getInboundLedgers()/getNodeFamily()/getJobQueue()/
     // getOverlay()/getAmendmentTable()/getNodeStore() and
     // throw std::logic_error.
-    EXPECT_NO_THROW(enabledRequest.start("http://localhost:4318/v1/metrics"));
+    EXPECT_NO_THROW(enabledRequest.startAsyncGauges());
     EXPECT_NO_THROW(enabledRequest.detachCallbacks());
     EXPECT_NO_THROW(enabledRequest.stop());
 
     // Contrast: enabled=false reports exactly false.
-    telemetry::MetricsRegistry const disabledRequest(false, mockApp_, j_);
+    telemetry::MetricsRegistry const disabledRequest(false, mockApp_, j_, kTestOptions);
     EXPECT_FALSE(disabledRequest.isEnabled());
 }
 

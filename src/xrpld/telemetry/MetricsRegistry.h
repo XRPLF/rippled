@@ -104,17 +104,16 @@
  * Example usage:
  *
  * @code
- * // In Application::setup(), after telemetry_ is created. Phase 1 needs
- * // only the config strings, so it runs immediately and the meter is live
- * // before any metric-emitting code:
- * metricsRegistry_ = std::make_unique<telemetry::MetricsRegistry>(
- * telemetry_->isEnabled(), app, journal);
- * // The endpoint, the TLS settings and the resource identity come from
- * // [telemetry] and [network_id], read directly in Application::setup()
- * // rather than through Telemetry::Setup.
- * metricsRegistry_->start(startOptions);
+ * // In ApplicationImp's member-init list, right after telemetry_ and before
+ * // every subsystem. The constructor builds the pipeline and every
+ * // synchronous instrument, so no producer can exist before they do. The
+ * // endpoint, the TLS settings and the resource identity come from
+ * // [telemetry] and [network_id], read by Application.cpp rather than
+ * // through Telemetry::Setup.
+ * metricsRegistry_(std::make_unique<telemetry::MetricsRegistry>(
+ *     telemetry_->isEnabled(), *this, journal, options))
  *
- * // Later in setup(), once overlay_ exists (the last of the services the
+ * // Later, in setup(), once overlay_ exists (the last of the services the
  * // callbacks read). Phase 2 registers the observable instruments:
  * metricsRegistry_->startAsyncGauges();
  *
@@ -134,13 +133,16 @@
  * if (auto* mr = app_.getMetricsRegistry())
  * mr->recordJobQueued("ledgerData", "ProcessLData");
  *
- * // Shutdown:
+ * // Shutdown, before any service the callbacks read is stopped. Idempotent,
+ * // so run() and ~ApplicationImp both call it:
  * metricsRegistry_->stop();
  * @endcode
  *
  * Caveats:
  * - The MetricsRegistry must be created AFTER the Telemetry object because
- * it reads isEnabled() to decide whether to initialize the OTel SDK.
+ * it reads isEnabled() to decide whether to initialize the OTel SDK, and
+ * BEFORE every subsystem that records a metric. Declaration order in
+ * ApplicationImp is the guarantee; keep the member where it is.
  * - Observable gauge callbacks capture a reference to the Application; the
  * Application must outlive the MetricsRegistry (guaranteed because
  * MetricsRegistry is stopped before Application teardown).
@@ -172,6 +174,7 @@
 #ifdef XRPL_ENABLE_TELEMETRY
 #include <opentelemetry/metrics/meter.h>
 #include <opentelemetry/metrics/meter_provider.h>
+#include <opentelemetry/metrics/observer_result.h>
 #include <opentelemetry/nostd/shared_ptr.h>
 #include <opentelemetry/nostd/unique_ptr.h>
 #include <opentelemetry/sdk/metrics/meter_provider.h>
@@ -237,15 +240,19 @@ namespace telemetry {
  * catch-all try block so a transient failure never crashes
  * the reader thread.
  * - ValidationTracker protects its rolling windows internally.
- * - start(), startAsyncGauges() and stop() are NOT thread-safe
+ * - The constructor, startAsyncGauges() and stop() are NOT thread-safe
  * with each other and must all be called, in that order, from
  * the single Application lifecycle thread.
  *
- * @note Lifetime:
- * - Must be constructed AFTER telemetry_ (reads isEnabled()).
- * - Must be stopped BEFORE Application services it observes are
- * destroyed; the Application owns it via unique_ptr so normal
- * teardown guarantees this.
+ * @note Lifetime, in three phases (see Phase):
+ * - Ready: the constructor built the pipeline and the synchronous
+ * instruments. Runs in ApplicationImp's member-init list, so it precedes
+ * every subsystem that could record.
+ * - GaugesArmed: startAsyncGauges() registered the observable callbacks.
+ * Runs once overlay_ exists, the last service those callbacks read.
+ * - Stopped: stop() joined the reader thread. Runs before any observed
+ * service stops, from run() and again from ~ApplicationImp for the
+ * paths that never reach run().
  *
  * @note Extending:
  * - Adding a new CountedObject type is auto-picked up by the
@@ -260,65 +267,54 @@ namespace telemetry {
  * - Adding a new OBSERVABLE gauge still requires eager central
  * registration -- pull-model instruments cannot be lazily created.
  */
+/**
+ * Run time at which a finished job counts as a stall, in microseconds.
+ * Equal to LoadMonitor's 1 s warn threshold (LoadMonitor.cpp
+ * addLoadSample) so this counter and the "Job: ... run:" log line
+ * describe the same event.
+ */
+inline constexpr std::int64_t kJobStallThresholdUs = 1'000'000;
+
 class MetricsRegistry
 {
 public:
     /**
-     * Construct a MetricsRegistry.
-     *
-     * @param enabled  Whether OTel metric export is active. When false,
-     * all methods become no-ops.
-     * @param app      Reference to the ServiceRegistry (Application) for
-     * reading current metric values in gauge callbacks.
-     * @param journal  Journal for log output.
-     */
-    MetricsRegistry(bool enabled, ServiceRegistry& app, beast::Journal journal);
-
-    ~MetricsRegistry();
-
-    /**
-     * Non-copyable, non-movable.
-     */
-    MetricsRegistry(MetricsRegistry const&) = delete;
-    MetricsRegistry&
-    operator=(MetricsRegistry const&) = delete;
-
-    /**
-     * Everything `start()` needs from config: where to export, how to secure
-     * the connection, and the process identity stamped on the OTel resource.
+     * Everything the constructor needs from config: where to export, how to
+     * secure the connection, and the process identity stamped on the OTel
+     * resource.
      *
      * The values come from the `[telemetry]` section plus `[network_id]`, read
-     * in `ApplicationImp::startTelemetry()`. They must match what
-     * `makeTelemetrySetup()` gives the trace pipeline, or one node reports two
-     * identities and a dashboard filter shows half its series.
+     * by `makeMetricsRegistryOptions()` in `Application.cpp`. They must match
+     * what `makeTelemetrySetup()` gives the trace pipeline, or one node reports
+     * two identities and a dashboard filter shows half its series.
      *
      * A struct rather than ten positional parameters: seven of them are
      * strings, so a swapped pair would compile and silently stamp the wrong
      * label. Designated initializers name every value at the call site.
      *
      * @code
-     * MetricsRegistry::StartOptions opts{
+     * MetricsRegistry::Options opts{
      *     .endpoint = "http://localhost:4318/v1/metrics",
      *     .serviceName = "xrpld",
      *     .serviceVersion = build_info::getVersionString(),
      *     .serviceInstanceId = nodePublicKey,
      *     .nodeId = nodePublicKey,
      *     .networkId = 2};
-     * registry.start(opts);
+     * MetricsRegistry registry(enabled, app, journal, opts);
      *
      * // Edge case: mutual TLS to a collector that requires it.
      * opts.useTls = true;
      * opts.tlsCaCertPath = "/etc/xrpld/otel-ca.pem";
      * opts.tlsClientCertPath = "/etc/xrpld/node.pem";
      * opts.tlsClientKeyPath = "/etc/xrpld/node.key";
-     * registry.start(opts);
+     * MetricsRegistry secure(enabled, app, journal, opts);
      * @endcode
      *
      * @note Plain aggregate, no invariants enforced. `networkType` is not a
-     * field: it is derived from @ref networkId inside `start()` so the
-     * two can never disagree.
+     * field: it is derived from @ref networkId inside the constructor so
+     * the two can never disagree.
      */
-    struct StartOptions
+    struct Options
     {
         /**
          * OTLP/HTTP endpoint URL for metric export, from
@@ -384,17 +380,17 @@ public:
     };
 
     /**
-     * Initialize the OTel metrics pipeline and create the SYNCHRONOUS
-     * instruments (counters and histograms).
+     * Construct the registry and, when enabled, build the whole metrics
+     * pipeline: OTLP exporter, periodic reader, MeterProvider and every
+     * SYNCHRONOUS instrument (counters and histograms).
      *
-     * This is the first of two startup phases, and it can be called as soon
-     * as the registry is constructed — which is what makes the meter live
-     * before the first metric-emitting code runs. Startup RPCs and the first
-     * consensus round both record metrics; a call-site metric macro caches
-     * its instrument on first use, so a first use before the meter exists
-     * latches null for the process lifetime.
+     * Doing this in the constructor is what fixes the init order. The
+     * Application declares its registry before every subsystem, so no
+     * producer can exist before the instruments do. A failure to build the
+     * pipeline is logged and leaves the registry a no-op; it never stops the
+     * node.
      *
-     * @note Invariant for future changes: this phase may create only
+     * @note Invariant for future changes: the constructor may create only
      * instruments with NO Application-reading callback. Push-model
      * counters and histograms qualify; app code records into them
      * when it is ready. Any observable instrument whose callback
@@ -403,34 +399,51 @@ public:
      * that callback against a half-built Application. This applies
      * to observable COUNTERS as well as gauges.
      *
+     * @param enabled  False makes every method a no-op (telemetry disabled).
+     * @param app      Services the observable-gauge callbacks read.
+     * @param journal  Log output.
      * @param options  Endpoint, TLS settings and resource identity, all read
-     * from config by the caller. See @ref StartOptions.
+     * from config by the caller. See @ref Options.
      */
-    void
-    start(StartOptions const& options);
+    MetricsRegistry(
+        bool enabled,
+        ServiceRegistry& app,
+        beast::Journal journal,
+        Options const& options);
+
+    /**
+     * Stops the pipeline if run() or ~ApplicationImp did not already.
+     */
+    ~MetricsRegistry();
+
+    /**
+     * Non-copyable, non-movable.
+     */
+    MetricsRegistry(MetricsRegistry const&) = delete;
+    MetricsRegistry&
+    operator=(MetricsRegistry const&) = delete;
 
     /**
      * Register the pull-model observable instruments — the second startup
      * phase. Mostly ObservableGauges, plus the ObservableCounters whose
      * source value is already cumulative.
      *
-     * A separate entry point from `start()` because the two halves have
-     * different prerequisites. `start()` needs only config strings; these
-     * callbacks read live Application services, so this half must run later.
-     * Registering an observable also arms the reader thread to invoke its
-     * callback on the next tick, which is why the separation is about ordering
-     * and not just tidiness.
+     * A separate entry point from the constructor because the two halves have
+     * different prerequisites. The constructor needs only config strings;
+     * these callbacks read live Application services, so this half must run
+     * later. Registering an observable also arms the reader thread to invoke
+     * its callback on the next tick, which is why the separation is about
+     * ordering and not just tidiness.
      *
-     * @pre `start()` has already run (the meter exists). If it has not,
-     * this is a logged no-op rather than a crash.
+     * Calling it twice, or after stop(), logs a warning and does nothing.
+     *
      * @pre Every service the callbacks read is constructed. The full set,
      * from the `app.get*()` calls in the registration helpers, is:
      * Overlay, OPs (NetworkOPs), LedgerMaster, OpenLedger, TxQ,
      * NodeStore, NodeFamily, Validators, AcceptedLedgerCache,
      * CachedSLEs, AcquireStats, TimeKeeper, RelationalDatabase,
      * InboundLedgers and FeeTrack.
-     * All but Overlay already exist by the time `start()` is
-     * callable, so Overlay is what fixes this call's position:
+     * Overlay is built last, so it fixes this call's position:
      * `ServiceRegistry::getOverlay()` `XRPL_ASSERT`s that
      * `overlay_` is non-null, and a reader-thread tick before the
      * overlay exists aborts a Debug build. The callbacks' catch-all
@@ -467,6 +480,11 @@ public:
     /**
      * Flush pending metrics and shut down the pipeline.
      *
+     * Stores `Phase::Stopped` first so `recording()` reads false on every
+     * later record call, then destroys the SDK provider. meter_ is not
+     * touched: record threads may still be running, and the gate is what
+     * keeps them off the dying pipeline. Idempotent.
+     *
      * @pre `detachCallbacks()` should have been called earlier in the
      * shutdown sequence; otherwise there is a narrow race between
      * the final reader-thread tick and the destruction of
@@ -482,6 +500,28 @@ public:
     isEnabled() const noexcept
     {
         return enabled_;
+    }
+
+    /**
+     * @return true when a record call is safe to run.
+     *
+     * False when the registry is disabled, or after stop() has torn down the
+     * export pipeline. After stop() the SDK's SyncMetricStorage still holds a
+     * raw pointer to an AggregationConfig owned by a destroyed View, so a
+     * record with a first-seen attribute set would fire the factory lambda
+     * and deref that dangling pointer. Every XRPL_METRIC_* macro reads this
+     * once before touching an instrument.
+     *
+     * One acquire atomic load in the hot path.
+     */
+    [[nodiscard]] bool
+    recording() const noexcept
+    {
+#ifdef XRPL_ENABLE_TELEMETRY
+        return enabled_ && phase_.load(std::memory_order_acquire) != Phase::Stopped;
+#else
+        return enabled_;
+#endif
     }
 
     // -----------------------------------------------------------------
@@ -845,9 +885,15 @@ public:
      * Access the shared OTel Meter for call-site instrument creation.
      * Used by the XRPL_METRIC_* macros (MetricMacros.h) so new synchronous
      * counters/histograms can be declared at their call site instead of as
-     * MetricsRegistry members. Returns an empty (falsy) shared_ptr before
-     * start() has run or when disabled.
-     * @return The shared Meter, or empty if not yet started.
+     * MetricsRegistry members.
+     *
+     * Invariant: never empty while recording() is true. The constructor sets
+     * it to the real meter, or to a no-op meter when the pipeline failed to
+     * build, and never writes it again, so reads need no lock. After stop()
+     * the meter's SDK context is gone; the macros gate on recording() first,
+     * so no caller reaches it then.
+     *
+     * @return The shared Meter.
      */
     [[nodiscard]] opentelemetry::nostd::shared_ptr<opentelemetry::metrics::Meter>
     meter() const noexcept
@@ -964,6 +1010,23 @@ private:
     beast::Journal const journal_;
 
     /**
+     * Where the registry is in its life. Construction ends in `Ready`;
+     * startAsyncGauges() moves to `GaugesArmed`; stop() to `Stopped`. A call
+     * that does not fit the current phase logs a warning and does nothing.
+     *
+     * After `Stopped` the SDK pipeline is gone. recording() reads false, so
+     * no macro touches meter_ or a cached instrument.
+     */
+    enum class Phase { Ready, GaugesArmed, Stopped };
+
+    /**
+     * Current phase. Written from the Application lifecycle thread with
+     * release ordering; read from record threads via `recording()` with
+     * acquire ordering, so no record starts once stop() has stored `Stopped`.
+     */
+    std::atomic<Phase> phase_{Phase::Ready};
+
+    /**
      * Set by detachCallbacks() during shutdown so every ObservableGauge
      * callback returns early before reading Application services that
      * may already be stopped. Checked with memory_order_acquire at the
@@ -1016,6 +1079,11 @@ private:
      * Counter: job_finished_total{job_type="<name>",handler="<name>"}
      */
     opentelemetry::nostd::unique_ptr<opentelemetry::metrics::Counter<uint64_t>> jobFinishedCounter_;
+    /**
+     * Counter: jobq_stall_total{job_type="<name>"} — one per finished job
+     * whose run time reached kJobStallThresholdUs.
+     */
+    opentelemetry::nostd::unique_ptr<opentelemetry::metrics::Counter<uint64_t>> jobStallCounter_;
     /**
      * Histogram: job_queued_us{job_type="<name>",handler="<name>"}
      */
@@ -1242,29 +1310,39 @@ private:
     /**
      * Build the OTLP/HTTP exporter, periodic reader, resource attributes and
      * histogram views, then create the MeterProvider and meter. Extracted
-     * from start() to keep each function under the 80-line limit.
+     * from the constructor to keep each function under the 80-line limit.
      *
      * @param options Endpoint, TLS settings and resource identity, forwarded
-     * unchanged from `start()`. See @ref StartOptions.
+     * unchanged from the constructor. See @ref Options.
      */
     void
-    initExporterAndProvider(StartOptions const& options);
+    initExporterAndProvider(Options const& options);
 
     /**
      * Create the synchronous instruments (RPC and job-queue counters and
      * histograms, plus the external dashboard parity counters). Extracted
-     * from start() to keep each function under the 80-line limit.
+     * from the constructor to keep each function under the 80-line limit.
      */
     void
     initSyncInstruments();
+
+    /**
+     * Give up the pipeline after a build failure: drop the provider, hand
+     * out a no-op meter so every call site still gets an instrument, and log
+     * why. The registry stays enabled and inert for the process.
+     *
+     * @param reason What failed, for the log line.
+     */
+    void
+    disablePipeline(std::string_view reason);
 
     /**
      * Register all observable gauge callbacks with the OTel SDK.
      * Dispatches to one helper per metric domain so that each helper
      * stays well under the 80-line-per-function limit.
      *
-     * Called only from `startAsyncGauges()`, which owns the enabled_ and
-     * meter_ guards and the Application-state precondition.
+     * Called only from `startAsyncGauges()`, which owns the enabled_,
+     * phase_ and provider_ guards and the Application-state precondition.
      */
     void
     registerAsyncGauges();
@@ -1279,6 +1357,14 @@ private:
     registerJqTransOverflowCounter();  // gap-fill: overlay overflow total
     void
     registerCacheHitRateGauge();
+    /**
+     * Observe the two TaggedCache lock-hold peaks onto the cache_metrics
+     * gauge. Split out to keep registerCacheHitRateGauge's callback under
+     * the 80-line limit. Static because it touches neither instance state
+     * nor telemetry members — it reads through the passed app reference.
+     */
+    static void
+    observeCacheLockHoldPeaks(opentelemetry::metrics::ObserverResult& result, ServiceRegistry& app);
     void
     registerTxqGauge();
     void

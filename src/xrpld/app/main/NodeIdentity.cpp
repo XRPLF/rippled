@@ -4,15 +4,11 @@
 #include <xrpld/core/Config.h>
 
 #include <xrpl/basics/Log.h>
-#include <xrpl/basics/contract.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/config/Constants.h>
 #include <xrpl/core/StartUpType.h>
-#include <xrpl/protocol/KeyType.h>
 #include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/SecretKey.h>
-#include <xrpl/protocol/Seed.h>
-#include <xrpl/protocol/tokens.h>
 #include <xrpl/rdb/DBInit.h>
 #include <xrpl/rdb/DatabaseCon.h>
 #include <xrpl/server/Wallet.h>
@@ -23,111 +19,47 @@
 #include <exception>
 #include <filesystem>
 #include <optional>
-#include <stdexcept>
 #include <string>
 #include <system_error>
 #include <utility>
 
 namespace xrpl {
 
-std::pair<PublicKey, SecretKey>
-getNodeIdentity(Application& app, boost::program_options::variables_map const& cmdline)
+namespace {
+
+/**
+ * The stored identity, read without creating or modifying anything.
+ *
+ * Runs before the Application, so it opens the wallet itself rather than going
+ * through getWalletDB(). Three things keep that safe: the file must already
+ * exist, the init SQL is empty so the schema is never created, and the global
+ * pragmas are off because they include journal_mode, which rewrites the
+ * database header. The connection closes before this returns.
+ *
+ * @param config  The server configuration.
+ * @param journal Journal for reporting an unreadable database.
+ * @return The stored keypair, or std::nullopt when there is none to read.
+ */
+std::optional<std::pair<PublicKey, SecretKey>>
+storedIdentity(Config const& config, beast::Journal journal)
 {
-    std::optional<Seed> seed;
-
-    if (cmdline.contains("nodeid"))
-    {
-        seed = parseGenericSeed(cmdline["nodeid"].as<std::string>(), false);
-
-        if (!seed)
-            Throw<std::runtime_error>("Invalid 'nodeid' in command line");
-    }
-    else if (app.config().exists(Sections::kNodeSeed))
-    {
-        seed = parseBase58<Seed>(app.config().section(Sections::kNodeSeed).lines().front());
-
-        if (!seed)
-        {
-            Throw<std::runtime_error>(
-                std::string("Invalid [") + Sections::kNodeSeed + "] in configuration file");
-        }
-    }
-
-    if (seed)
-    {
-        auto secretKey = generateSecretKey(KeyType::Secp256k1, *seed);
-        auto publicKey = derivePublicKey(KeyType::Secp256k1, secretKey);
-
-        return {publicKey, secretKey};
-    }
-
-    auto db = app.getWalletDB().checkoutDb();
-
-    if (cmdline.contains("newnodeid"))
-        clearNodeIdentity(*db);
-
-    return getNodeIdentity(*db);
-}
-
-std::optional<std::string>
-resolveNodePublicKey(
-    Config const& config,
-    boost::program_options::variables_map const& cmdline,
-    beast::Journal journal)
-{
-    std::optional<Seed> seed;
-    bool seedConfigured = false;
-
-    if (cmdline.contains("nodeid"))
-    {
-        seedConfigured = true;
-        seed = parseGenericSeed(cmdline["nodeid"].as<std::string>(), false);
-    }
-    else if (config.exists(Sections::kNodeSeed))
-    {
-        seedConfigured = true;
-        if (auto const& lines = config.section(Sections::kNodeSeed).lines(); !lines.empty())
-            seed = parseBase58<Seed>(lines.front());
-    }
-
-    // A configured seed decides the identity outright. A malformed or missing
-    // one is reported by getNodeIdentity(), which runs later.
-    if (seedConfigured)
-    {
-        if (!seed)
-            return std::nullopt;
-
-        auto const secretKey = generateSecretKey(KeyType::Secp256k1, *seed);
-        return toBase58(TokenType::NodePublic, derivePublicKey(KeyType::Secp256k1, secretKey));
-    }
-
-    // --newnodeid discards whatever is stored.
-    if (cmdline.contains("newnodeid"))
-        return std::nullopt;
-
     try
     {
         auto setup = setupDatabaseCon(config, journal);
 
-        // Standalone uses a temporary database, so nothing is persisted and this
-        // run will mint a fresh key.
+        // Standalone gets a private temporary database, so there is nothing
+        // persisted to read and nothing setup() could read back either.
         if (setup.standAlone && setup.startUp != StartUpType::Load &&
             setup.startUp != StartUpType::LoadFile && setup.startUp != StartUpType::Replay)
         {
             return std::nullopt;
         }
 
-        // The global pragmas include journal_mode, which rewrites the database
-        // header. The wallet is opened without them everywhere else.
         setup.useGlobalPragma = false;
 
-        // Only read an existing file: SQLite would otherwise create one.
         if (std::error_code ec; !std::filesystem::exists(setup.dataDir / kWalletDbName, ec))
-        {
             return std::nullopt;
-        }
 
-        // Empty init SQL: open the existing schema, never create it.
         DatabaseCon walletDb{
             setup,
             kWalletDbName,
@@ -136,8 +68,7 @@ resolveNodePublicKey(
             journal};
 
         auto db = walletDb.checkoutDb();
-        if (auto const stored = readNodeIdentity(*db))
-            return toBase58(TokenType::NodePublic, stored->first);
+        return readNodeIdentity(*db);
     }
     catch (std::exception const& e)
     {
@@ -145,6 +76,67 @@ resolveNodePublicKey(
     }
 
     return std::nullopt;
+}
+
+}  // namespace
+
+std::pair<PublicKey, SecretKey>
+resolveNodeIdentity(
+    Config const& config,
+    boost::program_options::variables_map const& cmdline,
+    beast::Journal journal)
+{
+    // Marshal Config and the cmdline into the libxrpl-level primitives the
+    // decision helpers take. Keeping the decision in libxrpl lets its tests
+    // cover every branch without an xrpld Config.
+    std::optional<std::string> cmdlineSeed;
+    if (cmdline.contains("nodeid"))
+        cmdlineSeed = cmdline["nodeid"].as<std::string>();
+
+    std::optional<std::string> configSeedLine;
+    if (config.exists(Sections::kNodeSeed))
+    {
+        auto const& lines = config.section(Sections::kNodeSeed).lines();
+        // Present-but-empty stays as an empty string, so parseNodeIdentitySeed
+        // throws the same "invalid [node_seed]" error the old code did.
+        configSeedLine = lines.empty() ? std::string{} : lines.front();
+    }
+
+    auto const seed = parseNodeIdentitySeed(cmdlineSeed, configSeedLine);
+    bool const newNodeId = cmdline.contains("newnodeid");
+
+    // storedIdentity() catches its own exceptions and returns std::nullopt on
+    // any read failure, so a wallet that will not open collapses into "mint".
+    return selectNodeIdentity(seed, newNodeId, [&] { return storedIdentity(config, journal); });
+}
+
+std::pair<PublicKey, SecretKey>
+getNodeIdentity(
+    Application& app,
+    boost::program_options::variables_map const& cmdline,
+    std::pair<PublicKey, SecretKey> const& resolved)
+{
+    // A configured seed reaches neither the reader nor the writer.
+    if (cmdline.contains("nodeid") || app.config().exists(Sections::kNodeSeed))
+        return resolved;
+
+    auto db = app.getWalletDB().checkoutDb();
+
+    if (cmdline.contains("newnodeid"))
+        clearNodeIdentity(*db);
+
+    // What is stored wins, so a restart keeps the node's identity even if
+    // another process wrote one between construction and here. Telemetry's
+    // resources are already built from `resolved`, so on that one run the two
+    // would disagree; it needs a restart to line up, as the configuration
+    // reference records.
+    if (auto const stored = readNodeIdentity(*db))
+        return *stored;
+
+    // Nothing stored, or --newnodeid just cleared it. Persist the pair
+    // telemetry is already reporting, so both agree from now on.
+    storeNodeIdentity(*db, resolved);
+    return resolved;
 }
 
 }  // namespace xrpl
