@@ -1,0 +1,651 @@
+#pragma once
+
+#include <xrpld/app/main/Application.h>
+#include <xrpld/core/Config.h>
+#include <xrpld/overlay/Message.h>
+#include <xrpld/overlay/Overlay.h>
+#include <xrpld/overlay/Peer.h>
+#include <xrpld/overlay/Slot.h>
+#include <xrpld/overlay/detail/Handshake.h>
+#include <xrpld/overlay/detail/TrafficCount.h>
+#include <xrpld/overlay/detail/TxMetrics.h>
+#include <xrpld/peerfinder/detail/StoreSqdb.h>
+#include <xrpld/rpc/ServerHandler.h>
+
+#include <xrpl/basics/Resolver.h>
+#include <xrpl/basics/UnorderedContainers.h>
+#include <xrpl/basics/UptimeClock.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/beast/insight/Collector.h>
+#include <xrpl/beast/insight/Gauge.h>
+#include <xrpl/beast/insight/Hook.h>
+#include <xrpl/beast/net/IPEndpoint.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/beast/utility/PropertyStream.h>
+#include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/peerfinder/PeerfinderManager.h>
+#include <xrpl/peerfinder/Slot.h>
+#include <xrpl/resource/ResourceManager.h>
+#include <xrpl/server/Handoff.h>
+#include <xrpl/server/Writer.h>
+
+#include <boost/algorithm/string/predicate.hpp>
+#include <boost/asio/basic_waitable_timer.hpp>
+#include <boost/asio/ip/tcp.hpp>
+#include <boost/asio/ssl/context.hpp>
+#include <boost/asio/strand.hpp>
+#include <boost/container/flat_map.hpp>
+
+#include <xrpl.pb.h>
+
+#include <atomic>
+#include <chrono>
+#include <condition_variable>
+#include <cstddef>
+#include <cstdint>
+#include <functional>
+#include <memory>
+#include <mutex>
+#include <optional>
+#include <set>
+#include <string>
+#include <unordered_map>
+#include <utility>
+#include <vector>
+
+namespace xrpl {
+
+// The largest counts an operator can configure must still imply a message size
+// within the overall protocol message limit. The same check for the defaults
+// lives in Message.h.
+static_assert(
+    maximumManifestsMessageSize(Config::kMaxManifestCount, Config::kMaxManifestCount) <
+    kMaximumMessageSize);
+
+class PeerImp;
+class BasicConfig;
+
+class OverlayImpl : public Overlay, public reduce_relay::SquelchHandler
+{
+public:
+    class Child
+    {
+    protected:
+        OverlayImpl& overlay_;
+
+        explicit Child(OverlayImpl& overlay);
+
+    public:
+        virtual ~Child();
+        virtual void
+        stop() = 0;
+    };
+
+private:
+    using ClockType = std::chrono::steady_clock;
+    using SocketType = boost::asio::ip::tcp::socket;
+    using AddressType = boost::asio::ip::address;
+    using EndpointType = boost::asio::ip::tcp::endpoint;
+    using ErrorCode = boost::system::error_code;
+
+    struct Timer : Child, std::enable_shared_from_this<Timer>
+    {
+        boost::asio::basic_waitable_timer<ClockType> timer;
+        bool stopping{false};
+
+        explicit Timer(OverlayImpl& overlay);
+
+        void
+        stop() override;
+
+        void
+        asyncWait();
+
+        void
+        onTimer(ErrorCode ec);
+    };
+
+    Application& app_;
+    boost::asio::io_context& ioContext_;
+    std::optional<boost::asio::executor_work_guard<boost::asio::io_context::executor_type>> work_;
+    boost::asio::strand<boost::asio::io_context::executor_type> strand_;
+    mutable std::recursive_mutex mutex_;  // VFALCO use std::mutex
+    std::condition_variable_any cond_;
+    std::weak_ptr<Timer> timer_;
+    boost::container::flat_map<Child*, std::weak_ptr<Child>> list_;
+    Setup setup_;
+    beast::Journal const journal_;
+    ServerHandler& serverHandler_;
+    resource::Manager& resourceManager_;
+    peer_finder::StoreSqdb store_;
+    std::unique_ptr<peer_finder::Manager> peerFinder_;
+    TrafficCount traffic_;
+    HashMap<std::shared_ptr<peer_finder::Slot>, std::weak_ptr<PeerImp>> peers_;
+    HashMap<Peer::ID, std::weak_ptr<PeerImp>> ids_;
+    Resolver& resolver_;
+    std::atomic<Peer::ID> nextId_;
+    int timerCount_{0};
+    std::atomic<uint64_t> jqTransOverflow_{0};
+    std::atomic<uint64_t> peerDisconnects_{0};
+    std::atomic<uint64_t> peerDisconnectsCharges_{0};
+
+    reduce_relay::Slots<UptimeClock> slots_;
+
+    // Transaction reduce-relay metrics
+    metrics::TxMetrics txMetrics_;
+
+    // A message with the list of manifests we send to peers
+    std::shared_ptr<Message> manifestMessage_;
+    // Used to track whether we need to update the cached list of manifests
+    std::optional<std::uint32_t> manifestListSeq_;
+    // Protects the message and the sequence list of manifests
+    std::mutex manifestLock_;
+
+    //--------------------------------------------------------------------------
+
+public:
+    OverlayImpl(
+        Application& app,
+        Setup setup,
+        ServerHandler& serverHandler,
+        resource::Manager& resourceManager,
+        Resolver& resolver,
+        boost::asio::io_context& ioContext,
+        BasicConfig const& config,
+        beast::insight::Collector::Ptr const& collector);
+
+    OverlayImpl(OverlayImpl const&) = delete;
+    OverlayImpl&
+    operator=(OverlayImpl const&) = delete;
+
+    void
+    start() override;
+
+    void
+    stop() override;
+
+    peer_finder::Manager&
+    peerFinder()
+    {
+        return *peerFinder_;
+    }
+
+    resource::Manager&
+    resourceManager()
+    {
+        return resourceManager_;
+    }
+
+    Setup const&
+    setup() const
+    {
+        return setup_;
+    }
+
+    Handoff
+    onHandoff(
+        std::unique_ptr<StreamType>&& bundle,
+        HttpRequestType&& request,
+        EndpointType remoteEndpoint) override;
+
+    void
+    connect(beast::ip::Endpoint const& remoteEndpoint) override;
+
+    int
+    limit() override;
+
+    std::size_t
+    size() const override;
+
+    json::Value
+    json() override;
+
+    PeerSequence
+    getActivePeers() const override;
+
+    /**
+     * Get active peers excluding peers in toSkip.
+     * @param toSkip peers to skip
+     * @param active a number of active peers
+     * @param disabled a number of peers with tx reduce-relay
+     *     feature disabled
+     * @param enabledInSkip a number of peers with tx reduce-relay
+     *     feature enabled and in toSkip
+     * @return active peers less peers in toSkip
+     */
+    PeerSequence
+    getActivePeers(
+        std::set<Peer::ID> const& toSkip,
+        std::size_t& active,
+        std::size_t& disabled,
+        std::size_t& enabledInSkip) const;
+
+    void
+    checkTracking(std::uint32_t) override;
+
+    std::shared_ptr<Peer>
+    findPeerByShortID(Peer::ID const& id) const override;
+
+    std::shared_ptr<Peer>
+    findPeerByPublicKey(PublicKey const& pubKey) override;
+
+    void
+    broadcast(protocol::TMProposeSet const& m) override;
+
+    void
+    broadcast(protocol::TMValidation const& m) override;
+
+    std::set<Peer::ID>
+    relay(protocol::TMProposeSet const& m, UInt256 const& uid, PublicKey const& validator) override;
+
+    std::set<Peer::ID>
+    relay(protocol::TMValidation const& m, UInt256 const& uid, PublicKey const& validator) override;
+
+    void
+    relay(
+        UInt256 const&,
+        std::optional<std::reference_wrapper<protocol::TMTransaction>> m,
+        std::set<Peer::ID> const& skip) override;
+
+    std::shared_ptr<Message>
+    getManifestsMessage();
+
+    //--------------------------------------------------------------------------
+    //
+    // OverlayImpl
+    //
+
+    void
+    addActive(std::shared_ptr<PeerImp> const& peer);
+
+    void
+    remove(std::shared_ptr<peer_finder::Slot> const& slot);
+
+    /**
+     * Called when a peer has connected successfully
+     * This is called after the peer handshake has been completed and during
+     * peer activation. At this point, the peer address and the public key
+     * are known.
+     */
+    void
+    activate(std::shared_ptr<PeerImp> const& peer);
+
+    // Called when an active peer is destroyed.
+    void
+    onPeerDeactivate(Peer::ID id);
+
+    // UnaryFunc will be called as
+    //  void(std::shared_ptr<PeerImp>&&)
+    //
+    template <class UnaryFunc>
+    void
+    forEach(UnaryFunc&& f) const
+    {
+        std::vector<std::weak_ptr<PeerImp>> wp;
+        {
+            std::scoped_lock const lock(mutex_);
+
+            // Iterate over a copy of the peer list because peer
+            // destruction can invalidate iterators.
+            wp.reserve(ids_.size());
+
+            for (auto& x : ids_)
+                wp.push_back(x.second);
+        }
+
+        for (auto const& w : wp)
+        {
+            // NOLINTNEXTLINE(misc-const-correctness) moved into f
+            if (auto p = w.lock())
+                f(std::move(p));
+        }
+    }
+
+    // Called when TMManifests is received from a peer
+    void
+    onManifests(
+        std::shared_ptr<protocol::TMManifests> const& m,
+        std::shared_ptr<PeerImp> const& from);
+
+    static bool
+    isPeerUpgrade(HttpRequestType const& request);
+
+    template <class Body>
+    static bool
+    isPeerUpgrade(boost::beast::http::response<Body> const& response)
+    {
+        if (!isUpgrade(response))
+            return false;
+        return response.result() == boost::beast::http::status::switching_protocols;
+    }
+
+    template <class Fields>
+    static bool
+    isUpgrade(boost::beast::http::header<true, Fields> const& req)
+    {
+        if (req.version() < 11)
+            return false;
+        if (req.method() != boost::beast::http::verb::get)
+            return false;
+        if (!boost::beast::http::token_list{req["Connection"]}.exists("upgrade"))
+            return false;
+        return true;
+    }
+
+    template <class Fields>
+    static bool
+    isUpgrade(boost::beast::http::header<false, Fields> const& req)
+    {
+        if (req.version() < 11)
+            return false;
+        if (!boost::beast::http::token_list{req["Connection"]}.exists("upgrade"))
+            return false;
+        return true;
+    }
+
+    static std::string
+    makePrefix(std::uint32_t id);
+
+    void
+    reportInboundTraffic(TrafficCount::Category cat, int bytes);
+
+    void
+    reportOutboundTraffic(TrafficCount::Category cat, int bytes);
+
+    void
+    incJqTransOverflow() override
+    {
+        ++jqTransOverflow_;
+    }
+
+    std::uint64_t
+    getJqTransOverflow() const override
+    {
+        return jqTransOverflow_;
+    }
+
+    void
+    incPeerDisconnect() override
+    {
+        ++peerDisconnects_;
+    }
+
+    std::uint64_t
+    getPeerDisconnect() const override
+    {
+        return peerDisconnects_;
+    }
+
+    void
+    incPeerDisconnectCharges() override
+    {
+        ++peerDisconnectsCharges_;
+    }
+
+    std::uint64_t
+    getPeerDisconnectCharges() const override
+    {
+        return peerDisconnectsCharges_;
+    }
+
+    std::optional<std::uint32_t>
+    networkID() const override
+    {
+        return setup_.networkID;
+    }
+
+    /**
+     * Updates message count for validator/peer. Sends TMSquelch if the number
+     * of messages for N peers reaches threshold T. A message is counted
+     * if a peer receives the message for the first time and if
+     * the message has been  relayed.
+     * @param key Unique message's key
+     * @param validator Validator's public key
+     * @param peers Peers' id to update the slots for
+     * @param type Received protocol message type
+     */
+    void
+    updateSlotAndSquelch(
+        UInt256 const& key,
+        PublicKey const& validator,
+        std::set<Peer::ID>&& peers,
+        protocol::MessageType type);
+
+    /**
+     * Overload to reduce allocation in case of single peer
+     */
+    void
+    updateSlotAndSquelch(
+        UInt256 const& key,
+        PublicKey const& validator,
+        Peer::ID peer,
+        protocol::MessageType type);
+
+    /**
+     * Called when the peer is deleted. If the peer was selected to be the
+     * source of messages from the validator then squelched peers have to be
+     * unsquelched.
+     * @param id Peer's id
+     */
+    void
+    deletePeer(Peer::ID id);
+
+    json::Value
+    txMetrics() const override
+    {
+        return txMetrics_.json();
+    }
+
+    /**
+     * Add tx reduce-relay metrics.
+     */
+    template <typename... Args>
+    void
+    addTxMetrics(Args... args)
+    {
+        if (!strand_.running_in_this_thread())
+            return post(strand_, [this, args...] { addTxMetrics(args...); });
+
+        txMetrics_.addMetrics(args...);
+    }
+
+private:
+    void
+    squelch(PublicKey const& validator, Peer::ID const id, std::uint32_t squelchDuration)
+        const override;
+
+    void
+    unsquelch(PublicKey const& validator, Peer::ID id) const override;
+
+    std::shared_ptr<Writer>
+    makeRedirectResponse(
+        std::shared_ptr<peer_finder::Slot> const& slot,
+        HttpRequestType const& request,
+        AddressType remoteAddress);
+
+    static std::shared_ptr<Writer>
+    makeErrorResponse(
+        std::shared_ptr<peer_finder::Slot> const& slot,
+        HttpRequestType const& request,
+        AddressType remoteAddress,
+        std::string const& msg);
+
+    /**
+     * Handles crawl requests. Crawl returns information about the
+     * node and its peers so crawlers can map the network.
+     *
+     * @return true if the request was handled.
+     */
+    bool
+    processCrawl(HttpRequestType const& req, Handoff& handoff);
+
+    /**
+     * Handles validator list requests.
+     * Using a /vl/<hex-encoded public key> URL, will retrieve the
+     * latest validator list (or UNL) that this node has for that
+     * public key, if the node trusts that public key.
+     *
+     * @return true if the request was handled.
+     */
+    bool
+    processValidatorList(HttpRequestType const& req, Handoff& handoff);
+
+    /**
+     * Handles health requests. Health returns information about the
+     * health of the node.
+     *
+     * @return true if the request was handled.
+     */
+    bool
+    processHealth(HttpRequestType const& req, Handoff& handoff);
+
+    /**
+     * Handles non-peer protocol requests.
+     *
+     * @return true if the request was handled.
+     */
+    bool
+    processRequest(HttpRequestType const& req, Handoff& handoff);
+
+    /**
+     * Returns information about peers on the overlay network.
+     * Reported through the /crawl API
+     * Controlled through the config section [crawl] overlay=[0|1]
+     */
+    json::Value
+    getOverlayInfo() const;
+
+    /**
+     * Returns information about the local server.
+     * Reported through the /crawl API
+     * Controlled through the config section [crawl] server=[0|1]
+     */
+    json::Value
+    getServerInfo();
+
+    /**
+     * Returns information about the local server's performance counters.
+     * Reported through the /crawl API
+     * Controlled through the config section [crawl] counts=[0|1]
+     */
+    json::Value
+    getServerCounts();
+
+    /**
+     * Returns information about the local server's UNL.
+     * Reported through the /crawl API
+     * Controlled through the config section [crawl] unl=[0|1]
+     */
+    json::Value
+    getUnlInfo();
+
+    //--------------------------------------------------------------------------
+
+    //
+    // PropertyStream
+    //
+
+    void
+    onWrite(beast::PropertyStream::Map& stream) override;
+
+    //--------------------------------------------------------------------------
+
+    void
+    remove(Child& child);
+
+    void
+    stopChildren();
+
+    void
+    autoConnect();
+
+    void
+    sendEndpoints();
+
+    /**
+     * Send once a second transactions' hashes aggregated by peers.
+     */
+    void
+    sendTxQueue() const;
+
+    /**
+     * Check if peers stopped relaying messages
+     * and if slots stopped receiving messages from the validator
+     */
+    void
+    deleteIdlePeers();
+
+private:
+    struct TrafficGauges
+    {
+        TrafficGauges(std::string const& name, beast::insight::Collector::Ptr const& collector)
+            : name(name)
+            , bytesIn(collector->makeGauge(name, "Bytes_In"))
+            , bytesOut(collector->makeGauge(name, "Bytes_Out"))
+            , messagesIn(collector->makeGauge(name, "Messages_In"))
+            , messagesOut(collector->makeGauge(name, "Messages_Out"))
+        {
+        }
+        std::string const name;
+        beast::insight::Gauge bytesIn;
+        beast::insight::Gauge bytesOut;
+        beast::insight::Gauge messagesIn;
+        beast::insight::Gauge messagesOut;
+    };
+
+    struct Stats
+    {
+        template <class Handler>
+        Stats(
+            Handler const& handler,
+            beast::insight::Collector::Ptr const& collector,
+            std::unordered_map<TrafficCount::Category, TrafficGauges>&& trafficGauges)
+            : peerDisconnects(collector->makeGauge("Overlay", "Peer_Disconnects"))
+            , trafficGauges(std::move(trafficGauges))
+            , hook(collector->makeHook(handler))
+        {
+        }
+
+        beast::insight::Gauge peerDisconnects;
+        std::unordered_map<TrafficCount::Category, TrafficGauges> trafficGauges;
+        beast::insight::Hook hook;
+    };
+
+    Stats stats_;
+    std::mutex statsMutex_;
+
+private:
+    void
+    collectMetrics()
+    {
+        auto const counts = traffic_.getCounts();
+        std::scoped_lock const lock(statsMutex_);
+        XRPL_ASSERT(
+            counts.size() == stats_.trafficGauges.size(),
+            "xrpl::OverlayImpl::collect_metrics : counts size do match");
+
+        for (auto const& [key, value] : counts)
+        {
+            auto const it = stats_.trafficGauges.find(key);
+            if (it == stats_.trafficGauges.end())
+                continue;
+
+            auto const& gauge = it->second;
+
+            XRPL_ASSERT(
+                gauge.name == value.name,
+                "xrpl::OverlayImpl::collect_metrics : gauge and counter "
+                "match");
+
+            gauge.bytesIn = value.bytesIn;
+            gauge.bytesOut = value.bytesOut;
+            gauge.messagesIn = value.messagesIn;
+            gauge.messagesOut = value.messagesOut;
+        }
+
+        stats_.peerDisconnects = getPeerDisconnect();
+    }
+};
+
+}  // namespace xrpl

@@ -1,0 +1,197 @@
+#pragma once
+
+#include <xrpl/basics/contract.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/server/Port.h>
+#include <xrpl/server/detail/Door.h>
+#include <xrpl/server/detail/io_list.h>
+
+#include <boost/asio.hpp>
+#include <boost/asio/executor_work_guard.hpp>
+#include <boost/asio/io_context.hpp>
+
+#include <array>
+#include <chrono>
+#include <cstddef>
+#include <memory>
+#include <mutex>
+#include <optional>
+#include <stdexcept>
+#include <string>
+#include <unordered_map>
+#include <utility>
+#include <vector>
+
+namespace xrpl {
+
+using Endpoints = std::unordered_map<std::string, boost::asio::ip::tcp::endpoint>;
+
+/**
+ * A multi-protocol server.
+ *
+ * This server maintains multiple configured listening ports,
+ * with each listening port allows for multiple protocols including
+ * HTTP, HTTP/S, WebSocket, Secure WebSocket, and the Peer protocol.
+ */
+class Server
+{
+public:
+    /**
+     * Destroy the server.
+     * The server is closed if it is not already closed. This call
+     * blocks until the server has stopped.
+     */
+    virtual ~Server() = default;
+
+    /**
+     * Returns the Journal associated with the server.
+     */
+    virtual beast::Journal
+    journal() = 0;
+
+    /**
+     * Set the listening port settings.
+     * This may only be called once.
+     */
+    virtual Endpoints
+    ports(std::vector<Port> const& v) = 0;
+
+    /**
+     * Close the server.
+     * The close is performed asynchronously. The handler will be notified
+     * when the server has stopped. The server is considered stopped when
+     * there are no pending I/O completion handlers and all connections
+     * have closed.
+     * Thread safety:
+     *     Safe to call concurrently from any thread.
+     */
+    virtual void
+    close() = 0;
+};
+
+template <class Handler>
+class ServerImpl : public Server
+{
+private:
+    using ClockType = std::chrono::system_clock;
+
+    static constexpr auto kHistorySize = 100;
+
+    Handler& handler_;
+    beast::Journal const j_;
+    boost::asio::io_context& ioContext_;
+    boost::asio::strand<boost::asio::io_context::executor_type> strand_;
+    std::optional<boost::asio::executor_work_guard<boost::asio::io_context::executor_type>> work_;
+
+    std::mutex m_;
+    std::vector<Port> ports_;
+    std::vector<std::weak_ptr<Door<Handler>>> list_;
+    int high_ = 0;
+    std::array<std::size_t, 64> hist_{};
+
+    IOList ios_;
+
+public:
+    ServerImpl(Handler& handler, boost::asio::io_context& ioContext, beast::Journal journal);
+
+    ~ServerImpl() override;
+
+    beast::Journal
+    journal() override
+    {
+        return j_;
+    }
+
+    Endpoints
+    ports(std::vector<Port> const& ports) override;
+
+    void
+    close() override;
+
+    IOList&
+    ios()
+    {
+        return ios_;
+    }
+
+    boost::asio::io_context&
+    getIoContext()
+    {
+        return ioContext_;
+    }
+
+    bool
+    closed();
+
+private:
+    static int
+    ceilLog2(unsigned long long x);
+};
+
+template <class Handler>
+ServerImpl<Handler>::ServerImpl(
+    Handler& handler,
+    boost::asio::io_context& ioContext,
+    beast::Journal journal)
+    : handler_(handler)
+    , j_(journal)
+    , ioContext_(ioContext)
+    , strand_(boost::asio::make_strand(ioContext_))
+    , work_(std::in_place, boost::asio::make_work_guard(ioContext_))
+{
+}
+
+template <class Handler>
+ServerImpl<Handler>::~ServerImpl()
+{
+    // Handler::onStopped will not be called
+    work_ = std::nullopt;
+    ios_.close();
+    ios_.join();
+}
+
+template <class Handler>
+Endpoints
+ServerImpl<Handler>::ports(std::vector<Port> const& ports)
+{
+    if (closed())
+        Throw<std::logic_error>("ports() on closed Server");
+    ports_.reserve(ports.size());
+    Endpoints eps;
+    eps.reserve(ports.size());
+    for (auto const& port : ports)
+    {
+        ports_.push_back(port);
+        auto& internalPort = ports_.back();
+        if (auto const sp = ios_.emplace<Door<Handler>>(handler_, ioContext_, internalPort, j_))
+        {
+            list_.push_back(sp);
+
+            auto ep = sp->getEndpoint();
+            if (internalPort.port == 0u)
+                internalPort.port = ep.port();
+            eps.emplace(port.name, std::move(ep));
+
+            sp->run();
+        }
+    }
+    return eps;
+}
+
+template <class Handler>
+void
+ServerImpl<Handler>::close()
+{
+    ios_.close([&] {
+        work_ = std::nullopt;
+        handler_.onStopped(*this);
+    });
+}
+
+template <class Handler>
+bool
+ServerImpl<Handler>::closed()
+{
+    return ios_.closed();
+}
+}  // namespace xrpl

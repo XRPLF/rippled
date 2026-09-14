@@ -1,0 +1,227 @@
+#include <xrpl/protocol/detail/STVar.h>
+
+#include <xrpl/basics/contract.h>
+#include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STAccount.h>
+#include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/STArray.h>
+#include <xrpl/protocol/STBase.h>
+#include <xrpl/protocol/STBitString.h>
+#include <xrpl/protocol/STBlob.h>
+#include <xrpl/protocol/STCurrency.h>
+#include <xrpl/protocol/STInteger.h>
+#include <xrpl/protocol/STIssue.h>
+#include <xrpl/protocol/STNumber.h>
+#include <xrpl/protocol/STObject.h>
+#include <xrpl/protocol/STPathSet.h>
+#include <xrpl/protocol/STVector256.h>
+#include <xrpl/protocol/Serializer.h>
+
+#include <stdexcept>
+#include <tuple>
+#include <type_traits>
+
+namespace xrpl::detail {
+
+DefaultObjectT gDefaultObject;
+NonPresentObjectT gNonPresentObject;
+
+//------------------------------------------------------------------------------
+
+STVar::~STVar()
+{
+    destroy();
+}
+
+STVar::STVar(STVar const& other)
+{
+    if (other.p_ != nullptr)
+        p_ = other.p_->copy(kMaxSize, &d_);
+}
+
+STVar::STVar(STVar&& other)
+{
+    if (other.onHeap())
+    {
+        p_ = other.p_;
+        other.p_ = nullptr;
+    }
+    else
+    {
+        p_ = other.p_->move(kMaxSize, &d_);
+    }
+}
+
+STVar&
+STVar::operator=(STVar const& rhs)
+{
+    if (&rhs != this)
+    {
+        destroy();
+        if (rhs.p_ != nullptr)
+        {
+            p_ = rhs.p_->copy(kMaxSize, &d_);
+        }
+        else
+        {
+            p_ = nullptr;
+        }
+    }
+
+    return *this;
+}
+
+STVar&
+STVar::operator=(STVar&& rhs)
+{
+    if (&rhs != this)
+    {
+        destroy();
+        if (rhs.onHeap())
+        {
+            p_ = rhs.p_;
+            rhs.p_ = nullptr;
+        }
+        else
+        {
+            p_ = rhs.p_->move(kMaxSize, &d_);
+        }
+    }
+
+    return *this;
+}
+
+STVar::STVar(DefaultObjectT, SField const& name) : STVar(name.fieldType, name)
+{
+}
+
+STVar::STVar(NonPresentObjectT, SField const& name) : STVar(STI_NOTPRESENT, name)
+{
+}
+
+STVar::STVar(SerialIter& sit, SField const& name, int depth)
+{
+    if (depth > 10)
+        Throw<std::runtime_error>("Maximum nesting depth of STVar exceeded");
+    constructST(name.fieldType, depth, sit, name);
+}
+
+STVar::STVar(SerializedTypeID id, SField const& name)
+{
+    XRPL_ASSERT(
+        (id == STI_NOTPRESENT) || (id == name.fieldType),
+        "xrpl::detail::STVar::STVar(SerializedTypeID) : valid type input");
+    constructST(id, 0, name);
+}
+
+void
+STVar::destroy()
+{
+    if (onHeap())
+    {
+        delete p_;
+    }
+    else
+    {
+        p_->~STBase();
+    }
+
+    p_ = nullptr;
+}
+
+template <typename... Args>
+    requires ValidConstructSTArgs<Args...>
+void
+STVar::constructST(SerializedTypeID id, int depth, Args&&... args)
+{
+    auto const constructWithDepth = [&]<typename T> {
+        if constexpr (std::is_same_v<std::tuple<std::remove_cvref_t<Args>...>, std::tuple<SField>>)
+        {
+            construct<T>(std::forward<Args>(args)...);
+        }
+        else if constexpr (
+            std::
+                is_same_v<std::tuple<std::remove_cvref_t<Args>...>, std::tuple<SerialIter, SField>>)
+        {
+            construct<T>(std::forward<Args>(args)..., depth);
+        }
+        else
+        {
+            static constexpr bool kAlwaysFalse =
+                !std::is_same_v<std::tuple<Args...>, std::tuple<Args...>>;
+            static_assert(kAlwaysFalse, "Invalid STVar constructor arguments");
+        }
+    };
+
+    switch (id)
+    {
+        case STI_NOTPRESENT: {
+            // Last argument is always SField
+            SField const& field = std::get<sizeof...(args) - 1>(std::forward_as_tuple(args...));
+            construct<STBase>(field);
+            return;
+        }
+        case STI_UINT8:
+            construct<STUInt8>(std::forward<Args>(args)...);
+            return;
+        case STI_UINT16:
+            construct<STUInt16>(std::forward<Args>(args)...);
+            return;
+        case STI_UINT32:
+            construct<STUInt32>(std::forward<Args>(args)...);
+            return;
+        case STI_UINT64:
+            construct<STUInt64>(std::forward<Args>(args)...);
+            return;
+        case STI_AMOUNT:
+            construct<STAmount>(std::forward<Args>(args)...);
+            return;
+        case STI_NUMBER:
+            construct<STNumber>(std::forward<Args>(args)...);
+            return;
+        case STI_UINT128:
+            construct<STUInt128>(std::forward<Args>(args)...);
+            return;
+        case STI_UINT160:
+            construct<STUInt160>(std::forward<Args>(args)...);
+            return;
+        case STI_UINT192:
+            construct<STUInt192>(std::forward<Args>(args)...);
+            return;
+        case STI_UINT256:
+            construct<STUInt256>(std::forward<Args>(args)...);
+            return;
+        case STI_INT32:
+            construct<STInt32>(std::forward<Args>(args)...);
+            return;
+        case STI_VECTOR256:
+            construct<STVector256>(std::forward<Args>(args)...);
+            return;
+        case STI_VL:
+            construct<STBlob>(std::forward<Args>(args)...);
+            return;
+        case STI_ACCOUNT:
+            construct<STAccount>(std::forward<Args>(args)...);
+            return;
+        case STI_PATHSET:
+            construct<STPathSet>(std::forward<Args>(args)...);
+            return;
+        case STI_OBJECT:
+            constructWithDepth.template operator()<STObject>();
+            return;
+        case STI_ARRAY:
+            constructWithDepth.template operator()<STArray>();
+            return;
+        case STI_ISSUE:
+            construct<STIssue>(std::forward<Args>(args)...);
+            return;
+        case STI_CURRENCY:
+            construct<STCurrency>(std::forward<Args>(args)...);
+            return;
+        default:
+            Throw<std::runtime_error>("Unknown object type");
+    }
+}
+
+}  // namespace xrpl::detail

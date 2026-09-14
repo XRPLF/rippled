@@ -1,0 +1,64 @@
+name: Build Conan dependencies
+description: "Install Conan dependencies, optionally forcing a rebuild of all dependencies."
+
+# Note that actions do not support 'type' and all inputs are strings, see
+# https://docs.github.com/en/actions/reference/workflows-and-actions/metadata-syntax#inputs.
+inputs:
+  build_type:
+    description: 'The build type to use ("Debug", "Release").'
+    required: true
+  build_nproc:
+    description: "The number of processors to use for building."
+    required: true
+  force_build:
+    description: 'Force building of all dependencies ("true", "false").'
+    required: false
+    default: "false"
+  log_verbosity:
+    description: 'The logging verbosity ("quiet", "verbose"), or empty to use the Conan defaults.'
+    required: false
+    default: ""
+  sanitizers:
+    description: "The sanitizers to enable."
+    required: false
+    default: ""
+
+runs:
+  using: composite
+  steps:
+    - name: Install Conan dependencies
+      shell: bash
+      env:
+        BUILD_NPROC: ${{ inputs.build_nproc }}
+        BUILD_OPTION: ${{ inputs.force_build == 'true' && '*' || 'missing' }}
+        BUILD_TYPE: ${{ inputs.build_type }}
+        LOG_VERBOSITY: ${{ inputs.log_verbosity }}
+        SANITIZERS: ${{ inputs.sanitizers }}
+      run: |
+        # By default, leave the verbosity unset, so CMake configure output is
+        # shown, but compile commands and Boost's b2 debug output (~85k lines
+        # when "verbose") are not.
+        VERBOSITY_ARGS=()
+        if [[ -n "${LOG_VERBOSITY}" ]]; then
+            VERBOSITY_ARGS=(
+                --conf:all tools.build:verbosity="${LOG_VERBOSITY}"
+                --conf:all tools.compilation:verbosity="${LOG_VERBOSITY}"
+            )
+        fi
+        conan install \
+            --profile:all ci \
+            --build="${BUILD_OPTION}" \
+            --options:host='&:tests=True' \
+            --options:host='&:xrpld=True' \
+            --settings:all build_type="${BUILD_TYPE}" \
+            --conf:all tools.build:jobs=${BUILD_NPROC} \
+            "${VERBOSITY_ARGS[@]}" \
+            --format=json \
+            . >"${RUNNER_TEMP}/conan-graph.json"
+
+    # Tools that run during the build may only load glibc from the Nix store,
+    # as their package ID survives a GCC runtime update.
+    - name: Check build-context packages for Nix store dependencies (Linux)
+      if: ${{ runner.os == 'Linux' }}
+      shell: bash
+      run: ./bin/nix/check-build-context-runtime.sh "${RUNNER_TEMP}/conan-graph.json"

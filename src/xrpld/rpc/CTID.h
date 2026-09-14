@@ -1,0 +1,114 @@
+#pragma once
+
+#include <boost/regex.hpp>
+
+#include <cstdint>
+#include <iomanip>
+#include <ios>
+#include <optional>
+#include <sstream>
+#include <string>
+#include <string_view>
+#include <tuple>
+
+namespace xrpl::rpc {
+
+// CTID stands for Concise Transaction ID.
+//
+// The CTID comes from XLS-15d: Concise Transaction Identifier #34
+//
+//   https://github.com/XRPLF/XRPL-Standards/discussions/34
+//
+// The Concise Transaction ID provides a way to identify a transaction
+// that includes which network the transaction was submitted to.
+
+/**
+ * @brief Encodes ledger sequence, transaction index, and network ID into a CTID
+ * string.
+ *
+ * @param ledgerSeq  Ledger sequence number (max 0x0FFF'FFFF).
+ * @param txnIndex   Transaction index within the ledger (max 0xFFFF).
+ * @param networkID  Network identifier (max 0xFFFF).
+ * @return Optional CTID string in uppercase hexadecimal, or std::nullopt if
+ * inputs are out of range.
+ */
+inline std::optional<std::string>
+encodeCTID(uint32_t ledgerSeq, uint32_t txnIndex, uint32_t networkID) noexcept
+{
+    static constexpr uint32_t kMaxLedgerSeq = 0x0FFF'FFFF;
+    static constexpr uint32_t kMaxTxnIndex = 0xFFFF;
+    static constexpr uint32_t kMaxNetworkId = 0xFFFF;
+
+    if (ledgerSeq > kMaxLedgerSeq || txnIndex > kMaxTxnIndex || networkID > kMaxNetworkId)
+        return std::nullopt;
+
+    uint64_t const ctidValue = ((0xC000'0000ULL + static_cast<uint64_t>(ledgerSeq)) << 32) |
+        ((static_cast<uint64_t>(txnIndex) << 16) | networkID);
+
+    std::stringstream buffer;
+    buffer << std::hex << std::uppercase << std::setfill('0') << std::setw(16) << ctidValue;
+    return buffer.str();
+}
+
+/**
+ * @brief Decodes a CTID string or integer into its component parts.
+ *
+ * @tparam T  Type of the CTID input (string, string_view, char*, integral).
+ * @param ctid  CTID value to decode.
+ * @return Optional tuple of (ledgerSeq, txnIndex, networkID), or std::nullopt
+ * if invalid.
+ */
+template <typename T>
+inline std::optional<std::tuple<uint32_t, uint16_t, uint16_t>>
+decodeCTID(T const ctid) noexcept
+{
+    uint64_t ctidValue = 0;
+
+    if constexpr (
+        std::is_same_v<T, std::string> || std::is_same_v<T, std::string_view> ||
+        std::is_same_v<T, char*> || std::is_same_v<T, char const*>)
+    {
+        std::string const ctidString(ctid);
+
+        if (ctidString.size() != 16)
+            return std::nullopt;
+
+        static boost::regex const kHexRegex("^[0-9A-Fa-f]{16}$");
+        if (!boost::regex_match(ctidString, kHexRegex))
+            return std::nullopt;
+
+        try
+        {
+            ctidValue = std::stoull(ctidString, nullptr, 16);
+        }
+        // LCOV_EXCL_START
+        catch (...)
+        {
+            // should be impossible to hit given the length/regex check
+            return std::nullopt;
+        }
+        // LCOV_EXCL_STOP
+    }
+    else if constexpr (std::is_integral_v<T>)
+    {
+        ctidValue = static_cast<uint64_t>(ctid);
+    }
+    else
+    {
+        return std::nullopt;
+    }
+
+    // Validate CTID prefix.
+    static constexpr uint64_t kCtidPrefixMask = 0xF000'0000'0000'0000ULL;
+    static constexpr uint64_t kCtidPrefix = 0xC000'0000'0000'0000ULL;
+    if ((ctidValue & kCtidPrefixMask) != kCtidPrefix)
+        return std::nullopt;
+
+    auto const ledgerSeq = static_cast<uint32_t>((ctidValue >> 32) & 0x0FFF'FFFF);
+    auto const txnIndex = static_cast<uint16_t>((ctidValue >> 16) & 0xFFFF);
+    auto const networkID = static_cast<uint16_t>(ctidValue & 0xFFFF);
+
+    return std::make_tuple(ledgerSeq, txnIndex, networkID);
+}
+
+}  // namespace xrpl::rpc

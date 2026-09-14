@@ -1,0 +1,3639 @@
+#include <test/jtx/Account.h>
+#include <test/jtx/Env.h>
+#include <test/jtx/Env_ss.h>
+#include <test/jtx/acctdelete.h>
+#include <test/jtx/amount.h>
+#include <test/jtx/batch.h>
+#include <test/jtx/envconfig.h>
+#include <test/jtx/fee.h>
+#include <test/jtx/multisign.h>
+#include <test/jtx/noop.h>
+#include <test/jtx/pay.h>
+#include <test/jtx/trust.h>
+
+#include <xrpld/app/misc/TxQ.h>
+#include <xrpld/rpc/Role.h>
+#include <xrpld/rpc/detail/TransactionSign.h>
+
+#include <xrpl/basics/contract.h>
+#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/config/Constants.h>
+#include <xrpl/json/json_reader.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/json/to_string.h>
+#include <xrpl/protocol/ErrorCodes.h>
+#include <xrpl/protocol/KeyType.h>
+#include <xrpl/protocol/TxFlags.h>
+#include <xrpl/protocol/jss.h>
+#include <xrpl/server/LoadFeeTrack.h>
+#include <xrpl/server/NetworkOPs.h>
+
+#include <array>
+#include <cassert>
+#include <chrono>
+#include <memory>
+#include <sstream>
+#include <stdexcept>
+#include <tuple>
+
+namespace xrpl::rpc {
+
+struct ExpectedResult
+{
+    char const* token = "";
+    ErrorCodeI code = RpcSuccess;
+    char const* message = "";
+
+    constexpr ExpectedResult() = default;
+
+    constexpr ExpectedResult(char const* token, ErrorCodeI code, char const* message)
+        : token(token), code(code), message(message)
+    {
+    }
+};
+
+struct TxnTestData
+{
+    char const* const description;
+    int const line;
+    char const* const json;
+    // The JSON is applied to four different interfaces:
+    //   1. sign,
+    //   2. submit,
+    //   3. sign_for, and
+    //   4. submit_multisigned.
+    // The JSON is not valid for all of these interfaces, but it should
+    // crash kNone of them, and should provide reliable error messages.
+    //
+    // The expected array contains the expected error token, code and message
+    // for the above cases.
+    std::array<ExpectedResult, 4> const expected;
+
+    constexpr TxnTestData(
+        char const* description,
+        int line,
+        char const* json,
+        std::array<ExpectedResult, 4> const& expected)
+        : description(description), line(line), json(json), expected{expected}
+    {
+    }
+
+    TxnTestData() = delete;
+    TxnTestData(TxnTestData const&) = delete;
+    TxnTestData(TxnTestData&&) = delete;
+    TxnTestData&
+    operator=(TxnTestData const&) = delete;
+    TxnTestData&
+    operator=(TxnTestData&&) = delete;
+};
+
+static constexpr TxnTestData kTxnTestArray[] = {
+
+    {
+        "Minimal payment, no Amount only DeliverMax",
+        __LINE__,
+        R"({
+    "command": "dummy_command",
+    "secret": "masterpassphrase",
+    "tx_json": {
+        "Account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+        "DeliverMax": "1000000000",
+        "Destination": "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
+        "TransactionType": "Payment"
+    }
+})",
+        {
+            {
+                {},
+                {},
+                {"invalidParams", RpcInvalidParams, "Missing field 'account'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.Sequence'."},
+            },
+        },
+    },
+
+    {
+        "Pass in Fee with minimal payment, both Amount and DeliverMax.",
+        __LINE__,
+        R"({
+    "command": "dummy_command",
+    "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+    "secret": "masterpassphrase",
+    "tx_json": {
+        "Fee": 10,
+        "Account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+        "Amount": "1000000000",
+        "DeliverMax": "1000000000",
+        "Destination": "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
+        "TransactionType": "Payment"
+    }
+})",
+        {
+            {
+                {},
+                {},
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.Sequence'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.Sequence'."},
+            },
+        },
+    },
+
+    {
+        "Pass in Sequence, no Amount only DeliverMax",
+        __LINE__,
+        R"({
+    "command": "dummy_command",
+    "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+    "secret": "masterpassphrase",
+    "tx_json": {
+        "Sequence": 0,
+        "Account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+        "DeliverMax": "1000000000",
+        "Destination": "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
+        "TransactionType": "Payment"
+    }
+})",
+        {
+            {
+                {},
+                {},
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.Fee'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.SigningPubKey'."},
+            },
+        },
+    },
+
+    {
+        "Pass in Sequence and Fee with minimal payment, both Amount and "
+        "DeliverMax.",
+        __LINE__,
+        R"({
+    "command": "dummy_command",
+    "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+    "secret": "masterpassphrase",
+    "tx_json": {
+        "Sequence": 0,
+        "Fee": 10,
+        "Account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+        "Amount": "1000000000",
+        "DeliverMax": "1000000000",
+        "Destination": "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
+        "TransactionType": "Payment"
+    }
+})",
+        {
+            {
+                {},
+                {},
+                {
+                    "invalidParams",
+                    RpcInvalidParams,
+                    "A Signer may not be the transaction's Account "
+                    "(rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh).",
+                },
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.SigningPubKey'."},
+            },
+        },
+    },
+
+    {
+        "Add 'fee_mult_max' field.",
+        __LINE__,
+        R"({
+    "command": "dummy_command",
+    "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+    "secret": "masterpassphrase",
+    "fee_mult_max": 7,
+    "tx_json": {
+        "Sequence": 0,
+        "Account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+        "Amount": "1000000000",
+        "Destination": "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
+        "TransactionType": "Payment"
+    }
+})",
+        {
+            {
+                {},
+                {},
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.Fee'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.SigningPubKey'."},
+            },
+        },
+    },
+
+    {
+        "Add 'fee_mult_max' and 'fee_div_max' field.",
+        __LINE__,
+        R"({
+    "command": "dummy_command",
+    "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+    "secret": "masterpassphrase",
+    "fee_mult_max": 7,
+    "fee_div_max": 4,
+    "tx_json": {
+        "Sequence": 0,
+        "Account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+        "Amount": "1000000000",
+        "Destination": "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
+        "TransactionType": "Payment"
+    }
+})",
+        {
+            {
+                {},
+                {},
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.Fee'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.SigningPubKey'."},
+            },
+        },
+    },
+
+    {
+        "fee_mult_max is ignored if 'Fee' is present.",
+        __LINE__,
+        R"({
+    "command": "dummy_command",
+    "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+    "secret": "masterpassphrase",
+    "fee_mult_max": 0,
+    "tx_json": {
+        "Sequence": 0,
+        "Fee": 10,
+        "Account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+        "Amount": "1000000000",
+        "Destination": "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
+        "TransactionType": "Payment"
+    }
+})",
+        {
+            {
+                {},
+                {},
+                {
+                    "invalidParams",
+                    RpcInvalidParams,
+                    "A Signer may not be the transaction's Account "
+                    "(rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh).",
+                },
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.SigningPubKey'."},
+            },
+        },
+    },
+
+    {
+        "fee_div_max is ignored if 'Fee' is present.",
+        __LINE__,
+        R"({
+    "command": "dummy_command",
+    "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+    "secret": "masterpassphrase",
+    "fee_mult_max": 100,
+    "fee_div_max": 1000,
+    "tx_json": {
+        "Sequence": 0,
+        "Fee": 10,
+        "Account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+        "Amount": "1000000000",
+        "Destination": "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
+        "TransactionType": "Payment"
+    }
+})",
+        {
+            {
+                {},
+                {},
+                {
+                    "invalidParams",
+                    RpcInvalidParams,
+                    "A Signer may not be the transaction's Account "
+                    "(rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh).",
+                },
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.SigningPubKey'."},
+            },
+        },
+    },
+
+    {
+        "Invalid 'fee_mult_max' field.",
+        __LINE__,
+        R"({
+    "command": "dummy_command",
+    "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+    "secret": "masterpassphrase",
+    "fee_mult_max": "NotAFeeMultiplier",
+    "tx_json": {
+        "Sequence": 0,
+        "Account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+        "Amount": "1000000000",
+        "Destination": "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
+        "TransactionType": "Payment"
+    }
+})",
+        {
+            {
+                {"highFee", RpcHighFee, "Invalid field 'fee_mult_max', not a positive integer."},
+                {"highFee", RpcHighFee, "Invalid field 'fee_mult_max', not a positive integer."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.Fee'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.SigningPubKey'."},
+            },
+        },
+    },
+
+    {
+        "Invalid 'fee_div_max' field.",
+        __LINE__,
+        R"({
+    "command": "dummy_command",
+    "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+    "secret": "masterpassphrase",
+    "fee_mult_max": 5,
+    "fee_div_max": "NotAFeeMultiplier",
+    "tx_json": {
+        "Sequence": 0,
+        "Account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+        "Amount": "1000000000",
+        "Destination": "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
+        "TransactionType": "Payment"
+    }
+})",
+        {
+            {
+                {"highFee", RpcHighFee, "Invalid field 'fee_div_max', not a positive integer."},
+                {"highFee", RpcHighFee, "Invalid field 'fee_div_max', not a positive integer."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.Fee'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.SigningPubKey'."},
+            },
+        },
+    },
+
+    {
+        "Invalid value for 'fee_mult_max' field.",
+        __LINE__,
+        R"({
+    "command": "dummy_command",
+    "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+    "secret": "masterpassphrase",
+    "fee_mult_max": 0,
+    "tx_json": {
+        "Sequence": 0,
+        "Account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+        "Amount": "1000000000",
+        "Destination": "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
+        "TransactionType": "Payment"
+    }
+})",
+        {
+            {
+                {"highFee", RpcHighFee, "Fee of 10 exceeds the requested tx limit of 0"},
+                {"highFee", RpcHighFee, "Fee of 10 exceeds the requested tx limit of 0"},
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.Fee'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.SigningPubKey'."},
+            },
+        },
+    },
+
+    {
+        "Invalid value for 'fee_div_max' field.",
+        __LINE__,
+        R"({
+    "command": "dummy_command",
+    "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+    "secret": "masterpassphrase",
+    "fee_mult_max": 4,
+    "fee_div_max": 7,
+    "tx_json": {
+        "Sequence": 0,
+        "Account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+        "Amount": "1000000000",
+        "Destination": "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
+        "TransactionType": "Payment"
+    }
+})",
+        {
+            {
+                {"highFee", RpcHighFee, "Fee of 10 exceeds the requested tx limit of 5"},
+                {"highFee", RpcHighFee, "Fee of 10 exceeds the requested tx limit of 5"},
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.Fee'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.SigningPubKey'."},
+            },
+        },
+    },
+
+    {
+        "Invalid zero value for 'fee_div_max' field.",
+        __LINE__,
+        R"({
+    "command": "dummy_command",
+    "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+    "secret": "masterpassphrase",
+    "fee_mult_max": 4,
+    "fee_div_max": 0,
+    "tx_json": {
+        "Sequence": 0,
+        "Account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+        "Amount": "1000000000",
+        "Destination": "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
+        "TransactionType": "Payment"
+    }
+})",
+        {
+            {
+                {
+                    "invalidParams",
+                    RpcInvalidParams,
+                    "Invalid field 'fee_div_max', not a positive integer.",
+                },
+                {
+                    "invalidParams",
+                    RpcInvalidParams,
+                    "Invalid field 'fee_div_max', not a positive integer.",
+                },
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.Fee'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.SigningPubKey'."},
+            },
+        },
+    },
+
+    {
+        "Missing 'Amount'.",
+        __LINE__,
+        R"({
+    "command": "dummy_command",
+    "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+    "secret": "masterpassphrase",
+    "tx_json": {
+        "Account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+        "Destination": "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
+        "TransactionType": "Payment"
+    }
+})",
+        {
+            {
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.Amount'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.Amount'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.Sequence'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.Sequence'."},
+            },
+        },
+    },
+
+    {
+        "Invalid 'Amount'.",
+        __LINE__,
+        R"({
+    "command": "dummy_command",
+    "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+    "secret": "masterpassphrase",
+    "tx_json": {
+        "Account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+        "Amount": "NotAnAmount",
+        "Destination": "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
+        "TransactionType": "Payment"
+    }
+})",
+        {
+            {
+                {"invalidParams", RpcInvalidParams, "Invalid field 'tx_json.Amount'."},
+                {"invalidParams", RpcInvalidParams, "Invalid field 'tx_json.Amount'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.Sequence'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.Sequence'."},
+            },
+        },
+    },
+
+    {
+        "Missing 'Destination'.",
+        __LINE__,
+        R"({
+    "command": "dummy_command",
+    "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+    "secret": "masterpassphrase",
+    "tx_json": {
+        "Account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+        "Amount": "1000000000",
+        "TransactionType": "Payment"
+    }
+})",
+        {
+            {
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.Destination'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.Destination'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.Sequence'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.Sequence'."},
+            },
+        },
+    },
+
+    {
+        "Invalid 'Destination'.",
+        __LINE__,
+        R"({
+    "command": "dummy_command",
+    "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+    "secret": "masterpassphrase",
+    "tx_json": {
+        "Account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+        "Amount": "1000000000",
+        "Destination": "NotADestination",
+        "TransactionType": "Payment"
+    }
+})",
+        {
+            {
+                {"invalidParams", RpcInvalidParams, "Invalid field 'tx_json.Destination'."},
+                {"invalidParams", RpcInvalidParams, "Invalid field 'tx_json.Destination'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.Sequence'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.Sequence'."},
+            },
+        },
+    },
+
+    {
+        "Cannot create XRP to XRP paths.",
+        __LINE__,
+        R"({
+    "command": "dummy_command",
+    "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+    "secret": "masterpassphrase",
+    "build_path": 1,
+    "tx_json": {
+        "Account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+        "Amount": "1000000000",
+        "Destination": "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
+        "TransactionType": "Payment"
+    }
+})",
+        {
+            {
+                {"invalidParams", RpcInvalidParams, "Cannot build XRP to XRP paths."},
+                {"invalidParams", RpcInvalidParams, "Cannot build XRP to XRP paths."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.Sequence'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.Sequence'."},
+            },
+        },
+    },
+
+    {
+        "Successful 'build_path'.",
+        __LINE__,
+        R"({
+    "command": "dummy_command",
+    "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+    "secret": "masterpassphrase",
+    "build_path": 1,
+    "tx_json": {
+        "Account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+        "Amount": {
+            "value": "10",
+            "currency": "USD",
+            "issuer": "rLPwWB1itaUGMV8kbMLLysjGkEpTM2Soy4"
+        },
+        "Destination": "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
+        "TransactionType": "Payment"
+    }
+})",
+        {
+            {
+                {},
+                {},
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.Sequence'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.Sequence'."},
+            },
+        },
+    },
+
+    {
+        "Not valid to include both 'Paths' and 'build_path'.",
+        __LINE__,
+        R"({
+    "command": "dummy_command",
+    "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+    "secret": "masterpassphrase",
+    "build_path": 1,
+    "tx_json": {
+        "Account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+        "Amount": {
+            "value": "10",
+            "currency": "USD",
+            "issuer": "rLPwWB1itaUGMV8kbMLLysjGkEpTM2Soy4"
+        },
+        "Destination": "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
+        "Paths": "",
+        "TransactionType": "Payment"
+    }
+})",
+        {
+            {
+                {
+                    "invalidParams",
+                    RpcInvalidParams,
+                    "Cannot specify both 'tx_json.Paths' and 'build_path'",
+                },
+                {
+                    "invalidParams",
+                    RpcInvalidParams,
+                    "Cannot specify both 'tx_json.Paths' and 'build_path'",
+                },
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.Sequence'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.Sequence'."},
+            },
+        },
+    },
+
+    {
+        "Successful 'SendMax'.",
+        __LINE__,
+        R"({
+    "command": "dummy_command",
+    "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+    "secret": "masterpassphrase",
+    "build_path": 1,
+    "tx_json": {
+        "Account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+        "Amount": {
+            "value": "10",
+            "currency": "USD",
+            "issuer": "rLPwWB1itaUGMV8kbMLLysjGkEpTM2Soy4"
+        },
+        "SendMax": {
+            "value": "5",
+            "currency": "USD",
+            "issuer": "rLPwWB1itaUGMV8kbMLLysjGkEpTM2Soy4"
+        },
+        "Destination": "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
+        "TransactionType": "Payment"
+    }
+})",
+        {
+            {
+                {},
+                {},
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.Sequence'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.Sequence'."},
+            },
+        },
+    },
+
+    {
+        "'Amount' may not be XRP for pathfinding, but 'SendMax' may be XRP.",
+        __LINE__,
+        R"({
+    "command": "dummy_command",
+    "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+    "secret": "masterpassphrase",
+    "build_path": 1,
+    "tx_json": {
+        "Account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+        "Amount": {
+            "value": "10",
+            "currency": "USD",
+            "issuer": "rLPwWB1itaUGMV8kbMLLysjGkEpTM2Soy4"
+        },
+        "SendMax": 10000,
+        "Destination": "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
+        "TransactionType": "Payment"
+    }
+})",
+        {
+            {
+                {},
+                {},
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.Sequence'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.Sequence'."},
+            },
+        },
+    },
+
+    {
+        "'secret' must be present.",
+        __LINE__,
+        R"({
+    "command": "dummy_command",
+    "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+    "tx_json": {
+        "Account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+        "Amount": "1000000000",
+        "Destination": "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
+        "TransactionType": "Payment"
+    }
+})",
+        {
+            {
+                {"invalidParams", RpcInvalidParams, "Missing field 'secret'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'secret'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.Sequence'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.Sequence'."},
+            },
+        },
+    },
+
+    {
+        "'secret' must be non-empty.",
+        __LINE__,
+        R"({
+    "command": "dummy_command",
+    "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+    "secret": "",
+    "tx_json": {
+        "Account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+        "Amount": "1000000000",
+        "Destination": "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
+        "TransactionType": "Payment"
+    }
+})",
+        {
+            {
+                {"badSeed", RpcBadSeed, "Invalid field 'secret'."},
+                {"badSeed", RpcBadSeed, "Invalid field 'secret'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.Sequence'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.Sequence'."},
+            },
+        },
+    },
+
+    {
+        "Use 'seed' instead of 'secret'.",
+        __LINE__,
+        R"({
+    "command": "dummy_command",
+    "account": "rJrxi4Wxev4bnAGVNP9YCdKPdAoKfAmcsi",
+    "key_type": "ed25519",
+    "seed": "sh1yJfwoi98zCygwijUzuHmJDeVKd",
+    "tx_json": {
+        "Account": "rJrxi4Wxev4bnAGVNP9YCdKPdAoKfAmcsi",
+        "Amount": "1000000000",
+        "Destination": "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
+        "TransactionType": "Payment"
+    }
+})",
+        {
+            {
+                {},
+                {},
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.Sequence'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.Sequence'."},
+            },
+        },
+    },
+
+    {
+        "Malformed 'seed'.",
+        __LINE__,
+        R"({
+    "command": "dummy_command",
+    "account": "rJrxi4Wxev4bnAGVNP9YCdKPdAoKfAmcsi",
+    "key_type": "ed25519",
+    "seed": "not a seed",
+    "tx_json": {
+        "Account": "rJrxi4Wxev4bnAGVNP9YCdKPdAoKfAmcsi",
+        "Amount": "1000000000",
+        "Destination": "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
+        "TransactionType": "Payment"
+    }
+})",
+        {
+            {
+                {"badSeed", RpcBadSeed, "Disallowed seed."},
+                {"badSeed", RpcBadSeed, "Disallowed seed."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.Sequence'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.Sequence'."},
+            },
+        },
+    },
+
+    {
+        "'tx_json' must be present.",
+        __LINE__,
+        R"({
+    "command": "dummy_command",
+    "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+    "secret": "masterpassphrase",
+    "rx_json": {
+        "Account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+        "Amount": "1000000000",
+        "Destination": "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
+        "TransactionType": "Payment"
+    }
+})",
+        {
+            {
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json'."},
+            },
+        },
+    },
+
+    {
+        "'TransactionType' must be present.",
+        __LINE__,
+        R"({
+    "command": "dummy_command",
+    "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+    "secret": "masterpassphrase",
+    "tx_json": {
+        "Account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+        "Amount": "1000000000",
+        "Destination": "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
+    }
+})",
+        {
+            {
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.TransactionType'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.TransactionType'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.Sequence'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.Sequence'."},
+            },
+        },
+    },
+
+    {
+        "The 'TransactionType' must be a pre-established transaction type.",
+        __LINE__,
+        R"({
+    "command": "dummy_command",
+    "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+    "secret": "masterpassphrase",
+    "tx_json": {
+        "Account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+        "Amount": "1000000000",
+        "Destination": "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
+        "TransactionType": "tt"
+    }
+})",
+        {
+            {
+                {
+                    "invalidParams",
+                    RpcInvalidParams,
+                    "Field 'tx_json.TransactionType' has invalid data.",
+                },
+                {
+                    "invalidParams",
+                    RpcInvalidParams,
+                    "Field 'tx_json.TransactionType' has invalid data.",
+                },
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.Sequence'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.Sequence'."},
+            },
+        },
+    },
+
+    {
+        "The 'TransactionType' may be represented with an integer.",
+        __LINE__,
+        R"({
+    "command": "dummy_command",
+    "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+    "secret": "masterpassphrase",
+    "tx_json": {
+        "Account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+        "Amount": "1000000000",
+        "Destination": "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
+        "TransactionType": 0
+    }
+})",
+        {
+            {
+                {},
+                {},
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.Sequence'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.Sequence'."},
+            },
+        },
+    },
+
+    {
+        "'Account' must be present.",
+        __LINE__,
+        R"({
+    "command": "dummy_command",
+    "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+    "secret": "masterpassphrase",
+    "tx_json": {
+        "Amount": "1000000000",
+        "Destination": "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
+        "TransactionType": "Payment"
+    }
+})",
+        {
+            {
+                {"srcActMissing", RpcSrcActMissing, "Missing field 'tx_json.Account'."},
+                {"srcActMissing", RpcSrcActMissing, "Missing field 'tx_json.Account'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.Sequence'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.Sequence'."},
+            },
+        },
+    },
+
+    {
+        "'Account' must be well formed.",
+        __LINE__,
+        R"({
+    "command": "dummy_command",
+    "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+    "secret": "masterpassphrase",
+    "tx_json": {
+        "Account": "NotAnAccount",
+        "Amount": "1000000000",
+        "Destination": "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
+        "TransactionType": "Payment"
+    }
+})",
+        {
+            {
+                {"srcActMalformed", RpcSrcActMalformed, "Invalid field 'tx_json.Account'."},
+                {"srcActMalformed", RpcSrcActMalformed, "Invalid field 'tx_json.Account'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.Sequence'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.Sequence'."},
+            },
+        },
+    },
+
+    {
+        "The 'offline' tag may be added to the transaction.",
+        __LINE__,
+        R"({
+    "command": "dummy_command",
+    "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+    "secret": "masterpassphrase",
+    "offline": 0,
+    "tx_json": {
+        "Account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+        "Amount": "1000000000",
+        "Destination": "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
+        "TransactionType": "Payment"
+    }
+})",
+        {
+            {
+                {},
+                {},
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.Sequence'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.Sequence'."},
+            },
+        },
+    },
+
+    {
+        "If 'offline' is true then a 'Sequence' field must be supplied.",
+        __LINE__,
+        R"({
+    "command": "dummy_command",
+    "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+    "secret": "masterpassphrase",
+    "offline": 1,
+    "tx_json": {
+        "Fee": 10,
+        "Account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+        "Amount": "1000000000",
+        "Destination": "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
+        "TransactionType": "Payment"
+    }
+})",
+        {
+            {
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.Sequence'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.Sequence'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.Sequence'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.Sequence'."},
+            },
+        },
+    },
+
+    {
+        "If 'offline' is true then a 'Fee' field must be supplied.",
+        __LINE__,
+        R"({
+    "command": "dummy_command",
+    "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+    "secret": "masterpassphrase",
+    "offline": 1,
+    "tx_json": {
+        "Sequence": 0,
+        "Account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+        "Amount": "1000000000",
+        "Destination": "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
+        "TransactionType": "Payment"
+    }
+})",
+        {
+            {
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.Fee'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.Fee'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.Fee'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.SigningPubKey'."},
+            },
+        },
+    },
+
+    {
+        "Valid transaction if 'offline' is true.",
+        __LINE__,
+        R"({
+    "command": "dummy_command",
+    "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+    "secret": "masterpassphrase",
+    "offline": 1,
+    "tx_json": {
+        "Sequence": 0,
+        "Fee": 10,
+        "Account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+        "Amount": "1000000000",
+        "Destination": "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
+        "TransactionType": "Payment"
+    }
+})",
+        {
+            {
+                {},
+                {},
+                {
+                    "invalidParams",
+                    RpcInvalidParams,
+                    "A Signer may not be the transaction's Account "
+                    "(rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh).",
+                },
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.SigningPubKey'."},
+            },
+        },
+    },
+
+    {
+        "'offline' and 'build_path' are mutually exclusive.",
+        __LINE__,
+        R"({
+    "command": "dummy_command",
+    "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+    "secret": "masterpassphrase",
+    "offline": 1,
+    "build_path": 1,
+    "tx_json": {
+        "Sequence": 0,
+        "Fee": 10,
+        "Account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+        "Amount": "1000000000",
+        "Destination": "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
+        "TransactionType": "Payment"
+    }
+})",
+        {
+            {
+                {
+                    "invalidParams",
+                    RpcInvalidParams,
+                    "Field 'build_path' not allowed in this context.",
+                },
+                {
+                    "invalidParams",
+                    RpcInvalidParams,
+                    "Field 'build_path' not allowed in this context.",
+                },
+                {
+                    "invalidParams",
+                    RpcInvalidParams,
+                    "Field 'build_path' not allowed in this context.",
+                },
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.SigningPubKey'."},
+            },
+        },
+    },
+
+    {
+        "A 'Flags' field may be specified.",
+        __LINE__,
+        R"({
+    "command": "dummy_command",
+    "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+    "secret": "masterpassphrase",
+    "tx_json": {
+        "Flags": 0,
+        "Account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+        "Amount": "1000000000",
+        "Destination": "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
+        "TransactionType": "Payment"
+    }
+})",
+        {
+            {
+                {},
+                {},
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.Sequence'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.Sequence'."},
+            },
+        },
+    },
+
+    {
+        "The 'Flags' field must be numeric.",
+        __LINE__,
+        R"({
+    "command": "dummy_command",
+    "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+    "secret": "masterpassphrase",
+    "tx_json": {
+        "Flags": "NotGoodFlags",
+        "Account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+        "Amount": "1000000000",
+        "Destination": "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
+        "TransactionType": "Payment"
+    }
+})",
+        {
+            {
+                {"invalidParams", RpcInvalidParams, "Field 'tx_json.Flags' has invalid data."},
+                {"invalidParams", RpcInvalidParams, "Field 'tx_json.Flags' has invalid data."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.Sequence'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.Sequence'."},
+            },
+        },
+    },
+
+    {
+        "It's okay to add a 'debug_signing' field.",
+        __LINE__,
+        R"({
+    "command": "dummy_command",
+    "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+    "secret": "masterpassphrase",
+    "debug_signing": 0,
+    "tx_json": {
+        "Account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+        "Amount": "1000000000",
+        "Destination": "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
+        "TransactionType": "Payment"
+    }
+})",
+        {
+            {
+                {},
+                {},
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.Sequence'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.Sequence'."},
+            },
+        },
+    },
+
+    {
+        "Single-sign a multisigned transaction.",
+        __LINE__,
+        R"({
+    "command": "dummy_command",
+    "account": "rPcNzota6B8YBokhYtcTNqQVCngtbnWfux",
+    "secret": "a",
+    "tx_json": {
+        "Account" : "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
+        "Amount" : "1000000000",
+        "Destination" : "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+        "Fee" : "50",
+        "Sequence" : 0,
+        "Signers" : [
+            {
+                "Signer" : {
+                    "Account" : "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+                    "SigningPubKey" : "0330E7FC9D56BB25D6893BA3F317AE5BCF33B3291BD63DB32654A313222F7FD020",
+                    "TxnSignature" : "304502210080EB23E78A841DDC5E3A4F10DE6EAF052207D6B519BF8954467ADB221B3F349002202CA458E8D4E4DE7176D27A91628545E7B295A5DFC8ADF0B5CD3E279B6FA02998"
+                }
+            }
+        ],
+        "SigningPubKey" : "",
+        "TransactionType" : "Payment"
+    }
+})",
+        {
+            {
+                {"alreadyMultisig", RpcAlreadyMultisig, "Already multisigned."},
+                {"alreadyMultisig", RpcAlreadyMultisig, "Already multisigned."},
+                {"badSecret", RpcBadSecret, "Secret does not match account."},
+                {},
+            },
+        },
+    },
+
+    {
+        "Minimal sign_for.",
+        __LINE__,
+        R"({
+    "command": "dummy_command",
+    "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+    "secret": "masterpassphrase",
+    "tx_json": {
+        "Account": "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
+        "Amount": "1000000000",
+        "Destination": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+        "Fee": 50,
+        "Sequence": 0,
+        "SigningPubKey": "",
+        "TransactionType": "Payment"
+    }
+})",
+        {
+            {
+                {"badSecret", RpcBadSecret, "Secret does not match account."},
+                {"badSecret", RpcBadSecret, "Secret does not match account."},
+                {},
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.Signers'."},
+            },
+        },
+    },
+
+    {
+        "Minimal offline sign_for.",
+        __LINE__,
+        R"({
+    "command": "dummy_command",
+    "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+    "secret": "masterpassphrase",
+    "offline": 1,
+    "tx_json": {
+        "Account": "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
+        "Amount": "1000000000",
+        "Destination": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+        "Fee": 50,
+        "Sequence": 0,
+        "SigningPubKey": "",
+        "TransactionType": "Payment"
+    }
+})",
+        {
+            {
+                {},
+                {},
+                {},
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.Signers'."},
+            },
+        },
+    },
+
+    {
+        "Offline sign_for using 'seed' instead of 'secret'.",
+        __LINE__,
+        R"({
+    "command": "dummy_command",
+    "account": "rJrxi4Wxev4bnAGVNP9YCdKPdAoKfAmcsi",
+    "key_type": "ed25519",
+    "seed": "sh1yJfwoi98zCygwijUzuHmJDeVKd",
+    "offline": 1,
+    "tx_json": {
+        "Account": "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
+        "Amount": "1000000000",
+        "Destination": "rJrxi4Wxev4bnAGVNP9YCdKPdAoKfAmcsi",
+        "Fee": 50,
+        "Sequence": 0,
+        "SigningPubKey": "",
+        "TransactionType": "Payment"
+    }
+})",
+        {
+            {
+                {},
+                {},
+                {},
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.Signers'."},
+            },
+        },
+    },
+
+    {
+        "Malformed seed in sign_for.",
+        __LINE__,
+        R"({
+    "command": "dummy_command",
+    "account": "rJrxi4Wxev4bnAGVNP9YCdKPdAoKfAmcsi",
+    "key_type": "ed25519",
+    "seed": "sh1yJfwoi98zCygwjUzuHmJDeVKd",
+    "offline": 1,
+    "tx_json": {
+        "Account": "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
+        "Amount": "1000000000",
+        "Destination": "rJrxi4Wxev4bnAGVNP9YCdKPdAoKfAmcsi",
+        "Fee": 50,
+        "Sequence": 0,
+        "SigningPubKey": "",
+        "TransactionType": "Payment"
+    }
+})",
+        {
+            {
+                {"badSeed", RpcBadSeed, "Disallowed seed."},
+                {"badSeed", RpcBadSeed, "Disallowed seed."},
+                {"badSeed", RpcBadSeed, "Disallowed seed."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.Signers'."},
+            },
+        },
+    },
+
+    {
+        "Missing 'Account' in sign_for.",
+        __LINE__,
+        R"({
+    "command": "dummy_command",
+    "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+    "secret": "masterpassphrase",
+    "tx_json": {
+        "Amount": "1000000000",
+        "Destination": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+        "Fee": 50,
+        "Sequence": 0,
+        "SigningPubKey": "",
+        "TransactionType": "Payment"
+    }
+})",
+        {
+            {
+                {"srcActMissing", RpcSrcActMissing, "Missing field 'tx_json.Account'."},
+                {"srcActMissing", RpcSrcActMissing, "Missing field 'tx_json.Account'."},
+                {"srcActMissing", RpcSrcActMissing, "Missing field 'tx_json.Account'."},
+                {"srcActMissing", RpcSrcActMissing, "Missing field 'tx_json.Account'."},
+            },
+        },
+    },
+
+    {
+        "Missing 'Amount' in sign_for.",
+        __LINE__,
+        R"({
+    "command": "dummy_command",
+    "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+    "secret": "masterpassphrase",
+    "tx_json": {
+        "Account": "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
+        "Destination": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+        "Fee": 50,
+        "Sequence": 0,
+        "SigningPubKey": "",
+        "TransactionType": "Payment"
+    }
+})",
+        {
+            {
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.Amount'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.Amount'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.Amount'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.Amount'."},
+            },
+        },
+    },
+
+    {
+        "Missing 'Destination' in sign_for.",
+        __LINE__,
+        R"({
+    "command": "dummy_command",
+    "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+    "secret": "masterpassphrase",
+    "tx_json": {
+        "Account": "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
+        "Amount": "1000000000",
+        "Fee": 50,
+        "Sequence": 0,
+        "SigningPubKey": "",
+        "TransactionType": "Payment"
+    }
+})",
+        {
+            {
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.Destination'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.Destination'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.Destination'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.Destination'."},
+            },
+        },
+    },
+
+    {
+        "Missing 'Destination' in sign_for, use DeliverMax",
+        __LINE__,
+        R"({
+    "command": "dummy_command",
+    "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+    "secret": "masterpassphrase",
+    "tx_json": {
+        "Account": "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
+        "DeliverMax": "1000000000",
+        "Fee": 50,
+        "Sequence": 0,
+        "SigningPubKey": "",
+        "TransactionType": "Payment"
+    }
+})",
+        {
+            {
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.Destination'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.Destination'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.Destination'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.Destination'."},
+            },
+        },
+    },
+
+    {
+        "Missing 'Fee' in sign_for.",
+        __LINE__,
+        R"({
+    "command": "dummy_command",
+    "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+    "secret": "masterpassphrase",
+    "tx_json": {
+        "Account": "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
+        "Amount": "1000000000",
+        "Destination": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+        "Sequence": 0,
+        "SigningPubKey": "",
+        "TransactionType": "Payment"
+    }
+})",
+        {
+            {
+                {"badSecret", RpcBadSecret, "Secret does not match account."},
+                {"badSecret", RpcBadSecret, "Secret does not match account."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.Fee'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.Fee'."},
+            },
+        },
+    },
+
+    {
+        "Missing 'Sequence' in sign_for.",
+        __LINE__,
+        R"({
+    "command": "dummy_command",
+    "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+    "secret": "masterpassphrase",
+    "tx_json": {
+        "Account": "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
+        "Amount": "1000000000",
+        "Destination": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+        "Fee": 50,
+        "SigningPubKey": "",
+        "TransactionType": "Payment"
+    }
+})",
+        {
+            {
+                {"badSecret", RpcBadSecret, "Secret does not match account."},
+                {"badSecret", RpcBadSecret, "Secret does not match account."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.Sequence'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.Sequence'."},
+            },
+        },
+    },
+
+    {
+        "Missing 'SigningPubKey' in sign_for is automatically filled in.",
+        __LINE__,
+        R"({
+    "command": "dummy_command",
+    "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+    "secret": "masterpassphrase",
+    "tx_json": {
+        "Account": "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
+        "Amount": "1000000000",
+        "Destination": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+        "Fee": 50,
+        "Sequence": 0,
+        "TransactionType": "Payment"
+    }
+})",
+        {
+            {
+                {"badSecret", RpcBadSecret, "Secret does not match account."},
+                {"badSecret", RpcBadSecret, "Secret does not match account."},
+                {},
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.SigningPubKey'."},
+            },
+        },
+    },
+
+    {
+        "In sign_for, an account may not sign for itself.",
+        __LINE__,
+        R"({
+    "command": "dummy_command",
+    "account": "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
+    "secret": "a",
+    "tx_json": {
+        "Account": "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
+        "Amount": "1000000000",
+        "Destination": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+        "Fee": 50,
+        "Sequence": 0,
+        "TransactionType": "Payment"
+    }
+})",
+        {
+            {
+                {},
+                {},
+                {
+                    "invalidParams",
+                    RpcInvalidParams,
+                    "A Signer may not be the transaction's Account "
+                    "(rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA).",
+                },
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.SigningPubKey'."},
+            },
+        },
+    },
+
+    {
+        "Cannot put duplicate accounts in Signers array",
+        __LINE__,
+        R"({
+    "command": "dummy_command",
+    "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+    "secret": "masterpassphrase",
+    "tx_json": {
+        "Account" : "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
+        "Amount" : "1000000000",
+        "Destination" : "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+        "Fee" : "50",
+        "Sequence" : 0,
+        "Signers" : [
+            {
+                "Signer" : {
+                    "Account" : "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+                    "SigningPubKey" : "0330E7FC9D56BB25D6893BA3F317AE5BCF33B3291BD63DB32654A313222F7FD020",
+                    "TxnSignature" : "304502210080EB23E78A841DDC5E3A4F10DE6EAF052207D6B519BF8954467ADB221B3F349002202CA458E8D4E4DE7176D27A91628545E7B295A5DFC8ADF0B5CD3E279B6FA02998"
+                }
+            }
+        ],
+        "SigningPubKey" : "",
+        "TransactionType" : "Payment"
+    }
+})",
+        {
+            {
+                {"alreadyMultisig", RpcAlreadyMultisig, "Already multisigned."},
+                {"alreadyMultisig", RpcAlreadyMultisig, "Already multisigned."},
+                {
+                    "invalidParams",
+                    RpcInvalidParams,
+                    "Duplicate Signers:Signer:Account entries "
+                    "(rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh) are not allowed.",
+                },
+                {},
+            },
+        },
+    },
+
+    {
+        "Correctly append to pre-established Signers array",
+        __LINE__,
+        R"({
+    "command": "dummy_command",
+    "account": "rPcNzota6B8YBokhYtcTNqQVCngtbnWfux",
+    "secret": "c",
+    "tx_json": {
+        "Account" : "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
+        "Amount" : "1000000000",
+        "Destination" : "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+        "Fee" : "50",
+        "Sequence" : 0,
+        "Signers" : [
+            {
+                "Signer" : {
+                    "Account" : "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+                    "SigningPubKey" : "0330E7FC9D56BB25D6893BA3F317AE5BCF33B3291BD63DB32654A313222F7FD020",
+                    "TxnSignature" : "304502210080EB23E78A841DDC5E3A4F10DE6EAF052207D6B519BF8954467ADB221B3F349002202CA458E8D4E4DE7176D27A91628545E7B295A5DFC8ADF0B5CD3E279B6FA02998"
+                }
+            }
+        ],
+        "SigningPubKey" : "",
+        "TransactionType" : "Payment"
+    }
+})",
+        {
+            {
+                {"alreadyMultisig", RpcAlreadyMultisig, "Already multisigned."},
+                {"alreadyMultisig", RpcAlreadyMultisig, "Already multisigned."},
+                {},
+                {},
+            },
+        },
+    },
+
+    {
+        "Append to pre-established Signers array with bad signature",
+        __LINE__,
+        R"({
+    "command": "dummy_command",
+    "account": "rPcNzota6B8YBokhYtcTNqQVCngtbnWfux",
+    "secret": "c",
+    "tx_json": {
+        "Account" : "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
+        "Amount" : "1000000000",
+        "Destination" : "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+        "Fee" : "50",
+        "Sequence" : 0,
+        "Signers" : [
+            {
+                "Signer" : {
+                    "Account" : "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+                    "SigningPubKey" : "0330E7FC9D56BB25D6893BA3F317AE5BCF33B3291BD63DB32654A313222F7FD020",
+                    "TxnSignature" : "304502210080EB23E78A841DDC5E3A4F10DE6EAF052207D6B519BF8954467ACB221B3F349002202CA458E8D4E4DE7176D27A91628545E7B295A5DFC8ADF0B5CD3E279B6FA02998"
+                }
+            }
+        ],
+        "SigningPubKey" : "",
+        "TransactionType" : "Payment"
+    }
+})",
+        {
+            {
+                {"alreadyMultisig", RpcAlreadyMultisig, "Already multisigned."},
+                {"alreadyMultisig", RpcAlreadyMultisig, "Already multisigned."},
+                {"internal", RpcInternal, "Invalid signature."},
+                {"internal", RpcInternal, "Invalid signature."},
+            },
+        },
+    },
+
+    {
+        "Non-empty 'SigningPubKey' in sign_for.",
+        __LINE__,
+        R"({
+    "command": "dummy_command",
+    "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+    "secret": "masterpassphrase",
+    "tx_json": {
+        "Account": "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
+        "Amount": "1000000000",
+        "Destination": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+        "Fee": 50,
+        "Sequence": 0,
+        "SigningPubKey": "1",
+        "TransactionType": "Payment"
+    }
+})",
+        {
+            {
+                {"badSecret", RpcBadSecret, "Secret does not match account."},
+                {"badSecret", RpcBadSecret, "Secret does not match account."},
+                {
+                    "invalidParams",
+                    RpcInvalidParams,
+                    "When multi-signing 'tx_json.SigningPubKey' must be empty.",
+                },
+                {
+                    "invalidParams",
+                    RpcInvalidParams,
+                    "When multi-signing 'tx_json.SigningPubKey' must be empty.",
+                },
+            },
+        },
+    },
+
+    {
+        "Missing 'TransactionType' in sign_for.",
+        __LINE__,
+        R"({
+    "command": "dummy_command",
+    "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+    "secret": "masterpassphrase",
+    "tx_json": {
+        "Account": "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
+        "Amount": "1000000000",
+        "Destination": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+        "Fee": 50,
+        "Sequence": 0,
+        "SigningPubKey": "",
+    }
+})",
+        {
+            {
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.TransactionType'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.TransactionType'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.TransactionType'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.TransactionType'."},
+            },
+        },
+    },
+
+    {
+        "TxnSignature in sign_for.",
+        __LINE__,
+        R"({
+    "command": "dummy_command",
+    "account": "rPcNzota6B8YBokhYtcTNqQVCngtbnWfux",
+    "secret": "c",
+    "tx_json": {
+        "Account" : "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
+        "Amount" : "1000000000",
+        "Destination" : "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+        "Fee" : "50",
+        "Sequence" : 0,
+        "Signers" : [
+            {
+                "Signer" : {
+                    "Account" : "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+                    "SigningPubKey" : "0330E7FC9D56BB25D6893BA3F317AE5BCF33B3291BD63DB32654A313222F7FD020",
+                    "TxnSignature" : "304502210080EB23E78A841DDC5E3A4F10DE6EAF052207D6B519BF8954467ADB221B3F349002202CA458E8D4E4DE7176D27A91628545E7B295A5DFC8ADF0B5CD3E279B6FA02998"
+                }
+            }
+        ],
+        "SigningPubKey" : "",
+        "TxnSignature" : "304502210080EB23E78A841DDC5E3A4F10DE6EAF052207D6B519BF8954467ADB221B3F349002202CA458E8D4E4DE7176D27A91628545E7B295A5DFC8ADF0B5CD3E279B6FA02998",
+        "TransactionType" : "Payment"
+    }
+})",
+        {
+            {
+                {"alreadyMultisig", RpcAlreadyMultisig, "Already multisigned."},
+                {"alreadyMultisig", RpcAlreadyMultisig, "Already multisigned."},
+                {"alreadySingleSig", RpcAlreadySingleSig, "Already single-signed."},
+                {"signingMalformed", RpcSigningMalformed, "Signing of transaction is malformed."},
+            },
+        },
+    },
+
+    {
+        "Invalid field 'tx_json': string instead of object",
+        __LINE__,
+        R"({
+    "command": "dummy_command",
+    "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+    "secret": "masterpassphrase",
+    "tx_json": ""
+})",
+        {
+            {
+                {"invalidParams", RpcInvalidParams, "Invalid field 'tx_json', not object."},
+                {"invalidParams", RpcInvalidParams, "Invalid field 'tx_json', not object."},
+                {"invalidParams", RpcInvalidParams, "Invalid field 'tx_json', not object."},
+                {"invalidParams", RpcInvalidParams, "Invalid field 'tx_json', not object."},
+            },
+        },
+    },
+
+    {
+        "Invalid field 'tx_json': integer instead of object",
+        __LINE__,
+        R"({
+    "command": "dummy_command",
+    "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+    "secret": "masterpassphrase",
+    "tx_json": 20160331
+})",
+        {
+            {
+                {"invalidParams", RpcInvalidParams, "Invalid field 'tx_json', not object."},
+                {"invalidParams", RpcInvalidParams, "Invalid field 'tx_json', not object."},
+                {"invalidParams", RpcInvalidParams, "Invalid field 'tx_json', not object."},
+                {"invalidParams", RpcInvalidParams, "Invalid field 'tx_json', not object."},
+            },
+        },
+    },
+
+    {
+        "Invalid field 'tx_json': array instead of object",
+        __LINE__,
+        R"({
+    "command": "dummy_command",
+    "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+    "secret": "masterpassphrase",
+    "tx_json": [ "hello", "world" ]
+})",
+        {
+            {
+                {"invalidParams", RpcInvalidParams, "Invalid field 'tx_json', not object."},
+                {"invalidParams", RpcInvalidParams, "Invalid field 'tx_json', not object."},
+                {"invalidParams", RpcInvalidParams, "Invalid field 'tx_json', not object."},
+                {"invalidParams", RpcInvalidParams, "Invalid field 'tx_json', not object."},
+            },
+        },
+    },
+
+    {
+        "Pass in Fee with minimal payment, both Amount and DeliverMax.",
+        __LINE__,
+        R"({
+    "command": "dummy_command",
+    "account": "r9zN9x52FiCFAcicCLMQKbj1nxYhxJbbSy",
+    "secret": "ssgN6zTvtM1q9XV8DvJpWm8LBYWiY",
+    "tx_json": {
+        "Fee": 10,
+        "Account": "r9zN9x52FiCFAcicCLMQKbj1nxYhxJbbSy",
+        "Amount": "1000000000",
+        "DeliverMax": "1000000000",
+        "Destination": "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
+        "TransactionType": "Payment"
+    }
+})",
+        {
+            {
+                {"srcActNotFound", RpcSrcActNotFound, "Source account not found."},
+                {"srcActNotFound", RpcSrcActNotFound, "Source account not found."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.Sequence'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.Sequence'."},
+            },
+        },
+    },
+
+    {
+        "Minimal submit_multisigned.",
+        __LINE__,
+        R"({
+    "command": "submit_multisigned",
+    "tx_json": {
+        "Account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+        "Amount": "1000000000",
+        "Destination": "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
+        "Fee": 50,
+        "Sequence": 0,
+        "Signers" : [
+             {
+                "Signer" : {
+                    "Account" : "rPcNzota6B8YBokhYtcTNqQVCngtbnWfux",
+                    "SigningPubKey" : "02FE36A690D6973D55F88553F5D2C4202DE75F2CF8A6D0E17C70AC223F044501F8",
+                    "TxnSignature" : "3045022100909D01399AFFAD1E30D250CE61F93975B7F61E47B5244D78C3E86D9806535D95022012E389E0ACB016334052B7FE07FA6CEFDC8BE82CB410FA841D5049641C89DC8F"
+                }
+            }
+        ],
+        "SigningPubKey": "",
+        "TransactionType": "Payment"
+    }
+})",
+        {
+            {
+                {"invalidParams", RpcInvalidParams, "Missing field 'secret'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'secret'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'account'."},
+                {},
+            },
+        },
+    },
+
+    {
+        "Minimal submit_multisigned with bad signature.",
+        __LINE__,
+        R"({
+    "command": "submit_multisigned",
+    "tx_json": {
+        "Account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+        "Amount": "1000000000",
+        "Destination": "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
+        "Fee": 50,
+        "Sequence": 0,
+        "Signers": [
+            {
+                "Signer": {
+                    "Account": "rPcNzota6B8YBokhYtcTNqQVCngtbnWfux",
+                    "TxnSignature": "3045022100F9ED357606932697A4FAB2BE7F222C21DD93CA4CFDD90357AADD07465E8457D6022038173193E3DFFFB5D78DD738CC0905395F885DA65B98FDB9793901FE3FD26ECE",
+                    "SigningPubKey": "02FE36A690D6973D55F88553F5D2C4202DE75F2CF8A6D0E17C70AC223F044501F8"
+                }
+            }
+        ],
+        "SigningPubKey": "",
+        "TransactionType": "Payment"
+    }
+})",
+        {
+            {
+                {"invalidParams", RpcInvalidParams, "Missing field 'secret'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'secret'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'account'."},
+                {"internal", RpcInternal, "Invalid signature."},
+            },
+        },
+    },
+
+    {
+        "Missing tx_json in submit_multisigned.",
+        __LINE__,
+        R"({
+    "command": "submit_multisigned",
+    "Signers": [
+        {
+            "Signer": {
+                "Account": "rPcNzota6B8YBokhYtcTNqQVCngtbnWfux",
+                "TxnSignature": "3045022100F9ED357606932697A4FAB2BE7F222C21DD93CA4CFDD90357AADD07465E8457D6022038173193E3DFFFB5D78DD738CC0905395F885DA65B98FDB9793901FE3FD26ECE",
+                "SigningPubKey": "02FE36A690D6973D55F88553F5D2C4202DE75F2CF8A6D0E17C70AC223F044501F8"
+            }
+        }
+    ]
+})",
+        {
+            {
+                {"invalidParams", RpcInvalidParams, "Missing field 'secret'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'secret'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'account'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json'."},
+            },
+        },
+    },
+
+    {
+        "Missing sequence in submit_multisigned.",
+        __LINE__,
+        R"({
+    "command": "submit_multisigned",
+    "tx_json": {
+        "Account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+        "Amount": "1000000000",
+        "Destination": "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
+        "Fee": 50,
+        "Signers": [
+            {
+                "Signer": {
+                    "Account": "rPcNzota6B8YBokhYtcTNqQVCngtbnWfux",
+                    "TxnSignature": "3045022100F9ED357606932697A4FAB2BE7F222C21DD93CA4CFDD90357AADD07465E8457D6022038173193E3DFFFB5D78DD738CC0905395F885DA65B98FDB9793901FE3FD26ECE",
+                    "SigningPubKey": "02FE36A690D6973D55F88553F5D2C4202DE75F2CF8A6D0E17C70AC223F044501F8"
+                }
+            }
+        ],
+        "SigningPubKey": "",
+        "TransactionType": "Payment"
+    }
+})",
+        {
+            {
+                {"invalidParams", RpcInvalidParams, "Missing field 'secret'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'secret'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'account'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.Sequence'."},
+            },
+        },
+    },
+
+    {
+        "Missing SigningPubKey in submit_multisigned.",
+        __LINE__,
+        R"({
+    "command": "submit_multisigned",
+    "tx_json": {
+        "Account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+        "Amount": "1000000000",
+        "Destination": "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
+        "Fee": 50,
+        "Signers": [
+            {
+                "Signer": {
+                    "Account": "rPcNzota6B8YBokhYtcTNqQVCngtbnWfux",
+                    "TxnSignature": "3045022100F9ED357606932697A4FAB2BE7F222C21DD93CA4CFDD90357AADD07465E8457D6022038173193E3DFFFB5D78DD738CC0905395F885DA65B98FDB9793901FE3FD26ECE",
+                    "SigningPubKey": "02FE36A690D6973D55F88553F5D2C4202DE75F2CF8A6D0E17C70AC223F044501F8"
+                }
+            }
+        ],
+        "Sequence": 0,
+        "TransactionType": "Payment"
+    }
+})",
+        {
+            {
+                {"invalidParams", RpcInvalidParams, "Missing field 'secret'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'secret'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'account'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.SigningPubKey'."},
+            },
+        },
+    },
+
+    {
+        "Non-empty SigningPubKey in submit_multisigned.",
+        __LINE__,
+        R"({
+    "command": "submit_multisigned",
+    "tx_json": {
+        "Account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+        "Amount": "1000000000",
+        "Destination": "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
+        "Fee": 50,
+        "Sequence": 0,
+        "Signers": [
+            {
+                "Signer": {
+                    "Account": "rPcNzota6B8YBokhYtcTNqQVCngtbnWfux",
+                    "TxnSignature": "3045022100F9ED357606932697A4FAB2BE7F222C21DD93CA4CFDD90357AADD07465E8457D6022038173193E3DFFFB5D78DD738CC0905395F885DA65B98FDB9793901FE3FD26ECE",
+                    "SigningPubKey": "02FE36A690D6973D55F88553F5D2C4202DE75F2CF8A6D0E17C70AC223F044501F8"
+                }
+            }
+        ],
+        "SigningPubKey": "02FE36A690D6973D55F88553F5D2C4202DE75F2CF8A6D0E17C70AC223F044501F8",
+        "TransactionType": "Payment"
+    }
+})",
+        {
+            {
+                {"invalidParams", RpcInvalidParams, "Missing field 'secret'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'secret'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'account'."},
+                {
+                    "invalidParams",
+                    RpcInvalidParams,
+                    "When multi-signing 'tx_json.SigningPubKey' must be empty.",
+                },
+            },
+        },
+    },
+
+    {
+        "Missing TransactionType in submit_multisigned.",
+        __LINE__,
+        R"({
+    "command": "submit_multisigned",
+    "tx_json": {
+        "Account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+        "Amount": "1000000000",
+        "Destination": "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
+        "Fee": 50,
+        "Signers": [
+            {
+                "Signer": {
+                    "Account": "rPcNzota6B8YBokhYtcTNqQVCngtbnWfux",
+                    "TxnSignature": "3045022100F9ED357606932697A4FAB2BE7F222C21DD93CA4CFDD90357AADD07465E8457D6022038173193E3DFFFB5D78DD738CC0905395F885DA65B98FDB9793901FE3FD26ECE",
+                    "SigningPubKey": "02FE36A690D6973D55F88553F5D2C4202DE75F2CF8A6D0E17C70AC223F044501F8"
+                }
+            }
+        ],
+        "Sequence": 0,
+        "SigningPubKey": "",
+    }
+})",
+        {
+            {
+                {"invalidParams", RpcInvalidParams, "Missing field 'secret'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'secret'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'account'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.TransactionType'."},
+            },
+        },
+    },
+
+    {
+        "Missing Account in submit_multisigned.",
+        __LINE__,
+        R"({
+    "command": "submit_multisigned",
+    "tx_json": {
+        "Amount": "1000000000",
+        "Destination": "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
+        "Fee": 50,
+        "Sequence": 0,
+        "Signers": [
+            {
+                "Signer": {
+                    "Account": "rPcNzota6B8YBokhYtcTNqQVCngtbnWfux",
+                    "TxnSignature": "3045022100F9ED357606932697A4FAB2BE7F222C21DD93CA4CFDD90357AADD07465E8457D6022038173193E3DFFFB5D78DD738CC0905395F885DA65B98FDB9793901FE3FD26ECE",
+                    "SigningPubKey": "02FE36A690D6973D55F88553F5D2C4202DE75F2CF8A6D0E17C70AC223F044501F8"
+                }
+            }
+        ],
+        "SigningPubKey": "",
+        "TransactionType": "Payment"
+    }
+})",
+        {
+            {
+                {"invalidParams", RpcInvalidParams, "Missing field 'secret'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'secret'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'account'."},
+                {"srcActMissing", RpcSrcActMissing, "Missing field 'tx_json.Account'."},
+            },
+        },
+    },
+
+    {
+        "Malformed Account in submit_multisigned.",
+        __LINE__,
+        R"({
+    "command": "submit_multisigned",
+    "tx_json": {
+        "Account": "NotAnAccount",
+        "Amount": "1000000000",
+        "Destination": "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
+        "Fee": 50,
+        "Sequence": 0,
+        "Signers": [
+            {
+                "Signer": {
+                    "Account": "rPcNzota6B8YBokhYtcTNqQVCngtbnWfux",
+                    "TxnSignature": "3045022100F9ED357606932697A4FAB2BE7F222C21DD93CA4CFDD90357AADD07465E8457D6022038173193E3DFFFB5D78DD738CC0905395F885DA65B98FDB9793901FE3FD26ECE",
+                    "SigningPubKey": "02FE36A690D6973D55F88553F5D2C4202DE75F2CF8A6D0E17C70AC223F044501F8"
+                }
+            }
+        ],
+        "SigningPubKey": "",
+        "TransactionType": "Payment"
+    }
+})",
+        {
+            {
+                {"invalidParams", RpcInvalidParams, "Missing field 'secret'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'secret'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'account'."},
+                {"srcActMalformed", RpcSrcActMalformed, "Invalid field 'tx_json.Account'."},
+            },
+        },
+    },
+
+    {
+        "Account not in ledger in submit_multisigned.",
+        __LINE__,
+        R"({
+    "command": "submit_multisigned",
+    "tx_json": {
+        "Account": "rDg53Haik2475DJx8bjMDSDPj4VX7htaMd",
+        "Amount": "1000000000",
+        "Destination": "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
+        "Fee": 50,
+        "Sequence": 0,
+        "Signers": [
+            {
+                "Signer": {
+                    "Account": "rPcNzota6B8YBokhYtcTNqQVCngtbnWfux",
+                    "TxnSignature": "3045022100F9ED357606932697A4FAB2BE7F222C21DD93CA4CFDD90357AADD07465E8457D6022038173193E3DFFFB5D78DD738CC0905395F885DA65B98FDB9793901FE3FD26ECE",
+                    "SigningPubKey": "02FE36A690D6973D55F88553F5D2C4202DE75F2CF8A6D0E17C70AC223F044501F8"
+                }
+            }
+        ],
+        "SigningPubKey": "",
+        "TransactionType": "Payment"
+    }
+})",
+        {
+            {
+                {"invalidParams", RpcInvalidParams, "Missing field 'secret'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'secret'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'account'."},
+                {"srcActNotFound", RpcSrcActNotFound, "Source account not found."},
+            },
+        },
+    },
+
+    {
+        "Missing Fee in submit_multisigned.",
+        __LINE__,
+        R"({
+    "command": "submit_multisigned",
+    "tx_json": {
+        "Account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+        "Amount": "1000000000",
+        "Destination": "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
+        "Sequence": 0,
+        "Signers": [
+            {
+                "Signer": {
+                    "Account": "rPcNzota6B8YBokhYtcTNqQVCngtbnWfux",
+                    "TxnSignature": "3045022100F9ED357606932697A4FAB2BE7F222C21DD93CA4CFDD90357AADD07465E8457D6022038173193E3DFFFB5D78DD738CC0905395F885DA65B98FDB9793901FE3FD26ECE",
+                    "SigningPubKey": "02FE36A690D6973D55F88553F5D2C4202DE75F2CF8A6D0E17C70AC223F044501F8"
+                }
+            }
+        ],
+        "SigningPubKey": "",
+        "TransactionType": "Payment"
+    }
+})",
+        {
+            {
+                {"invalidParams", RpcInvalidParams, "Missing field 'secret'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'secret'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'account'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.Fee'."},
+            },
+        },
+    },
+
+    {
+        "Non-numeric Fee in submit_multisigned.",
+        __LINE__,
+        R"({
+    "command": "submit_multisigned",
+    "tx_json": {
+        "Account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+        "Amount": "1000000000",
+        "Destination": "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
+        "Fee": 50.1,
+        "Sequence": 0,
+        "Signers": [
+            {
+                "Signer": {
+                    "Account": "rPcNzota6B8YBokhYtcTNqQVCngtbnWfux",
+                    "TxnSignature": "3045022100F9ED357606932697A4FAB2BE7F222C21DD93CA4CFDD90357AADD07465E8457D6022038173193E3DFFFB5D78DD738CC0905395F885DA65B98FDB9793901FE3FD26ECE",
+                    "SigningPubKey": "02FE36A690D6973D55F88553F5D2C4202DE75F2CF8A6D0E17C70AC223F044501F8"
+                }
+            }
+        ],
+        "SigningPubKey": "",
+        "TransactionType": "Payment"
+    }
+})",
+        {
+            {
+                {"invalidParams", RpcInvalidParams, "Missing field 'secret'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'secret'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'account'."},
+                {"invalidParams", RpcInvalidParams, "Field 'tx_json.Fee' has invalid data."},
+            },
+        },
+    },
+
+    {
+        "Missing Amount in submit_multisigned Payment.",
+        __LINE__,
+        R"({
+    "command": "submit_multisigned",
+    "tx_json": {
+        "Account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+        "Destination": "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
+        "Fee": 50000000,
+        "Sequence": 0,
+        "Signers": [
+            {
+                "Signer": {
+                    "Account": "rPcNzota6B8YBokhYtcTNqQVCngtbnWfux",
+                    "TxnSignature": "3045022100F9ED357606932697A4FAB2BE7F222C21DD93CA4CFDD90357AADD07465E8457D6022038173193E3DFFFB5D78DD738CC0905395F885DA65B98FDB9793901FE3FD26ECE",
+                    "SigningPubKey": "02FE36A690D6973D55F88553F5D2C4202DE75F2CF8A6D0E17C70AC223F044501F8"
+                }
+            }
+        ],
+        "SigningPubKey": "",
+        "TransactionType": "Payment"
+    }
+})",
+        {
+            {
+                {"invalidParams", RpcInvalidParams, "Missing field 'secret'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'secret'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'account'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.Amount'."},
+            },
+        },
+    },
+
+    {
+        "Invalid Amount in submit_multisigned Payment.",
+        __LINE__,
+        R"({
+    "command": "submit_multisigned",
+    "tx_json": {
+        "Account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+        "Amount": "NotANumber",
+        "Destination": "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
+        "Fee": 50,
+        "Sequence": 0,
+        "Signers": [
+            {
+                "Signer": {
+                    "Account": "rPcNzota6B8YBokhYtcTNqQVCngtbnWfux",
+                    "TxnSignature": "3045022100F9ED357606932697A4FAB2BE7F222C21DD93CA4CFDD90357AADD07465E8457D6022038173193E3DFFFB5D78DD738CC0905395F885DA65B98FDB9793901FE3FD26ECE",
+                    "SigningPubKey": "02FE36A690D6973D55F88553F5D2C4202DE75F2CF8A6D0E17C70AC223F044501F8"
+                }
+            }
+        ],
+        "SigningPubKey": "",
+        "TransactionType": "Payment"
+    }
+})",
+        {
+            {
+                {"invalidParams", RpcInvalidParams, "Missing field 'secret'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'secret'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'account'."},
+                {"invalidParams", RpcInvalidParams, "Invalid field 'tx_json.Amount'."},
+            },
+        },
+    },
+
+    {
+        "Invalid DeliverMax in submit_multisigned Payment.",
+        __LINE__,
+        R"({
+    "command": "submit_multisigned",
+    "tx_json": {
+        "Account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+        "DeliverMax": "NotANumber",
+        "Destination": "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
+        "Fee": 50,
+        "Sequence": 0,
+        "Signers": [
+            {
+                "Signer": {
+                    "Account": "rPcNzota6B8YBokhYtcTNqQVCngtbnWfux",
+                    "TxnSignature": "3045022100F9ED357606932697A4FAB2BE7F222C21DD93CA4CFDD90357AADD07465E8457D6022038173193E3DFFFB5D78DD738CC0905395F885DA65B98FDB9793901FE3FD26ECE",
+                    "SigningPubKey": "02FE36A690D6973D55F88553F5D2C4202DE75F2CF8A6D0E17C70AC223F044501F8"
+                }
+            }
+        ],
+        "SigningPubKey": "",
+        "TransactionType": "Payment"
+    }
+})",
+        {
+            {
+                {"invalidParams", RpcInvalidParams, "Missing field 'secret'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'secret'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'account'."},
+                {"invalidParams", RpcInvalidParams, "Invalid field 'tx_json.Amount'."},
+            },
+        },
+    },
+
+    {
+        "No build_path in submit_multisigned.",
+        __LINE__,
+        R"({
+    "command": "submit_multisigned",
+    "build_path": 1,
+    "tx_json": {
+        "Account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+        "Amount": "1000000000",
+        "Destination": "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
+        "Fee": 50,
+        "Sequence": 0,
+        "Signers": [
+            {
+                "Signer": {
+                    "Account": "rPcNzota6B8YBokhYtcTNqQVCngtbnWfux",
+                    "TxnSignature": "3045022100F9ED357606932697A4FAB2BE7F222C21DD93CA4CFDD90357AADD07465E8457D6022038173193E3DFFFB5D78DD738CC0905395F885DA65B98FDB9793901FE3FD26ECE",
+                    "SigningPubKey": "02FE36A690D6973D55F88553F5D2C4202DE75F2CF8A6D0E17C70AC223F044501F8"
+                }
+            }
+        ],
+        "SigningPubKey": "",
+        "TransactionType": "Payment"
+    }
+})",
+        {
+            {
+                {"invalidParams", RpcInvalidParams, "Missing field 'secret'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'secret'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'account'."},
+                {
+                    "invalidParams",
+                    RpcInvalidParams,
+                    "Field 'build_path' not allowed in this context.",
+                },
+            },
+        },
+    },
+
+    {
+        "Missing Destination in submit_multisigned Payment.",
+        __LINE__,
+        R"({
+    "command": "submit_multisigned",
+    "tx_json": {
+        "Account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+        "Amount": "1000000000",
+        "Fee": 50,
+        "Sequence": 0,
+        "Signers": [
+            {
+                "Signer": {
+                    "Account": "rPcNzota6B8YBokhYtcTNqQVCngtbnWfux",
+                    "TxnSignature": "3045022100F9ED357606932697A4FAB2BE7F222C21DD93CA4CFDD90357AADD07465E8457D6022038173193E3DFFFB5D78DD738CC0905395F885DA65B98FDB9793901FE3FD26ECE",
+                    "SigningPubKey": "02FE36A690D6973D55F88553F5D2C4202DE75F2CF8A6D0E17C70AC223F044501F8"
+                }
+            }
+        ],
+        "SigningPubKey": "",
+        "TransactionType": "Payment"
+    }
+})",
+        {
+            {
+                {"invalidParams", RpcInvalidParams, "Missing field 'secret'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'secret'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'account'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.Destination'."},
+            },
+        },
+    },
+
+    {
+        "Malformed Destination in submit_multisigned Payment.",
+        __LINE__,
+        R"({
+    "command": "submit_multisigned",
+    "tx_json": {
+        "Account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+        "Amount": "1000000000",
+        "Destination": "NotADestination",
+        "Fee": 50,
+        "Sequence": 0,
+        "Signers": [
+            {
+                "Signer": {
+                    "Account": "rPcNzota6B8YBokhYtcTNqQVCngtbnWfux",
+                    "TxnSignature": "3045022100F9ED357606932697A4FAB2BE7F222C21DD93CA4CFDD90357AADD07465E8457D6022038173193E3DFFFB5D78DD738CC0905395F885DA65B98FDB9793901FE3FD26ECE",
+                    "SigningPubKey": "02FE36A690D6973D55F88553F5D2C4202DE75F2CF8A6D0E17C70AC223F044501F8"
+                }
+            }
+        ],
+        "SigningPubKey": "",
+        "TransactionType": "Payment"
+    }
+})",
+        {
+            {
+                {"invalidParams", RpcInvalidParams, "Missing field 'secret'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'secret'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'account'."},
+                {"invalidParams", RpcInvalidParams, "Invalid field 'tx_json.Destination'."},
+            },
+        },
+    },
+
+    {
+        "Missing Signers field in submit_multisigned.",
+        __LINE__,
+        R"({
+    "command": "submit_multisigned",
+    "tx_json": {
+        "Account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+        "Amount": "1000000000",
+        "Destination": "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
+        "Fee": 50,
+        "Sequence": 0,
+        "SigningPubKey": "",
+        "TransactionType": "Payment"
+    }
+})",
+        {
+            {
+                {"invalidParams", RpcInvalidParams, "Missing field 'secret'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'secret'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'account'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.Signers'."},
+            },
+        },
+    },
+
+    {
+        "Signers not an array in submit_multisigned.",
+        __LINE__,
+        R"({
+    "command": "submit_multisigned",
+    "tx_json": {
+        "Account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+        "Amount": "1000000000",
+        "Destination": "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
+        "Fee": 50,
+        "Sequence": 0,
+        "Signers": {
+            "Account": "rPcNzota6B8YBokhYtcTNqQVCngtbnWfux",
+            "TxnSignature": "3045022100F9ED357606932697A4FAB2BE7F222C21DD93CA4CFDD90357AADD07465E8457D6022038173193E3DFFFB5D78DD738CC0905395F885DA65B98FDB9793901FE3FD26ECE",
+            "SigningPubKey": "02FE36A690D6973D55F88553F5D2C4202DE75F2CF8A6D0E17C70AC223F044501F8"
+        },
+        "SigningPubKey": "",
+        "TransactionType": "Payment"
+    }
+})",
+        {
+            {
+                {"invalidParams", RpcInvalidParams, "Missing field 'secret'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'secret'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'account'."},
+                {"invalidParams", RpcInvalidParams, "Field 'tx_json.Signers' is not a JSON array."},
+            },
+        },
+    },
+
+    {
+        "Empty Signers array in submit_multisigned.",
+        __LINE__,
+        R"({
+    "command": "submit_multisigned",
+    "tx_json": {
+        "Account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+        "Amount": "1000000000",
+        "Destination": "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
+        "Fee": 50,
+        "Sequence": 0,
+        "Signers": [
+        ],
+        "SigningPubKey": "",
+        "TransactionType": "Payment"
+    }
+})",
+        {
+            {
+                {"invalidParams", RpcInvalidParams, "Missing field 'secret'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'secret'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'account'."},
+                {"invalidParams", RpcInvalidParams, "tx_json.Signers array may not be empty."},
+            },
+        },
+    },
+
+    {
+        "Duplicate Signer in submit_multisigned.",
+        __LINE__,
+        R"({
+    "command": "submit_multisigned",
+    "tx_json": {
+        "Account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+        "Amount": "1000000000",
+        "Destination": "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
+        "Fee": 50,
+        "Sequence": 0,
+        "Signers": [
+            {
+                "Signer": {
+                    "Account": "rPcNzota6B8YBokhYtcTNqQVCngtbnWfux",
+                    "TxnSignature": "3045022100F9ED357606932697A4FAB2BE7F222C21DD93CA4CFDD90357AADD07465E8457D6022038173193E3DFFFB5D78DD738CC0905395F885DA65B98FDB9793901FE3FD26ECE",
+                    "SigningPubKey": "02FE36A690D6973D55F88553F5D2C4202DE75F2CF8A6D0E17C70AC223F044501F8"
+                }
+            },
+            {
+                "Signer": {
+                    "Account": "rPcNzota6B8YBokhYtcTNqQVCngtbnWfux",
+                    "TxnSignature": "3045022100F9ED357606932697A4FAB2BE7F222C21DD93CA4CFDD90357AADD07465E8457D6022038173193E3DFFFB5D78DD738CC0905395F885DA65B98FDB9793901FE3FD26ECE",
+                    "SigningPubKey": "02FE36A690D6973D55F88553F5D2C4202DE75F2CF8A6D0E17C70AC223F044501F8"
+                }
+            }
+        ],
+        "SigningPubKey": "",
+        "TransactionType": "Payment"
+    }
+})",
+        {
+            {
+                {"invalidParams", RpcInvalidParams, "Missing field 'secret'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'secret'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'account'."},
+                {
+                    "invalidParams",
+                    RpcInvalidParams,
+                    "Duplicate Signers:Signer:Account entries "
+                    "(rPcNzota6B8YBokhYtcTNqQVCngtbnWfux) are not allowed.",
+                },
+            },
+        },
+    },
+
+    {
+        "Signer is tx_json Account in submit_multisigned.",
+        __LINE__,
+        R"({
+    "command": "submit_multisigned",
+    "tx_json": {
+        "Account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+        "Amount": "1000000000",
+        "Destination": "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
+        "Fee": 50,
+        "Sequence": 0,
+        "Signers": [
+            {
+                "Signer": {
+                    "Account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+                    "TxnSignature": "3045022100F9ED357606932697A4FAB2BE7F222C21DD93CA4CFDD90357AADD07465E8457D6022038173193E3DFFFB5D78DD738CC0905395F885DA65B98FDB9793901FE3FD26ECE",
+                    "SigningPubKey": "02FE36A690D6973D55F88553F5D2C4202DE75F2CF8A6D0E17C70AC223F044501F8"
+                }
+            }
+        ],
+        "SigningPubKey": "",
+        "TransactionType": "Payment"
+    }
+})",
+        {
+            {
+                {"invalidParams", RpcInvalidParams, "Missing field 'secret'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'secret'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'account'."},
+                {
+                    "invalidParams",
+                    RpcInvalidParams,
+                    "A Signer may not be the transaction's Account "
+                    "(rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh).",
+                },
+            },
+        },
+    },
+
+    {
+        "Empty Signers array in submit_multisigned, use DeliverMax",
+        __LINE__,
+        R"({
+    "command": "submit_multisigned",
+    "tx_json": {
+        "Account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+        "DeliverMax": "10000000",
+        "Destination": "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
+        "Fee": 50,
+        "Sequence": 0,
+        "Signers": [
+        ],
+        "SigningPubKey": "",
+        "TransactionType": "Payment"
+    }
+})",
+        {
+            {
+                {"invalidParams", RpcInvalidParams, "Missing field 'secret'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'secret'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'account'."},
+                {"invalidParams", RpcInvalidParams, "tx_json.Signers array may not be empty."},
+            },
+        },
+    },
+
+    {
+        "Empty Signers array in submit_multisigned, use DeliverMax and Amount",
+        __LINE__,
+        R"({
+    "command": "submit_multisigned",
+    "tx_json": {
+        "Account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+        "Amount": "10000000",
+        "DeliverMax": "10000000",
+        "Destination": "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
+        "Fee": 50,
+        "Sequence": 0,
+        "Signers": [
+        ],
+        "SigningPubKey": "",
+        "TransactionType": "Payment"
+    }
+})",
+        {
+            {
+                {"invalidParams", RpcInvalidParams, "Missing field 'secret'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'secret'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'account'."},
+                {"invalidParams", RpcInvalidParams, "tx_json.Signers array may not be empty."},
+            },
+        },
+    },
+
+    {
+        "Payment cannot specify different DeliverMax and Amount.",
+        __LINE__,
+        R"({
+    "command": "dummy_command",
+    "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+    "secret": "masterpassphrase",
+    "debug_signing": 0,
+    "tx_json": {
+        "Account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+        "Amount": "1000000000",
+        "DeliverMax": "1000000020",
+        "Destination": "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
+        "Fee": 50,
+        "Sequence": 0,
+        "SigningPubKey": "",
+        "TransactionType": "Payment"
+    }
+})",
+        {
+            {
+                {
+                    "invalidParams",
+                    RpcInvalidParams,
+                    "Cannot specify differing 'Amount' and 'DeliverMax'",
+                },
+                {
+                    "invalidParams",
+                    RpcInvalidParams,
+                    "Cannot specify differing 'Amount' and 'DeliverMax'",
+                },
+                {
+                    "invalidParams",
+                    RpcInvalidParams,
+                    "Cannot specify differing 'Amount' and 'DeliverMax'",
+                },
+                {
+                    "invalidParams",
+                    RpcInvalidParams,
+                    "Cannot specify differing 'Amount' and 'DeliverMax'",
+                },
+            },
+        },
+    },
+    {
+        "Payment cannot specify bad DomainID.",
+        __LINE__,
+        R"({
+    "command": "dummy_command",
+    "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+    "secret": "masterpassphrase",
+    "debug_signing": 0,
+    "tx_json": {
+        "Account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+        "Amount": "1000000000",
+        "Destination": "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
+        "Fee": 50,
+        "Sequence": 0,
+        "SigningPubKey": "",
+        "TransactionType": "Payment",
+        "DomainID": "invalid",
+    }
+})",
+        {
+            {
+                {"domainMalformed", RpcDomainMalformed, "Unable to parse 'DomainID'."},
+                {"domainMalformed", RpcDomainMalformed, "Unable to parse 'DomainID'."},
+                {"domainMalformed", RpcDomainMalformed, "Unable to parse 'DomainID'."},
+                {"domainMalformed", RpcDomainMalformed, "Unable to parse 'DomainID'."},
+            },
+        },
+    },
+
+    {
+        "Minimal delegated transaction.",
+        __LINE__,
+        R"({
+    "command": "dummy_command",
+    "secret": "a",
+    "tx_json": {
+        "Account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+        "Amount": "1000000000",
+        "Destination": "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
+        "TransactionType": "Payment",
+        "Delegate": "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA"
+    }
+})",
+        {
+            {
+                {},
+                {},
+                {"invalidParams", RpcInvalidParams, "Missing field 'account'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.Sequence'."},
+            },
+        },
+    },
+
+    {
+        "Delegate not well formed.",
+        __LINE__,
+        R"({
+    "command": "dummy_command",
+    "secret": "a",
+    "tx_json": {
+        "Account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+        "Amount": "1000000000",
+        "Destination": "rJrxi4Wxev4bnAGVNP9YCdKPdAoKfAmcsi",
+        "TransactionType": "Payment",
+        "Delegate": "NotAnAccount"
+    }
+})",
+        {
+            {
+                {"srcActMalformed", RpcSrcActMalformed, "Invalid field 'tx_json.Delegate'."},
+                {"srcActMalformed", RpcSrcActMalformed, "Invalid field 'tx_json.Delegate'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'account'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.Sequence'."},
+            },
+        },
+    },
+
+    {
+        "Delegate not in ledger.",
+        __LINE__,
+        R"({
+    "command": "dummy_command",
+    "secret": "a",
+    "tx_json": {
+        "Account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+        "Amount": "1000000000",
+        "Destination": "rJrxi4Wxev4bnAGVNP9YCdKPdAoKfAmcsi",
+        "TransactionType": "Payment",
+        "Delegate": "rDg53Haik2475DJx8bjMDSDPj4VX7htaMd"
+    }
+})",
+        {
+            {
+                {"delegateActNotFound", RpcDelegateActNotFound, "Delegate account not found."},
+                {"delegateActNotFound", RpcDelegateActNotFound, "Delegate account not found."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'account'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.Sequence'."},
+            },
+        },
+    },
+
+    {
+        "Delegate and secret not match.",
+        __LINE__,
+        R"({
+    "command": "dummy_command",
+    "secret": "aa",
+    "tx_json": {
+        "Account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+        "Amount": "1000000000",
+        "Destination": "rJrxi4Wxev4bnAGVNP9YCdKPdAoKfAmcsi",
+        "TransactionType": "Payment",
+        "Delegate": "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA"
+    }
+})",
+        {
+            {
+                {"badSecret", RpcBadSecret, "Secret does not match account."},
+                {"badSecret", RpcBadSecret, "Secret does not match account."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'account'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.Sequence'."},
+            },
+        },
+    },
+
+};
+
+class JSONRPC_test : public beast::unit_test::Suite
+{
+public:
+    void
+    testBadRpcCommand()
+    {
+        testcase("bad RPC command");
+        test::jtx::Env env(*this);
+        json::Value const result{env.rpc("bad_command", R"({"MakingThisUp": 0})")};
+
+        BEAST_EXPECT(result[jss::result][jss::error] == "unknownCmd");
+        BEAST_EXPECT(result[jss::result][jss::error_code] == RpcUnknownCommand);
+        BEAST_EXPECT(result[jss::result][jss::error_message] == "Unknown method.");
+        BEAST_EXPECT(result[jss::result][jss::request][jss::command] == "bad_command");
+    }
+
+    void
+    testAutoFillFails()
+    {
+        testcase("autofill fails");
+        using namespace test::jtx;
+
+        // test batch raw transactions max size
+        {
+            Env env(*this);
+            auto const ledger = env.current();
+            auto const& feeTrack = env.app().getFeeTrack();
+            json::Value req;
+            Account const alice("alice");
+            Account const bob("bob");
+            env.fund(XRP(100000), alice);
+            env.close();
+
+            auto const batchFee = batch::calcBatchFee(env, 0, 2);
+            auto const seq = env.seq(alice);
+            auto jt = env.jtnofill(
+                batch::outer(alice, env.seq(alice), batchFee, tfAllOrNothing),
+                batch::Inner(pay(alice, bob, XRP(1)), seq + 1),
+                batch::Inner(pay(alice, bob, XRP(2)), seq + 2),
+                batch::Inner(pay(alice, bob, XRP(3)), seq + 3),
+                batch::Inner(pay(alice, bob, XRP(4)), seq + 4),
+                batch::Inner(pay(alice, bob, XRP(5)), seq + 5),
+                batch::Inner(pay(alice, bob, XRP(6)), seq + 6),
+                batch::Inner(pay(alice, bob, XRP(7)), seq + 7),
+                batch::Inner(pay(alice, bob, XRP(8)), seq + 8),
+                batch::Inner(pay(alice, bob, XRP(9)), seq + 9));
+
+            jt.jv.removeMember(jss::Fee);
+            jt.jv.removeMember(jss::TxnSignature);
+            req[jss::tx_json] = jt.jv;
+            json::Value const result = checkFee(
+                req,
+                Role::ADMIN,
+                true,
+                env.app().config(),
+                feeTrack,
+                env.app().getTxQ(),
+                env.app());
+            BEAST_EXPECT(result.size() == 0);
+            BEAST_EXPECT(
+                req[jss::tx_json].isMember(jss::Fee) &&
+                req[jss::tx_json][jss::Fee] == env.current()->fees().base.jsonClipped());
+        }
+
+        // test signers max size
+        {
+            Env env(*this);
+            auto const ledger = env.current();
+            auto const& feeTrack = env.app().getFeeTrack();
+            json::Value req;
+            Account const alice("alice");
+            Account const bob("bob");
+            env.fund(XRP(100000), alice, bob);
+            env.close();
+
+            auto const jt = env.jtnofill(
+                noop(alice),
+                Msig(
+                    alice,
+                    alice,
+                    alice,
+                    alice,
+                    alice,
+                    alice,
+                    alice,
+                    alice,
+                    alice,
+                    alice,
+                    alice,
+                    alice,
+                    alice,
+                    alice,
+                    alice,
+                    alice,
+                    alice,
+                    alice,
+                    alice,
+                    alice,
+                    alice,
+                    alice,
+                    alice,
+                    alice,
+                    alice,
+                    alice,
+                    alice,
+                    alice,
+                    alice,
+                    alice,
+                    alice,
+                    alice,
+                    alice,
+                    alice,
+                    alice,
+                    alice,
+                    alice,
+                    alice,
+                    alice,
+                    alice));
+
+            req[jss::tx_json] = jt.jv;
+            json::Value const result = checkFee(
+                req,
+                Role::ADMIN,
+                true,
+                env.app().config(),
+                feeTrack,
+                env.app().getTxQ(),
+                env.app());
+            BEAST_EXPECT(result.size() == 0);
+            BEAST_EXPECT(
+                req[jss::tx_json].isMember(jss::Fee) &&
+                req[jss::tx_json][jss::Fee] == env.current()->fees().base.jsonClipped());
+        }
+    }
+
+    void
+    testAutoFillFees()
+    {
+        testcase("autofill fees");
+        // Pin the reference fee so the asserted error messages don't depend on
+        // UNIT_TEST_REFERENCE_FEE.
+        test::jtx::Env env(*this, test::jtx::envconfig([](std::unique_ptr<Config> cfg) {
+            cfg->fees.referenceFee = 10;
+            return cfg;
+        }));
+        auto const baseFee = static_cast<int>(env.current()->fees().base.drops());
+        auto const ledger = env.current();
+        auto const& feeTrack = env.app().getFeeTrack();
+
+        {
+            json::Value req;
+            json::Reader().parse(R"({ "fee_mult_max" : 1, "tx_json" : { } } )", req);
+            json::Value const result = checkFee(
+                req,
+                Role::ADMIN,
+                true,
+                env.app().config(),
+                feeTrack,
+                env.app().getTxQ(),
+                env.app());
+
+            BEAST_EXPECT(!rpc::containsError(result));
+            BEAST_EXPECT(
+                req[jss::tx_json].isMember(jss::Fee) && req[jss::tx_json][jss::Fee] == baseFee);
+        }
+
+        {
+            json::Value req;
+            json::Reader().parse(
+                "{ \"fee_mult_max\" : 3, \"fee_div_max\" : 2, "
+                "\"tx_json\" : { } } ",
+                req);
+            json::Value const result = checkFee(
+                req,
+                Role::ADMIN,
+                true,
+                env.app().config(),
+                feeTrack,
+                env.app().getTxQ(),
+                env.app());
+
+            BEAST_EXPECT(!rpc::containsError(result));
+            BEAST_EXPECT(
+                req[jss::tx_json].isMember(jss::Fee) && req[jss::tx_json][jss::Fee] == baseFee);
+        }
+
+        {
+            json::Value req;
+            json::Reader().parse(R"({ "fee_mult_max" : 0, "tx_json" : { } } )", req);
+            json::Value const result = checkFee(
+                req,
+                Role::ADMIN,
+                true,
+                env.app().config(),
+                feeTrack,
+                env.app().getTxQ(),
+                env.app());
+
+            BEAST_EXPECT(result[jss::error] == "highFee");
+            BEAST_EXPECT(result[jss::error_code] == RpcHighFee);
+            BEAST_EXPECT(
+                result[jss::error_message] == "Fee of 10 exceeds the requested tx limit of 0");
+            BEAST_EXPECT(!req[jss::tx_json].isMember(jss::Fee));
+        }
+
+        {
+            // 3/6 = 1/2, but use the bigger number make sure
+            // we're dividing.
+            json::Value req;
+            json::Reader().parse(
+                "{ \"fee_mult_max\" : 3, \"fee_div_max\" : 6, "
+                "\"tx_json\" : { } } ",
+                req);
+            json::Value const result = checkFee(
+                req,
+                Role::ADMIN,
+                true,
+                env.app().config(),
+                feeTrack,
+                env.app().getTxQ(),
+                env.app());
+
+            BEAST_EXPECT(result[jss::error] == "highFee");
+            BEAST_EXPECT(result[jss::error_code] == RpcHighFee);
+            BEAST_EXPECT(
+                result[jss::error_message] == "Fee of 10 exceeds the requested tx limit of 5");
+            BEAST_EXPECT(!req[jss::tx_json].isMember(jss::Fee));
+        }
+
+        {
+            json::Value req;
+            json::Reader().parse(
+                "{ \"fee_mult_max\" : 0, \"fee_div_max\" : 2, "
+                "\"tx_json\" : { } } ",
+                req);
+            json::Value const result = checkFee(
+                req,
+                Role::ADMIN,
+                true,
+                env.app().config(),
+                feeTrack,
+                env.app().getTxQ(),
+                env.app());
+
+            BEAST_EXPECT(result[jss::error] == "highFee");
+            BEAST_EXPECT(result[jss::error_code] == RpcHighFee);
+            BEAST_EXPECT(
+                result[jss::error_message] == "Fee of 10 exceeds the requested tx limit of 0");
+            BEAST_EXPECT(!req[jss::tx_json].isMember(jss::Fee));
+        }
+
+        {
+            json::Value req;
+            json::Reader().parse(
+                "{ \"fee_mult_max\" : 10, \"fee_div_max\" : 0, "
+                "\"tx_json\" : { } } ",
+                req);
+            json::Value const result = checkFee(
+                req,
+                Role::ADMIN,
+                true,
+                env.app().config(),
+                feeTrack,
+                env.app().getTxQ(),
+                env.app());
+
+            BEAST_EXPECT(result[jss::error] == "invalidParams");
+            BEAST_EXPECT(result[jss::error_code] == RpcInvalidParams);
+            BEAST_EXPECT(
+                result[jss::error_message] ==
+                "Invalid field 'fee_div_max', not a positive integer.");
+            BEAST_EXPECT(!req[jss::tx_json].isMember(jss::Fee));
+        }
+
+        {
+            // transaction with a higher base fee
+            json::Value req;
+            test::jtx::Account const alice("alice");
+            req[jss::tx_json] = test::jtx::acctdelete(env.master.human(), alice.human());
+            json::Value const result = checkFee(
+                req,
+                Role::ADMIN,
+                true,
+                env.app().config(),
+                feeTrack,
+                env.app().getTxQ(),
+                env.app());
+
+            BEAST_EXPECT(result.size() == 0);
+            BEAST_EXPECT(
+                req[jss::tx_json].isMember(jss::Fee) &&
+                req[jss::tx_json][jss::Fee] == env.current()->fees().increment.jsonClipped());
+        }
+    }
+
+    void
+    testAutoFillEscalatedFees()
+    {
+        testcase("autofill escalated fees");
+        using namespace test::jtx;
+        Env env{*this, envconfig([](std::unique_ptr<Config> cfg) {
+                    cfg->loadFromString(std::string("[") + Sections::kSigningSupport + "]\ntrue");
+                    cfg->section(Sections::kTransactionQueue)
+                        .set(Keys::kMinimumTxnInLedgerStandalone, "3");
+                    return cfg;
+                })};
+        LoadFeeTrack const& feeTrackOuter = env.app().getFeeTrack();
+
+        {
+            // high mult, no tx
+            json::Value req;
+            json::Reader().parse(
+                R"({
+                "fee_mult_max" : 1000,
+                "tx_json" : { }
+            })",
+                req);
+            json::Value const result = checkFee(
+                req,
+                Role::ADMIN,
+                true,
+                env.app().config(),
+                feeTrackOuter,
+                env.app().getTxQ(),
+                env.app());
+
+            BEAST_EXPECT(!rpc::containsError(result));
+            BEAST_EXPECT(req[jss::tx_json].isMember(jss::Fee) && req[jss::tx_json][jss::Fee] == 10);
+        }
+
+        {
+            // low mult, no tx
+            json::Value req;
+            json::Reader().parse(
+                R"({
+                "fee_mult_max" : 5,
+                "tx_json" : { }
+            })",
+                req);
+            json::Value const result = checkFee(
+                req,
+                Role::ADMIN,
+                true,
+                env.app().config(),
+                feeTrackOuter,
+                env.app().getTxQ(),
+                env.app());
+
+            BEAST_EXPECT(!rpc::containsError(result));
+            BEAST_EXPECT(req[jss::tx_json].isMember(jss::Fee) && req[jss::tx_json][jss::Fee] == 10);
+        }
+
+        // put 4 transactions into the open ledger
+        for (auto i = 0; i < 4; ++i)
+        {
+            env(noop(env.master));
+        }
+
+        {
+            // high mult, 4 txs
+            json::Value req;
+            json::Reader().parse(
+                R"({
+                "fee_mult_max" : 1000,
+                "tx_json" : { }
+            })",
+                req);
+            json::Value const result = checkFee(
+                req,
+                Role::ADMIN,
+                true,
+                env.app().config(),
+                feeTrackOuter,
+                env.app().getTxQ(),
+                env.app());
+
+            BEAST_EXPECT(!rpc::containsError(result));
+            BEAST_EXPECT(
+                req[jss::tx_json].isMember(jss::Fee) && req[jss::tx_json][jss::Fee] == 8889);
+        }
+
+        {
+            // low mult, 4 tx
+            json::Value req;
+            json::Reader().parse(
+                R"({
+                "fee_mult_max" : 5,
+                "tx_json" : { }
+            })",
+                req);
+            json::Value const result = checkFee(
+                req,
+                Role::ADMIN,
+                true,
+                env.app().config(),
+                feeTrackOuter,
+                env.app().getTxQ(),
+                env.app());
+
+            BEAST_EXPECT(result[jss::error] == "highFee");
+            BEAST_EXPECT(result[jss::error_code] == RpcHighFee);
+            BEAST_EXPECT(
+                result[jss::error_message] == "Fee of 8889 exceeds the requested tx limit of 50");
+            BEAST_EXPECT(!req[jss::tx_json].isMember(jss::Fee));
+        }
+
+        {
+            // different low mult, 4 tx
+            json::Value req;
+            json::Reader().parse(
+                R"({
+                "fee_mult_max" : 1000,
+                "fee_div_max" : 3,
+                "tx_json" : { }
+            })",
+                req);
+            json::Value const result = checkFee(
+                req,
+                Role::ADMIN,
+                true,
+                env.app().config(),
+                feeTrackOuter,
+                env.app().getTxQ(),
+                env.app());
+
+            BEAST_EXPECT(result[jss::error] == "highFee");
+            BEAST_EXPECT(result[jss::error_code] == RpcHighFee);
+            BEAST_EXPECT(
+                result[jss::error_message] == "Fee of 8889 exceeds the requested tx limit of 3333");
+            BEAST_EXPECT(!req[jss::tx_json].isMember(jss::Fee));
+        }
+
+        {
+            // high mult, 4 tx
+            json::Value req;
+            json::Reader().parse(
+                R"({
+                "fee_mult_max" : 8000,
+                "fee_div_max" : 3,
+                "tx_json" : { }
+            })",
+                req);
+            json::Value const result = checkFee(
+                req,
+                Role::ADMIN,
+                true,
+                env.app().config(),
+                feeTrackOuter,
+                env.app().getTxQ(),
+                env.app());
+
+            BEAST_EXPECT(!rpc::containsError(result));
+            BEAST_EXPECT(
+                req[jss::tx_json].isMember(jss::Fee) && req[jss::tx_json][jss::Fee] == 8889);
+        }
+
+        {
+            // negative mult
+            json::Value req;
+            json::Reader().parse(
+                R"({
+                "fee_mult_max" : -5,
+                "tx_json" : { }
+            })",
+                req);
+            json::Value const result = checkFee(
+                req,
+                Role::ADMIN,
+                true,
+                env.app().config(),
+                feeTrackOuter,
+                env.app().getTxQ(),
+                env.app());
+
+            BEAST_EXPECT(result[jss::error] == "invalidParams");
+            BEAST_EXPECT(result[jss::error_code] == RpcInvalidParams);
+            BEAST_EXPECT(
+                result[jss::error_message] ==
+                "Invalid field 'fee_mult_max', not a positive integer.");
+        }
+
+        {
+            // negative div
+            json::Value req;
+            json::Reader().parse(
+                R"({
+                "fee_div_max" : -2,
+                "tx_json" : { }
+            })",
+                req);
+            json::Value const result = checkFee(
+                req,
+                Role::ADMIN,
+                true,
+                env.app().config(),
+                feeTrackOuter,
+                env.app().getTxQ(),
+                env.app());
+
+            BEAST_EXPECT(result[jss::error] == "invalidParams");
+            BEAST_EXPECT(result[jss::error_code] == RpcInvalidParams);
+            BEAST_EXPECT(
+                result[jss::error_message] ==
+                "Invalid field 'fee_div_max', not a positive integer.");
+        }
+
+        {
+            // negative mult & div
+            json::Value req;
+            json::Reader().parse(
+                R"({
+                "fee_mult_max" : -2,
+                "fee_div_max" : -3,
+                "tx_json" : { }
+            })",
+                req);
+            json::Value const result = checkFee(
+                req,
+                Role::ADMIN,
+                true,
+                env.app().config(),
+                feeTrackOuter,
+                env.app().getTxQ(),
+                env.app());
+
+            BEAST_EXPECT(result[jss::error] == "invalidParams");
+            BEAST_EXPECT(result[jss::error_code] == RpcInvalidParams);
+            BEAST_EXPECT(
+                result[jss::error_message] ==
+                "Invalid field 'fee_mult_max', not a positive integer.");
+        }
+
+        env.close();
+
+        {
+            // Call "sign" with nothing in the open ledger
+            json::Value toSign;
+            toSign[jss::tx_json] = noop(env.master);
+            toSign[jss::secret] = "masterpassphrase";
+            auto rpcResult = env.rpc("json", "sign", to_string(toSign));
+            auto result = rpcResult[jss::result];
+
+            BEAST_EXPECT(!rpc::containsError(result));
+            BEAST_EXPECT(
+                result[jss::tx_json].isMember(jss::Fee) && result[jss::tx_json][jss::Fee] == "10");
+            BEAST_EXPECT(
+                result[jss::tx_json].isMember(jss::Sequence) &&
+                result[jss::tx_json][jss::Sequence].isConvertibleTo(json::ValueType::UInt));
+        }
+
+        {
+            // Call "sign" with enough transactions in the open ledger
+            // to escalate the fee.
+            for (;;)
+            {
+                auto const metrics = env.app().getTxQ().getMetrics(*env.current());
+                if (metrics.openLedgerFeeLevel > metrics.minProcessingFeeLevel)
+                    break;
+                env(noop(env.master));
+            }
+
+            json::Value toSign;
+            toSign[jss::tx_json] = noop(env.master);
+            toSign[jss::secret] = "masterpassphrase";
+            toSign[jss::fee_mult_max] = 900;
+            auto rpcResult = env.rpc("json", "sign", to_string(toSign));
+            auto result = rpcResult[jss::result];
+
+            BEAST_EXPECT(!rpc::containsError(result));
+            BEAST_EXPECT(
+                result[jss::tx_json].isMember(jss::Fee) &&
+                result[jss::tx_json][jss::Fee] == "7813");
+            BEAST_EXPECT(
+                result[jss::tx_json].isMember(jss::Sequence) &&
+                result[jss::tx_json][jss::Sequence].isConvertibleTo(json::ValueType::UInt));
+
+            env.close();
+        }
+
+        {
+            // Call "sign" with higher server load
+            {
+                auto& feeTrack = env.app().getFeeTrack();
+                BEAST_EXPECT(feeTrack.getLoadFactor() == 256);
+                for (int i = 0; i < 8; ++i)
+                    feeTrack.raiseLocalFee();
+                BEAST_EXPECT(feeTrack.getLoadFactor() == 1220);
+            }
+
+            json::Value toSign;
+            toSign[jss::tx_json] = noop(env.master);
+            toSign[jss::secret] = "masterpassphrase";
+            auto rpcResult = env.rpc("json", "sign", to_string(toSign));
+            auto result = rpcResult[jss::result];
+
+            BEAST_EXPECT(!rpc::containsError(result));
+            BEAST_EXPECT(
+                result[jss::tx_json].isMember(jss::Fee) && result[jss::tx_json][jss::Fee] == "47");
+            BEAST_EXPECT(
+                result[jss::tx_json].isMember(jss::Sequence) &&
+                result[jss::tx_json][jss::Sequence].isConvertibleTo(json::ValueType::UInt));
+        }
+
+        {
+            // Call "sign" with higher server load and
+            // enough transactions to escalate the fee
+            BEAST_EXPECT(feeTrackOuter.getLoadFactor() == 1220);
+
+            for (;;)
+            {
+                auto const metrics = env.app().getTxQ().getMetrics(*env.current());
+                if (metrics.openLedgerFeeLevel > metrics.minProcessingFeeLevel)
+                    break;
+                env(noop(env.master), Fee(47));
+            }
+
+            EnvSs const envs(env);
+
+            json::Value toSign;
+            toSign[jss::tx_json] = noop(env.master);
+            toSign[jss::secret] = "masterpassphrase";
+            // Max fee = 7000 drops
+            toSign[jss::fee_mult_max] = 700;
+            auto rpcResult = env.rpc("json", "sign", to_string(toSign));
+            auto result = rpcResult[jss::result];
+
+            BEAST_EXPECT(!rpc::containsError(result));
+            BEAST_EXPECT(
+                result[jss::tx_json].isMember(jss::Fee) &&
+                result[jss::tx_json][jss::Fee] == "6806");
+            BEAST_EXPECT(
+                result[jss::tx_json].isMember(jss::Sequence) &&
+                result[jss::tx_json][jss::Sequence].isConvertibleTo(json::ValueType::UInt));
+        }
+    }
+
+    void
+    testAutoFillNetworkID()
+    {
+        testcase("autofill NetworkID");
+        using namespace test::jtx;
+        Env env{*this, envconfig([&](std::unique_ptr<Config> cfg) {
+                    cfg->networkId = 1025;
+                    return cfg;
+                })};
+
+        {
+            json::Value toSign;
+            toSign[jss::tx_json] = noop(env.master);
+
+            BEAST_EXPECT(!toSign[jss::tx_json].isMember(jss::NetworkID));
+            toSign[jss::secret] = "masterpassphrase";
+            auto rpcResult = env.rpc("json", "sign", to_string(toSign));
+            auto result = rpcResult[jss::result];
+
+            BEAST_EXPECT(!rpc::containsError(result));
+            BEAST_EXPECT(
+                result[jss::tx_json].isMember(jss::NetworkID) &&
+                result[jss::tx_json][jss::NetworkID] == 1025);
+        }
+    }
+
+    // A function that can be called as though it would process a transaction.
+    static void
+    fakeProcessTransaction(std::shared_ptr<Transaction>&, bool, bool, NetworkOPs::FailHard)
+    {
+        ;
+    }
+
+    void
+    testTransactionRPC()
+    {
+        testcase("sign/submit RPCs");
+        using namespace std::chrono_literals;
+        using namespace test::jtx;
+        // Use jtx to set up a ledger so the tests will do the right thing.
+        Account const a{"a"};  // rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA
+        Account const g{"g"};  // rLPwWB1itaUGMV8kbMLLysjGkEpTM2Soy4
+        auto const usd = g["USD"];
+
+        // Account: rJrxi4Wxev4bnAGVNP9YCdKPdAoKfAmcsi
+        // seed:    sh1yJfwoi98zCygwijUzuHmJDeVKd
+        Account const ed{"ed", KeyType::Ed25519};
+        // master is rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh.
+        // "b" (not in the ledger) is rDg53Haik2475DJx8bjMDSDPj4VX7htaMd.
+        // "c" (phantom signer) is rPcNzota6B8YBokhYtcTNqQVCngtbnWfux.
+
+        Env env(*this, envconfig([](std::unique_ptr<Config> cfg) {
+            cfg->fees.referenceFee = 10;
+            return cfg;
+        }));
+        env.fund(XRP(100000), a, ed, g);
+        env.close();
+
+        env(trust(a, usd(1000)));
+        env(trust(env.master, usd(1000)));
+        env(pay(g, a, usd(50)));
+        env(pay(g, env.master, usd(50)));
+        env.close();
+
+        ProcessTransactionFn const processTxn = fakeProcessTransaction;
+
+        // A list of all the functions we want to test.
+        using SignFunc = json::Value (*)(
+            json::Value params,
+            unsigned int apiVersion,
+            NetworkOPs::FailHard failType,
+            Role role,
+            std::chrono::seconds validatedLedgerAge,
+            Application& app);
+
+        using SubmitFunc = json::Value (*)(
+            json::Value params,
+            unsigned int apiVersion,
+            NetworkOPs::FailHard failType,
+            Role role,
+            std::chrono::seconds validatedLedgerAge,
+            Application& app,
+            ProcessTransactionFn const& processTransaction);
+
+        using TestStuff = std::tuple<SignFunc, SubmitFunc, char const*, unsigned int>;
+
+        static TestStuff const kTestFuncs[] = {
+            TestStuff{transactionSign, nullptr, "sign", 0},
+            TestStuff{nullptr, transactionSubmit, "submit", 1},
+            TestStuff{transactionSignFor, nullptr, "sign_for", 2},
+            TestStuff{nullptr, transactionSubmitMultiSigned, "submit_multisigned", 3},
+        };
+
+        for (auto testFunc : kTestFuncs)
+        {
+            // For each JSON test.
+            for (auto const& txnTest : kTxnTestArray)
+            {
+                json::Value req;
+                json::Reader().parse(txnTest.json, req);
+                if (rpc::containsError(req))
+                    Throw<std::runtime_error>("Internal JSONRPC_test error.  Bad test JSON.");
+
+                static Role const kTestedRoles[] = {
+                    Role::GUEST,
+                    Role::USER,
+                    Role::ADMIN,
+                    Role::FORBID,
+                };
+
+                for (Role const testRole : kTestedRoles)
+                {
+                    json::Value result;
+                    auto const signFn = get<0>(testFunc);
+                    if (signFn != nullptr)
+                    {
+                        assert(get<1>(testFunc) == nullptr);
+                        result = signFn(req, 1, NetworkOPs::FailHard::Yes, testRole, 1s, env.app());
+                    }
+                    else
+                    {
+                        auto const submitFn = get<1>(testFunc);
+                        assert(submitFn != nullptr);
+                        result = submitFn(
+                            req, 1, NetworkOPs::FailHard::Yes, testRole, 1s, env.app(), processTxn);
+                    }
+
+                    std::string errToken;
+                    int errCode = RpcSuccess;
+                    std::string errStr;
+                    if (rpc::containsError(result))
+                    {
+                        errToken = result[jss::error].asString();
+                        errCode = result[jss::error_code].asInt();
+                        errStr = result["error_message"].asString();
+                    }
+
+                    auto const& expected = txnTest.expected[get<3>(testFunc)];
+                    if (errToken == expected.token && errCode == expected.code &&
+                        errStr == expected.message)
+                    {
+                        pass();
+                    }
+                    else
+                    {
+                        std::ostringstream description;
+                        description << txnTest.description << "  Called " << get<2>(testFunc)
+                                    << "().  Got \'" << errToken << "\' (" << errCode << ") \'"
+                                    << errStr << "\'";
+                        fail(description.str(), __FILE__, txnTest.line);
+                    }
+                }
+            }
+        }
+    }
+
+    void
+    run() override
+    {
+        testBadRpcCommand();
+        testAutoFillFails();
+        testAutoFillFees();
+        testAutoFillEscalatedFees();
+        testAutoFillNetworkID();
+        testTransactionRPC();
+    }
+};
+
+BEAST_DEFINE_TESTSUITE(JSONRPC, rpc, xrpl);
+
+}  // namespace xrpl::rpc

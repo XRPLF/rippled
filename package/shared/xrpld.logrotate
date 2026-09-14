@@ -1,0 +1,19 @@
+/var/log/xrpld/*.log {
+  daily
+  minsize 200M
+  rotate 7
+  nocreate
+  missingok
+  notifempty
+  compress
+  compresscmd /usr/bin/gzip
+  compressext .gz
+  postrotate
+    # Only signal the daemon if it's actually running; otherwise the RPC
+    # call returns a transport error and logrotate marks the rotation as
+    # failed, generating recurring errors on stopped nodes.
+    if systemctl is-active --quiet xrpld; then
+      /usr/bin/xrpld --conf /etc/xrpld/xrpld.cfg logrotate
+    fi
+  endscript
+}

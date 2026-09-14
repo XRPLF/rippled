@@ -1,0 +1,64 @@
+#pragma once
+
+#include <xrpl/basics/Log.h>
+#include <xrpl/beast/utility/Journal.h>
+
+#include <memory>
+#include <string>
+#include <utility>
+
+namespace xrpl::test {
+
+/**
+ * Log manager that searches for a specific message substring
+ */
+class CheckMessageLogs : public Logs
+{
+    std::string msg_;
+    bool* pFound_;
+
+    class CheckMessageSink : public beast::Journal::Sink
+    {
+        CheckMessageLogs& owner_;
+
+    public:
+        CheckMessageSink(beast::Severity threshold, CheckMessageLogs& owner)
+            : beast::Journal::Sink(threshold, false), owner_(owner)
+        {
+        }
+
+        void
+        write(beast::Severity level, std::string const& text) override
+        {
+            if (text.contains(owner_.msg_))
+                *owner_.pFound_ = true;
+        }
+
+        void
+        writeAlways(beast::Severity level, std::string const& text) override
+        {
+            write(level, text);
+        }
+    };
+
+public:
+    /**
+     * Constructor
+     *
+     * @param msg The message string to search for
+     * @param pFound Pointer to the variable to set to true if the message is
+     * found
+     */
+    CheckMessageLogs(std::string msg, bool* pFound)
+        : Logs{beast::Severity::Debug}, msg_{std::move(msg)}, pFound_{pFound}
+    {
+    }
+
+    std::unique_ptr<beast::Journal::Sink>
+    makeSink(std::string const& partition, beast::Severity threshold) override
+    {
+        return std::make_unique<CheckMessageSink>(threshold, *this);
+    }
+};
+
+}  // namespace xrpl::test

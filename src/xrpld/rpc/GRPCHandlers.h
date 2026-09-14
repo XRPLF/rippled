@@ -1,0 +1,35 @@
+#pragma once
+
+#include <xrpld/rpc/Context.h>
+
+#include <grpcpp/support/status.h>
+#include <org/xrpl/rpc/v1/get_ledger.pb.h>
+#include <org/xrpl/rpc/v1/get_ledger_data.pb.h>
+#include <org/xrpl/rpc/v1/get_ledger_diff.pb.h>
+#include <org/xrpl/rpc/v1/get_ledger_entry.pb.h>
+
+#include <utility>
+
+namespace xrpl {
+
+/*
+ * These handlers are for gRPC. They each take in a protobuf message that is
+ * nested inside rpc::GRPCContext<T>, where T is the request type
+ * The return value is the response type, as well as a status
+ * If the status is not Status::OK (meaning an error occurred), then only
+ * the status will be sent to the client, and the response will be omitted
+ */
+
+std::pair<org::xrpl::rpc::v1::GetLedgerResponse, grpc::Status>
+doLedgerGrpc(rpc::GRPCContext<org::xrpl::rpc::v1::GetLedgerRequest>& context);
+
+std::pair<org::xrpl::rpc::v1::GetLedgerEntryResponse, grpc::Status>
+doLedgerEntryGrpc(rpc::GRPCContext<org::xrpl::rpc::v1::GetLedgerEntryRequest> const& context);
+
+std::pair<org::xrpl::rpc::v1::GetLedgerDataResponse, grpc::Status>
+doLedgerDataGrpc(rpc::GRPCContext<org::xrpl::rpc::v1::GetLedgerDataRequest> const& context);
+
+std::pair<org::xrpl::rpc::v1::GetLedgerDiffResponse, grpc::Status>
+doLedgerDiffGrpc(rpc::GRPCContext<org::xrpl::rpc::v1::GetLedgerDiffRequest> const& context);
+
+}  // namespace xrpl

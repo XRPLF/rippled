@@ -1,0 +1,248 @@
+#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/protocol/TER.h>
+
+#include <cstddef>
+#include <string>
+#include <tuple>
+#include <type_traits>
+
+namespace xrpl {
+
+struct TER_test : public beast::unit_test::Suite
+{
+    void
+    testTransResultInfo()
+    {
+        for (auto i = -400; i < 400; ++i)
+        {
+            TER const t = TER::fromInt(i);
+            auto const inRange = isTelLocal(t) || isTemMalformed(t) || isTefFailure(t) ||
+                isTerRetry(t) || isTesSuccess(t) || isTecClaim(t);
+
+            std::string token, text;
+            auto const good = transResultInfo(t, token, text);
+            BEAST_EXPECT(inRange || !good);
+            BEAST_EXPECT(transToken(t) == (good ? token : "-"));
+            BEAST_EXPECT(transHuman(t) == (good ? text : "-"));
+
+            auto code = transCode(token);
+            BEAST_EXPECT(good == !!code);
+            BEAST_EXPECT(!code || *code == t);
+        }
+    }
+
+    // Helper template that makes sure two types are not convertible or
+    // assignable if not the same.
+    // o I1 one tuple index.
+    // o I2 other tuple index.
+    // o Tup is expected to be a tuple.
+    // It's a functor, rather than a function template, since a class template
+    // can be a template argument without being full specified.
+    template <std::size_t I1, std::size_t I2>
+    class NotConvertible
+    {
+    public:
+        template <typename Tup>
+        void
+        operator()(Tup const& tup, beast::unit_test::Suite&) const
+        {
+            // Entries in the tuple should not be convertible or assignable
+            // unless they are the same types.
+            using ToT = std::decay_t<decltype(std::get<I1>(tup))>;
+            using FromT = std::decay_t<decltype(std::get<I2>(tup))>;
+            static_assert(
+                std::is_same_v<FromT, ToT> == std::is_convertible_v<FromT, ToT>, "Convert err");
+            static_assert(
+                std::is_same_v<ToT, FromT> == std::is_constructible_v<ToT, FromT>, "Construct err");
+            static_assert(
+                std::is_same_v<ToT, FromT> == std::is_assignable_v<ToT&, FromT const&>,
+                "Assign err");
+
+            // Assignment or conversion from integer to type should never work.
+            static_assert(!std::is_convertible_v<int, ToT>, "Convert err");
+            static_assert(!std::is_constructible_v<ToT, int>, "Construct err");
+            static_assert(!std::is_assignable_v<ToT&, int const&>, "Assign err");
+        }
+    };
+
+    // Fast iteration over the tuple.
+    template <
+        std::size_t I1,
+        std::size_t I2,
+        template <std::size_t, std::size_t> class Func,
+        typename Tup>
+    void
+    testIterate(Tup const& tup, beast::unit_test::Suite& s)
+        requires(I1 != 0)
+    {
+        Func<I1, I2> const func;
+        func(tup, s);
+        testIterate<I1 - 1, I2, Func>(tup, s);
+    }
+
+    // Slow iteration over the tuple.
+    template <
+        std::size_t I1,
+        std::size_t I2,
+        template <std::size_t, std::size_t> class Func,
+        typename Tup>
+    void
+    testIterate(Tup const& tup, beast::unit_test::Suite& s)
+        requires(I1 == 0 && I2 != 0)
+    {
+        Func<I1, I2> const func;
+        func(tup, s);
+        testIterate<std::tuple_size_v<Tup> - 1, I2 - 1, Func>(tup, s);
+    }
+
+    // Finish iteration over the tuple.
+    template <
+        std::size_t I1,
+        std::size_t I2,
+        template <std::size_t, std::size_t> class Func,
+        typename Tup>
+    void
+    testIterate(Tup const& tup, beast::unit_test::Suite& s)
+        requires(I1 == 0 && I2 == 0)
+    {
+        Func<I1, I2> const func;
+        func(tup, s);
+    }
+
+    void
+    testConversion()
+    {
+        // Verify that valid conversions are valid and invalid conversions
+        // are not valid.
+
+        // Examples of each kind of enum.
+        static auto const kTerEnums = std::make_tuple(
+            telLOCAL_ERROR, temMALFORMED, tefFAILURE, terRETRY, tesSUCCESS, tecCLAIM);
+        static int const kHiIndex{std::tuple_size_v<decltype(kTerEnums)> - 1};
+
+        // Verify that enums cannot be converted to other enum types.
+        testIterate<kHiIndex, kHiIndex, NotConvertible>(kTerEnums, *this);
+
+        // Lambda that verifies assignability and convertibility.
+        auto const isConvertible = [](auto from, auto to) {
+            using FromT = std::decay_t<decltype(from)>;
+            using ToT = std::decay_t<decltype(to)>;
+            static_assert(std::is_convertible_v<FromT, ToT>, "Convert err");
+            static_assert(std::is_constructible_v<ToT, FromT>, "Construct err");
+            static_assert(std::is_assignable_v<ToT&, FromT const&>, "Assign err");
+        };
+
+        // Verify the right types convert to NotTEC.
+        NotTEC const notTec;
+        isConvertible(telLOCAL_ERROR, notTec);
+        isConvertible(temMALFORMED, notTec);
+        isConvertible(tefFAILURE, notTec);
+        isConvertible(terRETRY, notTec);
+        isConvertible(tesSUCCESS, notTec);
+        isConvertible(notTec, notTec);
+
+        // Lambda that verifies types and not assignable or convertible.
+        auto const notConvertible = [](auto from, auto to) {
+            using ToT = std::decay_t<decltype(to)>;
+            using FromT = std::decay_t<decltype(from)>;
+            static_assert(!std::is_convertible_v<FromT, ToT>, "Convert err");
+            static_assert(!std::is_constructible_v<ToT, FromT>, "Construct err");
+            static_assert(!std::is_assignable_v<ToT&, FromT const&>, "Assign err");
+        };
+
+        // Verify types that shouldn't convert to NotTEC.
+        TER const ter;
+        notConvertible(tecCLAIM, notTec);
+        notConvertible(ter, notTec);
+        notConvertible(4, notTec);
+
+        // Verify the right types convert to TER.
+        isConvertible(telLOCAL_ERROR, ter);
+        isConvertible(temMALFORMED, ter);
+        isConvertible(tefFAILURE, ter);
+        isConvertible(terRETRY, ter);
+        isConvertible(tesSUCCESS, ter);
+        isConvertible(tecCLAIM, ter);
+        isConvertible(notTec, ter);
+        isConvertible(ter, ter);
+
+        // Verify that you can't convert from int to ter.
+        notConvertible(4, ter);
+    }
+
+    // Helper template that makes sure two types are comparable.  Also
+    // verifies that one of the types does not compare to int.
+    // o I1 one tuple index.
+    // o I2 other tuple index.
+    // o Tup is expected to be a tuple.
+    // It's a functor, rather than a function template, since a class template
+    // can be a template argument without being full specified.
+    template <std::size_t I1, std::size_t I2>
+    class CheckComparable
+    {
+    public:
+        template <typename Tup>
+        void
+        operator()(Tup const& tup, beast::unit_test::Suite& s) const
+        {
+            // All entries in the tuple should be comparable one to the other.
+            auto const lhs = std::get<I1>(tup);
+            auto const rhs = std::get<I2>(tup);
+
+            static_assert(std::is_same_v<decltype(operator==(lhs, rhs)), bool>, "== err");
+
+            static_assert(std::is_same_v<decltype(operator!=(lhs, rhs)), bool>, "!= err");
+
+            static_assert(std::is_same_v<decltype(operator<(lhs, rhs)), bool>, "< err");
+
+            static_assert(std::is_same_v<decltype(operator<=(lhs, rhs)), bool>, "<= err");
+
+            static_assert(std::is_same_v<decltype(operator>(lhs, rhs)), bool>, "> err");
+
+            static_assert(std::is_same_v<decltype(operator>=(lhs, rhs)), bool>, ">= err");
+
+            // Make sure a sampling of TER types exhibit the expected behavior
+            // for all comparison operators.
+            s.expect((lhs == rhs) == (TERtoInt(lhs) == TERtoInt(rhs)));
+            s.expect((lhs != rhs) == (TERtoInt(lhs) != TERtoInt(rhs)));
+            s.expect((lhs < rhs) == (TERtoInt(lhs) < TERtoInt(rhs)));
+            s.expect((lhs <= rhs) == (TERtoInt(lhs) <= TERtoInt(rhs)));
+            s.expect((lhs > rhs) == (TERtoInt(lhs) > TERtoInt(rhs)));
+            s.expect((lhs >= rhs) == (TERtoInt(lhs) >= TERtoInt(rhs)));
+        }
+    };
+
+    void
+    testComparison()
+    {
+        // All of the TER-related types should be comparable.
+
+        // Examples of all the types we expect to successfully compare.
+        static auto const kTers = std::make_tuple(
+            telLOCAL_ERROR,
+            temMALFORMED,
+            tefFAILURE,
+            terRETRY,
+            tesSUCCESS,
+            tecCLAIM,
+            NotTEC{telLOCAL_ERROR},
+            TER{tecCLAIM});
+        static int const kHiIndex{std::tuple_size_v<decltype(kTers)> - 1};
+
+        // Verify that all types in the ters tuple can be compared with all
+        // the other types in ters.
+        testIterate<kHiIndex, kHiIndex, CheckComparable>(kTers, *this);
+    }
+
+    void
+    run() override
+    {
+        testTransResultInfo();
+        testConversion();
+        testComparison();
+    }
+};
+
+BEAST_DEFINE_TESTSUITE(TER, protocol, xrpl);
+
+}  // namespace xrpl

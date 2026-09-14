@@ -1,0 +1,29 @@
+#pragma once
+
+#include <xrpl/beast/container/aged_container.h>
+
+#include <chrono>
+#include <cstddef>
+
+namespace beast {
+
+/**
+ * Expire aged container items past the specified age.
+ */
+template <class AgedContainer, class Rep, class Period>
+std::size_t
+expire(AgedContainer& c, std::chrono::duration<Rep, Period> const& age)
+    requires(IsAgedContainer<AgedContainer>::value)
+{
+    std::size_t n(0);
+    auto const expired(c.clock().now() - age);
+    for (auto iter(c.chronological.cbegin());
+         iter != c.chronological.cend() && iter.when() <= expired;)
+    {
+        iter = c.erase(iter);
+        ++n;
+    }
+    return n;
+}
+
+}  // namespace beast

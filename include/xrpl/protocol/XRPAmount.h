@@ -1,0 +1,293 @@
+#pragma once
+
+#include <xrpl/basics/MathUtilities.h>
+#include <xrpl/basics/Number.h>
+#include <xrpl/basics/contract.h>
+#include <xrpl/beast/utility/Zero.h>
+#include <xrpl/json/json_forwards.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/protocol/Units.h>
+
+#include <boost/multiprecision/cpp_int.hpp>
+#include <boost/operators.hpp>
+
+#include <cstdint>
+#include <istream>
+#include <limits>
+#include <optional>
+#include <ostream>
+#include <stdexcept>
+#include <string>
+#include <type_traits>
+
+namespace xrpl {
+
+class XRPAmount : private boost::totally_ordered<XRPAmount>,
+                  private boost::additive<XRPAmount>,
+                  private boost::equality_comparable<XRPAmount, std::int64_t>,
+                  private boost::additive<XRPAmount, std::int64_t>
+{
+public:
+    using UnitType = unit::dropTag;
+    using value_type = std::int64_t;
+
+private:
+    value_type drops_;
+
+public:
+    XRPAmount() = default;
+    constexpr XRPAmount(XRPAmount const& other) = default;
+    constexpr XRPAmount&
+    operator=(XRPAmount const& other) = default;
+
+    // Round to nearest, even on tie.
+    explicit XRPAmount(Number const& x) : XRPAmount(static_cast<value_type>(x))
+    {
+    }
+
+    constexpr XRPAmount(beast::Zero) : drops_(0)
+    {
+    }
+
+    constexpr XRPAmount&
+    operator=(beast::Zero)
+    {
+        drops_ = 0;
+        return *this;
+    }
+
+    constexpr explicit XRPAmount(value_type drops) : drops_(drops)
+    {
+    }
+
+    XRPAmount&
+    operator=(value_type drops)
+    {
+        drops_ = drops;
+        return *this;
+    }
+
+    constexpr XRPAmount
+    operator*(value_type const& rhs) const
+    {
+        if (auto const result = checkedMul(drops_, rhs))
+            return XRPAmount{*result};
+        // Not reached in constant evaluation: an overflowing constant
+        // expression fails to compile instead.
+        XRPAmount product{*this};
+        product *= rhs;
+        return product;
+    }
+
+    friend constexpr XRPAmount
+    operator*(value_type lhs, XRPAmount const& rhs)
+    {
+        // multiplication is commutative
+        return rhs * lhs;
+    }
+
+    XRPAmount&
+    operator+=(XRPAmount const& other)
+    {
+        return *this += other.drops();
+    }
+
+    XRPAmount&
+    operator-=(XRPAmount const& other)
+    {
+        return *this -= other.drops();
+    }
+
+    XRPAmount&
+    operator+=(value_type const& rhs);
+
+    XRPAmount&
+    operator-=(value_type const& rhs);
+
+    XRPAmount&
+    operator*=(value_type const& rhs);
+
+    XRPAmount
+    operator-() const
+    {
+        return XRPAmount{-drops_};
+    }
+
+    bool
+    operator==(XRPAmount const& other) const
+    {
+        return drops_ == other.drops_;
+    }
+
+    bool
+    operator==(value_type other) const
+    {
+        return drops_ == other;
+    }
+
+    bool
+    operator<(XRPAmount const& other) const
+    {
+        return drops_ < other.drops_;
+    }
+
+    /**
+     * Returns true if the amount is not zero
+     */
+    explicit constexpr
+    operator bool() const noexcept
+    {
+        return drops_ != 0;
+    }
+
+    operator Number() const noexcept
+    {
+        return drops();
+    }
+
+    /**
+     * Return the sign of the amount
+     */
+    [[nodiscard]] constexpr int
+    signum() const noexcept
+    {
+        if (drops_ < 0)
+            return -1;
+        return (drops_ != 0) ? 1 : 0;
+    }
+
+    /**
+     * Returns the number of drops
+     */
+    [[nodiscard]] constexpr value_type
+    drops() const
+    {
+        return drops_;
+    }
+
+    [[nodiscard]] constexpr double
+    decimalXRP() const;
+
+    template <class Dest>
+    [[nodiscard]] std::optional<Dest>
+    dropsAs() const
+    {
+        if ((drops_ > std::numeric_limits<Dest>::max()) ||
+            (!std::numeric_limits<Dest>::is_signed && drops_ < 0) ||
+            (std::numeric_limits<Dest>::is_signed && drops_ < std::numeric_limits<Dest>::lowest()))
+        {
+            return std::nullopt;
+        }
+        return static_cast<Dest>(drops_);
+    }
+
+    template <class Dest>
+    Dest
+    dropsAs(Dest defaultValue) const
+    {
+        return dropsAs<Dest>().value_or(defaultValue);
+    }
+
+    template <class Dest>
+    [[nodiscard]] Dest
+    dropsAs(XRPAmount defaultValue) const
+    {
+        return dropsAs<Dest>().value_or(defaultValue.drops());
+    }
+
+    /* Clips a 64-bit value to a 32-bit JSON number. It is only used
+     * in contexts that don't expect the value to ever approach
+     * the 32-bit limits (i.e. fees and reserves).
+     */
+    [[nodiscard]] json::Value
+    jsonClipped() const
+    {
+        static_assert(
+            std::is_signed_v<value_type> && std::is_integral_v<value_type>,
+            "Expected XRPAmount to be a signed integral type");
+
+        constexpr auto kMin = std::numeric_limits<json::Int>::min();
+        constexpr auto kMax = std::numeric_limits<json::Int>::max();
+
+        if (drops_ < kMin)
+            return kMin;
+        if (drops_ > kMax)
+            return kMax;
+        return static_cast<json::Int>(drops_);
+    }
+
+    /**
+     * Returns the underlying value. Code SHOULD NOT call this
+     * function unless the type has been abstracted away,
+     * e.g. in a templated function.
+     */
+    [[nodiscard]] constexpr value_type
+    value() const
+    {
+        return drops_;
+    }
+
+    friend std::istream&
+    operator>>(std::istream& s, XRPAmount& val)
+    {
+        s >> val.drops_;
+        return s;
+    }
+
+    static XRPAmount
+    minPositiveAmount()
+    {
+        return XRPAmount{1};
+    }
+};
+
+/**
+ * Number of drops per 1 XRP
+ */
+constexpr XRPAmount kDropsPerXrp{1'000'000};
+
+constexpr double
+XRPAmount::decimalXRP() const
+{
+    return static_cast<double>(drops_) / kDropsPerXrp.drops();
+}
+
+// Output XRPAmount as just the drops value.
+template <class Char, class Traits>
+std::basic_ostream<Char, Traits>&
+operator<<(std::basic_ostream<Char, Traits>& os, XRPAmount const& q)
+{
+    return os << q.drops();
+}
+
+inline std::string
+to_string(XRPAmount const& amount)
+{
+    return std::to_string(amount.drops());
+}
+
+inline XRPAmount
+mulRatio(XRPAmount const& amt, std::uint32_t num, std::uint32_t den, bool roundUp)
+{
+    using namespace boost::multiprecision;
+
+    if (den == 0u)
+        Throw<std::runtime_error>("division by zero");
+
+    int128_t const amt128(amt.drops());
+    auto const neg = amt.drops() < 0;
+    auto const m = amt128 * num;
+    auto r = m / den;
+    if (m % den)
+    {
+        if (!neg && roundUp)
+            r += 1;
+        if (neg && !roundUp)
+            r -= 1;
+    }
+    if (r > std::numeric_limits<XRPAmount::value_type>::max())
+        Throw<std::overflow_error>("XRP mulRatio overflow");
+    return XRPAmount(r.convert_to<XRPAmount::value_type>());
+}
+
+}  // namespace xrpl

@@ -1,0 +1,427 @@
+#include <xrpl/tx/transactors/system/Change.h>
+
+#include <xrpl/basics/Log.h>
+#include <xrpl/basics/Slice.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/basics/strHex.h>
+#include <xrpl/beast/utility/Zero.h>
+#include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/core/ServiceRegistry.h>
+#include <xrpl/ledger/AmendmentTable.h>
+#include <xrpl/ledger/entries/AmendmentsEntry.h>
+#include <xrpl/ledger/entries/FeeSettingsEntry.h>
+#include <xrpl/ledger/entries/NegativeUNLEntry.h>
+#include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Fees.h>
+#include <xrpl/protocol/Protocol.h>
+#include <xrpl/protocol/PublicKey.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STArray.h>
+#include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/STVector256.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/TxFlags.h>
+#include <xrpl/protocol/TxFormats.h>
+#include <xrpl/protocol/XRPAmount.h>
+#include <xrpl/server/NetworkOPs.h>
+#include <xrpl/tx/Transactor.h>
+
+#include <algorithm>
+
+namespace xrpl {
+
+template <>
+NotTEC
+Transactor::invokePreflight<Change>(PreflightContext const& ctx)
+{
+    // 0 means "Allow any flags"
+    // The check for tfEnableAmendmentMask is gated by LendingProtocol because
+    // that feature introduced this parameter, and it's not worth adding another
+    // amendment just for this.
+    if (auto const ret =
+            preflight0(ctx, ctx.rules.enabled(featureLendingProtocol) ? tfEnableAmendmentMask : 0))
+        return ret;
+
+    auto const account = ctx.tx.getAccountID(sfAccount);
+    if (account != beast::kZero)
+    {
+        JLOG(ctx.j.warn()) << "Change: Bad source id";
+        return temBAD_SRC_ACCOUNT;
+    }
+
+    // No point in going any further if the transaction fee is malformed.
+    auto const fee = ctx.tx.getFieldAmount(sfFee);
+    if (!fee.native() || fee != beast::kZero)
+    {
+        JLOG(ctx.j.warn()) << "Change: invalid fee";
+        return temBAD_FEE;
+    }
+
+    if (!ctx.tx.getSigningPubKey().empty() || !ctx.tx.getSignature().empty() ||
+        ctx.tx.isFieldPresent(sfSigners))
+    {
+        JLOG(ctx.j.warn()) << "Change: Bad signature";
+        return temBAD_SIGNATURE;
+    }
+
+    if (ctx.tx.getFieldU32(sfSequence) != 0 || ctx.tx.isFieldPresent(sfPreviousTxnID))
+    {
+        JLOG(ctx.j.warn()) << "Change: Bad sequence";
+        return temBAD_SEQUENCE;
+    }
+
+    return tesSUCCESS;
+}
+
+TER
+Change::preclaim(PreclaimContext const& ctx)
+{
+    // If tapOPEN_LEDGER is resurrected into ApplyFlags,
+    // this block can be moved to preflight.
+    if (ctx.view.open())
+    {
+        JLOG(ctx.j.warn()) << "Change transaction against open ledger";
+        return temINVALID;
+    }
+
+    switch (ctx.tx.getTxnType())
+    {
+        case ttFEE:
+            // The XRPFees feature has been retired, these fields are required now.
+            if (!ctx.tx.isFieldPresent(sfBaseFeeDrops) ||
+                !ctx.tx.isFieldPresent(sfReserveBaseDrops) ||
+                !ctx.tx.isFieldPresent(sfReserveIncrementDrops))
+                return temMALFORMED;
+            // The XRPFees feature has been retired, these fields are forbidden now.
+            if (ctx.tx.isFieldPresent(sfBaseFee) || ctx.tx.isFieldPresent(sfReferenceFeeUnits) ||
+                ctx.tx.isFieldPresent(sfReserveBase) || ctx.tx.isFieldPresent(sfReserveIncrement))
+                return temMALFORMED;
+            if (ctx.view.rules().enabled(featureSmartEscrow))
+            {
+                if (!ctx.tx.isFieldPresent(sfGasLimit) ||
+                    !ctx.tx.isFieldPresent(sfBytecodeSizeLimit) ||
+                    !ctx.tx.isFieldPresent(sfGasPrice))
+                    return temMALFORMED;
+                if (ctx.tx[sfGasLimit] > kMaxGasLimit ||
+                    ctx.tx[sfBytecodeSizeLimit] > kMaxBytecodeSizeLimit ||
+                    ctx.tx[sfGasPrice] < kMinGasPrice)
+                    return temBAD_FEE;
+            }
+            else
+            {
+                if (ctx.tx.isFieldPresent(sfGasLimit) ||
+                    ctx.tx.isFieldPresent(sfBytecodeSizeLimit) || ctx.tx.isFieldPresent(sfGasPrice))
+                    return temDISABLED;
+            }
+            return tesSUCCESS;
+        case ttAMENDMENT:
+        case ttUNL_MODIFY:
+            return tesSUCCESS;
+        default:
+            return temUNKNOWN;
+    }
+}
+
+TER
+Change::doApply()
+{
+    switch (ctx_.tx.getTxnType())
+    {
+        case ttAMENDMENT:
+            return applyAmendment();
+        case ttFEE:
+            return applyFee();
+        case ttUNL_MODIFY:
+            return applyUNLModify();
+        // LCOV_EXCL_START
+        default:
+            UNREACHABLE("xrpl::Change::doApply : invalid transaction type");
+            return tefFAILURE;
+            // LCOV_EXCL_STOP
+    }
+}
+
+void
+Change::preCompute()
+{
+    XRPL_ASSERT(accountID_ == beast::kZero, "xrpl::Change::preCompute : zero account");
+}
+
+void
+Change::initializeVMFees()
+{
+    FeeSettingsEntryW feeObject(view());
+
+    if (!feeObject)
+    {
+        feeObject.newSLE();
+        feeObject.insert();
+    }
+
+    // Compile-time constants, never `FeeSetup`: every node applies this
+    // pseudo-transaction, so reading local config here would diverge.
+    feeObject->at(sfGasLimit) = kDefaultGasLimit;
+    feeObject->at(sfBytecodeSizeLimit) = kDefaultBytecodeSizeLimit;
+    feeObject->at(sfGasPrice) = kDefaultGasPrice;
+
+    feeObject.update();
+
+    JLOG(j_.info()) << "Feature Extension fees initialized on SmartEscrow activation";
+}
+
+TER
+Change::applyAmendment()
+{
+    UInt256 const amendment(ctx_.tx.getFieldH256(sfAmendment));
+
+    AmendmentsEntryW amendmentObject(view(), j_);
+
+    if (!amendmentObject)
+    {
+        amendmentObject.newSLE();
+        amendmentObject.insert();
+    }
+
+    STVector256 amendments = amendmentObject->getFieldV256(sfAmendments);
+
+    if (std::ranges::find(amendments, amendment) != amendments.end())
+        return tefALREADY;
+
+    bool const gotMajority = ctx_.tx.isFlag(tfGotMajority);
+    bool const lostMajority = ctx_.tx.isFlag(tfLostMajority);
+
+    if (gotMajority && lostMajority)
+        return temINVALID_FLAG;
+
+    STArray newMajorities(sfMajorities);
+
+    bool found = false;
+    if (amendmentObject->isFieldPresent(sfMajorities))
+    {
+        STArray const& oldMajorities = amendmentObject->getFieldArray(sfMajorities);
+        for (auto const& majority : oldMajorities)
+        {
+            if (majority.getFieldH256(sfAmendment) == amendment)
+            {
+                if (gotMajority)
+                    return tefALREADY;
+                found = true;
+            }
+            else
+            {
+                // pass through
+                newMajorities.pushBack(majority);
+            }
+        }
+    }
+
+    if (!found && lostMajority)
+        return tefALREADY;
+
+    if (gotMajority)
+    {
+        // This amendment now has a majority
+        newMajorities.pushBack(STObject::makeInnerObject(sfMajority));
+        auto& entry = newMajorities.back();
+        entry[sfAmendment] = amendment;
+        entry[sfCloseTime] = view().parentCloseTime().time_since_epoch().count();
+
+        if (!ctx_.registry.get().getAmendmentTable().isSupported(amendment))
+        {
+            JLOG(j_.warn()) << "Unsupported amendment " << amendment << " received a majority.";
+        }
+    }
+    else if (!lostMajority)
+    {
+        // No flags, enable amendment
+        amendments.pushBack(amendment);
+        amendmentObject->setFieldV256(sfAmendments, amendments);
+
+        ctx_.registry.get().getAmendmentTable().enable(amendment);
+
+        if (!ctx_.registry.get().getAmendmentTable().isSupported(amendment))
+        {
+            JLOG(j_.error()) << "Unsupported amendment " << amendment
+                             << " activated: server blocked.";
+            ctx_.registry.get().getOPs().setAmendmentBlocked();
+        }
+
+        if (amendment == featureSmartEscrow)
+            initializeVMFees();
+    }
+
+    if (newMajorities.empty())
+    {
+        amendmentObject->makeFieldAbsent(sfMajorities);
+    }
+    else
+    {
+        amendmentObject->setFieldArray(sfMajorities, newMajorities);
+    }
+
+    amendmentObject.update();
+
+    return tesSUCCESS;
+}
+
+TER
+Change::applyFee()
+{
+    FeeSettingsEntryW feeObject(view());
+
+    if (!feeObject)
+    {
+        feeObject.newSLE();
+        feeObject.insert();
+    }
+    auto const set = [](FeeSettingsEntryW& feeObject, STTx const& tx, auto const&... fields) {
+        ((feeObject->at(fields) = tx[fields]), ...);
+    };
+    set(feeObject, ctx_.tx, sfBaseFeeDrops, sfReserveBaseDrops, sfReserveIncrementDrops);
+    // Ensure the old fields are removed
+    feeObject->makeFieldAbsent(sfBaseFee);
+    feeObject->makeFieldAbsent(sfReferenceFeeUnits);
+    feeObject->makeFieldAbsent(sfReserveBase);
+    feeObject->makeFieldAbsent(sfReserveIncrement);
+    if (view().rules().enabled(featureSmartEscrow))
+    {
+        set(feeObject, ctx_.tx, sfGasLimit, sfBytecodeSizeLimit, sfGasPrice);
+    }
+
+    feeObject.update();
+
+    JLOG(j_.warn()) << "Fees have been changed";
+    return tesSUCCESS;
+}
+
+TER
+Change::applyUNLModify()
+{
+    if (!isFlagLedger(view().seq()))
+    {
+        JLOG(j_.warn()) << "N-UNL: applyUNLModify, not a flag ledger, seq=" << view().seq();
+        return tefFAILURE;
+    }
+
+    if (!ctx_.tx.isFieldPresent(sfUNLModifyDisabling) ||
+        ctx_.tx.getFieldU8(sfUNLModifyDisabling) > 1 || !ctx_.tx.isFieldPresent(sfLedgerSequence) ||
+        !ctx_.tx.isFieldPresent(sfUNLModifyValidator))
+    {
+        JLOG(j_.warn()) << "N-UNL: applyUNLModify, wrong Tx format.";
+        return tefFAILURE;
+    }
+
+    bool const disabling = ctx_.tx.getFieldU8(sfUNLModifyDisabling) != 0u;
+    auto const seq = ctx_.tx.getFieldU32(sfLedgerSequence);
+    if (seq != view().seq())
+    {
+        JLOG(j_.warn()) << "N-UNL: applyUNLModify, wrong ledger seq=" << seq;
+        return tefFAILURE;
+    }
+
+    Blob const validator = ctx_.tx.getFieldVL(sfUNLModifyValidator);
+    if (!publicKeyType(makeSlice(validator)))
+    {
+        JLOG(j_.warn()) << "N-UNL: applyUNLModify, bad validator key";
+        return tefFAILURE;
+    }
+
+    JLOG(j_.info()) << "N-UNL: applyUNLModify, " << (disabling ? "ToDisable" : "ToReEnable")
+                    << " seq=" << seq << " validator data:" << strHex(validator);
+
+    NegativeUNLEntryW negUnlObject(view(), j_);
+    if (!negUnlObject)
+    {
+        negUnlObject.newSLE();
+        negUnlObject.insert();
+    }
+
+    bool const found = [&] {
+        if (negUnlObject->isFieldPresent(sfDisabledValidators))
+        {
+            auto const& negUnl = negUnlObject->getFieldArray(sfDisabledValidators);
+            for (auto const& v : negUnl)
+            {
+                if (v.isFieldPresent(sfPublicKey) && v.getFieldVL(sfPublicKey) == validator)
+                    return true;
+            }
+        }
+        return false;
+    }();
+
+    if (disabling)
+    {
+        // cannot have more than one toDisable
+        if (negUnlObject->isFieldPresent(sfValidatorToDisable))
+        {
+            JLOG(j_.warn()) << "N-UNL: applyUNLModify, already has ToDisable";
+            return tefFAILURE;
+        }
+
+        // cannot be the same as toReEnable
+        if (negUnlObject->isFieldPresent(sfValidatorToReEnable))
+        {
+            if (negUnlObject->getFieldVL(sfValidatorToReEnable) == validator)
+            {
+                JLOG(j_.warn()) << "N-UNL: applyUNLModify, ToDisable is same as ToReEnable";
+                return tefFAILURE;
+            }
+        }
+
+        // cannot be in negative UNL already
+        if (found)
+        {
+            JLOG(j_.warn()) << "N-UNL: applyUNLModify, ToDisable already in negative UNL";
+            return tefFAILURE;
+        }
+
+        negUnlObject->setFieldVL(sfValidatorToDisable, validator);
+    }
+    else
+    {
+        // cannot have more than one toReEnable
+        if (negUnlObject->isFieldPresent(sfValidatorToReEnable))
+        {
+            JLOG(j_.warn()) << "N-UNL: applyUNLModify, already has ToReEnable";
+            return tefFAILURE;
+        }
+
+        // cannot be the same as toDisable
+        if (negUnlObject->isFieldPresent(sfValidatorToDisable))
+        {
+            if (negUnlObject->getFieldVL(sfValidatorToDisable) == validator)
+            {
+                JLOG(j_.warn()) << "N-UNL: applyUNLModify, ToReEnable is same as ToDisable";
+                return tefFAILURE;
+            }
+        }
+
+        // must be in negative UNL
+        if (!found)
+        {
+            JLOG(j_.warn()) << "N-UNL: applyUNLModify, ToReEnable is not in negative UNL";
+            return tefFAILURE;
+        }
+
+        negUnlObject->setFieldVL(sfValidatorToReEnable, validator);
+    }
+
+    negUnlObject.update();
+    return tesSUCCESS;
+}
+
+void
+Change::visitInvariantEntry(bool, SLE::ConstRef, SLE::ConstRef)
+{
+    // No transaction-specific invariants yet (future work).
+}
+
+bool
+Change::finalizeInvariants(STTx const&, TER, XRPAmount, ReadView const&, beast::Journal const&)
+{
+    // No transaction-specific invariants yet (future work).
+    return true;
+}
+
+}  // namespace xrpl

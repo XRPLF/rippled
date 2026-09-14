@@ -1,0 +1,49 @@
+name: Setup Conan
+description: "Set up Conan configuration, profile, and remote."
+
+inputs:
+  remote_name:
+    description: "The name of the Conan remote to use."
+    required: false
+    default: xrplf
+  remote_url:
+    description: "The URL of the Conan endpoint to use."
+    required: false
+    default: https://conan.xrplf.org/repository/conan/
+
+runs:
+  using: composite
+
+  steps:
+    - name: Apply custom configuration to global.conf
+      shell: bash
+      run: |
+        cat conan/global.conf ${{ runner.os == 'Linux' && '>>' || '>' }} $(conan config home)/global.conf
+
+    - name: Show global configuration
+      shell: bash
+      run: |
+        conan config show '*'
+
+    - name: Install profiles
+      shell: bash
+      run: |
+        conan config install conan/profiles/ -tf $(conan config home)/profiles/
+
+    - name: Show CI profile
+      shell: bash
+      run: |
+        conan profile show --profile ci
+
+    - name: Add a remote
+      shell: bash
+      env:
+        REMOTE_NAME: ${{ inputs.remote_name }}
+        REMOTE_URL: ${{ inputs.remote_url }}
+      run: |
+        conan remote add --index 0 --force "${REMOTE_NAME}" "${REMOTE_URL}"
+
+    - name: List remotes
+      shell: bash
+      run: |
+        conan remote list

@@ -1,0 +1,188 @@
+#pragma once
+
+#include <xrpl/basics/Number.h>
+#include <xrpl/beast/utility/Zero.h>
+
+#include <boost/operators.hpp>
+
+#include <cstdint>
+#include <ostream>
+#include <string>
+
+namespace xrpl {
+
+/**
+ * Floating point representation of amounts with high dynamic range
+ *
+ * Amounts are stored as a normalized signed mantissa and an exponent. The
+ * range of the normalized exponent is [-96,80] and the range of the absolute
+ * value of the normalized mantissa is [1000000000000000, 9999999999999999].
+ *
+ * Arithmetic operations can throw std::overflow_error during normalization
+ * if the amount exceeds the largest representable amount, but underflows
+ * will silently truncate to zero.
+ */
+class IOUAmount : private boost::totally_ordered<IOUAmount>, private boost::additive<IOUAmount>
+{
+private:
+    using MantissaType = std::int64_t;
+    using ExponentType = int;
+    MantissaType mantissa_{};
+    ExponentType exponent_{};
+
+    /**
+     * Adjusts the mantissa and exponent to the proper range.
+     *
+     * This can throw if the amount cannot be normalized, or is larger than
+     * the largest value that can be represented as an IOU amount. Amounts
+     * that are too small to be represented normalize to 0.
+     */
+    void
+    normalize();
+
+    static IOUAmount
+    fromNumber(Number const& number);
+
+public:
+    IOUAmount() = default;
+    explicit IOUAmount(Number const& other);
+    IOUAmount(beast::Zero);
+    IOUAmount(MantissaType mantissa, ExponentType exponent);
+
+    IOUAmount& operator=(beast::Zero);
+
+    operator Number() const;
+
+    IOUAmount&
+    operator+=(IOUAmount const& other);
+
+    IOUAmount&
+    operator-=(IOUAmount const& other);
+
+    IOUAmount
+    operator-() const;
+
+    bool
+    operator==(IOUAmount const& other) const;
+
+    bool
+    operator<(IOUAmount const& other) const;
+
+    /**
+     * Returns true if the amount is not zero
+     */
+    explicit
+    operator bool() const noexcept;
+
+    /**
+     * Return the sign of the amount
+     */
+    [[nodiscard]] int
+    signum() const noexcept;
+
+    [[nodiscard]] ExponentType
+    exponent() const noexcept;
+
+    [[nodiscard]] MantissaType
+    mantissa() const noexcept;
+
+    static IOUAmount
+    minPositiveAmount();
+
+    friend std::ostream&
+    operator<<(std::ostream& os, IOUAmount const& x)
+    {
+        return os << to_string(x);
+    }
+};
+
+inline IOUAmount::IOUAmount(beast::Zero)
+{
+    *this = beast::kZero;
+}
+
+inline IOUAmount::IOUAmount(MantissaType mantissa, ExponentType exponent)
+    : mantissa_(mantissa), exponent_(exponent)
+{
+    normalize();
+}
+
+inline IOUAmount&
+IOUAmount::operator=(beast::Zero)
+{
+    // The -100 is used to allow 0 to sort less than small positive values
+    // which will have a large negative exponent.
+    mantissa_ = 0;
+    exponent_ = -100;
+    return *this;
+}
+
+inline IOUAmount::
+operator Number() const
+{
+    return Number{mantissa_, exponent_};
+}
+
+inline IOUAmount&
+IOUAmount::operator-=(IOUAmount const& other)
+{
+    *this += -other;
+    return *this;
+}
+
+inline IOUAmount
+IOUAmount::operator-() const
+{
+    return {-mantissa_, exponent_};
+}
+
+inline bool
+IOUAmount::operator==(IOUAmount const& other) const
+{
+    return exponent_ == other.exponent_ && mantissa_ == other.mantissa_;
+}
+
+inline bool
+IOUAmount::operator<(IOUAmount const& other) const
+{
+    return Number{*this} < Number{other};
+}
+
+inline IOUAmount::
+operator bool() const noexcept
+{
+    return mantissa_ != 0;
+}
+
+inline int
+IOUAmount::signum() const noexcept
+{
+    if (mantissa_ < 0)
+        return -1;
+    return (mantissa_ != 0) ? 1 : 0;
+}
+
+inline IOUAmount::ExponentType
+IOUAmount::exponent() const noexcept
+{
+    return exponent_;
+}
+
+inline IOUAmount::MantissaType
+IOUAmount::mantissa() const noexcept
+{
+    return mantissa_;
+}
+
+std::string
+to_string(IOUAmount const& amount);
+
+/* Return num*amt/den
+   This function keeps more precision than computing
+   num*amt, storing the result in an IOUAmount, then
+   dividing by den.
+*/
+IOUAmount
+mulRatio(IOUAmount const& amt, std::uint32_t num, std::uint32_t den, bool roundUp);
+
+}  // namespace xrpl

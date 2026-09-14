@@ -1,0 +1,86 @@
+#pragma once
+
+#include <xrpld/app/misc/detail/Work.h>
+
+#include <xrpl/basics/ByteUtilities.h>
+#include <xrpl/basics/FileUtilities.h>
+#include <xrpl/beast/utility/instrumentation.h>
+
+#include <boost/asio/bind_executor.hpp>
+#include <boost/asio/io_context.hpp>
+#include <boost/asio/strand.hpp>
+
+#include <functional>
+#include <memory>
+#include <string>
+#include <utility>
+
+namespace xrpl::detail {
+
+// Work with files
+class WorkFile : public Work, public std::enable_shared_from_this<WorkFile>
+{
+protected:
+    using ErrorCode = boost::system::error_code;
+    // Override the definition in Work.h
+    using ResponseType = std::string;
+
+public:
+    using CallbackType = std::function<void(ErrorCode const&, ResponseType const&)>;
+
+public:
+    WorkFile(std::string path, boost::asio::io_context& ios, CallbackType cb);
+    ~WorkFile() override;
+
+    void
+    run() override;
+
+    void
+    cancel() override;
+
+private:
+    std::string path_;
+    CallbackType cb_;
+    boost::asio::io_context& ios_;
+    boost::asio::strand<boost::asio::io_context::executor_type> strand_;
+};
+
+//------------------------------------------------------------------------------
+
+inline WorkFile::WorkFile(std::string path, boost::asio::io_context& ios, CallbackType cb)
+    : path_(std::move(path)), cb_(std::move(cb)), ios_(ios), strand_(boost::asio::make_strand(ios))
+{
+}
+
+inline WorkFile::~WorkFile()
+{
+    if (cb_)
+        cb_(make_error_code(boost::system::errc::interrupted), {});
+}
+
+inline void
+WorkFile::run()
+{
+    if (!strand_.running_in_this_thread())
+    {
+        boost::asio::post(ios_, boost::asio::bind_executor(strand_, [self = shared_from_this()] {
+                              self->run();
+                          }));
+        return;
+    }
+
+    ErrorCode ec;
+    auto const fileContents = getFileContents(ec, path_, megabytes(1));
+
+    XRPL_ASSERT(cb_, "xrpl::detail::WorkFile::run : callback is set");
+    cb_(ec, fileContents);
+    cb_ = nullptr;
+}
+
+inline void
+WorkFile::cancel()
+{
+    // Nothing to do. Either it finished in run, or it didn't start.
+}
+
+}  // namespace xrpl::detail

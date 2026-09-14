@@ -1,0 +1,532 @@
+#include <xrpld/rpc/detail/RPCHelpers.h>
+
+#include <xrpld/rpc/Context.h>
+#include <xrpld/rpc/DeliveredAmount.h>
+#include <xrpld/rpc/Role.h>
+#include <xrpld/rpc/detail/Tuning.h>
+
+#include <xrpl/basics/Log.h>
+#include <xrpl/basics/Slice.h>
+#include <xrpl/basics/UnorderedContainers.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/basics/contract.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/core/ServiceRegistry.h>
+#include <xrpl/ledger/ReadView.h>
+#include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Asset.h>
+#include <xrpl/protocol/ErrorCodes.h>
+#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/Issue.h>
+#include <xrpl/protocol/KeyType.h>
+#include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/PublicKey.h>
+#include <xrpl/protocol/RPCErr.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/SecretKey.h>
+#include <xrpl/protocol/Seed.h>
+#include <xrpl/protocol/UintTypes.h>
+#include <xrpl/protocol/jss.h>
+#include <xrpl/protocol/tokens.h>
+
+#include <boost/algorithm/string/predicate.hpp>
+
+#include <rpcspec/Errors.hpp>
+
+#include <algorithm>
+#include <array>
+#include <charconv>
+#include <cstdint>
+#include <cstring>
+#include <format>
+#include <functional>
+#include <optional>
+#include <string_view>
+#include <system_error>
+#include <tuple>
+#include <utility>
+
+namespace xrpl::rpc {
+
+std::uint64_t
+getStartHint(SLE::ConstRef sle, AccountID const& accountID)
+{
+    if (sle->getType() == ltRIPPLE_STATE)
+    {
+        if (sle->getFieldAmount(sfLowLimit).getIssuer() == accountID)
+        {
+            return sle->getFieldU64(sfLowNode);
+        }
+        if (sle->getFieldAmount(sfHighLimit).getIssuer() == accountID)
+        {
+            return sle->getFieldU64(sfHighNode);
+        }
+    }
+
+    if (!sle->isFieldPresent(sfOwnerNode))
+        return 0;
+
+    return sle->getFieldU64(sfOwnerNode);
+}
+
+namespace {
+
+// UINT64 sf*Node fields that record a page number in an owner directory.
+// Keep in sync with sfields.macro; the xrpl.rpc.RPCHelpers test enforces it.
+constexpr std::array<SField const*, 9> kOwnerDirNodeFields{
+    &sfOwnerNode,
+    &sfLowNode,
+    &sfHighNode,
+    &sfDestinationNode,
+    &sfIssuerNode,
+    &sfSubjectNode,
+    &sfSponseeNode,
+    &sfLoanBrokerNode,
+    &sfVaultNode,
+};
+
+}  // namespace
+
+bool
+isOwnerDirNodeField(SField const& field)
+{
+    return std::ranges::contains(kOwnerDirNodeFields, &field);
+}
+
+std::optional<std::pair<uint256, std::uint64_t>>
+parseAccountMarker(std::string_view marker)
+{
+    auto const comma = marker.find(',');
+    if (comma == std::string_view::npos)
+        return std::nullopt;
+
+    uint256 startAfter;
+    if (!startAfter.parseHex(marker.substr(0, comma)))
+        return std::nullopt;
+
+    auto hint = marker.substr(comma + 1);
+    hint = hint.substr(0, hint.find(','));
+    if (hint.starts_with('+'))
+        hint.remove_prefix(1);
+
+    std::uint64_t startHint = 0;
+    auto const [end, ec] = std::from_chars(hint.data(), hint.data() + hint.size(), startHint);
+    if (ec != std::errc{} || end != hint.data() + hint.size())
+        return std::nullopt;
+
+    return std::pair{startAfter, startHint};
+}
+
+bool
+isRelatedToAccount(ReadView const& ledger, SLE::ConstRef sle, AccountID const& accountID)
+{
+    // Marker validator for account_lines / account_offers / account_channels
+    // pagination: probes each owner-directory page-hint field on `sle` and
+    // returns true iff `sle`'s key is present on that page in `accountID`'s
+    // owner directory. Bounded by kOwnerDirNodeFields.size() ledger reads.
+    auto const ownerDir = keylet::ownerDir(accountID);
+
+    auto const pageContainsKey = [&](std::uint64_t node) {
+        auto const page = ledger.read(keylet::page(ownerDir, node));
+        return page && std::ranges::contains(page->getFieldV256(sfIndexes), sle->key());
+    };
+
+    return std::ranges::any_of(kOwnerDirNodeFields, [&](SField const* field) {
+        return sle->isFieldPresent(*field) && pageContainsKey(sle->getFieldU64(*field));
+    });
+}
+
+HashSet<AccountID>
+parseAccountIds(json::Value const& jvArray)
+{
+    HashSet<AccountID> result;
+    for (auto const& jv : jvArray)
+    {
+        if (!jv.isString())
+            return HashSet<AccountID>();
+        auto const id = parseBase58<AccountID>(jv.asString());
+        if (!id)
+            return HashSet<AccountID>();
+        result.insert(*id);
+    }
+    return result;
+}
+
+HashSet<MPTID>
+parseMPTIssuanceIDs(json::Value const& jvArray)
+{
+    HashSet<MPTID> result;
+    for (auto const& jv : jvArray)
+    {
+        if (!jv.isString())
+            return HashSet<MPTID>();
+
+        auto const mptIssuanceIdStr = jv.asString();
+        MPTID mptIssuanceID;
+        if (!mptIssuanceID.parseHex(mptIssuanceIdStr))
+            return HashSet<MPTID>();
+
+        result.insert(mptIssuanceID);
+    }
+    return result;
+}
+
+unsigned int
+clampLimit(unsigned int limit, tuning::LimitRange const& range, Role const& role)
+{
+    if (isUnlimited(role))
+        return limit;
+    return std::clamp(limit, range.rmin, range.rmax);
+}
+
+std::optional<json::Value>
+readLimitField(unsigned int& limit, tuning::LimitRange const& range, JsonContext const& context)
+{
+    limit = range.rDefault;
+    if (!context.params.isMember(jss::limit) || context.params[jss::limit].isNull())
+        return std::nullopt;
+
+    auto const& jvLimit = context.params[jss::limit];
+    if (!jvLimit.isUInt() && (!jvLimit.isInt() || jvLimit.asInt() < 0))
+        return rpc::expectedFieldError(jss::limit, "unsigned integer");
+
+    limit = jvLimit.asUInt();
+    if (limit == 0)
+        return rpc::invalidFieldError(jss::limit);
+
+    limit = clampLimit(limit, range, context.role);
+    return std::nullopt;
+}
+
+std::optional<Seed>
+parseXrplLibSeed(json::Value const& value)
+{
+    // XrplLib encodes seed used to generate an Ed25519 wallet in a
+    // non-standard way. While xrpld never encode seeds that way, we
+    // try to detect such keys to avoid user confusion.
+    if (!value.isString())
+        return std::nullopt;
+
+    auto const result = decodeBase58Token(value.asString(), TokenType::None);
+
+    if (result.size() == 18 && static_cast<std::uint8_t>(result[0]) == std::uint8_t(0xE1) &&
+        static_cast<std::uint8_t>(result[1]) == std::uint8_t(0x4B))
+        return Seed(makeSlice(result.substr(2)));
+
+    return std::nullopt;
+}
+
+std::optional<Seed>
+getSeedFromRPC(json::Value const& params, json::Value& error)
+{
+    using StringToSeedT = std::function<std::optional<Seed>(std::string const&)>;
+    using SeedMatchT = std::pair<char const*, StringToSeedT>;
+
+    static SeedMatchT const kSeedTypes[]{
+        {jss::passphrase.cStr(), [](std::string const& s) { return parseGenericSeed(s); }},
+        {jss::seed.cStr(), [](std::string const& s) { return parseBase58<Seed>(s); }},
+        {
+            jss::seed_hex.cStr(),
+            [](std::string const& s) {
+                UInt128 i;
+                if (i.parseHex(s))
+                    return std::optional<Seed>(Slice(i.data(), i.size()));
+                return std::optional<Seed>{};
+            },
+        },
+    };
+
+    // Identify which seed type is in use.
+    SeedMatchT const* seedType = nullptr;
+    int count = 0;
+    for (auto const& t : kSeedTypes)
+    {
+        if (params.isMember(t.first))
+        {
+            ++count;
+            seedType = &t;
+        }
+    }
+
+    if (count != 1)
+    {
+        error = rpc::makeParamError(
+            "Exactly one of the following must be specified: " + std::string(jss::passphrase) +
+            ", " + std::string(jss::seed) + " or " + std::string(jss::seed_hex));
+        return std::nullopt;
+    }
+
+    // Make sure a string is present
+    auto const& param = params[seedType->first];
+    if (!param.isString())
+    {
+        error = rpc::expectedFieldError(seedType->first, "string");
+        return std::nullopt;
+    }
+
+    auto const fieldContents = param.asString();
+
+    // Convert string to seed.
+    std::optional<Seed> seed = seedType->second(fieldContents);
+
+    if (!seed)
+        error = rpcError(RpcBadSeed);
+
+    return seed;
+}
+
+std::optional<std::pair<PublicKey, SecretKey>>
+keypairForSignature(json::Value const& params, json::Value& error, unsigned int apiVersion)
+{
+    bool const hasKeyType = params.isMember(jss::key_type);
+
+    // All of the secret types we allow, but only one at a time.
+    static char const* const kSecretTypes[]{
+        jss::passphrase.cStr(),
+        jss::secret.cStr(),
+        jss::seed.cStr(),
+        jss::seed_hex.cStr(),
+    };
+
+    // Identify which secret type is in use.
+    char const* secretType = nullptr;
+    int count = 0;
+    for (auto t : kSecretTypes)
+    {
+        if (params.isMember(t))
+        {
+            ++count;
+            secretType = t;
+        }
+    }
+
+    if (count == 0 || secretType == nullptr)
+    {
+        error = rpc::missingFieldError(jss::secret);
+        return {};
+    }
+
+    if (count > 1)
+    {
+        error = rpc::makeParamError(
+            "Exactly one of the following must be specified: " + std::string(jss::passphrase) +
+            ", " + std::string(jss::secret) + ", " + std::string(jss::seed) + " or " +
+            std::string(jss::seed_hex));
+        return {};
+    }
+
+    std::optional<KeyType> keyType;
+    std::optional<Seed> seed;
+
+    if (hasKeyType)
+    {
+        if (!params[jss::key_type].isString())
+        {
+            error = rpc::expectedFieldError(jss::key_type, "string");
+            return {};
+        }
+
+        keyType = keyTypeFromString(params[jss::key_type].asString());
+
+        if (!keyType)
+        {
+            if (apiVersion > 1u)
+            {
+                error = rpc::makeError(RpcBadKeyType);
+            }
+            else
+            {
+                error = rpc::invalidFieldError(jss::key_type);
+            }
+            return {};
+        }
+
+        // using strcmp as pointers may not match (see
+        // https://developercommunity.visualstudio.com/t/assigning-constexpr-char--to-static-cha/10021357?entry=problem)
+        if (strcmp(secretType, jss::secret.cStr()) == 0)
+        {
+            error = rpc::makeParamError(
+                "The secret field is not allowed if " + std::string(jss::key_type) + " is used.");
+            return {};
+        }
+    }
+
+    // XrplLib encodes seed used to generate an Ed25519 wallet in a
+    // non-standard way. While we never encode seeds that way, we try
+    // to detect such keys to avoid user confusion.
+    // using strcmp as pointers may not match (see
+    // https://developercommunity.visualstudio.com/t/assigning-constexpr-char--to-static-cha/10021357?entry=problem)
+    if (strcmp(secretType, jss::seed_hex.cStr()) != 0)
+    {
+        seed = rpc::parseXrplLibSeed(params[secretType]);
+
+        if (seed)
+        {
+            // If the user passed in an Ed25519 seed but *explicitly*
+            // requested another key type, return an error.
+            if (keyType.value_or(KeyType::Ed25519) != KeyType::Ed25519)
+            {
+                error = rpc::makeError(RpcBadSeed, "Specified seed is for an Ed25519 wallet.");
+                return {};
+            }
+
+            keyType = KeyType::Ed25519;
+        }
+    }
+
+    if (!keyType)
+        keyType = KeyType::Secp256k1;
+
+    if (!seed)
+    {
+        if (hasKeyType)
+        {
+            seed = getSeedFromRPC(params, error);
+        }
+        else
+        {
+            if (!params[jss::secret].isString())
+            {
+                error = rpc::expectedFieldError(jss::secret, "string");
+                return {};
+            }
+
+            seed = parseGenericSeed(params[jss::secret].asString());
+        }
+    }
+
+    if (!seed)
+    {
+        if (!containsError(error))
+        {
+            error = rpc::makeError(RpcBadSeed, rpc::invalidFieldMessage(secretType));
+        }
+
+        return {};
+    }
+
+    if (keyType != KeyType::Secp256k1 && keyType != KeyType::Ed25519)
+        logicError("keypairForSignature: invalid key type");
+
+    return generateKeyPair(*keyType, *seed);
+}
+
+std::pair<::rpc::Status, LedgerEntryType>
+chooseLedgerEntryType(json::Value const& params)
+{
+    std::pair<::rpc::Status, LedgerEntryType> result{::rpc::Status::kOK, ltANY};
+    if (params.isMember(jss::type))
+    {
+        static constexpr auto kTypes =
+            std::to_array<std::tuple<char const*, char const*, LedgerEntryType>>({
+#pragma push_macro("LEDGER_ENTRY")
+#undef LEDGER_ENTRY
+
+#define LEDGER_ENTRY(tag, value, name, rpcName, ...) {jss::name, jss::rpcName, tag},
+
+#include <xrpl/protocol/detail/ledger_entries.macro>
+
+#undef LEDGER_ENTRY
+#pragma pop_macro("LEDGER_ENTRY")
+            });
+
+        auto const& p = params[jss::type];
+        if (!p.isString())
+        {
+            result.first = ::rpc::Status{RpcInvalidParams, "Invalid field 'type', not string."};
+            return result;
+        }
+
+        // Use the passed in parameter to find a ledger type based on matching
+        // against the canonical name (case-insensitive) or the RPC name
+        // (case-sensitive).
+        auto const filter = p.asString();
+        auto const iter = std::ranges::find_if(kTypes, [&filter](decltype(kTypes.front())& t) {
+            return boost::iequals(std::get<0>(t), filter) || std::get<1>(t) == filter;
+        });
+        if (iter == kTypes.end())
+        {
+            result.first = ::rpc::Status{RpcInvalidParams, "Invalid field 'type'."};
+            return result;
+        }
+        result.second = std::get<2>(*iter);
+    }
+    return result;
+}
+
+bool
+isAccountObjectsValidType(LedgerEntryType const& type)
+{
+    switch (type)
+    {
+        case LedgerEntryType::ltAMENDMENTS:
+        case LedgerEntryType::ltDIR_NODE:
+        case LedgerEntryType::ltFEE_SETTINGS:
+        case LedgerEntryType::ltLEDGER_HASHES:
+        case LedgerEntryType::ltNEGATIVE_UNL:
+            return false;
+        default:
+            return true;
+    }
+}
+
+ErrorCodeI
+parseSubUnsubJson(
+    Asset& asset,
+    json::Value const& params,
+    json::StaticString const& name,
+    beast::Journal j)
+{
+    auto const& jv = params[name];
+    auto const [issuerError, assetError] = [&] {
+        if (name == jss::taker_pays)
+            return std::make_pair(RpcSrcIsrMalformed, RpcSrcCurMalformed);
+        return std::make_pair(RpcDstIsrMalformed, RpcDstAmtMalformed);
+    }();
+
+    if (jv.isMember(jss::mpt_issuance_id) &&
+        (jv.isMember(jss::currency) || jv.isMember(jss::issuer)))
+    {
+        JLOG(j.info()) << std::format("Bad {} currency or MPT.", name.cStr());
+        return RpcInvalidParams;
+    }
+
+    if (jv.isMember(jss::currency))
+    {
+        Issue issue = xrpIssue();
+        // Parse mandatory currency.
+        if (!jv.isMember(jss::currency) ||
+            !toCurrency(issue.currency, jv[jss::currency].asString()))
+        {
+            JLOG(j.info()) << std::format("Bad {} currency.", name.cStr());
+            return assetError;
+        }
+
+        // Parse optional issuer.
+        if ((jv.isMember(jss::issuer) &&
+             (!jv[jss::issuer].isString() || !toIssuer(issue.account, jv[jss::issuer].asString())))
+            // Don't allow illegal issuers.
+            || (!issue.currency != !issue.account) || noAccount() == issue.account)
+        {
+            JLOG(j.info()) << std::format("Bad {} issuer.", name.cStr());
+            return issuerError;
+        }
+        asset = issue;
+    }
+    else if (jv.isMember(jss::mpt_issuance_id))
+    {
+        MPTID mptid;
+        if (!mptid.parseHex(jv[jss::mpt_issuance_id].asString()))
+            return assetError;
+        asset = mptid;
+    }
+    else
+    {
+        JLOG(j.info()) << std::format("Neither {} currency or MPT is present.", name.cStr());
+        return assetError;
+    }
+
+    return RpcSuccess;
+}
+
+}  // namespace xrpl::rpc

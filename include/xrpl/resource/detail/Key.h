@@ -1,0 +1,50 @@
+#pragma once
+
+#include <xrpl/beast/hash/uhash.h>
+#include <xrpl/beast/net/IPEndpoint.h>
+#include <xrpl/resource/detail/Kind.h>
+
+#include <cstddef>
+#include <utility>
+
+namespace xrpl::resource {
+
+// The consumer key
+struct Key
+{
+    Kind kind;
+    beast::ip::Endpoint address;
+
+    Key() = delete;
+
+    Key(Kind k, beast::ip::Endpoint addr) : kind(k), address(std::move(addr))
+    {
+    }
+
+    struct Hasher
+    {
+        std::size_t
+        operator()(Key const& v) const
+        {
+            return addrHash_(v.address);
+        }
+
+    private:
+        beast::Uhash<> addrHash_;
+    };
+
+    struct KeyEqual
+    {
+        KeyEqual() = default;
+
+        bool
+        operator()(Key const& lhs, Key const& rhs) const
+        {
+            return lhs.kind == rhs.kind && lhs.address == rhs.address;
+        }
+
+    private:
+    };
+};
+
+}  // namespace xrpl::resource

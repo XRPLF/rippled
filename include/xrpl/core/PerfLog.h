@@ -1,0 +1,196 @@
+#pragma once
+
+#include <xrpl/basics/Log.h>
+#include <xrpl/basics/StringUtilities.h>
+#include <xrpl/core/Job.h>
+#include <xrpl/json/json_value.h>
+
+#include <chrono>
+#include <cstdint>
+#include <filesystem>
+#include <functional>
+#include <memory>
+#include <span>
+#include <string_view>
+
+namespace beast {
+class Journal;
+}  // namespace beast
+
+namespace xrpl {
+class Application;
+class Section;
+namespace perf {
+
+/**
+ * Singleton class that maintains performance counters and optionally
+ * writes Json-formatted data to a distinct log. It should exist prior
+ * to other objects launched by Application to make it accessible for
+ * performance logging.
+ */
+
+class PerfLog
+{
+public:
+    using SteadyClock = std::chrono::steady_clock;
+    using SystemClock = std::chrono::system_clock;
+    using SteadyTimePoint = std::chrono::time_point<SteadyClock>;
+    using SystemTimePoint = std::chrono::time_point<SystemClock>;
+    using Seconds = std::chrono::seconds;
+    using Milliseconds = std::chrono::milliseconds;
+    using Microseconds = std::chrono::microseconds;
+
+    /**
+     * Configuration from [perf] section of xrpld.cfg.
+     */
+    struct Setup
+    {
+        std::filesystem::path perfLog;
+        // log_interval is in milliseconds to support faster testing.
+        Milliseconds logInterval{Seconds(1)};
+    };
+
+    virtual ~PerfLog() = default;
+
+    virtual void
+    start()
+    {
+    }
+
+    virtual void
+    stop()
+    {
+    }
+
+    /**
+     * Log start of RPC call.
+     *
+     * @param method RPC command
+     * @param requestId Unique identifier to track command
+     */
+    virtual void
+    rpcStart(std::string_view method, std::uint64_t requestId) = 0;
+
+    /**
+     * Log successful finish of RPC call
+     *
+     * @param method RPC command
+     * @param requestId Unique identifier to track command
+     */
+    virtual void
+    rpcFinish(std::string_view method, std::uint64_t requestId) = 0;
+
+    /**
+     * Log errored RPC call
+     *
+     * @param method RPC command
+     * @param requestId Unique identifier to track command
+     */
+    virtual void
+    rpcError(std::string_view method, std::uint64_t requestId) = 0;
+
+    /**
+     * Log queued job
+     *
+     * @param type Job type
+     */
+    virtual void
+    jobQueue(JobType const type) = 0;
+
+    /**
+     * Log job executing
+     *
+     * @param type Job type
+     * @param dur Duration enqueued in microseconds
+     * @param startTime Time that execution began
+     * @param instance JobQueue worker thread instance
+     */
+    virtual void
+    jobStart(JobType const type, Microseconds dur, SteadyTimePoint startTime, int instance) = 0;
+
+    /**
+     * Log job finishing
+     *
+     * @param type Job type
+     * @param dur Duration running in microseconds
+     * @param instance Jobqueue worker thread instance
+     */
+    virtual void
+    jobFinish(JobType const type, Microseconds dur, int instance) = 0;
+
+    /**
+     * Render performance counters in Json
+     *
+     * @return Counters Json object
+     */
+    [[nodiscard]] virtual json::Value
+    countersJson() const = 0;
+
+    /**
+     * Render currently executing jobs and RPC calls and durations in Json
+     *
+     * @return Current executing jobs and RPC calls and durations
+     */
+    [[nodiscard]] virtual json::Value
+    currentJson() const = 0;
+
+    /**
+     * Ensure enough room to store each currently executing job
+     *
+     * @param resize Number of JobQueue worker threads
+     */
+    virtual void
+    resizeJobs(int const resize) = 0;
+
+    /**
+     * Rotate perf log file
+     */
+    virtual void
+    rotate() = 0;
+};
+
+PerfLog::Setup
+setupPerfLog(Section const& section, std::filesystem::path const& configDir);
+
+/**
+ * @param methodNames The RPC methods to count, one counter per name. Reported
+ *        as JSON keys that borrow each name and read it as a C string, which is
+ *        why the parameter type requires one that reaches its terminating null.
+ *        The names must outlive the returned object, which holds views of them.
+ *        The range itself need not: it is copied.
+ *        Passed in rather than looked up here, so that this layer needs no
+ *        knowledge of the dispatch table.
+ */
+std::unique_ptr<PerfLog>
+makePerfLog(
+    PerfLog::Setup const& setup,
+    Application& app,
+    std::span<NullTerminatedView const> methodNames,
+    beast::Journal journal,
+    std::function<void()>&& signalStop);
+
+template <typename Func, class Rep, class Period>
+auto
+measureDurationAndLog(
+    Func&& func,
+    std::string_view actionDescription,
+    std::chrono::duration<Rep, Period> maxDelay,
+    beast::Journal const& journal)
+{
+    auto const startTime = std::chrono::high_resolution_clock::now();
+
+    auto result = func();
+
+    auto const endTime = std::chrono::high_resolution_clock::now();
+    auto const duration =
+        std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime);
+    if (duration > maxDelay)
+    {
+        JLOG(journal.warn()) << actionDescription << " took " << duration.count() << " ms";
+    }
+
+    return result;
+}
+
+}  // namespace perf
+}  // namespace xrpl

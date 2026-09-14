@@ -1,0 +1,189 @@
+#include <xrpld/overlay/PeerSet.h>
+
+#include <xrpld/app/main/Application.h>
+#include <xrpld/overlay/Message.h>
+#include <xrpld/overlay/Overlay.h>
+#include <xrpld/overlay/Peer.h>
+
+#include <xrpl/basics/Log.h>
+#include <xrpl/beast/utility/Journal.h>
+
+#include <google/protobuf/message.h>
+
+#include <xrpl.pb.h>
+
+#include <algorithm>
+#include <cstddef>
+#include <functional>
+#include <memory>
+#include <set>
+#include <utility>
+#include <vector>
+
+namespace xrpl {
+
+class PeerSetImpl : public PeerSet
+{
+public:
+    PeerSetImpl(Application& app);
+
+    void
+    addPeers(
+        std::size_t limit,
+        std::function<bool(std::shared_ptr<Peer> const&)> hasItem,
+        std::function<void(std::shared_ptr<Peer> const&)> onPeerAdded) override;
+
+    /**
+     * Send a message to one or all peers.
+     */
+    void
+    sendRequest(
+        ::google::protobuf::Message const& message,
+        protocol::MessageType type,
+        std::shared_ptr<Peer> const& peer) override;
+
+    [[nodiscard]] std::set<Peer::ID> const&
+    getPeerIds() const override;
+
+private:
+    // Used in this class for access to boost::asio::io_context and
+    // xrpl::Overlay.
+    Application& app_;
+    beast::Journal journal_;
+
+    /**
+     * The identifiers of the peers we are tracking.
+     */
+    std::set<Peer::ID> peers_;
+};
+
+PeerSetImpl::PeerSetImpl(Application& app) : app_(app), journal_(app.getJournal("PeerSet"))
+{
+}
+
+void
+PeerSetImpl::addPeers(
+    std::size_t limit,
+    std::function<bool(std::shared_ptr<Peer> const&)> hasItem,
+    std::function<void(std::shared_ptr<Peer> const&)> onPeerAdded)
+{
+    using ScoredPeer = std::pair<int, std::shared_ptr<Peer>>;
+
+    auto const& overlay = app_.getOverlay();
+
+    std::vector<ScoredPeer> pairs;
+    pairs.reserve(overlay.size());
+
+    overlay.foreach([&](auto const& peer) {
+        auto const score = peer->getScore(hasItem(peer));
+        pairs.emplace_back(score, std::move(peer));
+    });
+
+    std::ranges::sort(
+        pairs, [](ScoredPeer const& lhs, ScoredPeer const& rhs) { return lhs.first > rhs.first; });
+
+    std::size_t accepted = 0;
+    for (auto const& pair : pairs)
+    {
+        auto const peer = pair.second;
+        if (!peers_.insert(peer->id()).second)
+            continue;
+        onPeerAdded(peer);
+        if (++accepted >= limit)
+            break;
+    }
+}
+
+void
+PeerSetImpl::sendRequest(
+    ::google::protobuf::Message const& message,
+    protocol::MessageType type,
+    std::shared_ptr<Peer> const& peer)
+{
+    auto const packet = std::make_shared<Message>(message, type);
+    if (peer)
+    {
+        peer->send(packet);
+        return;
+    }
+
+    for (auto const id : peers_)
+    {
+        if (auto const p = app_.getOverlay().findPeerByShortID(id))
+            p->send(packet);
+    }
+}
+
+std::set<Peer::ID> const&
+PeerSetImpl::getPeerIds() const
+{
+    return peers_;
+}
+
+class PeerSetBuilderImpl : public PeerSetBuilder
+{
+public:
+    PeerSetBuilderImpl(Application& app) : app_(app)
+    {
+    }
+
+    std::unique_ptr<PeerSet>
+    build() override
+    {
+        return std::make_unique<PeerSetImpl>(app_);
+    }
+
+private:
+    Application& app_;
+};
+
+std::unique_ptr<PeerSetBuilder>
+makePeerSetBuilder(Application& app)
+{
+    return std::make_unique<PeerSetBuilderImpl>(app);
+}
+
+class DummyPeerSet : public PeerSet
+{
+public:
+    DummyPeerSet(Application& app) : j_(app.getJournal("DummyPeerSet"))
+    {
+    }
+
+    void
+    addPeers(
+        std::size_t limit,
+        std::function<bool(std::shared_ptr<Peer> const&)> hasItem,
+        std::function<void(std::shared_ptr<Peer> const&)> onPeerAdded) override
+    {
+        JLOG(j_.error()) << "DummyPeerSet addPeers should not be called";
+    }
+
+    void
+    sendRequest(
+        ::google::protobuf::Message const& message,
+        protocol::MessageType type,
+        std::shared_ptr<Peer> const& peer) override
+    {
+        JLOG(j_.error()) << "DummyPeerSet sendRequest should not be called";
+    }
+
+    [[nodiscard]] std::set<Peer::ID> const&
+    getPeerIds() const override
+    {
+        static std::set<Peer::ID> const kEmptyPeers;
+        JLOG(j_.error()) << "DummyPeerSet getPeerIds should not be called";
+        return kEmptyPeers;
+    }
+
+private:
+    beast::Journal j_;
+};
+
+std::unique_ptr<PeerSet>
+makeDummyPeerSet(Application& app)
+{
+    return std::make_unique<DummyPeerSet>(app);
+}
+
+}  // namespace xrpl

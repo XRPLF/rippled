@@ -1,0 +1,461 @@
+#include <xrpl/tx/transactors/escrow/EscrowCreate.h>
+
+#include <xrpl/basics/Log.h>
+#include <xrpl/basics/chrono.h>
+#include <xrpl/beast/utility/Zero.h>
+#include <xrpl/conditions/Condition.h>
+#include <xrpl/ledger/ApplyView.h>
+#include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/View.h>
+#include <xrpl/ledger/entries/EscrowEntry.h>
+#include <xrpl/ledger/helpers/AccountRootHelpers.h>
+#include <xrpl/ledger/helpers/DirectoryHelpers.h>
+#include <xrpl/ledger/helpers/EscrowHelpers.h>
+#include <xrpl/ledger/helpers/SponsorHelpers.h>
+#include <xrpl/ledger/helpers/TokenHelpers.h>
+#include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Concepts.h>
+#include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Fees.h>
+#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/Issue.h>
+#include <xrpl/protocol/Keylet.h>
+#include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/MPTAmount.h>
+#include <xrpl/protocol/MPTIssue.h>
+#include <xrpl/protocol/Protocol.h>
+#include <xrpl/protocol/Rate.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/UintTypes.h>
+#include <xrpl/protocol/XRPAmount.h>
+#include <xrpl/tx/Transactor.h>
+#include <xrpl/tx/applySteps.h>
+
+#include <memory>
+#include <system_error>
+#include <variant>
+
+namespace xrpl {
+
+/*
+    Escrow
+    ======
+
+    Escrow is a feature of the XRP Ledger that allows you to send conditional
+    XRP payments. These conditional payments, called escrows, set aside XRP and
+    deliver it later when certain conditions are met. Conditions to successfully
+    finish an escrow include time-based unlocks and crypto-conditions. Escrows
+    can also be set to expire if not finished in time.
+
+    The XRP set aside in an escrow is locked up. No one can use or destroy the
+    XRP until the escrow has been successfully finished or canceled. Before the
+    expiration time, only the intended receiver can get the XRP. After the
+    expiration time, the XRP can only be returned to the sender.
+
+    For more details on escrow, including examples, diagrams and more please
+    visit https://xrpl.org/escrow.html
+
+    For details on specific transactions, including fields and validation rules
+    please see:
+
+    `EscrowCreate`
+    --------------
+        See: https://xrpl.org/escrowcreate.html
+
+    `EscrowFinish`
+    --------------
+        See: https://xrpl.org/escrowfinish.html
+
+    `EscrowCancel`
+    --------------
+        See: https://xrpl.org/escrowcancel.html
+*/
+
+//------------------------------------------------------------------------------
+
+TxConsequences
+EscrowCreate::makeTxConsequences(PreflightContext const& ctx)
+{
+    auto const amount = ctx.tx[sfAmount];
+    return TxConsequences{ctx.tx, isXRP(amount) ? amount.xrp() : beast::kZero};
+}
+
+bool
+EscrowCreate::checkExtraFeatures(PreflightContext const& ctx)
+{
+    // Only require featureMPTokensV1 when the escrow amount is an MPT and
+    // fixCleanup3_2_0 is active; XRP/IOU escrows are unaffected by this gate.
+    if (ctx.rules.enabled(fixCleanup3_2_0) && ctx.tx[sfAmount].holds<MPTIssue>())
+    {
+        if (!ctx.rules.enabled(featureMPTokensV1))
+            return false;
+    }
+
+    return (!ctx.tx.isFieldPresent(sfBytecode) && !ctx.tx.isFieldPresent(sfData)) ||
+        ctx.rules.enabled(featureSmartEscrow);
+}
+
+template <ValidIssueType T>
+static NotTEC
+escrowCreatePreflightHelper(PreflightContext const& ctx);
+
+template <>
+NotTEC
+escrowCreatePreflightHelper<Issue>(PreflightContext const& ctx)
+{
+    STAmount const amount = ctx.tx[sfAmount];
+    if (amount.native() || amount <= beast::kZero)
+        return temBAD_AMOUNT;
+
+    if (badCurrency() == amount.get<Issue>().currency)
+        return temBAD_CURRENCY;
+
+    return tesSUCCESS;
+}
+
+template <>
+NotTEC
+escrowCreatePreflightHelper<MPTIssue>(PreflightContext const& ctx)
+{
+    if (!ctx.rules.enabled(fixCleanup3_2_0) && !ctx.rules.enabled(featureMPTokensV1))
+        return temDISABLED;
+
+    auto const amount = ctx.tx[sfAmount];
+    if (amount.native() || amount.mpt() > MPTAmount{kMaxMpTokenAmount} || amount <= beast::kZero)
+        return temBAD_AMOUNT;
+
+    return tesSUCCESS;
+}
+
+XRPAmount
+EscrowCreate::calculateBaseFee(ReadView const& view, STTx const& tx)
+{
+    XRPAmount txnFees{Transactor::calculateBaseFee(view, tx)};
+    if (tx.isFieldPresent(sfBytecode))
+    {
+        // Ten base fees in all: `Transactor::calculateBaseFee` charges one,
+        // this adds nine. Plus 5 drops per byte.
+        txnFees += 9 * view.fees().base + 5 * tx[sfBytecode].size();
+    }
+    return txnFees;
+}
+
+NotTEC
+EscrowCreate::preflight(PreflightContext const& ctx)
+{
+    STAmount const amount{ctx.tx[sfAmount]};
+    if (!isXRP(amount))
+    {
+        if (!ctx.rules.enabled(featureTokenEscrow))
+            return temBAD_AMOUNT;
+
+        if (auto const ret = std::visit(
+                [&]<typename T>(T const&) { return escrowCreatePreflightHelper<T>(ctx); },
+                amount.asset().value());
+            !isTesSuccess(ret))
+            return ret;
+    }
+    else
+    {
+        if (amount <= beast::kZero)
+            return temBAD_AMOUNT;
+    }
+
+    // We must specify at least one timeout value
+    if (!ctx.tx[~sfCancelAfter] && !ctx.tx[~sfFinishAfter])
+        return temBAD_EXPIRATION;
+
+    // If both finish and cancel times are specified then the cancel time must
+    // be strictly after the finish time.
+    if (ctx.tx[~sfCancelAfter] && ctx.tx[~sfFinishAfter] &&
+        ctx.tx[sfCancelAfter] <= ctx.tx[sfFinishAfter])
+        return temBAD_EXPIRATION;
+
+    if (ctx.tx.isFieldPresent(sfBytecode) && !ctx.tx.isFieldPresent(sfCancelAfter))
+        return temBAD_EXPIRATION;
+
+    // In the absence of a FinishAfter, the escrow can be finished
+    // immediately, which can be confusing. When creating an escrow,
+    // we want to ensure that either a FinishAfter time is explicitly
+    // specified or a completion condition is attached.
+    if (!ctx.tx[~sfFinishAfter] && !ctx.tx[~sfCondition] && !ctx.tx[~sfBytecode])
+    {
+        JLOG(ctx.j.debug()) << "Must have at least one of FinishAfter, "
+                               "Condition, or Bytecode.";
+        return temMALFORMED;
+    }
+
+    if (auto const cb = ctx.tx[~sfCondition])
+    {
+        using namespace xrpl::cryptoconditions;
+
+        std::error_code ec;
+
+        auto const condition = Condition::deserialize(*cb, ec);
+        if (!condition)
+        {
+            JLOG(ctx.j.debug()) << "Malformed condition during escrow creation: " << ec.message();
+            return temMALFORMED;
+        }
+    }
+
+    if (ctx.tx.isFieldPresent(sfData))
+    {
+        if (!ctx.tx.isFieldPresent(sfBytecode))
+        {
+            JLOG(ctx.j.debug()) << "EscrowCreate with Data requires Bytecode";
+            return temMALFORMED;
+        }
+        auto const data = ctx.tx.getFieldVL(sfData);
+        if (data.size() > kMaxWasmDataLength)
+        {
+            JLOG(ctx.j.debug()) << "EscrowCreate.Data bad size " << data.size();
+            return temMALFORMED;
+        }
+    }
+
+    // amendment was checked by checkExtraFeatures
+    if (ctx.tx.isFieldPresent(sfBytecode))
+    {
+        auto const code = ctx.tx.getFieldVL(sfBytecode);
+        // Protocol ceiling only; `preflight` has no view.
+        if (code.empty() || code.size() > kMaxBytecodeSizeLimit)
+        {
+            JLOG(ctx.j.debug()) << "EscrowCreate.Bytecode bad size " << code.size();
+            return temMALFORMED;
+        }
+    }
+
+    return tesSUCCESS;
+}
+
+TER
+EscrowCreate::preclaim(PreclaimContext const& ctx)
+{
+    STAmount const amount{ctx.tx[sfAmount]};
+    AccountID const account{ctx.tx[sfAccount]};
+    AccountID const dest{ctx.tx[sfDestination]};
+
+    auto const sled = ctx.view.read(keylet::account(dest));
+    if (!sled)
+        return tecNO_DST;
+
+    // Pseudo-accounts cannot receive escrow. Note, this is not amendment-gated
+    // because all writes to pseudo-account discriminator fields **are**
+    // amendment gated, hence the behaviour of this check will always match the
+    // currently active amendments.
+    if (isPseudoAccount(sled))
+        return tecNO_PERMISSION;
+
+    if (!isXRP(amount))
+    {
+        if (!ctx.view.rules().enabled(featureTokenEscrow))
+            return temDISABLED;  // LCOV_EXCL_LINE
+
+        if (auto const ret = std::visit(
+                [&]<typename T>(T const&) {
+                    return escrowLockPreclaimHelper<T>(ctx.view, account, dest, amount, ctx.j);
+                },
+                amount.asset().value());
+            !isTesSuccess(ret))
+            return ret;
+    }
+
+    // The limits are voted, so they can change between ledgers. A `tef`, unlike
+    // a `tem`, does not mark the transaction bad for the hold time.
+    if (ctx.tx.isFieldPresent(sfBytecode))
+    {
+        auto const& fees = ctx.view.fees();
+        if (isBytecodeUploadDisabled(fees))
+        {
+            JLOG(ctx.j.debug()) << "WASM runtime deactivated by fee voting";
+            return tefTEMP_DISABLED;
+        }
+
+        auto const code = ctx.tx.getFieldVL(sfBytecode);
+        if (code.size() > fees.bytecodeSizeLimit)
+        {
+            JLOG(ctx.j.debug()) << "EscrowCreate.Bytecode over voted limit " << code.size();
+            return tefEXCEEDS_LIMIT;
+        }
+
+        // TODO(SmartEscrow): screen the module itself here - that it compiles,
+        // and that it imports and exports what the engine can serve - once the
+        // WASM engine lands. Until then any blob of the right size is taken.
+    }
+
+    return tesSUCCESS;
+}
+
+TER
+EscrowCreate::doApply()
+{
+    auto const closeTime = ctx_.view().header().parentCloseTime;
+
+    if (ctx_.tx[~sfCancelAfter] && after(closeTime, ctx_.tx[sfCancelAfter]))
+        return tecNO_PERMISSION;
+
+    if (ctx_.tx[~sfFinishAfter] && after(closeTime, ctx_.tx[sfFinishAfter]))
+        return tecNO_PERMISSION;
+
+    auto const sle = ctx_.view().peek(keylet::account(accountID_));
+    if (!sle)
+        return tefINTERNAL;  // LCOV_EXCL_LINE
+
+    // Check reserve and funds availability
+    STAmount const amount{ctx_.tx[sfAmount]};
+    auto const reserveToAdd = calculateAdditionalReserve(ctx_.tx[~sfBytecode]);
+
+    auto const balance = sle->getFieldAmount(sfBalance).xrp();
+    // First check: whoever is on the hook for the new owner increment
+    // can cover it. When sponsored this hits the sponsor branch and
+    // validates the sponsor's reserve + remaining credit. When
+    // unsponsored this hits the source branch and validates the
+    // source's pre-lock balance against base + (currentOC+1)*increment.
+    if (auto const ret = checkReserve(
+            ctx_.getApplyViewContext(), sle, balance, {.ownerCountDelta = reserveToAdd}, j_);
+        !isTesSuccess(ret))
+        return ret;
+
+    if (isXRP(amount))
+    {
+        // Second check (XRP escrow only): after locking the escrowed
+        // amount, the source must still meet its own reserve floor. This is
+        // always the source's own balance against the source's own reserve —
+        // the sponsor's reserve was already validated above, and a sponsor
+        // never covers the locked funds. We compare directly (rather than via
+        // checkReserve) because that helper diverts to the sponsor's balance
+        // when a sponsor is present and would ignore the source's post-lock
+        // balance entirely. ownerCountDelta differs by case:
+        // - sponsored:   0            — sponsor covers the new owner increment, so
+        //                the source only owes reserve for its current owners.
+        // - unsponsored: reserveToAdd — source owes reserve including the new
+        //                increment, which Bytecode can make larger than one unit.
+        auto const sourceReserve = accountReserve(
+            ctx_.view(),
+            sle,
+            j_,
+            {.ownerCountDelta = getTxReserveSponsorID(ctx_.tx) ? 0 : reserveToAdd});
+        if (balance - STAmount(amount).xrp() < sourceReserve)
+            return tecUNFUNDED;
+    }
+
+    // Check destination account
+    {
+        auto const sled = ctx_.view().read(keylet::account(ctx_.tx[sfDestination]));
+        if (!sled)
+            return tecNO_DST;  // LCOV_EXCL_LINE
+        if (sled->isFlag(lsfRequireDestTag) && !ctx_.tx[~sfDestinationTag])
+            return tecDST_TAG_NEEDED;
+    }
+
+    // Create escrow in ledger.  Note that we use the value from the
+    // sequence or ticket.  For more explanation see comments in SeqProxy.h.
+    EscrowEntryW escrow(accountID_, ctx_.tx.getSeqProxy(), ctx_.view(), j_);
+    Keylet const escrowKeylet = escrow.keylet();
+    escrow.newSLE();
+    (*escrow)[sfAmount] = amount;
+    (*escrow)[sfAccount] = accountID_;
+    (*escrow)[~sfCondition] = ctx_.tx[~sfCondition];
+    (*escrow)[~sfSourceTag] = ctx_.tx[~sfSourceTag];
+    (*escrow)[sfDestination] = ctx_.tx[sfDestination];
+    (*escrow)[~sfCancelAfter] = ctx_.tx[~sfCancelAfter];
+    (*escrow)[~sfFinishAfter] = ctx_.tx[~sfFinishAfter];
+    (*escrow)[~sfDestinationTag] = ctx_.tx[~sfDestinationTag];
+    (*escrow)[~sfBytecode] = ctx_.tx[~sfBytecode];
+    (*escrow)[~sfData] = ctx_.tx[~sfData];
+
+    if (ctx_.view().rules().enabled(fixIncludeKeyletFields))
+    {
+        (*escrow)[sfSequence] = ctx_.tx.getSeqProxy().value();
+    }
+
+    if (ctx_.view().rules().enabled(featureTokenEscrow) && !isXRP(amount))
+    {
+        auto const xferRate = transferRate(ctx_.view(), amount);
+        if (xferRate != kParityRate)
+            (*escrow)[sfTransferRate] = xferRate.value;
+    }
+
+    escrow.insert();
+
+    // Add escrow to sender's owner directory
+    {
+        auto page = ctx_.view().dirInsert(
+            keylet::ownerDir(accountID_), escrowKeylet, describeOwnerDir(accountID_));
+        if (!page)
+            return tecDIR_FULL;  // LCOV_EXCL_LINE
+        (*escrow)[sfOwnerNode] = *page;
+    }
+
+    // If it's not a self-send, add escrow to recipient's owner directory.
+    AccountID const dest = ctx_.tx[sfDestination];
+    if (dest != accountID_)
+    {
+        auto page =
+            ctx_.view().dirInsert(keylet::ownerDir(dest), escrowKeylet, describeOwnerDir(dest));
+        if (!page)
+            return tecDIR_FULL;  // LCOV_EXCL_LINE
+        (*escrow)[sfDestinationNode] = *page;
+    }
+
+    // IOU escrow objects are added to the issuer's owner directory to help
+    // track the total locked balance. For MPT, this isn't necessary because the
+    // locked balance is already stored directly in the MPTokenIssuance object.
+    AccountID const issuer = amount.getIssuer();
+    if (!isXRP(amount) && issuer != accountID_ && issuer != dest && !amount.holds<MPTIssue>())
+    {
+        auto page =
+            ctx_.view().dirInsert(keylet::ownerDir(issuer), escrowKeylet, describeOwnerDir(issuer));
+        if (!page)
+            return tecDIR_FULL;  // LCOV_EXCL_LINE
+        (*escrow)[sfIssuerNode] = *page;
+    }
+
+    // Deduct owner's balance
+    if (isXRP(amount))
+    {
+        (*sle)[sfBalance] = (*sle)[sfBalance] - amount;
+    }
+    else
+    {
+        if (auto const ret = std::visit(
+                [&]<typename T>(T const&) {
+                    return escrowLockApplyHelper<T>(ctx_.view(), issuer, accountID_, amount, j_);
+                },
+                amount.asset().value());
+            !isTesSuccess(ret))
+        {
+            return ret;  // LCOV_EXCL_LINE
+        }
+    }
+
+    // increment owner count
+    increaseOwnerCount(ctx_.getApplyViewContext(), sle, reserveToAdd, ctx_.journal);
+    addSponsorToLedgerEntry(ctx_.getApplyViewContext(), escrow.mutableRawSle());
+    ctx_.view().update(sle);
+    return tesSUCCESS;
+}
+
+void
+EscrowCreate::visitInvariantEntry(bool, SLE::ConstRef, SLE::ConstRef)
+{
+    // No transaction-specific invariants yet (future work).
+}
+
+bool
+EscrowCreate::finalizeInvariants(
+    STTx const&,
+    TER,
+    XRPAmount,
+    ReadView const&,
+    beast::Journal const&)
+{
+    // No transaction-specific invariants yet (future work).
+    return true;
+}
+}  // namespace xrpl

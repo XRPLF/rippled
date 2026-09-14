@@ -1,0 +1,195 @@
+#pragma once
+
+#include <xrpld/core/Config.h>
+
+#include <atomic>
+#include <cstdint>
+#include <map>
+#include <memory>
+#include <string>
+
+namespace xrpl::test {
+
+extern std::atomic<bool> gEnvUseIPv4;
+
+inline char const*
+getEnvLocalhostAddr()
+{
+    return gEnvUseIPv4 ? "127.0.0.1" : "::1";
+}
+
+/**
+ * @brief initializes a config object for use with jtx::Env
+ *
+ * @param config the configuration object to be initialized
+ */
+extern void
+setupConfigForUnitTests(Config& config);
+
+namespace jtx {
+
+/**
+ * @brief creates and initializes a default
+ * configuration for jtx::Env
+ *
+ * @return unique_ptr to Config instance
+ */
+inline std::unique_ptr<Config>
+envconfig()
+{
+    auto p = std::make_unique<Config>();
+    setupConfigForUnitTests(*p);
+    return p;
+}
+
+/**
+ * @brief creates and initializes a default configuration for jtx::Env and
+ * invokes the provided function/lambda with the configuration object.
+ *
+ * @param modfunc callable function or lambda to modify the default config.
+ * The first argument to the function must be std::unique_ptr to
+ * xrpl::Config. The function takes ownership of the unique_ptr and
+ * relinquishes ownership by returning a unique_ptr.
+ *
+ * @param args additional arguments that will be passed to
+ * the config modifier function (optional)
+ *
+ * @return unique_ptr to Config instance
+ */
+template <class F, class... Args>
+std::unique_ptr<Config>
+envconfig(F&& modfunc, Args&&... args)
+{
+    return modfunc(envconfig(), std::forward<Args>(args)...);
+}
+
+/**
+ * @brief adjust config to enable online_delete
+ *
+ * @param cfg config instance to be modified
+ *
+ * @param deleteInterval how many new ledgers should be available before
+ * rotating. Defaults to 8, because the standalone minimum is 8.
+ *
+ * @return unique_ptr to Config instance
+ */
+std::unique_ptr<Config>
+onlineDelete(std::unique_ptr<Config> cfg, std::uint32_t deleteInterval = 8);
+
+/**
+ * @brief adjust config so no admin ports are enabled
+ *
+ * this is intended for use with envconfig, as in
+ * envconfig(noAdmin)
+ *
+ * @param cfg config instance to be modified
+ *
+ * @return unique_ptr to Config instance
+ */
+std::unique_ptr<Config> noAdmin(std::unique_ptr<Config>);
+
+std::unique_ptr<Config> secureGateway(std::unique_ptr<Config>);
+
+std::unique_ptr<Config> adminLocalnet(std::unique_ptr<Config>);
+
+std::unique_ptr<Config> secureGatewayLocalnet(std::unique_ptr<Config>);
+
+std::unique_ptr<Config> singleThreadIo(std::unique_ptr<Config>);
+
+/**
+ * @brief adjust configuration with params needed to be a validator
+ *
+ * this is intended for use with envconfig, as in
+ * envconfig(validator, myseed)
+ *
+ * @param cfg config instance to be modified
+ * @param seed seed string for use in secret key generation. A fixed default
+ * value will be used if this string is empty
+ *
+ * @return unique_ptr to Config instance
+ */
+std::unique_ptr<Config>
+validator(std::unique_ptr<Config>, std::string const&);
+
+/**
+ * @brief add a grpc address and port to config
+ *
+ * This is intended for use with envconfig, for tests that require a grpc
+ * server. If this function is not called, grpc server will not start
+ *
+ *
+ * @param cfg config instance to be modified
+ */
+std::unique_ptr<Config> addGrpcConfig(std::unique_ptr<Config>);
+
+/**
+ * @brief add a grpc address, port and secureGateway to config
+ *
+ * This is intended for use with envconfig, for tests that require a grpc
+ * server. If this function is not called, grpc server will not start
+ *
+ *
+ * @param cfg config instance to be modified
+ */
+std::unique_ptr<Config>
+addGrpcConfigWithSecureGateway(std::unique_ptr<Config>, std::string const& secureGateway);
+
+/**
+ * @brief add a grpc address, port and TLS certificate/key paths to config
+ *
+ * This is intended for use with envconfig, for tests that require a grpc
+ * server with TLS enabled.
+ *
+ * @param cfg config instance to be modified
+ * @param certPath path to SSL certificate file
+ * @param keyPath path to SSL private key file
+ */
+std::unique_ptr<Config>
+addGrpcConfigWithTLS(
+    std::unique_ptr<Config>,
+    std::string const& certPath,
+    std::string const& keyPath);
+
+/**
+ * @brief add a grpc address, port and TLS certificate/key/client CA paths to config
+ *
+ * This is intended for use with envconfig, for tests that require a grpc
+ * server with mutual TLS (client certificate verification) enabled.
+ *
+ * @param cfg config instance to be modified
+ * @param certPath path to SSL certificate file
+ * @param keyPath path to SSL private key file
+ * @param clientCAPath path to SSL client CA certificate file for mTLS
+ */
+std::unique_ptr<Config>
+addGrpcConfigWithTLSAndClientCA(
+    std::unique_ptr<Config>,
+    std::string const& certPath,
+    std::string const& keyPath,
+    std::string const& clientCAPath);
+
+/**
+ * @brief add a grpc address, port and TLS with server cert chain to config
+ *
+ * This is intended for use with envconfig, for tests that require a grpc
+ * server with TLS enabled and intermediate CA certificates.
+ *
+ * @param cfg config instance to be modified
+ * @param certPath path to SSL certificate file
+ * @param keyPath path to SSL private key file
+ * @param certChainPath path to SSL intermediate CA certificate(s) file
+ */
+std::unique_ptr<Config>
+addGrpcConfigWithTLSAndCertChain(
+    std::unique_ptr<Config>,
+    std::string const& certPath,
+    std::string const& keyPath,
+    std::string const& certChainPath);
+
+std::unique_ptr<Config>
+makeConfig(
+    std::map<std::string, std::string> extraTxQ = {},
+    std::map<std::string, std::string> extraVoting = {});
+
+}  // namespace jtx
+}  // namespace xrpl::test

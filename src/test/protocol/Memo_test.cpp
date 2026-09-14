@@ -1,0 +1,127 @@
+
+#include <test/jtx/Account.h>
+#include <test/jtx/Env.h>
+#include <test/jtx/JTx.h>
+#include <test/jtx/amount.h>
+#include <test/jtx/memo.h>
+#include <test/jtx/noop.h>
+#include <test/jtx/rpc.h>
+
+#include <xrpl/basics/strHex.h>
+#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/protocol/SField.h>
+
+#include <string_view>
+
+namespace xrpl {
+
+class Memo_test : public beast::unit_test::Suite
+{
+public:
+    void
+    testMemos()
+    {
+        testcase("Test memos");
+
+        using namespace test::jtx;
+        Account const alice{"alice"};
+
+        Env env(*this);
+        env.fund(XRP(10000), alice);
+        env.close();
+
+        // Lambda that returns a valid JTx with a memo that we can hack up.
+        // This is the basis for building tests of invalid states.
+        auto const makeJtxWithMemo = [&env, &alice] {
+            JTx example = noop(alice);
+            Memo const exampleMemo{"tic", "tac", "toe"};
+            exampleMemo(env, example);
+            return example;
+        };
+
+        // A valid memo.
+        env(makeJtxWithMemo());
+        env.close();
+
+        {
+            // Make sure that too big a memo is flagged as invalid.
+            JTx memoSize = makeJtxWithMemo();
+            memoSize.jv[sfMemos.jsonName][0u][sfMemo.jsonName][sfMemoData.jsonName] =
+                std::string(2020, '0');
+            env(memoSize,
+                Rpc("invalidTransaction",
+                    "fails local checks: The memo exceeds the maximum allowed "
+                    "size."));
+
+            // This memo is just barely small enough.
+            memoSize.jv[sfMemos.jsonName][0u][sfMemo.jsonName][sfMemoData.jsonName] =
+                std::string(2018, '1');
+            env(memoSize);
+        }
+        {
+            // Put a non-Memo in the Memos array.
+            JTx memoNonMemo = noop(alice);
+            auto& jv = memoNonMemo.jv;
+            auto& ma = jv[sfMemos.jsonName];
+            auto& mi = ma[ma.size()];
+            auto& m = mi[sfCreatedNode.jsonName];  // CreatedNode in Memos
+            m[sfMemoData.jsonName] = "3030303030";
+
+            env(memoNonMemo,
+                Rpc("invalidTransaction",
+                    "fails local checks: A memo array may contain only Memo "
+                    "objects."));
+        }
+        {
+            // Put an invalid field in a Memo object.
+            JTx memoExtra = makeJtxWithMemo();
+            memoExtra.jv[sfMemos.jsonName][0u][sfMemo.jsonName][sfFlags.jsonName] = 13;
+            env(memoExtra,
+                Rpc("invalidTransaction",
+                    "fails local checks: A memo may contain only MemoType, "
+                    "MemoData or MemoFormat fields."));
+        }
+        {
+            // Put a character that is not allowed in a URL in a MemoType field.
+            JTx memoBadChar = makeJtxWithMemo();
+            memoBadChar.jv[sfMemos.jsonName][0u][sfMemo.jsonName][sfMemoType.jsonName] =
+                strHex(std::string_view("ONE<INFINITY"));
+            env(memoBadChar,
+                Rpc("invalidTransaction",
+                    "fails local checks: The MemoType and MemoFormat fields "
+                    "may only contain characters that are allowed in URLs "
+                    "under RFC 3986."));
+        }
+        {
+            // Put a character that is not allowed in a URL in a MemoData field.
+            // That's okay.
+            JTx memoLegitChar = makeJtxWithMemo();
+            memoLegitChar.jv[sfMemos.jsonName][0u][sfMemo.jsonName][sfMemoData.jsonName] =
+                strHex(std::string_view("ONE<INFINITY"));
+            env(memoLegitChar);
+        }
+        {
+            // Put a character that is not allowed in a URL in a MemoFormat.
+            JTx memoBadChar = makeJtxWithMemo();
+            memoBadChar.jv[sfMemos.jsonName][0u][sfMemo.jsonName][sfMemoFormat.jsonName] =
+                strHex(std::string_view("NoBraces{}InURL"));
+            env(memoBadChar,
+                Rpc("invalidTransaction",
+                    "fails local checks: The MemoType and MemoFormat fields "
+                    "may only contain characters that are allowed in URLs "
+                    "under RFC 3986."));
+        }
+    }
+
+    //--------------------------------------------------------------------------
+
+    void
+    run() override
+    {
+        testMemos();
+    }
+};
+
+BEAST_DEFINE_TESTSUITE(Memo, protocol, xrpl);
+
+}  // namespace xrpl

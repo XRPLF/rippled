@@ -1,0 +1,35 @@
+#pragma once
+
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/protocol/LedgerFormats.h>
+
+namespace xrpl {
+
+class STLedgerEntry;
+
+/**
+ * A pair of SHAMap key and LedgerEntryType.
+ *
+ * A Keylet identifies both a key in the state map
+ * and its ledger entry type.
+ *
+ * @note Keylet is a portmanteau of the words key
+ *       and LET, an acronym for LedgerEntryType.
+ */
+struct Keylet
+{
+    UInt256 key;
+    LedgerEntryType type;
+
+    Keylet(LedgerEntryType type, UInt256 const& key) : key(key), type(type)
+    {
+    }
+
+    /**
+     * Returns true if the SLE matches the type
+     */
+    [[nodiscard]] bool
+    check(STLedgerEntry const&) const;
+};
+
+}  // namespace xrpl

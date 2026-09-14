@@ -1,0 +1,91 @@
+#pragma once
+
+#include <xrpl/beast/hash/xxhasher.h>
+
+#include <cstdint>
+#include <mutex>
+#include <random>
+#include <utility>
+
+namespace xrpl {
+
+namespace detail {
+
+using SeedPair = std::pair<std::uint64_t, std::uint64_t>;
+
+template <bool = true>
+SeedPair
+makeSeedPair() noexcept
+{
+    struct StateT
+    {
+        std::mutex mutex;
+        std::random_device rng;
+        std::mt19937_64 gen;
+        std::uniform_int_distribution<std::uint64_t> dist;
+
+        StateT() : gen(rng())
+        {
+        }
+        // state_t(state_t const&) = delete;
+        // state_t& operator=(state_t const&) = delete;
+    };
+    static StateT kState;
+    std::scoped_lock const lock(kState.mutex);
+    return {kState.dist(kState.gen), kState.dist(kState.gen)};
+}
+
+}  // namespace detail
+
+/**
+ * Seed functor once per construction
+ *
+ * A std compatible hash adapter that resists adversarial inputs.
+ * For this to work, T must implement in its own namespace:
+ *
+ * @code
+ *
+ * template <class Hasher>
+ * void
+ * hash_append (Hasher& h, T const& t) noexcept
+ * {
+ *     // hash_append each base and member that should
+ *     //  participate in forming the hash
+ *     using beast::hash_append;
+ *     hash_append (h, static_cast<T::base1 const&>(t));
+ *     hash_append (h, static_cast<T::base2 const&>(t));
+ *     // ...
+ *     hash_append (h, t.member1);
+ *     hash_append (h, t.member2);
+ *     // ...
+ * }
+ *
+ * @endcode
+ *
+ * Do not use any version of Murmur or CityHash for the Hasher
+ * template parameter (the hashing algorithm).  For details
+ * see https://131002.net/siphash/#at
+ */
+
+template <class HashAlgorithm = beast::Xxhasher>
+class HardenedHash
+{
+private:
+    detail::SeedPair seeds_{detail::makeSeedPair<>()};
+
+public:
+    using result_type = HashAlgorithm::result_type;
+
+    HardenedHash() = default;
+
+    template <class T>
+    result_type
+    operator()(T const& t) const noexcept
+    {
+        HashAlgorithm h(seeds_.first, seeds_.second);
+        hash_append(h, t);
+        return static_cast<result_type>(h);
+    }
+};
+
+}  // namespace xrpl

@@ -1,0 +1,137 @@
+#pragma once
+
+#include <xrpl/basics/Slice.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/protocol/tokens.h>
+
+#include <array>
+#include <cstddef>
+#include <cstdint>
+#include <optional>
+#include <string>
+
+namespace xrpl {
+
+/**
+ * Seeds are used to generate deterministic secret keys.
+ */
+class Seed
+{
+private:
+    std::array<uint8_t, 16> buf_{};
+
+public:
+    using const_iterator = std::array<uint8_t, 16>::const_iterator;
+
+    Seed() = delete;
+
+    Seed(Seed const&) = default;
+    Seed&
+    operator=(Seed const&) = default;
+
+    /**
+     * Destroy the seed.
+     * The buffer will first be securely erased.
+     */
+    ~Seed();
+
+    /**
+     * Construct a seed
+     */
+    /** @{ */
+    explicit Seed(Slice const& slice);
+    explicit Seed(UInt128 const& seed);
+    /** @} */
+
+    [[nodiscard]] std::uint8_t const*
+    data() const
+    {
+        return buf_.data();
+    }
+
+    [[nodiscard]] std::size_t
+    size() const
+    {
+        return buf_.size();
+    }
+
+    [[nodiscard]] const_iterator
+    begin() const noexcept
+    {
+        return buf_.begin();
+    }
+
+    [[nodiscard]] const_iterator
+    cbegin() const noexcept
+    {
+        return buf_.cbegin();
+    }
+
+    [[nodiscard]] const_iterator
+    end() const noexcept
+    {
+        return buf_.end();
+    }
+
+    [[nodiscard]] const_iterator
+    cend() const noexcept
+    {
+        return buf_.cend();
+    }
+};
+
+//------------------------------------------------------------------------------
+
+/**
+ * Create a seed using secure random numbers.
+ */
+Seed
+randomSeed();
+
+/**
+ * Generate a seed deterministically.
+ *
+ * The algorithm is specific to the XRPL:
+ *
+ *     The seed is calculated as the first 128 bits
+ *     of the SHA512-Half of the string text excluding
+ *     any terminating null.
+ *
+ * @note This will not attempt to determine the format of
+ *       the string (e.g. hex or base58).
+ */
+Seed
+generateSeed(std::string const& passPhrase);
+
+/**
+ * Parse a Base58 encoded string into a seed
+ */
+template <>
+std::optional<Seed>
+parseBase58(std::string const& s);
+
+/**
+ * Attempt to parse a string as a seed.
+ *
+ * @param str the string to parse
+ * @param rfc1751 true if we should attempt RFC1751 style parsing (deprecated)
+ */
+std::optional<Seed>
+parseGenericSeed(std::string const& str, bool rfc1751 = true);
+
+/**
+ * Encode a Seed in RFC1751 format
+ */
+std::string
+seedAs1751(Seed const& seed);
+
+/**
+ * Format a seed as a Base58 string
+ */
+inline std::string
+toBase58(Seed const& seed)
+{
+    return encodeBase58Token(TokenType::FamilySeed, seed.data(), seed.size());
+}
+
+}  // namespace xrpl

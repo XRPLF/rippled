@@ -1,0 +1,95 @@
+#pragma once
+
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/basics/partitioned_unordered_map.h>
+
+#include <cstddef>
+#include <ostream>
+#include <string>
+
+namespace xrpl {
+
+// A SHAMapHash is the hash of a node in a SHAMap, and also the
+// type of the hash of the entire SHAMap.
+
+class SHAMapHash
+{
+    UInt256 hash_;
+
+public:
+    SHAMapHash() = default;
+    explicit SHAMapHash(UInt256 const& hash) : hash_(hash)
+    {
+    }
+
+    [[nodiscard]] UInt256 const&
+    asUInt256() const
+    {
+        return hash_;
+    }
+    UInt256&
+    asUInt256()
+    {
+        return hash_;
+    }
+    [[nodiscard]] bool
+    isZero() const
+    {
+        return hash_.isZero();
+    }
+    [[nodiscard]] bool
+    isNonZero() const
+    {
+        return hash_.isNonZero();
+    }
+    [[nodiscard]] int
+    signum() const
+    {
+        return hash_.signum();
+    }
+    void
+    zero()
+    {
+        hash_.zero();
+    }
+
+    friend bool
+    operator==(SHAMapHash const& x, SHAMapHash const& y)
+    {
+        return x.hash_ == y.hash_;
+    }
+
+    friend bool
+    operator<(SHAMapHash const& x, SHAMapHash const& y)
+    {
+        return x.hash_ < y.hash_;
+    }
+
+    friend std::ostream&
+    operator<<(std::ostream& os, SHAMapHash const& x)
+    {
+        return os << x.hash_;
+    }
+
+    friend std::string
+    to_string(SHAMapHash const& x)
+    {
+        return to_string(x.hash_);
+    }
+
+    template <class H>
+    friend void
+    hash_append(H& h, SHAMapHash const& x)
+    {
+        hash_append(h, x.hash_);
+    }
+};
+
+template <>
+inline std::size_t
+extract(SHAMapHash const& key)
+{
+    return *reinterpret_cast<std::size_t const*>(key.asUInt256().data());
+}
+
+}  // namespace xrpl

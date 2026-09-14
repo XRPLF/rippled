@@ -1,0 +1,284 @@
+# This workflow runs workflows to check, build and test the project
+# on every meaningful change on pull_request.
+# However, it will not run if the PR is a draft
+# unless it has the 'DraftRunCI' or 'Full CI build' label.
+#
+# By default a PR builds only a minimal matrix.
+# The full matrix runs once the PR is labeled "Ready to merge" or "Full CI build".
+# For commits to PRs that target a release branch,
+# it also uploads the libxrpl recipe to the Conan remote.
+name: PR
+
+on:
+  merge_group:
+    types:
+      - checks_requested
+  pull_request:
+    types:
+      - opened
+      - reopened
+      - synchronize
+      - ready_for_review
+      # Trigger on label changes so toggling "Ready to merge" or "Full CI build"
+      # switches between the minimal and full matrix without needing a new push.
+      - labeled
+      - unlabeled
+
+concurrency:
+  # A single per-ref group with cancel-in-progress means any newer run (a push
+  # or a label change) supersedes the in-progress one for that ref. Keeping
+  # exactly one authoritative run per ref ensures a fast do-nothing run can never
+  # mask a real build's checks.
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  # This job determines whether the rest of the workflow should run at all,
+  # based on the current set of labels: it runs when the PR is not a draft
+  # (which should also cover merge-group) or has the 'DraftRunCI' or
+  # 'Full CI build' label. Whether a build then happens, and whether it is the
+  # minimal or full matrix, is decided further below and in the strategy matrix.
+  should-run:
+    if: >-
+      ${{
+        !github.event.pull_request.draft
+        || contains(github.event.pull_request.labels.*.name, 'DraftRunCI')
+        || contains(github.event.pull_request.labels.*.name, 'Full CI build')
+      }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Determine changed files
+        # This step checks whether any files have changed that should
+        # cause the next jobs to run. We do it this way rather than
+        # using `paths` in the `on:` section, because all required
+        # checks must pass, even for changes that do not modify anything
+        # that affects those checks. We would therefore like to make the
+        # checks required only if the job runs, but GitHub does not
+        # support that directly. By always executing the workflow on new
+        # commits and by using the changed-files action below, we ensure
+        # that Github considers any skipped jobs to have passed, and in
+        # turn the required checks as well.
+        id: changes
+        uses: tj-actions/changed-files@9426d40962ed5378910ee2e21d5f8c6fcbf2dd96 # v47.0.6
+        with:
+          files: |
+            # These paths are unique to `on-pr.yml`.
+            .github/scripts/levelization/**
+            .github/scripts/rename/**
+            .github/workflows/reusable-check-levelization.yml
+            .github/workflows/reusable-check-rename.yml
+            .github/workflows/on-pr.yml
+
+            # Keep the paths below in sync with those in `on-trigger.yml`.
+            .github/actions/build-deps/**
+            .github/actions/release-info/**
+            .github/actions/setup-conan/**
+            .github/actions/setup-nix-env/**
+            .github/scripts/strategy-matrix/**
+            .github/workflows/reusable-build-test-config.yml
+            .github/workflows/reusable-build-test.yml
+            .github/workflows/reusable-check-autogen.yml
+            .github/workflows/reusable-clang-tidy.yml
+            .github/workflows/reusable-package-test-install.yml
+            .github/workflows/reusable-package.yml
+            .github/workflows/reusable-rust.yml
+            .github/workflows/reusable-strategy-matrix.yml
+            .github/workflows/reusable-test.yml
+            .github/workflows/reusable-upload-recipe.yml
+            .clang-tidy
+            .codecov.yml
+            bin/check-tools.sh
+            bin/nix/**
+            cfg/**
+            cmake/**
+            conan/**
+            crates/**
+            external/**
+            include/**
+            src/**
+            tests/**
+            CMakeLists.txt
+            conanfile.py
+            conan.lock
+            flake.lock
+            flake.nix
+            nix/**
+            LICENSE.md
+            package/**
+            README.md
+
+      - name: Check whether to run
+        # This step determines whether the rest of the workflow should
+        # run. The rest of the workflow will run if this job runs AND at
+        # least one of:
+        # * Any of the files checked in the `changes` step were modified
+        # * The PR is NOT a draft and is labeled "Ready to merge"
+        # * The PR is labeled "Full CI build" (draft or not)
+        # * The workflow is running from the merge queue
+        id: go
+        env:
+          FILES: ${{ steps.changes.outputs.any_changed }}
+          DRAFT: ${{ github.event.pull_request.draft }}
+          READY: ${{ contains(github.event.pull_request.labels.*.name, 'Ready to merge') }}
+          FULL: ${{ contains(github.event.pull_request.labels.*.name, 'Full CI build') }}
+          MERGE: ${{ github.event_name == 'merge_group' }}
+        run: |
+          echo "go=${{ (env.DRAFT != 'true' && env.READY == 'true') || env.FULL == 'true' || env.FILES == 'true' || env.MERGE == 'true' }}" >>"${GITHUB_OUTPUT}"
+          cat "${GITHUB_OUTPUT}"
+    outputs:
+      go: ${{ steps.go.outputs.go == 'true' }}
+
+  check-autogen:
+    needs: should-run
+    if: ${{ needs.should-run.outputs.go == 'true' }}
+    uses: ./.github/workflows/reusable-check-autogen.yml
+
+  check-levelization:
+    needs: should-run
+    if: ${{ needs.should-run.outputs.go == 'true' }}
+    uses: ./.github/workflows/reusable-check-levelization.yml
+
+  check-rename:
+    needs: should-run
+    if: ${{ needs.should-run.outputs.go == 'true' }}
+    uses: ./.github/workflows/reusable-check-rename.yml
+
+  # Runs regardless of the changed files.
+  # PRs into staging branches are skipped, since fixes may be cherry-picked between release lines.
+  check-release-commits:
+    needs: should-run
+    if: ${{ github.event.pull_request.base.ref == 'develop' || github.event.merge_group.base_ref == 'refs/heads/develop' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # The check needs the full history of the release and staging branches.
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Check for copied release commits
+        if: ${{ github.event_name == 'pull_request' }}
+        env:
+          BASE: ${{ github.event.pull_request.base.sha }}
+          HEAD: ${{ github.event.pull_request.head.sha }}
+        run: .github/scripts/releasing/check-no-copied-release-commits.sh "${BASE}" "${HEAD}"
+      # Runs even if the previous check fails, so that both problems are reported at once.
+      - name: Check merge-back has no new commits
+        if: ${{ !cancelled() && github.event_name == 'pull_request' }}
+        env:
+          BASE: ${{ github.event.pull_request.base.sha }}
+          HEAD: ${{ github.event.pull_request.head.sha }}
+        run: .github/scripts/releasing/check-merge-back-commits.sh "${BASE}" "${HEAD}"
+      # The queue squashes PRs, so check the PR's own branch, named in the queue branch.
+      - name: Check the merge queue doesn't merge a release back
+        if: ${{ github.event_name == 'merge_group' }}
+        env:
+          BASE: ${{ github.event.merge_group.base_sha }}
+          HEAD_REF: ${{ github.event.merge_group.head_ref }}
+        run: |
+          if ! [[ "${HEAD_REF}" =~ /pr-([0-9]+)-[0-9a-f]+$ ]]; then
+              echo "Error: Can't find the PR number in '${HEAD_REF}'."
+              exit 1
+          fi
+          git fetch --no-tags origin "refs/pull/${BASH_REMATCH[1]}/head"
+          .github/scripts/releasing/check-no-merge-back.sh "${BASE}" FETCH_HEAD
+
+  clang-tidy:
+    needs: should-run
+    if: ${{ needs.should-run.outputs.go == 'true' }}
+    uses: ./.github/workflows/reusable-clang-tidy.yml
+    permissions:
+      issues: write
+      contents: read
+    with:
+      create_issue_on_failure: false
+
+  build-test:
+    needs: should-run
+    if: ${{ needs.should-run.outputs.go == 'true' }}
+    uses: ./.github/workflows/reusable-build-test.yml
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [linux, macos, windows]
+    with:
+      # Enable ccache only for events targeting the XRPLF repository, since
+      # other accounts will not have access to our remote cache storage.
+      ccache_enabled: ${{ github.repository_owner == 'XRPLF' }}
+      os: ${{ matrix.os }}
+    secrets:
+      CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+
+  rust:
+    needs: should-run
+    if: ${{ needs.should-run.outputs.go == 'true' }}
+    uses: ./.github/workflows/reusable-rust.yml
+    secrets:
+      CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+
+  package:
+    needs: [should-run, build-test]
+    # Packaging consumes the debian/rhel release binaries, which are only built
+    # by the full matrix. Skip it for pull requests that ran only the minimal
+    # matrix (i.e. not yet labeled "Ready to merge" or "Full CI build").
+    if: ${{ needs.should-run.outputs.go == 'true' && (github.event_name != 'pull_request' || contains(github.event.pull_request.labels.*.name, 'Ready to merge') || contains(github.event.pull_request.labels.*.name, 'Full CI build')) }}
+    uses: ./.github/workflows/reusable-package.yml
+    with:
+      # A pull request builds packages to prove they still build, and publishes
+      # nothing. Stated rather than left to the input's default, so that changing
+      # that default cannot start publishing from pull requests. No secrets are
+      # passed either, which is the second reason a publish here cannot succeed.
+      publish: false
+
+  upload-recipe:
+    needs:
+      - should-run
+      - build-test
+    # Only run when committing to a PR that targets a release branch.
+    if: ${{ github.repository == 'XRPLF/rippled' && needs.should-run.outputs.go == 'true' && github.event_name == 'pull_request' && startsWith(github.event.pull_request.base.ref, 'release/') }}
+    uses: ./.github/workflows/reusable-upload-recipe.yml
+    secrets:
+      remote_username: ${{ secrets.NEXUS_REMOTE_USERNAME }}
+      remote_password: ${{ secrets.NEXUS_REMOTE_PASSWORD }}
+
+  notify-clio:
+    needs: upload-recipe
+    runs-on: ubuntu-latest
+    steps:
+      # Notify the Clio repository about the newly proposed release version, so
+      # it can be checked for compatibility before the release is actually made.
+      - name: Notify Clio
+        env:
+          GH_TOKEN: ${{ secrets.CLIO_NOTIFY_TOKEN }}
+          PR_URL: ${{ github.event.pull_request.html_url }}
+        run: |
+          gh api --method POST -H "Accept: application/vnd.github+json" -H "X-GitHub-Api-Version: 2022-11-28" \
+              /repos/xrplf/clio/dispatches -f "event_type=check_libxrpl" \
+              -F "client_payload[ref]=${{ needs.upload-recipe.outputs.recipe_ref }}" \
+              -F "client_payload[pr_url]=${PR_URL}"
+
+  passed:
+    if: failure() || cancelled()
+    needs:
+      - check-autogen
+      - check-levelization
+      - check-rename
+      - check-release-commits
+      - clang-tidy
+      - build-test
+      - rust
+      - package
+      - upload-recipe
+      - notify-clio
+    runs-on: ubuntu-latest
+    steps:
+      - name: Fail
+        run: exit 1

@@ -1,0 +1,89 @@
+#pragma once
+
+#include <xrpld/app/main/Application.h>
+#include <xrpld/overlay/Peer.h>
+#include <xrpld/overlay/detail/ProtocolMessage.h>
+
+#include <google/protobuf/message.h>
+
+#include <xrpl.pb.h>
+
+#include <cstddef>
+#include <functional>
+#include <memory>
+#include <set>
+
+namespace xrpl {
+
+/**
+ * Supports data retrieval by managing a set of peers.
+ *
+ * When desired data (such as a ledger or a transaction set)
+ * is missing locally it can be obtained by querying connected
+ * peers. This class manages common aspects of the retrieval.
+ * Callers maintain the set by adding and removing peers depending
+ * on whether the peers have useful information.
+ *
+ * The data is represented by its hash.
+ */
+class PeerSet
+{
+public:
+    virtual ~PeerSet() = default;
+
+    /**
+     * Try add more peers
+     * @param limit  number of peers to add
+     * @param hasItem  callback that helps to select peers
+     * @param onPeerAdded  callback called when a peer is added
+     */
+    virtual void
+    addPeers(
+        std::size_t limit,
+        std::function<bool(std::shared_ptr<Peer> const&)> hasItem,
+        std::function<void(std::shared_ptr<Peer> const&)> onPeerAdded) = 0;
+
+    /**
+     * send a message
+     */
+    template <typename MessageType>
+    void
+    sendRequest(MessageType const& message, std::shared_ptr<Peer> const& peer)
+    {
+        this->sendRequest(message, protocolMessageType(message), peer);
+    }
+
+    virtual void
+    sendRequest(
+        ::google::protobuf::Message const& message,
+        protocol::MessageType type,
+        std::shared_ptr<Peer> const& peer) = 0;
+
+    /**
+     * get the set of ids of previously added peers
+     */
+    [[nodiscard]] virtual std::set<Peer::ID> const&
+    getPeerIds() const = 0;
+};
+
+class PeerSetBuilder
+{
+public:
+    virtual ~PeerSetBuilder() = default;
+
+    virtual std::unique_ptr<PeerSet>
+    build() = 0;
+};
+
+std::unique_ptr<PeerSetBuilder>
+makePeerSetBuilder(Application& app);
+
+/**
+ * Make a dummy PeerSet that does not do anything.
+ * @note For the use case of InboundLedger in ApplicationImp::loadOldLedger(),
+ *       where a real PeerSet is not needed.
+ */
+std::unique_ptr<PeerSet>
+makeDummyPeerSet(Application& app);
+
+}  // namespace xrpl

@@ -1,0 +1,462 @@
+
+#include <test/jtx/Account.h>
+#include <test/jtx/Env.h>
+#include <test/jtx/amount.h>
+
+#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/ledger/helpers/AMMHelpers.h>
+#include <xrpl/protocol/AmountConversions.h>
+#include <xrpl/protocol/IOUAmount.h>
+#include <xrpl/protocol/Quality.h>
+#include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/UintTypes.h>
+#include <xrpl/protocol/XRPAmount.h>
+
+#include <boost/regex/v5/regex.hpp>
+#include <boost/regex/v5/regex_replace.hpp>
+#include <boost/regex/v5/regex_search.hpp>
+#include <boost/regex/v5/regex_token_iterator.hpp>
+
+#include <cstdint>
+#include <exception>
+#include <format>
+#include <iostream>
+#include <map>
+#include <optional>
+#include <ostream>
+#include <string>
+#include <tuple>
+#include <utility>
+#include <vector>
+
+namespace xrpl::test {
+
+/**
+ * AMM Calculator. Uses AMM formulas to simulate the payment engine
+ * expected results. Assuming the formulas are correct some unit-tests can
+ * be verified. Currently supported operations are:
+ *  - swapIn, find out given in. in can flow through multiple AMM/Offer steps.
+ *  - swapOut, find in given out. out can flow through multiple AMM/Offer steps.
+ *  - lptokens, find lptokens given pool composition.
+ *  - changespq, change AMM spot price (SP) quality. given AMM and Offer
+ *      find out AMM offer, which changes AMM's SP quality to
+ *      the Offer's quality.
+ */
+class AMMCalc_test : public beast::unit_test::Suite
+{
+    using TokenIter = boost::sregex_token_iterator;
+    using Steps = std::vector<std::pair<Amounts, bool>>;
+    using TransferRates = std::map<std::string, std::uint32_t>;
+    using SwapArgs = std::tuple<Steps, STAmount, TransferRates, std::uint32_t>;
+    jtx::Account const gw_{jtx::Account("gw")};
+    TokenIter const end_;
+
+    std::optional<STAmount>
+    getAmt(TokenIter const& p, bool* delimited = nullptr)
+    {
+        using namespace jtx;
+        if (p == end_)
+            return STAmount{};
+        std::string str = *p;
+        str = boost::regex_replace(str, boost::regex("^(A|O)[(]"), "");
+        boost::smatch match;
+        // XXX(val))?
+        boost::regex const rx("^([^(]+)[(]([^)]+)[)]([)])?$");
+        if (boost::regex_search(str, match, rx))
+        {
+            if (delimited != nullptr)
+                *delimited = (match[3] != "");
+            if (match[1] == "XRP")
+            {
+                return XRP(std::stoll(match[2]));
+                // drops
+            }
+            if (match[1] == "XRPA")
+            {
+                return XRPAmount{std::stoll(match[2])};
+            }
+            return amountFromString(gw_[match[1]].asset(), match[2]);
+        }
+        return std::nullopt;
+    }
+
+    std::optional<std::tuple<std::string, std::uint32_t, bool>>
+    getRate(TokenIter const& p)
+    {
+        if (p == end_)
+            return std::nullopt;
+        std::string str = *p;
+        str = boost::regex_replace(str, boost::regex("^T[(]"), "");
+        // XXX(rate))?
+        boost::smatch match;
+        boost::regex const rx("^([^(]+)[(]([^)]+)[)]([)])?$");
+        if (boost::regex_search(str, match, rx))
+        {
+            std::string const currency = match[1];
+            // input is rate * 100, no fraction
+            std::uint32_t const rate = 10'000'000 * std::stoi(match[2].str());
+            // true if delimited - )
+            return {{currency, rate, match[3] != ""}};
+        }
+        return std::nullopt;
+    }
+
+    std::uint32_t
+    getFee(TokenIter const& p)
+    {
+        if (p != end_)
+        {
+            std::string const s = *p;
+            return std::stoll(s);
+        }
+        return 0;
+    }
+
+    std::optional<std::pair<Amounts, bool>>
+    getAmounts(TokenIter& p)
+    {
+        if (p == end_)
+            return std::nullopt;
+        std::string const s = *p;
+        bool const amm = s[0] != 'O';
+        auto const a1 = getAmt(p++);
+        if (!a1 || p == end_)
+            return std::nullopt;
+        auto const a2 = getAmt(p++);
+        if (!a2)
+            return std::nullopt;
+        return {{{*a1, *a2}, amm}};
+    }
+
+    std::optional<TransferRates>
+    getTransferRate(TokenIter& p)
+    {
+        TransferRates rates{};
+        if (p == end_)
+            return rates;
+        std::string str = *p;
+        if (str[0] != 'T')
+            return rates;
+        // T(USD(rate),GBP(rate), ...)
+        while (p != end_)
+        {
+            if (auto const rate = getRate(p++))
+            {
+                auto const [currency, transferRate, delimited] = *rate;
+                rates[currency] = transferRate;
+                if (delimited)
+                    break;
+            }
+            else
+            {
+                return std::nullopt;
+            }
+        }
+        return rates;
+    }
+
+    std::optional<SwapArgs>
+    getSwap(TokenIter& p)
+    {
+        // pairs of amm pool or offer
+        Steps pairs;
+        // either amm pool or offer
+        auto const isPair = [](auto const& p) {
+            std::string const s = *p;
+            return s[0] == 'A' || s[0] == 'O';
+        };
+        // get AMM or offer
+        while (isPair(p))
+        {
+            auto const res = getAmounts(p);
+            if (!res || p == end_)
+                return std::nullopt;
+            pairs.push_back(*res);
+        }
+        // swap in/out amount
+        auto const swap = getAmt(p++);
+        if (!swap)
+            return std::nullopt;
+        // optional transfer rate
+        auto const rate = getTransferRate(p);
+        if (!rate)
+            return std::nullopt;
+        auto const fee = getFee(p);
+        return {{pairs, *swap, *rate, fee}};
+    }
+
+    static std::string
+    toString(STAmount const& a)
+    {
+        return std::format("{}/{}", a.getText(), ::xrpl::to_string(a.get<Issue>().currency));
+    }
+
+    static STAmount
+    mulratio(STAmount const& amt, std::uint32_t a, std::uint32_t b, bool round)
+    {
+        if (a == b)
+            return amt;
+        if (amt.native())
+            return toSTAmount(mulRatio(amt.xrp(), a, b, round), amt.asset());
+        return toSTAmount(mulRatio(amt.iou(), a, b, round), amt.asset());
+    }
+
+    static void
+    swapOut(SwapArgs const& args)
+    {
+        auto const vp = std::get<Steps>(args);
+        STAmount sout = std::get<STAmount>(args);
+        auto const fee = std::get<std::uint32_t>(args);
+        auto const rates = std::get<TransferRates>(args);
+        STAmount resultOut = sout;
+        STAmount resultIn{};
+        STAmount sin{};
+        int limitingStep = vp.size();
+        STAmount limitStepOut{};
+        auto const transferRate = [&](STAmount const& amt) {
+            auto const currency = ::xrpl::to_string(amt.get<Issue>().currency);
+            return rates.contains(currency) ? rates.at(currency) : QUALITY_ONE;
+        };
+        // swap out reverse
+        sin = sout;
+        for (auto it = vp.rbegin(); it != vp.rend(); ++it)
+        {
+            sout = mulratio(sin, transferRate(sin), QUALITY_ONE, true);
+            auto const [amts, amm] = *it;
+            // assume no amm limit
+            if (amm)
+            {
+                sin = swapAssetOut(amts, sout, fee);
+            }
+            else if (sout <= amts.out)
+            {
+                sin = Quality{amts}.ceilOut(amts, sout).in;
+            }
+            // limiting step
+            else
+            {
+                sin = amts.in;
+                limitingStep = vp.rend() - it - 1;
+                limitStepOut = amts.out;
+                if (it == vp.rbegin())
+                    resultOut = amts.out;
+            }
+            resultIn = sin;
+        }
+        sin = limitStepOut;
+        // swap in if limiting step
+        for (int i = limitingStep + 1; i < vp.size(); ++i)
+        {
+            auto const [amts, amm] = vp[i];
+            sin = mulratio(sin, QUALITY_ONE, transferRate(sin), false);
+            if (amm)
+            {
+                sout = swapAssetIn(amts, sin, fee);
+            }
+            // assume there is no limiting step in fwd
+            else
+            {
+                sout = Quality{amts}.ceilIn(amts, sin).out;
+            }
+            sin = sout;
+            resultOut = sout;
+        }
+        std::cout << "in: " << toString(resultIn) << " out: " << toString(resultOut) << std::endl;
+    }
+
+    static void
+    swapIn(SwapArgs const& args)
+    {
+        auto const vp = std::get<Steps>(args);
+        STAmount sin = std::get<STAmount>(args);
+        auto const fee = std::get<std::uint32_t>(args);
+        auto const rates = std::get<TransferRates>(args);
+        STAmount resultIn = sin;
+        STAmount resultOut{};
+        STAmount sout{};
+        int limitingStep = 0;
+        STAmount limitStepIn{};
+        auto const transferRate = [&](STAmount const& amt) {
+            auto const currency = ::xrpl::to_string(amt.get<Issue>().currency);
+            return rates.contains(currency) ? rates.at(currency) : QUALITY_ONE;
+        };
+        // Swap in forward
+        for (auto it = vp.begin(); it != vp.end(); ++it)
+        {
+            auto const [amts, amm] = *it;
+            sin = mulratio(sin, QUALITY_ONE, transferRate(sin),
+                           false);  // out of the next step
+            // assume no amm limit
+            if (amm)
+            {
+                sout = swapAssetIn(amts, sin, fee);
+            }
+            else if (sin <= amts.in)
+            {
+                sout = Quality{amts}.ceilIn(amts, sin).out;
+            }
+            // limiting step, requested in is greater than the offer
+            // pay exactly amts.in, which gets amts.out
+            else
+            {
+                sout = amts.out;
+                limitingStep = it - vp.begin();
+                limitStepIn = amts.in;
+            }
+            sin = sout;
+            resultOut = sout;
+        }
+        sin = limitStepIn;
+        // swap out if limiting step
+        for (int i = limitingStep - 1; i >= 0; --i)
+        {
+            sout = mulratio(sin, transferRate(sin), QUALITY_ONE, false);
+            auto const [amts, amm] = vp[i];
+            if (amm)
+            {
+                sin = swapAssetOut(amts, sout, fee);
+            }
+            // assume there is no limiting step
+            else
+            {
+                sin = Quality{amts}.ceilOut(amts, sout).in;
+            }
+            resultIn = sin;
+        }
+        resultOut = mulratio(resultOut, QUALITY_ONE, transferRate(resultOut), true);
+        std::cout << "in: " << toString(resultIn) << " out: " << toString(resultOut) << std::endl;
+    }
+
+    void
+    run() override
+    {
+        using namespace jtx;
+        auto const a = arg();
+        boost::regex const re(",");
+        TokenIter p(a.begin(), a.end(), re, -1);
+        // Token is denoted as CUR(xxx), where CUR is the currency code
+        //    and xxx is the amount, for instance: XRP(100) or USD(11.5)
+        // AMM is denoted as A(CUR1(xxx1),CUR2(xxx2)), for instance:
+        //    A(XRP(1000),USD(1000)), the tokens must be in the order
+        //    poolGets/poolPays
+        // Offer is denoted as O(CUR1(xxx1),CUR2(xxx2)), for instance:
+        //    O(XRP(100),USD(100)), the tokens must be in the order
+        //    takerPays/takerGets
+        // Transfer rate is denoted as a comma separated list for each
+        // currency with the transfer rate, for instance:
+        //   T(USD(175),...,EUR(100)).
+        //   the transfer rate is 100 * rate, with no fraction, for instance:
+        //     1.75 = 1.75 * 100 = 175
+        //   the transfer rate is optional
+        // AMM trading fee is an integer in {0,1000}, 1000 represents 1%
+        //   the trading fee is optional
+        auto const exec = [&] -> bool {
+            if (p == end_)
+                return true;
+            // Swap in to the steps. Execute steps in forward direction first.
+            // swapin,A(XRP(1000),USD(1000)),O(USD(10),EUR(10)),XRP(11),
+            //     T(USD(125)),1000
+            // where
+            //   A(...),O(...) are the payment steps, in this case
+            //     consisting of AMM and Offer.
+            //   XRP(11) is the swapIn value. Note the order of tokens in AMM;
+            //     i.e. poolGets/poolPays.
+            //   T(USD(125) is the transfer rate of 1.25%.
+            //   1000 is AMM trading fee of 1%, the fee is optional.
+            if (*p == "swapin")
+            {
+                if (auto const swap = getSwap(++p); swap)
+                {
+                    swapIn(*swap);
+                    return true;
+                }
+            }
+            // Swap out of the steps. Execute steps in reverse direction first.
+            // swapout,A(USD(1000),XRP(1000)),XRP(10),T(USD(100)),100
+            // where
+            //   A(...) is the payment step, in this case
+            //     consisting of AMM.
+            //   XRP(10) is the swapOut value. Note the order of tokens in AMM:
+            //     i.e. poolGets/poolPays.
+            //   T(USD(100) is the transfer rate of 1%.
+            //   100 is AMM trading fee of 0.1%.
+            else if (*p == "swapout")
+            {
+                if (auto const swap = getSwap(++p); swap)
+                {
+                    swapOut(*swap);
+                    return true;
+                }
+            }
+            // Calculate AMM lptokens
+            // lptokens,USD(1000),XRP(1000)
+            // where
+            //  USD(...),XRP(...) is the pool composition
+            else if (*p == "lptokens")
+            {
+                if (auto const pool = getAmounts(++p); pool)
+                {
+                    Account const amm("amm");
+                    auto const lpt = amm["LPT"];
+                    std::cout << ::xrpl::to_string(
+                                     ammLPTokens(pool->first.in, pool->first.out, lpt).iou())
+                              << std::endl;
+                    return true;
+                }
+            }
+            // Change spot price quality - generates AMM offer such that
+            // when consumed the updated AMM spot price quality is equal
+            // to the CLOB offer quality
+            // changespq,A(XRP(1000),USD(1000)),O(XRP(100),USD(99)),10
+            //   where
+            //     A(...) is AMM
+            //     O(...) is CLOB offer
+            //     10 is AMM trading fee
+            else if (*p == "changespq")
+            {
+                Env const env(*this);
+                if (auto const pool = getAmounts(++p))
+                {
+                    if (auto const offer = getAmounts(p))
+                    {
+                        auto const fee = getFee(p);
+                        if (auto const ammOffer = changeSpotPriceQuality(
+                                pool->first,
+                                Quality{offer->first},
+                                fee,
+                                beast::Journal(beast::Journal::getNullSink()));
+                            ammOffer)
+                        {
+                            std::cout << "amm offer: " << toString(ammOffer->in) << " "
+                                      << toString(ammOffer->out)
+                                      << "\nnew pool: " << toString(pool->first.in + ammOffer->in)
+                                      << " " << toString(pool->first.out - ammOffer->out)
+                                      << std::endl;
+                        }
+                        else
+                        {
+                            std::cout << "can't change the pool's SP quality" << std::endl;
+                        }
+                        return true;
+                    }
+                }
+            }
+            return false;
+        };
+        bool res = false;
+        try
+        {
+            res = exec();
+        }
+        catch (std::exception const& ex)
+        {
+            std::cout << ex.what() << std::endl;
+        }
+        BEAST_EXPECT(res);
+    }
+};
+
+BEAST_DEFINE_TESTSUITE_MANUAL(AMMCalc, app, xrpl);
+
+}  // namespace xrpl::test

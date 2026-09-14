@@ -1,0 +1,162 @@
+#include <xrpld/overlay/detail/ProtocolVersion.h>
+
+#include <xrpl/beast/core/LexicalCast.h>
+#include <xrpl/beast/rfc2616.h>
+
+#include <boost/beast/core/string_type.hpp>
+#include <boost/iterator/function_output_iterator.hpp>
+#include <boost/regex/v5/regbase.hpp>
+#include <boost/regex/v5/regex.hpp>
+#include <boost/regex/v5/regex_match.hpp>
+
+#include <algorithm>
+#include <cstdint>
+#include <functional>
+#include <iterator>
+#include <optional>
+#include <ranges>
+#include <string>
+#include <string_view>
+#include <vector>
+
+namespace xrpl {
+
+/**
+ * The list of protocol versions we speak and we prefer to use.
+ *
+ * @note The list must be sorted in strictly ascending order (and so
+ *       it may not contain any duplicates!)
+ */
+
+constexpr ProtocolVersion const kSupportedProtocolList[]{
+    {2, 2},
+    {2, 3},
+};
+
+// There should be at least one protocol we're willing to speak.
+static_assert(
+    !std::ranges::empty(kSupportedProtocolList),
+    "There must be at least one supported protocol.");
+
+// Searching for an adjacent pair where the first element is not less than the
+// second one proves the list is sorted in strictly ascending order, which in
+// turn means it holds no duplicates.
+static_assert(
+    std::ranges::adjacent_find(kSupportedProtocolList, std::ranges::greater_equal{}) ==
+        std::ranges::end(kSupportedProtocolList),
+    "The list of supported protocols isn't properly sorted.");
+
+std::string
+to_string(ProtocolVersion const& p)
+{
+    return "XRPL/" + std::to_string(p.first) + "." + std::to_string(p.second);
+}
+
+std::vector<ProtocolVersion>
+parseProtocolVersions(std::string_view value)
+{
+    static boost::regex const kRE(
+        "^"                        // start of line
+        "XRPL/"                    // The string "XRPL/"
+        "([2-9]|(?:[1-9][0-9]+))"  // a number (greater than 2 with no leading
+                                   // zeroes)
+        "\\."                      // a period
+        "(0|(?:[1-9][0-9]*))"      // a number (no leading zeroes unless exactly
+                                   // zero)
+        "$"                        // The end of the string
+        ,
+        boost::regex_constants::optimize);
+
+    std::vector<ProtocolVersion> result;
+
+    for (auto const& s : beast::rfc2616::splitCommas(value))
+    {
+        boost::smatch m;
+
+        if (boost::regex_match(s, m, kRE))
+        {
+            std::uint16_t major = 0;
+            std::uint16_t minor = 0;
+            if (!beast::lexicalCastChecked(major, std::string(m[1])))
+                continue;
+
+            if (!beast::lexicalCastChecked(minor, std::string(m[2])))
+                continue;
+
+            auto const proto = makeProtocol(major, minor);
+
+            // This is an extra sanity check: we check that the protocol we just
+            // decoded corresponds to the token we were parsing.
+            if (to_string(proto) == s)
+                result.push_back(makeProtocol(major, minor));
+        }
+    }
+
+    // We guarantee that the returned list is sorted and contains no duplicates:
+    std::ranges::sort(result);
+    auto const uniq = std::ranges::unique(result);
+    result.erase(uniq.begin(), uniq.end());
+
+    return result;
+}
+
+std::optional<ProtocolVersion>
+negotiateProtocolVersion(std::vector<ProtocolVersion> const& versions)
+{
+    std::optional<ProtocolVersion> result;
+
+    // The protocol version we want to negotiate is the largest item in the
+    // intersection of the versions supported by us and the peer. Since the
+    // output of std::set_intersection is sorted, that item is always going
+    // to be the last one. So we get a little clever and avoid the need for
+    // a container:
+    std::function<void(ProtocolVersion const&)> const pickVersion =
+        [&result](ProtocolVersion const& v) { result = v; };
+
+    std::ranges::set_intersection(
+        versions, kSupportedProtocolList, boost::make_function_output_iterator(pickVersion));
+
+    return result;
+}
+
+std::optional<ProtocolVersion>
+negotiateProtocolVersion(std::string_view versions)
+{
+    auto const them = parseProtocolVersions(versions);
+
+    return negotiateProtocolVersion(them);
+}
+
+std::string const&
+supportedProtocolVersions()
+{
+    static std::string const kSupported = [] {
+        std::string ret;
+        for (auto const& v : kSupportedProtocolList)
+        {
+            if (!ret.empty())
+                ret += ", ";
+            ret += to_string(v);
+        }
+
+        return ret;
+    }();
+
+    return kSupported;
+}
+
+bool
+isProtocolSupported(ProtocolVersion const& v)
+{
+    return std::end(kSupportedProtocolList) != std::ranges::find(kSupportedProtocolList, v);
+}
+
+ProtocolVersion
+newestSupportedProtocolVersion()
+{
+    // Scans rather than reading the sorted list's last entry, so it does not
+    // depend on an invariant kept elsewhere.
+    return *std::ranges::max_element(kSupportedProtocolList);
+}
+
+}  // namespace xrpl

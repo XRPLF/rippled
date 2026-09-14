@@ -1,0 +1,81 @@
+@startuml
+box "Server 1"
+    participant timer1 as "std::timer"
+    participant jq1 as "JobQueue"
+    participant ib1 as "InboundTransactions"
+    participant ta1 as "TransactionAcquire"
+    participant pi1 as "PeerImp"
+end box
+
+box "Server 2"
+    participant pi2 as "PeerImp"
+    participant jq2 as "JobQueue"
+    participant ib2 as "InboundTransactions"
+end box
+
+autoactivate on
+[-> ib1 : getSet(rootHash)
+    ib1 -> ta1 : TransactionAcquire(rootHash)
+    return
+    ib1 -> ta1 : init(numPeers=2)
+        ta1 -> ta1 : addPeers(limit=2)
+            ta1 -> ta1 : onPeerAdded(peer)
+                ta1 -> ta1 : trigger(peer)
+                    ta1 -> pi1 : send(TMGetLedger)
+                    return
+                deactivate ta1
+            deactivate ta1
+        deactivate ta1
+        ta1 -> ta1 : setTimer()
+            ta1 -> timer1 : wait(() -> TransactionAcquire.queueJob())
+            return
+        deactivate ta1
+    return
+return empty SHAMap
+
+...
+pi1 -> pi2 : onMessage(TMGetLedger)
+    pi2 -> jq2 : addJob(() -> PeerImp.getLedger(message))
+    return
+deactivate pi2
+
+...
+jq2 -> pi2 : getLedger(message)
+    pi2 -> ib2 : getSet(rootHash)
+    |||
+    return SHAMap
+    pi2 -> pi2 : send(TMLedgerData)
+    deactivate pi2
+deactivate pi2
+
+...
+pi2 -> pi1 : onMessage(TMLedgerData)
+    pi1 -> jq1 : addJob(() -> InboundTransactions.gotData(hash, message))
+    return
+deactivate pi1
+
+...
+jq1 -> ib1 : gotData(hash, message)
+    ib1 -> ta1 : takeNodes(nodeIDs, blobs)
+    return useful | invalid
+deactivate ib1
+
+...
+timer1 -> ta1 : queueJob()
+    ta1 -> jq1 : addJob(() -> TransactionAcquire.invokeOnTimer())
+    return
+deactivate ta1
+
+...
+jq1 -> ta1 : invokeOnTimer()
+    ta1 -> ta1 : onTimer()
+        ta1 -> ta1 : addPeers(limit=1)
+            ta1 -> ta1 : onPeerAdded(peer)
+                ta1 -> ta1 : trigger(peer)
+                note right: mComplete = true;
+                deactivate ta1
+            deactivate ta1
+        deactivate ta1
+    deactivate ta1
+deactivate ta1
+@enduml

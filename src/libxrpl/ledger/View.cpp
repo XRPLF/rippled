@@ -1,0 +1,673 @@
+#include <xrpl/ledger/View.h>
+
+#include <xrpl/basics/Log.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/basics/chrono.h>
+#include <xrpl/basics/safe_cast.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/beast/utility/Zero.h>
+#include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/ledger/ApplyView.h>
+#include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/entries/AmendmentsEntry.h>
+#include <xrpl/ledger/entries/DepositPreauthEntry.h>
+#include <xrpl/ledger/entries/LedgerHashesEntry.h>
+#include <xrpl/ledger/helpers/AccountRootHelpers.h>
+#include <xrpl/ledger/helpers/CredentialHelpers.h>
+#include <xrpl/ledger/helpers/DirectoryHelpers.h>
+#include <xrpl/ledger/helpers/MPTokenHelpers.h>
+#include <xrpl/ledger/helpers/RippleStateHelpers.h>
+#include <xrpl/ledger/helpers/SponsorHelpers.h>
+#include <xrpl/ledger/helpers/TokenHelpers.h>
+#include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Asset.h>
+#include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/Issue.h>
+#include <xrpl/protocol/Keylet.h>
+#include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/MPTIssue.h>
+#include <xrpl/protocol/Protocol.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/XRPAmount.h>
+
+#include <cstdint>
+#include <optional>
+#include <set>
+#include <vector>
+
+namespace xrpl {
+
+//------------------------------------------------------------------------------
+//
+// Observers
+//
+//------------------------------------------------------------------------------
+
+bool
+hasExpired(
+    ReadView const& view,
+    std::optional<std::uint32_t> const& exp,
+    ExpiryComparison comparison)
+{
+    using D = NetClock::duration;
+    using Tp = NetClock::time_point;
+
+    if (!exp)
+        return false;
+    auto const boundary = Tp{D{*exp}};
+    return comparison == ExpiryComparison::Inclusive  //
+        ? view.parentCloseTime() >= boundary
+        : view.parentCloseTime() > boundary;
+}
+
+namespace {
+
+std::optional<bool>
+checkVaultPseudoAccountFrozenPreconditions(ReadView const& view, std::uint8_t depth)
+{
+    if (!view.rules().enabled(featureSingleAssetVault))
+        return false;
+
+    if (depth >= kMaxAssetCheckDepth)
+    {
+        // LCOV_EXCL_START
+        UNREACHABLE(
+            "xrpl::View::checkVaultPseudoAccountFrozenPreconditions : reached asset check depth");
+        return true;
+        // LCOV_EXCL_STOP
+    }
+
+    return std::nullopt;
+}
+
+bool
+isVaultPseudoAccountFrozenForIssuance(
+    ReadView const& view,
+    AccountID const& account,
+    SLE const& issuanceSle,
+    std::uint8_t depth)
+{
+    XRPL_ASSERT(
+        issuanceSle.getType() == ltMPTOKEN_ISSUANCE,
+        "xrpl::isVaultPseudoAccountFrozenForIssuance : MPTokenIssuance SLE");
+
+    auto const issuer = issuanceSle.getAccountID(sfIssuer);
+
+    // Post-fixCleanup3_2_0: vault shares carry sfReferenceHolding pointing
+    // to the vault pseudo's MPToken or RippleState for the underlying.
+    // Read it to derive the underlying asset and recurse, skipping the
+    // issuer-account-then-vault chain. Pre-amendment shares (no field)
+    // fall back to the chain lookup below.
+    if (issuanceSle.isFieldPresent(sfReferenceHolding))
+    {
+        auto const sleHolding =
+            view.read(keylet::unchecked(issuanceSle.getFieldH256(sfReferenceHolding)));
+        if (!sleHolding)
+        {
+            // LCOV_EXCL_START
+            UNREACHABLE("xrpl::isVaultPseudoAccountFrozen : dangling sfReferenceHolding");
+            return false;
+            // LCOV_EXCL_STOP
+        }
+        return isAnyFrozen(
+            view, {issuer, account}, assetOfHolding(issuanceSle, *sleHolding), depth + 1);
+    }
+
+    auto const mptIssuer = view.read(keylet::account(issuer));
+    if (mptIssuer == nullptr)
+    {
+        // LCOV_EXCL_START
+        UNREACHABLE("xrpl::isVaultPseudoAccountFrozen : null MPToken issuer");
+        return false;
+        // LCOV_EXCL_STOP
+    }
+
+    if (!mptIssuer->isFieldPresent(sfVaultID))
+        return false;  // not a Vault pseudo-account, common case
+
+    auto const vault = view.read(keylet::vault(mptIssuer->getFieldH256(sfVaultID)));
+    if (vault == nullptr)
+    {  // LCOV_EXCL_START
+        UNREACHABLE("xrpl::isVaultPseudoAccountFrozen : null vault");
+        return false;
+        // LCOV_EXCL_STOP
+    }
+
+    return isAnyFrozen(view, {issuer, account}, vault->at(sfAsset), depth + 1);
+}
+
+}  // namespace
+
+bool
+isVaultPseudoAccountFrozen(
+    ReadView const& view,
+    AccountID const& account,
+    SLE const& issuanceSle,
+    std::uint8_t depth)
+{
+    if (auto const result = checkVaultPseudoAccountFrozenPreconditions(view, depth))
+        return *result;
+
+    return isVaultPseudoAccountFrozenForIssuance(view, account, issuanceSle, depth);
+}
+
+bool
+isVaultPseudoAccountFrozen(
+    ReadView const& view,
+    AccountID const& account,
+    MPTIssue const& mptShare,
+    std::uint8_t depth)
+{
+    if (auto const result = checkVaultPseudoAccountFrozenPreconditions(view, depth))
+        return *result;
+
+    auto const issuanceSle = view.read(keylet::mptokenIssuance(mptShare.getMptID()));
+    if (issuanceSle == nullptr)
+        return false;  // zero MPToken won't block deletion of MPTokenIssuance
+
+    return isVaultPseudoAccountFrozenForIssuance(view, account, *issuanceSle, depth);
+}
+
+bool
+isLPTokenFrozen(
+    ReadView const& view,
+    AccountID const& account,
+    Asset const& asset,
+    Asset const& asset2)
+{
+    return isFrozen(view, account, asset) || isFrozen(view, account, asset2);
+}
+
+TER
+canTransferLPToken(
+    ReadView const& view,
+    AccountID const& from,
+    AccountID const& to,
+    AccountID const& lpTokenIssuer)
+{
+    // Only AMM-issued LPTokens are subject to this check. The LPToken's issuer
+    // is the AMM account; if it is not an AMM, this is not an LPToken.
+    auto const sleIssuer = view.read(keylet::account(lpTokenIssuer));
+    if (!sleIssuer || !sleIssuer->isFieldPresent(sfAMMID))
+        return tesSUCCESS;
+
+    auto const sleAmm = view.read(keylet::amm((*sleIssuer)[sfAMMID]));
+    if (!sleAmm)
+        return tecINTERNAL;  // LCOV_EXCL_LINE
+
+    auto const transferable = [&](Asset const& a) -> TER {
+        if (!a.holds<MPTIssue>())
+            return tesSUCCESS;
+        return canTransfer(view, a.get<MPTIssue>(), from, to);
+    };
+    if (auto const err = transferable((*sleAmm)[sfAsset]); !isTesSuccess(err))
+        return err;
+    return transferable((*sleAmm)[sfAsset2]);
+}
+
+bool
+areCompatible(
+    ReadView const& validLedger,
+    ReadView const& testLedger,
+    beast::Journal::Stream const& s,
+    char const* reason)
+{
+    bool ret = true;
+
+    if (validLedger.header().seq < testLedger.header().seq)
+    {
+        // valid -> ... -> test
+        auto hash = hashOfSeq(
+            testLedger, validLedger.header().seq, beast::Journal{beast::Journal::getNullSink()});
+        if (hash && (*hash != validLedger.header().hash))
+        {
+            JLOG(s) << reason << " incompatible with valid ledger";
+
+            JLOG(s) << "Hash(VSeq): " << to_string(*hash);
+
+            ret = false;
+        }
+    }
+    else if (validLedger.header().seq > testLedger.header().seq)
+    {
+        // test -> ... -> valid
+        auto hash = hashOfSeq(
+            validLedger, testLedger.header().seq, beast::Journal{beast::Journal::getNullSink()});
+        if (hash && (*hash != testLedger.header().hash))
+        {
+            JLOG(s) << reason << " incompatible preceding ledger";
+
+            JLOG(s) << "Hash(NSeq): " << to_string(*hash);
+
+            ret = false;
+        }
+    }
+    else if (
+        (validLedger.header().seq == testLedger.header().seq) &&
+        (validLedger.header().hash != testLedger.header().hash))
+    {
+        // Same sequence number, different hash
+        JLOG(s) << reason << " incompatible ledger";
+
+        ret = false;
+    }
+
+    if (!ret)
+    {
+        JLOG(s) << "Val: " << validLedger.header().seq << " "
+                << to_string(validLedger.header().hash);
+
+        JLOG(s) << "New: " << testLedger.header().seq << " " << to_string(testLedger.header().hash);
+    }
+
+    return ret;
+}
+
+bool
+areCompatible(
+    UInt256 const& validHash,
+    LedgerIndex validIndex,
+    ReadView const& testLedger,
+    beast::Journal::Stream const& s,
+    char const* reason)
+{
+    bool ret = true;
+
+    if (testLedger.header().seq > validIndex)
+    {
+        // Ledger we are testing follows last valid ledger
+        auto hash =
+            hashOfSeq(testLedger, validIndex, beast::Journal{beast::Journal::getNullSink()});
+        if (hash && (*hash != validHash))
+        {
+            JLOG(s) << reason << " incompatible following ledger";
+            JLOG(s) << "Hash(VSeq): " << to_string(*hash);
+
+            ret = false;
+        }
+    }
+    else if ((validIndex == testLedger.header().seq) && (testLedger.header().hash != validHash))
+    {
+        JLOG(s) << reason << " incompatible ledger";
+
+        ret = false;
+    }
+
+    if (!ret)
+    {
+        JLOG(s) << "Val: " << validIndex << " " << to_string(validHash);
+
+        JLOG(s) << "New: " << testLedger.header().seq << " " << to_string(testLedger.header().hash);
+    }
+
+    return ret;
+}
+
+std::set<UInt256>
+getEnabledAmendments(ReadView const& view)
+{
+    return AmendmentsEntryR(view).enabledAmendments();
+}
+
+MajorityAmendmentsT
+getMajorityAmendments(ReadView const& view)
+{
+    return AmendmentsEntryR(view).majorityAmendments();
+}
+
+std::optional<UInt256>
+hashOfSeq(ReadView const& ledger, LedgerIndex seq, beast::Journal journal)
+{
+    // Easy cases...
+    if (seq > ledger.seq())
+    {
+        JLOG(journal.warn()) << "Can't get seq " << seq << " from " << ledger.seq() << " future";
+        return std::nullopt;
+    }
+    if (seq == ledger.seq())
+        return ledger.header().hash;
+    if (seq == (ledger.seq() - 1))
+        return ledger.header().parentHash;
+
+    if (int const diff = ledger.seq() - seq; diff <= 256)
+    {
+        // Within 256...
+        LedgerHashesEntryR const hashIndex(ledger, journal);
+        if (hashIndex)
+        {
+            XRPL_ASSERT(
+                hashIndex->getFieldU32(sfLastLedgerSequence) == (ledger.seq() - 1),
+                "xrpl::hashOfSeq : matching ledger sequence");
+            if (auto const hash = hashIndex.hashAt(diff - 1))
+                return hash;
+            JLOG(journal.warn()) << "Ledger " << ledger.seq() << " missing hash for " << seq << " ("
+                                 << hashIndex->getFieldV256(sfHashes).size() << "," << diff << ")";
+        }
+        else
+        {
+            JLOG(journal.warn()) << "Ledger " << ledger.seq() << ":" << ledger.header().hash
+                                 << " missing normal list";
+        }
+    }
+
+    if ((seq & 0xff) != 0)
+    {
+        JLOG(journal.debug()) << "Can't get seq " << seq << " from " << ledger.seq() << " past";
+        return std::nullopt;
+    }
+
+    // in skiplist
+    LedgerHashesEntryR const hashIndex(keylet::skip(seq), ledger, journal);
+    if (hashIndex)
+    {
+        auto const lastSeq = hashIndex->getFieldU32(sfLastLedgerSequence);
+        XRPL_ASSERT(lastSeq >= seq, "xrpl::hashOfSeq : minimum last ledger");
+        XRPL_ASSERT((lastSeq & 0xff) == 0, "xrpl::hashOfSeq : valid last ledger");
+        if (auto const hash = hashIndex.hashAt((lastSeq - seq) >> 8))
+            return hash;
+    }
+    JLOG(journal.warn()) << "Can't get seq " << seq << " from " << ledger.seq() << " error";
+    return std::nullopt;
+}
+
+//------------------------------------------------------------------------------
+//
+// Modifiers
+//
+//------------------------------------------------------------------------------
+
+TER
+dirLink(ApplyView& view, AccountID const& owner, SLE::pointer const& object, SF_UINT64 const& node)
+{
+    auto const page =
+        view.dirInsert(keylet::ownerDir(owner), object->key(), describeOwnerDir(owner));
+    if (!page)
+        return tecDIR_FULL;  // LCOV_EXCL_LINE
+    object->setFieldU64(node, *page);
+    return tesSUCCESS;
+}
+
+/*
+ * Checks if a withdrawal amount into the destination account exceeds
+ * any applicable receiving limit.
+ * Called by VaultWithdraw and LoanBrokerCoverWithdraw.
+ *
+ * IOU : Performs the trustline check against the destination account's
+ * credit limit to ensure the account's trust maximum is not exceeded.
+ *
+ * MPT: The limit check is effectively skipped (returns true). This is
+ * because MPT MaximumAmount relates to token supply, and withdrawal does not
+ * involve minting new tokens that could exceed the global cap.
+ * On withdrawal, tokens are simply transferred from the vault's pseudo-account
+ * to the destination account. Since no new MPT tokens are minted during this
+ * transfer, the withdrawal cannot violate the MPT MaximumAmount/supply cap
+ * even if `from` is the issuer.
+ */
+static TER
+withdrawToDestExceedsLimit(
+    ReadView const& view,
+    AccountID const& from,
+    AccountID const& to,
+    STAmount const& amount)
+{
+    auto const& issuer = amount.getIssuer();
+    if (from == to || to == issuer || isXRP(issuer))
+        return tesSUCCESS;
+
+    return amount.asset().visit(
+        [&](Issue const& issue) -> TER {
+            auto const& currency = issue.currency;
+            auto const owed = creditBalance(view, to, issuer, currency);
+            if (owed <= beast::kZero)
+            {
+                auto const limit = creditLimit(view, to, issuer, currency);
+                if (-owed >= limit || amount > (limit + owed))
+                    return tecNO_LINE;
+            }
+            return tesSUCCESS;
+        },
+        [](MPTIssue const&) -> TER { return tesSUCCESS; });
+}
+
+[[nodiscard]] TER
+canWithdraw(
+    ReadView const& view,
+    AccountID const& from,
+    AccountID const& to,
+    SLE::ConstRef toSle,
+    STAmount const& amount,
+    bool hasDestinationTag,
+    std::optional<std::vector<UInt256>> const& credentialIDs)
+{
+    if (auto const ret = checkDestinationAndTag(toSle, hasDestinationTag))
+        return ret;
+
+    if (from == to)
+        return tesSUCCESS;
+
+    if (toSle->isFlag(lsfDepositAuth))
+    {
+        if (!DepositPreauthEntryR(to, from, view))
+        {
+            if (credentialIDs.has_value())
+            {
+                STVector256 const credIDs{*credentialIDs};
+
+                // Callers must have validated these in preclaim, so a missing
+                // credential here is an invariant violation.
+                for (auto const& h : credIDs)
+                {
+                    if (!view.exists(keylet::credential(h)))
+                        return tecINTERNAL;  // LCOV_EXCL_LINE
+                }
+
+                if (auto const ret = credentials::authorizedDepositPreauth(view, credIDs, to);
+                    !isTesSuccess(ret))
+                    return ret;
+            }
+            else
+            {
+                return tecNO_PERMISSION;
+            }
+        }
+    }
+
+    return withdrawToDestExceedsLimit(view, from, to, amount);
+}
+
+[[nodiscard]] TER
+canWithdraw(
+    ReadView const& view,
+    AccountID const& from,
+    AccountID const& to,
+    STAmount const& amount,
+    bool hasDestinationTag,
+    std::optional<std::vector<UInt256>> const& credentialIDs)
+{
+    auto const toSle = view.read(keylet::account(to));
+
+    return canWithdraw(view, from, to, toSle, amount, hasDestinationTag, credentialIDs);
+}
+
+[[nodiscard]] TER
+canWithdraw(ReadView const& view, STTx const& tx)
+{
+    auto const from = tx[sfAccount];
+    auto const to = tx[~sfDestination].value_or(from);
+
+    return canWithdraw(
+        view, from, to, tx[sfAmount], tx.isFieldPresent(sfDestinationTag), tx[~sfCredentialIDs]);
+}
+
+TER
+doWithdraw(
+    ApplyViewContext ctx,
+    AccountID const& senderAcct,
+    AccountID const& dstAcct,
+    AccountID const& sourceAcct,
+    XRPAmount priorBalance,
+    STAmount const& destinationAmount,
+    STAmount const& sourceAmount,
+    beast::Journal j)
+{
+    XRPL_ASSERT(
+        destinationAmount.asset() == sourceAmount.asset(),
+        "xrpl::doWithdraw : delivered and source amounts use the same asset");
+
+    auto const dstSle = ctx.view.read(keylet::account(dstAcct));
+
+    // Create a trust line or MPToken for a self-destination only when there
+    // is a payout to credit. Post-fixCleanup3_4_0, a zero-value withdraw
+    // (e.g. share redemption from a fully impaired vault) must not insert
+    // an empty holding: that records a one-sided zero delta and can also
+    // create+delete MPTokens in the same transaction.
+    if (dstAcct == senderAcct)
+    {
+        if (destinationAmount > beast::kZero || !ctx.view.rules().enabled(fixCleanup3_4_0))
+        {
+            if (auto const ter =
+                    addEmptyHolding(ctx, senderAcct, priorBalance, destinationAmount.asset(), j);
+                !isTesSuccess(ter) && ter != tecDUPLICATE)
+                return ter;
+        }
+    }
+    else
+    {
+        if (auto err = verifyDepositPreauth(ctx.tx, ctx.view, senderAcct, dstAcct, dstSle, j))
+            return err;
+    }
+
+    // Sanity check
+    if (accountHolds(
+            ctx.view,
+            sourceAcct,
+            destinationAmount.asset(),
+            FreezeHandling::IgnoreFreeze,
+            AuthHandling::IgnoreAuth,
+            j) < sourceAmount)
+    {
+        // LCOV_EXCL_START
+        JLOG(j.error()) << "doWithdraw: source account holds fewer assets than the withdrawal.";
+        return tefINTERNAL;
+        // LCOV_EXCL_STOP
+    }
+
+    // A transfer fee applies. Redeem the gross amount with the issuer, then
+    // issue the net amount to the destination.
+    if (sourceAmount != destinationAmount)
+    {
+        auto const issuer = destinationAmount.getIssuer();
+        XRPL_ASSERT(
+            !destinationAmount.native() && sourceAcct != issuer && dstAcct != issuer,
+            "xrpl::doWithdraw : transfer fee applies between token holders");
+
+        if (auto const ter = directSendNoFee(ctx.view, sourceAcct, issuer, sourceAmount, false, j);
+            !isTesSuccess(ter))
+            return ter;  // LCOV_EXCL_LINE
+
+        return directSendNoFee(ctx.view, issuer, dstAcct, destinationAmount, false, j);
+    }
+
+    // A reserve sponsor only covers tx.Account's own objects, so resolve the
+    // sponsor against the destination. accountSend can auto-create a holding
+    // for dstAcct; keying on the destination ensures a third-party destination's
+    // holding is never stamped with the tx's reserve sponsor.
+    auto const sponsorSle = getEffectiveTxReserveSponsor(ctx, dstSle);
+    if (!sponsorSle)
+        return sponsorSle.error();  // LCOV_EXCL_LINE
+
+    // Move the funds directly from the broker's pseudo-account to the
+    // dstAcct
+    return accountSend(
+        ctx.view, sourceAcct, dstAcct, destinationAmount, j, *sponsorSle, WaiveTransferFee::Yes);
+}
+
+TER
+cleanupOnAccountDelete(
+    ApplyView& view,
+    Keylet const& ownerDirKeylet,
+    EntryDeleter const& deleter,
+    beast::Journal j,
+    std::optional<uint16_t> maxNodesToDelete)
+{
+    // Delete all the entries in the account directory.
+    SLE::pointer sleDirNode{};
+    unsigned int uDirEntry{0};
+    UInt256 dirEntry{beast::kZero};
+    std::uint32_t deleted = 0;
+
+    if (view.exists(ownerDirKeylet) &&
+        dirFirst(view, ownerDirKeylet.key, sleDirNode, uDirEntry, dirEntry))
+    {
+        do
+        {
+            if (maxNodesToDelete && ++deleted > *maxNodesToDelete)
+                return tecINCOMPLETE;
+
+            // Choose the right way to delete each directory node.
+            auto sleItem = view.peek(keylet::child(dirEntry));
+            if (!sleItem)
+            {
+                // Directory node has an invalid index.  Bail out.
+                // LCOV_EXCL_START
+                JLOG(j.fatal()) << "DeleteAccount: Directory node in ledger " << view.seq()
+                                << " has index to object that is missing: " << to_string(dirEntry);
+                return tefBAD_LEDGER;
+                // LCOV_EXCL_STOP
+            }
+
+            LedgerEntryType const nodeType{
+                safeCast<LedgerEntryType>(sleItem->getFieldU16(sfLedgerEntryType)),
+            };
+
+            // Deleter handles the details of specific account-owned object
+            // deletion
+            auto const [ter, skipEntry] = deleter(nodeType, dirEntry, sleItem);
+            if (!isTesSuccess(ter))
+                return ter;
+
+            // dirFirst() and dirNext() are like iterators with exposed
+            // internal state.  We'll take advantage of that exposed state
+            // to solve a common C++ problem: iterator invalidation while
+            // deleting elements from a container.
+            //
+            // We have just deleted one directory entry, which means our
+            // "iterator state" is invalid.
+            //
+            //  1. During the process of getting an entry from the
+            //     directory uDirEntry was incremented from 'it' to 'it'+1.
+            //
+            //  2. We then deleted the entry at index 'it', which means the
+            //     entry that was at 'it'+1 has now moved to 'it'.
+            //
+            //  3. So we verify that uDirEntry is indeed 'it'+1.  Then we jam it
+            //     back to 'it' to "un-invalidate" the iterator.
+            XRPL_ASSERT(uDirEntry >= 1, "xrpl::cleanupOnAccountDelete : minimum dir entries");
+            if (uDirEntry == 0)
+            {
+                // LCOV_EXCL_START
+                JLOG(j.error()) << "DeleteAccount iterator re-validation failed.";
+                return tefBAD_LEDGER;
+                // LCOV_EXCL_STOP
+            }
+            if (skipEntry == SkipEntry::No)
+                uDirEntry--;
+
+        } while (dirNext(view, ownerDirKeylet.key, sleDirNode, uDirEntry, dirEntry));
+    }
+
+    return tesSUCCESS;
+}
+
+bool
+after(NetClock::time_point now, std::uint32_t mark)
+{
+    return now.time_since_epoch().count() > mark;
+}
+
+}  // namespace xrpl

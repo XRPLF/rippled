@@ -1,0 +1,185 @@
+#pragma once
+
+#include <xrpl/basics/Buffer.h>
+#include <xrpl/basics/Slice.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/protocol/KeyType.h>
+#include <xrpl/protocol/PublicKey.h>
+#include <xrpl/protocol/Seed.h>
+#include <xrpl/protocol/tokens.h>
+
+#include <array>
+#include <cstdint>
+#include <cstring>
+#include <optional>
+#include <string>
+#include <utility>
+
+namespace xrpl {
+
+/**
+ * A secret key.
+ */
+class SecretKey
+{
+public:
+    static constexpr std::size_t kSize = 32;
+
+private:
+    std::uint8_t buf_[kSize]{};
+
+public:
+    using const_iterator = std::uint8_t const*;
+
+    SecretKey() = delete;
+    SecretKey(SecretKey const&) = default;
+    SecretKey&
+    operator=(SecretKey const&) = default;
+
+    bool
+    operator==(SecretKey const&) = delete;
+    bool
+    operator!=(SecretKey const&) = delete;
+
+    ~SecretKey();
+
+    SecretKey(std::array<std::uint8_t, kSize> const& data);
+    SecretKey(Slice const& slice);
+
+    [[nodiscard]] std::uint8_t const*
+    data() const
+    {
+        return buf_;
+    }
+
+    [[nodiscard]] std::size_t
+    size() const
+    {
+        return sizeof(buf_);
+    }
+
+    /**
+     * Convert the secret key to a hexadecimal string.
+     *
+     * @note The operator<< function is deliberately omitted
+     * to avoid accidental exposure of secret key material.
+     */
+    [[nodiscard]] std::string
+    toString() const;
+
+    [[nodiscard]] const_iterator
+    begin() const noexcept
+    {
+        return buf_;
+    }
+
+    [[nodiscard]] const_iterator
+    cbegin() const noexcept
+    {
+        return buf_;
+    }
+
+    [[nodiscard]] const_iterator
+    end() const noexcept
+    {
+        return buf_ + sizeof(buf_);
+    }
+
+    [[nodiscard]] const_iterator
+    cend() const noexcept
+    {
+        return buf_ + sizeof(buf_);
+    }
+};
+
+bool
+operator==(SecretKey const& lhs, SecretKey const& rhs) = delete;
+
+bool
+operator!=(SecretKey const& lhs, SecretKey const& rhs) = delete;
+
+//------------------------------------------------------------------------------
+
+/**
+ * Parse a secret key
+ */
+template <>
+std::optional<SecretKey>
+parseBase58(TokenType type, std::string const& s);
+
+inline std::string
+toBase58(TokenType type, SecretKey const& sk)
+{
+    return encodeBase58Token(type, sk.data(), sk.size());
+}
+
+/**
+ * Create a secret key using secure random numbers.
+ */
+SecretKey
+randomSecretKey();
+
+/**
+ * Generate a new secret key deterministically.
+ */
+SecretKey
+generateSecretKey(KeyType type, Seed const& seed);
+
+/**
+ * Derive the public key from a secret key.
+ */
+PublicKey
+derivePublicKey(KeyType type, SecretKey const& sk);
+
+/**
+ * Generate a key pair deterministically.
+ *
+ * This algorithm is specific to the XRPL:
+ *
+ * For secp256k1 key pairs, the seed is converted
+ * to a Generator and used to compute the key pair
+ * corresponding to ordinal 0 for the generator.
+ */
+std::pair<PublicKey, SecretKey>
+generateKeyPair(KeyType type, Seed const& seed);
+
+/**
+ * Create a key pair using secure random numbers.
+ */
+std::pair<PublicKey, SecretKey>
+randomKeyPair(KeyType type);
+
+/**
+ * Generate a signature for a message digest.
+ * This can only be used with secp256k1 since Ed25519's
+ * security properties come, in part, from how the message
+ * is hashed.
+ */
+/** @{ */
+Buffer
+signDigest(PublicKey const& pk, SecretKey const& sk, UInt256 const& digest);
+
+inline Buffer
+signDigest(KeyType type, SecretKey const& sk, UInt256 const& digest)
+{
+    return signDigest(derivePublicKey(type, sk), sk, digest);
+}
+/** @} */
+
+/**
+ * Generate a signature for a message.
+ * With secp256k1 signatures, the data is first hashed with
+ * SHA512-Half, and the resulting digest is signed.
+ */
+/** @{ */
+Buffer
+sign(PublicKey const& pk, SecretKey const& sk, Slice const& message);
+
+inline Buffer
+sign(KeyType type, SecretKey const& sk, Slice const& message)
+{
+    return sign(derivePublicKey(type, sk), sk, message);
+}
+/** @} */
+
+}  // namespace xrpl

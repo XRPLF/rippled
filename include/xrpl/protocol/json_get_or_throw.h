@@ -1,0 +1,159 @@
+#pragma once
+
+#include <xrpl/basics/Buffer.h>
+#include <xrpl/basics/StringUtilities.h>
+#include <xrpl/basics/contract.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/protocol/SField.h>
+
+#include <charconv>
+#include <cstdint>
+#include <exception>
+#include <optional>
+#include <string>
+#include <system_error>
+#include <utility>
+
+namespace json {
+struct JsonMissingKeyError : std::exception
+{
+    char const* const key;
+    mutable std::string msg;
+    JsonMissingKeyError(json::StaticString const& k) : key{k.cStr()}
+    {
+    }
+    char const*
+    what() const noexcept override
+    {
+        if (msg.empty())
+        {
+            msg = std::string("Missing json key: ") + key;
+        }
+        return msg.c_str();
+    }
+};
+
+struct JsonTypeMismatchError : std::exception
+{
+    char const* const key;
+    std::string const expectedType;
+    mutable std::string msg;
+    JsonTypeMismatchError(json::StaticString const& k, std::string et)
+        : key{k.cStr()}, expectedType{std::move(et)}
+    {
+    }
+    char const*
+    what() const noexcept override
+    {
+        if (msg.empty())
+        {
+            msg = std::string("Type mismatch on json key: ") + key +
+                "; expected type: " + expectedType;
+        }
+        return msg.c_str();
+    }
+};
+
+template <class T>
+T
+getOrThrow(json::Value const& v, xrpl::SField const& field)
+{
+    static_assert(sizeof(T) == -1, "This function must be specialized");
+}
+
+template <>
+inline std::string
+getOrThrow(json::Value const& v, xrpl::SField const& field)
+{
+    using namespace xrpl;
+    json::StaticString const& key = field.getJsonName();
+    if (!v.isMember(key))
+        Throw<JsonMissingKeyError>(key);
+
+    json::Value const& inner = v[key];
+    if (!inner.isString())
+        Throw<JsonTypeMismatchError>(key, "string");
+    return inner.asString();
+}
+
+// Note, this allows integer numeric fields to act as bools
+template <>
+inline bool
+getOrThrow(json::Value const& v, xrpl::SField const& field)
+{
+    using namespace xrpl;
+    json::StaticString const& key = field.getJsonName();
+    if (!v.isMember(key))
+        Throw<JsonMissingKeyError>(key);
+    json::Value const& inner = v[key];
+    if (inner.isBool())
+        return inner.asBool();
+    if (!inner.isIntegral())
+        Throw<JsonTypeMismatchError>(key, "bool");
+
+    return inner.asInt() != 0;
+}
+
+template <>
+inline std::uint64_t
+getOrThrow(json::Value const& v, xrpl::SField const& field)
+{
+    using namespace xrpl;
+    json::StaticString const& key = field.getJsonName();
+    if (!v.isMember(key))
+        Throw<JsonMissingKeyError>(key);
+    json::Value const& inner = v[key];
+    if (inner.isUInt())
+        return inner.asUInt();
+    if (inner.isInt())
+    {
+        auto const r = inner.asInt();
+        if (r < 0)
+            Throw<JsonTypeMismatchError>(key, "uint64");
+        return r;
+    }
+    if (inner.isString())
+    {
+        auto const s = inner.asString();
+        // parse as hex
+        std::uint64_t val = 0;
+
+        auto [p, ec] = std::from_chars(s.data(), s.data() + s.size(), val, 16);
+
+        if (ec != std::errc() || (p != s.data() + s.size()))
+            Throw<JsonTypeMismatchError>(key, "uint64");
+        return val;
+    }
+    Throw<JsonTypeMismatchError>(key, "uint64");
+}
+
+template <>
+inline xrpl::Buffer
+getOrThrow(json::Value const& v, xrpl::SField const& field)
+{
+    using namespace xrpl;
+    std::string const hex = getOrThrow<std::string>(v, field);
+    if (auto const r = strUnHex(hex))
+    {
+        // TODO: mismatch between a buffer and a blob
+        return Buffer{r->data(), r->size()};
+    }
+    Throw<JsonTypeMismatchError>(field.getJsonName(), "Buffer");
+}
+
+// This function may be used by external projects (like the witness server).
+template <class T>
+std::optional<T>
+getOptional(json::Value const& v, xrpl::SField const& field)
+{
+    try
+    {
+        return getOrThrow<T>(v, field);
+    }
+    catch (...)  // NOLINT(bugprone-empty-catch)
+    {
+    }
+    return {};
+}
+
+}  // namespace json

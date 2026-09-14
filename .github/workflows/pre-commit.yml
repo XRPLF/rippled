@@ -1,0 +1,21 @@
+name: Run pre-commit hooks
+
+on:
+  merge_group:
+    types:
+      - checks_requested
+  pull_request:
+  push:
+    branches:
+      - "develop"
+      - "release/*"
+      - "staging/*"
+  workflow_dispatch:
+
+jobs:
+  # Call the workflow in the XRPLF/actions repo that runs the pre-commit hooks.
+  run-hooks:
+    uses: XRPLF/actions/.github/workflows/pre-commit.yml@6a52459a658649a0aeaab4ebd6a8f25173f6f16f
+    with:
+      runs_on: ubuntu-latest
+      container: '{ "image": "ghcr.io/xrplf/xrpld/pre-commit:sha-d3a71b2" }'

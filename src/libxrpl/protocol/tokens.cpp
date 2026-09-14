@@ -1,0 +1,713 @@
+//
+/* The base58 encoding & decoding routines in the b58_ref namespace are taken
+ * from Bitcoin but have been modified from the original.
+ *
+ * Copyright (c) 2014 The Bitcoin Core developers
+ * Distributed under the MIT software license, see the accompanying
+ * file COPYING or http://www.opensource.org/licenses/mit-license.php.
+ */
+
+#include <xrpl/protocol/tokens.h>
+
+#include <xrpl/basics/safe_cast.h>
+#include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/protocol/detail/b58_utils.h>
+#include <xrpl/protocol/detail/token_errors.h>
+#include <xrpl/protocol/digest.h>
+
+#include <boost/container/small_vector.hpp>
+#include <boost/endian/conversion.hpp>
+
+#include <algorithm>
+#include <array>
+#include <cstdint>
+#include <cstring>
+#include <expected>
+#include <ranges>
+#include <span>
+#include <string>
+#include <string_view>
+#include <type_traits>
+#include <vector>
+
+/*
+Converting between bases is straight forward. First, some background:
+
+Given the coefficients C[m], ... ,C[0] and base B, those coefficients represent
+the number C[m]*B^m + ... + C[0]*B^0; The following pseudo-code converts the
+coefficients to the (infinite precision) integer N:
+
+```
+N = 0;
+i = m ;; N.B. m is the index of the largest coefficient
+while (i>=0)
+    N = N + C[i]*B^i
+    i = i - 1
+```
+
+For example, in base 10, the number 437 represents the integer 4*10^2 + 3*10^1 +
+7*10^0. In base 16, 437 is the same as 4*16^2 + 3*16^1 + 7*16^0.
+
+To find the coefficients that represent the integer N in base B, we start by
+computing the lowest order coefficients and work up to the highest order
+coefficients. The following pseudo-code converts the (infinite precision)
+integer N to the correct coefficients:
+
+```
+i = 0
+while(N)
+    C[i] = N mod B
+    N = floor(N/B)
+    i = i + 1
+```
+
+For example, to find the coefficients of the integer 437 in base 10:
+
+C[0] is 437 mod 10; C[0] = 7;
+N is floor(437/10); N = 43;
+C[1] is 43 mod 10; C[1] = 3;
+N is floor(43/10); N = 4;
+C[2] is 4 mod 10; C[2] = 4;
+N is floor(4/10); N = 0;
+Since N is 0, the algorithm stops.
+
+
+To convert between a number represented with coefficients from base B1 to that
+same number represented with coefficients from base B2, we can use the algorithm
+that converts coefficients from base B1 to an integer, and then use the
+algorithm that converts a number to coefficients from base B2.
+
+There is a useful shortcut that can be used if one of the bases is a power of
+the other base. If B1 == B2^G, then each coefficient from base B1 can be
+converted to base B2 independently to create a group of "G" B2 coefficient.
+These coefficients can be simply concatenated together. Since 16 == 2^4, this
+property is what makes base 16 useful when dealing with binary numbers. For
+example consider converting the base 16 number "93" to binary. The base 16
+coefficient 9 is represented in base 2 with the coefficients 1,0,0,1. The base
+16 coefficient 3 is represented in base 2 with the coefficients 0,0,1,1. To get
+the final answer, just concatenate those two independent conversions together.
+The base 16 number "93" is the binary number "10010011".
+
+The original (now reference) algorithm to convert from base 58 to a binary
+number used the
+
+```
+N = 0;
+for i in m to 0 inclusive
+    N = N + C[i]*B^i
+```
+
+algorithm.
+
+However, the algorithm above is pseudo-code. In particular, the variable "N" is
+an infinite precision integer in that pseudo-code. Real computers do
+computations on registers, and these registers have limited length. Modern
+computers use 64-bit general purpose registers, and can multiply two 64 bit
+numbers and obtain a 128 bit result (in two registers).
+
+The original algorithm in essence converted from base 58 to base 256 (base
+2^8). The new, faster algorithm converts from base 58 to base 58^10 (this is
+fast using the shortcut described above), then from base 58^10 to base 2^64
+(this is slow, and requires multi-precision arithmetic), and then from base 2^64
+to base 2^8 (this is fast, using the shortcut described above). Base 58^10 is
+chosen because it is the largest power of 58 that will fit into a 64-bit
+register.
+
+While it may seem counter-intuitive that converting from base 58 -> base 58^10
+-> base 2^64 -> base 2^8 is faster than directly converting from base 58 -> base
+2^8, it is actually 10x-15x faster. The reason for the speed increase is two of
+the conversions are trivial (converting between bases where one base is a power
+of another base), and doing the multi-precision computations with larger
+coefficients sizes greatly speeds up the multi-precision computations.
+*/
+
+namespace xrpl {
+
+static constexpr char const* kAlphabetForward =
+    "rpshnaf39wBUDNEGHJKLM4PQRST7VWXYZ2bcdeCg65jkm8oFqi1tuvAxyz";
+
+static constexpr std::array<int, 256> const kAlphabetReverse = [] {
+    std::array<int, 256> map{};
+    for (auto& m : map)
+        m = -1;
+    for (int i = 0, j = 0; kAlphabetForward[i] != 0; ++i)
+        map[static_cast<unsigned char>(kAlphabetForward[i])] = j++;
+    return map;
+}();
+
+template <class Hasher>
+static Hasher::result_type
+digest(void const* data, std::size_t size) noexcept
+{
+    Hasher h;
+    h(data, size);
+    return static_cast<Hasher::result_type>(h);
+}
+
+template <class Hasher, class T, std::size_t N>
+static Hasher::result_type
+digest(std::array<T, N> const& v)
+    requires(sizeof(T) == 1)
+{
+    return digest<Hasher>(v.data(), v.size());
+}
+
+// Computes a double digest (e.g. digest of the digest)
+template <class Hasher, class... Args>
+static Hasher::result_type
+digest2(Args const&... args)
+{
+    return digest<Hasher>(digest<Hasher>(args...));
+}
+
+/**
+ * Calculate a 4-byte checksum of the data
+ *
+ * The checksum is calculated as the first 4 bytes
+ * of the SHA256 digest of the message. This is added
+ * to the base58 encoding of identifiers to detect
+ * user error in data entry.
+ *
+ * @note This checksum algorithm is part of the client API
+ */
+static void
+checksum(void* out, void const* message, std::size_t size)
+{
+    auto const h = digest2<Sha256Hasher>(message, size);
+    std::memcpy(out, h.data(), 4);
+}
+
+[[nodiscard]] std::string
+encodeBase58Token(TokenType type, void const* token, std::size_t size)
+{
+#ifndef _MSC_VER
+    return b58_fast::encodeBase58Token(type, token, size);
+#else
+    return b58_ref::encodeBase58Token(type, token, size);
+#endif
+}
+
+[[nodiscard]] std::string
+decodeBase58Token(std::string const& s, TokenType type)
+{
+#ifndef _MSC_VER
+    return b58_fast::decodeBase58Token(s, type);
+#else
+    return b58_ref::decodeBase58Token(s, type);
+#endif
+}
+
+namespace b58_ref {
+
+namespace detail {
+
+std::string
+encodeBase58(void const* message, std::size_t size, void* temp, std::size_t tempSize)
+{
+    auto pbegin = reinterpret_cast<unsigned char const*>(message);
+    auto const pend = pbegin + size;
+
+    // Skip & count leading zeroes.
+    int zeroes = 0;
+    while (pbegin != pend && *pbegin == 0)
+    {
+        pbegin++;
+        zeroes++;
+    }
+
+    auto const b58begin = reinterpret_cast<unsigned char*>(temp);
+    auto const b58end = b58begin + tempSize;
+
+    std::fill(b58begin, b58end, 0);
+
+    while (pbegin != pend)
+    {
+        int carry = *pbegin;
+        // Apply "b58 = b58 * 256 + ch".
+        for (auto iter = b58end; iter != b58begin; --iter)
+        {
+            carry += 256 * iter[-1];
+            iter[-1] = carry % 58;
+            carry /= 58;
+        }
+        XRPL_ASSERT(carry == 0, "xrpl::b58_ref::detail::encodeBase58 : zero carry");
+        pbegin++;
+    }
+
+    // Skip leading zeroes in base58 result.
+    auto iter = b58begin;
+    while (iter != b58end && *iter == 0)
+        ++iter;
+
+    // Translate the result into a string.
+    std::string str;
+    str.reserve(zeroes + (b58end - iter));
+    str.assign(zeroes, kAlphabetForward[0]);
+    while (iter != b58end)
+        str += kAlphabetForward[*(iter++)];
+    return str;
+}
+
+std::string
+decodeBase58(std::string const& s)
+{
+    auto psz = reinterpret_cast<unsigned char const*>(s.c_str());
+    auto remain = s.size();
+    // Skip and count leading zeroes
+    int zeroes = 0;
+    while (remain > 0 && kAlphabetReverse[*psz] == 0)
+    {
+        ++zeroes;
+        ++psz;
+        --remain;
+    }
+
+    if (remain > 64)
+        return {};
+
+    // Allocate enough space in big-endian base256 representation.
+    // log(58) / log(256), rounded up.
+    std::vector<std::uint8_t> b256((remain * 733 / 1000) + 1);
+    while (remain > 0)
+    {
+        auto carry = kAlphabetReverse[*psz];
+        if (carry == -1)
+            return {};
+        // Apply "b256 = b256 * 58 + carry".
+        for (std::uint8_t& byte : std::views::reverse(b256))
+        {
+            carry += 58 * byte;
+            byte = carry % 256;
+            carry /= 256;
+        }
+        XRPL_ASSERT(carry == 0, "xrpl::b58_ref::detail::decodeBase58 : zero carry");
+        ++psz;
+        --remain;
+    }
+    // Skip leading zeroes in b256.
+    auto iter = std::ranges::find_if(b256, [](std::uint8_t c) { return c != 0; });
+    std::string result;
+    result.reserve(zeroes + (b256.end() - iter));
+    result.assign(zeroes, 0x00);
+    while (iter != b256.end())
+        result.push_back(*(iter++));
+    return result;
+}
+
+}  // namespace detail
+
+std::string
+encodeBase58Token(TokenType type, void const* token, std::size_t size)
+{
+    // expanded token includes type + 4 byte checksum
+    auto const expanded = 1 + size + 4;
+
+    // We need expanded + expanded * (log(256) / log(58)) which is
+    // bounded by expanded + expanded * (138 / 100 + 1) which works
+    // out to expanded * 3:
+    auto const bufsize = expanded * 3;
+
+    boost::container::small_vector<std::uint8_t, 1024> buf(bufsize);
+
+    // Lay the data out as
+    //      <type><token><checksum>
+    buf[0] = safeCast<std::underlying_type_t<TokenType>>(type);
+    if (size != 0u)
+        std::memcpy(buf.data() + 1, token, size);
+    checksum(buf.data() + 1 + size, buf.data(), 1 + size);
+
+    return detail::encodeBase58(buf.data(), expanded, buf.data() + expanded, bufsize - expanded);
+}
+
+std::string
+decodeBase58Token(std::string const& s, TokenType type)
+{
+    std::string const ret = detail::decodeBase58(s);
+
+    // Reject zero length tokens
+    if (ret.size() < 6)
+        return {};
+
+    // The type must match.
+    if (type != safeCast<TokenType>(static_cast<std::uint8_t>(ret[0])))
+        return {};
+
+    // And the checksum must as well.
+    std::array<char, 4> guard{};
+    checksum(guard.data(), ret.data(), ret.size() - guard.size());
+    if (!std::equal(guard.rbegin(), guard.rend(), ret.rbegin()))
+        return {};
+
+    // Skip the leading type byte and the trailing checksum.
+    return ret.substr(1, ret.size() - 1 - guard.size());
+}
+}  // namespace b58_ref
+
+#ifndef _MSC_VER
+// The algorithms use gcc's int128 (fast MS version will have to wait, in the
+// meantime MS falls back to the slower reference implementation)
+namespace b58_fast {
+namespace detail {
+// Note: both the input and output will be BIG ENDIAN
+B58Result<std::span<std::uint8_t>>
+b256ToB58Be(std::span<std::uint8_t const> input, std::span<std::uint8_t> out)
+{
+    // Max valid input is 38 bytes:
+    // (33 bytes for nodepublic + 1 byte token + 4 bytes checksum)
+    if (input.size() > 38)
+    {
+        return std::unexpected(TokenCodecErrc::InputTooLarge);
+    };
+
+    auto const countLeadingZeros = [](std::span<std::uint8_t const> const& col) -> std::size_t {
+        std::size_t count = 0;
+        for (auto const& c : col)
+        {
+            if (c != 0)
+            {
+                return count;
+            }
+            count += 1;
+        }
+        return count;
+    };
+
+    auto const inputZeros = countLeadingZeros(input);
+    input = input.subspan(inputZeros);
+
+    // Allocate enough base 2^64 coeff for encoding 38 bytes
+    // log(2^(38*8),2^64)) ~= 4.75. So 5 coeff are enough
+    std::array<std::uint64_t, 5> base264CoeffBuf{};
+    std::span<std::uint64_t> const base264Coeff = [&] -> std::span<std::uint64_t> {
+        // convert input from big endian to native u64, lowest coeff first
+        std::size_t numCoeff = 0;
+        for (int i = 0; i < base264CoeffBuf.size(); ++i)
+        {
+            if (i * 8 >= input.size())
+            {
+                break;
+            }
+            auto const srcIEnd = input.size() - (i * 8);
+            if (srcIEnd >= 8)
+            {
+                std::memcpy(&base264CoeffBuf[numCoeff], &input[srcIEnd - 8], 8);
+                boost::endian::big_to_native_inplace(base264CoeffBuf[numCoeff]);
+            }
+            else
+            {
+                std::uint64_t be = 0;
+                for (int bi = 0; bi < srcIEnd; ++bi)
+                {
+                    be <<= 8;
+                    be |= input[bi];
+                }
+                base264CoeffBuf[numCoeff] = be;
+            };
+            numCoeff += 1;
+        }
+        return std::span(base264CoeffBuf.data(), numCoeff);
+    }();
+
+    // Allocate enough base 58^10 coeff for encoding 38 bytes
+    // log(2^(38*8),58^10)) ~= 5.18. So 6 coeff are enough
+    std::array<std::uint64_t, 6> base5810Coeff{};
+    constexpr std::uint64_t kB5810 = 430804206899405824;  // 58^10;
+    std::size_t num5810Coeffs = 0;
+    std::size_t cur264End = base264Coeff.size();
+    // compute the base 58^10 coeffs
+    while (cur264End > 0)
+    {
+        base5810Coeff[num5810Coeffs] =
+            xrpl::b58_fast::detail::inplaceBigintDivRem(base264Coeff.subspan(0, cur264End), kB5810);
+        num5810Coeffs += 1;
+        if (base264Coeff[cur264End - 1] == 0)
+        {
+            cur264End -= 1;
+        }
+    }
+
+    // Translate the result into the alphabet
+    // Put all the zeros at the beginning, then all the values from the output
+    std::fill(out.begin(), out.begin() + inputZeros, ::xrpl::kAlphabetForward[0]);
+
+    // iterate through the base 58^10 coeff
+    // convert to base 58 big endian then
+    // convert to alphabet big endian
+    bool skipZeros = true;
+    auto outIndex = inputZeros;
+    for (int i = num5810Coeffs - 1; i >= 0; --i)
+    {
+        if (skipZeros && base5810Coeff[i] == 0)
+        {
+            continue;
+        }
+        static constexpr std::uint64_t kB5810 = 430804206899405824;  // 58^10;
+        if (base5810Coeff[i] >= kB5810)
+        {
+            return std::unexpected(TokenCodecErrc::InputTooLarge);
+        }
+        std::array<std::uint8_t, 10> const b58Be =
+            xrpl::b58_fast::detail::b5810ToB58Be(base5810Coeff[i]);
+        std::size_t toSkip = 0;
+        std::span<std::uint8_t const> const b58BeS{b58Be.data(), b58Be.size()};
+        if (skipZeros)
+        {
+            toSkip = countLeadingZeros(b58BeS);
+            skipZeros = false;
+            if (out.size() < ((i + 1) * 10) - toSkip)
+            {
+                return std::unexpected(TokenCodecErrc::OutputTooSmall);
+            }
+        }
+        for (auto const b58Coeff : b58BeS.subspan(toSkip))
+        {
+            out[outIndex] = ::xrpl::kAlphabetForward[b58Coeff];
+            outIndex += 1;
+        }
+    }
+
+    return out.subspan(0, outIndex);
+}
+
+// Note the input is BIG ENDIAN (some fn in this module use little endian)
+B58Result<std::span<std::uint8_t>>
+b58ToB256Be(std::string_view input, std::span<std::uint8_t> out)
+{
+    // Convert from b58 to b 58^10
+
+    // Max encoded value is 38 bytes
+    // log(2^(38*8),58) ~= 51.9
+    if (input.size() > 52)
+    {
+        return std::unexpected(TokenCodecErrc::InputTooLarge);
+    };
+    if (out.size() < 8)
+    {
+        return std::unexpected(TokenCodecErrc::OutputTooSmall);
+    }
+
+    auto const countLeadingZeros = [&](auto const& col) -> std::size_t {
+        std::size_t count = 0;
+        for (auto const& c : col)
+        {
+            if (c != ::xrpl::kAlphabetForward[0])
+            {
+                return count;
+            }
+            count += 1;
+        }
+        return count;
+    };
+
+    auto const inputZeros = countLeadingZeros(input);
+
+    // Allocate enough base 58^10 coeff for encoding 38 bytes
+    // (33 bytes for nodepublic + 1 byte token + 4 bytes checksum)
+    // log(2^(38*8),58^10)) ~= 5.18. So 6 coeff are enough
+    std::array<std::uint64_t, 6> b5810Coeff{};
+    auto [numFullCoeffs, partialCoeffLen] = xrpl::b58_fast::detail::divRem(input.size(), 10);
+    auto const numPartialCoeffs = (partialCoeffLen != 0u) ? 1 : 0;
+    auto const numB5810Coeffs = numFullCoeffs + numPartialCoeffs;
+    XRPL_ASSERT(
+        numB5810Coeffs <= b5810Coeff.size(),
+        "xrpl::b58_fast::detail::b58_to_b256_be : maximum coeff");
+    for (unsigned char const c : input.substr(0, partialCoeffLen))
+    {
+        auto const curVal = ::xrpl::kAlphabetReverse[c];
+        if (curVal < 0)
+        {
+            return std::unexpected(TokenCodecErrc::InvalidEncodingChar);
+        }
+        b5810Coeff[0] *= 58;
+        b5810Coeff[0] += curVal;
+    }
+    for (int i = 0; i < 10; ++i)
+    {
+        for (int j = 0; j < numFullCoeffs; ++j)
+        {
+            unsigned char const c = input[partialCoeffLen + (j * 10) + i];
+            auto const curVal = ::xrpl::kAlphabetReverse[c];
+            if (curVal < 0)
+            {
+                return std::unexpected(TokenCodecErrc::InvalidEncodingChar);
+            }
+            b5810Coeff[numPartialCoeffs + j] *= 58;
+            b5810Coeff[numPartialCoeffs + j] += curVal;
+        }
+    }
+
+    constexpr std::uint64_t kB5810 = 430804206899405824;  // 58^10;
+
+    // log(2^(38*8),2^64) ~= 4.75)
+    std::array<std::uint64_t, 5> result{};
+    result[0] = b5810Coeff[0];
+    std::size_t curResultSize = 1;
+    for (int i = 1; i < numB5810Coeffs; ++i)
+    {
+        std::uint64_t const c = b5810Coeff[i];
+
+        {
+            auto const code = xrpl::b58_fast::detail::inplaceBigintMul(
+                std::span(&result[0], curResultSize + 1), kB5810);
+            if (code != TokenCodecErrc::Success)
+            {
+                return std::unexpected(code);
+            }
+        }
+        {
+            auto const code = xrpl::b58_fast::detail::inplaceBigintAdd(
+                std::span(&result[0], curResultSize + 1), c);
+            if (code != TokenCodecErrc::Success)
+            {
+                return std::unexpected(code);
+            }
+        }
+        if (result[curResultSize] != 0)
+        {
+            curResultSize += 1;
+        }
+    }
+    std::fill(out.begin(), out.begin() + inputZeros, 0);
+    auto curOutI = inputZeros;
+    // Don't write leading zeros to the output for the most significant
+    // coeff
+    {
+        std::uint64_t const c = result[curResultSize - 1];
+        auto skipZero = true;
+        // start and end of output range
+        for (int i = 0; i < 8; ++i)
+        {
+            std::uint8_t const b = (c >> (8 * (7 - i))) & 0xff;
+            if (skipZero)
+            {
+                if (b == 0)
+                {
+                    continue;
+                }
+                skipZero = false;
+            }
+            out[curOutI] = b;
+            curOutI += 1;
+        }
+    }
+    if ((curOutI + (8 * (curResultSize - 1))) > out.size())
+    {
+        return std::unexpected(TokenCodecErrc::OutputTooSmall);
+    }
+
+    for (int i = curResultSize - 2; i >= 0; --i)
+    {
+        auto c = result[i];
+        boost::endian::native_to_big_inplace(c);
+        memcpy(&out[curOutI], &c, 8);
+        curOutI += 8;
+    }
+
+    return out.subspan(0, curOutI);
+}
+}  // namespace detail
+
+B58Result<std::span<std::uint8_t>>
+encodeBase58Token(
+    TokenType tokenType,
+    std::span<std::uint8_t const> input,
+    std::span<std::uint8_t> out)
+{
+    static constexpr std::size_t kTmpBufSize = 128;
+    std::array<std::uint8_t, kTmpBufSize> buf{};
+    if (input.size() > kTmpBufSize - 5)
+    {
+        return std::unexpected(TokenCodecErrc::InputTooLarge);
+    }
+    if (input.empty())
+    {
+        return std::unexpected(TokenCodecErrc::InputTooSmall);
+    }
+    // <type (1 byte)><token (input len)><checksum (4 bytes)>
+    buf[0] = static_cast<std::uint8_t>(tokenType);
+    // buf[1..=input.len()] = input;
+    memcpy(&buf[1], input.data(), input.size());
+    size_t const checksumI = input.size() + 1;
+    // buf[checksum_i..checksum_i + 4] = checksum
+    checksum(buf.data() + checksumI, buf.data(), checksumI);
+    std::span<std::uint8_t const> const b58Span(buf.data(), input.size() + 5);
+    return detail::b256ToB58Be(b58Span, out);
+}
+// Convert from base 58 to base 256, largest coefficients first
+// The input is encoded in XRPL format, with the token in the first
+// byte and the checksum in the last four bytes.
+// The decoded base 256 value does not include the token type or checksum.
+// It is an error if the token type or checksum does not match.
+B58Result<std::span<std::uint8_t>>
+decodeBase58Token(TokenType type, std::string_view s, std::span<std::uint8_t> outBuf)
+{
+    std::array<std::uint8_t, 64> tmpBuf{};
+    auto const decodeResult = detail::b58ToB256Be(s, std::span(tmpBuf.data(), tmpBuf.size()));
+
+    if (!decodeResult)
+        return decodeResult;
+
+    auto const ret = decodeResult.value();
+
+    // Reject zero length tokens
+    if (ret.size() < 6)
+        return std::unexpected(TokenCodecErrc::InputTooSmall);
+
+    // The type must match.
+    if (type != static_cast<TokenType>(static_cast<std::uint8_t>(ret[0])))
+        return std::unexpected(TokenCodecErrc::MismatchedTokenType);
+
+    // And the checksum must as well.
+    std::array<std::uint8_t, 4> guard{};
+    checksum(guard.data(), ret.data(), ret.size() - guard.size());
+    if (!std::equal(guard.rbegin(), guard.rend(), ret.rbegin()))
+    {
+        return std::unexpected(TokenCodecErrc::MismatchedChecksum);
+    }
+
+    std::size_t const outSize = ret.size() - 1 - guard.size();
+    if (outBuf.size() < outSize)
+        return std::unexpected(TokenCodecErrc::OutputTooSmall);
+    // Skip the leading type byte and the trailing checksum.
+    std::copy(ret.begin() + 1, ret.begin() + outSize + 1, outBuf.begin());
+    return outBuf.subspan(0, outSize);
+}
+
+[[nodiscard]] std::string
+encodeBase58Token(TokenType type, void const* token, std::size_t size)
+{
+    std::string sr;
+    // The largest object encoded as base58 is 33 bytes; This will be encoded in
+    // at most ceil(log(2^256,58)) bytes, or 46 bytes. 128 is plenty (and
+    // there's not real benefit making it smaller). Note that 46 bytes may be
+    // encoded in more than 46 base58 chars. Since decode uses 64 as the
+    // over-allocation, this function uses 128 (again, over-allocation assuming
+    // 2 base 58 char per byte)
+    sr.resize(128);
+    std::span<std::uint8_t> const outSp(reinterpret_cast<std::uint8_t*>(sr.data()), sr.size());
+    std::span<std::uint8_t const> const inSp(reinterpret_cast<std::uint8_t const*>(token), size);
+    auto r = b58_fast::encodeBase58Token(type, inSp, outSp);
+    if (!r)
+        return {};
+    sr.resize(r.value().size());
+    return sr;
+}
+
+[[nodiscard]] std::string
+decodeBase58Token(std::string const& s, TokenType type)
+{
+    std::string sr;
+    // The largest object encoded as base58 is 33 bytes; 64 is plenty (and
+    // there's no benefit making it smaller)
+    sr.resize(64);
+    std::span<std::uint8_t> const outSp(reinterpret_cast<std::uint8_t*>(sr.data()), sr.size());
+    auto r = b58_fast::decodeBase58Token(type, s, outSp);
+    if (!r)
+        return {};
+    sr.resize(r.value().size());
+    return sr;
+}
+
+}  // namespace b58_fast
+#endif  // _MSC_VER
+}  // namespace xrpl

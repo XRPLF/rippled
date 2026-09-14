@@ -1,0 +1,17 @@
+#pragma once
+
+#include <test/jtx/AbstractClient.h>
+
+#include <xrpld/core/Config.h>
+
+#include <memory>
+
+namespace xrpl::test {
+
+/**
+ * Returns a client using JSON-RPC over HTTP/S.
+ */
+std::unique_ptr<AbstractClient>
+makeJSONRPCClient(Config const& cfg, unsigned rpcVersion = 2);
+
+}  // namespace xrpl::test

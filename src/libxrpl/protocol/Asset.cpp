@@ -1,0 +1,76 @@
+#include <xrpl/protocol/Asset.h>
+
+#include <xrpl/basics/Number.h>
+#include <xrpl/basics/contract.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Concepts.h>
+#include <xrpl/protocol/Issue.h>
+#include <xrpl/protocol/MPTIssue.h>
+#include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/jss.h>
+
+#include <ostream>
+#include <stdexcept>
+#include <string>
+#include <variant>
+
+namespace xrpl {
+
+AccountID const&
+Asset::getIssuer() const
+{
+    return std::visit([&](auto&& issue) -> AccountID const& { return issue.getIssuer(); }, issue_);
+}
+
+std::string
+Asset::getText() const
+{
+    return std::visit([&](auto&& issue) { return issue.getText(); }, issue_);
+}
+
+void
+Asset::setJson(json::Value& jv) const
+{
+    std::visit([&](auto&& issue) { issue.setJson(jv); }, issue_);
+}
+
+STAmount
+Asset::operator()(Number const& number) const
+{
+    return STAmount{*this, number};
+}
+
+std::string
+to_string(Asset const& asset)
+{
+    return std::visit([&](auto const& issue) { return to_string(issue); }, asset.value());
+}
+
+bool
+validJSONAsset(json::Value const& jv)
+{
+    if (jv.isMember(jss::mpt_issuance_id))
+        return !(jv.isMember(jss::currency) || jv.isMember(jss::issuer));
+    return jv.isMember(jss::currency);
+}
+
+Asset
+assetFromJson(json::Value const& v)
+{
+    if (!v.isMember(jss::currency) && !v.isMember(jss::mpt_issuance_id))
+        Throw<std::runtime_error>("assetFromJson must contain currency or mpt_issuance_id");
+
+    if (v.isMember(jss::currency))
+        return issueFromJson(v);
+    return mptIssueFromJson(v);
+}
+
+std::ostream&
+operator<<(std::ostream& os, Asset const& x)
+{
+    std::visit([&]<ValidIssueType TIss>(TIss const& issue) { os << issue; }, x.value());
+    return os;
+}
+
+}  // namespace xrpl

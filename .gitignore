@@ -1,0 +1,102 @@
+# .gitignore
+# cspell: disable
+
+# Macintosh Desktop Services Store files.
+.DS_Store
+
+# Build, intermediate, and temporary artifacts.
+*~
+*.o
+*.pdb
+*.swp
+/.clangd
+Debug/
+Release/
+/.build/
+/.venv/
+/build/
+/db/
+/out.txt
+/Testing/
+/tmp/
+CMakeSettings.json
+CMakeUserPresets.json
+
+# Coverage files.
+*.gcno
+*.gcda
+*.gcov
+
+# Profiling data.
+gmon.out
+
+# Levelization data.
+.github/scripts/levelization/results/*
+!.github/scripts/levelization/results/loops.txt
+!.github/scripts/levelization/results/ordering.txt
+
+# Customized configs.
+/rippled.cfg
+/xrpld.cfg
+/validators.txt
+
+# Locally patched Conan recipes
+external/conan-center-index/
+
+# Local conan directory
+.conan
+
+# XCode IDE.
+*.pbxuser
+!default.pbxuser
+*.mode1v3
+!default.mode1v3
+*.mode2v3
+!default.mode2v3
+*.perspectivev3
+!default.perspectivev3
+xcuserdata
+profile
+*.moved-aside
+DerivedData
+*.hmap
+
+# JetBrains IDE.
+/.idea/
+
+# Microsoft Visual Studio IDE.
+/.vs/
+/.vscode/
+
+# zed IDE.
+/.zed/
+
+# AI tools.
+# Shared/committable AI agent config (AGENTS.md, CLAUDE.md, GEMINI.md, .claude/settings.json,
+# tool-specific rules files, etc.) should be checked in — see CONTRIBUTING.md. Only the
+# personal/local variants below are ignored.
+/.agent
+/.agents
+/.augment
+/.claude/settings.local.json
+AGENTS.override.md
+CLAUDE.local.md
+GEMINI.local.md
+
+# Python
+__pycache__
+
+# Rust build artifacts.
+target/
+
+# Direnv's directory
+/.direnv
+
+# Direnv's local, per-developer overrides
+/.envrc.local
+
+# clangd cache
+/.cache
+
+# Rust build directory
+crates/target

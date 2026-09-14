@@ -1,0 +1,279 @@
+#include <test/jtx/TestSuite.h>
+#include <test/unit_test/SuiteJournal.h>
+
+#include <xrpld/overlay/Cluster.h>
+
+#include <xrpl/basics/chrono.h>
+#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/config/BasicConfig.h>
+#include <xrpl/protocol/KeyType.h>
+#include <xrpl/protocol/PublicKey.h>
+#include <xrpl/protocol/SecretKey.h>
+#include <xrpl/protocol/tokens.h>
+
+#include <algorithm>
+#include <chrono>
+#include <cstddef>
+#include <cstdint>
+#include <memory>
+#include <vector>
+
+namespace xrpl::tests {
+
+class cluster_test : public xrpl::TestSuite
+{
+    test::SuiteJournal journal_;
+
+public:
+    cluster_test() : journal_("cluster_test", *this)
+    {
+    }
+
+    std::unique_ptr<Cluster>
+    create(std::vector<PublicKey> const& nodes)
+    {
+        auto cluster = std::make_unique<Cluster>(journal_);
+
+        for (auto const& n : nodes)
+            cluster->update(n, "Test");
+
+        return cluster;
+    }
+
+    static PublicKey
+    randomNode()
+    {
+        return derivePublicKey(KeyType::Secp256k1, randomSecretKey());
+    }
+
+    void
+    testMembership()
+    {
+        // The servers on the network
+        std::vector<PublicKey> network;
+
+        while (network.size() != 128)
+            network.push_back(randomNode());
+
+        {
+            testcase("Membership: Empty cluster");
+
+            auto c = create({});
+
+            for (auto const& n : network)
+                BEAST_EXPECT(!c->member(n));
+        }
+
+        {
+            testcase("Membership: Non-empty cluster and none present");
+
+            std::vector<PublicKey> cluster;
+            while (cluster.size() != 32)
+                cluster.push_back(randomNode());
+
+            auto c = create(cluster);
+
+            for (auto const& n : network)
+                BEAST_EXPECT(!c->member(n));
+        }
+
+        {
+            testcase("Membership: Non-empty cluster and some present");
+
+            std::vector<PublicKey> cluster(network.begin(), network.begin() + 16);
+
+            while (cluster.size() != 32)
+                cluster.push_back(randomNode());
+
+            auto c = create(cluster);
+
+            for (auto const& n : cluster)
+                BEAST_EXPECT(c->member(n));
+
+            for (auto const& n : network)
+            {
+                auto const found = std::ranges::find(cluster, n);
+                BEAST_EXPECT(static_cast<bool>(c->member(n)) == (found != cluster.end()));
+            }
+        }
+
+        {
+            testcase("Membership: isMember agrees with member");
+
+            // Number of network nodes that also belong to the cluster.
+            std::size_t const overlapCount = 16;
+
+            // Total size of the cluster once padded with non-network nodes.
+            std::size_t const clusterSize = 32;
+
+            std::vector<PublicKey> cluster(network.begin(), network.begin() + overlapCount);
+
+            while (cluster.size() != clusterSize)
+                cluster.push_back(randomNode());
+
+            auto c = create(cluster);
+
+            for (auto const& n : cluster)
+                BEAST_EXPECT(c->isMember(n));
+
+            for (auto const& n : network)
+                BEAST_EXPECT(c->isMember(n) == static_cast<bool>(c->member(n)));
+        }
+
+        {
+            testcase("Membership: Non-empty cluster and all present");
+
+            std::vector<PublicKey> cluster(network.begin(), network.begin() + 32);
+
+            auto c = create(cluster);
+
+            for (auto const& n : cluster)
+                BEAST_EXPECT(c->member(n));
+
+            for (auto const& n : network)
+            {
+                auto const found = std::ranges::find(cluster, n);
+                BEAST_EXPECT(static_cast<bool>(c->member(n)) == (found != cluster.end()));
+            }
+        }
+    }
+
+    void
+    testUpdating()
+    {
+        testcase("Updating");
+
+        auto c = create({});
+
+        auto const node = randomNode();
+        auto const name = toBase58(TokenType::NodePublic, node);
+        std::uint32_t const load = 0;
+        NetClock::time_point tick = {};
+
+        // Initial update
+        BEAST_EXPECT(c->update(node, "", load, tick));
+        {
+            auto member = c->member(node);
+            BEAST_EXPECT(static_cast<bool>(member));
+            BEAST_EXPECT(member->empty());  // NOLINT(bugprone-unchecked-optional-access)
+        }
+
+        // Updating too quickly: should fail
+        BEAST_EXPECT(!c->update(node, name, load, tick));
+        {
+            auto member = c->member(node);
+            BEAST_EXPECT(static_cast<bool>(member));
+            BEAST_EXPECT(member->empty());  // NOLINT(bugprone-unchecked-optional-access)
+        }
+
+        using namespace std::chrono_literals;
+
+        // Updating the name (empty updates to non-empty)
+        tick += 1s;
+        BEAST_EXPECT(c->update(node, name, load, tick));
+        {
+            auto member = c->member(node);
+            BEAST_EXPECT(static_cast<bool>(member));
+            BEAST_EXPECT(*member == name);  // NOLINT(bugprone-unchecked-optional-access)
+        }
+
+        // Updating the name (non-empty doesn't go to empty)
+        tick += 1s;
+        BEAST_EXPECT(c->update(node, "", load, tick));
+        {
+            auto member = c->member(node);
+            BEAST_EXPECT(static_cast<bool>(member));
+            BEAST_EXPECT(*member == name);  // NOLINT(bugprone-unchecked-optional-access)
+        }
+
+        // Updating the name (non-empty updates to new non-empty)
+        tick += 1s;
+        BEAST_EXPECT(c->update(node, "test", load, tick));
+        {
+            auto member = c->member(node);
+            BEAST_EXPECT(static_cast<bool>(member));
+            BEAST_EXPECT(*member == "test");  // NOLINT(bugprone-unchecked-optional-access)
+        }
+    }
+
+    void
+    testConfigLoad()
+    {
+        testcase("Config Load");
+
+        auto c = std::make_unique<Cluster>(journal_);
+
+        // The servers on the network
+        std::vector<PublicKey> network;
+
+        while (network.size() != 8)
+            network.push_back(randomNode());
+
+        auto const format = [](PublicKey const& publicKey, char const* comment = nullptr) {
+            auto ret = toBase58(TokenType::NodePublic, publicKey);
+
+            if (comment)
+                ret += comment;
+
+            return ret;
+        };
+
+        Section s1;
+
+        // Correct (empty) configuration
+        BEAST_EXPECT(c->load(s1));
+        BEAST_EXPECT(c->size() == 0);
+
+        // Correct configuration
+        s1.append(format(network[0]));
+        s1.append(format(network[1], "    "));
+        s1.append(format(network[2], " Comment"));
+        s1.append(format(network[3], " Multi Word Comment"));
+        s1.append(format(network[4], "  Leading Whitespace"));
+        s1.append(format(network[5], " Trailing Whitespace  "));
+        s1.append(format(network[6], "  Leading & Trailing Whitespace  "));
+        s1.append(format(network[7], "  Leading,  Trailing  &  Internal  Whitespace  "));
+
+        BEAST_EXPECT(c->load(s1));
+
+        for (auto const& n : network)
+            BEAST_EXPECT(c->member(n));
+
+        // Incorrect configurations
+        Section s2;
+        s2.append("NotAPublicKey");
+        BEAST_EXPECT(!c->load(s2));
+
+        Section s3;
+        s3.append(format(network[0], "!"));
+        BEAST_EXPECT(!c->load(s3));
+
+        Section s4;
+        s4.append(format(network[0], "!  Comment"));
+        BEAST_EXPECT(!c->load(s4));
+
+        // Check if we properly terminate when we encounter
+        // a malformed or unparsable entry:
+        auto const node1 = randomNode();
+        auto const node2 = randomNode();
+
+        Section s5;
+        s5.append(format(node1, "XXX"));
+        s5.append(format(node2));
+        BEAST_EXPECT(!c->load(s5));
+        BEAST_EXPECT(!c->member(node1));
+        BEAST_EXPECT(!c->member(node2));
+    }
+
+    void
+    run() override
+    {
+        testMembership();
+        testUpdating();
+        testConfigLoad();
+    }
+};
+
+BEAST_DEFINE_TESTSUITE(cluster, overlay, xrpl);
+
+}  // namespace xrpl::tests

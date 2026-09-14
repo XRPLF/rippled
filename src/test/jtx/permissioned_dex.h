@@ -1,0 +1,35 @@
+#pragma once
+
+#include <test/jtx/Account.h>
+#include <test/jtx/Env.h>
+
+#include <xrpl/basics/base_uint.h>
+
+#include <string>
+#include <vector>
+
+namespace xrpl::test::jtx {
+
+UInt256
+setupDomain(
+    jtx::Env& env,
+    std::vector<jtx::Account> const& accounts,
+    jtx::Account const& domainOwner = jtx::Account("domainOwner"),
+    std::string const& credType = "Cred");
+
+class PermissionedDEX
+{
+public:
+    Account gw;
+    Account domainOwner;
+    Account alice;
+    Account bob;
+    Account carol;
+    IOU usd;
+    UInt256 domainID;
+    std::string credType;
+
+    PermissionedDEX(Env& env);
+};
+
+}  // namespace xrpl::test::jtx

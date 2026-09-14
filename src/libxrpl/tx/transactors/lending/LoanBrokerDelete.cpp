@@ -1,0 +1,262 @@
+#include <xrpl/tx/transactors/lending/LoanBrokerDelete.h>
+
+#include <xrpl/basics/Log.h>
+#include <xrpl/basics/Number.h>
+#include <xrpl/beast/utility/Zero.h>
+#include <xrpl/ledger/helpers/AccountRootHelpers.h>
+#include <xrpl/ledger/helpers/LendingHelpers.h>
+#include <xrpl/ledger/helpers/TokenHelpers.h>
+#include <xrpl/ledger/helpers/VaultHelpers.h>
+#include <xrpl/protocol/Asset.h>
+#include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/XRPAmount.h>
+#include <xrpl/tx/Transactor.h>
+
+namespace xrpl {
+
+bool
+LoanBrokerDelete::checkExtraFeatures(PreflightContext const& ctx)
+{
+    return checkLendingProtocolDependencies(ctx.rules, ctx.tx);
+}
+
+NotTEC
+LoanBrokerDelete::preflight(PreflightContext const& ctx)
+{
+    if (ctx.tx[sfLoanBrokerID] == beast::kZero)
+        return temINVALID;
+
+    return tesSUCCESS;
+}
+
+TER
+LoanBrokerDelete::preclaim(PreclaimContext const& ctx)
+{
+    auto const& tx = ctx.tx;
+
+    auto const account = tx[sfAccount];
+    auto const brokerID = tx[sfLoanBrokerID];
+
+    auto const sleBroker = ctx.view.read(keylet::loanBroker(brokerID));
+    if (!sleBroker)
+    {
+        JLOG(ctx.j.warn()) << "LoanBroker does not exist.";
+        return tecNO_ENTRY;
+    }
+
+    auto const brokerOwner = sleBroker->at(sfOwner);
+
+    if (account != brokerOwner)
+    {
+        JLOG(ctx.j.warn()) << "Account is not the owner of the LoanBroker.";
+        return tecNO_PERMISSION;
+    }
+    if (auto const ownerCount = sleBroker->at(sfOwnerCount); ownerCount != 0)
+    {
+        JLOG(ctx.j.warn()) << "LoanBrokerDelete: Owner count is " << ownerCount;
+        return tecHAS_OBLIGATIONS;
+    }
+
+    auto const vault = ctx.view.read(keylet::vault(sleBroker->at(sfVaultID)));
+    if (!vault)
+    {
+        // LCOV_EXCL_START
+        JLOG(ctx.j.fatal()) << "Vault is missing for Broker " << brokerID;
+        return tefBAD_LEDGER;
+        // LCOV_EXCL_STOP
+    }
+
+    Asset const asset = vault->at(sfAsset);
+
+    if (auto const debtTotal = sleBroker->at(sfDebtTotal); debtTotal != beast::kZero)
+    {
+        // Any remaining debt should have been wiped out by the last Loan
+        // Delete. This check is purely defensive.
+        auto const scale = getVaultScale(vault);
+
+        auto const rounded =
+            roundToAsset(asset, debtTotal, scale, Number::RoundingMode::TowardsZero);
+
+        if (rounded != beast::kZero)
+        {
+            // LCOV_EXCL_START
+            JLOG(ctx.j.warn()) << "LoanBrokerDelete: Debt total is " << debtTotal
+                               << ", which rounds to " << rounded;
+            return tecHAS_OBLIGATIONS;
+            // LCOV_EXCL_STOP
+        }
+    }
+
+    auto const coverAvailable = STAmount{asset, sleBroker->at(sfCoverAvailable)};
+    // If there are assets in the cover, broker will receive them on deletion.
+    if (coverAvailable > beast::kZero)
+    {
+        auto const brokerPseudo = sleBroker->at(sfAccount);
+
+        // Pre-fixCleanup3_5_0: only freeze checks apply to the cover payout.
+        // Post-fixCleanup3_5_0: apply the cover-withdraw transfer and authorization checks too.
+        if (ctx.view.rules().enabled(fixCleanup3_5_0))
+        {
+            // Like a cover withdrawal, the payout skips the lsfMPTCanTransfer check so that an
+            // issuer cannot trap the broker's cover.
+            if (auto const ret = canTransfer(
+                    ctx.view, asset, brokerPseudo, brokerOwner, WaiveMPTCanTransfer::Yes))
+                return ret;
+
+            if (auto const ret = requireAuth(ctx.view, asset, brokerOwner, AuthType::WeakAuth))
+                return ret;
+
+            if (!holdingExists(ctx.view, brokerOwner, asset))
+            {
+                if (auto const ret = canAddHolding(ctx.view, asset); !isTesSuccess(ret))
+                    return ret;
+            }
+        }
+
+        if (auto const ret = checkDeepFrozen(ctx.view, brokerOwner, asset))
+        {
+            JLOG(ctx.j.warn()) << "Broker owner account is frozen.";
+            return ret;
+        }
+
+        if (ctx.view.rules().enabled(fixCleanup3_2_0))
+        {
+            if (auto const ret = checkFrozen(ctx.view, brokerPseudo, asset))
+            {
+                JLOG(ctx.j.warn()) << "Broker pseudo-account is frozen/locked.";
+                return ret;
+            }
+        }
+    }
+
+    return tesSUCCESS;
+}
+
+TER
+LoanBrokerDelete::doApply()
+{
+    auto const& tx = ctx_.tx;
+
+    auto const brokerID = tx[sfLoanBrokerID];
+
+    // Delete the loan broker
+    auto const broker = view().peek(keylet::loanBroker(brokerID));
+    if (!broker)
+        return tefBAD_LEDGER;  // LCOV_EXCL_LINE
+    auto const vaultID = broker->at(sfVaultID);
+    auto const sleVault = view().read(keylet::vault(vaultID));
+    if (!sleVault)
+        return tefBAD_LEDGER;  // LCOV_EXCL_LINE
+    auto const vaultPseudoID = sleVault->at(sfAccount);
+    auto const vaultAsset = sleVault->at(sfAsset);
+
+    auto const brokerPseudoID = broker->at(sfAccount);
+
+    if (!view().dirRemove(
+            keylet::ownerDir(accountID_), broker->at(sfOwnerNode), broker->key(), false))
+    {
+        return tefBAD_LEDGER;  // LCOV_EXCL_LINE
+    }
+    if (!view().dirRemove(
+            keylet::ownerDir(vaultPseudoID), broker->at(sfVaultNode), broker->key(), false))
+    {
+        return tefBAD_LEDGER;  // LCOV_EXCL_LINE
+    }
+
+    auto const owner = view().peek(keylet::account(accountID_));
+    if (!owner)
+        return tefBAD_LEDGER;  // LCOV_EXCL_LINE
+
+    // Pre-fixCleanup3_5_0: the owner count drops after the pseudo-account is erased.
+    // Post-fixCleanup3_5_0: it drops first, so the owner's holding created below can use the
+    // reserve that the broker frees.
+    bool const fix350Enabled = view().rules().enabled(fixCleanup3_5_0);
+    if (fix350Enabled)
+    {
+        // Decreases the owner count by two: one for the LoanBroker object, and one
+        // for the pseudo-account.
+        decreaseOwnerCountForObject(view(), owner, broker, 2, j_);
+    }
+
+    {
+        auto const coverAvailable = STAmount{vaultAsset, broker->at(sfCoverAvailable)};
+
+        // Pre-fixCleanup3_5_0: the cover goes straight to accountSend, so an MPT payout to an
+        // owner with no MPToken fails with tecNO_AUTH.
+        // Post-fixCleanup3_5_0: a nonzero cover first gets the owner a holding if it has none, as a
+        // withdrawal to self does.
+        if (fix350Enabled && coverAvailable > beast::kZero &&
+            !holdingExists(view(), accountID_, vaultAsset))
+        {
+            if (auto const ter = addEmptyHolding(
+                    ctx_.getApplyViewContext(), accountID_, preFeeBalance_, vaultAsset, j_))
+                return ter;
+        }
+
+        if (auto const ter = accountSend(
+                view(), brokerPseudoID, accountID_, coverAvailable, j_, {}, WaiveTransferFee::Yes))
+            return ter;
+    }
+
+    if (auto ter = removeEmptyHolding(ctx_.getApplyViewContext(), brokerPseudoID, vaultAsset, j_))
+        return ter;
+
+    auto const brokerPseudoSLE = view().peek(keylet::account(brokerPseudoID));
+    if (!brokerPseudoSLE)
+        return tefBAD_LEDGER;  // LCOV_EXCL_LINE
+
+    // Making the payment and removing the empty holding should have deleted any
+    // obligations associated with the broker or broker pseudo-account.
+    if (*brokerPseudoSLE->at(sfBalance))
+    {
+        JLOG(j_.warn()) << "LoanBrokerDelete: Pseudo-account has a balance";
+        return tecHAS_OBLIGATIONS;  // LCOV_EXCL_LINE
+    }
+    if (brokerPseudoSLE->at(sfOwnerCount) != 0)
+    {
+        JLOG(j_.warn()) << "LoanBrokerDelete: Pseudo-account still owns objects";
+        return tecHAS_OBLIGATIONS;  // LCOV_EXCL_LINE
+    }
+    if (auto const directory = keylet::ownerDir(brokerPseudoID); view().read(directory))
+    {
+        JLOG(j_.warn()) << "LoanBrokerDelete: Pseudo-account has a directory";
+        return tecHAS_OBLIGATIONS;  // LCOV_EXCL_LINE
+    }
+
+    view().erase(brokerPseudoSLE);
+
+    if (!fix350Enabled)
+        decreaseOwnerCountForObject(view(), owner, broker, 2, j_);
+
+    view().erase(broker);
+
+    return tesSUCCESS;
+}
+
+void
+LoanBrokerDelete::visitInvariantEntry(bool, SLE::ConstRef, SLE::ConstRef)
+{
+    // No transaction-specific invariants yet (future work).
+}
+
+bool
+LoanBrokerDelete::finalizeInvariants(
+    STTx const&,
+    TER,
+    XRPAmount,
+    ReadView const&,
+    beast::Journal const&)
+{
+    // No transaction-specific invariants yet (future work).
+    return true;
+}
+
+//------------------------------------------------------------------------------
+
+}  // namespace xrpl

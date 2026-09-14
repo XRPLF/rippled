@@ -1,0 +1,644 @@
+The XRP Ledger has many and diverse stakeholders, and everyone deserves
+a chance to contribute meaningful changes to the code that runs the
+XRPL.
+
+# Contributing
+
+We assume you are familiar with the general practice of [making
+contributions on GitHub][contrib]. This file includes only special
+instructions specific to this project.
+
+## Before you start
+
+The following branches exist in the main project repository:
+
+- `develop`: The latest set of unreleased features, and the most common
+  starting point for contributions.
+- `staging/*` (e.g. `staging/3.4.x`): Staging branches, one per release line,
+  where fixes for that line are developed.
+- `release/*` (e.g. `release/3.4.x`): Release branches, one per release line,
+  holding the latest public release candidate or release for that line.
+  Releases are published as [tagged releases](https://github.com/XRPLF/rippled/releases).
+
+See [RELEASING.md](./RELEASING.md) for how these branches are used.
+
+The tip of each branch must be signed. In order for GitHub to sign a
+squashed commit that it builds from your pull request, GitHub must know
+your verifying key. Please set up [signature verification][signing].
+
+In general, external contributions should be developed in your personal
+[fork][forking]. Contributions from developers with write permissions
+should be done in [the main repository][xrpld] in a branch with
+a permitted prefix. Permitted prefixes are:
+
+- XLS-[a-zA-Z0-9]+/.+
+  - e.g. XLS-0033d/mpt-clarify-STEitherAmount
+- [GitHub username]/.+
+  - e.g. JoelKatz/fix-rpc-webhook-queue
+- [Organization name]/.+
+  - e.g. ripple/antithesis
+
+Regardless of where the branch is created, please open a _draft_ pull
+request as soon as possible after pushing the branch to Github, to
+increase visibility, and ease feedback during the development process.
+
+## Major contributions
+
+If your contribution is a major feature or breaking change, then you
+must first write an XRP Ledger Standard (XLS) describing it. Go to
+[XRPL-Standards](https://github.com/XRPLF/XRPL-Standards/discussions),
+choose the next available standard number, and open a discussion with an
+appropriate title to propose your draft standard.
+
+When you submit a pull request, please link the corresponding XLS in the
+description. An XLS still in `Draft` status is considered a
+work-in-progress and open for discussion. Please allow time for
+questions, suggestions, and changes to the XLS draft. It is the
+responsibility of the XLS author to update the draft to match the final
+implementation when its corresponding pull request is merged, unless the
+author delegates that responsibility to others.
+
+Any amendment or major RPC change requires either a new XLS or an update
+to an existing XLS. Neither change will be released (in an amendment's
+case, marked as `Supported::yes`) until the corresponding XLS's status
+is `Final`.
+
+## AI coding agents
+
+[`AGENTS.md`](./AGENTS.md) (and its `CLAUDE.md` symlink, for Claude Code) holds shared, checked-in guidance for AI coding agents working in this repository — build/test/lint commands and architecture notes. Additional `AGENTS.md` files may exist in subdirectories to give agents context specific to that part of the codebase; whenever you add one, also add a `CLAUDE.md` symlink pointing to it (`ln -s AGENTS.md CLAUDE.md`) so Claude Code picks it up too.
+
+If you want to give an agent personal instructions that shouldn't be shared with other contributors (e.g. your own workflow preferences), those are gitignored, not checked in:
+
+- `CLAUDE.local.md` — read by Claude Code alongside `CLAUDE.md`.
+- `AGENTS.override.md` — read by AGENTS.md-compatible tools that support a personal override file layered on top of `AGENTS.md`.
+
+Likewise, `.claude/settings.local.json` is for personal, untracked Claude Code settings, while `.claude/settings.json` is shared.
+
+## Before making a pull request
+
+(Or marking a draft pull request as ready.)
+
+Changes that alter transaction processing must be guarded by an
+[Amendment](https://xrpl.org/amendments.html).
+All other changes that maintain the existing behavior do not need an
+Amendment.
+
+Ensure that your code compiles according to the build instructions in
+[`BUILD.md`](./BUILD.md).
+
+Please write tests for your code.
+If your test can be run offline, in under 60 seconds, then it can be an
+automatic test run by `xrpld --unittest`.
+Otherwise, it must be a manual test.
+
+If you create new source files, they must be organized as follows:
+
+- If the files are in any of the `libxrpl` modules, the headers (`.h`) must go
+  under `include/xrpl`, and source (`.cpp`) files must go under
+  `src/libxrpl`.
+- All other non-test files must go under `src/xrpld`.
+- New test source files should use `gtest` and go under `src/tests`, unless that isn't possible, in which case they should use our legacy test framework and go under `src/test`.
+- All benchmark source files must go under `src/benchmarks`.
+
+The source must be formatted according to the style guide below. The easiest
+way to satisfy this is to install the [`pre-commit`](#pre-commit-hooks) hooks,
+which format and lint your changes automatically on every commit.
+
+Header includes must be [levelized](.github/scripts/levelization).
+
+Changes should be usually squashed down into a single commit.
+Some larger or more complicated change sets make more sense,
+and are easier to review if organized into multiple logical commits.
+Either way, all commits should fit the following criteria:
+
+- Changes should be presented in a single commit or a logical
+  sequence of commits.
+  Specifically, chronological commits that simply
+  reflect the history of how the author implemented
+  the change, "warts and all", are not useful to
+  reviewers.
+- Every commit should have a [good message](#good-commit-messages).
+  to explain a specific aspects of the change.
+- Every commit should be signed.
+- Every commit should be well-formed (builds successfully,
+  unit tests passing), as this helps to resolve merge
+  conflicts, and makes it easier to use `git bisect`
+  to find bugs.
+
+### Good commit messages
+
+Refer to
+["How to Write a Git Commit Message"](https://cbea.ms/git-commit/)
+for general rules on writing a good commit message.
+
+tl;dr
+
+> 1. Separate subject from body with a blank line.
+> 2. Limit the subject line to 50 characters.
+>    - [...]shoot for 50 characters, but consider 72 the hard limit.
+> 3. Capitalize the subject line.
+> 4. Do not end the subject line with a period.
+> 5. Use the imperative mood in the subject line.
+>    - A properly formed Git commit subject line should always be able
+>      to complete the following sentence: "If applied, this commit will
+>      _your subject line here_".
+> 6. Wrap the body at 72 characters.
+> 7. Use the body to explain what and why vs. how.
+
+## Pull requests
+
+In general, pull requests use `develop` as the base branch.
+
+The exceptions are fixes for an existing release line,
+which use that line's staging branch (e.g. `staging/3.4.x`) as the base.
+
+If your changes are not quite ready, but you want to make it easily available
+for preliminary examination or review, you can create a "Draft" pull request.
+While a pull request is marked as a "Draft", you can rebase or reorganize the
+commits in the pull request as desired.
+
+Github pull requests are created as "Ready" by default, or you can mark
+a "Draft" pull request as "Ready".
+Once a pull request is marked as "Ready",
+any changes must be added as new commits. Do not
+force-push to a branch in a pull request under review.
+(This includes rebasing your branch onto the updated base branch.
+Use a merge operation, instead or hit the "Update branch" button
+at the bottom of the Github PR page.)
+This preserves the ability for reviewers to filter changes since their last
+review.
+
+A pull request must obtain **approvals from at least two reviewers**
+before it can be considered for merge by a Maintainer.
+Maintainers retain discretion to require more approvals if they feel the
+credibility of the existing approvals is insufficient.
+
+Pull requests must be merged by [squash-and-merge][squash]
+to preserve a linear history for the `develop` branch.
+
+### Type of Change
+
+In addition to those guidelines, please start your PR title with one of the following:
+
+- `build:` - The changes _only_ affect the build process, including CMake and/or Conan settings.
+- `feat`: New feature (change which adds functionality).
+- `fix:` - The primary purpose is to fix an existing bug.
+- `docs:` - The changes _only_ affect documentation.
+- `test:` - The changes _only_ affect unit tests.
+- `ci`: Continuous Integration (changes to our CI configuration files and scripts).
+- `style`: Code style (formatting).
+- `refactor:` - The changes refactor code without affecting functionality.
+- `perf:` - The primary purpose is performance improvements.
+- `chore:` - Other tasks that don't affect the binary, but don't fit any of the other cases. e.g. `git` settings, `clang-tidy`, removing dead code, dropping support for older tooling.
+
+First letter after the type prefix should be capitalized, and the type prefix should be followed by a colon and a space. e.g. `feat: Add support for Borrowing Protocol`.
+
+### "Ready to merge"
+
+A pull request should only have the "Ready to merge" label added when it
+meets a few criteria:
+
+1. It must have two approving reviews [as described
+   above](#pull-requests). (Exception: PRs that are deemed "trivial"
+   only need one approval.)
+2. All CI checks must be complete and passed. (One-off failures may
+   be acceptable if they are related to a known issue.)
+3. The PR must have a [good commit message](#good-commit-messages).
+   - If the PR started with a good commit message, and it doesn't
+     need to be updated, the author can indicate that in a comment.
+   - Any contributor, preferably the author, can leave a comment
+     suggesting a commit message.
+   - If the author squashes and rebases the code in preparation for
+     merge, they should also ensure the commit message(s) are updated
+     as well.
+4. The PR branch must be up to date with the base branch (usually
+   `develop`). This is usually accomplished by merging the base branch
+   into the feature branch, but if the other criteria are met, the
+   changes can be squashed and rebased on top of the base branch.
+5. Finally, and most importantly, the author of the PR must
+   positively indicate that the PR is ready to merge. That can be
+   accomplished by adding the "Ready to merge" label if their role
+   allows, or by leaving a comment to the effect that the PR is ready to
+   merge.
+
+Once the "Ready to merge" label is added, a maintainer may merge the PR
+at any time, so don't use it lightly.
+
+# Style guide
+
+This is a non-exhaustive list of recommended style guidelines. These are
+not always strictly enforced and serve as a way to keep the codebase
+coherent rather than a set of _thou shalt not_ commandments.
+
+## Pre-commit hooks
+
+We use the [`pre-commit`](https://pre-commit.com/) framework to run the
+formatting and linting tools that keep the codebase consistent. `pre-commit`
+runs each tool configured in
+[`.pre-commit-config.yaml`](./.pre-commit-config.yaml) in its own isolated
+environment, so you don't need to install most of the individual tools
+yourself. The version of each hook sourced from an external repository
+(`clang-format`, `gersemi`, etc.) is pinned in that file, so running the hooks
+locally uses exactly the same versions as CI. A few `local` hooks — most notably
+`clang-tidy` and `cargo fmt` — run tools from your own environment; see
+[Installing clang-tidy](#installing-clang-tidy) and
+[Rust](./docs/build/environment.md#rust) for how to get those.
+
+To get started, install `pre-commit` and enable the git hook scripts:
+
+```bash
+pip install pre-commit
+pre-commit install
+```
+
+Once installed, the hooks run automatically on your staged files every time you
+`git commit`. You can also run them on demand:
+
+```bash
+# Run all hooks against only the staged files
+pre-commit run
+
+# Run all hooks against every file in the repository
+pre-commit run --all-files
+
+# Run a single hook (e.g. clang-format) against all files
+pre-commit run clang-format --all-files
+```
+
+The hooks configured in this repository include, among others:
+
+- `clang-format` — C++/proto formatting (see [Formatting](#formatting))
+- `clang-tidy` — C++ static analysis (see [Clang-tidy](#clang-tidy)); opt in with `TIDY=1`
+- `fix-include-style`, `fix-pragma-once`, `check-doxygen-style` — C++ hygiene
+- `gersemi` — CMake formatting
+- `cargo fmt` — Rust formatting for the crates in `crates/`
+- `prettier`, `black`, `shfmt` — formatting for JavaScript/JSON/Markdown, Python, and shell
+- `cspell` — spell checking
+
+The same hooks run in CI on every pull request, so running them locally before
+you push helps you avoid CI failures.
+
+## Formatting
+
+All code must conform to `clang-format`, according to the settings in
+[`.clang-format`](./.clang-format), unless the result would be unreasonably
+difficult to read or maintain. The `clang-format` version is pinned in
+[`.pre-commit-config.yaml`](./.pre-commit-config.yaml), so the
+[`pre-commit`](#pre-commit-hooks) hook always formats with the same version as
+CI. To demarcate lines that should be left as-is, surround them with comments
+like this:
+
+```
+// clang-format off
+...
+// clang-format on
+```
+
+The easiest way to format your changes is to let the `pre-commit` hook run
+automatically on commit, or to run it manually:
+
+```bash
+pre-commit run clang-format --all-files
+```
+
+You can also format individual files in place by running `clang-format -i <file>...`
+from any directory within this project.
+
+> [!NOTE]
+> This uses whatever `clang-format` version is installed locally, which may
+> differ from the pinned version used by `pre-commit` and CI, so the results
+> can vary.
+
+There is a Continuous Integration job that runs clang-format on pull requests. If the code doesn't comply, a patch file that corrects auto-fixable formatting issues is generated.
+
+To download the patch file:
+
+1. Next to `clang-format / check (pull_request) Failing after #s` -> click **Details** to open the details page.
+2. Left menu -> click **Summary**
+3. Scroll down to near the bottom-right under `Artifacts` -> click **clang-format.patch**
+4. Download the zip file and extract it to your local git repository. Run `git apply [patch-file-name]`.
+5. Commit and push.
+
+## Clang-tidy
+
+All code must pass `clang-tidy` checks according to the settings in [`.clang-tidy`](./.clang-tidy).
+
+There is a Continuous Integration job that runs clang-tidy on pull requests. The CI will check:
+
+- All changed C++ files (`.cpp`, `.h`, `.ipp`) when only code files are modified
+- **All files in the repository** when the `.clang-tidy` configuration file is changed
+
+This ensures that configuration changes don't introduce new warnings across the codebase.
+
+### Installing clang-tidy
+
+The [Nix development shell](./docs/build/nix.md) provides `clang-tidy` at the [tested version](./docs/build/environment.md#tested-compiler-versions).
+
+### Running clang-tidy locally
+
+Before running clang-tidy, you must generate the files it depends on (protobuf headers, and, when the project is configured with `-Drust=ON`, the cxxbridge headers from the Rust crates). Configure the project as described in [`BUILD.md`](./BUILD.md), then build the `tidy_prerequisites` target, which generates all of them:
+
+```bash
+cmake --build build --target tidy_prerequisites
+```
+
+#### Via pre-commit (recommended)
+
+If you have already installed the [`pre-commit`](#pre-commit-hooks) hooks, you can run clang-tidy on your staged files using:
+
+```
+TIDY=1 pre-commit run clang-tidy
+```
+
+This runs clang-tidy locally with the same configuration/flags as CI, scoped to your staged C++ files. The `TIDY=1` environment variable is required to opt in — without it the hook is skipped.
+
+You can also have clang-tidy run automatically on every `git commit` by setting `TIDY=1` in your shell environment:
+
+```
+export TIDY=1
+```
+
+With this set, the hook will run as part of `git commit` alongside the other pre-commit checks.
+
+#### Manually
+
+Then run clang-tidy on your local changes:
+
+```
+run-clang-tidy -p build -allow-no-checks include src tests
+```
+
+This will check all source files in the `include`, `src` and `tests` directories using the compile commands from your `build` directory.
+Headers are checked on their own, which requires the `verify_headers` CMake option (ON by default).
+If you wish to automatically fix whatever clang-tidy finds _and_ is capable of fixing, add `-fix -format` to the above command:
+
+```
+run-clang-tidy -p build -quiet -fix -format -allow-no-checks include src tests
+```
+
+`-format` reformats the fixed code with [`.clang-format`](./.clang-format); without it the fixes are inserted in LLVM style and the `clang-format` hook rewrites them afterwards.
+
+## Contracts and instrumentation
+
+We are using [Antithesis](https://antithesis.com/) for continuous fuzzing,
+and keep a copy of [Antithesis C++ SDK](https://github.com/antithesishq/antithesis-sdk-cpp/)
+in `external/antithesis-sdk`. One of the aims of fuzzing is to identify bugs
+by finding external conditions which cause contracts violations inside `xrpld`.
+The contracts are expressed as `XRPL_ASSERT` or `UNREACHABLE` (defined in
+`include/xrpl/beast/utility/instrumentation.h`), which are effectively (outside
+of Antithesis) wrappers for `assert(...)` with added name. The purpose of name
+is to provide contracts with stable identity which does not rely on line numbers.
+
+When `xrpld` is built with the Antithesis instrumentation enabled
+(using `voidstar` CMake option) and ran on the Antithesis platform, the
+contracts become
+[test properties](https://antithesis.com/docs/using_antithesis/properties.html);
+otherwise they are just like a regular `assert`.
+To learn more about Antithesis, see
+[How Antithesis Works](https://antithesis.com/docs/introduction/how_antithesis_works.html)
+and [C++ SDK](https://antithesis.com/docs/using_antithesis/sdk/cpp/overview.html#)
+
+We continue to use the old style `assert` or `assert(false)` in certain
+locations, where the reporting of contract violations on the Antithesis
+platform is either not possible or not useful.
+
+For this reason:
+
+- The locations where `assert` or `assert(false)` contracts should continue to be used:
+  - `constexpr` functions
+  - unit tests i.e. files under `src/test`
+  - unit tests-related modules (files under `beast/test` and `beast/unit_test`)
+- Outside of the listed locations, do not use `assert`; use `XRPL_ASSERT` instead,
+  giving it unique name, with the short description of the contract.
+- Outside of the listed locations, do not use `assert(false)`; use
+  `UNREACHABLE` instead, giving it unique name, with the description of the
+  condition being violated
+- The contract name should start with a full name (including scope) of the
+  function, optionally a named lambda, followed by a colon `:` and a brief
+  (typically at most five words) description. `UNREACHABLE` contracts
+  can use slightly longer descriptions. If there are multiple overloads of the
+  function, use common sense to balance both brevity and unambiguity of the
+  function name. NOTE: the purpose of name is to provide stable means of
+  unique identification of every contract; for this reason try to avoid elements
+  which can change in some obvious refactors or when reinforcing the condition.
+- Contract description typically (except for `UNREACHABLE`) should describe the
+  _expected_ condition, as in "I assert that _expected_ is true".
+- Contract description for `UNREACHABLE` should describe the _unexpected_
+  situation which caused the line to have been reached.
+- Example good name for an
+  `UNREACHABLE` macro `"json::operator==(Value, Value) : invalid type"`; example
+  good name for an `XRPL_ASSERT` macro `"json::Value::asCString : valid type"`.
+- Example **bad** name
+  `"RFC1751::insert(char* s, int x, int start, int length) : length is greater than or equal zero"`
+  (missing namespace, unnecessary full function signature, description too verbose).
+  Good name: `"xrpl::RFC1751::insert : minimum length"`.
+- In **few** well-justified cases a non-standard name can be used, in which case a
+  comment should be placed to explain the rationale (example in `contract.cpp`)
+- Do **not** rename a contract without a good reason (e.g. the name no longer
+  reflects the location or the condition being checked)
+- Do not use `std::unreachable`
+- Do not put contracts where they can be violated by an external condition
+  (e.g. timing, data payload before mandatory validation etc.) as this creates
+  bogus bug reports (and causes crashes of Debug builds)
+
+## Unit Tests
+
+To execute all unit tests:
+
+`xrpld --unittest --unittest-jobs=<number of cores>`
+
+(Note: Using multiple cores on a Mac M1 can cause spurious test failures. The
+cause is still under investigation. If you observe this problem, try specifying fewer jobs.)
+
+To run a specific set of test suites:
+
+```
+xrpld --unittest TestSuiteName
+```
+
+Note: In this example, all tests with prefix `TestSuiteName` will be run, so if
+`TestSuiteName1` and `TestSuiteName2` both exist, then both tests will run.
+Alternatively, if the unit test name finds an exact match, it will stop
+doing partial matches, i.e. if a unit test with a title of `TestSuiteName`
+exists, then no other unit test will be executed, apart from `TestSuiteName`.
+
+## Avoid
+
+1. Proliferation of nearly identical code.
+2. Proliferation of new files and classes.
+3. Complex inheritance and complex OOP patterns.
+4. Unmanaged memory allocation and raw pointers.
+5. Macros and non-trivial templates (unless they add significant value).
+6. Lambda patterns (unless these add significant value).
+7. CPU or architecture-specific code unless there is a good reason to
+   include it, and where it is used, guard it with macros and provide
+   explanatory comments.
+8. Importing new libraries unless there is a very good reason to do so.
+
+## Seek to
+
+9. Extend functionality of existing code rather than creating new code.
+10. Prefer readability over terseness where important logic is
+    concerned.
+11. Inline functions that are not used or are not likely to be used
+    elsewhere in the codebase.
+12. Use clear and self-explanatory names for functions, variables,
+    structs and classes.
+13. Use TitleCase for classes, structs, type aliases and filenames,
+    camelCase for function and variable names, lower case for namespaces and
+    folders. The exception is a type alias that generic code looks up by name
+    (`value_type`, `iterator`, `result_type`, and the rest of the standard
+    container, hash and clock members), which keeps its snake_case spelling;
+    `.clang-tidy` lists the names that are allowed.
+14. Provide as many comments as you feel that a competent programmer
+    would need to understand what your code does.
+
+# Maintainers
+
+Maintainers are ecosystem participants with elevated access to the repository.
+They are able to push new code, make decisions on when a release should be
+made, etc.
+
+## Adding and removing
+
+New maintainers can be proposed by two existing maintainers, subject to a vote
+by a quorum of the existing maintainers.
+A minimum of 50% support and a 50% participation is required.
+In the event of a tie vote, the addition of the new maintainer will be
+rejected.
+
+Existing maintainers can resign, or be subject to a vote for removal at the
+behest of two existing maintainers.
+A minimum of 60% agreement and 50% participation are required.
+The XRP Ledger Foundation will have the ability, for cause, to remove an
+existing maintainer without a vote.
+
+## Current Maintainers
+
+Maintainers are users with maintain or admin access to the repo.
+
+- [bthomee](https://github.com/bthomee) (Ripple)
+- [intelliot](https://github.com/intelliot) (Ripple)
+- [JoelKatz](https://github.com/JoelKatz) (Ripple)
+- [legleux](https://github.com/legleux) (Ripple)
+- [mankins](https://github.com/mankins) (XRP Ledger Foundation)
+- [WietseWind](https://github.com/WietseWind) (XRPL Labs + XRP Ledger Foundation)
+- [ximinez](https://github.com/ximinez) (Ripple)
+
+## Current Code Reviewers
+
+Code Reviewers are developers who have the ability to review, approve, and
+in some cases merge source code changes.
+
+- [a1q123456](https://github.com/a1q123456) (Ripple)
+- [Bronek](https://github.com/Bronek) (Ripple)
+- [bthomee](https://github.com/bthomee) (Ripple)
+- [ckeshava](https://github.com/ckeshava) (Ripple)
+- [dangell7](https://github.com/dangell7) (XRPL Labs)
+- [godexsoft](https://github.com/godexsoft) (Ripple)
+- [gregtatcam](https://github.com/gregtatcam) (Ripple)
+- [kuznetsss](https://github.com/kuznetsss) (Ripple)
+- [lmaisons](https://github.com/lmaisons) (Ripple)
+- [mathbunnyru](https://github.com/mathbunnyru) (Ripple)
+- [mvadari](https://github.com/mvadari) (Ripple)
+- [oleks-rip](https://github.com/oleks-rip) (Ripple)
+- [PeterChen13579](https://github.com/PeterChen13579) (Ripple)
+- [pwang200](https://github.com/pwang200) (Ripple)
+- [q73zhao](https://github.com/q73zhao) (Ripple)
+- [shawnxie999](https://github.com/shawnxie999) (Ripple)
+- [Tapanito](https://github.com/Tapanito) (Ripple)
+- [ximinez](https://github.com/ximinez) (Ripple)
+
+Developers not on this list are able and encouraged to submit feedback
+on pending code changes (open pull requests).
+
+## Instructions for maintainers
+
+These instructions assume you have your git upstream remotes configured
+to avoid accidental pushes to the main repo, and a remote group
+specifying both of them. e.g.
+
+```
+$ git remote -v | grep upstream
+upstream        https://github.com/XRPLF/rippled.git (fetch)
+upstream        https://github.com/XRPLF/rippled.git (push)
+upstream-push   git@github.com:XRPLF/rippled.git (fetch)
+upstream-push   git@github.com:XRPLF/rippled.git (push)
+
+$ git config remotes.upstreams
+upstream upstream-push
+```
+
+You can use the [setup-upstreams] script to set this up.
+
+It also assumes you have a default gpg signing key set up in git. e.g.
+
+```
+$ git config user.signingkey
+968479A1AFF927E37D1A566BB5690EEEBB952194
+# (This is github's key. Use your own.)
+```
+
+### When and how to merge pull requests
+
+The maintainer should double-check that the PR has met all the
+necessary criteria, and can request additional information from the
+owner, or additional reviews, and can always feel free to remove the
+"Ready to merge" label if appropriate. The maintainer has final say on
+whether a PR gets merged, and are encouraged to communicate and issues
+or concerns to other maintainers.
+
+#### Most pull requests: "Squash and merge"
+
+Most pull requests don't need special handling, and can simply be
+merged using the "Squash and merge" button on the Github UI. Update
+the suggested commit message, or modify it as needed.
+
+#### Slightly more complicated pull requests
+
+Some pull requests need to be pushed to their base branch (usually `develop`)
+as more than one commit.
+A PR author may _request_ to merge as separate commits. They
+must _justify_ why separate commits are needed, and _specify_ how they
+would like the commits to be merged. If you disagree with the author,
+discuss it with them directly.
+
+If the process is reasonable, follow it. The simplest option is to do a
+fast forward only merge (`--ff-only`) on the command line
+and push to the base branch.
+
+Some examples of when separate commits are worthwhile are:
+
+1. PRs where source files are reorganized in multiple steps.
+2. PRs where the commits are mostly independent and _could_ be separate
+   PRs, but are pulled together into one PR under a commit theme or
+   issue.
+3. PRs that are complicated enough that `git bisect` would not be much
+   help if it determined this PR introduced a problem.
+
+Either way, check that:
+
+- The commits are based on the current tip of the base branch.
+- The commits are clean:
+  No merge commits (except when merging a release, see [RELEASING.md](./RELEASING.md)),
+  no "[FOLD]" or "fixup!" messages.
+- All commits are signed. If the commits are not signed by the author, use
+  `git commit --amend -S` to sign them yourself.
+- At least one (but preferably all) of the commits has the PR number
+  in the commit message.
+
+The "Create a merge commit" and "Rebase and merge" options should be
+disabled in the Github UI, but if you ever find them available **Do not
+use them!**
+
+### Releases
+
+Releases, release branches, and merging releases back into `develop`
+are described in [RELEASING.md](./RELEASING.md).
+
+[contrib]: https://docs.github.com/en/get-started/quickstart/contributing-to-projects
+[squash]: https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/incorporating-changes-from-a-pull-request/about-pull-request-merges#squash-and-merge-your-commits
+[forking]: https://github.com/XRPLF/rippled/fork
+[xrpld]: https://github.com/XRPLF/rippled
+[signing]: https://docs.github.com/en/authentication/managing-commit-signature-verification/about-commit-signature-verification
+[setup-upstreams]: ./bin/git/setup-upstreams.sh

@@ -1,0 +1,319 @@
+#pragma once
+
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/basics/chrono.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/ledger/ApplyView.h>
+#include <xrpl/ledger/ReadView.h>
+#include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Asset.h>
+#include <xrpl/protocol/Keylet.h>
+#include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/MPTIssue.h>
+#include <xrpl/protocol/Protocol.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/XRPAmount.h>
+
+#include <cstdint>
+#include <functional>
+#include <map>
+#include <optional>
+#include <set>
+#include <utility>
+#include <vector>
+
+namespace xrpl {
+
+enum class SkipEntry : bool { No = false, Yes };
+
+//------------------------------------------------------------------------------
+//
+// Observers
+//
+//------------------------------------------------------------------------------
+
+/**
+ * Whether an expiration check should be inclusive or exclusive.
+ */
+enum class ExpiryComparison { Inclusive, Exclusive };
+
+/**
+ * Determines whether the given expiration time has passed.
+ *
+ * In the XRP Ledger, expiration times are defined as the number of whole
+ * seconds after the "XRPL epoch" which, for historical reasons, is set
+ * to January 1, 2000 (00:00 UTC).
+ *
+ * This is like the way the Unix epoch works, except the XRPL epoch is
+ * precisely 946,684,800 seconds after the Unix Epoch.
+ *
+ * See https://xrpl.org/basic-data-types.html#specifying-time
+ *
+ * Expiration is defined in terms of the close time of the parent ledger,
+ * because we definitively know the time that it closed (since consensus
+ * agrees on time) but we do not know the closing time of the ledger that
+ * is under construction.
+ *
+ * @param view The ledger whose parent time is used as the clock.
+ * @param exp The optional expiration time we want to check.
+ * @param comparison Whether the boundary is inclusive (`now >= exp`, the
+ *                   default) or exclusive (`now > exp`).
+ *
+ * @return `true` if `exp` is in the past; `false` otherwise.
+ */
+[[nodiscard]] bool
+hasExpired(
+    ReadView const& view,
+    std::optional<std::uint32_t> const& exp,
+    ExpiryComparison comparison = ExpiryComparison::Inclusive);
+
+// Note, depth parameter is used to limit the recursion depth
+[[nodiscard]] bool
+isVaultPseudoAccountFrozen(
+    ReadView const& view,
+    AccountID const& account,
+    MPTIssue const& mptShare,
+    std::uint8_t depth);
+
+[[nodiscard]] bool
+isVaultPseudoAccountFrozen(
+    ReadView const& view,
+    AccountID const& account,
+    SLE const& issuanceSle,
+    std::uint8_t depth);
+
+[[nodiscard]] bool
+isLPTokenFrozen(
+    ReadView const& view,
+    AccountID const& account,
+    Asset const& asset,
+    Asset const& asset2);
+
+/**
+ * Check whether an AMM LPToken may be transferred between @p from and @p to.
+ *
+ * @p lpTokenIssuer is the issuer of the LPToken being moved. If it is not an
+ * AMM account the token is not an LPToken and the transfer is unconditionally
+ * permitted. Otherwise, for each MPT pool asset of that AMM, canTransfer() must
+ * permit the transfer (which exempts the MPT issuer). Non-MPT pool assets are
+ * always transferable by this check, so it is implicitly gated by
+ * featureMPTokensV2 (MPTs can only be AMM pool assets once V2 is enabled).
+ *
+ * @return tesSUCCESS if permitted, otherwise the canTransfer() failure code
+ * (e.g. tecNO_AUTH) of the first MPT pool asset that disallows it.
+ */
+[[nodiscard]] TER
+canTransferLPToken(
+    ReadView const& view,
+    AccountID const& from,
+    AccountID const& to,
+    AccountID const& lpTokenIssuer);
+
+// Return the list of enabled amendments
+[[nodiscard]] std::set<UInt256>
+getEnabledAmendments(ReadView const& view);
+
+// Return a map of amendments that have achieved majority
+using MajorityAmendmentsT = std::map<UInt256, NetClock::time_point>;
+[[nodiscard]] MajorityAmendmentsT
+getMajorityAmendments(ReadView const& view);
+
+/**
+ * Return the hash of a ledger by sequence.
+ * The hash is retrieved by looking up the "skip list"
+ * in the passed ledger. As the skip list is limited
+ * in size, if the requested ledger sequence number is
+ * out of the range of ledgers represented in the skip
+ * list, then std::nullopt is returned.
+ * @return The hash of the ledger with the
+ *         given sequence number or std::nullopt.
+ */
+[[nodiscard]] std::optional<UInt256>
+hashOfSeq(ReadView const& ledger, LedgerIndex seq, beast::Journal journal);
+
+/**
+ * Find a ledger index from which we could easily get the requested ledger
+ *
+ * The index that we return should meet two requirements:
+ *     1) It must be the index of a ledger that has the hash of the ledger
+ *         we are looking for. This means that its sequence must be equal to
+ *         greater than the sequence that we want but not more than 256 greater
+ *         since each ledger contains the hashes of the 256 previous ledgers.
+ *
+ *     2) Its hash must be easy for us to find. This means it must be 0 mod 256
+ *         because every such ledger is permanently enshrined in a LedgerHashes
+ *         page which we can easily retrieve via the skip list.
+ */
+inline LedgerIndex
+getCandidateLedger(LedgerIndex requested)
+{
+    return (requested + 255) & (~255);
+}
+
+/**
+ * Return false if the test ledger is provably incompatible
+ * with the valid ledger, that is, they could not possibly
+ * both be valid. Use the first form if you have both ledgers,
+ * use the second form if you have not acquired the valid ledger yet
+ */
+[[nodiscard]] bool
+areCompatible(
+    ReadView const& validLedger,
+    ReadView const& testLedger,
+    beast::Journal::Stream const& s,
+    char const* reason);
+
+[[nodiscard]] bool
+areCompatible(
+    UInt256 const& validHash,
+    LedgerIndex validIndex,
+    ReadView const& testLedger,
+    beast::Journal::Stream const& s,
+    char const* reason);
+
+//------------------------------------------------------------------------------
+//
+// Modifiers
+//
+//------------------------------------------------------------------------------
+
+[[nodiscard]] TER
+dirLink(
+    ApplyView& view,
+    AccountID const& owner,
+    SLE::pointer const& object,
+    SF_UINT64 const& node = sfOwnerNode);
+
+/**
+ * Checks that can withdraw funds from an object to itself or a destination.
+ *
+ * The receiver may be either the submitting account (sfAccount) or a different
+ * destination account (sfDestination).
+ *
+ *    - Checks that the receiver account exists.
+ *    - If the receiver requires a destination tag, check that one exists, even
+ *      if withdrawing to self.
+ *    - If withdrawing to self, succeed.
+ *    - If not, checks if the receiver requires deposit authorization, and if
+ *      the sender has it (account-based or credential-based).
+ *    - Expects any credentials passed in to already exist in the ledger, and
+ *      returns an internal error otherwise. Validate them beforehand with
+ *      credentials::valid().
+ *    - Checks that the receiver will not exceed the limit (IOU trustline limit
+ *      or MPT MaximumAmount).
+ */
+[[nodiscard]] TER
+canWithdraw(
+    ReadView const& view,
+    AccountID const& from,
+    AccountID const& to,
+    SLE::ConstRef toSle,
+    STAmount const& amount,
+    bool hasDestinationTag,
+    std::optional<std::vector<UInt256>> const& credentialIDs = std::nullopt);
+
+/**
+ * Checks that can withdraw funds from an object to itself or a destination.
+ *
+ * The receiver may be either the submitting account (sfAccount) or a different
+ * destination account (sfDestination).
+ *
+ *    - Checks that the receiver account exists.
+ *    - If the receiver requires a destination tag, check that one exists, even
+ *      if withdrawing to self.
+ *    - If withdrawing to self, succeed.
+ *    - If not, checks if the receiver requires deposit authorization, and if
+ *      the sender has it (account-based or credential-based).
+ *    - Expects any credentials passed in to already exist in the ledger, and
+ *      returns an internal error otherwise. Validate them beforehand with
+ *      credentials::valid().
+ *    - Checks that the receiver will not exceed the limit (IOU trustline limit
+ *      or MPT MaximumAmount).
+ */
+[[nodiscard]] TER
+canWithdraw(
+    ReadView const& view,
+    AccountID const& from,
+    AccountID const& to,
+    STAmount const& amount,
+    bool hasDestinationTag,
+    std::optional<std::vector<UInt256>> const& credentialIDs = std::nullopt);
+
+/**
+ * Checks that can withdraw funds from an object to itself or a destination.
+ *
+ * The receiver may be either the submitting account (sfAccount) or a different
+ * destination account (sfDestination). Credentials, if any, are taken from the
+ * transaction's sfCredentialIDs field.
+ *
+ *    - Checks that the receiver account exists.
+ *    - If the receiver requires a destination tag, check that one exists, even
+ *      if withdrawing to self.
+ *    - If withdrawing to self, succeed.
+ *    - If not, checks if the receiver requires deposit authorization, and if
+ *      the sender has it (account-based or credential-based).
+ *    - Expects any credentials in sfCredentialIDs to already exist in the
+ *      ledger, and returns an internal error otherwise. Validate them
+ *      beforehand with credentials::valid().
+ *    - Checks that the receiver will not exceed the limit (IOU trustline limit
+ *      or MPT MaximumAmount).
+ */
+[[nodiscard]] TER
+canWithdraw(ReadView const& view, STTx const& tx);
+
+/**
+ * Pays out a withdrawal from a vault or loan broker pseudo-account.
+ *
+ * `sourceAmount` leaves `sourceAcct` and `destinationAmount` reaches `dstAcct`.
+ * The two differ only when the withdrawal carries a transfer fee; the
+ * difference is the fee and is settled through the issuer.
+ */
+[[nodiscard]] TER
+doWithdraw(
+    ApplyViewContext ctx,
+    AccountID const& senderAcct,
+    AccountID const& dstAcct,
+    AccountID const& sourceAcct,
+    XRPAmount priorBalance,
+    STAmount const& destinationAmount,
+    STAmount const& sourceAmount,
+    beast::Journal j);
+
+/**
+ * Deleter function prototype. Returns the status of the entry deletion
+ * (if should not be skipped) and if the entry should be skipped. The status
+ * is always tesSUCCESS if the entry should be skipped.
+ */
+using EntryDeleter =
+    std::function<std::pair<TER, SkipEntry>(LedgerEntryType, UInt256 const&, SLE::pointer&)>;
+/**
+ * Cleanup owner directory entries on account delete.
+ * Used for a regular and AMM accounts deletion. The caller
+ * has to provide the deleter function, which handles details of
+ * specific account-owned object deletion.
+ * @return tecINCOMPLETE indicates maxNodesToDelete
+ * are deleted and there remains more nodes to delete.
+ */
+[[nodiscard]] TER
+cleanupOnAccountDelete(
+    ApplyView& view,
+    Keylet const& ownerDirKeylet,
+    EntryDeleter const& deleter,
+    beast::Journal j,
+    std::optional<std::uint16_t> maxNodesToDelete = std::nullopt);
+
+/**
+ * Has the specified time passed?
+ *
+ * @param now  the current time
+ * @param mark the cutoff point
+ * @return true if \a now refers to a time strictly after \a mark, else false.
+ */
+bool
+after(NetClock::time_point now, std::uint32_t mark);
+
+}  // namespace xrpl

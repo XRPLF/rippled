@@ -1,0 +1,433 @@
+#include <test/jtx/Account.h>
+#include <test/jtx/Env.h>
+#include <test/jtx/WSClient.h>
+#include <test/jtx/amount.h>
+#include <test/jtx/envconfig.h>
+#include <test/jtx/pay.h>
+
+#include <xrpld/core/Config.h>
+#include <xrpld/overlay/Compression.h>
+#include <xrpld/overlay/Message.h>
+#include <xrpld/overlay/detail/Handshake.h>
+#include <xrpld/overlay/detail/ProtocolMessage.h>
+#include <xrpld/overlay/detail/ZeroCopyStream.h>
+
+#include <xrpl/basics/Log.h>
+#include <xrpl/basics/Slice.h>
+#include <xrpl/basics/StringUtilities.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/basics/chrono.h>
+#include <xrpl/basics/random.h>
+#include <xrpl/basics/strHex.h>
+#include <xrpl/beast/net/IPAddress.h>
+#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/protocol/HashPrefix.h>
+#include <xrpl/protocol/KeyType.h>
+#include <xrpl/protocol/LedgerHeader.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STObject.h>
+#include <xrpl/protocol/SecretKey.h>
+#include <xrpl/protocol/Seed.h>
+#include <xrpl/protocol/Serializer.h>
+#include <xrpl/protocol/Sign.h>
+#include <xrpl/protocol/digest.h>
+#include <xrpl/protocol/jss.h>
+#include <xrpl/shamap/SHAMapNodeID.h>
+
+#include <boost/asio/buffer.hpp>
+#include <boost/asio/ip/address.hpp>
+#include <boost/beast/core/multi_buffer.hpp>
+#include <boost/system/detail/error_code.hpp>
+
+#include <xrpl.pb.h>
+
+#include <algorithm>
+#include <cstdint>
+#include <memory>
+#include <sstream>
+#include <string>
+#include <vector>
+
+namespace xrpl::test {
+
+using namespace xrpl::test;
+using namespace xrpl::test::jtx;
+
+static UInt256
+ledgerHash(LedgerHeader const& info)
+{
+    return xrpl::sha512Half(
+        HashPrefix::LedgerMaster,
+        std::uint32_t(info.seq),
+        std::uint64_t(info.drops.drops()),
+        info.parentHash,
+        info.txHash,
+        info.accountHash,
+        std::uint32_t(info.parentCloseTime.time_since_epoch().count()),
+        std::uint32_t(info.closeTime.time_since_epoch().count()),
+        std::uint8_t(info.closeTimeResolution.count()),
+        std::uint8_t(info.closeFlags));
+}
+
+class compression_test : public beast::unit_test::Suite
+{
+    using Compressed = compression::Compressed;
+    using Algorithm = compression::Algorithm;
+
+public:
+    compression_test() = default;
+
+    template <typename T>
+    void
+    doTest(std::shared_ptr<T> proto, protocol::MessageType mt, uint16_t nbuffers, std::string msg)
+    {
+        testcase("Compress/Decompress: " + msg);
+
+        Message m(*proto, mt);
+
+        auto& buffer = m.getBuffer(Compressed::On);
+
+        boost::beast::multi_buffer buffers;
+
+        // simulate multi-buffer
+        auto const sz = buffer.size() / nbuffers;
+        for (int i = 0; i < nbuffers; i++)
+        {
+            auto const start = buffer.begin() + sz * i;
+            auto const end = i < nbuffers - 1 ? (buffer.begin() + sz * (i + 1)) : buffer.end();
+            std::vector<std::uint8_t> slice(start, end);
+            buffers.commit(
+                boost::asio::buffer_copy(
+                    buffers.prepare(slice.size()), boost::asio::buffer(slice)));
+        }
+
+        boost::system::error_code ec;
+        auto header = xrpl::detail::parseMessageHeader(ec, buffers.data(), buffer.size());
+
+        BEAST_EXPECT(header);
+
+        if (!header || header->algorithm == Algorithm::None)
+            return;
+
+        std::vector<std::uint8_t> decompressed;
+        decompressed.resize(header->uncompressedSize);
+
+        BEAST_EXPECT(header->payloadWireSize == buffer.size() - header->headerSize);
+
+        ZeroCopyInputStream stream(buffers.data());
+        stream.Skip(header->headerSize);
+
+        auto const decompressedSize = xrpl::compression::decompress(
+            stream, header->payloadWireSize, decompressed.data(), header->uncompressedSize);
+        BEAST_EXPECT(decompressedSize == header->uncompressedSize);
+        auto const proto1 = std::make_shared<T>();
+
+        BEAST_EXPECT(proto1->ParseFromArray(decompressed.data(), decompressedSize));
+        auto uncompressed = m.getBuffer(Compressed::Off);
+        BEAST_EXPECT(
+            std::equal(
+                uncompressed.begin() + xrpl::compression::kHeaderBytes,
+                uncompressed.end(),
+                decompressed.begin()));
+    }
+
+    static std::shared_ptr<protocol::TMManifests>
+    buildManifests(int n)
+    {
+        auto manifests = std::make_shared<protocol::TMManifests>();
+        manifests->mutable_list()->Reserve(n);
+        for (int i = 0; i < n; i++)
+        {
+            auto master = randomKeyPair(KeyType::Ed25519);
+            auto signing = randomKeyPair(KeyType::Ed25519);
+            STObject st(sfGeneric);
+            st[sfSequence] = i;
+            st[sfPublicKey] = std::get<0>(master);
+            st[sfSigningPubKey] = std::get<0>(signing);
+            st[sfDomain] =
+                makeSlice(std::string("example") + std::to_string(i) + std::string(".com"));
+            sign(
+                st, HashPrefix::Manifest, KeyType::Ed25519, std::get<1>(master), sfMasterSignature);
+            sign(st, HashPrefix::Manifest, KeyType::Ed25519, std::get<1>(signing));
+            Serializer s;
+            st.add(s);
+            auto* manifest = manifests->add_list();
+            manifest->set_stobject(s.data(), s.size());
+        }
+        return manifests;
+    }
+
+    static std::shared_ptr<protocol::TMEndpoints>
+    buildEndpoints(int n)
+    {
+        auto endpoints = std::make_shared<protocol::TMEndpoints>();
+        endpoints->mutable_endpoints_v2()->Reserve(n);
+        for (int i = 0; i < n; i++)
+        {
+            auto ep = endpoints->add_endpoints_v2();
+            ep->set_endpoint(std::string("10.0.1.") + std::to_string(i));
+            ep->set_hops(i);
+        }
+        endpoints->set_version(2);
+
+        return endpoints;
+    }
+
+    std::shared_ptr<protocol::TMTransaction>
+    buildTransaction(Logs& logs)
+    {
+        Env env(*this, envconfig());
+        int const fund = 10000;
+        auto const alice = Account("alice");
+        auto const bob = Account("bob");
+        env.fund(XRP(fund), "alice", "bob");
+        env.trust(bob["USD"](fund), alice);
+        env.close();
+
+        auto const toBinary = [this](std::string const& text) {
+            auto blob = strUnHex(text);
+            BEAST_EXPECT(blob);
+            return std::string{reinterpret_cast<char const*>(blob->data()), blob->size()};
+        };
+
+        std::string usdTxBlob;
+        auto wsc = makeWSClient(env.app().config());
+        {
+            json::Value requestUSD;
+            requestUSD[jss::secret] = toBase58(generateSeed("bob"));
+            requestUSD[jss::tx_json] = pay("bob", "alice", bob["USD"](fund / 2));
+            json::Value replyUSD = wsc->invoke("sign", requestUSD);
+
+            usdTxBlob = toBinary(replyUSD[jss::result][jss::tx_blob].asString());
+        }
+
+        auto transaction = std::make_shared<protocol::TMTransaction>();
+        transaction->set_rawtransaction(usdTxBlob);
+        transaction->set_status(protocol::tsNEW);
+        transaction->set_receivetimestamp(randInt<std::uint64_t>());
+        transaction->set_deferred(true);
+
+        return transaction;
+    }
+
+    static std::shared_ptr<protocol::TMGetLedger>
+    buildGetLedger()
+    {
+        auto getLedger = std::make_shared<protocol::TMGetLedger>();
+        getLedger->set_itype(protocol::liTS_CANDIDATE);
+        getLedger->set_ltype(protocol::TMLedgerType::ltACCEPTED);
+        UInt256 const hash(xrpl::sha512Half(123456789));
+        getLedger->set_ledgerhash(hash.begin(), hash.size());
+        getLedger->set_ledgerseq(123456789);
+        xrpl::SHAMapNodeID const sha(64, hash);
+        getLedger->add_nodeids(sha.getRawString());
+        getLedger->set_requestcookie(123456789);
+        getLedger->set_querytype(protocol::qtINDIRECT);
+        getLedger->set_querydepth(3);
+        return getLedger;
+    }
+
+    static std::shared_ptr<protocol::TMLedgerData>
+    buildLedgerData(uint32_t n, Logs& logs)
+    {
+        auto ledgerData = std::make_shared<protocol::TMLedgerData>();
+        UInt256 const hash(xrpl::sha512Half(12356789));
+        ledgerData->set_ledgerhash(hash.data(), hash.size());
+        ledgerData->set_ledgerseq(123456789);
+        ledgerData->set_type(protocol::TMLedgerInfoType::liAS_NODE);
+        ledgerData->set_requestcookie(123456789);
+        ledgerData->set_error(protocol::TMReplyError::reNO_LEDGER);
+        ledgerData->mutable_nodes()->Reserve(n);
+        UInt256 parentHash(0);
+
+        NetClock::duration const resolution{10};
+        NetClock::time_point ct{resolution};
+
+        for (int i = 0; i < n; i++)
+        {
+            LedgerHeader info;
+            info.seq = i;
+            info.parentCloseTime = ct;
+            info.hash = xrpl::sha512Half(i);
+            info.txHash = xrpl::sha512Half(i + 1);
+            info.accountHash = xrpl::sha512Half(i + 2);
+            info.parentHash = parentHash;
+            info.drops = XRPAmount(10);
+            info.closeTimeResolution = resolution;
+            info.closeTime = ct;
+            ct += resolution;
+            parentHash = ledgerHash(info);
+            Serializer nData;
+            xrpl::addRaw(info, nData);
+            ledgerData->add_nodes()->set_nodedata(nData.getDataPtr(), nData.getLength());
+        }
+
+        return ledgerData;
+    }
+
+    static std::shared_ptr<protocol::TMGetObjectByHash>
+    buildGetObjectByHash()
+    {
+        auto getObject = std::make_shared<protocol::TMGetObjectByHash>();
+
+        getObject->set_type(
+            protocol::TMGetObjectByHash_ObjectType::TMGetObjectByHash_ObjectType_otTRANSACTION);
+        getObject->set_query(true);
+        UInt256 hash(xrpl::sha512Half(123456789));
+        getObject->set_ledgerhash(hash.data(), hash.size());
+        getObject->set_fat(true);
+        for (int i = 0; i < 100; i++)
+        {
+            UInt256 hash(xrpl::sha512Half(i));
+            auto object = getObject->add_objects();
+            object->set_hash(hash.data(), hash.size());
+            xrpl::SHAMapNodeID const sha(64, hash);
+            object->set_nodeid(sha.getRawString());
+            object->set_index("");
+            object->set_data("");
+            object->set_ledgerseq(i);
+        }
+        return getObject;
+    }
+
+    static std::shared_ptr<protocol::TMValidatorListCollection>
+    buildValidatorListCollection()
+    {
+        auto list = std::make_shared<protocol::TMValidatorListCollection>();
+
+        auto master = randomKeyPair(KeyType::Ed25519);
+        auto signing = randomKeyPair(KeyType::Ed25519);
+        STObject st(sfGeneric);
+        st[sfSequence] = 0;
+        st[sfPublicKey] = std::get<0>(master);
+        st[sfSigningPubKey] = std::get<0>(signing);
+        st[sfDomain] = makeSlice(std::string("example.com"));
+        sign(st, HashPrefix::Manifest, KeyType::Ed25519, std::get<1>(master), sfMasterSignature);
+        sign(st, HashPrefix::Manifest, KeyType::Ed25519, std::get<1>(signing));
+        Serializer s;
+        st.add(s);
+        list->set_manifest(s.data(), s.size());
+        list->set_version(4);
+        STObject const signature(sfSignature);
+        xrpl::sign(st, HashPrefix::Manifest, KeyType::Ed25519, std::get<1>(signing));
+        Serializer s1;
+        st.add(s1);
+        auto& blob = *list->add_blobs();
+        blob.set_signature(s1.data(), s1.size());
+        blob.set_blob(strHex(s.slice()));
+        return list;
+    }
+
+    void
+    testProtocol()
+    {
+        auto const thresh = beast::Severity::Info;
+        auto logs = std::make_unique<Logs>(thresh);
+
+        protocol::TMManifests const manifests;
+        protocol::TMEndpoints const endpoints;
+        protocol::TMTransaction const transaction;
+        protocol::TMGetLedger const getLedger;
+        protocol::TMLedgerData const ledgerData;
+        protocol::TMGetObjectByHash const getObject;
+        protocol::TMValidatorListCollection const validatorListCollection;
+
+        // 4.5KB
+        doTest(buildManifests(20), protocol::mtMANIFESTS, 4, "TMManifests20");
+        // 22KB
+        doTest(buildManifests(100), protocol::mtMANIFESTS, 4, "TMManifests100");
+        // 131B
+        doTest(buildEndpoints(10), protocol::mtENDPOINTS, 4, "TMEndpoints10");
+        // 1.3KB
+        doTest(buildEndpoints(100), protocol::mtENDPOINTS, 4, "TMEndpoints100");
+        // 242B
+        doTest(buildTransaction(*logs), protocol::mtTRANSACTION, 1, "TMTransaction");
+        // 87B
+        doTest(buildGetLedger(), protocol::mtGET_LEDGER, 1, "TMGetLedger");
+        // 61KB
+        doTest(buildLedgerData(500, *logs), protocol::mtLEDGER_DATA, 10, "TMLedgerData500");
+        // 122 KB
+        doTest(buildLedgerData(1000, *logs), protocol::mtLEDGER_DATA, 20, "TMLedgerData1000");
+        // 1.2MB
+        doTest(buildLedgerData(10000, *logs), protocol::mtLEDGER_DATA, 50, "TMLedgerData10000");
+        // 12MB
+        doTest(buildLedgerData(100000, *logs), protocol::mtLEDGER_DATA, 100, "TMLedgerData100000");
+        // 61MB
+        doTest(buildLedgerData(500000, *logs), protocol::mtLEDGER_DATA, 100, "TMLedgerData500000");
+        // 7.7KB
+        doTest(buildGetObjectByHash(), protocol::mtGET_OBJECTS, 4, "TMGetObjectByHash");
+        doTest(
+            buildValidatorListCollection(),
+            protocol::mtVALIDATOR_LIST_COLLECTION,
+            4,
+            "TMValidatorListCollection");
+    }
+
+    void
+    testHandshake()
+    {
+        testcase("Handshake");
+        auto getEnv = [&](bool enable) {
+            Config c;
+            std::stringstream str;
+            str << "[reduce_relay]\n"
+                << "vp_base_squelch_enable=1\n"
+                << "[compression]\n"
+                << enable << "\n";
+            c.loadFromString(str.str());
+            auto env = std::make_shared<jtx::Env>(*this);
+            env->app().config().compression = c.compression;
+            env->app().config().vpReduceRelayBaseSquelchEnable = c.vpReduceRelayBaseSquelchEnable;
+            return env;
+        };
+        auto const handshake = [&](int outboundEnable, int inboundEnable) {
+            beast::ip::Address const addr = boost::asio::ip::make_address("172.1.1.100");
+
+            auto env = getEnv(outboundEnable);
+            auto request = xrpl::makeRequest(
+                true,
+                env->app().config().compression,
+                false,
+                env->app().config().txReduceRelayEnable,
+                env->app().config().vpReduceRelayBaseSquelchEnable);
+            HttpRequestType httpRequest;
+            httpRequest.version(request.version());
+            httpRequest.base() = request.base();
+            // feature enabled on the peer's connection only if both sides are
+            // enabled
+            auto const peerEnabled = inboundEnable && outboundEnable;
+            // inbound is enabled if the request's header has the feature
+            // enabled and the peer's configuration is enabled
+            auto const inboundEnabled =
+                peerFeatureEnabled(httpRequest, kFeatureCompr, "lz4", inboundEnable);
+            BEAST_EXPECT(!(peerEnabled ^ inboundEnabled));
+
+            env.reset();
+            env = getEnv(inboundEnable);
+            auto const httpResp = xrpl::makeResponse(
+                true, httpRequest, addr, addr, UInt256{1}, 1, {1, 0}, env->app());
+            // outbound is enabled if the response's header has the feature
+            // enabled and the peer's configuration is enabled
+            auto const outboundEnabled =
+                peerFeatureEnabled(httpResp, kFeatureCompr, "lz4", outboundEnable);
+            BEAST_EXPECT(!(peerEnabled ^ outboundEnabled));
+        };
+        handshake(1, 1);
+        handshake(1, 0);
+        handshake(0, 1);
+        handshake(0, 0);
+    }
+
+    void
+    run() override
+    {
+        testProtocol();
+        testHandshake();
+    }
+};
+
+BEAST_DEFINE_TESTSUITE_MANUAL(compression, overlay, xrpl);
+
+}  // namespace xrpl::test

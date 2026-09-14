@@ -1,0 +1,22 @@
+#pragma once
+
+#include <xrpl/beast/container/detail/aged_unordered_container.h>
+
+#include <chrono>
+#include <functional>
+#include <memory>
+#include <utility>
+
+namespace beast {
+
+template <
+    class Key,
+    class T,
+    class Clock = std::chrono::steady_clock,
+    class Hash = std::hash<Key>,
+    class KeyEqual = std::equal_to<Key>,
+    class Allocator = std::allocator<std::pair<Key const, T>>>
+using AgedUnorderedMultimap =
+    detail::AgedUnorderedContainer<true, true, Key, T, Clock, Hash, KeyEqual, Allocator>;
+
+}  // namespace beast

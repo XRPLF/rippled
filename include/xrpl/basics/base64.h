@@ -1,0 +1,85 @@
+// Distributed under the Boost Software License, Version 1.0. (See accompanying
+// file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
+//
+
+/*
+   Portions from http://www.adp-gmbh.ch/cpp/common/base64.html
+   Copyright notice:
+
+   base64.cpp and base64.h
+
+   Copyright (C) 2004-2008 René Nyffenegger
+
+   This source code is provided 'as-is', without any express or implied
+   warranty. In no event will the author be held liable for any damages
+   arising from the use of this software.
+
+   Permission is granted to anyone to use this software for any purpose,
+   including commercial applications, and to alter it and redistribute it
+   freely, subject to the following restrictions:
+
+   1. The origin of this source code must not be misrepresented; you must not
+      claim that you wrote the original source code. If you use this source code
+      in a product, an acknowledgment in the product documentation would be
+      appreciated but is not required.
+
+   2. Altered source versions must be plainly marked as such, and must not be
+      misrepresented as being the original source code.
+
+   3. This notice may not be removed or altered from any source distribution.
+
+   René Nyffenegger rene.nyffenegger@adp-gmbh.ch
+
+*/
+
+#pragma once
+
+#include <cstddef>
+#include <cstdint>
+#include <string>
+#include <string_view>
+
+namespace xrpl {
+
+namespace base64 {
+
+/**
+ * Returns the maximum number of characters needed to base64-encode @p nBytes bytes.
+ *
+ * @param nBytes Number of input bytes.
+ * @return Size of the encoded string, including padding.
+ */
+constexpr std::size_t
+encodedSize(std::size_t const nBytes)
+{
+    return 4 * ((nBytes + 2) / 3);
+}
+
+/**
+ * Returns the maximum number of bytes a base64 string of @p numChars characters
+ * decodes to.
+ *
+ * @param numChars Number of base64 characters.
+ * @return Upper bound on the number of decoded bytes.
+ */
+constexpr std::size_t
+decodedSize(std::size_t const numChars)
+{
+    return ((numChars / 4) * 3) + 2;
+}
+
+}  // namespace base64
+
+std::string
+base64Encode(std::uint8_t const* data, std::size_t len);
+
+inline std::string
+base64Encode(std::string_view s)
+{
+    return base64Encode(reinterpret_cast<std::uint8_t const*>(s.data()), s.size());
+}
+
+std::string
+base64Decode(std::string_view data);
+
+}  // namespace xrpl

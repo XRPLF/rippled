@@ -1,0 +1,131 @@
+#pragma once
+
+#include <xrpld/rpc/handlers/ledger/Ledger.h>
+
+#include <xrpl/json/json_value.h>
+
+namespace xrpl {
+
+json::Value
+doAccountObjects(rpc::JsonContext&);
+json::Value
+doAccountTx(rpc::JsonContext&);
+json::Value
+doAMMInfo(rpc::JsonContext&);
+json::Value
+doBookOffers(rpc::JsonContext&);
+json::Value
+doBlackList(rpc::JsonContext&);
+json::Value
+doCanDelete(rpc::JsonContext&);
+json::Value
+doChannelAuthorize(rpc::JsonContext&);
+json::Value
+doChannelVerify(rpc::JsonContext&);
+json::Value
+doConnect(rpc::JsonContext&);
+json::Value
+doConsensusInfo(rpc::JsonContext&);
+json::Value
+doFeature(rpc::JsonContext&);
+json::Value
+doFee(rpc::JsonContext&);
+json::Value
+doFetchInfo(rpc::JsonContext&);
+json::Value
+doGatewayBalances(rpc::JsonContext&);
+json::Value
+doGetCounts(rpc::JsonContext&);
+json::Value
+doGetAggregatePrice(rpc::JsonContext&);
+json::Value
+doLedgerAccept(rpc::JsonContext&);
+json::Value
+doLedgerCleaner(rpc::JsonContext&);
+json::Value
+doLedgerClosed(rpc::JsonContext&);
+json::Value
+doLedgerCurrent(rpc::JsonContext&);
+json::Value
+doLedgerData(rpc::JsonContext&);
+json::Value
+doLedgerEntry(rpc::JsonContext&);
+json::Value
+doLedgerHeader(rpc::JsonContext&);
+json::Value
+doLedgerRequest(rpc::JsonContext&);
+json::Value
+doLogLevel(rpc::JsonContext&);
+json::Value
+doLogRotate(rpc::JsonContext&);
+json::Value
+doManifest(rpc::JsonContext&);
+json::Value
+doNoRippleCheck(rpc::JsonContext&);
+json::Value
+doOwnerInfo(rpc::JsonContext&);
+json::Value
+doPathFind(rpc::JsonContext&);
+json::Value
+doPause(rpc::JsonContext&);
+json::Value
+doPeers(rpc::JsonContext&);
+json::Value
+doPing(rpc::JsonContext const&);
+json::Value
+doPrint(rpc::JsonContext&);
+json::Value
+doRandom(rpc::JsonContext const&);
+json::Value
+doResume(rpc::JsonContext&);
+json::Value
+doPeerReservationsAdd(rpc::JsonContext&);
+json::Value
+doPeerReservationsDel(rpc::JsonContext&);
+json::Value
+doPeerReservationsList(rpc::JsonContext&);
+json::Value
+doRipplePathFind(rpc::JsonContext&);
+json::Value
+doServerDefinitions(rpc::JsonContext&);
+json::Value
+doServerInfo(rpc::JsonContext&);  // for humans
+json::Value
+doServerState(rpc::JsonContext&);  // for machines
+json::Value
+doSign(rpc::JsonContext&);
+json::Value
+doSignFor(rpc::JsonContext&);
+json::Value
+doSimulate(rpc::JsonContext&);
+json::Value
+doStop(rpc::JsonContext&);
+json::Value
+doSubmit(rpc::JsonContext&);
+json::Value
+doSubmitMultiSigned(rpc::JsonContext&);
+json::Value
+doSubscribe(rpc::JsonContext&);
+json::Value
+doTxJson(rpc::JsonContext&);
+json::Value
+doTxHistory(rpc::JsonContext&);
+json::Value
+doTxReduceRelay(rpc::JsonContext&);
+json::Value
+doUnlList(rpc::JsonContext&);
+json::Value
+doUnsubscribe(rpc::JsonContext&);
+json::Value
+doValidationCreate(rpc::JsonContext const&);
+json::Value
+doWalletPropose(rpc::JsonContext const&);
+json::Value
+doValidators(rpc::JsonContext&);
+json::Value
+doValidatorListSites(rpc::JsonContext&);
+json::Value
+doValidatorInfo(rpc::JsonContext&);
+json::Value
+doVaultInfo(rpc::JsonContext const&);
+}  // namespace xrpl

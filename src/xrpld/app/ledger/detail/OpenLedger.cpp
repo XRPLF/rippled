@@ -1,0 +1,239 @@
+#include <xrpld/app/ledger/OpenLedger.h>
+
+#include <xrpld/app/main/Application.h>
+#include <xrpld/app/misc/TxQ.h>
+#include <xrpld/core/TimeKeeper.h>
+#include <xrpld/overlay/Overlay.h>
+
+#include <xrpl/basics/Log.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/core/HashRouter.h>
+#include <xrpl/ledger/ApplyView.h>
+#include <xrpl/ledger/Ledger.h>
+#include <xrpl/ledger/OpenView.h>
+#include <xrpl/ledger/ReadView.h>
+#include <xrpl/protocol/Rules.h>
+#include <xrpl/protocol/SField.h>  // IWYU pragma: keep
+#include <xrpl/protocol/STObject.h>
+#include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/Serializer.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/TxFlags.h>
+#include <xrpl/shamap/SHAMap.h>
+#include <xrpl/tx/apply.h>
+
+#include <boost/range/adaptor/transformed.hpp>
+
+#include <xrpl.pb.h>
+
+#include <exception>
+#include <memory>
+#include <mutex>
+#include <sstream>
+#include <string>
+#include <string_view>
+#include <utility>
+#include <vector>
+
+namespace xrpl {
+
+OpenLedger::OpenLedger(
+    std::shared_ptr<Ledger const> const& ledger,
+    CachedSLEs& cache,
+    beast::Journal journal)
+    : j_(journal), cache_(cache), current_(create(ledger->rules(), ledger))
+{
+}
+
+bool
+OpenLedger::empty() const
+{
+    std::scoped_lock const lock(modifyMutex_);
+    return current_->txCount() == 0;
+}
+
+std::shared_ptr<OpenView const>
+OpenLedger::current() const
+{
+    std::scoped_lock const lock(currentMutex_);
+    return current_;
+}
+
+bool
+OpenLedger::modify(ModifyType const& f)
+{
+    std::scoped_lock const lock1(modifyMutex_);
+    auto next = std::make_shared<OpenView>(*current_);
+    auto const changed = f(*next, j_);
+    if (changed)
+    {
+        std::scoped_lock const lock2(currentMutex_);
+        current_ = std::move(next);
+    }
+    return changed;
+}
+
+void
+OpenLedger::accept(
+    Application& app,
+    Rules const& rules,
+    std::shared_ptr<Ledger const> const& ledger,
+    OrderedTxs const& locals,
+    bool retriesFirst,
+    OrderedTxs& retries,
+    ApplyFlags flags,
+    std::string_view suffix,
+    ModifyType const& f)
+{
+    JLOG(j_.trace()) << "accept ledger " << ledger->seq() << " " << suffix;
+    auto next = create(rules, ledger);
+    if (retriesFirst)
+    {
+        // Handle disputed tx, outside lock
+        using Empty = std::vector<std::shared_ptr<STTx const>>;
+        apply(app, *next, *ledger, Empty{}, retries, flags, j_);
+    }
+    // Block calls to modify, otherwise
+    // new tx going into the open ledger
+    // would get lost.
+    std::scoped_lock const lock1(modifyMutex_);
+    // Apply tx from the current open view
+    if (!current_->txs.empty())
+    {
+        apply(
+            app,
+            *next,
+            *ledger,
+            boost::adaptors::transform(
+                current_->txs,
+                [](std::pair<std::shared_ptr<STTx const>, std::shared_ptr<STObject const>> const&
+                       p) { return p.first; }),
+            retries,
+            flags,
+            j_);
+    }
+    // Call the modifier
+    if (f)
+        f(*next, j_);
+    // Apply local tx
+    for (auto const& item : locals)
+        app.getTxQ().apply(app, *next, item.second, flags, j_);
+
+    // If we didn't relay this transaction recently, relay it to all peers
+    for (auto const& txpair : next->txs)
+    {
+        auto const& tx = txpair.first;
+        auto const txId = tx->getTransactionID();
+
+        // skip batch txns
+        // The flag should only be settable if Batch feature is enabled. If
+        // Batch is not enabled, the flag is always invalid, so don't relay it
+        // regardless.
+        // LCOV_EXCL_START
+        if (tx->isFlag(tfInnerBatchTxn))
+        {
+            XRPL_ASSERT(
+                txpair.second && txpair.second->isFieldPresent(sfParentBatchID),
+                "Inner Batch transaction missing sfParentBatchID");
+            continue;
+        }
+        // LCOV_EXCL_STOP
+
+        if (auto const toSkip = app.getHashRouter().shouldRelay(txId))
+        {
+            JLOG(j_.debug()) << "Relaying recovered tx " << txId;
+            protocol::TMTransaction msg;
+            Serializer s;
+
+            tx->add(s);
+            msg.set_rawtransaction(s.data(), s.size());
+            msg.set_status(protocol::tsNEW);
+            msg.set_receivetimestamp(app.getTimeKeeper().now().time_since_epoch().count());
+            app.getOverlay().relay(txId, msg, *toSkip);
+        }
+    }
+
+    // Switch to the new open view
+    std::scoped_lock const lock2(currentMutex_);
+    current_ = std::move(next);
+}
+
+//------------------------------------------------------------------------------
+
+std::shared_ptr<OpenView>
+OpenLedger::create(Rules const& rules, std::shared_ptr<Ledger const> const& ledger)
+{
+    return std::make_shared<OpenView>(
+        kOpenLedger, rules, std::make_shared<CachedLedger const>(ledger, cache_));
+}
+
+auto
+OpenLedger::applyOne(
+    Application& app,
+    OpenView& view,
+    std::shared_ptr<STTx const> const& tx,
+    bool retry,
+    ApplyFlags flags,
+    beast::Journal j) -> Result
+{
+    if (retry)
+        flags = flags | TapRetry;
+    // If it's in anybody's proposed set, try to keep it in the ledger
+    auto const result = xrpl::apply(app, view, *tx, flags, j);
+    if (result.applied || result.ter == terQUEUED)
+        return Result::Success;
+    if (isTefFailure(result.ter) || isTemMalformed(result.ter) || isTelLocal(result.ter))
+        return Result::Failure;
+    return Result::Retry;
+}
+
+//------------------------------------------------------------------------------
+
+std::string
+debugTxstr(std::shared_ptr<STTx const> const& tx)
+{
+    std::stringstream ss;
+    ss << tx->getTransactionID();
+    return ss.str().substr(0, 4);
+}
+
+std::string
+debugTostr(OrderedTxs const& set)
+{
+    std::stringstream ss;
+    for (auto const& item : set)
+        ss << debugTxstr(item.second) << ", ";
+    return ss.str();
+}
+
+std::string
+debugTostr(SHAMap const& set)
+{
+    std::stringstream ss;
+    for (auto const& item : set)
+    {
+        try
+        {
+            SerialIter sit(item.slice());
+            auto const tx = std::make_shared<STTx const>(sit);
+            ss << debugTxstr(tx) << ", ";
+        }
+        catch (std::exception const& ex)
+        {
+            ss << "THROW:" << ex.what() << ", ";
+        }
+    }
+    return ss.str();
+}
+
+std::string
+debugTostr(std::shared_ptr<ReadView const> const& view)
+{
+    std::stringstream ss;
+    for (auto const& item : view->txs)
+        ss << debugTxstr(item.first) << ", ";
+    return ss.str();
+}
+
+}  // namespace xrpl

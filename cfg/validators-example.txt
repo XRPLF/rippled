@@ -1,0 +1,90 @@
+#
+# Default validators.txt
+#
+# This file is located in the same folder as your xrpld.cfg file
+# and defines which validators your server trusts not to collude.
+#
+# This file is UTF-8 with DOS, UNIX, or Mac style line endings.
+# Blank lines and lines starting with a '#' are ignored.
+#
+#
+#
+# [validators]
+#
+#   List of the validation public keys of nodes to always accept as validators.
+#
+#   Manually listing validator keys is not recommended for production networks.
+#   See validator_list_sites and validator_list_keys below.
+#
+#   Examples:
+#    n9KorY8QtTdRx7TVDpwnG9NvyxsDwHUKUEeDLY3AkiGncVaSXZi5
+#    n9MqiExBcoG19UXwoLjBJnhsxEhAZMuWwJDRdkyDz1EkEkwzQTNt
+#
+# [validator_list_sites]
+#
+#   List of URIs serving lists of recommended validators.
+#
+#   Examples:
+#    https://vl.ripple.com
+#    https://unl.xrplf.org
+#    http://127.0.0.1:8000
+#    file:///etc/xrpld/vl.txt
+#
+# [validator_list_keys]
+#
+#   List of keys belonging to trusted validator list publishers.
+#   Validator lists fetched from configured sites will only be considered
+#   if the list is accompanied by a valid signature from a trusted
+#   publisher key.
+#   Validator list keys should be hex-encoded.
+#
+#   Examples:
+#    ED2677ABFFD1B33AC6FBC3062B71F1E8397C1505E1C42C64D11AD1B28FF73F4734
+#    ED307A760EE34F2D0CAA103377B1969117C38B8AA0AA1E2A24DAC1F32FC97087ED
+#
+
+# The default validator list publishers that the xrpld instance
+# trusts.
+#
+# WARNING: Changing these values can cause your xrpld instance to see a
+#          validated ledger that contradicts other xrpld instances'
+#          validated ledgers (aka a ledger fork) if your validator list(s)
+#          do not sufficiently overlap with the list(s) used by others.
+#          See: https://arxiv.org/pdf/1802.07242.pdf
+
+[validator_list_sites]
+https://vl.ripple.com
+https://unl.xrplf.org
+
+[validator_list_keys]
+#vl.ripple.com
+ED2677ABFFD1B33AC6FBC3062B71F1E8397C1505E1C42C64D11AD1B28FF73F4734
+#unl.xrplf.org
+ED42AEC58B701EEBB77356FFFEC26F83C1F0407263530F068C7C73D392C7E06FD1
+
+# To use the test network (see https://xrpl.org/connect-your-rippled-to-the-xrp-test-net.html),
+# use the following configuration instead:
+#
+# [validator_list_sites]
+# https://vl.altnet.rippletest.net
+#
+# [validator_list_keys]
+# ED264807102805220DA0F312E71FC2C69E1552C9C5790F6C25E3729DEB573D5860
+
+
+# [validator_list_threshold]
+#
+#   Minimum number of validator lists on which a validator must be listed in
+#   order to be used.
+#
+#   This can be set explicitly to any positive integer number not greater than
+#   the size of [validator_list_keys]. If it is not set, or set to 0, the
+#   value will be calculated at startup from the size of [validator_list_keys],
+#   where the calculation is:
+#
+#     threshold = size(validator_list_keys) < 3
+#       ? 1
+#       : floor(size(validator_list_keys) / 2) + 1
+
+[validator_list_threshold]
+0

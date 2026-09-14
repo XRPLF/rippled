@@ -1,0 +1,241 @@
+
+#include <test/jtx/Env.h>
+#include <test/jtx/amount.h>
+#include <test/jtx/pay.h>
+#include <test/jtx/trust.h>
+
+#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/json/to_string.h>
+#include <xrpl/protocol/ErrorCodes.h>
+#include <xrpl/protocol/TxFlags.h>
+#include <xrpl/protocol/UintTypes.h>
+#include <xrpl/protocol/jss.h>
+
+#include <algorithm>
+#include <cstddef>
+#include <optional>
+#include <vector>
+
+namespace xrpl {
+
+class AccountCurrencies_test : public beast::unit_test::Suite
+{
+    void
+    testBadInput()
+    {
+        testcase("Bad input to account_currencies");
+
+        using namespace test::jtx;
+        Env env{*this};
+
+        auto const alice = Account{"alice"};
+        env.fund(XRP(10000), alice);
+        env.close();
+
+        {  // invalid ledger (hash)
+            json::Value params;
+            params[jss::account] = Account{"bob"}.human();
+            params[jss::ledger_hash] = 1;
+            auto const result =
+                env.rpc("json", "account_currencies", to_string(params))[jss::result];
+            BEAST_EXPECT(result[jss::error] == "invalidParams");
+            BEAST_EXPECT(result[jss::error_code] == RpcInvalidParams);
+            BEAST_EXPECT(
+                result[jss::error_message] == "Invalid field 'ledger_hash', not hex string.");
+        }
+
+        {  // missing account field
+            auto const result = env.rpc("json", "account_currencies", "{}")[jss::result];
+            BEAST_EXPECT(result[jss::error] == "invalidParams");
+            BEAST_EXPECT(result[jss::error_code] == RpcInvalidParams);
+            BEAST_EXPECT(result[jss::error_message] == "Missing field 'account'.");
+        }
+
+        {
+            // invalid ledger is reported before a missing or invalid account
+            auto const testInvalidLedger = [&](json::Value params) {
+                params[jss::ledger_hash] = 1;
+                auto const result =
+                    env.rpc("json", "account_currencies", to_string(params))[jss::result];
+                BEAST_EXPECT(result[jss::error] == "invalidParams");
+                BEAST_EXPECT(result[jss::error_code] == RpcInvalidParams);
+                BEAST_EXPECT(
+                    result[jss::error_message] == "Invalid field 'ledger_hash', not hex string.");
+            };
+
+            testInvalidLedger(json::Value{json::ValueType::Object});
+
+            for (auto const& field : {jss::account, jss::ident})
+            {
+                json::Value params;
+                params[field] = 1;
+                testInvalidLedger(params);
+
+                params[field] = "llIIOO";
+                testInvalidLedger(params);
+            }
+        }
+
+        {
+            // test account non-string
+            auto const testInvalidAccountParam = [&](auto const& param) {
+                json::Value params;
+                params[jss::account] = param;
+                auto jrr = env.rpc("json", "account_currencies", to_string(params))[jss::result];
+                BEAST_EXPECT(jrr[jss::error] == "invalidParams");
+                BEAST_EXPECT(jrr[jss::error_code] == RpcInvalidParams);
+                BEAST_EXPECT(jrr[jss::error_message] == "Invalid field 'account'.");
+            };
+
+            testInvalidAccountParam(1);
+            testInvalidAccountParam(1.1);
+            testInvalidAccountParam(true);
+            testInvalidAccountParam(json::Value(json::ValueType::Null));
+            testInvalidAccountParam(json::Value(json::ValueType::Object));
+            testInvalidAccountParam(json::Value(json::ValueType::Array));
+        }
+
+        {
+            // test ident non-string
+            auto const testInvalidIdentParam = [&](auto const& param) {
+                json::Value params;
+                params[jss::ident] = param;
+                auto jrr = env.rpc("json", "account_currencies", to_string(params))[jss::result];
+                BEAST_EXPECT(jrr[jss::error] == "invalidParams");
+                BEAST_EXPECT(jrr[jss::error_code] == RpcInvalidParams);
+                BEAST_EXPECT(jrr[jss::error_message] == "Invalid field 'ident'.");
+            };
+
+            testInvalidIdentParam(1);
+            testInvalidIdentParam(1.1);
+            testInvalidIdentParam(true);
+            testInvalidIdentParam(json::Value(json::ValueType::Null));
+            testInvalidIdentParam(json::Value(json::ValueType::Object));
+            testInvalidIdentParam(json::Value(json::ValueType::Array));
+        }
+
+        {
+            json::Value params;
+            params[jss::account] = "llIIOO";  // these are invalid in bitcoin alphabet
+            auto const result =
+                env.rpc("json", "account_currencies", to_string(params))[jss::result];
+            BEAST_EXPECT(result[jss::error] == "actMalformed");
+            BEAST_EXPECT(result[jss::error_code] == RpcActMalformed);
+            BEAST_EXPECT(result[jss::error_message] == "Account malformed.");
+            BEAST_EXPECT(result.isMember(jss::ledger_current_index));
+            BEAST_EXPECT(result[jss::validated] == false);
+        }
+
+        {
+            // Cannot use a seed as account
+            json::Value params;
+            params[jss::account] = "Bob";
+            auto const result =
+                env.rpc("json", "account_currencies", to_string(params))[jss::result];
+            BEAST_EXPECT(result[jss::error] == "actMalformed");
+            BEAST_EXPECT(result[jss::error_code] == RpcActMalformed);
+            BEAST_EXPECT(result[jss::error_message] == "Account malformed.");
+        }
+
+        {  // ask for nonexistent account
+            json::Value params;
+            params[jss::account] = Account{"bob"}.human();
+            auto const result =
+                env.rpc("json", "account_currencies", to_string(params))[jss::result];
+            BEAST_EXPECT(result[jss::error] == "actNotFound");
+            BEAST_EXPECT(result[jss::error_code] == RpcActNotFound);
+            BEAST_EXPECT(result[jss::error_message] == "Account not found.");
+        }
+    }
+
+    void
+    testBasic()
+    {
+        testcase("Basic request for account_currencies");
+
+        using namespace test::jtx;
+        Env env{*this};
+
+        auto const alice = Account{"alice"};
+        auto const gw = Account{"gateway"};
+        env.fund(XRP(10000), alice, gw);
+        char currencySuffix{'A'};
+        std::vector<std::optional<IOU>> gwCurrencies(26);  // A - Z
+        std::ranges::generate(gwCurrencies, [&] {
+            auto gwc = gw[std::string("US") + currencySuffix++];
+            env(trust(alice, gwc(100)));
+            return gwc;
+        });
+        env.close();
+
+        json::Value params;
+        params[jss::account] = alice.human();
+        auto result = env.rpc("json", "account_currencies", to_string(params))[jss::result];
+
+        auto const arrayCheck = [&result](
+                                    json::StaticString const& fld,
+                                    std::vector<std::optional<IOU>> const& expected) -> bool {
+            bool stat = result.isMember(fld) && result[fld].isArray() &&
+                result[fld].size() == expected.size();
+            for (size_t i = 0; stat && i < expected.size(); ++i)
+            {
+                stat &= (to_string(expected[i].value().currency) == result[fld][i].asString());
+            }
+            return stat;
+        };
+
+        BEAST_EXPECT(arrayCheck(jss::receive_currencies, gwCurrencies));
+        BEAST_EXPECT(arrayCheck(jss::send_currencies, {}));
+
+        // now form a payment for each currency
+        for (auto const& c : gwCurrencies)
+            env(pay(gw, alice, c.value()(50)));  // NOLINT(bugprone-unchecked-optional-access)
+
+        // send_currencies should be populated now
+        result = env.rpc("json", "account_currencies", to_string(params))[jss::result];
+        BEAST_EXPECT(arrayCheck(jss::receive_currencies, gwCurrencies));
+        BEAST_EXPECT(arrayCheck(jss::send_currencies, gwCurrencies));
+
+        // freeze the USD trust line and verify that the receive currencies
+        // does not change
+        env(trust(alice, gw["USD"](100), tfSetFreeze));
+        result = env.rpc("account_lines", alice.human());
+        for (auto const& l : result[jss::lines])
+            BEAST_EXPECT(l[jss::freeze].asBool() == (l[jss::currency] == "USD"));
+        result = env.rpc("json", "account_currencies", to_string(params))[jss::result];
+        BEAST_EXPECT(arrayCheck(jss::receive_currencies, gwCurrencies));
+        BEAST_EXPECT(arrayCheck(jss::send_currencies, gwCurrencies));
+        // clear the freeze
+        env(trust(alice, gw["USD"](100), tfClearFreeze));
+
+        // make a payment that exhausts the trustline from alice to gw for USA
+        env(pay(gw, alice, gw["USA"](50)));
+        // USA should now be missing from receive_currencies
+        result = env.rpc("json", "account_currencies", to_string(params))[jss::result];
+        decltype(gwCurrencies)
+            const gwCurrenciesNoUSA(gwCurrencies.begin() + 1, gwCurrencies.end());
+        BEAST_EXPECT(arrayCheck(jss::receive_currencies, gwCurrenciesNoUSA));
+        BEAST_EXPECT(arrayCheck(jss::send_currencies, gwCurrencies));
+
+        // add trust from gw to alice and then exhaust that trust line
+        // so that send_currencies for alice will now omit USA
+        env(trust(gw, alice["USA"](100)));
+        env(pay(alice, gw, alice["USA"](200)));
+        result = env.rpc("json", "account_currencies", to_string(params))[jss::result];
+        BEAST_EXPECT(arrayCheck(jss::receive_currencies, gwCurrencies));
+        BEAST_EXPECT(arrayCheck(jss::send_currencies, gwCurrenciesNoUSA));
+    }
+
+public:
+    void
+    run() override
+    {
+        testBadInput();
+        testBasic();
+    }
+};
+
+BEAST_DEFINE_TESTSUITE(AccountCurrencies, rpc, xrpl);
+
+}  // namespace xrpl

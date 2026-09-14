@@ -1,0 +1,101 @@
+#pragma once
+
+#include <xrpl/basics/Number.h>
+#include <xrpl/basics/contract.h>
+#include <xrpl/beast/utility/Zero.h>
+#include <xrpl/protocol/AMMCore.h>
+#include <xrpl/protocol/Quality.h>
+
+#include <cstdint>
+#include <optional>
+#include <stdexcept>
+
+namespace xrpl {
+
+/**
+ * Average quality of a path as a function of `out`: q(out) = m * out + b,
+ * where m = -1 / poolGets, b = poolPays / poolGets. If CLOB offer then
+ * `m` is equal to 0 `b` is equal to the offer's quality. The function
+ * is derived by substituting `in` in q = out / in with the swap out formula
+ * for `in`:
+ * in = [(poolGets * poolPays) / (poolGets - out) - poolPays] / (1 - tfee)
+ * and combining the function for multiple steps. The function is used
+ * to limit required output amount when quality limit is provided in one
+ * path optimization.
+ */
+class QualityFunction
+{
+private:
+    // slope
+    Number m_;
+    // intercept
+    Number b_;
+    // seated if QF is for CLOB offer.
+    std::optional<Quality> quality_;
+
+public:
+    struct AMMTag
+    {
+    };
+    // AMMOffer for multi-path is like CLOB, i.e. the offer size
+    // changes proportionally to its quality.
+    struct CLOBLikeTag
+    {
+    };
+    QualityFunction(Quality const& quality, CLOBLikeTag);
+    template <typename TIn, typename TOut>
+    QualityFunction(TAmounts<TIn, TOut> const& amounts, std::uint32_t tfee, AMMTag);
+
+    /**
+     * Combines QF with the next step QF
+     */
+    void
+    combine(QualityFunction const& qf);
+
+    /**
+     * Find output to produce the requested
+     * average quality.
+     * @param quality requested average quality (quality limit)
+     */
+    std::optional<Number>
+    outFromAvgQ(Quality const& quality);
+
+    /**
+     * Return whether `out` produces at least the requested
+     * average quality.
+     * @param quality requested average quality (quality limit)
+     * @param out output amount to test
+     */
+    [[nodiscard]] bool
+    satisfiesAvgQ(Quality const& quality, Number const& out) const;
+
+    /**
+     * Return true if the quality function is constant
+     */
+    [[nodiscard]] bool
+    isConst() const
+    {
+        return quality_.has_value();
+    }
+
+    [[nodiscard]] std::optional<Quality> const&
+    quality() const
+    {
+        return quality_;
+    }
+};
+
+template <typename TIn, typename TOut>
+QualityFunction::QualityFunction(
+    TAmounts<TIn, TOut> const& amounts,
+    std::uint32_t tfee,
+    QualityFunction::AMMTag)
+{
+    if (amounts.in <= beast::kZero || amounts.out <= beast::kZero)
+        Throw<std::runtime_error>("QualityFunction amounts are 0.");
+    Number const cfee = feeMult(tfee);
+    m_ = -cfee / amounts.in;
+    b_ = amounts.out * cfee / amounts.in;
+}
+
+}  // namespace xrpl

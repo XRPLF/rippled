@@ -1,0 +1,633 @@
+#include <test/jtx/envconfig.h>
+
+#include <xrpl/basics/make_SSLContext.h>
+#include <xrpl/beast/core/CurrentThreadName.h>
+#include <xrpl/beast/unit_test/suite.h>
+
+#include <boost/asio/basic_waitable_timer.hpp>
+#include <boost/asio/bind_executor.hpp>
+#include <boost/asio/buffer.hpp>
+#include <boost/asio/error.hpp>
+#include <boost/asio/executor_work_guard.hpp>
+#include <boost/asio/io_context.hpp>
+#include <boost/asio/ip/address.hpp>
+#include <boost/asio/ip/tcp.hpp>
+#include <boost/asio/post.hpp>
+#include <boost/asio/read_until.hpp>
+#include <boost/asio/ssl/context.hpp>
+#include <boost/asio/ssl/stream.hpp>
+#include <boost/asio/strand.hpp>
+#include <boost/asio/streambuf.hpp>
+#include <boost/asio/write.hpp>
+#include <boost/optional/optional.hpp>  // IWYU pragma: keep
+#include <boost/system/detail/error_code.hpp>
+
+#include <cassert>
+#include <chrono>
+#include <condition_variable>
+#include <cstddef>
+#include <map>
+#include <memory>
+#include <mutex>
+#include <ostream>
+#include <string>
+#include <thread>
+#include <utility>
+#include <vector>
+
+namespace xrpl {
+/*
+
+Findings from the test:
+
+If the remote host calls async_shutdown then the local host's
+async_read will complete with eof.
+
+If both hosts call async_shutdown then the calls to async_shutdown
+will complete with eof.
+
+*/
+
+class short_read_test : public beast::unit_test::Suite
+{
+private:
+    using IoContextType = boost::asio::io_context;
+    using StrandType = boost::asio::strand<IoContextType::executor_type>;
+    using TimerType = boost::asio::basic_waitable_timer<std::chrono::steady_clock>;
+    using AcceptorType = boost::asio::ip::tcp::acceptor;
+    using SocketType = boost::asio::ip::tcp::socket;
+    using StreamType = boost::asio::ssl::stream<SocketType&>;
+    using ErrorCode = boost::system::error_code;
+    using EndpointType = boost::asio::ip::tcp::endpoint;
+    using AddressType = boost::asio::ip::address;
+
+    IoContextType ioContext_;
+    boost::optional<boost::asio::executor_work_guard<boost::asio::io_context::executor_type>> work_;
+    std::thread thread_;
+    std::shared_ptr<boost::asio::ssl::context> context_;
+
+    template <class Streambuf>
+    static void
+    write(Streambuf& sb, std::string const& s)
+    {
+        using boost::asio::buffer;
+        using boost::asio::buffer_copy;
+        using boost::asio::buffer_size;
+        boost::asio::const_buffer const buf(s.data(), s.size());
+        sb.commit(buffer_copy(sb.prepare(buffer_size(buf)), buf));
+    }
+
+    //--------------------------------------------------------------------------
+
+    class Base
+    {
+    protected:
+        class Child
+        {
+        private:
+            Base& base_;
+
+        public:
+            explicit Child(Base& base) : base_(base)
+            {
+            }
+
+            virtual ~Child()
+            {
+                base_.remove(this);
+            }
+
+            virtual void
+            close() = 0;
+        };
+
+    private:
+        std::mutex mutex_;
+        std::condition_variable cond_;
+        std::map<Child*, std::weak_ptr<Child>> list_;
+        bool closed_ = false;
+
+    public:
+        ~Base()
+        {
+            // Derived class must call wait() in the destructor
+            assert(list_.empty());
+        }
+
+        void
+        add(std::shared_ptr<Child> const& child)
+        {
+            std::scoped_lock const lock(mutex_);
+            list_.emplace(child.get(), child);
+        }
+
+        void
+        remove(Child* child)
+        {
+            std::scoped_lock const lock(mutex_);
+            list_.erase(child);
+            if (list_.empty())
+                cond_.notify_one();
+        }
+
+        void
+        close()
+        {
+            std::vector<std::shared_ptr<Child>> v;
+            {
+                std::scoped_lock const lock(mutex_);
+                v.reserve(list_.size());
+                if (closed_)
+                    return;
+                closed_ = true;
+                for (auto const& c : list_)
+                {
+                    if (auto p = c.second.lock())
+                    {
+                        p->close();
+                        // Must destroy shared_ptr outside the
+                        // lock otherwise deadlock from the
+                        // managed object's destructor.
+                        v.emplace_back(std::move(p));
+                    }
+                }
+            }
+        }
+
+        void
+        wait()
+        {
+            std::unique_lock<std::mutex> lock(mutex_);
+            while (!list_.empty())
+                cond_.wait(lock);
+        }
+    };
+
+    //--------------------------------------------------------------------------
+
+    class Server : public Base
+    {
+    private:
+        short_read_test& test_;
+        EndpointType endpoint_;
+
+        struct Acceptor : Child, std::enable_shared_from_this<Acceptor>
+        {
+            Server& server;
+            short_read_test& test;
+            AcceptorType acceptor;
+            SocketType socket;
+            StrandType strand;
+
+            explicit Acceptor(Server& server)
+                : Child(server)
+                , server(server)
+                , test(server.test_)
+                , acceptor(
+                      test.ioContext_,
+                      EndpointType(boost::asio::ip::make_address(test::getEnvLocalhostAddr()), 0))
+                , socket(test.ioContext_)
+                , strand(boost::asio::make_strand(test.ioContext_))
+            {
+                acceptor.listen();
+                server.endpoint_ = acceptor.local_endpoint();
+            }
+
+            void
+            close() override
+            {
+                if (!strand.running_in_this_thread())
+                {
+                    post(strand, [self = shared_from_this()] { self->close(); });
+                    return;
+                }
+                acceptor.close();
+            }
+
+            void
+            run()
+            {
+                acceptor.async_accept(
+                    socket, bind_executor(strand, [self = shared_from_this()](ErrorCode const& ec) {
+                        self->onAccept(ec);
+                    }));
+            }
+
+            void
+            fail(std::string const& what, ErrorCode ec)
+            {
+                if (acceptor.is_open())
+                {
+                    if (ec != boost::asio::error::operation_aborted)
+                        test.log << what << ": " << ec.message() << std::endl;
+                    acceptor.close();
+                }
+            }
+
+            void
+            onAccept(ErrorCode ec)
+            {
+                if (ec)
+                {
+                    fail("accept", ec);
+                    return;
+                }
+                auto const p = std::make_shared<Connection>(server, std::move(socket));
+                server.add(p);
+                p->run();
+                acceptor.async_accept(
+                    socket, bind_executor(strand, [self = shared_from_this()](ErrorCode const& ec) {
+                        self->onAccept(ec);
+                    }));
+            }
+        };
+
+        struct Connection : Child, std::enable_shared_from_this<Connection>
+        {
+            Server& server;
+            short_read_test& test;
+            SocketType socket;
+            StreamType stream;
+            StrandType strand;
+            TimerType timer;
+            boost::asio::streambuf buf;
+
+            Connection(Server& inServer, SocketType&& inSocket)
+                : Child(inServer)
+                , server(inServer)
+                , test(server.test_)
+                , socket(std::move(inSocket))
+                , stream(socket, *test.context_)
+                , strand(boost::asio::make_strand(test.ioContext_))
+                , timer(test.ioContext_)
+            {
+            }
+
+            void
+            close() override
+            {
+                if (!strand.running_in_this_thread())
+                {
+                    post(strand, [self = shared_from_this()] { self->close(); });
+                    return;
+                }
+                if (socket.is_open())
+                {
+                    socket.close();
+                    timer.cancel();
+                }
+            }
+
+            void
+            run()
+            {
+                timer.expires_after(std::chrono::seconds(3));
+                timer.async_wait(bind_executor(
+                    strand,
+                    [self = shared_from_this()](ErrorCode const& ec) { self->onTimer(ec); }));
+                stream.async_handshake(
+                    StreamType::server,
+                    bind_executor(strand, [self = shared_from_this()](ErrorCode const& ec) {
+                        self->onHandshake(ec);
+                    }));
+            }
+
+            void
+            fail(std::string const& what, ErrorCode ec)
+            {
+                if (socket.is_open())
+                {
+                    if (ec != boost::asio::error::operation_aborted)
+                        test.log << "[server] " << what << ": " << ec.message() << std::endl;
+                    socket.close();
+                    timer.cancel();
+                }
+            }
+
+            void
+            onTimer(ErrorCode ec)
+            {
+                if (ec == boost::asio::error::operation_aborted)
+                    return;
+                if (ec)
+                {
+                    fail("timer", ec);
+                    return;
+                }
+                test.log << "[server] timeout" << std::endl;
+                socket.close();
+            }
+
+            void
+            onHandshake(ErrorCode ec)
+            {
+                if (ec)
+                {
+                    fail("handshake", ec);
+                    return;
+                }
+                boost::asio::async_read_until(
+                    stream,
+                    buf,
+                    "\n",
+                    bind_executor(
+                        strand,
+                        [self = shared_from_this()](
+                            ErrorCode const& ec, std::size_t bytesTransferred) {
+                            self->onRead(ec, bytesTransferred);
+                        }));
+            }
+
+            void
+            onRead(ErrorCode ec, std::size_t bytesTransferred)
+            {
+                if (ec == boost::asio::error::eof)
+                {
+                    server.test_.log << "[server] read: EOF" << std::endl;
+                    stream.async_shutdown(
+                        bind_executor(strand, [self = shared_from_this()](ErrorCode const& ec) {
+                            self->onShutdown(ec);
+                        }));
+                    return;
+                }
+                if (ec)
+                {
+                    fail("read", ec);
+                    return;
+                }
+
+                buf.commit(bytesTransferred);
+                buf.consume(bytesTransferred);
+                write(buf, "BYE\n");
+                boost::asio::async_write(
+                    stream,
+                    buf.data(),
+                    bind_executor(
+                        strand,
+                        [self = shared_from_this()](
+                            ErrorCode const& ec, std::size_t bytesTransferred) {
+                            self->onWrite(ec, bytesTransferred);
+                        }));
+            }
+
+            void
+            onWrite(ErrorCode ec, std::size_t bytesTransferred)
+            {
+                buf.consume(bytesTransferred);
+                if (ec)
+                {
+                    fail("write", ec);
+                    return;
+                }
+                stream.async_shutdown(bind_executor(
+                    strand,
+                    [self = shared_from_this()](ErrorCode const& ec) { self->onShutdown(ec); }));
+            }
+
+            void
+            onShutdown(ErrorCode ec)
+            {
+                if (ec)
+                {
+                    fail("shutdown", ec);
+                    return;
+                }
+                socket.close();
+                timer.cancel();
+            }
+        };
+
+    public:
+        explicit Server(short_read_test& test) : test_(test)
+        {
+            auto const p = std::make_shared<Acceptor>(*this);
+            add(p);
+            p->run();
+        }
+
+        ~Server()
+        {
+            close();
+            wait();
+        }
+
+        [[nodiscard]] EndpointType const&
+        endpoint() const
+        {
+            return endpoint_;
+        }
+    };
+
+    //--------------------------------------------------------------------------
+    class Client : public Base
+
+    {
+    private:
+        short_read_test& test_;
+
+        struct Connection : Child, std::enable_shared_from_this<Connection>
+        {
+            Client& client;
+            short_read_test& test;
+            SocketType socket;
+            StreamType stream;
+            StrandType strand;
+            TimerType timer;
+            boost::asio::streambuf buf;
+            EndpointType const& ep;
+
+            Connection(Client& client, EndpointType const& ep)
+                : Child(client)
+                , client(client)
+                , test(client.test_)
+                , socket(test.ioContext_)
+                , stream(socket, *test.context_)
+                , strand(boost::asio::make_strand(test.ioContext_))
+                , timer(test.ioContext_)
+                , ep(ep)
+            {
+            }
+
+            void
+            close() override
+            {
+                if (!strand.running_in_this_thread())
+                {
+                    post(strand, [self = shared_from_this()] { self->close(); });
+                    return;
+                }
+                if (socket.is_open())
+                {
+                    socket.close();
+                    timer.cancel();
+                }
+            }
+
+            void
+            run(EndpointType const& ep)
+            {
+                timer.expires_after(std::chrono::seconds(3));
+                timer.async_wait(bind_executor(
+                    strand,
+                    [self = shared_from_this()](ErrorCode const& ec) { self->onTimer(ec); }));
+                socket.async_connect(
+                    ep, bind_executor(strand, [self = shared_from_this()](ErrorCode const& ec) {
+                        self->onConnect(ec);
+                    }));
+            }
+
+            void
+            fail(std::string const& what, ErrorCode ec)
+            {
+                if (socket.is_open())
+                {
+                    if (ec != boost::asio::error::operation_aborted)
+                        test.log << "[client] " << what << ": " << ec.message() << std::endl;
+                    socket.close();
+                    timer.cancel();
+                }
+            }
+
+            void
+            onTimer(ErrorCode ec)
+            {
+                if (ec == boost::asio::error::operation_aborted)
+                    return;
+                if (ec)
+                {
+                    fail("timer", ec);
+                    return;
+                }
+                test.log << "[client] timeout";
+                socket.close();
+            }
+
+            void
+            onConnect(ErrorCode ec)
+            {
+                if (ec)
+                {
+                    fail("connect", ec);
+                    return;
+                }
+                stream.async_handshake(
+                    StreamType::client,
+                    bind_executor(strand, [self = shared_from_this()](ErrorCode const& ec) {
+                        self->onHandshake(ec);
+                    }));
+            }
+
+            void
+            onHandshake(ErrorCode ec)
+            {
+                if (ec)
+                {
+                    fail("handshake", ec);
+                    return;
+                }
+                write(buf, "HELLO\n");
+
+                boost::asio::async_write(
+                    stream,
+                    buf.data(),
+                    bind_executor(
+                        strand,
+                        [self = shared_from_this()](
+                            ErrorCode const& ec, std::size_t bytesTransferred) {
+                            self->onWrite(ec, bytesTransferred);
+                        }));
+            }
+
+            void
+            onWrite(ErrorCode ec, std::size_t bytesTransferred)
+            {
+                buf.consume(bytesTransferred);
+                if (ec)
+                {
+                    fail("write", ec);
+                    return;
+                }
+                boost::asio::async_read_until(
+                    stream,
+                    buf,
+                    "\n",
+                    bind_executor(
+                        strand,
+                        [self = shared_from_this()](
+                            ErrorCode const& ec, std::size_t bytesTransferred) {
+                            self->onRead(ec, bytesTransferred);
+                        }));
+            }
+
+            void
+            onRead(ErrorCode ec, std::size_t bytesTransferred)
+            {
+                if (ec)
+                {
+                    fail("read", ec);
+                    return;
+                }
+                buf.commit(bytesTransferred);
+                stream.async_shutdown(bind_executor(
+                    strand,
+                    [self = shared_from_this()](ErrorCode const& ec) { self->onShutdown(ec); }));
+            }
+
+            void
+            onShutdown(ErrorCode ec)
+            {
+                if (ec)
+                {
+                    fail("shutdown", ec);
+                    return;
+                }
+                socket.close();
+                timer.cancel();
+            }
+        };
+
+    public:
+        Client(short_read_test& test, EndpointType const& ep) : test_(test)
+        {
+            auto const p = std::make_shared<Connection>(*this, ep);
+            add(p);
+            p->run(ep);
+        }
+
+        ~Client()
+        {
+            close();
+            wait();
+        }
+    };
+
+public:
+    short_read_test()
+        : work_(ioContext_.get_executor())
+        , thread_(std::thread([this] {
+            beast::setCurrentThreadName("io_context");
+            this->ioContext_.run();
+        }))
+        , context_(makeSslContext(""))
+    {
+    }
+
+    ~short_read_test() override
+    {
+        work_.reset();
+        thread_.join();
+    }
+
+    void
+    run() override
+    {
+        Server const s(*this);
+        Client c(*this, s.endpoint());
+        c.wait();
+        pass();
+    }
+};
+
+BEAST_DEFINE_TESTSUITE(short_read, overlay, xrpl);
+
+}  // namespace xrpl

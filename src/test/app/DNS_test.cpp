@@ -1,0 +1,122 @@
+
+#include <test/jtx/Env.h>
+
+#include <xrpld/app/misc/detail/Work.h>
+#include <xrpld/app/misc/detail/WorkSSL.h>
+
+#include <xrpl/basics/StringUtilities.h>
+#include <xrpl/beast/unit_test/suite.h>
+
+#include <boost/asio/ip/tcp.hpp>
+#include <boost/system/detail/error_code.hpp>
+
+#include <condition_variable>
+#include <map>
+#include <memory>
+#include <mutex>
+#include <string>
+
+namespace xrpl::test {
+
+class DNS_test : public beast::unit_test::Suite
+{
+    using EndpointType = boost::asio::ip::tcp::endpoint;
+    using ErrorCode = boost::system::error_code;
+    std::weak_ptr<xrpl::detail::Work> work_;
+    EndpointType lastEndpoint_;
+    ParsedUrl pUrl_;
+    std::string port_;
+    jtx::Env env_;
+    std::map<std::string, int> resolved_;
+    std::mutex mutex_;
+    std::condition_variable cv_;
+
+public:
+    DNS_test() : env_(*this)
+    {
+    }
+
+    void
+    makeRequest(EndpointType const& lastEndpoint, bool lastStatus)
+    {
+        auto const onFetch = [&](ErrorCode const& errorCode,
+                                 EndpointType const& endpoint,
+                                 xrpl::detail::ResponseType const& resp) {
+            BEAST_EXPECT(!errorCode);
+            lastEndpoint_ = endpoint;
+            resolved_[endpoint.address().to_string()]++;
+            cv_.notify_all();
+        };
+
+        auto const sp = std::make_shared<xrpl::detail::WorkSSL>(
+            pUrl_.domain,
+            pUrl_.path,
+            port_,
+            env_.app().getIOContext(),
+            env_.journal,
+            env_.app().config(),
+            lastEndpoint,
+            lastStatus,
+            onFetch);
+        work_ = sp;
+        sp->run();
+
+        std::unique_lock l(mutex_);
+        cv_.wait(l);
+    }
+
+    bool
+    isMultipleEndpoints()
+    {
+        using boost::asio::ip::tcp;
+        tcp::resolver resolver(env_.app().getIOContext());
+        std::string const port = pUrl_.port ? std::to_string(*pUrl_.port) : "443";
+        auto const results = resolver.resolve(pUrl_.domain, port);
+        auto it = results.begin();
+        auto const end = results.end();
+        int n = 0;
+        for (; it != end; ++it)
+            ++n;
+        return n > 1;
+    }
+
+    void
+    parse()
+    {
+        std::string url = arg();
+        if (url.empty())
+            url = "https://vl.ripple.com";
+        BEAST_EXPECT(parseUrl(pUrl_, url));
+        port_ = pUrl_.port ? std::to_string(*pUrl_.port) : "443";
+    }
+
+    void
+    run() override
+    {
+        parse();
+        // First endpoint is random. Next three
+        // should resolve to the same endpoint. Run a few times
+        // to verify we are not selecting by chance the same endpoint.
+        for (int i = 1; i <= 4; ++i)
+        {
+            makeRequest(lastEndpoint_, true);
+            BEAST_EXPECT(resolved_.size() == 1 && resolved_.begin()->second == i);
+        }
+        if (!isMultipleEndpoints())
+            return;
+        // Run with the "failed" status. In this case endpoints are selected at
+        // random but last endpoint is not selected.
+        resolved_.clear();
+        for (int i = 0; i < 4; ++i)
+            makeRequest(lastEndpoint_, false);
+        // Should have more than one but some endpoints can repeat since
+        // selected at random. We'll never have four identical endpoints
+        // here because on failure we randomly select an endpoint different
+        // from the last endpoint.
+        BEAST_EXPECT(resolved_.size() > 1);
+    }
+};
+
+BEAST_DEFINE_TESTSUITE_MANUAL_PRIO(DNS, app, xrpl, 20);
+
+}  // namespace xrpl::test

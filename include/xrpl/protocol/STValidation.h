@@ -1,0 +1,299 @@
+#pragma once
+
+#include <xrpl/basics/Blob.h>
+#include <xrpl/basics/CountedObject.h>
+#include <xrpl/basics/Log.h>
+#include <xrpl/basics/Slice.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/basics/chrono.h>
+#include <xrpl/basics/contract.h>
+#include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/protocol/KeyType.h>
+#include <xrpl/protocol/PublicKey.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/SOTemplate.h>
+#include <xrpl/protocol/STBase.h>
+#include <xrpl/protocol/STObject.h>
+#include <xrpl/protocol/SecretKey.h>
+#include <xrpl/protocol/Serializer.h>
+#include <xrpl/protocol/UintTypes.h>
+#include <xrpl/protocol/tokens.h>
+
+#include <cstddef>
+#include <cstdint>
+#include <optional>
+#include <sstream>
+#include <stdexcept>
+#include <string>
+
+namespace xrpl {
+
+// Validation flags
+
+// This is a full (as opposed to a partial) validation
+constexpr std::uint32_t kVfFullValidation = 0x00000001;
+
+// The signature is fully canonical
+constexpr std::uint32_t kVfFullyCanonicalSig = 0x80000000;
+
+class STValidation final : public STObject, public CountedObject<STValidation>
+{
+    bool trusted_ = false;
+
+    // Determines the validity of the signature in this validation; unseated
+    // optional if we haven't yet checked it, a boolean otherwise.
+    mutable std::optional<bool> valid_;
+
+    // The public key associated with the key used to sign this validation
+    PublicKey const signingPubKey_;
+
+    // The ID of the validator that issued this validation. For validators
+    // that use manifests this will be derived from the master public key.
+    NodeID const nodeID_;
+
+    NetClock::time_point seenTime_;
+
+public:
+    /**
+     * @struct DeserializeOptions
+     * @brief Options controlling deserialization of a STValidation.
+
+     * @var DeserializeOptions::checkSignature
+     * Whether to verify the data was signed properly
+     *
+     * @var DeserializeOptions::requireCanonicalOrder
+     * Whether to require the fields to be in canonical order
+     */
+    struct DeserializeOptions
+    {
+        bool checkSignature;
+        bool requireCanonicalOrder;
+    };
+
+    /**
+     * Construct a STValidation from a peer from serialized data.
+     *
+     * @param sit Iterator over serialized data
+     * @param lookupNodeID Invocable with signature
+     *                        NodeID(PublicKey const&)
+     *                     used to find the Node ID based on the public key
+     *                     that signed the validation. For manifest based
+     *                     validators, this should be the NodeID of the master
+     *                     public key.
+     * @param options Options controlling deserialization
+     *
+     * @note Throws if the object is not valid
+     */
+    template <class LookupNodeID>
+    STValidation(SerialIter& sit, LookupNodeID&& lookupNodeID, DeserializeOptions options);
+
+    /**
+     * Construct, sign and trust a new STValidation issued by this node.
+     *
+     * @param signTime When the validation is signed
+     * @param publicKey The current signing public key
+     * @param secretKey The current signing secret key
+     * @param nodeID ID corresponding to node's public master key
+     * @param f callback function to "fill" the validation with necessary data
+     */
+    template <typename F>
+    STValidation(
+        NetClock::time_point signTime,
+        PublicKey const& pk,
+        SecretKey const& sk,
+        NodeID const& nodeID,
+        F&& f);
+
+    // Hash of the validated ledger
+    [[nodiscard]] UInt256
+    getLedgerHash() const;
+
+    // Hash of consensus transaction set used to generate ledger
+    [[nodiscard]] UInt256
+    getConsensusHash() const;
+
+    [[nodiscard]] NetClock::time_point
+    getSignTime() const;
+
+    [[nodiscard]] NetClock::time_point
+    getSeenTime() const noexcept;
+
+    [[nodiscard]] PublicKey const&
+    getSignerPublic() const noexcept;
+
+    [[nodiscard]] NodeID const&
+    getNodeID() const noexcept;
+
+    /**
+     * Whether this validation carries a good signature.
+     *
+     * Reports false if the signature cannot be checked at all, so a caller
+     * cannot tell that apart from a bad signature. Either way the validation is
+     * unusable, and the reason is logged. Only a computed answer is remembered.
+     */
+    [[nodiscard]] bool
+    isValid() const noexcept;
+
+    [[nodiscard]] bool
+    isFull() const noexcept;
+
+    [[nodiscard]] bool
+    isTrusted() const noexcept;
+
+    [[nodiscard]] UInt256
+    getSigningHash() const;
+
+    void
+    setTrusted();
+
+    void
+    setUntrusted();
+
+    void
+    setSeen(NetClock::time_point s);
+
+    [[nodiscard]] Blob
+    getSerialized() const;
+
+    [[nodiscard]] Blob
+    getSignature() const;
+
+    [[nodiscard]] std::string
+    render() const
+    {
+        std::stringstream ss;
+        ss << "validation: " << " ledger_hash: " << getLedgerHash()
+           << " consensus_hash: " << getConsensusHash()
+           << " sign_time: " << to_string(getSignTime())
+           << " seen_time: " << to_string(getSeenTime())
+           << " signer_public_key: " << getSignerPublic() << " node_id: " << getNodeID()
+           << " is_valid: " << isValid() << " is_full: " << isFull()
+           << " is_trusted: " << isTrusted() << " signing_hash: " << getSigningHash()
+           << " base58: " << toBase58(TokenType::NodePublic, getSignerPublic());
+        return ss.str();
+    }
+
+private:
+    static SOTemplate const&
+    validationFormat();
+
+    STBase*
+    copy(std::size_t n, void* buf) const override;
+    STBase*
+    move(std::size_t n, void* buf) override;
+
+    friend class detail::STVar;
+};
+
+template <class LookupNodeID>
+STValidation::STValidation(SerialIter& sit, LookupNodeID&& lookupNodeID, DeserializeOptions options)
+    : STObject(validationFormat(), sit, sfValidation, options.requireCanonicalOrder)
+    , signingPubKey_([this] {
+        auto const spk = getFieldVL(sfSigningPubKey);
+
+        if (publicKeyType(makeSlice(spk)) != KeyType::Secp256k1)
+            Throw<std::runtime_error>("Invalid public key in validation");
+
+        return PublicKey{makeSlice(spk)};
+    }())
+    , nodeID_(lookupNodeID(signingPubKey_))
+{
+    if (options.checkSignature && !isValid())
+    {
+        JLOG(debugLog().error()) << "Invalid signature in validation: "
+                                 << getJson(JsonOptions::Values::None);
+        Throw<std::runtime_error>("Invalid signature in validation");
+    }
+
+    XRPL_ASSERT(nodeID_.isNonZero(), "xrpl::STValidation::STValidation(SerialIter) : nonzero node");
+}
+
+/**
+ * Construct, sign and trust a new STValidation issued by this node.
+ *
+ * @param signTime When the validation is signed
+ * @param publicKey The current signing public key
+ * @param secretKey The current signing secret key
+ * @param nodeID ID corresponding to node's public master key
+ * @param f callback function to "fill" the validation with necessary data
+ */
+template <typename F>
+STValidation::STValidation(
+    NetClock::time_point signTime,
+    PublicKey const& pk,
+    SecretKey const& sk,
+    NodeID const& nodeID,
+    F&& f)
+    : STObject(validationFormat(), sfValidation)
+    , signingPubKey_(pk)
+    , nodeID_(nodeID)
+    , seenTime_(signTime)
+{
+    XRPL_ASSERT(
+        nodeID_.isNonZero(),
+        "xrpl::STValidation::STValidation(PublicKey, SecretKey) : nonzero "
+        "node");
+
+    // First, set our own public key:
+    if (publicKeyType(pk) != KeyType::Secp256k1)
+        logicError("We can only use secp256k1 keys for signing validations");
+
+    setFieldVL(sfSigningPubKey, pk.slice());
+    setFieldU32(sfSigningTime, signTime.time_since_epoch().count());
+
+    // Perform additional initialization
+    f(*this);
+
+    // Finally, sign the validation and mark it as trusted:
+    setFlag(kVfFullyCanonicalSig);
+    setFieldVL(sfSignature, signDigest(pk, sk, getSigningHash()));
+    setTrusted();
+
+    // Check to ensure that all required fields are present.
+    for (auto const& e : validationFormat())
+    {
+        if (e.style() == SoeRequired && !isFieldPresent(e.sField()))
+            logicError("Required field '" + e.sField().getName() + "' missing from validation.");
+    }
+
+    // We just signed this, so it should be valid.
+    valid_ = true;
+}
+
+inline PublicKey const&
+STValidation::getSignerPublic() const noexcept
+{
+    return signingPubKey_;
+}
+
+inline NodeID const&
+STValidation::getNodeID() const noexcept
+{
+    return nodeID_;
+}
+
+inline bool
+STValidation::isTrusted() const noexcept
+{
+    return trusted_;
+}
+
+inline void
+STValidation::setTrusted()
+{
+    trusted_ = true;
+}
+
+inline void
+STValidation::setUntrusted()
+{
+    trusted_ = false;
+}
+
+inline void
+STValidation::setSeen(NetClock::time_point s)
+{
+    seenTime_ = s;
+}
+
+}  // namespace xrpl

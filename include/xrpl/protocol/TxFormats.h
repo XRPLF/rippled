@@ -1,0 +1,147 @@
+#pragma once
+
+#include <xrpl/protocol/KnownFormats.h>
+#include <xrpl/protocol/SOTemplate.h>
+
+#include <cstdint>
+#include <vector>
+
+namespace xrpl {
+
+/**
+ * Transaction type identifiers.
+ *
+ * These are part of the binary message format.
+ *
+ * @ingroup protocol
+ */
+/**
+ * Transaction type identifiers
+ *
+ * Each ledger object requires a unique type identifier, which is stored
+ * within the object itself; this makes it possible to iterate the entire
+ * ledger and determine each object's type and verify that the object you
+ * retrieved from a given hash matches the expected type.
+ *
+ * @warning Since these values are included in transactions, which are signed
+ *          objects, and used by the code to determine the type of transaction
+ *          being invoked, they are part of the protocol. **Changing them
+ *          should be avoided because without special handling, this will
+ *          result in a hard fork.**
+ *
+ * @note When retiring types, the specific values should not be removed but
+ *       should be marked as [[deprecated]]. This is to avoid accidental
+ *       reuse of identifiers.
+ *
+ * @todo The C++ language does not enable checking for duplicate values
+ *       here. If it becomes possible then we should do this.
+ *
+ * @ingroup protocol
+ */
+// clang-format off
+// Protocol-critical, hundreds of usages
+// NOLINTNEXTLINE(cppcoreguidelines-use-enum-class)
+enum TxType : std::uint16_t
+{
+
+#pragma push_macro("TRANSACTION")
+#undef TRANSACTION
+
+#define TRANSACTION(tag, value, ...) tag = value,
+
+#include <xrpl/protocol/detail/transactions.macro>
+
+#undef TRANSACTION
+#pragma pop_macro("TRANSACTION")
+
+    /**
+     * This transaction type is deprecated; it is retained for historical purposes.
+     */
+    TtNicknameSet [[deprecated("This transaction type is not supported and should not be used.")]] = 6,
+
+    /**
+     * This transaction type is deprecated; it is retained for historical purposes.
+     */
+    TtContract [[deprecated("This transaction type is not supported and should not be used.")]] = 9,
+
+    /**
+     * This identifier was never used, but the slot is reserved for historical purposes.
+     */
+    TtSpinalTap [[deprecated("This transaction type is not supported and should not be used.")]] = 11,
+
+    /**
+     * This transaction type installs a hook.
+     */
+    TtHookSet [[maybe_unused]] = 22,
+
+    /**
+     * This transaction type was removed with the XChainBridge amendment, which was never enabled
+     * on Mainnet. The value is reserved for historical purposes.
+     */
+    TtXChainCreateClaimID [[deprecated("This transaction type is not supported and should not be used.")]] = 41,
+
+    /**
+     * This transaction type was removed with the XChainBridge amendment, which was never enabled
+     * on Mainnet. The value is reserved for historical purposes.
+     */
+    TtXChainCommit [[deprecated("This transaction type is not supported and should not be used.")]] = 42,
+
+    /**
+     * This transaction type was removed with the XChainBridge amendment, which was never enabled
+     * on Mainnet. The value is reserved for historical purposes.
+     */
+    TtXChainClaim [[deprecated("This transaction type is not supported and should not be used.")]] = 43,
+
+    /**
+     * This transaction type was removed with the XChainBridge amendment, which was never enabled
+     * on Mainnet. The value is reserved for historical purposes.
+     */
+    TtXChainAccountCreateCommit [[deprecated("This transaction type is not supported and should not be used.")]] = 44,
+
+    /**
+     * This transaction type was removed with the XChainBridge amendment, which was never enabled
+     * on Mainnet. The value is reserved for historical purposes.
+     */
+    TtXChainAddClaimAttestation [[deprecated("This transaction type is not supported and should not be used.")]] = 45,
+
+    /**
+     * This transaction type was removed with the XChainBridge amendment, which was never enabled
+     * on Mainnet. The value is reserved for historical purposes.
+     */
+    TtXChainAddAccountCreateAttestation [[deprecated("This transaction type is not supported and should not be used.")]] = 46,
+
+    /**
+     * This transaction type was removed with the XChainBridge amendment, which was never enabled
+     * on Mainnet. The value is reserved for historical purposes.
+     */
+    TtXChainModifyBridge [[deprecated("This transaction type is not supported and should not be used.")]] = 47,
+
+    /**
+     * This transaction type was removed with the XChainBridge amendment, which was never enabled
+     * on Mainnet. The value is reserved for historical purposes.
+     */
+    TtXChainCreateBridge [[deprecated("This transaction type is not supported and should not be used.")]] = 48,
+};
+// clang-format on
+
+/**
+ * Manages the list of known transaction formats.
+ */
+class TxFormats : public KnownFormats<TxType, TxFormats>
+{
+private:
+    /**
+     * Create the object.
+     * This will load the object with all the known transaction formats.
+     */
+    TxFormats();
+
+public:
+    static TxFormats const&
+    getInstance();
+
+    static std::vector<SOElement> const&
+    getCommonFields();
+};
+
+}  // namespace xrpl

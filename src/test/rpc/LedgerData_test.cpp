@@ -1,0 +1,490 @@
+
+#include <test/jtx/Account.h>
+#include <test/jtx/Env.h>
+#include <test/jtx/TestHelpers.h>
+#include <test/jtx/amount.h>
+#include <test/jtx/deposit.h>
+#include <test/jtx/envconfig.h>
+#include <test/jtx/multisign.h>
+#include <test/jtx/offer.h>
+#include <test/jtx/ticket.h>
+
+#include <xrpl/basics/StringUtilities.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/basics/chrono.h>
+#include <xrpl/basics/strHex.h>
+#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/json/to_string.h>
+#include <xrpl/ledger/View.h>
+#include <xrpl/protocol/ErrorCodes.h>
+#include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/Serializer.h>
+#include <xrpl/protocol/jss.h>
+
+#include <chrono>
+#include <cstdint>
+#include <string>
+
+namespace xrpl {
+
+class LedgerData_test : public beast::unit_test::Suite
+{
+public:
+    // test helper
+    static bool
+    checkMarker(json::Value const& val)
+    {
+        return val.isMember(jss::marker) && val[jss::marker].isString() &&
+            !val[jss::marker].asString().empty();
+    }
+
+    void
+    testCurrentLedgerToLimits(bool asAdmin)
+    {
+        using namespace test::jtx;
+        Env env{*this, asAdmin ? envconfig() : envconfig(noAdmin)};
+        Account const gw{"gateway"};
+        auto const usd = gw["USD"];
+        env.fund(XRP(100000), gw);
+
+        int const maxLimit = 256;  // would be 2048 for binary requests, no
+                                   // need to test that here
+
+        for (auto i = 0; i < maxLimit + 10; i++)
+        {
+            Account const bob{std::string("bob") + std::to_string(i)};
+            env.fund(XRP(1000), bob);
+        }
+        // Note that calls to env.close() fail without admin permission.
+        if (asAdmin)
+            env.close();
+
+        // with no limit specified, we get the max_limit if the total number of
+        // accounts is greater than max, which it is here
+        json::Value jvParams;
+        jvParams[jss::ledger_index] = "current";
+        jvParams[jss::binary] = false;
+        {
+            auto const jrr = env.rpc("json", "ledger_data", to_string(jvParams))[jss::result];
+            BEAST_EXPECT(
+                jrr[jss::ledger_current_index].isIntegral() &&
+                jrr[jss::ledger_current_index].asInt() > 0);
+            BEAST_EXPECT(checkMarker(jrr));
+            BEAST_EXPECT(checkArraySize(jrr[jss::state], maxLimit));
+        }
+
+        // check limits values around the max_limit (+/- 1)
+        for (auto delta = -1; delta <= 1; delta++)
+        {
+            jvParams[jss::limit] = maxLimit + delta;
+            auto const jrr = env.rpc("json", "ledger_data", to_string(jvParams))[jss::result];
+            BEAST_EXPECT(checkArraySize(
+                jrr[jss::state], (delta > 0 && !asAdmin) ? maxLimit : maxLimit + delta));
+        }
+    }
+
+    void
+    testCurrentLedgerBinary()
+    {
+        using namespace test::jtx;
+        Env env{*this, envconfig(noAdmin)};
+        Account const gw{"gateway"};
+        auto const usd = gw["USD"];
+        env.fund(XRP(100000), gw);
+
+        int const numAccounts = 10;
+
+        for (auto i = 0; i < numAccounts; i++)
+        {
+            Account const bob{std::string("bob") + std::to_string(i)};
+            env.fund(XRP(1000), bob);
+        }
+
+        // with no limit specified, we should get all of our fund entries
+        // plus three more related to the gateway setup
+        json::Value jvParams;
+        jvParams[jss::ledger_index] = "current";
+        jvParams[jss::binary] = true;
+        auto const jrr = env.rpc("json", "ledger_data", to_string(jvParams))[jss::result];
+        BEAST_EXPECT(
+            jrr[jss::ledger_current_index].isIntegral() &&
+            jrr[jss::ledger_current_index].asInt() > 0);
+        BEAST_EXPECT(!jrr.isMember(jss::marker));
+        BEAST_EXPECT(checkArraySize(jrr[jss::state], numAccounts + 4));
+    }
+
+    void
+    testBadInput()
+    {
+        using namespace test::jtx;
+        Env env{*this};
+        Account const gw{"gateway"};
+        auto const usd = gw["USD"];
+        Account const bob{"bob"};
+
+        env.fund(XRP(10000), gw, bob);
+        env.trust(usd(1000), bob);
+
+        {
+            // bad limit
+            json::Value jvParams;
+            jvParams[jss::limit] = "0";  // NOT an integer
+            auto const jrr = env.rpc("json", "ledger_data", to_string(jvParams))[jss::result];
+            BEAST_EXPECT(jrr[jss::status] == "error");
+            BEAST_EXPECT(jrr[jss::error] == "invalidParams");
+            BEAST_EXPECT(jrr[jss::error_code] == RpcInvalidParams);
+            BEAST_EXPECT(jrr[jss::error_message] == "Invalid field 'limit', not integer.");
+        }
+
+        {
+            // invalid marker
+            json::Value jvParams;
+            jvParams[jss::marker] = "NOT_A_MARKER";
+            auto const jrr = env.rpc("json", "ledger_data", to_string(jvParams))[jss::result];
+            BEAST_EXPECT(jrr[jss::status] == "error");
+            BEAST_EXPECT(jrr[jss::error] == "invalidParams");
+            BEAST_EXPECT(jrr[jss::error_code] == RpcInvalidParams);
+            BEAST_EXPECT(jrr[jss::error_message] == "Invalid field 'marker', not valid.");
+        }
+
+        {
+            // invalid marker - not a string
+            json::Value jvParams;
+            jvParams[jss::marker] = 1;
+            auto const jrr = env.rpc("json", "ledger_data", to_string(jvParams))[jss::result];
+            BEAST_EXPECT(jrr[jss::status] == "error");
+            BEAST_EXPECT(jrr[jss::error] == "invalidParams");
+            BEAST_EXPECT(jrr[jss::error_code] == RpcInvalidParams);
+            BEAST_EXPECT(jrr[jss::error_message] == "Invalid field 'marker', not valid.");
+        }
+
+        {
+            // ask for a bad ledger index
+            json::Value jvParams;
+            jvParams[jss::ledger_index] = 10u;
+            auto const jrr = env.rpc("json", "ledger_data", to_string(jvParams))[jss::result];
+            BEAST_EXPECT(jrr[jss::status] == "error");
+            BEAST_EXPECT(jrr[jss::error] == "lgrNotFound");
+            BEAST_EXPECT(jrr[jss::error_code] == RpcLgrNotFound);
+            BEAST_EXPECT(jrr[jss::error_message] == "ledgerNotFound");
+        }
+
+        {
+            // binary not a boolean
+            json::Value jvParams;
+            jvParams[jss::binary] = "true";
+            auto const jrr = env.rpc("json", "ledger_data", to_string(jvParams))[jss::result];
+            BEAST_EXPECT(jrr[jss::status] == "error");
+            BEAST_EXPECT(jrr[jss::error] == "invalidParams");
+            BEAST_EXPECT(jrr[jss::error_code] == RpcInvalidParams);
+            BEAST_EXPECT(jrr[jss::error_message] == "Invalid field 'binary', not boolean.");
+        }
+    }
+
+    void
+    testMarkerFollow()
+    {
+        using namespace test::jtx;
+        Env env{*this, envconfig(noAdmin)};
+        Account const gw{"gateway"};
+        auto const usd = gw["USD"];
+        env.fund(XRP(100000), gw);
+
+        int const numAccounts = 20;
+
+        for (auto i = 0; i < numAccounts; i++)
+        {
+            Account const bob{std::string("bob") + std::to_string(i)};
+            env.fund(XRP(1000), bob);
+        }
+
+        // with no limit specified, we should get all of our fund entries
+        // plus three more related to the gateway setup
+        json::Value jvParams;
+        jvParams[jss::ledger_index] = "current";
+        jvParams[jss::binary] = false;
+        auto jrr = env.rpc("json", "ledger_data", to_string(jvParams))[jss::result];
+        auto const totalCount = jrr[jss::state].size();
+
+        // now make request with a limit and loop until we get all
+        jvParams[jss::limit] = 5;
+        jrr = env.rpc("json", "ledger_data", to_string(jvParams))[jss::result];
+        BEAST_EXPECT(checkMarker(jrr));
+        auto runningTotal = jrr[jss::state].size();
+        while (jrr.isMember(jss::marker))
+        {
+            jvParams[jss::marker] = jrr[jss::marker];
+            jrr = env.rpc("json", "ledger_data", to_string(jvParams))[jss::result];
+            runningTotal += jrr[jss::state].size();
+        }
+        BEAST_EXPECT(runningTotal == totalCount);
+    }
+
+    void
+    testLedgerHeader()
+    {
+        using namespace test::jtx;
+        Env env{*this};
+        env.fund(XRP(100000), "alice");
+        env.close();
+
+        // Ledger header should be present in the first query
+        {
+            // Closed ledger with non binary form
+            json::Value jvParams;
+            jvParams[jss::ledger_index] = "closed";
+            auto jrr = env.rpc("json", "ledger_data", to_string(jvParams))[jss::result];
+            if (BEAST_EXPECT(jrr.isMember(jss::ledger)))
+            {
+                BEAST_EXPECT(
+                    jrr[jss::ledger][jss::ledger_hash] == to_string(env.closed()->header().hash));
+            }
+        }
+        {
+            // Closed ledger with binary form
+            json::Value jvParams;
+            jvParams[jss::ledger_index] = "closed";
+            jvParams[jss::binary] = true;
+            auto jrr = env.rpc("json", "ledger_data", to_string(jvParams))[jss::result];
+            if (BEAST_EXPECT(jrr.isMember(jss::ledger)))
+            {
+                auto data = strUnHex(jrr[jss::ledger][jss::ledger_data].asString());
+                if (BEAST_EXPECT(data); data.has_value())
+                {
+                    Serializer s(data->data(), data->size());
+                    std::uint32_t seq = 0;
+                    BEAST_EXPECT(s.getInteger<std::uint32_t>(seq, 0));
+                    BEAST_EXPECT(seq == 3);
+                }
+            }
+        }
+        {
+            // Current ledger with binary form
+            json::Value jvParams;
+            jvParams[jss::binary] = true;
+            auto jrr = env.rpc("json", "ledger_data", to_string(jvParams))[jss::result];
+            BEAST_EXPECT(jrr.isMember(jss::ledger));
+            BEAST_EXPECT(!jrr[jss::ledger].isMember(jss::ledger_data));
+        }
+    }
+
+    void
+    testLedgerType()
+    {
+        // Put a bunch of different LedgerEntryTypes into a ledger
+        using namespace test::jtx;
+
+        // Make sure fixInnerObjTemplate2 doesn't break amendments.
+        for (FeatureBitset const& features : {
+                 testableAmendments() - fixInnerObjTemplate2,
+                 testableAmendments() | fixInnerObjTemplate2,
+             })
+        {
+            using namespace std::chrono;
+            Env env{*this, envconfig(validator, ""), features};
+
+            Account const gw{"gateway"};
+            auto const usd = gw["USD"];
+            env.fund(XRP(100000), gw);
+
+            auto const makeRequest = [&env](json::StaticString const& type) {
+                json::Value jvParams;
+                jvParams[jss::ledger_index] = "current";
+                jvParams[jss::type] = type;
+                return env.rpc("json", "ledger_data", to_string(jvParams))[jss::result];
+            };
+
+            // Assert that state is an empty array.
+            for (auto const& type : {
+                     jss::amendments,
+                     jss::check,
+                     jss::directory,
+                     jss::offer,
+                     jss::signer_list,
+                     jss::state,
+                     jss::ticket,
+                     jss::escrow,
+                     jss::payment_channel,
+                     jss::deposit_preauth,
+                 })
+            {
+                auto const jrr = makeRequest(type);
+                BEAST_EXPECT(checkArraySize(jrr[jss::state], 0));
+            }
+
+            int const numAccounts = 10;
+
+            for (auto i = 0; i < numAccounts; i++)
+            {
+                Account const bob{std::string("bob") + std::to_string(i)};
+                env.fund(XRP(1000), bob);
+            }
+            env(offer(Account{"bob0"}, usd(100), XRP(100)));
+            env.trust(Account{"bob2"}["USD"](100), Account{"bob3"});
+
+            auto majorities = getMajorityAmendments(*env.closed());
+            for (int i = 0; i <= 256; ++i)
+            {
+                env.close();
+                majorities = getMajorityAmendments(*env.closed());
+                if (!majorities.empty())
+                    break;
+            }
+
+            env(signers(Account{"bob0"}, 1, {{Account{"bob1"}, 1}, {Account{"bob2"}, 1}}));
+            env(ticket::create(env.master, 1));
+
+            {
+                json::Value jv;
+                jv[jss::TransactionType] = jss::EscrowCreate;
+                jv[jss::Account] = Account{"bob5"}.human();
+                jv[jss::Destination] = Account{"bob6"}.human();
+                jv[jss::Amount] = XRP(50).value().getJson(JsonOptions::Values::None);
+                jv[sfFinishAfter.fieldName] =
+                    NetClock::time_point{env.now() + 10s}.time_since_epoch().count();
+                env(jv);
+            }
+
+            {
+                json::Value jv;
+                jv[jss::TransactionType] = jss::PaymentChannelCreate;
+                jv[jss::Account] = Account{"bob6"}.human();
+                jv[jss::Destination] = Account{"bob7"}.human();
+                jv[jss::Amount] = XRP(100).value().getJson(JsonOptions::Values::None);
+                jv[jss::SettleDelay] = NetClock::duration{10s}.count();
+                jv[sfPublicKey.fieldName] = strHex(Account{"bob6"}.pk().slice());
+                jv[sfCancelAfter.fieldName] =
+                    NetClock::time_point{env.now() + 300s}.time_since_epoch().count();
+                env(jv);
+            }
+
+            env(check::create("bob6", "bob7", XRP(100)));
+
+            // bob9 DepositPreauths bob4 and bob8.
+            env(deposit::auth(Account{"bob9"}, Account{"bob4"}));
+            env(deposit::auth(Account{"bob9"}, Account{"bob8"}));
+            env.close();
+
+            // Now fetch each type
+
+            {  // jvParams[jss::type] = "account";
+                auto const jrr = makeRequest(jss::account);
+                BEAST_EXPECT(checkArraySize(jrr[jss::state], 12));
+                for (auto const& j : jrr[jss::state])
+                    BEAST_EXPECT(j["LedgerEntryType"] == jss::AccountRoot);
+            }
+
+            {  // jvParams[jss::type] = "amendments";
+                auto const jrr = makeRequest(jss::amendments);
+                BEAST_EXPECT(checkArraySize(jrr[jss::state], 1));
+                for (auto const& j : jrr[jss::state])
+                    BEAST_EXPECT(j["LedgerEntryType"] == jss::Amendments);
+            }
+
+            {  // jvParams[jss::type] = "check";
+                auto const jrr = makeRequest(jss::check);
+                BEAST_EXPECT(checkArraySize(jrr[jss::state], 1));
+                for (auto const& j : jrr[jss::state])
+                    BEAST_EXPECT(j["LedgerEntryType"] == jss::Check);
+            }
+
+            {  // jvParams[jss::type] = "directory";
+                auto const jrr = makeRequest(jss::directory);
+                BEAST_EXPECT(checkArraySize(jrr[jss::state], 9));
+                for (auto const& j : jrr[jss::state])
+                    BEAST_EXPECT(j["LedgerEntryType"] == jss::DirectoryNode);
+            }
+
+            {  // jvParams[jss::type] = "fee";
+                auto const jrr = makeRequest(jss::fee);
+                BEAST_EXPECT(checkArraySize(jrr[jss::state], 1));
+                for (auto const& j : jrr[jss::state])
+                    BEAST_EXPECT(j["LedgerEntryType"] == jss::FeeSettings);
+            }
+
+            {  // jvParams[jss::type] = "hashes";
+                auto const jrr = makeRequest(jss::hashes);
+                BEAST_EXPECT(checkArraySize(jrr[jss::state], 2));
+                for (auto const& j : jrr[jss::state])
+                    BEAST_EXPECT(j["LedgerEntryType"] == jss::LedgerHashes);
+            }
+
+            {  // jvParams[jss::type] = "offer";
+                auto const jrr = makeRequest(jss::offer);
+                BEAST_EXPECT(checkArraySize(jrr[jss::state], 1));
+                for (auto const& j : jrr[jss::state])
+                    BEAST_EXPECT(j["LedgerEntryType"] == jss::Offer);
+            }
+
+            {  // jvParams[jss::type] = "signer_list";
+                auto const jrr = makeRequest(jss::signer_list);
+                BEAST_EXPECT(checkArraySize(jrr[jss::state], 1));
+                for (auto const& j : jrr[jss::state])
+                    BEAST_EXPECT(j["LedgerEntryType"] == jss::SignerList);
+            }
+
+            {  // jvParams[jss::type] = "state";
+                auto const jrr = makeRequest(jss::state);
+                BEAST_EXPECT(checkArraySize(jrr[jss::state], 1));
+                for (auto const& j : jrr[jss::state])
+                    BEAST_EXPECT(j["LedgerEntryType"] == jss::RippleState);
+            }
+
+            {  // jvParams[jss::type] = "ticket";
+                auto const jrr = makeRequest(jss::ticket);
+                BEAST_EXPECT(checkArraySize(jrr[jss::state], 1));
+                for (auto const& j : jrr[jss::state])
+                    BEAST_EXPECT(j["LedgerEntryType"] == jss::Ticket);
+            }
+
+            {  // jvParams[jss::type] = "escrow";
+                auto const jrr = makeRequest(jss::escrow);
+                BEAST_EXPECT(checkArraySize(jrr[jss::state], 1));
+                for (auto const& j : jrr[jss::state])
+                    BEAST_EXPECT(j["LedgerEntryType"] == jss::Escrow);
+            }
+
+            {  // jvParams[jss::type] = "payment_channel";
+                auto const jrr = makeRequest(jss::payment_channel);
+                BEAST_EXPECT(checkArraySize(jrr[jss::state], 1));
+                for (auto const& j : jrr[jss::state])
+                    BEAST_EXPECT(j["LedgerEntryType"] == jss::PayChannel);
+            }
+
+            {  // jvParams[jss::type] = "deposit_preauth";
+                auto const jrr = makeRequest(jss::deposit_preauth);
+                BEAST_EXPECT(checkArraySize(jrr[jss::state], 2));
+                for (auto const& j : jrr[jss::state])
+                    BEAST_EXPECT(j["LedgerEntryType"] == jss::DepositPreauth);
+            }
+
+            {  // jvParams[jss::type] = "misspelling";
+                json::Value jvParams;
+                jvParams[jss::ledger_index] = "current";
+                jvParams[jss::type] = "misspelling";
+                auto const jrr = env.rpc("json", "ledger_data", to_string(jvParams))[jss::result];
+                BEAST_EXPECT(jrr["error"] == "invalidParams");
+                BEAST_EXPECT(jrr["error_code"] == RpcInvalidParams);
+                BEAST_EXPECT(jrr["error_message"] == "Invalid field 'type'.");
+            }
+        }
+    }
+
+    void
+    run() override
+    {
+        testCurrentLedgerToLimits(true);
+        testCurrentLedgerToLimits(false);
+        testCurrentLedgerBinary();
+        testBadInput();
+        testMarkerFollow();
+        testLedgerHeader();
+        testLedgerType();
+    }
+};
+
+BEAST_DEFINE_TESTSUITE_PRIO(LedgerData, rpc, xrpl, 1);
+
+}  // namespace xrpl

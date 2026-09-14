@@ -1,0 +1,341 @@
+#include <xrpld/app/misc/NegativeUNLVote.h>
+
+#include <xrpld/app/consensus/RCLValidations.h>
+
+#include <xrpl/basics/Log.h>
+#include <xrpl/basics/UnorderedContainers.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/ledger/Ledger.h>
+#include <xrpl/ledger/entries/LedgerHashesEntry.h>
+#include <xrpl/protocol/Protocol.h>
+#include <xrpl/protocol/PublicKey.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/Serializer.h>
+#include <xrpl/protocol/TxFormats.h>
+#include <xrpl/protocol/UintTypes.h>
+#include <xrpl/shamap/SHAMapItem.h>
+#include <xrpl/shamap/SHAMapTreeNode.h>
+
+#include <cmath>
+#include <cstddef>
+#include <cstdint>
+#include <memory>
+#include <mutex>
+#include <optional>
+#include <vector>
+
+namespace xrpl {
+
+NegativeUNLVote::NegativeUNLVote(NodeID const& myId, beast::Journal j) : myId_(myId), j_(j)
+{
+}
+
+void
+NegativeUNLVote::doVoting(
+    std::shared_ptr<Ledger const> const& prevLedger,
+    HashSet<PublicKey> const& unlKeys,
+    RCLValidations& validations,
+    std::shared_ptr<SHAMap> const& initialSet)
+{
+    // Voting steps:
+    // -- build a reliability score table of validators
+    // -- process the table and find all candidates to disable or to re-enable
+    // -- pick one to disable and one to re-enable if any
+    // -- if found candidates, add ttUNL_MODIFY Tx
+
+    // Build NodeID set for internal use.
+    // Build NodeID to PublicKey map for lookup before creating ttUNL_MODIFY Tx.
+    HashSet<NodeID> unlNodeIDs;
+    HashMap<NodeID, PublicKey> nidToKeyMap;
+    for (auto const& k : unlKeys)
+    {
+        auto nid = calcNodeID(k);
+        nidToKeyMap.emplace(nid, k);
+        unlNodeIDs.emplace(nid);
+    }
+
+    // Build a reliability score table of validators
+    if (std::optional<HashMap<NodeID, std::uint32_t>> scoreTable =
+            buildScoreTable(prevLedger, unlNodeIDs, validations))
+    {
+        // build next negUnl
+        auto negUnlKeys = prevLedger->negativeUNL();
+        auto negUnlToDisable = prevLedger->validatorToDisable();
+        auto negUnlToReEnable = prevLedger->validatorToReEnable();
+        if (negUnlToDisable)
+            negUnlKeys.insert(*negUnlToDisable);
+        if (negUnlToReEnable)
+            negUnlKeys.erase(*negUnlToReEnable);
+
+        HashSet<NodeID> negUnlNodeIDs;
+        for (auto const& k : negUnlKeys)
+        {
+            auto nid = calcNodeID(k);
+            negUnlNodeIDs.emplace(nid);
+            if (!nidToKeyMap.contains(nid))
+            {
+                nidToKeyMap.emplace(nid, k);
+            }
+        }
+
+        auto const seq = prevLedger->header().seq + 1;
+        purgeNewValidators(seq);
+
+        // Process the table and find all candidates to disable or to re-enable
+        auto const candidates = findAllCandidates(unlNodeIDs, negUnlNodeIDs, *scoreTable);
+
+        // Pick one to disable and one to re-enable if any, add ttUNL_MODIFY Tx
+        if (!candidates.toDisableCandidates.empty())
+        {
+            auto const n = choose(prevLedger->header().hash, candidates.toDisableCandidates);
+            XRPL_ASSERT(
+                nidToKeyMap.contains(n), "xrpl::NegativeUNLVote::doVoting : found node to disable");
+            addTx(seq, nidToKeyMap.at(n), NegativeUNLModify::ToDisable, initialSet);
+        }
+
+        if (!candidates.toReEnableCandidates.empty())
+        {
+            auto const n = choose(prevLedger->header().hash, candidates.toReEnableCandidates);
+            XRPL_ASSERT(
+                nidToKeyMap.contains(n), "xrpl::NegativeUNLVote::doVoting : found node to enable");
+            addTx(seq, nidToKeyMap.at(n), NegativeUNLModify::ToReEnable, initialSet);
+        }
+    }
+}
+
+void
+NegativeUNLVote::addTx(
+    LedgerIndex seq,
+    PublicKey const& vp,
+    NegativeUNLModify modify,
+    std::shared_ptr<SHAMap> const& initialSet)
+{
+    STTx const negUnlTx(ttUNL_MODIFY, [&](auto& obj) {
+        obj.setFieldU8(sfUNLModifyDisabling, modify == NegativeUNLModify::ToDisable ? 1 : 0);
+        obj.setFieldU32(sfLedgerSequence, seq);
+        obj.setFieldVL(sfUNLModifyValidator, vp.slice());
+    });
+
+    Serializer s;
+    negUnlTx.add(s);
+    if (!initialSet->addGiveItem(
+            SHAMapNodeType::TnTransactionNm,
+            makeShamapitem(negUnlTx.getTransactionID(), s.slice())))
+    {
+        JLOG(j_.warn()) << "N-UNL: ledger seq=" << seq << ", add ttUNL_MODIFY tx failed";
+    }
+    else
+    {
+        JLOG(j_.debug()) << "N-UNL: ledger seq=" << seq
+                         << ", add a ttUNL_MODIFY Tx with txID: " << negUnlTx.getTransactionID()
+                         << ", the validator to "
+                         << (modify == NegativeUNLModify::ToDisable ? "disable: " : "re-enable: ")
+                         << vp;
+    }
+}
+
+NodeID
+NegativeUNLVote::choose(UInt256 const& randomPadData, std::vector<NodeID> const& candidates)
+{
+    XRPL_ASSERT(!candidates.empty(), "xrpl::NegativeUNLVote::choose : non-empty input");
+    static_assert(NodeID::kBytes <= UInt256::kBytes);
+    NodeID const randomPad = NodeID::fromVoid(randomPadData.data());
+    NodeID txNodeID = candidates[0];
+    for (int j = 1; j < candidates.size(); ++j)
+    {
+        if ((candidates[j] ^ randomPad) < (txNodeID ^ randomPad))
+        {
+            txNodeID = candidates[j];
+        }
+    }
+    return txNodeID;
+}
+
+std::optional<HashMap<NodeID, std::uint32_t>>
+NegativeUNLVote::buildScoreTable(
+    std::shared_ptr<Ledger const> const& prevLedger,
+    HashSet<NodeID> const& unl,
+    RCLValidations& validations)
+{
+    // Find agreed validation messages received for
+    // the last FLAG_LEDGER_INTERVAL (i.e. 256) ledgers,
+    // for every validator, and fill the score table.
+
+    // Ask the validation container to keep enough validation message history
+    // for next time.
+    auto const seq = prevLedger->header().seq + 1;
+    validations.setSeqToKeep(seq - 1, seq + kFlagLedgerInterval);
+
+    // Find FLAG_LEDGER_INTERVAL (i.e. 256) previous ledger hashes
+    LedgerHashesEntryR const hashIndex(*prevLedger, j_);
+    if (!hashIndex || !hashIndex->isFieldPresent(sfHashes))
+    {
+        JLOG(j_.debug()) << "N-UNL: ledger " << seq << " no history.";
+        return {};
+    }
+    auto const ledgerAncestors = hashIndex->getFieldV256(sfHashes).value();
+    auto const numAncestors = ledgerAncestors.size();
+    if (numAncestors < kFlagLedgerInterval)
+    {
+        JLOG(j_.debug()) << "N-UNL: ledger " << seq << " not enough history. Can trace back only "
+                         << numAncestors << " ledgers.";
+        return {};
+    }
+
+    // have enough ledger ancestors, build the score table
+    HashMap<NodeID, std::uint32_t> scoreTable;
+    for (auto const& k : unl)
+    {
+        scoreTable[k] = 0;
+    }
+
+    // Query the validation container for every ledger hash and fill
+    // the score table.
+    for (int i = 0; i < kFlagLedgerInterval; ++i)
+    {
+        for (auto const& v :
+             validations.getTrustedForLedger(ledgerAncestors[numAncestors - 1 - i], seq - 2 - i))
+        {
+            if (scoreTable.contains(v->getNodeID()))
+                ++scoreTable[v->getNodeID()];
+        }
+    }
+
+    // Return false if the validation message history or local node's
+    // participation in the history is not good.
+    auto const myValidationCount = [&] -> std::uint32_t {
+        if (auto const it = scoreTable.find(myId_); it != scoreTable.end())
+            return it->second;
+        return 0;
+    }();
+    if (myValidationCount < kNegativeUnlMinLocalValsToVote)
+    {
+        JLOG(j_.debug()) << "N-UNL: ledger " << seq << ". Local node only issued "
+                         << myValidationCount << " validations in last " << kFlagLedgerInterval
+                         << " ledgers."
+                         << " The reliability measurement could be wrong.";
+        return {};
+    }
+    if (myValidationCount > kNegativeUnlMinLocalValsToVote &&
+        myValidationCount <= kFlagLedgerInterval)
+    {
+        return scoreTable;
+    }
+
+    // cannot happen because validations.getTrustedForLedger does not
+    // return multiple validations of the same ledger from a validator.
+    JLOG(j_.error()) << "N-UNL: ledger " << seq << ". Local node issued " << myValidationCount
+                     << " validations in last " << kFlagLedgerInterval << " ledgers. Too many!";
+    return {};
+}
+
+NegativeUNLVote::Candidates
+NegativeUNLVote::findAllCandidates(
+    HashSet<NodeID> const& unl,
+    HashSet<NodeID> const& negUnl,
+    HashMap<NodeID, std::uint32_t> const& scoreTable)
+{
+    // Compute if need to find more validators to disable
+    auto const canAdd = [&] -> bool {
+        auto const maxNegativeListed =
+            static_cast<std::size_t>(std::ceil(unl.size() * kNegativeUnlMaxListed));
+        std::size_t negativeListed = 0;
+        for (auto const& n : unl)
+        {
+            if (negUnl.contains(n))
+                ++negativeListed;
+        }
+        bool const result = negativeListed < maxNegativeListed;
+        JLOG(j_.trace()) << "N-UNL: nodeId " << myId_ << " lowWaterMark "
+                         << kNegativeUnlLowWaterMark << " highWaterMark "
+                         << kNegativeUnlHighWaterMark << " canAdd " << result << " negativeListed "
+                         << negativeListed << " maxNegativeListed " << maxNegativeListed;
+        return result;
+    }();
+
+    Candidates candidates;
+    for (auto const& [nodeId, score] : scoreTable)
+    {
+        JLOG(j_.trace()) << "N-UNL: node " << nodeId << " score " << score;
+
+        // Find toDisable Candidates: check if
+        //  (1) canAdd,
+        //  (2) has less than negativeUNLLowWaterMark validations,
+        //  (3) is not in negUnl, and
+        //  (4) is not a new validator.
+        if (canAdd && score < kNegativeUnlLowWaterMark && !negUnl.contains(nodeId) &&
+            !newValidators_.contains(nodeId))
+        {
+            JLOG(j_.trace()) << "N-UNL: toDisable candidate " << nodeId;
+            candidates.toDisableCandidates.push_back(nodeId);
+        }
+
+        // Find toReEnable Candidates: check if
+        //  (1) has more than negativeUNLHighWaterMark validations,
+        //  (2) is in negUnl
+        if (score > kNegativeUnlHighWaterMark && negUnl.contains(nodeId))
+        {
+            JLOG(j_.trace()) << "N-UNL: toReEnable candidate " << nodeId;
+            candidates.toReEnableCandidates.push_back(nodeId);
+        }
+    }
+
+    // If a negative UNL validator is removed from nodes' UNLs, it is no longer
+    // a validator. It should be removed from the negative UNL too.
+    // Note that even if it is still offline and in minority nodes' UNLs, it
+    // will not be re-added to the negative UNL. Because the UNLModify Tx will
+    // not be included in the agreed TxSet of a ledger.
+    //
+    // Find this kind of toReEnable Candidate if did not find any toReEnable
+    // candidate yet: check if
+    //  (1) is in negUnl
+    //  (2) is not in unl.
+    if (candidates.toReEnableCandidates.empty())
+    {
+        for (auto const& n : negUnl)
+        {
+            if (!unl.contains(n))
+            {
+                candidates.toReEnableCandidates.push_back(n);
+            }
+        }
+    }
+    return candidates;
+}
+
+void
+NegativeUNLVote::newValidators(LedgerIndex seq, HashSet<NodeID> const& nowTrusted)
+{
+    std::scoped_lock const lock(mutex_);
+    for (auto const& n : nowTrusted)
+    {
+        if (!newValidators_.contains(n))
+        {
+            JLOG(j_.trace()) << "N-UNL: add a new validator " << n << " at ledger seq=" << seq;
+            newValidators_[n] = seq;
+        }
+    }
+}
+
+void
+NegativeUNLVote::purgeNewValidators(LedgerIndex seq)
+{
+    std::scoped_lock const lock(mutex_);
+    auto i = newValidators_.begin();
+    while (i != newValidators_.end())
+    {
+        if (seq - i->second > kNewValidatorDisableSkip)
+        {
+            i = newValidators_.erase(i);
+        }
+        else
+        {
+            ++i;
+        }
+    }
+}
+
+}  // namespace xrpl

@@ -1,0 +1,164 @@
+#include <test/jtx/Account.h>
+#include <test/jtx/Env.h>
+#include <test/jtx/amount.h>
+#include <test/jtx/envconfig.h>
+#include <test/jtx/offer.h>
+#include <test/jtx/pay.h>
+
+#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/protocol/ErrorCodes.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/jss.h>
+
+#include <boost/container/static_vector.hpp>
+
+#include <cstddef>
+#include <string>
+#include <unordered_map>
+
+namespace xrpl {
+
+class TransactionHistory_test : public beast::unit_test::Suite
+{
+    void
+    testBadInput()
+    {
+        testcase("Invalid request params");
+        using namespace test::jtx;
+        Env env{*this, envconfig(noAdmin)};
+
+        {
+            // no params
+            auto const result = env.client().invoke("tx_history", {})[jss::result];
+            BEAST_EXPECT(result[jss::status] == "error");
+            BEAST_EXPECT(result[jss::error] == "invalidParams");
+            BEAST_EXPECT(result[jss::error_code] == RpcInvalidParams);
+            BEAST_EXPECT(result[jss::error_message] == "Invalid parameters.");
+        }
+
+        {
+            // test at 1 greater than the allowed non-admin limit
+            json::Value params{json::ValueType::Object};
+            params[jss::start] = 10001;  // limited to <= 10000 for non admin
+            auto const result = env.client().invoke("tx_history", params)[jss::result];
+            BEAST_EXPECT(result[jss::status] == "error");
+            BEAST_EXPECT(result[jss::error] == "noPermission");
+            BEAST_EXPECT(result[jss::error_code] == RpcNoPermission);
+            BEAST_EXPECT(
+                result[jss::error_message] == "You don't have permission for this command.");
+        }
+    }
+
+    void
+    testCommandRetired()
+    {
+        testcase("Command retired from API v2");
+        using namespace test::jtx;
+        Env env{*this, envconfig(noAdmin)};
+
+        json::Value params{json::ValueType::Object};
+        params[jss::api_version] = 2;
+        auto const result = env.client().invoke("tx_history", params)[jss::result];
+        BEAST_EXPECT(result[jss::status] == "error");
+        BEAST_EXPECT(result[jss::error] == "unknownCmd");
+        BEAST_EXPECT(result[jss::error_code] == RpcUnknownCommand);
+        BEAST_EXPECT(result[jss::error_message] == "Unknown method.");
+    }
+
+    void
+    testRequest()
+    {
+        testcase("Basic request");
+        using namespace test::jtx;
+        Env env{*this};
+
+        // create enough transactions to provide some
+        // history...
+        size_t const numAccounts = 20;
+        boost::container::static_vector<Account, numAccounts> accounts;
+        for (size_t i = 0; i < numAccounts; ++i)
+        {
+            accounts.emplace_back("A" + std::to_string(i));
+            auto const& acct = accounts.back();
+            env.fund(XRP(10000), acct);
+            env.close();
+            if (i > 0)
+            {
+                auto const& prev = accounts[i - 1];
+                env.trust(acct["USD"](1000), prev);
+                env(pay(acct, prev, acct["USD"](5)));
+            }
+            env(offer(acct, XRP(100), acct["USD"](1)));
+            env.close();
+
+            // verify the latest transaction in env (offer)
+            // is available in tx_history.
+            json::Value params{json::ValueType::Object};
+            params[jss::start] = 0;
+            auto result = env.client().invoke("tx_history", params)[jss::result];
+            if (!BEAST_EXPECT(result[jss::txs].isArray() && result[jss::txs].size() > 0))
+                return;
+
+            // search for a tx in history matching the last offer
+            bool const txFound = [&] {
+                auto const toFind = env.tx()->getJson(JsonOptions::Values::None);
+                for (auto tx : result[jss::txs])
+                {
+                    tx.removeMember(jss::inLedger);
+                    tx.removeMember(jss::ledger_index);
+                    if (toFind == tx)
+                        return true;
+                }
+                return false;
+            }();
+            BEAST_EXPECT(txFound);
+        }
+
+        unsigned int start = 0;
+        unsigned int total = 0;
+        // also summarize the transaction types in this map
+        std::unordered_map<std::string, unsigned> typeCounts;
+        while (start < 120)
+        {
+            json::Value params{json::ValueType::Object};
+            params[jss::start] = start;
+            auto result = env.client().invoke("tx_history", params)[jss::result];
+            if (!BEAST_EXPECT(result[jss::txs].isArray() && result[jss::txs].size() > 0))
+                break;
+            total += result[jss::txs].size();
+            start += 20;
+            for (auto const& t : result[jss::txs])
+            {
+                typeCounts[t[sfTransactionType.fieldName].asString()]++;
+            }
+        }
+        BEAST_EXPECT(total == 117);
+        BEAST_EXPECT(typeCounts[jss::AccountSet.cStr()] == 20);
+        BEAST_EXPECT(typeCounts[jss::TrustSet.cStr()] == 19);
+        BEAST_EXPECT(typeCounts[jss::Payment.cStr()] == 58);
+        BEAST_EXPECT(typeCounts[jss::OfferCreate.cStr()] == 20);
+
+        // also, try a request with max non-admin start value
+        {
+            json::Value params{json::ValueType::Object};
+            params[jss::start] = 10000;  // limited to <= 10000 for non admin
+            auto const result = env.client().invoke("tx_history", params)[jss::result];
+            BEAST_EXPECT(result[jss::status] == "success");
+            BEAST_EXPECT(result[jss::index] == 10000);
+        }
+    }
+
+public:
+    void
+    run() override
+    {
+        testBadInput();
+        testRequest();
+        testCommandRetired();
+    }
+};
+
+BEAST_DEFINE_TESTSUITE(TransactionHistory, rpc, xrpl);
+
+}  // namespace xrpl

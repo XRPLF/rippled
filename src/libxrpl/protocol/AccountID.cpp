@@ -1,0 +1,184 @@
+#include <xrpl/protocol/AccountID.h>
+
+#include <xrpl/basics/hardened_hash.h>
+#include <xrpl/basics/spinlock.h>
+#include <xrpl/beast/utility/Zero.h>
+#include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/protocol/PublicKey.h>
+#include <xrpl/protocol/digest.h>
+#include <xrpl/protocol/tokens.h>
+
+#include <atomic>
+#include <cstdint>
+#include <cstring>
+#include <memory>
+#include <mutex>
+#include <optional>
+#include <string>
+#include <vector>
+
+namespace xrpl {
+
+namespace detail {
+
+/**
+ * Caches the base58 representations of AccountIDs
+ */
+class AccountIdCache
+{
+private:
+    struct CachedAccountID
+    {
+        AccountID id;
+        char encoding[40] = {0};
+    };
+
+    // The actual cache
+    std::vector<CachedAccountID> cache_;
+
+    // We use a hash function designed to resist algorithmic complexity attacks
+    HardenedHash<> hasher_;
+
+    // 64 spinlocks, packed into a single 64-bit value
+    std::atomic<std::uint64_t> locks_ = 0;
+
+public:
+    AccountIdCache(std::size_t count) : cache_(count)
+    {
+        // This is non-binding, but we try to avoid wasting memory that
+        // is caused by overallocation.
+        cache_.shrink_to_fit();
+    }
+
+    std::string
+    toBase58(AccountID const& id)
+    {
+        auto const index = hasher_(id) % cache_.size();
+
+        PackedSpinlock sl(locks_, index % 64);
+
+        {
+            std::scoped_lock const lock(sl);
+
+            // The check against the first character of the encoding ensures
+            // that we don't mishandle the case of the all-zero account:
+            if (cache_[index].encoding[0] != 0 && cache_[index].id == id)
+                return cache_[index].encoding;
+        }
+
+        auto ret = encodeBase58Token(TokenType::AccountID, id.data(), id.size());
+
+        XRPL_ASSERT(ret.size() <= 38, "xrpl::detail::AccountIdCache : maximum result size");
+
+        {
+            std::scoped_lock const lock(sl);
+            cache_[index].id = id;
+            std::strcpy(cache_[index].encoding, ret.c_str());
+        }
+
+        return ret;
+    }
+};
+
+}  // namespace detail
+
+static std::unique_ptr<detail::AccountIdCache> gAccountIdCache;
+
+void
+initAccountIdCache(std::size_t count)
+{
+    if (!gAccountIdCache && count != 0)
+        gAccountIdCache = std::make_unique<detail::AccountIdCache>(count);
+}
+
+std::string
+toBase58(AccountID const& v)
+{
+    if (gAccountIdCache)
+        return gAccountIdCache->toBase58(v);
+
+    return encodeBase58Token(TokenType::AccountID, v.data(), v.size());
+}
+
+template <>
+std::optional<AccountID>
+parseBase58(std::string const& s)
+{
+    auto const result = decodeBase58Token(s, TokenType::AccountID);
+    if (result.size() != AccountID::kBytes)
+        return std::nullopt;
+    return AccountID::fromRaw(result);
+}
+
+//------------------------------------------------------------------------------
+/*
+    Calculation of the Account ID
+
+    The AccountID is a 160-bit identifier that uniquely
+    distinguishes an account. The account may or may not
+    exist in the ledger. Even for accounts that are not in
+    the ledger, cryptographic operations may be performed
+    which affect the ledger. For example, designating an
+    account not in the ledger as a regular key for an
+    account that is in the ledger.
+
+    Why did we use half of SHA512 for most things but then
+    SHA256 followed by RIPEMD160 for account IDs? Why didn't
+    we do SHA512 half then RIPEMD160? Or even SHA512 then RIPEMD160?
+    For that matter why RIPEMD160 at all why not just SHA512 and keep
+    only 160 bits?
+
+    Answer (David Schwartz):
+
+        The short answer is that we kept Bitcoin's behavior.
+        The longer answer was that:
+            1) Using a single hash could leave ripple
+               vulnerable to length extension attacks.
+            2) Only RIPEMD160 is generally considered safe at 160 bits.
+
+        Any of those schemes would have been acceptable. However,
+        the one chosen avoids any need to defend the scheme chosen.
+        (Against any criticism other than unnecessary complexity.)
+
+        "The historical reason was that in the very early days,
+        we wanted to give people as few ways to argue that we were
+        less secure than Bitcoin. So where there was no good reason
+        to change something, it was not changed."
+*/
+AccountID
+calcAccountID(PublicKey const& pk)
+{
+    static_assert(AccountID::kBytes == sizeof(RipeshaHasher::result_type));
+
+    RipeshaHasher rsh;
+    rsh(pk.data(), pk.size());
+    return AccountID::fromRaw(static_cast<RipeshaHasher::result_type>(rsh));
+}
+
+AccountID const&
+xrpAccount()
+{
+    static AccountID const kAccount(beast::kZero);
+    return kAccount;
+}
+
+AccountID const&
+noAccount()
+{
+    static AccountID const kAccount(1);
+    return kAccount;
+}
+
+bool
+toIssuer(AccountID& issuer, std::string const& s)
+{
+    if (issuer.parseHex(s))
+        return true;
+    auto const account = parseBase58<AccountID>(s);
+    if (!account)
+        return false;
+    issuer = *account;
+    return true;
+}
+
+}  // namespace xrpl

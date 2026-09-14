@@ -1,0 +1,263 @@
+#include <xrpld/app/ledger/BuildLedger.h>
+
+#include <xrpld/app/ledger/LedgerReplay.h>
+#include <xrpld/app/ledger/OpenLedger.h>
+#include <xrpld/app/main/Application.h>
+
+#include <xrpl/basics/Log.h>
+#include <xrpl/basics/chrono.h>
+#include <xrpl/basics/contract.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/ledger/ApplyView.h>
+#include <xrpl/ledger/CanonicalTXSet.h>
+#include <xrpl/ledger/Ledger.h>
+#include <xrpl/ledger/OpenView.h>
+#include <xrpl/ledger/entries/FeeSettingsEntry.h>
+#include <xrpl/nodestore/NodeObject.h>
+#include <xrpl/protocol/Indexes.h>  // IWYU pragma: keep
+#include <xrpl/protocol/LedgerHeader.h>
+#include <xrpl/protocol/Protocol.h>
+#include <xrpl/protocol/SystemParameters.h>  // IWYU pragma: keep
+#include <xrpl/protocol/TxFlags.h>
+#include <xrpl/tx/apply.h>
+
+#include <cstddef>
+#include <exception>
+#include <memory>
+#include <set>
+
+namespace xrpl {
+
+/* Generic buildLedgerImpl that dispatches to ApplyTxs invocable with signature
+    void(OpenView&, std::shared_ptr<Ledger> const&)
+   It is responsible for adding transactions to the open view to generate the
+   new ledger. It is generic since the mechanics differ for consensus
+   generated ledgers versus replayed ledgers.
+*/
+template <class ApplyTxs>
+std::shared_ptr<Ledger>
+buildLedgerImpl(
+    std::shared_ptr<Ledger const> const& parent,
+    NetClock::time_point closeTime,
+    bool const closeTimeCorrect,
+    NetClock::duration closeResolution,
+    Application& app,
+    beast::Journal j,
+    ApplyTxs&& applyTxs)
+{
+    auto built = std::make_shared<Ledger>(*parent, closeTime);
+
+    if (built->isFlagLedger())
+    {
+        built->updateNegativeUNL();
+    }
+
+    // Set up to write SHAMap changes to our database,
+    //   perform updates, extract changes
+
+    {
+        OpenView accum(&*built);
+        XRPL_ASSERT(!accum.open(), "xrpl::buildLedgerImpl : valid ledger state");
+        applyTxs(accum, built);
+        accum.apply(*built);
+    }
+
+    built->updateSkipList();
+    {
+        // Write the final version of all modified SHAMap
+        // nodes to the node store to preserve the new LCL
+
+        int const asf = built->stateMap().flushDirty(NodeObjectType::AccountNode);
+        int const tmf = built->txMap().flushDirty(NodeObjectType::TransactionNode);
+        JLOG(j.debug()) << "Flushed " << asf << " accounts and " << tmf << " transaction nodes";
+    }
+    built->unshare();
+
+    // Accept ledger
+    XRPL_ASSERT(
+        built->header().seq < kXrpLedgerEarliestFees || FeeSettingsEntryR(*built),
+        "xrpl::buildLedgerImpl : valid ledger fees");
+    // The invariant: a ledger this function returns has both maps immutable, which is what
+    // setAccepted() reports on (see Ledger::setImmutable()). Nothing downstream re-checks it.
+    //
+    // logicError() rather than UNREACHABLE(): the consensus caller acts on this ledger straight
+    // away, so the stop has to name this site in every build rather than only where assertions
+    // are on. See RCLConsensus::Adaptor::buildLCL().
+    if (!built->setAccepted(closeTime, closeResolution, closeTimeCorrect))
+    {
+        // LCOV_EXCL_START
+        logicError("buildLedgerImpl: accepted ledger map is invalid");
+        // LCOV_EXCL_STOP
+    }
+
+    return built;
+}
+
+/**
+ * Apply a set of consensus transactions to a ledger.
+ *
+ * @param app Handle to application
+ * @param txns the set of transactions to apply,
+ * @param failed set of transactions that failed to apply
+ * @param view ledger to apply to
+ * @param j Journal for logging
+ * @return number of transactions applied; transactions to retry left in txns
+ */
+
+std::size_t
+applyTransactions(
+    Application& app,
+    std::shared_ptr<Ledger const> const& built,
+    CanonicalTXSet& txns,
+    std::set<TxID>& failed,
+    OpenView& view,
+    beast::Journal j)
+{
+    bool certainRetry = true;
+    std::size_t count = 0;
+
+    // Attempt to apply all of the retriable transactions
+    for (int pass = 0; pass < LEDGER_TOTAL_PASSES; ++pass)
+    {
+        JLOG(j.debug()) << (certainRetry ? "Pass: " : "Final pass: ") << pass << " begins ("
+                        << txns.size() << " transactions)";
+        int changes = 0;
+
+        auto it = txns.begin();
+
+        while (it != txns.end())
+        {
+            auto const txid = it->first.getTXID();
+
+            try
+            {
+                if (pass == 0 && built->txExists(txid))
+                {
+                    it = txns.erase(it);
+                    continue;
+                }
+
+                switch (applyTransaction(app, view, *it->second, certainRetry, TapNone, j))
+                {
+                    case ApplyTransactionResult::Success:
+                        it = txns.erase(it);
+                        ++changes;
+                        break;
+
+                    case ApplyTransactionResult::Fail:
+                        failed.insert(txid);
+                        it = txns.erase(it);
+                        break;
+
+                    case ApplyTransactionResult::Retry:
+                        ++it;
+                }
+            }
+            catch (std::exception const& ex)
+            {
+                JLOG(j.warn()) << "Transaction " << txid << " throws: " << ex.what();
+                failed.insert(txid);
+                it = txns.erase(it);
+            }
+        }
+
+        JLOG(j.debug()) << (certainRetry ? "Pass: " : "Final pass: ") << pass << " completed ("
+                        << changes << " changes)";
+
+        // Accumulate changes.
+        count += changes;
+
+        // A non-retry pass made no changes
+        if ((changes == 0) && !certainRetry)
+            break;
+
+        // Stop retriable passes
+        if ((changes == 0) || (pass >= LEDGER_RETRY_PASSES))
+            certainRetry = false;
+    }
+
+    // If there are any transactions left, we must have
+    // tried them in at least one final pass
+    XRPL_ASSERT(txns.empty() || !certainRetry, "xrpl::applyTransactions : retry transactions");
+    return count;
+}
+
+// Build a ledger from consensus transactions
+std::shared_ptr<Ledger>
+buildLedger(
+    std::shared_ptr<Ledger const> const& parent,
+    NetClock::time_point closeTime,
+    bool const closeTimeCorrect,
+    NetClock::duration closeResolution,
+    Application& app,
+    CanonicalTXSet& txns,
+    std::set<TxID>& failedTxns,
+    beast::Journal j)
+{
+    JLOG(j.debug()) << "Report: Transaction Set = " << txns.key() << ", close "
+                    << closeTime.time_since_epoch().count()
+                    << (closeTimeCorrect ? "" : " (incorrect)");
+
+    return buildLedgerImpl(
+        parent,
+        closeTime,
+        closeTimeCorrect,
+        closeResolution,
+        app,
+        j,
+        [&](OpenView& accum, std::shared_ptr<Ledger> const& built) {
+            JLOG(j.debug()) << "Attempting to apply " << txns.size() << " transactions";
+
+            auto const applied = applyTransactions(app, built, txns, failedTxns, accum, j);
+
+            if (!txns.empty() || !failedTxns.empty())
+            {
+                JLOG(j.debug()) << "Applied " << applied << " transactions; " << failedTxns.size()
+                                << " failed and " << txns.size() << " will be retried. "
+                                << "Total transactions in ledger (including Inner Batch): "
+                                << accum.txCount();
+            }
+            else
+            {
+                JLOG(j.debug()) << "Applied " << applied << " transactions. "
+                                << "Total transactions in ledger (including Inner Batch): "
+                                << accum.txCount();
+            }
+        });
+}
+
+// Build a ledger by replaying
+std::shared_ptr<Ledger>
+buildLedger(
+    LedgerReplay const& replayData,
+    ApplyFlags applyFlags,
+    Application& app,
+    beast::Journal j)
+{
+    auto const& replayLedger = replayData.replay();
+
+    JLOG(j.debug()) << "Report: Replay Ledger " << replayLedger->header().hash;
+
+    return buildLedgerImpl(
+        replayData.parent(),
+        replayLedger->header().closeTime,
+        ((replayLedger->header().closeFlags & kSLcfNoConsensusTime) == 0),
+        replayLedger->header().closeTimeResolution,
+        app,
+        j,
+        [&](OpenView& accum, std::shared_ptr<Ledger> const& built) {
+            for (auto& tx : replayData.orderedTxns())
+            {
+                // Inner batch transactions are applied as part of their outer
+                // Batch transaction, never on their own. Skip them here so they
+                // are not re-applied a second time outside of the batch during
+                // replay.
+                if (tx.second->isFlag(tfInnerBatchTxn))
+                    continue;
+                applyTransaction(app, accum, *tx.second, false, applyFlags, j);
+            }
+        });
+}
+
+}  // namespace xrpl

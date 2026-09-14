@@ -1,0 +1,18 @@
+#pragma once
+
+#include <xrpl/beast/container/detail/aged_ordered_container.h>
+
+#include <chrono>
+#include <functional>
+#include <memory>
+
+namespace beast {
+
+template <
+    class Key,
+    class Clock = std::chrono::steady_clock,
+    class Compare = std::less<Key>,
+    class Allocator = std::allocator<Key>>
+using AgedSet = detail::AgedOrderedContainer<false, false, Key, void, Clock, Compare, Allocator>;
+
+}  // namespace beast

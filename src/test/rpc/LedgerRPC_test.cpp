@@ -1,0 +1,959 @@
+
+#include <test/jtx/Account.h>
+#include <test/jtx/Env.h>
+#include <test/jtx/amount.h>
+#include <test/jtx/envconfig.h>
+#include <test/jtx/fee.h>
+#include <test/jtx/last_ledger_sequence.h>
+#include <test/jtx/mpt.h>
+#include <test/jtx/noop.h>
+#include <test/jtx/offer.h>
+#include <test/jtx/pay.h>
+#include <test/jtx/seq.h>
+#include <test/jtx/ter.h>
+
+#include <xrpld/app/misc/TxQ.h>
+#include <xrpld/rpc/CTID.h>
+
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/config/Constants.h>
+#include <xrpl/core/NetworkIDService.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/json/to_string.h>
+#include <xrpl/protocol/ErrorCodes.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/TxFlags.h>
+#include <xrpl/protocol/jss.h>
+
+#include <cstdint>
+#include <memory>
+#include <string>
+#include <utility>
+
+namespace xrpl::test {
+
+class LedgerRPC_test : public beast::unit_test::Suite
+{
+    void
+    checkErrorValue(
+        json::Value const& jv,
+        std::string const& err,
+        ErrorCodeI code,
+        std::string const& msg)
+    {
+        if (BEAST_EXPECT(jv.isMember(jss::status)))
+            BEAST_EXPECT(jv[jss::status] == "error");
+        if (BEAST_EXPECT(jv.isMember(jss::error)))
+            BEAST_EXPECT(jv[jss::error] == err);
+        if (BEAST_EXPECT(jv.isMember(jss::error_code)))
+            BEAST_EXPECT(jv[jss::error_code] == code);
+        if (msg.empty())
+        {
+            BEAST_EXPECT(
+                jv[jss::error_message] == json::ValueType::Null || jv[jss::error_message] == "");
+        }
+        else if (BEAST_EXPECT(jv.isMember(jss::error_message)))
+        {
+            BEAST_EXPECTS(
+                jv[jss::error_message] == msg,
+                "Expected error message \"" + msg + "\", received \"" +
+                    jv[jss::error_message].asString() + "\"");
+        }
+    }
+
+    // Corrupt a valid address by replacing the 10th character with '!'.
+    // '!' is not part of the ripple alphabet.
+    static std::string
+    makeBadAddress(std::string good)
+    {
+        std::string ret = std::move(good);
+        ret.replace(10, 1, 1, '!');
+        return ret;
+    }
+
+    void
+    testLedgerRequest()
+    {
+        testcase("Basic Request");
+        using namespace test::jtx;
+
+        Env env{*this};
+
+        env.close();
+        BEAST_EXPECT(env.current()->header().seq == 4);
+
+        {
+            json::Value jvParams;
+            // can be either numeric or quoted numeric
+            jvParams[jss::ledger_index] = 1;
+            auto const jrr = env.rpc("json", "ledger", to_string(jvParams))[jss::result];
+            BEAST_EXPECT(jrr[jss::ledger][jss::closed] == true);
+            BEAST_EXPECT(jrr[jss::ledger][jss::ledger_index] == "1");
+        }
+
+        {
+            json::Value jvParams;
+            jvParams[jss::ledger_index] = "1";
+            auto const jrr = env.rpc("json", "ledger", to_string(jvParams))[jss::result];
+            BEAST_EXPECT(jrr[jss::ledger][jss::closed] == true);
+            BEAST_EXPECT(jrr[jss::ledger][jss::ledger_index] == "1");
+        }
+
+        {
+            // using current identifier
+            auto const jrr = env.rpc("ledger", "current")[jss::result];
+            BEAST_EXPECT(jrr[jss::ledger][jss::closed] == false);
+            BEAST_EXPECT(
+                jrr[jss::ledger][jss::ledger_index] == std::to_string(env.current()->header().seq));
+            BEAST_EXPECT(jrr[jss::ledger_current_index] == env.current()->header().seq);
+        }
+
+        {
+            auto const jrr = env.rpc("json", "ledger", "{}")[jss::result];
+            BEAST_EXPECT(!jrr.isMember(jss::ledger));
+            BEAST_EXPECT(jrr[jss::closed][jss::ledger][jss::closed] == true);
+            BEAST_EXPECT(
+                jrr[jss::closed][jss::ledger][jss::ledger_index] ==
+                std::to_string(env.closed()->header().seq));
+            BEAST_EXPECT(jrr[jss::open][jss::ledger][jss::closed] == false);
+            BEAST_EXPECT(
+                jrr[jss::open][jss::ledger][jss::ledger_index] ==
+                std::to_string(env.current()->header().seq));
+        }
+    }
+
+    void
+    testBadInput()
+    {
+        testcase("Bad Input");
+        using namespace test::jtx;
+        Env env{*this};
+        Account const gw{"gateway"};
+        auto const usd = gw["USD"];
+        Account const bob{"bob"};
+
+        env.fund(XRP(10000), gw, bob);
+        env.close();
+        env.trust(usd(1000), bob);
+        env.close();
+
+        {
+            // ask for an arbitrary string - index
+            json::Value jvParams;
+            jvParams[jss::ledger_index] = "potato";
+            auto const jrr = env.rpc("json", "ledger", to_string(jvParams))[jss::result];
+            checkErrorValue(
+                jrr,
+                "invalidParams",
+                RpcInvalidParams,
+                "Invalid field 'ledger_index', not string or number.");
+        }
+
+        {
+            // ask for a negative index
+            json::Value jvParams;
+            jvParams[jss::ledger_index] = -1;
+            auto const jrr = env.rpc("json", "ledger", to_string(jvParams))[jss::result];
+            checkErrorValue(
+                jrr,
+                "invalidParams",
+                RpcInvalidParams,
+                "Invalid field 'ledger_index', not string or number.");
+        }
+
+        {
+            // ask for a bad ledger index
+            json::Value jvParams;
+            jvParams[jss::ledger_index] = 10u;
+            auto const jrr = env.rpc("json", "ledger", to_string(jvParams))[jss::result];
+            checkErrorValue(jrr, "lgrNotFound", RpcLgrNotFound, "ledgerNotFound");
+        }
+
+        {
+            // unrecognized string arg -- error
+            auto const jrr = env.rpc("ledger", "arbitrary_text")[jss::result];
+            checkErrorValue(jrr, "lgrNotFound", RpcLgrNotFound, "ledgerNotFound");
+        }
+
+        {
+            // Request queue for closed ledger
+            json::Value jvParams;
+            jvParams[jss::ledger_index] = "validated";
+            jvParams[jss::queue] = true;
+            auto const jrr = env.rpc("json", "ledger", to_string(jvParams))[jss::result];
+            checkErrorValue(jrr, "invalidParams", RpcInvalidParams, "Invalid parameters.");
+        }
+
+        {
+            // Request a ledger with a very large (double) sequence.
+            auto const ret = env.rpc("json", "ledger", "{ \"ledger_index\" : 2e15 }");
+            BEAST_EXPECT(ret[jss::error] == "invalidParams");
+            BEAST_EXPECT(ret[jss::error_code] == RpcInvalidParams);
+            BEAST_EXPECT(ret[jss::error_message] == "Invalid parameters.");
+        }
+
+        {
+            // Request a ledger with very large (integer) sequence.
+            auto const ret = env.rpc("json", "ledger", "{ \"ledger_index\" : 1000000000000000 }");
+            checkErrorValue(ret, "invalidParams", RpcInvalidParams, "Invalid parameters.");
+        }
+
+        {
+            // test all boolean fields with non-boolean values
+            auto const testBooleanField = [&](json::StaticString const& field) {
+                json::Value jvParams;
+                jvParams[field] = "blah";
+                auto const jrr = env.rpc("json", "ledger", to_string(jvParams))[jss::result];
+                checkErrorValue(jrr, "invalidParams", RpcInvalidParams, "Invalid parameters.");
+            };
+            testBooleanField(jss::full);
+            testBooleanField(jss::accounts);
+            testBooleanField(jss::transactions);
+            testBooleanField(jss::expand);
+            testBooleanField(jss::binary);
+            testBooleanField(jss::owner_funds);
+            testBooleanField(jss::queue);
+        }
+    }
+
+    void
+    testLedgerCurrent()
+    {
+        testcase("ledger_current Request");
+        using namespace test::jtx;
+
+        Env env{*this};
+
+        env.close();
+        BEAST_EXPECT(env.current()->header().seq == 4);
+
+        {
+            auto const jrr = env.rpc("ledger_current")[jss::result];
+            BEAST_EXPECT(jrr[jss::ledger_current_index] == env.current()->header().seq);
+        }
+    }
+
+    void
+    testLedgerFull()
+    {
+        testcase("Ledger Request, Full Option");
+        using namespace test::jtx;
+
+        Env env{*this};
+
+        env.close();
+
+        json::Value jvParams;
+        jvParams[jss::ledger_index] = 3u;
+        jvParams[jss::full] = true;
+        auto const jrr = env.rpc("json", "ledger", to_string(jvParams))[jss::result];
+        BEAST_EXPECT(jrr[jss::ledger].isMember(jss::accountState));
+        BEAST_EXPECT(jrr[jss::ledger][jss::accountState].isArray());
+        BEAST_EXPECT(jrr[jss::ledger][jss::accountState].size() == 3u);
+    }
+
+    void
+    testLedgerFullNonAdmin()
+    {
+        testcase("Ledger Request, Full Option Without Admin");
+        using namespace test::jtx;
+
+        Env env{*this, envconfig(noAdmin)};
+
+        //        env.close();
+
+        json::Value jvParams;
+        jvParams[jss::ledger_index] = 1u;
+        jvParams[jss::full] = true;
+        auto const jrr = env.rpc("json", "ledger", to_string(jvParams))[jss::result];
+        checkErrorValue(
+            jrr, "noPermission", RpcNoPermission, "You don't have permission for this command.");
+    }
+
+    void
+    testLedgerAccounts()
+    {
+        testcase("Ledger Request, Accounts Option");
+        using namespace test::jtx;
+
+        Env env{*this};
+
+        env.close();
+
+        json::Value jvParams;
+        jvParams[jss::ledger_index] = 3u;
+        jvParams[jss::accounts] = true;
+        auto const jrr = env.rpc("json", "ledger", to_string(jvParams))[jss::result];
+        BEAST_EXPECT(jrr[jss::ledger].isMember(jss::accountState));
+        BEAST_EXPECT(jrr[jss::ledger][jss::accountState].isArray());
+        BEAST_EXPECT(jrr[jss::ledger][jss::accountState].size() == 3u);
+    }
+
+    void
+    testLedgerOwnerFundsMPTOffer()
+    {
+        testcase("Ledger owner_funds with MPT offer");
+        using namespace test::jtx;
+
+        Env env{*this};
+        Account const gw{"gateway"};
+        Account const alice{"alice"};
+        auto const usd = gw["USD"];
+
+        env.fund(XRP(10'000), gw, alice);
+        env.close();
+        env.trust(usd(1'000), alice);
+        env(pay(gw, alice, usd(100)));
+        MPTTester mpt({
+            .env = env,
+            .issuer = gw,
+            .holders = {alice},
+            .pay = 100,
+            .flags = tfMPTRequireAuth | kMptDexFlags,
+            .authHolder = true,
+            .close = false,
+        });
+        MPT const mptAsset = mpt;
+        env.close();
+
+        env(noop(alice));
+        // These offers differ only by TakerGets asset type. Omitting
+        // owner_funds serializes the tx JSON without computing offer balances;
+        // owner_funds=true asks LedgerToJson to compute accountFunds(TakerGets)
+        // for both offers, which is where IOU and MPT used to diverge.
+        env(offer(alice, XRP(10), usd(10)));
+        env(offer(alice, XRP(10), mptAsset(10)));
+        // The MPT offer was created while authorized. Unauthorizing in the
+        // same ledger makes owner_funds depend on AuthHandling::IgnoreAuth.
+        mpt.authorize({.account = gw, .holder = alice, .flags = tfMPTUnauthorize});
+        env(noop(alice));
+        env.close();
+
+        auto const ledgerHash = to_string(env.closed()->header().hash);
+
+        auto const getTransactions = [&](bool includeOwnerFunds) {
+            json::Value params;
+            params[jss::ledger_hash] = ledgerHash;
+            params[jss::transactions] = true;
+            params[jss::expand] = true;
+            // The baseline omits owner_funds, which the RPC treats as false.
+            // Setting it true requests the same ledger, but asks the ledger
+            // serializer to add owner_funds to offer transactions in that
+            // ledger's transaction array.
+            if (includeOwnerFunds)
+                params[jss::owner_funds] = true;
+
+            auto const result = env.rpc("json", "ledger", to_string(params))[jss::result];
+            BEAST_EXPECT(!result.isMember(jss::error));
+            BEAST_EXPECT(result[jss::ledger][jss::transactions].isArray());
+            return result[jss::ledger][jss::transactions];
+        };
+
+        auto const findOffer = [](json::Value const& txs, bool mpt) -> json::Value const* {
+            for (auto i = 0u; i < txs.size(); ++i)
+            {
+                auto const& tx = txs[i].isMember(jss::tx_json) ? txs[i][jss::tx_json] : txs[i];
+                if (tx[jss::TransactionType] == jss::OfferCreate &&
+                    tx[jss::TakerGets].isMember(jss::mpt_issuance_id) == mpt)
+                {
+                    return &txs[i];
+                }
+            }
+            return nullptr;
+        };
+
+        // Baseline: same ledger request without owner_funds fields.
+        auto const baseline = getTransactions(false);
+        BEAST_EXPECT(baseline.size() == 5u);
+        BEAST_EXPECT(findOffer(baseline, false) != nullptr);
+        BEAST_EXPECT(findOffer(baseline, true) != nullptr);
+
+        // Same ledger request with owner_funds added to eligible offer txs.
+        auto const withOwnerFunds = getTransactions(true);
+        // Requesting owner_funds must not change which ledger transactions are
+        // returned, even when one offer's TakerGets is MPT.
+        BEAST_EXPECT(withOwnerFunds.size() == baseline.size());
+
+        // The IOU offer is the control case for expected owner_funds output.
+        auto const* iouOfferTx = findOffer(withOwnerFunds, false);
+        if (BEAST_EXPECT(iouOfferTx != nullptr))
+            BEAST_EXPECT((*iouOfferTx)[jss::owner_funds] == "100");
+
+        // MPT owner_funds should match the IOU behavior, even though Alice is
+        // unauthorized by the ledger snapshot used for serialization.
+        auto const* mptOfferTx = findOffer(withOwnerFunds, true);
+        if (BEAST_EXPECT(mptOfferTx != nullptr))
+            BEAST_EXPECT((*mptOfferTx)[jss::owner_funds] == "100");
+    }
+
+    /**
+     * @brief ledger RPC requests as a way to drive
+     * input options to lookupLedger. The point of this test is
+     * coverage for lookupLedger, not so much the ledger
+     * RPC request.
+     */
+    void
+    testLookupLedger()
+    {
+        testcase("Lookup ledger");
+        using namespace test::jtx;
+
+        auto cfg = envconfig();
+        cfg->fees.referenceFee = 10;
+        Env env{*this, std::move(cfg), FeatureBitset{}};  // hashes requested below
+                                                          // assume no amendments
+        env.fund(XRP(10000), "alice");
+        env.close();
+        env.fund(XRP(10000), "bob");
+        env.close();
+        env.fund(XRP(10000), "jim");
+        env.close();
+        env.fund(XRP(10000), "jill");
+
+        {
+            // access via the legacy ledger field, keyword index values
+            json::Value jvParams;
+            jvParams[jss::ledger] = "closed";
+            auto jrr = env.rpc("json", "ledger", to_string(jvParams))[jss::result];
+            BEAST_EXPECT(jrr.isMember(jss::ledger));
+            BEAST_EXPECT(jrr.isMember(jss::ledger_hash));
+            BEAST_EXPECT(jrr[jss::ledger][jss::ledger_index] == "5");
+
+            jvParams[jss::ledger] = "validated";
+            jrr = env.rpc("json", "ledger", to_string(jvParams))[jss::result];
+            BEAST_EXPECT(jrr.isMember(jss::ledger));
+            BEAST_EXPECT(jrr.isMember(jss::ledger_hash));
+            BEAST_EXPECT(jrr[jss::ledger][jss::ledger_index] == "5");
+
+            jvParams[jss::ledger] = "current";
+            jrr = env.rpc("json", "ledger", to_string(jvParams))[jss::result];
+            BEAST_EXPECT(jrr.isMember(jss::ledger));
+            BEAST_EXPECT(jrr[jss::ledger][jss::ledger_index] == "6");
+
+            // ask for a bad ledger keyword
+            jvParams[jss::ledger] = "invalid";
+            jrr = env.rpc("json", "ledger", to_string(jvParams))[jss::result];
+            BEAST_EXPECT(jrr[jss::error] == "invalidParams");
+            BEAST_EXPECT(jrr[jss::error_code] == RpcInvalidParams);
+            BEAST_EXPECT(
+                jrr[jss::error_message] == "Invalid field 'ledger', not string or number.");
+
+            // numeric index
+            jvParams[jss::ledger] = 4;
+            jrr = env.rpc("json", "ledger", to_string(jvParams))[jss::result];
+            BEAST_EXPECT(jrr.isMember(jss::ledger));
+            BEAST_EXPECT(jrr.isMember(jss::ledger_hash));
+            BEAST_EXPECT(jrr[jss::ledger][jss::ledger_index] == "4");
+
+            // numeric index - out of range
+            jvParams[jss::ledger] = 20;
+            jrr = env.rpc("json", "ledger", to_string(jvParams))[jss::result];
+            BEAST_EXPECT(jrr[jss::error] == "lgrNotFound");
+            BEAST_EXPECT(jrr[jss::error_code] == RpcLgrNotFound);
+            BEAST_EXPECT(jrr[jss::error_message] == "ledgerNotFound");
+        }
+
+        {
+            std::string const hash5{
+                "BFF5D915A6386545C8F1D8D9B165BDB6B29636653009509E0B43517E52E36CAE"};
+            // access via the ledger_hash field
+            json::Value jvParams;
+            jvParams[jss::ledger_hash] = hash5;
+            auto jrr = env.rpc("json", "ledger", to_string(jvParams))[jss::result];
+            BEAST_EXPECT(jrr.isMember(jss::ledger));
+            BEAST_EXPECT(jrr.isMember(jss::ledger_hash));
+            BEAST_EXPECT(jrr[jss::ledger][jss::ledger_index] == "5");
+
+            // extra leading hex chars in hash are not allowed
+            jvParams[jss::ledger_hash] = "DEADBEEF" + hash5;
+            jrr = env.rpc("json", "ledger", to_string(jvParams))[jss::result];
+            BEAST_EXPECT(jrr[jss::error] == "invalidParams");
+            BEAST_EXPECT(jrr[jss::error_code] == RpcInvalidParams);
+            BEAST_EXPECT(jrr[jss::error_message] == "Invalid field 'ledger_hash', not hex string.");
+
+            // request with non-string ledger_hash
+            jvParams[jss::ledger_hash] = 2;
+            jrr = env.rpc("json", "ledger", to_string(jvParams))[jss::result];
+            BEAST_EXPECT(jrr[jss::error] == "invalidParams");
+            BEAST_EXPECT(jrr[jss::error_code] == RpcInvalidParams);
+            BEAST_EXPECT(jrr[jss::error_message] == "Invalid field 'ledger_hash', not hex string.");
+
+            // malformed (non hex) hash
+            jvParams[jss::ledger_hash] =
+                "2E81FC6EC0DD943197EGC7E3FBE9AE30"
+                "7F2775F2F7485BB37307984C3C0F2340";
+            jrr = env.rpc("json", "ledger", to_string(jvParams))[jss::result];
+            BEAST_EXPECT(jrr[jss::error] == "invalidParams");
+            BEAST_EXPECT(jrr[jss::error_code] == RpcInvalidParams);
+            BEAST_EXPECT(jrr[jss::error_message] == "Invalid field 'ledger_hash', not hex string.");
+
+            // properly formed, but just doesn't exist
+            jvParams[jss::ledger_hash] =
+                "8C3EEDB3124D92E49E75D81A8826A2E6"
+                "5A75FD71FC3FD6F36FEB803C5F1D812D";
+            jrr = env.rpc("json", "ledger", to_string(jvParams))[jss::result];
+            BEAST_EXPECT(jrr[jss::error] == "lgrNotFound");
+            BEAST_EXPECT(jrr[jss::error_code] == RpcLgrNotFound);
+            BEAST_EXPECT(jrr[jss::error_message] == "ledgerNotFound");
+        }
+
+        {
+            // access via the ledger_index field, keyword index values
+            json::Value jvParams;
+            jvParams[jss::ledger_index] = "closed";
+            auto jrr = env.rpc("json", "ledger", to_string(jvParams))[jss::result];
+            BEAST_EXPECT(jrr.isMember(jss::ledger));
+            BEAST_EXPECT(jrr.isMember(jss::ledger_hash));
+            BEAST_EXPECT(jrr[jss::ledger][jss::ledger_index] == "5");
+            BEAST_EXPECT(jrr.isMember(jss::ledger_index));
+
+            jvParams[jss::ledger_index] = "validated";
+            jrr = env.rpc("json", "ledger", to_string(jvParams))[jss::result];
+            BEAST_EXPECT(jrr.isMember(jss::ledger));
+            BEAST_EXPECT(jrr.isMember(jss::ledger_hash));
+            BEAST_EXPECT(jrr[jss::ledger][jss::ledger_index] == "5");
+
+            jvParams[jss::ledger_index] = "current";
+            jrr = env.rpc("json", "ledger", to_string(jvParams))[jss::result];
+            BEAST_EXPECT(jrr.isMember(jss::ledger));
+            BEAST_EXPECT(jrr[jss::ledger][jss::ledger_index] == "6");
+            BEAST_EXPECT(jrr.isMember(jss::ledger_current_index));
+
+            // ask for a bad ledger keyword
+            jvParams[jss::ledger_index] = "invalid";
+            jrr = env.rpc("json", "ledger", to_string(jvParams))[jss::result];
+            BEAST_EXPECT(jrr[jss::error] == "invalidParams");
+            BEAST_EXPECT(jrr[jss::error_code] == RpcInvalidParams);
+            BEAST_EXPECT(
+                jrr[jss::error_message] == "Invalid field 'ledger_index', not string or number.");
+
+            // numeric index
+            for (auto const i : {1, 2, 3, 4, 5, 6})
+            {
+                jvParams[jss::ledger_index] = i;
+                jrr = env.rpc("json", "ledger", to_string(jvParams))[jss::result];
+                BEAST_EXPECT(jrr.isMember(jss::ledger));
+                if (i < 6)
+                    BEAST_EXPECT(jrr.isMember(jss::ledger_hash));
+                BEAST_EXPECT(jrr[jss::ledger][jss::ledger_index] == std::to_string(i));
+            }
+
+            // numeric index - out of range
+            jvParams[jss::ledger_index] = 7;
+            jrr = env.rpc("json", "ledger", to_string(jvParams))[jss::result];
+            BEAST_EXPECT(jrr[jss::error] == "lgrNotFound");
+            BEAST_EXPECT(jrr[jss::error_code] == RpcLgrNotFound);
+            BEAST_EXPECT(jrr[jss::error_message] == "ledgerNotFound");
+        }
+    }
+
+    void
+    testNoQueue()
+    {
+        testcase("Ledger with queueing disabled");
+        using namespace test::jtx;
+        Env env{*this};
+
+        json::Value jv;
+        jv[jss::ledger_index] = "current";
+        jv[jss::queue] = true;
+        jv[jss::expand] = true;
+
+        auto const jrr = env.rpc("json", "ledger", to_string(jv))[jss::result];
+        BEAST_EXPECT(!jrr.isMember(jss::queue_data));
+    }
+
+    void
+    testQueue()
+    {
+        testcase("Ledger with Queued Transactions");
+        using namespace test::jtx;
+        auto cfg = envconfig([](std::unique_ptr<Config> cfg) {
+            auto& section = cfg->section(Sections::kTransactionQueue);
+            section.set(Keys::kMinimumTxnInLedgerStandalone, "3");
+            section.set(Keys::kNormalConsensusIncreasePercent, "0");
+            return cfg;
+        });
+
+        cfg->fees.referenceFee = 10;
+        Env env(*this, std::move(cfg));
+
+        json::Value jv;
+        jv[jss::ledger_index] = "current";
+        jv[jss::queue] = true;
+        jv[jss::expand] = true;
+
+        Account const alice{"alice"};
+        Account const bob{"bob"};
+        Account const charlie{"charlie"};
+        Account const daria{"daria"};
+        env.fund(XRP(10000), alice);
+        env.fund(XRP(10000), bob);
+        env.close();
+        env.fund(XRP(10000), charlie);
+        env.fund(XRP(10000), daria);
+        env.close();
+
+        auto jrr = env.rpc("json", "ledger", to_string(jv))[jss::result];
+        BEAST_EXPECT(!jrr.isMember(jss::queue_data));
+
+        // Fill the open ledger
+        for (;;)
+        {
+            auto const metrics = env.app().getTxQ().getMetrics(*env.current());
+            if (metrics.openLedgerFeeLevel > metrics.minProcessingFeeLevel)
+                break;
+            env(noop(alice));
+        }
+
+        BEAST_EXPECT(env.current()->header().seq == 5);
+        // Put some txs in the queue
+        // Alice
+        auto aliceSeq = env.seq(alice);
+        env(pay(alice, "george", XRP(1000)), LastLedgerSeq(7), Ter(terQUEUED));
+        env(offer(alice, XRP(50000), alice["USD"](5000)), Seq(aliceSeq + 1), Ter(terQUEUED));
+        env(noop(alice), Seq(aliceSeq + 2), Ter(terQUEUED));
+        // Bob
+        auto const batch = [&env](Account a) {
+            auto aSeq = env.seq(a);
+            // Enough fee to get in front of alice in the queue
+            for (int i = 0; i < 10; ++i)
+            {
+                env(noop(a), Fee(1000 + i), Seq(aSeq + i), Ter(terQUEUED));
+            }
+        };
+        batch(bob);
+        // Charlie
+        batch(charlie);
+        // Daria
+        batch(daria);
+
+        jrr = env.rpc("json", "ledger", to_string(jv))[jss::result];
+        BEAST_EXPECT(jrr[jss::queue_data].size() == 33);
+
+        // Close enough ledgers so that alice's first tx expires.
+        env.close();
+        env.close();
+        env.close();
+        BEAST_EXPECT(env.current()->header().seq == 8);
+
+        jrr = env.rpc("json", "ledger", to_string(jv))[jss::result];
+        BEAST_EXPECT(jrr[jss::queue_data].size() == 11);
+
+        env.close();
+
+        jrr = env.rpc("json", "ledger", to_string(jv))[jss::result];
+        std::string const txid0 = [&] {
+            auto const& parentHash = env.current()->header().parentHash;
+            if (BEAST_EXPECT(jrr[jss::queue_data].size() == 2))
+            {
+                std::string const txid1 = [&] {
+                    auto const& txj = jrr[jss::queue_data][1u];
+                    BEAST_EXPECT(txj[jss::account] == alice.human());
+                    BEAST_EXPECT(txj[jss::fee_level] == "256");
+                    BEAST_EXPECT(txj["preflight_result"] == "tesSUCCESS");
+                    BEAST_EXPECT(txj["retries_remaining"] == 10);
+                    BEAST_EXPECT(txj.isMember(jss::tx));
+                    auto const& tx = txj[jss::tx];
+                    BEAST_EXPECT(tx[jss::Account] == alice.human());
+                    BEAST_EXPECT(tx[jss::TransactionType] == jss::AccountSet);
+                    return tx[jss::hash].asString();
+                }();
+
+                auto const& txj = jrr[jss::queue_data][0u];
+                BEAST_EXPECT(txj[jss::account] == alice.human());
+                BEAST_EXPECT(txj[jss::fee_level] == "256");
+                BEAST_EXPECT(txj["preflight_result"] == "tesSUCCESS");
+                BEAST_EXPECT(txj["retries_remaining"] == 10);
+                BEAST_EXPECT(txj.isMember(jss::tx));
+                auto const& tx = txj[jss::tx];
+                BEAST_EXPECT(tx[jss::Account] == alice.human());
+                BEAST_EXPECT(tx[jss::TransactionType] == jss::OfferCreate);
+                auto const txid0 = tx[jss::hash].asString();
+                UInt256 tx0, tx1;
+                BEAST_EXPECT(tx0.parseHex(txid0));
+                BEAST_EXPECT(tx1.parseHex(txid1));
+                BEAST_EXPECT((tx0 ^ parentHash) < (tx1 ^ parentHash));
+                return txid0;
+            }
+            return std::string{};
+        }();
+
+        env.close();
+
+        jv[jss::expand] = false;
+
+        jrr = env.rpc("json", "ledger", to_string(jv))[jss::result];
+        if (BEAST_EXPECT(jrr[jss::queue_data].size() == 2))
+        {
+            auto const& parentHash = env.current()->header().parentHash;
+            auto const txid1 = [&] {
+                auto const& txj = jrr[jss::queue_data][0u];
+                BEAST_EXPECT(txj[jss::account] == alice.human());
+                BEAST_EXPECT(txj[jss::fee_level] == "256");
+                BEAST_EXPECT(txj["preflight_result"] == "tesSUCCESS");
+                BEAST_EXPECT(txj.isMember(jss::tx));
+                return txj[jss::tx].asString();
+            }();
+            auto const& txj = jrr[jss::queue_data][1u];
+            BEAST_EXPECT(txj[jss::account] == alice.human());
+            BEAST_EXPECT(txj[jss::fee_level] == "256");
+            BEAST_EXPECT(txj["preflight_result"] == "tesSUCCESS");
+            BEAST_EXPECT(txj["retries_remaining"] == 9);
+            BEAST_EXPECT(txj["last_result"] == "terPRE_SEQ");
+            BEAST_EXPECT(txj.isMember(jss::tx));
+            BEAST_EXPECT(txj[jss::tx] == txid0);
+            UInt256 tx0, tx1;
+            BEAST_EXPECT(tx0.parseHex(txid0));
+            BEAST_EXPECT(tx1.parseHex(txid1));
+            BEAST_EXPECT((tx1 ^ parentHash) < (tx0 ^ parentHash));
+        }
+
+        env.close();
+
+        jv[jss::expand] = true;
+        jv[jss::binary] = true;
+
+        jrr = env.rpc("json", "ledger", to_string(jv))[jss::result];
+        if (BEAST_EXPECT(jrr[jss::queue_data].size() == 2))
+        {
+            auto const& txj = jrr[jss::queue_data][0u];
+            BEAST_EXPECT(txj[jss::account] == alice.human());
+            BEAST_EXPECT(txj[jss::fee_level] == "256");
+            BEAST_EXPECT(txj["preflight_result"] == "tesSUCCESS");
+            BEAST_EXPECT(txj["retries_remaining"] == 8);
+            BEAST_EXPECT(txj["last_result"] == "terPRE_SEQ");
+            BEAST_EXPECT(txj.isMember(jss::tx));
+            BEAST_EXPECT(txj[jss::tx].isMember(jss::tx_blob));
+
+            auto const& txj2 = jrr[jss::queue_data][1u];
+            BEAST_EXPECT(txj2[jss::account] == alice.human());
+            BEAST_EXPECT(txj2[jss::fee_level] == "256");
+            BEAST_EXPECT(txj2["preflight_result"] == "tesSUCCESS");
+            BEAST_EXPECT(txj2["retries_remaining"] == 10);
+            BEAST_EXPECT(!txj2.isMember("last_result"));
+            BEAST_EXPECT(txj2.isMember(jss::tx));
+            BEAST_EXPECT(txj2[jss::tx].isMember(jss::tx_blob));
+        }
+
+        for (int i = 0; i != 9; ++i)
+        {
+            env.close();
+        }
+
+        jv[jss::expand] = false;
+        jv[jss::binary] = false;
+
+        jrr = env.rpc("json", "ledger", to_string(jv))[jss::result];
+        std::string const txid2 = [&] {
+            if (BEAST_EXPECT(jrr[jss::queue_data].size() == 1))
+            {
+                auto const& txj = jrr[jss::queue_data][0u];
+                BEAST_EXPECT(txj[jss::account] == alice.human());
+                BEAST_EXPECT(txj[jss::fee_level] == "256");
+                BEAST_EXPECT(txj["preflight_result"] == "tesSUCCESS");
+                BEAST_EXPECT(txj["retries_remaining"] == 1);
+                BEAST_EXPECT(txj["last_result"] == "terPRE_SEQ");
+                BEAST_EXPECT(txj.isMember(jss::tx));
+                BEAST_EXPECT(txj[jss::tx] != txid0);
+                return txj[jss::tx].asString();
+            }
+            return std::string{};
+        }();
+
+        jv[jss::full] = true;
+
+        jrr = env.rpc("json", "ledger", to_string(jv))[jss::result];
+        if (BEAST_EXPECT(jrr[jss::queue_data].size() == 1))
+        {
+            auto const& txj = jrr[jss::queue_data][0u];
+            BEAST_EXPECT(txj[jss::account] == alice.human());
+            BEAST_EXPECT(txj[jss::fee_level] == "256");
+            BEAST_EXPECT(txj["preflight_result"] == "tesSUCCESS");
+            BEAST_EXPECT(txj["retries_remaining"] == 1);
+            BEAST_EXPECT(txj["last_result"] == "terPRE_SEQ");
+            BEAST_EXPECT(txj.isMember(jss::tx));
+            auto const& tx = txj[jss::tx];
+            BEAST_EXPECT(tx[jss::Account] == alice.human());
+            BEAST_EXPECT(tx[jss::TransactionType] == jss::AccountSet);
+            BEAST_EXPECT(tx[jss::hash] == txid2);
+        }
+    }
+
+    void
+    testLedgerAccountsOption()
+    {
+        testcase("Ledger Request, Accounts Hashes");
+        using namespace test::jtx;
+
+        Env env{*this};
+
+        env.close();
+
+        std::string index;
+        int hashesLedgerEntryIndex = -1;
+        {
+            json::Value jvParams;
+            jvParams[jss::ledger_index] = 3u;
+            jvParams[jss::accounts] = true;
+            jvParams[jss::expand] = true;
+            jvParams[jss::type] = "hashes";
+            auto const jrr = env.rpc("json", "ledger", to_string(jvParams))[jss::result];
+            BEAST_EXPECT(jrr[jss::ledger].isMember(jss::accountState));
+            BEAST_EXPECT(jrr[jss::ledger][jss::accountState].isArray());
+
+            for (auto i = 0; i < jrr[jss::ledger][jss::accountState].size(); i++)
+            {
+                if (jrr[jss::ledger][jss::accountState][i]["LedgerEntryType"] == jss::LedgerHashes)
+                {
+                    index = jrr[jss::ledger][jss::accountState][i]["index"].asString();
+                    hashesLedgerEntryIndex = i;
+                }
+            }
+
+            for (auto const& object : jrr[jss::ledger][jss::accountState])
+            {
+                if (object["LedgerEntryType"] == jss::LedgerHashes)
+                    index = object["index"].asString();
+            }
+
+            // jss::type is a deprecated field
+            BEAST_EXPECT(
+                jrr.isMember(jss::warnings) && jrr[jss::warnings].isArray() &&
+                jrr[jss::warnings].size() == 1 &&
+                jrr[jss::warnings][0u][jss::id].asInt() == WarnRpcFieldsDeprecated);
+        }
+        {
+            json::Value jvParams;
+            jvParams[jss::ledger_index] = 3u;
+            jvParams[jss::accounts] = true;
+            jvParams[jss::expand] = false;
+            jvParams[jss::type] = "hashes";
+            auto const jrr = env.rpc("json", "ledger", to_string(jvParams))[jss::result];
+            BEAST_EXPECT(jrr[jss::ledger].isMember(jss::accountState));
+            BEAST_EXPECT(jrr[jss::ledger][jss::accountState].isArray());
+            BEAST_EXPECT(
+                hashesLedgerEntryIndex > 0 &&
+                jrr[jss::ledger][jss::accountState][hashesLedgerEntryIndex] == index);
+
+            // jss::type is a deprecated field
+            BEAST_EXPECT(
+                jrr.isMember(jss::warnings) && jrr[jss::warnings].isArray() &&
+                jrr[jss::warnings].size() == 1 &&
+                jrr[jss::warnings][0u][jss::id].asInt() == WarnRpcFieldsDeprecated);
+        }
+    }
+
+    void
+    testLedgerExpandedTransactionsCTID()
+    {
+        testcase("Expanded Transactions CTID");
+        using namespace test::jtx;
+
+        Env env{*this};
+        Account const alice{"alice"};
+        env.fund(XRP(10000), alice);
+        env.close();
+
+        uint32_t const netID = env.app().getNetworkIDService().getNetworkID();
+
+        // API v2 non-binary: CTID present
+        {
+            json::Value jvParams;
+            jvParams[jss::ledger_index] = "validated";
+            jvParams[jss::transactions] = true;
+            jvParams[jss::expand] = true;
+            jvParams[jss::api_version] = 2;
+            auto const jrr = env.rpc("json", "ledger", to_string(jvParams))[jss::result];
+            BEAST_EXPECT(jrr[jss::status] == "success");
+            auto const& txns = jrr[jss::ledger][jss::transactions];
+            BEAST_EXPECT(txns.isArray() && txns.size() > 0);
+            for (auto const& txn : txns)
+            {
+                BEAST_EXPECT(txn.isMember(jss::ctid));
+                auto const expectedCtid = rpc::encodeCTID(
+                    jrr[jss::ledger][jss::ledger_index].asUInt(),
+                    txn[jss::meta][sfTransactionIndex.jsonName].asUInt(),
+                    netID);
+                // NOLINTBEGIN(bugprone-unchecked-optional-access)
+                if (BEAST_EXPECT(expectedCtid.has_value()))
+                    BEAST_EXPECT(txn[jss::ctid] == expectedCtid.value());
+                // NOLINTEND(bugprone-unchecked-optional-access)
+            }
+        }
+
+        // API v1 non-binary: CTID present
+        {
+            json::Value jvParams;
+            jvParams[jss::ledger_index] = "validated";
+            jvParams[jss::transactions] = true;
+            jvParams[jss::expand] = true;
+            auto const jrr = env.rpc("json", "ledger", to_string(jvParams))[jss::result];
+            BEAST_EXPECT(jrr[jss::status] == "success");
+            auto const& txns = jrr[jss::ledger][jss::transactions];
+            BEAST_EXPECT(txns.isArray() && txns.size() > 0);
+            for (auto const& txn : txns)
+            {
+                BEAST_EXPECT(txn.isMember(jss::ctid));
+            }
+        }
+
+        // Binary expanded: CTID present
+        {
+            json::Value jvParams;
+            jvParams[jss::ledger_index] = "validated";
+            jvParams[jss::transactions] = true;
+            jvParams[jss::expand] = true;
+            jvParams[jss::binary] = true;
+            jvParams[jss::api_version] = 2;
+            auto const jrr = env.rpc("json", "ledger", to_string(jvParams))[jss::result];
+            BEAST_EXPECT(jrr[jss::status] == "success");
+            auto const& txns = jrr[jss::ledger][jss::transactions];
+            BEAST_EXPECT(txns.isArray() && txns.size() > 0);
+            for (auto const& txn : txns)
+            {
+                BEAST_EXPECT(txn.isMember(jss::ctid));
+            }
+        }
+
+        // Non-expanded: transactions are plain hash strings, no CTID
+        {
+            json::Value jvParams;
+            jvParams[jss::ledger_index] = "validated";
+            jvParams[jss::transactions] = true;
+            jvParams[jss::api_version] = 2;
+            auto const jrr = env.rpc("json", "ledger", to_string(jvParams))[jss::result];
+            BEAST_EXPECT(jrr[jss::status] == "success");
+            auto const& txns = jrr[jss::ledger][jss::transactions];
+            BEAST_EXPECT(txns.isArray() && txns.size() > 0);
+            for (auto const& txn : txns)
+            {
+                BEAST_EXPECT(txn.isString());
+            }
+        }
+    }
+
+public:
+    void
+    run() override
+    {
+        testLedgerRequest();
+        testBadInput();
+        testLedgerCurrent();
+        testLedgerFull();
+        testLedgerFullNonAdmin();
+        testLedgerAccounts();
+        testLedgerOwnerFundsMPTOffer();
+        testLookupLedger();
+        testNoQueue();
+        testQueue();
+        testLedgerAccountsOption();
+        testLedgerExpandedTransactionsCTID();
+    }
+};
+
+BEAST_DEFINE_TESTSUITE(LedgerRPC, rpc, xrpl);
+
+}  // namespace xrpl::test

@@ -1,0 +1,131 @@
+#pragma once
+
+#include <concepts>
+#include <cstddef>
+#include <memory>
+#include <variant>
+
+namespace xrpl {
+
+/**
+ * A combination of a std::shared_ptr and a std::weak_pointer.
+ *
+ *
+ * This class is a wrapper to a `std::variant<std::shared_ptr,std::weak_ptr>`
+ * This class is useful for storing intrusive pointers in tagged caches using less
+ * memory than storing both pointers directly.
+ */
+
+template <class T>
+class SharedWeakCachePointer
+{
+public:
+    SharedWeakCachePointer() = default;
+
+    SharedWeakCachePointer(SharedWeakCachePointer const& rhs);
+
+    template <class TT>
+        requires std::convertible_to<TT*, T*>
+    SharedWeakCachePointer(std::shared_ptr<TT> const& rhs);
+
+    SharedWeakCachePointer(SharedWeakCachePointer&& rhs);
+
+    template <class TT>
+        requires std::convertible_to<TT*, T*>
+    SharedWeakCachePointer(std::shared_ptr<TT>&& rhs);
+
+    SharedWeakCachePointer&
+    operator=(SharedWeakCachePointer const& rhs);
+
+    template <class TT>
+        requires std::convertible_to<TT*, T*>
+    SharedWeakCachePointer&
+    operator=(std::shared_ptr<TT> const& rhs);
+
+    template <class TT>
+        requires std::convertible_to<TT*, T*>
+    SharedWeakCachePointer&
+    operator=(std::shared_ptr<TT>&& rhs);
+
+    ~SharedWeakCachePointer();
+
+    /**
+     * Return a strong pointer if this is already a strong pointer (i.e. don't
+     * lock the weak pointer. Use the `lock` method if that's what's needed)
+     */
+    [[nodiscard]] std::shared_ptr<T> const&
+    getStrong() const;
+
+    /**
+     * Return true if this is a strong pointer and the strong pointer is
+     * seated.
+     */
+    explicit
+    operator bool() const noexcept;
+
+    /**
+     * Set the pointer to null, decrement the appropriate ref count, and run
+     * the appropriate release action.
+     */
+    void
+    reset();
+
+    /**
+     * If this is a strong pointer, return the raw pointer. Otherwise return
+     * null.
+     */
+    [[nodiscard]] T*
+    get() const;
+
+    /**
+     * If this is a strong pointer, return the strong count. Otherwise return 0
+     */
+    [[nodiscard]] std::size_t
+    useCount() const;
+
+    /**
+     * Return true if there is a non-zero strong count.
+     */
+    [[nodiscard]] bool
+    expired() const;
+
+    /**
+     * If this is a strong pointer, return the strong pointer. Otherwise
+     * attempt to lock the weak pointer.
+     */
+    [[nodiscard]] std::shared_ptr<T>
+    lock() const;
+
+    /**
+     * Return true is this represents a strong pointer.
+     */
+    [[nodiscard]] bool
+    isStrong() const;
+
+    /**
+     * Return true is this represents a weak pointer.
+     */
+    [[nodiscard]] bool
+    isWeak() const;
+
+    /**
+     * If this is a weak pointer, attempt to convert it to a strong pointer.
+     *
+     * @return true if successfully converted to a strong pointer (or was
+     *         already a strong pointer). Otherwise false.
+     */
+    bool
+    convertToStrong();
+
+    /**
+     * If this is a strong pointer, attempt to convert it to a weak pointer.
+     *
+     * @return false if the pointer is null. Otherwise return true.
+     */
+    bool
+    convertToWeak();
+
+private:
+    std::variant<std::shared_ptr<T>, std::weak_ptr<T>> combo_;
+};
+}  // namespace xrpl

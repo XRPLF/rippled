@@ -1,0 +1,420 @@
+#pragma once
+
+#include <xrpl/basics/Slice.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Asset.h>
+#include <xrpl/protocol/Book.h>
+#include <xrpl/protocol/Issue.h>
+#include <xrpl/protocol/Keylet.h>
+#include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/Protocol.h>
+#include <xrpl/protocol/SeqProxy.h>
+#include <xrpl/protocol/UintTypes.h>
+
+#include <array>
+#include <cstdint>
+#include <functional>
+#include <set>
+#include <utility>
+
+namespace xrpl {
+/**
+ * Keylet computation functions.
+ *
+ * Entries in the ledger are located using 256-bit locators. The locators are
+ * calculated using a wide range of parameters specific to the entry whose
+ * locator we are calculating (e.g. an account's locator is derived from the
+ * account's address, whereas the locator for an offer is derived from the
+ * account and the offer sequence.)
+ *
+ * To enhance type safety during lookup and make the code more robust, we use
+ * keylets, which contain not only the locator of the object but also the type
+ * of the object being referenced.
+ *
+ * These functions each return a type-specific keylet.
+ */
+namespace keylet {
+
+/**
+ * AccountID root
+ */
+Keylet
+account(AccountID const& id) noexcept;
+
+/**
+ * The index of the amendment table
+ */
+Keylet const&
+amendments() noexcept;
+
+/**
+ * Any item that can be in an owner dir.
+ */
+Keylet
+child(UInt256 const& key) noexcept;
+
+/**
+ * The index of the "short" skip list
+ *
+ * The "short" skip list is a node (at a fixed index) that holds the hashes
+ * of ledgers since the last flag ledger. It will contain, at most, 256 hashes.
+ */
+Keylet const&
+skip() noexcept;
+
+/**
+ * The index of the long skip for a particular ledger range.
+ *
+ * The "long" skip list is a node that holds the hashes of (up to) 256 flag
+ * ledgers.
+ *
+ * It can be used to efficiently skip back to any ledger using only two hops:
+ * the first hop gets the "long" skip list for the ledger it wants to retrieve
+ * and uses it to get the hash of the flag ledger whose short skip list will
+ * contain the hash of the requested ledger.
+ */
+Keylet
+skip(LedgerIndex ledger) noexcept;
+
+/**
+ * The (fixed) index of the object containing the ledger fees.
+ */
+Keylet const&
+feeSettings() noexcept;
+
+/**
+ * The (fixed) index of the object containing the ledger negativeUNL.
+ */
+Keylet const&
+negativeUNL() noexcept;
+
+/**
+ * The beginning of an order book
+ */
+Keylet
+book(Book const& b);
+
+/**
+ * The index of a trust line for a given currency
+ *
+ * Note that a trustline is *shared* between two accounts (commonly referred
+ * to as the issuer and the holder); if Alice sets up a trust line to Bob for
+ * BTC, and Bob trusts Alice for BTC, here is only a single BTC trust line
+ * between them.
+ */
+/** @{ */
+Keylet
+trustLine(AccountID const& id0, AccountID const& id1, Currency const& currency) noexcept;
+
+inline Keylet
+trustLine(AccountID const& id, Issue const& issue) noexcept
+{
+    return trustLine(id, issue.account, issue.currency);
+}
+/** @} */
+
+/**
+ * An offer from an account
+ */
+/** @{ */
+Keylet
+offer(AccountID const& id, SeqProxy const& seq) noexcept;
+
+inline Keylet
+offer(UInt256 const& key) noexcept
+{
+    return {ltOFFER, key};
+}
+/** @} */
+
+/**
+ * The initial directory page for a specific quality
+ */
+Keylet
+quality(Keylet const& k, std::uint64_t const q) noexcept;
+
+/**
+ * The directory for the next lower quality
+ */
+Keylet
+next(Keylet const& k);
+
+/**
+ * A ticket belonging to an account
+ */
+/** @{ */
+Keylet
+ticket(AccountID const& id, SeqProxy const& ticketSeq);
+
+inline Keylet
+ticket(UInt256 const& key)
+{
+    return {ltTICKET, key};
+}
+/** @} */
+
+/**
+ * A SignerList
+ */
+Keylet
+signerList(AccountID const& account) noexcept;
+
+/**
+ * A Sponsorship
+ */
+Keylet
+sponsorship(AccountID const& sponsor, AccountID const& sponsee) noexcept;
+
+/**
+ * A Check
+ */
+/** @{ */
+Keylet
+check(AccountID const& id, SeqProxy const& seq) noexcept;
+
+inline Keylet
+check(UInt256 const& key) noexcept
+{
+    return {ltCHECK, key};
+}
+/** @} */
+
+/**
+ * A TransactionProposal
+ */
+/** @{ */
+Keylet
+txProposal(AccountID const& target, std::uint32_t ticketSequence) noexcept;
+
+inline Keylet
+txProposal(UInt256 const& key) noexcept
+{
+    return {ltTRANSACTION_PROPOSAL, key};
+}
+/** @} */
+
+/**
+ * A DepositPreauth
+ */
+/** @{ */
+Keylet
+depositPreauth(AccountID const& owner, AccountID const& preauthorized) noexcept;
+
+Keylet
+depositPreauth(
+    AccountID const& owner,
+    std::set<std::pair<AccountID, Slice>> const& authCreds) noexcept;
+
+inline Keylet
+depositPreauth(UInt256 const& key) noexcept
+{
+    return {ltDEPOSIT_PREAUTH, key};
+}
+/** @} */
+
+//------------------------------------------------------------------------------
+
+/**
+ * Any ledger entry
+ */
+Keylet
+unchecked(UInt256 const& key) noexcept;
+
+/**
+ * The root page of an account's directory
+ */
+Keylet
+ownerDir(AccountID const& id) noexcept;
+
+/**
+ * A page in a directory
+ */
+/** @{ */
+Keylet
+page(UInt256 const& root, std::uint64_t const index = 0) noexcept;
+
+inline Keylet
+page(Keylet const& root, std::uint64_t const index = 0) noexcept
+{
+    XRPL_ASSERT(root.type == ltDIR_NODE, "xrpl::keylet::page : valid root type");
+    return page(root.key, index);
+}
+/** @} */
+
+/**
+ * An escrow entry
+ */
+Keylet
+escrow(AccountID const& src, SeqProxy const& seq) noexcept;
+
+/**
+ * A PaymentChannel
+ */
+Keylet
+payChannel(AccountID const& src, AccountID const& dst, SeqProxy const& seq) noexcept;
+
+/**
+ * NFT page keylets
+ *
+ * Unlike objects whose ledger identifiers are produced by hashing data,
+ * NFT page identifiers are composite identifiers, consisting of the owner's
+ * 160-bit AccountID, followed by a 96-bit value that determines which NFT
+ * tokens are candidates for that page.
+ */
+/** @{ */
+/**
+ * A keylet for the owner's first possible NFT page.
+ */
+Keylet
+nftokenPageMin(AccountID const& owner);
+
+/**
+ * A keylet for the owner's last possible NFT page.
+ */
+Keylet
+nftokenPageMax(AccountID const& owner);
+
+Keylet
+nftokenPage(Keylet const& k, UInt256 const& token);
+/** @} */
+
+/**
+ * An offer from an account to buy or sell an NFT
+ */
+Keylet
+nftokenOffer(AccountID const& owner, SeqProxy const& seq);
+
+inline Keylet
+nftokenOffer(UInt256 const& offer)
+{
+    return {ltNFTOKEN_OFFER, offer};
+}
+
+/**
+ * The directory of buy offers for the specified NFT
+ */
+Keylet
+nftBuys(UInt256 const& id) noexcept;
+
+/**
+ * The directory of sell offers for the specified NFT
+ */
+Keylet
+nftSells(UInt256 const& id) noexcept;
+
+/**
+ * AMM entry
+ */
+Keylet
+amm(Asset const& issue1, Asset const& issue2) noexcept;
+
+Keylet
+amm(UInt256 const& amm) noexcept;
+
+/**
+ * A keylet for Delegate object
+ */
+Keylet
+delegate(AccountID const& account, AccountID const& authorizedAccount) noexcept;
+
+Keylet
+did(AccountID const& account) noexcept;
+
+Keylet
+oracle(AccountID const& account, std::uint32_t const documentID) noexcept;
+
+Keylet
+credential(AccountID const& subject, AccountID const& issuer, Slice const& credType) noexcept;
+
+inline Keylet
+credential(UInt256 const& key) noexcept
+{
+    return {ltCREDENTIAL, key};
+}
+
+Keylet
+mptokenIssuance(MPTID const& issuanceID) noexcept;
+
+inline Keylet
+mptokenIssuance(UInt256 const& issuanceKey)
+{
+    return {ltMPTOKEN_ISSUANCE, issuanceKey};
+}
+
+Keylet
+mptoken(MPTID const& issuanceID, AccountID const& holder) noexcept;
+
+inline Keylet
+mptoken(UInt256 const& mptokenKey)
+{
+    return {ltMPTOKEN, mptokenKey};
+}
+
+Keylet
+mptoken(UInt256 const& issuanceKey, AccountID const& holder) noexcept;
+
+Keylet
+vault(AccountID const& owner, SeqProxy const& seq) noexcept;
+
+inline Keylet
+vault(UInt256 const& vaultKey)
+{
+    return {ltVAULT, vaultKey};
+}
+
+Keylet
+loanBroker(AccountID const& owner, SeqProxy const& seq) noexcept;
+
+inline Keylet
+loanBroker(UInt256 const& key)
+{
+    return {ltLOAN_BROKER, key};
+}
+
+Keylet
+loan(UInt256 const& loanBrokerID, SeqProxy const& loanSeq) noexcept;
+
+inline Keylet
+loan(UInt256 const& key)
+{
+    return {ltLOAN, key};
+}
+
+Keylet
+permissionedDomain(AccountID const& account, SeqProxy const& seq) noexcept;
+
+Keylet
+permissionedDomain(UInt256 const& domainID) noexcept;
+}  // namespace keylet
+
+// Everything below is deprecated and should be removed in favor of keylets:
+
+UInt256
+getBookBase(Book const& book);
+
+UInt256
+getQualityNext(UInt256 const& uBase);
+
+// VFALCO This name could be better
+std::uint64_t
+getQuality(UInt256 const& uBase);
+
+template <class... KeyletParams>
+// NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
+struct KeyletDesc
+{
+    std::function<Keylet(KeyletParams...)> function;
+    json::StaticString expectedLEName;
+    bool includeInTests{};
+};
+
+// This list should include all of the keylet functions that take a single AccountID parameter.
+extern std::array<KeyletDesc<AccountID const&>, 6> const kDirectAccountKeylets;
+
+MPTID
+makeMptID(std::uint32_t const sequence, AccountID const& account);
+
+}  // namespace xrpl

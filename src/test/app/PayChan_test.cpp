@@ -1,0 +1,2310 @@
+
+#include <test/jtx/Account.h>
+#include <test/jtx/Env.h>
+#include <test/jtx/TestHelpers.h>
+#include <test/jtx/acctdelete.h>
+#include <test/jtx/amount.h>
+#include <test/jtx/balance.h>  // IWYU pragma: keep
+#include <test/jtx/credentials.h>
+#include <test/jtx/deposit.h>
+#include <test/jtx/fee.h>
+#include <test/jtx/flags.h>
+#include <test/jtx/paychan.h>
+#include <test/jtx/ter.h>
+#include <test/jtx/ticket.h>
+#include <test/jtx/txflags.h>
+
+#include <xrpld/rpc/Context.h>
+#include <xrpld/rpc/Role.h>
+#include <xrpld/rpc/handlers/Handlers.h>
+
+#include <xrpl/basics/Slice.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/basics/chrono.h>
+#include <xrpl/basics/strHex.h>
+#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/beast/utility/Zero.h>
+#include <xrpl/core/Job.h>
+#include <xrpl/core/ServiceRegistry.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/json/to_string.h>
+#include <xrpl/ledger/Dir.h>
+#include <xrpl/ledger/ReadView.h>
+#include <xrpl/protocol/ApiVersion.h>
+#include <xrpl/protocol/ErrorCodes.h>
+#include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/KeyType.h>
+#include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/PublicKey.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/SeqProxy.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/TxFlags.h>
+#include <xrpl/protocol/jss.h>
+#include <xrpl/resource/Charge.h>
+#include <xrpl/resource/Consumer.h>
+#include <xrpl/resource/Fees.h>
+
+#include <algorithm>
+#include <cassert>
+#include <cstddef>
+#include <cstdint>
+#include <iterator>
+#include <optional>
+#include <set>
+#include <string>
+#include <string_view>
+#include <utility>
+#include <vector>
+
+namespace xrpl::test {
+using namespace jtx::paychan;
+
+struct PayChan_test : public beast::unit_test::Suite
+{
+    static std::pair<UInt256, SLE::const_pointer>
+    channelKeyAndSle(ReadView const& view, jtx::Account const& account, jtx::Account const& dst)
+    {
+        auto const sle = view.read(keylet::account(account));
+        if (!sle)
+            return {};
+        auto const k =
+            keylet::payChannel(account, dst, SeqProxy::rawSequence((*sle)[sfSequence] - 1));
+        return {k.key, view.read(k)};
+    }
+
+    static std::optional<std::int64_t>
+    channelExpiration(ReadView const& view, UInt256 const& chan)
+    {
+        auto const slep = view.read({ltPAYCHAN, chan});
+        if (!slep)
+            return std::nullopt;
+        if (auto const r = (*slep)[~sfExpiration])
+            return r.value();
+        return std::nullopt;
+    }
+
+    void
+    testSimple(FeatureBitset features)
+    {
+        testcase("simple");
+        using namespace jtx;
+        using namespace std::literals::chrono_literals;
+        Env env{*this, features};
+        auto const alice = Account("alice");
+        auto const bob = Account("bob");
+        auto const usda = alice["USD"];
+        env.fund(XRP(10000), alice, bob);
+        auto const pk = alice.pk();
+        auto const settleDelay = 100s;
+        auto const chan = channel(alice, bob, env.seq(alice));
+        env(create(alice, bob, XRP(1000), settleDelay, pk));
+        BEAST_EXPECT(channelBalance(*env.current(), chan) == XRP(0));
+        BEAST_EXPECT(channelAmount(*env.current(), chan) == XRP(1000));
+
+        {
+            auto const preAlice = env.balance(alice);
+            env(fund(alice, chan, XRP(1000)));
+            auto const feeDrops = env.current()->fees().base;
+            BEAST_EXPECT(env.balance(alice) == preAlice - XRP(1000) - feeDrops);
+        }
+
+        auto chanBal = channelBalance(*env.current(), chan);
+        auto const chanAmt = channelAmount(*env.current(), chan);
+        BEAST_EXPECT(chanBal == XRP(0));
+        BEAST_EXPECT(chanAmt == XRP(2000));
+
+        {
+            // bad amounts (non-xrp, negative amounts)
+            env(create(alice, bob, usda(1000), settleDelay, pk), Ter(temBAD_AMOUNT));
+            env(fund(alice, chan, usda(1000)), Ter(temBAD_AMOUNT));
+            env(create(alice, bob, XRP(-1000), settleDelay, pk), Ter(temBAD_AMOUNT));
+            env(fund(alice, chan, XRP(-1000)), Ter(temBAD_AMOUNT));
+        }
+
+        // invalid account
+        env(create(alice, "noAccount", XRP(1000), settleDelay, pk), Ter(tecNO_DST));
+        // can't create channel to the same account
+        env(create(alice, alice, XRP(1000), settleDelay, pk), Ter(temDST_IS_SRC));
+        // invalid channel
+
+        env(fund(alice, channel(alice, "noAccount", env.seq(alice) - 1), XRP(1000)),
+            Ter(tecNO_ENTRY));
+        // not enough funds
+        env(create(alice, bob, XRP(10000), settleDelay, pk), Ter(tecUNFUNDED));
+
+        {
+            // No signature claim with bad amounts (negative and non-xrp)
+            auto const iou = usda(100).value();
+            auto const negXRP = XRP(-100).value();
+            auto const posXRP = XRP(100).value();
+            env(claim(alice, chan, iou, iou), Ter(temBAD_AMOUNT));
+            env(claim(alice, chan, posXRP, iou), Ter(temBAD_AMOUNT));
+            env(claim(alice, chan, iou, posXRP), Ter(temBAD_AMOUNT));
+            env(claim(alice, chan, negXRP, negXRP), Ter(temBAD_AMOUNT));
+            env(claim(alice, chan, posXRP, negXRP), Ter(temBAD_AMOUNT));
+            env(claim(alice, chan, negXRP, posXRP), Ter(temBAD_AMOUNT));
+        }
+        {
+            // No signature claim more than authorized
+            auto const delta = XRP(500);
+            auto const reqBal = chanBal + delta;
+            auto const authAmt = reqBal + XRP(-100);
+            assert(reqBal <= chanAmt);
+            env(claim(alice, chan, reqBal, authAmt), Ter(temBAD_AMOUNT));
+        }
+        {
+            // No signature needed since the owner is claiming
+            auto const preBob = env.balance(bob);
+            auto const delta = XRP(500);
+            auto const reqBal = chanBal + delta;
+            auto const authAmt = reqBal + XRP(100);
+            assert(reqBal <= chanAmt);
+            env(claim(alice, chan, reqBal, authAmt));
+            BEAST_EXPECT(channelBalance(*env.current(), chan) == reqBal);
+            BEAST_EXPECT(channelAmount(*env.current(), chan) == chanAmt);
+            BEAST_EXPECT(env.balance(bob) == preBob + delta);
+            chanBal = reqBal;
+        }
+        {
+            // Claim with signature
+            auto preBob = env.balance(bob);
+            auto const delta = XRP(500);
+            auto const reqBal = chanBal + delta;
+            auto const authAmt = reqBal + XRP(100);
+            assert(reqBal <= chanAmt);
+            auto const sig = signClaimAuth(alice.pk(), alice.sk(), chan, authAmt);
+            env(claim(bob, chan, reqBal, authAmt, Slice(sig), alice.pk()));
+            BEAST_EXPECT(channelBalance(*env.current(), chan) == reqBal);
+            BEAST_EXPECT(channelAmount(*env.current(), chan) == chanAmt);
+            auto const feeDrops = env.current()->fees().base;
+            BEAST_EXPECT(env.balance(bob) == preBob + delta - feeDrops);
+            chanBal = reqBal;
+
+            // claim again
+            preBob = env.balance(bob);
+            env(claim(bob, chan, reqBal, authAmt, Slice(sig), alice.pk()),
+                Ter(tecUNFUNDED_PAYMENT));
+            BEAST_EXPECT(channelBalance(*env.current(), chan) == chanBal);
+            BEAST_EXPECT(channelAmount(*env.current(), chan) == chanAmt);
+            BEAST_EXPECT(env.balance(bob) == preBob - feeDrops);
+        }
+        {
+            // Try to claim more than authorized
+            auto const preBob = env.balance(bob);
+            STAmount const authAmt = chanBal + XRP(500);
+            STAmount const reqAmt = authAmt + STAmount{1};
+            assert(reqAmt <= chanAmt);
+            auto const sig = signClaimAuth(alice.pk(), alice.sk(), chan, authAmt);
+            env(claim(bob, chan, reqAmt, authAmt, Slice(sig), alice.pk()), Ter(temBAD_AMOUNT));
+            BEAST_EXPECT(channelBalance(*env.current(), chan) == chanBal);
+            BEAST_EXPECT(channelAmount(*env.current(), chan) == chanAmt);
+            BEAST_EXPECT(env.balance(bob) == preBob);
+        }
+
+        // Dst tries to fund the channel
+        env(fund(bob, chan, XRP(1000)), Ter(tecNO_PERMISSION));
+        BEAST_EXPECT(channelBalance(*env.current(), chan) == chanBal);
+        BEAST_EXPECT(channelAmount(*env.current(), chan) == chanAmt);
+
+        {
+            // Wrong signing key
+            auto const sig = signClaimAuth(bob.pk(), bob.sk(), chan, XRP(1500));
+            env(claim(bob, chan, XRP(1500).value(), XRP(1500).value(), Slice(sig), bob.pk()),
+                Ter(temBAD_SIGNER));
+            BEAST_EXPECT(channelBalance(*env.current(), chan) == chanBal);
+            BEAST_EXPECT(channelAmount(*env.current(), chan) == chanAmt);
+        }
+        {
+            // Bad signature
+            auto const sig = signClaimAuth(bob.pk(), bob.sk(), chan, XRP(1500));
+            env(claim(bob, chan, XRP(1500).value(), XRP(1500).value(), Slice(sig), alice.pk()),
+                Ter(temBAD_SIGNATURE));
+            BEAST_EXPECT(channelBalance(*env.current(), chan) == chanBal);
+            BEAST_EXPECT(channelAmount(*env.current(), chan) == chanAmt);
+        }
+        {
+            // Dst closes channel
+            auto const preAlice = env.balance(alice);
+            auto const preBob = env.balance(bob);
+            env(claim(bob, chan), Txflags(tfClose));
+            BEAST_EXPECT(!channelExists(*env.current(), chan));
+            auto const feeDrops = env.current()->fees().base;
+            auto const delta = chanAmt - chanBal;
+            assert(delta > beast::kZero);
+            BEAST_EXPECT(env.balance(alice) == preAlice + delta);
+            BEAST_EXPECT(env.balance(bob) == preBob - feeDrops);
+        }
+    }
+
+    void
+    testDisallowIncoming(FeatureBitset features)
+    {
+        testcase("Disallow Incoming Flag");
+        using namespace jtx;
+
+        using namespace std::literals::chrono_literals;
+        Env env{*this, features};
+        auto const alice = Account("alice");
+        auto const bob = Account("bob");
+        auto const cho = Account("cho");
+        env.fund(XRP(10000), alice, bob, cho);
+        auto const pk = alice.pk();
+        auto const settleDelay = 100s;
+
+        // set flag on bob only
+        env(fset(bob, asfDisallowIncomingPayChan));
+        env.close();
+
+        // channel creation from alice to bob is disallowed
+        {
+            auto const chan = channel(alice, bob, env.seq(alice));
+            env(create(alice, bob, XRP(1000), settleDelay, pk), Ter(tecNO_PERMISSION));
+            BEAST_EXPECT(!channelExists(*env.current(), chan));
+        }
+
+        // set flag on alice also
+        env(fset(alice, asfDisallowIncomingPayChan));
+        env.close();
+
+        // channel creation from bob to alice is now disallowed
+        {
+            auto const chan = channel(bob, alice, env.seq(bob));
+            env(create(bob, alice, XRP(1000), settleDelay, pk), Ter(tecNO_PERMISSION));
+            BEAST_EXPECT(!channelExists(*env.current(), chan));
+        }
+
+        // remove flag from bob
+        env(fclear(bob, asfDisallowIncomingPayChan));
+        env.close();
+
+        // now the channel between alice and bob can exist
+        {
+            auto const chan = channel(alice, bob, env.seq(alice));
+            env(create(alice, bob, XRP(1000), settleDelay, pk), Ter(tesSUCCESS));
+            BEAST_EXPECT(channelExists(*env.current(), chan));
+        }
+
+        // a channel from cho to alice isn't allowed
+        {
+            auto const chan = channel(cho, alice, env.seq(cho));
+            env(create(cho, alice, XRP(1000), settleDelay, pk), Ter(tecNO_PERMISSION));
+            BEAST_EXPECT(!channelExists(*env.current(), chan));
+        }
+
+        // remove flag from alice
+        env(fclear(alice, asfDisallowIncomingPayChan));
+        env.close();
+
+        // now a channel from cho to alice is allowed
+        {
+            auto const chan = channel(cho, alice, env.seq(cho));
+            env(create(cho, alice, XRP(1000), settleDelay, pk), Ter(tesSUCCESS));
+            BEAST_EXPECT(channelExists(*env.current(), chan));
+        }
+    }
+
+    void
+    testCancelAfter(FeatureBitset features)
+    {
+        testcase("cancel after");
+        using namespace jtx;
+        using namespace std::literals::chrono_literals;
+        auto const alice = Account("alice");
+        auto const bob = Account("bob");
+        auto const carol = Account("carol");
+        {
+            // If dst claims after cancel after, channel closes
+            Env env{*this, features};
+            env.fund(XRP(10000), alice, bob);
+            auto const pk = alice.pk();
+            auto const settleDelay = 100s;
+            NetClock::time_point const cancelAfter =
+                env.current()->header().parentCloseTime + 3600s;
+            auto const channelFunds = XRP(1000);
+            auto const chan = channel(alice, bob, env.seq(alice));
+            env(create(alice, bob, channelFunds, settleDelay, pk, cancelAfter));
+            BEAST_EXPECT(channelExists(*env.current(), chan));
+            env.close(cancelAfter);
+            {
+                // dst cannot claim after cancelAfter
+                auto const chanBal = channelBalance(*env.current(), chan);
+                auto const chanAmt = channelAmount(*env.current(), chan);
+                auto const preAlice = env.balance(alice);
+                auto const preBob = env.balance(bob);
+                auto const delta = XRP(500);
+                auto const reqBal = chanBal + delta;
+                auto const authAmt = reqBal + XRP(100);
+                assert(reqBal <= chanAmt);
+                auto const sig = signClaimAuth(alice.pk(), alice.sk(), chan, authAmt);
+                env(claim(bob, chan, reqBal, authAmt, Slice(sig), alice.pk()));
+                auto const feeDrops = env.current()->fees().base;
+                BEAST_EXPECT(!channelExists(*env.current(), chan));
+                BEAST_EXPECT(env.balance(bob) == preBob - feeDrops);
+                BEAST_EXPECT(env.balance(alice) == preAlice + channelFunds);
+            }
+        }
+        {
+            // Third party can close after cancel after
+            Env env{*this, features};
+            env.fund(XRP(10000), alice, bob, carol);
+            auto const pk = alice.pk();
+            auto const settleDelay = 100s;
+            NetClock::time_point const cancelAfter =
+                env.current()->header().parentCloseTime + 3600s;
+            auto const channelFunds = XRP(1000);
+            auto const chan = channel(alice, bob, env.seq(alice));
+            env(create(alice, bob, channelFunds, settleDelay, pk, cancelAfter));
+            BEAST_EXPECT(channelExists(*env.current(), chan));
+            // third party close before cancelAfter
+            env(claim(carol, chan), Txflags(tfClose), Ter(tecNO_PERMISSION));
+            BEAST_EXPECT(channelExists(*env.current(), chan));
+            env.close(cancelAfter);
+            // third party close after cancelAfter
+            auto const preAlice = env.balance(alice);
+            env(claim(carol, chan), Txflags(tfClose));
+            BEAST_EXPECT(!channelExists(*env.current(), chan));
+            BEAST_EXPECT(env.balance(alice) == preAlice + channelFunds);
+        }
+        // fixPayChanCancelAfter
+        // CancelAfter should be greater than close time
+        {
+            for (bool const withFixPayChan : {true, false})
+            {
+                auto const amend = withFixPayChan ? features : features - fixPayChanCancelAfter;
+                Env env{*this, amend};
+                env.fund(XRP(10000), alice, bob);
+                env.close();
+
+                auto const pk = alice.pk();
+                auto const settleDelay = 100s;
+                auto const channelFunds = XRP(1000);
+                NetClock::time_point const cancelAfter =
+                    env.current()->header().parentCloseTime - 1s;
+                auto const txResult = withFixPayChan ? Ter(tecEXPIRED) : Ter(tesSUCCESS);
+                env(create(alice, bob, channelFunds, settleDelay, pk, cancelAfter), txResult);
+            }
+        }
+        // fixPayChanCancelAfter
+        // CancelAfter can be equal to the close time
+        {
+            for (bool const withFixPayChan : {true, false})
+            {
+                auto const amend = withFixPayChan ? features : features - fixPayChanCancelAfter;
+                Env env{*this, amend};
+                env.fund(XRP(10000), alice, bob);
+                env.close();
+
+                auto const pk = alice.pk();
+                auto const settleDelay = 100s;
+                auto const channelFunds = XRP(1000);
+                NetClock::time_point const cancelAfter = env.current()->header().parentCloseTime;
+                env(create(alice, bob, channelFunds, settleDelay, pk, cancelAfter),
+                    Ter(tesSUCCESS));
+            }
+        }
+    }
+
+    void
+    testExpiration(FeatureBitset features)
+    {
+        testcase("expiration");
+        using namespace jtx;
+        using namespace std::literals::chrono_literals;
+        Env env{*this, features};
+        auto const alice = Account("alice");
+        auto const bob = Account("bob");
+        auto const carol = Account("carol");
+        env.fund(XRP(10000), alice, bob, carol);
+        auto const pk = alice.pk();
+        auto const settleDelay = 3600s;
+        auto const closeTime = env.current()->header().parentCloseTime;
+        auto const minExpiration = closeTime + settleDelay;
+        NetClock::time_point const cancelAfter = closeTime + 7200s;
+        auto const channelFunds = XRP(1000);
+        auto const chan = channel(alice, bob, env.seq(alice));
+        env(create(alice, bob, channelFunds, settleDelay, pk, cancelAfter));
+        BEAST_EXPECT(channelExists(*env.current(), chan));
+        BEAST_EXPECT(!channelExpiration(*env.current(), chan));
+        // Owner closes, will close after settleDelay
+        env(claim(alice, chan), Txflags(tfClose));
+        auto const counts = [](auto const& t) { return t.time_since_epoch().count(); };
+        // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
+        BEAST_EXPECT(*channelExpiration(*env.current(), chan) == counts(minExpiration));
+        // increase the expiration time
+        env(fund(alice, chan, XRP(1), NetClock::time_point{minExpiration + 100s}));
+        // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
+        BEAST_EXPECT(*channelExpiration(*env.current(), chan) == counts(minExpiration) + 100);
+        // decrease the expiration, but still above minExpiration
+        env(fund(alice, chan, XRP(1), NetClock::time_point{minExpiration + 50s}));
+        // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
+        BEAST_EXPECT(*channelExpiration(*env.current(), chan) == counts(minExpiration) + 50);
+        // decrease the expiration below minExpiration
+        env(fund(alice, chan, XRP(1), NetClock::time_point{minExpiration - 50s}),
+            Ter(temBAD_EXPIRATION));
+        // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
+        BEAST_EXPECT(*channelExpiration(*env.current(), chan) == counts(minExpiration) + 50);
+        env(claim(bob, chan), Txflags(tfRenew), Ter(tecNO_PERMISSION));
+        // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
+        BEAST_EXPECT(*channelExpiration(*env.current(), chan) == counts(minExpiration) + 50);
+        env(claim(alice, chan), Txflags(tfRenew));
+        BEAST_EXPECT(!channelExpiration(*env.current(), chan));
+        // decrease the expiration below minExpiration
+        env(fund(alice, chan, XRP(1), NetClock::time_point{minExpiration - 50s}),
+            Ter(temBAD_EXPIRATION));
+        BEAST_EXPECT(!channelExpiration(*env.current(), chan));
+        env(fund(alice, chan, XRP(1), NetClock::time_point{minExpiration}));
+        env.close(minExpiration);
+        // Try to extend the expiration after the expiration has already passed
+        env(fund(alice, chan, XRP(1), NetClock::time_point{minExpiration + 1000s}));
+        BEAST_EXPECT(!channelExists(*env.current(), chan));
+    }
+
+    void
+    testSettleDelay(FeatureBitset features)
+    {
+        testcase("settle delay");
+        using namespace jtx;
+        using namespace std::literals::chrono_literals;
+        Env env{*this, features};
+        auto const alice = Account("alice");
+        auto const bob = Account("bob");
+        env.fund(XRP(10000), alice, bob);
+        auto const pk = alice.pk();
+        auto const settleDelay = 3600s;
+        NetClock::time_point const settleTimepoint =
+            env.current()->header().parentCloseTime + settleDelay;
+        auto const channelFunds = XRP(1000);
+        auto const chan = channel(alice, bob, env.seq(alice));
+        env(create(alice, bob, channelFunds, settleDelay, pk));
+        BEAST_EXPECT(channelExists(*env.current(), chan));
+        // Owner closes, will close after settleDelay
+        env(claim(alice, chan), Txflags(tfClose));
+        BEAST_EXPECT(channelExists(*env.current(), chan));
+        env.close(settleTimepoint - (settleDelay / 2));
+        {
+            // receiver can still claim
+            auto const chanBal = channelBalance(*env.current(), chan);
+            auto const chanAmt = channelAmount(*env.current(), chan);
+            auto const preBob = env.balance(bob);
+            auto const delta = XRP(500);
+            auto const reqBal = chanBal + delta;
+            auto const authAmt = reqBal + XRP(100);
+            assert(reqBal <= chanAmt);
+            auto const sig = signClaimAuth(alice.pk(), alice.sk(), chan, authAmt);
+            env(claim(bob, chan, reqBal, authAmt, Slice(sig), alice.pk()));
+            BEAST_EXPECT(channelBalance(*env.current(), chan) == reqBal);
+            BEAST_EXPECT(channelAmount(*env.current(), chan) == chanAmt);
+            auto const feeDrops = env.current()->fees().base;
+            BEAST_EXPECT(env.balance(bob) == preBob + delta - feeDrops);
+        }
+        env.close(settleTimepoint);
+        {
+            // past settleTime, channel will close
+            auto const chanBal = channelBalance(*env.current(), chan);
+            auto const chanAmt = channelAmount(*env.current(), chan);
+            auto const preAlice = env.balance(alice);
+            auto const preBob = env.balance(bob);
+            auto const delta = XRP(500);
+            auto const reqBal = chanBal + delta;
+            auto const authAmt = reqBal + XRP(100);
+            assert(reqBal <= chanAmt);
+            auto const sig = signClaimAuth(alice.pk(), alice.sk(), chan, authAmt);
+            env(claim(bob, chan, reqBal, authAmt, Slice(sig), alice.pk()));
+            BEAST_EXPECT(!channelExists(*env.current(), chan));
+            auto const feeDrops = env.current()->fees().base;
+            BEAST_EXPECT(env.balance(alice) == preAlice + chanAmt - chanBal);
+            BEAST_EXPECT(env.balance(bob) == preBob - feeDrops);
+        }
+    }
+
+    void
+    testCloseDry(FeatureBitset features)
+    {
+        testcase("close dry");
+        using namespace jtx;
+        using namespace std::literals::chrono_literals;
+        Env env{*this, features};
+        auto const alice = Account("alice");
+        auto const bob = Account("bob");
+        env.fund(XRP(10000), alice, bob);
+        auto const pk = alice.pk();
+        auto const settleDelay = 3600s;
+        auto const channelFunds = XRP(1000);
+        auto const chan = channel(alice, bob, env.seq(alice));
+        env(create(alice, bob, channelFunds, settleDelay, pk));
+        BEAST_EXPECT(channelExists(*env.current(), chan));
+        // Owner tries to close channel, but it will remain open (settle delay)
+        env(claim(alice, chan), Txflags(tfClose));
+        BEAST_EXPECT(channelExists(*env.current(), chan));
+        {
+            // claim the entire amount
+            auto const preBob = env.balance(bob);
+            env(claim(alice, chan, channelFunds.value(), channelFunds.value()));
+            BEAST_EXPECT(channelBalance(*env.current(), chan) == channelFunds);
+            BEAST_EXPECT(env.balance(bob) == preBob + channelFunds);
+        }
+        auto const preAlice = env.balance(alice);
+        // Channel is now dry, can close before expiration date
+        env(claim(alice, chan), Txflags(tfClose));
+        BEAST_EXPECT(!channelExists(*env.current(), chan));
+        auto const feeDrops = env.current()->fees().base;
+        BEAST_EXPECT(env.balance(alice) == preAlice - feeDrops);
+    }
+
+    void
+    testDefaultAmount(FeatureBitset features)
+    {
+        // auth amount defaults to balance if not present
+        testcase("default amount");
+        using namespace jtx;
+        using namespace std::literals::chrono_literals;
+        Env env{*this, features};
+        auto const alice = Account("alice");
+        auto const bob = Account("bob");
+        env.fund(XRP(10000), alice, bob);
+        auto const pk = alice.pk();
+        auto const settleDelay = 3600s;
+        auto const channelFunds = XRP(1000);
+        auto const chan = channel(alice, bob, env.seq(alice));
+        env(create(alice, bob, channelFunds, settleDelay, pk));
+        BEAST_EXPECT(channelExists(*env.current(), chan));
+        // Owner tries to close channel, but it will remain open (settle delay)
+        env(claim(alice, chan), Txflags(tfClose));
+        BEAST_EXPECT(channelExists(*env.current(), chan));
+        {
+            auto chanBal = channelBalance(*env.current(), chan);
+            auto const chanAmt = channelAmount(*env.current(), chan);
+            auto const preBob = env.balance(bob);
+
+            auto const delta = XRP(500);
+            auto const reqBal = chanBal + delta;
+            assert(reqBal <= chanAmt);
+            auto const sig = signClaimAuth(alice.pk(), alice.sk(), chan, reqBal);
+            env(claim(bob, chan, reqBal, std::nullopt, Slice(sig), alice.pk()));
+            BEAST_EXPECT(channelBalance(*env.current(), chan) == reqBal);
+            auto const feeDrops = env.current()->fees().base;
+            BEAST_EXPECT(env.balance(bob) == preBob + delta - feeDrops);
+            chanBal = reqBal;
+        }
+        {
+            // Claim again
+            auto chanBal = channelBalance(*env.current(), chan);
+            auto const chanAmt = channelAmount(*env.current(), chan);
+            auto const preBob = env.balance(bob);
+
+            auto const delta = XRP(500);
+            auto const reqBal = chanBal + delta;
+            assert(reqBal <= chanAmt);
+            auto const sig = signClaimAuth(alice.pk(), alice.sk(), chan, reqBal);
+            env(claim(bob, chan, reqBal, std::nullopt, Slice(sig), alice.pk()));
+            BEAST_EXPECT(channelBalance(*env.current(), chan) == reqBal);
+            auto const feeDrops = env.current()->fees().base;
+            BEAST_EXPECT(env.balance(bob) == preBob + delta - feeDrops);
+            chanBal = reqBal;
+        }
+    }
+
+    void
+    testDisallowXRP(FeatureBitset features)
+    {
+        // auth amount defaults to balance if not present
+        testcase("Disallow XRP");
+        using namespace jtx;
+        using namespace std::literals::chrono_literals;
+
+        auto const alice = Account("alice");
+        auto const bob = Account("bob");
+        {
+            // Create a channel where dst disallows XRP.  Ignore that flag,
+            // since it's just advisory.
+            Env env{*this, features};
+            env.fund(XRP(10000), alice, bob);
+            env(fset(bob, asfDisallowXRP));
+            auto const chan = channel(alice, bob, env.seq(alice));
+            env(create(alice, bob, XRP(1000), 3600s, alice.pk()));
+            BEAST_EXPECT(channelExists(*env.current(), chan));
+        }
+
+        {
+            // Claim to a channel where dst disallows XRP (channel is
+            // created before disallow xrp is set).  Ignore that flag
+            // since it is just advisory.
+            Env env{*this, features};
+            env.fund(XRP(10000), alice, bob);
+            auto const chan = channel(alice, bob, env.seq(alice));
+            env(create(alice, bob, XRP(1000), 3600s, alice.pk()));
+            BEAST_EXPECT(channelExists(*env.current(), chan));
+
+            env(fset(bob, asfDisallowXRP));
+            auto const reqBal = XRP(500).value();
+            env(claim(alice, chan, reqBal, reqBal));
+        }
+    }
+
+    void
+    testDstTag(FeatureBitset features)
+    {
+        // auth amount defaults to balance if not present
+        testcase("Dst Tag");
+        using namespace jtx;
+        using namespace std::literals::chrono_literals;
+        // Create a channel where dst disallows XRP
+        Env env{*this, features};
+        auto const alice = Account("alice");
+        auto const bob = Account("bob");
+        env.fund(XRP(10000), alice, bob);
+        env(fset(bob, asfRequireDest));
+        auto const pk = alice.pk();
+        auto const settleDelay = 3600s;
+        auto const channelFunds = XRP(1000);
+        {
+            auto const chan = channel(alice, bob, env.seq(alice));
+            env(create(alice, bob, channelFunds, settleDelay, pk), Ter(tecDST_TAG_NEEDED));
+            BEAST_EXPECT(!channelExists(*env.current(), chan));
+        }
+        {
+            auto const chan = channel(alice, bob, env.seq(alice));
+            env(create(alice, bob, channelFunds, settleDelay, pk, std::nullopt, 1));
+            BEAST_EXPECT(channelExists(*env.current(), chan));
+        }
+    }
+
+    void
+    testDepositAuth(FeatureBitset features)
+    {
+        testcase("Deposit Authorization");
+        using namespace jtx;
+        using namespace std::literals::chrono_literals;
+
+        auto const alice = Account("alice");
+        auto const bob = Account("bob");
+        auto const carol = Account("carol");
+        auto const usda = alice["USD"];
+        {
+            Env env{*this, features};
+            env.fund(XRP(10000), alice, bob, carol);
+
+            env(fset(bob, asfDepositAuth));
+            env.close();
+
+            auto const pk = alice.pk();
+            auto const settleDelay = 100s;
+            auto const chan = channel(alice, bob, env.seq(alice));
+            env(create(alice, bob, XRP(1000), settleDelay, pk));
+            env.close();
+
+            BEAST_EXPECT(channelBalance(*env.current(), chan) == XRP(0));
+            BEAST_EXPECT(channelAmount(*env.current(), chan) == XRP(1000));
+
+            // alice can add more funds to the channel even though bob has
+            // asfDepositAuth set.
+            env(fund(alice, chan, XRP(1000)));
+            env.close();
+
+            // alice claims. Fails because bob's lsfDepositAuth flag is set.
+            env(claim(alice, chan, XRP(500).value(), XRP(500).value()), Ter(tecNO_PERMISSION));
+            env.close();
+
+            // Claim with signature
+            auto const baseFee = env.current()->fees().base;
+            auto const preBob = env.balance(bob);
+            {
+                auto const delta = XRP(500).value();
+                auto const sig = signClaimAuth(pk, alice.sk(), chan, delta);
+
+                // alice claims with signature.  Fails since bob has
+                // lsfDepositAuth flag set.
+                env(claim(alice, chan, delta, delta, Slice(sig), pk), Ter(tecNO_PERMISSION));
+                env.close();
+                BEAST_EXPECT(env.balance(bob) == preBob);
+
+                // bob claims but omits the signature.  Fails because only
+                // alice can claim without a signature.
+                env(claim(bob, chan, delta, delta), Ter(temBAD_SIGNATURE));
+                env.close();
+
+                // bob claims with signature.  Succeeds even though bob's
+                // lsfDepositAuth flag is set since bob submitted the
+                // transaction.
+                env(claim(bob, chan, delta, delta, Slice(sig), pk));
+                env.close();
+                BEAST_EXPECT(env.balance(bob) == preBob + delta - baseFee);
+            }
+            {
+                // Explore the limits of deposit pre-authorization.
+                auto const delta = XRP(600).value();
+                auto const sig = signClaimAuth(pk, alice.sk(), chan, delta);
+
+                // carol claims and fails.  Only channel participants (bob or
+                // alice) may claim.
+                env(claim(carol, chan, delta, delta, Slice(sig), pk), Ter(tecNO_PERMISSION));
+                env.close();
+
+                // bob preauthorizes carol for deposit.  But after that carol
+                // still can't claim since only channel participants may claim.
+                env(deposit::auth(bob, carol));
+                env.close();
+
+                env(claim(carol, chan, delta, delta, Slice(sig), pk), Ter(tecNO_PERMISSION));
+
+                // Since alice is not preauthorized she also may not claim
+                // for bob.
+                env(claim(alice, chan, delta, delta, Slice(sig), pk), Ter(tecNO_PERMISSION));
+                env.close();
+
+                // However if bob preauthorizes alice for deposit then she can
+                // successfully submit a claim.
+                env(deposit::auth(bob, alice));
+                env.close();
+
+                env(claim(alice, chan, delta, delta, Slice(sig), pk));
+                env.close();
+
+                BEAST_EXPECT(env.balance(bob) == preBob + delta - (3 * baseFee));
+            }
+            {
+                // bob removes pre-authorization of alice.  Once again she
+                // cannot submit a claim.
+                auto const delta = XRP(800).value();
+
+                env(deposit::unauth(bob, alice));
+                env.close();
+
+                // alice claims and fails since she is no longer preauthorized.
+                env(claim(alice, chan, delta, delta), Ter(tecNO_PERMISSION));
+                env.close();
+
+                // bob clears lsfDepositAuth.  Now alice can claim.
+                env(fclear(bob, asfDepositAuth));
+                env.close();
+
+                // alice claims successfully.
+                env(claim(alice, chan, delta, delta));
+                env.close();
+                BEAST_EXPECT(env.balance(bob) == preBob + XRP(800) - (5 * baseFee));
+            }
+        }
+    }
+
+    void
+    testDepositAuthCreds()
+    {
+        testcase("Deposit Authorization with Credentials");
+        using namespace jtx;
+        using namespace std::literals::chrono_literals;
+
+        char const credType[] = "abcde";
+
+        Account const alice("alice");
+        Account const bob("bob");
+        Account const carol("carol");
+        Account const dillon("dillon");
+        Account const zelda("zelda");
+
+        {
+            Env env{*this};
+            env.fund(XRP(10000), alice, bob, carol, dillon, zelda);
+
+            auto const pk = alice.pk();
+            auto const settleDelay = 100s;
+            auto const chan = channel(alice, bob, env.seq(alice));
+            env(create(alice, bob, XRP(1000), settleDelay, pk));
+            env.close();
+
+            // alice add funds to the channel
+            env(fund(alice, chan, XRP(1000)));
+            env.close();
+
+            std::string const credBadIdx =
+                "D007AE4B6E1274B4AF872588267B810C2F82716726351D1C7D38D3E5499FC6"
+                "E1";
+
+            auto const delta = XRP(500).value();
+
+            {  // create credentials
+                auto jv = credentials::create(alice, carol, credType);
+                uint32_t const t =
+                    env.current()->header().parentCloseTime.time_since_epoch().count() + 100;
+                jv[sfExpiration.jsonName] = t;
+                env(jv);
+                env.close();
+            }
+
+            auto const jv = credentials::ledgerEntry(env, alice, carol, credType);
+            std::string const credIdx = jv[jss::result][jss::index].asString();
+
+            // Bob require pre-authorization
+            env(fset(bob, asfDepositAuth));
+            env.close();
+
+            // Fail, credentials not accepted
+            env(claim(alice, chan, delta, delta),
+                credentials::Ids({credIdx}),
+                Ter(tecBAD_CREDENTIALS));
+            env.close();
+
+            env(credentials::accept(alice, carol, credType));
+            env.close();
+
+            // Fail, no depositPreauth object
+            env(claim(alice, chan, delta, delta),
+                credentials::Ids({credIdx}),
+                Ter(tecNO_PERMISSION));
+            env.close();
+
+            // Setup deposit authorization
+            env(deposit::authCredentials(bob, {{.issuer = carol, .credType = credType}}));
+            env.close();
+
+            // Fail, credentials doesn’t belong to root account
+            env(claim(dillon, chan, delta, delta),
+                credentials::Ids({credIdx}),
+                Ter(tecBAD_CREDENTIALS));
+
+            // Fails because bob's lsfDepositAuth flag is set.
+            env(claim(alice, chan, delta, delta), Ter(tecNO_PERMISSION));
+
+            // Fail, bad credentials index.
+            env(claim(alice, chan, delta, delta),
+                credentials::Ids({credBadIdx}),
+                Ter(tecBAD_CREDENTIALS));
+
+            // Fail, empty credentials
+            env(claim(alice, chan, delta, delta), credentials::Ids({}), Ter(temMALFORMED));
+
+            {
+                // claim fails cause of expired credentials
+
+                // Every cycle +10sec.
+                for (int i = 0; i < 10; ++i)
+                    env.close();
+
+                env(claim(alice, chan, delta, delta), credentials::Ids({credIdx}), Ter(tecEXPIRED));
+                env.close();
+            }
+
+            {  // create credentials once more
+                env(credentials::create(alice, carol, credType));
+                env.close();
+                env(credentials::accept(alice, carol, credType));
+                env.close();
+
+                auto const jv = credentials::ledgerEntry(env, alice, carol, credType);
+                std::string const credIdx = jv[jss::result][jss::index].asString();
+
+                // Success
+                env(claim(alice, chan, delta, delta), credentials::Ids({credIdx}));
+            }
+        }
+
+        {
+            Env env{*this};
+            env.fund(XRP(10000), alice, bob, carol, dillon, zelda);
+
+            auto const pk = alice.pk();
+            auto const settleDelay = 100s;
+            auto const chan = channel(alice, bob, env.seq(alice));
+            env(create(alice, bob, XRP(1000), settleDelay, pk));
+            env.close();
+
+            // alice add funds to the channel
+            env(fund(alice, chan, XRP(1000)));
+            env.close();
+
+            auto const delta = XRP(500).value();
+
+            {  // create credentials
+                env(credentials::create(alice, carol, credType));
+                env.close();
+                env(credentials::accept(alice, carol, credType));
+                env.close();
+            }
+
+            auto const jv = credentials::ledgerEntry(env, alice, carol, credType);
+            std::string const credIdx = jv[jss::result][jss::index].asString();
+
+            // Succeed, lsfDepositAuth is not set
+            env(claim(alice, chan, delta, delta), credentials::Ids({credIdx}));
+            env.close();
+        }
+
+        {
+            // Credentials amendment not enabled
+            Env env(*this, testableAmendments() - featureCredentials);
+            env.fund(XRP(5000), "alice", "bob");
+            env.close();
+
+            auto const pk = alice.pk();
+            auto const settleDelay = 100s;
+            auto const chan = channel(alice, bob, env.seq(alice));
+            env(create(alice, bob, XRP(1000), settleDelay, pk));
+            env.close();
+
+            env(fund(alice, chan, XRP(1000)));
+            env.close();
+            std::string const credIdx =
+                "48004829F915654A81B11C4AB8218D96FED67F209B58328A72314FB6EA288B"
+                "E4";
+
+            // can't claim with old DepositPreauth because rule is not enabled.
+            env(fset(bob, asfDepositAuth));
+            env.close();
+            env(deposit::auth(bob, alice));
+            env.close();
+
+            env(claim(alice, chan, XRP(500).value(), XRP(500).value()),
+                credentials::Ids({credIdx}),
+                Ter(temDISABLED));
+        }
+    }
+
+    void
+    testMultiple(FeatureBitset features)
+    {
+        // auth amount defaults to balance if not present
+        testcase("Multiple channels to the same account");
+        using namespace jtx;
+        using namespace std::literals::chrono_literals;
+        Env env{*this, features};
+        auto const alice = Account("alice");
+        auto const bob = Account("bob");
+        env.fund(XRP(10000), alice, bob);
+        auto const pk = alice.pk();
+        auto const settleDelay = 3600s;
+        auto const channelFunds = XRP(1000);
+        auto const chan1 = channel(alice, bob, env.seq(alice));
+        env(create(alice, bob, channelFunds, settleDelay, pk));
+        BEAST_EXPECT(channelExists(*env.current(), chan1));
+        auto const chan2 = channel(alice, bob, env.seq(alice));
+        env(create(alice, bob, channelFunds, settleDelay, pk));
+        BEAST_EXPECT(channelExists(*env.current(), chan2));
+        BEAST_EXPECT(chan1 != chan2);
+    }
+
+    void
+    testAccountChannelsRPC(FeatureBitset features)
+    {
+        testcase("AccountChannels RPC");
+
+        using namespace jtx;
+        using namespace std::literals::chrono_literals;
+        Env env{*this, features};
+        auto const alice = Account("alice");
+        auto const bob = Account("bob");
+        auto const charlie = Account("charlie", KeyType::Ed25519);
+        env.fund(XRP(10000), alice, bob, charlie);
+        auto const pk = alice.pk();
+        auto const settleDelay = 3600s;
+        auto const channelFunds = XRP(1000);
+        auto const chan1Str = to_string(channel(alice, bob, env.seq(alice)));
+        env(create(alice, bob, channelFunds, settleDelay, pk));
+        env.close();
+        {
+            // test account non-string
+            auto const testInvalidAccountParam = [&](auto const& param) {
+                json::Value params;
+                params[jss::account] = param;
+                auto const jrr =
+                    env.rpc("json", "account_channels", to_string(params))[jss::result];
+                BEAST_EXPECT(jrr[jss::error] == "invalidParams");
+                BEAST_EXPECT(jrr[jss::error_code] == RpcInvalidParams);
+                BEAST_EXPECT(jrr[jss::error_message] == "Invalid field 'account'.");
+            };
+
+            testInvalidAccountParam(1);
+            testInvalidAccountParam(1.1);
+            testInvalidAccountParam(true);
+            testInvalidAccountParam(json::Value(json::ValueType::Null));
+            testInvalidAccountParam(json::Value(json::ValueType::Object));
+            testInvalidAccountParam(json::Value(json::ValueType::Array));
+        }
+        {
+            // test destination_account non-string
+            auto const testInvalidDestAccountParam = [&](auto const& param) {
+                json::Value params;
+                params[jss::account] = alice.human();
+                params[jss::destination_account] = param;
+                auto const jrr =
+                    env.rpc("json", "account_channels", to_string(params))[jss::result];
+                BEAST_EXPECT(jrr[jss::error] == "invalidParams");
+                BEAST_EXPECT(jrr[jss::error_code] == RpcInvalidParams);
+                BEAST_EXPECT(jrr[jss::error_message] == "Invalid field 'destination_account'.");
+            };
+
+            testInvalidDestAccountParam(1);
+            testInvalidDestAccountParam(1.1);
+            testInvalidDestAccountParam(true);
+            testInvalidDestAccountParam(json::Value(json::ValueType::Null));
+            testInvalidDestAccountParam(json::Value(json::ValueType::Object));
+            testInvalidDestAccountParam(json::Value(json::ValueType::Array));
+        }
+        {
+            // An empty destination_account is no destination at all.
+            json::Value params;
+            params[jss::account] = alice.human();
+            params[jss::destination_account] = "";
+            auto const jrr = env.rpc("json", "account_channels", to_string(params))[jss::result];
+            BEAST_EXPECT(jrr[jss::channels].size() == 1);
+            BEAST_EXPECT(jrr[jss::channels][0u][jss::channel_id] == chan1Str);
+            BEAST_EXPECT(jrr[jss::channels][0u][jss::destination_account] == bob.human());
+        }
+        {
+            // A malformed account is reported without the ledger fields.
+            json::Value params;
+            params[jss::account] = "llIIOO";
+            auto const jrr = env.rpc("json", "account_channels", to_string(params))[jss::result];
+            BEAST_EXPECT(jrr[jss::error] == "actMalformed");
+            BEAST_EXPECT(jrr[jss::error_code] == RpcActMalformed);
+            BEAST_EXPECT(jrr[jss::error_message] == "Account malformed.");
+            BEAST_EXPECT(!jrr.isMember(jss::ledger_index));
+            BEAST_EXPECT(!jrr.isMember(jss::ledger_current_index));
+        }
+        {
+            // A bad limit is reported before an account that is not found.
+            json::Value params;
+            params[jss::account] = Account("bogie").human();
+            params[jss::limit] = 0;
+            auto const jrr = env.rpc("json", "account_channels", to_string(params))[jss::result];
+            BEAST_EXPECT(jrr[jss::error] == "invalidParams");
+            BEAST_EXPECT(jrr[jss::error_code] == RpcInvalidParams);
+            BEAST_EXPECT(jrr[jss::error_message] == "Invalid field 'limit'.");
+        }
+        {
+            // A non-string marker names the field; one that does not parse does not.
+            json::Value params;
+            params[jss::account] = alice.human();
+            params[jss::marker] = 1;
+            auto const notString =
+                env.rpc("json", "account_channels", to_string(params))[jss::result];
+            BEAST_EXPECT(notString[jss::error] == "invalidParams");
+            BEAST_EXPECT(notString[jss::error_code] == RpcInvalidParams);
+            BEAST_EXPECT(notString[jss::error_message] == "Invalid field 'marker', not string.");
+
+            params[jss::marker] = "NOT_A_MARKER";
+            auto const malformed =
+                env.rpc("json", "account_channels", to_string(params))[jss::result];
+            BEAST_EXPECT(malformed[jss::error] == "invalidParams");
+            BEAST_EXPECT(malformed[jss::error_code] == RpcInvalidParams);
+            BEAST_EXPECT(malformed[jss::error_message] == "Invalid parameters.");
+        }
+        {
+            auto const r = env.rpc("account_channels", alice.human(), bob.human());
+            BEAST_EXPECT(r[jss::result][jss::channels].size() == 1);
+            BEAST_EXPECT(r[jss::result][jss::channels][0u][jss::channel_id] == chan1Str);
+            BEAST_EXPECT(r[jss::result][jss::validated]);
+        }
+        {
+            auto const r = env.rpc("account_channels", alice.human());
+            BEAST_EXPECT(r[jss::result][jss::channels].size() == 1);
+            BEAST_EXPECT(r[jss::result][jss::channels][0u][jss::channel_id] == chan1Str);
+            BEAST_EXPECT(r[jss::result][jss::validated]);
+        }
+        {
+            auto const r = env.rpc("account_channels", bob.human(), alice.human());
+            BEAST_EXPECT(r[jss::result][jss::channels].size() == 0);
+            BEAST_EXPECT(r[jss::result][jss::validated]);
+        }
+        auto const chan2Str = to_string(channel(alice, bob, env.seq(alice)));
+        env(create(alice, bob, channelFunds, settleDelay, pk));
+        env.close();
+        {
+            auto const r = env.rpc("account_channels", alice.human(), bob.human());
+            BEAST_EXPECT(r[jss::result][jss::channels].size() == 2);
+            BEAST_EXPECT(r[jss::result][jss::validated]);
+            BEAST_EXPECT(chan1Str != chan2Str);
+            for (auto const& c : {chan1Str, chan2Str})
+            {
+                BEAST_EXPECT(
+                    r[jss::result][jss::channels][0u][jss::channel_id] == c ||
+                    r[jss::result][jss::channels][1u][jss::channel_id] == c);
+            }
+        }
+    }
+
+    void
+    testAccountChannelsRPCMarkers(FeatureBitset features)
+    {
+        testcase("Account channels RPC markers");
+
+        using namespace test::jtx;
+        using namespace std::literals;
+
+        auto const alice = Account("alice");
+        auto const bobs = [] -> std::vector<Account> {
+            int const n = 10;
+            std::vector<Account> r;
+            r.reserve(n);
+            for (int i = 0; i < n; ++i)
+            {
+                r.emplace_back("bob"s + std::to_string(i));
+            }
+            return r;
+        }();
+
+        Env env{*this, features};
+        env.fund(XRP(10000), alice);
+        for (auto const& a : bobs)
+        {
+            env.fund(XRP(10000), a);
+            env.close();
+        }
+
+        {
+            // create a channel from alice to every bob account
+            auto const settleDelay = 3600s;
+            auto const channelFunds = XRP(1);
+            for (auto const& b : bobs)
+            {
+                env(create(alice, b, channelFunds, settleDelay, alice.pk()));
+            }
+        }
+
+        auto testLimit = [](test::jtx::Env& env,
+                            test::jtx::Account const& src,
+                            std::optional<int> limit = std::nullopt,
+                            json::Value const& marker = json::ValueType::Null,
+                            std::optional<test::jtx::Account> const& dst = std::nullopt) {
+            json::Value jvc;
+            jvc[jss::account] = src.human();
+            if (dst)
+                jvc[jss::destination_account] = dst->human();
+            if (limit)
+                jvc[jss::limit] = *limit;
+            if (marker)
+                jvc[jss::marker] = marker;
+
+            return env.rpc("json", "account_channels", to_string(jvc))[jss::result];
+        };
+
+        {
+            // No marker
+            auto const r = testLimit(env, alice);
+            BEAST_EXPECT(r.isMember(jss::channels));
+            BEAST_EXPECT(r[jss::channels].size() == bobs.size());
+        }
+
+        auto const bobsB58 = [&bobs] -> std::set<std::string> {
+            std::set<std::string> r;
+            for (auto const& a : bobs)
+                r.insert(a.human());
+            return r;
+        }();
+
+        for (int limit = 1; limit < bobs.size() + 1; ++limit)
+        {
+            auto leftToFind = bobsB58;
+            auto const numFull = bobs.size() / limit;
+            auto const numNonFull = ((bobs.size() % limit) != 0u) ? 1 : 0;
+
+            json::Value marker = json::ValueType::Null;
+
+            auto const testIt = [&](bool expectMarker, int expectedBatchSize) {
+                auto const r = testLimit(env, alice, limit, marker);
+                BEAST_EXPECT(!expectMarker || r.isMember(jss::marker));
+                if (r.isMember(jss::marker))
+                    marker = r[jss::marker];
+                BEAST_EXPECT(r[jss::channels].size() == expectedBatchSize);
+                auto const c = r[jss::channels];
+                auto const s = r[jss::channels].size();
+                for (int j = 0; j < s; ++j)
+                {
+                    auto const dstAcc = c[j][jss::destination_account].asString();
+                    BEAST_EXPECT(leftToFind.count(dstAcc));
+                    leftToFind.erase(dstAcc);
+                }
+            };
+
+            for (int i = 0; i < numFull; ++i)
+            {
+                bool const expectMarker = (numNonFull != 0 || i < numFull - 1);
+                testIt(expectMarker, limit);
+            }
+
+            if (numNonFull != 0)
+            {
+                testIt(false, bobs.size() % limit);
+            }
+            BEAST_EXPECT(leftToFind.empty());
+        }
+
+        {
+            // degenerate case
+            auto const r = testLimit(env, alice, 0);
+            BEAST_EXPECT(r[jss::error] == "invalidParams");
+            BEAST_EXPECT(r[jss::error_code] == RpcInvalidParams);
+            BEAST_EXPECT(r[jss::error_message] == "Invalid field 'limit'.");
+        }
+
+        {
+            // The marker's start hint may have a leading '+', and anything after a second
+            // comma is ignored.
+            auto const first = testLimit(env, alice, 1);
+            auto const marker = first[jss::marker].asString();
+            auto const comma = marker.find(',');
+            BEAST_EXPECT(comma != std::string::npos);
+
+            auto const rest = testLimit(
+                env,
+                alice,
+                std::nullopt,
+                marker.substr(0, comma) + ",+" + marker.substr(comma + 1) + ",ignored");
+            BEAST_EXPECT(rest[jss::channels].size() == bobs.size() - 1);
+
+            std::set<std::string> found{
+                first[jss::channels][0u][jss::destination_account].asString(),
+            };
+
+            for (auto const& c : rest[jss::channels])
+                BEAST_EXPECT(found.insert(c[jss::destination_account].asString()).second);
+
+            BEAST_EXPECT(found == bobsB58);
+        }
+    }
+
+    void
+    testAccountChannelsRPCSenderOnly(FeatureBitset features)
+    {
+        // Check that the account_channels command only returns channels owned
+        // by the account
+        testcase("Account channels RPC owner only");
+
+        using namespace test::jtx;
+        using namespace std::literals;
+
+        auto const alice = Account("alice");
+        auto const bob = Account("bob");
+        Env env{*this, features};
+        env.fund(XRP(10000), alice, bob);
+
+        // Create a channel from alice to bob and from bob to alice
+        // When retrieving alice's channels, it should only retrieve the
+        // channels where alice is the source, not the destination
+        auto const settleDelay = 3600s;
+        auto const channelFunds = XRP(1000);
+        env(create(alice, bob, channelFunds, settleDelay, alice.pk()));
+        env(create(bob, alice, channelFunds, settleDelay, bob.pk()));
+
+        auto const r = [&] {
+            json::Value jvc;
+            jvc[jss::account] = alice.human();
+
+            return env.rpc("json", "account_channels", to_string(jvc))[jss::result];
+        }();
+        BEAST_EXPECT(r.isMember(jss::channels));
+        BEAST_EXPECT(r[jss::channels].size() == 1);
+        BEAST_EXPECT(r[jss::channels][0u][jss::destination_account].asString() == bob.human());
+    }
+
+    void
+    testAccountChannelAuthorize(FeatureBitset features)
+    {
+        using namespace jtx;
+        using namespace std::literals::chrono_literals;
+
+        Env env{*this, features};
+        auto const alice = Account("alice");
+        auto const bob = Account("bob");
+        auto const charlie = Account("charlie", KeyType::Ed25519);
+        env.fund(XRP(10000), alice, bob, charlie);
+        auto const pk = alice.pk();
+        auto const settleDelay = 3600s;
+        auto const channelFunds = XRP(1000);
+        auto const chan1Str = to_string(channel(alice, bob, env.seq(alice)));
+        env(create(alice, bob, channelFunds, settleDelay, pk));
+        env.close();
+
+        json::Value args{json::ValueType::Object};
+        args[jss::channel_id] = chan1Str;
+        args[jss::key_type] = "ed255191";
+        args[jss::seed] = "snHq1rzQoN2qiUkC3XF5RyxBzUtN";
+        args[jss::amount] = 51110000;
+
+        // test for all api versions
+        forAllApiVersions([&, this](unsigned apiVersion) {
+            testcase("PayChan Channel_Auth RPC Api " + std::to_string(apiVersion));
+            args[jss::api_version] = apiVersion;
+            auto const rs =
+                env.rpc("json", "channel_authorize", args.toStyledString())[jss::result];
+            auto const error = apiVersion < 2u ? "invalidParams" : "badKeyType";
+            auto const errorCode = apiVersion < 2u ? RpcInvalidParams : RpcBadKeyType;
+            auto const errorMessage =
+                apiVersion < 2u ? "Invalid field 'key_type'." : "Bad key type.";
+            BEAST_EXPECT(rs[jss::error] == error);
+            BEAST_EXPECT(rs[jss::error_code] == errorCode);
+            BEAST_EXPECT(rs[jss::error_message] == errorMessage);
+        });
+    }
+
+    void
+    testAuthVerifyRPC(FeatureBitset features)
+    {
+        testcase("PayChan Auth/Verify RPC");
+        using namespace jtx;
+        using namespace std::literals::chrono_literals;
+        Env env{*this, features};
+        auto const alice = Account("alice");
+        auto const bob = Account("bob");
+        auto const charlie = Account("charlie", KeyType::Ed25519);
+        env.fund(XRP(10000), alice, bob, charlie);
+        auto const pk = alice.pk();
+        auto const settleDelay = 3600s;
+        auto const channelFunds = XRP(1000);
+        auto const chan1Str = to_string(channel(alice, bob, env.seq(alice)));
+        env(create(alice, bob, channelFunds, settleDelay, pk));
+        env.close();
+        std::string chan1PkStr;
+        {
+            auto const r = env.rpc("account_channels", alice.human(), bob.human());
+            BEAST_EXPECT(r[jss::result][jss::channels].size() == 1);
+            BEAST_EXPECT(r[jss::result][jss::channels][0u][jss::channel_id] == chan1Str);
+            BEAST_EXPECT(r[jss::result][jss::validated]);
+            chan1PkStr = r[jss::result][jss::channels][0u][jss::public_key].asString();
+        }
+        {
+            auto const r = env.rpc("account_channels", alice.human());
+            BEAST_EXPECT(r[jss::result][jss::channels].size() == 1);
+            BEAST_EXPECT(r[jss::result][jss::channels][0u][jss::channel_id] == chan1Str);
+            BEAST_EXPECT(r[jss::result][jss::validated]);
+            chan1PkStr = r[jss::result][jss::channels][0u][jss::public_key].asString();
+        }
+        {
+            auto const r = env.rpc("account_channels", bob.human(), alice.human());
+            BEAST_EXPECT(r[jss::result][jss::channels].size() == 0);
+            BEAST_EXPECT(r[jss::result][jss::validated]);
+        }
+        auto const chan2Str = to_string(channel(alice, bob, env.seq(alice)));
+        env(create(alice, bob, channelFunds, settleDelay, pk));
+        env.close();
+        {
+            auto const r = env.rpc("account_channels", alice.human(), bob.human());
+            BEAST_EXPECT(r[jss::result][jss::channels].size() == 2);
+            BEAST_EXPECT(r[jss::result][jss::validated]);
+            BEAST_EXPECT(chan1Str != chan2Str);
+            for (auto const& c : {chan1Str, chan2Str})
+            {
+                BEAST_EXPECT(
+                    r[jss::result][jss::channels][0u][jss::channel_id] == c ||
+                    r[jss::result][jss::channels][1u][jss::channel_id] == c);
+            }
+        }
+
+        auto const sliceToHex = [](Slice const& slice) {
+            std::string s;
+            s.reserve(2 * slice.size());
+            for (std::uint8_t const byte : slice)
+            {
+                s += "0123456789ABCDEF"[((byte & 0xf0) >> 4)];
+                s += "0123456789ABCDEF"[((byte & 0x0f) >> 0)];
+            }
+            return s;
+        };
+
+        {
+            // Verify chan1 auth
+            auto const rs = env.rpc("channel_authorize", "alice", chan1Str, "1000");
+            auto const sig = rs[jss::result][jss::signature].asString();
+            BEAST_EXPECT(!sig.empty());
+            {
+                auto const rv = env.rpc("channel_verify", chan1PkStr, chan1Str, "1000", sig);
+                BEAST_EXPECT(rv[jss::result][jss::signature_verified].asBool());
+            }
+
+            {
+                // use pk hex to verify
+                auto const pkAsHex = sliceToHex(pk.slice());
+                auto const rv = env.rpc("channel_verify", pkAsHex, chan1Str, "1000", sig);
+                BEAST_EXPECT(rv[jss::result][jss::signature_verified].asBool());
+            }
+            {
+                // malformed amount
+                auto const pkAsHex = sliceToHex(pk.slice());
+                auto rv = env.rpc("channel_verify", pkAsHex, chan1Str, "1000x", sig);
+                BEAST_EXPECT(rv[jss::error] == "channelAmtMalformed");
+                BEAST_EXPECT(rv[jss::error_code] == RpcChannelAmtMalformed);
+                BEAST_EXPECT(rv[jss::error_message] == "Payment channel amount is malformed.");
+                rv = env.rpc("channel_verify", pkAsHex, chan1Str, "1000 ", sig);
+                BEAST_EXPECT(rv[jss::error] == "channelAmtMalformed");
+                BEAST_EXPECT(rv[jss::error_code] == RpcChannelAmtMalformed);
+                BEAST_EXPECT(rv[jss::error_message] == "Payment channel amount is malformed.");
+                rv = env.rpc("channel_verify", pkAsHex, chan1Str, "x1000", sig);
+                BEAST_EXPECT(rv[jss::error] == "channelAmtMalformed");
+                BEAST_EXPECT(rv[jss::error_code] == RpcChannelAmtMalformed);
+                BEAST_EXPECT(rv[jss::error_message] == "Payment channel amount is malformed.");
+                rv = env.rpc("channel_verify", pkAsHex, chan1Str, "x", sig);
+                BEAST_EXPECT(rv[jss::error] == "channelAmtMalformed");
+                BEAST_EXPECT(rv[jss::error_code] == RpcChannelAmtMalformed);
+                BEAST_EXPECT(rv[jss::error_message] == "Payment channel amount is malformed.");
+                rv = env.rpc("channel_verify", pkAsHex, chan1Str, " ", sig);
+                BEAST_EXPECT(rv[jss::error] == "channelAmtMalformed");
+                BEAST_EXPECT(rv[jss::error_code] == RpcChannelAmtMalformed);
+                BEAST_EXPECT(rv[jss::error_message] == "Payment channel amount is malformed.");
+                rv = env.rpc("channel_verify", pkAsHex, chan1Str, "1000 1000", sig);
+                BEAST_EXPECT(rv[jss::error] == "channelAmtMalformed");
+                BEAST_EXPECT(rv[jss::error_code] == RpcChannelAmtMalformed);
+                BEAST_EXPECT(rv[jss::error_message] == "Payment channel amount is malformed.");
+                rv = env.rpc("channel_verify", pkAsHex, chan1Str, "1,000", sig);
+                BEAST_EXPECT(rv[jss::error] == "channelAmtMalformed");
+                BEAST_EXPECT(rv[jss::error_code] == RpcChannelAmtMalformed);
+                BEAST_EXPECT(rv[jss::error_message] == "Payment channel amount is malformed.");
+                rv = env.rpc("channel_verify", pkAsHex, chan1Str, " 1000", sig);
+                BEAST_EXPECT(rv[jss::error] == "channelAmtMalformed");
+                BEAST_EXPECT(rv[jss::error_code] == RpcChannelAmtMalformed);
+                BEAST_EXPECT(rv[jss::error_message] == "Payment channel amount is malformed.");
+                rv = env.rpc("channel_verify", pkAsHex, chan1Str, "", sig);
+                BEAST_EXPECT(rv[jss::error] == "channelAmtMalformed");
+                BEAST_EXPECT(rv[jss::error_code] == RpcChannelAmtMalformed);
+                BEAST_EXPECT(rv[jss::error_message] == "Payment channel amount is malformed.");
+            }
+            {
+                // malformed channel
+                auto const pkAsHex = sliceToHex(pk.slice());
+                auto chan1StrBad = chan1Str;
+                chan1StrBad.pop_back();
+                auto rv = env.rpc("channel_verify", pkAsHex, chan1StrBad, "1000", sig);
+                BEAST_EXPECT(rv[jss::error] == "channelMalformed");
+                BEAST_EXPECT(rv[jss::error_code] == RpcChannelMalformed);
+                BEAST_EXPECT(rv[jss::error_message] == "Payment channel is malformed.");
+                rv = env.rpc("channel_authorize", "alice", chan1StrBad, "1000");
+                BEAST_EXPECT(rv[jss::error] == "channelMalformed");
+                BEAST_EXPECT(rv[jss::error_code] == RpcChannelMalformed);
+                BEAST_EXPECT(rv[jss::error_message] == "Payment channel is malformed.");
+
+                chan1StrBad = chan1Str;
+                chan1StrBad.push_back('0');
+                rv = env.rpc("channel_verify", pkAsHex, chan1StrBad, "1000", sig);
+                BEAST_EXPECT(rv[jss::error] == "channelMalformed");
+                BEAST_EXPECT(rv[jss::error_code] == RpcChannelMalformed);
+                BEAST_EXPECT(rv[jss::error_message] == "Payment channel is malformed.");
+                rv = env.rpc("channel_authorize", "alice", chan1StrBad, "1000");
+                BEAST_EXPECT(rv[jss::error] == "channelMalformed");
+                BEAST_EXPECT(rv[jss::error_code] == RpcChannelMalformed);
+                BEAST_EXPECT(rv[jss::error_message] == "Payment channel is malformed.");
+
+                chan1StrBad = chan1Str;
+                chan1StrBad.back() = 'x';
+                rv = env.rpc("channel_verify", pkAsHex, chan1StrBad, "1000", sig);
+                BEAST_EXPECT(rv[jss::error] == "channelMalformed");
+                BEAST_EXPECT(rv[jss::error_code] == RpcChannelMalformed);
+                BEAST_EXPECT(rv[jss::error_message] == "Payment channel is malformed.");
+                rv = env.rpc("channel_authorize", "alice", chan1StrBad, "1000");
+                BEAST_EXPECT(rv[jss::error] == "channelMalformed");
+                BEAST_EXPECT(rv[jss::error_code] == RpcChannelMalformed);
+                BEAST_EXPECT(rv[jss::error_message] == "Payment channel is malformed.");
+            }
+            {
+                // channel_id is not a string.
+                json::Value args{json::ValueType::Object};
+                args[jss::amount] = "2000";
+                args[jss::channel_id] = 2000;
+                args[jss::key_type] = "secp256k1";
+                args[jss::passphrase] = "passphrase_can_be_anything";
+
+                auto const ra =
+                    env.rpc("json", "channel_authorize", args.toStyledString())[jss::result];
+                BEAST_EXPECT(ra[jss::error] == "invalidParams");
+                BEAST_EXPECT(ra[jss::error_code] == RpcInvalidParams);
+                BEAST_EXPECT(ra[jss::error_message] == "Invalid parameters.");
+            }
+            {
+                // channel_id is not a string.
+                json::Value args{json::ValueType::Object};
+                args[jss::public_key] = chan1PkStr;
+                args[jss::channel_id] = 2000;
+                args[jss::amount] = "1000";
+                args[jss::signature] = sig;
+
+                auto const rv =
+                    env.rpc("json", "channel_verify", args.toStyledString())[jss::result];
+                BEAST_EXPECT(rv[jss::error] == "invalidParams");
+                BEAST_EXPECT(rv[jss::error_code] == RpcInvalidParams);
+                BEAST_EXPECT(rv[jss::error_message] == "Invalid parameters.");
+            }
+            {
+                // give an ill formed base 58 public key
+                auto const illFormedPk = chan1PkStr.substr(0, chan1PkStr.size() - 1);
+                auto const rv = env.rpc("channel_verify", illFormedPk, chan1Str, "1000", sig);
+                BEAST_EXPECT(!rv[jss::result][jss::signature_verified].asBool());
+            }
+            {
+                // give an ill formed hex public key
+                auto const pkAsHex = sliceToHex(pk.slice());
+                auto const illFormedPk = pkAsHex.substr(0, chan1PkStr.size() - 1);
+                auto const rv = env.rpc("channel_verify", illFormedPk, chan1Str, "1000", sig);
+                BEAST_EXPECT(!rv[jss::result][jss::signature_verified].asBool());
+            }
+        }
+        {
+            // Try to verify chan2 auth with chan1 key
+            auto const rs = env.rpc("channel_authorize", "alice", chan2Str, "1000");
+            auto const sig = rs[jss::result][jss::signature].asString();
+            BEAST_EXPECT(!sig.empty());
+            {
+                auto const rv = env.rpc("channel_verify", chan1PkStr, chan1Str, "1000", sig);
+                BEAST_EXPECT(!rv[jss::result][jss::signature_verified].asBool());
+            }
+            {
+                // use pk hex to verify
+                auto const pkAsHex = sliceToHex(pk.slice());
+                auto const rv = env.rpc("channel_verify", pkAsHex, chan1Str, "1000", sig);
+                BEAST_EXPECT(!rv[jss::result][jss::signature_verified].asBool());
+            }
+        }
+        {
+            // Try to explicitly specify secp256k1 and Ed25519 keys:
+            auto const chan = to_string(channel(charlie, alice, env.seq(charlie)));
+            env(create(charlie, alice, channelFunds, settleDelay, charlie.pk()));
+            env.close();
+
+            std::string cpk;
+            {
+                auto const r = env.rpc("account_channels", charlie.human(), alice.human());
+                BEAST_EXPECT(r[jss::result][jss::channels].size() == 1);
+                BEAST_EXPECT(r[jss::result][jss::channels][0u][jss::channel_id] == chan);
+                BEAST_EXPECT(r[jss::result][jss::validated]);
+                cpk = r[jss::result][jss::channels][0u][jss::public_key].asString();
+            }
+
+            // Try to authorize without specifying a key type, expect an error:
+            auto const rs = env.rpc("channel_authorize", "charlie", chan, "1000");
+            auto const sig = rs[jss::result][jss::signature].asString();
+            BEAST_EXPECT(!sig.empty());
+            {
+                auto const rv = env.rpc("channel_verify", cpk, chan, "1000", sig);
+                BEAST_EXPECT(!rv[jss::result][jss::signature_verified].asBool());
+            }
+
+            // Try to authorize using an unknown key type, except an error:
+            auto const rs1 = env.rpc("channel_authorize", "charlie", "nyx", chan, "1000");
+            BEAST_EXPECT(rs1[jss::error] == "badKeyType");
+            BEAST_EXPECT(rs1[jss::error_code] == RpcBadKeyType);
+            BEAST_EXPECT(rs1[jss::error_message] == "Bad key type.");
+
+            // Try to authorize using secp256k1; the authorization _should_
+            // succeed but the verification should fail:
+            auto const rs2 = env.rpc("channel_authorize", "charlie", "secp256k1", chan, "1000");
+            auto const sig2 = rs2[jss::result][jss::signature].asString();
+            BEAST_EXPECT(!sig2.empty());
+            {
+                auto const rv = env.rpc("channel_verify", cpk, chan, "1000", sig2);
+                BEAST_EXPECT(!rv[jss::result][jss::signature_verified].asBool());
+            }
+
+            // Try to authorize using Ed25519; expect success:
+            auto const rs3 = env.rpc("channel_authorize", "charlie", "ed25519", chan, "1000");
+            auto const sig3 = rs3[jss::result][jss::signature].asString();
+            BEAST_EXPECT(!sig3.empty());
+            {
+                auto const rv = env.rpc("channel_verify", cpk, chan, "1000", sig3);
+                BEAST_EXPECT(rv[jss::result][jss::signature_verified].asBool());
+            }
+        }
+
+        {
+            // send malformed amounts rpc requests
+            auto rs = env.rpc("channel_authorize", "alice", chan1Str, "1000x");
+            BEAST_EXPECT(rs[jss::error] == "channelAmtMalformed");
+            BEAST_EXPECT(rs[jss::error_code] == RpcChannelAmtMalformed);
+            BEAST_EXPECT(rs[jss::error_message] == "Payment channel amount is malformed.");
+            rs = env.rpc("channel_authorize", "alice", chan1Str, "x1000");
+            BEAST_EXPECT(rs[jss::error] == "channelAmtMalformed");
+            BEAST_EXPECT(rs[jss::error_code] == RpcChannelAmtMalformed);
+            BEAST_EXPECT(rs[jss::error_message] == "Payment channel amount is malformed.");
+            rs = env.rpc("channel_authorize", "alice", chan1Str, "x");
+            BEAST_EXPECT(rs[jss::error] == "channelAmtMalformed");
+            BEAST_EXPECT(rs[jss::error_code] == RpcChannelAmtMalformed);
+            BEAST_EXPECT(rs[jss::error_message] == "Payment channel amount is malformed.");
+            {
+                // Missing channel_id
+                json::Value args{json::ValueType::Object};
+                args[jss::amount] = "2000";
+                args[jss::key_type] = "secp256k1";
+                args[jss::passphrase] = "passphrase_can_be_anything";
+                rs = env.rpc("json", "channel_authorize", args.toStyledString())[jss::result];
+                BEAST_EXPECT(rs[jss::error] == "invalidParams");
+                BEAST_EXPECT(rs[jss::error_code] == RpcInvalidParams);
+                BEAST_EXPECT(rs[jss::error_message] == "Missing field 'channel_id'.");
+            }
+            {
+                // Missing amount
+                json::Value args{json::ValueType::Object};
+                args[jss::channel_id] = chan1Str;
+                args[jss::key_type] = "secp256k1";
+                args[jss::passphrase] = "passphrase_can_be_anything";
+                rs = env.rpc("json", "channel_authorize", args.toStyledString())[jss::result];
+                BEAST_EXPECT(rs[jss::error] == "invalidParams");
+                BEAST_EXPECT(rs[jss::error_code] == RpcInvalidParams);
+                BEAST_EXPECT(rs[jss::error_message] == "Missing field 'amount'.");
+            }
+            {
+                // Missing key_type and no secret.
+                json::Value args{json::ValueType::Object};
+                args[jss::amount] = "2000";
+                args[jss::channel_id] = chan1Str;
+                args[jss::passphrase] = "passphrase_can_be_anything";
+                rs = env.rpc("json", "channel_authorize", args.toStyledString())[jss::result];
+                BEAST_EXPECT(rs[jss::error] == "invalidParams");
+                BEAST_EXPECT(rs[jss::error_code] == RpcInvalidParams);
+                BEAST_EXPECT(rs[jss::error_message] == "Missing field 'secret'.");
+            }
+            {
+                // Both passphrase and seed specified.
+                json::Value args{json::ValueType::Object};
+                args[jss::amount] = "2000";
+                args[jss::channel_id] = chan1Str;
+                args[jss::key_type] = "secp256k1";
+                args[jss::passphrase] = "passphrase_can_be_anything";
+                args[jss::seed] = "seed can be anything";
+                rs = env.rpc("json", "channel_authorize", args.toStyledString())[jss::result];
+                BEAST_EXPECT(rs[jss::error] == "invalidParams");
+                BEAST_EXPECT(rs[jss::error_code] == RpcInvalidParams);
+                BEAST_EXPECT(
+                    rs[jss::error_message] ==
+                    "Exactly one of the following must be specified: passphrase, secret, seed or "
+                    "seed_hex");
+            }
+            {
+                // channel_id is not exact hex.
+                json::Value args{json::ValueType::Object};
+                args[jss::amount] = "2000";
+                args[jss::channel_id] = chan1Str + "1";
+                args[jss::key_type] = "secp256k1";
+                args[jss::passphrase] = "passphrase_can_be_anything";
+                rs = env.rpc("json", "channel_authorize", args.toStyledString())[jss::result];
+                BEAST_EXPECT(rs[jss::error] == "channelMalformed");
+                BEAST_EXPECT(rs[jss::error_code] == RpcChannelMalformed);
+                BEAST_EXPECT(rs[jss::error_message] == "Payment channel is malformed.");
+            }
+            {
+                // amount is not a string
+                json::Value args{json::ValueType::Object};
+                args[jss::amount] = 2000;
+                args[jss::channel_id] = chan1Str;
+                args[jss::key_type] = "secp256k1";
+                args[jss::passphrase] = "passphrase_can_be_anything";
+                rs = env.rpc("json", "channel_authorize", args.toStyledString())[jss::result];
+                BEAST_EXPECT(rs[jss::error] == "channelAmtMalformed");
+                BEAST_EXPECT(rs[jss::error_code] == RpcChannelAmtMalformed);
+                BEAST_EXPECT(rs[jss::error_message] == "Payment channel amount is malformed.");
+            }
+            {
+                // Amount is not a decimal string.
+                json::Value args{json::ValueType::Object};
+                args[jss::amount] = "TwoThousand";
+                args[jss::channel_id] = chan1Str;
+                args[jss::key_type] = "secp256k1";
+                args[jss::passphrase] = "passphrase_can_be_anything";
+                rs = env.rpc("json", "channel_authorize", args.toStyledString())[jss::result];
+                BEAST_EXPECT(rs[jss::error] == "channelAmtMalformed");
+                BEAST_EXPECT(rs[jss::error_code] == RpcChannelAmtMalformed);
+                BEAST_EXPECT(rs[jss::error_message] == "Payment channel amount is malformed.");
+            }
+        }
+    }
+
+    void
+    testOptionalFields(FeatureBitset features)
+    {
+        testcase("Optional Fields");
+        using namespace jtx;
+        using namespace std::literals::chrono_literals;
+        Env env{*this, features};
+        auto const alice = Account("alice");
+        auto const bob = Account("bob");
+        auto const carol = Account("carol");
+        auto const dan = Account("dan");
+        env.fund(XRP(10000), alice, bob, carol, dan);
+        auto const pk = alice.pk();
+        auto const settleDelay = 3600s;
+        auto const channelFunds = XRP(1000);
+
+        std::optional<NetClock::time_point> const cancelAfter;
+
+        {
+            auto const chan = to_string(channel(alice, bob, env.seq(alice)));
+            env(create(alice, bob, channelFunds, settleDelay, pk));
+            auto const r = env.rpc("account_channels", alice.human(), bob.human());
+            BEAST_EXPECT(r[jss::result][jss::channels].size() == 1);
+            BEAST_EXPECT(r[jss::result][jss::channels][0u][jss::channel_id] == chan);
+            BEAST_EXPECT(!r[jss::result][jss::channels][0u].isMember(jss::destination_tag));
+        }
+        {
+            std::uint32_t dstTag = 42;
+            auto const chan = to_string(channel(alice, carol, env.seq(alice)));
+            env(create(alice, carol, channelFunds, settleDelay, pk, cancelAfter, dstTag));
+            auto const r = env.rpc("account_channels", alice.human(), carol.human());
+            BEAST_EXPECT(r[jss::result][jss::channels].size() == 1);
+            BEAST_EXPECT(r[jss::result][jss::channels][0u][jss::channel_id] == chan);
+            BEAST_EXPECT(r[jss::result][jss::channels][0u][jss::destination_tag] == dstTag);
+        }
+    }
+
+    void
+    testChannelVerifyLoadType(FeatureBitset features)
+    {
+        testcase("channel_verify sets kFEE_HEAVY_BURDEN_RPC load type");
+
+        using namespace jtx;
+        using namespace std::literals::chrono_literals;
+
+        Env env{*this, features};
+        auto const alice = Account("alice");
+        auto const bob = Account("bob");
+
+        env.fund(XRP(10000), alice, bob);
+
+        auto const pk = alice.pk();
+        auto const settleDelay = 3600s;
+        auto const channelFunds = XRP(1000);
+        auto const chanStr = to_string(channel(alice, bob, env.seq(alice)));
+
+        env(create(alice, bob, channelFunds, settleDelay, pk));
+        env.close();
+
+        // Step 1: get a valid signature from channel_authorize
+        auto const authResult = env.rpc("channel_authorize", "alice", chanStr, "1000");
+        auto const sig = authResult[jss::result][jss::signature].asString();
+        BEAST_EXPECT(!sig.empty());
+        auto const pkHex = strHex(pk.slice());
+
+        // Step 2: build rpc::JsonContext directly so we can inspect loadType
+        auto& app = env.app();
+        resource::Charge loadType = resource::kFeeReferenceRpc;
+        resource::Consumer c;
+        rpc::JsonContext context{
+            {
+                .j = env.journal,
+                .app = app,
+                .loadType = loadType,
+                .netOps = app.getOPs(),
+                .ledgerMaster = app.getLedgerMaster(),
+                .consumer = c,
+                .role = Role::USER,
+                .coro = {},
+                .infoSub = {},
+                .apiVersion = rpc::kApiVersionIfUnspecified,
+            },
+            {},
+            // NOLINTNEXTLINE(readability-trailing-comma) fix-it drops comma after `{}`
+            {},
+        };
+        json::Value params;
+        params[jss::public_key] = pkHex;
+        params[jss::channel_id] = chanStr;
+        params[jss::amount] = "1000";
+        params[jss::signature] = sig;
+        context.params = std::move(params);
+
+        // Confirm default before calling handler
+        BEAST_EXPECT(context.loadType == resource::kFeeReferenceRpc);
+        json::Value result;
+        Gate g;
+        app.getJobQueue().postCoro(JtClient, "RPC-Client", [&](auto const& coro) {
+            context.coro = coro;
+            result = doChannelVerify(context);
+            g.signal();
+        });
+
+        using namespace std::chrono_literals;
+        BEAST_EXPECT(g.waitFor(5s));
+        // Signature must verify correctly
+        BEAST_EXPECT(result[jss::signature_verified].asBool());
+        // KEY ASSERTION: loadType must be kFEE_HEAVY_BURDEN_RPC after the fix
+        // Before fix: this will FAIL because loadType stays kFEE_REFERENCE_RPC (20)
+        // After fix:  this will PASS because loadType is kFEE_HEAVY_BURDEN_RPC (3000)
+        BEAST_EXPECT(context.loadType == resource::kFeeHeavyBurdenRpc);
+        // Confirm the charge is 150x heavier than the current (broken) default
+        BEAST_EXPECT(context.loadType.cost() == resource::kFeeHeavyBurdenRpc.cost());  // 3000
+        BEAST_EXPECT(context.loadType.cost() != resource::kFeeReferenceRpc.cost());    // not 20
+    }
+
+    void
+    testChannelAuthorizeLoadType(FeatureBitset features)
+    {
+        testcase("channel_authorize sets kFEE_HEAVY_BURDEN_RPC load type");
+
+        using namespace jtx;
+        using namespace std::literals::chrono_literals;
+
+        Env env{*this, features};
+        auto const alice = Account("alice");
+        auto const bob = Account("bob");
+
+        env.fund(XRP(10000), alice, bob);
+
+        auto const pk = alice.pk();
+        auto const settleDelay = 3600s;
+        auto const chanStr = to_string(channel(alice, bob, env.seq(alice)));
+
+        env(create(alice, bob, XRP(1000), settleDelay, pk));
+        env.close();
+
+        auto& app = env.app();
+        resource::Charge loadType = resource::kFeeReferenceRpc;
+        resource::Consumer c;
+        rpc::JsonContext context{
+            {
+                .j = env.journal,
+                .app = app,
+                .loadType = loadType,
+                .netOps = app.getOPs(),
+                .ledgerMaster = app.getLedgerMaster(),
+                .consumer = c,
+                .role = Role::ADMIN,  // channel_authorize requires ADMIN or canSign()
+                .coro = {},
+                .infoSub = {},
+                .apiVersion = rpc::kApiVersionIfUnspecified,
+            },
+            {},
+            // NOLINTNEXTLINE(readability-trailing-comma) fix-it drops comma after `{}`
+            {},
+        };
+        json::Value params;
+        params[jss::channel_id] = chanStr;
+        params[jss::amount] = "1000";
+        params[jss::secret] = alice.name();  // use account name as seed
+        context.params = std::move(params);
+
+        // Confirm default before calling handler
+        BEAST_EXPECT(context.loadType == resource::kFeeReferenceRpc);
+        json::Value result;
+        Gate g;
+        app.getJobQueue().postCoro(JtClient, "RPC-Client", [&](auto const& coro) {
+            context.coro = coro;
+            result = doChannelAuthorize(context);
+            g.signal();
+        });
+
+        using namespace std::chrono_literals;
+
+        BEAST_EXPECT(g.waitFor(5s));
+        // Must return a valid signature
+        BEAST_EXPECT(result.isMember(jss::signature));
+        BEAST_EXPECT(!result[jss::signature].asString().empty());
+        // KEY ASSERTION: loadType must be kFEE_HEAVY_BURDEN_RPC after the fix
+        // Before fix: FAILS — stays at kFEE_REFERENCE_RPC (charge=20)
+        // After fix:  PASSES — set to kFEE_HEAVY_BURDEN_RPC (charge=3000)
+        BEAST_EXPECT(context.loadType == resource::kFeeHeavyBurdenRpc);
+    }
+
+    void
+    testMalformedPK(FeatureBitset features)
+    {
+        testcase("malformed pk");
+        using namespace jtx;
+        using namespace std::literals::chrono_literals;
+        Env env{*this, features};
+        auto const alice = Account("alice");
+        auto const bob = Account("bob");
+        auto const usda = alice["USD"];
+        env.fund(XRP(10000), alice, bob);
+        auto const pk = alice.pk();
+        auto const settleDelay = 100s;
+
+        auto const chan = channel(alice, bob, env.seq(alice));
+        auto jv = create(alice, bob, XRP(1000), settleDelay, pk);
+        auto const pkHex = strHex(pk.slice());
+        jv["PublicKey"] = pkHex.substr(2, pkHex.size() - 2);
+        env(jv, Ter(temMALFORMED));
+        jv["PublicKey"] = pkHex.substr(0, pkHex.size() - 2);
+        env(jv, Ter(temMALFORMED));
+        auto badPrefix = pkHex;
+        badPrefix[0] = 'f';
+        badPrefix[1] = 'f';
+        jv["PublicKey"] = badPrefix;
+        env(jv, Ter(temMALFORMED));
+
+        jv["PublicKey"] = pkHex;
+        env(jv);
+
+        auto const authAmt = XRP(100);
+        auto const sig = signClaimAuth(alice.pk(), alice.sk(), chan, authAmt);
+        jv = claim(bob, chan, authAmt.value(), authAmt.value(), Slice(sig), alice.pk());
+        jv["PublicKey"] = pkHex.substr(2, pkHex.size() - 2);
+        env(jv, Ter(temMALFORMED));
+        jv["PublicKey"] = pkHex.substr(0, pkHex.size() - 2);
+        env(jv, Ter(temMALFORMED));
+        badPrefix = pkHex;
+        badPrefix[0] = 'f';
+        badPrefix[1] = 'f';
+        jv["PublicKey"] = badPrefix;
+        env(jv, Ter(temMALFORMED));
+
+        // missing public key
+        jv.removeMember("PublicKey");
+        env(jv, Ter(temMALFORMED));
+
+        {
+            auto const txn = R"*(
+        {
+
+        "channel_id":"5DB01B7FFED6B67E6B0414DED11E051D2EE2B7619CE0EAA6286D67A3A4D5BDB3",
+                "signature":
+        "304402204EF0AFB78AC23ED1C472E74F4299C0C21F1B21D07EFC0A3838A420F76D783A400220154FB11B6F54320666E4C36CA7F686C16A3A0456800BBC43746F34AF50290064",
+                "public_key":
+        "aKijDDiC2q2gXjMpM7i4BUS6cmixgsEe18e7CjsUxwihKfuoFgS5",
+                "amount": "1000000"
+            }
+        )*";
+            auto const r = env.rpc("json", "channel_verify", txn);
+            BEAST_EXPECT(r["result"]["error"] == "publicMalformed");
+            BEAST_EXPECT(r["result"]["error_code"] == RpcPublicMalformed);
+            BEAST_EXPECT(r["result"]["error_message"] == "Public key is malformed.");
+        }
+    }
+
+    void
+    testMetaAndOwnership(FeatureBitset features)
+    {
+        testcase("Metadata & Ownership");
+
+        using namespace jtx;
+        using namespace std::literals::chrono_literals;
+
+        auto const alice = Account("alice");
+        auto const bob = Account("bob");
+        auto const settleDelay = 100s;
+        auto const pk = alice.pk();
+
+        auto const inOwnerDir =
+            [](ReadView const& view, Account const& acc, SLE::ConstRef chan) -> bool {
+            xrpl::Dir const ownerDir(view, keylet::ownerDir(acc.id()));
+            // NOLINTNEXTLINE(modernize-use-ranges)
+            return std::find(ownerDir.begin(), ownerDir.end(), chan) != ownerDir.end();
+        };
+
+        auto const ownerDirCount = [](ReadView const& view, Account const& acc) -> std::size_t {
+            xrpl::Dir const ownerDir(view, keylet::ownerDir(acc.id()));
+            return std::distance(ownerDir.begin(), ownerDir.end());
+        };
+
+        {
+            // Test with adding the paychan to the recipient's owner directory
+            Env env{*this, features};
+            env.fund(XRP(10000), alice, bob);
+            env(create(alice, bob, XRP(1000), settleDelay, pk));
+            env.close();
+            auto const [chan, chanSle] = channelKeyAndSle(*env.current(), alice, bob);
+            BEAST_EXPECT(inOwnerDir(*env.current(), alice, chanSle));
+            BEAST_EXPECT(ownerDirCount(*env.current(), alice) == 1);
+            BEAST_EXPECT(inOwnerDir(*env.current(), bob, chanSle));
+            BEAST_EXPECT(ownerDirCount(*env.current(), bob) == 1);
+            // close the channel
+            env(claim(bob, chan), Txflags(tfClose));
+            BEAST_EXPECT(!channelExists(*env.current(), chan));
+            BEAST_EXPECT(!inOwnerDir(*env.current(), alice, chanSle));
+            BEAST_EXPECT(ownerDirCount(*env.current(), alice) == 0);
+            BEAST_EXPECT(!inOwnerDir(*env.current(), bob, chanSle));
+            BEAST_EXPECT(ownerDirCount(*env.current(), bob) == 0);
+        }
+
+        {
+            // Test removing paychans created before adding to the recipient's
+            // owner directory
+            Env env(*this, features);
+            env.fund(XRP(10000), alice, bob);
+            // create the channel before the amendment activates
+            env(create(alice, bob, XRP(1000), settleDelay, pk));
+            env.close();
+            auto const [chan, chanSle] = channelKeyAndSle(*env.current(), alice, bob);
+            BEAST_EXPECT(inOwnerDir(*env.current(), alice, chanSle));
+            BEAST_EXPECT(ownerDirCount(*env.current(), alice) == 1);
+            BEAST_EXPECT(inOwnerDir(*env.current(), bob, chanSle));
+            BEAST_EXPECT(ownerDirCount(*env.current(), bob) == 1);
+
+            env(claim(bob, chan), Txflags(tfClose));
+            BEAST_EXPECT(!channelExists(*env.current(), chan));
+            BEAST_EXPECT(!inOwnerDir(*env.current(), alice, chanSle));
+            BEAST_EXPECT(ownerDirCount(*env.current(), alice) == 0);
+            BEAST_EXPECT(!inOwnerDir(*env.current(), bob, chanSle));
+            BEAST_EXPECT(ownerDirCount(*env.current(), bob) == 0);
+        }
+    }
+
+    void
+    testAccountDelete(FeatureBitset features)
+    {
+        testcase("Account Delete");
+        using namespace test::jtx;
+        using namespace std::literals::chrono_literals;
+        auto const rmAccount =
+            [this](
+                Env& env, Account const& toRm, Account const& dst, TER expectedTer = tesSUCCESS) {
+                // only allow an account to be deleted if the account's sequence
+                // number is at least 256 less than the current ledger sequence
+                for (auto minRmSeq = env.seq(toRm) + 257; env.current()->seq() < minRmSeq;
+                     env.close())
+                {
+                }
+
+                env(acctdelete(toRm, dst),
+                    Fee(drops(env.current()->fees().increment)),
+                    Ter(expectedTer));
+                env.close();
+                this->BEAST_EXPECT(
+                    isTesSuccess(expectedTer) == !env.closed()->exists(keylet::account(toRm.id())));
+            };
+
+        auto const alice = Account("alice");
+        auto const bob = Account("bob");
+        auto const carol = Account("carol");
+
+        {
+            Env env{*this, features};
+            env.fund(XRP(10000), alice, bob, carol);
+            env.close();
+
+            // Create a channel from alice to bob
+            auto const pk = alice.pk();
+            auto const settleDelay = 100s;
+            auto const chan = channel(alice, bob, env.seq(alice));
+            env(create(alice, bob, XRP(1000), settleDelay, pk));
+            env.close();
+            BEAST_EXPECT(channelBalance(*env.current(), chan) == XRP(0));
+            BEAST_EXPECT(channelAmount(*env.current(), chan) == XRP(1000));
+
+            rmAccount(env, alice, carol, tecHAS_OBLIGATIONS);
+            rmAccount(env, bob, carol, TER(tecHAS_OBLIGATIONS));
+
+            auto const feeDrops = env.current()->fees().base;
+            auto chanBal = channelBalance(*env.current(), chan);
+            auto chanAmt = channelAmount(*env.current(), chan);
+            BEAST_EXPECT(chanBal == XRP(0));
+            BEAST_EXPECT(chanAmt == XRP(1000));
+
+            auto const preBob = env.balance(bob);
+            auto const delta = XRP(50);
+            auto reqBal = chanBal + delta;
+            auto authAmt = reqBal + XRP(100);
+            assert(reqBal <= chanAmt);
+
+            env(claim(alice, chan, reqBal, authAmt));
+            env.close();
+            BEAST_EXPECT(channelBalance(*env.current(), chan) == reqBal);
+            BEAST_EXPECT(channelAmount(*env.current(), chan) == chanAmt);
+            BEAST_EXPECT(env.balance(bob) == preBob + delta);
+            chanBal = reqBal;
+
+            auto const preAlice = env.balance(alice);
+            env(fund(alice, chan, XRP(1000)));
+            env.close();
+            BEAST_EXPECT(env.balance(alice) == preAlice - XRP(1000) - feeDrops);
+            BEAST_EXPECT(channelAmount(*env.current(), chan) == chanAmt + XRP(1000));
+            chanAmt = chanAmt + XRP(1000);
+
+            {
+                // Owner closes, will close after settleDelay
+                env(claim(alice, chan), Txflags(tfClose));
+                env.close();
+                // settle delay hasn't elapsed. Channels should exist.
+                BEAST_EXPECT(channelExists(*env.current(), chan));
+                auto const closeTime = env.current()->header().parentCloseTime;
+                auto const minExpiration = closeTime + settleDelay;
+                env.close(minExpiration);
+                env(claim(alice, chan), Txflags(tfClose));
+                BEAST_EXPECT(!channelExists(*env.current(), chan));
+            }
+        }
+    }
+
+    void
+    testUsingTickets(FeatureBitset features)
+    {
+        testcase("using tickets");
+        using namespace jtx;
+        using namespace std::literals::chrono_literals;
+        Env env{*this, features};
+        auto const alice = Account("alice");
+        auto const bob = Account("bob");
+        auto const usda = alice["USD"];
+        env.fund(XRP(10000), alice, bob);
+
+        // alice and bob grab enough tickets for all of the following
+        // transactions.  Note that once the tickets are acquired alice's
+        // and bob's account sequence numbers should not advance.
+        std::uint32_t aliceTicketSeq{env.seq(alice) + 1};
+        env(ticket::create(alice, 10));
+        std::uint32_t const aliceSeq{env.seq(alice)};
+
+        std::uint32_t bobTicketSeq{env.seq(bob) + 1};
+        env(ticket::create(bob, 10));
+        std::uint32_t const bobSeq{env.seq(bob)};
+
+        auto const pk = alice.pk();
+        auto const settleDelay = 100s;
+        auto const chan = channel(alice, bob, aliceTicketSeq);
+
+        env(create(alice, bob, XRP(1000), settleDelay, pk), ticket::Use(aliceTicketSeq++));
+
+        env.require(Tickets(alice, env.seq(alice) - aliceTicketSeq));
+        BEAST_EXPECT(env.seq(alice) == aliceSeq);
+
+        BEAST_EXPECT(channelBalance(*env.current(), chan) == XRP(0));
+        BEAST_EXPECT(channelAmount(*env.current(), chan) == XRP(1000));
+
+        {
+            auto const preAlice = env.balance(alice);
+            env(fund(alice, chan, XRP(1000)), ticket::Use(aliceTicketSeq++));
+
+            env.require(Tickets(alice, env.seq(alice) - aliceTicketSeq));
+            BEAST_EXPECT(env.seq(alice) == aliceSeq);
+
+            auto const feeDrops = env.current()->fees().base;
+            BEAST_EXPECT(env.balance(alice) == preAlice - XRP(1000) - feeDrops);
+        }
+
+        auto chanBal = channelBalance(*env.current(), chan);
+        auto const chanAmt = channelAmount(*env.current(), chan);
+        BEAST_EXPECT(chanBal == XRP(0));
+        BEAST_EXPECT(chanAmt == XRP(2000));
+
+        {
+            // No signature needed since the owner is claiming
+            auto const preBob = env.balance(bob);
+            auto const delta = XRP(500);
+            auto const reqBal = chanBal + delta;
+            auto const authAmt = reqBal + XRP(100);
+            assert(reqBal <= chanAmt);
+            env(claim(alice, chan, reqBal, authAmt), ticket::Use(aliceTicketSeq++));
+
+            env.require(Tickets(alice, env.seq(alice) - aliceTicketSeq));
+            BEAST_EXPECT(env.seq(alice) == aliceSeq);
+
+            BEAST_EXPECT(channelBalance(*env.current(), chan) == reqBal);
+            BEAST_EXPECT(channelAmount(*env.current(), chan) == chanAmt);
+            BEAST_EXPECT(env.balance(bob) == preBob + delta);
+            chanBal = reqBal;
+        }
+        {
+            // Claim with signature
+            auto preBob = env.balance(bob);
+            auto const delta = XRP(500);
+            auto const reqBal = chanBal + delta;
+            auto const authAmt = reqBal + XRP(100);
+            assert(reqBal <= chanAmt);
+            auto const sig = signClaimAuth(alice.pk(), alice.sk(), chan, authAmt);
+            env(claim(bob, chan, reqBal, authAmt, Slice(sig), alice.pk()),
+                ticket::Use(bobTicketSeq++));
+
+            env.require(Tickets(bob, env.seq(bob) - bobTicketSeq));
+            BEAST_EXPECT(env.seq(bob) == bobSeq);
+
+            BEAST_EXPECT(channelBalance(*env.current(), chan) == reqBal);
+            BEAST_EXPECT(channelAmount(*env.current(), chan) == chanAmt);
+            auto const feeDrops = env.current()->fees().base;
+            BEAST_EXPECT(env.balance(bob) == preBob + delta - feeDrops);
+            chanBal = reqBal;
+
+            // claim again
+            preBob = env.balance(bob);
+            // A transaction that generates a tec still consumes its ticket.
+            env(claim(bob, chan, reqBal, authAmt, Slice(sig), alice.pk()),
+                ticket::Use(bobTicketSeq++),
+                Ter(tecUNFUNDED_PAYMENT));
+
+            env.require(Tickets(bob, env.seq(bob) - bobTicketSeq));
+            BEAST_EXPECT(env.seq(bob) == bobSeq);
+
+            BEAST_EXPECT(channelBalance(*env.current(), chan) == chanBal);
+            BEAST_EXPECT(channelAmount(*env.current(), chan) == chanAmt);
+            BEAST_EXPECT(env.balance(bob) == preBob - feeDrops);
+        }
+        {
+            // Try to claim more than authorized
+            auto const preBob = env.balance(bob);
+            STAmount const authAmt = chanBal + XRP(500);
+            STAmount const reqAmt = authAmt + drops(1);
+            assert(reqAmt <= chanAmt);
+            // Note that since claim() returns a tem (neither tec nor tes),
+            // the ticket is not consumed.  So we don't kIncrement bobTicket.
+            auto const sig = signClaimAuth(alice.pk(), alice.sk(), chan, authAmt);
+            env(claim(bob, chan, reqAmt, authAmt, Slice(sig), alice.pk()),
+                ticket::Use(bobTicketSeq),
+                Ter(temBAD_AMOUNT));
+
+            env.require(Tickets(bob, env.seq(bob) - bobTicketSeq));
+            BEAST_EXPECT(env.seq(bob) == bobSeq);
+
+            BEAST_EXPECT(channelBalance(*env.current(), chan) == chanBal);
+            BEAST_EXPECT(channelAmount(*env.current(), chan) == chanAmt);
+            BEAST_EXPECT(env.balance(bob) == preBob);
+        }
+
+        // Dst tries to fund the channel
+        env(fund(bob, chan, XRP(1000)), ticket::Use(bobTicketSeq++), Ter(tecNO_PERMISSION));
+
+        env.require(Tickets(bob, env.seq(bob) - bobTicketSeq));
+        BEAST_EXPECT(env.seq(bob) == bobSeq);
+
+        BEAST_EXPECT(channelBalance(*env.current(), chan) == chanBal);
+        BEAST_EXPECT(channelAmount(*env.current(), chan) == chanAmt);
+
+        {
+            // Dst closes channel
+            auto const preAlice = env.balance(alice);
+            auto const preBob = env.balance(bob);
+            env(claim(bob, chan), Txflags(tfClose), ticket::Use(bobTicketSeq++));
+
+            env.require(Tickets(bob, env.seq(bob) - bobTicketSeq));
+            BEAST_EXPECT(env.seq(bob) == bobSeq);
+
+            BEAST_EXPECT(!channelExists(*env.current(), chan));
+            auto const feeDrops = env.current()->fees().base;
+            auto const delta = chanAmt - chanBal;
+            assert(delta > beast::kZero);
+            BEAST_EXPECT(env.balance(alice) == preAlice + delta);
+            BEAST_EXPECT(env.balance(bob) == preBob - feeDrops);
+        }
+        env.require(Tickets(alice, env.seq(alice) - aliceTicketSeq));
+        BEAST_EXPECT(env.seq(alice) == aliceSeq);
+        env.require(Tickets(bob, env.seq(bob) - bobTicketSeq));
+        BEAST_EXPECT(env.seq(bob) == bobSeq);
+    }
+
+    void
+    testWithFeats(FeatureBitset features)
+    {
+        testSimple(features);
+        testDisallowIncoming(features);
+        testCancelAfter(features);
+        testSettleDelay(features);
+        testExpiration(features);
+        testCloseDry(features);
+        testDefaultAmount(features);
+        testDisallowXRP(features);
+        testDstTag(features);
+        testDepositAuth(features);
+        testMultiple(features);
+        testAccountChannelsRPC(features);
+        testAccountChannelsRPCMarkers(features);
+        testAccountChannelsRPCSenderOnly(features);
+        testAccountChannelAuthorize(features);
+        testAuthVerifyRPC(features);
+        testOptionalFields(features);
+        testMalformedPK(features);
+        testMetaAndOwnership(features);
+        testAccountDelete(features);
+        testUsingTickets(features);
+        testChannelVerifyLoadType(features);
+        testChannelAuthorizeLoadType(features);
+    }
+
+public:
+    void
+    run() override
+    {
+        using namespace test::jtx;
+        // fixCleanup3_2_0 changes payment-channel error codes (tem* -> tec*)
+        // and channel-closing semantics. This suite asserts the
+        // pre-amendment behavior, so run it with the amendment disabled.
+        FeatureBitset const all{testableAmendments() - fixCleanup3_2_0};
+        testWithFeats(all);
+        testDepositAuthCreds();
+        testMetaAndOwnership(all - fixIncludeKeyletFields);
+    }
+};
+
+BEAST_DEFINE_TESTSUITE(PayChan, app, xrpl);
+}  // namespace xrpl::test

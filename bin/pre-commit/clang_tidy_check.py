@@ -1,0 +1,119 @@
+#!/usr/bin/env python3
+"""Pre-commit hook that runs clang-tidy on staged files using run-clang-tidy.
+
+The script determines the staged files itself (see `pass_filenames: false` in
+.pre-commit-config.yaml) so run-clang-tidy is run once and handles parallelism
+internally: pre-commit would otherwise split the files across parallel hook
+invocations that race when fixes edit a shared header.
+"""
+
+from __future__ import annotations
+
+import os
+import re
+import shutil
+import subprocess
+import sys
+from pathlib import Path
+
+# Extensions run-clang-tidy can analyse: `.cpp` translation units and, thanks to
+# the `verify_headers` build option, `.h`/`.hpp` headers (each has its own
+# compile_commands.json entry). `.ipp` fragments have no entry and are skipped.
+TIDY_EXTENSIONS = {".cpp", ".h", ".hpp"}
+
+
+def clang_tidy_major() -> str | None:
+    """Major version of the `clang-tidy` on PATH, which run-clang-tidy invokes."""
+    if not (clang_tidy := shutil.which("clang-tidy")):
+        return None
+    output = subprocess.run(
+        [clang_tidy, "--version"], capture_output=True, text=True
+    ).stdout
+    m = re.search(r"LLVM version (\d+)", output)
+    return m.group(1) if m else None
+
+
+def find_tool(name: str, version: str | None) -> str | None:
+    """Prefer `<name>-<version>`, so a host tool of another version can't win."""
+    candidates = ([f"{name}-{version}"] if version else []) + [name]
+    for candidate in candidates:
+        if path := shutil.which(candidate):
+            return path
+    return None
+
+
+def find_build_dir(repo_root: Path) -> Path | None:
+    for name in (".build", "build"):
+        candidate = repo_root / name
+        if (candidate / "compile_commands.json").exists():
+            return candidate
+    return None
+
+
+def staged_files(repo_root: Path) -> list[Path]:
+    """Return absolute paths of staged, lint-able C/C++ files.
+
+    `--diff-filter=d` excludes deletions so we never lint a removed file.
+    """
+    output = subprocess.check_output(
+        ["git", "diff", "--staged", "--name-only", "--diff-filter=d", "--"]
+        + [f"*{ext}" for ext in TIDY_EXTENSIONS],
+        text=True,
+        cwd=repo_root,
+    )
+    return [repo_root / rel for rel in output.splitlines() if rel]
+
+
+def main():
+    if not os.environ.get("TIDY"):
+        return 0
+
+    repo_root = Path(
+        subprocess.check_output(
+            ["git", "rev-parse", "--show-toplevel"],
+            cwd=Path(__file__).parent,
+            text=True,
+        ).strip()
+    )
+
+    files = staged_files(repo_root)
+    if not files:
+        return 0
+
+    version = clang_tidy_major()
+    run_clang_tidy = find_tool("run-clang-tidy", version)
+    if not run_clang_tidy:
+        tried = f" (tried the '-{version}' suffix too)" if version else ""
+        print(
+            f"clang-tidy check failed: TIDY is enabled but run-clang-tidy "
+            f"was not found in PATH{tried}.",
+            file=sys.stderr,
+        )
+        return 1
+
+    build_dir = find_build_dir(repo_root)
+    if not build_dir:
+        print(
+            "clang-tidy check failed: no build directory with compile_commands.json found "
+            "(looked for .build/ and build/)",
+            file=sys.stderr,
+        )
+        return 1
+
+    result = subprocess.run(
+        [
+            run_clang_tidy,
+            "-quiet",
+            "-p",
+            build_dir,
+            "-fix",
+            "-format",
+            "-allow-no-checks",
+        ]
+        + files
+    )
+    return result.returncode
+
+
+if __name__ == "__main__":
+    sys.exit(main())

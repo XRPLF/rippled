@@ -1,0 +1,464 @@
+#include <test/jtx/Env.h>
+#include <test/jtx/TestHelpers.h>
+#include <test/jtx/WSClient.h>
+#include <test/jtx/amount.h>
+#include <test/jtx/balance.h>
+#include <test/jtx/jtx_json.h>
+#include <test/jtx/paths.h>
+#include <test/jtx/pay.h>
+#include <test/jtx/rate.h>
+#include <test/jtx/sendmax.h>
+#include <test/jtx/ter.h>
+#include <test/jtx/trust.h>
+
+#include <xrpl/basics/strHex.h>
+#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/protocol/ErrorCodes.h>
+#include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/jss.h>
+
+#include <chrono>
+
+namespace xrpl {
+
+class TrustAndBalance_test : public beast::unit_test::Suite
+{
+    void
+    testPayNonexistent(FeatureBitset features)
+    {
+        testcase("Payment to Nonexistent Account");
+        using namespace test::jtx;
+
+        Env env{*this, features};
+        env(pay(env.master, "alice", XRP(1)), Ter(tecNO_DST_INSUF_XRP));
+        env.close();
+    }
+
+    void
+    testTrustNonexistent()
+    {
+        testcase("Trust Nonexistent Account");
+        using namespace test::jtx;
+
+        Env env{*this};
+        Account const alice{"alice"};
+
+        env(trust(env.master, alice["USD"](100)), Ter(tecNO_DST));
+    }
+
+    void
+    testCreditLimit()
+    {
+        testcase("Credit Limit");
+        using namespace test::jtx;
+
+        Env env{*this};
+        Account const gw{"gateway"};
+        Account const alice{"alice"};
+        Account const bob{"bob"};
+
+        env.fund(XRP(10000), gw, alice, bob);
+        env.close();
+
+        // credit limit doesn't exist yet - verify ledger_entry
+        // reflects this
+        auto jrr = ledgerEntryState(env, gw, alice, "USD");
+        BEAST_EXPECT(jrr[jss::error] == "entryNotFound");
+        BEAST_EXPECT(jrr[jss::error_code] == RpcEntryNotFound);
+        BEAST_EXPECT(jrr[jss::error_message] == "Entry not found.");
+
+        // now create a credit limit
+        env(trust(alice, gw["USD"](800)));
+
+        jrr = ledgerEntryState(env, gw, alice, "USD");
+        BEAST_EXPECT(jrr[jss::node][sfBalance.fieldName][jss::value] == "0");
+        BEAST_EXPECT(jrr[jss::node][sfHighLimit.fieldName][jss::value] == "800");
+        BEAST_EXPECT(jrr[jss::node][sfHighLimit.fieldName][jss::issuer] == alice.human());
+        BEAST_EXPECT(jrr[jss::node][sfHighLimit.fieldName][jss::currency] == "USD");
+        BEAST_EXPECT(jrr[jss::node][sfLowLimit.fieldName][jss::value] == "0");
+        BEAST_EXPECT(jrr[jss::node][sfLowLimit.fieldName][jss::issuer] == gw.human());
+        BEAST_EXPECT(jrr[jss::node][sfLowLimit.fieldName][jss::currency] == "USD");
+
+        // modify the credit limit
+        env(trust(alice, gw["USD"](700)));
+
+        jrr = ledgerEntryState(env, gw, alice, "USD");
+        BEAST_EXPECT(jrr[jss::node][sfBalance.fieldName][jss::value] == "0");
+        BEAST_EXPECT(jrr[jss::node][sfHighLimit.fieldName][jss::value] == "700");
+        BEAST_EXPECT(jrr[jss::node][sfHighLimit.fieldName][jss::issuer] == alice.human());
+        BEAST_EXPECT(jrr[jss::node][sfHighLimit.fieldName][jss::currency] == "USD");
+        BEAST_EXPECT(jrr[jss::node][sfLowLimit.fieldName][jss::value] == "0");
+        BEAST_EXPECT(jrr[jss::node][sfLowLimit.fieldName][jss::issuer] == gw.human());
+        BEAST_EXPECT(jrr[jss::node][sfLowLimit.fieldName][jss::currency] == "USD");
+
+        // set negative limit - expect failure
+        env(trust(alice, gw["USD"](-1)), Ter(temBAD_LIMIT));
+
+        // set zero limit
+        env(trust(alice, gw["USD"](0)));
+
+        // ensure line is deleted
+        jrr = ledgerEntryState(env, gw, alice, "USD");
+        BEAST_EXPECT(jrr[jss::error] == "entryNotFound");
+        BEAST_EXPECT(jrr[jss::error_code] == RpcEntryNotFound);
+        BEAST_EXPECT(jrr[jss::error_message] == "Entry not found.");
+
+        // TODO Check in both owner books.
+
+        // set another credit limit
+        env(trust(alice, bob["USD"](600)));
+
+        // set limit on other side
+        env(trust(bob, alice["USD"](500)));
+
+        // check the ledger state for the trust line
+        jrr = ledgerEntryState(env, alice, bob, "USD");
+        BEAST_EXPECT(jrr[jss::node][sfBalance.fieldName][jss::value] == "0");
+        BEAST_EXPECT(jrr[jss::node][sfHighLimit.fieldName][jss::value] == "500");
+        BEAST_EXPECT(jrr[jss::node][sfHighLimit.fieldName][jss::issuer] == bob.human());
+        BEAST_EXPECT(jrr[jss::node][sfHighLimit.fieldName][jss::currency] == "USD");
+        BEAST_EXPECT(jrr[jss::node][sfLowLimit.fieldName][jss::value] == "600");
+        BEAST_EXPECT(jrr[jss::node][sfLowLimit.fieldName][jss::issuer] == alice.human());
+        BEAST_EXPECT(jrr[jss::node][sfLowLimit.fieldName][jss::currency] == "USD");
+    }
+
+    void
+    testDirectRipple(FeatureBitset features)
+    {
+        testcase("Direct Payment, Ripple");
+        using namespace test::jtx;
+
+        Env env{*this, features};
+        Account const alice{"alice"};
+        Account const bob{"bob"};
+
+        env.fund(XRP(10000), alice, bob);
+        env.close();
+
+        env(trust(alice, bob["USD"](600)));
+        env(trust(bob, alice["USD"](700)));
+
+        // alice sends bob partial with alice as issuer
+        env(pay(alice, bob, alice["USD"](24)));
+        env.require(Balance(bob, alice["USD"](24)));
+
+        // alice sends bob more with bob as issuer
+        env(pay(alice, bob, bob["USD"](33)));
+        env.require(Balance(bob, alice["USD"](57)));
+
+        // bob sends back more than sent
+        env(pay(bob, alice, bob["USD"](90)));
+        env.require(Balance(bob, alice["USD"](-33)));
+
+        // alice sends to her limit
+        env(pay(alice, bob, bob["USD"](733)));
+        env.require(Balance(bob, alice["USD"](700)));
+
+        // bob sends to his limit
+        env(pay(bob, alice, bob["USD"](1300)));
+        env.require(Balance(bob, alice["USD"](-600)));
+
+        // bob sends past limit
+        env(pay(bob, alice, bob["USD"](1)), Ter(tecPATH_DRY));
+        env.require(Balance(bob, alice["USD"](-600)));
+    }
+
+    void
+    testWithTransferFee(bool subscribe, bool withRate, FeatureBitset features)
+    {
+        testcase(
+            std::string("Direct Payment: ") + (withRate ? "With " : "Without ") + " Xfer Fee, " +
+            (subscribe ? "With " : "Without ") + " Subscribe");
+        using namespace test::jtx;
+
+        Env env{*this, features};
+        auto wsc = test::makeWSClient(env.app().config());
+        Account const gw{"gateway"};
+        Account const alice{"alice"};
+        Account const bob{"bob"};
+
+        env.fund(XRP(10000), gw, alice, bob);
+        env.close();
+
+        env(trust(alice, gw["AUD"](100)));
+        env(trust(bob, gw["AUD"](100)));
+
+        env(pay(gw, alice, alice["AUD"](1)));
+        env.close();
+
+        env.require(Balance(alice, gw["AUD"](1)));
+
+        // alice sends bob 1 AUD
+        env(pay(alice, bob, gw["AUD"](1)));
+        env.close();
+
+        env.require(Balance(alice, gw["AUD"](0)));
+        env.require(Balance(bob, gw["AUD"](1)));
+        env.require(Balance(gw, bob["AUD"](-1)));
+
+        if (withRate)
+        {
+            // set a transfer rate
+            env(rate(gw, 1.1));
+            env.close();
+            // bob sends alice 0.5 AUD with a max to spend
+            env(pay(bob, alice, gw["AUD"](0.5)), Sendmax(gw["AUD"](0.55)));
+        }
+        else
+        {
+            // bob sends alice 0.5 AUD
+            env(pay(bob, alice, gw["AUD"](0.5)));
+        }
+
+        env.require(Balance(alice, gw["AUD"](0.5)));
+        env.require(Balance(bob, gw["AUD"](withRate ? 0.45 : 0.5)));
+        env.require(Balance(gw, bob["AUD"](withRate ? -0.45 : -0.5)));
+
+        if (subscribe)
+        {
+            json::Value jvs;
+            jvs[jss::accounts] = json::ValueType::Array;
+            jvs[jss::accounts].append(gw.human());
+            jvs[jss::streams] = json::ValueType::Array;
+            jvs[jss::streams].append("transactions");
+            jvs[jss::streams].append("ledger");
+            auto jv = wsc->invoke("subscribe", jvs);
+            BEAST_EXPECT(jv[jss::status] == "success");
+
+            env.close();
+
+            using namespace std::chrono_literals;
+            BEAST_EXPECT(wsc->findMsg(5s, [](auto const& jval) {
+                auto const& t = jval[jss::transaction];
+                return t[jss::TransactionType] == jss::Payment;
+            }));
+            BEAST_EXPECT(wsc->findMsg(
+                5s, [](auto const& jval) { return jval[jss::type] == "ledgerClosed"; }));
+
+            BEAST_EXPECT(wsc->invoke("unsubscribe", jv)[jss::status] == "success");
+        }
+    }
+
+    void
+    testWithPath(FeatureBitset features)
+    {
+        testcase("Payments With Paths and Fees");
+        using namespace test::jtx;
+
+        Env env{*this, features};
+        Account const gw{"gateway"};
+        Account const alice{"alice"};
+        Account const bob{"bob"};
+
+        env.fund(XRP(10000), gw, alice, bob);
+        env.close();
+
+        // set a transfer rate
+        env(rate(gw, 1.1));
+
+        env(trust(alice, gw["AUD"](100)));
+        env(trust(bob, gw["AUD"](100)));
+
+        env(pay(gw, alice, alice["AUD"](4.4)));
+        env.require(Balance(alice, gw["AUD"](4.4)));
+
+        // alice sends gw issues to bob with a max spend that allows for the
+        // xfer rate
+        env(pay(alice, bob, gw["AUD"](1)), Sendmax(gw["AUD"](1.1)));
+        env.require(Balance(alice, gw["AUD"](3.3)));
+        env.require(Balance(bob, gw["AUD"](1)));
+
+        // alice sends bob issues to bob with a max spend
+        env(pay(alice, bob, bob["AUD"](1)), Sendmax(gw["AUD"](1.1)));
+        env.require(Balance(alice, gw["AUD"](2.2)));
+        env.require(Balance(bob, gw["AUD"](2)));
+
+        // alice sends gw issues to bob with a max spend
+        env(pay(alice, bob, gw["AUD"](1)), Sendmax(alice["AUD"](1.1)));
+        env.require(Balance(alice, gw["AUD"](1.1)));
+        env.require(Balance(bob, gw["AUD"](3)));
+
+        // alice sends bob issues to bob with a max spend in alice issues.
+        // expect fail since gw is not involved
+        env(pay(alice, bob, bob["AUD"](1)), Sendmax(alice["AUD"](1.1)), Ter(tecPATH_DRY));
+
+        env.require(Balance(alice, gw["AUD"](1.1)));
+        env.require(Balance(bob, gw["AUD"](3)));
+    }
+
+    void
+    testIndirect(FeatureBitset features)
+    {
+        testcase("Indirect Payment");
+        using namespace test::jtx;
+
+        Env env{*this, features};
+        Account const gw{"gateway"};
+        Account const alice{"alice"};
+        Account const bob{"bob"};
+
+        env.fund(XRP(10000), gw, alice, bob);
+        env.close();
+
+        env(trust(alice, gw["USD"](600)));
+        env(trust(bob, gw["USD"](700)));
+
+        env(pay(gw, alice, alice["USD"](70)));
+        env(pay(gw, bob, bob["USD"](50)));
+
+        env.require(Balance(alice, gw["USD"](70)));
+        env.require(Balance(bob, gw["USD"](50)));
+
+        // alice sends more than has to issuer: 100 out of 70
+        env(pay(alice, gw, gw["USD"](100)), Ter(tecPATH_PARTIAL));
+
+        // alice sends more than has to bob: 100 out of 70
+        env(pay(alice, bob, gw["USD"](100)), Ter(tecPATH_PARTIAL));
+
+        env.close();
+
+        env.require(Balance(alice, gw["USD"](70)));
+        env.require(Balance(bob, gw["USD"](50)));
+
+        // send with an account path
+        env(pay(alice, bob, gw["USD"](5)), test::jtx::Path(gw));
+
+        env.require(Balance(alice, gw["USD"](65)));
+        env.require(Balance(bob, gw["USD"](55)));
+    }
+
+    void
+    testIndirectMultiPath(bool withRate, FeatureBitset features)
+    {
+        testcase(
+            std::string("Indirect Payment, Multi Path, ") + (withRate ? "With " : "Without ") +
+            " Xfer Fee, ");
+        using namespace test::jtx;
+
+        Env env{*this, features};
+        Account const gw{"gateway"};
+        Account const amazon{"amazon"};
+        Account const alice{"alice"};
+        Account const bob{"bob"};
+        Account const carol{"carol"};
+
+        env.fund(XRP(10000), gw, amazon, alice, bob, carol);
+        env.close();
+
+        env(trust(amazon, gw["USD"](2000)));
+        env(trust(bob, alice["USD"](600)));
+        env(trust(bob, gw["USD"](1000)));
+        env(trust(carol, alice["USD"](700)));
+        env(trust(carol, gw["USD"](1000)));
+
+        if (withRate)
+            env(rate(gw, 1.1));
+
+        env(pay(gw, bob, bob["USD"](100)));
+        env(pay(gw, carol, carol["USD"](100)));
+        env.close();
+
+        // alice pays amazon via multiple paths
+        if (withRate)
+        {
+            env(pay(alice, amazon, gw["USD"](150)),
+                Sendmax(alice["USD"](200)),
+                test::jtx::Path(bob),
+                test::jtx::Path(carol));
+        }
+        else
+        {
+            env(pay(alice, amazon, gw["USD"](150)), test::jtx::Path(bob), test::jtx::Path(carol));
+        }
+
+        if (withRate)
+        {
+            env.require(Balance(
+                alice,
+                STAmount(carol["USD"], 6500000000000000ull, -14, true, STAmount::Unchecked{})));
+            env.require(Balance(carol, gw["USD"](35)));
+        }
+        else
+        {
+            env.require(Balance(alice, carol["USD"](-50)));
+            env.require(Balance(carol, gw["USD"](50)));
+        }
+        env.require(Balance(alice, bob["USD"](-100)));
+        env.require(Balance(amazon, gw["USD"](150)));
+        env.require(Balance(bob, gw["USD"](0)));
+    }
+
+    void
+    testInvoiceID(FeatureBitset features)
+    {
+        testcase("Set Invoice ID on Payment");
+        using namespace test::jtx;
+
+        Env env{*this, features};
+        Account const alice{"alice"};
+        auto wsc = test::makeWSClient(env.app().config());
+
+        env.fund(XRP(10000), alice);
+        env.close();
+
+        json::Value jvs;
+        jvs[jss::accounts] = json::ValueType::Array;
+        jvs[jss::accounts].append(env.master.human());
+        jvs[jss::streams] = json::ValueType::Array;
+        jvs[jss::streams].append("transactions");
+        BEAST_EXPECT(wsc->invoke("subscribe", jvs)[jss::status] == "success");
+
+        char const* invoiceId = "243F6A8885A308D313198A2E03707344A4093822299F31D0082EFA98EC4E6C89";
+
+        json::Value jv;
+        auto const tx =
+            env.jt(pay(env.master, alice, XRP(10000)), Json(sfInvoiceID.fieldName, invoiceId));
+        jv[jss::tx_blob] = strHex(tx.stx->getSerializer().slice());
+        auto jrr = wsc->invoke("submit", jv)[jss::result];
+        BEAST_EXPECT(jrr[jss::status] == "success");
+        BEAST_EXPECT(jrr[jss::tx_json][sfInvoiceID.fieldName] == invoiceId);
+        env.close();
+
+        using namespace std::chrono_literals;
+        BEAST_EXPECT(wsc->findMsg(2s, [invoiceId](auto const& jval) {
+            auto const& t = jval[jss::transaction];
+            return t[jss::TransactionType] == jss::Payment && t[sfInvoiceID.fieldName] == invoiceId;
+        }));
+
+        BEAST_EXPECT(wsc->invoke("unsubscribe", jv)[jss::status] == "success");
+    }
+
+public:
+    void
+    run() override
+    {
+        testTrustNonexistent();
+        testCreditLimit();
+
+        auto const testWithFeatures = [this](FeatureBitset features) {
+            testPayNonexistent(features);
+            testDirectRipple(features);
+            testWithTransferFee(false, false, features);
+            testWithTransferFee(false, true, features);
+            testWithTransferFee(true, false, features);
+            testWithTransferFee(true, true, features);
+            testWithPath(features);
+            testIndirect(features);
+            testIndirectMultiPath(true, features);
+            testIndirectMultiPath(false, features);
+            testInvoiceID(features);
+        };
+
+        using namespace test::jtx;
+        auto const sa = testableAmendments();
+        testWithFeatures(sa - featurePermissionedDEX);
+        testWithFeatures(sa);
+    }
+};
+
+BEAST_DEFINE_TESTSUITE(TrustAndBalance, app, xrpl);
+
+}  // namespace xrpl

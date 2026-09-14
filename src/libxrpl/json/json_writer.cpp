@@ -1,0 +1,729 @@
+#include <xrpl/json/json_writer.h>
+
+#include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/json/json_forwards.h>
+#include <xrpl/json/json_value.h>
+
+#include <charconv>
+#include <cstring>
+#include <iomanip>
+#include <ios>
+#include <ostream>
+#include <sstream>
+#include <string>
+#include <system_error>
+#include <utility>
+
+namespace json {
+
+static bool
+isControlCharacter(char ch)
+{
+    return ch > 0 && ch <= 0x1F;
+}
+
+static bool
+containsControlCharacter(char const* str)
+{
+    while (*str != 0)
+    {
+        if (isControlCharacter(*(str++)))
+            return true;
+    }
+
+    return false;
+}
+static void
+uintToString(unsigned int value, char*& current)
+{
+    *--current = 0;
+
+    do
+    {
+        *--current = (value % 10) + '0';
+        value /= 10;
+    } while (value != 0);
+}
+
+std::string
+valueToString(Int value)
+{
+    char buffer[32];
+    char* current = buffer + sizeof(buffer);  // NOLINT(misc-const-correctness)
+    bool const isNegative = value < 0;
+
+    if (isNegative)
+        value = -value;
+
+    uintToString(UInt(value), current);
+
+    if (isNegative)
+        *--current = '-';
+
+    XRPL_ASSERT(current >= buffer, "json::valueToString(Int) : buffer check");
+    return current;
+}
+
+std::string
+valueToString(UInt value)
+{
+    char buffer[32];
+    char* current = buffer + sizeof(buffer);  // NOLINT(misc-const-correctness)
+    uintToString(value, current);
+    XRPL_ASSERT(current >= buffer, "json::valueToString(UInt) : buffer check");
+    return current;
+}
+
+std::string
+valueToString(double value)
+{
+    // Format with 16 significant digits.
+    // We need not request the alternative representation that always has a
+    // decimal point because JSON doesn't distinguish the concepts of reals and integers.
+    // A double never needs more than 32 characters in this form,
+    // so to_chars cannot actually run out of room here.
+    char buffer[32];
+    auto const [ptr, ec] =
+        std::to_chars(buffer, buffer + sizeof(buffer), value, std::chars_format::general, 16);
+    XRPL_ASSERT(ec == std::errc{}, "json::valueToString(double) : conversion fits buffer");
+    if (ec != std::errc{})
+        return {};
+    return std::string(buffer, ptr);
+}
+
+std::string
+valueToString(bool value)
+{
+    return value ? "true" : "false";
+}
+
+std::string
+valueToQuotedString(char const* value)
+{
+    // Not sure how to handle unicode...
+    if (strpbrk(value, "\"\\\b\f\n\r\t") == nullptr && !containsControlCharacter(value))
+        return std::string("\"") + value + "\"";
+
+    // We have to walk value and escape any special characters.
+    // Appending to std::string is not efficient, but this should be rare.
+    // (Note: forward slashes are *not* rare, but I am not escaping them.)
+    unsigned const maxsize = (strlen(value) * 2) + 3;  // all-escaped+quotes+NULL
+    std::string result;
+    result.reserve(maxsize);  // to avoid lots of mallocs
+    result += '"';
+
+    for (char const* c = value; *c != 0; ++c)
+    {
+        switch (*c)
+        {
+            case '\"':
+                result += "\\\"";
+                break;
+
+            case '\\':
+                result += "\\\\";
+                break;
+
+            case '\b':
+                result += "\\b";
+                break;
+
+            case '\f':
+                result += "\\f";
+                break;
+
+            case '\n':
+                result += "\\n";
+                break;
+
+            case '\r':
+                result += "\\r";
+                break;
+
+            case '\t':
+                result += "\\t";
+                break;
+
+                // case '/':
+                // Even though \/ is considered a legal escape in JSON, a bare
+                // slash is also legal, so I see no reason to escape it.
+                // (I hope I am not misunderstanding something.
+                // blep notes: actually escaping \/ may be useful in javascript
+                // to avoid </ sequence. Should add a flag to allow this
+                // compatibility mode and prevent this sequence from occurring.
+            default:
+                if (isControlCharacter(*c))
+                {
+                    std::ostringstream oss;
+                    oss << "\\u" << std::hex << std::uppercase << std::setfill('0') << std::setw(4)
+                        << static_cast<int>(*c);
+                    result += oss.str();
+                }
+                else
+                {
+                    result += *c;
+                }
+
+                break;
+        }
+    }
+
+    result += '"';
+    return result;
+}
+
+// Class FastWriter
+// //////////////////////////////////////////////////////////////////
+
+std::string
+FastWriter::write(Value const& root)
+{
+    document_ = "";
+    writeValue(root);
+    return std::move(document_);
+}
+
+void
+FastWriter::writeValue(Value const& value)
+{
+    switch (value.type())
+    {
+        case ValueType::Null:
+            document_ += "null";
+            break;
+
+        case ValueType::Int:
+            document_ += valueToString(value.asInt());
+            break;
+
+        case ValueType::UInt:
+            document_ += valueToString(value.asUInt());
+            break;
+
+        case ValueType::Real:
+            document_ += valueToString(value.asDouble());
+            break;
+
+        case ValueType::String:
+            document_ += valueToQuotedString(value.asCString());
+            break;
+
+        case ValueType::Boolean:
+            document_ += valueToString(value.asBool());
+            break;
+
+        case ValueType::Array: {
+            document_ += '[';
+            int const size = value.size();
+
+            for (int index = 0; index < size; ++index)
+            {
+                if (index > 0)
+                    document_ += ',';
+
+                writeValue(value[index]);
+            }
+
+            document_ += ']';
+        }
+        break;
+
+        case ValueType::Object: {
+            Value::Members members(value.getMemberNames());
+            document_ += '{';
+
+            for (auto it = members.begin(); it != members.end(); ++it)
+            {
+                std::string const& name = *it;
+
+                if (it != members.begin())
+                    document_ += ',';
+
+                document_ += valueToQuotedString(name.c_str());
+                document_ += ':';
+                writeValue(value[name]);
+            }
+
+            document_ += '}';
+        }
+        break;
+    }
+}
+
+// Class StyledWriter
+// //////////////////////////////////////////////////////////////////
+
+StyledWriter::StyledWriter() = default;
+
+std::string
+StyledWriter::write(Value const& root)
+{
+    document_ = "";
+    addChildValues_ = false;
+    indentString_ = "";
+    writeValue(root);
+    document_ += '\n';
+    return document_;
+}
+
+void
+StyledWriter::writeValue(Value const& value)
+{
+    switch (value.type())
+    {
+        case ValueType::Null:
+            pushValue("null");
+            break;
+
+        case ValueType::Int:
+            pushValue(valueToString(value.asInt()));
+            break;
+
+        case ValueType::UInt:
+            pushValue(valueToString(value.asUInt()));
+            break;
+
+        case ValueType::Real:
+            pushValue(valueToString(value.asDouble()));
+            break;
+
+        case ValueType::String:
+            pushValue(valueToQuotedString(value.asCString()));
+            break;
+
+        case ValueType::Boolean:
+            pushValue(valueToString(value.asBool()));
+            break;
+
+        case ValueType::Array:
+            writeArrayValue(value);
+            break;
+
+        case ValueType::Object: {
+            Value::Members members(value.getMemberNames());
+
+            if (members.empty())
+            {
+                pushValue("{}");
+            }
+            else
+            {
+                writeWithIndent("{");
+                indent();
+                auto it = members.begin();
+
+                while (true)
+                {
+                    std::string const& name = *it;
+                    Value const& childValue = value[name];
+                    writeWithIndent(valueToQuotedString(name.c_str()));
+                    document_ += " : ";
+                    writeValue(childValue);
+
+                    if (++it; it == members.end())
+                        break;
+
+                    document_ += ',';
+                }
+
+                unindent();
+                writeWithIndent("}");
+            }
+        }
+        break;
+    }
+}
+
+void
+StyledWriter::writeArrayValue(Value const& value)
+{
+    unsigned const size = value.size();
+
+    if (size == 0)
+    {
+        pushValue("[]");
+    }
+    else
+    {
+        bool const isArrayMultiLine = isMultilineArray(value);
+
+        if (isArrayMultiLine)
+        {
+            writeWithIndent("[");
+            indent();
+            bool const hasChildValue = !childValues_.empty();
+            unsigned index = 0;
+
+            while (true)
+            {
+                Value const& childValue = value[index];
+
+                if (hasChildValue)
+                {
+                    writeWithIndent(childValues_[index]);
+                }
+                else
+                {
+                    writeIndent();
+                    writeValue(childValue);
+                }
+
+                if (++index == size)
+                    break;
+
+                document_ += ',';
+            }
+
+            unindent();
+            writeWithIndent("]");
+        }
+        else  // output on a single line
+        {
+            XRPL_ASSERT(
+                childValues_.size() == size,
+                "json::StyledWriter::writeArrayValue : child size match");
+            document_ += "[ ";
+
+            for (unsigned index = 0; index < size; ++index)
+            {
+                if (index > 0)
+                    document_ += ", ";
+
+                document_ += childValues_[index];
+            }
+
+            document_ += " ]";
+        }
+    }
+}
+
+bool
+StyledWriter::isMultilineArray(Value const& value)
+{
+    int const size = value.size();
+    bool isMultiLine = size * 3 >= rightMargin_;
+    childValues_.clear();
+
+    for (int index = 0; index < size && !isMultiLine; ++index)
+    {
+        Value const& childValue = value[index];
+        isMultiLine = isMultiLine ||
+            ((childValue.isArray() || childValue.isObject()) && childValue.size() > 0);
+    }
+
+    if (!isMultiLine)  // check if line length > max line length
+    {
+        childValues_.reserve(size);
+        addChildValues_ = true;
+        int lineLength = 4 + ((size - 1) * 2);  // '[ ' + ', '*n + ' ]'
+
+        for (int index = 0; index < size; ++index)
+        {
+            writeValue(value[index]);
+            lineLength += int(childValues_[index].length());
+        }
+
+        addChildValues_ = false;
+        isMultiLine = isMultiLine || lineLength >= rightMargin_;
+    }
+
+    return isMultiLine;
+}
+
+void
+StyledWriter::pushValue(std::string const& value)
+{
+    if (addChildValues_)
+    {
+        childValues_.push_back(value);
+    }
+    else
+    {
+        document_ += value;
+    }
+}
+
+void
+StyledWriter::writeIndent()
+{
+    if (!document_.empty())
+    {
+        char const last = document_[document_.length() - 1];
+
+        if (last == ' ')  // already indented
+            return;
+
+        if (last != '\n')  // Comments may add new-line
+            document_ += '\n';
+    }
+
+    document_ += indentString_;
+}
+
+void
+StyledWriter::writeWithIndent(std::string const& value)
+{
+    writeIndent();
+    document_ += value;
+}
+
+void
+StyledWriter::indent()
+{
+    indentString_ += std::string(indentSize_, ' ');
+}
+
+void
+StyledWriter::unindent()
+{
+    XRPL_ASSERT(
+        int(indentString_.size()) >= indentSize_,
+        "json::StyledWriter::unindent : maximum indent size");
+    indentString_.resize(indentString_.size() - indentSize_);
+}
+
+// Class StyledStreamWriter
+// //////////////////////////////////////////////////////////////////
+
+StyledStreamWriter::StyledStreamWriter(std::string indentation)
+    : indentation_(std::move(indentation))
+{
+}
+
+void
+StyledStreamWriter::write(std::ostream& out, Value const& root)
+{
+    document_ = &out;
+    addChildValues_ = false;
+    indentString_ = "";
+    writeValue(root);
+    *document_ << "\n";
+    document_ = nullptr;  // Forget the stream, for safety.
+}
+
+void
+StyledStreamWriter::writeValue(Value const& value)
+{
+    switch (value.type())
+    {
+        case ValueType::Null:
+            pushValue("null");
+            break;
+
+        case ValueType::Int:
+            pushValue(valueToString(value.asInt()));
+            break;
+
+        case ValueType::UInt:
+            pushValue(valueToString(value.asUInt()));
+            break;
+
+        case ValueType::Real:
+            pushValue(valueToString(value.asDouble()));
+            break;
+
+        case ValueType::String:
+            pushValue(valueToQuotedString(value.asCString()));
+            break;
+
+        case ValueType::Boolean:
+            pushValue(valueToString(value.asBool()));
+            break;
+
+        case ValueType::Array:
+            writeArrayValue(value);
+            break;
+
+        case ValueType::Object: {
+            Value::Members members(value.getMemberNames());
+
+            if (members.empty())
+            {
+                pushValue("{}");
+            }
+            else
+            {
+                writeWithIndent("{");
+                indent();
+                auto it = members.begin();
+
+                while (true)
+                {
+                    std::string const& name = *it;
+                    Value const& childValue = value[name];
+                    writeWithIndent(valueToQuotedString(name.c_str()));
+                    *document_ << " : ";
+                    writeValue(childValue);
+
+                    if (++it == members.end())
+                        break;
+
+                    *document_ << ",";
+                }
+
+                unindent();
+                writeWithIndent("}");
+            }
+        }
+        break;
+    }
+}
+
+void
+StyledStreamWriter::writeArrayValue(Value const& value)
+{
+    unsigned const size = value.size();
+
+    if (size == 0)
+    {
+        pushValue("[]");
+    }
+    else
+    {
+        bool const isArrayMultiLine = isMultilineArray(value);
+
+        if (isArrayMultiLine)
+        {
+            writeWithIndent("[");
+            indent();
+            bool const hasChildValue = !childValues_.empty();
+            unsigned index = 0;
+
+            while (true)
+            {
+                Value const& childValue = value[index];
+
+                if (hasChildValue)
+                {
+                    writeWithIndent(childValues_[index]);
+                }
+                else
+                {
+                    writeIndent();
+                    writeValue(childValue);
+                }
+
+                if (++index == size)
+                    break;
+
+                *document_ << ",";
+            }
+
+            unindent();
+            writeWithIndent("]");
+        }
+        else  // output on a single line
+        {
+            XRPL_ASSERT(
+                childValues_.size() == size,
+                "json::StyledStreamWriter::writeArrayValue : child size match");
+            *document_ << "[ ";
+
+            for (unsigned index = 0; index < size; ++index)
+            {
+                if (index > 0)
+                    *document_ << ", ";
+
+                *document_ << childValues_[index];
+            }
+
+            *document_ << " ]";
+        }
+    }
+}
+
+bool
+StyledStreamWriter::isMultilineArray(Value const& value)
+{
+    int const size = value.size();
+    bool isMultiLine = size * 3 >= rightMargin_;
+    childValues_.clear();
+
+    for (int index = 0; index < size && !isMultiLine; ++index)
+    {
+        Value const& childValue = value[index];
+        isMultiLine = isMultiLine ||
+            ((childValue.isArray() || childValue.isObject()) && childValue.size() > 0);
+    }
+
+    if (!isMultiLine)  // check if line length > max line length
+    {
+        childValues_.reserve(size);
+        addChildValues_ = true;
+        int lineLength = 4 + ((size - 1) * 2);  // '[ ' + ', '*n + ' ]'
+
+        for (int index = 0; index < size; ++index)
+        {
+            writeValue(value[index]);
+            lineLength += int(childValues_[index].length());
+        }
+
+        addChildValues_ = false;
+        isMultiLine = isMultiLine || lineLength >= rightMargin_;
+    }
+
+    return isMultiLine;
+}
+
+void
+StyledStreamWriter::pushValue(std::string const& value)
+{
+    if (addChildValues_)
+    {
+        childValues_.push_back(value);
+    }
+    else
+    {
+        *document_ << value;
+    }
+}
+
+void
+StyledStreamWriter::writeIndent()
+{
+    /*
+      Some comments in this method would have been nice. ;-)
+
+     if ( !document_.empty() )
+     {
+        char last = document_[document_.length()-1];
+        if ( last == ' ' )     // already indented
+           return;
+        if ( last != '\n' )    // Comments may add new-line
+           *document_ << '\n';
+     }
+    */
+    *document_ << '\n' << indentString_;
+}
+
+void
+StyledStreamWriter::writeWithIndent(std::string const& value)
+{
+    writeIndent();
+    *document_ << value;
+}
+
+void
+StyledStreamWriter::indent()
+{
+    indentString_ += indentation_;
+}
+
+void
+StyledStreamWriter::unindent()
+{
+    XRPL_ASSERT(
+        indentString_.size() >= indentation_.size(),
+        "json::StyledStreamWriter::unindent : maximum indent size");
+    indentString_.resize(indentString_.size() - indentation_.size());
+}
+
+std::ostream&
+operator<<(std::ostream& sout, Value const& root)
+{
+    json::StyledStreamWriter writer;
+    writer.write(sout, root);
+    return sout;
+}
+
+}  // namespace json

@@ -1,0 +1,93 @@
+#pragma once
+
+#include <xrpld/app/rdb/PeerFinder.h>
+
+#include <xrpl/basics/Log.h>
+#include <xrpl/beast/net/IPEndpoint.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/peerfinder/detail/Store.h>
+#include <xrpl/rdb/SociDB.h>
+
+#include <soci/session.h>
+
+#include <cstddef>
+#include <string>
+#include <vector>
+
+namespace xrpl::peer_finder {
+
+/**
+ * Database persistence for PeerFinder using SQLite
+ */
+class StoreSqdb : public Store
+{
+private:
+    beast::Journal journal_;
+    soci::session sqlDb_;
+
+public:
+    static constexpr auto kCurrentSchemaVersion = 4;  // on-database format version
+
+    explicit StoreSqdb(beast::Journal journal = beast::Journal{beast::Journal::getNullSink()})
+        : journal_(journal)
+    {
+    }
+
+    ~StoreSqdb() override = default;
+
+    void
+    open(BasicConfig const& config)
+    {
+        init(config);
+        update();
+    }
+
+    // Loads the bootstrap cache, calling the callback for each entry
+    //
+    std::size_t
+    load(LoadCallback const& cb) override
+    {
+        std::size_t n(0);
+
+        readPeerFinderDB(sqlDb_, [&](std::string const& s, int valence) {
+            beast::ip::Endpoint const endpoint(beast::ip::Endpoint::fromString(s));
+
+            if (!isUnspecified(endpoint))
+            {
+                cb(endpoint, valence);
+                ++n;
+            }
+            else
+            {
+                JLOG(journal_.error()) << "Bad address string '" << s << "' in Bootcache table";
+            }
+        });
+
+        return n;
+    }
+
+    // Overwrites the stored bootstrap cache with the specified array.
+    //
+    void
+    save(std::vector<Entry> const& v) override
+    {
+        savePeerFinderDB(sqlDb_, v);
+    }
+
+    // Convert any existing entries from an older schema to the
+    // current one, if appropriate.
+    void
+    update()
+    {
+        updatePeerFinderDB(sqlDb_, kCurrentSchemaVersion, journal_);
+    }
+
+private:
+    void
+    init(BasicConfig const& config)
+    {
+        initPeerFinderDB(sqlDb_, config, journal_);
+    }
+};
+
+}  // namespace xrpl::peer_finder

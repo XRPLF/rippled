@@ -1,0 +1,166 @@
+#pragma once
+
+#include <xrpl/basics/contract.h>
+#include <xrpl/beast/unit_test/suite.h>
+
+#include <exception>
+#include <filesystem>
+#include <fstream>
+#include <ostream>
+#include <stdexcept>
+#include <string>
+#include <utility>
+
+namespace xrpl::detail {
+
+/**
+ * Create a directory and remove it when it's done
+ */
+class DirGuard
+{
+protected:
+    using Path = std::filesystem::path;
+
+private:
+    Path subDir_;
+    bool rmSubDir_{false};
+
+protected:
+    beast::unit_test::Suite& test_;
+
+    auto
+    rmDir(Path const& toRm)
+    {
+        if (is_directory(toRm) && is_empty(toRm))
+        {
+            remove(toRm);
+        }
+        else
+        {
+            test_.log << "Expected " << toRm.string() << " to be an empty existing directory."
+                      << std::endl;
+        }
+    }
+
+public:
+    DirGuard(beast::unit_test::Suite& test, Path subDir, bool useCounter = true)
+        : subDir_(std::move(subDir)), test_(test)
+    {
+        using namespace std::filesystem;
+
+        static auto kSubDirCounter = 0;
+        if (useCounter)
+            subDir_ += std::to_string(++kSubDirCounter);
+        if (!exists(subDir_))
+        {
+            create_directory(subDir_);
+            rmSubDir_ = true;
+        }
+        else if (is_directory(subDir_))
+        {
+            rmSubDir_ = false;
+        }
+        else
+        {
+            // Cannot run the test. Someone created a file where we want to
+            // put our directory
+            Throw<std::runtime_error>("Cannot create directory: " + subDir_.string());
+        }
+    }
+
+    ~DirGuard()
+    {
+        try
+        {
+            using namespace std::filesystem;
+
+            if (rmSubDir_)
+                rmDir(subDir_);
+        }
+        catch (std::exception& e)
+        {
+            // if we throw here, just let it die.
+            test_.log << "Error in ~DirGuard: " << e.what() << std::endl;
+        };
+    }
+
+    [[nodiscard]] Path const&
+    subdir() const
+    {
+        return subDir_;
+    }
+};
+
+/**
+ * Write a file in a directory and remove when done
+ */
+class FileDirGuard : public DirGuard
+{
+protected:
+    Path const file_;
+    bool created_ = false;
+
+public:
+    FileDirGuard(
+        beast::unit_test::Suite& test,
+        Path subDir,
+        Path file,
+        std::string const& contents,
+        bool useCounter = true,
+        bool create = true)
+        : DirGuard(test, subDir, useCounter), file_(file.is_absolute() ? file : subdir() / file)
+    {
+        if (!exists(file_))
+        {
+            if (create)
+            {
+                std::ofstream o(file_.string());
+                o << contents;
+                created_ = true;
+            }
+        }
+        else
+        {
+            Throw<std::runtime_error>("Refusing to overwrite existing file: " + file_.string());
+        }
+    }
+
+    ~FileDirGuard()
+    {
+        try
+        {
+            using namespace std::filesystem;
+            if (exists(file_))
+            {
+                remove(file_);
+            }
+            else
+            {
+                if (created_)
+                {
+                    test_.log << "Expected " << file_.string() << " to be an existing file."
+                              << std::endl;
+                }
+            }
+        }
+        catch (std::exception& e)
+        {
+            // if we throw here, just let it die.
+            test_.log << "Error in ~FileGuard: " << e.what() << std::endl;
+        };
+    }
+
+    [[nodiscard]] Path const&
+    file() const
+    {
+        return file_;
+    }
+
+    [[nodiscard]] bool
+    fileExists() const
+    {
+        return std::filesystem::exists(file_);
+    }
+};
+
+}  // namespace xrpl::detail

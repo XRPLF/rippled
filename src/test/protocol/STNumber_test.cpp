@@ -1,0 +1,302 @@
+#include <xrpl/basics/Number.h>
+#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/json/json_forwards.h>
+#include <xrpl/protocol/IOUAmount.h>
+#include <xrpl/protocol/Issue.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/STNumber.h>
+#include <xrpl/protocol/Serializer.h>
+
+#include <cstdint>
+#include <exception>
+#include <initializer_list>
+#include <limits>
+#include <sstream>
+#include <stdexcept>
+#include <string>
+#include <type_traits>
+#include <typeinfo>
+
+namespace xrpl {
+
+struct STNumber_test : public beast::unit_test::Suite
+{
+    void
+    testCombo(Number number)
+    {
+        STNumber const before{sfNumber, number};
+        BEAST_EXPECT(number == before);
+        Serializer s;
+        before.add(s);
+        BEAST_EXPECT(s.size() == 12);
+        SerialIter sit(s.slice());
+        STNumber const after{sit, sfNumber};
+        BEAST_EXPECT(after.isEquivalent(before));
+        BEAST_EXPECT(number == after);
+    }
+
+    void
+    doRun()
+    {
+        {
+            STNumber const stnum{sfNumber};
+            BEAST_EXPECT(stnum.getSType() == STI_NUMBER);
+            BEAST_EXPECT(stnum.getText() == "0");
+            BEAST_EXPECT(stnum.isDefault() == true);
+            BEAST_EXPECT(stnum.value() == Number{0});
+        }
+
+        std::initializer_list<std::int64_t> const mantissas = {
+            std::numeric_limits<std::int64_t>::min(),
+            -1,
+            0,
+            1,
+            std::numeric_limits<std::int64_t>::max(),
+        };
+        for (std::int64_t const mantissa : mantissas)
+            testCombo(Number{mantissa});
+
+        std::initializer_list<std::int32_t> const exponents = {
+            Number::kMinExponent,
+            -1,
+            0,
+            1,
+            Number::kMaxExponent - 1,
+        };
+        for (std::int32_t const exponent : exponents)
+            testCombo(Number{123, exponent});
+
+        {
+            STAmount const strikePrice{noIssue(), 100};
+            STNumber const factor{sfNumber, 100};
+            auto const iouValue = strikePrice.iou();
+            IOUAmount const totalValue{iouValue * factor};
+            STAmount const totalAmount{totalValue, strikePrice.get<Issue>()};
+            BEAST_EXPECT(totalAmount == Number{10'000});
+        }
+
+        {
+            BEAST_EXPECT(numberFromJson(sfNumber, json::Value(42)) == STNumber(sfNumber, 42));
+            BEAST_EXPECT(numberFromJson(sfNumber, json::Value(-42)) == STNumber(sfNumber, -42));
+
+            BEAST_EXPECT(numberFromJson(sfNumber, json::UInt(42)) == STNumber(sfNumber, 42));
+
+            BEAST_EXPECT(numberFromJson(sfNumber, "-123") == STNumber(sfNumber, -123));
+
+            BEAST_EXPECT(numberFromJson(sfNumber, "123") == STNumber(sfNumber, 123));
+            BEAST_EXPECT(numberFromJson(sfNumber, "-123") == STNumber(sfNumber, -123));
+
+            BEAST_EXPECT(numberFromJson(sfNumber, "3.14") == STNumber(sfNumber, Number(314, -2)));
+            BEAST_EXPECT(numberFromJson(sfNumber, "-3.14") == STNumber(sfNumber, -Number(314, -2)));
+            BEAST_EXPECT(numberFromJson(sfNumber, "3.14e2") == STNumber(sfNumber, 314));
+            BEAST_EXPECT(numberFromJson(sfNumber, "-3.14e2") == STNumber(sfNumber, -314));
+
+            BEAST_EXPECT(numberFromJson(sfNumber, "1000e-2") == STNumber(sfNumber, 10));
+            BEAST_EXPECT(numberFromJson(sfNumber, "-1000e-2") == STNumber(sfNumber, -10));
+
+            BEAST_EXPECT(numberFromJson(sfNumber, "0") == STNumber(sfNumber, 0));
+            BEAST_EXPECT(numberFromJson(sfNumber, "0.0") == STNumber(sfNumber, 0));
+            BEAST_EXPECT(numberFromJson(sfNumber, "0.000") == STNumber(sfNumber, 0));
+            BEAST_EXPECT(numberFromJson(sfNumber, "-0") == STNumber(sfNumber, 0));
+            BEAST_EXPECT(numberFromJson(sfNumber, "-0.0") == STNumber(sfNumber, 0));
+            BEAST_EXPECT(numberFromJson(sfNumber, "-0.000") == STNumber(sfNumber, 0));
+            BEAST_EXPECT(numberFromJson(sfNumber, "0e6") == STNumber(sfNumber, 0));
+            BEAST_EXPECT(numberFromJson(sfNumber, "0.0e6") == STNumber(sfNumber, 0));
+            BEAST_EXPECT(numberFromJson(sfNumber, "0.000e6") == STNumber(sfNumber, 0));
+            BEAST_EXPECT(numberFromJson(sfNumber, "-0e6") == STNumber(sfNumber, 0));
+            BEAST_EXPECT(numberFromJson(sfNumber, "-0.0e6") == STNumber(sfNumber, 0));
+            BEAST_EXPECT(numberFromJson(sfNumber, "-0.000e6") == STNumber(sfNumber, 0));
+
+            {
+                auto const parseNumber = [](std::string const& boundary) {
+                    return numberFromJson(sfNumber, boundary);
+                };
+                auto const expectParseThrows = [this, &parseNumber](std::string const& boundary) {
+                    try
+                    {
+                        parseNumber(boundary);
+                        fail();
+                    }
+                    catch (std::exception const& e)
+                    {
+                        BEAST_EXPECT(std::string(e.what()) == "number cannot be represented");
+                    }
+                };
+
+                // Small rejects this; large scales parse it as 9223372036854775800e-1.
+                auto constexpr positiveBoundary = "922337203685477580";
+                auto constexpr negativeBoundary = "-922337203685477580";
+                if (Number::getMantissaScale() == MantissaRange::MantissaScale::Small)
+                {
+                    expectParseThrows(positiveBoundary);
+                    expectParseThrows(negativeBoundary);
+                }
+                else
+                {
+                    BEAST_EXPECT(
+                        parseNumber(positiveBoundary) ==
+                        STNumber(sfNumber, Number{922'337'203'685'477'580, 0}));
+                    BEAST_EXPECT(
+                        parseNumber(negativeBoundary) ==
+                        STNumber(sfNumber, Number{-922'337'203'685'477'580, 0}));
+                }
+
+                NumberRoundModeGuard const mg(Number::RoundingMode::TowardsZero);
+                // maxint64 9,223,372,036,854,775,807
+                auto const maxInt = std::to_string(std::numeric_limits<std::int64_t>::max());
+                // minint64 -9,223,372,036,854,775,808
+                auto const minInt = std::to_string(std::numeric_limits<std::int64_t>::min());
+                if (Number::getMantissaScale() == MantissaRange::MantissaScale::Small)
+                {
+                    // min/maxInt can't be exactly represented with the small mantissa, so they
+                    // don't parse, and are expected to throw.
+                    expectParseThrows(maxInt);
+                    expectParseThrows(minInt);
+                }
+                else
+                {
+                    // with large mantissas, maxint is fine
+                    BEAST_EXPECT(
+                        parseNumber(maxInt) ==
+                        STNumber(sfNumber, Number{9'223'372'036'854'775'807, 0}));
+                    // but minint's mantissa is > kMaxRep, and so rounds, and thus can't be parsed
+                    expectParseThrows(minInt);
+                }
+            }
+
+            constexpr auto kIMin = std::numeric_limits<int>::min();
+            BEAST_EXPECT(numberFromJson(sfNumber, kIMin) == STNumber(sfNumber, Number(kIMin, 0)));
+            BEAST_EXPECT(
+                numberFromJson(sfNumber, std::to_string(kIMin)) ==
+                STNumber(sfNumber, Number(kIMin, 0)));
+
+            constexpr auto kIMax = std::numeric_limits<int>::max();
+            BEAST_EXPECT(numberFromJson(sfNumber, kIMax) == STNumber(sfNumber, Number(kIMax, 0)));
+            BEAST_EXPECT(
+                numberFromJson(sfNumber, std::to_string(kIMax)) ==
+                STNumber(sfNumber, Number(kIMax, 0)));
+
+            constexpr auto kUMax = std::numeric_limits<unsigned int>::max();
+            BEAST_EXPECT(numberFromJson(sfNumber, kUMax) == STNumber(sfNumber, Number(kUMax, 0)));
+            BEAST_EXPECT(
+                numberFromJson(sfNumber, std::to_string(kUMax)) ==
+                STNumber(sfNumber, Number(kUMax, 0)));
+
+            auto const expectJsonThrows = [this](
+                                              json::Value const& num, std::string const& expected) {
+                try
+                {
+                    numberFromJson(sfNumber, num);
+                    fail();
+                }
+                catch (std::exception const& e)
+                {
+                    std::ostringstream out;
+                    out << "Json: " << num.asString() << " got exception: " << e.what()
+                        << ", expected: " << expected;
+                    BEAST_EXPECTS(std::string(e.what()) == expected, out.str());
+                }
+            };
+
+            // Obvious overflows tested here
+            expectJsonThrows("1e2000000", "Number::normalize 2");
+            expectJsonThrows("1e2000000000", "Number::normalize 2");
+
+            // Obvious non-numbers tested here
+            expectJsonThrows("", "'' is not a number");
+            expectJsonThrows("e", "'e' is not a number");
+            expectJsonThrows("1e", "'1e' is not a number");
+            expectJsonThrows("e2", "'e2' is not a number");
+            expectJsonThrows(json::Value(), "not a number");
+
+            try
+            {
+                auto const _ = numberFromJson(
+                    sfNumber,
+                    "1234567890123456789012345678901234567890123456789012345678"
+                    "9012345678901234567890123456789012345678901234567890123456"
+                    "78901234567890123456789012345678901234567890");
+                BEAST_EXPECT(false);
+            }
+            catch (std::bad_cast const& e)
+            {
+                BEAST_EXPECT(true);
+            }
+
+            // We do not handle leading zeros
+            try
+            {
+                auto const _ = numberFromJson(sfNumber, "001");
+                BEAST_EXPECT(false);
+            }
+            catch (std::runtime_error const& e)
+            {
+                std::string const expected = "'001' is not a number";
+                BEAST_EXPECT(e.what() == expected);
+            }
+
+            try
+            {
+                auto const _ = numberFromJson(sfNumber, "000.0");
+                BEAST_EXPECT(false);
+            }
+            catch (std::runtime_error const& e)
+            {
+                std::string const expected = "'000.0' is not a number";
+                BEAST_EXPECT(e.what() == expected);
+            }
+
+            // We do not handle dangling dot
+            try
+            {
+                auto const _ = numberFromJson(sfNumber, ".1");
+                BEAST_EXPECT(false);
+            }
+            catch (std::runtime_error const& e)
+            {
+                std::string const expected = "'.1' is not a number";
+                BEAST_EXPECT(e.what() == expected);
+            }
+
+            try
+            {
+                auto const _ = numberFromJson(sfNumber, "1.");
+                BEAST_EXPECT(false);
+            }
+            catch (std::runtime_error const& e)
+            {
+                std::string const expected = "'1.' is not a number";
+                BEAST_EXPECT(e.what() == expected);
+            }
+
+            try
+            {
+                auto const _ = numberFromJson(sfNumber, "1.e3");
+                BEAST_EXPECT(false);
+            }
+            catch (std::runtime_error const& e)
+            {
+                std::string const expected = "'1.e3' is not a number";
+                BEAST_EXPECT(e.what() == expected);
+            }
+        }
+    }
+
+    void
+    run() override
+    {
+        static_assert(!std::is_convertible_v<STNumber*, Number*>);
+
+        for (auto const scale : MantissaRange::getAllScales())
+        {
+            NumberMantissaScaleGuard const sg(scale);
+            testcase << to_string(Number::getMantissaScale());
+            doRun();
+        }
+    }
+};
+
+BEAST_DEFINE_TESTSUITE(STNumber, protocol, xrpl);
+
+}  // namespace xrpl

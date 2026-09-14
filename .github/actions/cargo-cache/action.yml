@@ -1,0 +1,39 @@
+name: Use cargo artifacts cache
+description: >
+  Cache the cargo build artifacts with rust-cache. Never caches ~/.cargo/bin:
+  when saving the cache, rust-cache deletes all binaries that were already
+  present there, which on persistent self-hosted runners wipes the tools
+  installed by prepare-runner. Harmless on ephemeral runners, but kept
+  consistent everywhere.
+
+inputs:
+  workspaces:
+    description: "Workspaces to cache, as 'workspace -> target' lines."
+    required: false
+    default: crates
+  key:
+    description: "Additional part of the cache key."
+    required: false
+    default: ""
+  cache-directories:
+    description: "Additional non-workspace directories to cache."
+    required: false
+    default: ""
+  save-if:
+    description: >
+      Condition for saving the cache after the job. Defaults to save only from develop branch
+    required: false
+    default: ${{ github.ref == 'refs/heads/develop' }}
+
+runs:
+  using: composite
+
+  steps:
+    - name: Use cargo artifacts cache
+      uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
+      with:
+        cache-bin: "false"
+        cache-directories: ${{ inputs.cache-directories }}
+        key: ${{ inputs.key }}
+        save-if: ${{ inputs.save-if }}
+        workspaces: ${{ inputs.workspaces }}

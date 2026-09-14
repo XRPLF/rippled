@@ -1,0 +1,97 @@
+#include <xrpl/beast/core/SemanticVersion.h>
+#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/protocol/BuildInfo.h>
+
+namespace xrpl {
+
+class BuildInfo_test : public beast::unit_test::Suite
+{
+public:
+    void
+    testEncodeSoftwareVersion()
+    {
+        testcase("EncodeSoftwareVersion");
+
+        auto encodedVersion = build_info::encodeSoftwareVersion("1.2.3-b7");
+
+        // the first two bytes identify the particular implementation, 0x183B
+        BEAST_EXPECT((encodedVersion & 0xFFFF'0000'0000'0000LLU) == 0x183B'0000'0000'0000LLU);
+
+        // the next three bytes: major version, minor version, patch version,
+        // 0x010203
+        BEAST_EXPECT((encodedVersion & 0x0000'FFFF'FF00'0000LLU) == 0x0000'0102'0300'0000LLU);
+
+        // the next two bits:
+        {
+            // 01 if a beta
+            BEAST_EXPECT((encodedVersion & 0x0000'0000'00C0'0000LLU) >> 22 == 0b01);
+            // 10 if an RC
+            encodedVersion = build_info::encodeSoftwareVersion("1.2.4-rc7");
+            BEAST_EXPECT((encodedVersion & 0x0000'0000'00C0'0000LLU) >> 22 == 0b10);
+            // 11 if neither an RC nor a beta
+            encodedVersion = build_info::encodeSoftwareVersion("1.2.5");
+            BEAST_EXPECT((encodedVersion & 0x0000'0000'00C0'0000LLU) >> 22 == 0b11);
+        }
+
+        // the next six bits: rc/beta number (1-63)
+        encodedVersion = build_info::encodeSoftwareVersion("1.2.6-b63");
+        BEAST_EXPECT((encodedVersion & 0x0000'0000'003F'0000LLU) >> 16 == 63);
+
+        // the last two bytes are zeros
+        BEAST_EXPECT((encodedVersion & 0x0000'0000'0000'FFFFLLU) == 0);
+
+        // Test some version strings with wrong formats:
+        // no rc/beta number
+        encodedVersion = build_info::encodeSoftwareVersion("1.2.3-b");
+        BEAST_EXPECT((encodedVersion & 0x0000'0000'00FF'0000LLU) == 0);
+        // rc/beta number out of range
+        encodedVersion = build_info::encodeSoftwareVersion("1.2.3-b64");
+        BEAST_EXPECT((encodedVersion & 0x0000'0000'00FF'0000LLU) == 0);
+
+        // Check that the rc/beta number of a release is 0:
+        encodedVersion = build_info::encodeSoftwareVersion("1.2.6");
+        BEAST_EXPECT((encodedVersion & 0x0000'0000'003F'0000LLU) == 0);
+    }
+
+    void
+    testIsXrpldVersion()
+    {
+        testcase("IsXrpldVersion");
+        auto const vFF = 0xFFFF'FFFF'FFFF'FFFFLLU;
+        BEAST_EXPECT(!build_info::isXrpldVersion(vFF));
+        auto const vXrpld = 0x183B'0000'0000'0000LLU;
+        BEAST_EXPECT(build_info::isXrpldVersion(vXrpld));
+    }
+
+    void
+    testIsNewerVersion()
+    {
+        testcase("IsNewerVersion");
+        auto const vFF = 0xFFFF'FFFF'FFFF'FFFFLLU;
+        BEAST_EXPECT(!build_info::isNewerVersion(vFF));
+
+        // 1.5.9 is newer than a development build (0.0.0-dev), but not a release.
+        auto v159 = build_info::encodeSoftwareVersion("1.5.9");
+        BEAST_EXPECT(
+            build_info::isNewerVersion(v159) ==
+            (beast::SemanticVersion(build_info::getVersionString()) <
+             beast::SemanticVersion("1.5.9")));
+
+        auto vCurrent = build_info::getEncodedVersion();
+        BEAST_EXPECT(!build_info::isNewerVersion(vCurrent));
+
+        auto vMax = build_info::encodeSoftwareVersion("255.255.255");
+        BEAST_EXPECT(build_info::isNewerVersion(vMax));
+    }
+
+    void
+    run() override
+    {
+        testEncodeSoftwareVersion();
+        testIsXrpldVersion();
+        testIsNewerVersion();
+    }
+};
+
+BEAST_DEFINE_TESTSUITE(BuildInfo, protocol, xrpl);
+}  // namespace xrpl

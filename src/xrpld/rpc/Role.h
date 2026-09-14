@@ -1,0 +1,76 @@
+#pragma once
+
+#include <xrpl/beast/net/IPAddress.h>
+#include <xrpl/beast/net/IPEndpoint.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/resource/Consumer.h>
+#include <xrpl/resource/ResourceManager.h>
+#include <xrpl/server/Handoff.h>
+#include <xrpl/server/Port.h>
+
+#include <boost/asio/ip/network_v4.hpp>
+#include <boost/asio/ip/network_v6.hpp>
+#include <boost/utility/string_view.hpp>
+
+#include <string_view>
+#include <vector>
+
+namespace xrpl {
+
+/**
+ * Indicates the level of administrative permission to grant.
+ * IDENTIFIED role has unlimited resources but cannot perform some
+ *            RPC commands.
+ * ADMIN role has unlimited resources and is able to perform all RPC
+ *            commands.
+ */
+enum class Role { GUEST, USER, IDENTIFIED, ADMIN, PROXY, FORBID };
+
+/**
+ * Return the allowed privilege role.
+ * params must meet the requirements of the JSON-RPC
+ * specification. It must be of type Object, containing the key params
+ * which is an array with at least one object. Inside this object
+ * are the optional keys 'admin_user' and 'admin_password' used to
+ * validate the credentials. If user is non-blank, it's username
+ * passed in the HTTP header by a secureGateway proxy.
+ */
+Role
+requestRole(
+    Role const& required,
+    Port const& port,
+    json::Value const& params,
+    beast::ip::Endpoint const& remoteIp,
+    std::string_view user);
+
+resource::Consumer
+requestInboundEndpoint(
+    resource::Manager& manager,
+    beast::ip::Endpoint const& remoteAddress,
+    Role const& role,
+    std::string_view user,
+    std::string_view forwardedFor);
+
+/**
+ * Check if the role entitles the user to unlimited resources.
+ */
+bool
+isUnlimited(Role const& role);
+
+/**
+ * True if remoteIp is in any of adminIp
+ *
+ * @param remoteIp Remote address for which to search.
+ * @param adminIp  List of IP's in which to search.
+ * @return Whether remoteIp is in adminIp.
+ */
+bool
+ipAllowed(
+    beast::ip::Address const& remoteIp,
+    std::vector<boost::asio::ip::network_v4> const& nets4,
+    std::vector<boost::asio::ip::network_v6> const& nets6);
+
+std::string_view
+forwardedFor(HttpRequestType const& request);
+
+}  // namespace xrpl

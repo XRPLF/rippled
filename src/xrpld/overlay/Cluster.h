@@ -1,0 +1,121 @@
+#pragma once
+
+#include <xrpld/overlay/ClusterNode.h>
+
+#include <xrpl/basics/chrono.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/config/BasicConfig.h>
+#include <xrpl/protocol/PublicKey.h>
+
+#include <cstddef>
+#include <cstdint>
+#include <functional>
+#include <mutex>
+#include <optional>
+#include <set>
+#include <string>
+#include <type_traits>
+
+namespace xrpl {
+
+class Cluster
+{
+private:
+    struct Comparator
+    {
+        explicit Comparator() = default;
+
+        // NOLINTNEXTLINE(readability-identifier-naming) -- std heterogeneous-lookup concept name
+        using is_transparent = std::true_type;
+
+        bool
+        operator()(ClusterNode const& lhs, ClusterNode const& rhs) const
+        {
+            return lhs.identity() < rhs.identity();
+        }
+
+        bool
+        operator()(ClusterNode const& lhs, PublicKey const& rhs) const
+        {
+            return lhs.identity() < rhs;
+        }
+
+        bool
+        operator()(PublicKey const& lhs, ClusterNode const& rhs) const
+        {
+            return lhs < rhs.identity();
+        }
+    };
+
+    std::set<ClusterNode, Comparator> nodes_;
+    std::mutex mutable mutex_;
+    beast::Journal mutable j_;
+
+public:
+    Cluster(beast::Journal j);
+
+    /**
+     * Determines whether a node belongs in the cluster
+     * @return std::nullopt if the node isn't a member,
+     *         otherwise, the comment associated with the
+     *         node (which may be an empty string).
+     */
+    std::optional<std::string>
+    member(PublicKey const& node) const;
+
+    /**
+     * Determines whether a node belongs in the cluster.
+     *
+     * Prefer this to `member` when the comment is not wanted: `member`
+     * copies the node's name out from under the lock, and most callers
+     * only test the result for engagement.
+     *
+     * @param node The node's public identity.
+     * @return Whether the node is a cluster member.
+     */
+    bool
+    isMember(PublicKey const& node) const;
+
+    /**
+     * The number of nodes in the cluster list.
+     */
+    std::size_t
+    size() const;
+
+    /**
+     * Store information about the state of a cluster node.
+     * @param identity The node's public identity
+     * @param name The node's name (may be empty)
+     * @return true if we updated our information
+     */
+    bool
+    update(
+        PublicKey const& identity,
+        std::string name,
+        std::uint32_t loadFee = 0,
+        NetClock::time_point reportTime = NetClock::time_point{});
+
+    /**
+     * Invokes the callback once for every cluster node.
+     * @note You are not allowed to call `update` from
+     *       within the callback.
+     */
+    void
+    forEach(std::function<void(ClusterNode const&)> func) const;
+
+    /**
+     * Load the list of cluster nodes.
+     *
+     * The section contains entries consisting of a base58
+     * encoded node public key, optionally followed by
+     * a comment.
+     *
+     * @return false if an entry could not be parsed or
+     *         contained an invalid node public key,
+     *         true otherwise.
+     */
+    bool
+    load(Section const& nodes);
+};
+
+}  // namespace xrpl

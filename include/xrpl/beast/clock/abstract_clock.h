@@ -1,0 +1,94 @@
+#pragma once
+
+namespace beast {
+
+/**
+ * Abstract interface to a clock.
+ *
+ * This makes now() a member function instead of a static member, so
+ * an instance of the class can be dependency injected, facilitating
+ * unit tests where time may be controlled.
+ *
+ * An AbstractClock inherits all the nested types of the Clock
+ * template parameter.
+ *
+ * Example:
+ *
+ * @code
+ *
+ * struct Implementation
+ * {
+ *     using ClockType = AbstractClock<std::chrono::steady_clock>;
+ *     ClockType& clock_;
+ *     explicit Implementation(ClockType& clock)
+ *         : clock_(clock)
+ *     {
+ *     }
+ * };
+ *
+ * @endcode
+ *
+ * @tparam Clock A type meeting these requirements:
+ *     http://en.cppreference.com/w/cpp/concept/Clock
+ */
+template <class Clock>
+class AbstractClock
+{
+public:
+    using rep = Clock::rep;
+    using period = Clock::period;
+    using duration = Clock::duration;
+    using time_point = Clock::time_point;
+    using ClockType = Clock;
+
+    static bool const is_steady = Clock::is_steady;  // NOLINT(readability-identifier-naming)
+
+    virtual ~AbstractClock() = default;
+    AbstractClock() = default;
+    AbstractClock(AbstractClock const&) = default;
+
+    /**
+     * Returns the current time.
+     */
+    [[nodiscard]] virtual time_point
+    now() const = 0;
+};
+
+//------------------------------------------------------------------------------
+
+namespace detail {
+
+template <class Facade, class Clock>
+struct AbstractClockWrapper : public AbstractClock<Facade>
+{
+    explicit AbstractClockWrapper() = default;
+
+    using typename AbstractClock<Facade>::duration;
+    using typename AbstractClock<Facade>::time_point;
+
+    [[nodiscard]] time_point
+    now() const override
+    {
+        return Clock::now();
+    }
+};
+
+}  // namespace detail
+
+//------------------------------------------------------------------------------
+
+/**
+ * Returns a global instance of an abstract clock.
+ * @tparam Facade A type meeting these requirements:
+ *     http://en.cppreference.com/w/cpp/concept/Clock
+ * @tparam Clock The actual concrete clock to use.
+ */
+template <class Facade, class Clock = Facade>
+AbstractClock<Facade>&
+getAbstractClock()
+{
+    static detail::AbstractClockWrapper<Facade, Clock> kClock;
+    return kClock;
+}
+
+}  // namespace beast

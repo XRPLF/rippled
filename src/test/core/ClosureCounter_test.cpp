@@ -1,0 +1,322 @@
+#include <test/jtx/Env.h>
+#include <test/jtx/envconfig.h>
+
+#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/core/ClosureCounter.h>
+
+#include <atomic>
+#include <optional>
+#include <thread>
+#include <utility>
+
+namespace xrpl::test {
+
+//------------------------------------------------------------------------------
+
+class ClosureCounter_test : public beast::unit_test::Suite
+{
+    // We're only using Env for its Journal.  That Journal gives better
+    // coverage in unit tests.
+    test::jtx::Env env_{*this, jtx::envconfig(), nullptr, beast::Severity::Disabled};
+    beast::Journal j_{env_.app().getJournal("ClosureCounter_test")};
+
+    void
+    testConstruction()
+    {
+        // Build different kinds of ClosureCounters.
+        {
+            // Count closures that return void and take no arguments.
+            ClosureCounter<void> voidCounter;
+            BEAST_EXPECT(voidCounter.count() == 0);
+
+            int evidence = 0;
+            // Make sure voidCounter.wrap works with an rvalue closure.
+            auto wrapped = voidCounter.wrap([&evidence] { ++evidence; });
+            BEAST_EXPECT(voidCounter.count() == 1);
+            BEAST_EXPECT(evidence == 0);
+            BEAST_EXPECT(wrapped);
+
+            // wrapped() should be callable with no arguments.
+            (*wrapped)();  // NOLINT(bugprone-unchecked-optional-access)
+            BEAST_EXPECT(evidence == 1);
+            (*wrapped)();  // NOLINT(bugprone-unchecked-optional-access)
+            BEAST_EXPECT(evidence == 2);
+
+            // Destroying the contents of wrapped should decrement voidCounter.
+            wrapped = std::nullopt;
+            BEAST_EXPECT(voidCounter.count() == 0);
+        }
+        {
+            // Count closures that return void and take one int argument.
+            ClosureCounter<void, int> setCounter;
+            BEAST_EXPECT(setCounter.count() == 0);
+
+            int evidence = 0;
+            // Make sure setCounter.wrap works with a non-const lvalue closure.
+            auto setInt = [&evidence](int i) { evidence = i; };
+            auto wrapped = setCounter.wrap(setInt);
+
+            BEAST_EXPECT(setCounter.count() == 1);
+            BEAST_EXPECT(evidence == 0);
+            BEAST_EXPECT(wrapped);
+
+            // wrapped() should be callable with one integer argument.
+            (*wrapped)(5);  // NOLINT(bugprone-unchecked-optional-access)
+            BEAST_EXPECT(evidence == 5);
+            (*wrapped)(11);  // NOLINT(bugprone-unchecked-optional-access)
+            BEAST_EXPECT(evidence == 11);
+
+            // Destroying the contents of wrapped should decrement setCounter.
+            wrapped = std::nullopt;
+            BEAST_EXPECT(setCounter.count() == 0);
+        }
+        {
+            // Count closures that return int and take two int arguments.
+            ClosureCounter<int, int, int> sumCounter;
+            BEAST_EXPECT(sumCounter.count() == 0);
+
+            // Make sure sumCounter.wrap works with a const lvalue closure.
+            auto const sum = [](int ii, int jj) { return ii + jj; };
+            auto wrapped = sumCounter.wrap(sum);
+
+            BEAST_EXPECT(sumCounter.count() == 1);
+            BEAST_EXPECT(wrapped);
+
+            // wrapped() should be callable with two integers.
+            BEAST_EXPECT((*wrapped)(5, 2) == 7);    // NOLINT(bugprone-unchecked-optional-access)
+            BEAST_EXPECT((*wrapped)(2, -8) == -6);  // NOLINT(bugprone-unchecked-optional-access)
+
+            // Destroying the contents of wrapped should decrement sumCounter.
+            wrapped = std::nullopt;
+            BEAST_EXPECT(sumCounter.count() == 0);
+        }
+    }
+
+    // A class used to test argument passing.
+    class TrackedString
+    {
+    public:
+        int copies = {0};
+        int moves = {0};
+        std::string str;
+
+        TrackedString() = delete;
+
+        explicit TrackedString(char const* rhs) : str(rhs)
+        {
+        }
+
+        // Copy constructor
+        TrackedString(TrackedString const& rhs)
+            : copies(rhs.copies + 1), moves(rhs.moves), str(rhs.str)
+        {
+        }
+
+        // Move constructor
+        TrackedString(TrackedString&& rhs) noexcept
+            : copies(rhs.copies), moves(rhs.moves + 1), str(std::move(rhs.str))
+        {
+        }
+
+        // Delete copy and move assignment.
+        TrackedString&
+        operator=(TrackedString const& rhs) = delete;
+
+        // String concatenation
+        TrackedString&
+        operator+=(char const* rhs)
+        {
+            str += rhs;
+            return *this;
+        }
+
+        friend TrackedString
+        operator+(TrackedString const& s, char const* rhs)
+        {
+            TrackedString ret{s};
+            ret.str += rhs;
+            return ret;
+        }
+    };
+
+    void
+    testArgs()
+    {
+        // Make sure a wrapped closure handles rvalue reference arguments
+        // correctly.
+        {
+            // Pass by value.
+            ClosureCounter<TrackedString, TrackedString> strCounter;
+            BEAST_EXPECT(strCounter.count() == 0);
+
+            auto wrapped = strCounter.wrap([](TrackedString in) { return in += "!"; });
+
+            BEAST_EXPECT(strCounter.count() == 1);
+            BEAST_EXPECT(wrapped);
+
+            TrackedString const strValue("value");
+            TrackedString const result =
+                (*wrapped)(strValue);  // NOLINT(bugprone-unchecked-optional-access)
+            BEAST_EXPECT(result.copies == 2);
+            BEAST_EXPECT(result.moves == 1);
+            BEAST_EXPECT(result.str == "value!");
+            BEAST_EXPECT(strValue.str.size() == 5);
+        }
+        {
+            // Use a const lvalue argument.
+            ClosureCounter<TrackedString, TrackedString const&> strCounter;
+            BEAST_EXPECT(strCounter.count() == 0);
+
+            auto wrapped = strCounter.wrap([](TrackedString const& in) { return in + "!"; });
+
+            BEAST_EXPECT(strCounter.count() == 1);
+            BEAST_EXPECT(wrapped);
+
+            TrackedString const strConstLValue("const lvalue");
+            TrackedString const result =
+                (*wrapped)(strConstLValue);  // NOLINT(bugprone-unchecked-optional-access)
+            BEAST_EXPECT(result.copies == 1);
+            // BEAST_EXPECT (result.moves == ?); // moves VS == 1, gcc == 0
+            BEAST_EXPECT(result.str == "const lvalue!");
+            BEAST_EXPECT(strConstLValue.str.size() == 12);
+        }
+        {
+            // Use a non-const lvalue argument.
+            ClosureCounter<TrackedString, TrackedString&> strCounter;
+            BEAST_EXPECT(strCounter.count() == 0);
+
+            auto wrapped = strCounter.wrap([](TrackedString& in) { return in += "!"; });
+
+            BEAST_EXPECT(strCounter.count() == 1);
+            BEAST_EXPECT(wrapped);
+
+            TrackedString strLValue("lvalue");
+            TrackedString const result =
+                (*wrapped)(strLValue);  // NOLINT(bugprone-unchecked-optional-access)
+            BEAST_EXPECT(result.copies == 1);
+            BEAST_EXPECT(result.moves == 0);
+            BEAST_EXPECT(result.str == "lvalue!");
+            BEAST_EXPECT(strLValue.str == result.str);
+        }
+        {
+            // Use an rvalue argument.
+            ClosureCounter<TrackedString, TrackedString&&> strCounter;
+            BEAST_EXPECT(strCounter.count() == 0);
+
+            auto wrapped = strCounter.wrap([](TrackedString&& in) {
+                // Note that kNone of the compilers noticed that in was
+                // leaving scope.  So, without intervention, they would
+                // do a copy for the return (June 2017).  An explicit
+                // std::move() was required.
+                in += "!";
+                return std::move(in);
+            });
+
+            BEAST_EXPECT(strCounter.count() == 1);
+            BEAST_EXPECT(wrapped);
+
+            // Make the string big enough to (probably) avoid the small string optimization.
+            TrackedString strRValue("rvalue abcdefghijklmnopqrstuvwxyz");
+            TrackedString const result =
+                (*wrapped)(std::move(strRValue));  // NOLINT(bugprone-unchecked-optional-access)
+            BEAST_EXPECT(result.copies == 0);
+            BEAST_EXPECT(result.moves == 1);
+            BEAST_EXPECT(result.str == "rvalue abcdefghijklmnopqrstuvwxyz!");
+            BEAST_EXPECT(strRValue.str.empty());  // NOLINT(bugprone-use-after-move)
+        }
+    }
+
+    void
+    testWrap()
+    {
+        // Verify reference counting.
+        ClosureCounter<void> voidCounter;
+        BEAST_EXPECT(voidCounter.count() == 0);
+        {
+            auto const wrapped1 = voidCounter.wrap([] {});
+            BEAST_EXPECT(voidCounter.count() == 1);
+            {
+                // Copy should increase reference count.
+                auto wrapped2(wrapped1);
+                BEAST_EXPECT(voidCounter.count() == 2);
+                {
+                    // Move should increase reference count.
+                    auto const wrapped3(std::move(wrapped2));
+                    BEAST_EXPECT(voidCounter.count() == 3);
+                    {
+                        // An additional closure also increases count.
+                        auto const wrapped4 = voidCounter.wrap([] {});
+                        BEAST_EXPECT(voidCounter.count() == 4);
+                    }
+                    BEAST_EXPECT(voidCounter.count() == 3);
+                }
+                BEAST_EXPECT(voidCounter.count() == 2);
+            }
+            BEAST_EXPECT(voidCounter.count() == 1);
+        }
+        BEAST_EXPECT(voidCounter.count() == 0);
+
+        // Join with 0 count should not stall.
+        using namespace std::chrono_literals;
+        voidCounter.join("testWrap", 1ms, j_);
+
+        // Wrapping a closure after join() should return std::nullopt.
+        BEAST_EXPECT(voidCounter.wrap([]() {}) == std::nullopt);
+    }
+
+    void
+    testWaitOnJoin()
+    {
+        // Verify reference counting.
+        ClosureCounter<void> voidCounter;
+        BEAST_EXPECT(voidCounter.count() == 0);
+
+        auto wrapped = (voidCounter.wrap([] {}));
+        BEAST_EXPECT(voidCounter.count() == 1);
+
+        // Calling join() now should stall, so do it on a different thread.
+        std::atomic<bool> threadExited{false};
+        std::thread localThread([&voidCounter, &threadExited, this] {
+            // Should stall after calling join.
+            using namespace std::chrono_literals;
+            voidCounter.join("testWaitOnJoin", 1ms, j_);
+            threadExited.store(true);
+        });
+
+        // Wait for the thread to call voidCounter.join().
+        while (!voidCounter.joined())
+            ;
+
+        // The thread should still be active after waiting 5 milliseconds.
+        // This is not a guarantee that join() stalled the thread, but it
+        // improves confidence.
+        using namespace std::chrono_literals;
+        std::this_thread::sleep_for(5ms);
+        BEAST_EXPECT(threadExited == false);
+
+        // Destroy the contents of wrapped and expect the thread to exit
+        // (asynchronously).
+        wrapped = std::nullopt;
+        BEAST_EXPECT(voidCounter.count() == 0);
+
+        // Wait for the thread to exit.
+        while (!threadExited)
+            ;
+        localThread.join();
+    }
+
+public:
+    void
+    run() override
+    {
+        testConstruction();
+        testArgs();
+        testWrap();
+        testWaitOnJoin();
+    }
+};
+
+BEAST_DEFINE_TESTSUITE(ClosureCounter, core, xrpl);
+
+}  // namespace xrpl::test
