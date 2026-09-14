@@ -142,11 +142,9 @@ inline constexpr std::string_view kMeterVersion{"1.0.0"};
  * it: telemetry disabled, or an exporter that failed to build. Callers then
  * need no null check, because an instrument always comes back.
  *
- * Two details are easy to get wrong alone, which is why this is shared: the
- * provider must be reached through a base `MeterProvider` pointer, because
- * `NoopMeterProvider`'s override hides the base class's defaulted overload;
- * and the version must be @ref kMeterVersion, or the meter identity differs
- * from the one the histogram views select on.
+ * Shared so every caller passes the same version, @ref kMeterVersion. A
+ * different version gives a different meter identity from the one the
+ * histogram views select on.
  *
  * @param name Instrumentation scope name to report.
  * @return An inert meter. Never empty.
