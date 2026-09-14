@@ -201,7 +201,6 @@ private:
     TestFamily family_{logs_.journal("TestFamily")};
     LoadFeeTrack feeTrack_{logs_.journal("LoadFeeTrack")};
     TestNetworkIDService networkIDService_;
-    Fees fees_{defaultFees()};
     HashRouter hashRouter_{HashRouter::Setup{}, stopwatch()};
     NodeCache tempNodeCache_{
         "TempNodeCache",
@@ -499,21 +498,6 @@ public:
     getWalletDB() override
     {
         throw std::logic_error("TestServiceRegistry::getWalletDB() not implemented");
-    }
-
-    Fees
-    getFees() const override
-    {
-        return fees_;
-    }
-
-    /**
-     * @brief Override the fee settings the transactors see.
-     */
-    void
-    setFees(Fees const& fees)
-    {
-        fees_ = fees;
     }
 
     // Temporary: Get the underlying Application
