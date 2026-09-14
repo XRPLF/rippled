@@ -303,7 +303,10 @@ PeerImp::send(std::shared_ptr<Message> const& m)
             TrafficCount::Category::Total,
             static_cast<int>(m->getBuffer(self->compressionEnabled_).size()));
 
-        auto sendqSize = self->sendQueue_.size();
+        // Only bulk traffic counts toward the health checks: priority traffic
+        // is bounded by the validator set and must never look like a peer that
+        // has stopped reading.
+        auto const sendqSize = self->sendQueue_.bulkSize();
 
         if (sendqSize < tuning::kTargetSendQueue)
         {
@@ -322,17 +325,30 @@ PeerImp::send(std::shared_ptr<Message> const& m)
 
         self->sendQueue_.push(m);
 
-        if (sendqSize != 0)
+        if (self->writing_)
             return;
 
-        boost::asio::async_write(
-            self->stream_,
-            boost::asio::buffer(self->sendQueue_.front()->getBuffer(self->compressionEnabled_)),
-            bind_executor(
-                self->strand_, [self](error_code const& ec, std::size_t bytesTransferred) {
-                    self->onWriteMessage(ec, bytesTransferred);
-                }));
+        self->writeNext();
     });
+}
+
+void
+PeerImp::writeNext()
+{
+    XRPL_ASSERT(
+        strand_.running_in_this_thread(), "xrpl::PeerImp::writeNext : strand in this thread");
+    XRPL_ASSERT(!writing_, "xrpl::PeerImp::writeNext : no write in flight");
+    XRPL_ASSERT(!sendQueue_.empty(), "xrpl::PeerImp::writeNext : non-empty send queue");
+
+    writing_ = sendQueue_.pop();
+    boost::asio::async_write(
+        stream_,
+        boost::asio::buffer(writing_->getBuffer(compressionEnabled_)),
+        bind_executor(
+            strand_,
+            [self = shared_from_this()](error_code const& ec, std::size_t bytesTransferred) {
+                self->onWriteMessage(ec, bytesTransferred);
+            }));
 }
 
 void
@@ -529,6 +545,9 @@ PeerImp::json()
         }
     }
 
+    ret[jss::send_queue] = static_cast<json::UInt>(sendQueue_.bulkSize());
+    ret[jss::priority_send_queue] = static_cast<json::UInt>(sendQueue_.prioritySize());
+
     ret[jss::metrics] = json::Value(json::ValueType::Object);
     ret[jss::metrics][jss::total_bytes_recv] = std::to_string(metrics_.recv.totalBytes());
     ret[jss::metrics][jss::total_bytes_sent] = std::to_string(metrics_.sent.totalBytes());
@@ -652,7 +671,7 @@ PeerImp::gracefulClose()
     XRPL_ASSERT(socket_.is_open(), "xrpl::PeerImp::gracefulClose : socket is open");
     XRPL_ASSERT(!gracefulClose_, "xrpl::PeerImp::gracefulClose : socket is not closing");
     gracefulClose_ = true;
-    if (!sendQueue_.empty())
+    if (writing_ || !sendQueue_.empty())
         return;
     setTimer();
     stream_.async_shutdown(bind_executor(
@@ -1008,19 +1027,11 @@ PeerImp::onWriteMessage(error_code ec, std::size_t bytesTransferred)
 
     metrics_.sent.addMessage(bytesTransferred);
 
-    XRPL_ASSERT(!sendQueue_.empty(), "xrpl::PeerImp::onWriteMessage : non-empty send buffer");
-    sendQueue_.pop();
+    XRPL_ASSERT(writing_, "xrpl::PeerImp::onWriteMessage : write was in flight");
+    writing_.reset();
     if (!sendQueue_.empty())
     {
-        // Timeout on writes only
-        boost::asio::async_write(
-            stream_,
-            boost::asio::buffer(sendQueue_.front()->getBuffer(compressionEnabled_)),
-            bind_executor(
-                strand_,
-                [self = shared_from_this()](error_code const& ec, std::size_t bytesTransferred) {
-                    self->onWriteMessage(ec, bytesTransferred);
-                }));
+        writeNext();
         return;
     }
 
@@ -2571,7 +2582,7 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMGetObjectByHash> const& m)
     if (packet.query())
     {
         // this is a query
-        if (sendQueue_.size() >= tuning::kDropSendQueue)
+        if (sendQueue_.bulkSize() >= tuning::kDropSendQueue)
         {
             JLOG(pJournal_.debug()) << "GetObject: Large send queue";
             return;
@@ -3470,7 +3481,7 @@ PeerImp::processLedgerRequest(
     }
     else
     {
-        if (sendQueue_.size() >= tuning::kDropSendQueue)
+        if (sendQueue_.bulkSize() >= tuning::kDropSendQueue)
         {
             JLOG(pJournal_.debug()) << "processLedgerRequest: Large send queue";
             return;
