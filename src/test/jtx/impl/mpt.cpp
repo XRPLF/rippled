@@ -1993,8 +1993,9 @@ MPTTester::recover(MPTConfidentialRecover const& arg, std::source_location const
     }
 
     // Get the holder's issuer mirror (encrypted balance)
+    auto const& issuance = arg.id ? *arg.id : issuanceID();
     auto const sleHolder =
-        env_.le(keylet::mptoken(issuanceID(), requireValue(arg.holder, "holder").id()));
+        env_.le(keylet::mptoken(issuance, requireValue(arg.holder, "holder").id()));
     if (!sleHolder)
         Throw<std::runtime_error>("Holder MPToken not found");
 
