@@ -49,6 +49,17 @@ struct Handler
     bool hasCommandLineForm = true;
 };
 
+/**
+ * Find the handler that answers a method at an API version.
+ *
+ * @param version The API version the request asks for.
+ * @param betaEnabled Whether the beta API version is enabled, without which
+ *        @p version cannot exceed kApiMaximumSupportedVersion.
+ * @param name The method name, matched exactly.
+ * @return The handler, or nullptr if the version is not served, no method has
+ *         this name, or the method is not served at this version. The pointer is
+ *         into the dispatch table, so it outlives every caller.
+ */
 Handler const*
 getHandler(unsigned int version, bool betaEnabled, std::string_view name);
 

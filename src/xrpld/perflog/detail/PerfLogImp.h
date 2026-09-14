@@ -99,6 +99,8 @@ class PerfLogImp : public PerfLog
         std::unordered_map<JobType, Locked<Jq>> jq;
         std::vector<std::pair<JobType, steady_time_point>> jobs;
         mutable std::mutex jobsMutex;
+        // Each view is a key of rpc above, not the argument rpcStart() received,
+        // so currentJson() can borrow it as a C string.
         std::unordered_map<std::uint64_t, MethodStart> methods;
         mutable std::mutex methodsMutex;
 

@@ -577,8 +577,9 @@ static_assert(
 
 // The names are handed to json::StaticString, and read as C strings from there,
 // so each must be a view of a whole string literal rather than a slice of one.
+// The lambda is consteval so that it can name isNullTerminated, which is too.
 static_assert(
-    std::ranges::all_of(kHandlers, isNullTerminated, &Handler::name),
+    [] consteval { return std::ranges::all_of(kHandlers, isNullTerminated, &Handler::name); }(),
     "xrpl::rpc : every handler name must be null-terminated");
 
 // The handler names, which are already distinct and sorted.

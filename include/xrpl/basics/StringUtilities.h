@@ -171,18 +171,20 @@ isProperlyFormedTomlDomain(std::string_view domain);
  * data() as a C string, as such a reader would, and see if it comes back
  * unchanged. A slice comes back longer, having run past its own end.
  *
- * The byte after a view is not part of it, so this is only well defined when
- * @p str points into storage that is known to hold a null somewhere at or
- * after its end -- a string literal, or the buffer of a std::string. For a
- * view built from a bare pointer and length it reads out of bounds, and in a
- * constant expression that is a compile error rather than undefined behaviour.
+ * The byte after a view is not part of it, so reading it is only defined when
+ * @p str points into storage known to hold a null at or after its end, such as
+ * a string literal. Hence consteval: an unterminated view is then a compile
+ * error rather than an out-of-bounds read.
  *
  * @param str The view to test.
- * @return Whether @p str is null-terminated.
+ * @return Whether @p str is null-terminated. A view with no data is not.
  */
-constexpr bool
+consteval bool
 isNullTerminated(std::string_view str)
 {
+    if (str.data() == nullptr)
+        return false;
+
     // Reading past the view is the point, so the usual warning about data() not
     // being null-terminated does not apply.
     // NOLINTNEXTLINE(bugprone-suspicious-stringview-data-usage)

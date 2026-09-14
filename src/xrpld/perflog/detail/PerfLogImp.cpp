@@ -3,7 +3,6 @@
 #include <xrpld/app/main/Application.h>
 
 #include <xrpl/basics/Log.h>
-#include <xrpl/basics/StringUtilities.h>
 #include <xrpl/basics/chrono.h>
 #include <xrpl/beast/core/CurrentThreadName.h>
 #include <xrpl/beast/utility/Journal.h>
@@ -41,20 +40,13 @@ PerfLogImp::Counters::Counters(std::span<std::string_view const> labels, JobType
 {
     {
         // populateRpc
+        //
+        // The labels are reported through json::StaticString, which reads them as
+        // C strings, so each must be a whole string literal. Each caller asserts
+        // that at compile time, as makePerfLog's documentation requires.
         rpc.reserve(labels.size());
         for (auto const& label : labels)
         {
-            // countersJson() reports these through json::StaticString, which
-            // reads them as C strings, so each must be a view of a whole string
-            // literal rather than a slice of one. Checked here, where the names
-            // arrive, rather than on every report. Callers pass a compile-time
-            // constant list and this runs once, before any thread starts, so a
-            // bad name faults every startup rather than some later request.
-            XRPL_ASSERT(
-                isNullTerminated(label),
-                "xrpl::perf::PerfLogImp::Counters::Counters : label is "
-                "null-terminated");
-
             auto const inserted = rpc.try_emplace(label).second;
             if (!inserted)
             {
@@ -114,9 +106,8 @@ PerfLogImp::Counters::countersJson() const
         totalRpc.errored += value.errored;
         p[jss::duration_us] = std::to_string(value.duration.count());
         totalRpc.duration += value.duration;
-        // The key outlives the program and, per the constructor's assert, is
-        // null-terminated, so it can be borrowed as a C string rather than
-        // duplicated into the object.
+        // The key is one of the constructor's labels, so it can be borrowed as a
+        // C string rather than duplicated into the object.
         // NOLINTNEXTLINE(bugprone-suspicious-stringview-data-usage)
         rpcobj[json::StaticString{proc.first.data()}] = p;
     }
@@ -213,7 +204,7 @@ PerfLogImp::Counters::currentJson() const
     for (auto m : methods)
     {
         json::Value methodobj(json::ValueType::Object);
-        // Borrowed as a C string, as in countersJson() above.
+        // A key of rpc, per methods' declaration, so borrowed as above.
         // NOLINTNEXTLINE(bugprone-suspicious-stringview-data-usage)
         methodobj[jss::method] = json::StaticString{m.first.data()};
         methodobj[jss::duration_us] =
@@ -353,6 +344,7 @@ PerfLogImp::rpcStart(std::string_view method, std::uint64_t const requestId)
         ++counter->second.value.started;
     }
     std::scoped_lock const lock(counters_.methodsMutex);
+    // The key, not the method argument: what is stored has to outlive the call.
     counters_.methods[requestId] = {counter->first, steady_clock::now()};
 }
 

@@ -1,6 +1,7 @@
 #include <test/jtx/Env.h>
 #include <test/jtx/envconfig.h>
 
+#include <xrpl/basics/StringUtilities.h>
 #include <xrpl/basics/random.h>
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/beast/utility/Journal.h>
@@ -56,6 +57,11 @@ class PerfLog_test : public beast::unit_test::Suite
         std::string_view{"method_c"},
         std::string_view{"method_d"},
         std::string_view{"method_e"}};
+
+    // makePerfLog cannot check this, so each caller checks its own names.
+    static_assert(
+        [] consteval { return std::ranges::all_of(kMethodNames, isNullTerminated); }(),
+        "xrpl::test::PerfLog_test : every method name must be null-terminated");
 
     // We're only using Env for its Journal.  That Journal gives better
     // coverage in unit tests.
