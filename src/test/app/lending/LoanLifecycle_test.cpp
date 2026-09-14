@@ -205,8 +205,14 @@ private:
         if (!BEAST_EXPECT(!createJson.isMember(jss::Signers)))
             counterpartyJson[sfSigners] = createJson[sfSigners];
 
-        // The duplicated signature works
-        createJson = env.json(createJson, Json(sfCounterpartySignature, counterpartyJson));
+        // The duplicated signature does not work: the counterparty signs a
+        // different prefix than the account.
+        env(env.json(createJson, Json(sfCounterpartySignature, counterpartyJson)),
+            Ter(telENV_RPC_FAILED));
+
+        // Signing the counterparty field itself works, even though the lender
+        // is both the borrower and the counterparty.
+        createJson = env.json(createJson, Sig(sfCounterpartySignature, lender));
         env(createJson);
 
         env.close();
@@ -347,7 +353,11 @@ private:
             auto const& asset = debtMaximumRequest.asset();
             auto const initialVault = asset(debtMaximumRequest * 100);
 
-            auto [tx, vaultKeylet] = vault.create({.owner = broker, .asset = asset});
+            // Under featureLendingProtocolV1_1 LoanBrokerSet::preclaim
+            // only accepts closed-ended vaults, so build one and advance
+            // past SubscriptionDate before creating broker/loan.
+            auto [tx, vaultKeylet, subscriptionDate] =
+                vault.createClosedEnded({.owner = broker, .asset = asset});
             env(tx, txFee);
             env.close();
 
@@ -355,6 +365,8 @@ private:
                     {.depositor = depositor, .id = vaultKeylet.key, .amount = initialVault}),
                 txFee);
             env.close();
+
+            vault.closePastSubscription(subscriptionDate);
 
             auto const brokerKeylet =
                 keylet::loanBroker(broker.id(), SeqProxy::rawSequence(env.seq(broker)));

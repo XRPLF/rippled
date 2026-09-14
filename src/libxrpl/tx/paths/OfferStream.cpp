@@ -4,6 +4,7 @@
 #include <xrpl/basics/Number.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/chrono.h>
+#include <xrpl/basics/contract.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/beast/utility/instrumentation.h>
@@ -25,7 +26,9 @@
 #include <xrpl/protocol/Quality.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/XRPAmount.h>
+#include <xrpl/tx/paths/detail/Steps.h>
 
 #include <algorithm>
 #include <optional>
@@ -255,6 +258,23 @@ TOfferStreamBase<TIn, TOut>::step()
             permRmOffer(entry->key());
             offer_ = TOffer<TIn, TOut>{};
             continue;
+        }
+
+        // Post-fixCleanup3_4_0 defensive check: an offer indexed in a domain
+        // book must claim that same domain. This can only happen if the book
+        // directory is corrupt (i.e. a separate book indexing bug). An offer
+        // with no sfDomainID at all is just as wrong here: the domain
+        // membership check below is gated on that field being present, so
+        // such an offer would otherwise be consumed from a domain book
+        // without any credential check.
+        if (view_.rules().enabled(fixCleanup3_4_0) && book_.domain.has_value() &&
+            (!entry->isFieldPresent(sfDomainID) ||
+             entry->getFieldH256(sfDomainID) != *book_.domain))
+        {
+            JLOG(j_.error()) << "Offer " << entry->key()
+                             << " domain missing or does not match book domain";
+            Throw<FlowException>(
+                tecINTERNAL, "Offer domain missing or does not match book domain.");
         }
 
         // Pre-fixCleanup3_3_0: validate domain membership for any book.

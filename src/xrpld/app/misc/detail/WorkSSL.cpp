@@ -10,8 +10,8 @@
 #include <boost/asio/io_context.hpp>
 #include <boost/asio/ssl/context.hpp>
 #include <boost/asio/ssl/stream_base.hpp>
-#include <boost/format/free_funcs.hpp>
 
+#include <format>
 #include <stdexcept>
 #include <string>
 
@@ -38,7 +38,7 @@ WorkSSL::WorkSSL(
 {
     auto ec = context_.preConnectVerify(stream_, host_);
     if (ec)
-        Throw<std::runtime_error>(boost::str(boost::format("preConnectVerify: %s") % ec.message()));
+        Throw<std::runtime_error>(std::format("preConnectVerify: {}", ec.message()));
 }
 
 void

@@ -103,7 +103,7 @@ namespace boost {
 template <>
 struct hash<::beast::ip::Address>
 {
-    explicit hash() = default;
+    hash() = default;
 
     std::size_t
     operator()(::beast::ip::Address const& addr) const

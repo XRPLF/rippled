@@ -77,8 +77,8 @@ ${SED_COMMAND} -i 's/Ripple integrators/XRPL developers/' README.md
 ${SED_COMMAND} -i 's/sanitizer-configuration-for-rippled/sanitizer-configuration-for-xrpld/' docs/build/sanitizers.md
 ${SED_COMMAND} -i 's/rippled/xrpld/g' .github/scripts/levelization/README.md
 ${SED_COMMAND} -i 's/rippled/xrpld/g' .github/scripts/strategy-matrix/generate.py
-${SED_COMMAND} -i 's@/rippled@/xrpld@g' docs/build/install.md
-${SED_COMMAND} -i 's@github.com/XRPLF/xrpld@github.com/XRPLF/rippled@g' docs/build/install.md
+${SED_COMMAND} -i 's@/rippled@/xrpld@g' docs/install.md
+${SED_COMMAND} -i 's@github.com/XRPLF/xrpld@github.com/XRPLF/rippled@g' docs/install.md
 ${SED_COMMAND} -i 's/rippled/xrpld/g' docs/Doxyfile
 ${SED_COMMAND} -i 's/ripple_basics/basics/' include/xrpl/basics/CountedObject.h
 ${SED_COMMAND} -i 's/<ripple/<xrpl/' include/xrpl/protocol/AccountID.h

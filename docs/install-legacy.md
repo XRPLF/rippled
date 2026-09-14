@@ -1,3 +1,10 @@
+# Installing xrpld 3.3.0 and earlier
+
+> [!IMPORTANT]
+> These instructions apply to xrpld 3.3.0 and earlier, published to
+> repos.ripple.com.
+> For later releases see [install.md](./install.md).
+
 This document contains instructions for installing xrpld.
 The APT package manager is common on Debian-based Linux distributions like
 Ubuntu,
@@ -52,7 +59,7 @@ The default [prefix][1] is typically `/usr/local` on Linux and macOS and
 
 5.  Add the appropriate XRPL repository for your operating system version:
 
-        echo "deb [signed-by=/usr/local/share/keyrings/ripple-key.gpg] https://repos.ripple.com/repos/xrpld-deb focal stable" | \
+        echo "deb [signed-by=/usr/local/share/keyrings/ripple-key.gpg] https://repos.ripple.com/repos/rippled-deb focal stable" | \
             sudo tee -a /etc/apt/sources.list.d/ripple.list
 
     The above example is appropriate for **Ubuntu 20.04 Focal Fossa**. For other operating systems, replace the word `focal` with one of the following:
@@ -106,8 +113,8 @@ The default [prefix][1] is typically `/usr/local` on Linux and macOS and
         enabled=1
         gpgcheck=0
         repo_gpgcheck=1
-        baseurl=https://repos.ripple.com/repos/xrpld-rpm/stable/
-        gpgkey=https://repos.ripple.com/repos/xrpld-rpm/stable/repodata/repomd.xml.key
+        baseurl=https://repos.ripple.com/repos/rippled-rpm/stable/
+        gpgkey=https://repos.ripple.com/repos/rippled-rpm/stable/repodata/repomd.xml.key
         REPOFILE
 
     _Unstable_
@@ -118,8 +125,8 @@ The default [prefix][1] is typically `/usr/local` on Linux and macOS and
         enabled=1
         gpgcheck=0
         repo_gpgcheck=1
-        baseurl=https://repos.ripple.com/repos/xrpld-rpm/unstable/
-        gpgkey=https://repos.ripple.com/repos/xrpld-rpm/unstable/repodata/repomd.xml.key
+        baseurl=https://repos.ripple.com/repos/rippled-rpm/unstable/
+        gpgkey=https://repos.ripple.com/repos/rippled-rpm/unstable/repodata/repomd.xml.key
         REPOFILE
 
     _Nightly_
@@ -130,8 +137,8 @@ The default [prefix][1] is typically `/usr/local` on Linux and macOS and
         enabled=1
         gpgcheck=0
         repo_gpgcheck=1
-        baseurl=https://repos.ripple.com/repos/xrpld-rpm/nightly/
-        gpgkey=https://repos.ripple.com/repos/xrpld-rpm/nightly/repodata/repomd.xml.key
+        baseurl=https://repos.ripple.com/repos/rippled-rpm/nightly/
+        gpgkey=https://repos.ripple.com/repos/rippled-rpm/nightly/repodata/repomd.xml.key
         REPOFILE
 
 2.  Fetch the latest repo updates:

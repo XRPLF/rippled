@@ -239,8 +239,13 @@ canTransfer(ReadView const& view, Issue const& issue, AccountID const& from, Acc
 //------------------------------------------------------------------------------
 
 /**
- * Any transactors that call addEmptyHolding() in doApply must call
- * canAddHolding() in preflight with the same View and Asset
+ * XRP and the issuer itself are always tesSUCCESS. Otherwise, after
+ * fixCleanup3_4_0, an existing trust line returns tecDUPLICATE without
+ * consulting issuer freeze or DefaultRipple; both still apply on the create
+ * path (DefaultRipple off is terNO_RIPPLE). canAddHolding() ignores existing
+ * holdings, so transactors that may create a holding in doApply should gate
+ * their preclaim call on it: after the amendment only when no holding
+ * exists, before it always.
  */
 [[nodiscard]] TER
 addEmptyHolding(

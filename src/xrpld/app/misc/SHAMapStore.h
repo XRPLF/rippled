@@ -8,6 +8,7 @@
 #include <xrpl/nodestore/Scheduler.h>
 #include <xrpl/protocol/Protocol.h>
 
+#include <chrono>
 #include <cstdint>
 #include <memory>
 #include <optional>
@@ -34,8 +35,8 @@ public:
     virtual void
     start() = 0;
 
-    virtual void
-    rendezvous() const = 0;
+    [[nodiscard]] virtual bool
+    rendezvous(std::optional<std::chrono::milliseconds> const& timeout = {}) const = 0;
 
     virtual void
     stop() = 0;

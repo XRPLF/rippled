@@ -21,7 +21,7 @@ class XChainAddAccountCreateAttestationBuilder;
  * Type: ttXCHAIN_ADD_ACCOUNT_CREATE_ATTESTATION (46)
  * Delegable: Delegation::Delegable
  * Amendment: featureXChainBridge
- * Privileges: CreateAcct
+ * Privileges: Privilege::CreateAcct
  *
  * Immutable wrapper around STTx providing type-safe field access.
  * Use XChainAddAccountCreateAttestationBuilder to construct new transactions.

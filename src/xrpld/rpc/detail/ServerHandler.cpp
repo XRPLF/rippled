@@ -264,7 +264,7 @@ ServerHandler::onHandoff(
 static inline json::Output
 makeOutput(Session& session)
 {
-    return [&](boost::beast::string_view const& b) { session.write(b.data(), b.size()); };
+    return [&](std::string_view b) { session.write(b.data(), b.size()); };
 }
 
 static std::map<std::string, std::string>
@@ -564,11 +564,11 @@ ServerHandler::processSession(
         makeOutput(*session),
         coro,
         forwardedFor(session->request()),
-        [&] {
+        [&] -> std::string_view {
             auto const iter = session->request().find("X-User");
             if (iter != session->request().end())
                 return iter->value();
-            return boost::beast::string_view{};
+            return {};
         }());
 
     if (beast::rfc2616::isKeepAlive(session->request()))

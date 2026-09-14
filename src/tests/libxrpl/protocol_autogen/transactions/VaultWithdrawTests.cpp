@@ -33,6 +33,7 @@ TEST(TransactionsVaultWithdrawTests, BuilderSettersRoundTrip)
     auto const amountValue = canonical_AMOUNT();
     auto const destinationValue = canonical_ACCOUNT();
     auto const destinationTagValue = canonical_UINT32();
+    auto const credentialIDsValue = canonical_VECTOR256();
 
     VaultWithdrawBuilder builder{
         accountValue,
@@ -45,6 +46,7 @@ TEST(TransactionsVaultWithdrawTests, BuilderSettersRoundTrip)
     // Set optional fields
     builder.setDestination(destinationValue);
     builder.setDestinationTag(destinationTagValue);
+    builder.setCredentialIDs(credentialIDsValue);
 
     auto tx = builder.build(publicKey, secretKey);
 
@@ -90,6 +92,14 @@ TEST(TransactionsVaultWithdrawTests, BuilderSettersRoundTrip)
         EXPECT_TRUE(tx.hasDestinationTag());
     }
 
+    {
+        auto const& expected = credentialIDsValue;
+        auto const actualOpt = tx.getCredentialIDs();
+        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfCredentialIDs should be present";
+        expectEqualField(expected, *actualOpt, "sfCredentialIDs");
+        EXPECT_TRUE(tx.hasCredentialIDs());
+    }
+
 }
 
 // 2 & 4) Start from an STTx, construct a builder from it, build a new wrapper,
@@ -110,6 +120,7 @@ TEST(TransactionsVaultWithdrawTests, BuilderFromStTxRoundTrip)
     auto const amountValue = canonical_AMOUNT();
     auto const destinationValue = canonical_ACCOUNT();
     auto const destinationTagValue = canonical_UINT32();
+    auto const credentialIDsValue = canonical_VECTOR256();
 
     // Build an initial transaction
     VaultWithdrawBuilder initialBuilder{
@@ -122,6 +133,7 @@ TEST(TransactionsVaultWithdrawTests, BuilderFromStTxRoundTrip)
 
     initialBuilder.setDestination(destinationValue);
     initialBuilder.setDestinationTag(destinationTagValue);
+    initialBuilder.setCredentialIDs(credentialIDsValue);
 
     auto initialTx = initialBuilder.build(publicKey, secretKey);
 
@@ -164,6 +176,13 @@ TEST(TransactionsVaultWithdrawTests, BuilderFromStTxRoundTrip)
         auto const actualOpt = rebuiltTx.getDestinationTag();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfDestinationTag should be present";
         expectEqualField(expected, *actualOpt, "sfDestinationTag");
+    }
+
+    {
+        auto const& expected = credentialIDsValue;
+        auto const actualOpt = rebuiltTx.getCredentialIDs();
+        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfCredentialIDs should be present";
+        expectEqualField(expected, *actualOpt, "sfCredentialIDs");
     }
 
 }
@@ -229,6 +248,8 @@ TEST(TransactionsVaultWithdrawTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(tx.getDestination().has_value());
     EXPECT_FALSE(tx.hasDestinationTag());
     EXPECT_FALSE(tx.getDestinationTag().has_value());
+    EXPECT_FALSE(tx.hasCredentialIDs());
+    EXPECT_FALSE(tx.getCredentialIDs().has_value());
 }
 
 }

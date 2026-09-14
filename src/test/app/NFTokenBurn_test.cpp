@@ -32,6 +32,7 @@
 #include <xrpl/protocol/jss.h>
 #include <xrpl/protocol/nft.h>
 #include <xrpl/tx/ApplyContext.h>
+#include <xrpl/tx/invariants/InvariantRunner.h>
 
 #include <algorithm>
 #include <cstddef>
@@ -116,33 +117,30 @@ class NFTokenBurn_test : public beast::unit_test::Suite
                 std::cout << "Ledger state is not array!" << std::endl;
                 return;
             }
-            for (json::UInt i = 0; i < state.size(); ++i)
+            for (auto& i : state)
             {
-                if (state[i].isMember(sfNFTokens.jsonName) &&
-                    state[i][sfNFTokens.jsonName].isArray())
+                if (i.isMember(sfNFTokens.jsonName) && i[sfNFTokens.jsonName].isArray())
                 {
-                    std::uint32_t const tokenCount = state[i][sfNFTokens.jsonName].size();
-                    std::cout << tokenCount << " NFtokens in page "
-                              << state[i][jss::index].asString() << std::endl;
+                    std::uint32_t const tokenCount = i[sfNFTokens.jsonName].size();
+                    std::cout << tokenCount << " NFtokens in page " << i[jss::index].asString()
+                              << std::endl;
 
                     if (vol == Volume::Noisy)
                     {
-                        std::cout << state[i].toStyledString() << std::endl;
+                        std::cout << i.toStyledString() << std::endl;
                     }
                     else
                     {
                         if (tokenCount > 0)
                         {
-                            std::cout
-                                << "first: " << state[i][sfNFTokens.jsonName][0u].toStyledString()
-                                << std::endl;
+                            std::cout << "first: " << i[sfNFTokens.jsonName][0u].toStyledString()
+                                      << std::endl;
                         }
                         if (tokenCount > 1)
                         {
-                            std::cout
-                                << "last: "
-                                << state[i][sfNFTokens.jsonName][tokenCount - 1].toStyledString()
-                                << std::endl;
+                            std::cout << "last: "
+                                      << i[sfNFTokens.jsonName][tokenCount - 1].toStyledString()
+                                      << std::endl;
                         }
                     }
                 }
@@ -418,12 +416,11 @@ class NFTokenBurn_test : public beast::unit_test::Suite
                 json::Value& state = jrr[jss::result][jss::state];
 
                 int pageCount = 0;
-                for (json::UInt i = 0; i < state.size(); ++i)
+                for (auto& i : state)
                 {
-                    if (state[i].isMember(sfNFTokens.jsonName) &&
-                        state[i][sfNFTokens.jsonName].isArray())
+                    if (i.isMember(sfNFTokens.jsonName) && i[sfNFTokens.jsonName].isArray())
                     {
-                        BEAST_EXPECT(state[i][sfNFTokens.jsonName].size() == 32);
+                        BEAST_EXPECT(i[sfNFTokens.jsonName].size() == 32);
                         ++pageCount;
                     }
                 }
@@ -458,11 +455,11 @@ class NFTokenBurn_test : public beast::unit_test::Suite
             {
                 json::Value jrr = env.rpc("json", "ledger_data", to_string(jvParams));
 
-                json::Value& state = jrr[jss::result][jss::state];
+                json::Value const& state = jrr[jss::result][jss::state];
 
-                for (json::UInt i = 0; i < state.size(); ++i)
+                for (auto const& i : state)
                 {
-                    BEAST_EXPECT(!state[i].isMember(sfNFTokens.jsonName));
+                    BEAST_EXPECT(!i.isMember(sfNFTokens.jsonName));
                 }
             }
         };
@@ -756,8 +753,8 @@ class NFTokenBurn_test : public beast::unit_test::Suite
             // We're going to fire an Invariant failure that is difficult to
             // cause.  We do it here because the tools are here.
             //
-            // See Invariants_test.cpp for examples of other invariant tests
-            // that this one is modeled after.
+            // See InvariantsMisc_test.cpp for examples of other invariant
+            // tests that this one is modeled after.
 
             // Generate three closely packed NFTokenPages.
             std::vector<uint256> nfts = genPackedTokens();
@@ -794,7 +791,7 @@ class NFTokenBurn_test : public beast::unit_test::Suite
                 TER terActual = tesSUCCESS;
                 for (TER const& terExpect : {TER(tecINVARIANT_FAILED), TER(tefINVARIANT_FAILED)})
                 {
-                    terActual = ac.checkInvariants(terActual, XRPAmount{});
+                    terActual = xrpl::checkInvariants(ac, terActual, XRPAmount{});
                     BEAST_EXPECT(terExpect == terActual);
                     BEAST_EXPECT(sink.messages().str().starts_with("Invariant failed:"));
                     // uncomment to log the invariant failure message
@@ -830,7 +827,7 @@ class NFTokenBurn_test : public beast::unit_test::Suite
                 TER terActual = tesSUCCESS;
                 for (TER const& terExpect : {TER(tecINVARIANT_FAILED), TER(tefINVARIANT_FAILED)})
                 {
-                    terActual = ac.checkInvariants(terActual, XRPAmount{});
+                    terActual = xrpl::checkInvariants(ac, terActual, XRPAmount{});
                     BEAST_EXPECT(terExpect == terActual);
                     BEAST_EXPECT(sink.messages().str().starts_with("Invariant failed:"));
                     // uncomment to log the invariant failure message
@@ -1075,12 +1072,11 @@ class NFTokenBurn_test : public beast::unit_test::Suite
                 json::Value& state = jrr[jss::result][jss::state];
 
                 int pageCount = 0;
-                for (json::UInt i = 0; i < state.size(); ++i)
+                for (auto& i : state)
                 {
-                    if (state[i].isMember(sfNFTokens.jsonName) &&
-                        state[i][sfNFTokens.jsonName].isArray())
+                    if (i.isMember(sfNFTokens.jsonName) && i[sfNFTokens.jsonName].isArray())
                     {
-                        BEAST_EXPECT(state[i][sfNFTokens.jsonName].size() == 32);
+                        BEAST_EXPECT(i[sfNFTokens.jsonName].size() == 32);
                         ++pageCount;
                     }
                 }
