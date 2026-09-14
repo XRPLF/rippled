@@ -15,6 +15,7 @@
 //! argument through.
 
 #![no_std]
+#![cfg_attr(coverage_nightly, feature(coverage_attribute))]
 
 // Not re-exported: the ABI is declared once, here, and this is the only call site.
 use xrpl_host_functions_macros::{coded_enum, host_functions};

@@ -1,3 +1,5 @@
+#![cfg_attr(coverage_nightly, feature(coverage_attribute))]
+
 mod enums;
 mod errors;
 mod glue;
@@ -366,6 +368,7 @@ impl Parse for HostFunctionsInput {
 }
 
 #[cfg(test)]
+#[cfg_attr(coverage_nightly, coverage(off))]
 mod tests {
     use super::*;
 

@@ -10,6 +10,7 @@
 //! Linked only into `xrpl_tests`, never into `libxrpl` or `xrpld`, so "no assembler in the
 //! shipped node" is a property of the link graph rather than a flag someone can flip.
 #![deny(rustdoc::broken_intra_doc_links)]
+#![cfg_attr(coverage_nightly, feature(coverage_attribute))]
 
 #[cxx::bridge(namespace = "rs::wasm_testkit")]
 mod ffi {
@@ -58,6 +59,7 @@ impl std::fmt::Display for UnknownHostFunction {
 impl std::error::Error for UnknownHostFunction {}
 
 #[cfg(test)]
+#[cfg_attr(coverage_nightly, coverage(off))]
 mod tests {
     use super::*;
 
