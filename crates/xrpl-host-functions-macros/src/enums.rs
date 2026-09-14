@@ -141,6 +141,7 @@ fn is_integer_literal(code: &Expr) -> bool {
 }
 
 #[cfg(test)]
+#[cfg_attr(coverage_nightly, coverage(off))]
 mod tests {
     use super::*;
 
