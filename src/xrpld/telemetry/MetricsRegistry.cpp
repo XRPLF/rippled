@@ -504,6 +504,8 @@ MetricsRegistry::initSyncInstruments()
     jobQueuedCounter_ = meter_->CreateUInt64Counter("job_queued_total", "Total jobs enqueued");
     jobStartedCounter_ = meter_->CreateUInt64Counter("job_started_total", "Total jobs started");
     jobFinishedCounter_ = meter_->CreateUInt64Counter("job_finished_total", "Total jobs completed");
+    jobStallCounter_ = meter_->CreateUInt64Counter(
+        metric::jobqStallTotal, "Jobs whose run time reached the 1 s stall threshold");
     jobQueuedDurationHistogram_ = meter_->CreateDoubleHistogram(
         kJobQueuedDurationUs, "Time jobs spent waiting in the queue (microseconds)");
     jobRunningDurationHistogram_ =
@@ -686,6 +688,10 @@ MetricsRegistry::recordJobFinished(
             {{label::jobType, std::string(jobType)}, {label::handler, handler}},
             opentelemetry::context::Context{});
     }
+    // One compare per job finish. A process-wide freeze shows up here as
+    // several job types crossing the bar in the same second.
+    if (runningDurUs >= kJobStallThresholdUs && jobStallCounter_)
+        jobStallCounter_->Add(1, {{label::jobType, std::string(jobType)}});
 #endif
 }
 
@@ -829,6 +835,10 @@ MetricsRegistry::registerCacheHitRateGauge()
                 opentelemetry::nostd::get<opentelemetry::nostd::shared_ptr<
                     opentelemetry::metrics::ObserverResultT<double>>>(result)
                     ->Observe(static_cast<double>(alSize), {{label::metric, "AL_size"}});
+
+                // Longest TaggedCache mutex hold since the last tick.
+                // Split out to keep this callback under the 80-line limit.
+                self->observeCacheLockHoldPeaks(result, app);
             }
             catch (...)  // NOLINT(bugprone-empty-catch)
             {
@@ -836,6 +846,28 @@ MetricsRegistry::registerCacheHitRateGauge()
             }
         },
         this);
+}
+
+void
+MetricsRegistry::observeCacheLockHoldPeaks(
+    opentelemetry::metrics::ObserverResult& result,
+    ServiceRegistry& app) const
+{
+    auto const tnPeak = app.getNodeFamily().getTreeNodeCache()->takeLockHoldPeak();
+    opentelemetry::nostd::get<
+        opentelemetry::nostd::shared_ptr<opentelemetry::metrics::ObserverResultT<double>>>(result)
+        ->Observe(
+            static_cast<double>(
+                std::chrono::duration_cast<std::chrono::microseconds>(tnPeak).count()),
+            {{label::metric, lval::cache_metrics::treenodeLockHoldPeakUs}});
+
+    auto const fbPeak = app.getNodeFamily().getFullBelowCache()->takeLockHoldPeak();
+    opentelemetry::nostd::get<
+        opentelemetry::nostd::shared_ptr<opentelemetry::metrics::ObserverResultT<double>>>(result)
+        ->Observe(
+            static_cast<double>(
+                std::chrono::duration_cast<std::chrono::microseconds>(fbPeak).count()),
+            {{label::metric, lval::cache_metrics::fullbelowLockHoldPeakUs}});
 }
 
 void

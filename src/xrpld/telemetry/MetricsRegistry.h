@@ -260,6 +260,14 @@ namespace telemetry {
  * - Adding a new OBSERVABLE gauge still requires eager central
  * registration -- pull-model instruments cannot be lazily created.
  */
+/**
+ * Run time at which a finished job counts as a stall, in microseconds.
+ * Equal to LoadMonitor's 1 s warn threshold (LoadMonitor.cpp
+ * addLoadSample) so this counter and the "Job: ... run:" log line
+ * describe the same event.
+ */
+inline constexpr std::int64_t kJobStallThresholdUs = 1'000'000;
+
 class MetricsRegistry
 {
 public:
@@ -1017,6 +1025,11 @@ private:
      */
     opentelemetry::nostd::unique_ptr<opentelemetry::metrics::Counter<uint64_t>> jobFinishedCounter_;
     /**
+     * Counter: jobq_stall_total{job_type="<name>"} — one per finished job
+     * whose run time reached kJobStallThresholdUs.
+     */
+    opentelemetry::nostd::unique_ptr<opentelemetry::metrics::Counter<uint64_t>> jobStallCounter_;
+    /**
      * Histogram: job_queued_us{job_type="<name>",handler="<name>"}
      */
     opentelemetry::nostd::unique_ptr<opentelemetry::metrics::Histogram<double>>
@@ -1279,6 +1292,14 @@ private:
     registerJqTransOverflowCounter();  // gap-fill: overlay overflow total
     void
     registerCacheHitRateGauge();
+    /**
+     * Observe the two TaggedCache lock-hold peaks onto the cache_metrics
+     * gauge. Split out to keep registerCacheHitRateGauge's callback under
+     * the 80-line limit.
+     */
+    void
+    observeCacheLockHoldPeaks(opentelemetry::metrics::ObserverResult& result, ServiceRegistry& app)
+        const;
     void
     registerTxqGauge();
     void
