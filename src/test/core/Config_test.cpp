@@ -8,6 +8,7 @@
 #include <xrpl/config/BasicConfig.h>
 #include <xrpl/config/Constants.h>
 #include <xrpl/protocol/SystemParameters.h>  // IWYU pragma: keep
+#include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/server/Port.h>
 
 #include <boost/lexical_cast/bad_lexical_cast.hpp>
@@ -1658,6 +1659,30 @@ r.ripple.com:51235
     }
 
     void
+    testToFees()
+    {
+        testcase("toFees");
+
+        FeeSetup setup;
+
+        setup.referenceFee = XRPAmount{17};
+        setup.accountReserve = XRPAmount{3'000'017};
+        setup.ownerReserve = XRPAmount{700'017};
+        setup.gasLimit = 123'457;
+        setup.bytecodeSizeLimit = 23'457;
+        setup.gasPrice = 7'654'321;
+
+        auto const fees = setup.toFees();
+
+        BEAST_EXPECT(fees.base == setup.referenceFee);
+        BEAST_EXPECT(fees.reserve == setup.accountReserve);
+        BEAST_EXPECT(fees.increment == setup.ownerReserve);
+        BEAST_EXPECT(fees.gasLimit == setup.gasLimit);
+        BEAST_EXPECT(fees.bytecodeSizeLimit == setup.bytecodeSizeLimit);
+        BEAST_EXPECT(fees.gasPrice == setup.gasPrice);
+    }
+
+    void
     run() override
     {
         testLegacy();
@@ -1676,6 +1701,7 @@ r.ripple.com:51235
         testAmendment();
         testOverlay();
         testNetworkID();
+        testToFees();
     }
 };
 
