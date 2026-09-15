@@ -826,6 +826,24 @@ public:
         return *walletDB_;
     }
 
+    Fees
+    getFees() const override
+    {
+        XRPL_ASSERT(config_, "xrpl::ApplicationImp::getFees : non-null config");
+
+        auto const& f1(config_->fees);
+
+        Fees f2;
+        f2.base = f1.referenceFee;
+        f2.reserve = f1.accountReserve;
+        f2.increment = f1.ownerReserve;
+        f2.gasLimit = f1.gasLimit;
+        f2.bytecodeSizeLimit = f1.bytecodeSizeLimit;
+        f2.gasPrice = f1.gasPrice;
+
+        return f2;
+    }
+
     bool
     serverOkay(std::string& reason) override;
 

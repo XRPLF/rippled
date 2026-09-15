@@ -194,6 +194,12 @@ TxMeta::getAsObject() const
     if (parentBatchID_.has_value())
         metaData.setFieldH256(sfParentBatchID, *parentBatchID_);
 
+    if (gasUsed_.has_value())
+        metaData.setFieldU32(sfGasUsed, *gasUsed_);
+
+    if (vmReturnCode_.has_value())
+        metaData.setFieldI32(sfVMReturnCode, *vmReturnCode_);
+
     return metaData;
 }
 
