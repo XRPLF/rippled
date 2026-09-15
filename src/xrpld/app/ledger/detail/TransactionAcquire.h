@@ -75,6 +75,23 @@ public:
         std::vector<std::pair<SHAMapNodeID, SHAMapTreeNodePtr>> data,
         std::shared_ptr<Peer> const& peer);
 
+    /**
+     * Whether a reply from this peer is worth deserializing.
+     *
+     * A settled acquisition discards whatever a reply contains, so it spends the
+     * late-reply allowance here, before the caller turns a wire packet into
+     * nodes at a hash apiece.
+     *
+     * The answer can go stale, since mtx_ is released before takeNodes(), which
+     * recognizes a late reply of its own accord.
+     *
+     * @param peer The peer that sent the reply, charged here when the reply is
+     *        outside the allowance.
+     * @return Whether the reply should be parsed and handed to takeNodes().
+     */
+    [[nodiscard]] bool
+    wantsReplyFrom(std::shared_ptr<Peer> const& peer);
+
     void
     init(int startPeers);
 
@@ -150,7 +167,20 @@ private:
     takeNodesLocked(
         std::vector<std::pair<SHAMapNodeID, SHAMapTreeNodePtr>> data,
         std::shared_ptr<Peer> const& peer,
-        ScopedLockType&);
+        ScopedLockType& sl);
+
+    /**
+     * Spend this peer's one free late reply, or charge it for replaying.
+     *
+     * Shared by wantsReplyFrom() and takeNodesLocked(), the two places a late
+     * reply is recognized. Only one of them sees any given reply, so a reply is
+     * charged once.
+     *
+     * @param peer The peer that sent the reply.
+     * @param sl Proof mtx_ is held, which the allowance sets require.
+     */
+    void
+    chargeLateReply(std::shared_ptr<Peer> const& peer, ScopedLockType& sl);
 
     void
     onTimer(bool progress, ScopedLockType& sl) override;
