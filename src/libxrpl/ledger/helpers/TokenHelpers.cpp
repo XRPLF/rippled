@@ -972,7 +972,10 @@ accountSendIOU(
 {
     if (saAmount < beast::kZero || saAmount.holds<MPTIssue>())
     {
-        return tecINTERNAL;  // LCOV_EXCL_LINE
+        // LCOV_EXCL_START
+        JLOG(j.fatal()) << "accountSendIOU: negative amount or invalid asset";
+        return tecINTERNAL;
+        // LCOV_EXCL_STOP
     }
 
     /* If we aren't sending anything or if the sender is the same as the

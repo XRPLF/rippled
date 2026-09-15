@@ -354,7 +354,7 @@ AMMWithdraw::applyGuts(Sandbox& sb)
     // Due to rounding, the LPTokenBalance of the last LP
     // might not match the LP's trustline balance
     if (auto const res = verifyAndAdjustLPTokenBalance(sb, lpTokens, ammSle, accountID_); !res)
-        return {res.error(), false};
+        return {res.error(), false};  // LCOV_EXCL_LINE
 
     auto const tfee = getTradingFee(ctx_.view(), *ammSle, accountID_);
 

@@ -950,7 +950,7 @@ verifyAndAdjustLPTokenBalance(
         }
         else
         {
-            return std::unexpected<TER>(tecAMM_INVALID_TOKENS);
+            return std::unexpected<TER>(tecAMM_INVALID_TOKENS);  // LCOV_EXCL_LINE
         }
     }
     return true;
