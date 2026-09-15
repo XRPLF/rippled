@@ -503,7 +503,7 @@
       "required_attributes": ["node_count", "nodes_copied"],
       "config_flag": "trace_ledger",
       "optional": true,
-      "note": "The whole-state-map walk. Measured 2026-09-13 on aws-dev-xrpl-1: ~10 min. nodes_copied is how many of the walked nodes were found only in the archive and had to be written to the writable backend (DatabaseRotating::duplicateCopyForwardTotal delta across the walk)."
+      "note": "The whole-state-map walk; ten minutes or more on a populated node. nodes_copied is how many of the walked nodes were found only in the archive and had to be written to the writable backend (DatabaseRotating::duplicateCopyForwardTotal delta across the walk)."
     },
     {
       "name": "nodestore.rotate.freshen.fetch",
@@ -512,7 +512,7 @@
       "required_attributes": ["key_count", "cache", "keys_copied"],
       "config_flag": "trace_ledger",
       "optional": true,
-      "note": "The per-key re-fetch loop. Keys are copied one cache partition at a time (TaggedCache::forEachKeyPartition) so the tree-node cache mutex is never held across the whole cache; the per-partition hold shows up on cache_metrics{metric=\"treenode_lock_hold_peak_us\"}. Before 2026-09-15 a separate freshen.keys child covered a single getKeys() hold of 5-6 s, which is what dropped aws-dev-xrpl-2 out of sync on every rotation. Two instances per rotation, told apart by cache (treenode | master_tx). keys_copied is the freshen's yield: keys that were only in the archive (duplicateCopyForwardTotal delta)."
+      "note": "The per-key re-fetch loop. Keys are copied one cache partition at a time (TaggedCache::forEachKeyPartition) so the tree-node cache mutex is never held across the whole cache; the per-partition hold shows up on cache_metrics{metric=\"treenode_lock_hold_peak_us\"}. A separate freshen.keys child once covered a single getKeys() hold that lasted seconds on a large cache and dropped the node out of sync on every rotation. Two instances per rotation, told apart by cache (treenode | master_tx). keys_copied is the freshen's yield: keys that were only in the archive (duplicateCopyForwardTotal delta)."
     },
     {
       "name": "nodestore.rotate.new_backend",

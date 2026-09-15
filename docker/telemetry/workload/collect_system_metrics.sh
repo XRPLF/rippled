@@ -133,8 +133,8 @@ log "Collecting metrics for ${DURATION}s (${SAMPLES} samples, ${#RPC_PORTS[@]} n
 # exit 0 with an all-zero JSON — a silent false pass.
 #
 # The clock has to be cheap as well as precise, because the latency it
-# measures is compared against a 2 ms threshold. Measured on a dev box: `date
-# +%s%N` costs ~1.2 ms per call, forking python3 for the same value ~13 ms.
+# measures is compared against a 2 ms threshold. Measured on one Linux host:
+# `date +%s%N` costs ~1.2 ms per call, forking python3 for the same value ~13 ms.
 # Two calls bracket every request, so a python3 fallback would add ~26 ms of
 # its own overhead to a 2 ms budget and make the number meaningless. There is
 # no cheap alternative worth having, so probe once and refuse to run without

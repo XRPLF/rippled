@@ -724,7 +724,7 @@ TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash,
             auto const copyStart = std::chrono::steady_clock::now();
             for (auto const& entry : partition)
                 keys.push_back(entry.first);
-            noteLockHold(copyStart, keys.size(), "getKeys");
+            noteLockHold(copyStart, keys.size(), "forEachKeyPartition");
         }
         f(keys);
     }

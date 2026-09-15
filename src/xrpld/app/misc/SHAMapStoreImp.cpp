@@ -52,6 +52,7 @@
 #include <optional>
 #include <stdexcept>
 #include <string>
+#include <string_view>
 #include <thread>
 #include <utility>
 #include <vector>
@@ -776,13 +777,15 @@ SHAMapStoreImp::freshenCaches()
 }
 
 void
-SHAMapStoreImp::recordFreshen(char const* cacheName, std::uint64_t fetched, std::uint64_t copied)
+SHAMapStoreImp::recordFreshen(
+    std::string_view cacheName,
+    std::uint64_t fetched,
+    std::uint64_t copied)
 {
     namespace lv = telemetry::lval::freshen_outcome;
     // One lambda, so one macro expansion and one counter instrument for both
     // outcomes.
-    auto const add = [&]([[maybe_unused]] std::uint64_t amount,
-                         [[maybe_unused]] char const* outcome) {
+    auto const add = [&](std::uint64_t amount, std::string_view outcome) {
         XRPL_METRIC_COUNTER_ADD_LABELED(
             app_,
             telemetry::metric::rotationFreshenKeysTotal,

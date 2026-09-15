@@ -220,14 +220,14 @@ private:
         RotationPhase(
             SHAMapStoreImp& owner,
             telemetry::StaticStr<N> const& phase,
-            char const* stage,
-            char const* cache = "")
+            std::string_view stage,
+            std::string_view cache = {})
             : owner_(owner)
             , stage_(stage)
             , cache_(cache)
             , span_(telemetry::TraceCategory::Ledger, telemetry::nodestore_span::rotateFull, phase)
         {
-            if (*cache_ != '\0')
+            if (!cache_.empty())
                 span_.setAttribute(telemetry::nodestore_span::attr::cache, cache_);
         }
 
@@ -245,8 +245,7 @@ private:
                 telemetry::metric::rotationPhaseDurationSeconds,
                 "Wall-clock seconds spent in one online-delete rotation phase",
                 seconds,
-                {{telemetry::label::stage, std::string(stage_)},
-                 {telemetry::label::cache, std::string(cache_)}});
+                {{telemetry::label::stage, stage_}, {telemetry::label::cache, cache_}});
         }
 
         RotationPhase(RotationPhase const&) = delete;
@@ -265,8 +264,12 @@ private:
 
     private:
         SHAMapStoreImp& owner_;
-        char const* stage_;
-        char const* cache_;
+        // Owned copies: the constructor takes views so callers can pass the
+        // label constants, but a view stored in a member would only be valid
+        // as long as the caller's text was. A phase is built a handful of
+        // times per rotation, so two small strings cost nothing.
+        std::string const stage_;
+        std::string const cache_;
         std::chrono::steady_clock::time_point start_ = std::chrono::steady_clock::now();
         telemetry::ScopedSpanGuard span_;
     };
@@ -285,7 +288,7 @@ private:
      */
     template <class CacheInstance>
     bool
-    freshenCache(CacheInstance& cache, char const* cacheName)
+    freshenCache(CacheInstance& cache, std::string_view cacheName)
     {
         namespace ns = telemetry::nodestore_span;
         namespace lv = telemetry::lval::rotation_phase;
@@ -295,21 +298,18 @@ private:
 
         // Keys are copied one map partition at a time, and each fetch runs with
         // the cache mutex released. getKeys() held the mutex across the whole
-        // cache; on a 26 million entry tree-node cache that froze every job
-        // for about six seconds and dropped the node out of sync each
-        // rotation. Once healthWait() says stop, the remaining partitions are
-        // still copied (cheap) but no longer fetched.
-        std::uint64_t keyCount = 0;
-        std::uint64_t check = 0;
+        // cache, which on a large tree-node cache stalls every job for seconds
+        // and can drop the node out of sync. Once healthWait() says stop, the
+        // remaining partitions are still copied (cheap) but no longer fetched.
+        std::uint64_t fetched = 0;
         bool stop = false;
         cache.forEachKeyPartition([&](auto const& keys) {
             if (stop)
                 return;
-            keyCount += keys.size();
             for (auto const& key : keys)
             {
                 dbRotating_->fetchNodeObject(key, 0, node_store::FetchType::Synchronous, true);
-                if (!(++check % checkHealthInterval_) && healthWait() != HealthResult::KeepGoing)
+                if (!(++fetched % checkHealthInterval_) && healthWait() != HealthResult::KeepGoing)
                 {
                     stop = true;
                     return;
@@ -317,9 +317,9 @@ private:
             }
         });
         auto const copied = dbRotating_->duplicateCopyForwardTotal() - copiedBefore;
-        phase.setAttribute(ns::attr::keyCount, static_cast<std::int64_t>(keyCount));
+        phase.setAttribute(ns::attr::keyCount, static_cast<std::int64_t>(fetched));
         phase.setAttribute(ns::attr::keysCopied, static_cast<std::int64_t>(copied));
-        recordFreshen(cacheName, keyCount, copied);
+        recordFreshen(cacheName, fetched, copied);
 
         return stop;
     }
@@ -330,7 +330,7 @@ private:
      * not once per cache type.
      */
     void
-    recordFreshen(char const* cacheName, std::uint64_t fetched, std::uint64_t copied);
+    recordFreshen(std::string_view cacheName, std::uint64_t fetched, std::uint64_t copied);
 
     /**
      * delete from sqlite table in batches to not lock the db excessively.

@@ -4,6 +4,7 @@
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/config/BasicConfig.h>
 #include <xrpl/nodestore/Backend.h>
+#include <xrpl/nodestore/Database.h>
 #include <xrpl/nodestore/DummyScheduler.h>
 #include <xrpl/nodestore/Manager.h>
 #include <xrpl/nodestore/NodeObject.h>
@@ -65,6 +66,16 @@ protected:
             scheduler_, 2, writable_, archive_, writableParams, journal_);
     }
 
+    /**
+     * The public fetch lives on Database; DatabaseRotatingImp's private
+     * override hides it by name, so tests reach it through the base.
+     */
+    Database&
+    db()
+    {
+        return *db_;
+    }
+
     bool
     inWritable(uint256 const& hash)
     {
@@ -87,7 +98,7 @@ TEST_F(RotatingDatabaseTest, duplicate_fetch_from_archive_counts_one_copy_forwar
     ASSERT_EQ(db_->duplicateCopyForwardTotal(), 0u);
 
     auto const fetched =
-        db_->fetchNodeObject(object->getHash(), 0, FetchType::Synchronous, /*duplicate=*/true);
+        db().fetchNodeObject(object->getHash(), 0, FetchType::Synchronous, /*duplicate=*/true);
     ASSERT_NE(fetched, nullptr);
     EXPECT_EQ(fetched->getHash(), object->getHash());
 
@@ -101,7 +112,7 @@ TEST_F(RotatingDatabaseTest, duplicate_fetch_from_archive_counts_one_copy_forwar
     // Now it is in the writable backend, so a second duplicate fetch copies
     // nothing.
     ASSERT_NE(
-        db_->fetchNodeObject(object->getHash(), 0, FetchType::Synchronous, /*duplicate=*/true),
+        db().fetchNodeObject(object->getHash(), 0, FetchType::Synchronous, /*duplicate=*/true),
         nullptr);
     EXPECT_EQ(db_->duplicateCopyForwardTotal(), 1u);
 }
@@ -112,7 +123,7 @@ TEST_F(RotatingDatabaseTest, duplicate_fetch_served_by_writable_counts_nothing)
     writable_->store(object);
 
     ASSERT_NE(
-        db_->fetchNodeObject(object->getHash(), 0, FetchType::Synchronous, /*duplicate=*/true),
+        db().fetchNodeObject(object->getHash(), 0, FetchType::Synchronous, /*duplicate=*/true),
         nullptr);
     EXPECT_EQ(db_->duplicateCopyForwardTotal(), 0u);
     EXPECT_EQ(db_->copyForwardTotal(), 0u);
@@ -125,7 +136,7 @@ TEST_F(RotatingDatabaseTest, ordinary_fetch_during_rotation_does_not_count_as_du
     db_->setRotationInFlight(true);
 
     ASSERT_NE(
-        db_->fetchNodeObject(object->getHash(), 0, FetchType::Synchronous, /*duplicate=*/false),
+        db().fetchNodeObject(object->getHash(), 0, FetchType::Synchronous, /*duplicate=*/false),
         nullptr);
 
     // Copied forward because a rotation is in flight, but that is the other

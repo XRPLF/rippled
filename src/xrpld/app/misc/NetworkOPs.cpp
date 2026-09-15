@@ -2956,10 +2956,11 @@ NetworkOPsImp::setMode(OperatingMode om)
     accounting_.mode(om);
 
     // Warn, not info: this line is the only record of a mode change with an
-    // exact timestamp. The state_changes_total counter above is scraped once a
-    // minute, which cannot place a flap against a multi-second event such as a
-    // cache lock hold. A node changes mode a few times a day at most, so the
-    // level costs nothing, and warn is the level the dev-box loggers ship.
+    // exact timestamp. The state_changes_total counter above is sampled on the
+    // metrics interval, which cannot order a mode change against a
+    // multi-second event such as a cache lock hold. A node changes mode a few
+    // times a day at most, so the level costs nothing, and operators who log
+    // at warn keep the line.
     JLOG(journal_.warn()) << "STATE->" << strOperatingMode();
     pubServer();
 }
