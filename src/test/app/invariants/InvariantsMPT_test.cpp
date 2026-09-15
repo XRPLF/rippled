@@ -1030,16 +1030,14 @@ class InvariantsMPT_test : public InvariantsBase
                 });
         }
 
-        // Issuance flags other than lsfMPTLocked are fixed at creation or
-        // set-once via MPTokenIssuanceSet; clearing one must trip the
-        // invariant. Create the MPT in preclose, then strip
-        // lsfMPTCanTransfer in precheck. lsfMPTLocked stays exempt: the
-        // regular lock/unlock tests exercise its clear path under the same
-        // amendments.
+        // lsfMPTLocked is exempt because tfMPTUnlock clears it legitimately.
+        // Pre-featureLendingProtocolV1_2: clearing another issuance flag is
+        // allowed.
+        // Post-featureLendingProtocolV1_2: clearing another issuance flag
+        // trips the invariant.
         {
             MPTID id{};
-            doInvariantCheck(
-                {{"immutable MPTokenIssuance flag cleared"}},
+            Precheck const clearCanTransfer =
                 [&](Account const&, Account const&, ApplyContext& ac) {
                     auto sleIssuance = ac.view().peek(keylet::mptokenIssuance(id));
                     if (!sleIssuance)
@@ -1048,20 +1046,35 @@ class InvariantsMPT_test : public InvariantsBase
                         sfFlags, sleIssuance->getFieldU32(sfFlags) & ~lsfMPTCanTransfer);
                     ac.view().update(sleIssuance);
                     return true;
-                },
+                };
+            Preclose const setup = [&](Account const&, Account const&, Env& env) {
+                Account const issuer{"issuer"};
+                env.fund(XRP(10'000), issuer);
+                env.close();
+                MPTTester mptt{env, issuer, kMptInitNoFund};
+                mptt.create({.flags = tfMPTCanTransfer | tfMPTCanLock});
+                id = mptt.issuanceID();
+                env.close();
+                return true;
+            };
+            STTx const tx{ttACCOUNT_SET, [](STObject&) {}};
+
+            doInvariantCheck(
+                makeEnv(all_ - featureLendingProtocolV1_2),
+                {},
+                clearCanTransfer,
                 XRPAmount{},
-                STTx{ttACCOUNT_SET, [](STObject&) {}},
+                tx,
+                {tesSUCCESS, tesSUCCESS},
+                setup);
+            doInvariantCheck(
+                makeEnv(all_ | featureLendingProtocolV1_2),
+                {{"immutable MPTokenIssuance flag cleared"}},
+                clearCanTransfer,
+                XRPAmount{},
+                tx,
                 {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
-                [&](Account const&, Account const&, Env& env) {
-                    Account const issuer{"issuer"};
-                    env.fund(XRP(10'000), issuer);
-                    env.close();
-                    MPTTester mptt{env, issuer, kMptInitNoFund};
-                    mptt.create({.flags = tfMPTCanTransfer | tfMPTCanLock});
-                    id = mptt.issuanceID();
-                    env.close();
-                    return true;
-                });
+                setup);
         }
 
         // A vault pseudo-account's MPToken cannot be deleted by anything

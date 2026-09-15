@@ -46,7 +46,7 @@ class ValidMPTIssuance
      * Flags cleared on an existing MPTokenIssuance, except lsfMPTLocked,
      * which tfMPTUnlock clears legitimately. Every other issuance flag is
      * fixed at creation or set-once via MPTokenIssuanceSet, so any bit
-     * accumulated here is a bug. Enforced post-fixCleanup3_4_0.
+     * accumulated here is a bug. Enforced post-featureLendingProtocolV1_2.
      */
     std::uint32_t issuanceFlagsCleared_ = 0;
 
