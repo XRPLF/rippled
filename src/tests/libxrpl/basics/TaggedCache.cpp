@@ -320,7 +320,7 @@ TEST(TaggedCacheTest, for_each_key_partition_on_empty_cache_calls_back_with_empt
     clock.set(0);
 
     using Cache = TaggedCache<LedgerIndex, std::string>;
-    Cache c("empty", 0, 1s, clock, journal);
+    Cache const c("empty", 0, 1s, clock, journal);
 
     std::size_t calls = 0;
     std::size_t keysSeen = 0;
