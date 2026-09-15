@@ -44,7 +44,7 @@ struct JsonContext;
  * @return A 64-bit unsigned integer representing the start hint for traversal.
  */
 std::uint64_t
-getStartHint(SLE::const_ref sle, AccountID const& accountID);
+getStartHint(SLE::ConstRef sle, AccountID const& accountID);
 
 /**
  * @brief Tests if a ledger entry (SLE) is owned by the specified account.
@@ -58,7 +58,7 @@ getStartHint(SLE::const_ref sle, AccountID const& accountID);
  * @return true if the SLE is owned by the account, false otherwise.
  */
 bool
-isRelatedToAccount(ReadView const& ledger, SLE::const_ref sle, AccountID const& accountID);
+isRelatedToAccount(ReadView const& ledger, SLE::ConstRef sle, AccountID const& accountID);
 
 /**
  * @brief Parses an array of account IDs from a JSON value.
@@ -68,7 +68,7 @@ isRelatedToAccount(ReadView const& ledger, SLE::const_ref sle, AccountID const& 
  * @param jvArray The JSON value containing an array of account IDs.
  * @return A hash_set containing the parsed AccountID objects.
  */
-hash_set<AccountID>
+HashSet<AccountID>
 parseAccountIds(json::Value const& jvArray);
 
 /**

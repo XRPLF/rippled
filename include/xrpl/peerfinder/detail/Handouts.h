@@ -86,7 +86,7 @@ class RedirectHandouts
 {
 public:
     template <class = void>
-    explicit RedirectHandouts(SlotImp::ptr slot);
+    explicit RedirectHandouts(SlotImp::Ptr slot);
 
     template <class = void>
     bool
@@ -98,7 +98,7 @@ public:
         return list_.size() >= tuning::kRedirectEndpointCount;
     }
 
-    [[nodiscard]] SlotImp::ptr const&
+    [[nodiscard]] SlotImp::Ptr const&
     slot() const
     {
         return slot_;
@@ -117,12 +117,12 @@ public:
     }
 
 private:
-    SlotImp::ptr slot_;
+    SlotImp::Ptr slot_;
     std::vector<Endpoint> list_;
 };
 
 template <class>
-RedirectHandouts::RedirectHandouts(SlotImp::ptr slot) : slot_(std::move(slot))
+RedirectHandouts::RedirectHandouts(SlotImp::Ptr slot) : slot_(std::move(slot))
 {
     list_.reserve(tuning::kRedirectEndpointCount);
 }
@@ -172,7 +172,7 @@ class SlotHandouts
 {
 public:
     template <class = void>
-    explicit SlotHandouts(SlotImp::ptr slot);
+    explicit SlotHandouts(SlotImp::Ptr slot);
 
     template <class = void>
     bool
@@ -190,7 +190,7 @@ public:
         list_.push_back(ep);
     }
 
-    [[nodiscard]] SlotImp::ptr const&
+    [[nodiscard]] SlotImp::Ptr const&
     slot() const
     {
         return slot_;
@@ -203,12 +203,12 @@ public:
     }
 
 private:
-    SlotImp::ptr slot_;
+    SlotImp::Ptr slot_;
     std::vector<Endpoint> list_;
 };
 
 template <class>
-SlotHandouts::SlotHandouts(SlotImp::ptr slot) : slot_(std::move(slot))
+SlotHandouts::SlotHandouts(SlotImp::Ptr slot) : slot_(std::move(slot))
 {
     list_.reserve(tuning::kNumberOfEndpoints);
 }
@@ -259,14 +259,14 @@ class ConnectHandouts
 public:
     // Keeps track of addresses we have made outgoing connections
     // to, for the purposes of not connecting to them too frequently.
-    using Squelches = beast::aged_set<beast::ip::Address>;
+    using Squelches = beast::AgedSet<beast::ip::Address>;
 
-    using list_type = std::vector<beast::ip::Endpoint>;
+    using ListType = std::vector<beast::ip::Endpoint>;
 
 private:
     std::size_t needed_;
     Squelches& squelches_;
-    list_type list_;
+    ListType list_;
 
 public:
     template <class = void>
@@ -294,13 +294,13 @@ public:
         return tryInsert(endpoint.address);
     }
 
-    list_type&
+    ListType&
     list()
     {
         return list_;
     }
 
-    [[nodiscard]] list_type const&
+    [[nodiscard]] ListType const&
     list() const
     {
         return list_;

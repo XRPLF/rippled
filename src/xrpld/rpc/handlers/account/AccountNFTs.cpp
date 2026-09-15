@@ -63,7 +63,7 @@ doAccountNFTs(rpc::JsonContext& context)
     if (auto err = readLimitField(limit, rpc::tuning::kAccountNfTokens, context))
         return *err;
 
-    uint256 marker;
+    UInt256 marker;
     bool const markerSet = params.isMember(jss::marker);
 
     if (markerSet)
@@ -88,7 +88,7 @@ doAccountNFTs(rpc::JsonContext& context)
     // Continue iteration from the current page:
     bool pastMarker = marker.isZero();
     bool markerFound = false;
-    uint256 const maskedMarker = marker & nft::kPageMask;
+    UInt256 const maskedMarker = marker & nft::kPageMask;
     while (cp)
     {
         auto arr = cp->getFieldArray(sfNFTokens);
@@ -106,8 +106,8 @@ doAccountNFTs(rpc::JsonContext& context)
             //     NFTokenIDs that all have the same low 96 bits.  If we're
             //     in that case then we need to compare against the full
             //     256 bits.
-            uint256 const nftokenID = o[sfNFTokenID];
-            uint256 const maskedNftokenID = nftokenID & nft::kPageMask;
+            UInt256 const nftokenID = o[sfNFTokenID];
+            UInt256 const maskedNftokenID = nftokenID & nft::kPageMask;
 
             if (!pastMarker)
             {

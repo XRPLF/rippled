@@ -83,15 +83,15 @@ public:
     };
 
 private:
-    using clock_type = std::chrono::steady_clock;
-    using socket_type = boost::asio::ip::tcp::socket;
-    using address_type = boost::asio::ip::address;
-    using endpoint_type = boost::asio::ip::tcp::endpoint;
-    using error_code = boost::system::error_code;
+    using ClockType = std::chrono::steady_clock;
+    using SocketType = boost::asio::ip::tcp::socket;
+    using AddressType = boost::asio::ip::address;
+    using EndpointType = boost::asio::ip::tcp::endpoint;
+    using ErrorCode = boost::system::error_code;
 
     struct Timer : Child, std::enable_shared_from_this<Timer>
     {
-        boost::asio::basic_waitable_timer<clock_type> timer;
+        boost::asio::basic_waitable_timer<ClockType> timer;
         bool stopping{false};
 
         explicit Timer(OverlayImpl& overlay);
@@ -103,7 +103,7 @@ private:
         asyncWait();
 
         void
-        onTimer(error_code ec);
+        onTimer(ErrorCode ec);
     };
 
     Application& app_;
@@ -121,10 +121,10 @@ private:
     peer_finder::StoreSqdb store_;
     std::unique_ptr<peer_finder::Manager> peerFinder_;
     TrafficCount traffic_;
-    hash_map<std::shared_ptr<peer_finder::Slot>, std::weak_ptr<PeerImp>> peers_;
-    hash_map<Peer::id_t, std::weak_ptr<PeerImp>> ids_;
+    HashMap<std::shared_ptr<peer_finder::Slot>, std::weak_ptr<PeerImp>> peers_;
+    HashMap<Peer::IdT, std::weak_ptr<PeerImp>> ids_;
     Resolver& resolver_;
-    std::atomic<Peer::id_t> nextId_;
+    std::atomic<Peer::IdT> nextId_;
     int timerCount_{0};
     std::atomic<uint64_t> jqTransOverflow_{0};
     std::atomic<uint64_t> peerDisconnects_{0};
@@ -153,7 +153,7 @@ public:
         Resolver& resolver,
         boost::asio::io_context& ioContext,
         BasicConfig const& config,
-        beast::insight::Collector::ptr const& collector);
+        beast::insight::Collector::Ptr const& collector);
 
     OverlayImpl(OverlayImpl const&) = delete;
     OverlayImpl&
@@ -185,9 +185,9 @@ public:
 
     Handoff
     onHandoff(
-        std::unique_ptr<stream_type>&& bundle,
-        http_request_type&& request,
-        endpoint_type remoteEndpoint) override;
+        std::unique_ptr<StreamType>&& bundle,
+        HttpRequestType&& request,
+        EndpointType remoteEndpoint) override;
 
     void
     connect(beast::ip::Endpoint const& remoteEndpoint) override;
@@ -216,7 +216,7 @@ public:
      */
     PeerSequence
     getActivePeers(
-        std::set<Peer::id_t> const& toSkip,
+        std::set<Peer::IdT> const& toSkip,
         std::size_t& active,
         std::size_t& disabled,
         std::size_t& enabledInSkip) const;
@@ -225,7 +225,7 @@ public:
     checkTracking(std::uint32_t) override;
 
     std::shared_ptr<Peer>
-    findPeerByShortID(Peer::id_t const& id) const override;
+    findPeerByShortID(Peer::IdT const& id) const override;
 
     std::shared_ptr<Peer>
     findPeerByPublicKey(PublicKey const& pubKey) override;
@@ -236,17 +236,17 @@ public:
     void
     broadcast(protocol::TMValidation const& m) override;
 
-    std::set<Peer::id_t>
-    relay(protocol::TMProposeSet const& m, uint256 const& uid, PublicKey const& validator) override;
+    std::set<Peer::IdT>
+    relay(protocol::TMProposeSet const& m, UInt256 const& uid, PublicKey const& validator) override;
 
-    std::set<Peer::id_t>
-    relay(protocol::TMValidation const& m, uint256 const& uid, PublicKey const& validator) override;
+    std::set<Peer::IdT>
+    relay(protocol::TMValidation const& m, UInt256 const& uid, PublicKey const& validator) override;
 
     void
     relay(
-        uint256 const&,
+        UInt256 const&,
         std::optional<std::reference_wrapper<protocol::TMTransaction>> m,
-        std::set<Peer::id_t> const& skip) override;
+        std::set<Peer::IdT> const& skip) override;
 
     std::shared_ptr<Message>
     getManifestsMessage();
@@ -273,7 +273,7 @@ public:
 
     // Called when an active peer is destroyed.
     void
-    onPeerDeactivate(Peer::id_t id);
+    onPeerDeactivate(Peer::IdT id);
 
     // UnaryFunc will be called as
     //  void(std::shared_ptr<PeerImp>&&)
@@ -308,7 +308,7 @@ public:
         std::shared_ptr<PeerImp> const& from);
 
     static bool
-    isPeerUpgrade(http_request_type const& request);
+    isPeerUpgrade(HttpRequestType const& request);
 
     template <class Body>
     static bool
@@ -406,9 +406,9 @@ public:
      */
     void
     updateSlotAndSquelch(
-        uint256 const& key,
+        UInt256 const& key,
         PublicKey const& validator,
-        std::set<Peer::id_t>&& peers,
+        std::set<Peer::IdT>&& peers,
         protocol::MessageType type);
 
     /**
@@ -416,9 +416,9 @@ public:
      */
     void
     updateSlotAndSquelch(
-        uint256 const& key,
+        UInt256 const& key,
         PublicKey const& validator,
-        Peer::id_t peer,
+        Peer::IdT peer,
         protocol::MessageType type);
 
     /**
@@ -428,7 +428,7 @@ public:
      * @param id Peer's id
      */
     void
-    deletePeer(Peer::id_t id);
+    deletePeer(Peer::IdT id);
 
     json::Value
     txMetrics() const override
@@ -451,23 +451,23 @@ public:
 
 private:
     void
-    squelch(PublicKey const& validator, Peer::id_t const id, std::uint32_t squelchDuration)
+    squelch(PublicKey const& validator, Peer::IdT const id, std::uint32_t squelchDuration)
         const override;
 
     void
-    unsquelch(PublicKey const& validator, Peer::id_t id) const override;
+    unsquelch(PublicKey const& validator, Peer::IdT id) const override;
 
     std::shared_ptr<Writer>
     makeRedirectResponse(
         std::shared_ptr<peer_finder::Slot> const& slot,
-        http_request_type const& request,
-        address_type remoteAddress);
+        HttpRequestType const& request,
+        AddressType remoteAddress);
 
     static std::shared_ptr<Writer>
     makeErrorResponse(
         std::shared_ptr<peer_finder::Slot> const& slot,
-        http_request_type const& request,
-        address_type remoteAddress,
+        HttpRequestType const& request,
+        AddressType remoteAddress,
         std::string const& msg);
 
     /**
@@ -477,7 +477,7 @@ private:
      * @return true if the request was handled.
      */
     bool
-    processCrawl(http_request_type const& req, Handoff& handoff);
+    processCrawl(HttpRequestType const& req, Handoff& handoff);
 
     /**
      * Handles validator list requests.
@@ -488,7 +488,7 @@ private:
      * @return true if the request was handled.
      */
     bool
-    processValidatorList(http_request_type const& req, Handoff& handoff);
+    processValidatorList(HttpRequestType const& req, Handoff& handoff);
 
     /**
      * Handles health requests. Health returns information about the
@@ -497,7 +497,7 @@ private:
      * @return true if the request was handled.
      */
     bool
-    processHealth(http_request_type const& req, Handoff& handoff);
+    processHealth(HttpRequestType const& req, Handoff& handoff);
 
     /**
      * Handles non-peer protocol requests.
@@ -505,7 +505,7 @@ private:
      * @return true if the request was handled.
      */
     bool
-    processRequest(http_request_type const& req, Handoff& handoff);
+    processRequest(HttpRequestType const& req, Handoff& handoff);
 
     /**
      * Returns information about peers on the overlay network.
@@ -578,7 +578,7 @@ private:
 private:
     struct TrafficGauges
     {
-        TrafficGauges(std::string const& name, beast::insight::Collector::ptr const& collector)
+        TrafficGauges(std::string const& name, beast::insight::Collector::Ptr const& collector)
             : name(name)
             , bytesIn(collector->makeGauge(name, "Bytes_In"))
             , bytesOut(collector->makeGauge(name, "Bytes_Out"))
@@ -598,7 +598,7 @@ private:
         template <class Handler>
         Stats(
             Handler const& handler,
-            beast::insight::Collector::ptr const& collector,
+            beast::insight::Collector::Ptr const& collector,
             std::unordered_map<TrafficCount::Category, TrafficGauges>&& trafficGauges)
             : peerDisconnects(collector->makeGauge("Overlay", "Peer_Disconnects"))
             , trafficGauges(std::move(trafficGauges))

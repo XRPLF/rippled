@@ -53,7 +53,7 @@ flow(
     OfferCrossing offerCrossing,
     std::optional<Quality> const& limitQuality,
     std::optional<STAmount> const& sendMax,
-    std::optional<uint256> const& domainID,
+    std::optional<UInt256> const& domainID,
     beast::Journal j,
     path::detail::FlowDebugInfo* flowDebugInfo)
 {
@@ -125,16 +125,16 @@ flow(
     // amount types.
     return std::visit(
         [&, &strands = strands]<typename TIn, typename TOut>(TIn const&, TOut const&) {
-            using TIn_ = TIn::amount_type;
-            using TOut_ = TOut::amount_type;
+            using TInAmount = TIn::Amount;
+            using TOutAmount = TOut::Amount;
             return finishFlow(
                 sb,
                 srcAsset,
                 dstAsset,
-                flow<TIn_, TOut_>(
+                flow<TInAmount, TOutAmount>(
                     sb,
                     strands,
-                    get<TOut_>(deliver),
+                    get<TOutAmount>(deliver),
                     partialPayment,
                     offerCrossing,
                     limitQuality,

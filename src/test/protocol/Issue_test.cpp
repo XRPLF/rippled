@@ -25,7 +25,7 @@ namespace xrpl {
 class Issue_test : public beast::unit_test::Suite
 {
 public:
-    using Domain = uint256;
+    using Domain = UInt256;
 
     // Comparison, hash tests for uint60 (via base_uint)
     template <typename Unsigned>
@@ -230,8 +230,8 @@ public:
         AccountID const i2(2);
         Issue const a1(c1, i1);
         Issue const a2(c2, i2);
-        uint256 const domain1{1};
-        uint256 const domain2{2};
+        UInt256 const domain1{1};
+        UInt256 const domain2{2};
 
         Set c;
 
@@ -267,8 +267,8 @@ public:
         AccountID const i2(2);
         Issue const a1(c1, i1);
         Issue const a2(c2, i2);
-        uint256 const domain1{1};
-        uint256 const domain2{2};
+        UInt256 const domain1{1};
+        UInt256 const domain2{2};
 
         Map c;
 
@@ -304,10 +304,10 @@ public:
         testIssueDomainSet<std::set<std::pair<Issue, Domain>>>();
 
         testcase("hash_set <std::pair<Issue, Domain>>");
-        testIssueDomainSet<hash_set<std::pair<Issue, Domain>>>();
+        testIssueDomainSet<HashSet<std::pair<Issue, Domain>>>();
 
         testcase("hash_set <std::pair<Issue, Domain>>");
-        testIssueDomainSet<hash_set<std::pair<Issue, Domain>>>();
+        testIssueDomainSet<HashSet<std::pair<Issue, Domain>>>();
     }
 
     void
@@ -352,10 +352,10 @@ public:
 #endif
 
         testcase("hash_set <Issue>");
-        testIssueSet<hash_set<Issue>>();
+        testIssueSet<HashSet<Issue>>();
 
         testcase("hash_set <Issue>");
-        testIssueSet<hash_set<Issue>>();
+        testIssueSet<HashSet<Issue>>();
     }
 
     void
@@ -401,8 +401,8 @@ public:
         Issue const a2(c1, i2);
         Issue const a3(c2, i2);
         Issue const a4(c3, i2);
-        uint256 const domain1{1};
-        uint256 const domain2{2};
+        UInt256 const domain1{1};
+        UInt256 const domain2{2};
 
         // Books without domains
         BEAST_EXPECT(Book(a1, a2, std::nullopt) != Book(a2, a3, std::nullopt));
@@ -562,8 +562,8 @@ public:
         Book const b1(a1, a2, std::nullopt);
         Book const b2(a2, a1, std::nullopt);
 
-        uint256 const domain1{1};
-        uint256 const domain2{2};
+        UInt256 const domain1{1};
+        UInt256 const domain2{2};
 
         Book const b1D1(a1, a2, domain1);
         Book const b2D1(a2, a1, domain1);
@@ -693,8 +693,8 @@ public:
         Book const b1(a1, a2, std::nullopt);
         Book const b2(a2, a1, std::nullopt);
 
-        uint256 const domain1{1};
-        uint256 const domain2{2};
+        UInt256 const domain1{1};
+        UInt256 const domain2{2};
 
         Book const b1D1(a1, a2, domain1);
         Book const b2D1(a2, a1, domain1);
@@ -833,10 +833,10 @@ public:
 #endif
 
         testcase("hash_set <Book>");
-        testBookSet<hash_set<Book>>();
+        testBookSet<HashSet<Book>>();
 
         testcase("hash_set <Book>");
-        testBookSet<hash_set<Book>>();
+        testBookSet<HashSet<Book>>();
     }
 
     void

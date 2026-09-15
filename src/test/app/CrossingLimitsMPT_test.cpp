@@ -265,16 +265,16 @@ public:
 
                 env.require(Balance(bob, usd(1'500)));
                 env.require(Balance(bob, eur(900)));
-                env.require(offers(bob, 1));
+                env.require(Offers(bob, 1));
                 env.require(Owners(bob, 3));
 
                 env.require(Balance(alice, usd(2'503)));
                 env.require(Balance(alice, eur(1'100)));
                 auto const numAOffers = 2'000 + 100 + 1'000 + 1 - ((2 * 100) + (2 * 199) + 1 + 1);
-                env.require(offers(alice, numAOffers));
+                env.require(Offers(alice, numAOffers));
                 env.require(Owners(alice, numAOffers + 2));
 
-                env.require(offers(carol, 0));
+                env.require(Offers(carol, 0));
             };
             testHelper2TokensMix(test);
         }
@@ -352,17 +352,17 @@ public:
 
                 env.require(Balance(bob, usd(1'509)));
                 env.require(Balance(bob, eur(900)));
-                env.require(offers(bob, 1));
+                env.require(Offers(bob, 1));
                 env.require(Owners(bob, 3));
 
                 env.require(Balance(alice, usd(2'494)));
                 env.require(Balance(alice, eur(1'100)));
                 auto const numAOffers =
                     1 + 2'000 + 100 + 1'000 + 1 - (1 + (2 * 100) + (2 * 199) + 1 + 1);
-                env.require(offers(alice, numAOffers));
+                env.require(Offers(alice, numAOffers));
                 env.require(Owners(alice, numAOffers + 2));
 
-                env.require(offers(carol, 0));
+                env.require(Offers(carol, 0));
             };
             testHelper2TokensMix(test);
         }

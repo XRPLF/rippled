@@ -400,13 +400,13 @@ private:
 
         auto const loanKeylet = keylet::loan(brokerInfo.brokerID, SeqProxy::rawSequence(1));
 
-        using tp = NetClock::time_point;
-        using d = NetClock::duration;
+        using Tp = NetClock::time_point;
+        using D = NetClock::duration;
 
         // Get past the grace period so the loan is defaultable.
         if (auto loan = env.le(loanKeylet); BEAST_EXPECT(loan))
         {
-            env.close(tp{d{loan->at(sfNextPaymentDueDate) + loan->at(sfGracePeriod) + 1}});
+            env.close(Tp{D{loan->at(sfNextPaymentDueDate) + loan->at(sfGracePeriod) + 1}});
         }
 
         // Global freeze trips the post-apply TransfersNotFrozen invariant.
@@ -476,11 +476,11 @@ private:
         env(pay(borrower, loanKeylet.key, debtMaximumRequest), Ter(tecLOCKED));
         env.close();
 
-        using tp = NetClock::time_point;
-        using d = NetClock::duration;
+        using Tp = NetClock::time_point;
+        using D = NetClock::duration;
         if (auto loan = env.le(loanKeylet); BEAST_EXPECT(loan))
         {
-            env.close(tp{d{loan->at(sfNextPaymentDueDate) + loan->at(sfGracePeriod) + 1}});
+            env.close(Tp{D{loan->at(sfNextPaymentDueDate) + loan->at(sfGracePeriod) + 1}});
         }
 
         // Pre-fixCleanup3_4_0 the ValidMPTTransfer invariant blocks the
@@ -525,13 +525,13 @@ private:
 
         auto const loanKeylet = keylet::loan(brokerInfo.brokerID, SeqProxy::rawSequence(1));
 
-        using tp = NetClock::time_point;
-        using d = NetClock::duration;
+        using Tp = NetClock::time_point;
+        using D = NetClock::duration;
 
         // Get past the grace period so the loan is defaultable.
         if (auto loan = env.le(loanKeylet); BEAST_EXPECT(loan))
         {
-            env.close(tp{d{loan->at(sfNextPaymentDueDate) + loan->at(sfGracePeriod) + 1}});
+            env.close(Tp{D{loan->at(sfNextPaymentDueDate) + loan->at(sfGracePeriod) + 1}});
         }
 
         // The default moves First-Loss Capital off the broker pseudo-account,

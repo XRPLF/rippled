@@ -105,11 +105,11 @@ public:
         F&& f);
 
     // Hash of the validated ledger
-    [[nodiscard]] uint256
+    [[nodiscard]] UInt256
     getLedgerHash() const;
 
     // Hash of consensus transaction set used to generate ledger
-    [[nodiscard]] uint256
+    [[nodiscard]] UInt256
     getConsensusHash() const;
 
     [[nodiscard]] NetClock::time_point
@@ -133,7 +133,7 @@ public:
     [[nodiscard]] bool
     isTrusted() const noexcept;
 
-    [[nodiscard]] uint256
+    [[nodiscard]] UInt256
     getSigningHash() const;
 
     void

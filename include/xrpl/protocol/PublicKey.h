@@ -235,7 +235,7 @@ publicKeyType(PublicKey const& publicKey)
 [[nodiscard]] bool
 verifyDigest(
     PublicKey const& publicKey,
-    uint256 const& digest,
+    UInt256 const& digest,
     Slice const& sig,
     bool mustBeFullyCanonical = true) noexcept;
 

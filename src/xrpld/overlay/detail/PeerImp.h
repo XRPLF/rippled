@@ -72,29 +72,29 @@ public:
     enum class Tracking { Diverged, Unknown, Converged };
 
 private:
-    using clock_type = std::chrono::steady_clock;
-    using error_code = boost::system::error_code;
-    using socket_type = boost::asio::ip::tcp::socket;
-    using middle_type = boost::beast::tcp_stream;
-    using stream_type = boost::beast::ssl_stream<middle_type>;
-    using address_type = boost::asio::ip::address;
-    using endpoint_type = boost::asio::ip::tcp::endpoint;
-    using waitable_timer = boost::asio::basic_waitable_timer<std::chrono::steady_clock>;
+    using ClockType = std::chrono::steady_clock;
+    using ErrorCode = boost::system::error_code;
+    using SocketType = boost::asio::ip::tcp::socket;
+    using MiddleType = boost::beast::tcp_stream;
+    using StreamType = boost::beast::ssl_stream<MiddleType>;
+    using AddressType = boost::asio::ip::address;
+    using EndpointType = boost::asio::ip::tcp::endpoint;
+    using WaitableTimer = boost::asio::basic_waitable_timer<std::chrono::steady_clock>;
     using Compressed = compression::Compressed;
 
     Application& app_;
-    id_t const id_;
+    IdT const id_;
     std::string fingerprint_;
     std::string prefix_;
     beast::WrappedSink sink_;
     beast::WrappedSink pSink_;
     beast::Journal const journal_;
     beast::Journal const pJournal_;
-    std::unique_ptr<stream_type> streamPtr_;
-    socket_type& socket_;
-    stream_type& stream_;
+    std::unique_ptr<StreamType> streamPtr_;
+    SocketType& socket_;
+    StreamType& stream_;
     boost::asio::strand<boost::asio::executor> strand_;
-    waitable_timer timer_;
+    WaitableTimer timer_;
 
     // Updated at each stage of the connection process to reflect
     // the current conditions as closely as possible.
@@ -109,7 +109,7 @@ private:
     ProtocolVersion protocol_;
 
     std::atomic<Tracking> tracking_;
-    clock_type::time_point trackingTime_;
+    ClockType::time_point trackingTime_;
     bool detaching_ = false;
     // Node public key of peer.
     PublicKey const publicKey_;
@@ -120,16 +120,16 @@ private:
     //
     LedgerIndex minLedger_ = 0;
     LedgerIndex maxLedger_ = 0;
-    uint256 closedLedgerHash_;
-    uint256 previousLedgerHash_;
+    UInt256 closedLedgerHash_;
+    UInt256 previousLedgerHash_;
 
-    boost::circular_buffer<uint256> recentLedgers_{128};
-    boost::circular_buffer<uint256> recentTxSets_{128};
+    boost::circular_buffer<UInt256> recentLedgers_{128};
+    boost::circular_buffer<UInt256> recentTxSets_{128};
 
     std::optional<std::chrono::milliseconds> latency_;
     std::optional<std::uint32_t> lastPingSeq_;
-    clock_type::time_point lastPingTime_;
-    clock_type::time_point const creationTime_;
+    ClockType::time_point lastPingTime_;
+    ClockType::time_point const creationTime_;
 
     reduce_relay::Squelch<UptimeClock> squelch_;
 
@@ -190,8 +190,8 @@ private:
     std::atomic<bool> chargeDisconnectFired_{false};
     std::shared_ptr<peer_finder::Slot> const slot_;
     boost::beast::multi_buffer readBuffer_;
-    http_request_type request_;
-    http_response_type response_;
+    HttpRequestType request_;
+    HttpResponseType response_;
     boost::beast::http::fields const& headers_;
     std::queue<std::shared_ptr<Message>> sendQueue_;
     bool gracefulClose_ = false;
@@ -199,14 +199,14 @@ private:
     std::unique_ptr<LoadEvent> loadEvent_;
     // The highest sequence of each PublisherList that has
     // been sent to or received from this peer.
-    hash_map<PublicKey, std::size_t> publisherListSequences_;
+    HashMap<PublicKey, std::size_t> publisherListSequences_;
 
     Compressed compressionEnabled_ = Compressed::Off;
 
     // Queue of transactions' hashes that have not been
     // relayed. The hashes are sent once a second to a peer
     // and the peer requests missing transactions from the node.
-    hash_set<uint256> txQueue_;
+    HashSet<UInt256> txQueue_;
     // true if tx reduce-relay feature is enabled on the peer.
     bool txReduceRelayEnabled_ = false;
 
@@ -236,7 +236,7 @@ private:
     private:
         std::shared_mutex mutable mutex_;
         boost::circular_buffer<std::uint64_t> rollingAvg_{30, 0ull};
-        clock_type::time_point intervalStart_{clock_type::now()};
+        ClockType::time_point intervalStart_{ClockType::now()};
         std::uint64_t totalBytes_{0};
         std::uint64_t accumBytes_{0};
         std::uint64_t rollingAvgBytes_{0};
@@ -258,13 +258,13 @@ public:
      */
     PeerImp(
         Application& app,
-        id_t id,
+        IdT id,
         std::shared_ptr<peer_finder::Slot> const& slot,
-        http_request_type&& request,
+        HttpRequestType&& request,
         PublicKey const& publicKey,
         ProtocolVersion protocol,
         resource::Consumer consumer,
-        std::unique_ptr<stream_type>&& streamPtr,
+        std::unique_ptr<StreamType>&& streamPtr,
         OverlayImpl& overlay);
 
     /**
@@ -274,14 +274,14 @@ public:
     template <class Buffers>
     PeerImp(
         Application& app,
-        std::unique_ptr<stream_type>&& streamPtr,
+        std::unique_ptr<StreamType>&& streamPtr,
         Buffers const& buffers,
         std::shared_ptr<peer_finder::Slot>&& slot,
-        http_response_type&& response,
+        HttpResponseType&& response,
         resource::Consumer usage,
         PublicKey const& publicKey,
         ProtocolVersion protocol,
-        id_t id,
+        IdT id,
         OverlayImpl& overlay);
 
     ~PeerImp() override;
@@ -324,14 +324,14 @@ public:
      * @param hash transaction's hash
      */
     void
-    addTxQueue(uint256 const& hash) override;
+    addTxQueue(UInt256 const& hash) override;
 
     /**
      * Remove transaction's hash from the transactions' hashes queue
      * @param hash transaction's hash
      */
     void
-    removeTxQueue(uint256 const& hash) override;
+    removeTxQueue(UInt256 const& hash) override;
 
     /**
      * Send a set of PeerFinder endpoints as a protocol message.
@@ -357,7 +357,7 @@ public:
     // Identity
     //
 
-    Peer::id_t
+    Peer::IdT
     id() const override
     {
         return id_;
@@ -395,10 +395,10 @@ public:
     getVersion() const;
 
     // Return the connection elapsed time.
-    clock_type::duration
+    ClockType::duration
     uptime() const
     {
-        return clock_type::now() - creationTime_;
+        return ClockType::now() - creationTime_;
     }
 
     json::Value
@@ -430,7 +430,7 @@ public:
     // Ledger
     //
 
-    uint256
+    UInt256
     getClosedLedgerHash() const override
     {
         std::scoped_lock const sl{recentLock_};
@@ -438,13 +438,13 @@ public:
     }
 
     bool
-    hasLedger(uint256 const& hash, std::uint32_t seq) const override;
+    hasLedger(UInt256 const& hash, std::uint32_t seq) const override;
 
     void
     ledgerRange(std::uint32_t& minSeq, std::uint32_t& maxSeq) const override;
 
     bool
-    hasTxSet(uint256 const& hash) const override;
+    hasTxSet(UInt256 const& hash) const override;
 
     void
     cycleStatus() override;
@@ -494,7 +494,7 @@ private:
     close();
 
     void
-    fail(std::string const& name, error_code ec);
+    fail(std::string const& name, ErrorCode ec);
 
     void
     gracefulClose();
@@ -514,7 +514,7 @@ private:
 
     // Called when SSL shutdown completes
     void
-    onShutdown(error_code ec);
+    onShutdown(ErrorCode ec);
 
     void
     doAccept();
@@ -535,11 +535,11 @@ private:
 
     // Called when protocol message bytes are received
     void
-    onReadMessage(error_code ec, std::size_t bytesTransferred);
+    onReadMessage(ErrorCode ec, std::size_t bytesTransferred);
 
     // Called when protocol messages bytes are sent
     void
-    onWriteMessage(error_code ec, std::size_t bytesTransferred);
+    onWriteMessage(ErrorCode ec, std::size_t bytesTransferred);
 
     /**
      * Called from onMessage(TMTransaction(s)).
@@ -648,7 +648,7 @@ private:
     // lockedRecentLock is passed as a reminder to callers that recentLock_
     // must be locked.
     void
-    addLedger(uint256 const& hash, std::scoped_lock<std::mutex> const& lockedRecentLock);
+    addLedger(UInt256 const& hash, std::scoped_lock<std::mutex> const& lockedRecentLock);
 
     void
     doFetchPack(std::shared_ptr<protocol::TMGetObjectByHash> const& packet);
@@ -684,7 +684,7 @@ private:
     void
     checkValidation(
         std::shared_ptr<STValidation> const& val,
-        uint256 const& key,
+        UInt256 const& key,
         std::shared_ptr<protocol::TMValidation> const& packet);
 
     void
@@ -771,14 +771,14 @@ protected:
 template <class Buffers>
 PeerImp::PeerImp(
     Application& app,
-    std::unique_ptr<stream_type>&& streamPtr,
+    std::unique_ptr<StreamType>&& streamPtr,
     Buffers const& buffers,
     std::shared_ptr<peer_finder::Slot>&& slot,
-    http_response_type&& response,
+    HttpResponseType&& response,
     resource::Consumer usage,
     PublicKey const& publicKey,
     ProtocolVersion protocol,
-    id_t id,
+    IdT id,
     OverlayImpl& overlay)
     : Child(overlay)
     , app_(app)
@@ -793,16 +793,16 @@ PeerImp::PeerImp(
     , socket_(streamPtr_->next_layer().socket())
     , stream_(*streamPtr_)
     , strand_(boost::asio::make_strand(socket_.get_executor()))
-    , timer_(waitable_timer{socket_.get_executor()})
+    , timer_(WaitableTimer{socket_.get_executor()})
     , remoteAddress_(slot->remoteEndpoint())
     , overlay_(overlay)
     , inbound_(false)
     , protocol_(std::move(protocol))
     , tracking_(Tracking::Unknown)
-    , trackingTime_(clock_type::now())
+    , trackingTime_(ClockType::now())
     , publicKey_(publicKey)
-    , lastPingTime_(clock_type::now())
-    , creationTime_(clock_type::now())
+    , lastPingTime_(ClockType::now())
+    , creationTime_(ClockType::now())
     , squelch_(app_.getJournal("Squelch"))
     , usage_(usage)
     , fee_{.fee = resource::kFeeTrivialPeer}

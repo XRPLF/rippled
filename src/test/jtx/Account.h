@@ -98,7 +98,7 @@ public:
     /**
      * Returns the Account ID.
      *
-     * The Account ID is the uint160 hash of the public key.
+     * The Account ID is the UInt160 hash of the public key.
      */
     [[nodiscard]] AccountID
     id() const

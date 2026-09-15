@@ -75,7 +75,7 @@ LoanSet::preflight(PreflightContext const& ctx)
     if (tx.isFlag(tfInnerBatchTxn) && ctx.rules.enabled(featureBatchV1_1) &&
         !tx.isFieldPresent(sfCounterparty))
     {
-        auto const parentBatchId = ctx.parentBatchId.value_or(uint256{0});
+        auto const parentBatchId = ctx.parentBatchId.value_or(UInt256{0});
         JLOG(ctx.j.debug()) << "BatchTrace[" << parentBatchId << "]: "
                             << "no Counterparty for inner LoanSet transaction.";
         return temBAD_SIGNER;
@@ -241,9 +241,9 @@ LoanSet::preclaim(PreclaimContext const& ctx)
         //     startDate + (paymentInterval * paymentTotal) + gracePeriod.
         // If that value is larger than "maxTime", the value
         // overflows, and we kill the transaction.
-        using timeType = decltype(sfNextPaymentDueDate)::type::value_type;
-        static_assert(std::is_same_v<timeType, std::uint32_t>);
-        constexpr timeType kMaxTime = std::numeric_limits<timeType>::max();
+        using TimeType = decltype(sfNextPaymentDueDate)::type::value_type;
+        static_assert(std::is_same_v<TimeType, std::uint32_t>);
+        constexpr TimeType kMaxTime = std::numeric_limits<TimeType>::max();
         static_assert(kMaxTime == 4'294'967'295);
 
         auto const timeAvailable = kMaxTime - getStartDate(ctx.view);
@@ -725,7 +725,7 @@ LoanSet::doApply()
 }
 
 void
-LoanSet::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
+LoanSet::visitInvariantEntry(bool, SLE::ConstRef, SLE::ConstRef)
 {
     // No transaction-specific invariants yet (future work).
 }

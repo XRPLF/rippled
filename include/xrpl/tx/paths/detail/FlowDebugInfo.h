@@ -22,8 +22,8 @@ namespace xrpl::path::detail {
 // Track performance information of a single payment
 struct FlowDebugInfo
 {
-    using clock = std::chrono::high_resolution_clock;
-    using time_point = clock::time_point;
+    using Clock = std::chrono::high_resolution_clock;
+    using time_point = Clock::time_point;
     boost::container::flat_map<std::string, std::pair<time_point, time_point>> timePoints;
     boost::container::flat_map<std::string, std::size_t> counts;
 
@@ -135,12 +135,12 @@ struct FlowDebugInfo
             FlowDebugInfo* info;
             Stopper(std::string name, FlowDebugInfo& pi) : tag(std::move(name)), info(&pi)
             {
-                auto const start = FlowDebugInfo::clock::now();
+                auto const start = FlowDebugInfo::Clock::now();
                 info->timePoints.emplace(tag, std::make_pair(start, start));
             }
             ~Stopper()
             {
-                auto const end = FlowDebugInfo::clock::now();
+                auto const end = FlowDebugInfo::Clock::now();
                 info->timePoints[tag].second = end;
             }
             Stopper(Stopper&&) = default;

@@ -29,7 +29,7 @@ public:
     PathRequestManager(
         Application& app,
         beast::Journal journal,
-        beast::insight::Collector::ptr const& collector)
+        beast::insight::Collector::Ptr const& collector)
         : app_(app), journal_(journal), lastIdentifier_(0)
     {
         fast_ = collector->makeEvent("pathfind_fast");
@@ -100,7 +100,7 @@ private:
     beast::insight::Event full_;
 
     // Track all requests
-    std::vector<PathRequest::wptr> requests_;
+    std::vector<PathRequest::Wptr> requests_;
 
     // Use a AssetCache
     std::weak_ptr<AssetCache> assetCache_;

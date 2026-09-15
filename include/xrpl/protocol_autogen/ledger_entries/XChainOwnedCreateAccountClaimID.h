@@ -257,7 +257,7 @@ public:
      * @return The constructed ledger entry wrapper.
      */
     XChainOwnedCreateAccountClaimID
-    build(uint256 const& index)
+    build(UInt256 const& index)
     {
         return XChainOwnedCreateAccountClaimID{std::make_shared<SLE>(std::move(object_), index)};
     }

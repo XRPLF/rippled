@@ -36,14 +36,14 @@ public:
      * @param successful  if the skipList data was acquired successfully
      * @param hash  hash of the ledger that has the skipList
      */
-    using OnSkipListDataCB = std::function<void(bool successful, uint256 const& hash)>;
+    using OnSkipListDataCB = std::function<void(bool successful, UInt256 const& hash)>;
 
     struct SkipListData
     {
         std::uint32_t const ledgerSeq;
-        std::vector<xrpl::uint256> const skipList;
+        std::vector<xrpl::UInt256> const skipList;
 
-        SkipListData(std::uint32_t const ledgerSeq, std::vector<xrpl::uint256> skipList)
+        SkipListData(std::uint32_t const ledgerSeq, std::vector<xrpl::UInt256> skipList)
             : ledgerSeq(ledgerSeq), skipList(std::move(skipList))
         {
         }
@@ -59,7 +59,7 @@ public:
     SkipListAcquire(
         Application& app,
         InboundLedgers& inboundLedgers,
-        uint256 const& ledgerHash,
+        UInt256 const& ledgerHash,
         std::unique_ptr<PeerSet> peerSet);
 
     ~SkipListAcquire() override;
@@ -122,7 +122,7 @@ private:
      */
     void
     onSkipListAcquired(
-        std::vector<uint256> const& skipList,
+        std::vector<UInt256> const& skipList,
         std::uint32_t ledgerSeq,
         ScopedLockType& sl);
 

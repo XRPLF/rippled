@@ -27,7 +27,7 @@ class TransactionAcquire final : public TimeoutCounter,
 public:
     using pointer = std::shared_ptr<TransactionAcquire>;
 
-    TransactionAcquire(Application& app, uint256 const& hash, std::unique_ptr<PeerSet> peerSet);
+    TransactionAcquire(Application& app, UInt256 const& hash, std::unique_ptr<PeerSet> peerSet);
     ~TransactionAcquire() override = default;
 
     SHAMapAddNode

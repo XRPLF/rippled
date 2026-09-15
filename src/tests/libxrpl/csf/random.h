@@ -80,9 +80,9 @@ public:
     Selector(RAIter first, RAIter last, std::vector<double> const& w, Generator& g)
         : first_{first}, last_{last}, dd_{w.begin(), w.end()}, g_{g}
     {
-        using tag = std::iterator_traits<RAIter>::iterator_category;
+        using Tag = std::iterator_traits<RAIter>::iterator_category;
         static_assert(
-            std::is_same_v<tag, std::random_access_iterator_tag>,
+            std::is_same_v<Tag, std::random_access_iterator_tag>,
             "Selector only supports random access iterators.");
         // TODO: Allow for forward iterators
     }

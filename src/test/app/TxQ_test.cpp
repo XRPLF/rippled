@@ -408,11 +408,11 @@ public:
 
         env(noop(alice), ticket::Use(tkt1 - 2), Ter(tefNO_TICKET));
         env(noop(alice), ticket::Use(tkt1 - 1), Ter(terPRE_TICKET));
-        env.require(Owners(alice, 0), tickets(alice, 0));
+        env.require(Owners(alice, 0), Tickets(alice, 0));
         checkMetrics(*this, env, 1, std::nullopt, 4, 3);
 
         env.close();
-        env.require(Owners(alice, 250), tickets(alice, 250));
+        env.require(Owners(alice, 250), Tickets(alice, 250));
         checkMetrics(*this, env, 0, 8, 1, 4);
         BEAST_EXPECT(env.seq(alice) == tkt1 + 250);
 
@@ -445,7 +445,7 @@ public:
         //  o Get tefNO_TICKET if the ticket has already been used.
         //  o Get telCAN_NOT_QUEUE_FEE if the transaction is still in the queue.
         env.close();
-        env.require(Owners(alice, 240), tickets(alice, 240));
+        env.require(Owners(alice, 240), Tickets(alice, 240));
 
         // These 4 went straight to the ledger:
         env(noop(alice), ticket::Use(tkt1 + 1), Ter(tefNO_TICKET));
@@ -510,7 +510,7 @@ public:
         //  o Get telCAN_NOT_QUEUE_FEE if the transaction is still in
         //    the queue.
         env.close();
-        env.require(Owners(alice, 237), tickets(alice, 237));
+        env.require(Owners(alice, 237), Tickets(alice, 237));
 
         // The four ticket-based transactions went out first, since
         // they paid the highest fee.
@@ -551,7 +551,7 @@ public:
         checkMetrics(*this, env, 10, 12, 7, 6);
 
         env.close();
-        env.require(Owners(alice, 231), tickets(alice, 231));
+        env.require(Owners(alice, 231), Tickets(alice, 231));
 
         // These three ticket-based transactions escaped the queue.
         env(noop(alice), ticket::Use(tkt1 + 14), Ter(tefNO_TICKET));
@@ -601,7 +601,7 @@ public:
         env(noop(alice), ticket::Use(tkt250 - 4), Fee((baseFee * 2.2 * 1.25) + 1), queued);
 
         env.close();
-        env.require(Owners(alice, 227), tickets(alice, 227));
+        env.require(Owners(alice, 227), Tickets(alice, 227));
 
         // Verify that all remaining transactions made it out of the TxQ.
         env(noop(alice), ticket::Use(tkt1 + 18), Ter(tefNO_TICKET));
@@ -1668,7 +1668,7 @@ public:
         // up to Alice's reserve.
         env(offer(bob, drops(5000), usd(5000)),
             Fee(openLedgerCost(env)),
-            Require(Balance(alice, drops(250)), Owners(alice, 1), lines(alice, 1)));
+            Require(Balance(alice, drops(250)), Owners(alice, 1), Lines(alice, 1)));
         checkMetrics(*this, env, 4, 6, 5, 3);
 
         // Try adding a new transaction.

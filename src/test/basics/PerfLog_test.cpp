@@ -40,7 +40,7 @@ class PerfLog_test : public beast::unit_test::Suite
 {
     enum class WithFile : bool { No = false, Yes = true };
 
-    using path = std::filesystem::path;
+    using Path = std::filesystem::path;
 
     // We're only using Env for its Journal.  That Journal gives better
     // coverage in unit tests.
@@ -90,14 +90,14 @@ class PerfLog_test : public beast::unit_test::Suite
             stopSignaled = true;
         }
 
-        static path
+        static Path
         logDir()
         {
             using namespace std::filesystem;
             return temp_directory_path() / "perf_log_test_dir";
         }
 
-        static path
+        static Path
         logFile()
         {
             return logDir() / "perf_log.txt";

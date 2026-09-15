@@ -188,7 +188,7 @@ hash_append(Hasher& h, STPath const& p) noexcept
 class STPathSet final : public STBase, public CountedObject<STPathSet>
 {
     std::vector<STPath> value_;
-    xrpl::hardened_hash_set<STPath> seenHashes_;
+    xrpl::HardenedHashSet<STPath> seenHashes_;
 
 public:
     STPathSet() = default;

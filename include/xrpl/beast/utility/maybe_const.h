@@ -19,6 +19,6 @@ struct MaybeConst
  * Alias for omitting `typename`.
  */
 template <bool IsConst, class T>
-using maybe_const_t = MaybeConst<IsConst, T>::type;
+using MaybeConstT = MaybeConst<IsConst, T>::type;
 
 }  // namespace beast

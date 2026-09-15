@@ -49,10 +49,10 @@ using namespace jtx;
  */
 class TMGetObjectByHash_test : public beast::unit_test::Suite
 {
-    using middle_type = boost::beast::tcp_stream;
-    using stream_type = boost::beast::ssl_stream<middle_type>;
-    using socket_type = boost::asio::ip::tcp::socket;
-    using shared_context = std::shared_ptr<boost::asio::ssl::context>;
+    using MiddleType = boost::beast::tcp_stream;
+    using StreamType = boost::beast::ssl_stream<MiddleType>;
+    using SocketType = boost::asio::ip::tcp::socket;
+    using SharedContext = std::shared_ptr<boost::asio::ssl::context>;
     /**
      * Test peer that captures sent messages for verification.
      */
@@ -62,11 +62,11 @@ class TMGetObjectByHash_test : public beast::unit_test::Suite
         PeerTest(
             Application& app,
             std::shared_ptr<peer_finder::Slot> const& slot,
-            http_request_type&& request,
+            HttpRequestType&& request,
             PublicKey const& publicKey,
             ProtocolVersion protocol,
             resource::Consumer consumer,
-            std::unique_ptr<TMGetObjectByHash_test::stream_type>&& streamPtr,
+            std::unique_ptr<TMGetObjectByHash_test::StreamType>&& streamPtr,
             OverlayImpl& overlay)
             : PeerImp(
                   app,
@@ -118,11 +118,11 @@ class TMGetObjectByHash_test : public beast::unit_test::Suite
         }
 
     private:
-        inline static Peer::id_t id = 0;
+        inline static Peer::IdT id = 0;
         std::shared_ptr<Message> lastSentMessage_;
     };
 
-    shared_context context_{makeSslContext("")};
+    SharedContext context_{makeSslContext("")};
     ProtocolVersion protocolVersion_{1, 7};
 
     std::shared_ptr<PeerTest>
@@ -131,7 +131,7 @@ class TMGetObjectByHash_test : public beast::unit_test::Suite
         auto& overlay = dynamic_cast<OverlayImpl&>(env.app().getOverlay());
         boost::beast::http::request<boost::beast::http::dynamic_body> request;
         auto streamPtr =
-            std::make_unique<stream_type>(socket_type(env.app().getIOContext()), *context_);
+            std::make_unique<StreamType>(SocketType(env.app().getIOContext()), *context_);
 
         beast::ip::Endpoint const local(boost::asio::ip::make_address("172.1.1.1"), 51235);
         beast::ip::Endpoint const remote(boost::asio::ip::make_address("172.1.1.2"), 51235);
@@ -161,11 +161,11 @@ class TMGetObjectByHash_test : public beast::unit_test::Suite
         auto& nodeStore = env.app().getNodeStore();
 
         // Create and store objects
-        std::vector<uint256> hashes;
+        std::vector<UInt256> hashes;
         hashes.reserve(numObjects);
         for (int i = 0; i < numObjects; ++i)
         {
-            uint256 const hash(xrpl::sha512Half(i));
+            UInt256 const hash(xrpl::sha512Half(i));
             hashes.push_back(hash);
 
             Blob data(100, static_cast<unsigned char>(i % 256));

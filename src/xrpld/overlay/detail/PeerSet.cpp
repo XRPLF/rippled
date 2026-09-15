@@ -42,7 +42,7 @@ public:
         protocol::MessageType type,
         std::shared_ptr<Peer> const& peer) override;
 
-    [[nodiscard]] std::set<Peer::id_t> const&
+    [[nodiscard]] std::set<Peer::IdT> const&
     getPeerIds() const override;
 
 private:
@@ -54,7 +54,7 @@ private:
     /**
      * The identifiers of the peers we are tracking.
      */
-    std::set<Peer::id_t> peers_;
+    std::set<Peer::IdT> peers_;
 };
 
 PeerSetImpl::PeerSetImpl(Application& app) : app_(app), journal_(app.getJournal("PeerSet"))
@@ -114,7 +114,7 @@ PeerSetImpl::sendRequest(
     }
 }
 
-std::set<Peer::id_t> const&
+std::set<Peer::IdT> const&
 PeerSetImpl::getPeerIds() const
 {
     return peers_;
@@ -168,10 +168,10 @@ public:
         JLOG(j_.error()) << "DummyPeerSet sendRequest should not be called";
     }
 
-    [[nodiscard]] std::set<Peer::id_t> const&
+    [[nodiscard]] std::set<Peer::IdT> const&
     getPeerIds() const override
     {
-        static std::set<Peer::id_t> const kEmptyPeers;
+        static std::set<Peer::IdT> const kEmptyPeers;
         JLOG(j_.error()) << "DummyPeerSet getPeerIds should not be called";
         return kEmptyPeers;
     }

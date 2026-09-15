@@ -17,7 +17,7 @@ namespace xrpl {
  * A class that simplifies iterating ledger directory pages
  *
  * The Dir class provides a forward iterator for walking through
- * the uint256 values contained in ledger directories.
+ * the UInt256 values contained in ledger directories.
  *
  * The Dir class also allows accelerated directory walking by
  * stepping directly from one page to the next using the next_page()
@@ -86,7 +86,7 @@ public:
         return page_;
     }
 
-    uint256
+    UInt256
     index() const
     {
         return index_;
@@ -103,11 +103,11 @@ private:
     ReadView const* view_ = nullptr;
     Keylet root_;
     Keylet page_;
-    uint256 index_;
+    UInt256 index_;
     std::optional<value_type> mutable cache_;
     SLE::const_pointer sle_;
     STVector256 const* indexes_ = nullptr;
-    std::vector<uint256>::const_iterator it_;
+    std::vector<UInt256>::const_iterator it_;
 };
 
 }  // namespace xrpl

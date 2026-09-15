@@ -980,11 +980,11 @@ Config::loadFromString(std::string const& fileContents)
         }
         else if (boost::iequals(match[2], "days"))
         {
-            amendmentMajorityTime = days(duration);
+            amendmentMajorityTime = Days(duration);
         }
         else if (boost::iequals(match[2], "weeks"))
         {
-            amendmentMajorityTime = weeks(duration);
+            amendmentMajorityTime = Weeks(duration);
         }
 
         if (amendmentMajorityTime < minutes(15))

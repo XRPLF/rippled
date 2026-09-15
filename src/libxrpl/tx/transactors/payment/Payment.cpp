@@ -141,7 +141,7 @@ Payment::preflight(PreflightContext const& ctx)
         return temMALFORMED;
 
     // A zero DomainID is invalid for a PermissionedDomain ledger entry because
-    // keylet::permissionedDomain(uint256) uses the DomainID as the ledger key.
+    // keylet::permissionedDomain(UInt256) uses the DomainID as the ledger key.
     if (auto const domainID = tx[~sfDomainID];
         ctx.rules.enabled(fixCleanup3_2_0) && domainID && *domainID == beast::kZero)
         return temMALFORMED;
@@ -818,7 +818,7 @@ Payment::doApply()
 }
 
 void
-Payment::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
+Payment::visitInvariantEntry(bool, SLE::ConstRef, SLE::ConstRef)
 {
     // No transaction-specific invariants yet (future work).
 }

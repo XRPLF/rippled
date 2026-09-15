@@ -178,7 +178,7 @@ toStrand(
     bool ownerPaysTransferFee,
     OfferCrossing offerCrossing,
     AMMContext& ammContext,
-    std::optional<uint256> const& domainID,
+    std::optional<UInt256> const& domainID,
     beast::Journal j)
 {
     if (isXRP(src) || isXRP(dst) || !isConsistent(deliver) ||
@@ -583,7 +583,7 @@ toStrands(
     bool ownerPaysTransferFee,
     OfferCrossing offerCrossing,
     AMMContext& ammContext,
-    std::optional<uint256> const& domainID,
+    std::optional<UInt256> const& domainID,
     beast::Journal j)
 {
     std::vector<Strand> result;
@@ -699,7 +699,7 @@ StrandContext::StrandContext(
     std::array<boost::container::flat_set<Asset>, 2>& seenDirectAssets,
     boost::container::flat_set<Asset>& seenBookOuts,
     AMMContext& ammContext,
-    std::optional<uint256> const& domainId,
+    std::optional<UInt256> const& domainId,
     beast::Journal j)
     : view(view)
     , strandSrc(strandSrc)

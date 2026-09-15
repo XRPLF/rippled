@@ -596,7 +596,7 @@ MPTTester::forObject(
 }
 
 [[nodiscard]] bool
-MPTTester::checkDomainID(std::optional<uint256> expected) const
+MPTTester::checkDomainID(std::optional<UInt256> expected) const
 {
     return forObject([&](SLEP const& sle) -> bool {
         if (sle->isFieldPresent(sfDomainID))
@@ -858,7 +858,7 @@ MPTTester::getClawbackProof(
     Account const& holder,
     std::uint64_t amount,
     Buffer const& privateKey,
-    uint256 const& contextHash) const
+    UInt256 const& contextHash) const
 {
     if (!id_)
         Throw<std::runtime_error>("MPT has not been created");
@@ -894,7 +894,7 @@ MPTTester::getClawbackProof(
 }
 
 std::optional<Buffer>
-MPTTester::getSchnorrProof(Account const& account, uint256 const& ctxHash) const
+MPTTester::getSchnorrProof(Account const& account, UInt256 const& ctxHash) const
 {
     auto const pubKey = getPubKey(account);
     if (!pubKey || pubKey->size() != kEcPubKeyLength)
@@ -922,7 +922,7 @@ MPTTester::getConfidentialSendProof(
     std::uint64_t const amount,
     std::vector<ConfidentialRecipient> const& recipients,
     Slice const& blindingFactor,
-    uint256 const& contextHash,
+    UInt256 const& contextHash,
     PedersenProofParams const& amountParams,
     PedersenProofParams const& balanceParams) const
 {
@@ -1007,7 +1007,7 @@ Buffer
 MPTTester::getConvertBackProof(
     Account const& holder,
     std::uint64_t const amount,
-    uint256 const& contextHash,
+    UInt256 const& contextHash,
     PedersenProofParams const& pcParams) const
 {
     // Expected total proof length: compact sigma proof (128 bytes) + single bulletproof (688 bytes)

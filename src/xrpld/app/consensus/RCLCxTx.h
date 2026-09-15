@@ -24,7 +24,7 @@ public:
     /**
      * Unique identifier/hash of transaction
      */
-    using ID = uint256;
+    using ID = UInt256;
 
     /**
      * Constructor
@@ -62,7 +62,7 @@ public:
     /**
      * Unique identifier/hash of the set of transactions
      */
-    using ID = uint256;
+    using ID = UInt256;
     /**
      * The type that corresponds to a single transaction
      */
@@ -183,7 +183,7 @@ public:
         // map from a trusted validator
         map->compare(*(j.map), delta, 65536);
 
-        std::map<uint256, bool> ret;
+        std::map<UInt256, bool> ret;
         for (auto const& [k, v] : delta)
         {
             XRPL_ASSERT(

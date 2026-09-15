@@ -147,7 +147,7 @@ doAccountLines(rpc::JsonContext& context)
         .raPeerAccount = raPeerAccount,
         .ignoreDefault = ignoreDefault,
         .foundCount = 0};
-    uint256 startAfter = beast::kZero;
+    UInt256 startAfter = beast::kZero;
     std::uint64_t startHint = 0;
 
     if (params.isMember(jss::marker))
@@ -185,7 +185,7 @@ doAccountLines(rpc::JsonContext& context)
     }
 
     auto count = 0;
-    std::optional<uint256> marker = {};
+    std::optional<UInt256> marker = {};
     std::uint64_t nextHint = 0;
     {
         if (!forEachItemAfter(
@@ -194,7 +194,7 @@ doAccountLines(rpc::JsonContext& context)
                 startAfter,
                 startHint,
                 limit + 1,
-                [&visitData, &count, &marker, &limit, &nextHint](SLE::const_ref sleCur) {
+                [&visitData, &count, &marker, &limit, &nextHint](SLE::ConstRef sleCur) {
                     if (!sleCur)
                     {
                         // LCOV_EXCL_START

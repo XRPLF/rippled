@@ -1,0 +1,11 @@
+# the beast container tests define allocators and iterators modelling
+# std concepts, which mandate
+# snake_case member type names.
+#
+# clang-tidy replaces rather than merges this option, so the list is the
+# top-level one restated plus the 3 name(s) needed only here:
+#   const_reverse_iterator other reverse_iterator
+InheritParentConfig: true
+CheckOptions:
+  readability-identifier-naming.TypeAliasIgnoredRegexp: "^(const_iterator|const_reference|const_reverse_iterator|difference_type|duration|iterator|iterator_category|key_type|mapped_type|other|period|pointer|reference|rep|result_type|reverse_iterator|size_type|time_point|value_type)$"
+  readability-identifier-naming.TypedefIgnoredRegexp: "^(const_iterator|const_reference|const_reverse_iterator|difference_type|duration|iterator|iterator_category|key_type|mapped_type|other|period|pointer|reference|rep|result_type|reverse_iterator|size_type|time_point|value_type)$"

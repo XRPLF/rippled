@@ -421,7 +421,7 @@ struct DepositPreauth_test : public beast::unit_test::Suite
             env(ticket::create(alice, 2));
             std::uint32_t const aliceSeq{env.seq(alice)};
             env.close();
-            env.require(tickets(alice, 2));
+            env.require(Tickets(alice, 2));
 
             // Consume the tickets from biggest seq to smallest 'cuz we can.
             std::uint32_t aliceTicketSeq{env.seq(alice)};
@@ -430,7 +430,7 @@ struct DepositPreauth_test : public beast::unit_test::Suite
             env(deposit::auth(alice, becky), ticket::Use(--aliceTicketSeq));
             env.close();
             // Alice uses a ticket but gains a preauth entry.
-            env.require(tickets(alice, 1));
+            env.require(Tickets(alice, 1));
             env.require(Owners(alice, 2));
             BEAST_EXPECT(env.seq(alice) == aliceSeq);
             env.require(Owners(becky, 0));
@@ -438,7 +438,7 @@ struct DepositPreauth_test : public beast::unit_test::Suite
             // Remove a DepositPreauth from alice.
             env(deposit::unauth(alice, becky), ticket::Use(--aliceTicketSeq));
             env.close();
-            env.require(tickets(alice, 0));
+            env.require(Tickets(alice, 0));
             env.require(Owners(alice, 0));
             BEAST_EXPECT(env.seq(alice) == aliceSeq);
             env.require(Owners(becky, 0));
@@ -608,7 +608,7 @@ struct DepositPreauth_test : public beast::unit_test::Suite
             env(pay(gw, alice, usd(500)));
             env.close();
 
-            env(offer(alice, XRP(100), usd(100), tfPassive), Require(offers(alice, 1)));
+            env(offer(alice, XRP(100), usd(100), tfPassive), Require(Offers(alice, 1)));
             env.close();
 
             // becky pays herself USD (10) by consuming part of alice's offer.

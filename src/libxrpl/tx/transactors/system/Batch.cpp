@@ -244,11 +244,11 @@ Batch::preflight(PreflightContext const& ctx)
     }
 
     // Validation Inner Batch Txns
-    std::unordered_set<uint256> uniqueHashes;
+    std::unordered_set<UInt256> uniqueHashes;
     std::unordered_map<AccountID, std::unordered_set<std::uint32_t>> accountSeqTicket;
     auto checkSignatureFields =
         [&parentBatchId, &j = ctx.j](
-            STObject const& sig, uint256 const& hash, char const* label = "") -> NotTEC {
+            STObject const& sig, UInt256 const& hash, char const* label = "") -> NotTEC {
         if (sig.isFieldPresent(sfTxnSignature))
         {
             JLOG(j.debug()) << "BatchTrace[" << parentBatchId << "]: "
@@ -571,7 +571,7 @@ Batch::doApply()
 }
 
 void
-Batch::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
+Batch::visitInvariantEntry(bool, SLE::ConstRef, SLE::ConstRef)
 {
     // No transaction-specific invariants yet (future work).
 }

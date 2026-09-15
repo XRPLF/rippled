@@ -33,10 +33,10 @@ public:
     operator=(TransactionMaster const&) = delete;
 
     std::shared_ptr<Transaction>
-    fetchFromCache(uint256 const&);
+    fetchFromCache(UInt256 const&);
 
     std::variant<std::pair<std::shared_ptr<Transaction>, std::shared_ptr<TxMeta>>, TxSearched>
-    fetch(uint256 const&, ErrorCodeI& ec);
+    fetch(UInt256 const&, ErrorCodeI& ec);
 
     /**
      * Fetch transaction from the cache or database.
@@ -48,7 +48,7 @@ public:
      *         the database while the search was conducted.
      */
     std::variant<std::pair<std::shared_ptr<Transaction>, std::shared_ptr<TxMeta>>, TxSearched>
-    fetch(uint256 const&, ClosedInterval<uint32_t> const& range, ErrorCodeI& ec);
+    fetch(UInt256 const&, ClosedInterval<uint32_t> const& range, ErrorCodeI& ec);
 
     std::shared_ptr<STTx const>
     fetch(
@@ -59,7 +59,7 @@ public:
     // return value: true = we had the transaction already
     bool
     inLedger(
-        uint256 const& hash,
+        UInt256 const& hash,
         std::uint32_t ledger,
         std::optional<uint32_t> tseq,
         std::optional<uint32_t> netID);
@@ -70,12 +70,12 @@ public:
     void
     sweep();
 
-    TaggedCache<uint256, Transaction>&
+    TaggedCache<UInt256, Transaction>&
     getCache();
 
 private:
     Application& app_;
-    TaggedCache<uint256, Transaction> cache_;
+    TaggedCache<UInt256, Transaction> cache_;
 };
 
 }  // namespace xrpl

@@ -189,7 +189,7 @@ LoanBrokerCoverDeposit::doApply()
 }
 
 void
-LoanBrokerCoverDeposit::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
+LoanBrokerCoverDeposit::visitInvariantEntry(bool, SLE::ConstRef, SLE::ConstRef)
 {
     // No transaction-specific invariants yet (future work).
 }

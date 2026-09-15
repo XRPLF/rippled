@@ -104,9 +104,9 @@ private:
         if (!BEAST_EXPECT(state1.paymentRemaining > 1))
             return;
 
-        using d = NetClock::duration;
-        using tp = NetClock::time_point;
-        auto const overdueClose = tp{d{state1.nextPaymentDate + state1.paymentInterval}};
+        using D = NetClock::duration;
+        using Tp = NetClock::time_point;
+        auto const overdueClose = Tp{D{state1.nextPaymentDate + state1.paymentInterval}};
         env.close(overdueClose);
 
         auto const brokerSle = env.le(keylet::loanBroker(broker.brokerID));
@@ -526,9 +526,9 @@ private:
 
         auto const loanSetFee = Fee(env.current()->fees().base * 2);
 
-        using timeType = decltype(sfNextPaymentDueDate)::type::value_type;
-        static_assert(std::is_same_v<timeType, std::uint32_t>);
-        constexpr timeType kMaxTime = std::numeric_limits<timeType>::max();
+        using TimeType = decltype(sfNextPaymentDueDate)::type::value_type;
+        static_assert(std::is_same_v<TimeType, std::uint32_t>);
+        constexpr TimeType kMaxTime = std::numeric_limits<TimeType>::max();
         static_assert(kMaxTime == 4'294'967'295);
 
         auto const baseJson = [&]() {

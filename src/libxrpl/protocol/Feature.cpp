@@ -24,7 +24,7 @@ namespace xrpl {
 
 inline std::size_t
 // NOLINTNEXTLINE(readability-identifier-naming)
-hash_value(xrpl::uint256 const& feature)
+hash_value(xrpl::UInt256 const& feature)
 {
     std::size_t seed = 0;
     using namespace boost;
@@ -69,17 +69,17 @@ class FeatureCollections
     struct Feature
     {
         std::string name;
-        uint256 feature;
+        UInt256 feature;
 
         Feature() = delete;
-        explicit Feature(std::string name, uint256 const& feature)
+        explicit Feature(std::string name, UInt256 const& feature)
             : name(std::move(name)), feature(feature)
         {
         }
 
         // These structs are used by the `features` multi_index_container to
         // provide access to the features collection by size_t index, string
-        // name, and uint256 feature identifier
+        // name, and UInt256 feature identifier
         struct ByIndex
         {
         };
@@ -93,19 +93,19 @@ class FeatureCollections
 
     // Intermediate types to help with readability
     template <class Tag, typename Type, Type Feature::* PtrToMember>
-    using feature_hashed_unique = boost::multi_index::hashed_unique<
+    using FeatureHashedUnique = boost::multi_index::hashed_unique<
         boost::multi_index::tag<Tag>,
         boost::multi_index::member<Feature, Type, PtrToMember>>;
 
     // Intermediate types to help with readability
-    using feature_indexing = boost::multi_index::indexed_by<
+    using FeatureIndexing = boost::multi_index::indexed_by<
         boost::multi_index::random_access<boost::multi_index::tag<Feature::ByIndex>>,
-        feature_hashed_unique<Feature::ByFeature, uint256, &Feature::feature>,
-        feature_hashed_unique<Feature::ByName, std::string, &Feature::name>>;
+        FeatureHashedUnique<Feature::ByFeature, UInt256, &Feature::feature>,
+        FeatureHashedUnique<Feature::ByName, std::string, &Feature::name>>;
 
     // This multi_index_container provides access to the features collection by
-    // name, index, and uint256 feature identifier
-    boost::multi_index::multi_index_container<Feature, feature_indexing> features_;
+    // name, index, and UInt256 feature identifier
+    boost::multi_index::multi_index_container<Feature, FeatureIndexing> features_;
     std::map<std::string, AmendmentSupport> all_;
     std::map<std::string, VoteBehavior> supported_;
     std::size_t upVotes_ = 0;
@@ -113,7 +113,7 @@ class FeatureCollections
     mutable std::atomic<bool> readOnly_ = false;
 
     // These helper functions provide access to the features collection by name,
-    // index, and uint256 feature identifier, so the details of
+    // index, and UInt256 feature identifier, so the details of
     // multi_index_container can be hidden
     Feature const&
     getByIndex(size_t i) const
@@ -131,7 +131,7 @@ class FeatureCollections
         return itTo - sequence.begin();
     }
     Feature const*
-    getByFeature(uint256 const& feature) const
+    getByFeature(UInt256 const& feature) const
     {
         auto const& featureIndex = features_.get<Feature::ByFeature>();
         auto const featureIt = featureIndex.find(feature);
@@ -148,10 +148,10 @@ class FeatureCollections
 public:
     FeatureCollections();
 
-    std::optional<uint256>
+    std::optional<UInt256>
     getRegisteredFeature(std::string const& name) const;
 
-    uint256
+    UInt256
     registerFeature(std::string const& name, Supported support, VoteBehavior vote);
 
     /**
@@ -161,13 +161,13 @@ public:
     registrationIsDone();
 
     std::size_t
-    featureToBitsetIndex(uint256 const& f) const;
+    featureToBitsetIndex(UInt256 const& f) const;
 
-    uint256 const&
+    UInt256 const&
     bitsetIndexToFeature(size_t i) const;
 
     std::string
-    featureToName(uint256 const& f) const;
+    featureToName(UInt256 const& f) const;
 
     /**
      * All amendments that are registered within the table.
@@ -215,7 +215,7 @@ FeatureCollections::FeatureCollections()
     features_.reserve(xrpl::detail::kNumFeatures);
 }
 
-std::optional<uint256>
+std::optional<UInt256>
 FeatureCollections::getRegisteredFeature(std::string const& name) const
 {
     XRPL_ASSERT(
@@ -233,7 +233,7 @@ check(bool condition, char const* logicErrorMessage)
         logicError(logicErrorMessage);
 }
 
-uint256
+UInt256
 FeatureCollections::registerFeature(std::string const& name, Supported support, VoteBehavior vote)
 {
     check(!readOnly_, "Attempting to register a feature after startup.");
@@ -292,7 +292,7 @@ FeatureCollections::registrationIsDone()
 }
 
 size_t
-FeatureCollections::featureToBitsetIndex(uint256 const& f) const
+FeatureCollections::featureToBitsetIndex(UInt256 const& f) const
 {
     XRPL_ASSERT(
         readOnly_.load(), "xrpl::FeatureCollections::featureToBitsetIndex : startup completed");
@@ -304,7 +304,7 @@ FeatureCollections::featureToBitsetIndex(uint256 const& f) const
     return getIndex(*feature);
 }
 
-uint256 const&
+UInt256 const&
 FeatureCollections::bitsetIndexToFeature(size_t i) const
 {
     XRPL_ASSERT(
@@ -314,7 +314,7 @@ FeatureCollections::bitsetIndexToFeature(size_t i) const
 }
 
 std::string
-FeatureCollections::featureToName(uint256 const& f) const
+FeatureCollections::featureToName(UInt256 const& f) const
 {
     XRPL_ASSERT(readOnly_.load(), "xrpl::FeatureCollections::featureToName : startup completed");
     Feature const* feature = getByFeature(f);
@@ -365,13 +365,13 @@ detail::numUpVotedAmendments()
 
 //------------------------------------------------------------------------------
 
-std::optional<uint256>
+std::optional<UInt256>
 getRegisteredFeature(std::string const& name)
 {
     return gFeatureCollections.getRegisteredFeature(name);
 }
 
-uint256
+UInt256
 registerFeature(std::string const& name, Supported support, VoteBehavior vote)
 {
     return gFeatureCollections.registerFeature(name, support, vote);
@@ -379,7 +379,7 @@ registerFeature(std::string const& name, Supported support, VoteBehavior vote)
 
 // Retired features are in the ledger and have no code controlled by the
 // feature. They need to be supported, but do not need to be voted on.
-uint256
+UInt256
 retireFeature(std::string const& name)
 {
     return registerFeature(name, Supported::Yes, VoteBehavior::Obsolete);
@@ -395,19 +395,19 @@ registrationIsDone()
 }
 
 size_t
-featureToBitsetIndex(uint256 const& f)
+featureToBitsetIndex(UInt256 const& f)
 {
     return gFeatureCollections.featureToBitsetIndex(f);
 }
 
-uint256
+UInt256
 bitsetIndexToFeature(size_t i)
 {
     return gFeatureCollections.bitsetIndexToFeature(i);
 }
 
 std::string
-featureToName(uint256 const& f)
+featureToName(UInt256 const& f)
 {
     return gFeatureCollections.featureToName(f);
 }
@@ -433,22 +433,22 @@ enforceValidFeatureName(auto fn) -> char const*
 }
 
 #define XRPL_FEATURE(name, supported, vote) \
-    uint256 const feature##name =           \
+    UInt256 const feature##name =           \
         registerFeature(enforceValidFeatureName([] { return #name; }), supported, vote);
 #define XRPL_FIX(name, supported, vote) \
-    uint256 const fix##name =           \
+    UInt256 const fix##name =           \
         registerFeature(enforceValidFeatureName([] { return "fix" #name; }), supported, vote);
 
 // clang-format off
 #define XRPL_RETIRE_FEATURE(name)                                       \
     [[deprecated("The referenced feature amendment has been retired")]] \
     [[maybe_unused]]                                                    \
-    uint256 const retiredFeature##name = retireFeature(#name);
+    UInt256 const retiredFeature##name = retireFeature(#name);
 
 #define XRPL_RETIRE_FIX(name)                                           \
     [[deprecated("The referenced fix amendment has been retired")]]     \
     [[maybe_unused]]                                                    \
-    uint256 const retiredFix##name = retireFeature("fix" #name);
+    UInt256 const retiredFix##name = retireFeature("fix" #name);
 // clang-format on
 
 #include <xrpl/protocol/detail/features.macro>

@@ -173,7 +173,7 @@ digest2(Args const&... args)
 static void
 checksum(void* out, void const* message, std::size_t size)
 {
-    auto const h = digest2<sha256_hasher>(message, size);
+    auto const h = digest2<Sha256Hasher>(message, size);
     std::memcpy(out, h.data(), 4);
 }
 

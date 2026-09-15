@@ -59,7 +59,7 @@ class PerfLogImp : public PerfLog
     struct Counters
     {
     public:
-        using MethodStart = std::pair<char const*, steady_time_point>;
+        using MethodStart = std::pair<char const*, SteadyTimePoint>;
         /**
          * RPC performance counters.
          */
@@ -71,7 +71,7 @@ class PerfLogImp : public PerfLog
             std::uint64_t finished{0};
             std::uint64_t errored{0};
             // Cumulative duration of all finished and errored method calls.
-            microseconds duration{0};
+            Microseconds duration{0};
         };
 
         /**
@@ -85,15 +85,15 @@ class PerfLogImp : public PerfLog
             std::uint64_t started{0};
             std::uint64_t finished{0};
             // Cumulative duration of all jobs' queued and running times.
-            microseconds queuedDuration{0};
-            microseconds runningDuration{0};
+            Microseconds queuedDuration{0};
+            Microseconds runningDuration{0};
         };
 
         // rpc and jq do not need mutex protection because all
         // keys and values are created before more threads are started.
         std::unordered_map<std::string, Locked<Rpc>> rpc;
         std::unordered_map<JobType, Locked<Jq>> jq;
-        std::vector<std::pair<JobType, steady_time_point>> jobs;
+        std::vector<std::pair<JobType, SteadyTimePoint>> jobs;
         mutable std::mutex jobsMutex;
         std::unordered_map<std::uint64_t, MethodStart> methods;
         mutable std::mutex methodsMutex;
@@ -114,7 +114,7 @@ class PerfLogImp : public PerfLog
     std::thread thread_;
     std::mutex mutex_;
     std::condition_variable cond_;
-    system_time_point lastLog_;
+    SystemTimePoint lastLog_;
     std::string const hostname_{boost::asio::ip::host_name()};
     bool stop_{false};
     bool rotate_{false};
@@ -155,10 +155,10 @@ public:
     void
     jobQueue(JobType const type) override;
     void
-    jobStart(JobType const type, microseconds dur, steady_time_point startTime, int instance)
+    jobStart(JobType const type, Microseconds dur, SteadyTimePoint startTime, int instance)
         override;
     void
-    jobFinish(JobType const type, microseconds dur, int instance) override;
+    jobFinish(JobType const type, Microseconds dur, int instance) override;
 
     json::Value
     countersJson() const override

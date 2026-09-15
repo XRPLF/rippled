@@ -216,7 +216,7 @@ Pathfinder::Pathfinder(
     std::optional<AccountID> const& uSrcIssuer,
     STAmount const& saDstAmount,
     std::optional<STAmount> const& srcAmount,
-    std::optional<uint256> const& domain,
+    std::optional<UInt256> const& domain,
     Application& app)
     : srcAccount_(uSrcAccount)
     , dstAccount_(uDstAccount)
