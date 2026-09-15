@@ -256,6 +256,8 @@ words:
   - replayer
   - repodata
   - repomd
+  - repost
+  - reposts
   - rerandomize
   - rerandomization
   - rerandomized
@@ -303,6 +305,7 @@ words:
   - sponsees
   - SRPMS
   - sslws
+  - stackful
   - statsd
   - STATSDCOLLECTOR
   - stissue
