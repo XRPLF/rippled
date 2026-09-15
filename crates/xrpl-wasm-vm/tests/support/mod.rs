@@ -387,6 +387,12 @@ pub struct FakeHost {
     pub float_binary_ops_asked: RefCell<Vec<FloatBinaryCall>>,
     /// Every `(x, n, mode)` `float_power` was asked for, tagged by operator name.
     pub float_unary_ops_asked: RefCell<Vec<FloatUnaryCall>>,
+    /// What every contract host function that answers bytes answers.
+    pub contract_value: Answer,
+    /// What every contract host function that answers a scalar answers.
+    pub contract_answer: HostResult<i32>,
+    /// What `emit_built_txn` and `emit_txn` write: a TER, as four little-endian bytes.
+    pub contract_ter: Answer,
 }
 
 impl Default for FakeHost {
@@ -509,6 +515,9 @@ impl Default for FakeHost {
             float_compare_asked: RefCell::new(Vec::new()),
             float_binary_ops_asked: RefCell::new(Vec::new()),
             float_unary_ops_asked: RefCell::new(Vec::new()),
+            contract_value: Answer::bytes([0xc0]),
+            contract_answer: Ok(0),
+            contract_ter: Answer::bytes(0i32.to_le_bytes()),
         }
     }
 }
@@ -1485,6 +1494,109 @@ impl HostFunctions for FakeHost {
             .push(("pow", x.to_vec(), n, mode));
         self.float_answer.fill(out)
     }
+
+    fn instance_param(&self, _index: i32, _st_type_id: i32, out: &mut [u8]) -> HostResult<usize> {
+        self.contract_value.fill(out)
+    }
+
+    fn function_param(&self, _index: i32, _st_type_id: i32, out: &mut [u8]) -> HostResult<usize> {
+        self.contract_value.fill(out)
+    }
+
+    fn get_data_object_field(
+        &self,
+        _account: &[u8],
+        _key: &str,
+        out: &mut [u8],
+    ) -> HostResult<usize> {
+        self.contract_value.fill(out)
+    }
+
+    fn get_data_nested_object_field(
+        &self,
+        _account: &[u8],
+        _key: &str,
+        _nested_key: &str,
+        out: &mut [u8],
+    ) -> HostResult<usize> {
+        self.contract_value.fill(out)
+    }
+
+    fn get_data_array_element_field(
+        &self,
+        _account: &[u8],
+        _key: &str,
+        _index: i32,
+        out: &mut [u8],
+    ) -> HostResult<usize> {
+        self.contract_value.fill(out)
+    }
+
+    fn get_data_nested_array_element_field(
+        &self,
+        _account: &[u8],
+        _key: &str,
+        _index: i32,
+        _nested_key: &str,
+        out: &mut [u8],
+    ) -> HostResult<usize> {
+        self.contract_value.fill(out)
+    }
+
+    fn set_data_object_field(&self, _account: &[u8], _key: &str, _value: &[u8]) -> HostResult<i32> {
+        self.contract_answer
+    }
+
+    fn set_data_nested_object_field(
+        &self,
+        _account: &[u8],
+        _key: &str,
+        _nested_key: &str,
+        _value: &[u8],
+    ) -> HostResult<i32> {
+        self.contract_answer
+    }
+
+    fn set_data_array_element_field(
+        &self,
+        _account: &[u8],
+        _key: &str,
+        _index: i32,
+        _value: &[u8],
+    ) -> HostResult<i32> {
+        self.contract_answer
+    }
+
+    fn set_data_nested_array_element_field(
+        &self,
+        _account: &[u8],
+        _key: &str,
+        _index: i32,
+        _nested_key: &str,
+        _value: &[u8],
+    ) -> HostResult<i32> {
+        self.contract_answer
+    }
+
+    fn build_txn(&self, _tx_type: i32) -> HostResult<i32> {
+        self.contract_answer
+    }
+
+    fn add_txn_field(&self, _index: i32, _field: i32, _data: &[u8]) -> HostResult<i32> {
+        self.contract_answer
+    }
+
+    fn emit_built_txn(&self, _index: i32, out: &mut [u8]) -> HostResult<usize> {
+        self.contract_ter.fill(out)
+    }
+
+    fn emit_txn(&self, _txn: &[u8], out: &mut [u8]) -> HostResult<usize> {
+        self.contract_ter.fill(out)
+    }
+
+    fn emit_event(&self, _name: &str, _data: &[u8]) -> HostResult<i32> {
+        self.contract_answer
+    }
 }
 
 // ---------------------------------------------------------------------------
@@ -1575,6 +1687,23 @@ pub mod import {
     pub const FLOAT_MULT: &str = r#"(import "host_lib" "float_mult" (func $float_mult (param i32 i32 i32 i32 i32 i32 i32) (result i32)))"#;
     pub const FLOAT_DIV: &str = r#"(import "host_lib" "float_div" (func $float_div (param i32 i32 i32 i32 i32 i32 i32) (result i32)))"#;
     pub const FLOAT_POW: &str = r#"(import "host_lib" "float_pow" (func $float_pow (param i32 i32 i32 i32 i32 i32) (result i32)))"#;
+    pub const INSTANCE_PARAM: &str = r#"(import "host_lib" "instance_param" (func $instance_param (param i32 i32 i32 i32) (result i32)))"#;
+    pub const FUNCTION_PARAM: &str = r#"(import "host_lib" "function_param" (func $function_param (param i32 i32 i32 i32) (result i32)))"#;
+    pub const GET_DATA_OBJECT_FIELD: &str = r#"(import "host_lib" "get_data_object_field" (func $get_data_object_field (param i32 i32 i32 i32 i32 i32) (result i32)))"#;
+    pub const GET_DATA_NESTED_OBJECT_FIELD: &str = r#"(import "host_lib" "get_data_nested_object_field" (func $get_data_nested_object_field (param i32 i32 i32 i32 i32 i32 i32 i32) (result i32)))"#;
+    pub const GET_DATA_ARRAY_ELEMENT_FIELD: &str = r#"(import "host_lib" "get_data_array_element_field" (func $get_data_array_element_field (param i32 i32 i32 i32 i32 i32 i32) (result i32)))"#;
+    pub const GET_DATA_NESTED_ARRAY_ELEMENT_FIELD: &str = r#"(import "host_lib" "get_data_nested_array_element_field" (func $get_data_nested_array_element_field (param i32 i32 i32 i32 i32 i32 i32 i32 i32) (result i32)))"#;
+    pub const SET_DATA_OBJECT_FIELD: &str = r#"(import "host_lib" "set_data_object_field" (func $set_data_object_field (param i32 i32 i32 i32 i32 i32) (result i32)))"#;
+    pub const SET_DATA_NESTED_OBJECT_FIELD: &str = r#"(import "host_lib" "set_data_nested_object_field" (func $set_data_nested_object_field (param i32 i32 i32 i32 i32 i32 i32 i32) (result i32)))"#;
+    pub const SET_DATA_ARRAY_ELEMENT_FIELD: &str = r#"(import "host_lib" "set_data_array_element_field" (func $set_data_array_element_field (param i32 i32 i32 i32 i32 i32 i32) (result i32)))"#;
+    pub const SET_DATA_NESTED_ARRAY_ELEMENT_FIELD: &str = r#"(import "host_lib" "set_data_nested_array_element_field" (func $set_data_nested_array_element_field (param i32 i32 i32 i32 i32 i32 i32 i32 i32) (result i32)))"#;
+    pub const BUILD_TXN: &str =
+        r#"(import "host_lib" "build_txn" (func $build_txn (param i32) (result i32)))"#;
+    pub const ADD_TXN_FIELD: &str = r#"(import "host_lib" "add_txn_field" (func $add_txn_field (param i32 i32 i32 i32) (result i32)))"#;
+    pub const EMIT_BUILT_TXN: &str = r#"(import "host_lib" "emit_built_txn" (func $emit_built_txn (param i32 i32 i32) (result i32)))"#;
+    pub const EMIT_TXN: &str =
+        r#"(import "host_lib" "emit_txn" (func $emit_txn (param i32 i32 i32 i32) (result i32)))"#;
+    pub const EMIT_EVENT: &str = r#"(import "host_lib" "emit_event" (func $emit_event (param i32 i32 i32 i32) (result i32)))"#;
 }
 
 /// One page of linear memory, exported under the name the engine looks for.

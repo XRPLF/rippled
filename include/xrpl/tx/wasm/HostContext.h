@@ -425,6 +425,106 @@ public:
         std::int32_t n,
         std::int32_t mode,
         rust::Slice<std::uint8_t> out) const noexcept;
+
+    // Smart-contract host functions. Each forwards to `xrpl::HostFunctions`, whose
+    // escrow implementation leaves them `Unimplemented`.
+
+    // The instance and call parameters, each serialized as the `STData` type
+    // `stTypeId` names. A negative index or type is `InvalidParams`.
+    [[nodiscard]] std::int32_t
+    instanceParam(std::int32_t index, std::int32_t stTypeId, rust::Slice<std::uint8_t> out)
+        const noexcept;
+
+    [[nodiscard]] std::int32_t
+    functionParam(std::int32_t index, std::int32_t stTypeId, rust::Slice<std::uint8_t> out)
+        const noexcept;
+
+    // The account id must be 20 bytes, else `InvalidParams`. Writes the value's
+    // canonical field serialization, without its type byte.
+    [[nodiscard]] std::int32_t
+    getDataObjectField(
+        rust::Slice<std::uint8_t const> account,
+        rust::Str key,
+        rust::Slice<std::uint8_t> out) const noexcept;
+
+    [[nodiscard]] std::int32_t
+    getDataNestedObjectField(
+        rust::Slice<std::uint8_t const> account,
+        rust::Str key,
+        rust::Str nestedKey,
+        rust::Slice<std::uint8_t> out) const noexcept;
+
+    // A negative element index is `IndexOutOfBounds`, not a very large one.
+    [[nodiscard]] std::int32_t
+    getDataArrayElementField(
+        rust::Slice<std::uint8_t const> account,
+        rust::Str key,
+        std::int32_t index,
+        rust::Slice<std::uint8_t> out) const noexcept;
+
+    [[nodiscard]] std::int32_t
+    getDataNestedArrayElementField(
+        rust::Slice<std::uint8_t const> account,
+        rust::Str key,
+        std::int32_t index,
+        rust::Str nestedKey,
+        rust::Slice<std::uint8_t> out) const noexcept;
+
+    // `value` is a one-byte `SerializedTypeID` followed by that type's
+    // serialization; anything else is `InvalidParams`.
+    [[nodiscard]] std::int32_t
+    setDataObjectField(
+        rust::Slice<std::uint8_t const> account,
+        rust::Str key,
+        rust::Slice<std::uint8_t const> value) const noexcept;
+
+    [[nodiscard]] std::int32_t
+    setDataNestedObjectField(
+        rust::Slice<std::uint8_t const> account,
+        rust::Str key,
+        rust::Str nestedKey,
+        rust::Slice<std::uint8_t const> value) const noexcept;
+
+    [[nodiscard]] std::int32_t
+    setDataArrayElementField(
+        rust::Slice<std::uint8_t const> account,
+        rust::Str key,
+        std::int32_t index,
+        rust::Slice<std::uint8_t const> value) const noexcept;
+
+    [[nodiscard]] std::int32_t
+    setDataNestedArrayElementField(
+        rust::Slice<std::uint8_t const> account,
+        rust::Str key,
+        std::int32_t index,
+        rust::Str nestedKey,
+        rust::Slice<std::uint8_t const> value) const noexcept;
+
+    // A transaction type outside `std::uint16_t` is `InvalidParams`. Answers the
+    // index of the transaction now being built.
+    [[nodiscard]] std::int32_t
+    buildTxn(std::int32_t txType) const noexcept;
+
+    [[nodiscard]] std::int32_t
+    addTxnField(std::int32_t index, std::int32_t field, rust::Slice<std::uint8_t const> data)
+        const noexcept;
+
+    // Writes the TER the emitted transaction produced, as four little-endian bytes.
+    //
+    // The TER is written rather than returned because a `tem`, `tef`, `ter` or `tel`
+    // code is negative, and a negative return is a `HostFunctionError`. A buffer too
+    // small to hold it does not un-apply the transaction.
+    [[nodiscard]] std::int32_t
+    emitBuiltTxn(std::int32_t index, rust::Slice<std::uint8_t> out) const noexcept;
+
+    // `txn` must be a serialized transaction, else `InvalidParams`. Writes the TER as
+    // `emitBuiltTxn` does.
+    [[nodiscard]] std::int32_t
+    emitTxn(rust::Slice<std::uint8_t const> txn, rust::Slice<std::uint8_t> out) const noexcept;
+
+    // `data` must be a serialized `STJson` object, else `InvalidParams`.
+    [[nodiscard]] std::int32_t
+    emitEvent(rust::Str name, rust::Slice<std::uint8_t const> data) const noexcept;
 };
 
 }  // namespace xrpl

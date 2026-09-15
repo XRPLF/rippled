@@ -571,4 +571,143 @@ host_functions! {
     #[gas = 5500]
     #[wasm_name = "float_pow"]
     fn float_power(&self, x: &[u8], n: i32, out: &mut [u8], mode: i32) -> HostResult<usize>;
+
+    // ------------------------------------------------------------------
+    // Smart contracts
+    //
+    // A contract reaches the parameters it was instantiated and called with, the
+    // data object it keeps per account, and the transactions and events it emits.
+    // A programmable escrow's host implements none of these, so they answer
+    // `Unimplemented` there.
+    // ------------------------------------------------------------------
+
+    /// The contract instance's parameter at `index`, serialized as the type `st_type_id`
+    /// names; `InvalidParams` if the parameter does not hold that type.
+    #[gas = 100]
+    #[wasm_name = "instance_param"]
+    fn instance_param(&self, index: i32, st_type_id: i32, out: &mut [u8]) -> HostResult<usize>;
+
+    /// The parameter this call was given at `index`, serialized as the type `st_type_id`
+    /// names; `InvalidParams` if the parameter does not hold that type.
+    #[gas = 100]
+    #[wasm_name = "function_param"]
+    fn function_param(&self, index: i32, st_type_id: i32, out: &mut [u8]) -> HostResult<usize>;
+
+    /// The value `key` holds in the 20-byte `account`'s data object, as its canonical
+    /// field serialization without a leading type byte.
+    #[gas = 500]
+    #[wasm_name = "get_data_object_field"]
+    fn get_data_object_field(&self, account: &[u8], key: &str, out: &mut [u8]) -> HostResult<usize>;
+
+    /// The value `nested_key` holds in the object under `key` in `account`'s data object.
+    #[gas = 500]
+    #[wasm_name = "get_data_nested_object_field"]
+    fn get_data_nested_object_field(
+        &self,
+        account: &[u8],
+        key: &str,
+        nested_key: &str,
+        out: &mut [u8],
+    ) -> HostResult<usize>;
+
+    /// The value `key` holds in element `index` of `account`'s data array.
+    #[gas = 500]
+    #[wasm_name = "get_data_array_element_field"]
+    fn get_data_array_element_field(
+        &self,
+        account: &[u8],
+        key: &str,
+        index: i32,
+        out: &mut [u8],
+    ) -> HostResult<usize>;
+
+    /// The value `nested_key` holds in element `index` of the array under `key` in
+    /// `account`'s data object.
+    #[gas = 500]
+    #[wasm_name = "get_data_nested_array_element_field"]
+    fn get_data_nested_array_element_field(
+        &self,
+        account: &[u8],
+        key: &str,
+        index: i32,
+        nested_key: &str,
+        out: &mut [u8],
+    ) -> HostResult<usize>;
+
+    /// Stores `value` under `key` in `account`'s data object, replacing whatever was
+    /// there. `value` is a field serialization preceded by its one-byte type.
+    #[gas = 500]
+    #[wasm_name = "set_data_object_field"]
+    fn set_data_object_field(&self, account: &[u8], key: &str, value: &[u8]) -> HostResult<i32>;
+
+    /// Stores `value` under `nested_key` in the object under `key` in `account`'s data
+    /// object. `key` is the outer name.
+    #[gas = 500]
+    #[wasm_name = "set_data_nested_object_field"]
+    fn set_data_nested_object_field(
+        &self,
+        account: &[u8],
+        key: &str,
+        nested_key: &str,
+        value: &[u8],
+    ) -> HostResult<i32>;
+
+    /// Stores `value` under `key` in element `index` of `account`'s data array.
+    #[gas = 500]
+    #[wasm_name = "set_data_array_element_field"]
+    fn set_data_array_element_field(
+        &self,
+        account: &[u8],
+        key: &str,
+        index: i32,
+        value: &[u8],
+    ) -> HostResult<i32>;
+
+    /// Stores `value` under `nested_key` in element `index` of the array under `key` in
+    /// `account`'s data object.
+    #[gas = 500]
+    #[wasm_name = "set_data_nested_array_element_field"]
+    fn set_data_nested_array_element_field(
+        &self,
+        account: &[u8],
+        key: &str,
+        index: i32,
+        nested_key: &str,
+        value: &[u8],
+    ) -> HostResult<i32>;
+
+    /// Starts building a transaction of type `tx_type` and answers its index, or
+    /// `SubmitTxnFailure` if a contract may not emit that type.
+    #[gas = 200]
+    #[wasm_name = "build_txn"]
+    fn build_txn(&self, tx_type: i32) -> HostResult<i32>;
+
+    /// Sets the field `field` names on the transaction being built at `index` to `data`,
+    /// which is that field's serialization.
+    #[gas = 200]
+    #[wasm_name = "add_txn_field"]
+    fn add_txn_field(&self, index: i32, field: i32, data: &[u8]) -> HostResult<i32>;
+
+    /// Applies the transaction built at `index`, writing the resulting TER as four
+    /// little-endian bytes.
+    ///
+    /// The TER is written rather than returned because a `tem`, `tef`, `ter` or `tel`
+    /// code is negative, and a negative result is a `HostError`. A `BufferTooSmall`
+    /// here does not un-apply the transaction: the emit has already happened.
+    #[gas = 500]
+    #[wasm_name = "emit_built_txn"]
+    fn emit_built_txn(&self, index: i32, out: &mut [u8]) -> HostResult<usize>;
+
+    /// Applies the serialized transaction `txn`, writing the resulting TER as four
+    /// little-endian bytes; `InvalidParams` if `txn` is not a well-formed transaction.
+    /// The TER is written rather than returned for the reason `emit_built_txn` gives.
+    #[gas = 500]
+    #[wasm_name = "emit_txn"]
+    fn emit_txn(&self, txn: &[u8], out: &mut [u8]) -> HostResult<usize>;
+
+    /// Records `data` as the event named `name`, for this node's subscribers. `data` is
+    /// a serialized `STJson` object.
+    #[gas = 500]
+    #[wasm_name = "emit_event"]
+    fn emit_event(&self, name: &str, data: &[u8]) -> HostResult<i32>;
 }

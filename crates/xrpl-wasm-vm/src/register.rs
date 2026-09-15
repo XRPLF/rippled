@@ -11,7 +11,7 @@
 //! **A body charges no gas and touches no wire encoding.** The generated closure
 //! does both, around the call, so a body says only what the call *is*.
 //!
-//! Four shapes cover 59 of the 60, each decided by the declaration's own types:
+//! Four shapes cover 77 of the 78, each decided by the declaration's own types:
 //!
 //! - a value the host answers directly — read the arguments, call the host;
 //! - [`write_into`], for a value written straight to the guest's output region:
@@ -21,7 +21,7 @@
 //!   the inputs stay borrowed rather than copied;
 //! - [`write_mant_exp`], for the one call that writes two regions.
 //!
-//! `trace` is the sixtieth: its declared `HostResult<()>` gives it a
+//! `trace` is the seventy-eighth: its declared `HostResult<()>` gives it a
 //! `CallResult<()>` body and the `charged_unreported` helper.
 
 use crate::abi::{CallResult, guest_memory, write_buffered, write_into, write_mant_exp};
@@ -708,5 +708,198 @@ impl HostFunctionBodies for Bodies {
         write_buffered(caller, out, |host, memory, buf| {
             host.float_power(x.read(memory)?, n, buf, mode)
         })
+    }
+
+    fn instance_param(
+        caller: &mut Caller<'_, VmState<'_>>,
+        index: i32,
+        st_type_id: i32,
+        out: OutBytes,
+    ) -> CallResult<i32> {
+        write_into(caller, out, |host, out| {
+            host.instance_param(index, st_type_id, out)
+        })
+    }
+
+    fn function_param(
+        caller: &mut Caller<'_, VmState<'_>>,
+        index: i32,
+        st_type_id: i32,
+        out: OutBytes,
+    ) -> CallResult<i32> {
+        write_into(caller, out, |host, out| {
+            host.function_param(index, st_type_id, out)
+        })
+    }
+
+    fn get_data_object_field(
+        caller: &mut Caller<'_, VmState<'_>>,
+        account: InBytes,
+        key: InStr,
+        out: OutBytes,
+    ) -> CallResult<i32> {
+        write_buffered(caller, out, |host, memory, buf| {
+            host.get_data_object_field(account.read(memory)?, key.read(memory)?, buf)
+        })
+    }
+
+    fn get_data_nested_object_field(
+        caller: &mut Caller<'_, VmState<'_>>,
+        account: InBytes,
+        key: InStr,
+        nested_key: InStr,
+        out: OutBytes,
+    ) -> CallResult<i32> {
+        write_buffered(caller, out, |host, memory, buf| {
+            host.get_data_nested_object_field(
+                account.read(memory)?,
+                key.read(memory)?,
+                nested_key.read(memory)?,
+                buf,
+            )
+        })
+    }
+
+    fn get_data_array_element_field(
+        caller: &mut Caller<'_, VmState<'_>>,
+        account: InBytes,
+        key: InStr,
+        index: i32,
+        out: OutBytes,
+    ) -> CallResult<i32> {
+        write_buffered(caller, out, |host, memory, buf| {
+            host.get_data_array_element_field(account.read(memory)?, key.read(memory)?, index, buf)
+        })
+    }
+
+    fn get_data_nested_array_element_field(
+        caller: &mut Caller<'_, VmState<'_>>,
+        account: InBytes,
+        key: InStr,
+        index: i32,
+        nested_key: InStr,
+        out: OutBytes,
+    ) -> CallResult<i32> {
+        write_buffered(caller, out, |host, memory, buf| {
+            host.get_data_nested_array_element_field(
+                account.read(memory)?,
+                key.read(memory)?,
+                index,
+                nested_key.read(memory)?,
+                buf,
+            )
+        })
+    }
+
+    fn set_data_object_field(
+        caller: &mut Caller<'_, VmState<'_>>,
+        account: InBytes,
+        key: InStr,
+        value: InBytes,
+    ) -> CallResult<i32> {
+        let memory = guest_memory(caller)?;
+        let host = caller.data().host;
+        Ok(host.set_data_object_field(
+            account.read(memory)?,
+            key.read(memory)?,
+            value.read(memory)?,
+        )?)
+    }
+
+    fn set_data_nested_object_field(
+        caller: &mut Caller<'_, VmState<'_>>,
+        account: InBytes,
+        key: InStr,
+        nested_key: InStr,
+        value: InBytes,
+    ) -> CallResult<i32> {
+        let memory = guest_memory(caller)?;
+        let host = caller.data().host;
+        Ok(host.set_data_nested_object_field(
+            account.read(memory)?,
+            key.read(memory)?,
+            nested_key.read(memory)?,
+            value.read(memory)?,
+        )?)
+    }
+
+    fn set_data_array_element_field(
+        caller: &mut Caller<'_, VmState<'_>>,
+        account: InBytes,
+        key: InStr,
+        index: i32,
+        value: InBytes,
+    ) -> CallResult<i32> {
+        let memory = guest_memory(caller)?;
+        let host = caller.data().host;
+        Ok(host.set_data_array_element_field(
+            account.read(memory)?,
+            key.read(memory)?,
+            index,
+            value.read(memory)?,
+        )?)
+    }
+
+    fn set_data_nested_array_element_field(
+        caller: &mut Caller<'_, VmState<'_>>,
+        account: InBytes,
+        key: InStr,
+        index: i32,
+        nested_key: InStr,
+        value: InBytes,
+    ) -> CallResult<i32> {
+        let memory = guest_memory(caller)?;
+        let host = caller.data().host;
+        Ok(host.set_data_nested_array_element_field(
+            account.read(memory)?,
+            key.read(memory)?,
+            index,
+            nested_key.read(memory)?,
+            value.read(memory)?,
+        )?)
+    }
+
+    fn build_txn(caller: &mut Caller<'_, VmState<'_>>, tx_type: i32) -> CallResult<i32> {
+        let host = caller.data().host;
+        Ok(host.build_txn(tx_type)?)
+    }
+
+    fn add_txn_field(
+        caller: &mut Caller<'_, VmState<'_>>,
+        index: i32,
+        field: i32,
+        data: InBytes,
+    ) -> CallResult<i32> {
+        let memory = guest_memory(caller)?;
+        let host = caller.data().host;
+        Ok(host.add_txn_field(index, field, data.read(memory)?)?)
+    }
+
+    fn emit_built_txn(
+        caller: &mut Caller<'_, VmState<'_>>,
+        index: i32,
+        out: OutBytes,
+    ) -> CallResult<i32> {
+        write_into(caller, out, |host, out| host.emit_built_txn(index, out))
+    }
+
+    fn emit_txn(
+        caller: &mut Caller<'_, VmState<'_>>,
+        txn: InBytes,
+        out: OutBytes,
+    ) -> CallResult<i32> {
+        write_buffered(caller, out, |host, memory, buf| {
+            host.emit_txn(txn.read(memory)?, buf)
+        })
+    }
+
+    fn emit_event(
+        caller: &mut Caller<'_, VmState<'_>>,
+        name: InStr,
+        data: InBytes,
+    ) -> CallResult<i32> {
+        let memory = guest_memory(caller)?;
+        let host = caller.data().host;
+        Ok(host.emit_event(name.read(memory)?, data.read(memory)?)?)
     }
 }

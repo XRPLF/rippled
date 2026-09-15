@@ -402,6 +402,77 @@ fn call_for(op: HostFunctionSpec) -> Call {
             "(call $float_pow (i32.const 0) (i32.const 8) (i32.const 2) (i32.const 8) (i32.const 8) (i32.const 0))",
             6,
         ),
+        HostFunctionSpec::InstanceParam => (
+            import::INSTANCE_PARAM,
+            "(call $instance_param (i32.const 0) (i32.const 1) (i32.const 0) (i32.const 8))",
+            4,
+        ),
+        HostFunctionSpec::FunctionParam => (
+            import::FUNCTION_PARAM,
+            "(call $function_param (i32.const 0) (i32.const 1) (i32.const 0) (i32.const 8))",
+            4,
+        ),
+        HostFunctionSpec::GetDataObjectField => (
+            import::GET_DATA_OBJECT_FIELD,
+            "(call $get_data_object_field (i32.const 0) (i32.const 20) (i32.const 20) (i32.const 4) (i32.const 32) (i32.const 8))",
+            6,
+        ),
+        HostFunctionSpec::GetDataNestedObjectField => (
+            import::GET_DATA_NESTED_OBJECT_FIELD,
+            "(call $get_data_nested_object_field (i32.const 0) (i32.const 20) (i32.const 20) (i32.const 4) (i32.const 24) (i32.const 4) (i32.const 32) (i32.const 8))",
+            8,
+        ),
+        HostFunctionSpec::GetDataArrayElementField => (
+            import::GET_DATA_ARRAY_ELEMENT_FIELD,
+            "(call $get_data_array_element_field (i32.const 0) (i32.const 20) (i32.const 20) (i32.const 4) (i32.const 0) (i32.const 32) (i32.const 8))",
+            7,
+        ),
+        HostFunctionSpec::GetDataNestedArrayElementField => (
+            import::GET_DATA_NESTED_ARRAY_ELEMENT_FIELD,
+            "(call $get_data_nested_array_element_field (i32.const 0) (i32.const 20) (i32.const 20) (i32.const 4) (i32.const 0) (i32.const 24) (i32.const 4) (i32.const 32) (i32.const 8))",
+            9,
+        ),
+        HostFunctionSpec::SetDataObjectField => (
+            import::SET_DATA_OBJECT_FIELD,
+            "(call $set_data_object_field (i32.const 0) (i32.const 20) (i32.const 20) (i32.const 4) (i32.const 32) (i32.const 8))",
+            6,
+        ),
+        HostFunctionSpec::SetDataNestedObjectField => (
+            import::SET_DATA_NESTED_OBJECT_FIELD,
+            "(call $set_data_nested_object_field (i32.const 0) (i32.const 20) (i32.const 20) (i32.const 4) (i32.const 24) (i32.const 4) (i32.const 32) (i32.const 8))",
+            8,
+        ),
+        HostFunctionSpec::SetDataArrayElementField => (
+            import::SET_DATA_ARRAY_ELEMENT_FIELD,
+            "(call $set_data_array_element_field (i32.const 0) (i32.const 20) (i32.const 20) (i32.const 4) (i32.const 0) (i32.const 32) (i32.const 8))",
+            7,
+        ),
+        HostFunctionSpec::SetDataNestedArrayElementField => (
+            import::SET_DATA_NESTED_ARRAY_ELEMENT_FIELD,
+            "(call $set_data_nested_array_element_field (i32.const 0) (i32.const 20) (i32.const 20) (i32.const 4) (i32.const 0) (i32.const 24) (i32.const 4) (i32.const 32) (i32.const 8))",
+            9,
+        ),
+        HostFunctionSpec::BuildTxn => (import::BUILD_TXN, "(call $build_txn (i32.const 0))", 1),
+        HostFunctionSpec::AddTxnField => (
+            import::ADD_TXN_FIELD,
+            "(call $add_txn_field (i32.const 0) (i32.const 1) (i32.const 0) (i32.const 8))",
+            4,
+        ),
+        HostFunctionSpec::EmitBuiltTxn => (
+            import::EMIT_BUILT_TXN,
+            "(call $emit_built_txn (i32.const 0) (i32.const 0) (i32.const 4))",
+            3,
+        ),
+        HostFunctionSpec::EmitTxn => (
+            import::EMIT_TXN,
+            "(call $emit_txn (i32.const 0) (i32.const 8) (i32.const 16) (i32.const 4))",
+            4,
+        ),
+        HostFunctionSpec::EmitEvent => (
+            import::EMIT_EVENT,
+            "(call $emit_event (i32.const 0) (i32.const 4) (i32.const 8) (i32.const 8))",
+            4,
+        ),
     };
     Call {
         import,

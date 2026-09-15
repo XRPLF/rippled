@@ -605,6 +605,109 @@ impl HostFunctions for FakeHost {
         }
         put(out, &[x[0]])
     }
+
+    fn instance_param(&self, _index: i32, _st_type_id: i32, out: &mut [u8]) -> HostResult<usize> {
+        put(out, &[0xc0])
+    }
+
+    fn function_param(&self, _index: i32, _st_type_id: i32, out: &mut [u8]) -> HostResult<usize> {
+        put(out, &[0xc0])
+    }
+
+    fn get_data_object_field(
+        &self,
+        _account: &[u8],
+        _key: &str,
+        out: &mut [u8],
+    ) -> HostResult<usize> {
+        put(out, &[0xc0])
+    }
+
+    fn get_data_nested_object_field(
+        &self,
+        _account: &[u8],
+        _key: &str,
+        _nested_key: &str,
+        out: &mut [u8],
+    ) -> HostResult<usize> {
+        put(out, &[0xc0])
+    }
+
+    fn get_data_array_element_field(
+        &self,
+        _account: &[u8],
+        _key: &str,
+        _index: i32,
+        out: &mut [u8],
+    ) -> HostResult<usize> {
+        put(out, &[0xc0])
+    }
+
+    fn get_data_nested_array_element_field(
+        &self,
+        _account: &[u8],
+        _key: &str,
+        _index: i32,
+        _nested_key: &str,
+        out: &mut [u8],
+    ) -> HostResult<usize> {
+        put(out, &[0xc0])
+    }
+
+    fn set_data_object_field(&self, _account: &[u8], _key: &str, _value: &[u8]) -> HostResult<i32> {
+        Ok(0)
+    }
+
+    fn set_data_nested_object_field(
+        &self,
+        _account: &[u8],
+        _key: &str,
+        _nested_key: &str,
+        _value: &[u8],
+    ) -> HostResult<i32> {
+        Ok(0)
+    }
+
+    fn set_data_array_element_field(
+        &self,
+        _account: &[u8],
+        _key: &str,
+        _index: i32,
+        _value: &[u8],
+    ) -> HostResult<i32> {
+        Ok(0)
+    }
+
+    fn set_data_nested_array_element_field(
+        &self,
+        _account: &[u8],
+        _key: &str,
+        _index: i32,
+        _nested_key: &str,
+        _value: &[u8],
+    ) -> HostResult<i32> {
+        Ok(0)
+    }
+
+    fn build_txn(&self, _tx_type: i32) -> HostResult<i32> {
+        Ok(0)
+    }
+
+    fn add_txn_field(&self, _index: i32, _field: i32, _data: &[u8]) -> HostResult<i32> {
+        Ok(0)
+    }
+
+    fn emit_built_txn(&self, _index: i32, out: &mut [u8]) -> HostResult<usize> {
+        put(out, &0i32.to_le_bytes())
+    }
+
+    fn emit_txn(&self, _txn: &[u8], out: &mut [u8]) -> HostResult<usize> {
+        put(out, &0i32.to_le_bytes())
+    }
+
+    fn emit_event(&self, _name: &str, _data: &[u8]) -> HostResult<i32> {
+        Ok(0)
+    }
 }
 
 #[test]
@@ -1005,6 +1108,21 @@ fn the_spec_table_matches_the_declarations() {
             ("float_mult", 300),
             ("float_div", 300),
             ("float_pow", 5500),
+            ("instance_param", 100),
+            ("function_param", 100),
+            ("get_data_object_field", 500),
+            ("get_data_nested_object_field", 500),
+            ("get_data_array_element_field", 500),
+            ("get_data_nested_array_element_field", 500),
+            ("set_data_object_field", 500),
+            ("set_data_nested_object_field", 500),
+            ("set_data_array_element_field", 500),
+            ("set_data_nested_array_element_field", 500),
+            ("build_txn", 200),
+            ("add_txn_field", 200),
+            ("emit_built_txn", 500),
+            ("emit_txn", 500),
+            ("emit_event", 500),
         ]
     );
 }
@@ -1092,6 +1210,21 @@ fn the_wasm_signatures_match_the_declarations() {
             "float_mult (i32, i32, i32, i32, i32, i32, i32) -> i32",
             "float_div (i32, i32, i32, i32, i32, i32, i32) -> i32",
             "float_pow (i32, i32, i32, i32, i32, i32) -> i32",
+            "instance_param (i32, i32, i32, i32) -> i32",
+            "function_param (i32, i32, i32, i32) -> i32",
+            "get_data_object_field (i32, i32, i32, i32, i32, i32) -> i32",
+            "get_data_nested_object_field (i32, i32, i32, i32, i32, i32, i32, i32) -> i32",
+            "get_data_array_element_field (i32, i32, i32, i32, i32, i32, i32) -> i32",
+            "get_data_nested_array_element_field (i32, i32, i32, i32, i32, i32, i32, i32, i32) -> i32",
+            "set_data_object_field (i32, i32, i32, i32, i32, i32) -> i32",
+            "set_data_nested_object_field (i32, i32, i32, i32, i32, i32, i32, i32) -> i32",
+            "set_data_array_element_field (i32, i32, i32, i32, i32, i32, i32) -> i32",
+            "set_data_nested_array_element_field (i32, i32, i32, i32, i32, i32, i32, i32, i32) -> i32",
+            "build_txn (i32) -> i32",
+            "add_txn_field (i32, i32, i32, i32) -> i32",
+            "emit_built_txn (i32, i32, i32) -> i32",
+            "emit_txn (i32, i32, i32, i32) -> i32",
+            "emit_event (i32, i32, i32, i32) -> i32",
         ]
     );
 }

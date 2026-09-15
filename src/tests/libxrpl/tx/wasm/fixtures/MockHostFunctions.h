@@ -7,15 +7,20 @@
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/STJson.h>
 #include <xrpl/protocol/STNumber.h>
+#include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/UintTypes.h>
 #include <xrpl/tx/wasm/HostFunc.h>
 #include <xrpl/tx/wasm/WasmCommon.h>
 
 #include <gmock/gmock.h>
 
+#include <cstddef>
 #include <cstdint>
 #include <expected>
+#include <memory>
 #include <string_view>
 
 namespace xrpl::test {
@@ -421,6 +426,112 @@ struct MockHostFunctions : HostFunctions
         floatPower,
         (Slice const& x, std::int32_t n, std::int32_t mode),
         (const, override));
+
+    // The contract host functions. Unlike everything above they are not `const`: they
+    // mutate the contract's data cache, its transaction builder and its event map.
+
+    MOCK_METHOD(
+        (std::expected<Bytes, HostFunctionError>),
+        instanceParam,
+        (std::uint32_t index, std::uint32_t stTypeId),
+        (override));
+
+    MOCK_METHOD(
+        (std::expected<Bytes, HostFunctionError>),
+        functionParam,
+        (std::uint32_t index, std::uint32_t stTypeId),
+        (override));
+
+    MOCK_METHOD(
+        (std::expected<Bytes, HostFunctionError>),
+        getDataObjectField,
+        (AccountID const& account, std::string_view const& key),
+        (override));
+
+    MOCK_METHOD(
+        (std::expected<Bytes, HostFunctionError>),
+        getDataNestedObjectField,
+        (AccountID const& account, std::string_view const& key, std::string_view const& nestedKey),
+        (override));
+
+    MOCK_METHOD(
+        (std::expected<Bytes, HostFunctionError>),
+        getDataArrayElementField,
+        (AccountID const& account, std::size_t index, std::string_view const& key),
+        (override));
+
+    MOCK_METHOD(
+        (std::expected<Bytes, HostFunctionError>),
+        getDataNestedArrayElementField,
+        (AccountID const& account,
+         std::string_view const& key,
+         std::size_t index,
+         std::string_view const& nestedKey),
+        (override));
+
+    MOCK_METHOD(
+        (std::expected<std::int32_t, HostFunctionError>),
+        setDataObjectField,
+        (AccountID const& account, std::string_view const& key, STJson::Value const& value),
+        (override));
+
+    MOCK_METHOD(
+        (std::expected<std::int32_t, HostFunctionError>),
+        setDataNestedObjectField,
+        (AccountID const& account,
+         std::string_view const& key,
+         std::string_view const& nestedKey,
+         STJson::Value const& value),
+        (override));
+
+    MOCK_METHOD(
+        (std::expected<std::int32_t, HostFunctionError>),
+        setDataArrayElementField,
+        (AccountID const& account,
+         std::size_t index,
+         std::string_view const& key,
+         STJson::Value const& value),
+        (override));
+
+    MOCK_METHOD(
+        (std::expected<std::int32_t, HostFunctionError>),
+        setDataNestedArrayElementField,
+        (AccountID const& account,
+         std::string_view const& key,
+         std::size_t index,
+         std::string_view const& nestedKey,
+         STJson::Value const& value),
+        (override));
+
+    MOCK_METHOD(
+        (std::expected<std::int32_t, HostFunctionError>),
+        buildTxn,
+        (std::uint16_t const& txType),
+        (override));
+
+    MOCK_METHOD(
+        (std::expected<std::int32_t, HostFunctionError>),
+        addTxnField,
+        (std::uint32_t const& index, SField const& field, Slice const& data),
+        (override));
+
+    MOCK_METHOD(
+        (std::expected<std::int32_t, HostFunctionError>),
+        emitBuiltTxn,
+        (std::uint32_t const& index),
+        (override));
+
+    MOCK_METHOD(
+        (std::expected<std::int32_t, HostFunctionError>),
+        emitTxn,
+        (std::shared_ptr<STTx const> const& stxPtr),
+        (override));
+
+    MOCK_METHOD(
+        (std::expected<std::int32_t, HostFunctionError>),
+        emitEvent,
+        (std::string_view const& eventName, STJson const& eventData),
+        (override));
 };
 
 // Matches a `Slice` (or anything with `data()`/`size()`) against the bytes of a string, so
@@ -432,6 +543,42 @@ MATCHER_P(BytesAre, expected, "")
 {
     return std::string_view{reinterpret_cast<char const*>(arg.data()), arg.size()} ==
         std::string_view{expected};
+}
+
+// Matches an `AccountID` against another, so an expectation can name *whose* data a
+// contract asked the host for.
+// NOLINTNEXTLINE(readability-identifier-naming)
+MATCHER_P(AccountIs, expected, "")
+{
+    return arg == expected;
+}
+
+// Matches an `STJson::Value` against the type and serialization it should carry, which
+// is what the guest wrote into the value region.
+// NOLINTNEXTLINE(readability-identifier-naming)
+MATCHER_P2(JsonValueIs, type, bytes, "")
+{
+    if (!arg || arg->getSType() != type)
+        return false;
+    Serializer s;
+    arg->add(s);
+    return Bytes{s.peekData().begin(), s.peekData().end()} == bytes;
+}
+
+// Matches an `STJson` by its serialization. `isEquivalent` compares the `shared_ptr`s a
+// map holds rather than the values they point at, so it cannot be used here.
+// NOLINTNEXTLINE(readability-identifier-naming)
+MATCHER_P(EventJsonEq, expected, "")
+{
+    return arg.toBlob() == expected.toBlob();
+}
+
+// Matches a transaction by its id, which is all a host call needs to say *which*
+// transaction the guest handed it.
+// NOLINTNEXTLINE(readability-identifier-naming)
+MATCHER_P(StTxIdIs, expected, "")
+{
+    return arg && arg->getTransactionID() == expected;
 }
 
 }  // namespace xrpl::test

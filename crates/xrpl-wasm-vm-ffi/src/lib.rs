@@ -543,6 +543,114 @@ mod ffi {
         #[namespace = "xrpl"]
         #[cxx_name = "floatPower"]
         fn float_power(self: &HostContext, x: &[u8], n: i32, mode: i32, out: &mut [u8]) -> i32;
+
+        #[namespace = "xrpl"]
+        #[cxx_name = "instanceParam"]
+        fn instance_param(self: &HostContext, index: i32, st_type_id: i32, out: &mut [u8]) -> i32;
+
+        #[namespace = "xrpl"]
+        #[cxx_name = "functionParam"]
+        fn function_param(self: &HostContext, index: i32, st_type_id: i32, out: &mut [u8]) -> i32;
+
+        #[namespace = "xrpl"]
+        #[cxx_name = "getDataObjectField"]
+        fn get_data_object_field(
+            self: &HostContext,
+            account: &[u8],
+            key: &str,
+            out: &mut [u8],
+        ) -> i32;
+
+        #[namespace = "xrpl"]
+        #[cxx_name = "getDataNestedObjectField"]
+        fn get_data_nested_object_field(
+            self: &HostContext,
+            account: &[u8],
+            key: &str,
+            nested_key: &str,
+            out: &mut [u8],
+        ) -> i32;
+
+        #[namespace = "xrpl"]
+        #[cxx_name = "getDataArrayElementField"]
+        fn get_data_array_element_field(
+            self: &HostContext,
+            account: &[u8],
+            key: &str,
+            index: i32,
+            out: &mut [u8],
+        ) -> i32;
+
+        #[namespace = "xrpl"]
+        #[cxx_name = "getDataNestedArrayElementField"]
+        fn get_data_nested_array_element_field(
+            self: &HostContext,
+            account: &[u8],
+            key: &str,
+            index: i32,
+            nested_key: &str,
+            out: &mut [u8],
+        ) -> i32;
+
+        #[namespace = "xrpl"]
+        #[cxx_name = "setDataObjectField"]
+        fn set_data_object_field(
+            self: &HostContext,
+            account: &[u8],
+            key: &str,
+            value: &[u8],
+        ) -> i32;
+
+        #[namespace = "xrpl"]
+        #[cxx_name = "setDataNestedObjectField"]
+        fn set_data_nested_object_field(
+            self: &HostContext,
+            account: &[u8],
+            key: &str,
+            nested_key: &str,
+            value: &[u8],
+        ) -> i32;
+
+        #[namespace = "xrpl"]
+        #[cxx_name = "setDataArrayElementField"]
+        fn set_data_array_element_field(
+            self: &HostContext,
+            account: &[u8],
+            key: &str,
+            index: i32,
+            value: &[u8],
+        ) -> i32;
+
+        #[namespace = "xrpl"]
+        #[cxx_name = "setDataNestedArrayElementField"]
+        fn set_data_nested_array_element_field(
+            self: &HostContext,
+            account: &[u8],
+            key: &str,
+            index: i32,
+            nested_key: &str,
+            value: &[u8],
+        ) -> i32;
+
+        #[namespace = "xrpl"]
+        #[cxx_name = "buildTxn"]
+        fn build_txn(self: &HostContext, tx_type: i32) -> i32;
+
+        #[namespace = "xrpl"]
+        #[cxx_name = "addTxnField"]
+        fn add_txn_field(self: &HostContext, index: i32, field: i32, data: &[u8]) -> i32;
+
+        #[namespace = "xrpl"]
+        #[cxx_name = "emitBuiltTxn"]
+        fn emit_built_txn(self: &HostContext, index: i32, out: &mut [u8]) -> i32;
+
+        #[namespace = "xrpl"]
+        #[cxx_name = "emitTxn"]
+        fn emit_txn(self: &HostContext, txn: &[u8], out: &mut [u8]) -> i32;
+
+        #[namespace = "xrpl"]
+        #[cxx_name = "emitEvent"]
+        fn emit_event(self: &HostContext, name: &str, data: &[u8]) -> i32;
     }
 }
 
@@ -926,6 +1034,127 @@ impl HostFunctions for CxxHost<'_> {
 
     fn float_power(&self, x: &[u8], n: i32, out: &mut [u8], mode: i32) -> HostResult<usize> {
         bytes_written(self.ctx.float_power(x, n, mode, out))
+    }
+
+    fn instance_param(&self, index: i32, st_type_id: i32, out: &mut [u8]) -> HostResult<usize> {
+        bytes_written(self.ctx.instance_param(index, st_type_id, out))
+    }
+
+    fn function_param(&self, index: i32, st_type_id: i32, out: &mut [u8]) -> HostResult<usize> {
+        bytes_written(self.ctx.function_param(index, st_type_id, out))
+    }
+
+    fn get_data_object_field(
+        &self,
+        account: &[u8],
+        key: &str,
+        out: &mut [u8],
+    ) -> HostResult<usize> {
+        bytes_written(self.ctx.get_data_object_field(account, key, out))
+    }
+
+    fn get_data_nested_object_field(
+        &self,
+        account: &[u8],
+        key: &str,
+        nested_key: &str,
+        out: &mut [u8],
+    ) -> HostResult<usize> {
+        bytes_written(
+            self.ctx
+                .get_data_nested_object_field(account, key, nested_key, out),
+        )
+    }
+
+    fn get_data_array_element_field(
+        &self,
+        account: &[u8],
+        key: &str,
+        index: i32,
+        out: &mut [u8],
+    ) -> HostResult<usize> {
+        bytes_written(
+            self.ctx
+                .get_data_array_element_field(account, key, index, out),
+        )
+    }
+
+    fn get_data_nested_array_element_field(
+        &self,
+        account: &[u8],
+        key: &str,
+        index: i32,
+        nested_key: &str,
+        out: &mut [u8],
+    ) -> HostResult<usize> {
+        bytes_written(
+            self.ctx
+                .get_data_nested_array_element_field(account, key, index, nested_key, out),
+        )
+    }
+
+    fn set_data_object_field(&self, account: &[u8], key: &str, value: &[u8]) -> HostResult<i32> {
+        scalar(self.ctx.set_data_object_field(account, key, value))
+    }
+
+    fn set_data_nested_object_field(
+        &self,
+        account: &[u8],
+        key: &str,
+        nested_key: &str,
+        value: &[u8],
+    ) -> HostResult<i32> {
+        scalar(
+            self.ctx
+                .set_data_nested_object_field(account, key, nested_key, value),
+        )
+    }
+
+    fn set_data_array_element_field(
+        &self,
+        account: &[u8],
+        key: &str,
+        index: i32,
+        value: &[u8],
+    ) -> HostResult<i32> {
+        scalar(
+            self.ctx
+                .set_data_array_element_field(account, key, index, value),
+        )
+    }
+
+    fn set_data_nested_array_element_field(
+        &self,
+        account: &[u8],
+        key: &str,
+        index: i32,
+        nested_key: &str,
+        value: &[u8],
+    ) -> HostResult<i32> {
+        scalar(
+            self.ctx
+                .set_data_nested_array_element_field(account, key, index, nested_key, value),
+        )
+    }
+
+    fn build_txn(&self, tx_type: i32) -> HostResult<i32> {
+        scalar(self.ctx.build_txn(tx_type))
+    }
+
+    fn add_txn_field(&self, index: i32, field: i32, data: &[u8]) -> HostResult<i32> {
+        scalar(self.ctx.add_txn_field(index, field, data))
+    }
+
+    fn emit_built_txn(&self, index: i32, out: &mut [u8]) -> HostResult<usize> {
+        bytes_written(self.ctx.emit_built_txn(index, out))
+    }
+
+    fn emit_txn(&self, txn: &[u8], out: &mut [u8]) -> HostResult<usize> {
+        bytes_written(self.ctx.emit_txn(txn, out))
+    }
+
+    fn emit_event(&self, name: &str, data: &[u8]) -> HostResult<i32> {
+        scalar(self.ctx.emit_event(name, data))
     }
 }
 

@@ -680,6 +680,109 @@ mod tests {
         ) -> HostResult<usize> {
             unreachable!("no unit test in this module calls the host")
         }
+        fn instance_param(
+            &self,
+            _index: i32,
+            _st_type_id: i32,
+            _out: &mut [u8],
+        ) -> HostResult<usize> {
+            unreachable!("no unit test in this module calls the host")
+        }
+        fn function_param(
+            &self,
+            _index: i32,
+            _st_type_id: i32,
+            _out: &mut [u8],
+        ) -> HostResult<usize> {
+            unreachable!("no unit test in this module calls the host")
+        }
+        fn get_data_object_field(
+            &self,
+            _account: &[u8],
+            _key: &str,
+            _out: &mut [u8],
+        ) -> HostResult<usize> {
+            unreachable!("no unit test in this module calls the host")
+        }
+        fn get_data_nested_object_field(
+            &self,
+            _account: &[u8],
+            _key: &str,
+            _nested_key: &str,
+            _out: &mut [u8],
+        ) -> HostResult<usize> {
+            unreachable!("no unit test in this module calls the host")
+        }
+        fn get_data_array_element_field(
+            &self,
+            _account: &[u8],
+            _key: &str,
+            _index: i32,
+            _out: &mut [u8],
+        ) -> HostResult<usize> {
+            unreachable!("no unit test in this module calls the host")
+        }
+        fn get_data_nested_array_element_field(
+            &self,
+            _account: &[u8],
+            _key: &str,
+            _index: i32,
+            _nested_key: &str,
+            _out: &mut [u8],
+        ) -> HostResult<usize> {
+            unreachable!("no unit test in this module calls the host")
+        }
+        fn set_data_object_field(
+            &self,
+            _account: &[u8],
+            _key: &str,
+            _value: &[u8],
+        ) -> HostResult<i32> {
+            unreachable!("no unit test in this module calls the host")
+        }
+        fn set_data_nested_object_field(
+            &self,
+            _account: &[u8],
+            _key: &str,
+            _nested_key: &str,
+            _value: &[u8],
+        ) -> HostResult<i32> {
+            unreachable!("no unit test in this module calls the host")
+        }
+        fn set_data_array_element_field(
+            &self,
+            _account: &[u8],
+            _key: &str,
+            _index: i32,
+            _value: &[u8],
+        ) -> HostResult<i32> {
+            unreachable!("no unit test in this module calls the host")
+        }
+        fn set_data_nested_array_element_field(
+            &self,
+            _account: &[u8],
+            _key: &str,
+            _index: i32,
+            _nested_key: &str,
+            _value: &[u8],
+        ) -> HostResult<i32> {
+            unreachable!("no unit test in this module calls the host")
+        }
+        fn build_txn(&self, _tx_type: i32) -> HostResult<i32> {
+            unreachable!("no unit test in this module calls the host")
+        }
+        fn add_txn_field(&self, _index: i32, _field: i32, _data: &[u8]) -> HostResult<i32> {
+            unreachable!("no unit test in this module calls the host")
+        }
+        fn emit_built_txn(&self, _index: i32, _out: &mut [u8]) -> HostResult<usize> {
+            unreachable!("no unit test in this module calls the host")
+        }
+        fn emit_txn(&self, _txn: &[u8], _out: &mut [u8]) -> HostResult<usize> {
+            unreachable!("no unit test in this module calls the host")
+        }
+        fn emit_event(&self, _name: &str, _data: &[u8]) -> HostResult<i32> {
+            unreachable!("no unit test in this module calls the host")
+        }
     }
 
     fn state(budget: u64) -> VmState<'static> {

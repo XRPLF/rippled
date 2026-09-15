@@ -11,7 +11,9 @@
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/STJson.h>
 #include <xrpl/protocol/STNumber.h>
+#include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/UintTypes.h>
 #include <xrpl/tx/wasm/HostFunc.h>
@@ -28,6 +30,7 @@
 #include <exception>
 #include <expected>
 #include <limits>
+#include <memory>
 #include <optional>
 #include <string>
 #include <string_view>
@@ -139,6 +142,66 @@ parseST(rust::Slice<std::uint8_t const> bytes)
     {
         return std::unexpected(HostFunctionError::InvalidParams);
     }
+}
+
+// A guest-supplied string, as the view `HostFunctions` takes. The engine has already
+// refused a region that is not UTF-8, so nothing is checked here.
+std::string_view
+asStringView(rust::Str str)
+{
+    return std::string_view{str.data(), str.size()};
+}
+
+// Decode a 20-byte account id; any other length is `InvalidParams`.
+std::expected<AccountID, HostFunctionError>
+parseAccount(rust::Slice<std::uint8_t const> account)
+{
+    if (account.size() != AccountID::size())
+    {
+        return std::unexpected(HostFunctionError::InvalidParams);
+    }
+    return AccountID::fromVoid(account.data());
+}
+
+// Decode a contract data value: a one-byte `SerializedTypeID` followed by that type's
+// serialization.
+//
+// A guest that writes those bytes wrongly gets `InvalidParams` rather than a fatal
+// error, so the deserializer's exception is caught here instead of by `guarded`.
+std::expected<STJson::Value, HostFunctionError>
+parseJsonValue(rust::Slice<std::uint8_t const> value)
+{
+    if (value.size() > kMaxWasmDataLength)
+    {
+        return std::unexpected(HostFunctionError::DataFieldTooLarge);
+    }
+
+    try
+    {
+        auto sit = SerialIter{Slice{value.data(), value.size()}};
+        auto parsed = STJson::makeValueFromVLWithType(sit);
+        if (!parsed)
+        {
+            return std::unexpected(HostFunctionError::InvalidParams);
+        }
+        return parsed;
+    }
+    catch (std::exception const&)
+    {
+        return std::unexpected(HostFunctionError::InvalidParams);
+    }
+}
+
+// A guest-supplied element index. Negative is out of range rather than a very large
+// unsigned one, which is what an unchecked cast would make it.
+std::expected<std::size_t, HostFunctionError>
+parseIndex(std::int32_t index)
+{
+    if (index < 0)
+    {
+        return std::unexpected(HostFunctionError::IndexOutOfBounds);
+    }
+    return static_cast<std::size_t>(index);
 }
 
 template <typename Functor>
@@ -1272,6 +1335,312 @@ HostContext::floatPower(
     return guarded(hostFunctions_.getJournal(), kHostInternal, [&] {
         return invoke<false>(
             out, [&] { return hostFunctions_.floatPower(Slice{x.data(), x.size()}, n, mode); });
+    });
+}
+
+std::int32_t
+HostContext::instanceParam(std::int32_t index, std::int32_t stTypeId, rust::Slice<std::uint8_t> out)
+    const noexcept
+{
+    return guarded(hostFunctions_.getJournal(), kHostInternal, [&] {
+        if (index < 0 || stTypeId < 0)
+        {
+            return hfErrorToInt(HostFunctionError::InvalidParams);
+        }
+        return invoke<false>(out, [&] {
+            return hostFunctions_.instanceParam(
+                static_cast<std::uint32_t>(index), static_cast<std::uint32_t>(stTypeId));
+        });
+    });
+}
+
+std::int32_t
+HostContext::functionParam(std::int32_t index, std::int32_t stTypeId, rust::Slice<std::uint8_t> out)
+    const noexcept
+{
+    return guarded(hostFunctions_.getJournal(), kHostInternal, [&] {
+        if (index < 0 || stTypeId < 0)
+        {
+            return hfErrorToInt(HostFunctionError::InvalidParams);
+        }
+        return invoke<false>(out, [&] {
+            return hostFunctions_.functionParam(
+                static_cast<std::uint32_t>(index), static_cast<std::uint32_t>(stTypeId));
+        });
+    });
+}
+
+std::int32_t
+HostContext::getDataObjectField(
+    rust::Slice<std::uint8_t const> account,
+    rust::Str key,
+    rust::Slice<std::uint8_t> out) const noexcept
+{
+    return guarded(hostFunctions_.getJournal(), kHostInternal, [&] {
+        return invokeWithAccount(account, out, [&](AccountID const& acct) {
+            return hostFunctions_.getDataObjectField(acct, asStringView(key));
+        });
+    });
+}
+
+std::int32_t
+HostContext::getDataNestedObjectField(
+    rust::Slice<std::uint8_t const> account,
+    rust::Str key,
+    rust::Str nestedKey,
+    rust::Slice<std::uint8_t> out) const noexcept
+{
+    return guarded(hostFunctions_.getJournal(), kHostInternal, [&] {
+        return invokeWithAccount(account, out, [&](AccountID const& acct) {
+            return hostFunctions_.getDataNestedObjectField(
+                acct, asStringView(key), asStringView(nestedKey));
+        });
+    });
+}
+
+std::int32_t
+HostContext::getDataArrayElementField(
+    rust::Slice<std::uint8_t const> account,
+    rust::Str key,
+    std::int32_t index,
+    rust::Slice<std::uint8_t> out) const noexcept
+{
+    return guarded(hostFunctions_.getJournal(), kHostInternal, [&] {
+        auto const element = parseIndex(index);
+        if (!element)
+        {
+            return hfErrorToInt(element.error());
+        }
+        return invokeWithAccount(account, out, [&](AccountID const& acct) {
+            return hostFunctions_.getDataArrayElementField(acct, *element, asStringView(key));
+        });
+    });
+}
+
+std::int32_t
+HostContext::getDataNestedArrayElementField(
+    rust::Slice<std::uint8_t const> account,
+    rust::Str key,
+    std::int32_t index,
+    rust::Str nestedKey,
+    rust::Slice<std::uint8_t> out) const noexcept
+{
+    return guarded(hostFunctions_.getJournal(), kHostInternal, [&] {
+        auto const element = parseIndex(index);
+        if (!element)
+        {
+            return hfErrorToInt(element.error());
+        }
+        return invokeWithAccount(account, out, [&](AccountID const& acct) {
+            return hostFunctions_.getDataNestedArrayElementField(
+                acct, asStringView(key), *element, asStringView(nestedKey));
+        });
+    });
+}
+
+std::int32_t
+HostContext::setDataObjectField(
+    rust::Slice<std::uint8_t const> account,
+    rust::Str key,
+    rust::Slice<std::uint8_t const> value) const noexcept
+{
+    return guarded(hostFunctions_.getJournal(), kHostInternal, [&] {
+        auto const acct = parseAccount(account);
+        if (!acct)
+        {
+            return hfErrorToInt(acct.error());
+        }
+        auto const parsed = parseJsonValue(value);
+        if (!parsed)
+        {
+            return hfErrorToInt(parsed.error());
+        }
+        return invoke(
+            [&] { return hostFunctions_.setDataObjectField(*acct, asStringView(key), *parsed); });
+    });
+}
+
+std::int32_t
+HostContext::setDataNestedObjectField(
+    rust::Slice<std::uint8_t const> account,
+    rust::Str key,
+    rust::Str nestedKey,
+    rust::Slice<std::uint8_t const> value) const noexcept
+{
+    return guarded(hostFunctions_.getJournal(), kHostInternal, [&] {
+        auto const acct = parseAccount(account);
+        if (!acct)
+        {
+            return hfErrorToInt(acct.error());
+        }
+        auto const parsed = parseJsonValue(value);
+        if (!parsed)
+        {
+            return hfErrorToInt(parsed.error());
+        }
+        return invoke([&] {
+            return hostFunctions_.setDataNestedObjectField(
+                *acct, asStringView(key), asStringView(nestedKey), *parsed);
+        });
+    });
+}
+
+std::int32_t
+HostContext::setDataArrayElementField(
+    rust::Slice<std::uint8_t const> account,
+    rust::Str key,
+    std::int32_t index,
+    rust::Slice<std::uint8_t const> value) const noexcept
+{
+    return guarded(hostFunctions_.getJournal(), kHostInternal, [&] {
+        auto const acct = parseAccount(account);
+        if (!acct)
+        {
+            return hfErrorToInt(acct.error());
+        }
+        auto const element = parseIndex(index);
+        if (!element)
+        {
+            return hfErrorToInt(element.error());
+        }
+        auto const parsed = parseJsonValue(value);
+        if (!parsed)
+        {
+            return hfErrorToInt(parsed.error());
+        }
+        return invoke([&] {
+            return hostFunctions_.setDataArrayElementField(
+                *acct, *element, asStringView(key), *parsed);
+        });
+    });
+}
+
+std::int32_t
+HostContext::setDataNestedArrayElementField(
+    rust::Slice<std::uint8_t const> account,
+    rust::Str key,
+    std::int32_t index,
+    rust::Str nestedKey,
+    rust::Slice<std::uint8_t const> value) const noexcept
+{
+    return guarded(hostFunctions_.getJournal(), kHostInternal, [&] {
+        auto const acct = parseAccount(account);
+        if (!acct)
+        {
+            return hfErrorToInt(acct.error());
+        }
+        auto const element = parseIndex(index);
+        if (!element)
+        {
+            return hfErrorToInt(element.error());
+        }
+        auto const parsed = parseJsonValue(value);
+        if (!parsed)
+        {
+            return hfErrorToInt(parsed.error());
+        }
+        return invoke([&] {
+            return hostFunctions_.setDataNestedArrayElementField(
+                *acct, asStringView(key), *element, asStringView(nestedKey), *parsed);
+        });
+    });
+}
+
+std::int32_t
+HostContext::buildTxn(std::int32_t txType) const noexcept
+{
+    return guarded(hostFunctions_.getJournal(), kHostInternal, [&] {
+        if (txType < 0 || txType > std::numeric_limits<std::uint16_t>::max())
+        {
+            return hfErrorToInt(HostFunctionError::InvalidParams);
+        }
+        return invoke([&] { return hostFunctions_.buildTxn(static_cast<std::uint16_t>(txType)); });
+    });
+}
+
+std::int32_t
+HostContext::addTxnField(
+    std::int32_t index,
+    std::int32_t field,
+    rust::Slice<std::uint8_t const> data) const noexcept
+{
+    return guarded(hostFunctions_.getJournal(), kHostInternal, [&] {
+        if (index < 0)
+        {
+            return hfErrorToInt(HostFunctionError::IndexOutOfBounds);
+        }
+        if (data.size() > kMaxWasmDataLength)
+        {
+            return hfErrorToInt(HostFunctionError::DataFieldTooLarge);
+        }
+        return invokeWithField(field, [&](SField const& sField) {
+            return hostFunctions_.addTxnField(
+                static_cast<std::uint32_t>(index), sField, Slice{data.data(), data.size()});
+        });
+    });
+}
+
+std::int32_t
+HostContext::emitBuiltTxn(std::int32_t index, rust::Slice<std::uint8_t> out) const noexcept
+{
+    return guarded(hostFunctions_.getJournal(), kHostInternal, [&] {
+        if (index < 0)
+        {
+            return hfErrorToInt(HostFunctionError::IndexOutOfBounds);
+        }
+        return invoke<true>(
+            out, [&] { return hostFunctions_.emitBuiltTxn(static_cast<std::uint32_t>(index)); });
+    });
+}
+
+std::int32_t
+HostContext::emitTxn(rust::Slice<std::uint8_t const> txn, rust::Slice<std::uint8_t> out)
+    const noexcept
+{
+    return guarded(hostFunctions_.getJournal(), kHostInternal, [&] {
+        if (txn.size() > kMaxWasmDataLength)
+        {
+            return hfErrorToInt(HostFunctionError::DataFieldTooLarge);
+        }
+
+        std::shared_ptr<STTx const> stx;
+        try
+        {
+            stx = std::make_shared<STTx const>(SerialIter{Slice{txn.data(), txn.size()}});
+        }
+        catch (std::exception const&)
+        {
+            return hfErrorToInt(HostFunctionError::InvalidParams);
+        }
+
+        return invoke<true>(out, [&] { return hostFunctions_.emitTxn(stx); });
+    });
+}
+
+std::int32_t
+HostContext::emitEvent(rust::Str name, rust::Slice<std::uint8_t const> data) const noexcept
+{
+    return guarded(hostFunctions_.getJournal(), kHostInternal, [&] {
+        if (data.size() > kMaxWasmDataLength)
+        {
+            return hfErrorToInt(HostFunctionError::DataFieldTooLarge);
+        }
+
+        std::shared_ptr<STJson> event;
+        try
+        {
+            event = STJson::fromBlob(data.data(), data.size());
+        }
+        catch (std::exception const&)
+        {
+            return hfErrorToInt(HostFunctionError::InvalidParams);
+        }
+        if (!event)
+        {
+            return hfErrorToInt(HostFunctionError::InvalidParams);
+        }
+
+        return invoke([&] { return hostFunctions_.emitEvent(asStringView(name), *event); });
     });
 }
 

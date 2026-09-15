@@ -103,7 +103,7 @@ fn a_disabled_feature_does_not_pass() {
 /// Hand-written is the point: these are a statement of the wire the ABI's derived
 /// table did not produce, so putting them through `check` compares the two rather
 /// than comparing the table with itself.
-const ALL_IMPORTS: [&str; 63] = [
+const ALL_IMPORTS: [&str; 78] = [
     import::LDGR_INDEX,
     import::PARENT_LDGR_TIME,
     import::PARENT_LDGR_HASH,
@@ -167,6 +167,21 @@ const ALL_IMPORTS: [&str; 63] = [
     import::FLOAT_MULT,
     import::FLOAT_DIV,
     import::FLOAT_POW,
+    import::INSTANCE_PARAM,
+    import::FUNCTION_PARAM,
+    import::GET_DATA_OBJECT_FIELD,
+    import::GET_DATA_NESTED_OBJECT_FIELD,
+    import::GET_DATA_ARRAY_ELEMENT_FIELD,
+    import::GET_DATA_NESTED_ARRAY_ELEMENT_FIELD,
+    import::SET_DATA_OBJECT_FIELD,
+    import::SET_DATA_NESTED_OBJECT_FIELD,
+    import::SET_DATA_ARRAY_ELEMENT_FIELD,
+    import::SET_DATA_NESTED_ARRAY_ELEMENT_FIELD,
+    import::BUILD_TXN,
+    import::ADD_TXN_FIELD,
+    import::EMIT_BUILT_TXN,
+    import::EMIT_TXN,
+    import::EMIT_EVENT,
 ];
 
 #[test]
@@ -457,14 +472,14 @@ fn screening_and_a_run_agree() {
 }
 
 /// The signatures screening derives are the ones the linker registers: a module
-/// importing all 60 host functions at the type `HostFunctionSpec` derives must
+/// importing all 78 host functions at the type `HostFunctionSpec` derives must
 /// instantiate.
 ///
 /// Unlike [`ALL_IMPORTS`], the other side of this is live code — the registration
 /// as it is rather than a description of it — so it is what a changed engine has to
 /// answer to. **What it cannot see is the table and the linker being wrong the same
 /// way**, the closures being generated from this very table; that is what
-/// [`ALL_IMPORTS`] and `generated_abi.rs`'s 60 literals are for.
+/// [`ALL_IMPORTS`] and `generated_abi.rs`'s 78 literals are for.
 #[test]
 fn the_derived_signatures_are_what_the_linker_registers() {
     let declarations: Vec<String> = HostFunctionSpec::ALL
