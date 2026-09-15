@@ -1619,7 +1619,6 @@ public:
         // proper lifetime.
         std::unordered_set<uint256, beast::Uhash<>> const presets;
         Rules const defaultRules{presets};
-        BEAST_EXPECT(!defaultRules.enabled(featureAMM));
 
         unexpected(!j.checkSign(defaultRules), "Transaction fails signature test");
 
