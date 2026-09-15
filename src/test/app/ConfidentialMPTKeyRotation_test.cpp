@@ -2022,6 +2022,39 @@ class ConfidentialMPTKeyRotation_test : public ConfidentialTransferTestBase
             BEAST_EXPECT((*sle)[~sfIssuerKeyMirrorEpoch] == 1u);
             BEAST_EXPECT((*sle)[~sfAuditorKeyMirrorEpoch] == 1u);
         }
+
+        // Holder auditor late-registration: the auditor key is registered for the first time (key
+        // epoch absent), so the holder setting their initial auditor mirror leaves the auditor
+        // mirror epoch absent as well.
+        {
+            Env env{*this, features};
+            Account const alice("alice");
+            Account const bob("bob");
+            Account const auditor("auditor");
+            // No auditor in the confidential setup, so bob has no auditor mirror.
+            ConfidentialEnv ct{env, alice, {{.account = bob}}};
+
+            // Register an auditor key for the first time (auditor key epoch stays
+            // absent).
+            ct.mpt.generateKeyPair(auditor);
+            ct.mpt.set({.account = alice, .auditorPubKey = ct.mpt.getPubKey(auditor)});
+
+            // The holder encrypts their own balance under the newly registered auditor key.
+            Buffer const auditorCipher =
+                ct.mpt.encryptAmount(auditor, amount, generateBlindingFactor());
+
+            ct.mpt.mirrorUpdate({
+                .account = bob,
+                .auditorEncryptedAmount = auditorCipher,
+            });
+
+            auto const sle = env.le(keylet::mptoken(ct.mpt.issuanceID(), bob.id()));
+            if (!BEAST_EXPECT(sle))
+                return;
+            BEAST_EXPECT(strHex((*sle)[sfAuditorEncryptedBalance]) == strHex(auditorCipher));
+            // First-time registration leaves the mirror epoch absent.
+            BEAST_EXPECT(!sle->isFieldPresent(sfAuditorKeyMirrorEpoch));
+        }
     }
 
     void
