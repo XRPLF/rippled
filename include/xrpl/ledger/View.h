@@ -113,6 +113,33 @@ canTransferLPToken(
     AccountID const& to,
     AccountID const& lpTokenIssuer);
 
+/**
+ * Check whether @p account is authorized to hold an AMM's LPToken.
+ *
+ * An LPToken represents a claim on both of its AMM's pool assets, so holding
+ * it grants exposure to assets the holder may never have been authorized for
+ * (XLS-0073d, AMMClawback, §1.2). AMMDeposit enforces this with requireAuth
+ * on each pool asset, but LPTokens are also freely transferable, which would
+ * let an account acquire that exposure without ever passing that check.
+ *
+ * @p lpTokenIssuer is the issuer of the LPToken in question. If it is not an
+ * AMM account the token is not an LPToken and the check passes. Otherwise
+ * @p account must pass requireAuth (WeakAuth) for both of the AMM's pool
+ * assets, mirroring the AMMDeposit precondition.
+ *
+ * Like requireAuth, this reads the current view only, and passes when the
+ * issuer's account root is absent; a caller that must fail closed on that
+ * shape (e.g. an invariant) has to detect it itself.
+ *
+ * @return tesSUCCESS if authorized, otherwise the requireAuth failure code
+ * (tecNO_AUTH or tecNO_LINE) of the first pool asset that disallows it.
+ */
+[[nodiscard]] TER
+checkLPTokenAuthorization(
+    ReadView const& view,
+    AccountID const& account,
+    AccountID const& lpTokenIssuer);
+
 // Return the list of enabled amendments
 [[nodiscard]] std::set<uint256>
 getEnabledAmendments(ReadView const& view);
