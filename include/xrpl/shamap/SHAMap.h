@@ -16,6 +16,7 @@
 #include <xrpl/shamap/SHAMapMissingNode.h>
 #include <xrpl/shamap/SHAMapTreeNode.h>
 
+#include <atomic>
 #include <condition_variable>
 #include <cstddef>
 #include <cstdint>
@@ -27,6 +28,7 @@
 #include <mutex>
 #include <optional>
 #include <set>
+#include <shared_mutex>
 #include <stack>
 #include <tuple>
 #include <utility>
@@ -414,6 +416,35 @@ public:
     void
     setUnbacked();
 
+    /**
+     * Drop resident cold subtrees to reclaim memory, keeping child hashes so
+     * they can be re-faulted from the NodeStore on demand.
+     *
+     * Only operates on a backed, immutable map (otherwise returns 0). Walks the
+     * resident tree from the root; inner nodes at depth >= minDepth (root is
+     * depth 0) have their resident children dropped, deepest first. Only clean
+     * (cowid()==0) nodes are shed, since dirty nodes are not yet on disk. The
+     * root itself is never dropped. Returns the number of child pointers
+     * dropped.
+     */
+    std::size_t
+    shedCold(unsigned minDepth);
+
+    /**
+     * Enable or disable resident subtree shedding process-wide.
+     *
+     * Default is off. While off, reader guards cost one relaxed atomic load and
+     * take no lock, and the sweep never calls shedCold().
+     */
+    static void
+    setShedEnabled(bool enabled);
+
+    /**
+     * Report whether sheddable resident subtrees are enabled process-wide.
+     */
+    static bool
+    shedEnabled();
+
     void
     dump(bool withHashes = false) const;
     void
@@ -562,6 +593,33 @@ private:
         int& maxCount) const;
     int
     walkSubTree(bool doWrite, NodeObjectType t);
+
+    // Recursive helper for shedCold. Holds a strong ref to `node` and to each
+    // child it recurses into so a dropped subtree is never dereferenced.
+    void
+    shedInner(
+        intr_ptr::SharedPtr<SHAMapInnerNode> const& node,
+        unsigned depth,
+        unsigned minDepth,
+        std::size_t& dropped);
+
+    // Shed gate and the lock that serializes shedCold against bare-pointer
+    // traversals. Both are process-wide: immutable snapshots of one ledger are
+    // distinct SHAMap objects sharing the same physical nodes, so a per-object
+    // mutex would not cover a reader on another snapshot. The lock is taken
+    // only while shedEnabled_ is set.
+    static std::atomic<bool> shedEnabled_;
+    static std::shared_mutex shedMutex_;
+
+    // Shared lock on shedMutex_ while shedding is enabled, otherwise an empty
+    // lock. Held across a bare-pointer descent.
+    [[nodiscard]] std::shared_lock<std::shared_mutex>
+    shedReadGuard() const
+    {
+        if (shedEnabled_.load(std::memory_order_relaxed))
+            return std::shared_lock<std::shared_mutex>(shedMutex_);
+        return std::shared_lock<std::shared_mutex>();
+    }
 
     // Structure to track information about call to
     // getMissingNodes while it's in progress

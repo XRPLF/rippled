@@ -14,6 +14,7 @@
 
 #include <array>
 #include <mutex>
+#include <shared_mutex>
 #include <sstream>
 #include <stack>
 #include <thread>
@@ -139,6 +140,9 @@ SHAMap::compare(SHAMap const& otherMap, Delta& differences, int maxCount) const
 
     if (getHash() == otherMap.getHash())
         return true;
+
+    // Bare-pointer walk of both maps, including walkBranch; hold the shed guard.
+    auto const shedLock = shedReadGuard();
 
     using StackEntry = std::pair<SHAMapTreeNode*, SHAMapTreeNode*>;
     std::stack<StackEntry, std::vector<StackEntry>> nodeStack;  // track nodes we've pushed
