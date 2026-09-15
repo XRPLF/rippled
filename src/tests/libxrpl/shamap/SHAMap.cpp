@@ -273,8 +273,8 @@ INSTANTIATE_TEST_SUITE_P(
     shamapBackingModeName);
 
 // Exercises the traversal stacks built by belowHelper. Each stack entry pairs a node with the ID
-// naming its position, and SHAMap asserts that pairing on every push, so these traversals fail
-// loudly in a Debug build if a node ID is ever derived from the wrong branch.
+// naming its position, and SHAMap enforces that pairing on every push, failing if a node ID is
+// ever derived from the wrong branch (both Debug and Release builds).
 class SHAMapTraversal : public ::testing::Test
 {
 protected:
