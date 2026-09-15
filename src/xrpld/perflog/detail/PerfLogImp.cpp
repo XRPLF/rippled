@@ -40,19 +40,24 @@ namespace xrpl::perf {
 PerfLogImp::Counters::Counters(
     std::span<NullTerminatedView const> methodNames,
     JobTypes const& jobTypes)
-    : labels(methodNames.begin(), methodNames.end())
 {
-    rpc.reserve(labels.size());
-    for (auto const& label : labels)
+    // Only a name that got a counter is kept, so labels and rpc hold the same set
+    // and countersJson() reports each counter once. Keeping a repeated name would
+    // add its counter to the totals twice, because the assertion below is compiled
+    // out of a release build.
+    labels.reserve(methodNames.size());
+    rpc.reserve(methodNames.size());
+    for (auto const& name : methodNames)
     {
-        auto const inserted = rpc.try_emplace(label).second;
+        auto const inserted = rpc.try_emplace(name).second;
         if (!inserted)
         {
-            // Nothing else inserts into rpc, so a name cannot repeat.
             // LCOV_EXCL_START
-            UNREACHABLE("xrpl::perf::PerfLogImp::Counters::Counters : failed to insert label");
+            UNREACHABLE("xrpl::perf::PerfLogImp::Counters::Counters : method name is unique");
+            continue;
             // LCOV_EXCL_STOP
         }
+        labels.push_back(name);
     }
 
     jq.reserve(jobTypes.size());
