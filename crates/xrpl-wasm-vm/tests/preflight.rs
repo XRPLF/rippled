@@ -103,7 +103,7 @@ fn a_disabled_feature_does_not_pass() {
 /// Hand-written is the point: these are a statement of the wire the ABI's derived
 /// table did not produce, so putting them through `check` compares the two rather
 /// than comparing the table with itself.
-const ALL_IMPORTS: [&str; 60] = [
+const ALL_IMPORTS: [&str; 63] = [
     import::LDGR_INDEX,
     import::PARENT_LDGR_TIME,
     import::PARENT_LDGR_HASH,
@@ -142,6 +142,9 @@ const ALL_IMPORTS: [&str; 60] = [
     import::SIGNERS_ID,
     import::TICKET_ID,
     import::VAULT_ID,
+    import::SPONSORSHIP_ID,
+    import::LOAN_BROKER_ID,
+    import::LOAN_ID,
     import::SHA512_HALF,
     import::TRACE,
     import::SET_DATA,
