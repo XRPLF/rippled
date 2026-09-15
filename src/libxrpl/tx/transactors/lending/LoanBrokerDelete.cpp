@@ -98,9 +98,10 @@ LoanBrokerDelete::preclaim(PreclaimContext const& ctx)
     {
         auto const brokerPseudo = sleBroker->at(sfAccount);
 
-        // Pre-fixCleanup3_4_0: only freeze checks apply to the cover payout.
-        // Post-fixCleanup3_4_0: apply the cover-withdraw transfer and authorization checks too.
-        if (ctx.view.rules().enabled(fixCleanup3_4_0))
+        // Pre-featureLendingProtocolV1_2: only freeze checks apply to the cover payout.
+        // Post-featureLendingProtocolV1_2: apply the cover-withdraw transfer and authorization
+        // checks too.
+        if (ctx.view.rules().enabled(featureLendingProtocolV1_2))
         {
             auto const waive = ctx.view.rules().enabled(fixCleanup3_2_0) ? WaiveMPTCanTransfer::Yes
                                                                          : WaiveMPTCanTransfer::No;

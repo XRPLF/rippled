@@ -1853,7 +1853,7 @@ class LoanBroker_test : public beast::unit_test::Suite
     testLoanBrokerDeleteNoRippleIOU(FeatureBitset features)
     {
         testcase << "LoanBrokerDelete - non-rippling IOU "
-                 << (features[fixCleanup3_4_0] ? "post-fix" : "pre-fix");
+                 << (features[featureLendingProtocolV1_2] ? "post-V1.2" : "pre-V1.2");
         using namespace jtx;
         using namespace loan_broker;
 
@@ -1898,7 +1898,7 @@ class LoanBroker_test : public beast::unit_test::Suite
         env(trust(issuer, alice["IOU"](0), tfSetNoRipple));
         env.close();
 
-        if (features[fixCleanup3_4_0])
+        if (features[featureLendingProtocolV1_2])
         {
             env(del(alice, brokerKeylet.key), Ter(terNO_RIPPLE));
             env.close();
@@ -1924,7 +1924,7 @@ class LoanBroker_test : public beast::unit_test::Suite
     {
         testcase << "LoanBrokerDelete - IOU line deleted before payout, issuer "
                  << (clearDefaultRipple ? "without" : "with") << " DefaultRipple "
-                 << (features[fixCleanup3_4_0] ? "post-fix" : "pre-fix");
+                 << (features[featureLendingProtocolV1_2] ? "post-V1.2" : "pre-V1.2");
         using namespace jtx;
         using namespace loan_broker;
 
@@ -1982,7 +1982,8 @@ class LoanBroker_test : public beast::unit_test::Suite
     testLoanBrokerDeleteRequireAuthMPT(FeatureBitset features, bool ownerAuthorized)
     {
         testcase << "LoanBrokerDelete - auth-required broker pseudo-account MPT "
-                 << (features[fixCleanup3_4_0] ? "post-fix" : "pre-fix") << ", owner "
+                 << (features[fixCleanup3_4_0] ? "post-Cleanup3.4" : "pre-Cleanup3.4") << ", "
+                 << (features[featureLendingProtocolV1_2] ? "post-V1.2" : "pre-V1.2") << ", owner "
                  << (ownerAuthorized ? "authorized" : "unauthorized");
         using namespace jtx;
         using namespace loan_broker;
@@ -2055,7 +2056,7 @@ class LoanBroker_test : public beast::unit_test::Suite
         // Record alice's balance before deletion
         auto const aliceBalanceBefore = env.balance(alice, mpt);
 
-        if (features[fixCleanup3_4_0] && !ownerAuthorized)
+        if (features[featureLendingProtocolV1_2] && !ownerAuthorized)
         {
             env(del(alice, brokerKeylet.key), Ter(tecNO_AUTH));
             env.close();
@@ -2074,6 +2075,17 @@ class LoanBroker_test : public beast::unit_test::Suite
             env(del(alice, brokerKeylet.key));
             env.close();
             BEAST_EXPECT(env.le(brokerKeylet) == nullptr);
+            return;
+        }
+
+        if (features[fixCleanup3_4_0] && !ownerAuthorized)
+        {
+            env(del(alice, brokerKeylet.key), Ter(tecINVARIANT_FAILED));
+            env.close();
+
+            BEAST_EXPECT(env.le(brokerKeylet) != nullptr);
+            BEAST_EXPECT(env.le(pseudoMptKey) != nullptr);
+            BEAST_EXPECT(env.balance(alice, mpt) == aliceBalanceBefore);
             return;
         }
 
@@ -3162,20 +3174,23 @@ public:
         testLoanBrokerDeleteFrozenIOU(all_ - fixCleanup3_2_0);
 
         testLoanBrokerDeleteNoRippleIOU(all_);
-        testLoanBrokerDeleteNoRippleIOU(all_ - fixCleanup3_4_0);
+        testLoanBrokerDeleteNoRippleIOU(all_ - featureLendingProtocolV1_2);
 
         testLoanBrokerDeleteDeletedLineIOU(all_, true, terNO_RIPPLE);
-        testLoanBrokerDeleteDeletedLineIOU(all_ - fixCleanup3_4_0, true, tesSUCCESS);
+        testLoanBrokerDeleteDeletedLineIOU(all_ - featureLendingProtocolV1_2, true, tesSUCCESS);
         testLoanBrokerDeleteDeletedLineIOU(all_, false, tesSUCCESS);
 
         // featureMPTokensV2 independently makes ValidMPTTransfer enforcing,
-        // but it's Supported::No (never enabled on real networks); exclude
-        // it here so fixCleanup3_4_0 alone is the deciding amendment, as it
-        // would be on mainnet.
+        // but it is not enabled on real networks. Exclude it so Cleanup3.4
+        // alone determines whether the invariant rejects the transfer.
         testLoanBrokerDeleteRequireAuthMPT(all_ - featureMPTokensV2, true);
         testLoanBrokerDeleteRequireAuthMPT(all_ - featureMPTokensV2 - fixCleanup3_4_0, true);
+
+        // LendingProtocolV1_2 moves an unauthorized-destination failure from
+        // the enforcing invariant into preclaim as tecNO_AUTH.
         testLoanBrokerDeleteRequireAuthMPT(all_ - featureMPTokensV2, false);
-        testLoanBrokerDeleteRequireAuthMPT(all_ - featureMPTokensV2 - fixCleanup3_4_0, false);
+        testLoanBrokerDeleteRequireAuthMPT(
+            all_ - featureMPTokensV2 - featureLendingProtocolV1_2, false);
         // TODO: Write clawback failure tests with an issuer / MPT that doesn't
         // have the right flags set.
     }
