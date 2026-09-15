@@ -102,7 +102,8 @@ public:
     getTrackSize() const;
 
     /**
-     * Longest single hold of the cache mutex by sweep() or getKeys() since
+     * Longest single hold of the cache mutex by sweep(), getKeys() or
+     * forEachKeyPartition() since
      * the previous call, then reset to zero. A per-collect peak: the metrics
      * gauge reads it once per collection tick.
      */
@@ -258,9 +259,9 @@ public:
      *
      * The mutex is held only while one partition's keys are copied out, and
      * `f` runs with the mutex released. So the longest hold is one partition,
-     * not the whole cache. getKeys() holds the mutex across every entry, which
-     * on a 26 million entry cache froze every other user of the cache for
-     * about six seconds.
+     * not the whole cache. getKeys() holds the mutex across every entry, and
+     * on a cache of tens of millions of entries that hold lasts seconds, during
+     * which every other user of the cache waits.
      *
      * `f` is called once per partition, in partition order, with that
      * partition's keys as they were when it was copied. A key inserted after
