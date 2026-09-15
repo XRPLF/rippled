@@ -277,6 +277,21 @@ fn call_for(op: HostFunctionSpec) -> Call {
             "(call $vault_id (i32.const 0) (i32.const 20) (i32.const 0) (i32.const 4) (i32.const 32) (i32.const 32))",
             6,
         ),
+        HostFunctionSpec::SponsorshipKeylet => (
+            import::SPONSORSHIP_ID,
+            "(call $sponsorship_id (i32.const 0) (i32.const 20) (i32.const 20) (i32.const 20) (i32.const 40) (i32.const 32))",
+            6,
+        ),
+        HostFunctionSpec::LoanBrokerKeylet => (
+            import::LOAN_BROKER_ID,
+            "(call $loan_broker_id (i32.const 0) (i32.const 20) (i32.const 0) (i32.const 4) (i32.const 32) (i32.const 32))",
+            6,
+        ),
+        HostFunctionSpec::LoanKeylet => (
+            import::LOAN_ID,
+            "(call $loan_id (i32.const 0) (i32.const 32) (i32.const 0) (i32.const 4) (i32.const 44) (i32.const 32))",
+            6,
+        ),
         HostFunctionSpec::Sha512Half => (
             import::SHA512_HALF,
             "(call $sha512_half (i32.const 0) (i32.const 4) (i32.const 0) (i32.const 32))",

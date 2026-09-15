@@ -440,6 +440,39 @@ impl HostFunctionBodies for Bodies {
         })
     }
 
+    fn sponsorship_keylet(
+        caller: &mut Caller<'_, VmState<'_>>,
+        sponsor: InBytes,
+        sponsee: InBytes,
+        out: OutBytes,
+    ) -> CallResult<i32> {
+        write_buffered(caller, out, |host, memory, buf| {
+            host.sponsorship_keylet(sponsor.read(memory)?, sponsee.read(memory)?, buf)
+        })
+    }
+
+    fn loan_broker_keylet(
+        caller: &mut Caller<'_, VmState<'_>>,
+        owner: InBytes,
+        seq: InU32,
+        out: OutBytes,
+    ) -> CallResult<i32> {
+        write_buffered(caller, out, |host, memory, buf| {
+            host.loan_broker_keylet(owner.read(memory)?, seq.read(memory)?, buf)
+        })
+    }
+
+    fn loan_keylet(
+        caller: &mut Caller<'_, VmState<'_>>,
+        loan_broker_id: InBytes,
+        loan_seq: InU32,
+        out: OutBytes,
+    ) -> CallResult<i32> {
+        write_buffered(caller, out, |host, memory, buf| {
+            host.loan_keylet(loan_broker_id.read(memory)?, loan_seq.read(memory)?, buf)
+        })
+    }
+
     fn sha512_half(
         caller: &mut Caller<'_, VmState<'_>>,
         data: InBytes,
