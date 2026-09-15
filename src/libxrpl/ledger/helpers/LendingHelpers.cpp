@@ -1392,18 +1392,34 @@ computePaymentComponents(
             "xrpl::detail::computePaymentComponents",
             "excess non-negative");
     };
-    // Helper to reduce deltas when they collectively exceed a limit.
-    // Order matters: we prefer to reduce interest first (most flexible),
-    // then management fee, then principal (least flexible).
+    auto giveTo = [](Number& component, Number& shortage, Number const& maximum) {
+        if (shortage > beast::kZero)
+        {
+            // Put as much of the shortage as we can into the provided part
+            // and the total
+            auto part = std::min(maximum - component, shortage);
+            component += part;
+            shortage -= part;
+        }
+        // If the shortage goes negative, we put too much, which should be
+        // impossible
+        XRPL_ASSERT_PARTS(
+            shortage >= beast::kZero,
+            "ripple::detail::computePaymentComponents",
+            "excess non-negative");
+    };
     auto addressExcess = [&takeFrom](LoanStateDeltas& deltas, Number& excess) {
         // This order is based on where errors are the least problematic
         takeFrom(deltas.interest, excess);
         takeFrom(deltas.managementFee, excess);
         takeFrom(deltas.principal, excess);
     };
-
-    // Check if deltas exceed the total outstanding value. This should never
-    // happen due to earlier caps, but handle it defensively.
+    auto addressShortage =
+        [&giveTo](LoanStateDeltas& deltas, Number& shortage, LoanState const& current) {
+            giveTo(deltas.interest, shortage, current.interestDue);
+            giveTo(deltas.managementFee, shortage, current.managementFeeDue);
+            giveTo(deltas.principal, shortage, current.principalOutstanding);
+        };
     Number totalOverpayment = deltas.total() - currentLedgerState.valueOutstanding;
 
     if (totalOverpayment > beast::kZero)
@@ -1431,14 +1447,33 @@ computePaymentComponents(
         addressExcess(deltas, excess);
         shortage = -excess;
     }
+    else if (shortage > beast::kZero && totalOverpayment < beast::kZero)
+    {
+        // If there's a shortage, and there's room in the loan itself, we can
+        // top up the parts to make the payment correct.
+        shortage = std::min(-totalOverpayment, shortage);
+        addressShortage(deltas, shortage, currentLedgerState);
+    }
 
-    // At this point, shortage >= 0 means we're paying less than the full
-    // periodic payment (due to rounding or component caps).
-    // shortage < 0 would mean we're trying to pay more than allowed (bug).
+    // The shortage should never be negative, which indicates that the parts are
+    // trying to take more than the whole payment. The shortage should not be
+    // positive, either, which indicates that we're not going to take the whole
+    // payment amount. Only the last payment should be allowed to have a
+    // shortage, and that's handled in a special case above.
     XRPL_ASSERT_PARTS(
-        shortage >= beast::kZero,
-        "xrpl::detail::computePaymentComponents",
+        shortage == beast::kZero,
+        "ripple::detail::computePaymentComponents",
         "no shortage or excess");
+#if LOANCOMPLETE
+    /*
+    // This used to be part of the above assert. It will eventually be removed
+    // if proved accurate
+    ||
+        (shortage > beast::kZero &&
+         ((asset.integral() && shortage < 3) ||
+          (scale - shortage.exponent() > 14)))
+          */
+#endif
 
     // Final validation that all components are valid
     XRPL_ASSERT_PARTS(
