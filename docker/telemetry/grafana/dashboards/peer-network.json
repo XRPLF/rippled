@@ -1,0 +1,289 @@
+{
+  "annotations": {
+    "list": []
+  },
+  "description": "Peer-to-peer consensus traffic: rates of proposals and validations received from peers and their split between trusted and untrusted sources.",
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "id": null,
+  "links": [],
+  "panels": [
+    {
+      "title": "Peer Proposal Receive Rate",
+      "description": "**What:** Rate of consensus proposals arriving from connected network peers.\n**How it's computed:** Per-second rate over a 5-minute window, per node.\n**Reading it:** Reflects how many validators' proposals reach this node each round.\n**Healthy range:** Workload-dependent; scales with peer count and network activity.\n**Watch for:** A sudden drop means loss of proposal flow; a sharp sustained spike from a single peer can indicate flooding.\n**Source:** src/xrpld/overlay/detail/PeerImp.cpp:PeerImp::onMessage(TMProposeSet)",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 0
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc",
+          "maxHeight": 600
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "sum by (service_instance_id) (rate(traces_span_metrics_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", span_name=\"peer.proposal.receive\"}[5m]))",
+          "legendFormat": "Proposals Received / Sec [{{service_instance_id}}]"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "suffix: proposals/s",
+          "custom": {
+            "axisLabel": "Proposals / Sec",
+            "spanNulls": 1800000,
+            "insertNulls": false,
+            "showPoints": "auto",
+            "pointSize": 3
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "title": "Peer Validation Receive Rate",
+      "description": "**What:** Rate of ledger validations arriving from connected network peers.\n**How it's computed:** Per-second rate over a 5-minute window, per node.\n**Reading it:** Reflects the volume of validation traffic reaching this node.\n**Healthy range:** Workload-dependent; scales with the number of validators and peers.\n**Watch for:** A drop starves the validation quorum; an abnormal spike from one peer can indicate abuse.\n**Source:** src/xrpld/overlay/detail/PeerImp.cpp:PeerImp::onMessage(TMValidation)",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 0
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc",
+          "maxHeight": 600
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "sum by (service_instance_id) (rate(traces_span_metrics_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", span_name=\"peer.validation.receive\"}[5m]))",
+          "legendFormat": "Validations Received / Sec [{{service_instance_id}}]"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "suffix: validations/s",
+          "custom": {
+            "axisLabel": "Validations / Sec",
+            "spanNulls": 1800000,
+            "insertNulls": false,
+            "showPoints": "auto",
+            "pointSize": 3
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "title": "Proposals Trusted vs Untrusted",
+      "description": "**What:** Share of received proposals from trusted validators (in this node's UNL) versus untrusted sources.\n**How it's computed:** Total counts split by trust status over a 5-minute window, shown as proportions.\n**Reading it:** A well-connected node with a good UNL sees a healthy trusted share.\n**Healthy range:** A substantial trusted proportion; exact mix is workload-dependent.\n**Watch for:** A collapse of the trusted share means poor connectivity to UNL validators; a flood of untrusted proposals can indicate abuse.\n**Source:** src/xrpld/overlay/detail/PeerImp.cpp:PeerImp::onMessage(TMProposeSet)",
+      "type": "piechart",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 8
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "sum by (proposal_trusted, service_instance_id) (increase(traces_span_metrics_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", proposal_trusted=~\"$proposal_trusted\", span_name=\"peer.proposal.receive\"}[5m]))",
+          "legendFormat": "Trusted = {{proposal_trusted}} [{{service_instance_id}}]"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        },
+        "overrides": []
+      }
+    },
+    {
+      "title": "Validations Trusted vs Untrusted",
+      "description": "**What:** Share of received validations from trusted validators (in this node's UNL) versus untrusted sources.\n**How it's computed:** Total counts split by trust status over a 5-minute window, shown as proportions.\n**Reading it:** Confirms the node is hearing from its expected trusted validator set.\n**Healthy range:** A substantial trusted proportion; exact mix is workload-dependent.\n**Watch for:** A shrinking trusted share risks the validation quorum; a surge of untrusted validations can indicate abuse.\n**Source:** src/xrpld/overlay/detail/PeerImp.cpp:PeerImp::onMessage(TMValidation)",
+      "type": "piechart",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 8
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "sum by (validation_trusted, service_instance_id) (increase(traces_span_metrics_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", validation_trusted=~\"$validation_trusted\", span_name=\"peer.validation.receive\"}[5m]))",
+          "legendFormat": "Trusted = {{validation_trusted}} [{{service_instance_id}}]"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        },
+        "overrides": []
+      }
+    }
+  ],
+  "schemaVersion": 39,
+  "tags": ["network", "peer"],
+  "templating": {
+    "list": [
+      {
+        "name": "service_name",
+        "label": "Service Name",
+        "description": "Filter by service.name (e.g. xrpld, xrpld-validator)",
+        "type": "query",
+        "query": "label_values(service_name)",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "prometheus"
+        },
+        "includeAll": true,
+        "allValue": ".*",
+        "current": {
+          "text": "xrpld",
+          "value": "xrpld"
+        },
+        "multi": true,
+        "refresh": 2,
+        "sort": 1
+      },
+      {
+        "name": "deployment_environment",
+        "label": "Environment",
+        "description": "Filter by deployment tier (local/ci/test/prod)",
+        "type": "query",
+        "query": "label_values(deployment_environment)",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "prometheus"
+        },
+        "includeAll": true,
+        "allValue": ".*",
+        "current": {
+          "text": "All",
+          "value": "$__all"
+        },
+        "multi": true,
+        "refresh": 2,
+        "sort": 1
+      },
+      {
+        "name": "xrpl_network_type",
+        "label": "Network",
+        "description": "Filter by XRPL network (mainnet/testnet/devnet)",
+        "type": "query",
+        "query": "label_values(xrpl_network_type)",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "prometheus"
+        },
+        "includeAll": true,
+        "allValue": ".*",
+        "current": {
+          "text": "All",
+          "value": "$__all"
+        },
+        "multi": true,
+        "refresh": 2,
+        "sort": 1
+      },
+      {
+        "name": "node",
+        "label": "Node",
+        "description": "Filter by rippled node (service.instance.id — e.g. Node-1)",
+        "type": "query",
+        "query": "label_values(target_info, service_instance_id)",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "prometheus"
+        },
+        "includeAll": true,
+        "allValue": ".*",
+        "current": {
+          "text": "All",
+          "value": "$__all"
+        },
+        "multi": true,
+        "refresh": 2,
+        "sort": 1
+      },
+      {
+        "name": "proposal_trusted",
+        "label": "Proposal Trusted",
+        "description": "Filter by proposal trust status (true = from trusted validator)",
+        "type": "query",
+        "query": "label_values(traces_span_metrics_calls_total{span_name=\"peer.proposal.receive\"}, proposal_trusted)",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "prometheus"
+        },
+        "includeAll": true,
+        "allValue": ".*",
+        "current": {
+          "text": "All",
+          "value": "$__all"
+        },
+        "multi": true,
+        "refresh": 2,
+        "sort": 1
+      },
+      {
+        "name": "validation_trusted",
+        "label": "Validation Trusted",
+        "description": "Filter by validation trust status (true = from trusted validator)",
+        "type": "query",
+        "query": "label_values(traces_span_metrics_calls_total{span_name=\"peer.validation.receive\"}, validation_trusted)",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "prometheus"
+        },
+        "includeAll": true,
+        "allValue": ".*",
+        "current": {
+          "text": "All",
+          "value": "$__all"
+        },
+        "multi": true,
+        "refresh": 2,
+        "sort": 1
+      }
+    ]
+  },
+  "time": {
+    "from": "now-1h",
+    "to": "now"
+  },
+  "title": "Peer Network",
+  "uid": "peer-network"
+}

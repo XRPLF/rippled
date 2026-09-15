@@ -39,10 +39,10 @@ datasources:
             tag: service.name
             operator: "="
             scope: resource
-            type: dynamic
-          # service.instance.id: unique node identifier — defaults to the
-          #   node's public key (e.g., nHB1X37...). Distinguishes individual
-          #   nodes in a multi-node cluster or network.
+            type: static
+          # service.instance.id: unique node identifier — configurable via
+          #   the service_instance_id setting in [telemetry], defaults to the
+          #   node's public key. E.g. "Node-1" or "nHB1X37...".
           - id: node-id
             tag: service.instance.id
             operator: "="
@@ -152,6 +152,57 @@ datasources:
             type: static
           - id: consensus-close-resolution
             tag: close_resolution_ms
+            operator: "="
+            scope: span
+            type: dynamic
+          - id: consensus-proposers
+            tag: proposers
+            operator: "="
+            scope: span
+            type: dynamic
+          - id: consensus-result
+            tag: consensus_result
+            operator: "="
+            scope: span
+            type: dynamic
+          - id: consensus-mode-old
+            tag: mode_old
+            operator: "="
+            scope: span
+            type: dynamic
+          - id: consensus-mode-new
+            tag: mode_new
+            operator: "="
+            scope: span
+            type: dynamic
+          - id: consensus-ledger-id
+            tag: consensus_ledger_id
+            operator: "="
+            scope: span
+            type: static
+          # Additional transaction and queue filters
+          - id: tx-path
+            tag: path
+            operator: "="
+            scope: span
+            type: dynamic
+          - id: tx-suppressed
+            tag: suppressed
+            operator: "="
+            scope: span
+            type: dynamic
+          - id: peer-version
+            tag: peer_version
+            operator: "="
+            scope: span
+            type: dynamic
+          - id: txq-status
+            tag: txq_status
+            operator: "="
+            scope: span
+            type: dynamic
+          - id: txq-ter-code
+            tag: ter_code
             operator: "="
             scope: span
             type: dynamic
