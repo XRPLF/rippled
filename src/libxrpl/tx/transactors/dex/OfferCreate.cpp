@@ -25,6 +25,7 @@
 #include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/Keylet.h>
 #include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/MPTAmount.h>
 #include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/Quality.h>
@@ -51,6 +52,7 @@
 #include <functional>
 #include <memory>
 #include <optional>
+#include <stdexcept>
 #include <tuple>
 #include <utility>
 
@@ -414,19 +416,47 @@ OfferCreate::flowCross(
         // offer taker.  Set sendMax to allow for the gateway's cut.
         Rate gatewayXferRate{QUALITY_ONE};
         STAmount sendMax = takerAmount.in;
+        // Payment flow code compares quality after the transfer rate is
+        // included, so the threshold is computed from the grossed-up input.
+        STAmount thresholdIn = sendMax;
         if (!sendMax.native() && (accountID_ != sendMax.getIssuer()))
         {
             gatewayXferRate = transferRate(psb, sendMax);
             if (gatewayXferRate.value != QUALITY_ONE)
             {
-                sendMax =
-                    multiplyRound(takerAmount.in, gatewayXferRate, takerAmount.in.asset(), true);
+                try
+                {
+                    sendMax = multiplyRound(
+                        takerAmount.in, gatewayXferRate, takerAmount.in.asset(), true);
+                    thresholdIn = sendMax;
+                }
+                catch (std::overflow_error const&)
+                {
+                    // Only an MPT amount can overflow here (IOU rescales and
+                    // XRP has no transfer rate), and MPT offers require
+                    // featureMPTokensV2 at preflight, so this legacy re-throw
+                    // is unreachable in practice.
+                    // LCOV_EXCL_START
+                    if (!takerAmount.in.holds<MPTIssue>() ||
+                        !psb.rules().enabled(featureMPTokensV2))
+                        throw;
+                    // LCOV_EXCL_STOP
+
+                    // The grossed-up MPT amount exceeds 2^63-1. The taker can't
+                    // send more than its balance anyway. The threshold only
+                    // needs the ratio, so compute it as an IOU, which can't
+                    // overflow.
+                    sendMax = inStartBalance;
+                    thresholdIn = multiplyRound(
+                        STAmount{noIssue(), takerAmount.in.mantissa()},
+                        gatewayXferRate,
+                        noIssue(),
+                        true);
+                }
             }
         }
 
-        // Payment flow code compares quality after the transfer rate is
-        // included.  Since transfer rate is incorporated compute threshold.
-        Quality threshold{takerAmount.out, sendMax};
+        Quality threshold{takerAmount.out, thresholdIn};
 
         // If we're creating a passive offer adjust the threshold so we only
         // cross offers that have a better quality than this one.
@@ -871,15 +901,30 @@ OfferCreate::applyGuts(Sandbox& sb, Sandbox& sbCancel)
         return {tesSUCCESS, true};
     }
 
+    // A taker redeeming an MPT into this offer pays the transfer fee, and
+    // BookStep grosses up TakerPays by the rate for the whole offer before
+    // anything else. If that doesn't fit in an MPT amount, no taker can take
+    // the offer and BookStep would remove it on the first attempt. Checked on
+    // the remainder: it may fit even if the original amount didn't.
+    bool cannotRest = false;
+    if (mptV2 && saTakerPays.holds<MPTIssue>())
+    {
+        auto const rate = transferRate(sb, saTakerPays);
+        cannotRest = rate != kParityRate &&
+            !tryMulRatio(saTakerPays.mpt(), rate.value, QUALITY_ONE, /*roundUp*/ true);
+    }
+
     // The remainder rests at uRate, the original pre-crossing rate. A zero
     // rate (quality not representable) puts it in the directory whose index
     // equals getBookBase(book), and BookTip scans keys strictly greater, so it
-    // could never be crossed while holding the owner's reserve. Don't place
-    // it; anything that crossed is kept, and a fully crossed offer has already
-    // returned above. Gated to preserve pre-amendment behavior.
-    if (mptV2 && uRate == 0)
+    // could never be crossed while holding the owner's reserve. Likewise, a
+    // bid whose fee-grossed TakerPays doesn't fit would be removed by BookStep
+    // on the first take. Don't place it; anything that crossed is kept, and a
+    // fully crossed offer has already returned above. Gated to preserve
+    // pre-amendment behavior.
+    if ((mptV2 && uRate == 0) || cannotRest)
     {
-        JLOG(j_.debug()) << "Unrepresentable quality: remainder not placed";
+        JLOG(j_.debug()) << "Unrepresentable quality or fee: remainder not placed";
         if (!crossed)
             return {tecKILLED, false};
         return {tesSUCCESS, true};
