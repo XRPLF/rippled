@@ -1,0 +1,42 @@
+{
+  "genesis": {
+    "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+    "seed": "snoPBrXtMeMyMHUVTgbuqAfg1SUTb",
+    "description": "Genesis account with all XRP. Used to fund test accounts."
+  },
+  "test_accounts": [
+    {
+      "name": "alice",
+      "description": "Primary sender for Payment and OfferCreate transactions."
+    },
+    {
+      "name": "bob",
+      "description": "Primary receiver for Payment transactions."
+    },
+    {
+      "name": "carol",
+      "description": "TrustSet and issued currency counterparty."
+    },
+    {
+      "name": "dave",
+      "description": "NFToken operations (mint, offer, accept)."
+    },
+    {
+      "name": "eve",
+      "description": "Escrow operations (create, finish)."
+    },
+    {
+      "name": "frank",
+      "description": "AMM pool operations (create, deposit, withdraw)."
+    },
+    {
+      "name": "grace",
+      "description": "Additional sender for parallel transaction submission."
+    },
+    {
+      "name": "heidi",
+      "description": "Additional receiver for payment diversity."
+    }
+  ],
+  "note": "Test account keypairs are generated dynamically at runtime via wallet_propose RPC. This file defines the logical roles. Actual keys are stored in the workdir during execution."
+}

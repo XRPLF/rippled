@@ -17,7 +17,17 @@ struct FetchReport
     {
     }
 
-    std::chrono::milliseconds elapsed{};
+    /**
+     * Wall time the fetch took, in microseconds.
+     *
+     * Microseconds and not milliseconds: a warm nodestore answers a read in
+     * single-digit microseconds and a cold one in low hundreds. A
+     * millisecond field rounds both to zero, so it discards the only
+     * quantity that separates a healthy read path from a stalled one.
+     *
+     * A consumer that needs milliseconds casts explicitly.
+     */
+    std::chrono::microseconds elapsed{};
     FetchType const fetchType;
     bool wasFound = false;
 };
@@ -29,7 +39,18 @@ struct BatchWriteReport
 {
     explicit BatchWriteReport() = default;
 
+    /**
+     * Wall time the batch write took, in milliseconds.
+     *
+     * Milliseconds is the right unit here, unlike on FetchReport: a batch
+     * write covers many objects and reaches the disk, so it lands in the
+     * millisecond range rather than below it.
+     */
     std::chrono::milliseconds elapsed;
+
+    /**
+     * Number of objects written in the batch.
+     */
     int writeCount;
 };
 
