@@ -90,9 +90,9 @@ class Handler_test : public beast::unit_test::Suite
         std::random_device dev;
         std::ranlux48 prng(dev());
 
-        // The lowest version still served. Asking for one outside the supported
-        // range would make getHandler() return at its bounds check, without
-        // searching, and the benchmark would then be timing that check.
+        // The lowest version still served. Outside the supported range getHandler()
+        // returns at its bounds check without searching, so the benchmark would
+        // time that check instead of a lookup.
         constexpr unsigned kVersion = rpc::kApiMinimumSupportedVersion;
 
         // Only the names that answer at kVersion, so that every timed call does a

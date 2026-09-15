@@ -3,6 +3,7 @@
 #include <xrpld/app/main/Application.h>
 
 #include <xrpl/basics/Log.h>
+#include <xrpl/basics/StringUtilities.h>
 #include <xrpl/basics/chrono.h>
 #include <xrpl/beast/core/CurrentThreadName.h>
 #include <xrpl/beast/utility/Journal.h>
@@ -36,44 +37,34 @@
 
 namespace xrpl::perf {
 
-PerfLogImp::Counters::Counters(std::span<std::string_view const> labels, JobTypes const& jobTypes)
+PerfLogImp::Counters::Counters(
+    std::span<NullTerminatedView const> methodNames,
+    JobTypes const& jobTypes)
+    : labels(methodNames.begin(), methodNames.end())
 {
+    rpc.reserve(labels.size());
+    for (auto const& label : labels)
     {
-        // populateRpc
-        //
-        // The labels are reported through json::StaticString, which reads them as
-        // C strings, so each must be a whole string literal. Each caller asserts
-        // that at compile time, as makePerfLog's documentation requires.
-        rpc.reserve(labels.size());
-        for (auto const& label : labels)
+        auto const inserted = rpc.try_emplace(label).second;
+        if (!inserted)
         {
-            auto const inserted = rpc.try_emplace(label).second;
-            if (!inserted)
-            {
-                // Ensure that no other function populates this entry.
-                // LCOV_EXCL_START
-                UNREACHABLE(
-                    "xrpl::perf::PerfLogImp::Counters::Counters : failed to "
-                    "insert label");
-                // LCOV_EXCL_STOP
-            }
+            // Nothing else inserts into rpc, so a name cannot repeat.
+            // LCOV_EXCL_START
+            UNREACHABLE("xrpl::perf::PerfLogImp::Counters::Counters : failed to insert label");
+            // LCOV_EXCL_STOP
         }
     }
+
+    jq.reserve(jobTypes.size());
+    for (auto const& [jobType, _] : jobTypes)
     {
-        // populateJq
-        jq.reserve(jobTypes.size());
-        for (auto const& [jobType, _] : jobTypes)
+        auto const inserted = jq.emplace(jobType, Jq()).second;
+        if (!inserted)
         {
-            auto const inserted = jq.emplace(jobType, Jq()).second;
-            if (!inserted)
-            {
-                // Ensure that no other function populates this entry.
-                // LCOV_EXCL_START
-                UNREACHABLE(
-                    "xrpl::perf::PerfLogImp::Counters::Counters : failed to "
-                    "insert job type");
-                // LCOV_EXCL_STOP
-            }
+            // Nothing else inserts into jq, so a job type cannot repeat.
+            // LCOV_EXCL_START
+            UNREACHABLE("xrpl::perf::PerfLogImp::Counters::Counters : failed to insert job type");
+            // LCOV_EXCL_STOP
         }
     }
 }
@@ -84,17 +75,31 @@ PerfLogImp::Counters::countersJson() const
     json::Value rpcobj(json::ValueType::Object);
     // totalRpc represents all rpc methods. All that started, finished, etc.
     Rpc totalRpc;
-    for (auto const& proc : rpc)
+    // Walked by label rather than by map entry, so that each key can be reported
+    // as a C string. The constructor gives rpc an entry per label, so the lookup
+    // succeeds; it is a find rather than an at() because this runs on the logging
+    // thread, where a throw would end the process.
+    for (auto const& label : labels)
     {
+        auto const entry = rpc.find(label);
+        if (entry == rpc.end())
+        {
+            // LCOV_EXCL_START
+            UNREACHABLE("xrpl::perf::PerfLogImp::Counters::countersJson : label has a counter");
+            continue;
+            // LCOV_EXCL_STOP
+        }
+        auto const& counter = entry->second;
+
         Rpc value;
         {
-            std::scoped_lock const lock(proc.second.mutex);
-            if ((proc.second.value.started == 0u) && (proc.second.value.finished == 0u) &&
-                (proc.second.value.errored == 0u))
+            std::scoped_lock const lock(counter.mutex);
+            if ((counter.value.started == 0u) && (counter.value.finished == 0u) &&
+                (counter.value.errored == 0u))
             {
                 continue;
             }
-            value = proc.second.value;
+            value = counter.value;
         }
 
         json::Value p(json::ValueType::Object);
@@ -106,10 +111,7 @@ PerfLogImp::Counters::countersJson() const
         totalRpc.errored += value.errored;
         p[jss::duration_us] = std::to_string(value.duration.count());
         totalRpc.duration += value.duration;
-        // The key is one of the constructor's labels, so it can be borrowed as a
-        // C string rather than duplicated into the object.
-        // NOLINTNEXTLINE(bugprone-suspicious-stringview-data-usage)
-        rpcobj[json::StaticString{proc.first.data()}] = p;
+        rpcobj[json::StaticString{label.asCString()}] = p;
     }
 
     if (totalRpc.started != 0u)
@@ -310,7 +312,7 @@ PerfLogImp::report()
 PerfLogImp::PerfLogImp(
     Setup setup,
     Application& app,
-    std::span<std::string_view const> methodNames,
+    std::span<NullTerminatedView const> methodNames,
     beast::Journal journal,
     std::function<void()>&& signalStop)
     : setup_(std::move(setup))
@@ -518,7 +520,7 @@ std::unique_ptr<PerfLog>
 makePerfLog(
     PerfLog::Setup const& setup,
     Application& app,
-    std::span<std::string_view const> methodNames,
+    std::span<NullTerminatedView const> methodNames,
     beast::Journal journal,
     std::function<void()>&& signalStop)
 {

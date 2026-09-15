@@ -165,16 +165,14 @@ isProperlyFormedTomlDomain(std::string_view domain);
 /**
  * Whether a view can be passed on as a C string.
  *
- * A view is only usable that way if it covers a whole null-terminated string
- * rather than a slice of one, since a reader given just the pointer stops at
- * the first null. This asks exactly that question: rebuild the view from its
- * data() as a C string, as such a reader would, and see if it comes back
- * unchanged. A slice comes back longer, having run past its own end.
+ * A reader given only data() stops at the first null, so the view must reach the
+ * terminating null. The test rebuilds the view from data() and compares: a view
+ * that stops earlier rebuilds longer, and so compares unequal.
  *
- * The byte after a view is not part of it, so reading it is only defined when
- * @p str points into storage known to hold a null at or after its end, such as
- * a string literal. Hence consteval: an unterminated view is then a compile
- * error rather than an out-of-bounds read.
+ * consteval because reading the byte after the view is only defined when @p str
+ * points into storage holding a null at or after its end, such as a string
+ * literal. An unterminated view is then a compile error, not an out-of-bounds
+ * read.
  *
  * @param str The view to test.
  * @return Whether @p str is null-terminated. A view with no data is not.
@@ -185,10 +183,64 @@ isNullTerminated(std::string_view str)
     if (str.data() == nullptr)
         return false;
 
-    // Reading past the view is the point, so the usual warning about data() not
-    // being null-terminated does not apply.
+    // Reading past the view is the point, so the usual data() warning does not
+    // apply.
     // NOLINTNEXTLINE(bugprone-suspicious-stringview-data-usage)
     return std::string_view{str.data()} == str;
 }
+
+/**
+ * A string that is known to reach its terminating null.
+ *
+ * Converts to std::string_view, so it compares and hashes as one. Unlike a
+ * view, asCString() may be handed to a reader that expects a C string, such
+ * as json::StaticString.
+ *
+ * The only constructor is consteval and rejects a view that stops before the
+ * null, so the property holds by construction and no caller asserts it.
+ */
+class NullTerminatedView
+{
+public:
+    /**
+     * Build a view from one that reaches its terminating null.
+     *
+     * @param view The string to hold. Rejected at compile time if it stops
+     *        before its terminating null, or has no data.
+     */
+    consteval NullTerminatedView(std::string_view view) : data_(view.data()), size_(view.size())
+    {
+        if (!isNullTerminated(view))
+            throw "xrpl::NullTerminatedView : view does not reach a null";
+    }
+
+    constexpr
+    operator std::string_view() const noexcept
+    {
+        return view();
+    }
+
+    /**
+     * @return The string as a view.
+     */
+    [[nodiscard]] constexpr std::string_view
+    view() const noexcept
+    {
+        return {data_, size_};
+    }
+
+    /**
+     * @return The string as a C string. Never null.
+     */
+    [[nodiscard]] constexpr char const*
+    asCString() const noexcept
+    {
+        return data_;
+    }
+
+private:
+    char const* data_;
+    std::size_t size_;
+};
 
 }  // namespace xrpl

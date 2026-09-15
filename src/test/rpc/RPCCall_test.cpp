@@ -5932,10 +5932,9 @@ public:
     // The command-line table and the dispatch table must agree.
     //
     // Forwards: every name the command line accepts must reach a handler at the
-    // version the command-line client requests. Merely existing in the dispatch
-    // table is not enough, because a handler whose API range excludes
-    // kApiCommandLineVersion would parse the command and then answer
-    // RpcUnknownCommand.
+    // version the command-line client requests. Presence in the dispatch table is
+    // not enough: a handler whose API range excludes kApiCommandLineVersion parses
+    // the command and then answers RpcUnknownCommand.
     //
     // Backwards: a handler that claims a command-line form must have one, and
     // one that denies it must not, so that Handler::hasCommandLineForm cannot go
@@ -5981,7 +5980,7 @@ public:
 
             // Both name lists are sorted, so a binary search suffices.
             BEAST_EXPECTS(
-                claimsCommandLine == std::ranges::binary_search(commandLine, name),
+                claimsCommandLine == std::ranges::binary_search(commandLine, name.view()),
                 std::string{name});
         }
     }

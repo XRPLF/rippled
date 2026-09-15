@@ -1,6 +1,7 @@
 #pragma once
 
 #include <xrpl/basics/Log.h>
+#include <xrpl/basics/StringUtilities.h>
 #include <xrpl/core/Job.h>
 #include <xrpl/json/json_value.h>
 
@@ -152,20 +153,19 @@ PerfLog::Setup
 setupPerfLog(Section const& section, std::filesystem::path const& configDir);
 
 /**
- * @param methodNames The RPC methods to count, one counter per name. Each name
- *        must be a view of a whole, null-terminated string literal rather than
- *        a slice of one, because the counters are reported as JSON keys that
- *        borrow the name and read it as a C string. Nothing here can check that,
- *        so the caller must assert it with isNullTerminated. The names must
- *        outlive the returned object, which holds views of them. Callers pass
- *        rpc::getHandlerNames(); it is an argument so that this layer needs to
- *        know nothing about the RPC dispatch table.
+ * @param methodNames The RPC methods to count, one counter per name. Reported
+ *        as JSON keys that borrow each name and read it as a C string, which is
+ *        why the parameter type requires one that reaches its terminating null.
+ *        The names must outlive the returned object, which holds views of them.
+ *        The range itself need not: it is copied.
+ *        Passed in rather than looked up here, so that this layer needs no
+ *        knowledge of the dispatch table.
  */
 std::unique_ptr<PerfLog>
 makePerfLog(
     PerfLog::Setup const& setup,
     Application& app,
-    std::span<std::string_view const> methodNames,
+    std::span<NullTerminatedView const> methodNames,
     beast::Journal journal,
     std::function<void()>&& signalStop);
 

@@ -200,8 +200,8 @@ doCommand(rpc::JsonContext& context, json::Value& result)
         return error;
     }
 
-    // No null check on the method: every entry in the dispatch table carries
-    // one, which a static_assert there enforces at compile time.
+    // No null check on the method: Handler::Method has no default constructor, so
+    // every entry in the dispatch table names one.
     if (!context.headers.user.empty() || !context.headers.forwardedFor.empty())
     {
         JLOG(context.j.debug()) << "start command: " << handler->name

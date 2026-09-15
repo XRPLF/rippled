@@ -6,6 +6,7 @@
 #include <xrpld/rpc/detail/Tuning.h>
 
 #include <xrpl/basics/Log.h>
+#include <xrpl/basics/StringUtilities.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/ApiVersion.h>
 #include <xrpl/protocol/ErrorCodes.h>
@@ -27,11 +28,60 @@ enum class Condition {
 
 struct Handler
 {
-    // A plain function pointer, not a std::function: every method is a free
-    // function known at compile time, so nothing needs to be captured. This
-    // also keeps Handler a literal type, letting the dispatch table be built
-    // and checked at compile time.
-    using Method = Status (*)(JsonContext&, json::Value&);
+    /**
+     * The function a handler dispatches to.
+     *
+     * A plain function pointer, not a std::function: every method is a free
+     * function known at compile time, so nothing needs to be captured. That
+     * keeps Handler a literal type, letting the dispatch table be built and
+     * checked at compile time.
+     *
+     * of() takes the function as a template argument, and there is no default
+     * constructor, so a table entry that omits its method does not compile.
+     *
+     * The pointer is not also checked against null, because gcc under
+     * -fsanitize=undefined does not fold the address of a function template
+     * instantiation in a constant expression. A null check in the table
+     * assertion, or a requires clause on Fn, both fail to compile there.
+     */
+    class Method
+    {
+    public:
+        using Function = Status (*)(JsonContext&, json::Value&);
+
+        /**
+         * Build a Method that calls a given function.
+         *
+         * @tparam Fn The function to call.
+         * @return The Method.
+         */
+        template <Function Fn>
+        static constexpr Method
+        of() noexcept
+        {
+            return Method{Fn};
+        }
+
+        /**
+         * Call the function.
+         *
+         * @param context The request being served.
+         * @param result The object the function writes its reply into.
+         * @return The status the function returns.
+         */
+        Status
+        operator()(JsonContext& context, json::Value& result) const
+        {
+            return fn_(context, result);
+        }
+
+    private:
+        constexpr explicit Method(Function fn) noexcept : fn_(fn)
+        {
+        }
+
+        Function fn_;
+    };
 
     std::string_view name;
     Method valueMethod;
@@ -41,11 +91,10 @@ struct Handler
     unsigned minApiVer = kApiMinimumSupportedVersion;
     unsigned maxApiVer = kApiMaximumValidVersion;
 
-    // Whether the command-line client accepts this method as a command. Most do;
-    // the exceptions are methods whose arguments have no sensible positional
-    // form. Recorded here, rather than left to a comment, so that RPCCall_test
-    // can hold this table and the command-line table to each other: a method
-    // claiming a command-line form must have one, and one denying it must not.
+    // Whether the command-line client accepts this method as a command. The
+    // exceptions are methods whose arguments have no positional form. A field
+    // rather than a comment, so that RPCCall_test can check it against the
+    // command-line table in both directions.
     bool hasCommandLineForm = true;
 };
 
@@ -78,10 +127,11 @@ makeObjectValue(Value const& value, json::StaticString const& field = jss::messa
 /**
  * Return the names of all methods, sorted and without duplicates.
  *
- * The names view refers to storage that outlives the program, so it is safe to
- * hold on to.
+ * The names refer to storage that outlives the program, so they are safe to
+ * hold on to, and each reaches its terminating null, so a caller may read one
+ * as a C string.
  */
-std::span<std::string_view const>
+std::span<NullTerminatedView const>
 getHandlerNames();
 
 template <class T>

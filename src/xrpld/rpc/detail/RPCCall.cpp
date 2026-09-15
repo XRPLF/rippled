@@ -62,6 +62,56 @@ class RPCParser;
 
 namespace {
 
+/**
+ * The member function a command dispatches to.
+ *
+ * of() takes the function as a template argument, and there is no default
+ * constructor, so a table entry that omits its parser does not compile.
+ *
+ * The pointer is not also checked against null, because gcc under
+ * -fsanitize=undefined does not fold a pointer to a member function in a
+ * constant expression. A null check in commandsValid(), or a requires clause on
+ * Fn, both fail to compile there.
+ */
+class Parse
+{
+public:
+    using Function = json::Value (RPCParser::*)(json::Value const& jvParams);
+
+    /**
+     * Build a Parse that calls a given member function.
+     *
+     * @tparam Fn The member function to call.
+     * @return The Parse.
+     */
+    template <Function Fn>
+    static constexpr Parse
+    of() noexcept
+    {
+        return Parse{Fn};
+    }
+
+    /**
+     * Call the parser.
+     *
+     * Defined below RPCParser, because calling one of its members needs the
+     * complete class.
+     *
+     * @param parser The parser to call the member function on.
+     * @param jvParams The command line arguments, as an array.
+     * @return The request, or an error.
+     */
+    json::Value
+    operator()(RPCParser& parser, json::Value const& jvParams) const;
+
+private:
+    constexpr explicit Parse(Function fn) noexcept : fn_(fn)
+    {
+    }
+
+    Function fn_;
+};
+
 // One command the command line accepts: the method it names, the parser that
 // turns arguments into a request, and how many arguments that parser needs.
 //
@@ -74,7 +124,7 @@ struct Command
     static constexpr unsigned kUnlimitedParams = std::numeric_limits<unsigned>::max();
 
     std::string_view name;
-    json::Value (RPCParser::*parse)(json::Value const& jvParams);
+    Parse parse;
     unsigned minParams = 0;
     unsigned maxParams = kUnlimitedParams;
 };
@@ -1267,364 +1317,364 @@ private:
     // An omitted minParams means the command takes no arguments; an omitted
     // maxParams means it takes any number. See Command.
     //
-    // The commands, in whatever order reads best. parseCommand() searches
-    // kSortedCommands below, so the order here carries no meaning.
+    // The commands. The order is free: parseCommand() searches kSortedCommands
+    // below.
     static constexpr auto kCommandArray = std::to_array<Command>({
         // Request-response methods
         // - Returns an error, or the request.
         // - To modify the method, provide a new method in the request.
         {
             .name = rpc::method::kAccountCurrencies,
-            .parse = &RPCParser::parseAccountCurrencies,
+            .parse = Parse::of<&RPCParser::parseAccountCurrencies>(),
             .minParams = 1,
             .maxParams = 3,
         },
         {
             .name = rpc::method::kAccountInfo,
-            .parse = &RPCParser::parseAccountItems,
+            .parse = Parse::of<&RPCParser::parseAccountItems>(),
             .minParams = 1,
             .maxParams = 3,
         },
         {
             .name = rpc::method::kAccountLines,
-            .parse = &RPCParser::parseAccountLines,
+            .parse = Parse::of<&RPCParser::parseAccountLines>(),
             .minParams = 1,
             .maxParams = 5,
         },
         {
             .name = rpc::method::kAccountChannels,
-            .parse = &RPCParser::parseAccountChannels,
+            .parse = Parse::of<&RPCParser::parseAccountChannels>(),
             .minParams = 1,
             .maxParams = 3,
         },
         {
             .name = rpc::method::kAccountNfts,
-            .parse = &RPCParser::parseAccountItems,
+            .parse = Parse::of<&RPCParser::parseAccountItems>(),
             .minParams = 1,
             .maxParams = 5,
         },
         {
             .name = rpc::method::kAccountObjects,
-            .parse = &RPCParser::parseAccountItems,
+            .parse = Parse::of<&RPCParser::parseAccountItems>(),
             .minParams = 1,
             .maxParams = 5,
         },
         {
             .name = rpc::method::kAccountOffers,
-            .parse = &RPCParser::parseAccountItems,
+            .parse = Parse::of<&RPCParser::parseAccountItems>(),
             .minParams = 1,
             .maxParams = 4,
         },
         {
             .name = rpc::method::kAccountTx,
-            .parse = &RPCParser::parseAccountTransactions,
+            .parse = Parse::of<&RPCParser::parseAccountTransactions>(),
             .minParams = 1,
             .maxParams = 8,
         },
         {
             .name = rpc::method::kAmmInfo,
-            .parse = &RPCParser::parseAsIs,
+            .parse = Parse::of<&RPCParser::parseAsIs>(),
             .minParams = 1,
             .maxParams = 2,
         },
         {
             .name = rpc::method::kVaultInfo,
-            .parse = &RPCParser::parseVault,
+            .parse = Parse::of<&RPCParser::parseVault>(),
             .minParams = 1,
             .maxParams = 2,
         },
         {
             .name = rpc::method::kBookChanges,
-            .parse = &RPCParser::parseLedgerId,
+            .parse = Parse::of<&RPCParser::parseLedgerId>(),
             .minParams = 1,
             .maxParams = 1,
         },
         {
             .name = rpc::method::kBookOffers,
-            .parse = &RPCParser::parseBookOffers,
+            .parse = Parse::of<&RPCParser::parseBookOffers>(),
             .minParams = 2,
             .maxParams = 7,
         },
         {
             .name = rpc::method::kCanDelete,
-            .parse = &RPCParser::parseCanDelete,
+            .parse = Parse::of<&RPCParser::parseCanDelete>(),
             .maxParams = 1,
         },
         {
             .name = rpc::method::kChannelAuthorize,
-            .parse = &RPCParser::parseChannelAuthorize,
+            .parse = Parse::of<&RPCParser::parseChannelAuthorize>(),
             .minParams = 3,
             .maxParams = 4,
         },
         {
             .name = rpc::method::kChannelVerify,
-            .parse = &RPCParser::parseChannelVerify,
+            .parse = Parse::of<&RPCParser::parseChannelVerify>(),
             .minParams = 4,
             .maxParams = 4,
         },
         {
             .name = rpc::method::kConnect,
-            .parse = &RPCParser::parseConnect,
+            .parse = Parse::of<&RPCParser::parseConnect>(),
             .minParams = 1,
             .maxParams = 2,
         },
         {
             .name = rpc::method::kConsensusInfo,
-            .parse = &RPCParser::parseAsIs,
+            .parse = Parse::of<&RPCParser::parseAsIs>(),
             .maxParams = 0,
         },
         {
             .name = rpc::method::kDepositAuthorized,
-            .parse = &RPCParser::parseDepositAuthorized,
+            .parse = Parse::of<&RPCParser::parseDepositAuthorized>(),
             .minParams = 2,
             .maxParams = 11,
         },
         {
             .name = rpc::method::kFeature,
-            .parse = &RPCParser::parseFeature,
+            .parse = Parse::of<&RPCParser::parseFeature>(),
             .maxParams = 2,
         },
         {
             .name = rpc::method::kFetchInfo,
-            .parse = &RPCParser::parseFetchInfo,
+            .parse = Parse::of<&RPCParser::parseFetchInfo>(),
             .maxParams = 1,
         },
         {
             .name = rpc::method::kGatewayBalances,
-            .parse = &RPCParser::parseGatewayBalances,
+            .parse = Parse::of<&RPCParser::parseGatewayBalances>(),
             .minParams = 1,
         },
         {
             .name = rpc::method::kGetCounts,
-            .parse = &RPCParser::parseGetCounts,
+            .parse = Parse::of<&RPCParser::parseGetCounts>(),
             .maxParams = 1,
         },
         {
             .name = rpc::method::kJson,
-            .parse = &RPCParser::parseJson,
+            .parse = Parse::of<&RPCParser::parseJson>(),
             .minParams = 2,
             .maxParams = 2,
         },
         {
             .name = rpc::method::kJson2,
-            .parse = &RPCParser::parseJson2,
+            .parse = Parse::of<&RPCParser::parseJson2>(),
             .minParams = 1,
             .maxParams = 1,
         },
         {
             .name = rpc::method::kLedger,
-            .parse = &RPCParser::parseLedger,
+            .parse = Parse::of<&RPCParser::parseLedger>(),
             .maxParams = 2,
         },
         {
             .name = rpc::method::kLedgerAccept,
-            .parse = &RPCParser::parseAsIs,
+            .parse = Parse::of<&RPCParser::parseAsIs>(),
             .maxParams = 0,
         },
         {
             .name = rpc::method::kLedgerClosed,
-            .parse = &RPCParser::parseAsIs,
+            .parse = Parse::of<&RPCParser::parseAsIs>(),
             .maxParams = 0,
         },
         {
             .name = rpc::method::kLedgerCurrent,
-            .parse = &RPCParser::parseAsIs,
+            .parse = Parse::of<&RPCParser::parseAsIs>(),
             .maxParams = 0,
         },
         {
             .name = rpc::method::kLedgerEntry,
-            .parse = &RPCParser::parseLedgerEntry,
+            .parse = Parse::of<&RPCParser::parseLedgerEntry>(),
             .minParams = 1,
             .maxParams = 2,
         },
         {
             .name = rpc::method::kLedgerHeader,
-            .parse = &RPCParser::parseLedgerId,
+            .parse = Parse::of<&RPCParser::parseLedgerId>(),
             .minParams = 1,
             .maxParams = 1,
         },
         {
             .name = rpc::method::kLedgerRequest,
-            .parse = &RPCParser::parseLedgerId,
+            .parse = Parse::of<&RPCParser::parseLedgerId>(),
             .minParams = 1,
             .maxParams = 1,
         },
         {
             .name = rpc::method::kLogLevel,
-            .parse = &RPCParser::parseLogLevel,
+            .parse = Parse::of<&RPCParser::parseLogLevel>(),
             .maxParams = 2,
         },
         {
             .name = rpc::method::kLogrotate,
-            .parse = &RPCParser::parseAsIs,
+            .parse = Parse::of<&RPCParser::parseAsIs>(),
             .maxParams = 0,
         },
         {
             .name = rpc::method::kManifest,
-            .parse = &RPCParser::parseManifest,
+            .parse = Parse::of<&RPCParser::parseManifest>(),
             .minParams = 1,
             .maxParams = 1,
         },
         {
             .name = rpc::method::kOwnerInfo,
-            .parse = &RPCParser::parseAccountItems,
+            .parse = Parse::of<&RPCParser::parseAccountItems>(),
             .minParams = 1,
             .maxParams = 3,
         },
         {
             .name = rpc::method::kPeers,
-            .parse = &RPCParser::parseAsIs,
+            .parse = Parse::of<&RPCParser::parseAsIs>(),
             .maxParams = 0,
         },
         {
             .name = rpc::method::kPing,
-            .parse = &RPCParser::parseAsIs,
+            .parse = Parse::of<&RPCParser::parseAsIs>(),
             .maxParams = 0,
         },
         {
             .name = rpc::method::kPrint,
-            .parse = &RPCParser::parseAsIs,
+            .parse = Parse::of<&RPCParser::parseAsIs>(),
             .maxParams = 1,
         },
         {
             .name = rpc::method::kRandom,
-            .parse = &RPCParser::parseAsIs,
+            .parse = Parse::of<&RPCParser::parseAsIs>(),
             .maxParams = 0,
         },
         {
             .name = rpc::method::kPeerReservationsAdd,
-            .parse = &RPCParser::parsePeerReservationsAdd,
+            .parse = Parse::of<&RPCParser::parsePeerReservationsAdd>(),
             .minParams = 1,
             .maxParams = 2,
         },
         {
             .name = rpc::method::kPeerReservationsDel,
-            .parse = &RPCParser::parsePeerReservationsDel,
+            .parse = Parse::of<&RPCParser::parsePeerReservationsDel>(),
             .minParams = 1,
             .maxParams = 1,
         },
         {
             .name = rpc::method::kPeerReservationsList,
-            .parse = &RPCParser::parseAsIs,
+            .parse = Parse::of<&RPCParser::parseAsIs>(),
             .maxParams = 0,
         },
         {
             .name = rpc::method::kRipplePathFind,
-            .parse = &RPCParser::parseRipplePathFind,
+            .parse = Parse::of<&RPCParser::parseRipplePathFind>(),
             .minParams = 1,
             .maxParams = 2,
         },
         {
             .name = rpc::method::kServerDefinitions,
-            .parse = &RPCParser::parseServerDefinitions,
+            .parse = Parse::of<&RPCParser::parseServerDefinitions>(),
             .maxParams = 1,
         },
         {
             .name = rpc::method::kServerInfo,
-            .parse = &RPCParser::parseServerInfo,
+            .parse = Parse::of<&RPCParser::parseServerInfo>(),
             .maxParams = 1,
         },
         {
             .name = rpc::method::kServerState,
-            .parse = &RPCParser::parseServerInfo,
+            .parse = Parse::of<&RPCParser::parseServerInfo>(),
             .maxParams = 1,
         },
         {
             .name = rpc::method::kSign,
-            .parse = &RPCParser::parseSignSubmit,
+            .parse = Parse::of<&RPCParser::parseSignSubmit>(),
             .minParams = 2,
             .maxParams = 4,
         },
         {
             .name = rpc::method::kSignFor,
-            .parse = &RPCParser::parseSignFor,
+            .parse = Parse::of<&RPCParser::parseSignFor>(),
             .minParams = 3,
             .maxParams = 4,
         },
         {
             .name = rpc::method::kStop,
-            .parse = &RPCParser::parseAsIs,
+            .parse = Parse::of<&RPCParser::parseAsIs>(),
             .maxParams = 0,
         },
         {
             .name = rpc::method::kSimulate,
-            .parse = &RPCParser::parseSimulate,
+            .parse = Parse::of<&RPCParser::parseSimulate>(),
             .minParams = 1,
             .maxParams = 2,
         },
         {
             .name = rpc::method::kSubmit,
-            .parse = &RPCParser::parseSignSubmit,
+            .parse = Parse::of<&RPCParser::parseSignSubmit>(),
             .minParams = 1,
             .maxParams = 4,
         },
         {
             .name = rpc::method::kSubmitMultisigned,
-            .parse = &RPCParser::parseSubmitMultiSigned,
+            .parse = Parse::of<&RPCParser::parseSubmitMultiSigned>(),
             .minParams = 1,
             .maxParams = 1,
         },
         {
             .name = rpc::method::kTransactionEntry,
-            .parse = &RPCParser::parseTransactionEntry,
+            .parse = Parse::of<&RPCParser::parseTransactionEntry>(),
             .minParams = 2,
             .maxParams = 2,
         },
         {
             .name = rpc::method::kTx,
-            .parse = &RPCParser::parseTx,
+            .parse = Parse::of<&RPCParser::parseTx>(),
             .minParams = 1,
             .maxParams = 4,
         },
         {
             .name = rpc::method::kTxHistory,
-            .parse = &RPCParser::parseTxHistory,
+            .parse = Parse::of<&RPCParser::parseTxHistory>(),
             .minParams = 1,
             .maxParams = 1,
         },
         {
             .name = rpc::method::kUnlList,
-            .parse = &RPCParser::parseAsIs,
+            .parse = Parse::of<&RPCParser::parseAsIs>(),
             .maxParams = 0,
         },
         {
             .name = rpc::method::kValidationCreate,
-            .parse = &RPCParser::parseValidationCreate,
+            .parse = Parse::of<&RPCParser::parseValidationCreate>(),
             .maxParams = 1,
         },
         {
             .name = rpc::method::kValidatorInfo,
-            .parse = &RPCParser::parseAsIs,
+            .parse = Parse::of<&RPCParser::parseAsIs>(),
             .maxParams = 0,
         },
         {
             .name = rpc::method::kVersion,
-            .parse = &RPCParser::parseAsIs,
+            .parse = Parse::of<&RPCParser::parseAsIs>(),
             .maxParams = 0,
         },
         {
             .name = rpc::method::kWalletPropose,
-            .parse = &RPCParser::parseWalletPropose,
+            .parse = Parse::of<&RPCParser::parseWalletPropose>(),
             .maxParams = 1,
         },
         {
             .name = rpc::method::kInternal,
-            .parse = &RPCParser::parseInternal,
+            .parse = Parse::of<&RPCParser::parseInternal>(),
             .minParams = 1,
         },
 
-        // Event methods - rejected outright below, so any parameters will do
+        // Event methods, rejected below, so the parameter range is unconstrained
         {
             .name = rpc::method::kPathFind,
-            .parse = &RPCParser::parseEvented,
+            .parse = Parse::of<&RPCParser::parseEvented>(),
         },
         {
             .name = rpc::method::kSubscribe,
-            .parse = &RPCParser::parseEvented,
+            .parse = Parse::of<&RPCParser::parseEvented>(),
         },
         {
             .name = rpc::method::kUnsubscribe,
-            .parse = &RPCParser::parseEvented,
+            .parse = Parse::of<&RPCParser::parseEvented>(),
         },
     });
 
@@ -1662,13 +1712,16 @@ public:
      * Whether the command table is well formed.
      *
      * A name must select exactly one command, and must name a method the server
-     * can dispatch - otherwise the command line would accept something that
-     * then goes nowhere. The latter is checked by RPCCall_test, which can see
-     * the handler table; here we can at least rule out duplicates and gaps.
+     * can dispatch, or the command line would accept a command it cannot
+     * answer. RPCCall_test checks the second property, because it can see the
+     * handler table. This checks the first, and the parameter range.
+     *
+     * The parser is not checked: Parse has no default constructor, so an entry
+     * that omits it does not compile.
      *
      * This is a function the static_assert below the class calls, rather than
-     * the assert itself, because reading a pointer to a member of RPCParser is
-     * only a constant expression once RPCParser is complete.
+     * the assert itself, because the table names members of RPCParser, and that
+     * is only a constant expression once RPCParser is complete.
      */
     static constexpr bool
     commandsValid()
@@ -1676,8 +1729,7 @@ public:
         for (std::size_t i = 0; i < kSortedCommands.size(); ++i)
         {
             auto const& command = kSortedCommands[i];
-            if (command.name.empty() || command.parse == nullptr ||
-                command.minParams > command.maxParams)
+            if (command.name.empty() || command.minParams > command.maxParams)
                 return false;
             if (i > 0 && kSortedCommands[i - 1].name == command.name)
                 return false;
@@ -1725,15 +1777,26 @@ public:
             return rpcError(RpcBadSyntax);
         }
 
-        return (this->*(found->parse))(jvParams);
+        return found->parse(*this, jvParams);
     }
 };
+
+namespace {
+
+// Out of line because RPCParser is incomplete where Parse is declared.
+json::Value
+Parse::operator()(RPCParser& parser, json::Value const& jvParams) const
+{
+    return (parser.*fn_)(jvParams);
+}
+
+}  // namespace
 
 // See the comment on commandsValid() for why this is out here.
 static_assert(
     RPCParser::commandsValid(),
-    "xrpl::RPCParser : every command needs a unique name, a parser, and a valid "
-    "parameter count range");
+    "xrpl::RPCParser : every command needs a unique name and a valid parameter "
+    "count range");
 
 //------------------------------------------------------------------------------
 

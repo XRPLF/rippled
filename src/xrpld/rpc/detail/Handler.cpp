@@ -19,9 +19,13 @@
 #include <iterator>
 #include <span>
 #include <string_view>
+#include <utility>
 
 namespace xrpl::rpc {
 namespace {
+
+// Shorthand: the tables below name this type once per entry.
+using Method = Handler::Method;
 
 /**
  * Adjust an old-style handler to be call-by-reference.
@@ -77,7 +81,7 @@ handlerFrom()
 
     return {
         HandlerImpl::name,
-        &handle<HandlerImpl>,
+        Method::of<&handle<HandlerImpl>>(),
         HandlerImpl::role,
         HandlerImpl::condition,
         HandlerImpl::minApiVer,
@@ -85,198 +89,199 @@ handlerFrom()
     };
 }
 
-// The handlers, in whatever order reads best. getHandler() searches kHandlers
-// below, which is this array sorted; the order here carries no meaning.
-constexpr Handler kHandlerArray[]{
+// The handlers that name the function they dispatch to. The order is free:
+// getHandler() searches kHandlers below, which is this array and the next one
+// sorted together.
+constexpr Handler kFunctionHandlerArray[]{
     // Request-response methods
     {
         .name = method::kAccountInfo,
-        .valueMethod = &byRef<&doAccountInfo>,
+        .valueMethod = Method::of<&byRef<&doAccountInfo>>(),
         .role = Role::USER,
         .condition = Condition::NoCondition,
     },
     {
         .name = method::kAccountCurrencies,
-        .valueMethod = &byRef<&doAccountCurrencies>,
+        .valueMethod = Method::of<&byRef<&doAccountCurrencies>>(),
         .role = Role::USER,
         .condition = Condition::NoCondition,
     },
     {
         .name = method::kAccountLines,
-        .valueMethod = &byRef<&doAccountLines>,
+        .valueMethod = Method::of<&byRef<&doAccountLines>>(),
         .role = Role::USER,
         .condition = Condition::NoCondition,
     },
     {
         .name = method::kAccountChannels,
-        .valueMethod = &byRef<&doAccountChannels>,
+        .valueMethod = Method::of<&byRef<&doAccountChannels>>(),
         .role = Role::USER,
         .condition = Condition::NoCondition,
     },
     {
         .name = method::kAccountNfts,
-        .valueMethod = &byRef<&doAccountNFTs>,
+        .valueMethod = Method::of<&byRef<&doAccountNFTs>>(),
         .role = Role::USER,
         .condition = Condition::NoCondition,
     },
     {
         .name = method::kAccountObjects,
-        .valueMethod = &byRef<&doAccountObjects>,
+        .valueMethod = Method::of<&byRef<&doAccountObjects>>(),
         .role = Role::USER,
         .condition = Condition::NoCondition,
     },
     {
         .name = method::kAccountOffers,
-        .valueMethod = &byRef<&doAccountOffers>,
+        .valueMethod = Method::of<&byRef<&doAccountOffers>>(),
         .role = Role::USER,
         .condition = Condition::NoCondition,
     },
     {
         .name = method::kAccountTx,
-        .valueMethod = &byRef<&doAccountTx>,
+        .valueMethod = Method::of<&byRef<&doAccountTx>>(),
         .role = Role::USER,
         .condition = Condition::NoCondition,
     },
     {
         .name = method::kAmmInfo,
-        .valueMethod = &byRef<&doAMMInfo>,
+        .valueMethod = Method::of<&byRef<&doAMMInfo>>(),
         .role = Role::USER,
         .condition = Condition::NoCondition,
     },
     {
         .name = method::kBlacklist,
-        .valueMethod = &byRef<&doBlackList>,
+        .valueMethod = Method::of<&byRef<&doBlackList>>(),
         .role = Role::ADMIN,
         .condition = Condition::NoCondition,
         .hasCommandLineForm = false,
     },
     {
         .name = method::kBookChanges,
-        .valueMethod = &byRef<&doBookChanges>,
+        .valueMethod = Method::of<&byRef<&doBookChanges>>(),
         .role = Role::USER,
         .condition = Condition::NoCondition,
     },
     {
         .name = method::kBookOffers,
-        .valueMethod = &byRef<&doBookOffers>,
+        .valueMethod = Method::of<&byRef<&doBookOffers>>(),
         .role = Role::USER,
         .condition = Condition::NoCondition,
     },
     {
         .name = method::kCanDelete,
-        .valueMethod = &byRef<&doCanDelete>,
+        .valueMethod = Method::of<&byRef<&doCanDelete>>(),
         .role = Role::ADMIN,
         .condition = Condition::NoCondition,
     },
     {
         .name = method::kChannelAuthorize,
-        .valueMethod = &byRef<&doChannelAuthorize>,
+        .valueMethod = Method::of<&byRef<&doChannelAuthorize>>(),
         .role = Role::USER,
         .condition = Condition::NoCondition,
     },
     {
         .name = method::kChannelVerify,
-        .valueMethod = &byRef<&doChannelVerify>,
+        .valueMethod = Method::of<&byRef<&doChannelVerify>>(),
         .role = Role::USER,
         .condition = Condition::NoCondition,
     },
     {
         .name = method::kConnect,
-        .valueMethod = &byRef<&doConnect>,
+        .valueMethod = Method::of<&byRef<&doConnect>>(),
         .role = Role::ADMIN,
         .condition = Condition::NoCondition,
     },
     {
         .name = method::kConsensusInfo,
-        .valueMethod = &byRef<&doConsensusInfo>,
+        .valueMethod = Method::of<&byRef<&doConsensusInfo>>(),
         .role = Role::ADMIN,
         .condition = Condition::NoCondition,
     },
     {
         .name = method::kDepositAuthorized,
-        .valueMethod = &byRef<&doDepositAuthorized>,
+        .valueMethod = Method::of<&byRef<&doDepositAuthorized>>(),
         .role = Role::USER,
         .condition = Condition::NoCondition,
     },
     {
         .name = method::kFeature,
-        .valueMethod = &byRef<&doFeature>,
+        .valueMethod = Method::of<&byRef<&doFeature>>(),
         .role = Role::USER,
         .condition = Condition::NoCondition,
     },
     {
         .name = method::kFee,
-        .valueMethod = &byRef<&doFee>,
+        .valueMethod = Method::of<&byRef<&doFee>>(),
         .role = Role::USER,
         .condition = Condition::NeedsCurrentLedger,
         .hasCommandLineForm = false,
     },
     {
         .name = method::kFetchInfo,
-        .valueMethod = &byRef<&doFetchInfo>,
+        .valueMethod = Method::of<&byRef<&doFetchInfo>>(),
         .role = Role::ADMIN,
         .condition = Condition::NoCondition,
     },
     {
         .name = method::kGatewayBalances,
-        .valueMethod = &byRef<&doGatewayBalances>,
+        .valueMethod = Method::of<&byRef<&doGatewayBalances>>(),
         .role = Role::USER,
         .condition = Condition::NoCondition,
     },
     {
         .name = method::kGetCounts,
-        .valueMethod = &byRef<&doGetCounts>,
+        .valueMethod = Method::of<&byRef<&doGetCounts>>(),
         .role = Role::ADMIN,
         .condition = Condition::NoCondition,
     },
     {
         .name = method::kGetAggregatePrice,
-        .valueMethod = &byRef<&doGetAggregatePrice>,
+        .valueMethod = Method::of<&byRef<&doGetAggregatePrice>>(),
         .role = Role::USER,
         .condition = Condition::NoCondition,
         .hasCommandLineForm = false,
     },
     {
         .name = method::kLedgerAccept,
-        .valueMethod = &byRef<&doLedgerAccept>,
+        .valueMethod = Method::of<&byRef<&doLedgerAccept>>(),
         .role = Role::ADMIN,
         .condition = Condition::NeedsCurrentLedger,
     },
     {
         .name = method::kLedgerCleaner,
-        .valueMethod = &byRef<&doLedgerCleaner>,
+        .valueMethod = Method::of<&byRef<&doLedgerCleaner>>(),
         .role = Role::ADMIN,
         .condition = Condition::NeedsNetworkConnection,
         .hasCommandLineForm = false,
     },
     {
         .name = method::kLedgerClosed,
-        .valueMethod = &byRef<&doLedgerClosed>,
+        .valueMethod = Method::of<&byRef<&doLedgerClosed>>(),
         .role = Role::USER,
         .condition = Condition::NeedsClosedLedger,
     },
     {
         .name = method::kLedgerCurrent,
-        .valueMethod = &byRef<&doLedgerCurrent>,
+        .valueMethod = Method::of<&byRef<&doLedgerCurrent>>(),
         .role = Role::USER,
         .condition = Condition::NeedsCurrentLedger,
     },
     {
         .name = method::kLedgerData,
-        .valueMethod = &byRef<&doLedgerData>,
+        .valueMethod = Method::of<&byRef<&doLedgerData>>(),
         .role = Role::USER,
         .condition = Condition::NoCondition,
         .hasCommandLineForm = false,
     },
     {
         .name = method::kLedgerEntry,
-        .valueMethod = &byRef<&doLedgerEntry>,
+        .valueMethod = Method::of<&byRef<&doLedgerEntry>>(),
         .role = Role::USER,
         .condition = Condition::NoCondition,
     },
     {
         .name = method::kLedgerHeader,
-        .valueMethod = &byRef<&doLedgerHeader>,
+        .valueMethod = Method::of<&byRef<&doLedgerHeader>>(),
         .role = Role::USER,
         .condition = Condition::NoCondition,
         .minApiVer = 1,
@@ -284,178 +289,178 @@ constexpr Handler kHandlerArray[]{
     },
     {
         .name = method::kLedgerRequest,
-        .valueMethod = &byRef<&doLedgerRequest>,
+        .valueMethod = Method::of<&byRef<&doLedgerRequest>>(),
         .role = Role::ADMIN,
         .condition = Condition::NoCondition,
     },
     {
         .name = method::kLogLevel,
-        .valueMethod = &byRef<&doLogLevel>,
+        .valueMethod = Method::of<&byRef<&doLogLevel>>(),
         .role = Role::ADMIN,
         .condition = Condition::NoCondition,
     },
     {
         .name = method::kLogrotate,
-        .valueMethod = &byRef<&doLogRotate>,
+        .valueMethod = Method::of<&byRef<&doLogRotate>>(),
         .role = Role::ADMIN,
         .condition = Condition::NoCondition,
     },
     {
         .name = method::kManifest,
-        .valueMethod = &byRef<&doManifest>,
+        .valueMethod = Method::of<&byRef<&doManifest>>(),
         .role = Role::USER,
         .condition = Condition::NoCondition,
     },
     {
         .name = method::kNftBuyOffers,
-        .valueMethod = &byRef<&doNFTBuyOffers>,
+        .valueMethod = Method::of<&byRef<&doNFTBuyOffers>>(),
         .role = Role::USER,
         .condition = Condition::NoCondition,
         .hasCommandLineForm = false,
     },
     {
         .name = method::kNftSellOffers,
-        .valueMethod = &byRef<&doNFTSellOffers>,
+        .valueMethod = Method::of<&byRef<&doNFTSellOffers>>(),
         .role = Role::USER,
         .condition = Condition::NoCondition,
         .hasCommandLineForm = false,
     },
     {
         .name = method::kNorippleCheck,
-        .valueMethod = &byRef<&doNoRippleCheck>,
+        .valueMethod = Method::of<&byRef<&doNoRippleCheck>>(),
         .role = Role::USER,
         .condition = Condition::NoCondition,
         .hasCommandLineForm = false,
     },
     {
         .name = method::kOwnerInfo,
-        .valueMethod = &byRef<&doOwnerInfo>,
+        .valueMethod = Method::of<&byRef<&doOwnerInfo>>(),
         .role = Role::USER,
         .condition = Condition::NeedsCurrentLedger,
     },
     {
         .name = method::kPeers,
-        .valueMethod = &byRef<&doPeers>,
+        .valueMethod = Method::of<&byRef<&doPeers>>(),
         .role = Role::ADMIN,
         .condition = Condition::NoCondition,
     },
     {
         .name = method::kPathFind,
-        .valueMethod = &byRef<&doPathFind>,
+        .valueMethod = Method::of<&byRef<&doPathFind>>(),
         .role = Role::USER,
         .condition = Condition::NeedsCurrentLedger,
     },
     {
         .name = method::kPing,
-        .valueMethod = &byRef<&doPing>,
+        .valueMethod = Method::of<&byRef<&doPing>>(),
         .role = Role::USER,
         .condition = Condition::NoCondition,
     },
     {
         .name = method::kPrint,
-        .valueMethod = &byRef<&doPrint>,
+        .valueMethod = Method::of<&byRef<&doPrint>>(),
         .role = Role::ADMIN,
         .condition = Condition::NoCondition,
     },
     {
         .name = method::kRandom,
-        .valueMethod = &byRef<&doRandom>,
+        .valueMethod = Method::of<&byRef<&doRandom>>(),
         .role = Role::USER,
         .condition = Condition::NoCondition,
     },
     {
         .name = method::kPeerReservationsAdd,
-        .valueMethod = &byRef<&doPeerReservationsAdd>,
+        .valueMethod = Method::of<&byRef<&doPeerReservationsAdd>>(),
         .role = Role::ADMIN,
         .condition = Condition::NoCondition,
     },
     {
         .name = method::kPeerReservationsDel,
-        .valueMethod = &byRef<&doPeerReservationsDel>,
+        .valueMethod = Method::of<&byRef<&doPeerReservationsDel>>(),
         .role = Role::ADMIN,
         .condition = Condition::NoCondition,
     },
     {
         .name = method::kPeerReservationsList,
-        .valueMethod = &byRef<&doPeerReservationsList>,
+        .valueMethod = Method::of<&byRef<&doPeerReservationsList>>(),
         .role = Role::ADMIN,
         .condition = Condition::NoCondition,
     },
     {
         .name = method::kRipplePathFind,
-        .valueMethod = &byRef<&doRipplePathFind>,
+        .valueMethod = Method::of<&byRef<&doRipplePathFind>>(),
         .role = Role::USER,
         .condition = Condition::NoCondition,
     },
     {
         .name = method::kServerDefinitions,
-        .valueMethod = &byRef<&doServerDefinitions>,
+        .valueMethod = Method::of<&byRef<&doServerDefinitions>>(),
         .role = Role::USER,
         .condition = Condition::NoCondition,
     },
     {
         .name = method::kServerInfo,
-        .valueMethod = &byRef<&doServerInfo>,
+        .valueMethod = Method::of<&byRef<&doServerInfo>>(),
         .role = Role::USER,
         .condition = Condition::NoCondition,
     },
     {
         .name = method::kServerState,
-        .valueMethod = &byRef<&doServerState>,
+        .valueMethod = Method::of<&byRef<&doServerState>>(),
         .role = Role::USER,
         .condition = Condition::NoCondition,
     },
     {
         .name = method::kSign,
-        .valueMethod = &byRef<&doSign>,
+        .valueMethod = Method::of<&byRef<&doSign>>(),
         .role = Role::USER,
         .condition = Condition::NoCondition,
     },
     {
         .name = method::kSignFor,
-        .valueMethod = &byRef<&doSignFor>,
+        .valueMethod = Method::of<&byRef<&doSignFor>>(),
         .role = Role::USER,
         .condition = Condition::NoCondition,
     },
     {
         .name = method::kSimulate,
-        .valueMethod = &byRef<&doSimulate>,
+        .valueMethod = Method::of<&byRef<&doSimulate>>(),
         .role = Role::USER,
         .condition = Condition::NeedsCurrentLedger,
     },
     {
         .name = method::kStop,
-        .valueMethod = &byRef<&doStop>,
+        .valueMethod = Method::of<&byRef<&doStop>>(),
         .role = Role::ADMIN,
         .condition = Condition::NoCondition,
     },
     {
         .name = method::kSubmit,
-        .valueMethod = &byRef<&doSubmit>,
+        .valueMethod = Method::of<&byRef<&doSubmit>>(),
         .role = Role::USER,
         .condition = Condition::NeedsCurrentLedger,
     },
     {
         .name = method::kSubmitMultisigned,
-        .valueMethod = &byRef<&doSubmitMultiSigned>,
+        .valueMethod = Method::of<&byRef<&doSubmitMultiSigned>>(),
         .role = Role::USER,
         .condition = Condition::NeedsCurrentLedger,
     },
     {
         .name = method::kTransactionEntry,
-        .valueMethod = &byRef<&doTransactionEntry>,
+        .valueMethod = Method::of<&byRef<&doTransactionEntry>>(),
         .role = Role::USER,
         .condition = Condition::NoCondition,
     },
     {
         .name = method::kTx,
-        .valueMethod = &byRef<&doTxJson>,
+        .valueMethod = Method::of<&byRef<&doTxJson>>(),
         .role = Role::USER,
         .condition = Condition::NeedsNetworkConnection,
     },
     {
         .name = method::kTxHistory,
-        .valueMethod = &byRef<&doTxHistory>,
+        .valueMethod = Method::of<&byRef<&doTxHistory>>(),
         .role = Role::USER,
         .condition = Condition::NoCondition,
         .minApiVer = 1,
@@ -463,65 +468,65 @@ constexpr Handler kHandlerArray[]{
     },
     {
         .name = method::kTxReduceRelay,
-        .valueMethod = &byRef<&doTxReduceRelay>,
+        .valueMethod = Method::of<&byRef<&doTxReduceRelay>>(),
         .role = Role::USER,
         .condition = Condition::NoCondition,
         .hasCommandLineForm = false,
     },
     {
         .name = method::kUnlList,
-        .valueMethod = &byRef<&doUnlList>,
+        .valueMethod = Method::of<&byRef<&doUnlList>>(),
         .role = Role::ADMIN,
         .condition = Condition::NoCondition,
     },
     {
         .name = method::kValidationCreate,
-        .valueMethod = &byRef<&doValidationCreate>,
+        .valueMethod = Method::of<&byRef<&doValidationCreate>>(),
         .role = Role::ADMIN,
         .condition = Condition::NoCondition,
     },
     {
         .name = method::kValidators,
-        .valueMethod = &byRef<&doValidators>,
+        .valueMethod = Method::of<&byRef<&doValidators>>(),
         .role = Role::ADMIN,
         .condition = Condition::NoCondition,
         .hasCommandLineForm = false,
     },
     {
         .name = method::kValidatorListSites,
-        .valueMethod = &byRef<&doValidatorListSites>,
+        .valueMethod = Method::of<&byRef<&doValidatorListSites>>(),
         .role = Role::ADMIN,
         .condition = Condition::NoCondition,
         .hasCommandLineForm = false,
     },
     {
         .name = method::kValidatorInfo,
-        .valueMethod = &byRef<&doValidatorInfo>,
+        .valueMethod = Method::of<&byRef<&doValidatorInfo>>(),
         .role = Role::ADMIN,
         .condition = Condition::NoCondition,
     },
     {
         .name = method::kVaultInfo,
-        .valueMethod = &byRef<&doVaultInfo>,
+        .valueMethod = Method::of<&byRef<&doVaultInfo>>(),
         .role = Role::USER,
         .condition = Condition::NoCondition,
     },
     {
         .name = method::kWalletPropose,
-        .valueMethod = &byRef<&doWalletPropose>,
+        .valueMethod = Method::of<&byRef<&doWalletPropose>>(),
         .role = Role::ADMIN,
         .condition = Condition::NoCondition,
     },
     // Event methods
     {
         .name = method::kSubscribe,
-        .valueMethod = &byRef<&doSubscribe>,
+        .valueMethod = Method::of<&byRef<&doSubscribe>>(),
         .role = Role::USER,
         .condition = Condition::NoCondition,
     },
     {
         .name = method::kUnsubscribe,
-        .valueMethod = &byRef<&doUnsubscribe>,
+        .valueMethod = Method::of<&byRef<&doUnsubscribe>>(),
         .role = Role::USER,
         .condition = Condition::NoCondition,
     },
@@ -534,12 +539,32 @@ constexpr Handler kClassHandlerArray[]{
     handlerFrom<VersionHandler>(),
 };
 
-// The whole dispatch table: the two arrays above, concatenated. Their sizes are
-// taken from the arrays so that adding a handler to either needs no change here.
+/**
+ * Join the two handler arrays above into one.
+ *
+ * Handler has no default constructor, so every entry is built in place from an
+ * index pack rather than the array being sized and then copied into. The packs
+ * come from the arrays themselves, so adding a handler to either needs no change
+ * here.
+ *
+ * @return kFunctionHandlerArray followed by kClassHandlerArray.
+ */
+constexpr auto
+joinHandlers()
+{
+    constexpr auto kFunctionIndices = std::make_index_sequence<std::size(kFunctionHandlerArray)>{};
+    constexpr auto kClassIndices = std::make_index_sequence<std::size(kClassHandlerArray)>{};
+
+    return []<std::size_t... Function, std::size_t... Class>(
+               std::index_sequence<Function...>, std::index_sequence<Class...>) {
+        return std::array<Handler, sizeof...(Function) + sizeof...(Class)>{
+            kFunctionHandlerArray[Function]..., kClassHandlerArray[Class]...};
+    }(kFunctionIndices, kClassIndices);
+}
+
+// The whole dispatch table.
 constexpr auto kHandlers = [] {
-    std::array<Handler, std::size(kHandlerArray) + std::size(kClassHandlerArray)> all{};
-    auto const out = std::ranges::copy(kHandlerArray, all.begin()).out;
-    std::ranges::copy(kClassHandlerArray, out);
+    auto all = joinHandlers();
 
     // Sorted by name, so a handler can be found by binary search.
     std::ranges::sort(all, {}, &Handler::name);
@@ -556,12 +581,15 @@ static_assert(
 // answers. Where a method's behaviour differs by API version, the handler
 // branches on context.apiVersion rather than being registered once per range.
 // Checked here, at compile time, rather than on the first dispatch.
+//
+// The method is not checked: Handler::Method has no default constructor, so an
+// entry that omits it does not compile.
 static_assert(
     [] {
         for (std::size_t i = 0; i < kHandlers.size(); ++i)
         {
             auto const& h = kHandlers[i];
-            if (h.name.empty() || h.valueMethod == nullptr || h.minApiVer > h.maxApiVer ||
+            if (h.name.empty() || h.minApiVer > h.maxApiVer ||
                 h.maxApiVer > rpc::kApiMaximumValidVersion ||
                 h.minApiVer < rpc::kApiMinimumSupportedVersion)
                 return false;
@@ -572,22 +600,27 @@ static_assert(
         }
         return true;
     }(),
-    "xrpl::rpc : every handler needs a unique name, a method, and a valid API "
-    "version range");
+    "xrpl::rpc : every handler needs a unique name and a valid API version range");
 
-// The names are handed to json::StaticString, and read as C strings from there,
-// so each must be a view of a whole string literal rather than a slice of one.
-// The lambda is consteval so that it can name isNullTerminated, which is too.
-static_assert(
-    [] consteval { return std::ranges::all_of(kHandlers, isNullTerminated, &Handler::name); }(),
-    "xrpl::rpc : every handler name must be null-terminated");
+/**
+ * Convert the handler names to a form that may be read as C strings.
+ *
+ * NullTerminatedView's constructor rejects a name that does not reach its
+ * terminating null, so this replaces the separate assertion that used to check
+ * the same property. It is consteval because that constructor is.
+ *
+ * @tparam I The indices of kHandlers.
+ * @return The names, in the order kHandlers holds them, which is sorted.
+ */
+template <std::size_t... I>
+consteval auto
+checkedHandlerNames(std::index_sequence<I...>)
+{
+    return std::array<NullTerminatedView, sizeof...(I)>{NullTerminatedView{kHandlers[I].name}...};
+}
 
 // The handler names, which are already distinct and sorted.
-constexpr auto kHandlerNames = [] {
-    std::array<std::string_view, kHandlers.size()> names{};
-    std::ranges::transform(kHandlers, names.begin(), &Handler::name);
-    return names;
-}();
+constexpr auto kHandlerNames = checkedHandlerNames(std::make_index_sequence<kHandlers.size()>{});
 
 }  // namespace
 
@@ -610,7 +643,7 @@ getHandler(unsigned version, bool betaEnabled, std::string_view name)
     return nullptr;
 }
 
-std::span<std::string_view const>
+std::span<NullTerminatedView const>
 getHandlerNames()
 {
     return kHandlerNames;

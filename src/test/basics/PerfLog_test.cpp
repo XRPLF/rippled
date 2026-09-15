@@ -43,25 +43,20 @@ class PerfLog_test : public beast::unit_test::Suite
 
     using path = std::filesystem::path;
 
-    // The method names to count. PerfLog treats these as opaque keys, so these
-    // are made up rather than taken from the RPC dispatch table: this test then
-    // needs to know nothing about the RPC layer, and does not silently change
-    // shape when a method is added or removed.
+    // The method names to count. PerfLog treats them as opaque keys, so these are
+    // made up rather than taken from the dispatch table: this test then needs no
+    // knowledge of the RPC layer, and does not change shape when a method is
+    // added or removed.
     //
-    // They are string literals because PerfLog stores views of these names and
-    // reads them back as C strings, so they must be null-terminated and outlive
-    // the PerfLog. Sorted, because the counters are reported in sorted order.
+    // String literals because PerfLog reads them back as C strings, which is what
+    // NullTerminatedView requires, and they must outlive the PerfLog. Sorted,
+    // because the counters are reported in sorted order.
     static constexpr std::array kMethodNames{
-        std::string_view{"method_a"},
-        std::string_view{"method_b"},
-        std::string_view{"method_c"},
-        std::string_view{"method_d"},
-        std::string_view{"method_e"}};
-
-    // makePerfLog cannot check this, so each caller checks its own names.
-    static_assert(
-        [] consteval { return std::ranges::all_of(kMethodNames, isNullTerminated); }(),
-        "xrpl::test::PerfLog_test : every method name must be null-terminated");
+        NullTerminatedView{"method_a"},
+        NullTerminatedView{"method_b"},
+        NullTerminatedView{"method_c"},
+        NullTerminatedView{"method_d"},
+        NullTerminatedView{"method_e"}};
 
     // We're only using Env for its Journal.  That Journal gives better
     // coverage in unit tests.
@@ -331,10 +326,10 @@ public:
         auto perfLog{fixture.perfLog(withFile)};
         perfLog->start();
 
-        // The labels we can use for RPC interfaces without causing an assert:
-        // exactly those the PerfLog was constructed with. Copied into a vector
-        // because they are shuffled below and then paired positionally with the
-        // request ids.
+        // The only labels the RPC interface accepts: those the PerfLog was
+        // constructed with, since rpcStart() reaches UNREACHABLE for any other.
+        // Copied into a vector because they are shuffled below, then paired
+        // positionally with the request ids.
         auto labels = std::ranges::to<std::vector>(kMethodNames);
         std::shuffle(labels.begin(), labels.end(), defaultPrng());
 
@@ -393,7 +388,7 @@ public:
             std::uint64_t prevDur = std::numeric_limits<std::uint64_t>::max();
             for (int i = 0; i < currents.size(); ++i)
             {
-                BEAST_EXPECT(currents[i].name == labels[i / 2]);
+                BEAST_EXPECT(currents[i].name == labels[i / 2].view());
                 BEAST_EXPECT(prevDur > currents[i].dur);
                 prevDur = currents[i].dur;
             }
@@ -1035,6 +1030,34 @@ public:
         }
     }
 
+    // makePerfLog() copies the range of names it is given, so only the names have
+    // to outlive the PerfLog. Here the range does not: it is destroyed before the
+    // counters are read. Retaining it instead is a use-after-free that a
+    // sanitizer build reports and this test would otherwise pass through.
+    void
+    testCallerRangeNeedNotOutlive()
+    {
+        testcase("Caller's range need not outlive the PerfLog");
+
+        Fixture const fixture{env_.app(), j_};
+
+        std::unique_ptr<perf::PerfLog> perfLog;
+        {
+            std::vector<NullTerminatedView> const names{kMethodNames.begin(), kMethodNames.end()};
+            perf::PerfLog::Setup const setup{.perfLog = "", .logInterval = fixture.logInterval()};
+            perfLog = perf::makePerfLog(setup, env_.app(), names, j_, []() {});
+        }
+
+        perfLog->start();
+        perfLog->rpcStart(kMethodNames[0], 1);
+        perfLog->rpcFinish(kMethodNames[0], 1);
+
+        // Reads the retained names, which is where a dangling range would surface.
+        json::Value const counters{perfLog->countersJson()[jss::rpc]};
+        BEAST_EXPECT(counters.isMember(std::string{kMethodNames[0].view()}));
+        perfLog->stop();
+    }
+
     void
     run() override
     {
@@ -1047,6 +1070,7 @@ public:
         testInvalidID(WithFile::Yes);
         testRotate(WithFile::No);
         testRotate(WithFile::Yes);
+        testCallerRangeNeedNotOutlive();
     }
 };
 
