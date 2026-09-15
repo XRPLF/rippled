@@ -171,11 +171,12 @@ Some state exists only to be reported: a timestamp read to measure something, a 
 
 `xrpl/telemetry/Recording.h` holds that state in types that carry a real member when telemetry is compiled in and are empty types with no-op methods when it is not. Declare the member unconditionally: its storage collapses to padding, and its work disappears.
 
-| Utility      | Use it for                                                                                  | With telemetry compiled out                      |
-| ------------ | ------------------------------------------------------------------------------------------- | ------------------------------------------------ |
-| `kEnabled`   | `if constexpr (telemetry::kEnabled)` around a telemetry-only block that has no span to test | `false`, so the block is discarded               |
-| `Stopwatch`  | an elapsed time measured only in order to report it                                         | holds nothing; `elapsedUs()` returns exactly `0` |
-| `Counter<T>` | a count with no reader outside telemetry                                                    | holds nothing; `load()` returns `T{}`            |
+| Utility      | Use it for                                                                                  | With telemetry compiled out                                                          |
+| ------------ | ------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
+| `kEnabled`   | `if constexpr (telemetry::kEnabled)` around a telemetry-only block that has no span to test | `false`, so the block is discarded                                                   |
+| `Stopwatch`  | an elapsed time measured only in order to report it                                         | holds nothing; `elapsedUs()` returns exactly `0`                                     |
+| `Counter<T>` | a count with no reader outside telemetry                                                    | holds nothing; `load()` returns `T{}`                                                |
+| `Mirror<T>`  | a value kept only so that a change in it can be reported                                    | holds nothing; `changedTo()` returns `false`, so the reporting branch is never taken |
 
 ```cpp
 // Times a loop with no preprocessor branch anywhere. The clock is not read at
@@ -192,6 +193,16 @@ Two constraints decide whether these are usable at a given site:
 - **`if constexpr` still type-checks the branch it discards** in non-template code, so use it only where the block names no `opentelemetry::` type. `SpanGuard` exists to keep those types out of call sites, so that is the usual case; a block that does name them stays behind `#ifdef`.
 
 `Counter` declares copy and move deleted, matching the `std::atomic` it holds when telemetry is compiled in, so a class that owns one has the same copy semantics in both builds.
+
+`Mirror<T>` covers the compare-then-store shape: read whether an incoming value differs from the last one, store it, and report only on a change. `changedTo()` does all three in one call, which is what keeps a once-per-round event from becoming one per proposal.
+
+```cpp
+// True only on a real change, and only when telemetry is compiled in.
+if (lastRound.changedTo(roundParentHash))
+    span->addEvent(event::newRequester);
+```
+
+It holds a plain `T`, not an atomic, and is deliberately not synchronized: guard it the way you guard the state beside it. A value read from another thread — a gauge callback, typically — must stay an atomic of its own, and `Mirror` is not a substitute for one. It requires a copyable `T`, asserted in the class, so that its own copy semantics cannot differ between builds.
 
 ## Span lifetime and cross-thread handling
 

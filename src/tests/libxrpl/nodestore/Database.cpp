@@ -476,4 +476,80 @@ INSTANTIATE_TEST_SUITE_P(
     ::testing::ValuesIn(importBackends()),
     [](::testing::TestParamInfo<std::string> const& info) { return info.param; });
 
+/**
+ * Verify the import store path feeds the write-duration accumulator.
+ *
+ * getStoreDurationUs() backs the only write-side latency signal there is, and
+ * the telemetry gauge derives the mean write latency by dividing it by
+ * getStoreCount(). Database::importInternal() writes straight to the backend
+ * with storeBatch() rather than through the virtual store(), so it is a third
+ * store path that has to time itself; the per-store coverage in
+ * DatabaseConfig_test cannot reach it. Asserting the exact zero-before state
+ * as well as the accumulate-after state means a regression to a never-written
+ * member fails here rather than showing up as a permanently flat dashboard
+ * panel.
+ *
+ * nudb rather than memory: the import has to do real backend work for the
+ * elapsed time to round up to a whole microsecond.
+ */
+TEST(NodeStoreDatabase, import_accumulates_store_duration)
+{
+    DummyScheduler scheduler;
+    beast::Journal const journal(TestSink::instance());
+
+    TempDir const srcDir;
+    Section srcParams;
+    srcParams.set("type", "nudb");
+    srcParams.set("path", srcDir.path());
+
+    auto const batch = createPredictableBatch(kNumObjects, kSeedValue);
+    ASSERT_EQ(batch.size(), static_cast<std::size_t>(kNumObjects));
+
+    auto src = Manager::instance().makeDatabase(megabytes(4), scheduler, 2, srcParams, journal);
+    ASSERT_NE(src, nullptr);
+
+    storeBatch(*src, batch);
+    ASSERT_EQ(src->getStoreCount(), batch.size());
+
+    TempDir const destDir;
+    Section destParams;
+    destParams.set("type", "nudb");
+    destParams.set("path", destDir.path());
+
+    auto dest = Manager::instance().makeDatabase(megabytes(4), scheduler, 2, destParams, journal);
+    ASSERT_NE(dest, nullptr);
+
+    // A second, freshly opened database reads exactly zero even though the
+    // source has already written. That is what proves the accumulator is
+    // per-instance state and not a shared global, and it is the state the
+    // gauge must report as "no mean available" rather than as a
+    // zero-microsecond latency.
+    ASSERT_EQ(dest->getStoreCount(), 0u);
+    ASSERT_EQ(dest->getStoreDurationUs(), 0u);
+
+    dest->importDatabase(*src);
+
+    // Every object crossed exactly once. importInternal reports whole batches
+    // of kBatchWritePreallocationSize, so the count is the object total and
+    // not the number of batches.
+    ASSERT_EQ(dest->getStoreCount(), batch.size());
+
+    // The core assertion: the import path timed its backend writes. The exact
+    // microsecond figure is wall-clock dependent, but "still exactly zero
+    // after real writes" is the dead-member bug being guarded against.
+    EXPECT_GT(dest->getStoreDurationUs(), 0u);
+
+    // Negative half: the import wrote into dest, not src, so the source's
+    // store count cannot have moved. Its duration is legitimately non-zero
+    // from its own storeBatch above, so the count is what isolates the
+    // import's effect.
+    EXPECT_EQ(src->getStoreCount(), batch.size());
+
+    // A mean derived the way the telemetry gauge derives it must be a sane,
+    // non-zero microsecond figure rather than a division artifact. Strictly
+    // positive, not >= 0: both operands are unsigned, so >= 0 would be
+    // vacuously true and gcc rejects it outright.
+    EXPECT_GT(dest->getStoreDurationUs() / dest->getStoreCount(), 0u);
+}
+
 }  // namespace xrpl::node_store

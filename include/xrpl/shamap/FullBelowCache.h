@@ -83,6 +83,16 @@ public:
     }
 
     /**
+     * See TaggedCache::takeLockHoldPeak(). Longest mutex hold since the last
+     * call, then reset. Read once per metrics collection tick.
+     */
+    [[nodiscard]] std::chrono::nanoseconds
+    takeLockHoldPeak() noexcept
+    {
+        return cache_.takeLockHoldPeak();
+    }
+
+    /**
      * Refresh the last access time of an item, if it exists.
      * Thread safety:
      *     Safe to call from any thread.

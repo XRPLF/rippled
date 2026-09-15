@@ -138,11 +138,14 @@ DatabaseRotatingImp::store(NodeObjectType type, Blob&& data, uint256 const& hash
         return writableBackend_;
     }();
 
-    // Time only the backend call, matching DatabaseNodeImp, so the two store
-    // paths feed the same accumulator with comparable numbers.
+    // Time only the backend write, which is the disk work, matching
+    // DatabaseNodeImp so the two store paths feed the same accumulator with
+    // comparable numbers. One clock pair per stored object, accumulated into an
+    // atomic that the metrics gauge reads on its own schedule, so nothing is
+    // added to the read path or per tree node.
     auto const begin = std::chrono::steady_clock::now();
     backend->store(nObj);
-    storeDurationStats(std::chrono::steady_clock::now() - begin);
+    recordStoreDuration(std::chrono::steady_clock::now() - begin);
 
     storeStats(1, nObj->getData().size());
 }
@@ -220,7 +223,18 @@ DatabaseRotatingImp::fetchNodeObject(
             if (duplicate || rotationInFlight_.load(std::memory_order_acquire))
             {
                 if (!duplicate)
+                {
+                    // Two counters, one event: the per-rotation tally that
+                    // rotate() resets for its log line, and the monotonic total
+                    // the metrics gauge reads, which must never go backwards.
+                    // Only the first is needed for the log line, so the second
+                    // costs an extra atomic increment per copy-forward and is
+                    // compiled out with its only reader.
                     copyForwardCount_.fetch_add(1, std::memory_order_relaxed);
+#ifdef XRPL_ENABLE_TELEMETRY
+                    copyForwardTotal_.fetch_add(1, std::memory_order_relaxed);
+#endif
+                }
                 writable->store(nodeObject);
             }
         }

@@ -8,6 +8,8 @@
 #include <xrpld/app/ledger/detail/SkipListAcquire.h>
 #include <xrpld/app/ledger/detail/TimeoutCounter.h>
 #include <xrpld/app/main/Application.h>
+#include <xrpld/telemetry/MetricMacros.h>
+#include <xrpld/telemetry/MetricNames.h>
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/base_uint.h>
@@ -208,12 +210,42 @@ LedgerReplayTask::tryAdvance(ScopedLockType& sl)
 
         complete_ = true;
         JLOG(journal_.info()) << "Completed " << hash_;
+
+        // Terminal success. Emitted once per task: the loop above is guarded by
+        // isDone() at every entry point, so a completed task cannot re-enter
+        // and double-count.
+        recordOutcome(telemetry::lval::replay_outcome::success);
     }
     catch (std::runtime_error const&)
     {
         failed_ = true;
+
+        // A delta failed to build on top of its parent, so the replayed range
+        // cannot be reconstructed. This counter is the only external record
+        // of that exit: `failed_` above is internal state and there is no log
+        // line on this path.
+        recordOutcome(telemetry::lval::replay_outcome::buildFailed);
     }
 }
+
+// Not static: the metric macros below read the app_ member. With telemetry
+// compiled out they expand to nothing, so the body touches no member and
+// clang-tidy sees a method that could be static.
+// NOLINTBEGIN(readability-convert-member-functions-to-static)
+void
+LedgerReplayTask::recordOutcome(char const* outcome) const
+{
+    // One labelled counter Add per terminal event, never per delta or per
+    // ledger. Replay quietly falling back to plain acquisition is the failure
+    // this makes visible: without it, a replay that never succeeds is
+    // indistinguishable from one that was never attempted.
+    XRPL_METRIC_COUNTER_INC_LABELED(
+        app_,
+        telemetry::metric::ledgerReplayOutcomeTotal,
+        "Ledger replay tasks by terminal outcome",
+        {{telemetry::label::outcome, std::string(outcome)}});
+}
+// NOLINTEND(readability-convert-member-functions-to-static)
 
 void
 LedgerReplayTask::updateSkipList(
@@ -229,6 +261,12 @@ LedgerReplayTask::updateSkipList(
         {
             JLOG(journal_.error()) << "Parameter update failed " << hash_;
             failed_ = true;
+
+            // The acquired skip list did not match what this task asked for,
+            // so the task is abandoned before any delta is fetched. A distinct
+            // outcome from a timeout: this one indicates a peer served an
+            // inconsistent skip list, not a slow or absent peer.
+            recordOutcome(telemetry::lval::replay_outcome::parameterFailed);
             return;
         }
     }
@@ -247,6 +285,11 @@ LedgerReplayTask::onTimer(bool progress, ScopedLockType& sl)
     {
         failed_ = true;
         JLOG(journal_.debug()) << "LedgerReplayTask Failed, too many timeouts " << hash_;
+
+        // The task ran out of retries waiting for its deltas. This is the
+        // outcome that pairs with the fallback counters: the sub-acquires gave
+        // up, and so did the task above them.
+        recordOutcome(telemetry::lval::timeout);
     }
     else
     {

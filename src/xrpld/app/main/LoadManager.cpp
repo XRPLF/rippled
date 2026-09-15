@@ -11,6 +11,11 @@
 #include <xrpl/server/LoadFeeTrack.h>
 #include <xrpl/server/NetworkOPs.h>
 
+#ifdef XRPL_ENABLE_TELEMETRY
+// The memory orders are named only in updateStallState(), whose body is
+// compiled out with the members it publishes.
+#include <atomic>
+#endif
 #include <chrono>
 #include <exception>
 #include <memory>
@@ -115,6 +120,13 @@ LoadManager::run()
         static constexpr auto kStallFatalLogMessageTimeLimit = 90s;
         static constexpr auto kStallLogicErrorTimeLimit = 600s;
 
+        // Publish the stall state for telemetry before acting on it, so the
+        // gauge still sees the final duration on the tick that logicErrors.
+        // An unarmed detector reports healthy: its heartbeat is not yet
+        // meaningful, so a large elapsed time there is not a stall.
+        updateStallState(
+            armed ? timeSpentStalled : 0s, std::chrono::seconds(kReportingIntervalSeconds));
+
         if (armed && (timeSpentStalled >= kReportingIntervalSeconds))
         {
             // Report the stalled condition every reportingIntervalSeconds
@@ -170,6 +182,33 @@ LoadManager::run()
         app_.getOPs().reportFeeChange();
     }
 }
+
+// Not static: with telemetry compiled out the whole body is gated away, so it
+// touches no member and clang-tidy sees a method that could be static.
+// NOLINTBEGIN(readability-convert-member-functions-to-static)
+void
+LoadManager::updateStallState(
+    std::chrono::seconds const stalled,
+    std::chrono::seconds const reportThreshold)
+{
+#ifdef XRPL_ENABLE_TELEMETRY
+    // The two members maintained here are read only by the metrics registry, so
+    // they are compiled out with it. Unguarded this would run every second of
+    // the process's life to maintain values nobody could read.
+    //
+    // Read the previous tick's value before overwriting it: the healthy ->
+    // reportable transition is what defines a new episode. Only the monitor
+    // thread writes these, so the read-then-write needs no atomicity as a pair.
+    auto const state = evaluateStall(
+        currentStallSeconds_.load(std::memory_order_relaxed), stalled, reportThreshold);
+
+    currentStallSeconds_.store(state.seconds, std::memory_order_relaxed);
+
+    if (state.newEpisode)
+        stallEventCount_.fetch_add(1, std::memory_order_relaxed);
+#endif
+}
+// NOLINTEND(readability-convert-member-functions-to-static)
 
 //------------------------------------------------------------------------------
 

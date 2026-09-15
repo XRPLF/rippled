@@ -6,6 +6,14 @@
 #include <xrpld/app/misc/detail/WorkFile.h>
 #include <xrpld/app/misc/detail/WorkPlain.h>
 #include <xrpld/app/misc/detail/WorkSSL.h>
+#ifdef XRPL_ENABLE_TELEMETRY
+// The metric macro is named only inside reportFetchOutcome(), whose body is
+// compiled out with the counter it records.
+#include <xrpld/telemetry/MetricMacros.h>
+#endif
+// Not gated: the outcome-label constants are named by the fetch handlers, which
+// pass them whether or not the counter exists.
+#include <xrpld/telemetry/MetricNames.h>
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/StringUtilities.h>
@@ -37,6 +45,7 @@
 #include <sstream>
 #include <stdexcept>
 #include <string>
+#include <string_view>
 #include <tuple>
 #include <utility>
 #include <vector>
@@ -380,6 +389,72 @@ ValidatorSite::onTimer(std::size_t siteIdx, error_code const& ec)
     }
 }
 
+// Not static: with telemetry compiled out the whole body is gated away, so it
+// touches no member and clang-tidy sees a method that could be static.
+// NOLINTBEGIN(readability-convert-member-functions-to-static)
+void
+ValidatorSite::reportFetchOutcome(
+    std::size_t siteIdx,
+    std::string_view outcome,
+    std::scoped_lock<std::mutex> const& sitesLock)
+{
+#ifdef XRPL_ENABLE_TELEMETRY
+    // Every step below exists to label one counter, so it is compiled out with
+    // the counter. Unguarded it would parse the URI parts and build the label
+    // string on every fetch even with nothing to record it to.
+    //
+    // loadedResource is set in Site's constructor and never reassigned, so
+    // it is always non-null. Unlike activeResource (reset once a fetch
+    // completes) it also keeps the URI exactly as configured, which keeps
+    // the time series stable when a site redirects.
+    //
+    // The label is rebuilt from the parsed parts rather than using the raw
+    // configured URI. [validator_list_sites] accepts userinfo in the URI and
+    // ParsedUrl retains it in username/password even though the fetch itself
+    // never sends it, so the label was the one place a configured
+    // `https://user:pass@host` could surface -- and from there it would reach
+    // the collector, Prometheus and every dashboard.
+    //
+    // Scheme, host, port and path, with the path truncated at the first '?' or
+    // '#'. Three details:
+    //   - The port appears only when it differs from the scheme's default. The
+    //     Resource constructor fills in 443/https and 80/http when the config
+    //     omits one, so `pUrl.port` alone cannot say whether an operator asked
+    //     for a port; comparing against the default can. Always printing it
+    //     would rewrite the existing `https://vl.ripple.com` series as
+    //     `https://vl.ripple.com:443/` and break continuity, while always
+    //     dropping it would merge two genuinely different local sites that
+    //     differ only by port.
+    //   - parseUrl's path group is `(/.*)?`, which is greedy to end of string, so
+    //     a query or fragment lands inside `path`. A list URL authenticated by
+    //     `?token=...` would otherwise leak through the label the same way
+    //     userinfo would.
+    //   - parseUrl's host group permits '@', so a malformed URI with two of them
+    //     leaves the tail of the userinfo in `domain`. Cutting at the last '@'
+    //     keeps that out of the label too.
+    auto const& url = sites_[siteIdx].loadedResource->pUrl;
+
+    std::string host = url.domain;
+    if (auto const at = host.rfind('@'); at != std::string::npos)
+        host.erase(0, at + 1);
+
+    std::string siteLabel = url.scheme + "://" + host;
+
+    auto const defaultPort = url.scheme == "https" ? 443 : 80;
+    if (url.port && *url.port != defaultPort)
+        siteLabel += ":" + std::to_string(*url.port);
+
+    siteLabel += url.path.substr(0, url.path.find_first_of("?#"));
+
+    XRPL_METRIC_COUNTER_INC_LABELED(
+        app_,
+        telemetry::metric::unlFetchTotal,
+        "Validator list fetch attempts, by site and outcome",
+        {{telemetry::label::site, siteLabel}, {telemetry::label::outcome, std::string(outcome)}});
+#endif
+}
+// NOLINTEND(readability-convert-member-functions-to-static)
+
 void
 ValidatorSite::parseJsonResponse(
     std::string const& res,
@@ -496,6 +571,16 @@ ValidatorSite::parseJsonResponse(
         sites_[siteIdx].refreshInterval = refresh;
         sites_[siteIdx].nextRefresh = clock_type::now() + sites_[siteIdx].refreshInterval;
     }
+
+#ifdef XRPL_ENABLE_TELEMETRY
+    // Gated at the call as well as in the callee: to_string() builds a
+    // std::string for the outcome label, and this is the only reader of it.
+    // The other two call sites pass a compile-time constant, so the callee's
+    // own guard is enough for them.
+    //
+    // Last on purpose: if anything above throws, the caller's catch counts it.
+    reportFetchOutcome(siteIdx, to_string(applyResult.bestDisposition()), sitesLock);
+#endif
 }
 
 std::shared_ptr<ValidatorSite::Site::Resource>
@@ -552,7 +637,7 @@ ValidatorSite::onSiteFetch(
             sites_[siteIdx].lastRequestEndpoint = endpoint;
         JLOG(j_.debug()) << "Got completion for " << sites_[siteIdx].activeResource->uri << " "
                          << endpoint;
-        auto onError = [&](std::string const& errMsg, bool retry) {
+        auto onError = [&](std::string const& errMsg, bool retry, std::string_view outcome) {
             sites_[siteIdx].lastRefreshStatus.emplace(
                 Site::Status{
                     .refreshed = clock_type::now(),
@@ -560,6 +645,7 @@ ValidatorSite::onSiteFetch(
                     .message = errMsg});
             if (retry)
                 sites_[siteIdx].nextRefresh = clock_type::now() + kErrorRetryInterval;
+            reportFetchOutcome(siteIdx, outcome, lockSites);
 
             // See if there's a copy saved locally from last time we
             // saw the list.
@@ -569,7 +655,7 @@ ValidatorSite::onSiteFetch(
         {
             JLOG(j_.warn()) << "Problem retrieving from " << sites_[siteIdx].activeResource->uri
                             << " " << endpoint << " " << ec.value() << ":" << ec.message();
-            onError("fetch error", true);
+            onError("fetch error", true, telemetry::lval::unl_fetch::fetchError);
         }
         else
         {
@@ -605,14 +691,14 @@ ValidatorSite::onSiteFetch(
                         JLOG(j_.warn()) << "Request for validator list at "
                                         << sites_[siteIdx].activeResource->uri << " " << endpoint
                                         << " returned bad status: " << res.result_int();
-                        onError("bad result code", true);
+                        onError("bad result code", true, telemetry::lval::unl_fetch::badStatus);
                     }
                 }
             }
             catch (std::exception const& ex)
             {
                 JLOG(j_.error()) << "Exception in " << __func__ << ": " << ex.what();
-                onError(ex.what(), false);
+                onError(ex.what(), false, telemetry::lval::unl_fetch::parseError);
             }
         }
         sites_[siteIdx].activeResource.reset();
@@ -633,12 +719,15 @@ ValidatorSite::onTextFetch(
 {
     std::scoped_lock const lockSites{sitesMutex_};
     {
+        // Both failures share one catch, so the label is set where detected.
+        std::string_view outcome = telemetry::lval::unl_fetch::parseError;
         try
         {
             if (ec)
             {
                 JLOG(j_.warn()) << "Problem retrieving from " << sites_[siteIdx].activeResource->uri
                                 << " " << ec.value() << ": " << ec.message();
+                outcome = telemetry::lval::unl_fetch::fetchError;
                 throw std::runtime_error{"fetch error"};
             }
 
@@ -654,6 +743,7 @@ ValidatorSite::onTextFetch(
                     .refreshed = clock_type::now(),
                     .disposition = ListDisposition::Invalid,
                     .message = ex.what()});
+            reportFetchOutcome(siteIdx, outcome, lockSites);
         }
         sites_[siteIdx].activeResource.reset();
     }

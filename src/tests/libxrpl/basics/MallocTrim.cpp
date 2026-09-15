@@ -121,7 +121,12 @@ TEST(parseStatmRSSkB, standard_format)
 }
 #endif
 
-TEST(mallocTrim, without_debug_logging)
+// The measurement must NOT depend on the journal's severity. An ordinary node
+// does not run at debug level, so gating the measurement on severity would
+// leave the caller with no duration to record on the one kind of node where
+// the trim cost matters. This is the guard for that: with a null sink
+// (nothing is even loggable) every field must still be populated.
+TEST(mallocTrim, measures_without_debug_logging)
 {
     beast::Journal const journal{beast::Journal::getNullSink()};
 
@@ -130,10 +135,29 @@ TEST(mallocTrim, without_debug_logging)
 #if defined(__GLIBC__) && BOOST_OS_LINUX
     EXPECT_EQ(report.supported, true);
     EXPECT_GE(report.trimResult, 0);
-    EXPECT_EQ(report.durationUs, std::chrono::microseconds{-1});
-    EXPECT_EQ(report.minfltDelta, -1);
-    EXPECT_EQ(report.majfltDelta, -1);
+
+    // The three measured fields are populated, NOT left at their -1
+    // "not measured" sentinel. Asserting >= 0 rather than == a fixed number
+    // because these are real timings; the sentinel is what the test excludes.
+    EXPECT_GE(report.durationUs.count(), 0);
+    EXPECT_GE(report.minfltDelta, 0);
+    EXPECT_GE(report.majfltDelta, 0);
+
+    // RSS is read on both sides of the trim, so both are real page counts.
+    // A live process always has resident pages, so these are strictly > 0.
+    EXPECT_GT(report.rssBeforeKB, 0);
+    EXPECT_GT(report.rssAfterKB, 0);
+
+    // deltaKB() is now derived from two real readings rather than from the
+    // sentinel pair, so it is the genuine change: a trim never grows RSS by
+    // more than another thread could allocate concurrently, and this test is
+    // single-threaded, so the reading cannot be positive.
+    EXPECT_LE(report.deltaKB(), 0);
+    EXPECT_EQ(report.deltaKB(), report.rssAfterKB - report.rssBeforeKB);
 #else
+    // NEGATIVE PLATFORM PATH: not Linux/glibc, so there is no trim at all and
+    // every field must keep its sentinel. A zero here would falsely claim a
+    // free trim happened.
     EXPECT_EQ(report.supported, false);
     EXPECT_EQ(report.trimResult, -1);
     EXPECT_EQ(report.rssBeforeKB, -1);
@@ -141,6 +165,7 @@ TEST(mallocTrim, without_debug_logging)
     EXPECT_EQ(report.durationUs, std::chrono::microseconds{-1});
     EXPECT_EQ(report.minfltDelta, -1);
     EXPECT_EQ(report.majfltDelta, -1);
+    EXPECT_EQ(report.deltaKB(), 0);
 #endif
 }
 
@@ -185,6 +210,12 @@ TEST(mallocTrim, with_debug_logging)
     EXPECT_GE(report.durationUs.count(), 0);
     EXPECT_GE(report.minfltDelta, 0);
     EXPECT_GE(report.majfltDelta, 0);
+
+    // Same fields as the null-sink case above: raising the severity adds the
+    // log line and changes nothing about what is measured. The two tests
+    // together are what prove the severity does not gate the measurement.
+    EXPECT_GT(report.rssBeforeKB, 0);
+    EXPECT_GT(report.rssAfterKB, 0);
 #else
     EXPECT_EQ(report.supported, false);
     EXPECT_EQ(report.trimResult, -1);

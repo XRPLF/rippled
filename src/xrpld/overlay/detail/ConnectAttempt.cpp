@@ -6,10 +6,23 @@
 #include <xrpld/overlay/detail/Handshake.h>
 #include <xrpld/overlay/detail/OverlayImpl.h>
 #include <xrpld/overlay/detail/PeerImp.h>
+#include <xrpld/overlay/detail/PeerSpanNames.h>
 #include <xrpld/overlay/detail/ProtocolVersion.h>
+#ifdef XRPL_ENABLE_TELEMETRY
+// The macros and the metric-name constants are named only inside
+// reportOutcome(), whose body is compiled out with the metrics it records.
+#include <xrpld/telemetry/MetricMacros.h>
+#include <xrpld/telemetry/MetricNames.h>
+#endif
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/beast/net/IPAddressConversion.h>
+#ifdef XRPL_ENABLE_TELEMETRY
+// Supplies to_string() for an endpoint, used only to print the remote address
+// into the dial span attribute. That attribute is built with telemetry, so
+// nothing here is named otherwise.
+#include <xrpl/beast/net/IPEndpoint.h>
+#endif  // XRPL_ENABLE_TELEMETRY
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/json/json_reader.h>
@@ -19,6 +32,13 @@
 #include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/tokens.h>
 #include <xrpl/resource/Consumer.h>
+#ifdef XRPL_ENABLE_TELEMETRY
+// Named only where the dial span is opened and ended, both compiled out below.
+// The span member itself is declared unconditionally, so ConnectAttempt.h keeps
+// its own SpanGuard.h include either way.
+#include <xrpl/telemetry/SpanGuard.h>
+#include <xrpl/telemetry/SpanNames.h>
+#endif
 
 #include <boost/asio/bind_executor.hpp>
 #include <boost/asio/buffer.hpp>
@@ -36,10 +56,15 @@
 
 #include <chrono>
 #include <cstddef>
+#ifdef XRPL_ENABLE_TELEMETRY
+// std::int64_t is named only by the span's duration attribute below.
+#include <cstdint>
+#endif
 #include <exception>
 #include <memory>
 #include <optional>
 #include <string>
+#include <string_view>
 #include <utility>
 #include <vector>
 
@@ -79,6 +104,17 @@ ConnectAttempt::~ConnectAttempt()
     if (slot_ != nullptr)
         overlay_.peerFinder().onClosed(slot_);
     JLOG(journal_.trace()) << "~ConnectAttempt";
+
+#ifdef XRPL_ENABLE_TELEMETRY
+    // Last resort for an attempt torn down without reaching a terminal path
+    // (overlay shutdown, or an operation_aborted early return). The span ends
+    // here with no `outcome`, which is the honest record: the dial really did
+    // take this long and really did not conclude. Attempts that did conclude
+    // already ended their span in reportOutcome(), so this is a no-op for them
+    // -- ~optional on an empty handle. Nothing here can throw: ~SpanGuard is
+    // noexcept and no attribute is written.
+    dialSpan_.reset();
+#endif
 }
 
 void
@@ -99,6 +135,38 @@ ConnectAttempt::stop()
 void
 ConnectAttempt::run()
 {
+#ifdef XRPL_ENABLE_TELEMETRY
+    // The clock and the span exist only to measure and trace the dial, so both
+    // are compiled out with what reads them. Unguarded, every outbound dial
+    // would pay for a steady_clock reading and an optional emplace for nothing.
+    //
+    // Start the dial clock before any async operation is initiated. The
+    // constructor is too early (it only builds the object; the caller decides
+    // when to dial), and after setTimer() would be too late: setTimer() already
+    // queues a strand-bound wait that can read dialStart_ via reportOutcome().
+    dialStart_ = std::chrono::steady_clock::now();
+
+    // Span the dial beside the clock it shares, and for the same reason: the
+    // constructor is too early and setTimer() already queues a wait that can
+    // reach reportOutcome(). A fresh trace root -- a dial is the first thing a
+    // starting node does, so there is nothing to parent it to, and freshRoot()
+    // stops it inheriting whatever unrelated span happens to be active on the
+    // thread that decided to dial.
+    {
+        using namespace telemetry;
+        dialSpan_.emplace(
+            SpanGuard::freshRoot(TraceCategory::Peer, seg::peer, peer_span::op::dial));
+        if (*dialSpan_)
+        {
+            // Which peer. Deliberately span-only, never a metric label: one
+            // series per peer address would be unbounded cardinality.
+            dialSpan_->setAttribute(
+                peer_span::attr::remoteEndpoint,
+                to_string(beast::IPAddressConversion::fromAsio(remoteEndpoint_)).c_str());
+        }
+    }
+#endif
+
     setTimer();
 
     stream_.next_layer().async_connect(
@@ -106,6 +174,66 @@ ConnectAttempt::run()
         boost::asio::bind_executor(
             strand_, [self = shared_from_this()](error_code const& ec) { self->onConnect(ec); }));
 }
+
+// Not static: with telemetry compiled out the whole body is gated away, so it
+// touches no member and clang-tidy sees a method that could be static.
+// NOLINTBEGIN(readability-convert-member-functions-to-static)
+void
+ConnectAttempt::reportOutcome(std::string_view outcome)
+{
+#ifdef XRPL_ENABLE_TELEMETRY
+    // Nothing here has an effect outside telemetry: the latch below only stops
+    // the metrics and the span being written twice, and the dial's terminal
+    // handling (close(), fail()) happens at each call site, not here. So the
+    // whole body goes with the signals it reports.
+    if (outcomeReported_)
+        return;
+    outcomeReported_ = true;
+
+    // Elapsed time is computed inline, not in a named local, so nothing is
+    // left unused when the macros compile away. Microseconds are converted to
+    // fractional milliseconds: `duration<double, std::milli>` would put a
+    // comma in a non-variadic macro argument, which the preprocessor splits.
+    XRPL_METRIC_HISTOGRAM_RECORD(
+        app_,
+        telemetry::metric::overlayDialLatencyMs,
+        "Time from starting an outbound peer dial to its terminal outcome, in milliseconds",
+        std::chrono::duration_cast<std::chrono::microseconds>(
+            std::chrono::steady_clock::now() - dialStart_)
+                .count() /
+            1000.0);
+
+    XRPL_METRIC_COUNTER_INC_LABELED(
+        app_,
+        telemetry::metric::overlayConnectTotal,
+        "Outbound peer connection attempts, by terminal outcome",
+        {{telemetry::label::outcome, std::string(outcome)}});
+
+    // End the span with the SAME outcome value the counter just recorded, from
+    // the same funnel, so the two can never disagree. The first-call-wins guard
+    // above makes this exactly-once at no extra cost.
+    if (dialSpan_)
+    {
+        if (*dialSpan_)
+        {
+            using namespace telemetry;
+            dialSpan_->setAttribute(peer_span::attr::outcome, outcome);
+            // Same elapsed time the histogram above records, stamped on the
+            // individual attempt so one slow dial is findable in a trace
+            // instead of only visible in an aggregate p95.
+            dialSpan_->setAttribute(
+                peer_span::attr::durationMs,
+                static_cast<std::int64_t>(std::chrono::duration_cast<std::chrono::milliseconds>(
+                                              std::chrono::steady_clock::now() - dialStart_)
+                                              .count()));
+        }
+        // Unconditional, so the span never leaks even when it was inactive, and
+        // so the destructor's reset() finds an empty handle.
+        dialSpan_.reset();
+    }
+#endif
+}
+// NOLINTEND(readability-convert-member-functions-to-static)
 
 //------------------------------------------------------------------------------
 
@@ -192,6 +320,7 @@ ConnectAttempt::onTimer(error_code ec)
         close();
         return;
     }
+    reportOutcome(telemetry::peer_span::val::timeout);
     fail("Timeout");
 }
 
@@ -205,6 +334,7 @@ ConnectAttempt::onConnect(error_code ec)
         if (ec == boost::asio::error::operation_aborted)
             return;
 
+        reportOutcome(telemetry::peer_span::val::tcpFail);
         fail("onConnect", ec);
         return;
     }
@@ -216,6 +346,7 @@ ConnectAttempt::onConnect(error_code ec)
     socket_.local_endpoint(ec);
     if (ec)
     {
+        reportOutcome(telemetry::peer_span::val::tcpFail);
         fail("onConnect", ec);
         return;
     }
@@ -241,6 +372,7 @@ ConnectAttempt::onHandshake(error_code ec)
         if (ec == boost::asio::error::operation_aborted)
             return;
 
+        reportOutcome(telemetry::peer_span::val::tlsFail);
         fail("onHandshake", ec);
         return;
     }
@@ -248,6 +380,7 @@ ConnectAttempt::onHandshake(error_code ec)
     auto const localEndpoint = socket_.local_endpoint(ec);
     if (ec)
     {
+        reportOutcome(telemetry::peer_span::val::tlsFail);
         fail("onHandshake", ec);
         return;
     }
@@ -255,13 +388,20 @@ ConnectAttempt::onHandshake(error_code ec)
     if (!overlay_.peerFinder().onConnected(
             slot_, beast::IPAddressConversion::fromAsio(localEndpoint)))
     {
-        fail("Duplicate connection");
+        // Not a TLS failure: the handshake succeeded and PeerFinder then
+        // recognised the remote address as our own. Logic::onConnected has
+        // exactly one false-returning path and it is the self-connect check
+        // ("Logic dropping as self connect"), so this branch means we dialled
+        // ourselves -- a local misconfiguration, not an unreachable peer.
+        reportOutcome(telemetry::peer_span::val::selfConnection);
+        fail("Self connection");
         return;
     }
 
     auto const sharedValue = makeSharedValue(*streamPtr_, journal_);
     if (!sharedValue)
     {
+        reportOutcome(telemetry::peer_span::val::tlsFail);
         close();  // makeSharedValue logs
         return;
     }
@@ -303,6 +443,7 @@ ConnectAttempt::onWrite(error_code ec)
         if (ec == boost::asio::error::operation_aborted)
             return;
 
+        reportOutcome(telemetry::peer_span::val::upgradeFail);
         fail("onWrite", ec);
         return;
     }
@@ -340,6 +481,7 @@ ConnectAttempt::onRead(error_code ec)
             return;
         }
 
+        reportOutcome(telemetry::peer_span::val::upgradeFail);
         fail("onRead", ec);
         return;
     }
@@ -357,8 +499,19 @@ ConnectAttempt::onShutdown(error_code ec)
         return;
     }
 
+    // A cancelled shutdown is us tearing the attempt down, not the peer failing
+    // it. Every other handler here guards this; without the same guard an
+    // ordinary overlay stop was counted as upgrade_fail, inflating that outcome
+    // on any node that shuts down while dials are in flight.
+    if (ec == boost::asio::error::operation_aborted)
+    {
+        close();
+        return;
+    }
+
     if (ec != boost::asio::error::eof)
     {
+        reportOutcome(telemetry::peer_span::val::upgradeFail);
         fail("onShutdown", ec);
         return;
     }
@@ -406,10 +559,13 @@ ConnectAttempt::processResponse()
         }
     }
 
+    // The HTTP-503 block above only harvests redirect hints and falls through,
+    // so this is the first terminal point for a response we cannot upgrade.
     if (!OverlayImpl::isPeerUpgrade(response_))
     {
         JLOG(journal_.info()) << "Unable to upgrade to peer protocol: " << response_.result()
                               << " (" << response_.reason() << ")";
+        reportOutcome(telemetry::peer_span::val::upgradeFail);
         close();
         return;
     }
@@ -426,6 +582,7 @@ ConnectAttempt::processResponse()
 
         if (!negotiatedProtocol)
         {
+            reportOutcome(telemetry::peer_span::val::upgradeFail);
             fail("processResponse: Unable to negotiate protocol version");
             return;
         }
@@ -434,6 +591,7 @@ ConnectAttempt::processResponse()
     auto const sharedValue = makeSharedValue(*streamPtr_, journal_);
     if (!sharedValue)
     {
+        reportOutcome(telemetry::peer_span::val::upgradeFail);
         close();  // makeSharedValue logs
         return;
     }
@@ -464,6 +622,7 @@ ConnectAttempt::processResponse()
             overlay_.peerFinder().activate(slot_, publicKey, static_cast<bool>(member));
         if (result != peer_finder::Result::Success)
         {
+            reportOutcome(telemetry::peer_span::val::upgradeFail);
             fail("Outbound " + std::string(to_string(result)));
             return;
         }
@@ -481,9 +640,14 @@ ConnectAttempt::processResponse()
             overlay_);
 
         overlay_.addActive(peer);
+
+        // Only after addActive succeeds is the dial genuinely complete. If
+        // anything above threw, the catch below reports the failure instead.
+        reportOutcome(telemetry::peer_span::val::connected);
     }
     catch (std::exception const& e)
     {
+        reportOutcome(telemetry::peer_span::val::upgradeFail);
         fail(std::string("Handshake failure (") + e.what() + ")");
         return;
     }

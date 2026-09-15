@@ -97,6 +97,12 @@ public:
         return logic_.config();
     }
 
+    SlotCensus
+    getSlotCensus() override
+    {
+        return logic_.getSlotCensus();
+    }
+
     void
     addFixedPeer(std::string_view name, std::vector<beast::ip::Endpoint> const& addresses) override
     {
