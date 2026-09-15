@@ -1,4 +1,3 @@
-#include <test/app/wasm_fixtures/fixtures.h>
 #include <test/jtx/AMM.h>
 #include <test/jtx/Account.h>
 #include <test/jtx/Env.h>
@@ -60,6 +59,8 @@
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/digest.h>
 #include <xrpl/protocol/jss.h>
+
+#include <filesystem>
 
 namespace xrpl {
 namespace test {
@@ -1495,7 +1496,7 @@ class Contract_test : public beast::unit_test::Suite
         std::string const& dir = "e2e-tests";
         std::string const name = "/Users/darkmatter/projects/ledger-works/xrpl-wasm-std/" + dir +
             "/" + contract_name + "/target/wasm32v1-none/release/" + contract_name + ".wasm";
-        if (!boost::filesystem::exists(name))
+        if (!std::filesystem::exists(name))
         {
             std::cout << "File does not exist: " << name << "\n";
             return "";

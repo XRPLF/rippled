@@ -189,7 +189,8 @@ JSS(confidential_balance_inbox);  // out: mpt_holders (confidential MPT)
 JSS(confidential_balance_spending);  // out: mpt_holders (confidential MPT)
 JSS(confidential_balance_version);   // out: mpt_holders (confidential MPT)
 JSS(consensus);                      // out: NetworkOPs, LedgerConsensus
-JSS(contract_account);               // out: ContractInfo
+JSS(contract_account);               // in: LedgerEntry, out: ContractInfo
+JSS(contract_hash);                  // in: LedgerEntry
 JSS(converge_time);                  // out: NetworkOPs
 JSS(converge_time_s);                // out: NetworkOPs
 JSS(cookie);                         // out: NetworkOPs

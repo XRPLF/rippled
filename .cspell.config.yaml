@@ -7,8 +7,7 @@ ignorePaths:
   - cmake/**
   - LICENSE.md
   - .clang-tidy
-  - src/test/app/wasm_fixtures/**/*.wat
-  - src/test/app/wasm_fixtures/*.c
+  - nix/check-tools/*.txt # generated, and full of Nix store hashes
 language: en
 allowCompoundWords: true # TODO (#6334)
 ignoreRandomStrings: true
@@ -71,6 +70,7 @@ words:
   - canonicality
   - cdylib
   - canonicalised
+  - cctools
   - changespq
   - checkme
   - choco
@@ -106,12 +106,14 @@ words:
   - deleteme
   - demultiplexer
   - deserializaton
+  - desugars
   - desync
   - desynced
   - determ
   - disablerepo
   - distro
   - doxyfile
+  - dsymutil
   - dxrpl
   - elgamal
   - emittance
@@ -131,6 +133,7 @@ words:
   - gcov
   - gcovr
   - ghead
+  - gmock
   - Gnutella
   - godexsoft
   - gpgcheck
@@ -140,7 +143,9 @@ words:
   - hwaddress
   - hwrap
   - ifndef
+  - impls
   - inequation
+  - initialiser
   - insuf
   - insuff
   - invasively
@@ -170,6 +175,7 @@ words:
   - LOCALGOOD
   - logwstream
   - Lombrozo
+  - lresolv
   - lseq
   - lsmf
   - ltype
@@ -223,6 +229,7 @@ words:
   - Nyffenegger
   - onlatest
   - ostr
+  - otool
   - oxalica
   - pargs
   - partitioner
@@ -248,15 +255,20 @@ words:
   - pyparsing
   - qalloc
   - qbsprofile
+  - qself
   - queuable
   - Raphson
   - rcflags
   - replayer
+  - repodata
+  - repomd
   - rerandomize
   - rerandomization
   - rerandomized
   - rerandomizes
   - rerere
+  - retargeted
+  - retargets
   - retriable
   - RIPD
   - ripdtop
@@ -292,6 +304,7 @@ words:
   - sles
   - soci
   - socidb
+  - Sonatype
   - sponsee
   - sponsees
   - SRPMS
@@ -313,6 +326,7 @@ words:
   - summands
   - superpeer
   - superpeers
+  - Swatinem
   - takergets
   - takerpays
   - ters
@@ -341,6 +355,7 @@ words:
   - unflatten
   - unfund
   - unimpair
+  - unmetered
   - unroutable
   - unscalable
   - unserviced
@@ -361,6 +376,8 @@ words:
   - vfalco
   - vinnie
   - wasmi
+  - wasmparser
+  - Werror
   - wextra
   - wptr
   - writeme
@@ -368,13 +385,17 @@ words:
   - wthread
   - xbridge
   - xchain
+  - xcrun
   - xfloat
   - ximinez
   - XMACRO
+  - xored
   - xrpkuwait
   - xrpl
   - xrpld
   - xrplf
   - xxhash
   - xxhasher
+  - zstdio
   - CGNAT
+  - ungated

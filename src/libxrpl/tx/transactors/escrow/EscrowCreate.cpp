@@ -34,7 +34,6 @@
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/Transactor.h>
 #include <xrpl/tx/applySteps.h>
-#include <xrpl/tx/wasm/HostFunc.h>
 #include <xrpl/tx/wasm/WasmVM.h>
 
 #include <memory>
@@ -250,8 +249,7 @@ EscrowCreate::preflightSigValidated(PreflightContext const& ctx)
         auto const code = ctx.tx.getFieldVL(sfBytecode);
         // basic checks happen in `preflight`
 
-        HostFunctions mock(ctx.j);
-        auto const re = preflightEscrowWasm(code, mock, escrowFunctionName);
+        auto const re = preflightEscrowWasm(code, ctx.j, escrowFunctionName);
         if (!isTesSuccess(re))
         {
             JLOG(ctx.j.debug()) << "EscrowCreate.Bytecode bad WASM";
@@ -387,11 +385,11 @@ escrowCreatePreclaimHelper<MPTIssue>(
         return ter;
 
     // If the issuer has frozen the account, return tecLOCKED
-    if (isFrozen(ctx.view, account, mptIssue))
+    if (isFrozen(ctx.view, account, *sleIssuance))
         return tecLOCKED;
 
     // If the issuer has frozen the destination, return tecLOCKED
-    if (isFrozen(ctx.view, dest, mptIssue))
+    if (isFrozen(ctx.view, dest, *sleIssuance))
         return tecLOCKED;
 
     // If the mpt cannot be transferred, return tecNO_AUTH

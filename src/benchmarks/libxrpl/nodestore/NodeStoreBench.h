@@ -2,10 +2,10 @@
 
 #include <xrpl/basics/Blob.h>
 #include <xrpl/basics/ByteUtilities.h>
+#include <xrpl/basics/FileUtilities.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/safe_cast.h>
 #include <xrpl/beast/utility/Journal.h>
-#include <xrpl/beast/utility/temp_dir.h>
 #include <xrpl/beast/xor_shift_engine.h>
 #include <xrpl/config/BasicConfig.h>
 #include <xrpl/nodestore/Backend.h>
@@ -227,7 +227,7 @@ sliceFixedBatches(Batch const& pool, std::size_t batchSize)
  */
 struct BackendHarness
 {
-    beast::TempDir tempDir;  ///< Declared first so it is destroyed last
+    TempDir tempDir;  ///< Declared first so it is destroyed last
     DummyScheduler scheduler;
     beast::Journal journal{beast::Journal::getNullSink()};
     std::unique_ptr<Backend> backend;
@@ -257,7 +257,7 @@ struct BackendHarness
  */
 struct DatabaseHarness
 {
-    beast::TempDir tempDir;
+    TempDir tempDir;
     DummyScheduler scheduler;
     beast::Journal journal{beast::Journal::getNullSink()};
     std::unique_ptr<Database> db;
@@ -297,12 +297,11 @@ struct BackendConfig
 inline std::vector<BackendConfig> const&
 backendConfigs()
 {
+    // Use factory settings for each DB
     static std::vector<BackendConfig> const kConfigs = {
         {.name = "nudb", .config = "type=nudb"},
 #if XRPL_ROCKSDB_AVAILABLE
-        {.name = "rocksdb",
-         .config = "type=rocksdb,open_files=2000,filter_bits=12,cache_mb=256,"
-                   "file_size_mb=8,file_size_mult=2"},
+        {.name = "rocksdb", .config = "type=rocksdb"},
 #endif
     };
     return kConfigs;

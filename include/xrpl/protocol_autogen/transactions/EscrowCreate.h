@@ -21,7 +21,7 @@ class EscrowCreateBuilder;
  * Type: ttESCROW_CREATE (1)
  * Delegable: Delegation::Delegable
  * Amendment: uint256{}
- * Privileges: NoPriv
+ * Privileges: Privilege::NoPriv
  *
  * Immutable wrapper around STTx providing type-safe field access.
  * Use EscrowCreateBuilder to construct new transactions.

@@ -21,7 +21,7 @@ class ContractModifyBuilder;
  * Type: ttCONTRACT_MODIFY (93)
  * Delegable: Delegation::Delegable
  * Amendment: featureSmartContract
- * Privileges: NoPriv
+ * Privileges: Privilege::NoPriv
  *
  * Immutable wrapper around STTx providing type-safe field access.
  * Use ContractModifyBuilder to construct new transactions.

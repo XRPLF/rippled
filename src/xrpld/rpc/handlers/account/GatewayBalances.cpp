@@ -63,6 +63,12 @@ doGatewayBalances(rpc::JsonContext& context)
     if (!(params.isMember(jss::account) || params.isMember(jss::ident)))
         return rpc::missingFieldError(jss::account);
 
+    if (params.isMember(jss::account) && !params[jss::account].isString())
+        return rpc::invalidFieldError(jss::account);
+
+    if (params.isMember(jss::ident) && !params[jss::ident].isString())
+        return rpc::invalidFieldError(jss::ident);
+
     std::string const strIdent(
         params.isMember(jss::account) ? params[jss::account].asString()
                                       : params[jss::ident].asString());

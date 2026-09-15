@@ -268,63 +268,47 @@ ContractCall::doApply()
     }
 
     std::uint32_t const allowance = ctx_.tx[sfGas];
-    auto re = runEscrowWasm(wasm, ledgerDataProvider, allowance, funcName, {});
+    auto const re = runEscrowWasm(wasm, ledgerDataProvider, allowance, funcName);
 
-    // Wasm Result
-    if (re.has_value())
+    // Charge for what the contract burned whether or not it completed. A
+    // cost outside the allowance is an engine fault.
+    std::optional<std::int64_t> const cost = re.has_value() ? re->cost : re.error().cost;
+    if (cost.has_value())
     {
-        // TODO: better error handling for this conversion
-        // if (allowance > re.value().cost)
-        // {
-        //     allowance -= static_cast<std::uint32_t>(re.value().cost);
-        //     // auto const returnAllowance = [&]() {
-        //     //     ctx_.view().update(
-        //     //         keylet::account(contractAccount),
-        //     //         [allowance](SLE& sle) {
-        //     //             sle.setFieldU32(
-        //     //                 sfBalance,
-        //     //                 sle.getFieldU32(sfBalance) + allowance);
-        //     //         });
-        //     // };
-        //     // returnAllowance();
-        // }
-
-        ctx_.setGasUsed(static_cast<uint32_t>(re.value().cost));
-        auto ret = re.value().result;
-        if (ret < 0)
-        {
-            JLOG(j_.trace()) << "WASM Execution Failed: " << ret;
-            ctx_.setVMReturnCode(ret);
-            // ctx_.setWasmReturnStr(contractCtx.result.exitReason);
-            return tecBYTECODE_REJECTED;
-        }
-
-        if (auto res = contract::finalizeContractData(
-                ctx_.registry,
-                ctx_.view(),
-                contractAccount,
-                contractCtx.result.dataMap,
-                contractCtx.result.eventMap,
-                ctx_.tx.getTransactionID());
-            !isTesSuccess(res))
-        {
-            JLOG(j_.trace()) << "Contract data finalization failed: " << transHuman(res);
-            return res;
-        }
-
-        ctx_.setVMReturnCode(ret);
-        // ctx_.setWasmReturnStr(contractCtx.result.exitReason);
-        ctx_.setEmittedTxns(contractCtx.result.emittedTxns);
-        return tesSUCCESS;
+        if (*cost < 0 || *cost > allowance)
+            return tecINTERNAL;
+        ctx_.setGasUsed(static_cast<std::uint32_t>(*cost));
     }
-    else
+
+    if (!re.has_value())
     {
-        JLOG(j_.trace()) << "WASM Failure: " + transHuman(re.error().ter);
-        auto const errorCode = TERtoInt(re.error().ter);
-        ctx_.setVMReturnCode(errorCode);
-        // ctx_.setWasmReturnStr(contractCtx.result.exitReason);
+        JLOG(j_.trace()) << "WASM Failure: " << transHuman(re.error().ter);
+        ctx_.setVMReturnCode(TERtoInt(re.error().ter));
         return re.error().ter;
     }
+
+    auto const ret = re->result;
+    ctx_.setVMReturnCode(ret);
+    if (ret < 0)
+    {
+        JLOG(j_.trace()) << "WASM Execution Failed: " << ret;
+        return tecBYTECODE_REJECTED;
+    }
+
+    if (auto const res = contract::finalizeContractData(
+            ctx_.registry,
+            ctx_.view(),
+            contractAccount,
+            contractCtx.result.dataMap,
+            contractCtx.result.eventMap,
+            ctx_.tx.getTransactionID());
+        !isTesSuccess(res))
+    {
+        JLOG(j_.trace()) << "Contract data finalization failed: " << transHuman(res);
+        return res;
+    }
+
+    ctx_.setEmittedTxns(contractCtx.result.emittedTxns);
     return tesSUCCESS;
 }
 

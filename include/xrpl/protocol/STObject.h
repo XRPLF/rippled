@@ -444,8 +444,6 @@ public:
 
     bool
     operator==(STObject const& o) const;
-    bool
-    operator!=(STObject const& o) const;
 
     class FieldErr;
 
@@ -677,36 +675,6 @@ public:
         if (lhs.engaged() != rhs.engaged())
             return false;
         return !lhs.engaged() || *lhs == *rhs;
-    }
-
-    friend bool
-    operator!=(OptionalProxy const& lhs, std::nullopt_t) noexcept
-    {
-        return !(lhs == std::nullopt);
-    }
-
-    friend bool
-    operator!=(std::nullopt_t, OptionalProxy const& rhs) noexcept
-    {
-        return !(rhs == std::nullopt);
-    }
-
-    friend bool
-    operator!=(OptionalProxy const& lhs, optional_type const& rhs) noexcept
-    {
-        return !(lhs == rhs);
-    }
-
-    friend bool
-    operator!=(optional_type const& lhs, OptionalProxy const& rhs) noexcept
-    {
-        return !(lhs == rhs);
-    }
-
-    friend bool
-    operator!=(OptionalProxy const& lhs, OptionalProxy const& rhs) noexcept
-    {
-        return !(lhs == rhs);
     }
 
     // Emulate std::optional::value_or
@@ -1212,12 +1180,6 @@ STObject::setFieldH160(SField const& field, BaseUInt<160, Tag> const& v)
     {
         Throw<std::runtime_error>("Wrong field type");
     }
-}
-
-inline bool
-STObject::operator!=(STObject const& o) const
-{
-    return !(*this == o);
 }
 
 template <typename T, typename V>

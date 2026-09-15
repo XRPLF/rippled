@@ -15,7 +15,6 @@
 #include <cstdint>
 #include <expected>
 #include <stdexcept>
-#include <string>
 #include <utility>
 #include <variant>
 
@@ -124,9 +123,10 @@ getAnyFieldData(FieldValue const& variantObj)
     if (uint256 const* const* u = std::get_if<uint256 const*>(&variantObj))
         return Bytes((*u)->begin(), (*u)->end());
 
-    // Unreachable: the variant only holds the two alternatives above. If not,
-    // it's an xrpld bug -> tecINTERNAL (thrown, caught by HostFuncMain_wrap).
-    Throw<std::runtime_error>(std::string(hfErrInternal));  // LCOV_EXCL_LINE
+    // Unreachable: the variant only holds the two alternatives above. If not, it is an
+    // xrpld bug, and `guarded` turns the throw into `InternalFatal`, which stops the run ->
+    // tecINTERNAL.
+    Throw<std::runtime_error>("field value variant holds neither alternative");  // LCOV_EXCL_LINE
 }
 
 static inline bool

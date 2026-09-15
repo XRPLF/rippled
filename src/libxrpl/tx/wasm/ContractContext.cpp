@@ -1,7 +1,8 @@
+#include <xrpl/tx/wasm/ContractContext.h>
+
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/mulDiv.h>
 #include <xrpl/protocol/Indexes.h>
-#include <xrpl/tx/wasm/ContractContext.h>
 
 namespace xrpl {
 

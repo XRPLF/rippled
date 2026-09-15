@@ -1045,25 +1045,6 @@ public:
         class OtherDuration,
         class OtherAllocator>
     bool
-    operator!=(AgedOrderedContainer<
-               OtherIsMulti,
-               OtherIsMap,
-               Key,
-               OtherT,
-               OtherDuration,
-               Compare,
-               OtherAllocator> const& other) const
-    {
-        return !(this->operator==(other));
-    }
-
-    template <
-        bool OtherIsMulti,
-        bool OtherIsMap,
-        class OtherT,
-        class OtherDuration,
-        class OtherAllocator>
-    bool
     operator<(AgedOrderedContainer<
               OtherIsMulti,
               OtherIsMap,

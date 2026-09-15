@@ -864,15 +864,12 @@ parseContractSource(
         return parseObjectID(params, fieldName);
     }
 
-    auto const id = LedgerEntryHelpers::requiredAccountID(params, jss::owner, "malformedOwner");
-    if (!id)
-        return std::unexpected(id.error());
+    auto const contractHash =
+        ledger_entry_helpers::requiredUInt256(params, jss::contract_hash, "malformedRequest");
+    if (!contractHash)
+        return std::unexpected(contractHash.error());
 
-    auto const seq = LedgerEntryHelpers::requiredUInt32(params, jss::seq, "malformedRequest");
-    if (!seq)
-        return std::unexpected(seq.error());
-
-    return keylet::vault(*id, *seq).key;
+    return keylet::contractSource(*contractHash).key;
 }
 
 static std::expected<uint256, json::Value>
@@ -886,15 +883,21 @@ parseContract(
         return parseObjectID(params, fieldName);
     }
 
-    auto const id = LedgerEntryHelpers::requiredAccountID(params, jss::owner, "malformedOwner");
-    if (!id)
-        return std::unexpected(id.error());
+    auto const contractHash =
+        ledger_entry_helpers::requiredUInt256(params, jss::contract_hash, "malformedRequest");
+    if (!contractHash)
+        return std::unexpected(contractHash.error());
 
-    auto const seq = LedgerEntryHelpers::requiredUInt32(params, jss::seq, "malformedRequest");
+    auto const owner =
+        ledger_entry_helpers::requiredAccountID(params, jss::owner, "malformedOwner");
+    if (!owner)
+        return std::unexpected(owner.error());
+
+    auto const seq = ledger_entry_helpers::requiredUInt32(params, jss::seq, "malformedRequest");
     if (!seq)
         return std::unexpected(seq.error());
 
-    return keylet::vault(*id, *seq).key;
+    return keylet::contract(*contractHash, *owner, *seq).key;
 }
 
 static std::expected<uint256, json::Value>
@@ -908,15 +911,17 @@ parseContractData(
         return parseObjectID(params, fieldName);
     }
 
-    auto const id = LedgerEntryHelpers::requiredAccountID(params, jss::owner, "malformedOwner");
-    if (!id)
-        return std::unexpected(id.error());
+    auto const owner =
+        ledger_entry_helpers::requiredAccountID(params, jss::owner, "malformedOwner");
+    if (!owner)
+        return std::unexpected(owner.error());
 
-    auto const seq = LedgerEntryHelpers::requiredUInt32(params, jss::seq, "malformedRequest");
-    if (!seq)
-        return std::unexpected(seq.error());
+    auto const contractAccount = ledger_entry_helpers::requiredAccountID(
+        params, jss::contract_account, "malformedContractAccount");
+    if (!contractAccount)
+        return std::unexpected(contractAccount.error());
 
-    return keylet::vault(*id, *seq).key;
+    return keylet::contractData(*owner, *contractAccount).key;
 }
 
 struct LedgerEntry

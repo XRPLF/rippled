@@ -205,7 +205,7 @@ ContractCreate::doApply()
         ctx_.view().insert(sourceSle);
     }
 
-    std::uint32_t const seq = ctx_.tx.getSeqValue();
+    std::uint32_t const seq = ctx_.tx.getSeqProxy().value();
     auto const contractKeylet = keylet::contract(*contractHash, accountID_, seq);
     auto contractSle = std::make_shared<SLE>(contractKeylet);
 

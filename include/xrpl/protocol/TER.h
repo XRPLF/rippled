@@ -132,7 +132,6 @@ enum TEMcodes : TERUnderlyingType {
 
     temBAD_MPT,
     temBAD_CIPHERTEXT,
-    temBAD_WASM,
     temINVALID_BYTECODE,
     temTEMP_DISABLED,
 };

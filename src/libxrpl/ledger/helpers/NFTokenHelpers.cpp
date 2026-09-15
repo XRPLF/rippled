@@ -15,6 +15,7 @@
 #include <xrpl/ledger/helpers/RippleStateHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Issue.h>
@@ -776,6 +777,13 @@ tokenOfferCreatePreflight(
         return temBAD_AMOUNT;
     }
 
+    if (rules.enabled(fixCleanup3_4_0))
+    {
+        // We don't allow a non-native currency to use the currency code XRP.
+        if (badAsset() == amount.asset())
+            return temBAD_CURRENCY;
+    }
+
     if (!isXRP(amount))
     {
         if ((nftFlags & nft::kFlagOnlyXrp) != 0)
@@ -854,7 +862,13 @@ tokenOfferCreatePreclaim(
             return tefNFTOKEN_IS_NOT_TRANSFERABLE;
     }
 
-    if (isFrozen(view, acctID, amount.get<Issue>().currency, amount.getIssuer()))
+    // The IOU issuer is not subject to their own global freeze when the offer
+    // is denominated in their own IOU (e.g. receiving their own transfer fees),
+    // and they cannot hold a trust line to themselves.
+    bool const acctIsIouIssuer =
+        view.rules().enabled(fixCleanup3_4_0) && acctID == amount.getIssuer();
+    if (!acctIsIouIssuer &&
+        isFrozen(view, acctID, amount.get<Issue>().currency, amount.getIssuer()))
         return tecFROZEN;
 
     // If this is an offer to buy the token, the account must have the

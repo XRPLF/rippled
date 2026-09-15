@@ -29,25 +29,39 @@ class ContractEventMap : public std::map<std::string, STJson>
 
 namespace contract {
 
-/** The maximum number of data modifications in a single function. */
+/**
+ * The maximum number of data modifications in a single function.
+ */
 int64_t constexpr maxDataModifications = 1000;
 
-/** The maximum number of bytes the data can occupy. */
+/**
+ * The maximum number of bytes the data can occupy.
+ */
 int64_t constexpr maxContractDataSize = 1024;
 
-/** The multiplier for contract data size calculations. */
+/**
+ * The multiplier for contract data size calculations.
+ */
 int64_t constexpr dataByteMultiplier = 512;
 
-/** The cost multiplier of creating a contract in bytes. */
+/**
+ * The cost multiplier of creating a contract in bytes.
+ */
 int64_t constexpr createByteMultiplier = 500ULL;
 
-/** The value to return when the fee calculation failed. */
+/**
+ * The value to return when the fee calculation failed.
+ */
 int64_t constexpr feeCalculationFailed = 0x7FFFFFFFFFFFFFFFLL;
 
-/** The maximum number of contract parameters that can be in a transaction. */
+/**
+ * The maximum number of contract parameters that can be in a transaction.
+ */
 std::size_t constexpr maxContractParams = 8;
 
-/** The maximum number of contract functions that can be in a transaction. */
+/**
+ * The maximum number of contract functions that can be in a transaction.
+ */
 std::size_t constexpr maxContractFunctions = 32;
 
 int64_t

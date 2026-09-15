@@ -47,6 +47,7 @@
 #include <xrpl/protocol/SecretKey.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
+#include <xrpl/protocol/TxSettings.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/protocol/jss.h>
 
@@ -2718,19 +2719,24 @@ class Delegate_test : public beast::unit_test::Suite
 
         std::size_t delegableCount = 0;
 
+#pragma push_macro("UNWRAP")
+#undef UNWRAP
 #pragma push_macro("TRANSACTION")
 #undef TRANSACTION
 
-#define TRANSACTION(tag, value, name, txDelegable, ...) \
-    if (txDelegable == Delegation::Delegable)           \
-    {                                                   \
-        delegableCount++;                               \
+#define UNWRAP(...) __VA_ARGS__
+#define TRANSACTION(tag, value, name, settings, ...)                                 \
+    if ((xrpl::TxSettings UNWRAP settings).delegable == xrpl::Delegation::Delegable) \
+    {                                                                                \
+        delegableCount++;                                                            \
     }
 
 #include <xrpl/protocol/detail/transactions.macro>
 
 #undef TRANSACTION
 #pragma pop_macro("TRANSACTION")
+#undef UNWRAP
+#pragma pop_macro("UNWRAP")
 
         // ====================================================================
         // IMPORTANT NOTICE:
@@ -2750,7 +2756,7 @@ class Delegate_test : public beast::unit_test::Suite
         // DO NOT modify expectedDelegableCount unless all scenarios, including
         // edge cases, have been fully tested and verified.
         // ====================================================================
-        std::size_t const expectedDelegableCount = 63;
+        std::size_t const expectedDelegableCount = 62;
 
         BEAST_EXPECTS(
             delegableCount == expectedDelegableCount,

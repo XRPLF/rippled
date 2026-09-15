@@ -3,6 +3,7 @@
 #include <xrpl/basics/Slice.h>
 #include <xrpl/beast/utility/instrumentation.h>
 
+#include <algorithm>
 #include <cstdint>
 #include <cstring>
 #include <memory>
@@ -157,6 +158,19 @@ public:
     /** @} */
 
     /**
+     * Set every byte in the buffer to the given value.
+     *
+     * The size is unchanged, and this is a no-op on an empty buffer.
+     *
+     * @param value the byte to write to every position.
+     */
+    void
+    fill(std::uint8_t value) noexcept
+    {
+        std::fill_n(p_.get(), size_, value);
+    }
+
+    /**
      * Reset the buffer.
      * All memory is deallocated. The resulting size is 0.
      */
@@ -224,12 +238,6 @@ operator==(Buffer const& lhs, Buffer const& rhs) noexcept
         return true;
 
     return std::memcmp(lhs.data(), rhs.data(), lhs.size()) == 0;
-}
-
-inline bool
-operator!=(Buffer const& lhs, Buffer const& rhs) noexcept
-{
-    return !(lhs == rhs);
 }
 
 }  // namespace xrpl

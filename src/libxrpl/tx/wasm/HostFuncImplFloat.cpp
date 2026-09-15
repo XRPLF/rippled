@@ -384,32 +384,6 @@ floatDivideImpl(Slice const& x, Slice const& y, int32_t mode)
 }
 
 std::expected<Bytes, HostFunctionError>
-floatRootImpl(Slice const& x, int32_t n, int32_t mode)
-{
-    try
-    {
-        if (n < 1)
-            return std::unexpected(HostFunctionError::FloatInputMalformed);
-
-        detail::FloatState const rm(mode);
-        if (!rm)
-            return std::unexpected(HostFunctionError::FloatInputMalformed);
-
-        auto const xx = detail::floatDecode(x);
-        if (!xx)
-            return std::unexpected(HostFunctionError::FloatInputMalformed);
-
-        return detail::floatEncode(root(*xx, n));
-    }
-    // LCOV_EXCL_START
-    catch (...)
-    {
-        return std::unexpected(HostFunctionError::FloatComputationError);
-    }
-    // LCOV_EXCL_STOP
-}
-
-std::expected<Bytes, HostFunctionError>
 floatPowerImpl(Slice const& x, int32_t n, int32_t mode)
 {
     try
@@ -513,12 +487,6 @@ std::expected<Bytes, HostFunctionError>
 WasmHostFunctionsImpl::floatDivide(Slice const& x, Slice const& y, int32_t mode) const
 {
     return wasm_float::floatDivideImpl(x, y, mode);
-}
-
-std::expected<Bytes, HostFunctionError>
-WasmHostFunctionsImpl::floatRoot(Slice const& x, int32_t n, int32_t mode) const
-{
-    return wasm_float::floatRootImpl(x, n, mode);
 }
 
 std::expected<Bytes, HostFunctionError>
