@@ -2,7 +2,6 @@
 
 #include <xrpl/beast/insight/Collector.h>
 #include <xrpl/beast/insight/Gauge.h>
-#include <xrpl/beast/insight/Hook.h>
 #include <xrpl/beast/insight/OTelCollector.h>
 #include <xrpl/beast/utility/Journal.h>
 
@@ -11,6 +10,7 @@
 #include <opentelemetry/metrics/provider.h>
 #include <opentelemetry/nostd/function_ref.h>
 #include <opentelemetry/nostd/shared_ptr.h>
+#include <opentelemetry/sdk/metrics/export/metric_producer.h>
 #include <opentelemetry/sdk/metrics/instruments.h>
 #include <opentelemetry/sdk/metrics/meter_provider.h>
 #include <opentelemetry/sdk/metrics/meter_provider_factory.h>
@@ -57,7 +57,7 @@ public:
         Collect([](metrics_sdk::ResourceMetrics&) { return true; });
     }
 
-    metrics_sdk::AggregationTemporality
+    [[nodiscard]] metrics_sdk::AggregationTemporality
     GetAggregationTemporality(metrics_sdk::InstrumentType) const noexcept override
     {
         return metrics_sdk::AggregationTemporality::kCumulative;

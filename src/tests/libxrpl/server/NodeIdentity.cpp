@@ -34,6 +34,7 @@
 #include <soci/into.h>
 #include <soci/session.h>
 
+#include <algorithm>
 #include <filesystem>
 #include <functional>
 #include <memory>
@@ -109,7 +110,7 @@ TEST(WalletNodeIdentity, store_then_read_returns_the_same_pair)
     auto const stored = readNodeIdentity(*db);
     ASSERT_TRUE(stored.has_value());
     EXPECT_EQ(stored->first, minted.first);
-    EXPECT_EQ(stored->second, minted.second);
+    EXPECT_TRUE(std::ranges::equal(stored->second, minted.second));
 }
 
 TEST(WalletNodeIdentity, store_appends_rather_than_replacing)
@@ -159,7 +160,7 @@ TEST(WalletNodeIdentity, clear_then_store_installs_the_new_pair)
     auto const stored = readNodeIdentity(*db);
     ASSERT_TRUE(stored.has_value());
     EXPECT_EQ(stored->first, replacement.first);
-    EXPECT_EQ(stored->second, replacement.second);
+    EXPECT_TRUE(std::ranges::equal(stored->second, replacement.second));
 }
 
 TEST(WalletNodeIdentity, get_mints_and_persists_when_the_table_is_empty)
@@ -341,7 +342,7 @@ TEST(SelectNodeIdentity, returns_stored_when_reader_has_one)
 
     EXPECT_TRUE(reader.called);
     EXPECT_EQ(result.first, storedPair.first);
-    EXPECT_EQ(result.second, storedPair.second);
+    EXPECT_TRUE(std::ranges::equal(result.second, storedPair.second));
 }
 
 TEST(SelectNodeIdentity, mints_when_nothing_stored)

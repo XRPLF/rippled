@@ -222,7 +222,11 @@ DatabaseRotatingImp::fetchNodeObject(
             // otherwise survive only in RAM once the archive is dropped.
             if (duplicate || rotationInFlight_.load(std::memory_order_acquire))
             {
-                if (!duplicate)
+                if (duplicate)
+                {
+                    duplicateCopyForwardTotal_.fetch_add(1, std::memory_order_relaxed);
+                }
+                else
                 {
                     // Two counters, one event: the per-rotation tally that
                     // rotate() resets for its log line, and the monotonic total
