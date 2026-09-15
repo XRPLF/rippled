@@ -12,6 +12,7 @@
 #include <xrpl/config/Constants.h>
 #include <xrpl/net/HTTPClient.h>
 #include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Fees.h>
 #include <xrpl/protocol/SystemParameters.h>
 #include <xrpl/rdb/DBInit.h>
 #include <xrpl/rdb/DatabaseCon.h>
@@ -1253,6 +1254,12 @@ setupFeeVote(Section const& section)
             setup.accountReserve = temp;
         if (set(temp, Keys::kOwnerReserve, section))
             setup.ownerReserve = temp;
+        if (set(temp, Keys::kGasLimit, section) && temp <= kMaxGasLimit)
+            setup.gasLimit = temp;
+        if (set(temp, Keys::kBytecodeSizeLimit, section) && temp <= kMaxBytecodeSizeLimit)
+            setup.bytecodeSizeLimit = temp;
+        if (set(temp, Keys::kGasPrice, section))
+            setup.gasPrice = temp;
     }
     return setup;
 }
