@@ -77,10 +77,10 @@ Fixtures::memoTx()
     return assembler;
 }
 
-FieldLocator
+OwnedLocator
 Fixtures::memoLocator()
 {
-    return FieldLocator{{sfMemos.getCode(), 0, sfMemoData.getCode()}};
+    return locator({sfMemos.getCode(), 0, sfMemoData.getCode()});
 }
 
 WasmHost

@@ -6,6 +6,7 @@
 
 #include <gtest/gtest.h>
 #include <helpers/Account.h>
+#include <tx/wasm/fixtures/OwnedLocator.h>
 #include <tx/wasm/fixtures/RealHostFixture.h>
 #include <tx/wasm/fixtures/WasmLedger.h>
 
@@ -32,7 +33,7 @@ TEST_F(CurrentLedgerObjNestedFieldImpl, MatchesNestedSignerQuorum)
     auto const owner = fund("owner");
     auto h = makeHost(owner);
     expectValue(
-        h->getCurrentLedgerObjNestedField(FieldLocator{{sfSignerQuorum.getCode()}}),
+        h->getCurrentLedgerObjNestedField(locator({sfSignerQuorum.getCode()})),
         RealHostFixture::toBytes(static_cast<std::uint32_t>(2)));
 }
 
@@ -42,7 +43,7 @@ TEST_F(CurrentLedgerObjNestedFieldImpl, MatchesNestedSignerWeight)
     auto h = makeHost(owner);
     expectValue(
         h->getCurrentLedgerObjNestedField(
-            FieldLocator{{sfSignerEntries.getCode(), 0, sfSignerWeight.getCode()}}),
+            locator({sfSignerEntries.getCode(), 0, sfSignerWeight.getCode()})),
         RealHostFixture::toBytes(static_cast<std::uint16_t>(1)));
 }
 
@@ -57,7 +58,7 @@ TEST_F(CurrentLedgerObjNestedFieldImpl, MatchesNestedSignerAccount)
 
     expectValue(
         h->getCurrentLedgerObjNestedField(
-            FieldLocator{{sfSignerEntries.getCode(), 0, sfAccount.getCode()}}),
+            locator({sfSignerEntries.getCode(), 0, sfAccount.getCode()})),
         RealHostFixture::toBytes(entry0.getAccountID(sfAccount)));
 }
 
@@ -66,8 +67,7 @@ TEST_F(CurrentLedgerObjNestedFieldImpl, MissingFieldNotFound)
     auto const owner = fund("owner");
     auto h = makeHost(owner);
     expectError(
-        h->getCurrentLedgerObjNestedField(
-            FieldLocator{{sfSigners.getCode(), 0, sfAccount.getCode()}}),
+        h->getCurrentLedgerObjNestedField(locator({sfSigners.getCode(), 0, sfAccount.getCode()})),
         HostFunctionError::FieldNotFound);
 }
 
@@ -79,11 +79,11 @@ TEST_F(CurrentLedgerObjNestedFieldImpl, IndexOutOfBounds)
 
     expectError(
         h->getCurrentLedgerObjNestedField(
-            FieldLocator{{sfSignerEntries.getCode(), 2, sfAccount.getCode()}}),
+            locator({sfSignerEntries.getCode(), 2, sfAccount.getCode()})),
         err);
     expectError(
         h->getCurrentLedgerObjNestedField(
-            FieldLocator{{sfSignerEntries.getCode(), -1, sfAccount.getCode()}}),
+            locator({sfSignerEntries.getCode(), -1, sfAccount.getCode()})),
         err);
 }
 
@@ -93,10 +93,10 @@ TEST_F(CurrentLedgerObjNestedFieldImpl, UnknownFieldCodeInvalidField)
     auto h = makeHost(owner);
     auto const err = HostFunctionError::InvalidField;
 
-    expectError(h->getCurrentLedgerObjNestedField(FieldLocator{{fieldCode(20000, 20000)}}), err);
+    expectError(h->getCurrentLedgerObjNestedField(locator({fieldCode(20000, 20000)})), err);
     expectError(
         h->getCurrentLedgerObjNestedField(
-            FieldLocator{{sfSignerEntries.getCode(), 0, fieldCode(20000, 20000)}}),
+            locator({sfSignerEntries.getCode(), 0, fieldCode(20000, 20000)})),
         err);
 }
 
@@ -106,7 +106,7 @@ TEST_F(CurrentLedgerObjNestedFieldImpl, NestIntoNonContainerMalformed)
     auto h = makeHost(owner);
     expectError(
         h->getCurrentLedgerObjNestedField(
-            FieldLocator{{sfSignerQuorum.getCode(), 0, sfAccount.getCode()}}),
+            locator({sfSignerQuorum.getCode(), 0, sfAccount.getCode()})),
         HostFunctionError::LocatorMalformed);
 }
 
@@ -116,7 +116,7 @@ TEST_F(CurrentLedgerObjNestedFieldImpl, MissingCurrentObjectNotFound)
     auto assembler = bareTx();
     auto h = makeHost(keylet::signerList(owner.id()), assembler.type, std::move(assembler.build));
     expectError(
-        h->getCurrentLedgerObjNestedField(FieldLocator{{sfSignerQuorum.getCode()}}),
+        h->getCurrentLedgerObjNestedField(locator({sfSignerQuorum.getCode()})),
         HostFunctionError::LedgerObjNotFound);
 }
 
