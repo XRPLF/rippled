@@ -73,6 +73,14 @@ serialization(STJson::Value const& value)
     return Bytes{s.peekData().begin(), s.peekData().end()};
 }
 
+// The bytes an `add_txn_field` call carries for an account field. An `STAccount` writes its
+// length before the 20 bytes, so a bare account id does not deserialize.
+inline Bytes
+accountField(AccountID const& account)
+{
+    return serialization(acct(account));
+}
+
 // The bytes a guest writes for `value`: its one-byte `SerializedTypeID`, then its
 // serialization. The inverse of what `HostContext` decodes.
 inline Bytes
