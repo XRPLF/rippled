@@ -545,6 +545,14 @@ MATCHER_P(BytesAre, expected, "")
         std::string_view{expected};
 }
 
+// Matches a `Slice` against exact bytes. `BytesAre` compares against a string and so stops
+// at the first NUL, which most serialized fields contain.
+// NOLINTNEXTLINE(readability-identifier-naming)
+MATCHER_P(SliceIs, expected, "")
+{
+    return Bytes{arg.data(), arg.data() + arg.size()} == expected;
+}
+
 // Matches an `AccountID` against another, so an expectation can name *whose* data a
 // contract asked the host for.
 // NOLINTNEXTLINE(readability-identifier-naming)
