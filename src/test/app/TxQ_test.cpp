@@ -5,6 +5,8 @@
 #include <test/jtx/WSClient.h>
 #include <test/jtx/amount.h>
 #include <test/jtx/balance.h>
+#include <test/jtx/batch.h>
+#include <test/jtx/credentials.h>
 #include <test/jtx/delegate.h>
 #include <test/jtx/envconfig.h>
 #include <test/jtx/fee.h>
@@ -4718,6 +4720,722 @@ public:
         checkMetrics(*this, env, 0, 10, 2, 5);
     }
 
+    // Runs the "an inner is blocked by a foreign tx" batch/TxQ scenario at a
+    // given referenceFee and checks the expected outcome. The scenario is
+    // identical across calls; only the fee (and therefore the salt-dependent
+    // cross-account ordering) differs, so each caller passes the expected
+    // results and documents why they differ. See the call sites for the
+    // per-fee narrative.
+    //
+    // Structure (same as case (5), so isFirstInAccount(batch) is reached, but
+    // now alice already has a foreign regular tx at the front of her queue
+    // ahead of the Batch's alice inner; when innerRunnable walks alice's
+    // account it hits that foreign tx and returns false):
+    //   - bob's regular   @bobSeq      pays carol XRP(1)
+    //   - alice's foreign  @aliceSeq    pays carol XRP(10)
+    //   - outer Batch      @bobSeq+1
+    //       - inner bob    @bobSeq+2    pays carol XRP(100)
+    //       - inner alice  @aliceSeq+1  pays carol XRP(1000)
+    // Every value-moving tx pays carol a distinct magnitude, so carol's
+    // balance delta uniquely identifies which of the four applied.
+    void
+    testBatchForeignBlockedInner(
+        std::uint32_t referenceFee,
+        std::uint32_t expectedBobSeqDelta,
+        std::uint32_t expectedAliceSeqDelta,
+        int expectedCarolReceivedXrp,
+        bool bobInnerApplied,
+        bool aliceInnerApplied)
+    {
+        using namespace jtx;
+
+        auto cfg = makeConfig(
+            {{Keys::kMinimumTxnInLedgerStandalone, "2"},
+             {Keys::kLedgersInQueue, "3"},
+             {Keys::kMaximumTxnPerAccount, "10"}});
+        cfg->fees.referenceFee = referenceFee;
+        Env env(*this, std::move(cfg));
+
+        BEAST_EXPECT(env.current()->fees().base == referenceFee);
+
+        auto alice = Account("alice");
+        auto bob = Account("bob");
+        auto carol = Account("carol");
+        auto filler = Account("filler");
+
+        env.fund(XRP(10000), alice);
+        env.close();
+        env.fund(XRP(10000), bob);
+        env.close();
+        env.fund(XRP(10000), carol);
+        env.close();
+        env.fund(XRP(10000), filler);
+        env.close();
+
+        fillQueue(env, filler);
+
+        auto const aliceSeq = env.seq(alice);
+        auto const bobSeq = env.seq(bob);
+        auto const batchFee = batch::calcBatchFee(env, 1, 2);
+        auto const foreignFee = batchFee - env.current()->fees().base;
+        auto const preAlice = env.balance(alice);
+        auto const preBob = env.balance(bob);
+        auto const preCarol = env.balance(carol);
+
+        // bob's regular tx at the front of bob's queue. Its fee is lower than
+        // the Batch but higher than alice's foreign tx below, so in byFee_
+        // order it sits between them: Batch, bob's regular, alice's foreign.
+        // bob's regular is processed before alice's foreign; when it applies
+        // its account-successor is the Batch and feeNextIter points at alice's
+        // foreign (lower fee than the Batch), so feeAllowsNext is true and
+        // isFirstInAccount(batch) runs while alice's foreign tx still blocks
+        // the alice inner.
+        env(pay(bob, carol, XRP(1)), Seq(bobSeq), Fee(batchFee), Ter(terQUEUED));
+
+        // A foreign regular tx at the front of alice's queue, ahead of the
+        // Batch's alice inner. Lowest fee, so it is still in the queue when
+        // isFirstInAccount(batch) runs. This is the blocker for Trigger 015.
+        env(pay(alice, carol, XRP(10)), Seq(aliceSeq), Fee(foreignFee), Ter(terQUEUED));
+
+        // Batch: outer bob@bobSeq+1 (high fee, skipped until bob's regular
+        // applies), inner bob@bobSeq+2, inner alice@aliceSeq+1 (blocked by
+        // alice's foreign regular@aliceSeq).
+        env(batch::outer(bob, bobSeq + 1, batchFee * 8, tfAllOrNothing),
+            batch::Inner(pay(bob, carol, XRP(100)), bobSeq + 2),
+            batch::Inner(pay(alice, carol, XRP(1000)), aliceSeq + 1),
+            batch::Sig(alice),
+            Ter(terQUEUED));
+
+        // The first close applies the outer Batch (and the two regular txs);
+        // the second close is where the inners would apply (Batch inners only
+        // apply once the outer is in a closed ledger). Whether they actually
+        // apply depends on the salt-dependent ordering for this fee.
+        env.close();
+        env.close();
+
+        BEAST_EXPECT(env.app().getTxQ().getMetrics(*env.current()).txCount == 0);
+        BEAST_EXPECT(env.seq(bob) == bobSeq + expectedBobSeqDelta);
+        BEAST_EXPECT(env.seq(alice) == aliceSeq + expectedAliceSeqDelta);
+
+        // carol's delta is the sum of the magnitudes that applied, so it
+        // uniquely pins down which txs ran.
+        BEAST_EXPECT(env.balance(carol) == preCarol + XRP(expectedCarolReceivedXrp));
+
+        // bob always pays his regular tx fee (batchFee), the outer Batch fee
+        // (batchFee * 8) and the XRP(1) regular payment; he pays the XRP(100)
+        // inner only if it applied. alice always pays her foreign regular tx
+        // fee (foreignFee) and the XRP(10) regular payment; she pays the
+        // XRP(1000) inner only if it applied. The inners carry no fee.
+        BEAST_EXPECT(
+            env.balance(bob) ==
+            preBob - XRP(1) - drops(batchFee + batchFee * 8) -
+                (bobInnerApplied ? XRP(100) : XRP(0)));
+        BEAST_EXPECT(
+            env.balance(alice) ==
+            preAlice - XRP(10) - drops(foreignFee) - (aliceInnerApplied ? XRP(1000) : XRP(0)));
+    }
+
+    void
+    testBatch()
+    {
+        using namespace jtx;
+        using namespace std::chrono;
+        testcase("batch");
+
+        // A queued Batch needs two ledger closes to fully apply: the first
+        // close processes the Batch from the open ledger and removes it from
+        // the queue; the second close applies the inner transactions.
+
+        // 1) Queue order: batch tx, then 2 regular txs.
+        {
+            Env env(
+                *this,
+                makeConfig(
+                    {{Keys::kMinimumTxnInLedgerStandalone, "2"},
+                     {Keys::kLedgersInQueue, "3"},
+                     {Keys::kMaximumTxnPerAccount, "10"}}));
+
+            auto alice = Account("alice");
+            auto filler = Account("filler");
+
+            env.fund(XRP(10000), alice);
+            env.close();
+            env.fund(XRP(10000), filler);
+            env.close();
+
+            // Fill the open ledger so escalation is active.
+            fillQueue(env, filler);
+            checkMetrics(*this, env, 0, 6, 3, 2);
+
+            auto const aliceSeq = env.seq(alice);
+            auto const batchFee = batch::calcBatchFee(env, 0, 2);
+
+            // Queue the Batch first. Outer at aliceSeq, inner txs at
+            // aliceSeq + 1 and aliceSeq + 2.
+            env(batch::outer(alice, aliceSeq, batchFee, tfAllOrNothing),
+                batch::Inner(noop(alice), aliceSeq + 1),
+                batch::Inner(noop(alice), aliceSeq + 2),
+                Ter(terQUEUED));
+            checkMetrics(*this, env, 1, 6, 3, 2);
+
+            // Queue two regular txs behind the Batch (alice's next seqs).
+            env(noop(alice), Seq(aliceSeq + 3), Ter(terQUEUED));
+            env(noop(alice), Seq(aliceSeq + 4), Ter(terQUEUED));
+            checkMetrics(*this, env, 3, 6, 3, 2);
+
+            // The first close applies the outer Batch; the second applies its
+            // inners (Batch inners only apply once the outer is in a closed
+            // ledger).
+            env.close();
+            env.close();
+
+            // All transactions have been applied and the queue is empty.
+            BEAST_EXPECT(env.app().getTxQ().getMetrics(*env.current()).txCount == 0);
+            BEAST_EXPECT(env.seq(alice) == aliceSeq + 5);
+        }
+
+        // 2) Queue order: 2 regular txs, then batch tx, then 2 regular txs
+        {
+            Env env(
+                *this,
+                makeConfig(
+                    {{Keys::kMinimumTxnInLedgerStandalone, "2"},
+                     {Keys::kLedgersInQueue, "3"},
+                     {Keys::kMaximumTxnPerAccount, "10"}}));
+
+            auto alice = Account("alice");
+            auto filler = Account("filler");
+
+            env.fund(XRP(10000), alice);
+            env.close();
+            env.fund(XRP(10000), filler);
+            env.close();
+
+            // Fill the open ledger so escalation is active.
+            fillQueue(env, filler);
+            checkMetrics(*this, env, 0, 6, 3, 2);
+
+            auto const aliceSeq = env.seq(alice);
+            auto const batchFee = batch::calcBatchFee(env, 0, 2);
+
+            // Queue two regular txs first.
+            env(noop(alice), Seq(aliceSeq + 0), Ter(terQUEUED));
+            env(noop(alice), Seq(aliceSeq + 1), Ter(terQUEUED));
+            checkMetrics(*this, env, 2, 6, 3, 2);
+
+            // Queue the Batch behind them. Outer at aliceSeq + 2, inner txs at
+            // aliceSeq + 3 and aliceSeq + 4.
+            env(batch::outer(alice, aliceSeq + 2, batchFee, tfAllOrNothing),
+                batch::Inner(noop(alice), aliceSeq + 3),
+                batch::Inner(noop(alice), aliceSeq + 4),
+                Ter(terQUEUED));
+            checkMetrics(*this, env, 3, 6, 3, 2);
+
+            // Queue two more regular txs behind the Batch.
+            env(noop(alice), Seq(aliceSeq + 5), Ter(terQUEUED));
+            env(noop(alice), Seq(aliceSeq + 6), Ter(terQUEUED));
+            checkMetrics(*this, env, 5, 6, 3, 2);
+
+            // The first close applies the outer Batch; the second applies its
+            // inners (Batch inners only apply once the outer is in a closed
+            // ledger).
+            env.close();
+            env.close();
+
+            // All transactions have been applied and the queue is empty.
+            BEAST_EXPECT(env.app().getTxQ().getMetrics(*env.current()).txCount == 0);
+            BEAST_EXPECT(env.seq(alice) == aliceSeq + 7);
+        }
+
+        // 3) Multi-account Batch queued then applied successfully. The outer is
+        //    alice's; the single inner is bob's.
+        {
+            Env env(
+                *this,
+                makeConfig(
+                    {{Keys::kMinimumTxnInLedgerStandalone, "2"},
+                     {Keys::kLedgersInQueue, "3"},
+                     {Keys::kMaximumTxnPerAccount, "10"}}));
+
+            auto alice = Account("alice");
+            auto bob = Account("bob");
+            auto filler = Account("filler");
+
+            env.fund(XRP(10000), alice);
+            env.close();
+            env.fund(XRP(10000), bob);
+            env.close();
+            env.fund(XRP(10000), filler);
+            env.close();
+
+            // Fill the open ledger so escalation is active.
+            fillQueue(env, filler);
+            checkMetrics(*this, env, 0, 6, 3, 2);
+
+            auto const aliceSeq = env.seq(alice);
+            auto const bobSeq = env.seq(bob);
+            auto const batchFee = batch::calcBatchFee(env, 1, 2);
+
+            // Batch: outer alice, inner alice (aliceSeq + 1), inner bob (bobSeq).
+            // bob is the only queued tx for bob's account.
+            env(batch::outer(alice, aliceSeq, batchFee, tfAllOrNothing),
+                batch::Inner(noop(alice), aliceSeq + 1),
+                batch::Inner(pay(bob, alice, XRP(1)), bobSeq),
+                batch::Sig(bob),
+                Ter(terQUEUED));
+            checkMetrics(*this, env, 1, 6, 3, 2);
+
+            // The first close applies the outer Batch; the second applies its
+            // inners (Batch inners only apply once the outer is in a closed
+            // ledger).
+            env.close();
+            env.close();
+
+            // The Batch applied: alice's outer + both inners, bob's inner
+            // included. Removing bob's inner emptied bob's queue entry.
+            BEAST_EXPECT(env.app().getTxQ().getMetrics(*env.current()).txCount == 0);
+            BEAST_EXPECT(env.seq(alice) == aliceSeq + 2);
+            BEAST_EXPECT(env.seq(bob) == bobSeq + 1);
+        }
+
+        // 4) Multi-account Batch that fails to queue all inners. The first
+        //    inner (bob) queues, but the second inner (carol) fails during
+        //    processInnerBatch (carol's inner carries a future sequence, so it
+        //    is not runnable).
+        {
+            Env env(
+                *this,
+                makeConfig(
+                    {{Keys::kMinimumTxnInLedgerStandalone, "2"},
+                     {Keys::kLedgersInQueue, "3"},
+                     {Keys::kMaximumTxnPerAccount, "10"}}));
+
+            auto alice = Account("alice");
+            auto bob = Account("bob");
+            auto carol = Account("carol");
+            auto filler = Account("filler");
+
+            env.fund(XRP(10000), alice);
+            env.close();
+            env.fund(XRP(10000), bob);
+            env.close();
+            env.fund(XRP(10000), carol);
+            env.close();
+            env.fund(XRP(10000), filler);
+            env.close();
+
+            // Fill the open ledger so escalation is active. Funding four
+            // accounts raised txPerLedger, so fillQueue must be recomputed
+            // against the live metrics (its loop already does this).
+            fillQueue(env, filler);
+
+            auto const aliceSeq = env.seq(alice);
+            auto const bobSeq = env.seq(bob);
+            auto const carolSeq = env.seq(carol);
+            auto const batchFee = batch::calcBatchFee(env, 2, 2);
+
+            // carol's inner uses a future sequence (carolSeq + 5), leaving a
+            // gap so it cannot be queued. bob's inner uses the correct next
+            // sequence and queues first.
+            env(batch::outer(alice, aliceSeq, batchFee, tfAllOrNothing),
+                batch::Inner(pay(bob, alice, XRP(1)), bobSeq),
+                batch::Inner(pay(carol, alice, XRP(1)), carolSeq + 5),
+                batch::Sig(bob, carol),
+                Ter(temINVALID_INNER_BATCH));
+
+            // The Batch was rolled back: nothing remains queued.
+            BEAST_EXPECT(env.seq(bob) == bobSeq);
+            BEAST_EXPECT(env.seq(carol) == carolSeq);
+        }
+
+        // 5) reach isFirstInAccount(batch) via eraseAndAdvance.
+        //    bob's queue: a regular tx (low fee, front), then the outer
+        //    Batch bob seq+1 (high fee). Because bob's regular is first in bob's
+        //    account, the higher-fee Batch is *skipped* by the accept loop
+        //    until bob's regular applies. When bob's regular applies,
+        //    eraseAndAdvance resolves bob's account-successor to the Batch,
+        //    and (bob's regular being the lowest fee => feeNextIter == end())
+        //    feeAllowsNext is true, so isFirstInAccount(batch) runs
+        //    innerRunnable on each inner.
+        {
+            Env env(
+                *this,
+                makeConfig(
+                    {{Keys::kMinimumTxnInLedgerStandalone, "2"},
+                     {Keys::kLedgersInQueue, "3"},
+                     {Keys::kMaximumTxnPerAccount, "10"}}));
+
+            auto alice = Account("alice");
+            auto bob = Account("bob");
+            auto filler = Account("filler");
+
+            env.fund(XRP(10000), alice);
+            env.close();
+            env.fund(XRP(10000), bob);
+            env.close();
+            env.fund(XRP(10000), filler);
+            env.close();
+
+            fillQueue(env, filler);
+
+            auto const aliceSeq = env.seq(alice);
+            auto const bobSeq = env.seq(bob);
+            auto const batchFee = batch::calcBatchFee(env, 1, 2);
+            auto const preAlice = env.balance(alice);
+            auto const preBob = env.balance(bob);
+
+            // bob's regular tx at the front of bob's queue, paying the lowest
+            // fee so it is the last entry in byFee_ (=> feeNextIter == end()
+            // after it applies).
+            env(noop(bob), Seq(bobSeq), Fee(batchFee), Ter(terQUEUED));
+
+            // Batch: outer bob@bobSeq+1 (high fee => front of byFee_, but
+            // skipped because bob's regular@bobSeq is first for bob), inner
+            // bob@bobSeq+2, inner alice@aliceSeq. alice's inner is first in
+            // alice's account, so every inner is runnable and the Batch is
+            // "first in account".
+            env(batch::outer(bob, bobSeq + 1, batchFee * 8, tfAllOrNothing),
+                batch::Inner(noop(bob), bobSeq + 2),
+                batch::Inner(noop(alice), aliceSeq),
+                batch::Sig(alice),
+                Ter(terQUEUED));
+
+            // The first close applies the outer Batch (and bob's regular tx);
+            // the second applies its inners (Batch inners only apply once the
+            // outer is in a closed ledger).
+            env.close();
+            env.close();
+
+            // The Batch and both regular txs applied. On bob's account:
+            // regular@bobSeq, outer Batch@bobSeq+1, inner@bobSeq+2 => seq += 3.
+            // On alice's account: only the alice inner@aliceSeq => seq += 1.
+            BEAST_EXPECT(env.app().getTxQ().getMetrics(*env.current()).txCount == 0);
+            BEAST_EXPECT(env.seq(bob) == bobSeq + 3);
+            BEAST_EXPECT(env.seq(alice) == aliceSeq + 1);
+
+            // bob paid the regular tx fee (batchFee) plus the outer Batch fee
+            // (batchFee * 8). alice's inner is a noop carrying no fee, so
+            // alice's balance is unchanged.
+            BEAST_EXPECT(env.balance(bob) == preBob - drops(batchFee + batchFee * 8));
+            BEAST_EXPECT(env.balance(alice) == preAlice);
+        }
+
+        // 6) An inner is blocked by a foreign tx, at referenceFee == 10.
+        //    Same structure as (5) so isFirstInAccount(batch) is reached, but
+        //    now alice already has a foreign regular tx at the front of her
+        //    queue (aliceSeq), ahead of the Batch's alice inner (aliceSeq+1).
+        //    When innerRunnable walks alice's account it hits that foreign tx
+        //    (parentTx is null, and it is not this Batch's outer), so it
+        //    returns false.
+        //
+        //    This case is sensitive to the reference fee: the fee determines
+        //    every transaction's sfFee, hence its id, hence the closed-ledger
+        //    hash that becomes the next CanonicalTXSet salt, and the
+        //    cross-account application order is keyed on account ^ salt_. At
+        //    referenceFee == 10 the salt orders the entries so that all four
+        //    txs apply: bob += 3 (regular + outer + inner), alice += 2 (foreign
+        //    + inner), and carol receives 1 + 10 + 100 + 1000 = 1111 XRP. We
+        //    pin the fee so the outcome is deterministic regardless of the
+        //    build's UNIT_TEST_REFERENCE_FEE. Case (7) is the same scenario at a
+        //    fee where the salt reorders the entries and the inners are skipped.
+        testBatchForeignBlockedInner(
+            10 /*referenceFee*/,
+            3 /*bob seq delta*/,
+            2 /*alice seq delta*/,
+            1111 /*carol receives XRP*/,
+            true /*bob inner applied*/,
+            true /*alice inner applied*/);
+
+        // 7) Identical scenario to case (6) but at referenceFee == 400 instead
+        //    of 10. Only the fee differs, which changes every transaction's
+        //    sfFee, hence its id, hence the closed-ledger hash, hence the
+        //    CanonicalTXSet salt (salt_ = parent ledger hash); cross-account
+        //    order is keyed on account ^ salt_. Under this salt the entries
+        //    reorder so that the Batch's inners are *not* applied at all: only
+        //    the fee-bearing outer Batch and the two regular txs apply.
+        //
+        //    The divergence is a function of the exact transaction content, not
+        //    of the fee alone: sweeping referenceFee across many values with
+        //    these payments, some fees apply all four txs (like case (6)) and
+        //    some skip both inners. 400 is one of the fees that skips (the CI
+        //    fee 500 happens to apply everything with this content). We pin 400
+        //    so the skip reproduces deterministically regardless of the build's
+        //    UNIT_TEST_REFERENCE_FEE. Results differ from case (6): bob += 2
+        //    (regular + outer, no inner@bobSeq+2), alice += 1 (foreign only, no
+        //    inner@aliceSeq+1), and carol receives only 1 + 10 = 11 XRP.
+        testBatchForeignBlockedInner(
+            400 /*referenceFee*/,
+            2 /*bob seq delta*/,
+            1 /*alice seq delta*/,
+            11 /*carol receives XRP*/,
+            false /*bob inner applied*/,
+            false /*alice inner applied*/);
+
+        // 8) tryClearAccountQueueUpThruTx must refuse to "clear through" a
+        //    queued Batch inner tx. A Batch (outer alice) queues
+        //    a bob inner at bobSeq. Then a high-fee, escalated regular tx is
+        //    submitted for bob at bobSeq+1: this is not bob's next account
+        //    sequence, so it builds a multiTxn (the gap at bobSeq is filled by
+        //    the queued inner) and, paying more than the required fee level,
+        //    reaches tryClearAccountQueueUpThruTx. Walking [bobSeq, bobSeq+1)
+        //    it finds the inner (parentTx set) and returns telINSUF_FEE_P
+        //    instead of clearing the queue through it.
+        {
+            Env env(
+                *this,
+                makeConfig(
+                    {{Keys::kMinimumTxnInLedgerStandalone, "2"},
+                     {Keys::kLedgersInQueue, "3"},
+                     {Keys::kMaximumTxnPerAccount, "10"}}));
+
+            auto alice = Account("alice");
+            auto bob = Account("bob");
+            auto filler = Account("filler");
+
+            env.fund(XRP(10000), alice);
+            env.close();
+            env.fund(XRP(10000), bob);
+            env.close();
+            env.fund(XRP(10000), filler);
+            env.close();
+
+            // Fill the open ledger so escalation is active (requiredFeeLevel
+            // above the base level).
+            fillQueue(env, filler);
+
+            auto const aliceSeq = env.seq(alice);
+            auto const bobSeq = env.seq(bob);
+            auto const batchFee = batch::calcBatchFee(env, 1, 2);
+            auto const baseFee = env.current()->fees().base;
+            auto const preAlice = env.balance(alice);
+            auto const preBob = env.balance(bob);
+
+            // Batch: outer alice@aliceSeq, inner alice@aliceSeq+1, inner
+            // bob@bobSeq. bob's only queued entry is the inner at bobSeq.
+            env(batch::outer(alice, aliceSeq, batchFee, tfAllOrNothing),
+                batch::Inner(noop(alice), aliceSeq + 1),
+                batch::Inner(pay(bob, alice, XRP(1)), bobSeq),
+                batch::Sig(bob),
+                Ter(terQUEUED));
+
+            // Submit a regular tx for bob at bobSeq+1 (not bob's next account
+            // seq -> multiTxn; the gap at bobSeq is the queued inner) paying a
+            // large fee so it exceeds the required fee level and reaches
+            // tryClearAccountQueueUpThruTx. The bob inner in front of it is a
+            // Batch inner (parentTx set), so the clear-through is refused
+            // (Trigger 022) and the tx is queued instead.
+            auto const bobFee = baseFee * 3000;
+            auto const bobRegular = env.jt(noop(bob), Seq(bobSeq + 1), Fee(bobFee), Ter(terQUEUED));
+            env(bobRegular);
+
+            // The first close applies the outer Batch (and bob's regular tx);
+            // the second applies its inners (Batch inners only apply once the
+            // outer is in a closed ledger).
+            env.close();
+            env.close();
+
+            // The Batch applied (alice outer@aliceSeq, alice inner@aliceSeq+1,
+            // bob inner@bobSeq) and bob's regular@bobSeq+1 applied afterwards.
+            // On alice's account seq += 2; on bob's account seq += 2 (inner +
+            // regular).
+            BEAST_EXPECT(env.app().getTxQ().getMetrics(*env.current()).txCount == 0);
+            BEAST_EXPECT(env.seq(alice) == aliceSeq + 2);
+            BEAST_EXPECT(env.seq(bob) == bobSeq + 2);
+
+            // alice paid the outer Batch fee (batchFee) and received XRP(1)
+            // from bob's inner payment. bob paid XRP(1) (inner payment) plus
+            // his regular tx fee (bobFee); the inner itself carries no fee.
+            BEAST_EXPECT(env.balance(alice) == preAlice + XRP(1) - drops(batchFee));
+            BEAST_EXPECT(env.balance(bob) == preBob - XRP(1) - drops(bobFee));
+        }
+
+        // 9) A regular transaction replaces a queued outer Batch.
+        //    This is the only replacement involving a Batch that is allowed.
+        //    A Batch is queued at alice@aliceSeq. A regular CredentialCreate is
+        //    then submitted at the same account/sequence, paying more than the
+        //    Batch's fee level plus the retry bump, so it replaces the Batch.
+        //    The Batch (and its inners) are dropped; the CredentialCreate
+        //    applies and its ledger object is created.
+        {
+            Env env(
+                *this,
+                makeConfig(
+                    {{Keys::kMinimumTxnInLedgerStandalone, "2"},
+                     {Keys::kLedgersInQueue, "3"},
+                     {Keys::kMaximumTxnPerAccount, "10"}}));
+
+            auto alice = Account("alice");
+            auto subject = Account("subject");
+            auto filler = Account("filler");
+
+            env.fund(XRP(10000), alice);
+            env.close();
+            env.fund(XRP(10000), subject);
+            env.close();
+            env.fund(XRP(10000), filler);
+            env.close();
+
+            // Fill the open ledger so escalation is active.
+            fillQueue(env, filler);
+
+            auto const aliceSeq = env.seq(alice);
+            auto const batchFee = batch::calcBatchFee(env, 0, 2);
+            auto const baseFee = env.current()->fees().base;
+            std::string const credType = "abcde";
+
+            // Queue an outer Batch (alice) at aliceSeq with two alice inners.
+            env(batch::outer(alice, aliceSeq, batchFee, tfAllOrNothing),
+                batch::Inner(noop(alice), aliceSeq + 1),
+                batch::Inner(noop(alice), aliceSeq + 2),
+                Ter(terQUEUED));
+
+            // Submit a regular CredentialCreate at aliceSeq. The queued Batch
+            // paid batchFee against its own (batchFee) base fee, so its stored
+            // fee level is kBaseLevel; a regular tx needs a fee level above
+            // kBaseLevel * 1.25 to replace it. baseFee * 2 clears that bump
+            // while staying below the open-ledger fee level (so it queues and
+            // replaces rather than applying directly). Trigger 034 fires.
+            // alice is the credential issuer (so the CredentialCreate is
+            // submitted by alice, at aliceSeq); subject is the other account.
+            env(credentials::create(subject, alice, credType),
+                Seq(aliceSeq),
+                Fee(baseFee * 2),
+                Ter(terQUEUED));
+
+            env.close();
+
+            // The CredentialCreate applied (not the Batch): alice's account
+            // advanced by exactly one, and the credential object exists.
+            BEAST_EXPECT(env.seq(alice) == aliceSeq + 1);
+            BEAST_EXPECT(env.le(credentials::keylet(subject, alice, credType)) != nullptr);
+        }
+
+        // 10) Trigger 033: a queued Batch inner transaction cannot be replaced.
+        //    A Batch is queued whose inner sits at alice@aliceSeq+1. A regular
+        //    transaction is then submitted at alice@aliceSeq+1 paying a large
+        //    fee. Because the queued entry there is a Batch inner (parentTx
+        //    set), the replacement is refused with telCAN_NOT_QUEUE.
+        {
+            Env env(
+                *this,
+                makeConfig(
+                    {{Keys::kMinimumTxnInLedgerStandalone, "2"},
+                     {Keys::kLedgersInQueue, "3"},
+                     {Keys::kMaximumTxnPerAccount, "10"}}));
+
+            auto alice = Account("alice");
+            auto filler = Account("filler");
+
+            env.fund(XRP(10000), alice);
+            env.close();
+            env.fund(XRP(10000), filler);
+            env.close();
+
+            fillQueue(env, filler);
+
+            auto const aliceSeq = env.seq(alice);
+            auto const batchFee = batch::calcBatchFee(env, 0, 2);
+            auto const baseFee = env.current()->fees().base;
+
+            // Queue an outer Batch (alice) at aliceSeq; its inners sit at
+            // aliceSeq+1 and aliceSeq+2.
+            env(batch::outer(alice, aliceSeq, batchFee, tfAllOrNothing),
+                batch::Inner(noop(alice), aliceSeq + 1),
+                batch::Inner(noop(alice), aliceSeq + 2),
+                Ter(terQUEUED));
+
+            // Attempt to replace the inner at aliceSeq+1 with a regular tx
+            // paying a fee above the retry bump but below the open-ledger fee
+            // level (so it reaches the queue-replacement path rather than
+            // applying directly). The target is a Batch inner (parentTx set),
+            // so replacement is refused.
+            env(noop(alice), Seq(aliceSeq + 1), Fee(baseFee * 2), Ter(telCAN_NOT_QUEUE));
+        }
+
+        // 11) an outer Batch cannot replace a queued transaction.
+        //     A regular tx is queued at alice@aliceSeq. An outer Batch is then
+        //     submitted at alice@aliceSeq paying a large fee. A Batch may not
+        //     replace an existing entry, so it is refused with
+        //     telCAN_NOT_QUEUE.
+        {
+            Env env(
+                *this,
+                makeConfig(
+                    {{Keys::kMinimumTxnInLedgerStandalone, "2"},
+                     {Keys::kLedgersInQueue, "3"},
+                     {Keys::kMaximumTxnPerAccount, "10"}}));
+
+            auto alice = Account("alice");
+            auto filler = Account("filler");
+
+            env.fund(XRP(10000), alice);
+            env.close();
+            env.fund(XRP(10000), filler);
+            env.close();
+
+            fillQueue(env, filler);
+
+            auto const aliceSeq = env.seq(alice);
+            auto const batchFee = batch::calcBatchFee(env, 0, 2);
+
+            // Queue a regular tx at aliceSeq.
+            env(noop(alice), Seq(aliceSeq), Ter(terQUEUED));
+
+            // Attempt to replace it with an outer Batch at aliceSeq. The Batch
+            // pays a fee above the retry bump but below the open-ledger fee
+            // level, so it reaches the queue-replacement path. A Batch cannot
+            // replace a queued tx (Trigger 032), so it is refused.
+            env(batch::outer(alice, aliceSeq, drops(batchFee * 2), tfAllOrNothing),
+                batch::Inner(noop(alice), aliceSeq + 1),
+                batch::Inner(noop(alice), aliceSeq + 2),
+                Ter(telCAN_NOT_QUEUE));
+        }
+
+        // 12) a Batch inner cannot replace a queued transaction.
+        //     A regular tx is queued at bob@bobSeq. A Batch is then submitted
+        //     whose bob inner sits at bob@bobSeq. The inner attempts to replace
+        //     bob's queued tx, which is refused with telCAN_NOT_QUEUE; this
+        //     fails the whole Batch, which the outer surfaces as
+        //     temINVALID_INNER_BATCH.
+        {
+            Env env(
+                *this,
+                makeConfig(
+                    {{Keys::kMinimumTxnInLedgerStandalone, "2"},
+                     {Keys::kLedgersInQueue, "3"},
+                     {Keys::kMaximumTxnPerAccount, "10"}}));
+
+            auto alice = Account("alice");
+            auto bob = Account("bob");
+            auto filler = Account("filler");
+
+            env.fund(XRP(10000), alice);
+            env.close();
+            env.fund(XRP(10000), bob);
+            env.close();
+            env.fund(XRP(10000), filler);
+            env.close();
+
+            fillQueue(env, filler);
+
+            auto const aliceSeq = env.seq(alice);
+            auto const bobSeq = env.seq(bob);
+            auto const batchFee = batch::calcBatchFee(env, 1, 2);
+
+            // Queue a regular tx at bob@bobSeq.
+            env(noop(bob), Seq(bobSeq), Ter(terQUEUED));
+
+            // Submit a Batch (outer alice) whose bob inner sits at bob@bobSeq,
+            // colliding with bob's queued regular tx. The inner cannot replace
+            // it, so the Batch fails as temINVALID_INNER_BATCH.
+            env(batch::outer(alice, aliceSeq, batchFee, tfAllOrNothing),
+                batch::Inner(noop(alice), aliceSeq + 1),
+                batch::Inner(noop(bob), bobSeq),
+                batch::Sig(bob),
+                Ter(temINVALID_INNER_BATCH));
+        }
+    }
+
     void
     run() override
     {
@@ -4740,6 +5458,7 @@ public:
         testSponsorTxCannotQueue();
         testDelegateTxCannotQueue();
         testConsequences();
+        testBatch();
     }
 
     void
