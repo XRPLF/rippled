@@ -1138,9 +1138,7 @@ TRANSACTION(ttSPONSORSHIP_SET, 91, SponsorshipSet,
 #   include <xrpl/tx/transactors/token/ConfidentialMPTMirrorUpdate.h>
 #endif
 TRANSACTION(ttCONFIDENTIAL_MPT_MIRROR_UPDATE, 92, ConfidentialMPTMirrorUpdate,
-    Delegation::NotDelegable,
-    featureConfidentialMPTKeyRotation,
-    NoPriv,
+    ({.delegable = Delegation::Delegable, .amendment = featureConfidentialMPTKeyRotation}),
     ({
     {sfMPTokenIssuanceID, SoeRequired},
     {sfHolder, SoeOptional},

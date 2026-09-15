@@ -19,9 +19,9 @@ class ConfidentialMPTMirrorUpdateBuilder;
  * @brief Transaction: ConfidentialMPTMirrorUpdate
  *
  * Type: ttCONFIDENTIAL_MPT_MIRROR_UPDATE (92)
- * Delegable: Delegation::NotDelegable
+ * Delegable: Delegation::Delegable
  * Amendment: featureConfidentialMPTKeyRotation
- * Privileges: NoPriv
+ * Privileges: Privilege::NoPriv
  *
  * Immutable wrapper around STTx providing type-safe field access.
  * Use ConfidentialMPTMirrorUpdateBuilder to construct new transactions.
