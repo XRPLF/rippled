@@ -1,9 +1,8 @@
 
-#include <test/jtx/TestHelpers.h>
-
 #include <xrpld/rpc/detail/Handler.h>
 
 #include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/protocol/ApiVersion.h>
 
 #include <algorithm>
 #include <array>
@@ -12,7 +11,10 @@
 #include <cmath>
 #include <cstddef>
 #include <iostream>
+#include <iterator>
 #include <random>
+#include <string>
+#include <string_view>
 #include <tuple>
 #include <vector>
 // cspell: words stdev
@@ -88,21 +90,50 @@ class Handler_test : public beast::unit_test::Suite
         std::random_device dev;
         std::ranlux48 prng(dev());
 
-        std::vector<char const*> names = test::jtx::makeVector(xrpl::rpc::getHandlerNames());
+        // The lowest version still served. Outside the supported range getHandler()
+        // returns at its bounds check without searching, so the benchmark would
+        // time that check instead of a lookup.
+        constexpr unsigned kVersion = rpc::kApiMinimumSupportedVersion;
+
+        // Only the names that answer at kVersion, so that every timed call does a
+        // whole lookup: a method served from a later version only would not.
+        // Contiguous, so that picking one by index costs nothing.
+        std::vector<std::string_view> names;
+        std::ranges::copy_if(
+            rpc::getHandlerNames(), std::back_inserter(names), [](std::string_view name) {
+                return rpc::getHandler(kVersion, false, name) != nullptr;
+            });
+
+        if (!BEAST_EXPECTS(
+                !names.empty(),
+                "no handler answers at API version " + std::to_string(kVersion) +
+                    ", so there is nothing to measure"))
+            return;
 
         std::uniform_int_distribution<std::size_t> distr{0, names.size() - 1};
 
         std::size_t dummy = 0;
+        std::size_t misses = 0;
         auto const [mean, stdev, n] = time(
             1'000'000,
             [&](std::size_t i) {
-                auto const d = rpc::getHandler(1, false, names[i]);
+                auto const d = rpc::getHandler(kVersion, false, names[i]);
+                if (d == nullptr)
+                {
+                    ++misses;
+                    return;
+                }
                 dummy = dummy + i + (int)d->role;
             },
             [&]() -> std::size_t { return distr(prng); });
 
         std::cout << "mean=" << mean << " stdev=" << stdev << " N=" << n << '\n';
 
+        // Every name answered once already, so a miss here cannot happen.
+        BEAST_EXPECTS(
+            misses == 0,
+            std::to_string(misses) + " of " + std::to_string(n) + " lookups at API version " +
+                std::to_string(kVersion) + " found no handler, so nothing was measured");
         BEAST_EXPECT(dummy != 0);
     }
 
@@ -114,6 +145,8 @@ public:
     }
 };
 
+// Manual: the suite only reports a timing, which says nothing on a CI runner.
+// The table invariants are static_asserts in Handler.cpp.
 BEAST_DEFINE_TESTSUITE_MANUAL(Handler, rpc, xrpl);
 
 }  // namespace xrpl::test
