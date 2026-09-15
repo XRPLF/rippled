@@ -11,11 +11,10 @@
 //! all a consensus path can act on, and [`check_all`] reports every one. Both draw
 //! from [`check_error_iter`], so they cannot disagree about which refusal is first.
 //!
-//! Two things it deliberately does not screen. A module exporting **no** linear
-//! memory passes: a contract that makes no host call needs none, and one that
-//! does is refused at the call and charged for what it burned. A start section
-//! passes: it is guest code, and executing it is the one thing a check must not do
-//! — a trap in one is charged to the contract like any other trap.
+//! One thing it deliberately does not screen: a module exporting **no** linear
+//! memory passes, since a contract that makes no host call needs none, and one that
+//! does is refused at the call and charged for what it burned. A start section needs
+//! no rule of its own — the engine forbids one, so such a module fails to compile.
 //!
 //! Two things it screens that a run can only discover: an exported memory, or an
 //! exported table, larger than the engine grants. Both read the same export list, so
