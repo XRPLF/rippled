@@ -109,8 +109,10 @@ TEST(WalletNodeIdentity, store_then_read_returns_the_same_pair)
     auto db = (*wallet).checkoutDb();
     auto const stored = readNodeIdentity(*db);
     ASSERT_TRUE(stored.has_value());
+    // NOLINTBEGIN(bugprone-unchecked-optional-access): presence asserted above.
     EXPECT_EQ(stored->first, minted.first);
     EXPECT_TRUE(std::ranges::equal(stored->second, minted.second));
+    // NOLINTEND(bugprone-unchecked-optional-access)
 }
 
 TEST(WalletNodeIdentity, store_appends_rather_than_replacing)
@@ -137,6 +139,7 @@ TEST(WalletNodeIdentity, store_appends_rather_than_replacing)
     // comes back -- not which one.
     auto const stored = readNodeIdentity(*db);
     ASSERT_TRUE(stored.has_value());
+    // NOLINTNEXTLINE(bugprone-unchecked-optional-access): presence asserted above.
     EXPECT_TRUE(stored->first == first.first || stored->first == second.first)
         << "readNodeIdentity must return one of the two stored pairs";
 }
@@ -159,8 +162,10 @@ TEST(WalletNodeIdentity, clear_then_store_installs_the_new_pair)
     storeNodeIdentity(*db, replacement);
     auto const stored = readNodeIdentity(*db);
     ASSERT_TRUE(stored.has_value());
+    // NOLINTBEGIN(bugprone-unchecked-optional-access): presence asserted above.
     EXPECT_EQ(stored->first, replacement.first);
     EXPECT_TRUE(std::ranges::equal(stored->second, replacement.second));
+    // NOLINTEND(bugprone-unchecked-optional-access)
 }
 
 TEST(WalletNodeIdentity, get_mints_and_persists_when_the_table_is_empty)
@@ -175,6 +180,7 @@ TEST(WalletNodeIdentity, get_mints_and_persists_when_the_table_is_empty)
 
     auto const stored = readNodeIdentity(*db);
     ASSERT_TRUE(stored.has_value()) << "getNodeIdentity() must persist what it mints";
+    // NOLINTNEXTLINE(bugprone-unchecked-optional-access): presence asserted above.
     EXPECT_EQ(stored->first, minted.first);
     EXPECT_EQ(getNodeIdentity(*db).first, minted.first);
 }
@@ -217,6 +223,7 @@ TEST(ParseNodeIdentitySeed, valid_cmdline_returns_that_seed)
     auto const seed = parseNodeIdentitySeed(std::string{kValidSeed}, std::nullopt);
     ASSERT_TRUE(seed.has_value());
 
+    // NOLINTNEXTLINE(bugprone-unchecked-optional-access): presence asserted above.
     auto const sk = generateSecretKey(KeyType::Secp256k1, *seed);
     auto const pk = derivePublicKey(KeyType::Secp256k1, sk);
     EXPECT_EQ(toBase58(TokenType::NodePublic, pk), std::string{kValidSeedPublic});
@@ -229,6 +236,7 @@ TEST(ParseNodeIdentitySeed, valid_config_returns_that_seed)
     auto const seed = parseNodeIdentitySeed(std::nullopt, std::string{kValidSeed});
     ASSERT_TRUE(seed.has_value());
 
+    // NOLINTNEXTLINE(bugprone-unchecked-optional-access): presence asserted above.
     auto const sk = generateSecretKey(KeyType::Secp256k1, *seed);
     auto const pk = derivePublicKey(KeyType::Secp256k1, sk);
     EXPECT_EQ(toBase58(TokenType::NodePublic, pk), std::string{kValidSeedPublic});
@@ -261,6 +269,7 @@ TEST(ParseNodeIdentitySeed, cmdline_wins_over_config)
     auto const seed = parseNodeIdentitySeed(std::string{kValidSeed}, std::string{kOtherSeed});
     ASSERT_TRUE(seed.has_value());
 
+    // NOLINTNEXTLINE(bugprone-unchecked-optional-access): presence asserted above.
     auto const sk = generateSecretKey(KeyType::Secp256k1, *seed);
     auto const pk = derivePublicKey(KeyType::Secp256k1, sk);
     EXPECT_EQ(toBase58(TokenType::NodePublic, pk), std::string{kValidSeedPublic});
