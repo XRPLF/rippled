@@ -970,19 +970,11 @@ accountSendIOU(
     SLE::ref sponsorSle,
     WaiveTransferFee waiveFee)
 {
-    if (view.rules().enabled(fixAMMv1_1))
-    {
-        if (saAmount < beast::kZero || saAmount.holds<MPTIssue>())
-        {
-            return tecINTERNAL;  // LCOV_EXCL_LINE
-        }
-    }
-    else
+    if (saAmount < beast::kZero || saAmount.holds<MPTIssue>())
     {
         // LCOV_EXCL_START
-        XRPL_ASSERT(
-            saAmount >= beast::kZero && !saAmount.holds<MPTIssue>(),
-            "xrpl::accountSendIOU : minimum amount and not MPT");
+        JLOG(j.fatal()) << "accountSendIOU: negative amount or invalid asset";
+        return tecINTERNAL;
         // LCOV_EXCL_STOP
     }
 
