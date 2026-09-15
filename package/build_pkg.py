@@ -98,8 +98,8 @@ def check_binaries(build_dir: Path) -> None:
     # No package goes out without the attribution.
     notice = build_dir / "validator-keys-LICENSE"
     assert notice.is_file(), (
-        f"missing {notice}. cmake/XrplValidatorKeys.cmake copies it out of the "
-        "fetched validator-keys-tool source, so reconfigure with -Dvalidator_keys=ON."
+        f"missing {notice}. cmake/XrplValidatorKeys.cmake copies it from "
+        "src/tools/validator-keys, so reconfigure with -Dvalidator_keys=ON."
     )
 
     # Catches a binary still pointing at the Nix store's ELF loader, since

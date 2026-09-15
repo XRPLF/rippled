@@ -73,9 +73,10 @@ artifacts (`xrpld_artifact_name` and `validator_keys_artifact_name`) after that
 same config, so a packaged config must keep `-Dvalidator_keys=ON`. Those configs
 are not `minimal`, so `on-pr.yml` only packages once a PR runs the full matrix.
 
-`validator-keys` is fetched from an exact commit pinned in
+`validator-keys` is built from the source in
+[`src/tools/validator-keys`](../src/tools/validator-keys), enabled by
 [`cmake/XrplValidatorKeys.cmake`](../cmake/XrplValidatorKeys.cmake), so a given
-`xrpld` version always packages the same tool; bump that commit deliberately.
+`xrpld` version always packages the tool from the same tree.
 
 ### Locally (mirrors CI)
 

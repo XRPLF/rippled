@@ -194,6 +194,15 @@ tests.libxrpl > xrpl.resource
 tests.libxrpl > xrpl.server
 tests.libxrpl > xrpl.shamap
 tests.libxrpl > xrpl.tx
+tests.tools > tools.validator-keys
+tests.tools > xrpl.basics
+tests.tools > xrpl.json
+tests.tools > xrpl.protocol
+tests.tools > xrpl.server
+tools.validator-keys > xrpl.basics
+tools.validator-keys > xrpl.json
+tools.validator-keys > xrpl.protocol
+tools.validator-keys > xrpl.server
 xrpl.conditions > xrpl.basics
 xrpl.conditions > xrpl.protocol
 xrpl.config > xrpl.basics
