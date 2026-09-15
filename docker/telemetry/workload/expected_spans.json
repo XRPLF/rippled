@@ -503,7 +503,7 @@
       "required_attributes": ["node_count"],
       "config_flag": "trace_ledger",
       "optional": true,
-      "note": "The whole-state-map walk. Measured 2026-09-13 on aws-dev-xrpl-1: ~10 min."
+      "note": "The whole-state-map walk; ten minutes or more on a populated node."
     },
     {
       "name": "nodestore.rotate.freshen.keys",
@@ -512,7 +512,7 @@
       "required_attributes": ["key_count"],
       "config_flag": "trace_ledger",
       "optional": true,
-      "note": "TaggedCache::getKeys() under the tree-node cache mutex -- the 5-6 s hold that froze every job on aws-dev-xrpl-1/2 (2026-09-13). This is the child that must overlap the stalled receive spans in a Tempo view for the proof to close."
+      "note": "TaggedCache::getKeys() under the tree-node cache mutex -- a hold of seconds on a large cache that freezes every job. This is the child that must overlap the stalled receive spans in a Tempo view for the proof to close."
     },
     {
       "name": "nodestore.rotate.freshen.fetch",
