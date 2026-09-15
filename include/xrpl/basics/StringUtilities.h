@@ -205,10 +205,14 @@ public:
     /**
      * Build a view from one that reaches its terminating null.
      *
+     * Explicit, so that a plain view cannot become a proof of termination by
+     * accident. The conversion the other way stays implicit.
+     *
      * @param view The string to hold. Rejected at compile time if it stops
      *        before its terminating null, or has no data.
      */
-    consteval NullTerminatedView(std::string_view view) : data_(view.data()), size_(view.size())
+    explicit consteval NullTerminatedView(std::string_view view)
+        : data_(view.data()), size_(view.size())
     {
         if (!isNullTerminated(view))
             throw "xrpl::NullTerminatedView : view does not reach a null";

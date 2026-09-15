@@ -92,7 +92,7 @@ handlerFrom()
 // The handlers that name the function they dispatch to. The order is free:
 // getHandler() searches kHandlers below, which is this array and the next one
 // sorted together.
-constexpr Handler kFunctionHandlerArray[]{
+constexpr auto kFunctionHandlerArray = std::to_array<Handler>({
     // Request-response methods
     {
         .name = method::kAccountInfo,
@@ -530,14 +530,14 @@ constexpr Handler kFunctionHandlerArray[]{
         .role = Role::USER,
         .condition = Condition::NoCondition,
     },
-};
+});
 
 // The class-based handlers, which carry their name and API range as static
 // members rather than as a table entry, so they cannot go in the array above.
-constexpr Handler kClassHandlerArray[]{
+constexpr auto kClassHandlerArray = std::to_array<Handler>({
     handlerFrom<LedgerHandler>(),
     handlerFrom<VersionHandler>(),
-};
+});
 
 /**
  * Join the two handler arrays above into one.
