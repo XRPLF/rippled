@@ -11,10 +11,10 @@
 namespace xrpl::reduce_relay {
 
 // Peer's squelch is limited in time to
-// rand{MIN_UNSQUELCH_EXPIRE, max_squelch},
+// rand{kMinUnsquelchExpire, max_squelch},
 // where max_squelch is
-// min(max(MAX_UNSQUELCH_EXPIRE_DEFAULT, SQUELCH_PER_PEER * number_of_peers),
-//     MAX_UNSQUELCH_EXPIRE_PEERS)
+// min(max(kMaxUnsquelchExpireDefault, kSquelchPerPeer * number_of_peers),
+//     kMaxUnsquelchExpirePeers)
 static constexpr auto kMinUnsquelchExpire = std::chrono::seconds{300};
 static constexpr auto kMaxUnsquelchExpireDefault = std::chrono::seconds{600};
 static constexpr auto kSquelchPerPeer = std::chrono::seconds(10);
@@ -29,6 +29,14 @@ static constexpr uint16_t kMinMessageThreshold = 19;
 static constexpr uint16_t kMaxMessageThreshold = 20;
 // Max selected peers to choose as the source of messages from validator
 static constexpr uint16_t kMaxSelectedPeers = 5;
+
+// Max number of untrusted slots the server will maintain
+static constexpr uint16_t kMaxUntrustedSlots = 30;
+
+// The maximum of seconds an untrusted validator can go without sending a
+// validation message. After this, a validator may be squelched
+static constexpr auto kMaxUntrustedValidatorIdle = std::chrono::seconds{30};
+
 // Wait before reduce-relay feature is enabled on boot up to let
 // the server establish peer connections
 static constexpr auto kWaitOnBootup = std::chrono::minutes{10};
