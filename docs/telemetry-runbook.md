@@ -3357,9 +3357,8 @@ increase(nodestore_state{metric="acquire_ledger_timeouts", service_instance_id=~
 
 #### Measured reference points
 
-**Provenance.** The two columns below are our own measurements: node2 on the AWS
-dev box, build `e3c2f8279a`, 2026-07-27/28, same host and same binary for both
-runs, differing only in the state of the store. Use them as the shape to compare
+**Provenance.** The two columns below are our own measurements: one mainnet node,
+same host and same binary for both runs, differing only in the state of the store. Use them as the shape to compare
 against, not as thresholds. The read figures below come from the `read_mean_us`
 gauge, the only read-latency signal exported; the "highest sample" row is the
 largest value that gauge reached over the run, not a read-latency percentile. The third dataset in this section — the 25-minute devnet stall and its
