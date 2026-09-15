@@ -368,6 +368,12 @@ issuerFundsToSelfIssue(ReadView const& view, MPTIssue const& issue);
 /**
  * Facilitate tracking of MPT sold by an issuer owning MPT sell offer.
  * See ApplyView::issuerSelfDebitHookMPT().
+ *
+ * `amount` may be 0. BookStep removes an offer whose fee-adjusted funded
+ * output is 0, but other clips (for example MaximumAmount via limitStepIn)
+ * can still consume a zero slice of a funded remainder. The hook must
+ * accept 0: first call still snapshots origBalance; a zero debit adds
+ * nothing to selfDebit.
  */
 void
 issuerSelfDebitHookMPT(ApplyView& view, MPTIssue const& issue, std::uint64_t amount);
