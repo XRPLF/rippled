@@ -418,6 +418,18 @@ protected:
         }
     };
 
+    // Create an issuance that can hold confidential balances, with the listed
+    // holders funded and authorized, and a key pair generated for the issuer,
+    // every holder, and every extra key owner. The keys are
+    // generated but not registered.
+    static void
+    setupConfidentialIssuance(
+        test::jtx::MPTTester& mpt,
+        test::jtx::Account const& issuer,
+        std::vector<test::jtx::Account> const& holders,
+        std::vector<test::jtx::Account> const& keyOwners = {},
+        std::uint32_t flags = tfMPTCanTransfer | tfMPTCanHoldConfidentialBalance);
+
     // Set up an MPT environment suitable for batch testing.
     // alice is issuer; bob has 'bobAmt' in confidential spending; carol has
     // 'carolAmt' in confidential spending; dave is initialised with pubkey but
