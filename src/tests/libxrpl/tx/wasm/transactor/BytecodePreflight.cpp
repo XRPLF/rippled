@@ -74,6 +74,22 @@ TEST_F(BytecodePreflight, AZeroSizeLimitDisablesUploadsRatherThanRejectingThem)
         temTEMP_DISABLED);
 }
 
+// Deliberately not valid wasm: with uploads switched off the module must never be compiled,
+// so the answer is `temTEMP_DISABLED` rather than `temINVALID_BYTECODE`. An operator who has
+// disabled uploads should not be paying to validate what arrives.
+TEST_F(BytecodePreflight, AZeroSizeLimitAnswersBeforeTheModuleIsCompiled)
+{
+    auto fees = TestServiceRegistry::defaultFees();
+    fees.bytecodeSizeLimit = 0;
+    auto env = TxTest{std::nullopt, fees};
+    createAccounts(env, XRP(5'000), alice, carol);
+
+    Bytes const notWasm{0xAA, 0xBB};
+    EXPECT_EQ(
+        env.submit(escrowCreate(env, notWasm), alice, escrowCreateFee(env, notWasm)).ter,
+        temTEMP_DISABLED);
+}
+
 TEST_F(BytecodePreflight, AZeroGasLimitDisablesUploads)
 {
     auto fees = TestServiceRegistry::defaultFees();

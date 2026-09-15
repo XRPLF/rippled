@@ -104,11 +104,28 @@ TEST(BytecodeSize, RaisingTheLimitAdmitsALargerModule)
     EXPECT_EQ(createEscrowWith(env, alice, wasm), tesSUCCESS);
 }
 
+// The voted limit can be set past the protocol ceiling here, which voting would not allow.
+// `preflight` bounds every module by the ceiling before any voted value is consulted, so the
+// module is still refused — the ceiling is a real bound, not just a cap on what can be voted.
+TEST(BytecodeSize, AModulePastTheProtocolCeilingIsRefusedEvenWithTheLimitRaised)
+{
+    auto fees = TestServiceRegistry::defaultFees();
+    fees.bytecodeSizeLimit = kMaxBytecodeSizeLimit * 2;
+    auto env = TxTest{std::nullopt, fees};
+    auto const alice = fundedAccount(env);
+
+    auto const wasm = codeHeavyModule(kMaxBytecodeSizeLimit + 10'000);
+    ASSERT_GT(wasm.size(), kMaxBytecodeSizeLimit);
+    ASSERT_LT(wasm.size(), env.getOpenLedger().fees().bytecodeSizeLimit);
+
+    EXPECT_EQ(createEscrowWith(env, alice, wasm), temMALFORMED);
+}
+
 // No per-function limit sits below the module limit: one function may occupy the entire
 // module. `wasmparser` defines `MAX_WASM_FUNCTION_SIZE` = 128 KiB, but nothing on this path
 // appears to enforce it — a lone body of a million instructions is accepted.
 //
-// So `bytecodeSizeLimit` is not defence in depth; it is the only bound on how much there is
+// So `bytecodeSizeLimit` is not defense in depth; it is the only bound on how much there is
 // to compile, and raising it raises the worst case with nothing behind it. A failure here
 // means a second limit has appeared, and that reasoning needs revisiting.
 TEST(BytecodeSize, ASingleFunctionBodyIsNotSeparatelyCapped)
