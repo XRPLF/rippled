@@ -343,7 +343,7 @@ mod tests {
     use crate::vm::TRANSFER_LIMIT_BYTES;
     use std::cell::Cell;
     use wasmi::StoreLimitsBuilder;
-    use xrpl_host_functions::TraceDataType;
+    use xrpl_host_functions::{FloatOrdering, TraceDataType};
 
     /// `charge_transfer` takes the store data, which has to hold a host.
     struct UncalledHost;
@@ -632,7 +632,7 @@ mod tests {
         ) -> HostResult<usize> {
             unreachable!("no unit test in this module calls the host")
         }
-        fn float_compare(&self, _x: &[u8], _y: &[u8]) -> HostResult<i32> {
+        fn float_compare(&self, _x: &[u8], _y: &[u8]) -> HostResult<FloatOrdering> {
             unreachable!("no unit test in this module calls the host")
         }
         fn float_add(
