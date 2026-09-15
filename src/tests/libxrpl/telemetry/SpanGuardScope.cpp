@@ -15,6 +15,10 @@
 //  - DeterministicIdGenerator (installed by the test TracerProvider) mints a
 //    caller-pinned trace_id for a forced-root span. PendingTraceId pins the id
 //    for one root span; an ambient child under a live parent never adopts it.
+//  - addEvent records the event name and every attribute onto the exported
+//    span. The attribute overload copies each pair into an OTel
+//    key-value-iterable, so the values are read back off the exported SpanData
+//    rather than trusted.
 //
 // The whole file is telemetry-only: when XRPL_ENABLE_TELEMETRY is not defined
 // SpanGuard is a no-op stub and the OpenTelemetry SDK headers are unavailable,
@@ -23,9 +27,11 @@
 #ifdef XRPL_ENABLE_TELEMETRY
 
 #include <xrpl/basics/LocalValue.h>
+#include <xrpl/consensus/ConsensusSpanNames.h>
 #include <xrpl/telemetry/CoroAwareContextStorage.h>
 #include <xrpl/telemetry/DeterministicIdGenerator.h>
 #include <xrpl/telemetry/SpanGuard.h>
+#include <xrpl/telemetry/SpanNames.h>
 #include <xrpl/telemetry/Telemetry.h>
 
 #include <gtest/gtest.h>
@@ -34,6 +40,7 @@
 #include <opentelemetry/exporters/memory/in_memory_span_data.h>
 #include <opentelemetry/exporters/memory/in_memory_span_exporter_factory.h>
 #include <opentelemetry/nostd/shared_ptr.h>
+#include <opentelemetry/nostd/variant.h>
 #include <opentelemetry/sdk/resource/resource.h>
 #include <opentelemetry/sdk/trace/samplers/always_on_factory.h>
 #include <opentelemetry/sdk/trace/simple_processor_factory.h>
@@ -57,6 +64,7 @@
 #include <string>
 #include <string_view>
 #include <thread>
+#include <unordered_map>
 #include <utility>
 #include <vector>
 
@@ -159,6 +167,16 @@ public:
         return true;
     }
 
+    /**
+     * @return A fixed strategy; the scope tests do not exercise trace-id
+     * correlation, so either value works.
+     */
+    [[nodiscard]] ConsensusTraceStrategy
+    getConsensusTraceStrategy() const override
+    {
+        return ConsensusTraceStrategy::Deterministic;
+    }
+
     opentelemetry::nostd::shared_ptr<opentelemetry::trace::Tracer>
     getTracer(std::string_view name) override
     {
@@ -236,6 +254,28 @@ countSpans(
             ++count;
     }
     return count;
+}
+
+/**
+ * Read one string attribute off an exported span event.
+ *
+ * Returns a sentinel instead of asserting so the caller's EXPECT_EQ prints the
+ * key that was wrong.
+ *
+ * @param event  Exported event to read.
+ * @param key    Attribute key to look up.
+ * @return The attribute's string value; "<missing>" when the key is absent,
+ * "<not-a-string>" when it holds another variant alternative.
+ */
+std::string
+eventAttribute(otel_sdk_trace::SpanDataEvent const& event, std::string_view key)
+{
+    auto const& attrs = event.GetAttributes();
+    auto const it = attrs.find(std::string(key));
+    if (it == attrs.end())
+        return "<missing>";
+    auto const* const value = opentelemetry::nostd::get_if<std::string>(&it->second);
+    return value != nullptr ? *value : "<not-a-string>";
 }
 
 /**
@@ -553,6 +593,67 @@ TEST_F(SpanGuardScopeTest, activate_sets_ambient_without_owning)
     auto* txSpan = findSpan(spans, "tx.process");
     ASSERT_NE(txSpan, nullptr);
     EXPECT_EQ(txSpan->GetSpanId(), activeId);
+}
+
+// addEvent(name, attrs) on a LIVE span must reach the exporter with the event
+// name and every attribute value intact. The overload rebuilds each pair into an
+// OTel key-value-iterable, so a dropped or mistyped pair would be invisible
+// without reading the exported event back. Values are asserted individually as
+// well as by count: two attributes with one value blanked still counts as two.
+TEST_F(SpanGuardScopeTest, spanGuard_addEvent_records_name_and_attribute_values)
+{
+    namespace cs = consensus::span;
+
+    static constexpr std::string_view kEventName{cs::event::txIncluded};
+    static constexpr std::string_view kTxIdKey{cs::attr::txId};
+    static constexpr std::string_view kTxId{"6B5F1A2C3D4E5F60718293A4B5C6D7E8"};
+    static constexpr std::string_view kStateKey{cs::attr::consensusState};
+    static constexpr std::string_view kState{cs::val::finished};
+
+    {
+        auto guard = SpanGuard::span(TraceCategory::Consensus, seg::consensus, cs::op::acceptApply);
+        ASSERT_TRUE(static_cast<bool>(guard));
+        guard.addEvent(kEventName, {{kTxIdKey, kTxId}, {kStateKey, kState}});
+    }  // guard ends the span, exporting it.
+
+    auto spans = spanData()->GetSpans();
+    auto* applySpan = findSpan(spans, cs::acceptApply);
+    ASSERT_NE(applySpan, nullptr);
+
+    auto const& events = applySpan->GetEvents();
+    ASSERT_EQ(events.size(), 1u);
+    auto const& event = events.front();
+
+    EXPECT_EQ(event.GetName(), std::string(kEventName));
+    EXPECT_EQ(event.GetAttributes().size(), 2u);
+    EXPECT_EQ(event.GetDroppedAttributesCount(), 0u);
+    EXPECT_EQ(eventAttribute(event, kTxIdKey), std::string(kTxId));
+    EXPECT_EQ(eventAttribute(event, kStateKey), std::string(kState));
+}
+
+// The name-only overload records the event with NO attributes, so a regression
+// that leaked attributes between the two overloads shows up here rather than as
+// an extra key on a production event.
+TEST_F(SpanGuardScopeTest, spanGuard_addEvent_without_attributes_records_bare_event)
+{
+    namespace cs = consensus::span;
+
+    static constexpr std::string_view kEventName{cs::event::phaseAccepted};
+
+    {
+        auto guard = SpanGuard::span(TraceCategory::Consensus, seg::consensus, cs::op::round);
+        ASSERT_TRUE(static_cast<bool>(guard));
+        guard.addEvent(kEventName);
+    }
+
+    auto spans = spanData()->GetSpans();
+    auto* roundSpan = findSpan(spans, cs::round);
+    ASSERT_NE(roundSpan, nullptr);
+
+    auto const& events = roundSpan->GetEvents();
+    ASSERT_EQ(events.size(), 1u);
+    EXPECT_EQ(events.front().GetName(), std::string(kEventName));
+    EXPECT_EQ(events.front().GetAttributes().size(), 0u);
 }
 
 // A forced-root span started while a PendingTraceId is active adopts that
