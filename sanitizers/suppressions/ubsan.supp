@@ -106,6 +106,10 @@ unsigned-integer-overflow:snappy.cc
 # multiplies eight packed digits modulo 2^64; the wraparound is by design.
 unsigned-integer-overflow:fast_float
 
+# OpenTelemetry SDK intentional overflows in hash functions
+unsigned-integer-overflow:opentelemetry/sdk/common/attributemap_hash.h
+unsigned-integer-overflow:opentelemetry
+
 # Abseil intentional overflows in hashing, RNG and time arithmetic.
 # Matched at library scope (like boost above): the wraparound is by design
 # across many absl files (hash mixing, raw_hash_set probing, duration math,

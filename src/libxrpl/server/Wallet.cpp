@@ -3,13 +3,16 @@
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/UnorderedContainers.h>
 #include <xrpl/basics/base_uint.h>
+#include <xrpl/basics/contract.h>
 #include <xrpl/basics/safe_cast.h>
 #include <xrpl/beast/hash/uhash.h>
 #include <xrpl/beast/utility/Journal.h>
+#include <xrpl/config/Constants.h>
 #include <xrpl/core/PeerReservationTable.h>
 #include <xrpl/protocol/KeyType.h>
 #include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/SecretKey.h>
+#include <xrpl/protocol/Seed.h>
 #include <xrpl/protocol/tokens.h>
 #include <xrpl/rdb/DBInit.h>
 #include <xrpl/rdb/DatabaseCon.h>
@@ -32,6 +35,8 @@
 #include <format>
 #include <functional>
 #include <memory>
+#include <optional>
+#include <stdexcept>
 #include <string>
 #include <unordered_set>
 #include <utility>
@@ -141,44 +146,104 @@ addValidatorManifest(soci::session& session, std::string const& serialized)
     tr.commit();
 }
 
+std::optional<Seed>
+parseNodeIdentitySeed(
+    std::optional<std::string> const& cmdlineSeed,
+    std::optional<std::string> const& configSeed)
+{
+    if (cmdlineSeed)
+    {
+        auto seed = parseGenericSeed(*cmdlineSeed, false);
+        if (!seed)
+            Throw<std::runtime_error>("Invalid 'nodeid' in command line");
+        return seed;
+    }
+
+    if (configSeed)
+    {
+        auto seed = parseBase58<Seed>(*configSeed);
+        if (!seed)
+        {
+            Throw<std::runtime_error>(
+                std::string("Invalid [") + Sections::kNodeSeed + "] in configuration file");
+        }
+        return seed;
+    }
+
+    return std::nullopt;
+}
+
+std::pair<PublicKey, SecretKey>
+selectNodeIdentity(
+    std::optional<Seed> const& configuredSeed,
+    bool newNodeId,
+    std::function<std::optional<std::pair<PublicKey, SecretKey>>()> const& readStored)
+{
+    if (configuredSeed)
+    {
+        auto const sk = generateSecretKey(KeyType::Secp256k1, *configuredSeed);
+        return {derivePublicKey(KeyType::Secp256k1, sk), sk};
+    }
+
+    // --newnodeid discards whatever is stored, so mint now.
+    if (!newNodeId)
+    {
+        if (auto stored = readStored())
+            return *stored;
+    }
+
+    return randomKeyPair(KeyType::Secp256k1);
+}
+
 void
 clearNodeIdentity(soci::session& session)
 {
     session << "DELETE FROM NodeIdentity;";
 }
 
-std::pair<PublicKey, SecretKey>
-getNodeIdentity(soci::session& session)
+std::optional<std::pair<PublicKey, SecretKey>>
+readNodeIdentity(soci::session& session)
 {
+    // SOCI requires boost::optional (not std::optional) as the parameter.
+    boost::optional<std::string> pubKO, priKO;
+    soci::statement st =
+        (session.prepare << "SELECT PublicKey, PrivateKey FROM NodeIdentity;",
+         soci::into(pubKO),
+         soci::into(priKO));
+    st.execute();
+    while (st.fetch())
     {
-        // SOCI requires boost::optional (not std::optional) as the parameter.
-        boost::optional<std::string> pubKO, priKO;
-        soci::statement st =
-            (session.prepare << "SELECT PublicKey, PrivateKey FROM NodeIdentity;",
-             soci::into(pubKO),
-             soci::into(priKO));
-        st.execute();
-        while (st.fetch())
-        {
-            auto const sk = parseBase58<SecretKey>(TokenType::NodePrivate, priKO.value_or(""));
-            auto const pk = parseBase58<PublicKey>(TokenType::NodePublic, pubKO.value_or(""));
+        auto const sk = parseBase58<SecretKey>(TokenType::NodePrivate, priKO.value_or(""));
+        auto const pk = parseBase58<PublicKey>(TokenType::NodePublic, pubKO.value_or(""));
 
-            // Only use if the public and secret keys are a pair
-            if (sk && pk && (*pk == derivePublicKey(KeyType::Secp256k1, *sk)))
-                return {*pk, *sk};
-        }
+        // Only use if the public and secret keys are a pair
+        if (sk && pk && (*pk == derivePublicKey(KeyType::Secp256k1, *sk)))
+            return std::pair{*pk, *sk};
     }
 
-    // If a valid identity wasn't found, we randomly generate a new one:
-    auto [newpublicKey, newsecretKey] = randomKeyPair(KeyType::Secp256k1);
+    return std::nullopt;
+}
 
+void
+storeNodeIdentity(soci::session& session, std::pair<PublicKey, SecretKey> const& keys)
+{
     session << std::format(
         "INSERT INTO NodeIdentity (PublicKey,PrivateKey) "
         "VALUES ('{}','{}');",
-        toBase58(TokenType::NodePublic, newpublicKey),
-        toBase58(TokenType::NodePrivate, newsecretKey));
+        toBase58(TokenType::NodePublic, keys.first),
+        toBase58(TokenType::NodePrivate, keys.second));
+}
 
-    return {newpublicKey, newsecretKey};
+std::pair<PublicKey, SecretKey>
+getNodeIdentity(soci::session& session)
+{
+    if (auto const stored = readNodeIdentity(session))
+        return *stored;
+
+    // If a valid identity wasn't found, we randomly generate a new one:
+    auto const keys = randomKeyPair(KeyType::Secp256k1);
+    storeNodeIdentity(session, keys);
+    return keys;
 }
 
 std::unordered_set<PeerReservation, beast::Uhash<>, KeyEqual>
