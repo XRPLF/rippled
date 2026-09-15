@@ -218,11 +218,15 @@ DatabaseRotatingImp::fetchNodeObject(
             // While a rotation is in flight, ordinary (duplicate == false)
             // reads served by the archive are copied forward too: the
             // archive is about to be deleted, and a body canonicalized
-            // into the cache after the freshen getKeys() snapshot would
-            // otherwise survive only in RAM once the archive is dropped.
+            // into the cache after the freshen copied that partition's keys
+            // would otherwise survive only in RAM once the archive is dropped.
             if (duplicate || rotationInFlight_.load(std::memory_order_acquire))
             {
-                if (!duplicate)
+                if (duplicate)
+                {
+                    duplicateCopyForwardTotal_.fetch_add(1, std::memory_order_relaxed);
+                }
+                else
                 {
                     // Two counters, one event: the per-rotation tally that
                     // rotate() resets for its log line, and the monotonic total

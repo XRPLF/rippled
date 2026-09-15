@@ -5180,7 +5180,7 @@
         "type": "prometheus",
         "uid": "${DS_PROMETHEUS}"
       },
-      "description": "###### What this is:\n*p95 wall-clock seconds spent in each online-delete rotation phase, broken down by `stage`. Recorded from `SHAMapStoreImp::RotationPhase`'s destructor at the end of every rotation phase.*\n\n###### What to look for:\n* `freshen.keys` p95 in seconds means the tree-node cache mutex was held across a `getKeys()` copy for that long \u2014 every SHAMap fetch during that window waited.\n* `copy` p95 approaching the rotation cadence means the state-map walk is no longer converging inside its own interval.\n\n###### Source:\n`SHAMapStoreImp.cpp` \u2014 `SHAMapStoreImp::run` and `RotationPhase`\n\n###### Keywords:\nRotation phase duration, online-delete, freshen.keys, rotation stall",
+      "description": "###### What this is:\n*p95 wall-clock seconds spent in each online-delete rotation phase, broken down by `stage`. Recorded from `SHAMapStoreImp::RotationPhase`'s destructor at the end of every rotation phase.*\n\n###### What to look for:\n* `freshen.fetch` p95 in minutes means the per-key re-fetch loop is reading the whole tree-node cache back from disk; the cache mutex is released between partitions, so this is read load, not a freeze. The freeze itself shows on _Cache Lock Hold Peak_.\n* `copy` p95 approaching the rotation cadence means the state-map walk is no longer converging inside its own interval.\n\n###### Source:\n`SHAMapStoreImp.cpp` \u2014 `SHAMapStoreImp::run` and `RotationPhase`\n\n###### Keywords:\nRotation phase duration, online-delete, freshen.fetch, rotation stall",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -5280,7 +5280,7 @@
         "type": "prometheus",
         "uid": "${DS_PROMETHEUS}"
       },
-      "description": "###### What this is:\n*Longest single hold of a `TaggedCache::mutex_` since the previous collection tick, in microseconds. One series each for the tree-node cache and the FullBelow cache, observed on the `cache_metrics` gauge.*\n\n###### What to look for:\n* A multi-second peak in `treenode_lock_hold_peak_us` is the mutex hold that froze every SHAMap fetch job.\n* Correlate with the `nodestore.rotate.freshen.keys` span and the `rotating` log line \u2014 a rotation is the usual cause.\n\n###### Source:\n`TaggedCache.ipp` \u2014 `noteLockHold`, `takeLockHoldPeak`; observed by `MetricsRegistry::observeCacheLockHoldPeaks`\n\n###### Keywords:\nTaggedCache lock hold, TreeNodeCache, FullBelowCache, rotation stall",
+      "description": "###### What this is:\n*Longest single hold of a `TaggedCache::mutex_` since the previous collection tick, in microseconds. One series each for the tree-node cache and the FullBelow cache, observed on the `cache_metrics` gauge.*\n\n###### What to look for:\n* A multi-second peak in `treenode_lock_hold_peak_us` is the mutex hold that froze every SHAMap fetch job.\n* Correlate with the `nodestore.rotate.freshen.fetch` span and the `rotating` log line \u2014 a rotation is the usual cause. The freshen copies keys one cache partition at a time, so a peak above one second here means a partition grew past what one hold can copy in time.\n\n###### Source:\n`TaggedCache.ipp` \u2014 `noteLockHold`, `takeLockHoldPeak`; observed by `MetricsRegistry::observeCacheLockHoldPeaks`\n\n###### Keywords:\nTaggedCache lock hold, TreeNodeCache, FullBelowCache, rotation stall",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -5373,6 +5373,108 @@
         }
       ],
       "title": "Cache Lock Hold Peak (\u00b5s)",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "description": "###### What this is:\n*Keys touched by each online-delete rotation's freshen step, split by `cache` (tree-node or master-tx) and `outcome`. `fetched` is how many keys the freshen read; `copied` is how many of those were found only in the archive that is about to be deleted, and so had to be written to the writable backend. The counter is incremented twice per cache per rotation, so each bar is one rotation's total for that cache and outcome.*\n\n###### What to look for:\n* `copied` sitting far below `fetched` means the freshen is rescuing almost nothing \u2014 it reads a huge number of keys and keeps only a few.\n* `fetched` in the tens of millions per rotation is today's expected read load \u2014 the cost the freshen pays on every rotation.\n\n###### Source:\n`SHAMapStoreImp.cpp` \u2014 `SHAMapStoreImp::recordFreshen`\n\n###### Keywords:\nRotation freshen, online-delete, keys copied forward, read amplification",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "Keys per rotation",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "bars",
+            "fillOpacity": 70,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 0,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "showValues": false,
+            "spanNulls": 1800000,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "unit": "short",
+          "decimals": 0
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 10,
+        "w": 12,
+        "x": 0,
+        "y": 449
+      },
+      "id": 76,
+      "options": {
+        "annotations": {
+          "clustering": -1,
+          "multiLane": false
+        },
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "enableFacetedFilter": false,
+          "overflow": "ellipsis",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "maxHeight": 600,
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "pluginVersion": "13.2.0-28926505616",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "round(sum by (service_instance_id, cache, outcome) (increase(rotation_freshen_keys_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}[$__interval])))",
+          "legendFormat": "rotation_freshen_keys_total [{{service_instance_id}}-{{cache}}-{{outcome}}]",
+          "refId": "A",
+          "interval": "1m"
+        }
+      ],
+      "title": "Rotation Freshen Yield (keys per rotation)",
       "type": "timeseries"
     }
   ],
