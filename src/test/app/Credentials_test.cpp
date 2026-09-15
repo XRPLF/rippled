@@ -584,7 +584,7 @@ struct Credentials_test : public beast::unit_test::Suite
                 auto const expectedResult = [&]() -> TER {
                     if (features[fixCleanup3_3_0])
                         return tecPSEUDO_ACCOUNT;
-                    if (features[fixPseudoAccountOwnership])
+                    if (features[featureLendingProtocolV1_2])
                         return tecINVARIANT_FAILED;
                     return tesSUCCESS;
                 }();

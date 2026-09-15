@@ -59,7 +59,7 @@ ValidPseudoAccountOwnership::finalize(
     ReadView const& view,
     beast::Journal const& j)
 {
-    if (!view.rules().enabled(fixPseudoAccountOwnership))
+    if (!view.rules().enabled(featureLendingProtocolV1_2))
         return true;
 
     for (auto const& [owner, indexes] : added_)

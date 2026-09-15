@@ -823,7 +823,7 @@ class InvariantsPseudoAccount_test : public InvariantsBase
         testcase << "no ownership enforcement before the amendment";
         vaultKeylet.reset();
         doInvariantCheck(
-            makeEnv(all_ - fixPseudoAccountOwnership),
+            makeEnv(all_ - featureLendingProtocolV1_2),
             {},
             [&](Account const&, Account const& a2, ApplyContext& ac) {
                 auto const pseudo = vaultPseudo(ac);
