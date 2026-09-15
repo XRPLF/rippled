@@ -1613,7 +1613,7 @@ private:
             .minParams = 1,
         },
 
-        // Event methods -- rejected outright below, so any parameters will do
+        // Event methods - rejected outright below, so any parameters will do
         {
             .name = rpc::method::kPathFind,
             .parse = &RPCParser::parseEvented,
@@ -1662,7 +1662,7 @@ public:
      * Whether the command table is well formed.
      *
      * A name must select exactly one command, and must name a method the server
-     * can dispatch -- otherwise the command line would accept something that
+     * can dispatch - otherwise the command line would accept something that
      * then goes nowhere. The latter is checked by RPCCall_test, which can see
      * the handler table; here we can at least rule out duplicates and gaps.
      *

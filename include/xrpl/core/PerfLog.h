@@ -155,8 +155,9 @@ setupPerfLog(Section const& section, std::filesystem::path const& configDir);
  * @param methodNames The RPC methods to count, one counter per name. Each name
  *        must be a view of a whole, null-terminated string literal rather than
  *        a slice of one, because the counters are reported as JSON keys that
- *        borrow the name and read it as a C string. The names must outlive the
- *        returned object, which holds views of them. Callers pass
+ *        borrow the name and read it as a C string. Nothing here can check that,
+ *        so the caller must assert it with isNullTerminated. The names must
+ *        outlive the returned object, which holds views of them. Callers pass
  *        rpc::getHandlerNames(); it is an argument so that this layer needs to
  *        know nothing about the RPC dispatch table.
  */
