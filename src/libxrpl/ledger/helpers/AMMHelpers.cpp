@@ -161,6 +161,11 @@ ammAssetOut(
 {
     auto const f = getFee(tfee);
     Number const t1 = lpTokens / lptAMMBalance;
+    // t1 <= 1 and f <= kTradingFeeThreshold/kAuctionSlotFeeScaleFactor (0.01),
+    // so denom is in [-1, -0.99] and can never be zero.
+    auto const denom = t1 * f - 1;
+    XRPL_ASSERT(denom != beast::kZero, "xrpl::ammAssetOut : denominator is non-zero");
+
     if (!isFeatureEnabled(fixAMMv1_3))
     {
         auto const b = assetBalance * (t1 * t1 - t1 * (2 - f)) / (t1 * f - 1);
