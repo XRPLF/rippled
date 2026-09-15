@@ -210,21 +210,11 @@ ConfidentialMPTClawback::doApply()
         (*sleHolderMPToken)[sfAuditorEncryptedBalance] = std::move(*encZeroForAuditor);
     }
 
-    // Both mirrors were just replaced with encryptions of zero under the
-    // currently registered keys, so record the epochs they now belong to. The
-    // auditor mirror is the one that matters here: clawback rewrites it without
-    // requiring it to be current, so its epoch can genuinely move forward.
+    // Allow clawback on stale mirrors since the issuer can still generate the
+    // proof using the corresponding stale private key. The mirrors are updated
+    // to the current epoch during execution.
     if (view().rules().enabled(featureConfidentialMPTKeyRotation))
-    {
-        if (auto const epoch = (*sleIssuance)[~sfIssuerKeyEpoch].value_or(0); epoch != 0)
-            (*sleHolderMPToken)[sfIssuerKeyMirrorEpoch] = epoch;
-
-        if (sleHolderMPToken->isFieldPresent(sfAuditorEncryptedBalance))
-        {
-            if (auto const epoch = (*sleIssuance)[~sfAuditorKeyEpoch].value_or(0); epoch != 0)
-                (*sleHolderMPToken)[sfAuditorKeyMirrorEpoch] = epoch;
-        }
-    }
+        setMirrorEpochs(*sleIssuance, *sleHolderMPToken);
 
     // Decrease Global Confidential Outstanding Amount
     auto const oldCOA = (*sleIssuance)[sfConfidentialOutstandingAmount];

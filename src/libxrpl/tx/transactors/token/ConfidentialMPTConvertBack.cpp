@@ -199,9 +199,7 @@ ConfidentialMPTConvertBack::preclaim(PreclaimContext const& ctx)
     }
 
     // Converting back homomorphically subtracts from the holder's mirrors, so
-    // those mirrors must be encrypted under the currently registered keys. This
-    // also covers the auditor mirror a late-registered auditor key leaves
-    // missing, which the sanity check below would otherwise treat as impossible.
+    // those mirrors must be current.
     if (ctx.view.rules().enabled(featureConfidentialMPTKeyRotation) &&
         !areMirrorsCurrent(*sleIssuance, *sleMptoken))
     {

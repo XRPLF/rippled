@@ -14,21 +14,21 @@ let
   plainGccStdenv = pkgs."gcc${toString gccVersion}Stdenv";
   plainClangStdenv = llvmPackages.stdenv;
 
-  # Custom-glibc stdenvs, matching the CI environment (see compilers.nix). The
-  # pinned glibc snapshot only builds on Linux, so on darwin these fall back to
-  # the plain stdenvs; the `if isLinux` guard keeps `customGlibc` from being
-  # forced (and erroring) on macOS.
-  customCompilers = import ./compilers.nix { inherit pkgs customGlibc; };
-  customGccStdenv = if pkgs.stdenv.isLinux then customCompilers.customStdenv else plainGccStdenv;
-  customClangStdenv =
-    if pkgs.stdenv.isLinux then customCompilers.customClangStdenv else plainClangStdenv;
+  # Each forces something absent on the other platform, so both stay lazy.
+  linux = import ./linux.nix { inherit pkgs customGlibc; };
+  darwin = import ./darwin.nix { inherit pkgs; };
+
+  # Custom-glibc stdenvs, matching the CI environment. darwin has no custom
+  # glibc, so there they fall back to the plain nixpkgs stdenvs.
+  customGccStdenv = if pkgs.stdenv.isLinux then linux.gccStdenv else plainGccStdenv;
+  customClangStdenv = if pkgs.stdenv.isLinux then linux.clangStdenv else plainClangStdenv;
 
   # gcov matching each gcc shell, so `-Dcoverage=ON` builds work in the shell.
   plainGcov = mkGcov {
     name = "plain";
     cc = gccPackage.cc;
   };
-  customGccGcov = if pkgs.stdenv.isLinux then customCompilers.customGcov else plainGcov;
+  customGccGcov = if pkgs.stdenv.isLinux then linux.gcov else plainGcov;
 
   # Whole directory: init.sh locates the profiles relative to itself.
   conanDir = ../conan;
@@ -48,6 +48,16 @@ let
     fi
     unset _xrpl_conan_stamp
   '';
+
+  # Not sdkEnv: a shell's stdenv already sets that up. Prepended so the stub
+  # beats the nixpkgs libresolv this shell's tooling drags in.
+  darwinLibresolvHook = pkgs.lib.optionalString pkgs.stdenv.isDarwin (
+    pkgs.lib.concatLines (
+      pkgs.lib.mapAttrsToList (
+        name: value: ''export ${name}="${value} ''${${name}:-}"''
+      ) darwin.libresolvEnv
+    )
+  );
 
   # Shown when entering a *-plain shell. These exist only on Linux (see below),
   # where the stock toolchain diverges from CI.
@@ -106,6 +116,7 @@ let
         shellHook = ''
           echo "Welcome to xrpld development shell";
           ${compilerVersionHook}
+          ${darwinLibresolvHook}
           ${conanHook}
           ${warningHook}
         '';

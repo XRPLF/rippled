@@ -21,7 +21,7 @@ class XChainModifyBridgeBuilder;
  * Type: ttXCHAIN_MODIFY_BRIDGE (47)
  * Delegable: Delegation::Delegable
  * Amendment: featureXChainBridge
- * Privileges: NoPriv
+ * Privileges: Privilege::NoPriv
  *
  * Immutable wrapper around STTx providing type-safe field access.
  * Use XChainModifyBridgeBuilder to construct new transactions.

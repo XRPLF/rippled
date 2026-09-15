@@ -484,31 +484,36 @@ private:
 
     // returns the first item at or below this node
     SHAMapLeafNode*
-    firstBelow(SHAMapTreeNodePtr node, SharedPtrNodeStack& stack, int branch = 0) const;
+    firstBelow(SHAMapTreeNodePtr node, SharedPtrNodeStack& stack, unsigned int branch = 0u) const;
 
     // returns the last item at or below this node
     SHAMapLeafNode*
-    lastBelow(SHAMapTreeNodePtr node, SharedPtrNodeStack& stack, int branch = kBranchFactor) const;
+    lastBelow(
+        SHAMapTreeNodePtr node,
+        SharedPtrNodeStack& stack,
+        unsigned int branch = kBranchFactor) const;
+
+    // direction in which belowHelper scans an inner node's branches
+    enum class BelowDirection { First, Last };
 
     // helper function for firstBelow and lastBelow
     SHAMapLeafNode*
     belowHelper(
         SHAMapTreeNodePtr node,
         SharedPtrNodeStack& stack,
-        int branch,
-        std::tuple<int, std::function<bool(int)>, std::function<void(int&)>> const& loopParams)
-        const;
+        unsigned int branch,
+        BelowDirection direction) const;
 
     // Simple descent
     // Get a child of the specified node
     SHAMapTreeNode*
-    descend(SHAMapInnerNode*, int branch) const;
+    descend(SHAMapInnerNode*, unsigned int branch) const;
     SHAMapTreeNode*
-    descendThrow(SHAMapInnerNode*, int branch) const;
+    descendThrow(SHAMapInnerNode*, unsigned int branch) const;
     SHAMapTreeNodePtr
-    descend(SHAMapInnerNode&, int branch) const;
+    descend(SHAMapInnerNode&, unsigned int branch) const;
     SHAMapTreeNodePtr
-    descendThrow(SHAMapInnerNode&, int branch) const;
+    descendThrow(SHAMapInnerNode&, unsigned int branch) const;
 
     // Descend with filter
     // If pending, callback is called as if it called fetchNodeNT
@@ -516,7 +521,7 @@ private:
     SHAMapTreeNode*
     descendAsync(
         SHAMapInnerNode* parent,
-        int branch,
+        unsigned int branch,
         SHAMapSyncFilter const* filter,
         bool& pending,
         descendCallback&&) const;
@@ -525,13 +530,13 @@ private:
     descend(
         SHAMapInnerNode* parent,
         SHAMapNodeID const& parentID,
-        int branch,
+        unsigned int branch,
         SHAMapSyncFilter const* filter) const;
 
     // Non-storing
     // Does not hook the returned node to its parent
     SHAMapTreeNodePtr
-    descendNoStore(SHAMapInnerNode&, int branch) const;
+    descendNoStore(SHAMapInnerNode&, unsigned int branch) const;
 
     /**
      * If there is only one leaf below this node, get its contents
@@ -581,8 +586,8 @@ private:
         using StackEntry = std::tuple<
             SHAMapInnerNode*,  // pointer to the node
             SHAMapNodeID,      // the node's ID
-            int,               // while child we check first
-            int,               // which child we check next
+            unsigned int,      // which child we check first
+            unsigned int,      // which child we check next
             bool>;             // whether we've found any missing children yet
 
         // We explicitly choose to specify the use of std::deque here, because
@@ -596,7 +601,7 @@ private:
         using DeferredNode = std::tuple<
             SHAMapInnerNode*,    // parent node
             SHAMapNodeID,        // parent node ID
-            int,                 // branch
+            unsigned int,        // branch
             SHAMapTreeNodePtr>;  // node
 
         int deferred;

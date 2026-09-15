@@ -343,20 +343,9 @@ ConfidentialMPTConvert::doApply()
         if (auditorEc)
             (*sleMptoken)[sfAuditorEncryptedBalance] = *auditorEc;
 
-        // Record which key epoch the new mirrors belong to. An absent mirror
-        // epoch means zero, so leave the field out at that value to match the
-        // convention the issuance epochs follow.
+        // Initialize key epochs when registering the keys.
         if (view().rules().enabled(featureConfidentialMPTKeyRotation))
-        {
-            if (auto const epoch = (*sleIssuance)[~sfIssuerKeyEpoch].value_or(0); epoch != 0)
-                (*sleMptoken)[sfIssuerKeyMirrorEpoch] = epoch;
-
-            if (auditorEc)
-            {
-                if (auto const epoch = (*sleIssuance)[~sfAuditorKeyEpoch].value_or(0); epoch != 0)
-                    (*sleMptoken)[sfAuditorKeyMirrorEpoch] = epoch;
-            }
-        }
+            setMirrorEpochs(*sleIssuance, *sleMptoken);
 
         // Spending balance starts at zero. Must use canonical zero encryption
         // (deterministic ciphertext) so the ledger state is reproducible.

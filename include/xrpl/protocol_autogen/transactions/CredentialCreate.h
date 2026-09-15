@@ -21,7 +21,7 @@ class CredentialCreateBuilder;
  * Type: ttCREDENTIAL_CREATE (58)
  * Delegable: Delegation::Delegable
  * Amendment: featureCredentials
- * Privileges: NoPriv
+ * Privileges: Privilege::NoPriv
  *
  * Immutable wrapper around STTx providing type-safe field access.
  * Use CredentialCreateBuilder to construct new transactions.

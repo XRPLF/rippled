@@ -25,32 +25,38 @@ esac
 # Packaging runs in a vanilla distro image, so the tooling comes from the distro's
 # archive rather than from nixpkgs:
 #
-#   - debhelper and dpkg-dev build the DEB
+#   - debhelper and dpkg-dev build the DEB, and lintian checks it
+#   - binutils gives debian/rules the readelf its glibc-floor check runs; it
+#     already arrives via dpkg-dev, but that tool is called directly
 #   - rpm-build builds the RPM, with systemd-rpm-macros and redhat-rpm-config
 #     supplying the systemd and find-debuginfo macros the spec uses
-#   - git gives build_pkg.sh a real history to read SOURCE_DATE_EPOCH from;
-#     without one the timestamp falls back to the wall clock
-#   - curl uploads the finished packages in publish_pkg.sh
-#   - ca-certificates lets curl and git verify TLS
+#   - rpm-sign and gnupg2 sign the built RPM
+#   - python3 runs the packaging scripts
+#   - git gives build_pkg.py the commit timestamp it stamps files with
+#   - ca-certificates lets git and the packaging scripts verify TLS
 function install() {
     case "${ID}" in
         debian | ubuntu)
             apt-get update -y
             apt-get install -y --no-install-recommends \
+                binutils \
                 ca-certificates \
-                curl \
                 debhelper \
                 debhelper-compat \
                 dpkg-dev \
-                git
+                git \
+                lintian \
+                python3
             ;;
 
         rhel | centos | rocky | almalinux)
             dnf install -y --setopt=install_weak_deps=False \
-                curl-minimal \
                 git \
-                rpm-build \
+                gnupg2 \
+                python3 \
                 redhat-rpm-config \
+                rpm-build \
+                rpm-sign \
                 systemd-rpm-macros
             ;;
     esac
