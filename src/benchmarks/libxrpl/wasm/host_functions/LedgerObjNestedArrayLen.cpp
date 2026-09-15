@@ -4,6 +4,7 @@
 #include <benchmark/benchmark.h>
 #include <benchmarks/libxrpl/wasm/BenchFixtures.h>
 #include <benchmarks/libxrpl/wasm/WasmBench.h>
+#include <tx/wasm/fixtures/OwnedLocator.h>
 
 #include <string_view>
 
@@ -20,7 +21,7 @@ ledgerObjNestedArrayLenImpl(benchmark::State& state)
         kWasmName,
         [] { return Fixtures::instance().cachedSignerListHost(); },
         [](auto& host) {
-            return host.getLedgerObjNestedArrayLen(1, FieldLocator{{sfSignerEntries.getCode()}});
+            return host.getLedgerObjNestedArrayLen(1, locator({sfSignerEntries.getCode()}));
         });
 }
 BENCHMARK(ledgerObjNestedArrayLenImpl)->UseManualTime()->Iterations(kBenchIterations);

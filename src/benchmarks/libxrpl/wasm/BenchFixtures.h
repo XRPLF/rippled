@@ -6,6 +6,7 @@
 #include <xrpl/tx/wasm/WasmCommon.h>
 
 #include <helpers/Account.h>
+#include <tx/wasm/fixtures/OwnedLocator.h>
 #include <tx/wasm/fixtures/WasmLedger.h>
 
 #include <cstdint>
@@ -69,7 +70,7 @@ public:
 
     // `sfMemos[0].sfMemoData` — a two-step locator path, the shape the nested getters are priced
     // for.
-    [[nodiscard]] static FieldLocator
+    [[nodiscard]] static OwnedLocator
     memoLocator();
 
     // Canonical float operands. Zeroed bytes decode as a non-canonical float and would be

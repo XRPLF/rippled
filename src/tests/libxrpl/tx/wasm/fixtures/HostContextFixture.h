@@ -87,11 +87,11 @@ struct HostContextTest : testing::Test
 // NOLINTNEXTLINE(readability-identifier-naming)
 MATCHER_P(LocatorEquals, steps, "")
 {
-    if (arg.size() != static_cast<std::uint32_t>(steps.size()))
+    if (arg.size() != steps.size())
     {
         return false;
     }
-    for (std::uint32_t i = 0; i < arg.size(); ++i)
+    for (std::size_t i = 0; i < arg.size(); ++i)
     {
         if (arg[i] != steps[i])
         {
