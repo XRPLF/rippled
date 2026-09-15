@@ -2,6 +2,7 @@
 #include <test/jtx/Env.h>
 #include <test/jtx/SignerUtils.h>
 #include <test/jtx/TestHelpers.h>
+#include <test/jtx/WSClient.h>
 #include <test/jtx/acctdelete.h>
 #include <test/jtx/amount.h>
 #include <test/jtx/balance.h>  // IWYU pragma: keep
@@ -2973,6 +2974,427 @@ class Batch_test : public beast::unit_test::Suite
     }
 
     void
+    testAccountTxnID(FeatureBitset features)
+    {
+        testcase("account txn id");
+
+        using namespace test::jtx;
+        using namespace std::literals;
+
+        // With fixCleanup3_4_0 the Batch wrapper does not stamp
+        // sfAccountTxnID, so an inner can reference the last pre-batch
+        // transaction. Without the fix the wrapper stamps its own ID, which
+        // no inner can carry: the outer's ID hashes over sfRawTransactions.
+        for (bool const withFix : {true, false})
+        {
+            auto const amend = withFix ? features : features - fixCleanup3_4_0;
+            Env env{*this, amend};
+
+            auto const alice = Account("alice");
+            auto const bob = Account("bob");
+            env.fund(XRP(10000), alice, bob);
+            env.close();
+
+            env(fset(alice, asfAccountTxnID));
+            env.close();
+
+            // Arm the tracking field: fset leaves it zero, and the first
+            // transaction after it stamps the first usable prior-txn ID.
+            env(noop(alice));
+            env.close();
+            uint256 const priorID = env.tx()->getTransactionID();
+
+            auto const preBob = env.balance(bob);
+            auto const seq = env.seq(alice);
+            auto const batchFee = batch::calcBatchFee(env, 0, 2);
+            auto tx1 = batch::Inner(pay(alice, bob, XRP(1)), seq + 1);
+            tx1[sfAccountTxnID.jsonName] = strHex(priorID);
+            auto const [txIDs, batchID] = submitBatch(
+                env,
+                tesSUCCESS,
+                batch::outer(alice, seq, batchFee, tfAllOrNothing),
+                tx1,
+                batch::Inner(pay(alice, bob, XRP(2)), seq + 2));
+            env.close();
+
+            auto const sle = env.le(keylet::account(alice));
+            BEAST_EXPECT(sle && sle->isFieldPresent(sfAccountTxnID));
+            if (withFix)
+            {
+                std::vector<TestLedgerData> const testCases = {
+                    {.index = 0,
+                     .txType = "Batch",
+                     .result = "tesSUCCESS",
+                     .txHash = batchID,
+                     .batchID = std::nullopt},
+                    {.index = 1,
+                     .txType = "Payment",
+                     .result = "tesSUCCESS",
+                     .txHash = txIDs[0],
+                     .batchID = batchID},
+                    {.index = 2,
+                     .txType = "Payment",
+                     .result = "tesSUCCESS",
+                     .txHash = txIDs[1],
+                     .batchID = batchID},
+                };
+                validateClosedLedger(env, testCases);
+
+                BEAST_EXPECT(env.seq(alice) == seq + 3);
+                BEAST_EXPECT(env.balance(bob) == preBob + XRP(3));
+
+                // The chain ends at the last applied inner, not the wrapper.
+                BEAST_EXPECT(strHex(sle->getFieldH256(sfAccountTxnID)) == txIDs[1]);
+
+                // A post-batch transaction chains off the last inner.
+                auto jv = pay(alice, bob, XRP(1));
+                jv[sfAccountTxnID.jsonName] = txIDs[1];
+                env(jv);
+                env.close();
+            }
+            else
+            {
+                // tefWRONG_PRIOR on the inner: the wrapper already stamped
+                // its own ID, and tfAllOrNothing reverts every inner.
+                std::vector<TestLedgerData> const testCases = {
+                    {.index = 0,
+                     .txType = "Batch",
+                     .result = "tesSUCCESS",
+                     .txHash = batchID,
+                     .batchID = std::nullopt},
+                };
+                validateClosedLedger(env, testCases);
+
+                BEAST_EXPECT(env.seq(alice) == seq + 1);
+                BEAST_EXPECT(env.balance(bob) == preBob);
+
+                // The wrapper stamped its own ID.
+                BEAST_EXPECT(strHex(sle->getFieldH256(sfAccountTxnID)) == batchID);
+            }
+        }
+
+        // A wrapper whose inners all belong to another account: with the fix
+        // nothing stamps the outer account's sfAccountTxnID, so it keeps its
+        // pre-batch value; without the fix the wrapper stamps its own ID
+        // even though the outer account authored no inner.
+        for (bool const withFix : {true, false})
+        {
+            auto const amend = withFix ? features : features - fixCleanup3_4_0;
+            Env env{*this, amend};
+
+            auto const alice = Account("alice");
+            auto const bob = Account("bob");
+            env.fund(XRP(10000), alice, bob);
+            env.close();
+
+            env(fset(alice, asfAccountTxnID));
+            env.close();
+
+            env(noop(alice));
+            env.close();
+            uint256 const priorID = env.tx()->getTransactionID();
+
+            auto const preAlice = env.balance(alice);
+            auto const aliceSeq = env.seq(alice);
+            auto const bobSeq = env.seq(bob);
+            auto const batchFee = batch::calcBatchFee(env, 1, 2);
+            auto const [txIDs, batchID] = submitBatch(
+                env,
+                tesSUCCESS,
+                batch::outer(alice, aliceSeq, batchFee, tfAllOrNothing),
+                batch::Inner(pay(bob, alice, XRP(1)), bobSeq),
+                batch::Inner(pay(bob, alice, XRP(2)), bobSeq + 1),
+                batch::Sig(bob));
+            env.close();
+
+            // Bob's inners apply under either amendment state: alice's
+            // prior-txn chain constrains only her own transactions.
+            std::vector<TestLedgerData> const testCases = {
+                {.index = 0,
+                 .txType = "Batch",
+                 .result = "tesSUCCESS",
+                 .txHash = batchID,
+                 .batchID = std::nullopt},
+                {.index = 1,
+                 .txType = "Payment",
+                 .result = "tesSUCCESS",
+                 .txHash = txIDs[0],
+                 .batchID = batchID},
+                {.index = 2,
+                 .txType = "Payment",
+                 .result = "tesSUCCESS",
+                 .txHash = txIDs[1],
+                 .batchID = batchID},
+            };
+            validateClosedLedger(env, testCases);
+
+            BEAST_EXPECT(env.seq(alice) == aliceSeq + 1);
+            BEAST_EXPECT(env.seq(bob) == bobSeq + 2);
+            BEAST_EXPECT(env.balance(alice) == preAlice + XRP(3) - batchFee);
+
+            auto const sle = env.le(keylet::account(alice));
+            BEAST_EXPECT(sle && sle->isFieldPresent(sfAccountTxnID));
+            if (withFix)
+            {
+                // Nothing stamped the field: it keeps its pre-batch value,
+                // and a post-batch transaction chains off the pre-batch
+                // transaction, not the batch.
+                BEAST_EXPECT(sle->getFieldH256(sfAccountTxnID) == priorID);
+
+                auto jv = pay(alice, bob, XRP(1));
+                jv[sfAccountTxnID.jsonName] = strHex(priorID);
+                env(jv);
+                env.close();
+            }
+            else
+            {
+                BEAST_EXPECT(strHex(sle->getFieldH256(sfAccountTxnID)) == batchID);
+            }
+        }
+
+        // A wrapper whose inners all fail still claims its fee and sequence,
+        // but with the fix it does not advance the prior-txn chain: the next
+        // transaction chains off the last pre-batch transaction.
+        for (bool const withFix : {true, false})
+        {
+            auto const amend = withFix ? features : features - fixCleanup3_4_0;
+            Env env{*this, amend};
+
+            auto const alice = Account("alice");
+            auto const bob = Account("bob");
+            env.fund(XRP(10000), alice, bob);
+            env.close();
+
+            env(fset(alice, asfAccountTxnID));
+            env.close();
+
+            env(noop(alice));
+            env.close();
+            uint256 const priorID = env.tx()->getTransactionID();
+
+            auto const preAlice = env.balance(alice);
+            auto const seq = env.seq(alice);
+            auto const batchFee = batch::calcBatchFee(env, 0, 2);
+            auto const [txIDs, batchID] = submitBatch(
+                env,
+                tesSUCCESS,
+                batch::outer(alice, seq, batchFee, tfAllOrNothing),
+                batch::Inner(pay(alice, bob, XRP(1)), seq - 10),
+                batch::Inner(pay(alice, bob, XRP(2)), seq + 2));
+            env.close();
+
+            // The past-sequence inner fails, so tfAllOrNothing reverts both
+            // inners and only the wrapper makes the ledger.
+            std::vector<TestLedgerData> const testCases = {
+                {.index = 0,
+                 .txType = "Batch",
+                 .result = "tesSUCCESS",
+                 .txHash = batchID,
+                 .batchID = std::nullopt},
+            };
+            validateClosedLedger(env, testCases);
+
+            BEAST_EXPECT(env.seq(alice) == seq + 1);
+            BEAST_EXPECT(env.balance(alice) == preAlice - batchFee);
+
+            auto const sle = env.le(keylet::account(alice));
+            BEAST_EXPECT(sle && sle->isFieldPresent(sfAccountTxnID));
+            if (withFix)
+            {
+                BEAST_EXPECT(sle->getFieldH256(sfAccountTxnID) == priorID);
+
+                // A post-batch transaction chains off the pre-batch
+                // transaction.
+                auto jv = pay(alice, bob, XRP(1));
+                jv[sfAccountTxnID.jsonName] = strHex(priorID);
+                env(jv);
+                env.close();
+            }
+            else
+            {
+                BEAST_EXPECT(strHex(sle->getFieldH256(sfAccountTxnID)) == batchID);
+            }
+        }
+
+        // The wrapper's own sfAccountTxnID is still validated in preclaim
+        // under both amendment states; with the fix a matching value admits
+        // the batch without the wrapper then stamping over the field.
+        for (bool const withFix : {true, false})
+        {
+            auto const amend = withFix ? features : features - fixCleanup3_4_0;
+            Env env{*this, amend};
+
+            auto const alice = Account("alice");
+            auto const bob = Account("bob");
+            env.fund(XRP(10000), alice, bob);
+            env.close();
+
+            // fset only creates the (zero) tracking field, so its own ID is
+            // a guaranteed-stale prior-txn value.
+            env(fset(alice, asfAccountTxnID));
+            env.close();
+            uint256 const staleID = env.tx()->getTransactionID();
+
+            env(noop(alice));
+            env.close();
+            uint256 const priorID = env.tx()->getTransactionID();
+
+            // A stale value fails preclaim, fix or no fix.
+            {
+                auto const aliceSeq = env.seq(alice);
+                auto const bobSeq = env.seq(bob);
+                auto const batchFee = batch::calcBatchFee(env, 1, 2);
+                auto outer = batch::outer(alice, aliceSeq, batchFee, tfAllOrNothing);
+                outer[sfAccountTxnID.jsonName] = strHex(staleID);
+                submitBatch(
+                    env,
+                    tefWRONG_PRIOR,
+                    outer,
+                    batch::Inner(pay(bob, alice, XRP(1)), bobSeq),
+                    batch::Inner(pay(bob, alice, XRP(2)), bobSeq + 1),
+                    batch::Sig(bob));
+                env.close();
+
+                BEAST_EXPECT(env.seq(alice) == aliceSeq);
+                BEAST_EXPECT(env.seq(bob) == bobSeq);
+            }
+
+            // The current value passes preclaim.
+            {
+                auto const aliceSeq = env.seq(alice);
+                auto const bobSeq = env.seq(bob);
+                auto const batchFee = batch::calcBatchFee(env, 1, 2);
+                auto outer = batch::outer(alice, aliceSeq, batchFee, tfAllOrNothing);
+                outer[sfAccountTxnID.jsonName] = strHex(priorID);
+                auto const [txIDs, batchID] = submitBatch(
+                    env,
+                    tesSUCCESS,
+                    outer,
+                    batch::Inner(pay(bob, alice, XRP(1)), bobSeq),
+                    batch::Inner(pay(bob, alice, XRP(2)), bobSeq + 1),
+                    batch::Sig(bob));
+                env.close();
+
+                std::vector<TestLedgerData> const testCases = {
+                    {.index = 0,
+                     .txType = "Batch",
+                     .result = "tesSUCCESS",
+                     .txHash = batchID,
+                     .batchID = std::nullopt},
+                    {.index = 1,
+                     .txType = "Payment",
+                     .result = "tesSUCCESS",
+                     .txHash = txIDs[0],
+                     .batchID = batchID},
+                    {.index = 2,
+                     .txType = "Payment",
+                     .result = "tesSUCCESS",
+                     .txHash = txIDs[1],
+                     .batchID = batchID},
+                };
+                validateClosedLedger(env, testCases);
+
+                BEAST_EXPECT(env.seq(alice) == aliceSeq + 1);
+                BEAST_EXPECT(env.seq(bob) == bobSeq + 2);
+
+                auto const sle = env.le(keylet::account(alice));
+                BEAST_EXPECT(sle && sle->isFieldPresent(sfAccountTxnID));
+                if (withFix)
+                {
+                    // Validated in preclaim, but not stamped.
+                    BEAST_EXPECT(sle->getFieldH256(sfAccountTxnID) == priorID);
+                }
+                else
+                {
+                    BEAST_EXPECT(strHex(sle->getFieldH256(sfAccountTxnID)) == batchID);
+                }
+            }
+        }
+    }
+
+    void
+    testSubscriptions(FeatureBitset features)
+    {
+        testcase("subscriptions");
+
+        using namespace test::jtx;
+        using namespace std::literals;
+
+        Env env{*this, features};
+        auto const alice = Account("alice");
+        auto const bob = Account("bob");
+        env.fund(XRP(10000), alice, bob);
+        env.close();
+
+        auto wsc = makeWSClient(env.app().config());
+        json::Value stream;
+        stream[jss::streams] = json::ValueType::Array;
+        stream[jss::streams].append("transactions");
+        stream[jss::streams].append("transactions_proposed");
+        BEAST_EXPECT(wsc->invoke("subscribe", stream)[jss::status] == "success");
+
+        auto const seq = env.seq(alice);
+        auto const batchFee = batch::calcBatchFee(env, 0, 2);
+        auto const [txIDs, batchID] = submitBatch(
+            env,
+            tesSUCCESS,
+            batch::outer(alice, seq, batchFee, tfAllOrNothing),
+            batch::Inner(pay(alice, bob, XRP(1)), seq + 1),
+            batch::Inner(pay(alice, bob, XRP(2)), seq + 2));
+        env.close();
+
+        // The hash sits under jss::transaction (API v1), jss::tx_json
+        // (API v2), or at the top level, depending on message shape.
+        auto const txHash = [](json::Value const& msg) -> std::string {
+            if (msg.isMember(jss::hash))
+            {
+                return msg[jss::hash].asString();
+            }
+            for (auto const& field : {jss::transaction, jss::tx_json})
+            {
+                if (msg.isMember(field) && msg[field].isMember(jss::hash))
+                {
+                    return msg[field][jss::hash].asString();
+                }
+            }
+            return {};
+        };
+        auto const isValidated = [](json::Value const& msg) {
+            return msg.isMember(jss::validated) && msg[jss::validated].asBool();
+        };
+
+        std::vector<json::Value> msgs;
+        while (auto msg = wsc->getMsg(2s))
+        {
+            msgs.push_back(*msg);
+        }
+
+        // Proposed stream: the outer Batch only. pubProposedTransaction
+        // drops tfInnerBatchTxn, so an inner must never appear unvalidated.
+        std::size_t proposed = 0;
+        for (auto const& msg : msgs)
+        {
+            if (!isValidated(msg))
+            {
+                ++proposed;
+                BEAST_EXPECT(txHash(msg) == batchID);
+            }
+        }
+        BEAST_EXPECT(proposed == 1);
+
+        // Validated stream: the outer and both inners publish, each with
+        // metadata.
+        for (std::string const& hash : {batchID, txIDs[0], txIDs[1]})
+        {
+            BEAST_EXPECT(std::ranges::any_of(msgs, [&](json::Value const& msg) {
+                return isValidated(msg) && txHash(msg) == hash && msg.isMember(jss::meta);
+            }));
+        }
+
+        BEAST_EXPECT(wsc->invoke("unsubscribe", stream)[jss::status] == "success");
+    }
+
+    void
     testAccountDelete(FeatureBitset features)
     {
         testcase("account delete");
@@ -5914,6 +6336,8 @@ class Batch_test : public beast::unit_test::Suite
         testAccountActivation(features);
         testCheckAllSignatures(features);
         testAccountSet(features);
+        testAccountTxnID(features);
+        testSubscriptions(features);
         testAccountDelete(features);
         testLoan(features);
         testObjectCreateSequence(features);
