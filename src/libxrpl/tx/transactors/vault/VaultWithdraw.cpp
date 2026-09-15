@@ -25,6 +25,7 @@
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/Transactor.h>
+#include <xrpl/tx/helpers/PreflightHelpers.h>
 
 #include <stdexcept>
 
@@ -52,18 +53,18 @@ shouldWaiveWithdrawal(ReadView const& view, AccountID const& account, SLE::const
 NotTEC
 VaultWithdraw::preflight(PreflightContext const& ctx)
 {
-    if (ctx.tx[sfVaultID] == beast::kZero)
+    if (isZeroId(ctx.tx[sfVaultID]))
     {
         JLOG(ctx.j.debug()) << "VaultWithdraw: zero/empty vault ID.";
         return temMALFORMED;
     }
 
-    if (ctx.tx[sfAmount] <= beast::kZero)
+    if (!isPositiveAmount(ctx.tx[sfAmount]))
         return temBAD_AMOUNT;
 
     if (auto const destination = ctx.tx[~sfDestination])
     {
-        if (*destination == beast::kZero)
+        if (isZeroId(*destination))
         {
             return temMALFORMED;
         }
