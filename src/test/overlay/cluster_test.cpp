@@ -99,9 +99,15 @@ public:
         {
             testcase("Membership: isMember agrees with member");
 
-            std::vector<PublicKey> cluster(network.begin(), network.begin() + 16);
+            // Number of network nodes that also belong to the cluster.
+            std::size_t const overlapCount = 16;
 
-            while (cluster.size() != 32)
+            // Total size of the cluster once padded with non-network nodes.
+            std::size_t const clusterSize = 32;
+
+            std::vector<PublicKey> cluster(network.begin(), network.begin() + overlapCount);
+
+            while (cluster.size() != clusterSize)
                 cluster.push_back(randomNode());
 
             auto c = create(cluster);
