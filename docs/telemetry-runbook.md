@@ -4587,9 +4587,9 @@ panel it reads.
       validations arriving too late to close the round).
     - **A single stalled round** — read **p99**, not p50/p95. At the devnet rate
       of ~19 rounds/min one long round is a single sample in several hundred, so
-      p95 stays at the normal close time and can even dip. Measured on
-      `devnet-otel-usw2-01`: an 11.4 s round showed as p99 13400 ms while p95
-      read 3400 ms, indistinguishable from its 2900-3787 ms baseline. The
+      p95 stays at the normal close time and can even dip. Measured on a
+      devnet node: an 11.4 s round showed as p99 13400 ms while p95 read
+      3400 ms, indistinguishable from its ~2900-3800 ms baseline. The
       heatmap shows the same outlier as one faint high-bucket cell.
     - **P95 climbing while P50 stays flat** — a minority of rounds stall. This
       is the early form of what the heatmap later shows as a second band.
