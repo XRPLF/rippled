@@ -356,6 +356,9 @@ public:
     OperatingMode
     getOperatingMode() const override;
 
+    StateAccountingData
+    getStateAccountingData() override;
+
     std::string
     strOperatingMode(OperatingMode const mode, bool const admin) const override;
 
@@ -519,8 +522,19 @@ public:
     void
     consensusViewChange() override;
 
+    void
+    setStall(std::chrono::milliseconds duration) override;
+    bool
+    isStalled() const override;
+    void
+    clearStall() override;
+
     json::Value
     getConsensusInfo() override;
+    std::size_t
+    getPrevProposers() const override;
+    std::chrono::milliseconds
+    getPrevRoundTime() const override;
     json::Value
     getServerInfo(bool human, bool admin, bool counters) override;
     void
@@ -948,6 +962,8 @@ private:
     std::atomic<bool> amendmentWarned_{false};
     std::atomic<bool> unlBlocked_{false};
 
+    std::atomic<std::int64_t> stallDeadlineMs_{0};
+
     ClosureCounter<void, boost::system::error_code const&> waitHandlerCounter_;
     boost::asio::steady_timer heartbeatTimer_;
     boost::asio::steady_timer clusterTimer_;
@@ -1089,6 +1105,16 @@ inline OperatingMode
 NetworkOPsImp::getOperatingMode() const
 {
     return mode_;
+}
+
+NetworkOPs::StateAccountingData
+NetworkOPsImp::getStateAccountingData()
+{
+    auto const data = accounting_.getCounterData();
+    std::array<NetworkOPs::AccountingCounter, 5> out;
+    for (std::size_t i = 0; i < out.size(); ++i)
+        out[i] = {data.counters[i].transitions, data.counters[i].dur};
+    return {out, data.mode, data.start, data.initialSyncUs};
 }
 
 inline std::string
@@ -1290,6 +1316,13 @@ NetworkOPsImp::processHeartbeatTimer()
             CLOG(clog.ss()) << ", changing to " << strOperatingMode(newMode, true);
         }
         CLOG(clog.ss()) << ". ";
+    }
+
+    if (isStalled())
+    {
+        CLOG(clog.ss()) << "node is stalled, skipping consensus timerEntry. ";
+        setHeartbeatTimer();
+        return;
     }
 
     consensus_.timerEntry(registry_.get().getTimeKeeper().closeTime(), clog.ss());
@@ -2382,6 +2415,35 @@ NetworkOPsImp::consensusViewChange()
 }
 
 void
+NetworkOPsImp::setStall(std::chrono::milliseconds duration)
+{
+    auto const deadline = std::chrono::steady_clock::now() + duration;
+    auto const ms =
+        std::chrono::duration_cast<std::chrono::milliseconds>(deadline.time_since_epoch()).count();
+    stallDeadlineMs_.store(ms, std::memory_order_relaxed);
+    JLOG(journal_.warn()) << "Node stalled for " << duration.count() << "ms";
+}
+
+bool
+NetworkOPsImp::isStalled() const
+{
+    auto const deadline = stallDeadlineMs_.load(std::memory_order_relaxed);
+    if (deadline == 0)
+        return false;
+    auto const now = std::chrono::duration_cast<std::chrono::milliseconds>(
+                         std::chrono::steady_clock::now().time_since_epoch())
+                         .count();
+    return now < deadline;
+}
+
+void
+NetworkOPsImp::clearStall()
+{
+    stallDeadlineMs_.store(0, std::memory_order_relaxed);
+    JLOG(journal_.warn()) << "Node stall cleared";
+}
+
+void
 NetworkOPsImp::pubManifest(Manifest const& mo)
 {
     // Hold each locked subscriber alive until after streamLock_ is released:
@@ -2802,6 +2864,18 @@ json::Value
 NetworkOPsImp::getConsensusInfo()
 {
     return consensus_.getJson(true);
+}
+
+std::size_t
+NetworkOPsImp::getPrevProposers() const
+{
+    return consensus_.prevProposers();
+}
+
+std::chrono::milliseconds
+NetworkOPsImp::getPrevRoundTime() const
+{
+    return consensus_.prevRoundTime();
 }
 
 json::Value

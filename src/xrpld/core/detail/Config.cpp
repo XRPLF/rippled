@@ -481,6 +481,9 @@ Config::loadFromString(std::string const& fileContents)
     if (auto s = getIniFileSection(secConfig, Sections::kIpsFixed))
         ipsFixed = *s;
 
+    if (auto s = getIniFileSection(secConfig, Sections::kDatagramMonitor))
+        DATAGRAM_MONITOR = *s;
+
     // if the user has specified ip:port then replace : with a space.
     {
         auto replaceColons = [](std::vector<std::string>& strVec) {
