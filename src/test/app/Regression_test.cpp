@@ -303,12 +303,11 @@ struct Regression_test : public beast::unit_test::Suite
                 return digest.asUInt256();
             }();
 
-            auto const mapCounts = [&](CountedObjects::List const& list) {
-                std::map<std::string, int> result;
-                for (auto const& e : list)
-                {
-                    result[e.first] = e.second;
-                }
+            auto const mapCounts = [] {
+                std::map<std::string, std::uint32_t> result;
+
+                for (auto const& c : gCountedObjects)
+                    result.emplace(c.name(), c.count());
 
                 return result;
             };
@@ -317,11 +316,11 @@ struct Regression_test : public beast::unit_test::Suite
             {
                 auto& cache = env.app().getCachedSLEs();
                 cache.del(*digest, false);  // NOLINT(bugprone-unchecked-optional-access)
-                auto const beforeCounts = mapCounts(CountedObjects::getInstance().getCounts(0));
+                auto const beforeCounts = mapCounts();
 
                 env(check::cash(alice, bobIndex, check::DeliverMin(XRP(100))), Ter(tecNO_ENTRY));
 
-                auto const afterCounts = mapCounts(CountedObjects::getInstance().getCounts(0));
+                auto const afterCounts = mapCounts();
 
                 using namespace std::string_literals;
                 BEAST_EXPECT(

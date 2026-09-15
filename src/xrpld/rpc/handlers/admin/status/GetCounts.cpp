@@ -4,6 +4,7 @@
 #include <xrpld/app/rdb/backend/SQLiteDatabase.h>
 #include <xrpld/rpc/Context.h>
 
+#include <xrpl/basics/CountedObject.h>
 #include <xrpl/basics/UptimeClock.h>
 #include <xrpl/json/json_forwards.h>
 #include <xrpl/json/json_value.h>
@@ -11,9 +12,11 @@
 #include <xrpl/protocol/jss.h>
 #include <xrpl/server/NetworkOPs.h>
 
+#include <algorithm>
 #include <chrono>
 #include <cstddef>
 #include <string>
+#include <utility>
 
 namespace xrpl {
 
@@ -43,16 +46,26 @@ textTime(
 }
 
 json::Value
-getCountsJson(Application& app, int minObjectCount)
+getCountsJson(Application& app, std::uint32_t minObjectCount)
 {
-    auto objectCounts = CountedObjects::getInstance().getCounts(minObjectCount);
+    json::Value ret = json::ValueType::Object;
 
-    json::Value ret(json::ValueType::Object);
+    ret[jss::counters] = [minObjectCount] {
+        json::Value ctrs = json::ValueType::Object;
 
-    for (auto const& [k, v] : objectCounts)
-    {
-        ret[k] = v;
-    }
+        for (auto const& c : gCountedObjects)
+        {
+            if (auto const count = c.count(); count >= minObjectCount)
+            {
+                json::Value obj(json::ValueType::Object);
+                obj[jss::current] = count;
+                obj[jss::maximum] = std::max(count, c.max());
+                ctrs[c.name()] = std::move(obj);
+            }
+        }
+
+        return ctrs;
+    }();
 
     if (app.config().useTxTables())
     {
@@ -113,7 +126,7 @@ getCountsJson(Application& app, int minObjectCount)
 json::Value
 doGetCounts(rpc::JsonContext& context)
 {
-    int minCount = 10;
+    std::uint32_t minCount = 10;
 
     if (context.params.isMember(jss::min_count))
         minCount = context.params[jss::min_count].asUInt();
