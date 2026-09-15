@@ -20,6 +20,7 @@
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/ConfidentialTransfer.h>
+#include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/UintTypes.h>
@@ -451,8 +452,10 @@ class MPTTester
     std::optional<Account> const auditor_;
     std::optional<MPTID> id_;
     bool close_;
-    std::unordered_map<AccountID, Buffer> pubKeys_;
-    std::unordered_map<AccountID, Buffer> privKeys_;
+    // Keys generated for each account. Buffer vector's index is the key epoch: index 0 is
+    // the initial pair and each rotation appends.
+    std::unordered_map<AccountID, std::vector<Buffer>> pubKeys_;
+    std::unordered_map<AccountID, std::vector<Buffer>> privKeys_;
 
 public:
     enum class EncryptedBalanceType {
@@ -619,6 +622,15 @@ public:
         std::optional<std::uint32_t> issuerKeyEpoch,
         std::optional<std::uint32_t> auditorKeyEpoch) const;
 
+    // Checks both mirror epochs on a holder's MPToken. Pass std::nullopt for an
+    // epoch that is expected to be absent, which means the mirror was written
+    // under the issuance's epoch 0 key.
+    [[nodiscard]] bool
+    checkMirrorEpochs(
+        Account const& holder,
+        std::optional<std::uint32_t> issuerKeyMirrorEpoch,
+        std::optional<std::uint32_t> auditorKeyMirrorEpoch) const;
+
     // Checks that the issuance carries the encryption keys of the given
     // accounts. Pass std::nullopt for a key that is expected to be absent,
     // which means the key is never registered.
@@ -678,20 +690,31 @@ public:
 
     operator Asset() const;
 
-    void
+    // Generates the account's next key pair and returns the key epoch it landed
+    // at, leaving the earlier ones retrievable.
+    std::uint32_t
     generateKeyPair(Account const& account);
 
+    // Returns the account's public key at the given key epoch, or its latest key when
+    // no epoch is given.
     [[nodiscard]] std::optional<Buffer>
-    getPubKey(Account const& account) const;
+    getPubKey(Account const& account, std::optional<std::uint32_t> epoch = std::nullopt) const;
 
+    // Returns the account's private key at the given key epoch, or its latest key when
+    // no epoch is given.
     [[nodiscard]] std::optional<Buffer>
-    getPrivKey(Account const& account) const;
+    getPrivKey(Account const& account, std::optional<std::uint32_t> epoch = std::nullopt) const;
 
     [[nodiscard]] Buffer
     encryptAmount(Account const& account, uint64_t const amt, Buffer const& blindingFactor) const;
 
+    // Decrypts with the account's key at the given key epoch, or its latest key
+    // when no epoch is given.
     [[nodiscard]] std::optional<uint64_t>
-    decryptAmount(Account const& account, Buffer const& amt) const;
+    decryptAmount(
+        Account const& account,
+        Buffer const& amt,
+        std::optional<std::uint32_t> epoch = std::nullopt) const;
 
     [[nodiscard]] std::optional<uint64_t>
     getDecryptedBalance(Account const& account, EncryptedBalanceType balanceType) const;
@@ -744,6 +767,10 @@ private:
     forObject(
         std::function<bool(SLEP const& sle)> const& cb,
         std::optional<Account> const& holder = std::nullopt) const;
+
+    // Reads one of the holder's mirror key epochs off their MPToken.
+    [[nodiscard]] std::optional<std::uint32_t>
+    getMirrorEpoch(Account const& holder, SF_UINT32 const& field) const;
 
     template <typename A>
     TER
