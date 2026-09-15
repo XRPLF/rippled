@@ -1030,6 +1030,53 @@ class InvariantsMPT_test : public InvariantsBase
                 });
         }
 
+        // lsfMPTLocked is exempt because tfMPTUnlock clears it legitimately.
+        // Pre-featureLendingProtocolV1_2: clearing another issuance flag is
+        // allowed.
+        // Post-featureLendingProtocolV1_2: clearing another issuance flag
+        // trips the invariant.
+        {
+            MPTID id{};
+            Precheck const clearCanTransfer =
+                [&](Account const&, Account const&, ApplyContext& ac) {
+                    auto sleIssuance = ac.view().peek(keylet::mptokenIssuance(id));
+                    if (!sleIssuance)
+                        return false;
+                    sleIssuance->setFieldU32(
+                        sfFlags, sleIssuance->getFieldU32(sfFlags) & ~lsfMPTCanTransfer);
+                    ac.view().update(sleIssuance);
+                    return true;
+                };
+            Preclose const setup = [&](Account const&, Account const&, Env& env) {
+                Account const issuer{"issuer"};
+                env.fund(XRP(10'000), issuer);
+                env.close();
+                MPTTester mptt{env, issuer, kMptInitNoFund};
+                mptt.create({.flags = tfMPTCanTransfer | tfMPTCanLock});
+                id = mptt.issuanceID();
+                env.close();
+                return true;
+            };
+            STTx const tx{ttACCOUNT_SET, [](STObject&) {}};
+
+            doInvariantCheck(
+                makeEnv(all_ - featureLendingProtocolV1_2),
+                {},
+                clearCanTransfer,
+                XRPAmount{},
+                tx,
+                {tesSUCCESS, tesSUCCESS},
+                setup);
+            doInvariantCheck(
+                makeEnv(all_ | featureLendingProtocolV1_2),
+                {{"immutable MPTokenIssuance flag cleared"}},
+                clearCanTransfer,
+                XRPAmount{},
+                tx,
+                {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
+                setup);
+        }
+
         // A vault pseudo-account's MPToken cannot be deleted by anything
         // other than a VaultDelete transaction. Set up a vault, then have
         // an arbitrary tx erase the pseudo's MPToken in precheck.
@@ -1097,6 +1144,12 @@ class InvariantsMPT_test : public InvariantsBase
                       0u})
                 {
                     MPTID id{};
+                    // Issuance flags cannot be cleared after creation (and
+                    // ValidMPTIssuance now rejects it), so the CanTransfer /
+                    // CanTrade rows create the issuance without the bit
+                    // instead of stripping it in precheck.
+                    std::uint32_t const createFlags =
+                        (flag == 0u || flag == lsfMPTLocked) ? kMptDexFlags : (kMptDexFlags & flag);
                     auto const isSuccess = !gates.any() || flag == 0 ||
                         (tx == ttPAYMENT && !crossCurrencyPayment && (flag == ~lsfMPTCanTrade)) ||
                         (tx == ttAMM_WITHDRAW &&
@@ -1118,14 +1171,9 @@ class InvariantsMPT_test : public InvariantsBase
                             auto issuanceSle = ac.view().peek(keylet::mptokenIssuance(id));
                             if (!issuanceSle)
                                 return false;
-                            auto const flags = issuanceSle->at(sfFlags);
                             if (flag == lsfMPTLocked)
                             {
-                                issuanceSle->at(sfFlags) = flags | lsfMPTLocked;
-                            }
-                            else if (flag != 0u)
-                            {
-                                issuanceSle->at(sfFlags) = flags & flag;
+                                issuanceSle->at(sfFlags) = issuanceSle->at(sfFlags) | lsfMPTLocked;
                             }
                             issuanceSle->at(sfOutstandingAmount) = 200;
                             ac.view().update(issuanceSle);
@@ -1146,7 +1194,11 @@ class InvariantsMPT_test : public InvariantsBase
                             Account const gw("gw");
                             env.fund(XRP(1'000), gw);
                             MPTTester const usd(
-                                {.env = env, .issuer = gw, .holders = {a1, a2}, .pay = 100});
+                                {.env = env,
+                                 .issuer = gw,
+                                 .holders = {a1, a2},
+                                 .pay = 100,
+                                 .flags = createFlags});
                             id = usd.issuanceID();
                             // Either gate enforces, so both must be off to stay
                             // advisory. Disable after setting up the MPT; the
