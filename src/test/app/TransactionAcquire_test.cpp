@@ -264,6 +264,59 @@ struct TransactionAcquire_test : public beast::unit_test::Suite
     }
 
     /**
+     * The late-reply allowance must survive giveSet(), through the real
+     * dispatch rather than by calling takeNodes() directly.
+     *
+     * giveSet() only resets the acquisition when something else supplied
+     * the set (see the fromAcquire guard), so a reply arriving after
+     * completion still reaches getAcquire() and takeNodesLocked()'s
+     * allowance instead of gotData()'s unconditional ta == nullptr charge.
+     * Driven end to end through InboundTransactions::gotData(), including
+     * the async job done() hands off to, since every other late-reply test
+     * in this suite calls takeNodes() directly and so never exercises that
+     * path.
+     *
+     * @param env The environment to run in.
+     */
+    void
+    testLateReplyAllowanceSurvivesGiveSet(jtx::Env& env)
+    {
+        testcase("The late-reply allowance survives giveSet()");
+
+        auto const chain = DeepChain::toLeaf(3, nextSeed());
+        auto& inbound = env.app().getInboundTransactions();
+
+        uint256 const setHash = chain.rootHash.asUInt256();
+        BEAST_EXPECT(inbound.getSet(setHash, true) == nullptr);
+
+        // One peer supplies the whole chain, so it alone earns the one targeted follow-up
+        // request the root reply buys, and so the allowance's one slot.
+        auto const rootPeer = std::make_shared<ChargeRecordingPeer>();
+        inbound.gotData(setHash, rootPeer, packetFor(chain, {{SHAMapNodeID{}, chain.nodeAt(0)}}));
+        BEAST_EXPECT(rootPeer->charges().empty());
+
+        inbound.gotData(setHash, rootPeer, packetFor(chain, chain.nodesBelowRoot()));
+        BEAST_EXPECT(rootPeer->charges().empty());
+
+        // Proves the acquisition completed and handed off through the real done()/giveSet()
+        // path, rather than this case racing takeNodes() directly the way the rest of the
+        // suite does.
+        auto const delivered = waitForDeliveredSet(env, setHash);
+        BEAST_EXPECT(delivered != nullptr);
+
+        // Without keeping the acquisition registered past giveSet(), gotData() would take the
+        // ta == nullptr branch here and charge this outright - the allowance in
+        // takeNodesLocked() would never get a chance to run at all. rootPeer's own late reply
+        // is the one whose slot this is, and is free.
+        inbound.gotData(setHash, rootPeer, packetFor(chain, {{SHAMapNodeID{}, chain.nodeAt(0)}}));
+        BEAST_EXPECT(rootPeer->charges().empty());
+
+        // A second reply from rootPeer has already spent that slot: this one is a replay.
+        inbound.gotData(setHash, rootPeer, packetFor(chain, {{SHAMapNodeID{}, chain.nodeAt(0)}}));
+        BEAST_EXPECT(rootPeer->charges() == std::vector{resource::kFeeUselessData});
+    }
+
+    /**
      * A chain reaching kLeafDepth must end the acquisition outright.
      *
      * @param env The environment to run in.
@@ -1104,6 +1157,7 @@ struct TransactionAcquire_test : public beast::unit_test::Suite
 
         testHappyPathCompletesAcquisition(env);
         testTwoPeersEachSupplyPartOfTheSet(env);
+        testLateReplyAllowanceSurvivesGiveSet(env);
         testFabricatedChainFailsAcquire(env);
         testWrongNodeKeepsAcquireAlive(env);
         testBadRootKeepsAcquireAlive(env);
