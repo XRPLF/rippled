@@ -1744,6 +1744,60 @@ class ConfidentialMPTKeyRotation_test : public ConfidentialTransferTestBase
                 .err = tesSUCCESS,
             });
         }
+
+        // A lock does not block a migration.
+        {
+            Env env{*this, features};
+            Account const alice("alice");
+            Account const bob("bob");
+            Account const carol("carol");
+            Account const newIssuerKey("newIssuerKey");
+            Account const newerIssuerKey("newerIssuerKey");
+
+            ConfidentialEnv ct{env, alice, {{.account = bob}, {.account = carol}}};
+            ct.mpt.set({.account = alice, .holder = bob, .flags = tfMPTLock});
+            ct.mpt.set({.account = alice, .holder = carol, .flags = tfMPTLock});
+
+            // Rotate the issuer key so both holders' mirrors are stale.
+            ct.mpt.generateKeyPair(newIssuerKey);
+            ct.mpt.set({.account = alice, .issuerPubKey = ct.mpt.getPubKey(newIssuerKey)});
+
+            // The issuer migrates an individually locked holder.
+            ct.mpt.mirrorUpdate({
+                .account = alice,
+                .holder = bob,
+                .issuerEncryptedAmount = validCipher,
+                .err = tesSUCCESS,
+            });
+
+            // An individually locked holder migrates itself.
+            ct.mpt.mirrorUpdate({
+                .account = carol,
+                .issuerEncryptedAmount = validCipher,
+                .err = tesSUCCESS,
+            });
+
+            // Release the individual locks and lock the whole issuance instead. Rotate again so
+            // both mirrors are stale once more.
+            ct.mpt.set({.account = alice, .holder = bob, .flags = tfMPTUnlock});
+            ct.mpt.set({.account = alice, .holder = carol, .flags = tfMPTUnlock});
+            ct.mpt.set({.account = alice, .flags = tfMPTLock});
+            ct.mpt.generateKeyPair(newerIssuerKey);
+            ct.mpt.set({.account = alice, .issuerPubKey = ct.mpt.getPubKey(newerIssuerKey)});
+
+            ct.mpt.mirrorUpdate({
+                .account = alice,
+                .holder = bob,
+                .issuerEncryptedAmount = validCipher,
+                .err = tesSUCCESS,
+            });
+
+            ct.mpt.mirrorUpdate({
+                .account = carol,
+                .issuerEncryptedAmount = validCipher,
+                .err = tesSUCCESS,
+            });
+        }
     }
 
     void
