@@ -146,6 +146,33 @@ setProofOrDummy(json::Value& jv, std::optional<Buffer> const& proof, std::size_t
     jv[sfZKProof.jsonName] = strHex(proof ? *proof : gMakeZeroBuffer(dummyLen));
 }
 
+/**
+ * @brief Looks up an account's key at a given key epoch.
+ *
+ * @param keys accounts' history of keys, indexed by key epoch.
+ * @param account The account whose key is being looked up.
+ * @param epoch The key epoch, or std::nullopt for the account's latest key.
+ * @return The key, or std::nullopt if the account has no key at that epoch.
+ */
+[[nodiscard]] std::optional<Buffer>
+keyAtEpoch(
+    std::unordered_map<AccountID, std::vector<Buffer>> const& keys,
+    AccountID const& account,
+    std::optional<std::uint32_t> epoch)
+{
+    auto const it = keys.find(account);
+    if (it == keys.end() || it->second.empty())
+        return std::nullopt;
+
+    if (!epoch)
+        return it->second.back();
+
+    if (*epoch >= it->second.size())
+        return std::nullopt;
+
+    return it->second[*epoch];
+}
+
 }  // namespace
 
 void
@@ -702,6 +729,65 @@ MPTTester::checkImmutableFlags(std::uint32_t expectedFlags) const
     });
 }
 
+[[nodiscard]] bool
+MPTTester::checkKeyEpochs(
+    std::optional<std::uint32_t> issuerKeyEpoch,
+    std::optional<std::uint32_t> auditorKeyEpoch) const
+{
+    return forObject([&](SLEP const& sle) -> bool {
+        return (*sle)[~sfIssuerKeyEpoch] == issuerKeyEpoch &&
+            (*sle)[~sfAuditorKeyEpoch] == auditorKeyEpoch;
+    });
+}
+
+[[nodiscard]] bool
+MPTTester::checkMirrorEpochs(
+    Account const& holder,
+    std::optional<std::uint32_t> issuerKeyMirrorEpoch,
+    std::optional<std::uint32_t> auditorKeyMirrorEpoch) const
+{
+    return forObject(
+        [&](SLEP const& sle) -> bool {
+            return (*sle)[~sfIssuerKeyMirrorEpoch] == issuerKeyMirrorEpoch &&
+                (*sle)[~sfAuditorKeyMirrorEpoch] == auditorKeyMirrorEpoch;
+        },
+        holder);
+}
+
+[[nodiscard]] std::optional<std::uint32_t>
+MPTTester::getMirrorEpoch(Account const& holder, SF_UINT32 const& field) const
+{
+    std::optional<std::uint32_t> epoch;
+    forObject(
+        [&](SLEP const& sle) -> bool {
+            epoch = (*sle)[~field];
+            return true;
+        },
+        holder);
+    return epoch;
+}
+
+[[nodiscard]] bool
+MPTTester::checkEncryptionKeys(
+    std::optional<Account> const& issuerKeyOwner,
+    std::optional<Account> const& auditorKeyOwner) const
+{
+    auto const matches =
+        [this](SLEP const& sle, SF_VL const& field, std::optional<Account> const& owner) {
+            if (!owner)
+                return !sle->isFieldPresent(field);
+
+            auto const expected = getPubKey(*owner);
+            return expected && sle->isFieldPresent(field) &&
+                strHex((*sle)[field]) == strHex(*expected);
+        };
+
+    return forObject([&](SLEP const& sle) -> bool {
+        return matches(sle, sfIssuerEncryptionKey, issuerKeyOwner) &&
+            matches(sle, sfAuditorEncryptionKey, auditorKeyOwner);
+    });
+}
+
 void
 MPTTester::pay(
     Account const& src,
@@ -1154,8 +1240,13 @@ MPTTester::convert(MPTConvert const& arg)
     if (!prevInboxBalance || !prevSpendingBalance || !prevIssuerBalance)
         Throw<std::runtime_error>("Failed to get Pre-convert balance");
 
+    // The auditor mirror is only touched if the transaction carries an auditor
+    // ciphertext, which mirrors the condition convertJV fills it under.
+    bool const hasAuditorAmt =
+        arg.auditorEncryptedAmt || (auditor_ && arg.fillAuditorEncryptedAmt.value_or(false));
+
     std::optional<uint64_t> prevAuditorBalance;
-    if (arg.auditorEncryptedAmt || auditor_)
+    if (hasAuditorAmt)
     {
         prevAuditorBalance = getDecryptedBalance(account, auditorEncryptedBalance);
         if (!prevAuditorBalance)
@@ -1193,7 +1284,7 @@ MPTTester::convert(MPTConvert const& arg)
         if (!postInboxBalance || !postIssuerBalance || !postSpendingBalance)
             Throw<std::runtime_error>("Failed to get post-convert balance");
 
-        if (arg.auditorEncryptedAmt || auditor_)
+        if (hasAuditorAmt)
         {
             auto const postAuditorBalance = getDecryptedBalance(account, auditorEncryptedBalance);
 
@@ -1706,7 +1797,7 @@ MPTTester::confidentialClaw(MPTConfidentialClawback const& arg)
     }
 }
 
-void
+std::uint32_t
 MPTTester::generateKeyPair(Account const& account)
 {
     unsigned char privKey[kEcPrivKeyLength];
@@ -1724,26 +1815,23 @@ MPTTester::generateKeyPair(Account const& account)
         Throw<std::runtime_error>("failed to serialize public key");
     }
 
-    pubKeys_.insert({account.id(), Buffer{compressedPubKey, kEcPubKeyLength}});
-    privKeys_.insert({account.id(), Buffer{privKey, kEcPrivKeyLength}});
+    auto& pubKeyEpochs = pubKeys_[account.id()];
+    pubKeyEpochs.emplace_back(compressedPubKey, kEcPubKeyLength);
+    privKeys_[account.id()].emplace_back(privKey, kEcPrivKeyLength);
+
+    return static_cast<std::uint32_t>(pubKeyEpochs.size() - 1);
 }
 
 std::optional<Buffer>
-MPTTester::getPubKey(Account const& account) const
+MPTTester::getPubKey(Account const& account, std::optional<std::uint32_t> epoch) const
 {
-    if (auto const it = pubKeys_.find(account.id()); it != pubKeys_.end())
-        return it->second;
-
-    return std::nullopt;
+    return keyAtEpoch(pubKeys_, account.id(), epoch);
 }
 
 std::optional<Buffer>
-MPTTester::getPrivKey(Account const& account) const
+MPTTester::getPrivKey(Account const& account, std::optional<std::uint32_t> epoch) const
 {
-    if (auto const it = privKeys_.find(account.id()); it != privKeys_.end())
-        return it->second;
-
-    return std::nullopt;
+    return keyAtEpoch(privKeys_, account.id(), epoch);
 }
 
 Buffer
@@ -1762,7 +1850,10 @@ MPTTester::encryptAmount(Account const& account, uint64_t const amt, Buffer cons
 }
 
 std::optional<uint64_t>
-MPTTester::decryptAmount(Account const& account, Buffer const& amt) const
+MPTTester::decryptAmount(
+    Account const& account,
+    Buffer const& amt,
+    std::optional<std::uint32_t> epoch) const
 {
     if (amt.size() != kEcGamalEncryptedTotalLength)
         return std::nullopt;
@@ -1771,7 +1862,7 @@ MPTTester::decryptAmount(Account const& account, Buffer const& amt) const
     if (!pair)
         return std::nullopt;
 
-    auto const privKey = getPrivKey(account);
+    auto const privKey = getPrivKey(account, epoch);
     if (!privKey || privKey->size() != kEcPrivKeyLength)
         return std::nullopt;
 
@@ -1803,18 +1894,24 @@ MPTTester::getDecryptedBalance(Account const& account, EncryptedBalanceType bala
 
     Account decryptor = account;
 
+    // A mirror stays encrypted under the key it was written with, so a rotation
+    // leaves it readable only by that generation of the key, not the latest one.
+    std::optional<std::uint32_t> epoch;
+
     if (balanceType == issuerEncryptedBalance)
     {
         decryptor = issuer_;
+        epoch = getMirrorEpoch(account, sfIssuerKeyMirrorEpoch).value_or(0);
     }
     else if (balanceType == auditorEncryptedBalance)
     {
         if (!auditor_)
             return std::nullopt;
         decryptor = *auditor_;
+        epoch = getMirrorEpoch(account, sfAuditorKeyMirrorEpoch).value_or(0);
     }
 
-    return decryptAmount(decryptor, *encryptedAmt);
+    return decryptAmount(decryptor, *encryptedAmt, epoch);
 }
 
 json::Value
