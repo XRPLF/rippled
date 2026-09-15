@@ -420,7 +420,7 @@ TxQApplyImpl::checkFrontTx(TxMapCIter const& prevIter, TxMapCIter const& endIter
     // implies txIter is set
 
     // NOLINTBEGIN(bugprone-unchecked-optional-access)
-    XRPL_ASSERT(prevIter != endIter, "xrpl::TxQ::apply : not end");
+    XRPL_ASSERT(prevIter != endIter, "xrpl::TxQApplyImpl::checkFrontTx : not end");
     if (prevIter == endIter || txSeq_ < prevIter->first)
     {
         // The first Sequence number in the queue must be the
@@ -458,7 +458,10 @@ TxQApplyImpl::calcSpendAndFee() const
     XRPAmount totalFee = beast::kZero;
 
     if (!prevTxs_)
-        return {potentialSpend, totalFee};
+    {
+        UNREACHABLE("xrpl::TxQApplyImpl::calcSpendAndFee !prevTxs_");  // LCOV_EXCL_LINE
+        return {potentialSpend, totalFee};                             // LCOV_EXCL_LINE
+    }
 
     for (auto iter = prevTxs_->first, end = prevTxs_->second; iter != end; ++iter)
     {
@@ -516,7 +519,10 @@ TxQApplyImpl::processAccountTxs()
     // Find the entry in the queue that precedes the new
     // transaction, if one does.
     if (!prevTxs_)
-        return {};  // LCOV_EXCL_LINE
+    {
+        UNREACHABLE("xrpl::TxQApplyImpl::processAccountTxs !prevTxs_");  // LCOV_EXCL_LINE
+        return {};                                                       // LCOV_EXCL_LINE
+    }
     TxQ::TxQAccount const& txQAcct = byAccountIter_->second;
     if (auto const err = checkFrontTx(txQAcct.getPrevTx(txSeq_), prevTxs_->second); err.has_value())
         return err;
@@ -598,7 +604,7 @@ TxQApplyImpl::processAccountTxs()
     XRPL_ASSERT(
         potentialTotalSpend > XRPAmount{0} ||
             (potentialTotalSpend == XRPAmount{0} && multiTxn_->applyView.fees().base == 0),
-        "xrpl::TxQ::apply : total spend check");
+        "xrpl::TxQApplyImpl::processAccountTxs : total spend check");
     sleBump->setFieldAmount(sfBalance, balance - potentialTotalSpend);
     // The transaction's sequence/ticket will be valid when the other
     // transactions in the queue have been processed. If the tx has a
@@ -746,7 +752,7 @@ TxQApplyImpl::processQueueIsFull()
             auto dropRIter = endAccount.transactions.rbegin();
             XRPL_ASSERT(
                 dropRIter->second.account == lastRIter->account,
-                "xrpl::TxQ::apply : cheapest transaction found");
+                "xrpl::TxQApplyImpl::processQueueIsFull : cheapest transaction found");
             JLOG(j_.info()) << "Removing last item of account " << lastRIter->account
                             << " from queue with average fee of " << endEffectiveFeeLevel
                             << " in favor of " << txID_ << " with fee of " << feeLevelPaid_;
@@ -771,7 +777,7 @@ TxQApplyImpl::addTxToQueue()
     {
         // Create a new TxQAccount object and add the byAccount lookup.
         std::tie(byAccountIter_, created) = txq_.byAccount_.emplace(accID_, TxQ::TxQAccount(tx_));
-        XRPL_ASSERT(created, "xrpl::TxQ::apply : account created");
+        XRPL_ASSERT(created, "xrpl::TxQApplyImpl::addTxToQueue : account created");
     }
     // Modify the flags for use when coming out of the queue.
     // These changes _may_ cause an extra `preflight`, but as long as
@@ -1567,7 +1573,7 @@ TxQApplyImpl::applyImpl()
         return {pcresult.ter, false};
 
     // Too low of a fee should get caught by preclaim
-    XRPL_ASSERT(feeLevelPaid_ >= TxQ::kBaseLevel, "xrpl::TxQ::apply : minimum fee");
+    XRPL_ASSERT(feeLevelPaid_ >= TxQ::kBaseLevel, "xrpl::TxQApplyImpl::applyImpl : minimum fee");
 
     JLOG(j_.trace()) << "Transaction " << txID_ << " from account " << accID_
                      << " has fee level of " << feeLevelPaid_ << " needs at least "
