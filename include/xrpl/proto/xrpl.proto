@@ -94,8 +94,16 @@ message TMPublicKey {
 // Older peers that do not understand field 1001 will simply ignore it
 // per protobuf wire-format rules, preserving backwards compatibility.
 //
-// trace_state is reserved for future use. It is currently neither
-// populated on inject nor read on extract; consumers must not rely on it.
+// trace_state (field 4) is reserved and inert: it is neither populated on
+// inject nor read on extract, so consumers must not rely on it. Beyond the
+// W3C tracestate use noted on the field below, it is the intended home for
+// an authenticated token a receiver could verify before adopting a peer's
+// trace context as its parent. Today this message is unauthenticated peer
+// input: the receiver only checks that the ids are well formed (16-byte
+// trace_id, 8-byte span_id, neither all-zero) and otherwise starts a fresh
+// trace, so the ids are a hint, not trusted provenance. An authenticated
+// scheme would need a shared verification key, a canonical form to sign,
+// and a defined policy for peers that send no token.
 message TraceContext {
   optional bytes trace_id = 1;      // 16-byte trace identifier
   optional bytes span_id = 2;       // 8-byte parent span identifier

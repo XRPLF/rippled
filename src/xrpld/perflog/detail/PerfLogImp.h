@@ -153,12 +153,16 @@ public:
     }
 
     void
-    jobQueue(JobType const type) override;
+    jobQueue(JobType const type, std::string const& name) override;
     void
-    jobStart(JobType const type, microseconds dur, steady_time_point startTime, int instance)
-        override;
+    jobStart(
+        JobType const type,
+        std::string const& name,
+        microseconds dur,
+        steady_time_point startTime,
+        int instance) override;
     void
-    jobFinish(JobType const type, microseconds dur, int instance) override;
+    jobFinish(JobType const type, std::string const& name, microseconds dur, int instance) override;
 
     json::Value
     countersJson() const override

@@ -224,6 +224,64 @@ TEST(ValidationTracker, send_and_check_counters_count_messages_not_ledgers)
 
 // ---- late repair -----------------------------------------------------------
 
+TEST(ValidationTracker, gross_totals_count_only_the_first_classification)
+{
+    // Three agreements and two misses, all decided in one pass.
+    auto t = makeTracker();
+    for (unsigned i = 1; i <= 3; ++i)
+    {
+        t.recordOurValidation(makeHash(i), i);
+        t.recordNetworkValidation(makeHash(i), i);
+    }
+    for (unsigned i = 4; i <= 5; ++i)
+        t.recordNetworkValidation(makeHash(i), i);
+    settle(t);
+
+    // With no repair yet, the gross pair equals the net pair.
+    EXPECT_EQ(t.totalAgreements(), 3u);
+    EXPECT_EQ(t.totalAgreementsEver(), 3u);
+    EXPECT_EQ(t.totalMissed(), 2u);
+    EXPECT_EQ(t.totalMissedEver(), 2u);
+
+    // Repair one miss inside the repair window.
+    advance(std::chrono::seconds(30));
+    t.recordOurValidation(makeHash(4), 4);
+    t.reconcile();
+
+    // The net pair moves with the repair, the gross pair does not.
+    EXPECT_EQ(t.totalAgreements(), 4u);
+    EXPECT_EQ(t.totalMissed(), 1u);
+    EXPECT_EQ(t.totalAgreementsEver(), 3u);
+    EXPECT_EQ(t.totalMissedEver(), 2u);
+
+    // Every decided ledger is counted once across the two gross tallies.
+    EXPECT_EQ(t.totalAgreementsEver() + t.totalMissedEver(), 5u);
+}
+
+TEST(ValidationTracker, a_repair_never_decrements_the_gross_missed_total)
+{
+    // One miss, then its other half arrives. A Prometheus counter is fed from
+    // the gross tally, so that tally must not go down here.
+    auto t = makeTracker();
+    t.recordNetworkValidation(makeHash(10), 1000);
+    settle(t);
+
+    EXPECT_EQ(t.totalMissed(), 1u);
+    EXPECT_EQ(t.totalMissedEver(), 1u);
+    EXPECT_EQ(t.totalAgreements(), 0u);
+    EXPECT_EQ(t.totalAgreementsEver(), 0u);
+
+    advance(std::chrono::seconds(30));
+    t.recordOurValidation(makeHash(10), 1000);
+    t.reconcile();
+
+    EXPECT_EQ(t.totalMissed(), 0u);
+    EXPECT_EQ(t.totalAgreements(), 1u);
+    // Frozen at first classification: the miss stays, no agreement is added.
+    EXPECT_EQ(t.totalMissedEver(), 1u);
+    EXPECT_EQ(t.totalAgreementsEver(), 0u);
+}
+
 TEST(ValidationTracker, late_repair_turns_a_miss_into_an_agreement)
 {
     auto t = makeTracker();

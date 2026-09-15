@@ -430,8 +430,39 @@ land in one pull request or several. Run it locally with:
 python .github/scripts/otel-naming/check_otel_naming.py
 ```
 
+### Naming a wrong form in prose (`otel-naming:allow-dotted`)
+
+The doc rule (E) flags any dotted `` `xrpl.<domain>.<field>` `` key in the
+telemetry docs, because a reader copies those keys straight into a TraceQL or
+PromQL query. A doc that _teaches_ the convention, or records a rename, has to be
+able to name the wrong form as a counter-example. That mention is opted out with
+a marker naming exactly the keys the line is allowed to mention:
+
+```markdown
+Use `tx_hash`, not `xrpl.tx.hash`.
+<!-- otel-naming:allow-dotted: xrpl.tx.hash -->
+```
+
+- The marker applies to **its own line only**, and exempts **only the keys it
+  lists** (comma- and/or space-separated, backticks optional). A dotted key on a
+  marked line that the marker does not name still fails, so an exemption cannot
+  quietly widen when someone edits the line later.
+- A marker with no key list exempts nothing and reports a warning; so does a
+  marker naming a key the line no longer mentions (a stale exemption).
+- Never use it to keep a real attribute table dotted. If the doc publishes a key
+  an operator is meant to query, fix the key — the marker is for mentions, not
+  for published attributes.
+
 See [.github/scripts/otel-naming/README.md](.github/scripts/otel-naming/README.md)
 for the full rule list.
+
+## Adding a new OTel metric
+
+See `src/xrpld/telemetry/MetricMacros.h` for the call-site macros covering every
+OTel instrument kind (Counter, UpDownCounter, Histogram, Gauge, and their
+Observable/async counterparts) and the "Adding a New Metric" section in
+[docs/telemetry-runbook.md](docs/telemetry-runbook.md) for the walkthrough and a
+need-to-macro lookup table.
 
 ## Contracts and instrumentation
 

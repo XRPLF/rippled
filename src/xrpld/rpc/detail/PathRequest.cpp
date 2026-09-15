@@ -1,3 +1,7 @@
+// cspell:ignore ISTOGRAM
+// The all-caps macro name XRPL_METRIC_HISTOGRAM_RECORD trips cspell's
+// compound-word splitter, which emits the subword "ISTOGRAM"; ignore it here.
+
 #include <xrpld/rpc/detail/PathRequest.h>
 
 #include <xrpld/app/main/Application.h>
@@ -8,6 +12,7 @@
 #include <xrpld/rpc/detail/Pathfinder.h>
 #include <xrpld/rpc/detail/PathfinderUtils.h>
 #include <xrpld/rpc/detail/Tuning.h>
+#include <xrpld/telemetry/MetricMacros.h>
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/UnorderedContainers.h>
@@ -49,6 +54,14 @@
 #include <string>
 #include <utility>
 #include <variant>
+
+// The path-count metric name and description. Both are only ever used inside an
+// XRPL_METRIC_* argument list, and those macros expand to nothing when
+// telemetry is off, so the include is guarded like its uses -- clang-tidy's
+// misc-include-cleaner rejects an include nothing references.
+#ifdef XRPL_ENABLE_TELEMETRY
+#include <xrpl/telemetry/RpcMetricNames.h>
+#endif  // XRPL_ENABLE_TELEMETRY
 
 namespace xrpl {
 
@@ -745,6 +758,12 @@ PathRequest::findPaths(
 
 #ifdef XRPL_ENABLE_TELEMETRY
     span.setAttribute(pathfind_span::attr::numPaths, totalPaths);
+    // The attribute answers "how many paths did THIS pass find" on one sampled
+    // trace. The histogram answers "how many paths do passes find" across all
+    // of them, which no attribute can, since an unsampled trace is never read.
+    // Inside the guard because totalPaths only exists when telemetry is built.
+    XRPL_METRIC_HISTOGRAM_RECORD(
+        app_, kPathfindDiscoveredPaths, kPathfindDiscoveredPathsDesc, totalPaths);
 #endif
 
     /*  The resource fee is based on the number of source currencies used.

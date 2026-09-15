@@ -833,7 +833,8 @@ run(int argc, char** argv)
         //
         // Only the construction is covered. The [telemetry] section is parsed
         // near the top of the member list, before the job queue and node store
-        // are built, so unwinding that throw destroys little. setup() is
+        // are built, so unwinding that throw destroys little: the metrics
+        // registry, whose destructor joins its export thread. setup() is
         // left outside deliberately: it starts subsystems whose shutdown order
         // is delicate, and only the normal stop sequence gets that order right.
         std::unique_ptr<Application> app;

@@ -279,6 +279,7 @@ TEST(TelemetryConfig, setup_defaults)
     EXPECT_EQ(s.serviceName, "xrpld");
     EXPECT_TRUE(s.serviceVersion.empty());
     EXPECT_TRUE(s.serviceInstanceId.empty());
+    EXPECT_TRUE(s.nodeId.empty());
     EXPECT_EQ(s.tracesEndpoint, "http://localhost:4318/v1/traces");
     EXPECT_EQ(s.metricsEndpoint, "http://localhost:4318/v1/metrics");
     EXPECT_FALSE(s.useTls);
@@ -319,6 +320,18 @@ TEST(TelemetryConfig, parse_empty_section)
     EXPECT_TRUE(setup.traceConsensus);
     EXPECT_TRUE(setup.tracePeer);
     EXPECT_TRUE(setup.traceLedger);
+}
+
+TEST(TelemetryConfig, empty_service_instance_id_falls_back_to_node_key)
+{
+    // An empty value is indistinguishable from an unset key on the metrics
+    // side (makeMetricsRegistryOptions falls back to the node key), so the
+    // trace side must do the same. Without this fallback traces stamp "" while
+    // metrics stamp the node key and every $node filter shows half the series.
+    Section section;
+    section.set("service_instance_id", "");
+    auto const setup = telemetry::makeTelemetrySetup(section, "nHUtest123", "2.0.0", 0);
+    EXPECT_EQ(setup.serviceInstanceId, "nHUtest123");
 }
 
 TEST(TelemetryConfig, parse_full_section)

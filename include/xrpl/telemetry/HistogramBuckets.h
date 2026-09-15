@@ -134,6 +134,68 @@ inline constexpr std::array kByteBuckets{
     1'048'576.0};
 
 /**
+ * Bucket edges, in microseconds, for the OTel-native duration instruments
+ * created directly on MetricsRegistry: job queue wait and run times, RPC
+ * method latency, and GetObject lookup latency.
+ *
+ * The edges from 1 to 1000 us are the ones that matter most. An earlier
+ * version of this ladder started at 100 us, which sat ABOVE the mass of every
+ * instrument using it: 99.3% of job_queued_us samples, 92.5% of
+ * job_running_us and 90.4% of getobject_lookup_us fell in that first bucket.
+ * `histogram_quantile` then interpolated inside bucket 0 and returned the
+ * boundary scaled by the requested quantile -- p75/p95/p99 of job_queued_us
+ * read 75.5/95.7/99.7 us, which is arithmetic on the bucket edge, not a
+ * latency. A warm nodestore read is around 1.5 us, so single-microsecond
+ * resolution is not excessive here.
+ *
+ * The upper edges reach a minute so multi-second stalls stay measurable. The
+ * SDK's own default ladder stops at 10,000, which every one of these
+ * instruments exceeds during catch-up.
+ */
+inline constexpr std::array kMicrosecondBuckets{
+    1.0,
+    2.0,
+    5.0,
+    10.0,
+    25.0,
+    50.0,
+    100.0,
+    250.0,
+    500.0,
+    1'000.0,
+    5'000.0,
+    25'000.0,
+    100'000.0,
+    500'000.0,
+    1'000'000.0,
+    5'000'000.0,
+    10'000'000.0,
+    30'000'000.0,
+    60'000'000.0};
+
+/**
+ * Bucket edges for the GetObject request object count.
+ *
+ * Counts run from 1 to the hard reply cap (kHardMaxReplyNodes, 12288). The
+ * honest sync path asks for at most 8 objects, so the low edges are
+ * fine-grained; the upper ones follow the charge size bands up to the cap.
+ * Because the top edge IS the hard cap, this ladder cannot saturate.
+ */
+inline constexpr std::array
+    kObjectCountBuckets{1.0, 2.0, 4.0, 8.0, 16.0, 64.0, 256.0, 1'024.0, 4'096.0, 12'288.0};
+
+/**
+ * Bucket edges for the GetObject resource charge.
+ *
+ * Charges span 0 (the free tier) to roughly 99k for a full-size all-miss
+ * request. The edges bracket the two thresholds that decide a peer's fate --
+ * the warning threshold at 5000 and the drop threshold at 25000 -- so a
+ * dashboard can show how close charges run to each.
+ */
+inline constexpr std::array
+    kChargeBuckets{0.0, 100.0, 500.0, 1'000.0, 5'000.0, 10'000.0, 25'000.0, 50'000.0, 100'000.0};
+
+/**
  * @brief Check that a ladder is strictly ascending and non-negative.
  *
  * The SDK places a sample with `std::lower_bound` over the edges, which
@@ -160,6 +222,9 @@ isAscendingNonNegative(std::span<double const> ladder) noexcept
 
 static_assert(isAscendingNonNegative(kMillisecondBuckets));
 static_assert(isAscendingNonNegative(kByteBuckets));
+static_assert(isAscendingNonNegative(kMicrosecondBuckets));
+static_assert(isAscendingNonNegative(kObjectCountBuckets));
+static_assert(isAscendingNonNegative(kChargeBuckets));
 
 /**
  * @brief Copy a ladder into the `std::vector<double>` the OTel SDK wants.

@@ -72,10 +72,21 @@ jobs:
             .github/scripts/levelization/**
             .github/scripts/otel-naming/**
             .github/scripts/rename/**
+            .github/scripts/telemetry/**
             .github/workflows/reusable-check-levelization.yml
             .github/workflows/reusable-check-otel-naming.yml
             .github/workflows/reusable-check-rename.yml
             .github/workflows/on-pr.yml
+
+            # The non-code layers the OTel naming check validates: the docs that
+            # publish attribute tables (Rule E) and the telemetry stack config —
+            # collector, Tempo, dashboards (Rules B, C, D). Without these paths a
+            # docs-only or dashboard-only pull request sets `go=false`, so the
+            # very layers those rules exist to police would never be checked.
+            # As with `README.md` below, matching one of these also switches on
+            # the rest of the workflow; there is a single `go` gate.
+            docs/**
+            docker/telemetry/**
 
             # Keep the paths below in sync with those in `on-trigger.yml`.
             .github/actions/build-deps/**
