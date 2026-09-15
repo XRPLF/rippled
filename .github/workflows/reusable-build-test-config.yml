@@ -85,8 +85,9 @@ defaults:
     shell: bash
 
 env:
-  # Conan installs the generators in the build/generators directory, see the
-  # layout() method in conanfile.py. We then run CMake from the build directory.
+  # The build directory passed to Conan (--output-folder) and CMake (-B). Conan
+  # writes its generators into the "generators" subdirectory of it, see the
+  # layout() method in conanfile.py.
   BUILD_DIR: build
 
 jobs:
@@ -184,6 +185,7 @@ jobs:
       - name: Build dependencies
         uses: ./.github/actions/build-deps
         with:
+          build_dir: ${{ env.BUILD_DIR }}
           build_nproc: ${{ steps.nproc.outputs.nproc }}
           build_type: ${{ inputs.build_type }}
           # Set the verbosity to "quiet" for Windows to avoid an excessive
@@ -192,17 +194,17 @@ jobs:
           sanitizers: ${{ inputs.sanitizers }}
 
       - name: Configure CMake
-        working-directory: ${{ env.BUILD_DIR }}
         env:
           BUILD_TYPE: ${{ inputs.build_type }}
           CMAKE_ARGS: ${{ inputs.cmake_args }}
         run: |
           cmake \
               -G '${{ runner.os == 'Windows' && 'Visual Studio 18 2026' || 'Ninja' }}' \
-              -DCMAKE_TOOLCHAIN_FILE:FILEPATH=build/generators/conan_toolchain.cmake \
+              -DCMAKE_TOOLCHAIN_FILE:FILEPATH="${BUILD_DIR}/generators/conan_toolchain.cmake" \
               -DCMAKE_BUILD_TYPE="${BUILD_TYPE}" \
               ${CMAKE_ARGS} \
-              ..
+              -S . \
+              -B "${BUILD_DIR}"
 
       # Export the sanitizer options before any instrumented binary runs. The
       # build step below invokes instrumented dependency tools (protoc, grpc),
@@ -226,7 +228,6 @@ jobs:
           echo "LSAN_OPTIONS=include=${SUPP}/runtime-lsan-options.txt:suppressions=${SUPP}/lsan.supp" >>${GITHUB_ENV}
 
       - name: Build the binary
-        working-directory: ${{ env.BUILD_DIR }}
         env:
           BUILD_NPROC: ${{ steps.nproc.outputs.nproc }}
           BUILD_TYPE: ${{ inputs.build_type }}
@@ -234,7 +235,7 @@ jobs:
         run: |
           set -o pipefail
           cmake \
-              --build . \
+              --build "${BUILD_DIR}" \
               --config "${BUILD_TYPE}" \
               --parallel "${BUILD_NPROC}" \
               --target "${CMAKE_TARGET}" \
