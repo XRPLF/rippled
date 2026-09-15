@@ -2047,6 +2047,23 @@ static RPCCallTestData const kRpcCallTestArray[] = {
       }
     ]
     })"},
+    {"channel_authorize: zero amount.",
+     __LINE__,
+     {"channel_authorize",
+      "secret_can_be_anything",
+      "0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF",
+      "0"},
+     RPCCallTestData::Exception::NoException,
+     R"({
+    "method" : "channel_authorize",
+    "params" : [
+      {
+         "error" : "channelAmtMalformed",
+         "error_code" : 44,
+         "error_message" : "Payment channel amount is malformed."
+      }
+    ]
+    })"},
 
     // channel_verify
     // --------------------------------------------------------------
@@ -2055,7 +2072,7 @@ static RPCCallTestData const kRpcCallTestArray[] = {
      {"channel_verify",
       "aB4BXXLuPu8DpVuyq1DBiu3SrPdtK9AYZisKhu8mvkoiUD8J9Gov",
       "0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF",
-      "0",
+      "2000",
       "DEADBEEF"},
      RPCCallTestData::Exception::NoException,
      R"({
@@ -2063,7 +2080,7 @@ static RPCCallTestData const kRpcCallTestArray[] = {
     "params" : [
       {
          "api_version" : %API_VER%,
-         "amount" : "0",
+         "amount" : "2000",
          "channel_id" : "0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF",
          "public_key" : "aB4BXXLuPu8DpVuyq1DBiu3SrPdtK9AYZisKhu8mvkoiUD8J9Gov",
          "signature" : "DEADBEEF"
@@ -2203,6 +2220,24 @@ static RPCCallTestData const kRpcCallTestArray[] = {
       "021D93E21C44160A1B3B66DA1F37B86BE39FFEA3FC4B95FAA2063F82EE823599F6",
       "0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF",
       "-1",
+      "DEADBEEF"},
+     RPCCallTestData::Exception::NoException,
+     R"({
+    "method" : "channel_verify",
+    "params" : [
+      {
+         "error" : "channelAmtMalformed",
+         "error_code" : 44,
+         "error_message" : "Payment channel amount is malformed."
+      }
+    ]
+    })"},
+    {"channel_verify: zero amount.",
+     __LINE__,
+     {"channel_verify",
+      "021D93E21C44160A1B3B66DA1F37B86BE39FFEA3FC4B95FAA2063F82EE823599F6",
+      "0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF",
+      "0",
       "DEADBEEF"},
      RPCCallTestData::Exception::NoException,
      R"({
