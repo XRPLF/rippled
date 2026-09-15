@@ -220,4 +220,33 @@ WasmHostFunctionsImpl::vaultKeylet(AccountID const& account, std::uint32_t seq) 
     return Bytes{keylet.key.begin(), keylet.key.end()};
 }
 
+std::expected<Bytes, HostFunctionError>
+WasmHostFunctionsImpl::sponsorshipKeylet(AccountID const& sponsor, AccountID const& sponsee) const
+{
+    if (!sponsor || !sponsee)
+        return std::unexpected(HostFunctionError::InvalidAccount);
+    if (sponsor == sponsee)
+        return std::unexpected(HostFunctionError::InvalidParams);
+    auto const keylet = keylet::sponsorship(sponsor, sponsee);
+    return Bytes{keylet.key.begin(), keylet.key.end()};
+}
+
+std::expected<Bytes, HostFunctionError>
+WasmHostFunctionsImpl::loanBrokerKeylet(AccountID const& owner, std::uint32_t seq) const
+{
+    if (!owner)
+        return std::unexpected(HostFunctionError::InvalidAccount);
+    auto const keylet = keylet::loanBroker(owner, SeqProxy::rawSequence(seq));
+    return Bytes{keylet.key.begin(), keylet.key.end()};
+}
+
+std::expected<Bytes, HostFunctionError>
+WasmHostFunctionsImpl::loanKeylet(uint256 const& loanBrokerID, std::uint32_t loanSeq) const
+{
+    if (!loanBrokerID)
+        return std::unexpected(HostFunctionError::InvalidParams);
+    auto const keylet = keylet::loan(loanBrokerID, SeqProxy::rawSequence(loanSeq));
+    return Bytes{keylet.key.begin(), keylet.key.end()};
+}
+
 }  // namespace xrpl

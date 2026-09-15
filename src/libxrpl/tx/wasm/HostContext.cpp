@@ -931,6 +931,50 @@ HostContext::vaultKeylet(
 }
 
 std::int32_t
+HostContext::sponsorshipKeylet(
+    rust::Slice<std::uint8_t const> sponsor,
+    rust::Slice<std::uint8_t const> sponsee,
+    rust::Slice<std::uint8_t> out) const noexcept
+{
+    return guarded(hostFunctions_.getJournal(), kHostInternal, [&] {
+        return invokeWithAccounts(
+            sponsor, sponsee, out, [&](auto const& sponsorId, auto const& sponseeId) {
+                return hostFunctions_.sponsorshipKeylet(sponsorId, sponseeId);
+            });
+    });
+}
+
+std::int32_t
+HostContext::loanBrokerKeylet(
+    rust::Slice<std::uint8_t const> owner,
+    std::uint32_t seq,
+    rust::Slice<std::uint8_t> out) const noexcept
+{
+    return guarded(hostFunctions_.getJournal(), kHostInternal, [&] {
+        return invokeWithAccount(owner, out, [&](auto const& ownerId) {
+            return hostFunctions_.loanBrokerKeylet(ownerId, seq);
+        });
+    });
+}
+
+std::int32_t
+HostContext::loanKeylet(
+    rust::Slice<std::uint8_t const> loanBrokerID,
+    std::uint32_t loanSeq,
+    rust::Slice<std::uint8_t> out) const noexcept
+{
+    return guarded(hostFunctions_.getJournal(), kHostInternal, [&] {
+        if (loanBrokerID.size() != uint256::size())
+        {
+            return hfErrorToInt(HostFunctionError::InvalidParams);
+        }
+        return invoke<false>(out, [&] {
+            return hostFunctions_.loanKeylet(uint256::fromVoid(loanBrokerID.data()), loanSeq);
+        });
+    });
+}
+
+std::int32_t
 HostContext::sha512Half(rust::Slice<std::uint8_t const> data, rust::Slice<std::uint8_t> out)
     const noexcept
 {

@@ -392,6 +392,44 @@ impl HostFunctions for FakeHost {
         put(out, &[account[0]; HASH_LEN])
     }
 
+    /// The same two-account shape as `delegate_keylet`, for a `Sponsorship`.
+    fn sponsorship_keylet(
+        &self,
+        sponsor: &[u8],
+        sponsee: &[u8],
+        out: &mut [u8],
+    ) -> HostResult<usize> {
+        if sponsor.is_empty() || sponsee.is_empty() {
+            return Err(HostError::InvalidAccount);
+        }
+        if sponsor == sponsee {
+            return Err(HostError::InvalidParams);
+        }
+        put(out, &[sponsor[0]; HASH_LEN])
+    }
+
+    /// The same account-and-sequence shape, for a `LoanBroker`.
+    fn loan_broker_keylet(&self, owner: &[u8], _seq: u32, out: &mut [u8]) -> HostResult<usize> {
+        if owner.is_empty() {
+            return Err(HostError::InvalidAccount);
+        }
+        put(out, &[owner[0]; HASH_LEN])
+    }
+
+    /// A keylet from a 32-byte loan broker id and a sequence; `InvalidParams` if the id
+    /// is empty.
+    fn loan_keylet(
+        &self,
+        loan_broker_id: &[u8],
+        _loan_seq: u32,
+        out: &mut [u8],
+    ) -> HostResult<usize> {
+        if loan_broker_id.is_empty() {
+            return Err(HostError::InvalidParams);
+        }
+        put(out, &[loan_broker_id[0]; HASH_LEN])
+    }
+
     fn sha512_half(&self, data: &[u8], out: &mut [u8]) -> HostResult<usize> {
         let mut digest = [0; HASH_LEN];
         digest[0] = data.len() as u8;
@@ -786,6 +824,27 @@ fn the_trait_is_implementable() {
         host.vault_keylet(&[], 5, &mut out),
         Err(HostError::InvalidAccount)
     );
+    assert_eq!(
+        host.sponsorship_keylet(&[7; 20], &[8; 20], &mut out),
+        Ok(HASH_LEN)
+    );
+    assert_eq!(out[0], 7);
+    assert_eq!(
+        host.sponsorship_keylet(&[7; 20], &[7; 20], &mut out),
+        Err(HostError::InvalidParams)
+    );
+    assert_eq!(host.loan_broker_keylet(&[7; 20], 5, &mut out), Ok(HASH_LEN));
+    assert_eq!(out[0], 7);
+    assert_eq!(
+        host.loan_broker_keylet(&[], 5, &mut out),
+        Err(HostError::InvalidAccount)
+    );
+    assert_eq!(host.loan_keylet(&[9; 32], 5, &mut out), Ok(HASH_LEN));
+    assert_eq!(out[0], 9);
+    assert_eq!(
+        host.loan_keylet(&[], 5, &mut out),
+        Err(HostError::InvalidParams)
+    );
     assert_eq!(host.sha512_half(b"abc", &mut out), Ok(HASH_LEN));
     assert_eq!(out[0], 3);
     assert_eq!(host.trace("hello", TraceDataType::AsHex, b"xy"), Ok(()));
@@ -937,6 +996,9 @@ fn the_spec_table_matches_the_declarations() {
             ("signers_id", 350),
             ("ticket_id", 350),
             ("vault_id", 350),
+            ("sponsorship_id", 350),
+            ("loan_broker_id", 350),
+            ("loan_id", 350),
             ("sha512_half", 2000),
             ("trace", 30),
             ("set_data", 1000),
@@ -1021,6 +1083,9 @@ fn the_wasm_signatures_match_the_declarations() {
             "signers_id (i32, i32, i32, i32) -> i32",
             "ticket_id (i32, i32, i32, i32, i32, i32) -> i32",
             "vault_id (i32, i32, i32, i32, i32, i32) -> i32",
+            "sponsorship_id (i32, i32, i32, i32, i32, i32) -> i32",
+            "loan_broker_id (i32, i32, i32, i32, i32, i32) -> i32",
+            "loan_id (i32, i32, i32, i32, i32, i32) -> i32",
             "sha512_half (i32, i32, i32, i32) -> i32",
             "trace (i32, i32, i32, i32, i32)",
             "set_data (i32, i32) -> i32",
