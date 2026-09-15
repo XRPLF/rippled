@@ -77,8 +77,6 @@ ConfidentialMPTMirrorUpdate::preflight(PreflightContext const& ctx)
     if (hasAuditorAmount && !isValidCiphertext(ctx.tx[sfAuditorEncryptedAmount]))
         return temBAD_CIPHERTEXT;
 
-    // todo: check zkproof
-
     return tesSUCCESS;
 }
 
@@ -200,8 +198,6 @@ ConfidentialMPTMirrorUpdate::preclaim(PreclaimContext const& ctx)
         if (!inboxIsCanonicalZero)
             return tecNO_PERMISSION;
     }
-
-    // todo: check zkproof
 
     return tesSUCCESS;
 }
