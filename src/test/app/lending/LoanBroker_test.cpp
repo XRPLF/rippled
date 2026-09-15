@@ -1763,6 +1763,124 @@ class LoanBroker_test : public beast::unit_test::Suite
         }
     }
 
+    // Before fixCleanup3_5_0, ValidConfidentialMPToken derived
+    // hasPublicBalance from the pre-transaction snapshot of an erased
+    // MPToken. LoanBrokerDelete returns the cover and then erases the broker
+    // pseudo-account's MPToken in a single doApply, so that snapshot was
+    // always non-zero and the erase was flagged as "deleted with encrypted
+    // state". finalize gated the flag on the issuance-wide
+    // ConfidentialOutstandingAmount, which made an unrelated holder's
+    // confidential balance sufficient to reject the deletion -- even though a
+    // pseudo-account MPToken can never carry confidential fields.
+    void
+    testLoanBrokerDeleteConfidentialCOA(FeatureBitset features)
+    {
+        testcase << "LoanBrokerDelete - unrelated confidential holder";
+        using namespace jtx;
+        using namespace loan_broker;
+
+        auto const withFix = features[fixCleanup3_5_0];
+
+        Account const issuer("issuer");
+        Account const alice("alice");
+        // carol holds the same MPT but has no relationship to the vault, the
+        // broker, or alice.
+        Account const carol("carol");
+
+        for (bool const carolConverts : {false, true})
+        {
+            Env env(*this, features);
+            env.fund(XRP(100'000), issuer, alice, carol);
+            env.close();
+
+            MPTTester mptt{env, issuer, kMptInitNoFund};
+            mptt.create({.flags = tfMPTCanTransfer | tfMPTCanHoldConfidentialBalance});
+
+            PrettyAsset const mpt{mptt.issuanceID()};
+
+            mptt.authorize({.account = alice});
+            mptt.authorize({.account = carol});
+            env(pay(issuer, alice, mpt(100'000)));
+            env(pay(issuer, carol, mpt(100)));
+            env.close();
+
+            // The issuer must publish an encryption key before any holder can
+            // convert into confidential form.
+            mptt.generateKeyPair(issuer);
+            mptt.set({.account = issuer, .issuerPubKey = mptt.getPubKey(issuer)});
+
+            Vault const vault{env};
+            auto [tx, vaultKeylet] = vault.create({.owner = alice, .asset = mpt});
+            env(tx);
+            env.close();
+
+            env(vault.deposit({.depositor = alice, .id = vaultKeylet.key, .amount = mpt(10'000)}));
+            env.close();
+
+            auto const brokerKeylet =
+                keylet::loanBroker(alice.id(), SeqProxy::rawSequence(env.seq(alice)));
+            env(set(alice, vaultKeylet.key));
+            env.close();
+
+            env(coverDeposit(alice, brokerKeylet.key, mpt(5'000).value()));
+            env.close();
+
+            auto const broker = env.le(brokerKeylet);
+            if (!BEAST_EXPECT(broker))
+                return;
+            BEAST_EXPECT(broker->at(sfCoverAvailable) > 0);
+
+            auto const brokerPseudoID = broker->at(sfAccount);
+            auto const pseudoMptKey = keylet::mptoken(mptt.issuanceID(), brokerPseudoID);
+            if (!BEAST_EXPECT(env.le(pseudoMptKey)))
+                return;
+
+            // The broker pseudo-account has no signing key, so it can never
+            // submit a confidential transaction and its MPToken holds none of
+            // the four ciphertext fields.
+            Account const brokerHolder("broker", brokerPseudoID);
+            BEAST_EXPECT(!mptt.getEncryptedBalance(brokerHolder, MPTTester::holderEncryptedInbox));
+            BEAST_EXPECT(
+                !mptt.getEncryptedBalance(brokerHolder, MPTTester::holderEncryptedSpending));
+            BEAST_EXPECT(
+                !mptt.getEncryptedBalance(brokerHolder, MPTTester::issuerEncryptedBalance));
+            BEAST_EXPECT(
+                !mptt.getEncryptedBalance(brokerHolder, MPTTester::auditorEncryptedBalance));
+
+            if (carolConverts)
+            {
+                mptt.generateKeyPair(carol);
+                mptt.convert({.account = carol, .amt = 1, .holderPubKey = mptt.getPubKey(carol)});
+            }
+
+            BEAST_EXPECT(mptt.getIssuanceConfidentialBalance() == (carolConverts ? 1 : 0));
+
+            if (carolConverts && !withFix)
+            {
+                // The cover is non-zero at the start of the transaction, so
+                // the erase is flagged and carol's COA rejects it.
+                env(del(alice, brokerKeylet.key), Ter(tecINVARIANT_FAILED));
+                env.close();
+                BEAST_EXPECT(env.le(brokerKeylet) != nullptr);
+                BEAST_EXPECT(env.le(pseudoMptKey) != nullptr);
+
+                // Draining the cover in an earlier transaction leaves the
+                // MPToken's pre-transaction balance at zero, which sidesteps
+                // the flag entirely.
+                env(coverWithdraw(alice, brokerKeylet.key, mpt(5'000).value()));
+                env.close();
+            }
+
+            // With the fix the balance is read at erase time, so returning
+            // the cover and deleting the broker in one transaction succeeds
+            // regardless of carol's confidential balance.
+            env(del(alice, brokerKeylet.key));
+            env.close();
+            BEAST_EXPECT(env.le(brokerKeylet) == nullptr);
+            BEAST_EXPECT(env.le(pseudoMptKey) == nullptr);
+        }
+    }
+
     void
     testLoanBrokerDeleteFrozenIOU(FeatureBitset features)
     {
@@ -3003,6 +3121,9 @@ public:
 
         testLoanBrokerDeleteFrozenIOU(all_);
         testLoanBrokerDeleteFrozenIOU(all_ - fixCleanup3_2_0);
+
+        testLoanBrokerDeleteConfidentialCOA(all_);
+        testLoanBrokerDeleteConfidentialCOA(all_ - fixCleanup3_5_0);
 
         // featureMPTokensV2 independently makes ValidMPTTransfer enforcing,
         // but it's Supported::No (never enabled on real networks); exclude

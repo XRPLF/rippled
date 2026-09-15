@@ -43,9 +43,11 @@ class ValidMPTIssuance
     bool referenceHoldingMutated_ = false;
 
     /**
-     * MPTokens and RippleStates deleted during apply. finalize() checks each
-     * holder's AccountRoot to detect vault pseudo-account holdings deleted
-     * outside VaultDelete. All these checks are gated on fixCleanup3_2_0.
+     * MPTokens and RippleStates deleted during apply. Under fixCleanup3_2_0,
+     * finalize() checks each holder's AccountRoot to detect vault
+     * pseudo-account holdings deleted outside VaultDelete. Under
+     * fixCleanup3_5_0 it also rejects any MPToken erased with a non-zero
+     * sfMPTAmount (the check formerly lived in ValidConfidentialMPToken).
      */
     std::vector<std::shared_ptr<SLE const>> deletedHoldings_;
 
@@ -138,8 +140,9 @@ public:
  * - Convert/ConvertBack symmetry:
  * Regular MPToken balance change (±X) == COA (Confidential Outstanding Amount) change (∓X)
  * - Cannot delete MPToken with non-zero confidential state:
- * Cannot delete if sfIssuerEncryptedBalance exists
- * Cannot delete if sfConfidentialBalanceInbox and sfConfidentialBalanceSpending exist
+ * Cannot delete if any of sfConfidentialBalanceSpending, sfConfidentialBalanceInbox,
+ * sfIssuerEncryptedBalance or sfAuditorEncryptedBalance is present, and the issuance's
+ * sfConfidentialOutstandingAmount is non-zero. Mirrors MPTokenAuthorize::preclaim.
  * - Privacy flag consistency:
  * MPToken confidential balance fields can only be created or changed if
  * lsfMPTCanHoldConfidentialBalance is set on the issuance.
@@ -162,6 +165,10 @@ class ValidConfidentialMPToken
         std::int64_t outstandingDelta = 0;
         SLE::const_pointer issuance;
         bool deletedWithEncrypted = false;
+        // Pre-transaction public balance of an erased MPToken. Reproduces
+        // the pre-fixCleanup3_5_0 behaviour where the confidential gate
+        // below also rejected any erase whose `before` balance was non-zero.
+        bool deletedWithBalanceBefore = false;
         bool badConsistency = false;
         bool badCOA = false;
         bool changesConfidentialFields = false;

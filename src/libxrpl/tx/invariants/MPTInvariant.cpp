@@ -68,12 +68,13 @@ subtractMPTAmountDelta(std::int64_t delta, std::uint64_t amount)
 void
 ValidMPTIssuance::visitEntry(bool isDelete, SLE::const_ref before, SLE::const_ref after)
 {
-    // The sfReferenceHolding tracking and the deleted-holding capture are
-    // only meaningful post-fixCleanup3_2_0 (the field is never set
-    // pre-amendment, and the holding-deletion rule does not apply).
-    // Skip both blocks when the amendment is off so we avoid wasted work
-    // on the hot path.
+    // sfReferenceHolding is never set pre-fixCleanup3_2_0 and the
+    // vault-pseudo holding-deletion rule does not apply, so both are
+    // gated on fix320Enabled. The MPToken half of deletedHoldings_ also
+    // feeds the fixCleanup3_5_0 erase-time public balance check in
+    // finalize(), so it is captured whenever either amendment is on.
     bool const fix320Enabled = isFeatureEnabled(fixCleanup3_2_0);
+    bool const fix350Enabled = isFeatureEnabled(fixCleanup3_5_0);
 
     if (after && after->getType() == ltMPTOKEN_ISSUANCE)
     {
@@ -107,7 +108,7 @@ ValidMPTIssuance::visitEntry(bool isDelete, SLE::const_ref before, SLE::const_re
         if (isDelete)
         {
             mptokensDeleted_++;
-            if (fix320Enabled)
+            if (fix320Enabled || fix350Enabled)
                 deletedHoldings_.push_back(after);
         }
         else if (!before)
@@ -192,6 +193,22 @@ ValidMPTIssuance::finalize(
         }
         if (!invariantPasses)
             return false;
+    }
+
+    // Erasing an MPToken that still holds a public balance is wrong on its
+    // own terms: it destroys value. Judged on the erase-time snapshot,
+    // per-holder, so a funded MPToken visited alongside empty siblings is
+    // still caught.
+    if (rules.enabled(fixCleanup3_5_0))
+    {
+        for (auto const& sleHolding : deletedHoldings_)
+        {
+            if (sleHolding->getType() == ltMPTOKEN && sleHolding->getFieldU64(sfMPTAmount) > 0)
+            {
+                JLOG(j.fatal()) << "Invariant failed: MPToken deleted with non-zero balance";
+                return false;
+            }
+        }
     }
 
     if (isTesSuccess(result) || (mptV2Enabled && result == tecINCOMPLETE))
@@ -559,16 +576,20 @@ ValidConfidentialMPToken::visitEntry(
         change.mptAmountDelta =
             subtractMPTAmountDelta(change.mptAmountDelta, before->getFieldU64(sfMPTAmount));
 
-        // Cannot delete MPToken with non-zero confidential state or non-zero public amount
+        // Cannot delete MPToken with non-zero confidential state.
         if (isDelete)
         {
-            bool const hasPublicBalance = before->getFieldU64(sfMPTAmount) > 0;
-            bool const hasEncryptedFields = before->isFieldPresent(sfConfidentialBalanceSpending) ||
+            // changes_ is keyed by issuance, so sibling holders erased by the
+            // same transaction share this entry. Only ever set these, never
+            // clear them, or an empty sibling visited later would mask a
+            // funded MPToken.
+            if (before->getFieldU64(sfMPTAmount) > 0)
+                changes_[id].deletedWithBalanceBefore = true;
+
+            if (before->isFieldPresent(sfConfidentialBalanceSpending) ||
                 before->isFieldPresent(sfConfidentialBalanceInbox) ||
                 before->isFieldPresent(sfIssuerEncryptedBalance) ||
-                before->isFieldPresent(sfAuditorEncryptedBalance);
-
-            if (hasPublicBalance || hasEncryptedFields)
+                before->isFieldPresent(sfAuditorEncryptedBalance))
                 changes_[id].deletedWithEncrypted = true;
         }
     }
@@ -674,6 +695,8 @@ ValidConfidentialMPToken::finalize(
     if (result != tesSUCCESS)
         return true;
 
+    bool const cleanupEnabled = view.rules().enabled(fixCleanup3_5_0);
+
     for (auto const& [id, checks] : changes_)
     {
         // Find the MPTokenIssuance
@@ -688,8 +711,20 @@ ValidConfidentialMPToken::finalize(
         if (!issuance)
             continue;
 
-        // Cannot delete MPToken with non-zero confidential state
-        if (checks.deletedWithEncrypted)
+        // Cannot delete MPToken with non-zero confidential state.
+        //
+        // Before fixCleanup3_5_0 this gate also absorbed the pre-transaction
+        // public balance, so any drain-then-erase of an MPToken -- an
+        // AMMWithdraw of the whole pool, a LoanBrokerDelete returning cover --
+        // was rejected whenever some unrelated holder of the same issuance
+        // held a confidential balance. The COA gate itself is correct for
+        // ciphertext and mirrors MPTokenAuthorize::preclaim; only the public
+        // balance leg was misplaced.
+        bool const deletedWithEncrypted = cleanupEnabled
+            ? checks.deletedWithEncrypted
+            : (checks.deletedWithEncrypted || checks.deletedWithBalanceBefore);
+
+        if (deletedWithEncrypted)
         {
             if ((*issuance)[~sfConfidentialOutstandingAmount].value_or(0) > 0)
             {
