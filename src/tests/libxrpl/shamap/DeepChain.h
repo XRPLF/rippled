@@ -77,6 +77,24 @@ struct DeepChain
     }
 
     /**
+     * The same chain, with a second and unresolvable child at every level.
+     *
+     * On a backed map descendAsync() then posts a real asynchronous read at
+     * every level, which is what leaves reads in flight when a walk reaches
+     * kLeafDepth. Offered only for this shape: the decoy sits on branch 1,
+     * which is free only because a fabricated chain's pathKey is zero and
+     * so every real child sits on branch 0.
+     *
+     * @param seed Varies the whole chain. See the constructor.
+     * @return The chain.
+     */
+    [[nodiscard]] static DeepChain
+    withDecoys(unsigned int seed = 1)
+    {
+        return DeepChain{std::nullopt, seed, Decoy::Yes};
+    }
+
+    /**
      * A chain ending in a real transaction leaf, which completes an
      * acquisition.
      *
