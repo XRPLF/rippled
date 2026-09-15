@@ -317,30 +317,6 @@ public:
     }
 
     /**
-     * @brief Get sfIssuerMirrorEncryptionKey (SoeOptional)
-     * @return The field value, or std::nullopt if not present.
-     */
-    [[nodiscard]]
-    protocol_autogen::Optional<SF_VL::type::value_type>
-    getIssuerMirrorEncryptionKey() const
-    {
-        if (hasIssuerMirrorEncryptionKey())
-            return this->sle_->at(sfIssuerMirrorEncryptionKey);
-        return std::nullopt;
-    }
-
-    /**
-     * @brief Check if sfIssuerMirrorEncryptionKey is present.
-     * @return True if the field is present, false otherwise.
-     */
-    [[nodiscard]]
-    bool
-    hasIssuerMirrorEncryptionKey() const
-    {
-        return this->sle_->isFieldPresent(sfIssuerMirrorEncryptionKey);
-    }
-
-    /**
      * @brief Get sfHolderEncryptionKey (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
@@ -562,17 +538,6 @@ public:
     setAuditorKeyMirrorEpoch(std::decay_t<typename SF_UINT32::type::value_type> const& value)
     {
         object_[sfAuditorKeyMirrorEpoch] = value;
-        return *this;
-    }
-
-    /**
-     * @brief Set sfIssuerMirrorEncryptionKey (SoeOptional)
-     * @return Reference to this builder for method chaining.
-     */
-    MPTokenBuilder&
-    setIssuerMirrorEncryptionKey(std::decay_t<typename SF_VL::type::value_type> const& value)
-    {
-        object_[sfIssuerMirrorEncryptionKey] = value;
         return *this;
     }
 

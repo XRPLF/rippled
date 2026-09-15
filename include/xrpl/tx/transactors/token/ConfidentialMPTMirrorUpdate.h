@@ -37,11 +37,13 @@ namespace xrpl {
  *   register an auditor key at a later time through `MPTokenIssuanceSet`. Then the issuer uses this
  *   flow to set the holder's initial `sfAuditorEncryptedBalance` on `MPToken` object.
  *
- * - Holder self-migration mode: Submitted by the holder. This is the recovery
- *   path used when the issuer has permanently lost private key and can no longer perform
- *   active re-encryption. The holder decrypts their own
+ * - Holder self-migration mode: Submitted by the holder. The holder decrypts their own
  *   `sfConfidentialBalanceSpending` with holder's private key to recover the balance and
- *   re-encrypts it under the relevant new ElGamal public key(s).
+ *   re-encrypts it under the relevant new ElGamal public key(s). This mode is always
+ *   available to the holder and is not conditioned on the issuer being unable to migrate
+ *   them: the ledger cannot verify whether an issuer has really lost its private key. That
+ *   loss is only the expected motivation, since an issuer that still holds its key can
+ *   migrate holders itself in issuer mode.
  * @note All holder migration flows strictly require the holder's
  *       `sfConfidentialBalanceInbox` to be canonically zero; the holder must run
  *       `ConfidentialMPTMergeInbox` first so the spending balance reflects the
@@ -52,9 +54,9 @@ namespace xrpl {
  *
  * 6. Holder Auditor-Mirror Migration: Re-encrypts the holder's
  *    `sfAuditorEncryptedBalance` under the auditor's new ElGamal public key, or
- *    sets it for the first time when the auditor key was late-registered. Needed
- *    only because the issuer, having lost sk_I, can no longer perform the auditor
- *    re-encryption or initial registration in issuer mode (flows 2 and 4).
+ *    sets it for the first time when the auditor key was late-registered. This is the
+ *    holder-driven counterpart to flows 2 and 4, for when the issuer does not migrate
+ *    the holder itself.
  *
  * 7. Simultaneous Holder Self-Migration: Updates both the issuer and auditor
  *    encrypted balances in a single transaction (both keys have rotated).

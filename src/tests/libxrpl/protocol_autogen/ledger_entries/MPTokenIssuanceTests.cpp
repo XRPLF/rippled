@@ -38,7 +38,6 @@ TEST(MPTokenIssuanceTests, BuilderSettersRoundTrip)
     auto const auditorEncryptionKeyValue = canonical_VL();
     auto const issuerKeyEpochValue = canonical_UINT32();
     auto const auditorKeyEpochValue = canonical_UINT32();
-    auto const initialIssuerEncryptionKeyValue = canonical_VL();
     auto const confidentialOutstandingAmountValue = canonical_UINT64();
 
     MPTokenIssuanceBuilder builder{
@@ -62,7 +61,6 @@ TEST(MPTokenIssuanceTests, BuilderSettersRoundTrip)
     builder.setAuditorEncryptionKey(auditorEncryptionKeyValue);
     builder.setIssuerKeyEpoch(issuerKeyEpochValue);
     builder.setAuditorKeyEpoch(auditorKeyEpochValue);
-    builder.setInitialIssuerEncryptionKey(initialIssuerEncryptionKeyValue);
     builder.setConfidentialOutstandingAmount(confidentialOutstandingAmountValue);
 
     builder.setLedgerIndex(index);
@@ -207,14 +205,6 @@ TEST(MPTokenIssuanceTests, BuilderSettersRoundTrip)
     }
 
     {
-        auto const& expected = initialIssuerEncryptionKeyValue;
-        auto const actualOpt = entry.getInitialIssuerEncryptionKey();
-        ASSERT_TRUE(actualOpt.has_value());
-        expectEqualField(expected, *actualOpt, "sfInitialIssuerEncryptionKey");
-        EXPECT_TRUE(entry.hasInitialIssuerEncryptionKey());
-    }
-
-    {
         auto const& expected = confidentialOutstandingAmountValue;
         auto const actualOpt = entry.getConfidentialOutstandingAmount();
         ASSERT_TRUE(actualOpt.has_value());
@@ -253,7 +243,6 @@ TEST(MPTokenIssuanceTests, BuilderFromSleRoundTrip)
     auto const auditorEncryptionKeyValue = canonical_VL();
     auto const issuerKeyEpochValue = canonical_UINT32();
     auto const auditorKeyEpochValue = canonical_UINT32();
-    auto const initialIssuerEncryptionKeyValue = canonical_VL();
     auto const confidentialOutstandingAmountValue = canonical_UINT64();
 
     auto sle = std::make_shared<SLE>(MPTokenIssuance::entryType, index);
@@ -276,7 +265,6 @@ TEST(MPTokenIssuanceTests, BuilderFromSleRoundTrip)
     sle->at(sfAuditorEncryptionKey) = auditorEncryptionKeyValue;
     sle->at(sfIssuerKeyEpoch) = issuerKeyEpochValue;
     sle->at(sfAuditorKeyEpoch) = auditorKeyEpochValue;
-    sle->at(sfInitialIssuerEncryptionKey) = initialIssuerEncryptionKeyValue;
     sle->at(sfConfidentialOutstandingAmount) = confidentialOutstandingAmountValue;
 
     MPTokenIssuanceBuilder builderFromSle{sle};
@@ -505,19 +493,6 @@ TEST(MPTokenIssuanceTests, BuilderFromSleRoundTrip)
     }
 
     {
-        auto const& expected = initialIssuerEncryptionKeyValue;
-
-        auto const fromSleOpt = entryFromSle.getInitialIssuerEncryptionKey();
-        auto const fromBuilderOpt = entryFromBuilder.getInitialIssuerEncryptionKey();
-
-        ASSERT_TRUE(fromSleOpt.has_value());
-        ASSERT_TRUE(fromBuilderOpt.has_value());
-
-        expectEqualField(expected, *fromSleOpt, "sfInitialIssuerEncryptionKey");
-        expectEqualField(expected, *fromBuilderOpt, "sfInitialIssuerEncryptionKey");
-    }
-
-    {
         auto const& expected = confidentialOutstandingAmountValue;
 
         auto const fromSleOpt = entryFromSle.getConfidentialOutstandingAmount();
@@ -618,8 +593,6 @@ TEST(MPTokenIssuanceTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(entry.getIssuerKeyEpoch().has_value());
     EXPECT_FALSE(entry.hasAuditorKeyEpoch());
     EXPECT_FALSE(entry.getAuditorKeyEpoch().has_value());
-    EXPECT_FALSE(entry.hasInitialIssuerEncryptionKey());
-    EXPECT_FALSE(entry.getInitialIssuerEncryptionKey().has_value());
     EXPECT_FALSE(entry.hasConfidentialOutstandingAmount());
     EXPECT_FALSE(entry.getConfidentialOutstandingAmount().has_value());
 }

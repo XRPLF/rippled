@@ -17,7 +17,6 @@
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/Transactor.h>
 
-#include <cstdint>
 #include <memory>
 
 namespace xrpl {
@@ -148,28 +147,20 @@ ConfidentialMPTMirrorUpdate::preclaim(PreclaimContext const& ctx)
     if (hasAuditorAmount && !sleIssuance->isFieldPresent(sfAuditorEncryptionKey))
         return tecNO_PERMISSION;
 
-    // Epoch staleness. Mirror epochs count how many times the
-    // holder's mirrors have been re-encrypted; the issuance key epochs count
-    // how many times the keys have rotated.
-    std::uint32_t const issuerKeyEpoch = (*sleIssuance)[~sfIssuerKeyEpoch].value_or(0);
-    std::uint32_t const auditorKeyEpoch = (*sleIssuance)[~sfAuditorKeyEpoch].value_or(0);
-    std::uint32_t const issuerMirrorEpoch = (*sleMptoken)[~sfIssuerKeyMirrorEpoch].value_or(0);
-    std::uint32_t const auditorMirrorEpoch = (*sleMptoken)[~sfAuditorKeyMirrorEpoch].value_or(0);
-
-    // The issuer mirror can only be re-encrypted while it is stale.
-    if (hasIssuerAmount && issuerMirrorEpoch >= issuerKeyEpoch)
+    // An issuer mirror may only be re-encrypted while it is stale, reject if it is already current.
+    if (hasIssuerAmount && isIssuerMirrorCurrent(*sleIssuance, *sleMptoken))
         return tecNO_PERMISSION;
 
     if (hasAuditorAmount)
     {
         // An issuer-mode auditor-only migration: the issuer mirror must already be up to date.
-        if (hasHolder && !hasIssuerAmount && issuerMirrorEpoch != issuerKeyEpoch)
+        if (hasHolder && !hasIssuerAmount && !isIssuerMirrorCurrent(*sleIssuance, *sleMptoken))
             return tecNO_PERMISSION;
 
-        // The auditor mirror can only be re-encrypted while it is stale, unless
-        // this is its first-time registration (no auditor mirror yet).
-        bool const hasAuditorMirror = sleMptoken->isFieldPresent(sfAuditorEncryptedBalance);
-        if (hasAuditorMirror && auditorMirrorEpoch >= auditorKeyEpoch)
+        // An auditor mirror may only be re-encrypted while it is stale, reject if it is already
+        // current. isAuditorMirrorCurrent reports an absent auditor mirror as stale, which is what
+        // allows an auditor-only migration to create one for the first time.
+        if (isAuditorMirrorCurrent(*sleIssuance, *sleMptoken))
             return tecNO_PERMISSION;
     }
 
@@ -247,23 +238,18 @@ ConfidentialMPTMirrorUpdate::doApply()
     }
 
     // Re-encrypt the requested mirror(s) and advance the corresponding mirror
-    // epoch to match the issuance key epoch. Only
-    // set the epoch field when it is non-zero, matching the issuance convention
-    // that an absent epoch means zero.
+    // epoch to match the issuance key epoch. Each mirror is stamped separately
+    // because this transaction may migrate either one or both.
     if (ctx_.tx.isFieldPresent(sfIssuerEncryptedAmount))
     {
         (*sleMptoken)[sfIssuerEncryptedBalance] = ctx_.tx[sfIssuerEncryptedAmount];
-        std::uint32_t const issuerKeyEpoch = (*sleIssuance)[~sfIssuerKeyEpoch].value_or(0);
-        if (issuerKeyEpoch != 0)
-            (*sleMptoken)[sfIssuerKeyMirrorEpoch] = issuerKeyEpoch;
+        setIssuerMirrorEpoch(*sleIssuance, *sleMptoken);
     }
 
     if (ctx_.tx.isFieldPresent(sfAuditorEncryptedAmount))
     {
         (*sleMptoken)[sfAuditorEncryptedBalance] = ctx_.tx[sfAuditorEncryptedAmount];
-        std::uint32_t const auditorKeyEpoch = (*sleIssuance)[~sfAuditorKeyEpoch].value_or(0);
-        if (auditorKeyEpoch != 0)
-            (*sleMptoken)[sfAuditorKeyMirrorEpoch] = auditorKeyEpoch;
+        setAuditorMirrorEpoch(*sleIssuance, *sleMptoken);
     }
 
     view().update(sleMptoken);
