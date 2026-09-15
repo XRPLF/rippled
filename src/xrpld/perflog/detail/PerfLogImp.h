@@ -1,5 +1,6 @@
 #pragma once
 
+#include <xrpl/basics/StringUtilities.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/core/Job.h>
 #include <xrpl/core/JobTypes.h>
