@@ -18,17 +18,18 @@ missing lives in a sibling layer.
 Run the C++ side with:
 
 ```bash
-./build/xrpl_tests --gtest_filter='*Impl.*:*Call.*:*E2e.*:WasmVMTest.*:WasmVMDeathTest.*:PreflightTest.*:BytecodeSize.*:BytecodePreflight.*:FinishFailures.*:BytecodeRun.*:GasFees.*:DataOnReject.*'
+./build/xrpl_tests --gtest_filter='*Impl.*:*Call.*:*E2e.*:*DirectCall.*:WasmVMTest.*:WasmVMDeathTest.*:PreflightTest.*:BytecodeSize.*:BytecodePreflight.*:FinishFailures.*:BytecodeRun.*:GasFees.*:DataOnReject.*'
 ```
 
-(744 tests, 142 suites.) The engine-level coverage is Rust: `cd crates && cargo test`.
+(898 tests, 178 suites.) The engine-level coverage is Rust: `cd crates && cargo test`.
 
 ## `fixtures/` — split by whether it needs a test framework
 
-|                                                |                                                                                                                                                                                                                                                                                    |
-| ---------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **No GTest** — the `xrpl.testkit.wasm` library | `WasmLedger` (real genesis ledger + the real host over it), `WasmRun` (WAT assembler), `NftSetup`, `FloatConstants`                                                                                                                                                                |
-| **GTest** → `xrpl_tests`                       | `RealHostFixture` (`: testing::Test, WasmLedger` + `expectValue`/`expectError`/`expectKeyletMatches`), `FloatFixture`, `NFTFixture`, `MockHostFunctions`, `WasmFixture`, `RealVmTest`, `HostContextFixture`, `EscrowWasm` (transactor contracts + fee arithmetic), `ModuleBuilder` |
+|                                                            |                                                                                                                                                                                                                                                                                                                                                                                         |
+| ---------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **No GTest** — the `xrpl.testkit.wasm` library             | `WasmLedger` (real genesis ledger + the real host over it), `WasmRun` (WAT assembler), `NftSetup`, `FloatConstants`                                                                                                                                                                                                                                                                     |
+| **No GTest** — the `xrpl.testkit.wasm` library (contracts) | `ContractLedger` (a real contract host over the same ledger, built as `ContractCall::doApply` builds one) and `ContractHost`, whose `finalize()` writes the data cache and events to the ledger                                                                                                                                                                                         |
+| **GTest** → `xrpl_tests`                                   | `RealHostFixture` (`: testing::Test, WasmLedger` + `expectValue`/`expectError`/`expectKeyletMatches`), `FloatFixture`, `NFTFixture`, `MockHostFunctions`, `WasmFixture`, `RealVmTest`, `HostContextFixture`, `EscrowWasm` (transactor contracts + fee arithmetic), `ModuleBuilder`, `ContractHostFixture` (value constructors and `valueWire`), `ContractVmTest`, `ContractCallFixture` |
 
 The split exists because a benchmark wants a ledger and a host, not GTest's lifecycle:
 `xrpl.bench.wasm` links no GTest and no GMock at all.
@@ -37,6 +38,26 @@ Setup steps in `WasmLedger` and `NftSetup` **throw** (`fixtureFailed`) rather th
 An `EXPECT_` outside a running test is recorded and discarded, so a benchmark whose escrow was
 never created would still run its host call, take the not-found path, and report a cheap,
 plausible, completely wrong price. **If you add a setup step that can fail, throw.**
+
+## Smart contracts
+
+The contract host functions sit in the same layers and the same `host_lib` namespace as the
+escrow ones, whose host leaves them `Unimplemented`. `host_functions/` and `host_calls/` hold
+one file per function as usual; the fixtures are `ContractHostFixture` and `ContractCallTest`
+rather than `RealHostFixture` and `HostCallTest`, because a contract host needs a
+`ContractContext` behind it.
+
+Two byte-order conventions live side by side and are easy to assume wrongly:
+
+|                                    |                                                                           |
+| ---------------------------------- | ------------------------------------------------------------------------- |
+| `instance_param`, `function_param` | the parameter as **little-endian** integers                               |
+| `get_data_*`                       | the value's **canonical big-endian** serialization, without its type byte |
+| `set_data_*` (input)               | the type byte, then that type's serialization                             |
+| `emit_built_txn`, `emit_txn`       | the TER as **four little-endian bytes in the output region**              |
+
+The TER is written rather than returned because `tem`, `tef`, `ter` and `tel` codes are
+negative, and the engine reads a negative result as a `HostError` and stops the run.
 
 ## Gas calibration
 
@@ -57,18 +78,22 @@ test passed, and it was caught by cross-checking the guest SDK.
 Convention mismatch is a property of a call's **shape**, not of the function — all 19 keylets share
 one shape, so a 19th keylet e2e proves nothing the 1st did. The inventory is meant to be exhaustive:
 
-| Shape / convention                        | Covered by                 | Why it is its own row                                    |
-| ----------------------------------------- | -------------------------- | -------------------------------------------------------- |
-| no-input scalar getter                    | `LedgerSqnE2e`             | header read; the minimal call                            |
-| field code in, bytes out (ledger object)  | `CurrentLedgerObjFieldE2e` | `SField` translation over a real object                  |
-| field code in, bytes out (transaction)    | `TxFieldE2e`               | a different source than a ledger object                  |
-| region in, bytes out + `u32` region       | `CacheLedgerObjE2e`        | the 4-byte little-endian region convention               |
-| slot in, bytes out — **cross-call state** | `CacheLedgerObjE2e`        | the slot table is the only host state outliving one call |
-| locator (path of i32 steps)               | `TxNestedFieldE2e`         | a wire format the guest writes and the host walks        |
-| **two** output regions                    | `FloatToMantExpE2e`        | two bounds checks, two writes, an ordering between them  |
-| write / mutation                          | `SetDataE2e`               | the one thing a contract changes                         |
-| **error** path from a real impl           | `HostErrorE2e`             | a soft code from a real failure, not a staged one        |
-| realistic multi-call contract             | `HostFunctionTourE2e`      | the old `all_host_functions` tour shape, as one test     |
+| Shape / convention                        | Covered by                 | Why it is its own row                                        |
+| ----------------------------------------- | -------------------------- | ------------------------------------------------------------ |
+| no-input scalar getter                    | `LedgerSqnE2e`             | header read; the minimal call                                |
+| field code in, bytes out (ledger object)  | `CurrentLedgerObjFieldE2e` | `SField` translation over a real object                      |
+| field code in, bytes out (transaction)    | `TxFieldE2e`               | a different source than a ledger object                      |
+| region in, bytes out + `u32` region       | `CacheLedgerObjE2e`        | the 4-byte little-endian region convention                   |
+| slot in, bytes out — **cross-call state** | `CacheLedgerObjE2e`        | the slot table is the only host state outliving one call     |
+| locator (path of i32 steps)               | `TxNestedFieldE2e`         | a wire format the guest writes and the host walks            |
+| **two** output regions                    | `FloatToMantExpE2e`        | two bounds checks, two writes, an ordering between them      |
+| write / mutation                          | `SetDataE2e`               | the one thing a contract changes                             |
+| **error** path from a real impl           | `HostErrorE2e`             | a soft code from a real failure, not a staged one            |
+| realistic multi-call contract             | `HostFunctionTourE2e`      | the old `all_host_functions` tour shape, as one test         |
+| typed value in, untyped value out         | `ContractDataE2e`          | the guest writes a type byte the host does not write back    |
+| index scalar **between** two regions      | `ContractDataE2e`          | two regions either side of a scalar is a new argument order  |
+| builder index — **cross-call state**      | `ContractEmitE2e`          | the contract's own slot table, and the TER crossing as bytes |
+| a whole serialized object in              | `ContractEventE2e`         | a different parser from the one a single value goes through  |
 
 Adding a function needs no new e2e case unless it introduces a shape not in that table. Per-function
 breadth lives in `host_functions/` and `host_calls/`, one case each.

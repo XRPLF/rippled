@@ -28,7 +28,10 @@ bridge.
 ## Host functions
 
 Grouped by what they reach: ledger information; transaction and ledger-object field access;
-keylet construction; cryptography; float arithmetic; NFT queries; tracing.
+keylet construction; cryptography; float arithmetic; NFT queries; tracing. A further group
+serves smart contracts rather than escrows — their instance and call parameters, the data
+object a contract keeps per account, and the transactions and events it emits — and
+`WasmHostFunctionsImpl` leaves every one of those `Unimplemented`.
 
 The wire names and per-call gas costs are declared in `crates/xrpl-host-functions` —
 one `host_functions!` block that generates the ABI trait and the spec table. That
