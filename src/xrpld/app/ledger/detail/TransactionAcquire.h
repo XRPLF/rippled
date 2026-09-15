@@ -51,6 +51,15 @@ public:
         std::chrono::milliseconds retryInterval = kRetryInterval);
     ~TransactionAcquire() override = default;
 
+    /**
+     * Add nodes a peer sent us to the set we are acquiring.
+     *
+     * @param data The nodes to add, each with its claimed position.
+     * @param peer The peer that sent them.
+     * @return The tally of useful, unwanted, and bad nodes in the batch. Useful and
+     *         bad can both be nonzero, since only the node the batch stops on is
+     *         bad.
+     */
     SHAMapAddNode
     takeNodes(
         std::vector<std::pair<SHAMapNodeID, SHAMapTreeNodePtr>> data,
@@ -77,6 +86,23 @@ protected:
 private:
     bool haveRoot_{false};
     std::unique_ptr<PeerSet> peerSet_;
+
+    /**
+     * Add nodes a peer sent us, on the lock takeNodes() holds.
+     *
+     * Split out so recording what the batch achieved happens on one exit rather
+     * than on each of the several this has, including the ones that stop the batch
+     * early.
+     *
+     * @param data The nodes to add, each with its claimed position.
+     * @param peer The peer that sent them.
+     * @return The tally of useful, unwanted, and bad nodes in the batch.
+     */
+    SHAMapAddNode
+    takeNodesLocked(
+        std::vector<std::pair<SHAMapNodeID, SHAMapTreeNodePtr>> data,
+        std::shared_ptr<Peer> const& peer,
+        ScopedLockType&);
 
     void
     onTimer(bool progress, ScopedLockType& sl) override;
