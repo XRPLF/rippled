@@ -473,15 +473,19 @@ SHAMapStoreImp::run()
 
             JLOG(journal_.debug()) << "copying ledger " << validatedSeq;
             std::uint64_t nodeCount = 0;
+            std::uint64_t nodesCopied = 0;
 
             try
             {
                 RotationPhase phase(*this, ns::phase::copy, lv::copy);
+                auto const copiedBefore = dbRotating_->duplicateCopyForwardTotal();
                 validatedLedger->stateMap().snapShot(false)->visitNodes(
                     [this, &nodeCount](SHAMapTreeNode const& node) {
                         return copyNode(nodeCount, node);
                     });
+                nodesCopied = dbRotating_->duplicateCopyForwardTotal() - copiedBefore;
                 phase.setAttribute(ns::attr::nodeCount, static_cast<std::int64_t>(nodeCount));
+                phase.setAttribute(ns::attr::nodesCopied, static_cast<std::int64_t>(nodesCopied));
             }
             catch (SHAMapMissingNode const& e)
             {
@@ -499,8 +503,8 @@ SHAMapStoreImp::run()
                 continue;
             }
             // Only log if we completed without a "health" abort
-            JLOG(journal_.debug())
-                << "copied ledger " << validatedSeq << " nodecount " << nodeCount;
+            JLOG(journal_.debug()) << "copied ledger " << validatedSeq << " nodecount " << nodeCount
+                                   << " copied forward from the archive " << nodesCopied;
 
             // Close the getKeys()->swap exposure window: from here until
             // rotate() completes, an ordinary read served by the archive is
@@ -764,10 +768,34 @@ SHAMapStoreImp::clearCaches(LedgerIndex validatedSeq)
 void
 SHAMapStoreImp::freshenCaches()
 {
-    if (freshenCache(*treeNodeCache_))
+    namespace lv = telemetry::lval::freshen_cache;
+    if (freshenCache(*treeNodeCache_, lv::treenode))
         return;
-    if (freshenCache(app_.getMasterTransaction().getCache()))
+    if (freshenCache(app_.getMasterTransaction().getCache(), lv::masterTx))
         return;
+}
+
+void
+SHAMapStoreImp::recordFreshen(char const* cacheName, std::uint64_t fetched, std::uint64_t copied)
+{
+    namespace lv = telemetry::lval::freshen_outcome;
+    // One lambda, so one macro expansion and one counter instrument for both
+    // outcomes.
+    auto const add = [&]([[maybe_unused]] std::uint64_t amount,
+                         [[maybe_unused]] char const* outcome) {
+        XRPL_METRIC_COUNTER_ADD_LABELED(
+            app_,
+            telemetry::metric::rotationFreshenKeysTotal,
+            "Keys the rotation's cache freshen fetched, and how many were only in the archive",
+            amount,
+            {{telemetry::label::cache, std::string(cacheName)},
+             {telemetry::label::outcome, std::string(outcome)}});
+    };
+    add(fetched, lv::fetched);
+    add(copied, lv::copied);
+
+    JLOG(journal_.warn()) << "freshened " << cacheName << " cache: " << fetched << " keys fetched, "
+                          << copied << " copied forward from the archive";
 }
 
 void

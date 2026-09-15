@@ -240,6 +240,12 @@ public:
         return map_;
     }
 
+    partition_map_type const&
+    map() const
+    {
+        return map_;
+    }
+
     Iterator
     begin()
     {

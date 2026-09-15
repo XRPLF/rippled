@@ -1168,6 +1168,49 @@ TEST(MetricMacros, state_changes_total_keys_series_on_from_to_pair)
     }
 }
 
+TEST(MetricMacros, rotation_freshen_keys_total_keys_series_on_cache_and_outcome)
+{
+    CollectingProvider const provider;
+    FakeApp app;
+    wire(app, /*enabled=*/true, provider.meter());
+
+    // Mirrors SHAMapStoreImp::recordFreshen: one Add per outcome per cache,
+    // through a single macro expansion.
+    auto const add = [&app](char const* cache, char const* outcome, std::uint64_t amount) {
+        XRPL_METRIC_COUNTER_ADD_LABELED(
+            app,
+            telemetry::metric::rotationFreshenKeysTotal,
+            "Keys the rotation's cache freshen fetched, and how many were only in the archive",
+            amount,
+            {{telemetry::label::cache, std::string(cache)},
+             {telemetry::label::outcome, std::string(outcome)}});
+    };
+    namespace fc = telemetry::lval::freshen_cache;
+    namespace fo = telemetry::lval::freshen_outcome;
+    add(fc::treenode, fo::fetched, 26);
+    add(fc::treenode, fo::copied, 3);
+    add(fc::masterTx, fo::fetched, 5);
+    add(fc::masterTx, fo::copied, 0);
+
+    auto const data = provider.collect();
+    auto const& name = telemetry::metric::rotationFreshenKeysTotal;
+
+    // Two caches times two outcomes: exactly four series, even where the
+    // amount was zero, so a yield of zero is a reading and not an absence.
+    ASSERT_EQ(data.at(name).size(), 4u);
+    EXPECT_EQ(counterValue(data, name, attrs("cache", "treenode", "outcome", "fetched")), 26);
+    EXPECT_EQ(counterValue(data, name, attrs("cache", "treenode", "outcome", "copied")), 3);
+    EXPECT_EQ(counterValue(data, name, attrs("cache", "master_tx", "outcome", "fetched")), 5);
+    EXPECT_EQ(counterValue(data, name, attrs("cache", "master_tx", "outcome", "copied")), 0);
+
+    for (auto const& [labels, point] : data.at(name))
+    {
+        ASSERT_EQ(labels.size(), 2u);
+        EXPECT_EQ(labels.count("cache"), 1u);
+        EXPECT_EQ(labels.count("outcome"), 1u);
+    }
+}
+
 // sync_state fans four independent signals out of ONE callback under the
 // `metric` label, mirroring MetricsRegistry::registerSyncStateGauge(). The
 // values chosen are the diagnostically interesting combination: never reached

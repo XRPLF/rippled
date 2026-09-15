@@ -68,9 +68,10 @@ INSTANTIATE_TEST_SUITE_P(
 
 TEST(HistogramBucketsRange, rotationPhaseLadderSpansSecondsToAnHour)
 {
-    // Measured 2026-09-13 on aws-dev-xrpl-1: freshen.keys 5-6 s, freshen.fetch
-    // ~3 min, copy ~10 min, whole rotation 13-17 min. The floor must sit under
-    // the lock hold; the ceiling above a whole rotation with headroom.
+    // Measured 2026-09-13 on aws-dev-xrpl-1: getKeys() lock hold 5-6 s (since
+    // split per partition), freshen.fetch ~3 min, copy ~10 min, whole rotation
+    // 13-17 min. The floor must sit under a short phase; the ceiling above a
+    // whole rotation with headroom.
     EXPECT_EQ(kRotationPhaseSecondsBuckets.front(), 1.0);
     EXPECT_LE(kRotationPhaseSecondsBuckets.front(), 5.0);
     EXPECT_EQ(kRotationPhaseSecondsBuckets.back(), 3600.0);

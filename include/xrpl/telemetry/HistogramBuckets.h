@@ -108,9 +108,10 @@ inline constexpr std::array kMillisecondBuckets{
 /**
  * Bucket edges, in seconds, for `rotation_phase_duration_seconds`.
  *
- * Measured 2026-09-13 on aws-dev-xrpl-1: freshen.keys 5-6 s, freshen.fetch
- * ~3 min, copy ~10 min, whole rotation 13-17 min. The 1 s floor sits under
- * the lock hold; 3600 s leaves headroom above a slow rotation.
+ * Measured 2026-09-13 on aws-dev-xrpl-1: the getKeys() lock hold 5-6 s (since
+ * split per partition), freshen.fetch ~3 min, copy ~10 min, whole rotation
+ * 13-17 min. The 1 s floor sits under a short phase; 3600 s leaves headroom
+ * above a slow rotation.
  */
 inline constexpr std::array kRotationPhaseSecondsBuckets{
     1.0,
