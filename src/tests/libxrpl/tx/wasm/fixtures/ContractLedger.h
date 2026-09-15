@@ -111,6 +111,11 @@ public:
 private:
     ContractHost
     makeContractHost(beast::Journal journal, ContractHostOptions options);
+
+    // Every host gets a transaction of its own. Two identical ones would share an id, and a
+    // ledger refuses to record the same transaction twice — which a test that finalizes more
+    // than once would otherwise hit.
+    std::uint32_t callSequence_{1};
 };
 
 // -------------------------------------------------------------------------------------

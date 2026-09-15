@@ -79,6 +79,7 @@ ContractLedger::makeContractHost(beast::Journal journal, ContractHostOptions opt
         obj.setAccountID(sfContractAccount, contractAccount);
         obj.setFieldVL(sfFunctionName, Blob{'c', 'a', 'l', 'l'});
         obj.setFieldU32(sfGas, 1'000'000);
+        obj.setFieldU32(sfSequence, callSequence_++);
     });
 
     auto context = std::make_unique<ApplyContext>(
