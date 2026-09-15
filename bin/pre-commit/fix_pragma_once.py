@@ -9,15 +9,17 @@ Usage: ./bin/pre-commit/fix_pragma_once.py <file1> <file2> ...
 import sys
 from pathlib import Path
 
-PRAGMA_ONCE = "#pragma once\n\n"
+PRAGMA_ONCE = "#pragma once"
+# Written with a blank line after it, to match the existing headers.
+INSERTED = f"{PRAGMA_ONCE}\n\n"
 
 
 def fix_pragma_once(path: Path) -> bool:
     original = path.read_text(encoding="utf-8")
-    if PRAGMA_ONCE not in original:
-        path.write_text(PRAGMA_ONCE + original, encoding="utf-8")
-        return False
-    return True
+    if PRAGMA_ONCE in original:
+        return True
+    path.write_text(INSERTED + original, encoding="utf-8")
+    return False
 
 
 def main() -> int:
