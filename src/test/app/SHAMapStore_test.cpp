@@ -1077,8 +1077,10 @@ public:
                  ledgerSeq < target;
                  ++ledgerSeq)
             {
-                env(pay(alice, bob, XRP(1)));
-                env(pay(bob, alice, XRP(1)));
+                // A fresh funded account each ledger adds new state-map
+                // nodes, so each rotation copies forward genuinely new data
+                // while alice's and bob's roots persist across the boundary.
+                env.fund(XRP(1000), Account("acct" + std::to_string(ledgerSeq)));
                 env.close();
 
                 auto ledger = env.rpc("ledger", "validated");
