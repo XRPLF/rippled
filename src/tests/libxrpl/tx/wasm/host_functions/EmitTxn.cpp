@@ -63,23 +63,17 @@ TEST_F(EmitTxnImpl, APaymentTheLedgerAcceptsIsQueued)
     EXPECT_EQ(contractHost.context().result.emittedTxns.size(), 1U);
 }
 
-// A transaction the contract did not mark as an inner one cannot be emitted at all.
-//
-// The host means to set the flag for it, and rebuilds the transaction to do so — but
-// rebuilding an `STTx` from its own fields re-runs the format check, which rejects a
-// defaulted `sfPaths` that the original carried harmlessly. The contract is told
-// `InternalFatal`, so the run stops and the transaction reports `tecINTERNAL`.
-//
-// This pins what happens today. A contract's own choice reading as a node fault belongs
-// with the same fix as `EmitBuiltTxnImpl.ATransactionMissingARequiredFieldStopsTheRun`.
-TEST_F(EmitTxnImpl, ATransactionWithoutTheInnerFlagStopsTheRun)
+// A contract does not have to mark what it emits as an inner transaction: the host marks it,
+// on a copy, and the transaction is applied like any other.
+TEST_F(EmitTxnImpl, ATransactionWithoutTheInnerFlagIsMarkedAndEmitted)
 {
     auto const contractHost = host();
 
-    expectError(
-        contractHost->emitTxn(payment(XRP(192), contractSequence(), false)),
-        HostFunctionError::InternalFatal);
-    EXPECT_TRUE(contractHost.context().result.emittedTxns.empty());
+    expectValue(
+        contractHost->emitTxn(payment(XRP(192), contractSequence(), false)), TERtoInt(tesSUCCESS));
+
+    ASSERT_EQ(contractHost.context().result.emittedTxns.size(), 1U);
+    EXPECT_TRUE(contractHost.context().result.emittedTxns.front()->isFlag(tfInnerBatchTxn));
 }
 
 // One the contract did mark keeps the flag, which is what the transactor reads to know it is

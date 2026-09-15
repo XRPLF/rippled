@@ -950,17 +950,26 @@ ContractHostFunctionsImpl::emitBuiltTxn(std::uint32_t const& index)
         // Ensure tfInnerBatchTxn is always set, even if the contract
         // overwrote sfFlags via addTxnField.
         contractCtx.built_txns[index].setFlag(tfInnerBatchTxn);
-        std::shared_ptr<STTx const> const stx =
-            std::make_shared<STTx>(std::move(contractCtx.built_txns[index]));
 
+        // `STTx`'s constructor checks the transaction against its format, and reports a
+        // field the type requires but the contract never set by throwing. That is the
+        // contract's own mistake, so it is caught here and answered rather than left to
+        // the catch below, which would report a node fault and stop the run.
+        //
+        // The built transaction is copied rather than moved: a run that is told its
+        // transaction is malformed can correct it and emit the same index again. `STTx`
+        // takes the object by rvalue, so the copy is made here.
+        std::shared_ptr<STTx const> stx;
         try
         {
+            STObject built = contractCtx.built_txns[index];
+            stx = std::make_shared<STTx const>(std::move(built));
             (void)stx->getTransactionID();
         }
         catch (std::exception const& e)
         {
             JLOG(j.trace()) << "WasmTrace[" << parentBatchId << "]: "
-                            << "emitBuiltTxn: Failed to decode transaction: " << e.what();
+                            << "emitBuiltTxn: Failed to build transaction: " << e.what();
             return std::unexpected(HostFunctionError::SubmitTxnFailure);
         }
 
@@ -1003,14 +1012,23 @@ ContractHostFunctionsImpl::emitTxn(std::shared_ptr<STTx const> const& stxPtr)
 
     try
     {
-        // Ensure tfInnerBatchTxn is always set on emitted transactions.
-        // Since STTx is const, create a mutable copy if the flag is missing.
+        // Ensure tfInnerBatchTxn is always set on emitted transactions. `STTx` is held
+        // const, so the flag goes on a copy.
+        //
+        // The copy is made through `STTx`'s own copy constructor rather than by rebuilding
+        // one from its fields. Rebuilding re-runs the format check, which rejects the
+        // defaulted `sfPaths` an ordinary Payment carries harmlessly — so a contract that
+        // simply did not set the flag itself could not emit anything at all.
         std::shared_ptr<STTx const> txPtr = stxPtr;
         if (!stxPtr->isFlag(tfInnerBatchTxn))
         {
-            STObject obj(static_cast<STObject const&>(*stxPtr));
-            obj.setFlag(tfInnerBatchTxn);
-            txPtr = std::make_shared<STTx const>(std::move(obj));
+            auto flagged = std::make_shared<STTx>(*stxPtr);
+
+            // `setFlag` reaches an existing `sfFlags` and cannot add one: a transaction
+            // built against a template holds the field as a placeholder until something
+            // gives it a value, and that is what `setFieldU32` does.
+            flagged->setFieldU32(sfFlags, flagged->getFlags() | tfInnerBatchTxn);
+            txPtr = std::move(flagged);
         }
 
         try

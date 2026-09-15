@@ -84,22 +84,35 @@ TEST_F(EmitBuiltTxnImpl, APaymentTheAccountCannotAffordIsReportedAsItsTec)
         << "a fee-claiming transaction belongs on the ledger";
 }
 
-// A transaction missing a field its type requires never becomes a transaction at all.
-//
-// What the contract is told is `InternalFatal`, which stops the run and reports
-// `tecINTERNAL`: the transaction's format is checked where `STTx` is constructed, outside
-// the guard that would have answered `SubmitTxnFailure`. A contract's own mistake reading as
-// a node fault is worth revisiting; this pins what it does today.
-TEST_F(EmitBuiltTxnImpl, ATransactionMissingARequiredFieldStopsTheRun)
+// A transaction missing a field its type requires never becomes a transaction, and the
+// contract is told so: `SubmitTxnFailure` is a refusal it can act on, where the run-stopping
+// `InternalFatal` would have reported a node fault for a mistake of its own.
+TEST_F(EmitBuiltTxnImpl, ATransactionMissingARequiredFieldIsRefused)
 {
     auto const contractHost = host();
     auto const amount = WasmLedger::toBytes(STAmount{XRP(1)});
     ASSERT_TRUE(contractHost->buildTxn(ttPAYMENT));
     ASSERT_TRUE(contractHost->addTxnField(0, sfAmount, Slice{amount.data(), amount.size()}));
 
-    // No destination, so the payment cannot even be serialized as one.
-    expectError(contractHost->emitBuiltTxn(0), HostFunctionError::InternalFatal);
+    // No destination, so the payment cannot be built as one.
+    expectError(contractHost->emitBuiltTxn(0), HostFunctionError::SubmitTxnFailure);
     EXPECT_TRUE(contractHost.context().result.emittedTxns.empty());
+}
+
+// A refusal leaves the transaction where it was, so the contract can supply what was missing
+// and emit the same index again.
+TEST_F(EmitBuiltTxnImpl, ARefusedTransactionCanBeCorrectedAndEmitted)
+{
+    auto const contractHost = host();
+    auto const amount = WasmLedger::toBytes(STAmount{XRP(192)});
+    auto const destination = accountField(carol.id());
+    ASSERT_TRUE(contractHost->buildTxn(ttPAYMENT));
+    ASSERT_TRUE(contractHost->addTxnField(0, sfAmount, Slice{amount.data(), amount.size()}));
+    ASSERT_FALSE(contractHost->emitBuiltTxn(0));
+
+    ASSERT_TRUE(
+        contractHost->addTxnField(0, sfDestination, Slice{destination.data(), destination.size()}));
+    expectValue(contractHost->emitBuiltTxn(0), TERtoInt(tesSUCCESS));
 }
 
 TEST_F(EmitBuiltTxnImpl, AnIndexNamingNoTransactionIsOutOfBounds)
