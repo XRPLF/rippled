@@ -166,6 +166,12 @@ public:
     static Bytes
     toBytes(STNumber const& number);
 
+protected:
+    // The journal `makeTracingHost` hands its host, whose output `logged()` reads back.
+    // Held here so it outlives every host a test makes and accumulates across the test.
+    [[nodiscard]] beast::Journal
+    tracingJournal();
+
 private:
     CaptureSink traceSink_{beast::Severity::Trace};
 };

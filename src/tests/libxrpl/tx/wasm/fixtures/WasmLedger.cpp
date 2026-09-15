@@ -271,6 +271,12 @@ WasmLedger::makeTracingHost(
     return makeHost(beast::Journal{traceSink_}, leKey, txType, std::move(assembler));
 }
 
+beast::Journal
+WasmLedger::tracingJournal()
+{
+    return beast::Journal{traceSink_};
+}
+
 std::string
 WasmLedger::logged() const
 {
