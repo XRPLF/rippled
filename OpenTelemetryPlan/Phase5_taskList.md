@@ -40,10 +40,10 @@
           explicit:
             buckets: [1ms, 5ms, 10ms, 25ms, 50ms, 100ms, 250ms, 500ms, 1s, 5s]
         dimensions:
-          - name: xrpl.rpc.command
-          - name: xrpl.rpc.status
-          - name: xrpl.consensus.phase
-          - name: xrpl.tx.type
+          - name: command
+          - name: rpc_status
+          - name: consensus_phase
+          - name: tx_type
     ```
   - Add `prometheus` exporter:
     ```yaml
