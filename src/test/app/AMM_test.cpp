@@ -26,6 +26,7 @@
 #include <xrpl/basics/safe_cast.h>
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/beast/utility/Journal.h>
+#include <xrpl/beast/utility/Zero.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/helpers/AMMHelpers.h>
@@ -52,6 +53,7 @@
 #include <boost/regex/v5/regex.hpp>
 #include <boost/regex/v5/regex_search.hpp>
 
+#include <algorithm>
 #include <array>
 #include <cassert>
 #include <chrono>
@@ -2470,6 +2472,252 @@ private:
             // But the slots are refreshed and the fee is changed
             BEAST_EXPECT(ammAlice.expectTradingFee(82));
         });
+    }
+
+    void
+    testFeeVoteWithdraw(FeatureBitset features)
+    {
+        testcase("Fee Vote On Withdraw");
+        using namespace jtx;
+
+        auto hasVoter = [](json::Value const& ammInfo, std::string const& account) {
+            if (!ammInfo.isMember(jss::vote_slots))
+                return false;
+            return std::ranges::any_of(ammInfo[jss::vote_slots], [&](json::Value const& entry) {
+                return entry[jss::account] == account;
+            });
+        };
+
+        // PoC: an LP with a dominant, fee-suppressing vote withdraws all
+        // liquidity. With fixCleanup3_4_0 the stale vote slot is pruned and
+        // the trading fee is recomputed from the remaining LPs; without it the
+        // suppressed fee (and the stale vote slot) persists until the next
+        // AMMVote.
+        testAMM(
+            [&](AMM& ammAlice, Env& env) {
+                // Alice (pool creator, 10'000 LPTokens) votes for a 1% fee.
+                ammAlice.vote(alice_, 1'000);
+                BEAST_EXPECT(ammAlice.expectTradingFee(1'000));
+
+                // Carol flash-deposits an equal amount, gaining 50% of the
+                // voting power, and votes for a 0.1% fee, halving the fee to
+                // (1'000 + 100) / 2 = 550.
+                ammAlice.deposit(carol_, XRP(10'000), USD(10'000));
+                BEAST_EXPECT(ammAlice.getLPTokensBalance(carol_) > beast::kZero);
+                ammAlice.vote(carol_, 100);
+                BEAST_EXPECT(ammAlice.expectTradingFee(550));
+
+                // Carol withdraws all her liquidity. Alice remains the only LP.
+                ammAlice.withdrawAll(carol_);
+                BEAST_EXPECT(ammAlice.expectLPTokens(carol_, IOUAmount{0}));
+
+                auto const ammInfo = ammAlice.ammRpcInfo()[jss::amm];
+                bool const carolPresent = hasVoter(ammInfo, carol_.human());
+
+                if (env.enabled(fixCleanup3_4_0))
+                {
+                    // The stale vote slot is pruned and the fee reverts to
+                    // Alice's 1% vote.
+                    BEAST_EXPECT(ammAlice.expectTradingFee(1'000));
+                    BEAST_EXPECT(!carolPresent);
+                }
+                else
+                {
+                    // The suppressed fee and Carol's stale vote slot persist.
+                    BEAST_EXPECT(ammAlice.expectTradingFee(550));
+                    BEAST_EXPECT(carolPresent);
+                }
+            },
+            std::nullopt,
+            0,
+            std::nullopt,
+            {features});
+
+        // Partial withdrawal: Carol keeps 1% of her LP. Her vote slot and
+        // auction slot remain; the fee/discounted-fee are recomputed from the
+        // new holdings weights.
+        testAMM(
+            [&](AMM& ammAlice, Env& env) {
+                ammAlice.vote(alice_, 1'000);
+                ammAlice.deposit(carol_, XRP(10'000), USD(10'000));
+                ammAlice.vote(carol_, 100);
+                BEAST_EXPECT(ammAlice.expectTradingFee(550));
+
+                // Carol wins the auction slot at the vacant-slot minimum:
+                // 20e6 * 0.0055 / 25 = 4'400.
+                env(ammAlice.bid({.account = carol_}));
+                BEAST_EXPECT(ammAlice.expectAuctionSlot(55, 0, IOUAmount{4'400}));
+
+                ammAlice.withdraw(carol_, 9'900'000);
+                // 4'400 LP were burned to buy the slot, so ~95'600 remain.
+                BEAST_EXPECT(ammAlice.getLPTokensBalance(carol_) > beast::kZero);
+                BEAST_EXPECT(ammAlice.getLPTokensBalance(carol_) < IOUAmount{200'000});
+
+                auto const ammInfo = ammAlice.ammRpcInfo()[jss::amm];
+                BEAST_EXPECT(hasVoter(ammInfo, carol_.human()));
+                BEAST_EXPECT(hasVoter(ammInfo, alice_.human()));
+
+                if (env.enabled(fixCleanup3_4_0))
+                {
+                    // (1000 * 10e6 + 100 * 1e5) / 10.1e6 = 991. Slot is kept
+                    // because Carol is still an LP; discounted fee is 991/10.
+                    BEAST_EXPECT(ammAlice.expectTradingFee(991));
+                    BEAST_EXPECT(ammAlice.expectAuctionSlot(99, 0, IOUAmount{4'400}));
+                    BEAST_EXPECT(ammInfo[jss::auction_slot][jss::account] == carol_.human());
+                }
+                else
+                {
+                    BEAST_EXPECT(ammAlice.expectTradingFee(550));
+                    BEAST_EXPECT(ammAlice.expectAuctionSlot(55, 0, IOUAmount{4'400}));
+                    BEAST_EXPECT(ammInfo[jss::auction_slot][jss::account] == carol_.human());
+                }
+            },
+            std::nullopt,
+            0,
+            std::nullopt,
+            {features});
+
+        // Last remaining voter withdraws while a non-voting LP still funds the
+        // pool. The empty voter set must not be treated as a 0% fee vote.
+        testAMM(
+            [&](AMM& ammAlice, Env& env) {
+                ammAlice.vote(alice_, 1'000);
+                BEAST_EXPECT(ammAlice.expectTradingFee(1'000));
+
+                fund(env, gw_, {bob_}, XRP(30'000), {USD(30'000)}, Fund::Acct);
+                ammAlice.deposit(bob_, XRP(10'000), USD(10'000));
+                BEAST_EXPECT(ammAlice.getLPTokensBalance(bob_) > beast::kZero);
+
+                // Bob never votes, so VoteSlots is still {Alice}. Alice
+                // withdraws everything; Bob's liquidity keeps the pool alive.
+                ammAlice.withdrawAll(alice_);
+                BEAST_EXPECT(ammAlice.expectLPTokens(alice_, IOUAmount{0}));
+
+                auto const ammInfo = ammAlice.ammRpcInfo()[jss::amm];
+                bool const alicePresent = hasVoter(ammInfo, alice_.human());
+
+                if (env.enabled(fixCleanup3_4_0))
+                {
+                    // Alice's slot is pruned, but the fee stays at the last
+                    // governance-set value instead of dropping to 0.
+                    BEAST_EXPECT(ammAlice.expectTradingFee(1'000));
+                    BEAST_EXPECT(!alicePresent);
+                }
+                else
+                {
+                    BEAST_EXPECT(ammAlice.expectTradingFee(1'000));
+                    BEAST_EXPECT(alicePresent);
+                }
+            },
+            std::nullopt,
+            0,
+            std::nullopt,
+            {features});
+
+        // After Carol fully withdraws, a new bidder only pays the vacant-slot
+        // minimum and Carol is not refunded.
+        testAMM(
+            [&](AMM& ammAlice, Env& env) {
+                Account const zelda{"zelda"};
+                fund(env, gw_, {zelda}, XRP(30'000), {USD(30'000)}, Fund::Acct);
+
+                ammAlice.vote(alice_, 1'000);
+                ammAlice.deposit(carol_, XRP(10'000), USD(10'000));
+                ammAlice.vote(carol_, 100);
+                BEAST_EXPECT(ammAlice.expectTradingFee(550));
+
+                // Carol overpays so an outbid would be far above the vacant
+                // minimum.
+                env(ammAlice.bid({.account = carol_, .bidMin = 50'000}));
+                BEAST_EXPECT(ammAlice.expectAuctionSlot(55, 0, IOUAmount{50'000}));
+
+                ammAlice.withdrawAll(carol_);
+                BEAST_EXPECT(ammAlice.expectLPTokens(carol_, IOUAmount{0}));
+
+                ammAlice.deposit(zelda, XRP(10'000), USD(10'000));
+                auto const zeldaBefore = ammAlice.getLPTokensBalance(zelda);
+                // Vacant-slot minimum is far below an outbid of Carol's 50k
+                // bid. With the fix Zelda pays the minimum and Carol is not
+                // refunded; without it Zelda must outbid and Carol is refunded.
+                env(ammAlice.bid({.account = zelda}));
+                auto const zeldaPaid = zeldaBefore - ammAlice.getLPTokensBalance(zelda);
+
+                BEAST_EXPECT(
+                    ammAlice.ammRpcInfo()[jss::amm][jss::auction_slot][jss::account] ==
+                    zelda.human());
+                if (env.enabled(fixCleanup3_4_0))
+                {
+                    BEAST_EXPECT(ammAlice.expectTradingFee(1'000));
+                    BEAST_EXPECT(zeldaPaid < IOUAmount{20'000});
+                    BEAST_EXPECT(ammAlice.expectLPTokens(carol_, IOUAmount{0}));
+                }
+                else
+                {
+                    BEAST_EXPECT(zeldaPaid > IOUAmount{50'000});
+                    BEAST_EXPECT(ammAlice.getLPTokensBalance(carol_) > beast::kZero);
+                }
+            },
+            std::nullopt,
+            0,
+            std::nullopt,
+            {features});
+
+        // AMMClawback of a holder who voted and won the auction slot must
+        // prune the vote and expire the slot the same way AMMWithdraw does.
+        {
+            Env env(*this, features);
+            env.fund(XRP(30'000), gw_, alice_, carol_);
+            env(fset(gw_, asfAllowTrustLineClawback));
+            env.close();
+            env.trust(USD(30'000), alice_);
+            env.trust(USD(30'000), carol_);
+            env(pay(gw_, alice_, USD(20'000)));
+            env(pay(gw_, carol_, USD(20'000)));
+            env.close();
+
+            AMM amm(env, alice_, XRP(10'000), USD(10'000), false, 1'000);
+            BEAST_EXPECT(amm.expectTradingFee(1'000));
+
+            amm.deposit(carol_, XRP(10'000), USD(10'000));
+            amm.vote(carol_, 100);
+            BEAST_EXPECT(amm.expectTradingFee(550));
+            env(amm.bid({.account = carol_}));
+            BEAST_EXPECT(amm.expectAuctionSlot(55, 0, IOUAmount{4'400}));
+
+            auto auctionHolder = [&]() -> std::optional<AccountID> {
+                auto const sle = env.current()->read(keylet::amm(xrpIssue(), USD.issue()));
+                if (!sle || !sle->isFieldPresent(sfAuctionSlot))
+                    return std::nullopt;
+                auto const& slot = sle->getFieldObject(sfAuctionSlot);
+                if (!slot.isFieldPresent(sfAccount))
+                    return std::nullopt;
+                return slot.getAccountID(sfAccount);
+            };
+            BEAST_EXPECT(auctionHolder() == carol_.id());
+
+            // Asset must be the clawable IOU (USD); XRP as Asset is temMALFORMED.
+            amm.clawback({.issuer = gw_, .holder = carol_, .assets = {{USD, xrpIssue()}}});
+            BEAST_EXPECT(amm.expectLPTokens(carol_, IOUAmount{0}));
+
+            auto const ammInfo = amm.ammRpcInfo()[jss::amm];
+            bool const carolPresent = hasVoter(ammInfo, carol_.human());
+            auto const holderAfter = auctionHolder();
+
+            if (env.enabled(fixCleanup3_4_0))
+            {
+                BEAST_EXPECT(amm.expectTradingFee(1'000));
+                BEAST_EXPECT(!carolPresent);
+                BEAST_EXPECT(holderAfter != carol_.id());
+            }
+            else
+            {
+                // Pre-amendment clawback does not prune votes or recompute the
+                // fee. Auction-slot occupancy after clawback+close is not
+                // part of this fix and is left to the bid transactor.
+                BEAST_EXPECT(amm.expectTradingFee(550));
+                BEAST_EXPECT(carolPresent);
+            }
+        }
     }
 
     void
@@ -7466,6 +7714,8 @@ private:
         testWithdraw();
         testInvalidFeeVote();
         testFeeVote();
+        testFeeVoteWithdraw(all);
+        testFeeVoteWithdraw(all - fixCleanup3_4_0);
         testInvalidBid();
         testBid(all);
         testBid(all - fixCleanup3_4_0);
