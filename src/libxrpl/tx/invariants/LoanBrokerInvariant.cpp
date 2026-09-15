@@ -31,6 +31,8 @@ ValidLoanBroker::visitEntry(bool isDelete, SLE::const_ref before, SLE::const_ref
     //   (a) only ttLOAN_BROKER_DELETE removes a broker
     //   (b) at most one broker is removed per transaction
     //   (c) DebtTotal and OwnerCount were zero before deletion
+    //   (d) the removed broker is the one named by the transaction, and no
+    //       other broker was created or modified alongside it
     // `before` is the pre-transaction state, which is what
     // LoanBrokerDelete::preclaim reads. Erased trust lines and MPTokens need no
     // special handling here: the `if (after)` branch below already records them.
@@ -122,6 +124,8 @@ ValidLoanBroker::finalize(
     // Loan Brokers will not exist on ledger if the Lending Protocol amendment
     // is not enabled, so there's no need to check it.
 
+    bool const fix350Enabled = view.rules().enabled(fixCleanup3_5_0);
+
     // Deletion invariants (featureLendingProtocolV1_1). At most one
     // LoanBroker may be removed per transaction, and only by
     // ttLOAN_BROKER_DELETE, and only when its pre-state OwnerCount is zero and
@@ -130,7 +134,8 @@ ValidLoanBroker::finalize(
     // LoanBrokerDelete-must-not-touch-any-loan rule: even a broker that has
     // finished paying off every loan may still hold non-zero exposure until
     // its LoanBrokerCoverWithdraw settles, and neither state is safe to
-    // delete.
+    // delete. From fixCleanup3_5_0 the removed broker must also be the one
+    // named by the transaction, with no other broker touched alongside it.
     if (view.rules().enabled(featureLendingProtocolV1_1))
     {
         if (multipleBrokerDeletions_)
@@ -176,6 +181,30 @@ ValidLoanBroker::finalize(
                 JLOG(j.fatal())
                     << "Invariant failed: Loan Broker deleted with non-zero owner count";
                 return false;
+            }
+            // Checked last so that the more specific diagnostics above are
+            // reported first.
+            if (fix350Enabled)
+            {
+                auto const deletedKey = deletedBroker_->key();
+                // The erased broker is itself collected in brokers_, so only a
+                // different directly-touched broker is a violation. Brokers
+                // reached indirectly, through a pseudo-account, trust line or
+                // MPToken, carry no brokerAfter and are not touched in this sense.
+                if (std::ranges::any_of(brokers_, [&deletedKey](auto const& entry) {
+                        return entry.second.brokerAfter && entry.first != deletedKey;
+                    }))
+                {
+                    JLOG(j.fatal()) << "Invariant failed: " <<  //
+                        "Loan Broker deletion must not create or modify another Loan Broker";
+                    return false;
+                }
+                if (deletedKey != keylet::loanBroker(tx[sfLoanBrokerID]).key)
+                {
+                    JLOG(j.fatal()) << "Invariant failed: " <<  //
+                        "deleted Loan Broker does not match the LoanBrokerID in the transaction";
+                    return false;
+                }
             }
         }
     }

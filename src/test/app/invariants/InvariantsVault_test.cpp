@@ -375,43 +375,55 @@ class InvariantsVault_test : public InvariantsBase
                 return true;
             });
 
+        Precheck const eraseTwoVaults = [](Account const& a1,
+                                           Account const& a2,
+                                           ApplyContext& ac) {
+            for (auto const& a : {a1, a2})
+            {
+                auto const keylet = keylet::vault(a.id(), SeqProxy::rawSequence(ac.view().seq()));
+                auto sleVault = ac.view().peek(keylet);
+                if (!sleVault)
+                    return false;
+                ac.view().erase(sleVault);
+            }
+            return true;
+        };
+
+        Preclose const createTwoVaults = [](Account const& a1, Account const& a2, Env& env) {
+            Vault const vault{env};
+            for (auto const& a : {a1, a2})
+            {
+                auto [tx, _] = vault.create({.owner = a, .asset = xrpIssue()});
+                env(tx);
+            }
+            return true;
+        };
+
+        // Erasing two vaults is reported by the deletion count check, which is
+        // counted ahead of the general single-vault check so that it is
+        // reachable at all -- every erased vault is also recorded as a
+        // "before" state, so the general check would otherwise always win.
         doInvariantCheck(
-            {"vault operation updated more than single vault",
-             "deleted Vault without deleting its pseudo-account"},
-            [&](Account const& a1, Account const& a2, ApplyContext& ac) {
-                {
-                    auto const keylet =
-                        keylet::vault(a1.id(), SeqProxy::rawSequence(ac.view().seq()));
-                    auto sleVault = ac.view().peek(keylet);
-                    if (!sleVault)
-                        return false;
-                    ac.view().erase(sleVault);
-                }
-                {
-                    auto const keylet =
-                        keylet::vault(a2.id(), SeqProxy::rawSequence(ac.view().seq()));
-                    auto sleVault = ac.view().peek(keylet);
-                    if (!sleVault)
-                        return false;
-                    ac.view().erase(sleVault);
-                }
-                return true;
-            },
+            {"more than one vault deleted", "deleted Vault without deleting its pseudo-account"},
+            eraseTwoVaults,
             XRPAmount{},
             STTx{ttVAULT_DELETE, [](STObject&) {}},
             {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
-            [&](Account const& a1, Account const& a2, Env& env) {
-                Vault const vault{env};
-                {
-                    auto [tx, _] = vault.create({.owner = a1, .asset = xrpIssue()});
-                    env(tx);
-                }
-                {
-                    auto [tx, _] = vault.create({.owner = a2, .asset = xrpIssue()});
-                    env(tx);
-                }
-                return true;
-            });
+            createTwoVaults);
+
+        // Without fixCleanup3_5_0 the deletion count check is skipped and the
+        // same state falls through to the general single-vault check, which
+        // still rejects it. This pins the gate: the amendment sharpens the
+        // diagnostic, it does not decide whether the transaction is rejected.
+        doInvariantCheck(
+            makeEnv(all_ - fixCleanup3_5_0),
+            {"vault operation updated more than single vault",
+             "deleted Vault without deleting its pseudo-account"},
+            eraseTwoVaults,
+            XRPAmount{},
+            STTx{ttVAULT_DELETE, [](STObject&) {}},
+            {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
+            createTwoVaults);
 
         doInvariantCheck(
             {"vault operation updated more than single vault"},
@@ -479,6 +491,70 @@ class InvariantsVault_test : public InvariantsBase
                 auto [tx, keylet] = vault.create({.owner = a1, .asset = xrpIssue()});
                 env(tx);
                 env(vault.deposit({.depositor = a1, .id = keylet.key, .amount = XRP(10)}));
+                return true;
+            });
+
+        // A VaultDelete must erase the vault its VaultID names. The vault here
+        // is perfectly deletable -- empty, with its share issuance erased
+        // alongside it -- so every other deletion check passes and only the
+        // identity check can fire. This is what a transactor that resolved the
+        // wrong keylet would leave behind.
+        doInvariantCheck(
+            {"deleted vault does not match the VaultID in the transaction"},
+            [&](Account const& a1, Account const& a2, ApplyContext& ac) {
+                auto const keylet = keylet::vault(a1.id(), SeqProxy::rawSequence(ac.view().seq()));
+                auto sleVault = ac.view().peek(keylet);
+                if (!sleVault)
+                    return false;
+                auto sleShares = ac.view().peek(keylet::mptokenIssuance((*sleVault)[sfShareMPTID]));
+                if (!sleShares)
+                    return false;
+                ac.view().erase(sleVault);
+                ac.view().erase(sleShares);
+                return true;
+            },
+            XRPAmount{},
+            STTx{ttVAULT_DELETE, [](STObject& tx) { tx.setFieldH256(sfVaultID, uint256(42)); }},
+            {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
+            [&](Account const& a1, Account const& a2, Env& env) {
+                Vault const vault{env};
+                auto [tx, _] = vault.create({.owner = a1, .asset = xrpIssue()});
+                env(tx);
+                return true;
+            });
+
+        // Erasing one vault while another survives the transaction is not
+        // caught by the single-vault check, which counts the "before" and
+        // "after" collections separately and so sees one entry in each. Left
+        // unchecked, the value comparisons would measure the erased vault's
+        // pre-state against the surviving vault's post-state.
+        doInvariantCheck(
+            {"vault deletion must not create or modify another vault"},
+            [&](Account const& a1, Account const& a2, ApplyContext& ac) {
+                auto const sequence = ac.view().seq();
+                auto sleVault =
+                    ac.view().peek(keylet::vault(a1.id(), SeqProxy::rawSequence(sequence)));
+                if (!sleVault)
+                    return false;
+                ac.view().erase(sleVault);
+                // A second, newly created vault leaves the "after" collection
+                // non-empty while the erased vault is the only "before" entry.
+                auto sleOther =
+                    std::make_shared<SLE>(keylet::vault(a2.id(), SeqProxy::rawSequence(sequence)));
+                auto const vaultPage = ac.view().dirInsert(
+                    keylet::ownerDir(a2.id()), sleOther->key(), describeOwnerDir(a2.id()));
+                sleOther->setFieldU64(sfOwnerNode, *vaultPage);
+                sleOther->setAccountID(sfAccount, a2.id());
+                ac.view().insert(sleOther);
+                return true;
+            },
+            XRPAmount{},
+            STTx{ttVAULT_SET, [](STObject&) {}},
+            {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
+            [&](Account const& a1, Account const& a2, Env& env) {
+                Vault const vault{env};
+                auto [tx, _] = vault.create({.owner = a1, .asset = xrpIssue()});
+                env(tx);
                 return true;
             });
 
@@ -1465,6 +1541,110 @@ class InvariantsVault_test : public InvariantsBase
                 STTx{ttACCOUNT_SET, [](STObject&) {}},
                 {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
                 precloseLoan);
+
+            // A LoanDelete must erase the loan its LoanID names. Naming a
+            // different loan is what a transactor that resolved the wrong
+            // keylet would leave behind.
+            doInvariantCheck(
+                {"deleted loan does not match the LoanID in the transaction"},
+                eraseLoan,
+                XRPAmount{},
+                STTx{ttLOAN_DELETE, [](STObject& tx) { tx.setFieldH256(sfLoanID, uint256(42)); }},
+                {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
+                precloseLoan);
+        }
+
+        // A LoanDelete that erases one loan must not touch another. Two loans
+        // are seeded against a real broker so that both are pre-existing: the
+        // second is modified rather than created, which would otherwise trip
+        // the "created by a transaction other than LoanSet" check first.
+        {
+            Env env{*this, all_};
+            Account const a1{"A1"};
+            Account const a2{"A2"};
+            env.fund(XRP(1000), a1, a2);
+            auto const keys = createClosedXrpBroker(a1, env);
+            if (BEAST_EXPECT(keys))
+            {
+                auto const& brokerKeylet = keys->second;
+
+                OpenView ov{*env.current()};
+                auto const loanKeylet1 = keylet::loan(brokerKeylet.key, SeqProxy::rawSequence(1));
+                auto const loanKeylet2 = keylet::loan(brokerKeylet.key, SeqProxy::rawSequence(2));
+                ov.rawInsert(makeLoanSle(brokerKeylet.key, 1, a1.id()));
+                ov.rawInsert(makeLoanSle(brokerKeylet.key, 2, a1.id()));
+
+                STTx const tx{ttLOAN_DELETE, [](STObject&) {}};
+                test::StreamSink sink{beast::Severity::Warning};
+                beast::Journal const jlog{sink};
+                ApplyContext ac{
+                    env.app(), ov, tx, tesSUCCESS, env.current()->fees().base, TapNone, jlog};
+                CurrentTransactionRulesGuard const rulesGuard(ov.rules());
+
+                auto sleLoan1 = ac.view().peek(loanKeylet1);
+                auto sleLoan2 = ac.view().peek(loanKeylet2);
+                if (BEAST_EXPECT(sleLoan1 && sleLoan2))
+                {
+                    ac.view().erase(sleLoan1);
+                    ac.view().update(sleLoan2);
+
+                    auto transactor = makeTransactor(ac);
+                    if (BEAST_EXPECT(transactor))
+                    {
+                        TER const result = transactor->checkInvariants(
+                            tesSUCCESS, XRPAmount{}, Transactor::InvariantScope::Full);
+                        BEAST_EXPECT(result == tecINVARIANT_FAILED);
+                        BEAST_EXPECT(sink.messages().str().contains(
+                            "loan deletion must not create or modify another loan"));
+                    }
+                }
+            }
+        }
+
+        // A LoanDelete must not erase more than one loan. The bound is new in
+        // fixCleanup3_5_0: before it ValidLoan checked only that the erasing
+        // transaction was a LoanDelete, so any number of loans could go at
+        // once. Both loans are seeded directly, so erasing them is the only
+        // thing ValidLoan has to object to.
+        for (bool const withFix : {true, false})
+        {
+            Env env{*this, withFix ? all_ : all_ - fixCleanup3_5_0};
+            Account const a1{"A1"};
+            Account const a2{"A2"};
+            env.fund(XRP(1000), a1, a2);
+            auto const keys = createClosedXrpBroker(a1, env);
+            if (!BEAST_EXPECT(keys))
+                continue;
+            auto const& brokerKeylet = keys->second;
+
+            OpenView ov{*env.current()};
+            auto const loanKeylet1 = keylet::loan(brokerKeylet.key, SeqProxy::rawSequence(1));
+            auto const loanKeylet2 = keylet::loan(brokerKeylet.key, SeqProxy::rawSequence(2));
+            ov.rawInsert(makeLoanSle(brokerKeylet.key, 1, a1.id()));
+            ov.rawInsert(makeLoanSle(brokerKeylet.key, 2, a1.id()));
+
+            STTx const tx{ttLOAN_DELETE, [](STObject&) {}};
+            test::StreamSink sink{beast::Severity::Warning};
+            beast::Journal const jlog{sink};
+            ApplyContext ac{
+                env.app(), ov, tx, tesSUCCESS, env.current()->fees().base, TapNone, jlog};
+            CurrentTransactionRulesGuard const rulesGuard(ov.rules());
+
+            auto sleLoan1 = ac.view().peek(loanKeylet1);
+            auto sleLoan2 = ac.view().peek(loanKeylet2);
+            if (!BEAST_EXPECT(sleLoan1 && sleLoan2))
+                continue;
+            ac.view().erase(sleLoan1);
+            ac.view().erase(sleLoan2);
+
+            auto transactor = makeTransactor(ac);
+            if (!BEAST_EXPECT(transactor))
+                continue;
+            TER const result = transactor->checkInvariants(
+                tesSUCCESS, XRPAmount{}, Transactor::InvariantScope::Full);
+            BEAST_EXPECT(sink.messages().str().contains("more than one Loan deleted") == withFix);
+            if (withFix)
+                BEAST_EXPECT(result == tecINVARIANT_FAILED);
         }
 
         STTx const loanSetTx{

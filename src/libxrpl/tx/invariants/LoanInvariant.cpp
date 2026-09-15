@@ -52,6 +52,7 @@ ValidLoan::finalize(
 
     auto const txType = tx.getTxnType();
     bool const lpV11Enabled = view.rules().enabled(featureLendingProtocolV1_1);
+    bool const fix350Enabled = view.rules().enabled(fixCleanup3_5_0);
 
     // Without featureLendingProtocolV1_1 an erased Loan is subject to the same
     // per-entry checks as any modified Loan. From V1_1 onward it is only subject
@@ -271,6 +272,33 @@ ValidLoan::finalize(
                            "other than LoanDelete";
         return false;
     }
+
+    // An erased Loan must be exactly the Loan named by a ttLOAN_DELETE, and
+    // that transaction must not leave any other Loan created or modified.
+    if (lpV11Enabled && fix350Enabled && !deletedLoans_.empty())
+    {
+        if (deletedLoans_.size() > 1)
+        {
+            JLOG(j.fatal()) << "Invariant failed: more than one Loan deleted";
+            return false;
+        }
+
+        if (!loans_.empty())
+        {
+            JLOG(j.fatal()) << "Invariant failed: loan deletion must not "
+                               "create or modify another loan";
+            return false;
+        }
+
+        if (txType != ttLOAN_DELETE ||
+            deletedLoans_.front().first->key() != keylet::loan(tx[sfLoanID]).key)
+        {
+            JLOG(j.fatal()) << "Invariant failed: deleted loan does not match "
+                               "the LoanID in the transaction";
+            return false;
+        }
+    }
+
     return true;
 }
 

@@ -543,6 +543,28 @@ class InvariantsPseudoAccount_test : public InvariantsBase
                 STTx{ttACCOUNT_SET, [](STObject&) {}},
                 {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
                 createLoanBroker);
+
+            // A LoanBrokerDelete must remove the broker its LoanBrokerID
+            // names. The broker here is freshly created, so its DebtTotal and
+            // OwnerCount are both zero and every other deletion check passes,
+            // leaving only the identity check to fire.
+            doInvariantCheck(
+                {{"deleted Loan Broker does not match the LoanBrokerID in the transaction"}},
+                [&](Account const&, Account const&, ApplyContext& ac) {
+                    if (loanBrokerKeylet.type != ltLOAN_BROKER)
+                        return false;
+                    auto sleBroker = ac.view().peek(loanBrokerKeylet);
+                    if (!BEAST_EXPECT(sleBroker))
+                        return false;
+                    ac.view().erase(sleBroker);
+                    return true;
+                },
+                XRPAmount{},
+                STTx{
+                    ttLOAN_BROKER_DELETE,
+                    [](STObject& tx) { tx.setFieldH256(sfLoanBrokerID, uint256(42)); }},
+                {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
+                createLoanBroker);
         }
 
         // A LoanBrokerDelete must not remove a broker whose pre-transaction
@@ -722,6 +744,26 @@ class InvariantsPseudoAccount_test : public InvariantsBase
                         return false;
                     ac.view().erase(sle1);
                     ac.view().erase(sle2);
+                    return true;
+                },
+                XRPAmount{},
+                STTx{ttLOAN_BROKER_DELETE, [](STObject&) {}},
+                {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
+                createTwoBrokers);
+
+            // Erasing one broker while touching another is not caught by the
+            // multiple-deletion check, which only counts erasures. The erased
+            // broker is itself collected alongside the modified one, so the
+            // check has to disregard it and look for a different broker.
+            doInvariantCheck(
+                {{"Loan Broker deletion must not create or modify another Loan Broker"}},
+                [&](Account const&, Account const&, ApplyContext& ac) {
+                    auto sle1 = ac.view().peek(loanBrokerKeylet1);
+                    auto sle2 = ac.view().peek(loanBrokerKeylet2);
+                    if (!BEAST_EXPECT(sle1 && sle2))
+                        return false;
+                    ac.view().erase(sle1);
+                    ac.view().update(sle2);
                     return true;
                 },
                 XRPAmount{},
