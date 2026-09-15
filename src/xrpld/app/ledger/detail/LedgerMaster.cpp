@@ -82,17 +82,39 @@
 
 namespace xrpl {
 
-// Don't catch up more than 100 ledgers (cannot exceed 256)
+/**
+ * Don't catch up more than 100 ledgers (cannot exceed 256).
+ *
+ * A wider gap between the published and validated ledgers is abandoned rather
+ * than filled, and publication jumps straight to the validated ledger. The 256
+ * ceiling is how far back hashOfSeq() can reach in one skip-list lookup.
+ */
 static constexpr int kMaxLedgerGap{100};
 
-// Don't acquire history if ledger is too old
+/**
+ * Don't acquire history if ledger is too old. Age of the validated ledger,
+ * above which back-filling is skipped so the node can catch up first.
+ */
 static constexpr std::chrono::minutes kMaxLedgerAgeAcquire{1};
 
-// Don't acquire history if write load is too high
+/**
+ * Don't acquire history if write load is too high. Node-store write queue
+ * depth, in pending writes, above which back-filling is skipped.
+ */
 static constexpr int kMaxWriteLoadAcquire{8192};
 
-// Helper function for LedgerMaster::doAdvance()
-// Return true if candidateLedger should be fetched from the network.
+/**
+ * Helper function for LedgerMaster::doAdvance()
+ * Return true if candidateLedger should be fetched from the network.
+ *
+ * @param currentLedger Sequence of the newest validated ledger.
+ * @param ledgerHistory How many ledgers of history the operator asked to keep.
+ * @param minimumOnline Lowest sequence the node must keep online, if known.
+ * @param candidateLedger Sequence of the missing ledger being considered.
+ * @param j Log sink for the decision.
+ * @return true when the candidate may be the current ledger, falls inside the
+ * configured history window, or is at or above the minimum to keep online.
+ */
 static bool
 shouldAcquire(
     std::uint32_t const currentLedger,
@@ -1126,12 +1148,27 @@ LedgerMaster::consensusBuilt(
     auto validations =
         app_.getValidators().negativeUNLFilter(app_.getValidations().currentTrusted());
 
-    // Track validation counts with sequence numbers
+    /**
+     * Track validation counts with sequence numbers.
+     *
+     * One tally per ledger hash, built while scanning the current trusted
+     * validations. A validation names a hash but not always a usable sequence,
+     * so the first sequence seen for a hash is kept and later ones ignored.
+     *
+     * @note Not thread-safe, and not intended to be: instances live only inside
+     * the loop below, which holds no lock.
+     */
     class ValSeq
     {
     public:
         ValSeq() = default;
 
+        /**
+         * Counts one more validation for this ledger.
+         *
+         * @param seq Sequence the validation reported. Adopted only if no
+         * sequence is known yet; zero leaves the tally's sequence unknown.
+         */
         void
         mergeValidation(LedgerIndex seq)
         {
@@ -1142,7 +1179,14 @@ LedgerMaster::consensusBuilt(
                 ledgerSeq = seq;
         }
 
+        /**
+         * How many trusted validations named this ledger.
+         */
         std::size_t valCount{0};
+
+        /**
+         * Sequence of this ledger, or 0 while still unknown.
+         */
         LedgerIndex ledgerSeq{0};
     };
 
