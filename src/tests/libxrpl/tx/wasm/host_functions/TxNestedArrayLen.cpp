@@ -6,6 +6,7 @@
 
 #include <gtest/gtest.h>
 #include <helpers/Account.h>
+#include <tx/wasm/fixtures/OwnedLocator.h>
 #include <tx/wasm/fixtures/RealHostFixture.h>
 #include <tx/wasm/fixtures/WasmLedger.h>
 
@@ -35,22 +36,21 @@ TEST_F(TxNestedArrayLenImpl, MemosLength)
 {
     auto const owner = fund("owner");
     auto h = makeHost(owner);
-    expectValue(h->getTxNestedArrayLen(FieldLocator{{sfMemos.getCode()}}), 1);
+    expectValue(h->getTxNestedArrayLen(locator({sfMemos.getCode()})), 1);
 }
 
 TEST_F(TxNestedArrayLenImpl, CredentialIdsLength)
 {
     auto const owner = fund("owner");
     auto h = makeHost(owner);
-    expectValue(h->getTxNestedArrayLen(FieldLocator{{sfCredentialIDs.getCode()}}), 1);
+    expectValue(h->getTxNestedArrayLen(locator({sfCredentialIDs.getCode()})), 1);
 }
 
 TEST_F(TxNestedArrayLenImpl, NonArrayFieldNoArray)
 {
     auto const owner = fund("owner");
     auto h = makeHost(owner);
-    expectError(
-        h->getTxNestedArrayLen(FieldLocator{{sfAccount.getCode()}}), HostFunctionError::NoArray);
+    expectError(h->getTxNestedArrayLen(locator({sfAccount.getCode()})), HostFunctionError::NoArray);
 }
 
 TEST_F(TxNestedArrayLenImpl, MissingFieldNotFound)
@@ -58,8 +58,7 @@ TEST_F(TxNestedArrayLenImpl, MissingFieldNotFound)
     auto const owner = fund("owner");
     auto h = makeHost(owner);
     expectError(
-        h->getTxNestedArrayLen(FieldLocator{{sfSigners.getCode()}}),
-        HostFunctionError::FieldNotFound);
+        h->getTxNestedArrayLen(locator({sfSigners.getCode()})), HostFunctionError::FieldNotFound);
 }
 
 }  // namespace xrpl::test
