@@ -328,6 +328,7 @@ class LedgerEntry_test : public beast::unit_test::Suite
         FieldType const typeID,
         std::string const& expectedError,
         bool required = true,
+        std::optional<std::string> typeNameOverride = std::nullopt,
         std::source_location const location = std::source_location::current())
     {
         forAllApiVersions([&, this](unsigned apiVersion) {
@@ -350,8 +351,8 @@ class LedgerEntry_test : public beast::unit_test::Suite
                 correctRequest[fieldName] = fieldValue;
                 json::Value const jrr = env.rpc(
                     apiVersion, "json", "ledger_entry", to_string(correctRequest))[jss::result];
-                auto const expectedErrMsg =
-                    rpc::expectedFieldMessage(fieldName, getTypeName(typeID));
+                auto const expectedErrMsg = rpc::expectedFieldMessage(
+                    fieldName, typeNameOverride.value_or(getTypeName(typeID)));
                 checkErrorValue(jrr, expectedError, expectedErrMsg, location);
             };
 
@@ -427,6 +428,7 @@ class LedgerEntry_test : public beast::unit_test::Suite
             FieldType::HashField,
             "malformedRequest",
             true,
+            std::nullopt,
             location);
     }
 
@@ -442,6 +444,7 @@ class LedgerEntry_test : public beast::unit_test::Suite
         test::jtx::Env& env,
         json::StaticString const& parentField,
         std::vector<Subfield> const& subfields,
+        std::optional<std::string> parentTypeNameOverride = std::nullopt,
         std::source_location const location = std::source_location::current())
     {
         testMalformedField(
@@ -451,6 +454,7 @@ class LedgerEntry_test : public beast::unit_test::Suite
             FieldType::HashOrObjectField,
             "malformedRequest",
             true,
+            parentTypeNameOverride,
             location);
 
         json::Value correctOutput;
@@ -2094,14 +2098,18 @@ class LedgerEntry_test : public beast::unit_test::Suite
 
         {
             // Malformed cases (missing / wrong-type subfields, and a
-            // non-object non-hex-string parent value).
+            // non-object non-hex-string parent value). Once the parent has
+            // been shown not to be an object, parseTransactionProposal names
+            // "hex string" — not "hex string or object" — as the form still
+            // on the table.
             runLedgerEntryTest(
                 env,
                 jss::transaction_proposal,
                 {
                     {.fieldName = jss::account, .malformedErrorMsg = "malformedAddress"},
                     {.fieldName = jss::ticket_seq, .malformedErrorMsg = "malformedRequest"},
-                });
+                },
+                "hex string");
         }
     }
 

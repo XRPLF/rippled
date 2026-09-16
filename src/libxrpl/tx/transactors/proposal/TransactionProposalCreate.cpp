@@ -207,11 +207,11 @@ TransactionProposalCreate::preclaim(PreclaimContext const& ctx)
                 {
                     // Only reachable if the on-ledger SignerList is corrupt
                     // (SignerListSet re-runs the same deserialize on write).
-                    // LCOV_EXCL_START
+                    // Exercised by testCorruptSignerList via an OpenLedger
+                    // overlay that produces the same failure modes.
                     JLOG(ctx.j.fatal()) << "TransactionProposalCreate: unparseable SignerList: "
                                         << transToken(accountSigners.error());
                     return std::unexpected(tefBAD_LEDGER);
-                    // LCOV_EXCL_STOP
                 }
 
                 return std::ranges::any_of(
@@ -220,12 +220,11 @@ TransactionProposalCreate::preclaim(PreclaimContext const& ctx)
             catch (std::exception const& e)
             {
                 // Same as above: only reachable via ledger corruption that
-                // makes an STObject accessor throw.
-                // LCOV_EXCL_START
+                // makes an STObject accessor throw. Exercised by
+                // testCorruptSignerList.
                 JLOG(ctx.j.fatal())
                     << "TransactionProposalCreate: unparseable SignerList: " << e.what();
                 return std::unexpected(tefBAD_LEDGER);
-                // LCOV_EXCL_STOP
             }
         };
 
