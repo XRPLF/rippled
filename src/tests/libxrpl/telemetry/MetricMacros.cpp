@@ -23,7 +23,7 @@
 
 #ifdef XRPL_ENABLE_TELEMETRY
 
-#include <xrpld/telemetry/MetricMacros.h>
+#include <xrpl/telemetry/MetricMacros.h>
 
 #include <gtest/gtest.h>
 #include <opentelemetry/metrics/meter.h>

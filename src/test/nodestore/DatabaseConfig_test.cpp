@@ -9,7 +9,7 @@
 // of them reads. Both live in xrpld and are only declared in a
 // telemetry-enabled build, so the include is guarded like its uses below.
 #include <xrpld/app/ledger/AcquireStats.h>
-#include <xrpld/telemetry/MetricsRegistry.h>
+#include <xrpld/telemetry/AppMetricGauges.h>
 #endif
 
 #include <xrpl/basics/Blob.h>
@@ -988,7 +988,7 @@ public:
         /**
          * Return a sink callable that appends into @ref emitted.
          */
-        telemetry::MetricsRegistry::ObserveFn
+        telemetry::AppMetricGauges::ObserveFn
         fn()
         {
             return
@@ -1082,7 +1082,7 @@ public:
         // Fresh store: the eight unconditional labels are published, each at
         // exactly zero, and NEITHER mean appears.
         MetricSink fresh;
-        telemetry::MetricsRegistry::observeNodeStoreTotals(*db, fresh.fn());
+        telemetry::AppMetricGauges::observeNodeStoreTotals(*db, fresh.fn());
 
         std::vector<std::string> const kFreshLabels{
             "node_read_bytes",
@@ -1139,7 +1139,7 @@ public:
             BEAST_EXPECT(db.fetchNodeObject(object->getHash(), 0) == nullptr);
 
         MetricSink busy;
-        telemetry::MetricsRegistry::observeNodeStoreTotals(db, busy.fn());
+        telemetry::AppMetricGauges::observeNodeStoreTotals(db, busy.fn());
 
         // Ten labels now: the eight above plus both means.
         BEAST_EXPECT(busy.emitted.size() == 10);
@@ -1201,7 +1201,7 @@ public:
             storeBatch(*mem, batch);
 
             MetricSink sink;
-            telemetry::MetricsRegistry::observeWritePathDetail(*mem, sink.fn());
+            telemetry::AppMetricGauges::observeWritePathDetail(*mem, sink.fn());
             // Cause as well as state: the store really was written to, so the
             // emptiness is the std::nullopt branch and not an idle database.
             BEAST_EXPECT(sink.emitted.empty());
@@ -1223,7 +1223,7 @@ public:
         // pins the deliberate asymmetry -- zero is meaningful for a gauge and
         // meaningless for a mean.
         MetricSink fresh;
-        telemetry::MetricsRegistry::observeWritePathDetail(*db, fresh.fn());
+        telemetry::AppMetricGauges::observeWritePathDetail(*db, fresh.fn());
         std::vector<std::string> const kFreshLabels{"nudb_insert_max_us", "nudb_writers_in_flight"};
         BEAST_EXPECT(fresh.names() == kFreshLabels);
         BEAST_EXPECT(fresh.value("nudb_writers_in_flight") == std::int64_t{0});
@@ -1236,7 +1236,7 @@ public:
         storeBatch(*db, stored);
 
         MetricSink busy;
-        telemetry::MetricsRegistry::observeWritePathDetail(*db, busy.fn());
+        telemetry::AppMetricGauges::observeWritePathDetail(*db, busy.fn());
         std::vector<std::string> const kBusyLabels{
             "nudb_insert_max_us",
             "nudb_insert_mean_us",
@@ -1285,7 +1285,7 @@ public:
         // these would lose the ability to see that nothing happened.
         AcquireStats const quiet;
         MetricSink fresh;
-        telemetry::MetricsRegistry::observeAcquireStats(quiet, fresh.fn());
+        telemetry::AppMetricGauges::observeAcquireStats(quiet, fresh.fn());
         BEAST_EXPECT(fresh.names() == kLabels);
         BEAST_EXPECT(fresh.emitted.size() == kLabels.size());
         for (auto const& label : kLabels)
@@ -1313,7 +1313,7 @@ public:
             busy.recordSweepEviction();
 
         MetricSink sink;
-        telemetry::MetricsRegistry::observeAcquireStats(busy, sink.fn());
+        telemetry::AppMetricGauges::observeAcquireStats(busy, sink.fn());
         BEAST_EXPECT(sink.names() == kLabels);
         BEAST_EXPECT(sink.value("acquire_deferrals") == std::int64_t{3});
         BEAST_EXPECT(sink.value("acquire_timeouts") == std::int64_t{7});
@@ -1350,7 +1350,7 @@ public:
             return;
 
         MetricSink sink;
-        telemetry::MetricsRegistry::observeReadQueue(*db, sink.fn());
+        telemetry::AppMetricGauges::observeReadQueue(*db, sink.fn());
 
         std::vector<std::string> const kLabels{
             "read_queue", "read_request_bundle", "read_threads_running", "read_threads_total"};

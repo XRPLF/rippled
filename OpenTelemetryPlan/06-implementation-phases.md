@@ -794,8 +794,10 @@ flowchart LR
 ## 6.8.2 Phase 9: Internal Metric Instrumentation Gap Fill (Weeks 14-15)
 
 > **Status**: Complete. Merged on `pratik/otel-phase9-metric-gap-fill`. Shipped
-> artefacts: `src/xrpld/telemetry/MetricsRegistry.{h,cpp}` (~41 KB + ~71 KB),
-> `src/xrpld/telemetry/MetricMacros.h`, `include/xrpl/nodestore/WriteStats.h`,
+> artefacts: `include/xrpl/telemetry/MetricsRegistry.h` (~40 KB) with
+> `src/libxrpl/telemetry/MetricsRegistry.cpp` (~28 KB),
+> `src/xrpld/telemetry/AppMetricGauges.{h,cpp}` (~20 KB + ~56 KB),
+> `include/xrpl/telemetry/MetricMacros.h`, `include/xrpl/nodestore/WriteStats.h`,
 > `src/xrpld/app/ledger/AcquireStats.h`,
 > `include/xrpl/telemetry/GetObjectMetricNames.h`, 10 GTest files under
 > `src/tests/libxrpl/telemetry/`, 4 new Grafana dashboards, provisioned Grafana
@@ -1955,13 +1957,13 @@ class ValidationTracker
 
 **Key new files**:
 
-- `src/xrpld/telemetry/ValidationTracker.h`
-- `src/xrpld/telemetry/detail/ValidationTracker.cpp`
+- `include/xrpl/telemetry/ValidationTracker.h`
+- `src/libxrpl/telemetry/detail/ValidationTracker.cpp`
 
 **Key modified files**:
 
-- `src/xrpld/telemetry/MetricsRegistry.h` (add ValidationTracker member)
-- `src/xrpld/telemetry/MetricsRegistry.cpp` (add gauge callback reading from tracker)
+- `include/xrpl/telemetry/MetricsRegistry.h` (add ValidationTracker member)
+- `src/xrpld/telemetry/AppMetricGauges.cpp` (add gauge callback reading from tracker)
 - `src/xrpld/app/consensus/RCLConsensus.cpp` (add recording hooks)
 - `src/xrpld/app/ledger/detail/LedgerMaster.cpp` (add recording hook)
 
@@ -1986,7 +1988,7 @@ New MetricsRegistry observable gauge for amendment, UNL, and quorum health.
 |                    | `unl_expiry_days`   | double | `app_.validators().expires()` → days until expiry |
 |                    | `validation_quorum` | int64  | `app_.validators().quorum()`                      |
 
-**File**: `src/xrpld/telemetry/MetricsRegistry.cpp` (new gauge callback in `registerAsyncGauges()`)
+**File**: `src/xrpld/telemetry/AppMetricGauges.cpp` (new gauge callback in `registerAsyncGauges()`)
 
 **Exit Criteria**:
 
@@ -2009,7 +2011,7 @@ New MetricsRegistry observable gauge for peer health aggregates.
 
 **Implementation note**: The callback iterates `app_.overlay().foreach(...)` to collect per-peer latency and version data. This runs every 10s on the metrics reader thread — acceptable overhead for ~50-200 peers.
 
-**File**: `src/xrpld/telemetry/MetricsRegistry.cpp`
+**File**: `src/xrpld/telemetry/AppMetricGauges.cpp`
 
 **Exit Criteria**:
 
@@ -2032,7 +2034,7 @@ New MetricsRegistry observable gauge for fee and ledger metrics.
 |                  | `ledger_age_seconds` | double | `now - lastValidatedCloseTime`            |
 |                  | `transaction_rate`   | double | Derived: tx count delta / time delta      |
 
-**File**: `src/xrpld/telemetry/MetricsRegistry.cpp`
+**File**: `src/xrpld/telemetry/AppMetricGauges.cpp`
 
 **Exit Criteria**:
 
@@ -2067,7 +2069,7 @@ xrpld's `OperatingMode` enum maps 0-4 (DISCONNECTED through FULL). The external 
 
 **Note**: Values 5-6 require checking both `OperatingMode` and `ConsensusMode`. The callback should derive these from `app_.getOPs().getOperatingMode()` combined with `mConsensus.mode()`. If operating mode is FULL and consensus is proposing → 6; if FULL and validating → 5; otherwise use the raw OperatingMode enum value.
 
-**File**: `src/xrpld/telemetry/MetricsRegistry.cpp`
+**File**: `src/xrpld/telemetry/AppMetricGauges.cpp`
 
 **Exit Criteria**:
 
@@ -2094,7 +2096,7 @@ The label value was `nudb_bytes` through Phase 8 and was renamed in Phase 9: the
 value is read from `Database`, not from the NuDB backend, so a backend prefix
 misdescribed it and the old name implied an on-disk size it never reported.
 
-**File**: `src/xrpld/telemetry/MetricsRegistry.cpp`
+**File**: `src/xrpld/telemetry/AppMetricGauges.cpp`
 
 **Exit Criteria**:
 
@@ -2119,7 +2121,10 @@ New counters incremented at event sites. Declared in MetricsRegistry, recording 
 
 **Key modified files**:
 
-- `src/xrpld/telemetry/MetricsRegistry.h/.cpp` (counter declarations)
+- `include/xrpl/telemetry/MetricsRegistry.h` and
+  `src/libxrpl/telemetry/MetricsRegistry.cpp` (synchronous counter declarations)
+- `src/xrpld/telemetry/AppMetricGauges.cpp` (the three observed as ObservableCounters:
+  `validation_agreements_total`, `validation_missed_total`, `jq_trans_overflow_total`)
 - `src/xrpld/app/consensus/RCLConsensus.cpp` (recording: ledgers_closed, validations_sent)
 - `src/xrpld/app/ledger/detail/LedgerMaster.cpp` (recording: validations_checked)
 - `src/xrpld/app/misc/NetworkOPs.cpp` (recording: state_changes)
@@ -2145,7 +2150,7 @@ Reads from the `ValidationTracker` (Task 7.8) to export rolling window stats.
 |                        | `agreements_24h`    | int64  | `tracker.agreements24h()`   |
 |                        | `missed_24h`        | int64  | `tracker.missed24h()`       |
 
-**File**: `src/xrpld/telemetry/MetricsRegistry.cpp`
+**File**: `src/xrpld/telemetry/AppMetricGauges.cpp`
 
 **Exit Criteria**:
 
@@ -2333,12 +2338,12 @@ Phase 9 additionally ships 9 rules with no external counterpart:
 | Peer Count Critical | `server_info{metric="peers"} < 5`                       | —          |
 
 > **"Not Proposing" is unblocked.** The `state_tracking` gauge **is**
-> implemented: `MetricsRegistry::registerStateTrackingGauge()`
-> (`MetricsRegistry.cpp:1461-1510`) creates
-> `CreateDoubleObservableGauge("state_tracking", …)` at `:1466` and observes
-> `state_value` (`:1497`) and `time_in_current_state_seconds` (`:1502`). It is
-> already consumed by `validator-health.json:765,971` and
-> `ledger-data-sync.json:869`, and documented in
+> implemented: `AppMetricGauges::registerStateTrackingGauge()`
+> (`src/xrpld/telemetry/AppMetricGauges.cpp`) creates
+> `CreateDoubleObservableGauge("state_tracking", …)` and observes `state_value`
+> and `time_in_current_state_seconds`. It is
+> already consumed by `validator-health.json` and
+> `ledger-data-sync.json`, and documented in
 > [09-data-collection-reference.md](./09-data-collection-reference.md) §
 > "State Tracking". Only **3** of the 14 remaining rules are blocked on anything —
 > CPU High, Memory Critical and Disk Warning, all needing `node_exporter`.

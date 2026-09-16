@@ -1,22 +1,24 @@
 #pragma once
 
 /**
- * Central OTel Metrics Registry for xrpld.
+ * Central OTel metrics registry: the export pipeline and the instruments that
+ * app code pushes values into.
  *
- * Owns all OpenTelemetry metric instruments (counters, histograms,
- * observable gauges) that are NOT already covered by the beast::insight
- * StatsD pipeline. The instruments are created once at startup and polled
- * by the OTel PeriodicExportingMetricReader at a configurable interval
- * (default 10 s).
+ * Owns the OpenTelemetry MeterProvider, the OTLP/HTTP exporter, the periodic
+ * reader and every SYNCHRONOUS instrument (counters and histograms) that is
+ * not already covered by the beast::insight StatsD pipeline. The instruments
+ * are created once at startup and drained by the OTel
+ * PeriodicExportingMetricReader at a fixed interval (10 s).
  *
  * When XRPL_ENABLE_TELEMETRY is **not** defined, this class compiles to a
  * lightweight no-op: every public method is an empty inline.
  *
+ * Every caller reaches it through ServiceRegistry::getMetricsRegistry(), and
+ * the XRPL_METRIC_* macros then create their own instruments from meter().
+ *
  * Dependency / ownership diagram (ASCII):
  *
- * Application
- * |
- * +-- MetricsRegistry  (unique_ptr, created in setup(), started/stopped with telemetry)
+ * MetricsRegistry
  * |
  * +-- OTel MeterProvider  (owns reader + exporter)
  * |       |
@@ -41,42 +43,7 @@
  * |       +-- txq_expired_total
  * |       +-- txq_dropped_total{reason}
  * |
- * +-- ValidationTracker  (validation agreement tracker)
- * |
- * +-- Observable Gauges  (async callbacks, polled by reader)
- * +-- Cache hit rates  (SLE, ledger, AL)
- * +-- TreeNode / FullBelow sizes
- * +-- TxQ metrics
- * +-- CountedObject counts
- * +-- Load factor breakdown
- * +-- NodeStore I/O gauges (totals, derived means, NuDB write queue,
- *                          ledger-acquisition stall counters)
- * +-- Server info (state, uptime, peers, consensus)
- * +-- Build info (version label)
- * +-- Complete ledger ranges (start/end pairs)
- * +-- DB metrics (storage KB, fetch rate)
- * +-- Validator health (amend blocked, UNL, quorum)
- * +-- Peer quality (P90 latency, version spread)
- * +-- Reduce-relay efficiency (selected/suppressed peers)
- * +-- Ledger economy (fees, reserves, age)
- * +-- State tracking (mode value, time in state)
- * +-- Storage detail (NuDB sizes)
- * +-- Validation agreement (1h/24h pct, counts)
- * +-- jq_trans_overflow_total (observed from Overlay)
- *
- * Control-flow for async gauges:
- *
- * PeriodicExportingMetricReader (background thread, 10 s tick)
- * |
- * v
- * OTel SDK invokes registered ObservableGauge callbacks
- * |
- * v
- * Each callback reads current value from Application services
- * (e.g. app.getTxQ().getMetrics(), app.getFeeTrack().getLoadFactor())
- * |
- * v
- * Result set is exported via OTLP/HTTP to the collector
+ * +-- ValidationTracker  (rolling validation-agreement windows)
  *
  * Control-flow for synchronous instruments:
  *
@@ -101,11 +68,7 @@
  * // [telemetry] and [network_id], read by Application.cpp rather than
  * // through Telemetry::Setup.
  * metricsRegistry_(std::make_unique<telemetry::MetricsRegistry>(
- *     telemetry_->isEnabled(), *this, journal, options))
- *
- * // Later, in setup(), once overlay_ exists (the last of the services the
- * // callbacks read). Phase 2 registers the observable instruments:
- * metricsRegistry_->startAsyncGauges();
+ *     telemetry_->isEnabled(), journal, options))
  *
  * // In PerfLogImp::rpcStart():
  * if (auto* mr = app_.getMetricsRegistry())
@@ -123,8 +86,8 @@
  * if (auto* mr = app_.getMetricsRegistry())
  * mr->recordJobQueued("ledgerData", "ProcessLData");
  *
- * // Shutdown, before any service the callbacks read is stopped. Idempotent,
- * // so run() and ~ApplicationImp both call it:
+ * // Shutdown, before any observer of live server state is torn down.
+ * // Idempotent, so run() and ~ApplicationImp both call it:
  * metricsRegistry_->stop();
  * @endcode
  *
@@ -133,20 +96,16 @@
  * it reads isEnabled() to decide whether to initialize the OTel SDK, and
  * BEFORE every subsystem that records a metric. Declaration order in
  * ApplicationImp is the guarantee; keep the member where it is.
- * - Observable gauge callbacks capture a reference to the Application; the
- * Application must outlive the MetricsRegistry (guaranteed because
- * MetricsRegistry is stopped before Application teardown).
- * - If a new CountedObject type is added, it will NOT appear automatically
- * in the object_count gauge; the callback iterates a fixed list.
  * - Adding a new synchronous instrument requires updating both the header
  * and the .cpp, then calling the new record*() method from the
- * instrumentation site.
+ * instrumentation site. Prefer the XRPL_METRIC_* macros, which need
+ * neither.
  */
 
 #ifdef XRPL_ENABLE_TELEMETRY
-// The tracker is held and exposed only in this configuration, where the gauge
-// callbacks that drain it exist.
-#include <xrpld/telemetry/ValidationTracker.h>
+// The tracker is held and exposed only in this configuration, where the
+// observable-gauge callbacks that drain it exist.
+#include <xrpl/telemetry/ValidationTracker.h>
 #endif
 
 #include <xrpl/beast/utility/Journal.h>
@@ -168,84 +127,58 @@
 #include <opentelemetry/nostd/unique_ptr.h>
 #include <opentelemetry/sdk/metrics/meter_provider.h>
 
-// These three serve only the telemetry-only members below, so they are guarded
-// like their uses: std::atomic by callbacksDetached_, std::function by the
-// ObserveFn sink, std::shared_ptr by provider_.
+// These two serve only the telemetry-only members below, so they are guarded
+// like their uses: std::atomic by phase_, std::shared_ptr by provider_.
 #include <atomic>
-#include <functional>
 #include <memory>
 #endif
 
-namespace xrpl {
-
-class ServiceRegistry;
-
-// Defined in src/xrpld/app/ledger/AcquireStats.h. Forward-declared because
-// only the gauge helpers in the .cpp touch it, and pulling an xrpld/app
-// header in here would widen the dependencies of every file that includes
-// this one.
-class AcquireStats;
-
-namespace node_store {
-class Database;
-}  // namespace node_store
-
-namespace telemetry {
+namespace xrpl::telemetry {
 
 /**
  * Central OpenTelemetry metric registry.
  *
- * Owns all OTel instruments (counters, histograms, observable gauges)
- * that are not covered by the beast::insight StatsD pipeline. See the
- * file-level header comment above for the full dependency diagram,
- * gauge domain list, and usage examples.
+ * Owns the metrics export pipeline and every push-model instrument that the
+ * beast::insight StatsD pipeline does not already cover. See the file-level
+ * header comment above for the instrument inventory and usage examples.
  *
  * Class / collaborator diagram (ASCII):
  *
- * +-----------------+        +-------------------+
- * |   Application   |------->|  MetricsRegistry  |
- * +-----------------+        +-------------------+
- * |       |        |
- * creates/owns    v       v        v
- * +-----------+  +---------+  +-------------------+
- * | Meter     |  | Counter |  | ValidationTracker |
- * | Provider  |  | /Hist.  |  | (rolling windows) |
- * +-----------+  +---------+  +-------------------+
+ * MetricsRegistry
  * |
- * v
- * Periodic reader thread (~10 s)
- * -> ObservableGauge callbacks
- * -> OTLP/HTTP export
+ * +-- creates/owns --> MeterProvider (SDK)
+ * |                        |
+ * |                        v
+ * |                    reader thread (~10 s) -> OTLP/HTTP export
+ * |
+ * +-- creates/owns --> Counter and Histogram instruments
+ * |
+ * +-- holds ----------> ValidationTracker (rolling windows)
  *
  * @note Thread safety:
  * - The recordRpc, recordJob, and increment methods are invoked
- * from xrpld hot paths. OTel Counter::Add() and
- * Histogram::Record() are documented thread-safe, and
- * null-guard checks protect uninitialized instruments.
- * - ObservableGauge callbacks run on the OTel SDK background
- * reader thread (~10 s tick), concurrently with writers.
- * Each callback reads only lock-protected or atomic state
- * from Application services and wraps the body in a
- * catch-all try block so a transient failure never crashes
- * the reader thread.
+ * from hot paths. OTel Counter::Add() and Histogram::Record()
+ * are documented thread-safe, and null-guard checks protect
+ * uninitialized instruments.
+ * - recording() is a single acquire load and is read on every
+ * XRPL_METRIC_* call site, from any thread.
+ * - meter() may be called from any thread. The constructor is the
+ * last writer of the handle it returns; stop() leaves it alone.
  * - ValidationTracker protects its rolling windows internally.
- * - The constructor, startAsyncGauges() and stop() are NOT thread-safe
- * with each other and must all be called, in that order, from
- * the single Application lifecycle thread.
+ * - The constructor, hasPipeline() and stop() are NOT thread-safe
+ * with each other. All three read or write provider_, a plain
+ * shared_ptr that stop() resets, so all three belong on the
+ * single server lifecycle thread, in that order.
  *
- * @note Lifetime, in three phases (see Phase):
+ * @note Lifetime, in two phases (see Phase):
  * - Ready: the constructor built the pipeline and the synchronous
  * instruments. Runs in ApplicationImp's member-init list, so it precedes
  * every subsystem that could record.
- * - GaugesArmed: startAsyncGauges() registered the observable callbacks.
- * Runs once overlay_ exists, the last service those callbacks read.
  * - Stopped: stop() joined the reader thread. Runs before any observed
  * service stops, from run() and again from ~ApplicationImp for the
  * paths that never reach run().
  *
  * @note Extending:
- * - Adding a new CountedObject type is auto-picked up by the
- * object_count gauge via iteration.
  * - Adding a new SYNCHRONOUS instrument (counter/histogram): prefer the
  * XRPL_METRIC_* call-site macros in MetricMacros.h -- no header/cpp
  * edit needed. Fall back to a dedicated member + init line + record
@@ -253,8 +186,10 @@ namespace telemetry {
  * back by other code (e.g. ValidationTracker-style accumulation) or
  * needs a custom histogram bucket View (see the histogram note in
  * MetricMacros.h).
- * - Adding a new OBSERVABLE gauge still requires eager central
- * registration -- pull-model instruments cannot be lazily created.
+ * - An OBSERVABLE instrument does not belong here. Its callback reads live
+ * server state, so it must be registered only once that state exists,
+ * which is later than this object is built. Register it from the layer
+ * that owns those callbacks.
  */
 class MetricsRegistry
 {
@@ -281,14 +216,14 @@ public:
      *     .serviceInstanceId = nodePublicKey,
      *     .nodeId = nodePublicKey,
      *     .networkId = 2};
-     * MetricsRegistry registry(enabled, app, journal, opts);
+     * MetricsRegistry registry(enabled, journal, opts);
      *
      * // Edge case: mutual TLS to a collector that requires it.
      * opts.useTls = true;
      * opts.tlsCaCertPath = "/etc/xrpld/otel-ca.pem";
      * opts.tlsClientCertPath = "/etc/xrpld/node.pem";
      * opts.tlsClientKeyPath = "/etc/xrpld/node.key";
-     * MetricsRegistry secure(enabled, app, journal, opts);
+     * MetricsRegistry secure(enabled, journal, opts);
      * @endcode
      *
      * @note Plain aggregate, no invariants enforced. `networkType` is not a
@@ -372,25 +307,21 @@ public:
      * node.
      *
      * @note Invariant for future changes: the constructor may create only
-     * instruments with NO Application-reading callback. Push-model
-     * counters and histograms qualify; app code records into them
-     * when it is ready. Any observable instrument whose callback
-     * reads an Application service belongs in `startAsyncGauges()`,
-     * because registering it here arms the reader thread to invoke
-     * that callback against a half-built Application. This applies
-     * to observable COUNTERS as well as gauges.
+     * instruments with NO callback of their own. Push-model counters
+     * and histograms qualify; app code records into them when it is
+     * ready. An instrument registered here is live immediately, and
+     * the reader thread may invoke its callback before the rest of
+     * the server is built, so any observable whose callback reads
+     * live server state must be registered later, by the layer that
+     * owns those callbacks. This applies to observable COUNTERS as
+     * well as gauges.
      *
      * @param enabled  False makes every method a no-op (telemetry disabled).
-     * @param app      Services the observable-gauge callbacks read.
      * @param journal  Log output.
      * @param options  Endpoint, TLS settings and resource identity, all read
      * from config by the caller. See @ref Options.
      */
-    MetricsRegistry(
-        bool enabled,
-        ServiceRegistry& app,
-        beast::Journal journal,
-        Options const& options);
+    MetricsRegistry(bool enabled, beast::Journal journal, Options const& options);
 
     /**
      * Stops the pipeline if run() or ~ApplicationImp did not already.
@@ -405,60 +336,6 @@ public:
     operator=(MetricsRegistry const&) = delete;
 
     /**
-     * Register the pull-model observable instruments — the second startup
-     * phase. Mostly ObservableGauges, plus the ObservableCounters whose
-     * source value is already cumulative.
-     *
-     * A separate entry point from the constructor because the two halves have
-     * different prerequisites. The constructor needs only config strings;
-     * these callbacks read live Application services, so this half must run
-     * later. Registering an observable also arms the reader thread to invoke
-     * its callback on the next tick, which is why the separation is about
-     * ordering and not just tidiness.
-     *
-     * Calling it twice, or after stop(), logs a warning and does nothing.
-     *
-     * @pre Every service the callbacks read is constructed. The full set,
-     * from the `app.get*()` calls in the registration helpers, is:
-     * Overlay, OPs (NetworkOPs), LedgerMaster, OpenLedger, TxQ,
-     * NodeStore, NodeFamily, Validators, AcceptedLedgerCache,
-     * CachedSLEs, AcquireStats, TimeKeeper, RelationalDatabase,
-     * InboundLedgers and FeeTrack.
-     * Overlay is built last, so it fixes this call's position:
-     * `ServiceRegistry::getOverlay()` `XRPL_ASSERT`s that
-     * `overlay_` is non-null, and a reader-thread tick before the
-     * overlay exists aborts a Debug build. The callbacks' catch-all
-     * try block does not catch an assert. `getTxQ()` and
-     * `getRelationalDatabase()` assert likewise.
-     */
-    void
-    startAsyncGauges();
-
-    /**
-     * Detach all ObservableGauge callbacks so they no-op on the next
-     * reader-thread tick.
-     *
-     * Must be called BEFORE any Application service that the callbacks
-     * read (nodeStore, overlay, networkOPs, ledgerMaster, etc.) is
-     * stopped. The flag is checked with acquire ordering at the top of
-     * every callback; together with the release store here it
-     * guarantees that once `detachCallbacks()` returns, no subsequent
-     * callback invocation will dereference an already-stopped service.
-     *
-     * Idempotent, and safe to call multiple times: the flag is one-way,
-     * only ever set to true, and nothing clears it. The actual
-     * SDK-level provider shutdown still happens in `stop()`.
-     *
-     * @note One-way means this is a shutdown-only call. Calling it before
-     * `startAsyncGauges()` does not "have no effect" — it
-     * permanently disarms every gauge the later call registers, so
-     * the instruments exist but never observe a value. Only call it
-     * once the process is shutting down.
-     */
-    void
-    detachCallbacks() noexcept;
-
-    /**
      * Flush pending metrics and shut down the pipeline.
      *
      * Stores `Phase::Stopped` first so `recording()` reads false on every
@@ -466,10 +343,11 @@ public:
      * touched: record threads may still be running, and the gate is what
      * keeps them off the dying pipeline. Idempotent.
      *
-     * @pre `detachCallbacks()` should have been called earlier in the
-     * shutdown sequence; otherwise there is a narrow race between
-     * the final reader-thread tick and the destruction of
-     * Application services that the gauge callbacks read from.
+     * @pre Anything that observes live server state on the reader thread has
+     * already been disarmed. Shutting the provider down joins that
+     * thread, so a caller that has not disarmed its observers leaves a
+     * narrow race between the final tick and the teardown of what those
+     * observers read.
      */
     void
     stop();
@@ -504,6 +382,22 @@ public:
         return enabled_;
 #endif
     }
+
+    /**
+     * @return true when a real exporting pipeline exists, as opposed to the
+     * no-op meter installed when the pipeline is disabled.
+     *
+     * A meter() check cannot answer this. The registry always hands out a
+     * meter, so registering instruments on a no-op one would report success
+     * and export nothing. Ask this before registering an observable
+     * instrument.
+     *
+     * @note Not thread-safe against stop(), which drops the provider this
+     * reads. Call it from the server lifecycle thread, like the constructor
+     * and stop().
+     */
+    [[nodiscard]] bool
+    hasPipeline() const noexcept;
 
     // -----------------------------------------------------------------
     // Synchronous instrument recording (called from PerfLog hot paths)
@@ -571,11 +465,8 @@ public:
      * which is a stronger guarantee than an allowlist that would have to
      * be maintained by hand.
      *
-     * Defined inline so unit tests can call it without linking the rest
-     * of the registry: in a telemetry-enabled build MetricsRegistry.cpp
-     * is not compiled into the test binary, so an out-of-line definition
-     * would be unreachable from tests. Being inline also makes it usable
-     * regardless of XRPL_ENABLE_TELEMETRY.
+     * Defined inline so it is available in a build without telemetry and
+     * usable in a constant expression.
      *
      * @param name  The job name as passed to JobQueue::addJob.
      * @return @p name when it is non-empty and all ASCII letters, else
@@ -633,10 +524,8 @@ public:
      * INT64_MAX rather than wrapping, because a wrapped gauge reads as a
      * sudden healthy-looking dip.
      *
-     * Defined inline for the same reason as sanitiseHandler(): in a
-     * telemetry-enabled build MetricsRegistry.cpp is not compiled into the
-     * unit-test binary, so an out-of-line definition would be untestable.
-     * constexpr so the cases below are checked at compile time.
+     * Defined inline for the same reason as sanitiseHandler(); constexpr so
+     * the cases below are checked at compile time.
      *
      * @param total  Cumulative numerator (e.g. summed microseconds).
      * @param count  Number of samples in @p total.
@@ -692,9 +581,7 @@ public:
      * interval whose first equals its last as a bare sequence number. A segment
      * with no dash is therefore a range of one ledger, not a malformed one.
      *
-     * Defined inline for the same reason as sanitiseHandler(): in a
-     * telemetry-enabled build MetricsRegistry.cpp is not compiled into the
-     * unit-test binary, so an out-of-line definition would be untestable.
+     * Defined inline for the same reason as sanitiseHandler().
      *
      * @param segment  One segment, already split on ','. Leading or trailing
      * whitespace is rejected, because the producer emits none.
@@ -889,59 +776,6 @@ public:
     {
         return meter_;
     }
-
-    /**
-     * Sink handed to the nodestore_state gauge helpers below.
-     *
-     * Every value they publish multiplexes onto the single `nodestore_state`
-     * gauge through its `metric` label, so the helpers need no access to the
-     * OTel observer result -- just somewhere to put a name and a number.
-     */
-    using ObserveFn = std::function<void(char const* name, std::int64_t value)>;
-
-    /**
-     * Observe the NodeStore I/O totals and the means derived from them.
-     *
-     * @param db       NodeStore to read the counters from.
-     * @param observe  Sink for one `metric`-labelled value.
-     */
-    static void
-    observeNodeStoreTotals(node_store::Database& db, ObserveFn const& observe);
-
-    /**
-     * Observe the backend write-path detail, when the backend measures it.
-     *
-     * Publishes nothing for a backend whose getWriteStats() is std::nullopt,
-     * which is every backend except NuDB. Absent labels let a reader tell
-     * "not measured" from "measured, and idle"; zeros would read as a
-     * perfectly idle write path.
-     *
-     * @param db       NodeStore whose writable backend is sampled.
-     * @param observe  Sink for one `metric`-labelled value.
-     */
-    static void
-    observeWritePathDetail(node_store::Database const& db, ObserveFn const& observe);
-
-    /**
-     * Observe the ledger-acquisition progress and stall counters.
-     *
-     * @param stats    Process-wide acquisition counters.
-     * @param observe  Sink for one `metric`-labelled value.
-     */
-    static void
-    observeAcquireStats(AcquireStats const& stats, ObserveFn const& observe);
-
-    /**
-     * Observe the read queue depth and the read thread-pool counts.
-     *
-     * These four have no accessor on Database, so its JSON counters object
-     * is still the only way to reach them.
-     *
-     * @param db       NodeStore to read the JSON counters from.
-     * @param observe  Sink for one `metric`-labelled value.
-     */
-    static void
-    observeReadQueue(node_store::Database& db, ObserveFn const& observe);
 #endif
 
 private:
@@ -962,42 +796,25 @@ private:
     ValidationTracker validationTracker_;
 
     /**
-     * Reference to Application services for gauge callbacks.
-     * Only needed when OTel is compiled in, since observable gauge
-     * callbacks live entirely inside the XRPL_ENABLE_TELEMETRY guard.
-     */
-    ServiceRegistry& app_;
-
-    /**
      * Journal for logging.
      */
     beast::Journal const journal_;
 
     /**
      * Where the registry is in its life. Construction ends in `Ready`;
-     * startAsyncGauges() moves to `GaugesArmed`; stop() to `Stopped`. A call
-     * that does not fit the current phase logs a warning and does nothing.
+     * stop() moves to `Stopped`.
      *
      * After `Stopped` the SDK pipeline is gone. recording() reads false, so
      * no macro touches meter_ or a cached instrument.
      */
-    enum class Phase { Ready, GaugesArmed, Stopped };
+    enum class Phase { Ready, Stopped };
 
     /**
-     * Current phase. Written from the Application lifecycle thread with
-     * release ordering; read from record threads via `recording()` with
-     * acquire ordering, so no record starts once stop() has stored `Stopped`.
+     * Current phase. Written from the server lifecycle thread with release
+     * ordering; read from record threads via `recording()` with acquire
+     * ordering, so no record starts once stop() has stored `Stopped`.
      */
     std::atomic<Phase> phase_{Phase::Ready};
-
-    /**
-     * Set by detachCallbacks() during shutdown so every ObservableGauge
-     * callback returns early before reading Application services that
-     * may already be stopped. Checked with memory_order_acquire at the
-     * top of each callback to pair with the memory_order_release store
-     * in detachCallbacks().
-     */
-    std::atomic<bool> callbacksDetached_{false};
 
     /**
      * The SDK MeterProvider that owns the export pipeline.
@@ -1054,94 +871,6 @@ private:
     opentelemetry::nostd::unique_ptr<opentelemetry::metrics::Histogram<double>>
         jobRunningDurationHistogram_;
 
-    // --- Observable gauges (registered via callbacks) ---
-    // Handles are stored so we can remove callbacks on shutdown.
-    /**
-     * Observable gauges for cache hit rates and sizes.
-     */
-    opentelemetry::nostd::shared_ptr<opentelemetry::metrics::ObservableInstrument>
-        cacheHitRateGauge_;
-    /**
-     * Observable gauges for TxQ metrics.
-     */
-    opentelemetry::nostd::shared_ptr<opentelemetry::metrics::ObservableInstrument> txqGauge_;
-    /**
-     * Observable gauges for counted object instances.
-     */
-    opentelemetry::nostd::shared_ptr<opentelemetry::metrics::ObservableInstrument>
-        objectCountGauge_;
-    /**
-     * Observable gauges for load factor breakdown.
-     */
-    opentelemetry::nostd::shared_ptr<opentelemetry::metrics::ObservableInstrument> loadFactorGauge_;
-    /**
-     * Observable gauge multiplexing every NodeStore value onto one
-     * instrument via its `metric` label: I/O totals, the read and write
-     * means derived from them, the NuDB write-queue detail, and the
-     * ledger-acquisition stall counters.
-     */
-    opentelemetry::nostd::shared_ptr<opentelemetry::metrics::ObservableInstrument> nodeStoreGauge_;
-    /**
-     * Observable gauge for server-level health metrics (state, uptime, peers, etc.).
-     */
-    opentelemetry::nostd::shared_ptr<opentelemetry::metrics::ObservableInstrument> serverInfoGauge_;
-    /**
-     * Observable gauge for build version info (label-based, value=1).
-     */
-    opentelemetry::nostd::shared_ptr<opentelemetry::metrics::ObservableInstrument> buildInfoGauge_;
-    /**
-     * Observable gauge for complete ledger range start/end pairs.
-     */
-    opentelemetry::nostd::shared_ptr<opentelemetry::metrics::ObservableInstrument>
-        completeLedgersGauge_;
-    /**
-     * Observable gauge for database sizes and historical fetch rate.
-     */
-    opentelemetry::nostd::shared_ptr<opentelemetry::metrics::ObservableInstrument> dbMetricsGauge_;
-
-    // --- External dashboard parity gauges ---
-    /**
-     * Observable gauge for validator health indicators (amendment blocked,
-     * UNL blocked, quorum, UNL expiry).
-     */
-    opentelemetry::nostd::shared_ptr<opentelemetry::metrics::ObservableInstrument>
-        validatorHealthGauge_;
-    /**
-     * Observable gauge for peer network quality metrics (P90 latency,
-     * insane peer count, version spread, upgrade recommendation).
-     */
-    opentelemetry::nostd::shared_ptr<opentelemetry::metrics::ObservableInstrument>
-        peerQualityGauge_;
-    /**
-     * Observable gauge for transaction reduce-relay efficiency (selected vs
-     * suppressed peers, feature-disabled peers, missing-tx frequency).
-     */
-    opentelemetry::nostd::shared_ptr<opentelemetry::metrics::ObservableInstrument>
-        reduceRelayGauge_;
-    /**
-     * Observable gauge for ledger economy metrics (base fee, reserve,
-     * reserve increment, ledger age).
-     */
-    opentelemetry::nostd::shared_ptr<opentelemetry::metrics::ObservableInstrument>
-        ledgerEconomyGauge_;
-    /**
-     * Observable gauge for node state tracking (operating mode value,
-     * time in current state).
-     */
-    opentelemetry::nostd::shared_ptr<opentelemetry::metrics::ObservableInstrument>
-        stateTrackingGauge_;
-    /**
-     * Observable gauge for storage detail metrics (NuDB on-disk size).
-     */
-    opentelemetry::nostd::shared_ptr<opentelemetry::metrics::ObservableInstrument>
-        storageDetailGauge_;
-    /**
-     * Observable gauge for validation agreement metrics (1h/24h percentages
-     * and counts from ValidationTracker).
-     */
-    opentelemetry::nostd::shared_ptr<opentelemetry::metrics::ObservableInstrument>
-        validationAgreementGauge_;
-
     // --- External dashboard parity counters ---
     /**
      * Counter: ledgers_closed_total — incremented each consensus round.
@@ -1165,12 +894,6 @@ private:
     opentelemetry::nostd::unique_ptr<opentelemetry::metrics::Counter<uint64_t>>
         stateChangesCounter_;
     /**
-     * ObservableCounter: jq_trans_overflow_total — observed from
-     * Overlay::getJqTransOverflow() (cumulative overflow tally owned by the overlay).
-     */
-    opentelemetry::nostd::shared_ptr<opentelemetry::metrics::ObservableInstrument>
-        jqTransOverflowObservable_;
-    /**
      * Counter: ledger_history_mismatch_total{reason} — incremented per classified
      * built-vs-validated ledger mismatch.
      */
@@ -1186,20 +909,6 @@ private:
      * admission to the queue.
      */
     opentelemetry::nostd::unique_ptr<opentelemetry::metrics::Counter<uint64_t>> txqDroppedCounter_;
-    /**
-     * ObservableCounter: validation_agreements_total — observed from
-     * ValidationTracker::totalAgreementsEver() (monotonic gross lifetime
-     * tally, initial-classification semantics).
-     */
-    opentelemetry::nostd::shared_ptr<opentelemetry::metrics::ObservableInstrument>
-        validationAgreementsObservable_;
-    /**
-     * ObservableCounter: validation_missed_total — observed from
-     * ValidationTracker::totalMissedEver() (monotonic gross lifetime tally,
-     * initial-classification semantics).
-     */
-    opentelemetry::nostd::shared_ptr<opentelemetry::metrics::ObservableInstrument>
-        validationMissedObservable_;
 
     /**
      * Build the OTLP/HTTP exporter, periodic reader, resource attributes and
@@ -1229,68 +938,7 @@ private:
      */
     void
     disablePipeline(std::string_view reason);
-
-    /**
-     * Register all observable gauge callbacks with the OTel SDK.
-     * Dispatches to one helper per metric domain so that each helper
-     * stays well under the 80-line-per-function limit.
-     *
-     * Called only from `startAsyncGauges()`, which owns the enabled_,
-     * phase_ and provider_ guards and the Application-state precondition.
-     */
-    void
-    registerAsyncGauges();
-
-    // Per-domain registration helpers for the async (pull-model) phase.
-    // Each creates its instrument -- an ObservableGauge, or an
-    // ObservableCounter where the underlying value is cumulative -- and
-    // attaches a single callback that reads current values from Application
-    // services. The callbacks run on the OTel
-    // PeriodicExportingMetricReader background thread (~10 s tick).
-    void
-    registerJqTransOverflowCounter();  // gap-fill: overlay overflow total
-    void
-    registerCacheHitRateGauge();
-    void
-    registerTxqGauge();
-    void
-    registerObjectCountGauge();
-    void
-    registerLoadFactorGauge();
-    void
-    registerNodeStoreGauge();
-
-    // The four nodestore_state helpers and their ObserveFn sink are public
-    // (above), so a test can drive each one with a recording sink and assert
-    // the exact `metric` label values it publishes. They read only their
-    // arguments, so exposing them widens no state.
-
-    void
-    registerServerInfoGauge();
-    void
-    registerBuildInfoGauge();
-    void
-    registerCompleteLedgersGauge();
-    void
-    registerDbMetricsGauge();
-    void
-    registerValidatorHealthGauge();
-    void
-    registerPeerQualityGauge();
-    void
-    registerReduceRelayGauge();  // Reduce-relay efficiency
-    void
-    registerLedgerEconomyGauge();
-    void
-    registerStateTrackingGauge();
-    void
-    registerStorageDetailGauge();
-    void
-    registerValidationAgreementGauge();
-    void
-    registerValidationTotalsCounters();  // gap-fill: lifetime agree/miss _total
-#endif                                   // XRPL_ENABLE_TELEMETRY
+#endif  // XRPL_ENABLE_TELEMETRY
 };
 
-}  // namespace telemetry
-}  // namespace xrpl
+}  // namespace xrpl::telemetry

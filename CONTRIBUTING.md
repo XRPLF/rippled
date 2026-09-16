@@ -458,7 +458,7 @@ for the full rule list.
 
 ## Adding a new OTel metric
 
-See `src/xrpld/telemetry/MetricMacros.h` for the call-site macros covering every
+See `include/xrpl/telemetry/MetricMacros.h` for the call-site macros covering every
 OTel instrument kind (Counter, UpDownCounter, Histogram, Gauge, and their
 Observable/async counterparts) and the "Adding a New Metric" section in
 [docs/telemetry-runbook.md](docs/telemetry-runbook.md) for the walkthrough and a
