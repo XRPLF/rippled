@@ -801,7 +801,7 @@ reader, and OTLP/HTTP exporter, even though both request a meter named
 `xrpld` / `1.0.0`. `OTelCollector` takes its meter from the **global** provider,
 which `Telemetry` publishes and reads every 1000 ms; `MetricsRegistry` builds a
 private provider it does not publish, read every 10000 ms
-(`src/xrpld/telemetry/MetricsRegistry.cpp`). So `jobq_<jobtype>_*` and
+(`src/libxrpl/telemetry/MetricsRegistry.cpp`). So `jobq_<jobtype>_*` and
 `job_*_total` reach Prometheus on different cadences and should not be assumed
 sampled at the same instant.
 
@@ -1081,8 +1081,8 @@ async callbacks for new categories.
 > **Label values are case-sensitive and three cache values are not lowercase.**
 > The `metric` label carries the string literal passed to `Observe()`, verbatim:
 > `SLE_hit_rate`, `AL_hit_rate` and `AL_size` are upper-case
-> (`src/xrpld/telemetry/MetricsRegistry.cpp:666`, `:682`, `:708`), while
-> `ledger_hit_rate` genuinely is lowercase (`:675`). A selector written as
+> (all four `Observe()` calls are in `AppMetricGauges::registerCacheHitRateGauge()`),
+> while `ledger_hit_rate` genuinely is lowercase. A selector written as
 > `cache_metrics{metric="sle_hit_rate"}` matches nothing.
 
 #### Server Info (via OTel MetricsRegistry)
@@ -1263,7 +1263,7 @@ docker/telemetry/workload/benchmark.sh --xrpld .build/xrpld --duration 300
 > (`nodestore_state`, `cache_metrics`, …) once.
 >
 > Note that `ledgers_closed_total` appears in **both** instrument rows: it is
-> created as a `MetricsRegistry` member (`MetricsRegistry.cpp:386-387`, whose
+> created as a `MetricsRegistry` member (in `MetricsRegistry::initSyncInstruments()`, whose
 > `incrementLedgersClosed()` has no callers) and separately incremented at its
 > call site via `XRPL_METRIC_COUNTER_INC` (`RCLConsensus.cpp:749`). The distinct
 > name count across the two rows is therefore 41, not 42.
@@ -1361,9 +1361,13 @@ Phase 11 builds a custom OTel Collector receiver (Go) that polls xrpld's admin R
 
 ### Phase 9: OTel SDK-Exported Metrics (MetricsRegistry)
 
-Phase 9 introduces the `MetricsRegistry` class (`src/xrpld/telemetry/MetricsRegistry.h/.cpp`)
-which registers metrics directly with the OpenTelemetry Metrics SDK. These are exported
-via OTLP/HTTP to the OTel Collector and scraped by Prometheus.
+Phase 9 introduces the `MetricsRegistry` class (`include/xrpl/telemetry/MetricsRegistry.h`,
+`src/libxrpl/telemetry/MetricsRegistry.cpp`) which registers metrics directly with the
+OpenTelemetry Metrics SDK. The synchronous counters and histograms are created there. The
+observable gauges in the tables below are registered by `AppMetricGauges`
+(`src/xrpld/telemetry/AppMetricGauges.h`, `src/xrpld/telemetry/AppMetricGauges.cpp`), which
+stays in `xrpld` because its callbacks read `Application`. Both are exported via OTLP/HTTP
+to the OTel Collector and scraped by Prometheus.
 
 #### NodeStore I/O (Observable Gauge — `nodestore_state`)
 
@@ -1403,9 +1407,9 @@ via OTLP/HTTP to the OTel Collector and scraped by Prometheus.
 
 Further label values on the same instrument, added to separate the two
 bottlenecks that both present as the `ledgerData` job lane pinned at its
-concurrency cap. Observed in `MetricsRegistry::observeNodeStoreTotals()`,
+concurrency cap. Observed in `AppMetricGauges::observeNodeStoreTotals()`,
 `observeWritePathDetail()`, and `observeAcquireStats()`
-(`src/xrpld/telemetry/MetricsRegistry.cpp:871-942`).
+(`src/xrpld/telemetry/AppMetricGauges.cpp`).
 
 | Prometheus Metric                                    | Type  | Labels   | Description                                             |
 | ---------------------------------------------------- | ----- | -------- | ------------------------------------------------------- |
@@ -1497,7 +1501,7 @@ data as uninformative unless the build is known to include the fix.
 #### TxQ Admission and Ledger Mismatch (Synchronous Counters)
 
 Three monotonic counters created alongside the Phase 7+ parity counters
-(`src/xrpld/telemetry/MetricsRegistry.cpp:394-399`). The gauges above answer
+(in `MetricsRegistry::initSyncInstruments()`). The gauges above answer
 "how deep is the queue"; these answer "what did the queue refuse, and did the
 ledger we built match the one the network validated".
 
@@ -1543,7 +1547,7 @@ Rejections (Dropped)", "Queue Abandonment Rate (Expired)"; _Consensus Health_
 #### Reduce-Relay Efficiency (Observable Gauge — `reduce_relay_metrics`)
 
 Transaction reduce-relay effectiveness, read from `Overlay::txMetrics()` each
-collection cycle (`src/xrpld/telemetry/MetricsRegistry.cpp:1370-1402`). A high
+collection cycle (`AppMetricGauges::registerReduceRelayGauge()`). A high
 `suppressed_peers` : `selected_peers` ratio proves the feature is saving
 bandwidth; a high `not_enabled_peers` means stale peers are forcing full relay.
 
@@ -1572,7 +1576,7 @@ Selection", "Reduce-Relay Missing-Tx Frequency".
 | `rpc_in_flight_requests`    | UpDownCounter | (none)            | RPC calls currently executing (+1 rpcStart, -1 rpcEnd) |
 
 `rpc_in_flight_requests` is emitted at its call site via the `XRPL_METRIC_UPDOWN_ADD`
-macro (see `src/xrpld/telemetry/MetricMacros.h` and `PerfLogImp.cpp`), not through a
+macro (see `include/xrpl/telemetry/MetricMacros.h` and `PerfLogImp.cpp`), not through a
 `MetricsRegistry` member. As an UpDownCounter it carries no `_total` suffix (that is
 reserved for monotonic counters).
 
@@ -1582,7 +1586,7 @@ Two histograms describing how much work one request asks for. Names and
 descriptions are the `constexpr` constants in
 `include/xrpl/telemetry/RpcMetricNames.h`; both are recorded at their call sites
 via `XRPL_METRIC_*`, and both have an explicit-bucket view registered in
-`src/xrpld/telemetry/MetricsRegistry.cpp`.
+`src/libxrpl/telemetry/MetricsRegistry.cpp`.
 
 | Prometheus Metric           | Type      | Labels | Description                                             |
 | --------------------------- | --------- | ------ | ------------------------------------------------------- |
@@ -1702,8 +1706,8 @@ information the batch totals do not already carry.
 
 **All three histograms need an explicit bucket view.** The SDK's default
 histogram boundaries top out at 10000. Every one of these three exceeds that, so
-without a view their top quantiles would all read as a flat 10000. Twelve views are
-registered in `src/xrpld/telemetry/MetricsRegistry.cpp`, and three of the twelve are
+without a view their top quantiles would all read as a flat 10000. Thirteen views are
+registered in `src/libxrpl/telemetry/MetricsRegistry.cpp`, and three of the thirteen are
 for this family:
 
 | Instrument                  | View helper                     | Boundaries                                             |
@@ -1712,13 +1716,15 @@ for this family:
 | `getobject_request_objects` | `addHistogramView()`, own set   | `1, 2, 4, 8, 16, 64, 256, 1024, 4096, 12288`           |
 | `getobject_charge`          | `addHistogramView()`, own set   | `0, 100, 500, 1000, 5000, 10000, 25000, 50000, 100000` |
 
-The other nine views are `addMicrosecondHistogramView()` on `job_queued_us`,
+The other ten views are `addMicrosecondHistogramView()` on `job_queued_us`,
 `job_running_us`, `rpc_method_us` and `sweep_malloc_trim_us`;
-`addRoundDurationHistogramView()` on `consensus_round_duration_ms`; and
+`addRoundDurationHistogramView()` on `consensus_round_duration_ms`;
+`addRotationPhaseHistogramView()` on `rotation_phase_duration_seconds`; and
 `addHistogramView()` with its own set on `dns_resolve_latency_ms`,
 `overlay_dial_latency_ms`, `rpc_batch_size` and `pathfind_discovered_paths`. That
-is five µs-ladder views, one round-duration ladder, and six caller-supplied sets —
-the two above, those two millisecond latencies, and two object counts. See
+is five µs-ladder views, one round-duration ladder, one seconds ladder for the
+rotation phases, and six caller-supplied sets — the two above, those two
+millisecond latencies, and two object counts. See
 [RPC Request-Count Histograms](#rpc-request-count-histograms) for the last two.
 
 **Why the latter two do not use the µs ladder.** They are not durations. The µs
@@ -1758,7 +1764,7 @@ not a lowercase word and not a friendly alias. The value is
 `beast::typeName<Object>()` (`include/xrpl/basics/CountedObject.h:115`), which
 demangles `typeid(T).name()` with `abi::__cxa_demangle`
 (`include/xrpl/beast/type_name.h:16-45`) and applies no stripping; the observer
-copies it through verbatim (`src/xrpld/telemetry/MetricsRegistry.cpp:781-787`).
+copies it through verbatim (`AppMetricGauges::registerObjectCountGauge()`).
 Values therefore keep their `xrpl::` namespace, nested `::`, and template
 arguments.
 
@@ -1893,16 +1899,17 @@ These metrics fill gaps identified by comparing xrpld's internal observability w
 Data source: `ValidationTracker` class with 8s grace period and 5m late repair window.
 
 > **Every value on this instrument is a double.** The family is one
-> `CreateDoubleObservableGauge` (`src/xrpld/telemetry/MetricsRegistry.cpp:1593`),
+> `CreateDoubleObservableGauge` (in `AppMetricGauges::registerValidationAgreementGauge()`),
 > so the integral counts are cast to `double` before `Observe()` — there is no
 > Int64 sub-series to filter on. The same holds for `validator_health`,
 > `peer_quality` and `state_tracking` below; an earlier revision of these four
 > tables split the Type column between Int64 and Double, which the code does not
 > do.
 >
-> The 7-day window is `ValidationTracker::kWindow7d` = 168 hours
-> (`src/xrpld/telemetry/ValidationTracker.h:311`) and is observed alongside the 1h
-> and 24h windows at `MetricsRegistry.cpp:1623-1626`. Panels exist on _Validator
+> The 7-day window spans `ValidationTracker::kBuckets7d` = `7 * 24 * 60` one-minute
+> buckets, i.e. 168 hours (`include/xrpl/telemetry/ValidationTracker.h`), and is
+> observed alongside the 1h and 24h windows in
+> `AppMetricGauges::registerValidationAgreementGauge()`. Panels exist on _Validator
 > Health_ (`validator-health`): "Agreement % (7d)" and "Agreements vs Missed
 > (7d)".
 
@@ -1915,7 +1922,7 @@ Data source: `ValidationTracker` class with 8s grace period and 5m late repair w
 | `validator_health{metric="unl_expiry_days"}`   | Double | `metric` | Days until UNL list expires    |
 | `validator_health{metric="validation_quorum"}` | Double | `metric` | Validation quorum threshold    |
 
-Single `CreateDoubleObservableGauge` at `MetricsRegistry.cpp:1217`.
+Single `CreateDoubleObservableGauge`, in `AppMetricGauges::registerValidatorHealthGauge()`.
 
 #### Peer Quality (Observable Gauge — `peer_quality`)
 
@@ -1926,7 +1933,7 @@ Single `CreateDoubleObservableGauge` at `MetricsRegistry.cpp:1217`.
 | `peer_quality{metric="peers_higher_version_pct"}` | Double | `metric` | % of peers on newer xrpld version    |
 | `peer_quality{metric="upgrade_recommended"}`      | Double | `metric` | 1 if >60% of peers are newer version |
 
-Single `CreateDoubleObservableGauge` at `MetricsRegistry.cpp:1266`.
+Single `CreateDoubleObservableGauge`, in `AppMetricGauges::registerPeerQualityGauge()`.
 
 #### Ledger Economy (Observable Gauge — `ledger_economy`)
 
@@ -1945,9 +1952,9 @@ Single `CreateDoubleObservableGauge` at `MetricsRegistry.cpp:1266`.
 | `state_tracking{metric="state_value"}`                   | Double | `metric` | Numeric state 0-6 (see encoding below) |
 | `state_tracking{metric="time_in_current_state_seconds"}` | Double | `metric` | Duration in current state              |
 
-Single `CreateDoubleObservableGauge` at `MetricsRegistry.cpp:1483`.
+Single `CreateDoubleObservableGauge`, in `AppMetricGauges::registerStateTrackingGauge()`.
 
-State value encoding: 0=disconnected, 1=connected, 2=syncing, 3=tracking, 4=full, 5=validating (FULL + validating), 6=proposing (FULL + proposing). Values 0-4 are `OperatingMode` cast to double (`include/xrpl/server/NetworkOPs.h:60-66`); 5 and 6 are the FULL-only refinements at `MetricsRegistry.cpp:1500-1515`. **The range is 0-6, not 0-7** — there is no seventh state.
+State value encoding: 0=disconnected, 1=connected, 2=syncing, 3=tracking, 4=full, 5=validating (FULL + validating), 6=proposing (FULL + proposing). Values 0-4 are `OperatingMode` cast to double (`include/xrpl/server/NetworkOPs.h:60-66`); 5 and 6 are the FULL-only refinements in `AppMetricGauges::registerStateTrackingGauge()`. **The range is 0-6, not 0-7** — there is no seventh state.
 
 #### Storage Detail (Observable Gauge — `storage_detail`)
 
@@ -1956,11 +1963,11 @@ State value encoding: 0=disconnected, 1=connected, 2=syncing, 3=tracking, 4=full
 | `storage_detail{metric="stored_object_bytes"}` | Int64 | `metric` | Cumulative object-payload bytes written (not on-disk size) |
 
 > **`stored_object_bytes` is not a file size.** It observes `getStoreSize()`
-> (`src/xrpld/telemetry/MetricsRegistry.cpp:1574`), which sums the object payloads
+> (in `AppMetricGauges::registerStorageDetailGauge()`), which sums the object payloads
 > this process has written. It therefore excludes NuDB's keys, bucket padding and
 > log, and it resets when the process restarts while the files on disk do not.
 > `node_written_bytes` on the `nodestore_state` gauge calls the same accessor
-> (`MetricsRegistry.cpp:877`), so the two series are equal by construction and any
+> (in `AppMetricGauges::observeNodeStoreTotals()`), so the two series are equal by construction and any
 > write-amplification ratio built from the pair is a constant 1.0. To size the store
 > on disk, stat the backend's files; no metric reports it today.
 >
@@ -1979,12 +1986,11 @@ State value encoding: 0=disconnected, 1=connected, 2=syncing, 3=tracking, 4=full
 | `state_changes_total`       | Counter | Operating mode transitions   | NetworkOPs.cpp   |
 
 > **Known issue — `ledgers_closed_total` has a dead second producer.** The
-> instrument is created twice. `MetricsRegistry::registerCounters()` eagerly
+> instrument is created twice. `MetricsRegistry::initSyncInstruments()` eagerly
 > creates it as the member `ledgersClosedCounter_`
-> (`src/xrpld/telemetry/MetricsRegistry.cpp:386-387`), and its only mutator,
-> `MetricsRegistry::incrementLedgersClosed()`
-> (declared `MetricsRegistry.h:591`, defined `MetricsRegistry.cpp:1703`), has
-> **zero callers** — the header says so itself at `MetricsRegistry.h:584-588`.
+> (`src/libxrpl/telemetry/MetricsRegistry.cpp`), and its only mutator,
+> `MetricsRegistry::incrementLedgersClosed()`, has **zero callers** — the `@note`
+> on its declaration in `include/xrpl/telemetry/MetricsRegistry.h` says so itself.
 > The value operators actually see comes from the single live increment,
 > the `XRPL_METRIC_COUNTER_INC` call site in
 > `RCLConsensus::Adaptor::doAccept()` (`src/xrpld/app/consensus/RCLConsensus.cpp:749`).
@@ -2031,15 +2037,15 @@ The dotted form was dropped by the 2026-05-13 naming redesign, in three commits:
 
 What the code emits today, and where it is documented:
 
-| Old dotted key (never emitted)                                    | Live equivalent                                                                                                                                                                              |
-| ----------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `xrpl.peer.version`                                               | `peer_version` — see [§Transaction Attributes](#transaction-attributes) <!-- otel-naming:allow-dotted: xrpl.peer.version -->                                                                 |
-| `xrpl.validation.ledger_hash`, `xrpl.peer.validation.ledger_hash` | one bare `ledger_hash` on both `consensus.validation.send` and `peer.validation.receive` <!-- otel-naming:allow-dotted: xrpl.validation.ledger_hash, xrpl.peer.validation.ledger_hash -->    |
-| `xrpl.validation.full`, `xrpl.peer.validation.full`               | one bare `full_validation` on both of those spans <!-- otel-naming:allow-dotted: xrpl.validation.full, xrpl.peer.validation.full -->                                                         |
-| `xrpl.consensus.validation_quorum`                                | `quorum`, on `consensus.accept` only <!-- otel-naming:allow-dotted: xrpl.consensus.validation_quorum -->                                                                                     |
-| `xrpl.node.amendment_blocked`                                     | **not a span attribute at all** — only the metric `validator_health{metric="amendment_blocked"}` (`MetricsRegistry.cpp:1233`) <!-- otel-naming:allow-dotted: xrpl.node.amendment_blocked --> |
-| `xrpl.node.server_state`                                          | **not a span attribute at all** — only the metric `server_info{metric="server_state"}` (`MetricsRegistry.cpp:1031`) <!-- otel-naming:allow-dotted: xrpl.node.server_state -->                |
-| `xrpl.consensus.proposers_validated`                              | **never implemented** in any form <!-- otel-naming:allow-dotted: xrpl.consensus.proposers_validated -->                                                                                      |
+| Old dotted key (never emitted)                                    | Live equivalent                                                                                                                                                                                                     |
+| ----------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `xrpl.peer.version`                                               | `peer_version` — see [§Transaction Attributes](#transaction-attributes) <!-- otel-naming:allow-dotted: xrpl.peer.version -->                                                                                        |
+| `xrpl.validation.ledger_hash`, `xrpl.peer.validation.ledger_hash` | one bare `ledger_hash` on both `consensus.validation.send` and `peer.validation.receive` <!-- otel-naming:allow-dotted: xrpl.validation.ledger_hash, xrpl.peer.validation.ledger_hash -->                           |
+| `xrpl.validation.full`, `xrpl.peer.validation.full`               | one bare `full_validation` on both of those spans <!-- otel-naming:allow-dotted: xrpl.validation.full, xrpl.peer.validation.full -->                                                                                |
+| `xrpl.consensus.validation_quorum`                                | `quorum`, on `consensus.accept` only <!-- otel-naming:allow-dotted: xrpl.consensus.validation_quorum -->                                                                                                            |
+| `xrpl.node.amendment_blocked`                                     | **not a span attribute at all** — only the metric `validator_health{metric="amendment_blocked"}` (`AppMetricGauges::registerValidatorHealthGauge()`) <!-- otel-naming:allow-dotted: xrpl.node.amendment_blocked --> |
+| `xrpl.node.server_state`                                          | **not a span attribute at all** — only the metric `server_info{metric="server_state"}` (`AppMetricGauges::registerServerInfoGauge()`) <!-- otel-naming:allow-dotted: xrpl.node.server_state -->                     |
+| `xrpl.consensus.proposers_validated`                              | **never implemented** in any form <!-- otel-naming:allow-dotted: xrpl.consensus.proposers_validated -->                                                                                                             |
 
 The identical nine-row list was deleted from
 `docker/telemetry/workload/expected_spans.json` by commit `cb9fce6890` for the

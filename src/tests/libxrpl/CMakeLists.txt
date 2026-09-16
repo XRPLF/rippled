@@ -21,10 +21,11 @@ set_target_properties(
 )
 # Lets test sources include the shared helpers as <helpers/...>.
 target_include_directories(xrpl_tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
-# Some headers under test live in src/xrpld/ rather than in libxrpl (for
-# example app/ledger/AcquireStats.h and telemetry/ValidationTracker.h), so put
-# src/ on the include path to reach them as <xrpld/...>. This is unconditional
-# because header-only ones are testable in every build, telemetry or not.
+# Two tests reach a header under src/xrpld/ rather than in libxrpl:
+# ledger/AcquireStats.cpp includes <xrpld/app/ledger/AcquireStats.h> and
+# telemetry/RpcMetricNames.cpp includes <xrpld/rpc/detail/Tuning.h>. Put src/ on
+# the include path so both resolve as <xrpld/...>. This is unconditional because
+# those headers are header-only and testable in every build, telemetry or not.
 target_include_directories(xrpl_tests PRIVATE ${CMAKE_SOURCE_DIR}/src)
 target_link_libraries(xrpl_tests PRIVATE GTest::gtest GTest::gmock xrpl.libxrpl)
 
@@ -116,29 +117,6 @@ if(telemetry)
             "${OTEL_IN_MEMORY_EXPORTER_LIB}"
             opentelemetry-cpp::opentelemetry-cpp
     )
-else()
-    # MetricsRegistry lives in xrpld; compile its .cpp directly into the test
-    # target so the no-op path can be tested without linking all of xrpld.
-    # When telemetry=ON, XRPL_ENABLE_TELEMETRY is globally defined and the
-    # .cpp pulls in xrpld symbols we cannot satisfy here.
-    target_sources(
-        xrpl_tests
-        PRIVATE ${CMAKE_SOURCE_DIR}/src/xrpld/telemetry/MetricsRegistry.cpp
-    )
 endif()
-
-# ValidationTracker lives in src/xrpld/ (not libxrpl), so we compile its
-# implementation directly into the test binary and put src/ on the include path
-# so its tests can reach <xrpld/telemetry/...> headers.
-#
-# Both are unconditional: the class carries no telemetry guards, so its tests
-# compile and run in every build. Gating them would leave the test file (which
-# is likewise unguarded) without the header it includes and without the
-# definitions it calls.
-target_include_directories(xrpl_tests PRIVATE ${CMAKE_SOURCE_DIR}/src)
-target_sources(
-    xrpl_tests
-    PRIVATE ${CMAKE_SOURCE_DIR}/src/xrpld/telemetry/detail/ValidationTracker.cpp
-)
 
 gtest_discover_tests(xrpl_tests DISCOVERY_TIMEOUT 60)

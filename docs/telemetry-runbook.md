@@ -1753,27 +1753,27 @@ These gauges are exported via the OTel Metrics SDK `PeriodicMetricReader` (10s i
 
 | Prometheus Metric                                   | Source              | Description                                                                                                                                                                         |
 | --------------------------------------------------- | ------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `server_info{metric="server_state"}`                | MetricsRegistry.cpp | Operating mode (0=DISCONNECTED .. 4=FULL)                                                                                                                                           |
-| `server_info{metric="uptime"}`                      | MetricsRegistry.cpp | Seconds since server start                                                                                                                                                          |
-| `server_info{metric="peers"}`                       | MetricsRegistry.cpp | Total connected peers                                                                                                                                                               |
-| `server_info{metric="validated_ledger_seq"}`        | MetricsRegistry.cpp | Validated ledger sequence number                                                                                                                                                    |
-| `server_info{metric="ledger_current_index"}`        | MetricsRegistry.cpp | Current open ledger sequence                                                                                                                                                        |
-| `server_info{metric="peer_disconnects_resources"}`  | MetricsRegistry.cpp | Cumulative resource-related peer disconnects                                                                                                                                        |
-| `server_info{metric="last_close_proposers"}`        | MetricsRegistry.cpp | Proposers in last closed round                                                                                                                                                      |
-| `server_info{metric="last_close_converge_time_ms"}` | MetricsRegistry.cpp | Last close convergence time (ms)                                                                                                                                                    |
-| `server_info{metric="last_close_time"}`             | MetricsRegistry.cpp | Network close time of last closed ledger (NetClock secs since XRPL epoch). Age = `time() - (value + 946684800)`; close interval = `1/rate(ledgers_closed_total)`, not a gauge delta |
-| `build_info{version="<ver>"}`                       | MetricsRegistry.cpp | Info-style metric (always 1)                                                                                                                                                        |
-| `complete_ledgers{bound="start\|end",index="<N>"}`  | MetricsRegistry.cpp | Complete ledger range start/end pairs                                                                                                                                               |
-| `db_metrics{metric="db_kb_total"}`                  | MetricsRegistry.cpp | Total database size (KB)                                                                                                                                                            |
-| `db_metrics{metric="db_kb_ledger"}`                 | MetricsRegistry.cpp | Ledger database size (KB)                                                                                                                                                           |
-| `db_metrics{metric="db_kb_transaction"}`            | MetricsRegistry.cpp | Transaction database size (KB)                                                                                                                                                      |
-| `db_metrics{metric="historical_perminute"}`         | MetricsRegistry.cpp | Historical ledger fetches per minute                                                                                                                                                |
-| `cache_metrics{metric="AL_size"}`                   | MetricsRegistry.cpp | AcceptedLedger cache size                                                                                                                                                           |
-| `nodestore_state{metric="node_reads_duration_us"}`  | MetricsRegistry.cpp | Cumulative read time (microseconds)                                                                                                                                                 |
-| `nodestore_state{metric="node_writes_duration_us"}` | MetricsRegistry.cpp | Cumulative write time (microseconds)                                                                                                                                                |
-| `nodestore_state{metric="read_request_bundle"}`     | MetricsRegistry.cpp | Read request bundle count                                                                                                                                                           |
-| `nodestore_state{metric="read_threads_running"}`    | MetricsRegistry.cpp | Active read threads                                                                                                                                                                 |
-| `nodestore_state{metric="read_threads_total"}`      | MetricsRegistry.cpp | Total read threads configured                                                                                                                                                       |
+| `server_info{metric="server_state"}`                | AppMetricGauges.cpp | Operating mode (0=DISCONNECTED .. 4=FULL)                                                                                                                                           |
+| `server_info{metric="uptime"}`                      | AppMetricGauges.cpp | Seconds since server start                                                                                                                                                          |
+| `server_info{metric="peers"}`                       | AppMetricGauges.cpp | Total connected peers                                                                                                                                                               |
+| `server_info{metric="validated_ledger_seq"}`        | AppMetricGauges.cpp | Validated ledger sequence number                                                                                                                                                    |
+| `server_info{metric="ledger_current_index"}`        | AppMetricGauges.cpp | Current open ledger sequence                                                                                                                                                        |
+| `server_info{metric="peer_disconnects_resources"}`  | AppMetricGauges.cpp | Cumulative resource-related peer disconnects                                                                                                                                        |
+| `server_info{metric="last_close_proposers"}`        | AppMetricGauges.cpp | Proposers in last closed round                                                                                                                                                      |
+| `server_info{metric="last_close_converge_time_ms"}` | AppMetricGauges.cpp | Last close convergence time (ms)                                                                                                                                                    |
+| `server_info{metric="last_close_time"}`             | AppMetricGauges.cpp | Network close time of last closed ledger (NetClock secs since XRPL epoch). Age = `time() - (value + 946684800)`; close interval = `1/rate(ledgers_closed_total)`, not a gauge delta |
+| `build_info{version="<ver>"}`                       | AppMetricGauges.cpp | Info-style metric (always 1)                                                                                                                                                        |
+| `complete_ledgers{bound="start\|end",index="<N>"}`  | AppMetricGauges.cpp | Complete ledger range start/end pairs                                                                                                                                               |
+| `db_metrics{metric="db_kb_total"}`                  | AppMetricGauges.cpp | Total database size (KB)                                                                                                                                                            |
+| `db_metrics{metric="db_kb_ledger"}`                 | AppMetricGauges.cpp | Ledger database size (KB)                                                                                                                                                           |
+| `db_metrics{metric="db_kb_transaction"}`            | AppMetricGauges.cpp | Transaction database size (KB)                                                                                                                                                      |
+| `db_metrics{metric="historical_perminute"}`         | AppMetricGauges.cpp | Historical ledger fetches per minute                                                                                                                                                |
+| `cache_metrics{metric="AL_size"}`                   | AppMetricGauges.cpp | AcceptedLedger cache size                                                                                                                                                           |
+| `nodestore_state{metric="node_reads_duration_us"}`  | AppMetricGauges.cpp | Cumulative read time (microseconds)                                                                                                                                                 |
+| `nodestore_state{metric="node_writes_duration_us"}` | AppMetricGauges.cpp | Cumulative write time (microseconds)                                                                                                                                                |
+| `nodestore_state{metric="read_request_bundle"}`     | AppMetricGauges.cpp | Read request bundle count                                                                                                                                                           |
+| `nodestore_state{metric="read_threads_running"}`    | AppMetricGauges.cpp | Active read threads                                                                                                                                                                 |
+| `nodestore_state{metric="read_threads_total"}`      | AppMetricGauges.cpp | Total read threads configured                                                                                                                                                       |
 | `rpc_in_flight_requests`                            | PerfLogImp.cpp      | RPC requests currently executing (UpDownCounter)                                                                                                                                    |
 
 #### Sync Diagnosis Signals
@@ -1786,21 +1786,21 @@ label values rather than reporting them as zero.
 
 | Prometheus Metric                                    | Source              | Description                                                 |
 | ---------------------------------------------------- | ------------------- | ----------------------------------------------------------- |
-| `nodestore_state{metric="read_mean_us"}`             | MetricsRegistry.cpp | Mean time per backend read (microseconds)                   |
-| `nodestore_state{metric="write_mean_us"}`            | MetricsRegistry.cpp | Mean time per backend write (microseconds)                  |
-| `nodestore_state{metric="nudb_writers_in_flight"}`   | MetricsRegistry.cpp | Threads inside a NuDB insert right now                      |
-| `nodestore_state{metric="nudb_writer_depth_x100"}`   | MetricsRegistry.cpp | Mean queue depth at the NuDB insert mutex, ×100             |
-| `nodestore_state{metric="nudb_insert_mean_us"}`      | MetricsRegistry.cpp | Mean NuDB insert time, queueing included (microseconds)     |
-| `nodestore_state{metric="nudb_insert_max_us"}`       | MetricsRegistry.cpp | Slowest single NuDB insert seen (microseconds)              |
-| `nodestore_state{metric="acquire_deferrals"}`        | MetricsRegistry.cpp | Timer jobs skipped because the lane was full, **all lanes** |
-| `nodestore_state{metric="acquire_timeouts"}`         | MetricsRegistry.cpp | Timer bodies that ran and advanced retry, **all lanes**     |
-| `nodestore_state{metric="acquire_ledger_deferrals"}` | MetricsRegistry.cpp | Deferrals from ledger acquisition alone                     |
-| `nodestore_state{metric="acquire_ledger_timeouts"}`  | MetricsRegistry.cpp | Timeouts from ledger acquisition alone                      |
-| `nodestore_state{metric="acquire_give_ups"}`         | MetricsRegistry.cpp | Acquisitions that exhausted their retry budget              |
-| `nodestore_state{metric="acquire_aborts"}`           | MetricsRegistry.cpp | Acquisitions destroyed before finishing                     |
-| `nodestore_state{metric="acquire_aborts_partial"}`   | MetricsRegistry.cpp | Subset of aborts that discarded partly built maps           |
-| `nodestore_state{metric="acquire_completions"}`      | MetricsRegistry.cpp | Acquisitions that finished successfully                     |
-| `nodestore_state{metric="acquire_sweep_evictions"}`  | MetricsRegistry.cpp | Acquisitions evicted by the 1-minute sweep                  |
+| `nodestore_state{metric="read_mean_us"}`             | AppMetricGauges.cpp | Mean time per backend read (microseconds)                   |
+| `nodestore_state{metric="write_mean_us"}`            | AppMetricGauges.cpp | Mean time per backend write (microseconds)                  |
+| `nodestore_state{metric="nudb_writers_in_flight"}`   | AppMetricGauges.cpp | Threads inside a NuDB insert right now                      |
+| `nodestore_state{metric="nudb_writer_depth_x100"}`   | AppMetricGauges.cpp | Mean queue depth at the NuDB insert mutex, ×100             |
+| `nodestore_state{metric="nudb_insert_mean_us"}`      | AppMetricGauges.cpp | Mean NuDB insert time, queueing included (microseconds)     |
+| `nodestore_state{metric="nudb_insert_max_us"}`       | AppMetricGauges.cpp | Slowest single NuDB insert seen (microseconds)              |
+| `nodestore_state{metric="acquire_deferrals"}`        | AppMetricGauges.cpp | Timer jobs skipped because the lane was full, **all lanes** |
+| `nodestore_state{metric="acquire_timeouts"}`         | AppMetricGauges.cpp | Timer bodies that ran and advanced retry, **all lanes**     |
+| `nodestore_state{metric="acquire_ledger_deferrals"}` | AppMetricGauges.cpp | Deferrals from ledger acquisition alone                     |
+| `nodestore_state{metric="acquire_ledger_timeouts"}`  | AppMetricGauges.cpp | Timeouts from ledger acquisition alone                      |
+| `nodestore_state{metric="acquire_give_ups"}`         | AppMetricGauges.cpp | Acquisitions that exhausted their retry budget              |
+| `nodestore_state{metric="acquire_aborts"}`           | AppMetricGauges.cpp | Acquisitions destroyed before finishing                     |
+| `nodestore_state{metric="acquire_aborts_partial"}`   | AppMetricGauges.cpp | Subset of aborts that discarded partly built maps           |
+| `nodestore_state{metric="acquire_completions"}`      | AppMetricGauges.cpp | Acquisitions that finished successfully                     |
+| `nodestore_state{metric="acquire_sweep_evictions"}`  | AppMetricGauges.cpp | Acquisitions evicted by the 1-minute sweep                  |
 
 `nudb_writer_depth_x100` is fixed-point: divide by 100 to read it. The depth sits
 just above 1.0 even under load, so an integer gauge would truncate the whole
@@ -1839,8 +1839,10 @@ ledger acquisition deferring". Use `acquire_ledger_deferrals` and
 These five come from the `PerfLog` job hooks, not from beast::insight, so they
 are exported by the `MetricsRegistry` meter. `job_queued_us` and `job_running_us`
 have explicit microsecond bucket views registered
-(`addMicrosecondHistogramView()` calls at MetricsRegistry.cpp:310-311; the helper
-itself is at `:197`) spanning 100 µs to 60 s; without those the SDK default
+(`addMicrosecondHistogramView()`, called from
+`MetricsRegistry::initExporterAndProvider()` — both live in
+`src/libxrpl/telemetry/MetricsRegistry.cpp`) spanning 100 µs to 60 s; without
+those the SDK default
 buckets stop at 10 ms and every quantile saturates.
 
 | Prometheus Metric    | Kind      | Labels                | Description                          |
@@ -1872,7 +1874,7 @@ two production job names embed a ledger sequence number:
 A raw label would mint a new Prometheus series for every ledger — unbounded
 growth at ~1 series every 3-5 s, forever.
 `MetricsRegistry::sanitiseHandler()` (declared inline in
-`src/xrpld/telemetry/MetricsRegistry.h`) therefore applies one rule:
+`include/xrpl/telemetry/MetricsRegistry.h`) therefore applies one rule:
 
 - Keep the name when it is **non-empty and every character is an ASCII letter**.
 - Otherwise return the constant `"other"`. An empty name, a digit, a hyphen, or
@@ -1999,7 +2001,7 @@ rpc_batch_size_count - rpc_batch_size_bucket{le="12288"}
 <!-- The all-caps macro name XRPL_METRIC_HISTOGRAM_RECORD trips cspell's
      compound-word splitter, which emits the subword "ISTOGRAM"; ignore it here. -->
 
-Use the call-site macros in `src/xrpld/telemetry/MetricMacros.h` -- no
+Use the call-site macros in `include/xrpl/telemetry/MetricMacros.h` -- no
 `MetricsRegistry.h`/`.cpp` edit is needed for any of these:
 
 | Need                                                   | Macro                                                                                                                                                                     |
@@ -2010,12 +2012,12 @@ Use the call-site macros in `src/xrpld/telemetry/MetricMacros.h` -- no
 | Last-value snapshot (not a distribution)               | `XRPL_METRIC_GAUGE_RECORD` [+ `_LABELED`] -- requires an ABI v2 opentelemetry-cpp build; this repo currently builds ABI v1, so use the observable-gauge row below instead |
 | Value your own code already tracks, sampled on a timer | `XRPL_METRIC_OBSERVABLE_GAUGE_REGISTER` / `_COUNTER_REGISTER` / `_UPDOWN_REGISTER`                                                                                        |
 
-First declare the name in `src/xrpld/telemetry/MetricNames.h` -- the emit site
+First declare the name in `include/xrpl/telemetry/MetricNames.h` -- the emit site
 must reference a constant, never a string literal, and CI Rule I enforces that
 for any metric family that already has constants:
 
 ```cpp
-// in src/xrpld/telemetry/MetricNames.h, namespace metric:
+// in include/xrpl/telemetry/MetricNames.h, namespace metric:
 inline constexpr char myNewThingTotal[] = "my_new_thing_total";
 inline constexpr char myInFlightRequests[] = "my_in_flight_requests";
 inline constexpr char myThingSize[] = "my_thing_size";
@@ -2024,8 +2026,8 @@ inline constexpr char myThingSize[] = "my_thing_size";
 Then emit against it:
 
 ```cpp
-#include <xrpld/telemetry/MetricMacros.h>
-#include <xrpld/telemetry/MetricNames.h>
+#include <xrpl/telemetry/MetricMacros.h>
+#include <xrpl/telemetry/MetricNames.h>
 
 // Monotonic counter:
 XRPL_METRIC_COUNTER_INC(
@@ -2053,8 +2055,9 @@ Naming rules (counter `_total`, duration `_us`/`_ms`/`_seconds`, no `xrpld_`
 prefix, bounded label cardinality) are listed in CONTRIBUTING.md ->
 "Telemetry metric naming" and enforced by CI Rules I/J/K. A histogram whose values can
 exceed ~10,000 units (e.g. a microsecond duration beyond 10ms) still needs one
-line added to `addMicrosecondHistogramView()` in `MetricsRegistry.cpp` -- the
-only case that still touches a central file. There is no way to read a metric's
+line added to `addMicrosecondHistogramView()` in
+`src/libxrpl/telemetry/MetricsRegistry.cpp` -- the only case that still touches a
+central file. There is no way to read a metric's
 current value back from application code -- OTel's API is write-only by design;
 keep your own state if your logic needs to both record and read a running value
 (see the Doxygen header in `MetricMacros.h` for the full explanation).
@@ -2324,10 +2327,12 @@ Requires `trace_peer=1` in the `[telemetry]` config section.
 > `{quantile="$quantile"}` matches nothing and reports no error. The job queue
 > exposes two parallel families: `job_running_us` / `job_queued_us`
 > (`MetricsRegistry` instruments, labelled by `job_type` and `handler`,
-> microseconds — what these panels use;
-> [MetricsRegistry.cpp:94-95](../src/xrpld/telemetry/MetricsRegistry.cpp#L94),
-> [363-366](../src/xrpld/telemetry/MetricsRegistry.cpp#L363), recorded from the
-> `PerfLog` job hooks at
+> microseconds — what these panels use; the two names come from the
+> `kJobQueuedDurationUs` / `kJobRunningDurationUs` constants and the microsecond
+> buckets from `addMicrosecondHistogramView()` in
+> `MetricsRegistry::initExporterAndProvider()`, all in
+> [MetricsRegistry.cpp](../src/libxrpl/telemetry/MetricsRegistry.cpp), recorded
+> from the `PerfLog` job hooks at
 > [PerfLogImp.cpp:432](../src/xrpld/perflog/detail/PerfLogImp.cpp#L432)) and
 > `jobq_<jobtype>[_q]_milliseconds`
 > (beast::insight, one instrument per job type, milliseconds —

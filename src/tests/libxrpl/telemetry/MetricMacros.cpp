@@ -19,15 +19,15 @@
 
 #ifdef XRPL_ENABLE_TELEMETRY
 
-#include <xrpld/telemetry/MetricMacros.h>
+#include <xrpl/telemetry/MetricMacros.h>
 
 #include <xrpld/overlay/Overlay.h>
-#include <xrpld/telemetry/MetricNames.h>
-#include <xrpld/telemetry/MetricsRegistry.h>
 
 #include <xrpl/basics/MallocTrim.h>
 #include <xrpl/core/JobQueue.h>
 #include <xrpl/peerfinder/PeerfinderManager.h>
+#include <xrpl/telemetry/MetricNames.h>
+#include <xrpl/telemetry/MetricsRegistry.h>
 
 #include <gtest/gtest.h>
 #include <opentelemetry/metrics/meter.h>

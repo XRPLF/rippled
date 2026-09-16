@@ -1,12 +1,11 @@
 #include <xrpld/perflog/detail/PerfLogImp.h>
 
 #include <xrpld/app/main/Application.h>
-#include <xrpld/telemetry/MetricMacros.h>
 
 #ifdef XRPL_ENABLE_TELEMETRY
 // Only the recording calls below and the metric macros' expansion name the
 // registry, and neither survives with telemetry compiled out.
-#include <xrpld/telemetry/MetricsRegistry.h>
+#include <xrpl/telemetry/MetricsRegistry.h>
 #endif
 
 #include <xrpl/basics/Log.h>
@@ -24,6 +23,7 @@
 #include <xrpl/json/json_writer.h>
 #include <xrpl/nodestore/Database.h>
 #include <xrpl/protocol/jss.h>
+#include <xrpl/telemetry/MetricMacros.h>
 
 #include <chrono>
 #include <cstdint>
