@@ -76,35 +76,4 @@ struct MockVmTest : testing::Test
     }
 };
 
-// Base for the per-host-function fixtures. Each derives, supplies the module that exercises
-// its own import, and runs it through `callHost()` — so a test says only what the host was
-// asked and what came back.
-struct HostCallTest : MockVmTest
-{
-    // The module under test. One import, one `escrow_finish` that calls it.
-    [[nodiscard]] virtual std::string
-    wat() const = 0;
-
-    std::expected<EscrowResult, WasmTER>
-    callHost(std::string_view entryPoint = escrowFunctionName)
-    {
-        return run(wat(), kAmpleGas, entryPoint);
-    }
-
-    // The contract's return value, which for these modules is what the host answered — or
-    // its negative error code. Fails the test if the run did not complete.
-    std::int32_t
-    hostAnswer(std::string_view entryPoint = escrowFunctionName)
-    {
-        auto const outcome = callHost(entryPoint);
-        if (!outcome)
-        {
-            ADD_FAILURE() << "the run did not complete: " << transToken(outcome.error().ter)
-                          << "; logged: " << logged();
-            return 0;
-        }
-        return outcome->result;
-    }
-};
-
 }  // namespace xrpl::test

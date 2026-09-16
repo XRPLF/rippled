@@ -4,7 +4,7 @@
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
-#include <tx/wasm/fixtures/WasmFixture.h>
+#include <tx/wasm/fixtures/HostCallFixture.h>
 
 #include <cstdint>
 #include <expected>
@@ -17,21 +17,22 @@ using testing::Return;
 // home_le_field — a scalar field code in, bytes out.
 struct CurrentLedgerObjFieldCall : HostCallTest
 {
-    // The field code the guest asks for. A real one, so the shim's `SField` lookup has
-    // something to find.
-    std::int32_t fieldCode = sfBalance.getCode();
+    static constexpr std::int32_t kOutAt = 0;
+    static constexpr std::int32_t kOutLen = 32;
 
-    [[nodiscard]] std::string
-    wat() const override
+    static constexpr Arg kOut = Arg::outRegion(kOutAt, kOutLen);
+
+    // A real field code, so the shim's `SField` lookup has something to find.
+    static Arg
+    field()
     {
-        return std::string{R"wat(
-(module
-  (import "host_lib" "home_le_field" (func $home_le_field (param i32 i32 i32) (result i32)))
-  (memory (export "memory") 1)
-  (func (export "escrow_finish") (result i32)
-    (call $home_le_field (i32.const )wat"} +
-            std::to_string(fieldCode) + R"wat() (i32.const 0) (i32.const 32))))
-)wat";
+        return Arg::scalar(sfBalance.getCode());
+    }
+
+    [[nodiscard]] static std::string
+    watFor(Arg fieldArg, Arg outArg, Answer answer = Answer::WrittenBytes)
+    {
+        return hostCallWat("home_le_field", {fieldArg, outArg}, {}, answer);
     }
 };
 
@@ -42,15 +43,25 @@ TEST_F(CurrentLedgerObjFieldCall, FieldCodeBecomesSFieldHostIsAskedFor)
     EXPECT_CALL(host, getCurrentLedgerObjField(testing::Ref(sfBalance)))
         .WillOnce(Return(Bytes{1, 2, 3}));
 
-    EXPECT_EQ(hostAnswer(), 3) << "the length the host reported";
+    auto const wat = watFor(field(), kOut, Answer::Status);
+    EXPECT_EQ(hostAnswer(wat), 3) << "the length the host reported";
+}
+
+TEST_F(CurrentLedgerObjFieldCall, FieldBytesReachTheGuestsOutRegion)
+{
+    EXPECT_CALL(host, getCurrentLedgerObjField(testing::Ref(sfBalance)))
+        .WillOnce(Return(Bytes{1, 2, 3, 4}));
+
+    auto const wat = watFor(field(), kOut);
+    EXPECT_EQ(hostAnswer(wat), 0x04030201) << "the four bytes, little-endian";
 }
 
 TEST_F(CurrentLedgerObjFieldCall, UnknownFieldCodeIsRefusedWithoutAskingHost)
 {
-    fieldCode = 0x7fff'0000;  // a type nothing is registered under
     EXPECT_CALL(host, getCurrentLedgerObjField).Times(0);
 
-    EXPECT_EQ(hostAnswer(), hfErrorToInt(HostFunctionError::InvalidField));
+    auto const wat = watFor(Arg::scalar(0x7fff'0000), kOut);  // a type nothing is registered under
+    EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::InvalidField));
 }
 
 TEST_F(CurrentLedgerObjFieldCall, HostErrorBecomesContractReturnValue)
@@ -58,7 +69,8 @@ TEST_F(CurrentLedgerObjFieldCall, HostErrorBecomesContractReturnValue)
     EXPECT_CALL(host, getCurrentLedgerObjField)
         .WillOnce(Return(std::unexpected(HostFunctionError::FieldNotFound)));
 
-    EXPECT_EQ(hostAnswer(), hfErrorToInt(HostFunctionError::FieldNotFound));
+    auto const wat = watFor(field(), kOut);
+    EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::FieldNotFound));
 }
 
 // The field cap bounds the status, not just the bytes: a host reporting a length past
@@ -68,7 +80,8 @@ TEST_F(CurrentLedgerObjFieldCall, FieldPastProtocolCapIsTooLarge)
     EXPECT_CALL(host, getCurrentLedgerObjField)
         .WillOnce(Return(Bytes(kMaxWasmDataLength + 1, 0xab)));
 
-    EXPECT_EQ(hostAnswer(), hfErrorToInt(HostFunctionError::DataFieldTooLarge));
+    auto const wat = watFor(field(), kOut);
+    EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::DataFieldTooLarge));
 }
 
 }  // namespace xrpl::test

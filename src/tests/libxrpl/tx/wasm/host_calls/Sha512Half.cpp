@@ -2,9 +2,10 @@
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
+#include <tx/wasm/fixtures/HostCallFixture.h>
 #include <tx/wasm/fixtures/MockHostFunctions.h>
-#include <tx/wasm/fixtures/WasmFixture.h>
 
+#include <cstdint>
 #include <expected>
 #include <string>
 
@@ -15,27 +16,15 @@ using testing::Return;
 // sha512_half — bytes in and bytes out, the shape that needs the engine's output buffer.
 struct Sha512HalfCall : HostCallTest
 {
-    [[nodiscard]] std::string
-    wat() const override
-    {
-        return std::string{R"wat(
-(module
-  (import "host_lib" "sha512_half" (func $sha512_half (param i32 i32 i32 i32) (result i32)))
-  (memory (export "memory") 1)
-  (data (i32.const 64) "abc")
+    static constexpr std::int32_t kOutAt = 0;
+    static constexpr std::int32_t kInputAt = 64;
+    static constexpr std::int32_t kInputLen = 3;
+    static constexpr std::int32_t kDigestLen = 32;
 
-  ;; Hashes the three bytes at 64 into the 32 at 0, then returns the first four bytes of the
-  ;; digest so the answer is shown to have arrived, not just been counted.
-  (func (export "escrow_finish") (result i32)
-    (local $n i32)
-    (local.set $n (call $sha512_half (i32.const 64) (i32.const 3) (i32.const 0) (i32.const 32)))
-    (select (local.get $n) (i32.load (i32.const 0)) (i32.lt_s (local.get $n) (i32.const 0))))
+    static constexpr Arg kInput = Arg::region(kInputAt, kInputLen);
+    static constexpr Arg kOut = Arg::outRegion(kOutAt, kDigestLen);
 
-  ;; Reports the length the host gave, for the cases where the digest itself is not the point.
-  (func (export "digest_length") (result i32)
-    (call $sha512_half (i32.const 64) (i32.const 3) (i32.const 0) (i32.const 32))))
-)wat"};
-    }
+    Bytes const input{'a', 'b', 'c'};
 
     // A digest whose first four bytes are distinctive, so the load below cannot pass by
     // accident.
@@ -49,6 +38,13 @@ struct Sha512HalfCall : HostCallTest
         value.begin()[3] = 0x0a;
         return value;
     }
+
+    [[nodiscard]] std::string
+    watFor(Arg inputArg, Arg outArg, Answer answer = Answer::WrittenBytes) const
+    {
+        return hostCallWat(
+            "sha512_half", {inputArg, outArg}, {{.at = kInputAt, .bytes = input}}, answer);
+    }
 };
 
 // Both directions in one call: the guest's bytes reach the host borrowed from its memory, and
@@ -57,14 +53,16 @@ TEST_F(Sha512HalfCall, GuestBytesReachHostAndDigestComesBack)
 {
     EXPECT_CALL(host, computeSha512HalfHash(BytesAre("abc"))).WillOnce(Return(digest()));
 
-    EXPECT_EQ(hostAnswer(), 0x0a0b0c0d) << "the digest's first four bytes, little-endian";
+    auto const wat = watFor(kInput, kOut);
+    EXPECT_EQ(hostAnswer(wat), 0x0a0b0c0d) << "the digest's first four bytes, little-endian";
 }
 
 TEST_F(Sha512HalfCall, DigestIsThirtyTwoBytes)
 {
     EXPECT_CALL(host, computeSha512HalfHash).WillOnce(Return(digest()));
 
-    EXPECT_EQ(hostAnswer("digest_length"), 32);
+    auto const wat = watFor(kInput, kOut, Answer::Status);
+    EXPECT_EQ(hostAnswer(wat), kDigestLen);
 }
 
 TEST_F(Sha512HalfCall, HostErrorBecomesContractReturnValue)
@@ -72,7 +70,8 @@ TEST_F(Sha512HalfCall, HostErrorBecomesContractReturnValue)
     EXPECT_CALL(host, computeSha512HalfHash)
         .WillOnce(Return(std::unexpected(HostFunctionError::InvalidParams)));
 
-    EXPECT_EQ(hostAnswer(), hfErrorToInt(HostFunctionError::InvalidParams));
+    auto const wat = watFor(kInput, kOut);
+    EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::InvalidParams));
 }
 
 }  // namespace xrpl::test
