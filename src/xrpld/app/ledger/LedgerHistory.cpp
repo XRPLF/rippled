@@ -4,7 +4,6 @@
 #include <xrpld/app/ledger/LedgerToJson.h>
 #include <xrpld/app/main/Application.h>
 #include <xrpld/core/Config.h>
-#include <xrpld/telemetry/MetricsRegistry.h>
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/base_uint.h>
@@ -22,6 +21,7 @@
 #include <xrpl/protocol/TxMeta.h>
 #include <xrpl/shamap/SHAMap.h>
 #include <xrpl/shamap/SHAMapItem.h>
+#include <xrpl/telemetry/MetricsRegistry.h>
 
 #include <algorithm>
 #include <memory>

@@ -12,7 +12,6 @@
 #include <xrpld/rpc/detail/Pathfinder.h>
 #include <xrpld/rpc/detail/PathfinderUtils.h>
 #include <xrpld/rpc/detail/Tuning.h>
-#include <xrpld/telemetry/MetricMacros.h>
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/UnorderedContainers.h>
@@ -40,6 +39,7 @@
 #include <xrpl/resource/Consumer.h>
 #include <xrpl/server/InfoSub.h>
 #include <xrpl/server/LoadFeeTrack.h>
+#include <xrpl/telemetry/MetricMacros.h>
 #include <xrpl/telemetry/Redaction.h>
 #include <xrpl/telemetry/SpanGuard.h>
 #include <xrpl/tx/paths/RippleCalc.h>

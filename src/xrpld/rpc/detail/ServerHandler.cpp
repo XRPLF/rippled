@@ -14,7 +14,6 @@
 #include <xrpld/rpc/detail/Tuning.h>
 #include <xrpld/rpc/detail/WSInfoSub.h>
 #include <xrpld/rpc/json_body.h>  // IWYU pragma: keep
-#include <xrpld/telemetry/MetricMacros.h>
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/StringUtilities.h>
@@ -54,6 +53,7 @@
 #include <xrpl/server/SimpleWriter.h>
 #include <xrpl/server/WSSession.h>
 #include <xrpl/server/detail/JSONRPCUtil.h>
+#include <xrpl/telemetry/MetricMacros.h>
 #include <xrpl/telemetry/SpanGuard.h>
 
 #include <boost/asio/buffer.hpp>

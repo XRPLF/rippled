@@ -5,8 +5,6 @@
 #include <xrpld/app/main/Application.h>
 #include <xrpld/app/misc/SHAMapStore.h>
 #include <xrpld/app/misc/SHAMapStoreSpanNames.h>
-#include <xrpld/telemetry/MetricMacros.h>
-#include <xrpld/telemetry/MetricNames.h>
 
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/config/BasicConfig.h>
@@ -21,6 +19,8 @@
 #include <xrpl/shamap/FullBelowCache.h>
 #include <xrpl/shamap/SHAMapTreeNode.h>
 #include <xrpl/shamap/TreeNodeCache.h>
+#include <xrpl/telemetry/MetricMacros.h>
+#include <xrpl/telemetry/MetricNames.h>
 #include <xrpl/telemetry/SpanGuard.h>
 #include <xrpl/telemetry/SpanNames.h>
 

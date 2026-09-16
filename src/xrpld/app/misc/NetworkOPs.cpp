@@ -30,13 +30,6 @@
 #include <xrpld/rpc/CTID.h>
 #include <xrpld/rpc/ServerHandler.h>
 #include <xrpld/rpc/detail/SyntheticFields.h>
-#include <xrpld/telemetry/MetricMacros.h>
-#ifdef XRPL_ENABLE_TELEMETRY
-// The metric-name constants are named only as macro arguments, which the
-// macros drop when telemetry is compiled out.
-#include <xrpld/telemetry/MetricNames.h>
-#endif
-#include <xrpld/telemetry/MetricsRegistry.h>
 #include <xrpld/telemetry/PropagationHelpers.h>
 #include <xrpld/telemetry/TxSpanNames.h>
 
@@ -125,6 +118,12 @@
 #include <xrpl/server/LoadFeeTrack.h>
 #include <xrpl/server/Manifest.h>
 #include <xrpl/shamap/SHAMap.h>
+#include <xrpl/telemetry/MetricMacros.h>
+#ifdef XRPL_ENABLE_TELEMETRY
+// The metric-name constants are named only as macro arguments, which the
+// macros drop when telemetry is compiled out.
+#include <xrpl/telemetry/MetricNames.h>
+#endif
 #include <xrpl/telemetry/SpanGuard.h>
 #include <xrpl/tx/apply.h>
 
