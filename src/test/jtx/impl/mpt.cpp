@@ -2175,27 +2175,10 @@ void
 MPTTester::mirrorUpdate(MPTMirrorUpdate const& arg)
 {
     json::Value jv;
-    if (arg.account)
-    {
-        jv[sfAccount] = arg.account->human();
-    }
-    else
-    {
-        Throw<std::runtime_error>("Account not specified");
-    }
+    jv[jss::TransactionType] = jss::ConfidentialMPTMirrorUpdate;
 
-    if (arg.id)
-    {
-        jv[sfMPTokenIssuanceID] = to_string(*arg.id);
-    }
-    else
-    {
-        if (!id_)
-            Throw<std::runtime_error>("MPT has not been created");
-        jv[sfMPTokenIssuanceID] = to_string(*id_);
-    }
-
-    jv[sfTransactionType] = jss::ConfidentialMPTMirrorUpdate;
+    setAccountField(jv, arg.account);
+    setIssuanceIdField(jv, arg.id);
 
     if (arg.holder)
         jv[sfHolder] = arg.holder->human();
