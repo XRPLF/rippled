@@ -10,12 +10,6 @@
 #include <xrpld/app/main/Application.h>
 #include <xrpld/overlay/Peer.h>
 #include <xrpld/overlay/PeerSet.h>
-#include <xrpld/telemetry/MetricMacros.h>
-#ifdef XRPL_ENABLE_TELEMETRY
-// The metric-name constants are named only as macro arguments, which the
-// macros drop when telemetry is compiled out.
-#include <xrpld/telemetry/MetricNames.h>
-#endif
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/base_uint.h>
@@ -26,6 +20,12 @@
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/protocol/LedgerHeader.h>
 #include <xrpl/protocol/Rules.h>
+#include <xrpl/telemetry/MetricMacros.h>
+#ifdef XRPL_ENABLE_TELEMETRY
+// The metric-name constants are named only as macro arguments, which the
+// macros drop when telemetry is compiled out.
+#include <xrpl/telemetry/MetricNames.h>
+#endif
 
 #include <xrpl.pb.h>
 

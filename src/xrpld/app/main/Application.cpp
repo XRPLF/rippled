@@ -39,13 +39,7 @@
 #include <xrpld/rpc/detail/PathRequestManager.h>
 #include <xrpld/rpc/detail/Pathfinder.h>
 #include <xrpld/shamap/NodeFamily.h>
-#include <xrpld/telemetry/MetricMacros.h>
-#ifdef XRPL_ENABLE_TELEMETRY
-// The metric-name constants are named only as macro arguments, which the
-// macros drop when telemetry is compiled out.
-#include <xrpld/telemetry/MetricNames.h>
-#endif
-#include <xrpld/telemetry/MetricsRegistry.h>
+#include <xrpld/telemetry/AppMetricGauges.h>
 
 #include <xrpl/basics/ByteUtilities.h>
 #include <xrpl/basics/Log.h>
@@ -110,6 +104,13 @@
 #include <xrpl/shamap/SHAMap.h>
 #include <xrpl/shamap/SHAMapMissingNode.h>
 #include <xrpl/shamap/TreeNodeCache.h>
+#include <xrpl/telemetry/MetricMacros.h>
+#ifdef XRPL_ENABLE_TELEMETRY
+// The metric-name constants are named only as macro arguments, which the
+// macros drop when telemetry is compiled out.
+#include <xrpl/telemetry/MetricNames.h>
+#endif
+#include <xrpl/telemetry/MetricsRegistry.h>
 #include <xrpl/telemetry/Telemetry.h>
 #include <xrpl/tx/apply.h>
 
@@ -142,6 +143,7 @@
 #include <optional>
 #include <ostream>
 #include <string>
+#include <string_view>
 #include <thread>
 #include <utility>
 #include <vector>
@@ -297,13 +299,21 @@ public:
     std::pair<PublicKey, SecretKey> nodeIdentity_;
     std::unique_ptr<telemetry::Telemetry> telemetry_;
     /**
-     * OTel metrics registry for gap-fill metrics (counters, histograms,
-     * observable gauges). Its constructor builds the pipeline and every
-     * synchronous instrument, so it must stay declared after telemetry_ and
-     * before every subsystem that records a metric. Declaration order is the
-     * whole guarantee. Gauges are armed later by startTelemetryGauges().
+     * OTel metrics pipeline for gap-fill metrics. Its constructor builds the
+     * provider and every synchronous instrument (counters and histograms), so
+     * it must stay declared after telemetry_ and before every subsystem that
+     * records a metric. Declaration order is the whole guarantee.
      */
     std::unique_ptr<telemetry::MetricsRegistry> metricsRegistry_;
+    /**
+     * The observable gauges, whose callbacks read live application services.
+     * Armed later by startTelemetryGauges().
+     *
+     * Declared after metricsRegistry_ because members are destroyed in reverse
+     * declaration order: the gauges hold a MetricsRegistry& and must be
+     * destroyed before it.
+     */
+    std::unique_ptr<telemetry::AppMetricGauges> metricGauges_;
     Application::MutexType masterMutex_;
 
     // Required by the SHAMapStore
@@ -444,11 +454,18 @@ public:
         , metricsRegistry_(
               std::make_unique<telemetry::MetricsRegistry>(
                   telemetry_->isEnabled(),
-                  *this,
                   logs_->journal("MetricsRegistry"),
                   makeMetricsRegistryOptions(
                       *config_,
                       toBase58(TokenType::NodePublic, nodeIdentity_.first))))
+        // Registers nothing until startAsyncGauges(), so building it here
+        // costs nothing and keeps the member non-null for the whole lifetime.
+        // That is what lets the shutdown path call it unconditionally.
+        , metricGauges_(
+              std::make_unique<telemetry::AppMetricGauges>(
+                  *metricsRegistry_,
+                  *this,
+                  logs_->journal("MetricsRegistry")))
 
         , txMaster_(*this)
         , collectorManager_(makeCollectorManager(
@@ -640,24 +657,35 @@ public:
      */
     ~ApplicationImp() override
     {
+        // Each step is isolated, so a throw from one still leaves the others to
+        // run. Skipping stopMetricsRegistry() would be the costly one: nothing
+        // would join the OTel reader thread until ~MetricsRegistry(), and
+        // metricGauges_ is destroyed before that, so the callbacks' instrument
+        // handles would go away while the thread was still sampling them.
+        //
         // A shutdown diagnostic must never terminate the process, and a
-        // destructor is implicitly noexcept.
-        try
-        {
-            collectorManager_->collector()->onCollectionStopping();
-            stopMetricsRegistry();
-            telemetry_->stop();
-        }
-        catch (std::exception const& e)
-        {
-            JLOG(journal_.error()) << "Error stopping telemetry: " << e.what();
-        }
-        catch (...)
-        {
-            // The callees reach third-party SDK code, which may throw something
-            // outside std::exception. Escaping here would terminate the process.
-            JLOG(journal_.error()) << "Error stopping telemetry: unknown exception";
-        }
+        // destructor is implicitly noexcept, so nothing may escape.
+        auto const stopStep = [this](std::string_view name, auto&& step) noexcept {
+            try
+            {
+                step();
+            }
+            catch (std::exception const& e)
+            {
+                JLOG(journal_.error()) << "Error stopping " << name << ": " << e.what();
+            }
+            catch (...)
+            {
+                // The callees reach third-party SDK code, which may throw
+                // something outside std::exception.
+                JLOG(journal_.error()) << "Error stopping " << name << ": unknown exception";
+            }
+        };
+
+        // Both observers stop before telemetry, which they export through.
+        stopStep("collector", [this] { collectorManager_->collector()->onCollectionStopping(); });
+        stopStep("metrics registry", [this] { stopMetricsRegistry(); });
+        stopStep("telemetry", [this] { telemetry_->stop(); });
     }
 
     //--------------------------------------------------------------------------
@@ -1417,13 +1445,13 @@ private:
      * nodeStore_, nodeFamily_, validators_, acceptedLedgerCache_,
      * cachedSLEs_, acquireStats_, timeKeeper_, relationalDatabase_,
      * inboundLedgers_, feeTrack_) are built earlier in setup(). See
-     * MetricsRegistry::startAsyncGauges() for the full list.
+     * AppMetricGauges::startAsyncGauges() for the full list.
      */
     void
     startTelemetryGauges() const;
 
     /**
-     * Stop the metrics registry: detach its gauge callbacks and join its
+     * Detach the gauge callbacks, then stop the metrics pipeline and join its
      * reader thread. Idempotent. Called from run() before any observed
      * service stops, and again from ~ApplicationImp for the paths that never
      * reach run().
@@ -1880,16 +1908,17 @@ ApplicationImp::startTelemetry() const
 void
 ApplicationImp::startTelemetryGauges() const
 {
-    metricsRegistry_->startAsyncGauges();
+    metricGauges_->startAsyncGauges();
 }
 
 void
 ApplicationImp::stopMetricsRegistry() const
 {
-    // stop() detaches the callbacks and then shuts the provider down, which
-    // joins the reader thread, so once it returns no callback is running or
-    // can start. The cost is that metrics recorded after this point are not
-    // exported.
+    // Detach first, then stop. Detaching guarantees no gauge callback reads an
+    // application service or the meter after this point; stop() then closes the
+    // recording gate and destroys the provider. Reversed, a callback already
+    // running on the OTel reader thread could touch a destroyed provider.
+    metricGauges_->detachCallbacks();
     metricsRegistry_->stop();
 }
 
@@ -1967,7 +1996,7 @@ ApplicationImp::run()
 
     // Both observers stop before any service below is stopped. The collector's
     // gauge callbacks run hook handlers that read ledgerMaster_, networkOPs_,
-    // the peer finder, the job queue and overlay_; the registry's callbacks
+    // the peer finder, the job queue and overlay_; the metric gauges' callbacks
     // run on the OTel reader thread and read nodeStore_, overlay_, networkOPs_,
     // loadManager_, ledgerMaster, inboundLedgers and more. Each call returns
     // once no callback is running or can start.

@@ -6,14 +6,6 @@
 #include <xrpld/app/misc/detail/WorkFile.h>
 #include <xrpld/app/misc/detail/WorkPlain.h>
 #include <xrpld/app/misc/detail/WorkSSL.h>
-#ifdef XRPL_ENABLE_TELEMETRY
-// The metric macro is named only inside reportFetchOutcome(), whose body is
-// compiled out with the counter it records.
-#include <xrpld/telemetry/MetricMacros.h>
-#endif
-// Not gated: the outcome-label constants are named by the fetch handlers, which
-// pass them whether or not the counter exists.
-#include <xrpld/telemetry/MetricNames.h>
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/StringUtilities.h>
@@ -24,6 +16,14 @@
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/digest.h>
 #include <xrpl/protocol/jss.h>
+#ifdef XRPL_ENABLE_TELEMETRY
+// The metric macro is named only inside reportFetchOutcome(), whose body is
+// compiled out with the counter it records.
+#include <xrpl/telemetry/MetricMacros.h>
+#endif
+// Not gated: the outcome-label constants are named by the fetch handlers, which
+// pass them whether or not the counter exists.
+#include <xrpl/telemetry/MetricNames.h>
 
 #include <boost/asio/error.hpp>
 #include <boost/beast/http/field.hpp>

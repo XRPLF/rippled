@@ -3,8 +3,6 @@
 #include <xrpld/app/ledger/LedgerMaster.h>
 #include <xrpld/app/main/Application.h>
 #include <xrpld/overlay/detail/ProtocolVersion.h>
-#include <xrpld/telemetry/MetricMacros.h>
-#include <xrpld/telemetry/MetricNames.h>
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/Slice.h>
@@ -23,6 +21,8 @@
 #include <xrpl/protocol/SecretKey.h>
 #include <xrpl/protocol/digest.h>
 #include <xrpl/protocol/tokens.h>
+#include <xrpl/telemetry/MetricMacros.h>
+#include <xrpl/telemetry/MetricNames.h>
 
 #include <boost/asio/ip/address.hpp>
 #include <boost/beast/http/status.hpp>

@@ -8,12 +8,6 @@
 #include <xrpld/overlay/detail/PeerImp.h>
 #include <xrpld/overlay/detail/PeerSpanNames.h>
 #include <xrpld/overlay/detail/ProtocolVersion.h>
-#ifdef XRPL_ENABLE_TELEMETRY
-// The macros and the metric-name constants are named only inside
-// reportOutcome(), whose body is compiled out with the metrics it records.
-#include <xrpld/telemetry/MetricMacros.h>
-#include <xrpld/telemetry/MetricNames.h>
-#endif
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/beast/net/IPAddressConversion.h>
@@ -33,6 +27,10 @@
 #include <xrpl/protocol/tokens.h>
 #include <xrpl/resource/Consumer.h>
 #ifdef XRPL_ENABLE_TELEMETRY
+// The macros and the metric-name constants are named only inside
+// reportOutcome(), whose body is compiled out with the metrics it records.
+#include <xrpl/telemetry/MetricMacros.h>
+#include <xrpl/telemetry/MetricNames.h>
 // Named only where the dial span is opened and ended, both compiled out below.
 // The span member itself is declared unconditionally, so ConnectAttempt.h keeps
 // its own SpanGuard.h include either way.

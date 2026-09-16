@@ -629,25 +629,25 @@ groups:
       # Node state flapping: full -> syncing/tracking -> full, repeatedly.
       #
       # state_accounting_full_transitions counts transitions INTO full
-      # (NetworkOPs.cpp StateAccounting::mode) and is exported as a cumulative
-      # gauge, so increase() is correct — and its counter-reset correction
-      # turns a process restart into a small positive delta rather than a
-      # false spike.
+      # (NetworkOPs.cpp StateAccounting::mode), a cumulative gauge that EVERY
+      # node always reports, so increase() returns a real series (0 when
+      # healthy) and this rule never evaluates to NoData. A sparse counter such
+      # as state_changes_total{from,to} has no series until the edge occurs, so
+      # it would raise a false DatasourceNoData on a healthy node -- do not
+      # switch to it here.
       #
-      # state_changes_total cannot be used here: it carries no from/to labels,
-      # so it cannot distinguish a flap from a normal startup walk.
+      # Threshold >0: one full -> syncing -> full round is a single re-entry,
+      # which is exactly the online-delete rotation flap to catch.
       #
       # The uptime gate is load-bearing. Every node walks
       # disconnected -> connected -> syncing -> tracking -> full once at boot;
-      # without the gate every restart pages. Measured: flapping nodes re-enter
-      # full 4-6 times per hour sustained, healthy nodes 0-1, so >3 separates
-      # the populations with a 3x margin.
+      # the gate suppresses that first hour so a restart does not page.
       - uid: xrpld-node-state-flapping
         title: NodeStateFlapping
         condition: C
         for: 15m
         isPaused: true
-        noDataState: NoData
+        noDataState: OK
         execErrState: Error
         labels:
           severity: warning
@@ -656,9 +656,10 @@ groups:
           summary: "Node state flapping on {{ $labels.service_instance_id }}"
           description: >-
             Node {{ $labels.service_instance_id }} re-entered the FULL state
-            {{ $values.B.Value }} times in the last hour (>3). It is oscillating
-            between full and syncing/connected rather than holding sync. Check
-            node-store IO latency, peer connectivity, and clock sync.
+            {{ $values.B.Value }} time(s) in the last hour past its first hour
+            of uptime. It is flapping out of sync rather than holding FULL.
+            Likely the online-delete rotation cache-freshen; check the rotation
+            spans and cache lock-hold peak.
         data:
           - refId: A
             relativeTimeRange:
@@ -700,7 +701,7 @@ groups:
               conditions:
                 - evaluator:
                     type: gt
-                    params: [3]
+                    params: [0]
               datasource:
                 type: __expr__
                 uid: __expr__
