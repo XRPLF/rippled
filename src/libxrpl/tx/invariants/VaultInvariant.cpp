@@ -532,7 +532,8 @@ ValidVault::finalize(
         // The vault erased must be the one the transaction names. Reaching here
         // means txnType is ttVAULT_DELETE, so sfVaultID is present. Checked last
         // so that the more specific diagnostics above are reported first.
-        if (fix350Enabled && beforeVault.key != keylet::vault(tx[sfVaultID]).key)
+if (fix350Enabled &&
+    (!tx.isFieldPresent(sfVaultID) || beforeVault.key != keylet::vault(tx[sfVaultID]).key))
         {
             JLOG(j.fatal()) << "Invariant failed: deleted vault does not match "
                                "the VaultID in the transaction";
