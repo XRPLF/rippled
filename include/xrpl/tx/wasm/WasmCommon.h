@@ -4,6 +4,7 @@
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/beast/utility/Journal.h>
+#include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/protocol/TER.h>
 
 #include <bit>
@@ -126,7 +127,12 @@ public:
     operator[](size_t i) const
     {
         if (i >= size())
+        {
+            // LCOV_EXCL_START
+            UNREACHABLE("xrpl::FieldLocator::operator[] : index out of bounds");
             Throw<std::runtime_error>("index out of bounds");
+            // LCOV_EXCL_STOP
+        }
         auto step = int32_t{};
         std::memcpy(&step, bytes_.data() + (i * sizeof(int32_t)), sizeof(int32_t));
         return adjustWasmEndianess(step);
