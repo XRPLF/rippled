@@ -976,6 +976,72 @@ struct TransactionProposalCreate_test : public beast::unit_test::Suite
         }
     }
 
+    // Same failure mode as testCorruptSignerList, but reached through the
+    // delegate branch: preclaim looks up the delegate's own SignerList when
+    // the proposer is neither the target, on the target's SignerList, nor the
+    // delegate itself. If the delegate's SignerList is unparseable, preclaim
+    // must surface tefBAD_LEDGER — exercising the second isAuthorizedFor call
+    // that runs against the delegate rather than the target.
+    void
+    testCorruptDelegateSignerList(FeatureBitset features)
+    {
+        testcase("unparseable delegate SignerList is tefBAD_LEDGER");
+
+        using namespace jtx;
+        using namespace std::chrono_literals;
+
+        Env env{*this, features};
+
+        Account const target{"target"};
+        Account const delegateAcct{"delegateAcct"};
+        Account const ds1{"ds1"};  // on delegateAcct's own SignerList, not target's
+        Account const bob{"bob"};
+        env.fund(XRP(10000), target, delegateAcct, ds1, bob);
+        env.close();
+
+        // Grant delegate Payment permission for target; give delegate its own
+        // SignerList so that isAuthorizedFor(delegateAccount) actually reads
+        // and deserializes it. Do not give target a SignerList: proposer ds1
+        // must fail isAuthorizedFor(target) before ever reaching the delegate
+        // branch.
+        env(delegate::set(target, delegateAcct, {"Payment"}));
+        env(signers(delegateAcct, 1, {{ds1, 1}}));
+        env.close();
+
+        // Ticket first: createTicket closes, which would drop a later
+        // open-ledger overlay and restore a well-formed SignerList.
+        std::uint32_t const ticketSeq = proposal::createTicket(env, target);
+
+        // Corrupt delegate's SignerList in the open ledger overlay only. Do
+        // not close() afterward: a closed ledger would drop the overlay.
+        auto const delegateSignerListKeylet = keylet::signerList(delegateAcct.id());
+        BEAST_EXPECT(env.app().getOpenLedger().modify([&](OpenView& view, beast::Journal) {
+            auto const sle = view.read(delegateSignerListKeylet);
+            if (!sle)
+                return false;
+            auto replacement = std::make_shared<SLE>(*sle);
+            // Right inner name, but no sfAccount: deserialize calls
+            // getAccountID and throws (Field not found), which the catch
+            // maps to tefBAD_LEDGER.
+            STArray badEntries;
+            badEntries.pushBack(STObject{sfSignerEntry});
+            replacement->setFieldArray(sfSignerEntries, badEntries);
+            view.rawReplace(replacement);
+            return true;
+        }));
+        BEAST_EXPECT(env.le(delegateSignerListKeylet));
+
+        json::Value tx = pay(target, bob, XRP(1));
+        tx[sfDelegate.jsonName] = delegateAcct.human();
+        env(proposal::create(
+                ds1,
+                proposal::unsignedPayload(env, tx, ticketSeq),
+                proposal::expiration(env, 100s)),
+            Ter(tefBAD_LEDGER),
+            proposal::verify::create());
+        BEAST_EXPECT(!proposal::entry(env, target, ticketSeq));
+    }
+
     // The target account must be able to authorize a transaction through a
     // SignerList, so a pseudo-account (here an AMM's) cannot be a target even
     // though it exists on-ledger (On-Chain Cosigner spec §5.3.2.5).
@@ -1566,6 +1632,7 @@ struct TransactionProposalCreate_test : public beast::unit_test::Suite
         testCorruptSignerList(all);
         testDelegatedProposedTx(all);
         testDelegatedGranularProposedTx(all);
+        testCorruptDelegateSignerList(all);
         testPseudoTarget(all);
 
         // Apply
