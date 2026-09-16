@@ -27,7 +27,7 @@ use std::fmt;
 use wasmi::{ExternType, FuncType, Module, ValType};
 use xrpl_host_functions::{HOST_MODULE, HostFunctionSpec};
 
-use crate::vm::{MAX_MEMORY_PAGES, MAX_TABLE_ELEMENTS, compile};
+use crate::vm::{MAX_MEMORY_PAGES, MAX_TABLE_ELEMENTS, compile, wasm_engine};
 use signature::check_signature;
 
 /// Why a module cannot be run. One variant per stage, since the caller maps the
@@ -76,7 +76,7 @@ impl fmt::Display for CheckError {
 /// the module is built on; the resource caps come last, being a request rather than a
 /// mistake about the ABI.
 pub fn check(wasm: &[u8], function_name: &str) -> Result<(), CheckError> {
-    let module = compile(wasm).map_err(CheckError::Compile)?;
+    let module = compile(&wasm_engine(), wasm).map_err(CheckError::Compile)?;
     check_imports(&module)?;
     check_entry_point(&module, function_name)?;
     check_exported_resources(&module)

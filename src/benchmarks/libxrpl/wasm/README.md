@@ -127,27 +127,22 @@ The linker rebuild and the fuel-metering overhead are **not** separable from her
 `runEscrowWasm` and `preflightEscrowWasm`. Both need benchmarks inside `xrpl-wasm-vm`, where
 `compile` and `wasm_engine` are `pub(crate)`.
 
-### Compiling leaks — pin your iteration counts
+### Pin your iteration counts
 
-`wasm_engine()` is a process-global `LazyLock<Engine>`, and what `Module::new` adds to it is never
-released. Repeatedly preflighting one **60-byte** module:
+`wasm_engine()` returns a fresh `Engine` per call and `run`/`check` drop theirs on return, so
+compiles no longer accumulate. Compiling 64-function modules and sampling RSS from `ps`, the cost is
+a one-time 0.6 MiB that arrives within the first few thousand compiles and then does not move
+through 40,000 — allocator high-water mark, not growth. A shared engine grew by 5.4 KB per compile
+without bound, which over the same 40,000 would have been ~216 MiB. That retires the old hazard
+here, where automatic sizing reached 7.9 GB resident and every later case in the binary failed to
+compile.
 
-| `--benchmark_repetitions` | peak RSS |
-| ------------------------- | -------- |
-| 1                         | 0.41 GB  |
-| 5                         | 1.46 GB  |
-| 15                        | 4.20 GB  |
+The measurement cycles 2,000 distinct modules, so the allocator sees a repeating size distribution;
+a validator meeting varied contract sizes would settle at a somewhat higher mark, still bounded.
 
-Linear, at roughly **800 bytes per compile**. Within the suite this is why every `Vm.cpp` case pins
-`->Iterations(...)`: automatic sizing ran `preflightMinimal` ~348k times per repetition, reaching
-7.9 GB at 25 repetitions, after which every later case in the binary failed to compile — 720 errored
-rows, all blaming cases that were innocent.
-
-**Outside the suite it is worth a look.** A validator compiles once to screen an `EscrowCreate`
-and again for every `EscrowFinish` that runs the contract — with no module cache between them, and
-once per apply attempt rather than once per transaction — all against that same static engine.
-Whether that is unbounded growth in production depends on wasmi internals not checked here (wasmi
-2.0.0, wasmparser 0.228): this is the C++-visible symptom, not a diagnosis.
+Pin `->Iterations(...)` anyway: automatic sizing targets a wall-clock budget rather than a compile
+count, which gives the cheap cases six-figure counts and `/4096` a handful, and stops the sweep's
+rows being comparable to each other or to the last run.
 
 ## Gotchas, each of which has already cost someone an afternoon
 
