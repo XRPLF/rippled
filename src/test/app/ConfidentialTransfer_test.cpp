@@ -7123,6 +7123,18 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
                 mptAlice.confidentialClaw(
                     {.account = alice, .holder = carol, .amt = 15, .fee = expectedFee});
             });
+
+            // Check fee for the mirror update transaction.
+            Account const newIssuerKey("newIssuerKey");
+            mptAlice.generateKeyPair(newIssuerKey);
+            mptAlice.set({.account = alice, .issuerPubKey = mptAlice.getPubKey(newIssuerKey)});
+            checkFee(alice, [&]() {
+                mptAlice.mirrorUpdate(
+                    {.account = alice,
+                     .holder = bob,
+                     .issuerEncryptedAmount = getTrivialCiphertext(),
+                     .fee = expectedFee});
+            });
         }
 
         // test insufficient fee for confidential transactions
@@ -7152,6 +7164,12 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
                 {.account = alice,
                  .holder = carol,
                  .amt = 1,
+                 .fee = baseFee,
+                 .err = telINSUF_FEE_P});
+            mptAlice.mirrorUpdate(
+                {.account = alice,
+                 .holder = bob,
+                 .issuerEncryptedAmount = getTrivialCiphertext(),
                  .fee = baseFee,
                  .err = telINSUF_FEE_P});
         }
