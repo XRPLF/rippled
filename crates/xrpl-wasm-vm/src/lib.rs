@@ -22,7 +22,7 @@ mod preflight;
 mod register;
 mod vm;
 
-pub use preflight::{CheckError, check};
+pub use preflight::{CheckError, check, check_all};
 pub use vm::{
     MAX_FIELD_BYTES, MAX_MEMORY_BYTES, MAX_MEMORY_PAGES, MAX_TABLE_ELEMENTS, RunError, RunFailure,
     RunOutcome, TRANSFER_LIMIT_BYTES, run,
