@@ -17,6 +17,7 @@
 
 #include <cstdint>
 #include <exception>
+#include <expected>
 #include <memory>
 #include <optional>
 #include <utility>
@@ -146,6 +147,26 @@ invokePreflight(PreflightContext const& ctx)
         JLOG(ctx.j.fatal()) << "Unknown transaction type in preflight: " << e.txnType;
         UNREACHABLE("xrpl::invokePreflight : unknown transaction type");
         return {temUNKNOWN, TxConsequences{temUNKNOWN}};
+        // LCOV_EXCL_STOP
+    }
+}
+
+std::expected<TxConsequences, NotTEC>
+invokeConsequences(PreflightContext const& ctx)
+{
+    try
+    {
+        return withTxnType(ctx.rules, ctx.tx.getTxnType(), [&]<typename T>() {
+            return consequencesHelper<T>(ctx);
+        });
+    }
+    catch (UnknownTxnType const& e)
+    {
+        // Should never happen
+        // LCOV_EXCL_START
+        JLOG(ctx.j.fatal()) << "Unknown transaction type in invokeConsequences: " << e.txnType;
+        UNREACHABLE("xrpl::invokeConsequences : unknown transaction type");
+        return std::unexpected(temUNKNOWN);
         // LCOV_EXCL_STOP
     }
 }
