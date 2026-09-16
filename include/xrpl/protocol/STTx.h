@@ -180,6 +180,18 @@ public:
     [[nodiscard]] AccountID
     getInitiator() const;
 
+    /**
+     * @overload
+     *
+     * Same rule applied to any transaction-shaped STObject (e.g. an inner
+     * batch transaction, or a proposed transaction stored on a
+     * TransactionProposal ledger entry) without paying for STTx template
+     * validation. Callers that already hold an STTx should prefer the
+     * instance method.
+     */
+    [[nodiscard]] static AccountID
+    getInitiator(STObject const& tx);
+
     [[nodiscard]] AccountID
     getFeePayerID() const;
 

@@ -193,6 +193,18 @@ auxiliaryRole(
  * ambiguous case with tecNO_PERMISSION until the two are reconciled (a
  * SigningForRole hint, or a spec edit).
  *
+ * A pre-funded Sponsor slot needs no contribution at all (the ordinary
+ * Transactor::checkSponsor path accepts an absent sfSponsorSignature when
+ * a Sponsorship SLE exists and does not require a fee signature — see
+ * XLS-68), so in principle a proposal whose Counterparty is also a
+ * pre-funded Sponsor is unambiguous: only the Counterparty slot needs
+ * signing. Distinguishing that from a co-signed Sponsor requires reading
+ * the Sponsorship SLE at both Create and Sign time, and that state can
+ * change between them. hasRoleOverlap therefore rejects all Counterparty
+ * / Sponsor overlaps at Create time as a conservative rule; the check
+ * here is defense-in-depth and never fires against a well-formed
+ * proposal.
+ *
  * @param implicitCounterparty See isRequiredSigningFor.
  */
 bool
@@ -200,6 +212,27 @@ hasAmbiguousOuterRole(
     STObject const& proposedTx,
     AccountID const& signingFor,
     std::optional<AccountID> const& implicitCounterparty = std::nullopt);
+
+/**
+ * Whether the proposed transaction assigns the same account to more than
+ * one signing role in {initiator (Account or Delegate), Counterparty,
+ * Sponsor}. Under fixCleanup3_4_0 each role signs a distinct payload
+ * (xrpl::signingPrefix), so a single contribution cannot satisfy two
+ * slots and a proposal with such an overlap can never complete no matter
+ * how many contributions are collected. TransactionProposalCreate
+ * rejects the overlap up front rather than letting the proposal sit
+ * unsatisfiable until it expires.
+ *
+ * This is a stateless syntactic check. It cannot see whether a Sponsor
+ * slot is pre-funded (which would make the overlap harmless), and does
+ * not resolve the implicit LoanBroker.Owner Counterparty a LoanSet
+ * without sfCounterparty infers (a proposal creator who wants that
+ * counterparty on the ledger must arrange it not to overlap with other
+ * roles either way). Callers that need to admit a pre-funded Sponsor
+ * overlap will need a spec edit and a role-hint on the payload.
+ */
+bool
+hasRoleOverlap(STObject const& proposedTx);
 
 /**
  * The blob ProposalSignature.TxnSignature must be valid over for this

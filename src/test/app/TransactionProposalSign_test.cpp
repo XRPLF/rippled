@@ -45,12 +45,30 @@ namespace xrpl::test {
 
 struct TransactionProposalSign_test : public beast::unit_test::Suite
 {
+    // The proposed transaction stored on `target`'s TransactionProposal
+    // ledger entry, in STObject form. Handles the BEAST_EXPECT of the entry
+    // itself so callers can just check the optional and return, rather than
+    // repeating the entry/dereference boilerplate.
+    std::optional<STObject>
+    proposedObject(jtx::Env const& env, jtx::Account const& target, std::uint32_t ticketSeq)
+    {
+        auto const sle = jtx::proposal::entry(env, target, ticketSeq);
+        if (!BEAST_EXPECT(sle))
+            return std::nullopt;
+        return sle->getFieldObject(sfProposedTransaction);
+    }
+
+    // The same payload rendered as JSON, ready to be resubmitted through the
+    // ordinary tx path once the proposal completes. Returns an empty json
+    // value if the proposal is missing; callers that submit the result
+    // observe the ordinary temMALFORMED that follows.
     json::Value
     proposedJson(jtx::Env const& env, jtx::Account const& target, std::uint32_t ticketSeq)
     {
-        auto const sle = jtx::proposal::entry(env, target, ticketSeq);
-        BEAST_EXPECT(sle);
-        return sle->getFieldObject(sfProposedTransaction).getJson(JsonOptions::Values::None);
+        auto const obj = proposedObject(env, target, ticketSeq);
+        if (!obj)
+            return {};
+        return obj->getJson(JsonOptions::Values::None);
     }
 
     // Build a TransactionProposalSign where ProposalSignature.Account and the
@@ -68,15 +86,14 @@ struct TransactionProposalSign_test : public beast::unit_test::Suite
         jtx::Account const& signerAccount,
         jtx::Account const& signingKey)
     {
-        auto const sle = jtx::proposal::entry(env, target, ticketSeq);
-        if (!BEAST_EXPECT(sle))
+        auto const proposedTx = proposedObject(env, target, ticketSeq);
+        if (!proposedTx)
             return {};
-        STObject const proposedTx = sle->getFieldObject(sfProposedTransaction);
         // No callers use signAs with a LoanSet payload — this shortcut path
         // doesn't need to resolve an implicit LoanBroker.Owner. If one shows
         // up later, mirror the resolution jtx::proposal::sign does.
         auto const data = xrpl::proposal::signingData(
-            proposedTx,
+            *proposedTx,
             signingFor.id(),
             signerAccount.id(),
             signingKey.pk().slice(),
@@ -178,6 +195,29 @@ struct TransactionProposalSign_test : public beast::unit_test::Suite
         }
 
         {
+            // ProposalSignature.Account is SoeRequired on the inner object
+            // (InnerObjectFormats), so its absence is caught by STObject
+            // template application at parse time — never reaches the
+            // transactor. The tx cannot be built at all.
+            json::Value jv = proposal::sign(env, ceo, target, ticketSeq, target, ceo);
+            jv[sfProposalSignature.jsonName].removeMember(jss::Account);
+            env.setParseFailureExpected(true);
+            try
+            {
+                env(jv, Ter(temMALFORMED));
+                fail();  // parse must throw
+            }
+            catch (std::exception const& e)
+            {
+                BEAST_EXPECT(
+                    std::string(e.what()).find(
+                        "'ProposalSignature' contents did not meet requirements") !=
+                    std::string::npos);
+            }
+            env.setParseFailureExpected(false);
+        }
+
+        {
             // A broken signature reaches preclaim (preflight only checks
             // fields are non-empty and the key parses) and fails there
             // with the claimed-fee code the rest of preclaim uses.
@@ -249,10 +289,10 @@ struct TransactionProposalSign_test : public beast::unit_test::Suite
         env.close();
 
         {
-            auto const sle = proposal::entry(env, target, ticketSeq);
-            if (!BEAST_EXPECT(sle))
+            auto const proposed = proposedObject(env, target, ticketSeq);
+            if (!proposed)
                 return;
-            auto const stored = sle->getFieldObject(sfProposedTransaction);
+            auto const& stored = *proposed;
             BEAST_EXPECT(stored.isFieldPresent(sfSigners));
             BEAST_EXPECT(stored.getFieldArray(sfSigners).size() == 1);
             BEAST_EXPECT(stored.getFieldArray(sfSigners)[0].getAccountID(sfAccount) == ceo.id());
@@ -263,10 +303,10 @@ struct TransactionProposalSign_test : public beast::unit_test::Suite
         env.close();
 
         {
-            auto const sle = proposal::entry(env, target, ticketSeq);
-            if (!BEAST_EXPECT(sle))
+            auto const proposed = proposedObject(env, target, ticketSeq);
+            if (!proposed)
                 return;
-            auto const stored = sle->getFieldObject(sfProposedTransaction);
+            auto const& stored = *proposed;
             auto const& signers = stored.getFieldArray(sfSigners);
             BEAST_EXPECT(signers.size() == 2);
             BEAST_EXPECT(signers[0].getAccountID(sfAccount) < signers[1].getAccountID(sfAccount));
@@ -306,10 +346,10 @@ struct TransactionProposalSign_test : public beast::unit_test::Suite
         env.close();
 
         {
-            auto const sle = proposal::entry(env, target, ticketSeq);
-            if (!BEAST_EXPECT(sle))
+            auto const proposed = proposedObject(env, target, ticketSeq);
+            if (!proposed)
                 return;
-            auto const stored = sle->getFieldObject(sfProposedTransaction);
+            auto const& stored = *proposed;
             BEAST_EXPECT(!stored.isFieldPresent(sfSigners));
             BEAST_EXPECT(!stored.getFieldVL(sfSigningPubKey).empty());
             BEAST_EXPECT(stored.isFieldPresent(sfTxnSignature));
@@ -325,7 +365,9 @@ struct TransactionProposalSign_test : public beast::unit_test::Suite
     void
     testOrdinaryDelegate(FeatureBitset features)
     {
-        testcase("ordinary sign for the proposed transaction's Delegate");
+        testcase(
+            "proposed transaction uses a Delegate account; delegate has "
+            "configured a SignerList and its multi-sign satisfies the proposal");
 
         using namespace jtx;
         using namespace std::chrono_literals;
@@ -356,10 +398,10 @@ struct TransactionProposalSign_test : public beast::unit_test::Suite
         env.close();
 
         {
-            auto const sle = proposal::entry(env, target, ticketSeq);
-            if (!BEAST_EXPECT(sle))
+            auto const proposed = proposedObject(env, target, ticketSeq);
+            if (!proposed)
                 return;
-            auto const stored = sle->getFieldObject(sfProposedTransaction);
+            auto const& stored = *proposed;
             BEAST_EXPECT(stored.getAccountID(sfDelegate) == delegateAcct.id());
             BEAST_EXPECT(stored.isFieldPresent(sfSigners));
             BEAST_EXPECT(stored.getFieldArray(sfSigners).size() == 1);
@@ -410,10 +452,10 @@ struct TransactionProposalSign_test : public beast::unit_test::Suite
         env.close();
 
         {
-            auto const sle = proposal::entry(env, target, ticketSeq);
-            if (!BEAST_EXPECT(sle))
+            auto const proposed = proposedObject(env, target, ticketSeq);
+            if (!proposed)
                 return;
-            auto const stored = sle->getFieldObject(sfProposedTransaction);
+            auto const& stored = *proposed;
             BEAST_EXPECT(stored.getFieldVL(sfSigningPubKey).empty());
             BEAST_EXPECT(!stored.isFieldPresent(sfTxnSignature));
         }
@@ -476,10 +518,13 @@ struct TransactionProposalSign_test : public beast::unit_test::Suite
             env(proposal::sign(env, lender, borrower, ticketSeq, lender, lender));
             env.close();
 
-            auto const sle = proposal::entry(env, borrower, ticketSeq);
-            if (!BEAST_EXPECT(sle))
+            auto const proposed = proposedObject(env, borrower, ticketSeq);
+
+            if (!proposed)
+
                 return;
-            auto const stored = sle->getFieldObject(sfProposedTransaction);
+
+            auto const& stored = *proposed;
 
             // No mutation of the outer Signers / top-level SigningPubKey:
             // this is not a Transaction-role contribution.
@@ -518,10 +563,13 @@ struct TransactionProposalSign_test : public beast::unit_test::Suite
             env(proposal::sign(env, borrower, borrower, ticketSeq2, lender, lenderCFO));
             env.close();
 
-            auto const sle = proposal::entry(env, borrower, ticketSeq2);
-            if (!BEAST_EXPECT(sle))
+            auto const proposed = proposedObject(env, borrower, ticketSeq2);
+
+            if (!proposed)
+
                 return;
-            auto const stored = sle->getFieldObject(sfProposedTransaction);
+
+            auto const& stored = *proposed;
 
             if (!BEAST_EXPECT(stored.isFieldPresent(sfCounterpartySignature)))
                 return;
@@ -598,10 +646,13 @@ struct TransactionProposalSign_test : public beast::unit_test::Suite
             env(proposal::sign(env, lender, borrower, ticketSeq, lender, lender));
             env.close();
 
-            auto const sle = proposal::entry(env, borrower, ticketSeq);
-            if (!BEAST_EXPECT(sle))
+            auto const proposed = proposedObject(env, borrower, ticketSeq);
+
+            if (!proposed)
+
                 return;
-            auto const stored = sle->getFieldObject(sfProposedTransaction);
+
+            auto const& stored = *proposed;
             if (!BEAST_EXPECT(stored.isFieldPresent(sfCounterpartySignature)))
                 return;
             auto const cs = stored.getFieldObject(sfCounterpartySignature);
@@ -627,10 +678,13 @@ struct TransactionProposalSign_test : public beast::unit_test::Suite
                 Ter(tecNO_PERMISSION));
             env.close();
 
-            auto const sle = proposal::entry(env, borrower, ticketSeq);
-            if (!BEAST_EXPECT(sle))
+            auto const proposed = proposedObject(env, borrower, ticketSeq);
+
+            if (!proposed)
+
                 return;
-            auto const stored = sle->getFieldObject(sfProposedTransaction);
+
+            auto const& stored = *proposed;
             BEAST_EXPECT(!stored.isFieldPresent(sfCounterpartySignature));
         }
     }
@@ -676,10 +730,13 @@ struct TransactionProposalSign_test : public beast::unit_test::Suite
             env(proposal::sign(env, backer, target, ticketSeq, backer, backer));
             env.close();
 
-            auto const sle = proposal::entry(env, target, ticketSeq);
-            if (!BEAST_EXPECT(sle))
+            auto const proposed = proposedObject(env, target, ticketSeq);
+
+            if (!proposed)
+
                 return;
-            auto const stored = sle->getFieldObject(sfProposedTransaction);
+
+            auto const& stored = *proposed;
             if (!BEAST_EXPECT(stored.isFieldPresent(sfSponsorSignature)))
                 return;
             auto const ss = stored.getFieldObject(sfSponsorSignature);
@@ -710,10 +767,13 @@ struct TransactionProposalSign_test : public beast::unit_test::Suite
             env(proposal::sign(env, target, target, ticketSeq2, backer, backerCFO));
             env.close();
 
-            auto const sle = proposal::entry(env, target, ticketSeq2);
-            if (!BEAST_EXPECT(sle))
+            auto const proposed = proposedObject(env, target, ticketSeq2);
+
+            if (!proposed)
+
                 return;
-            auto const stored = sle->getFieldObject(sfProposedTransaction);
+
+            auto const& stored = *proposed;
             if (!BEAST_EXPECT(stored.isFieldPresent(sfSponsorSignature)))
                 return;
             auto const ss = stored.getFieldObject(sfSponsorSignature);
@@ -725,14 +785,18 @@ struct TransactionProposalSign_test : public beast::unit_test::Suite
         }
     }
 
-    // SigningFor plays two outer roles at once: Counterparty and Sponsor.
-    // Under fixCleanup3_4_0 the two slots require signatures over distinct
-    // payloads, so a single contribution cannot satisfy both; preclaim
-    // rejects the ambiguous case with tecNO_PERMISSION.
+    // A proposed transaction whose Counterparty and Sponsor are the same
+    // account: under fixCleanup3_4_0 the two slots require signatures over
+    // distinct payloads, so a single contribution cannot satisfy both.
+    // TransactionProposalCreate's hasRoleOverlap check rejects the payload
+    // up front with temBAD_SIGNER — Sign is never called against it — so a
+    // proposal that would otherwise sit unsatisfiable until it expires is
+    // caught at the very entry point instead. The Sign-time
+    // hasAmbiguousOuterRole guard remains as defense in depth.
     void
     testMultiRoleAmbiguity(FeatureBitset features)
     {
-        testcase("outer multi-role ambiguity rejected");
+        testcase("outer multi-role ambiguity rejected at proposal creation");
 
         using namespace jtx;
         using namespace std::chrono_literals;
@@ -754,36 +818,27 @@ struct TransactionProposalSign_test : public beast::unit_test::Suite
         tx[sfSponsor.jsonName] = bothRoles.human();
         tx[sfSponsorFlags.jsonName] = spfSponsorFee;
         env(proposal::create(
-            borrower,
-            proposal::unsignedPayload(env, tx, ticketSeq),
-            proposal::expiration(env, 100s)));
+                borrower,
+                proposal::unsignedPayload(env, tx, ticketSeq),
+                proposal::expiration(env, 100s)),
+            Ter(temBAD_SIGNER));
         env.close();
 
-        env(proposal::sign(env, bothRoles, borrower, ticketSeq, bothRoles, bothRoles),
-            Ter(tecNO_PERMISSION));
-        env.close();
-
-        // Neither slot is populated — the whole contribution is rejected,
-        // not silently routed to one slot.
-        auto const sle = proposal::entry(env, borrower, ticketSeq);
-        if (!BEAST_EXPECT(sle))
-            return;
-        auto const stored = sle->getFieldObject(sfProposedTransaction);
-        BEAST_EXPECT(!stored.isFieldPresent(sfCounterpartySignature));
-        BEAST_EXPECT(!stored.isFieldPresent(sfSponsorSignature));
+        // No proposal was created; there is nothing to sign against.
+        BEAST_EXPECT(!proposal::entry(env, borrower, ticketSeq));
     }
 
     // Companion to testMultiRoleAmbiguity for the initiator + aux combo.
     // preflight1Sponsor rejects sfSponsor == sfAccount but does *not* reject
     // sfSponsor == sfDelegate — a Delegate authorized to submit on behalf of
-    // the target may still coincide with the transaction's Sponsor. In that
-    // case the same account plays both the initiator role (via Delegate) and
-    // the Sponsor role at Sign time; hasAmbiguousOuterRole catches it and
-    // returns tecNO_PERMISSION rather than silently routing to one slot.
+    // the target may still coincide with the transaction's Sponsor. That
+    // corner is caught by TransactionProposalCreate's hasRoleOverlap gate
+    // (initiator resolves to Delegate when present), so Sign never sees the
+    // ambiguous proposal.
     void
     testInitiatorAuxAmbiguity(FeatureBitset features)
     {
-        testcase("Delegate + Sponsor same account rejected");
+        testcase("Delegate + Sponsor same account rejected at proposal creation");
 
         using namespace jtx;
         using namespace std::chrono_literals;
@@ -805,33 +860,21 @@ struct TransactionProposalSign_test : public beast::unit_test::Suite
         // A Payment where the same account is both the Delegate that would
         // submit on target's behalf and the fee sponsor. Legal ledger-wise
         // — preflight1Sponsor's Account==Sponsor guard doesn't apply to a
-        // Delegate — but ambiguous at Sign time.
+        // Delegate — but ambiguous under fixCleanup3_4_0's role prefixes.
+        // TransactionProposalCreate rejects up front with temBAD_SIGNER.
         json::Value tx = pay(target, dest, XRP(1));
         tx[sfDelegate.jsonName] = dualRole.human();
         tx[sfSponsor.jsonName] = dualRole.human();
         tx[sfSponsorFlags.jsonName] = static_cast<std::uint32_t>(spfSponsorFee);
         env(proposal::create(
-            target,
-            proposal::unsignedPayload(env, tx, ticketSeq),
-            proposal::expiration(env, 100s)));
+                target,
+                proposal::unsignedPayload(env, tx, ticketSeq),
+                proposal::expiration(env, 100s)),
+            Ter(temBAD_SIGNER));
         env.close();
 
-        // SigningFor = dualRole matches both the initiator slot (as Delegate)
-        // and the Sponsor slot; hasAmbiguousOuterRole rejects.
-        env(proposal::sign(env, dualRole, target, ticketSeq, dualRole, dualRole),
-            Ter(tecNO_PERMISSION));
-        env.close();
-
-        // Neither slot mutated.
-        auto const sle = proposal::entry(env, target, ticketSeq);
-        if (!BEAST_EXPECT(sle))
-            return;
-        auto const stored = sle->getFieldObject(sfProposedTransaction);
-        BEAST_EXPECT(!stored.isFieldPresent(sfSigners));
-        BEAST_EXPECT(
-            !stored.isFieldPresent(sfSigningPubKey) || stored.getFieldVL(sfSigningPubKey).empty());
-        BEAST_EXPECT(!stored.isFieldPresent(sfTxnSignature));
-        BEAST_EXPECT(!stored.isFieldPresent(sfSponsorSignature));
+        // No proposal was created; there is nothing to sign against.
+        BEAST_EXPECT(!proposal::entry(env, target, ticketSeq));
     }
 
     // A signature computed with the Transaction-role prefix cannot be
@@ -872,10 +915,10 @@ struct TransactionProposalSign_test : public beast::unit_test::Suite
         // with SigningFor = backer, which routes to the Sponsor slot. The
         // verify() call in preclaim rebuilds the payload under the Sponsor
         // prefix and rejects the signature.
-        auto const sle = proposal::entry(env, target, ticketSeq);
-        if (!BEAST_EXPECT(sle))
+        auto const proposed = proposedObject(env, target, ticketSeq);
+        if (!proposed)
             return;
-        auto const stored = sle->getFieldObject(sfProposedTransaction);
+        auto const& stored = *proposed;
 
         STTx stx{STObject{stored}};
         stx.setFieldVL(sfSigningPubKey, backer.pk().slice());
@@ -1013,12 +1056,89 @@ struct TransactionProposalSign_test : public beast::unit_test::Suite
 
         // Signature was recorded on the proposal exactly as if no sponsor
         // were involved.
-        auto const sle = proposal::entry(env, target, ticketSeq);
-        if (!BEAST_EXPECT(sle))
+        auto const proposed = proposedObject(env, target, ticketSeq);
+        if (!proposed)
             return;
-        auto const stored = sle->getFieldObject(sfProposedTransaction);
+        auto const& stored = *proposed;
         BEAST_EXPECT(stored.isFieldPresent(sfTxnSignature));
         BEAST_EXPECT(!stored.getFieldVL(sfSigningPubKey).empty());
+    }
+
+    // The outer TransactionProposalSign transaction is itself multi-signed
+    // through the submitter's SignerList. The submitter's own account
+    // (ctx.tx.getAccountID(sfAccount)) delegates authority to a set of
+    // signers, and the outer signature verification uses the ordinary
+    // multi-sign path — orthogonal to the ProposalSignature inside, which is
+    // still a single-sign over the proposed transaction by the SigningFor
+    // account. Charged fee scales with the number of outer Signers.
+    void
+    testOuterMultiSignedSign(FeatureBitset features)
+    {
+        testcase("outer TransactionProposalSign transaction is multi-signed");
+
+        using namespace jtx;
+        using namespace std::chrono_literals;
+
+        Env env{*this, features};
+
+        Account const target{"target"};
+        Account const dest{"dest"};
+        Account const submitter{"submitter"};  // multi-signed relay account
+        Account const cosigner1{"cosigner1"};
+        Account const cosigner2{"cosigner2"};
+        env.fund(XRP(10000), target, dest, submitter, cosigner1, cosigner2);
+        env.close();
+
+        // Two SignerLists: one on `target` so the proposal's ProposalSignature
+        // has somewhere to land (target multi-signs the proposal itself), and
+        // one on `submitter` so the outer TransactionProposalSign can be
+        // multi-signed. These are unrelated to each other by design.
+        env(signers(target, 1, {{cosigner1, 1}}));
+        env(signers(submitter, 2, {{cosigner1, 1}, {cosigner2, 1}}));
+        env.close();
+
+        std::uint32_t const ticketSeq = proposal::createTicket(env, target);
+        env(proposal::create(
+            target,
+            proposal::unsignedPayload(env, pay(target, dest, XRP(1)), ticketSeq),
+            proposal::expiration(env, 100s)));
+        env.close();
+
+        auto const submitterBefore = env.balance(submitter);
+        XRPAmount const baseFee = env.current()->fees().base;
+
+        // Build the ProposalSignature from cosigner1 signing for target on
+        // target's SignerList, then have `submitter` relay it wrapped in an
+        // outer TransactionProposalSign that is itself multi-signed by
+        // (cosigner1, cosigner2) against submitter's own SignerList. env
+        // recomputes the outer signature over the augmented payload; the
+        // ProposalSignature (inner) stays intact.
+        json::Value signJson = proposal::sign(env, submitter, target, ticketSeq, target, cosigner1);
+        signJson.removeMember(jss::TxnSignature);
+        signJson.removeMember(jss::SigningPubKey);
+
+        // Multi-sign minimum fee is baseFee + (signerCount * baseFee).
+        // For two outer signers that is 3 * baseFee; anything below is
+        // rejected (telINSUF_FEE_P).
+        env(signJson, Msig(cosigner1, cosigner2), Fee((3 * baseFee) - 1), Ter(telINSUF_FEE_P));
+        env.close();
+        BEAST_EXPECT(env.balance(submitter) == submitterBefore);
+
+        // Correctly priced multi-signed submission: fee comes out of the
+        // submitter, ProposalSignature is recorded on target's proposal
+        // exactly as if the outer Sign had been single-signed. The outer
+        // multi-sign never intersects the proposal-signature routing.
+        env(signJson, Msig(cosigner1, cosigner2), Fee(3 * baseFee));
+        env.close();
+        BEAST_EXPECT(env.balance(submitter) == submitterBefore - (3 * baseFee));
+
+        auto const proposed = proposedObject(env, target, ticketSeq);
+        if (!proposed)
+            return;
+        auto const& stored = *proposed;
+        BEAST_EXPECT(stored.isFieldPresent(sfSigners));
+        BEAST_EXPECT(stored.getFieldArray(sfSigners).size() == 1);
+        BEAST_EXPECT(stored.getFieldArray(sfSigners)[0].getAccountID(sfAccount) == cosigner1.id());
     }
 
     // Two TransactionProposalSign transactions for the same proposal applied
@@ -1066,10 +1186,13 @@ struct TransactionProposalSign_test : public beast::unit_test::Suite
         env(proposal::sign(env, cfo, target, ticketSeq, target, cfo));
         env.close();
 
-        auto const sle = proposal::entry(env, target, ticketSeq);
-        if (!BEAST_EXPECT(sle))
+        auto const proposed = proposedObject(env, target, ticketSeq);
+
+        if (!proposed)
+
             return;
-        auto const stored = sle->getFieldObject(sfProposedTransaction);
+
+        auto const& stored = *proposed;
         if (!BEAST_EXPECT(stored.isFieldPresent(sfSigners)))
             return;
         auto const& outerSigners = stored.getFieldArray(sfSigners);
@@ -1293,10 +1416,10 @@ struct TransactionProposalSign_test : public beast::unit_test::Suite
         env.close();
 
         {
-            auto const sle = proposal::entry(env, outer, ticketSeq);
-            if (!BEAST_EXPECT(sle))
+            auto const proposed = proposedObject(env, outer, ticketSeq);
+            if (!proposed)
                 return;
-            auto const stored = sle->getFieldObject(sfProposedTransaction);
+            auto const& stored = *proposed;
             BEAST_EXPECT(stored.isFieldPresent(sfSigners));
             BEAST_EXPECT(stored.getFieldArray(sfSigners).size() == 1);
             BEAST_EXPECT(stored.isFieldPresent(sfBatchSigners));
@@ -1390,10 +1513,10 @@ struct TransactionProposalSign_test : public beast::unit_test::Suite
             env(signAs(env, relay, target, ticketSeq, target, ceo, ceoRegKey));
             env.close();
 
-            auto const sle = proposal::entry(env, target, ticketSeq);
-            if (BEAST_EXPECT(sle))
+            auto const proposed = proposedObject(env, target, ticketSeq);
+            if (proposed)
             {
-                auto const stored = sle->getFieldObject(sfProposedTransaction);
+                auto const& stored = *proposed;
                 BEAST_EXPECT(stored.isFieldPresent(sfSigners));
                 BEAST_EXPECT(stored.getFieldArray(sfSigners).size() == 1);
                 BEAST_EXPECT(
@@ -1468,10 +1591,10 @@ struct TransactionProposalSign_test : public beast::unit_test::Suite
         env(proposal::sign(env, submitter, target, ticketSeq, target, phantom));
         env.close();
 
-        auto const sle = proposal::entry(env, target, ticketSeq);
-        if (BEAST_EXPECT(sle))
+        auto const proposed = proposedObject(env, target, ticketSeq);
+        if (proposed)
         {
-            auto const stored = sle->getFieldObject(sfProposedTransaction);
+            auto const& stored = *proposed;
             BEAST_EXPECT(stored.isFieldPresent(sfSigners));
             BEAST_EXPECT(stored.getFieldArray(sfSigners).size() == 1);
             BEAST_EXPECT(
@@ -1581,10 +1704,10 @@ struct TransactionProposalSign_test : public beast::unit_test::Suite
 
         // Nothing was recorded: no BatchSigners entry, no mutation of the
         // sponsored inner's sponsor slot.
-        auto const sle = proposal::entry(env, outer, ticketSeq);
-        if (!BEAST_EXPECT(sle))
+        auto const proposed = proposedObject(env, outer, ticketSeq);
+        if (!proposed)
             return;
-        auto const stored = sle->getFieldObject(sfProposedTransaction);
+        auto const& stored = *proposed;
         BEAST_EXPECT(!stored.isFieldPresent(sfBatchSigners));
         auto const& inners = stored.getFieldArray(sfRawTransactions);
         if (!BEAST_EXPECT(inners.size() == 2))
@@ -1659,10 +1782,13 @@ struct TransactionProposalSign_test : public beast::unit_test::Suite
         env(proposal::sign(env, outerKey, outer, ticketSeq, bob, bobKey2));
         env.close();
 
-        auto const sle = proposal::entry(env, outer, ticketSeq);
-        if (!BEAST_EXPECT(sle))
+        auto const proposed = proposedObject(env, outer, ticketSeq);
+
+        if (!proposed)
+
             return;
-        auto const stored = sle->getFieldObject(sfProposedTransaction);
+
+        auto const& stored = *proposed;
         auto const& batchSigners = stored.getFieldArray(sfBatchSigners);
         BEAST_EXPECT(batchSigners.size() == 1);
         BEAST_EXPECT(batchSigners[0].getAccountID(sfAccount) == bob.id());
@@ -1715,10 +1841,13 @@ struct TransactionProposalSign_test : public beast::unit_test::Suite
         env(proposal::sign(env, outer, outer, ticketSeq, fresh, fresh));
         env.close();
 
-        auto const sle = proposal::entry(env, outer, ticketSeq);
-        if (!BEAST_EXPECT(sle))
+        auto const proposed = proposedObject(env, outer, ticketSeq);
+
+        if (!proposed)
+
             return;
-        auto const stored = sle->getFieldObject(sfProposedTransaction);
+
+        auto const& stored = *proposed;
         BEAST_EXPECT(stored.isFieldPresent(sfBatchSigners));
         auto const& batchSigners = stored.getFieldArray(sfBatchSigners);
         BEAST_EXPECT(batchSigners.size() == 1);
@@ -1747,6 +1876,7 @@ struct TransactionProposalSign_test : public beast::unit_test::Suite
         testRolePrefixEnforced(all);
         testAuxSlotDuplicateAndModeConflict(all);
         testSignBeingSponsored(all);
+        testOuterMultiSignedSign(all);
         testMultipleSignsSameLedger(all);
         testExpired(all);
         testExpiredWithBadSignature(all);

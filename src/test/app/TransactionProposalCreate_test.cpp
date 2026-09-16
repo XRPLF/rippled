@@ -468,6 +468,92 @@ struct TransactionProposalCreate_test : public beast::unit_test::Suite
         }
     }
 
+    // Under fixCleanup3_4_0 each outer role (initiator, Counterparty, Sponsor)
+    // signs a distinct payload, so a proposal that assigns the same account
+    // to more than one of those roles can never accumulate signatures for
+    // both slots: whichever payload the contributor happens to sign, the
+    // other slot is left unfilled forever. TransactionProposalCreate rejects
+    // the payload at preflight with temBAD_SIGNER rather than storing an
+    // unsatisfiable proposal.
+    //
+    // The initiator resolves to sfDelegate when present and to sfAccount
+    // otherwise, mirroring STTx::getInitiator. preflight1 already rejects
+    // sfDelegate == sfAccount (temBAD_SIGNER) and preflight1Sponsor already
+    // rejects sfSponsor == sfAccount on the inner tx, so those cases are
+    // caught by ordinary preflight before hasRoleOverlap runs.
+    void
+    testRoleOverlap(FeatureBitset features)
+    {
+        testcase("reject proposal with overlapping outer signing roles");
+
+        using namespace jtx;
+        using namespace std::chrono_literals;
+
+        Env env{*this, features};
+
+        Account const target{"target"};
+        Account const bob{"bob"};
+        Account const overlap{"overlap"};
+        env.fund(XRP(10000), target, bob, overlap);
+        env.close();
+
+        // overlap acts as target's Delegate for both Payment and LoanSet
+        // in the cases below; the grant is unrelated to hasRoleOverlap
+        // itself, which is a pure syntactic check on the payload.
+        env(delegate::set(target, overlap, {"Payment", "LoanSet"}));
+        env.close();
+
+        std::uint32_t const targetTicketSeq = proposal::createTicket(env, target, 4);
+        std::uint32_t const expiration = proposal::expiration(env, 100s);
+
+        auto reject = [&](json::Value const& proposedTx) {
+            env(proposal::create(target, proposedTx, expiration),
+                Ter(temBAD_SIGNER),
+                proposal::verify::create());
+            env.close();
+            // The Ticket target already owns is untouched; no proposal SLE
+            // was added.
+            BEAST_EXPECT(!proposal::entry(env, target, targetTicketSeq));
+        };
+
+        // Delegate == Counterparty. LoanSet is the only in-tree tx type that
+        // carries sfCounterparty; overlap plays both the initiator role
+        // (as Delegate) and the counterparty role at once.
+        {
+            json::Value tx = loan::set(target, uint256{1}, 1'000);
+            tx[sfDelegate.getJsonName()] = overlap.human();
+            tx[sfCounterparty.getJsonName()] = overlap.human();
+            reject(proposal::unsignedPayload(env, tx, targetTicketSeq));
+        }
+
+        // Delegate == Sponsor. preflight1Sponsor's sfSponsor==sfAccount
+        // guard does not apply to a Delegate, so this reaches hasRoleOverlap.
+        {
+            json::Value tx = pay(target, bob, XRP(1));
+            tx[sfDelegate.getJsonName()] = overlap.human();
+            tx[sfSponsor.getJsonName()] = overlap.human();
+            tx[sfSponsorFlags.getJsonName()] = spfSponsorFee;
+            reject(proposal::unsignedPayload(env, tx, targetTicketSeq));
+        }
+
+        // Account == Counterparty (no Delegate).
+        {
+            json::Value tx = loan::set(target, uint256{1}, 1'000);
+            tx[sfCounterparty.getJsonName()] = target.human();
+            reject(proposal::unsignedPayload(env, tx, targetTicketSeq));
+        }
+
+        // Counterparty == Sponsor: the two auxiliary slots collide with each
+        // other rather than with the initiator.
+        {
+            json::Value tx = loan::set(target, uint256{1}, 1'000);
+            tx[sfCounterparty.getJsonName()] = bob.human();
+            tx[sfSponsor.getJsonName()] = bob.human();
+            tx[sfSponsorFlags.getJsonName()] = spfSponsorFee;
+            reject(proposal::unsignedPayload(env, tx, targetTicketSeq));
+        }
+    }
+
     // A proposal that could never be completed must not be stored, and a
     // target-and-ticket pair may hold at most one proposal.
     void
@@ -1558,6 +1644,7 @@ struct TransactionProposalCreate_test : public beast::unit_test::Suite
         testDisabled(all);
         testRejectedPayload(all);
         testRejectedSignatureFields(all);
+        testRoleOverlap(all);
 
         // Preclaim
         testPreclaim(all);

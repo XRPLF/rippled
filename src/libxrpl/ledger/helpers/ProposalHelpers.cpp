@@ -44,18 +44,6 @@ innerTxn(STObject const& wrapper)
     return wrapper.getFieldObject(sfRawTransaction);
 }
 
-// The account authorized to sign for `tx` on the ordinary submit path: its
-// Delegate if permission delegation is in use, otherwise its Account. Mirrors
-// STTx::getInitiator so that a contribution recorded here matches the
-// signature Transactor::checkSign will later look for.
-AccountID
-initiator(STObject const& tx)
-{
-    if (tx.isFieldPresent(sfDelegate))
-        return tx.getAccountID(sfDelegate);
-    return tx.getAccountID(sfAccount);
-}
-
 STObject*
 findBatchSigner(STArray& batchSigners, AccountID const& signingFor)
 {
@@ -90,6 +78,17 @@ makeSignerEntry(STObject const& proposalSignature)
     return entry;
 }
 
+// Slot state is a natural consequence of the contributions received so far:
+// a prior single-sign leaves top-level SigningPubKey+TxnSignature, a prior
+// multi-sign leaves an sfSigners array. The mode-conflict branches below
+// therefore capture a legitimate submit-time conflict between two contributors
+// choosing incompatible modes for the same slot — not ledger corruption:
+// the completed transaction can only carry one of the two on the submit path,
+// so the second contribution has to be rejected. It becomes tecNO_PERMISSION
+// (a claimed-fee, protocol-level failure) rather than a duplicate, because
+// the incoming signature is not the same as what is already recorded and it
+// is not implicitly redundant either — the contributor is asked to resubmit
+// in the mode the slot already committed to.
 TER
 recordIntoSigners(STObject& slot, STObject const& proposalSignature, bool const singleSign)
 {
@@ -100,6 +99,9 @@ recordIntoSigners(STObject& slot, STObject const& proposalSignature, bool const 
 
     if (singleSign)
     {
+        // Slot already holds one or more multi-sign shares: the completed
+        // transaction cannot carry both a single-sign and a Signers array
+        // for the same account, so this contribution has nowhere to land.
         if (hasSigners)
             return tecNO_PERMISSION;
         if (hasSingle)
@@ -109,6 +111,8 @@ recordIntoSigners(STObject& slot, STObject const& proposalSignature, bool const 
         return tesSUCCESS;
     }
 
+    // Symmetric mode conflict: slot already holds a single-sign
+    // contribution, so a multi-sign share cannot be added on top of it.
     if (hasSingle)
         return tecNO_PERMISSION;
 
@@ -220,7 +224,7 @@ auxiliaryRole(
 {
     // The initiator's contribution is a Transaction role, which is expressed
     // by "no auxiliary role" so the two never both hold.
-    if (signingFor == initiator(proposedTx))
+    if (signingFor == STTx::getInitiator(proposedTx))
         return std::nullopt;
 
     // A LoanSet without sfCounterparty defaults to LoanBroker.Owner
@@ -246,7 +250,7 @@ isOuterSigningFor(
     // A contribution for the proposed transaction itself: its initiator
     // (Account or Delegate), or an outer Counterparty / Sponsor co-signature.
     // Not an inner Batch participant — those go in sfBatchSigners.
-    return signingFor == initiator(proposedTx) ||
+    return signingFor == STTx::getInitiator(proposedTx) ||
         auxiliaryRole(proposedTx, signingFor, implicitCounterparty).has_value();
 }
 
@@ -257,7 +261,7 @@ hasAmbiguousOuterRole(
     std::optional<AccountID> const& implicitCounterparty)
 {
     std::size_t roles = 0;
-    if (signingFor == initiator(proposedTx))
+    if (signingFor == STTx::getInitiator(proposedTx))
         ++roles;
 
     auto const explicitCounter = proposedTx[~sfCounterparty];
@@ -269,6 +273,32 @@ hasAmbiguousOuterRole(
         ++roles;
 
     return roles > 1;
+}
+
+bool
+hasRoleOverlap(STObject const& proposedTx)
+{
+    auto const initiator = STTx::getInitiator(proposedTx);
+    auto const counter = proposedTx[~sfCounterparty];
+    auto const sponsor = proposedTx[~sfSponsor];
+
+    // Initiator overlaps. sfDelegate == sfAccount is rejected by
+    // preflight1 (temBAD_SIGNER) before the inner preflight even sees
+    // this proposal, so an overlap here means the initiator (whichever
+    // Account or Delegate it is) is also carrying one of the aux roles.
+    // preflight1Sponsor separately rejects sfSponsor == sfAccount on the
+    // proposed tx, but does not reject sfSponsor == sfDelegate — that
+    // corner is caught here.
+    if (counter && *counter == initiator)
+        return true;
+    if (sponsor && *sponsor == initiator)
+        return true;
+
+    // Auxiliary roles overlap: same account fills both aux slots.
+    if (counter && sponsor && *counter == *sponsor)
+        return true;
+
+    return false;
 }
 
 bool
@@ -286,8 +316,11 @@ isRequiredSigningFor(
 
     // A batch inner participant is any account whose signature the batch's
     // own submit-time check requires, minus the outer account (which never
-    // appears in BatchSigners). Mirrors Batch::preflightSigValidated's
-    // requiredSigners assembly:
+    // appears in BatchSigners). Must stay in lockstep with the
+    // requiredSigners list built by Batch::preflightSigValidated — if that
+    // gate ever admits a new signer category, this recognizer must admit it
+    // too, or a submittable inner signature will have nowhere on the
+    // proposal to land. Today's list is:
     //   - each inner's initiator (Delegate if permission delegation is in
     //     use, otherwise Account) — a delegated inner is signed by the
     //     Delegate, not the Account holder;
@@ -301,25 +334,30 @@ isRequiredSigningFor(
     // counterparty-carrying inner tx type), cosign routes those signatures
     // to BatchSigners the same way Batch requires them at submit.
     //
-    // Inner sfSponsor is deliberately not recognized here. Batch's own
-    // requiredSigners assembly gates the sponsor on
-    // rb.isFieldPresent(sfSponsorSignature); a proposal inner is stored in
-    // unsigned canonical form and never carries that field, so the batch's
-    // own submit-time check would not require the sponsor as a batch
-    // signer either. In v1 cosign therefore handles inner reserve
-    // sponsorship the pre-funded way: the sponsor establishes the
-    // sponsorship SLE ahead of time via SponsorshipTransfer, and no
-    // TransactionProposalSign is collected for the sponsor role at the
-    // inner level. Co-signed inner sponsorship (a sponsor who signs both
-    // the inner Sponsor payload and the batch payload) would require a
-    // second signature slot per contribution and is deferred to a
-    // follow-up amendment.
+    // Inner sfSponsor may be present on a proposal inner (for pre-funded
+    // reserve sponsorship the sponsor established off-cosign via
+    // SponsorshipTransfer), but it is deliberately not recognized as a
+    // cosign signer role here. Batch::preflightSigValidated gates the
+    // inner sponsor on rb.isFieldPresent(sfSponsorSignature); a proposal
+    // inner is stored in unsigned canonical form and never carries that
+    // field, so the batch's own submit-time check would not require the
+    // sponsor as a batch signer either. Co-signed inner sponsorship (a
+    // sponsor who signs both the inner Sponsor payload and the batch
+    // payload) would require an inner sfSponsorSignature slot on the
+    // stored proposal and a second signature-routing target per
+    // contribution, and is deferred to a follow-up amendment.
     auto const outer = proposedTx.getAccountID(sfAccount);
     return std::ranges::any_of(proposedTx.getFieldArray(sfRawTransactions), [&](auto const& inner) {
         auto const tx = innerTxn(inner);
+        // Unreachable via isRequiredSigningFor: signingFor == outer is
+        // already the outer Batch's initiator, so isOuterSigningFor above
+        // returned true and this loop is never entered for that case.
+        // Kept as a defensive guard against future callers of the inner
+        // loop and to match Batch::preflightSigValidated's outer-excludes
+        // rule verbatim.
         if (signingFor == outer)
-            return false;
-        if (signingFor == initiator(tx))
+            return false;  // LCOV_EXCL_LINE
+        if (signingFor == STTx::getInitiator(tx))
             return true;
         if (auto const counter = tx[~sfCounterparty]; counter && *counter == signingFor)
             return true;
