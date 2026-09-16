@@ -1339,6 +1339,15 @@ class ConfidentialMPTKeyRotation_test : public ConfidentialTransferTestBase
             .err = temBAD_CIPHERTEXT,
         });
 
+        // The proof has the wrong length.
+        mptAlice.mirrorUpdate({
+            .account = alice,
+            .holder = bob,
+            .issuerEncryptedAmount = validCipher,
+            .zkProof = gMakeZeroBuffer(kEcEqualityProofLength - 1),
+            .err = temMALFORMED,
+        });
+
         // Issuer amount is the right length but not a valid ciphertext.
         mptAlice.mirrorUpdate({
             .account = alice,
@@ -1385,7 +1394,7 @@ class ConfidentialMPTKeyRotation_test : public ConfidentialTransferTestBase
             });
         }
 
-        // The issuance have not enabled confidential balances.
+        // The issuance has not enabled confidential balances.
         {
             Env env{*this, features};
             Account const alice("alice");

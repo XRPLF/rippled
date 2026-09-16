@@ -17,8 +17,6 @@
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/Transactor.h>
 
-#include <memory>
-
 namespace xrpl {
 
 bool
@@ -69,6 +67,10 @@ ConfidentialMPTMirrorUpdate::preflight(PreflightContext const& ctx)
     if (hasAuditorAmount &&
         ctx.tx[sfAuditorEncryptedAmount].length() != kEcGamalEncryptedTotalLength)
         return temBAD_CIPHERTEXT;
+
+    // Check proof length.
+    if (ctx.tx[sfZKProof].length() != kEcEqualityProofLength)
+        return temMALFORMED;
 
     // Check the encrypted amount formats. It is more expensive so put it at the end of preflight.
     if (hasIssuerAmount && !isValidCiphertext(ctx.tx[sfIssuerEncryptedAmount]))
@@ -253,10 +255,7 @@ ConfidentialMPTMirrorUpdate::doApply()
 }
 
 void
-ConfidentialMPTMirrorUpdate::visitInvariantEntry(
-    bool,
-    std::shared_ptr<SLE const> const&,
-    std::shared_ptr<SLE const> const&)
+ConfidentialMPTMirrorUpdate::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
 {
 }
 
