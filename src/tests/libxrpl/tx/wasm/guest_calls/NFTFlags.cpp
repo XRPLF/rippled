@@ -4,7 +4,7 @@
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
-#include <tx/wasm/fixtures/HostCallFixture.h>
+#include <tx/wasm/fixtures/GuestCallFixture.h>
 
 #include <cstdint>
 #include <expected>
@@ -17,7 +17,7 @@ using testing::Eq;
 using testing::Return;
 
 // nft_flags — an nft id region in, the flags answered directly with no out region.
-struct NFTFlagsGuest : HostCallTest
+struct NFTFlagsGuest : GuestCallTest
 {
     static constexpr std::int32_t kNftIdAt = 0;
     static constexpr std::int32_t kNftIdLen = static_cast<std::int32_t>(uint256::size());
@@ -57,7 +57,7 @@ TEST_F(NFTFlagsGuest, HostExceptionStopsTheRunAndIsLogged)
     EXPECT_CALL(host, getNFTFlags(Eq(nftId)))
         .WillOnce(testing::Throw(std::runtime_error{"nft flags came apart"}));
 
-    auto const outcome = callHost(watFor(kNftId));
+    auto const outcome = run(watFor(kNftId));
     ASSERT_FALSE(outcome.has_value());
     EXPECT_EQ(outcome.error().ter, tecINTERNAL);
     EXPECT_THAT(logged(), testing::HasSubstr("getNFTFlags"));

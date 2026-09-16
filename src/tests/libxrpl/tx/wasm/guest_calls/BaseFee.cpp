@@ -3,7 +3,7 @@
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
-#include <tx/wasm/fixtures/HostCallFixture.h>
+#include <tx/wasm/fixtures/GuestCallFixture.h>
 
 #include <cstdint>
 #include <expected>
@@ -15,11 +15,7 @@ namespace xrpl::test {
 using testing::Return;
 
 // base_fee — no input, one scalar written out.
-//
-// `abi.rs`'s `write_into` serves it, so the out region is judged *before* the host is asked:
-// an unreachable region never reaches the mock, while a too-short one does, the fit being
-// decided against the length the host reports.
-struct BaseFeeGuest : HostCallTest
+struct BaseFeeGuest : GuestCallTest
 {
     static constexpr std::int32_t kOutAt = 0;
     static constexpr std::int32_t kFeeLen = 4;
@@ -60,14 +56,12 @@ TEST_F(BaseFeeGuest, HostErrorBecomesContractReturnValue)
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::LedgerObjNotFound));
 }
 
-// `guarded` turns the throw into `InternalFatal`, which the engine treats as fatal rather
-// than passing back: the run ends, and the guest never resumes to read it.
 TEST_F(BaseFeeGuest, HostExceptionStopsTheRunAndIsLogged)
 {
     EXPECT_CALL(host, getBaseFee())
         .WillOnce(testing::Throw(std::runtime_error{"base fee came apart"}));
 
-    auto const outcome = callHost(watFor(kOut));
+    auto const outcome = run(watFor(kOut));
     ASSERT_FALSE(outcome.has_value());
     EXPECT_EQ(outcome.error().ter, tecINTERNAL);
     EXPECT_THAT(logged(), testing::HasSubstr("getBaseFee"));

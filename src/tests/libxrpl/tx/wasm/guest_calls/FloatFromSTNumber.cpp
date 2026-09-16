@@ -7,7 +7,7 @@
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
-#include <tx/wasm/fixtures/HostCallFixture.h>
+#include <tx/wasm/fixtures/GuestCallFixture.h>
 
 #include <cstdint>
 #include <expected>
@@ -37,7 +37,7 @@ serialized(std::int64_t mantissa, std::int32_t exponent)
 
 // float_from_stnumber — a serialized `STNumber` region and a rounding mode in, a float region
 // out.
-struct FloatFromSTNumberGuest : HostCallTest
+struct FloatFromSTNumberGuest : GuestCallTest
 {
     static constexpr std::int32_t kNumberAt = 0;
     static constexpr std::int32_t kOutAt = 16;
@@ -104,7 +104,7 @@ TEST_F(FloatFromSTNumberGuest, HostExceptionStopsTheRunAndIsLogged)
     EXPECT_CALL(host, floatFromSTNumber(Eq(number), kMode))
         .WillOnce(testing::Throw(std::runtime_error{"float from st number came apart"}));
 
-    auto const outcome = callHost(watFor(numberRegion, kOut, kRounding));
+    auto const outcome = run(watFor(numberRegion, kOut, kRounding));
     ASSERT_FALSE(outcome.has_value());
     EXPECT_EQ(outcome.error().ter, tecINTERNAL);
     EXPECT_THAT(logged(), testing::HasSubstr("floatFromSTNumber"));

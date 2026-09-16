@@ -1,9 +1,10 @@
 #include <xrpl/protocol/TER.h>
 #include <xrpl/tx/wasm/WasmCommon.h>
+#include <xrpl/tx/wasm/WasmVM.h>
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
-#include <tx/wasm/fixtures/HostCallFixture.h>
+#include <tx/wasm/fixtures/GuestCallFixture.h>
 #include <tx/wasm/fixtures/MockHostFunctions.h>
 #include <tx/wasm/fixtures/WasmRun.h>
 
@@ -26,7 +27,7 @@ using testing::Return;
 // `tests/host_calls.rs` covers the two regions' bounds and fit against a fake host; what only
 // this layer can show is that `CxxHost`'s forward puts the `FloatPair`'s halves into the
 // guest's regions the right way round.
-struct FloatToMantExpGuest : HostCallTest
+struct FloatToMantExpGuest : GuestCallTest
 {
     static constexpr std::int32_t kXAt = 0;
     static constexpr std::int32_t kMantissaAt = 16;
@@ -65,7 +66,7 @@ struct FloatToMantExpGuest : HostCallTest
     (func $f (param i32 i32 i32 i32 i32 i32) (result i32)))
   (memory (export "memory") 1)
   (data (i32.const {0}) "{1}")
-  (func (export "escrow_finish") (result i32)
+  (func (export "{9}") (result i32)
     (local $n i32)
     (local.set $n (call $f
       (i32.const {2}) (i32.const {3})
@@ -83,7 +84,8 @@ struct FloatToMantExpGuest : HostCallTest
             mantissaArg.len,
             exponentArg.value,
             exponentArg.len,
-            answerExpr);
+            answerExpr,
+            escrowFunctionName);
     }
 };
 
@@ -127,7 +129,7 @@ TEST_F(FloatToMantExpGuest, HostExceptionStopsTheRunAndIsLogged)
     EXPECT_CALL(host, floatToMantExp(BytesAre(kXText)))
         .WillOnce(testing::Throw(std::runtime_error{"float to mant exp came apart"}));
 
-    auto const outcome = callHost(watFor(kX, kMantissaOut, kExponentOut));
+    auto const outcome = run(watFor(kX, kMantissaOut, kExponentOut));
     ASSERT_FALSE(outcome.has_value());
     EXPECT_EQ(outcome.error().ter, tecINTERNAL);
     EXPECT_THAT(logged(), testing::HasSubstr("floatToMantExp"));

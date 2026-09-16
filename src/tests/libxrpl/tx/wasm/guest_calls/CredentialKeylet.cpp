@@ -4,7 +4,7 @@
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
-#include <tx/wasm/fixtures/HostCallFixture.h>
+#include <tx/wasm/fixtures/GuestCallFixture.h>
 #include <tx/wasm/fixtures/MockHostFunctions.h>
 
 #include <cstdint>
@@ -20,7 +20,7 @@ using testing::Return;
 //
 // The credential type has no length rule anywhere in the path, so the happy path names its
 // bytes rather than its size.
-struct CredentialKeyletGuest : HostCallTest
+struct CredentialKeyletGuest : GuestCallTest
 {
     static constexpr std::int32_t kSubjectAt = 0;
     static constexpr std::int32_t kIssuerAt = 32;
@@ -100,7 +100,7 @@ TEST_F(CredentialKeyletGuest, HostExceptionStopsTheRunAndIsLogged)
     EXPECT_CALL(host, credentialKeylet(subject, issuer, BytesAre("terms")))
         .WillOnce(testing::Throw(std::runtime_error{"credential keylet came apart"}));
 
-    auto const outcome = callHost(watFor(kSubject, kIssuer, kType, kOut));
+    auto const outcome = run(watFor(kSubject, kIssuer, kType, kOut));
     ASSERT_FALSE(outcome.has_value());
     EXPECT_EQ(outcome.error().ter, tecINTERNAL);
     EXPECT_THAT(logged(), testing::HasSubstr("credentialKeylet"));

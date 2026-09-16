@@ -4,7 +4,7 @@
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
-#include <tx/wasm/fixtures/HostCallFixture.h>
+#include <tx/wasm/fixtures/GuestCallFixture.h>
 
 #include <cstdint>
 #include <expected>
@@ -21,7 +21,7 @@ using testing::Return;
 // The shape with no out region, which is why this file has no buffer-fit case to make: the
 // slot number crosses as the call's own `i32`. It stands for the array-length family,
 // `nft_flags`, `float_cmp`, `check_sig` and `set_data`, which answer the same way.
-struct CacheLedgerObjGuest : HostCallTest
+struct CacheLedgerObjGuest : GuestCallTest
 {
     static constexpr std::int32_t kObjIdAt = 0;
     static constexpr std::int32_t kObjIdLen = static_cast<std::int32_t>(uint256::size());
@@ -58,21 +58,17 @@ TEST_F(CacheLedgerObjGuest, HostErrorBecomesContractReturnValue)
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::SlotsFull));
 }
 
-// `guarded` turns the throw into `InternalFatal`, which the engine treats as fatal rather
-// than passing back: the run ends, and the guest never resumes to read it.
 TEST_F(CacheLedgerObjGuest, HostExceptionStopsTheRunAndIsLogged)
 {
     EXPECT_CALL(host, cacheLedgerObj(Eq(objId), kSlot))
         .WillOnce(testing::Throw(std::runtime_error{"cache slot came apart"}));
 
-    auto const outcome = callHost(watFor(kObjId, kCacheIdx));
+    auto const outcome = run(watFor(kObjId, kCacheIdx));
     ASSERT_FALSE(outcome.has_value());
     EXPECT_EQ(outcome.error().ter, tecINTERNAL);
     EXPECT_THAT(logged(), testing::HasSubstr("cacheLedgerObj"));
 }
 
-// A 31-byte region is in bounds, so the engine passes it on and `HostContext` is the one to
-// refuse it — which is why the mock, one layer below, is never reached.
 TEST_F(CacheLedgerObjGuest, ObjIdOfTheWrongLengthIsRefusedWithoutAskingHost)
 {
     EXPECT_CALL(host, cacheLedgerObj).Times(0);

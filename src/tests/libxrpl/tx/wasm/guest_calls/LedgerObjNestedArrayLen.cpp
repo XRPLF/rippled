@@ -4,7 +4,7 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 #include <tx/wasm/fixtures/BytesHelpers.h>
-#include <tx/wasm/fixtures/HostCallFixture.h>
+#include <tx/wasm/fixtures/GuestCallFixture.h>
 
 #include <cstdint>
 #include <expected>
@@ -21,7 +21,7 @@ using testing::Return;
 //
 // The slot and the locator's pointer and length are three bare `i32`s on the wire, so each
 // carries a value none of the others could be mistaken for.
-struct LedgerObjNestedArrayLenGuest : HostCallTest
+struct LedgerObjNestedArrayLenGuest : GuestCallTest
 {
     static constexpr std::int32_t kLocatorAt = 16;
     static constexpr std::int32_t kLocatorLen = 12;
@@ -75,21 +75,17 @@ TEST_F(LedgerObjNestedArrayLenGuest, HostErrorBecomesContractReturnValue)
     EXPECT_EQ(hostAnswer(watFor(kCacheIdx, kLocator)), hfErrorToInt(HostFunctionError::NoArray));
 }
 
-// `guarded` turns the throw into `InternalFatal`, which the engine treats as fatal rather
-// than passing back: the run ends, and the guest never resumes to read it.
 TEST_F(LedgerObjNestedArrayLenGuest, HostExceptionStopsTheRunAndIsLogged)
 {
     EXPECT_CALL(host, getLedgerObjNestedArrayLen(kSlot, LocatorEquals(steps)))
         .WillOnce(testing::Throw(std::runtime_error{"ledger obj nested array len came apart"}));
 
-    auto const outcome = callHost(watFor(kCacheIdx, kLocator));
+    auto const outcome = run(watFor(kCacheIdx, kLocator));
     ASSERT_FALSE(outcome.has_value());
     EXPECT_EQ(outcome.error().ter, tecINTERNAL);
     EXPECT_THAT(logged(), testing::HasSubstr("getLedgerObjNestedArrayLen"));
 }
 
-// An empty region is in bounds, so the engine passes it on and `HostContext` is the one to
-// refuse it — which is why the mock, one layer below, is never reached.
 TEST_F(LedgerObjNestedArrayLenGuest, EmptyLocatorIsRefusedWithoutAskingHost)
 {
     EXPECT_CALL(host, getLedgerObjNestedArrayLen).Times(0);

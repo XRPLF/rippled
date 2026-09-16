@@ -4,7 +4,7 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 #include <tx/wasm/fixtures/BytesHelpers.h>
-#include <tx/wasm/fixtures/HostCallFixture.h>
+#include <tx/wasm/fixtures/GuestCallFixture.h>
 
 #include <cstdint>
 #include <expected>
@@ -17,10 +17,7 @@ namespace xrpl::test {
 using testing::Return;
 
 // tx_inner — a locator region in, bytes out.
-//
-// `abi.rs`'s `write_buffered` serves it, so the host is asked into a scratch buffer before
-// the out region is looked at: all three out-region axes reach the mock.
-struct TxNestedFieldGuest : HostCallTest
+struct TxNestedFieldGuest : GuestCallTest
 {
     static constexpr std::int32_t kLocatorAt = 16;
     static constexpr std::int32_t kLocatorLen = 12;
@@ -72,21 +69,17 @@ TEST_F(TxNestedFieldGuest, HostErrorBecomesContractReturnValue)
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::NotLeafField));
 }
 
-// `guarded` turns the throw into `InternalFatal`, which the engine treats as fatal rather
-// than passing back: the run ends, and the guest never resumes to read it.
 TEST_F(TxNestedFieldGuest, HostExceptionStopsTheRunAndIsLogged)
 {
     EXPECT_CALL(host, getTxNestedField(LocatorEquals(steps)))
         .WillOnce(testing::Throw(std::runtime_error{"tx nested field came apart"}));
 
-    auto const outcome = callHost(watFor(kLocator, kOut));
+    auto const outcome = run(watFor(kLocator, kOut));
     ASSERT_FALSE(outcome.has_value());
     EXPECT_EQ(outcome.error().ter, tecINTERNAL);
     EXPECT_THAT(logged(), testing::HasSubstr("getTxNestedField"));
 }
 
-// An empty region is in bounds, so the engine passes it on and `HostContext` is the one to
-// refuse it — which is why the mock, one layer below, is never reached.
 TEST_F(TxNestedFieldGuest, EmptyLocatorIsRefusedWithoutAskingHost)
 {
     EXPECT_CALL(host, getTxNestedField).Times(0);

@@ -4,7 +4,7 @@
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
-#include <tx/wasm/fixtures/HostCallFixture.h>
+#include <tx/wasm/fixtures/GuestCallFixture.h>
 
 #include <cstdint>
 #include <expected>
@@ -17,7 +17,7 @@ using testing::Eq;
 using testing::Return;
 
 // nft_taxon — an nft id region in, the taxon out as four little-endian bytes.
-struct NFTTaxonGuest : HostCallTest
+struct NFTTaxonGuest : GuestCallTest
 {
     static constexpr std::int32_t kNftIdAt = 0;
     static constexpr std::int32_t kOutAt = 32;
@@ -69,7 +69,7 @@ TEST_F(NFTTaxonGuest, HostExceptionStopsTheRunAndIsLogged)
     EXPECT_CALL(host, getNFTTaxon(Eq(nftId)))
         .WillOnce(testing::Throw(std::runtime_error{"nft taxon came apart"}));
 
-    auto const outcome = callHost(watFor(kNftId, kOut));
+    auto const outcome = run(watFor(kNftId, kOut));
     ASSERT_FALSE(outcome.has_value());
     EXPECT_EQ(outcome.error().ter, tecINTERNAL);
     EXPECT_THAT(logged(), testing::HasSubstr("getNFTTaxon"));

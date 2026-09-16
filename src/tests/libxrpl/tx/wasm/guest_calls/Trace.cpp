@@ -6,10 +6,11 @@
 #include <xrpl/tx/wasm/HostContext.h>
 #include <xrpl/tx/wasm/HostFunc.h>
 #include <xrpl/tx/wasm/WasmCommon.h>
+#include <xrpl/tx/wasm/WasmVM.h>
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
-#include <tx/wasm/fixtures/HostCallFixture.h>
+#include <tx/wasm/fixtures/GuestCallFixture.h>
 // For `TraceDataType`: declared in the cxx bridge, defined in the header it generates.
 #include <xrpl_wasm_vm_ffi_cxxbridge/lib.h>
 
@@ -54,7 +55,7 @@ serialized(STAmount const& amount)
 //
 // `hostCallWat` cannot build this one: `trace` answers nothing, so its import declares no
 // result and the module supplies the status itself.
-struct TraceGuest : HostCallTest
+struct TraceGuest : GuestCallTest
 {
     static constexpr std::int32_t kDataAt = 64;
 
@@ -71,7 +72,7 @@ struct TraceGuest : HostCallTest
   (memory (export "memory") 1)
   (data (i32.const 0) "note")
   (data (i32.const {0}) "{1}")
-  (func (export "escrow_finish") (result i32)
+  (func (export "{5}") (result i32)
     (call $trace
       (i32.const 0) (i32.const 4) (i32.const {2}) (i32.const {3}) (i32.const {4}))
     (i32.const 1)))
@@ -80,7 +81,8 @@ struct TraceGuest : HostCallTest
             watBytes(data),
             typeCode,
             dataPtr,
-            dataLen);
+            dataLen,
+            escrowFunctionName);
     }
 
     // The common case: the region the guest presents is the bytes that are there.

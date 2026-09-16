@@ -4,7 +4,7 @@
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
-#include <tx/wasm/fixtures/HostCallFixture.h>
+#include <tx/wasm/fixtures/GuestCallFixture.h>
 
 #include <cstdint>
 #include <expected>
@@ -20,9 +20,7 @@ using testing::Return;
 // Both leading arguments are bare `i32`s on the wire, so the slot and the field code are
 // values that cannot be confused for one another: a swap in `CxxHost`'s forward would
 // otherwise be invisible.
-//
-// `abi.rs`'s `write_into` serves it, so the out region is judged *before* the host is asked.
-struct LedgerObjFieldGuest : HostCallTest
+struct LedgerObjFieldGuest : GuestCallTest
 {
     static constexpr std::int32_t kOutAt = 64;
     static constexpr std::int32_t kOutLen = 8;
@@ -51,8 +49,6 @@ struct LedgerObjFieldGuest : HostCallTest
     }
 };
 
-// The shim turns the guest's `i32` into the `SField` the C++ interface takes; asserting on
-// the argument is what pins that translation rather than assuming it.
 TEST_F(LedgerObjFieldGuest, SlotAndFieldCodeReachHostInOrder)
 {
     EXPECT_CALL(host, getLedgerObjField(kSlot, testing::Ref(sfBalance))).WillOnce(Return(value));
@@ -98,14 +94,12 @@ TEST_F(LedgerObjFieldGuest, HostErrorBecomesContractReturnValue)
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::FieldNotFound));
 }
 
-// `guarded` turns the throw into `InternalFatal`, which the engine treats as fatal rather
-// than passing back: the run ends, and the guest never resumes to read it.
 TEST_F(LedgerObjFieldGuest, HostExceptionStopsTheRunAndIsLogged)
 {
     EXPECT_CALL(host, getLedgerObjField(kSlot, testing::Ref(sfBalance)))
         .WillOnce(testing::Throw(std::runtime_error{"ledger obj field came apart"}));
 
-    auto const outcome = callHost(watFor(kCacheIdx, field(), kOut));
+    auto const outcome = run(watFor(kCacheIdx, field(), kOut));
     ASSERT_FALSE(outcome.has_value());
     EXPECT_EQ(outcome.error().ter, tecINTERNAL);
     EXPECT_THAT(logged(), testing::HasSubstr("getLedgerObjField"));

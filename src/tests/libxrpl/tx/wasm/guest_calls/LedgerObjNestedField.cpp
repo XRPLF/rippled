@@ -4,7 +4,7 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 #include <tx/wasm/fixtures/BytesHelpers.h>
-#include <tx/wasm/fixtures/HostCallFixture.h>
+#include <tx/wasm/fixtures/GuestCallFixture.h>
 
 #include <cstdint>
 #include <expected>
@@ -20,10 +20,7 @@ using testing::Return;
 //
 // The slot, the locator's pointer and length and the out region's are five bare `i32`s on the
 // wire, so each carries a value none of the others could be mistaken for.
-//
-// `abi.rs`'s `write_buffered` serves it, so the host is asked into a scratch buffer before
-// the out region is looked at: all three out-region axes reach the mock.
-struct LedgerObjNestedFieldGuest : HostCallTest
+struct LedgerObjNestedFieldGuest : GuestCallTest
 {
     static constexpr std::int32_t kLocatorAt = 16;
     static constexpr std::int32_t kLocatorLen = 12;
@@ -92,21 +89,17 @@ TEST_F(LedgerObjNestedFieldGuest, HostErrorBecomesContractReturnValue)
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::NotLeafField));
 }
 
-// `guarded` turns the throw into `InternalFatal`, which the engine treats as fatal rather
-// than passing back: the run ends, and the guest never resumes to read it.
 TEST_F(LedgerObjNestedFieldGuest, HostExceptionStopsTheRunAndIsLogged)
 {
     EXPECT_CALL(host, getLedgerObjNestedField(kSlot, LocatorEquals(steps)))
         .WillOnce(testing::Throw(std::runtime_error{"ledger obj nested field came apart"}));
 
-    auto const outcome = callHost(watFor(kCacheIdx, kLocator, kOut));
+    auto const outcome = run(watFor(kCacheIdx, kLocator, kOut));
     ASSERT_FALSE(outcome.has_value());
     EXPECT_EQ(outcome.error().ter, tecINTERNAL);
     EXPECT_THAT(logged(), testing::HasSubstr("getLedgerObjNestedField"));
 }
 
-// An empty region is in bounds, so the engine passes it on and `HostContext` is the one to
-// refuse it — which is why the mock, one layer below, is never reached.
 TEST_F(LedgerObjNestedFieldGuest, EmptyLocatorIsRefusedWithoutAskingHost)
 {
     EXPECT_CALL(host, getLedgerObjNestedField).Times(0);

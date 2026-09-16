@@ -5,7 +5,7 @@
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
-#include <tx/wasm/fixtures/HostCallFixture.h>
+#include <tx/wasm/fixtures/GuestCallFixture.h>
 
 #include <cstdint>
 #include <expected>
@@ -17,7 +17,7 @@ namespace xrpl::test {
 using testing::Return;
 
 // trustline_id — two account regions and a currency in, a keylet region out.
-struct TrustLineKeyletGuest : HostCallTest
+struct TrustLineKeyletGuest : GuestCallTest
 {
     static constexpr std::int32_t kAccount1At = 0;
     static constexpr std::int32_t kAccount2At = 32;
@@ -96,7 +96,7 @@ TEST_F(TrustLineKeyletGuest, HostExceptionStopsTheRunAndIsLogged)
     EXPECT_CALL(host, trustLineKeylet(account1, account2, currency))
         .WillOnce(testing::Throw(std::runtime_error{"trust line keylet came apart"}));
 
-    auto const outcome = callHost(watFor(kAccount1, kAccount2, kCurrency, kOut));
+    auto const outcome = run(watFor(kAccount1, kAccount2, kCurrency, kOut));
     ASSERT_FALSE(outcome.has_value());
     EXPECT_EQ(outcome.error().ter, tecINTERNAL);
     EXPECT_THAT(logged(), testing::HasSubstr("trustLineKeylet"));

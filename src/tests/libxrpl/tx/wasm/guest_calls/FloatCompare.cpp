@@ -3,7 +3,7 @@
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
-#include <tx/wasm/fixtures/HostCallFixture.h>
+#include <tx/wasm/fixtures/GuestCallFixture.h>
 #include <tx/wasm/fixtures/MockHostFunctions.h>
 
 #include <cstdint>
@@ -21,7 +21,7 @@ using testing::Return;
 //
 // The verdict is a tri-state — 0 equal, 1 first greater, 2 second greater — which is why it
 // never collides with a negative error code.
-struct FloatCompareGuest : HostCallTest
+struct FloatCompareGuest : GuestCallTest
 {
     static constexpr std::int32_t kXAt = 0;
     static constexpr std::int32_t kYAt = 16;
@@ -67,7 +67,7 @@ TEST_F(FloatCompareGuest, HostExceptionStopsTheRunAndIsLogged)
     EXPECT_CALL(host, floatCompare(BytesAre(kXText), BytesAre(kYText)))
         .WillOnce(testing::Throw(std::runtime_error{"float compare came apart"}));
 
-    auto const outcome = callHost(watFor(kX, kY));
+    auto const outcome = run(watFor(kX, kY));
     ASSERT_FALSE(outcome.has_value());
     EXPECT_EQ(outcome.error().ter, tecINTERNAL);
     EXPECT_THAT(logged(), testing::HasSubstr("floatCompare"));

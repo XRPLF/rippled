@@ -3,7 +3,7 @@
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
-#include <tx/wasm/fixtures/HostCallFixture.h>
+#include <tx/wasm/fixtures/GuestCallFixture.h>
 #include <tx/wasm/fixtures/MockHostFunctions.h>
 
 #include <cstdint>
@@ -18,7 +18,7 @@ using testing::Return;
 
 // float_mult — `float_add`'s shape, and `FloatAdd.cpp` is where the reasoning behind these
 // axes is written down.
-struct FloatMultiplyGuest : HostCallTest
+struct FloatMultiplyGuest : GuestCallTest
 {
     static constexpr std::int32_t kXAt = 0;
     static constexpr std::int32_t kYAt = 16;
@@ -88,7 +88,7 @@ TEST_F(FloatMultiplyGuest, HostExceptionStopsTheRunAndIsLogged)
     EXPECT_CALL(host, floatMultiply(BytesAre(kXText), BytesAre(kYText), kMode))
         .WillOnce(testing::Throw(std::runtime_error{"float multiply came apart"}));
 
-    auto const outcome = callHost(watFor(kX, kY, kOut, kRounding));
+    auto const outcome = run(watFor(kX, kY, kOut, kRounding));
     ASSERT_FALSE(outcome.has_value());
     EXPECT_EQ(outcome.error().ter, tecINTERNAL);
     EXPECT_THAT(logged(), testing::HasSubstr("floatMultiply"));

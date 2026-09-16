@@ -4,7 +4,7 @@
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
-#include <tx/wasm/fixtures/HostCallFixture.h>
+#include <tx/wasm/fixtures/GuestCallFixture.h>
 
 #include <cstdint>
 #include <expected>
@@ -19,7 +19,7 @@ using testing::Return;
 //
 // No out region and no guest memory read at all, so the only argument axis is the field code
 // itself.
-struct CurrentLedgerObjArrayLenGuest : HostCallTest
+struct CurrentLedgerObjArrayLenGuest : GuestCallTest
 {
     static constexpr std::int32_t kCount = 5;
 
@@ -37,8 +37,6 @@ struct CurrentLedgerObjArrayLenGuest : HostCallTest
     }
 };
 
-// The shim turns the guest's `i32` into the `SField` the C++ interface takes; asserting on
-// the argument is what pins that translation rather than assuming it.
 TEST_F(CurrentLedgerObjArrayLenGuest, FieldCodeBecomesSFieldHostIsAskedFor)
 {
     EXPECT_CALL(host, getCurrentLedgerObjArrayLen(testing::Ref(sfBalance)))
@@ -65,14 +63,12 @@ TEST_F(CurrentLedgerObjArrayLenGuest, HostErrorBecomesContractReturnValue)
     EXPECT_EQ(hostAnswer(watFor(field())), hfErrorToInt(HostFunctionError::NoArray));
 }
 
-// `guarded` turns the throw into `InternalFatal`, which the engine treats as fatal rather
-// than passing back: the run ends, and the guest never resumes to read it.
 TEST_F(CurrentLedgerObjArrayLenGuest, HostExceptionStopsTheRunAndIsLogged)
 {
     EXPECT_CALL(host, getCurrentLedgerObjArrayLen(testing::Ref(sfBalance)))
         .WillOnce(testing::Throw(std::runtime_error{"current ledger obj array len came apart"}));
 
-    auto const outcome = callHost(watFor(field()));
+    auto const outcome = run(watFor(field()));
     ASSERT_FALSE(outcome.has_value());
     EXPECT_EQ(outcome.error().ter, tecINTERNAL);
     EXPECT_THAT(logged(), testing::HasSubstr("getCurrentLedgerObjArrayLen"));

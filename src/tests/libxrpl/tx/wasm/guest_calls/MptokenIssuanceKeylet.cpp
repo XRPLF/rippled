@@ -4,7 +4,7 @@
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
-#include <tx/wasm/fixtures/HostCallFixture.h>
+#include <tx/wasm/fixtures/GuestCallFixture.h>
 
 #include <cstdint>
 #include <expected>
@@ -16,7 +16,7 @@ namespace xrpl::test {
 using testing::Return;
 
 // mpt_issuance_id — an issuer region and a four-byte `seq` region in, a keylet region out.
-struct MptokenIssuanceKeyletGuest : HostCallTest
+struct MptokenIssuanceKeyletGuest : GuestCallTest
 {
     static constexpr std::int32_t kIssuerAt = 0;
     static constexpr std::int32_t kSeqAt = 32;
@@ -88,7 +88,7 @@ TEST_F(MptokenIssuanceKeyletGuest, HostExceptionStopsTheRunAndIsLogged)
     EXPECT_CALL(host, mptokenIssuanceKeylet(issuer, kSeqValue))
         .WillOnce(testing::Throw(std::runtime_error{"mptoken issuance keylet came apart"}));
 
-    auto const outcome = callHost(watFor(kIssuer, kSeq, kOut));
+    auto const outcome = run(watFor(kIssuer, kSeq, kOut));
     ASSERT_FALSE(outcome.has_value());
     EXPECT_EQ(outcome.error().ter, tecINTERNAL);
     EXPECT_THAT(logged(), testing::HasSubstr("mptokenIssuanceKeylet"));

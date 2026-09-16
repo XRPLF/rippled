@@ -20,7 +20,7 @@ namespace xrpl::test {
 // argument axis is then a value written where it is read, and a case the builder cannot
 // express — a second export, an import returning nothing — passes `hostAnswer` its own text
 // instead.
-struct HostCallTest : MockVmTest
+struct GuestCallTest : MockVmTest
 {
     // These modules declare one page, so this is the first address past guest memory: what a
     // test reaches for when it wants a region the engine must refuse.
@@ -93,16 +93,10 @@ struct HostCallTest : MockVmTest
         std::vector<Memory> const& memory = {},
         Answer answer = Answer::WrittenBytes);
 
-    [[nodiscard]] std::expected<EscrowResult, WasmTER>
-    callHost(std::string_view wat, std::string_view entryPoint = escrowFunctionName)
-    {
-        return run(wat, kAmpleGas, entryPoint);
-    }
-
     // What the contract returned, which for these modules is the host's answer or its
     // negative error code. Fails the test if the run did not complete.
     std::int32_t
-    hostAnswer(std::string_view wat, std::string_view entryPoint = escrowFunctionName);
+    hostAnswer(std::string_view wat);
 };
 
 }  // namespace xrpl::test

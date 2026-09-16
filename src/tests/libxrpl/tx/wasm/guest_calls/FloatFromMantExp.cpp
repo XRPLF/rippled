@@ -3,7 +3,7 @@
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
-#include <tx/wasm/fixtures/HostCallFixture.h>
+#include <tx/wasm/fixtures/GuestCallFixture.h>
 
 #include <cstdint>
 #include <expected>
@@ -16,7 +16,7 @@ using testing::Return;
 
 // float_from_mant_exp — an `i64` mantissa, an `i32` exponent and a rounding mode in, a float
 // region out. The three scalars carry pairwise distinct values, so a permuted forward fails.
-struct FloatFromMantExpGuest : HostCallTest
+struct FloatFromMantExpGuest : GuestCallTest
 {
     static constexpr std::int32_t kOutAt = 0;
     static constexpr std::int32_t kFloatLen = 12;
@@ -81,7 +81,7 @@ TEST_F(FloatFromMantExpGuest, HostExceptionStopsTheRunAndIsLogged)
     EXPECT_CALL(host, floatFromMantExp(kMantissa, kExponent, kMode))
         .WillOnce(testing::Throw(std::runtime_error{"float from mant exp came apart"}));
 
-    auto const outcome = callHost(watFor(kMant, kExp, kOut, kRounding));
+    auto const outcome = run(watFor(kMant, kExp, kOut, kRounding));
     ASSERT_FALSE(outcome.has_value());
     EXPECT_EQ(outcome.error().ter, tecINTERNAL);
     EXPECT_THAT(logged(), testing::HasSubstr("floatFromMantExp"));

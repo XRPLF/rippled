@@ -4,7 +4,7 @@
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
-#include <tx/wasm/fixtures/HostCallFixture.h>
+#include <tx/wasm/fixtures/GuestCallFixture.h>
 
 #include <cstdint>
 #include <expected>
@@ -23,7 +23,7 @@ using testing::Return;
 // enabled one, as the name those same bytes spell. `host_context/IsAmendmentEnabled.cpp`
 // pins that fall-through below the forward; here it is the guest's bytes that have to reach
 // both overloads.
-struct IsAmendmentEnabledGuest : HostCallTest
+struct IsAmendmentEnabledGuest : GuestCallTest
 {
     static constexpr std::int32_t kIdAt = 0;
     static constexpr std::int32_t kNameAt = 64;
@@ -118,14 +118,12 @@ TEST_F(IsAmendmentEnabledGuest, HostErrorBecomesContractReturnValue)
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::FieldNotFound));
 }
 
-// `guarded` turns the throw into `InternalFatal`, which the engine treats as fatal rather
-// than passing back: the run ends, and the guest never resumes to read it.
 TEST_F(IsAmendmentEnabledGuest, HostExceptionStopsTheRunAndIsLogged)
 {
     EXPECT_CALL(host, isAmendmentEnabled(NameMatcher(Eq(kAmendmentName))))
         .WillOnce(testing::Throw(std::runtime_error{"amendment lookup came apart"}));
 
-    auto const outcome = callHost(watFor(kName));
+    auto const outcome = run(watFor(kName));
     ASSERT_FALSE(outcome.has_value());
     EXPECT_EQ(outcome.error().ter, tecINTERNAL);
     EXPECT_THAT(logged(), testing::HasSubstr("isAmendmentEnabled"));

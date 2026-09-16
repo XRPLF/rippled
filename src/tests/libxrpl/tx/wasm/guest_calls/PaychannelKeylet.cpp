@@ -4,7 +4,7 @@
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
-#include <tx/wasm/fixtures/HostCallFixture.h>
+#include <tx/wasm/fixtures/GuestCallFixture.h>
 
 #include <cstdint>
 #include <expected>
@@ -19,7 +19,7 @@ using testing::Return;
 //
 // The declared `u32` is not a wasm scalar: it arrives as a region holding the number
 // little-endian (`args.rs`'s `InU32`), which is why `seq` below is spelled as bytes.
-struct PaychannelKeyletGuest : HostCallTest
+struct PaychannelKeyletGuest : GuestCallTest
 {
     static constexpr std::int32_t kAccountAt = 0;
     static constexpr std::int32_t kDestinationAt = 32;
@@ -102,7 +102,7 @@ TEST_F(PaychannelKeyletGuest, HostExceptionStopsTheRunAndIsLogged)
     EXPECT_CALL(host, paychannelKeylet(account, destination, kSeqValue))
         .WillOnce(testing::Throw(std::runtime_error{"paychannel keylet came apart"}));
 
-    auto const outcome = callHost(watFor(kAccount, kDestination, kSeq, kOut));
+    auto const outcome = run(watFor(kAccount, kDestination, kSeq, kOut));
     ASSERT_FALSE(outcome.has_value());
     EXPECT_EQ(outcome.error().ter, tecINTERNAL);
     EXPECT_THAT(logged(), testing::HasSubstr("paychannelKeylet"));

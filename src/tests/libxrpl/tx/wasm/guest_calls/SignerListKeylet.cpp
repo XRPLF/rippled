@@ -4,7 +4,7 @@
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
-#include <tx/wasm/fixtures/HostCallFixture.h>
+#include <tx/wasm/fixtures/GuestCallFixture.h>
 
 #include <cstdint>
 #include <expected>
@@ -16,7 +16,7 @@ namespace xrpl::test {
 using testing::Return;
 
 // signers_id — one account region in, a keylet region out.
-struct SignerListKeyletGuest : HostCallTest
+struct SignerListKeyletGuest : GuestCallTest
 {
     static constexpr std::int32_t kAccountAt = 0;
     static constexpr std::int32_t kOutAt = 32;
@@ -79,7 +79,7 @@ TEST_F(SignerListKeyletGuest, HostExceptionStopsTheRunAndIsLogged)
     EXPECT_CALL(host, signerListKeylet(account))
         .WillOnce(testing::Throw(std::runtime_error{"signer list keylet came apart"}));
 
-    auto const outcome = callHost(watFor(kAccount, kOut));
+    auto const outcome = run(watFor(kAccount, kOut));
     ASSERT_FALSE(outcome.has_value());
     EXPECT_EQ(outcome.error().ter, tecINTERNAL);
     EXPECT_THAT(logged(), testing::HasSubstr("signerListKeylet"));

@@ -4,7 +4,7 @@
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
-#include <tx/wasm/fixtures/HostCallFixture.h>
+#include <tx/wasm/fixtures/GuestCallFixture.h>
 
 #include <cstdint>
 #include <expected>
@@ -16,7 +16,7 @@ namespace xrpl::test {
 using testing::Return;
 
 // oracle_id — an account region and a four-byte `doc_id` region in, a keylet region out.
-struct OracleKeyletGuest : HostCallTest
+struct OracleKeyletGuest : GuestCallTest
 {
     static constexpr std::int32_t kAccountAt = 0;
     static constexpr std::int32_t kDocIdAt = 32;
@@ -88,7 +88,7 @@ TEST_F(OracleKeyletGuest, HostExceptionStopsTheRunAndIsLogged)
     EXPECT_CALL(host, oracleKeylet(account, kDocIdValue))
         .WillOnce(testing::Throw(std::runtime_error{"oracle keylet came apart"}));
 
-    auto const outcome = callHost(watFor(kAccount, kDocId, kOut));
+    auto const outcome = run(watFor(kAccount, kDocId, kOut));
     ASSERT_FALSE(outcome.has_value());
     EXPECT_EQ(outcome.error().ter, tecINTERNAL);
     EXPECT_THAT(logged(), testing::HasSubstr("oracleKeylet"));

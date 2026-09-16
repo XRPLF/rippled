@@ -4,7 +4,7 @@
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
-#include <tx/wasm/fixtures/HostCallFixture.h>
+#include <tx/wasm/fixtures/GuestCallFixture.h>
 
 #include <cstdint>
 #include <expected>
@@ -21,7 +21,7 @@ using testing::Return;
 // (`crates/xrpl-wasm-vm-ffi/src/lib.rs`) hands the C++ host the regions the guest wrote, in
 // the guest's order. `host_context/DelegateKeylet.cpp` enters below that forward and Rust's
 // `tests/host_calls.rs` stops above it, so a swap there is invisible to both.
-struct DelegateKeyletGuest : HostCallTest
+struct DelegateKeyletGuest : GuestCallTest
 {
     static constexpr std::int32_t kAccountAt = 0;
     static constexpr std::int32_t kAuthorizeAt = 32;
@@ -90,22 +90,17 @@ TEST_F(DelegateKeyletGuest, HostErrorBecomesContractReturnValue)
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::LedgerObjNotFound));
 }
 
-// `guarded` turns the throw into `InternalFatal`, and the engine treats that code as fatal
-// rather than passing it back: the run ends, and the guest never resumes to read it. Only
-// this layer can say so — `host_context/` sees the `InternalFatal` return and stops there.
 TEST_F(DelegateKeyletGuest, HostExceptionStopsTheRunAndIsLogged)
 {
     EXPECT_CALL(host, delegateKeylet(account, authorize))
         .WillOnce(testing::Throw(std::runtime_error{"delegate keylet came apart"}));
 
-    auto const outcome = callHost(watFor(kAccount, kAuthorize, kOut));
+    auto const outcome = run(watFor(kAccount, kAuthorize, kOut));
     ASSERT_FALSE(outcome.has_value());
     EXPECT_EQ(outcome.error().ter, tecINTERNAL);
     EXPECT_THAT(logged(), testing::HasSubstr("delegateKeylet"));
 }
 
-// A 19-byte region is in bounds, so the engine passes it on and `HostContext` is the one to
-// refuse it — which is why the mock, one layer below, is never reached.
 TEST_F(DelegateKeyletGuest, AccountOfTheWrongLengthIsRefusedWithoutAskingHost)
 {
     EXPECT_CALL(host, delegateKeylet).Times(0);
@@ -138,9 +133,6 @@ TEST_F(DelegateKeyletGuest, NegativeInputPointerIsRefusedWithoutAskingHost)
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::InvalidParams));
 }
 
-// The three cases below reach the host: this call reads guest memory as well as writing it,
-// so `abi.rs`'s `write_buffered` judges the inputs, calls the host into a scratch buffer,
-// and only then looks at where the answer was asked to go.
 TEST_F(DelegateKeyletGuest, OutRegionOneByteShortIsRefusedAfterAskingHost)
 {
     EXPECT_CALL(host, delegateKeylet(account, authorize)).WillOnce(Return(keylet));

@@ -4,7 +4,7 @@
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
-#include <tx/wasm/fixtures/HostCallFixture.h>
+#include <tx/wasm/fixtures/GuestCallFixture.h>
 
 #include <cstdint>
 #include <expected>
@@ -16,7 +16,7 @@ namespace xrpl::test {
 using testing::Return;
 
 // deposit_preauth_id — two account regions in, a keylet region out.
-struct DepositPreauthKeyletGuest : HostCallTest
+struct DepositPreauthKeyletGuest : GuestCallTest
 {
     static constexpr std::int32_t kAccountAt = 0;
     static constexpr std::int32_t kAuthorizeAt = 32;
@@ -84,7 +84,7 @@ TEST_F(DepositPreauthKeyletGuest, HostExceptionStopsTheRunAndIsLogged)
     EXPECT_CALL(host, depositPreauthKeylet(account, authorize))
         .WillOnce(testing::Throw(std::runtime_error{"deposit preauth keylet came apart"}));
 
-    auto const outcome = callHost(watFor(kAccount, kAuthorize, kOut));
+    auto const outcome = run(watFor(kAccount, kAuthorize, kOut));
     ASSERT_FALSE(outcome.has_value());
     EXPECT_EQ(outcome.error().ter, tecINTERNAL);
     EXPECT_THAT(logged(), testing::HasSubstr("depositPreauthKeylet"));

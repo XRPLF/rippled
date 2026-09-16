@@ -3,7 +3,7 @@
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
-#include <tx/wasm/fixtures/HostCallFixture.h>
+#include <tx/wasm/fixtures/GuestCallFixture.h>
 #include <tx/wasm/fixtures/MockHostFunctions.h>
 
 #include <cstdint>
@@ -17,7 +17,7 @@ namespace xrpl::test {
 using testing::Return;
 
 // float_to_int — a float region and a rounding mode in, eight little-endian bytes out.
-struct FloatToIntGuest : HostCallTest
+struct FloatToIntGuest : GuestCallTest
 {
     static constexpr std::int32_t kXAt = 0;
     static constexpr std::int32_t kOutAt = 16;
@@ -71,7 +71,7 @@ TEST_F(FloatToIntGuest, HostExceptionStopsTheRunAndIsLogged)
     EXPECT_CALL(host, floatToInt(BytesAre(kXText), kMode))
         .WillOnce(testing::Throw(std::runtime_error{"float to int came apart"}));
 
-    auto const outcome = callHost(watFor(kX, kOut, kRounding));
+    auto const outcome = run(watFor(kX, kOut, kRounding));
     ASSERT_FALSE(outcome.has_value());
     EXPECT_EQ(outcome.error().ter, tecINTERNAL);
     EXPECT_THAT(logged(), testing::HasSubstr("floatToInt"));

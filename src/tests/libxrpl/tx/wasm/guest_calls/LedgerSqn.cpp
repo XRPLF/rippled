@@ -1,11 +1,14 @@
+#include <xrpl/protocol/TER.h>
 #include <xrpl/tx/wasm/WasmCommon.h>
+#include <xrpl/tx/wasm/WasmVM.h>
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
-#include <tx/wasm/fixtures/HostCallFixture.h>
+#include <tx/wasm/fixtures/GuestCallFixture.h>
 
 #include <cstdint>
 #include <expected>
+#include <format>
 #include <string>
 #include <string_view>
 
@@ -14,7 +17,7 @@ namespace xrpl::test {
 using testing::Return;
 
 // ldgr_index — no input, one scalar output.
-struct LedgerSqnGuest : HostCallTest
+struct LedgerSqnGuest : GuestCallTest
 {
     static constexpr std::int32_t kOutAt = 0;
     static constexpr std::int32_t kSeqLen = 4;
@@ -60,17 +63,53 @@ TEST_F(LedgerSqnGuest, BufferTooSmallIsRefusedWholeNotTruncated)
     // Two bytes is not enough for the value. Returns the host's code while memory is still
     // zero, or 1 if anything was written into it — so a refused write is visibly a refusal
     // and not a truncation.
-    static constexpr std::string_view kWat = R"wat(
+    auto const wat = std::format(
+        R"wat(
 (module
   (import "host_lib" "ldgr_index" (func $ldgr_index (param i32 i32) (result i32)))
   (memory (export "memory") 1)
-  (func (export "escrow_finish") (result i32)
+  (func (export "{}") (result i32)
     (local $n i32)
     (local.set $n (call $ldgr_index (i32.const 0) (i32.const 2)))
     (select (local.get $n) (i32.const 1) (i32.eqz (i32.load (i32.const 0))))))
-)wat";
+)wat",
+        escrowFunctionName);
 
-    EXPECT_EQ(hostAnswer(kWat), hfErrorToInt(HostFunctionError::BufferTooSmall));
+    EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::BufferTooSmall));
 }
 
+TEST_F(LedgerSqnGuest, StatusIsTheScalarWidth)
+{
+    EXPECT_CALL(host, getLedgerSqn()).WillOnce(Return(0x01020304u));
+
+    auto const wat = watFor(kOut, Answer::Status);
+    EXPECT_EQ(hostAnswer(wat), kSeqLen);
+}
+
+TEST_F(LedgerSqnGuest, HostExceptionStopsTheRunAndIsLogged)
+{
+    EXPECT_CALL(host, getLedgerSqn())
+        .WillOnce(testing::Throw(std::runtime_error{"ledger sequence came apart"}));
+
+    auto const outcome = run(watFor(kOut));
+    ASSERT_FALSE(outcome.has_value());
+    EXPECT_EQ(outcome.error().ter, tecINTERNAL);
+    EXPECT_THAT(logged(), testing::HasSubstr("getLedgerSqn"));
+}
+
+TEST_F(LedgerSqnGuest, OutRegionPastMemoryIsRefusedWithoutAskingHost)
+{
+    EXPECT_CALL(host, getLedgerSqn).Times(0);
+
+    auto const wat = watFor(Arg::outRegion(kOnePage, kSeqLen));
+    EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::PointerOutOfBounds));
+}
+
+TEST_F(LedgerSqnGuest, NegativeOutPointerIsRefusedWithoutAskingHost)
+{
+    EXPECT_CALL(host, getLedgerSqn).Times(0);
+
+    auto const wat = watFor(Arg::outRegion(-1, kSeqLen));
+    EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::InvalidParams));
+}
 }  // namespace xrpl::test

@@ -3,7 +3,7 @@
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
-#include <tx/wasm/fixtures/HostCallFixture.h>
+#include <tx/wasm/fixtures/GuestCallFixture.h>
 
 #include <cstdint>
 #include <expected>
@@ -20,7 +20,7 @@ using testing::Return;
 // (`crates/xrpl-wasm-vm-ffi/src/lib.rs`) reaches the C++ host with the guest's arguments.
 // Declaration order is wasm parameter order, so `mode` is the *last* parameter, after the
 // out region's pointer and length — an engine reading it as a length would still typecheck.
-struct FloatFromIntGuest : HostCallTest
+struct FloatFromIntGuest : GuestCallTest
 {
     static constexpr std::int32_t kOutAt = 0;
     static constexpr std::int32_t kFloatLen = 12;
@@ -90,14 +90,12 @@ TEST_F(FloatFromIntGuest, HostErrorBecomesContractReturnValue)
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::FloatComputationError));
 }
 
-// `guarded` turns the throw into `InternalFatal`, which the engine treats as fatal rather
-// than passing back: the run ends, and the guest never resumes to read it.
 TEST_F(FloatFromIntGuest, HostExceptionStopsTheRunAndIsLogged)
 {
     EXPECT_CALL(host, floatFromInt(kX, kMode))
         .WillOnce(testing::Throw(std::runtime_error{"float from int came apart"}));
 
-    auto const outcome = callHost(watFor(kInt, kOut, kRounding));
+    auto const outcome = run(watFor(kInt, kOut, kRounding));
     ASSERT_FALSE(outcome.has_value());
     EXPECT_EQ(outcome.error().ter, tecINTERNAL);
     EXPECT_THAT(logged(), testing::HasSubstr("floatFromInt"));

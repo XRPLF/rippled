@@ -10,7 +10,7 @@ missing lives in a sibling layer.
 | ------------------------------------- | --------------------------------------------------- | ---- | --- | ------ | ---------------------------------------------------------------------------------------- |
 | Engine / gas / limits / ABI           | `crates/xrpl-wasm-vm`, `crates/xrpl-host-functions` | mock | ✓   | ✗      | gas, transfer budget, memory/field limits, preflight, VM limits, generated ABI           |
 | `host_context/` (`HostContextTest`)   | `.../host_context`                                  | mock | ✗   | ✗      | the `HostContext` marshalling shim alone (byte order, buffer sizing, `SField` xlat)      |
-| `guest_calls/` (`HostCallTest`)       | `.../guest_calls`                                   | mock | ✓   | ✗      | per-function **wire contract** — what the host was asked, what came back                 |
+| `guest_calls/` (`GuestCallTest`)      | `.../guest_calls`                                   | mock | ✓   | ✗      | per-function **wire contract** — what the host was asked, what came back                 |
 | `host_functions/` (`RealHostFixture`) | `.../host_functions`                                | real | ✗   | real   | each function's **actual answer** vs. a real `TxTest` ledger                             |
 | `e2e/` (`RealVmTest`)                 | `.../e2e`                                           | real | ✓   | real   | **full-stack integration** — VM + `HostContext` + real impl + real ledger                |
 | `transactor/` (`TxTest`)              | `.../transactor`                                    | real | ✓   | real   | the **transactor** around a contract — fees, reserves, limits, what each failure reports |
@@ -21,7 +21,7 @@ Run the C++ side with:
 ./build/xrpl_tests --gtest_filter='*Impl.*:*Call.*:*Guest.*:*E2e.*:WasmVMTest.*:WasmVMDeathTest.*:PreflightTest.*:BytecodeSize.*:BytecodePreflight.*:FinishFailures.*:BytecodeRun.*:GasFees.*:DataOnReject.*'
 ```
 
-(744 tests, 142 suites.) The engine-level coverage is Rust: `cd crates && cargo test`.
+The engine-level coverage is Rust: `cd crates && cargo test`.
 
 ## `fixtures/` — split by whether it needs a test framework
 

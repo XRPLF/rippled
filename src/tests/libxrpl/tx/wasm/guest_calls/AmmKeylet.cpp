@@ -7,7 +7,7 @@
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
-#include <tx/wasm/fixtures/HostCallFixture.h>
+#include <tx/wasm/fixtures/GuestCallFixture.h>
 
 #include <cstdint>
 #include <expected>
@@ -23,7 +23,7 @@ using testing::Return;
 //
 // An asset's wire length selects its kind (`parseAsset`), so the two below are an MPT id and a
 // currency followed by its issuer: two assets the host can tell apart.
-struct AmmKeyletGuest : HostCallTest
+struct AmmKeyletGuest : GuestCallTest
 {
     static constexpr std::int32_t kAsset1At = 0;
     static constexpr std::int32_t kAsset2At = 32;
@@ -99,7 +99,7 @@ TEST_F(AmmKeyletGuest, HostExceptionStopsTheRunAndIsLogged)
     EXPECT_CALL(host, ammKeylet(Eq(asset1), Eq(asset2)))
         .WillOnce(testing::Throw(std::runtime_error{"amm keylet came apart"}));
 
-    auto const outcome = callHost(watFor(kAsset1, kAsset2, kOut));
+    auto const outcome = run(watFor(kAsset1, kAsset2, kOut));
     ASSERT_FALSE(outcome.has_value());
     EXPECT_EQ(outcome.error().ter, tecINTERNAL);
     EXPECT_THAT(logged(), testing::HasSubstr("ammKeylet"));

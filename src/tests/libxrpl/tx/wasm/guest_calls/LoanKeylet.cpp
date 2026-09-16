@@ -4,7 +4,7 @@
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
-#include <tx/wasm/fixtures/HostCallFixture.h>
+#include <tx/wasm/fixtures/GuestCallFixture.h>
 
 #include <cstdint>
 #include <expected>
@@ -17,7 +17,7 @@ using testing::Eq;
 using testing::Return;
 
 // loan_id — a 32-byte loan broker id and a four-byte sequence region in, a keylet out.
-struct LoanKeyletGuest : HostCallTest
+struct LoanKeyletGuest : GuestCallTest
 {
     static constexpr std::int32_t kLoanBrokerIdAt = 0;
     static constexpr std::int32_t kSeqAt = 32;
@@ -90,7 +90,7 @@ TEST_F(LoanKeyletGuest, HostExceptionStopsTheRunAndIsLogged)
     EXPECT_CALL(host, loanKeylet(Eq(loanBrokerId), kSeqValue))
         .WillOnce(testing::Throw(std::runtime_error{"loan keylet came apart"}));
 
-    auto const outcome = callHost(watFor(kLoanBrokerId, kSeq, kOut));
+    auto const outcome = run(watFor(kLoanBrokerId, kSeq, kOut));
     ASSERT_FALSE(outcome.has_value());
     EXPECT_EQ(outcome.error().ter, tecINTERNAL);
     EXPECT_THAT(logged(), testing::HasSubstr("loanKeylet"));

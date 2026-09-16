@@ -4,7 +4,7 @@
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
-#include <tx/wasm/fixtures/HostCallFixture.h>
+#include <tx/wasm/fixtures/GuestCallFixture.h>
 
 #include <cstdint>
 #include <expected>
@@ -19,7 +19,7 @@ using testing::Return;
 //
 // Both are bare `i32`s on the wire, so the slot and the field code are values that cannot be
 // confused for one another: a swap in `CxxHost`'s forward would otherwise be invisible.
-struct LedgerObjArrayLenGuest : HostCallTest
+struct LedgerObjArrayLenGuest : GuestCallTest
 {
     static constexpr std::int32_t kCount = 5;
     static constexpr std::int32_t kSlot = 7;
@@ -41,8 +41,6 @@ struct LedgerObjArrayLenGuest : HostCallTest
     }
 };
 
-// The shim turns the guest's `i32` into the `SField` the C++ interface takes; asserting on
-// the argument is what pins that translation rather than assuming it.
 TEST_F(LedgerObjArrayLenGuest, SlotAndFieldCodeReachHostInOrder)
 {
     EXPECT_CALL(host, getLedgerObjArrayLen(kSlot, testing::Ref(sfBalance)))
@@ -81,14 +79,12 @@ TEST_F(LedgerObjArrayLenGuest, HostErrorBecomesContractReturnValue)
     EXPECT_EQ(hostAnswer(watFor(kCacheIdx, field())), hfErrorToInt(HostFunctionError::NoArray));
 }
 
-// `guarded` turns the throw into `InternalFatal`, which the engine treats as fatal rather
-// than passing back: the run ends, and the guest never resumes to read it.
 TEST_F(LedgerObjArrayLenGuest, HostExceptionStopsTheRunAndIsLogged)
 {
     EXPECT_CALL(host, getLedgerObjArrayLen(kSlot, testing::Ref(sfBalance)))
         .WillOnce(testing::Throw(std::runtime_error{"ledger obj array len came apart"}));
 
-    auto const outcome = callHost(watFor(kCacheIdx, field()));
+    auto const outcome = run(watFor(kCacheIdx, field()));
     ASSERT_FALSE(outcome.has_value());
     EXPECT_EQ(outcome.error().ter, tecINTERNAL);
     EXPECT_THAT(logged(), testing::HasSubstr("getLedgerObjArrayLen"));

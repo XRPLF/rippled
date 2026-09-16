@@ -5,7 +5,7 @@
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
-#include <tx/wasm/fixtures/HostCallFixture.h>
+#include <tx/wasm/fixtures/GuestCallFixture.h>
 
 #include <cstdint>
 #include <expected>
@@ -20,7 +20,7 @@ using testing::Return;
 // mptoken_id — a 24-byte MPT id and a 20-byte holder in, a keylet region out. The two lengths
 // differ, so a forward that swapped them would be caught by the length check before the bytes
 // were ever compared.
-struct MptokenKeyletGuest : HostCallTest
+struct MptokenKeyletGuest : GuestCallTest
 {
     static constexpr std::int32_t kMptidAt = 0;
     static constexpr std::int32_t kHolderAt = 32;
@@ -88,7 +88,7 @@ TEST_F(MptokenKeyletGuest, HostExceptionStopsTheRunAndIsLogged)
     EXPECT_CALL(host, mptokenKeylet(Eq(mptid), holder))
         .WillOnce(testing::Throw(std::runtime_error{"mptoken keylet came apart"}));
 
-    auto const outcome = callHost(watFor(kMptid, kHolder, kOut));
+    auto const outcome = run(watFor(kMptid, kHolder, kOut));
     ASSERT_FALSE(outcome.has_value());
     EXPECT_EQ(outcome.error().ter, tecINTERNAL);
     EXPECT_THAT(logged(), testing::HasSubstr("mptokenKeylet"));

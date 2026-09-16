@@ -5,7 +5,7 @@
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
-#include <tx/wasm/fixtures/HostCallFixture.h>
+#include <tx/wasm/fixtures/GuestCallFixture.h>
 
 #include <cstdint>
 #include <expected>
@@ -31,7 +31,7 @@ serialized(STAmount const& amount)
 
 // float_from_stamount — a serialized `STAmount` region and a rounding mode in, a float region
 // out.
-struct FloatFromSTAmountGuest : HostCallTest
+struct FloatFromSTAmountGuest : GuestCallTest
 {
     static constexpr std::int32_t kAmountAt = 0;
     static constexpr std::int32_t kOutAt = 16;
@@ -96,7 +96,7 @@ TEST_F(FloatFromSTAmountGuest, HostExceptionStopsTheRunAndIsLogged)
     EXPECT_CALL(host, floatFromSTAmount(Eq(amount), kMode))
         .WillOnce(testing::Throw(std::runtime_error{"float from st amount came apart"}));
 
-    auto const outcome = callHost(watFor(amountRegion, kOut, kRounding));
+    auto const outcome = run(watFor(amountRegion, kOut, kRounding));
     ASSERT_FALSE(outcome.has_value());
     EXPECT_EQ(outcome.error().ter, tecINTERNAL);
     EXPECT_THAT(logged(), testing::HasSubstr("floatFromSTAmount"));

@@ -3,7 +3,7 @@
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
-#include <tx/wasm/fixtures/HostCallFixture.h>
+#include <tx/wasm/fixtures/GuestCallFixture.h>
 
 #include <cstdint>
 #include <expected>
@@ -15,7 +15,7 @@ namespace xrpl::test {
 using testing::Return;
 
 // float_from_uint — a region and a rounding mode in, a float region out.
-struct FloatFromUintGuest : HostCallTest
+struct FloatFromUintGuest : GuestCallTest
 {
     static constexpr std::int32_t kXAt = 0;
     static constexpr std::int32_t kOutAt = 16;
@@ -82,14 +82,12 @@ TEST_F(FloatFromUintGuest, HostExceptionStopsTheRunAndIsLogged)
     EXPECT_CALL(host, floatFromUint(kValue, kMode))
         .WillOnce(testing::Throw(std::runtime_error{"float from uint came apart"}));
 
-    auto const outcome = callHost(watFor(kX, kOut, kRounding));
+    auto const outcome = run(watFor(kX, kOut, kRounding));
     ASSERT_FALSE(outcome.has_value());
     EXPECT_EQ(outcome.error().ter, tecINTERNAL);
     EXPECT_THAT(logged(), testing::HasSubstr("floatFromUint"));
 }
 
-// A seven-byte region is in bounds, so the engine passes it on and `HostContext` is the one to
-// refuse it — which is why the mock, one layer below, is never reached.
 TEST_F(FloatFromUintGuest, OperandOfTheWrongLengthIsRefusedWithoutAskingHost)
 {
     EXPECT_CALL(host, floatFromUint).Times(0);
@@ -114,9 +112,6 @@ TEST_F(FloatFromUintGuest, NegativeInputPointerIsRefusedWithoutAskingHost)
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::InvalidParams));
 }
 
-// The three cases below reach the host: this call reads guest memory as well as writing it,
-// so `abi.rs`'s `write_buffered` judges the input, calls the host into a scratch buffer, and
-// only then looks at where the answer was asked to go.
 TEST_F(FloatFromUintGuest, OutRegionOneByteShortIsRefusedAfterAskingHost)
 {
     EXPECT_CALL(host, floatFromUint(kValue, kMode)).WillOnce(Return(result));

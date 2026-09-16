@@ -3,7 +3,7 @@
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
-#include <tx/wasm/fixtures/HostCallFixture.h>
+#include <tx/wasm/fixtures/GuestCallFixture.h>
 #include <tx/wasm/fixtures/MockHostFunctions.h>
 
 #include <cstdint>
@@ -23,7 +23,7 @@ using testing::Return;
 // order, which is why the two carry distinct bytes. `host_context/FloatAdd.cpp` enters below
 // that forward and Rust's `tests/host_calls.rs` stops above it, so a swap there is invisible
 // to both. `float_sub`, `float_mult`, `float_div` and `float_pow` are built the same way.
-struct FloatAddGuest : HostCallTest
+struct FloatAddGuest : GuestCallTest
 {
     static constexpr std::int32_t kXAt = 0;
     static constexpr std::int32_t kYAt = 16;
@@ -91,7 +91,7 @@ TEST_F(FloatAddGuest, HostExceptionStopsTheRunAndIsLogged)
     EXPECT_CALL(host, floatAdd(BytesAre(kXText), BytesAre(kYText), kMode))
         .WillOnce(testing::Throw(std::runtime_error{"float add came apart"}));
 
-    auto const outcome = callHost(watFor(kX, kY, kOut, kRounding));
+    auto const outcome = run(watFor(kX, kY, kOut, kRounding));
     ASSERT_FALSE(outcome.has_value());
     EXPECT_EQ(outcome.error().ter, tecINTERNAL);
     EXPECT_THAT(logged(), testing::HasSubstr("floatAdd"));
@@ -121,9 +121,6 @@ TEST_F(FloatAddGuest, NegativeInputPointerIsRefusedWithoutAskingHost)
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::InvalidParams));
 }
 
-// The three cases below reach the host: this call reads guest memory as well as writing it,
-// so `abi.rs`'s `write_buffered` judges the inputs, calls the host into a scratch buffer, and
-// only then looks at where the answer was asked to go.
 TEST_F(FloatAddGuest, OutRegionOneByteShortIsRefusedAfterAskingHost)
 {
     EXPECT_CALL(host, floatAdd(BytesAre(kXText), BytesAre(kYText), kMode)).WillOnce(Return(result));

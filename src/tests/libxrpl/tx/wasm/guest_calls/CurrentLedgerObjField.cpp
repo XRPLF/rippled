@@ -1,10 +1,11 @@
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/TER.h>
 #include <xrpl/tx/wasm/WasmCommon.h>
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
-#include <tx/wasm/fixtures/HostCallFixture.h>
+#include <tx/wasm/fixtures/GuestCallFixture.h>
 
 #include <cstdint>
 #include <expected>
@@ -15,7 +16,7 @@ namespace xrpl::test {
 using testing::Return;
 
 // home_le_field — a scalar field code in, bytes out.
-struct CurrentLedgerObjFieldGuest : HostCallTest
+struct CurrentLedgerObjFieldGuest : GuestCallTest
 {
     static constexpr std::int32_t kOutAt = 0;
     static constexpr std::int32_t kOutLen = 32;
@@ -36,8 +37,6 @@ struct CurrentLedgerObjFieldGuest : HostCallTest
     }
 };
 
-// The shim turns the guest's `i32` into the `SField` the C++ interface takes; asserting on
-// the argument is what pins that translation rather than assuming it.
 TEST_F(CurrentLedgerObjFieldGuest, FieldCodeBecomesSFieldHostIsAskedFor)
 {
     EXPECT_CALL(host, getCurrentLedgerObjField(testing::Ref(sfBalance)))
@@ -84,4 +83,39 @@ TEST_F(CurrentLedgerObjFieldGuest, FieldPastProtocolCapIsTooLarge)
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::DataFieldTooLarge));
 }
 
+TEST_F(CurrentLedgerObjFieldGuest, HostExceptionStopsTheRunAndIsLogged)
+{
+    EXPECT_CALL(host, getCurrentLedgerObjField(testing::Ref(sfBalance)))
+        .WillOnce(testing::Throw(std::runtime_error{"ledger object field came apart"}));
+
+    auto const outcome = run(watFor(field(), kOut));
+    ASSERT_FALSE(outcome.has_value());
+    EXPECT_EQ(outcome.error().ter, tecINTERNAL);
+    EXPECT_THAT(logged(), testing::HasSubstr("getCurrentLedgerObjField"));
+}
+
+TEST_F(CurrentLedgerObjFieldGuest, OutRegionOneByteShortIsRefusedAfterAskingHost)
+{
+    EXPECT_CALL(host, getCurrentLedgerObjField(testing::Ref(sfBalance)))
+        .WillOnce(Return(Bytes{1, 2, 3, 4}));
+
+    auto const wat = watFor(field(), Arg::outRegion(kOutAt, 3));
+    EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::BufferTooSmall));
+}
+
+TEST_F(CurrentLedgerObjFieldGuest, OutRegionPastMemoryIsRefusedWithoutAskingHost)
+{
+    EXPECT_CALL(host, getCurrentLedgerObjField).Times(0);
+
+    auto const wat = watFor(field(), Arg::outRegion(kOnePage, kOutLen));
+    EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::PointerOutOfBounds));
+}
+
+TEST_F(CurrentLedgerObjFieldGuest, NegativeOutPointerIsRefusedWithoutAskingHost)
+{
+    EXPECT_CALL(host, getCurrentLedgerObjField).Times(0);
+
+    auto const wat = watFor(field(), Arg::outRegion(-1, kOutLen));
+    EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::InvalidParams));
+}
 }  // namespace xrpl::test

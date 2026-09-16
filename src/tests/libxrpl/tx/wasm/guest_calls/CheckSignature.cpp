@@ -4,7 +4,7 @@
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
-#include <tx/wasm/fixtures/HostCallFixture.h>
+#include <tx/wasm/fixtures/GuestCallFixture.h>
 #include <tx/wasm/fixtures/MockHostFunctions.h>
 
 #include <cstdint>
@@ -17,7 +17,7 @@ namespace xrpl::test {
 using testing::Return;
 
 // check_sig — three byte regions in, the verdict as the return value.
-struct CheckSignatureGuest : HostCallTest
+struct CheckSignatureGuest : GuestCallTest
 {
     static constexpr std::int32_t kMessageAt = 0;
     static constexpr std::int32_t kSignatureAt = 32;
@@ -79,7 +79,7 @@ TEST_F(CheckSignatureGuest, HostExceptionStopsTheRunAndIsLogged)
     EXPECT_CALL(host, checkSignature(BytesAre("msg"), BytesAre("sig"), BytesAre("key")))
         .WillOnce(testing::Throw(std::runtime_error{"signature check came apart"}));
 
-    auto const outcome = callHost(watFor(kMessage, kSignature, kPubkey));
+    auto const outcome = run(watFor(kMessage, kSignature, kPubkey));
     ASSERT_FALSE(outcome.has_value());
     EXPECT_EQ(outcome.error().ter, tecINTERNAL);
     EXPECT_THAT(logged(), testing::HasSubstr("checkSignature"));

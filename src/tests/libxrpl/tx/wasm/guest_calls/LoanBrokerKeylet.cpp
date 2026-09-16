@@ -4,7 +4,7 @@
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
-#include <tx/wasm/fixtures/HostCallFixture.h>
+#include <tx/wasm/fixtures/GuestCallFixture.h>
 
 #include <cstdint>
 #include <expected>
@@ -16,7 +16,7 @@ namespace xrpl::test {
 using testing::Return;
 
 // loan_broker_id — an owner region and a four-byte `seq` region in, a keylet region out.
-struct LoanBrokerKeyletGuest : HostCallTest
+struct LoanBrokerKeyletGuest : GuestCallTest
 {
     static constexpr std::int32_t kOwnerAt = 0;
     static constexpr std::int32_t kSeqAt = 32;
@@ -88,7 +88,7 @@ TEST_F(LoanBrokerKeyletGuest, HostExceptionStopsTheRunAndIsLogged)
     EXPECT_CALL(host, loanBrokerKeylet(owner, kSeqValue))
         .WillOnce(testing::Throw(std::runtime_error{"loan broker keylet came apart"}));
 
-    auto const outcome = callHost(watFor(kOwner, kSeq, kOut));
+    auto const outcome = run(watFor(kOwner, kSeq, kOut));
     ASSERT_FALSE(outcome.has_value());
     EXPECT_EQ(outcome.error().ter, tecINTERNAL);
     EXPECT_THAT(logged(), testing::HasSubstr("loanBrokerKeylet"));

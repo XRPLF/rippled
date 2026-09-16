@@ -1,4 +1,4 @@
-#include <tx/wasm/fixtures/HostCallFixture.h>
+#include <tx/wasm/fixtures/GuestCallFixture.h>
 
 #include <xrpl/protocol/TER.h>
 #include <xrpl/tx/wasm/WasmVM.h>
@@ -17,14 +17,14 @@ namespace xrpl::test {
 
 namespace {
 
-using Kind = HostCallTest::Arg::Kind;
+using Kind = GuestCallTest::Arg::Kind;
 
 // The wasm value types `args` lowers to, and the constants that spell it at the call site.
 // Both switch over the same kinds in the same order, which is what keeps a module's declared
 // signature and the arguments it passes from disagreeing. Neither carries a `default`, so a
 // kind added to `Arg` is a `-Wswitch` warning in both rather than a silent `i32`.
 std::string
-paramList(std::vector<HostCallTest::Arg> const& args)
+paramList(std::vector<GuestCallTest::Arg> const& args)
 {
     std::string params;
     for (auto const& arg : args)
@@ -47,7 +47,7 @@ paramList(std::vector<HostCallTest::Arg> const& args)
 }
 
 std::string
-argList(std::vector<HostCallTest::Arg> const& args)
+argList(std::vector<GuestCallTest::Arg> const& args)
 {
     std::string constants;
     for (auto const& arg : args)
@@ -70,7 +70,7 @@ argList(std::vector<HostCallTest::Arg> const& args)
 }
 
 std::string
-dataSegments(std::vector<HostCallTest::Memory> const& memory)
+dataSegments(std::vector<GuestCallTest::Memory> const& memory)
 {
     std::string segments;
     for (auto const& seed : memory)
@@ -84,14 +84,19 @@ dataSegments(std::vector<HostCallTest::Memory> const& memory)
 }  // namespace
 
 std::string
-HostCallTest::hostCallWat(
+GuestCallTest::hostCallWat(
     std::string_view importName,
     std::vector<Arg> const& args,
     std::vector<Memory> const& memory,
     Answer answer)
 {
-    auto const out =
-        std::ranges::find_if(args, [](Arg const& arg) { return arg.kind == Arg::Kind::OutRegion; });
+    auto const isOut = [](Arg const& arg) { return arg.kind == Arg::Kind::OutRegion; };
+    auto const out = std::ranges::find_if(args, isOut);
+
+    // Nothing else catches this: a second out region still fits the declared arity, and
+    // only the first is read back.
+    EXPECT_LE(std::ranges::count_if(args, isOut), 1)
+        << "hostCallWat reads back one out region; write the module by hand for two";
 
     // `if` rather than `select`, which evaluates both arms: the load would trap for the
     // tests whose out pointer is deliberately out of bounds, and those runs are meant to
@@ -123,9 +128,9 @@ HostCallTest::hostCallWat(
 }
 
 std::int32_t
-HostCallTest::hostAnswer(std::string_view wat, std::string_view entryPoint)
+GuestCallTest::hostAnswer(std::string_view wat)
 {
-    auto const outcome = callHost(wat, entryPoint);
+    auto const outcome = run(wat);
     if (!outcome)
     {
         ADD_FAILURE() << "the run did not complete: " << transToken(outcome.error().ter)

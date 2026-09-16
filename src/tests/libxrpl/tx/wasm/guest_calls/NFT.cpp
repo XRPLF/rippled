@@ -5,7 +5,7 @@
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
-#include <tx/wasm/fixtures/HostCallFixture.h>
+#include <tx/wasm/fixtures/GuestCallFixture.h>
 
 #include <cstdint>
 #include <expected>
@@ -19,7 +19,7 @@ using testing::Eq;
 using testing::Return;
 
 // nft_uri — an account region and an nft id region in, the token's URI out.
-struct NFTGuest : HostCallTest
+struct NFTGuest : GuestCallTest
 {
     static constexpr std::int32_t kAccountAt = 0;
     static constexpr std::int32_t kNftIdAt = 32;
@@ -82,7 +82,7 @@ TEST_F(NFTGuest, HostExceptionStopsTheRunAndIsLogged)
     EXPECT_CALL(host, getNFT(Eq(account), Eq(nftId)))
         .WillOnce(testing::Throw(std::runtime_error{"nft uri came apart"}));
 
-    auto const outcome = callHost(watFor(kAccount, kNftId, kOut));
+    auto const outcome = run(watFor(kAccount, kNftId, kOut));
     ASSERT_FALSE(outcome.has_value());
     EXPECT_EQ(outcome.error().ter, tecINTERNAL);
     EXPECT_THAT(logged(), testing::HasSubstr("getNFT"));

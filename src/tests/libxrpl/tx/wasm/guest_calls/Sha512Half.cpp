@@ -1,8 +1,9 @@
+#include <xrpl/protocol/TER.h>
 #include <xrpl/tx/wasm/WasmCommon.h>
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
-#include <tx/wasm/fixtures/HostCallFixture.h>
+#include <tx/wasm/fixtures/GuestCallFixture.h>
 #include <tx/wasm/fixtures/MockHostFunctions.h>
 
 #include <cstdint>
@@ -14,7 +15,7 @@ namespace xrpl::test {
 using testing::Return;
 
 // sha512_half — bytes in and bytes out, the shape that needs the engine's output buffer.
-struct Sha512HalfGuest : HostCallTest
+struct Sha512HalfGuest : GuestCallTest
 {
     static constexpr std::int32_t kOutAt = 0;
     static constexpr std::int32_t kInputAt = 64;
@@ -74,4 +75,54 @@ TEST_F(Sha512HalfGuest, HostErrorBecomesContractReturnValue)
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::InvalidParams));
 }
 
+TEST_F(Sha512HalfGuest, HostExceptionStopsTheRunAndIsLogged)
+{
+    EXPECT_CALL(host, computeSha512HalfHash)
+        .WillOnce(testing::Throw(std::runtime_error{"digest came apart"}));
+
+    auto const outcome = run(watFor(kInput, kOut));
+    ASSERT_FALSE(outcome.has_value());
+    EXPECT_EQ(outcome.error().ter, tecINTERNAL);
+    EXPECT_THAT(logged(), testing::HasSubstr("sha512Half"));
+}
+
+TEST_F(Sha512HalfGuest, InputRegionPastMemoryIsRefusedWithoutAskingHost)
+{
+    EXPECT_CALL(host, computeSha512HalfHash).Times(0);
+
+    auto const wat = watFor(Arg::region(kOnePage, kInputLen), kOut);
+    EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::PointerOutOfBounds));
+}
+
+TEST_F(Sha512HalfGuest, NegativeInputPointerIsRefusedWithoutAskingHost)
+{
+    EXPECT_CALL(host, computeSha512HalfHash).Times(0);
+
+    auto const wat = watFor(Arg::region(-1, kInputLen), kOut);
+    EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::InvalidParams));
+}
+
+TEST_F(Sha512HalfGuest, OutRegionOneByteShortIsRefusedAfterAskingHost)
+{
+    EXPECT_CALL(host, computeSha512HalfHash(BytesAre("abc"))).WillOnce(Return(digest()));
+
+    auto const wat = watFor(kInput, Arg::outRegion(kOutAt, kDigestLen - 1));
+    EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::BufferTooSmall));
+}
+
+TEST_F(Sha512HalfGuest, OutRegionPastMemoryIsRefusedAfterAskingHost)
+{
+    EXPECT_CALL(host, computeSha512HalfHash(BytesAre("abc"))).WillOnce(Return(digest()));
+
+    auto const wat = watFor(kInput, Arg::outRegion(kOnePage, kDigestLen));
+    EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::PointerOutOfBounds));
+}
+
+TEST_F(Sha512HalfGuest, NegativeOutPointerIsRefusedAfterAskingHost)
+{
+    EXPECT_CALL(host, computeSha512HalfHash(BytesAre("abc"))).WillOnce(Return(digest()));
+
+    auto const wat = watFor(kInput, Arg::outRegion(-1, kDigestLen));
+    EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::InvalidParams));
+}
 }  // namespace xrpl::test

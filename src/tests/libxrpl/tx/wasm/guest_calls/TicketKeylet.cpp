@@ -4,7 +4,7 @@
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
-#include <tx/wasm/fixtures/HostCallFixture.h>
+#include <tx/wasm/fixtures/GuestCallFixture.h>
 
 #include <cstdint>
 #include <expected>
@@ -16,7 +16,7 @@ namespace xrpl::test {
 using testing::Return;
 
 // ticket_id — an account region and a four-byte `seq` region in, a keylet region out.
-struct TicketKeyletGuest : HostCallTest
+struct TicketKeyletGuest : GuestCallTest
 {
     static constexpr std::int32_t kAccountAt = 0;
     static constexpr std::int32_t kSeqAt = 32;
@@ -88,7 +88,7 @@ TEST_F(TicketKeyletGuest, HostExceptionStopsTheRunAndIsLogged)
     EXPECT_CALL(host, ticketKeylet(account, kSeqValue))
         .WillOnce(testing::Throw(std::runtime_error{"ticket keylet came apart"}));
 
-    auto const outcome = callHost(watFor(kAccount, kSeq, kOut));
+    auto const outcome = run(watFor(kAccount, kSeq, kOut));
     ASSERT_FALSE(outcome.has_value());
     EXPECT_EQ(outcome.error().ter, tecINTERNAL);
     EXPECT_THAT(logged(), testing::HasSubstr("ticketKeylet"));

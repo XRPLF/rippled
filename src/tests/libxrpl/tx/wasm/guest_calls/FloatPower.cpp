@@ -3,7 +3,7 @@
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
-#include <tx/wasm/fixtures/HostCallFixture.h>
+#include <tx/wasm/fixtures/GuestCallFixture.h>
 #include <tx/wasm/fixtures/MockHostFunctions.h>
 
 #include <cstdint>
@@ -20,7 +20,7 @@ using testing::Return;
 // `FloatAdd.cpp` is where the reasoning behind these axes is written down; the difference
 // here is that the second operand is a scalar, and it is followed by two more `i32`s that a
 // permuted forward could put in its place.
-struct FloatPowerGuest : HostCallTest
+struct FloatPowerGuest : GuestCallTest
 {
     static constexpr std::int32_t kXAt = 0;
     static constexpr std::int32_t kOutAt = 16;
@@ -83,7 +83,7 @@ TEST_F(FloatPowerGuest, HostExceptionStopsTheRunAndIsLogged)
     EXPECT_CALL(host, floatPower(BytesAre(kXText), kN, kMode))
         .WillOnce(testing::Throw(std::runtime_error{"float power came apart"}));
 
-    auto const outcome = callHost(watFor(kX, kDegree, kOut, kRounding));
+    auto const outcome = run(watFor(kX, kDegree, kOut, kRounding));
     ASSERT_FALSE(outcome.has_value());
     EXPECT_EQ(outcome.error().ter, tecINTERNAL);
     EXPECT_THAT(logged(), testing::HasSubstr("floatPower"));

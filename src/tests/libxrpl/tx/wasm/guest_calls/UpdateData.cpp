@@ -3,7 +3,7 @@
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
-#include <tx/wasm/fixtures/HostCallFixture.h>
+#include <tx/wasm/fixtures/GuestCallFixture.h>
 #include <tx/wasm/fixtures/MockHostFunctions.h>
 
 #include <cstdint>
@@ -19,7 +19,7 @@ using testing::Return;
 //
 // The only mutating call with no out region, so the guest learns nothing but the count; what
 // this layer has to show is that the bytes it wrote are the bytes the host is handed.
-struct UpdateDataGuest : HostCallTest
+struct UpdateDataGuest : GuestCallTest
 {
     static constexpr std::int32_t kDataAt = 0;
     static constexpr std::int32_t kDataLen = 5;
@@ -52,14 +52,12 @@ TEST_F(UpdateDataGuest, HostErrorBecomesContractReturnValue)
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::DataFieldTooLarge));
 }
 
-// `guarded` turns the throw into `InternalFatal`, which the engine treats as fatal rather
-// than passing back: the run ends, and the guest never resumes to read it.
 TEST_F(UpdateDataGuest, HostExceptionStopsTheRunAndIsLogged)
 {
     EXPECT_CALL(host, updateData(BytesAre("hello")))
         .WillOnce(testing::Throw(std::runtime_error{"update data came apart"}));
 
-    auto const outcome = callHost(watFor(kData));
+    auto const outcome = run(watFor(kData));
     ASSERT_FALSE(outcome.has_value());
     EXPECT_EQ(outcome.error().ter, tecINTERNAL);
     EXPECT_THAT(logged(), testing::HasSubstr("updateData"));
