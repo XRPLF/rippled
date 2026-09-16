@@ -18,7 +18,7 @@ namespace xrpl::test {
 
 // A contract reads a field of its current ledger object (a real escrow) end to end: the real
 // VM runs the guest, `HostContext` marshals the field code into an `SField`, the real impl
-// reads the real ledger, and the byte count comes back to the guest. `host_calls/` proves the
+// reads the real ledger, and the byte count comes back to the guest. `guest_calls/` proves the
 // marshalling with a mock and `host_functions/` proves the impl's answer without a VM; this
 // proves the two agree over a real ledger.
 struct CurrentLedgerObjFieldE2e : RealVmTest

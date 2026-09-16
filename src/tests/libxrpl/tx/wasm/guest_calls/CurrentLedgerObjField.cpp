@@ -15,7 +15,7 @@ namespace xrpl::test {
 using testing::Return;
 
 // home_le_field — a scalar field code in, bytes out.
-struct CurrentLedgerObjFieldCall : HostCallTest
+struct CurrentLedgerObjFieldGuest : HostCallTest
 {
     static constexpr std::int32_t kOutAt = 0;
     static constexpr std::int32_t kOutLen = 32;
@@ -38,7 +38,7 @@ struct CurrentLedgerObjFieldCall : HostCallTest
 
 // The shim turns the guest's `i32` into the `SField` the C++ interface takes; asserting on
 // the argument is what pins that translation rather than assuming it.
-TEST_F(CurrentLedgerObjFieldCall, FieldCodeBecomesSFieldHostIsAskedFor)
+TEST_F(CurrentLedgerObjFieldGuest, FieldCodeBecomesSFieldHostIsAskedFor)
 {
     EXPECT_CALL(host, getCurrentLedgerObjField(testing::Ref(sfBalance)))
         .WillOnce(Return(Bytes{1, 2, 3}));
@@ -47,7 +47,7 @@ TEST_F(CurrentLedgerObjFieldCall, FieldCodeBecomesSFieldHostIsAskedFor)
     EXPECT_EQ(hostAnswer(wat), 3) << "the length the host reported";
 }
 
-TEST_F(CurrentLedgerObjFieldCall, FieldBytesReachTheGuestsOutRegion)
+TEST_F(CurrentLedgerObjFieldGuest, FieldBytesReachTheGuestsOutRegion)
 {
     EXPECT_CALL(host, getCurrentLedgerObjField(testing::Ref(sfBalance)))
         .WillOnce(Return(Bytes{1, 2, 3, 4}));
@@ -56,7 +56,7 @@ TEST_F(CurrentLedgerObjFieldCall, FieldBytesReachTheGuestsOutRegion)
     EXPECT_EQ(hostAnswer(wat), 0x04030201) << "the four bytes, little-endian";
 }
 
-TEST_F(CurrentLedgerObjFieldCall, UnknownFieldCodeIsRefusedWithoutAskingHost)
+TEST_F(CurrentLedgerObjFieldGuest, UnknownFieldCodeIsRefusedWithoutAskingHost)
 {
     EXPECT_CALL(host, getCurrentLedgerObjField).Times(0);
 
@@ -64,7 +64,7 @@ TEST_F(CurrentLedgerObjFieldCall, UnknownFieldCodeIsRefusedWithoutAskingHost)
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::InvalidField));
 }
 
-TEST_F(CurrentLedgerObjFieldCall, HostErrorBecomesContractReturnValue)
+TEST_F(CurrentLedgerObjFieldGuest, HostErrorBecomesContractReturnValue)
 {
     EXPECT_CALL(host, getCurrentLedgerObjField)
         .WillOnce(Return(std::unexpected(HostFunctionError::FieldNotFound)));
@@ -75,7 +75,7 @@ TEST_F(CurrentLedgerObjFieldCall, HostErrorBecomesContractReturnValue)
 
 // The field cap bounds the status, not just the bytes: a host reporting a length past
 // `kMaxWasmDataLength` is too large whatever the guest's buffer was.
-TEST_F(CurrentLedgerObjFieldCall, FieldPastProtocolCapIsTooLarge)
+TEST_F(CurrentLedgerObjFieldGuest, FieldPastProtocolCapIsTooLarge)
 {
     EXPECT_CALL(host, getCurrentLedgerObjField)
         .WillOnce(Return(Bytes(kMaxWasmDataLength + 1, 0xab)));

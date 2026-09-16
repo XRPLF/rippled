@@ -14,7 +14,7 @@ namespace xrpl::test {
 using testing::Return;
 
 // ldgr_index — no input, one scalar output.
-struct LedgerSqnCall : HostCallTest
+struct LedgerSqnGuest : HostCallTest
 {
     static constexpr std::int32_t kOutAt = 0;
     static constexpr std::int32_t kSeqLen = 4;
@@ -28,7 +28,7 @@ struct LedgerSqnCall : HostCallTest
     }
 };
 
-TEST_F(LedgerSqnCall, SequenceReachesGuestAsFourLittleEndianBytes)
+TEST_F(LedgerSqnGuest, SequenceReachesGuestAsFourLittleEndianBytes)
 {
     EXPECT_CALL(host, getLedgerSqn()).WillOnce(Return(0x01020304u));
 
@@ -38,7 +38,7 @@ TEST_F(LedgerSqnCall, SequenceReachesGuestAsFourLittleEndianBytes)
     EXPECT_EQ(hostAnswer(wat), 0x01020304);
 }
 
-TEST_F(LedgerSqnCall, HostErrorBecomesContractReturnValue)
+TEST_F(LedgerSqnGuest, HostErrorBecomesContractReturnValue)
 {
     EXPECT_CALL(host, getLedgerSqn())
         .WillOnce(Return(std::unexpected(HostFunctionError::LedgerObjNotFound)));
@@ -53,7 +53,7 @@ TEST_F(LedgerSqnCall, HostErrorBecomesContractReturnValue)
 //
 // Its own module, because showing that the refusal wrote *nothing* needs the guest to read
 // its memory back after the call, which is more than one host call's worth of module.
-TEST_F(LedgerSqnCall, BufferTooSmallIsRefusedWholeNotTruncated)
+TEST_F(LedgerSqnGuest, BufferTooSmallIsRefusedWholeNotTruncated)
 {
     EXPECT_CALL(host, getLedgerSqn()).WillOnce(Return(0x01020304u));
 

@@ -14,7 +14,7 @@ namespace xrpl::test {
 using testing::Return;
 
 // sha512_half — bytes in and bytes out, the shape that needs the engine's output buffer.
-struct Sha512HalfCall : HostCallTest
+struct Sha512HalfGuest : HostCallTest
 {
     static constexpr std::int32_t kOutAt = 0;
     static constexpr std::int32_t kInputAt = 64;
@@ -49,7 +49,7 @@ struct Sha512HalfCall : HostCallTest
 
 // Both directions in one call: the guest's bytes reach the host borrowed from its memory, and
 // the answer comes back into the same memory through the engine's buffer.
-TEST_F(Sha512HalfCall, GuestBytesReachHostAndDigestComesBack)
+TEST_F(Sha512HalfGuest, GuestBytesReachHostAndDigestComesBack)
 {
     EXPECT_CALL(host, computeSha512HalfHash(BytesAre("abc"))).WillOnce(Return(digest()));
 
@@ -57,7 +57,7 @@ TEST_F(Sha512HalfCall, GuestBytesReachHostAndDigestComesBack)
     EXPECT_EQ(hostAnswer(wat), 0x0a0b0c0d) << "the digest's first four bytes, little-endian";
 }
 
-TEST_F(Sha512HalfCall, DigestIsThirtyTwoBytes)
+TEST_F(Sha512HalfGuest, DigestIsThirtyTwoBytes)
 {
     EXPECT_CALL(host, computeSha512HalfHash).WillOnce(Return(digest()));
 
@@ -65,7 +65,7 @@ TEST_F(Sha512HalfCall, DigestIsThirtyTwoBytes)
     EXPECT_EQ(hostAnswer(wat), kDigestLen);
 }
 
-TEST_F(Sha512HalfCall, HostErrorBecomesContractReturnValue)
+TEST_F(Sha512HalfGuest, HostErrorBecomesContractReturnValue)
 {
     EXPECT_CALL(host, computeSha512HalfHash)
         .WillOnce(Return(std::unexpected(HostFunctionError::InvalidParams)));
