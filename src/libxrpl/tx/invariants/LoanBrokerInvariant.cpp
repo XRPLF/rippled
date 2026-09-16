@@ -201,7 +201,8 @@ ValidLoanBroker::finalize(
                         "Loan Broker deletion must not create or modify another Loan Broker";
                     return false;
                 }
-                if (deletedKey != keylet::loanBroker(tx[sfLoanBrokerID]).key)
+if (!tx.isFieldPresent(sfLoanBrokerID) ||
+    deletedKey != keylet::loanBroker(tx[sfLoanBrokerID]).key)
                 {
                     JLOG(j.fatal()) << "Invariant failed: " <<  //
                         "deleted Loan Broker does not match the LoanBrokerID in the transaction";
