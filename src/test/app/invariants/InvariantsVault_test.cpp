@@ -1699,7 +1699,7 @@ class InvariantsVault_test : public InvariantsBase
                 eraseLoan,
                 XRPAmount{},
                 STTx{ttLOAN_DELETE, [](STObject& tx) { tx.setFieldH256(sfLoanID, uint256(42)); }},
-                {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
+                {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
                 precloseLoan);
         }
 
