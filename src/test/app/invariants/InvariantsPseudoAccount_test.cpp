@@ -771,6 +771,58 @@ class InvariantsPseudoAccount_test : public InvariantsBase
                 {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
                 createTwoBrokers);
         }
+
+        // A LoanBrokerDelete that modifies a broker without deleting one must
+        // fail the invariant, but only with fixCleanup3_5_0 enabled and only
+        // when the transaction succeeded.
+        {
+            using Outcome = std::pair<TER, std::string>;
+            auto const deleteNoBroker = [&, this](FeatureBitset features, TER initialResult) {
+                Env env{*this, features};
+                Account const a1{"A1"};
+                Account const a2{"A2"};
+                env.fund(XRP(1000), a1, a2);
+                env.close();
+                PrettyAsset const xrpAsset{xrpIssue(), 1'000'000};
+                auto const brokerKeylet = createLoanBroker(a1, env, xrpAsset);
+                if (!BEAST_EXPECT(env.le(brokerKeylet)))
+                    return Outcome{initialResult, {}};
+                env.close();
+
+                OpenView ov{*env.current()};
+                STTx const tx{ttLOAN_BROKER_DELETE, [](STObject&) {}};
+                test::StreamSink sink{beast::Severity::Warning};
+                beast::Journal const jlog{sink};
+                ApplyContext ac{
+                    env.app(), ov, tx, tesSUCCESS, env.current()->fees().base, TapNone, jlog};
+                CurrentTransactionRulesGuard const rulesGuard(ov.rules());
+
+                auto sleBroker = ac.view().peek(brokerKeylet);
+                if (!BEAST_EXPECT(sleBroker))
+                    return Outcome{initialResult, {}};
+                ac.view().update(sleBroker);
+
+                auto transactor = makeTransactor(ac);
+                if (!BEAST_EXPECT(transactor))
+                    return Outcome{initialResult, {}};
+                TER const ter = transactor->checkInvariants(
+                    initialResult, XRPAmount{}, Transactor::InvariantScope::Full);
+                return Outcome{ter, sink.messages().str()};
+            };
+
+            static constexpr char const* kNoBrokerDeleted =
+                "Loan Broker deletion succeeded without deleting a Loan Broker";
+
+            auto const [ter, log] = deleteNoBroker(all_, tesSUCCESS);
+            BEAST_EXPECT(log.contains(kNoBrokerDeleted));
+            BEAST_EXPECT(ter == tecINVARIANT_FAILED);
+            // Gated on fixCleanup3_5_0: before it, this state went unreported.
+            BEAST_EXPECT(!deleteNoBroker(all_ - fixCleanup3_5_0, tesSUCCESS)
+                              .second.contains(kNoBrokerDeleted));
+            // Gated on the transaction having succeeded, too. A LoanBrokerDelete
+            // that ends in a tec deletes nothing, and must not be faulted for it.
+            BEAST_EXPECT(!deleteNoBroker(all_, tecKILLED).second.contains(kNoBrokerDeleted));
+        }
     }
 
     void

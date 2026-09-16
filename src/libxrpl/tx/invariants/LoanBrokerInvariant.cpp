@@ -31,8 +31,9 @@ ValidLoanBroker::visitEntry(bool isDelete, SLE::const_ref before, SLE::const_ref
     //   (a) only ttLOAN_BROKER_DELETE removes a broker
     //   (b) at most one broker is removed per transaction
     //   (c) DebtTotal and OwnerCount were zero before deletion
-    //   (d) the removed broker is the one named by the transaction, and no
-    //       other broker was created or modified alongside it
+    //   (d) a ttLOAN_BROKER_DELETE removes exactly one broker, it is the one
+    //       named by the transaction, and no other broker was created or
+    //       modified alongside it
     // `before` is the pre-transaction state, which is what
     // LoanBrokerDelete::preclaim reads. Erased trust lines and MPTokens need no
     // special handling here: the `if (after)` branch below already records them.
@@ -116,7 +117,7 @@ ValidLoanBroker::goodZeroDirectory(
 bool
 ValidLoanBroker::finalize(
     STTx const& tx,
-    TER const,
+    TER const result,
     XRPAmount const,
     ReadView const& view,
     beast::Journal const& j)
@@ -134,8 +135,9 @@ ValidLoanBroker::finalize(
     // LoanBrokerDelete-must-not-touch-any-loan rule: even a broker that has
     // finished paying off every loan may still hold non-zero exposure until
     // its LoanBrokerCoverWithdraw settles, and neither state is safe to
-    // delete. From fixCleanup3_5_0 the removed broker must also be the one
-    // named by the transaction, with no other broker touched alongside it.
+    // delete. From fixCleanup3_5_0 a successful ttLOAN_BROKER_DELETE must
+    // remove a broker, that broker must be the one named by the transaction,
+    // and no other broker may be touched alongside it.
     if (view.rules().enabled(featureLendingProtocolV1_1))
     {
         if (multipleBrokerDeletions_)
@@ -206,6 +208,14 @@ ValidLoanBroker::finalize(
                     return false;
                 }
             }
+        }
+        else if (fix350Enabled && tx.getTxnType() == ttLOAN_BROKER_DELETE && isTesSuccess(result))
+        {
+            // LoanBrokerDelete's privileges do not require LoanBrokerDelete to erase broker
+            // objects, and nothing else requires it.
+            JLOG(j.fatal()) << "Invariant failed: " <<  //
+                "Loan Broker deletion succeeded without deleting a Loan Broker";
+            return false;
         }
     }
 

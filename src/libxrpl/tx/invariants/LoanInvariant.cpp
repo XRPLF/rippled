@@ -273,10 +273,20 @@ ValidLoan::finalize(
         return false;
     }
 
-    // An erased Loan must be exactly the Loan named by a ttLOAN_DELETE, and
-    // that transaction must not leave any other Loan created or modified.
-    if (lpV11Enabled && fix350Enabled && !deletedLoans_.empty())
+    // A successful ttLOAN_DELETE must erase exactly one Loan, that Loan must be
+    // the one named by its LoanID, and no other Loan may be created or
+    // modified. Keyed off the transaction type.
+    // LoanDelete has no privileges, so nothing else requires it to erase
+    // anything.
+    if (lpV11Enabled && fix350Enabled && txType == ttLOAN_DELETE && isTesSuccess(result))
     {
+        if (deletedLoans_.empty())
+        {
+            JLOG(j.fatal()) << "Invariant failed: loan deletion succeeded "
+                               "without deleting a loan";
+            return false;
+        }
+
         if (deletedLoans_.size() > 1)
         {
             JLOG(j.fatal()) << "Invariant failed: more than one Loan deleted";
@@ -290,8 +300,7 @@ ValidLoan::finalize(
             return false;
         }
 
-        if (txType != ttLOAN_DELETE ||
-            deletedLoans_.front().first->key() != keylet::loan(tx[sfLoanID]).key)
+        if (deletedLoans_.front().first->key() != keylet::loan(tx[sfLoanID]).key)
         {
             JLOG(j.fatal()) << "Invariant failed: deleted loan does not match "
                                "the LoanID in the transaction";

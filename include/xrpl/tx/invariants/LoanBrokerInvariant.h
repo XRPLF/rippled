@@ -24,9 +24,10 @@ namespace xrpl {
  *    `OwnerCount` is zero and its pre-state `DebtTotal` rounds to zero at the
  *    vault's `AssetsTotal` scale, as `LoanBrokerDelete::preclaim` requires.
  * 3. At most one `ltLOAN_BROKER` may be deleted in a single transaction.
- * 4. From `fixCleanup3_5_0` onward, an erased `ltLOAN_BROKER` must be the one
- *    identified by the transaction's `LoanBrokerID`, and that transaction must
- *    not leave any other broker created or modified.
+ * 4. From `fixCleanup3_5_0` onward, a successful `ttLOAN_BROKER_DELETE` must
+ *    erase exactly one `ltLOAN_BROKER`, it must be the one identified by the
+ *    transaction's `LoanBrokerID`, and the transaction must not leave any other
+ *    broker created or modified.
  *
  */
 class ValidLoanBroker

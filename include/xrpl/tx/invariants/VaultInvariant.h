@@ -50,6 +50,11 @@ namespace xrpl {
  *   the one identified by a ttVAULT_DELETE transaction's VaultID, and that
  *   transaction must not leave any other vault created or modified
  *
+ * Deletion of a vault pseudo-account's holding is enforced by
+ * ValidMPTIssuance (see MPTInvariant.cpp): from fixCleanup3_5_0 onward a
+ * ttVAULT_DELETE may only erase the holdings of the pseudo-account it deletes,
+ * not those of a vault that survives the transaction.
+ *
  * Immutability of VaultKind, SubscriptionDate and RedemptionDate is enforced
  * by NoModifiedUnmodifiableFields (see InvariantCheck.cpp). From
  * featureLendingProtocolV1_1 onwards, immutability of the vault's Asset,

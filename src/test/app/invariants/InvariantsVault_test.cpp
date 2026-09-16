@@ -607,6 +607,106 @@ class InvariantsVault_test : public InvariantsBase
             {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
             createOneVault);
 
+        // A VaultDelete that deletes a1's vault must not erase a2's vault's
+        // trust line along with it. The third leg checks that deleting a1's vault
+        // on its own stays silent.
+        {
+            using Holding = std::pair<TER, std::string>;
+            auto const deleteVaultAndHolding = [&, this](FeatureBitset features, bool eraseOther) {
+                Env env{*this, features};
+                Account const gw{"gw"};
+                Account const a1{"A1"};
+                Account const a2{"A2"};
+                env.fund(XRP(1000), gw, a1, a2);
+                env.close();
+
+                // An IOU vault, so that the pseudo-account holds the asset in a
+                // RippleState of its own. An XRP vault has no holding to erase.
+                PrettyAsset const asset{gw["IOU"]};
+                Vault const vault{env};
+                auto [txCreate1, vaultKeylet1] = vault.create({.owner = a1, .asset = asset});
+                env(txCreate1);
+                auto [txCreate2, vaultKeylet2] = vault.create({.owner = a2, .asset = asset});
+                env(txCreate2);
+                env.close();
+
+                OpenView ov{*env.current()};
+                STTx const tx{ttVAULT_DELETE, [&vaultKeylet1](STObject& obj) {
+                                  obj.setFieldH256(sfVaultID, vaultKeylet1.key);
+                              }};
+                test::StreamSink sink{beast::Severity::Warning};
+                beast::Journal const jlog{sink};
+                ApplyContext ac{
+                    env.app(), ov, tx, tesSUCCESS, env.current()->fees().base, TapNone, jlog};
+                CurrentTransactionRulesGuard const rulesGuard(ov.rules());
+
+                // Read (don't touch) the vaults: a pseudo-account's holding is
+                // reachable from the share issuance, which records it in
+                // sfReferenceHolding for every non-XRP vault from
+                // fixCleanup3_2_0 onward.
+                auto const holdingKeylet = [&](Keylet const& k) -> std::optional<Keylet> {
+                    auto const sleVault = ac.view().read(k);
+                    if (!sleVault)
+                        return std::nullopt;
+                    auto const sleShares =
+                        ac.view().read(keylet::mptokenIssuance(sleVault->at(sfShareMPTID)));
+                    if (!sleShares || !sleShares->isFieldPresent(sfReferenceHolding))
+                        return std::nullopt;
+                    return keylet::unchecked(sleShares->getFieldH256(sfReferenceHolding));
+                };
+                auto const holding1 = holdingKeylet(vaultKeylet1);
+                auto const holding2 = holdingKeylet(vaultKeylet2);
+                if (!BEAST_EXPECT(holding1 && holding2))
+                    return Holding{tesSUCCESS, {}};
+
+                auto sleVault1 = ac.view().peek(vaultKeylet1);
+                if (!BEAST_EXPECT(sleVault1))
+                    return Holding{tesSUCCESS, {}};
+                auto sleShares1 =
+                    ac.view().peek(keylet::mptokenIssuance(sleVault1->at(sfShareMPTID)));
+                auto slePseudo1 = ac.view().peek(keylet::account(sleVault1->at(sfAccount)));
+                // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
+                auto sleHolding1 = ac.view().peek(*holding1);
+                if (!BEAST_EXPECT(sleShares1 && slePseudo1 && sleHolding1))
+                    return Holding{tesSUCCESS, {}};
+                ac.view().erase(sleHolding1);
+                ac.view().erase(sleShares1);
+                ac.view().erase(slePseudo1);
+                ac.view().erase(sleVault1);
+
+                if (eraseOther)
+                {
+                    // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
+                    auto sleHolding2 = ac.view().peek(*holding2);
+                    if (!BEAST_EXPECT(sleHolding2))
+                        return Holding{tesSUCCESS, {}};
+                    ac.view().erase(sleHolding2);
+                }
+
+                auto transactor = makeTransactor(ac);
+                if (!BEAST_EXPECT(transactor))
+                    return Holding{tesSUCCESS, {}};
+                TER const ter = transactor->checkInvariants(
+                    tesSUCCESS, XRPAmount{}, Transactor::InvariantScope::Full);
+                return Holding{ter, sink.messages().str()};
+            };
+
+            static constexpr char const* kOtherHolding =
+                "vault deletion deleted another vault pseudo-account's holding";
+
+            auto const [terHolding, logHolding] = deleteVaultAndHolding(all_, true);
+            BEAST_EXPECT(logHolding.contains(kOtherHolding));
+            BEAST_EXPECT(terHolding == tecINVARIANT_FAILED);
+            // Gated on fixCleanup3_5_0: before it the transaction type alone
+            // excused the other vault's erased holding.
+            BEAST_EXPECT(!deleteVaultAndHolding(all_ - fixCleanup3_5_0, true)
+                              .second.contains(kOtherHolding));
+            // The deleted vault's own holding stays exempt. Its pseudo-account
+            // is gone from the post-transaction view, so nothing there
+            // identifies the erased holding as a vault's.
+            BEAST_EXPECT(!deleteVaultAndHolding(all_, false).second.contains(kOtherHolding));
+        }
+
         doInvariantCheck(
             {"vault operation succeeded without modifying a vault"},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
@@ -1696,6 +1796,60 @@ class InvariantsVault_test : public InvariantsBase
             BEAST_EXPECT(sink.messages().str().contains("more than one Loan deleted") == withFix);
             if (withFix)
                 BEAST_EXPECT(result == tecINVARIANT_FAILED);
+        }
+
+        // A LoanDelete that modifies a loan without deleting one must fail the
+        // invariant, but only with fixCleanup3_5_0 enabled and only when the
+        // transaction succeeded.
+        {
+            using Outcome = std::pair<TER, std::string>;
+            auto const deleteNoLoan = [&, this](FeatureBitset features, TER initialResult) {
+                Env env{*this, features};
+                Account const a1{"A1"};
+                Account const a2{"A2"};
+                env.fund(XRP(1000), a1, a2);
+                auto const keys = createClosedXrpBroker(a1, env);
+                if (!BEAST_EXPECT(keys))
+                    return Outcome{initialResult, {}};
+                // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
+                auto const& brokerKeylet = keys->second;
+
+                OpenView ov{*env.current()};
+                auto const loanKeylet = keylet::loan(brokerKeylet.key, SeqProxy::rawSequence(1));
+                ov.rawInsert(makeLoanSle(brokerKeylet.key, 1, a1.id()));
+
+                STTx const tx{ttLOAN_DELETE, [](STObject&) {}};
+                test::StreamSink sink{beast::Severity::Warning};
+                beast::Journal const jlog{sink};
+                ApplyContext ac{
+                    env.app(), ov, tx, tesSUCCESS, env.current()->fees().base, TapNone, jlog};
+                CurrentTransactionRulesGuard const rulesGuard(ov.rules());
+
+                auto sleLoan = ac.view().peek(loanKeylet);
+                if (!BEAST_EXPECT(sleLoan))
+                    return Outcome{initialResult, {}};
+                ac.view().update(sleLoan);
+
+                auto transactor = makeTransactor(ac);
+                if (!BEAST_EXPECT(transactor))
+                    return Outcome{initialResult, {}};
+                TER const ter = transactor->checkInvariants(
+                    initialResult, XRPAmount{}, Transactor::InvariantScope::Full);
+                return Outcome{ter, sink.messages().str()};
+            };
+
+            static constexpr char const* kNoLoanDeleted =
+                "loan deletion succeeded without deleting a loan";
+
+            auto const [ter, log] = deleteNoLoan(all_, tesSUCCESS);
+            BEAST_EXPECT(log.contains(kNoLoanDeleted));
+            BEAST_EXPECT(ter == tecINVARIANT_FAILED);
+            // Gated on fixCleanup3_5_0: before it, this state went unreported.
+            BEAST_EXPECT(
+                !deleteNoLoan(all_ - fixCleanup3_5_0, tesSUCCESS).second.contains(kNoLoanDeleted));
+            // Gated on the transaction having succeeded, too. A LoanDelete that
+            // ends in a tec deletes nothing, and must not be faulted for it.
+            BEAST_EXPECT(!deleteNoLoan(all_, tecKILLED).second.contains(kNoLoanDeleted));
         }
 
         STTx const loanSetTx{
