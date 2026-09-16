@@ -4,7 +4,6 @@
 #include <benchmark/benchmark.h>
 #include <benchmarks/libxrpl/wasm/BenchFixtures.h>
 #include <benchmarks/libxrpl/wasm/WasmBench.h>
-#include <tx/wasm/fixtures/OwnedLocator.h>
 
 #include <cstdint>
 #include <string_view>

@@ -11,12 +11,12 @@
 #include <xrpl/protocol/SeqProxy.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol_autogen/transactions/EscrowCreate.h>
-#include <xrpl/tx/wasm/WasmCommon.h>
 
 #include <helpers/Account.h>
 #include <helpers/TxTest.h>
 #include <tx/wasm/fixtures/FloatConstants.h>
 #include <tx/wasm/fixtures/NftSetup.h>
+#include <tx/wasm/fixtures/OwnedLocator.h>
 #include <tx/wasm/fixtures/WasmLedger.h>
 
 #include <string>
