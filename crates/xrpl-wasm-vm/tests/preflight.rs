@@ -3,6 +3,9 @@
 //! `check` reaches its verdict from the compiled module alone, so these tests take
 //! no host — except the ones that put the same module through `run` to compare the
 //! two.
+//!
+//! These screen with `check`, which reports the earliest refusal; the last section
+//! is what `check_all` adds.
 
 mod support;
 
@@ -733,5 +736,68 @@ fn structurally_malformed_modules_are_refused() {
     for (label, h) in cases {
         let refusal = xrpl_wasm_vm::check(&hex(h), ENTRY).expect_err(label);
         assert_stage!(refusal, CheckError::Compile(_));
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Reporting every refusal
+// ---------------------------------------------------------------------------
+
+/// A module that breaks every rule past compiling, once each.
+fn a_module_faulting_at_every_stage() -> String {
+    format!(
+        r#"(module
+             (import "host_lib" "no_such_function" (func (param i32) (result i32)))
+             (import "host_lib" "ldgr_index" (func (param i64 i64) (result i32)))
+             (memory (export "memory") {pages})
+             (table (export "t") {elements} funcref)
+             (func (export "{ENTRY}") (result i64) (i64.const 0)))"#,
+        pages = MAX_MEMORY_PAGES + 1,
+        elements = MAX_TABLE_ELEMENTS + 1,
+    )
+}
+
+#[test]
+fn check_all_reports_a_refusal_from_every_stage() {
+    let refusals = xrpl_wasm_vm::check_all(&assemble(&a_module_faulting_at_every_stage()), ENTRY)
+        .expect_err("this module breaks every rule past compiling");
+
+    assert!(
+        matches!(
+            refusals.as_slice(),
+            [
+                CheckError::Import(_),
+                CheckError::Signature(_),
+                CheckError::EntryPoint(_),
+                CheckError::Memory(_),
+                CheckError::Table(_),
+            ]
+        ),
+        "{refusals:?}"
+    );
+}
+
+/// What lets the consensus path keep fail-fast without a second implementation of
+/// the stage order to drift from.
+#[test]
+fn check_reports_what_check_all_reports_first() {
+    let wasm = assemble(&a_module_faulting_at_every_stage());
+
+    let first = xrpl_wasm_vm::check(&wasm, ENTRY).expect_err("five faults");
+    let all = xrpl_wasm_vm::check_all(&wasm, ENTRY).expect_err("five faults");
+
+    assert_eq!(first.to_string(), all[0].to_string());
+}
+
+/// Nothing to report is `Ok`, never an empty `Vec`.
+#[test]
+fn check_all_passes_a_runnable_contract() {
+    let wat = module(
+        &[import::LDGR_INDEX, ONE_PAGE],
+        "(call $ldgr_index (i32.const 0) (i32.const 4))",
+    );
+
+    if let Err(refusals) = xrpl_wasm_vm::check_all(&assemble(&wat), ENTRY) {
+        panic!("expected this module to pass, but: {refusals:?}\n{wat}");
     }
 }
