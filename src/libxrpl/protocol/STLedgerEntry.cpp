@@ -18,12 +18,11 @@
 #include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/jss.h>
 
-#include <boost/format/free_funcs.hpp>
-
 #include <algorithm>
 #include <array>
 #include <cstddef>
 #include <cstdint>
+#include <format>
 #include <stdexcept>
 #include <string>
 #include <utility>
@@ -111,7 +110,7 @@ STLedgerEntry::getSType() const
 std::string
 STLedgerEntry::getText() const
 {
-    return str(boost::format("{ %s, %s }") % to_string(key_) % STObject::getText());
+    return std::format("{{ {}, {} }}", to_string(key_), STObject::getText());
 }
 
 json::Value

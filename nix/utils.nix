@@ -1,4 +1,8 @@
-{ nixpkgs, nixpkgs-custom-glibc }:
+{
+  nixpkgs,
+  nixpkgs-custom-glibc,
+  rust-overlay,
+}:
 function:
 nixpkgs.lib.genAttrs
   [
@@ -10,7 +14,12 @@ nixpkgs.lib.genAttrs
   (
     system:
     function {
-      pkgs = import nixpkgs { inherit system; };
+      # rust-overlay adds `pkgs.rust-bin`, from which we build the pinned Rust
+      # toolchain (see packages.nix). Consumed by both the CI image and dev shell.
+      pkgs = import nixpkgs {
+        inherit system;
+        overlays = [ (import rust-overlay) ];
+      };
       # glibc 2.31 — matches the system libc on Ubuntu 20.04 LTS. Sourced
       # from the nixpkgs snapshot pinned via the `nixpkgs-custom-glibc`
       # flake input, so the build uses the compiler from that snapshot

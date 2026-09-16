@@ -12,7 +12,7 @@
 #include <memory>
 #include <stdexcept>
 
-namespace xrpl::NodeStore {
+namespace xrpl::node_store {
 
 /**
  * Convert a NodeObject from in-memory to database format.
@@ -68,7 +68,7 @@ class EncodedBlob
 public:
     explicit EncodedBlob(std::shared_ptr<NodeObject> const& obj)
         : size_([&obj]() {
-            XRPL_ASSERT(obj, "xrpl::NodeStore::EncodedBlob::EncodedBlob : non-null input");
+            XRPL_ASSERT(obj, "xrpl::node_store::EncodedBlob::EncodedBlob : non-null input");
 
             if (!obj)
                 throw std::runtime_error("EncodedBlob: unseated std::shared_ptr used.");
@@ -88,7 +88,7 @@ public:
         XRPL_ASSERT(
             ((ptr_ == payload_.data()) && (size_ <= payload_.size())) ||
                 ((ptr_ != payload_.data()) && (size_ > payload_.size())),
-            "xrpl::NodeStore::EncodedBlob::~EncodedBlob : valid payload "
+            "xrpl::node_store::EncodedBlob::~EncodedBlob : valid payload "
             "pointer");
 
         if (ptr_ != payload_.data())
@@ -114,4 +114,4 @@ public:
     }
 };
 
-}  // namespace xrpl::NodeStore
+}  // namespace xrpl::node_store

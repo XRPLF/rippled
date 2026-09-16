@@ -5,7 +5,7 @@
 #include <memory>
 #include <vector>
 
-namespace xrpl::NodeStore {
+namespace xrpl::node_store {
 
 // This is only used to pre-allocate the array for
 // batch objects and does not affect the amount written.
@@ -36,4 +36,4 @@ enum class Status {
  */
 using Batch = std::vector<std::shared_ptr<NodeObject>>;
 
-}  // namespace xrpl::NodeStore
+}  // namespace xrpl::node_store

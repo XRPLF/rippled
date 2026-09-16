@@ -46,6 +46,7 @@
 #include <xrpl/protocol/STArray.h>
 #include <xrpl/protocol/STVector256.h>
 #include <xrpl/protocol/STXChainBridge.h>
+#include <xrpl/protocol/SeqProxy.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/jss.h>
 
@@ -349,7 +350,7 @@ class LedgerEntry_test : public beast::unit_test::Suite
                 json::Value const jrr = env.rpc(
                     apiVersion, "json", "ledger_entry", to_string(correctRequest))[jss::result];
                 auto const expectedErrMsg =
-                    RPC::expectedFieldMessage(fieldName, getTypeName(typeID));
+                    rpc::expectedFieldMessage(fieldName, getTypeName(typeID));
                 checkErrorValue(jrr, expectedError, expectedErrMsg, location);
             };
 
@@ -383,13 +384,13 @@ class LedgerEntry_test : public beast::unit_test::Suite
                 json::Value const jrr = env.rpc(
                     apiVersion, "json", "ledger_entry", to_string(correctRequest))[jss::result];
                 checkErrorValue(
-                    jrr, "malformedRequest", RPC::missingFieldMessage(fieldName.cStr()), location);
+                    jrr, "malformedRequest", rpc::missingFieldMessage(fieldName.cStr()), location);
 
                 correctRequest[parentFieldName][fieldName] = json::ValueType::Null;
                 json::Value const jrr2 = env.rpc(
                     apiVersion, "json", "ledger_entry", to_string(correctRequest))[jss::result];
                 checkErrorValue(
-                    jrr2, "malformedRequest", RPC::missingFieldMessage(fieldName.cStr()), location);
+                    jrr2, "malformedRequest", rpc::missingFieldMessage(fieldName.cStr()), location);
             }
             auto tryField = [&](json::Value fieldValue) -> void {
                 correctRequest[parentFieldName][fieldName] = fieldValue;
@@ -399,7 +400,7 @@ class LedgerEntry_test : public beast::unit_test::Suite
                 checkErrorValue(
                     jrr,
                     expectedError,
-                    RPC::expectedFieldMessage(fieldName, getTypeName(typeID)),
+                    rpc::expectedFieldMessage(fieldName, getTypeName(typeID)),
                     location);
             };
 
@@ -807,7 +808,7 @@ class LedgerEntry_test : public beast::unit_test::Suite
         env.fund(XRP(10000), alice);
         env.close();
 
-        auto const checkId = keylet::check(env.master, env.seq(env.master));
+        auto const checkId = keylet::check(env.master, SeqProxy::rawSequence(env.seq(env.master)));
 
         env(check::create(env.master, alice, XRP(100)));
         env.close();
@@ -1083,8 +1084,8 @@ class LedgerEntry_test : public beast::unit_test::Suite
                 json::Value const jrr =
                     env.rpc("json", "ledger_entry", to_string(jvParams))[jss::result];
                 auto const expectedErrMsg = fieldValue.isNull()
-                    ? RPC::missingFieldMessage(jss::issuer.cStr())
-                    : RPC::expectedFieldMessage(jss::issuer, "AccountID");
+                    ? rpc::missingFieldMessage(jss::issuer.cStr())
+                    : rpc::expectedFieldMessage(jss::issuer, "AccountID");
                 checkErrorValue(jrr, "malformedAuthorizedCredentials", expectedErrMsg);
             };
 
@@ -1114,7 +1115,7 @@ class LedgerEntry_test : public beast::unit_test::Suite
             checkErrorValue(
                 jrr[jss::result],
                 "malformedAuthorizedCredentials",
-                RPC::expectedFieldMessage(jss::authorized_credentials, "array"));
+                rpc::expectedFieldMessage(jss::authorized_credentials, "array"));
         }
 
         {
@@ -1134,8 +1135,8 @@ class LedgerEntry_test : public beast::unit_test::Suite
                 json::Value const jrr =
                     env.rpc("json", "ledger_entry", to_string(jvParams))[jss::result];
                 auto const expectedErrMsg = fieldValue.isNull()
-                    ? RPC::missingFieldMessage(jss::credential_type.cStr())
-                    : RPC::expectedFieldMessage(jss::credential_type, "hex string");
+                    ? rpc::missingFieldMessage(jss::credential_type.cStr())
+                    : rpc::expectedFieldMessage(jss::credential_type, "hex string");
                 checkErrorValue(jrr, "malformedAuthorizedCredentials", expectedErrMsg);
             };
 
@@ -1527,7 +1528,8 @@ class LedgerEntry_test : public beast::unit_test::Suite
         uint256 const nftokenID0 = token::getNextID(env, issuer, 0, tfTransferable);
         env(token::mint(issuer, 0), Txflags(tfTransferable));
         env.close();
-        uint256 const offerID = keylet::nftokenOffer(issuer, env.seq(issuer)).key;
+        uint256 const offerID =
+            keylet::nftokenOffer(issuer, SeqProxy::rawSequence(env.seq(issuer))).key;
         env(token::createOffer(issuer, nftokenID0, drops(1)),
             token::Destination(buyer),
             Txflags(tfSellNFToken));
@@ -1711,7 +1713,8 @@ class LedgerEntry_test : public beast::unit_test::Suite
 
         std::string const ledgerHash{to_string(env.closed()->header().hash)};
 
-        uint256 const payChanIndex{keylet::payChannel(alice, env.master, env.seq(alice) - 1).key};
+        uint256 const payChanIndex{
+            keylet::payChannel(alice, env.master, SeqProxy::rawSequence(env.seq(alice) - 1)).key};
         {
             // Request the payment channel using its index.
             json::Value jvParams;
@@ -1836,7 +1839,7 @@ class LedgerEntry_test : public beast::unit_test::Suite
                         checkErrorValue(
                             jrr,
                             "malformedAddress",
-                            RPC::expectedFieldMessage(jss::accounts, "array of Accounts"));
+                            rpc::expectedFieldMessage(jss::accounts, "array of Accounts"));
                     }
 
                     {
@@ -1851,7 +1854,7 @@ class LedgerEntry_test : public beast::unit_test::Suite
                         checkErrorValue(
                             jrr,
                             "malformedAddress",
-                            RPC::expectedFieldMessage(jss::accounts, "array of Accounts"));
+                            rpc::expectedFieldMessage(jss::accounts, "array of Accounts"));
                     }
                 };
 
@@ -1949,7 +1952,7 @@ class LedgerEntry_test : public beast::unit_test::Suite
         env.close();
 
         // Create two tickets.
-        std::uint32_t const tkt1{env.seq(env.master) + 1};
+        SeqProxy tkt1 = SeqProxy::rawTicket(env.seq(env.master));
         env(ticket::create(env.master, 2));
         env.close();
 
@@ -1960,7 +1963,7 @@ class LedgerEntry_test : public beast::unit_test::Suite
         {
             // Not a valid ticket requested by index.
             json::Value jvParams;
-            jvParams[jss::ticket] = to_string(getTicketIndex(env.master, tkt1 - 1));
+            jvParams[jss::ticket] = to_string(keylet::ticket(env.master, tkt1).key);
             jvParams[jss::ledger_hash] = ledgerHash;
             json::Value const jrr =
                 env.rpc("json", "ledger_entry", to_string(jvParams))[jss::result];
@@ -1969,31 +1972,34 @@ class LedgerEntry_test : public beast::unit_test::Suite
         {
             // First real ticket requested by index.
             json::Value jvParams;
-            jvParams[jss::ticket] = to_string(getTicketIndex(env.master, tkt1));
+            tkt1.advanceBy(1);
+            jvParams[jss::ticket] = to_string(keylet::ticket(env.master, tkt1).key);
             jvParams[jss::ledger_hash] = ledgerHash;
             json::Value const jrr =
                 env.rpc("json", "ledger_entry", to_string(jvParams))[jss::result];
             BEAST_EXPECT(jrr[jss::node][sfLedgerEntryType.jsonName] == jss::Ticket);
-            BEAST_EXPECT(jrr[jss::node][sfTicketSequence.jsonName] == tkt1);
+            BEAST_EXPECT(jrr[jss::node][sfTicketSequence.jsonName] == tkt1.value());
         }
         {
             // Second real ticket requested by account and sequence.
+            tkt1.advanceBy(1);
             json::Value jvParams;
             jvParams[jss::ticket] = json::ValueType::Object;
             jvParams[jss::ticket][jss::account] = env.master.human();
-            jvParams[jss::ticket][jss::ticket_seq] = tkt1 + 1;
+            jvParams[jss::ticket][jss::ticket_seq] = tkt1.value();
             jvParams[jss::ledger_hash] = ledgerHash;
             json::Value const jrr =
                 env.rpc("json", "ledger_entry", to_string(jvParams))[jss::result];
             BEAST_EXPECT(
-                jrr[jss::node][jss::index] == to_string(getTicketIndex(env.master, tkt1 + 1)));
+                jrr[jss::node][jss::index] == to_string(keylet::ticket(env.master, tkt1).key));
         }
         {
             // Not a valid ticket requested by account and sequence.
+            tkt1.advanceBy(1);
             json::Value jvParams;
             jvParams[jss::ticket] = json::ValueType::Object;
             jvParams[jss::ticket][jss::account] = env.master.human();
-            jvParams[jss::ticket][jss::ticket_seq] = tkt1 + 2;
+            jvParams[jss::ticket][jss::ticket_seq] = tkt1.value();
             jvParams[jss::ledger_hash] = ledgerHash;
             json::Value const jrr =
                 env.rpc("json", "ledger_entry", to_string(jvParams))[jss::result];
@@ -2253,7 +2259,8 @@ class LedgerEntry_test : public beast::unit_test::Suite
                 jv[jss::result][jss::node][sfLedgerEntryType.jsonName] == jss::PermissionedDomain);
 
             std::string const pdIdx = jv[jss::result][jss::index].asString();
-            BEAST_EXPECT(strHex(keylet::permissionedDomain(alice, seq).key) == pdIdx);
+            BEAST_EXPECT(
+                strHex(keylet::permissionedDomain(alice, SeqProxy::rawSequence(seq)).key) == pdIdx);
 
             params.clear();
             params[jss::ledger_index] = jss::validated;
@@ -2703,7 +2710,7 @@ class LedgerEntry_test : public beast::unit_test::Suite
         env.fund(XRP(10000), alice);
         env.close();
 
-        auto const checkId = keylet::check(env.master, env.seq(env.master));
+        auto const checkId = keylet::check(env.master, SeqProxy::rawSequence(env.seq(env.master)));
 
         env(check::create(env.master, alice, XRP(100)));
         env.close();

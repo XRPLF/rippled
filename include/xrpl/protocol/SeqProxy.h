@@ -53,12 +53,27 @@ public:
     operator=(SeqProxy const& other) = default;
 
     /**
-     * Factory function to return a sequence-based SeqProxy
+     * Factory function to return a sequence-based SeqProxy.
+     * Outside of tests, this function should only be used for "secondary" transaction sequences,
+     * e.g. `sfOfferSequence`, or sequence fields in an existing ledger object. DO NOT use this for
+     * the "primary" sequence of a transaction, `sfSequence`.
      */
     static constexpr SeqProxy
-    sequence(std::uint32_t v)
+    rawSequence(std::uint32_t v)
     {
         return SeqProxy{Type::Seq, v};
+    }
+
+    /**
+     * Factory function to return a ticket-based SeqProxy.
+     * Outside of tests, this function should only be used for "secondary" transaction sequences,
+     * e.g. `sfOfferSequence`, or sequence fields in an existing ledger object. DO NOT use this for
+     * the "primary" ticket sequence of a transaction, `sfTicketSequence`.
+     */
+    static constexpr SeqProxy
+    rawTicket(std::uint32_t v)
+    {
+        return SeqProxy{Type::Ticket, v};
     }
 
     [[nodiscard]] constexpr std::uint32_t
@@ -106,12 +121,6 @@ public:
         if (lhs.type_ != rhs.type_)
             return false;
         return (lhs.value() == rhs.value());
-    }
-
-    friend constexpr bool
-    operator!=(SeqProxy lhs, SeqProxy rhs)
-    {
-        return !(lhs == rhs);
     }
 
     friend constexpr bool

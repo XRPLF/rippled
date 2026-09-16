@@ -17,7 +17,7 @@ class Transaction;
 class TxMeta;
 class STTx;
 
-namespace RPC {
+namespace rpc {
 
 struct JsonContext;
 
@@ -41,23 +41,23 @@ insertDeliveredAmount(
 void
 insertDeliveredAmount(
     json::Value& meta,
-    RPC::JsonContext const&,
+    rpc::JsonContext const&,
     std::shared_ptr<Transaction> const&,
     TxMeta const&);
 void
 insertDeliveredAmount(
     json::Value& meta,
-    RPC::JsonContext const&,
+    rpc::JsonContext const&,
     std::shared_ptr<STTx const> const&,
     TxMeta const&);
 
 std::optional<STAmount>
 getDeliveredAmount(
-    RPC::Context const& context,
+    rpc::Context const& context,
     std::shared_ptr<STTx const> const& serializedTx,
     TxMeta const& transactionMeta,
     LedgerIndex const& ledgerIndex);
 /** @} */
 
-}  // namespace RPC
+}  // namespace rpc
 }  // namespace xrpl

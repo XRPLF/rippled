@@ -40,6 +40,7 @@
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/SecretKey.h>
+#include <xrpl/protocol/SeqProxy.h>
 #include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
@@ -71,7 +72,8 @@ struct PayChan_test : public beast::unit_test::Suite
         auto const sle = view.read(keylet::account(account));
         if (!sle)
             return {};
-        auto const k = keylet::payChannel(account, dst, (*sle)[sfSequence] - 1);
+        auto const k =
+            keylet::payChannel(account, dst, SeqProxy::rawSequence((*sle)[sfSequence] - 1));
         return {k.key, view.read(k)};
     }
 
@@ -1624,11 +1626,11 @@ struct PayChan_test : public beast::unit_test::Suite
         BEAST_EXPECT(!sig.empty());
         auto const pkHex = strHex(pk.slice());
 
-        // Step 2: build RPC::JsonContext directly so we can inspect loadType
+        // Step 2: build rpc::JsonContext directly so we can inspect loadType
         auto& app = env.app();
-        Resource::Charge loadType = Resource::kFeeReferenceRpc;
-        Resource::Consumer c;
-        RPC::JsonContext context{
+        resource::Charge loadType = resource::kFeeReferenceRpc;
+        resource::Consumer c;
+        rpc::JsonContext context{
             {.j = env.journal,
              .app = app,
              .loadType = loadType,
@@ -1638,7 +1640,7 @@ struct PayChan_test : public beast::unit_test::Suite
              .role = Role::USER,
              .coro = {},
              .infoSub = {},
-             .apiVersion = RPC::kApiVersionIfUnspecified},
+             .apiVersion = rpc::kApiVersionIfUnspecified},
             {},
             {}};
         json::Value params;
@@ -1649,7 +1651,7 @@ struct PayChan_test : public beast::unit_test::Suite
         context.params = std::move(params);
 
         // Confirm default before calling handler
-        BEAST_EXPECT(context.loadType == Resource::kFeeReferenceRpc);
+        BEAST_EXPECT(context.loadType == resource::kFeeReferenceRpc);
         json::Value result;
         Gate g;
         app.getJobQueue().postCoro(JtClient, "RPC-Client", [&](auto const& coro) {
@@ -1665,10 +1667,10 @@ struct PayChan_test : public beast::unit_test::Suite
         // KEY ASSERTION: loadType must be kFEE_HEAVY_BURDEN_RPC after the fix
         // Before fix: this will FAIL because loadType stays kFEE_REFERENCE_RPC (20)
         // After fix:  this will PASS because loadType is kFEE_HEAVY_BURDEN_RPC (3000)
-        BEAST_EXPECT(context.loadType == Resource::kFeeHeavyBurdenRpc);
+        BEAST_EXPECT(context.loadType == resource::kFeeHeavyBurdenRpc);
         // Confirm the charge is 150x heavier than the current (broken) default
-        BEAST_EXPECT(context.loadType.cost() == Resource::kFeeHeavyBurdenRpc.cost());  // 3000
-        BEAST_EXPECT(context.loadType.cost() != Resource::kFeeReferenceRpc.cost());    // not 20
+        BEAST_EXPECT(context.loadType.cost() == resource::kFeeHeavyBurdenRpc.cost());  // 3000
+        BEAST_EXPECT(context.loadType.cost() != resource::kFeeReferenceRpc.cost());    // not 20
     }
 
     void
@@ -1693,9 +1695,9 @@ struct PayChan_test : public beast::unit_test::Suite
         env.close();
 
         auto& app = env.app();
-        Resource::Charge loadType = Resource::kFeeReferenceRpc;
-        Resource::Consumer c;
-        RPC::JsonContext context{
+        resource::Charge loadType = resource::kFeeReferenceRpc;
+        resource::Consumer c;
+        rpc::JsonContext context{
             {.j = env.journal,
              .app = app,
              .loadType = loadType,
@@ -1705,7 +1707,7 @@ struct PayChan_test : public beast::unit_test::Suite
              .role = Role::ADMIN,  // channel_authorize requires ADMIN or canSign()
              .coro = {},
              .infoSub = {},
-             .apiVersion = RPC::kApiVersionIfUnspecified},
+             .apiVersion = rpc::kApiVersionIfUnspecified},
             {},
             {}};
         json::Value params;
@@ -1715,7 +1717,7 @@ struct PayChan_test : public beast::unit_test::Suite
         context.params = std::move(params);
 
         // Confirm default before calling handler
-        BEAST_EXPECT(context.loadType == Resource::kFeeReferenceRpc);
+        BEAST_EXPECT(context.loadType == resource::kFeeReferenceRpc);
         json::Value result;
         Gate g;
         app.getJobQueue().postCoro(JtClient, "RPC-Client", [&](auto const& coro) {
@@ -1733,7 +1735,7 @@ struct PayChan_test : public beast::unit_test::Suite
         // KEY ASSERTION: loadType must be kFEE_HEAVY_BURDEN_RPC after the fix
         // Before fix: FAILS — stays at kFEE_REFERENCE_RPC (charge=20)
         // After fix:  PASSES — set to kFEE_HEAVY_BURDEN_RPC (charge=3000)
-        BEAST_EXPECT(context.loadType == Resource::kFeeHeavyBurdenRpc);
+        BEAST_EXPECT(context.loadType == resource::kFeeHeavyBurdenRpc);
     }
 
     void

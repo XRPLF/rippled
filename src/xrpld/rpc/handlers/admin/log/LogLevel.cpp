@@ -16,7 +16,7 @@
 namespace xrpl {
 
 json::Value
-doLogLevel(RPC::JsonContext& context)
+doLogLevel(rpc::JsonContext& context)
 {
     // log_level
     if (not context.params.isMember(jss::severity))

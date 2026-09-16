@@ -5,6 +5,7 @@
 #include <xrpl/beast/container/detail/aged_associative_container.h>
 #include <xrpl/beast/container/detail/aged_container_iterator.h>
 #include <xrpl/beast/container/detail/empty_base_optimization.h>
+#include <xrpl/beast/utility/instrumentation.h>
 
 #include <boost/intrusive/list.hpp>
 #include <boost/intrusive/unordered_set.hpp>
@@ -1338,28 +1339,6 @@ public:
                KeyEqual,
                OtherAllocator> const& other) const
         requires MaybeMulti;
-
-    template <
-        bool OtherIsMulti,
-        bool OtherIsMap,
-        class OtherKey,
-        class OtherT,
-        class OtherDuration,
-        class OtherHash,
-        class OtherAllocator>
-    bool
-    operator!=(AgedUnorderedContainer<
-               OtherIsMulti,
-               OtherIsMap,
-               OtherKey,
-               OtherT,
-               OtherDuration,
-               OtherHash,
-               KeyEqual,
-               OtherAllocator> const& other) const
-    {
-        return !(this->operator==(other));
-    }
 
 private:
     bool

@@ -40,18 +40,18 @@ listed later.
 | 04           | xrpl/protocol                       |
 | 05           | xrpl/core xrpl/resource xrpl/server |
 | 06           | xrpl/ledger xrpl/nodestore xrpl/net |
-| 07           | xrpl/shamap                         |
+| 07           | xrpl/shamap xrpl/consensus          |
 
 ## xrpld Modules (Application Implementation)
 
-| Level / Tier | Module(s)                        |
-| ------------ | -------------------------------- |
-| 05           | xrpld/conditions xrpld/consensus |
-| 06           | xrpld/core xrpld/peerfinder      |
-| 07           | xrpld/shamap xrpld/overlay       |
-| 08           | xrpld/app                        |
-| 09           | xrpld/rpc                        |
-| 10           | xrpld/perflog                    |
+| Level / Tier | Module(s)                   |
+| ------------ | --------------------------- |
+| 05           | xrpld/conditions            |
+| 06           | xrpld/core xrpld/peerfinder |
+| 07           | xrpld/shamap xrpld/overlay  |
+| 08           | xrpld/app                   |
+| 09           | xrpld/rpc                   |
+| 10           | xrpld/perflog               |
 
 ## Test Modules
 

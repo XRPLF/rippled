@@ -8,7 +8,7 @@
 namespace xrpl {
 
 json::Value
-doPrint(RPC::JsonContext& context)
+doPrint(rpc::JsonContext& context)
 {
     JsonPropertyStream stream;
     if (context.params.isObject() && context.params[jss::params].isArray() &&

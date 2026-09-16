@@ -2,13 +2,13 @@
 
 #include <xrpld/app/ledger/InboundLedger.h>
 #include <xrpld/app/ledger/LedgerMaster.h>
+#include <xrpld/app/ledger/LedgerNodeHelpers.h>
 #include <xrpld/app/main/Application.h>
 #include <xrpld/overlay/PeerSet.h>
 
 #include <xrpl/basics/Blob.h>
 #include <xrpl/basics/DecayingSample.h>
 #include <xrpl/basics/Log.h>
-#include <xrpl/basics/Slice.h>
 #include <xrpl/basics/UnorderedContainers.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/scope.h>
@@ -252,23 +252,17 @@ public:
         Serializer s;
         try
         {
-            for (int i = 0; i < packetPtr->nodes().size(); ++i)
+            for (auto const& ledgerNode : packetPtr->nodes())
             {
-                auto const& node = packetPtr->nodes(i);
-
-                if (!node.has_nodeid() || !node.has_nodedata())
-                    return;
-
-                auto newNode = SHAMapTreeNode::makeFromWire(makeSlice(node.nodedata()));
-
-                if (!newNode)
+                auto const treeNode = getTreeNode(ledgerNode.nodedata());
+                if (!treeNode)
                     return;
 
                 s.erase();
-                newNode->serializeWithPrefix(s);
+                treeNode->serializeWithPrefix(s);
 
                 app_.getLedgerMaster().addFetchPack(
-                    newNode->getHash().asUInt256(), std::make_shared<Blob>(s.begin(), s.end()));
+                    treeNode->getHash().asUInt256(), std::make_shared<Blob>(s.begin(), s.end()));
             }
         }
         catch (std::exception const&)  // NOLINT(bugprone-empty-catch)

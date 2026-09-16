@@ -88,7 +88,7 @@ class Handler_test : public beast::unit_test::Suite
         std::random_device dev;
         std::ranlux48 prng(dev());
 
-        std::vector<char const*> names = test::jtx::makeVector(xrpl::RPC::getHandlerNames());
+        std::vector<char const*> names = test::jtx::makeVector(xrpl::rpc::getHandlerNames());
 
         std::uniform_int_distribution<std::size_t> distr{0, names.size() - 1};
 
@@ -96,7 +96,7 @@ class Handler_test : public beast::unit_test::Suite
         auto const [mean, stdev, n] = time(
             1'000'000,
             [&](std::size_t i) {
-                auto const d = RPC::getHandler(1, false, names[i]);
+                auto const d = rpc::getHandler(1, false, names[i]);
                 dummy = dummy + i + (int)d->role;
             },
             [&]() -> std::size_t { return distr(prng); });

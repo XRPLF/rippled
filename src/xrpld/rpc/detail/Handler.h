@@ -20,7 +20,7 @@ namespace json {
 class Object;
 }  // namespace json
 
-namespace xrpl::RPC {
+namespace xrpl::rpc {
 
 // Under what condition can we call this RPC?
 enum class Condition {
@@ -38,7 +38,7 @@ struct Handler
     char const* name;
     Method<json::Value> valueMethod;
     Role role;
-    RPC::Condition condition;
+    rpc::Condition condition;
 
     unsigned minApiVer = kApiMinimumSupportedVersion;
     unsigned maxApiVer = kApiMaximumValidVersion;
@@ -92,7 +92,7 @@ conditionMet(Condition conditionRequired, T& context)
 
     if (!context.app.config().standalone() && conditionRequired != Condition::NoCondition)
     {
-        if (context.ledgerMaster.getValidatedLedgerAge() > Tuning::kMaxValidatedLedgerAge)
+        if (context.ledgerMaster.getValidatedLedgerAge() > tuning::kMaxValidatedLedgerAge)
         {
             if (context.apiVersion == 1)
                 return RpcNoCurrent;
@@ -122,4 +122,4 @@ conditionMet(Condition conditionRequired, T& context)
     return RpcSuccess;
 }
 
-}  // namespace xrpl::RPC
+}  // namespace xrpl::rpc

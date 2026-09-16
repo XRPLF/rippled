@@ -6,7 +6,6 @@
 #include <xrpld/overlay/PeerSet.h>
 
 #include <xrpl/basics/CountedObject.h>
-#include <xrpl/basics/Slice.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/clock/abstract_clock.h>
 #include <xrpl/json/json_value.h>
@@ -24,7 +23,7 @@
 #include <memory>
 #include <mutex>
 #include <set>
-#include <string>
+#include <string_view>
 #include <utility>
 #include <vector>
 
@@ -136,7 +135,7 @@ private:
     addPeers();
 
     void
-    tryDB(NodeStore::Database& srcDB);
+    tryDB(node_store::Database& srcDB);
 
     void
     done();
@@ -154,16 +153,19 @@ private:
     processData(std::shared_ptr<Peer> peer, protocol::TMLedgerData const& data);
 
     bool
-    takeHeader(std::string const& data);
+    takeHeader(std::string_view data);
 
     void
-    receiveNode(protocol::TMLedgerData const& packet, SHAMapAddNode&);
+    receiveNode(
+        std::shared_ptr<Peer> const& peer,
+        protocol::TMLedgerData const& packet,
+        SHAMapAddNode& san);
 
     bool
-    takeTxRootNode(Slice const& data, SHAMapAddNode&);
+    takeTxRootNode(std::string_view data, SHAMapAddNode& san);
 
     bool
-    takeAsRootNode(Slice const& data, SHAMapAddNode&);
+    takeAsRootNode(std::string_view data, SHAMapAddNode& san);
 
     std::vector<uint256>
     neededTxHashes(int max, SHAMapSyncFilter const* filter) const;

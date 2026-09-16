@@ -1,4 +1,3 @@
-#include <xrpl/basics/Blob.h>
 #include <xrpl/basics/SHAMapHash.h>
 #include <xrpl/basics/Slice.h>
 #include <xrpl/basics/base_uint.h>
@@ -18,6 +17,7 @@
 #include <shamap/common.h>
 
 #include <chrono>
+#include <cstddef>
 #include <cstdint>
 #include <list>
 #include <utility>
@@ -34,15 +34,17 @@ protected:
     boost::intrusive_ptr<SHAMapItem>
     makeRandomAS()
     {
+        static constexpr auto kWordsPerState = 3uz;
+
         Serializer s;
 
-        for (int d = 0; d < 3; ++d)
+        for (auto word = 0uz; word < kWordsPerState; ++word)
             s.add32(randInt<std::uint32_t>(eng_));
         return makeShamapitem(s.getSHA512Half(), s.slice());
     }
 
     bool
-    confuseMap(SHAMap& map, int count)
+    confuseMap(SHAMap& map, std::size_t count)
     {
         // add a bunch of random states to a map, then remove them
         // map should be the same
@@ -50,7 +52,7 @@ protected:
 
         std::list<uint256> items;
 
-        for (int i = 0; i < count; ++i)
+        for (auto i = 0uz; i < count; ++i)
         {
             auto item = makeRandomAS();
             items.push_back(item->key());
@@ -87,39 +89,45 @@ TEST_F(SHAMapSyncTest, sync)
     SHAMap source{SHAMapType::FREE, f};
     SHAMap destination{SHAMapType::FREE, f2};
 
-    int const items = 10000;
-    for (int i = 0; i < items; ++i)
+    static constexpr auto kItemCount = 10000uz;
+    static constexpr auto kInvariantInterval = 100uz;
+    static constexpr auto kNodesToConfuse = 500uz;
+    static constexpr auto kMaxNodesPerRequest = 2048;
+
+    for (auto i = 0uz; i < kItemCount; ++i)
     {
         source.addItem(SHAMapNodeType::TnAccountState, makeRandomAS());
-        if (i % 100 == 0)
+        if (i % kInvariantInterval == 0)
             source.invariants();
     }
 
     source.invariants();
-    ASSERT_TRUE(confuseMap(source, 500));
+    ASSERT_TRUE(confuseMap(source, kNodesToConfuse));
     source.invariants();
 
     source.setImmutable();
 
-    int count = 0;
+    std::size_t count = 0;
     source.visitLeaves([&count]([[maybe_unused]] auto const& item) { ++count; });
-    EXPECT_EQ(count, items);
+    EXPECT_EQ(count, kItemCount);
 
     std::vector<SHAMapMissingNode> missingNodes;
-    source.walkMap(missingNodes, 2048);
+    source.walkMap(missingNodes, kMaxNodesPerRequest);
     EXPECT_TRUE(missingNodes.empty());
 
     destination.setSynching();
 
     {
-        std::vector<std::pair<SHAMapNodeID, Blob>> a;
+        std::vector<SHAMapNodeData> a;
 
         ASSERT_TRUE(source.getNodeFat(SHAMapNodeID(), a, randBool(eng_), randInt(eng_, 2)));
 
         ASSERT_FALSE(a.empty()) << "NodeSize";
 
-        ASSERT_TRUE(
-            destination.addRootNode(source.getHash(), makeSlice(a[0].second), nullptr).isGood());
+        auto node = SHAMapTreeNode::makeFromWire(makeSlice(a[0].data));
+        if (!node)
+            FAIL() << "Could not create node";
+        ASSERT_TRUE(destination.addRootNode(source.getHash(), std::move(node), nullptr).isGood());
     }
 
     do
@@ -127,13 +135,13 @@ TEST_F(SHAMapSyncTest, sync)
         f.clock().advance(std::chrono::seconds(1));
 
         // get the list of nodes we know we need
-        auto nodesMissing = destination.getMissingNodes(2048, nullptr);
+        auto nodesMissing = destination.getMissingNodes(kMaxNodesPerRequest, nullptr);
 
         if (nodesMissing.empty())
             break;
 
         // get as many nodes as possible based on this information
-        std::vector<std::pair<SHAMapNodeID, Blob>> b;
+        std::vector<SHAMapNodeData> b;
 
         for (auto& it : nodesMissing)
         {
@@ -155,7 +163,12 @@ TEST_F(SHAMapSyncTest, sync)
             // Keep failures fatal here because this loop is data-dependent.
             // non-deterministic number of times and the number of tests run
             // should be deterministic
-            if (!destination.addKnownNode(i.first, makeSlice(i.second), nullptr).isUseful())
+            auto node = SHAMapTreeNode::makeFromWire(makeSlice(i.data));
+            if (!node)
+                FAIL() << "Could not create node";
+            if (i.isLeaf != node->isLeaf())
+                FAIL() << "Node is not a leaf";
+            if (!destination.addKnownNode(i.nodeID, std::move(node), nullptr).isUseful())
                 FAIL() << "Known node was not useful";
         }
     } while (true);

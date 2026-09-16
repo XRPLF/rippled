@@ -22,14 +22,12 @@
 #include <xrpl/server/Manifest.h>
 #include <xrpl/server/Wallet.h>
 
-#include <boost/filesystem/operations.hpp>
-#include <boost/filesystem/path.hpp>
-
 #include <algorithm>
 #include <array>
 #include <cassert>
 #include <cstdint>
 #include <exception>
+#include <filesystem>
 #include <limits>
 #include <memory>
 #include <optional>
@@ -56,18 +54,18 @@ private:
     }
 
     static void
-    cleanupDatabaseDir(boost::filesystem::path const& dbPath)
+    cleanupDatabaseDir(std::filesystem::path const& dbPath)
     {
-        using namespace boost::filesystem;
+        using namespace std::filesystem;
         if (!exists(dbPath) || !is_directory(dbPath) || !is_empty(dbPath))
             return;
         remove(dbPath);
     }
 
     static void
-    setupDatabaseDir(boost::filesystem::path const& dbPath)
+    setupDatabaseDir(std::filesystem::path const& dbPath)
     {
-        using namespace boost::filesystem;
+        using namespace std::filesystem;
         if (!exists(dbPath))
         {
             create_directory(dbPath);
@@ -80,10 +78,10 @@ private:
             Throw<std::runtime_error>("Cannot create directory: " + dbPath.string());
         }
     }
-    static boost::filesystem::path
+    static std::filesystem::path
     getDatabasePath()
     {
-        return boost::filesystem::current_path() / "manifest_test_databases";
+        return std::filesystem::current_path() / "manifest_test_databases";
     }
 
 public:
@@ -351,7 +349,7 @@ public:
                 BEAST_EXPECT(loaded.revoked(pk));
             }
         }
-        boost::filesystem::remove(getDatabasePath() / boost::filesystem::path(dbName));
+        std::filesystem::remove(getDatabasePath() / std::filesystem::path(dbName));
     }
 
     void

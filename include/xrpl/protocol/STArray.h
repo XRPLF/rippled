@@ -133,9 +133,6 @@ public:
     bool
     operator==(STArray const& s) const;
 
-    bool
-    operator!=(STArray const& s) const;
-
     iterator
     erase(iterator pos);
 
@@ -281,12 +278,6 @@ inline bool
 STArray::operator==(STArray const& s) const
 {
     return v_ == s.v_;
-}
-
-inline bool
-STArray::operator!=(STArray const& s) const
-{
-    return v_ != s.v_;
 }
 
 inline STArray::iterator

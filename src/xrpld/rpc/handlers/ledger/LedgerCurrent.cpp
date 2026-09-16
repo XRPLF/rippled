@@ -8,7 +8,7 @@
 namespace xrpl {
 
 json::Value
-doLedgerCurrent(RPC::JsonContext& context)
+doLedgerCurrent(rpc::JsonContext& context)
 {
     json::Value jvResult;
     jvResult[jss::ledger_current_index] = context.ledgerMaster.getCurrentLedgerIndex();
