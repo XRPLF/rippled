@@ -1641,8 +1641,9 @@ class InvariantsMPT_test : public InvariantsBase
 
         // fixCleanup3_5_0 enabled, fixCleanup3_2_0 disabled: the two
         // amendments are independent, so this is the only configuration in
-        // which the `|| fix350Enabled` half of the deletedHoldings_ capture
-        // gate in ValidMPTIssuance::visitEntry is load-bearing.
+        // which the `|| isFeatureEnabled(fixCleanup3_5_0)` half of the
+        // deletedHoldings_ capture gate in ValidMPTIssuance::visitEntry is
+        // load-bearing.
         {
             auto const preclose = [&](Account const& a1, Account const& a2, Env& env) -> bool {
                 MPTTester mpt(env, a1, {.holders = {a2}, .fund = false});

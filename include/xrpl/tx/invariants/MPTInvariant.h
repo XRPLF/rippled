@@ -43,11 +43,12 @@ class ValidMPTIssuance
     bool referenceHoldingMutated_ = false;
 
     /**
-     * MPTokens and RippleStates deleted during apply. Under fixCleanup3_2_0,
-     * finalize() checks each holder's AccountRoot to detect vault
-     * pseudo-account holdings deleted outside VaultDelete. Under
-     * fixCleanup3_5_0 it also rejects any MPToken erased with a non-zero
-     * sfMPTAmount (the check formerly lived in ValidConfidentialMPToken).
+     * MPTokens and RippleStates deleted during apply. finalize() checks each
+     * holder's AccountRoot to detect vault pseudo-account holdings deleted
+     * outside VaultDelete. All these checks are gated on fixCleanup3_2_0.
+     *
+     * Under fixCleanup3_5_0, finalize() also rejects any MPToken erased with
+     * a non-zero sfMPTAmount.
      */
     std::vector<std::shared_ptr<SLE const>> deletedHoldings_;
 
@@ -165,9 +166,11 @@ class ValidConfidentialMPToken
         std::int64_t outstandingDelta = 0;
         SLE::const_pointer issuance;
         bool deletedWithEncrypted = false;
-        // Pre-transaction public balance of an erased MPToken. Reproduces
-        // the pre-fixCleanup3_5_0 behaviour where the confidential gate
-        // below also rejected any erase whose `before` balance was non-zero.
+        // Pre-transaction public balance of an erased MPToken. Only captured
+        // while fixCleanup3_5_0 is disabled, to reproduce the legacy
+        // behaviour where a non-zero `before` balance also fed the
+        // confidential gate, rejecting the erase whenever the issuance's COA
+        // was non-zero.
         bool deletedWithBalanceBefore = false;
         bool badConsistency = false;
         bool badCOA = false;

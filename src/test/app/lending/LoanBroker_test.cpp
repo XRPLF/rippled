@@ -1764,11 +1764,11 @@ class LoanBroker_test : public beast::unit_test::Suite
     }
 
     // Before fixCleanup3_5_0, ValidConfidentialMPToken derived
-    // hasPublicBalance from the pre-transaction snapshot of an erased
-    // MPToken. LoanBrokerDelete returns the cover and then erases the broker
-    // pseudo-account's MPToken in a single doApply, so that snapshot was
-    // always non-zero and the erase was flagged as "deleted with encrypted
-    // state". finalize gated the flag on the issuance-wide
+    // deletedWithBalanceBefore from the pre-transaction snapshot of an
+    // erased MPToken. LoanBrokerDelete returns the cover and then erases the
+    // broker pseudo-account's MPToken in a single doApply, so that snapshot
+    // was always non-zero and the erase was flagged as "deleted with
+    // encrypted state". finalize gated the flag on the issuance-wide
     // ConfidentialOutstandingAmount, which made an unrelated holder's
     // confidential balance sufficient to reject the deletion -- even though a
     // pseudo-account MPToken can never carry confidential fields.

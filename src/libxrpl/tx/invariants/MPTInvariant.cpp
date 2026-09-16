@@ -68,13 +68,12 @@ subtractMPTAmountDelta(std::int64_t delta, std::uint64_t amount)
 void
 ValidMPTIssuance::visitEntry(bool isDelete, SLE::const_ref before, SLE::const_ref after)
 {
-    // sfReferenceHolding is never set pre-fixCleanup3_2_0 and the
-    // vault-pseudo holding-deletion rule does not apply, so both are
-    // gated on fix320Enabled. The MPToken half of deletedHoldings_ also
-    // feeds the fixCleanup3_5_0 erase-time public balance check in
-    // finalize(), so it is captured whenever either amendment is on.
+    // The sfReferenceHolding tracking and the deleted-holding capture are
+    // only meaningful post-fixCleanup3_2_0 (the field is never set
+    // pre-amendment, and the holding-deletion rule does not apply).
+    // Skip both blocks when the amendment is off so we avoid wasted work
+    // on the hot path, except where noted for fixCleanup3_5_0 below.
     bool const fix320Enabled = isFeatureEnabled(fixCleanup3_2_0);
-    bool const fix350Enabled = isFeatureEnabled(fixCleanup3_5_0);
 
     if (after && after->getType() == ltMPTOKEN_ISSUANCE)
     {
@@ -108,7 +107,10 @@ ValidMPTIssuance::visitEntry(bool isDelete, SLE::const_ref before, SLE::const_re
         if (isDelete)
         {
             mptokensDeleted_++;
-            if (fix320Enabled || fix350Enabled)
+            // deletedHoldings_ also feeds finalize()'s erase-time public
+            // balance check, gated on fixCleanup3_5_0 independently of
+            // fixCleanup3_2_0.
+            if (fix320Enabled || isFeatureEnabled(fixCleanup3_5_0))
                 deletedHoldings_.push_back(after);
         }
         else if (!before)
@@ -195,10 +197,7 @@ ValidMPTIssuance::finalize(
             return false;
     }
 
-    // Erasing an MPToken that still holds a public balance is wrong on its
-    // own terms: it destroys value. Judged on the erase-time snapshot,
-    // per-holder, so a funded MPToken visited alongside empty siblings is
-    // still caught.
+    // Deleting an MPToken with a non-zero MPTAmount is rejected.
     if (rules.enabled(fixCleanup3_5_0))
     {
         for (auto const& sleHolding : deletedHoldings_)
@@ -580,10 +579,17 @@ ValidConfidentialMPToken::visitEntry(
         if (isDelete)
         {
             // changes_ is keyed by issuance, so sibling holders erased by the
-            // same transaction share this entry. Only ever set these, never
-            // clear them, or an empty sibling visited later would mask a
-            // funded MPToken.
-            if (before->getFieldU64(sfMPTAmount) > 0)
+            // same transaction share this entry. Only ever set these flags,
+            // never clear them, or an empty sibling visited later would mask
+            // a funded MPToken.
+
+            // Retired by fixCleanup3_5_0, which moved the public balance
+            // check to ValidMPTIssuance::finalize. Kept pre-amendment for
+            // consensus safety: a non-zero public balance used to feed the
+            // confidential gate below, rejecting the erase whenever the
+            // issuance's COA was non-zero, and already-validated ledgers
+            // depend on that.
+            if (!isFeatureEnabled(fixCleanup3_5_0) && before->getFieldU64(sfMPTAmount) > 0)
                 changes_[id].deletedWithBalanceBefore = true;
 
             if (before->isFieldPresent(sfConfidentialBalanceSpending) ||
