@@ -27,8 +27,6 @@
 #include <xrpl/resource/detail/Entry.h>
 #include <xrpl/resource/detail/Tuning.h>
 
-#include <boost/algorithm/string/predicate.hpp>
-
 #include <chrono>
 #include <string>
 
@@ -128,9 +126,16 @@ class NoRippleCheck_test : public beast::unit_test::Suite
             params[jss::account] = toBase58(TokenType::NodePrivate, alice.sk());
             params[jss::role] = "user";
             params[jss::ledger] = "current";
+            params[jss::transactions] = true;
             auto const result = env.rpc("json", "noripple_check", to_string(params))[jss::result];
             BEAST_EXPECT(result[jss::error] == "actMalformed");
             BEAST_EXPECT(result[jss::error_message] == "Account malformed.");
+            // The changelog promises malformed-account responses carry
+            // neither `transactions` nor any ledger metadata.
+            BEAST_EXPECT(!result.isMember(jss::transactions));
+            BEAST_EXPECT(!result.isMember(jss::ledger_hash));
+            BEAST_EXPECT(!result.isMember(jss::ledger_index));
+            BEAST_EXPECT(!result.isMember(jss::validated));
         }
 
         {
@@ -196,6 +201,7 @@ class NoRippleCheck_test : public beast::unit_test::Suite
         if (!BEAST_EXPECT(pa.isArray()))
             return;
 
+        BEAST_EXPECT(!result.isMember(jss::transactions));
         if (problems)
         {
             if (!BEAST_EXPECT(pa.size() == 2))
@@ -203,13 +209,13 @@ class NoRippleCheck_test : public beast::unit_test::Suite
 
             if (user)
             {
-                BEAST_EXPECT(boost::starts_with(pa[0u].asString(), "You appear to have set"));
-                BEAST_EXPECT(boost::starts_with(pa[1u].asString(), "You should probably set"));
+                BEAST_EXPECT(pa[0u].asString().starts_with("You appear to have set"));
+                BEAST_EXPECT(pa[1u].asString().starts_with("You should probably set"));
             }
             else
             {
-                BEAST_EXPECT(boost::starts_with(pa[0u].asString(), "You should immediately set"));
-                BEAST_EXPECT(boost::starts_with(pa[1u].asString(), "You should clear"));
+                BEAST_EXPECT(pa[0u].asString().starts_with("You should immediately set"));
+                BEAST_EXPECT(pa[1u].asString().starts_with("You should clear"));
             }
         }
         else
@@ -221,12 +227,12 @@ class NoRippleCheck_test : public beast::unit_test::Suite
         // time.
         params[jss::transactions] = true;
         result = env.rpc("json", "noripple_check", to_string(params))[jss::result];
-        if (!BEAST_EXPECT(result[jss::transactions].isArray()))
-            return;
 
         auto const txs = result[jss::transactions];
         if (problems)
         {
+            if (!BEAST_EXPECT(result[jss::transactions].isArray()))
+                return;
             if (!BEAST_EXPECT(txs.size() == (user ? 1 : 2)))
                 return;
 

@@ -92,6 +92,7 @@ public:
     static constexpr std::size_t kMaxStates = 128;
     static std::array<std::atomic<TrackedState>, kMaxStates> state;
     static std::atomic<std::size_t> nextId;
+
     static TrackedState
     getState(std::size_t id)
     {
@@ -100,13 +101,12 @@ public:
 
         return state[id].load(std::memory_order_acquire);
     }
+
     static void
     resetStates(bool resetCallback)
     {
         for (std::size_t i = 0; i < kMaxStates; ++i)
-        {
             state[i].store(TrackedState::Uninitialized, std::memory_order_release);
-        }
         nextId.store(0, std::memory_order_release);
         if (resetCallback)
             TIBase::tracingCallback = [](TrackedState, std::optional<TrackedState>) {};
@@ -120,6 +120,7 @@ public:
         {
             TIBase::resetStates(resetCallback);
         }
+
         ~ResetStatesGuard()
         {
             TIBase::resetStates(resetCallback);
@@ -130,6 +131,7 @@ public:
     {
         state[id].store(TrackedState::Alive, std::memory_order_relaxed);
     }
+
     ~TIBase() override
     {
         using enum TrackedState;
@@ -218,9 +220,7 @@ TEST(IntrusiveSharedTest, basics)
         EXPECT_EQ(TIBase::getState(id), Alive);
         EXPECT_EQ(b->useCount(), 1);
         for (auto i = 0uz; i < 10; ++i)
-        {
             strong.push_back(b);
-        }
         b.reset();
         EXPECT_EQ(TIBase::getState(id), Alive);
         strong.resize(strong.size() - 1);
@@ -244,8 +244,7 @@ TEST(IntrusiveSharedTest, basics)
         EXPECT_EQ(TIBase::getState(id), PartiallyDeleted);
         while (!weak.empty())
         {
-            weak.resize(weak.size() - 1);
-            if (!weak.empty())
+            if (weak.resize(weak.size() - 1); !weak.empty())
             {
                 EXPECT_EQ(TIBase::getState(id), PartiallyDeleted);
             }

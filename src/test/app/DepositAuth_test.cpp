@@ -935,6 +935,46 @@ struct DepositPreauth_test : public beast::unit_test::Suite
     }
 
     void
+    testZeroCredentialID(FeatureBitset features)
+    {
+        testcase("Zero credential ID");
+
+        using namespace jtx;
+
+        char const credType[] = "abcde";
+        Account const issuer{"issuer"};
+        Account const alice{"alice"};
+        Account const bob{"bob"};
+
+        Env env(*this, features);
+
+        env.fund(XRP(5000), issuer, alice, bob);
+        env.close();
+
+        env(credentials::create(alice, issuer, credType));
+        env.close();
+        env(credentials::accept(alice, issuer, credType));
+        env.close();
+
+        auto const jv = credentials::ledgerEntry(env, alice, issuer, credType);
+        std::string const credIdx = jv[jss::result][jss::index].asString();
+
+        std::string const zeroIdx(64, '0');
+
+        // post-fixCleanup3_4_0: a zero ID is rejected by checkFields in
+        // preflight; pre-fixCleanup3_4_0, it will trigger assertion, so it is not testable.
+        env(pay(alice, bob, XRP(100)), credentials::Ids({zeroIdx}), Ter(temMALFORMED));
+        env.close();
+
+        env(pay(alice, bob, XRP(100)), credentials::Ids({credIdx, zeroIdx}), Ter(temMALFORMED));
+        env.close();
+
+        // A valid credential succeeds
+        env(pay(alice, bob, XRP(100)), credentials::Ids({credIdx}));
+        env.close();
+    }
+
+    void
     testCredentialsCreation()
     {
         using namespace jtx;
@@ -1446,6 +1486,7 @@ struct DepositPreauth_test : public beast::unit_test::Suite
         testPayment(supported - featureCredentials);
         testPayment(supported);
         testCredentialsPayment();
+        testZeroCredentialID(supported);
         testCredentialsCreation();
         testExpiredCreds();
         testSortingCredentials();

@@ -88,8 +88,13 @@ EscrowCreate::checkExtraFeatures(PreflightContext const& ctx)
     // Only require featureMPTokensV1 when the escrow amount is an MPT and
     // fixCleanup3_2_0 is active; XRP/IOU escrows are unaffected by this gate.
     if (ctx.rules.enabled(fixCleanup3_2_0) && ctx.tx[sfAmount].holds<MPTIssue>())
-        return ctx.rules.enabled(featureMPTokensV1);
-    return true;
+    {
+        if (!ctx.rules.enabled(featureMPTokensV1))
+            return false;
+    }
+
+    return (!ctx.tx.isFieldPresent(sfBytecode) && !ctx.tx.isFieldPresent(sfData)) ||
+        ctx.rules.enabled(featureSmartEscrow);
 }
 
 template <ValidIssueType T>
@@ -304,11 +309,11 @@ escrowCreatePreclaimHelper<MPTIssue>(
         return ter;
 
     // If the issuer has frozen the account, return tecLOCKED
-    if (isFrozen(ctx.view, account, mptIssue))
+    if (isFrozen(ctx.view, account, *sleIssuance))
         return tecLOCKED;
 
     // If the issuer has frozen the destination, return tecLOCKED
-    if (isFrozen(ctx.view, dest, mptIssue))
+    if (isFrozen(ctx.view, dest, *sleIssuance))
         return tecLOCKED;
 
     // If the mpt cannot be transferred, return tecNO_AUTH

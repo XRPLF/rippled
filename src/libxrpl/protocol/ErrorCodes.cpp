@@ -105,10 +105,9 @@ static constexpr ErrorInfo kUnorderedErrorInfos[]{
 };
 // clang-format on
 
-// Sort and validate unorderedErrorInfos at compile time.  Should be
-// converted to consteval when get to C++20.
+// Sort and validate unorderedErrorInfos at compile time.
 template <int M, int N>
-constexpr auto
+consteval auto
 sortErrorInfos(ErrorInfo const (&unordered)[N]) -> std::array<ErrorInfo, M>
 {
     std::array<ErrorInfo, M> ret = {};

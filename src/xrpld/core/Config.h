@@ -11,11 +11,10 @@
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/rdb/DatabaseCon.h>
 
-#include <boost/filesystem.hpp>  // VFALCO FIX: This include should not be here
-
 #include <chrono>
 #include <cstddef>
 #include <cstdint>
+#include <filesystem>
 #include <optional>
 #include <string>
 #include <unordered_set>
@@ -97,17 +96,17 @@ public:
     /**
      * Returns the full path and filename of the debug log file.
      */
-    [[nodiscard]] boost::filesystem::path
+    [[nodiscard]] std::filesystem::path
     getDebugLogFile() const;
 
 private:
-    boost::filesystem::path configFile_;
+    std::filesystem::path configFile_;
 
 public:
-    boost::filesystem::path configDir;
+    std::filesystem::path configDir;
 
 private:
-    boost::filesystem::path debugLogfile_;
+    std::filesystem::path debugLogfile_;
 
     void
     load();

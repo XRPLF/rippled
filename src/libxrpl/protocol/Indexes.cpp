@@ -123,6 +123,10 @@ getBookBase(Book const& book)
 {
     XRPL_ASSERT(isConsistent(book), "xrpl::getBookBase : input is consistent");
 
+    constexpr std::uint8_t kIssueToMPTTag = 0x01;
+    constexpr std::uint8_t kMPTToIssueTag = 0x02;
+    constexpr std::uint8_t kMPTToMPTTag = 0x03;
+
     auto getIndexHash = [&book]<typename... Args>(Args... args) {
         if (book.domain)
             return indexHash(std::forward<Args>(args)..., *book.domain);
@@ -136,19 +140,36 @@ getBookBase(Book const& book)
                 return getIndexHash(
                     LedgerNameSpace::BookDir, in.currency, out.currency, in.account, out.account);
             }
+            // The three MPT-involving branches are new under MPTokensV2 and
+            // each gets a 1-byte discriminator to prevent preimage collisions
+            // between branches: the (Issue,MPT) and (MPT,Issue) preimages
+            // are both 64 bytes of raw concatenation, so without a
+            // per-branch tag chosen Currency / MPTID / AccountID values can
+            // align byte-for-byte and produce the same BookDir keylet for
+            // two distinct markets. (Issue,Issue) is left untagged to
+            // preserve existing mainnet order-book keylets.
             else if constexpr (std::is_same_v<TIn, Issue> && std::is_same_v<TOut, MPTIssue>)
             {
                 return getIndexHash(
-                    LedgerNameSpace::BookDir, in.currency, out.getMptID(), in.account);
+                    LedgerNameSpace::BookDir,
+                    kIssueToMPTTag,
+                    in.currency,
+                    out.getMptID(),
+                    in.account);
             }
             else if constexpr (std::is_same_v<TIn, MPTIssue> && std::is_same_v<TOut, Issue>)
             {
                 return getIndexHash(
-                    LedgerNameSpace::BookDir, in.getMptID(), out.currency, out.account);
+                    LedgerNameSpace::BookDir,
+                    kMPTToIssueTag,
+                    in.getMptID(),
+                    out.currency,
+                    out.account);
             }
             else
             {
-                return getIndexHash(LedgerNameSpace::BookDir, in.getMptID(), out.getMptID());
+                return getIndexHash(
+                    LedgerNameSpace::BookDir, kMPTToMPTTag, in.getMptID(), out.getMptID());
             }
         },
         book.in.value(),

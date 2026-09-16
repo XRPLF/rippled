@@ -29,6 +29,7 @@
 #include <xrpl/json/json_value.h>
 #include <xrpl/json/to_string.h>
 #include <xrpl/ledger/OpenView.h>
+#include <xrpl/protocol/ApiVersion.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Protocol.h>
@@ -36,6 +37,7 @@
 #include <xrpl/protocol/SeqProxy.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
+#include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/protocol/nft.h>
 
@@ -4791,6 +4793,87 @@ class NFTokenBaseUtil_test : public beast::unit_test::Suite
     }
 
     void
+    testNftXxxOffersMarkerWrongSide(FeatureBitset features)
+    {
+        // A pagination marker passed to nft_buy_offers / nft_sell_offers must
+        // reference an offer on the same side (buy vs. sell) as the directory
+        // being enumerated.  A wrong-side marker is rejected with invalidParams.
+        //
+        // Note: the pre-fix code also returned invalidParams for a wrong-side
+        // marker, but only after scanning the entire target directory (an
+        // O(directory size) walk usable to burn CPU).  The fix short-circuits
+        // that scan.  The scan-avoidance is not observable from the RPC
+        // response, so this test locks the rejection contract (wrong-side ->
+        // error, same-side -> success) rather than the performance property.
+        testcase("nft_buy_offers and nft_sell_offers wrong-side marker");
+
+        using namespace test::jtx;
+
+        Env env{*this, features};
+
+        Account const issuer{"issuer"};
+        Account const buyer{"buyer"};
+
+        env.fund(XRP(10000), issuer, buyer);
+        env.close();
+
+        // Mint a transferable NFT.
+        uint256 const nftID{token::getNextID(env, issuer, 0u, tfTransferable)};
+        env(token::mint(issuer, 0), Txflags(tfTransferable));
+        env.close();
+
+        // Create one sell offer (from the issuer, who owns the NFT) and one
+        // buy offer (from the buyer) for the same NFT.
+        env(token::createOffer(issuer, nftID, XRP(100)), Txflags(tfSellNFToken));
+        env(token::createOffer(buyer, nftID, XRP(50)), token::Owner(issuer));
+        env.close();
+
+        // Grab the index of the single offer on each side from the RPC
+        // response so we can use it as a marker.
+        auto firstOfferIndex = [this, &env, &nftID](char const* request) {
+            json::Value params;
+            params[jss::nft_id] = to_string(nftID);
+            json::Value const result = env.rpc("json", request, to_string(params))[jss::result];
+            BEAST_EXPECT(result.isMember(jss::offers) && result[jss::offers].size() == 1);
+            return result[jss::offers][0u][jss::nft_offer_index].asString();
+        };
+
+        std::string const sellOfferIndex = firstOfferIndex("nft_sell_offers");
+        std::string const buyOfferIndex = firstOfferIndex("nft_buy_offers");
+
+        auto queryWithMarker = [&env, &nftID](char const* request, std::string const& marker) {
+            json::Value params;
+            params[jss::nft_id] = to_string(nftID);
+            params[jss::marker] = marker;
+            return env.rpc("json", request, to_string(params))[jss::result];
+        };
+
+        // A marker referencing an offer on the wrong side is rejected with
+        // invalidParams.
+        {
+            // Sell-side marker passed to nft_buy_offers.
+            json::Value const result = queryWithMarker("nft_buy_offers", sellOfferIndex);
+            BEAST_EXPECT(result[jss::error].asString() == "invalidParams");
+        }
+        {
+            // Buy-side marker passed to nft_sell_offers.
+            json::Value const result = queryWithMarker("nft_sell_offers", buyOfferIndex);
+            BEAST_EXPECT(result[jss::error].asString() == "invalidParams");
+        }
+
+        // A same-side marker is still accepted.  With a single offer on each
+        // side, resuming after it simply yields no further offers.
+        {
+            json::Value const result = queryWithMarker("nft_buy_offers", buyOfferIndex);
+            BEAST_EXPECT(!result.isMember(jss::error));
+        }
+        {
+            json::Value const result = queryWithMarker("nft_sell_offers", sellOfferIndex);
+            BEAST_EXPECT(!result.isMember(jss::error));
+        }
+    }
+
+    void
     testNFTokenNegOffer(FeatureBitset features)
     {
         using namespace test::jtx;
@@ -6244,84 +6327,162 @@ class NFTokenBaseUtil_test : public beast::unit_test::Suite
         env.fund(XRP(10000), alice, bob, broker);
         env.close();
 
-        // Verify `nftoken_id` value equals to the NFTokenID that was
-        // changed in the most recent NFTokenMint or NFTokenAcceptOffer
-        // transaction
-        auto verifyNFTokenID = [&](uint256 const& actualNftID) {
+        // Transaction metadata is not always reported under the same field
+        // name: the `ledger` RPC uses `metaData`, the others use `meta`.
+        auto const getMeta = [](json::Value const& tx) -> json::Value const* {
+            if (tx.isMember(jss::meta))
+                return &tx[jss::meta];
+            if (tx.isMember(jss::metaData))
+                return &tx[jss::metaData];
+            return nullptr;
+        };
+
+        // Neither is the transaction hash: api_version 1 nests the
+        // transaction under `tx`, later versions use `tx_json`, and some
+        // responses put the hash on the entry itself.
+        auto const getHash = [](json::Value const& entry) -> std::string {
+            if (entry.isMember(jss::tx) && entry[jss::tx].isMember(jss::hash))
+                return entry[jss::tx][jss::hash].asString();
+            if (entry.isMember(jss::tx_json) && entry[jss::tx_json].isMember(jss::hash))
+                return entry[jss::tx_json][jss::hash].asString();
+            return entry[jss::hash].asString();
+        };
+
+        // Run `verifyMeta` against the metadata of the most recent
+        // transaction as reported by the `tx`, `ledger` and `account_tx`
+        // RPCs, so that the synthetic fields are checked in every response
+        // that carries them. Runs under both api_version 1 (`tx`/`meta`)
+        // and the latest api_version (`tx_json`/synthetic fields alongside
+        // it), since the two versions place fields differently.
+        auto verifyMetaInAllResponses = [&](auto verifyMeta) {
             // Get the hash for the most recent transaction.
             std::string const txHash{
                 env.tx()->getJson(JsonOptions::Values::None)[jss::hash].asString()};
 
             env.close();
-            json::Value const meta = env.rpc("tx", txHash)[jss::result][jss::meta];
 
-            // Expect nftokens_id field
-            if (!BEAST_EXPECT(meta.isMember(jss::nftoken_id)))
-                return;
+            for (unsigned const apiVersion :
+                 {unsigned{rpc::kApiMinimumSupportedVersion},
+                  unsigned{rpc::kApiMaximumSupportedVersion}})
+            {
+                // Test 1: Check tx RPC response
+                json::Value const txResult = env.rpc(apiVersion, "tx", txHash)[jss::result];
+                verifyMeta(txResult[jss::meta]);
 
-            // Check the value of NFT ID in the meta with the
-            // actual value
-            uint256 nftID;
-            BEAST_EXPECT(nftID.parseHex(meta[jss::nftoken_id].asString()));
-            BEAST_EXPECT(nftID == actualNftID);
+                // Test 2: Check ledger RPC response with expanded
+                // transactions
+                json::Value ledgerParams;
+                ledgerParams[jss::ledger_index] = txResult[jss::ledger_index].asUInt();
+                ledgerParams[jss::transactions] = true;
+                ledgerParams[jss::expand] = true;
+
+                auto const ledgerResult =
+                    env.rpc(apiVersion, "json", "ledger", to_string(ledgerParams));
+                auto const& ledgerTx =
+                    ledgerResult[jss::result][jss::ledger][jss::transactions][0u];
+
+                // Verify transaction hash matches
+                BEAST_EXPECT(getHash(ledgerTx) == txHash);
+
+                if (auto const* meta = getMeta(ledgerTx); BEAST_EXPECT(meta != nullptr))
+                    verifyMeta(*meta);
+
+                // Test 3: Check account_tx RPC response
+                // The transaction is not necessarily alice's, so query
+                // account_tx for the account that actually submitted it.
+                json::Value accountTxParams;
+                accountTxParams[jss::account] = txResult.isMember(jss::tx_json)
+                    ? txResult[jss::tx_json][jss::Account].asString()
+                    : txResult[jss::Account].asString();
+
+                auto const accountTxResult =
+                    env.rpc(apiVersion, "json", "account_tx", to_string(accountTxParams));
+
+                // account_tx ordering is not guaranteed, so find our
+                // transaction by hash rather than assuming it is the most
+                // recent one.
+                json::Value const* accountTx = nullptr;
+                for (auto const& entry : accountTxResult[jss::result][jss::transactions])
+                {
+                    if (getHash(entry) == txHash)
+                    {
+                        accountTx = &entry;
+                        break;
+                    }
+                }
+
+                if (!BEAST_EXPECT(accountTx != nullptr))
+                    continue;
+
+                if (auto const* meta = getMeta(*accountTx); BEAST_EXPECT(meta != nullptr))
+                    verifyMeta(*meta);
+            }
+        };
+
+        // Verify `nftoken_id` value equals to the NFTokenID that was
+        // changed in the most recent NFTokenMint or NFTokenAcceptOffer
+        // transaction
+        auto verifyNFTokenID = [&](uint256 const& actualNftID) {
+            verifyMetaInAllResponses([&](json::Value const& meta) {
+                // Expect nftoken_id field
+                if (!BEAST_EXPECT(meta.isMember(jss::nftoken_id)))
+                    return;
+
+                // Check the value of NFT ID matches
+                uint256 nftID;
+                BEAST_EXPECT(nftID.parseHex(meta[jss::nftoken_id].asString()));
+                BEAST_EXPECT(nftID == actualNftID);
+            });
         };
 
         // Verify `nftoken_ids` value equals to the NFTokenIDs that were
         // changed in the most recent NFTokenCancelOffer transaction
         auto verifyNFTokenIDsInCancelOffer = [&](std::vector<uint256> actualNftIDs) {
-            // Get the hash for the most recent transaction.
-            std::string const txHash{
-                env.tx()->getJson(JsonOptions::Values::None)[jss::hash].asString()};
-
-            env.close();
-            json::Value const meta = env.rpc("tx", txHash)[jss::result][jss::meta];
-
-            // Expect nftokens_ids field and verify the values
-            if (!BEAST_EXPECT(meta.isMember(jss::nftoken_ids)))
-                return;
-
-            // Convert NFT IDs from json::Value to uint256
-            std::vector<uint256> metaIDs;
-            std::transform(
-                meta[jss::nftoken_ids].begin(),
-                meta[jss::nftoken_ids].end(),
-                std::back_inserter(metaIDs),
-                [this](json::Value id) {
-                    uint256 nftID;
-                    BEAST_EXPECT(nftID.parseHex(id.asString()));
-                    return nftID;
-                });
-
-            // Sort both array to prepare for comparison
-            std::ranges::sort(metaIDs);
+            // Sort to prepare for comparison
             std::ranges::sort(actualNftIDs);
 
-            // Make sure the expect number of NFTs is correct
-            BEAST_EXPECT(metaIDs.size() == actualNftIDs.size());
+            verifyMetaInAllResponses([&](json::Value const& meta) {
+                // Expect nftoken_ids field and verify the values
+                if (!BEAST_EXPECT(meta.isMember(jss::nftoken_ids)))
+                    return;
 
-            // Check the value of NFT ID in the meta with the
-            // actual values
-            for (size_t i = 0; i < metaIDs.size(); ++i)
-                BEAST_EXPECT(metaIDs[i] == actualNftIDs[i]);
+                // Convert NFT IDs from json::Value to uint256
+                std::vector<uint256> metaIDs;
+                std::transform(
+                    meta[jss::nftoken_ids].begin(),
+                    meta[jss::nftoken_ids].end(),
+                    std::back_inserter(metaIDs),
+                    [this](json::Value id) {
+                        uint256 nftID;
+                        BEAST_EXPECT(nftID.parseHex(id.asString()));
+                        return nftID;
+                    });
+
+                std::ranges::sort(metaIDs);
+
+                // Make sure the expect number of NFTs is correct
+                if (!BEAST_EXPECT(metaIDs.size() == actualNftIDs.size()))
+                    return;
+
+                // Check the value of NFT ID in the meta with the
+                // actual values
+                for (size_t i = 0; i < metaIDs.size(); ++i)
+                    BEAST_EXPECT(metaIDs[i] == actualNftIDs[i]);
+            });
         };
 
         // Verify `offer_id` value equals to the offerID that was
         // changed in the most recent NFTokenCreateOffer tx
         auto verifyNFTokenOfferID = [&](uint256 const& offerID) {
-            // Get the hash for the most recent transaction.
-            std::string const txHash{
-                env.tx()->getJson(JsonOptions::Values::None)[jss::hash].asString()};
+            verifyMetaInAllResponses([&](json::Value const& meta) {
+                // Expect offer_id field and verify the value
+                if (!BEAST_EXPECT(meta.isMember(jss::offer_id)))
+                    return;
 
-            env.close();
-            json::Value const meta = env.rpc("tx", txHash)[jss::result][jss::meta];
-
-            // Expect offer_id field and verify the value
-            if (!BEAST_EXPECT(meta.isMember(jss::offer_id)))
-                return;
-
-            uint256 metaOfferID;
-            BEAST_EXPECT(metaOfferID.parseHex(meta[jss::offer_id].asString()));
-            BEAST_EXPECT(metaOfferID == offerID);
+                uint256 metaOfferID;
+                BEAST_EXPECT(metaOfferID.parseHex(meta[jss::offer_id].asString()));
+                BEAST_EXPECT(metaOfferID == offerID);
+            });
         };
 
         // Check new fields in tx meta when for all NFTtransactions
@@ -7274,6 +7435,127 @@ class NFTokenBaseUtil_test : public beast::unit_test::Suite
         }
     }
 
+    void
+    testCreateOfferInvalidAmount(FeatureBitset features)
+    {
+        testcase("Invalid NFT offer create amount");
+
+        using namespace test::jtx;
+
+        // Before fixCleanup3_4_0, a fake-XRP offer amount (an IOU using the
+        // "XRP" currency code) is not rejected in preflight. With the amendment
+        // enabled, preflight rejects it with temBAD_CURRENCY.
+        for (bool const withFix : {false, true})
+        {
+            Env env{*this, withFix ? features | fixCleanup3_4_0 : features - fixCleanup3_4_0};
+
+            Account const alice{"alice"};
+            Account const gw{"gw"};
+
+            env.fund(XRP(1000), alice, gw);
+            env.close();
+
+            uint256 const nftID = token::getNextID(env, alice, 0, tfTransferable);
+            env(token::mint(alice, 0u), Txflags(tfTransferable));
+            env.close();
+
+            // Fake XRP (an IOU using the "XRP" currency code) sell offer
+            // amount.
+            auto const bad = IOU(gw, badCurrency());
+            env(token::createOffer(alice, nftID, bad(1)),
+                Txflags(tfSellNFToken),
+                Ter(withFix ? TER{temBAD_CURRENCY} : TER{tesSUCCESS}));
+            env.close();
+        }
+    }
+
+    void
+    testAcceptOfferInvalidBrokerFee(FeatureBitset features)
+    {
+        testcase("Invalid NFT offer accept broker fee");
+
+        using namespace test::jtx;
+
+        // Before fixCleanup3_4_0, a fake-XRP broker fee (an IOU using the "XRP"
+        // currency code) is not rejected in preflight and reaches later offer
+        // validation instead. With the amendment enabled, preflight rejects it
+        // with temBAD_CURRENCY.
+        for (bool const withFix : {false, true})
+        {
+            Env env{*this, withFix ? features | fixCleanup3_4_0 : features - fixCleanup3_4_0};
+
+            Account const alice{"alice"};
+            Account const buyer{"buyer"};
+            Account const broker{"broker"};
+            Account const gw{"gw"};
+
+            env.fund(XRP(1000), alice, buyer, broker, gw);
+            env.close();
+
+            uint256 const nftID = token::getNextID(env, alice, 0, tfTransferable);
+            env(token::mint(alice, 0u), Txflags(tfTransferable));
+            env.close();
+
+            uint256 const sellOfferIndex =
+                keylet::nftokenOffer(alice, SeqProxy::rawSequence(env.seq(alice))).key;
+            env(token::createOffer(alice, nftID, XRP(10)), Txflags(tfSellNFToken));
+            env.close();
+
+            uint256 const buyOfferIndex =
+                keylet::nftokenOffer(buyer, SeqProxy::rawSequence(env.seq(buyer))).key;
+            env(token::createOffer(buyer, nftID, XRP(40)), token::Owner(alice));
+            env.close();
+
+            // Fake XRP (an IOU using the "XRP" currency code) broker fee.
+            auto const bad = IOU(gw, badCurrency());
+            env(token::brokerOffers(broker, buyOfferIndex, sellOfferIndex),
+                token::BrokerFee(bad(1)),
+                Ter(withFix ? TER{temBAD_CURRENCY} : TER{tecNFTOKEN_BUY_SELL_MISMATCH}));
+            env.close();
+        }
+    }
+
+    void
+    testCreateOfferIouIssuerGlobalFreeze(FeatureBitset features)
+    {
+        testcase("Create NFT offer by IOU issuer under global freeze");
+
+        using namespace test::jtx;
+
+        // Before fixCleanup3_4_0, an IOU issuer that has set a global freeze on
+        // their own currency cannot create an NFToken offer denominated in that
+        // currency; the offer is rejected with tecFROZEN.  With the amendment
+        // enabled, the issuer is not subject to their own global freeze when the
+        // offer is denominated in their own IOU (e.g. to receive their own
+        // transfer fees), so the offer succeeds.
+        for (bool const withFix : {false, true})
+        {
+            Env env{*this, withFix ? features | fixCleanup3_4_0 : features - fixCleanup3_4_0};
+
+            Account const issuer{"issuer"};
+            IOU const isISU(issuer["ISU"]);
+
+            env.fund(XRP(1000), issuer);
+            env.close();
+
+            // issuer mints a transferable NFToken.
+            uint256 const nftID = token::getNextID(env, issuer, 0, tfTransferable);
+            env(token::mint(issuer, 0u), Txflags(tfTransferable));
+            env.close();
+
+            // issuer sets a global freeze on their own IOU.
+            env(fset(issuer, asfGlobalFreeze));
+            env.close();
+
+            // issuer creates a sell offer for the NFToken denominated in their
+            // own (globally frozen) IOU.
+            env(token::createOffer(issuer, nftID, isISU(100)),
+                Txflags(tfSellNFToken),
+                Ter(withFix ? TER{tesSUCCESS} : TER{tecFROZEN}));
+            env.close();
+        }
+    }
+
 protected:
     FeatureBitset const allFeatures_{test::jtx::testableAmendments()};
 
@@ -7305,6 +7587,7 @@ protected:
         testNFTokenWithTickets(features);
         testNFTokenDeleteAccount(features);
         testNftXxxOffers(features);
+        testNftXxxOffersMarkerWrongSide(features);
         testNFTokenNegOffer(features);
         testIOUWithTransferFee(features);
         testBrokeredSaleToSelf(features);
@@ -7315,6 +7598,9 @@ protected:
         testUnaskedForAutoTrustline(features);
         testNFTIssuerIsIOUIssuer(features);
         testNFTokenModify(features);
+        testCreateOfferInvalidAmount(features);
+        testAcceptOfferInvalidBrokerFee(features);
+        testCreateOfferIouIssuerGlobalFreeze(features);
     }
 
 public:
