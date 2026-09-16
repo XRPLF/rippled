@@ -214,7 +214,7 @@ ConfidentialMPTMirrorUpdate::doApply()
         UNREACHABLE(
             "xrpl::ConfidentialMPTMirrorUpdate::doApply : preclaim already validated the "
             "issuance exists");
-        return tefINTERNAL;
+        return tecINTERNAL;
         // LCOV_EXCL_STOP
     }
 
@@ -229,7 +229,7 @@ ConfidentialMPTMirrorUpdate::doApply()
         UNREACHABLE(
             "xrpl::ConfidentialMPTMirrorUpdate::doApply : preclaim already validated the "
             "MPToken exists");
-        return tefINTERNAL;
+        return tecINTERNAL;
         // LCOV_EXCL_STOP
     }
 
