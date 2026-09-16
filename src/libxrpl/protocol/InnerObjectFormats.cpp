@@ -168,6 +168,14 @@ InnerObjectFormats::InnerObjectFormats()
             {sfTxnSignature, SoeOptional},
             {sfSigners, SoeOptional},
         });
+
+    add(sfProposalSignature.jsonName,
+        sfProposalSignature.getCode(),
+        {
+            {sfAccount, SoeRequired},
+            {sfSigningPubKey, SoeRequired},
+            {sfTxnSignature, SoeRequired},
+        });
 }
 
 InnerObjectFormats const&

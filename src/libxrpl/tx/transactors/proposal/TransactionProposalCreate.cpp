@@ -98,6 +98,22 @@ TransactionProposalCreate::preflight(PreflightContext const& ctx)
         return temBAD_SIGNER;
     }
 
+    // The proposed transaction cannot assign the same account to more than
+    // one signing role — its initiator (Account or Delegate) and any
+    // Counterparty / Sponsor co-signer must each be a distinct account.
+    // Under fixCleanup3_4_0 each role signs a distinct payload, so a
+    // proposal with such an overlap can never complete: one contribution
+    // fills at most one slot, and the other role would sit waiting
+    // forever. Rejecting up front is friendlier than letting the proposal
+    // sit unsatisfiable until it expires.
+    if (proposal::hasRoleOverlap(proposedTx))
+    {
+        JLOG(ctx.j.debug()) << "TransactionProposalCreate: proposed txn "
+                               "assigns the same account to more than one "
+                               "signing role (initiator/Counterparty/Sponsor).";
+        return temBAD_SIGNER;
+    }
+
     if (!proposal::hasEmptySigningPubKey(proposedTx))
     {
         JLOG(ctx.j.debug()) << "TransactionProposalCreate: proposed txn "
