@@ -541,26 +541,28 @@ ValidVault::finalize(
 
         return result;
     }
-    if (txnType == ttVAULT_DELETE)
-    {
-        JLOG(j.fatal()) << "Invariant failed: vault deletion succeeded without "
-                           "deleting a vault";
-        XRPL_ASSERT(enforce, "xrpl::ValidVault::finalize : vault deletion invariant");
-        return !enforce;  // That's all we can do here
-    }
 
     // Reaching here means a vault survives the transaction, so any vault erased
     // alongside it must be a different one. The single-vault check above counts
     // beforeVault_ and afterVault_ separately and so cannot see this pairing,
     // which would otherwise leave the checks below comparing the pre-state of
     // the erased vault against the post-state of the surviving one. Checked
-    // before the assert that follows, which covers the same pairing but only in
-    // debug builds.
+    // ahead of the ttVAULT_DELETE case below, which covers the same state but
+    // misreports it as a deletion that erased nothing, and ahead of the assert
+    // on the surviving vault's identity, which fires only in debug builds.
     if (fix350Enabled && !deletedVault_.empty())
     {
         JLOG(j.fatal()) << "Invariant failed: vault deletion must not "
                            "create or modify another vault";
         return false;  // That's all we can do here
+    }
+
+    if (txnType == ttVAULT_DELETE)
+    {
+        JLOG(j.fatal()) << "Invariant failed: vault deletion succeeded without "
+                           "deleting a vault";
+        XRPL_ASSERT(enforce, "xrpl::ValidVault::finalize : vault deletion invariant");
+        return !enforce;  // That's all we can do here
     }
 
     // Note, `afterVault_.empty()` is handled above

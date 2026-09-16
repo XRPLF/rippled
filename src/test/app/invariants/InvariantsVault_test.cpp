@@ -375,9 +375,7 @@ class InvariantsVault_test : public InvariantsBase
                 return true;
             });
 
-        Precheck const eraseTwoVaults = [](Account const& a1,
-                                           Account const& a2,
-                                           ApplyContext& ac) {
+        Precheck const eraseTwoVaults = [](Account const& a1, Account const& a2, ApplyContext& ac) {
             for (auto const& a : {a1, a2})
             {
                 auto const keylet = keylet::vault(a.id(), SeqProxy::rawSequence(ac.view().seq()));
@@ -557,6 +555,57 @@ class InvariantsVault_test : public InvariantsBase
                 env(tx);
                 return true;
             });
+
+        // The same pairing on ttVAULT_DELETE, the one transaction type allowed
+        // to erase a vault. It reports this diagnostic only because the check
+        // is made ahead of the case that reads the surviving vault and reports
+        // a deletion that erased nothing.
+        //
+        // Erase a1's vault and create a bare one for a2, leaving the erased
+        // vault the only "before" entry and the new one the only "after" entry.
+        Precheck const eraseAndAdd = [](Account const& a1, Account const& a2, ApplyContext& ac) {
+            auto const sequence = ac.view().seq();
+            auto sleVault = ac.view().peek(keylet::vault(a1.id(), SeqProxy::rawSequence(sequence)));
+            if (!sleVault)
+                return false;
+            ac.view().erase(sleVault);
+            auto sleOther =
+                std::make_shared<SLE>(keylet::vault(a2.id(), SeqProxy::rawSequence(sequence)));
+            auto const vaultPage = ac.view().dirInsert(
+                keylet::ownerDir(a2.id()), sleOther->key(), describeOwnerDir(a2.id()));
+            sleOther->setFieldU64(sfOwnerNode, *vaultPage);
+            sleOther->setAccountID(sfAccount, a2.id());
+            ac.view().insert(sleOther);
+            return true;
+        };
+
+        Preclose const createOneVault = [](Account const& a1, Account const& a2, Env& env) {
+            Vault const vault{env};
+            auto [tx, _] = vault.create({.owner = a1, .asset = xrpIssue()});
+            env(tx);
+            return true;
+        };
+
+        doInvariantCheck(
+            {"vault deletion must not create or modify another vault"},
+            eraseAndAdd,
+            XRPAmount{},
+            STTx{ttVAULT_DELETE, [](STObject&) {}},
+            {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
+            createOneVault);
+
+        // Without fixCleanup3_5_0 the same state falls through to that case and
+        // is reported as a deletion that erased nothing. This pins the gate:
+        // the amendment sharpens the diagnostic, it does not decide whether the
+        // transaction is rejected.
+        doInvariantCheck(
+            makeEnv(all_ - fixCleanup3_5_0),
+            {"vault deletion succeeded without deleting a vault"},
+            eraseAndAdd,
+            XRPAmount{},
+            STTx{ttVAULT_DELETE, [](STObject&) {}},
+            {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
+            createOneVault);
 
         doInvariantCheck(
             {"vault operation succeeded without modifying a vault"},
@@ -1566,6 +1615,7 @@ class InvariantsVault_test : public InvariantsBase
             auto const keys = createClosedXrpBroker(a1, env);
             if (BEAST_EXPECT(keys))
             {
+                // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
                 auto const& brokerKeylet = keys->second;
 
                 OpenView ov{*env.current()};
@@ -1615,6 +1665,7 @@ class InvariantsVault_test : public InvariantsBase
             auto const keys = createClosedXrpBroker(a1, env);
             if (!BEAST_EXPECT(keys))
                 continue;
+            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
             auto const& brokerKeylet = keys->second;
 
             OpenView ov{*env.current()};
