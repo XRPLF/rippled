@@ -1057,29 +1057,20 @@ public:
         auto& store = env.app().getSHAMapStore();
         auto& lm = env.app().getLedgerMaster();
 
-        // Real account state, so the state map carries inner nodes that the
-        // rotation must copy forward rather than an almost-empty tree.
-        auto const alice = Account("alice");
-        auto const bob = Account("bob");
-        env.fund(XRP(10000), alice, bob);
-        env.close();
-
+        // waitForReady() must run on a freshly built Env: it asserts the store
+        // has not rotated yet and that the validated ledger is the third one.
         auto ledgerSeq = waitForReady(env);
-        auto lastRotated = store.getLastRotated();
+        auto lastRotated = ledgerSeq - 1;
+        BEAST_EXPECT(store.getLastRotated() == lastRotated);
 
-        // Two rotations. A payment each ledger mutates the state map so
-        // successive rotations copy forward genuinely different nodes, while
-        // alice's and bob's account roots persist unchanged across the archive
-        // boundary -- exactly the nodes the copy-forward must preserve.
+        // Two rotations, so the first rotation's archive is really deleted by
+        // the second. Funding a fresh account every ledger keeps adding
+        // state-map nodes, while accounts funded before the boundary must stay
+        // reachable afterwards -- exactly what the copy-forward preserves.
         for (int rotation = 0; rotation < 2; ++rotation)
         {
-            for (auto const target = store.getLastRotated() + kDeleteInterval + 1;
-                 ledgerSeq < target;
-                 ++ledgerSeq)
+            for (; ledgerSeq < lastRotated + kDeleteInterval + 1; ++ledgerSeq)
             {
-                // A fresh funded account each ledger adds new state-map
-                // nodes, so each rotation copies forward genuinely new data
-                // while alice's and bob's roots persist across the boundary.
                 env.fund(XRP(1000), Account("acct" + std::to_string(ledgerSeq)));
                 env.close();
 
