@@ -229,12 +229,17 @@ target_link_libraries(
 # each module's headers: a module can only include xrpl/telemetry/ headers if
 # it links this target, and the target must already exist at that point.
 #
-# Links xrpl.libxrpl.protocol PRIVATELY for sha512Half (digest.h)
+# Links xrpl.libxrpl.protocol and xrpl.libxrpl.core PUBLICLY: ValidationTracker.h
+# takes LedgerIndex and MetricMacros.h takes ServiceRegistry, both in interfaces.
 add_module(xrpl telemetry)
 target_link_libraries(
     xrpl.libxrpl.telemetry
-    PUBLIC xrpl.libxrpl.basics xrpl.libxrpl.beast xrpl.libxrpl.config
-    PRIVATE xrpl.libxrpl.protocol
+    PUBLIC
+        xrpl.libxrpl.basics
+        xrpl.libxrpl.beast
+        xrpl.libxrpl.config
+        xrpl.libxrpl.core
+        xrpl.libxrpl.protocol
 )
 if(telemetry)
     # Telemetry owns both the trace and (as of the direct-metrics API) the

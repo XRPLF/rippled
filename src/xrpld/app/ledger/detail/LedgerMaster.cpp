@@ -18,7 +18,6 @@
 #include <xrpld/overlay/Overlay.h>
 #include <xrpld/overlay/Peer.h>
 #include <xrpld/rpc/detail/PathRequestManager.h>
-#include <xrpld/telemetry/MetricsRegistry.h>
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/MathUtilities.h>
@@ -58,6 +57,7 @@
 #include <xrpl/shamap/SHAMap.h>
 #include <xrpl/shamap/SHAMapMissingNode.h>
 #include <xrpl/shamap/SHAMapTreeNode.h>
+#include <xrpl/telemetry/MetricsRegistry.h>
 #include <xrpl/telemetry/SpanGuard.h>
 #include <xrpl/telemetry/SpanNames.h>
 

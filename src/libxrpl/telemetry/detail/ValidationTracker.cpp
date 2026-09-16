@@ -3,7 +3,7 @@
  * Implementation of the ValidationTracker class.
  */
 
-#include <xrpld/telemetry/ValidationTracker.h>
+#include <xrpl/telemetry/ValidationTracker.h>
 
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/protocol/Protocol.h>

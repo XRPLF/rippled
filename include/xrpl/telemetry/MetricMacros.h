@@ -132,9 +132,8 @@
 #include <boost/asio/detail/socket_types.hpp>
 #endif
 
-#include <xrpld/telemetry/MetricsRegistry.h>  // IWYU pragma: keep
-
-#include <xrpl/core/ServiceRegistry.h>  // IWYU pragma: keep
+#include <xrpl/core/ServiceRegistry.h>       // IWYU pragma: keep
+#include <xrpl/telemetry/MetricsRegistry.h>  // IWYU pragma: keep
 
 #ifdef XRPL_ENABLE_TELEMETRY
 

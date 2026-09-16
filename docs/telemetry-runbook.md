@@ -1829,8 +1829,10 @@ ledger acquisition deferring". Use `acquire_ledger_deferrals` and
 These five come from the `PerfLog` job hooks, not from beast::insight, so they
 are exported by the `MetricsRegistry` meter. `job_queued_us` and `job_running_us`
 have explicit microsecond bucket views registered
-(`addMicrosecondHistogramView()` calls at MetricsRegistry.cpp:310-311; the helper
-itself is at `:197`) spanning 100 µs to 60 s; without those the SDK default
+(`addMicrosecondHistogramView()`, called from
+`MetricsRegistry::initExporterAndProvider()` — both live in
+`src/libxrpl/telemetry/MetricsRegistry.cpp`) spanning 100 µs to 60 s; without
+those the SDK default
 buckets stop at 10 ms and every quantile saturates.
 
 | Prometheus Metric    | Kind      | Labels                | Description                          |
@@ -1862,7 +1864,7 @@ two production job names embed a ledger sequence number:
 A raw label would mint a new Prometheus series for every ledger — unbounded
 growth at ~1 series every 3-5 s, forever.
 `MetricsRegistry::sanitiseHandler()` (declared inline in
-`src/xrpld/telemetry/MetricsRegistry.h`) therefore applies one rule:
+`include/xrpl/telemetry/MetricsRegistry.h`) therefore applies one rule:
 
 - Keep the name when it is **non-empty and every character is an ASCII letter**.
 - Otherwise return the constant `"other"`. An empty name, a digit, a hyphen, or
@@ -1989,7 +1991,7 @@ rpc_batch_size_count - rpc_batch_size_bucket{le="12288"}
 <!-- The all-caps macro name XRPL_METRIC_HISTOGRAM_RECORD trips cspell's
      compound-word splitter, which emits the subword "ISTOGRAM"; ignore it here. -->
 
-Use the call-site macros in `src/xrpld/telemetry/MetricMacros.h` -- no
+Use the call-site macros in `include/xrpl/telemetry/MetricMacros.h` -- no
 `MetricsRegistry.h`/`.cpp` edit is needed for any of these:
 
 | Need                                                   | Macro                                                                                                                                                                     |
@@ -2001,7 +2003,7 @@ Use the call-site macros in `src/xrpld/telemetry/MetricMacros.h` -- no
 | Value your own code already tracks, sampled on a timer | `XRPL_METRIC_OBSERVABLE_GAUGE_REGISTER` / `_COUNTER_REGISTER` / `_UPDOWN_REGISTER`                                                                                        |
 
 ```cpp
-#include <xrpld/telemetry/MetricMacros.h>
+#include <xrpl/telemetry/MetricMacros.h>
 
 // Monotonic counter:
 XRPL_METRIC_COUNTER_INC(app_, "my_new_thing_total", "Description of what this counts");
@@ -2018,8 +2020,9 @@ XRPL_METRIC_OBSERVABLE_GAUGE_REGISTER(app_, "my_thing_size", "Current size",
 
 Counters use a `_total` suffix by convention. A histogram whose values can
 exceed ~10,000 units (e.g. a microsecond duration beyond 10ms) still needs one
-line added to `addMicrosecondHistogramView()` in `MetricsRegistry.cpp` -- the
-only case that still touches a central file. There is no way to read a metric's
+line added to `addMicrosecondHistogramView()` in
+`src/libxrpl/telemetry/MetricsRegistry.cpp` -- the only case that still touches a
+central file. There is no way to read a metric's
 current value back from application code -- OTel's API is write-only by design;
 keep your own state if your logic needs to both record and read a running value
 (see the Doxygen header in `MetricMacros.h` for the full explanation).
@@ -2289,10 +2292,12 @@ Requires `trace_peer=1` in the `[telemetry]` config section.
 > `{quantile="$quantile"}` matches nothing and reports no error. The job queue
 > exposes two parallel families: `job_running_us` / `job_queued_us`
 > (`MetricsRegistry` instruments, labelled by `job_type` and `handler`,
-> microseconds — what these panels use;
-> [MetricsRegistry.cpp:94-95](../src/xrpld/telemetry/MetricsRegistry.cpp#L94),
-> [363-366](../src/xrpld/telemetry/MetricsRegistry.cpp#L363), recorded from the
-> `PerfLog` job hooks at
+> microseconds — what these panels use; the two names come from the
+> `kJobQueuedDurationUs` / `kJobRunningDurationUs` constants and the microsecond
+> buckets from `addMicrosecondHistogramView()` in
+> `MetricsRegistry::initExporterAndProvider()`, all in
+> [MetricsRegistry.cpp](../src/libxrpl/telemetry/MetricsRegistry.cpp), recorded
+> from the `PerfLog` job hooks at
 > [PerfLogImp.cpp:432](../src/xrpld/perflog/detail/PerfLogImp.cpp#L432)) and
 > `jobq_<jobtype>[_q]_milliseconds`
 > (beast::insight, one instrument per job type, milliseconds —

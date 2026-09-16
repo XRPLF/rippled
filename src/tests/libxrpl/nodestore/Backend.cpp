@@ -217,7 +217,7 @@ INSTANTIATE_TEST_SUITE_P(
 // parameterized suite above only reaches when XRPL_ROCKSDB_AVAILABLE.
 //
 // Why absence and not zeros: the exporter skips the whole nudb_* label group
-// when getWriteStats() is empty (MetricsRegistry.cpp observeWritePathDetail
+// when getWriteStats() is empty (AppMetricGauges.cpp observeWritePathDetail
 // returns early). If the base class returned a default-constructed WriteStats
 // instead, every non-NuDB node would publish nudb_writers_in_flight=0 and
 // nudb_insert_max_us=0 -- a perfectly idle write path, on a node whose write

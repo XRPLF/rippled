@@ -30,7 +30,6 @@
 #include <xrpld/rpc/CTID.h>
 #include <xrpld/rpc/ServerHandler.h>
 #include <xrpld/rpc/detail/SyntheticFields.h>
-#include <xrpld/telemetry/MetricsRegistry.h>
 #include <xrpld/telemetry/PropagationHelpers.h>
 #include <xrpld/telemetry/TxSpanNames.h>
 
@@ -119,6 +118,7 @@
 #include <xrpl/server/LoadFeeTrack.h>
 #include <xrpl/server/Manifest.h>
 #include <xrpl/shamap/SHAMap.h>
+#include <xrpl/telemetry/MetricsRegistry.h>
 #include <xrpl/telemetry/SpanGuard.h>
 #include <xrpl/tx/apply.h>
 
