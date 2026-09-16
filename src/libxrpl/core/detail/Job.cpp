@@ -36,6 +36,12 @@ Job::getType() const
     return type_;
 }
 
+std::string const&
+Job::getName() const
+{
+    return name_;
+}
+
 Job::clock_type::time_point const&
 Job::queueTime() const
 {

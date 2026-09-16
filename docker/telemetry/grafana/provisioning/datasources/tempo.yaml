@@ -1,0 +1,228 @@
+# Grafana datasource provisioning for Grafana Tempo.
+# Auto-configures Tempo as a trace data source on Grafana startup.
+# Access Grafana at http://localhost:3000, then use Explore -> Tempo
+# to browse xrpld traces using TraceQL.
+#
+# Search filters provide pre-configured dropdowns in the Explore UI.
+# Each phase adds filters for the span attributes it introduces.
+# Base filters — node identity, service, span name, status.
+# RPC command, status, role filters.
+# Transaction hash, local/peer origin, status.
+# Consensus mode, round, ledger sequence, close time.
+
+apiVersion: 1
+
+datasources:
+  - name: Tempo
+    type: tempo
+    access: proxy
+    url: http://tempo:3200
+    uid: tempo
+    jsonData:
+      nodeGraph:
+        enabled: true
+      # Service map and traces-to-metrics require a Prometheus datasource
+      # (not included in this stack). These features are inactive until a
+      # Prometheus service is added to docker-compose.yml.
+      serviceMap:
+        datasourceUid: prometheus
+      # Trace-to-log correlation — enables one-click navigation
+      # from a Tempo trace to the corresponding Loki log lines. Filters
+      # by trace_id so only logs from the same trace are shown.
+      tracesToLogs:
+        datasourceUid: loki
+        filterByTraceID: true
+        filterBySpanID: false
+        tags: []
+      tracesToMetrics:
+        datasourceUid: prometheus
+        spanStartTimeShift: "-1h"
+        spanEndTimeShift: "1h"
+      search:
+        filters:
+          # --- Node identification filters ---
+          # service.name: logical service name (default: "xrpld").
+          #   Useful when running multiple service types in the same collector.
+          - id: service-name
+            tag: service.name
+            operator: "="
+            scope: resource
+            type: static
+          # service.instance.id: unique node identifier — configurable via
+          #   the service_instance_id setting in [telemetry], defaults to the
+          #   node's public key. E.g. "Node-1" or "nHB1X37...".
+          - id: node-id
+            tag: service.instance.id
+            operator: "="
+            scope: resource
+            type: dynamic
+          # service.version: xrpld build version (e.g., "2.4.0-b1").
+          #   Filter traces from specific software releases.
+          - id: node-version
+            tag: service.version
+            operator: "="
+            scope: resource
+            type: dynamic
+          # xrpl.network.id: numeric network identifier
+          #   (0 = mainnet, 1 = testnet, 2 = devnet, etc.).
+          #   Derived from the [network_id] config section.
+          - id: network-id
+            tag: xrpl.network.id
+            operator: "="
+            scope: resource
+            type: dynamic
+          # xrpl.network.type: human-readable network name derived from
+          #   network ID ("mainnet", "testnet", "devnet", "unknown").
+          - id: network-type
+            tag: xrpl.network.type
+            operator: "="
+            scope: resource
+            type: dynamic
+          # --- Span intrinsic filters ---
+          # name: the span operation name (e.g., "rpc.command.server_info").
+          #   Use to find traces for a specific RPC command or subsystem.
+          - id: span-name
+            tag: name
+            operator: "="
+            scope: intrinsic
+            type: dynamic
+          # status: span completion status ("ok", "error", "unset").
+          #   Filter for failed operations to diagnose errors.
+          - id: span-status
+            tag: status
+            operator: "="
+            scope: intrinsic
+            type: dynamic
+          # duration: span wall-clock duration. Use with ">" operator
+          #   to find slow operations (e.g., duration > 500ms).
+          - id: span-duration
+            tag: duration
+            operator: ">"
+            scope: intrinsic
+            type: dynamic
+          # RPC tracing filters
+          - id: rpc-command
+            tag: command
+            operator: "="
+            scope: span
+            type: dynamic
+          - id: rpc-status
+            tag: rpc_status
+            operator: "="
+            scope: span
+            type: dynamic
+          - id: rpc-role
+            tag: rpc_role
+            operator: "="
+            scope: span
+            type: dynamic
+          # Transaction tracing filters
+          - id: tx-hash
+            tag: tx_hash
+            operator: "="
+            scope: span
+            type: static
+          - id: tx-origin
+            tag: local
+            operator: "="
+            scope: span
+            type: dynamic
+          - id: tx-status
+            tag: tx_status
+            operator: "="
+            scope: span
+            type: dynamic
+          # tx_type: transaction type (e.g., "Payment", "OfferCreate").
+          - id: tx-type
+            tag: tx_type
+            operator: "="
+            scope: span
+            type: dynamic
+          # Consensus tracing filters
+          - id: consensus-mode
+            tag: consensus_mode
+            operator: "="
+            scope: span
+            type: static
+          - id: consensus-round
+            tag: consensus_round
+            operator: "="
+            scope: span
+            type: dynamic
+          - id: consensus-ledger-seq
+            tag: ledger_seq
+            operator: "="
+            scope: span
+            type: static
+          # ledger_hash: ledger hash — scope all spans to a specific closed ledger.
+          - id: ledger-hash
+            tag: ledger_hash
+            operator: "="
+            scope: span
+            type: static
+          - id: consensus-close-time-correct
+            tag: close_time_correct
+            operator: "="
+            scope: span
+            type: static
+          - id: consensus-state
+            tag: consensus_state
+            operator: "="
+            scope: span
+            type: static
+          - id: consensus-close-resolution
+            tag: close_resolution_ms
+            operator: "="
+            scope: span
+            type: dynamic
+          - id: consensus-proposers
+            tag: proposers
+            operator: "="
+            scope: span
+            type: dynamic
+          - id: consensus-result
+            tag: consensus_result
+            operator: "="
+            scope: span
+            type: dynamic
+          - id: consensus-mode-old
+            tag: mode_old
+            operator: "="
+            scope: span
+            type: dynamic
+          - id: consensus-mode-new
+            tag: mode_new
+            operator: "="
+            scope: span
+            type: dynamic
+          - id: consensus-ledger-id
+            tag: consensus_ledger_id
+            operator: "="
+            scope: span
+            type: static
+          # Additional transaction and queue filters
+          - id: tx-path
+            tag: path
+            operator: "="
+            scope: span
+            type: dynamic
+          - id: tx-suppressed
+            tag: suppressed
+            operator: "="
+            scope: span
+            type: dynamic
+          - id: peer-version
+            tag: peer_version
+            operator: "="
+            scope: span
+            type: dynamic
+          - id: txq-status
+            tag: txq_status
+            operator: "="
+            scope: span
+            type: dynamic
+          - id: txq-ter-code
+            tag: ter_code
+            operator: "="
+            scope: span
+            type: dynamic

@@ -241,7 +241,15 @@ Database::fetchNodeObject(
 
     auto nodeObject{fetchNodeObject(hash, ledgerSeq, fetchReport, duplicate)};
     auto dur = steady_clock::now() - begin;
-    fetchDurationUs_ += duration_cast<microseconds>(dur).count();
+
+    // One measurement, dur, feeds both the cumulative counter and the scheduler
+    // report, so the two can never disagree about how long this fetch took.
+    // They express it in different units: the counter accumulates nanoseconds,
+    // the clock's own resolution, so a run of reads each faster than a
+    // microsecond still sums to the right total; the report carries
+    // microseconds, the unit FetchReport::elapsed declares.
+    fetchDurationNs_ += static_cast<std::uint64_t>(duration_cast<nanoseconds>(dur).count());
+    auto const elapsedUs = duration_cast<microseconds>(dur);
     if (nodeObject)
     {
         ++fetchHitCount_;
@@ -249,7 +257,7 @@ Database::fetchNodeObject(
     }
     ++fetchTotalCount_;
 
-    fetchReport.elapsed = duration_cast<milliseconds>(dur);
+    fetchReport.elapsed = elapsedUs;
     scheduler_.onFetch(fetchReport);
     return nodeObject;
 }
@@ -273,7 +281,10 @@ Database::getCountsJson(json::Value& obj)
     obj[jss::node_reads_hit] = std::to_string(fetchHitCount_);
     obj[jss::node_written_bytes] = std::to_string(storeSz_);
     obj[jss::node_read_bytes] = std::to_string(fetchSz_);
-    obj[jss::node_reads_duration_us] = std::to_string(fetchDurationUs_);
+    // Through the accessors: the accumulators hold nanoseconds and these two
+    // fields are declared in microseconds.
+    obj[jss::node_reads_duration_us] = std::to_string(getFetchDurationUs());
+    obj[jss::node_writes_duration_us] = std::to_string(getStoreDurationUs());
 }
 
 }  // namespace xrpl::node_store

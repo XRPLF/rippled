@@ -23,6 +23,7 @@
 #include <boost/system/detail/error_code.hpp>
 #include <boost/system/system_error.hpp>
 
+#include <atomic>
 #include <chrono>
 #include <cstddef>
 #include <deque>
@@ -166,7 +167,10 @@ private:
     std::string name_;
     GaugeImpl::value_type lastValue_{0};
     GaugeImpl::value_type value_{0};
-    bool dirty_{false};
+    // Start dirty so the initial value (0) is emitted on the first flush.
+    // Without this, gauges whose value never changes from 0 would never
+    // appear in downstream metric stores (e.g. Prometheus via StatsD).
+    bool dirty_{true};
 };
 
 //------------------------------------------------------------------------------
@@ -218,6 +222,13 @@ private:
     std::recursive_mutex metricsLock_;
     List<StatsDMetricBase> metrics_;
 
+    /**
+     * Whether hook handlers may be called. False until onCollectionReady(),
+     * because the handlers read application services that are still being
+     * constructed while this collector exists.
+     */
+    std::atomic<bool> polling_{false};
+
     // Must come last for order of init
     std::thread thread_;
 
@@ -253,6 +264,22 @@ public:
 
         work_.reset();
         thread_.join();
+    }
+
+    void
+    onCollectionReady() override
+    {
+        polling_.store(true, std::memory_order_release);
+    }
+
+    void
+    onCollectionStopping() override
+    {
+        polling_.store(false, std::memory_order_release);
+
+        // onTimer holds metricsLock_ across the handler loop, so acquiring it
+        // here waits for a handler that is already running.
+        std::scoped_lock const _(metricsLock_);
     }
 
     Hook
@@ -437,11 +464,17 @@ public:
             return;
         }
 
-        std::scoped_lock const _(metricsLock_);
+        if (polling_.load(std::memory_order_acquire))
+        {
+            std::scoped_lock const _(metricsLock_);
 
-        for (auto& m : metrics_)
-            m.doProcess();
+            for (auto& m : metrics_)
+                m.doProcess();
+        }
 
+        // The gate above holds back hook handlers, not socket I/O. Events reach
+        // data_ without passing through metrics_, so the drain must run on every
+        // tick or they sit unsent before startup and are lost at shutdown.
         sendBuffers();
 
         setTimer();
