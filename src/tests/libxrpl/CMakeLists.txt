@@ -5,15 +5,24 @@ include(verify_headers)
 # Test requirements.
 find_package(GTest REQUIRED)
 
-# Single combined gtest binary built from the shared test helpers and all test
-# modules below.
-add_executable(
-    xrpl_tests
-    main.cpp
+add_library(
+    xrpl.testkit.wasm
+    STATIC
     helpers/Account.cpp
     helpers/TestSink.cpp
     helpers/TxTest.cpp
+    tx/wasm/fixtures/NftSetup.cpp
+    tx/wasm/fixtures/WasmLedger.cpp
+    tx/wasm/fixtures/WasmRun.cpp
 )
+target_include_directories(xrpl.testkit.wasm PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+target_link_libraries(
+    xrpl.testkit.wasm
+    PUBLIC xrpl.libxrpl xrpl_wasm_testkit_cxxbridge
+)
+add_dependencies(xrpl.testkit.wasm xrpl_crates)
+
+add_executable(xrpl_tests main.cpp)
 patch_nix_binary(xrpl_tests)
 set_target_properties(
     xrpl_tests
@@ -21,7 +30,10 @@ set_target_properties(
 )
 # Lets test sources include the shared helpers as <helpers/...>.
 target_include_directories(xrpl_tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
-target_link_libraries(xrpl_tests PRIVATE GTest::gtest GTest::gmock xrpl.libxrpl)
+target_link_libraries(
+    xrpl_tests
+    PRIVATE GTest::gtest GTest::gmock xrpl.libxrpl xrpl.testkit.wasm
+)
 
 # One source subdirectory per module. Network unit tests are currently not
 # supported on Windows.
@@ -43,9 +55,6 @@ set(test_modules
 if(NOT WIN32)
     list(APPEND test_modules net)
 endif()
-if(rust)
-    target_link_libraries(xrpl_tests PRIVATE rs_hello_world_cxxbridge)
-endif()
 
 foreach(module IN LISTS test_modules)
     # Append the module's sources (${module}/*.cpp and ${module}.cpp, if any).
@@ -55,12 +64,13 @@ foreach(module IN LISTS test_modules)
         "${CMAKE_CURRENT_SOURCE_DIR}/${module}/*.cpp"
         "${CMAKE_CURRENT_SOURCE_DIR}/${module}.cpp"
     )
-    if(NOT rust)
-        # Tests of the Rust interop include generated cxxbridge headers, which
-        # do not exist without the crates, so keep them out of the build tree
-        # entirely. They are named `Rust<something>.cpp`.
-        list(FILTER sources EXCLUDE REGEX "/Rust[^/]*\\.cpp$")
-    endif()
+    # The framework-free half of tx/wasm/fixtures/ is compiled into xrpl.testkit.wasm,
+    # which this binary links; the rest of that folder belongs here.
+    list(
+        FILTER sources
+        EXCLUDE
+        REGEX "/fixtures/(NftSetup|WasmLedger|WasmRun)\\.cpp$"
+    )
     target_sources(xrpl_tests PRIVATE ${sources})
 
     # Expose the module's private headers under their canonical include path.

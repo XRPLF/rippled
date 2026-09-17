@@ -1,13 +1,23 @@
 #pragma once
 
 #include <xrpl/basics/Log.h>
+#include <xrpl/basics/UnorderedContainers.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/chrono.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/core/HashRouter.h>
 #include <xrpl/core/NetworkIDService.h>
 #include <xrpl/core/ServiceRegistry.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/ledger/AmendmentTable.h>
 #include <xrpl/ledger/PendingSaves.h>
+#include <xrpl/ledger/View.h>
+#include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Protocol.h>
+#include <xrpl/protocol/PublicKey.h>
+#include <xrpl/protocol/Rules.h>
+#include <xrpl/protocol/STValidation.h>
+#include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/server/LoadFeeTrack.h>
 
 #include <boost/asio/io_context.hpp>
@@ -15,11 +25,15 @@
 #include <helpers/TestFamily.h>
 #include <helpers/TestSink.h>
 
+#include <chrono>
 #include <cstdint>
+#include <map>
 #include <memory>
 #include <optional>
+#include <set>
 #include <stdexcept>
 #include <string>
+#include <vector>
 
 namespace xrpl::test {
 
@@ -37,6 +51,100 @@ public:
     makeSink(std::string const&, beast::Severity threshold) override
     {
         return std::make_unique<TestSink>(threshold);
+    }
+};
+
+/**
+ * Minimal AmendmentTable for tests.
+ */
+class TestAmendmentTable final : public AmendmentTable
+{
+public:
+    [[nodiscard]] uint256
+    find(std::string const& name) const override
+    {
+        return getRegisteredFeature(name).value_or(uint256{});
+    }
+
+    bool
+    veto(uint256 const&) override
+    {
+        throw std::logic_error("TestAmendmentTable::veto not implemented");
+    }
+    bool
+    unVeto(uint256 const&) override
+    {
+        throw std::logic_error("TestAmendmentTable::unVeto not implemented");
+    }
+    bool
+    enable(uint256 const&) override
+    {
+        throw std::logic_error("TestAmendmentTable::enable not implemented");
+    }
+    [[nodiscard]] bool
+    isEnabled(uint256 const&) const override
+    {
+        throw std::logic_error("TestAmendmentTable::isEnabled not implemented");
+    }
+    [[nodiscard]] bool
+    isSupported(uint256 const&) const override
+    {
+        throw std::logic_error("TestAmendmentTable::isSupported not implemented");
+    }
+    [[nodiscard]] bool
+    hasUnsupportedEnabled() const override
+    {
+        throw std::logic_error("TestAmendmentTable::hasUnsupportedEnabled not implemented");
+    }
+    [[nodiscard]] std::optional<NetClock::time_point>
+    firstUnsupportedExpected() const override
+    {
+        throw std::logic_error("TestAmendmentTable::firstUnsupportedExpected not implemented");
+    }
+    [[nodiscard]] json::Value
+    getJson(bool) const override
+    {
+        throw std::logic_error("TestAmendmentTable::getJson not implemented");
+    }
+    [[nodiscard]] json::Value
+    getJson(uint256 const&, bool) const override
+    {
+        throw std::logic_error("TestAmendmentTable::getJson(amendment) not implemented");
+    }
+    [[nodiscard]] bool
+    needValidatedLedger(LedgerIndex) const override
+    {
+        throw std::logic_error("TestAmendmentTable::needValidatedLedger not implemented");
+    }
+    void
+    doValidatedLedger(LedgerIndex, std::set<uint256> const&, majorityAmendments_t const&) override
+    {
+        throw std::logic_error("TestAmendmentTable::doValidatedLedger not implemented");
+    }
+    void
+    trustChanged(hash_set<PublicKey> const&) override
+    {
+        throw std::logic_error("TestAmendmentTable::trustChanged not implemented");
+    }
+    std::map<uint256, std::uint32_t>
+    doVoting(
+        Rules const&,
+        NetClock::time_point,
+        std::set<uint256> const&,
+        majorityAmendments_t const&,
+        std::vector<std::shared_ptr<STValidation>> const&) override
+    {
+        throw std::logic_error("TestAmendmentTable::doVoting not implemented");
+    }
+    [[nodiscard]] std::vector<uint256>
+    doValidation(std::set<uint256> const&) const override
+    {
+        throw std::logic_error("TestAmendmentTable::doValidation not implemented");
+    }
+    [[nodiscard]] std::vector<uint256>
+    getDesired() const override
+    {
+        throw std::logic_error("TestAmendmentTable::getDesired not implemented");
     }
 };
 
@@ -71,11 +179,27 @@ private:
  */
 class TestServiceRegistry : public ServiceRegistry
 {
+public:
+    /**
+     * @brief The fee settings a test environment starts with.
+     */
+    static Fees
+    defaultFees()
+    {
+        Fees fees{XRPAmount{10}, XRPAmount{10 * kDropsPerXrp}, XRPAmount{2 * kDropsPerXrp}};
+        fees.gasLimit = 1'000'000;
+        fees.bytecodeSizeLimit = 100'000;
+        fees.gasPrice = 1'000'000;
+        return fees;
+    }
+
+private:
     TestLogs logs_{beast::Severity::Warning};
     boost::asio::io_context ioContext_;
     TestFamily family_{logs_.journal("TestFamily")};
     LoadFeeTrack feeTrack_{logs_.journal("LoadFeeTrack")};
     TestNetworkIDService networkIDService_;
+    Fees fees_{defaultFees()};
     HashRouter hashRouter_{HashRouter::Setup{}, stopwatch()};
     NodeCache tempNodeCache_{
         "TempNodeCache",
@@ -91,6 +215,7 @@ class TestServiceRegistry : public ServiceRegistry
         logs_.journal("TaggedCache")};
     PendingSaves pendingSaves_;
     std::optional<uint256> trapTxID_;
+    TestAmendmentTable amendmentTable_;
 
 public:
     TestServiceRegistry() = default;
@@ -143,7 +268,7 @@ public:
     AmendmentTable&
     getAmendmentTable() override
     {
-        throw std::logic_error("TestServiceRegistry::getAmendmentTable() not implemented");
+        return amendmentTable_;
     }
 
     HashRouter&
@@ -372,6 +497,21 @@ public:
     getWalletDB() override
     {
         throw std::logic_error("TestServiceRegistry::getWalletDB() not implemented");
+    }
+
+    Fees
+    getFees() const override
+    {
+        return fees_;
+    }
+
+    /**
+     * @brief Override the fee settings the transactors see.
+     */
+    void
+    setFees(Fees const& fees)
+    {
+        fees_ = fees;
     }
 
     // Temporary: Get the underlying Application

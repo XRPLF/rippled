@@ -4,12 +4,12 @@
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/chrono.h>
 #include <xrpl/beast/hash/uhash.h>
-#include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/Ledger.h>
 #include <xrpl/ledger/OpenView.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Fees.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/Rules.h>
 #include <xrpl/protocol/SField.h>
@@ -30,6 +30,7 @@
 #include <cmath>
 #include <concepts>
 #include <cstdint>
+#include <map>
 #include <memory>
 #include <optional>
 #include <stdexcept>
@@ -164,6 +165,19 @@ struct TxResult
 };
 
 /**
+ * @brief Result of a transaction submission that has been closed into a ledger.
+ *
+ * `TxResult::metadata` is always `std::nullopt`, because metadata is only built for a view
+ * that is not open. This is what `TxTest::submitAndClose` returns instead: the result code
+ * paired with the metadata that closing produced.
+ */
+struct ClosedResult
+{
+    TER ter;                     ///< The transaction engine result code.
+    std::optional<TxMeta> meta;  ///< Metadata from the close, absent if none was produced.
+};
+
+/**
  * @brief A lightweight transaction testing harness.
  *
  * Unlike the JTx framework which requires a full Application and RPC layer,
@@ -191,8 +205,16 @@ public:
      *
      * @param features Optional set of features to enable. If not specified,
      *                 uses all testable amendments.
+     * @param fees Optional fee settings. If not specified, uses
+     *             `TestServiceRegistry::defaultFees()`. Applied to **both** the genesis
+     *             ledger and the service registry, because transactors read limits from the
+     *             registry (`ctx.registry.get().getFees()`) while `calculateBaseFee` reads
+     *             `view.fees()` — a test whose fees disagree across the two is testing a
+     *             state no ledger can be in.
      */
-    explicit TxTest(std::optional<FeatureBitset> features = std::nullopt);
+    explicit TxTest(
+        std::optional<FeatureBitset> features = std::nullopt,
+        std::optional<Fees> fees = std::nullopt);
 
     /**
      * @brief Check if a feature is enabled.
@@ -218,17 +240,22 @@ public:
      * @tparam T A type derived from TransactionBuilderBase.
      * @param builder The transaction builder.
      * @param signer The account to sign with.
+     * @param fee The fee to pay. The 10 drop default is below what some transactions
+     *            require: an `EscrowCreate` carrying `sfBytecode` owes
+     *            `base * 10 + 5 * bytecodeBytes` (`EscrowCreate::calculateBaseFee`), and an
+     *            `EscrowFinish` carrying `sfGas` owes the allowance priced at `gasPrice`.
+     *            Those submissions would fail on the fee rather than on whatever they meant
+     *            to test, so they must pass one explicitly.
      * @return TxResult containing the result code, applied status, and metadata.
      */
     template <typename T>
         requires std::
             derived_from<std::decay_t<T>, transactions::TransactionBuilderBase<std::decay_t<T>>>
         [[nodiscard]] TxResult
-        submit(T&& builder, Account const& signer)
+        submit(T&& builder, Account const& signer, XRPAmount fee = XRPAmount{10})
     {
         auto const& obj = builder.getSTObject();
         auto accountId = obj[sfAccount];
-        // Only set sequence if not using a ticket (ticket sets sequence to 0)
         if (!obj.isFieldPresent(sfTicketSequence))
         {
             builder.setSequence(getAccountRoot(accountId).getSequence());
@@ -237,8 +264,33 @@ public:
         {
             builder.setSequence(0);
         }
-        builder.setFee(XRPAmount(10));
+        builder.setFee(fee);
         return submit(builder.build(signer.pk(), signer.sk()).getSTTx());
+    }
+
+    /**
+     * @brief Submit a transaction, then close the ledger and return its metadata.
+     *
+     * Metadata comes into being at `close`, not at `submit` (see `close`), so any assertion
+     * about `sfGasUsed`, `sfVMReturnCode`, or a delivered amount needs this three-step
+     * sequence rather than `submit` alone. Closing also advances time by one close
+     * interval, which matters to a test sensitive to a `FinishAfter` or an expiry.
+     *
+     * @tparam T A type derived from TransactionBuilderBase.
+     * @param builder The transaction builder.
+     * @param signer The account to sign with.
+     * @param fee The fee to pay; see `submit` for when the default is not enough.
+     * @return The result code and the metadata produced by the close.
+     */
+    template <typename T>
+        requires std::
+            derived_from<std::decay_t<T>, transactions::TransactionBuilderBase<std::decay_t<T>>>
+        [[nodiscard]] ClosedResult
+        submitAndClose(T&& builder, Account const& signer, XRPAmount fee = XRPAmount{10})
+    {
+        auto const result = submit(std::forward<T>(builder), signer, fee);
+        close();
+        return ClosedResult{.ter = result.ter, .meta = getMetadata(result.tx->getTransactionID())};
     }
 
     /**
@@ -282,6 +334,28 @@ public:
     getAccountRoot(AccountID const& id) const;
 
     /**
+     * @brief Get an account's owner count.
+     * @param id The account ID.
+     * @return The number of ledger objects the account owns.
+     * @throws std::runtime_error if the account does not exist.
+     */
+    [[nodiscard]] std::uint32_t
+    getOwnerCount(AccountID const& id) const;
+
+    /**
+     * @brief Get an account's XRP balance.
+     *
+     * The IOU overload of `getBalance` covers trust lines; this covers the account's own
+     * drops, which is what a fee- or reserve-sensitive test needs to assert on.
+     *
+     * @param id The account ID.
+     * @return The balance in drops.
+     * @throws std::runtime_error if the account does not exist.
+     */
+    [[nodiscard]] XRPAmount
+    getXrpBalance(AccountID const& id) const;
+
+    /**
      * @brief Get the current open ledger view.
      * @return A mutable reference to the open ledger.
      */
@@ -307,9 +381,25 @@ public:
      *
      * Creates a new closed ledger from the current open ledger.
      * All pending transactions are re-applied in canonical order.
+     *
+     * @note This is where transaction **metadata** comes into being: it is only built for a
+     *       view that is not open (`ApplyStateTable::apply`), so `submit` cannot return any.
+     *       Each closed transaction's metadata is retained for `getMetadata`.
      */
     void
     close();
+
+    /**
+     * @brief Get the metadata of a transaction in the most recently closed ledger.
+     *
+     * Metadata is a property of a *closed* ledger, so the sequence is submit → `close` →
+     * `getMetadata`. Only the latest close is retained.
+     *
+     * @param txId The transaction's ID (`TxResult::tx->getTransactionID()`).
+     * @return The metadata, or `std::nullopt` if that transaction was not in the last close.
+     */
+    [[nodiscard]] std::optional<TxMeta>
+    getMetadata(uint256 const& txId) const;
 
     /**
      * @brief Advance time without closing the ledger.
@@ -345,9 +435,14 @@ public:
 
     /**
      * @brief Get the service registry.
+     *
+     * Returns the concrete test type so a test can reach its setters — `setFees` in
+     * particular, for the cases that need a limit to change *after* setup, which the
+     * constructor's `fees` parameter cannot express.
+     *
      * @return A reference to the service registry.
      */
-    ServiceRegistry&
+    TestServiceRegistry&
     getServiceRegistry()
     {
         return registry_;
@@ -366,9 +461,51 @@ private:
     std::vector<std::shared_ptr<STTx const>> pendingTxs_;
 
     /**
+     * Metadata from the most recent close, keyed by transaction ID. Replaced each close.
+     */
+    std::map<uint256, TxMeta> closedMetadata_;
+
+    /**
      * Current time (can be advanced arbitrarily for testing).
      */
     NetClock::time_point now_;
 };
+
+//------------------------------------------------------------------------------
+// TxTest free helpers
+//------------------------------------------------------------------------------
+
+/**
+ * @brief A ledger-close-time deadline `seconds` in the future.
+ *
+ * Time fields on the wire are `std::uint32_t` seconds since the XRPL epoch, while the
+ * environment reports a `NetClock::time_point`. Every `CancelAfter` / `FinishAfter` needs
+ * the same cast, and getting it wrong yields a deadline in the past — which a transactor
+ * reports as `temBAD_EXPIRATION`, a failure that looks like the case under test.
+ *
+ * @param env The environment whose close time the deadline is relative to.
+ * @param seconds How far past the current close time the deadline should sit.
+ * @return The deadline, as a transaction field expects it.
+ */
+[[nodiscard]] std::uint32_t
+closeTimeOffset(TxTest const& env, std::uint32_t seconds);
+
+/**
+ * @brief Create and fund several accounts with the same balance.
+ *
+ * @code
+ *     createAccounts(env, XRP(5'000), alice, carol);
+ * @endcode
+ *
+ * @param env The environment to create the accounts in.
+ * @param xrp The initial balance for each account.
+ * @param accounts The accounts to create.
+ */
+template <std::same_as<Account>... Accounts>
+void
+createAccounts(TxTest& env, XRPAmount xrp, Accounts const&... accounts)
+{
+    (env.createAccount(accounts, xrp), ...);
+}
 
 }  // namespace xrpl::test
