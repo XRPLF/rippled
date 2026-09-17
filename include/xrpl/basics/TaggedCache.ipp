@@ -597,6 +597,47 @@ template <
     class Hash,
     class KeyEqual,
     class Mutex>
+template <class F>
+inline bool
+TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash, KeyEqual, Mutex>::
+    forEachKeyPartition(F&& f) const
+{
+    // Reused across partitions, so the whole walk costs one allocation.
+    std::vector<key_type> keys;
+    for (std::size_t p = 0; p < cache_.partitions(); ++p)
+    {
+        keys.clear();
+        {
+            std::scoped_lock const lock(mutex_);
+            auto const& partition = cache_.map()[p];
+            keys.reserve(partition.size());
+            auto const start = std::chrono::steady_clock::now();
+            for (auto const& entry : partition)
+                keys.push_back(entry.first);
+            auto const held = std::chrono::steady_clock::now() - start;
+            if (held >= std::chrono::seconds{1})
+            {
+                JLOG(journal_.warn())
+                    << name_ << " TaggedCache forEachKeyPartition held the lock "
+                    << std::chrono::duration_cast<std::chrono::milliseconds>(held).count()
+                    << "ms over " << keys.size() << " entries";
+            }
+        }
+        if (!f(keys))
+            return false;
+    }
+    return true;
+}
+
+template <
+    class Key,
+    class T,
+    bool IsKeyCache,
+    class SharedWeakUnionPointer,
+    class SharedPointerType,
+    class Hash,
+    class KeyEqual,
+    class Mutex>
 inline auto
 TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash, KeyEqual, Mutex>::
     getKeys() const -> std::vector<key_type>

@@ -245,6 +245,29 @@ public:
     std::vector<key_type>
     getKeys() const;
 
+    /**
+     * Visit every key, one map partition at a time.
+     *
+     * The mutex is held only while one partition's keys are copied out, and
+     * `f` runs with the mutex released. So the longest hold is one partition,
+     * not the whole cache. getKeys() holds the mutex across every entry, and
+     * on a cache of tens of millions of entries that hold lasts seconds,
+     * during which every other user of the cache waits.
+     *
+     * `f` is called once per partition, in partition order, with that
+     * partition's keys as they were when it was copied. A key inserted after
+     * its partition was copied is not visited; a key removed after the copy is
+     * still visited. That is the same snapshot rule getKeys() has, applied per
+     * partition rather than once.
+     *
+     * @param f Callable taking `std::vector<key_type> const&` and returning
+     *          false to stop the walk before the next partition.
+     * @return true if every partition was visited, false if `f` stopped early.
+     */
+    template <class F>
+    bool
+    forEachKeyPartition(F&& f) const;
+
     // CachedSLEs functions.
     /**
      * Returns the fraction of cache hits.
