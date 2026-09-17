@@ -6923,6 +6923,7 @@ private:
         testAMMClawback(all - fixAMMv1_3 - featureAMMClawback);
         for (auto const& f : amendmentCombinations({fixCleanup3_3_0, featureAMMClawback}))
             testAMMDepositWithFrozenAssets(f);
+        testAMMDepositWithFrozenAssets(all - featureAMMClawback);
         testAMMDepositWithFrozenAssets(all - fixAMMv1_3 - featureAMMClawback);
         testFixReserveCheckOnWithdrawal(all);
         testFixReserveCheckOnWithdrawal(all - fixAMMv1_2);
