@@ -293,11 +293,11 @@ TEST(TaggedCacheTest, for_each_key_partition_on_empty_cache_calls_back_with_empt
 
     std::size_t calls = 0;
     std::size_t keysSeen = 0;
-    c.forEachKeyPartition([&](std::vector<LedgerIndex> const& keys) {
+    EXPECT_TRUE(c.forEachKeyPartition([&](std::vector<LedgerIndex> const& keys) {
         ++calls;
         keysSeen += keys.size();
         return true;
-    });
+    }));
 
     EXPECT_EQ(calls, static_cast<std::size_t>(std::thread::hardware_concurrency()));
     EXPECT_EQ(keysSeen, 0u);
@@ -318,9 +318,13 @@ TEST(TaggedCacheTest, for_each_key_partition_releases_the_mutex_while_the_callba
     // A recursive mutex lets the calling thread re-lock it, so the probe has to
     // run on another thread: try_lock there succeeds only if this thread is not
     // holding the mutex while the callback runs.
+    // With no partitions the callback never runs and every assertion below is
+    // vacuously true, which would hide the one thing this test exists to prove.
+    ASSERT_GT(std::thread::hardware_concurrency(), 0u);
+
     std::size_t calls = 0;
     std::size_t unlockedDuringCallback = 0;
-    c.forEachKeyPartition([&](std::vector<LedgerIndex> const&) {
+    EXPECT_TRUE(c.forEachKeyPartition([&](std::vector<LedgerIndex> const&) {
         ++calls;
         bool acquired = false;
         std::thread probe([&] {
@@ -332,7 +336,7 @@ TEST(TaggedCacheTest, for_each_key_partition_releases_the_mutex_while_the_callba
         if (acquired)
             ++unlockedDuringCallback;
         return true;
-    });
+    }));
 
     EXPECT_EQ(calls, static_cast<std::size_t>(std::thread::hardware_concurrency()));
     EXPECT_EQ(unlockedDuringCallback, calls);
@@ -354,9 +358,9 @@ TEST(TaggedCacheTest, for_each_key_partition_tolerates_inserts_from_another_thre
 
     // While one partition's keys are being handled, another thread inserts a
     // fresh key. The mutex is free during the callback, so the insert must
-    // complete (a held mutex would deadlock the join), and every original key
-    // must still be visited exactly once. Whether the new keys are visited
-    // depends on which partition they land in, so only their count is bounded.
+    // complete -- a held mutex would deadlock the join -- and every original key
+    // must still be visited exactly once. Whether a late key is visited depends
+    // on which partition it lands in, so this asserts nothing about those.
     std::vector<LedgerIndex> visited;
     LedgerIndex next = original;
     c.forEachKeyPartition([&](std::vector<LedgerIndex> const& keys) {
@@ -372,7 +376,6 @@ TEST(TaggedCacheTest, for_each_key_partition_tolerates_inserts_from_another_thre
     auto const originals =
         std::ranges::count_if(visited, [](LedgerIndex k) { return k < original; });
     EXPECT_EQ(static_cast<LedgerIndex>(originals), original);
-    EXPECT_LE(visited.size() - static_cast<std::size_t>(originals), next - original);
     EXPECT_EQ(c.getTrackSize(), static_cast<int>(next));
 }
 

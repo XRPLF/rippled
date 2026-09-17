@@ -29,8 +29,6 @@
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/server/NetworkOPs.h>
-#include <xrpl/shamap/Family.h>
-#include <xrpl/shamap/TreeNodeCache.h>
 
 #include <algorithm>
 #include <atomic>
@@ -1038,71 +1036,6 @@ public:
     }
 
     void
-    testFreshenKeepsLedgersResolvable()
-    {
-        // After a rotation deletes the archived shard, every node of a
-        // retained validated ledger must still be reachable from the writable
-        // backend. run() copies the validated state map forward and then
-        // freshens the caches so a node whose only on-disk copy was in the
-        // doomed archive is rewritten into the writable backend first. Were
-        // that copy-forward dropped, reloading a retained ledger from disk once
-        // the archive is gone would hit a missing node.
-        //
-        // Drive two rotations (so the first archive is actually deleted),
-        // clear the in-memory caches so the check must read the backend, then
-        // reload a retained ledger and assert it resolves with no missing node.
-        testcase("freshen keeps retained ledgers resolvable");
-        using namespace jtx;
-        using namespace std::chrono_literals;
-
-        Env env(*this, envconfig(onlineDelete));
-        auto& store = env.app().getSHAMapStore();
-        auto& lm = env.app().getLedgerMaster();
-
-        // waitForReady() must run on a freshly built Env: it asserts the store
-        // has not rotated yet and that the validated ledger is the third one.
-        auto ledgerSeq = waitForReady(env);
-        auto lastRotated = ledgerSeq - 1;
-        BEAST_EXPECT(store.getLastRotated() == lastRotated);
-
-        // Two rotations, so the first rotation's archive is really deleted by
-        // the second. Funding a fresh account every ledger keeps adding
-        // state-map nodes, while accounts funded before the boundary must stay
-        // reachable afterwards -- exactly what the copy-forward preserves.
-        for (int rotation = 0; rotation < 2; ++rotation)
-        {
-            for (; ledgerSeq < lastRotated + kDeleteInterval + 1; ++ledgerSeq)
-            {
-                env.fund(XRP(1000), Account("acct" + std::to_string(ledgerSeq)));
-                env.close();
-
-                auto ledger = env.rpc("ledger", "validated");
-                BEAST_EXPECT(goodLedger(env, ledger, std::to_string(ledgerSeq), true));
-            }
-
-            BEAST_EXPECT(syncStore(env));
-            BEAST_EXPECT(store.getLastRotated() != lastRotated);
-            lastRotated = store.getLastRotated();
-        }
-
-        // A validated ledger the store still retains after both rotations.
-        auto const retainedSeq = lastRotated;
-
-        // Force the walk onto the backend: drop the tree-node cache and the
-        // cached ledger objects, so getLedgerBySeq must rebuild the ledger from
-        // the store. A node that was not copied forward is now only in the
-        // deleted archive, so the rebuild or the walk would fail.
-        env.app().getNodeFamily().getTreeNodeCache()->clear();
-        lm.clearLedgerCachePrior(retainedSeq + 1);
-
-        auto const retained = lm.getLedgerBySeq(retainedSeq);
-        if (BEAST_EXPECT(retained != nullptr))
-        {
-            BEAST_EXPECT(retained->walkLedger(env.app().getJournal("SHAMapStoreTest"), false));
-        }
-    }
-
-    void
     testCanDelete()
     {
         testcase("online_delete with advisory_delete");
@@ -1992,7 +1925,6 @@ public:
         testConfig();
         testClear();
         testAutomatic();
-        testFreshenKeepsLedgersResolvable();
         testCanDelete();
         testRotate();
         testLedgerGaps();

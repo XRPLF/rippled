@@ -255,17 +255,25 @@ public:
      * during which every other user of the cache waits.
      *
      * `f` is called once per partition, in partition order, with that
-     * partition's keys as they were when it was copied. A key inserted after
-     * its partition was copied is not visited; a key removed after the copy is
-     * still visited. That is the same snapshot rule getKeys() has, applied per
-     * partition rather than once.
+     * partition's keys as they were when that partition was copied. There is
+     * no single instant at which the whole cache was observed, so the snapshot
+     * is weaker than getKeys() in one direction and stronger in the other: a
+     * key inserted into a partition already copied is not visited, while one
+     * inserted into a later partition is, and a key erased before its
+     * partition is copied is not visited even though getKeys() would have
+     * returned it.
+     *
+     * @note `f` receives a reference to one buffer that is cleared and refilled
+     *       for each partition. Any pointer, iterator or reference into it is
+     *       dangling by the next call, so a callback that needs the keys beyond
+     *       its own invocation must copy them.
      *
      * @param f Callable taking `std::vector<key_type> const&` and returning
      *          false to stop the walk before the next partition.
      * @return true if every partition was visited, false if `f` stopped early.
      */
     template <class F>
-    bool
+    [[nodiscard]] bool
     forEachKeyPartition(F&& f) const;
 
     // CachedSLEs functions.

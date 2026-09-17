@@ -202,13 +202,14 @@ private:
      * is copied into the writable backend before the archive is deleted.
      *
      * Keys are copied one map partition at a time, and every fetch runs with
-     * the cache mutex released. getKeys() held the mutex across the whole
+     * the cache mutex released. getKeys() would hold the mutex across the whole
      * cache, which on a large tree-node cache stalls every job for seconds and
      * can drop the node out of sync. The walk is abandoned as soon as
      * healthWait() reports the node is no longer keeping up.
      *
      * @param cache The cache to walk.
-     * @return true if healthWait() said the rotation must stop or expire.
+     * @return true if healthWait() said the rotation must stop or expire, so
+     *         the caller must abandon it; false if every key was fetched.
      */
     template <class CacheInstance>
     bool
