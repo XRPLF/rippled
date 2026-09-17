@@ -38,6 +38,14 @@ Cluster::member(PublicKey const& identity) const
     return iter->name();
 }
 
+bool
+Cluster::isMember(PublicKey const& identity) const
+{
+    std::scoped_lock const lock(mutex_);
+
+    return nodes_.contains(identity);
+}
+
 std::size_t
 Cluster::size() const
 {
