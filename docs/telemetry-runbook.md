@@ -4955,21 +4955,25 @@ CI run so its variance characteristics are preserved. Details in
 
 #### CI workflow
 
-`.github/workflows/telemetry-validation.yml` runs three jobs — `linux-image-tag`
-(reads the CI image tag from the build matrix so this workflow cannot drift onto
-a different compiler than the main CI), `build-xrpld` (self-hosted runner, same
-container as the main CI, so Conan and ccache hit the shared caches), and
-`validate-telemetry` (`ubuntu-latest`, which has Docker).
+[`reusable-telemetry-validation.yml`](../.github/workflows/reusable-telemetry-validation.yml)
+runs two jobs — `build-xrpld` (self-hosted runner, same container as the main
+CI, so Conan and ccache hit the shared caches) and `validate-telemetry`
+(`ubuntu-latest`, which has Docker).
 
-- **Triggers**: `workflow_dispatch`, and `push` on `pratik/otel-phase*`,
-  `feature/otel-*`, `feature/telemetry-*` limited to a `paths` filter covering
-  the workflow file, `docker/telemetry/**`, and the telemetry sources under
-  `include/xrpl/telemetry/**`, `src/libxrpl/telemetry/**` and
-  `src/xrpld/telemetry/**`. There is no cron schedule.
+- **Caller**: [`on-pr.yml`](../.github/workflows/on-pr.yml), on `pull_request`
+  and `merge_group`. It resolves the CI image tag from the build matrix so this
+  build cannot drift onto a different compiler than the main CI, asks Conan
+  whether the recipe compiles telemetry in, and starts the pair only when
+  telemetry-relevant paths changed. There is no cron schedule.
+- **Telemetry gate**: `validate-telemetry` is skipped when telemetry is off,
+  because a build with the tracing compiled out emits no spans and no metrics to
+  assert on. `build-xrpld` runs either way, so the telemetry-off build is still
+  compiled here.
 - **Invocation**: `run-full-validation.sh --xrpld <binary>`, so the default
   `full-validation` profile is used and no category is skipped.
-- **Log-trace correlation is gated**: `--skip-loki` is not passed
-  ([telemetry-validation.yml:237](../.github/workflows/telemetry-validation.yml#L237)),
+- **Log-trace correlation is gated**: `--skip-loki` is not passed by the
+  "Run full telemetry validation" step of
+  [`reusable-telemetry-validation.yml`](../.github/workflows/reusable-telemetry-validation.yml),
   so `log.trace_id_present` and `log.trace_id_cross_reference` are constructed and
   can fail the job. Correlation spans four independent legs — node, mount,
   collector, Loki — and a failed check names none of them, so

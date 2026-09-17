@@ -66,10 +66,6 @@ inline constexpr auto local = makeStr("local");
  */
 inline constexpr auto path = makeStr("path");
 /**
- * "suppressed" — whether tx was suppressed as duplicate.
- */
-inline constexpr auto suppressed = makeStr("suppressed");
-/**
  * "tx_status" — domain-qualified (collides with rpc_status, txq_status).
  */
 inline constexpr auto txStatus = makeStr("tx_status");
@@ -105,15 +101,6 @@ namespace val {
 inline constexpr auto sync = makeStr("sync");
 inline constexpr auto async = makeStr("async");
 inline constexpr auto knownBad = makeStr("known_bad");
-/**
- * Transaction was suppressed via HashRouter (duplicate, not flagged bad).
- */
-inline constexpr auto suppressed = makeStr("suppressed");
-/**
- * Transaction was rejected because it carried tfInnerBatchTxn, which
- * must never appear in network-relayed traffic.
- */
-inline constexpr auto rejectedInnerBatch = makeStr("rejected_inner_batch");
 /**
  * Transaction was dropped because the validated ledger is too old to
  * confidently apply new transactions (server is out of sync).
