@@ -648,13 +648,7 @@ fn unbounded_recursion_is_stopped_by_the_call_stack_limit() {
 }
 
 /// A module with many functions currently compiles and runs: wasmi's only cap is its
-/// 1,000,000 hard limit, so the ticket's ~24k-function module is not refused here. Every
-/// validation appends to the engine's append-only CodeMap, which a per-call engine now frees
-/// when the run ends — so this is a peak-memory cost for the duration of one run rather than
-/// the process-lifetime accumulation it was, but nothing bounds that peak.
-/// Enforcing a tighter bound (a function-count / average-bytes-per-function limit) belongs in
-/// a future preflight pass that parses the module before the engine sees it. Ignored until
-/// then, so this documents the gap without asserting it is acceptable.
+/// 1,000,000 hard limit.
 #[test]
 #[ignore = "CodeMap-DoS unmitigated; a function-count limit is deferred to preflight parsing"]
 fn many_functions_currently_run_unbounded() {

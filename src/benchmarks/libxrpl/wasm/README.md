@@ -82,8 +82,7 @@ why the three terms in `rel_error` do not all combine in quadrature.
 **`guestInstruction` is the self-test — read it first.** It runs the calibration's own loop body, so
 its `implied_gas` (wall time) and `charged_gas` (the fuel meter) are two independent measurements of
 one quantity. Quiet Release machine: **≈13.7 against 13.007, ~5% high.** A persistent gap much
-beyond that means every other number in the run shares it. It has already caught an estimator
-mismatch worth +40%, and the memory leak below.
+beyond that means every other number in the run shares it.
 
 **`suggested_gas` for an `Impl`-only case is a lower bound** — the crossing floor is measured on a
 call with no input, so a function that moves bytes pays more; `Sha512Half` and `UpdateData` sweep
@@ -129,20 +128,9 @@ The linker rebuild and the fuel-metering overhead are **not** separable from her
 
 ### Pin your iteration counts
 
-`wasm_engine()` returns a fresh `Engine` per call and `run`/`check` drop theirs on return, so
-compiles no longer accumulate. Compiling 64-function modules and sampling RSS from `ps`, the cost is
-a one-time 0.6 MiB that arrives within the first few thousand compiles and then does not move
-through 40,000 — allocator high-water mark, not growth. A shared engine grew by 5.4 KB per compile
-without bound, which over the same 40,000 would have been ~216 MiB. That retires the old hazard
-here, where automatic sizing reached 7.9 GB resident and every later case in the binary failed to
-compile.
-
-The measurement cycles 2,000 distinct modules, so the allocator sees a repeating size distribution;
-a validator meeting varied contract sizes would settle at a somewhat higher mark, still bounded.
-
-Pin `->Iterations(...)` anyway: automatic sizing targets a wall-clock budget rather than a compile
-count, which gives the cheap cases six-figure counts and `/4096` a handful, and stops the sweep's
-rows being comparable to each other or to the last run.
+Pin `->Iterations(...)`: automatic sizing targets a wall-clock budget, not a compile count,
+so the cheap cases get six-figure counts and `/4096` a handful — leaving no row comparable to
+another or to the last run.
 
 ## Gotchas, each of which has already cost someone an afternoon
 
