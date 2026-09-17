@@ -865,6 +865,42 @@ class InvariantsVault_test : public InvariantsBase
             precloseXrp,
             TxAccount::A2);
 
+        // The cap check has two post-fixCleanup3_4_0 triggers: the transaction
+        // supplied sfAssetsMaximum, or the cap changed. The case above covers
+        // the cap-changed one (its ttVAULT_SET carries no fields). This covers
+        // the other: the cap is left alone at 30 XRP and the transaction
+        // carries sfAssetsMaximum, so only the isFieldPresent disjunct can
+        // fire. AssetsTotal is pushed past the cap here rather than in
+        // preclose because VaultSet::doApply refuses to set a cap below
+        // AssetsTotal, so the over-cap state is only reachable by fabrication.
+        // Raising AssetsTotal also trips the "must not change assets
+        // outstanding" check, hence two expected messages.
+        Number const vaultCap = XRP(30).number();
+        doInvariantCheck(
+            {"set must not change assets outstanding",
+             "set assets outstanding must not exceed assets maximum"},
+            [&](Account const& a1, Account const& a2, ApplyContext& ac) {
+                auto const keylet = keylet::vault(a1.id(), SeqProxy::rawSequence(ac.view().seq()));
+                return kAdjust(ac.view(), keylet, kArgs(a2.id(), 0, [&](Adjustments& sample) {
+                                   sample.assetsTotal = XRP(1).value().xrp().drops();
+                               }));
+            },
+            XRPAmount{},
+            STTx{ttVAULT_SET, [&](STObject& tx) { tx[sfAssetsMaximum] = vaultCap; }},
+            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            [&](Account const& a1, Account const& a2, Env& env) -> bool {
+                env.fund(XRP(1000), a3, a4);
+                Vault const vault{env};
+                auto [tx, keylet] = vault.create({.owner = a1, .asset = xrpIssue()});
+                tx[sfAssetsMaximum] = vaultCap;
+                env(tx);
+                env(vault.deposit({.depositor = a1, .id = keylet.key, .amount = XRP(10)}));
+                env(vault.deposit({.depositor = a2, .id = keylet.key, .amount = XRP(10)}));
+                env(vault.deposit({.depositor = a3, .id = keylet.key, .amount = XRP(10)}));
+                return true;
+            },
+            TxAccount::A2);
+
         doInvariantCheck(
             {"assets maximum must not be negative"},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
@@ -1188,33 +1224,51 @@ class InvariantsVault_test : public InvariantsBase
 
         // ttLOAN_PAY success post-conditions. A loan left with payments still
         // remaining after a successful payment must show that payment in its
-        // balance and schedule: PrincipalOutstanding and PaymentRemaining both
-        // strictly decrease, and NextPaymentDueDate advances by a positive
-        // multiple of PaymentInterval. Each case seeds the same loan, then applies
+        // balance and schedule: neither PrincipalOutstanding nor
+        // TotalValueOutstanding may increase, at least one of them must
+        // strictly decrease, PaymentRemaining must strictly decrease, and
+        // NextPaymentDueDate must advance by a positive multiple of
+        // PaymentInterval. Each failing case seeds the same loan, then applies
         // an after-image that breaks exactly one of those conditions.
         {
             struct Case
             {
                 Number principal;
+                Number totalValue;
                 std::uint32_t remaining;
                 std::uint32_t dueDate;
                 std::string expected;
             };
             auto const cases = std::to_array<Case>({
                 {.principal = Number(100),
+                 .totalValue = Number(150),
                  .remaining = 1,
                  .dueDate = 110,
-                 .expected = "loan pay must strictly decrease PrincipalOutstanding"},
+                 .expected = "loan pay must decrease PrincipalOutstanding or "
+                             "TotalValueOutstanding"},
+                {.principal = Number(110),
+                 .totalValue = Number(150),
+                 .remaining = 1,
+                 .dueDate = 110,
+                 .expected = "loan pay must not increase PrincipalOutstanding"},
                 {.principal = Number(50),
+                 .totalValue = Number(160),
+                 .remaining = 1,
+                 .dueDate = 110,
+                 .expected = "loan pay must not increase TotalValueOutstanding"},
+                {.principal = Number(50),
+                 .totalValue = Number(150),
                  .remaining = 2,
                  .dueDate = 110,
                  .expected = "loan pay must decrease PaymentRemaining"},
                 {.principal = Number(50),
+                 .totalValue = Number(150),
                  .remaining = 1,
                  .dueDate = 100,
                  .expected = "loan pay must advance NextPaymentDueDate"},
                 // Advanced, but not by a whole number of payment intervals.
                 {.principal = Number(50),
+                 .totalValue = Number(150),
                  .remaining = 1,
                  .dueDate = 105,
                  .expected = "loan pay must advance NextPaymentDueDate"},
@@ -1255,6 +1309,7 @@ class InvariantsVault_test : public InvariantsBase
                 if (!BEAST_EXPECT(sleLoan))
                     continue;
                 sleLoan->at(sfPrincipalOutstanding) = c.principal;
+                sleLoan->at(sfTotalValueOutstanding) = c.totalValue;
                 sleLoan->setFieldU32(sfPaymentRemaining, c.remaining);
                 sleLoan->setFieldU32(sfNextPaymentDueDate, c.dueDate);
                 ac.view().update(sleLoan);
@@ -1266,6 +1321,65 @@ class InvariantsVault_test : public InvariantsBase
                     tesSUCCESS, XRPAmount{}, Transactor::InvariantScope::Full);
                 BEAST_EXPECT(result == tecINVARIANT_FAILED);
                 BEAST_EXPECT(sink.messages().str().contains(c.expected));
+            }
+
+            // Principal may stick while TotalValueOutstanding falls. This
+            // after-image is only a Loan mutation, so other (vault) invariants
+            // still fail under Full scope; ValidLoan itself must not.
+            {
+                Env env{*this, all_};
+                Account const a1{"A1"};
+                Account const a2{"A2"};
+                env.fund(XRP(1000), a1, a2);
+                auto const keys = createClosedXrpBroker(a1, env);
+                if (!keys)
+                {
+                    fail();
+                }
+                else
+                {
+                    auto const& brokerKeylet = keys->second;
+                    OpenView ov{*env.current()};
+                    auto const loanKeylet =
+                        keylet::loan(brokerKeylet.key, SeqProxy::rawSequence(1));
+                    {
+                        auto sleLoan = makeLoanSle(brokerKeylet.key, 1, a2.id());
+                        sleLoan->at(sfPrincipalOutstanding) = Number(100);
+                        sleLoan->at(sfTotalValueOutstanding) = Number(150);
+                        sleLoan->at(sfPaymentInterval) = 10u;
+                        sleLoan->setFieldU32(sfPaymentRemaining, 2);
+                        sleLoan->setFieldU32(sfNextPaymentDueDate, 100);
+                        ov.rawInsert(sleLoan);
+                    }
+
+                    STTx const tx{
+                        ttLOAN_PAY, [](STObject& t) { t.setFieldAmount(sfAmount, XRPAmount(50)); }};
+                    test::StreamSink sink{beast::Severity::Warning};
+                    beast::Journal const jlog{sink};
+                    ApplyContext ac{
+                        env.app(), ov, tx, tesSUCCESS, env.current()->fees().base, TapNone, jlog};
+                    CurrentTransactionRulesGuard const rulesGuard(ov.rules());
+
+                    auto sleLoan = ac.view().peek(loanKeylet);
+                    if (BEAST_EXPECT(sleLoan))
+                    {
+                        sleLoan->at(sfPrincipalOutstanding) = Number(100);
+                        sleLoan->at(sfTotalValueOutstanding) = Number(140);
+                        sleLoan->setFieldU32(sfPaymentRemaining, 1);
+                        sleLoan->setFieldU32(sfNextPaymentDueDate, 110);
+                        ac.view().update(sleLoan);
+
+                        auto transactor = makeTransactor(ac);
+                        if (BEAST_EXPECT(transactor))
+                        {
+                            std::ignore = transactor->checkInvariants(
+                                tesSUCCESS, XRPAmount{}, Transactor::InvariantScope::Full);
+                            auto const logs = sink.messages().str();
+                            BEAST_EXPECT(!logs.contains("Invariant failed: Loan"));
+                            BEAST_EXPECT(!logs.contains("loan pay"));
+                        }
+                    }
+                }
             }
         }
 
@@ -2758,13 +2872,15 @@ class InvariantsVault_test : public InvariantsBase
                     "RedemptionDate";
 
         // A newly-created loan against a closed-ended vault must satisfy StartDate +
-        // PaymentInterval * PaymentRemaining < RedemptionDate. LoanSet::preclaim enforces the same
-        // bound; this test synthesises an invalid loan directly in the ApplyView so the invariant
-        // catches it even when preclaim is bypassed.
+        // PaymentInterval * PaymentRemaining + kLoanRedemptionBuffer <= RedemptionDate.
+        // LoanSet::preclaim enforces the same bound; this test synthesises a loan whose
+        // final payment is still before RedemptionDate (so the old unbuffered check would
+        // pass) but inside the buffer zone.
         Keylet closedEndedBrokerKeylet = keylet::amendments();
         std::uint32_t closedEndedRed = 0;
         doInvariantCheck(
-            {"closed-ended loan final payment must precede RedemptionDate"},
+            {"closed-ended loan final payment must precede RedemptionDate by at least "
+             "kLoanRedemptionBuffer"},
             [&](Account const& a1, Account const&, ApplyContext& ac) {
                 // Touch the vault so ValidVault::finalizeLoanSet sees an
                 // entry in afterVault_; the vault is in Investment, so
@@ -2781,15 +2897,14 @@ class InvariantsVault_test : public InvariantsBase
                     return false;
                 std::uint32_t const loanSeq = sleBroker->at(sfLoanSequence);
 
-                // Synthesize a Loan whose final scheduled payment lands
-                // exactly at RedemptionDate: StartDate = red, interval = 60,
-                // remaining = 1 => red + 60 >= red.
+                // Final payment at RedemptionDate - (kLoanRedemptionBuffer - 1): still
+                // strictly before RedemptionDate, but inside the buffer.
                 auto sleLoan = makeLoanSle(closedEndedBrokerKeylet.key, loanSeq, a1.id());
                 sleLoan->at(sfLoanBrokerID) = closedEndedBrokerKeylet.key;
                 sleLoan->at(sfLoanSequence) = loanSeq;
                 sleLoan->at(sfBorrower) = a1.id();
-                sleLoan->at(sfStartDate) = closedEndedRed;
-                sleLoan->at(sfPaymentInterval) = 60;
+                sleLoan->at(sfStartDate) = closedEndedRed - kLoanRedemptionBuffer;
+                sleLoan->at(sfPaymentInterval) = 1;
                 sleLoan->at(sfPaymentRemaining) = 1;
                 sleLoan->at(sfTotalValueOutstanding) = Number(100);
                 sleLoan->at(sfPeriodicPayment) = Number(1);

@@ -62,10 +62,11 @@ ValidLoan::finalize(
     // Ledger entry validation checks.
     for (auto const& [before, after] : loans_)
     {
-        // A closed-ended vault must not accept a loan whose final scheduled payment falls on or
-        // after the vault's RedemptionDate. This mirrors the LoanSet::preclaim gate and only fires
-        // on loan creation; once the loan exists, its StartDate / PaymentInterval are immutable and
-        // PaymentRemaining only decreases, so the bound is preserved.
+        // A closed-ended vault must not accept a loan whose final scheduled payment falls fewer
+        // than kLoanRedemptionBuffer seconds before the vault's RedemptionDate. This mirrors the
+        // LoanSet::preclaim gate and only fires on loan creation; once the loan exists, its
+        // StartDate / PaymentInterval are immutable and PaymentRemaining only decreases, so the
+        // bound is preserved.
         if (!before && isTesSuccess(result))
         {
             auto const broker = view.read(keylet::loanBroker(after->at(sfLoanBrokerID)));
@@ -80,11 +81,13 @@ ValidLoan::finalize(
                     std::uint32_t const interval = after->at(sfPaymentInterval);
                     std::uint32_t const remaining = after->at(sfPaymentRemaining);
                     std::uint32_t const redemption = vault->at(sfRedemptionDate);
-                    if (std::uint64_t{startDate} + (std::uint64_t{interval} * remaining) >=
+                    if (std::uint64_t{startDate} + (std::uint64_t{interval} * remaining) +
+                            kLoanRedemptionBuffer >
                         redemption)
                     {
                         JLOG(j.fatal()) << "Invariant failed: closed-ended loan final payment "
-                                           "must precede RedemptionDate";
+                                           "must precede RedemptionDate by at least "
+                                           "kLoanRedemptionBuffer";
                         return false;
                     }
                 }
@@ -228,17 +231,38 @@ ValidLoan::finalize(
             // must show that payment in its balance and schedule. A payment that clears
             // the loan outright instead drives PaymentRemaining to zero, which the
             // fully-paid-off and zero due-date checks above pin.
+            //
+            // PrincipalOutstanding may stay put on a non-final pay: at integer
+            // scale, fixCleanup3_2_0 rounds principal up so a fractional
+            // amortization step does not reduce it. Interest (TVO) still falls.
+            // Neither balance may grow: a payment never adds to what is owed,
+            // since late-payment penalties are charged in the same transaction
+            // rather than tracked in TotalValueOutstanding.
             if (isTesSuccess(result) && txType == ttLOAN_PAY)
             {
                 if (before && after->at(sfPaymentRemaining) != 0)
                 {
-                    if (!(after->at(sfPrincipalOutstanding) < before->at(sfPrincipalOutstanding)))
+                    if (after->at(sfPrincipalOutstanding) > before->at(sfPrincipalOutstanding))
                     {
-                        JLOG(j.fatal()) << "Invariant failed: loan pay must strictly decrease "
+                        JLOG(j.fatal()) << "Invariant failed: loan pay must not increase "
                                            "PrincipalOutstanding on a non-full-repayment";
                         return false;
                     }
-                    if (!(after->at(sfPaymentRemaining) < before->at(sfPaymentRemaining)))
+                    if (after->at(sfTotalValueOutstanding) > before->at(sfTotalValueOutstanding))
+                    {
+                        JLOG(j.fatal()) << "Invariant failed: loan pay must not increase "
+                                           "TotalValueOutstanding on a non-full-repayment";
+                        return false;
+                    }
+                    if (after->at(sfPrincipalOutstanding) == before->at(sfPrincipalOutstanding) &&
+                        after->at(sfTotalValueOutstanding) == before->at(sfTotalValueOutstanding))
+                    {
+                        JLOG(j.fatal()) << "Invariant failed: loan pay must decrease "
+                                           "PrincipalOutstanding or TotalValueOutstanding "
+                                           "on a non-full-repayment";
+                        return false;
+                    }
+                    if (after->at(sfPaymentRemaining) >= before->at(sfPaymentRemaining))
                     {
                         JLOG(j.fatal()) << "Invariant failed: loan pay must decrease "
                                            "PaymentRemaining on a non-full-repayment";

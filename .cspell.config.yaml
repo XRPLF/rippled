@@ -141,6 +141,7 @@ words:
   - hwrap
   - ifndef
   - inequation
+  - Injectivity
   - insuf
   - insuff
   - invasively
@@ -366,7 +367,6 @@ words:
   - venv
   - vfalco
   - vinnie
-  - vkeylet
   - wasmi
   - wextra
   - wptr
