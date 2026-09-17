@@ -30,7 +30,7 @@ use std::fmt;
 use wasmi::{ExternType, FuncType, Module, ValType};
 use xrpl_host_functions::{HOST_MODULE, HostFunctionSpec};
 
-use crate::vm::{MAX_MEMORY_PAGES, MAX_TABLE_ELEMENTS, compile};
+use crate::vm::{MAX_MEMORY_PAGES, MAX_TABLE_ELEMENTS, compile, wasm_engine};
 use signature::check_signature;
 
 /// Why a module cannot be run. One variant per stage, since the caller maps the
@@ -74,7 +74,7 @@ impl fmt::Display for CheckError {
 /// `function_name` as `() -> i32`, and ask for no more memory or table than it may
 /// have.
 pub fn check(wasm: &[u8], function_name: &str) -> Result<(), CheckError> {
-    let module = compile(wasm).map_err(CheckError::Compile)?;
+    let module = compile(&wasm_engine(), wasm).map_err(CheckError::Compile)?;
     check_error_iter(&module, function_name)
         .next()
         .map_or(Ok(()), Err)
@@ -82,7 +82,8 @@ pub fn check(wasm: &[u8], function_name: &str) -> Result<(), CheckError> {
 
 /// [`check`], reporting every error found rather than stopping at the first.
 pub fn check_all(wasm: &[u8], function_name: &str) -> Result<(), Vec<CheckError>> {
-    let module = compile(wasm).map_err(|detail| vec![CheckError::Compile(detail)])?;
+    let module =
+        compile(&wasm_engine(), wasm).map_err(|detail| vec![CheckError::Compile(detail)])?;
     let refusals: Vec<CheckError> = check_error_iter(&module, function_name).collect();
     if refusals.is_empty() {
         return Ok(());

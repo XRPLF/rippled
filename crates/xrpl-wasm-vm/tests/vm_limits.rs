@@ -165,7 +165,7 @@ fn a_declared_table_maximum_past_the_cap_is_allowed_but_unreachable() {
 // Engine configuration
 // ---------------------------------------------------------------------------
 
-/// One row per feature `build_wasm_engine` turns off: the smallest module that uses
+/// One row per feature `wasm_engine` turns off: the smallest module that uses
 /// it, and the fragment of wasmi's refusal that names the feature. A row declaring
 /// its own memory omits [`ONE_PAGE`], or it is refused for having two memories
 /// instead.
@@ -279,9 +279,9 @@ fn every_disabled_feature_is_refused_by_name() {
 }
 
 /// The three knobs [`every_disabled_feature_is_refused_by_name`] cannot cover. The
-/// engine is a process-wide `LazyLock`, so a test observes the one configuration
-/// `build_wasm_engine` makes: a knob masked by another, or with no caller-visible
-/// effect, has no distinguishing module.
+/// configuration is the same for every engine `wasm_engine` builds, so a test
+/// observes the one `wasm_engine` makes: a knob masked by another, or with no
+/// caller-visible effect, has no distinguishing module.
 #[test]
 fn the_knobs_without_a_module_of_their_own() {
     let host = FakeHost::new();
@@ -648,11 +648,7 @@ fn unbounded_recursion_is_stopped_by_the_call_stack_limit() {
 }
 
 /// A module with many functions currently compiles and runs: wasmi's only cap is its
-/// 1,000,000 hard limit, so the ticket's ~24k-function module — a CodeMap-growth DoS, since
-/// every validation appends to the engine's append-only CodeMap — is not refused here.
-/// Enforcing a tighter bound (a function-count / average-bytes-per-function limit) belongs in
-/// a future preflight pass that parses the module before the engine sees it. Ignored until
-/// then, so this documents the gap without asserting it is acceptable.
+/// 1,000,000 hard limit.
 #[test]
 #[ignore = "CodeMap-DoS unmitigated; a function-count limit is deferred to preflight parsing"]
 fn many_functions_currently_run_unbounded() {
