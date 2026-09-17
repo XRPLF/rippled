@@ -207,6 +207,11 @@ inline constexpr char syncAddnodeTotal[] = "sync_addnode_total";
  * Worker-pool saturation: tasks in flight, threads, and jobs queued.
  */
 inline constexpr char jobqSaturation[] = "jobq_saturation";
+/**
+ * Jobs whose run time reached LoadMonitor's 1 s warn threshold, by job type.
+ * An exact counter for a process-wide freeze; the spans say what caused it.
+ */
+inline constexpr char jobqStallTotal[] = "jobq_stall_total";
 
 // ===== Quorum and publish: can this node accept and publish a ledger? =======
 
@@ -267,6 +272,12 @@ inline constexpr char amendmentBlock[] = "amendment_block";
  * Wall-clock duration of a completed consensus round.
  */
 inline constexpr char consensusRoundDurationMs[] = "consensus_round_duration_ms";
+/**
+ * Rounds where the network's preferred ledger differed from ours. One
+ * increment per transition into WrongLedger, labelled with the mode being
+ * left. WrongLedger itself is therefore never a value of the label.
+ */
+inline constexpr char consensusViewChangeTotal[] = "consensus_view_change_total";
 
 // ===== Sweep: what the periodic cache sweep costs ============================
 //
@@ -319,6 +330,12 @@ inline constexpr char rotationCopyNodeRestoreTotal[] = "rotation_copy_node_resto
  * store from xrpld without libxrpl having to know about telemetry.
  */
 inline constexpr char rotationState[] = "rotation_state";
+
+/**
+ * Wall-clock seconds spent in one online-delete rotation phase. Labelled by
+ * `stage`; see lval::rotation_phase. Recorded once per phase end.
+ */
+inline constexpr char rotationPhaseDurationSeconds[] = "rotation_phase_duration_seconds";
 
 // ===== Pre-existing instruments pulled in by the family ratchet ==============
 //
@@ -431,6 +448,10 @@ inline constexpr char direction[] = "direction";
  * Which kind of peer data request is being described.
  */
 inline constexpr char request[] = "request";
+/**
+ * Consensus mode being left when a view change is counted.
+ */
+inline constexpr char consensusMode[] = "consensus_mode";
 
 }  // namespace label
 
@@ -657,6 +678,29 @@ namespace rotation_state {
 inline constexpr char inFlight[] = "in_flight";
 inline constexpr char copyForward[] = "copy_forward";
 }  // namespace rotation_state
+
+/**
+ * `stage` values for rotation_phase_duration_seconds. Identical to the
+ * child span suffixes in SHAMapStoreSpanNames.h so a panel can join the two.
+ */
+namespace rotation_phase {
+inline constexpr char clearPrior[] = "clear_prior";
+inline constexpr char copy[] = "copy";
+inline constexpr char freshenKeys[] = "freshen.keys";
+inline constexpr char freshenFetch[] = "freshen.fetch";
+inline constexpr char newBackend[] = "new_backend";
+inline constexpr char clearCaches[] = "clear_caches";
+inline constexpr char swap[] = "swap";
+inline constexpr char healthWait[] = "health_wait";
+}  // namespace rotation_phase
+
+/**
+ * `metric` values added to the cache_metrics gauge for lock-hold peaks.
+ */
+namespace cache_metrics {
+inline constexpr char treenodeLockHoldPeakUs[] = "treenode_lock_hold_peak_us";
+inline constexpr char fullbelowLockHoldPeakUs[] = "fullbelow_lock_hold_peak_us";
+}  // namespace cache_metrics
 
 /**
  * `ledger_quorum_publish` sub-metrics: the gate, and how late publish is.

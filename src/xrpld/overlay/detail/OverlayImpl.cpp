@@ -14,8 +14,6 @@
 #include <xrpld/rpc/ServerHandler.h>
 #include <xrpld/rpc/handlers/admin/status/GetCounts.h>
 #include <xrpld/rpc/json_body.h>
-#include <xrpld/telemetry/MetricMacros.h>
-#include <xrpld/telemetry/MetricNames.h>
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/Resolver.h>
@@ -56,6 +54,8 @@
 #include <xrpl/server/SimpleWriter.h>
 #include <xrpl/server/Wallet.h>
 #include <xrpl/server/Writer.h>
+#include <xrpl/telemetry/MetricMacros.h>
+#include <xrpl/telemetry/MetricNames.h>
 
 #include <boost/algorithm/string/predicate.hpp>
 #include <boost/asio/bind_executor.hpp>

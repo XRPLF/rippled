@@ -3,7 +3,6 @@
 #include <xrpld/app/ledger/OpenLedger.h>
 #include <xrpld/app/main/Application.h>
 #include <xrpld/app/misc/detail/TxQSpanNames.h>
-#include <xrpld/telemetry/MetricsRegistry.h>
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/base_uint.h>
@@ -33,6 +32,7 @@
 #include <xrpl/protocol/Units.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/protocol/jss.h>
+#include <xrpl/telemetry/MetricsRegistry.h>
 #include <xrpl/telemetry/SpanGuard.h>
 #include <xrpl/tx/apply.h>
 #include <xrpl/tx/applySteps.h>
@@ -808,9 +808,13 @@ TxQ::apply(
         {
             span.setAttribute(txq_span::attr::terCode, transToken(directApplied->ter).c_str());
             if (directApplied->applied)
+            {
                 span.setAttribute(txq_span::attr::txqStatus, txq_span::val::appliedDirect);
+            }
             else
+            {
                 span.setAttribute(txq_span::attr::txqStatus, txq_span::val::failed);
+            }
         }
         return *directApplied;
     }

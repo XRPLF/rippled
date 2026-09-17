@@ -195,7 +195,6 @@ tests.libxrpl > xrpl.core
 tests.libxrpl > xrpld.app
 tests.libxrpl > xrpld.overlay
 tests.libxrpl > xrpld.rpc
-tests.libxrpl > xrpld.telemetry
 tests.libxrpl > xrpl.json
 tests.libxrpl > xrpl.ledger
 tests.libxrpl > xrpl.net
@@ -203,6 +202,7 @@ tests.libxrpl > xrpl.nodestore
 tests.libxrpl > xrpl.peerfinder
 tests.libxrpl > xrpl.protocol
 tests.libxrpl > xrpl.protocol_autogen
+tests.libxrpl > xrpl.rdb
 tests.libxrpl > xrpl.resource
 tests.libxrpl > xrpl.server
 tests.libxrpl > xrpl.shamap
@@ -253,6 +253,8 @@ xrpl.shamap > xrpl.nodestore
 xrpl.shamap > xrpl.protocol
 xrpl.telemetry > xrpl.basics
 xrpl.telemetry > xrpl.config
+xrpl.telemetry > xrpl.core
+xrpl.telemetry > xrpl.protocol
 xrpl.tx > xrpl.basics
 xrpl.tx > xrpl.core
 xrpl.tx > xrpl.ledger
@@ -307,15 +309,14 @@ xrpld.perflog > xrpl.config
 xrpld.perflog > xrpl.core
 xrpld.perflog > xrpld.app
 xrpld.perflog > xrpld.rpc
-xrpld.perflog > xrpld.telemetry
 xrpld.perflog > xrpl.json
 xrpld.perflog > xrpl.nodestore
 xrpld.perflog > xrpl.protocol
+xrpld.perflog > xrpl.telemetry
 xrpld.rpc > xrpl.basics
 xrpld.rpc > xrpl.config
 xrpld.rpc > xrpl.core
 xrpld.rpc > xrpld.core
-xrpld.rpc > xrpld.telemetry
 xrpld.rpc > xrpl.json
 xrpld.rpc > xrpl.ledger
 xrpld.rpc > xrpl.net

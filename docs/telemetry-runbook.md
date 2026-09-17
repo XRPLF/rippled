@@ -91,6 +91,8 @@ cmake --build . --target xrpld
 
 Conan also writes a `conan-release` CMake preset, so `cmake --preset conan-release -Dtelemetry=ON` works instead of the explicit toolchain line. There is no preset named `default`.
 
+Both telemetry flags are the current default, so omitting them still gives you an instrumented build. Pass them anyway, so the build stays instrumented wherever the default moves.
+
 ### 4. Run against a live network
 
 Two ready-made configs connect a tracking node (no validator credentials) to a
@@ -109,7 +111,7 @@ Both set `[insight] server=otel` (native metrics → collector → Prometheus, w
 drives the dashboards) and `service_instance_id`, exposed by Prometheus as the
 `service_instance_id` label that the `$node` dashboard variable filters on. The
 mainnet config logs to `/var/log/xrpld/mainnet/debug.log` — the path
-the collector's filelog receiver tails for log-trace correlation.
+the collector's file_log receiver tails for log-trace correlation.
 
 Metrics begin flowing as soon as the node connects to peers (`server_state`
 ≥ `connected`); full ledger and consensus panels populate after sync
@@ -208,12 +210,12 @@ To return to local-only export, bring the stack up with just the base
 The prepared config **dual-exports**: data goes to both the local stack and
 Grafana Cloud, so the on-box backends remain a fallback. For cloud-only,
 remove the local exporters (`debug`, `otlp/tempo`, `prometheus`,
-`otlphttp/loki`) from the respective pipelines in
+`otlp_http/loki`) from the respective pipelines in
 `otel-collector-config.grafanacloud.yaml`, leaving only
-`otlphttp/grafanacloud`.
+`otlp_http/grafanacloud`.
 
 > **Note**: shipping logs to Grafana Cloud requires keeping xrpld file
-> logging on (at least `warning` level) so the collector's filelog receiver
+> logging on (at least `warning` level) so the collector's file_log receiver
 > has a `debug.log` to tail. Traces and metrics are unaffected by log level.
 
 ### Importing dashboards to Grafana Cloud
@@ -284,7 +286,7 @@ this span: count successes as total minus error, or filter on `status_code`.
 The three apply-pipeline spans (`tx.preflight`, `tx.preclaim`, `tx.transactor`)
 share a deterministic `trace_id` from `txID[0:16]`, so they group under one
 trace per transaction. The `stage` attribute (`preflight` / `preclaim` /
-`apply`) drives the collector spanmetrics `stage` dimension, giving per-stage
+`apply`) drives the collector span_metrics `stage` dimension, giving per-stage
 RED metrics on the _Transaction Overview_ dashboard.
 
 `current_ledger_seq` is the current (open/in-flight) ledger index a span acted on
@@ -993,7 +995,7 @@ flowchart TB
   (`tvc < minVal`) it returns early with no promotion — a built ledger that loses
   is abandoned ([LedgerMaster.cpp:980](../src/xrpld/app/ledger/detail/LedgerMaster.cpp#L980);
   [docs/consensus.md:50](consensus.md)). The `ledger.validate` span is emitted only
-  inside `checkAccept` ([LedgerMaster.cpp:987](../src/xrpld/app/ledger/detail/LedgerMaster.cpp#L987)).
+  inside `checkAccept` ([LedgerMaster.cpp:1003](../src/xrpld/app/ledger/detail/LedgerMaster.cpp#L1003)).
 - **validation-send guard**: broadcast only if
   `validating_ && isCompatible && !consensusFail && canValidateSeq(seq)` — silently
   suppressed for incompatible ledgers or an already-validated seq
@@ -1160,8 +1162,8 @@ are pending a code fix:
 - **`ledger.acquire` / `ledger.store` / `ledger.validate` are not reliably roots
   either.** All three use `SpanGuard::span`
   ([InboundLedger.cpp:113](../src/xrpld/app/ledger/detail/InboundLedger.cpp#L113),
-  [LedgerMaster.cpp:463](../src/xrpld/app/ledger/detail/LedgerMaster.cpp#L463),
-  [987](../src/xrpld/app/ledger/detail/LedgerMaster.cpp#L987)), which inherits the
+  [LedgerMaster.cpp:470](../src/xrpld/app/ledger/detail/LedgerMaster.cpp#L470),
+  [1003](../src/xrpld/app/ledger/detail/LedgerMaster.cpp#L1003)), which inherits the
   ambient span ([SpanGuard.cpp:233](../src/libxrpl/telemetry/SpanGuard.cpp#L233))
   rather than `freshRoot`
   ([245](../src/libxrpl/telemetry/SpanGuard.cpp#L245)) — the same defect as
@@ -1341,7 +1343,7 @@ sum by (stage) (rate(span_calls_total{span_name=~"tx.preflight|tx.preclaim|tx.tr
 > in `otel-collector-config.grafanacloud.yaml` — the base
 > `otel-collector-config.yaml` has no tail sampling at all, so a stock local
 > stack retains every trace. Where that Cloud policy is in force it applies to
-> the trace-storage branch only; spanmetrics run on a separate branch and still
+> the trace-storage branch only; span_metrics run on a separate branch and still
 > see 100% of spans, so the derived RED metrics stay exact either way.
 
 ### Transaction Queue Health
@@ -1577,7 +1579,7 @@ all its normal attributes, it just lacks a cross-node parent link.
 
 ## Prometheus Metrics (Spanmetrics)
 
-The OTel Collector's spanmetrics connector automatically derives RED (Rate, Errors, Duration) metrics from every span. No custom metrics code is needed in xrpld.
+The OTel Collector's span_metrics connector automatically derives RED (Rate, Errors, Duration) metrics from every span. No custom metrics code is needed in xrpld.
 
 ### Generated Metric Names
 
@@ -1751,27 +1753,27 @@ These gauges are exported via the OTel Metrics SDK `PeriodicMetricReader` (10s i
 
 | Prometheus Metric                                   | Source              | Description                                                                                                                                                                         |
 | --------------------------------------------------- | ------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `server_info{metric="server_state"}`                | MetricsRegistry.cpp | Operating mode (0=DISCONNECTED .. 4=FULL)                                                                                                                                           |
-| `server_info{metric="uptime"}`                      | MetricsRegistry.cpp | Seconds since server start                                                                                                                                                          |
-| `server_info{metric="peers"}`                       | MetricsRegistry.cpp | Total connected peers                                                                                                                                                               |
-| `server_info{metric="validated_ledger_seq"}`        | MetricsRegistry.cpp | Validated ledger sequence number                                                                                                                                                    |
-| `server_info{metric="ledger_current_index"}`        | MetricsRegistry.cpp | Current open ledger sequence                                                                                                                                                        |
-| `server_info{metric="peer_disconnects_resources"}`  | MetricsRegistry.cpp | Cumulative resource-related peer disconnects                                                                                                                                        |
-| `server_info{metric="last_close_proposers"}`        | MetricsRegistry.cpp | Proposers in last closed round                                                                                                                                                      |
-| `server_info{metric="last_close_converge_time_ms"}` | MetricsRegistry.cpp | Last close convergence time (ms)                                                                                                                                                    |
-| `server_info{metric="last_close_time"}`             | MetricsRegistry.cpp | Network close time of last closed ledger (NetClock secs since XRPL epoch). Age = `time() - (value + 946684800)`; close interval = `1/rate(ledgers_closed_total)`, not a gauge delta |
-| `build_info{version="<ver>"}`                       | MetricsRegistry.cpp | Info-style metric (always 1)                                                                                                                                                        |
-| `complete_ledgers{bound="start\|end",index="<N>"}`  | MetricsRegistry.cpp | Complete ledger range start/end pairs                                                                                                                                               |
-| `db_metrics{metric="db_kb_total"}`                  | MetricsRegistry.cpp | Total database size (KB)                                                                                                                                                            |
-| `db_metrics{metric="db_kb_ledger"}`                 | MetricsRegistry.cpp | Ledger database size (KB)                                                                                                                                                           |
-| `db_metrics{metric="db_kb_transaction"}`            | MetricsRegistry.cpp | Transaction database size (KB)                                                                                                                                                      |
-| `db_metrics{metric="historical_perminute"}`         | MetricsRegistry.cpp | Historical ledger fetches per minute                                                                                                                                                |
-| `cache_metrics{metric="AL_size"}`                   | MetricsRegistry.cpp | AcceptedLedger cache size                                                                                                                                                           |
-| `nodestore_state{metric="node_reads_duration_us"}`  | MetricsRegistry.cpp | Cumulative read time (microseconds)                                                                                                                                                 |
-| `nodestore_state{metric="node_writes_duration_us"}` | MetricsRegistry.cpp | Cumulative write time (microseconds)                                                                                                                                                |
-| `nodestore_state{metric="read_request_bundle"}`     | MetricsRegistry.cpp | Read request bundle count                                                                                                                                                           |
-| `nodestore_state{metric="read_threads_running"}`    | MetricsRegistry.cpp | Active read threads                                                                                                                                                                 |
-| `nodestore_state{metric="read_threads_total"}`      | MetricsRegistry.cpp | Total read threads configured                                                                                                                                                       |
+| `server_info{metric="server_state"}`                | AppMetricGauges.cpp | Operating mode (0=DISCONNECTED .. 4=FULL)                                                                                                                                           |
+| `server_info{metric="uptime"}`                      | AppMetricGauges.cpp | Seconds since server start                                                                                                                                                          |
+| `server_info{metric="peers"}`                       | AppMetricGauges.cpp | Total connected peers                                                                                                                                                               |
+| `server_info{metric="validated_ledger_seq"}`        | AppMetricGauges.cpp | Validated ledger sequence number                                                                                                                                                    |
+| `server_info{metric="ledger_current_index"}`        | AppMetricGauges.cpp | Current open ledger sequence                                                                                                                                                        |
+| `server_info{metric="peer_disconnects_resources"}`  | AppMetricGauges.cpp | Cumulative resource-related peer disconnects                                                                                                                                        |
+| `server_info{metric="last_close_proposers"}`        | AppMetricGauges.cpp | Proposers in last closed round                                                                                                                                                      |
+| `server_info{metric="last_close_converge_time_ms"}` | AppMetricGauges.cpp | Last close convergence time (ms)                                                                                                                                                    |
+| `server_info{metric="last_close_time"}`             | AppMetricGauges.cpp | Network close time of last closed ledger (NetClock secs since XRPL epoch). Age = `time() - (value + 946684800)`; close interval = `1/rate(ledgers_closed_total)`, not a gauge delta |
+| `build_info{version="<ver>"}`                       | AppMetricGauges.cpp | Info-style metric (always 1)                                                                                                                                                        |
+| `complete_ledgers{bound="start\|end",index="<N>"}`  | AppMetricGauges.cpp | Complete ledger range start/end pairs                                                                                                                                               |
+| `db_metrics{metric="db_kb_total"}`                  | AppMetricGauges.cpp | Total database size (KB)                                                                                                                                                            |
+| `db_metrics{metric="db_kb_ledger"}`                 | AppMetricGauges.cpp | Ledger database size (KB)                                                                                                                                                           |
+| `db_metrics{metric="db_kb_transaction"}`            | AppMetricGauges.cpp | Transaction database size (KB)                                                                                                                                                      |
+| `db_metrics{metric="historical_perminute"}`         | AppMetricGauges.cpp | Historical ledger fetches per minute                                                                                                                                                |
+| `cache_metrics{metric="AL_size"}`                   | AppMetricGauges.cpp | AcceptedLedger cache size                                                                                                                                                           |
+| `nodestore_state{metric="node_reads_duration_us"}`  | AppMetricGauges.cpp | Cumulative read time (microseconds)                                                                                                                                                 |
+| `nodestore_state{metric="node_writes_duration_us"}` | AppMetricGauges.cpp | Cumulative write time (microseconds)                                                                                                                                                |
+| `nodestore_state{metric="read_request_bundle"}`     | AppMetricGauges.cpp | Read request bundle count                                                                                                                                                           |
+| `nodestore_state{metric="read_threads_running"}`    | AppMetricGauges.cpp | Active read threads                                                                                                                                                                 |
+| `nodestore_state{metric="read_threads_total"}`      | AppMetricGauges.cpp | Total read threads configured                                                                                                                                                       |
 | `rpc_in_flight_requests`                            | PerfLogImp.cpp      | RPC requests currently executing (UpDownCounter)                                                                                                                                    |
 
 #### Sync Diagnosis Signals
@@ -1784,21 +1786,21 @@ label values rather than reporting them as zero.
 
 | Prometheus Metric                                    | Source              | Description                                                 |
 | ---------------------------------------------------- | ------------------- | ----------------------------------------------------------- |
-| `nodestore_state{metric="read_mean_us"}`             | MetricsRegistry.cpp | Mean time per backend read (microseconds)                   |
-| `nodestore_state{metric="write_mean_us"}`            | MetricsRegistry.cpp | Mean time per backend write (microseconds)                  |
-| `nodestore_state{metric="nudb_writers_in_flight"}`   | MetricsRegistry.cpp | Threads inside a NuDB insert right now                      |
-| `nodestore_state{metric="nudb_writer_depth_x100"}`   | MetricsRegistry.cpp | Mean queue depth at the NuDB insert mutex, ×100             |
-| `nodestore_state{metric="nudb_insert_mean_us"}`      | MetricsRegistry.cpp | Mean NuDB insert time, queueing included (microseconds)     |
-| `nodestore_state{metric="nudb_insert_max_us"}`       | MetricsRegistry.cpp | Slowest single NuDB insert seen (microseconds)              |
-| `nodestore_state{metric="acquire_deferrals"}`        | MetricsRegistry.cpp | Timer jobs skipped because the lane was full, **all lanes** |
-| `nodestore_state{metric="acquire_timeouts"}`         | MetricsRegistry.cpp | Timer bodies that ran and advanced retry, **all lanes**     |
-| `nodestore_state{metric="acquire_ledger_deferrals"}` | MetricsRegistry.cpp | Deferrals from ledger acquisition alone                     |
-| `nodestore_state{metric="acquire_ledger_timeouts"}`  | MetricsRegistry.cpp | Timeouts from ledger acquisition alone                      |
-| `nodestore_state{metric="acquire_give_ups"}`         | MetricsRegistry.cpp | Acquisitions that exhausted their retry budget              |
-| `nodestore_state{metric="acquire_aborts"}`           | MetricsRegistry.cpp | Acquisitions destroyed before finishing                     |
-| `nodestore_state{metric="acquire_aborts_partial"}`   | MetricsRegistry.cpp | Subset of aborts that discarded partly built maps           |
-| `nodestore_state{metric="acquire_completions"}`      | MetricsRegistry.cpp | Acquisitions that finished successfully                     |
-| `nodestore_state{metric="acquire_sweep_evictions"}`  | MetricsRegistry.cpp | Acquisitions evicted by the 1-minute sweep                  |
+| `nodestore_state{metric="read_mean_us"}`             | AppMetricGauges.cpp | Mean time per backend read (microseconds)                   |
+| `nodestore_state{metric="write_mean_us"}`            | AppMetricGauges.cpp | Mean time per backend write (microseconds)                  |
+| `nodestore_state{metric="nudb_writers_in_flight"}`   | AppMetricGauges.cpp | Threads inside a NuDB insert right now                      |
+| `nodestore_state{metric="nudb_writer_depth_x100"}`   | AppMetricGauges.cpp | Mean queue depth at the NuDB insert mutex, ×100             |
+| `nodestore_state{metric="nudb_insert_mean_us"}`      | AppMetricGauges.cpp | Mean NuDB insert time, queueing included (microseconds)     |
+| `nodestore_state{metric="nudb_insert_max_us"}`       | AppMetricGauges.cpp | Slowest single NuDB insert seen (microseconds)              |
+| `nodestore_state{metric="acquire_deferrals"}`        | AppMetricGauges.cpp | Timer jobs skipped because the lane was full, **all lanes** |
+| `nodestore_state{metric="acquire_timeouts"}`         | AppMetricGauges.cpp | Timer bodies that ran and advanced retry, **all lanes**     |
+| `nodestore_state{metric="acquire_ledger_deferrals"}` | AppMetricGauges.cpp | Deferrals from ledger acquisition alone                     |
+| `nodestore_state{metric="acquire_ledger_timeouts"}`  | AppMetricGauges.cpp | Timeouts from ledger acquisition alone                      |
+| `nodestore_state{metric="acquire_give_ups"}`         | AppMetricGauges.cpp | Acquisitions that exhausted their retry budget              |
+| `nodestore_state{metric="acquire_aborts"}`           | AppMetricGauges.cpp | Acquisitions destroyed before finishing                     |
+| `nodestore_state{metric="acquire_aborts_partial"}`   | AppMetricGauges.cpp | Subset of aborts that discarded partly built maps           |
+| `nodestore_state{metric="acquire_completions"}`      | AppMetricGauges.cpp | Acquisitions that finished successfully                     |
+| `nodestore_state{metric="acquire_sweep_evictions"}`  | AppMetricGauges.cpp | Acquisitions evicted by the 1-minute sweep                  |
 
 `nudb_writer_depth_x100` is fixed-point: divide by 100 to read it. The depth sits
 just above 1.0 even under load, so an integer gauge would truncate the whole
@@ -1837,8 +1839,10 @@ ledger acquisition deferring". Use `acquire_ledger_deferrals` and
 These five come from the `PerfLog` job hooks, not from beast::insight, so they
 are exported by the `MetricsRegistry` meter. `job_queued_us` and `job_running_us`
 have explicit microsecond bucket views registered
-(`addMicrosecondHistogramView()` calls at MetricsRegistry.cpp:310-311; the helper
-itself is at `:197`) spanning 100 µs to 60 s; without those the SDK default
+(`addMicrosecondHistogramView()`, called from
+`MetricsRegistry::initExporterAndProvider()` — both live in
+`src/libxrpl/telemetry/MetricsRegistry.cpp`) spanning 100 µs to 60 s; without
+those the SDK default
 buckets stop at 10 ms and every quantile saturates.
 
 | Prometheus Metric    | Kind      | Labels                | Description                          |
@@ -1870,7 +1874,7 @@ two production job names embed a ledger sequence number:
 A raw label would mint a new Prometheus series for every ledger — unbounded
 growth at ~1 series every 3-5 s, forever.
 `MetricsRegistry::sanitiseHandler()` (declared inline in
-`src/xrpld/telemetry/MetricsRegistry.h`) therefore applies one rule:
+`include/xrpl/telemetry/MetricsRegistry.h`) therefore applies one rule:
 
 - Keep the name when it is **non-empty and every character is an ASCII letter**.
 - Otherwise return the constant `"other"`. An empty name, a digit, a hyphen, or
@@ -1997,7 +2001,7 @@ rpc_batch_size_count - rpc_batch_size_bucket{le="12288"}
 <!-- The all-caps macro name XRPL_METRIC_HISTOGRAM_RECORD trips cspell's
      compound-word splitter, which emits the subword "ISTOGRAM"; ignore it here. -->
 
-Use the call-site macros in `src/xrpld/telemetry/MetricMacros.h` -- no
+Use the call-site macros in `include/xrpl/telemetry/MetricMacros.h` -- no
 `MetricsRegistry.h`/`.cpp` edit is needed for any of these:
 
 | Need                                                   | Macro                                                                                                                                                                     |
@@ -2008,12 +2012,12 @@ Use the call-site macros in `src/xrpld/telemetry/MetricMacros.h` -- no
 | Last-value snapshot (not a distribution)               | `XRPL_METRIC_GAUGE_RECORD` [+ `_LABELED`] -- requires an ABI v2 opentelemetry-cpp build; this repo currently builds ABI v1, so use the observable-gauge row below instead |
 | Value your own code already tracks, sampled on a timer | `XRPL_METRIC_OBSERVABLE_GAUGE_REGISTER` / `_COUNTER_REGISTER` / `_UPDOWN_REGISTER`                                                                                        |
 
-First declare the name in `src/xrpld/telemetry/MetricNames.h` -- the emit site
+First declare the name in `include/xrpl/telemetry/MetricNames.h` -- the emit site
 must reference a constant, never a string literal, and CI Rule I enforces that
 for any metric family that already has constants:
 
 ```cpp
-// in src/xrpld/telemetry/MetricNames.h, namespace metric:
+// in include/xrpl/telemetry/MetricNames.h, namespace metric:
 inline constexpr char myNewThingTotal[] = "my_new_thing_total";
 inline constexpr char myInFlightRequests[] = "my_in_flight_requests";
 inline constexpr char myThingSize[] = "my_thing_size";
@@ -2022,8 +2026,8 @@ inline constexpr char myThingSize[] = "my_thing_size";
 Then emit against it:
 
 ```cpp
-#include <xrpld/telemetry/MetricMacros.h>
-#include <xrpld/telemetry/MetricNames.h>
+#include <xrpl/telemetry/MetricMacros.h>
+#include <xrpl/telemetry/MetricNames.h>
 
 // Monotonic counter:
 XRPL_METRIC_COUNTER_INC(
@@ -2051,8 +2055,9 @@ Naming rules (counter `_total`, duration `_us`/`_ms`/`_seconds`, no `xrpld_`
 prefix, bounded label cardinality) are listed in CONTRIBUTING.md ->
 "Telemetry metric naming" and enforced by CI Rules I/J/K. A histogram whose values can
 exceed ~10,000 units (e.g. a microsecond duration beyond 10ms) still needs one
-line added to `addMicrosecondHistogramView()` in `MetricsRegistry.cpp` -- the
-only case that still touches a central file. There is no way to read a metric's
+line added to `addMicrosecondHistogramView()` in
+`src/libxrpl/telemetry/MetricsRegistry.cpp` -- the only case that still touches a
+central file. There is no way to read a metric's
 current value back from application code -- OTel's API is write-only by design;
 keep your own state if your logic needs to both record and read a running value
 (see the Doxygen header in `MetricMacros.h` for the full explanation).
@@ -2195,7 +2200,7 @@ collector settings make it work, both already enabled:
 
 - `prometheus.resource_to_telemetry_conversion: enabled: true` promotes
   resource attributes to metric labels on the local scrape surface.
-- `spanmetrics.resource_metrics_key_attributes` lists the tier attributes so
+- `span_metrics.resource_metrics_key_attributes` lists the tier attributes so
   span-derived series stay grouped per node and tier.
 
 Traces and logs carry resource attributes natively; Grafana Cloud ingests all
@@ -2322,10 +2327,12 @@ Requires `trace_peer=1` in the `[telemetry]` config section.
 > `{quantile="$quantile"}` matches nothing and reports no error. The job queue
 > exposes two parallel families: `job_running_us` / `job_queued_us`
 > (`MetricsRegistry` instruments, labelled by `job_type` and `handler`,
-> microseconds — what these panels use;
-> [MetricsRegistry.cpp:94-95](../src/xrpld/telemetry/MetricsRegistry.cpp#L94),
-> [363-366](../src/xrpld/telemetry/MetricsRegistry.cpp#L363), recorded from the
-> `PerfLog` job hooks at
+> microseconds — what these panels use; the two names come from the
+> `kJobQueuedDurationUs` / `kJobRunningDurationUs` constants and the microsecond
+> buckets from `addMicrosecondHistogramView()` in
+> `MetricsRegistry::initExporterAndProvider()`, all in
+> [MetricsRegistry.cpp](../src/libxrpl/telemetry/MetricsRegistry.cpp), recorded
+> from the `PerfLog` job hooks at
 > [PerfLogImp.cpp:432](../src/xrpld/perflog/detail/PerfLogImp.cpp#L432)) and
 > `jobq_<jobtype>[_q]_milliseconds`
 > (beast::insight, one instrument per job type, milliseconds —
@@ -2838,7 +2845,7 @@ curl -sG http://localhost:9090/api/v1/query \
 When xrpld is built with `telemetry=ON`, log lines emitted within an active, sampled OpenTelemetry span automatically include `trace_id` and `span_id` fields:
 
 ```
-2024-Jan-15 10:30:45.123456 UTC LedgerMaster:NFO trace_id=abc123def456789012345678abcdef01 span_id=0123456789abcdef Validated ledger 42
+2024-Jan-15 10:30:45.123456789 UTC LedgerMaster:NFO trace_id=abc123def456789012345678abcdef01 span_id=0123456789abcdef Validated ledger 42
 ```
 
 This enables bidirectional navigation between logs and traces in Grafana:
@@ -2874,7 +2881,7 @@ The sampled check is normally satisfied on a self-rooted consensus round — hea
 
 With all four satisfied, `info` is the minimum level at which the `log.trace_id_present` and `log.trace_id_cross_reference` checks pass by construction, and it is what the correlation-checking harnesses generate: the cfgs written by [run-full-validation.sh](../docker/telemetry/workload/run-full-validation.sh) and [integration-test.sh](../docker/telemetry/integration-test.sh) each set `enabled=1`, `trace_consensus=1` and `log_level info` together. `benchmark.sh` deliberately does not — it stays at `warning` to keep log I/O out of the overhead measurement, and it runs no correlation check. At `warning` and above that pair is suppressed and correlation becomes incidental — dependent on a `warn`-or-worse line happening to fire inside some active span.
 
-> **CI exercises both checks.** `log.trace_id_present` and `log.trace_id_cross_reference` are gated on every CI run — see [CI workflow](#ci-workflow) for the invocation and the per-leg diagnostics printed alongside them. Run the same thing locally after any change to log formatting, span activation, the `filelog` receiver or the Loki exporter:
+> **CI exercises both checks.** `log.trace_id_present` and `log.trace_id_cross_reference` are gated on every CI run — see [CI workflow](#ci-workflow) for the invocation and the per-leg diagnostics printed alongside them. Run the same thing locally after any change to log formatting, span activation, the `file_log` receiver or the Loki exporter:
 >
 > ```bash
 > docker/telemetry/workload/run-full-validation.sh --xrpld .build/xrpld
@@ -2884,7 +2891,7 @@ With all four satisfied, `info` is the minimum level at which the `log.trace_id_
 
 `debug` does correlate strictly more: it additionally brings in [`BuildLedger.cpp:81`](../src/xrpld/app/ledger/detail/BuildLedger.cpp#L81) (inside the `ledger.build` `ScopedSpanGuard` at [:55](../src/xrpld/app/ledger/detail/BuildLedger.cpp#L55), once per ledger close) and [`RPCHandler.cpp:188`](../src/xrpld/rpc/detail/RPCHandler.cpp#L188) (inside the `rpc.command.*` `ScopedSpanGuard` at [:168](../src/xrpld/rpc/detail/RPCHandler.cpp#L168), once per RPC command), giving broader multi-subsystem coverage.
 
-But raising the **base** level to `debug` puts synchronous log I/O inside `ledger.build`, `consensus.accept` (including [RCLConsensus.cpp:663](../src/xrpld/app/consensus/RCLConsensus.cpp#L663), which logs **per transaction**) and `tx.apply` — precisely the spans whose p50/p95/p99 latencies `regression-metrics.json` gates. A baseline captured at `debug` bakes that log I/O into the latency numbers permanently, turning the regression gate into a measurement of its own configuration.
+But raising the **base** level to `debug` puts synchronous log I/O inside `ledger.build`, `consensus.accept` (including [RCLConsensus.cpp:715](../src/xrpld/app/consensus/RCLConsensus.cpp#L715), which logs **per transaction**) and `tx.apply` — precisely the spans whose p50/p95/p99 latencies `regression-metrics.json` gates. A baseline captured at `debug` bakes that log I/O into the latency numbers permanently, turning the regression gate into a measurement of its own configuration.
 
 So if you need the broader coverage, enable it **per partition** rather than globally, and only **after** a baseline has been captured at the harness's normal level:
 
@@ -2895,9 +2902,11 @@ log_level RPCHandler debug
 
 ### Log Ingestion Pipeline
 
-Log files are ingested by the OTel Collector's `filelog` receiver, which tails `debug.log` files and parses them with a regex that extracts `timestamp`, `partition`, `severity`, `trace_id`, `span_id`, and `message` fields. Parsed entries are exported to Grafana Loki.
+Log files are ingested by the OTel Collector's `file_log` receiver, which tails `debug.log` files and parses them with a regex that extracts `timestamp`, `partition`, `severity`, `trace_id`, `span_id`, and `message` fields. Parsed entries are exported to Grafana Loki.
 
-The receiver tails `/var/log/xrpld/*/debug.log` inside the collector container. docker-compose bind-mounts the host log root there; the source defaults to the repo-relative `docker/telemetry/data/logs`, which the telemetry configs write to (`data/logs/<network>/debug.log`) and which needs no root. To tail logs from elsewhere, set `XRPLD_LOG_DIR` before `docker compose up` (the integration test does this to point at its own workdir). The single trailing `*` matches one per-network or per-node subdirectory.
+The receiver tails `/var/log/xrpld/*/debug.log` inside the collector container. docker-compose bind-mounts the host log root there; the source defaults to the repo-relative `docker/telemetry/data/logs`, which the telemetry configs write to (`data/logs/<service_instance_id>/debug.log`). To tail logs from elsewhere, set `XRPLD_LOG_DIR` before `docker compose up` (the integration test does this to point at its own workdir). The single trailing `*` matches one per-node subdirectory.
+
+That subdirectory is load-bearing, not cosmetic. Docker creates a missing bind-mount source as root, and `Config::getDebugLogFile()` only warns when it cannot create the log directory, so a root-owned log root produces a healthy-looking node that writes no `debug.log` and an empty Loki with no error at any layer. The `xrpld-logdir-init` service creates the directory and hands it to `XRPLD_UID`/`XRPLD_GID` (default 1000) to prevent that. The receiver also lifts the subdirectory name onto the resource attribute `service.instance.id`, which Loki indexes as the label `service_instance_id`, so each emitter must name its log directory after its own `[telemetry] service_instance_id` or log lines carry a node name that no trace or metric shares.
 
 Each file is read from the beginning, because the receiver's own default (`end`) would skip anything a node wrote before the collector's first poll and would never read a log that has stopped being written to. Read offsets are held in memory by default, so a restarted collector re-reads the files it already ingested. The developer stack avoids that by layering `otel-collector-filestorage.yaml` as a second `--config`, which adds a `file_storage` extension that keeps the offsets on a named volume; a one-shot init service prepares that volume, because the collector runs as a non-root user and a fresh Docker volume is owned by root. Ephemeral stacks such as the workload validation harness create a fresh log directory per run, so they have nothing to resume from and deliberately omit the overlay.
 
@@ -2930,7 +2939,7 @@ after the selector and cannot be discovered by `label_values()`.
 
 # Logs from the last hour containing trace context. `partition`, `severity`, and
 # `trace_id` are already parsed into structured metadata by the collector's
-# filelog receiver, so re-extracting them with regexp is unnecessary work.
+# file_log receiver, so re-extracting them with regexp is unnecessary work.
 {service_name="xrpld"} | trace_id != ""
 
 # Count of traced vs untraced log lines
@@ -3386,9 +3395,8 @@ increase(nodestore_state{metric="acquire_ledger_timeouts", service_instance_id=~
 
 #### Measured reference points
 
-**Provenance.** The two columns below are our own measurements: node2 on the AWS
-dev box, build `e3c2f8279a`, 2026-07-27/28, same host and same binary for both
-runs, differing only in the state of the store. Use them as the shape to compare
+**Provenance.** The two columns below are our own measurements: one mainnet node,
+same host and same binary for both runs, differing only in the state of the store. Use them as the shape to compare
 against, not as thresholds. The read figures below come from the `read_mean_us`
 gauge, the only read-latency signal exported; the "highest sample" row is the
 largest value that gauge reached over the run, not a read-latency percentile. The third dataset in this section — the 25-minute devnet stall and its
@@ -3645,9 +3653,9 @@ not a sign the cache is working.
 ### No logs in Loki
 
 - Verify the log file mount in docker-compose.yml points to the correct xrpld log directory (default source `docker/telemetry/data/logs`, or the `XRPLD_LOG_DIR` override) and that xrpld actually writes `debug.log` there
-- Check OTel Collector logs for filelog receiver errors: `docker compose logs otel-collector`
+- Check OTel Collector logs for file_log receiver errors: `docker compose logs otel-collector`
 - Verify Loki is running: `curl http://localhost:3100/ready`
-- Check the filelog receiver glob `/var/log/xrpld/*/debug.log` matches your log layout — the log file must sit one subdirectory below the mount root
+- Check the file_log receiver glob `/var/log/xrpld/*/debug.log` matches your log layout — the log file must sit one subdirectory below the mount root
 
 ### Diagnosing slow/stuck fresh sync
 
@@ -3815,19 +3823,27 @@ Read the **Back-fill & persistence** row.
 |                                                             |                                                                                                                                                                             | no series at all on either query                                | `online_delete` is not configured on this node, which is **not** the same as rotation costing nothing — rule the whole rotation hypothesis out and move on                                                                                                                                                                                   |
 |                                                             |                                                                                                                                                                             | copy-forward writes while the flag reads 0                      | the window flag leaked; treat the rate as unattributed rather than concluding rotation is cheap                                                                                                                                                                                                                                              |
 | _Rotation Node Re-Store Rate_                               | flat at zero                                                                                                                                                                | any sustained rate                                              | an earlier rotation removed the only on-disk copy of clean nodes the current state map still reaches. Two consequences: each rescue is an extra write competing with sync, and without it the node would later hit an unresolvable missing-node error. Get the hashes from the `copyNode` warning in Loki — they are deliberately not labels |
+| _Rotation Phase Duration (p95 by stage)_                    | `freshen.keys` p95 well under one second on an idle node; other stages proportional to state-map size                                                                       | `freshen.keys` p95 in seconds                                   | the tree-node cache mutex is being held across the getKeys() copy for that long; every job that fetches a SHAMap node during that window waits, and a `full`->`syncing` flap is likely for the round that overlaps it                                                                                                                        |
+|                                                             |                                                                                                                                                                             | `copy` p95 approaching the rotation cadence                     | the state-map walk is not converging inside its own interval; the next rotation will overlap this one                                                                                                                                                                                                                                        |
+| _Cache Lock Hold Peak (us)_                                 | zero on an idle node; sub-millisecond values during a sweep                                                                                                                 | multi-second peak                                               | the `TaggedCache` for either the tree-node cache or the FullBelow cache held its mutex that long across `getKeys()` or `sweep()`. Correlate with the `rotating` log line and the `nodestore.rotate.freshen.keys` span: a rotation is the usual cause                                                                                         |
+| _Job Stalls ≥1 s (Count By Job Type)_                       | zero, or a very small count on a healthy busy node                                                                                                                          | several distinct job types crossing the bar in the same minute  | the whole worker pool froze at the same instant. This is a process-wide stall, not a per-type slowdown; the rotation spans point at what caused it                                                                                                                                                                                           |
 
-> **Scope of the rotation-window flag.** `rotation_state{metric="in_flight"}` is
-> set immediately before `freshenCaches()` and cleared by `RotationExposureGuard`
-> on scope exit, so it brackets only the freshen/swap phase — deliberately, since
-> its purpose is the copy-forward exposure window. It therefore **cannot** tell
-> you whether rotation is saturating the node. Measured on
-> `devnet-otel-usw2-01/02` (`online_delete=256`, ~47.4M state nodes): the flag
-> averaged 0.159 / 0.135 over 9 h while the node was actually inside a rotation
-> ~93% of wall clock, because the dominant `visitNodes` copy phase (median 651 s
-> of an ~785 s cycle) emits no signal at all. Read at face value the row above
-> says "healthy" on a node that is rotation-bound. Until the copy phase is
-> instrumented (RIPD-7144), the only way to measure occupancy is the
-> `rotating validatedSeq` / `copied ledger` / `new backend` log triplet.
+> **Proving a rotation stall from telemetry.** For a suspected rotation-driven
+> `full`->`syncing` flap on a node with `online_delete` configured:
+>
+> 1. Locate the flap time from `increase(state_changes_total{from="full",to="syncing"}[1m])`.
+> 2. In the same minute check `increase(jobq_stall_total[1m]) > 0` — a rotation stall
+>    lifts several distinct `job_type` values simultaneously.
+> 3. Look at `cache_metrics{metric="treenode_lock_hold_peak_us"}`. A value in
+>    the millions in the flap minute is the mutex hold that froze every job.
+> 4. In Tempo, `{ name = "nodestore.rotate.freshen.keys" }` in a +/- 2 min window: its
+>    span's start and end must bracket the stalled `consensus.*.receive` spans.
+> 5. `increase(consensus_view_change_total[1m])` should rise by one, and the
+>    `consensus.round` trace of that minute carries a `view.change` event.
+>
+> If step 4 has no span, check `trace_ledger=1` in `[telemetry]` and that the
+> Cloud collector carries the `keep-rotation-traces` policy — the 0.5% probabilistic
+> sampler would otherwise drop most rotations.
 
 **Conclusion:** the tree-node cache sits one layer **above** the node store, so a
 miss here is what produces a node-store read there; reading the two together is
@@ -4567,9 +4583,9 @@ panel it reads.
       validations arriving too late to close the round).
     - **A single stalled round** — read **p99**, not p50/p95. At the devnet rate
       of ~19 rounds/min one long round is a single sample in several hundred, so
-      p95 stays at the normal close time and can even dip. Measured on
-      `devnet-otel-usw2-01`: an 11.4 s round showed as p99 13400 ms while p95
-      read 3400 ms, indistinguishable from its 2900-3787 ms baseline. The
+      p95 stays at the normal close time and can even dip. Measured on a
+      devnet node: an 11.4 s round showed as p99 13400 ms while p95 read
+      3400 ms, indistinguishable from its ~2900-3800 ms baseline. The
       heatmap shows the same outlier as one faint high-bucket cell.
     - **P95 climbing while P50 stays flat** — a minority of rounds stall. This
       is the early form of what the heatmap later shows as a second band.
@@ -4669,7 +4685,7 @@ conan install .. --output-folder . --build missing -o telemetry=False --settings
 cmake -DCMAKE_TOOLCHAIN_FILE:FILEPATH=build/generators/conan_toolchain.cmake -DCMAKE_BUILD_TYPE=Release -Dtelemetry=OFF ..
 ```
 
-Pass the flag explicitly rather than omitting it — an omitted flag resolves to whatever
+Both flags are needed. Pass each explicitly rather than omitting it — an omitted flag resolves to whatever
 the build's current default is. That default is `ON` on the telemetry branches so CI
 compiles the instrumented paths, and `OFF` once the feature is merged; `-Dtelemetry=OFF`
 is correct either way. `-DXRPL_ENABLE_TELEMETRY=OFF` does **not** work: that name is only
@@ -4952,12 +4968,12 @@ container as the main CI, so Conan and ccache hit the shared caches), and
   these checks are enabled: per-node counts of `debug.log` lines carrying the
   injected `trace_id`/`span_id` shape plus the severity mix, the container-side
   listing of `/var/log/xrpld` taken with the collector's own mounts and uid, the
-  `filelog` receiver's watched files, logs-pipeline warnings and internal
+  `file_log` receiver's watched files, logs-pipeline warnings and internal
   log-record counters, and Loki's entry counts for the stream selector with and
   without the line filter. The diagnostics are non-fatal by construction: each
   leg is isolated and a missing container or unreachable endpoint prints a note.
   Those two Loki entry counts are `sum(count_over_time(...))`, and the `sum()` is
-  load-bearing: the `filelog` receiver leaves `message` and `timestamp` as
+  load-bearing: the `file_log` receiver leaves `message` and `timestamp` as
   log-record attributes, Loki's OTLP path stores them as structured metadata, and
   structured metadata joins a metric query's label set — so an unaggregated
   `count_over_time` produces one series per log line and Loki answers `HTTP 400

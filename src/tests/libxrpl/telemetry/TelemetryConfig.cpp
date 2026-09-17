@@ -8,6 +8,7 @@
 
 #include <chrono>
 #include <cstdint>
+#include <filesystem>
 #include <fstream>
 #include <initializer_list>
 #include <limits>
@@ -45,7 +46,9 @@ namespace {
  * pairingError, useTlsError and readError are message fragments. All three
  * guards throw std::runtime_error, so the exception type alone cannot tell
  * them apart. Each fragment occurs in exactly one of the three messages, so
- * matching it proves which guard fired.
+ * matching it proves which guard fired. notRegularError names the one reason
+ * the readability guard supplies itself rather than taking from the operating
+ * system, so matching it proves the file-type branch ran and not the open.
  */
 namespace mtls {
 constexpr char const* keyClientCert = "tls_client_cert";
@@ -55,6 +58,7 @@ constexpr char const* clientKey = "/etc/ssl/client.key";
 constexpr char const* pairingError = "must be set together";
 constexpr char const* useTlsError = "require use_tls=1";
 constexpr char const* readError = "cannot be read";
+constexpr char const* notRegularError = "not a regular file";
 
 /**
  * Endpoint values and the message fragment of the scheme guard.
@@ -74,6 +78,19 @@ constexpr char const* httpEndpoint = "http://collector:4318/v1/traces";
 constexpr char const* httpsEndpoint = "https://collector:4318/v1/traces";
 constexpr char const* defaultEndpoint = "http://localhost:4318/v1/traces";
 constexpr char const* schemeError = "must start with 'https://'";
+
+/**
+ * The same four values for the metric signal.
+ *
+ * The guard covers both endpoints, so every case that expects parsing to
+ * succeed has to set this key too. Spelled separately from the trace values so
+ * a case can put one signal on https and the other on http, which is the
+ * configuration that used to pass.
+ */
+constexpr char const* keyMetricsEndpoint = "metrics_endpoint";
+constexpr char const* metricsHttpEndpoint = "http://collector:4318/v1/metrics";
+constexpr char const* metricsHttpsEndpoint = "https://collector:4318/v1/metrics";
+constexpr char const* defaultMetricsEndpoint = "http://localhost:4318/v1/metrics";
 
 /**
  * Build a [telemetry] section carrying only the `enabled` key.
@@ -305,6 +322,18 @@ TEST(TelemetryConfig, parse_empty_section)
     EXPECT_TRUE(setup.traceLedger);
 }
 
+TEST(TelemetryConfig, empty_service_instance_id_falls_back_to_node_key)
+{
+    // An empty value is indistinguishable from an unset key on the metrics
+    // side (makeMetricsRegistryOptions falls back to the node key), so the
+    // trace side must do the same. Without this fallback traces stamp "" while
+    // metrics stamp the node key and every $node filter shows half the series.
+    Section section;
+    section.set("service_instance_id", "");
+    auto const setup = telemetry::makeTelemetrySetup(section, "nHUtest123", "2.0.0", 0);
+    EXPECT_EQ(setup.serviceInstanceId, "nHUtest123");
+}
+
 TEST(TelemetryConfig, parse_full_section)
 {
     // The CA path has to name a real file: with enabled=1 and use_tls=1 the
@@ -363,6 +392,7 @@ TEST(TelemetryConfig, mtls_cert_and_key_both_set)
     Section section = mtls::makeSection(true);
     section.set("use_tls", "1");
     section.set(mtls::keyEndpoint, mtls::httpsEndpoint);
+    section.set(mtls::keyMetricsEndpoint, mtls::metricsHttpsEndpoint);
     section.set(mtls::keyClientCert, cert);
     section.set(mtls::keyClientKey, key);
 
@@ -486,6 +516,7 @@ TEST(TelemetryConfig, tls_missing_client_cert_file_throws)
     Section section = mtls::makeSection(true);
     section.set("use_tls", "1");
     section.set(mtls::keyEndpoint, mtls::httpsEndpoint);
+    section.set(mtls::keyMetricsEndpoint, mtls::metricsHttpsEndpoint);
     section.set(mtls::keyClientCert, absentCert);
     section.set(mtls::keyClientKey, mtls::writeCertFile(dir.file("k.pem")));
 
@@ -504,6 +535,7 @@ TEST(TelemetryConfig, tls_missing_client_key_file_throws)
     Section section = mtls::makeSection(true);
     section.set("use_tls", "1");
     section.set(mtls::keyEndpoint, mtls::httpsEndpoint);
+    section.set(mtls::keyMetricsEndpoint, mtls::metricsHttpsEndpoint);
     section.set(mtls::keyClientCert, mtls::writeCertFile(dir.file("c.pem")));
     section.set(mtls::keyClientKey, absentKey);
 
@@ -529,6 +561,32 @@ TEST(TelemetryConfig, tls_missing_ca_cert_file_throws)
             AllOf(HasSubstr(mtls::readError), HasSubstr("tls_ca_cert"), HasSubstr(absentCa))));
 }
 
+TEST(TelemetryConfig, tls_client_key_that_is_a_directory_throws)
+{
+    // A path that exists but is a directory. The check opens the file instead
+    // of reading it, and opening a directory for input succeeds on Linux, so
+    // the file-type branch is the only thing that can reject this. The message
+    // must still name the key and the path, which is what tells the operator
+    // which setting is wrong.
+    TempDir const dir;
+    auto const keyDir = dir.file("keydir");
+    ASSERT_TRUE(std::filesystem::create_directory(keyDir));
+    Section section = mtls::makeSection(true);
+    section.set("use_tls", "1");
+    section.set(mtls::keyEndpoint, mtls::httpsEndpoint);
+    section.set(mtls::keyMetricsEndpoint, mtls::metricsHttpsEndpoint);
+    section.set(mtls::keyClientCert, mtls::writeCertFile(dir.file("c.pem")));
+    section.set(mtls::keyClientKey, keyDir);
+
+    EXPECT_THAT(
+        [&section] { mtls::parseSection(section); },
+        ThrowsMessage<std::runtime_error>(AllOf(
+            HasSubstr(mtls::readError),
+            HasSubstr(mtls::notRegularError),
+            HasSubstr(mtls::keyClientKey),
+            HasSubstr(keyDir))));
+}
+
 TEST(TelemetryConfig, tls_readable_files_are_accepted)
 {
     // Full mTLS with all three files present and readable: parsing must
@@ -540,6 +598,7 @@ TEST(TelemetryConfig, tls_readable_files_are_accepted)
     Section section = mtls::makeSection(true);
     section.set("use_tls", "1");
     section.set(mtls::keyEndpoint, mtls::httpsEndpoint);
+    section.set(mtls::keyMetricsEndpoint, mtls::metricsHttpsEndpoint);
     section.set("tls_ca_cert", ca);
     section.set(mtls::keyClientCert, cert);
     section.set(mtls::keyClientKey, key);
@@ -638,20 +697,83 @@ TEST(TelemetryConfig, mtls_client_cert_on_an_https_endpoint_is_accepted)
 {
     // The same configuration as the two cases above with only the scheme
     // changed, so nothing but the scheme can explain the different outcome.
+    // Both endpoints are https, which is the only shape the guard accepts.
     TempDir const dir;
     auto const cert = mtls::writeCertFile(dir.file("c.pem"));
     auto const key = mtls::writeCertFile(dir.file("k.pem"));
     Section section = mtls::makeSection(true);
     section.set("use_tls", "1");
     section.set(mtls::keyEndpoint, mtls::httpsEndpoint);
+    section.set(mtls::keyMetricsEndpoint, mtls::metricsHttpsEndpoint);
     section.set(mtls::keyClientCert, cert);
     section.set(mtls::keyClientKey, key);
 
     telemetry::Telemetry::Setup setup;
     ASSERT_NO_THROW(setup = mtls::parseSection(section));
     EXPECT_EQ(setup.tracesEndpoint, mtls::httpsEndpoint);
+    EXPECT_EQ(setup.metricsEndpoint, mtls::metricsHttpsEndpoint);
     EXPECT_EQ(setup.tlsClientCertPath, cert);
     EXPECT_EQ(setup.tlsClientKeyPath, key);
+}
+
+TEST(TelemetryConfig, mtls_client_cert_on_a_plain_http_metrics_endpoint_throws)
+{
+    // traces_endpoint is https and only metrics_endpoint is not, so the trace
+    // guard cannot be what fires. Before the metric endpoint was checked this
+    // configuration started the node and exported every metric in the clear,
+    // with the client certificate attached to the exporter and never used.
+    TempDir const dir;
+    Section section = mtls::makeSection(true);
+    section.set("use_tls", "1");
+    section.set(mtls::keyEndpoint, mtls::httpsEndpoint);
+    section.set(mtls::keyMetricsEndpoint, mtls::metricsHttpEndpoint);
+    section.set(mtls::keyClientCert, mtls::writeCertFile(dir.file("c.pem")));
+    section.set(mtls::keyClientKey, mtls::writeCertFile(dir.file("k.pem")));
+
+    EXPECT_THAT(
+        [&section] { mtls::parseSection(section); },
+        ThrowsMessage<std::runtime_error>(AllOf(
+            HasSubstr(mtls::schemeError),
+            HasSubstr(mtls::keyMetricsEndpoint),
+            HasSubstr(mtls::metricsHttpEndpoint))));
+}
+
+TEST(TelemetryConfig, mtls_client_cert_with_the_default_metrics_endpoint_throws)
+{
+    // The key is absent, so the built-in default applies, and that default is a
+    // plain http URL. This is the shape an operator reaches by setting up mTLS
+    // and overriding only traces_endpoint, which makes it the case worth having.
+    TempDir const dir;
+    Section section = mtls::makeSection(true);
+    section.set("use_tls", "1");
+    section.set(mtls::keyEndpoint, mtls::httpsEndpoint);
+    section.set(mtls::keyClientCert, mtls::writeCertFile(dir.file("c.pem")));
+    section.set(mtls::keyClientKey, mtls::writeCertFile(dir.file("k.pem")));
+
+    EXPECT_THAT(
+        [&section] { mtls::parseSection(section); },
+        ThrowsMessage<std::runtime_error>(AllOf(
+            HasSubstr(mtls::schemeError),
+            HasSubstr(mtls::keyMetricsEndpoint),
+            HasSubstr(mtls::defaultMetricsEndpoint))));
+}
+
+TEST(TelemetryConfig, one_way_tls_on_a_plain_http_metrics_endpoint_is_accepted)
+{
+    // The control for the metric guard's scope, matching the trace one below:
+    // same plain http metrics endpoint and use_tls=1, but no client identity to
+    // lose. Widen the guard to every use_tls=1 node and this case starts failing.
+    TempDir const dir;
+    auto const ca = mtls::writeCertFile(dir.file("ca.pem"));
+    Section section = mtls::makeSection(true);
+    section.set("use_tls", "1");
+    section.set(mtls::keyMetricsEndpoint, mtls::metricsHttpEndpoint);
+    section.set("tls_ca_cert", ca);
+
+    telemetry::Telemetry::Setup setup;
+    ASSERT_NO_THROW(setup = mtls::parseSection(section));
+    EXPECT_EQ(setup.metricsEndpoint, mtls::metricsHttpEndpoint);
+    EXPECT_TRUE(setup.tlsClientCertPath.empty());
 }
 
 TEST(TelemetryConfig, mtls_scheme_check_is_case_sensitive_like_the_exporter)

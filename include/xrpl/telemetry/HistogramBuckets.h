@@ -106,6 +106,28 @@ inline constexpr std::array kMillisecondBuckets{
     120'000.0};
 
 /**
+ * Bucket edges, in seconds, for `rotation_phase_duration_seconds`.
+ *
+ * On a populated online_delete node the phases run from seconds (freshen.keys)
+ * through minutes (freshen.fetch) to ten minutes or more (copy), and a whole
+ * rotation about a quarter of an hour. The 1 s floor sits under the shortest
+ * phase; 3600 s leaves headroom above a slow rotation.
+ */
+inline constexpr std::array kRotationPhaseSecondsBuckets{
+    1.0,
+    5.0,
+    10.0,
+    30.0,
+    60.0,
+    120.0,
+    300.0,
+    600.0,
+    900.0,
+    1'200.0,
+    1'800.0,
+    3'600.0};
+
+/**
  * Bucket edges, in bytes, for `beast::insight` Events whose samples are
  * sizes rather than durations. Currently only the RPC response size.
  *

@@ -807,26 +807,19 @@ run(int argc, char** argv)
         if (vm.contains("debug"))
             setDebugLogSink(logs->makeSink("Debug", beast::Severity::Trace));
 
-        // Telemetry needs the node public key at construction, so read it here
-        // where a config error can still be reported and the process can exit
-        // cleanly. getNodeIdentity() in setup() stays authoritative.
-        std::optional<std::string> nodePublicKey;
+        // Telemetry stamps the node public key into resources it builds during
+        // construction, so the identity is decided here, where a malformed
+        // [node_seed] can still be reported and the process can exit cleanly.
+        // setup() persists it; see getNodeIdentity().
+        std::optional<std::pair<PublicKey, SecretKey>> nodeIdentity;
         try
         {
-            nodePublicKey = resolveNodePublicKey(*config, vm, logs->journal("Application"));
+            nodeIdentity = resolveNodeIdentity(*config, vm, logs->journal("Application"));
         }
         catch (std::exception const& e)
         {
             std::cerr << "Unable to start " << systemName() << ": " << e.what() << std::endl;
             return -1;
-        }
-
-        if (!nodePublicKey)
-        {
-            JLOG(logs->journal("Application").warn())
-                << "Telemetry: no node identity available yet, so this run reports an empty "
-                   "service.instance.id. Set [telemetry] service_instance_id, or restart once "
-                   "the node key exists.";
         }
 
         // Application construction runs member initializers that validate
@@ -840,14 +833,15 @@ run(int argc, char** argv)
         //
         // Only the construction is covered. The [telemetry] section is parsed
         // near the top of the member list, before the job queue and node store
-        // are built, so unwinding that throw destroys very little. setup() is
+        // are built, so unwinding that throw destroys little: the metrics
+        // registry, whose destructor joins its export thread. setup() is
         // left outside deliberately: it starts subsystems whose shutdown order
         // is delicate, and only the normal stop sequence gets that order right.
         std::unique_ptr<Application> app;
         try
         {
             app = makeApplication(
-                std::move(config), std::move(logs), std::make_unique<TimeKeeper>(), nodePublicKey);
+                std::move(config), std::move(logs), std::make_unique<TimeKeeper>(), *nodeIdentity);
         }
         catch (std::exception const& e)
         {

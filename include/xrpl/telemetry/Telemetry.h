@@ -134,6 +134,23 @@ inline constexpr std::string_view kMeterName{"xrpld"};
  * OTel instrumentation scope version reported for the meter.
  */
 inline constexpr std::string_view kMeterVersion{"1.0.0"};
+
+/**
+ * A meter whose instruments record nothing.
+ *
+ * For every path that must hand out a usable meter without a pipeline behind
+ * it: telemetry disabled, or an exporter that failed to build. Callers then
+ * need no null check, because an instrument always comes back.
+ *
+ * Shared so every caller passes the same version, @ref kMeterVersion. A
+ * different version gives a different meter identity from the one the
+ * histogram views select on.
+ *
+ * @param name Instrumentation scope name to report.
+ * @return An inert meter. Never empty.
+ */
+[[nodiscard]] opentelemetry::nostd::shared_ptr<opentelemetry::metrics::Meter>
+noopMeter(std::string_view name = kMeterName);
 #endif
 
 /**

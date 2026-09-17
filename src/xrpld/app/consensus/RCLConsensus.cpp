@@ -18,13 +18,6 @@
 #include <xrpld/app/misc/ValidatorList.h>
 #include <xrpld/overlay/Overlay.h>
 #include <xrpld/overlay/predicates.h>
-#include <xrpld/telemetry/MetricMacros.h>
-#ifdef XRPL_ENABLE_TELEMETRY
-// The metric-name constants are named only as macro arguments, which the
-// macros drop when telemetry is compiled out.
-#include <xrpld/telemetry/MetricNames.h>
-#endif
-#include <xrpld/telemetry/MetricsRegistry.h>
 #include <xrpld/telemetry/PropagationHelpers.h>
 
 #include <xrpl/basics/Log.h>
@@ -71,6 +64,13 @@
 #include <xrpl/shamap/SHAMapItem.h>
 #include <xrpl/shamap/SHAMapMissingNode.h>
 #include <xrpl/shamap/SHAMapTreeNode.h>
+#include <xrpl/telemetry/MetricMacros.h>
+#ifdef XRPL_ENABLE_TELEMETRY
+// The metric-name constants are named only as macro arguments, which the
+// macros drop when telemetry is compiled out.
+#include <xrpl/telemetry/MetricNames.h>
+#endif
+#include <xrpl/telemetry/MetricsRegistry.h>
 #include <xrpl/telemetry/SpanGuard.h>
 
 #include <boost/smart_ptr/intrusive_ptr.hpp>
@@ -353,7 +353,26 @@ RCLConsensus::Adaptor::getPrevLedger(
     if (netLgr != ledgerID)
     {
         if (mode != ConsensusMode::WrongLedger)
+        {
+            // One count and one event per transition into WrongLedger, the
+            // same edge that demotes the node out of FULL. Labelled with the
+            // mode being left; WrongLedger itself is never a label value.
+            XRPL_METRIC_COUNTER_INC_LABELED(
+                app_,
+                telemetry::metric::consensusViewChangeTotal,
+                "Consensus rounds whose preferred ledger diverged from the local one",
+                {{telemetry::label::consensusMode, std::string(toDisplayString(mode))}});
+            if (roundSpan_ && *roundSpan_)
+            {
+                namespace cs = telemetry::consensus::span;
+                std::string const prev = to_string(ledgerID).substr(0, 16);
+                std::string const net = to_string(netLgr).substr(0, 16);
+                roundSpan_->addEvent(
+                    cs::event::viewChange,
+                    {{cs::attr::prevLedgerPrefix, prev}, {cs::attr::netLedgerPrefix, net}});
+            }
             app_.getOPs().consensusViewChange();
+        }
 
         JLOG(j_.debug()) << json::Compact(app_.getValidations().getJsonTrie());
     }

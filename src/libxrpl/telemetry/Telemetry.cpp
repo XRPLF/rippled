@@ -261,11 +261,8 @@ public:
     [[nodiscard]] opentelemetry::nostd::shared_ptr<metrics_api::Meter>
     getMeter(std::string_view name) override
     {
-        // Serve a meter from a process-wide noop provider, mirroring the
-        // noop tracer above. Instruments created from it are inert.
-        static auto noopProvider = opentelemetry::nostd::shared_ptr<metrics_api::MeterProvider>(
-            new metrics_api::NoopMeterProvider());
-        return noopProvider->GetMeter(std::string(name), std::string(kMeterVersion));
+        // Mirrors the noop tracer above: instruments created from it are inert.
+        return noopMeter(name);
     }
 
     [[nodiscard]] opentelemetry::nostd::shared_ptr<trace_api::Span>
@@ -726,6 +723,16 @@ public:
 };
 
 }  // namespace
+
+opentelemetry::nostd::shared_ptr<metrics_api::Meter>
+noopMeter(std::string_view name)
+{
+    // One provider for the process: it holds a single inert meter, so nothing
+    // is gained by building another.
+    static auto const kProvider = opentelemetry::nostd::shared_ptr<metrics_api::MeterProvider>(
+        new metrics_api::NoopMeterProvider());
+    return kProvider->GetMeter(std::string(name), std::string(kMeterVersion));
+}
 
 opentelemetry::exporter::otlp::OtlpHttpExporterOptions
 makeTraceExporterOptions(Telemetry::Setup const& setup)

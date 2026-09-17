@@ -511,7 +511,7 @@ Enforcement is by the same script as the span rules, whose metric rules are:
 
 ## Adding a new OTel metric
 
-See `src/xrpld/telemetry/MetricMacros.h` for the call-site macros covering every
+See `include/xrpl/telemetry/MetricMacros.h` for the call-site macros covering every
 OTel instrument kind (Counter, UpDownCounter, Histogram, Gauge, and their
 Observable/async counterparts), `src/xrpld/telemetry/MetricNames.h` for the name
 and label constants to reference (and the rules above), and the "Adding a New

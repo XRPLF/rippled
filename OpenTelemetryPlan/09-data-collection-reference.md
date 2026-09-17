@@ -434,7 +434,7 @@ Join a transaction's work to its ledger with `{span.current_ledger_seq=<N>}`.
 | `quorum`                           | int64   | `consensus.accept`                                                                                 | Quorum required                                            |
 | `round_time_ms`                    | int64   | `consensus.accept`, `consensus.accept.apply`                                                       | Total consensus round duration in milliseconds             |
 | `consensus_state`                  | string  | `consensus.accept.apply`                                                                           | Consensus outcome: `"finished"` or `"moved_on"`            |
-| `close_time_ripple_epoch_s`        | int64   | `consensus.accept.apply`                                                                           | Agreed-upon ledger close time (Ripple epoch seconds)       |
+| `close_time_ripple_epoch_s`        | int64   | `consensus.accept.apply`                                                                           | Agreed-upon ledger close time (XRPL epoch seconds)         |
 | `close_time_correct`               | boolean | `consensus.accept.apply`                                                                           | Whether validators agreed on close time                    |
 | `close_resolution_ms`              | int64   | `consensus.accept.apply`                                                                           | Close-time rounding granularity in milliseconds            |
 | `proposing`                        | boolean | `consensus.accept.apply`, `consensus.validation.send`                                              | Whether this node was a proposer                           |
@@ -481,7 +481,7 @@ Join a transaction's work to its ledger with `{span.current_ledger_seq=<N>}`.
 | Attribute                   | Type    | Set On                                            | Description                                      |
 | --------------------------- | ------- | ------------------------------------------------- | ------------------------------------------------ |
 | `ledger_seq`                | int64   | `ledger.build`, `ledger.validate`, `ledger.store` | Ledger sequence number                           |
-| `close_time_ripple_epoch_s` | int64   | `ledger.build`                                    | Ledger close time (Ripple epoch seconds)         |
+| `close_time_ripple_epoch_s` | int64   | `ledger.build`                                    | Ledger close time (XRPL epoch seconds)           |
 | `close_time_correct`        | boolean | `ledger.build`                                    | Whether close time was agreed upon by validators |
 | `close_resolution_ms`       | int64   | `ledger.build`                                    | Close time rounding granularity in milliseconds  |
 | `tx_count`                  | int64   | `tx.apply`                                        | Transactions applied to the ledger               |
@@ -801,7 +801,7 @@ reader, and OTLP/HTTP exporter, even though both request a meter named
 `xrpld` / `1.0.0`. `OTelCollector` takes its meter from the **global** provider,
 which `Telemetry` publishes and reads every 1000 ms; `MetricsRegistry` builds a
 private provider it does not publish, read every 10000 ms
-(`src/xrpld/telemetry/MetricsRegistry.cpp`). So `jobq_<jobtype>_*` and
+(`src/libxrpl/telemetry/MetricsRegistry.cpp`). So `jobq_<jobtype>_*` and
 `job_*_total` reach Prometheus on different cadences and should not be assumed
 sampled at the same instant.
 
@@ -996,7 +996,7 @@ Phase 8 injects OTel trace context into xrpld's `Logs::format()` output, enablin
 Example:
 
 ```
-2024-Jan-15 10:30:45.123456 UTC LedgerMaster:NFO trace_id=abc123def456789012345678abcdef01 span_id=0123456789abcdef Validated ledger 42
+2024-Jan-15 10:30:45.123456789 UTC LedgerMaster:NFO trace_id=abc123def456789012345678abcdef01 span_id=0123456789abcdef Validated ledger 42
 ```
 
 - **`trace_id=<hex32>`** — 32-character lowercase hex trace identifier. Links to the distributed trace in Tempo.
@@ -1010,10 +1010,10 @@ The trace context injection is implemented in `Logs::format()` (`src/libxrpl/bas
 ### Log Ingestion Pipeline
 
 ```
-xrpld debug.log -> OTel Collector filelog receiver -> regex_parser -> Loki exporter -> Grafana Loki
+xrpld debug.log -> OTel Collector file_log receiver -> regex_parser -> Loki exporter -> Grafana Loki
 ```
 
-The OTel Collector's `filelog` receiver tails `debug.log` files and uses a `regex_parser` operator to extract structured fields:
+The OTel Collector's `file_log` receiver tails `debug.log` files and uses a `regex_parser` operator to extract structured fields:
 
 | Field       | Type     | Description                                              |
 | ----------- | -------- | -------------------------------------------------------- |
@@ -1033,7 +1033,7 @@ Bidirectional linking between logs and traces is configured via Grafana datasour
 
 ### Loki Backend
 
-Grafana Loki (v3.7.6) serves as the log storage backend. It receives log entries from the OTel Collector's `otlphttp/loki` exporter via the native OTLP endpoint at `http://loki:3100/otlp`.
+Grafana Loki (v3.7.6) serves as the log storage backend. It receives log entries from the OTel Collector's `otlp_http/loki` exporter via the native OTLP endpoint at `http://loki:3100/otlp`.
 
 ### LogQL Query Examples
 
@@ -1081,8 +1081,8 @@ async callbacks for new categories.
 > **Label values are case-sensitive and three cache values are not lowercase.**
 > The `metric` label carries the string literal passed to `Observe()`, verbatim:
 > `SLE_hit_rate`, `AL_hit_rate` and `AL_size` are upper-case
-> (`src/xrpld/telemetry/MetricsRegistry.cpp:666`, `:682`, `:708`), while
-> `ledger_hit_rate` genuinely is lowercase (`:675`). A selector written as
+> (all four `Observe()` calls are in `AppMetricGauges::registerCacheHitRateGauge()`),
+> while `ledger_hit_rate` genuinely is lowercase. A selector written as
 > `cache_metrics{metric="sle_hit_rate"}` matches nothing.
 
 #### Server Info (via OTel MetricsRegistry)
@@ -1263,7 +1263,7 @@ docker/telemetry/workload/benchmark.sh --xrpld .build/xrpld --duration 300
 > (`nodestore_state`, `cache_metrics`, …) once.
 >
 > Note that `ledgers_closed_total` appears in **both** instrument rows: it is
-> created as a `MetricsRegistry` member (`MetricsRegistry.cpp:386-387`, whose
+> created as a `MetricsRegistry` member (in `MetricsRegistry::initSyncInstruments()`, whose
 > `incrementLedgersClosed()` has no callers) and separately incremented at its
 > call site via `XRPL_METRIC_COUNTER_INC` (`RCLConsensus.cpp:749`). The distinct
 > name count across the two rows is therefore 41, not 42.
@@ -1361,9 +1361,13 @@ Phase 11 builds a custom OTel Collector receiver (Go) that polls xrpld's admin R
 
 ### Phase 9: OTel SDK-Exported Metrics (MetricsRegistry)
 
-Phase 9 introduces the `MetricsRegistry` class (`src/xrpld/telemetry/MetricsRegistry.h/.cpp`)
-which registers metrics directly with the OpenTelemetry Metrics SDK. These are exported
-via OTLP/HTTP to the OTel Collector and scraped by Prometheus.
+Phase 9 introduces the `MetricsRegistry` class (`include/xrpl/telemetry/MetricsRegistry.h`,
+`src/libxrpl/telemetry/MetricsRegistry.cpp`) which registers metrics directly with the
+OpenTelemetry Metrics SDK. The synchronous counters and histograms are created there. The
+observable gauges in the tables below are registered by `AppMetricGauges`
+(`src/xrpld/telemetry/AppMetricGauges.h`, `src/xrpld/telemetry/AppMetricGauges.cpp`), which
+stays in `xrpld` because its callbacks read `Application`. Both are exported via OTLP/HTTP
+to the OTel Collector and scraped by Prometheus.
 
 #### NodeStore I/O (Observable Gauge — `nodestore_state`)
 
@@ -1403,9 +1407,9 @@ via OTLP/HTTP to the OTel Collector and scraped by Prometheus.
 
 Further label values on the same instrument, added to separate the two
 bottlenecks that both present as the `ledgerData` job lane pinned at its
-concurrency cap. Observed in `MetricsRegistry::observeNodeStoreTotals()`,
+concurrency cap. Observed in `AppMetricGauges::observeNodeStoreTotals()`,
 `observeWritePathDetail()`, and `observeAcquireStats()`
-(`src/xrpld/telemetry/MetricsRegistry.cpp:871-942`).
+(`src/xrpld/telemetry/AppMetricGauges.cpp`).
 
 | Prometheus Metric                                    | Type  | Labels   | Description                                             |
 | ---------------------------------------------------- | ----- | -------- | ------------------------------------------------------- |
@@ -1497,7 +1501,7 @@ data as uninformative unless the build is known to include the fix.
 #### TxQ Admission and Ledger Mismatch (Synchronous Counters)
 
 Three monotonic counters created alongside the Phase 7+ parity counters
-(`src/xrpld/telemetry/MetricsRegistry.cpp:394-399`). The gauges above answer
+(in `MetricsRegistry::initSyncInstruments()`). The gauges above answer
 "how deep is the queue"; these answer "what did the queue refuse, and did the
 ledger we built match the one the network validated".
 
@@ -1543,7 +1547,7 @@ Rejections (Dropped)", "Queue Abandonment Rate (Expired)"; _Consensus Health_
 #### Reduce-Relay Efficiency (Observable Gauge — `reduce_relay_metrics`)
 
 Transaction reduce-relay effectiveness, read from `Overlay::txMetrics()` each
-collection cycle (`src/xrpld/telemetry/MetricsRegistry.cpp:1370-1402`). A high
+collection cycle (`AppMetricGauges::registerReduceRelayGauge()`). A high
 `suppressed_peers` : `selected_peers` ratio proves the feature is saving
 bandwidth; a high `not_enabled_peers` means stale peers are forcing full relay.
 
@@ -1572,7 +1576,7 @@ Selection", "Reduce-Relay Missing-Tx Frequency".
 | `rpc_in_flight_requests`    | UpDownCounter | (none)            | RPC calls currently executing (+1 rpcStart, -1 rpcEnd) |
 
 `rpc_in_flight_requests` is emitted at its call site via the `XRPL_METRIC_UPDOWN_ADD`
-macro (see `src/xrpld/telemetry/MetricMacros.h` and `PerfLogImp.cpp`), not through a
+macro (see `include/xrpl/telemetry/MetricMacros.h` and `PerfLogImp.cpp`), not through a
 `MetricsRegistry` member. As an UpDownCounter it carries no `_total` suffix (that is
 reserved for monotonic counters).
 
@@ -1582,7 +1586,7 @@ Two histograms describing how much work one request asks for. Names and
 descriptions are the `constexpr` constants in
 `include/xrpl/telemetry/RpcMetricNames.h`; both are recorded at their call sites
 via `XRPL_METRIC_*`, and both have an explicit-bucket view registered in
-`src/xrpld/telemetry/MetricsRegistry.cpp`.
+`src/libxrpl/telemetry/MetricsRegistry.cpp`.
 
 | Prometheus Metric           | Type      | Labels | Description                                             |
 | --------------------------- | --------- | ------ | ------------------------------------------------------- |
@@ -1702,8 +1706,8 @@ information the batch totals do not already carry.
 
 **All three histograms need an explicit bucket view.** The SDK's default
 histogram boundaries top out at 10000. Every one of these three exceeds that, so
-without a view their top quantiles would all read as a flat 10000. Twelve views are
-registered in `src/xrpld/telemetry/MetricsRegistry.cpp`, and three of the twelve are
+without a view their top quantiles would all read as a flat 10000. Thirteen views are
+registered in `src/libxrpl/telemetry/MetricsRegistry.cpp`, and three of the thirteen are
 for this family:
 
 | Instrument                  | View helper                     | Boundaries                                             |
@@ -1712,13 +1716,15 @@ for this family:
 | `getobject_request_objects` | `addHistogramView()`, own set   | `1, 2, 4, 8, 16, 64, 256, 1024, 4096, 12288`           |
 | `getobject_charge`          | `addHistogramView()`, own set   | `0, 100, 500, 1000, 5000, 10000, 25000, 50000, 100000` |
 
-The other nine views are `addMicrosecondHistogramView()` on `job_queued_us`,
+The other ten views are `addMicrosecondHistogramView()` on `job_queued_us`,
 `job_running_us`, `rpc_method_us` and `sweep_malloc_trim_us`;
-`addRoundDurationHistogramView()` on `consensus_round_duration_ms`; and
+`addRoundDurationHistogramView()` on `consensus_round_duration_ms`;
+`addRotationPhaseHistogramView()` on `rotation_phase_duration_seconds`; and
 `addHistogramView()` with its own set on `dns_resolve_latency_ms`,
 `overlay_dial_latency_ms`, `rpc_batch_size` and `pathfind_discovered_paths`. That
-is five µs-ladder views, one round-duration ladder, and six caller-supplied sets —
-the two above, those two millisecond latencies, and two object counts. See
+is five µs-ladder views, one round-duration ladder, one seconds ladder for the
+rotation phases, and six caller-supplied sets — the two above, those two
+millisecond latencies, and two object counts. See
 [RPC Request-Count Histograms](#rpc-request-count-histograms) for the last two.
 
 **Why the latter two do not use the µs ladder.** They are not durations. The µs
@@ -1758,7 +1764,7 @@ not a lowercase word and not a friendly alias. The value is
 `beast::typeName<Object>()` (`include/xrpl/basics/CountedObject.h:115`), which
 demangles `typeid(T).name()` with `abi::__cxa_demangle`
 (`include/xrpl/beast/type_name.h:16-45`) and applies no stripping; the observer
-copies it through verbatim (`src/xrpld/telemetry/MetricsRegistry.cpp:781-787`).
+copies it through verbatim (`AppMetricGauges::registerObjectCountGauge()`).
 Values therefore keep their `xrpl::` namespace, nested `::`, and template
 arguments.
 
@@ -1893,16 +1899,17 @@ These metrics fill gaps identified by comparing xrpld's internal observability w
 Data source: `ValidationTracker` class with 8s grace period and 5m late repair window.
 
 > **Every value on this instrument is a double.** The family is one
-> `CreateDoubleObservableGauge` (`src/xrpld/telemetry/MetricsRegistry.cpp:1593`),
+> `CreateDoubleObservableGauge` (in `AppMetricGauges::registerValidationAgreementGauge()`),
 > so the integral counts are cast to `double` before `Observe()` — there is no
 > Int64 sub-series to filter on. The same holds for `validator_health`,
 > `peer_quality` and `state_tracking` below; an earlier revision of these four
 > tables split the Type column between Int64 and Double, which the code does not
 > do.
 >
-> The 7-day window is `ValidationTracker::kWindow7d` = 168 hours
-> (`src/xrpld/telemetry/ValidationTracker.h:311`) and is observed alongside the 1h
-> and 24h windows at `MetricsRegistry.cpp:1623-1626`. Panels exist on _Validator
+> The 7-day window spans `ValidationTracker::kBuckets7d` = `7 * 24 * 60` one-minute
+> buckets, i.e. 168 hours (`include/xrpl/telemetry/ValidationTracker.h`), and is
+> observed alongside the 1h and 24h windows in
+> `AppMetricGauges::registerValidationAgreementGauge()`. Panels exist on _Validator
 > Health_ (`validator-health`): "Agreement % (7d)" and "Agreements vs Missed
 > (7d)".
 
@@ -1915,7 +1922,7 @@ Data source: `ValidationTracker` class with 8s grace period and 5m late repair w
 | `validator_health{metric="unl_expiry_days"}`   | Double | `metric` | Days until UNL list expires    |
 | `validator_health{metric="validation_quorum"}` | Double | `metric` | Validation quorum threshold    |
 
-Single `CreateDoubleObservableGauge` at `MetricsRegistry.cpp:1217`.
+Single `CreateDoubleObservableGauge`, in `AppMetricGauges::registerValidatorHealthGauge()`.
 
 #### Peer Quality (Observable Gauge — `peer_quality`)
 
@@ -1926,7 +1933,7 @@ Single `CreateDoubleObservableGauge` at `MetricsRegistry.cpp:1217`.
 | `peer_quality{metric="peers_higher_version_pct"}` | Double | `metric` | % of peers on newer xrpld version    |
 | `peer_quality{metric="upgrade_recommended"}`      | Double | `metric` | 1 if >60% of peers are newer version |
 
-Single `CreateDoubleObservableGauge` at `MetricsRegistry.cpp:1266`.
+Single `CreateDoubleObservableGauge`, in `AppMetricGauges::registerPeerQualityGauge()`.
 
 #### Ledger Economy (Observable Gauge — `ledger_economy`)
 
@@ -1945,9 +1952,9 @@ Single `CreateDoubleObservableGauge` at `MetricsRegistry.cpp:1266`.
 | `state_tracking{metric="state_value"}`                   | Double | `metric` | Numeric state 0-6 (see encoding below) |
 | `state_tracking{metric="time_in_current_state_seconds"}` | Double | `metric` | Duration in current state              |
 
-Single `CreateDoubleObservableGauge` at `MetricsRegistry.cpp:1483`.
+Single `CreateDoubleObservableGauge`, in `AppMetricGauges::registerStateTrackingGauge()`.
 
-State value encoding: 0=disconnected, 1=connected, 2=syncing, 3=tracking, 4=full, 5=validating (FULL + validating), 6=proposing (FULL + proposing). Values 0-4 are `OperatingMode` cast to double (`include/xrpl/server/NetworkOPs.h:60-66`); 5 and 6 are the FULL-only refinements at `MetricsRegistry.cpp:1500-1515`. **The range is 0-6, not 0-7** — there is no seventh state.
+State value encoding: 0=disconnected, 1=connected, 2=syncing, 3=tracking, 4=full, 5=validating (FULL + validating), 6=proposing (FULL + proposing). Values 0-4 are `OperatingMode` cast to double (`include/xrpl/server/NetworkOPs.h:60-66`); 5 and 6 are the FULL-only refinements in `AppMetricGauges::registerStateTrackingGauge()`. **The range is 0-6, not 0-7** — there is no seventh state.
 
 #### Storage Detail (Observable Gauge — `storage_detail`)
 
@@ -1956,11 +1963,11 @@ State value encoding: 0=disconnected, 1=connected, 2=syncing, 3=tracking, 4=full
 | `storage_detail{metric="stored_object_bytes"}` | Int64 | `metric` | Cumulative object-payload bytes written (not on-disk size) |
 
 > **`stored_object_bytes` is not a file size.** It observes `getStoreSize()`
-> (`src/xrpld/telemetry/MetricsRegistry.cpp:1574`), which sums the object payloads
+> (in `AppMetricGauges::registerStorageDetailGauge()`), which sums the object payloads
 > this process has written. It therefore excludes NuDB's keys, bucket padding and
 > log, and it resets when the process restarts while the files on disk do not.
 > `node_written_bytes` on the `nodestore_state` gauge calls the same accessor
-> (`MetricsRegistry.cpp:877`), so the two series are equal by construction and any
+> (in `AppMetricGauges::observeNodeStoreTotals()`), so the two series are equal by construction and any
 > write-amplification ratio built from the pair is a constant 1.0. To size the store
 > on disk, stat the backend's files; no metric reports it today.
 >
@@ -1979,12 +1986,11 @@ State value encoding: 0=disconnected, 1=connected, 2=syncing, 3=tracking, 4=full
 | `state_changes_total`       | Counter | Operating mode transitions   | NetworkOPs.cpp   |
 
 > **Known issue — `ledgers_closed_total` has a dead second producer.** The
-> instrument is created twice. `MetricsRegistry::registerCounters()` eagerly
+> instrument is created twice. `MetricsRegistry::initSyncInstruments()` eagerly
 > creates it as the member `ledgersClosedCounter_`
-> (`src/xrpld/telemetry/MetricsRegistry.cpp:386-387`), and its only mutator,
-> `MetricsRegistry::incrementLedgersClosed()`
-> (declared `MetricsRegistry.h:591`, defined `MetricsRegistry.cpp:1703`), has
-> **zero callers** — the header says so itself at `MetricsRegistry.h:584-588`.
+> (`src/libxrpl/telemetry/MetricsRegistry.cpp`), and its only mutator,
+> `MetricsRegistry::incrementLedgersClosed()`, has **zero callers** — the `@note`
+> on its declaration in `include/xrpl/telemetry/MetricsRegistry.h` says so itself.
 > The value operators actually see comes from the single live increment,
 > the `XRPL_METRIC_COUNTER_INC` call site in
 > `RCLConsensus::Adaptor::doAccept()` (`src/xrpld/app/consensus/RCLConsensus.cpp:749`).
@@ -2031,15 +2037,15 @@ The dotted form was dropped by the 2026-05-13 naming redesign, in three commits:
 
 What the code emits today, and where it is documented:
 
-| Old dotted key (never emitted)                                    | Live equivalent                                                                                                                                                                              |
-| ----------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `xrpl.peer.version`                                               | `peer_version` — see [§Transaction Attributes](#transaction-attributes) <!-- otel-naming:allow-dotted: xrpl.peer.version -->                                                                 |
-| `xrpl.validation.ledger_hash`, `xrpl.peer.validation.ledger_hash` | one bare `ledger_hash` on both `consensus.validation.send` and `peer.validation.receive` <!-- otel-naming:allow-dotted: xrpl.validation.ledger_hash, xrpl.peer.validation.ledger_hash -->    |
-| `xrpl.validation.full`, `xrpl.peer.validation.full`               | one bare `full_validation` on both of those spans <!-- otel-naming:allow-dotted: xrpl.validation.full, xrpl.peer.validation.full -->                                                         |
-| `xrpl.consensus.validation_quorum`                                | `quorum`, on `consensus.accept` only <!-- otel-naming:allow-dotted: xrpl.consensus.validation_quorum -->                                                                                     |
-| `xrpl.node.amendment_blocked`                                     | **not a span attribute at all** — only the metric `validator_health{metric="amendment_blocked"}` (`MetricsRegistry.cpp:1233`) <!-- otel-naming:allow-dotted: xrpl.node.amendment_blocked --> |
-| `xrpl.node.server_state`                                          | **not a span attribute at all** — only the metric `server_info{metric="server_state"}` (`MetricsRegistry.cpp:1031`) <!-- otel-naming:allow-dotted: xrpl.node.server_state -->                |
-| `xrpl.consensus.proposers_validated`                              | **never implemented** in any form <!-- otel-naming:allow-dotted: xrpl.consensus.proposers_validated -->                                                                                      |
+| Old dotted key (never emitted)                                    | Live equivalent                                                                                                                                                                                                     |
+| ----------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `xrpl.peer.version`                                               | `peer_version` — see [§Transaction Attributes](#transaction-attributes) <!-- otel-naming:allow-dotted: xrpl.peer.version -->                                                                                        |
+| `xrpl.validation.ledger_hash`, `xrpl.peer.validation.ledger_hash` | one bare `ledger_hash` on both `consensus.validation.send` and `peer.validation.receive` <!-- otel-naming:allow-dotted: xrpl.validation.ledger_hash, xrpl.peer.validation.ledger_hash -->                           |
+| `xrpl.validation.full`, `xrpl.peer.validation.full`               | one bare `full_validation` on both of those spans <!-- otel-naming:allow-dotted: xrpl.validation.full, xrpl.peer.validation.full -->                                                                                |
+| `xrpl.consensus.validation_quorum`                                | `quorum`, on `consensus.accept` only <!-- otel-naming:allow-dotted: xrpl.consensus.validation_quorum -->                                                                                                            |
+| `xrpl.node.amendment_blocked`                                     | **not a span attribute at all** — only the metric `validator_health{metric="amendment_blocked"}` (`AppMetricGauges::registerValidatorHealthGauge()`) <!-- otel-naming:allow-dotted: xrpl.node.amendment_blocked --> |
+| `xrpl.node.server_state`                                          | **not a span attribute at all** — only the metric `server_info{metric="server_state"}` (`AppMetricGauges::registerServerInfoGauge()`) <!-- otel-naming:allow-dotted: xrpl.node.server_state -->                     |
+| `xrpl.consensus.proposers_validated`                              | **never implemented** in any form <!-- otel-naming:allow-dotted: xrpl.consensus.proposers_validated -->                                                                                                             |
 
 The identical nine-row list was deleted from
 `docker/telemetry/workload/expected_spans.json` by commit `cb9fce6890` for the
@@ -2066,10 +2072,12 @@ query, an alert — matches nothing and should be pointed at the live keys above
 
 | Dashboard          | UID                         | Data Source | Key Panels                                                             |
 | ------------------ | --------------------------- | ----------- | ---------------------------------------------------------------------- |
-| Validator Health   | `validator-health`          | Prometheus  | Server state timeline, proposer count, converge time, amendment voting |
+| Validator Health   | `validator-health-external` | Prometheus  | Server state timeline, proposer count, converge time, amendment voting |
 | Network Topology   | `xrpld-network-topology`    | Prometheus  | Peer count, version distribution, latency distribution, diverged peers |
 | Fee Market (Ext)   | `xrpld-fee-market-external` | Prometheus  | Fee levels, queue depth, load factor breakdown, escalation timeline    |
 | DEX & AMM Overview | `xrpld-dex-amm`             | Prometheus  | AMM TVL, order book depth, spread trends, trading fee revenue          |
+
+Grafana keys a dashboard by its UID, so two dashboards sharing one UID overwrite each other — whichever the provisioner loads last wins, and it does so silently. Phase 9 already ships `validator-health` (the row above), so the Phase 11 dashboard uses `validator-health-external`, the same way Fee Market is disambiguated as `xrpld-fee-market-external`. `OpenTelemetryPlan/Phase11_taskList.md` § Task 11.9 carries the same rule and the filename that goes with it.
 
 ### Prometheus Alerting Rules (Phase 11)
 
@@ -2407,22 +2415,27 @@ no panel (it is read in Tempo instead).
 | `txset.acquire` span (`outcome`, `txset_hash`, `duration_ms`, `timeouts`, `peer_count`)                                                                                                                                                                                                                                                | span               | `TransactionAcquire.cpp` — `TransactionAcquire::finalizeAcquireSpan`                                     | Tx-Set Acquire Outcomes; Tx-Set Acquire Duration (p95)                                                                                                                                 | One attempt to fetch the transaction set a consensus proposal referenced but this node did not hold. `TransactionAcquire` had **zero** telemetry of any kind before this, so a consensus round stalled waiting on a set was indistinguishable from an idle one. The sibling of `ledger.acquire`: same `TimeoutCounter` base, same trigger/onTimer/takeNodes shape, and the same `trace_ledger` flag so the two halves of a stuck sync cannot be enabled apart. `outcome` is `complete` \| `failed` \| `timeout` \| `abandoned`, stamped by one idempotent finalizer on every exit: `done()`; `abandonAcquireSpan()` when `InboundTransactions` stops pursuing the fetch (`giveSet`, the `newRound` sweep, `stop`, or the container being destroyed); and `cancel()`, a `TimeoutCounter` exit that fails the task without reaching `done()`. Each closes the span where the fetch really stops, so `duration_ms` never includes the time a stray reference lived; the destructor only asserts one of them ran. A fetch dropped before `init()` emits no span at all, so these outcomes cover the spans that exist, not every fetch constructed. `timeout` is distinct from `failed` because the exhausted-budget path sets the terminal `failed_` flag too — that flag is how the timer loop stops — so the outcome rule checks the timeout first or every timeout would read as a data fault. `txset_hash` identifies WHICH set stalled and stays span-only: one metric series per consensus round would be unbounded. **Which round(s) asked** is a repeated `round.request` **event** (`current_ledger_hash` + `current_ledger_seq`, re-exported keys), one per requesting round rather than a parent, a link or one attribute — each of those flattens a many-to-many relation to 1:1. Fired once per ROUND, not per peer proposal, keyed on the round's parent-ledger hash: that separates rounds STARTED on different forks at the same height, but NOT a mid-round wrong-ledger recovery, which never re-reaches `preStartRound`. The count is a LOWER BOUND valid only while the span is open — after it closes, later requests add nothing, so a fetch that kept three rounds waiting can show one event. Requester, never consumer.                 |
 | `ledger.serve` span (`object_type`, `outcome`, `served_nodes`, `peer_id`, `ledger_seq`)                                                                                                                                                                                                                                                | span               | `PeerImp.cpp` — `PeerImp::processLedgerRequest` (the `JtLedgerReq` worker)                               | Ledger Serve Rate by Object Type                                                                                                                                                       | This node answering a peer's `TMGetLedger` request — the **supply side** of the sync exchange, and the trace-level companion to the existing `serve_refused_total` counter. The whole serve path had no span, so how long this node takes to answer, and whether it answered at all, was unobservable. A fresh trace root, because the request arrives from the wire on a shared worker whose ambient span is unrelated. `object_type` (`header` \| `tx` \| `as` \| `txset`) and `outcome` (`complete` \| `partial` \| `refused`) are both derived by shared rules in `LedgerSpanNames.h` rather than named per branch, which is what stops the eight exits of `processLedgerRequest` disagreeing about one request. `outcome` is derived from the reply itself — `served_nodes` is the reply's own node count and is 0 on all seven refusal paths — so nothing is accumulated and no work is added to the per-node assembly loop. `partial` means the reply hit `Tuning::kSoftMaxReplyNodes`, so the peer must make another round trip.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
 | `peer.dial` span (`outcome`, `remote_endpoint`, `duration_ms`)                                                                                                                                                                                                                                                                         | span               | `ConnectAttempt.cpp` — `ConnectAttempt::reportOutcome`                                                   | Outbound Dial Outcomes (span-derived, per attempt)                                                                                                                                     | One outbound connect attempt, as a per-attempt timeline rather than a rate. The trace-level companion to `overlay_connect_total` / `overlay_dial_latency_ms`: it carries the same six `outcome` values, set from the same `reportOutcome` funnel, so span and counter cannot disagree, and the funnel's existing first-call-wins guard makes the span exactly-once for free. What it adds is `remote_endpoint` — WHICH peer — which the counter deliberately cannot carry, because one series per peer address would be unbounded cardinality; it is a dedicated Tempo span column instead. A fresh trace root: a dial is the first thing a starting node does, so there is nothing to parent it to. An attempt torn down mid-dial by shutdown ends its span in the destructor with no `outcome`, which is the honest record of "never concluded" rather than a dropped span.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| `nodestore.rotate` span + 8 children (`ledger_seq`, `last_rotated`, `outcome`; children carry a phase-specific attribute)                                                                                                                                                                                                              | span               | `SHAMapStoreImp.cpp` — `SHAMapStoreImp::run` rotation block; `RotationPhase` helper                      | Rotation Phase Duration (p95 by stage)                                                                                                                                                 | One trace per online-delete rotation. Fresh root: the SHAMapStore thread has no ambient span. The eight children — `clear_prior`, `copy`, `freshen.keys`, `freshen.fetch`, `new_backend`, `clear_caches`, `swap`, `health_wait` — are child spans through the thread's ambient scope, so each one covers exactly its own step. `outcome` is `complete`\|`expired`\|`stopping`\|`missing_node`, stamped by the `RotationOutcome` finalizer on whichever exit runs first; its destructor asserts one exit was named, catching a new return path that forgot to. Exists to make a rotation-driven stall reproducible from telemetry alone: the `freshen.keys` child sits inside `SHAMapStoreImp::freshenCache` around `cache.getKeys()` on the tree-node cache, so a Tempo view of one rotation shows that child overlapping the frozen `consensus.*.receive` spans instead of leaving the lock hold un-attributable.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| `rotation_phase_duration_seconds` (`stage`)                                                                                                                                                                                                                                                                                            | histogram          | `SHAMapStoreImp.cpp` — `RotationPhase::~RotationPhase`                                                   | Rotation Phase Duration (p95 by stage)                                                                                                                                                 | Wall-clock seconds spent in one rotation phase, recorded once per phase end. Exists beside the spans because the Grafana Cloud collector applies 0.5% probabilistic tail sampling, so any single trace is likely dropped; the histogram is unsampled and exact. `stage` is the child span's suffix (see `lval::rotation_phase`), so a p95 panel breaks down by phase. Bucket ladder covers 1 s to 3600 s (see `HistogramBuckets.h`'s `kRotationPhaseSecondsBuckets`), because a `copy` phase runs ~10 min on mainnet and the spanmetrics 120 s ceiling would pin every quantile.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| `jobq_stall_total` (`job_type`)                                                                                                                                                                                                                                                                                                        | counter            | `MetricsRegistry.cpp` — `recordJobFinished` (compares against `kJobStallThresholdUs`)                    | Job Stalls >=1 s (Count By Job Type)                                                                                                                                                   | Every job whose run time reached `LoadMonitor`'s 1 s warn bar (the same "Job: … run:" log line). A process-wide freeze shows up here as several job types crossing the bar in the same second — the exact detector for a rotation-driven stall, since sampling cannot drop a counter. `job_type` comes from `JobTypes::name()`; no per-handler dimension, because the rotation stall pathology is not per-handler.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| `cache_metrics{metric="treenode_lock_hold_peak_us"\|"fullbelow_lock_hold_peak_us"}`                                                                                                                                                                                                                                                    | observable gauge   | `MetricsRegistry.cpp` — `observeCacheLockHoldPeaks` reads `TaggedCache::takeLockHoldPeak()`              | Cache Lock Hold Peak (us)                                                                                                                                                              | Longest single hold of the `TaggedCache::mutex_` since the previous collection tick, in microseconds, observed on the existing `cache_metrics` gauge. `take*()` is destructive: the tick reads the peak and resets. Emitted at 0 on an idle node, so absence of the series is a wiring bug rather than a healthy state. A multi-second value is the lock that froze every SHAMap-node fetch during a rotation, which is exactly the signal WP-B6 exists to expose. `TaggedCache` lives in `xrpl/basics` and cannot include telemetry headers, so the cache exposes a value and `MetricsRegistry` reads it — the same pattern `registerNodeStoreGauge` already uses.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
 
-### Why rotation duration is not recorded
+### Why rotation duration is recorded per phase, not as one number
 
-An obvious fifth rotation signal would be how long a rotation takes, and it is
-deliberately absent. `SHAMapStoreImp::run` calls `healthWait()` at eight points
-inside the rotation sequence, and `healthWait()` blocks in
-`std::this_thread::sleep_for(recoveryWaitTime_)` for as long as the node is not
-`FULL` or its validated ledger is older than the age threshold. A wall-clock
-duration spanning the rotation would therefore add a deliberate throttle to real
-work and report the sum as one number — and the throttle dominates precisely
-when the node is unhealthy, which is when the number would be read.
+`SHAMapStoreImp::run` calls `healthWait()` at several points inside the rotation
+sequence, and `healthWait()` blocks in `std::this_thread::sleep_for(recoveryWaitTime_)`
+for as long as the node is not `FULL` or its validated ledger is older than the age
+threshold. A single wall-clock duration spanning the whole rotation would fold
+work-time and throttle-time into one number, and the throttle dominates precisely
+when the node is unhealthy — which is when the number would be read.
 
-Subtracting the sleep is not clean either: the waits are interleaved with the
-work at eight sites, and instrumenting each interval separately would mean eight
-new emit points inside a sequence whose control flow already has several early
-returns. The two signals in the table answer the question rotation duration was
-wanted for — how much extra I/O did rotation cause — directly and without that
-ambiguity, so the duration is left unmeasured rather than published as a number
-that conflates work with throttling.
+The trigger for splitting was a measurement on two mainnet nodes with populated stores:
+every rotation froze the process for seconds at the copy-walk → freshen boundary, and no
+existing signal could place that freeze in time (the `rotation_state{in_flight}` gauge
+is 60 s-resolution and only brackets the freshen/swap window, not the whole rotation).
+The fix, WP-B6, is per-phase timing: `rotation_phase_duration_seconds{stage}` and eight
+child spans (see the row above), with `health_wait` as its own child so the throttle is
+separable from the work. That resolves the objection this section previously recorded
+without discarding it — the two signals below still answer the "how much extra I/O did
+rotation cause" question directly, and `rotation_phase_duration_seconds{stage="copy"}`
+now answers "how long did the walk take" without conflating it with a wait.

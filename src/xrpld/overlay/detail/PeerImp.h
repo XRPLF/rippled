@@ -9,7 +9,6 @@
 #include <xrpld/overlay/Squelch.h>
 #include <xrpld/overlay/detail/OverlayImpl.h>
 #include <xrpld/overlay/detail/ProtocolVersion.h>
-#include <xrpld/telemetry/MetricNames.h>
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/Number.h>
@@ -35,6 +34,7 @@
 #include <xrpl/server/Handoff.h>
 #include <xrpl/server/Manifest.h>
 #include <xrpl/shamap/SHAMapNodeID.h>
+#include <xrpl/telemetry/MetricNames.h>
 #include <xrpl/telemetry/SpanGuard.h>
 
 #include <boost/circular_buffer.hpp>

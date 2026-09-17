@@ -87,6 +87,11 @@ UNIT_TO_MS = {"ms": 1.0, "s": 1000.0}
 REL_TOLERANCE = 1e-12
 
 
+def is_number(value):
+    """True for a real JSON number. bool is an int subclass, so exclude it."""
+    return not isinstance(value, bool) and isinstance(value, (int, float))
+
+
 def read_text_or_exit(path):
     """Read a required text input, or exit 1 naming the input that failed."""
     try:
@@ -96,11 +101,22 @@ def read_text_or_exit(path):
 
 
 def read_json_or_exit(path):
-    """Read and parse a required JSON input, or exit 1 naming what failed."""
+    """Read and parse a required JSON object, or exit 1 naming what failed.
+
+    All three JSON inputs are objects. A top-level null, list or number parses
+    fine and then dies on the first .get, so check the shape here rather than
+    report it as a traceback pointing into this script.
+    """
     try:
-        return json.loads(read_text_or_exit(path))
+        parsed = json.loads(read_text_or_exit(path))
     except json.JSONDecodeError as exc:
         sys.exit(f"{path}: required input is not valid JSON -- {exc}")
+    if not isinstance(parsed, dict):
+        sys.exit(
+            f"{path}: required input is valid JSON but its top level is "
+            f"{type(parsed).__name__}, not an object -- nothing can be read from it"
+        )
+    return parsed
 
 
 def span_edges_ms():
@@ -264,7 +280,7 @@ def _unusable_baseline(key, value, unit):
         A failure string, or None when the value is usable.
     """
     # bool is a subclass of int; True would otherwise pass as the number 1.
-    if isinstance(value, bool) or not isinstance(value, (int, float)):
+    if not is_number(value):
         return (
             f"{key}: baseline value {value!r} is not a number, so no bound can be "
             f"derived from it. Recapture the baseline from a CI run rather than "
@@ -338,12 +354,24 @@ def check_key(key, entry, thresholds, ladders):
     if rule is None:
         failures.append(
             f"{key}: no per-metric override, so it falls back to the defaults and "
-            f"gates on the percentage bound alone. Add an override with "
-            f"max_abs_increase = {hi_next - value!r} (rule B)"
+            f"gates on the percentage bound alone. Add an override in "
+            f"{THRESHOLDS} with "
+            f"max_abs_increase_{unit} = {hi_next - value!r} (rule B)"
         )
         return failures
 
+    if not isinstance(rule, dict):
+        return [
+            f"{key}: threshold override {rule!r} is not an object carrying "
+            f"max_abs_increase_{unit} and max_pct_increase -- fix it in {THRESHOLDS}"
+        ]
+
     bound = rule.get("max_abs_increase_ms", rule.get("max_abs_increase_us"))
+    if bound is not None and not is_number(bound):
+        return [
+            f"{key}: max_abs_increase_{unit} is {bound!r}, not a number, so it "
+            f"cannot be compared with the derived bound -- fix it in {THRESHOLDS}"
+        ]
     expected = hi_next - value
     if bound is None or abs(bound - expected) > REL_TOLERANCE * expected:
         failures.append(
@@ -354,6 +382,11 @@ def check_key(key, entry, thresholds, ladders):
     pct = rule.get("max_pct_increase")
     if pct is None:
         failures.append(f"{key}: no max_pct_increase, so the metric never gates")
+    elif not is_number(pct):
+        failures.append(
+            f"{key}: max_pct_increase is {pct!r}, not a number -- fix it in "
+            f"{THRESHOLDS}"
+        )
     elif bound is not None and pct >= 100.0 * bound / value:
         failures.append(
             f"{key}: max_pct_increase {pct:g}% is at or above the absolute bound's "
@@ -391,6 +424,13 @@ def main():
 
     ladders = {"ms": span_edges_ms(), "us": microsecond_edges()}
     gated = baseline["metrics"]
+    # A list or a string is truthy, so it survives the placeholder test above
+    # and then either crashes or reports its characters as gated keys.
+    if not isinstance(gated, dict):
+        sys.exit(
+            f"{BASELINE}: 'metrics' is {type(gated).__name__}, not an object of "
+            f"key -> {{value, unit}} -- recapture the baseline from a CI run"
+        )
     failures = []
 
     declared = declared_keys(metrics_cfg)

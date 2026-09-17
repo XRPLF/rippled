@@ -142,7 +142,7 @@ needs a finer low-end ladder **as well as** a spread-aware baseline.
 `0.005` / `0.0095` / `0.0099` ms, which is `0.5` / `0.95` / `0.99 × 0.01` ms — the ladder's first
 edge times the quantile, the signature of every sample landing in the first bucket. Those numbers
 are interpolation arithmetic on the bucket floor, not latencies. It is physically plausible:
-[`LedgerMaster.cpp:463`](../../../../src/xrpld/app/ledger/detail/LedgerMaster.cpp#L463) wraps an
+[`LedgerMaster.cpp:470`](../../../../src/xrpld/app/ledger/detail/LedgerMaster.cpp#L470) wraps an
 in-memory `ledgerHistory_.insert`, which completes in single-digit microseconds.
 
 While all the mass stays under 10 us the reported quantile cannot move materially, so **no
@@ -180,7 +180,7 @@ while the other quantile stayed well inside its bound in the same run — the si
 not of a regression.
 
 The mechanism is arrival timing, not slow code. The span opens only once a quorum-completing
-validation arrives ([`LedgerMaster.cpp:987`](../../../../src/xrpld/app/ledger/detail/LedgerMaster.cpp#L987),
+validation arrives ([`LedgerMaster.cpp:1003`](../../../../src/xrpld/app/ledger/detail/LedgerMaster.cpp#L1003),
 inside `checkAccept`, past the `tvc < minVal` early return) and wraps the promotion work that
 follows — `setValidated`, `setFull`, `setValidLedger`, `pendSaveValidated`. Its duration therefore
 tracks when peer validations arrive in a 5-node cluster and what promotion then schedules, so a
@@ -323,7 +323,7 @@ each node's `[rpc_startup]` stanza. Logging is **synchronous**, and several of t
 spans contain log statements, so the configured level is part of the measurement:
 
 - `ledger.build` contains [`BuildLedger.cpp:81`](../../../../src/xrpld/app/ledger/detail/BuildLedger.cpp#L81) (debug).
-- `consensus.accept` contains [RCLConsensus.cpp:655/663/686](../../../../src/xrpld/app/consensus/RCLConsensus.cpp#L663) (debug) — `:663` logs **once per transaction** in the canonical set.
+- `consensus.accept` contains [RCLConsensus.cpp:683/687/698/715](../../../../src/xrpld/app/consensus/RCLConsensus.cpp#L715) (debug) — `:715` logs **once per transaction** in the canonical set.
 - `tx.apply` and the other `spans.names` entries in [`../regression-metrics.json`](../regression-metrics.json) are affected the same way.
 
 Raising the level admits more of those statements and inflates the p50/p95/p99 of the very
@@ -415,7 +415,7 @@ the first produces metrics that look gated in the report but are not.
 `rpc.process` is deliberately absent from the `spans.names` list in
 `regression-metrics.json`, so no `span.rpc.process.*` key appears in this
 baseline. The span is created only in `ServerHandler::processRequest()`
-(`src/xrpld/rpc/detail/ServerHandler.cpp:705`), which is reached only from the
+(`src/xrpld/rpc/detail/ServerHandler.cpp:718`), which is reached only from the
 HTTP/JSON-RPC session path. The harness load generator is WebSocket-only and
 that path never calls `processRequest`, so the span is never emitted under any
 workload profile here — `expected_spans.json` marks it `"optional": true` for
