@@ -351,7 +351,14 @@ for i in $(seq 1 "$NUM_NODES"); do
         "" | null) die "$NODE_PREFIX-$i has no seed in $WORKDIR/validator-keys.json — the file holds fewer than $NUM_NODES entries, or entry $((i - 1)) carries no seed" ;;
     esac
 
-    # Build ips_fixed.
+    # Peer list for the loopback mesh. Emitted as [ips], NOT [ips_fixed],
+    # even though [ips_fixed] is the section whose documented meaning fits a
+    # private cluster. [ips_fixed] holds the connections open to all peers, and
+    # measured against this same commit that moved consensus.ledger_close.p95
+    # from 0.57 ms to 6.43 ms and tripped the regression gate, while every
+    # transaction-path metric fell. The committed baseline describes the [ips]
+    # topology, so switching sections is a deliberate workload change that has
+    # to arrive with a refreshed baseline and re-derived bounds.
     IPS_FIXED=""
     for j in $(seq 1 "$NUM_NODES"); do
         if [ "$j" -ne "$i" ]; then
@@ -400,7 +407,7 @@ $SEED
 [validators_file]
 $WORKDIR/validators.txt
 
-[ips_fixed]
+[ips]
 ${IPS_FIXED}
 
 [telemetry]

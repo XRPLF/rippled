@@ -136,8 +136,18 @@ The guarantee costs sensitivity where the ladder is coarse: the detection floor 
 | `span.tx.process.p99`             | 0.9940 ms  | 5 ms      | 5.03x | 1 ms → 5 ms          |
 
 Four of the six are limited by the same `1 ms → 5 ms` step, which is where this ladder is coarsest
-relative to how the spans actually behave. None of the six fires on any observed run, so all six
-stay gated; the weak floor is recorded here so it is visible rather than surprising.
+relative to how the spans actually behave. All six stay gated; the weak floor is recorded here so it
+is visible rather than surprising.
+
+None of the six fires on an observed run **of this workload** — but the qualifier is load-bearing,
+and there is now a measurement behind it. Changing one line of the generated node config from
+`[ips]` to `[ips_fixed]`, which holds peer connections open instead of treating the list as a
+discovery hint, moved `span.consensus.ledger_close.p95` from 0.57 ms to 6.43 ms and tripped this
+gate, while every transaction-path metric fell. Nothing else in that commit touched the consensus
+path. So a weak floor is not the only way one of these keys reddens: a change to the cluster's
+topology is enough on its own, which is exactly why
+[Refreshing the baseline](#refreshing-the-baseline) treats a workload change as requiring a new
+baseline.
 
 The fix is a 2 ms edge (ideally 3 ms as well) in the collector's spanmetrics `buckets` list plus the
 matching entries in `kMillisecondBuckets`, and 2000 us plus 50000 us edges in `kMicrosecondBuckets`.
