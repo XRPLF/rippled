@@ -27,24 +27,35 @@ was invoked with. Capture and comparison are profile-agnostic — they only read
 Prometheus — so all existing profiles (`full-validation`, `quick-smoke`, `stress`)
 continue to work unchanged.
 
-## Current state: 20 metrics gate, on a baseline captured 2026-08-26
+## Current state: 19 metrics gate, on a baseline captured 2026-09-10
 
-`baseline-timings.json` holds real captured values for the 20 keys the harness gates, from CI run
-`32964262700` at `8418d474a7`, profile `full-validation`, window `3m`. It replaced a capture taken
-at `6a82fc6f37` that predated two workload changes — the removal of the refused path-finding RPC
-load (`59a0595a6e`) and everything after it — so its numbers described a workload the harness no
-longer runs. The entries before that, captured on 2026-06-05, were voided into a placeholder: they
-predated the
-spanmetrics ladder's 1 ms floor, which made every sub-millisecond quantile
-in that capture bucket-edge arithmetic rather than a latency (a p95 of `0.95` ms is `0.95 × 1 ms`).
-Because the comparator only flags a metric when the current value _exceeds_ the baseline, a
-stale-high baseline passes everything silently, so the entries had to be dropped rather than left
-in place. They stay retrievable from this file's git history.
+`baseline-timings.json` holds real captured values for the 19 keys the harness gates. Every value is
+the **median of three clean CI runs** — `34495527952`, `34505215266` and `34507425933` — taken at
+`a0385c53cb`, profile `full-validation`, window `3m`. The file records that provenance itself, in
+its `source_runs` and `statistic` fields.
+
+The median of three is the point, not a detail. A single-run baseline is what disqualified five of
+the six excluded keys below: one sample carries no information about spread, and the bound is
+derived from that one sample alone.
+
+It replaced a capture taken 2026-08-26, before the account-funding race was fixed. Phases whose
+funding silently failed submitted little or no traffic, so that capture recorded artificially low
+ledger and transaction timings. Once funding worked, `span.ledger.build.p99` read 29.00 ms against
+its 9.109 ms baseline and turned the gate red on a run whose 200 span and metric checks all passed
+— which is why that key is now excluded.
+
+Two earlier generations stay retrievable from this file's git history: a 2026-08-24 capture, and
+before it entries captured 2026-06-05 that were voided into a placeholder because they were captured
+against the spanmetrics ladder's old 1 ms floor, which made every sub-millisecond quantile in that
+capture bucket-edge arithmetic rather than a latency (a p95 of `0.95` ms is `0.95 × 1 ms`). Because the
+comparator only flags a metric when the current value _exceeds_ the baseline, a stale-high baseline
+passes everything silently, so those entries had to be dropped rather than left in place.
 
 **A placeholder must not outlive one run.** CI stays green the whole time one stands, so an
 un-copied block is not a failure anyone will notice — it is a silent loss of regression coverage
-that looks identical to a passing gate. Voiding a baseline is the one hand edit this file allows;
-_setting_ one always comes from a printed CI block, per the "Refreshing the baseline" rule below.
+that looks identical to a passing gate. Voiding a baseline is the one hand edit that needs no CI
+block behind it. Setting one comes from a printed CI block, with a single documented exception —
+combining several runs into a median, which nothing automates yet (see [Schema](#schema)).
 
 ## Absolute bounds are derived per metric, from the ladder
 
@@ -61,8 +72,8 @@ fire. Firing needs the quantile to have moved at least two buckets up. A multipl
 _enclosing_ bucket's width cannot deliver this, because once the quantile crosses `hi` the
 interpolation happens across the **next** bucket, which on this ladder is up to 8x wider —
 `(0.5, 1]` is 0.5 ms wide and `(1, 5]` is 4 ms wide. The full derivation, both ladders, and a
-per-key table of the arithmetic are in that file's `_absolute_bound_derivation` and
-`_derivation_table`.
+per-key table of the arithmetic are in that file's `_absolute_bound_derivation`,
+`_bucket_note` (both ladders) and `_derivation_table`.
 
 Two earlier generations of this bound were wrong, in opposite directions:
 
@@ -70,17 +81,24 @@ Two earlier generations of this bound were wrong, in opposite directions:
 | ------------------------------ | -------------------------------------------- | --------------------- | ---------------------------------------- |
 | flat                           | 10 ms `p50`/`p95`, 15 ms `p99`, 20000 us job | 5 / 28 keys           | 2 / 25 keys                              |
 | 2 × enclosing bucket width     | per metric                                   | 28 / 28 keys          | **21 / 25 keys**                         |
-| `hi_next − baseline` (current) | per metric                                   | 19 / 20 keys          | **0 / 20 keys**                          |
+| `hi_next − baseline` (current) | per metric                                   | **19 / 19 keys**      | **0 / 19 keys**                          |
 
-The first two rows were measured when 28 and 25 keys were gated; the current row was re-measured
-over today's 20 by injecting a 10x regression into each gated key in turn against a real CI
-`timings.json`. The gate flagged 19. The exception is `job.acceptLedger.running.p95`, whose
-detection floor is 16.28x: 10x reaches 61429 us against a 100000 us trip point, and the gate first
-fires at 16.28x (measured — 16.2x passes, 16.28x fails). At **20x the sweep catches 20 of 20**. That
-is the ladder, not the rule; the key is listed under
-[weakly guarded](#which-keys-are-only-weakly-guarded) below. On the 2026-08-24 baseline the same key
-had a 5.74x floor and 10x did catch it, which is what a baseline refresh can silently do to
-sensitivity. The zero in the last column is by
+The first two rows were measured when 28 and 25 keys were gated, by injecting a 10x regression into
+each gated key in turn against a real CI `timings.json`. The current row is **derived, not sampled**,
+and holds for every key on the 2026-09-10 baseline. A key's detection floor is exactly
+`trip point ÷ baseline`, because the gate fires when the reading exceeds the trip point and a `k`x
+regression reads `k × baseline`. So a 10x regression is caught precisely when the floor is under 10x,
+and the weakest floor on this baseline is 7.41x — see
+[weakly guarded](#which-keys-are-only-weakly-guarded) below.
+
+That is a real improvement over the 2026-08-26 baseline, where `job.acceptLedger.running.p95` had a
+16.28x floor and was the one key a 10x regression missed. Its baseline rose from 6142.9 us to
+15967.7 us while `hi_next` stayed at 100000 us, which pulled its floor down to 6.26x. Note the
+direction this can move in: floors are a property of where each baseline lands on the ladder, so a
+refresh changes sensitivity without anything about the code changing. Re-derive this table on every
+refresh.
+
+The zero in the last column is by
 construction rather than by sampling: rule C in
 [`check_regression_bounds.py`](../../../../.github/scripts/telemetry/check_regression_bounds.py)
 fails the build unless every trip point is exactly `hi_next`, and a trip point at a bucket edge
@@ -105,30 +123,44 @@ signature described below.
 ### Which keys are only weakly guarded
 
 The guarantee costs sensitivity where the ladder is coarse: the detection floor is
-`hi_next / baseline`, so a baseline sitting just above an edge is guarded loosely. Measured over
-the current baseline the floor ranges 2.21x to 16.28x. Do **not** read these as guarded:
+`hi_next / baseline`, so a baseline sitting just above an edge is guarded loosely. Over the
+2026-09-10 baseline the floor ranges 2.00x to 7.41x. Do **not** read these six as guarded:
 
-| key                               | baseline  | fires at  | floor  | limiting ladder step |
-| --------------------------------- | --------- | --------- | ------ | -------------------- |
-| `job.acceptLedger.running.p95`    | 6142.9 us | 100000 us | 16.28x | 25000 us → 100000 us |
-| `span.consensus.accept.p50`       | 0.5287 ms | 5 ms      | 9.46x  | 1 ms → 5 ms          |
-| `job.transaction.running.p95`     | 600.0 us  | 5000 us   | 8.33x  | 1000 us → 5000 us    |
-| `span.tx.process.p95`             | 0.6100 ms | 5 ms      | 8.20x  | 1 ms → 5 ms          |
-| `span.rpc.ws_message.p95`         | 0.6977 ms | 5 ms      | 7.17x  | 1 ms → 5 ms          |
-| `span.consensus.ledger_close.p95` | 0.7830 ms | 5 ms      | 6.39x  | 1 ms → 5 ms          |
-| `span.rpc.ws_message.p99`         | 0.9757 ms | 5 ms      | 5.12x  | 1 ms → 5 ms          |
+| key                               | baseline   | fires at  | floor | limiting ladder step |
+| --------------------------------- | ---------- | --------- | ----- | -------------------- |
+| `span.consensus.ledger_close.p95` | 0.6750 ms  | 5 ms      | 7.41x | 1 ms → 5 ms          |
+| `span.consensus.accept.p50`       | 1.4364 ms  | 10 ms     | 6.96x | 5 ms → 10 ms         |
+| `job.acceptLedger.running.p95`    | 15967.7 us | 100000 us | 6.26x | 25000 us → 100000 us |
+| `span.rpc.ws_message.p95`         | 0.8122 ms  | 5 ms      | 6.16x | 1 ms → 5 ms          |
+| `span.rpc.ws_message.p99`         | 0.9873 ms  | 5 ms      | 5.06x | 1 ms → 5 ms          |
+| `span.tx.process.p99`             | 0.9940 ms  | 5 ms      | 5.03x | 1 ms → 5 ms          |
 
-`job.acceptLedger.running.p95` is the one that matters most, because it is the only gated key a
-10x regression does not catch (see the generation table above). Its floor moved there **in this
-refresh**, from 5.74x: the baseline fell from 17428.6 us to 6142.9 us while `hi_next` stayed at
-100000 us. It does **not** fire on any observed run — its worst reading is 0.16 of its trip point —
-so it stays gated, and the weak floor is recorded here so it is visible rather than surprising. The
-fix is a 2 ms edge (ideally 3 ms as well) in the collector's spanmetrics `buckets` list plus the
+Four of the six are limited by the same `1 ms → 5 ms` step, which is where this ladder is coarsest
+relative to how the spans actually behave. All six stay gated; the weak floor is recorded here so it
+is visible rather than surprising.
+
+None of the six fires on an observed run **of this workload** — but the qualifier is load-bearing,
+and there is now a measurement behind it. Changing one line of the generated node config from
+`[ips]` to `[ips_fixed]`, which holds peer connections open instead of treating the list as a
+discovery hint, moved `span.consensus.ledger_close.p95` from 0.57 ms to 6.43 ms and tripped this
+gate, while every transaction-path metric fell. Nothing else in that commit touched the consensus
+path. So a weak floor is not the only way one of these keys reddens: a change to the cluster's
+topology is enough on its own, which is exactly why
+[Refreshing the baseline](#refreshing-the-baseline) treats a workload change as requiring a new
+baseline.
+
+The fix is a 2 ms edge (ideally 3 ms as well) in the collector's spanmetrics `buckets` list plus the
 matching entries in `kMillisecondBuckets`, and 2000 us plus 50000 us edges in `kMicrosecondBuckets`.
 That work belongs to the branch that owns the ladders.
 
+`job.transaction.running.p95` and `span.tx.process.p95` were on this list against the 2026-08-26
+baseline, at 8.33x and 8.20x, and both dropped off it in the refresh — 2.65x and 2.00x now.
+`span.tx.process.p95` is the tightest gated key on this baseline — 0.50 on baseline over trip point,
+and 0.76 on the observed maximum across the three source runs — so it is the first to re-measure if
+the gate reddens. The two ratios have different numerators; neither is the other.
+
 `span.tx.apply.p50` is absent from this table because it is **no longer gated at all** — see
-[what all five excluded keys have in common](#what-all-five-excluded-keys-have-in-common). Beyond
+[what all six excluded keys have in common](#what-all-six-excluded-keys-have-in-common). Beyond
 its variance it had a second, independent problem: its baseline of `0.00597` ms sat inside the
 ladder's **first** bucket `(0, 0.01]`, so the reported figure was interpolation across that bucket,
 tracking the _fraction_ of applies finishing under 10 us rather than a latency — the same mechanism
@@ -165,13 +197,15 @@ exclusion at _quantile_ rather than _span_ granularity, which is why
 lists span names and `_quantiles` is shared across all of them, so removing two quantiles of one
 span cannot be expressed by deleting a name.
 
-Measured across four CI runs:
+Measured across four CI runs, against the baseline in force **when the two keys were excluded**.
+The `p50` row is the only one still gated. Its baseline was 0.0779 ms then and is 0.0598 ms now, with
+the same 0.25 ms trip point either way, so the argument is unchanged:
 
-| key                               | baseline  | trip point | observed min | observed max | spread |
-| --------------------------------- | --------- | ---------- | ------------ | ------------ | ------ |
-| `span.ledger.validate.p50` (kept) | 0.0647 ms | 0.25 ms    | 0.0484 ms    | 0.0778 ms    | 1.6x   |
-| `span.ledger.validate.p95`        | 0.2404 ms | 0.5 ms     | 0.1281 ms    | 0.7500 ms    | 5.9x   |
-| `span.ledger.validate.p99`        | 1.0600 ms | 10 ms      | 0.3875 ms    | 25.8750 ms   | 66.8x  |
+| key                               | baseline at exclusion | trip point | observed min | observed max | spread |
+| --------------------------------- | --------------------- | ---------- | ------------ | ------------ | ------ |
+| `span.ledger.validate.p50` (kept) | 0.0779 ms             | 0.25 ms    | 0.0484 ms    | 0.0778 ms    | 1.6x   |
+| `span.ledger.validate.p95`        | 0.2404 ms             | 0.5 ms     | 0.1281 ms    | 0.7500 ms    | 5.9x   |
+| `span.ledger.validate.p99`        | 1.0600 ms             | 10 ms      | 0.3875 ms    | 25.8750 ms   | 66.8x  |
 
 Both excluded quantiles reach past their trip point on an ordinary run, so CI reddened twice with
 no code change: run `32867433073` read `p95` = 0.7500 ms (+212%) and run `32862589645` read
@@ -206,9 +240,9 @@ proves nothing; it is spread **relative to the trip point** that decides. And be
 point is derived from the baseline, a baseline that lands at the **low end** of a metric's own
 range shrinks that trip point without anything about the metric having changed.
 
-That is what happened to three `p50` keys on this baseline, and **all three are excluded** —
-this rule being applied, not a new exception. Measured across the three CI runs `32862589645`,
-`32867433073` and `32964262700` (the last of which is this baseline):
+That is what happened to three `p50` keys on the **2026-08-26** baseline, and **all three are
+excluded** — this rule being applied, not a new exception. Measured across the three CI runs
+`32862589645`, `32867433073` and `32964262700` (the last of which produced that baseline):
 
 | key                               | bound     | trip point | observed max | max ÷ trip | spread |
 | --------------------------------- | --------- | ---------- | ------------ | ---------- | ------ |
@@ -216,15 +250,15 @@ this rule being applied, not a new exception. Measured across the three CI runs 
 | `span.ledger.build.p50`           | 0.3849 ms | 0.5 ms     | 2.3826 ms    | **4.77x**  | 20.7x  |
 | `span.consensus.ledger_close.p50` | 0.0613 ms | 0.1 ms     | 0.2377 ms    | **2.38x**  | 6.1x   |
 
-Before the exclusion, replaying **either** older run against this baseline reported exactly those
+Before the exclusion, replaying **either** older run against that baseline reported exactly those
 three and nothing else — and run `32867433073` carries the same post-path-finding-removal workload
 as the baseline itself, so the movement was metric variance, not a workload difference. Those two
 runs are what would have reddened CI. After the exclusion both replay clean.
 
 The evidence that settles it is `span.tx.apply.p50`'s own history. It read **0.7917 ms** in the
-previous baseline and **0.00597 ms** in this one — a 132x difference between two runs of the same
-workload. At the old value the identical `hi_next − baseline` rule produced a 4.21 ms bound whose
-5 ms trip point absorbed the entire range; at the new value it produces 0.0440 ms and cannot.
+2026-08-24 baseline and **0.00597 ms** in the 2026-08-26 one — a 132x difference between two runs of
+the same workload. At the old value the identical `hi_next − baseline` rule produced a 4.21 ms bound
+whose 5 ms trip point absorbed the entire range; at the new value it produces 0.0440 ms and cannot.
 Nothing about the metric changed. **Whether the gate functioned was decided by where in its own
 distribution the captured run happened to land** — which is not a threshold that needs tuning, it
 is a key that cannot be gated from a single-run baseline at all.
@@ -232,9 +266,12 @@ is a key that cannot be gated from a single-run baseline at all.
 So the remedy is the `excluded_keys` entry with the measurement behind it, exactly as
 `ledger.validate` p95 and p99 got — **not** a widened bound, and **not** re-baselining until a run
 lands favourably. A key that fails this test is never fixed by widening its bound. The remaining
-20 gated keys sit at or below 0.58 of their trip points, the worst being `span.consensus.accept.p50`.
+19 gated keys sit between 0.14 and 0.50 of their **baseline** over their trip point, the tightest
+being `span.tx.process.p95` at 0.50. That ratio is derivable from the two committed JSON files, so it
+is checkable; a headroom figure against each key's observed maximum is not, because no per-run
+`timings.json` is committed.
 
-### What all five excluded keys have in common
+### What all six excluded keys have in common
 
 | key                               | trip point | observed max | mechanism                             |
 | --------------------------------- | ---------- | ------------ | ------------------------------------- |
@@ -243,19 +280,29 @@ lands favourably. A key that fails this test is never fixed by widening its boun
 | `span.ledger.build.p50`           | 0.5 ms     | 2.3826 ms    | baseline in a low bucket              |
 | `span.ledger.validate.p95`        | 0.5 ms     | 0.7500 ms    | baseline in a low bucket              |
 | `span.ledger.validate.p99`        | 10 ms      | 25.8750 ms   | spread too large for any bound        |
+| `span.ledger.build.p99`           | 25 ms      | 29.0000 ms   | spread too large for any bound        |
 
-One invariant covers all five: **the observed maximum exceeds `baseline + bound`**, so an ordinary
-run clears the trip point with nothing having regressed. Two mechanisms produce it. Four of the five
+One invariant covers all six: **the observed maximum exceeds `baseline + bound`**, so an ordinary
+run clears the trip point with nothing having regressed. Two mechanisms produce it. Four of the six
 have a baseline sitting low in the ladder, where the derived bound is tiny because the bound _is_
-the distance to the next edge up. The fifth, `ledger.validate.p99`, has a comparatively generous
-8.94 ms bound and still fails, because a 66.8x spread reaches 25.875 ms against a 10 ms trip point.
+the distance to the next edge up. The other two fail despite generous bounds:
+`ledger.validate.p99` has 8.94 ms and a 66.8x spread that reaches 25.875 ms against a 10 ms trip
+point, and `ledger.build.p99` has 16.056 ms and a 4.11x spread whose maximum is 1.16x its trip
+point.
 
-**The follow-up that would restore coverage**, stated rather than left implied: a baseline captured
-from a **single run** cannot support these keys, because one sample carries no information about
-spread and the bound is derived from that one sample alone. What would let them be gated again is a
-**multi-run baseline** — or a spread measurement captured alongside the baseline — so a bound can be
-sized against observed variance instead of against the ladder only. That is not implemented; it is
-the design change these five exclusions are waiting on.
+`span.ledger.build.p99` is the newest of the six and the clearest illustration of the rule, because
+the previous baseline **hid** it: at 9.109 ms the same rule also gave a 25 ms trip point, and the key
+read as gated only because both the capture and the comparison runs happened to land low. Ledger
+construction keeps coverage through `span.ledger.build.p95`, whose baseline sits at 0.48 of its trip
+point.
+
+**The follow-up that would restore coverage**, stated rather than left implied: a bound derived from
+the ladder alone cannot support these keys, because it carries no information about spread. What
+would let them be gated again is a bound sized against **observed variance** — a spread measurement
+captured alongside the baseline, rather than the ladder distance only. The 2026-09-10 baseline is
+already a median of three runs, which is the raw material for that; using the spread to size bounds
+is the part that is not implemented, and it is the design change these six exclusions are waiting
+on.
 
 ## Bootstrapping the baseline
 
@@ -346,9 +393,11 @@ debug-level detail, enable it per partition **after** the baseline exists.
   "window": "3m",
   "git_sha": "<SHA of the commit that produced these numbers>",
   "profile": "<workload profile used>",
+  "source_runs": [34495527952, 34505215266, 34507425933],
+  "statistic": "median of three clean full-validation runs",
   "capture": {
-    "declared": 20,
-    "captured": 20,
+    "declared": 19,
+    "captured": 19,
     "min_ratio": 0.5,
     "complete": true
   },
@@ -358,6 +407,21 @@ debug-level detail, enable it per partition **after** the baseline exists.
   }
 }
 ```
+
+`source_runs` and `statistic` record how the numbers were arrived at, and the committed baseline
+carries both. They matter because the bound-derivation rule reads the baseline as a single number:
+if `statistic` says the values are a median of several runs, a reviewer knows the spread was
+observable, and if it is absent the baseline came from one run and every key on it is exposed to the
+single-run problem described under
+[The general rule this exposed](#the-general-rule-this-exposed). Neither field is read by any
+script; they are provenance, like `git_sha`.
+
+`capture_timings.py` emits neither field, and no script in this directory combines several runs, so
+a multi-run baseline is currently assembled by hand and these two fields are how that is declared.
+That is a gap, not a workflow: it sits outside the paste-from-CI rule the rest of this file
+describes, so the median and the run ids are only as trustworthy as the PR that introduced them.
+Automating the combination — and having it write both fields — is part of the multi-run baseline work
+the exclusions are waiting on.
 
 `capture` describes the capture that produced the file, not the metrics in it:
 `declared` is how many keys the surface asked for, `captured` how many came back with a
