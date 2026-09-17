@@ -32,14 +32,10 @@ such as Grafana Tempo.
 
 Telemetry is gated twice — once at compile time and once at runtime:
 
-- **Compile time**: The Conan option `telemetry` and CMake option `telemetry` decide
-  whether the OTel SDK is linked in and `XRPL_ENABLE_TELEMETRY` is defined.
+- **Compile time**: The Conan option `telemetry` must be `True`. It is the only switch: there is no CMake option, because `conan install` writes the value into the generated toolchain and CMake reads it from there.
   When off, all `SpanGuard` calls compile to inline no-ops (defined in `SpanGuard.h`)
   with zero overhead — no OTel SDK dependency required.
-  The option is currently `True`/`ON` on the telemetry branches so that CI builds and
-  exercises the instrumented code; **`False`/`OFF` is the intended default once this
-  feature is merged.** Pass the value you want explicitly rather than relying on the
-  default.
+  Pass the value you want explicitly rather than relying on the default.
 - **Runtime**: Telemetry is **off by default** — the `[telemetry]` config section must
   set `enabled=1`. When disabled at runtime, a no-op implementation is used even in a
   build that has the SDK compiled in.
@@ -110,10 +106,9 @@ cmake --build . --parallel $(nproc)
 
 ## Building without telemetry
 
-Pass `-o telemetry=False` to `conan install`, and `-Dtelemetry=OFF` to CMake if you
-configure without the Conan-generated toolchain. Do not just omit the option — it then
-resolves to whatever the current default is, and that default is `True` on the
-telemetry branches.
+Pass `-o telemetry=False` to `conan install`. That is the whole switch: CMake takes the
+value from the generated toolchain, so there is no CMake flag to pass as well. Do not just
+omit the option — it then resolves to whatever the recipe's current default is.
 
 The `opentelemetry-cpp` dependency will not be downloaded,
 the `XRPL_ENABLE_TELEMETRY` preprocessor define will not be set,
@@ -124,7 +119,7 @@ The resulting binary is identical to one built before telemetry support was adde
 > CMake option — it is only a compile definition added when `telemetry` is on. Passing it
 > on the command line leaves telemetry compiled in; CMake merely lists it at the end of
 > configuration under `Manually-specified variables were not used by the project`.
-> Use `-Dtelemetry=OFF`.
+> Use `-o telemetry=False` on `conan install`.
 
 ## Troubleshooting
 
