@@ -11,6 +11,7 @@
 #include <test/jtx/mpt.h>
 #include <test/jtx/pay.h>
 #include <test/jtx/permissioned_domains.h>
+#include <test/jtx/sig.h>
 #include <test/jtx/ter.h>
 #include <test/jtx/trust.h>
 #include <test/jtx/vault.h>
@@ -33,8 +34,10 @@
 #include <xrpl/protocol/SeqProxy.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
+#include <xrpl/protocol/Units.h>
 #include <xrpl/protocol/jss.h>
 
+#include <chrono>
 #include <functional>
 #include <string>
 #include <tuple>
@@ -1586,6 +1589,126 @@ private:
         }
     }
 
+    // A defaulted loan can leave a vault holding shares with nothing behind
+    // them. Ordinary deposits are refused there because the share price is
+    // undefined, but a donation mints no shares, so it is the one deposit
+    // that can put assets back.
+    void
+    testVaultDepositDonateInsolvent()
+    {
+        using namespace test::jtx;
+        using namespace loan_broker;
+        using namespace loan;
+        std::string const prefix = "VaultDeposit donate insolvent";
+
+        // featureLendingProtocolV1_1 confines loan brokers to closed-ended
+        // vaults, and those refuse every deposit once they leave the
+        // Subscription phase, which a defaulted loan requires. An
+        // open-ended vault is the only shape that reaches the insolvency
+        // check at all.
+        Env env{*this, all_ - featureLendingProtocolV1_1};
+        Vault const vault{env};
+
+        auto const vaultShareBalance = [&](Keylet const& vaultKeylet) {
+            auto const sleVault = env.le(vaultKeylet);
+            BEAST_EXPECT(sleVault != nullptr);
+
+            auto const sleIssuance = env.le(keylet::mptokenIssuance(sleVault->at(sfShareMPTID)));
+            BEAST_EXPECT(sleIssuance != nullptr);
+
+            return sleIssuance->at(sfOutstandingAmount);
+        };
+
+        auto const vaultAssetBalance = [&](Keylet const& vaultKeylet) {
+            auto const sleVault = env.le(vaultKeylet);
+            BEAST_EXPECT(sleVault != nullptr);
+
+            return std::make_pair(sleVault->at(sfAssetsAvailable), sleVault->at(sfAssetsTotal));
+        };
+
+        Account const owner{"owner"};
+        Account const depositor{"depositor"};
+        env.fund(XRP(1'000'000), owner, depositor);
+        env.close();
+
+        PrettyAsset const asset = xrpIssue();
+
+        auto const [createTx, vaultKeylet] = vault.create({.owner = owner, .asset = asset});
+        env(createTx, Ter(tesSUCCESS));
+        env.close();
+
+        env(vault.deposit({.depositor = depositor, .id = vaultKeylet.key, .amount = asset(100)}),
+            Ter(tesSUCCESS));
+        env.close();
+
+        auto const sharesIssued = vaultShareBalance(vaultKeylet);
+        BEAST_EXPECT(sharesIssued > 0);
+
+        // Lend the vault's entire balance out, then let the loan default so
+        // the receivable is written off and the vault is left with shares
+        // and no assets.
+        auto const brokerKeylet =
+            keylet::loanBroker(owner.id(), SeqProxy::rawSequence(env.seq(owner)));
+        env(loan_broker::set(owner, vaultKeylet.key), Ter(tesSUCCESS));
+        env.close();
+
+        auto const loanKeylet = keylet::loan(brokerKeylet.key, SeqProxy::rawSequence(1));
+        env(loan::set(depositor, brokerKeylet.key, asset(100).value()),
+            kInterestRate(TenthBips32(0)),
+            kGracePeriod(60),
+            kPaymentInterval(120),
+            kPaymentTotal(10),
+            Sig(sfCounterpartySignature, owner),
+            Fee(env.current()->fees().base * 2),
+            Ter(tesSUCCESS));
+        env.close();
+
+        env.close(std::chrono::seconds{120 + 60});
+        env(manage(owner, loanKeylet.key, tfLoanDefault), Ter(tesSUCCESS));
+        env.close();
+
+        {
+            testcase(prefix + " setup leaves shares with no assets");
+            auto const [available, total] = vaultAssetBalance(vaultKeylet);
+            BEAST_EXPECT(available == 0);
+            BEAST_EXPECT(total == 0);
+            BEAST_EXPECT(vaultShareBalance(vaultKeylet) == sharesIssued);
+        }
+
+        {
+            testcase(prefix + " ordinary deposit is refused");
+            env(vault.deposit({.depositor = depositor, .id = vaultKeylet.key, .amount = asset(50)}),
+                Ter(tecLOCKED));
+            env.close();
+        }
+
+        {
+            testcase(prefix + " donation recapitalizes the vault");
+            env(vault.deposit({
+                    .depositor = owner,
+                    .id = vaultKeylet.key,
+                    .amount = asset(50),
+                    .flags = tfVaultDonate,
+                }),
+                Ter(tesSUCCESS));
+            env.close();
+
+            auto const [available, total] = vaultAssetBalance(vaultKeylet);
+            BEAST_EXPECT(available == asset(50).value());
+            BEAST_EXPECT(total == asset(50).value());
+            BEAST_EXPECT(vaultShareBalance(vaultKeylet) == sharesIssued);
+        }
+
+        {
+            testcase(prefix + " ordinary deposit resumes once backed again");
+            env(vault.deposit({.depositor = depositor, .id = vaultKeylet.key, .amount = asset(50)}),
+                Ter(tesSUCCESS));
+            env.close();
+
+            BEAST_EXPECT(vaultShareBalance(vaultKeylet) > sharesIssued);
+        }
+    }
+
 public:
     void
     run() override
@@ -1598,6 +1721,7 @@ public:
         testVaultCreateLEVersion();
         testVaultDepositBlockGeneral();
         testVaultDepositDonate();
+        testVaultDepositDonateInsolvent();
 
         testVaultWithdrawPseudoAccountDestination(all_ - fixCleanup3_4_0);
         testVaultWithdrawPseudoAccountDestination(all_);
