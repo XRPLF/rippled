@@ -539,6 +539,10 @@ MetricsRegistry::stop()
 #endif  // XRPL_ENABLE_TELEMETRY
 }
 
+// This reads provider_ when telemetry is compiled in and touches no member
+// when it is not, so clang-tidy asks for it to be static. Making it static
+// would give the two builds different signatures.
+// NOLINTBEGIN(readability-convert-member-functions-to-static)
 bool
 MetricsRegistry::hasPipeline() const noexcept
 {
@@ -548,6 +552,7 @@ MetricsRegistry::hasPipeline() const noexcept
     return false;
 #endif
 }
+// NOLINTEND(readability-convert-member-functions-to-static)
 
 // -----------------------------------------------------------------
 // Synchronous instrument recording — RPC metrics
