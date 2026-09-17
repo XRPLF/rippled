@@ -39,7 +39,7 @@
 #include <xrpl/resource/Consumer.h>
 #include <xrpl/server/InfoSub.h>
 #include <xrpl/server/LoadFeeTrack.h>
-#include <xrpl/telemetry/MetricMacros.h>
+#include <xrpl/telemetry/MetricMacros.h>  // IWYU pragma: keep
 #include <xrpl/telemetry/Redaction.h>
 #include <xrpl/telemetry/SpanGuard.h>
 #include <xrpl/tx/paths/RippleCalc.h>
