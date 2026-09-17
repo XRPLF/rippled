@@ -42,6 +42,7 @@
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/Transactor.h>
 #include <xrpl/tx/applySteps.h>
+#include <xrpl/tx/helpers/PreflightHelpers.h>
 #include <xrpl/tx/paths/Flow.h>
 #include <xrpl/tx/paths/detail/Steps.h>
 
@@ -100,7 +101,7 @@ OfferCreate::preflight(PreflightContext const& ctx)
     // A zero DomainID is invalid for a PermissionedDomain ledger entry because
     // keylet::permissionedDomain(uint256) uses the DomainID as the ledger key.
     if (auto const domainID = tx[~sfDomainID];
-        ctx.rules.enabled(fixCleanup3_2_0) && domainID && *domainID == beast::kZero)
+        ctx.rules.enabled(fixCleanup3_2_0) && domainID && isZeroId(*domainID))
         return temMALFORMED;
 
     bool const bImmediateOrCancel(tx.isFlag(tfImmediateOrCancel));
@@ -137,7 +138,7 @@ OfferCreate::preflight(PreflightContext const& ctx)
         JLOG(j.debug()) << "Malformed offer: redundant (XRP for XRP)";
         return temBAD_OFFER;
     }
-    if (saTakerPays <= beast::kZero || saTakerGets <= beast::kZero)
+    if (!isPositiveAmount(saTakerPays) || !isPositiveAmount(saTakerGets))
     {
         JLOG(j.debug()) << "Malformed offer: bad amount";
         return temBAD_OFFER;
