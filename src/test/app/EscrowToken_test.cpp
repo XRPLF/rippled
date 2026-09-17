@@ -8,6 +8,7 @@
 #include <test/jtx/fee.h>
 #include <test/jtx/flags.h>
 #include <test/jtx/mpt.h>
+#include <test/jtx/multisign.h>
 #include <test/jtx/pay.h>
 #include <test/jtx/rate.h>
 #include <test/jtx/regkey.h>
@@ -376,7 +377,7 @@ struct EscrowToken_test : public beast::unit_test::Suite
             env.close();
         }
 
-        // AMM issuer without asfAllowTrustLineLocking
+        // AMM issuer without lsfAllowTrustLineLocking
         // (succeeds under fixTokenEscrowV1_1, fails otherwise)
         {
             bool const withFix = features[fixTokenEscrowV1_1];
@@ -418,7 +419,7 @@ struct EscrowToken_test : public beast::unit_test::Suite
             }
         }
 
-        // Blackholed issuer without asfAllowTrustLineLocking
+        // Blackholed issuer without lsfAllowTrustLineLocking
         // (succeeds under fixTokenEscrowV1_1, fails otherwise)
         {
             bool const withFix = features[fixTokenEscrowV1_1];
@@ -454,6 +455,83 @@ struct EscrowToken_test : public beast::unit_test::Suite
                 auto const sleGW = env.le(keylet::account(gw));
                 BEAST_EXPECT(sleGW && sleGW->isFlag(lsfAllowTrustLineLocking));
             }
+        }
+
+        // tecNO_PERMISSION: issuer with the master key disabled and a regular
+        // key it can sign with
+        {
+            Env env{*this, features};
+            auto const baseFee = env.current()->fees().base;
+            auto const alice = Account("alice");
+            auto const bob = Account("bob");
+            auto const gw = Account{"gateway"};
+            auto const usd = gw["USD"];
+
+            env.fund(XRP(5000), alice, bob, gw);
+            env.close();
+            env.trust(usd(10'000), alice, bob);
+            env.close();
+            env(pay(gw, alice, usd(5000)));
+            env(pay(gw, bob, usd(5000)));
+            env.close();
+
+            Account const regular("regular");
+            env(regkey(gw, regular));
+            env.close();
+            env(fset(gw, asfDisableMaster), Sig(gw));
+            env.close();
+
+            env(escrow::create(alice, bob, usd(100)),
+                escrow::kFinishTime(env.now() + 1s),
+                Fee(baseFee * 150),
+                Ter(tecNO_PERMISSION));
+            env.close();
+
+            auto const sleGW = env.le(keylet::account(gw));
+            BEAST_EXPECT(sleGW && sleGW->isFlag(lsfDisableMaster));
+            BEAST_EXPECT(
+                sleGW && sleGW->isFieldPresent(sfRegularKey) &&
+                sleGW->getAccountID(sfRegularKey) == regular.id());
+            BEAST_EXPECT(sleGW && !sleGW->isFlag(lsfAllowTrustLineLocking));
+        }
+
+        // tecNO_PERMISSION: issuer with a blackhole regular key and a signer
+        // list
+        {
+            Env env{*this, features};
+            auto const baseFee = env.current()->fees().base;
+            auto const alice = Account("alice");
+            auto const bob = Account("bob");
+            auto const gw = Account{"gateway"};
+            auto const usd = gw["USD"];
+
+            env.fund(XRP(5000), alice, bob, gw);
+            env.close();
+            env.trust(usd(10'000), alice, bob);
+            env.close();
+            env(pay(gw, alice, usd(5000)));
+            env(pay(gw, bob, usd(5000)));
+            env.close();
+
+            env(signers(gw, 1, {{bob, 1}}));
+            env.close();
+
+            Account const blackhole("blackhole", AccountID(1));
+            env(regkey(gw, blackhole));
+            env.close();
+            env(fset(gw, asfDisableMaster), Sig(gw));
+            env.close();
+
+            env(escrow::create(alice, bob, usd(100)),
+                escrow::kFinishTime(env.now() + 1s),
+                Fee(baseFee * 150),
+                Ter(tecNO_PERMISSION));
+            env.close();
+
+            auto const sleGW = env.le(keylet::account(gw));
+            BEAST_EXPECT(sleGW && sleGW->isFlag(lsfDisableMaster));
+            BEAST_EXPECT(env.le(keylet::signers(gw)));
+            BEAST_EXPECT(sleGW && !sleGW->isFlag(lsfAllowTrustLineLocking));
         }
 
         // tecNO_LINE: account does not have a trustline to the issuer

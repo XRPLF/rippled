@@ -212,19 +212,19 @@ isPseudoAccount(
 isBlackholed(ReadView const& view, std::shared_ptr<SLE const> const& sle)
 {
     if (!sle || sle->getType() != ltACCOUNT_ROOT)
-        return false;
+        return false;  // LCOV_EXCL_LINE
 
     if (!sle->isFlag(lsfDisableMaster))
         return false;
 
     if (sle->isFieldPresent(sfRegularKey))
     {
-        AccountID const rk = sle->getAccountID(sfRegularKey);
-        static AccountID const kAccountZero(0);
-        static AccountID const kAccountOne(1);
+        // A regular key can still sign unless it is one of the blackhole
+        // addresses, which are derived from an integer and not from a key.
         static AccountID const kAccountTwo(2);
+        AccountID const rk = sle->getAccountID(sfRegularKey);
 
-        if (rk != kAccountZero && rk != kAccountOne && rk != kAccountTwo)
+        if (rk != xrpAccount() && rk != noAccount() && rk != kAccountTwo)
             return false;
     }
 
