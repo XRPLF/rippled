@@ -10,7 +10,7 @@ missing lives in a sibling layer.
 | ------------------------------------- | --------------------------------------------------- | ---- | --- | ------ | ---------------------------------------------------------------------------------------- |
 | Engine / gas / limits / ABI           | `crates/xrpl-wasm-vm`, `crates/xrpl-host-functions` | mock | ✓   | ✗      | gas, transfer budget, memory/field limits, preflight, VM limits, generated ABI           |
 | `host_context/` (`HostContextTest`)   | `.../host_context`                                  | mock | ✗   | ✗      | the `HostContext` marshalling shim alone (byte order, buffer sizing, `SField` xlat)      |
-| `host_calls/` (`HostCallTest`)        | `.../host_calls`                                    | mock | ✓   | ✗      | per-function **wire contract** — what the host was asked, what came back                 |
+| `guest_calls/` (`GuestCallTest`)      | `.../guest_calls`                                   | mock | ✓   | ✗      | per-function **wire contract** — what the host was asked, what came back                 |
 | `host_functions/` (`RealHostFixture`) | `.../host_functions`                                | real | ✗   | real   | each function's **actual answer** vs. a real `TxTest` ledger                             |
 | `e2e/` (`RealVmTest`)                 | `.../e2e`                                           | real | ✓   | real   | **full-stack integration** — VM + `HostContext` + real impl + real ledger                |
 | `transactor/` (`TxTest`)              | `.../transactor`                                    | real | ✓   | real   | the **transactor** around a contract — fees, reserves, limits, what each failure reports |
@@ -18,10 +18,10 @@ missing lives in a sibling layer.
 Run the C++ side with:
 
 ```bash
-./build/xrpl_tests --gtest_filter='*Impl.*:*Call.*:*E2e.*:WasmVMTest.*:WasmVMDeathTest.*:PreflightTest.*:BytecodeSize.*:BytecodePreflight.*:FinishFailures.*:BytecodeRun.*:GasFees.*:DataOnReject.*'
+./build/xrpl_tests --gtest_filter='*Impl.*:*Call.*:*Guest.*:*E2e.*:WasmVMTest.*:WasmVMDeathTest.*:PreflightTest.*:BytecodeSize.*:BytecodePreflight.*:FinishFailures.*:BytecodeRun.*:GasFees.*:DataOnReject.*'
 ```
 
-(744 tests, 142 suites.) The engine-level coverage is Rust: `cd crates && cargo test`.
+The engine-level coverage is Rust: `cd crates && cargo test`.
 
 ## `fixtures/` — split by whether it needs a test framework
 
@@ -48,7 +48,7 @@ tree one file per function, with their own README.
 **`e2e/` covers every marshalling shape and cross-call convention exactly once. It does not cover
 every function.** That is a completeness claim on the axis e2e uniquely tests, not a sample.
 
-`host_calls` pins what the bridge _asks_ with a canned answer; `host_functions` pins what the real
+`guest_calls` pins what the bridge _asks_ with a canned answer; `host_functions` pins what the real
 impl _answers_. The type system guarantees they agree on signatures, but nothing guarantees they
 agree on **conventions** — units, endianness, buffer layout — because in neither test does a real
 guest write bytes a real host reads. That is the `seq`-as-little-endian-region bug: every internal
@@ -71,7 +71,7 @@ one shape, so a 19th keylet e2e proves nothing the 1st did. The inventory is mea
 | realistic multi-call contract             | `HostFunctionTourE2e`      | the old `all_host_functions` tour shape, as one test     |
 
 Adding a function needs no new e2e case unless it introduces a shape not in that table. Per-function
-breadth lives in `host_functions/` and `host_calls/`, one case each.
+breadth lives in `host_functions/` and `guest_calls/`, one case each.
 
 ## Out of scope
 

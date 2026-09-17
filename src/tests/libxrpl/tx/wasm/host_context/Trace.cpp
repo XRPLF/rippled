@@ -17,13 +17,13 @@
 
 namespace xrpl::test {
 
-struct TraceDirectCall : HostContextTest
+struct TraceCall : HostContextTest
 {
 };
 
 // The catch sits in `trace` itself, not in `guarded`. It logs at trace level, below the
 // fixture's default threshold, so the threshold is lowered to observe it.
-TEST_F(TraceDirectCall, HostExceptionIsSwallowedRatherThanEscaping)
+TEST_F(TraceCall, HostExceptionIsSwallowedRatherThanEscaping)
 {
     sink.threshold(beast::Severity::Trace);
     EXPECT_CALL(host, trace).WillOnce(testing::Throw(std::runtime_error{"trace sink came apart"}));
@@ -34,7 +34,7 @@ TEST_F(TraceDirectCall, HostExceptionIsSwallowedRatherThanEscaping)
 }
 
 // The cap is on message and data together, not on data alone.
-TEST_F(TraceDirectCall, MessagePlusDataPastCapIsDroppedWithoutAskingHost)
+TEST_F(TraceCall, MessagePlusDataPastCapIsDroppedWithoutAskingHost)
 {
     Bytes const data(kMaxWasmDataLength, 0x41);
     EXPECT_CALL(host, trace).Times(0);
@@ -42,7 +42,7 @@ TEST_F(TraceDirectCall, MessagePlusDataPastCapIsDroppedWithoutAskingHost)
     hostContext.trace("x", bytesOf(data), TraceDataType::AsText);
 }
 
-TEST_F(TraceDirectCall, CodesNamingNoTypeAreDropped)
+TEST_F(TraceCall, CodesNamingNoTypeAreDropped)
 {
     // Either side of the seven that name a type, and the ends of the range the guest's `i32`
     // can hold.
@@ -65,7 +65,7 @@ TEST_F(TraceDirectCall, CodesNamingNoTypeAreDropped)
 
 // The only buffer `AsText` cannot take verbatim: an empty `Slice` has a null `data()`, which
 // `std::string` may not be handed.
-TEST_F(TraceDirectCall, EmptyBufferIsRenderedAsEmptyText)
+TEST_F(TraceCall, EmptyBufferIsRenderedAsEmptyText)
 {
     EXPECT_CALL(host, trace(std::string_view("note"), std::string_view("")));
 
@@ -74,7 +74,7 @@ TEST_F(TraceDirectCall, EmptyBufferIsRenderedAsEmptyText)
 
 // The exception to the widths below: `floatToString` renders an undecodable buffer as text
 // rather than refusing it, so this is the one type whose malformed data still reaches the host.
-TEST_F(TraceDirectCall, XfloatOfTheWrongWidthReachesHostAsInvalidData)
+TEST_F(TraceCall, XfloatOfTheWrongWidthReachesHostAsInvalidData)
 {
     EXPECT_CALL(host, trace(std::string_view("note"), std::string_view("Invalid data: FFFFFFFF")));
 
@@ -83,7 +83,7 @@ TEST_F(TraceDirectCall, XfloatOfTheWrongWidthReachesHostAsInvalidData)
 
 // An amount is read rather than measured: the deserializer takes what it needs and is not asked
 // whether anything is left, so trailing bytes are ignored rather than refused.
-TEST_F(TraceDirectCall, AmountPastItsWidthIsReadFromTheFrontOfTheBuffer)
+TEST_F(TraceCall, AmountPastItsWidthIsReadFromTheFrontOfTheBuffer)
 {
     Bytes const data{0x40, 0, 0, 0, 0, 0, 0x03, 0xe8, 0xff, 0xff, 0xff, 0xff};
     EXPECT_CALL(host, trace(std::string_view("note"), std::string_view("1000/XRP")));
