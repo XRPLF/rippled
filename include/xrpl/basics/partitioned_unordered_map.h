@@ -1,6 +1,7 @@
 #pragma once
 
 #include <xrpl/beast/hash/uhash.h>
+#include <xrpl/beast/utility/instrumentation.h>
 
 #include <cstddef>
 #include <functional>
@@ -8,6 +9,7 @@
 #include <memory>
 #include <optional>
 #include <string>
+#include <thread>
 #include <unordered_map>
 #include <utility>
 #include <vector>
@@ -36,22 +38,9 @@ template <
     typename Alloc = std::allocator<std::pair<Key const, Value>>>
 class PartitionedUnorderedMap
 {
-    /**
-     * How many sub-maps the keys are spread over. Never zero.
-     */
     std::size_t partitions_;
 
 public:
-    /**
-     * Partition count used when the caller does not ask for one.
-     *
-     * A partition is the unit of parallel work for callers that walk the whole
-     * map: TaggedCache::sweep() runs one thread per partition. Holding this
-     * small and fixed keeps that thread count independent of how many cores
-     * the host has.
-     */
-    static constexpr std::size_t kDefaultPartitions = 2;
-
     using key_type = Key;
     using mapped_type = Value;
     using value_type = std::pair<Key const, mapped_type>;
@@ -226,21 +215,19 @@ private:
     }
 
 public:
-    /**
-     * Builds an empty map spread over a fixed number of partitions.
-     *
-     * @param partitions How many partitions to use. An empty optional, or 0,
-     * selects kDefaultPartitions.
-     */
     PartitionedUnorderedMap(std::optional<std::size_t> partitions = std::nullopt)
-        : partitions_(partitions && (*partitions != 0u) ? *partitions : kDefaultPartitions)
+        // Set partitions to the number of hardware threads if the parameter
+        // is either empty or set to 0.
+        : partitions_(
+              partitions && (*partitions != 0u) ? *partitions : std::thread::hardware_concurrency())
     {
         map_.resize(partitions_);
+        XRPL_ASSERT(
+            partitions_,
+            "xrpl::PartitionedUnorderedMap::PartitionedUnorderedMap : "
+            "nonzero partitions");
     }
 
-    /**
-     * Returns how many partitions the keys are spread over.
-     */
     std::size_t
     partitions() const
     {
