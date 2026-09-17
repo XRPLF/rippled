@@ -6,6 +6,8 @@
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/OpenView.h>
+#include <xrpl/ledger/OrderBookDB.h>
+#include <xrpl/protocol/Book.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxMeta.h>
@@ -52,6 +54,13 @@ ApplyContext::apply(TER ter)
 {
     // NOLINTNEXTLINE(bugprone-unchecked-optional-access) view_ emplaced in constructor
     return view_->apply(base_, tx, ter, parentBatchId_, (flags_ & TapDryRun) != 0u, journal);
+}
+
+void
+ApplyContext::addOrderBook(Book const& book)
+{
+    if ((flags_ & TapDryRun) == TapNone)
+        registry.get().getOrderBookDB().addOrderBook(book);
 }
 
 std::size_t

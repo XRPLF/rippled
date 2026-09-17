@@ -207,7 +207,7 @@ private:
     std::shared_ptr<AssetCache> rLCache_;
 
     STPathElement source_;
-    STPathSet completePaths_;
+    STPathSet completePaths_{STPathSet::DeduplicationTag{}};
     std::vector<PathRank> pathRanks_;
     std::map<PathType, STPathSet> paths_;
 

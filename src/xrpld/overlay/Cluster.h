@@ -64,6 +64,19 @@ public:
     member(PublicKey const& node) const;
 
     /**
+     * Determines whether a node belongs in the cluster.
+     *
+     * Prefer this to `member` when the comment is not wanted: `member`
+     * copies the node's name out from under the lock, and most callers
+     * only test the result for engagement.
+     *
+     * @param node The node's public identity.
+     * @return Whether the node is a cluster member.
+     */
+    bool
+    isMember(PublicKey const& node) const;
+
+    /**
      * The number of nodes in the cluster list.
      */
     std::size_t
