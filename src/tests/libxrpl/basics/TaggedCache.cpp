@@ -363,13 +363,13 @@ TEST(TaggedCacheTest, for_each_key_partition_tolerates_inserts_from_another_thre
     // on which partition it lands in, so this asserts nothing about those.
     std::vector<LedgerIndex> visited;
     LedgerIndex next = original;
-    c.forEachKeyPartition([&](std::vector<LedgerIndex> const& keys) {
+    EXPECT_TRUE(c.forEachKeyPartition([&](std::vector<LedgerIndex> const& keys) {
         visited.insert(visited.end(), keys.begin(), keys.end());
         std::thread inserter([&] { c.insert(next, "late"); });
         inserter.join();
         ++next;
         return true;
-    });
+    }));
 
     std::ranges::sort(visited);
     EXPECT_EQ(std::ranges::adjacent_find(visited), visited.end());
