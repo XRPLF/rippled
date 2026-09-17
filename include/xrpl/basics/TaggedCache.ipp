@@ -604,6 +604,8 @@ TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash,
 {
     // Reused across partitions, so the whole walk costs one allocation.
     std::vector<key_type> keys;
+    // partitions() and map() are fixed at construction, so the bound and the
+    // indexing need no lock.
     for (std::size_t p = 0; p < cache_.partitions(); ++p)
     {
         keys.clear();
@@ -611,17 +613,8 @@ TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash,
             std::scoped_lock const lock(mutex_);
             auto const& partition = cache_.map()[p];
             keys.reserve(partition.size());
-            auto const start = std::chrono::steady_clock::now();
             for (auto const& entry : partition)
                 keys.push_back(entry.first);
-            auto const held = std::chrono::steady_clock::now() - start;
-            if (held >= std::chrono::seconds{1})
-            {
-                JLOG(journal_.warn())
-                    << name_ << " TaggedCache forEachKeyPartition held the lock "
-                    << std::chrono::duration_cast<std::chrono::milliseconds>(held).count()
-                    << "ms over " << keys.size() << " entries";
-            }
         }
         if (!f(keys))
             return false;
