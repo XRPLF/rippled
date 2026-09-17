@@ -12,6 +12,7 @@
 #include <cstddef>
 #include <iostream>
 #include <iterator>
+#include <optional>
 #include <random>
 #include <string>
 #include <string_view>
@@ -148,5 +149,122 @@ public:
 // Manual: the suite only reports a timing, which says nothing on a CI runner.
 // The table invariants are static_asserts in Handler.cpp.
 BEAST_DEFINE_TESTSUITE_MANUAL(Handler, rpc, xrpl);
+
+// What getHandler() answers, as opposed to how fast it answers. A lookup needs no
+// Application, so these cases run as an automatic suite.
+//
+// The bounds check they cover is unreachable from a request: getAPIVersionNumber()
+// applies the same predicate first, and every caller rejects an invalid version
+// before it asks for a handler. That is why it is checked here directly, and why
+// it is worth checking at all rather than deleting as unreachable.
+class HandlerLookup_test : public beast::unit_test::Suite
+{
+    /**
+     * Find a method that is served at a given API version.
+     *
+     * The name comes from the table, so a case below does not name a method that a
+     * later API version may retire.
+     *
+     * @param version The API version to answer at.
+     * @param betaEnabled Whether the beta API version is enabled.
+     * @return A name that answers, or nullopt if none does.
+     */
+    static std::optional<std::string_view>
+    nameServedAt(unsigned version, bool betaEnabled)
+    {
+        for (std::string_view name : rpc::getHandlerNames())
+        {
+            if (rpc::getHandler(version, betaEnabled, name) != nullptr)
+                return name;
+        }
+
+        return std::nullopt;
+    }
+
+    void
+    testUnservedVersion()
+    {
+        testcase("An unserved API version has no handler");
+
+        // A name the table certainly holds, so that a null answer below can only
+        // come from the version and not from the name.
+        auto const name = nameServedAt(rpc::kApiMinimumSupportedVersion, false);
+        if (!BEAST_EXPECTS(
+                name.has_value(),
+                "no handler answers at API version " +
+                    std::to_string(rpc::kApiMinimumSupportedVersion) +
+                    ", so there is no name to ask about"))
+            return;
+
+        // Below the minimum, which no setting serves.
+        BEAST_EXPECT(
+            rpc::getHandler(rpc::kApiMinimumSupportedVersion - 1, false, *name) == nullptr);
+        BEAST_EXPECT(rpc::getHandler(rpc::kApiMinimumSupportedVersion - 1, true, *name) == nullptr);
+
+        // Above the maximum each setting serves. Both values stay outside the
+        // served range however the version constants move, so neither case can
+        // become vacuous.
+        BEAST_EXPECT(
+            rpc::getHandler(rpc::kApiMaximumSupportedVersion + 1, false, *name) == nullptr);
+        BEAST_EXPECT(rpc::getHandler(rpc::kApiBetaVersion + 1, true, *name) == nullptr);
+    }
+
+    void
+    testBetaVersionGate()
+    {
+        testcase("The beta API version is served only where it is enabled");
+
+        // Between betas the beta version is the maximum supported one, leaving the
+        // two settings nothing to tell apart. Compiled out rather than asserted, so
+        // that the case arms itself again when a later beta version arrives.
+        if constexpr (rpc::kApiBetaVersion > rpc::kApiMaximumSupportedVersion)
+        {
+            auto const name = nameServedAt(rpc::kApiBetaVersion, true);
+            if (!BEAST_EXPECTS(
+                    name.has_value(),
+                    "no handler answers at API version " + std::to_string(rpc::kApiBetaVersion) +
+                        ", so there is nothing for the gate to reject"))
+                return;
+
+            // The handler serves this version, so only the server's own range can
+            // turn the answer into a null one.
+            BEAST_EXPECT(rpc::getHandler(rpc::kApiBetaVersion, true, *name) != nullptr);
+            BEAST_EXPECT(rpc::getHandler(rpc::kApiBetaVersion, false, *name) == nullptr);
+        }
+        else
+        {
+            log << "the beta API version is the maximum supported version, so no gate "
+                   "separates them\n";
+            pass();
+        }
+    }
+
+    void
+    testUnknownMethod()
+    {
+        testcase("An unknown method has no handler");
+
+        constexpr unsigned kVersion = rpc::kApiMinimumSupportedVersion;
+
+        BEAST_EXPECT(rpc::getHandler(kVersion, false, "no such method") == nullptr);
+        BEAST_EXPECT(rpc::getHandler(kVersion, false, "") == nullptr);
+
+        // A method name holds lowercase letters and underscores, so a tilde sorts
+        // after every entry. This runs the search off the end of the table, which
+        // no other case here does.
+        BEAST_EXPECT(rpc::getHandler(kVersion, false, "~") == nullptr);
+    }
+
+public:
+    void
+    run() override
+    {
+        testUnservedVersion();
+        testBetaVersionGate();
+        testUnknownMethod();
+    }
+};
+
+BEAST_DEFINE_TESTSUITE(HandlerLookup, rpc, xrpl);
 
 }  // namespace xrpl::test
