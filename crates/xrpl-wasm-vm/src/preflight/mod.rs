@@ -82,7 +82,11 @@ pub fn check(wasm: &[u8], function_name: &str) -> Result<(), CheckError> {
 
 /// [`check`], reporting every error found rather than stopping at the first.
 pub fn check_all(wasm: &[u8], function_name: &str) -> Result<(), Vec<CheckError>> {
-    let module = compile(&wasm_engine(), wasm).map_err(|detail| vec![CheckError::Compile(detail)])?;
+    let module 
+    
+    
+    
+    = compile(&wasm_engine(), wasm).map_err(|detail| vec![CheckError::Compile(detail)])?;
     let refusals: Vec<CheckError> = check_error_iter(&module, function_name).collect();
     if refusals.is_empty() {
         return Ok(());
