@@ -709,11 +709,6 @@ public:
     hash_set<PublicKey>
     getTrustedMasterKeys() const;
 
-    void
-    debugSetTrusted(
-        std::vector<PublicKey> const& validators,
-        std::optional<std::size_t> quorumOverride = std::nullopt);
-
     /**
      * get the validator list threshold
      * @return the threshold

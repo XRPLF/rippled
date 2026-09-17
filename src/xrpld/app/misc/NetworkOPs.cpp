@@ -522,13 +522,6 @@ public:
     void
     consensusViewChange() override;
 
-    void
-    setStall(std::chrono::milliseconds duration) override;
-    bool
-    isStalled() const override;
-    void
-    clearStall() override;
-
     json::Value
     getConsensusInfo() override;
     std::size_t
@@ -968,8 +961,6 @@ private:
     std::atomic<bool> amendmentWarned_{false};
     std::atomic<bool> unlBlocked_{false};
 
-    std::atomic<std::int64_t> stallDeadlineMs_{0};
-
     ClosureCounter<void, boost::system::error_code const&> waitHandlerCounter_;
     boost::asio::steady_timer heartbeatTimer_;
     boost::asio::steady_timer clusterTimer_;
@@ -1323,13 +1314,6 @@ NetworkOPsImp::processHeartbeatTimer()
             CLOG(clog.ss()) << ", changing to " << strOperatingMode(newMode, true);
         }
         CLOG(clog.ss()) << ". ";
-    }
-
-    if (isStalled())
-    {
-        CLOG(clog.ss()) << "node is stalled, skipping consensus timerEntry. ";
-        setHeartbeatTimer();
-        return;
     }
 
     consensus_.timerEntry(registry_.get().getTimeKeeper().closeTime(), clog.ss());
@@ -2419,35 +2403,6 @@ NetworkOPsImp::consensusViewChange()
     {
         setMode(OperatingMode::CONNECTED);
     }
-}
-
-void
-NetworkOPsImp::setStall(std::chrono::milliseconds duration)
-{
-    auto const deadline = std::chrono::steady_clock::now() + duration;
-    auto const ms =
-        std::chrono::duration_cast<std::chrono::milliseconds>(deadline.time_since_epoch()).count();
-    stallDeadlineMs_.store(ms, std::memory_order_relaxed);
-    JLOG(journal_.warn()) << "Node stalled for " << duration.count() << "ms";
-}
-
-bool
-NetworkOPsImp::isStalled() const
-{
-    auto const deadline = stallDeadlineMs_.load(std::memory_order_relaxed);
-    if (deadline == 0)
-        return false;
-    auto const now = std::chrono::duration_cast<std::chrono::milliseconds>(
-                         std::chrono::steady_clock::now().time_since_epoch())
-                         .count();
-    return now < deadline;
-}
-
-void
-NetworkOPsImp::clearStall()
-{
-    stallDeadlineMs_.store(0, std::memory_order_relaxed);
-    JLOG(journal_.warn()) << "Node stall cleared";
 }
 
 void

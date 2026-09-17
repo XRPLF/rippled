@@ -85,8 +85,6 @@ doNFTBuyOffers(rpc::JsonContext&);
 json::Value
 doNFTSellOffers(rpc::JsonContext&);
 json::Value
-doNodeStall(rpc::JsonContext&);
-json::Value
 doNoRippleCheck(rpc::JsonContext&);
 json::Value
 doOwnerInfo(rpc::JsonContext&);
@@ -125,8 +123,6 @@ doSignFor(rpc::JsonContext&);
 json::Value
 doSimulate(rpc::JsonContext&);
 json::Value
-doInject(rpc::JsonContext&);
-json::Value
 doStop(rpc::JsonContext&);
 json::Value
 doSubmit(rpc::JsonContext&);
@@ -144,8 +140,6 @@ json::Value
 doTxReduceRelay(rpc::JsonContext&);
 json::Value
 doUnlList(rpc::JsonContext&);
-json::Value
-doUnlSet(rpc::JsonContext&);
 json::Value
 doUnsubscribe(rpc::JsonContext&);
 json::Value

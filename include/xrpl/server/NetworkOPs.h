@@ -234,13 +234,6 @@ public:
     virtual void
     consensusViewChange() = 0;
 
-    virtual void
-    setStall(std::chrono::milliseconds duration) = 0;
-    virtual bool
-    isStalled() const = 0;
-    virtual void
-    clearStall() = 0;
-
     virtual json::Value
     getConsensusInfo() = 0;
     // Proposers and round time of the last consensus round, for out-of-band
