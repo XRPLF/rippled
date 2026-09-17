@@ -28,9 +28,9 @@ When enabled, it instruments RPC requests with trace spans that are exported via
 OTLP/HTTP to an OpenTelemetry Collector, which forwards them to a tracing backend
 such as Grafana Tempo.
 
-Telemetry is **off by default** at both compile time and runtime:
+Telemetry is gated twice — once at compile time and once at runtime:
 
-- **Compile time**: The Conan option `telemetry` and CMake option `telemetry` must be set to `True`/`ON`.
+- **Compile time**: The Conan option `telemetry` must be `True`. It is the only switch: there is no CMake option, because `conan install` writes the value into the generated toolchain and CMake reads it from there.
   When disabled, all `SpanGuard` calls compile to inline no-ops (defined in `SpanGuard.h`)
   with zero overhead — no OTel SDK dependency required.
 - **Runtime**: The `[telemetry]` config section must set `enabled=1`.

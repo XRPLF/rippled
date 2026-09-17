@@ -141,11 +141,13 @@ if(rocksdb)
 endif()
 
 # OpenTelemetry distributed tracing (optional).
-# When ON, links against opentelemetry-cpp and defines XRPL_ENABLE_TELEMETRY
+# When on, links against opentelemetry-cpp and defines XRPL_ENABLE_TELEMETRY
 # so that tracing macros in TracingInstrumentation.h are compiled in.
-# When OFF (default), all tracing code compiles to no-ops with zero overhead.
-# Enable via: conan install -o telemetry=True, or cmake -Dtelemetry=ON.
-option(telemetry "Enable OpenTelemetry tracing" ON)
+# When off, all tracing code compiles to no-ops with zero overhead.
+#
+# There is no CMake option. The one switch is `conan install -o telemetry=`,
+# which decides whether opentelemetry-cpp is fetched and sets the variable read
+# below through the generated toolchain.
 if(telemetry)
     find_package(opentelemetry-cpp CONFIG REQUIRED)
     add_compile_definitions(XRPL_ENABLE_TELEMETRY)
