@@ -55,9 +55,9 @@
       "name": "tx.receive",
       "category": "transaction",
       "parent": null,
-      "required_attributes": ["tx_hash", "peer_id", "suppressed"],
+      "required_attributes": ["tx_hash", "peer_id"],
       "config_flag": "trace_transactions",
-      "note": "Cross-node span: parent context propagated from the sender's tx.process via protobuf. Also carries tx_type and peer_version. tx_status is only set when a tx is suppressed/known-bad, so it is not a required attribute on every tx.receive."
+      "note": "Cross-node span: parent context propagated from the sender's tx.process via protobuf. Also carries tx_type and peer_version. The span is created only after the node decides to process the transaction, so a relayed duplicate produces no span at all; how many were dropped is the transactions_duplicate traffic category. tx_status is set only on the paths that drop a transaction after that point, so it is not a required attribute."
     },
     {
       "name": "tx.apply",
