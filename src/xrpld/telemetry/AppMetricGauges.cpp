@@ -24,6 +24,11 @@
 
 #include <xrpld/telemetry/AppMetricGauges.h>
 
+// Both name types in the constructor signature, which is compiled in either
+// way, so they belong outside the telemetry guard below.
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/telemetry/MetricsRegistry.h>
+
 #ifdef XRPL_ENABLE_TELEMETRY
 
 // The app and overlay includes below are why
@@ -56,7 +61,6 @@
 #include <xrpl/basics/CountedObject.h>
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/UptimeClock.h>
-#include <xrpl/beast/utility/Journal.h>
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/nodestore/Database.h>
