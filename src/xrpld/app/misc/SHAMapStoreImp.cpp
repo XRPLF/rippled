@@ -29,12 +29,10 @@
 #include <xrpl/server/State.h>
 #include <xrpl/shamap/SHAMapMissingNode.h>
 #include <xrpl/shamap/SHAMapTreeNode.h>
-#include <xrpl/telemetry/MetricMacros.h>
-#ifdef XRPL_ENABLE_TELEMETRY
-// The metric-name constants are named only as macro arguments, which the
-// macros drop when telemetry is compiled out.
+// MetricNames.h is unguarded because the rotation-phase label constants are
+// passed to RotationPhase as ordinary constructor arguments, in both builds.
+#include <xrpl/telemetry/MetricMacros.h>  // IWYU pragma: keep
 #include <xrpl/telemetry/MetricNames.h>
-#endif
 #include <xrpl/telemetry/SpanGuard.h>
 #include <xrpl/telemetry/SpanNames.h>
 
