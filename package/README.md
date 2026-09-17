@@ -135,9 +135,12 @@ release defaults to 1 and is overridable with `-Dpkg_release=N`.
 
 ## Publishing packages
 
-Packages are published to the XRPLF repositories on Sonatype Nexus at
-`https://packages.xrplf.org`. The `release-info` action decides the channel from
-the event, and `publish_pkg.py` maps that channel to its repositories:
+Packages are published to the XRPLF repositories on Sonatype Nexus through
+`https://packages-upload.xrplf.org`. Reads go through
+`https://packages.xrplf.org`, which Cloudflare proxies to cache them and which
+rejects request bodies over 100 MB, so uploads use the DNS-only host instead.
+The `release-info` action decides the channel from the event, and
+`publish_pkg.py` maps that channel to its repositories:
 
 | Event                    | Version           | Channel   | DEB repository | RPM upload repository |
 | ------------------------ | ----------------- | --------- | -------------- | --------------------- |
