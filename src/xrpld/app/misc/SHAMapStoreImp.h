@@ -253,8 +253,10 @@ private:
         }
 
     private:
-        SHAMapStoreImp& owner_;
-        char const* stage_;
+        // Read only inside the metric macro in the destructor, so a
+        // -DXRPL_ENABLE_TELEMETRY=0 build sees no use at all.
+        [[maybe_unused]] SHAMapStoreImp& owner_;
+        [[maybe_unused]] char const* stage_;
         std::chrono::steady_clock::time_point start_ = std::chrono::steady_clock::now();
         telemetry::ScopedSpanGuard span_;
     };
