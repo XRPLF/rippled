@@ -1,12 +1,10 @@
 #pragma once
 
 #include <xrpl/tx/wasm/WasmCommon.h>
-#include <xrpl/tx/wasm/WasmVM.h>
 
 #include <tx/wasm/fixtures/WasmFixture.h>
 
 #include <cstdint>
-#include <expected>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -15,26 +13,13 @@ namespace xrpl::test {
 
 // Base for the per-host-function fixtures: a guest module run through the real engine
 // against the mocked host `MockVmTest` holds.
-//
-// A test builds its module and hands it over, rather than the fixture holding one. An
-// argument axis is then a value written where it is read, and a case the builder cannot
-// express — a second export, an import returning nothing — passes `hostAnswer` its own text
-// instead.
 struct GuestCallTest : MockVmTest
 {
-    // These modules declare one page, so this is the first address past guest memory: what a
-    // test reaches for when it wants a region the engine must refuse.
+    // The first address past guest memory.
     static constexpr std::int32_t kOnePage = 65536;
 
-    // One argument of a host call, in wasm parameter order.
-    //
-    // A region is *two* wasm parameters, and `value` and `len` are separate because
-    // perturbing one of them is what most of a host function's argument axes are. `kind`
-    // also decides the import's declared signature, so a module's signature cannot disagree
-    // with the arguments it passes.
-    //
-    // A declared `u32` is a `region` of four bytes rather than a `scalar`: the ABI carries a
-    // sequence number as four little-endian bytes in memory (`args.rs`'s `InU32`).
+    // One argument, in wasm parameter order. A region is *two* wasm parameters, and a
+    // declared `u32` is a region of four little-endian bytes, not a scalar (`args.rs`).
     struct Arg
     {
         enum class Kind : std::uint8_t { Scalar32, Scalar64, Region, OutRegion };
@@ -68,24 +53,19 @@ struct GuestCallTest : MockVmTest
         }
     };
 
-    // Bytes laid into guest memory at instantiation, for the regions a call reads.
+    // Bytes placed in guest memory at instantiation.
     struct Memory
     {
         std::int32_t at;
         Bytes bytes;
     };
 
-    // What a successful call answers the guest: the first four bytes of its out region, so
-    // the value is shown to have arrived rather than only been counted, or the call's own
-    // status, which for a call that writes is the length. A call with no out region answers
-    // its status whichever of these is asked for.
+    // What a successful call answers: the out region's first four bytes, or the status.
+    // With no out region it is the status either way.
     enum class Answer : std::uint8_t { WrittenBytes, Status };
 
-    // A module whose `escrow_finish` makes exactly one host call.
-    //
-    // The import is declared at the signature `args` implies, `memory` becomes `(data ...)`
-    // segments, and the arguments are `args` spelled as constants. A negative status comes
-    // back unchanged whatever `answer` asks for, there being nothing then to read.
+    // A module whose `escrow_finish` makes one host call, its import declared at the
+    // signature `args` implies.
     [[nodiscard]] static std::string
     hostCallWat(
         std::string_view importName,
@@ -93,8 +73,8 @@ struct GuestCallTest : MockVmTest
         std::vector<Memory> const& memory = {},
         Answer answer = Answer::WrittenBytes);
 
-    // What the contract returned, which for these modules is the host's answer or its
-    // negative error code. Fails the test if the run did not complete.
+    // The contract's return: the host's answer, or a negative error code. Adds a failure if
+    // the run did not complete.
     std::int32_t
     hostAnswer(std::string_view wat);
 };
