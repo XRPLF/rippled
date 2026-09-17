@@ -15,7 +15,7 @@ package/
     publish_pkg.py      Uploads built packages to the XRPLF Nexus repositories (called by CI, and shipped in that image)
   rpm/
     xrpld.spec      RPM spec
-  debian/           Debian control files (control, rules, copyright, xrpld.docs, xrpld.links, source/format)
+  debian/           Debian control files (control, rules, copyright, xrpld.docs, xrpld.links, xrpld.lintian-overrides, source/format)
   shared/
     xrpld.service       systemd unit file (used by both RPM and DEB)
     xrpld.sysusers      sysusers.d config (used by both RPM and DEB)
@@ -34,10 +34,10 @@ image and both CI and local builds pick it up — and names the format that imag
 builds in `type`, which CI passes to `build_pkg.py` as `--package-type`; the two
 have to stay in step.
 
-| Package type | Image (`configs.<distro>[].package.image` in `linux.json`) | Tools required                                      |
-| ------------ | ---------------------------------------------------------- | --------------------------------------------------- |
-| RPM          | `ghcr.io/xrplf/xrpld/packaging-rhel:sha-<sha>`             | `rpmbuild`, `rpmsign`                               |
-| DEB          | `ghcr.io/xrplf/xrpld/packaging-debian:sha-<sha>`           | `dpkg-buildpackage`, debhelper with compat level 13 |
+| Package type | Image (`configs.<distro>[].package.image` in `linux.json`) | Tools required                                                 |
+| ------------ | ---------------------------------------------------------- | -------------------------------------------------------------- |
+| RPM          | `ghcr.io/xrplf/xrpld/packaging-rhel:sha-<sha>`             | `rpmbuild`, `rpmsign`                                          |
+| DEB          | `ghcr.io/xrplf/xrpld/packaging-debian:sha-<sha>`           | `dpkg-buildpackage`, debhelper with compat level 13, `lintian` |
 
 To print the full packaging matrix (artifact names and images) for the current
 `linux.json`:
@@ -51,13 +51,19 @@ To print the full packaging matrix (artifact names and images) for the current
 ### Via CI
 
 Caller workflows (`on-pr.yml`, `on-tag.yml`, `on-trigger.yml`) call
-`reusable-package.yml`. That workflow generates its own packaging matrix from
-the configs that carry a `package` map (via `generate.py --packaging`) and fans
-out one job per distro. Each job downloads the pre-built `xrpld` and
-`validator-keys` binary artifacts and runs in that distro's container, building
-the format `package.type` declares. The packaging script derives the package
-version from the downloaded binary's `xrpld --version` output; no CMake
-configure or build step is needed inside the packaging job.
+`reusable-package.yml`, which runs in three stages:
+
+1. `package` fans out one job per config carrying a `package` map, building and
+   signing in that config's container, and uploading `<config>-pkg` alongside
+   `<config>-pkg-debug` for the much larger debug symbols.
+2. `test-install` installs `<config>-pkg` in the container of every distro the
+   packages target and runs the binaries there, so one that cannot be installed
+   never reaches Nexus.
+3. `publish` uploads both artifacts, or lists what it would upload.
+
+The packaging script derives the package version from the downloaded binary's
+`xrpld --version` output; no CMake configure or build step is needed inside the
+packaging job.
 
 The binaries come from the `debian` and `rhel` build configs themselves — the
 ones carrying the `package` map — which pass `-Dvalidator_keys=ON` so that the
@@ -94,8 +100,7 @@ docker run --rm \
     --pkg-release "${PKG_RELEASE}" \
     --channel UNRELEASED
 
-# Output:
-#   build/debbuild/*.deb         (DEB + dbgsym; Debian names both .deb)
+# Output (the deb image writes build/debbuild/*.deb instead):
 #   build/rpmbuild/RPMS/x86_64/*.rpm
 ```
 
@@ -155,9 +160,9 @@ the last, and the date and hash say which commit a package on
 `packages.xrplf.org` came from. Both reach the packaging scripts as arguments,
 so neither script derives anything itself.
 
-Publishing is the last step of each packaging job, uploading from the container
-that built the packages with the `publish_pkg.py` shipped in the image — the
-same copy other repositories run. Without `publish: true` the step is a
+Publishing is its own job, gated behind `test-install`, uploading from the same
+image that built the packages with the `publish_pkg.py` shipped in it — the
+same copy other repositories run. Without `publish: true` the job is a
 `--dry-run`, listing the uploads it would make without needing credentials, so
 any run that builds packages also exercises the upload routing. `on-trigger.yml`
 passes `publish: true` for develop pushes in `XRPLF/rippled` and `on-tag.yml`
@@ -201,6 +206,9 @@ The binary's version is already SemVer-validated by `BuildInfo`.
 the final release. If that normalized package version still contains `-`,
 packaging fails because RPM forbids `-` in `Version`, and Debian uses `-` as
 the upstream/revision separator.
+
+> [!NOTE]
+> Debug and sanitizer builds are not packaged yet.
 
 `pkg_version` is the normalized package metadata version derived inside
 `build_pkg.py` from the binary-reported `xrpld` version (`-` pre-release
@@ -279,37 +287,45 @@ service restart.
 2. Stages the binaries, configs, `README.md`, `LICENSE.md`, and
    `validator-keys-LICENSE`.
 3. Copies `package/debian/` control files into `debbuild/source/debian/`.
-4. Copies shared service/sysusers/tmpfiles into `debian/` where `dh_installsystemd`, `dh_installsysusers`, and `dh_installtmpfiles` pick them up automatically.
+4. Copies shared service/sysusers/tmpfiles/logrotate into `debian/` where `dh_installsystemd`, `dh_installsysusers`, `dh_installtmpfiles` and `dh_installlogrotate` pick them up automatically.
 5. Generates a minimal `debian/changelog` using `${pkg_version}-${PKG_RELEASE}`,
    where `pkg_version` is derived from the binary-reported `xrpld` version.
 6. Runs `dpkg-buildpackage -b --no-sign -d` (`-d` skips the build-dependency check, since the binary is already built). `debian/rules` uses manual `install` commands.
+
+   It also rewrites the `libc6` bound to `LIBC_MIN` in `debian/rules`, the glibc
+   the Nix toolchain builds against. `dpkg-shlibdeps` would otherwise derive it
+   from the build host's symbols file — on trixie that yields `libc6 (>= 2.34)`
+   because of `sysconf`, locking out distros the binaries run on. A check fails
+   the build if either binary outgrows `LIBC_MIN`.
+
 7. Output: `debbuild/*.deb`, the binary package and the `-dbgsym` package.
    Debian gives dbgsym packages a `.deb` extension; only Ubuntu uses `.ddeb`.
 
 ## Post-build verification
 
 ```bash
-# DEB
-dpkg-deb -c debbuild/*.deb | grep -E 'systemd|sysusers|tmpfiles'
+# DEB (one invocation per package: the dbgsym package is a .deb too)
+for deb in debbuild/*.deb; do dpkg-deb -c "${deb}"; done | grep -E 'systemd|sysusers|tmpfiles'
+lintian -I debbuild/*.deb
 
 # RPM
 rpm -qlp rpmbuild/RPMS/x86_64/*.rpm
-
-# Optional, and not in the packaging image: apt-get install -y lintian
-lintian -I debbuild/*.deb
 ```
+
+`lintian` still reports `embedded-library zlib`, `no-manual-page` and
+`initial-upload-closes-no-bugs`; only the `/usr/local` tags are overridden.
 
 ## Reproducibility
 
-`build_pkg.py` sets `SOURCE_DATE_EPOCH` from the latest git commit time and
-exports it; the RPM spec clamps file modification times to it via
-`%build_mtime_policy`. The remaining variables
-below further improve reproducibility but are _not_ set by the script — export
-them yourself if needed:
+Both formats build reproducibly as they are: the same binaries at the same
+commit give byte-identical packages on a rebuild, and nothing has to be
+exported by hand.
 
-```bash
-export TZ=UTC
-export LC_ALL=C.UTF-8
-export GZIP=-n
-export DEB_BUILD_OPTIONS="noautodbgsym reproducible=+fixfilepath"
-```
+`build_pkg.py` sets `SOURCE_DATE_EPOCH` from the latest git commit time.
+`dpkg-buildpackage` honours it on its own; the RPM spec sets three macros:
+
+- `%clamp_mtime_to_source_date_epoch` — file modification times, from
+  `SOURCE_DATE_EPOCH`.
+- `%use_source_date_epoch_as_buildtime` — the `BUILDTIME` header, from the
+  same.
+- `%_buildhost` — pinned, so the builder's hostname stays out of the header.

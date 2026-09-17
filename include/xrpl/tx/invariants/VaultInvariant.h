@@ -131,20 +131,57 @@ private:
     deltaAssets(AccountID const& id) const;
 
     /**
-     * @brief Return the vault-asset delta for the transaction's sending
-     *        account, adjusted for the fee.
+     * @brief Return the AccountRoot whose XRP balance actually absorbed a
+     *        transaction's fee, if any.
      *
-     * Calls @c deltaAssets for @c tx[sfAccount] and, for non-delegated XRP
-     * transactions, adds the consumed fee back so the invariant sees the net
-     * asset movement rather than the fee-reduced balance change.
+     * Mirrors @c Transactor::getFeePayer, but resolves to @c std::nullopt for
+     * a pre-funded sponsorship: that fee is drawn from the @c ltSponsorship
+     * object's @c sfFeeAmount, never from the sponsor's own AccountRoot, so
+     * there is no balance to add back there.
      *
-     * @param tx  The transaction being applied.
-     * @param fee Fee charged by this transaction.
+     * @param view Read-only view of the ledger after the transaction.
+     * @param tx   The transaction being applied.
+     * @return The fee-paying AccountRoot's id, or @c std::nullopt when the
+     *         fee was not drawn from any AccountRoot balance.
+     */
+    [[nodiscard]] static std::optional<AccountID>
+    feePayerAccountRoot(ReadView const& view, STTx const& tx);
+
+    /**
+     * @brief Return the vault-asset delta for a party inspected as a
+     *        withdrawal/deposit counterparty, adjusted for the fee.
+     *
+     * Calls @c deltaAssets for @p id and, for XRP transactions, adds the
+     * consumed fee back only when @p id is the AccountRoot that actually
+     * paid it (per @c feePayerAccountRoot) -- so the invariant sees the net
+     * asset movement rather than a fee-reduced balance change, regardless of
+     * whether @p id is the sender, a distinct destination, a delegate, or a
+     * co-signed fee sponsor. Post-@c fixCleanup3_4_0, any resulting
+     * economically-zero delta is always normalized to absence.
+     *
+     * Pre-@c fixCleanup3_4_0 this replicates the legacy behaviour exactly:
+     * only @c tx[sfAccount] could ever receive a fee correction (and only
+     * when it was itself, per @c STTx::getFeePayerID, the fee payer). After
+     * that sender-only correction a zero delta is collapsed to absence; if
+     * the correction does not apply, a present-zero delta is kept as-is.
+     *
+     * @param view          Read-only view of the ledger after the transaction.
+     * @param id            Account being inspected as sender or destination.
+     * @param tx            The transaction being applied.
+     * @param fee           Fee charged by this transaction.
+     * @param fix340Enabled Whether @c fixCleanup3_4_0 is enabled, as already
+     *                      determined once by @c finalize.
      * @return The fee-adjusted delta, or @c std::nullopt if the net delta is
-     *         zero or the account entry was not touched.
+     *         zero (always post-amendment; pre-amendment only after the
+     *         sender-only fee correction) or the entry was not touched.
      */
     [[nodiscard]] std::optional<DeltaInfo>
-    deltaAssetsTxAccount(STTx const& tx, XRPAmount fee) const;
+    deltaAssetsForParty(
+        ReadView const& view,
+        AccountID const& id,
+        STTx const& tx,
+        XRPAmount fee,
+        bool fix340Enabled) const;
 
     /**
      * @brief Return the vault-share balance-change delta for an account.
@@ -174,8 +211,8 @@ private:
      *
      * For a closed-ended vault, a loan may only be originated while the vault is in the Investment
      * phase (strictly past @c SubscriptionDate and before @c RedemptionDate). Open-ended vaults (@c
-     * NoPhase) are unaffected. The complementary maturity bound (final payment strictly precedes @c
-     * RedemptionDate) is enforced by @c ValidLoan.
+     * NoPhase) are unaffected. The complementary maturity bound (final payment precedes @c
+     * RedemptionDate by at least @c kLoanRedemptionBuffer) is enforced by @c ValidLoan.
      */
     [[nodiscard]] bool
     finalizeLoanSet(ReadView const& view, beast::Journal const& j) const;

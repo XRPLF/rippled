@@ -1,8 +1,9 @@
 # Clippy, coverage and documentation for the Rust crates in crates/. Each runs
 # as an independent job on a GitHub-hosted runner, but inside the same container
 # image used to build the crates in the C++/Corrosion path, so the toolchain
-# (and therefore the lints, coverage instrumentation and the cargo cache) matches
-# what production builds use.
+# (and therefore the lints and the cargo cache) matches what production builds
+# use. Coverage is the exception: it needs the nightly rustc that honours
+# #[coverage(off)], which the image carries alongside the pinned stable.
 #
 # Rust unit tests are deliberately NOT run here. They run as part of the C++
 # build (reusable-build-test-config.yml), which already compiles the crates on a
@@ -27,7 +28,7 @@ permissions:
 jobs:
   clippy:
     runs-on: ubuntu-latest
-    container: ghcr.io/xrplf/xrpld/nix-ubuntu:sha-473fe44
+    container: ghcr.io/xrplf/xrpld/nix-ubuntu:sha-060957e
     steps:
       - name: Checkout repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -40,10 +41,13 @@ jobs:
 
   coverage:
     runs-on: ubuntu-latest
-    container: ghcr.io/xrplf/xrpld/nix-ubuntu:sha-473fe44
+    container: ghcr.io/xrplf/xrpld/nix-ubuntu:sha-060957e
     steps:
       - name: Checkout repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Use the nightly Rust toolchain
+        run: rust-nightly path >>"${GITHUB_PATH}"
 
       - name: Use cargo artifacts cache
         uses: ./.github/actions/cargo-cache
@@ -66,7 +70,7 @@ jobs:
 
   doc:
     runs-on: ubuntu-latest
-    container: ghcr.io/xrplf/xrpld/nix-ubuntu:sha-473fe44
+    container: ghcr.io/xrplf/xrpld/nix-ubuntu:sha-060957e
     steps:
       - name: Checkout repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1

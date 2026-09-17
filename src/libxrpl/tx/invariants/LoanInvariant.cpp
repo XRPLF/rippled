@@ -62,10 +62,11 @@ ValidLoan::finalize(
     // Ledger entry validation checks.
     for (auto const& [before, after] : loans_)
     {
-        // A closed-ended vault must not accept a loan whose final scheduled payment falls on or
-        // after the vault's RedemptionDate. This mirrors the LoanSet::preclaim gate and only fires
-        // on loan creation; once the loan exists, its StartDate / PaymentInterval are immutable and
-        // PaymentRemaining only decreases, so the bound is preserved.
+        // A closed-ended vault must not accept a loan whose final scheduled payment falls fewer
+        // than kLoanRedemptionBuffer seconds before the vault's RedemptionDate. This mirrors the
+        // LoanSet::preclaim gate and only fires on loan creation; once the loan exists, its
+        // StartDate / PaymentInterval are immutable and PaymentRemaining only decreases, so the
+        // bound is preserved.
         if (!before && isTesSuccess(result))
         {
             auto const broker = view.read(keylet::loanBroker(after->at(sfLoanBrokerID)));
@@ -80,11 +81,13 @@ ValidLoan::finalize(
                     std::uint32_t const interval = after->at(sfPaymentInterval);
                     std::uint32_t const remaining = after->at(sfPaymentRemaining);
                     std::uint32_t const redemption = vault->at(sfRedemptionDate);
-                    if (std::uint64_t{startDate} + (std::uint64_t{interval} * remaining) >=
+                    if (std::uint64_t{startDate} + (std::uint64_t{interval} * remaining) +
+                            kLoanRedemptionBuffer >
                         redemption)
                     {
                         JLOG(j.fatal()) << "Invariant failed: closed-ended loan final payment "
-                                           "must precede RedemptionDate";
+                                           "must precede RedemptionDate by at least "
+                                           "kLoanRedemptionBuffer";
                         return false;
                     }
                 }
