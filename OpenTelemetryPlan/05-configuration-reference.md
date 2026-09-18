@@ -441,7 +441,7 @@ The search-filter list is the practical index of queryable span attributes:
 resource scope (`service.name`, `service.instance.id`, `service.version`,
 `xrpl.network.id`, `xrpl.network.type`), intrinsics (`name`, `status`,
 `duration`), and span scope (`command`, `rpc_status`, `rpc_role`, `tx_hash`,
-`tx_type`, `tx_status`, `local`, `path`, `suppressed`, `peer_version`,
+`tx_type`, `tx_status`, `local`, `path`, `peer_version`,
 `consensus_*`, `ledger_seq`, `ledger_hash`, `close_time_correct`,
 `close_resolution_ms`, `proposers`, `mode_old`, `mode_new`, `txq_status`,
 `ter_code`).
