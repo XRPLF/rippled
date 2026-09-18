@@ -349,7 +349,6 @@ otelcol.connector.spanmetrics "xrpld" {
 
   // Overlay / peer dimensions.
   dimension { name = "local" }
-  dimension { name = "suppressed" }
   dimension { name = "proposal_trusted" }
   dimension { name = "validation_trusted" }
 

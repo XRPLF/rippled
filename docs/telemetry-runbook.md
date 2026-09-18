@@ -590,7 +590,7 @@ flowchart TB
     RELAYOUT(["Overlay::relay fan-out to N peers<br/>(no span; if applied / terQUEUED,<br/>shouldRelay, not tfInnerBatchTxn)"]):::plain
     PREDROP(["Diverged / needNetworkLedger<br/>(no span — dropped before tx.receive)"]):::drop
     RCV["tx.receive<br/>(peer TMTransaction in)"]:::span
-    RCVDROP["tx.receive<br/>tx_status = rejected_inner_batch /<br/>suppressed / dropped_no_sync /<br/>dropped_queue_full"]:::drop
+    RCVDROP["tx.receive<br/>tx_status = dropped_no_sync /<br/>dropped_queue_full"]:::drop
     CHK(["checkTransaction<br/>(JtTransaction worker, no span)"]):::plain
     PRELAY_IN(["TMTransaction in (no span)"]):::plain
 
