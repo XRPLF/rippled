@@ -581,6 +581,27 @@ ServerHandler::processSession(
     }
 }
 
+// Only apply to request copies being echoed, not to handler results that may
+// intentionally contain generated secrets. The JSON reader bounds nesting depth.
+static void
+maskSensitiveFields(json::Value& request)
+{
+    if (request.isObject())
+    {
+        for (auto const& field : {jss::passphrase, jss::secret, jss::seed, jss::seed_hex})
+        {
+            if (request.isMember(field))
+                request[field] = "<masked>";
+        }
+    }
+
+    if (request.isObject() || request.isArray())
+    {
+        for (auto& child : request)
+            maskSensitiveFields(child);
+    }
+}
+
 static json::Value
 makeJsonError(json::Int code, json::Value&& message)
 {
@@ -647,6 +668,7 @@ ServerHandler::processRequest(
         {
             json::Value r(json::ValueType::Object);
             r[jss::request] = jsonRPC;
+            maskSensitiveFields(r[jss::request]);
             r[jss::error] = makeJsonError(kMethodNotFound, "Method not found");
             reply.append(r);
             continue;
@@ -675,6 +697,7 @@ ServerHandler::processRequest(
             }
             json::Value r(json::ValueType::Object);
             r[jss::request] = jsonRPC;
+            maskSensitiveFields(r[jss::request]);
             r[jss::error] = makeJsonError(kWrongVersion, jss::invalid_API_version.cStr());
             reply.append(r);
             continue;
@@ -717,6 +740,7 @@ ServerHandler::processRequest(
                     return;
                 }
                 json::Value r = jsonRPC;
+                maskSensitiveFields(r);
                 r[jss::error] = makeJsonError(kServerOverloaded, "Server is overloaded");
                 reply.append(r);
                 continue;
@@ -732,6 +756,7 @@ ServerHandler::processRequest(
                 return;
             }
             json::Value r = jsonRPC;
+            maskSensitiveFields(r);
             r[jss::error] = makeJsonError(kForbidden, "Forbidden");
             reply.append(r);
             continue;
@@ -746,6 +771,7 @@ ServerHandler::processRequest(
                 return;
             }
             json::Value r = jsonRPC;
+            maskSensitiveFields(r);
             r[jss::error] = makeJsonError(kMethodNotFound, "Null method");
             reply.append(r);
             continue;
@@ -761,6 +787,7 @@ ServerHandler::processRequest(
                 return;
             }
             json::Value r = jsonRPC;
+            maskSensitiveFields(r);
             r[jss::error] = makeJsonError(kMethodNotFound, "method is not string");
             reply.append(r);
             continue;
@@ -776,6 +803,7 @@ ServerHandler::processRequest(
                 return;
             }
             json::Value r = jsonRPC;
+            maskSensitiveFields(r);
             r[jss::error] = makeJsonError(kMethodNotFound, "method is empty");
             reply.append(r);
             continue;
@@ -830,6 +858,7 @@ ServerHandler::processRequest(
                 }
 
                 json::Value r = jsonRPC;
+                maskSensitiveFields(r);
                 r[jss::error] = makeJsonError(kMethodNotFound, "ripplerpc is not a string");
                 reply.append(r);
                 continue;
