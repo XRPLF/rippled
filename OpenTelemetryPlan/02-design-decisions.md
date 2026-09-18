@@ -246,7 +246,6 @@ keys (the dotted form is reserved for resource scope per §2.3.3).
 | `tx_result`          | string | `"tesSUCCESS"`, `"tecPATH_DRY"`, etc. |
 | `current_ledger_seq` | int64  | Open ledger the transaction targeted  |
 | `relay_count`        | int64  | Peers the transaction was relayed to  |
-| `suppressed`         | bool   | `true` when HashRouter dropped a dup  |
 
 > **Note:** `current_ledger_seq` and `ledger_seq` are the same concept — a ledger's sequence number — but they name different ledgers, so the design keeps two keys rather than one. `current_ledger_seq` is the open or in-flight ledger a transaction's work was applied into; it is named after the RPC field `ledger_current_index`. `ledger_seq` (see [Ledger & Job Attributes](#ledger--job-attributes)) is a closed or validated ledger, set by the ledger and consensus spans. Neither is spelled `ledger_index`: per rule 2 of [Telemetry span attribute naming](../CONTRIBUTING.md#telemetry-span-attribute-naming), one concept gets one key reused verbatim, and a different referent is disambiguated with a prefix rather than a synonym.
 
