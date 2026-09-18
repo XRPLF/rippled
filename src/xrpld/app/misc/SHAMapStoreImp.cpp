@@ -435,7 +435,7 @@ SHAMapStoreImp::run()
             JLOG(journal_.debug())
                 << "copied ledger " << validatedSeq << " nodecount " << nodeCount;
 
-            // Close the getKeys()->swap exposure window: from here until
+            // Close the freshen->swap exposure window: from here until
             // rotate() completes, an ordinary read served by the archive is
             // copied forward into the writable backend, so a node fetched
             // from the doomed archive cannot be left RAM-only when the
