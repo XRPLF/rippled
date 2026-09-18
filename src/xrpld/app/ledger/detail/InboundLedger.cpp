@@ -54,8 +54,6 @@
 
 namespace xrpl {
 
-using namespace std::chrono_literals;
-
 static constexpr auto kPeerCountStart = 5;           // Number of peers to start with
 static constexpr auto kPeerCountAdd = 3;             // Number of peers to add on a timeout
 static constexpr auto kLedgerTimeoutRetriesMax = 6;  // how many timeouts before we give up
@@ -65,20 +63,18 @@ static constexpr auto kMissingNodesFind = 256;  // Number of nodes to find initi
 static constexpr auto kReqNodesReply = 128;     // Number of nodes to request for a reply
 static constexpr auto kReqNodes = 12;           // Number of nodes to request blindly
 
-// millisecond for each ledger timeout
-constexpr auto kLedgerAcquireTimeout = 3000ms;
-
 InboundLedger::InboundLedger(
     Application& app,
     uint256 const& hash,
     std::uint32_t seq,
     Reason reason,
     clock_type& clock,
-    std::unique_ptr<PeerSet> peerSet)
+    std::unique_ptr<PeerSet> peerSet,
+    std::chrono::milliseconds retryInterval)
     : TimeoutCounter(
           app,
           hash,
-          kLedgerAcquireTimeout,
+          retryInterval,
           {.jobType = JtLedgerData, .jobName = "InboundLedger", .jobLimit = 5},
           app.getJournal("InboundLedger"))
     , clock_(clock)

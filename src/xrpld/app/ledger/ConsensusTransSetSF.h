@@ -9,6 +9,7 @@
 #include <xrpl/shamap/SHAMapSyncFilter.h>
 #include <xrpl/shamap/SHAMapTreeNode.h>
 
+#include <cstddef>
 #include <cstdint>
 #include <optional>
 
@@ -23,6 +24,18 @@ class ConsensusTransSetSF : public SHAMapSyncFilter
 {
 public:
     using NodeCache = TaggedCache<SHAMapHash, Blob>;
+
+    /**
+     * The size a node's hash-prefixed wire data must reach before gotNode()
+     * tries to parse and resubmit it as a transaction.
+     *
+     * A threshold rather than a derived bound: the smallest a hash-prefixed
+     * SHAMap leaf can be is the 4-byte HashPrefix plus kMinShaMapItemBytes, and
+     * nothing that size is a signed transaction either. The extra byte is the
+     * long-standing threshold this check has always used, kept as it was.
+     */
+    static constexpr std::size_t kMinTxNodeBytesToParse =
+        sizeof(std::uint32_t) + kMinShaMapItemBytes + 1;
 
     ConsensusTransSetSF(Application& app, NodeCache& nodeCache);
 
