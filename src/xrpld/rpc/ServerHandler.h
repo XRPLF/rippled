@@ -192,6 +192,9 @@ private:
     void
     processSession(std::shared_ptr<Session> const&, std::shared_ptr<JobQueue::Coro> coro);
 
+    /**
+     * Process an RPC request and write the reply to `output`.
+     */
     void
     processRequest(
         Port const& port,
