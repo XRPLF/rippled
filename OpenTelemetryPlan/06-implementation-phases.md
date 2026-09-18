@@ -182,7 +182,7 @@ and [Phase3_taskList.md Task 3.9](./Phase3_taskList.md) for the full implementat
 - [x] Trace context in Protocol Buffer messages — `message TraceContext`
       (`include/xrpl/proto/xrpl.proto:101`), carried as optional field `1001` on
       three message types (`:130`, `:181`, `:229`)
-- [x] HashRouter deduplication visible in traces — `suppressed` attribute
+- [x] HashRouter deduplication visible — a dropped duplicate produces no span
       (`TxSpanNames.h:71`)
 - [ ] Multi-node integration tests passing — Phase 10 harness
 - [ ] <5% overhead on transaction throughput — needs the Phase 10 benchmark suite
