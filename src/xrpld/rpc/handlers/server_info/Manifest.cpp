@@ -19,6 +19,9 @@ doManifest(rpc::JsonContext& context)
     if (!params.isMember(jss::public_key))
         return rpc::missingFieldError(jss::public_key);
 
+    if (!params[jss::public_key].isString())
+        return RPC::expected_field_error(jss::public_key, "string");
+
     auto const requested = params[jss::public_key].asString();
 
     json::Value ret;
