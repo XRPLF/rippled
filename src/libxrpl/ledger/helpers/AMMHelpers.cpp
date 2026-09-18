@@ -857,6 +857,110 @@ initializeFeeAuctionVote(
         auctionSlot.makeFieldAbsent(sfAuthAccounts);
 }
 
+void
+updateAMMVoteSlotsAndFee(
+    ApplyView& view,
+    SLE::pointer& ammSle,
+    AccountID const& lpAccount,
+    beast::Journal j)
+{
+    STAmount const lptAMMBalance = (*ammSle)[sfLPTokenBalance];
+    // AMM is (being) emptied; nothing to recompute.
+    if (lptAMMBalance == beast::kZero)
+        return;  // LCOV_EXCL_LINE
+
+    if (ammSle->isFieldPresent(sfVoteSlots))
+    {
+        // Reserve the current length; the result may be shorter if slots are
+        // pruned. Mirrors AMMVote::applyVote's holdings-weighted fee average.
+        STArray updatedVoteSlots(sfVoteSlots, ammSle->getFieldArray(sfVoteSlots).size());
+        Number num{0};
+        Number den{0};
+
+        // Keep only the vote entries whose account still holds LP tokens and
+        // recompute each entry's weight and the running fee numerator/denominator.
+        for (auto const& entry : ammSle->getFieldArray(sfVoteSlots))
+        {
+            auto const entryAccount = entry[sfAccount];
+            auto const lpTokens = ammLPHolds(view, *ammSle, entryAccount, j);
+            if (lpTokens == beast::kZero)
+            {
+                JLOG(j.debug()) << "updateAMMVoteSlotsAndFee, account " << entryAccount
+                                << " is not LP";
+                continue;
+            }
+            auto const feeVal = entry[sfTradingFee];
+            num += feeVal * lpTokens;
+            den += lpTokens;
+            STObject newEntry = STObject::makeInnerObject(sfVoteEntry);
+            newEntry.setAccountID(sfAccount, entryAccount);
+            if (feeVal != 0)
+                newEntry.setFieldU16(sfTradingFee, feeVal);
+            newEntry.setFieldU32(
+                sfVoteWeight,
+                static_cast<std::int64_t>(
+                    Number(lpTokens) * kVoteWeightScaleFactor / lptAMMBalance));
+            updatedVoteSlots.pushBack(std::move(newEntry));
+        }
+
+        ammSle->setFieldArray(sfVoteSlots, updatedVoteSlots);
+
+        // den == 0 means no remaining voter still holds LP tokens (the LP set
+        // and the voter set can be disjoint). Leave sfTradingFee unchanged
+        // rather than treating an empty voter set as a genuine 0% vote.
+        if (den != kNumZero)
+        {
+            if (auto const fee = static_cast<std::int64_t>(num / den))
+            {
+                ammSle->setFieldU16(sfTradingFee, fee);
+                if (ammSle->isFieldPresent(sfAuctionSlot))
+                {
+                    auto& auctionSlot = ammSle->peekFieldObject(sfAuctionSlot);
+                    if (auto const discountedFee = fee / kAuctionSlotDiscountedFeeFraction)
+                    {
+                        auctionSlot.setFieldU16(sfDiscountedFee, discountedFee);
+                    }
+                    else if (auctionSlot.isFieldPresent(sfDiscountedFee))
+                    {
+                        auctionSlot.makeFieldAbsent(sfDiscountedFee);
+                    }
+                }
+            }
+            else
+            {
+                if (ammSle->isFieldPresent(sfTradingFee))
+                    ammSle->makeFieldAbsent(sfTradingFee);
+                if (ammSle->isFieldPresent(sfAuctionSlot))
+                {
+                    auto& auctionSlot = ammSle->peekFieldObject(sfAuctionSlot);
+                    if (auctionSlot.isFieldPresent(sfDiscountedFee))
+                        auctionSlot.makeFieldAbsent(sfDiscountedFee);
+                }
+            }
+        }
+    }
+
+    // Clear the auction slot only if this LP is the holder and now holds no
+    // tokens. Bidding burns LP as payment, so a holder can have a zero LP
+    // balance and still own the slot; a later withdraw by a different LP
+    // must not revoke that purchase. sfAccount is required on the inner
+    // object, so the holder is reset to the zero account - the same vacant
+    // path applyBid already takes when validOwner fails.
+    if (ammSle->isFieldPresent(sfAuctionSlot))
+    {
+        auto& auctionSlot = ammSle->peekFieldObject(sfAuctionSlot);
+        if (auto const acct = auctionSlot[~sfAccount];
+            acct && *acct == lpAccount && ammLPHolds(view, *ammSle, lpAccount, j) == beast::kZero)
+        {
+            auctionSlot.setAccountID(sfAccount, AccountID{});
+            if (auctionSlot.isFieldPresent(sfAuthAccounts))
+                auctionSlot.makeFieldAbsent(sfAuthAccounts);
+        }
+    }
+
+    view.update(ammSle);
+}
+
 std::expected<bool, TER>
 isOnlyLiquidityProvider(ReadView const& view, Issue const& ammIssue, AccountID const& lpAccount)
 {
