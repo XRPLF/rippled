@@ -47,7 +47,6 @@
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/KeyType.h>
-#include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
@@ -69,7 +68,6 @@
 #include <xrpl/tx/transactors/payment/Payment.h>
 #include <xrpl/tx/transactors/system/Batch.h>
 
-#include <algorithm>
 #include <cstddef>
 #include <cstdint>
 #include <exception>
@@ -3140,9 +3138,7 @@ class Batch_test : public beast::unit_test::Suite
     {
         testcase("loan");
 
-        bool const lendingBatchEnabled = !std::ranges::any_of(
-            Batch::kDisabledTxTypes,
-            [](auto const& disabled) { return disabled == ttLOAN_BROKER_SET; });
+        bool const lendingBatchEnabled = features[featureLendingProtocolV1_1];
 
         using namespace test::jtx;
 
@@ -3311,17 +3307,55 @@ class Batch_test : public beast::unit_test::Suite
                             Fee(kNone),
                             Seq(kNone)),
                         lenderSeq + 1),
-                    batch::Inner(manage(lender, loanKeylet.key, tfLoanImpair), lenderSeq + 2),
+                    batch::Inner(
+                        loan_broker::coverDeposit(lender, brokerKeylet.key, asset(100).value()),
+                        lenderSeq + 2),
                     batch::Sig(borrower));
             }
             env.close();
             BEAST_EXPECT(env.le(brokerKeylet));
-            if (auto const sleLoan = env.le(loanKeylet);
-                lendingBatchEnabled ? BEAST_EXPECT(sleLoan) : !BEAST_EXPECT(!sleLoan))
-            {
-                BEAST_EXPECT(sleLoan->isFlag(lsfLoanImpaired));
-            }
+            BEAST_EXPECT(static_cast<bool>(env.le(loanKeylet)) == lendingBatchEnabled);
         }
+    }
+
+    void
+    testLendingAmendment(FeatureBitset features)
+    {
+        testcase("lending amendment");
+
+        using namespace test::jtx;
+
+        auto const run = [this](FeatureBitset amendments, TER expected, bool expectVault) {
+            Env env{*this, amendments};
+
+            Account const payer{"payer"};
+            Account const lender{"lender"};
+            env.fund(XRP(100'000), payer, lender);
+            env.close();
+
+            Vault const vault{env};
+            auto [create, vaultKeylet] = vault.create({.owner = lender, .asset = xrpIssue()});
+
+            auto const payerSeq = env.seq(payer);
+            auto const lenderSeq = env.seq(lender);
+            auto const batchFee = batch::calcBatchFee(env, 1, 2);
+            submitBatch(
+                env,
+                expected,
+                batch::outer(payer, payerSeq, batchFee, tfAllOrNothing),
+                batch::Inner(create, lenderSeq),
+                batch::Inner(
+                    vault.deposit(
+                        {.depositor = lender, .id = vaultKeylet.key, .amount = XRP(1'000)}),
+                    lenderSeq + 1),
+                batch::Sig(lender));
+            env.close();
+
+            BEAST_EXPECT(static_cast<bool>(env.le(vaultKeylet)) == expectVault);
+        };
+
+        run(features - featureLendingProtocolV1_1, temINVALID_INNER_BATCH, false);
+        run(features, tesSUCCESS, true);
     }
 
     void
@@ -5915,6 +5949,7 @@ class Batch_test : public beast::unit_test::Suite
         testCheckAllSignatures(features);
         testAccountSet(features);
         testAccountDelete(features);
+        testLendingAmendment(features);
         testLoan(features);
         testObjectCreateSequence(features);
         testObjectCreateTicket(features);

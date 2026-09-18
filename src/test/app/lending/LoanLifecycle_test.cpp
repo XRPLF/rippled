@@ -30,11 +30,8 @@
 #include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
-#include <xrpl/protocol/TxFormats.h>
 #include <xrpl/protocol/jss.h>
-#include <xrpl/tx/transactors/system/Batch.h>
 
-#include <algorithm>
 #include <array>
 #include <cstddef>
 #include <cstdint>
@@ -498,8 +495,7 @@ private:
         // From FIND-001
         testcase << "Batch Bypass Counterparty";
 
-        bool const lendingBatchEnabled = !std::ranges::any_of(
-            Batch::kDisabledTxTypes, [](auto const& disabled) { return disabled == ttLOAN_SET; });
+        bool const lendingBatchEnabled = features[featureLendingProtocolV1_1];
 
         using namespace jtx;
         using namespace std::chrono_literals;
