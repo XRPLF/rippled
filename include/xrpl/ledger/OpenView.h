@@ -5,6 +5,7 @@
 #include <xrpl/ledger/RawView.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/detail/RawStateTable.h>
+#include <xrpl/protocol/Book.h>
 #include <xrpl/protocol/Fees.h>
 #include <xrpl/protocol/Keylet.h>
 #include <xrpl/protocol/LedgerHeader.h>
@@ -97,6 +98,9 @@ private:
     ReadView const* base_;
     detail::RawStateTable items_;
     std::shared_ptr<void const> hold_;
+
+    // Order book directories created by the changes applied to this view.
+    std::vector<Book> orderBooks_;
 
     /**
      * In batch mode, the number of transactions already executed.
@@ -203,6 +207,30 @@ public:
      */
     void
     apply(TxsRawView& to) const;
+
+    /**
+     * Record order book directories created by changes applied to this view.
+     *
+     * A view that is discarded takes its books with it, so a book reaches the
+     * OrderBookDB only once the changes that created it reach the ledger.
+     */
+    void
+    addOrderBooks(std::vector<Book> books)
+    {
+        orderBooks_.insert(
+            orderBooks_.end(),
+            std::make_move_iterator(books.begin()),
+            std::make_move_iterator(books.end()));
+    }
+
+    /**
+     * Take the recorded order book directories, leaving none behind.
+     */
+    [[nodiscard]] std::vector<Book>
+    takeOrderBooks()
+    {
+        return std::exchange(orderBooks_, {});
+    }
 
     // ReadView
 

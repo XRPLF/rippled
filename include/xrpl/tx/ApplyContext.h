@@ -131,9 +131,12 @@ public:
     }
 
     /**
-     * Registers a newly-created order book directory with the shared,
-     * process-wide OrderBookDB, unless this transaction is being applied
-     * under TapDryRun.
+     * Records a newly-created order book directory on this transaction's view.
+     *
+     * The book travels with the changes that created it and reaches the
+     * shared, process-wide OrderBookDB only once they reach the ledger: in
+     * apply() for an ordinary transaction, and for a batch inner when the
+     * batch itself commits. Nothing is recorded under TapDryRun.
      */
     void
     addOrderBook(Book const& book);

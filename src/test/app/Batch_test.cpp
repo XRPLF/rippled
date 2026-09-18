@@ -41,6 +41,7 @@
 #include <xrpl/json/to_string.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/OpenView.h>
+#include <xrpl/ledger/OrderBookDB.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Batch.h>
 #include <xrpl/protocol/Feature.h>
@@ -5897,6 +5898,59 @@ class Batch_test : public beast::unit_test::Suite
     }
 
     void
+    testInnerOfferOrderBook(FeatureBitset features)
+    {
+        testcase("inner offer order book");
+
+        using namespace test::jtx;
+        using namespace std::literals;
+
+        auto const alice = Account("alice");
+        auto const bob = Account("bob");
+        auto const gw = Account("gw");
+        auto const usd = gw["USD"];
+
+        // A batch that aborts leaves no offer in the ledger, so the book its
+        // inner OfferCreate created is not registered.
+        {
+            Env env{*this, features};
+            env.fund(XRP(10000), alice, bob, gw);
+            env.close();
+
+            auto const batchFee = batch::calcBatchFee(env, 0, 2);
+            auto const seq = env.seq(alice);
+            env(batch::outer(alice, seq, batchFee, tfAllOrNothing),
+                batch::Inner(offer(alice, usd(100), XRP(100)), seq + 1),
+                batch::Inner(pay(alice, bob, XRP(100000)), seq + 2));
+            env.close();
+
+            BEAST_EXPECT(env.le(keylet::account(alice))->getFieldU32(sfOwnerCount) == 0);
+            BEAST_EXPECTS(
+                env.app().getOrderBookDB().getBooksByTakerPays(usd.issue()).empty(),
+                "aborted batch registered a book");
+        }
+
+        // A batch that commits registers the book its inner OfferCreate created.
+        {
+            Env env{*this, features};
+            env.fund(XRP(10000), alice, bob, gw);
+            env.close();
+
+            auto const batchFee = batch::calcBatchFee(env, 0, 2);
+            auto const seq = env.seq(alice);
+            env(batch::outer(alice, seq, batchFee, tfAllOrNothing),
+                batch::Inner(offer(alice, usd(100), XRP(100)), seq + 1),
+                batch::Inner(pay(alice, bob, XRP(1)), seq + 2));
+            env.close();
+
+            BEAST_EXPECT(env.le(keylet::account(alice))->getFieldU32(sfOwnerCount) == 1);
+            BEAST_EXPECTS(
+                env.app().getOrderBookDB().getBooksByTakerPays(usd.issue()).size() == 1,
+                "committed batch did not register the book");
+        }
+    }
+
+    void
     testWithFeats(FeatureBitset features)
     {
         testEnable(features);
@@ -5935,6 +5989,7 @@ class Batch_test : public beast::unit_test::Suite
         testOuterBinding(features);
         testUnsortedBatchSigners(features);
         testBatchSigCache(features);
+        testInnerOfferOrderBook(features);
     }
 
 public:
