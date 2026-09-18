@@ -26,6 +26,14 @@ datasources:
       # Prometheus service is added to docker-compose.yml.
       serviceMap:
         datasourceUid: prometheus
+      # Trace-to-log correlation — enables one-click navigation
+      # from a Tempo trace to the corresponding Loki log lines. Filters
+      # by trace_id so only logs from the same trace are shown.
+      tracesToLogs:
+        datasourceUid: loki
+        filterByTraceID: true
+        filterBySpanID: false
+        tags: []
       tracesToMetrics:
         datasourceUid: prometheus
         spanStartTimeShift: "-1h"
@@ -124,6 +132,12 @@ datasources:
             operator: "="
             scope: span
             type: dynamic
+          # tx_type: transaction type (e.g., "Payment", "OfferCreate").
+          - id: tx-type
+            tag: tx_type
+            operator: "="
+            scope: span
+            type: dynamic
           # Consensus tracing filters
           - id: consensus-mode
             tag: consensus_mode
@@ -137,6 +151,12 @@ datasources:
             type: dynamic
           - id: consensus-ledger-seq
             tag: ledger_seq
+            operator: "="
+            scope: span
+            type: static
+          # ledger_hash: ledger hash — scope all spans to a specific closed ledger.
+          - id: ledger-hash
+            tag: ledger_hash
             operator: "="
             scope: span
             type: static
