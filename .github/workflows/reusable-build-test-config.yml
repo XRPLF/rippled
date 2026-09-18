@@ -277,9 +277,9 @@ jobs:
           if-no-files-found: error
 
       - name: Run the validator-keys tests
-        if: ${{ env.VALIDATOR_KEYS_ENABLED == 'true' }}
+        if: ${{ env.VALIDATOR_KEYS_ENABLED == 'true' && !inputs.build_only }}
         working-directory: ${{ env.BUILD_DIR }}
-        run: ./validator-keys --unittest
+        run: ./validator_keys_tests
 
       - name: Upload the validator-keys binary
         if: ${{ env.PACKAGING_ARTIFACTS_ENABLED == 'true' && env.VALIDATOR_KEYS_ENABLED == 'true' }}
