@@ -97,7 +97,7 @@
     - Extract parent trace context from incoming `TMTransaction::trace_context` field (if present)
     - Create `tx.receive` span as child of extracted context (or new root if none)
     - Set attributes: `xrpl.tx.hash`, `xrpl.peer.id`, `xrpl.tx.status`
-    - On HashRouter suppression (duplicate): set `xrpl.tx.suppressed=true`, add `tx.duplicate` event
+    - Create the span only after `HashRouter::shouldProcess()` accepts, so a dropped duplicate produces no span
     - Wrap validation call with child span `tx.validate`
     - Wrap relay with `tx.relay` span
   - When relaying to peers:
@@ -158,7 +158,7 @@
 
 - Edit `src/xrpld/overlay/detail/PeerImp.cpp` (in handleTransaction):
   - After calling `HashRouter::shouldProcess()` or `addSuppressionPeer()`:
-    - Record `xrpl.tx.suppressed` attribute (true/false)
+    - Start the span here, not before, so only transactions this node will process are traced
     - Record `xrpl.tx.flags` showing current HashRouter state (SAVED, TRUSTED, etc.)
     - Add `tx.first_seen` or `tx.duplicate` event
 
