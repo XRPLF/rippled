@@ -168,7 +168,6 @@ connectors:
       - name: consensus_mode
       - name: close_time_correct
       - name: local
-      - name: suppressed
       - name: proposal_trusted
       - name: validation_trusted
       - name: tx_type

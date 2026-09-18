@@ -208,8 +208,8 @@
       "id": 4
     },
     {
-      "title": "Transaction Receive vs Suppressed",
-      "description": "**What:** Raw transaction messages received from peers, split by whether they were suppressed as duplicates before processing.\n**How it's computed:** Per-second rate split by suppressed flag over a 5-minute window, per node.\n**Reading it:** A healthy relay network produces a steady suppressed share as duplicates are filtered.\n**Healthy range:** Workload-dependent; suppression is expected and normal.\n**Watch for:** A sharp rise in the suppressed line can reflect gossip amplification or a peer replaying transactions.\n**Source:** src/xrpld/overlay/detail/PeerImp.cpp:PeerImp::handleTransaction",
+      "title": "Transaction Receive Rate",
+      "description": "**What:** Transactions received from peers that this node went on to process.\n**How it's computed:** Per-second rate of the tx.receive span over a 5-minute window, per node.\n**Reading it:** Tracks the useful inbound transaction load. Copies dropped as duplicates are not counted here, because the span starts after the duplicate check; their volume is the transactions_duplicate traffic category.\n**Healthy range:** Workload-dependent.\n**Watch for:** A fall to zero while peers are connected means inbound relay has stopped.\n**Source:** src/xrpld/overlay/detail/PeerImp.cpp:PeerImp::handleTransaction",
       "type": "timeseries",
       "gridPos": {
         "h": 10,
@@ -229,9 +229,9 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "sum by (suppressed, service_instance_id) (rate(span_calls_total{span_name=\"tx.receive\", tx_type=~\"$tx_type\", service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[$__rate_interval]))",
+          "expr": "sum by (service_instance_id) (rate(span_calls_total{span_name=\"tx.receive\", tx_type=~\"$tx_type\", service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[$__rate_interval]))",
           "interval": "15s",
-          "legendFormat": "Suppressed={{suppressed}} [{{service_instance_id}}]"
+          "legendFormat": "Tx Receive [{{service_instance_id}}]"
         }
       ],
       "fieldConfig": {
