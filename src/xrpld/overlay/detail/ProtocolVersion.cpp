@@ -156,7 +156,7 @@ newestSupportedProtocolVersion()
 {
     // The list above is sorted, so this could read its last entry instead. It
     // scans for the maximum so that it stays correct on its own, rather than on
-    // an invariant a separate static_assert keeps. The list holds two entries.
+    // an invariant a separate static_assert keeps.
     return *std::ranges::max_element(kSupportedProtocolList);
 }
 
