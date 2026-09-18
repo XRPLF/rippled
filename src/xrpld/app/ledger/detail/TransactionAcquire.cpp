@@ -8,6 +8,7 @@
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/base_uint.h>
+#include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/core/Job.h>
 #include <xrpl/server/NetworkOPs.h>
 #include <xrpl/shamap/SHAMap.h>
@@ -50,16 +51,31 @@ TransactionAcquire::TransactionAcquire(
 void
 TransactionAcquire::done()
 {
-    // We hold a PeerSet lock and so cannot do real work here
+    // mtx_ is held, so this may only post real work rather than do it.
 
     if (failed_)
     {
         JLOG(journal_.debug()) << "Failed to acquire TX set " << hash_;
     }
+    else if (!map_->setImmutable())
+    {
+        // trigger() verified the map before setting complete_ and mtx_ has been held since, and
+        // unlike InboundLedger nothing walks this map with the lock released, so nothing can have
+        // invalidated it. Untestable for that reason, and left an UNREACHABLE rather than turned
+        // into a recovery: there is no interleaving that reaches it.
+        // LCOV_EXCL_START
+        // Withdraw complete_ alongside the failure, or trigger() and takeNodes() - which both check
+        // complete_ before failed_ - keep treating this as delivered while consensus waits on a set
+        // giveSet() never hands over.
+        complete_ = false;
+        failed_ = true;
+        JLOG(journal_.debug()) << "Failed to acquire TX set " << hash_;
+        UNREACHABLE("xrpl::TransactionAcquire::done : map is invalid");
+        // LCOV_EXCL_STOP
+    }
     else
     {
         JLOG(journal_.debug()) << "Acquired TX set " << hash_;
-        map_->setImmutable();
 
         uint256 const& hash(hash_);
         std::shared_ptr<SHAMap> const& map(map_);
