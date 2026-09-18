@@ -314,6 +314,13 @@ public:
     // Enable the beta API version
     bool betaRpcApi = false;
 
+    // Allow the "submit" and "simulate" RPCs to capture transaction
+    // processing logs (preflight, preclaim, and apply) and return them
+    // in the response when the client requests them with "debug": true.
+    // Disabled by default because capturing logs adds overhead and may
+    // expose internal server details.
+    bool rpcDebugLog = false;
+
     // First, attempt to load the latest ledger directly from disk.
     bool fastLoad = false;
     // When starting xrpld with existing database it do not know it has those
