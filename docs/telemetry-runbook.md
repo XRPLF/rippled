@@ -274,14 +274,14 @@ this span: count successes as total minus error, or filter on `status_code`.
 
 ### Transaction Spans
 
-| Span Name       | Source File     | Attributes                                                                                              | Description                           |
-| --------------- | --------------- | ------------------------------------------------------------------------------------------------------- | ------------------------------------- |
-| `tx.process`    | NetworkOPs.cpp  | `tx_hash`, `local`, `path`, `tx_type`, `fee`, `sequence`, `ter_result`, `applied`, `current_ledger_seq` | Transaction submission and processing |
-| `tx.receive`    | PeerImp.cpp     | `peer_id`, `tx_hash`, `tx_type`, `peer_version`, `suppressed`, `tx_status`, `current_ledger_seq`        | Transaction received from peer relay  |
-| `tx.apply`      | BuildLedger.cpp | `tx_count`, `tx_failed`                                                                                 | Transaction set applied per ledger    |
-| `tx.preflight`  | applySteps.cpp  | `stage`, `tx_type`, `ter_result`                                                                        | Stateless checks stage                |
-| `tx.preclaim`   | applySteps.cpp  | `stage`, `tx_type`, `ter_result`, `current_ledger_seq`, `current_ledger_hash`                           | Ledger-aware checks stage             |
-| `tx.transactor` | Transactor.cpp  | `stage`, `tx_type`, `ter_result`, `applied`, `current_ledger_seq`, `current_ledger_hash`                | Apply stage (transactor runs)         |
+| Span Name       | Source File     | Attributes                                                                                              | Description                                                  |
+| --------------- | --------------- | ------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------ |
+| `tx.process`    | NetworkOPs.cpp  | `tx_hash`, `local`, `path`, `tx_type`, `fee`, `sequence`, `ter_result`, `applied`, `current_ledger_seq` | Transaction submission and processing                        |
+| `tx.receive`    | PeerImp.cpp     | `peer_id`, `tx_hash`, `tx_type`, `peer_version`, `tx_status`, `current_ledger_seq`                      | Transaction this node will process, received from peer relay |
+| `tx.apply`      | BuildLedger.cpp | `tx_count`, `tx_failed`                                                                                 | Transaction set applied per ledger                           |
+| `tx.preflight`  | applySteps.cpp  | `stage`, `tx_type`, `ter_result`                                                                        | Stateless checks stage                                       |
+| `tx.preclaim`   | applySteps.cpp  | `stage`, `tx_type`, `ter_result`, `current_ledger_seq`, `current_ledger_hash`                           | Ledger-aware checks stage                                    |
+| `tx.transactor` | Transactor.cpp  | `stage`, `tx_type`, `ter_result`, `applied`, `current_ledger_seq`, `current_ledger_hash`                | Apply stage (transactor runs)                                |
 
 The three apply-pipeline spans (`tx.preflight`, `tx.preclaim`, `tx.transactor`)
 share a deterministic `trace_id` from `txID[0:16]`, so they group under one
@@ -595,7 +595,7 @@ flowchart TB
     RELAYOUT(["Overlay::relay fan-out to N peers<br/>(no span; if applied / terQUEUED,<br/>shouldRelay, not tfInnerBatchTxn)"]):::plain
     PREDROP(["Diverged / needNetworkLedger<br/>(no span — dropped before tx.receive)"]):::drop
     RCV["tx.receive<br/>(peer TMTransaction in)"]:::span
-    RCVDROP["tx.receive<br/>tx_status = rejected_inner_batch /<br/>suppressed / dropped_no_sync /<br/>dropped_queue_full"]:::drop
+    RCVDROP["tx.receive<br/>tx_status = dropped_no_sync /<br/>dropped_queue_full"]:::drop
     CHK(["checkTransaction<br/>(JtTransaction worker, no span)"]):::plain
     PRELAY_IN(["TMTransaction in (no span)"]):::plain
 
