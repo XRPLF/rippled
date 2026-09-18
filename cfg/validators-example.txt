@@ -20,6 +20,16 @@
 #    n9KorY8QtTdRx7TVDpwnG9NvyxsDwHUKUEeDLY3AkiGncVaSXZi5
 #    n9MqiExBcoG19UXwoLjBJnhsxEhAZMuWwJDRdkyDz1EkEkwzQTNt
 #
+# [validator_keys]
+#
+#   An additional list of validation public keys to always accept as
+#   validators. Entries use the same format as [validators] and are merged
+#   with it at startup; this section exists mainly for backward compatibility.
+#
+#   Examples:
+#    n9KorY8QtTdRx7TVDpwnG9NvyxsDwHUKUEeDLY3AkiGncVaSXZi5
+#    n9MqiExBcoG19UXwoLjBJnhsxEhAZMuWwJDRdkyDz1EkEkwzQTNt
+#
 # [validator_list_sites]
 #
 #   List of URIs serving lists of recommended validators.
