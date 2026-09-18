@@ -19,7 +19,6 @@
 #include <memory>
 #include <mutex>
 #include <string>
-#include <thread>
 #include <type_traits>
 #include <vector>
 
@@ -72,6 +71,16 @@ public:
     using clock_type = beast::AbstractClock<std::chrono::steady_clock>;
     using shared_weak_combo_pointer_type = SharedWeakUnionPointerType;
     using shared_pointer_type = SharedPointerType;
+
+    /**
+     * Most worker threads a single sweep() may start.
+     *
+     * The cache is split into partitions and sweep() shares them out over its
+     * workers. A worker takes several partitions when there are more of them
+     * than this, so the thread count is fixed however many partitions the
+     * cache holds and however many cores the host has.
+     */
+    static constexpr std::size_t kMaxSweepThreads = 4;
 
 public:
     TaggedCache(
@@ -357,8 +366,19 @@ private:
 
     using cache_type = hardened_partitioned_hash_map<key_type, Entry, Hash, KeyEqual>;
 
-    [[nodiscard]] std::thread
-    sweepHelper(
+    /**
+     * Sweeps one partition of a key/value cache, in the calling thread.
+     *
+     * @param whenExpire Entries last accessed at or before this point expire.
+     * @param now Current time, used to pull back a timestamp set in the future.
+     * @param partition The one partition to walk.
+     * @param stuffToSweep Collects the evicted pointers so the caller can
+     * destroy them once it has released the cache lock.
+     * @param allRemovals Accumulates this partition's removal count across all
+     * workers.
+     */
+    void
+    sweepPartition(
         clock_type::time_point const& whenExpire,
         [[maybe_unused]] clock_type::time_point const& now,
         KeyValueCacheType::map_type& partition,
@@ -366,8 +386,20 @@ private:
         std::atomic<int>& allRemovals,
         std::scoped_lock<std::recursive_mutex> const&);
 
-    [[nodiscard]] std::thread
-    sweepHelper(
+    /**
+     * Sweeps one partition of a key-only cache, in the calling thread.
+     *
+     * A key-only cache owns no pointers, so nothing is collected for later
+     * destruction and the stuffToSweep parameter is unused.
+     *
+     * @param whenExpire Entries last accessed at or before this point expire.
+     * @param now Current time, used to pull back a timestamp set in the future.
+     * @param partition The one partition to walk.
+     * @param allRemovals Accumulates this partition's removal count across all
+     * workers.
+     */
+    void
+    sweepPartition(
         clock_type::time_point const& whenExpire,
         clock_type::time_point const& now,
         KeyOnlyCacheType::map_type& partition,
