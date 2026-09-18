@@ -108,10 +108,10 @@ inline constexpr std::array kMillisecondBuckets{
 /**
  * Bucket edges, in seconds, for `rotation_phase_duration_seconds`.
  *
- * On a populated online_delete node the phases run from seconds (freshen.keys)
- * through minutes (freshen.fetch) to ten minutes or more (copy), and a whole
- * rotation about a quarter of an hour. The 1 s floor sits under the shortest
- * phase; 3600 s leaves headroom above a slow rotation.
+ * On a populated online_delete node the phases span from seconds
+ * (new_backend, swap) through minutes (freshen.fetch) to ten minutes or more
+ * (copy), and a whole rotation runs a quarter of an hour. The 1 s floor sits
+ * under the shortest phase; 3600 s leaves headroom above a slow rotation.
  */
 inline constexpr std::array kRotationPhaseSecondsBuckets{
     1.0,

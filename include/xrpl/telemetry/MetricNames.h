@@ -341,6 +341,14 @@ inline constexpr char rotationState[] = "rotation_state";
  */
 inline constexpr char rotationPhaseDurationSeconds[] = "rotation_phase_duration_seconds";
 
+/**
+ * Keys the rotation's cache freshen fetched, and how many were only in the
+ * archive. Labelled `cache` (which cache) and `outcome` (`fetched` or
+ * `copied`). Two Adds per cache per rotation, never one per key. The ratio
+ * copied/fetched is the freshen's yield, which no other signal measures.
+ */
+inline constexpr char rotationFreshenKeysTotal[] = "rotation_freshen_keys_total";
+
 // ===== Pre-existing instruments pulled in by the family ratchet ==============
 //
 // These predate the sync-diagnostics work. They are declared here because the
@@ -444,6 +452,12 @@ inline constexpr char source[] = "source";
  * Which stage of a multi-step pipeline the event belongs to.
  */
 inline constexpr char stage[] = "stage";
+/**
+ * Which in-memory cache a rotation freshen step worked on. Values in
+ * lval::freshen_cache. Empty on rotation stages that have no cache, which
+ * Prometheus reads as the label being absent.
+ */
+inline constexpr char cache[] = "cache";
 /**
  * Connection direction, inbound or outbound.
  */
@@ -690,13 +704,32 @@ inline constexpr char copyForward[] = "copy_forward";
 namespace rotation_phase {
 inline constexpr char clearPrior[] = "clear_prior";
 inline constexpr char copy[] = "copy";
-inline constexpr char freshenKeys[] = "freshen.keys";
 inline constexpr char freshenFetch[] = "freshen.fetch";
 inline constexpr char newBackend[] = "new_backend";
 inline constexpr char clearCaches[] = "clear_caches";
 inline constexpr char swap[] = "swap";
 inline constexpr char healthWait[] = "health_wait";
 }  // namespace rotation_phase
+
+/**
+ * `cache` values for the rotation freshen: the SHAMap tree-node cache and the
+ * master transaction cache, the two caches SHAMapStoreImp::freshenCaches
+ * walks.
+ */
+namespace freshen_cache {
+inline constexpr char treenode[] = "treenode";
+inline constexpr char masterTx[] = "master_tx";
+}  // namespace freshen_cache
+
+/**
+ * `outcome` values for rotation_freshen_keys_total. `fetched` is every key
+ * the freshen asked the node store for; `copied` is the subset that was only
+ * in the archive and had to be written to the writable backend.
+ */
+namespace freshen_outcome {
+inline constexpr char fetched[] = "fetched";
+inline constexpr char copied[] = "copied";
+}  // namespace freshen_outcome
 
 /**
  * `metric` values added to the cache_metrics gauge for lock-hold peaks.

@@ -500,28 +500,19 @@
       "name": "nodestore.rotate.copy",
       "category": "ledger",
       "parent": "nodestore.rotate",
-      "required_attributes": ["node_count"],
+      "required_attributes": ["node_count", "nodes_copied"],
       "config_flag": "trace_ledger",
       "optional": true,
-      "note": "The whole-state-map walk; ten minutes or more on a populated node."
-    },
-    {
-      "name": "nodestore.rotate.freshen.keys",
-      "category": "ledger",
-      "parent": "nodestore.rotate",
-      "required_attributes": ["key_count"],
-      "config_flag": "trace_ledger",
-      "optional": true,
-      "note": "TaggedCache::getKeys() under the tree-node cache mutex -- a hold of seconds on a large cache that freezes every job. This is the child that must overlap the stalled receive spans in a Tempo view for the proof to close."
+      "note": "The whole-state-map walk; ten minutes or more on a populated node. nodes_copied is how many of the walked nodes were found only in the archive and had to be written to the writable backend (DatabaseRotating::duplicateCopyForwardTotal delta across the walk)."
     },
     {
       "name": "nodestore.rotate.freshen.fetch",
       "category": "ledger",
       "parent": "nodestore.rotate",
-      "required_attributes": ["key_count"],
+      "required_attributes": ["key_count", "cache", "keys_copied"],
       "config_flag": "trace_ledger",
       "optional": true,
-      "note": "The per-key re-fetch loop after getKeys() returned."
+      "note": "The per-key re-fetch loop. Keys are copied one cache partition at a time (TaggedCache::forEachKeyPartition) so the tree-node cache mutex is never held across the whole cache; the per-partition hold shows up on cache_metrics{metric=\"treenode_lock_hold_peak_us\"}. A separate freshen.keys child once covered a single getKeys() hold that lasted seconds on a large cache and dropped the node out of sync on every rotation. Two instances per rotation, told apart by cache (treenode | master_tx). keys_copied is the freshen's yield: keys that were only in the archive (duplicateCopyForwardTotal delta)."
     },
     {
       "name": "nodestore.rotate.new_backend",
@@ -709,13 +700,6 @@
     },
     {
       "parent": "nodestore.rotate",
-      "child": "nodestore.rotate.freshen.keys",
-      "description": "phase child of the rotation root; both optional -- the child whose duration overlaps the freeze",
-      "skip": true,
-      "skip_reason": "nodestore.rotate never fires under the harness; see the span note."
-    },
-    {
-      "parent": "nodestore.rotate",
       "child": "nodestore.rotate.freshen.fetch",
       "description": "phase child of the rotation root; both optional",
       "skip": true,
@@ -764,6 +748,6 @@
     ]
   },
   "_conditional_attributes_note": "Five attributes documented in the 'Fresh-node sync diagnostics' table of docs/telemetry-glossary.md are deliberately absent from required_attributes above, because each is emitted only when its value is known and _validate_span_attributes_otlp() has no per-attribute optional flag -- listing one would fail CI red on a healthy run. ledger.acquire/peer_count is set only when finalizeAcquireSpan() is passed a peer count (InboundLedger.cpp), which the sweep and shutdown paths cannot supply. ledger_seq on the three ledger.acquire.header/.astree/.txtree phase spans is set only when seq_ != 0 (InboundLedger.cpp startPhaseSpan), and a by-hash acquire starts with seq_ == 0 and learns the sequence only when the header arrives -- so a phase that opens before the header legitimately carries no sequence. ledger_seq on ledger.serve is set only when the reply carries one (PeerImp.cpp), which an object-by-hash request does not. All five ARE indexed in the glossary table and rendered by the Ledger Sync Health board; the honest encoding is to document them here rather than assert a conditional attribute as required.",
-  "total_span_types": 57,
-  "total_unique_attributes": 80
+  "total_span_types": 56,
+  "total_unique_attributes": 83
 }
