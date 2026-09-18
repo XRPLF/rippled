@@ -178,10 +178,10 @@ doBookOffers(rpc::JsonContext& context)
     json::Value const& takerPays = context.params[jss::taker_pays];
     json::Value const& takerGets = context.params[jss::taker_gets];
 
-    if (!takerPays.isObjectOrNull())
+    if (!takerPays.isObject())
         return rpc::objectFieldError(jss::taker_pays);
 
-    if (!takerGets.isObjectOrNull())
+    if (!takerGets.isObject())
         return rpc::objectFieldError(jss::taker_gets);
 
     if (auto const err = validateTakerJSON(takerPays, jss::taker_pays))
