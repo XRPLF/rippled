@@ -39,6 +39,7 @@ set(test_modules
     tx
     protocol_autogen
     server
+    telemetry
 )
 if(NOT WIN32)
     list(APPEND test_modules net)
@@ -86,6 +87,29 @@ target_sources(xrpl_tests PRIVATE ${csf_sources})
 # so verify them against the test binary's own compile environment.
 if(verify_headers)
     verify_target_headers(xrpl_tests "${CMAKE_CURRENT_SOURCE_DIR}")
+endif()
+
+# The telemetry test module exercises SpanGuard/Telemetry, which link against
+# the OpenTelemetry SDK when the telemetry build option is enabled.
+if(telemetry)
+    # The SpanGuardScope tests drive an InMemorySpanExporter to read exported
+    # spans (test-only; production never uses it). The Conan package ships
+    # libopentelemetry_exporter_in_memory.a but declares the component with no
+    # libs, so neither the umbrella target nor opentelemetry-cpp::exporter_in_memory
+    # puts the archive on the link line. Locate it by path and link it BEFORE
+    # the umbrella so its undefined SDK references resolve against the umbrella.
+    find_library(
+        OTEL_IN_MEMORY_EXPORTER_LIB
+        NAMES opentelemetry_exporter_in_memory
+        HINTS "${opentelemetry-cpp_PACKAGE_FOLDER_RELEASE}/lib"
+        REQUIRED
+    )
+    target_link_libraries(
+        xrpl_tests
+        PRIVATE
+            "${OTEL_IN_MEMORY_EXPORTER_LIB}"
+            opentelemetry-cpp::opentelemetry-cpp
+    )
 endif()
 
 gtest_discover_tests(xrpl_tests DISCOVERY_TIMEOUT 60)

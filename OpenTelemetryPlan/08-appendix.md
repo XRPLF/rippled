@@ -181,7 +181,15 @@ flowchart TB
 | [06-implementation-phases.md](./06-implementation-phases.md)     | Timeline, tasks, risks, success metrics      |
 | [07-observability-backends.md](./07-observability-backends.md)   | Backend selection and architecture           |
 | [08-appendix.md](./08-appendix.md)                               | Glossary, references, version history        |
-| [presentation.md](./presentation.md)                             | Slide deck for OTel plan overview            |
+
+### Task Lists
+
+| Document                                   | Description                          |
+| ------------------------------------------ | ------------------------------------ |
+| [Phase2_taskList.md](./Phase2_taskList.md) | RPC layer trace instrumentation      |
+| [Phase3_taskList.md](./Phase3_taskList.md) | Peer overlay & consensus tracing     |
+| [Phase4_taskList.md](./Phase4_taskList.md) | Transaction lifecycle tracing        |
+| [Phase5_taskList.md](./Phase5_taskList.md) | Ledger processing & advanced tracing |
 
 ---
 
