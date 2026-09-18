@@ -13,6 +13,7 @@
 #include <xrpl/nodestore/Database.h>
 #include <xrpl/nodestore/NodeObject.h>
 #include <xrpl/nodestore/Scheduler.h>
+#include <xrpl/nodestore/WriteStats.h>
 
 #include <chrono>
 #include <cstdint>
@@ -87,6 +88,12 @@ public:
     getWriteLoad() const override
     {
         return backend_->getWriteLoad();
+    }
+
+    [[nodiscard]] std::optional<WriteStats>
+    getWriteStats() const override
+    {
+        return backend_->getWriteStats();
     }
 
     void

@@ -1,3 +1,7 @@
+// cspell:ignore ISTOGRAM
+// The all-caps macro name XRPL_METRIC_HISTOGRAM_RECORD trips cspell's
+// compound-word splitter, which emits the subword "ISTOGRAM"; ignore it here.
+
 #include <xrpld/rpc/ServerHandler.h>
 
 #include <xrpld/app/main/Application.h>
@@ -49,6 +53,7 @@
 #include <xrpl/server/SimpleWriter.h>
 #include <xrpl/server/WSSession.h>
 #include <xrpl/server/detail/JSONRPCUtil.h>
+#include <xrpl/telemetry/MetricMacros.h>
 #include <xrpl/telemetry/SpanGuard.h>
 
 #include <boost/asio/buffer.hpp>
@@ -76,6 +81,14 @@
 #include <string_view>
 #include <utility>
 #include <vector>
+
+// The batch-size metric name and description. Both are only ever used inside an
+// XRPL_METRIC_* argument list, and those macros expand to nothing when
+// telemetry is off, so the include is guarded like its uses -- clang-tidy's
+// misc-include-cleaner rejects an include nothing references.
+#ifdef XRPL_ENABLE_TELEMETRY
+#include <xrpl/telemetry/RpcMetricNames.h>
+#endif  // XRPL_ENABLE_TELEMETRY
 
 namespace xrpl {
 using namespace telemetry;
@@ -762,7 +775,14 @@ ServerHandler::processRequest(
     }
     span.setAttribute(rpc_span::attr::isBatch, batch);
     if (batch)
+    {
         span.setAttribute(rpc_span::attr::batchSize, static_cast<int64_t>(size));
+        // The attribute answers "how big was THIS batch" on one sampled trace.
+        // The histogram answers "how big are batches" across all of them, which
+        // no attribute can, since an unsampled trace is never read.
+        XRPL_METRIC_HISTOGRAM_RECORD(
+            app_, telemetry::kRpcBatchSize, telemetry::kRpcBatchSizeDesc, size);
+    }
 
     json::Value reply(batch ? json::ValueType::Array : json::ValueType::Object);
 

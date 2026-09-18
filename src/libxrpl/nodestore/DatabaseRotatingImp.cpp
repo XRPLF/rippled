@@ -12,13 +12,16 @@
 #include <xrpl/nodestore/NodeObject.h>
 #include <xrpl/nodestore/Scheduler.h>
 #include <xrpl/nodestore/Types.h>
+#include <xrpl/nodestore/WriteStats.h>
 
 #include <atomic>
+#include <chrono>
 #include <cstdint>
 #include <exception>
 #include <functional>
 #include <memory>
 #include <mutex>
+#include <optional>
 #include <string>
 #include <utility>
 
@@ -100,6 +103,13 @@ DatabaseRotatingImp::getWriteLoad() const
     return writableBackend_->getWriteLoad();
 }
 
+std::optional<WriteStats>
+DatabaseRotatingImp::getWriteStats() const
+{
+    std::scoped_lock const lock(mutex_);
+    return writableBackend_->getWriteStats();
+}
+
 void
 DatabaseRotatingImp::importDatabase(Database& source)
 {
@@ -128,7 +138,12 @@ DatabaseRotatingImp::store(NodeObjectType type, Blob&& data, uint256 const& hash
         return writableBackend_;
     }();
 
+    // Time only the backend call, matching DatabaseNodeImp, so the two store
+    // paths feed the same accumulator with comparable numbers.
+    auto const begin = std::chrono::steady_clock::now();
     backend->store(nObj);
+    storeDurationStats(std::chrono::steady_clock::now() - begin);
+
     storeStats(1, nObj->getData().size());
 }
 

@@ -57,6 +57,7 @@
 #include <xrpl/shamap/SHAMap.h>
 #include <xrpl/shamap/SHAMapMissingNode.h>
 #include <xrpl/shamap/SHAMapTreeNode.h>
+#include <xrpl/telemetry/MetricsRegistry.h>
 #include <xrpl/telemetry/SpanGuard.h>
 #include <xrpl/telemetry/SpanNames.h>
 
@@ -295,6 +296,17 @@ LedgerMaster::setValidLedger(std::shared_ptr<Ledger const> const& l)
         "xrpl::LedgerMaster::setValidLedger : valid ledger sequence");
     (void)maxLedgerDifference_;
     validLedgerSeq_ = l->header().seq;
+
+#ifdef XRPL_ENABLE_TELEMETRY
+    // Record the network-validated ledger for the agreement tracker so it
+    // can compare against our own validations.
+    //
+    // Only when enabled: recording takes the tracker's lock and inserts an
+    // entry, and nothing reconciles or drains those entries unless the
+    // observable gauges are running.
+    if (auto* mr = app_.getMetricsRegistry(); mr != nullptr && mr->isEnabled())
+        mr->getValidationTracker().recordNetworkValidation(l->header().hash, l->header().seq);
+#endif
 
     app_.getOPs().updateLocalTx(*l);
     app_.getSHAMapStore().onLedgerClosed(getValidatedLedger());

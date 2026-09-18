@@ -141,13 +141,18 @@ if(rocksdb)
 endif()
 
 # OpenTelemetry distributed tracing (optional).
-# When on, links against opentelemetry-cpp and defines XRPL_ENABLE_TELEMETRY
-# so that SpanGuard factory methods produce real OTel spans.
-# When off, all tracing code compiles to no-ops with zero overhead.
+# When on, links against opentelemetry-cpp and defines XRPL_ENABLE_TELEMETRY so
+# that SpanGuard factory methods produce real OTel spans.
+# When off, all tracing code compiles to no-ops with zero overhead and
+# opentelemetry-cpp is not needed at all.
 #
 # There is no CMake option. The one switch is `conan install -o telemetry=`,
 # which decides whether opentelemetry-cpp is fetched and sets the variable read
 # below through the generated toolchain.
+#
+# -DXRPL_ENABLE_TELEMETRY=OFF turns nothing off: that name is only a compile
+# definition added below, so CMake lists it as an unused variable at the end of
+# configuration.
 if(telemetry)
     find_package(opentelemetry-cpp CONFIG REQUIRED)
     add_compile_definitions(XRPL_ENABLE_TELEMETRY)

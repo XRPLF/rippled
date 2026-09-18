@@ -36,13 +36,14 @@ class PerfLogTest : public PerfLog
     }
 
     void
-    jobQueue(JobType const type) override
+    jobQueue(JobType const type, std::string const& name) override
     {
     }
 
     void
     jobStart(
         JobType const type,
+        std::string const& name,
         std::chrono::microseconds dur,
         std::chrono::time_point<std::chrono::steady_clock> startTime,
         int instance) override
@@ -50,7 +51,11 @@ class PerfLogTest : public PerfLog
     }
 
     void
-    jobFinish(JobType const type, std::chrono::microseconds dur, int instance) override
+    jobFinish(
+        JobType const type,
+        std::string const& name,
+        std::chrono::microseconds dur,
+        int instance) override
     {
     }
 
