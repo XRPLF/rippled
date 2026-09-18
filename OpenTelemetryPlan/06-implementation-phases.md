@@ -182,7 +182,7 @@ and [Phase3_taskList.md Task 3.9](./Phase3_taskList.md) for the full implementat
 - [x] Trace context in Protocol Buffer messages — `message TraceContext`
       (`include/xrpl/proto/xrpl.proto:101`), carried as optional field `1001` on
       three message types (`:130`, `:181`, `:229`)
-- [x] HashRouter deduplication visible in traces — `suppressed` attribute
+- [x] HashRouter deduplication visible — a dropped duplicate produces no span
       (`TxSpanNames.h:71`)
 - [ ] Multi-node integration tests passing — Phase 10 harness
 - [ ] <5% overhead on transaction throughput — needs the Phase 10 benchmark suite
@@ -1053,7 +1053,7 @@ flowchart LR
 - **Metric validation** uses the Prometheus `/api/v1/series` endpoint (not instant queries) which polls for late-populating series and ignores Prometheus's staleness horizon. Every metric in `expected_metrics.json` must have > 0 series.
 - **Gauge visibility**: the harness sets `[insight] server=otel` (`run-full-validation.sh`), so `beast::insight` gauges become OTel observable gauges whose callback is invoked on every collection cycle. A gauge that sits at 0 and never changes (e.g. `jobq_job_count`) therefore still reports, and `/api/v1/series` sees it.
 - **I/O latency fix**: `io_latency_sampler` emits unconditionally on first sample, then applies the 10 ms threshold. This ensures `ios_latency` is registered in Prometheus even in low-load CI environments.
-- **tx.receive span**: attribute keys are bare, not dotted — `suppressed` and `tx_status` (`TxSpanNames.h:71,75`). `suppressed` is set on both outcomes (`false` on the accepted path, `true` when the HashRouter suppresses), but `tx_status` is set **only** on the reject/known-bad/dropped paths, so it is absent on a successful receive. Assert on the attribute, not on span status.
+- **tx.receive span**: attribute keys are bare, not dotted — `tx_status` (`TxSpanNames.h`). The span is created only after the node decides to process the transaction, so a relayed duplicate produces no span; how many were dropped is the `transactions_duplicate` traffic category. `tx_status` is set **only** on the paths that drop a transaction after that point, so it is absent on a successful receive. Assert on the attribute, not on span status.
 
 ### Tasks
 
