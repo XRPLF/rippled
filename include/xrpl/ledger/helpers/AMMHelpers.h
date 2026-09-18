@@ -2,7 +2,6 @@
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/Number.h>
-#include <xrpl/basics/contract.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/ledger/ApplyView.h>
@@ -29,7 +28,6 @@
 #include <expected>
 #include <functional>
 #include <optional>
-#include <stdexcept>
 #include <tuple>
 #include <utility>
 
@@ -313,11 +311,11 @@ getAMMOfferStartWithTakerPays(
  * is equal to LOB quality (in this case AMM offer quality is
  * better than LOB quality) or AMM offer is equal to LOB quality
  * (in this case SPQ is better than LOB quality).
- * Pre-amendment code calculates takerPays first. If takerGets is the
- * economically coarser integral side, it is rounded down, which results in
- * worse offer quality than LOB quality, and the offer might fail to generate.
- * Post-amendment code calculates the economically coarser integral offer side
- * first. The result is rounded down, which makes the offer quality better.
+ * The economically coarser integral offer side is calculated first. The
+ * result is rounded down, which makes the offer quality better. Calculating
+ * takerPays first instead would round down takerGets when that is the coarser
+ * side, giving worse quality than LOB quality, and the offer might fail to
+ * generate.
  *   It might not be possible to match either SPQ or AMM offer to LOB
  * quality. This generally happens at higher fees.
  * @param pool AMM pool balances
@@ -331,71 +329,8 @@ changeSpotPriceQuality(
     TAmounts<TIn, TOut> const& pool,
     Quality const& quality,
     std::uint16_t tfee,
-    Rules const& rules,
     beast::Journal j)
 {
-    if (!rules.enabled(fixAMMv1_1))
-    {
-        // Finds takerPays (i) and takerGets (o) such that given pool
-        // composition poolGets(I) and poolPays(O): (O - o) / (I + i) = quality.
-        // Where takerGets is calculated as the swapAssetIn (see below).
-        // The above equation produces the quadratic equation:
-        // i^2*(1-fee) + i*I*(2-fee) + I^2 - I*O/quality,
-        // which is solved for i, and o is found with swapAssetIn().
-        auto const f = feeMult(tfee);  // 1 - fee
-        auto const& a = f;
-        auto const b = pool.in * (1 + f);
-        Number const c = pool.in * pool.in - pool.in * pool.out * quality.rate();
-        auto const res = b * b - 4 * a * c;
-        if (res < 0)
-        {
-            return std::nullopt;  // LCOV_EXCL_LINE
-        }
-        if (auto const nTakerPaysPropose = (-b + root2(res)) / (2 * a); nTakerPaysPropose > 0)
-        {
-            auto const nTakerPays = [&]() {
-                // The fee might make the AMM offer quality less than CLOB
-                // quality. Therefore, AMM offer has to satisfy this constraint:
-                // o / i >= q. Substituting o with swapAssetIn() gives: i <= O /
-                // q - I / (1 - fee).
-                auto const nTakerPaysConstraint = pool.out * quality.rate() - pool.in / f;
-                if (nTakerPaysPropose > nTakerPaysConstraint)
-                    return nTakerPaysConstraint;
-                return nTakerPaysPropose;
-            }();
-            if (nTakerPays <= 0)
-            {
-                JLOG(j.trace()) << "changeSpotPriceQuality calc failed: " << to_string(pool.in)
-                                << " " << to_string(pool.out) << " " << quality << " " << tfee;
-                return std::nullopt;
-            }
-            auto const takerPays =
-                toAmount<TIn>(getAsset(pool.in), nTakerPays, Number::RoundingMode::Upward);
-            // should not fail
-            if (auto amounts = TAmounts<TIn, TOut>{takerPays, swapAssetIn(pool, takerPays, tfee)};
-                Quality{amounts} < quality &&
-                !withinRelativeDistance(Quality{amounts}, quality, Number(1, -7)))
-            {
-                JLOG(j.error()) << "changeSpotPriceQuality failed: " << to_string(pool.in) << " "
-                                << to_string(pool.out) << " "
-                                << " " << quality << " " << tfee << " " << to_string(amounts.in)
-                                << " " << to_string(amounts.out);
-                Throw<std::runtime_error>("changeSpotPriceQuality failed");
-            }
-            else
-            {
-                JLOG(j.trace()) << "changeSpotPriceQuality succeeded: " << to_string(pool.in) << " "
-                                << to_string(pool.out) << " "
-                                << " " << quality << " " << tfee << " " << to_string(amounts.in)
-                                << " " << to_string(amounts.out);
-                return amounts;
-            }
-        }
-        JLOG(j.trace()) << "changeSpotPriceQuality calc failed: " << to_string(pool.in) << " "
-                        << to_string(pool.out) << " " << quality << " " << tfee;
-        return std::nullopt;
-    }
-
     auto amounts = [&]() {
         bool const inIntegral = getAsset(pool.in).integral();
         bool const outIntegral = getAsset(pool.out).integral();
@@ -461,57 +396,49 @@ template <typename TIn, typename TOut>
 TOut
 swapAssetIn(TAmounts<TIn, TOut> const& pool, TIn const& assetIn, std::uint16_t tfee)
 {
-    if (auto const& rules = getCurrentTransactionRules(); rules && rules->enabled(fixAMMv1_1))
-    {
-        // set rounding to always favor the amm. Clip to zero.
-        // calculate:
-        // pool.out -
-        // (pool.in * pool.out) / (pool.in + assetIn * feeMult(tfee)),
-        // and explicitly set the rounding modes
-        // Favoring the amm means we should:
-        // minimize:
-        // pool.out -
-        // (pool.in * pool.out) / (pool.in + assetIn * feeMult(tfee)),
-        // maximize:
-        // (pool.in * pool.out) / (pool.in + assetIn * feeMult(tfee)),
-        // (pool.in * pool.out)
-        // minimize:
-        // (pool.in + assetIn * feeMult(tfee)),
-        // minimize:
-        // assetIn * feeMult(tfee)
-        // feeMult is: (1-fee), fee is tfee/100000
-        // minimize:
-        // 1-fee
-        // maximize:
-        // fee
-        SaveNumberRoundMode const _{Number::getround()};
+    // set rounding to always favor the amm. Clip to zero.
+    // calculate:
+    // pool.out -
+    // (pool.in * pool.out) / (pool.in + assetIn * feeMult(tfee)),
+    // and explicitly set the rounding modes
+    // Favoring the amm means we should:
+    // minimize:
+    // pool.out -
+    // (pool.in * pool.out) / (pool.in + assetIn * feeMult(tfee)),
+    // maximize:
+    // (pool.in * pool.out) / (pool.in + assetIn * feeMult(tfee)),
+    // (pool.in * pool.out)
+    // minimize:
+    // (pool.in + assetIn * feeMult(tfee)),
+    // minimize:
+    // assetIn * feeMult(tfee)
+    // feeMult is: (1-fee), fee is tfee/100000
+    // minimize:
+    // 1-fee
+    // maximize:
+    // fee
+    SaveNumberRoundMode const _{Number::getround()};
 
-        Number::setround(Number::RoundingMode::Upward);
-        auto const numerator = pool.in * pool.out;
-        auto const fee = getFee(tfee);
+    Number::setround(Number::RoundingMode::Upward);
+    auto const numerator = pool.in * pool.out;
+    auto const fee = getFee(tfee);
 
-        Number::setround(Number::RoundingMode::Downward);
-        auto const denom = pool.in + assetIn * (1 - fee);
+    Number::setround(Number::RoundingMode::Downward);
+    auto const denom = pool.in + assetIn * (1 - fee);
 
-        if (denom.signum() <= 0)
-            return toAmount<TOut>(getAsset(pool.out), 0);
+    if (denom.signum() <= 0)
+        return toAmount<TOut>(getAsset(pool.out), 0);
 
-        Number::setround(Number::RoundingMode::Upward);
-        auto const ratio = numerator / denom;
+    Number::setround(Number::RoundingMode::Upward);
+    auto const ratio = numerator / denom;
 
-        Number::setround(Number::RoundingMode::Downward);
-        auto const swapOut = pool.out - ratio;
+    Number::setround(Number::RoundingMode::Downward);
+    auto const swapOut = pool.out - ratio;
 
-        if (swapOut.signum() < 0)
-            return toAmount<TOut>(getAsset(pool.out), 0);
+    if (swapOut.signum() < 0)
+        return toAmount<TOut>(getAsset(pool.out), 0);
 
-        return toAmount<TOut>(getAsset(pool.out), swapOut, Number::RoundingMode::Downward);
-    }
-
-    return toAmount<TOut>(
-        getAsset(pool.out),
-        pool.out - (pool.in * pool.out) / (pool.in + assetIn * feeMult(tfee)),
-        Number::RoundingMode::Downward);
+    return toAmount<TOut>(getAsset(pool.out), swapOut, Number::RoundingMode::Downward);
 }
 
 /**
@@ -528,57 +455,49 @@ template <typename TIn, typename TOut>
 TIn
 swapAssetOut(TAmounts<TIn, TOut> const& pool, TOut const& assetOut, std::uint16_t tfee)
 {
-    if (auto const& rules = getCurrentTransactionRules(); rules && rules->enabled(fixAMMv1_1))
+    // set rounding to always favor the amm. Clip to zero.
+    // calculate:
+    // ((pool.in * pool.out) / (pool.out - assetOut) - pool.in) /
+    // (1-tfee/100000)
+    // maximize:
+    // ((pool.in * pool.out) / (pool.out - assetOut) - pool.in)
+    // maximize:
+    // (pool.in * pool.out) / (pool.out - assetOut)
+    // maximize:
+    // (pool.in * pool.out)
+    // minimize
+    // (pool.out - assetOut)
+    // minimize:
+    // (1-tfee/100000)
+    // maximize:
+    // tfee/100000
+
+    SaveNumberRoundMode const _{Number::getround()};
+
+    Number::setround(Number::RoundingMode::Upward);
+    auto const numerator = pool.in * pool.out;
+
+    Number::setround(Number::RoundingMode::Downward);
+    auto const denom = pool.out - assetOut;
+    if (denom.signum() <= 0)
     {
-        // set rounding to always favor the amm. Clip to zero.
-        // calculate:
-        // ((pool.in * pool.out) / (pool.out - assetOut) - pool.in) /
-        // (1-tfee/100000)
-        // maximize:
-        // ((pool.in * pool.out) / (pool.out - assetOut) - pool.in)
-        // maximize:
-        // (pool.in * pool.out) / (pool.out - assetOut)
-        // maximize:
-        // (pool.in * pool.out)
-        // minimize
-        // (pool.out - assetOut)
-        // minimize:
-        // (1-tfee/100000)
-        // maximize:
-        // tfee/100000
-
-        SaveNumberRoundMode const _{Number::getround()};
-
-        Number::setround(Number::RoundingMode::Upward);
-        auto const numerator = pool.in * pool.out;
-
-        Number::setround(Number::RoundingMode::Downward);
-        auto const denom = pool.out - assetOut;
-        if (denom.signum() <= 0)
-        {
-            return toMaxAmount<TIn>(getAsset(pool.in));
-        }
-
-        Number::setround(Number::RoundingMode::Upward);
-        auto const ratio = numerator / denom;
-        auto const numerator2 = ratio - pool.in;
-        auto const fee = getFee(tfee);
-
-        Number::setround(Number::RoundingMode::Downward);
-        auto const feeMult = 1 - fee;
-
-        Number::setround(Number::RoundingMode::Upward);
-        auto const swapIn = numerator2 / feeMult;
-        if (swapIn.signum() < 0)
-            return toAmount<TIn>(getAsset(pool.in), 0);
-
-        return toAmount<TIn>(getAsset(pool.in), swapIn, Number::RoundingMode::Upward);
+        return toMaxAmount<TIn>(getAsset(pool.in));
     }
 
-    return toAmount<TIn>(
-        getAsset(pool.in),
-        ((pool.in * pool.out) / (pool.out - assetOut) - pool.in) / feeMult(tfee),
-        Number::RoundingMode::Upward);
+    Number::setround(Number::RoundingMode::Upward);
+    auto const ratio = numerator / denom;
+    auto const numerator2 = ratio - pool.in;
+    auto const fee = getFee(tfee);
+
+    Number::setround(Number::RoundingMode::Downward);
+    auto const feeMult = 1 - fee;
+
+    Number::setround(Number::RoundingMode::Upward);
+    auto const swapIn = numerator2 / feeMult;
+    if (swapIn.signum() < 0)
+        return toAmount<TIn>(getAsset(pool.in), 0);
+
+    return toAmount<TIn>(getAsset(pool.in), swapIn, Number::RoundingMode::Upward);
 }
 
 /**
