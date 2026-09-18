@@ -46,7 +46,6 @@
 #include <xrpl/basics/ToString.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/chrono.h>
-#include <xrpl/basics/contract.h>
 #include <xrpl/basics/random.h>
 #include <xrpl/beast/asio/io_latency_probe.h>
 #include <xrpl/beast/core/LexicalCast.h>
@@ -80,9 +79,11 @@
 #include <xrpl/protocol/BuildInfo.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>  // IWYU pragma: keep
+#include <xrpl/protocol/KeyType.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/STParsedJSON.h>
+#include <xrpl/protocol/SecretKey.h>
 #include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/SystemParameters.h>  // IWYU pragma: keep
 #include <xrpl/protocol/jss.h>
@@ -220,6 +221,13 @@ public:
 
     beast::Journal journal_;
     std::unique_ptr<perf::PerfLog> perfLog_;
+    /**
+     * This node's keypair, resolved before construction by
+     * resolveNodeIdentity() and persisted by setup(). Declared before
+     * telemetry_ because that builds resource attributes from it, and they are
+     * immutable once built.
+     */
+    std::pair<PublicKey, SecretKey> nodeIdentity_;
     std::unique_ptr<telemetry::Telemetry> telemetry_;
     Application::MutexType masterMutex_;
 
@@ -236,7 +244,6 @@ public:
     NodeCache tempNodeCache_;
     CachedSLEs cachedSLEs_;
     std::unique_ptr<NetworkIDService> networkIDService_;
-    std::optional<std::pair<PublicKey, SecretKey>> nodeIdentity_;
     ValidatorKeys const validatorKeys_;
 
     std::unique_ptr<resource::Manager> resourceManager_;
@@ -316,7 +323,8 @@ public:
     ApplicationImp(
         std::unique_ptr<Config> config,
         std::unique_ptr<Logs> logs,
-        std::unique_ptr<TimeKeeper> timeKeeper)
+        std::unique_ptr<TimeKeeper> timeKeeper,
+        std::pair<PublicKey, SecretKey> const& resolvedIdentity)
         : BasicApp(numberOfThreads(*config))
         , config_(std::move(config))
         , logs_(std::move(logs))
@@ -330,11 +338,16 @@ public:
                   *this,
                   logs_->journal("PerfLog"),
                   [this] { signalStop("PerfLog"); }))
+        , nodeIdentity_(resolvedIdentity)
+        // Telemetry publishes the MeterProvider on construction, so it must
+        // precede collectorManager_ below and every subsystem that creates an
+        // instrument. Its resource is immutable, so the instance id has to be
+        // supplied now, from the identity resolved above.
         , telemetry_(
               telemetry::makeTelemetry(
                   telemetry::makeTelemetrySetup(
                       config_->section("telemetry"),
-                      "",  // Updated later via setServiceInstanceId()
+                      toBase58(TokenType::NodePublic, nodeIdentity_.first),
                       build_info::getVersionString(),
                       config_->networkId),
                   logs_->journal("Telemetry")))
@@ -342,6 +355,12 @@ public:
         , txMaster_(*this)
         , collectorManager_(makeCollectorManager(
               config_->section(Sections::kInsight),
+              // Fall back to [telemetry] service_name so metrics inherit the
+              // same service.name as traces when [insight] omits it. Network
+              // type is derived from [network_id] via the shared telemetry
+              // helper, keeping metrics and traces on one network label.
+              config_->section("telemetry").valueOr<std::string>("service_name", ""),
+              telemetry::networkTypeFromId(config_->networkId),
               logs_->journal("Collector")))
         , jobQueue_(
               std::make_unique<JobQueue>(
@@ -385,7 +404,7 @@ public:
               stopwatch(),
               logs_->journal("TaggedCache"))
         , cachedSLEs_(
-              "Cached SLEs",
+              "Cached_SLEs",
               0,
               std::chrono::minutes(1),
               stopwatch(),
@@ -509,6 +528,39 @@ public:
         add(ledgerCleaner_.get());
     }
 
+    /**
+     * Stop observing and stop telemetry before the members are destroyed.
+     *
+     * The metrics reader thread runs callbacks that read the services member
+     * destruction is about to tear down. telemetry_ is declared early because
+     * the collector needs its MeterProvider, so reverse-order member destruction
+     * would take it down last.
+     *
+     * run() does both on the normal path; this covers the paths that never
+     * reach it -- every `return false` in setup(), and the unit tests. Both
+     * calls are idempotent.
+     */
+    ~ApplicationImp() override
+    {
+        // A shutdown diagnostic must never terminate the process, and a
+        // destructor is implicitly noexcept.
+        try
+        {
+            collectorManager_->collector()->onCollectionStopping();
+            telemetry_->stop();
+        }
+        catch (std::exception const& e)
+        {
+            JLOG(journal_.error()) << "Error stopping telemetry: " << e.what();
+        }
+        catch (...)
+        {
+            // The callees reach third-party SDK code, which may throw something
+            // outside std::exception. Escaping here would terminate the process.
+            JLOG(journal_.error()) << "Error stopping telemetry: unknown exception";
+        }
+    }
+
     //--------------------------------------------------------------------------
 
     bool
@@ -575,10 +627,7 @@ public:
     std::pair<PublicKey, SecretKey> const&
     nodeIdentity() override
     {
-        if (nodeIdentity_)
-            return *nodeIdentity_;
-
-        logicError("Accessing Application::nodeIdentity() before it is initialized.");
+        return nodeIdentity_;
     }
 
     std::optional<PublicKey const>
@@ -1161,9 +1210,8 @@ private:
      * global Telemetry instance is not yet live, and the first consensus
      * round runs inside setup().
      *
-     * @pre nodeIdentity_ is populated, so setServiceInstanceId() has
-     * already supplied the service.instance.id resource attribute
-     * (the Telemetry resource is fixed once start() builds it).
+     * The resource attributes, including service.instance.id, were supplied at
+     * construction.
      */
     void
     startTelemetry() const;
@@ -1263,15 +1311,15 @@ ApplicationImp::setup(boost::program_options::variables_map const& cmdline)
         return false;
     }
 
-    nodeIdentity_ = getNodeIdentity(*this, cmdline);
+    // Persist the identity resolved before construction, or adopt the one the
+    // wallet already holds. Telemetry is already reporting the resolved key.
+    nodeIdentity_ = getNodeIdentity(*this, cmdline, nodeIdentity_);
 
-    // Now that the node identity is known, inject it into the telemetry
-    // resource attributes — but only if the user didn't already set a
-    // custom service_instance_id in [telemetry].  The Telemetry object
-    // was constructed with an empty serviceInstanceId because
-    // nodeIdentity_ is not available in the member initializer list.
+    // The metrics resource was fixed at construction, but the tracer resource is
+    // built by start() below, so the stored key still reaches spans if it
+    // differs from the resolved one.
     if (!config_->section("telemetry").exists("service_instance_id"))
-        telemetry_->setServiceInstanceId(toBase58(TokenType::NodePublic, nodeIdentity_->first));
+        telemetry_->setServiceInstanceId(toBase58(TokenType::NodePublic, nodeIdentity_.first));
 
     // Start telemetry here, not in start(). Spans are emitted during the rest
     // of setup() — the first consensus round in beginConsensus() below — and
@@ -1445,6 +1493,12 @@ ApplicationImp::setup(boost::program_options::variables_map const& cmdline)
         *config_,
         collectorManager_->collector());
     add(*overlay_);  // add to PropertyStream
+
+    // Register the collector's observable instruments. Their callbacks run hook
+    // handlers that read ledgerMaster_, networkOPs_, the peer finder, the job
+    // queue and overlay_ -- the last of these to be built. Still before the
+    // first consensus round below, so that round is covered.
+    collectorManager_->collector()->onCollectionReady();
 
     // start first consensus round
     if (!networkOPs_->beginConsensus(ledgerMaster_->getClosedLedger()->header().hash, {}))
@@ -1662,6 +1716,11 @@ ApplicationImp::run()
     publisherManifests_->save(getWalletDB(), "PublisherManifests", [this](PublicKey const& pubKey) {
         return getValidators().trustedPublisher(pubKey);
     });
+
+    // Stop observing before any service below is stopped: the collector's gauge
+    // callbacks run hook handlers that read ledgerMaster_, networkOPs_, the peer
+    // finder, the job queue and overlay_. Returns once no callback is running.
+    collectorManager_->collector()->onCollectionStopping();
 
     // The order of these stop calls is delicate.
     // Re-ordering them risks undefined behavior.
@@ -2247,8 +2306,24 @@ makeApplication(
     std::unique_ptr<Logs> logs,
     std::unique_ptr<TimeKeeper> timeKeeper)
 {
+    // No identity supplied, so mint one. setup() stores it if the wallet holds
+    // none, which is what a standalone run and a test Application do anyway.
+    return makeApplication(
+        std::move(config),
+        std::move(logs),
+        std::move(timeKeeper),
+        randomKeyPair(KeyType::Secp256k1));
+}
+
+std::unique_ptr<Application>
+makeApplication(
+    std::unique_ptr<Config> config,
+    std::unique_ptr<Logs> logs,
+    std::unique_ptr<TimeKeeper> timeKeeper,
+    std::pair<PublicKey, SecretKey> const& nodeIdentity)
+{
     return std::make_unique<ApplicationImp>(
-        std::move(config), std::move(logs), std::move(timeKeeper));
+        std::move(config), std::move(logs), std::move(timeKeeper), nodeIdentity);
 }
 
 void

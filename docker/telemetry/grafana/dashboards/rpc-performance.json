@@ -9,94 +9,14 @@
   "links": [],
   "panels": [
     {
-      "title": "RPC Request Rate by Command",
-      "description": "**What:** Per-command throughput of RPC calls the node serves (e.g. server_info, submit, account_info).\n**How it's computed:** Per-second rate split by command name over a 5-minute window, per node.\n**Reading it:** Shows which API endpoints drive load and how demand shifts over time.\n**Healthy range:** Workload-dependent; varies with client mix.\n**Watch for:** A sudden spike on one command can indicate a runaway client or scripted abuse.\n**Source:** src/xrpld/rpc/detail/RPCHandler.cpp:callMethod",
-      "type": "timeseries",
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 0,
-        "y": 24
-      },
-      "options": {
-        "tooltip": {
-          "mode": "multi",
-          "sort": "desc",
-          "maxHeight": 600
-        }
-      },
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus"
-          },
-          "expr": "sum by (command, service_instance_id) (rate(traces_span_metrics_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", command=~\"$command\", span_name=~\"rpc.command.*\"}[5m]))",
-          "legendFormat": "{{command}} [{{service_instance_id}}]"
-        }
-      ],
-      "fieldConfig": {
-        "defaults": {
-          "unit": "reqps",
-          "custom": {
-            "axisLabel": "Requests / Sec",
-            "spanNulls": 1800000,
-            "insertNulls": false,
-            "showPoints": "auto",
-            "pointSize": 3
-          }
-        },
-        "overrides": []
-      }
-    },
-    {
-      "title": "RPC Latency P95 by Command",
-      "description": "**What:** 95th-percentile response time for each RPC command.\n**How it's computed:** 95th percentile of per-command durations over a 5-minute window, per node.\n**Reading it:** Read-only lookups should be fast; heavy commands like path finding are naturally slower.\n**Healthy range:** Sub-second for most commands; command-dependent.\n**Watch for:** Rising p95 on a normally fast command signals contention or an expensive query pattern.\n**Source:** src/xrpld/rpc/detail/RPCHandler.cpp:callMethod",
-      "type": "timeseries",
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 12,
-        "y": 24
-      },
-      "options": {
-        "tooltip": {
-          "mode": "multi",
-          "sort": "desc",
-          "maxHeight": 600
-        }
-      },
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus"
-          },
-          "expr": "histogram_quantile(0.95, sum by (le, command, service_instance_id) (rate(traces_span_metrics_duration_milliseconds_bucket{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", command=~\"$command\", span_name=~\"rpc.command.*\"}[5m])))",
-          "legendFormat": "P95 {{command}} [{{service_instance_id}}]"
-        }
-      ],
-      "fieldConfig": {
-        "defaults": {
-          "unit": "ms",
-          "custom": {
-            "axisLabel": "Latency (ms)",
-            "spanNulls": 1800000,
-            "insertNulls": false,
-            "showPoints": "auto",
-            "pointSize": 3
-          }
-        },
-        "overrides": []
-      }
-    },
-    {
-      "title": "RPC Error Rate",
+      "title": "RPC Error Rate [$xrpl_network_type]",
       "description": "**What:** Percentage of each RPC command's calls that ended in an error.\n**How it's computed:** Error calls divided by total calls per command over a 5-minute window, per node.\n**Reading it:** Green below 1%, yellow 1-5%, red above 5%.\n**Healthy range:** Below 1% for healthy commands.\n**Watch for:** A sustained error spike on one command is consistent with a client probing or misusing that endpoint.\n**Source:** src/xrpld/rpc/detail/RPCHandler.cpp:callMethod",
       "type": "bargauge",
       "gridPos": {
-        "h": 8,
+        "h": 10,
         "w": 12,
         "x": 0,
-        "y": 8
+        "y": 0
       },
       "options": {
         "tooltip": {
@@ -109,7 +29,8 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "sum by (command, service_instance_id) (rate(traces_span_metrics_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", command=~\"$command\", span_name=~\"rpc.command.*\", status_code=\"STATUS_CODE_ERROR\"}[5m])) / sum by (command, service_instance_id) (rate(traces_span_metrics_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", command=~\"$command\", span_name=~\"rpc.command.*\"}[5m])) * 100",
+          "expr": "sum by (command, service_instance_id) (rate(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", command=~\"$command\", span_name=~\"rpc.command.*\", status_code=\"STATUS_CODE_ERROR\"}[$__rate_interval])) / sum by (command, service_instance_id) (rate(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", command=~\"$command\", span_name=~\"rpc.command.*\"}[$__rate_interval])) * 100",
+          "interval": "15s",
           "legendFormat": "{{command}} [{{service_instance_id}}]"
         }
       ],
@@ -134,19 +55,197 @@
           }
         },
         "overrides": []
-      }
+      },
+      "repeat": "xrpl_network_type",
+      "repeatDirection": "h",
+      "maxPerRow": 2,
+      "id": 1
+    },
+    {
+      "title": "Top Commands by Volume [$xrpl_network_type]",
+      "description": "**What:** The ten most-called RPC commands by total invocations recently.\n**How it's computed:** Ranked total counts per command over a 5-minute window, per node.\n**Reading it:** Identifies the hottest API endpoints driving node load.\n**Healthy range:** Workload-dependent.\n**Watch for:** An unexpected command dominating the ranking can indicate scripted abuse or a misbehaving client.\n**Source:** src/xrpld/rpc/detail/RPCHandler.cpp:callMethod",
+      "type": "bargauge",
+      "gridPos": {
+        "h": 10,
+        "w": 12,
+        "x": 0,
+        "y": 10
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "topk(10, sum by (command, service_instance_id) (increase(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", command=~\"$command\", span_name=~\"rpc.command.*\"}[$__rate_interval])))",
+          "interval": "15s",
+          "legendFormat": "{{command}} [{{service_instance_id}}]"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none"
+        },
+        "overrides": []
+      },
+      "repeat": "xrpl_network_type",
+      "repeatDirection": "h",
+      "maxPerRow": 2,
+      "id": 2
+    },
+    {
+      "title": "WebSocket Message Rate [$xrpl_network_type]",
+      "description": "**What:** Rate of incoming WebSocket RPC messages the server processes.\n**How it's computed:** Per-second rate over a 5-minute window, per node.\n**Reading it:** Non-zero only when clients connect over WebSocket rather than HTTP.\n**Healthy range:** Zero is normal for HTTP-only deployments; otherwise workload-dependent.\n**Watch for:** An unexpected surge points to a chatty or abusive WebSocket client.\n**Source:** src/xrpld/rpc/detail/ServerHandler.cpp:ServerHandler::processSession",
+      "type": "stat",
+      "gridPos": {
+        "h": 10,
+        "w": 12,
+        "x": 0,
+        "y": 20
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "sum by (service_instance_id) (rate(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", command=~\"$command\", span_name=\"rpc.ws_message\"}[$__rate_interval]))",
+          "interval": "15s",
+          "legendFormat": "WS Messages / Sec [{{service_instance_id}}]"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "suffix: messages/s"
+        },
+        "overrides": []
+      },
+      "repeat": "xrpl_network_type",
+      "repeatDirection": "h",
+      "maxPerRow": 2,
+      "id": 3
+    },
+    {
+      "title": "RPC Request Rate by Command",
+      "description": "**What:** Per-command throughput of RPC calls the node serves (e.g. server_info, submit, account_info).\n**How it's computed:** Per-second rate split by command name over a 5-minute window, per node.\n**Reading it:** Shows which API endpoints drive load and how demand shifts over time.\n**Healthy range:** Workload-dependent; varies with client mix.\n**Watch for:** A sudden spike on one command can indicate a runaway client or scripted abuse.\n**Source:** src/xrpld/rpc/detail/RPCHandler.cpp:callMethod",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 10,
+        "w": 12,
+        "x": 0,
+        "y": 30
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc",
+          "maxHeight": 600
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "sum by (command, service_instance_id) (rate(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", command=~\"$command\", span_name=~\"rpc.command.*\"}[$__rate_interval]))",
+          "interval": "15s",
+          "legendFormat": "{{command}} [{{service_instance_id}}]"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "reqps",
+          "custom": {
+            "axisLabel": "Requests / Sec",
+            "spanNulls": 1800000,
+            "insertNulls": false,
+            "showPoints": "auto",
+            "pointSize": 5,
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "gradientMode": "none"
+          }
+        },
+        "overrides": []
+      },
+      "id": 4
+    },
+    {
+      "title": "RPC Latency P95 by Command",
+      "description": "**What:** 95th-percentile response time for each RPC command.\n**How it's computed:** 95th percentile of per-command durations over a 5-minute window, per node.\n**Reading it:** Read-only lookups should be fast; heavy commands like path finding are naturally slower.\n**Healthy range:** Sub-second for most commands; command-dependent.\n**Watch for:** Rising p95 on a normally fast command signals contention or an expensive query pattern.\n**Source:** src/xrpld/rpc/detail/RPCHandler.cpp:callMethod",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 10,
+        "w": 12,
+        "x": 12,
+        "y": 30
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc",
+          "maxHeight": 600
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "histogram_quantile(0.95, sum by (le, command, service_instance_id) (rate(span_duration_milliseconds_bucket{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", command=~\"$command\", span_name=~\"rpc.command.*\"}[5m])))",
+          "interval": "15s",
+          "legendFormat": "P95 {{command}} [{{service_instance_id}}]"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ms",
+          "custom": {
+            "axisLabel": "Latency (ms)",
+            "spanNulls": 1800000,
+            "insertNulls": false,
+            "showPoints": "auto",
+            "pointSize": 5,
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "gradientMode": "none"
+          }
+        },
+        "overrides": []
+      },
+      "id": 5
     },
     {
       "title": "RPC Latency Heatmap",
       "description": "**What:** Distribution of RPC response times over time across all commands.\n**How it's computed:** Counts of requests by duration band in each 5-minute window, per node.\n**Reading it:** A single tight band is healthy; brighter cells mark the common latency.\n**Healthy range:** Concentrated at low latency; command-dependent.\n**Watch for:** Two separate bands (bimodal latency) reveal a slow path affecting some requests.\n**Source:** src/xrpld/rpc/detail/RPCHandler.cpp:callMethod",
       "type": "heatmap",
       "gridPos": {
-        "h": 8,
+        "h": 10,
         "w": 12,
-        "x": 12,
-        "y": 8
+        "x": 0,
+        "y": 40
       },
       "options": {
+        "calculate": false,
+        "cellGap": 1,
+        "color": {
+          "mode": "scheme",
+          "scheme": "Turbo",
+          "steps": 64
+        },
+        "legend": {
+          "show": true
+        },
         "tooltip": {
           "mode": "multi",
           "sort": "desc",
@@ -162,7 +261,8 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "sum(increase(traces_span_metrics_duration_milliseconds_bucket{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", command=~\"$command\", span_name=~\"rpc.command.*\"}[5m])) by (le)",
+          "expr": "sum(increase(span_duration_milliseconds_bucket{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", command=~\"$command\", span_name=~\"rpc.command.*\"}[5m])) by (le)",
+          "interval": "15s",
           "legendFormat": "{{le}}",
           "format": "heatmap"
         }
@@ -174,17 +274,18 @@
             "spanNulls": 1800000
           }
         }
-      }
+      },
+      "id": 6
     },
     {
       "title": "Overall RPC Throughput",
       "description": "**What:** Aggregate request flow through two pipeline layers: the outer HTTP handler that accepts connections and the inner layer that parses and dispatches.\n**How it's computed:** Per-second rate of each layer over a 5-minute window, per node.\n**Reading it:** The two lines should overlap when requests flow cleanly.\n**Healthy range:** Workload-dependent; both layers tracking each other.\n**Watch for:** A gap means requests are being queued or rejected before dispatch.\n**Source:** src/xrpld/rpc/detail/ServerHandler.cpp:ServerHandler::processSession, ServerHandler::processRequest",
       "type": "timeseries",
       "gridPos": {
-        "h": 8,
+        "h": 10,
         "w": 12,
-        "x": 0,
-        "y": 16
+        "x": 12,
+        "y": 40
       },
       "options": {
         "tooltip": {
@@ -198,14 +299,16 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "sum by (service_instance_id) (rate(traces_span_metrics_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", command=~\"$command\", span_name=\"rpc.http_request\"}[5m]))",
+          "expr": "sum by (service_instance_id) (rate(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", command=~\"$command\", span_name=\"rpc.http_request\"}[$__rate_interval]))",
+          "interval": "15s",
           "legendFormat": "rpc.http_request / Sec [{{service_instance_id}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "sum by (service_instance_id) (rate(traces_span_metrics_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", command=~\"$command\", span_name=\"rpc.process\"}[5m]))",
+          "expr": "sum by (service_instance_id) (rate(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", command=~\"$command\", span_name=\"rpc.process\"}[$__rate_interval]))",
+          "interval": "15s",
           "legendFormat": "rpc.process / Sec [{{service_instance_id}}]"
         }
       ],
@@ -217,21 +320,25 @@
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
-            "pointSize": 3
+            "pointSize": 5,
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "gradientMode": "none"
           }
         },
         "overrides": []
-      }
+      },
+      "id": 7
     },
     {
       "title": "RPC Success vs Error",
       "description": "**What:** Aggregate rate of successful versus failed RPC commands across all types.\n**How it's computed:** Per-second rate of each outcome over a 5-minute window, per node.\n**Reading it:** Success should dominate; the error line should stay low.\n**Healthy range:** Error rate near zero; success rate is workload-dependent.\n**Watch for:** A sustained rise in the error line warrants drilling into the per-command breakdown.\n**Source:** src/xrpld/rpc/detail/RPCHandler.cpp:callMethod",
       "type": "timeseries",
       "gridPos": {
-        "h": 8,
+        "h": 10,
         "w": 12,
-        "x": 12,
-        "y": 16
+        "x": 0,
+        "y": 50
       },
       "options": {
         "tooltip": {
@@ -245,14 +352,16 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "sum by (service_instance_id) (rate(traces_span_metrics_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", command=~\"$command\", span_name=~\"rpc.command.*\", status_code=\"STATUS_CODE_UNSET\"}[5m]))",
+          "expr": "sum by (service_instance_id) (rate(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", command=~\"$command\", span_name=~\"rpc.command.*\", status_code=\"STATUS_CODE_UNSET\"}[$__rate_interval]))",
+          "interval": "15s",
           "legendFormat": "Success [{{service_instance_id}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "sum by (service_instance_id) (rate(traces_span_metrics_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", command=~\"$command\", span_name=~\"rpc.command.*\", status_code=\"STATUS_CODE_ERROR\"}[5m]))",
+          "expr": "sum by (service_instance_id) (rate(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", command=~\"$command\", span_name=~\"rpc.command.*\", status_code=\"STATUS_CODE_ERROR\"}[$__rate_interval]))",
+          "interval": "15s",
           "legendFormat": "Error [{{service_instance_id}}]"
         }
       ],
@@ -264,85 +373,25 @@
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
-            "pointSize": 3
+            "pointSize": 5,
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "gradientMode": "none"
           }
         },
         "overrides": []
-      }
-    },
-    {
-      "title": "Top Commands by Volume",
-      "description": "**What:** The ten most-called RPC commands by total invocations recently.\n**How it's computed:** Ranked total counts per command over a 5-minute window, per node.\n**Reading it:** Identifies the hottest API endpoints driving node load.\n**Healthy range:** Workload-dependent.\n**Watch for:** An unexpected command dominating the ranking can indicate scripted abuse or a misbehaving client.\n**Source:** src/xrpld/rpc/detail/RPCHandler.cpp:callMethod",
-      "type": "bargauge",
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 0,
-        "y": 0
       },
-      "options": {
-        "tooltip": {
-          "mode": "multi",
-          "sort": "desc"
-        }
-      },
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus"
-          },
-          "expr": "topk(10, sum by (command, service_instance_id) (increase(traces_span_metrics_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", command=~\"$command\", span_name=~\"rpc.command.*\"}[5m])))",
-          "legendFormat": "{{command}} [{{service_instance_id}}]"
-        }
-      ],
-      "fieldConfig": {
-        "defaults": {
-          "unit": "none"
-        },
-        "overrides": []
-      }
-    },
-    {
-      "title": "WebSocket Message Rate",
-      "description": "**What:** Rate of incoming WebSocket RPC messages the server processes.\n**How it's computed:** Per-second rate over a 5-minute window, per node.\n**Reading it:** Non-zero only when clients connect over WebSocket rather than HTTP.\n**Healthy range:** Zero is normal for HTTP-only deployments; otherwise workload-dependent.\n**Watch for:** An unexpected surge points to a chatty or abusive WebSocket client.\n**Source:** src/xrpld/rpc/detail/ServerHandler.cpp:ServerHandler::processSession",
-      "type": "stat",
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 12,
-        "y": 0
-      },
-      "options": {
-        "tooltip": {
-          "mode": "multi",
-          "sort": "desc"
-        }
-      },
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus"
-          },
-          "expr": "sum by (service_instance_id) (rate(traces_span_metrics_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", command=~\"$command\", span_name=\"rpc.ws_message\"}[5m]))",
-          "legendFormat": "WS Messages / Sec [{{service_instance_id}}]"
-        }
-      ],
-      "fieldConfig": {
-        "defaults": {
-          "unit": "suffix: messages/s"
-        },
-        "overrides": []
-      }
+      "id": 8
     },
     {
       "title": "RPC Resource Cost by Command",
       "description": "**What:** RPC traffic grouped by its resource-cost category, distinguishing cheap lookups from expensive or malformed requests.\n**How it's computed:** Per-second rate per cost category over a 5-minute window.\n**Reading it:** Low-cost categories should dominate.\n**Healthy range:** Mostly low-cost traffic; workload-dependent.\n**Watch for:** A rising share of high-cost or malformed categories points to problematic or abusive clients.\n**Source:** src/xrpld/rpc/detail/RPCHandler.cpp:callMethod",
       "type": "timeseries",
       "gridPos": {
-        "h": 8,
-        "w": 12,
+        "h": 10,
+        "w": 24,
         "x": 0,
-        "y": 32
+        "y": 60
       },
       "options": {
         "tooltip": {
@@ -361,7 +410,8 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "sum by (load_type) (rate(traces_span_metrics_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", span_name=~\"rpc.command.*\", load_type!=\"\"}[5m]))",
+          "expr": "sum by (load_type) (rate(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", span_name=~\"rpc.command.*\", load_type!=\"\"}[$__rate_interval]))",
+          "interval": "15s",
           "legendFormat": "{{load_type}}"
         }
       ],
@@ -373,21 +423,25 @@
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
-            "pointSize": 3
+            "pointSize": 5,
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "gradientMode": "none"
           }
         },
         "overrides": []
-      }
+      },
+      "id": 9
     },
     {
       "title": "Batch vs Single RPC Requests",
       "description": "**What:** Rate of batched RPC requests versus single requests.\n**How it's computed:** Per-second rate of each over a 5-minute window, per node.\n**Reading it:** Most traffic is typically single requests.\n**Healthy range:** Workload-dependent; batch share usually small.\n**Watch for:** A high batch rate may indicate bulk-automation clients or an attempt to amplify load per connection.\n**Source:** src/xrpld/rpc/detail/ServerHandler.cpp:ServerHandler::processRequest",
       "type": "timeseries",
       "gridPos": {
-        "h": 8,
+        "h": 10,
         "w": 12,
-        "x": 12,
-        "y": 32
+        "x": 0,
+        "y": 70
       },
       "options": {
         "tooltip": {
@@ -401,14 +455,16 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "sum by (service_instance_id) (rate(traces_span_metrics_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", span_name=\"rpc.process\", is_batch=\"true\"}[5m]))",
+          "expr": "sum by (service_instance_id) (rate(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", span_name=\"rpc.process\", is_batch=\"true\"}[$__rate_interval]))",
+          "interval": "15s",
           "legendFormat": "Batch [{{service_instance_id}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "sum by (service_instance_id) (rate(traces_span_metrics_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", span_name=\"rpc.process\", is_batch=\"false\"}[5m]))",
+          "expr": "sum by (service_instance_id) (rate(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", span_name=\"rpc.process\", is_batch=\"false\"}[$__rate_interval]))",
+          "interval": "15s",
           "legendFormat": "Single [{{service_instance_id}}]"
         }
       ],
@@ -420,11 +476,15 @@
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
-            "pointSize": 3
+            "pointSize": 5,
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "gradientMode": "none"
           }
         },
         "overrides": []
-      }
+      },
+      "id": 10
     }
   ],
   "schemaVersion": 39,
@@ -516,7 +576,7 @@
         "label": "RPC Command",
         "description": "Filter by RPC command name (e.g., server_info, submit)",
         "type": "query",
-        "query": "label_values(traces_span_metrics_calls_total{span_name=~\"rpc.command.*\"}, command)",
+        "query": "label_values(span_calls_total{span_name=~\"rpc.command.*\"}, command)",
         "datasource": {
           "type": "prometheus",
           "uid": "prometheus"

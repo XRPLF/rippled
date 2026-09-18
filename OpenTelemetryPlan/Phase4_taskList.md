@@ -220,7 +220,7 @@
 
 ## Task 4.8: Consensus Validation Span Enrichment — NOT DONE
 
-> **Source**: [External Dashboard Parity](../docs/superpowers/specs/2026-03-30-external-dashboard-parity-design.md) — adds validation agreement context inspired by the community [xrpl-validator-dashboard](https://github.com/realgrapedrop/xrpl-validator-dashboard).
+> **Source**: [External Dashboard Parity](./06-implementation-phases.md#appendix-external-dashboard-parity) — adds validation agreement context inspired by the community [xrpl-validator-dashboard](https://github.com/realgrapedrop/xrpl-validator-dashboard).
 >
 > **Upstream**: Phase 4 tasks 4.1-4.4 (span creation must exist).
 > **Downstream**: Phase 7 (ValidationTracker reads these attributes), Phase 10 (validation checks).
