@@ -142,6 +142,10 @@ ValidMPTIssuance::finalize(
     //   - A vault pseudo-account's MPToken or RippleState may only be
     //     deleted by VaultDelete; the share's sfReferenceHolding pointer
     //     must not dangle outside that controlled lifecycle.
+    // Post-fixCleanup3_5_0:
+    //   - That last rule narrows further: a VaultDelete may only erase the
+    //     holdings of the pseudo-account it deletes, not those of a vault that
+    //     survives the transaction.
     if (rules.enabled(fixCleanup3_2_0))
     {
         // Not an amendment gate like the same-named flags below, just an
@@ -159,7 +163,11 @@ ValidMPTIssuance::finalize(
                                "MPTokenIssuance by a non-VaultCreate transaction";
             invariantPasses = false;
         }
-        if (!deletedHoldings_.empty() && tx.getTxnType() != ttVAULT_DELETE)
+        // From fixCleanup3_5_0 a VaultDelete may only erase the holdings of the
+        // vault it deletes, not those of any other vault.
+        bool const exemptHoldings =
+            tx.getTxnType() == ttVAULT_DELETE && !rules.enabled(fixCleanup3_5_0);
+        if (!deletedHoldings_.empty() && !exemptHoldings)
         {
             auto const isVaultPseudo = [&](AccountID const& acct) {
                 auto const sle = view.read(keylet::account(acct));
@@ -184,8 +192,16 @@ ValidMPTIssuance::finalize(
                 }
                 if (offending)
                 {
-                    JLOG(j.fatal()) << "Invariant failed: vault pseudo-account holding "
-                                       "deleted by a non-VaultDelete transaction";
+                    if (tx.getTxnType() == ttVAULT_DELETE)
+                    {
+                        JLOG(j.fatal()) << "Invariant failed: vault deletion deleted another "
+                                           "vault pseudo-account's holding";
+                    }
+                    else
+                    {
+                        JLOG(j.fatal()) << "Invariant failed: vault pseudo-account holding "
+                                           "deleted by a non-VaultDelete transaction";
+                    }
                     invariantPasses = false;
                 }
             }
