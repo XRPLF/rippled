@@ -83,7 +83,7 @@ private:
     using Compressed = compression::Compressed;
 
     Application& app_;
-    IdT const id_;
+    ID const id_;
     std::string fingerprint_;
     std::string prefix_;
     beast::WrappedSink sink_;
@@ -258,7 +258,7 @@ public:
      */
     PeerImp(
         Application& app,
-        IdT id,
+        ID id,
         std::shared_ptr<peer_finder::Slot> const& slot,
         HttpRequestType&& request,
         PublicKey const& publicKey,
@@ -281,7 +281,7 @@ public:
         resource::Consumer usage,
         PublicKey const& publicKey,
         ProtocolVersion protocol,
-        IdT id,
+        ID id,
         OverlayImpl& overlay);
 
     ~PeerImp() override;
@@ -357,7 +357,7 @@ public:
     // Identity
     //
 
-    Peer::IdT
+    Peer::ID
     id() const override
     {
         return id_;
@@ -771,7 +771,7 @@ PeerImp::PeerImp(
     resource::Consumer usage,
     PublicKey const& publicKey,
     ProtocolVersion protocol,
-    IdT id,
+    ID id,
     OverlayImpl& overlay)
     : Child(overlay)
     , app_(app)

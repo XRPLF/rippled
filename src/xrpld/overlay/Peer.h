@@ -38,7 +38,7 @@ public:
      * can discover if the peer is no longer connected and make
      * adjustments as needed.
      */
-    using IdT = std::uint32_t;
+    using ID = std::uint32_t;
 
     virtual ~Peer() = default;
 
@@ -80,7 +80,7 @@ public:
     // Identity
     //
 
-    [[nodiscard]] virtual IdT
+    [[nodiscard]] virtual ID
     id() const = 0;
 
     /**

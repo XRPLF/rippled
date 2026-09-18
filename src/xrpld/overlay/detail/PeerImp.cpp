@@ -126,7 +126,7 @@ constexpr std::chrono::seconds kPeerTimerInterval{60};
 
 PeerImp::PeerImp(
     Application& app,
-    IdT id,
+    ID id,
     std::shared_ptr<peer_finder::Slot> const& slot,
     HttpRequestType&& request,
     PublicKey const& publicKey,

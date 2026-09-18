@@ -88,7 +88,7 @@ class Config;
 class HashRouter
 {
 public:
-    // The type here *MUST* match the type of Peer::IdT
+    // The type here *MUST* match the type of Peer::ID
     using PeerShortID = std::uint32_t;
 
     /**

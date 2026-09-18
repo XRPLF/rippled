@@ -44,8 +44,8 @@ class TMGetLedger_test : public beast::unit_test::Suite
         auto request = std::make_shared<protocol::TMGetLedger>();
         request->set_itype(protocol::liTX_NODE);
 
-        // A uint256-sized ledger hash, as a well-formed request carries.
-        uint256 const ledgerHash{1};
+        // A UInt256-sized ledger hash, as a well-formed request carries.
+        UInt256 const ledgerHash{1};
         request->set_ledgerhash(ledgerHash.data(), ledgerHash.size());
 
         // Valid, deserializable SHAMap node IDs.

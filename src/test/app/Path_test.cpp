@@ -2140,7 +2140,7 @@ public:
         BEAST_EXPECT(orderings == 6);
         BEAST_EXPECT(hashes.size() == orderings);
 
-        auto seen = hardened_hash_set<STPath>{};
+        auto seen = HardenedHashSet<STPath>{};
         for (auto const& p : {currencyFirst, mptFirst})
         {
             seen.emplace(p);
@@ -2173,7 +2173,7 @@ public:
             auto const rhsPath = path({rhs});
             BEAST_EXPECT(hasher(lhsPath) == hasher(rhsPath));
 
-            auto equal = hardened_hash_set<STPath>{};
+            auto equal = HardenedHashSet<STPath>{};
             equal.emplace(lhsPath);
             equal.emplace(rhsPath);
             BEAST_EXPECT(equal.size() == 1);

@@ -291,7 +291,7 @@ public:
     charge(resource::Charge const& fee, std::string const& context = {}) override
     {
     }
-    [[nodiscard]] IdT
+    [[nodiscard]] ID
     id() const override
     {
         return 1234;
@@ -485,10 +485,10 @@ struct TestPeerSet : public PeerSet
         }
     }
 
-    [[nodiscard]] std::set<Peer::IdT> const&
+    [[nodiscard]] std::set<Peer::ID> const&
     getPeerIds() const override
     {
-        static std::set<Peer::IdT> const kEmptyPeers;
+        static std::set<Peer::ID> const kEmptyPeers;
         return kEmptyPeers;
     }
 

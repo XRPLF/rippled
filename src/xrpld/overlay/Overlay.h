@@ -133,7 +133,7 @@ public:
      * Returns the peer with the matching short id, or null.
      */
     [[nodiscard]] virtual std::shared_ptr<Peer>
-    findPeerByShortID(Peer::IdT const& id) const = 0;
+    findPeerByShortID(Peer::ID const& id) const = 0;
 
     /**
      * Returns the peer with the matching public key, or null.
@@ -160,7 +160,7 @@ public:
      * @param validator The pubkey of the validator that issued this proposal
      * @return the set of peers which have already sent us this proposal
      */
-    virtual std::set<Peer::IdT>
+    virtual std::set<Peer::ID>
     relay(protocol::TMProposeSet const& m, UInt256 const& uid, PublicKey const& validator) = 0;
 
     /**
@@ -170,7 +170,7 @@ public:
      * @param validator The pubkey of the validator that issued this validation
      * @return the set of peers which have already sent us this validation
      */
-    virtual std::set<Peer::IdT>
+    virtual std::set<Peer::ID>
     relay(protocol::TMValidation const& m, UInt256 const& uid, PublicKey const& validator) = 0;
 
     /**
@@ -185,7 +185,7 @@ public:
     relay(
         UInt256 const& hash,
         std::optional<std::reference_wrapper<protocol::TMTransaction>> m,
-        std::set<Peer::IdT> const& toSkip) = 0;
+        std::set<Peer::ID> const& toSkip) = 0;
 
     /**
      * Visit every active peer.

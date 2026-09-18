@@ -227,7 +227,7 @@ private:
         std::uint16_t relayPercentage,
         std::uint16_t expectRelay,
         std::uint16_t expectQueue,
-        std::set<Peer::IdT> const& toSkip = {})
+        std::set<Peer::ID> const& toSkip = {})
     {
         testcase(test);
         jtx::Env env(*this);
@@ -259,7 +259,7 @@ private:
     run() override
     {
         bool const log = false;
-        std::set<Peer::IdT> skip = {0, 1, 2, 3, 4};
+        std::set<Peer::ID> skip = {0, 1, 2, 3, 4};
         testConfig(log);
         // relay to all peers, no hash queue
         testRelay("feature disabled", false, 10, 0, 10, 25, 10, 0);

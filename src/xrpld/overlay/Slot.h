@@ -78,14 +78,14 @@ public:
      * @param duration Squelch duration in seconds
      */
     virtual void
-    squelch(PublicKey const& validator, Peer::IdT id, std::uint32_t duration) const = 0;
+    squelch(PublicKey const& validator, Peer::ID id, std::uint32_t duration) const = 0;
     /**
      * Unsquelch handler
      * @param validator Public key of the source validator
      * @param id Peer's id to unsquelch
      */
     virtual void
-    unsquelch(PublicKey const& validator, Peer::IdT id) const = 0;
+    unsquelch(PublicKey const& validator, Peer::ID id) const = 0;
 };
 
 /**
@@ -103,7 +103,7 @@ class Slot final
 {
 private:
     friend class Slots<ClockType>;
-    using IdT = Peer::IdT;
+    using ID = Peer::ID;
     using time_point = ClockType::time_point;
 
     // a callback to report ignored squelches
@@ -147,7 +147,7 @@ private:
     void
     update(
         PublicKey const& validator,
-        IdT id,
+        ID id,
         protocol::MessageType type,
         IgnoredSquelchCallback callback);
 
@@ -163,7 +163,7 @@ private:
      *      disconnects
      */
     void
-    deletePeer(PublicKey const& validator, IdT id, bool erase);
+    deletePeer(PublicKey const& validator, ID id, bool erase);
 
     /**
      * Get the time of the last peer selection round
@@ -198,14 +198,14 @@ private:
     /**
      * Return selected peers
      */
-    [[nodiscard]] std::set<IdT>
+    [[nodiscard]] std::set<ID>
     getSelected() const;
 
     /**
      * Get peers info. Return map of peer's state, count, squelch
      * expiration milsec, and last message time milsec.
      */
-    [[nodiscard]] std::unordered_map<IdT, std::tuple<PeerState, uint16_t, uint32_t, uint32_t>>
+    [[nodiscard]] std::unordered_map<ID, std::tuple<PeerState, uint16_t, uint32_t, uint32_t>>
     getPeers() const;
 
     /**
@@ -251,11 +251,11 @@ private:
         time_point lastMessage;  // time last message received
     };
 
-    std::unordered_map<IdT, PeerInfo> peers_;  // peer's data
+    std::unordered_map<ID, PeerInfo> peers_;  // peer's data
 
     // pool of peers considered as the source of messages
     // from validator - peers that reached kMinMessageThreshold
-    std::unordered_set<IdT> considered_;
+    std::unordered_set<ID> considered_;
 
     // number of peers that reached kMaxMessageThreshold
     std::uint16_t reachedThreshold_{0};
@@ -298,7 +298,7 @@ template <typename ClockType>
 void
 Slot<ClockType>::update(
     PublicKey const& validator,
-    IdT id,
+    ID id,
     protocol::MessageType type,
     IgnoredSquelchCallback callback)
 {
@@ -362,7 +362,7 @@ Slot<ClockType>::update(
         // If number of remaining peers != maxSelectedPeers_
         // then reset the Counting state and let deleteIdlePeer() handle
         // idled peers.
-        std::unordered_set<IdT> selected;
+        std::unordered_set<ID> selected;
         auto const consideredPoolSize = considered_.size();
         while (selected.size() != maxSelectedPeers_ && !considered_.empty())
         {
@@ -444,12 +444,12 @@ Slot<ClockType>::getSquelchDuration(std::size_t npeers)
 
 template <typename ClockType>
 void
-Slot<ClockType>::deletePeer(PublicKey const& validator, IdT id, bool erase)
+Slot<ClockType>::deletePeer(PublicKey const& validator, ID id, bool erase)
 {
     auto it = peers_.find(id);
     if (it != peers_.end())
     {
-        std::vector<Peer::IdT> toUnsquelch;
+        std::vector<Peer::ID> toUnsquelch;
 
         JLOG(journal_.trace()) << "deletePeer: " << Slice(validator) << " " << id << " selected "
                                << (it->second.state == PeerState::Selected) << " considered "
@@ -527,10 +527,10 @@ Slot<ClockType>::notInState(PeerState state) const
 }
 
 template <typename ClockType>
-std::set<Peer::IdT>
+std::set<Peer::ID>
 Slot<ClockType>::getSelected() const
 {
-    std::set<IdT> r;
+    std::set<ID> r;
     for (auto const& [id, info] : peers_)
     {
         if (info.state == PeerState::Selected)
@@ -540,12 +540,12 @@ Slot<ClockType>::getSelected() const
 }
 
 template <typename ClockType>
-std::unordered_map<Peer::IdT, std::tuple<PeerState, uint16_t, uint32_t, uint32_t>>
+std::unordered_map<Peer::ID, std::tuple<PeerState, uint16_t, uint32_t, uint32_t>>
 Slot<ClockType>::getPeers() const
 {
     using namespace std::chrono;
     auto r = std::
-        unordered_map<IdT, std::tuple<PeerState, std::uint16_t, std::uint32_t, std::uint32_t>>();
+        unordered_map<ID, std::tuple<PeerState, std::uint16_t, std::uint32_t, std::uint32_t>>();
 
     for (auto const& [id, info] : peers_)
     {
@@ -572,10 +572,10 @@ template <typename ClockType>
 class Slots final
 {
     using time_point = ClockType::time_point;
-    using IdT = Peer::IdT;
+    using ID = Peer::ID;
     using Messages = beast::AgedUnorderedMap<
         UInt256,
-        std::unordered_set<Peer::IdT>,
+        std::unordered_set<Peer::ID>,
         ClockType,
         HardenedHash<StrongHash>>;
 
@@ -631,7 +631,7 @@ public:
     updateSlotAndSquelch(
         UInt256 const& key,
         PublicKey const& validator,
-        IdT id,
+        ID id,
         protocol::MessageType type)
     {
         updateSlotAndSquelch(key, validator, id, type, []() {});
@@ -649,7 +649,7 @@ public:
     updateSlotAndSquelch(
         UInt256 const& key,
         PublicKey const& validator,
-        IdT id,
+        ID id,
         protocol::MessageType type,
         Slot<ClockType>::IgnoredSquelchCallback callback);
 
@@ -699,7 +699,7 @@ public:
     /**
      * Get selected peers
      */
-    std::set<IdT>
+    std::set<ID>
     getSelected(PublicKey const& validator)
     {
         auto const& it = slots_.find(validator);
@@ -712,7 +712,7 @@ public:
      * Get peers info. Return map of peer's state, count, and squelch
      * expiration milliseconds.
      */
-    std::unordered_map<Peer::IdT, std::tuple<PeerState, uint16_t, uint32_t, std::uint32_t>>
+    std::unordered_map<Peer::ID, std::tuple<PeerState, uint16_t, uint32_t, std::uint32_t>>
     getPeers(PublicKey const& validator)
     {
         auto const& it = slots_.find(validator);
@@ -741,7 +741,7 @@ public:
      * @param erase If true then erase the peer
      */
     void
-    deletePeer(IdT id, bool erase);
+    deletePeer(ID id, bool erase);
 
 private:
     /**
@@ -750,7 +750,7 @@ private:
      * Return true if added
      */
     bool
-    addPeerMessage(UInt256 const& key, IdT id);
+    addPeerMessage(UInt256 const& key, ID id);
 
     std::atomic_bool reduceRelayReady_{false};
 
@@ -771,7 +771,7 @@ private:
 
 template <typename ClockType>
 bool
-Slots<ClockType>::addPeerMessage(UInt256 const& key, IdT id)
+Slots<ClockType>::addPeerMessage(UInt256 const& key, ID id)
 {
     beast::expire(peersWithMessage, reduce_relay::kIdled);
 
@@ -781,7 +781,7 @@ Slots<ClockType>::addPeerMessage(UInt256 const& key, IdT id)
         if (it == peersWithMessage.end())
         {
             JLOG(journal_.trace()) << "addPeerMessage: new " << to_string(key) << " " << id;
-            peersWithMessage.emplace(key, std::unordered_set<IdT>{id});
+            peersWithMessage.emplace(key, std::unordered_set<ID>{id});
             return true;
         }
 
@@ -805,7 +805,7 @@ void
 Slots<ClockType>::updateSlotAndSquelch(
     UInt256 const& key,
     PublicKey const& validator,
-    IdT id,
+    ID id,
     protocol::MessageType type,
     Slot<ClockType>::IgnoredSquelchCallback callback)
 {
@@ -832,7 +832,7 @@ Slots<ClockType>::updateSlotAndSquelch(
 
 template <typename ClockType>
 void
-Slots<ClockType>::deletePeer(IdT id, bool erase)
+Slots<ClockType>::deletePeer(ID id, bool erase)
 {
     for (auto& [validator, slot] : slots_)
         slot.deletePeer(validator, id, erase);

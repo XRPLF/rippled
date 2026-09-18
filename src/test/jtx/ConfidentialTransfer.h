@@ -141,7 +141,7 @@ protected:
         Buffer const& pedersenCommitment,
         Buffer const& encryptedSpendingBalance,
         Buffer const& pcBlindingFactor,
-        uint256 const& contextHash)
+        UInt256 const& contextHash)
     {
         if (pedersenCommitment.size() != kCompressedEcPointLength)
             Throw<std::runtime_error>("getForgedConvertBackProof: bad pedersenCommitment length");
