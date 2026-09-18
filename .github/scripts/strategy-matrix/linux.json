@@ -38,6 +38,14 @@
         "minimal": false,
         "sanitizers": ["address", "undefinedbehavior"]
       },
+      {
+        "compiler": ["clang"],
+        "build_type": ["Debug"],
+        "arch": ["amd64"],
+        "minimal": false,
+        "extended": true,
+        "sanitizers": ["thread"]
+      },
 
       {
         "compiler": ["clang"],

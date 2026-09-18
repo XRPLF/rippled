@@ -1,32 +1,23 @@
-# We were seeing some false positives and some repeated errors(since these are library files) in following files.
-# Clang will skip instrumenting the files added here.
-# We should fix the underlying issues(if any) and remove these entries.
-
-deadlock:libxrpl/beast/utility/beast_Journal.cpp
-deadlock:libxrpl/beast/utility/beast_PropertyStream.cpp
-deadlock:test/beast/beast_PropertyStream_test.cpp
-deadlock:xrpld/core/detail/Workers.cpp
-deadlock:xrpld/core/JobQueue.cpp
-
-race:libxrpl/beast/utility/beast_Journal.cpp
-race:libxrpl/beast/utility/beast_PropertyStream.cpp
-race:test/beast/beast_PropertyStream_test.cpp
-race:xrpld/core/detail/Workers.cpp
-race:xrpld/core/JobQueue.cpp
-
-signal:libxrpl/beast/utility/beast_Journal.cpp
-signal:libxrpl/beast/utility/beast_PropertyStream.cpp
-signal:test/beast/beast_PropertyStream_test.cpp
-signal:xrpld/core/detail/Workers.cpp
-signal:xrpld/core/JobQueue.cpp
-
-src:beast/utility/beast_Journal.cpp
-src:beast/utility/beast_PropertyStream.cpp
-src:core/detail/Workers.cpp
-src:core/JobQueue.cpp
-src:libxrpl/beast/utility/beast_Journal.cpp
-src:test/beast/beast_PropertyStream_test.cpp
-src:src/test/app/Invariants_test.cpp
+# Clang skips instrumenting the files listed here. Keep the list as short as it
+# can be: an entry here removes a file from every sanitizer's view, so it hides
+# real findings along with the false positive it was added for.
+#
+# This is a clang ignorelist, not a runtime suppressions file, and the two take
+# different syntax. Here an entry reads <entity>:<glob>, and the only entities
+# clang looks up are src, fun, global, type and mainfile. A `race:`, `deadlock:`
+# or `signal:` entry parses without an error and is then never consulted, so it
+# does nothing; those types belong in tsan.supp. The glob has to match the whole
+# path as the compiler receives it, which the build makes absolute, so an entry
+# needs a leading `*` to match anything at all. See docs/build/sanitizers.md.
+#
+# This list once held seven `src:` entries for beast_Journal.cpp,
+# beast_PropertyStream.cpp, Workers.cpp, JobQueue.cpp, the PropertyStream test
+# and Invariants_test.cpp, added against false positives. None carried the
+# leading `*`, so none ever matched, and every one of those files has been
+# instrumented the whole time. The sanitizer jobs pass that way, so the
+# suppressions are not needed; they are removed rather than repaired. Restore one
+# only with a finding that shows it is needed, and check it works by the method
+# in sanitizers.md.
 
 # ASan false positive: stack-use-after-scope in ErrorCodes.h inline functions.
 # When Clang inlines the StaticString overloads (e.g. invalidFieldError(StaticString)),
