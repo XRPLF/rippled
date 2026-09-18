@@ -6,6 +6,7 @@
 #include <xrpl/ledger/OpenView.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/detail/ApplyViewBase.h>
+#include <xrpl/protocol/Book.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STTx.h>
@@ -15,6 +16,7 @@
 #include <cstddef>
 #include <functional>
 #include <optional>
+#include <vector>
 
 namespace xrpl {
 
@@ -69,6 +71,18 @@ public:
     }
 
     /**
+     * Record an order book directory created by this transaction.
+     *
+     * The book travels with the changes: apply() hands it to the view being
+     * applied to, and discarding this view discards the book with it.
+     */
+    void
+    addOrderBook(Book const& book)
+    {
+        orderBooks_.push_back(book);
+    }
+
+    /**
      * Get the number of modified entries
      */
     std::size_t
@@ -88,6 +102,7 @@ public:
 
 private:
     std::optional<STAmount> deliver_;
+    std::vector<Book> orderBooks_;
 };
 
 }  // namespace xrpl

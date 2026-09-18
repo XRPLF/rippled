@@ -53,14 +53,28 @@ std::optional<TxMeta>
 ApplyContext::apply(TER ter)
 {
     // NOLINTNEXTLINE(bugprone-unchecked-optional-access) view_ emplaced in constructor
-    return view_->apply(base_, tx, ter, parentBatchId_, (flags_ & TapDryRun) != 0u, journal);
+    auto metadata =
+        view_->apply(base_, tx, ter, parentBatchId_, (flags_ & TapDryRun) != 0u, journal);
+
+    // The changes, and the books with them, are now in base_. For an ordinary
+    // transaction that is the ledger view, so the books are real. A batch
+    // inner's base_ is the batch's own view, which the batch may still
+    // discard, so its books travel on with that view instead.
+    if ((flags_ & TapBatch) == TapNone)
+    {
+        auto& orderBookDB = registry.get().getOrderBookDB();
+        for (auto const& book : base_.takeOrderBooks())
+            orderBookDB.addOrderBook(book);
+    }
+
+    return metadata;
 }
 
 void
 ApplyContext::addOrderBook(Book const& book)
 {
     if ((flags_ & TapDryRun) == TapNone)
-        registry.get().getOrderBookDB().addOrderBook(book);
+        view_->addOrderBook(book);
 }
 
 std::size_t

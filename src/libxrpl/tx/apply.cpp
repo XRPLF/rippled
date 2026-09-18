@@ -8,6 +8,7 @@
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/OpenView.h>
+#include <xrpl/ledger/OrderBookDB.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Rules.h>
 #include <xrpl/protocol/SField.h>
@@ -229,7 +230,12 @@ applyBatchTransactions(
         // there is no aggregate cap here. Bounded by kMaxBatchTxCount * cap,
         // which standalone txns can already produce in one ledger.
         if (ret.applied && (isTesSuccess(ret.ter) || isTecClaim(ret.ter)))
+        {
             perTxBatchView.apply(batchView);
+
+            // The books follow those changes into the batch's view.
+            batchView.addOrderBooks(perTxBatchView.takeOrderBooks());
+        }
 
         return ret;
     };
@@ -293,7 +299,15 @@ applyTransaction(
                 OpenView wholeBatchView(kBatchView, view);
 
                 if (applyBatchTransactions(registry, wholeBatchView, txn, j))
+                {
                     wholeBatchView.apply(view);
+
+                    // The batch is in the ledger, so the books its inners
+                    // created exist.
+                    auto& orderBookDB = registry.getOrderBookDB();
+                    for (auto const& book : wholeBatchView.takeOrderBooks())
+                        orderBookDB.addOrderBook(book);
+                }
             }
 
             return ApplyTransactionResult::Success;

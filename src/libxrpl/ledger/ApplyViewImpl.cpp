@@ -14,6 +14,7 @@
 #include <cstddef>
 #include <functional>
 #include <optional>
+#include <utility>
 
 namespace xrpl {
 
@@ -30,6 +31,7 @@ ApplyViewImpl::apply(
     bool isDryRun,
     beast::Journal j)
 {
+    to.addOrderBooks(std::move(orderBooks_));
     return items_.apply(to, tx, ter, deliver_, parentBatchId, isDryRun, j);
 }
 

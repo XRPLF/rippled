@@ -41,6 +41,7 @@
 #include <xrpl/json/to_string.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/OpenView.h>
+#include <xrpl/ledger/OrderBookDB.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Batch.h>
 #include <xrpl/protocol/Feature.h>
@@ -5897,6 +5898,135 @@ class Batch_test : public beast::unit_test::Suite
     }
 
     void
+    testInnerOfferOrderBook(FeatureBitset features)
+    {
+        testcase("inner offer order book");
+
+        using namespace test::jtx;
+        using namespace std::literals;
+
+        auto const alice = Account("alice");
+        auto const bob = Account("bob");
+        auto const gw = Account("gw");
+        auto const usd = gw["USD"];
+
+        // A batch that aborts leaves no offer in the ledger, so the book its
+        // inner OfferCreate created is not registered.
+        {
+            Env env{*this, features};
+            env.fund(XRP(10000), alice, bob, gw);
+            env.close();
+
+            auto const batchFee = batch::calcBatchFee(env, 0, 2);
+            auto const seq = env.seq(alice);
+            env(batch::outer(alice, seq, batchFee, tfAllOrNothing),
+                batch::Inner(offer(alice, usd(100), XRP(100)), seq + 1),
+                batch::Inner(pay(alice, bob, XRP(100000)), seq + 2));
+            env.close();
+
+            BEAST_EXPECT(env.le(keylet::account(alice))->getFieldU32(sfOwnerCount) == 0);
+            BEAST_EXPECTS(
+                env.app().getOrderBookDB().getBooksByTakerPays(usd.issue()).empty(),
+                "aborted batch registered a book");
+        }
+
+        // A batch that commits registers the book its inner OfferCreate created.
+        {
+            Env env{*this, features};
+            env.fund(XRP(10000), alice, bob, gw);
+            env.close();
+
+            auto const batchFee = batch::calcBatchFee(env, 0, 2);
+            auto const seq = env.seq(alice);
+            env(batch::outer(alice, seq, batchFee, tfAllOrNothing),
+                batch::Inner(offer(alice, usd(100), XRP(100)), seq + 1),
+                batch::Inner(pay(alice, bob, XRP(1)), seq + 2));
+            env.close();
+
+            BEAST_EXPECT(env.le(keylet::account(alice))->getFieldU32(sfOwnerCount) == 1);
+            BEAST_EXPECTS(
+                env.app().getOrderBookDB().getBooksByTakerPays(usd.issue()).size() == 1,
+                "committed batch did not register the book");
+        }
+    }
+
+    void
+    testWrappedInnerSubmission(FeatureBitset features)
+    {
+        testcase("wrapper field submission");
+
+        using namespace test::jtx;
+
+        // Object fields with no InnerObjectFormats template, used in place of
+        // sfRawTransaction as the wrapper of each inner transaction.
+        for (SField const* wrapper :
+             {&sfRawTransaction,
+              &sfCreatedNode,
+              &sfModifiedNode,
+              &sfDeletedNode,
+              &sfTemplateEntry,
+              &sfEmitDetails,
+              &sfMemo,
+              &sfFinalFields,
+              &sfNewFields,
+              &sfPreviousFields,
+              &sfTransactionMetaData})
+        {
+            bool const poisoned = (wrapper != &sfRawTransaction);
+
+            auto const alice = Account("alice");
+            auto const bob = Account("bob");
+
+            auto wrap = [&](std::uint32_t s) {
+                json::Value inner = pay(alice, bob, XRP(1));
+                inner[jss::SigningPubKey] = "";
+                inner[jss::Sequence] = s;
+                inner[jss::Fee] = "0";
+                inner[jss::Flags] = tfInnerBatchTxn;
+
+                json::Value wrapped;
+                wrapped[wrapper->jsonName] = inner;
+                return wrapped;
+            };
+
+            auto submit = [&](Env& env, TER expected) {
+                env.fund(XRP(10000), alice, bob);
+                env.close();
+
+                auto const preBob = env.balance(bob);
+                auto const batchFee = batch::calcBatchFee(env, 0, 2);
+                auto const seq = env.seq(alice);
+
+                auto jv = batch::outer(alice, seq, batchFee, tfAllOrNothing);
+                jv[jss::RawTransactions][0u] = wrap(seq + 1);
+                jv[jss::RawTransactions][1u] = wrap(seq + 2);
+
+                env(jv, Ter(expected));
+                env.close();
+
+                return env.balance(bob) == preBob + XRP(2);
+            };
+
+            // Without fixCleanup3_5_0 every wrapper executes.
+            {
+                Env env{*this, features - fixCleanup3_5_0};
+                BEAST_EXPECTS(
+                    submit(env, tesSUCCESS),
+                    wrapper->getName() + " did not execute without fixCleanup3_5_0");
+            }
+
+            // With fixCleanup3_5_0 only sfRawTransaction is accepted.
+            {
+                Env env{*this, features | fixCleanup3_5_0};
+                bool const delivered = submit(env, poisoned ? TER{temMALFORMED} : TER{tesSUCCESS});
+                BEAST_EXPECTS(
+                    delivered == !poisoned,
+                    wrapper->getName() + " wrong result with fixCleanup3_5_0");
+            }
+        }
+    }
+
+    void
     testWithFeats(FeatureBitset features)
     {
         testEnable(features);
@@ -5935,6 +6065,8 @@ class Batch_test : public beast::unit_test::Suite
         testOuterBinding(features);
         testUnsortedBatchSigners(features);
         testBatchSigCache(features);
+        testInnerOfferOrderBook(features);
+        testWrappedInnerSubmission(features);
     }
 
 public:
