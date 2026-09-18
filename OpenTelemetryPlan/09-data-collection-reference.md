@@ -353,7 +353,6 @@ The tables below list one row per attribute per subsystem, so a key shared by tw
 | `tx_type`             | string  | `tx.process`, `tx.preflight`, `tx.preclaim`, `tx.transactor` | Transaction type name (e.g., `Payment`)                                                                                               |
 | `fee`                 | int64   | `tx.process`                                                 | Transaction fee in drops                                                                                                              |
 | `sequence`            | int64   | `tx.process`                                                 | Transaction sequence number                                                                                                           |
-| `suppressed`          | boolean | `tx.receive`                                                 | `true` if transaction was suppressed (duplicate)                                                                                      |
 | `tx_status`           | string  | `tx.receive`                                                 | Transaction status (e.g., `"known_bad"`)                                                                                              |
 | `peer_id`             | int64   | `tx.receive`                                                 | Peer identifier (also set on peer spans)                                                                                              |
 | `peer_version`        | string  | `tx.receive`                                                 | Peer protocol version string                                                                                                          |
@@ -366,7 +365,7 @@ The tables below list one row per attribute per subsystem, so a key shared by tw
 **Tempo query**: `{span.tx_hash="<hash>"}` to trace a specific transaction across nodes.
 Join a transaction's work to its ledger with `{span.current_ledger_seq=<N>}`.
 
-**Prometheus labels**: `local`, `suppressed`, `tx_type`, `ter_result`, `stage` (SpanMetrics dimensions).
+**Prometheus labels**: `local`, `tx_type`, `ter_result`, `stage` (SpanMetrics dimensions).
 
 #### Transaction Queue (TxQ) Attributes
 
@@ -559,7 +558,6 @@ SpanMetrics connector does not rewrite or prefix it:
 | `consensus_mode`                  | string  | `consensus.round`, `consensus.ledger_close`    |
 | `close_time_correct`              | boolean | `consensus.accept.apply`                       |
 | `local`                           | boolean | `tx.process`                                   |
-| `suppressed`                      | boolean | `tx.receive`                                   |
 | `proposal_trusted`                | boolean | `peer.proposal.receive`                        |
 | `validation_trusted`              | boolean | `peer.validation.receive`                      |
 | `tx_type`                         | string  | `tx.*`, `txq.enqueue`                          |

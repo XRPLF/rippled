@@ -254,6 +254,10 @@ inline constexpr char peerAcceptTotal[] = "peer_accept_total";
  */
 inline constexpr char peerDisconnectTotal[] = "peer_disconnect_total";
 /**
+ * Relayed transactions this node did not process, by reason.
+ */
+inline constexpr char peerTxRejectedTotal[] = "peer_tx_rejected_total";
+/**
  * Peer data requests this node declined to serve, by kind and cause.
  */
 inline constexpr char serveRefusedTotal[] = "serve_refused_total";
@@ -794,6 +798,22 @@ inline constexpr char writeError[] = "write_error";
 inline constexpr char graceful[] = "graceful";
 inline constexpr char readError[] = "read_error";
 }  // namespace disconnect
+
+/**
+ * `peer_tx_rejected_total` reasons -- why a relayed transaction was not
+ * processed.
+ *
+ * `duplicate` is ordinary relay overlap and dominates, because a peer relays
+ * every transaction it hears. `known_bad` and `inner_batch` mean a peer sent
+ * traffic it should not, so the split is what separates normal overlap from a
+ * misbehaving peer. The total across reasons matches the
+ * `transactions_duplicate` traffic category for the first two.
+ */
+namespace tx_rejected {
+inline constexpr char duplicate[] = "duplicate";
+inline constexpr char knownBad[] = "known_bad";
+inline constexpr char innerBatch[] = "inner_batch";
+}  // namespace tx_rejected
 
 /**
  * `serve_refused_total` request kinds: what the peer had asked for.

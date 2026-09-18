@@ -1428,6 +1428,12 @@ PeerImp::handleTransaction(
         */
         if (stx->isFlag(tfInnerBatchTxn))
         {
+            XRPL_METRIC_COUNTER_INC_LABELED(
+                app_,
+                telemetry::metric::peerTxRejectedTotal,
+                "Relayed transactions not processed, by reason",
+                {{telemetry::label::reason,
+                  std::string(telemetry::lval::tx_rejected::innerBatch)}});
             JLOG(pJournal_.warn()) << "Ignoring Network relayed Tx containing "
                                       "tfInnerBatchTxn (handleTransaction).";
             fee_.update(resource::kFeeModerateBurdenPeer, "inner batch txn");
@@ -1443,11 +1449,24 @@ PeerImp::handleTransaction(
             // we have seen this transaction recently
             if (any(flags & HashRouterFlags::BAD))
             {
+                XRPL_METRIC_COUNTER_INC_LABELED(
+                    app_,
+                    telemetry::metric::peerTxRejectedTotal,
+                    "Relayed transactions not processed, by reason",
+                    {{telemetry::label::reason,
+                      std::string(telemetry::lval::tx_rejected::knownBad)}});
                 fee_.update(resource::kFeeUselessData, "known bad");
                 JLOG(pJournal_.debug()) << "Ignoring known bad tx " << txID;
             }
             else
             {
+                XRPL_METRIC_COUNTER_INC_LABELED(
+                    app_,
+                    telemetry::metric::peerTxRejectedTotal,
+                    "Relayed transactions not processed, by reason",
+                    {{telemetry::label::reason,
+                      std::string(telemetry::lval::tx_rejected::duplicate)}});
+
                 // Erase only if the server has seen this tx. If the server
                 // has not seen this tx then the tx could not have been
                 // queued for this peer.
