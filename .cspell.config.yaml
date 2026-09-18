@@ -119,6 +119,7 @@ words:
   - enablerepo
   - endmacro
   - envrc
+  - EOCFG
   - exceptioned
   - EXPECT_STREQ
   - exfiltration
@@ -216,6 +217,7 @@ words:
   - nixfmt
   - nixos
   - nixpkgs
+  - NETOP
   - NOLINT
   - NOLINTNEXTLINE
   - nonxrp
@@ -241,6 +243,8 @@ words:
   - permdex
   - perminute
   - permissioned
+  - pgrep
+  - pkill
   - pimpl
   - pointee
   - populator
@@ -265,6 +269,7 @@ words:
   - replayer
   - repodata
   - repomd
+  - reqps
   - rerandomize
   - rerandomization
   - rerandomized
