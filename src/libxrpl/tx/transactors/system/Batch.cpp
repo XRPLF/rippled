@@ -9,6 +9,7 @@
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/helpers/SponsorHelpers.h>
 #include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAccount.h>  // IWYU pragma: keep
@@ -284,9 +285,21 @@ Batch::preflight(PreflightContext const& ctx)
 
         return tesSUCCESS;
     };
-    for (auto const& stxPtr : ctx.tx.getBatchTransactions())
+    auto const& innerTxns = ctx.tx.getBatchTransactions();
+    for (std::size_t i = 0; i < innerTxns.size(); ++i)
     {
-        STTx const& stx = *stxPtr;
+        STTx const& stx = *innerTxns[i];
+
+        // Object fields with no InnerObjectFormats template carry no field
+        // constraints, so any of them wraps an inner transaction as well as
+        // sfRawTransaction does unless the name is required here.
+        if (ctx.rules.enabled(fixCleanup3_5_0) && rawTxns[i].getFName() != sfRawTransaction)
+        {
+            JLOG(ctx.j.debug()) << "BatchTrace[" << parentBatchId << "]:"
+                                << "txns array may contain only RawTransaction objects.";
+            return temMALFORMED;
+        }
+
         auto const hash = stx.getTransactionID();
         if (!uniqueHashes.emplace(hash).second)
         {
