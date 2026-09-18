@@ -87,9 +87,7 @@ public:
               std::move(request),
               publicKey,
               protocol,
-              // `resource::Consumer` is copy-only, so `std::move` here would
-              // be a copy anyway.
-              consumer,
+              consumer,  // copy-only, so `std::move` would be a copy anyway
               std::move(streamPtr),
               overlay)
     {
