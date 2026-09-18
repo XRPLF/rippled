@@ -444,13 +444,13 @@ Clear, measurable criteria for each phase.
 
 ### 6.10.3 Phase 3: Transaction Tracing
 
-| Criterion        | Measurement                     | Target                             |
-| ---------------- | ------------------------------- | ---------------------------------- |
-| Local Trace      | Submit → validate → TxQ traced  | Single-node test passes            |
-| Cross-Node       | Context propagates via protobuf | Multi-node test passes             |
-| Relay Visibility | relay_count attribute correct   | Spot check 100 txs                 |
-| HashRouter       | Deduplication visible in trace  | Duplicate txs show suppressed=true |
-| Performance      | TX throughput overhead          | <5% degradation                    |
+| Criterion        | Measurement                     | Target                     |
+| ---------------- | ------------------------------- | -------------------------- |
+| Local Trace      | Submit → validate → TxQ traced  | Single-node test passes    |
+| Cross-Node       | Context propagates via protobuf | Multi-node test passes     |
+| Relay Visibility | relay_count attribute correct   | Spot check 100 txs         |
+| HashRouter       | Deduplication visible           | Duplicates produce no span |
+| Performance      | TX throughput overhead          | <5% degradation            |
 
 **Definition of Done**: Transaction traces span 3+ nodes in test network, performance within bounds.
 
