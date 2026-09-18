@@ -26,8 +26,7 @@
       "stage",
       "txq_status",
       "close_time_correct",
-      "consensus_state",
-      "suppressed"
+      "consensus_state"
     ],
     "_dimension_labels_note": "Bare label names as configured in otel-collector-config.yaml spanmetrics dimensions. Informational only (not asserted by the validator)."
   },
