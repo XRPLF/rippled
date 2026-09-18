@@ -437,6 +437,56 @@ public:
     }
 
     /**
+     * Aggregates the per-peer advertised ledger ranges into supply counts.
+     *
+     * Iterates the active peers once, reading each one's cached
+     * `ledgerRange()`. Peers advertising [0, 0] have not reported yet and are
+     * skipped entirely, so they cannot drag `supplyMinSeq` to zero and make a
+     * healthy peer set look like it offers history from genesis.
+     *
+     * @param validatedSeq This node's validated sequence.
+     * @return The supply counts and the covered sequence window.
+     *
+     * @note O(peers). `getActivePeers()` copies the peer list under the
+     *       overlay lock and releases it before the loop runs, so no peer's
+     *       `ledgerRange()` lock is ever taken while holding the overlay lock.
+     * @note Called from the ~10 s telemetry gauge callback only.
+     */
+    [[nodiscard]] PeerLedgerSupply
+    getPeerLedgerSupply(std::uint32_t validatedSeq) const override;
+
+    /**
+     * Forwards the PeerFinder slot census.
+     *
+     * @return One consistent snapshot of all nine slot/cache fields.
+     */
+    [[nodiscard]] peer_finder::SlotCensus
+    getSlotCensus() override
+    {
+        return peerFinder_->getSlotCensus();
+    }
+
+    /**
+     * Emits the inbound-accept outcome counter for one handoff attempt.
+     *
+     * Counts the terminal outcome of every inbound connection this node is
+     * offered. The outbound twin (`overlay_connect_total`) already exists in
+     * ConnectAttempt, so this closes the in/out split: without it, a node
+     * refusing every inbound connection looks the same as one nobody dials.
+     *
+     * @param outcome Stable slug for the terminal outcome. Drawn from a fixed
+     *        set of literals at the call sites, never from peer-supplied data,
+     *        so label cardinality is bounded by the code.
+     *
+     * @note Cold path: one call per inbound handoff, which is a
+     *       connection-rate event, not a message-rate one.
+     * @note No-op when telemetry is compiled out or disabled; the macro
+     *       carries that guard, so this needs no `#ifdef`.
+     */
+    void
+    reportAcceptOutcome(char const* outcome);
+
+    /**
      * Add tx reduce-relay metrics.
      */
     template <typename... Args>
@@ -574,6 +624,41 @@ private:
      */
     void
     deleteIdlePeers();
+
+    /**
+     * Emit the DNS resolve outcome and latency metrics for one resolved name.
+     *
+     * Shared by both `resolver_.resolve(...)` completion handlers in
+     * OverlayImpl::start() (the bootstrap `[ips]` batch and the `[ips_fixed]`
+     * batch), so the emit code exists exactly once. This matters beyond
+     * de-duplication: the metric macros cache their instrument in a
+     * function-local `static`, so keeping a single call site also keeps a
+     * single shared instrument for both batches.
+     *
+     * Emits:
+     *   - `dns_resolve_latency_ms` histogram, no labels
+     *   - `dns_resolve_total` counter, label `outcome` = "resolved" | "empty"
+     *
+     * ResolverAsio invokes its handler with the same signature for success and
+     * failure; on failure the address list is empty. So an empty list is the
+     * only failure signal available to the caller, and `resolved` must be
+     * derived from it.
+     *
+     * @param start When the resolve request was submitted. The measured latency
+     *        therefore spans the whole batch resolve for that name, not just
+     *        the final DNS round trip.
+     * @param resolved True when the resolver returned at least one address.
+     *
+     * @note Called once per resolved name during overlay startup only
+     *       (bootstrap plus fixed peers) -- this is not a hot loop.
+     * @note MetricsRegistry is already started when this runs:
+     *       ApplicationImp::setup() calls startTelemetry() before
+     *       ApplicationImp::start() calls overlay_->start().
+     * @note No-op when telemetry is compiled out or disabled at runtime; the
+     *       macro carries that guard, so this method needs no `#ifdef`.
+     */
+    void
+    reportDnsResolve(std::chrono::steady_clock::time_point start, bool resolved);
 
 private:
     struct TrafficGauges

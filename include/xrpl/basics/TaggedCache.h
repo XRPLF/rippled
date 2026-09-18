@@ -101,6 +101,14 @@ public:
     int
     getTrackSize() const;
 
+    /**
+     * Longest single hold of the cache mutex by sweep() or getKeys() since
+     * the previous call, then reset to zero. A per-collect peak: the metrics
+     * gauge reads it once per collection tick.
+     */
+    [[nodiscard]] std::chrono::nanoseconds
+    takeLockHoldPeak() noexcept;
+
     float
     getHitRate();
 
@@ -374,6 +382,18 @@ private:
         SweptPointersVector&,
         std::atomic<int>& allRemovals,
         std::scoped_lock<std::recursive_mutex> const&);
+
+    /**
+     * Record one mutex hold. Keeps the maximum since the last take and warns
+     * when a hold reaches one second, the same bar LoadMonitor uses for a job.
+     * `const` because getKeys() is `const` and lockHoldPeakNs_ is `mutable`.
+     */
+    void
+    noteLockHold(std::chrono::steady_clock::time_point start, std::size_t entries, char const* op)
+        const noexcept;
+
+    // Peak mutex hold in nanoseconds since the last takeLockHoldPeak().
+    mutable std::atomic<std::int64_t> lockHoldPeakNs_{0};
 
     beast::Journal journal_;
     clock_type& clock_;

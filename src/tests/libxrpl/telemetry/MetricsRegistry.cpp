@@ -32,6 +32,16 @@
  * the gate. It does not prove the memory is safe: with no sanitizer, a read of
  * freed memory can still pass. A sanitizer build running these same tests is
  * what would catch a regression in the memory itself.
+ *
+ * Two tests in group 4 assert on the class surface rather than on behaviour:
+ * `state_changes_total` has no registry-owned increment method, and `meter()`
+ * is not a member in a telemetry-off build. Both read the surface with a
+ * `requires` expression, so the compiler decides the property and the test
+ * reports it.
+ *
+ * The observable gauges are not part of this class, and this binary links
+ * xrpl.libxrpl only, so no gauge value can be observed here. Those values are
+ * asserted where the gauges live.
  */
 
 #include <xrpl/telemetry/MetricsRegistry.h>
@@ -663,7 +673,7 @@ testOptions()
 /**
  * Call every record and increment method on @p registry once.
  *
- * All thirteen are driven from one place, so a method added to the class
+ * All twelve are driven from one place, so a method added to the class
  * without a line here reads as an uncovered method rather than as a passing
  * test.
  *
@@ -684,7 +694,6 @@ recordEverything(MetricsRegistry& registry, std::string const& tag)
     registry.incrementLedgersClosed();
     registry.incrementValidationsSent();
     registry.incrementValidationsChecked();
-    registry.incrementStateChanges();
     registry.incrementLedgerHistoryMismatch("mismatch_" + tag);
     registry.incrementTxqExpired();
     registry.incrementTxqDropped("dropped_" + tag);
@@ -811,7 +820,7 @@ TEST_F(MetricsRegistryTest, every_record_method_runs_while_recording)
     MetricsRegistry registry(true, j_, testOptions());
     ASSERT_EQ(registry.recording(), true);
 
-    // The one test that drives all thirteen real entry points against a real
+    // The one test that drives all twelve real entry points against a real
     // SDK provider. No point can be read back -- the core owns its provider and
     // exposes no reader -- so the sweep is a crash canary and the assertions
     // below are the deterministic part.
@@ -879,7 +888,7 @@ TEST_F(MetricsRegistryTest, records_after_stop_are_inert)
     ASSERT_EQ(registry.recording(), false);
 #endif
 
-    // The same thirteen methods with a tag never used before stop(), so every
+    // The same twelve methods with a tag never used before stop(), so every
     // attribute set here is first-seen -- including four histogram records
     // across three instruments, which is the case that allocates through the
     // AggregationConfig the destroyed View owned.
@@ -917,6 +926,51 @@ TEST_F(MetricsRegistryTest, stop_twice_is_safe)
     EXPECT_EQ(registry.hasPipeline(), false);
 #endif
 }
+
+// ---------------------------------------------------------------------------
+// Class-surface assertions. These read what the class declares, not what a
+// registry does, so the compiler decides them and the test reports the answer.
+// ---------------------------------------------------------------------------
+
+// The `state_changes_total` counter has no registry-owned wrapper method by
+// design: it is emitted from a labelled call-site macro in
+// NetworkOPsImp::setMode, which is the only place that knows {from,to}. Adding
+// incrementStateChanges() would put an unlabelled instrument beside the
+// labelled one, so Prometheus would carry two conflicting versions of one
+// metric name.
+TEST_F(MetricsRegistryTest, state_changes_counter_has_no_registry_wrapper)
+{
+    auto hasIncrementStateChanges = []<typename T>(T* r) {
+        return requires { r->incrementStateChanges(); };
+    };
+    EXPECT_FALSE(hasIncrementStateChanges(static_cast<MetricsRegistry*>(nullptr)));
+
+    // Positive control: a sibling parity counter that is a registry wrapper is
+    // still detectable, so the trait above is really probing for the method and
+    // not vacuously false.
+    auto hasIncrementLedgersClosed = []<typename T>(T* r) {
+        return requires { r->incrementLedgersClosed(); };
+    };
+    EXPECT_TRUE(hasIncrementLedgersClosed(static_cast<MetricsRegistry*>(nullptr)));
+}
+
+#ifndef XRPL_ENABLE_TELEMETRY
+
+// meter() is the only accessor that reaches the OTel SDK, and in a
+// telemetry-off build it is not a member at all. The check is red if the
+// accessor escapes its #ifdef and drags the SDK into this build.
+TEST_F(MetricsRegistryTest, telemetry_off_build_exposes_no_meter_accessor)
+{
+    auto hasMeter = []<typename T>(T* r) { return requires { r->meter(); }; };
+    EXPECT_FALSE(hasMeter(static_cast<MetricsRegistry*>(nullptr)));
+
+    // Positive control: recording() -- an accessor that exists in both builds
+    // -- is detectable on the same trait shape.
+    auto hasRecording = []<typename T>(T* r) { return requires { r->recording(); }; };
+    EXPECT_TRUE(hasRecording(static_cast<MetricsRegistry*>(nullptr)));
+}
+
+#endif  // !XRPL_ENABLE_TELEMETRY
 
 #ifdef XRPL_ENABLE_TELEMETRY
 

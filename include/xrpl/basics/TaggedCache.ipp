@@ -146,6 +146,53 @@ template <
     class Hash,
     class KeyEqual,
     class Mutex>
+inline std::chrono::nanoseconds
+TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash, KeyEqual, Mutex>::
+    takeLockHoldPeak() noexcept
+{
+    return std::chrono::nanoseconds{lockHoldPeakNs_.exchange(0, std::memory_order_relaxed)};
+}
+
+template <
+    class Key,
+    class T,
+    bool IsKeyCache,
+    class SharedWeakUnionPointer,
+    class SharedPointerType,
+    class Hash,
+    class KeyEqual,
+    class Mutex>
+inline void
+TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash, KeyEqual, Mutex>::
+    noteLockHold(std::chrono::steady_clock::time_point start, std::size_t entries, char const* op)
+        const noexcept
+{
+    using namespace std::chrono;
+    auto const held = steady_clock::now() - start;
+    auto const heldNs = duration_cast<nanoseconds>(held).count();
+    // fetch_max is C++26; a CAS loop is the portable maximum.
+    auto seen = lockHoldPeakNs_.load(std::memory_order_relaxed);
+    while (seen < heldNs &&
+           !lockHoldPeakNs_.compare_exchange_weak(seen, heldNs, std::memory_order_relaxed))
+    {
+    }
+    if (held >= seconds{1})
+    {
+        JLOG(journal_.warn()) << name_ << " TaggedCache " << op << " held the lock "
+                              << duration_cast<milliseconds>(held).count() << "ms over " << entries
+                              << " entries";
+    }
+}
+
+template <
+    class Key,
+    class T,
+    bool IsKeyCache,
+    class SharedWeakUnionPointer,
+    class SharedPointerType,
+    class Hash,
+    class KeyEqual,
+    class Mutex>
 inline float
 TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash, KeyEqual, Mutex>::
     getHitRate()
@@ -241,8 +288,10 @@ TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash,
     clock_type::time_point whenExpire;
 
     auto const start = std::chrono::steady_clock::now();
+    std::size_t entries = 0;
     {
         std::scoped_lock const lock(mutex_);
+        entries = cache_.size();
 
         if (targetSize_ == 0 || (static_cast<int>(cache_.size()) <= targetSize_))
         {
@@ -277,6 +326,7 @@ TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash,
     }
     // At this point allStuffToSweep will go out of scope outside the lock
     // and decrement the reference count on each strong pointer.
+    noteLockHold(start, entries, "sweep");
     JLOG(journal_.debug()) << name_ << " TaggedCache sweep lock duration "
                            << std::chrono::duration_cast<std::chrono::milliseconds>(
                                   std::chrono::steady_clock::now() - start)
@@ -640,8 +690,10 @@ TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash,
         XRPL_ASSERT(lock.owns_lock(), "xrpl::TaggedCache::getKeys(): owns lock");
         XRPL_ASSERT(
             v.capacity() >= cache_.size(), "xrpl::TaggedCache::getKeys(): sufficient capacity");
+        auto const copyStart = std::chrono::steady_clock::now();
         for (auto const& _ : cache_)
             v.push_back(_.first);
+        noteLockHold(copyStart, v.size(), "getKeys");
     }
 
     return v;

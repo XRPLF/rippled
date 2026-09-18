@@ -1,8 +1,10 @@
+// cspell:ignore ISTOGRAM Wreturn
 #pragma once
 
 #include <xrpld/app/ledger/LedgerMaster.h>
 #include <xrpld/app/main/Application.h>
 #include <xrpld/app/misc/SHAMapStore.h>
+#include <xrpld/app/misc/SHAMapStoreSpanNames.h>
 
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/config/BasicConfig.h>
@@ -17,17 +19,23 @@
 #include <xrpl/shamap/FullBelowCache.h>
 #include <xrpl/shamap/SHAMapTreeNode.h>
 #include <xrpl/shamap/TreeNodeCache.h>
+#include <xrpl/telemetry/MetricMacros.h>
+#include <xrpl/telemetry/MetricNames.h>
+#include <xrpl/telemetry/SpanGuard.h>
+#include <xrpl/telemetry/SpanNames.h>
 
 #include <algorithm>
 #include <atomic>
 #include <chrono>
 #include <condition_variable>
+#include <cstddef>
 #include <cstdint>
 #include <functional>
 #include <memory>
 #include <mutex>
 #include <optional>
 #include <string>
+#include <string_view>
 #include <thread>
 
 namespace xrpl {
@@ -197,13 +205,87 @@ private:
     std::unique_ptr<node_store::Backend>
     makeBackendRotating(std::string path = std::string());
 
+    /**
+     * One rotation phase: a child span of nodestore.rotate for its lifetime
+     * and one rotation_phase_duration_seconds record when it ends. Lives on
+     * the SHAMapStore thread only. Not movable: hold it in a scope.
+     */
+    class RotationPhase
+    {
+    public:
+        template <std::size_t N>
+        RotationPhase(
+            SHAMapStoreImp& owner,
+            telemetry::StaticStr<N> const& phase,
+            char const* stage)
+            : owner_(owner)
+            , stage_(stage)
+            , span_(telemetry::TraceCategory::Ledger, telemetry::nodestore_span::rotateFull, phase)
+        {
+        }
+
+        ~RotationPhase()
+        {
+            // [[maybe_unused]] so a -DXRPL_ENABLE_TELEMETRY=0 build (macro
+            // expands to `do {} while (false)`) keeps compiling under -Werror.
+            [[maybe_unused]] auto const seconds =
+                std::chrono::duration<double>(std::chrono::steady_clock::now() - start_).count();
+            XRPL_METRIC_HISTOGRAM_RECORD_LABELED(
+                owner_.app_,
+                telemetry::metric::rotationPhaseDurationSeconds,
+                "Wall-clock seconds spent in one online-delete rotation phase",
+                seconds,
+                {{telemetry::label::stage, std::string(stage_)}});
+        }
+
+        RotationPhase(RotationPhase const&) = delete;
+        RotationPhase&
+        operator=(RotationPhase const&) = delete;
+        RotationPhase(RotationPhase&&) = delete;
+        RotationPhase&
+        operator=(RotationPhase&&) = delete;
+
+        template <class Value>
+        void
+        setAttribute(std::string_view key, Value value) noexcept
+        {
+            span_.setAttribute(key, value);
+        }
+
+    private:
+        // Read only inside the metric macro in the destructor, so a
+        // -DXRPL_ENABLE_TELEMETRY=0 build sees no use at all.
+        [[maybe_unused]] SHAMapStoreImp& owner_;
+        [[maybe_unused]] char const* stage_;
+        std::chrono::steady_clock::time_point start_ = std::chrono::steady_clock::now();
+        telemetry::ScopedSpanGuard span_;
+    };
+
+    // True while run() is inside its rotation block. Read and written on the
+    // SHAMapStore thread only, so it needs no lock.
+    bool rotating_ = false;
+
     template <class CacheInstance>
     bool
     freshenCache(CacheInstance& cache)
     {
-        std::uint64_t check = 0;
+        namespace ns = telemetry::nodestore_span;
+        namespace lv = telemetry::lval::rotation_phase;
 
-        for (auto const& key : cache.getKeys())
+        // getKeys() copies every key under the cache mutex. It gets its own
+        // phase so the hold is visible on its own, apart from the fetch loop.
+        auto const keys = [&] {
+            RotationPhase phase(*this, ns::phase::freshenKeys, lv::freshenKeys);
+            auto k = cache.getKeys();
+            phase.setAttribute(ns::attr::keyCount, static_cast<std::int64_t>(k.size()));
+            return k;
+        }();
+
+        RotationPhase phase(*this, ns::phase::freshenFetch, lv::freshenFetch);
+        phase.setAttribute(ns::attr::keyCount, static_cast<std::int64_t>(keys.size()));
+
+        std::uint64_t check = 0;
+        for (auto const& key : keys)
         {
             dbRotating_->fetchNodeObject(key, 0, node_store::FetchType::Synchronous, true);
             if (!(++check % checkHealthInterval_) && healthWait() != HealthResult::KeepGoing)
