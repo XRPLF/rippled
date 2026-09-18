@@ -1540,7 +1540,7 @@ Clear, measurable criteria for each phase.
 | Relay Ordering        | Protobuf span_id propagation creates parent-child | Tempo trace tree shows relay chain                       |
 | Graceful Degradation  | Old peer drops trace_context                      | Spans still grouped by deterministic trace_id            |
 | Relay Visibility      | relay_count attribute correct                     | Spot check 100 txs                                       |
-| HashRouter            | Deduplication visible in trace                    | Duplicate txs show suppressed=true                       |
+| HashRouter            | Deduplication visible                             | Duplicates produce no span                               |
 | Performance           | TX throughput overhead                            | <5% degradation                                          |
 
 **Definition of Done**: Transaction traces span 3+ nodes in test network with deterministic trace_id correlation, parent-child ordering via protobuf propagation, and performance within bounds.
