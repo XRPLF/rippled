@@ -85,6 +85,7 @@ jobs:
             .github/workflows/reusable-build-test.yml
             .github/workflows/reusable-check-autogen.yml
             .github/workflows/reusable-clang-tidy.yml
+            .github/workflows/reusable-package-test-install.yml
             .github/workflows/reusable-package.yml
             .github/workflows/reusable-rust.yml
             .github/workflows/reusable-strategy-matrix.yml
