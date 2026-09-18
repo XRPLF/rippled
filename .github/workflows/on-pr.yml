@@ -126,6 +126,60 @@ jobs:
             package/**
             README.md
 
+      - name: Determine changed telemetry files
+        # A separate list from the one above, because the telemetry validation
+        # builds xrpld on the self-hosted runner and then runs a multi-node
+        # cluster for up to 30 minutes. The `go` gate above is true for almost
+        # any pull request, so gating this one on `go` alone would run that cost
+        # on every pull request in the repository.
+        #
+        # Keep these globs pointing at paths that exist -- two earlier entries
+        # matched zero tracked files, so C++ telemetry changes never triggered.
+        id: telemetry-changes
+        uses: tj-actions/changed-files@9426d40962ed5378910ee2e21d5f8c6fcbf2dd96 # v47.0.6
+        with:
+          files: |
+            # This workflow, the one it calls, and the harness that runs.
+            .github/workflows/on-pr.yml
+            .github/workflows/reusable-telemetry-validation.yml
+            docker/telemetry/**
+
+            # The telemetry modules themselves.
+            include/xrpl/telemetry/**
+            src/libxrpl/telemetry/**
+            src/xrpld/telemetry/**
+
+            # beast::insight, whose gauges and counters the validation asserts
+            # on. Both halves: the interface headers decide what the OTel
+            # collector can publish, so editing one moves the metric surface as
+            # surely as editing the implementation does.
+            include/xrpl/beast/insight/**
+            src/libxrpl/beast/insight/**
+
+            # The span-name and metric-name constants. These are the wire
+            # contract the harness asserts against by literal string, so a
+            # rename here compiles cleanly and silently empties the assertions.
+            # Matched by filename rather than directory because the convention
+            # colocates each header with the class it serves: they live under
+            # consensus/, overlay/, app/ledger/, app/main/, app/misc/, rpc/ and
+            # tx/, not under a telemetry/ directory.
+            **/*SpanNames.h
+            **/*MetricNames.h
+
+            # The GTests that pin those same constants.
+            src/tests/libxrpl/telemetry/**
+
+            # The checkers that gate this surface. otel-naming derives the legal
+            # attribute and metric names from the headers above; the telemetry
+            # scripts enforce the histogram-bucket parity and regression-bound
+            # rules the harness depends on.
+            .github/scripts/otel-naming/**
+            .github/scripts/telemetry/**
+
+            # The recipe, because it carries the telemetry option this decides
+            # the validation on.
+            conanfile.py
+
       - name: Check whether to run
         # This step determines whether the rest of the workflow should
         # run. The rest of the workflow will run if this job runs AND at
@@ -146,6 +200,7 @@ jobs:
           cat "${GITHUB_OUTPUT}"
     outputs:
       go: ${{ steps.go.outputs.go == 'true' }}
+      telemetry_changed: ${{ steps.telemetry-changes.outputs.any_changed == 'true' }}
 
   check-autogen:
     needs: should-run
@@ -219,6 +274,11 @@ jobs:
       remote_username: ${{ secrets.NEXUS_REMOTE_USERNAME }}
       remote_password: ${{ secrets.NEXUS_REMOTE_PASSWORD }}
 
+  telemetry-validation:
+    needs: should-run
+    if: ${{ needs.should-run.outputs.go == 'true' && needs.should-run.outputs.telemetry_changed == 'true' }}
+    uses: ./.github/workflows/reusable-telemetry-validation.yml
+
   notify-clio:
     needs: upload-recipe
     runs-on: ubuntu-latest
@@ -248,6 +308,7 @@ jobs:
       - package
       - upload-recipe
       - notify-clio
+      - telemetry-validation
     runs-on: ubuntu-latest
     steps:
       - name: Fail
