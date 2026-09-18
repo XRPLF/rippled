@@ -317,6 +317,63 @@ struct TransactionAcquire_test : public beast::unit_test::Suite
     }
 
     /**
+     * A late reply is turned away before its nodes are deserialized.
+     *
+     * Observed through the fee tier, which is what the order is visible
+     * in: unparseable node data charges kFeeInvalidData when parsed, and
+     * nothing or kFeeUselessData when turned away first. See
+     * testUndeserializableNodeIsCharged, which feeds the same packet to a
+     * running acquisition and does get kFeeInvalidData.
+     *
+     * @param env The environment to run in.
+     */
+    void
+    testLateReplyIsTurnedAwayBeforeParsing(jtx::Env& env)
+    {
+        testcase("A late reply is turned away before its nodes are parsed");
+
+        auto const chain = DeepChain::toLeaf(3, nextSeed());
+        auto& inbound = env.app().getInboundTransactions();
+
+        uint256 const setHash = chain.rootHash.asUInt256();
+        BEAST_EXPECT(inbound.getSet(setHash, true) == nullptr);
+
+        // One peer supplies the whole chain, so it alone holds the allowance's one slot. Delivered
+        // in two replies rather than one, since only a peer we asked holds a slot at all, and it is
+        // the follow-up request the root-only reply provokes that puts this one in requestedPeers_.
+        // A single reply completing the set instead reaches trigger()'s no-nodes-missing exit,
+        // which settles the acquisition without ever asking its supplier for anything.
+        auto const rootPeer = std::make_shared<ChargeRecordingPeer>();
+        inbound.gotData(setHash, rootPeer, packetFor(chain, {{SHAMapNodeID{}, chain.nodeAt(0)}}));
+        inbound.gotData(setHash, rootPeer, packetFor(chain, chain.nodesBelowRoot()));
+
+        BEAST_EXPECT(waitForDeliveredSet(env, setHash) != nullptr);
+        BEAST_EXPECT(rootPeer->charges().empty());
+
+        // A single byte naming a wire type that does not exist, as in
+        // testUndeserializableNodeIsCharged.
+        auto const garbage = [&] {
+            auto packet = std::make_shared<protocol::TMLedgerData>();
+            packet->set_ledgerhash(setHash.data(), uint256::size());
+            packet->set_ledgerseq(0);
+            packet->set_type(protocol::liTS_CANDIDATE);
+
+            auto* const node = packet->add_nodes();
+            node->set_nodedata("\xff", 1);
+            node->set_id(SHAMapNodeID{}.getRawString());
+            return packet;
+        };
+
+        // Free, and never looked at: parsing would charge kFeeInvalidData for the byte instead.
+        inbound.gotData(setHash, rootPeer, garbage());
+        BEAST_EXPECT(rootPeer->charges().empty());
+
+        // The slot is spent, so this one is charged as a replay rather than as bad data.
+        inbound.gotData(setHash, rootPeer, garbage());
+        BEAST_EXPECT(rootPeer->charges() == std::vector{resource::kFeeUselessData});
+    }
+
+    /**
      * A chain reaching kLeafDepth must end the acquisition outright.
      *
      * @param env The environment to run in.
@@ -868,11 +925,9 @@ struct TransactionAcquire_test : public beast::unit_test::Suite
      * The recorded progress is what the verdict is for: it stops the
      * next timer tick from counting a timeout, so reporting only the
      * node the batch stopped on would push an acquisition that is
-     * genuinely advancing toward kMaxTimeouts, while recording progress
-     * for a batch we already had would hold a stalled one open. The flag
-     * is read rather than the returned tally, which only stands in for
-     * it, and cleared between batches so each reading is about the batch
-     * just fed.
+     * genuinely advancing toward kMaxTimeouts. The flag is read rather
+     * than the returned tally, which only stands in for it, and cleared
+     * between batches so each reading is about the batch just fed.
      *
      * @param env The environment to run in.
      */
@@ -912,16 +967,15 @@ struct TransactionAcquire_test : public beast::unit_test::Suite
         // The bad node is still charged for, at the recoverable tier.
         BEAST_EXPECT(peer->charges() == std::vector{resource::kFeeInvalidData});
 
-        // A batch of nothing but the root we already have: counted as a duplicate rather than
-        // reaching the clean exit with nothing counted, so it is neither reported as useful nor
-        // allowed to postpone the timeout.
+        // A batch of nothing but the root we already have: counted as a duplicate, so not useful,
+        // but it still postpones the timeout since this peer is one we asked and it answered.
         acquire->clearProgress();
         auto const repeatedRoot = acquire->takeNodes({{SHAMapNodeID{}, chain.nodeAt(0)}}, peer);
 
         BEAST_EXPECTS(tallyIs(repeatedRoot, 0, 0, 1), repeatedRoot.get());
         BEAST_EXPECT(repeatedRoot.isGood());
         BEAST_EXPECT(!repeatedRoot.isUseful());
-        BEAST_EXPECT(!acquire->madeProgress());
+        BEAST_EXPECT(acquire->madeProgress());
 
         // The same root alongside a node we do need: the duplicate is reported as one, and the
         // node that did hook in is what records the progress.
@@ -937,6 +991,119 @@ struct TransactionAcquire_test : public beast::unit_test::Suite
 
         // None of that cost the sender anything beyond the one bad node above.
         BEAST_EXPECT(peer->charges() == std::vector{resource::kFeeInvalidData});
+    }
+
+    /**
+     * A duplicate-only reply from a peer we asked still postpones the timeout.
+     *
+     * trigger() asks every peer it is given, so on a fan-out the slower
+     * responder's reply is entirely nodes the faster one already supplied.
+     * The flag asks whether the peers being waited on are answering, and
+     * such a peer has answered.
+     *
+     * @param env The environment to run in.
+     */
+    void
+    testDuplicateOnlyReplyFromAskedPeerCountsAsProgress(jtx::Env& env)
+    {
+        testcase("A duplicate-only reply from a peer we asked counts as progress");
+
+        DeepChain const chain{nextSeed()};
+
+        auto const acquire = std::make_shared<TestableTransactionAcquire>(
+            env.app(), chain.rootHash.asUInt256(), std::make_unique<RequestCountingPeerSet>());
+
+        // Two peers racing the same request. Each earns its place in requestedPeers_ the way a
+        // real one does: a reply that lands buys a targeted follow-up request, which enrolls it.
+        auto const slower = std::make_shared<ChargeRecordingPeer>();
+        auto const faster = std::make_shared<ChargeRecordingPeer>();
+
+        acquire->takeNodes({{SHAMapNodeID{}, chain.nodeAt(0)}}, slower);
+
+        std::vector<std::pair<SHAMapNodeID, SHAMapTreeNodePtr>> below;
+        below.emplace_back(SHAMapNodeID{1, uint256{}}, chain.nodeAt(1));
+        below.emplace_back(SHAMapNodeID{2, uint256{}}, chain.nodeAt(2));
+
+        auto const won = acquire->takeNodes(below, faster);
+        BEAST_EXPECTS(tallyIs(won, 2, 0, 0), won.get());
+        BEAST_EXPECT(acquire->madeProgress());
+
+        // The same nodes from the peer that lost the race: nothing useful, but not a stall.
+        acquire->clearProgress();
+        auto const lost = acquire->takeNodes(below, slower);
+
+        BEAST_EXPECTS(tallyIs(lost, 0, 0, 2), lost.get());
+        BEAST_EXPECT(!lost.isUseful());
+        BEAST_EXPECT(lost.isGood());
+        BEAST_EXPECT(acquire->madeProgress());
+
+        // Answering costs neither peer anything.
+        BEAST_EXPECT(slower->charges().empty());
+        BEAST_EXPECT(faster->charges().empty());
+
+        acquire->cancel();
+    }
+
+    /**
+     * Duplicates postpone a timeout only for a peer we asked, and only while
+     * the acquisition is still running.
+     *
+     * A peer nobody asked says nothing about whether the peers being waited
+     * on are answering, and a settled acquisition has no timer left to
+     * postpone - though it reports a late reply as a duplicate too, so the
+     * tally alone cannot tell the two apart.
+     *
+     * @param env The environment to run in.
+     */
+    void
+    testUnaskedDuplicatesCannotPostponeTimeout(jtx::Env& env)
+    {
+        testcase("Duplicates postpone a timeout only for a peer we asked");
+
+        DeepChain const chain{nextSeed()};
+
+        auto const acquire = std::make_shared<TestableTransactionAcquire>(
+            env.app(), chain.rootHash.asUInt256(), std::make_unique<RequestCountingPeerSet>());
+
+        auto const asked = std::make_shared<ChargeRecordingPeer>();
+        acquire->takeNodes({{SHAMapNodeID{}, chain.nodeAt(0)}}, asked);
+        BEAST_EXPECT(acquire->madeProgress());
+
+        // A peer no request ever went to, resending the root we already have.
+        auto const stranger = std::make_shared<ChargeRecordingPeer>();
+        acquire->clearProgress();
+        auto const unsolicited = acquire->takeNodes({{SHAMapNodeID{}, chain.nodeAt(0)}}, stranger);
+
+        BEAST_EXPECTS(tallyIs(unsolicited, 0, 0, 1), unsolicited.get());
+        BEAST_EXPECT(!acquire->madeProgress());
+
+        // Not charged either: a node that hashes into the map is data we would have asked for.
+        BEAST_EXPECT(stranger->charges().empty());
+
+        // Accepting that reply made trigger() send this peer a request for the nodes still
+        // missing, which is what puts it in requestedPeers_ - the set records who we asked. So it
+        // is a peer we asked from here on, and its next duplicate does count.
+        acquire->clearProgress();
+        static_cast<void>(acquire->takeNodes({{SHAMapNodeID{}, chain.nodeAt(0)}}, stranger));
+        BEAST_EXPECT(acquire->madeProgress());
+
+        acquire->cancel();
+
+        // A settled acquisition: a late reply from its own supplier, a peer squarely in
+        // requestedPeers_, is reported as a duplicate and still records nothing.
+        auto const finished = DeepChain::toLeaf(3, nextSeed());
+        auto const completed = std::make_shared<TestableTransactionAcquire>(
+            env.app(), finished.rootHash.asUInt256(), std::make_unique<RequestCountingPeerSet>());
+        auto const supplier = std::make_shared<ChargeRecordingPeer>();
+
+        completed->takeNodes({{SHAMapNodeID{}, finished.nodeAt(0)}}, supplier);
+        completed->takeNodes(finished.nodesBelowRoot(), supplier);
+
+        completed->clearProgress();
+        auto const late = completed->takeNodes({{SHAMapNodeID{}, finished.nodeAt(0)}}, supplier);
+
+        BEAST_EXPECT(wasIgnored(late));
+        BEAST_EXPECT(!completed->madeProgress());
     }
 
     /**
@@ -1158,6 +1325,7 @@ struct TransactionAcquire_test : public beast::unit_test::Suite
         testHappyPathCompletesAcquisition(env);
         testTwoPeersEachSupplyPartOfTheSet(env);
         testLateReplyAllowanceSurvivesGiveSet(env);
+        testLateReplyIsTurnedAwayBeforeParsing(env);
         testFabricatedChainFailsAcquire(env);
         testWrongNodeKeepsAcquireAlive(env);
         testBadRootKeepsAcquireAlive(env);
@@ -1171,6 +1339,8 @@ struct TransactionAcquire_test : public beast::unit_test::Suite
         testUndeserializableNodeIsCharged(env);
         testChargeIsNotDecidedAfterTheLock(env);
         testPartialBatchIsCounted(env);
+        testDuplicateOnlyReplyFromAskedPeerCountsAsProgress(env);
+        testUnaskedDuplicatesCannotPostponeTimeout(env);
         testInitAsksOnlyPeersWithTheSet(env);
         testStillNeedLeavesARunningAcquireAlone(env);
 
