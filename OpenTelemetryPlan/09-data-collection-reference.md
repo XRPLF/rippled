@@ -489,7 +489,6 @@ SpanMetrics connector does not rewrite or prefix it:
 | `consensus_mode`                  | string  | `consensus.round`, `consensus.ledger_close`    |
 | `close_time_correct`              | boolean | `consensus.accept.apply`                       |
 | `local`                           | boolean | `tx.process`                                   |
-| `suppressed`                      | boolean | `tx.receive`                                   |
 | `proposal_trusted`                | boolean | `peer.proposal.receive`                        |
 | `validation_trusted`              | boolean | `peer.validation.receive`                      |
 | `tx_type`                         | string  | `tx.*`, `txq.enqueue`                          |
