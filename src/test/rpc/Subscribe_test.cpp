@@ -1573,7 +1573,7 @@ public:
     // live subscriber, rather than by reading a count to zero.
 
     // Build `count` distinct, valid, base58-encoded account strings cheaply by
-    // incrementing an AccountID. parseAccountIds dedups into a hash_set, so the
+    // incrementing an AccountID. parseAccountIds dedups into a HashSet, so the
     // strings MUST be distinct for the cap arithmetic to be exact; incrementing
     // guarantees distinctness without deriving `count` keypairs.
     static std::vector<std::string>

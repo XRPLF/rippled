@@ -208,7 +208,7 @@ public:
     //
     // Iteration by hops
     //
-    // The range [begin, end) provides a sequence of list_type
+    // The range [begin, end) provides a sequence of ListType
     // where each list contains endpoints at a given hops.
     //
 

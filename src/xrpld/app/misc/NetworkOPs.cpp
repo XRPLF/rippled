@@ -883,7 +883,7 @@ private:
      * between chunks so a competing publish can interleave; no iterator is held
      * across the unlock, so a concurrent mutation cannot dangle.
      *
-     * @tparam OuterMap    hash_map<AccountID, hash_map<seq, value>>.
+     * @tparam OuterMap    HashMap<AccountID, HashMap<seq, value>>.
      * @tparam BeforeErase Invoked with the inner value about to be erased, for
      * per-entry teardown the plain account maps do not need
      * (the history map uses it to stop its paging job).

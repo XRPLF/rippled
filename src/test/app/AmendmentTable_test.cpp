@@ -974,7 +974,7 @@ public:
         // trusted validators.
         auto callTrustChanged = [](std::vector<std::pair<PublicKey, SecretKey>> const& validators,
                                    std::unique_ptr<AmendmentTable> const& table) {
-            // We need a hash_set to pass to trustChanged.
+            // We need a HashSet to pass to trustChanged.
             HashSet<PublicKey> trustedValidators;
             trustedValidators.reserve(validators.size());
             std::ranges::for_each(validators, [&trustedValidators](auto const& val) {
