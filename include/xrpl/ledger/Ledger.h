@@ -102,7 +102,7 @@ public:
         CreateGenesisT,
         Rules rules,
         Fees const& fees,
-        std::vector<uint256> const& amendments,
+        std::vector<UInt256> const& amendments,
         Family& family);
 
     Ledger(LedgerHeader const& info, Rules rules, Family& family);
@@ -181,40 +181,40 @@ public:
     exists(Keylet const& k) const override;
 
     bool
-    exists(uint256 const& key) const;
+    exists(UInt256 const& key) const;
 
-    std::optional<uint256>
-    succ(uint256 const& key, std::optional<uint256> const& last = std::nullopt) const override;
+    std::optional<UInt256>
+    succ(UInt256 const& key, std::optional<UInt256> const& last = std::nullopt) const override;
 
     SLE::const_pointer
     read(Keylet const& k) const override;
 
-    std::unique_ptr<SlesType::iter_base>
+    std::unique_ptr<SlesType::IterBase>
     slesBegin() const override;
 
-    std::unique_ptr<SlesType::iter_base>
+    std::unique_ptr<SlesType::IterBase>
     slesEnd() const override;
 
-    std::unique_ptr<SlesType::iter_base>
-    slesUpperBound(uint256 const& key) const override;
+    std::unique_ptr<SlesType::IterBase>
+    slesUpperBound(UInt256 const& key) const override;
 
-    std::unique_ptr<TxsType::iter_base>
+    std::unique_ptr<TxsType::IterBase>
     txsBegin() const override;
 
-    std::unique_ptr<TxsType::iter_base>
+    std::unique_ptr<TxsType::IterBase>
     txsEnd() const override;
 
     bool
-    txExists(uint256 const& key) const override;
+    txExists(UInt256 const& key) const override;
 
-    tx_type
+    TxType
     txRead(key_type const& key) const override;
 
     //
     // DigestAwareReadView
     //
 
-    std::optional<digest_type>
+    std::optional<DigestType>
     digest(key_type const& key) const override;
 
     //
@@ -222,16 +222,16 @@ public:
     //
 
     void
-    rawErase(SLE::ref sle) override;
+    rawErase(SLE::Ref sle) override;
 
     void
-    rawInsert(SLE::ref sle) override;
+    rawInsert(SLE::Ref sle) override;
 
     void
-    rawErase(uint256 const& key);
+    rawErase(UInt256 const& key);
 
     void
-    rawReplace(SLE::ref sle) override;
+    rawReplace(SLE::Ref sle) override;
 
     void
     rawDestroyXRP(XRPAmount const& fee) override
@@ -245,7 +245,7 @@ public:
 
     void
     rawTxInsert(
-        uint256 const& key,
+        UInt256 const& key,
         std::shared_ptr<Serializer const> const& txn,
         std::shared_ptr<Serializer const> const& metaData) override;
 
@@ -346,7 +346,7 @@ public:
      *
      * @return the public keys
      */
-    hash_set<PublicKey>
+    HashSet<PublicKey>
     negativeUNL() const;
 
     /**

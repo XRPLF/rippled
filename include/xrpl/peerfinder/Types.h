@@ -10,7 +10,7 @@
 
 namespace xrpl::peer_finder {
 
-using clock_type = beast::AbstractClock<std::chrono::steady_clock>;
+using ClockType = beast::AbstractClock<std::chrono::steady_clock>;
 
 /**
  * Represents a set of addresses.

@@ -81,7 +81,7 @@ enum class OperatingMode {
 class NetworkOPs : public InfoSub::Source
 {
 public:
-    using clock_type = beast::AbstractClock<std::chrono::steady_clock>;
+    using ClockType = beast::AbstractClock<std::chrono::steady_clock>;
 
     enum class FailHard : unsigned char { No, Yes };
     static FailHard
@@ -179,7 +179,7 @@ public:
 
     // network state machine
     virtual bool
-    beginConsensus(uint256 const& netLCL, std::unique_ptr<std::stringstream> const& clog) = 0;
+    beginConsensus(UInt256 const& netLCL, std::unique_ptr<std::stringstream> const& clog) = 0;
     virtual void
     endConsensus(std::unique_ptr<std::stringstream> const& clog) = 0;
     virtual void

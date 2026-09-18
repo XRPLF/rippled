@@ -34,8 +34,8 @@ namespace xrpl {
 template <class Tx, class NodeId>
 class DisputedTx
 {
-    using TxID_t = Tx::ID;
-    using Map_t = boost::container::flat_map<NodeId, bool>;
+    using TxIDT = Tx::ID;
+    using MapT = boost::container::flat_map<NodeId, bool>;
 
 public:
     /**
@@ -55,7 +55,7 @@ public:
     /**
      * The unique id/hash of the disputed transaction.
      */
-    [[nodiscard]] TxID_t const&
+    [[nodiscard]] TxIDT const&
     id() const
     {
         return tx_.id();
@@ -202,7 +202,7 @@ private:
     int nays_{0};   //< Number of no votes
     bool ourVote_;  //< Our vote (true is yes)
     Tx tx_;         //< Transaction under dispute
-    Map_t votes_;   //< Map from NodeID to vote
+    MapT votes_;    //< Map from NodeID to vote
     /**
      * The number of rounds we've gone without changing our vote
      */

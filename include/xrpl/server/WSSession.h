@@ -101,7 +101,7 @@ struct WSSession
     [[nodiscard]] virtual Port const&
     port() const = 0;
 
-    [[nodiscard]] virtual http_request_type const&
+    [[nodiscard]] virtual HttpRequestType const&
     request() const = 0;
 
     [[nodiscard]] virtual boost::asio::ip::tcp::endpoint const&

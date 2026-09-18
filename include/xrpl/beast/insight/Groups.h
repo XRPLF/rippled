@@ -20,10 +20,10 @@ public:
      * Find or create a new collector with a given name.
      */
     /** @{ */
-    virtual Group::ptr const&
+    virtual Group::Ptr const&
     get(std::string const& name) = 0;
 
-    Group::ptr const&
+    Group::Ptr const&
     operator[](std::string const& name)
     {
         return get(name);
@@ -35,6 +35,6 @@ public:
  * Create a group container that uses the specified collector.
  */
 std::unique_ptr<Groups>
-makeGroups(Collector::ptr const& collector);
+makeGroups(Collector::Ptr const& collector);
 
 }  // namespace beast::insight

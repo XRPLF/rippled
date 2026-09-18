@@ -87,11 +87,11 @@ class RCLConsensus
         NegativeUNLVote nUnlVote_;
 
     public:
-        using Ledger_t = RCLCxLedger;
-        using NodeID_t = NodeID;
-        using NodeKey_t = PublicKey;
-        using TxSet_t = RCLTxSet;
-        using PeerPosition_t = RCLCxPeerPos;
+        using LedgerT = RCLCxLedger;
+        using NodeIDT = NodeID;
+        using NodeKeyT = PublicKey;
+        using TxSetT = RCLTxSet;
+        using PeerPositionT = RCLCxPeerPos;
 
         using Result = ConsensusResult<Adaptor>;
 
@@ -136,7 +136,7 @@ class RCLConsensus
          * @return Whether we enter the round proposing
          */
         bool
-        preStartRound(RCLCxLedger const& prevLedger, hash_set<NodeID> const& nowTrusted);
+        preStartRound(RCLCxLedger const& prevLedger, HashSet<NodeID> const& nowTrusted);
 
         bool
         haveValidated() const;
@@ -144,11 +144,11 @@ class RCLConsensus
         LedgerIndex
         getValidLedgerIndex() const;
 
-        std::pair<std::size_t, hash_set<NodeKey_t>>
+        std::pair<std::size_t, HashSet<NodeKeyT>>
         getQuorumKeys() const;
 
         std::size_t
-        laggards(Ledger_t::Seq const seq, hash_set<NodeKey_t>& trustedKeys) const;
+        laggards(LedgerT::Seq const seq, HashSet<NodeKeyT>& trustedKeys) const;
 
         /**
          * Whether I am a validator.
@@ -288,8 +288,8 @@ class RCLConsensus
          * @note ledgerID may not match ledger.id() if we haven't acquired
          *       the ledger matching ledgerID from the network
          */
-        uint256
-        getPrevLedger(uint256 ledgerID, RCLCxLedger const& ledger, ConsensusMode mode);
+        UInt256
+        getPrevLedger(UInt256 ledgerID, RCLCxLedger const& ledger, ConsensusMode mode);
 
         /**
          * Notified of change in consensus mode
@@ -434,7 +434,7 @@ public:
         LedgerMaster& ledgerMaster,
         LocalTxs& localTxs,
         InboundTransactions& inboundTransactions,
-        Consensus<Adaptor>::clock_type const& clock,
+        Consensus<Adaptor>::ClockType const& clock,
         ValidatorKeys const& validatorKeys,
         beast::Journal journal);
 
@@ -506,8 +506,8 @@ public:
         NetClock::time_point const& now,
         RCLCxLedger::ID const& prevLgrId,
         RCLCxLedger const& prevLgr,
-        hash_set<NodeID> const& nowUntrusted,
-        hash_set<NodeID> const& nowTrusted,
+        HashSet<NodeID> const& nowUntrusted,
+        HashSet<NodeID> const& nowTrusted,
         std::unique_ptr<std::stringstream> const& clog);
 
     /**

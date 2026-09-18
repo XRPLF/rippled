@@ -17,7 +17,7 @@ ReadViewFwdRange<ValueType>::Iterator::Iterator(Iterator&& other) noexcept
 template <class ValueType>
 ReadViewFwdRange<ValueType>::Iterator::Iterator(
     ReadView const* view,
-    std::unique_ptr<iter_base> impl)
+    std::unique_ptr<IterBase> impl)
     : view_(view), impl_(std::move(impl))
 {
 }

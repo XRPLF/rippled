@@ -25,7 +25,7 @@
 namespace xrpl {
 
 void
-TransfersNotFrozen::visitEntry(bool isDelete, SLE::const_ref before, SLE::const_ref after)
+TransfersNotFrozen::visitEntry(bool isDelete, SLE::ConstRef before, SLE::ConstRef after)
 {
     /*
      * A trust line freeze state alone doesn't determine if a transfer is
@@ -114,7 +114,7 @@ TransfersNotFrozen::finalize(
 }
 
 bool
-TransfersNotFrozen::isValidEntry(SLE::const_ref before, SLE::const_ref after)
+TransfersNotFrozen::isValidEntry(SLE::ConstRef before, SLE::ConstRef after)
 {
     // `after` can never be null, even if the trust line is deleted.
     XRPL_ASSERT(after, "xrpl::TransfersNotFrozen::isValidEntry : valid after.");
@@ -139,10 +139,7 @@ TransfersNotFrozen::isValidEntry(SLE::const_ref before, SLE::const_ref after)
 }
 
 STAmount
-TransfersNotFrozen::calculateBalanceChange(
-    SLE::const_ref before,
-    SLE::const_ref after,
-    bool isDelete)
+TransfersNotFrozen::calculateBalanceChange(SLE::ConstRef before, SLE::ConstRef after, bool isDelete)
 {
     auto const getBalance = [](auto const& line, auto const& other, bool zero) {
         STAmount const amt = line ? line->at(sfBalance) : other->at(sfBalance).zeroed();
@@ -185,7 +182,7 @@ TransfersNotFrozen::recordBalance(Issue const& issue, BalanceChange change)
 }
 
 void
-TransfersNotFrozen::recordBalanceChanges(SLE::const_ref after, STAmount const& balanceChange)
+TransfersNotFrozen::recordBalanceChanges(SLE::ConstRef after, STAmount const& balanceChange)
 {
     auto const balanceChangeSign = balanceChange.signum();
     auto const currency = after->at(sfBalance).get<Issue>().currency;
@@ -214,7 +211,7 @@ TransfersNotFrozen::findIssuer(AccountID const& issuerID, ReadView const& view)
 
 bool
 TransfersNotFrozen::validateIssuerChanges(
-    SLE::const_ref issuer,
+    SLE::ConstRef issuer,
     IssuerChanges const& changes,
     STTx const& tx,
     beast::Journal const& j,

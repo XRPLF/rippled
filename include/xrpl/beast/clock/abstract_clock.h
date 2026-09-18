@@ -9,7 +9,7 @@ namespace beast {
  * an instance of the class can be dependency injected, facilitating
  * unit tests where time may be controlled.
  *
- * An abstract_clock inherits all the nested types of the Clock
+ * An AbstractClock inherits all the nested types of the Clock
  * template parameter.
  *
  * Example:
@@ -18,9 +18,9 @@ namespace beast {
  *
  * struct Implementation
  * {
- *     using clock_type = abstract_clock <std::chrono::steady_clock>;
- *     clock_type& clock_;
- *     explicit Implementation (clock_type& clock)
+ *     using ClockType = AbstractClock<std::chrono::steady_clock>;
+ *     ClockType& clock_;
+ *     explicit Implementation(ClockType& clock)
  *         : clock_(clock)
  *     {
  *     }
@@ -39,7 +39,7 @@ public:
     using period = Clock::period;
     using duration = Clock::duration;
     using time_point = Clock::time_point;
-    using clock_type = Clock;
+    using ClockType = Clock;
 
     static bool const is_steady = Clock::is_steady;  // NOLINT(readability-identifier-naming)
 

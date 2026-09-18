@@ -3431,7 +3431,7 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
 
             // Generate the proof using known spending balance value
             auto const version = mptAlice.getMPTokenVersion(bob);
-            uint256 const convertBackContextHash =
+            UInt256 const convertBackContextHash =
                 getConvertBackContextHash(bob.id(), mptAlice.issuanceID(), env.seq(bob), version);
 
             auto const proof = mptAlice.getConvertBackProof(
@@ -5253,7 +5253,7 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
         // The proof uses PC(1, rho) but the transaction submits PC(balance, rho).
         // Verification fails because the proof doesn't match the submitted commitment.
         {
-            uint256 const contextHash =
+            UInt256 const contextHash =
                 getConvertBackContextHash(bob, mptAlice.issuanceID(), env.seq(bob), version);
             Buffer const badPedersenCommitment =
                 mptAlice.getPedersenCommitment(1, pcBlindingFactor);
@@ -5286,7 +5286,7 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
         // The pedersen commitment PC = balance*G + rho*H requires the same rho
         // used in proof generation. Using a different rho breaks the linkage.
         {
-            uint256 const contextHash =
+            UInt256 const contextHash =
                 getConvertBackContextHash(bob, mptAlice.issuanceID(), env.seq(bob), version);
 
             auto const proof = mptAlice.getConvertBackProof(
@@ -5320,7 +5320,7 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
         // we cannot call mpt_get_convert_back_proof because it has client-side
         // verification.
         {
-            uint256 const contextHash =
+            UInt256 const contextHash =
                 getConvertBackContextHash(bob, mptAlice.issuanceID(), env.seq(bob), version);
 
             uint64_t constexpr claimedBalance = 20;  // wrong: real balance is 40
@@ -5353,7 +5353,7 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
         // different pedersen commitment. Verification fails because the
         // submitted commitment doesn't match what the proof was generated for.
         {
-            uint256 const contextHash =
+            UInt256 const contextHash =
                 getConvertBackContextHash(bob, mptAlice.issuanceID(), env.seq(bob), version);
             Buffer const badPedersenCommitment =
                 mptAlice.getPedersenCommitment(1, pcBlindingFactor);
@@ -5387,7 +5387,7 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
         // sequence, issuanceID, amount, version). Using a different context hash
         // makes the proof invalid for this transaction, preventing replay attacks.
         {
-            uint256 const badContextHash{1};
+            UInt256 const badContextHash{1};
 
             auto const proof = mptAlice.getConvertBackProof(
                 bob,
@@ -5417,7 +5417,7 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
         // Test 6: Correct proof to verify the test setup is valid.
         // All parameters are correct, so the transaction should succeed.
         {
-            uint256 const contextHash =
+            UInt256 const contextHash =
                 getConvertBackContextHash(bob, mptAlice.issuanceID(), env.seq(bob), version);
 
             auto const proof = mptAlice.getConvertBackProof(
@@ -5912,7 +5912,7 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
         // we cannot call mpt_get_convert_back_proof because it has client-side
         // verification.
         {
-            uint256 const contextHash =
+            UInt256 const contextHash =
                 getConvertBackContextHash(bob, mptAlice.issuanceID(), env.seq(bob), version);
 
             uint64_t constexpr claimedBalance = 20;  // wrong: real balance is 40
@@ -5945,7 +5945,7 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
         // Pedersen commitment PC = balance*G + rho*H. Using a different rho
         // creates an inconsistency the verifier detects.
         {
-            uint256 const contextHash =
+            UInt256 const contextHash =
                 getConvertBackContextHash(bob, mptAlice.issuanceID(), env.seq(bob), version);
 
             auto const proof = mptAlice.getConvertBackProof(
@@ -5978,7 +5978,7 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
         // sequence, issuanceID, amount, version). Using a different context hash
         // makes the proof invalid for this transaction, preventing replay attacks.
         {
-            uint256 const badContextHash{1};
+            UInt256 const badContextHash{1};
             auto const proof = mptAlice.getConvertBackProof(
                 bob,
                 amt,
@@ -6007,7 +6007,7 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
         // Test 4: Correct proof to verify the test setup is valid.
         // All parameters are correct, so the transaction should succeed.
         {
-            uint256 const contextHash =
+            UInt256 const contextHash =
                 getConvertBackContextHash(bob, mptAlice.issuanceID(), env.seq(bob), version);
 
             auto const proof = mptAlice.getConvertBackProof(
@@ -6170,7 +6170,7 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
         // Generate a valid proof pi for Amount m1 = 10
         uint64_t const amtA = 10;
         uint32_t const currentSeq = env.seq(bob);
-        uint256 const contextHashA =
+        UInt256 const contextHashA =
             getConvertBackContextHash(bob, mptAlice.issuanceID(), currentSeq, version);
 
         auto const proofA = mptAlice.getConvertBackProof(
@@ -6253,7 +6253,7 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
         // Attack: Attempt to reuse proof tied to Version v at ledger Version v+1
         uint32_t const currentSeq = env.seq(bob);
         // Proof is explicitly generated using the outdated Version v
-        uint256 const oldContextHash =
+        UInt256 const oldContextHash =
             getConvertBackContextHash(bob, mptAlice.issuanceID(), currentSeq, versionV);
 
         auto const oldProof = mptAlice.getConvertBackProof(
@@ -6327,7 +6327,7 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
 
         auto const currentVersion = mptAlice.getMPTokenVersion(bob);
         // Uses the new signature: Account, IssuanceID, Sequence, Version
-        uint256 const contextHash =
+        UInt256 const contextHash =
             getConvertBackContextHash(bob, mptAlice.issuanceID(), env.seq(bob), currentVersion);
 
         auto const proof = mptAlice.getConvertBackProof(
@@ -6472,7 +6472,7 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
         Buffer const pedersenCommitment = mptAlice.getPedersenCommitment(kUnderflowedAmt, pcBf);
 
         auto const currentVersion = mptAlice.getMPTokenVersion(bob);
-        uint256 const contextHash =
+        UInt256 const contextHash =
             getConvertBackContextHash(bob, mptAlice.issuanceID(), env.seq(bob), currentVersion);
 
         auto const proof = mptAlice.getConvertBackProof(
@@ -7746,7 +7746,7 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
                 mptAlice.getPedersenCommitment(spendingBalance, pcBlindingFactor);
 
             auto const version = mptAlice.getMPTokenVersion(bob);
-            uint256 const convertBackCtxHash =
+            UInt256 const convertBackCtxHash =
                 getConvertBackContextHash(bob.id(), mptAlice.issuanceID(), env.seq(bob), version);
 
             auto const convertBackProof = mptAlice.getConvertBackProof(
@@ -7789,7 +7789,7 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
             ConfidentialSendSetup const setup(mptAlice, bob, carol, alice, sendAmount);
 
             // Compute context hash with a fabricated (wrong) issuanceID
-            uint192 const fakeIssuanceID{1};
+            UInt192 const fakeIssuanceID{1};
             auto const wrongCtxHash = getSendContextHash(
                 bob.id(), fakeIssuanceID, env.seq(bob), carol.id(), setup.version);
 

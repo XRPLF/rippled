@@ -471,7 +471,7 @@ public:
     }
 };
 
-using logstream = BasicLogstream<char>;
-using logwstream = BasicLogstream<wchar_t>;
+using LogStream = BasicLogstream<char>;
+using LogWStream = BasicLogstream<wchar_t>;
 
 }  // namespace beast

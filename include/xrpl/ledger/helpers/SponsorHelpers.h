@@ -88,13 +88,13 @@ getTxReserveSponsor(ReadView const& view, STTx const& tx);
  *         sponsor account cannot be loaded (an already-checked invariant)
  */
 [[nodiscard]] std::expected<SLE::pointer, TER>
-getEffectiveTxReserveSponsor(ApplyViewContext ctx, SLE::const_ref accountSle);
+getEffectiveTxReserveSponsor(ApplyViewContext ctx, SLE::ConstRef accountSle);
 
 /**
  * Return the AccountID stored in the given sponsor field of a ledger entry, or nullopt if absent.
  */
 std::optional<AccountID>
-getLedgerEntryReserveSponsorID(SLE::const_ref sle, SF_ACCOUNT const& field = sfSponsor);
+getLedgerEntryReserveSponsorID(SLE::ConstRef sle, SF_ACCOUNT const& field = sfSponsor);
 
 /**
  * Return a mutable SLE for the reserve sponsor recorded on a ledger entry.
@@ -110,7 +110,7 @@ getLedgerEntryReserveSponsorID(SLE::const_ref sle, SF_ACCOUNT const& field = sfS
 SLE::pointer
 getLedgerEntryReserveSponsor(
     ApplyView& view,
-    SLE::const_ref sle,
+    SLE::ConstRef sle,
     SF_ACCOUNT const& field = sfSponsor);
 
 /**
@@ -127,8 +127,8 @@ getLedgerEntryReserveSponsor(
  */
 void
 addSponsorToLedgerEntry(
-    SLE::ref sle,
-    SLE::const_ref sponsorSle,
+    SLE::Ref sle,
+    SLE::ConstRef sponsorSle,
     SF_ACCOUNT const& field = sfSponsor);
 
 /**
@@ -141,7 +141,7 @@ addSponsorToLedgerEntry(
  * can cover.
  */
 void
-addSponsorToLedgerEntry(ApplyViewContext ctx, SLE::ref sle, SF_ACCOUNT const& field = sfSponsor);
+addSponsorToLedgerEntry(ApplyViewContext ctx, SLE::Ref sle, SF_ACCOUNT const& field = sfSponsor);
 
 /**
  * Remove the reserve sponsor field from a ledger entry.
@@ -154,7 +154,7 @@ addSponsorToLedgerEntry(ApplyViewContext ctx, SLE::ref sle, SF_ACCOUNT const& fi
  * @param field The sponsor field to clear (defaults to sfSponsor)
  */
 void
-removeSponsorFromLedgerEntry(SLE::ref sle, SF_ACCOUNT const& field = sfSponsor);
+removeSponsorFromLedgerEntry(SLE::Ref sle, SF_ACCOUNT const& field = sfSponsor);
 
 /**
  * Whether @p account is the owner of a ledger entry for sponsorship purposes.

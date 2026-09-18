@@ -38,7 +38,7 @@ namespace xrpl::test {
 PeerTest::PeerTest(
     Application& app,
     std::shared_ptr<peer_finder::Slot> const& slot,
-    http_request_type&& request,
+    HttpRequestType&& request,
     PublicKey const& publicKey,
     ProtocolVersion protocol,
     resource::Consumer consumer,

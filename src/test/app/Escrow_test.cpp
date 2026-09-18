@@ -1359,8 +1359,8 @@ struct Escrow_test : public beast::unit_test::Suite
             env(ticket::create(bob, kBobTicketCount));
             env.close();
             std::uint32_t bobTicket{env.seq(bob)};
-            env.require(tickets(alice, 1));
-            env.require(tickets(bob, kBobTicketCount));
+            env.require(Tickets(alice, 1));
+            env.require(Tickets(bob, kBobTicketCount));
 
             // Note that from here on all transactions use tickets.  No account
             // root sequences should change.
@@ -1375,8 +1375,8 @@ struct Escrow_test : public beast::unit_test::Suite
                 escrow::kFinishTime(ts),
                 ticket::Use(aliceTicket));
             BEAST_EXPECT(env.seq(alice) == aliceRootSeq);
-            env.require(tickets(alice, 0));
-            env.require(tickets(bob, kBobTicketCount));
+            env.require(Tickets(alice, 0));
+            env.require(Tickets(bob, kBobTicketCount));
 
             // Advance the ledger, verifying that the finish won't complete
             // prematurely.  Note that each tec consumes one of bob's tickets.
@@ -1419,8 +1419,8 @@ struct Escrow_test : public beast::unit_test::Suite
             std::uint32_t bobTicket{env.seq(bob) + 1};
             env(ticket::create(bob, kBobTicketCount));
             env.close();
-            env.require(tickets(alice, 1));
-            env.require(tickets(bob, kBobTicketCount));
+            env.require(Tickets(alice, 1));
+            env.require(Tickets(bob, kBobTicketCount));
 
             // Note that from here on all transactions use tickets.  No account
             // root sequences should change.
@@ -1436,8 +1436,8 @@ struct Escrow_test : public beast::unit_test::Suite
                 escrow::kCancelTime(ts),
                 ticket::Use(aliceTicket));
             BEAST_EXPECT(env.seq(alice) == aliceRootSeq);
-            env.require(tickets(alice, 0));
-            env.require(tickets(bob, kBobTicketCount));
+            env.require(Tickets(alice, 0));
+            env.require(Tickets(bob, kBobTicketCount));
 
             // Advance the ledger, verifying that the cancel won't complete
             // prematurely.
@@ -1467,7 +1467,7 @@ struct Escrow_test : public beast::unit_test::Suite
             BEAST_EXPECT(env.seq(bob) == bobRootSeq);
 
             // Verify that bob actually consumed his tickets.
-            env.require(tickets(bob, env.seq(bob) - bobTicket));
+            env.require(Tickets(bob, env.seq(bob) - bobTicket));
         }
     }
 

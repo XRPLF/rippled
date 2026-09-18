@@ -36,7 +36,7 @@ namespace xrpl::test {
  */
 class PeerTest : public PeerImp
 {
-    inline static Peer::id_t id{};
+    inline static Peer::ID id{};
     std::shared_ptr<Message> lastSentMessage_;
     std::optional<bool> compressionEnabled_;
     std::optional<bool> reduceRelayEnabled_;
@@ -49,7 +49,7 @@ public:
     PeerTest(
         Application& app,
         std::shared_ptr<peer_finder::Slot> const& slot,
-        http_request_type&& request,
+        HttpRequestType&& request,
         PublicKey const& publicKey,
         ProtocolVersion protocol,
         resource::Consumer consumer,

@@ -660,7 +660,7 @@ run(int argc, char** argv)
             config->startUp = StartUpType::Replay;
             if (vm.contains("trap_tx_hash"))
             {
-                uint256 tmp = {};
+                UInt256 tmp = {};
                 auto hash = vm["trap_tx_hash"].as<std::string>();
                 if (tmp.parseHex(hash))
                 {

@@ -21,11 +21,11 @@ The module xrpl/basics should contain no dependencies on other modules.
 - `std::set`
   - For sorted containers.
 
-- `xrpl::hash_set`
+- `xrpl::HashSet`
   - Where inserts and contains need to be O(1).
   - For "small" sets, `std::set` might be faster and smaller.
 
-- `xrpl::hardened_hash_set`
+- `xrpl::HardenedHashSet`
   - For data sets where the key could be manipulated by an attacker
     in an attempt to mount an algorithmic complexity attack: see
     http://en.wikipedia.org/wiki/Algorithmic_complexity_attack
@@ -33,5 +33,5 @@ The module xrpl/basics should contain no dependencies on other modules.
 The following container is deprecated
 
 - `std::unordered_set`
-- Use `xrpl::hash_set` instead, which uses a better hashing algorithm.
-- Or use `xrpl::hardened_hash_set` to prevent algorithmic complexity attacks.
+- Use `xrpl::HashSet` instead, which uses a better hashing algorithm.
+- Or use `xrpl::HardenedHashSet` to prevent algorithmic complexity attacks.

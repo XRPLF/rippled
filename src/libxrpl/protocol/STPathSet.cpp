@@ -74,7 +74,7 @@ static_assert(
     "should, if the kMaxSize should be increased, or if STPathSet should be stored on the heap "
     "instead of in STVar.");
 
-STPathSet::STPathSet(DeduplicationTag) : seen_{std::make_unique<hardened_hash_set<STPath>>()}
+STPathSet::STPathSet(DeduplicationTag) : seen_{std::make_unique<HardenedHashSet<STPath>>()}
 {
 }
 
@@ -83,7 +83,7 @@ STPathSet::STPathSet(STPathSet const& other)
     , CountedObject<STPathSet>{other}
     , value_{other.value_}
     , seen_{
-          other.seen_ != nullptr ? std::make_unique<hardened_hash_set<STPath>>(*other.seen_)
+          other.seen_ != nullptr ? std::make_unique<HardenedHashSet<STPath>>(*other.seen_)
                                  : nullptr}
 {
 }
@@ -95,9 +95,8 @@ STPathSet::operator=(STPathSet const& other)
     {
         return *this;
     }
-    auto newSeen = other.seen_ != nullptr
-        ? std::make_unique<hardened_hash_set<STPath>>(*other.seen_)
-        : nullptr;
+    auto newSeen =
+        other.seen_ != nullptr ? std::make_unique<HardenedHashSet<STPath>>(*other.seen_) : nullptr;
     STBase::operator=(other);
     CountedObject<STPathSet>::operator=(other);
     value_ = other.value_;

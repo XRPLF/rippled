@@ -45,14 +45,14 @@ namespace xrpl {
 class STAmount final : public STBase, public CountedObject<STAmount>
 {
 public:
-    using mantissa_type = std::uint64_t;
-    using exponent_type = int;
-    using rep = std::pair<mantissa_type, exponent_type>;
+    using MantissaType = std::uint64_t;
+    using ExponentType = int;
+    using rep = std::pair<MantissaType, ExponentType>;
 
 private:
     Asset asset_;
-    mantissa_type value_{};
-    exponent_type offset_;
+    MantissaType value_{};
+    ExponentType offset_;
     bool isNegative_{};
 
 public:
@@ -90,16 +90,16 @@ public:
     STAmount(
         SField const& name,
         A const& asset,
-        mantissa_type mantissa,
-        exponent_type exponent,
+        MantissaType mantissa,
+        ExponentType exponent,
         bool negative,
         Unchecked);
 
     template <AssetType A>
     STAmount(
         A const& asset,
-        mantissa_type mantissa,
-        exponent_type exponent,
+        MantissaType mantissa,
+        ExponentType exponent,
         bool negative,
         Unchecked);
 
@@ -108,8 +108,8 @@ public:
     STAmount(
         SField const& name,
         A const& asset,
-        mantissa_type mantissa = 0,
-        exponent_type exponent = 0,
+        MantissaType mantissa = 0,
+        ExponentType exponent = 0,
         bool negative = false);
 
     STAmount(SField const& name, std::int64_t mantissa);
@@ -327,8 +327,8 @@ template <AssetType A>
 STAmount::STAmount(
     SField const& name,
     A const& asset,
-    mantissa_type mantissa,
-    exponent_type exponent,
+    MantissaType mantissa,
+    ExponentType exponent,
     bool negative,
     Unchecked)
     : STBase(name), asset_(asset), value_(mantissa), offset_(exponent), isNegative_(negative)
@@ -338,8 +338,8 @@ STAmount::STAmount(
 template <AssetType A>
 STAmount::STAmount(
     A const& asset,
-    mantissa_type mantissa,
-    exponent_type exponent,
+    MantissaType mantissa,
+    ExponentType exponent,
     bool negative,
     Unchecked)
     : asset_(asset), value_(mantissa), offset_(exponent), isNegative_(negative)

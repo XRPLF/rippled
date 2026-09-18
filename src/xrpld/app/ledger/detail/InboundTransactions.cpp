@@ -56,22 +56,22 @@ class InboundTransactionsImp : public InboundTransactions
 public:
     InboundTransactionsImp(
         Application& app,
-        beast::insight::Collector::ptr const& collector,
+        beast::insight::Collector::Ptr const& collector,
         std::function<void(std::shared_ptr<SHAMap> const&, bool)> gotSet,
         std::unique_ptr<PeerSetBuilder> peerSetBuilder)
         : app_(app)
-        , zeroSet_(map_[uint256()])
+        , zeroSet_(map_[UInt256()])
         , gotSet_(std::move(gotSet))
         , peerSetBuilder_(std::move(peerSetBuilder))
         , j_(app_.getJournal("InboundTransactions"))
     {
         zeroSet_.set =
-            std::make_shared<SHAMap>(SHAMapType::TRANSACTION, uint256(), app_.getNodeFamily());
+            std::make_shared<SHAMap>(SHAMapType::TRANSACTION, UInt256(), app_.getNodeFamily());
         zeroSet_.set->setUnbacked();
     }
 
     TransactionAcquire::pointer
-    getAcquire(uint256 const& hash)
+    getAcquire(UInt256 const& hash)
     {
         {
             std::scoped_lock const sl(lock_);
@@ -85,7 +85,7 @@ public:
     }
 
     std::shared_ptr<SHAMap>
-    getSet(uint256 const& hash, bool acquire) override
+    getSet(UInt256 const& hash, bool acquire) override
     {
         TransactionAcquire::pointer ta;
 
@@ -180,7 +180,7 @@ public:
     }
 
     void
-    giveSet(uint256 const& hash, std::shared_ptr<SHAMap> const& set, bool fromAcquire) override
+    giveSet(UInt256 const& hash, std::shared_ptr<SHAMap> const& set, bool fromAcquire) override
     {
         bool isNew = true;
 
@@ -247,7 +247,7 @@ public:
     }
 
 private:
-    using MapType = hash_map<uint256, InboundTransactionSet>;
+    using MapType = HashMap<UInt256, InboundTransactionSet>;
 
     Application& app_;
 
@@ -274,7 +274,7 @@ InboundTransactions::~InboundTransactions() = default;
 std::unique_ptr<InboundTransactions>
 makeInboundTransactions(
     Application& app,
-    beast::insight::Collector::ptr const& collector,
+    beast::insight::Collector::Ptr const& collector,
     std::function<void(std::shared_ptr<SHAMap> const&, bool)> gotSet)
 {
     return std::make_unique<InboundTransactionsImp>(

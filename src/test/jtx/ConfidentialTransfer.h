@@ -66,7 +66,7 @@ protected:
     getForgedBulletproof(
         std::array<uint64_t, 2> const& values,
         std::array<Buffer, 2> const& blindingFactors,
-        uint256 const& contextHash)
+        UInt256 const& contextHash)
     {
         auto* const ctx = mpt_secp256k1_context();
 
@@ -100,7 +100,7 @@ protected:
     getForgedSingleBulletproof(
         uint64_t value,
         Buffer const& blindingFactor,
-        uint256 const& contextHash)
+        UInt256 const& contextHash)
     {
         auto* const ctx = mpt_secp256k1_context();
 
@@ -141,7 +141,7 @@ protected:
         Buffer const& pedersenCommitment,
         Buffer const& encryptedSpendingBalance,
         Buffer const& pcBlindingFactor,
-        uint256 const& contextHash)
+        UInt256 const& contextHash)
     {
         if (pedersenCommitment.size() != kCompressedEcPointLength)
             Throw<std::runtime_error>("getForgedConvertBackProof: bad pedersenCommitment length");

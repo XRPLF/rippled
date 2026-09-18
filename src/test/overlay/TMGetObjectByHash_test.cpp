@@ -51,11 +51,11 @@ class TMGetObjectByHash_test : public beast::unit_test::Suite
         auto& nodeStore = env.app().getNodeStore();
 
         // Create and store objects
-        std::vector<uint256> hashes;
+        std::vector<UInt256> hashes;
         hashes.reserve(numObjects);
         for (int i = 0; i < numObjects; ++i)
         {
-            uint256 const hash(xrpl::sha512Half(i));
+            UInt256 const hash(xrpl::sha512Half(i));
             hashes.push_back(hash);
 
             Blob data(100, static_cast<unsigned char>(i % 256));

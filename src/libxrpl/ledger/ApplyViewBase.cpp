@@ -65,31 +65,31 @@ ApplyViewBase::read(Keylet const& k) const
 }
 
 auto
-ApplyViewBase::slesBegin() const -> std::unique_ptr<SlesType::iter_base>
+ApplyViewBase::slesBegin() const -> std::unique_ptr<SlesType::IterBase>
 {
     return base_->slesBegin();
 }
 
 auto
-ApplyViewBase::slesEnd() const -> std::unique_ptr<SlesType::iter_base>
+ApplyViewBase::slesEnd() const -> std::unique_ptr<SlesType::IterBase>
 {
     return base_->slesEnd();
 }
 
 auto
-ApplyViewBase::slesUpperBound(uint256 const& key) const -> std::unique_ptr<SlesType::iter_base>
+ApplyViewBase::slesUpperBound(UInt256 const& key) const -> std::unique_ptr<SlesType::IterBase>
 {
     return base_->slesUpperBound(key);
 }
 
 auto
-ApplyViewBase::txsBegin() const -> std::unique_ptr<TxsType::iter_base>
+ApplyViewBase::txsBegin() const -> std::unique_ptr<TxsType::IterBase>
 {
     return base_->txsBegin();
 }
 
 auto
-ApplyViewBase::txsEnd() const -> std::unique_ptr<TxsType::iter_base>
+ApplyViewBase::txsEnd() const -> std::unique_ptr<TxsType::IterBase>
 {
     return base_->txsEnd();
 }
@@ -101,7 +101,7 @@ ApplyViewBase::txExists(key_type const& key) const
 }
 
 auto
-ApplyViewBase::txRead(key_type const& key) const -> tx_type
+ApplyViewBase::txRead(key_type const& key) const -> TxType
 {
     return base_->txRead(key);
 }
@@ -121,19 +121,19 @@ ApplyViewBase::peek(Keylet const& k)
 }
 
 void
-ApplyViewBase::erase(SLE::ref sle)
+ApplyViewBase::erase(SLE::Ref sle)
 {
     items_.erase(*base_, sle);
 }
 
 void
-ApplyViewBase::insert(SLE::ref sle)
+ApplyViewBase::insert(SLE::Ref sle)
 {
     items_.insert(*base_, sle);
 }
 
 void
-ApplyViewBase::update(SLE::ref sle)
+ApplyViewBase::update(SLE::Ref sle)
 {
     items_.update(*base_, sle);
 }
@@ -141,19 +141,19 @@ ApplyViewBase::update(SLE::ref sle)
 //---
 
 void
-ApplyViewBase::rawErase(SLE::ref sle)
+ApplyViewBase::rawErase(SLE::Ref sle)
 {
     items_.rawErase(*base_, sle);
 }
 
 void
-ApplyViewBase::rawInsert(SLE::ref sle)
+ApplyViewBase::rawInsert(SLE::Ref sle)
 {
     items_.insert(*base_, sle);
 }
 
 void
-ApplyViewBase::rawReplace(SLE::ref sle)
+ApplyViewBase::rawReplace(SLE::Ref sle)
 {
     items_.replace(*base_, sle);
 }

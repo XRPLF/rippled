@@ -111,7 +111,7 @@ public:
     using const_iterator = const_pointer;
     using reverse_iterator = std::reverse_iterator<iterator>;
     using const_reverse_iterator = std::reverse_iterator<const_iterator>;
-    using tag_type = Tag;
+    using TagType = Tag;
 
     pointer
     data()
@@ -575,10 +575,10 @@ public:
     }
 };
 
-using uint128 = BaseUInt<128>;
-using uint160 = BaseUInt<160>;
-using uint256 = BaseUInt<256>;
-using uint192 = BaseUInt<192>;
+using UInt128 = BaseUInt<128>;
+using UInt160 = BaseUInt<160>;
+using UInt256 = BaseUInt<256>;
+using UInt192 = BaseUInt<192>;
 
 template <std::size_t Bits, class Tag>
 [[nodiscard]] constexpr std::strong_ordering
@@ -670,7 +670,7 @@ operator<<(std::ostream& out, BaseUInt<Bits, Tag> const& u)
 
 template <>
 inline std::size_t
-extract(uint256 const& key)
+extract(UInt256 const& key)
 {
     std::size_t result = 0;
     // Use memcpy to avoid unaligned UB
@@ -680,10 +680,10 @@ extract(uint256 const& key)
 }
 
 #ifndef __INTELLISENSE__
-static_assert(sizeof(uint128) == 128 / 8, "There should be no padding bytes");
-static_assert(sizeof(uint160) == 160 / 8, "There should be no padding bytes");
-static_assert(sizeof(uint192) == 192 / 8, "There should be no padding bytes");
-static_assert(sizeof(uint256) == 256 / 8, "There should be no padding bytes");
+static_assert(sizeof(UInt128) == 128 / 8, "There should be no padding bytes");
+static_assert(sizeof(UInt160) == 160 / 8, "There should be no padding bytes");
+static_assert(sizeof(UInt192) == 192 / 8, "There should be no padding bytes");
+static_assert(sizeof(UInt256) == 256 / 8, "There should be no padding bytes");
 #endif
 
 }  // namespace xrpl

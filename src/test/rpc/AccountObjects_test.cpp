@@ -631,7 +631,7 @@ public:
         BEAST_EXPECT(acctObjsTypeIsInvalid(acctObjs(gw, jss::NegativeUNL)));
 
         // gw mints an NFT so we can find it.
-        uint256 const nftID{token::getNextID(env, gw, 0u, tfTransferable)};
+        UInt256 const nftID{token::getNextID(env, gw, 0u, tfTransferable)};
         env(token::mint(gw, 0u), Txflags(tfTransferable));
         env.close();
         {

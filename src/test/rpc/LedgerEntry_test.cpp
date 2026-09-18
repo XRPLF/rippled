@@ -670,21 +670,21 @@ class LedgerEntry_test : public beast::unit_test::Suite
                     auto const sle = std::make_shared<SLE>(keylet);
 
                     // Create Amendments vector (enabled amendments)
-                    std::vector<uint256> enabledAmendments;
+                    std::vector<UInt256> enabledAmendments;
                     enabledAmendments.push_back(
-                        uint256::fromVoid(
+                        UInt256::fromVoid(
                             "42426C4D4F1009EE67080A9B7965B44656D7"
                             "714D104A72F9B4369F97ABF044EE"));
                     enabledAmendments.push_back(
-                        uint256::fromVoid(
+                        UInt256::fromVoid(
                             "4C97EBA926031A7CF7D7B36FDE3ED66DDA54"
                             "21192D63DE53FFB46E43B9DC8373"));
                     enabledAmendments.push_back(
-                        uint256::fromVoid(
+                        UInt256::fromVoid(
                             "03BDC0099C4E14163ADA272C1B6F6FABB448"
                             "CC3E51F522F978041E4B57D9158C"));
                     enabledAmendments.push_back(
-                        uint256::fromVoid(
+                        UInt256::fromVoid(
                             "35291ADD2D79EB6991343BDA0912269C817D"
                             "0F094B02226C1C14AD2858962ED4"));
                     sle->setFieldV256(sfAmendments, STVector256(enabledAmendments));
@@ -695,7 +695,7 @@ class LedgerEntry_test : public beast::unit_test::Suite
                     auto majority1 = STObject::makeInnerObject(sfMajority);
                     majority1.setFieldH256(
                         sfAmendment,
-                        uint256::fromVoid(
+                        UInt256::fromVoid(
                             "7BB62DC13EC72B775091E9C71BF8CF97E122"
                             "647693B50C5E87A80DFD6FCFAC50"));
                     majority1.setFieldU32(sfCloseTime, 779561310);
@@ -704,7 +704,7 @@ class LedgerEntry_test : public beast::unit_test::Suite
                     auto majority2 = STObject::makeInnerObject(sfMajority);
                     majority2.setFieldH256(
                         sfAmendment,
-                        uint256::fromVoid(
+                        UInt256::fromVoid(
                             "755C971C29971C9F20C6F080F2ED96F87884"
                             "E40AD19554A5EBECDCEC8A1F77FE"));
                     majority2.setFieldU32(sfCloseTime, 779561310);
@@ -1525,10 +1525,10 @@ class LedgerEntry_test : public beast::unit_test::Suite
         Account const buyer{"buyer"};
         env.fund(XRP(1000), issuer, buyer);
 
-        uint256 const nftokenID0 = token::getNextID(env, issuer, 0, tfTransferable);
+        UInt256 const nftokenID0 = token::getNextID(env, issuer, 0, tfTransferable);
         env(token::mint(issuer, 0), Txflags(tfTransferable));
         env.close();
-        uint256 const offerID =
+        UInt256 const offerID =
             keylet::nftokenOffer(issuer, SeqProxy::rawSequence(env.seq(issuer))).key;
         env(token::createOffer(issuer, nftokenID0, drops(1)),
             token::Destination(buyer),
@@ -1608,7 +1608,7 @@ class LedgerEntry_test : public beast::unit_test::Suite
                     sle->setFieldArray(sfDisabledValidators, disabledValidators);
                     sle->setFieldH256(
                         sfPreviousTxnID,
-                        uint256::fromVoid(
+                        UInt256::fromVoid(
                             "8D47FFE664BE6C335108DF689537625855A6"
                             "A95160CC6D351341B9"
                             "2624D9C5E3"));
@@ -1713,7 +1713,7 @@ class LedgerEntry_test : public beast::unit_test::Suite
 
         std::string const ledgerHash{to_string(env.closed()->header().hash)};
 
-        uint256 const payChanIndex{
+        UInt256 const payChanIndex{
             keylet::payChannel(alice, env.master, SeqProxy::rawSequence(env.seq(alice) - 1)).key};
         {
             // Request the payment channel using its index.
@@ -2403,7 +2403,7 @@ class LedgerEntry_test : public beast::unit_test::Suite
                 json::Value params;
 
                 // "field":[incorrect index hash]
-                auto const badKey = strHex(expectedKey.key + uint256{1});
+                auto const badKey = strHex(expectedKey.key + UInt256{1});
                 params[jss::ledger_index] = jss::validated;
                 params[field] = badKey;
                 auto const jv = env.rpc("json", "ledger_entry", to_string(params));
@@ -2621,7 +2621,7 @@ class LedgerEntry_test : public beast::unit_test::Suite
                 // "hashes":[incorrect index hash]
                 {
                     json::Value params;
-                    auto const badKey = strHex(expectedKey.key + uint256{1});
+                    auto const badKey = strHex(expectedKey.key + UInt256{1});
                     params[jss::ledger_index] = jss::validated;
                     params[jss::hashes] = badKey;
                     auto const jv = env.rpc("json", "ledger_entry", to_string(params));

@@ -45,7 +45,7 @@ public:
     }
 
     Status
-    fetch(uint256 const&, std::shared_ptr<NodeObject>*) override
+    fetch(UInt256 const&, std::shared_ptr<NodeObject>*) override
     {
         return Status::NotFound;
     }

@@ -25,7 +25,7 @@ nftPageLinks(jtx::Account const& acct, jtx::Account const& owner)
 
 // Fix sfExchangeRate on a book directory.  acct pays fee.
 json::Value
-bookExchangeRate(jtx::Account const& acct, uint256 const& bookDir)
+bookExchangeRate(jtx::Account const& acct, UInt256 const& bookDir)
 {
     json::Value jv;
     jv[sfAccount.jsonName] = acct.human();

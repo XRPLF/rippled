@@ -213,7 +213,7 @@ Manifest::verify() const
     return xrpl::verify(st, HashPrefix::Manifest, masterKey, sfMasterSignature);
 }
 
-uint256
+UInt256
 Manifest::hash() const
 {
     STObject st(sfGeneric);

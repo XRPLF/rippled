@@ -282,15 +282,15 @@ enum class ConsensusState {
 template <class Traits>
 struct ConsensusResult
 {
-    using Ledger_t = Traits::Ledger_t;
-    using TxSet_t = Traits::TxSet_t;
-    using NodeID_t = Traits::NodeID_t;
+    using LedgerT = Traits::LedgerT;
+    using TxSetT = Traits::TxSetT;
+    using NodeIDT = Traits::NodeIDT;
 
-    using Tx_t = TxSet_t::Tx;
-    using Proposal_t = ConsensusProposal<NodeID_t, typename Ledger_t::ID, typename TxSet_t::ID>;
-    using Dispute_t = DisputedTx<Tx_t, NodeID_t>;
+    using TxT = TxSetT::Tx;
+    using ProposalT = ConsensusProposal<NodeIDT, typename LedgerT::ID, typename TxSetT::ID>;
+    using DisputeT = DisputedTx<TxT, NodeIDT>;
 
-    ConsensusResult(TxSet_t&& s, Proposal_t&& p) : txns{std::move(s)}, position{std::move(p)}
+    ConsensusResult(TxSetT&& s, ProposalT&& p) : txns{std::move(s)}, position{std::move(p)}
     {
         XRPL_ASSERT(txns.id() == position.position(), "xrpl::ConsensusResult : valid inputs");
     }
@@ -298,20 +298,20 @@ struct ConsensusResult
     /**
      * The set of transactions consensus agrees go in the ledger
      */
-    TxSet_t txns;
+    TxSetT txns;
 
     /**
      * Our proposed position on transactions/close time
      */
-    Proposal_t position;
+    ProposalT position;
 
     /**
      * Transactions which are under dispute with our peers
      */
-    hash_map<typename Tx_t::ID, Dispute_t> disputes;
+    HashMap<typename TxT::ID, DisputeT> disputes;
 
     // Set of TxSet ids we have already compared/created disputes
-    hash_set<typename TxSet_t::ID> compares;
+    HashSet<typename TxSetT::ID> compares;
 
     // Measures the duration of the establish phase for this consensus round
     ConsensusTimer roundTime;

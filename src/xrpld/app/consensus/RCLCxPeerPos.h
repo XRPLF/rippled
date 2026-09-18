@@ -27,7 +27,7 @@ class RCLCxPeerPos
 {
 public:
     //< The type of the proposed position
-    using Proposal = ConsensusProposal<NodeID, uint256, uint256>;
+    using Proposal = ConsensusProposal<NodeID, UInt256, UInt256>;
 
     /**
      * Constructor
@@ -43,7 +43,7 @@ public:
     RCLCxPeerPos(
         PublicKey const& publicKey,
         Slice const& signature,
-        uint256 const& suppress,
+        UInt256 const& suppress,
         Proposal const& proposal);  // trivially copyable
 
     /**
@@ -73,7 +73,7 @@ public:
     /**
      * Unique id used by hash router to suppress duplicates
      */
-    uint256 const&
+    UInt256 const&
     suppressionID() const
     {
         return suppression_;
@@ -99,7 +99,7 @@ public:
 
 private:
     PublicKey publicKey_;
-    uint256 suppression_;
+    UInt256 suppression_;
     Proposal proposal_;
     boost::container::static_vector<std::uint8_t, 72> signature_;
 
@@ -133,10 +133,10 @@ private:
  * @param publicKey Signer's public key
  * @param signature Proposal signature
  */
-uint256
+UInt256
 proposalUniqueId(
-    uint256 const& proposeHash,
-    uint256 const& previousLedger,
+    UInt256 const& proposeHash,
+    UInt256 const& previousLedger,
     std::uint32_t proposeSeq,
     NetClock::time_point closeTime,
     Slice const& publicKey,
