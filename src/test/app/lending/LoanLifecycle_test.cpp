@@ -495,7 +495,7 @@ private:
         // From FIND-001
         testcase << "Batch Bypass Counterparty";
 
-        bool const lendingBatchEnabled = features[featureLendingProtocolV1_1];
+        bool const lendingBatchEnabled = features[featureLendingProtocolV1_2];
 
         using namespace jtx;
         using namespace std::chrono_literals;

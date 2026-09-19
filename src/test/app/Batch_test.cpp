@@ -3138,7 +3138,7 @@ class Batch_test : public beast::unit_test::Suite
     {
         testcase("loan");
 
-        bool const lendingBatchEnabled = features[featureLendingProtocolV1_1];
+        bool const lendingBatchEnabled = features[featureLendingProtocolV1_2];
 
         using namespace test::jtx;
 
@@ -3325,7 +3325,9 @@ class Batch_test : public beast::unit_test::Suite
 
         using namespace test::jtx;
 
-        auto const run = [this](FeatureBitset amendments, TER expected, bool expectVault) {
+        // Before LendingProtocolV1_2 a Vault inner transaction rejects the whole batch.
+        auto const checkVaultBatch = [this](FeatureBitset amendments) {
+            bool const lendingBatchEnabled = amendments[featureLendingProtocolV1_2];
             Env env{*this, amendments};
 
             Account const payer{"payer"};
@@ -3341,7 +3343,7 @@ class Batch_test : public beast::unit_test::Suite
             auto const batchFee = batch::calcBatchFee(env, 1, 2);
             submitBatch(
                 env,
-                expected,
+                lendingBatchEnabled ? TER{tesSUCCESS} : TER{temINVALID_INNER_BATCH},
                 batch::outer(payer, payerSeq, batchFee, tfAllOrNothing),
                 batch::Inner(create, lenderSeq),
                 batch::Inner(
@@ -3351,11 +3353,11 @@ class Batch_test : public beast::unit_test::Suite
                 batch::Sig(lender));
             env.close();
 
-            BEAST_EXPECT(static_cast<bool>(env.le(vaultKeylet)) == expectVault);
+            BEAST_EXPECT(static_cast<bool>(env.le(vaultKeylet)) == lendingBatchEnabled);
         };
 
-        run(features - featureLendingProtocolV1_1, temINVALID_INNER_BATCH, false);
-        run(features, tesSUCCESS, true);
+        checkVaultBatch(features - featureLendingProtocolV1_2);
+        checkVaultBatch(features);
     }
 
     void
