@@ -21,7 +21,7 @@ class VaultCreateBuilder;
  * Type: ttVAULT_CREATE (65)
  * Delegable: Delegation::NotDelegable
  * Amendment: featureSingleAssetVault
- * Privileges: CreatePseudoAcct | CreateMptIssuance | MustModifyVault
+ * Privileges: Privilege::CreatePseudoAcct | Privilege::CreateMptIssuance | Privilege::MustModifyVault
  *
  * Immutable wrapper around STTx providing type-safe field access.
  * Use VaultCreateBuilder to construct new transactions.

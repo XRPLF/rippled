@@ -69,6 +69,7 @@ words:
   - Buildx
   - canonicality
   - canonicalised
+  - cctools
   - changespq
   - checkme
   - choco
@@ -110,6 +111,7 @@ words:
   - disablerepo
   - distro
   - doxyfile
+  - dsymutil
   - dxrpl
   - elgamal
   - enabled
@@ -139,6 +141,7 @@ words:
   - hwrap
   - ifndef
   - inequation
+  - Injectivity
   - insuf
   - insuff
   - invasively
@@ -168,6 +171,7 @@ words:
   - LOCALGOOD
   - logwstream
   - Lombrozo
+  - lresolv
   - lseq
   - lsmf
   - ltype
@@ -221,6 +225,7 @@ words:
   - Nyffenegger
   - onlatest
   - ostr
+  - otool
   - oxalica
   - pargs
   - partitioner
@@ -250,11 +255,15 @@ words:
   - Raphson
   - rcflags
   - replayer
+  - repodata
+  - repomd
   - rerandomize
   - rerandomization
   - rerandomized
   - rerandomizes
   - rerere
+  - retargeted
+  - retargets
   - retriable
   - rewalking
   - RIPD
@@ -291,6 +300,7 @@ words:
   - sles
   - soci
   - socidb
+  - Sonatype
   - sponsee
   - sponsees
   - SRPMS
@@ -310,6 +320,7 @@ words:
   - summands
   - superpeer
   - superpeers
+  - Swatinem
   - takergets
   - takerpays
   - ters
@@ -365,6 +376,7 @@ words:
   - wthread
   - xbridge
   - xchain
+  - xcrun
   - ximinez
   - XMACRO
   - xored
@@ -374,4 +386,6 @@ words:
   - xrplf
   - xxhash
   - xxhasher
+  - zstdio
   - CGNAT
+  - ungated

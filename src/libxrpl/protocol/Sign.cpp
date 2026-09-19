@@ -1,16 +1,76 @@
 #include <xrpl/protocol/Sign.h>
 
+#include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/HashPrefix.h>
 #include <xrpl/protocol/KeyType.h>
 #include <xrpl/protocol/PublicKey.h>
+#include <xrpl/protocol/Rules.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STExchange.h>
 #include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/SecretKey.h>
 #include <xrpl/protocol/Serializer.h>
 
+#include <optional>
+
 namespace xrpl {
+
+SField const*
+signatureField(SignatureRole role)
+{
+    switch (role)
+    {
+        case SignatureRole::Transaction:
+            return nullptr;
+        case SignatureRole::Counterparty:
+            return &sfCounterpartySignature;
+        case SignatureRole::Sponsor:
+            return &sfSponsorSignature;
+    }
+    UNREACHABLE("xrpl::signatureField : unknown SignatureRole");
+    return nullptr;
+}
+
+std::optional<SignatureRole>
+signatureRole(SField const& sigField)
+{
+    if (sigField == sfCounterpartySignature)
+        return SignatureRole::Counterparty;
+    if (sigField == sfSponsorSignature)
+        return SignatureRole::Sponsor;
+    return std::nullopt;
+}
+
+// Signature validity depends on fixCleanup3_4_0: a role signature covers
+// different bytes before and after the amendment activates. checkValidity
+// caches its verdict per transaction ID, so it keeps two separate cache slots
+// for role-signature transactions (kSfSiggoodOldPrefix / kSfSigbadOldPrefix in
+// tx/apply.cpp) to keep a pre-fix verdict from being reused in the post-fix
+// era, and vice versa. See the block comment in tx/apply.cpp for the details
+// and the reason both directions matter.
+HashPrefix
+signingPrefix(SignatureRole role, bool multiSigning, Rules const& rules)
+{
+    // Before fixCleanup3_4_0 every signature on a transaction covered the same
+    // bytes, so a signature could be moved from one role to another.
+    if (!rules.enabled(fixCleanup3_4_0))
+        return multiSigning ? HashPrefix::TxMultiSign : HashPrefix::TxSign;
+
+    switch (role)
+    {
+        case SignatureRole::Transaction:
+            return multiSigning ? HashPrefix::TxMultiSign : HashPrefix::TxSign;
+        case SignatureRole::Counterparty:
+            return multiSigning ? HashPrefix::CounterpartyTxMultiSign
+                                : HashPrefix::CounterpartyTxSign;
+        case SignatureRole::Sponsor:
+            return multiSigning ? HashPrefix::SponsorTxMultiSign : HashPrefix::SponsorTxSign;
+    }
+    UNREACHABLE("xrpl::signingPrefix : unknown SignatureRole");
+    return multiSigning ? HashPrefix::TxMultiSign : HashPrefix::TxSign;
+}
 
 void
 sign(
@@ -70,18 +130,18 @@ verify(STObject const& st, HashPrefix const& prefix, PublicKey const& pk, SF_VL 
 // So, if we support multiple levels of signing, then we'll need to
 // incorporate the "signing for" accounts into the signing data as well.
 Serializer
-buildMultiSigningData(STObject const& obj, AccountID const& signingID)
+buildMultiSigningData(STObject const& obj, AccountID const& signingID, HashPrefix prefix)
 {
-    Serializer s{startMultiSigningData(obj)};
+    Serializer s{startMultiSigningData(obj, prefix)};
     finishMultiSigningData(signingID, s);
     return s;
 }
 
 Serializer
-startMultiSigningData(STObject const& obj)
+startMultiSigningData(STObject const& obj, HashPrefix prefix)
 {
     Serializer s;
-    s.add32(HashPrefix::TxMultiSign);
+    s.add32(prefix);
     obj.addWithoutSigningFields(s);
     return s;
 }

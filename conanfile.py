@@ -28,6 +28,7 @@ class Xrpl(ConanFile):
     }
 
     requires = [
+        "corrosion/0.6.1",
         "ed25519/2015.03",
         "fast_float/8.2.10",
         "grpc/1.81.1",
@@ -148,6 +149,7 @@ class Xrpl(ConanFile):
         self.requires("xxhash/0.8.3", transitive_headers=True)
 
     exports_sources = (
+        "bin/default-loader-path.sh",
         "CMakeLists.txt",
         "cfg/*",
         "cmake/*",

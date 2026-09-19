@@ -53,7 +53,21 @@ public:
     }
 
     [[nodiscard]] SHAMapNodeID
-    getChildNodeID(unsigned int m) const;
+    getChildNodeID(unsigned int branch) const;
+
+    /**
+     * Test whether this node ID lies on the path to the given leaf key
+     *
+     * A node at depth d identifies the tree path spelled by the first d
+     * nibbles of its key, so any leaf beneath it must agree on that prefix.
+     * A node ID that fails this test names a different subtree than the one
+     * it was built for.
+     *
+     * @param key  the key of a leaf below this node
+     * @return whether this node ID is a prefix of the leaf key
+     */
+    [[nodiscard]] bool
+    isPrefixOf(uint256 const& key) const;
 
     /**
      * Create a SHAMapNodeID of a node with the depth of the node and
@@ -64,7 +78,7 @@ public:
      * @return SHAMapNodeID of the node
      */
     static SHAMapNodeID
-    createID(int depth, uint256 const& key);
+    createID(unsigned int depth, uint256 const& key);
 
     /**
      * Comparison operators
