@@ -9,6 +9,7 @@
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STLedgerEntry.h>
@@ -98,14 +99,12 @@ LoanBrokerDelete::preclaim(PreclaimContext const& ctx)
     {
         auto const brokerPseudo = sleBroker->at(sfAccount);
 
-        // Pre-featureLendingProtocolV1_2: only freeze checks apply to the cover payout.
-        // Post-featureLendingProtocolV1_2: apply the cover-withdraw transfer and authorization
-        // checks too.
-        if (ctx.view.rules().enabled(featureLendingProtocolV1_2))
+        // Pre-fixCleanup3_5_0: only freeze checks apply to the cover payout.
+        // Post-fixCleanup3_5_0: apply the cover-withdraw transfer and authorization checks too.
+        if (ctx.view.rules().enabled(fixCleanup3_5_0))
         {
-            auto const waive = ctx.view.rules().enabled(fixCleanup3_2_0) ? WaiveMPTCanTransfer::Yes
-                                                                         : WaiveMPTCanTransfer::No;
-            if (auto const ret = canTransfer(ctx.view, asset, brokerPseudo, brokerOwner, waive))
+            if (auto const ret = canTransfer(
+                    ctx.view, asset, brokerPseudo, brokerOwner, WaiveMPTCanTransfer::Yes))
                 return ret;
 
             if (auto const ret = requireAuth(ctx.view, asset, brokerOwner, AuthType::WeakAuth))
@@ -115,6 +114,11 @@ LoanBrokerDelete::preclaim(PreclaimContext const& ctx)
             {
                 if (auto const ret = canAddHolding(ctx.view, asset); !isTesSuccess(ret))
                     return ret;
+
+                // The payout cannot recreate a deleted MPToken, because this transaction already
+                // deletes the pseudo-account's one. The owner has to authorize the MPT again.
+                if (asset.holds<MPTIssue>())
+                    return tecNO_AUTH;
             }
         }
 
