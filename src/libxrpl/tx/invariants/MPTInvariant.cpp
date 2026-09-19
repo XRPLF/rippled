@@ -202,10 +202,10 @@ ValidMPTIssuance::finalize(
             return false;
     }
 
-    // Post-featureLendingProtocolV1_2: no transaction may clear an issuance
-    // flag other than lsfMPTLocked, so downstream code can trust set-once
-    // flags such as lsfMPTCanTransfer.
-    if (rules.enabled(featureLendingProtocolV1_2) && issuanceFlagsCleared_ != 0)
+    // Post-fixCleanup3_5_0: no transaction may clear an issuance flag other
+    // than lsfMPTLocked, so downstream code can trust set-once flags such as
+    // lsfMPTCanTransfer.
+    if (rules.enabled(fixCleanup3_5_0) && issuanceFlagsCleared_ != 0)
     {
         JLOG(j.fatal()) << "Invariant failed: immutable MPTokenIssuance flag cleared";
         return false;

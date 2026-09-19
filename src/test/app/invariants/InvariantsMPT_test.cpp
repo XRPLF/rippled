@@ -1100,10 +1100,9 @@ class InvariantsMPT_test : public InvariantsBase
         }
 
         // lsfMPTLocked is exempt because tfMPTUnlock clears it legitimately.
-        // Pre-featureLendingProtocolV1_2: clearing another issuance flag is
-        // allowed.
-        // Post-featureLendingProtocolV1_2: clearing another issuance flag
-        // trips the invariant.
+        // Pre-fixCleanup3_5_0: clearing another issuance flag is allowed.
+        // Post-fixCleanup3_5_0: clearing another issuance flag trips the
+        // invariant.
         {
             MPTID id{};
             Precheck const clearCanTransfer =
@@ -1129,7 +1128,7 @@ class InvariantsMPT_test : public InvariantsBase
             STTx const tx{ttACCOUNT_SET, [](STObject&) {}};
 
             doInvariantCheck(
-                makeEnv(all_ - featureLendingProtocolV1_2),
+                makeEnv(all_ - fixCleanup3_5_0),
                 {},
                 clearCanTransfer,
                 XRPAmount{},
@@ -1137,7 +1136,7 @@ class InvariantsMPT_test : public InvariantsBase
                 {tesSUCCESS, tesSUCCESS},
                 setup);
             doInvariantCheck(
-                makeEnv(all_ | featureLendingProtocolV1_2),
+                makeEnv(all_),
                 {{"immutable MPTokenIssuance flag cleared"}},
                 clearCanTransfer,
                 XRPAmount{},
