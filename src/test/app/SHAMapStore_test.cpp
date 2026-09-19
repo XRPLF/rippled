@@ -1947,7 +1947,7 @@ public:
         for (; ledgerSeq < initialRotated + kDeleteInterval + 1; ++ledgerSeq)
             env.close();
 
-        store.rendezvous();
+        BEAST_EXPECT(store.rendezvous());
 
         auto const rotated = store.getLastRotated();
         BEAST_EXPECT(rotated > initialRotated);
@@ -2012,7 +2012,7 @@ public:
 
         for (; ledgerSeq < initialRotated + kHistory + 1; ++ledgerSeq)
             env.close();
-        store.rendezvous();
+        BEAST_EXPECT(store.rendezvous());
 
         BEAST_EXPECT(store.getLastRotated() > initialRotated);
         auto const minLedger = env.app().getRelationalDatabase().getMinLedgerSeq();
@@ -2061,7 +2061,7 @@ public:
         }
         catch (std::runtime_error const& e)
         {
-            BEAST_EXPECT(std::string(e.what()).find("ledger_history") != std::string::npos);
+            BEAST_EXPECT(std::string(e.what()).contains("ledger_history"));
         }
     }
 
@@ -2100,7 +2100,7 @@ public:
             canDelete[jss::result][jss::can_delete] == std::numeric_limits<unsigned int>::max());
 
         env.close();
-        store.rendezvous();
+        BEAST_EXPECT(store.rendezvous());
 
         canDelete = env.rpc("can_delete", "now");
         BEAST_EXPECT(!rpc::containsError(canDelete[jss::result]));

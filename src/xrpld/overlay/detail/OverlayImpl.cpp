@@ -104,6 +104,8 @@ static constexpr auto kServerCounts = (1 << 2);
 static constexpr auto kUnl = (1 << 3);
 }  // namespace crawl_options
 
+namespace {
+
 bool
 useSqlitePeerFinderStore(Config const& config)
 {
@@ -111,6 +113,8 @@ useSqlitePeerFinderStore(Config const& config)
     auto const backend = get(rdbSection, "backend", "sqlite");
     return !boost::iequals(backend, "rwdb");
 }
+
+}  // namespace
 
 //------------------------------------------------------------------------------
 

@@ -114,7 +114,7 @@ public:
         close();
     }
 
-    [[nodiscard]] [[nodiscard]] int
+    [[nodiscard]] int
     fdRequired() const override
     {
         return 0;
