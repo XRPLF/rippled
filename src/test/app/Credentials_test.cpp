@@ -584,7 +584,7 @@ struct Credentials_test : public beast::unit_test::Suite
                 auto const expectedResult = [&]() -> TER {
                     if (features[fixCleanup3_3_0])
                         return tecPSEUDO_ACCOUNT;
-                    if (features[featureLendingProtocolV1_2])
+                    if (features[fixCleanup3_5_0])
                         return tecINVARIANT_FAILED;
                     return tesSUCCESS;
                 }();
@@ -1182,6 +1182,7 @@ struct Credentials_test : public beast::unit_test::Suite
         testCreateFailed(all);
         testCreateFailed(all - fixDirectoryLimit);
         testCreateFailed(all - fixCleanup3_3_0);
+        testCreateFailed(all - fixCleanup3_3_0 - fixCleanup3_5_0);
         testAcceptFailed(all);
         testDeleteFailed(all);
         testFeatureFailed(all - featureCredentials);
