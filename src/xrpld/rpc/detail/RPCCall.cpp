@@ -1890,9 +1890,12 @@ struct RPCCallImp
             }
 
             // Parse reply. A plain text body is a rejection, which carries no field a credential
-            // could sit in, so it is logged as it is, capped at kMaxLoggedChars.
+            // could sit in, so it is logged as it is, capped at kMaxLoggedChars. The server
+            // answers these four texts before it reads a request out of the body.
             if (strData.starts_with("Unable to parse request") ||
-                strData.starts_with(jss::invalid_API_version.cStr()))
+                strData.starts_with(jss::invalid_API_version.cStr()) ||
+                strData.starts_with("Request is too large") ||
+                strData.starts_with("Request is empty"))
             {
                 JLOG(j.debug()) << "RPC reply: "
                                 << std::string_view{strData}.substr(0, rpc::kMaxLoggedChars);
