@@ -11,7 +11,9 @@
 
 namespace xrpl {
 
-/** Subscription object for JSON RPC. */
+/**
+ * Subscription object for JSON RPC.
+ */
 class RPCSub : public InfoSub
 {
 public:

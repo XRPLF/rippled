@@ -31,16 +31,22 @@ class ValidMPTIssuance
     // MPToken by an issuer
     bool mptCreatedByIssuer_ = false;
 
-    /// sfReferenceHolding is intended to be set exactly once at vault
-    /// creation and immutable thereafter; true when that rule was violated.
+    /**
+     * sfReferenceHolding is intended to be set exactly once at vault
+     * creation and immutable thereafter; true when that rule was violated.
+     */
     bool referenceHoldingSetOnCreate_ = false;
 
-    /// True when sfReferenceHolding was mutated on an existing MPTokenIssuance.
+    /**
+     * True when sfReferenceHolding was mutated on an existing MPTokenIssuance.
+     */
     bool referenceHoldingMutated_ = false;
 
-    /// MPTokens and RippleStates deleted during apply. finalize() checks each
-    /// holder's AccountRoot to detect vault pseudo-account holdings deleted
-    /// outside VaultDelete. All these checks are gated on fixCleanup3_2_0.
+    /**
+     * MPTokens and RippleStates deleted during apply. finalize() checks each
+     * holder's AccountRoot to detect vault pseudo-account holdings deleted
+     * outside VaultDelete. All these checks are gated on fixCleanup3_2_0.
+     */
     std::vector<std::shared_ptr<SLE const>> deletedHoldings_;
 
 public:
@@ -81,7 +87,7 @@ public:
  * OutstandingAmount after application equals OutstandingAmount before
  * application plus the net holder balance delta.
  */
-class ValidMPTPayment
+class ValidMPTBalanceChanges
 {
     enum class Order { Before = 0, After = 1 };
     struct MPTData
@@ -209,6 +215,13 @@ class ValidMPTTransfer
     // Deleted MPToken
     // MPToken key: true if MPTAuthorized is set
     hash_map<uint256, bool> deletedAuthorized_;
+    // Every touched AccountRoot (not only pseudos):
+    // AccountID -> whether it was a pseudo-account BEFORE this transaction
+    // applied. Needed because a transaction may erase a pseudo-account and
+    // move MPT out of it in the same transaction; by finalize() time the
+    // view no longer shows it as a pseudo-account (or as existing at all).
+    // False entries freeze the pre-tx classification for touched non-pseudos.
+    hash_map<AccountID, bool> pseudoAccountsBefore_;
 
 public:
     /**

@@ -21,7 +21,7 @@ class TrustSetBuilder;
  * Type: ttTRUST_SET (20)
  * Delegable: Delegation::Delegable
  * Amendment: uint256{}
- * Privileges: NoPriv
+ * Privileges: Privilege::NoPriv
  *
  * Immutable wrapper around STTx providing type-safe field access.
  * Use TrustSetBuilder to construct new transactions.
@@ -164,7 +164,9 @@ public:
         object_ = *tx;
     }
 
-    /** @brief Transaction-specific field setters */
+    /**
+     * @brief Transaction-specific field setters
+     */
 
     /**
      * @brief Set sfLimitAmount (SoeOptional)

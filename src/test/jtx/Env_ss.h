@@ -10,10 +10,11 @@
 
 namespace xrpl::test::jtx {
 
-/** A transaction testing environment wrapper.
-    Transactions submitted in sign-and-submit mode
-    by default.
-*/
+/**
+ * A transaction testing environment wrapper.
+ * Transactions submitted in sign-and-submit mode
+ * by default.
+ */
 class EnvSs
 {
 private:

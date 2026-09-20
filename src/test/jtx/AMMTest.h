@@ -103,7 +103,8 @@ public:
     }
 
 protected:
-    /** testAMM() funds 30,000XRP and 30,000IOU
+    /**
+     * testAMM() funds 30,000XRP and 30,000IOU
      * for each non-XRP asset to Alice and Carol
      */
     void

@@ -8,6 +8,7 @@
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/MPTokenHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
+#include <xrpl/ledger/helpers/VaultHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Feature.h>
@@ -30,6 +31,7 @@
 #include <cstdint>
 #include <memory>
 #include <optional>
+#include <utility>
 
 namespace xrpl {
 
@@ -40,6 +42,11 @@ VaultCreate::checkExtraFeatures(PreflightContext const& ctx)
         return false;
 
     if (ctx.tx.isFieldPresent(sfDomainID) && !ctx.rules.enabled(featurePermissionedDomains))
+        return false;
+
+    if (!ctx.rules.enabled(featureLendingProtocolV1_1) &&
+        (ctx.tx.isFieldPresent(sfVaultKind) || ctx.tx.isFieldPresent(sfSubscriptionDate) ||
+         ctx.tx.isFieldPresent(sfRedemptionDate)))
         return false;
 
     return true;
@@ -98,6 +105,22 @@ VaultCreate::preflight(PreflightContext const& ctx)
             return temMALFORMED;
     }
 
+    if (!isValidVaultKind(ctx.tx))
+        return temMALFORMED;
+    auto const kind = getVaultKind(ctx.tx);
+    auto const hasSubscription = ctx.tx.isFieldPresent(sfSubscriptionDate);
+    auto const hasRedemption = ctx.tx.isFieldPresent(sfRedemptionDate);
+    auto const isClosedEnded = kind == VaultKind::ClosedEnded;
+    if (!isClosedEnded && (hasSubscription || hasRedemption))
+        return temMALFORMED;
+    if (isClosedEnded)
+    {
+        if (!hasSubscription || !hasRedemption)
+            return temMALFORMED;
+        if (!isValidClosedEndedGap(ctx.tx[sfSubscriptionDate], ctx.tx[sfRedemptionDate]))
+            return temMALFORMED;
+    }
+
     return tesSUCCESS;
 }
 
@@ -130,10 +153,20 @@ VaultCreate::preclaim(PreclaimContext const& ctx)
             return tecOBJECT_NOT_FOUND;
     }
 
-    auto const sequence = ctx.tx.getSeqValue();
+    auto const sequence = ctx.tx.getSeqProxy();
     if (auto const accountId = pseudoAccountAddress(ctx.view, keylet::vault(account, sequence).key);
         accountId == beast::kZero)
         return terADDRESS_COLLISION;
+
+    // preflight enforces red >= sub + kMinInvestmentPeriod for closed-ended
+    // vaults, so a past RedemptionDate always implies a strictly-earlier,
+    // equally-past SubscriptionDate. The RedemptionDate arm below is therefore
+    // defensive: it cannot be the sole cause of tecEXPIRED. It is kept to
+    // preserve the invariant locally in case the preflight gap check is ever
+    // weakened.
+    if (hasExpired(ctx.view, ctx.tx[~sfSubscriptionDate]) ||
+        hasExpired(ctx.view, ctx.tx[~sfRedemptionDate]))
+        return tecEXPIRED;
 
     return tesSUCCESS;
 }
@@ -146,7 +179,8 @@ VaultCreate::doApply()
     // we can consider downgrading them to `tef` or `tem`.
 
     auto const& tx = ctx_.tx;
-    auto const sequence = tx.getSeqValue();
+    auto applyViewContext = ctx_.getApplyViewContext();
+    auto const sequence = tx.getSeqProxy();
     auto const owner = view().peek(keylet::account(accountID_));
     if (owner == nullptr)
         return tefINTERNAL;  // LCOV_EXCL_LINE
@@ -156,9 +190,8 @@ VaultCreate::doApply()
     if (auto ter = dirLink(view(), accountID_, vault))
         return ter;
     // We will create Vault and PseudoAccount, hence increase OwnerCount by 2
-    adjustOwnerCount(view(), owner, 2, j_);
-    auto const ownerCount = owner->at(sfOwnerCount);
-    if (preFeeBalance_ < view().fees().accountReserve(ownerCount))
+    increaseOwnerCount(view(), owner, {}, 2, j_);
+    if (preFeeBalance_ < accountReserve(view(), owner, j_))
         return tecINSUFFICIENT_RESERVE;
 
     auto maybePseudo = createPseudoAccount(view(), vault->key(), sfVaultID);
@@ -168,7 +201,8 @@ VaultCreate::doApply()
     AccountID const pseudoId = pseudo->at(sfAccount);
     auto const asset = tx[sfAsset];
 
-    if (auto ter = addEmptyHolding(view(), pseudoId, preFeeBalance_, asset, j_); !isTesSuccess(ter))
+    if (auto ter = addEmptyHolding(applyViewContext, pseudoId, preFeeBalance_, asset, j_);
+        !isTesSuccess(ter))
         return ter;
 
     std::uint8_t const scale = (asset.holds<MPTIssue>() || asset.native())
@@ -197,7 +231,7 @@ VaultCreate::doApply()
             : keylet::trustLine(pseudoId, asset.get<Issue>()).key;
     }();
     auto const maybeShare = MPTokenIssuanceCreate::create(
-        view(),
+        applyViewContext,
         j_,
         {
             .priorBalance = std::nullopt,
@@ -208,7 +242,6 @@ VaultCreate::doApply()
             .transferFee = std::nullopt,
             .metadata = tx[~sfMPTokenMetadata],
             .domainId = tx[~sfDomainID],
-            .mutableFlags = std::nullopt,
             .referenceHolding = referenceHolding,
         });
     if (!maybeShare)
@@ -217,7 +250,7 @@ VaultCreate::doApply()
 
     vault->setFieldIssue(sfAsset, STIssue{sfAsset, asset});
     vault->at(sfFlags) = tx.getFlags() & tfVaultPrivate;
-    vault->at(sfSequence) = sequence;
+    vault->at(sfSequence) = sequence.value();
     vault->at(sfOwner) = accountID_;
     vault->at(sfAccount) = pseudoId;
     vault->at(sfAssetsTotal) = Number(0);
@@ -240,11 +273,23 @@ VaultCreate::doApply()
     }
     if (scale != 0u)
         vault->at(sfScale) = scale;
+    if (view().rules().enabled(featureLendingProtocolV1_1))
+    {
+        vault->at(sfLEVersion) = std::to_underlying(VaultVersion::CashBasis);
+
+        auto const kind = getVaultKind(tx);
+        vault->at(sfVaultKind) = std::to_underlying(kind);
+        if (kind == VaultKind::ClosedEnded)
+        {
+            vault->at(sfSubscriptionDate) = tx[sfSubscriptionDate];
+            vault->at(sfRedemptionDate) = tx[sfRedemptionDate];
+        }
+    }
     view().insert(vault);
 
     // Explicitly create MPToken for the vault owner
-    if (auto const err =
-            authorizeMPToken(view(), preFeeBalance_, mptIssuanceID, accountID_, ctx_.journal);
+    if (auto const err = authorizeMPToken(
+            applyViewContext, preFeeBalance_, mptIssuanceID, accountID_, ctx_.journal);
         !isTesSuccess(err))
         return err;
 
@@ -252,7 +297,13 @@ VaultCreate::doApply()
     if (tx.isFlag(tfVaultPrivate))
     {
         if (auto const err = authorizeMPToken(
-                view(), preFeeBalance_, mptIssuanceID, pseudoId, ctx_.journal, {}, accountID_);
+                applyViewContext,
+                preFeeBalance_,
+                mptIssuanceID,
+                pseudoId,
+                ctx_.journal,
+                {},
+                accountID_);
             !isTesSuccess(err))
             return err;
     }

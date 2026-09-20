@@ -7,6 +7,7 @@
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Concepts.h>
 #include <xrpl/protocol/Quality.h>
+#include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/TER.h>
 
 #include <cstdint>
@@ -19,7 +20,8 @@ template <typename TIn, typename TOut>
 class AMMLiquidity;
 class QualityFunction;
 
-/** Represents synthetic AMM offer in BookStep. AMMOffer mirrors TOffer
+/**
+ * Represents synthetic AMM offer in BookStep. AMMOffer mirrors TOffer
  * methods for use in generic BookStep methods. AMMOffer amounts
  * are changed indirectly in BookStep limiting steps.
  */
@@ -86,14 +88,16 @@ public:
         return consumed_;
     }
 
-    /** Limit out of the provided offer. If one-path then swapOut
+    /**
+     * Limit out of the provided offer. If one-path then swapOut
      * using current balances. If multi-path then ceil_out using
      * current quality.
      */
     [[nodiscard]] TAmounts<TIn, TOut>
     limitOut(TAmounts<TIn, TOut> const& offerAmount, TOut const& limit, bool roundUp) const;
 
-    /** Limit in of the provided offer. If one-path then swapIn
+    /**
+     * Limit in of the provided offer. If one-path then swapIn
      * using current balances. If multi-path then ceil_in using
      * current quality.
      */
@@ -103,14 +107,18 @@ public:
     [[nodiscard]] QualityFunction
     getQualityFunc() const;
 
-    /** Send funds without incurring the transfer fee
+    /**
+     * Send funds without incurring the transfer fee
      */
     template <typename... Args>
     static TER
     send(Args&&... args)
     {
         return accountSend(
-            std::forward<Args>(args)..., WaiveTransferFee::Yes, AllowMPTOverflow::Yes);
+            std::forward<Args>(args)...,
+            SLE::pointer(),
+            WaiveTransferFee::Yes,
+            AllowMPTOverflow::Yes);
     }
 
     [[nodiscard]] bool
@@ -127,7 +135,8 @@ public:
         return {ofrInRate, QUALITY_ONE};
     }
 
-    /** Check the new pool product is greater or equal to the old pool
+    /**
+     * Check the new pool product is greater or equal to the old pool
      * product or if decreases then within some threshold.
      */
     [[nodiscard]] bool

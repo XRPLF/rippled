@@ -3,6 +3,7 @@
 #include <xrpl/basics/Slice.h>
 #include <xrpl/beast/utility/instrumentation.h>
 
+#include <algorithm>
 #include <cstdint>
 #include <cstring>
 #include <memory>
@@ -10,9 +11,10 @@
 
 namespace xrpl {
 
-/** Like std::vector<char> but better.
-    Meets the requirements of BufferFactory.
-*/
+/**
+ * Like std::vector<char> but better.
+ * Meets the requirements of BufferFactory.
+ */
 class Buffer
 {
 private:
@@ -24,30 +26,37 @@ public:
 
     Buffer() = default;
 
-    /** Create an uninitialized buffer with the given size. */
+    /**
+     * Create an uninitialized buffer with the given size.
+     */
     explicit Buffer(std::size_t size)
         : p_((size != 0u) ? new std::uint8_t[size] : nullptr), size_(size)
     {
     }
 
-    /** Create a buffer as a copy of existing memory.
-
-        @param data a pointer to the existing memory. If
-                    size is non-zero, it must not be null.
-        @param size size of the existing memory block.
-    */
+    /**
+     * Create a buffer as a copy of existing memory.
+     *
+     * @param data a pointer to the existing memory. If
+     *             size is non-zero, it must not be null.
+     * @param size size of the existing memory block.
+     */
     Buffer(void const* data, std::size_t size) : Buffer(size)
     {
         if (size != 0u)
             std::memcpy(p_.get(), data, size);
     }
 
-    /** Copy-construct */
+    /**
+     * Copy-construct
+     */
     Buffer(Buffer const& other) : Buffer(other.p_.get(), other.size_)
     {
     }
 
-    /** Copy assign */
+    /**
+     * Copy assign
+     */
     Buffer&
     operator=(Buffer const& other)
     {
@@ -59,17 +68,19 @@ public:
         return *this;
     }
 
-    /** Move-construct.
-        The other buffer is reset.
-    */
+    /**
+     * Move-construct.
+     * The other buffer is reset.
+     */
     Buffer(Buffer&& other) noexcept : p_(std::move(other.p_)), size_(other.size_)
     {
         other.size_ = 0;
     }
 
-    /** Move-assign.
-        The other buffer is reset.
-    */
+    /**
+     * Move-assign.
+     * The other buffer is reset.
+     */
     Buffer&
     operator=(Buffer&& other) noexcept
     {
@@ -82,12 +93,16 @@ public:
         return *this;
     }
 
-    /** Construct from a slice */
+    /**
+     * Construct from a slice
+     */
     explicit Buffer(Slice s) : Buffer(s.data(), s.size())
     {
     }
 
-    /** Assign from slice */
+    /**
+     * Assign from slice
+     */
     Buffer&
     operator=(Slice s)
     {
@@ -101,7 +116,9 @@ public:
         return *this;
     }
 
-    /** Returns the number of bytes in the buffer. */
+    /**
+     * Returns the number of bytes in the buffer.
+     */
     [[nodiscard]] std::size_t
     size() const noexcept
     {
@@ -121,10 +138,11 @@ public:
         return Slice{p_.get(), size_};
     }
 
-    /** Return a pointer to beginning of the storage.
-        @note The return type is guaranteed to be a pointer
-              to a single byte, to facilitate pointer arithmetic.
-    */
+    /**
+     * Return a pointer to beginning of the storage.
+     * @note The return type is guaranteed to be a pointer
+     *       to a single byte, to facilitate pointer arithmetic.
+     */
     /** @{ */
     [[nodiscard]] std::uint8_t const*
     data() const noexcept
@@ -139,9 +157,23 @@ public:
     }
     /** @} */
 
-    /** Reset the buffer.
-        All memory is deallocated. The resulting size is 0.
-    */
+    /**
+     * Set every byte in the buffer to the given value.
+     *
+     * The size is unchanged, and this is a no-op on an empty buffer.
+     *
+     * @param value the byte to write to every position.
+     */
+    void
+    fill(std::uint8_t value) noexcept
+    {
+        std::fill_n(p_.get(), size_, value);
+    }
+
+    /**
+     * Reset the buffer.
+     * All memory is deallocated. The resulting size is 0.
+     */
     void
     clear() noexcept
     {
@@ -149,9 +181,10 @@ public:
         size_ = 0;
     }
 
-    /** Reallocate the storage.
-        Existing data, if any, is discarded.
-    */
+    /**
+     * Reallocate the storage.
+     * Existing data, if any, is discarded.
+     */
     std::uint8_t*
     alloc(std::size_t n)
     {
@@ -205,12 +238,6 @@ operator==(Buffer const& lhs, Buffer const& rhs) noexcept
         return true;
 
     return std::memcmp(lhs.data(), rhs.data(), lhs.size()) == 0;
-}
-
-inline bool
-operator!=(Buffer const& lhs, Buffer const& rhs) noexcept
-{
-    return !(lhs == rhs);
 }
 
 }  // namespace xrpl

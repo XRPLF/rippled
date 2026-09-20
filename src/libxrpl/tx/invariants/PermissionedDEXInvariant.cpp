@@ -1,11 +1,13 @@
 #include <xrpl/tx/invariants/PermissionedDEXInvariant.h>
 
 #include <xrpl/basics/Log.h>
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/Rules.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STArray.h>
 #include <xrpl/protocol/STLedgerEntry.h>
@@ -17,19 +19,30 @@
 namespace xrpl {
 
 void
-ValidPermissionedDEX::visitEntry(bool isDelete, SLE::const_ref before, SLE::const_ref after)
+ValidPermissionedDEX::visitEntry(bool isDelete, SLE::const_ref, SLE::const_ref after)
 {
+    // Post-fixCleanup3_4_0: skip when after is null (defensive).
+    // Pre-amendment: original after-only path via the `if (after && ...)` checks below.
+    if (isFeatureEnabled(fixCleanup3_4_0) && !after)
+        return;
+
+    auto trackDomain = [this, isDelete](uint256 const& domain) {
+        domainsOld_.insert(domain);
+        if (!isDelete)
+            domains_.insert(domain);
+    };
+
     if (after && after->getType() == ltDIR_NODE)
     {
         if (after->isFieldPresent(sfDomainID))
-            domains_.insert(after->getFieldH256(sfDomainID));
+            trackDomain(after->getFieldH256(sfDomainID));
     }
 
     if (after && after->getType() == ltOFFER)
     {
         if (after->isFieldPresent(sfDomainID))
         {
-            domains_.insert(after->getFieldH256(sfDomainID));
+            trackDomain(after->getFieldH256(sfDomainID));
         }
         else
         {
@@ -87,7 +100,8 @@ ValidPermissionedDEX::finalize(
 
     // for both payment and offercreate, there shouldn't be another domain
     // that's different from the domain specified
-    for (auto const& d : domains_)
+    auto const& domains = view.rules().enabled(fixCleanup3_4_0) ? domains_ : domainsOld_;
+    for (auto const& d : domains)
     {
         if (d != domain)
         {

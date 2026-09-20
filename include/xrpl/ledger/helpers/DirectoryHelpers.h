@@ -95,19 +95,20 @@ internalDirFirst(
 }  // namespace detail
 
 /** @{ */
-/** Returns the first entry in the directory, advancing the index
-
-    @deprecated These are legacy function that are considered deprecated
-                and will soon be replaced with an iterator-based model
-                that is easier to use. You should not use them in new code.
-
-    @param view The view against which to operate
-    @param root The root (i.e. first page) of the directory to iterate
-    @param page The current page
-    @param index The index inside the current page
-    @param entry The entry at the current index
-
-    @return true if the directory isn't empty; false otherwise
+/**
+ * Returns the first entry in the directory, advancing the index
+ *
+ * @deprecated These are legacy function that are considered deprecated
+ *             and will soon be replaced with an iterator-based model
+ *             that is easier to use. You should not use them in new code.
+ *
+ * @param view The view against which to operate
+ * @param root The root (i.e. first page) of the directory to iterate
+ * @param page The current page
+ * @param index The index inside the current page
+ * @param entry The entry at the current index
+ *
+ * @return true if the directory isn't empty; false otherwise
  */
 bool
 cdirFirst(
@@ -127,19 +128,20 @@ dirFirst(
 /** @} */
 
 /** @{ */
-/** Returns the next entry in the directory, advancing the index
-
-    @deprecated These are legacy function that are considered deprecated
-                and will soon be replaced with an iterator-based model
-                that is easier to use. You should not use them in new code.
-
-    @param view The view against which to operate
-    @param root The root (i.e. first page) of the directory to iterate
-    @param page The current page
-    @param index The index inside the current page
-    @param entry The entry at the current index
-
-    @return true if the directory isn't empty; false otherwise
+/**
+ * Returns the next entry in the directory, advancing the index
+ *
+ * @deprecated These are legacy function that are considered deprecated
+ *             and will soon be replaced with an iterator-based model
+ *             that is easier to use. You should not use them in new code.
+ *
+ * @param view The view against which to operate
+ * @param root The root (i.e. first page) of the directory to iterate
+ * @param page The current page
+ * @param index The index inside the current page
+ * @param entry The entry at the current index
+ *
+ * @return true if the directory isn't empty; false otherwise
  */
 bool
 cdirNext(
@@ -158,16 +160,19 @@ dirNext(
     uint256& entry);
 /** @} */
 
-/** Iterate all items in the given directory. */
+/**
+ * Iterate all items in the given directory.
+ */
 void
 forEachItem(ReadView const& view, Keylet const& root, std::function<void(SLE::const_ref)> const& f);
 
-/** Iterate all items after an item in the given directory.
-    @param after The key of the item to start after
-    @param hint The directory page containing `after`
-    @param limit The maximum number of items to return
-    @return `false` if the iteration failed
-*/
+/**
+ * Iterate all items after an item in the given directory.
+ * @param after The key of the item to start after
+ * @param hint The directory page containing `after`
+ * @param limit The maximum number of items to return
+ * @return `false` if the iteration failed
+ */
 bool
 forEachItemAfter(
     ReadView const& view,
@@ -177,19 +182,22 @@ forEachItemAfter(
     unsigned int limit,
     std::function<bool(SLE::const_ref)> const& f);
 
-/** Iterate all items in an account's owner directory. */
+/**
+ * Iterate all items in an account's owner directory.
+ */
 inline void
 forEachItem(ReadView const& view, AccountID const& id, std::function<void(SLE::const_ref)> const& f)
 {
     forEachItem(view, keylet::ownerDir(id), f);
 }
 
-/** Iterate all items after an item in an owner directory.
-    @param after The key of the item to start after
-    @param hint The directory page containing `after`
-    @param limit The maximum number of items to return
-    @return `false` if the iteration failed
-*/
+/**
+ * Iterate all items after an item in an owner directory.
+ * @param after The key of the item to start after
+ * @param hint The directory page containing `after`
+ * @param limit The maximum number of items to return
+ * @return `false` if the iteration failed
+ */
 inline bool
 forEachItemAfter(
     ReadView const& view,
@@ -202,13 +210,16 @@ forEachItemAfter(
     return forEachItemAfter(view, keylet::ownerDir(id), after, hint, limit, f);
 }
 
-/** Returns `true` if the directory is empty
-    @param key The key of the directory
-*/
+/**
+ * Returns `true` if the directory is empty
+ * @param key The key of the directory
+ */
 [[nodiscard]] bool
 dirIsEmpty(ReadView const& view, Keylet const& k);
 
-/** Returns a function that sets the owner on a directory SLE */
+/**
+ * Returns a function that sets the owner on a directory SLE
+ */
 [[nodiscard]] std::function<void(SLE::ref)>
 describeOwnerDir(AccountID const& account);
 

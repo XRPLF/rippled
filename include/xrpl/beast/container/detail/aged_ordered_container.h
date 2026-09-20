@@ -39,22 +39,23 @@ struct IsBoostReverseIterator<boost::intrusive::reverse_iterator<It>> : std::tru
     explicit IsBoostReverseIterator() = default;
 };
 
-/** Associative container where each element is also indexed by time.
-
-    This container mirrors the interface of the standard library ordered
-    associative containers, with the addition that each element is associated
-    with a `when` `time_point` which is obtained from the value of the clock's
-    `now`. The function `touch` updates the time for an element to the current
-    time as reported by the clock.
-
-    An extra set of iterator types and member functions are provided in the
-    `chronological` memberspace that allow traversal in temporal or reverse
-    temporal order. This container is useful as a building block for caches
-    whose items expire after a certain amount of time. The chronological
-    iterators allow for fully customizable expiration strategies.
-
-    @see aged_set, aged_multiset, aged_map, aged_multimap
-*/
+/**
+ * Associative container where each element is also indexed by time.
+ *
+ * This container mirrors the interface of the standard library ordered
+ * associative containers, with the addition that each element is associated
+ * with a `when` `time_point` which is obtained from the value of the clock's
+ * `now`. The function `touch` updates the time for an element to the current
+ * time as reported by the clock.
+ *
+ * An extra set of iterator types and member functions are provided in the
+ * `chronological` memberspace that allow traversal in temporal or reverse
+ * temporal order. This container is useful as a building block for caches
+ * whose items expire after a certain amount of time. The chronological
+ * iterators allow for fully customizable expiration strategies.
+ *
+ * @see aged_set, aged_multiset, aged_map, aged_multimap
+ */
 template <
     bool IsMulti,
     bool IsMap,
@@ -359,6 +360,7 @@ private:
     deleteElement(Element const* p)
     {
         ElementAllocatorTraits::destroy(config_.alloc(), p);
+        // NOLINTNEXTLINE(cppcoreguidelines-pro-type-const-cast)
         ElementAllocatorTraits::deallocate(config_.alloc(), const_cast<Element*>(p), 1);
     }
 
@@ -1035,25 +1037,6 @@ public:
                OtherDuration,
                Compare,
                OtherAllocator> const& other) const;
-
-    template <
-        bool OtherIsMulti,
-        bool OtherIsMap,
-        class OtherT,
-        class OtherDuration,
-        class OtherAllocator>
-    bool
-    operator!=(AgedOrderedContainer<
-               OtherIsMulti,
-               OtherIsMap,
-               Key,
-               OtherT,
-               OtherDuration,
-               Compare,
-               OtherAllocator> const& other) const
-    {
-        return !(this->operator==(other));
-    }
 
     template <
         bool OtherIsMulti,
@@ -1794,7 +1777,9 @@ swap(
     lhs.swap(rhs);
 }
 
-/** Expire aged container items past the specified age. */
+/**
+ * Expire aged container items past the specified age.
+ */
 template <
     bool IsMulti,
     bool IsMap,

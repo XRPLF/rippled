@@ -29,7 +29,9 @@ public:
     static TER
     preclaim(PreclaimContext const& ctx);
 
-    /** Attempt to create the Permissioned Domain. */
+    /**
+     * Attempt to create the Permissioned Domain.
+     */
     TER
     doApply() override;
 

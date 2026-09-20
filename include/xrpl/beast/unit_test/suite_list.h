@@ -16,7 +16,9 @@
 
 namespace beast::unit_test {
 
-/// A container of test suites.
+/**
+ * A container of test suites.
+ */
 class SuiteList : public detail::ConstContainer<std::set<SuiteInfo>>
 {
 private:
@@ -26,10 +28,11 @@ private:
 #endif
 
 public:
-    /** Insert a suite into the set.
-
-        The suite must not already exist.
-    */
+    /**
+     * Insert a suite into the set.
+     *
+     * The suite must not already exist.
+     */
     template <class Suite>
     void
     insert(char const* name, char const* module, char const* library, bool manual, int priority);

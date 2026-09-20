@@ -177,7 +177,9 @@ ${field['typeData']['setter_type']} ${field['paramName']}${',' if i < len(requir
         object_ = *sle;
     }
 
-    /** @brief Ledger entry-specific field setters */
+    /**
+     * @brief Ledger entry-specific field setters
+     */
 % for field in fields:
 
     /**

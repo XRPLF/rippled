@@ -110,6 +110,7 @@ JSS(accounts);                    // in: LedgerEntry, Subscribe, handlers/Ledger
 JSS(accounts_proposed);           // in: Subscribe, Unsubscribe
 JSS(action);                      //
 JSS(active);                      // out: OverlayImpl
+JSS(actor);                       // in/out: AccountTx
 JSS(acquiring);                   // out: LedgerRequest
 JSS(address);                     // out: PeerImp
 JSS(affected);                    // out: AcceptedLedgerTx
@@ -133,6 +134,7 @@ JSS(attestation_reward_account);  //
 JSS(auction_slot);                // out: amm_info
 JSS(authorized);                  // out: AccountLines
 JSS(authorize);                   // out: delegate
+JSS(authorizer);                  // in/out: AccountTx
 JSS(authorized_credentials);      // in: ledger_entry DepositPreauth
 JSS(auth_accounts);               // out: amm_info
 JSS(auth_change);                 // out: AccountInfo
@@ -191,6 +193,7 @@ JSS(converge_time);                  // out: NetworkOPs
 JSS(converge_time_s);                // out: NetworkOPs
 JSS(cookie);                         // out: NetworkOPs
 JSS(count);                          // in: AccountTx*, ValidatorList
+JSS(counter_party);                  // in/out: AccountTx
 JSS(counters);                       // in/out: retrieve counters
 JSS(credentials);                    // in: deposit_authorized
 JSS(credential_type);                // in: LedgerEntry DepositPreauth
@@ -270,10 +273,12 @@ JSS(freeze);                         // out: AccountLines
 JSS(freeze_peer);                    // out: AccountLines
 JSS(deep_freeze);                    // out: AccountLines
 JSS(deep_freeze_peer);               // out: AccountLines
+JSS(delegate_filter);                // in/out: AccountTx
 JSS(frozen_balances);                // out: GatewayBalances
 JSS(full);                           // in: LedgerClearer, handlers/Ledger
 JSS(full_reply);                     // out: PathFind
 JSS(fullbelow_size);                 // out: GetCounts
+JSS(gateway);                        // in: noripple_check
 JSS(git);                            // out: server_info
 JSS(good);                           // out: RPCVersion
 JSS(hash);                           // out: NetworkOPs, InboundLedger, LedgerToJson, STTx; field
@@ -477,6 +482,7 @@ JSS(ports);                       // out: NetworkOPs
 JSS(previous);                    // out: Reservations
 JSS(previous_ledger);             // out: LedgerPropose
 JSS(price);                       // out: amm_info, AuctionSlot
+JSS(problems);                    // out: noripple_check
 JSS(proof);                       // in: BookOffers
 JSS(propose_seq);                 // out: LedgerPropose
 JSS(proposers);                   // out: NetworkOPs, LedgerConsensus
@@ -558,6 +564,9 @@ JSS(source_account);              // in: PathRequest, RipplePathFind
 JSS(source_amount);               // in: PathRequest, RipplePathFind
 JSS(source_currencies);           // in: PathRequest, RipplePathFind
 JSS(source_tag);                  // out: AccountChannels
+JSS(sponsee);                     // in: LedgerEntry
+JSS(sponsor);                     // in: LedgerEntry
+JSS(sponsored);                   // in: AccountObjects
 JSS(stand_alone);                 // out: NetworkOPs
 JSS(standard_deviation);          // out: get_aggregate_price
 JSS(start);                       // in: TxHistory
@@ -653,6 +662,7 @@ JSS(url);                         // in/out: Subscribe, Unsubscribe
 JSS(url_password);                // in: Subscribe
 JSS(url_username);                // in: Subscribe
 JSS(urlgravatar);                 //
+JSS(user);                        // in: noripple_check
 JSS(username);                    // in: Subscribe
 JSS(validated);                   // out: NetworkOPs, RPCHelpers, AccountTx*, Tx
 JSS(validator_list_expires);      // out: NetworkOps, ValidatorList

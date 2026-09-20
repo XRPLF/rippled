@@ -13,7 +13,9 @@
 
 namespace xrpl {
 
-/// Body that holds JSON
+/**
+ * Body that holds JSON
+ */
 struct JsonBody
 {
     explicit JsonBody() = default;

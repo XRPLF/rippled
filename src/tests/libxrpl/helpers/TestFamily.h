@@ -20,19 +20,20 @@
 
 namespace xrpl::test {
 
-/** Test implementation of Family for unit tests.
-
-    Uses an in-memory NodeStore database and simple caches.
-    The missingNode methods throw since tests shouldn't encounter missing nodes.
-*/
+/**
+ * Test implementation of Family for unit tests.
+ *
+ * Uses an in-memory NodeStore database and simple caches.
+ * The missingNode methods throw since tests shouldn't encounter missing nodes.
+ */
 class TestFamily : public Family
 {
 private:
-    std::unique_ptr<NodeStore::Database> db_;
+    std::unique_ptr<node_store::Database> db_;
     TestStopwatch clock_;
     std::shared_ptr<FullBelowCache> fbCache_;
     std::shared_ptr<TreeNodeCache> tnCache_;
-    NodeStore::DummyScheduler scheduler_;
+    node_store::DummyScheduler scheduler_;
     beast::Journal j_;
 
 public:
@@ -50,16 +51,16 @@ public:
         Section config;
         config.set(Keys::kType, "memory");
         config.set(Keys::kPath, "TestFamily");
-        db_ = NodeStore::Manager::instance().makeDatabase(megabytes(4), scheduler_, 1, config, j);
+        db_ = node_store::Manager::instance().makeDatabase(megabytes(4), scheduler_, 1, config, j);
     }
 
-    NodeStore::Database&
+    node_store::Database&
     db() override
     {
         return *db_;
     }
 
-    [[nodiscard]] NodeStore::Database const&
+    [[nodiscard]] node_store::Database const&
     db() const override
     {
         return *db_;
@@ -109,7 +110,9 @@ public:
         (*tnCache_).reset();
     }
 
-    /** Access the test clock for time manipulation in tests. */
+    /**
+     * Access the test clock for time manipulation in tests.
+     */
     TestStopwatch&
     clock()
     {

@@ -8,7 +8,9 @@
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/LendingHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
+#include <xrpl/ledger/helpers/VaultHelpers.h>
 #include <xrpl/protocol/Asset.h>
+#include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
@@ -34,7 +36,7 @@ LoanBrokerSet::checkExtraFeatures(PreflightContext const& ctx)
 NotTEC
 LoanBrokerSet::preflight(PreflightContext const& ctx)
 {
-    using namespace Lending;
+    using namespace lending;
 
     auto const& tx = ctx.tx;
     if (auto const data = tx[~sfData];
@@ -144,6 +146,20 @@ LoanBrokerSet::preclaim(PreclaimContext const& ctx)
     }
     else
     {
+        // LP V1.1: only closed-ended vaults may host a loan broker. The
+        // lending protocol relies on the closed-ended Subscription /
+        // Investment / Redemption phase structure; attaching a broker to
+        // an open-ended vault has no well-defined lifecycle. VaultCreate
+        // stays unrestricted so existing open-ended flows keep working;
+        // the constraint is enforced here, at the point where the vault
+        // is first bound to the lending protocol.
+        if (ctx.view.rules().enabled(featureLendingProtocolV1_1) &&
+            getVaultKind(sleVault) != VaultKind::ClosedEnded)
+        {
+            JLOG(ctx.j.warn()) << "LoanBroker requires a closed-ended Vault.";
+            return tecNO_PERMISSION;
+        }
+
         if (auto const ter = canAddHolding(ctx.view, asset))
             return ter;
 
@@ -218,7 +234,7 @@ LoanBrokerSet::doApply()
         }
         auto const vaultPseudoID = sleVault->at(sfAccount);
         auto const vaultAsset = sleVault->at(sfAsset);
-        auto const sequence = tx.getSeqValue();
+        auto const sequence = tx.getSeqProxy();
 
         auto owner = view.peek(keylet::account(accountID_));
         if (!owner)
@@ -238,9 +254,8 @@ LoanBrokerSet::doApply()
 
         // Increases the owner count by two: one for the LoanBroker object, and
         // one for the pseudo-account.
-        adjustOwnerCount(view, owner, 2, j_);
-        auto const ownerCount = owner->at(sfOwnerCount);
-        if (preFeeBalance_ < view.fees().accountReserve(ownerCount))
+        increaseOwnerCount(view, owner, {}, 2, j_);
+        if (preFeeBalance_ < accountReserve(view, owner, j_))
             return tecINSUFFICIENT_RESERVE;
 
         auto maybePseudo = createPseudoAccount(view, broker->key(), sfLoanBrokerID);
@@ -249,11 +264,12 @@ LoanBrokerSet::doApply()
         auto& pseudo = *maybePseudo;
         auto pseudoId = pseudo->at(sfAccount);
 
-        if (auto ter = addEmptyHolding(view, pseudoId, preFeeBalance_, sleVault->at(sfAsset), j_))
+        if (auto ter = addEmptyHolding(
+                ctx_.getApplyViewContext(), pseudoId, preFeeBalance_, sleVault->at(sfAsset), j_))
             return ter;
 
         // Initialize data fields:
-        broker->at(sfSequence) = sequence;
+        broker->at(sfSequence) = sequence.value();
         broker->at(sfVaultID) = vaultID;
         broker->at(sfOwner) = accountID_;
         broker->at(sfAccount) = pseudoId;

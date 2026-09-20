@@ -5,6 +5,7 @@
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/HashPrefix.h>
 #include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/Rules.h>
 #include <xrpl/protocol/SField.h>
@@ -13,6 +14,7 @@
 #include <xrpl/protocol/SecretKey.h>
 #include <xrpl/protocol/SeqProxy.h>
 #include <xrpl/protocol/Serializer.h>
+#include <xrpl/protocol/Sign.h>
 #include <xrpl/protocol/TxFormats.h>
 
 #include <boost/container/flat_set.hpp>
@@ -55,12 +57,13 @@ public:
     explicit STTx(SerialIter&& sit);
     explicit STTx(STObject&& object);
 
-    /** Constructs a transaction.
-
-        The returned transaction will have the specified type and
-        any fields that the callback function adds to the object
-        that's passed in.
-    */
+    /**
+     * Constructs a transaction.
+     *
+     * The returned transaction will have the specified type and
+     * any fields that the callback function adds to the object
+     * that's passed in.
+     */
     STTx(TxType type, std::function<void(STObject&)> assembler);
 
     // STObject functions.
@@ -92,10 +95,6 @@ public:
     [[nodiscard]] SeqProxy
     getSeqProxy() const;
 
-    /** Returns the first non-zero value of (Sequence, TicketSequence). */
-    [[nodiscard]] std::uint32_t
-    getSeqValue() const;
-
     [[nodiscard]] boost::container::flat_set<AccountID>
     getMentionedAccounts() const;
 
@@ -108,21 +107,44 @@ public:
     [[nodiscard]] json::Value
     getJson(JsonOptions options, bool binary) const;
 
+    /**
+     * Sign the transaction as its account.
+     *
+     * @param publicKey The public key for signing.
+     * @param secretKey The secret key for signing.
+     */
+    void
+    sign(PublicKey const& publicKey, SecretKey const& secretKey);
+
+    /**
+     * Sign the transaction in one of its signature fields.
+     *
+     * The signature is bound to the role that made it, so it cannot be moved
+     * into another role.
+     *
+     * @param publicKey The public key for signing.
+     * @param secretKey The secret key for signing.
+     * @param role The role signing the transaction.
+     * @param rules The current ledger rules.
+     */
     void
     sign(
         PublicKey const& publicKey,
         SecretKey const& secretKey,
-        std::optional<std::reference_wrapper<SField const>> signatureTarget = {});
+        SignatureRole role,
+        Rules const& rules);
 
-    /** Check the signature.
-        @param rules The current ledger rules.
-        @return `true` if valid signature. If invalid, the error message string.
-    */
+    /**
+     * Check the signature.
+     *
+     * @param rules The current ledger rules.
+     * @return `true` if valid signature. If invalid, the error message string.
+     */
     [[nodiscard]] std::expected<void, std::string>
     checkSign(Rules const& rules) const;
 
     [[nodiscard]] std::expected<void, std::string>
-    checkBatchSign(Rules const& rules) const;
+    checkBatchSign() const;
 
     // SQL Functions with metadata.
     static std::string const&
@@ -138,33 +160,57 @@ public:
         TxnSql status,
         std::string const& escapedMetaData) const;
 
-    [[nodiscard]] std::vector<uint256> const&
+    /**
+     * The IDs of the inner transactions of a Batch.
+     */
+    [[nodiscard]] std::vector<uint256>
     getBatchTransactionIDs() const;
 
+    /**
+     * The inner transactions of a Batch, built and validated at construction.
+     * Always seated for Batch STTx instances (construction throws if oversized).
+     */
+    [[nodiscard]] std::vector<std::shared_ptr<STTx const>> const&
+    getBatchTransactions() const;
+
+    /**
+     * The account responsible for the authorization: the delegate when
+     * sfDelegate is present, otherwise the account.
+     */
+    [[nodiscard]] AccountID
+    getInitiator() const;
+
+    [[nodiscard]] AccountID
+    getFeePayerID() const;
+
 private:
-    /** Check the signature.
-        @param rules The current ledger rules.
-        @param sigObject Reference to object that contains the signature fields.
-            Will be *this more often than not.
-        @return `true` if valid signature. If invalid, the error message string.
-    */
+    /**
+     * Check the signature.
+     *
+     * @param rules The current ledger rules.
+     * @param sigObject Reference to object that contains the signature fields.
+     *     Will be *this more often than not.
+     * @param role The role that made the signature in sigObject. Determines
+     *     the signing prefix, which binds the signature to that role.
+     * @return `true` if valid signature. If invalid, the error message string.
+     */
     [[nodiscard]] std::expected<void, std::string>
-    checkSign(Rules const& rules, STObject const& sigObject) const;
+    checkSign(Rules const& rules, STObject const& sigObject, SignatureRole role) const;
 
     [[nodiscard]] std::expected<void, std::string>
-    checkSingleSign(STObject const& sigObject) const;
+    checkSingleSign(STObject const& sigObject, HashPrefix prefix) const;
 
     [[nodiscard]] std::expected<void, std::string>
-    checkMultiSign(Rules const& rules, STObject const& sigObject) const;
+    checkMultiSign(STObject const& sigObject, HashPrefix prefix) const;
 
     [[nodiscard]] std::expected<void, std::string>
-    checkBatchSingleSign(STObject const& batchSigner) const;
+    checkBatchSingleSign(STObject const& batchSigner, std::vector<uint256> const& txIds) const;
 
     [[nodiscard]] std::expected<void, std::string>
-    checkBatchMultiSign(STObject const& batchSigner, Rules const& rules) const;
+    checkBatchMultiSign(STObject const& batchSigner, std::vector<uint256> const& txIds) const;
 
     void
-    buildBatchTxnIds();
+    buildBatchTxns();
 
     STBase*
     copy(std::size_t n, void* buf) const override;
@@ -172,23 +218,26 @@ private:
     move(std::size_t n, void* buf) override;
 
     friend class detail::STVar;
-    std::optional<std::vector<uint256>> batchTxnIds_;
+    std::optional<std::vector<std::shared_ptr<STTx const>>> batchTxns_;
 };
 
 bool
-passesLocalChecks(STObject const& st, std::string&);
+passesLocalChecks(STTx const& tx, std::string&);
 
-/** Sterilize a transaction.
-
-    The transaction is serialized and then deserialized,
-    ensuring that all equivalent transactions are in canonical
-    form. This also ensures that program metadata such as
-    the transaction's digest, are all computed.
-*/
+/**
+ * Sterilize a transaction.
+ *
+ * The transaction is serialized and then deserialized,
+ * ensuring that all equivalent transactions are in canonical
+ * form. This also ensures that program metadata such as
+ * the transaction's digest, are all computed.
+ */
 std::shared_ptr<STTx const>
 sterilize(STTx const& stx);
 
-/** Check whether a transaction is a pseudo-transaction */
+/**
+ * Check whether a transaction is a pseudo-transaction
+ */
 bool
 isPseudoTx(STObject const& tx);
 

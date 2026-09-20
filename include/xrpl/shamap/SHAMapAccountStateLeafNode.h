@@ -15,7 +15,9 @@
 
 namespace xrpl {
 
-/** A leaf node for a state object. */
+/**
+ * A leaf node for a state object.
+ */
 class SHAMapAccountStateLeafNode final : public SHAMapLeafNode,
                                          public CountedObject<SHAMapAccountStateLeafNode>
 {

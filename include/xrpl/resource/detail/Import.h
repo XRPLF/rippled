@@ -5,9 +5,11 @@
 
 #include <vector>
 
-namespace xrpl::Resource {
+namespace xrpl::resource {
 
-/** A set of imported consumer data from a gossip origin. */
+/**
+ * A set of imported consumer data from a gossip origin.
+ */
 struct Import
 {
     struct Item
@@ -30,4 +32,4 @@ struct Import
     std::vector<Item> items;
 };
 
-}  // namespace xrpl::Resource
+}  // namespace xrpl::resource

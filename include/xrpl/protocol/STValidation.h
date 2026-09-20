@@ -54,30 +54,48 @@ class STValidation final : public STObject, public CountedObject<STValidation>
     NetClock::time_point seenTime_;
 
 public:
-    /** Construct a STValidation from a peer from serialized data.
+    /**
+     * @struct DeserializeOptions
+     * @brief Options controlling deserialization of a STValidation.
 
-        @param sit Iterator over serialized data
-        @param lookupNodeID Invocable with signature
-                               NodeID(PublicKey const&)
-                            used to find the Node ID based on the public key
-                            that signed the validation. For manifest based
-                            validators, this should be the NodeID of the master
-                            public key.
-        @param checkSignature Whether to verify the data was signed properly
+     * @var DeserializeOptions::checkSignature
+     * Whether to verify the data was signed properly
+     *
+     * @var DeserializeOptions::requireCanonicalOrder
+     * Whether to require the fields to be in canonical order
+     */
+    struct DeserializeOptions
+    {
+        bool checkSignature;
+        bool requireCanonicalOrder;
+    };
 
-        @note Throws if the object is not valid
-    */
+    /**
+     * Construct a STValidation from a peer from serialized data.
+     *
+     * @param sit Iterator over serialized data
+     * @param lookupNodeID Invocable with signature
+     *                        NodeID(PublicKey const&)
+     *                     used to find the Node ID based on the public key
+     *                     that signed the validation. For manifest based
+     *                     validators, this should be the NodeID of the master
+     *                     public key.
+     * @param options Options controlling deserialization
+     *
+     * @note Throws if the object is not valid
+     */
     template <class LookupNodeID>
-    STValidation(SerialIter& sit, LookupNodeID&& lookupNodeID, bool checkSignature);
+    STValidation(SerialIter& sit, LookupNodeID&& lookupNodeID, DeserializeOptions options);
 
-    /** Construct, sign and trust a new STValidation issued by this node.
-
-        @param signTime When the validation is signed
-        @param publicKey The current signing public key
-        @param secretKey The current signing secret key
-        @param nodeID ID corresponding to node's public master key
-        @param f callback function to "fill" the validation with necessary data
-    */
+    /**
+     * Construct, sign and trust a new STValidation issued by this node.
+     *
+     * @param signTime When the validation is signed
+     * @param publicKey The current signing public key
+     * @param secretKey The current signing secret key
+     * @param nodeID ID corresponding to node's public master key
+     * @param f callback function to "fill" the validation with necessary data
+     */
     template <typename F>
     STValidation(
         NetClock::time_point signTime,
@@ -106,6 +124,13 @@ public:
     [[nodiscard]] NodeID const&
     getNodeID() const noexcept;
 
+    /**
+     * Whether this validation carries a good signature.
+     *
+     * Reports false if the signature cannot be checked at all, so a caller
+     * cannot tell that apart from a bad signature. Either way the validation is
+     * unusable, and the reason is logged. Only a computed answer is remembered.
+     */
     [[nodiscard]] bool
     isValid() const noexcept;
 
@@ -161,8 +186,8 @@ private:
 };
 
 template <class LookupNodeID>
-STValidation::STValidation(SerialIter& sit, LookupNodeID&& lookupNodeID, bool checkSignature)
-    : STObject(validationFormat(), sit, sfValidation)
+STValidation::STValidation(SerialIter& sit, LookupNodeID&& lookupNodeID, DeserializeOptions options)
+    : STObject(validationFormat(), sit, sfValidation, options.requireCanonicalOrder)
     , signingPubKey_([this]() {
         auto const spk = getFieldVL(sfSigningPubKey);
 
@@ -173,7 +198,7 @@ STValidation::STValidation(SerialIter& sit, LookupNodeID&& lookupNodeID, bool ch
     }())
     , nodeID_(lookupNodeID(signingPubKey_))
 {
-    if (checkSignature && !isValid())
+    if (options.checkSignature && !isValid())
     {
         JLOG(debugLog().error()) << "Invalid signature in validation: "
                                  << getJson(JsonOptions::Values::None);
@@ -183,14 +208,15 @@ STValidation::STValidation(SerialIter& sit, LookupNodeID&& lookupNodeID, bool ch
     XRPL_ASSERT(nodeID_.isNonZero(), "xrpl::STValidation::STValidation(SerialIter) : nonzero node");
 }
 
-/** Construct, sign and trust a new STValidation issued by this node.
-
-    @param signTime When the validation is signed
-    @param publicKey The current signing public key
-    @param secretKey The current signing secret key
-    @param nodeID ID corresponding to node's public master key
-    @param f callback function to "fill" the validation with necessary data
-*/
+/**
+ * Construct, sign and trust a new STValidation issued by this node.
+ *
+ * @param signTime When the validation is signed
+ * @param publicKey The current signing public key
+ * @param secretKey The current signing secret key
+ * @param nodeID ID corresponding to node's public master key
+ * @param f callback function to "fill" the validation with necessary data
+ */
 template <typename F>
 STValidation::STValidation(
     NetClock::time_point signTime,

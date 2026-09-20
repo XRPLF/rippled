@@ -83,12 +83,13 @@ class Job : public CountedObject<Job>
 public:
     using clock_type = std::chrono::steady_clock;
 
-    /** Default constructor.
-
-        Allows Job to be used as a container type.
-
-        This is used to allow things like jobMap [key] = value.
-    */
+    /**
+     * Default constructor.
+     *
+     * Allows Job to be used as a container type.
+     *
+     * This is used to allow things like jobMap [key] = value.
+     */
     // VFALCO NOTE I'd prefer not to have a default constructed object.
     //             What is the semantic meaning of a Job with no associated
     //             function? Having the invariant "all Job objects refer to
@@ -108,7 +109,9 @@ public:
     [[nodiscard]] JobType
     getType() const;
 
-    /** Returns the time when the job was queued. */
+    /**
+     * Returns the time when the job was queued.
+     */
     [[nodiscard]] clock_type::time_point const&
     queueTime() const;
 

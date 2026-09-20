@@ -10,7 +10,9 @@
 
 #include <string>
 
-/** DID operations. */
+/**
+ * DID operations.
+ */
 namespace xrpl::test::jtx::did {
 
 json::Value
@@ -19,7 +21,9 @@ set(jtx::Account const& account);
 json::Value
 setValid(jtx::Account const& account);
 
-/** Sets the optional DIDDocument on a DIDSet. */
+/**
+ * Sets the optional DIDDocument on a DIDSet.
+ */
 class Document
 {
 private:
@@ -37,7 +41,9 @@ public:
     }
 };
 
-/** Sets the optional URI on a DIDSet. */
+/**
+ * Sets the optional URI on a DIDSet.
+ */
 class Uri
 {
 private:
@@ -55,7 +61,9 @@ public:
     }
 };
 
-/** Sets the optional Data on a DIDSet. */
+/**
+ * Sets the optional Data on a DIDSet.
+ */
 class Data
 {
 private:

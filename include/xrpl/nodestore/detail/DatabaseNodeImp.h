@@ -22,7 +22,7 @@
 #include <stdexcept>
 #include <utility>
 
-namespace xrpl::NodeStore {
+namespace xrpl::node_store {
 
 class DatabaseNodeImp : public Database
 {
@@ -68,7 +68,7 @@ public:
 
         XRPL_ASSERT(
             backend_,
-            "xrpl::NodeStore::DatabaseNodeImp::DatabaseNodeImp : non-null "
+            "xrpl::node_store::DatabaseNodeImp::DatabaseNodeImp : non-null "
             "backend");
     }
 
@@ -92,7 +92,7 @@ public:
     void
     importDatabase(Database& source) override
     {
-        importInternal(*backend_.get(), source);
+        importInternal(*backend_, source);
     }
 
     void
@@ -138,4 +138,4 @@ private:
     }
 };
 
-}  // namespace xrpl::NodeStore
+}  // namespace xrpl::node_store

@@ -13,6 +13,7 @@
 #include <exception>
 #include <limits>
 #include <numbers>
+#include <optional>
 #include <regex>
 #include <sstream>
 #include <string>
@@ -592,6 +593,57 @@ TEST(json_value, bad_json)
     EXPECT_TRUE(r.parse(s, j));
 }
 
+namespace {
+
+std::optional<json::Value>
+parseValue(std::string const& doc)
+{
+    json::Value j;
+    json::Reader r;
+    if (!r.parse("{\"v\":" + doc + "}", j))
+        return std::nullopt;
+    return j["v"];
+}
+
+}  // namespace
+
+TEST(json_value, parse_double_valid)
+{
+    // 1e300 is large but still representable, so it parses (unlike the out-of-range cases below).
+    for (auto const& [text, expected] :
+         {std::pair{"2.5", 2.5},
+          std::pair{"-3.25e2", -325.0},
+          std::pair{"0.0", 0.0},
+          std::pair{"1E3", 1000.0},
+          std::pair{"-0.5e-1", -0.05},
+          std::pair{"1e300", 1e300}})
+    {
+        auto const v = parseValue(text);
+        ASSERT_TRUE(v.has_value()) << text;
+        // NOLINTBEGIN(bugprone-unchecked-optional-access)
+        EXPECT_TRUE(v->isDouble()) << text;
+        EXPECT_EQ(v->asDouble(), expected) << text;
+        // NOLINTEND(bugprone-unchecked-optional-access)
+    }
+}
+
+TEST(json_value, parse_double_out_of_range)
+{
+    // Magnitudes with no finite double representation are rejected.
+    for (char const* oor : {"1e400", "-1e400", "0.001e500", "1e-400", "-1e-400", "123e-500"})
+        EXPECT_FALSE(parseValue(oor).has_value()) << oor;
+}
+
+TEST(json_value, parse_double_malformed)
+{
+    // readNumber() collects any run of digits and '.eE+-' into a single Double
+    // token, so these malformed tokens reach decodeDouble. Each has a valid
+    // leading prefix that from_chars would accept on its own; requiring the
+    // entire token be consumed rejects them instead of silently truncating.
+    for (char const* bad : {"1+2", "1-2", "1.2.3", "1e5e6", "1..2", "++5", "1e", "1e+", ".", "-"})
+        EXPECT_FALSE(parseValue(bad).has_value()) << bad;
+}
+
 TEST(json_value, edge_cases)
 {
     std::uint32_t const maxUInt = std::numeric_limits<std::uint32_t>::max();
@@ -838,7 +890,7 @@ TEST(json_value, compact)
 {
     json::Value j;
     json::Reader r;
-    char const* s("{\"array\":[{\"12\":23},{},null,false,0.5]}");
+    char const* s(R"({"array":[{"12":23},{},null,false,0.5]})");
 
     auto countLines = [](std::string const& str) {
         return 1 + std::count_if(str.begin(), str.end(), [](char c) { return c == '\n'; });

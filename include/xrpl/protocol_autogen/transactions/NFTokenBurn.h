@@ -21,7 +21,7 @@ class NFTokenBurnBuilder;
  * Type: ttNFTOKEN_BURN (26)
  * Delegable: Delegation::Delegable
  * Amendment: uint256{}
- * Privileges: ChangeNftCounts
+ * Privileges: Privilege::ChangeNftCounts
  *
  * Immutable wrapper around STTx providing type-safe field access.
  * Use NFTokenBurnBuilder to construct new transactions.
@@ -125,7 +125,9 @@ public:
         object_ = *tx;
     }
 
-    /** @brief Transaction-specific field setters */
+    /**
+     * @brief Transaction-specific field setters
+     */
 
     /**
      * @brief Set sfNFTokenID (SoeRequired)

@@ -3,6 +3,7 @@
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/ledger/OwnerCounts.h>
 #include <xrpl/ledger/RawView.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Issue.h>
@@ -170,7 +171,7 @@ DeferredCredits::issuerSelfDebitMPT(
 }
 
 void
-DeferredCredits::ownerCount(AccountID const& id, std::uint32_t cur, std::uint32_t next)
+DeferredCredits::ownerCount(AccountID const& id, OwnerCounts const& cur, OwnerCounts const& next)
 {
     auto const v = std::max(cur, next);
     auto r = ownerCounts_.emplace(id, v);
@@ -181,7 +182,7 @@ DeferredCredits::ownerCount(AccountID const& id, std::uint32_t cur, std::uint32_
     }
 }
 
-std::optional<std::uint32_t>
+std::optional<OwnerCounts>
 DeferredCredits::ownerCount(AccountID const& id) const
 {
     auto i = ownerCounts_.find(id);
@@ -391,10 +392,10 @@ PaymentSandbox::balanceHookSelfIssueMPT(xrpl::MPTIssue const& issue, std::int64_
     return STAmount{issue};
 }
 
-std::uint32_t
-PaymentSandbox::ownerCountHook(AccountID const& account, std::uint32_t count) const
+OwnerCounts
+PaymentSandbox::ownerCountHook(AccountID const& account, OwnerCounts const& count) const
 {
-    std::uint32_t result = count;
+    OwnerCounts result = count;
     for (auto curSB = this; curSB != nullptr; curSB = curSB->ps_)
     {
         if (auto adj = curSB->tab_.ownerCount(account))
@@ -442,8 +443,8 @@ PaymentSandbox::issuerSelfDebitHookMPT(
 void
 PaymentSandbox::adjustOwnerCountHook(
     AccountID const& account,
-    std::uint32_t cur,
-    std::uint32_t next)
+    OwnerCounts const& cur,
+    OwnerCounts const& next)
 {
     tab_.ownerCount(account, cur, next);
 }

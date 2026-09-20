@@ -87,27 +87,28 @@ sliceToHex(Slice const& slice)
         s.reserve(2 * (slice.size() + 1));
         s = "0x";
     }
-    for (int i = 0; i < slice.size(); ++i)
+    for (std::uint8_t const byte : slice)
     {
         static constexpr char kHex[] = "0123456789ABCDEF";
-        s += kHex[((slice[i] & 0xf0) >> 4)];
-        s += kHex[((slice[i] & 0x0f) >> 0)];
+        s += kHex[((byte & 0xf0) >> 4)];
+        s += kHex[((byte & 0x0f) >> 0)];
     }
     return s;
 }
 
-/** Determine whether a signature is canonical.
-    Canonical signatures are important to protect against signature morphing
-    attacks.
-    @param vSig the signature data
-    @param sigLen the length of the signature
-    @param strict_param whether to enforce strictly canonical semantics
-
-    @note For more details please see:
-    https://xrpl.org/transaction-malleability.html
-    https://bitcointalk.org/index.php?topic=8392.msg127623#msg127623
-    https://github.com/sipa/bitcoin/commit/58bc86e37fda1aec270bccb3df6c20fbd2a6591c
-*/
+/**
+ * Determine whether a signature is canonical.
+ * Canonical signatures are important to protect against signature morphing
+ * attacks.
+ * @param vSig the signature data
+ * @param sigLen the length of the signature
+ * @param strict_param whether to enforce strictly canonical semantics
+ *
+ * @note For more details please see:
+ * https://xrpl.org/transaction-malleability.html
+ * https://bitcointalk.org/index.php?topic=8392.msg127623#msg127623
+ * https://github.com/sipa/bitcoin/commit/58bc86e37fda1aec270bccb3df6c20fbd2a6591c
+ */
 std::optional<ECDSACanonicality>
 ecdsaCanonicality(Slice const& sig)
 {

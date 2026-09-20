@@ -11,7 +11,9 @@
 
 namespace xrpl::reduce_relay {
 
-/** Maintains squelching of relaying messages from validators */
+/**
+ * Maintains squelching of relaying messages from validators
+ */
 template <typename ClockType>
 class Squelch
 {
@@ -23,7 +25,8 @@ public:
     }
     virtual ~Squelch() = default;
 
-    /** Squelch validation/proposal relaying for the validator
+    /**
+     * Squelch validation/proposal relaying for the validator
      * @param validator The validator's public key
      * @param squelchDuration Squelch duration in seconds
      * @return false if invalid squelch duration
@@ -31,13 +34,15 @@ public:
     bool
     addSquelch(PublicKey const& validator, std::chrono::seconds const& squelchDuration);
 
-    /** Remove the squelch
+    /**
+     * Remove the squelch
      * @param validator The validator's public key
      */
     void
     removeSquelch(PublicKey const& validator);
 
-    /** Remove expired squelch
+    /**
+     * Remove expired squelch
      * @param validator Validator's public key
      * @return true if removed or doesn't exist, false if still active
      */
@@ -45,8 +50,10 @@ public:
     expireSquelch(PublicKey const& validator);
 
 private:
-    /** Maintains the list of squelched relaying to downstream peers.
-     * Expiration time is included in the TMSquelch message. */
+    /**
+     * Maintains the list of squelched relaying to downstream peers.
+     * Expiration time is included in the TMSquelch message.
+     */
     hash_map<PublicKey, time_point> squelched_;
     beast::Journal const journal_;
 };

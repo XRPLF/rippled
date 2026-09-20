@@ -14,12 +14,13 @@ namespace xrpl {
 
 // VFALCO NOTE This class can be replaced with atomic<shared_ptr<...>>
 
-/** Hold a ledger in a thread-safe way.
-
-    VFALCO TODO The constructor should require a valid ledger, this
-                way the object always holds a value. We can use the
-                genesis ledger in all cases.
-*/
+/**
+ * Hold a ledger in a thread-safe way.
+ *
+ * VFALCO TODO The constructor should require a valid ledger, this
+ *             way the object always holds a value. We can use the
+ *             genesis ledger in all cases.
+ */
 class LedgerHolder : public CountedObject<LedgerHolder>
 {
 public:

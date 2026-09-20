@@ -85,23 +85,26 @@ public:
 
     virtual ~TOfferStreamBase() = default;
 
-    /** Returns the offer at the tip of the order book.
-        Offers are always presented in decreasing quality.
-        Only valid if step() returned `true`.
-    */
+    /**
+     * Returns the offer at the tip of the order book.
+     * Offers are always presented in decreasing quality.
+     * Only valid if step() returned `true`.
+     */
     [[nodiscard]] TOffer<TIn, TOut>&
     tip() const
     {
+        // NOLINTNEXTLINE(cppcoreguidelines-pro-type-const-cast)
         return const_cast<TOfferStreamBase*>(this)->offer_;
     }
 
-    /** Advance to the next valid offer.
-        This automatically removes:
-            - Offers with missing ledger entries
-            - Offers found unfunded
-            - expired offers
-        @return `true` if there is a valid offer.
-    */
+    /**
+     * Advance to the next valid offer.
+     * This automatically removes:
+     *     - Offers with missing ledger entries
+     *     - Offers found unfunded
+     *     - expired offers
+     * @return `true` if there is a valid offer.
+     */
     bool
     step();
 
@@ -113,23 +116,24 @@ public:
     }
 };
 
-/** Presents and consumes the offers in an order book.
-
-    The `view_' ` `ApplyView` accumulates changes to the ledger.
-    The `cancelView_` is used to determine if an offer is found
-    unfunded or became unfunded.
-    The `permToRemove` collection identifies offers that should be
-    removed even if the strand associated with this OfferStream
-    is not applied.
-
-    Certain invalid offers are added to the `permToRemove` collection:
-    - Offers with missing ledger entries
-    - Offers that expired
-    - Offers found unfunded:
-    An offer is found unfunded when the corresponding balance is zero
-    and the caller has not modified the balance. This is accomplished
-    by also looking up the balance in the cancel view.
-*/
+/**
+ * Presents and consumes the offers in an order book.
+ *
+ * The `view_' ` `ApplyView` accumulates changes to the ledger.
+ * The `cancelView_` is used to determine if an offer is found
+ * unfunded or became unfunded.
+ * The `permToRemove` collection identifies offers that should be
+ * removed even if the strand associated with this OfferStream
+ * is not applied.
+ *
+ * Certain invalid offers are added to the `permToRemove` collection:
+ * - Offers with missing ledger entries
+ * - Offers that expired
+ * - Offers found unfunded:
+ * An offer is found unfunded when the corresponding balance is zero
+ * and the caller has not modified the balance. This is accomplished
+ * by also looking up the balance in the cancel view.
+ */
 template <StepAmount TIn, StepAmount TOut>
 class FlowOfferStream : public TOfferStreamBase<TIn, TOut>
 {

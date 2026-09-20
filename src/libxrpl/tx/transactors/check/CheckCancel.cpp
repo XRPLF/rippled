@@ -1,10 +1,12 @@
 #include <xrpl/tx/transactors/check/CheckCancel.h>
 
 #include <xrpl/basics/Log.h>
+#include <xrpl/beast/utility/Zero.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STLedgerEntry.h>
@@ -19,6 +21,9 @@ namespace xrpl {
 NotTEC
 CheckCancel::preflight(PreflightContext const& ctx)
 {
+    if (ctx.rules.enabled(fixCleanup3_3_0) && ctx.tx[sfCheckID] == beast::kZero)
+        return temMALFORMED;
+
     return tesSUCCESS;
 }
 
@@ -91,8 +96,7 @@ CheckCancel::doApply()
     }
 
     // If we succeeded, update the check owner's reserve.
-    auto const sleSrc = view().peek(keylet::account(srcId));
-    adjustOwnerCount(view(), sleSrc, -1, viewJ);
+    decreaseOwnerCountForObject(view(), srcId, sleCheck, 1, viewJ);
 
     // Remove check from ledger.
     view().erase(sleCheck);

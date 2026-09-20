@@ -18,7 +18,8 @@ namespace xrpl {
 
 class Application;
 
-/** Manages the acquisition and lifetime of transaction sets.
+/**
+ * Manages the acquisition and lifetime of transaction sets.
  */
 
 class InboundTransactions
@@ -33,7 +34,8 @@ public:
 
     virtual ~InboundTransactions() = 0;
 
-    /** Find and return a transaction set, or nullptr if it is missing.
+    /**
+     * Find and return a transaction set, or nullptr if it is missing.
      *
      * @param setHash The transaction set ID (digest of the SHAMap root node).
      * @param acquire Whether to fetch the transaction set from the network if
@@ -44,7 +46,8 @@ public:
     virtual std::shared_ptr<SHAMap>
     getSet(uint256 const& setHash, bool acquire) = 0;
 
-    /** Add a transaction set from a LedgerData message.
+    /**
+     * Add a transaction set from a LedgerData message.
      *
      * @param setHash The transaction set ID (digest of the SHAMap root node).
      * @param peer The peer that sent the message.
@@ -56,7 +59,8 @@ public:
         std::shared_ptr<Peer> peer,
         std::shared_ptr<protocol::TMLedgerData> message) = 0;
 
-    /** Add a transaction set.
+    /**
+     * Add a transaction set.
      *
      * @param setHash The transaction set ID (should match set.getHash()).
      * @param set The transaction set.
@@ -66,7 +70,8 @@ public:
     virtual void
     giveSet(uint256 const& setHash, std::shared_ptr<SHAMap> const& set, bool acquired) = 0;
 
-    /** Informs the container if a new consensus round
+    /**
+     * Informs the container if a new consensus round
      */
     virtual void
     newRound(std::uint32_t seq) = 0;

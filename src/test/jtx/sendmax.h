@@ -9,7 +9,9 @@
 
 namespace xrpl::test::jtx {
 
-/** Sets the SendMax on a JTx. */
+/**
+ * Sets the SendMax on a JTx.
+ */
 class Sendmax
 {
 private:

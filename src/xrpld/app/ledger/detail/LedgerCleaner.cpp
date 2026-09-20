@@ -260,13 +260,14 @@ private:
         return hash ? *hash : beast::kZero;  // kludge
     }
 
-    /** Process a single ledger
-        @param ledgerIndex The index of the ledger to process.
-        @param ledgerHash  The known correct hash of the ledger.
-        @param doNodes Ensure all ledger nodes are in the node db.
-        @param doTxns Reprocess (account) transactions to SQL databases.
-        @return `true` if the ledger was cleaned.
-    */
+    /**
+     * Process a single ledger
+     * @param ledgerIndex The index of the ledger to process.
+     * @param ledgerHash  The known correct hash of the ledger.
+     * @param doNodes Ensure all ledger nodes are in the node db.
+     * @param doTxns Reprocess (account) transactions to SQL databases.
+     * @return `true` if the ledger was cleaned.
+     */
     bool
     doLedger(
         LedgerIndex const& ledgerIndex,
@@ -320,11 +321,12 @@ private:
         return true;
     }
 
-    /** Returns the hash of the specified ledger.
-        @param ledgerIndex The index of the desired ledger.
-        @param referenceLedger [out] An optional known good subsequent ledger.
-        @return The hash of the ledger. This will be all-bits-zero if not found.
-    */
+    /**
+     * Returns the hash of the specified ledger.
+     * @param ledgerIndex The index of the desired ledger.
+     * @param referenceLedger [out] An optional known good subsequent ledger.
+     * @return The hash of the ledger. This will be all-bits-zero if not found.
+     */
     LedgerHash
     getHash(LedgerIndex const& ledgerIndex, std::shared_ptr<ReadView const>& referenceLedger)
     {
@@ -373,7 +375,9 @@ private:
         return ledgerHash;
     }
 
-    /** Run the ledger cleaner. */
+    /**
+     * Run the ledger cleaner.
+     */
     void
     doLedgerCleaner()
     {

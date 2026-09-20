@@ -85,14 +85,15 @@ XorShiftEngine<Unused>::murmurhash3(result_type x) -> result_type
 
 }  // namespace detail
 
-/** XOR-shift Generator.
-
-    Meets the requirements of UniformRandomNumberGenerator.
-
-    Simple and fast RNG based on:
-    http://xorshift.di.unimi.it/xorshift128plus.c
-    does not accept seed==0
-*/
+/**
+ * XOR-shift Generator.
+ *
+ * Meets the requirements of UniformRandomNumberGenerator.
+ *
+ * Simple and fast RNG based on:
+ * http://xorshift.di.unimi.it/xorshift128plus.c
+ * does not accept seed==0
+ */
 using xor_shift_engine = detail::XorShiftEngine<>;
 
 }  // namespace beast

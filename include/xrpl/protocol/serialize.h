@@ -9,7 +9,9 @@
 
 namespace xrpl {
 
-/** Serialize an object to a blob. */
+/**
+ * Serialize an object to a blob.
+ */
 template <class Object>
 Blob
 serializeBlob(Object const& o)
@@ -19,7 +21,9 @@ serializeBlob(Object const& o)
     return s.peekData();
 }
 
-/** Serialize an object to a hex string. */
+/**
+ * Serialize an object to a hex string.
+ */
 inline std::string
 serializeHex(STObject const& o)
 {

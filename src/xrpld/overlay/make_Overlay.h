@@ -19,13 +19,15 @@ namespace xrpl {
 Overlay::Setup
 setupOverlay(BasicConfig const& config, beast::Journal j);
 
-/** Creates the implementation of Overlay. */
+/**
+ * Creates the implementation of Overlay.
+ */
 std::unique_ptr<Overlay>
 makeOverlay(
     Application& app,
     Overlay::Setup const& setup,
     ServerHandler& serverHandler,
-    Resource::Manager& resourceManager,
+    resource::Manager& resourceManager,
     Resolver& resolver,
     boost::asio::io_context& ioContext,
     BasicConfig const& config,

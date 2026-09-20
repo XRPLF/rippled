@@ -6,17 +6,19 @@
 
 #include <xrpl/json/json_value.h>
 
-#include <string>
+#include <string_view>
 
-namespace xrpl::RPC {
+namespace xrpl::rpc {
 
 struct JsonContext;
 
-/** Execute an RPC command and store the results in a json::Value. */
+/**
+ * Execute an RPC command and store the results in a json::Value.
+ */
 Status
-doCommand(RPC::JsonContext&, json::Value&);
+doCommand(rpc::JsonContext&, json::Value&);
 
 Role
-roleRequired(unsigned int version, bool betaEnabled, std::string const& method);
+roleRequired(unsigned int version, bool betaEnabled, std::string_view method);
 
-}  // namespace xrpl::RPC
+}  // namespace xrpl::rpc

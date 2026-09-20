@@ -30,35 +30,37 @@ namespace xrpl {
 
 namespace openssl::detail {
 
-/** The default strength of self-signed RSA certificates.
-
-    Per NIST Special Publication 800-57 Part 3, 2048-bit RSA is still
-    considered acceptably secure. Generally, we would want to go above
-    and beyond such recommendations (e.g. by using 3072 or 4096 bits)
-    but there is a computational cost associated with that may not
-    be worth paying, considering that:
-
-    - We regenerate a new ephemeral certificate and a securely generated
-      random private key every time the server is started; and
-    - There should not be any truly secure information (e.g. seeds or private
-      keys) that gets relayed to the server anyways over these RPCs.
-
-      @note If you increase the number of bits you need to generate new
-            default DH parameters and update defaultDH  accordingly.
- * */
+/**
+ * The default strength of self-signed RSA certificates.
+ *
+ * Per NIST Special Publication 800-57 Part 3, 2048-bit RSA is still
+ * considered acceptably secure. Generally, we would want to go above
+ * and beyond such recommendations (e.g. by using 3072 or 4096 bits)
+ * but there is a computational cost associated with that may not
+ * be worth paying, considering that:
+ *
+ * - We regenerate a new ephemeral certificate and a securely generated
+ *   random private key every time the server is started; and
+ * - There should not be any truly secure information (e.g. seeds or private
+ *   keys) that gets relayed to the server anyways over these RPCs.
+ *
+ * @note If you increase the number of bits you need to generate new
+ *       default DH parameters and update defaultDH  accordingly.
+ */
 int gDefaultRsaKeyBits = 2048;
 
-/** The default DH parameters.
-
-    These were generated using the OpenSSL command: `openssl dhparam 2048`
-    by Nik Bougalis <nikb@bougalis.net> on May, 29, 2022.
-
-    It is safe to use this, but if you want you can generate different
-    parameters and put them here. There's no easy way to change this
-    via the config file at this time.
-
-    @note If you increase the number of bits you need to update
-          defaultRSAKeyBits accordingly.
+/**
+ * The default DH parameters.
+ *
+ * These were generated using the OpenSSL command: `openssl dhparam 2048`
+ * by Nik Bougalis <nikb@bougalis.net> on May, 29, 2022.
+ *
+ * It is safe to use this, but if you want you can generate different
+ * parameters and put them here. There's no easy way to change this
+ * via the config file at this time.
+ *
+ * @note If you increase the number of bits you need to update
+ *       defaultRSAKeyBits accordingly.
  */
 static constexpr char kDefaultDh[] =
     "-----BEGIN DH PARAMETERS-----\n"
@@ -70,19 +72,20 @@ static constexpr char kDefaultDh[] =
     "9yqY3xXZID240RRcaJ25+U4lszFPqP+CEwIBAg==\n"
     "-----END DH PARAMETERS-----";
 
-/** The default list of ciphers we accept over TLS.
-
-    Generally we include cipher suites that are part of TLS v1.2, but
-    we specifically exclude:
-
-    - the DSS cipher suites (!DSS);
-    - cipher suites using pre-shared keys (!PSK);
-    - cipher suites that don't offer encryption (!eNULL); and
-    - cipher suites that don't offer authentication (!aNULL).
-
-    @note Server administrators can override this default list, on either a
-          global or per-port basis, using the `ssl_ciphers` directive in the
-          config file.
+/**
+ * The default list of ciphers we accept over TLS.
+ *
+ * Generally we include cipher suites that are part of TLS v1.2, but
+ * we specifically exclude:
+ *
+ * - the DSS cipher suites (!DSS);
+ * - cipher suites using pre-shared keys (!PSK);
+ * - cipher suites that don't offer encryption (!eNULL); and
+ * - cipher suites that don't offer authentication (!aNULL).
+ *
+ * @note Server administrators can override this default list, on either a
+ *       global or per-port basis, using the `ssl_ciphers` directive in the
+ *       config file.
  */
 std::string const kDefaultCipherList = "TLSv1.2:!CBC:!DSS:!PSK:!eNULL:!aNULL";
 

@@ -21,7 +21,7 @@ class PaymentChannelClaimBuilder;
  * Type: ttPAYCHAN_CLAIM (15)
  * Delegable: Delegation::Delegable
  * Amendment: uint256{}
- * Privileges: NoPriv
+ * Privileges: Privilege::NoPriv
  *
  * Immutable wrapper around STTx providing type-safe field access.
  * Use PaymentChannelClaimBuilder to construct new transactions.
@@ -229,7 +229,9 @@ public:
         object_ = *tx;
     }
 
-    /** @brief Transaction-specific field setters */
+    /**
+     * @brief Transaction-specific field setters
+     */
 
     /**
      * @brief Set sfChannel (SoeRequired)

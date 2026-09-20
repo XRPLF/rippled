@@ -13,13 +13,13 @@
 
 namespace xrpl {
 
-/** Holds transactions which were deferred to the next pass of consensus.
-
-    "Canonical" refers to the order in which transactions are applied.
-
-    - Puts transactions from the same account in SeqProxy order
-
-*/
+/**
+ * Holds transactions which were deferred to the next pass of consensus.
+ *
+ * "Canonical" refers to the order in which transactions are applied.
+ *
+ * - Puts transactions from the same account in SeqProxy order
+ */
 // VFALCO TODO rename to SortedTxSet
 class CanonicalTXSet : public CountedObject<CanonicalTXSet>
 {
@@ -57,12 +57,6 @@ private:
         operator==(Key const& lhs, Key const& rhs)
         {
             return lhs.txId_ == rhs.txId_;
-        }
-
-        friend bool
-        operator!=(Key const& lhs, Key const& rhs)
-        {
-            return !(lhs == rhs);
         }
 
         [[nodiscard]] uint256 const&

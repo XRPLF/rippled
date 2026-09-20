@@ -5,14 +5,17 @@
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/View.h>
+#include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/NFTokenHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
+#include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/Rate.h>
 #include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
@@ -45,6 +48,13 @@ NFTokenAcceptOffer::preflight(PreflightContext const& ctx)
 
         if (*bf <= beast::kZero)
             return temMALFORMED;
+
+        if (ctx.rules.enabled(fixCleanup3_4_0))
+        {
+            // We don't allow a non-native currency to use the currency code XRP.
+            if (badAsset() == bf->asset())
+                return temBAD_CURRENCY;
+        }
     }
 
     return tesSUCCESS;
@@ -387,8 +397,7 @@ NFTokenAcceptOffer::transferNFToken(
     auto const buyerOwnerCountAfter = sleBuyer->getFieldU32(sfOwnerCount);
     if (buyerOwnerCountAfter > buyerOwnerCountBefore)
     {
-        if (auto const reserve = view().fees().accountReserve(buyerOwnerCountAfter);
-            buyerBalance < reserve)
+        if (buyerBalance < accountReserve(view(), sleBuyer, j_))
             return tecINSUFFICIENT_RESERVE;
     }
 

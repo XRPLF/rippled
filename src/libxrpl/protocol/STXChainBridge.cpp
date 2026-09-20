@@ -11,9 +11,8 @@
 #include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/jss.h>
 
-#include <boost/format/free_funcs.hpp>
-
 #include <cstddef>
+#include <format>
 #include <memory>
 #include <stdexcept>
 #include <string>
@@ -141,10 +140,15 @@ STXChainBridge::getJson(JsonOptions jo) const
 std::string
 STXChainBridge::getText() const
 {
-    return str(
-        boost::format("{ %s = %s, %s = %s, %s = %s, %s = %s }") % sfLockingChainDoor.getName() %
-        lockingChainDoor_.getText() % sfLockingChainIssue.getName() % lockingChainIssue_.getText() %
-        sfIssuingChainDoor.getName() % issuingChainDoor_.getText() % sfIssuingChainIssue.getName() %
+    return std::format(
+        "{{ {} = {}, {} = {}, {} = {}, {} = {} }}",
+        sfLockingChainDoor.getName(),
+        lockingChainDoor_.getText(),
+        sfLockingChainIssue.getName(),
+        lockingChainIssue_.getText(),
+        sfIssuingChainDoor.getName(),
+        issuingChainDoor_.getText(),
+        sfIssuingChainIssue.getName(),
         issuingChainIssue_.getText());
 }
 

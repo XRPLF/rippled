@@ -8,7 +8,9 @@
 
 namespace xrpl {
 
-/** A PropertyStream::Sink which produces a json::Value of type ValueType::Object. */
+/**
+ * A PropertyStream::Sink which produces a json::Value of type ValueType::Object.
+ */
 class JsonPropertyStream : public beast::PropertyStream
 {
 public:

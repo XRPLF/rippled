@@ -60,7 +60,9 @@ public:
     STObject&
     getAffectedNode(uint256 const&);
 
-    /** Return a list of accounts affected by this transaction */
+    /**
+     * Return a list of accounts affected by this transaction
+     */
     [[nodiscard]] boost::container::flat_set<AccountID>
     getAffectedAccounts() const;
 

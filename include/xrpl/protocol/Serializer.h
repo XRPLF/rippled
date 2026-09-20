@@ -10,6 +10,7 @@
 #include <xrpl/protocol/HashPrefix.h>
 #include <xrpl/protocol/SField.h>
 
+#include <cstddef>
 #include <cstdint>
 #include <cstring>
 #include <stdexcept>
@@ -25,6 +26,101 @@ private:
     Blob data_;
 
 public:
+    /**
+     * A header is never longer than this. The encoder fills a buffer of this
+     * size and writes only the bytes it used.
+     */
+    static constexpr int kMaxNumberOfBytesInHeader = 3;
+
+    // A field whose size varies is stored as a header holding its length, then
+    // the field data. The header is 1, 2 or 3 bytes long. Nothing outside it says
+    // which, so the decoder reads the first byte and its value says how long the
+    // header is:
+    //
+    //     0 ... 192   kMin/kMaxValueOfFirstByteFor1ByteHeader
+    //   193 ... 240   kMin/kMaxValueOfFirstByteFor2ByteHeader
+    //   241 ... 254   kMin/kMaxValueOfFirstByteFor3ByteHeader
+    //         255     belongs to no header
+    //
+    // Each range starts one past the end of the range before it.
+
+    static constexpr int kMinValueOfFirstByteFor1ByteHeader = 0;
+    static constexpr int kMaxValueOfFirstByteFor1ByteHeader = 192;
+
+    static constexpr int kMinValueOfFirstByteFor2ByteHeader =
+        kMaxValueOfFirstByteFor1ByteHeader + 1;
+    static constexpr int kMaxValueOfFirstByteFor2ByteHeader = 240;
+
+    static constexpr int kMinValueOfFirstByteFor3ByteHeader =
+        kMaxValueOfFirstByteFor2ByteHeader + 1;
+
+    static constexpr int kMaxValueOfFirstByteFor3ByteHeader = 254;
+
+    // A length x too big for one byte is split across the header. For 2 bytes:
+    //
+    //     first byte  = 193 + (x - 193) / 256
+    //     second byte = (x - 193) % 256
+    //
+    // so 300 is stored as 193, 107. For 3 bytes it is the same, from 241, with
+    // the remainder split across two bytes: 20,000 is stored as 241, 29, 95.
+
+    static constexpr int kNumberOfValuesInOneByte = 256;
+    static constexpr int kNumberOfValuesInTwoBytes =
+        kNumberOfValuesInOneByte * kNumberOfValuesInOneByte;
+
+    // Each header length therefore covers a range of field lengths:
+    //
+    //        0 ...     192   kMin/kMaxValueOfLengthFor1ByteHeader
+    //      193 ...  12,480   kMin/kMaxValueOfLengthFor2ByteHeader
+    //   12,481 ... 918,744   kMin/kMaxValueOfLengthFor3ByteHeader
+    //
+    // The encoder always uses the shortest header that fits.
+
+    /**
+     * A 1 byte header holds the length in the byte itself, so both ends of
+     * this range are the same numbers as the first byte's own range.
+     */
+    static constexpr int kMinValueOfLengthFor1ByteHeader = kMinValueOfFirstByteFor1ByteHeader;
+    static constexpr int kMaxValueOfLengthFor1ByteHeader = kMaxValueOfFirstByteFor1ByteHeader;
+
+    static constexpr int kMinValueOfLengthFor2ByteHeader = kMaxValueOfLengthFor1ByteHeader + 1;
+
+    /**
+     * 48 values of the first byte mean a 2 byte header, and each of them covers
+     * 256 lengths. The 48 is worked out from the two range ends above, so it
+     * stays right if either of them changes.
+     */
+    static constexpr int kMaxValueOfLengthFor2ByteHeader = kMinValueOfLengthFor2ByteHeader +
+        ((kMaxValueOfFirstByteFor2ByteHeader - kMaxValueOfFirstByteFor1ByteHeader) *
+         kNumberOfValuesInOneByte) -
+        1;
+
+    static constexpr int kMinValueOfLengthFor3ByteHeader = kMaxValueOfLengthFor2ByteHeader + 1;
+
+    /**
+     * 14 values of the first byte mean a 3 byte header, and each of them covers
+     * 65,536 lengths. Counted the same way, that gives the largest length any
+     * header can state.
+     *
+     * Nothing is accepted or rejected against this. The assertion below uses it
+     * to check that every length the encoder writes is one a header can state.
+     */
+    static constexpr int kMaxRepresentableLength = kMinValueOfLengthFor3ByteHeader +
+        ((kMaxValueOfFirstByteFor3ByteHeader - kMaxValueOfFirstByteFor2ByteHeader) *
+         kNumberOfValuesInTwoBytes) -
+        1;
+
+    /**
+     * The largest length the encoder will write. This is the one number here
+     * that is picked rather than worked out. The decoder accepts nothing above
+     * it, so both sides agree on the same set of lengths.
+     */
+    static constexpr int kMaxValueOfLengthFor3ByteHeader = 918744;
+
+    static_assert(
+        kMaxValueOfLengthFor3ByteHeader <= kMaxRepresentableLength,
+        "a length the encoder writes must be one a header can state");
+
     explicit Serializer(int n = 256)
     {
         data_.reserve(n);
@@ -61,7 +157,7 @@ public:
 
     // assemble functions
     int
-    add8(unsigned char i);
+    add8(unsigned char byteValue);
     int
     add16(std::uint16_t i);
 
@@ -265,33 +361,95 @@ public:
         return v == data_;
     }
     bool
-    operator!=(Blob const& v) const
-    {
-        return v != data_;
-    }
-    bool
     operator==(Serializer const& v) const
     {
         return v.data_ == data_;
     }
-    bool
-    operator!=(Serializer const& v) const
-    {
-        return v.data_ != data_;
-    }
 
+    /**
+     * Works out how long a header is, from its first byte.
+     *
+     * Each overload of decodeVLLength below reads one header length, so call
+     * this first to learn which of them to call.
+     *
+     * @param firstByte First byte of the header, as read from the stream.
+     * @return How many bytes the whole header takes, counting firstByte: 1, 2
+     * or 3.
+     * @throws std::overflow_error if firstByte is the one value that starts no
+     * header.
+     */
     static int
-    decodeLengthLength(int b1);
+    decodeLengthLength(std::byte firstByte);
+
+    /**
+     * Reads the field length out of a 1 byte header.
+     *
+     * @param firstByte The single header byte, which is the length itself.
+     * @return Field length in bytes, from kMinValueOfLengthFor1ByteHeader to
+     * kMaxValueOfLengthFor1ByteHeader.
+     * @throws std::overflow_error if firstByte is big enough to mean a longer
+     * header, in which case it is not a length by itself.
+     */
     static int
-    decodeVLLength(int b1);
+    decodeVLLength(std::byte firstByte);
+
+    /**
+     * Reads the field length out of a 2 byte header.
+     *
+     * @param firstByte First header byte. Its value means a 2 byte header, and
+     * how far it sits into that range gives the top part of the length.
+     * @param secondByte Second header byte, holding the rest of the length.
+     * @return Field length in bytes, from kMinValueOfLengthFor2ByteHeader to
+     * kMaxValueOfLengthFor2ByteHeader.
+     * @throws std::overflow_error if firstByte is outside the range that means
+     * a 2 byte header.
+     */
     static int
-    decodeVLLength(int b1, int b2);
+    decodeVLLength(std::byte firstByte, std::byte secondByte);
+
+    /**
+     * Reads the field length out of a 3 byte header.
+     *
+     * @param firstByte First header byte. Its value means a 3 byte header, and
+     * how far it sits into that range gives the top part of the length.
+     * @param secondByte Second header byte, holding the middle part of the
+     * length.
+     * @param thirdByte Third header byte, holding the low part.
+     * @return Field length in bytes, from kMinValueOfLengthFor3ByteHeader to
+     * kMaxValueOfLengthFor3ByteHeader.
+     * @throws std::overflow_error if firstByte is outside the range that means
+     * a 3 byte header, or if the three bytes together state a length above
+     * kMaxValueOfLengthFor3ByteHeader, which the encoder would not write back.
+     */
     static int
-    decodeVLLength(int b1, int b2, int b3);
+    decodeVLLength(std::byte firstByte, std::byte secondByte, std::byte thirdByte);
 
 private:
+    /**
+     * Works out how many bytes the header needs for the given length.
+     *
+     * This deliberately repeats the width choice addEncoded makes, so that
+     * addVL's assertion can compare the two. It has no other caller; do not
+     * reach for it as a utility.
+     *
+     * @param length Field length in bytes.
+     * @return How many header bytes it needs: 1, 2 or 3.
+     * @throws std::overflow_error if length is negative, or above
+     * kMaxValueOfLengthFor3ByteHeader.
+     */
     static int
-    encodeLengthLength(int length);  // length to encode length
+    encodeLengthLength(int length);
+
+    /**
+     * Appends the length header for a field of the given length.
+     *
+     * The field's own data is not written; the caller appends it next.
+     *
+     * @param length Field length in bytes.
+     * @return Offset within this Serializer at which the header was written.
+     * @throws std::overflow_error if length is negative, or above
+     * kMaxValueOfLengthFor3ByteHeader.
+     */
     int
     addEncoded(int length);
 };
@@ -400,9 +558,15 @@ public:
     void
     getFieldID(int& type, int& name);
 
-    // Returns the size of the VL if the
-    // next object is a VL. Advances the iterator
-    // to the beginning of the VL.
+    /**
+     * Reads the length header at the read position and steps past it.
+     *
+     * @return Field length in bytes. The iterator is left on the first byte of
+     * the field data.
+     * @throws std::overflow_error if the header states a length the encoder could
+     * not have written.
+     * @throws std::runtime_error if the data runs out before the header does.
+     */
     int
     getVLDataLength();
 

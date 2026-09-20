@@ -99,23 +99,24 @@ deriveDeterministicRootKey(Seed const& seed)
 }
 
 //------------------------------------------------------------------------------
-/** Produces a sequence of secp256k1 key pairs.
-
-    The reference implementation of the XRP Ledger uses a custom derivation
-    algorithm which enables the derivation of an entire family of secp256k1
-    keypairs from a single 128-bit seed. The algorithm predates widely-used
-    standards like BIP-32 and BIP-44.
-
-    Important note to implementers:
-
-        Using this algorithm is not required: all valid secp256k1 keypairs will
-        work correctly. Third party implementations can use whatever mechanisms
-        they prefer. However, implementers of wallets or other tools that allow
-        users to use existing accounts should consider at least supporting this
-        derivation technique to make it easier for users to 'import' accounts.
-
-    For more details, please check out:
-        https://xrpl.org/cryptographic-keys.html#secp256k1-key-derivation
+/**
+ * Produces a sequence of secp256k1 key pairs.
+ *
+ * The reference implementation of the XRP Ledger uses a custom derivation
+ * algorithm which enables the derivation of an entire family of secp256k1
+ * keypairs from a single 128-bit seed. The algorithm predates widely-used
+ * standards like BIP-32 and BIP-44.
+ *
+ * Important note to implementers:
+ *
+ *     Using this algorithm is not required: all valid secp256k1 keypairs will
+ *     work correctly. Third party implementations can use whatever mechanisms
+ *     they prefer. However, implementers of wallets or other tools that allow
+ *     users to use existing accounts should consider at least supporting this
+ *     derivation technique to make it easier for users to 'import' accounts.
+ *
+ * For more details, please check out:
+ *     https://xrpl.org/cryptographic-keys.html#secp256k1-key-derivation
  */
 class Generator
 {
@@ -177,7 +178,9 @@ public:
         secureErase(generator_.data(), generator_.size());
     }
 
-    /** Generate the nth key pair. */
+    /**
+     * Generate the nth key pair.
+     */
     std::pair<PublicKey, SecretKey>
     operator()(std::size_t ordinal) const
     {

@@ -40,7 +40,7 @@ passwordUnrequiredOrSentCorrect(Port const& port, json::Value const& params)
 
 bool
 ipAllowed(
-    beast::IP::Address const& remoteIp,
+    beast::ip::Address const& remoteIp,
     std::vector<boost::asio::ip::network_v4> const& nets4,
     std::vector<boost::asio::ip::network_v6> const& nets6)
 {
@@ -78,7 +78,7 @@ ipAllowed(
 }
 
 bool
-isAdmin(Port const& port, json::Value const& params, beast::IP::Address const& remoteIp)
+isAdmin(Port const& port, json::Value const& params, beast::ip::Address const& remoteIp)
 {
     return ipAllowed(remoteIp, port.adminNetsV4, port.adminNetsV6) &&
         passwordUnrequiredOrSentCorrect(port, params);
@@ -89,7 +89,7 @@ requestRole(
     Role const& required,
     Port const& port,
     json::Value const& params,
-    beast::IP::Endpoint const& remoteIp,
+    beast::ip::Endpoint const& remoteIp,
     std::string_view user)
 {
     if (isAdmin(port, params, remoteIp.address()))
@@ -122,16 +122,16 @@ isUnlimited(
     Role const& required,
     Port const& port,
     json::Value const& params,
-    beast::IP::Endpoint const& remoteIp,
+    beast::ip::Endpoint const& remoteIp,
     std::string const& user)
 {
     return isUnlimited(requestRole(required, port, params, remoteIp, user));
 }
 
-Resource::Consumer
+resource::Consumer
 requestInboundEndpoint(
-    Resource::Manager& manager,
-    beast::IP::Endpoint const& remoteAddress,
+    resource::Manager& manager,
+    beast::ip::Endpoint const& remoteAddress,
     Role const& role,
     std::string_view user,
     std::string_view forwardedFor)

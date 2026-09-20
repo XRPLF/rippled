@@ -199,7 +199,7 @@ TEST(mallocTrim, repeated_calls)
     beast::Journal const journal{beast::Journal::getNullSink()};
 
     // Call malloc_trim multiple times to ensure it's safe
-    for (int i = 0; i < 5; ++i)
+    for (auto i = 0uz; i < 5; ++i)
     {
         MallocTrimReport const report = mallocTrim("iteration_" + std::to_string(i), journal);
 

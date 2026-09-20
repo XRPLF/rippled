@@ -22,7 +22,8 @@ namespace xrpl {
 
 class Sandbox;
 
-/** AMMWithdraw implements AMM withdraw Transactor.
+/**
+ * AMMWithdraw implements AMM withdraw Transactor.
  * The withdraw transaction is used to remove liquidity from the AMM instance
  * pool, thus redeeming some share of the pools that one owns in the form
  * of LPTokens. If the trader withdraws proportional values of both assets
@@ -96,7 +97,8 @@ public:
         ReadView const& view,
         beast::Journal const& j) override;
 
-    /** Equal-asset withdrawal (LPTokens) of some AMM instance pools
+    /**
+     * Equal-asset withdrawal (LPTokens) of some AMM instance pools
      * shares represented by the number of LPTokens .
      * The trading fee is not charged.
      * @param view
@@ -107,6 +109,11 @@ public:
      * @param lpTokens current LPT balance
      * @param lpTokensWithdraw amount of tokens to withdraw
      * @param tfee trading fee in basis points
+     * @param freezeHandling whether a frozen balance is reported as zero
+     * @param authHandling whether an unauthorized MPT balance is reported as
+     *        zero
+     * @param reserveHandling whether the recipient owner-reserve check is
+     *        enforced when a trustline or MPToken has to be auto-created
      * @param withdrawAll if withdrawing all lptokens
      * @param priorBalance balance before fees
      * @return
@@ -116,6 +123,7 @@ public:
         Sandbox& view,
         SLE const& ammSle,
         AccountID const account,
+        std::optional<AccountID> const& clawbackIssuer,
         AccountID const& ammAccount,
         STAmount const& amountBalance,
         STAmount const& amount2Balance,
@@ -125,22 +133,34 @@ public:
         std::uint16_t tfee,
         FreezeHandling freezeHandling,
         AuthHandling authHandling,
+        ReserveHandling reserveHandling,
         WithdrawAll withdrawAll,
         XRPAmount const& priorBalance,
         beast::Journal const& journal);
 
-    /** Withdraw requested assets and token from AMM into LP account.
+    /**
+     * Withdraw requested assets and token from AMM into LP account.
      * Return new total LPToken balance and the withdrawn amounts for both
      * assets.
      * @param view
      * @param ammSle AMM ledger entry
      * @param ammAccount AMM account
+     * @param clawbackIssuer when set (AMMClawback path), the issuer performing
+     *        the clawback. A recreated MPToken is only auto-authorized when the
+     *        asset's issuer matches this account, so a clawback cannot grant
+     *        authorization on behalf of a different (paired-asset) issuer.
+     * @param account LP account
      * @param amountBalance current LP asset1 balance
      * @param amountWithdraw asset1 withdraw amount
      * @param amount2Withdraw asset2 withdraw amount
      * @param lpTokensAMMBalance current AMM LPT balance
      * @param lpTokensWithdraw amount of lptokens to withdraw
      * @param tfee trading fee in basis points
+     * @param freezeHandling whether a frozen balance is reported as zero
+     * @param authHandling whether an unauthorized MPT balance is reported as
+     *        zero
+     * @param reserveHandling whether the recipient owner-reserve check is
+     *        enforced when a trustline or MPToken has to be auto-created
      * @param withdrawAll if withdraw all lptokens
      * @param priorBalance balance before fees
      * @return
@@ -150,6 +170,7 @@ public:
         Sandbox& view,
         SLE const& ammSle,
         AccountID const& ammAccount,
+        std::optional<AccountID> const& clawbackIssuer,
         AccountID const& account,
         STAmount const& amountBalance,
         STAmount const& amountWithdraw,
@@ -159,6 +180,7 @@ public:
         std::uint16_t tfee,
         FreezeHandling freezeHandling,
         AuthHandling authHandling,
+        ReserveHandling reserveHandling,
         WithdrawAll withdrawAll,
         XRPAmount const& priorBalance,
         beast::Journal const& journal);
@@ -173,15 +195,18 @@ public:
         beast::Journal const& journal);
 
 private:
-    /** Returns IgnoreFreeze when the withdrawer is the issuer of a pool
-     *  asset (post-fixCleanup3_3_0), ZeroIfFrozen otherwise. */
+    /**
+     * Returns IgnoreFreeze when the withdrawer is the issuer of a pool
+     *  asset (post-fixCleanup3_3_0), ZeroIfFrozen otherwise.
+     */
     [[nodiscard]] FreezeHandling
     issuerFreezeHandling() const;
 
     std::pair<TER, bool>
     applyGuts(Sandbox& view);
 
-    /** Withdraw requested assets and token from AMM into LP account.
+    /**
+     * Withdraw requested assets and token from AMM into LP account.
      * Return new total LPToken balance.
      * @param view
      * @param ammSle AMM ledger entry
@@ -205,7 +230,8 @@ private:
         STAmount const& lpTokensWithdraw,
         std::uint16_t tfee);
 
-    /** Equal-asset withdrawal (LPTokens) of some AMM instance pools
+    /**
+     * Equal-asset withdrawal (LPTokens) of some AMM instance pools
      * shares represented by the number of LPTokens .
      * The trading fee is not charged.
      * @param view
@@ -230,7 +256,8 @@ private:
         STAmount const& lpTokensWithdraw,
         std::uint16_t tfee);
 
-    /** Withdraw both assets (Asset1Out, Asset2Out) with the constraints
+    /**
+     * Withdraw both assets (Asset1Out, Asset2Out) with the constraints
      * on the maximum amount of each asset that the trader is willing
      * to withdraw. The trading fee is not charged.
      * @param view
@@ -255,7 +282,8 @@ private:
         STAmount const& amount2,
         std::uint16_t tfee);
 
-    /** Single asset withdrawal (Asset1Out) equivalent to the amount specified
+    /**
+     * Single asset withdrawal (Asset1Out) equivalent to the amount specified
      * in Asset1Out. The trading fee is charged.
      * @param view
      * @param ammAccount
@@ -275,7 +303,8 @@ private:
         STAmount const& amount,
         std::uint16_t tfee);
 
-    /** Single asset withdrawal (Asset1Out, LPTokens) proportional
+    /**
+     * Single asset withdrawal (Asset1Out, LPTokens) proportional
      * to the share specified by tokens. The trading fee is charged.
      * @param view
      * @param ammAccount
@@ -297,7 +326,8 @@ private:
         STAmount const& lpTokensWithdraw,
         std::uint16_t tfee);
 
-    /** Withdraw single asset (Asset1Out, EPrice) with two constraints.
+    /**
+     * Withdraw single asset (Asset1Out, EPrice) with two constraints.
      * The trading fee is charged.
      * @param view
      * @param ammAccount
@@ -319,7 +349,9 @@ private:
         STAmount const& ePrice,
         std::uint16_t tfee);
 
-    /** Check from the flags if it's withdraw all */
+    /**
+     * Check from the flags if it's withdraw all
+     */
     static WithdrawAll
     isWithdrawAll(STTx const& tx);
 };

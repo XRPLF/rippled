@@ -7,12 +7,13 @@
 
 namespace xrpl {
 
-/** Tracks program uptime to seconds precision.
-
-    The timer caches the current time as a performance optimization.
-    This allows clients to query the current time thousands of times
-    per second.
-*/
+/**
+ * Tracks program uptime to seconds precision.
+ *
+ * The timer caches the current time as a performance optimization.
+ * This allows clients to query the current time thousands of times
+ * per second.
+ */
 
 class UptimeClock
 {

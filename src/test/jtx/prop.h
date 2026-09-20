@@ -8,7 +8,9 @@
 
 namespace xrpl::test::jtx {
 
-/** Set a property on a JTx. */
+/**
+ * Set a property on a JTx.
+ */
 template <class T>
 struct Prop
 {

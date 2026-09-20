@@ -13,7 +13,9 @@
 #include <array>
 #include <cstdint>
 
-/** Escrow operations. */
+/**
+ * Escrow operations.
+ */
 namespace xrpl::test::jtx::escrow {
 
 json::Value
@@ -70,10 +72,14 @@ std::array<std::uint8_t, 39> const kCb3 = {
      0x3F, 0xA6, 0x3B, 0x1B, 0x60, 0x6F, 0x2D, 0x26, 0x4A, 0x2D, 0x85, 0x7B, 0xE8,
      0xA0, 0x9C, 0x1D, 0xFD, 0x57, 0x0D, 0x15, 0x85, 0x8B, 0xD4, 0x81, 0x01, 0x04}};
 
-/** Set the "FinishAfter" time tag on a JTx */
+/**
+ * Set the "FinishAfter" time tag on a JTx
+ */
 auto const kFinishTime = JTxFieldWrapper<TimePointField>(sfFinishAfter);
 
-/** Set the "CancelAfter" time tag on a JTx */
+/**
+ * Set the "CancelAfter" time tag on a JTx
+ */
 auto const kCancelTime = JTxFieldWrapper<TimePointField>(sfCancelAfter);
 
 auto const kCondition = JTxFieldWrapper<BlobField>(sfCondition);

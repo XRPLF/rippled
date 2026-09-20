@@ -23,7 +23,9 @@ namespace xrpl {
 class PathRequestManager
 {
 public:
-    /** A collection of all PathRequest instances. */
+    /**
+     * A collection of all PathRequest instances.
+     */
     PathRequestManager(
         Application& app,
         beast::Journal journal,
@@ -34,9 +36,10 @@ public:
         full_ = collector->makeEvent("pathfind_full");
     }
 
-    /** Update all of the contained PathRequest instances.
-
-        @param ledger Ledger we are pathfinding in.
+    /**
+     * Update all of the contained PathRequest instances.
+     *
+     * @param ledger Ledger we are pathfinding in.
      */
     void
     updateAll(std::shared_ptr<ReadView const> const& ledger);
@@ -62,7 +65,7 @@ public:
     makeLegacyPathRequest(
         PathRequest::pointer& req,
         std::function<void(void)> completion,
-        Resource::Consumer& consumer,
+        resource::Consumer& consumer,
         std::shared_ptr<ReadView const> const& inLedger,
         json::Value const& request);
 
@@ -70,7 +73,7 @@ public:
     // with the ledger specified by the caller
     json::Value
     doLegacyPathRequest(
-        Resource::Consumer& consumer,
+        resource::Consumer& consumer,
         std::shared_ptr<ReadView const> const& inLedger,
         json::Value const& request);
 

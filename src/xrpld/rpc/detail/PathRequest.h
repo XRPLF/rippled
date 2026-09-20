@@ -64,7 +64,7 @@ public:
     PathRequest(
         Application& app,
         std::function<void(void)> completion,
-        Resource::Consumer& consumer,
+        resource::Consumer& consumer,
         int id,
         PathRequestManager&,
         beast::Journal journal);
@@ -114,9 +114,10 @@ private:
         int const,
         std::function<bool(void)> const&);
 
-    /** Finds and sets a PathSet in the JSON argument.
-        Returns false if the source currencies are invalid.
-    */
+    /**
+     * Finds and sets a PathSet in the JSON argument.
+     * Returns false if the source currencies are invalid.
+     */
     bool
     findPaths(
         std::shared_ptr<AssetCache> const&,
@@ -136,7 +137,7 @@ private:
 
     std::weak_ptr<InfoSub> wpSubscriber_;  // Who this request came from
     std::function<void(void)> fCompletion_;
-    Resource::Consumer& consumer_;  // Charge according to source currencies
+    resource::Consumer& consumer_;  // Charge according to source currencies
 
     json::Value jvId_;
     json::Value jvStatus_;  // Last result

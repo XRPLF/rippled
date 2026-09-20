@@ -11,7 +11,8 @@
 
 namespace xrpl {
 
-/** AMMVote implements AMM vote Transactor.
+/**
+ * AMMVote implements AMM vote Transactor.
  * This transactor allows for the TradingFee of the AMM instance be a votable
  * parameter. Any account (LP) that holds the corresponding LPTokens can cast
  * a vote using the new AMMVote transaction. VoteSlots array in ltAMM object

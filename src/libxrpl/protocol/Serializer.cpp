@@ -99,7 +99,7 @@ int
 Serializer::addRaw(void const* ptr, int len)
 {
     int const ret = data_.size();
-    data_.insert(data_.end(), (char const*)ptr, ((char const*)ptr) + len);
+    data_.insert(data_.end(), static_cast<char const*>(ptr), static_cast<char const*>(ptr) + len);
     return ret;
 }
 
@@ -143,10 +143,10 @@ Serializer::addFieldID(int type, int name)
 }
 
 int
-Serializer::add8(unsigned char byte)
+Serializer::add8(unsigned char byteValue)
 {
     int const ret = data_.size();
-    data_.push_back(byte);
+    data_.push_back(byteValue);
     return ret;
 }
 
@@ -210,109 +210,138 @@ Serializer::addVL(void const* ptr, int len)
 int
 Serializer::addEncoded(int length)
 {
-    std::array<std::uint8_t, 4> bytes{};
+    // Without this, a negative length would fall into the 1 byte case below and
+    // be cast to a first byte no header uses. A size too big for int arrives
+    // here negative as well, since callers pass sizes through this parameter.
+    if (length < kMinValueOfLengthFor1ByteHeader)
+        Throw<std::overflow_error>("addEncoded: length is negative or did not fit in an int");
+
+    std::array<std::byte, kMaxNumberOfBytesInHeader> bytes{};
     int numBytes = 0;
 
-    if (length <= 192)
+    if (length <= kMaxValueOfLengthFor1ByteHeader)
     {
-        bytes[0] = static_cast<unsigned char>(length);
+        bytes[0] = static_cast<std::byte>(length);
         numBytes = 1;
     }
-    else if (length <= 12480)
+    else if (length <= kMaxValueOfLengthFor2ByteHeader)
     {
-        length -= 193;
-        bytes[0] = 193 + static_cast<unsigned char>(length >> 8);
-        bytes[1] = static_cast<unsigned char>(length & 0xff);
+        // Count from the smallest length a 2 byte header covers.
+        int const offset = length - kMinValueOfLengthFor2ByteHeader;
+        bytes[0] = static_cast<std::byte>(
+            kMinValueOfFirstByteFor2ByteHeader + (offset / kNumberOfValuesInOneByte));
+        bytes[1] = static_cast<std::byte>(offset % kNumberOfValuesInOneByte);
         numBytes = 2;
     }
-    else if (length <= 918744)
+    else if (length <= kMaxValueOfLengthFor3ByteHeader)
     {
-        length -= 12481;
-        bytes[0] = 241 + static_cast<unsigned char>(length >> 16);
-        bytes[1] = static_cast<unsigned char>((length >> 8) & 0xff);
-        bytes[2] = static_cast<unsigned char>(length & 0xff);
+        int const offset = length - kMinValueOfLengthFor3ByteHeader;
+        bytes[0] = static_cast<std::byte>(
+            kMinValueOfFirstByteFor3ByteHeader + (offset / kNumberOfValuesInTwoBytes));
+        bytes[1] =
+            static_cast<std::byte>((offset / kNumberOfValuesInOneByte) % kNumberOfValuesInOneByte);
+        bytes[2] = static_cast<std::byte>(offset % kNumberOfValuesInOneByte);
         numBytes = 3;
     }
     else
     {
-        Throw<std::overflow_error>("lenlen");
+        Throw<std::overflow_error>("addEncoded: length is too large to encode");
     }
 
-    return addRaw(&bytes[0], numBytes);
+    return addRaw(bytes.data(), numBytes);
 }
 
 int
 Serializer::encodeLengthLength(int length)
 {
-    if (length < 0)
-        Throw<std::overflow_error>("len<0");
+    if (length < kMinValueOfLengthFor1ByteHeader)
+    {
+        Throw<std::overflow_error>(
+            "encodeLengthLength: length is negative or did not fit in an int");
+    }
 
-    if (length <= 192)
+    if (length <= kMaxValueOfLengthFor1ByteHeader)
         return 1;
 
-    if (length <= 12480)
+    if (length <= kMaxValueOfLengthFor2ByteHeader)
         return 2;
 
-    if (length <= 918744)
+    if (length <= kMaxValueOfLengthFor3ByteHeader)
         return 3;
 
-    Throw<std::overflow_error>("len>918744");
-    return 0;  // Silence compiler warning.
+    Throw<std::overflow_error>("encodeLengthLength: length is too large to encode");
 }
 
 int
-Serializer::decodeLengthLength(int b1)
+Serializer::decodeLengthLength(std::byte firstByte)
 {
-    if (b1 < 0)
-        Throw<std::overflow_error>("b1<0");
+    int const firstByteValue = std::to_integer<int>(firstByte);
 
-    if (b1 <= 192)
+    if (firstByteValue <= kMaxValueOfFirstByteFor1ByteHeader)
         return 1;
 
-    if (b1 <= 240)
+    if (firstByteValue <= kMaxValueOfFirstByteFor2ByteHeader)
         return 2;
 
-    if (b1 <= 254)
+    if (firstByteValue <= kMaxValueOfFirstByteFor3ByteHeader)
         return 3;
 
-    Throw<std::overflow_error>("b1>254");
-    return 0;  // Silence compiler warning.
+    Throw<std::overflow_error>("decodeLengthLength: first byte does not start any header");
 }
 
 int
-Serializer::decodeVLLength(int b1)
+Serializer::decodeVLLength(std::byte firstByte)
 {
-    if (b1 < 0)
-        Throw<std::overflow_error>("b1<0");
+    int const length = std::to_integer<int>(firstByte);
 
-    if (b1 > 254)
-        Throw<std::overflow_error>("b1>254");
+    // A bigger value means a longer header, so it is not a length by itself.
+    if (length > kMaxValueOfLengthFor1ByteHeader)
+        Throw<std::overflow_error>("decodeVLLength 1 byte: first byte is not a length");
 
-    return b1;
+    return length;
 }
 
 int
-Serializer::decodeVLLength(int b1, int b2)
+Serializer::decodeVLLength(std::byte firstByte, std::byte secondByte)
 {
-    if (b1 < 193)
-        Throw<std::overflow_error>("b1<193");
+    int const firstByteValue = std::to_integer<int>(firstByte);
 
-    if (b1 > 240)
-        Throw<std::overflow_error>("b1>240");
+    if (firstByteValue < kMinValueOfFirstByteFor2ByteHeader)
+        Throw<std::overflow_error>("decodeVLLength 2 byte: first byte is below the range");
 
-    return 193 + ((b1 - 193) * 256) + b2;
+    if (firstByteValue > kMaxValueOfFirstByteFor2ByteHeader)
+        Throw<std::overflow_error>("decodeVLLength 2 byte: first byte is above the range");
+
+    // Both bytes are bounded by their own type, and the first one is bounded to
+    // the 2 byte range above, so this cannot leave the range the header covers.
+    return kMinValueOfLengthFor2ByteHeader +
+        ((firstByteValue - kMinValueOfFirstByteFor2ByteHeader) * kNumberOfValuesInOneByte) +
+        std::to_integer<int>(secondByte);
 }
 
 int
-Serializer::decodeVLLength(int b1, int b2, int b3)
+Serializer::decodeVLLength(std::byte firstByte, std::byte secondByte, std::byte thirdByte)
 {
-    if (b1 < 241)
-        Throw<std::overflow_error>("b1<241");
+    int const firstByteValue = std::to_integer<int>(firstByte);
 
-    if (b1 > 254)
-        Throw<std::overflow_error>("b1>254");
+    if (firstByteValue < kMinValueOfFirstByteFor3ByteHeader)
+        Throw<std::overflow_error>("decodeVLLength 3 byte: first byte is below the range");
 
-    return 12481 + ((b1 - 241) * 65536) + (b2 * 256) + b3;
+    if (firstByteValue > kMaxValueOfFirstByteFor3ByteHeader)
+        Throw<std::overflow_error>("decodeVLLength 3 byte: first byte is above the range");
+
+    int const length = kMinValueOfLengthFor3ByteHeader +
+        ((firstByteValue - kMinValueOfFirstByteFor3ByteHeader) * kNumberOfValuesInTwoBytes) +
+        (std::to_integer<int>(secondByte) * kNumberOfValuesInOneByte) +
+        std::to_integer<int>(thirdByte);
+
+    // A 3 byte header reaches further than kMaxValueOfLengthFor3ByteHeader, which
+    // is as far as the encoder goes. Refuse the rest, so every length accepted
+    // here is one that can be written back.
+    if (length > kMaxValueOfLengthFor3ByteHeader)
+        Throw<std::overflow_error>("decodeVLLength 3 byte: length is too large to re-encode");
+
+    return length;
 }
 
 //------------------------------------------------------------------------------
@@ -471,24 +500,24 @@ SerialIter::getRaw(int size)
 int
 SerialIter::getVLDataLength()
 {
-    int const b1 = get8();
+    std::byte const firstByte{get8()};
     int datLen = 0;
-    int const lenLen = Serializer::decodeLengthLength(b1);
+    int const lenLen = Serializer::decodeLengthLength(firstByte);
     if (lenLen == 1)
     {
-        datLen = Serializer::decodeVLLength(b1);
+        datLen = Serializer::decodeVLLength(firstByte);
     }
     else if (lenLen == 2)
     {
-        int const b2 = get8();
-        datLen = Serializer::decodeVLLength(b1, b2);
+        std::byte const secondByte{get8()};
+        datLen = Serializer::decodeVLLength(firstByte, secondByte);
     }
     else
     {
         XRPL_ASSERT(lenLen == 3, "xrpl::SerialIter::getVLDataLength : lenLen is 3");
-        int const b2 = get8();
-        int const b3 = get8();
-        datLen = Serializer::decodeVLLength(b1, b2, b3);
+        std::byte const secondByte{get8()};
+        std::byte const thirdByte{get8()};
+        datLen = Serializer::decodeVLLength(firstByte, secondByte, thirdByte);
     }
     return datLen;
 }
