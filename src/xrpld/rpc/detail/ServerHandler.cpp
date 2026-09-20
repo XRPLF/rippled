@@ -1001,15 +1001,11 @@ ServerHandler::processRequest(
             envelope = *parsed;
         }
 
-        /**
-         * Clear header-assigned values if not positively identified from a
-         * secureGateway.
-         */
-        if (role != Role::IDENTIFIED && role != Role::PROXY)
-        {
-            forwardedFor.remove_suffix(forwardedFor.size());
-            user.remove_suffix(user.size());
-        }
+        // Header-assigned values belong to the connection, so an entry not identified from a
+        // secureGateway drops them for itself only rather than clearing them in place.
+        bool const identified = role == Role::IDENTIFIED || role == Role::PROXY;
+        std::string_view const entryForwardedFor = identified ? forwardedFor : std::string_view{};
+        std::string_view const entryUser = identified ? user : std::string_view{};
 
         JLOG(journal_.debug()) << "Query: " << strMethod << rpc::loggable(params);
 
@@ -1031,7 +1027,7 @@ ServerHandler::processRequest(
              .infoSub = InfoSub::pointer(),
              .apiVersion = apiVersion},
             params,
-            {.user = user, .forwardedFor = forwardedFor}};
+            {.user = entryUser, .forwardedFor = entryForwardedFor}};
         json::Value result;
 
         auto start = std::chrono::system_clock::now();

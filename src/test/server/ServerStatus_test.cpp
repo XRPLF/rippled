@@ -134,6 +134,17 @@ class ServerStatus_test : public beast::unit_test::Suite, public beast::test::En
         return req;
     }
 
+    /**
+     * Build an HTTP/1.1 request for the server's root. It is a GET when `body`
+     * is empty and otherwise a JSON POST carrying it.
+     *
+     * @param host The host name or address the `Host` header names.
+     * @param port The port the `Host` header names.
+     * @param body The request body, empty for a GET.
+     * @param fields Headers inserted by name, so a name Beast has no
+     *        enumerator for, such as `X-User`, is carried too.
+     * @return The request, with its payload prepared.
+     */
     static auto
     makeHTTPRequest(
         std::string const& host,
@@ -147,8 +158,10 @@ class ServerStatus_test : public beast::unit_test::Suite, public beast::test::En
 
         req.target("/");
         req.version(11);
+        // By name: `name()` answers `field::unknown` for a header Beast has no enumerator for,
+        // such as `X-User`, and inserting that asserts.
         for (auto const& f : fields)
-            req.insert(f.name(), f.value());
+            req.insert(f.name_string(), f.value());
         req.insert("Host", host + ":" + std::to_string(port));
         req.insert("User-Agent", "test");
         if (body.empty())
@@ -1649,6 +1662,63 @@ class ServerStatus_test : public beast::unit_test::Suite, public beast::test::En
     }
 
     /**
+     * Header-assigned values belong to the connection, not to one entry of a
+     * batch, so an entry whose own role is neither identified nor proxied
+     * must not clear them for the entries after it.
+     *
+     * @param yield The coroutine the requests run on.
+     */
+    void
+    testBatchIdentity(boost::asio::yield_context& yield)
+    {
+        testcase("A batch entry keeps the connection's identity");
+
+        using namespace test::jtx;
+
+        // Both an admin net and a secure gateway, so one entry can be admin while the next is
+        // identified by the header.
+        Env env{*this, envconfig([](std::unique_ptr<Config> cfg) {
+                    (*cfg)[Sections::kPortRpc].set(Keys::kAdminUser, "u");
+                    (*cfg)[Sections::kPortRpc].set(Keys::kAdminPassword, "p");
+                    (*cfg)[Sections::kPortRpc].set(Keys::kSecureGateway, getEnvLocalhostAddr());
+                    return cfg;
+                })};
+
+        boost::system::error_code ec;
+
+        MyFields fields;
+        fields.insert("X-User", "xrposhi");
+        fields.insert("X-Forwarded-For", "203.0.113.9");
+
+        // The first entry is admin, which is the role the clearing keys off; the second presents
+        // no credentials and keeps the connection's `X-User` and forwarded-for address.
+        json::Value credentials(json::ValueType::Object);
+        credentials["admin_user"] = "u";
+        credentials["admin_password"] = "p";
+
+        json::Value batch;
+        batch[jss::method] = "batch";
+        batch[jss::params] = json::ValueType::Array;
+        batch[jss::params][0u][jss::method] = "ping";
+        batch[jss::params][0u][jss::params] = json::ValueType::Array;
+        batch[jss::params][0u][jss::params][0u] = credentials;
+        batch[jss::params][1u][jss::method] = "ping";
+
+        Response resp;
+        auto const reply = postAndParse(env, yield, resp, ec, to_string(batch), {}, fields);
+        BEAST_EXPECT(resp.result() == kOk);
+        BEAST_EXPECT(reply.isArray() && reply.size() == 2);
+
+        BEAST_EXPECT(reply[0u][jss::result][jss::role] == "admin");
+
+        // The second entry reports what it reports as a request of its own.
+        auto const& ping = reply[1u][jss::result];
+        BEAST_EXPECT(ping[jss::role] == "identified");
+        BEAST_EXPECT(ping["username"] == "xrposhi");
+        BEAST_EXPECT(ping[jss::ip] == "203.0.113.9");
+    }
+
+    /**
      * The five handlers that report a bare token carry a code and message with
      * it.
      *
@@ -2435,6 +2505,7 @@ public:
             testPrivilegedRequestIsNotShed(yield);
             testLegacyBatchEntryRejections(yield);
             testAnErrorReplyDoesNotFollowTheLogLevel(yield);
+            testBatchIdentity(yield);
             testHandlerErrorsCarryCodes(yield);
             testGainedStatusesStayOffLegacyEnvelope(yield);
             testUncommonHttpStatus(yield);
