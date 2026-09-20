@@ -110,6 +110,21 @@ namespace {
  *      }
  */
 
+/**
+ * Finds the handler for the command a request names.
+ *
+ * The request names its command in `command`, in `method`, or in both when
+ * the two agree. A name is a string: a member of any other type names no
+ * command, exactly as a string that no handler answers to.
+ *
+ * @param context The request, its role and the server it runs on.
+ * @param result Receives the handler when the request is accepted, and is
+ *         left as it was otherwise.
+ * @return `RpcSuccess` when @p result names the handler to run. Otherwise
+ *          the reason the request is rejected: `RpcTooBusy`,
+ *          `RpcCommandMissing`, `RpcUnknownCommand`, `RpcNoPermission`, or
+ *          the condition of the handler that the server does not meet.
+ */
 ErrorCodeI
 fillHandler(JsonContext& context, Handler const*& result)
 {
@@ -126,6 +141,12 @@ fillHandler(JsonContext& context, Handler const*& result)
 
     if (!context.params.isMember(jss::command) && !context.params.isMember(jss::method))
         return RpcCommandMissing;
+    // Only a string names a command. The conversions below throw for an object or an array.
+    for (auto const& name : {jss::command, jss::method})
+    {
+        if (context.params.isMember(name) && !context.params[name].isString())
+            return RpcUnknownCommand;
+    }
     if (context.params.isMember(jss::command) && context.params.isMember(jss::method))
     {
         if (context.params[jss::command].asString() != context.params[jss::method].asString())
