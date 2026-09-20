@@ -33,7 +33,10 @@ getHTTPHeaderTimestamp()
 void
 httpReply(int nStatus, std::string const& content, json::Output const& output, beast::Journal j)
 {
-    JLOG(j.trace()) << "HTTP Reply " << nStatus << " " << content;
+    // The status only. The body is a reply, which carries a credential when the
+    // command is a keygen, and this library cannot mask one: the caller logs the
+    // masked body at debug.
+    JLOG(j.trace()) << "HTTP Reply " << nStatus;
 
     if (content.empty() && nStatus == 401)
     {

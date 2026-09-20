@@ -171,6 +171,18 @@ public:
     void
     onRequest(Session& session);
 
+    /**
+     * Receives one WebSocket frame.
+     *
+     * A frame that exceeds the request size limit, does not parse or is not
+     * an object is answered here with `jsonInvalid` and the frame's `size`;
+     * its body is never echoed, since an unparsed body has no fields to mask.
+     * Any other frame is posted to the job queue and answered from
+     * processSession.
+     *
+     * @param session The WebSocket session the frame arrived on.
+     * @param buffers The frame's bytes.
+     */
     void
     onWSMessage(
         std::shared_ptr<WSSession> session,
@@ -183,15 +195,54 @@ public:
     onStopped(Server&);
 
 private:
+    /**
+     * Serves one parsed WebSocket request.
+     *
+     * Closes the connection when its resource balance is past the drop
+     * threshold. Otherwise checks the API version and the `command` and
+     * `method` fields, dispatches through rpc::doCommand, charges the
+     * session's consumer, and shapes the reply as a `response`, echoing the
+     * masked request on an error.
+     *
+     * @param session The session the request arrived on.
+     * @param coro The coroutine the request runs on.
+     * @param jv The parsed request.
+     * @return The reply to send.
+     */
     json::Value
     processSession(
         std::shared_ptr<WSSession> const& session,
         std::shared_ptr<JobQueue::Coro> const& coro,
         json::Value const& jv);
 
+    /**
+     * Serves one HTTP request on a coroutine: hands the body, the client
+     * address and the forwarding headers to processRequest, then completes
+     * or closes the session as its keep-alive header asks.
+     *
+     * @param session The HTTP session the request arrived on.
+     * @param coro The coroutine the request runs on.
+     */
     void
-    processSession(std::shared_ptr<Session> const&, std::shared_ptr<JobQueue::Coro> coro);
+    processSession(std::shared_ptr<Session> const& session, std::shared_ptr<JobQueue::Coro> coro);
 
+    /**
+     * Serves one HTTP body: parses it, answers a malformed or unauthorized
+     * request with a plain-text status, serves a `method: "batch"` body entry
+     * by entry, dispatches each request through rpc::doCommand, and writes
+     * the reply with its HTTP status. An error reply echoes the masked
+     * request.
+     *
+     * @param port The port the request arrived on, for its role and limits.
+     * @param request The raw body.
+     * @param remoteIPAddress The client address, for resource accounting and
+     *         the role.
+     * @param output Where the reply bytes are written.
+     * @param coro The coroutine the request runs on.
+     * @param forwardedFor The `X-Forwarded-For` header, when the port trusts
+     *         a proxy.
+     * @param user The `X-User` header.
+     */
     void
     processRequest(
         Port const& port,
