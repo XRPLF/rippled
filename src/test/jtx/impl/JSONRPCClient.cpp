@@ -10,6 +10,8 @@
 #include <xrpl/json/json_reader.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/json/to_string.h>
+#include <xrpl/protocol/ApiVersion.h>
+#include <xrpl/protocol/JsonRpc.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/server/Port.h>
 
@@ -163,8 +165,8 @@ public:
             jr[jss::method] = cmd;
             if (rpcVersion_ == 2)
             {
-                jr[jss::jsonrpc] = "2.0";
-                jr[jss::ripplerpc] = "2.0";
+                jr[jss::jsonrpc] = rpc::kJsonRpcVersion;
+                jr[jss::ripplerpc] = rpc::kRippleRpcVersion2;
                 jr[jss::id] = 5;
             }
             if (params)

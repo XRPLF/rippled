@@ -2170,8 +2170,7 @@ public:
         BEAST_EXPECT(jrr[jss::result][jss::engine_result] == "tesSUCCESS");
         if (wsc->version() == 2)
         {
-            BEAST_EXPECT(jrr.isMember(jss::jsonrpc) && jrr[jss::jsonrpc] == "2.0");
-            BEAST_EXPECT(jrr.isMember(jss::ripplerpc) && jrr[jss::ripplerpc] == "2.0");
+            BEAST_EXPECT(hasEnvelope2(jrr));
             BEAST_EXPECT(jrr.isMember(jss::id) && jrr[jss::id] == 5);
         }
 
