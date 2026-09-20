@@ -22,6 +22,14 @@ API version 2 is available in `xrpld` version 2.0.0 and later. See [API-VERSION-
 
 This version is supported by all `xrpld` versions. For WebSocket and HTTP JSON-RPC requests, it is currently the default API version used when no `api_version` is specified.
 
+## Unreleased
+
+### Bugfixes
+
+- A request echoed back in an error reply now has every credential-bearing field masked: `admin_password`, `admin_user`, `passphrase`, `password`, `secret`, `seed`, `seed_hex`, `url_password`, `url_username` and `username`. Nesting no longer matters, so a credential inside `params` is masked too. The same masking is applied to every request and reply written to the log, and it covers six further names that only a reply carries: `master_key`, `master_seed`, `master_seed_hex`, `validation_key`, `validation_private_key` and `validation_seed`, which is how `wallet_propose` and `validation_create` used to write a live private key to the log. A request or reply written to the log is truncated at 10,000 characters.
+- The command line client no longer prints a credential the operator did not type. A failing command echoes the request it built under `request_sent`, which carries the `admin_password` the client copies out of `[port_rpc]` in the config, so `./xrpld account_info rBogus` printed that password to stdout and into any captured output. `request_sent` is now masked. The `rpc` member beside it, which echoes the arguments as they were typed, is unchanged. The command line client also no longer writes an unparsed `json` or `ripple_path_find` argument to its trace log before parsing it, where a `secret` inside that argument could not be masked; it logs the parsed request instead, masked. The reply it receives is logged the same way, parsed and masked, where the raw body was written before, a `validation_create` answer included.
+- A WebSocket frame that does not parse, or exceeds the request size limit, is answered `{"type": "error", "error": "jsonInvalid", "size": <bytes>}`. The frame's body is reported by size rather than echoed back in a `value` member, since a body that does not parse has no fields to mask. A client that read `value` gets `size` instead.
+
 ## XRP Ledger server version 3.5.0
 
 Version 3.5.0 is not yet released.

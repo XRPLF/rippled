@@ -36,6 +36,7 @@
 #include <xrpld/rpc/Role.h>
 #include <xrpld/rpc/ServerHandler.h>
 #include <xrpld/rpc/detail/Handler.h>
+#include <xrpld/rpc/detail/MaskSecrets.h>
 #include <xrpld/rpc/detail/PathRequestManager.h>
 #include <xrpld/rpc/detail/Pathfinder.h>
 #include <xrpld/shamap/NodeFamily.h>
@@ -1473,7 +1474,7 @@ ApplicationImp::setup(boost::program_options::variables_map const& cmdline)
 
         if (!config_->quiet())
         {
-            JLOG(journal_.fatal()) << "Startup RPC: " << jvCommand << std::endl;
+            JLOG(journal_.fatal()) << "Startup RPC: " << rpc::loggable(jvCommand) << std::endl;
         }
 
         resource::Charge loadType = resource::kFeeReferenceRpc;
@@ -1496,7 +1497,7 @@ ApplicationImp::setup(boost::program_options::variables_map const& cmdline)
 
         if (!config_->quiet())
         {
-            JLOG(journal_.fatal()) << "Result: " << jvResult << std::endl;
+            JLOG(journal_.fatal()) << "Result: " << rpc::loggable(jvResult) << std::endl;
         }
     }
 

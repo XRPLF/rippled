@@ -1,17 +1,21 @@
+#include <test/jtx/CaptureLogs.h>
 #include <test/jtx/Env.h>
 #include <test/jtx/JSONRPCClient.h>
 #include <test/jtx/WSClient.h>
 #include <test/jtx/envconfig.h>
 
 #include <xrpld/app/ledger/LedgerMaster.h>
+#include <xrpld/rpc/detail/MaskSecrets.h>
 
 #include <xrpl/basics/base64.h>
 #include <xrpl/beast/test/yield_to.h>
 #include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/beast/utility/Journal.h>
 #include <xrpl/config/Constants.h>
 #include <xrpl/json/json_reader.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/json/to_string.h>
+#include <xrpl/protocol/ApiVersion.h>
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/server/LoadFeeTrack.h>
@@ -37,11 +41,13 @@
 #include <boost/lexical_cast.hpp>
 
 #include <array>
+#include <cstddef>
 #include <cstdint>
 #include <memory>
 #include <random>
 #include <regex>
 #include <string>
+#include <string_view>
 #include <utility>
 #include <vector>
 
@@ -203,6 +209,40 @@ class ServerStatus_test : public beast::unit_test::Suite, public beast::test::En
         }
     }
 
+    using Response = boost::beast::http::response<boost::beast::http::string_body>;
+
+    /**
+     * Posts @p body to the RPC port and returns the reply, parsed.
+     *
+     * @param env The environment naming the port.
+     * @param yield The coroutine the request runs on.
+     * @param resp Receives the whole HTTP response, for a caller asserting on
+     *         its status.
+     * @param ec Receives a connection error.
+     * @param body The request to post.
+     * @param label Identifies which case failed, for a caller iterating over
+     *         several. An empty one reports what BEAST_EXPECT would.
+     * @param fields Extra headers to send with it.
+     * @return The reply, parsed. Empty when the body is not JSON, which this
+     *          asserts against.
+     */
+    json::Value
+    postAndParse(
+        test::jtx::Env& env,
+        boost::asio::yield_context& yield,
+        Response& resp,
+        boost::system::error_code& ec,
+        std::string const& body,
+        std::string_view label = {},
+        MyFields const& fields = {})
+    {
+        doHTTPRequest(env, yield, false, resp, ec, body, fields);
+
+        json::Value reply;
+        BEAST_EXPECTS(json::Reader{}.parse(resp.body(), reply), label);
+        return reply;
+    }
+
     void
     doWSRequest(
         test::jtx::Env& env,
@@ -215,6 +255,60 @@ class ServerStatus_test : public beast::unit_test::Suite, public beast::test::En
         auto ip = env.app().config()[Sections::kPortWs].get<std::string>(Keys::kIp);
         // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
         doRequest(yield, makeWSUpgrade(*ip, *port), *ip, *port, secure, resp, ec);
+    }
+
+    /**
+     * Sends @p body verbatim over a fresh WebSocket session and returns the
+     * first reply, parsed, so a message naming no command can be exercised.
+     *
+     * @param yield The coroutine the request runs on.
+     * @param ip The server address.
+     * @param port The WebSocket port.
+     * @param body The frame to send.
+     * @return The reply, parsed. Empty when the connection fails, which this
+     *         asserts against.
+     */
+    json::Value
+    doWSMessage(
+        boost::asio::yield_context& yield,
+        std::string const& ip,
+        std::uint16_t port,
+        std::string const& body)
+    {
+        using namespace boost::asio;
+        using namespace boost::beast;
+
+        io_context& ios = getIoContext();
+        websocket::stream<ip::tcp::socket> ws{ios};
+        boost::system::error_code ec;
+
+        ip::tcp::resolver r{ios};
+        auto const it = r.async_resolve(ip, std::to_string(port), yield[ec]);
+        if (!BEAST_EXPECTS(!ec, ec.message()))
+            return {};
+        async_connect(ws.next_layer(), it, yield[ec]);
+        if (!BEAST_EXPECTS(!ec, ec.message()))
+            return {};
+        ws.async_handshake(ip + ":" + std::to_string(port), "/", yield[ec]);
+        if (!BEAST_EXPECTS(!ec, ec.message()))
+            return {};
+
+        ws.async_write(buffer(body), yield[ec]);
+        if (!BEAST_EXPECTS(!ec, ec.message()))
+            return {};
+
+        multi_buffer sb;
+        ws.async_read(sb, yield[ec]);
+        if (!BEAST_EXPECTS(!ec, ec.message()))
+            return {};
+
+        std::string text;
+        text.resize(buffer_size(sb.data()));
+        buffer_copy(buffer(text.data(), text.size()), sb.data());
+
+        json::Value reply;
+        BEAST_EXPECT(json::Reader{}.parse(text, reply));
+        return reply;
     }
 
     void
@@ -732,6 +826,16 @@ class ServerStatus_test : public beast::unit_test::Suite, public beast::test::En
             auto resp = sendAndParse("NOT JSON");
             BEAST_EXPECT(resp.isMember(jss::error) && resp[jss::error] == "jsonInvalid");
             BEAST_EXPECT(!resp.isMember(jss::status));
+            // The body is reported by size, not echoed.
+            BEAST_EXPECT(resp.isMember(jss::size) && resp[jss::size] == 8);
+            BEAST_EXPECT(!resp.isMember(jss::value));
+        }
+
+        {  // an unparsable frame carrying a credential does not echo it
+            auto resp =
+                sendAndParse(R"({"command":"submit","secret":"snoPBrXtMeMyMHUVTgbuqAfg1SUTb",})");
+            BEAST_EXPECT(resp.isMember(jss::error) && resp[jss::error] == "jsonInvalid");
+            BEAST_EXPECT(!to_string(resp).contains("snoPBrXtMeMyMHUVTgbuqAfg1SUTb"));
         }
 
         {  // send incorrect json (method and command fields differ)
@@ -1123,6 +1227,436 @@ class ServerStatus_test : public beast::unit_test::Suite, public beast::test::En
         }
     }
 
+    /**
+     * A credential the server echoes back is masked, on every path that echoes.
+     *
+     * Driven from `kCredentialFields` itself, so a field added to the list is
+     * covered here.
+     *
+     * @param yield The coroutine the requests run on.
+     */
+    void
+    testMaskedCredentials(boost::asio::yield_context& yield)
+    {
+        testcase("Echoed requests have their credentials masked");
+
+        using namespace test::jtx;
+        Env env{*this};
+
+        boost::system::error_code ec;
+
+        // Version 1 echoes the request back on an error, so its credentials must be masked.
+        {
+            boost::beast::http::response<boost::beast::http::string_body> resp;
+            json::Value jv;
+            jv[jss::method] = "sign";
+            jv[jss::params] = json::ValueType::Array;
+            json::Value params(json::ValueType::Object);
+            params[jss::ripplerpc] = rpc::kRippleRpcVersion1;
+            for (auto const field : rpc::kCredentialFields)
+                params[std::string{field}] = "sensitive";
+            jv[jss::params][0u] = params;
+            auto const reply = postAndParse(env, yield, resp, ec, to_string(jv));
+            auto const& echoed = reply[jss::result][jss::request];
+            for (auto const field : rpc::kCredentialFields)
+                BEAST_EXPECTS(echoed[std::string{field}] == "<masked>", std::string{field});
+        }
+
+        // A request the session rejects before dispatch is echoed back, so it must be masked.
+        // Written directly, since the client always names a command.
+        {
+            auto const port = env.app().config()[Sections::kPortWs].get<std::uint16_t>(Keys::kPort);
+            auto const ip = env.app().config()[Sections::kPortWs].get<std::string>(Keys::kIp);
+
+            json::Value jv;
+            for (auto const field : rpc::kCredentialFields)
+                jv[std::string{field}] = "sensitive";
+
+            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
+            auto const reply = doWSMessage(yield, *ip, *port, to_string(jv));
+            auto const& echoed = reply[jss::request];
+            for (auto const field : rpc::kCredentialFields)
+                BEAST_EXPECTS(echoed[std::string{field}] == "<masked>", std::string{field});
+        }
+
+        // A rejection echoing the whole request must mask the credentials inside
+        // `params`, where the JSON-RPC transport carries them.
+        {
+            json::Value params(json::ValueType::Object);
+            params[jss::account] = "rSomeAccount";
+            for (auto const field : rpc::kCredentialFields)
+                params[std::string{field}] = "sensitive";
+
+            json::Value entry;
+            entry[jss::id] = 2;
+            entry[jss::params] = json::ValueType::Array;
+            entry[jss::params][0u] = params;
+
+            // A batch: a lone request naming no method is answered with a bare message. The
+            // `"method": "batch"` form nests entries under `params` on every version.
+            json::Value batch;
+            batch[jss::method] = "batch";
+            batch[jss::params] = json::ValueType::Array;
+            batch[jss::params][0u] = entry;
+
+            Response resp;
+            auto const reply = postAndParse(env, yield, resp, ec, to_string(batch));
+            BEAST_EXPECT(reply.isArray() && reply.size() == 1);
+
+            auto const& echoed = reply[0u][jss::params][0u];
+            for (auto const field : rpc::kCredentialFields)
+                BEAST_EXPECTS(echoed[std::string{field}] == "<masked>", std::string{field});
+
+            // The rest of the request survives masking; only the credentials are replaced.
+            BEAST_EXPECT(echoed[jss::account] == "rSomeAccount");
+            BEAST_EXPECT(reply[0u][jss::id] == 2);
+        }
+    }
+
+    /**
+     * The request written to the log is masked, and capped in length.
+     *
+     * Both are asserted on one rendering: without the mask a seed reaches the
+     * log in the clear, and without the cap a client chooses how much it writes
+     * there. The marker past the cap is expected nowhere, every site rendering
+     * through `rpc::loggable`.
+     *
+     * `CaptureLogs` assigns its text in the destructor, so the `Env` is scoped
+     * and the string read after it.
+     *
+     * @param yield The coroutine the request runs on.
+     */
+    void
+    testTheLoggedRequestIsMaskedAndCapped(boost::asio::yield_context& yield)
+    {
+        testcase("The logged request is masked and capped");
+
+        using namespace test::jtx;
+
+        // Sorts after `secret` and before the tail marker, so the cap falls between them.
+        static constexpr std::size_t kFillerSize = 12000;
+        static constexpr char const* kSensitiveSeed = "snoPBrXtMeMyMHUVTgbuqAfg1SUTb";
+        static constexpr char const* kTailMarker = "PastTheCapMarker";
+
+        std::string logs;
+        {
+            Env env{
+                *this, envconfig(), std::make_unique<CaptureLogs>(&logs), beast::Severity::Debug};
+
+            boost::system::error_code ec;
+            Response resp;
+
+            json::Value params(json::ValueType::Object);
+            params[jss::secret] = kSensitiveSeed;
+            params["zfiller"] = std::string(kFillerSize, 'z');
+            params["zzztail"] = kTailMarker;
+
+            json::Value jv;
+            jv[jss::method] = "ping";
+            jv[jss::params] = json::ValueType::Array;
+            jv[jss::params][0u] = params;
+
+            auto const reply = postAndParse(env, yield, resp, ec, to_string(jv));
+            BEAST_EXPECT(reply[jss::result][jss::status] == jss::success);
+        }
+
+        auto const occurrences = [&logs](std::string_view needle) {
+            std::size_t count = 0;
+            for (auto at = logs.find(needle); at != std::string::npos;
+                 at = logs.find(needle, at + 1))
+            {
+                ++count;
+            }
+            return count;
+        };
+
+        // The seed reaches no line at all, and the duration line wrote the mask in its place.
+        BEAST_EXPECT(occurrences(kSensitiveSeed) == 0);
+        BEAST_EXPECT(logs.contains("RPC request processing duration = "));
+        BEAST_EXPECT(occurrences("<masked>") >= 2);
+
+        // No line reached the tail marker, because every site renders through `rpc::loggable`.
+        BEAST_EXPECT(occurrences(kTailMarker) == 0);
+    }
+
+    /**
+     * The reply written to the log is masked only when it carries a credential.
+     *
+     * A `wallet_propose` reply carries the keys it generated, and its `Reply:`
+     * line holds `<masked>` in their place. A `server_info` reply carries none
+     * and is logged as the string the client received.
+     *
+     * @param yield The coroutine the requests run on.
+     */
+    void
+    testTheLoggedReplyIsMaskedOnlyWhenItCarriesACredential(boost::asio::yield_context& yield)
+    {
+        testcase("The logged reply is masked only when it carries a credential");
+
+        using namespace test::jtx;
+
+        std::string logs;
+        json::Value wallet;
+        json::Value info;
+        {
+            Env env{
+                *this, envconfig(), std::make_unique<CaptureLogs>(&logs), beast::Severity::Debug};
+
+            boost::system::error_code ec;
+            Response resp;
+
+            json::Value jv;
+            jv[jss::method] = "wallet_propose";
+            wallet = postAndParse(env, yield, resp, ec, to_string(jv))[jss::result];
+            BEAST_EXPECT(wallet[jss::status] == jss::success);
+
+            jv[jss::method] = "server_info";
+            info = postAndParse(env, yield, resp, ec, to_string(jv))[jss::result];
+            BEAST_EXPECT(info[jss::status] == jss::success);
+        }
+
+        BEAST_EXPECT(logs.contains("Reply: "));
+
+        // The keys the client received reach no line, and the mask stands in their place.
+        for (auto const field : {jss::master_seed, jss::master_key})
+        {
+            auto const key = wallet[field].asString();
+            BEAST_EXPECT(!key.empty());
+            BEAST_EXPECTS(!logs.contains(key), field.cStr());
+        }
+        BEAST_EXPECT(logs.contains("<masked>"));
+
+        // A reply with no credential is logged as built: one line carries this member as the
+        // client read it.
+        auto const version = info[jss::info][jss::build_version].asString();
+        BEAST_EXPECT(!version.empty());
+        BEAST_EXPECT(logs.contains("\"build_version\":\"" + version + "\""));
+    }
+
+    /**
+     * A handler that throws is reported as `internal`, on both transports.
+     *
+     * `RPCHandler` catches the throw and injects `internal`, so the `catch`
+     * arms in `processSession` and `processRequest` are not what answers this.
+     * What this pins is the reply: `ledger_entry` is `Role::USER`, so an
+     * anonymous client reaches it.
+     *
+     * @param yield The coroutine the requests run on.
+     */
+    void
+    testInternalErrorIsReportedOnBothTransports(boost::asio::yield_context& yield)
+    {
+        testcase("An internal error is reported on both transports");
+
+        using namespace test::jtx;
+
+        static constexpr char const* kSensitiveSeed = "snoPBrXtMeMyMHUVTgbuqAfg1SUTb";
+
+        std::string logs;
+        {
+            Env env{
+                *this, envconfig(), std::make_unique<CaptureLogs>(&logs), beast::Severity::Info};
+            env.close();
+
+            auto const port = env.app().config()[Sections::kPortWs].get<std::uint16_t>(Keys::kPort);
+            auto const ip = env.app().config()[Sections::kPortWs].get<std::string>(Keys::kIp);
+
+            json::Value params(json::ValueType::Object);
+            params[jss::ledger_index] = jss::validated;
+            params[jss::hashes] = -1;
+            params[jss::secret] = kSensitiveSeed;
+
+            json::Value jv;
+            jv[jss::method] = "ledger_entry";
+            jv[jss::params] = json::ValueType::Array;
+            jv[jss::params][0u] = params;
+
+            boost::system::error_code ec;
+            Response resp;
+            auto const reply = postAndParse(env, yield, resp, ec, to_string(jv));
+            BEAST_EXPECTS(reply[jss::result][jss::error] == "internal", to_string(reply));
+
+            json::Value frame(params);
+            frame[jss::command] = "ledger_entry";
+            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
+            auto const wsReply = doWSMessage(yield, *ip, *port, to_string(frame));
+            BEAST_EXPECTS(wsReply[jss::error] == "internal", to_string(wsReply));
+        }
+
+        // The capture is not empty, so the absence assertion below is not vacuous.
+        BEAST_EXPECT(logs.contains("Caught throw: "));
+
+        // The line reports what was thrown and never the request.
+        BEAST_EXPECT(!logs.contains(kSensitiveSeed));
+    }
+
+    /**
+     * The credentials the command line client adds are masked in what it
+     * prints.
+     *
+     * The client copies `admin_user` and `admin_password` out of `[port_rpc]`
+     * into the request it builds, and prints to stdout rather than to a log.
+     *
+     * The account is asserted unmasked beside them, so that masking everything
+     * does not satisfy this case.
+     *
+     * `request_sent` is a second echo of the same request and is not exercised
+     * here: `fromCommandLine` writes it only on the transport-error path, which
+     * no jtx harness drives.
+     */
+    void
+    testCommandLineCredentialsAreMasked()
+    {
+        testcase("The command line client masks the credentials it adds");
+
+        using namespace test::jtx;
+
+        static constexpr char const* kConfiguredPassword = "correct-horse-battery-staple";
+
+        Env env{*this, envconfig([](std::unique_ptr<Config> cfg) {
+                    (*cfg)[Sections::kPortRpc].set(Keys::kAdminUser, "operator");
+                    (*cfg)[Sections::kPortRpc].set(Keys::kAdminPassword, kConfiguredPassword);
+                    return cfg;
+                })};
+
+        // `Env::doRpc` retries an internal error, repeating the request for no gain here.
+        env.setRetries(0);
+
+        // Well formed, so the parser accepts it and the server answers `actNotFound`. A malformed
+        // account fails in the parser, before there is a sent request to echo.
+        auto const output = env.rpc("account_info", Account{"never-funded"}.human());
+
+        // The call reached the server, so the echo below is the request the client built.
+        auto const& result = output[jss::result];
+        BEAST_EXPECTS(result[jss::error] == "actNotFound", to_string(output));
+
+        // The credentials from the config are masked; the account the operator typed is not.
+        BEAST_EXPECT(result[jss::request]["admin_password"] == "<masked>");
+        BEAST_EXPECT(result[jss::request]["admin_user"] == "<masked>");
+        BEAST_EXPECT(result[jss::request][jss::account] == Account{"never-funded"}.human());
+
+        // The subject of the fix: the configured password reaches no member of the output.
+        BEAST_EXPECT(!to_string(output).contains(kConfiguredPassword));
+    }
+
+    /**
+     * A credential in an `[rpc_startup]` command is masked in the startup
+     * log, and so is the result.
+     *
+     * Both lines are written at fatal, which the capture is taken at, and
+     * only by a server that is not quiet. The passphrase is the marker for the
+     * command line; a `wallet_propose` for a passphrase is deterministic, so
+     * the `master_seed` the same command returns through the client is the
+     * marker for the result line.
+     */
+    void
+    testStartupCommandsAreMasked()
+    {
+        testcase("Startup commands and their results are masked in the log");
+
+        using namespace test::jtx;
+
+        static constexpr char const* kPassphrase = "startup-passphrase-marker";
+
+        std::string logs;
+        std::string seed;
+        {
+            Env env{
+                *this,
+                envconfig([](std::unique_ptr<Config> cfg) {
+                    // The test config is quiet, and a quiet server writes neither line.
+                    cfg->setupControl(false, false, true);
+                    json::Value command(json::ValueType::Object);
+                    command[jss::command] = "wallet_propose";
+                    command[jss::passphrase] = kPassphrase;
+                    cfg->section(Sections::kRpcStartup).append(to_string(command));
+                    return cfg;
+                }),
+                std::make_unique<CaptureLogs>(&logs),
+                beast::Severity::Fatal};
+
+            json::Value params(json::ValueType::Object);
+            params[jss::passphrase] = kPassphrase;
+            auto const reply = env.rpc("json", "wallet_propose", to_string(params));
+            seed = reply[jss::result][jss::master_seed].asString();
+        }
+
+        // Both lines were written, so the absence assertions below are not vacuous.
+        BEAST_EXPECT(logs.contains("Startup RPC: "));
+        BEAST_EXPECT(logs.contains("Result: "));
+        BEAST_EXPECT(logs.contains("<masked>"));
+
+        BEAST_EXPECT(!logs.contains(kPassphrase));
+        BEAST_EXPECT(!seed.empty());
+        BEAST_EXPECT(!logs.contains(seed));
+    }
+
+    /**
+     * No credential reaches the log at trace, on any transport.
+     *
+     * Several render sites write only at `trace`, and no other test raises
+     * the threshold that far. A `wallet_propose` reply is the control for the
+     * `HTTP Reply` line: it carries the keys it generated, and that line
+     * carries the status only.
+     *
+     * @param yield The coroutine the requests run on.
+     */
+    void
+    testNoCredentialReachesTheLogAtTrace(boost::asio::yield_context& yield)
+    {
+        testcase("No credential reaches the log at trace");
+
+        using namespace test::jtx;
+
+        static constexpr char const* kSensitive = "sensitive-trace-value";
+
+        std::string logs;
+        std::string seed;
+        {
+            Env env{
+                *this, envconfig(), std::make_unique<CaptureLogs>(&logs), beast::Severity::Trace};
+
+            auto const port = env.app().config()[Sections::kPortWs].get<std::uint16_t>(Keys::kPort);
+            auto const ip = env.app().config()[Sections::kPortWs].get<std::string>(Keys::kIp);
+
+            json::Value params(json::ValueType::Object);
+            for (auto const field : rpc::kCredentialFields)
+                params[std::string{field}] = kSensitive;
+
+            json::Value jv;
+            jv[jss::method] = "ping";
+            jv[jss::params] = json::ValueType::Array;
+            jv[jss::params][0u] = params;
+
+            boost::system::error_code ec;
+            Response resp;
+            auto const reply = postAndParse(env, yield, resp, ec, to_string(jv));
+            BEAST_EXPECT(reply[jss::result][jss::status] == jss::success);
+
+            json::Value frame(params);
+            frame[jss::command] = "ping";
+            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
+            doWSMessage(yield, *ip, *port, to_string(frame));
+
+            json::Value wallet;
+            wallet[jss::method] = "wallet_propose";
+            auto const proposed = postAndParse(env, yield, resp, ec, to_string(wallet));
+            seed = proposed[jss::result][jss::master_seed].asString();
+        }
+
+        // Both transports logged, so an empty capture cannot pass this.
+        BEAST_EXPECT(logs.contains("Websocket received '"));
+        BEAST_EXPECT(logs.contains("doRpcCommand:"));
+        BEAST_EXPECT(logs.contains("HTTP Reply "));
+
+        BEAST_EXPECT(!logs.contains(kSensitive));
+        BEAST_EXPECT(logs.contains("<masked>"));
+
+        // The seed the client received reaches no line, the status-only reply line included.
+        BEAST_EXPECT(!seed.empty());
+        BEAST_EXPECT(!logs.contains(seed));
+    }
+
     void
     testStatusNotOkay(boost::asio::yield_context& yield)
     {
@@ -1180,8 +1714,16 @@ public:
             testNoRPC(yield);
             testWSRequests(yield);
             testRPCRequests(yield);
+            testMaskedCredentials(yield);
+            testTheLoggedRequestIsMaskedAndCapped(yield);
+            testTheLoggedReplyIsMaskedOnlyWhenItCarriesACredential(yield);
+            testInternalErrorIsReportedOnBothTransports(yield);
+            testNoCredentialReachesTheLogAtTrace(yield);
             testStatusNotOkay(yield);
         });
+
+        testCommandLineCredentialsAreMasked();
+        testStartupCommandsAreMasked();
     }
 };
 

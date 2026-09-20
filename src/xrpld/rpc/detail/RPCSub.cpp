@@ -1,6 +1,7 @@
 #include <xrpld/rpc/RPCSub.h>
 
 #include <xrpld/rpc/RPCCall.h>
+#include <xrpld/rpc/detail/MaskSecrets.h>
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/StringUtilities.h>
@@ -87,7 +88,7 @@ public:
         std::scoped_lock const sl(lock_);
 
         auto jm = broadcast ? j_.debug() : j_.info();
-        JLOG(jm) << "rpc_call::fromNetwork push: " << jvObj;
+        JLOG(jm) << "rpc_call::fromNetwork push: " << rpc::loggable(jvObj);
 
         deque_.emplace_back(seq_++, jvObj);
 

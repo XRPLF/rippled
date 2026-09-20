@@ -8,6 +8,7 @@
 #include <xrpld/rpc/Role.h>
 #include <xrpld/rpc/detail/AssetCache.h>
 #include <xrpld/rpc/detail/LegacyPathFind.h>
+#include <xrpld/rpc/detail/MaskSecrets.h>
 #include <xrpld/rpc/detail/Pathfinder.h>
 #include <xrpld/rpc/detail/RPCHelpers.h>
 #include <xrpld/rpc/detail/Tuning.h>
@@ -1018,7 +1019,8 @@ transactionSign(
     // could change the signing prefix of an alternate signature field.
     std::shared_ptr<ReadView const> const ledger = app.getOpenLedger().current();
     auto j = app.getJournal("RPCHandler");
-    JLOG(j.debug()) << "transactionSign: " << jvRequest;
+    // The next statement reads the signing secret out of this same request.
+    JLOG(j.debug()) << "transactionSign: " << loggable(jvRequest);
 
     // Add and amend fields based on the transaction type.
     SigningForParams signForParams;
@@ -1055,7 +1057,7 @@ transactionSubmit(
 
     auto const& ledger = app.getOpenLedger().current();
     auto j = app.getJournal("RPCHandler");
-    JLOG(j.debug()) << "transactionSubmit: " << jvRequest;
+    JLOG(j.debug()) << "transactionSubmit: " << loggable(jvRequest);
 
     // Add and amend fields based on the transaction type.
     SigningForParams signForParams;
@@ -1177,7 +1179,7 @@ transactionSignFor(
 {
     auto const& ledger = app.getOpenLedger().current();
     auto j = app.getJournal("RPCHandler");
-    JLOG(j.debug()) << "transactionSignFor: " << jvRequest;
+    JLOG(j.debug()) << "transactionSignFor: " << loggable(jvRequest);
 
     // Verify presence of the signer's account field.
     char const accountField[] = "account";
@@ -1301,7 +1303,7 @@ transactionSubmitMultiSigned(
 {
     auto const& ledger = app.getOpenLedger().current();
     auto j = app.getJournal("RPCHandler");
-    JLOG(j.debug()) << "transactionSubmitMultiSigned: " << jvRequest;
+    JLOG(j.debug()) << "transactionSubmitMultiSigned: " << loggable(jvRequest);
 
     // When multi-signing, the "Sequence" and "SigningPubKey" fields must
     // be passed in by the caller.
