@@ -5444,7 +5444,7 @@
       "options": {
         "annotations": {
           "clustering": -1,
-          "multiLane": false
+          "multiLane": true
         },
         "legend": {
           "calcs": [],
