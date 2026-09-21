@@ -167,7 +167,7 @@ callMethod(JsonContext& context, Handler::Method method, std::string_view name, 
     // rather than Server: the inbound boundary is above rpc.process.
     auto span =
         ScopedSpanGuard(TraceCategory::Rpc, rpc_span::prefix::command, name, SpanRole::Internal);
-    span.setAttribute(rpc_span::attr::command, name.c_str());
+    span.setAttribute(rpc_span::attr::command, name);
     span.setAttribute(rpc_span::attr::version, static_cast<int64_t>(context.apiVersion));
     span.setAttribute(
         rpc_span::attr::rpcRole,
