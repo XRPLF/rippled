@@ -29,6 +29,7 @@
 #include <expected>
 #include <limits>
 #include <optional>
+#include <span>
 #include <string>
 #include <string_view>
 #include <type_traits>
@@ -153,10 +154,7 @@ invokeWithLocator(
         return hfErrorToInt(HostFunctionError::LocatorMalformed);
     }
 
-    std::uint32_t const steps = locator.size() / sizeof(std::int32_t);
-    auto locBuf = std::vector<std::int32_t>(steps);
-    std::memcpy(locBuf.data(), locator.data(), locator.size());
-    auto const fl = FieldLocator{std::move(locBuf)};
+    auto const fl = FieldLocator{std::span{locator.data(), locator.size()}};
 
     auto const value = functor(fl);
     if (!value)
@@ -176,10 +174,7 @@ invokeWithLocator(rust::Slice<std::uint8_t const> locator, Functor&& functor)
         return hfErrorToInt(HostFunctionError::LocatorMalformed);
     }
 
-    std::uint32_t const steps = locator.size() / sizeof(std::int32_t);
-    auto locBuf = std::vector<std::int32_t>(steps);
-    std::memcpy(locBuf.data(), locator.data(), locator.size());
-    auto const fl = FieldLocator{std::move(locBuf)};
+    auto const fl = FieldLocator{std::span{locator.data(), locator.size()}};
 
     auto const value = functor(fl);
     if (!value)
