@@ -12,12 +12,11 @@ namespace {
 
 // What a run costs *around* the contract, rather than what its host calls cost. Only the guest's
 // own execution is metered, so every stage measured here is wall time no transaction pays for.
-// ../README.md has what each case measures and how to read `gas_equivalent`.
+// README.md has what each case measures and how to read `gas_equivalent`.
 //
-// **Every case must pin `->Iterations(...)`.** Compiling a module allocates against the
-// process-global engine and is never reclaimed — roughly 800 bytes per compile — so Google
-// Benchmark's automatic sizing, which targets a wall-clock budget rather than a compile count,
-// reaches gigabytes resident and the whole binary stops being able to compile anything.
+// **Every case pins `->Iterations(...)`.** Automatic sizing targets a wall-clock budget rather than
+// a compile count, so it gives the cheap cases six-figure counts and `/4096` a handful, leaving the
+// sweep's rows incomparable.
 
 // The smallest module the engine accepts. Everything a run does to it is overhead by construction.
 std::string
