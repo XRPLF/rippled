@@ -190,6 +190,12 @@ jobs:
     # matrix (i.e. not yet labeled "Ready to merge" or "Full CI build").
     if: ${{ needs.should-run.outputs.go == 'true' && (github.event_name != 'pull_request' || contains(github.event.pull_request.labels.*.name, 'Ready to merge') || contains(github.event.pull_request.labels.*.name, 'Full CI build')) }}
     uses: ./.github/workflows/reusable-package.yml
+    with:
+      # A pull request builds packages to prove they still build, and publishes
+      # nothing. Stated rather than left to the input's default, so that changing
+      # that default cannot start publishing from pull requests. No secrets are
+      # passed either, which is the second reason a publish here cannot succeed.
+      publish: false
 
   upload-recipe:
     needs:
