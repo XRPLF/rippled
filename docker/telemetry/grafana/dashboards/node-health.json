@@ -306,7 +306,8 @@
               }
             ]
           },
-          "unit": "suffix: fetches/s"
+          "unit": "si: fetches/s",
+          "decimals": 0
         }
       },
       "gridPos": {
@@ -375,7 +376,8 @@
               }
             ]
           },
-          "unit": "suffix: mismatches/s"
+          "unit": "si: mismatches/s",
+          "decimals": 0
         }
       },
       "gridPos": {

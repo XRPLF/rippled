@@ -189,7 +189,8 @@
       "fieldConfig": {
         "defaults": {
           "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
-          "unit": "suffix: messages/s"
+          "unit": "si: messages/s",
+          "decimals": 0
         },
         "overrides": []
       },
@@ -441,7 +442,8 @@
       "fieldConfig": {
         "defaults": {
           "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
-          "unit": "suffix: commands/s",
+          "unit": "si: commands/s",
+          "decimals": 0,
           "custom": {
             "axisLabel": "Commands / Sec",
             "spanNulls": 1800000,
@@ -495,7 +497,8 @@
       "fieldConfig": {
         "defaults": {
           "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
-          "unit": "suffix: requests/s",
+          "unit": "si: requests/s",
+          "decimals": 0,
           "custom": {
             "axisLabel": "Requests / Sec",
             "spanNulls": 1800000,
@@ -551,7 +554,8 @@
       "fieldConfig": {
         "defaults": {
           "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
-          "unit": "suffix: requests/s",
+          "unit": "si: requests/s",
+          "decimals": 0,
           "custom": {
             "axisLabel": "Requests / Sec",
             "spanNulls": 1800000,
