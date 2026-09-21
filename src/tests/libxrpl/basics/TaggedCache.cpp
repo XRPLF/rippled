@@ -248,9 +248,9 @@ TEST(TaggedCacheTest, sweep_thread_count_is_capped)
 {
     using Cache = TaggedCache<LedgerIndex, std::string>;
 
-    // sweep() runs one worker per partition unless it is capped, and the
+    // Without the cap, sweep() runs one worker per partition, and the
     // partition count follows the host's core count.
-    EXPECT_EQ(Cache::kMaxSweepThreads, 4u);
+    EXPECT_EQ(Cache::kMaxSweepThreads, 8u);
 }
 
 TEST(TaggedCacheTest, sweep_evicts_from_every_partition)

@@ -262,10 +262,8 @@ TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash,
                 << " aging at " << (now - whenExpire).count() << " of " << targetAge_.count();
         }
 
-        // Share the partitions out over a fixed number of workers, so the
-        // thread count does not follow the partition count. Worker w takes
-        // partitions w, w + workerCount, w + 2 * workerCount and so on, which
-        // covers every partition exactly once.
+        // Worker w takes partitions w, w + workerCount, w + 2 * workerCount
+        // and so on, covering every partition exactly once.
         std::size_t const workerCount = std::min(cache_.partitions(), kMaxSweepThreads);
 
         std::vector<std::thread> workers;
