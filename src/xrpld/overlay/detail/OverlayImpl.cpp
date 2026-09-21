@@ -322,7 +322,7 @@ OverlayImpl::onHandoff(
         {
             // The node gets a reserved slot if it is in our cluster
             // or if it has a reservation.
-            bool const reserved = static_cast<bool>(app_.getCluster().member(publicKey)) ||
+            bool const reserved = app_.getCluster().isMember(publicKey) ||
                 app_.getPeerReservations().contains(publicKey);
             auto const result = peerFinder_->activate(slot, publicKey, reserved);
             if (result != peer_finder::Result::Success)
