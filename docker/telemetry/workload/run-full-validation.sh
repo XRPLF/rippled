@@ -81,6 +81,13 @@ RPC_PORT_BASE=5005
 WS_PORT_BASE=6006
 PEER_PORT_BASE=51235
 
+# Node i lives in $WORKDIR/$NODE_PREFIX-$i, and every node path, kill pattern and
+# log glob below derives from it. The directory name is also the node's identity:
+# the collector stamps that segment as service.instance.id. If it and the
+# [telemetry] service_instance_id below disagree, log lines get a node name no
+# trace or metric shares. Sibling harness files pin their own stem.
+NODE_PREFIX="validator"
+
 # Hard ceiling on every RPC probe below. curl applies no overall timeout of its
 # own, so a node that accepts the connection and then stops answering parks the
 # poll loop for the rest of the run. The loops here count attempts, not seconds,
@@ -217,8 +224,19 @@ while [ $# -gt 0 ]; do
             # Match the node config path, not the bare workdir: a plain
             # "$WORKDIR" pattern also matches any shell, editor or log tail
             # whose command line merely mentions that path.
-            pkill -f "$WORKDIR/node[0-9]+/xrpld\.cfg" 2>/dev/null || true
-            docker compose -f "$COMPOSE_FILE" down 2>/dev/null || true
+            #
+            # This is the only thing that stops the nodes. They are host
+            # processes, not containers, so the compose teardown below does not
+            # touch them.
+            pkill -f "$WORKDIR/$NODE_PREFIX-[0-9]+/xrpld\.cfg" 2>/dev/null || true
+            # pkill sends SIGTERM and a node keeps writing NuDB while it unwinds,
+            # so the rm below would race a live writer and fail with ENOTEMPTY.
+            # Same wait as the pre-run cleanup path.
+            sleep 2
+            # -v also drops the named tempo-data volume. Without it the next
+            # run's Tempo starts with the previous run's traces still queryable,
+            # which a span assertion can be satisfied by.
+            docker compose -f "$COMPOSE_FILE" down -v 2>/dev/null || true
             # The collector bind-mounts $WORKDIR (see XRPLD_LOG_DIR below), so a
             # file left behind owned by a container uid makes this fail. Leaving
             # it in place would hand the next run stale node state, so say so
@@ -256,8 +274,11 @@ ok "Prerequisites verified."
 # Cleanup previous run
 # ---------------------------------------------------------------------------
 log "Cleaning up previous run..."
-# Narrowed for the same reason as the --cleanup branch above.
-pkill -f "$WORKDIR/node[0-9]+/xrpld\.cfg" 2>/dev/null || true
+# Matches the node config path, for the same reason as the --cleanup branch
+# above. A node left over
+# from a previous run still holds this run's RPC, WS and peer ports, so missing
+# one here surfaces much later as a cluster that never reaches consensus.
+pkill -f "$WORKDIR/$NODE_PREFIX-[0-9]+/xrpld\.cfg" 2>/dev/null || true
 sleep 2
 rm -rf "$WORKDIR" || die "Could not remove the previous run's workdir $WORKDIR"
 mkdir -p "$WORKDIR" "$REPORT_DIR" || die "Could not create $WORKDIR and $REPORT_DIR"
@@ -273,12 +294,15 @@ XRPLD_LOG_DIR="$WORKDIR" docker compose -f "$COMPOSE_FILE" up -d ||
 
 log "Waiting for OTel Collector..."
 for attempt in $(seq 1 30); do
-    status=$(curl -so /dev/null -w '%{http_code}' --max-time "$CURL_MAX_TIME" http://localhost:4318/ 2>/dev/null || echo 000)
+    # The fallback must not sit inside the substitution: curl already prints 000
+    # on a refused connection and then exits non-zero, so `|| echo 000` there
+    # appends a second 000 and the "not ready" test can never match.
+    status=$(curl -so /dev/null -w '%{http_code}' --max-time "$CURL_MAX_TIME" http://localhost:4318/ 2>/dev/null) || status=000
     if [ "$status" != "000" ]; then
         ok "OTel Collector ready (attempt $attempt)"
         break
     fi
-    [ "$attempt" -eq 30 ] && die "OTel Collector not ready after 30s"
+    [ "$attempt" -eq 30 ] && die "OTel Collector not ready after 30 attempts"
     sleep 1
 done
 
@@ -288,7 +312,7 @@ for attempt in $(seq 1 30); do
         ok "Tempo ready (attempt $attempt)"
         break
     fi
-    [ "$attempt" -eq 30 ] && die "Tempo not ready after 30s"
+    [ "$attempt" -eq 30 ] && die "Tempo not ready after 30 attempts"
     sleep 1
 done
 
@@ -298,7 +322,7 @@ for attempt in $(seq 1 30); do
         ok "Prometheus ready (attempt $attempt)"
         break
     fi
-    [ "$attempt" -eq 30 ] && die "Prometheus not ready after 30s"
+    [ "$attempt" -eq 30 ] && die "Prometheus not ready after 30 attempts"
     sleep 1
 done
 
@@ -311,23 +335,30 @@ bash "$SCRIPT_DIR/generate-validator-keys.sh" "$XRPLD" "$NUM_NODES" "$WORKDIR" |
     die "generate-validator-keys.sh failed — no validator keys for the $NUM_NODES-node cluster"
 
 for i in $(seq 1 "$NUM_NODES"); do
-    NODE_DIR="$WORKDIR/validator-$i"
-    mkdir -p "$NODE_DIR/nudb" "$NODE_DIR/db" || die "Could not create node$i directories under $NODE_DIR"
+    NODE_DIR="$WORKDIR/$NODE_PREFIX-$i"
+    mkdir -p "$NODE_DIR/nudb" "$NODE_DIR/db" || die "Could not create $NODE_PREFIX-$i directories under $NODE_DIR"
 
     RPC_PORT=$((RPC_PORT_BASE + i - 1))
     WS_PORT=$((WS_PORT_BASE + i - 1))
     PEER_PORT=$((PEER_PORT_BASE + i - 1))
     SEED=$(jq -r ".[$((i - 1))].seed" "$WORKDIR/validator-keys.json") ||
-        die "Could not read node$i's seed from $WORKDIR/validator-keys.json"
+        die "Could not read $NODE_PREFIX-$i's seed from $WORKDIR/validator-keys.json"
     # jq prints the string "null" and exits 0 when the array is shorter than
     # NUM_NODES, so the exit status alone does not detect a short key file. An
     # unusable seed here is only visible ~200s later as a cluster that never
     # proposes, which names the wrong step.
     case "$SEED" in
-        "" | null) die "node$i has no seed in $WORKDIR/validator-keys.json — the file holds fewer than $NUM_NODES entries, or entry $((i - 1)) carries no seed" ;;
+        "" | null) die "$NODE_PREFIX-$i has no seed in $WORKDIR/validator-keys.json — the file holds fewer than $NUM_NODES entries, or entry $((i - 1)) carries no seed" ;;
     esac
 
-    # Build ips_fixed.
+    # Peer list for the loopback mesh. Emitted as [ips], NOT [ips_fixed],
+    # even though [ips_fixed] is the section whose documented meaning fits a
+    # private cluster. [ips_fixed] holds the connections open to all peers, and
+    # measured against this same commit that moved consensus.ledger_close.p95
+    # from 0.57 ms to 6.43 ms and tripped the regression gate, while every
+    # transaction-path metric fell. The committed baseline describes the [ips]
+    # topology, so switching sections is a deliberate workload change that has
+    # to arrive with a refreshed baseline and re-derived bounds.
     IPS_FIXED=""
     for j in $(seq 1 "$NUM_NODES"); do
         if [ "$j" -ne "$i" ]; then
@@ -336,7 +367,7 @@ for i in $(seq 1 "$NUM_NODES"); do
         fi
     done
 
-    cat >"$NODE_DIR/xrpld.cfg" <<EOCFG || die "Could not write node$i's config to $NODE_DIR/xrpld.cfg"
+    cat >"$NODE_DIR/xrpld.cfg" <<EOCFG || die "Could not write $NODE_PREFIX-$i's config to $NODE_DIR/xrpld.cfg"
 [server]
 port_rpc
 port_ws
@@ -381,7 +412,7 @@ ${IPS_FIXED}
 
 [telemetry]
 enabled=1
-service_instance_id=validator-${i}
+service_instance_id=$NODE_PREFIX-${i}
 endpoint=http://localhost:4318/v1/traces
 batch_size=512
 batch_delay_ms=2000
@@ -442,7 +473,7 @@ EOCFG
     # The pid file is the only record of this child: every later liveness check
     # and crash report reads it back. Losing it silently would make a dead node
     # indistinguishable from one that was never started.
-    echo $! >"$NODE_DIR/xrpld.pid" || die "Could not write node$i's pid file $NODE_DIR/xrpld.pid"
+    echo $! >"$NODE_DIR/xrpld.pid" || die "Could not write $NODE_PREFIX-$i's pid file $NODE_DIR/xrpld.pid"
     log "  Node $i: RPC=$RPC_PORT WS=$WS_PORT Peer=$PEER_PORT PID=$!"
 done
 
@@ -478,17 +509,17 @@ node_running() {
 report_stopped_nodes() {
     local i pid status
     for i in $(seq 1 "$NUM_NODES"); do
-        pid=$(cat "$WORKDIR/validator-$i/xrpld.pid" 2>/dev/null || echo "")
+        pid=$(cat "$WORKDIR/$NODE_PREFIX-$i/xrpld.pid" 2>/dev/null || echo "")
         [ -n "$pid" ] || continue
         node_running "$pid" && continue
         status=0
         wait "$pid" 2>/dev/null || status=$?
-        warn "node$i (pid $pid) is not running — wait status $status"
-        if [ -s "$WORKDIR/validator-$i/stdout.log" ]; then
-            warn "node$i last output:"
-            tail -n 15 "$WORKDIR/validator-$i/stdout.log" | sed 's/^/      /' >&2
+        warn "$NODE_PREFIX-$i (pid $pid) is not running — wait status $status"
+        if [ -s "$WORKDIR/$NODE_PREFIX-$i/stdout.log" ]; then
+            warn "$NODE_PREFIX-$i last output:"
+            tail -n 15 "$WORKDIR/$NODE_PREFIX-$i/stdout.log" | sed 's/^/      /' >&2
         else
-            warn "node$i wrote no stdout at all"
+            warn "$NODE_PREFIX-$i wrote no stdout at all"
         fi
     done
 }
@@ -510,7 +541,7 @@ for attempt in $(seq 1 120); do
             # node is missing but not which one, which leaves nothing to grep
             # for in the artifacts. An empty state means the RPC port did not
             # answer at all, which usually means the process is gone.
-            laggards="$laggards node$i=${state:-unreachable}"
+            laggards="$laggards $NODE_PREFIX-$i=${state:-unreachable}"
         fi
     done
     if [ "$ready" -ge "$NUM_NODES" ]; then
@@ -522,7 +553,7 @@ for attempt in $(seq 1 120); do
     # minutes of progress output.
     stopped=0
     for n in $(seq 1 "$NUM_NODES"); do
-        p=$(cat "$WORKDIR/node$n/xrpld.pid" 2>/dev/null || echo "")
+        p=$(cat "$WORKDIR/$NODE_PREFIX-$n/xrpld.pid" 2>/dev/null || echo "")
         if [ -n "$p" ] && ! node_running "$p"; then
             stopped=$((stopped + 1))
         fi
@@ -548,7 +579,7 @@ for attempt in $(seq 1 120); do
         # is a no-op when nothing stopped, and it costs nothing to be sure.
         # Tolerated for the same reason as above.
         report_stopped_nodes || true
-        die "Consensus timeout — only $ready/$NUM_NODES nodes proposing after ${attempt}s. Not proposing:${laggards}. Check $WORKDIR/node*/debug.log and $WORKDIR/node*/stdout.log (a node that died before its log sink opened writes only the latter), then '$0 --cleanup'."
+        die "Consensus timeout — only $ready/$NUM_NODES nodes proposing after ${attempt} attempts. Not proposing:${laggards}. Check $WORKDIR/$NODE_PREFIX-*/debug.log and $WORKDIR/$NODE_PREFIX-*/stdout.log (a node that died before its log sink opened writes only the latter), then '$0 --cleanup'."
     fi
     printf "\r  %d/%d nodes proposing..." "$ready" "$NUM_NODES"
     sleep 1
@@ -570,7 +601,7 @@ for attempt in $(seq 1 60); do
     # ledger_economy{metric="base_fee_xrp"} is only observed from a validated
     # ledger, and complete_ledgers stays absent while the range is empty.
     if [ "$attempt" -eq 60 ]; then
-        die "No validated ledger after ${attempt}s (last seq: $val_seq). Check $WORKDIR/node*/debug.log, then '$0 --cleanup'."
+        die "No validated ledger after ${attempt} attempts (last seq: $val_seq). Check $WORKDIR/$NODE_PREFIX-*/debug.log, then '$0 --cleanup'."
     fi
     sleep 1
 done
@@ -704,9 +735,9 @@ diag_node_logs() {
     local i log bytes total correlated sample
     echo "  [leg 1/4 node] debug.log lines matching '$DIAG_TRACE_RE'"
     for i in $(seq 1 "$NUM_NODES"); do
-        log="$WORKDIR/validator-$i/debug.log"
+        log="$WORKDIR/$NODE_PREFIX-$i/debug.log"
         if [ ! -f "$log" ]; then
-            echo "    node$i: no debug.log at $log — the node never opened its log sink"
+            echo "    $NODE_PREFIX-$i: no debug.log at $log — the node never opened its log sink"
             continue
         fi
         bytes=$(wc -c <"$log" 2>/dev/null || echo 0)
@@ -714,7 +745,7 @@ diag_node_logs() {
         # grep -c exits 1 on zero matches but still prints the count, so the
         # guard keeps the 0 rather than replacing it with an empty string.
         correlated=$(grep -cE "$DIAG_TRACE_RE" "$log" 2>/dev/null || true)
-        echo "    node$i: bytes=$bytes lines=$total correlated=${correlated:-0}"
+        echo "    $NODE_PREFIX-$i: bytes=$bytes lines=$total correlated=${correlated:-0}"
         # Severity mix from the '[partition:]SEV' token, which Logs::format()
         # writes as the 4th whitespace-separated field. Fixed key order so two
         # runs' output can be diffed directly. Lines whose 4th field is not a
@@ -1076,7 +1107,7 @@ echo "  xrpld nodes ($NUM_NODES) are running:"
 for i in $(seq 1 "$NUM_NODES"); do
     rpc=$((RPC_PORT_BASE + i - 1))
     ws=$((WS_PORT_BASE + i - 1))
-    pid=$(cat "$WORKDIR/validator-$i/xrpld.pid" 2>/dev/null || echo 'unknown')
+    pid=$(cat "$WORKDIR/$NODE_PREFIX-$i/xrpld.pid" 2>/dev/null || echo 'unknown')
     echo "    Node $i: RPC=$rpc WS=$ws PID=$pid"
 done
 echo ""

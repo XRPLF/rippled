@@ -86,6 +86,14 @@ PEER_PORT_BASE=51250
 # Above run-full-validation.sh's 6006.. so both harnesses can share a box.
 WS_PORT_BASE=6020
 
+# Name stem of each node's directory: node i lives in $WORKDIR/$NODE_PREFIX-$i.
+# Every node path and kill pattern below derives from it, and so does the
+# service_instance_id the telemetry arm reports. The telemetry arm exports to the
+# same endpoint the workload harness uses, so a stem that differs from that
+# harness's is what keeps the two clusters apart in the backend. Deriving both
+# from one value is what stops the directory and the reported id drifting.
+NODE_PREFIX="bench-node"
+
 # Head start the generators get before the sampler opens its window.
 # tx_submitter.py creates and funds eight accounts from genesis and then waits
 # for those payments to validate, so without a lead the first seconds of every
@@ -148,6 +156,19 @@ done
 
 # Validate prerequisites. A missing binary or tool means no measurement can be
 # taken, which is "cannot measure", not "too slow".
+# Validate the two numeric options before anything derives ports, loop counts or
+# pid-count guards from them. --nodes 0 is the dangerous one: node_pids_csv then
+# yields an empty list, awk reports 0 fields, and the "found N of NUM_NODES pids"
+# guard compares 0 with 0 and passes, handing the sampler no pids at all.
+case "$NUM_NODES" in
+    '' | *[!0-9]*) cannot_measure "--nodes must be a positive integer, got '$NUM_NODES'" ;;
+esac
+[ "$NUM_NODES" -ge 1 ] || cannot_measure "--nodes must be at least 1, got '$NUM_NODES'"
+case "$DURATION" in
+    '' | *[!0-9]*) cannot_measure "--duration must be a positive integer, got '$DURATION'" ;;
+esac
+[ "$DURATION" -ge 1 ] || cannot_measure "--duration must be at least 1, got '$DURATION'"
+
 [ -x "$XRPLD" ] || cannot_measure "xrpld not found at $XRPLD"
 command -v jq >/dev/null 2>&1 || cannot_measure "jq not found"
 command -v bc >/dev/null 2>&1 || cannot_measure "bc not found"
@@ -189,7 +210,7 @@ start_cluster() {
 
     # Build per-node configs.
     for i in $(seq 1 "$NUM_NODES"); do
-        local node_dir="$WORKDIR/bench-node-$i"
+        local node_dir="$WORKDIR/$NODE_PREFIX-$i"
         mkdir -p "$node_dir/nudb" "$node_dir/db" ||
             cannot_measure "Could not create node$i directories under $node_dir"
 
@@ -227,7 +248,7 @@ start_cluster() {
             telemetry_section="
 [telemetry]
 enabled=1
-service_instance_id=bench-node-${i}
+service_instance_id=$NODE_PREFIX-${i}
 endpoint=http://localhost:4318/v1/traces
 exporter=otlp_http
 batch_size=512
@@ -251,10 +272,10 @@ endpoint=http://localhost:4318/v1/metrics"
 enabled=0"
         fi
 
-        # No `|| cannot_measure` here: a guard after `<<EOCFG` is read as the
-        # heredoc's first line, so it lands in the config and never runs. The
-        # mkdir above already covers the only realistic failure.
-        cat >"$node_dir/xrpld.cfg" <<EOCFG
+        # Guarded like every other fallible write. An unwritable node_dir would
+        # otherwise surface as cat's status 1, the code this script reserves for a
+        # measured threshold breach.
+        cat >"$node_dir/xrpld.cfg" <<EOCFG || cannot_measure "Could not write $node_dir/xrpld.cfg"
 [server]
 port_rpc
 port_ws
@@ -361,18 +382,16 @@ stop_cluster() {
 
     log "Stopping cluster..."
     for i in $(seq 1 "$NUM_NODES"); do
-        local pidfile="$WORKDIR/bench-node-$i/xrpld.pid"
+        local pidfile="$WORKDIR/$NODE_PREFIX-$i/xrpld.pid"
         if [ -f "$pidfile" ]; then
             kill "$(cat "$pidfile")" 2>/dev/null || true
         fi
     done
-    # Belt and braces for a node whose pidfile is missing or stale. Matched on
-    # the per-node config path — the shape start_cluster launches nodes with
-    # (`--conf $WORKDIR/nodeN/xrpld.cfg`) — rather than on the workdir alone.
-    # The loose form killed anything whose command line merely mentioned the
-    # workdir, including a developer's `tail -f $WORKDIR/node1/debug.log`, and
-    # the EXIT trap now makes this run on every exit path.
-    pkill -f "$WORKDIR/node[0-9]+/xrpld\.cfg" 2>/dev/null || true
+    # Belt and braces for a node whose pidfile is missing or stale. Matched on the
+    # per-node config path start_cluster launches with, not the workdir alone: a
+    # workdir-only pattern would also match anything that merely mentions the
+    # tree, such as a developer's `tail -f` on a node's debug.log.
+    pkill -f "$WORKDIR/$NODE_PREFIX-[0-9]+/xrpld\.cfg" 2>/dev/null || true
 
     # Guarded on purpose. This runs as the EXIT trap, where any unguarded
     # failure makes `set -e` exit with that command's status and discard the
@@ -383,12 +402,6 @@ stop_cluster() {
 
     return 0
 }
-
-# Reap the cluster on every exit path. Installed here rather than straight
-# after argument parsing so the handler name always resolves. Without it, any
-# failure between start_cluster and stop_cluster leaks the xrpld children
-# along with their RPC ports (5020+) and peer ports (51250+).
-trap 'stop_workload; stop_cluster' EXIT
 
 # Build RPC ports CSV string.
 rpc_ports_csv() {
@@ -422,7 +435,7 @@ ws_endpoints() {
 node_pids_csv() {
     local i out="" pid
     for i in $(seq 1 "$NUM_NODES"); do
-        pid=$(cat "$WORKDIR/bench-node-$i/xrpld.pid" 2>/dev/null) || continue
+        pid=$(cat "$WORKDIR/$NODE_PREFIX-$i/xrpld.pid" 2>/dev/null) || continue
         [ -n "$pid" ] && out="$out,$pid"
     done
     printf '%s' "${out#,}"
@@ -484,6 +497,14 @@ stop_workload() {
     WORKLOAD_PIDS=()
     return 0
 }
+
+# Reap the workload and the cluster on every exit path. Installed below both
+# handlers, not after argument parsing: if the trap fires while either name is
+# still undefined, errexit aborts the handler on "command not found" and the
+# rest of it -- the cluster reap -- never runs. Without the trap, any failure
+# between start_cluster and stop_cluster leaks the xrpld children along with
+# their RPC ports (5020+) and peer ports (51250+).
+trap 'stop_workload; stop_cluster' EXIT
 
 collect_metrics() {
     local label="$1"
@@ -548,26 +569,31 @@ INCONCLUSIVE="n/a"
 read_metric() {
     local file="$1"
     local key="$2"
-    jq -r ".$key // 0" "$file"
+    # jq exits 5 on malformed JSON and 2 on a missing file. Neither is one of
+    # this script's three documented codes, and a bare assignment would let it
+    # escape through errexit, so route both through cannot_measure.
+    jq -r ".$key // 0" "$file" 2>/dev/null ||
+        cannot_measure "$file is not readable JSON — refusing to compare an unreadable run"
 }
 
 BASE_CPU=$(read_metric "$BASELINE_FILE" "cpu_pct_avg")
 TELE_CPU=$(read_metric "$TELEMETRY_FILE" "cpu_pct_avg")
-CPU_DELTA=$(echo "scale=2; $TELE_CPU - $BASE_CPU" | bc 2>/dev/null || echo "0")
+CPU_DELTA=$(echo "scale=2; $TELE_CPU - $BASE_CPU" | bc 2>/dev/null || echo "$INCONCLUSIVE")
 
 BASE_MEM=$(read_metric "$BASELINE_FILE" "memory_rss_mb_peak")
 TELE_MEM=$(read_metric "$TELEMETRY_FILE" "memory_rss_mb_peak")
-MEM_DELTA=$(echo "scale=2; $TELE_MEM - $BASE_MEM" | bc 2>/dev/null || echo "0")
+MEM_DELTA=$(echo "scale=2; $TELE_MEM - $BASE_MEM" | bc 2>/dev/null || echo "$INCONCLUSIVE")
 
 BASE_RPC=$(read_metric "$BASELINE_FILE" "rpc_p99_ms")
 TELE_RPC=$(read_metric "$TELEMETRY_FILE" "rpc_p99_ms")
-RPC_DELTA=$(echo "scale=2; $TELE_RPC - $BASE_RPC" | bc 2>/dev/null || echo "0")
+RPC_DELTA=$(echo "scale=2; $TELE_RPC - $BASE_RPC" | bc 2>/dev/null || echo "$INCONCLUSIVE")
 
 # Both impacts below are ratios of the baseline, so a non-positive baseline
-# leaves them undefined. The collector writes tps=0 whenever no ledger
-# advanced and read_metric defaults a missing key to 0, so this is a routine
-# outcome rather than an edge case. Reporting it as "0% impact" would clear
-# the threshold and hide a failed baseline run.
+# leaves them undefined. Reporting that as "0% impact" would clear the
+# threshold and hide a failed baseline run. The reachable case is not the
+# collector's tps=0 placeholder -- that marks the run incomplete and stops it
+# earlier -- but quantization: tps is printed to two decimals, so a barely
+# advancing cluster yields "0.00" with the metrics still flagged complete.
 #
 # Both expressions scale by 100 before dividing. bc truncates at "scale" after
 # every operation, so dividing first would floor the ratio to 2 decimals and
@@ -576,7 +602,7 @@ RPC_DELTA=$(echo "scale=2; $TELE_RPC - $BASE_RPC" | bc 2>/dev/null || echo "0")
 BASE_TPS=$(read_metric "$BASELINE_FILE" "tps")
 TELE_TPS=$(read_metric "$TELEMETRY_FILE" "tps")
 if [[ "$(echo "$BASE_TPS > 0" | bc 2>/dev/null)" = "1" ]]; then
-    TPS_IMPACT=$(echo "scale=2; ($BASE_TPS - $TELE_TPS) * 100 / $BASE_TPS" | bc 2>/dev/null || echo "0")
+    TPS_IMPACT=$(echo "scale=2; ($BASE_TPS - $TELE_TPS) * 100 / $BASE_TPS" | bc 2>/dev/null || echo "$INCONCLUSIVE")
 else
     TPS_IMPACT="$INCONCLUSIVE"
 fi
@@ -584,7 +610,7 @@ fi
 BASE_CONS=$(read_metric "$BASELINE_FILE" "consensus_round_mean_ms")
 TELE_CONS=$(read_metric "$TELEMETRY_FILE" "consensus_round_mean_ms")
 if [[ "$(echo "$BASE_CONS > 0" | bc 2>/dev/null)" = "1" ]]; then
-    CONS_IMPACT=$(echo "scale=2; ($TELE_CONS - $BASE_CONS) * 100 / $BASE_CONS" | bc 2>/dev/null || echo "0")
+    CONS_IMPACT=$(echo "scale=2; ($TELE_CONS - $BASE_CONS) * 100 / $BASE_CONS" | bc 2>/dev/null || echo "$INCONCLUSIVE")
 else
     CONS_IMPACT="$INCONCLUSIVE"
 fi
@@ -615,7 +641,7 @@ check_threshold() {
     # Unusable measurement. Counted as a failure so the exit gate fires: an
     # undefined result must never read as a pass.
     if [ "$actual" = "$INCONCLUSIVE" ]; then
-        fail "$name: INCONCLUSIVE — baseline was zero or missing" >&2
+        fail "$name: INCONCLUSIVE — the baseline was zero or missing, or the arithmetic failed" >&2
         FAIL_COUNT=$((FAIL_COUNT + 1))
         INCONCLUSIVE_COUNT=$((INCONCLUSIVE_COUNT + 1))
         printf -v "$result_var" 'INCONCLUSIVE'
@@ -695,7 +721,14 @@ EOMD
 ok "Benchmark report written to $REPORT_FILE"
 cat "$REPORT_FILE"
 
-# Exit with failure if any check failed.
-if [ "$FAIL_COUNT" -gt 0 ]; then
+# Exit per the code table at the top of this file. A breach and an unmeasurable
+# row both have to fail the gate, but they are different codes: exit 1 promises
+# every metric was measured, so a run carrying an INCONCLUSIVE row reports 2
+# instead. FAIL_COUNT includes the inconclusive rows, so subtract them to see
+# whether any real threshold was exceeded.
+if [ "$((FAIL_COUNT - INCONCLUSIVE_COUNT))" -gt 0 ]; then
     exit 1
+elif [ "$INCONCLUSIVE_COUNT" -gt 0 ]; then
+    fail "$INCONCLUSIVE_COUNT overhead row(s) could not be measured — reporting an infrastructure error, not a breach" >&2
+    exit 2
 fi

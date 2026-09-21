@@ -263,13 +263,15 @@ private:
         }
 
     private:
-        SHAMapStoreImp& owner_;
+        // The three below are read only inside the metric macro in the
+        // destructor, so a -DXRPL_ENABLE_TELEMETRY=0 build sees no use at all.
+        [[maybe_unused]] SHAMapStoreImp& owner_;
         // Owned copies: the constructor takes views so callers can pass the
         // label constants, but a view stored in a member would only be valid
         // as long as the caller's text was. A phase is built a handful of
         // times per rotation, so two small strings cost nothing.
-        std::string const stage_;
-        std::string const cache_;
+        [[maybe_unused]] std::string const stage_;
+        [[maybe_unused]] std::string const cache_;
         std::chrono::steady_clock::time_point start_ = std::chrono::steady_clock::now();
         telemetry::ScopedSpanGuard span_;
     };

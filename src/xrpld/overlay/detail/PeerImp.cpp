@@ -454,7 +454,7 @@ PeerImp::crawl() const
 bool
 PeerImp::cluster() const
 {
-    return static_cast<bool>(app_.getCluster().member(publicKey_));
+    return app_.getCluster().isMember(publicKey_);
 }
 
 std::string
@@ -1408,43 +1408,6 @@ PeerImp::handleTransaction(
         auto stx = std::make_shared<STTx const>(sit);
         uint256 const txID = stx->getTransactionID();
 
-        using namespace telemetry;
-        // SpanGuard is thread-free (holds no Scope), so it is safe to hand to
-        // a job-queue worker and end on that thread — no detach step is needed.
-        // Left null when telemetry is compiled out: there is no span to own, so
-        // nothing is allocated for one. Every use below tests it, the job
-        // capture and activateIfLive() accept a null handle, and the transaction
-        // pipeline already takes a null span by default. Without this the
-        // make_shared allocated once per inbound transaction, duplicates
-        // included, to hold an empty object.
-        std::shared_ptr<SpanGuard> span;
-#ifdef XRPL_ENABLE_TELEMETRY
-        span = std::make_shared<SpanGuard>(txReceiveSpan(txID, *m));
-#endif
-        // Guarded on the span being live because these values are not free and
-        // this runs for every inbound transaction, including duplicates: the
-        // hash string allocates, and the open-ledger index takes the ledger
-        // master's lock. With telemetry compiled out the span is null; with it
-        // compiled in the block is skipped when telemetry is disabled at runtime
-        // or the transaction category is off.
-        if (span && *span)
-        {
-            span->setAttribute(tx_span::attr::txHash, to_string(txID).c_str());
-            span->setAttribute(tx_span::attr::peerId, static_cast<int64_t>(id_));
-            // The current (open) ledger index when the relayed tx was received
-            // — the ledger being worked on. Correlates this tx.receive to the
-            // ledger trace; not yet applied to a specific ledger, so no hash.
-            span->setAttribute(
-                tx_span::attr::currentLedgerSeq,
-                static_cast<std::int64_t>(app_.getLedgerMaster().getCurrentLedgerIndex()));
-            if (auto const* fmt = TxFormats::getInstance().findByType(stx->getTxnType()))
-                span->setAttribute(tx_span::attr::txType, fmt->getName().c_str());
-            if (auto const version = getVersion(); !version.empty())
-                span->setAttribute(tx_span::attr::peerVersion, version.c_str());
-        }
-        // Note: suppressed and txStatus are set once at each exit path
-        // (not as defaults here) to avoid OTel SDK attribute duplication.
-
         // Charge strongly for attempting to relay a txn with tfInnerBatchTxn
         // LCOV_EXCL_START
         /*
@@ -1465,8 +1428,12 @@ PeerImp::handleTransaction(
         */
         if (stx->isFlag(tfInnerBatchTxn))
         {
-            if (span)
-                span->setAttribute(tx_span::attr::txStatus, tx_span::val::rejectedInnerBatch);
+            XRPL_METRIC_COUNTER_INC_LABELED(
+                app_,
+                telemetry::metric::peerTxRejectedTotal,
+                "Relayed transactions not processed, by reason",
+                {{telemetry::label::reason,
+                  std::string(telemetry::lval::tx_rejected::innerBatch)}});
             JLOG(pJournal_.warn()) << "Ignoring Network relayed Tx containing "
                                       "tfInnerBatchTxn (handleTransaction).";
             fee_.update(resource::kFeeModerateBurdenPeer, "inner batch txn");
@@ -1479,23 +1446,26 @@ PeerImp::handleTransaction(
 
         if (!app_.getHashRouter().shouldProcess(txID, id_, flags, kTxInterval))
         {
-            if (span)
-                span->setAttribute(tx_span::attr::suppressed, true);
             // we have seen this transaction recently
             if (any(flags & HashRouterFlags::BAD))
             {
-                if (span)
-                    span->setAttribute(tx_span::attr::txStatus, tx_span::val::knownBad);
+                XRPL_METRIC_COUNTER_INC_LABELED(
+                    app_,
+                    telemetry::metric::peerTxRejectedTotal,
+                    "Relayed transactions not processed, by reason",
+                    {{telemetry::label::reason,
+                      std::string(telemetry::lval::tx_rejected::knownBad)}});
                 fee_.update(resource::kFeeUselessData, "known bad");
                 JLOG(pJournal_.debug()) << "Ignoring known bad tx " << txID;
             }
             else
             {
-                // Recently-seen but not flagged bad — this is the plain
-                // duplicate-suppression path. Mark it explicitly so the
-                // span never exits as "new".
-                if (span)
-                    span->setAttribute(tx_span::attr::txStatus, tx_span::val::suppressed);
+                XRPL_METRIC_COUNTER_INC_LABELED(
+                    app_,
+                    telemetry::metric::peerTxRejectedTotal,
+                    "Relayed transactions not processed, by reason",
+                    {{telemetry::label::reason,
+                      std::string(telemetry::lval::tx_rejected::duplicate)}});
 
                 // Erase only if the server has seen this tx. If the server
                 // has not seen this tx then the tx could not have been
@@ -1512,8 +1482,47 @@ PeerImp::handleTransaction(
             return;
         }
 
-        if (span)
-            span->setAttribute(tx_span::attr::suppressed, false);
+        using namespace telemetry;
+        // The span starts here, once this node has decided to process the
+        // transaction. A peer relays every transaction it hears, so most
+        // inbound copies are ones the checks above drop, and tracing those
+        // costs a span and its attributes to describe work never done. The
+        // number dropped is reported as the transactions_duplicate traffic
+        // category, which needs no span.
+        //
+        // SpanGuard is thread-free (holds no Scope), so it is safe to hand to
+        // a job-queue worker and end on that thread — no detach step is needed.
+        // Left null when telemetry is compiled out: there is no span to own, so
+        // nothing is allocated for one. Every use below tests it, the job
+        // capture and activateIfLive() accept a null handle, and the transaction
+        // pipeline already takes a null span by default.
+        std::shared_ptr<SpanGuard> span;
+#ifdef XRPL_ENABLE_TELEMETRY
+        span = std::make_shared<SpanGuard>(txReceiveSpan(txID, *m));
+#endif
+        // Guarded on the span being live because these values are not free: the
+        // hash string allocates, and the open-ledger index takes the ledger
+        // master's lock. With telemetry compiled out the span is null; with it
+        // compiled in the block is skipped when telemetry is disabled at runtime
+        // or the transaction category is off.
+        if (span && *span)
+        {
+            span->setAttribute(tx_span::attr::txHash, to_string(txID).c_str());
+            span->setAttribute(tx_span::attr::peerId, static_cast<int64_t>(id_));
+            // The current (open) ledger index when the relayed tx was received
+            // — the ledger being worked on. Correlates this tx.receive to the
+            // ledger trace; not yet applied to a specific ledger, so no hash.
+            span->setAttribute(
+                tx_span::attr::currentLedgerSeq,
+                static_cast<std::int64_t>(app_.getLedgerMaster().getCurrentLedgerIndex()));
+            if (auto const* fmt = TxFormats::getInstance().findByType(stx->getTxnType()))
+                span->setAttribute(tx_span::attr::txType, fmt->getName().c_str());
+            if (auto const version = getVersion(); !version.empty())
+                span->setAttribute(tx_span::attr::peerVersion, version.c_str());
+        }
+        // Note: txStatus is set once at each exit path below (not as a default
+        // here) to avoid OTel SDK attribute duplication.
+
         JLOG(pJournal_.debug()) << "Got tx " << txID;
 
         bool checkSignature = true;
@@ -1571,6 +1580,10 @@ PeerImp::handleTransaction(
     }
     catch (std::exception const& ex)
     {
+        if (fee_.fee < resource::kFeeInvalidData)
+        {
+            fee_.update(resource::kFeeInvalidData, "tx invalid");
+        }
         JLOG(pJournal_.warn()) << "Transaction invalid: " << strHex(m->rawtransaction())
                                << ". Exception: " << ex.what();
     }
@@ -1644,10 +1657,21 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMGetLedger> const& m)
 
     // Verify ledger node counts. Full parsing of the node IDs is deferred to the job, so the I/O
     // thread is not burdened with SHAMapNodeID deserialization for every TMGetLedger message.
-    if (itype != protocol::liBASE && m->nodeids_size() <= 0)
+    if (itype != protocol::liBASE)
     {
-        badData("Invalid ledger node IDs");
-        return;
+        if (m->nodeids_size() <= 0)
+        {
+            badData("Invalid ledger node IDs");
+            return;
+        }
+
+        if (m->nodeids_size() > tuning::kHardMaxReplyNodes)
+        {
+            badData(
+                "Requested number of ledger node IDs must be less than or equal to " +
+                std::to_string(tuning::kHardMaxReplyNodes));
+            return;
+        }
     }
 
     // Verify query type
@@ -3209,6 +3233,13 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMTransactions> const& m)
     {
         JLOG(pJournal_.error()) << "TMTransactions: tx reduce-relay is disabled";
         fee_.update(resource::kFeeMalformedRequest, "disabled");
+        return;
+    }
+
+    if (m->transactions_size() > reduce_relay::kMaxTxQueueSize)
+    {
+        JLOG(pJournal_.error()) << "TMTransactions: transaction list too large";
+        fee_.update(resource::kFeeMalformedRequest, "Transaction list too large");
         return;
     }
 
