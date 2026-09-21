@@ -699,9 +699,9 @@ private:
         env.close();
 
         // A real loan is originated during Investment (permitted only in this phase). Zero-interest
-        // one-payment schedule keeps AssetsTotal unchanged (both accrual and cash-basis
-        // accounting recognise no interest at origination); AssetsAvailable drops by the loan
-        // principal.
+        // one-payment schedule keeps AssetsTotal unchanged (both instant interest recognition and
+        // cash-basis accounting recognise no interest at origination); AssetsAvailable drops by
+        // the loan principal.
         env(loan::set(borrower, brokerKeylet.key, XRP(60).value()),
             loan::kInterestRate(TenthBips32(0)),
             kGracePeriod(60),
