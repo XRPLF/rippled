@@ -224,12 +224,6 @@ fn disabled_features() -> Vec<(&'static str, Vec<&'static str>, &'static str, &'
             "non-constant operator",
         ),
         (
-            "wasm_multi_memory",
-            vec![ONE_PAGE, "(memory 1)"],
-            "(i32.const 0)",
-            "multiple memories",
-        ),
-        (
             "wasm_memory64",
             vec![r#"(memory (export "memory") i64 1)"#],
             "(i32.const 0)",
@@ -278,7 +272,7 @@ fn every_disabled_feature_is_refused_by_name() {
     }
 }
 
-/// The three knobs [`every_disabled_feature_is_refused_by_name`] cannot cover. The
+/// The knobs [`every_disabled_feature_is_refused_by_name`] cannot cover. The
 /// configuration is the same for every engine `wasm_engine` builds, so a test
 /// observes the one `wasm_engine` makes: a knob masked by another, or with no
 /// caller-visible effect, has no distinguishing module.
@@ -292,6 +286,12 @@ fn the_knobs_without_a_module_of_their_own() {
     let refusal = failure(&wat, &host).to_string();
     assert!(refusal.contains("floating-point"), "{refusal}");
     assert!(!refusal.contains("saturating"), "{refusal}");
+
+    // `wasm_multi_memory(false)`: `EnforcedLimits::strict()` caps memories at one and
+    // is checked in `Module::new`.
+    let wat = module(&[ONE_PAGE, "(memory 1)"], "(i32.const 0)");
+    let refusal = assert_stage!(failure(&wat, &host), RunError::Compile(_)).to_string();
+    assert!(refusal.contains("limit of 1 memories"), "{refusal}");
 
     // `ignore_custom_sections(true)`: governs whether wasmi retains custom
     // sections, not accept/reject, so this pins only that one is harmless.

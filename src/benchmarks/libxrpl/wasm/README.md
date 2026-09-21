@@ -114,13 +114,22 @@ appearing a second time, because the transactor validates and executes with no m
 them. The size sweeps matter more than the floor: a fixed cost is only a griefing concern if it is
 large, but a slope against attacker-chosen module size is one at any height.
 
-Two caveats when reading a sweep. `gas_per_byte` is an **average** carrying the case's fixed cost,
+One caveat when reading a sweep: `gas_per_byte` is an **average** carrying the case's fixed cost,
 not a marginal rate — it overestimates, and falls toward the true slope as the module grows, so read
-the convergence rather than any single row. And the `/4096` points get few iterations and go noisy
-first; compare `rel_error` across the sweep before quoting the largest one.
+the convergence rather than any single row. A quiet Release run converges 31.4 → 13.2 → 7.8 → 6.7 →
+6.5 across `compileScaling`.
 
-The sweep stops at 4096 functions for want of a real cap to stop at — no maximum contract size is
-enforced anywhere yet, the transactor not being wired.
+**The filler modules are shaped by the engine's limits, not chosen freely.**
+`EnforcedLimits::strict()` refuses any module averaging under 40 bytes per function body once bodies
+total 1 KiB — a limit wasmi added to defend lazy compilation against precisely the shape a size
+sweep wants. So `fillerWat` gives each body `kFillerChain` mul/add pairs to clear that floor; one
+pair averages 12 bytes and is refused outright. Thinning the bodies to get more functions per byte
+does not make a harder module, it makes an inadmissible one.
+
+The sweep tops out at 2048 functions, bounded by **bytes** rather than function count: ~158 KiB
+against `kMaxBytecodeSizeLimit` of 200,000, where 4096 functions would be ~317 KiB and refused
+earlier in the transactor. `strict()`'s own `max_functions` of 10,000 never binds — 40 bytes per
+function against a 200,000-byte module caps any admissible contract at 5,000.
 
 The linker rebuild and the fuel-metering overhead are **not** separable from here — C++ sees only
 `runEscrowWasm` and `preflightEscrowWasm`. Both need benchmarks inside `xrpl-wasm-vm`, where
@@ -129,7 +138,7 @@ The linker rebuild and the fuel-metering overhead are **not** separable from her
 ### Pin your iteration counts
 
 Pin `->Iterations(...)`: automatic sizing targets a wall-clock budget, not a compile count,
-so the cheap cases get six-figure counts and `/4096` a handful — leaving no row comparable to
+so the cheap cases get six-figure counts and `/2048` a handful — leaving no row comparable to
 another or to the last run.
 
 ## Gotchas, each of which has already cost someone an afternoon
