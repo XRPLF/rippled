@@ -524,7 +524,8 @@
       "fieldConfig": {
         "defaults": {
           "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
-          "unit": "suffix: disconnects/s",
+          "unit": "si: disconnects/s",
+          "decimals": 0,
           "custom": {
             "axisLabel": "Disconnects / Sec",
             "drawStyle": "line",
@@ -576,7 +577,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "Peer Disconnect [${__field.labels.series}] ${__field.labels.xrpl_ident}",
+          "displayName": "[${__field.labels.series}] ${__field.labels.xrpl_ident}",
           "unit": "short",
           "custom": {
             "axisLabel": "Disconnects",
