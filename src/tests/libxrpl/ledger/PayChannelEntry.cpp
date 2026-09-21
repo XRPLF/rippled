@@ -1,4 +1,4 @@
-#include <xrpl/ledger/helpers/PayChannelEntry.h>
+#include <xrpl/ledger/entries/PayChannelEntry.h>
 
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Keylet.h>

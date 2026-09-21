@@ -1,4 +1,4 @@
-#include <xrpl/ledger/helpers/NegativeUNLEntry.h>
+#include <xrpl/ledger/entries/NegativeUNLEntry.h>
 
 #include <xrpl/protocol/Indexes.h>
 

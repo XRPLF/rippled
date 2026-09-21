@@ -1,4 +1,4 @@
-#include <xrpl/ledger/helpers/XChainOwnedClaimIDEntry.h>
+#include <xrpl/ledger/entries/XChainOwnedClaimIDEntry.h>
 
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Issue.h>

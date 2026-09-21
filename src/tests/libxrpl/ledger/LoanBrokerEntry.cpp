@@ -1,4 +1,4 @@
-#include <xrpl/ledger/helpers/LoanBrokerEntry.h>
+#include <xrpl/ledger/entries/LoanBrokerEntry.h>
 
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/SeqProxy.h>

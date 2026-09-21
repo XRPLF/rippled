@@ -1,4 +1,4 @@
-#include <xrpl/ledger/helpers/LoanEntry.h>
+#include <xrpl/ledger/entries/LoanEntry.h>
 
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Keylet.h>

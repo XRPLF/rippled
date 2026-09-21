@@ -1,46 +1,47 @@
 #pragma once
 
+#include <xrpl/basics/Slice.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
-#include <xrpl/ledger/helpers/SLEBase.h>
+#include <xrpl/ledger/entries/SLEBase.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/LedgerFormats.h>
-#include <xrpl/protocol/SeqProxy.h>
 
 namespace xrpl {
 
 template <typename ViewT>
-class CheckEntry : public SLEBase<ViewT, ltCHECK>
+class CredentialEntry : public SLEBase<ViewT, ltCREDENTIAL>
 {
 public:
-    using Base = SLEBase<ViewT, ltCHECK>;
+    using Base = SLEBase<ViewT, ltCREDENTIAL>;
 
     // Inherit base constructors: adopt an existing SLE, or resolve one from a
     // Keylet against the view.
     using Base::Base;
 
-    explicit CheckEntry(
-        AccountID const& id,
-        SeqProxy const& seq,
+    explicit CredentialEntry(
+        AccountID const& subject,
+        AccountID const& issuer,
+        Slice const& credType,
         Base::ViewRefType view,
         beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
-        : Base(keylet::check(id, seq), view, j)
+        : Base(keylet::credential(subject, issuer, credType), view, j)
     {
     }
 
-    explicit CheckEntry(
-        uint256 const& checkID,
+    explicit CredentialEntry(
+        uint256 const& credentialID,
         Base::ViewRefType view,
         beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
-        : Base(keylet::check(checkID), view, j)
+        : Base(keylet::credential(credentialID), view, j)
     {
     }
 };
 
-using CheckEntryR = CheckEntry<ReadView>;
-using CheckEntryW = CheckEntry<ApplyView>;
+using CredentialEntryR = CredentialEntry<ReadView>;
+using CredentialEntryW = CredentialEntry<ApplyView>;
 
 }  // namespace xrpl

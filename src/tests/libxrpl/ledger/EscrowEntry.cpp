@@ -1,4 +1,4 @@
-#include <xrpl/ledger/helpers/EscrowEntry.h>
+#include <xrpl/ledger/entries/EscrowEntry.h>
 
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/SeqProxy.h>

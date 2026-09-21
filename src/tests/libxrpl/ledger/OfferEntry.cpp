@@ -1,4 +1,4 @@
-#include <xrpl/ledger/helpers/OfferEntry.h>
+#include <xrpl/ledger/entries/OfferEntry.h>
 
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/SeqProxy.h>

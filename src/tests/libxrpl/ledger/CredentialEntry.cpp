@@ -1,4 +1,4 @@
-#include <xrpl/ledger/helpers/CredentialEntry.h>
+#include <xrpl/ledger/entries/CredentialEntry.h>
 
 #include <xrpl/basics/Slice.h>
 #include <xrpl/protocol/Indexes.h>

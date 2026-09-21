@@ -1,4 +1,4 @@
-#include <xrpl/ledger/helpers/AmendmentsEntry.h>
+#include <xrpl/ledger/entries/AmendmentsEntry.h>
 
 #include <xrpl/protocol/Indexes.h>
 

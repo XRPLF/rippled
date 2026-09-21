@@ -1,4 +1,4 @@
-#include <xrpl/ledger/helpers/BridgeEntry.h>
+#include <xrpl/ledger/entries/BridgeEntry.h>
 
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Issue.h>

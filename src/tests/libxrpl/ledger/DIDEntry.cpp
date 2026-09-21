@@ -1,4 +1,4 @@
-#include <xrpl/ledger/helpers/DIDEntry.h>
+#include <xrpl/ledger/entries/DIDEntry.h>
 
 #include <xrpl/protocol/Indexes.h>
 

@@ -1,38 +1,37 @@
 #pragma once
 
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
-#include <xrpl/ledger/helpers/SLEBase.h>
-#include <xrpl/protocol/AccountID.h>
+#include <xrpl/ledger/entries/SLEBase.h>
 #include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/Keylet.h>
 #include <xrpl/protocol/LedgerFormats.h>
-#include <xrpl/protocol/SeqProxy.h>
 
 namespace xrpl {
 
 template <typename ViewT>
-class PayChannelEntry : public SLEBase<ViewT, ltPAYCHAN>
+class NFTokenPageEntry : public SLEBase<ViewT, ltNFTOKEN_PAGE>
 {
 public:
-    using Base = SLEBase<ViewT, ltPAYCHAN>;
+    using Base = SLEBase<ViewT, ltNFTOKEN_PAGE>;
 
     // Inherit base constructors: adopt an existing SLE, or resolve one from a
     // Keylet against the view.
     using Base::Base;
 
-    explicit PayChannelEntry(
-        AccountID const& src,
-        AccountID const& dst,
-        SeqProxy const& seq,
+    explicit NFTokenPageEntry(
+        Keylet const& page,
+        uint256 const& token,
         Base::ViewRefType view,
         beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
-        : Base(keylet::payChannel(src, dst, seq), view, j)
+        : Base(keylet::nftokenPage(page, token), view, j)
     {
     }
 };
 
-using PayChannelEntryR = PayChannelEntry<ReadView>;
-using PayChannelEntryW = PayChannelEntry<ApplyView>;
+using NFTokenPageEntryR = NFTokenPageEntry<ReadView>;
+using NFTokenPageEntryW = NFTokenPageEntry<ApplyView>;
 
 }  // namespace xrpl

@@ -1,4 +1,4 @@
-#include <xrpl/ledger/helpers/MPTokenIssuanceEntry.h>
+#include <xrpl/ledger/entries/MPTokenIssuanceEntry.h>
 
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/UintTypes.h>

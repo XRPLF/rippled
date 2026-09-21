@@ -4,42 +4,43 @@
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
-#include <xrpl/ledger/helpers/SLEBase.h>
-#include <xrpl/protocol/Asset.h>
+#include <xrpl/ledger/entries/SLEBase.h>
+#include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/SeqProxy.h>
 
 namespace xrpl {
 
 template <typename ViewT>
-class AMMEntry : public SLEBase<ViewT, ltAMM>
+class TicketEntry : public SLEBase<ViewT, ltTICKET>
 {
 public:
-    using Base = SLEBase<ViewT, ltAMM>;
+    using Base = SLEBase<ViewT, ltTICKET>;
 
     // Inherit base constructors: adopt an existing SLE, or resolve one from a
     // Keylet against the view.
     using Base::Base;
 
-    explicit AMMEntry(
-        Asset const& issue1,
-        Asset const& issue2,
+    explicit TicketEntry(
+        AccountID const& id,
+        SeqProxy const& ticketSeq,
         Base::ViewRefType view,
         beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
-        : Base(keylet::amm(issue1, issue2), view, j)
+        : Base(keylet::ticket(id, ticketSeq), view, j)
     {
     }
 
-    explicit AMMEntry(
-        uint256 const& ammID,
+    explicit TicketEntry(
+        uint256 const& ticketID,
         Base::ViewRefType view,
         beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
-        : Base(keylet::amm(ammID), view, j)
+        : Base(keylet::ticket(ticketID), view, j)
     {
     }
 };
 
-using AMMEntryR = AMMEntry<ReadView>;
-using AMMEntryW = AMMEntry<ApplyView>;
+using TicketEntryR = TicketEntry<ReadView>;
+using TicketEntryW = TicketEntry<ApplyView>;
 
 }  // namespace xrpl

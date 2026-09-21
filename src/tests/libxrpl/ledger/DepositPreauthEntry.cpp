@@ -1,4 +1,4 @@
-#include <xrpl/ledger/helpers/DepositPreauthEntry.h>
+#include <xrpl/ledger/entries/DepositPreauthEntry.h>
 
 #include <xrpl/basics/Slice.h>
 #include <xrpl/protocol/AccountID.h>

@@ -4,7 +4,7 @@
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
-#include <xrpl/ledger/helpers/SLEBase.h>
+#include <xrpl/ledger/entries/SLEBase.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/LedgerFormats.h>
@@ -13,34 +13,34 @@
 namespace xrpl {
 
 template <typename ViewT>
-class NFTokenOfferEntry : public SLEBase<ViewT, ltNFTOKEN_OFFER>
+class PermissionedDomainEntry : public SLEBase<ViewT, ltPERMISSIONED_DOMAIN>
 {
 public:
-    using Base = SLEBase<ViewT, ltNFTOKEN_OFFER>;
+    using Base = SLEBase<ViewT, ltPERMISSIONED_DOMAIN>;
 
     // Inherit base constructors: adopt an existing SLE, or resolve one from a
     // Keylet against the view.
     using Base::Base;
 
-    explicit NFTokenOfferEntry(
-        AccountID const& owner,
+    explicit PermissionedDomainEntry(
+        AccountID const& account,
         SeqProxy const& seq,
         Base::ViewRefType view,
         beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
-        : Base(keylet::nftokenOffer(owner, seq), view, j)
+        : Base(keylet::permissionedDomain(account, seq), view, j)
     {
     }
 
-    explicit NFTokenOfferEntry(
-        uint256 const& offerID,
+    explicit PermissionedDomainEntry(
+        uint256 const& domainID,
         Base::ViewRefType view,
         beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
-        : Base(keylet::nftokenOffer(offerID), view, j)
+        : Base(keylet::permissionedDomain(domainID), view, j)
     {
     }
 };
 
-using NFTokenOfferEntryR = NFTokenOfferEntry<ReadView>;
-using NFTokenOfferEntryW = NFTokenOfferEntry<ApplyView>;
+using PermissionedDomainEntryR = PermissionedDomainEntry<ReadView>;
+using PermissionedDomainEntryW = PermissionedDomainEntry<ApplyView>;
 
 }  // namespace xrpl

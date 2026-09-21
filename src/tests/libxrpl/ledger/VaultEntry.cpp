@@ -1,4 +1,4 @@
-#include <xrpl/ledger/helpers/VaultEntry.h>
+#include <xrpl/ledger/entries/VaultEntry.h>
 
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/SeqProxy.h>

@@ -1,4 +1,4 @@
-#include <xrpl/ledger/helpers/SponsorshipEntry.h>
+#include <xrpl/ledger/entries/SponsorshipEntry.h>
 
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Keylet.h>

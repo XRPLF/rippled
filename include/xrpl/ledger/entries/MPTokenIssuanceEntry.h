@@ -4,52 +4,53 @@
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
-#include <xrpl/ledger/helpers/SLEBase.h>
+#include <xrpl/ledger/entries/SLEBase.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/UintTypes.h>
 
+#include <cstdint>
+
 namespace xrpl {
 
 template <typename ViewT>
-class MPTokenEntry : public SLEBase<ViewT, ltMPTOKEN>
+class MPTokenIssuanceEntry : public SLEBase<ViewT, ltMPTOKEN_ISSUANCE>
 {
 public:
-    using Base = SLEBase<ViewT, ltMPTOKEN>;
+    using Base = SLEBase<ViewT, ltMPTOKEN_ISSUANCE>;
 
     // Inherit base constructors: adopt an existing SLE, or resolve one from a
     // Keylet against the view.
     using Base::Base;
 
-    explicit MPTokenEntry(
+    explicit MPTokenIssuanceEntry(
+        std::uint32_t seq,
+        AccountID const& issuer,
+        Base::ViewRefType view,
+        beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
+        : Base(keylet::mptokenIssuance(makeMptID(seq, issuer)), view, j)
+    {
+    }
+
+    explicit MPTokenIssuanceEntry(
         MPTID const& issuanceID,
-        AccountID const& holder,
         Base::ViewRefType view,
         beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
-        : Base(keylet::mptoken(issuanceID, holder), view, j)
+        : Base(keylet::mptokenIssuance(issuanceID), view, j)
     {
     }
 
-    explicit MPTokenEntry(
+    explicit MPTokenIssuanceEntry(
         uint256 const& issuanceKey,
-        AccountID const& holder,
         Base::ViewRefType view,
         beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
-        : Base(keylet::mptoken(issuanceKey, holder), view, j)
-    {
-    }
-
-    explicit MPTokenEntry(
-        uint256 const& mptokenKey,
-        Base::ViewRefType view,
-        beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
-        : Base(keylet::mptoken(mptokenKey), view, j)
+        : Base(keylet::mptokenIssuance(issuanceKey), view, j)
     {
     }
 };
 
-using MPTokenEntryR = MPTokenEntry<ReadView>;
-using MPTokenEntryW = MPTokenEntry<ApplyView>;
+using MPTokenIssuanceEntryR = MPTokenIssuanceEntry<ReadView>;
+using MPTokenIssuanceEntryW = MPTokenIssuanceEntry<ApplyView>;
 
 }  // namespace xrpl

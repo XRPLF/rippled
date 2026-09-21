@@ -1,4 +1,4 @@
-#include <xrpl/ledger/helpers/NFTokenOfferEntry.h>
+#include <xrpl/ledger/entries/NFTokenOfferEntry.h>
 
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/SeqProxy.h>

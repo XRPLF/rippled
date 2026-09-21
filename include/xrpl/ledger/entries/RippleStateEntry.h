@@ -1,46 +1,48 @@
 #pragma once
 
-#include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
-#include <xrpl/ledger/helpers/SLEBase.h>
+#include <xrpl/ledger/entries/SLEBase.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/LedgerFormats.h>
-#include <xrpl/protocol/SeqProxy.h>
+#include <xrpl/protocol/UintTypes.h>
 
 namespace xrpl {
 
 template <typename ViewT>
-class LoanBrokerEntry : public SLEBase<ViewT, ltLOAN_BROKER>
+class RippleStateEntry : public SLEBase<ViewT, ltRIPPLE_STATE>
 {
 public:
-    using Base = SLEBase<ViewT, ltLOAN_BROKER>;
+    using Base = SLEBase<ViewT, ltRIPPLE_STATE>;
 
     // Inherit base constructors: adopt an existing SLE, or resolve one from a
     // Keylet against the view.
     using Base::Base;
 
-    explicit LoanBrokerEntry(
-        AccountID const& owner,
-        SeqProxy const& seq,
+    explicit RippleStateEntry(
+        AccountID const& id0,
+        AccountID const& id1,
+        Currency const& currency,
         Base::ViewRefType view,
         beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
-        : Base(keylet::loanBroker(owner, seq), view, j)
+        : Base(keylet::trustLine(id0, id1, currency), view, j)
     {
     }
 
-    explicit LoanBrokerEntry(
-        uint256 const& loanBrokerID,
+    explicit RippleStateEntry(
+        AccountID const& id,
+        Issue const& issue,
         Base::ViewRefType view,
         beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
-        : Base(keylet::loanBroker(loanBrokerID), view, j)
+        : Base(keylet::trustLine(id, issue), view, j)
     {
     }
 };
 
-using LoanBrokerEntryR = LoanBrokerEntry<ReadView>;
-using LoanBrokerEntryW = LoanBrokerEntry<ApplyView>;
+using RippleStateEntryR = RippleStateEntry<ReadView>;
+using RippleStateEntryW = RippleStateEntry<ApplyView>;
 
 }  // namespace xrpl

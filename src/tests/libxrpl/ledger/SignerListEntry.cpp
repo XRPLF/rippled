@@ -1,4 +1,4 @@
-#include <xrpl/ledger/helpers/SignerListEntry.h>
+#include <xrpl/ledger/entries/SignerListEntry.h>
 
 #include <xrpl/protocol/Indexes.h>
 

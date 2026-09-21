@@ -1,4 +1,4 @@
-#include <xrpl/ledger/helpers/DirectoryNodeEntry.h>
+#include <xrpl/ledger/entries/DirectoryNodeEntry.h>
 
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Keylet.h>

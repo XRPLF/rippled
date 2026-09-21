@@ -1,4 +1,4 @@
-#include <xrpl/ledger/helpers/PermissionedDomainEntry.h>
+#include <xrpl/ledger/entries/PermissionedDomainEntry.h>
 
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/SeqProxy.h>

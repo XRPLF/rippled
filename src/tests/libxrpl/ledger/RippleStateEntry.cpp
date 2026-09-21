@@ -1,4 +1,4 @@
-#include <xrpl/ledger/helpers/RippleStateEntry.h>
+#include <xrpl/ledger/entries/RippleStateEntry.h>
 
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Keylet.h>

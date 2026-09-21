@@ -1,4 +1,4 @@
-#include <xrpl/ledger/helpers/FeeSettingsEntry.h>
+#include <xrpl/ledger/entries/FeeSettingsEntry.h>
 
 #include <xrpl/protocol/Indexes.h>
 

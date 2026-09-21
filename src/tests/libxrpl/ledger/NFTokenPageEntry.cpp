@@ -1,4 +1,4 @@
-#include <xrpl/ledger/helpers/NFTokenPageEntry.h>
+#include <xrpl/ledger/entries/NFTokenPageEntry.h>
 
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Keylet.h>

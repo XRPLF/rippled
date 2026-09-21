@@ -1,4 +1,4 @@
-#include <xrpl/ledger/helpers/TicketEntry.h>
+#include <xrpl/ledger/entries/TicketEntry.h>
 
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/SeqProxy.h>

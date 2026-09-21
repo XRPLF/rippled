@@ -1,4 +1,4 @@
-#include <xrpl/ledger/helpers/DelegateEntry.h>
+#include <xrpl/ledger/entries/DelegateEntry.h>
 
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Keylet.h>

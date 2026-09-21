@@ -1,4 +1,4 @@
-#include <xrpl/ledger/helpers/CheckEntry.h>
+#include <xrpl/ledger/entries/CheckEntry.h>
 
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/SeqProxy.h>

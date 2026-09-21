@@ -1,4 +1,4 @@
-#include <xrpl/ledger/helpers/OracleEntry.h>
+#include <xrpl/ledger/entries/OracleEntry.h>
 
 #include <xrpl/protocol/Indexes.h>
 

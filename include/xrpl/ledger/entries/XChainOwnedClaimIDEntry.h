@@ -3,36 +3,36 @@
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
-#include <xrpl/ledger/helpers/SLEBase.h>
-#include <xrpl/protocol/AccountID.h>
+#include <xrpl/ledger/entries/SLEBase.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/STXChainBridge.h>
 
 #include <cstdint>
 
 namespace xrpl {
 
 template <typename ViewT>
-class OracleEntry : public SLEBase<ViewT, ltORACLE>
+class XChainOwnedClaimIDEntry : public SLEBase<ViewT, ltXCHAIN_OWNED_CLAIM_ID>
 {
 public:
-    using Base = SLEBase<ViewT, ltORACLE>;
+    using Base = SLEBase<ViewT, ltXCHAIN_OWNED_CLAIM_ID>;
 
     // Inherit base constructors: adopt an existing SLE, or resolve one from a
     // Keylet against the view.
     using Base::Base;
 
-    explicit OracleEntry(
-        AccountID const& account,
-        std::uint32_t documentID,
+    explicit XChainOwnedClaimIDEntry(
+        STXChainBridge const& bridge,
+        std::uint64_t seq,
         Base::ViewRefType view,
         beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
-        : Base(keylet::oracle(account, documentID), view, j)
+        : Base(keylet::xChainClaimID(bridge, seq), view, j)
     {
     }
 };
 
-using OracleEntryR = OracleEntry<ReadView>;
-using OracleEntryW = OracleEntry<ApplyView>;
+using XChainOwnedClaimIDEntryR = XChainOwnedClaimIDEntry<ReadView>;
+using XChainOwnedClaimIDEntryW = XChainOwnedClaimIDEntry<ApplyView>;
 
 }  // namespace xrpl

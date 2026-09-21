@@ -1,4 +1,4 @@
-#include <xrpl/ledger/helpers/AccountRootEntry.h>
+#include <xrpl/ledger/entries/AccountRootEntry.h>
 
 #include <xrpl/protocol/Indexes.h>
 

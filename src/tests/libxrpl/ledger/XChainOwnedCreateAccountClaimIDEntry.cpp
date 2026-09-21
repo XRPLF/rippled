@@ -1,4 +1,4 @@
-#include <xrpl/ledger/helpers/XChainOwnedCreateAccountClaimIDEntry.h>
+#include <xrpl/ledger/entries/XChainOwnedCreateAccountClaimIDEntry.h>
 
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Issue.h>

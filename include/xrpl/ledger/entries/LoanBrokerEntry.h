@@ -4,7 +4,7 @@
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
-#include <xrpl/ledger/helpers/SLEBase.h>
+#include <xrpl/ledger/entries/SLEBase.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/LedgerFormats.h>
@@ -13,34 +13,34 @@
 namespace xrpl {
 
 template <typename ViewT>
-class PermissionedDomainEntry : public SLEBase<ViewT, ltPERMISSIONED_DOMAIN>
+class LoanBrokerEntry : public SLEBase<ViewT, ltLOAN_BROKER>
 {
 public:
-    using Base = SLEBase<ViewT, ltPERMISSIONED_DOMAIN>;
+    using Base = SLEBase<ViewT, ltLOAN_BROKER>;
 
     // Inherit base constructors: adopt an existing SLE, or resolve one from a
     // Keylet against the view.
     using Base::Base;
 
-    explicit PermissionedDomainEntry(
-        AccountID const& account,
+    explicit LoanBrokerEntry(
+        AccountID const& owner,
         SeqProxy const& seq,
         Base::ViewRefType view,
         beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
-        : Base(keylet::permissionedDomain(account, seq), view, j)
+        : Base(keylet::loanBroker(owner, seq), view, j)
     {
     }
 
-    explicit PermissionedDomainEntry(
-        uint256 const& domainID,
+    explicit LoanBrokerEntry(
+        uint256 const& loanBrokerID,
         Base::ViewRefType view,
         beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
-        : Base(keylet::permissionedDomain(domainID), view, j)
+        : Base(keylet::loanBroker(loanBrokerID), view, j)
     {
     }
 };
 
-using PermissionedDomainEntryR = PermissionedDomainEntry<ReadView>;
-using PermissionedDomainEntryW = PermissionedDomainEntry<ApplyView>;
+using LoanBrokerEntryR = LoanBrokerEntry<ReadView>;
+using LoanBrokerEntryW = LoanBrokerEntry<ApplyView>;
 
 }  // namespace xrpl

@@ -3,31 +3,34 @@
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
-#include <xrpl/ledger/helpers/SLEBase.h>
+#include <xrpl/ledger/entries/SLEBase.h>
+#include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/LedgerFormats.h>
 
 namespace xrpl {
 
 template <typename ViewT>
-class NegativeUNLEntry : public SLEBase<ViewT, ltNEGATIVE_UNL>
+class SponsorshipEntry : public SLEBase<ViewT, ltSPONSORSHIP>
 {
 public:
-    using Base = SLEBase<ViewT, ltNEGATIVE_UNL>;
+    using Base = SLEBase<ViewT, ltSPONSORSHIP>;
 
     // Inherit base constructors: adopt an existing SLE, or resolve one from a
     // Keylet against the view.
     using Base::Base;
 
-    explicit NegativeUNLEntry(
+    explicit SponsorshipEntry(
+        AccountID const& sponsor,
+        AccountID const& sponsee,
         Base::ViewRefType view,
         beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
-        : Base(keylet::negativeUNL(), view, j)
+        : Base(keylet::sponsorship(sponsor, sponsee), view, j)
     {
     }
 };
 
-using NegativeUNLEntryR = NegativeUNLEntry<ReadView>;
-using NegativeUNLEntryW = NegativeUNLEntry<ApplyView>;
+using SponsorshipEntryR = SponsorshipEntry<ReadView>;
+using SponsorshipEntryW = SponsorshipEntry<ApplyView>;
 
 }  // namespace xrpl

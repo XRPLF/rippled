@@ -1,4 +1,4 @@
-#include <xrpl/ledger/helpers/AMMEntry.h>
+#include <xrpl/ledger/entries/AMMEntry.h>
 
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Indexes.h>

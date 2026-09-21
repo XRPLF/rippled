@@ -1,4 +1,4 @@
-#include <xrpl/ledger/helpers/LedgerHashesEntry.h>
+#include <xrpl/ledger/entries/LedgerHashesEntry.h>
 
 #include <xrpl/protocol/Indexes.h>
 
