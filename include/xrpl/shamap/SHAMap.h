@@ -35,7 +35,6 @@
 
 namespace xrpl {
 
-class SHAMapNodeID;
 class SHAMapSyncFilter;
 
 /**

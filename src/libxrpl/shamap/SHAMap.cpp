@@ -581,7 +581,7 @@ SHAMap::upperBound(uint256 const& id) const
     walkTowardsKey(id, &stack);
     while (!stack.empty())
     {
-        auto [node, nodeID] = stack.top();
+        auto const [node, nodeID] = stack.top();
         if (node->isLeaf())
         {
             auto leaf = safeDowncast<SHAMapLeafNode*>(node.get());
@@ -614,7 +614,7 @@ SHAMap::lowerBound(uint256 const& id) const
     walkTowardsKey(id, &stack);
     while (!stack.empty())
     {
-        auto [node, nodeID] = stack.top();
+        auto const [node, nodeID] = stack.top();
         if (node->isLeaf())
         {
             auto leaf = safeDowncast<SHAMapLeafNode*>(node.get());

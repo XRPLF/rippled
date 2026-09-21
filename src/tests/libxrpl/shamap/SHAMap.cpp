@@ -418,6 +418,41 @@ TEST_F(SHAMapTraversal, bounds_agree_with_iteration_for_absent_keys)
             EXPECT_EQ(lower->key(), keys[lowerCount - 1]) << "probe " << static_cast<unsigned>(c);
         }
     }
+
+    // Probe keys that land on a leaf and require the leaf-pop-and-resume case. Keys share
+    // "abcde" as a prefix and vary the 6th nibble, so a probe that shares the full prefix
+    // but differs in the padding hits a leaf from either side: '0' padded with '0' lands below
+    // the first key, and 'f' padded with 'f' lands above the last.
+    for (char const nibble : {'0', 'f'})
+    {
+        auto text = std::string("abcde") + nibble;
+        text.append(64 - text.size(), nibble);
+        uint256 const probe{std::string_view{text}};
+
+        auto const expectedUpper = std::ranges::upper_bound(keys, probe);
+        auto const upper = map.upperBound(probe);
+        if (expectedUpper == keys.end())
+        {
+            EXPECT_EQ(upper, map.end()) << "nibble " << nibble;
+        }
+        else
+        {
+            ASSERT_NE(upper, map.end()) << "nibble " << nibble;
+            EXPECT_EQ(upper->key(), *expectedUpper) << "nibble " << nibble;
+        }
+
+        auto const lowerCount = std::ranges::lower_bound(keys, probe) - keys.begin();
+        auto const lower = map.lowerBound(probe);
+        if (lowerCount == 0)
+        {
+            EXPECT_EQ(lower, map.end()) << "nibble " << nibble;
+        }
+        else
+        {
+            ASSERT_NE(lower, map.end()) << "nibble " << nibble;
+            EXPECT_EQ(lower->key(), keys[lowerCount - 1]) << "nibble " << nibble;
+        }
+    }
 }
 
 TEST_F(SHAMapTraversal, iteration_survives_deletions)
