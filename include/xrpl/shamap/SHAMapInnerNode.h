@@ -19,7 +19,8 @@ class SHAMapInnerNode final : public SHAMapTreeNode, public CountedObject<SHAMap
 {
 public:
     /**
-     * Each inner node has 16 children (the 'radix tree' part of the map)
+     * Each inner node has 16 children, which is the fan-out of the trie: one
+     * branch per value of the key nibble that level selects on.
      */
     static constexpr unsigned int kBranchFactor = 16;
 

@@ -144,9 +144,31 @@ deserializeSHAMapNodeID(std::string_view s)
 /** @} */
 
 /**
- * Returns the branch that would contain the given hash
+ * Returns the branch at the given depth that would contain the given hash
+ *
+ * Only the depth of a position matters here, since the nibble selected is read
+ * from `hash`. Callers holding a depth rather than a whole ID use this one.
+ *
+ * @param depth the depth of the node whose branch to select.
+ * @param hash the key whose nibble at that depth names the branch.
+ * @return the branch containing the hash.
  */
 [[nodiscard]] unsigned int
-selectBranch(SHAMapNodeID const& id, uint256 const& hash);
+selectBranch(unsigned int depth, uint256 const& hash);
+
+/**
+ * Returns the branch that would contain the given hash
+ *
+ * Reads only the depth of `id`, never its own key bits.
+ *
+ * @param id the node whose depth to read.
+ * @param hash the key whose nibble at that depth names the branch.
+ * @return the branch containing the hash.
+ */
+[[nodiscard]] inline unsigned int
+selectBranch(SHAMapNodeID const& id, uint256 const& hash)
+{
+    return selectBranch(id.getDepth(), hash);
+}
 
 }  // namespace xrpl

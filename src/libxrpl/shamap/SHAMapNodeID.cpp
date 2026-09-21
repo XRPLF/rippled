@@ -144,16 +144,17 @@ deserializeSHAMapNodeID(void const* data, std::size_t size)
 }
 
 [[nodiscard]] unsigned int
-selectBranch(SHAMapNodeID const& id, uint256 const& hash)
+selectBranch(unsigned int depth, uint256 const& hash)
 {
-    XRPL_ASSERT(id.getDepth() < SHAMap::kLeafDepth, "xrpl::selectBranch : depth below leaf depth");
+    XRPL_ASSERT(depth < SHAMap::kLeafDepth, "xrpl::selectBranch : depth below leaf depth");
 
-    // A depth-64 ID has no nibble left to select. Callers must not ask, but clamp anyway to keep
-    // the read below the end of the 32-byte key.
-    auto const depth = std::min(id.getDepth(), SHAMap::kLeafDepth - 1u);
-    auto branch = static_cast<unsigned int>(*(hash.begin() + (depth / 2)));
+    // A depth-64 position has no nibble left to select. Callers must not ask, but clamp anyway to
+    // keep the read below the end of the 32-byte key.
+    auto const clamped = std::min(depth, SHAMap::kLeafDepth - 1u);
+    auto branch = static_cast<unsigned int>(*(hash.begin() + (clamped / 2)));
 
-    if ((depth & 1) != 0u)
+    // The byte index and the nibble choice must come from the same value, so both read `clamped`.
+    if ((clamped & 1) != 0u)
     {
         branch &= 0xf;
     }
