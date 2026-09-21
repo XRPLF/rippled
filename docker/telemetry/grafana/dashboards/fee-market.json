@@ -474,7 +474,8 @@
       "fieldConfig": {
         "defaults": {
           "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
-          "unit": "suffix: transactions/s",
+          "unit": "si: transactions/s",
+          "decimals": 0,
           "custom": {
             "axisLabel": "Transactions / Sec",
             "spanNulls": 1800000,
@@ -523,7 +524,8 @@
       "fieldConfig": {
         "defaults": {
           "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
-          "unit": "suffix: transactions/s",
+          "unit": "si: transactions/s",
+          "decimals": 0,
           "custom": {
             "axisLabel": "Transactions / Sec",
             "spanNulls": 1800000,
