@@ -190,7 +190,8 @@
       "fieldConfig": {
         "defaults": {
           "displayName": "${__field.labels.series} [${__field.labels.service_instance_id} ${__field.labels.xrpl_branch} ${__field.labels.xrpl_node_role} ${__field.labels.xrpl_work_item}]",
-          "unit": "suffix: jobs/s",
+          "unit": "si: jobs/s",
+          "decimals": 0,
           "custom": {
             "drawStyle": "line",
             "lineWidth": 1,
@@ -247,7 +248,8 @@
       "fieldConfig": {
         "defaults": {
           "displayName": "${__field.labels.series} [${__field.labels.service_instance_id} ${__field.labels.xrpl_branch} ${__field.labels.xrpl_node_role} ${__field.labels.xrpl_work_item}]",
-          "unit": "suffix: jobs/s",
+          "unit": "si: jobs/s",
+          "decimals": 0,
           "custom": {
             "drawStyle": "line",
             "lineWidth": 1,
@@ -304,7 +306,8 @@
       "fieldConfig": {
         "defaults": {
           "displayName": "${__field.labels.series} [${__field.labels.service_instance_id} ${__field.labels.xrpl_branch} ${__field.labels.xrpl_node_role} ${__field.labels.xrpl_work_item}]",
-          "unit": "suffix: jobs/s",
+          "unit": "si: jobs/s",
+          "decimals": 0,
           "custom": {
             "drawStyle": "line",
             "lineWidth": 1,
@@ -555,7 +558,8 @@
       "fieldConfig": {
         "defaults": {
           "displayName": "${__field.labels.series} [${__field.labels.service_instance_id} ${__field.labels.xrpl_branch} ${__field.labels.xrpl_node_role} ${__field.labels.xrpl_work_item}]",
-          "unit": "suffix: overflows/min",
+          "unit": "si: overflows/min",
+          "decimals": 0,
           "thresholds": {
             "steps": [
               {

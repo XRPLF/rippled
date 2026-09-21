@@ -84,7 +84,8 @@
       "fieldConfig": {
         "defaults": {
           "displayName": "${__field.labels.xrpl_ident}",
-          "unit": "suffix: transactions/s",
+          "unit": "si: transactions/s",
+          "decimals": 0,
           "thresholds": {
             "steps": [
               {
@@ -214,7 +215,8 @@
       "fieldConfig": {
         "defaults": {
           "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
-          "unit": "suffix: transactions/s",
+          "unit": "si: transactions/s",
+          "decimals": 0,
           "custom": {
             "axisLabel": "Transactions / Sec",
             "spanNulls": 1800000,
@@ -267,7 +269,8 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "unit": "suffix: transactions/s",
+          "unit": "si: transactions/s",
+          "decimals": 0,
           "custom": {
             "axisLabel": "Transactions / Sec",
             "spanNulls": 1800000,
@@ -317,7 +320,8 @@
       "fieldConfig": {
         "defaults": {
           "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
-          "unit": "suffix: transactions/s",
+          "unit": "si: transactions/s",
+          "decimals": 0,
           "custom": {
             "axisLabel": "Transactions / Sec",
             "spanNulls": 1800000,
@@ -373,7 +377,8 @@
       "fieldConfig": {
         "defaults": {
           "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
-          "unit": "suffix: transactions/s",
+          "unit": "si: transactions/s",
+          "decimals": 0,
           "custom": {
             "axisLabel": "Transactions / Sec",
             "spanNulls": 1800000,
@@ -764,7 +769,8 @@
       "fieldConfig": {
         "defaults": {
           "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
-          "unit": "suffix: failures/s",
+          "unit": "si: failures/s",
+          "decimals": 0,
           "custom": {
             "axisLabel": "Failures / Sec",
             "spanNulls": 1800000,
@@ -925,7 +931,8 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "unit": "suffix: failures/s",
+          "unit": "si: failures/s",
+          "decimals": 0,
           "custom": {
             "axisLabel": "Failures / Sec",
             "spanNulls": 1800000,
@@ -1037,7 +1044,8 @@
       "fieldConfig": {
         "defaults": {
           "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
-          "unit": "suffix: enqueues/s",
+          "unit": "si: enqueues/s",
+          "decimals": 0,
           "custom": {
             "axisLabel": "Enqueues / Sec",
             "spanNulls": 1800000,
@@ -1135,7 +1143,8 @@
       "fieldConfig": {
         "defaults": {
           "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
-          "unit": "suffix: cleanups/s",
+          "unit": "si: cleanups/s",
+          "decimals": 0,
           "custom": {
             "axisLabel": "Cleanups / Sec",
             "spanNulls": 1800000,
