@@ -1163,6 +1163,24 @@ public:
                     sponsor::SponseeAcc(alice),
                     Ter(temMALFORMED));
             }
+
+            // Post-fixCleanup3_5_0, a zero ObjectID is malformed.
+            if (features[fixCleanup3_5_0])
+            {
+                uint256 const zeroObjectID{};
+
+                env(sponsor::transfer(alice, tfSponsorshipEnd, zeroObjectID), Ter(temMALFORMED));
+
+                env(sponsor::transfer(alice, tfSponsorshipCreate, zeroObjectID),
+                    sponsor::As(sponsor, spfSponsorReserve),
+                    Sig(sfSponsorSignature, sponsor),
+                    Ter(temMALFORMED));
+
+                env(sponsor::transfer(alice, tfSponsorshipReassign, zeroObjectID),
+                    sponsor::As(sponsor, spfSponsorReserve),
+                    Sig(sfSponsorSignature, sponsor),
+                    Ter(temMALFORMED));
+            }
         }
 
         {
