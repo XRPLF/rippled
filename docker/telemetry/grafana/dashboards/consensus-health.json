@@ -32,6 +32,10 @@
         "y": 1
       },
       "options": {
+        "annotations": {
+          "clustering": -1,
+          "multiLane": true
+        },
         "tooltip": {
           "mode": "multi",
           "sort": "desc",
@@ -135,6 +139,10 @@
         "y": 22
       },
       "options": {
+        "annotations": {
+          "clustering": -1,
+          "multiLane": true
+        },
         "tooltip": {
           "mode": "multi",
           "sort": "desc",
@@ -180,6 +188,10 @@
         "y": 22
       },
       "options": {
+        "annotations": {
+          "clustering": -1,
+          "multiLane": true
+        },
         "tooltip": {
           "mode": "multi",
           "sort": "desc",
@@ -243,6 +255,10 @@
         }
       ],
       "options": {
+        "annotations": {
+          "clustering": -1,
+          "multiLane": true
+        },
         "tooltip": {
           "mode": "multi",
           "sort": "desc",
@@ -288,6 +304,10 @@
         }
       ],
       "options": {
+        "annotations": {
+          "clustering": -1,
+          "multiLane": true
+        },
         "tooltip": {
           "mode": "multi",
           "sort": "desc",
@@ -323,6 +343,10 @@
         "y": 42
       },
       "options": {
+        "annotations": {
+          "clustering": -1,
+          "multiLane": true
+        },
         "tooltip": {
           "mode": "multi",
           "sort": "desc",
@@ -368,6 +392,10 @@
         "y": 42
       },
       "options": {
+        "annotations": {
+          "clustering": -1,
+          "multiLane": true
+        },
         "tooltip": {
           "mode": "multi",
           "sort": "desc",
@@ -421,6 +449,10 @@
         "y": 52
       },
       "options": {
+        "annotations": {
+          "clustering": -1,
+          "multiLane": true
+        },
         "tooltip": {
           "mode": "multi",
           "sort": "desc",
@@ -555,6 +587,10 @@
         "overrides": []
       },
       "options": {
+        "annotations": {
+          "clustering": -1,
+          "multiLane": true
+        },
         "tooltip": {
           "mode": "multi",
           "sort": "desc",
@@ -605,6 +641,10 @@
         "overrides": []
       },
       "options": {
+        "annotations": {
+          "clustering": -1,
+          "multiLane": true
+        },
         "tooltip": {
           "mode": "multi",
           "sort": "desc",
@@ -687,6 +727,10 @@
         ]
       },
       "options": {
+        "annotations": {
+          "clustering": -1,
+          "multiLane": true
+        },
         "tooltip": {
           "mode": "multi",
           "sort": "desc",
@@ -743,6 +787,10 @@
         "overrides": []
       },
       "options": {
+        "annotations": {
+          "clustering": -1,
+          "multiLane": true
+        },
         "tooltip": {
           "mode": "multi",
           "sort": "desc",
@@ -875,6 +923,10 @@
         "y": 104
       },
       "options": {
+        "annotations": {
+          "clustering": -1,
+          "multiLane": true
+        },
         "tooltip": {
           "mode": "multi",
           "sort": "desc",
@@ -928,6 +980,10 @@
         "y": 104
       },
       "options": {
+        "annotations": {
+          "clustering": -1,
+          "multiLane": true
+        },
         "tooltip": {
           "mode": "multi",
           "sort": "desc",
@@ -981,6 +1037,10 @@
         "y": 114
       },
       "options": {
+        "annotations": {
+          "clustering": -1,
+          "multiLane": true
+        },
         "tooltip": {
           "mode": "multi",
           "sort": "desc",
@@ -1047,6 +1107,10 @@
         "y": 125
       },
       "options": {
+        "annotations": {
+          "clustering": -1,
+          "multiLane": true
+        },
         "tooltip": {
           "mode": "multi",
           "sort": "desc",
@@ -1100,6 +1164,10 @@
         "y": 125
       },
       "options": {
+        "annotations": {
+          "clustering": -1,
+          "multiLane": true
+        },
         "tooltip": {
           "mode": "multi",
           "sort": "desc",
@@ -1153,6 +1221,10 @@
         "y": 135
       },
       "options": {
+        "annotations": {
+          "clustering": -1,
+          "multiLane": true
+        },
         "tooltip": {
           "mode": "multi",
           "sort": "desc",

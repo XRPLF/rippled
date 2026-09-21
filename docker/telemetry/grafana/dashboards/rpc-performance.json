@@ -146,6 +146,10 @@
         "y": 30
       },
       "options": {
+        "annotations": {
+          "clustering": -1,
+          "multiLane": true
+        },
         "tooltip": {
           "mode": "multi",
           "sort": "desc",
@@ -191,6 +195,10 @@
         "y": 30
       },
       "options": {
+        "annotations": {
+          "clustering": -1,
+          "multiLane": true
+        },
         "tooltip": {
           "mode": "multi",
           "sort": "desc",
@@ -288,6 +296,10 @@
         "y": 40
       },
       "options": {
+        "annotations": {
+          "clustering": -1,
+          "multiLane": true
+        },
         "tooltip": {
           "mode": "multi",
           "sort": "desc",
@@ -341,6 +353,10 @@
         "y": 50
       },
       "options": {
+        "annotations": {
+          "clustering": -1,
+          "multiLane": true
+        },
         "tooltip": {
           "mode": "multi",
           "sort": "desc",
@@ -394,6 +410,10 @@
         "y": 60
       },
       "options": {
+        "annotations": {
+          "clustering": -1,
+          "multiLane": true
+        },
         "tooltip": {
           "mode": "multi",
           "sort": "desc",
@@ -444,6 +464,10 @@
         "y": 70
       },
       "options": {
+        "annotations": {
+          "clustering": -1,
+          "multiLane": true
+        },
         "tooltip": {
           "mode": "multi",
           "sort": "desc",

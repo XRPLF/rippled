@@ -106,6 +106,10 @@
         "y": 21
       },
       "options": {
+        "annotations": {
+          "clustering": -1,
+          "multiLane": true
+        },
         "tooltip": {
           "mode": "multi",
           "sort": "desc",
@@ -224,6 +228,10 @@
         "y": 32
       },
       "options": {
+        "annotations": {
+          "clustering": -1,
+          "multiLane": true
+        },
         "tooltip": {
           "mode": "multi",
           "sort": "desc",
@@ -277,6 +285,10 @@
         "y": 32
       },
       "options": {
+        "annotations": {
+          "clustering": -1,
+          "multiLane": true
+        },
         "tooltip": {
           "mode": "multi",
           "sort": "desc",
@@ -372,6 +384,10 @@
         "y": 53
       },
       "options": {
+        "annotations": {
+          "clustering": -1,
+          "multiLane": true
+        },
         "tooltip": {
           "mode": "multi",
           "sort": "desc",
