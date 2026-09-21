@@ -339,17 +339,36 @@ Payment::checkGranularSemantics(
             bool const accountIsHolder =
                 accountIsLow ? rawBalance > beast::kZero : rawBalance < beast::kZero;
 
+            bool const mayIssue =
+                heldGranularPermissions.contains(PaymentMint) && destLimit > beast::kZero;
+
             // PaymentMint requires the destination to be the holder and the account to be the
             // issuer. destLimit > 0: destination is willing to hold account's IOUs (account is the
             // issuer). !accountIsHolder: DirectStepI will issue, not redeem.
-            if (heldGranularPermissions.contains(PaymentMint) && destLimit > beast::kZero &&
-                !accountIsHolder)
+            if (mayIssue && !accountIsHolder)
                 return tesSUCCESS;
 
             // PaymentBurn requires the source account to be the holder and the destination to be
             // the issuer. accountIsHolder: DirectStepI will redeem, not issue.
             if (heldGranularPermissions.contains(PaymentBurn) && accountIsHolder)
-                return tesSUCCESS;
+            {
+                if (view.rules().enabled(fixCleanup3_4_0))
+                {
+                    // Redeeming stops at the balance held; beyond that the payment engine
+                    // crosses zero and issues the account's own IOUs, which is a mint. So with
+                    // only PaymentBurn we must check the amount against the balance held. The
+                    // granular template forbids sfPaths, tfPartialPayment and a cross-asset
+                    // sfSendMax, so this is a single direct step, sfAmount is what the
+                    // trustline is debited.
+                    STAmount const held = accountIsLow ? rawBalance : -rawBalance;
+                    if (dstAmount <= held || mayIssue)
+                        return tesSUCCESS;
+                }
+                else
+                {
+                    return tesSUCCESS;
+                }
+            }
 
             return terNO_DELEGATE_PERMISSION;
         });
