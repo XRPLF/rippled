@@ -2,6 +2,7 @@
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
+#include <tx/wasm/fixtures/BytesHelpers.h>
 #include <tx/wasm/fixtures/HostContextFixture.h>
 
 #include <cstdint>
@@ -13,15 +14,13 @@ namespace xrpl::test {
 // No D or F axis: `getLedgerSqn` takes no argument, so there is nothing to decode wrong and
 // nothing whose forwarded identity to check.
 //
-// Named `LedgerSqnDirectCall`, not `LedgerSqnCall`: `host_calls/LedgerSqn.cpp` already owns
-// that name in the same gtest binary.
-struct LedgerSqnDirectCall : HostContextTest
+struct LedgerSqnCall : HostContextTest
 {
     static constexpr std::uint32_t kLedgerSqn = 0x12345678;
     Bytes const expectedBytes = bytesOfScalar(kLedgerSqn);
 };
 
-TEST_F(LedgerSqnDirectCall, HostValueIsWrittenAsLittleEndianBytes)
+TEST_F(LedgerSqnCall, HostValueIsWrittenAsLittleEndianBytes)
 {
     EXPECT_CALL(host, getLedgerSqn()).WillOnce(testing::Return(kLedgerSqn));
 
@@ -30,7 +29,7 @@ TEST_F(LedgerSqnDirectCall, HostValueIsWrittenAsLittleEndianBytes)
     EXPECT_TRUE(out.holds(bytesOf(expectedBytes)));
 }
 
-TEST_F(LedgerSqnDirectCall, HostErrorBecomesContractReturnValue)
+TEST_F(LedgerSqnCall, HostErrorBecomesContractReturnValue)
 {
     EXPECT_CALL(host, getLedgerSqn())
         .WillOnce(testing::Return(std::unexpected(HostFunctionError::Unimplemented)));
@@ -41,7 +40,7 @@ TEST_F(LedgerSqnDirectCall, HostErrorBecomesContractReturnValue)
     EXPECT_FALSE(out.wasWritten());
 }
 
-TEST_F(LedgerSqnDirectCall, HostExceptionBecomesInternalFatalAndIsLogged)
+TEST_F(LedgerSqnCall, HostExceptionBecomesInternalFatalAndIsLogged)
 {
     EXPECT_CALL(host, getLedgerSqn())
         .WillOnce(testing::Throw(std::runtime_error{"ledger sqn came apart"}));
@@ -55,7 +54,7 @@ TEST_F(LedgerSqnDirectCall, HostExceptionBecomesInternalFatalAndIsLogged)
 
 // The out-region contract: write only if the whole value fits, and return the true length
 // either way.
-TEST_F(LedgerSqnDirectCall, ShortOutRegionWritesNothingAndReturnsTrueLength)
+TEST_F(LedgerSqnCall, ShortOutRegionWritesNothingAndReturnsTrueLength)
 {
     EXPECT_CALL(host, getLedgerSqn()).WillOnce(testing::Return(kLedgerSqn));
 
@@ -64,7 +63,7 @@ TEST_F(LedgerSqnDirectCall, ShortOutRegionWritesNothingAndReturnsTrueLength)
     EXPECT_FALSE(out.wasWritten());
 }
 
-TEST_F(LedgerSqnDirectCall, OutRegionOfExactSizeIsWritten)
+TEST_F(LedgerSqnCall, OutRegionOfExactSizeIsWritten)
 {
     EXPECT_CALL(host, getLedgerSqn()).WillOnce(testing::Return(kLedgerSqn));
 

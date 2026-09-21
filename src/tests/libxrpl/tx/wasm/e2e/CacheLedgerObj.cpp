@@ -19,7 +19,7 @@ namespace xrpl::test {
 // hands those same bytes back to the host and answers with a slot number, and `le_field`
 // uses that slot to read the object. The slot table is the one piece of host state that
 // outlives a single call, so this is the only test at any layer that can catch the two ends
-// of that state disagreeing — `host_calls` mocks the host, so its slot numbers are whatever
+// of that state disagreeing — `guest_calls` mocks the host, so its slot numbers are whatever
 // the mock was told to return, and `host_functions` calls the impl directly, so its slots
 // never cross the guest boundary at all.
 struct CacheLedgerObjE2e : RealVmTest
