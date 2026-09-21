@@ -67,6 +67,10 @@
         "y": 0
       },
       "options": {
+        "annotations": {
+          "clustering": -1,
+          "multiLane": true
+        },
         "tooltip": {
           "maxHeight": 600,
           "mode": "multi",
@@ -147,6 +151,10 @@
         "y": 0
       },
       "options": {
+        "annotations": {
+          "clustering": -1,
+          "multiLane": true
+        },
         "tooltip": {
           "maxHeight": 600,
           "mode": "multi",
@@ -227,6 +235,10 @@
         "y": 10
       },
       "options": {
+        "annotations": {
+          "clustering": -1,
+          "multiLane": true
+        },
         "tooltip": {
           "maxHeight": 600,
           "mode": "multi",
@@ -310,6 +322,10 @@
         "y": 10
       },
       "options": {
+        "annotations": {
+          "clustering": -1,
+          "multiLane": true
+        },
         "tooltip": {
           "maxHeight": 600,
           "mode": "multi",
@@ -376,6 +392,10 @@
         "y": 20
       },
       "options": {
+        "annotations": {
+          "clustering": -1,
+          "multiLane": true
+        },
         "tooltip": {
           "maxHeight": 600,
           "mode": "multi",
@@ -442,6 +462,10 @@
         "y": 20
       },
       "options": {
+        "annotations": {
+          "clustering": -1,
+          "multiLane": true
+        },
         "tooltip": {
           "maxHeight": 600,
           "mode": "multi",
@@ -525,6 +549,10 @@
         "y": 30
       },
       "options": {
+        "annotations": {
+          "clustering": -1,
+          "multiLane": true
+        },
         "tooltip": {
           "maxHeight": 600,
           "mode": "multi",
@@ -591,6 +619,10 @@
         "y": 30
       },
       "options": {
+        "annotations": {
+          "clustering": -1,
+          "multiLane": true
+        },
         "tooltip": {
           "maxHeight": 600,
           "mode": "multi",

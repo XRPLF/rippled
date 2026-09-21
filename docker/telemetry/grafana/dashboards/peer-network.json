@@ -80,6 +80,10 @@
         "y": 1
       },
       "options": {
+        "annotations": {
+          "clustering": -1,
+          "multiLane": true
+        },
         "tooltip": {
           "maxHeight": 600,
           "mode": "multi",
@@ -125,6 +129,10 @@
         "y": 1
       },
       "options": {
+        "annotations": {
+          "clustering": -1,
+          "multiLane": true
+        },
         "tooltip": {
           "maxHeight": 600,
           "mode": "multi",

@@ -128,6 +128,10 @@
         "y": 10
       },
       "options": {
+        "annotations": {
+          "clustering": -1,
+          "multiLane": true
+        },
         "tooltip": {
           "maxHeight": 600,
           "mode": "multi",
@@ -178,6 +182,10 @@
         "y": 10
       },
       "options": {
+        "annotations": {
+          "clustering": -1,
+          "multiLane": true
+        },
         "tooltip": {
           "maxHeight": 600,
           "mode": "multi",
@@ -240,6 +248,10 @@
         "y": 20
       },
       "options": {
+        "annotations": {
+          "clustering": -1,
+          "multiLane": true
+        },
         "tooltip": {
           "maxHeight": 600,
           "mode": "multi",
@@ -290,6 +302,10 @@
         "y": 20
       },
       "options": {
+        "annotations": {
+          "clustering": -1,
+          "multiLane": true
+        },
         "tooltip": {
           "maxHeight": 600,
           "mode": "multi",
@@ -340,6 +356,10 @@
         "y": 30
       },
       "options": {
+        "annotations": {
+          "clustering": -1,
+          "multiLane": true
+        },
         "tooltip": {
           "maxHeight": 600,
           "mode": "multi",
@@ -402,6 +422,10 @@
         "y": 30
       },
       "options": {
+        "annotations": {
+          "clustering": -1,
+          "multiLane": true
+        },
         "tooltip": {
           "maxHeight": 600,
           "mode": "multi",
@@ -452,6 +476,10 @@
         "y": 40
       },
       "options": {
+        "annotations": {
+          "clustering": -1,
+          "multiLane": true
+        },
         "tooltip": {
           "maxHeight": 600,
           "mode": "multi",
@@ -502,6 +530,10 @@
         "y": 40
       },
       "options": {
+        "annotations": {
+          "clustering": -1,
+          "multiLane": true
+        },
         "tooltip": {
           "maxHeight": 600,
           "mode": "multi",
@@ -564,6 +596,10 @@
         "y": 50
       },
       "options": {
+        "annotations": {
+          "clustering": -1,
+          "multiLane": true
+        },
         "tooltip": {
           "maxHeight": 600,
           "mode": "multi",
@@ -614,6 +650,10 @@
         "y": 50
       },
       "options": {
+        "annotations": {
+          "clustering": -1,
+          "multiLane": true
+        },
         "tooltip": {
           "maxHeight": 600,
           "mode": "multi",
@@ -658,6 +698,10 @@
         "y": 60
       },
       "options": {
+        "annotations": {
+          "clustering": -1,
+          "multiLane": true
+        },
         "tooltip": {
           "maxHeight": 600,
           "mode": "multi",
@@ -708,6 +752,10 @@
         "y": 60
       },
       "options": {
+        "annotations": {
+          "clustering": -1,
+          "multiLane": true
+        },
         "tooltip": {
           "maxHeight": 600,
           "mode": "multi",
@@ -752,6 +800,10 @@
         "y": 70
       },
       "options": {
+        "annotations": {
+          "clustering": -1,
+          "multiLane": true
+        },
         "tooltip": {
           "maxHeight": 600,
           "mode": "multi",
@@ -808,6 +860,10 @@
         "y": 70
       },
       "options": {
+        "annotations": {
+          "clustering": -1,
+          "multiLane": true
+        },
         "tooltip": {
           "maxHeight": 600,
           "mode": "multi",
@@ -901,6 +957,10 @@
         "y": 81
       },
       "options": {
+        "annotations": {
+          "clustering": -1,
+          "multiLane": true
+        },
         "tooltip": {
           "maxHeight": 600,
           "mode": "multi",
@@ -1026,6 +1086,10 @@
         "y": 81
       },
       "options": {
+        "annotations": {
+          "clustering": -1,
+          "multiLane": true
+        },
         "tooltip": {
           "maxHeight": 600,
           "mode": "multi",
@@ -1078,7 +1142,12 @@
         "y": 91
       },
       "options": {
+        "annotations": {
+          "clustering": -1,
+          "multiLane": true
+        },
         "mergeValues": true,
+        "perPage": 5,
         "showValue": "auto",
         "alignValue": "left",
         "rowHeight": 0.9,
@@ -1191,6 +1260,10 @@
         "y": 91
       },
       "options": {
+        "annotations": {
+          "clustering": -1,
+          "multiLane": true
+        },
         "tooltip": {
           "maxHeight": 600,
           "mode": "multi",
@@ -1260,6 +1333,10 @@
         "y": 101
       },
       "options": {
+        "annotations": {
+          "clustering": -1,
+          "multiLane": true
+        },
         "tooltip": {
           "maxHeight": 600,
           "mode": "multi",
@@ -1340,6 +1417,10 @@
         "y": 101
       },
       "options": {
+        "annotations": {
+          "clustering": -1,
+          "multiLane": true
+        },
         "tooltip": {
           "maxHeight": 600,
           "mode": "multi",
@@ -1385,6 +1466,10 @@
         "y": 111
       },
       "options": {
+        "annotations": {
+          "clustering": -1,
+          "multiLane": true
+        },
         "tooltip": {
           "maxHeight": 600,
           "mode": "multi",
@@ -1430,6 +1515,10 @@
         "y": 111
       },
       "options": {
+        "annotations": {
+          "clustering": -1,
+          "multiLane": true
+        },
         "tooltip": {
           "maxHeight": 600,
           "mode": "multi",
@@ -1475,6 +1564,10 @@
         "y": 121
       },
       "options": {
+        "annotations": {
+          "clustering": -1,
+          "multiLane": true
+        },
         "tooltip": {
           "maxHeight": 600,
           "mode": "multi",
@@ -1567,6 +1660,10 @@
         "y": 121
       },
       "options": {
+        "annotations": {
+          "clustering": -1,
+          "multiLane": true
+        },
         "tooltip": {
           "maxHeight": 600,
           "mode": "multi",
@@ -1613,6 +1710,10 @@
         "y": 131
       },
       "options": {
+        "annotations": {
+          "clustering": -1,
+          "multiLane": true
+        },
         "tooltip": {
           "maxHeight": 600,
           "mode": "multi",
