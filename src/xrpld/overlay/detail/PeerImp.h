@@ -763,6 +763,7 @@ private:
     std::shared_ptr<SHAMap const>
     getTxSet(std::shared_ptr<protocol::TMGetLedger> const& m) const;
 
+protected:
     void
     processLedgerRequest(
         std::shared_ptr<protocol::TMGetLedger> const& m,
@@ -839,14 +840,6 @@ private:
         int const found,
         std::chrono::microseconds const lookupElapsed,
         resource::Charge const& fee);
-
-protected:
-    // Kept `protected` so test subclasses (see
-    // TMGetObjectByHash_test) can drive the
-    // synchronous processor and the differential-pricing helper without
-    // routing through the JobQueue or going through `friend` plumbing.
-    // Production callers reach these members only via
-    // `onMessage(TMGetObjectByHash)` → JobQueue → `processGetObjectByHash`.
 
     /**
      * Process a generic-query TMGetObjectByHash message.
