@@ -137,7 +137,7 @@ public:
     Scheduler();
 
     /**
-     * Return the clock. (aged_containers want a non-const ref =(
+     * Return the clock. (aged containers want a non-const ref =(
      */
     ClockType&
     clock() const;

@@ -54,7 +54,7 @@ struct IsBoostReverseIterator<boost::intrusive::reverse_iterator<It>> : std::tru
  * whose items expire after a certain amount of time. The chronological
  * iterators allow for fully customizable expiration strategies.
  *
- * @see aged_set, aged_multiset, aged_map, aged_multimap
+ * @see AgedSet, AgedMultiset, AgedMap, AgedMultimap
  */
 template <
     bool IsMulti,

@@ -59,8 +59,8 @@ namespace detail {
  * whose items expire after a certain amount of time. The chronological
  * iterators allow for fully customizable expiration strategies.
  *
- * @see aged_unordered_set, aged_unordered_multiset
- * @see aged_unordered_map, aged_unordered_multimap
+ * @see AgedUnorderedSet, AgedUnorderedMultiset
+ * @see AgedUnorderedMap, AgedUnorderedMultimap
  */
 template <
     bool IsMulti,

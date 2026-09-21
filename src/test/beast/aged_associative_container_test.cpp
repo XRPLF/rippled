@@ -1361,7 +1361,7 @@ AgedAssociativeContainerTestBase::testChronological()
 
     {
         // Because touch (reverse_iterator pos) is not allowed, the following
-        // lines should not compile for any aged_container type.
+        // lines should not compile for any aged container type.
         //      c.touch (c.rbegin());
         //      c.touch (c.crbegin());
     }
@@ -1463,7 +1463,7 @@ AgedAssociativeContainerTestBase::nextToEndIter(Iter beginIter, Iter const endIt
 // This implementation does not declare a pass, since it wants to allow
 // the caller to examine the size of the container and the returned iterator
 //
-// Note that this test works on the aged_associative containers because an
+// Note that this test works on the aged associative containers because an
 // erase only invalidates references and iterators to the erased element
 // (see 23.2.4/13).  Therefore the passed-in end iterator stays valid through
 // the whole test.
@@ -1575,7 +1575,7 @@ AgedAssociativeContainerTestBase::testElementErase()
         auto tempContainer(c);
         BEAST_EXPECT(tempContainer.size() > 4);
         // erase(reverse_iterator) is not allowed.  None of the following
-        // should compile for any aged_container type.
+        // should compile for any aged container type.
         //      c.erase (c.rbegin());
         //      c.erase (c.crbegin());
         //      c.erase(c.rbegin(), ++c.rbegin());
@@ -1764,43 +1764,43 @@ public:
 
     static_assert(
         std::is_same_v<AgedSet<Key>, detail::AgedOrderedContainer<false, false, Key, void>>,
-        "bad alias: aged_set");
+        "bad alias: AgedSet");
 
     static_assert(
         std::is_same_v<AgedMultiset<Key>, detail::AgedOrderedContainer<true, false, Key, void>>,
-        "bad alias: aged_multiset");
+        "bad alias: AgedMultiset");
 
     static_assert(
         std::is_same_v<AgedMap<Key, T>, detail::AgedOrderedContainer<false, true, Key, T>>,
-        "bad alias: aged_map");
+        "bad alias: AgedMap");
 
     static_assert(
         std::is_same_v<AgedMultimap<Key, T>, detail::AgedOrderedContainer<true, true, Key, T>>,
-        "bad alias: aged_multimap");
+        "bad alias: AgedMultimap");
 
     static_assert(
         std::is_same_v<
             AgedUnorderedSet<Key>,
             detail::AgedUnorderedContainer<false, false, Key, void>>,
-        "bad alias: aged_unordered_set");
+        "bad alias: AgedUnorderedSet");
 
     static_assert(
         std::is_same_v<
             AgedUnorderedMultiset<Key>,
             detail::AgedUnorderedContainer<true, false, Key, void>>,
-        "bad alias: aged_unordered_multiset");
+        "bad alias: AgedUnorderedMultiset");
 
     static_assert(
         std::is_same_v<
             AgedUnorderedMap<Key, T>,
             detail::AgedUnorderedContainer<false, true, Key, T>>,
-        "bad alias: aged_unordered_map");
+        "bad alias: AgedUnorderedMap");
 
     static_assert(
         std::is_same_v<
             AgedUnorderedMultimap<Key, T>,
             detail::AgedUnorderedContainer<true, true, Key, T>>,
-        "bad alias: aged_unordered_multimap");
+        "bad alias: AgedUnorderedMultimap");
 
     void
     run() override

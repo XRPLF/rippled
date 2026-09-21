@@ -5,10 +5,6 @@
 #include <utility>
 
 namespace beast {
-
-template <bool, bool, class, class, class, class, class>
-class aged_ordered_container;
-
 namespace detail {
 
 // If Iterator is SCARY then this iterator will be as well.
