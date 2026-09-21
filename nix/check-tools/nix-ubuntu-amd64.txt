@@ -131,6 +131,9 @@ Rust toolchain:
   ✅ rust-analyzer
      rust-analyzer 1.97.1 (8bab26f 2026-07-14)
      /nix/store/lr3m97p3hx1k22a7c44pb0wa7rbayhfi-rust-analyzer-preview-1.97.1-x86_64-unknown-linux-gnu/bin/rust-analyzer
+  ✅ rust-nightly
+     rustc 1.99.0-nightly (87e5904f5 2026-07-20)
+     /nix/store/j7kf7a5h4xypzp6x1skg4dsdx2k4fwb3-rust-nightly/bin/rust-nightly
   ✅ rustc
      rustc 1.97.1 (8bab26f4f 2026-07-14)
      /nix/store/40d3mzka7r1ps71l0yv2fs6616nbw85m-rust-minimal-1.97.1/bin/rustc
@@ -168,4 +171,4 @@ Mold:
 
 Skipping git-over-HTTPS check (CHECK_TOOLS_SKIP_CLONE is set).
 
-✅ All 52 checked tools are present and runnable.
+✅ All 53 checked tools are present and runnable.

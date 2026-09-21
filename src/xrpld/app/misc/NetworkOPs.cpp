@@ -28,9 +28,8 @@
 #include <xrpld/overlay/predicates.h>
 #include <xrpld/rpc/BookChanges.h>
 #include <xrpld/rpc/CTID.h>
-#include <xrpld/rpc/DeliveredAmount.h>
-#include <xrpld/rpc/MPTokenIssuanceID.h>
 #include <xrpld/rpc/ServerHandler.h>
+#include <xrpld/rpc/detail/SyntheticFields.h>
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/ToString.h>
@@ -92,7 +91,6 @@
 #include <xrpl/protocol/MPTAmount.h>
 #include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/MultiApiJson.h>
-#include <xrpl/protocol/NFTSyntheticSerializer.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/RPCErr.h>
@@ -1462,11 +1460,17 @@ NetworkOPsImp::preProcessTransaction(std::shared_ptr<Transaction>& transaction)
 
     // NOTE ximinez - I think this check is redundant,
     // but I'm not 100% sure yet.
-    // If so, only cost is looking up HashRouter flags.
-    auto const [validity, reason] =
-        checkValidity(registry_.get().getHashRouter(), sttx, view->rules());
-    XRPL_ASSERT(
-        validity == Validity::Valid, "xrpl::NetworkOPsImp::processTransaction : valid validity");
+    //
+    // For an ordinary transaction it is: the relay and submit paths have
+    // already run checkValidity, so this costs a HashRouter lookup. It is not
+    // redundant for a role-signature transaction while fixCleanup3_4_0 is
+    // activating. Those paths verify against the validated rules, which lag
+    // the open ledger rules used here, and checkValidity scopes a cached
+    // verdict to the rules that reached it, so this call can verify the
+    // signature again and come to a different answer. SigBad is therefore
+    // reachable, and the handler below is the correct response to it.
+    auto const& viewRules = view->rules();
+    auto const [validity, reason] = checkValidity(registry_.get().getHashRouter(), sttx, viewRules);
 
     // Not concerned with local checks at this point.
     if (validity == Validity::SigBad)
@@ -1474,7 +1478,15 @@ NetworkOPsImp::preProcessTransaction(std::shared_ptr<Transaction>& transaction)
         JLOG(journal_.info()) << "Transaction has bad signature: " << reason;
         transaction->setStatus(TransStatus::INVALID);
         transaction->setResult(temBAD_SIGNATURE);
-        registry_.get().getHashRouter().setFlags(transaction->getID(), HashRouterFlags::BAD);
+        // See the matching guard in PeerImp::checkTransaction: only cache
+        // BAD for a role-signature transaction once fixCleanup3_4_0 is
+        // enabled on this node. Remove together with the amendment.
+        if (viewRules.enabled(fixCleanup3_4_0) ||
+            (!sttx.isFieldPresent(sfSponsorSignature) &&
+             !sttx.isFieldPresent(sfCounterpartySignature)))
+        {
+            registry_.get().getHashRouter().setFlags(transaction->getID(), HashRouterFlags::BAD);
+        }
         return false;
     }
 
@@ -1874,11 +1886,21 @@ NetworkOPsImp::apply(std::unique_lock<std::mutex>& batchLock)
 
             if (validatedLedgerIndex)
             {
-                auto [fee, accountSeq, availableSeq] =
-                    registry_.get().getTxQ().getTxRequiredFeeAndSeq(
-                        *newOL, e.transaction->getSTransaction());
-                e.transaction->setCurrentLedgerState(
-                    *validatedLedgerIndex, fee, accountSeq, availableSeq);
+                auto maybeFeeAndSeq = registry_.get().getTxQ().getTxRequiredFeeAndSeq(
+                    *newOL, e.transaction->getSTransaction());
+                if (maybeFeeAndSeq.has_value())
+                {
+                    auto [fee, accountSeq, availableSeq] = *maybeFeeAndSeq;
+                    e.transaction->setCurrentLedgerState(
+                        *validatedLedgerIndex, fee, accountSeq, availableSeq);
+                }
+                else
+                {
+                    JLOG(journal_.debug())
+                        << "Unable to compute current ledger state for tx "
+                        << e.transaction->getID() << " in validated ledger "
+                        << *validatedLedgerIndex << ": " << transToken(maybeFeeAndSeq.error());
+                }
             }
         }
     }
@@ -3467,9 +3489,7 @@ NetworkOPsImp::transJson(
     if (meta)
     {
         jvObj[jss::meta] = meta->get().getJson(JsonOptions::Values::None);
-        rpc::insertDeliveredAmount(jvObj[jss::meta], *ledger, transaction, meta->get());
-        rpc::insertNFTSyntheticInJson(jvObj, transaction, meta->get());
-        rpc::insertMPTokenIssuanceID(jvObj[jss::meta], transaction, meta->get());
+        rpc::insertAllSyntheticInJson(jvObj[jss::meta], *ledger, transaction, meta->get());
     }
 
     // add CTID where the needed data for it exists
