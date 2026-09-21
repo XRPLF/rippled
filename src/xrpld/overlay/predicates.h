@@ -151,9 +151,9 @@ struct PeerInCluster
  */
 struct PeerInSet
 {
-    std::set<Peer::IdT> const& peerSet;
+    std::set<Peer::ID> const& peerSet;
 
-    PeerInSet(std::set<Peer::IdT> const& peers) : peerSet(peers)
+    PeerInSet(std::set<Peer::ID> const& peers) : peerSet(peers)
     {
     }
 

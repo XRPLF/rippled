@@ -122,9 +122,9 @@ private:
     std::unique_ptr<peer_finder::Manager> peerFinder_;
     TrafficCount traffic_;
     HashMap<std::shared_ptr<peer_finder::Slot>, std::weak_ptr<PeerImp>> peers_;
-    HashMap<Peer::IdT, std::weak_ptr<PeerImp>> ids_;
+    HashMap<Peer::ID, std::weak_ptr<PeerImp>> ids_;
     Resolver& resolver_;
-    std::atomic<Peer::IdT> nextId_;
+    std::atomic<Peer::ID> nextId_;
     int timerCount_{0};
     std::atomic<uint64_t> jqTransOverflow_{0};
     std::atomic<uint64_t> peerDisconnects_{0};
@@ -216,7 +216,7 @@ public:
      */
     PeerSequence
     getActivePeers(
-        std::set<Peer::IdT> const& toSkip,
+        std::set<Peer::ID> const& toSkip,
         std::size_t& active,
         std::size_t& disabled,
         std::size_t& enabledInSkip) const;
@@ -225,7 +225,7 @@ public:
     checkTracking(std::uint32_t) override;
 
     std::shared_ptr<Peer>
-    findPeerByShortID(Peer::IdT const& id) const override;
+    findPeerByShortID(Peer::ID const& id) const override;
 
     std::shared_ptr<Peer>
     findPeerByPublicKey(PublicKey const& pubKey) override;
@@ -236,17 +236,17 @@ public:
     void
     broadcast(protocol::TMValidation const& m) override;
 
-    std::set<Peer::IdT>
+    std::set<Peer::ID>
     relay(protocol::TMProposeSet const& m, UInt256 const& uid, PublicKey const& validator) override;
 
-    std::set<Peer::IdT>
+    std::set<Peer::ID>
     relay(protocol::TMValidation const& m, UInt256 const& uid, PublicKey const& validator) override;
 
     void
     relay(
         UInt256 const&,
         std::optional<std::reference_wrapper<protocol::TMTransaction>> m,
-        std::set<Peer::IdT> const& skip) override;
+        std::set<Peer::ID> const& skip) override;
 
     std::shared_ptr<Message>
     getManifestsMessage();
@@ -273,7 +273,7 @@ public:
 
     // Called when an active peer is destroyed.
     void
-    onPeerDeactivate(Peer::IdT id);
+    onPeerDeactivate(Peer::ID id);
 
     // UnaryFunc will be called as
     //  void(std::shared_ptr<PeerImp>&&)
@@ -408,7 +408,7 @@ public:
     updateSlotAndSquelch(
         UInt256 const& key,
         PublicKey const& validator,
-        std::set<Peer::IdT>&& peers,
+        std::set<Peer::ID>&& peers,
         protocol::MessageType type);
 
     /**
@@ -418,7 +418,7 @@ public:
     updateSlotAndSquelch(
         UInt256 const& key,
         PublicKey const& validator,
-        Peer::IdT peer,
+        Peer::ID peer,
         protocol::MessageType type);
 
     /**
@@ -428,7 +428,7 @@ public:
      * @param id Peer's id
      */
     void
-    deletePeer(Peer::IdT id);
+    deletePeer(Peer::ID id);
 
     json::Value
     txMetrics() const override
@@ -451,11 +451,11 @@ public:
 
 private:
     void
-    squelch(PublicKey const& validator, Peer::IdT const id, std::uint32_t squelchDuration)
+    squelch(PublicKey const& validator, Peer::ID const id, std::uint32_t squelchDuration)
         const override;
 
     void
-    unsquelch(PublicKey const& validator, Peer::IdT id) const override;
+    unsquelch(PublicKey const& validator, Peer::ID id) const override;
 
     std::shared_ptr<Writer>
     makeRedirectResponse(

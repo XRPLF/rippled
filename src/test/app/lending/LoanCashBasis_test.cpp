@@ -39,13 +39,13 @@ namespace xrpl::test {
 // amendment. They are called once, directly, from
 // runAmendmentIndependent() -- not looped through
 // runAmendmentSensitive()/amendmentCombinations(), since doing so would
-// require re-deriving whole-life-specific expected values for ~15
+// require re-deriving instant-recognition-specific expected values for ~15
 // unrelated regression tests.
 class LoanCashBasis_test : public LoanTestBase
 {
 private:
     // 1. LoanSet origination: Vault.AssetsTotal/LoanBroker.DebtTotal deltas,
-    // and the AssetsMaximum/DebtMaximum guards. Accrual AssetsMaximum still
+    // and the AssetsMaximum/DebtMaximum guards. Instant-recognition AssetsMaximum still
     // requires headroom for interestDue; cash-basis AssetsMaximum does not,
     // because origination does not credit interest into AssetsTotal.
     void
@@ -147,16 +147,16 @@ private:
 
             BEAST_EXPECTS(
                 assetsTotalDelta == interestDue,
-                "whole-life origination must add interestDue to AssetsTotal; delta=" +
+                "instant-recognition origination must add interestDue to AssetsTotal; delta=" +
                     to_string(assetsTotalDelta) + " interestDue=" + to_string(interestDue));
             BEAST_EXPECTS(
                 debtTotalDelta == principalOutstanding + interestDue,
-                "whole-life origination must add principal+interest to DebtTotal; delta=" +
+                "instant-recognition origination must add principal+interest to DebtTotal; delta=" +
                     to_string(debtTotalDelta));
         }
 
         // AssetsMaximum guard checks interestDue headroom only under
-        // whole-life accounting; DebtMaximum guard also varies by model.
+        // instant interest recognition; DebtMaximum guard also varies by model.
         auto runVaultGuard = [&](FeatureBitset features, Number const& slack, TER expected) {
             Env env(*this, features);
 
@@ -217,7 +217,8 @@ private:
 
         Number const oneDrop = xrpAsset(1).value();
         {
-            testcase("whole-life: LoanSet AssetsMaximum guard checks interestDue headroom");
+            testcase(
+                "instant-recognition: LoanSet AssetsMaximum guard checks interestDue headroom");
             // Guard rejects when there's not quite enough headroom for the
             // interest.
             runVaultGuard(all_, interestDueCash - oneDrop, tecLIMIT_EXCEEDED);
@@ -230,19 +231,19 @@ private:
             // Even far less headroom than interestDue still succeeds, since
             // cash-basis origination never adds interest to AssetsTotal.
             runVaultGuard(all_ | featureLendingProtocolV1_1, oneDrop, tesSUCCESS);
-            // Fully subscribed: AssetsTotal == AssetsMaximum. Accrual preclaim
+            // Fully subscribed: AssetsTotal == AssetsMaximum. Instant-recognition preclaim
             // used to refuse this; origination must still succeed because it
             // does not change AssetsTotal.
             runVaultGuard(all_ | featureLendingProtocolV1_1, Number{0}, tesSUCCESS);
         }
 
         // DebtMaximum guard: cash-basis projects principal-only DebtTotal;
-        // whole-life projects principal + interestDue.
+        // instant recognition projects principal + interestDue.
         for (auto const cashBasis : {true, false})
         {
             testcase(
                 std::string("LoanSet DebtMaximum guard (") +
-                (cashBasis ? "cash-basis)" : "whole-life)"));
+                (cashBasis ? "cash-basis)" : "instant-recognition)"));
             auto const features = cashBasis ? all_ | featureLendingProtocolV1_1 : all_;
             Number const newDebtTotal =
                 principalOutstandingCash + (cashBasis ? Number{} : interestDueCash);
@@ -254,9 +255,9 @@ private:
     // 2. LoanPay: regular, late, overpayment, and full-payment types.
     // Assert Vault.AssetsTotal/LoanBroker.DebtTotal deltas match
     // interestPaid/principalPaid under cash-basis, and cross-check the
-    // amendment-disabled run's deltas against the documented whole-life
+    // amendment-disabled run's deltas against the documented instant-recognition
     // formula (AssetsTotal += valueChange; DebtTotal mirrors the loan's own
-    // TotalValueOutstanding delta exactly, since whole-life debt recognition
+    // TotalValueOutstanding delta exactly, since instant-recognition debt recognition
     // tracks total loan value).
     void
     testCashBasisLoanPay()
@@ -360,7 +361,7 @@ private:
                 .totalValueDelta = totalValueAfter - totalValueBefore};
         };
 
-        // Compares the disabled (whole-life) and enabled (cash-basis) runs
+        // Compares the disabled (instant-recognition) and enabled (cash-basis) runs
         // of the same payment scenario, and asserts the documented
         // relationships between them.
         auto checkScenario = [&](std::string const& label,
@@ -381,12 +382,12 @@ private:
             // does.
             BEAST_EXPECTS(
                 off.debtTotalDelta == off.totalValueDelta,
-                "whole-life DebtTotal delta must mirror TotalValueOutstanding delta; "
+                "instant-recognition DebtTotal delta must mirror TotalValueOutstanding delta; "
                 "debtTotalDelta=" +
                     to_string(off.debtTotalDelta) +
                     " totalValueDelta=" + to_string(off.totalValueDelta));
 
-            // Derive interestPaid from the whole-life run's independent
+            // Derive interestPaid from the instant-recognition run's independent
             // ledger deltas:
             //   assetsTotalDelta_off == valueChange
             //   debtTotalDelta_off == valueChange - (principalPaid + interestPaid)
@@ -423,10 +424,11 @@ private:
 
             // Regular, on-time payments never change the loan's value beyond
             // normal amortization (production asserts valueChange == 0), so
-            // AssetsTotal must be unaffected in the whole-life run.
+            // AssetsTotal must be unaffected in the instant-recognition run.
             BEAST_EXPECTS(
                 off.assetsTotalDelta == beast::kZero,
-                "regular on-time payment must not change AssetsTotal under whole-life; delta=" +
+                "regular on-time payment must not change AssetsTotal under instant recognition; "
+                "delta=" +
                     to_string(off.assetsTotalDelta));
 
             checkScenario("regular payment", off, on);
@@ -932,14 +934,15 @@ private:
     }
 
     // 3b. LEVersion regression: a Vault created before featureLendingProtocolV1_1
-    // activates (LEVersion absent) must keep whole-life (accrual) accounting
+    // activates (LEVersion absent) must keep instant interest recognition
     // forever, even after the amendment is later enabled -- the switch is
     // per-Vault (LEVersion == VaultVersion::CashBasis), not a single global amendment
     // flag.
     void
-    testLegacyVaultKeepsAccrualAfterAmendmentEnabled()
+    testLegacyVaultKeepsInstantRecognitionAfterAmendmentEnabled()
     {
-        testcase("LEVersion: legacy vault keeps accrual after amendment enabled");
+        testcase(
+            "LEVersion: legacy vault keeps instant interest recognition after amendment enabled");
 
         using namespace jtx;
         using namespace loan;
@@ -977,7 +980,7 @@ private:
         }
 
         // Now enable the amendment -- production dispatch must still treat
-        // this specific Vault as accrual-basis, since its LEVersion is
+        // this specific Vault as instant interest recognition, since its LEVersion is
         // (and remains) absent.
         env.enableFeature(featureLendingProtocolV1_1);
         env.close();
@@ -997,7 +1000,7 @@ private:
         auto const loanSequence = brokerBeforeLoan->at(sfLoanSequence);
         auto const loanKeylet = keylet::loan(broker.brokerID, SeqProxy::rawSequence(loanSequence));
 
-        // ---- LoanSet origination: whole-life formulas expected ----
+        // ---- LoanSet origination: instant-recognition formulas expected ----
         auto const vaultBeforeSet = env.le(broker.vaultKeylet());
         auto const brokerBeforeSet = env.le(broker.brokerKeylet());
         BEAST_EXPECT(vaultBeforeSet && brokerBeforeSet);
@@ -1034,7 +1037,7 @@ private:
         LoanState const state = getCurrentState(env, broker, loanKeylet);
         env.close();
 
-        // ---- LoanPay: whole-life formulas expected ----
+        // ---- LoanPay: instant-recognition formulas expected ----
         auto const vaultBeforePay = env.le(broker.vaultKeylet());
         auto const brokerBeforePay = env.le(broker.brokerKeylet());
         auto const loanBeforePay = env.le(loanKeylet);
@@ -1059,7 +1062,7 @@ private:
             Number(brokerAfterPay->at(sfDebtTotal)) - debtTotalBeforePay;
         Number const totalValueDeltaPay = totalValueAfterPay - totalValueBeforePay;
 
-        // A regular, on-time payment has valueChange == 0, so whole-life
+        // A regular, on-time payment has valueChange == 0, so instant-recognition
         // AssetsTotal is untouched and DebtTotal mirrors TotalValueOutstanding.
         BEAST_EXPECTS(
             assetsTotalDeltaPay == beast::kZero,
@@ -1071,7 +1074,7 @@ private:
             "debtTotalDelta=" +
                 to_string(debtTotalDeltaPay) + " totalValueDelta=" + to_string(totalValueDeltaPay));
 
-        // ---- LoanManage: impair, then default -- whole-life exposure expected ----
+        // ---- LoanManage: impair, then default -- instant-recognition exposure expected ----
         auto const loanBeforeImpair = env.le(loanKeylet);
         BEAST_EXPECT(loanBeforeImpair);
         Number const totalValueBeforeImpair = loanBeforeImpair->at(sfTotalValueOutstanding);
@@ -1110,7 +1113,7 @@ private:
 
         BEAST_EXPECTS(
             debtTotalDeltaDefault == -expectedExposure,
-            "legacy vault default must reduce DebtTotal by whole-life exposure; delta=" +
+            "legacy vault default must reduce DebtTotal by instant-recognition exposure; delta=" +
                 to_string(debtTotalDeltaDefault) + " expected=" + to_string(expectedExposure));
         BEAST_EXPECTS(
             lossDeltaDefault == -expectedExposure,
@@ -1131,7 +1134,7 @@ private:
     // entirely under the amendment, with independently hand-computed
     // expected AssetsTotal/DebtTotal/LossUnrealized/CoverAvailable values at
     // each step. 0% interest keeps the arithmetic exact and tractable; the
-    // divergence from whole-life accounting is already covered directly by
+    // divergence from instant interest recognition is already covered directly by
     // testCashBasisLoanSetOrigination/LoanPay/LoanManage above, so this test
     // focuses purely on an independent, from-scratch trajectory check.
     void
@@ -1270,7 +1273,7 @@ public:
         testVaultSetWhileAssetsTotalExceedsMaximum();
         testCashBasisLoanSetAfterInterestExceedsCap();
         testCashBasisLoanManage();
-        testLegacyVaultKeepsAccrualAfterAmendmentEnabled();
+        testLegacyVaultKeepsInstantRecognitionAfterAmendmentEnabled();
         testCashBasisEndToEndTrajectory();
     }
 };

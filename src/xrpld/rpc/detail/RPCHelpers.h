@@ -66,7 +66,7 @@ isRelatedToAccount(ReadView const& ledger, SLE::ConstRef sle, AccountID const& a
  * Extracts and returns a set of AccountID objects from the provided JSON array.
  *
  * @param jvArray The JSON value containing an array of account IDs.
- * @return A hash_set containing the parsed AccountID objects.
+ * @return A HashSet containing the parsed AccountID objects.
  */
 HashSet<AccountID>
 parseAccountIds(json::Value const& jvArray);

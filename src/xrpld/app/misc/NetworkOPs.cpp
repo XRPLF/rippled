@@ -883,7 +883,7 @@ private:
      * between chunks so a competing publish can interleave; no iterator is held
      * across the unlock, so a concurrent mutation cannot dangle.
      *
-     * @tparam OuterMap    hash_map<AccountID, hash_map<seq, value>>.
+     * @tparam OuterMap    HashMap<AccountID, HashMap<seq, value>>.
      * @tparam BeforeErase Invoked with the inner value about to be erased, for
      * per-entry teardown the plain account maps do not need
      * (the history map uses it to stop its paging job).
@@ -1885,11 +1885,21 @@ NetworkOPsImp::apply(std::unique_lock<std::mutex>& batchLock)
 
             if (validatedLedgerIndex)
             {
-                auto [fee, accountSeq, availableSeq] =
-                    registry_.get().getTxQ().getTxRequiredFeeAndSeq(
-                        *newOL, e.transaction->getSTransaction());
-                e.transaction->setCurrentLedgerState(
-                    *validatedLedgerIndex, fee, accountSeq, availableSeq);
+                auto maybeFeeAndSeq = registry_.get().getTxQ().getTxRequiredFeeAndSeq(
+                    *newOL, e.transaction->getSTransaction());
+                if (maybeFeeAndSeq.has_value())
+                {
+                    auto [fee, accountSeq, availableSeq] = *maybeFeeAndSeq;
+                    e.transaction->setCurrentLedgerState(
+                        *validatedLedgerIndex, fee, accountSeq, availableSeq);
+                }
+                else
+                {
+                    JLOG(journal_.debug())
+                        << "Unable to compute current ledger state for tx "
+                        << e.transaction->getID() << " in validated ledger "
+                        << *validatedLedgerIndex << ": " << transToken(maybeFeeAndSeq.error());
+                }
             }
         }
     }

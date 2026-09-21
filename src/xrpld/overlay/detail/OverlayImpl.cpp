@@ -306,7 +306,7 @@ OverlayImpl::onHandoff(
         {
             // The node gets a reserved slot if it is in our cluster
             // or if it has a reservation.
-            bool const reserved = static_cast<bool>(app_.getCluster().member(publicKey)) ||
+            bool const reserved = app_.getCluster().isMember(publicKey) ||
                 app_.getPeerReservations().contains(publicKey);
             auto const result = peerFinder_->activate(slot, publicKey, reserved);
             if (result != peer_finder::Result::Success)
@@ -656,7 +656,7 @@ OverlayImpl::activate(std::shared_ptr<PeerImp> const& peer)
 }
 
 void
-OverlayImpl::onPeerDeactivate(Peer::IdT id)
+OverlayImpl::onPeerDeactivate(Peer::ID id)
 {
     std::scoped_lock const lock(mutex_);
     ids_.erase(id);
@@ -1132,7 +1132,7 @@ OverlayImpl::getActivePeers() const
 
 Overlay::PeerSequence
 OverlayImpl::getActivePeers(
-    std::set<Peer::IdT> const& toSkip,
+    std::set<Peer::ID> const& toSkip,
     std::size_t& active,
     std::size_t& disabled,
     std::size_t& enabledInSkip) const
@@ -1176,7 +1176,7 @@ OverlayImpl::checkTracking(std::uint32_t index)
 }
 
 std::shared_ptr<Peer>
-OverlayImpl::findPeerByShortID(Peer::IdT const& id) const
+OverlayImpl::findPeerByShortID(Peer::ID const& id) const
 {
     std::scoped_lock const lock(mutex_);
     auto const iter = ids_.find(id);
@@ -1211,7 +1211,7 @@ OverlayImpl::broadcast(protocol::TMProposeSet const& m)
     forEach([&](std::shared_ptr<PeerImp> const& p) { p->send(sm); });
 }
 
-std::set<Peer::IdT>
+std::set<Peer::ID>
 OverlayImpl::relay(protocol::TMProposeSet const& m, UInt256 const& uid, PublicKey const& validator)
 {
     if (auto const toSkip = app_.getHashRouter().shouldRelay(uid))
@@ -1233,7 +1233,7 @@ OverlayImpl::broadcast(protocol::TMValidation const& m)
     forEach([sm](std::shared_ptr<PeerImp> const& p) { p->send(sm); });
 }
 
-std::set<Peer::IdT>
+std::set<Peer::ID>
 OverlayImpl::relay(protocol::TMValidation const& m, UInt256 const& uid, PublicKey const& validator)
 {
     if (auto const toSkip = app_.getHashRouter().shouldRelay(uid))
@@ -1327,7 +1327,7 @@ void
 OverlayImpl::relay(
     UInt256 const& hash,
     std::optional<std::reference_wrapper<protocol::TMTransaction>> tx,
-    std::set<Peer::IdT> const& toSkip)
+    std::set<Peer::ID> const& toSkip)
 {
     bool relay = tx.has_value();
     if (relay)
@@ -1503,7 +1503,7 @@ makeSquelchMessage(PublicKey const& validator, bool squelch, uint32_t squelchDur
 }
 
 void
-OverlayImpl::unsquelch(PublicKey const& validator, Peer::IdT id) const
+OverlayImpl::unsquelch(PublicKey const& validator, Peer::ID id) const
 {
     if (auto peer = findPeerByShortID(id); peer)
     {
@@ -1514,7 +1514,7 @@ OverlayImpl::unsquelch(PublicKey const& validator, Peer::IdT id) const
 }
 
 void
-OverlayImpl::squelch(PublicKey const& validator, Peer::IdT id, uint32_t squelchDuration) const
+OverlayImpl::squelch(PublicKey const& validator, Peer::ID id, uint32_t squelchDuration) const
 {
     if (auto peer = findPeerByShortID(id); peer)
     {
@@ -1526,7 +1526,7 @@ void
 OverlayImpl::updateSlotAndSquelch(
     UInt256 const& key,
     PublicKey const& validator,
-    std::set<Peer::IdT>&& peers,
+    std::set<Peer::ID>&& peers,
     protocol::MessageType type)
 {
     if (!slots_.baseSquelchReady())
@@ -1556,7 +1556,7 @@ void
 OverlayImpl::updateSlotAndSquelch(
     UInt256 const& key,
     PublicKey const& validator,
-    Peer::IdT peer,
+    Peer::ID peer,
     protocol::MessageType type)
 {
     if (!slots_.baseSquelchReady())
@@ -1581,7 +1581,7 @@ OverlayImpl::updateSlotAndSquelch(
 }
 
 void
-OverlayImpl::deletePeer(Peer::IdT id)
+OverlayImpl::deletePeer(Peer::ID id)
 {
     if (!strand_.running_in_this_thread())
     {

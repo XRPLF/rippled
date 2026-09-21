@@ -3,6 +3,7 @@
 #include <xrpld/app/main/Application.h>
 #include <xrpld/app/misc/TxQ.h>  // IWYU pragma: keep
 #include <xrpld/rpc/Context.h>
+#include <xrpld/rpc/MethodNames.h>
 #include <xrpld/rpc/Role.h>
 #include <xrpld/rpc/Status.h>
 #include <xrpld/rpc/detail/Handler.h>
@@ -12,11 +13,8 @@
 #include <xrpl/protocol/ApiVersion.h>
 
 #include <memory>
+#include <string_view>
 #include <vector>
-
-namespace json {
-class Object;
-}  // namespace json
 
 namespace xrpl::rpc {
 
@@ -40,7 +38,7 @@ public:
     writeResult(json::Value&);
 
     // NOLINTBEGIN(readability-identifier-naming)
-    static constexpr char name[] = "ledger";
+    static constexpr std::string_view name = method::kLedger;
 
     static constexpr unsigned minApiVer = rpc::kApiMinimumSupportedVersion;
 

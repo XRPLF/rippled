@@ -51,7 +51,7 @@ ConnectAttempt::ConnectAttempt(
     EndpointType remoteEndpoint,
     resource::Consumer usage,
     SharedContext const& context,
-    Peer::IdT id,
+    Peer::ID id,
     std::shared_ptr<peer_finder::Slot> const& slot,
     beast::Journal journal,
     OverlayImpl& overlay)

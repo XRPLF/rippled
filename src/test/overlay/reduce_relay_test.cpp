@@ -254,13 +254,13 @@ public:
     updateSlotAndSquelch(
         UInt256 const& key,
         PublicKey const& validator,
-        Peer::IdT id,
+        Peer::ID id,
         SquelchCB f,
         protocol::MessageType type = protocol::mtVALIDATION) = 0;
 
     virtual void deleteIdlePeers(UnsquelchCB) = 0;
 
-    virtual void deletePeer(Peer::IdT, UnsquelchCB) = 0;
+    virtual void deletePeer(Peer::ID, UnsquelchCB) = 0;
 };
 
 class Validator;
@@ -301,7 +301,7 @@ public:
     {
         up_ = linkUp;
     }
-    Peer::IdT
+    Peer::ID
     peerId()
     {
         auto p = peer_.lock();
@@ -328,7 +328,7 @@ private:
  */
 class Validator
 {
-    using Links = std::unordered_map<Peer::IdT, LinkSPtr>;
+    using Links = std::unordered_map<Peer::ID, LinkSPtr>;
 
 public:
     Validator() : pkey_(std::get<0>(randomKeyPair(KeyType::Ed25519))), id_(sid++)
@@ -378,13 +378,13 @@ public:
     }
 
     void
-    deletePeer(Peer::IdT id)
+    deletePeer(Peer::ID id)
     {
         links_.erase(id);
     }
 
     void
-    forLinks(std::vector<Peer::IdT> peers, LinkIterCB f)
+    forLinks(std::vector<Peer::ID> peers, LinkIterCB f)
     {
         for (auto id : peers)
         {
@@ -412,7 +412,7 @@ public:
      * Send to specific peers
      */
     void
-    send(std::vector<Peer::IdT> peers, SquelchCB f)
+    send(std::vector<Peer::ID> peers, SquelchCB f)
     {
         forLinks(peers, [&](Link& link, MessageSPtr m) { link.send(m, f); });
     }
@@ -439,7 +439,7 @@ public:
     }
 
     void
-    linkUp(Peer::IdT id)
+    linkUp(Peer::ID id)
     {
         auto it = links_.find(id);
         assert(it != links_.end());
@@ -447,7 +447,7 @@ public:
     }
 
     void
-    linkDown(Peer::IdT id)
+    linkDown(Peer::ID id)
     {
         auto it = links_.find(id);
         assert(it != links_.end());
@@ -465,14 +465,14 @@ private:
 class PeerSim : public PeerPartial, public std::enable_shared_from_this<PeerSim>
 {
 public:
-    using IdT = Peer::IdT;
+    using ID = Peer::ID;
     PeerSim(Overlay& overlay, beast::Journal journal) : overlay_(overlay), squelch_(journal)
     {
     }
 
     ~PeerSim() override = default;
 
-    IdT
+    ID
     id() const override
     {
         return id_;
@@ -524,19 +524,19 @@ public:
     }
 
 private:
-    inline static IdT sid = 0;
+    inline static ID sid = 0;
     std::string fingerprint_;
-    IdT id_{sid++};
+    ID id_{sid++};
     Overlay& overlay_;
     reduce_relay::Squelch<ManualClock> squelch_;
 };
 
 class OverlaySim : public Overlay, public reduce_relay::SquelchHandler
 {
-    using Peers = std::unordered_map<Peer::IdT, PeerSPtr>;
+    using Peers = std::unordered_map<Peer::ID, PeerSPtr>;
 
 public:
-    using IdT = Peer::IdT;
+    using ID = Peer::ID;
     using ClockType = ManualClock;
     OverlaySim(Application& app) : slots_(app, *this, app.config()), registry_(app)
     {
@@ -563,7 +563,7 @@ public:
     updateSlotAndSquelch(
         UInt256 const& key,
         PublicKey const& validator,
-        Peer::IdT id,
+        Peer::ID id,
         SquelchCB f,
         protocol::MessageType type = protocol::mtVALIDATION) override
     {
@@ -572,7 +572,7 @@ public:
     }
 
     void
-    deletePeer(IdT id, UnsquelchCB f) override
+    deletePeer(ID id, UnsquelchCB f) override
     {
         unsquelch_ = f;
         slots_.deletePeer(id, true);
@@ -589,7 +589,7 @@ public:
     addPeer(bool useCache = true)
     {
         PeerSPtr peer{};
-        Peer::IdT id = 0;
+        Peer::ID id = 0;
         if (peersCache_.empty() || !useCache)
         {
             peer = std::make_shared<PeerSim>(*this, registry_.getJournal("Squelch"));
@@ -607,7 +607,7 @@ public:
     }
 
     void
-    deletePeer(Peer::IdT id, bool useCache = true)
+    deletePeer(Peer::ID id, bool useCache = true)
     {
         auto it = peers_.find(id);
         assert(it != peers_.end());
@@ -626,7 +626,7 @@ public:
             addPeer();
     }
 
-    std::optional<Peer::IdT>
+    std::optional<Peer::ID>
     deleteLastPeer()
     {
         if (peers_.empty())
@@ -651,20 +651,20 @@ public:
         return slots_.inState(validator, reduce_relay::SlotState::Counting);
     }
 
-    std::set<IdT>
+    std::set<ID>
     getSelected(PublicKey const& validator)
     {
         return slots_.getSelected(validator);
     }
 
     bool
-    isSelected(PublicKey const& validator, Peer::IdT peer)
+    isSelected(PublicKey const& validator, Peer::ID peer)
     {
         auto selected = slots_.getSelected(validator);
         return selected.contains(peer);
     }
 
-    IdT
+    ID
     getSelectedPeer(PublicKey const& validator)
     {
         auto selected = slots_.getSelected(validator);
@@ -673,7 +673,7 @@ public:
     }
 
     std::unordered_map<
-        IdT,
+        ID,
         std::tuple<reduce_relay::PeerState, std::uint16_t, std::uint32_t, std::uint32_t>>
     getPeers(PublicKey const& validator)
     {
@@ -688,13 +688,13 @@ public:
 
 private:
     void
-    squelch(PublicKey const& validator, Peer::IdT id, std::uint32_t squelchDuration) const override
+    squelch(PublicKey const& validator, Peer::ID id, std::uint32_t squelchDuration) const override
     {
         if (auto it = peers_.find(id); it != peers_.end())
             squelch_(validator, it->second, squelchDuration);
     }
     void
-    unsquelch(PublicKey const& validator, Peer::IdT id) const override
+    unsquelch(PublicKey const& validator, Peer::ID id) const override
     {
         if (auto it = peers_.find(id); it != peers_.end())
             unsquelch_(validator, it->second);
@@ -739,7 +739,7 @@ public:
         init();
     }
 
-    Peer::IdT
+    Peer::ID
     addPeer()
     {
         auto peer = overlay_.addPeer();
@@ -781,7 +781,7 @@ public:
     }
 
     void
-    enableLink(std::uint16_t validatorId, Peer::IdT peer, bool enable)
+    enableLink(std::uint16_t validatorId, Peer::ID peer, bool enable)
     {
         auto it = std::ranges::find_if(validators_, [&](auto& v) { return v.id() == validatorId; });
         assert(it != validators_.end());
@@ -796,7 +796,7 @@ public:
     }
 
     void
-    onDisconnectPeer(Peer::IdT peer)
+    onDisconnectPeer(Peer::ID peer)
     {
         // Send unsquelch to the Peer on all links. This way when
         // the Peer "reconnects" it starts sending messages on the link.
@@ -856,7 +856,7 @@ public:
      * Is peer in Selected state in any of the slots
      */
     bool
-    isSelected(Peer::IdT id)
+    isSelected(Peer::ID id)
     {
         return std::ranges::any_of(
             validators_, [&](auto& v) { return overlay_.isSelected(v, id); });
@@ -868,7 +868,7 @@ public:
      * in those slots.
      */
     bool
-    allCounting(Peer::IdT peer)
+    allCounting(Peer::ID peer)
     {
         for (auto& v : validators_)
         {
@@ -893,7 +893,7 @@ private:
 class reduce_relay_test : public beast::unit_test::Suite
 {
     using Slot = reduce_relay::Slot<ManualClock>;
-    using IdT = Peer::IdT;
+    using ID = Peer::ID;
 
 protected:
     void
@@ -910,7 +910,7 @@ protected:
     /**
      * Send squelch (if duration is set) or unsquelch (if duration not set)
      */
-    static Peer::IdT
+    static Peer::ID
     sendSquelch(
         PublicKey const& validator,
         PeerWPtr const& peerPtr,
@@ -940,7 +940,7 @@ protected:
         std::uint32_t cnt = 0;
         std::uint32_t handledCnt = 0;
         bool isSelected = false;
-        Peer::IdT peer{};
+        Peer::ID peer{};
         std::uint16_t validator{};
         std::optional<PublicKey> key;
         time_point<ManualClock> time;
@@ -1509,12 +1509,12 @@ vp_base_squelch_max_selected_peers=2
     {
         Handler() = default;
         void
-        squelch(PublicKey const&, Peer::IdT, std::uint32_t duration) const override
+        squelch(PublicKey const&, Peer::ID, std::uint32_t duration) const override
         {
             maxDuration = std::max<uint32_t>(duration, maxDuration);
         }
         void
-        unsquelch(PublicKey const&, Peer::IdT) const override
+        unsquelch(PublicKey const&, Peer::ID) const override
         {
         }
         mutable int maxDuration{0};
