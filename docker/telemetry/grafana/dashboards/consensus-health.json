@@ -162,7 +162,8 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "unit": "suffix: proposals/s",
+          "unit": "si: proposals/s",
+          "decimals": 0,
           "custom": {
             "axisLabel": "Proposals / Sec",
             "spanNulls": 1800000,
@@ -317,7 +318,8 @@
       },
       "fieldConfig": {
         "defaults": {
-          "unit": "suffix: rounds/s",
+          "unit": "si: rounds/s",
+          "decimals": 0,
           "custom": {
             "axisLabel": "Rounds / Sec",
             "spanNulls": 1800000,
@@ -366,7 +368,8 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "unit": "suffix: closes/s",
+          "unit": "si: closes/s",
+          "decimals": 0,
           "custom": {
             "axisLabel": "Closes / Sec",
             "spanNulls": 1800000,
@@ -423,7 +426,8 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "unit": "suffix: events/s",
+          "unit": "si: events/s",
+          "decimals": 0,
           "custom": {
             "axisLabel": "Events / Sec",
             "spanNulls": 1800000,
@@ -480,7 +484,8 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "unit": "suffix: events/s",
+          "unit": "si: events/s",
+          "decimals": 0,
           "custom": {
             "axisLabel": "Events / Sec",
             "spanNulls": 1800000,
@@ -954,7 +959,8 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "unit": "suffix: failures/s",
+          "unit": "si: failures/s",
+          "decimals": 0,
           "custom": {
             "axisLabel": "Failures / Sec",
             "spanNulls": 1800000,
@@ -1195,7 +1201,8 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "unit": "suffix: checks/s",
+          "unit": "si: checks/s",
+          "decimals": 0,
           "custom": {
             "axisLabel": "Checks / Sec",
             "spanNulls": 1800000,
@@ -1244,7 +1251,8 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "unit": "suffix: changes/s",
+          "unit": "si: changes/s",
+          "decimals": 0,
           "custom": {
             "axisLabel": "Changes / Sec",
             "spanNulls": 1800000,
