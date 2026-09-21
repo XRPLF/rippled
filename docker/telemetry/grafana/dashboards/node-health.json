@@ -567,7 +567,7 @@
       "options": {
         "annotations": {
           "clustering": -1,
-          "multiLane": false
+          "multiLane": true
         },
         "legend": {
           "calcs": [],
@@ -759,7 +759,7 @@
       "options": {
         "annotations": {
           "clustering": -1,
-          "multiLane": false
+          "multiLane": true
         },
         "legend": {
           "calcs": [],
@@ -895,7 +895,7 @@
       "options": {
         "annotations": {
           "clustering": -1,
-          "multiLane": false
+          "multiLane": true
         },
         "legend": {
           "calcs": ["sum", "max"],
@@ -1031,7 +1031,7 @@
       "options": {
         "annotations": {
           "clustering": -1,
-          "multiLane": false
+          "multiLane": true
         },
         "legend": {
           "calcs": [],
@@ -1191,7 +1191,7 @@
         "alignValue": "left",
         "annotations": {
           "clustering": -1,
-          "multiLane": false
+          "multiLane": true
         },
         "legend": {
           "displayMode": "list",
@@ -1200,6 +1200,7 @@
           "showLegend": true
         },
         "mergeValues": true,
+        "perPage": 5,
         "rowHeight": 0.9,
         "showValue": "auto",
         "tooltip": {
@@ -1308,7 +1309,7 @@
       "options": {
         "annotations": {
           "clustering": -1,
-          "multiLane": false
+          "multiLane": true
         },
         "legend": {
           "calcs": [],
@@ -1427,7 +1428,7 @@
       "options": {
         "annotations": {
           "clustering": -1,
-          "multiLane": false
+          "multiLane": true
         },
         "legend": {
           "calcs": [],
@@ -1534,7 +1535,7 @@
       "options": {
         "annotations": {
           "clustering": -1,
-          "multiLane": false
+          "multiLane": true
         },
         "legend": {
           "calcs": [],
@@ -1645,7 +1646,7 @@
       "options": {
         "annotations": {
           "clustering": -1,
-          "multiLane": false
+          "multiLane": true
         },
         "legend": {
           "calcs": [],
@@ -1757,7 +1758,7 @@
       "options": {
         "annotations": {
           "clustering": -1,
-          "multiLane": false
+          "multiLane": true
         },
         "legend": {
           "calcs": [],
@@ -1876,7 +1877,7 @@
       "options": {
         "annotations": {
           "clustering": -1,
-          "multiLane": false
+          "multiLane": true
         },
         "legend": {
           "calcs": [],
@@ -1992,7 +1993,7 @@
       "options": {
         "annotations": {
           "clustering": -1,
-          "multiLane": false
+          "multiLane": true
         },
         "legend": {
           "calcs": [],
@@ -2095,7 +2096,7 @@
       "options": {
         "annotations": {
           "clustering": -1,
-          "multiLane": false
+          "multiLane": true
         },
         "legend": {
           "calcs": [],
@@ -2278,7 +2279,7 @@
       "options": {
         "annotations": {
           "clustering": -1,
-          "multiLane": false
+          "multiLane": true
         },
         "legend": {
           "calcs": [],
@@ -2461,7 +2462,7 @@
       "options": {
         "annotations": {
           "clustering": -1,
-          "multiLane": false
+          "multiLane": true
         },
         "legend": {
           "calcs": [],
@@ -2564,7 +2565,7 @@
       "options": {
         "annotations": {
           "clustering": -1,
-          "multiLane": false
+          "multiLane": true
         },
         "legend": {
           "calcs": [],
@@ -2679,7 +2680,7 @@
           "options": {
             "annotations": {
               "clustering": -1,
-              "multiLane": false
+              "multiLane": true
             },
             "legend": {
               "calcs": [],
@@ -2798,7 +2799,7 @@
           "options": {
             "annotations": {
               "clustering": -1,
-              "multiLane": false
+              "multiLane": true
             },
             "legend": {
               "calcs": [],
@@ -2925,7 +2926,7 @@
           "options": {
             "annotations": {
               "clustering": -1,
-              "multiLane": false
+              "multiLane": true
             },
             "legend": {
               "calcs": [],
@@ -3738,7 +3739,7 @@
       "options": {
         "annotations": {
           "clustering": -1,
-          "multiLane": false
+          "multiLane": true
         },
         "legend": {
           "calcs": [],
@@ -3838,7 +3839,7 @@
       "options": {
         "annotations": {
           "clustering": -1,
-          "multiLane": false
+          "multiLane": true
         },
         "legend": {
           "calcs": [],
@@ -3975,7 +3976,7 @@
       "options": {
         "annotations": {
           "clustering": -1,
-          "multiLane": false
+          "multiLane": true
         },
         "legend": {
           "calcs": [],
@@ -4082,7 +4083,7 @@
       "options": {
         "annotations": {
           "clustering": -1,
-          "multiLane": false
+          "multiLane": true
         },
         "legend": {
           "calcs": [],
@@ -4186,7 +4187,7 @@
       "options": {
         "annotations": {
           "clustering": -1,
-          "multiLane": false
+          "multiLane": true
         },
         "legend": {
           "calcs": ["last", "max"],
@@ -4436,7 +4437,7 @@
       "options": {
         "annotations": {
           "clustering": -1,
-          "multiLane": false
+          "multiLane": true
         },
         "legend": {
           "calcs": [],
@@ -4556,7 +4557,7 @@
       "options": {
         "annotations": {
           "clustering": -1,
-          "multiLane": false
+          "multiLane": true
         },
         "legend": {
           "calcs": [],
@@ -4882,7 +4883,7 @@
       "options": {
         "annotations": {
           "clustering": -1,
-          "multiLane": false
+          "multiLane": true
         },
         "legend": {
           "calcs": [],
@@ -4985,7 +4986,7 @@
       "options": {
         "annotations": {
           "clustering": -1,
-          "multiLane": false
+          "multiLane": true
         },
         "legend": {
           "calcs": [],
@@ -5088,7 +5089,7 @@
       "options": {
         "annotations": {
           "clustering": -1,
-          "multiLane": false
+          "multiLane": true
         },
         "legend": {
           "calcs": [],
@@ -5191,7 +5192,7 @@
       "options": {
         "annotations": {
           "clustering": -1,
-          "multiLane": false
+          "multiLane": true
         },
         "legend": {
           "calcs": [],
@@ -5246,6 +5247,10 @@
         "y": 350
       },
       "options": {
+        "annotations": {
+          "clustering": -1,
+          "multiLane": true
+        },
         "tooltip": {
           "maxHeight": 600,
           "mode": "multi",
