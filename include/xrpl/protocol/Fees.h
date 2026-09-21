@@ -80,12 +80,12 @@ struct Fees
         std::uint32_t gasLimit,
         std::uint32_t bytecodeSizeLimit,
         std::uint32_t gasPrice)
-        : base(base)
-        , reserve(reserve)
-        , increment(increment)
-        , gasLimit(gasLimit)
-        , bytecodeSizeLimit(bytecodeSizeLimit)
-        , gasPrice(gasPrice)
+        : base{base}
+        , reserve{reserve}
+        , increment{increment}
+        , gasLimit{gasLimit}
+        , bytecodeSizeLimit{bytecodeSizeLimit}
+        , gasPrice{gasPrice}
     {
     }
 

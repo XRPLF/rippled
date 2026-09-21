@@ -13,6 +13,7 @@
 #include <xrpl/ledger/PendingSaves.h>
 #include <xrpl/ledger/View.h>
 #include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Fees.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/Rules.h>
@@ -190,9 +191,9 @@ public:
             XRPAmount{10},
             XRPAmount{10 * kDropsPerXrp},
             XRPAmount{2 * kDropsPerXrp},
-            1'000'000,
-            100'000,
-            1'000'000};
+            kDefaultGasLimit,
+            kDefaultBytecodeSizeLimit,
+            kDefaultGasPrice};
     }
 
 private:

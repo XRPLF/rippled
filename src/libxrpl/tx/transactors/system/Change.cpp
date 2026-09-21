@@ -179,7 +179,7 @@ Change::initializeVMFees()
 {
     auto const k = keylet::feeSettings();
 
-    SLE::pointer feeObject = view().peek(k);
+    auto feeObject = view().peek(k);
 
     if (!feeObject)
     {
