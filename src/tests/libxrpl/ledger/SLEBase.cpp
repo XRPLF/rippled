@@ -283,6 +283,28 @@ TEST_F(SLEBaseTests, WritableLifecycle)
         EXPECT_FALSE(ticket.exists());
     }
 
+    // Entry that already exists: update() is what promotes it from a bare
+    // peek to a real change. ApplyViewImpl::size() counts Insert, Modify and
+    // Erase but not Cache, so it shows the difference: building the entry
+    // only peeks, and the write is invisible to the view until update().
+    {
+        ApplyViewImpl fresh(&env_.getClosedLedger(), TapNone);
+
+        AccountRootEntryW account(alice_.id(), fresh);
+        EXPECT_TRUE(account.exists());
+        EXPECT_EQ(fresh.size(), 0);
+
+        account->setFieldU32(sfSequence, account->getFieldU32(sfSequence) + 1);
+        EXPECT_EQ(fresh.size(), 0);
+
+        account.update();
+        EXPECT_EQ(fresh.size(), 1);
+
+        // update() is idempotent: the entry is already a Modify.
+        account.update();
+        EXPECT_EQ(fresh.size(), 1);
+    }
+
     // Entry that already exists. ApplyStateTable::erase() keeps holding
     // this exact SLE and builds the DeletedNode's FinalFields from it, so
     // the entry must drop its pointer or a later write would silently
