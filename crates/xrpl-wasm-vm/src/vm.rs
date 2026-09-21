@@ -1,8 +1,8 @@
 use std::cell::Cell;
 use std::fmt;
 use wasmi::{
-    Config, Engine, Export, Linker, Memory, Module, Store, StoreLimits, StoreLimitsBuilder,
-    TrapCode,
+    CompilationMode, Config, Engine, Export, Linker, Memory, Module, Store, StoreLimits,
+    StoreLimitsBuilder, TrapCode,
 };
 use xrpl_host_functions::HostFunctions;
 
@@ -262,6 +262,7 @@ pub(crate) fn wasm_engine() -> Engine {
     // config.wasm_memory64(false);
     config.wasm_wide_arithmetic(false);
     config.allow_start_fn(false);
+    config.compilation_mode(CompilationMode::LazyTranslation);
     Engine::new(&config)
 }
 
