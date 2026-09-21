@@ -102,7 +102,8 @@
       "fieldConfig": {
         "defaults": {
           "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
-          "unit": "suffix: proposals/s",
+          "unit": "si: proposals/s",
+          "decimals": 0,
           "custom": {
             "axisLabel": "Proposals / Sec",
             "spanNulls": 1800000,
@@ -151,7 +152,8 @@
       "fieldConfig": {
         "defaults": {
           "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
-          "unit": "suffix: validations/s",
+          "unit": "si: validations/s",
+          "decimals": 0,
           "custom": {
             "axisLabel": "Validations / Sec",
             "spanNulls": 1800000,

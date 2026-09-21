@@ -73,7 +73,7 @@
           "sort": "desc"
         },
         "displayMode": "gradient",
-        "namePlacement": "top",
+        "namePlacement": "auto",
         "orientation": "horizontal",
         "reduceOptions": {
           "calcs": ["lastNotNull"],
@@ -672,7 +672,8 @@
       "fieldConfig": {
         "defaults": {
           "displayName": "${__field.labels.series} [${__field.labels.service_instance_id} ${__field.labels.xrpl_branch} ${__field.labels.xrpl_node_role} ${__field.labels.xrpl_work_item}]",
-          "unit": "suffix: messages/s",
+          "unit": "si: messages/s",
+          "decimals": 0,
           "custom": {
             "axisLabel": "Messages / Sec",
             "spanNulls": 1800000,
@@ -726,7 +727,8 @@
       "fieldConfig": {
         "defaults": {
           "displayName": "${__field.labels.series} [${__field.labels.service_instance_id} ${__field.labels.xrpl_branch} ${__field.labels.xrpl_node_role} ${__field.labels.xrpl_work_item}]",
-          "unit": "suffix: messages/s",
+          "unit": "si: messages/s",
+          "decimals": 0,
           "custom": {
             "axisLabel": "Messages / Sec",
             "spanNulls": 1800000,
@@ -774,7 +776,8 @@
       "fieldConfig": {
         "defaults": {
           "displayName": "${__field.labels.series} [${__field.labels.service_instance_id} ${__field.labels.xrpl_branch} ${__field.labels.xrpl_node_role} ${__field.labels.xrpl_work_item}]",
-          "unit": "suffix: messages/s",
+          "unit": "si: messages/s",
+          "decimals": 0,
           "custom": {
             "axisLabel": "Messages / Sec",
             "spanNulls": 1800000,
@@ -834,7 +837,8 @@
       "fieldConfig": {
         "defaults": {
           "displayName": "${__field.labels.series} [${__field.labels.service_instance_id} ${__field.labels.xrpl_branch} ${__field.labels.xrpl_node_role} ${__field.labels.xrpl_work_item}]",
-          "unit": "suffix: messages/s",
+          "unit": "si: messages/s",
+          "decimals": 0,
           "custom": {
             "axisLabel": "Messages / Sec",
             "spanNulls": 1800000,
@@ -1175,7 +1179,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "State ${__field.labels.xrpl_ident}",
+          "displayName": "${__field.labels.xrpl_ident}",
           "unit": "none",
           "custom": {
             "fillOpacity": 80,
@@ -1290,7 +1294,8 @@
       "fieldConfig": {
         "defaults": {
           "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
-          "unit": "suffix: ledgers/s",
+          "unit": "si: ledgers/s",
+          "decimals": 0,
           "custom": {
             "axisLabel": "Ledgers / Sec & Fetches / Sec",
             "spanNulls": 1800000,
@@ -1601,7 +1606,8 @@
       "fieldConfig": {
         "defaults": {
           "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
-          "unit": "suffix: reads/s",
+          "unit": "si: reads/s",
+          "decimals": 0,
           "custom": {
             "axisLabel": "Reads / Sec & Depth",
             "spanNulls": 1800000,
@@ -2138,7 +2144,8 @@
       "fieldConfig": {
         "defaults": {
           "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
-          "unit": "suffix: events/s",
+          "unit": "si: events/s",
+          "decimals": 0,
           "custom": {
             "axisLabel": "Events / Sec",
             "spanNulls": 1800000,
@@ -2201,7 +2208,8 @@
       "fieldConfig": {
         "defaults": {
           "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
-          "unit": "suffix: outcomes/s",
+          "unit": "si: outcomes/s",
+          "decimals": 0,
           "custom": {
             "axisLabel": "Outcomes / Sec",
             "spanNulls": 1800000,
@@ -2257,7 +2265,8 @@
       "fieldConfig": {
         "defaults": {
           "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
-          "unit": "suffix: acquisitions/s",
+          "unit": "si: acquisitions/s",
+          "decimals": 0,
           "custom": {
             "axisLabel": "Acquisitions / Sec",
             "spanNulls": 1800000,
@@ -2313,7 +2322,8 @@
       "fieldConfig": {
         "defaults": {
           "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
-          "unit": "suffix: events/s",
+          "unit": "si: events/s",
+          "decimals": 0,
           "custom": {
             "axisLabel": "Events / Sec",
             "spanNulls": 1800000,
