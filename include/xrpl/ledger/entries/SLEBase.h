@@ -35,11 +35,17 @@ namespace detail {
  * an ApplyView, so every entry over that view shares one SLE.
  *
  * @note The const_cast is what makes reaching ApplyView::peek() possible, and
- *       it is safe only because xrpld never instantiates a ReadView as a
- *       genuinely const object -- every view is a non-const object that some
- *       call sites merely observe through a const reference. If an actually
- *       const-qualified view type is ever introduced (an immutable snapshot,
- *       say), this becomes undefined behavior and must be revisited.
+ *       it is defined behavior only when the view really is a non-const
+ *       object that the caller merely observes through a const reference.
+ *       That holds for every production view today, but it is not a
+ *       guarantee the codebase makes: the unit tests already build
+ *       genuinely const ApplyView-derived objects (`Sandbox const` in
+ *       Directory_test.cpp and View_test.cpp, `PaymentSandbox const` in
+ *       TheoreticalQuality_test.cpp and View_test.cpp). Constructing a
+ *       read-only entry over one of those would be undefined behavior, so
+ *       do not, until #8069 removes the cast -- by giving ApplyView a
+ *       const-qualified peek(), which needs no amendment because
+ *       Action::Cache is invisible to apply(), visit() and metadata.
  *
  * @note Consequently a "read-only" entry over an ApplyView is not free of
  *       side effects: peek() installs an Action::Cache entry in the apply
@@ -50,8 +56,9 @@ namespace detail {
 inline SLE::const_pointer
 resolveEntry(ReadView const& view, Keylet const& key)
 {
-    // Views are never const objects; the read-only entry only holds a const
-    // reference because it does not itself modify the view.
+    // Safe only for a view that is not itself a const object -- see the
+    // note above. The entry holds a const reference because it does not
+    // modify the view, not because the view is const.
     // NOLINTNEXTLINE(cppcoreguidelines-pro-type-const-cast)
     if (auto const applyView = dynamic_cast<ApplyView*>(const_cast<ReadView*>(&view)))
         return applyView->peek(key);
