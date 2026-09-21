@@ -128,32 +128,69 @@ SHAMap::dirtyUp(NodePathStack& stack, uint256 const& target, SHAMapTreeNodePtr c
 SHAMapLeafNode*
 SHAMap::walkTowardsKey(uint256 const& id, NodePathStack* stack) const
 {
-    XRPL_ASSERT(
-        stack == nullptr || stack->empty(), "xrpl::SHAMap::walkTowardsKey : empty stack input");
+    if (stack != nullptr && !stack->empty())
+    {
+        // A plain XRPL_ASSERT here is a no-op under NDEBUG; without this guard a non-empty stack
+        // would be appended to below, leaving the caller with a path that starts mid-walk instead
+        // of at the root.
+        // LCOV_EXCL_START
+        UNREACHABLE("xrpl::SHAMap::walkTowardsKey : non-empty stack input");
+        stack->clear();
+        return nullptr;
+        // LCOV_EXCL_STOP
+    }
+
     auto inNode = root_;
     SHAMapNodeID nodeID;
 
-    // Every node on this walk lies on the path to `id`, so the stack can derive each ID from the
-    // branch `id` selects at the node above it.
-    auto pushCurrent = [&] {
-        if (stack != nullptr)
-            stack->pushNode(inNode, id);
+    // Without a caller-supplied stack, `nodeID` is the only record of position, so it is derived
+    // directly here instead of read back from a push. A push fails when the map is malformed, by
+    // holding a leaf outside the branch it was reached through or a node with no room left below
+    // it, not because `id` is merely absent; the stack is cleared rather than left holding a node
+    // that never became a real path entry. Callers tell the two apart by the path, which is empty
+    // only in the first case.
+    auto pushCurrent = [&]() -> bool {
+        if (stack == nullptr || stack->pushNode(inNode, id))
+        {
+            return true;
+        }
+        stack->clear();
+        return false;
     };
 
     while (inNode->isInner())
     {
-        pushCurrent();
+        if (!pushCurrent())
+        {
+            return nullptr;
+        }
 
         auto& inner = safeDowncast<SHAMapInnerNode&>(*inNode);
-        auto const branch = selectBranch(nodeID, id);
+        auto const branch = selectBranch(stack != nullptr ? stack->top().second : nodeID, id);
         if (inner.isEmptyBranch(branch))
             return nullptr;
 
         inNode = descendThrow(inner, branch);
-        nodeID = nodeID.getChildNodeID(branch);
+        if (stack == nullptr)
+        {
+            // Shares pastLeafDepth with pushChild, so this mode and the one with a
+            // caller-supplied path refuse at the same node. Reachable for the reason that helper
+            // gives, so it refuses rather than aborts.
+            auto const depth = nodeID.getDepth();
+            bool const tooDeep = pastLeafDepth(depth, *inNode);
+            SOMETIMES(tooDeep, "xrpl::SHAMap::walkTowardsKey : child too deep");
+            if (tooDeep)
+            {
+                return nullptr;
+            }
+            nodeID = nodeID.getChildNodeID(branch);
+        }
     }
 
-    pushCurrent();
+    if (!pushCurrent())
+    {
+        return nullptr;
+    }
     return safeDowncast<SHAMapLeafNode*>(inNode.get());
 }
 
@@ -357,11 +394,28 @@ SHAMap::descend(
         !parent->isEmptyBranch(branch), "xrpl::SHAMap::descend : parent branch is non-empty");
 
     SHAMapTreeNode* child = parent->getChildPointer(branch);  // NOLINT(misc-const-correctness)
+    auto childID = parentID.getChildNodeID(branch);
 
     if (child == nullptr)
     {
         auto const& childHash = parent->getChildHash(branch);
         SHAMapTreeNodePtr childNode = fetchNodeNT(childHash, filter);
+
+        if (childNode && !belongsAt(childID, *childNode))
+        {
+            // A node arriving through the filter is judged by hash, and a hash covers a node's
+            // contents rather than its position, so this is where a leaf that belongs elsewhere
+            // enters the map. Judged before canonicalizeChild, after which every later walk would
+            // see it as part of the tree.
+            //
+            // The map is the verdict rather than the node, because refusing one node would only
+            // make the walk fetch the same thing again: the filter answers from a local cache, so
+            // the next attempt resolves the same blob to the same place.
+            JLOG(journal_.warn()) << "Leaf " << childHash << " does not belong at " << childID
+                                  << ", map is invalid";
+            state_ = SHAMapState::Invalid;
+            return std::make_pair(nullptr, std::move(childID));
+        }
 
         if (childNode)
         {
@@ -370,7 +424,7 @@ SHAMap::descend(
         }
     }
 
-    return std::make_pair(child, parentID.getChildNodeID(branch));
+    return std::make_pair(child, std::move(childID));
 }
 
 SHAMapTreeNode*
@@ -436,6 +490,12 @@ SHAMapLeafNode*
 SHAMap::belowHelper(NodePathStack& stack, BelowDirection direction) const
 {
     XRPL_ASSERT(!stack.empty(), "xrpl::SHAMap::belowHelper : non-empty stack input");
+    if (stack.empty())
+    {
+        // LCOV_EXCL_START
+        return nullptr;
+        // LCOV_EXCL_STOP
+    }
     if (auto const& top = stack.top().first; top->isLeaf())
         return safeDowncast<SHAMapLeafNode*>(top.get());
 
@@ -455,7 +515,25 @@ SHAMap::belowHelper(NodePathStack& stack, BelowDirection direction) const
             continue;
         }
 
-        stack.pushChild(descendThrow(*inner, childBranch), childBranch);
+        auto descended = descendThrow(*inner, childBranch);
+        if (!stack.pushChild(std::move(descended), childBranch))
+        {
+            // A refused push means the map holds a node that cannot be walked, which is not the
+            // same as a subtree with no leaf below it. Throwing keeps nullptr meaning only the
+            // latter, so begin() cannot report such a map as empty while an iterator increment
+            // throws on the same condition. SHAMapMissingNode describes a resident node poorly,
+            // but descendThrow above throws it too, so every caller already handles it.
+            //
+            // The map is deliberately NOT condemned here. Every caller of belowHelper is a const
+            // read on an immutable snapshot, called from several RPC threads at once, and no
+            // reader checks isValid(); the callers that do are on the acquisition path. So the
+            // write would buy nothing, would race those readers, and would make a later compare()
+            // trip its own isValid() assertion. A map from peer data is judged where it is
+            // assembled (see SHAMap::descend and gmnProcessNodes).
+            JLOG(journal_.warn()) << "Cannot walk below " << stack.top().second << " at branch "
+                                  << childBranch;
+            Throw<SHAMapMissingNode>(type_, inner->getChildHash(childBranch));
+        }
 
         auto const& child = stack.top().first;
         if (child->isLeaf())
@@ -512,10 +590,17 @@ SHAMapLeafNode const*
 SHAMap::peekFirstItem(NodePathStack& stack) const
 {
     XRPL_ASSERT(stack.empty(), "xrpl::SHAMap::peekFirstItem : empty stack input");
-    stack.pushRoot(root_);
+    if (!stack.pushRoot(root_))
+    {
+        // LCOV_EXCL_START
+        return nullptr;
+        // LCOV_EXCL_STOP
+    }
     SHAMapLeafNode const* node = belowHelper(stack, BelowDirection::First);
     if (node == nullptr)
     {
+        // Whether the map was empty or belowHelper's walk otherwise failed to find a leaf, the
+        // stack is cleared rather than left holding a partial path the caller cannot use.
         stack.clear();
         return nullptr;
     }
@@ -526,6 +611,12 @@ SHAMapLeafNode const*
 SHAMap::peekNextItem(uint256 const& id, NodePathStack& stack) const
 {
     XRPL_ASSERT(!stack.empty(), "xrpl::SHAMap::peekNextItem : non-empty stack input");
+    if (stack.empty())
+    {
+        // LCOV_EXCL_START
+        return nullptr;
+        // LCOV_EXCL_STOP
+    }
     XRPL_ASSERT(stack.top().first->isLeaf(), "xrpl::SHAMap::peekNextItem : stack starts with leaf");
     stack.pop();
     while (!stack.empty())
@@ -537,7 +628,11 @@ SHAMap::peekNextItem(uint256 const& id, NodePathStack& stack) const
         {
             if (!inner.isEmptyBranch(i))
             {
-                stack.pushChild(descendThrow(inner, i), i);
+                auto child = descendThrow(inner, i);
+                if (!stack.pushChild(std::move(child), i))
+                {
+                    Throw<SHAMapMissingNode>(type_, id);
+                }
                 auto leaf = belowHelper(stack, BelowDirection::First);
                 if (leaf == nullptr)
                     Throw<SHAMapMissingNode>(type_, id);
@@ -578,12 +673,21 @@ SHAMap::ConstIterator
 SHAMap::boundHelper(uint256 const& id, BelowDirection direction) const
 {
     // Walk back up the path to `id` looking for the nearest leaf on the requested side. At each
-    // inner node the branches beyond the one `id` takes hold the candidates; the first non-empty
-    // one is the closest, and the extreme leaf below it is the answer.
+    // inner node the candidates are the branches on that side of the one `id` takes: the higher
+    // ones searching forward, the lower ones searching back. The nearest non-empty candidate holds
+    // the answer, which is its lowest leaf searching forward and its highest searching back.
     auto const searchingForward = direction == BelowDirection::First;
 
     NodePathStack stack;
     walkTowardsKey(id, &stack);
+
+    // An empty path means the walk refused a node, not that the map is empty: an empty map still
+    // leaves its root on the path. end() is the positive claim that no key lies on the requested
+    // side of `id`, so it must not stand in for "cannot answer", which is what every other entry
+    // point reports by throwing.
+    if (stack.empty())
+        Throw<SHAMapMissingNode>(type_, id);
+
     while (!stack.empty())
     {
         auto const [node, nodeID] = stack.top();
@@ -606,7 +710,11 @@ SHAMap::boundHelper(uint256 const& id, BelowDirection direction) const
                 if (inner.isEmptyBranch(branch))
                     continue;
 
-                stack.pushChild(descendThrow(inner, branch), branch);
+                auto child = descendThrow(inner, branch);
+                if (!stack.pushChild(std::move(child), branch))
+                {
+                    Throw<SHAMapMissingNode>(type_, id);
+                }
                 auto const leaf = belowHelper(stack, direction);
                 if (leaf == nullptr)
                     Throw<SHAMapMissingNode>(type_, id);
@@ -768,7 +876,16 @@ SHAMap::addGiveItem(SHAMapNodeType type, boost::intrusive_ptr<SHAMapItem const> 
 
         while ((b1 = selectBranch(nodeID, tag)) == (b2 = selectBranch(nodeID, otherItem->key())))
         {
-            stack.pushNode(node, tag);
+            if (!stack.pushNode(node, tag))
+            {
+                // The node pushed here is freshly made and inner, so only the depth bound could
+                // refuse it, and the loop cannot reach that bound: it advances only while the two
+                // keys agree at the current nibble, and keys agreeing at all 64 nibbles are equal,
+                // which the caller already returned false for.
+                // LCOV_EXCL_START
+                Throw<SHAMapMissingNode>(type_, tag);
+                // LCOV_EXCL_STOP
+            }
 
             // we need a new inner node, since both go on same branch at this
             // level
