@@ -1165,6 +1165,7 @@ public:
             }
 
             // Post-fixCleanup3_5_0, a zero ObjectID is malformed.
+            // Pre-fixCleanup3_5_0 path is unreachable so it is no testable.
             if (features[fixCleanup3_5_0])
             {
                 uint256 const zeroObjectID{};
