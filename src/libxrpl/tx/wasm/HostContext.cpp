@@ -347,7 +347,16 @@ invoke(Functor&& functor)
         return hfErrorToInt(value.error());
     }
 
-    return *value;
+    // `FloatOrdering` is the one answer not already an `i32`, and a scoped enum does not
+    // convert on its own. Its codes are non-negative, so the two returns stay distinct.
+    if constexpr (std::is_enum_v<std::remove_cvref_t<decltype(*value)>>)
+    {
+        return static_cast<std::int32_t>(*value);
+    }
+    else
+    {
+        return *value;
+    }
 }
 
 // A traced integer, which the guest sends as bytes rather than as a wasm scalar so that one

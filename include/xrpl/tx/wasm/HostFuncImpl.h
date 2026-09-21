@@ -274,7 +274,7 @@ public:
     std::expected<Bytes, HostFunctionError>
     floatFromMantExp(int64_t mantissa, int32_t exponent, int32_t mode) const override;
 
-    std::expected<int32_t, HostFunctionError>
+    std::expected<FloatOrdering, HostFunctionError>
     floatCompare(Slice const& x, Slice const& y) const override;
 
     std::expected<Bytes, HostFunctionError>
