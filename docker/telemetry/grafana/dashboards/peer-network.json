@@ -33,6 +33,10 @@
         "y": 1
       },
       "options": {
+        "annotations": {
+          "clustering": -1,
+          "multiLane": true
+        },
         "tooltip": {
           "mode": "multi",
           "sort": "desc",
@@ -78,6 +82,10 @@
         "y": 1
       },
       "options": {
+        "annotations": {
+          "clustering": -1,
+          "multiLane": true
+        },
         "tooltip": {
           "mode": "multi",
           "sort": "desc",
