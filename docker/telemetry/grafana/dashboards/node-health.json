@@ -306,7 +306,8 @@
               }
             ]
           },
-          "unit": "suffix: fetches/s"
+          "unit": "si: fetches/s",
+          "decimals": 0
         }
       },
       "gridPos": {
@@ -375,7 +376,8 @@
               }
             ]
           },
-          "unit": "suffix: mismatches/s"
+          "unit": "si: mismatches/s",
+          "decimals": 0
         }
       },
       "gridPos": {
@@ -1296,7 +1298,8 @@
               }
             ]
           },
-          "unit": "suffix: operations/s"
+          "unit": "si: operations/s",
+          "decimals": 0
         }
       },
       "gridPos": {
@@ -3532,7 +3535,7 @@
           "refId": "A"
         }
       ],
-      "title": "Validated Ledger Seq — Convergence (Max − Min, per network) [$xrpl_network_type]",
+      "title": "Validated Ledger Seq \u2014 Convergence (Max \u2212 Min, per Network) [$xrpl_network_type]",
       "type": "stat",
       "repeat": "xrpl_network_type",
       "repeatDirection": "h",
@@ -4252,7 +4255,8 @@
               }
             ]
           },
-          "unit": "suffix: fetches/min"
+          "unit": "si: fetches/min",
+          "decimals": 0
         }
       },
       "gridPos": {
@@ -4973,7 +4977,8 @@
               }
             ]
           },
-          "unit": "suffix: transactions/s"
+          "unit": "si: transactions/s",
+          "decimals": 0
         }
       },
       "gridPos": {
@@ -5179,7 +5184,8 @@
               }
             ]
           },
-          "unit": "suffix: acquisitions/s"
+          "unit": "si: acquisitions/s",
+          "decimals": 0
         }
       },
       "gridPos": {

@@ -124,7 +124,8 @@
       "fieldConfig": {
         "defaults": {
           "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
-          "unit": "suffix: messages/s",
+          "unit": "si: messages/s",
+          "decimals": 0,
           "custom": {
             "axisLabel": "Messages / Sec",
             "spanNulls": 1800000,
@@ -278,7 +279,8 @@
       "fieldConfig": {
         "defaults": {
           "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
-          "unit": "suffix: messages/s",
+          "unit": "si: messages/s",
+          "decimals": 0,
           "custom": {
             "axisLabel": "Messages / Sec & Bytes / Sec",
             "spanNulls": 1800000,
@@ -435,7 +437,8 @@
       "fieldConfig": {
         "defaults": {
           "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
-          "unit": "suffix: messages/s",
+          "unit": "si: messages/s",
+          "decimals": 0,
           "custom": {
             "axisLabel": "Messages / Sec",
             "spanNulls": 1800000,
@@ -836,7 +839,8 @@
       "fieldConfig": {
         "defaults": {
           "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
-          "unit": "suffix: lookups/s",
+          "unit": "si: lookups/s",
+          "decimals": 0,
           "custom": {
             "axisLabel": "Lookups / Sec",
             "spanNulls": 1800000,
@@ -884,7 +888,8 @@
       "fieldConfig": {
         "defaults": {
           "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
-          "unit": "suffix: rejections/s",
+          "unit": "si: rejections/s",
+          "decimals": 0,
           "custom": {
             "axisLabel": "Rejections / Sec",
             "spanNulls": 1800000,

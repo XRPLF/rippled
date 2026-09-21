@@ -84,7 +84,8 @@
       "fieldConfig": {
         "defaults": {
           "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
-          "unit": "suffix: validations/s"
+          "unit": "si: validations/s",
+          "decimals": 0
         },
         "overrides": []
       },
@@ -126,7 +127,8 @@
       "fieldConfig": {
         "defaults": {
           "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
-          "unit": "suffix: closes/s",
+          "unit": "si: closes/s",
+          "decimals": 0,
           "custom": {
             "axisLabel": "Closes / Sec",
             "spanNulls": 1800000,
@@ -188,7 +190,8 @@
       "fieldConfig": {
         "defaults": {
           "displayName": "${__field.labels.xrpl_ident}",
-          "unit": "suffix: proposals/s",
+          "unit": "si: proposals/s",
+          "decimals": 0,
           "custom": {
             "axisLabel": "Proposals / Sec",
             "spanNulls": 1800000,
@@ -244,7 +247,8 @@
       "fieldConfig": {
         "defaults": {
           "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
-          "unit": "suffix: events/s",
+          "unit": "si: events/s",
+          "decimals": 0,
           "custom": {
             "axisLabel": "Events / Sec",
             "spanNulls": 1800000,
@@ -300,7 +304,8 @@
       "fieldConfig": {
         "defaults": {
           "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
-          "unit": "suffix: events/s",
+          "unit": "si: events/s",
+          "decimals": 0,
           "custom": {
             "axisLabel": "Events / Sec",
             "spanNulls": 1800000,
@@ -585,7 +590,7 @@
         "overrides": []
       },
       "options": {
-        "namePlacement": "top",
+        "namePlacement": "auto",
         "orientation": "horizontal",
         "displayMode": "gradient",
         "showUnfilled": true,
@@ -661,7 +666,7 @@
         "overrides": []
       },
       "options": {
-        "namePlacement": "top",
+        "namePlacement": "auto",
         "orientation": "horizontal",
         "displayMode": "gradient",
         "showUnfilled": true,
@@ -910,7 +915,8 @@
       "fieldConfig": {
         "defaults": {
           "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
-          "unit": "suffix: rounds/s",
+          "unit": "si: rounds/s",
+          "decimals": 0,
           "custom": {
             "axisLabel": "Rounds / Sec",
             "spanNulls": 1800000,
@@ -1130,7 +1136,8 @@
       "fieldConfig": {
         "defaults": {
           "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
-          "unit": "suffix: failures/s",
+          "unit": "si: failures/s",
+          "decimals": 0,
           "custom": {
             "axisLabel": "Failures / Sec",
             "spanNulls": 1800000,
@@ -1186,7 +1193,8 @@
       "fieldConfig": {
         "defaults": {
           "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
-          "unit": "suffix: checks/s",
+          "unit": "si: checks/s",
+          "decimals": 0,
           "custom": {
             "axisLabel": "Checks / Sec",
             "spanNulls": 1800000,
@@ -1235,7 +1243,8 @@
       "fieldConfig": {
         "defaults": {
           "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
-          "unit": "suffix: changes/s",
+          "unit": "si: changes/s",
+          "decimals": 0,
           "custom": {
             "axisLabel": "Changes / Sec",
             "spanNulls": 1800000,
@@ -1284,7 +1293,8 @@
       "fieldConfig": {
         "defaults": {
           "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
-          "unit": "suffix: mismatches/s",
+          "unit": "si: mismatches/s",
+          "decimals": 0,
           "custom": {
             "axisLabel": "Mismatches / Sec",
             "spanNulls": 1800000,

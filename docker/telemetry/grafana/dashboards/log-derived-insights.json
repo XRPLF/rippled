@@ -918,7 +918,8 @@
       "fieldConfig": {
         "defaults": {
           "displayName": "${__field.labels.state} [${__field.labels.service_instance_id}]",
-          "unit": "suffix: transitions/s",
+          "unit": "si: transitions/s",
+          "decimals": 0,
           "min": 0,
           "custom": {
             "drawStyle": "line",
@@ -1054,7 +1055,8 @@
       "fieldConfig": {
         "defaults": {
           "displayName": "${__field.labels.severity} [${__field.labels.service_instance_id}]",
-          "unit": "suffix: lines/s",
+          "unit": "si: lines/s",
+          "decimals": 0,
           "custom": {
             "drawStyle": "line",
             "lineWidth": 1,
@@ -1118,7 +1120,8 @@
       "fieldConfig": {
         "defaults": {
           "displayName": "${__field.labels.partition} [${__field.labels.service_instance_id}]",
-          "unit": "suffix: lines/s",
+          "unit": "si: lines/s",
+          "decimals": 0,
           "custom": {
             "drawStyle": "line",
             "lineWidth": 1,
@@ -1195,7 +1198,8 @@
       "fieldConfig": {
         "defaults": {
           "displayName": "${__field.labels.action} [${__field.labels.service_instance_id}]",
-          "unit": "suffix: manifests/s",
+          "unit": "si: manifests/s",
+          "decimals": 0,
           "custom": {
             "drawStyle": "line",
             "lineWidth": 1,
@@ -1258,7 +1262,8 @@
       },
       "fieldConfig": {
         "defaults": {
-          "unit": "suffix: manifests/s",
+          "unit": "si: manifests/s",
+          "decimals": 0,
           "custom": {
             "drawStyle": "line",
             "lineWidth": 1,
@@ -1485,7 +1490,8 @@
       "fieldConfig": {
         "defaults": {
           "displayName": "${__field.labels.reason} [${__field.labels.service_instance_id}]",
-          "unit": "suffix: charges/s",
+          "unit": "si: charges/s",
+          "decimals": 0,
           "custom": {
             "drawStyle": "line",
             "lineWidth": 1,
@@ -1549,7 +1555,8 @@
       "fieldConfig": {
         "defaults": {
           "displayName": "${__field.labels.reason} [${__field.labels.service_instance_id}]",
-          "unit": "suffix: fee/s",
+          "unit": "si: fee/s",
+          "decimals": 0,
           "custom": {
             "drawStyle": "line",
             "lineWidth": 1,
@@ -1860,7 +1867,8 @@
       },
       "fieldConfig": {
         "defaults": {
-          "unit": "suffix: nodes/s",
+          "unit": "si: nodes/s",
+          "decimals": 0,
           "custom": {
             "drawStyle": "line",
             "lineWidth": 1,
@@ -1956,7 +1964,8 @@
       "fieldConfig": {
         "defaults": {
           "displayName": "${__field.labels.outcome} [${__field.labels.service_instance_id}]",
-          "unit": "suffix: events/s",
+          "unit": "si: events/s",
+          "decimals": 0,
           "custom": {
             "drawStyle": "line",
             "lineWidth": 1,
@@ -2019,7 +2028,8 @@
       },
       "fieldConfig": {
         "defaults": {
-          "unit": "suffix: events/s",
+          "unit": "si: events/s",
+          "decimals": 0,
           "custom": {
             "drawStyle": "line",
             "lineWidth": 1,
@@ -2106,7 +2116,8 @@
       "fieldConfig": {
         "defaults": {
           "displayName": "${__field.labels.phase} [${__field.labels.service_instance_id}]",
-          "unit": "suffix: transitions/s",
+          "unit": "si: transitions/s",
+          "decimals": 0,
           "custom": {
             "drawStyle": "line",
             "lineWidth": 1,
@@ -2170,7 +2181,8 @@
       "fieldConfig": {
         "defaults": {
           "displayName": "${__field.labels.mode} [${__field.labels.service_instance_id}]",
-          "unit": "suffix: beats/s",
+          "unit": "si: beats/s",
+          "decimals": 0,
           "custom": {
             "drawStyle": "line",
             "lineWidth": 1,
@@ -2233,7 +2245,7 @@
       },
       "fieldConfig": {
         "defaults": {
-          "unit": "suffix: validators",
+          "unit": "si: validators",
           "min": 0,
           "custom": {
             "drawStyle": "line",
@@ -2387,7 +2399,8 @@
       "fieldConfig": {
         "defaults": {
           "displayName": "${__field.labels.jobname} [${__field.labels.service_instance_id}]",
-          "unit": "suffix: breaches/s",
+          "unit": "si: breaches/s",
+          "decimals": 0,
           "custom": {
             "drawStyle": "line",
             "lineWidth": 1,
@@ -2529,7 +2542,8 @@
       "fieldConfig": {
         "defaults": {
           "displayName": "${__field.labels.partition} ${__field.labels.severity} [${__field.labels.service_instance_id}]",
-          "unit": "suffix: lines/s",
+          "unit": "si: lines/s",
+          "decimals": 0,
           "custom": {
             "drawStyle": "line",
             "lineWidth": 1,

@@ -80,7 +80,7 @@
           "color": {
             "mode": "palette-classic"
           },
-          "displayName": "DNS Resolve [${__field.labels.series}] ${__field.labels.xrpl_ident}",
+          "displayName": "[${__field.labels.series}] ${__field.labels.xrpl_ident}",
           "thresholds": {
             "mode": "absolute",
             "steps": [
@@ -113,7 +113,7 @@
         "maxVizHeight": 300,
         "minVizHeight": 16,
         "minVizWidth": 8,
-        "namePlacement": "top",
+        "namePlacement": "auto",
         "orientation": "horizontal",
         "reduceOptions": {
           "calcs": ["lastNotNull"],
@@ -153,7 +153,7 @@
           "color": {
             "mode": "palette-classic"
           },
-          "displayName": "Dial Outcome [${__field.labels.series}] ${__field.labels.xrpl_ident}",
+          "displayName": "[${__field.labels.series}] ${__field.labels.xrpl_ident}",
           "thresholds": {
             "mode": "absolute",
             "steps": [
@@ -186,7 +186,7 @@
         "maxVizHeight": 300,
         "minVizHeight": 16,
         "minVizWidth": 8,
-        "namePlacement": "top",
+        "namePlacement": "auto",
         "orientation": "horizontal",
         "reduceOptions": {
           "calcs": ["lastNotNull"],
@@ -226,7 +226,7 @@
           "color": {
             "mode": "palette-classic"
           },
-          "displayName": "Handshake Fail [${__field.labels.series}] ${__field.labels.xrpl_ident}",
+          "displayName": "[${__field.labels.series}] ${__field.labels.xrpl_ident}",
           "thresholds": {
             "mode": "absolute",
             "steps": [
@@ -259,7 +259,7 @@
         "maxVizHeight": 300,
         "minVizHeight": 16,
         "minVizWidth": 8,
-        "namePlacement": "top",
+        "namePlacement": "auto",
         "orientation": "horizontal",
         "reduceOptions": {
           "calcs": ["lastNotNull"],
@@ -299,7 +299,7 @@
           "color": {
             "mode": "palette-classic"
           },
-          "displayName": "UNL Fetch [${__field.labels.series}] ${__field.labels.xrpl_ident}",
+          "displayName": "[${__field.labels.series}] ${__field.labels.xrpl_ident}",
           "thresholds": {
             "mode": "absolute",
             "steps": [
@@ -332,7 +332,7 @@
         "maxVizHeight": 300,
         "minVizHeight": 16,
         "minVizWidth": 8,
-        "namePlacement": "top",
+        "namePlacement": "auto",
         "orientation": "horizontal",
         "reduceOptions": {
           "calcs": ["lastNotNull"],
@@ -874,7 +874,7 @@
       },
       "id": 65,
       "panels": [],
-      "title": "Peer supply",
+      "title": "Peer Supply",
       "type": "row"
     },
     {
@@ -888,7 +888,7 @@
           "color": {
             "mode": "palette-classic"
           },
-          "displayName": "Peer Accept [${__field.labels.series}] ${__field.labels.xrpl_ident}",
+          "displayName": "[${__field.labels.series}] ${__field.labels.xrpl_ident}",
           "thresholds": {
             "mode": "absolute",
             "steps": [
@@ -921,7 +921,7 @@
         "maxVizHeight": 300,
         "minVizHeight": 16,
         "minVizWidth": 8,
-        "namePlacement": "top",
+        "namePlacement": "auto",
         "orientation": "horizontal",
         "reduceOptions": {
           "calcs": ["lastNotNull"],
@@ -961,7 +961,7 @@
           "color": {
             "mode": "palette-classic"
           },
-          "displayName": "Peer Disconnect [${__field.labels.series}] ${__field.labels.xrpl_ident}",
+          "displayName": "[${__field.labels.series}] ${__field.labels.xrpl_ident}",
           "thresholds": {
             "mode": "absolute",
             "steps": [
@@ -994,7 +994,7 @@
         "maxVizHeight": 300,
         "minVizHeight": 16,
         "minVizWidth": 8,
-        "namePlacement": "top",
+        "namePlacement": "auto",
         "orientation": "horizontal",
         "reduceOptions": {
           "calcs": ["lastNotNull"],
@@ -1257,7 +1257,7 @@
           "refId": "B"
         }
       ],
-      "title": "Peer Supply Window Margin (history headroom vs tip gap)",
+      "title": "Peer Supply Window Margin (History Headroom vs Tip Gap)",
       "type": "timeseries"
     },
     {
@@ -1468,7 +1468,7 @@
       },
       "id": 64,
       "panels": [],
-      "title": "Sync state",
+      "title": "Sync State",
       "type": "row"
     },
     {
@@ -1720,7 +1720,7 @@
         "maxVizHeight": 300,
         "minVizHeight": 16,
         "minVizWidth": 8,
-        "namePlacement": "top",
+        "namePlacement": "auto",
         "orientation": "horizontal",
         "reduceOptions": {
           "calcs": ["lastNotNull"],
@@ -1781,26 +1781,17 @@
       },
       "id": 24,
       "options": {
-        "displayMode": "gradient",
-        "legend": {
-          "calcs": [],
-          "displayMode": "list",
-          "placement": "bottom",
-          "showLegend": false
-        },
-        "maxVizHeight": 300,
-        "minVizHeight": 16,
-        "minVizWidth": 8,
-        "namePlacement": "top",
-        "orientation": "horizontal",
+        "minVizHeight": 75,
+        "minVizWidth": 75,
+        "orientation": "auto",
         "reduceOptions": {
           "calcs": ["lastNotNull"],
           "fields": "",
           "values": false
         },
-        "showUnfilled": true,
-        "sizing": "manual",
-        "valueMode": "color"
+        "showThresholdLabels": false,
+        "showThresholdMarkers": true,
+        "sizing": "auto"
       },
       "pluginVersion": "13.2.0-28926505616",
       "targets": [
@@ -1814,7 +1805,7 @@
         }
       ],
       "title": "Mode Transitions by Edge [$xrpl_network_type]",
-      "type": "bargauge",
+      "type": "gauge",
       "repeat": "xrpl_network_type",
       "repeatDirection": "h",
       "maxPerRow": 2
@@ -1936,7 +1927,7 @@
       },
       "id": 66,
       "panels": [],
-      "title": "Ledger acquire & SHAMap fetch",
+      "title": "Ledger Acquire & SHAMap Fetch",
       "type": "row"
     },
     {
@@ -1950,7 +1941,7 @@
           "color": {
             "mode": "palette-classic"
           },
-          "displayName": "Acquire Stalls ${__field.labels.xrpl_ident}",
+          "displayName": "${__field.labels.xrpl_ident}",
           "thresholds": {
             "mode": "absolute",
             "steps": [
@@ -1983,7 +1974,7 @@
         "maxVizHeight": 300,
         "minVizHeight": 16,
         "minVizWidth": 8,
-        "namePlacement": "top",
+        "namePlacement": "auto",
         "orientation": "horizontal",
         "reduceOptions": {
           "calcs": ["lastNotNull"],
@@ -2023,7 +2014,7 @@
           "color": {
             "mode": "palette-classic"
           },
-          "displayName": "Acquire Source [${__field.labels.series}] ${__field.labels.xrpl_ident}",
+          "displayName": "[${__field.labels.series}] ${__field.labels.xrpl_ident}",
           "thresholds": {
             "mode": "absolute",
             "steps": [
@@ -2056,7 +2047,7 @@
         "maxVizHeight": 300,
         "minVizHeight": 16,
         "minVizWidth": 8,
-        "namePlacement": "top",
+        "namePlacement": "auto",
         "orientation": "horizontal",
         "reduceOptions": {
           "calcs": ["lastNotNull"],
@@ -2247,7 +2238,8 @@
               }
             ]
           },
-          "unit": "suffix: nodes/s"
+          "unit": "si: nodes/s",
+          "decimals": 0
         }
       },
       "gridPos": {
@@ -2539,7 +2531,7 @@
       },
       "id": 69,
       "panels": [],
-      "title": "Job queue",
+      "title": "Job Queue",
       "type": "row"
     },
     {
@@ -2722,7 +2714,7 @@
       },
       "id": 68,
       "panels": [],
-      "title": "Quorum & publish",
+      "title": "Quorum & Publish",
       "type": "row"
     },
     {
@@ -2736,7 +2728,7 @@
           "color": {
             "mode": "palette-classic"
           },
-          "displayName": "Quorum Shortfall [${__field.labels.series}] ${__field.labels.xrpl_ident}",
+          "displayName": "[${__field.labels.series}] ${__field.labels.xrpl_ident}",
           "thresholds": {
             "mode": "absolute",
             "steps": [
@@ -2769,7 +2761,7 @@
         "maxVizHeight": 300,
         "minVizHeight": 16,
         "minVizWidth": 8,
-        "namePlacement": "top",
+        "namePlacement": "auto",
         "orientation": "horizontal",
         "reduceOptions": {
           "calcs": ["lastNotNull"],
@@ -3080,7 +3072,7 @@
           "refId": "A"
         }
       ],
-      "title": "Publish Lag (validated minus published)",
+      "title": "Publish Lag (Validated Minus Published)",
       "type": "timeseries"
     },
     {
@@ -3274,7 +3266,7 @@
       },
       "id": 70,
       "panels": [],
-      "title": "Terminal blockers & serving",
+      "title": "Terminal Blockers & Serving",
       "type": "row"
     },
     {
@@ -3375,7 +3367,7 @@
           "color": {
             "mode": "palette-classic"
           },
-          "displayName": "Serve Refused [${__field.labels.series}] ${__field.labels.xrpl_ident}",
+          "displayName": "[${__field.labels.series}] ${__field.labels.xrpl_ident}",
           "thresholds": {
             "mode": "absolute",
             "steps": [
@@ -3408,7 +3400,7 @@
         "maxVizHeight": 300,
         "minVizHeight": 16,
         "minVizWidth": 8,
-        "namePlacement": "top",
+        "namePlacement": "auto",
         "orientation": "horizontal",
         "reduceOptions": {
           "calcs": ["lastNotNull"],
@@ -3481,7 +3473,7 @@
         "maxVizHeight": 300,
         "minVizHeight": 16,
         "minVizWidth": 8,
-        "namePlacement": "top",
+        "namePlacement": "auto",
         "orientation": "horizontal",
         "reduceOptions": {
           "calcs": ["lastNotNull"],
@@ -3623,7 +3615,7 @@
       },
       "id": 72,
       "panels": [],
-      "title": "Back-fill & persistence",
+      "title": "Back-fill & Persistence",
       "type": "row"
     },
     {
@@ -3637,7 +3629,7 @@
           "color": {
             "mode": "palette-classic"
           },
-          "displayName": "Replay Fallback [${__field.labels.series}] ${__field.labels.xrpl_ident}",
+          "displayName": "[${__field.labels.series}] ${__field.labels.xrpl_ident}",
           "thresholds": {
             "mode": "absolute",
             "steps": [
@@ -3670,7 +3662,7 @@
         "maxVizHeight": 300,
         "minVizHeight": 16,
         "minVizWidth": 8,
-        "namePlacement": "top",
+        "namePlacement": "auto",
         "orientation": "horizontal",
         "reduceOptions": {
           "calcs": ["lastNotNull"],
@@ -3710,7 +3702,7 @@
           "color": {
             "mode": "palette-classic"
           },
-          "displayName": "Replay Outcome [${__field.labels.series}] ${__field.labels.xrpl_ident}",
+          "displayName": "[${__field.labels.series}] ${__field.labels.xrpl_ident}",
           "thresholds": {
             "mode": "absolute",
             "steps": [
@@ -3743,7 +3735,7 @@
         "maxVizHeight": 300,
         "minVizHeight": 16,
         "minVizWidth": 8,
-        "namePlacement": "top",
+        "namePlacement": "auto",
         "orientation": "horizontal",
         "reduceOptions": {
           "calcs": ["lastNotNull"],
@@ -3816,7 +3808,7 @@
         "maxVizHeight": 300,
         "minVizHeight": 16,
         "minVizWidth": 8,
-        "namePlacement": "top",
+        "namePlacement": "auto",
         "orientation": "horizontal",
         "reduceOptions": {
           "calcs": ["lastNotNull"],
@@ -3898,7 +3890,7 @@
         "maxVizHeight": 300,
         "minVizHeight": 16,
         "minVizWidth": 8,
-        "namePlacement": "top",
+        "namePlacement": "auto",
         "orientation": "horizontal",
         "reduceOptions": {
           "calcs": ["lastNotNull"],
@@ -4089,7 +4081,8 @@
               }
             ]
           },
-          "unit": "suffix: operations/s"
+          "unit": "si: operations/s",
+          "decimals": 0
         }
       },
       "gridPos": {
@@ -4138,7 +4131,7 @@
           "refId": "B"
         }
       ],
-      "title": "NodeStore Operation Rate (writes vs reads)",
+      "title": "NodeStore Operation Rate (Writes vs Reads)",
       "type": "timeseries"
     },
     {
@@ -4415,7 +4408,7 @@
       },
       "id": 67,
       "panels": [],
-      "title": "Spans & traces",
+      "title": "Spans & Traces",
       "type": "row"
     },
     {
@@ -4429,7 +4422,7 @@
           "color": {
             "mode": "palette-classic"
           },
-          "displayName": "Acquire Phase [${__field.labels.series}] ${__field.labels.xrpl_ident}",
+          "displayName": "[${__field.labels.series}] ${__field.labels.xrpl_ident}",
           "thresholds": {
             "mode": "absolute",
             "steps": [
@@ -4462,7 +4455,7 @@
         "maxVizHeight": 300,
         "minVizHeight": 16,
         "minVizWidth": 8,
-        "namePlacement": "top",
+        "namePlacement": "auto",
         "orientation": "horizontal",
         "reduceOptions": {
           "calcs": ["lastNotNull"],
@@ -4603,7 +4596,7 @@
           "refId": "C"
         }
       ],
-      "title": "Ledger Acquire Phase Duration (p95 by phase)",
+      "title": "Ledger Acquire Phase Duration (p95 by Phase)",
       "type": "timeseries"
     },
     {
@@ -4661,7 +4654,8 @@
               }
             ]
           },
-          "unit": "suffix: acquisitions/s"
+          "unit": "si: acquisitions/s",
+          "decimals": 0
         }
       },
       "gridPos": {
@@ -4859,7 +4853,8 @@
               }
             ]
           },
-          "unit": "suffix: dials/s"
+          "unit": "si: dials/s",
+          "decimals": 0
         }
       },
       "gridPos": {
@@ -4900,7 +4895,7 @@
           "refId": "A"
         }
       ],
-      "title": "Outbound Dial Outcomes (span-derived, per attempt)",
+      "title": "Outbound Dial Outcomes (Span-Derived, per Attempt)",
       "type": "timeseries"
     },
     {
@@ -4958,7 +4953,8 @@
               }
             ]
           },
-          "unit": "suffix: requests/s"
+          "unit": "si: requests/s",
+          "decimals": 0
         }
       },
       "gridPos": {
@@ -5057,7 +5053,8 @@
               }
             ]
           },
-          "unit": "suffix: validations/s"
+          "unit": "si: validations/s",
+          "decimals": 0
         },
         "overrides": []
       },
@@ -5113,7 +5110,7 @@
           "color": {
             "mode": "palette-classic"
           },
-          "displayName": "Acquire Stalls ${__field.labels.xrpl_ident}",
+          "displayName": "[${__field.labels.series}] ${__field.labels.xrpl_ident}",
           "thresholds": {
             "mode": "absolute",
             "steps": [
@@ -5146,7 +5143,7 @@
         "maxVizHeight": 300,
         "minVizHeight": 16,
         "minVizWidth": 8,
-        "namePlacement": "top",
+        "namePlacement": "auto",
         "orientation": "horizontal",
         "reduceOptions": {
           "calcs": ["lastNotNull"],
@@ -5272,7 +5269,7 @@
           "refId": "A"
         }
       ],
-      "title": "Rotation Phase Duration (p95 by stage)",
+      "title": "Rotation Phase Duration (p95 by Stage)",
       "type": "timeseries"
     },
     {
