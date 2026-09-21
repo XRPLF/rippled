@@ -1,4 +1,5 @@
 #include <xrpl/basics/Slice.h>
+#include <xrpl/ledger/helpers/EscrowHelpers.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
@@ -17,6 +18,7 @@
 #include <tx/wasm/fixtures/WasmRun.h>
 
 #include <array>
+#include <cstddef>
 #include <cstdint>
 #include <optional>
 
@@ -143,9 +145,9 @@ TEST_F(BytecodeRun, TheBytecodeReserveIsHeldWhileTheEscrowLivesAndReleasedWhenIt
     auto const wasm = assembleWat(gatedOnLedgerSqn(threshold));
     auto const created = createEscrow(wasm);
 
-    // `calculateAdditionalReserve`: one increment for the escrow, plus one per 500 bytes.
-    auto const expected = 1U + static_cast<std::uint32_t>(wasm.size() / 500);
-    EXPECT_EQ(env.getOwnerCount(alice), expected);
+    auto const held = env.getOwnerCount(alice);
+    ASSERT_GT(held, 0U);
+    EXPECT_EQ(held, static_cast<std::uint32_t>(calculateAdditionalReserve(std::optional{wasm})));
 
     while (currentSeq() < threshold)
     {
@@ -154,6 +156,26 @@ TEST_F(BytecodeRun, TheBytecodeReserveIsHeldWhileTheEscrowLivesAndReleasedWhenIt
     ASSERT_EQ(finish(created.seq).ter, tesSUCCESS);
 
     EXPECT_EQ(env.getOwnerCount(alice), 0U);
+}
+
+// Fixed values, not a formula: the assertion this replaced computed its expectation
+// the way the implementation did, so it passed either side of the off-by-one.
+TEST(BytecodeReserve, TheBytecodeReserveIsCeilingDivision)
+{
+    auto const reserveFor = [](std::size_t size) {
+        return calculateAdditionalReserve(std::optional{Bytes(size, 0x00)});
+    };
+
+    EXPECT_EQ(calculateAdditionalReserve(std::optional<Bytes>{}), 1);
+    EXPECT_EQ(reserveFor(0), 1);
+    EXPECT_EQ(reserveFor(1), 1);
+    EXPECT_EQ(reserveFor(499), 1);
+    EXPECT_EQ(reserveFor(500), 1);
+    EXPECT_EQ(reserveFor(501), 2);
+    EXPECT_EQ(reserveFor(1000), 2);
+    EXPECT_EQ(reserveFor(1001), 3);
+    EXPECT_EQ(reserveFor(1500), 3);
+    EXPECT_EQ(reserveFor(200'000), 400);  // kMaxBytecodeSizeLimit
 }
 
 TEST_F(BytecodeRun, CreatingChargesTheAmountAndTheFee)

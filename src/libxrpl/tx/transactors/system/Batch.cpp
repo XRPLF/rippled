@@ -17,7 +17,6 @@
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
-#include <xrpl/protocol/TxFormats.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/Transactor.h>
 #include <xrpl/tx/applySteps.h>
@@ -73,14 +72,23 @@ Batch::calculateBaseFeeImpl(ReadView const& view, STTx const& tx)
     for (auto const& stx : tx.getBatchTransactions())
     {
         auto const fee = xrpl::calculateBaseFee(view, *stx);
-        // LCOV_EXCL_START
-        if (txnFees > maxAmount - fee)
+        if (!fee)
         {
+            JLOG(debugLog().error())
+                << "BatchTrace: base fee of inner transaction " << stx->getTransactionID()
+                << " could not be computed: " << transToken(fee.error());
+            return std::nullopt;
+        }
+
+        // LCOV_EXCL_START
+        if (txnFees > maxAmount - *fee)
+        {
+            UNREACHABLE("XRPAmount overflow in txnFees calculation");
             JLOG(debugLog().error()) << "BatchTrace: XRPAmount overflow in txnFees calculation.";
             return std::nullopt;
         }
         // LCOV_EXCL_STOP
-        txnFees += fee;
+        txnFees += *fee;
     }
 
     // Calculate the Signers/BatchSigners Fees
