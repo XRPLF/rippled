@@ -2138,7 +2138,8 @@
       "fieldConfig": {
         "defaults": {
           "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
-          "unit": "suffix: events/s",
+          "unit": "si: events/s",
+          "decimals": 0,
           "custom": {
             "axisLabel": "Events / Sec",
             "spanNulls": 1800000,
@@ -2201,7 +2202,8 @@
       "fieldConfig": {
         "defaults": {
           "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
-          "unit": "suffix: outcomes/s",
+          "unit": "si: outcomes/s",
+          "decimals": 0,
           "custom": {
             "axisLabel": "Outcomes / Sec",
             "spanNulls": 1800000,
@@ -2257,7 +2259,8 @@
       "fieldConfig": {
         "defaults": {
           "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
-          "unit": "suffix: acquisitions/s",
+          "unit": "si: acquisitions/s",
+          "decimals": 0,
           "custom": {
             "axisLabel": "Acquisitions / Sec",
             "spanNulls": 1800000,
@@ -2313,7 +2316,8 @@
       "fieldConfig": {
         "defaults": {
           "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
-          "unit": "suffix: events/s",
+          "unit": "si: events/s",
+          "decimals": 0,
           "custom": {
             "axisLabel": "Events / Sec",
             "spanNulls": 1800000,

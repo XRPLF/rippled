@@ -925,7 +925,8 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "unit": "suffix: failures/s",
+          "unit": "si: failures/s",
+          "decimals": 0,
           "custom": {
             "axisLabel": "Failures / Sec",
             "spanNulls": 1800000,

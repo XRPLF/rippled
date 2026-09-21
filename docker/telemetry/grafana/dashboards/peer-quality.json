@@ -359,7 +359,7 @@
         "y": 43
       },
       "options": {
-        "namePlacement": "top",
+        "namePlacement": "auto",
         "orientation": "horizontal",
         "displayMode": "gradient",
         "tooltip": {

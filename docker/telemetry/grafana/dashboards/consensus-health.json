@@ -585,7 +585,7 @@
         "overrides": []
       },
       "options": {
-        "namePlacement": "top",
+        "namePlacement": "auto",
         "orientation": "horizontal",
         "displayMode": "gradient",
         "showUnfilled": true,
@@ -661,7 +661,7 @@
         "overrides": []
       },
       "options": {
-        "namePlacement": "top",
+        "namePlacement": "auto",
         "orientation": "horizontal",
         "displayMode": "gradient",
         "showUnfilled": true,
@@ -910,7 +910,8 @@
       "fieldConfig": {
         "defaults": {
           "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
-          "unit": "suffix: rounds/s",
+          "unit": "si: rounds/s",
+          "decimals": 0,
           "custom": {
             "axisLabel": "Rounds / Sec",
             "spanNulls": 1800000,
@@ -1284,7 +1285,8 @@
       "fieldConfig": {
         "defaults": {
           "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
-          "unit": "suffix: mismatches/s",
+          "unit": "si: mismatches/s",
+          "decimals": 0,
           "custom": {
             "axisLabel": "Mismatches / Sec",
             "spanNulls": 1800000,

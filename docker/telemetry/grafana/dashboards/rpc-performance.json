@@ -687,7 +687,8 @@
       "fieldConfig": {
         "defaults": {
           "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
-          "unit": "suffix: calls/s",
+          "unit": "si: calls/s",
+          "decimals": 0,
           "custom": {
             "drawStyle": "line",
             "lineWidth": 1,
@@ -745,7 +746,8 @@
       "fieldConfig": {
         "defaults": {
           "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
-          "unit": "suffix: calls/s",
+          "unit": "si: calls/s",
+          "decimals": 0,
           "custom": {
             "drawStyle": "line",
             "lineWidth": 1,
@@ -803,7 +805,8 @@
       "fieldConfig": {
         "defaults": {
           "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
-          "unit": "suffix: errors/s",
+          "unit": "si: errors/s",
+          "decimals": 0,
           "custom": {
             "drawStyle": "line",
             "lineWidth": 1,
