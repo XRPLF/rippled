@@ -37,7 +37,8 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "unit": "suffix: transactions/s",
+          "unit": "si: transactions/s",
+          "decimals": 0,
           "thresholds": {
             "steps": [
               {

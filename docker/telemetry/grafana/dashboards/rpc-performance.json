@@ -126,7 +126,8 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "unit": "suffix: messages/s"
+          "unit": "si: messages/s",
+          "decimals": 0
         },
         "overrides": []
       },

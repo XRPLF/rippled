@@ -119,7 +119,8 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "unit": "suffix: validations/s"
+          "unit": "si: validations/s",
+          "decimals": 0
         },
         "overrides": []
       },

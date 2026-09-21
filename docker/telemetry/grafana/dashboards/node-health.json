@@ -140,7 +140,8 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "unit": "suffix: fetches/s"
+          "unit": "si: fetches/s",
+          "decimals": 0
         },
         "overrides": []
       },
@@ -176,7 +177,8 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "unit": "suffix: mismatches/s",
+          "unit": "si: mismatches/s",
+          "decimals": 0,
           "thresholds": {
             "steps": [
               {
