@@ -274,7 +274,8 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "unit": "suffix: commands/s",
+          "unit": "si: commands/s",
+          "decimals": 0,
           "custom": {
             "axisLabel": "Commands / Sec",
             "spanNulls": 1800000,
@@ -387,7 +388,8 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "unit": "suffix: requests/s",
+          "unit": "si: requests/s",
+          "decimals": 0,
           "custom": {
             "axisLabel": "Requests / Sec",
             "spanNulls": 1800000,
@@ -438,7 +440,8 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "unit": "suffix: requests/s",
+          "unit": "si: requests/s",
+          "decimals": 0,
           "custom": {
             "axisLabel": "Requests / Sec",
             "spanNulls": 1800000,
