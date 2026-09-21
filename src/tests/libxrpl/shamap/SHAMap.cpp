@@ -572,32 +572,39 @@ TEST_F(SHAMapTraversal, bounds_agree_with_iteration_for_absent_keys_at_leaf_dept
     // branch, right up to the one just above kLeafDepth.
     for (unsigned int const divergeAt : {0u, 31u, 61u, 62u})
     {
-        auto text = std::string(divergeAt, 'a') + "b";
-        text.append(64 - text.size(), '0');
-        uint256 const probe{std::string_view{text}};
+        // '9' sorts below the shared 'a' prefix and 'b' above it, so the probe lands under or
+        // over the whole key block -- driving belowHelper's First and Last descents respectively.
+        for (char const nibble : {'9', 'b'})
+        {
+            auto text = std::string(divergeAt, 'a') + nibble;
+            text.append(64 - text.size(), '0');
+            uint256 const probe{std::string_view{text}};
 
-        auto const expectedUpper = std::ranges::upper_bound(keys, probe);
-        auto const upper = map.upperBound(probe);
-        if (expectedUpper == keys.end())
-        {
-            EXPECT_EQ(upper, map.end()) << "divergeAt " << divergeAt;
-        }
-        else
-        {
-            ASSERT_NE(upper, map.end()) << "divergeAt " << divergeAt;
-            EXPECT_EQ(upper->key(), *expectedUpper) << "divergeAt " << divergeAt;
-        }
+            auto const expectedUpper = std::ranges::upper_bound(keys, probe);
+            auto const upper = map.upperBound(probe);
+            if (expectedUpper == keys.end())
+            {
+                EXPECT_EQ(upper, map.end()) << "divergeAt " << divergeAt << " nibble " << nibble;
+            }
+            else
+            {
+                ASSERT_NE(upper, map.end()) << "divergeAt " << divergeAt << " nibble " << nibble;
+                EXPECT_EQ(upper->key(), *expectedUpper)
+                    << "divergeAt " << divergeAt << " nibble " << nibble;
+            }
 
-        auto const lowerCount = std::ranges::lower_bound(keys, probe) - keys.begin();
-        auto const lower = map.lowerBound(probe);
-        if (lowerCount == 0)
-        {
-            EXPECT_EQ(lower, map.end()) << "divergeAt " << divergeAt;
-        }
-        else
-        {
-            ASSERT_NE(lower, map.end()) << "divergeAt " << divergeAt;
-            EXPECT_EQ(lower->key(), keys[lowerCount - 1]) << "divergeAt " << divergeAt;
+            auto const lowerCount = std::ranges::lower_bound(keys, probe) - keys.begin();
+            auto const lower = map.lowerBound(probe);
+            if (lowerCount == 0)
+            {
+                EXPECT_EQ(lower, map.end()) << "divergeAt " << divergeAt << " nibble " << nibble;
+            }
+            else
+            {
+                ASSERT_NE(lower, map.end()) << "divergeAt " << divergeAt << " nibble " << nibble;
+                EXPECT_EQ(lower->key(), keys[lowerCount - 1])
+                    << "divergeAt " << divergeAt << " nibble " << nibble;
+            }
         }
     }
 }
