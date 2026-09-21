@@ -408,8 +408,8 @@ public:
      * Erases the entry from the view.
      *
      * Drops the SLE afterwards, so the entry reports !exists() and any
-     * further use trips an assertion here rather than either throwing from
-     * deep inside ApplyStateTable or -- worse -- silently succeeding. For an
+     * further use throws here rather than either throwing from deep inside
+     * ApplyStateTable or -- worse -- silently succeeding. For an
      * entry that already existed, ApplyStateTable::erase keeps holding this
      * exact SLE and builds the DeletedNode's FinalFields from it, so a write
      * through the entry after erase() would land in transaction metadata
