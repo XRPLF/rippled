@@ -359,6 +359,47 @@ TEST_F(SLEBaseTests, ThrowsOnMissingEntry)
     AccountRootEntryR const missing(bob_.id(), env_.getClosedLedger());
     EXPECT_FALSE(missing.exists());
     EXPECT_THROW(std::ignore = missing.key(), std::logic_error);
+    EXPECT_THROW(std::ignore = missing.keylet(), std::logic_error);
+
+    // Dereferencing an absent entry throws rather than handing back a null
+    // pointer for the caller to walk into.
+    EXPECT_THROW(std::ignore = missing.operator->(), std::logic_error);
+    EXPECT_THROW(std::ignore = (*missing).getType(), std::logic_error);
+}
+
+TEST_F(SLEBaseTests, ThrowsOnMissingWritableEntry)
+{
+    // A view we never apply, so nothing here reaches the ledger.
+    ApplyViewImpl av(&env_.getClosedLedger(), TapNone);
+
+    // bob is unfunded, so this resolves to nothing and every operation that
+    // needs an SLE has to throw instead of dereferencing null. These are the
+    // cases a Release build used to walk straight past, back when they were
+    // XRPL_ASSERTs.
+    AccountRootEntryW missing(bob_.id(), av);
+    EXPECT_FALSE(missing.exists());
+
+    EXPECT_THROW(std::ignore = missing.operator->(), std::logic_error);
+    EXPECT_THROW(std::ignore = (*missing).getType(), std::logic_error);
+    EXPECT_THROW(missing.insert(), std::logic_error);
+    EXPECT_THROW(missing.update(), std::logic_error);
+    EXPECT_THROW(missing.erase(), std::logic_error);
+
+    // keylet() and key() are the exception: a writable entry keeps the keylet
+    // it was built from, so they stay valid before newSLE().
+    EXPECT_EQ(missing.key(), keylet::account(bob_.id()).key);
+
+    // newSLE() is the inverse -- it throws when the entry *does* exist,
+    // rather than silently dropping the SLE already held.
+    missing.newSLE();
+    EXPECT_TRUE(missing.exists());
+    EXPECT_THROW(missing.newSLE(), std::logic_error);
+
+    // And once erased, the entry is empty again and throws as before.
+    missing.insert();
+    missing.erase();
+    EXPECT_FALSE(missing.exists());
+    EXPECT_THROW(missing.update(), std::logic_error);
 }
 
 }  // namespace test
