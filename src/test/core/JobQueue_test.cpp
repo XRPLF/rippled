@@ -31,6 +31,7 @@
 #include <mutex>
 #include <optional>
 #include <string>
+#include <string_view>
 #include <utility>
 #include <vector>
 
@@ -243,15 +244,15 @@ public:
 class SilentPerfLog : public perf::PerfLog
 {
     void
-    rpcStart(std::string const&, std::uint64_t) override
+    rpcStart(std::string_view, std::uint64_t) override
     {
     }
     void
-    rpcFinish(std::string const&, std::uint64_t) override
+    rpcFinish(std::string_view, std::uint64_t) override
     {
     }
     void
-    rpcError(std::string const&, std::uint64_t) override
+    rpcError(std::string_view, std::uint64_t) override
     {
     }
     void
