@@ -876,7 +876,7 @@ SHAMap::getProofPath(uint256 const& key) const
         return {};
     }
 
-    if (auto const& node = stack.top().first; !node || node->isInner() ||
+    if (auto const& node = stack.top(); !node || node->isInner() ||
         intr_ptr::staticPointerCast<SHAMapLeafNode>(node)->peekItem()->key() != key)
     {
         JLOG(journal_.debug()) << "no path to " << key;
@@ -888,7 +888,7 @@ SHAMap::getProofPath(uint256 const& key) const
     while (!stack.empty())
     {
         Serializer s;
-        stack.top().first->serializeForWire(s);
+        stack.top()->serializeForWire(s);
         path.emplace_back(std::move(s.modData()));
         stack.pop();
     }
