@@ -37,6 +37,16 @@ class TransfersNotFrozen
         std::vector<BalanceChange> receivers;
     };
 
+    // Effective per-endpoint trust-line balance surrounding a change, using
+    // the same zero-substitution logic as calculateEffectiveBalances for
+    // dynamically created/deleted lines. Both fields are from the Low
+    // account's perspective (the storage convention).
+    struct EffectiveBalances
+    {
+        STAmount before;
+        STAmount after;
+    };
+
     using ByIssuer = std::map<Issue, IssuerChanges>;
     ByIssuer balanceChanges_;
 
@@ -53,14 +63,17 @@ private:
     bool
     isValidEntry(SLE::const_ref before, SLE::const_ref after);
 
-    static STAmount
-    calculateBalanceChange(SLE::const_ref before, SLE::const_ref after, bool isDelete);
+    static EffectiveBalances
+    calculateEffectiveBalances(SLE::const_ref before, SLE::const_ref after, bool isDelete);
 
     void
     recordBalance(Issue const& issue, BalanceChange change);
 
     void
-    recordBalanceChanges(SLE::const_ref after, STAmount const& balanceChange);
+    recordBalanceChanges(
+        SLE::const_ref after,
+        EffectiveBalances const& balances,
+        STAmount const& balanceChange);
 
     SLE::const_pointer
     findIssuer(AccountID const& issuerID, ReadView const& view);
