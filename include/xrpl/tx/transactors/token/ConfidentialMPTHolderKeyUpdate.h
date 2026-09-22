@@ -10,7 +10,6 @@
 #include <xrpl/tx/Transactor.h>
 
 #include <cstdint>
-#include <memory>
 
 namespace xrpl {
 

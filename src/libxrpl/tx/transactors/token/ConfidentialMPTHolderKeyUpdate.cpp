@@ -1,5 +1,6 @@
 #include <xrpl/tx/transactors/token/ConfidentialMPTHolderKeyUpdate.h>
 
+#include <xrpl/basics/Slice.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/core/ServiceRegistry.h>
