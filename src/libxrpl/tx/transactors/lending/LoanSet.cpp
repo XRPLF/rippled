@@ -559,7 +559,8 @@ LoanSet::doApply()
     TenthBips32 const coverRateMinimum{brokerSle->at(sfCoverRateMinimum)};
     {
         auto const minCover = [&]() {
-            if (ctx_.view().rules().enabled(fixCleanup3_2_0))
+            if (ctx_.view().rules().enabled(fixCleanup3_2_0) ||
+                getVaultVersion(vaultSle) == VaultVersion::FixedPrecision)
             {
                 return minimumBrokerCover(newDebtTotal, coverRateMinimum, vaultSle);
             }

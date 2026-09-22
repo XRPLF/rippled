@@ -5,6 +5,7 @@
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/ledger/helpers/LendingHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
+#include <xrpl/ledger/helpers/VaultHelpers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/SField.h>
@@ -104,21 +105,29 @@ LoanBrokerCoverDeposit::preclaim(PreclaimContext const& ctx)
     // here in preclaim lets  us reject sub-cover-scale dust early with tecPRECISION_LOSS instead of
     // failing only in  doApply.
     auto const roundedAmount = [&]() -> STAmount {
+        if (getVaultVersion(vault) == VaultVersion::FixedPrecision)
+            return roundToPosteriorBrokerCoverScale(
+                vault, sleBroker, amount, Number::RoundingMode::TowardsZero);
         if (!fix320Enabled)
-            return tx[sfAmount];
+            return amount;
 
         return roundToScale(
-            tx[sfAmount],
+            amount,
             scale(sleBroker->at(sfCoverAvailable), vaultAsset),
             Number::RoundingMode::Downward);
     }();
 
-    if (fix320Enabled && roundedAmount == beast::kZero)
+    if ((fix320Enabled || getVaultVersion(vault) == VaultVersion::FixedPrecision) &&
+        roundedAmount == beast::kZero)
     {
-        JLOG(ctx.j.warn()) << "LoanBrokerCoverDeposit: deposit amount: " << tx[sfAmount]
+        JLOG(ctx.j.warn()) << "LoanBrokerCoverDeposit: deposit amount: " << amount
                            << " is zero at loan broker scale";
         return tecPRECISION_LOSS;
     }
+
+    if (auto const ter = checkOptionalBrokerCoverInflow(vault, sleBroker, roundedAmount);
+        !isTesSuccess(ter))
+        return ter;
 
     if (accountHolds(
             ctx.view,
@@ -155,6 +164,9 @@ LoanBrokerCoverDeposit::doApply()
     // see the rationale comment in preclaim.
     bool const fix320Enabled = view().rules().enabled(fixCleanup3_2_0);
     auto const amount = [&]() -> STAmount {
+        if (getVaultVersion(vault) == VaultVersion::FixedPrecision)
+            return roundToPosteriorBrokerCoverScale(
+                vault, broker, tx[sfAmount], Number::RoundingMode::TowardsZero);
         if (!fix320Enabled)
             return tx[sfAmount];
 

@@ -73,12 +73,12 @@ class LoanBroker_test : public beast::unit_test::Suite
     // Ensure that all the features needed for Lending Protocol are included,
     // even if they are set to unsupported.
     //
-    // featureLendingProtocolV1_1 is excluded from the default set: it adds
-    // the closed-ended vault gate on LoanBrokerSet::preclaim (see
-    // LoanBrokerSet.cpp), but this suite exercises loan-broker mechanics on
-    // plain open-ended vaults. Tests that specifically exercise the
-    // amendment opt it back in explicitly and use closed-ended vaults.
-    FeatureBitset const all_{jtx::testableAmendments() - featureLendingProtocolV1_1};
+    // V1.1 and V1.2 are excluded from the default set: they add the
+    // closed-ended Vault gate and fixed-precision behavior, while this suite
+    // primarily exercises legacy LoanBroker mechanics on open-ended Vaults.
+    // Tests for the new behavior opt both amendments back in explicitly.
+    FeatureBitset const all_{
+        jtx::testableAmendments() - featureLendingProtocolV1_1 - featureLendingProtocolV1_2};
 
     void
     testDisabled()
@@ -2757,6 +2757,135 @@ class LoanBroker_test : public beast::unit_test::Suite
         BEAST_EXPECT(!env.le(credKeylet));
     }
 
+    void
+    testFixedPrecisionCover()
+    {
+        using namespace jtx;
+        using namespace loan_broker;
+
+        testcase("FixedPrecision LoanBroker cover");
+
+        FeatureBitset const v12{all_ | featureLendingProtocolV1_1 | featureLendingProtocolV1_2};
+        Account const issuer{"issuer"};
+        Account const alice{"alice"};
+        Account const borrower{"borrower"};
+        Env env{*this, v12};
+        env.fund(XRP(100'000), issuer, alice, borrower);
+        env.close();
+        env(fset(issuer, asfAllowTrustLineClawback));
+        env.close();
+
+        PrettyAsset const iou = issuer["IOU"];
+        env(trust(alice, iou(Number{10, 10})));
+        env(trust(borrower, iou(Number{10, 10})));
+        env(pay(issuer, alice, iou(Number{10, 9})));
+        env(pay(issuer, borrower, iou(Number{10, 2})));
+
+        Vault const vault{env};
+        [[maybe_unused]] auto [createTx, vaultKeylet, subscriptionDate] =
+            vault.createClosedEnded({.owner = alice, .asset = iou});
+        createTx[sfScale] = 6;
+        env(createTx);
+        env(vault.deposit({.depositor = alice, .id = vaultKeylet.key, .amount = iou(100)}));
+        vault.closePastSubscription(subscriptionDate);
+
+        env(set(alice, vaultKeylet.key), kDebtMaximum(Number{15, -7}), Ter(tecPRECISION_LOSS));
+
+        auto const brokerKeylet =
+            keylet::loanBroker(alice.id(), SeqProxy::rawSequence(env.seq(alice)));
+        env(set(alice, vaultKeylet.key), kDebtMaximum(Number{1, -6}));
+
+        env(coverDeposit(alice, brokerKeylet.key, iou(Number{1, -7})), Ter(tecPRECISION_LOSS));
+
+        Number const openLimit{9, 9};
+        env(coverDeposit(alice, brokerKeylet.key, iou(Number{18, -7})));
+        {
+            auto const broker = env.le(brokerKeylet);
+            BEAST_EXPECT(broker);
+            if (broker)
+                BEAST_EXPECT((broker->at(sfCoverAvailable) == Number{1, -6}));
+        }
+        env(coverDeposit(alice, brokerKeylet.key, iou(openLimit - Number{1, -6})));
+        env(coverDeposit(alice, brokerKeylet.key, iou(Number{1, -6})), Ter(tecLIMIT_EXCEEDED));
+
+        auto const coverAvailable = [&]() {
+            auto const broker = env.le(brokerKeylet);
+            BEAST_EXPECT(broker);
+            return broker ? broker->at(sfCoverAvailable) : Number{0};
+        };
+        BEAST_EXPECT(coverAvailable() == openLimit);
+
+        env(coverWithdraw(alice, brokerKeylet.key, iou(Number{18, -7})));
+        BEAST_EXPECT((coverAvailable() == openLimit - Number{1, -6}));
+
+        env(coverClawback(issuer), kLoanBrokerId(brokerKeylet.key), kAmount(iou(Number{18, -7})));
+        BEAST_EXPECT((coverAvailable() == openLimit - Number{2, -6}));
+
+        env(coverWithdraw(alice, brokerKeylet.key, iou(Number{1, -7})), Ter(tecPRECISION_LOSS));
+        env(coverClawback(issuer),
+            kLoanBrokerId(brokerKeylet.key),
+            kAmount(iou(Number{1, -7})),
+            Ter(tecPRECISION_LOSS));
+
+        env(coverClawback(issuer), kLoanBrokerId(brokerKeylet.key));
+        BEAST_EXPECT((coverAvailable() == Number{0}));
+
+        auto const minCoverBroker =
+            keylet::loanBroker(alice.id(), SeqProxy::rawSequence(env.seq(alice)));
+        env(set(alice, vaultKeylet.key),
+            kDebtMaximum(Number{100}),
+            kCoverRateMinimum(percentageToTenthBips(10)),
+            kCoverRateLiquidation(percentageToTenthBips(25)));
+        env(coverDeposit(alice, minCoverBroker.key, iou(Number{1, -1})));
+        env(loan::set(borrower, minCoverBroker.key, Number{1}),
+            Sig(sfCounterpartySignature, alice),
+            Fee(env.current()->fees().base * 2));
+        {
+            auto const broker = env.le(minCoverBroker);
+            BEAST_EXPECT(broker);
+            if (broker)
+                BEAST_EXPECT((broker->at(sfDebtTotal) == Number{1}));
+        }
+        env(coverWithdraw(alice, minCoverBroker.key, iou(Number{1, -6})),
+            Ter(tecINSUFFICIENT_FUNDS));
+        env(loan::set(borrower, minCoverBroker.key, Number{1}),
+            Sig(sfCounterpartySignature, alice),
+            Fee(env.current()->fees().base * 2),
+            Ter(tecINSUFFICIENT_FUNDS));
+        auto const loanKeylet = keylet::loan(minCoverBroker.key, SeqProxy::rawSequence(1));
+        env(loan::pay(borrower, loanKeylet.key, iou(1).value()));
+
+        {
+            testcase("FixedPrecision LoanBroker cover: XRP");
+            [[maybe_unused]] auto [xrpTx, xrpVault, xrpSub] =
+                vault.createClosedEnded({.owner = alice, .asset = xrpIssue()});
+            env(xrpTx);
+            auto const xrpBroker =
+                keylet::loanBroker(alice.id(), SeqProxy::rawSequence(env.seq(alice)));
+            env(set(alice, xrpVault.key));
+            env(coverDeposit(alice, xrpBroker.key, XRP(10)));
+            env(coverWithdraw(alice, xrpBroker.key, XRP(1)));
+        }
+
+        {
+            testcase("FixedPrecision LoanBroker cover: MPT");
+            MPTTester mptt{env, issuer, kMptInitNoFund};
+            mptt.create({.flags = tfMPTCanClawback | tfMPTCanTransfer | tfMPTCanLock});
+            PrettyAsset const mpt = mptt["MPT"];
+            mptt.authorize({.account = alice});
+            env(pay(issuer, alice, mpt(100)));
+            [[maybe_unused]] auto [mptTx, mptVault, mptSub] =
+                vault.createClosedEnded({.owner = alice, .asset = mpt});
+            env(mptTx);
+            auto const mptBroker =
+                keylet::loanBroker(alice.id(), SeqProxy::rawSequence(env.seq(alice)));
+            env(set(alice, mptVault.key));
+            env(coverDeposit(alice, mptBroker.key, mpt(10).value()));
+            env(coverWithdraw(alice, mptBroker.key, mpt(1).value()));
+            env(coverClawback(issuer), kLoanBrokerId(mptBroker.key), kAmount(mpt(1)));
+        }
+    }
+
     // Exercises canApplyToBrokerCover (fixCleanup3_2_0): a deposit, withdraw,
     // or clawback whose amount rounds to zero at sfCoverAvailable's precision
     // scale must be rejected with tecPRECISION_LOSS once the amendment is on,
@@ -2979,6 +3108,7 @@ public:
         testCoverWithdrawFreezes();
         testCoverWithdrawSelfWhileFrozen();
 
+        testFixedPrecisionCover();
         testCoverPrecisionGuard();
 
         testLoanBrokerSetDebtMaximum();

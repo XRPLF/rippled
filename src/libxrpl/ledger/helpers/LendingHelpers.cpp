@@ -35,6 +35,18 @@
 
 namespace xrpl {
 
+namespace {
+
+[[nodiscard]] int
+liveScale(Number const& reference, Asset const& asset, int baseScale)
+{
+    if (reference == beast::kZero)
+        return baseScale;
+    return std::max(baseScale, scale(reference, asset));
+}
+
+}  // namespace
+
 [[nodiscard]] TER
 canApplyToBrokerCover(
     ReadView const& view,
@@ -64,6 +76,126 @@ canApplyToBrokerCover(
     }
 
     return tesSUCCESS;
+}
+
+[[nodiscard]] int
+getBrokerCoverScale(SLE::const_ref vault, SLE::const_ref broker)
+{
+    XRPL_ASSERT(
+        vault && vault->getType() == ltVAULT, "xrpl::getBrokerCoverScale : valid Vault sle");
+    XRPL_ASSERT(
+        broker && broker->getType() == ltLOAN_BROKER,
+        "xrpl::getBrokerCoverScale : valid LoanBroker sle");
+
+    switch (getVaultVersion(vault))
+    {
+        case VaultVersion::Legacy:
+        case VaultVersion::CashBasis:
+            return scale(broker->at(sfCoverAvailable), vault->at(sfAsset));
+        case VaultVersion::FixedPrecision:
+            return liveScale(
+                broker->at(sfCoverAvailable), vault->at(sfAsset), getVaultBaseScale(vault));
+    }
+    // LCOV_EXCL_START
+    UNREACHABLE("xrpl::getBrokerCoverScale : valid VaultVersion");
+    return Number::kMinExponent - 1;
+    // LCOV_EXCL_STOP
+}
+
+[[nodiscard]] int
+getPosteriorBrokerCoverScale(SLE::const_ref vault, SLE::const_ref broker, STAmount const& delta)
+{
+    XRPL_ASSERT(
+        vault && vault->getType() == ltVAULT,
+        "xrpl::getPosteriorBrokerCoverScale : valid Vault sle");
+    XRPL_ASSERT(
+        broker && broker->getType() == ltLOAN_BROKER,
+        "xrpl::getPosteriorBrokerCoverScale : valid LoanBroker sle");
+    XRPL_ASSERT(
+        delta.asset() == vault->at(sfAsset),
+        "xrpl::getPosteriorBrokerCoverScale : delta and Vault asset match");
+
+    Number const posterior = [&] {
+        NumberRoundModeGuard const rg(Number::RoundingMode::ToNearest);
+        return broker->at(sfCoverAvailable) + delta;
+    }();
+
+    switch (getVaultVersion(vault))
+    {
+        case VaultVersion::Legacy:
+        case VaultVersion::CashBasis:
+            return scale(posterior, vault->at(sfAsset));
+        case VaultVersion::FixedPrecision:
+            return liveScale(posterior, vault->at(sfAsset), getVaultBaseScale(vault));
+    }
+    // LCOV_EXCL_START
+    UNREACHABLE("xrpl::getPosteriorBrokerCoverScale : valid VaultVersion");
+    return Number::kMinExponent - 1;
+    // LCOV_EXCL_STOP
+}
+
+[[nodiscard]] STAmount
+roundToPosteriorBrokerCoverScale(
+    SLE::const_ref vault,
+    SLE::const_ref broker,
+    STAmount const& delta,
+    Number::RoundingMode roundingMode)
+{
+    XRPL_ASSERT(
+        vault && vault->getType() == ltVAULT,
+        "xrpl::roundToPosteriorBrokerCoverScale : valid Vault sle");
+    XRPL_ASSERT(
+        broker && broker->getType() == ltLOAN_BROKER,
+        "xrpl::roundToPosteriorBrokerCoverScale : valid LoanBroker sle");
+    XRPL_ASSERT(
+        delta.asset() == vault->at(sfAsset),
+        "xrpl::roundToPosteriorBrokerCoverScale : delta and Vault asset match");
+    if (delta.integral())
+        return delta;
+    return roundToScale(delta, getPosteriorBrokerCoverScale(vault, broker, delta), roundingMode);
+}
+
+[[nodiscard]] TER
+checkOptionalBrokerCoverInflow(SLE::const_ref vault, SLE::const_ref broker, STAmount const& amount)
+{
+    XRPL_ASSERT(
+        vault && vault->getType() == ltVAULT,
+        "xrpl::checkOptionalBrokerCoverInflow : valid Vault sle");
+    XRPL_ASSERT(
+        broker && broker->getType() == ltLOAN_BROKER,
+        "xrpl::checkOptionalBrokerCoverInflow : valid LoanBroker sle");
+    XRPL_ASSERT(
+        amount.asset() == vault->at(sfAsset),
+        "xrpl::checkOptionalBrokerCoverInflow : amount and Vault asset match");
+    XRPL_ASSERT(!amount.negative(), "xrpl::checkOptionalBrokerCoverInflow : non-negative amount");
+    if (getVaultVersion(vault) != VaultVersion::FixedPrecision)
+        return tesSUCCESS;
+
+    STAmount const rounded =
+        roundToPosteriorBrokerCoverScale(vault, broker, amount, Number::RoundingMode::TowardsZero);
+    int const baseScale = getVaultBaseScale(vault);
+    if (getPosteriorBrokerCoverScale(vault, broker, rounded) != baseScale)
+        return tecLIMIT_EXCEEDED;
+
+    Number const posterior = [&] {
+        NumberRoundModeGuard const rg(Number::RoundingMode::TowardsZero);
+        return broker->at(sfCoverAvailable) + rounded;
+    }();
+    if (posterior > getVaultOpenLimit(vault))
+        return tecLIMIT_EXCEEDED;
+    return tesSUCCESS;
+}
+
+Number
+minimumBrokerCover(Number const& debtTotal, TenthBips32 coverRateMinimum, SLE::const_ref vaultSle)
+{
+    XRPL_ASSERT(
+        vaultSle && vaultSle->getType() == ltVAULT, "xrpl::minimumBrokerCover : valid Vault sle");
+    NumberRoundModeGuard const mg(Number::RoundingMode::Upward);
+    return roundToAsset(
+        vaultSle->at(sfAsset),
+        tenthBipsOfValue(debtTotal, coverRateMinimum),
+        getVaultBaseScale(vaultSle));
 }
 
 bool

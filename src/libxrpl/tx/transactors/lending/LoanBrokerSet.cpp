@@ -174,7 +174,12 @@ LoanBrokerSet::preclaim(PreclaimContext const& ctx)
     // type. This is mostly only relevant for integral (non-IOU) types
     for (auto const& field : getValueFields())
     {
-        if (auto const value = tx[field]; value && STAmount{asset, *value} != *value)
+        if (auto const value = tx[field]; value &&
+            (STAmount{asset, *value} != *value ||
+             (getVaultVersion(sleVault) == VaultVersion::FixedPrecision &&
+              roundToAsset(
+                  asset, *value, getVaultBaseScale(sleVault), Number::RoundingMode::TowardsZero) !=
+                  *value)))
         {
             JLOG(ctx.j.warn()) << field.f->getName() << " (" << *value
                                << ") can not be represented as a(n) " << to_string(asset) << ".";
