@@ -235,30 +235,40 @@ callMethod(JsonContext& context, Handler::Method method, std::string_view name, 
 // Resolve the span suffix / command attribute for a request that failed in
 // fillHandler. Returns the canonical handler name for a recognized command
 // (a finite, bounded set) or the literal "unknown" for a request that omits
-// both fields or names an unregistered command. The raw request value is
-// deliberately NOT used: the command attribute is promoted to a Prometheus
-// label by the spanmetrics connector, so an attacker-controlled string would
-// let arbitrary request input drive unbounded span-name / label cardinality.
+// both fields, supplies one that is not a string, or names an unregistered
+// command. The raw request value is deliberately NOT used: the command
+// attribute is promoted to a Prometheus label by the spanmetrics connector, so
+// an attacker-controlled string would let arbitrary request input drive
+// unbounded span-name / label cardinality.
 // Resolving against the registry keeps per-command error attribution for real
 // commands (e.g. a submit rejected with rpcTOO_BUSY stays rpc.command.submit)
 // while collapsing garbage input to a single series.
 std::string_view
 resolveCommandSpanName(JsonContext const& context)
 {
-    if (!context.params.isMember(jss::command) && !context.params.isMember(jss::method))
+    bool const hasCommand = context.params.isMember(jss::command);
+    bool const hasMethod = context.params.isMember(jss::method);
+
+    if (!hasCommand && !hasMethod)
+        return rpc_span::val::unknownCommand;
+
+    // A json array or object throws when asked for its string value, and no
+    // non-string field names a handler. The reply's error code is already
+    // decided, so naming the span must not be able to change it.
+    if ((hasCommand && !context.params[jss::command].isString()) ||
+        (hasMethod && !context.params[jss::method].isString()))
         return rpc_span::val::unknownCommand;
 
     // fillHandler() rejects a request that supplies both fields with differing
     // values as rpcUNKNOWN_COMMAND. Mirror that here, or the span would be
     // labelled with one of the two names and misattribute the error to a
     // command that was never dispatched.
-    if (context.params.isMember(jss::command) && context.params.isMember(jss::method) &&
+    if (hasCommand && hasMethod &&
         context.params[jss::command].asString() != context.params[jss::method].asString())
         return rpc_span::val::unknownCommand;
 
-    std::string const cmd = context.params.isMember(jss::command)
-        ? context.params[jss::command].asString()
-        : context.params[jss::method].asString();
+    std::string const cmd = hasCommand ? context.params[jss::command].asString()
+                                       : context.params[jss::method].asString();
 
     auto const* handler = getHandler(context.apiVersion, context.app.config().betaRpcApi, cmd);
     return (handler != nullptr) ? std::string_view{handler->name}
