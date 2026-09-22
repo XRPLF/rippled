@@ -23,15 +23,21 @@ services:
   otel-collector:
     image: otel/opentelemetry-collector-contrib:0.158.0
     command: ["--config=/etc/otel-collector-config.yaml"]
+    # Published on the host loopback only. The receivers have no auth and no
+    # TLS, so only processes on this host may reach them. Note this 127.0.0.1
+    # is the HOST interface docker listens on; the container-side bind lives in
+    # the collector config and is a separate choice. Upstream asks for a
+    # specific interface rather than 0.0.0.0 on either side (CWE-1327):
+    # https://opentelemetry.io/docs/security/config-best-practices/
     ports:
-      - "4317:4317" # OTLP gRPC
-      - "4318:4318" # OTLP HTTP
+      - "127.0.0.1:4317:4317" # OTLP gRPC receiver
+      - "127.0.0.1:4318:4318" # OTLP HTTP receiver (xrpld sends traces here)
       # StatsD UDP (beast::insight metrics). Bound to loopback only: the
       # receiver has no auth, and xrpld runs on the host, so it reaches the
       # collector via 127.0.0.1. Do not expose on 0.0.0.0 in shared setups.
       - "127.0.0.1:8125:8125/udp"
       - "127.0.0.1:8889:8889" # Prometheus metrics (span_metrics + statsd)
-      - "13133:13133" # Health check
+      - "127.0.0.1:13133:13133" # Health check endpoint
     volumes:
       # Mount collector pipeline config (receivers → processors → exporters)
       - ./otel-collector-config.yaml:/etc/otel-collector-config.yaml:ro
@@ -46,7 +52,7 @@ services:
     image: grafana/tempo:2.9.4
     command: ["-config.file=/etc/tempo.yaml"]
     ports:
-      - "3200:3200" # Tempo HTTP API (health check, query)
+      - "127.0.0.1:3200:3200" # Tempo HTTP API (health check, query)
     volumes:
       # Mount Tempo storage and ingestion config
       - ./tempo.yaml:/etc/tempo.yaml:ro
@@ -75,7 +81,7 @@ services:
       - GF_AUTH_ANONYMOUS_ENABLED=true # No login required for local dev
       - GF_AUTH_ANONYMOUS_ORG_ROLE=Admin # Full access without auth
     ports:
-      - "3000:3000" # Grafana web UI
+      - "127.0.0.1:3000:3000" # Grafana web UI
     volumes:
       # Auto-provision Tempo datasource and search filters on startup
       - ./grafana/provisioning:/etc/grafana/provisioning:ro
