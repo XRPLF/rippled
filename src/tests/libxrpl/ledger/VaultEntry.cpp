@@ -8,7 +8,7 @@
 
 namespace xrpl::test {
 
-TEST(VaultEntryTests, Constructors)
+TEST(VaultEntryTests, constructors)
 {
     EntryTestEnv e;
 
