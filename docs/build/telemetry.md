@@ -245,11 +245,11 @@ flowchart TD
 
 ### Coroutine-aware context storage
 
-The active-context stack is not a plain `thread_local`. At telemetry start
-xrpld installs `CoroAwareContextStorage`, which keeps the stack in an
-`xrpl::LocalValue`. Because `JobQueue::Coro::resume()` swaps the coroutine's
-`LocalValue` store in and out with the coroutine, the ambient context _follows
-the coroutine_ across every yield and resume — even when it resumes on a
+The active-context stack is not a plain `thread_local`. During startup, before
+any thread is created, xrpld installs `CoroAwareContextStorage`, which keeps the
+stack in an `xrpl::LocalValue`. Because `JobQueue::Coro::resume()` swaps the
+coroutine's `LocalValue` store in and out with the coroutine, the ambient context
+_follows the coroutine_ across every yield and resume — even when it resumes on a
 different worker thread. A `ScopedSpanGuard` held across a coroutine yield is
 therefore safe: its scope rides the coroutine and pops on the same store it was
 pushed onto, so it never pops the wrong stack. Off a coroutine the `LocalValue`

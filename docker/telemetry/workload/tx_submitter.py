@@ -281,6 +281,7 @@ async def ws_request(
     Raises:
         TimeoutError: If no reply carrying this request's ``id`` arrived within
                       RECV_TIMEOUT_S.
+        TypeError:    If a reply decodes to something other than a JSON object.
     """
     request_id = next(_request_ids)
     request: dict[str, Any] = {"command": command}
@@ -311,6 +312,14 @@ async def ws_request(
             raise TimeoutError(f"{command} (id {request_id}) got no reply")
         raw = await asyncio.wait_for(ws.recv(), timeout=remaining)
         resp = json.loads(raw)
+        # A reply that decodes to an array or a scalar has no .get(), and the
+        # AttributeError that follows names neither the command nor what
+        # arrived. Reject it here so the message carries both.
+        if not isinstance(resp, dict):
+            raise TypeError(
+                f"{command} (id {request_id}) got a JSON "
+                f"{type(resp).__name__} reply, expected an object"
+            )
         reply_id = resp.get("id")
         if reply_id is None or reply_id == request_id:
             break
@@ -1211,6 +1220,19 @@ def main() -> None:
     if args.weights:
         try:
             custom = json.loads(args.weights)
+            # A JSON array or scalar decodes fine and then has no .items().
+            # AttributeError is not a ValueError, so the handler below would not
+            # catch it: report the type that arrived instead of a traceback.
+            if not isinstance(custom, dict):
+                logger.error(
+                    "Invalid --weights: expected a JSON object of transaction "
+                    "type to weight, got a JSON %s: %s",
+                    type(custom).__name__,
+                    args.weights,
+                )
+                sys.exit(1)
+            # TypeError covers a non-numeric weight value (null, a list, an
+            # object), which int() rejects with TypeError rather than ValueError.
             weights = {k: int(v) for k, v in custom.items()}
             if not weights or sum(weights.values()) <= 0:
                 logger.error(
@@ -1219,7 +1241,7 @@ def main() -> None:
                 )
                 sys.exit(1)
             logger.info("Using custom weights: %s", weights)
-        except (json.JSONDecodeError, ValueError) as exc:
+        except (json.JSONDecodeError, TypeError, ValueError) as exc:
             logger.error("Invalid --weights JSON: %s", exc)
             sys.exit(1)
 

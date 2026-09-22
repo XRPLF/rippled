@@ -925,14 +925,15 @@ AppMetricGauges::registerValidatorHealthGauge()
                 observe("unl_blocked", app.getOPs().isUNLBlocked() ? 1.0 : 0.0);
                 observe("validation_quorum", static_cast<double>(app.getValidators().quorum()));
 
-                // Days until UNL list expiry (-1 if no expiry known).
+                // Days until UNL list expiry. Negative once the list has
+                // expired, +inf for a config-listed list that never expires,
+                // and -1 when no published list has been fetched at all.
                 auto const expiry = app.getValidators().expires();
                 if (expiry)
                 {
-                    auto const now = app.getTimeKeeper().closeTime();
-                    auto const diffHours =
-                        std::chrono::duration_cast<std::chrono::hours>(*expiry - now).count();
-                    observe("unl_expiry_days", static_cast<double>(diffHours) / 24.0);
+                    observe(
+                        "unl_expiry_days",
+                        MetricsRegistry::daysUntil(*expiry, app.getTimeKeeper().closeTime()));
                 }
                 else
                 {

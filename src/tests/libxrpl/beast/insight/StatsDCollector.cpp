@@ -73,6 +73,9 @@ public:
     /**
      * Waits for one datagram.
      *
+     * Leaves no handler queued, so a later call cannot run this call's
+     * completion.
+     *
      * @param timeout How long to wait before giving up.
      * @return the datagram's bytes, or an empty string if none arrived in
      * time.
@@ -80,17 +83,22 @@ public:
     std::string
     receive(std::chrono::milliseconds timeout)
     {
-        std::string received;
+        received_.clear();
         socket_.async_receive(
             boost::asio::buffer(buffer_),
-            [&received, this](boost::system::error_code const& ec, std::size_t bytes) {
+            [this](boost::system::error_code const& ec, std::size_t bytes) {
                 if (!ec)
-                    received.assign(buffer_.data(), bytes);
+                    received_.assign(buffer_.data(), bytes);
             });
         ioContext_.restart();
         ioContext_.run_for(timeout);
+
+        // A handler runs only inside the io_context, so cancel() merely queues
+        // one carrying operation_aborted. Run the context again to retire it.
         socket_.cancel();
-        return received;
+        ioContext_.restart();
+        ioContext_.poll();
+        return received_;
     }
 
 private:
@@ -109,6 +117,12 @@ private:
      * 1472-byte packet limit.
      */
     std::array<char, 2048> buffer_{};
+
+    /**
+     * What the last receive() read, empty when its wait ran out. A member, so
+     * no queued handler can outlive what it writes to.
+     */
+    std::string received_;
 };
 
 /**
@@ -140,6 +154,10 @@ TEST(StatsDCollector, UntouchedGaugePublishesInitialZero)
  * This is the other half of the rule above, and it is why the fix is a gauge
  * starting dirty rather than a flush of everything on the first tick. A counter
  * reports events, so an unsent counter and a zero counter mean the same thing.
+ *
+ * Silence is also what a dead loopback channel looks like, so an untouched gauge
+ * comes along as a positive control. One flush tick serves both metrics, so a
+ * counter line would have to travel beside the gauge's.
  */
 TEST(StatsDCollector, UntouchedCounterPublishesNothing)
 {
@@ -148,12 +166,18 @@ TEST(StatsDCollector, UntouchedCounterPublishesNothing)
 
     auto collector = StatsDCollector::make(address, "test", Journal(Journal::getNullSink()));
     auto const counter = collector->makeCounter("untouched");
+    auto const control = collector->makeGauge("control");
 
     // Same reason as above: polling must be on, or the empty result proves only
     // that nothing was polled.
     collector->onCollectionReady();
 
-    // Three seconds spans several one-second flush ticks.
+    // The control's line, alone: the channel carries a datagram, and the
+    // counter contributed nothing to it.
+    EXPECT_EQ(server.receive(std::chrono::seconds(10)), std::string("test.control:0|g\n"));
+
+    // Three seconds spans several one-second flush ticks. The control is clean
+    // after its first flush, so anything arriving now is the counter.
     EXPECT_EQ(server.receive(std::chrono::seconds(3)), std::string());
 }
 

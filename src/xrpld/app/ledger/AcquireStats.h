@@ -154,7 +154,12 @@ public:
     }
 
     /**
-     * Record that an idle acquisition was evicted by the sweep.
+     * Record that the sweep evicted an acquisition that had not finished.
+     *
+     * An acquisition that already completed or failed sits in the map only
+     * until the next sweep, and was counted by recordCompletion() or
+     * recordGiveUp() when it ended. Callers must exclude those, or this count
+     * measures map cleanup instead of discarded work.
      */
     void
     recordSweepEviction()
@@ -245,7 +250,10 @@ public:
     }
 
     /**
-     * Return the number of idle acquisitions evicted by the sweep.
+     * Return the number of unfinished acquisitions evicted by the sweep.
+     *
+     * Every one of these threw away whatever had been fetched so far, so this
+     * counts wasted work rather than how many entries the sweep removed.
      */
     [[nodiscard]] std::uint64_t
     getSweepEvictions() const
@@ -295,7 +303,7 @@ private:
     telemetry::Counter<> completions_;
 
     /**
-     * Idle acquisitions evicted by the sweep.
+     * Unfinished acquisitions evicted by the sweep.
      */
     telemetry::Counter<> sweepEvictions_;
 };
