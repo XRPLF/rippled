@@ -15,7 +15,9 @@
 #include <xrpl/basics/Number.h>
 #include <xrpl/basics/chrono.h>
 #include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/beast/utility/Zero.h>
 #include <xrpl/json/json_value.h>
+#include <xrpl/ledger/helpers/LendingHelpers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Issue.h>
@@ -928,6 +930,118 @@ private:
         run(all_, tesSUCCESS);
     }
 
+    void
+    testFixedPrecisionLoanSet()
+    {
+        using namespace jtx;
+        using namespace loan;
+
+        testcase("FixedPrecision LoanSet");
+
+        FeatureBitset const features{
+            all_ | featureLendingProtocolV1_1 | featureLendingProtocolV1_2};
+        Account const issuer{"issuer"};
+        Account const lender{"lender"};
+        Account const borrower{"borrower"};
+        Env env{*this, features};
+        env.fund(XRP(100'000), issuer, lender, borrower);
+        env.close();
+
+        PrettyAsset const iou = issuer["IOU"];
+        env(trust(lender, iou(Number{10, 10})));
+        env(trust(borrower, iou(Number{10, 10})));
+
+        Number const openLimit{9, 9};
+        env(pay(issuer, lender, iou(openLimit)));
+
+        Vault const vault{env};
+        auto [createTx, vaultKeylet, subscriptionDate] =
+            vault.createClosedEnded({.owner = lender, .asset = iou});
+        createTx[sfScale] = 6;
+        env(createTx);
+
+        Number const principal{100};
+        TenthBips32 const interestRate{100'000};
+        constexpr std::uint32_t paymentTotal = 2;
+        constexpr std::uint32_t paymentInterval = 24 * 60 * 60;
+        auto const properties = computeLoanProperties(
+            env.current()->rules(),
+            iou.raw(),
+            principal,
+            interestRate,
+            paymentInterval,
+            paymentTotal,
+            TenthBips16{0},
+            -6);
+        Number const interestDue = properties.loanState.interestDue;
+        BEAST_EXPECT(interestDue > beast::kZero);
+        BEAST_EXPECT(properties.loanScale == -6);
+
+        Number const deposit = openLimit - interestDue;
+        env(vault.deposit({.depositor = lender, .id = vaultKeylet.key, .amount = iou(deposit)}));
+        vault.closePastSubscription(subscriptionDate);
+
+        auto const brokerKeylet =
+            keylet::loanBroker(lender.id(), SeqProxy::rawSequence(env.seq(lender)));
+        env(loan_broker::set(lender, vaultKeylet.key));
+        env.close();
+
+        auto const fee = Fee(env.current()->fees().base * 2);
+        Number const offGrid{1, -7};
+        auto const rejectedOffGrid = [&](auto const& field) {
+            env(set(borrower, brokerKeylet.key, principal),
+                field(offGrid),
+                Sig(sfCounterpartySignature, lender),
+                fee,
+                Ter(tecPRECISION_LOSS));
+        };
+
+        env(set(borrower, brokerKeylet.key, offGrid),
+            Sig(sfCounterpartySignature, lender),
+            fee,
+            Ter(tecPRECISION_LOSS));
+        rejectedOffGrid(kLoanOriginationFee);
+        rejectedOffGrid(kLoanServiceFee);
+        rejectedOffGrid(kLatePaymentFee);
+        rejectedOffGrid(kClosePaymentFee);
+
+        auto const makeLoan = [&](TER expected) {
+            env(set(borrower, brokerKeylet.key, principal),
+                kInterestRate(interestRate),
+                kPaymentTotal(paymentTotal),
+                kPaymentInterval(paymentInterval),
+                Sig(sfCounterpartySignature, lender),
+                fee,
+                Ter(expected));
+            env.close();
+        };
+
+        makeLoan(tesSUCCESS);
+        auto const loanKeylet = keylet::loan(brokerKeylet.key, SeqProxy::rawSequence(1));
+        {
+            auto const loan = env.le(loanKeylet);
+            BEAST_EXPECT(loan);
+            if (loan)
+            {
+                BEAST_EXPECT(loan->at(sfLoanScale) == -6);
+                BEAST_EXPECT(loan->at(sfPeriodicPayment) == properties.periodicPayment);
+            }
+        }
+        {
+            auto const vaultSle = env.le(vaultKeylet);
+            BEAST_EXPECT(vaultSle);
+            if (vaultSle)
+            {
+                BEAST_EXPECT(vaultSle->at(sfAssetsTotal) == deposit);
+                BEAST_EXPECT(vaultSle->at(sfYieldUnrealized) == interestDue);
+            }
+        }
+
+        // The first LoanSet puts AssetsTotal + YieldUnrealized exactly at the
+        // Open-zone ceiling. A second loan's InterestDue is therefore rejected.
+        makeLoan(tecLIMIT_EXCEEDED);
+    }
+
 public:
     void
     run() override
@@ -937,6 +1051,7 @@ public:
             testLoanSet(features);
 
         testLoanSetClosedEnded();
+        testFixedPrecisionLoanSet();
         testLoanSetExistingLineAfterIssuerClearsDefaultRipple();
         testLoanSetOriginationFeeTwoMptCreates(all_);
         testLoanSetOriginationFeeTwoMptCreates(all_ - fixCleanup3_4_0);

@@ -467,7 +467,7 @@ LoanSet::doApply()
 
     auto vaultAvailableProxy = vaultSle->at(sfAssetsAvailable);
     auto vaultTotalProxy = vaultSle->at(sfAssetsTotal);
-    auto const vaultScale = getAssetsTotalScale(vaultSle);
+    auto const vaultScale = getVaultBaseScale(vaultSle);
     if (vaultAvailableProxy < principalRequested)
     {
         JLOG(j_.warn()) << "Insufficient assets available in the Vault to fund the loan.";
@@ -541,6 +541,24 @@ LoanSet::doApply()
                         << ". PeriodicPayment: " << properties.periodicPayment;
         return tecINTERNAL;
         // LCOV_EXCL_STOP
+    }
+
+    if (getVaultVersion(vaultSle) == VaultVersion::FixedPrecision)
+    {
+        Number const capacity = [&] {
+            NumberRoundModeGuard const rg(Number::RoundingMode::TowardsZero);
+            return vaultSle->at(sfAssetsTotal) + vaultSle->at(sfYieldUnrealized) +
+                state.interestDue;
+        }();
+        if (getVaultScale(vaultSle) != getVaultBaseScale(vaultSle) ||
+            capacity > getVaultOpenLimit(vaultSle))
+        {
+            JLOG(j_.warn()) << "Loan interest would exceed the FixedPrecision Vault's Open zone.";
+            return tecLIMIT_EXCEEDED;
+        }
+        XRPL_ASSERT(
+            properties.loanScale == getVaultBaseScale(vaultSle),
+            "xrpl::LoanSet::doApply : FixedPrecision loan uses Vault base scale");
     }
 
     auto const originationFee = tx[~sfLoanOriginationFee].value_or(Number{});
@@ -695,6 +713,8 @@ LoanSet::doApply()
     // Update the balances in the vault
     vaultAvailableProxy -= principalRequested;
     vaultTotalProxy += assetsTotalDelta;
+    if (getVaultVersion(vaultSle) == VaultVersion::FixedPrecision)
+        vaultSle->at(sfYieldUnrealized) += state.interestDue;
     XRPL_ASSERT_PARTS(
         *vaultAvailableProxy <= *vaultTotalProxy,
         "xrpl::LoanSet::doApply",
