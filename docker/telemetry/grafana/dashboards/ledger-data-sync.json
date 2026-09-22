@@ -2340,6 +2340,7 @@
       "id": 38
     }
   ],
+  "refresh": "30s",
   "schemaVersion": 39,
   "tags": ["ledger", "sync"],
   "templating": {
