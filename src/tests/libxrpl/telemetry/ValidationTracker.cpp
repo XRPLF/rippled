@@ -416,6 +416,52 @@ TEST(ValidationTracker, steady_traffic_across_the_grid_boundary_keeps_recent_cou
     EXPECT_EQ(t.missed7d(), 0u);
 }
 
+TEST(ValidationTracker, a_stall_across_the_1h_edge_counts_each_event_in_its_own_window)
+{
+    // Two minutes an hour apart are decided in one pass. pending_ is a hash
+    // map, so it hands them over in no useful order. Applied newest first, the
+    // older minute lands behind the 1-hour tail and is counted into that window
+    // anyway.
+    auto t = makeTracker();
+
+    constexpr std::uint64_t kOld = 30;
+    constexpr std::uint64_t kFresh = 30;
+
+    // No drain happens until the end, so the whole burst has to fit one ring.
+    static_assert(kOld + kFresh <= Tracker::ringCapacity());
+
+    for (std::uint64_t i = 0; i < kOld; ++i)
+    {
+        t.recordOurValidation(makeHash(9200 + i), static_cast<LedgerIndex>(9200 + i));
+        t.recordNetworkValidation(makeHash(9200 + i), static_cast<LedgerIndex>(9200 + i));
+    }
+
+    // Past the 1-hour edge with no reconcile in between, which is what puts two
+    // distant minutes into one pass.
+    advance(std::chrono::hours(1) + std::chrono::minutes(2));
+
+    for (std::uint64_t i = 0; i < kFresh; ++i)
+    {
+        t.recordOurValidation(makeHash(9300 + i), static_cast<LedgerIndex>(9300 + i));
+        t.recordNetworkValidation(makeHash(9300 + i), static_cast<LedgerIndex>(9300 + i));
+    }
+
+    settle(t);
+
+    // Nothing was dropped, so all 60 events really did reach that one pass.
+    ASSERT_EQ(t.droppedEvents(), 0u);
+
+    // Only the fresh minute is inside the hour. Both minutes are inside the day
+    // and the week, so those two totals are the control: they read the same
+    // whatever the order was.
+    EXPECT_EQ(t.agreements1h(), kFresh);
+    EXPECT_EQ(t.missed1h(), 0u);
+    EXPECT_DOUBLE_EQ(t.agreementPct1h(), 100.0);
+    EXPECT_EQ(t.agreements24h(), kOld + kFresh);
+    EXPECT_EQ(t.missed24h(), 0u);
+    EXPECT_EQ(t.agreements7d(), kOld + kFresh);
+}
+
 // ---- lifetime totals -------------------------------------------------------
 
 TEST(ValidationTracker, lifetime_totals_survive_window_expiry)
