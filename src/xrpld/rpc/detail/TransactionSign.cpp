@@ -917,7 +917,10 @@ getTxFee(Application const& app, Config const& config, json::Value tx)
         if (!passesLocalChecks(stTx, reason))
             return config.fees.referenceFee;
 
-        return calculateBaseFee(*app.getOpenLedger().current(), stTx);
+        // This fee is only a suggestion returned to the caller, so fall back to
+        // the reference fee as the other failure paths in this function do.
+        return calculateBaseFee(*app.getOpenLedger().current(), stTx)
+            .value_or(config.fees.referenceFee);
     }
     catch (std::exception& e)
     {
