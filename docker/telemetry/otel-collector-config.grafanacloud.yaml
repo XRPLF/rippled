@@ -89,7 +89,7 @@ processors:
       - name: half-percent
         type: probabilistic
         probabilistic:
-          sampling_percentage: 0.5
+          sampling_percentage: 100
       # A rotation happens every ~2 h and is the trace that proves a
       # full->syncing flap. Keep every one; children arrive first, so match
       # on the family prefix rather than the root name.
