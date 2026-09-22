@@ -38,7 +38,7 @@ namespace xrpl {
 namespace {
 
 [[nodiscard]] int
-liveScale(Number const& reference, Asset const& asset, int baseScale)
+liveCoverScale(Number const& reference, Asset const& asset, int baseScale)
 {
     if (reference == beast::kZero)
         return baseScale;
@@ -93,7 +93,7 @@ getBrokerCoverScale(SLE::const_ref vault, SLE::const_ref broker)
         case VaultVersion::CashBasis:
             return scale(broker->at(sfCoverAvailable), vault->at(sfAsset));
         case VaultVersion::FixedPrecision:
-            return liveScale(
+            return liveCoverScale(
                 broker->at(sfCoverAvailable), vault->at(sfAsset), getVaultBaseScale(vault));
     }
     // LCOV_EXCL_START
@@ -126,7 +126,7 @@ getPosteriorBrokerCoverScale(SLE::const_ref vault, SLE::const_ref broker, STAmou
         case VaultVersion::CashBasis:
             return scale(posterior, vault->at(sfAsset));
         case VaultVersion::FixedPrecision:
-            return liveScale(posterior, vault->at(sfAsset), getVaultBaseScale(vault));
+            return liveCoverScale(posterior, vault->at(sfAsset), getVaultBaseScale(vault));
     }
     // LCOV_EXCL_START
     UNREACHABLE("xrpl::getPosteriorBrokerCoverScale : valid VaultVersion");
