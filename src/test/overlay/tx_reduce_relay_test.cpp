@@ -96,9 +96,8 @@ class tx_reduce_relay_test : public beast::unit_test::Suite
     }
 
     /**
-     * Counts the transaction hashes queued for this peer.
-     *
-     * `send` is inherited, so relayed messages are counted through `sent()`.
+     * Counts queued transaction hashes. Relayed messages are counted through
+     * the inherited `sent()`.
      */
     class TxReducePeer : public CapturePeer
     {
@@ -127,22 +126,19 @@ class tx_reduce_relay_test : public beast::unit_test::Suite
     /**
      * Build one peer and register it with the overlay.
      *
-     * The first `nDisabled` peers are built without an `X-Protocol-Ctl`
-     * header, which is what leaves tx reduce-relay disabled on them. Because
-     * they are built first, they occupy the lowest connection ids, which is
-     * what makes them overlap the skipped peers in `testRelay`.
+     * The first `nDisabled` peers get no `X-Protocol-Ctl` header, which leaves
+     * tx reduce-relay disabled on them. Built first, they sit at the front of
+     * `peers`, where `testRelay`'s skip set expects them.
      *
      * @param env        The environment owning the overlay.
-     * @param builder    Supplies the connection id and remote address.
-     * @param peers      Receives the peer; the overlay only holds a weak
-     *                   pointer, so the caller has to keep it alive.
-     * @param nDisabled  How many more peers to leave reduce-relay disabled;
-     *                   decremented for each one built.
+     * @param peers      Receives the peer; the overlay holds only a weak
+     *                   pointer, so the caller keeps it alive.
+     * @param nDisabled  How many more peers to leave disabled; decremented
+     *                   per peer built.
      */
     void
     addPeer(
         jtx::Env& env,
-        CapturePeerBuilder& builder,
         std::vector<std::shared_ptr<TxReducePeer>>& peers,
         std::uint16_t& nDisabled)
     {
@@ -158,7 +154,7 @@ class tx_reduce_relay_test : public beast::unit_test::Suite
             request.insert("X-Protocol-Ctl", makeFeaturesRequestHeader(false, false, true, false));
 
         BEAST_EXPECT(overlay.findPeerByPublicKey(key) == std::shared_ptr<PeerImp>{});
-        auto const peer = builder.build<TxReducePeer>(env, key, std::move(request));
+        auto const peer = makeCapturePeer<TxReducePeer>(env, key, std::move(request));
         BEAST_EXPECT(overlay.findPeerByPublicKey(key) == peer);
         peers.emplace_back(peer);
     }
@@ -190,24 +186,22 @@ class tx_reduce_relay_test : public beast::unit_test::Suite
     {
         testcase(test);
         jtx::Env env(*this);
-        CapturePeerBuilder builder;
         std::vector<std::shared_ptr<TxReducePeer>> peers;
-        // Set before building any peer: `PeerImp` decides
-        // `txReduceRelayEnabled()` in its constructor, from the config and the
-        // handshake header together.
+        // `PeerImp` decides `txReduceRelayEnabled()` in its constructor, from
+        // the config and the handshake header, so set these first.
         env.app().config().txReduceRelayEnable = txRREnabled;
         env.app().config().txReduceRelayMinPeers = minPeers;
         env.app().config().txRelayPercentage = relayPercentage;
         for (int i = 0; i < nPeers; i++)
-            addPeer(env, builder, peers, nDisabled);
+            addPeer(env, peers, nDisabled);
 
-        // Bail out rather than fall through: an under-filled skip set would
-        // fail the relay counts below too, for a reason that looks unrelated.
+        // An under-filled skip set would also fail the relay counts below, for
+        // a reason that looks unrelated.
         if (!BEAST_EXPECT(nSkip <= peers.size()))
             return;
 
-        // Skip the peers built first, so the skipped set overlaps the
-        // reduce-relay-disabled peers the way the expected counts assume.
+        // Skip the peers built first, so the skip set overlaps the disabled
+        // peers as the expected counts assume.
         std::set<Peer::id_t> toSkip;
         for (std::size_t i = 0; i < nSkip; ++i)
             toSkip.insert(peers[i]->id());

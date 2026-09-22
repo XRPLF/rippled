@@ -45,16 +45,14 @@ class TMTransactions_test : public beast::unit_test::Suite
             *this,
             envconfig(),
             std::make_unique<CheckMessageLogs>(kLimitExceededMessage, &foundExpectedLog)};
-        CapturePeerBuilder builder;
 
-        // Set before building the peer: `PeerImp` decides
-        // `txReduceRelayEnabled()` in its constructor, from the config and the
-        // handshake header together.
+        // `PeerImp` decides `txReduceRelayEnabled()` in its constructor, from
+        // the config and the handshake header, so set this first.
         env.app().config().txReduceRelayEnable = true;
         http_request_type request;
         request.insert("X-Protocol-Ctl", makeFeaturesRequestHeader(false, false, true, false));
 
-        auto peer = builder.build(env, std::nullopt, std::move(request));
+        auto peer = makeCapturePeer(env, std::nullopt, std::move(request));
         peer->onMessage(createRequest(numTransactions));
 
         auto fee = peer->feeCharge();

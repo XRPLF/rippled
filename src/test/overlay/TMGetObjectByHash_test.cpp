@@ -33,11 +33,8 @@ using namespace jtx;
 class TMGetObjectByHash_test : public beast::unit_test::Suite
 {
     /**
-     * Adds a synchronous entry point to the JobQueue-dispatched processor.
-     *
-     * The production path runs this on JtLedgerReq; tests need to call it
-     * directly so the reply can be inspected through `sent()`.
-     * `PeerImp::processGetObjectByHash` is `protected` for that purpose.
+     * Calls the JtLedgerReq-dispatched processor synchronously, so the reply is
+     * visible through `sent()`.
      */
     class GetObjectPeer : public CapturePeer
     {
@@ -97,8 +94,7 @@ class TMGetObjectByHash_test : public beast::unit_test::Suite
         testcase("Reply Object Count");
 
         Env env(*this);
-        CapturePeerBuilder builder;
-        auto peer = builder.build<GetObjectPeer>(env);
+        auto peer = makeCapturePeer<GetObjectPeer>(env);
 
         auto request = createRequest(numObjects, env);
         peer->runProcessGetObjectByHash(request);

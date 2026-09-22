@@ -21,13 +21,11 @@ namespace xrpl::test {
 /**
  * A `Peer` whose every method is a no-op returning a default.
  *
- * `Peer` is a two dozen method pure interface, and a test double normally
- * cares about one or two of them. Derive from this and override only those.
- * Adding a method to `Peer` then costs one stub here rather than one per
- * double.
+ * Derive from this and override only the methods a test cares about. Adding a
+ * method to `Peer` then costs one stub here, not one per double.
  *
- * Identity is the exception to "returns a default": the id and the node public
- * key are real, because the code under test routes and deduplicates on both.
+ * The id and the node public key are real, because the code under test routes
+ * and deduplicates on both.
  */
 class PeerStub : public Peer
 {

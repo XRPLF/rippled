@@ -40,9 +40,8 @@ namespace xrpl::test {
 /**
  * A real `PeerImp` that captures the messages it would have sent.
  *
- * Only `send` and `run` are overridden, so everything a test drives through
- * `onMessage` runs production code. Derive from this to reach a `protected`
- * `PeerImp` member; `CapturePeerBuilder::build` takes the derived type.
+ * Only `send` and `run` are overridden, so `onMessage` runs production code.
+ * Derive from this to reach a `protected` `PeerImp` member.
  */
 class CapturePeer : public PeerImp
 {
@@ -52,13 +51,9 @@ public:
     using SocketType = boost::asio::ip::tcp::socket;
 
     /**
-     * Forwards to `PeerImp`, restating its two sinks by value.
-     *
-     * `PeerImp` declares `request` and `streamPtr` as rvalue references. Taking
-     * them by value instead is what lets a derived double write a plain
-     * `using CapturePeer::CapturePeer;`. An inherited constructor has no body,
-     * so an inherited rvalue-reference parameter is always reported as never
-     * moved from.
+     * Takes `PeerImp`'s two rvalue-reference parameters by value instead, so a
+     * derived double can inherit this constructor without a never-moved-from
+     * warning.
      *
      * @param app      The application owning the peer.
      * @param id       The connection id, unique among the overlay's peers.
@@ -96,12 +91,8 @@ public:
     ~CapturePeer() override = default;
 
     /**
-     * Deliberately does nothing, which is what keeps the peer alive.
-     *
-     * `OverlayImpl::addActive` calls `run()`, and for an inbound peer that
-     * reaches `PeerImp::doAccept`, which reads the ssl handshake off a socket
-     * a test never connected. That fails, and the peer closes and detaches
-     * itself again. Doing nothing leaves it registered and inert.
+     * Does nothing, so the peer stays registered. The real `run()` reaches
+     * `PeerImp::doAccept`, which fails on an unconnected socket and detaches.
      */
     void
     run() override
@@ -109,7 +100,7 @@ public:
     }
 
     /**
-     * Captures rather than writes, which is what makes replies observable.
+     * Captures the message instead of writing it, so replies are observable.
      */
     void
     send(std::shared_ptr<Message> const& m) override
@@ -136,12 +127,7 @@ public:
     }
 
     /**
-     * Exposes the charge `PeerImp` has accumulated but not yet applied.
-     *
-     * `PeerImp::currentFeeCharge` is `protected` for exactly this reason: a
-     * test can check which fee a message earned without draining it through
-     * `charge()`. Reading it needs no production accessor, only a derived
-     * class, and every suite that reads it wants the same one.
+     * Reads the accumulated charge without draining it through `charge()`.
      *
      * @return The charge accumulated on the peer so far.
      */
@@ -155,93 +141,112 @@ private:
     std::vector<std::shared_ptr<Message>> sent_;
 };
 
+namespace detail {
+
+// `inline` so the functions below name one entity across translation units.
+inline constexpr std::uint16_t kCapturePeerPort = 51235;
+
 /**
- * Builds active `CapturePeer` peers against an environment's overlay.
+ * Non-template, so all `makeCapturePeer` instantiations share one counter. A
+ * per-instantiation counter would give two peer types the same id, and
+ * `addActive` would silently drop the second from `ids_`.
  *
- * Holds the SSL context and hands out connection ids and remote addresses, so
- * no two peers built by one builder collide. Ids start at 1 and only ever
- * increase, as in production.
+ * @return The next unused connection id.
  */
-class CapturePeerBuilder
+inline Peer::id_t
+nextCapturePeerId()
 {
-public:
-    /**
-     * Build an active peer and register it with the overlay.
-     *
-     * @tparam PeerType  The peer class to build; must derive from `CapturePeer`
-     *                   and inherit its constructor.
-     * @param env        The environment owning the overlay.
-     * @param key        The peer's node public key, or unseated for a fresh
-     *                   random one.
-     * @param request    The handshake request. Pass one carrying an
-     *                   `X-Protocol-Ctl` header to negotiate features;
-     *                   `PeerImp` reads it in its constructor.
-     * @return The peer, already registered with the overlay. Throws rather
-     *         than returning if the peer finder refused a slot.
-     */
-    template <class PeerType = CapturePeer>
-    std::shared_ptr<PeerType>
-    build(
-        jtx::Env& env,
-        std::optional<PublicKey> key = std::nullopt,
-        http_request_type request = {})
+    static Peer::id_t id{0};
+    return ++id;
+}
+
+/**
+ * Non-template for the same reason as `nextCapturePeerId`. Each peer needs its
+ * own address, not just its own port: the peer finder caps inbound connections
+ * per address at `ipLimit`, which is at most 2 unless configured.
+ *
+ * @return The next unused remote endpoint.
+ */
+inline beast::ip::Endpoint
+nextCapturePeerRemote()
+{
+    // From 172.2.0.1 upward, so ~900k fit before reaching 172.16/12, where the
+    // peer finder would treat them as private rather than as real inbound.
+    static std::uint32_t next{0xAC020001};
+    return beast::ip::Endpoint(boost::asio::ip::address_v4(next++), kCapturePeerPort);
+}
+
+/**
+ * Outlives every peer, whose stream keeps a reference to it. `PeerImp::charge`
+ * posts a handler holding the peer, so a peer can outlive its caller's scope.
+ *
+ * @return The ssl context every test peer's stream is built on.
+ */
+inline boost::asio::ssl::context&
+capturePeerSslContext()
+{
+    static std::shared_ptr<boost::asio::ssl::context> const kContext{makeSslContext("")};
+    return *kContext;
+}
+
+}  // namespace detail
+
+/**
+ * Build an active `CapturePeer` and register it with the overlay.
+ *
+ * @tparam PeerType  The peer class to build; must derive from `CapturePeer` and
+ *                   inherit its constructor.
+ * @param env      The environment owning the overlay.
+ * @param key      The peer's node public key, or unseated for a fresh random
+ *                 one.
+ * @param request  The handshake request. `PeerImp` reads its `X-Protocol-Ctl`
+ *                 header in the constructor to negotiate features.
+ * @return The peer, already registered with the overlay. Throws if the peer
+ *         finder refused a slot.
+ */
+template <class PeerType = CapturePeer>
+std::shared_ptr<PeerType>
+makeCapturePeer(
+    jtx::Env& env,
+    std::optional<PublicKey> key = std::nullopt,
+    http_request_type request = {})
+{
+    auto& overlay = dynamic_cast<OverlayImpl&>(env.app().getOverlay());
+    auto streamPtr = std::make_unique<CapturePeer::StreamType>(
+        CapturePeer::SocketType(env.app().getIOContext()), detail::capturePeerSslContext());
+
+    beast::ip::Endpoint const local(
+        boost::asio::ip::make_address("172.1.1.1"), detail::kCapturePeerPort);
+    auto const remote = detail::nextCapturePeerRemote();
+
+    auto consumer = overlay.resourceManager().newInboundEndpoint(remote);
+    auto [slot, _] = overlay.peerFinder().newInboundSlot(local, remote);
+
+    // Unseated when the endpoint is already connected or at the per-address
+    // limit. `PeerImp` dereferences the slot, so fail here, not there.
+    if (!slot)
     {
-        auto& overlay = dynamic_cast<OverlayImpl&>(env.app().getOverlay());
-        auto streamPtr = std::make_unique<CapturePeer::StreamType>(
-            CapturePeer::SocketType(env.app().getIOContext()), *context_);
-
-        // Every peer needs its own remote address, not merely its own port. The
-        // peer finder caps inbound connections per address at `ipLimit`, which
-        // is at most 2 unless configured, and it refuses the slot once that is
-        // reached.
-        beast::ip::Endpoint const local(boost::asio::ip::make_address("172.1.1.1"), kPort);
-        beast::ip::Endpoint const remote(boost::asio::ip::address_v4(nextRemote_++), kPort);
-
-        auto consumer = overlay.resourceManager().newInboundEndpoint(remote);
-        auto [slot, _] = overlay.peerFinder().newInboundSlot(local, remote);
-
-        // The slot is unseated when the endpoint is already connected or its
-        // address is at the peer finder's per-address limit, and `PeerImp`
-        // dereferences the slot in its constructor. Fail here, where the cause
-        // is visible, rather than there with a segfault.
-        if (!slot)
-        {
-            Throw<std::runtime_error>(
-                "CapturePeerBuilder::build: no slot for " + to_string(remote));
-        }
-
-        if (!key)
-            key = PublicKey(std::get<0>(randomKeyPair(KeyType::Ed25519)));
-
-        auto peer = std::make_shared<PeerType>(
-            env.app(),
-            nextId_++,
-            slot,
-            std::move(request),
-            *key,
-            // A peer claiming an unsupported version would silently fail every
-            // test `PeerImp::supportsFeature` makes against the version, and so
-            // would only ever reach the legacy branch of a version-gated reply.
-            newestSupportedProtocolVersion(),
-            consumer,
-            std::move(streamPtr),
-            overlay);
-
-        overlay.addActive(peer);
-        return peer;
+        Throw<std::runtime_error>("makeCapturePeer: no slot for " + to_string(remote));
     }
 
-private:
-    static constexpr std::uint16_t kPort = 51235;
-    // Remote addresses are handed out from 172.2.0.1 upward, so ~900k fit
-    // before the counter reaches 172.16/12 and the peer finder starts treating
-    // them as private. Keeping them public is what makes a test peer look like
-    // a real inbound connection.
-    static constexpr std::uint32_t kFirstRemote = 0xAC020001;
+    if (!key)
+        key = PublicKey(std::get<0>(randomKeyPair(KeyType::Ed25519)));
 
-    std::shared_ptr<boost::asio::ssl::context> context_{makeSslContext("")};
-    Peer::id_t nextId_{1};
-    std::uint32_t nextRemote_{kFirstRemote};
-};
+    auto peer = std::make_shared<PeerType>(
+        env.app(),
+        detail::nextCapturePeerId(),
+        slot,
+        std::move(request),
+        *key,
+        // An unsupported version fails every `supportsFeature` test, so a
+        // version-gated reply would only ever take its legacy branch.
+        newestSupportedProtocolVersion(),
+        consumer,
+        std::move(streamPtr),
+        overlay);
+
+    overlay.addActive(peer);
+    return peer;
+}
 
 }  // namespace xrpl::test

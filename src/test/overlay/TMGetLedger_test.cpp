@@ -23,11 +23,8 @@ using namespace jtx;
 class TMGetLedger_test : public beast::unit_test::Suite
 {
     /**
-     * Adds a synchronous entry point to the JobQueue-dispatched processor.
-     *
-     * The production path runs this on JtLedgerReq; tests need to call it
-     * directly so the reply can be inspected through `lastSent()`.
-     * `PeerImp::processLedgerRequest` is `protected` for that purpose.
+     * Calls the JtLedgerReq-dispatched processor synchronously, so the reply is
+     * visible through `lastSent()`.
      */
     class GetLedgerPeer : public CapturePeer
     {
@@ -71,9 +68,8 @@ class TMGetLedger_test : public beast::unit_test::Suite
         testcase("Node ID Count Accepted");
 
         Env env{*this};
-        CapturePeerBuilder builder;
 
-        auto peer = builder.build(env);
+        auto peer = makeCapturePeer(env);
         peer->onMessage(createRequest(numNodeIds));
 
         // A request outside the accepted node-ID count is charged kFeeInvalidData; one inside
@@ -91,9 +87,8 @@ class TMGetLedger_test : public beast::unit_test::Suite
 
         Env env{*this};
         env.close();
-        CapturePeerBuilder builder;
 
-        auto peer = builder.build<GetLedgerPeer>(env);
+        auto peer = makeCapturePeer<GetLedgerPeer>(env);
 
         // Ask for the account-state root node of the closed ledger.
         auto request = createRequest(numNodeIds);

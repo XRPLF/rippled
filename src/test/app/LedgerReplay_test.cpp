@@ -269,8 +269,7 @@ enum class PeerFeature {
 class TestPeer : public PeerStub
 {
 public:
-    // The id is arbitrary but fixed: the replay code only ever compares ids,
-    // and every task here is served by a single peer.
+    // Arbitrary but fixed: the replay code only compares ids.
     explicit TestPeer(bool enableLedgerReplay)
         : PeerStub(1234), ledgerReplayEnabled_(enableLedgerReplay)
     {

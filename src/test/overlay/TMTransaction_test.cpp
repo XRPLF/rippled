@@ -21,9 +21,8 @@ class TMTransaction_test : public beast::unit_test::Suite
         testcase("Undeserializable Transaction Is Charged");
 
         Env env{*this, envconfig()};
-        CapturePeerBuilder builder;
 
-        auto peer = builder.build(env);
+        auto peer = makeCapturePeer(env);
         auto tx = std::make_shared<protocol::TMTransaction>();
         tx->set_status(protocol::tsNEW);
 
