@@ -40,11 +40,17 @@ services:
   otel-collector:
     image: otel/opentelemetry-collector-contrib:0.158.0
     command: ["--config=/etc/otel-collector-config.yaml"]
+    # Published on the host loopback only. The receivers have no auth and no
+    # TLS, so only processes on this host may reach them. Note this 127.0.0.1
+    # is the HOST interface docker listens on; the container-side bind lives in
+    # the collector config and is a separate choice. Upstream asks for a
+    # specific interface rather than 0.0.0.0 on either side (CWE-1327):
+    # https://opentelemetry.io/docs/security/config-best-practices/
     ports:
-      - "4317:4317" # OTLP gRPC
-      - "4318:4318" # OTLP HTTP (traces + beast::insight metrics)
-      - "8889:8889" # Prometheus metrics endpoint
-      - "13133:13133" # Health check
+      - "127.0.0.1:4317:4317" # OTLP gRPC
+      - "127.0.0.1:4318:4318" # OTLP HTTP (traces + beast::insight metrics)
+      - "127.0.0.1:8889:8889" # Prometheus metrics endpoint
+      - "127.0.0.1:13133:13133" # Health check
     volumes:
       - ./otel-collector-config.yaml:/etc/otel-collector-config.yaml:ro
       # Mount the validation workdir so the file_log receiver can tail node
@@ -60,7 +66,7 @@ services:
     image: grafana/tempo:2.9.4
     command: ["-config.file=/etc/tempo.yaml"]
     ports:
-      - "3200:3200" # Tempo HTTP API
+      - "127.0.0.1:3200:3200" # Tempo HTTP API
     volumes:
       - ./tempo.yaml:/etc/tempo.yaml:ro
       - tempo-data:/var/tempo
@@ -70,7 +76,7 @@ services:
   prometheus:
     image: prom/prometheus:v3.13.2
     ports:
-      - "9090:9090"
+      - "127.0.0.1:9090:9090"
     volumes:
       - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
     depends_on:
@@ -81,7 +87,7 @@ services:
   loki:
     image: grafana/loki:3.7.6
     ports:
-      - "3100:3100" # Loki HTTP API
+      - "127.0.0.1:3100:3100" # Loki HTTP API
     command: ["-config.file=/etc/loki/local-config.yaml"]
     networks:
       - workload-net
@@ -98,7 +104,7 @@ services:
       - GF_AUTH_ANONYMOUS_ENABLED=true # No login required for local dev
       - GF_AUTH_ANONYMOUS_ORG_ROLE=Admin # Full access without auth
     ports:
-      - "3000:3000" # Grafana web UI
+      - "127.0.0.1:3000:3000" # Grafana web UI
     volumes:
       - ./grafana/provisioning:/etc/grafana/provisioning:ro
       - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
