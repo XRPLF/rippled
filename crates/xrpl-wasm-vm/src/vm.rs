@@ -407,6 +407,22 @@ mod tests {
         assert_eq!(limits.memories(), 1);
     }
 
+    /// The three size-proportional fuel rates, read back off the engine. wasmi
+    /// takes its own defaults for these unless told otherwise, so an upgrade that
+    /// changed one would retune our gas silently. `Config` keeps them
+    /// `pub(crate)` and exposes them only through `Debug`.
+    #[test]
+    fn the_dynamic_fuel_costs_are_pinned() {
+        let config = format!("{:?}", wasm_engine().config());
+        for rate in [
+            "bytes_copied_per_fuel: 64",
+            "fuel_per_bytes_translated: 7",
+            "fuel_per_bytes_validated: 2",
+        ] {
+            assert!(config.contains(rate), "expected `{rate}` in {config}");
+        }
+    }
+
     /// The only place these numbers appear as literals; every other test derives
     /// them from the constants.
     #[test]
