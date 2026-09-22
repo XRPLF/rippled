@@ -20,6 +20,7 @@
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/STTakesAsset.h>
 #include <xrpl/protocol/SeqProxy.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
@@ -1862,6 +1863,17 @@ public:
                 .amount = STAmount{iou, Number{1, -13}},
                 .expected = tesSUCCESS,
             },
+            {
+                // CoverAvailable 1e10 is exponent -5. 1e-6 is non-zero at
+                // FixedPrecision P=6, but ToNearest at the live cover
+                // exponent rounds it to zero. Withdraw/clawback skip this
+                // helper for FixedPrecision so a re-fining outflow can
+                // succeed.
+                .name = "Coarsened live scale rejects re-fining amount",
+                .coverAvailable = Number{1, 10},
+                .amount = STAmount{iou, Number{1, -6}},
+                .expected = tecPRECISION_LOSS,
+            },
         };
 
         Env const env{*this};
@@ -1891,6 +1903,26 @@ public:
                     envOff.journal,
                     "test") == tesSUCCESS);
         }
+
+        testcase("minimumBrokerCover: FixedPrecision uses base scale");
+        auto const makeVault = [&](VaultVersion version) {
+            auto vault = std::make_shared<SLE>(ltVAULT, uint256{2u});
+            vault->setFieldIssue(sfAsset, STIssue{sfAsset, iou});
+            vault->at(sfAssetsTotal) = Number{1};
+            vault->at(sfScale) = 6;
+            vault->at(sfLEVersion) = std::to_underlying(version);
+            associateAsset(*vault, iou);
+            return vault;
+        };
+
+        Number const debtTotal{15, -2};
+        TenthBips32 const coverRate{1};
+        BEAST_EXPECT(
+            (minimumBrokerCover(debtTotal, coverRate, makeVault(VaultVersion::FixedPrecision)) ==
+             Number{2, -6}));
+        BEAST_EXPECT(
+            (minimumBrokerCover(debtTotal, coverRate, makeVault(VaultVersion::CashBasis)) ==
+             Number{15, -7}));
     }
 
     // Targeted unit test for getLoanDefaultFreezeExemptAccounts(): builds a real

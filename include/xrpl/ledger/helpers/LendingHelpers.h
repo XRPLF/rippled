@@ -10,7 +10,6 @@
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/LedgerFormats.h>  // IWYU pragma: keep
-#include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/Rules.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
@@ -55,6 +54,46 @@ canApplyToBrokerCover(
     STAmount const& amount,
     beast::Journal j,
     std::string_view logPrefix);
+
+/**
+ * Return a LoanBroker's current live cover exponent.
+ *
+ * Legacy and CashBasis Vaults use the exponent of CoverAvailable.
+ * FixedPrecision Vaults floor that exponent at the Vault's base exponent.
+ *
+ * Reserved for fee redirection into cover. Cover deposit, withdraw, and
+ * clawback round at the posterior live exponent instead.
+ */
+[[nodiscard]] int
+getBrokerCoverScale(SLE::const_ref vault, SLE::const_ref broker);
+
+/**
+ * Return a LoanBroker's posterior live cover exponent after applying an
+ * unrounded delta.
+ */
+[[nodiscard]] int
+getPosteriorBrokerCoverScale(SLE::const_ref vault, SLE::const_ref broker, STAmount const& delta);
+
+/**
+ * Round a cover delta at the LoanBroker's posterior live exponent.
+ */
+[[nodiscard]] STAmount
+roundToPosteriorBrokerCoverScale(
+    SLE::const_ref vault,
+    SLE::const_ref broker,
+    STAmount const& delta,
+    Number::RoundingMode roundingMode);
+
+/**
+ * Check whether `amount` is an admissible optional cover inflow.
+ *
+ * Legacy and CashBasis Vaults always succeed. A LoanBroker attached to a
+ * FixedPrecision Vault must remain at the Vault's base scale after applying
+ * the rounded amount, and its posterior CoverAvailable must stay within the
+ * Open zone.
+ */
+[[nodiscard]] TER
+checkOptionalBrokerCoverInflow(SLE::const_ref vault, SLE::const_ref broker, STAmount const& amount);
 
 // Lending protocol has dependencies, so capture them here.
 bool
@@ -262,20 +301,16 @@ getAssetsTotalScale(SLE::const_ref vaultSle)
     return scale(vaultSle->at(sfAssetsTotal), vaultSle->at(sfAsset));
 }
 
-// Compute the minimum required broker cover, rounded consistently.
-// DebtTotal is a broker-level aggregate maintained at vault scale, so the
-// rounding must also use vault scale — never an individual loan's scale.
-inline Number
-minimumBrokerCover(Number const& debtTotal, TenthBips32 coverRateMinimum, SLE::const_ref vaultSle)
-{
-    XRPL_ASSERT(
-        vaultSle && vaultSle->getType() == ltVAULT, "xrpl::minimumBrokerCover : valid Vault sle");
-    NumberRoundModeGuard const mg(Number::RoundingMode::Upward);
-    return roundToAsset(
-        vaultSle->at(sfAsset),
-        tenthBipsOfValue(debtTotal, coverRateMinimum),
-        getAssetsTotalScale(vaultSle));
-}
+/**
+ * Minimum required broker cover, rounded up.
+ *
+ * DebtTotal is a broker-level aggregate, never rounded at an individual
+ * loan's scale. Legacy and CashBasis Vaults round at the live AssetsTotal
+ * exponent. FixedPrecision Vaults round at the Vault's base exponent
+ * (`-Scale`, or 0 for integral assets).
+ */
+Number
+minimumBrokerCover(Number const& debtTotal, TenthBips32 coverRateMinimum, SLE::const_ref vaultSle);
 
 TER
 checkLoanGuards(

@@ -9,6 +9,7 @@
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/helpers/LendingHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
+#include <xrpl/ledger/helpers/VaultHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Feature.h>
@@ -375,7 +376,8 @@ LoanPay::doApply()
         // DebtTotal) use vaultScale. The legacy path below intentionally retains
         // its pre-amendment loanScale behavior.
         auto const minCover = [&]() {
-            if (view.rules().enabled(fixCleanup3_2_0))
+            if (view.rules().enabled(fixCleanup3_2_0) ||
+                getVaultVersion(vaultSle) == VaultVersion::FixedPrecision)
             {
                 return minimumBrokerCover(debtTotalProxy.value(), coverRateMinimum, vaultSle);
             }
