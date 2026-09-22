@@ -75,14 +75,20 @@ services:
         "--config=/etc/otel-collector-config.yaml",
         "--config=/etc/otel-collector-filestorage.yaml",
       ]
+    # Published on the host loopback only. The receivers have no auth and no
+    # TLS, so only processes on this host may reach them. Note this 127.0.0.1
+    # is the HOST interface docker listens on; the container-side bind lives in
+    # the collector config and is a separate choice. Upstream asks for a
+    # specific interface rather than 0.0.0.0 on either side (CWE-1327):
+    # https://opentelemetry.io/docs/security/config-best-practices/
     ports:
-      - "4317:4317" # OTLP gRPC
-      - "4318:4318" # OTLP HTTP (traces + native OTel metrics)
-      - "8889:8889" # Prometheus metrics (span_metrics + OTLP)
+      - "127.0.0.1:4317:4317" # OTLP gRPC
+      - "127.0.0.1:4318:4318" # OTLP HTTP (traces + native OTel metrics)
+      - "127.0.0.1:8889:8889" # Prometheus metrics (span_metrics + OTLP)
       # StatsD UDP port removed — beast::insight now uses native OTLP.
       # Uncomment if using server=statsd fallback:
-      # - "8125:8125/udp"
-      - "13133:13133" # Health check
+      # - "127.0.0.1:8125:8125/udp"
+      - "127.0.0.1:13133:13133" # Health check
     volumes:
       # Mount collector pipeline config (receivers → processors → exporters)
       - ./otel-collector-config.yaml:/etc/otel-collector-config.yaml:ro
@@ -118,7 +124,7 @@ services:
     image: grafana/tempo:2.9.4
     command: ["-config.file=/etc/tempo.yaml"]
     ports:
-      - "3200:3200" # Tempo HTTP API (health check, query)
+      - "127.0.0.1:3200:3200" # Tempo HTTP API (health check, query)
     volumes:
       # Mount Tempo storage and ingestion config
       - ./tempo.yaml:/etc/tempo.yaml:ro
@@ -145,7 +151,7 @@ services:
     # Pinned to an exact patch release for reproducible, config-stable runs.
     image: prom/prometheus:v3.13.2
     ports:
-      - "9090:9090"
+      - "127.0.0.1:9090:9090"
     volumes:
       - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
       - prometheus-data:/prometheus
@@ -162,7 +168,7 @@ services:
       - GF_AUTH_ANONYMOUS_ENABLED=true # No login required for local dev
       - GF_AUTH_ANONYMOUS_ORG_ROLE=Admin # Full access without auth
     ports:
-      - "3000:3000" # Grafana web UI
+      - "127.0.0.1:3000:3000" # Grafana web UI
     volumes:
       # Auto-provision Tempo datasource and search filters on startup
       - ./grafana/provisioning:/etc/grafana/provisioning:ro
