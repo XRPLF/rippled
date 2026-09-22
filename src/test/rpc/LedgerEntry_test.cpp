@@ -10,7 +10,6 @@
 #include <test/jtx/envconfig.h>
 #include <test/jtx/flags.h>
 #include <test/jtx/mpt.h>
-#include <test/jtx/multisign.h>
 #include <test/jtx/offer.h>
 #include <test/jtx/pay.h>
 #include <test/jtx/permissioned_domains.h>
@@ -40,8 +39,10 @@
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Keylet.h>
 #include <xrpl/protocol/Protocol.h>
+#include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STArray.h>
+#include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/STVector256.h>
 #include <xrpl/protocol/SeqProxy.h>
 #include <xrpl/protocol/TxFlags.h>
