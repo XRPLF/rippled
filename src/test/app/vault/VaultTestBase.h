@@ -113,8 +113,12 @@ protected:
         return {.vault = vault, .keylet = keylet, .sub = sub, .red = red};
     }
 
-    // Keep legacy Vault suites on their pre-V1.2 behavior. Tests for the
-    // fixed-precision protocol enable featureLendingProtocolV1_2 explicitly.
+    // The IOU precision-boundary bugs in VaultBugs_test.cpp probe the
+    // STAmount 16-digit mantissa cliff (~1e16). FixedPrecision's Open-zone
+    // cap (9e(15-Scale)) makes that value unreachable at any Scale, so
+    // these scenarios cannot be reproduced under V1.2 by construction.
+    // Tests for the fixed-precision protocol enable featureLendingProtocolV1_2
+    // explicitly.
     FeatureBitset const all_{test::jtx::testableAmendments() - featureLendingProtocolV1_2};
     std::string const iouCurrency_{"IOU"};
 };

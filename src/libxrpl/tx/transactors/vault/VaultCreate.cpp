@@ -45,6 +45,7 @@ VaultCreate::checkExtraFeatures(PreflightContext const& ctx)
         return false;
 
     if (!ctx.rules.enabled(featureLendingProtocolV1_1) &&
+        !ctx.rules.enabled(featureLendingProtocolV1_2) &&
         (ctx.tx.isFieldPresent(sfVaultKind) || ctx.tx.isFieldPresent(sfSubscriptionDate) ||
          ctx.tx.isFieldPresent(sfRedemptionDate)))
         return false;
@@ -276,12 +277,12 @@ VaultCreate::doApply()
     }
     if (scale != 0u)
         vault->at(sfScale) = scale;
-    // featureLendingProtocolV1_2 is defined to require V1.1: new vaults get
-    // FixedPrecision plus the V1.1 VaultKind fields even if a test enables
-    // only V1.2. YieldUnrealized is SoeDefault, so writing zero stores the
-    // field as absent, matching LossUnrealized.
+    // Treat featureLendingProtocolV1_2 as implying V1.1 when creating a vault;
+    // there is no FeatureBitset-level dependency lock. YieldUnrealized is
+    // SoeDefault, so writing zero stores the field as absent, matching
+    // LossUnrealized.
     bool const fixedPrecision = view().rules().enabled(featureLendingProtocolV1_2);
-    bool const cashBasis = view().rules().enabled(featureLendingProtocolV1_1);
+    bool const cashBasis = view().rules().enabled(featureLendingProtocolV1_1) || fixedPrecision;
     if (fixedPrecision)
     {
         vault->at(sfLEVersion) = std::to_underlying(VaultVersion::FixedPrecision);

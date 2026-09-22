@@ -450,7 +450,8 @@ VaultWithdraw::doApply()
     // permits fixed-share zero-asset withdrawals in a fully-impaired vault (where
     // assetsTotalForWithdrawal == 0), and clamping-then-rejecting would undo that. Also skip on
     // the final-withdrawal path, which overwrites assetsWithdrawn with sfAssetsAvailable below.
-    if (fix340Enabled && !isFinalWithdrawal && assetsWithdrawn > beast::kZero)
+    if ((fix340Enabled || getVaultVersion(vault) == VaultVersion::FixedPrecision) &&
+        !isFinalWithdrawal && assetsWithdrawn > beast::kZero)
     {
         // Check availability against the unclamped amount first, so a withdrawal that is both
         // over the vault's available balance and sub-ULP at the posterior sfAssetsTotal scale

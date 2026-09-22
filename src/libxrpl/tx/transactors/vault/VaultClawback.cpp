@@ -360,7 +360,9 @@ VaultClawback::assetsToClawback(
         // rails change by the same representable delta. sharesDestroyed is intentionally NOT
         // re-derived here: the holder's shares are burned for their pre-clamp value, so any
         // sub-ULP trimmed off stays in the vault for the remaining shareholders.
-        if (ctx_.view().rules().enabled(fixCleanup3_4_0) && assetsRecovered > beast::kZero)
+        if ((ctx_.view().rules().enabled(fixCleanup3_4_0) ||
+             getVaultVersion(vault) == VaultVersion::FixedPrecision) &&
+            assetsRecovered > beast::kZero)
         {
             auto const maybeClamped = clampToAssetsTotalScale(vault, -assetsRecovered);
             if (!maybeClamped)

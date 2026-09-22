@@ -329,7 +329,7 @@ VaultDeposit::doApply()
         // Post-fixCleanup3_4_0: round the deposit to the sfAssetsTotal scale so all accounting
         // fields (trust line / MPT, sfAssetsAvailable, sfAssetsTotal) change by the same
         // representable delta.
-        if (fix340Enabled)
+        if (fix340Enabled || getVaultVersion(vault) == VaultVersion::FixedPrecision)
         {
             // Round down at the posterior sfAssetsTotal scale so the vault is credited by no more
             // than the depositor paid. Keep the share count from the first round trip: the clamp

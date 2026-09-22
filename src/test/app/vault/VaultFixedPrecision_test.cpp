@@ -33,6 +33,24 @@ class VaultFixedPrecision_test : public VaultTestBase
             featureLendingProtocolV1_2;
     }
 
+    // Submits a VaultCreate for an open-ended vault at the given fixed
+    // Scale and closes the ledger. Shared by every scenario below that
+    // needs a Scale-6 vault rather than the protocol default.
+    static std::pair<test::jtx::Vault, Keylet>
+    createScaledVault(
+        test::jtx::Env& env,
+        test::jtx::Account const& owner,
+        Asset const& asset,
+        std::uint8_t scale)
+    {
+        test::jtx::Vault const vault{env};
+        auto [create, keylet] = vault.create({.owner = owner, .asset = asset});
+        create[sfScale] = scale;
+        env(create);
+        env.close();
+        return {vault, keylet};
+    }
+
     void
     testCreate()
     {
@@ -54,10 +72,38 @@ class VaultFixedPrecision_test : public VaultTestBase
             env.close();
 
             auto const sle = env.le(keylet);
-            BEAST_EXPECT(sle);
+            if (!BEAST_EXPECT(sle))
+                return;
             BEAST_EXPECT(sle->at(sfLEVersion) == std::to_underlying(VaultVersion::FixedPrecision));
             BEAST_EXPECT(sle->at(sfScale) == kVaultDefaultIouScale);
             BEAST_EXPECT(sle->at(sfYieldUnrealized) == beast::kZero);
+        }
+
+        {
+            testcase("VaultCreate treats V1.2 as implying V1.1");
+            Env env(*this, features() - featureLendingProtocolV1_1);
+            env.fund(XRP(1'000'000), issuer, owner);
+            env.close();
+
+            Vault const vault{env};
+            auto [tx, keylet] = vault.create(
+                {.owner = owner,
+                 .asset = asset,
+                 .vaultKind = std::to_underlying(VaultKind::OpenEnded)});
+            tx[sfScale] = kVaultMaximumFixedIouScale;
+            env(tx);
+            env.close();
+
+            auto const sle = env.le(keylet);
+            if (!BEAST_EXPECT(sle))
+                return;
+            BEAST_EXPECT(sle->at(sfLEVersion) == std::to_underlying(VaultVersion::FixedPrecision));
+            BEAST_EXPECT(sle->at(sfVaultKind) == std::to_underlying(VaultKind::OpenEnded));
+
+            auto [invalid, invalidKeylet] = vault.create({.owner = owner, .asset = asset});
+            invalid[sfScale] = static_cast<std::uint8_t>(kVaultMaximumFixedIouScale + 1);
+            env(invalid, Ter(temMALFORMED));
+            BEAST_EXPECT(!env.le(invalidKeylet));
         }
 
         for (std::uint8_t const scaleValue :
@@ -102,7 +148,8 @@ class VaultFixedPrecision_test : public VaultTestBase
             env.close();
 
             auto const sle = env.le(keylet);
-            BEAST_EXPECT(sle);
+            if (!BEAST_EXPECT(sle))
+                return;
             BEAST_EXPECT(sle->at(sfLEVersion) == std::to_underlying(VaultVersion::CashBasis));
             BEAST_EXPECT(!sle->isFieldPresent(sfYieldUnrealized));
         }
@@ -127,18 +174,15 @@ class VaultFixedPrecision_test : public VaultTestBase
         env(pay(issuer, owner, asset(open + Number{1})));
         env.close();
 
-        Vault const vault{env};
-        auto [create, keylet] = vault.create({.owner = owner, .asset = asset});
-        create[sfScale] = 6;
-        env(create);
-        env.close();
+        auto [vault, keylet] = createScaledVault(env, owner, asset, 6);
 
         testcase("VaultDeposit admits the Open boundary");
         env(vault.deposit({.depositor = owner, .id = keylet.key, .amount = asset(open)}));
         env.close();
 
         auto const atOpen = env.le(keylet);
-        BEAST_EXPECT(atOpen);
+        if (!BEAST_EXPECT(atOpen))
+            return;
         BEAST_EXPECT(atOpen->at(sfAssetsTotal) == open);
         BEAST_EXPECT(atOpen->at(sfAssetsAvailable) == open);
 
@@ -148,7 +192,8 @@ class VaultFixedPrecision_test : public VaultTestBase
         env.close();
 
         auto const afterRejected = env.le(keylet);
-        BEAST_EXPECT(afterRejected);
+        if (!BEAST_EXPECT(afterRejected))
+            return;
         BEAST_EXPECT(afterRejected->at(sfAssetsTotal) == open);
         BEAST_EXPECT(afterRejected->at(sfAssetsAvailable) == open);
     }
@@ -180,7 +225,8 @@ class VaultFixedPrecision_test : public VaultTestBase
         env.close();
 
         auto const before = env.le(keylet);
-        BEAST_EXPECT(before);
+        if (!BEAST_EXPECT(before))
+            return;
         BEAST_EXPECT(before->at(sfLEVersion) == std::to_underlying(VaultVersion::CashBasis));
 
         env.enableFeature(featureLendingProtocolV1_2);
@@ -189,7 +235,8 @@ class VaultFixedPrecision_test : public VaultTestBase
         env.close();
 
         auto const after = env.le(keylet);
-        BEAST_EXPECT(after);
+        if (!BEAST_EXPECT(after))
+            return;
         BEAST_EXPECT(after->at(sfLEVersion) == std::to_underlying(VaultVersion::CashBasis));
         BEAST_EXPECT(!after->isFieldPresent(sfYieldUnrealized));
         BEAST_EXPECT(after->at(sfAssetsTotal) == deposit);
@@ -222,11 +269,7 @@ class VaultFixedPrecision_test : public VaultTestBase
         env(pay(issuer, owner, asset(4)));
         env.close();
 
-        Vault const vault{env};
-        auto [create, keylet] = vault.create({.owner = owner, .asset = asset});
-        create[sfScale] = 6;
-        env(create);
-        env.close();
+        auto [vault, keylet] = createScaledVault(env, owner, asset, 6);
 
         testcase("VaultDeposit books the truncated amount on the base grid");
         env(vault.deposit(
@@ -234,7 +277,8 @@ class VaultFixedPrecision_test : public VaultTestBase
         env.close();
 
         auto afterDeposit = env.le(keylet);
-        BEAST_EXPECT(afterDeposit);
+        if (!BEAST_EXPECT(afterDeposit))
+            return;
         BEAST_EXPECT(afterDeposit->at(sfAssetsTotal) == (Number{3'234'567, -6}));
         BEAST_EXPECT(afterDeposit->at(sfAssetsAvailable) == (Number{3'234'567, -6}));
         BEAST_EXPECT(env.balance(owner, asset) == asset(Number{765'433, -6}));
@@ -245,7 +289,8 @@ class VaultFixedPrecision_test : public VaultTestBase
         env.close();
 
         auto afterWithdraw = env.le(keylet);
-        BEAST_EXPECT(afterWithdraw);
+        if (!BEAST_EXPECT(afterWithdraw))
+            return;
         BEAST_EXPECT(afterWithdraw->at(sfAssetsTotal) == (Number{2'234'567, -6}));
         BEAST_EXPECT(afterWithdraw->at(sfAssetsAvailable) == (Number{2'234'567, -6}));
         BEAST_EXPECT(env.balance(owner, asset) == asset(Number{1'765'433, -6}));
@@ -259,7 +304,8 @@ class VaultFixedPrecision_test : public VaultTestBase
         env.close();
 
         auto const afterClawback = env.le(keylet);
-        BEAST_EXPECT(afterClawback);
+        if (!BEAST_EXPECT(afterClawback))
+            return;
         BEAST_EXPECT(afterClawback->at(sfAssetsTotal) == (Number{1'234'567, -6}));
         BEAST_EXPECT(afterClawback->at(sfAssetsAvailable) == (Number{1'234'567, -6}));
     }
@@ -298,7 +344,8 @@ class VaultFixedPrecision_test : public VaultTestBase
             Ter(tecLIMIT_EXCEEDED));
 
         auto const sle = env.le(keylet);
-        BEAST_EXPECT(sle);
+        if (!BEAST_EXPECT(sle))
+            return;
         BEAST_EXPECT(sle->at(sfAssetsTotal) == Number{open});
     }
 
@@ -321,11 +368,7 @@ class VaultFixedPrecision_test : public VaultTestBase
         env(pay(issuer, owner, asset(1)));
         env.close();
 
-        Vault const vault{env};
-        auto [create, keylet] = vault.create({.owner = owner, .asset = asset});
-        create[sfScale] = 6;
-        env(create);
-        env.close();
+        auto [vault, keylet] = createScaledVault(env, owner, asset, 6);
 
         env(vault.deposit({.depositor = owner, .id = keylet.key, .amount = asset(Number{1, -7})}),
             Ter(tecPRECISION_LOSS));
@@ -350,11 +393,7 @@ class VaultFixedPrecision_test : public VaultTestBase
         env(pay(issuer, owner, asset(2)));
         env.close();
 
-        Vault const vault{env};
-        auto [create, keylet] = vault.create({.owner = owner, .asset = asset});
-        create[sfScale] = 6;
-        env(create);
-        env.close();
+        auto [vault, keylet] = createScaledVault(env, owner, asset, 6);
         env(vault.deposit({.depositor = owner, .id = keylet.key, .amount = asset(1)}));
         env.close();
 
@@ -383,11 +422,7 @@ class VaultFixedPrecision_test : public VaultTestBase
         env(pay(issuer, depositor, asset(2)));
         env.close();
 
-        Vault const vault{env};
-        auto [create, keylet] = vault.create({.owner = owner, .asset = asset});
-        create[sfScale] = 6;
-        env(create);
-        env.close();
+        auto [vault, keylet] = createScaledVault(env, owner, asset, 6);
         env(vault.deposit({.depositor = depositor, .id = keylet.key, .amount = asset(1)}));
         env.close();
 
