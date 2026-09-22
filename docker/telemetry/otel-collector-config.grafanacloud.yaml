@@ -78,13 +78,10 @@ processors:
   batch:
     timeout: 1s
     send_batch_size: 100
-  # Probabilistic tail sampling, on the trace-storage branch only. The
-  # spanmetrics branch sees every span, so span-derived RED metrics stay
-  # exact while stored trace volume is cut to bound cost on a long-running
-  # node. Operators who need full traces raise sampling_percentage to 100.
-  # Note: a log line carries a trace id only when its span was sampled at
-  # the SDK, so sampling here drops traces whose ids are already in the
-  # logs, and log-to-trace links for those resolve to nothing.
+  # Box-only (uncommitted): probabilistic 0.5% tail sampling on the
+  # trace-storage branch only. spanmetrics-derived metrics see 100% of spans
+  # (they run on a separate branch) so RED remain exact; Tempo/Cloud stores
+  # ~1/200 of traces to keep long-running node cost bounded.
   tail_sampling:
     decision_wait: 10s
     num_traces: 50000
@@ -180,15 +177,16 @@ connectors:
       unit: ms
       explicit:
         # Buckets MUST stay strictly ascending (the connector binary-searches
-        # them and silently misbuckets otherwise) and MUST match the Alloy
-        # list and the other collector config. Sub-millisecond boundaries
-        # exist because most xrpld spans sit far below 1ms: a 1ms floor puts
-        # nearly every sample in the first bucket and pins p95/p99 to that
-        # bucket's edge. Sub-second boundaries cover RPC, tx and ledger spans.
-        # The 2s-4s edges resolve second-scale consensus spans, and 10s/30s
-        # give the ledger.acquire catch-up tail a home so its p95/p99 stop
-        # reading as +Inf. Each edge was chosen from a measured duration
-        # distribution for the spans it covers.
+        # them and silently misbuckets otherwise). Sub-MILLISECOND boundaries
+        # (0.01-0.5ms) exist because most xrpld spans are far below 1ms --
+        # tx.preflight means ~0.012ms, tx.preclaim ~0.15ms -- so a 1ms floor
+        # put >99.99% of samples in the first bucket and pinned every p95/p99
+        # at a constant 0.95ms. Sub-second boundaries cover
+        # RPC/tx/ledger spans; the 2s-4s boundaries resolve second-scale
+        # consensus spans (consensus.round ~3.9s, consensus.establish ~1.9s)
+        # that used to pile into a single 1s-5s bucket; 10s/30s give the
+        # ledger.acquire tail (~17% exceeds 5s during catch-up) a measurable
+        # home so its p95/p99 stop reading as +Inf.
         buckets:
           [
             0.01ms,
