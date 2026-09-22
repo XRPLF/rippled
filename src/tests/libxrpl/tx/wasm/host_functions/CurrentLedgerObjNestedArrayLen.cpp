@@ -4,6 +4,7 @@
 
 #include <gtest/gtest.h>
 #include <helpers/Account.h>
+#include <tx/wasm/fixtures/OwnedLocator.h>
 #include <tx/wasm/fixtures/RealHostFixture.h>
 #include <tx/wasm/fixtures/WasmLedger.h>
 
@@ -28,7 +29,7 @@ TEST_F(CurrentLedgerObjNestedArrayLenImpl, SignerEntriesLength)
 {
     auto const owner = fund("owner");
     auto h = makeHost(owner);
-    expectValue(h->getCurrentLedgerObjNestedArrayLen(FieldLocator{{sfSignerEntries.getCode()}}), 2);
+    expectValue(h->getCurrentLedgerObjNestedArrayLen(locator({sfSignerEntries.getCode()})), 2);
 }
 
 TEST_F(CurrentLedgerObjNestedArrayLenImpl, NonArrayFieldNoArray)
@@ -36,7 +37,7 @@ TEST_F(CurrentLedgerObjNestedArrayLenImpl, NonArrayFieldNoArray)
     auto const owner = fund("owner");
     auto h = makeHost(owner);
     expectError(
-        h->getCurrentLedgerObjNestedArrayLen(FieldLocator{{sfSignerQuorum.getCode()}}),
+        h->getCurrentLedgerObjNestedArrayLen(locator({sfSignerQuorum.getCode()})),
         HostFunctionError::NoArray);
 }
 
@@ -45,7 +46,7 @@ TEST_F(CurrentLedgerObjNestedArrayLenImpl, MissingFieldNotFound)
     auto const owner = fund("owner");
     auto h = makeHost(owner);
     expectError(
-        h->getCurrentLedgerObjNestedArrayLen(FieldLocator{{sfSigners.getCode()}}),
+        h->getCurrentLedgerObjNestedArrayLen(locator({sfSigners.getCode()})),
         HostFunctionError::FieldNotFound);
 }
 
@@ -55,7 +56,7 @@ TEST_F(CurrentLedgerObjNestedArrayLenImpl, MissingCurrentObjectNotFound)
     auto assembler = bareTx();
     auto h = makeHost(keylet::signerList(owner.id()), assembler.type, std::move(assembler.build));
     expectError(
-        h->getCurrentLedgerObjNestedArrayLen(FieldLocator{{sfSignerEntries.getCode()}}),
+        h->getCurrentLedgerObjNestedArrayLen(locator({sfSignerEntries.getCode()})),
         HostFunctionError::LedgerObjNotFound);
 }
 

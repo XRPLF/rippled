@@ -12,6 +12,7 @@ add_library(
     helpers/TestSink.cpp
     helpers/TxTest.cpp
     tx/wasm/fixtures/NftSetup.cpp
+    tx/wasm/fixtures/OwnedLocator.cpp
     tx/wasm/fixtures/WasmLedger.cpp
     tx/wasm/fixtures/WasmRun.cpp
 )
@@ -69,7 +70,7 @@ foreach(module IN LISTS test_modules)
     list(
         FILTER sources
         EXCLUDE
-        REGEX "/fixtures/(NftSetup|WasmLedger|WasmRun)\\.cpp$"
+        REGEX "/fixtures/(NftSetup|OwnedLocator|WasmLedger|WasmRun)\\.cpp$"
     )
     target_sources(xrpl_tests PRIVATE ${sources})
 

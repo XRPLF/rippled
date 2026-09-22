@@ -1,8 +1,8 @@
 use std::cell::Cell;
 use std::fmt;
 use wasmi::{
-    Config, CustomFuelCosts, EnforcedLimits, Engine, Export, Linker, Memory, Module, Store,
-    StoreLimits, StoreLimitsBuilder, TrapCode,
+    CompilationMode, Config, CustomFuelCosts, EnforcedLimits, Engine, Export, Linker, Memory,
+    Module, Store, StoreLimits, StoreLimitsBuilder, TrapCode,
 };
 use xrpl_host_functions::HostFunctions;
 
@@ -273,6 +273,7 @@ pub(crate) fn wasm_engine() -> Engine {
     // config.operator_costs is already guarded by the probe_fuel test under budgets.rs
     // in that a change to operator costs in a future version will be a loud failure.
 
+    config.compilation_mode(CompilationMode::LazyTranslation);
     Engine::new(&config)
 }
 

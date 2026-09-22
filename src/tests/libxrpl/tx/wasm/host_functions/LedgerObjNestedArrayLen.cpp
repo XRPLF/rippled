@@ -5,6 +5,7 @@
 
 #include <gtest/gtest.h>
 #include <helpers/Account.h>
+#include <tx/wasm/fixtures/OwnedLocator.h>
 #include <tx/wasm/fixtures/RealHostFixture.h>
 #include <tx/wasm/fixtures/WasmLedger.h>
 
@@ -31,7 +32,7 @@ TEST_F(LedgerObjNestedArrayLenImpl, SignerEntriesLength)
 {
     auto const owner = fund("owner");
     auto h = makeHost(owner);
-    expectValue(h->getLedgerObjNestedArrayLen(1, FieldLocator{{sfSignerEntries.getCode()}}), 2);
+    expectValue(h->getLedgerObjNestedArrayLen(1, locator({sfSignerEntries.getCode()})), 2);
 }
 
 TEST_F(LedgerObjNestedArrayLenImpl, NonArrayFieldNoArray)
@@ -39,7 +40,7 @@ TEST_F(LedgerObjNestedArrayLenImpl, NonArrayFieldNoArray)
     auto const owner = fund("owner");
     auto h = makeHost(owner);
     expectError(
-        h->getLedgerObjNestedArrayLen(1, FieldLocator{{sfSignerQuorum.getCode()}}),
+        h->getLedgerObjNestedArrayLen(1, locator({sfSignerQuorum.getCode()})),
         HostFunctionError::NoArray);
 }
 
@@ -48,7 +49,7 @@ TEST_F(LedgerObjNestedArrayLenImpl, MissingFieldNotFound)
     auto const owner = fund("owner");
     auto h = makeHost(owner);
     expectError(
-        h->getLedgerObjNestedArrayLen(1, FieldLocator{{sfSigners.getCode()}}),
+        h->getLedgerObjNestedArrayLen(1, locator({sfSigners.getCode()})),
         HostFunctionError::FieldNotFound);
 }
 
@@ -57,13 +58,13 @@ TEST_F(LedgerObjNestedArrayLenImpl, SlotErrors)
     auto const owner = fund("owner");
     auto h = makeHost(owner);
     expectError(
-        h->getLedgerObjNestedArrayLen(0, FieldLocator{{sfSignerEntries.getCode()}}),
+        h->getLedgerObjNestedArrayLen(0, locator({sfSignerEntries.getCode()})),
         HostFunctionError::SlotOutRange);
     expectError(
-        h->getLedgerObjNestedArrayLen(257, FieldLocator{{sfSignerEntries.getCode()}}),
+        h->getLedgerObjNestedArrayLen(257, locator({sfSignerEntries.getCode()})),
         HostFunctionError::SlotOutRange);
     expectError(
-        h->getLedgerObjNestedArrayLen(2, FieldLocator{{sfSignerEntries.getCode()}}),
+        h->getLedgerObjNestedArrayLen(2, locator({sfSignerEntries.getCode()})),
         HostFunctionError::EmptySlot);
 }
 
@@ -73,7 +74,7 @@ TEST_F(LedgerObjNestedArrayLenImpl, NestIntoNonContainerMalformed)
     auto h = makeHost(owner);
     expectError(
         h->getLedgerObjNestedArrayLen(
-            1, FieldLocator{{sfSignerQuorum.getCode(), 0, sfAccount.getCode()}}),
+            1, locator({sfSignerQuorum.getCode(), 0, sfAccount.getCode()})),
         HostFunctionError::LocatorMalformed);
 }
 

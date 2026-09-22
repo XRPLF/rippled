@@ -29,6 +29,7 @@
 #include <expected>
 #include <limits>
 #include <optional>
+#include <span>
 #include <string>
 #include <string_view>
 #include <type_traits>
@@ -153,10 +154,7 @@ invokeWithLocator(
         return hfErrorToInt(HostFunctionError::LocatorMalformed);
     }
 
-    std::uint32_t const steps = locator.size() / sizeof(std::int32_t);
-    auto locBuf = std::vector<std::int32_t>(steps);
-    std::memcpy(locBuf.data(), locator.data(), locator.size());
-    auto const fl = FieldLocator{std::move(locBuf)};
+    auto const fl = FieldLocator{std::span{locator.data(), locator.size()}};
 
     auto const value = functor(fl);
     if (!value)
@@ -176,10 +174,7 @@ invokeWithLocator(rust::Slice<std::uint8_t const> locator, Functor&& functor)
         return hfErrorToInt(HostFunctionError::LocatorMalformed);
     }
 
-    std::uint32_t const steps = locator.size() / sizeof(std::int32_t);
-    auto locBuf = std::vector<std::int32_t>(steps);
-    std::memcpy(locBuf.data(), locator.data(), locator.size());
-    auto const fl = FieldLocator{std::move(locBuf)};
+    auto const fl = FieldLocator{std::span{locator.data(), locator.size()}};
 
     auto const value = functor(fl);
     if (!value)
@@ -347,7 +342,16 @@ invoke(Functor&& functor)
         return hfErrorToInt(value.error());
     }
 
-    return *value;
+    // `FloatOrdering` is the one answer not already an `i32`, and a scoped enum does not
+    // convert on its own. Its codes are non-negative, so the two returns stay distinct.
+    if constexpr (std::is_enum_v<std::remove_cvref_t<decltype(*value)>>)
+    {
+        return static_cast<std::int32_t>(*value);
+    }
+    else
+    {
+        return *value;
+    }
 }
 
 // A traced integer, which the guest sends as bytes rather than as a wasm scalar so that one
