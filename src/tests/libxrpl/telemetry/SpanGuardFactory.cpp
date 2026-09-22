@@ -1,12 +1,14 @@
+#include <xrpl/consensus/ConsensusSpanNames.h>
 #include <xrpl/telemetry/SpanGuard.h>
 #include <xrpl/telemetry/SpanNames.h>
+#include <xrpl/telemetry/Telemetry.h>
 
 #include <gtest/gtest.h>
 
 #include <cstdint>
 #include <exception>
 #include <stdexcept>
-#include <string>
+#include <string_view>
 #include <utility>
 
 using namespace xrpl;
@@ -88,28 +90,44 @@ TEST(SpanGuardFactory, discard_safe_on_null)
     EXPECT_FALSE(span);
 }
 
-TEST(SpanGuardFactory, consensus_close_time_attributes)
+TEST(SpanGuardFactory, consensus_accept_apply_attributes_are_inert_on_null_guard)
 {
-    // Verify the consensus attribute pattern compiles and doesn't crash with a
-    // null SpanGuard. Attribute keys/values use the underscore convention; the
-    // canonical consensus::span constants are defined in the xrpld-level
-    // ConsensusSpanNames.h, which a libxrpl test cannot include, so the keys are
-    // written as literals here.
-    {
-        auto span = telemetry::SpanGuard::span(
-            telemetry::TraceCategory::Consensus, telemetry::seg::consensus, "accept.apply");
-        span.setAttribute("ledger_seq", static_cast<int64_t>(42));
-        span.setAttribute("close_time_ripple_epoch_s", static_cast<int64_t>(780000000));
-        span.setAttribute("close_time_correct", true);
-        span.setAttribute("close_resolution_ms", static_cast<int64_t>(30000));
-        span.setAttribute("consensus_state", std::string("finished"));
-        span.setAttribute("proposing", true);
-        span.setAttribute("round_time_ms", static_cast<int64_t>(3500));
-    }
-    {
-        auto span = telemetry::SpanGuard::span(
-            telemetry::TraceCategory::Consensus, telemetry::seg::consensus, "accept.apply");
-        span.setAttribute("close_time_correct", false);
-        span.setAttribute("consensus_state", std::string("moved_on"));
-    }
+    namespace cs = consensus::span;
+
+    // Nothing in this binary starts telemetry, so span() returns a null guard
+    // before it even joins the name. Pinning that here says which of the
+    // factory's exits produced the null guard the rest of the test relies on.
+    ASSERT_EQ(Telemetry::getInstance(), nullptr);
+
+    // The attribute set RCLConsensus::doAccept() writes on consensus.accept.apply,
+    // read from the same constants the emitter uses rather than copied as
+    // literals. Both close-time outcomes are written below: the values differ,
+    // the guard's inertness does not.
+    auto applySpan = SpanGuard::span(TraceCategory::Consensus, seg::consensus, cs::op::acceptApply);
+    ASSERT_FALSE(applySpan);
+
+    applySpan.setAttribute(cs::attr::ledgerSeq, static_cast<std::int64_t>(42));
+    applySpan.setAttribute(cs::attr::closeTimeRippleEpochS, static_cast<std::int64_t>(780000000));
+    applySpan.setAttribute(cs::attr::closeTimeCorrect, true);
+    applySpan.setAttribute(cs::attr::closeResolutionMs, static_cast<std::int64_t>(30000));
+    applySpan.setAttribute(cs::attr::consensusState, std::string_view{cs::val::finished});
+    applySpan.setAttribute(cs::attr::proposing, true);
+    applySpan.setAttribute(cs::attr::roundTimeMs, static_cast<std::int64_t>(3500));
+
+    // A write cannot activate a guard, so it still holds no span and hands out
+    // no propagation bytes for an outgoing message to carry.
+    EXPECT_FALSE(applySpan);
+    EXPECT_FALSE(applySpan.getTraceBytes().valid);
+
+    // The consensus-failed branch writes the other value over the same two keys,
+    // and reaches the same inert guard.
+    auto movedOnSpan =
+        SpanGuard::span(TraceCategory::Consensus, seg::consensus, cs::op::acceptApply);
+    ASSERT_FALSE(movedOnSpan);
+
+    movedOnSpan.setAttribute(cs::attr::closeTimeCorrect, false);
+    movedOnSpan.setAttribute(cs::attr::consensusState, std::string_view{cs::val::movedOn});
+
+    EXPECT_FALSE(movedOnSpan);
+    EXPECT_FALSE(movedOnSpan.getTraceBytes().valid);
 }

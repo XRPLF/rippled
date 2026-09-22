@@ -1,9 +1,9 @@
 /**
  * GTest unit tests for MetricsRegistry.
  *
- *  Four groups. The first three drive the pure static helpers, which are
+ *  Five groups. The first four drive the pure static helpers, which are
  *  constexpr inline in the header and so need nothing on the link line. The
- *  fourth drives a real registry object.
+ *  fifth drives a real registry object.
  *
  *  1. sanitiseHandler() — the `handler` label sanitiser.
  *
@@ -15,14 +15,19 @@
  *     real producer, xrpl::to_string(RangeSet), rather than restating its
  *     format.
  *
- *  4. The registry lifecycle — construction, stop(), and the record and
+ *  4. daysUntil() — the signed deadline arithmetic behind unl_expiry_days.
+ *     NetClock counts seconds in a uint32_t, so the interesting cases are the
+ *     ones on the far side of the deadline, where an unsigned subtraction
+ *     wraps to about 49,700 days instead of going negative.
+ *
+ *  5. The registry lifecycle — construction, stop(), and the record and
  *     increment methods. Every test here runs in **both** builds: the core
  *     is compiled into xrpl.libxrpl, which this binary links either way, so
  *     with telemetry on these tests drive a real OTel pipeline and with it
  *     off they drive the no-op stubs. An assertion that holds in only one
  *     build carries its own #ifdef and says which build it pins.
  *
- * What group 4 pins about stop(), and what it does not:
+ * What group 5 pins about stop(), and what it does not:
  *
  * stop() stores Phase::Stopped before it destroys the SDK provider, and every
  * record method reads that phase through recording() first. Without the store,
@@ -44,9 +49,14 @@
  * asserted where the gauges live.
  */
 
+// cspell:ignore Wmissing
+// A comment below names the compiler flag -Wmissing-designated-field-initializers.
+// cspell's compound-word splitter emits the subword "Wmissing"; ignore it here.
+
 #include <xrpl/telemetry/MetricsRegistry.h>
 
 #include <xrpl/basics/RangeSet.h>
+#include <xrpl/basics/chrono.h>
 
 #include <gtest/gtest.h>
 
@@ -601,7 +611,134 @@ TEST(MetricsRegistryParseLedgerRange, reads_back_what_the_real_producer_wrote)
 }
 
 // ---------------------------------------------------------------------------
-// 4. The registry lifecycle.
+// 4. daysUntil() — the signed deadline arithmetic behind unl_expiry_days.
+//
+// The property under test is the sign, not the magnitude. NetClock's rep is
+// std::uint32_t, so subtracting two of its time_points in the clock's own
+// duration wraps as soon as the deadline is in the past: a list that expired
+// yesterday reports about +49,709 days, which reads as the healthiest possible
+// value on a panel whose thresholds colour high numbers green. Every case
+// below therefore pins an exact value on the far side of the deadline, plus
+// the "never expires" sentinel, which must stay above every finite reading.
+//
+// Each expected value is a hand-worked literal with an exact binary
+// representation, so EXPECT_EQ on a double is sound here and no case restates
+// the implementation's own expression.
+// ---------------------------------------------------------------------------
+
+namespace {
+
+/**
+ * Build a NetClock time_point from a count of seconds since the XRPL epoch.
+ */
+constexpr xrpl::NetClock::time_point
+netTime(std::uint32_t seconds)
+{
+    return xrpl::NetClock::time_point{xrpl::NetClock::duration{seconds}};
+}
+
+// An arbitrary "now", far enough from both ends of uint32_t that a case may
+// move the deadline either side of it.
+constexpr auto kNow = netTime(800'000'000);
+
+constexpr auto kDay = 86'400U;
+
+// Ahead of the deadline: ordinary positive readings.
+static_assert(Registry::daysUntil(netTime(800'000'000 + 7 * kDay), kNow) == 7.0);
+static_assert(Registry::daysUntil(netTime(800'000'000 + kDay / 2), kNow) == 0.5);
+static_assert(Registry::daysUntil(kNow, kNow) == 0.0);
+
+// Past the deadline: the readings the unsigned subtraction used to wrap.
+static_assert(Registry::daysUntil(netTime(800'000'000 - kDay), kNow) == -1.0);
+static_assert(Registry::daysUntil(netTime(800'000'000 - kDay / 2), kNow) == -0.5);
+static_assert(Registry::daysUntil(netTime(800'000'000 - 30 * kDay), kNow) == -30.0);
+
+// The sentinel the config path sets for a list that never expires.
+static_assert(
+    Registry::daysUntil(xrpl::NetClock::time_point::max(), kNow) ==
+    std::numeric_limits<double>::infinity());
+
+}  // namespace
+
+TEST(MetricsRegistryDaysUntil, a_passed_deadline_reads_negative_not_wrapped)
+{
+    // The defect this helper exists for. Subtracting in NetClock's own
+    // unsigned duration turns "expired a day ago" into "+49,709 days left",
+    // so a threshold watching for a small number never trips.
+    EXPECT_EQ(Registry::daysUntil(netTime(800'000'000 - kDay), kNow), -1.0);
+    EXPECT_LT(Registry::daysUntil(netTime(800'000'000 - kDay), kNow), 0.0);
+
+    // One second past the deadline is already negative, so the sign flips at
+    // the deadline rather than somewhere inside the first day.
+    EXPECT_LT(Registry::daysUntil(netTime(800'000'000 - 1), kNow), 0.0);
+    EXPECT_EQ(Registry::daysUntil(kNow, kNow), 0.0);
+}
+
+TEST(MetricsRegistryDaysUntil, readings_decrease_monotonically_as_the_deadline_passes)
+{
+    // Walks the deadline from a week out to a week gone in hour steps and
+    // requires every reading to be strictly below the one before it. A wrap
+    // anywhere in that walk is a jump upward, so this fails on the exact
+    // second the old arithmetic went wrong rather than only on sampled points.
+    constexpr auto kHour = 3'600U;
+    auto previous = Registry::daysUntil(netTime(800'000'000 + 7 * kDay), kNow);
+
+    for (std::uint32_t offset = 7 * kDay - kHour; offset > 0; offset -= kHour)
+    {
+        auto const ahead = Registry::daysUntil(netTime(800'000'000 + offset), kNow);
+        EXPECT_LT(ahead, previous) << "ahead of deadline by " << offset << "s";
+        previous = ahead;
+    }
+
+    for (std::uint32_t offset = 0; offset <= 7 * kDay; offset += kHour)
+    {
+        auto const behind = Registry::daysUntil(netTime(800'000'000 - offset), kNow);
+        EXPECT_LT(behind, previous) << "past deadline by " << offset << "s";
+        previous = behind;
+    }
+
+    // Ends a full week past the deadline, which is where the wrap was largest.
+    EXPECT_EQ(Registry::daysUntil(netTime(800'000'000 - 7 * kDay), kNow), -7.0);
+}
+
+TEST(MetricsRegistryDaysUntil, never_expires_sentinel_outranks_every_finite_reading)
+{
+    // A list loaded from the config file carries time_point::max() rather than
+    // a date. Reported as a number it would be about 40,000 days, which is
+    // indistinguishable from the wrap above; infinity says "no deadline" and
+    // cannot be mistaken for a count of days.
+    auto const never = Registry::daysUntil(xrpl::NetClock::time_point::max(), kNow);
+
+    EXPECT_EQ(never, std::numeric_limits<double>::infinity());
+    EXPECT_GT(never, Registry::daysUntil(netTime(4'000'000'000U), kNow));
+
+    // The reason the value matters: every "expiring soon" comparison must be
+    // false for it, and every "already expired" comparison too.
+    EXPECT_FALSE(never < 0.0);
+    EXPECT_FALSE(never < std::numeric_limits<double>::max());
+}
+
+TEST(MetricsRegistryDaysUntil, the_sentinel_is_the_one_the_validator_list_sets)
+{
+    // Pins the sentinel to the type's own maximum rather than to a literal, so
+    // a change to NetClock's width cannot leave this test agreeing with a
+    // value the config path no longer produces.
+    constexpr auto kMaxSeconds = std::numeric_limits<xrpl::NetClock::rep>::max();
+
+    EXPECT_EQ(xrpl::NetClock::time_point::max().time_since_epoch().count(), kMaxSeconds);
+    EXPECT_EQ(
+        Registry::daysUntil(netTime(kMaxSeconds), kNow), std::numeric_limits<double>::infinity());
+
+    // One second below the sentinel is a real date, so it reports a number of
+    // days rather than the sentinel. Without this the sentinel branch could be
+    // swallowing a whole range of legitimate deadlines.
+    EXPECT_LT(
+        Registry::daysUntil(netTime(kMaxSeconds - 1), kNow),
+        std::numeric_limits<double>::infinity());
+}
+
+// ---------------------------------------------------------------------------
+// 5. The registry lifecycle.
 //
 // The core is compiled into xrpl.libxrpl, which this binary links in both
 // builds, so every test below runs in both. The headers here serve only this
