@@ -1034,8 +1034,9 @@ public:
 
     // makePerfLog() copies the range of names it is given, so only the names have
     // to outlive the PerfLog. Here the range does not: it is destroyed before the
-    // counters are read. Retaining it instead is a use-after-free that a
-    // sanitizer build reports and this test would otherwise pass through.
+    // counters are read. Retaining it instead is a use-after-free, which a
+    // sanitizer build reports directly and which otherwise surfaces as a failed
+    // assertion or a Debug-mode heap-corruption abort, not a silent pass.
     void
     testCallerRangeNeedNotOutlive()
     {
