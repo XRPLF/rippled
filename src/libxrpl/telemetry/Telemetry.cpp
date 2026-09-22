@@ -477,6 +477,16 @@ public:
                                       "continuing without metrics: "
                                    << e.what();
         }
+        catch (...)
+        {
+            // initMetrics() reaches third-party SDK code, which may throw
+            // something outside std::exception. Escaping a constructor on the
+            // startup path would stop the node starting, so drop the
+            // half-built provider exactly as the clause above does.
+            meterProvider_.reset();
+            JLOG(journal_.error()) << "Telemetry metrics pipeline failed to initialise, "
+                                      "continuing without metrics: unknown exception";
+        }
     }
 
     /**
