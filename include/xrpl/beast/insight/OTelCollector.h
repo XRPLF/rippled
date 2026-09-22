@@ -39,14 +39,27 @@
 
 #include <memory>
 #include <string>
+#include <string_view>
 
 namespace beast::insight {
 
 /**
+ * Instrumentation scope this collector fetches its Meter under.
+ *
+ * Must equal xrpl::telemetry::kMeterName and kMeterVersion, or instruments land
+ * on a different scope than the views. Duplicated because beast sits below the
+ * telemetry module and cannot include its header; Telemetry.cpp static_asserts
+ * the two agree.
+ */
+inline constexpr std::string_view kOTelMeterName{"xrpld"};
+inline constexpr std::string_view kOTelMeterVersion{"1.0.0"};
+
+/**
  * @brief A Collector that exports metrics via OpenTelemetry OTLP/HTTP.
  *
- * Replaces StatsD-based metric collection with native OTel Metrics SDK
- * instruments. Each beast::insight instrument maps to an OTel equivalent:
+ * Selected by `[insight] server=otel`, as an alternative to StatsDCollector:
+ * it exports through the native OTel Metrics SDK rather than the StatsD wire
+ * format. Each beast::insight instrument maps to an OTel equivalent:
  *
  *   - Counter  -> OTel Counter<uint64_t>
  *   - Gauge    -> OTel ObservableGauge<int64_t> (async callback)
@@ -58,10 +71,10 @@ namespace beast::insight {
  * @code
  *   auto collector = beast::insight::OTelCollector::New(
  *       "http://localhost:4318/v1/metrics",  // OTLP/HTTP endpoint
- *       "xrpld",                              // logging label only
- *       "node-1",                             // service.instance.id
- *       "xrpld",                              // service.name
- *       "mainnet",                            // xrpl.network.type
+ *       "xrpld",                              // legacy prefix (log only)
+ *       "node-1",                             // instanceId (not read)
+ *       "xrpld",                              // serviceName (not read)
+ *       "mainnet",                            // networkType (not read)
  *       journal);
  *
  *   auto counter = collector->makeCounter("ledgers", "closed");
@@ -105,28 +118,21 @@ public:
      *
      * @param endpoint    OTLP/HTTP metrics endpoint URL
      *                    (e.g. "http://localhost:4318/v1/metrics").
-     * @param prefix      Label for the collector's startup log line
-     *                    (e.g. "xrpld"). Exported metric names are produced
-     *                    by formatName(), which lowercases the raw name and
-     *                    maps dots and spaces to underscores. The service is
-     *                    identified by the `service.name` OTel resource
-     *                    attribute.
-     * @param instanceId  Unique identifier for this node instance,
-     *                    emitted as the `service.instance.id` OTel
-     *                    resource attribute. Defaults to empty string
-     *                    (attribute omitted when empty).
-     * @param serviceName Value for the `service.name` OTel resource
-     *                    attribute. When empty, defaults to "xrpld".
-     *                    Matches the trace exporter's service.name so
-     *                    metrics and traces share one service identity.
-     * @param networkType Value for the `xrpl.network.type` OTel resource
-     *                    attribute (e.g. "mainnet"). When empty, the
-     *                    attribute is omitted. Supplied by the node so
-     *                    metrics carry the same network label as traces.
+     * @param prefix      Legacy metric-name prefix (e.g. "xrpld"). Not
+     *                    prepended to metric names; logged at startup only.
+     *                    The `service.name` resource attribute identifies
+     *                    the service.
+     * @param instanceId  Accepted but not read. The `service.instance.id`
+     *                    resource attribute comes from `[telemetry]`, which
+     *                    owns the shared metrics pipeline.
+     * @param serviceName Accepted but not read. The `service.name` resource
+     *                    attribute comes from `[telemetry]`.
+     * @param networkType Accepted but not read. The `xrpl.network.type`
+     *                    resource attribute comes from `[telemetry]`.
      * @param journal     Journal for logging.
      * @return Shared pointer to the created Collector.
      */
-    static std::shared_ptr<Collector>
+    [[nodiscard]] static std::shared_ptr<Collector>
     // NOLINTNEXTLINE(readability-identifier-naming)
     New(std::string const& endpoint,
         std::string const& prefix,

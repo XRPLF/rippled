@@ -142,21 +142,21 @@ code style and patterns (`04-code-samples.md` was deleted by `d6450631bf`)
 
 ---
 
-## Task 7.5: Preserve Metric Names in Prometheus
+## Task 7.5: Pin Down Metric Names in Prometheus
 
-**Objective**: Ensure existing Grafana dashboards continue working with identical metric names.
+**Objective**: Fix the exported name of every beast::insight instrument, and point the Grafana dashboards at those names.
 
 **What to do**:
 
-- In `OTelCollector.cpp`, construct OTel instrument names to match existing Prometheus metric names:
-  - beast::insight `make_gauge("LedgerMaster", "Validated_Ledger_Age")` → OTel instrument name: `xrpld_LedgerMaster_Validated_Ledger_Age`
-  - The prefix + group + name concatenation must produce the same string as `StatsDCollector`'s format
-  - Use underscores as separators (matching StatsD convention)
+- In `OTelCollector.cpp`, `formatName()` derives the OTel instrument name from the group and name beast::insight was given:
+  - beast::insight `makeGauge("LedgerMaster", "Validated_Ledger_Age")` → OTel instrument name: `ledgermaster_validated_ledger_age`
+  - `Groups` joins group and name with `.`; `formatName()` then lowercases and maps `.` and space to `_`
+  - No prefix is applied on this path. The service is identified by the `service.name` resource attribute, so `[insight] prefix` reaches only the startup log line
 
 - Verify in integration test that key Prometheus queries still return data:
-  - `xrpld_LedgerMaster_Validated_Ledger_Age`
-  - `xrpld_Peer_Finder_Active_Inbound_Peers`
-  - `xrpld_rpc_requests`
+  - `ledgermaster_validated_ledger_age`
+  - `peer_finder_active_inbound_peers`
+  - `rpc_requests_total`
 
 **Key consideration**: OTel Prometheus exporter may normalize metric names differently than StatsD receiver. Test this early (Task 7.2) and adjust naming strategy if needed. The OTel SDK's Prometheus exporter adds `_total` suffix to counters and converts dots to underscores — match existing conventions.
 
@@ -322,7 +322,7 @@ struct WindowEvent {
 
 ```cpp
 validatorHealthGauge_ = meter_->CreateDoubleObservableGauge(
-    "xrpld_validator_health", "Validator health indicators");
+    "validator_health", "Validator health indicators");
 ```
 
 **Gauge label values**:
@@ -347,7 +347,7 @@ candidates for removal from the UNL.
 
 ```cpp
 validatorParticipationGauge_ = meter_->CreateInt64ObservableGauge(
-    "xrpld_validator_participation",
+    "validator_participation",
     "Per-validator validation count over the last 256 ledgers");
 ```
 
@@ -370,7 +370,7 @@ validatorParticipationGauge_ = meter_->CreateInt64ObservableGauge(
   for each. The UNL list is from `app_.getValidators().getTrustedMasterKeys()`.
 
 - **Dashboard panel**: Add a table panel to the Validator Health dashboard
-  showing `xrpld_validator_participation` grouped by `validator` label,
+  showing `validator_participation` grouped by `validator` label,
   with a threshold color (green >= 240, yellow >= 200, red < 200).
 
 **Key modified files**: `src/xrpld/telemetry/MetricsRegistry.h/.cpp`
@@ -487,10 +487,10 @@ validatorParticipationGauge_ = meter_->CreateInt64ObservableGauge(
 
 **Gauge label values**:
 
-| Gauge Name             | Label `metric=`                 | Type   | Source                                               |
-| ---------------------- | ------------------------------- | ------ | ---------------------------------------------------- |
-| `xrpld_storage_detail` | `stored_object_bytes`           | int64  | `Database::getStoreSize()` — cumulative object bytes |
-| `xrpld_sync_info`      | `initial_sync_duration_seconds` | double | Time from start to first FULL                        |
+| Gauge Name       | Label `metric=`                 | Type   | Source                                               |
+| ---------------- | ------------------------------- | ------ | ---------------------------------------------------- |
+| `storage_detail` | `stored_object_bytes`           | int64  | `Database::getStoreSize()` — cumulative object bytes |
+| `sync_info`      | `initial_sync_duration_seconds` | double | Time from start to first FULL                        |
 
 `stored_object_bytes` is not a file size. `getStoreSize()` sums the object payloads
 this process has written, so it excludes NuDB's keys, bucket padding and log, and it
@@ -518,15 +518,15 @@ because the value comes from `Database` rather than the NuDB backend.
 
 **Objective**: Add 7 new event counters incremented at their respective instrumentation sites.
 
-| Counter Name                        | Increment Site                   | Source File           |
-| ----------------------------------- | -------------------------------- | --------------------- |
-| `xrpld_ledgers_closed_total`        | `onAccept()` in consensus        | RCLConsensus.cpp      |
-| `xrpld_validations_sent_total`      | `validate()` in consensus        | RCLConsensus.cpp      |
-| `xrpld_validations_checked_total`   | Network validation received      | LedgerMaster.cpp      |
-| `xrpld_validation_agreements_total` | ValidationTracker reconciliation | ValidationTracker.cpp |
-| `xrpld_validation_missed_total`     | ValidationTracker reconciliation | ValidationTracker.cpp |
-| `xrpld_state_changes_total`         | `setMode()` in NetworkOPs        | NetworkOPs.cpp        |
-| `xrpld_jq_trans_overflow_total`     | Job queue overflow path          | JobQueue.cpp          |
+| Counter Name                  | Increment Site                   | Source File           |
+| ----------------------------- | -------------------------------- | --------------------- |
+| `ledgers_closed_total`        | `onAccept()` in consensus        | RCLConsensus.cpp      |
+| `validations_sent_total`      | `validate()` in consensus        | RCLConsensus.cpp      |
+| `validations_checked_total`   | Network validation received      | LedgerMaster.cpp      |
+| `validation_agreements_total` | ValidationTracker reconciliation | ValidationTracker.cpp |
+| `validation_missed_total`     | ValidationTracker reconciliation | ValidationTracker.cpp |
+| `state_changes_total`         | `setMode()` in NetworkOPs        | NetworkOPs.cpp        |
+| `jq_trans_overflow_total`     | Job queue overflow path          | JobQueue.cpp          |
 
 **Key modified files**: `src/xrpld/telemetry/MetricsRegistry.h/.cpp` (declarations), plus recording sites in RCLConsensus.cpp, LedgerMaster.cpp, NetworkOPs.cpp, JobQueue.cpp
 
@@ -545,14 +545,14 @@ because the value comes from `Database` rather than the NuDB backend.
 
 **Gauge label values**:
 
-| Gauge Name                   | Label `metric=`     | Type   | Source                      |
-| ---------------------------- | ------------------- | ------ | --------------------------- |
-| `xrpld_validation_agreement` | `agreement_pct_1h`  | double | `tracker.agreementPct1h()`  |
-|                              | `agreements_1h`     | int64  | `tracker.agreements1h()`    |
-|                              | `missed_1h`         | int64  | `tracker.missed1h()`        |
-|                              | `agreement_pct_24h` | double | `tracker.agreementPct24h()` |
-|                              | `agreements_24h`    | int64  | `tracker.agreements24h()`   |
-|                              | `missed_24h`        | int64  | `tracker.missed24h()`       |
+| Gauge Name             | Label `metric=`     | Type   | Source                      |
+| ---------------------- | ------------------- | ------ | --------------------------- |
+| `validation_agreement` | `agreement_pct_1h`  | double | `tracker.agreementPct1h()`  |
+|                        | `agreements_1h`     | int64  | `tracker.agreements1h()`    |
+|                        | `missed_1h`         | int64  | `tracker.missed1h()`        |
+|                        | `agreement_pct_24h` | double | `tracker.agreementPct24h()` |
+|                        | `agreements_24h`    | int64  | `tracker.agreements24h()`   |
+|                        | `missed_24h`        | int64  | `tracker.missed24h()`       |
 
 **Key modified files**: `src/xrpld/telemetry/MetricsRegistry.cpp`
 

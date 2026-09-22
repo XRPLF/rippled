@@ -4,10 +4,9 @@
  *
  * Compiled only when XRPL_ENABLE_TELEMETRY is defined (via CMake
  * telemetry=ON). Maps beast::insight instruments to OTel SDK instruments
- * created on the GLOBAL Meter published by the telemetry module. This class
- * is an adapter only: it owns no export pipeline. The MeterProvider,
- * PeriodicExportingMetricReader, OTLP exporter and histogram view all live in
- * xrpl::telemetry::Telemetry.
+ * created on the GLOBAL Meter published by the telemetry module. It owns no
+ * export pipeline of its own: the MeterProvider, PeriodicExportingMetricReader,
+ * OTLP exporter and histogram view all live in xrpl::telemetry::Telemetry.
  *
  * When XRPL_ENABLE_TELEMETRY is not defined, OTelCollector::New() returns
  * a NullCollector so the build succeeds without OTel dependencies.
@@ -43,6 +42,7 @@
 #include <xrpl/beast/insight/MeterImpl.h>
 #include <xrpl/beast/insight/Unit.h>
 #include <xrpl/beast/utility/Journal.h>
+#include <xrpl/beast/utility/instrumentation.h>
 
 #include <opentelemetry/metrics/async_instruments.h>
 #include <opentelemetry/metrics/meter.h>
@@ -61,9 +61,12 @@
 #include <cstddef>
 #include <cstdint>
 #include <exception>
+#include <limits>
 #include <memory>
 #include <mutex>
+#include <ranges>
 #include <string>
+#include <string_view>
 #include <utility>
 #include <vector>
 
@@ -175,11 +178,10 @@ private:
  * The instrument's declared unit is what selects its bucket ladder: the
  * histogram views registered in Telemetry.cpp match on unit, so a `ms`
  * instrument gets the millisecond ladder and a `By` instrument the byte
- * ladder. The edges themselves live in xrpl/telemetry/HistogramBuckets.h --
- * do not restate them here. An earlier version of this comment listed
- * `[1, 5, ..., 1000, 5000] ms` as "matching the SpanMetrics connector"; that
- * was true when written and silently became false when the connector's
- * ladder was extended, which is why the edges now have one owner.
+ * ladder. The edges themselves live in xrpl/telemetry/HistogramBuckets.h,
+ * which is their single owner -- do not restate them here. An edge list copied
+ * into a comment reads as authoritative and goes stale the moment the
+ * collector's SpanMetrics ladder is extended, with nothing to flag the drift.
  *
  * Thread safety: OTel Histogram::Record() is thread-safe by specification.
  */
@@ -271,7 +273,7 @@ public:
      * @brief Return the current gauge value for the OTel callback.
      * @return The most recently set/incremented value.
      */
-    int64_t
+    [[nodiscard]] int64_t
     currentValue() const;
 
     OTelGaugeImpl&
@@ -284,10 +286,13 @@ public:
     gaugeCallback(opentelemetry::metrics::ObserverResult result, void* state);
 
     /**
-     * Create the observable instrument and register the callback, once.
+     * Create the observable instrument and register the callback.
      *
      * Called when the collector is told collection is ready, because the
      * callback reads live application state.
+     *
+     * Idempotent. Arming twice would register the callback twice, so callers
+     * need not check; onCollectionReady() iterates a snapshot and may re-arm.
      */
     void
     arm();
@@ -379,7 +384,7 @@ private:
 //------------------------------------------------------------------------------
 
 /**
- * @brief Main OTel Collector implementation (adapter over the global Meter).
+ * @brief Main OTel Collector implementation.
  *
  * Obtains its Meter from the GLOBAL MeterProvider owned and published by the
  * telemetry module (xrpl::telemetry::Telemetry), rather than building its own
@@ -388,7 +393,7 @@ private:
  *
  * The metrics pipeline (MeterProvider + PeriodicExportingMetricReader + OTLP
  * HTTP exporter + histogram view) lives in the telemetry module. This class is
- * a thin adapter kept for beast::insight callers during deprecation.
+ * the thin adapter that lets beast::insight callers reach it.
  *
  * Class diagram:
  *
@@ -444,20 +449,18 @@ public:
     /**
      * @brief Construct the OTel collector over the global MeterProvider.
      *
-     * @param endpoint    OTLP/HTTP metrics endpoint URL, recorded in the
-     *                    collector's startup log line. Export uses the
-     *                    endpoint configured on the global telemetry
-     *                    pipeline.
-     * @param prefix      Label for the collector's startup log line
-     *                    (e.g. "xrpld"). Exported metric names come from
-     *                    formatName(); the service is identified by the
+     * @param endpoint    OTLP/HTTP metrics endpoint URL. Informational only:
+     *                    the global telemetry pipeline is authoritative for
+     *                    the actual export endpoint. Used only in the startup
+     *                    log line.
+     * @param prefix      Metric-name prefix. Not applied to metric names;
+     *                    used only in the startup log line.
+     * @param instanceId  Accepted but not read. The telemetry module owns the
+     *                    service.instance.id resource attribute.
+     * @param serviceName Accepted but not read. The telemetry module owns the
      *                    service.name resource attribute.
-     * @param instanceId  Value for the service.instance.id resource attribute.
-     *                    When empty, the attribute is omitted.
-     * @param serviceName Value for the service.name resource attribute.
-     *                    When empty, defaults to "xrpld".
-     * @param networkType Value for the xrpl.network.type resource attribute.
-     *                    When empty, the attribute is omitted.
+     * @param networkType Accepted but not read. The telemetry module owns the
+     *                    xrpl.network.type resource attribute.
      * @param journal     Journal for logging.
      */
     OTelCollectorImp(
@@ -509,17 +512,25 @@ public:
 
     /**
      * @brief Register a hook for periodic invocation.
-     * @param hook  Pointer to the hook to register.
+     *
+     * Takes the owning shared_ptr so the list can store a weak reference.
+     * Called from makeHook() rather than the hook's constructor, because a
+     * weak_ptr cannot be formed until the shared_ptr owns the object.
+     *
+     * @param hook  Owning pointer to the hook to register.
      */
     void
-    addHook(OTelHookImpl* hook);
+    addHook(std::shared_ptr<OTelHookImpl> const& hook);
 
     /**
-     * @brief Unregister a hook.
-     * @param hook  Pointer to the hook to unregister.
+     * @brief Drop entries for hooks that have been destroyed.
+     *
+     * Called from ~OTelHookImpl. The dying hook's weak_ptr has already
+     * expired by then, so the entry is identified by expiry rather than by
+     * address.
      */
     void
-    removeHook(OTelHookImpl* hook);
+    removeExpiredHooks();
 
     /**
      * @brief Invoke all registered hooks.
@@ -538,24 +549,32 @@ public:
 
     /**
      * @brief Register a gauge for observable callback reading.
-     * @param gauge  Pointer to the gauge to register.
+     *
+     * Takes the owning shared_ptr so the list can store a weak reference.
+     * Called from makeGauge() rather than the gauge's constructor, because a
+     * weak_ptr cannot be formed until the shared_ptr owns the object.
+     *
+     * @param gauge  Owning pointer to the gauge to register.
      */
     void
-    addGauge(OTelGaugeImpl* gauge);
+    addGauge(std::shared_ptr<OTelGaugeImpl> const& gauge);
 
     /**
-     * @brief Unregister a gauge.
-     * @param gauge  Pointer to the gauge to unregister.
+     * @brief Drop entries for gauges that have been destroyed.
+     *
+     * Called from ~OTelGaugeImpl. The dying gauge's weak_ptr has already
+     * expired by then, so the entry is identified by expiry rather than by
+     * address.
      */
     void
-    removeGauge(OTelGaugeImpl* gauge);
+    removeExpiredGauges();
     /** @} */
 
     /**
      * @brief The shared Meter, for gauges creating their instrument in arm().
      * @return The Meter this collector resolved at construction.
      */
-    opentelemetry::nostd::shared_ptr<metrics_api::Meter> const&
+    [[nodiscard]] opentelemetry::nostd::shared_ptr<metrics_api::Meter> const&
     otelMeter() const;
 
     /**
@@ -570,8 +589,8 @@ public:
      * @param name  Raw metric name from beast::insight callers.
      * @return Fully-qualified metric name.
      */
-    static std::string
-    formatName(std::string const& name);
+    [[nodiscard]] static std::string
+    formatName(std::string_view name);
 
 private:
     /**
@@ -597,21 +616,45 @@ private:
 
     /**
      * Registered hooks called during observable callbacks.
+     *
+     * Weak, not owning, and not raw. callHooks() must invoke handlers with
+     * mutex_ released, because a handler may drop the last reference to a
+     * hook and ~OTelHookImpl re-acquires mutex_. A raw pointer copied out of
+     * this list could therefore be dangling by the time it is dereferenced.
+     * Locking a weak_ptr instead keeps the hook alive for exactly the
+     * duration of its own handler call, and an already-destroyed hook is
+     * skipped rather than followed.
      */
-    std::vector<OTelHookImpl*> hooks_;
+    std::vector<std::weak_ptr<OTelHookImpl>> hooks_;
 
     /**
      * Registered gauges read during observable callbacks.
+     *
+     * Weak for the same reason as hooks_. onCollectionReady() and
+     * onCollectionStopping() snapshot this list and then call arm()/disarm()
+     * with mutex_ released, because both enter the SDK's observable registry
+     * lock. A raw pointer copied out of the list could be dangling by then,
+     * since ~OTelGaugeImpl only re-acquires mutex_ to prune its own entry.
+     * Locking a weak_ptr keeps the gauge alive for exactly the duration of
+     * that arm or disarm call, and one destroyed since the snapshot is
+     * skipped rather than followed.
      */
-    std::vector<OTelGaugeImpl*> gauges_;
+    std::vector<std::weak_ptr<OTelGaugeImpl>> gauges_;
+
+    /**
+     * @brief Shortest gap between two hook invocations.
+     *
+     * Many gauge callbacks fire during one collection cycle. Only the first
+     * one past this window runs the hooks; the rest read the values it just
+     * refreshed. Unrelated to the OTLP export timeout, which shares the value.
+     */
+    static constexpr std::chrono::milliseconds kHookDebounceInterval{500};
 
     /**
      * @brief Debounce timestamp for callHooks().
      *
-     * Multiple gauge callbacks fire during the same collection cycle.
-     * This atomic tracks the last time hooks were invoked (ms since epoch).
-     * Hooks are called at most once per 500ms window to avoid redundant
-     * invocations while still ensuring fresh values each collection cycle.
+     * Milliseconds since the steady-clock epoch when hooks last ran. Updated
+     * with a compare-exchange rather than under mutex_.
      */
     std::atomic<int64_t> lastHookCallMs_{0};
 };
@@ -627,12 +670,14 @@ private:
 OTelHookImpl::OTelHookImpl(HandlerType handler, std::shared_ptr<OTelCollectorImp> impl)
     : impl_(std::move(impl)), handler_(std::move(handler))
 {
-    impl_->addHook(this);
+    // Registration happens in OTelCollectorImp::makeHook(), not here: the
+    // list holds weak references, and no weak_ptr to this object exists
+    // until the owning shared_ptr does.
 }
 
 OTelHookImpl::~OTelHookImpl()
 {
-    impl_->removeHook(this);
+    impl_->removeExpiredHooks();
 }
 
 void
@@ -655,8 +700,10 @@ OTelCounterImpl::OTelCounterImpl(
 void
 OTelCounterImpl::increment(value_type amount)
 {
-    // OTel counters require non-negative values. beast::insight CounterImpl
-    // uses int64_t, so clamp negative values to 0 and cast to uint64_t.
+    // OTel counters take unsigned deltas only. Assert to catch a decrementing
+    // caller; skip the Add so a release build under-counts instead of wrapping.
+    XRPL_ASSERT(
+        amount >= 0, "beast::insight::detail::OTelCounterImpl::increment : non-negative amount");
     if (amount > 0)
         counter_->Add(static_cast<uint64_t>(amount));
 }
@@ -687,7 +734,8 @@ OTelEventImpl::notify(value_type const& value)
 OTelGaugeImpl::OTelGaugeImpl(std::string name, std::shared_ptr<OTelCollectorImp> const& collector)
     : name_(std::move(name)), collector_(collector)
 {
-    collector_->addGauge(this);
+    // Registration happens in makeGauge(), not here: no weak_ptr to this
+    // object exists until the owning shared_ptr does.
 }
 
 void
@@ -737,26 +785,31 @@ OTelGaugeImpl::~OTelGaugeImpl()
     // callback for this instrument is in flight — removal is synchronous.
     // A no-op when never armed, or already disarmed at shutdown.
     disarm();
-    collector_->removeGauge(this);
+    collector_->removeExpiredGauges();
 }
 
 void
 OTelGaugeImpl::set(value_type value)
 {
-    value_.store(static_cast<int64_t>(value), std::memory_order_relaxed);
+    // value_type is uint64_t, the gauge reports int64_t. Clamp instead of
+    // wrapping to a negative, which increment() would then floor to 0.
+    constexpr auto kMax = static_cast<value_type>(std::numeric_limits<int64_t>::max());
+    value_.store(static_cast<int64_t>(std::min(value, kMax)), std::memory_order_relaxed);
 }
 
 void
 OTelGaugeImpl::increment(difference_type amount)
 {
-    // Use compare-exchange loop to safely clamp to [0, MAX].
+    // Saturate in [0, INT64_MAX]. Signed overflow is UB, so check the headroom
+    // before adding. A negative amount cannot underflow: current is never
+    // negative, so the lowest sum is 0 + INT64_MIN.
+    constexpr auto kMax = std::numeric_limits<int64_t>::max();
     int64_t current = value_.load(std::memory_order_relaxed);
     int64_t desired = 0;
     do
     {
-        desired = current + amount;
-        // Clamp to 0 on underflow.
-        desired = std::max(desired, int64_t{0});
+        desired =
+            (amount > 0 && current > kMax - amount) ? kMax : std::max(current + amount, int64_t{0});
     } while (!value_.compare_exchange_weak(current, desired, std::memory_order_relaxed));
 }
 
@@ -790,23 +843,19 @@ OTelMeterImpl::increment(value_type amount)
 OTelCollectorImp::OTelCollectorImp(
     std::string const& endpoint,
     std::string prefix,
-    std::string const& instanceId,
-    std::string const& serviceName,
-    std::string const& networkType,
+    // instanceId/serviceName/networkType are accepted so the New() signature
+    // stays uniform for callers, but they are not read here: the telemetry
+    // module owns the resource attributes for the shared metrics pipeline.
+    [[maybe_unused]] std::string const& instanceId,
+    [[maybe_unused]] std::string const& serviceName,
+    [[maybe_unused]] std::string const& networkType,
     Journal journal)
     : journal_(journal), prefix_(std::move(prefix))
 {
-    // instanceId/serviceName/networkType are accepted but unused here: the
-    // telemetry module owns the resource attributes for the shared metrics
-    // pipeline, so setting them from this collector would have no effect.
-    (void)instanceId;
-    (void)serviceName;
-    (void)networkType;
-
     if (journal_.info())
     {
-        // endpoint is logged for diagnostics only: the global telemetry
-        // pipeline owns the exporter that actually sends the metrics.
+        // endpoint is informational: the global telemetry pipeline owns the
+        // real exporter. It is logged here purely as a startup diagnostic.
         journal_.info() << "OTelCollector starting: endpoint=" << endpoint << " prefix=" << prefix_;
     }
 
@@ -815,14 +864,10 @@ OTelCollectorImp::OTelCollectorImp(
     // periodic reader, histogram view, resource attributes) and registers it
     // via metrics::Provider::SetMeterProvider() during start(). beast metrics
     // ride that shared pipeline, so both direct-API and beast-sourced metrics
-    // export under one resource identity.
-    //
-    // The name/version literals MUST match the telemetry module's kMeterName
-    // ("xrpld") and kMeterVersion ("1.0.0"). They are written as literals (not
-    // referenced from Telemetry.h) because beast/insight sits below the
-    // telemetry module in the layering and cannot include its header.
+    // export under one resource identity. The scope must match the telemetry
+    // module's; see kOTelMeterName in the header.
     otelMeter_ = metrics_api::Provider::GetMeterProvider()->GetMeter(
-        std::string{"xrpld"}, std::string{"1.0.0"});
+        std::string{kOTelMeterName}, std::string{kOTelMeterVersion});
 
     if (journal_.info())
     {
@@ -832,12 +877,8 @@ OTelCollectorImp::OTelCollectorImp(
 
 OTelCollectorImp::~OTelCollectorImp()
 {
-    if (journal_.info())
-    {
-        journal_.info() << "OTelCollector shutting down";
-    }
-    // No pipeline teardown here: the telemetry module owns the global
-    // MeterProvider lifecycle (ForceFlush/Shutdown happen in Telemetry::stop()).
+    // Nothing to tear down: the telemetry module owns the global MeterProvider,
+    // so ForceFlush and Shutdown happen in Telemetry::stop().
     if (journal_.info())
     {
         journal_.info() << "OTelCollector stopped";
@@ -847,7 +888,9 @@ OTelCollectorImp::~OTelCollectorImp()
 Hook
 OTelCollectorImp::makeHook(HookImpl::HandlerType const& handler)
 {
-    return Hook(std::make_shared<OTelHookImpl>(handler, shared_from_this()));
+    auto hook = std::make_shared<OTelHookImpl>(handler, shared_from_this());
+    addHook(hook);
+    return Hook(hook);
 }
 
 Counter
@@ -871,7 +914,9 @@ OTelCollectorImp::makeEvent(std::string const& name, Unit unit)
 Gauge
 OTelCollectorImp::makeGauge(std::string const& name)
 {
-    return Gauge(std::make_shared<OTelGaugeImpl>(formatName(name), shared_from_this()));
+    auto gauge = std::make_shared<OTelGaugeImpl>(formatName(name), shared_from_this());
+    addGauge(gauge);
+    return Gauge(gauge);
 }
 
 Meter
@@ -881,60 +926,64 @@ OTelCollectorImp::makeMeter(std::string const& name)
 }
 
 void
-OTelCollectorImp::addHook(OTelHookImpl* hook)
+OTelCollectorImp::addHook(std::shared_ptr<OTelHookImpl> const& hook)
 {
     std::scoped_lock const lock(mutex_);
-    hooks_.push_back(hook);
+    hooks_.emplace_back(hook);
 }
 
 void
-OTelCollectorImp::removeHook(OTelHookImpl* hook)
+OTelCollectorImp::removeExpiredHooks()
 {
     std::scoped_lock const lock(mutex_);
-    std::erase(hooks_, hook);
+    std::erase_if(hooks_, [](std::weak_ptr<OTelHookImpl> const& hook) { return hook.expired(); });
 }
 
 void
 OTelCollectorImp::callHooks()
 {
-    // Debounce: hooks run at most once per 500ms. Multiple gauge callbacks
-    // fire during the same collection cycle — only the first one triggers
-    // hooks. Subsequent callbacks within the window read already-updated
-    // gauge values.
     auto now = std::chrono::duration_cast<std::chrono::milliseconds>(
                    std::chrono::steady_clock::now().time_since_epoch())
                    .count();
     auto last = lastHookCallMs_.load(std::memory_order_acquire);
-    if (now - last < 500)
+    if (now - last < kHookDebounceInterval.count())
         return;
     if (!lastHookCallMs_.compare_exchange_strong(last, now, std::memory_order_acq_rel))
         return;  // Another thread won the race.
 
     // Copy the hook list under the lock, then invoke handlers outside it.
     // A handler may drop the last reference to an OTelHookImpl, whose
-    // destructor calls removeHook() and re-acquires mutex_; invoking
-    // handlers while holding the (non-recursive) lock would deadlock.
-    std::vector<OTelHookImpl*> hooks;
+    // destructor re-acquires mutex_; invoking handlers while holding the
+    // (non-recursive) lock would deadlock.
+    std::vector<std::weak_ptr<OTelHookImpl>> hooks;
     {
         std::scoped_lock const lock(mutex_);
         hooks = hooks_;
     }
-    for (auto* hook : hooks)
-        hook->callHandler();
+
+    // Locking each entry keeps that hook alive across its own handler call,
+    // so releasing mutex_ above cannot leave a dangling reference. A hook
+    // destroyed since the snapshot was taken locks to null and is skipped.
+    for (auto const& weakHook : hooks)
+    {
+        if (auto const hook = weakHook.lock())
+            hook->callHandler();
+    }
 }
 
 void
-OTelCollectorImp::addGauge(OTelGaugeImpl* gauge)
+OTelCollectorImp::addGauge(std::shared_ptr<OTelGaugeImpl> const& gauge)
 {
     std::scoped_lock const lock(mutex_);
-    gauges_.push_back(gauge);
+    gauges_.emplace_back(gauge);
 }
 
 void
-OTelCollectorImp::removeGauge(OTelGaugeImpl* gauge)
+OTelCollectorImp::removeExpiredGauges()
 {
     std::scoped_lock const lock(mutex_);
-    std::erase(gauges_, gauge);
+    std::erase_if(
+        gauges_, [](std::weak_ptr<OTelGaugeImpl> const& gauge) { return gauge.expired(); });
 }
 
 void
@@ -944,15 +993,24 @@ OTelCollectorImp::onCollectionReady()
     // observable registry lock, and the reader thread takes that lock before
     // calling callHooks(), which wants mutex_. callHooks() copies its hook list
     // for the same reason.
-    std::vector<OTelGaugeImpl*> gauges;
+    std::vector<std::weak_ptr<OTelGaugeImpl>> gauges;
     {
         std::scoped_lock const lock(mutex_);
         gauges = gauges_;
     }
 
     std::size_t armed = 0;
-    for (auto* gauge : gauges)
+    std::size_t live = 0;
+    for (auto const& weakGauge : gauges)
     {
+        // Locking keeps this gauge alive across its own arm() call. One
+        // destroyed since the snapshot locks to null and is skipped, and is
+        // not counted in the total below: it has no metric to register.
+        auto const gauge = weakGauge.lock();
+        if (!gauge)
+            continue;
+        ++live;
+
         // Telemetry must never stop the node, so one bad instrument costs only
         // its own metric.
         try
@@ -973,8 +1031,7 @@ OTelCollectorImp::onCollectionReady()
 
     if (auto stream = journal_.info())
     {
-        stream << "OTelCollector: registered " << armed << " of " << gauges.size()
-               << " observable gauges";
+        stream << "OTelCollector: registered " << armed << " of " << live << " observable gauges";
     }
 }
 
@@ -983,17 +1040,26 @@ OTelCollectorImp::onCollectionStopping()
 {
     // Same lock discipline as onCollectionReady(): snapshot, then act outside
     // the lock, because disarm() enters the SDK's observable registry lock.
-    std::vector<OTelGaugeImpl*> gauges;
+    std::vector<std::weak_ptr<OTelGaugeImpl>> gauges;
     {
         std::scoped_lock const lock(mutex_);
         gauges = gauges_;
     }
 
-    for (auto* gauge : gauges)
-        gauge->disarm();
+    // Locking keeps each gauge alive across its own disarm() call. One already
+    // destroyed disarmed itself in ~OTelGaugeImpl, so skipping it is correct.
+    std::size_t disarmed = 0;
+    for (auto const& weakGauge : gauges)
+    {
+        if (auto const gauge = weakGauge.lock())
+        {
+            gauge->disarm();
+            ++disarmed;
+        }
+    }
 
     if (auto stream = journal_.info())
-        stream << "OTelCollector: stopped observing " << gauges.size() << " gauges";
+        stream << "OTelCollector: stopped observing " << disarmed << " gauges";
 }
 
 opentelemetry::nostd::shared_ptr<metrics_api::Meter> const&
@@ -1003,25 +1069,16 @@ OTelCollectorImp::otelMeter() const
 }
 
 std::string
-OTelCollectorImp::formatName(std::string const& name)
+OTelCollectorImp::formatName(std::string_view name)
 {
-    // Produce a lowercase, Prometheus-compatible metric name: dots and
-    // spaces become underscores. Service identity travels in the
-    // service.name resource attribute, not in the metric name.
-    std::string result;
-    result.reserve(name.size());
-    for (char const c : name)
-    {
-        if (c == '.' || c == ' ')
-        {
-            result += '_';
-        }
-        else
-        {
-            result += static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
-        }
-    }
-    return result;
+    // Lowercase, with '.' and ' ' mapped to '_'. No prefix: the service.name
+    // resource attribute identifies the service.
+    return name | std::views::transform([](char c) {
+               return (c == '.' || c == ' ')
+                   ? '_'
+                   : static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
+           }) |
+        std::ranges::to<std::string>();
 }
 
 }  // namespace detail

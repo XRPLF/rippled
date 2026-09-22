@@ -32,8 +32,12 @@ namespace xrpl::telemetry {
  *  trace_id is derived from txID[0:16]. If the incoming message carries
  *  a protobuf TraceContext with a valid span_id, it is used as the
  *  parent to preserve relay ordering.
+ * @param txID  Transaction id; its first 16 bytes become the trace_id.
+ * @param msg   The received message, read only for its trace context.
+ * @return An active guard, or a null guard when the Transactions category
+ * is disabled. Bind it: a discarded guard ends the span immediately.
  */
-inline SpanGuard
+[[nodiscard]] inline SpanGuard
 txReceiveSpan(uint256 const& txID, [[maybe_unused]] protocol::TMTransaction const& msg)
 {
 #ifdef XRPL_ENABLE_TELEMETRY
@@ -63,8 +67,11 @@ txReceiveSpan(uint256 const& txID, [[maybe_unused]] protocol::TMTransaction cons
 /**
  * Create a "tx.process" span for transaction processing in NetworkOPs.
  *  trace_id is derived from txID[0:16].
+ * @param txID  Transaction id; its first 16 bytes become the trace_id.
+ * @return An active guard, or a null guard when the Transactions category
+ * is disabled. Bind it: a discarded guard ends the span immediately.
  */
-inline SpanGuard
+[[nodiscard]] inline SpanGuard
 txProcessSpan(uint256 const& txID)
 {
     return SpanGuard::hashSpan(

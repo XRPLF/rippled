@@ -67,6 +67,10 @@
         "y": 0
       },
       "options": {
+        "annotations": {
+          "clustering": -1,
+          "multiLane": true
+        },
         "tooltip": {
           "maxHeight": 600,
           "mode": "multi",
@@ -120,7 +124,8 @@
       "fieldConfig": {
         "defaults": {
           "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
-          "unit": "suffix: messages/s",
+          "unit": "si: messages/s",
+          "decimals": 0,
           "custom": {
             "axisLabel": "Messages / Sec",
             "spanNulls": 1800000,
@@ -147,6 +152,10 @@
         "y": 0
       },
       "options": {
+        "annotations": {
+          "clustering": -1,
+          "multiLane": true
+        },
         "tooltip": {
           "maxHeight": 600,
           "mode": "multi",
@@ -227,6 +236,10 @@
         "y": 10
       },
       "options": {
+        "annotations": {
+          "clustering": -1,
+          "multiLane": true
+        },
         "tooltip": {
           "maxHeight": 600,
           "mode": "multi",
@@ -266,7 +279,8 @@
       "fieldConfig": {
         "defaults": {
           "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
-          "unit": "suffix: messages/s",
+          "unit": "si: messages/s",
+          "decimals": 0,
           "custom": {
             "axisLabel": "Messages / Sec & Bytes / Sec",
             "spanNulls": 1800000,
@@ -310,6 +324,10 @@
         "y": 10
       },
       "options": {
+        "annotations": {
+          "clustering": -1,
+          "multiLane": true
+        },
         "tooltip": {
           "maxHeight": 600,
           "mode": "multi",
@@ -376,6 +394,10 @@
         "y": 20
       },
       "options": {
+        "annotations": {
+          "clustering": -1,
+          "multiLane": true
+        },
         "tooltip": {
           "maxHeight": 600,
           "mode": "multi",
@@ -415,7 +437,8 @@
       "fieldConfig": {
         "defaults": {
           "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
-          "unit": "suffix: messages/s",
+          "unit": "si: messages/s",
+          "decimals": 0,
           "custom": {
             "axisLabel": "Messages / Sec",
             "spanNulls": 1800000,
@@ -442,6 +465,10 @@
         "y": 20
       },
       "options": {
+        "annotations": {
+          "clustering": -1,
+          "multiLane": true
+        },
         "tooltip": {
           "maxHeight": 600,
           "mode": "multi",
@@ -525,6 +552,10 @@
         "y": 30
       },
       "options": {
+        "annotations": {
+          "clustering": -1,
+          "multiLane": true
+        },
         "tooltip": {
           "maxHeight": 600,
           "mode": "multi",
@@ -591,6 +622,10 @@
         "y": 30
       },
       "options": {
+        "annotations": {
+          "clustering": -1,
+          "multiLane": true
+        },
         "tooltip": {
           "maxHeight": 600,
           "mode": "multi",
@@ -670,6 +705,10 @@
         "y": 41
       },
       "options": {
+        "annotations": {
+          "clustering": -1,
+          "multiLane": true
+        },
         "tooltip": {
           "maxHeight": 600,
           "mode": "multi",
@@ -779,6 +818,10 @@
         "y": 51
       },
       "options": {
+        "annotations": {
+          "clustering": -1,
+          "multiLane": true
+        },
         "tooltip": {
           "maxHeight": 600,
           "mode": "multi",
@@ -796,7 +839,8 @@
       "fieldConfig": {
         "defaults": {
           "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
-          "unit": "suffix: lookups/s",
+          "unit": "si: lookups/s",
+          "decimals": 0,
           "custom": {
             "axisLabel": "Lookups / Sec",
             "spanNulls": 1800000,
@@ -823,6 +867,10 @@
         "y": 51
       },
       "options": {
+        "annotations": {
+          "clustering": -1,
+          "multiLane": true
+        },
         "tooltip": {
           "maxHeight": 600,
           "mode": "multi",
@@ -840,7 +888,8 @@
       "fieldConfig": {
         "defaults": {
           "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
-          "unit": "suffix: rejections/s",
+          "unit": "si: rejections/s",
+          "decimals": 0,
           "custom": {
             "axisLabel": "Rejections / Sec",
             "spanNulls": 1800000,
@@ -867,6 +916,10 @@
         "y": 61
       },
       "options": {
+        "annotations": {
+          "clustering": -1,
+          "multiLane": true
+        },
         "tooltip": {
           "maxHeight": 600,
           "mode": "multi",
@@ -1082,7 +1135,7 @@
         "query": "label_values(getobject_lookups_total, result)",
         "datasource": {
           "type": "prometheus",
-          "uid": "prometheus"
+          "uid": "${DS_PROMETHEUS}"
         },
         "includeAll": true,
         "allValue": ".*",
@@ -1102,7 +1155,7 @@
         "query": "label_values(getobject_rejected_total, reason)",
         "datasource": {
           "type": "prometheus",
-          "uid": "prometheus"
+          "uid": "${DS_PROMETHEUS}"
         },
         "includeAll": true,
         "allValue": ".*",

@@ -153,6 +153,7 @@ words:
   - ifndef
   - inequation
   - initialiser
+  - Injectivity
   - insuf
   - insuff
   - invasively
@@ -380,6 +381,7 @@ words:
   - unfindable
   - unflatten
   - unfund
+  - ungated
   - unheld
   - unimpair
   - unroutable
@@ -403,7 +405,6 @@ words:
   - venv
   - vfalco
   - vinnie
-  - vkeylet
   - wasmi
   - werror
   - wextra

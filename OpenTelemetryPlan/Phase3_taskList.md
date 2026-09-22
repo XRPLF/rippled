@@ -98,7 +98,7 @@
     - Extract parent trace context from incoming `TMTransaction::trace_context` field (if present)
     - Create `tx.receive` span as child of extracted context (or new root if none)
     - Set attributes: `tx_hash`, `peer_id`, `tx_status`
-    - On HashRouter suppression (duplicate): set `suppressed=true`, add `tx.duplicate` event
+    - Create the span only after `HashRouter::shouldProcess()` accepts, so a dropped duplicate produces no span
     - Wrap validation call with child span `tx.validate`
     - Wrap relay with `tx.relay` span
   - When relaying to peers:
@@ -169,7 +169,7 @@
 
 - Edit `src/xrpld/overlay/detail/PeerImp.cpp` (in handleTransaction):
   - After calling `HashRouter::shouldProcess()` or `addSuppressionPeer()`:
-    - Record `suppressed` attribute (true/false)
+    - Start the span here, not before, so only transactions this node will process are traced
     - Record `tx_flags` showing current HashRouter state (SAVED, TRUSTED, etc.)
     - Add `tx.first_seen` or `tx.duplicate` event
 
@@ -386,7 +386,7 @@ This gives the best of both worlds: guaranteed cross-node correlation via determ
        **combine** with deterministic trace_id — use the protobuf span_id as parent
        to preserve relay ordering, but override trace_id with the deterministic one.
     4. If no protobuf context: create span under `detCtx` directly.
-    5. Set all existing attributes (`hash`, `peerId`, `peerVersion`, `suppressed`, etc.).
+    5. Set all existing attributes (`hash`, `peerId`, `peerVersion`, etc.).
 
   - **Combining deterministic trace_id with protobuf parent span_id**:
     When both are available, construct a synthetic `SpanContext` with:
@@ -509,12 +509,14 @@ This gives the best of both worlds: guaranteed cross-node correlation via determ
 | `tx.process`      | `applied`            | bool   | `e.applied` (set after batch application)                           |
 | `tx.receive`      | `tx_type`            | string | `TxFormats::getInstance().findByType(stx->getTxnType())->getName()` |
 | `txq.enqueue`     | `tx_type`            | string | same pattern as above                                               |
-| `txq.enqueue`     | `txq_status`         | string | `queued` / `applied_direct` / `applied` / `rejected`                |
+| `txq.enqueue`     | `txq_status`         | string | `queued` / `applied_direct` / `applied` / `failed` / `rejected`     |
+| `txq.enqueue`     | `ter_code`           | string | `transToken(directApplied->ter)` (set on the direct-apply path)     |
 | `txq.enqueue`     | `fee_level_paid`     | int64  | `getFeeLevelPaid(view, *tx).value()`                                |
 | `txq.enqueue`     | `required_fee_level` | int64  | `getRequiredFeeLevel(...).value()`                                  |
 | `txq.batch_clear` | `num_cleared`        | int64  | queued txs cleared ahead of the applying tx                         |
 | `txq.cleanup`     | `expired_count`      | int64  | entries dropped for passed `LastLedgerSequence`                     |
 | `txq.accept_tx`   | `txq_status`         | string | `applied` / `failed` / `retried`                                    |
+| `txq.accept_tx`   | `ter_code`           | string | `transToken(txnResult)` (set before branching on the outcome)       |
 | `txq.accept`      | `ledger_changed`     | bool   | set at end of accept loop                                           |
 
 **New attr keys**: `TxSpanNames.h` (`txType`, `fee`, `sequence`, `terResult`, `applied`), `TxQSpanNames.h` (`txType`).

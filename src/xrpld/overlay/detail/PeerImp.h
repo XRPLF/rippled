@@ -696,6 +696,7 @@ private:
     std::shared_ptr<SHAMap const>
     getTxSet(std::shared_ptr<protocol::TMGetLedger> const& m) const;
 
+protected:
     void
     processLedgerRequest(
         std::shared_ptr<protocol::TMGetLedger> const& m,
@@ -704,10 +705,10 @@ private:
     /**
      * Record the OTel metrics for one completed `TMGetObjectByHash` request.
      *
-     * Extracted from `processGetObjectByHash()` purely to keep that method
-     * within the 80-line limit; it holds no logic of its own beyond deriving
-     * the hit/miss split from `requested` and `found`. Called once per
-     * request, after the fetch loop and the `charge()` call.
+     * Called once per request from `processGetObjectByHash()`, after the fetch
+     * loop and the `charge()` call. A separate method so that one stays within
+     * the 80-line limit; it holds no logic of its own beyond deriving the
+     * hit/miss split from `requested` and `found`.
      *
      * Records `getobject_request_objects`, `getobject_lookup_us`,
      * `getobject_charge`, and both label values of
@@ -729,14 +730,6 @@ private:
         int const found,
         std::chrono::microseconds const lookupElapsed,
         resource::Charge const& fee);
-
-protected:
-    // Kept `protected` so test subclasses (see
-    // TMGetObjectByHash_test) can drive the
-    // synchronous processor and the differential-pricing helper without
-    // routing through the JobQueue or going through `friend` plumbing.
-    // Production callers reach these members only via
-    // `onMessage(TMGetObjectByHash)` → JobQueue → `processGetObjectByHash`.
 
     /**
      * Process a generic-query TMGetObjectByHash message.

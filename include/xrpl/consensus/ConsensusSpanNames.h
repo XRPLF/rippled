@@ -15,8 +15,9 @@
  *
  *    consensus.round                             [main thread, root]
  *    |  Created: Adaptor::startRoundTracing()
- *    |  Attrs:   consensus_ledger_id, ledger_seq, consensus_mode,
- *    |           trace_strategy, consensus_round_id
+ *    |  Attrs:   consensus_ledger_id, ledger_seq, trace_strategy,
+ *    |           consensus_round_id; consensus_mode from
+ *    |           Adaptor::onModeChange()
  *    |
  *    +-- consensus.phase.open                    [main thread, child]
  *    |     Created: Consensus::startRoundInternal()
@@ -59,10 +60,10 @@
  *    |   |
  *    |   +-- consensus.accept.apply              [jtACCEPT thread, child of accept]
  *    |         Created: Adaptor::doAccept()
- *    |     Attrs:   ledger_seq, close_time, close_time_correct,
+ *    |     Attrs:   ledger_seq, close_time_ripple_epoch_s, close_time_correct,
  *    |              close_resolution_ms, consensus_state, proposing, round_time_ms,
- *    |              parent_close_time, close_time_self, close_time_vote_bins,
- *    |              resolution_direction, tx_count
+ *    |              parent_close_time_ripple_epoch_s, close_time_self_ripple_epoch_s,
+ *    |              close_time_vote_bins, resolution_direction, tx_count
  *    |     Events:  tx.included (per tx, attrs: tx_id)
  *    |
  *    +~~~ consensus.validation.send              [jtACCEPT thread, linked]
@@ -140,8 +141,8 @@ namespace attr {
  * concept, same key, distinguished by span name (not an emitter prefix).
  */
 using ::xrpl::telemetry::attr::closeResolutionMs;
-using ::xrpl::telemetry::attr::closeTime;
 using ::xrpl::telemetry::attr::closeTimeCorrect;
+using ::xrpl::telemetry::attr::closeTimeRippleEpochS;
 using ::xrpl::telemetry::attr::fullValidation;
 using ::xrpl::telemetry::attr::ledgerHash;
 using ::xrpl::telemetry::attr::ledgerSeq;
@@ -151,6 +152,11 @@ using ::xrpl::telemetry::attr::ledgerSeq;
  * Use `<domain>_<field>` underscore form for TraceQL ergonomics.
  */
 inline constexpr auto ledgerId = makeStr("consensus_ledger_id");
+/**
+ * Consensus mode. On consensus.round it is written by onModeChange, the point
+ * at which the engine applies the mode; on consensus.ledger_close the engine
+ * passes the mode in.
+ */
 inline constexpr auto mode = makeStr("consensus_mode");
 inline constexpr auto round = makeStr("consensus_round");
 inline constexpr auto roundId = makeStr("consensus_round_id");
@@ -232,8 +238,20 @@ inline constexpr auto positionHashPrefix = makeStr("position_hash_prefix");
  * "consensus_state" — domain-qualified (collides with other domains' state).
  */
 inline constexpr auto consensusState = makeStr("consensus_state");
-inline constexpr auto parentCloseTime = makeStr("parent_close_time");
-inline constexpr auto closeTimeSelf = makeStr("close_time_self");
+/**
+ * Close-time instants, both NetClock readings in whole seconds since the XRP
+ * Ledger epoch (2000-01-01T00:00:00Z) — see `closeTimeRippleEpochS` in
+ * SpanNames.h for why the epoch is spelled into the key.
+ *
+ * `parentCloseTimeRippleEpochS` is the previous ledger's close time;
+ * `closeTimeSelfRippleEpochS` is this node's own close-time vote for the round,
+ * so the pair shows how far the node's position sat from the ledger it built on.
+ *
+ * `closeTimeVoteBins` is not a time: it holds the number of distinct close-time
+ * positions seen from peers this round.
+ */
+inline constexpr auto parentCloseTimeRippleEpochS = makeStr("parent_close_time_ripple_epoch_s");
+inline constexpr auto closeTimeSelfRippleEpochS = makeStr("close_time_self_ripple_epoch_s");
 inline constexpr auto closeTimeVoteBins = makeStr("close_time_vote_bins");
 inline constexpr auto resolutionDirection = makeStr("resolution_direction");
 inline constexpr auto convergePercent = makeStr("converge_percent");
@@ -275,6 +293,20 @@ inline constexpr auto disputesCount = makeStr("disputes_count");
  */
 inline constexpr auto proposalTrusted = makeStr("proposal_trusted");
 inline constexpr auto validationTrusted = makeStr("validation_trusted");
+
+/**
+ * "validation_receive_status" — which exit the inbound validation took on
+ * consensus.validation.receive. Set once per exit, so a dropped validation
+ * (microseconds) is separable from a queued one (job wait plus
+ * checkValidation); without it the span reports two unrelated latency
+ * distributions and every quantile over it is meaningless.
+ *
+ * Deliberately NOT `validation_status`: that key belongs to
+ * consensus.validation.accept and carries what the validation store did
+ * (`ValStatus`). One key with two value domains would make any aggregation
+ * that does not also filter on span name meaningless.
+ */
+inline constexpr auto validationReceiveStatus = makeStr("validation_receive_status");
 }  // namespace attr
 
 // ===== Event names ===========================================================
@@ -285,7 +317,9 @@ namespace event {
  */
 inline constexpr auto disputeResolve = join(makeStr("dispute"), makeStr("resolve"));
 /**
- * "tx.included"
+ * "tx.included" — one per transaction of the agreed consensus set, recorded
+ * before the ledger is built. A transaction that then fails to apply still
+ * has an event, so this is a superset of the accepted ledger's contents.
  */
 inline constexpr auto txIncluded = join(makeStr("tx"), makeStr("included"));
 
@@ -340,6 +374,10 @@ inline constexpr auto closeAnomaly = makeStr("anomaly");
 inline constexpr auto closeOthersClosed = makeStr("others_closed");
 inline constexpr auto closeIdle = makeStr("idle");
 inline constexpr auto closeNormal = makeStr("normal");
+// validation_receive_status values, one per exit of the receive path.
+inline constexpr auto validationQueued = makeStr("queued");
+inline constexpr auto validationDroppedDiverged = makeStr("dropped_diverged");
+inline constexpr auto validationDroppedLoad = makeStr("dropped_load");
 }  // namespace val
 
 }  // namespace xrpl::telemetry::consensus::span

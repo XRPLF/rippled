@@ -158,15 +158,16 @@ fillHandler(JsonContext& context, Handler const*& result)
     return RpcSuccess;
 }
 
-template <class Object, class Method>
 Status
-callMethod(JsonContext& context, Method method, std::string const& name, Object& result)
+callMethod(JsonContext& context, Handler::Method method, std::string_view name, json::Value& result)
 {
     // Scoped so this command nests under rpc.process and becomes the ambient
     // parent of any command-internal spans (e.g. pathfind.request). Coro-aware
-    // storage keeps the scope correct across doRipplePathFind's yield.
-    auto span = ScopedSpanGuard(TraceCategory::Rpc, rpc_span::prefix::command, name);
-    span.setAttribute(rpc_span::attr::command, name.c_str());
+    // storage keeps the scope correct across doRipplePathFind's yield. Internal
+    // rather than Server: the inbound boundary is above rpc.process.
+    auto span =
+        ScopedSpanGuard(TraceCategory::Rpc, rpc_span::prefix::command, name, SpanRole::Internal);
+    span.setAttribute(rpc_span::attr::command, name);
     span.setAttribute(rpc_span::attr::version, static_cast<int64_t>(context.apiVersion));
     span.setAttribute(
         rpc_span::attr::rpcRole,
@@ -179,7 +180,8 @@ callMethod(JsonContext& context, Method method, std::string const& name, Object&
     try
     {
         perfLog.rpcStart(name, curId);
-        auto v = context.app.getJobQueue().makeLoadEvent(JtGeneric, "cmd:" + name);
+        auto v =
+            context.app.getJobQueue().makeLoadEvent(JtGeneric, std::string{"cmd:"}.append(name));
 
         auto start = std::chrono::system_clock::now();
         auto ret = method(context, result);
@@ -283,7 +285,9 @@ doCommand(rpc::JsonContext& context, json::Value& result)
         // registered handler names (plus "unknown") — see the helper for why
         // raw request input must not reach the telemetry pipeline.
         auto const cmdName = resolveCommandSpanName(context);
-        auto span = ScopedSpanGuard(TraceCategory::Rpc, rpc_span::prefix::command, cmdName);
+        // Internal for the same reason as the success path above.
+        auto span = ScopedSpanGuard(
+            TraceCategory::Rpc, rpc_span::prefix::command, cmdName, SpanRole::Internal);
         span.setAttribute(rpc_span::attr::command, cmdName);
         // Mirror the attribute set callMethod() puts on a successful command
         // span, so error spans stay filterable by API version and role.
@@ -300,32 +304,28 @@ doCommand(rpc::JsonContext& context, json::Value& result)
         return error;
     }
 
-    if (auto method = handler->valueMethod)
+    // No null check on the method: Handler::Method has no default constructor, so
+    // every entry in the dispatch table names one.
+    if (!context.headers.user.empty() || !context.headers.forwardedFor.empty())
     {
-        if (!context.headers.user.empty() || !context.headers.forwardedFor.empty())
-        {
-            JLOG(context.j.debug())
-                << "start command: " << handler->name << ", user: " << context.headers.user
-                << ", forwarded for: " << context.headers.forwardedFor;
+        JLOG(context.j.debug()) << "start command: " << handler->name
+                                << ", user: " << context.headers.user
+                                << ", forwarded for: " << context.headers.forwardedFor;
 
-            auto ret = callMethod(context, method, handler->name, result);
+        auto const ret = callMethod(context, handler->valueMethod, handler->name, result);
 
-            JLOG(context.j.debug())
-                << "finish command: " << handler->name << ", user: " << context.headers.user
-                << ", forwarded for: " << context.headers.forwardedFor;
+        JLOG(context.j.debug()) << "finish command: " << handler->name
+                                << ", user: " << context.headers.user
+                                << ", forwarded for: " << context.headers.forwardedFor;
 
-            return ret;
-        }
-
-        auto ret = callMethod(context, method, handler->name, result);
         return ret;
     }
 
-    return RpcUnknownCommand;
+    return callMethod(context, handler->valueMethod, handler->name, result);
 }
 
 Role
-roleRequired(unsigned int version, bool betaEnabled, std::string const& method)
+roleRequired(unsigned int version, bool betaEnabled, std::string_view method)
 {
     auto handler = rpc::getHandler(version, betaEnabled, method);
 

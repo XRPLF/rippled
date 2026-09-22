@@ -1,28 +1,42 @@
 /**
  * GTest unit tests for MetricsRegistry.
  *
- *  Three independent groups, split by what they can link:
+ *  Four groups. The first three drive the pure static helpers, which are
+ *  constexpr inline in the header and so need nothing on the link line. The
+ *  fourth drives a real registry object.
  *
- *  1. sanitiseHandler() — the `handler` label sanitiser. Runs in **both**
- *     builds. sanitiseHandler() is a public static constexpr defined inline
- *     in the header, so it needs no part of MetricsRegistry.cpp on the link
- *     line. These tests therefore sit outside the guard below; putting them
- *     inside it would silently compile them out of the telemetry-enabled
- *     build, which is the build that actually exports the label.
+ *  1. sanitiseHandler() — the `handler` label sanitiser.
  *
  *  2. scaledMean() — the guarded-division helper behind every derived mean
- *     on the nodestore_state gauge. Also a public static constexpr inline,
- *     so it runs in both builds for the same reason.
+ *     on the nodestore_state gauge.
  *
- *  3. The no-op / telemetry-disabled path — construction, the two-phase
- *     start() / startAsyncGauges() / stop() lifecycle, and the synchronous
- *     record*() methods. Guarded, because when XRPL_ENABLE_TELEMETRY is
- *     defined MetricsRegistry.cpp is not compiled into this binary (see
- *     src/tests/libxrpl/CMakeLists.txt) and its out-of-line symbols are
- *     unresolvable here.
+ *  3. parseLedgerRange() — reads one segment of the complete-ledger range
+ *     string the complete_ledgers gauge publishes. The last case drives the
+ *     real producer, xrpl::to_string(RangeSet), rather than restating its
+ *     format.
+ *
+ *  4. The registry lifecycle — construction, stop(), and the record and
+ *     increment methods. Every test here runs in **both** builds: the core
+ *     is compiled into xrpl.libxrpl, which this binary links either way, so
+ *     with telemetry on these tests drive a real OTel pipeline and with it
+ *     off they drive the no-op stubs. An assertion that holds in only one
+ *     build carries its own #ifdef and says which build it pins.
+ *
+ * What group 4 pins about stop(), and what it does not:
+ *
+ * stop() stores Phase::Stopped before it destroys the SDK provider, and every
+ * record method reads that phase through recording() first. Without the store,
+ * a record carrying a first-seen attribute set would reach an
+ * AggregationConfig that the destroyed View owned. The tests below assert that
+ * the gate is shut after stop() and that a record past it is inert. That pins
+ * the gate. It does not prove the memory is safe: with no sanitizer, a read of
+ * freed memory can still pass. A sanitizer build running these same tests is
+ * what would catch a regression in the memory itself.
  */
 
-#include <xrpld/telemetry/MetricsRegistry.h>
+#include <xrpl/telemetry/MetricsRegistry.h>
+
+#include <xrpl/basics/RangeSet.h>
 
 #include <gtest/gtest.h>
 
@@ -33,7 +47,10 @@
 #include <limits>
 #include <optional>
 #include <set>
+#include <string>
 #include <string_view>
+#include <utility>
+#include <vector>
 
 namespace {
 
@@ -204,9 +221,9 @@ allFoldToOther()
 static_assert(allPassThroughUnchanged());
 static_assert(allFoldToOther());
 
-// The verified size of the pass-through set as of this branch: 43 all-letter
-// job-name literals. Pinned so that adding or removing a job name without
-// revisiting the label-cardinality budget fails the build here.
+// The pass-through set is every all-letter job-name literal in the tree: 43
+// of them. Pinned so that adding or removing a job name without revisiting
+// the label-cardinality budget fails the build here.
 static_assert(kPassThroughHandlers.size() == 43);
 
 /**
@@ -417,447 +434,520 @@ TEST(MetricsRegistryScaledMean, default_scale_is_one)
     EXPECT_EQ(Registry::scaledMean(360, 8), 45);
 }
 
-// When telemetry is globally enabled, MetricsRegistry.cpp requires xrpld
-// link dependencies we cannot satisfy in a standalone GTest binary.
-#ifndef XRPL_ENABLE_TELEMETRY
+namespace {
 
-#include <xrpl/basics/Log.h>
-#include <xrpl/basics/base_uint.h>
+/**
+ * Segments the producer can emit, paired with the range each denotes.
+ *
+ * Both shapes come from xrpl::to_string(ClosedInterval): `first-last`, and a
+ * bare number when first equals last.
+ */
+constexpr std::array<std::pair<std::string_view, std::pair<std::uint32_t, std::uint32_t>>, 6>
+    kProducibleSegments{{
+        {"32570-50000", {32570, 50000}},
+        {"50005-75891421", {50005, 75891421}},
+        {"0-1", {0, 1}},
+        {"5000", {5000, 5000}},
+        {"0", {0, 0}},
+        {"1-1", {1, 1}},
+    }};
+
+/**
+ * Segments no producer emits and the parser must refuse.
+ *
+ * `5-6 ` and `0x10` are the two that pin the consumed-everything check: they
+ * start with digits from_chars can read, so only the `ptr != end` test rejects
+ * them. from_chars refuses the other ten on its own. Keep those two.
+ */
+constexpr std::array<std::string_view, 12> kUnreadableSegments{
+    "",
+    "-",
+    "-5",
+    "5-",
+    "abc",
+    "5-a",
+    "a-5",
+    "5--6",
+    " 5-6",
+    "5-6 ",
+    "+5",
+    "0x10",
+};
+
+}  // namespace
+
+TEST(MetricsRegistryParseLedgerRange, dashed_segment_yields_both_bounds)
+{
+    // The ordinary shape. Both bounds must survive, because the gauge publishes
+    // them as separate `start` and `end` series and a dashboard subtracts them.
+    EXPECT_EQ(
+        Registry::parseLedgerRange("32570-50000"),
+        (std::pair<std::uint32_t, std::uint32_t>{32570, 50000}));
+    EXPECT_EQ(
+        Registry::parseLedgerRange("50005-75891421"),
+        (std::pair<std::uint32_t, std::uint32_t>{50005, 75891421}));
+}
+
+TEST(MetricsRegistryParseLedgerRange, single_ledger_segment_is_a_range_not_a_reject)
+{
+    // A node holding exactly one complete ledger renders as a bare number, so
+    // treating a dashless segment as malformed reports nothing at all for that
+    // node -- the reading an operator most needs while a node is catching up.
+    auto const one = Registry::parseLedgerRange("5000");
+    if (!one.has_value())
+        FAIL() << "a single-ledger segment must parse";
+    EXPECT_EQ(one->first, 5000u);
+    EXPECT_EQ(one->second, 5000u);
+
+    // Cause, not just state: acceptance is specific to an all-digit segment.
+    // These two prove the dashless branch is not simply accepting everything,
+    // so the test above would still fail if the guard were removed outright.
+    EXPECT_FALSE(Registry::parseLedgerRange("abc").has_value());
+    EXPECT_FALSE(Registry::parseLedgerRange("5-").has_value());
+}
+
+TEST(MetricsRegistryParseLedgerRange, every_producible_segment_parses_exactly)
+{
+    for (auto const& [segment, expected] : kProducibleSegments)
+    {
+        // Comparing the whole optional covers both "was it parsed" and "are the
+        // bounds right" in one exact assertion, and keeps the loop going so one
+        // bad row cannot hide the other five.
+        EXPECT_EQ(Registry::parseLedgerRange(segment), std::optional{expected})
+            << "segment: " << segment;
+    }
+}
+
+TEST(MetricsRegistryParseLedgerRange, unreadable_segments_are_refused)
+{
+    for (auto const segment : kUnreadableSegments)
+    {
+        EXPECT_FALSE(Registry::parseLedgerRange(segment).has_value())
+            << "accepted an unreadable segment: [" << segment << "]";
+    }
+}
+
+TEST(MetricsRegistryParseLedgerRange, bounds_are_exact_at_the_sequence_limits)
+{
+    // The width comes from the function's own return type, so widening the
+    // sequence cannot leave this asserting against a stale boundary.
+    using Seq = decltype(Registry::parseLedgerRange("0"))::value_type::first_type;
+    constexpr auto kMaxSeq = std::numeric_limits<Seq>::max();
+    auto const maxText = std::to_string(kMaxSeq);
+
+    auto const atLimit = Registry::parseLedgerRange(maxText);
+    if (!atLimit.has_value())
+        FAIL() << "rejected the largest representable sequence: " << maxText;
+    EXPECT_EQ(atLimit->first, kMaxSeq);
+    EXPECT_EQ(atLimit->second, kMaxSeq);
+
+    // One past the limit does not wrap to a small, believable sequence.
+    auto const pastLimit = std::to_string(static_cast<std::uint64_t>(kMaxSeq) + 1);
+    EXPECT_FALSE(Registry::parseLedgerRange(pastLimit).has_value())
+        << "overflowed instead of refusing: " << pastLimit;
+}
+
+TEST(MetricsRegistryParseLedgerRange, reads_back_what_the_real_producer_wrote)
+{
+    // Drives the actual producer rather than a restatement of its format, so a
+    // change to to_string() fails here instead of silently changing what the
+    // gauge reports. The middle interval is one ledger wide on purpose: that is
+    // the shape that renders without a dash.
+    xrpl::RangeSet<std::uint32_t> ledgers;
+    ledgers.insert(xrpl::range<std::uint32_t>(32570, 50000));
+    ledgers.insert(xrpl::range<std::uint32_t>(60000, 60000));
+    ledgers.insert(xrpl::range<std::uint32_t>(70000, 75891421));
+
+    auto const rendered = xrpl::to_string(ledgers);
+
+    std::vector<std::pair<std::uint32_t, std::uint32_t>> recovered;
+    std::string_view rest{rendered};
+    while (!rest.empty())
+    {
+        auto const comma = rest.find(',');
+        auto const segment = rest.substr(0, comma);
+
+        auto const parsed = Registry::parseLedgerRange(segment);
+        if (!parsed.has_value())
+        {
+            FAIL() << "producer emitted a segment the parser refuses: [" << segment << "] from "
+                   << rendered;
+        }
+        recovered.push_back(*parsed);
+
+        rest = (comma == std::string_view::npos) ? std::string_view{} : rest.substr(comma + 1);
+    }
+
+    std::vector<std::pair<std::uint32_t, std::uint32_t>> const expected{
+        {32570, 50000},
+        {60000, 60000},
+        {70000, 75891421},
+    };
+    EXPECT_EQ(recovered, expected) << "rendered as: " << rendered;
+
+    // Cause, not just state: every interval survived the round trip, so none
+    // was dropped and no later index shifted down to fill a gap.
+    EXPECT_EQ(recovered.size(), ledgers.iterative_size());
+}
+
+// ---------------------------------------------------------------------------
+// 4. The registry lifecycle.
+//
+// The core is compiled into xrpl.libxrpl, which this binary links in both
+// builds, so every test below runs in both. The headers here serve only this
+// group, and two of them name types that exist in one build only, so they sit
+// beside their uses rather than at the top of the file.
+// ---------------------------------------------------------------------------
+
 #include <xrpl/beast/utility/Journal.h>
-#include <xrpl/core/ServiceRegistry.h>
 
-#include <boost/asio/io_context.hpp>
-
-#include <stdexcept>
-#include <string>
-
-using namespace xrpl;
+#ifdef XRPL_ENABLE_TELEMETRY
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/protocol/Protocol.h>
+#include <xrpl/telemetry/ValidationTracker.h>
+#endif
 
 namespace {
 
 /**
- * OTLP/HTTP endpoint passed to every start() call below. Nothing ever dials
- * it -- these tests exercise the no-op path -- it just has to be a plausible
- * URL. start() takes `std::string const&`, so call sites construct one from
- * this view rather than repeating the literal.
+ * OTLP/HTTP endpoint every registry below is given.
+ *
+ * Port 1 has no listener, so the one export attempt a test can provoke gets an
+ * immediate connection refusal. The reader's interval is 10 s, so no periodic
+ * export fires inside a test; stop() is what exports, because Shutdown()
+ * performs a final collect-and-export drain. A routable-but-dead address would
+ * make every test that calls stop() wait out the 5 s export timeout.
  */
-constexpr std::string_view kTestEndpoint{"http://localhost:4318/v1/metrics"};
+constexpr std::string_view kTestEndpoint{"http://127.0.0.1:1/v1/metrics"};
 
 /**
- * Minimal mock ServiceRegistry for MetricsRegistry testing.
- *
- *  Only the getMetricsRegistry() call is used in the tests; other methods
- *  are not invoked because the registry is disabled (enabled=false) so no
- *  gauge callbacks execute.
- *
- *  All pure virtual methods throw to catch accidental calls during tests.
+ * Resource identity stamped on the test pipeline. Fixed values, so any
+ * difference a test sees between two registries comes from the objects and not
+ * from their config.
  */
-class MockServiceRegistry : public ServiceRegistry
+constexpr std::string_view kTestServiceName{"metrics-registry-test-service"};
+constexpr std::string_view kTestServiceVersion{"0.0.0-test"};
+constexpr std::string_view kTestInstanceId{"metrics-registry-test-instance"};
+constexpr std::string_view kTestNodeId{"metrics-registry-test-node"};
+
+/**
+ * Options for every registry below.
+ *
+ * A function rather than a namespace-scope constant: the fields are
+ * std::string, so a constant would need dynamic initialisation to run before
+ * the first test.
+ *
+ * Default-constructed and then assigned, the shape makeMetricsRegistryOptions()
+ * in Application.cpp uses to build this same struct. Default construction
+ * leaves no member indeterminate: every std::string is empty, networkId is 0
+ * and useTls is false. A designated-initializer list naming a subset would trip
+ * -Wmissing-designated-field-initializers, an error in this build, and would
+ * trip it again the next time a field is added to Options.
+ *
+ * networkId stays 0 and useTls false, so the three TLS paths stay empty: the
+ * exporter reads them only over TLS. No test asserts on a resource attribute,
+ * because nothing here reads exported points back.
+ */
+MetricsRegistry::Options
+testOptions()
 {
-    [[noreturn]] static void
-    throwUnimplemented()
-    {
-        throw std::logic_error("MockServiceRegistry: method not implemented");
-    }
-
-public:
-    // ServiceRegistry interface — stubs that should never be called.
-    CollectorManager&
-    getCollectorManager() override
-    {
-        throwUnimplemented();
-    }
-    Family&
-    getNodeFamily() override
-    {
-        throwUnimplemented();
-    }
-    TimeKeeper&
-    getTimeKeeper() override
-    {
-        throwUnimplemented();
-    }
-    JobQueue&
-    getJobQueue() override
-    {
-        throwUnimplemented();
-    }
-    NodeCache&
-    getTempNodeCache() override
-    {
-        throwUnimplemented();
-    }
-    CachedSLEs&
-    getCachedSLEs() override
-    {
-        throwUnimplemented();
-    }
-    NetworkIDService&
-    getNetworkIDService() override
-    {
-        throwUnimplemented();
-    }
-    AmendmentTable&
-    getAmendmentTable() override
-    {
-        throwUnimplemented();
-    }
-    HashRouter&
-    getHashRouter() override
-    {
-        throwUnimplemented();
-    }
-    LoadFeeTrack&
-    getFeeTrack() override
-    {
-        throwUnimplemented();
-    }
-    LoadManager&
-    getLoadManager() override
-    {
-        throwUnimplemented();
-    }
-    RCLValidations&
-    getValidations() override
-    {
-        throwUnimplemented();
-    }
-    ValidatorList&
-    getValidators() override
-    {
-        throwUnimplemented();
-    }
-    ValidatorSite&
-    getValidatorSites() override
-    {
-        throwUnimplemented();
-    }
-    ManifestCache&
-    getValidatorManifests() override
-    {
-        throwUnimplemented();
-    }
-    ManifestCache&
-    getPublisherManifests() override
-    {
-        throwUnimplemented();
-    }
-    Overlay&
-    getOverlay() override
-    {
-        throwUnimplemented();
-    }
-    Cluster&
-    getCluster() override
-    {
-        throwUnimplemented();
-    }
-    PeerReservationTable&
-    getPeerReservations() override
-    {
-        throwUnimplemented();
-    }
-    resource::Manager&
-    getResourceManager() override
-    {
-        throwUnimplemented();
-    }
-    node_store::Database&
-    getNodeStore() override
-    {
-        throwUnimplemented();
-    }
-    SHAMapStore&
-    getSHAMapStore() override
-    {
-        throwUnimplemented();
-    }
-    RelationalDatabase&
-    getRelationalDatabase() override
-    {
-        throwUnimplemented();
-    }
-    InboundLedgers&
-    getInboundLedgers() override
-    {
-        throwUnimplemented();
-    }
-    InboundTransactions&
-    getInboundTransactions() override
-    {
-        throwUnimplemented();
-    }
-    TaggedCache<uint256, AcceptedLedger>&
-    getAcceptedLedgerCache() override
-    {
-        throwUnimplemented();
-    }
-    LedgerMaster&
-    getLedgerMaster() override
-    {
-        throwUnimplemented();
-    }
-    LedgerCleaner&
-    getLedgerCleaner() override
-    {
-        throwUnimplemented();
-    }
-    LedgerReplayer&
-    getLedgerReplayer() override
-    {
-        throwUnimplemented();
-    }
-    PendingSaves&
-    getPendingSaves() override
-    {
-        throwUnimplemented();
-    }
-    // AcquireStats lives in src/xrpld/ and is only forward-declared here; a
-    // reference return to an incomplete type is fine because this throws.
-    AcquireStats&
-    getAcquireStats() override
-    {
-        throwUnimplemented();
-    }
-    [[nodiscard]] OpenLedger&
-    getOpenLedger() override
-    {
-        throwUnimplemented();
-    }
-    [[nodiscard]] OpenLedger const&
-    getOpenLedger() const override
-    {
-        throwUnimplemented();
-    }
-    NetworkOPs&
-    getOPs() override
-    {
-        throwUnimplemented();
-    }
-    OrderBookDB&
-    getOrderBookDB() override
-    {
-        throwUnimplemented();
-    }
-    TransactionMaster&
-    getMasterTransaction() override
-    {
-        throwUnimplemented();
-    }
-    TxQ&
-    getTxQ() override
-    {
-        throwUnimplemented();
-    }
-    PathRequestManager&
-    getPathRequestManager() override
-    {
-        throwUnimplemented();
-    }
-    ServerHandler&
-    getServerHandler() override
-    {
-        throwUnimplemented();
-    }
-    perf::PerfLog&
-    getPerfLog() override
-    {
-        throwUnimplemented();
-    }
-    telemetry::Telemetry&
-    getTelemetry() override
-    {
-        throwUnimplemented();
-    }
-    telemetry::MetricsRegistry*
-    getMetricsRegistry() override
-    {
-        return nullptr;
-    }
-    [[nodiscard]] bool
-    isStopping() const override
-    {
-        return false;
-    }
-    beast::Journal
-    getJournal(std::string const&) override
-    {
-        return beast::Journal(beast::Journal::getNullSink());
-    }
-    boost::asio::io_context&
-    getIOContext() override
-    {
-        throwUnimplemented();
-    }
-    Logs&
-    getLogs() override
-    {
-        throwUnimplemented();
-    }
-    [[nodiscard]] std::optional<uint256> const&
-    getTrapTxID() const override
-    {
-        static std::optional<uint256> const kEmpty;
-        return kEmpty;
-    }
-    DatabaseCon&
-    getWalletDB() override
-    {
-        throwUnimplemented();
-    }
-    Application&
-    getApp() override
-    {
-        throwUnimplemented();
-    }
-};
+    MetricsRegistry::Options options;
+    options.endpoint = std::string{kTestEndpoint};
+    options.serviceName = std::string{kTestServiceName};
+    options.serviceVersion = std::string{kTestServiceVersion};
+    options.serviceInstanceId = std::string{kTestInstanceId};
+    options.nodeId = std::string{kTestNodeId};
+    return options;
+}
 
 /**
- * Test fixture that provides a MockServiceRegistry and null Journal.
+ * Call every record and increment method on @p registry once.
+ *
+ * All thirteen are driven from one place, so a method added to the class
+ * without a line here reads as an uncovered method rather than as a passing
+ * test.
+ *
+ * @param registry  The registry to drive.
+ * @param tag       Folded into every attribute value, so one call's label sets
+ *                  are disjoint from another call's. A tag unused before
+ *                  stop() is what makes each set first-seen afterwards.
+ */
+void
+recordEverything(MetricsRegistry& registry, std::string const& tag)
+{
+    registry.recordRpcStarted("started_" + tag);
+    registry.recordRpcFinished("finished_" + tag, 1000);
+    registry.recordRpcErrored("errored_" + tag, 500);
+    registry.recordJobQueued("queued_" + tag, "ProcessLData");
+    registry.recordJobStarted("started_" + tag, "RcvGetLedger", 200);
+    registry.recordJobFinished("finished_" + tag, "RcvGetObjByHash", 3000);
+    registry.incrementLedgersClosed();
+    registry.incrementValidationsSent();
+    registry.incrementValidationsChecked();
+    registry.incrementStateChanges();
+    registry.incrementLedgerHistoryMismatch("mismatch_" + tag);
+    registry.incrementTxqExpired();
+    registry.incrementTxqDropped("dropped_" + tag);
+}
+
+/**
+ * Fixture for the lifecycle tests.
+ *
+ * Holds the journal only. Each test builds its own registry: the class is
+ * neither copyable nor movable, and each test needs its own enable flag or its
+ * own stop ordering.
  */
 class MetricsRegistryTest : public ::testing::Test
 {
 protected:
-    MockServiceRegistry mockApp_;
     beast::Journal j_{beast::Journal::getNullSink()};
 };
 
 }  // namespace
 
+// ---------------------------------------------------------------------------
+// The disabled path. enabled=false makes every method inert in both builds, so
+// every assertion here holds unguarded.
+// ---------------------------------------------------------------------------
+
 TEST_F(MetricsRegistryTest, disabled_construction)
 {
-    // Construct with enabled=false; should be a no-op.
-    telemetry::MetricsRegistry const registry(false, mockApp_, j_);
-    EXPECT_FALSE(registry.isEnabled());
-}
+    MetricsRegistry const registry(false, j_, testOptions());
 
-TEST_F(MetricsRegistryTest, disabled_start_stop)
-{
-    telemetry::MetricsRegistry registry(false, mockApp_, j_);
-
-    // start() and stop() should be no-ops when disabled.
-    registry.start(std::string{kTestEndpoint});
-    registry.stop();
-
-    // Double stop should be safe.
-    registry.stop();
-}
-
-// ---------------------------------------------------------------------------
-// The two-phase startup split: start() then startAsyncGauges().
-//
-// Why the split exists: start() reads only config strings, while the
-// observable-instrument callbacks registered by startAsyncGauges() read live
-// Application services (getOverlay() asserts overlay_ is non-null). The split
-// lets the meter go live before the first consensus round records its
-// mode-transition counter, while the callbacks still wait for the subsystems.
-//
-// SCOPE OF THESE TESTS -- read before adding to them. MetricsRegistry.cpp is
-// compiled into this binary ONLY when telemetry is OFF
-// (src/tests/libxrpl/CMakeLists.txt:117-126 -- the `else()` branch; when it is
-// ON the .cpp needs concrete xrpld types such as LedgerMaster, TxQ, NetworkOPs,
-// Overlay and node_store::Database, which a standalone GTest binary cannot
-// link). Both start() and startAsyncGauges() therefore compile here to their
-// `#else` branch, which only (void)-casts its arguments. So these tests pin the
-// API SURFACE -- that both entry points exist, are callable in either order,
-// and leave the object usable -- and NOT the gauge behaviour. Real coverage of
-// "gauges observe values only after startAsyncGauges()" is unreachable from
-// this target; it needs the enabled path plus an in-memory metric reader.
-//
-// Two properties the production code does NOT have, so nothing below asserts
-// them: startAsyncGauges() has no idempotency guard (a second call on the
-// enabled path would create a second set of same-named instruments), and
-// callbacksDetached_ is one-way, so detachCallbacks() followed by
-// startAsyncGauges() would register permanently-dead instruments.
-// ---------------------------------------------------------------------------
-
-TEST_F(MetricsRegistryTest, async_gauges_start_after_start_is_safe)
-{
-    telemetry::MetricsRegistry registry(false, mockApp_, j_);
-
-    // The documented order: provider/sync instruments first, gauges second.
-    registry.start(std::string{kTestEndpoint});
-    registry.startAsyncGauges();
-
-    // State: the enable flag is untouched by either phase. Exact value, not
-    // merely "falsy" -- a phase that flipped it would be a real defect.
     EXPECT_EQ(registry.isEnabled(), false);
 
-    // Synchronous recording must work off phase 1 alone. This is the whole
-    // point of the split: nothing here needs the gauges to be registered.
-    registry.recordRpcStarted("server_info");
-    registry.recordRpcFinished("server_info", 1000);
+    // Mutation: drop the `enabled_ &&` term from recording(). A disabled
+    // registry would report itself recordable, and every call site would walk
+    // into an instrument that was never created.
+    EXPECT_EQ(registry.recording(), false);
 
-    registry.stop();
-    EXPECT_EQ(registry.isEnabled(), false);
+    // Mutation: delete `if (!enabled_) return;` from the constructor. A node
+    // with telemetry off would open an OTLP exporter and start a reader
+    // thread. In a telemetry-off build the same value comes from the #else
+    // branch of hasPipeline().
+    EXPECT_EQ(registry.hasPipeline(), false);
 }
 
-TEST_F(MetricsRegistryTest, async_gauges_before_start_does_not_break_start)
+TEST_F(MetricsRegistryTest, disabled_construct_stop)
 {
-    telemetry::MetricsRegistry registry(false, mockApp_, j_);
-
-    // Negative path: the mis-ordered call, gauges before the provider exists.
-    // In THIS build it reaches the (void)-cast stub, so what is actually
-    // proven is only that the entry point tolerates being called first and
-    // leaves the object usable -- not that the enabled path's `if (!meter_)`
-    // guard works, since that guard is inside #ifdef XRPL_ENABLE_TELEMETRY and
-    // is not compiled here.
-    registry.startAsyncGauges();
-    EXPECT_EQ(registry.isEnabled(), false);
-
-    // Phase 1 still works afterwards, so the bad call left no state behind.
-    registry.start(std::string{kTestEndpoint});
-    registry.recordJobQueued("ledgerData", "ProcessLData");
-    EXPECT_EQ(registry.isEnabled(), false);
+    MetricsRegistry registry(false, j_, testOptions());
 
     registry.stop();
-}
+    registry.stop();
 
-TEST_F(MetricsRegistryTest, async_gauges_respect_the_compile_time_guard)
-{
-    // Constructed with enabled=true, which on the enabled path would register
-    // instruments for real. In this build XRPL_ENABLE_TELEMETRY is undefined,
-    // so both phases compile to the (void)-cast stub branch and neither
-    // touches the mock -- every MockServiceRegistry accessor throws, so a
-    // callback that actually ran would surface as a thrown exception here.
-    telemetry::MetricsRegistry registry(true, mockApp_, j_);
-
-    // Cause, not just state: the flag really is true, so the no-op below is
-    // attributable to the compile-time guard and not to an early enabled_
-    // return.
-    EXPECT_EQ(registry.isEnabled(), true);
-
-    EXPECT_NO_THROW(registry.start(std::string{kTestEndpoint}));
-    EXPECT_NO_THROW(registry.startAsyncGauges());
-    EXPECT_NO_THROW(registry.stop());
-
-    EXPECT_EQ(registry.isEnabled(), true);
+    // Mutation, telemetry-on build: delete `if (!provider_) return;` from
+    // stop(). provider_ is null on this path because the constructor returned
+    // before building it, so the first call would dereference an empty
+    // shared_ptr. With telemetry off stop() has no body to break, and the three
+    // values below are what that build pins.
+    EXPECT_EQ(registry.isEnabled(), false);
+    EXPECT_EQ(registry.recording(), false);
+    EXPECT_EQ(registry.hasPipeline(), false);
 }
 
 TEST_F(MetricsRegistryTest, disabled_recording_methods)
 {
-    telemetry::MetricsRegistry registry(false, mockApp_, j_);
-    registry.start(std::string{kTestEndpoint});
+    MetricsRegistry registry(false, j_, testOptions());
 
-    // All recording methods should be no-ops (not crash).
-    registry.recordRpcStarted("server_info");
-    registry.recordRpcFinished("server_info", 1000);
-    registry.recordRpcErrored("ledger", 500);
-    registry.recordJobQueued("ledgerData", "ProcessLData");
-    registry.recordJobStarted("ledgerData", "ProcessLData", 200);
-    registry.recordJobFinished("ledgerData", "ProcessLData", 3000);
+    // A crash canary rather than a guard with a single-line mutation: both the
+    // recording() test and the null-instrument test would have to go before a
+    // record method faulted here. It is the line a sanitizer build turns into
+    // real coverage.
+    EXPECT_NO_THROW(recordEverything(registry, "disabled"));
+
+    // State after the sweep. enabled_ is `bool const`, so no mutation can turn
+    // the first two lines red on this path; hasPipeline() is the one that can --
+    // a record path that assigned provider_ would fail it.
+    EXPECT_EQ(registry.isEnabled(), false);
+    EXPECT_EQ(registry.recording(), false);
+    EXPECT_EQ(registry.hasPipeline(), false);
 
     registry.stop();
+    EXPECT_EQ(registry.isEnabled(), false);
+    EXPECT_EQ(registry.recording(), false);
 }
 
-TEST_F(MetricsRegistryTest, destructor_calls_stop)
+// ---------------------------------------------------------------------------
+// The enabled path. In a telemetry-on build these drive a real OTLP exporter,
+// MeterProvider and set of instruments; in a telemetry-off build they drive the
+// stubs, where recording() is just the enable flag and no pipeline exists.
+// ---------------------------------------------------------------------------
+
+TEST_F(MetricsRegistryTest, enabled_registry_records_from_construction)
 {
-    {
-        // Let the destructor handle cleanup.
-        telemetry::MetricsRegistry registry(false, mockApp_, j_);
-        registry.start(std::string{kTestEndpoint});
-    }
-    // If we get here without crash, the destructor handled stop.
+    // The registry is usable the moment it exists, which is why Application
+    // can declare it ahead of every subsystem that records. Nothing stops it
+    // here either, so the scope exit also covers the enabled destructor path.
+    // const because every method this test calls is const.
+    MetricsRegistry const registry(true, j_, testOptions());
+
+    // Mutation: isEnabled() returning a literal false. The disabled test
+    // asserts the opposite value, so only the enabled tests catch this. Not
+    // "drop the enabled_(enabled) member init" -- enabled_ is `bool const` with
+    // no default, so a constructor omitting it does not compile.
+    EXPECT_EQ(registry.isEnabled(), true);
+
+    // Mutation: seed phase_ with Phase::Stopped instead of Phase::Ready.
+    // Nothing in the class ever stores Ready, so the node would stay silent
+    // for its whole run. Also catches recording() testing phase_ == Stopped.
+    EXPECT_EQ(registry.recording(), true);
+
+#ifdef XRPL_ENABLE_TELEMETRY
+    // Telemetry-on only, and the property this refactoring exists to test: the
+    // constructor builds the pipeline, so no later start() call has to.
+    // Mutation: delete the initExporterAndProvider(options) call from the
+    // constructor's try block.
+    EXPECT_EQ(registry.hasPipeline(), true);
+#else
+    // Telemetry-off: the pipeline compiles out, so hasPipeline() is a literal
+    // false. Mutation: return true from that #else branch, which would tell a
+    // caller it may register an observable that can never export.
+    EXPECT_EQ(registry.hasPipeline(), false);
+#endif
 }
 
-#endif  // !XRPL_ENABLE_TELEMETRY
+TEST_F(MetricsRegistryTest, every_record_method_runs_while_recording)
+{
+    MetricsRegistry registry(true, j_, testOptions());
+    ASSERT_EQ(registry.recording(), true);
+
+    // The one test that drives all thirteen real entry points against a real
+    // SDK provider. No point can be read back -- the core owns its provider and
+    // exposes no reader -- so the sweep is a crash canary and the assertions
+    // below are the deterministic part.
+    EXPECT_NO_THROW(recordEverything(registry, "live"));
+
+    // Mutation: a record method that stores Phase::Stopped or resets provider_
+    // as a side effect. Either would silence the node after its first metric.
+    EXPECT_EQ(registry.isEnabled(), true);
+    EXPECT_EQ(registry.recording(), true);
+#ifdef XRPL_ENABLE_TELEMETRY
+    EXPECT_EQ(registry.hasPipeline(), true);
+#endif
+}
+
+TEST_F(MetricsRegistryTest, stop_closes_the_gate_and_leaves_enabled_true)
+{
+    MetricsRegistry registry(true, j_, testOptions());
+
+    // Setup: the gate really is open, so a false reading below is attributable
+    // to stop() and not to construction.
+    ASSERT_EQ(registry.recording(), true);
+
+    registry.stop();
+
+    // isEnabled() reports what config asked for; recording() reports whether a
+    // record call is safe. The value of this line is the PAIR it forms with the
+    // recording() assertion below -- true beside false -- which is what shows
+    // the gate is a phase and not the enable flag.
+    //
+    // Named honestly, because no single-line change makes this line fail in
+    // BOTH builds. enabled_ is `bool const`, so clearing it in stop() does not
+    // compile -- the type already forbids the defect. Rewriting isEnabled() as
+    // recording() is red only where stop() can move the phase, which is the
+    // telemetry-on build.
+    EXPECT_EQ(registry.isEnabled(), true);
+
+#ifdef XRPL_ENABLE_TELEMETRY
+    // Mutation: delete the phase_.store(Phase::Stopped, release) line from
+    // stop(). Every XRPL_METRIC_* call site reads recording() before it
+    // touches an instrument, so that one store is the whole gate.
+    EXPECT_EQ(registry.recording(), false);
+
+    // A separate observation from the gate, because a separate line does it:
+    // one stores the phase, another drops the provider. Mutation: delete
+    // provider_.reset() from stop().
+    EXPECT_EQ(registry.hasPipeline(), false);
+#else
+    // Telemetry-off: stop()'s body is entirely inside the guard, so it cannot
+    // move phase_, and recording() is the enable flag here. Pinned so that an
+    // #else branch which started gating shows up as a change.
+    EXPECT_EQ(registry.recording(), true);
+#endif
+}
+
+TEST_F(MetricsRegistryTest, records_after_stop_are_inert)
+{
+    MetricsRegistry registry(true, j_, testOptions());
+
+    // Label sets that already have SDK storage by the time stop() runs.
+    recordEverything(registry, "before_stop");
+
+    registry.stop();
+
+#ifdef XRPL_ENABLE_TELEMETRY
+    ASSERT_EQ(registry.recording(), false);
+#endif
+
+    // The same thirteen methods with a tag never used before stop(), so every
+    // attribute set here is first-seen -- including four histogram records
+    // across three instruments, which is the case that allocates through the
+    // AggregationConfig the destroyed View owned.
+    //
+    // Mutation: delete the `!recording()` test from any record method. That is
+    // the regression this file exists for, and it is reliably red only under a
+    // sanitizer: with none, a read of freed memory can still return and pass.
+    EXPECT_NO_THROW(recordEverything(registry, "after_stop"));
+
+    // Deterministic part: no record path reopens the gate or rebuilds the
+    // pipeline.
+    EXPECT_EQ(registry.isEnabled(), true);
+#ifdef XRPL_ENABLE_TELEMETRY
+    EXPECT_EQ(registry.recording(), false);
+    EXPECT_EQ(registry.hasPipeline(), false);
+#endif
+}
+
+TEST_F(MetricsRegistryTest, stop_twice_is_safe)
+{
+    MetricsRegistry registry(true, j_, testOptions());
+
+    registry.stop();
+
+    // run() and the Application destructor both call stop(), so a second call
+    // is the ordinary shutdown path. Mutation: delete `if (!provider_) return;`
+    // from stop(). provider_ is null by now, so this call would dereference an
+    // empty shared_ptr on every clean shutdown. The registry's own destructor
+    // then makes a third call.
+    EXPECT_NO_THROW(registry.stop());
+
+    EXPECT_EQ(registry.isEnabled(), true);
+#ifdef XRPL_ENABLE_TELEMETRY
+    EXPECT_EQ(registry.recording(), false);
+    EXPECT_EQ(registry.hasPipeline(), false);
+#endif
+}
+
+#ifdef XRPL_ENABLE_TELEMETRY
+
+// ---------------------------------------------------------------------------
+// getValidationTracker() is declared in a telemetry-on build only, because only
+// the observable-gauge callbacks drain the tracker. Two production call sites
+// reach it this way, so the accessor has to hand back the live member.
+// ---------------------------------------------------------------------------
+
+TEST_F(MetricsRegistryTest, validation_tracker_is_owned_per_registry)
+{
+    MetricsRegistry first(true, j_, testOptions());
+    MetricsRegistry second(true, j_, testOptions());
+
+    // Setup: both trackers start empty, so a count below is attributable to
+    // the record call and not to fixture state.
+    ASSERT_EQ(first.getValidationTracker().totalValidationsSent(), 0u);
+    ASSERT_EQ(second.getValidationTracker().totalValidationsSent(), 0u);
+
+    first.getValidationTracker().recordOurValidation(
+        xrpl::uint256{std::uint64_t{7}}, xrpl::LedgerIndex{7});
+
+    // Exact counts on both sides: the reference is live, so the write lands,
+    // and it lands on one registry only.
+    //
+    // Mutation: return a reference to a function-local static from
+    // getValidationTracker(). One shared tracker would put this count on
+    // `second` as well, so two registries in one process would report one
+    // merged agreement figure.
+    EXPECT_EQ(first.getValidationTracker().totalValidationsSent(), 1u);
+    EXPECT_EQ(second.getValidationTracker().totalValidationsSent(), 0u);
+}
+
+#endif  // XRPL_ENABLE_TELEMETRY

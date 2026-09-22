@@ -38,9 +38,14 @@ receivers:
         endpoint: 0.0.0.0:4317
       http:
         endpoint: 0.0.0.0:4318
-  filelog:
+  file_log:
     include:
       - /var/log/xrpld/*/debug.log
+    # Needed to recover which node a line came from. The subdirectory name is
+    # the only per-node signal in the log stream: Logs::format() writes
+    # trace_id and span_id but no node identity. Emitters name the directory
+    # after their own service_instance_id so the two agree.
+    include_file_path: true
     operators:
       - type: regex_parser
         regex: '^(?P<timestamp>\S+\s+\S+)\s+\S+\s+(?:(?P<partition>\S+):)?(?P<severity>\S+)\s+(?:trace_id=(?P<trace_id>[a-f0-9]+)\s+span_id=(?P<span_id>[a-f0-9]+)\s+)?(?P<message>.*)$'
@@ -48,15 +53,38 @@ receivers:
           parse_from: attributes.timestamp
           layout: "%Y-%b-%d %H:%M:%S.%f"
           location: UTC
+      # Lift the per-node directory out of the file path and onto the
+      # RESOURCE. include_file_path alone is not enough: it produces a log
+      # RECORD attribute, and on OTLP ingest Loki promotes only an allow-list
+      # of RESOURCE attributes to indexed stream labels. A record attribute
+      # becomes structured metadata, which cannot be used in a {...} selector.
+      # service.instance.id is on that allow-list and arrives as the LogQL
+      # label service_instance_id, which is the label the dashboards filter on.
+      # Dotted keys need bracket syntax; dot notation would be read as a
+      # nested traversal and match nothing.
+      - type: regex_parser
+        parse_from: attributes["log.file.path"]
+        parse_to: attributes
+        regex: "^/var/log/xrpld/(?P<node_dir>[^/]+)/"
+      - type: move
+        from: attributes.node_dir
+        to: resource["service.instance.id"]
+      # Drop the raw path once the node name is on the resource. Keeping it
+      # would add a structured-metadata field to every line for no benefit.
+      - type: remove
+        field: attributes["log.file.path"]
 
 processors:
   batch:
     timeout: 1s
     send_batch_size: 100
-  # Box-only (uncommitted): probabilistic 0.5% tail sampling on the
-  # trace-storage branch only. spanmetrics-derived metrics see 100% of spans
-  # (they run on a separate branch) so RED remain exact; Tempo/Cloud stores
-  # ~1/200 of traces to keep long-running node cost bounded.
+  # Probabilistic tail sampling, on the trace-storage branch only. The
+  # spanmetrics branch sees every span, so span-derived RED metrics stay
+  # exact while stored trace volume is cut to bound cost on a long-running
+  # node. Operators who need full traces raise sampling_percentage to 100.
+  # Note: a log line carries a trace id only when its span was sampled at
+  # the SDK, so sampling here drops traces whose ids are already in the
+  # logs, and log-to-trace links for those resolve to nothing.
   tail_sampling:
     decision_wait: 10s
     num_traces: 50000
@@ -152,16 +180,15 @@ connectors:
       unit: ms
       explicit:
         # Buckets MUST stay strictly ascending (the connector binary-searches
-        # them and silently misbuckets otherwise). Sub-MILLISECOND boundaries
-        # (0.01-0.5ms) exist because most xrpld spans are far below 1ms --
-        # tx.preflight means ~0.012ms, tx.preclaim ~0.15ms -- so a 1ms floor
-        # put >99.99% of samples in the first bucket and pinned every p95/p99
-        # at a constant 0.95ms. Sub-second boundaries cover
-        # RPC/tx/ledger spans; the 2s-4s boundaries resolve second-scale
-        # consensus spans (consensus.round ~3.9s, consensus.establish ~1.9s)
-        # that used to pile into a single 1s-5s bucket; 10s/30s give the
-        # ledger.acquire tail (~17% exceeds 5s during catch-up) a measurable
-        # home so its p95/p99 stop reading as +Inf.
+        # them and silently misbuckets otherwise) and MUST match the Alloy
+        # list and the other collector config. Sub-millisecond boundaries
+        # exist because most xrpld spans sit far below 1ms: a 1ms floor puts
+        # nearly every sample in the first bucket and pins p95/p99 to that
+        # bucket's edge. Sub-second boundaries cover RPC, tx and ledger spans.
+        # The 2s-4s edges resolve second-scale consensus spans, and 10s/30s
+        # give the ledger.acquire catch-up tail a home so its p95/p99 stop
+        # reading as +Inf. Each edge was chosen from a measured duration
+        # distribution for the spans it covers.
         buckets:
           [
             0.01ms,
@@ -189,16 +216,15 @@ connectors:
       - name: command
       - name: rpc_status
       - name: consensus_mode
-      # Only the boolean close_time_correct is promoted, never the close_time
-      # value itself: close_time is a monotonic NetClock timestamp, so a
-      # dimension on it would mint a new metric series every ledger (unbounded
-      # cardinality). The close-time value is exposed as the server_info
-      # last_close_time gauge instead (for last-close age); the close interval
-      # comes from the ledgers_closed_total counter.
+      # Only the boolean close_time_correct is promoted, never the
+      # close_time_ripple_epoch_s value itself: that attribute is a monotonic
+      # NetClock timestamp, so a dimension on it would mint a new metric series
+      # every ledger (unbounded cardinality). The close-time value is exposed as
+      # the server_info last_close_time gauge instead (for last-close age); the
+      # close interval comes from the ledgers_closed_total counter.
       - name: close_time_correct
       - name: consensus_state
       - name: local
-      - name: suppressed
       - name: proposal_trusted
       - name: validation_trusted
       - name: tx_type
@@ -222,7 +248,7 @@ exporters:
     endpoint: tempo:4317
     tls:
       insecure: true
-  otlphttp/loki:
+  otlp_http/loki:
     endpoint: http://loki:3100/otlp
   prometheus:
     endpoint: 0.0.0.0:8889
@@ -235,7 +261,7 @@ exporters:
   # Single OTLP/HTTP exporter to Grafana Cloud. The gateway fans the three
   # signals out to hosted Tempo (traces), Mimir/Prometheus (metrics), and
   # Loki (logs). Retry + queue guard against transient gateway errors.
-  otlphttp/grafanacloud:
+  otlp_http/grafanacloud:
     endpoint: ${env:GRAFANA_CLOUD_OTLP_ENDPOINT}
     auth:
       authenticator: basicauth/grafanacloud
@@ -248,7 +274,7 @@ service:
   extensions: [health_check, basicauth/grafanacloud]
   pipelines:
     # Each pipeline keeps its local exporter(s) AND adds Grafana Cloud.
-    # For cloud-only, drop debug/otlp/tempo, prometheus, and otlphttp/loki
+    # For cloud-only, drop debug/otlp/tempo, prometheus, and otlp_http/loki
     # from the respective exporter lists.
     # 100% of spans feed the spanmetrics connector so span-derived RED
     # metrics stay exact. No tail sampling on this branch.
@@ -261,7 +287,7 @@ service:
     traces/store:
       receivers: [otlp]
       processors: [tail_sampling, resource/tier, resource/stripsdk, batch]
-      exporters: [otlp/tempo, otlphttp/grafanacloud]
+      exporters: [otlp/tempo, otlp_http/grafanacloud]
     # The local Prometheus scrape promotes tier/instance resource attrs to
     # labels via resource_to_telemetry_conversion; Grafana Cloud (OTLP) does
     # not, so it runs a separate pipeline that copies them onto datapoint
@@ -275,8 +301,8 @@ service:
       receivers: [otlp, spanmetrics]
       processors:
         [resource/tier, resource/stripsdk, transform/cloudlabels, batch]
-      exporters: [otlphttp/grafanacloud]
+      exporters: [otlp_http/grafanacloud]
     logs:
-      receivers: [filelog]
+      receivers: [file_log]
       processors: [resource/logs, resource/tier, resource/stripsdk, batch]
-      exporters: [otlphttp/loki, otlphttp/grafanacloud]
+      exporters: [otlp_http/loki, otlp_http/grafanacloud]

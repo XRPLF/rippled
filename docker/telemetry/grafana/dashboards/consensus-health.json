@@ -84,7 +84,8 @@
       "fieldConfig": {
         "defaults": {
           "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
-          "unit": "suffix: validations/s"
+          "unit": "si: validations/s",
+          "decimals": 0
         },
         "overrides": []
       },
@@ -104,6 +105,10 @@
         "y": 10
       },
       "options": {
+        "annotations": {
+          "clustering": -1,
+          "multiLane": true
+        },
         "tooltip": {
           "maxHeight": 600,
           "mode": "multi",
@@ -122,7 +127,8 @@
       "fieldConfig": {
         "defaults": {
           "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
-          "unit": "suffix: closes/s",
+          "unit": "si: closes/s",
+          "decimals": 0,
           "custom": {
             "axisLabel": "Closes / Sec",
             "spanNulls": 1800000,
@@ -162,6 +168,10 @@
         "y": 21
       },
       "options": {
+        "annotations": {
+          "clustering": -1,
+          "multiLane": true
+        },
         "tooltip": {
           "maxHeight": 600,
           "mode": "multi",
@@ -174,13 +184,14 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "label_replace(label_join(label_replace(sum by (service_instance_id, xrpl_branch, xrpl_node_role, xrpl_work_item) (rate(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", span_name=\"consensus.proposal.send\"}[$__rate_interval])), \"series\", \"Proposals / Sec\", \"\", \"\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(?:, )*(.*[^, ])(?:, )*\")"
+          "expr": "label_replace(label_join(sum by (service_instance_id, xrpl_branch, xrpl_node_role, xrpl_work_item) (rate(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", span_name=\"consensus.proposal.send\"}[$__rate_interval])), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(?:, )*(.*[^, ])(?:, )*\")"
         }
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
-          "unit": "suffix: proposals/s",
+          "displayName": "${__field.labels.xrpl_ident}",
+          "unit": "si: proposals/s",
+          "decimals": 0,
           "custom": {
             "axisLabel": "Proposals / Sec",
             "spanNulls": 1800000,
@@ -207,6 +218,10 @@
         "y": 21
       },
       "options": {
+        "annotations": {
+          "clustering": -1,
+          "multiLane": true
+        },
         "tooltip": {
           "maxHeight": 600,
           "mode": "multi",
@@ -232,7 +247,8 @@
       "fieldConfig": {
         "defaults": {
           "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
-          "unit": "suffix: events/s",
+          "unit": "si: events/s",
+          "decimals": 0,
           "custom": {
             "axisLabel": "Events / Sec",
             "spanNulls": 1800000,
@@ -259,6 +275,10 @@
         "y": 31
       },
       "options": {
+        "annotations": {
+          "clustering": -1,
+          "multiLane": true
+        },
         "tooltip": {
           "maxHeight": 600,
           "mode": "multi",
@@ -284,7 +304,8 @@
       "fieldConfig": {
         "defaults": {
           "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
-          "unit": "suffix: events/s",
+          "unit": "si: events/s",
+          "decimals": 0,
           "custom": {
             "axisLabel": "Events / Sec",
             "spanNulls": 1800000,
@@ -311,6 +332,10 @@
         "y": 31
       },
       "options": {
+        "annotations": {
+          "clustering": -1,
+          "multiLane": true
+        },
         "tooltip": {
           "mode": "multi",
           "sort": "desc",
@@ -369,6 +394,10 @@
       },
 
       "options": {
+        "annotations": {
+          "clustering": -1,
+          "multiLane": true
+        },
         "tooltip": {
           "mode": "multi",
           "sort": "desc",
@@ -429,6 +458,10 @@
         "y": 52
       },
       "options": {
+        "annotations": {
+          "clustering": -1,
+          "multiLane": true
+        },
         "tooltip": {
           "mode": "multi",
           "sort": "desc",
@@ -482,6 +515,10 @@
         "y": 62
       },
       "options": {
+        "annotations": {
+          "clustering": -1,
+          "multiLane": true
+        },
         "tooltip": {
           "mode": "multi",
           "sort": "desc",
@@ -553,6 +590,7 @@
         "overrides": []
       },
       "options": {
+        "namePlacement": "auto",
         "orientation": "horizontal",
         "displayMode": "gradient",
         "showUnfilled": true,
@@ -628,6 +666,7 @@
         "overrides": []
       },
       "options": {
+        "namePlacement": "auto",
         "orientation": "horizontal",
         "displayMode": "gradient",
         "showUnfilled": true,
@@ -669,6 +708,10 @@
         "y": 93
       },
       "options": {
+        "annotations": {
+          "clustering": -1,
+          "multiLane": true
+        },
         "tooltip": {
           "maxHeight": 600,
           "mode": "multi",
@@ -714,6 +757,10 @@
         "y": 93
       },
       "options": {
+        "annotations": {
+          "clustering": -1,
+          "multiLane": true
+        },
         "tooltip": {
           "maxHeight": 600,
           "mode": "multi",
@@ -786,6 +833,10 @@
       },
       "id": 17,
       "options": {
+        "annotations": {
+          "clustering": -1,
+          "multiLane": true
+        },
         "tooltip": {
           "mode": "multi",
           "sort": "desc",
@@ -864,7 +915,8 @@
       "fieldConfig": {
         "defaults": {
           "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
-          "unit": "suffix: rounds/s",
+          "unit": "si: rounds/s",
+          "decimals": 0,
           "custom": {
             "axisLabel": "Rounds / Sec",
             "spanNulls": 1800000,
@@ -881,6 +933,10 @@
       },
       "id": 19,
       "options": {
+        "annotations": {
+          "clustering": -1,
+          "multiLane": true
+        },
         "tooltip": {
           "mode": "multi",
           "sort": "desc",
@@ -949,6 +1005,10 @@
         ]
       },
       "options": {
+        "annotations": {
+          "clustering": -1,
+          "multiLane": true
+        },
         "tooltip": {
           "mode": "multi",
           "sort": "desc",
@@ -1047,6 +1107,10 @@
         "y": 134
       },
       "options": {
+        "annotations": {
+          "clustering": -1,
+          "multiLane": true
+        },
         "tooltip": {
           "maxHeight": 600,
           "mode": "multi",
@@ -1072,7 +1136,8 @@
       "fieldConfig": {
         "defaults": {
           "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
-          "unit": "suffix: failures/s",
+          "unit": "si: failures/s",
+          "decimals": 0,
           "custom": {
             "axisLabel": "Failures / Sec",
             "spanNulls": 1800000,
@@ -1099,6 +1164,10 @@
         "y": 134
       },
       "options": {
+        "annotations": {
+          "clustering": -1,
+          "multiLane": true
+        },
         "tooltip": {
           "maxHeight": 600,
           "mode": "multi",
@@ -1124,7 +1193,8 @@
       "fieldConfig": {
         "defaults": {
           "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
-          "unit": "suffix: checks/s",
+          "unit": "si: checks/s",
+          "decimals": 0,
           "custom": {
             "axisLabel": "Checks / Sec",
             "spanNulls": 1800000,
@@ -1151,6 +1221,10 @@
         "y": 144
       },
       "options": {
+        "annotations": {
+          "clustering": -1,
+          "multiLane": true
+        },
         "tooltip": {
           "maxHeight": 600,
           "mode": "multi",
@@ -1169,7 +1243,8 @@
       "fieldConfig": {
         "defaults": {
           "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
-          "unit": "suffix: changes/s",
+          "unit": "si: changes/s",
+          "decimals": 0,
           "custom": {
             "axisLabel": "Changes / Sec",
             "spanNulls": 1800000,
@@ -1187,7 +1262,7 @@
     },
     {
       "title": "Ledger History Mismatch Rate by Reason",
-      "description": "###### What this is:\n*Rate of built-versus-validated ledger mismatches, broken down by why they diverged.*\n\n###### How it's computed:\n*Per-second rate of mismatch events grouped by reason, per node, over a 5-minute window.*\n\n###### Reading it:\n*Flat at zero is healthy; the reason label tells you the nature of any divergence.*\n\n###### Healthy range:\n*Zero under normal operation.*\n\n###### Watch for:\n*Any sustained rate marks a fork; the reason distinguishes close-time disagreement, sync drift, and transaction-processing differences.*\n\n###### Keywords:\n- **Ledger history mismatch** *(per node)* \u2014 when a locally built ledger's hash does not match the network-validated hash.\n- **Fork** *(network-wide)* \u2014 when nodes validate divergent ledger chains instead of a single agreed history.\n- **Close time** *(network event)* \u2014 the timestamp validators agree to stamp on a ledger, rounded to a shared resolution.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Computed in xrpld code (MetricsRegistry, OpenTelemetry SDK) and exported as a metric; the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[MetricsRegistry.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/telemetry/MetricsRegistry.cpp)\n\n###### Function:\n`incrementLedgerHistoryMismatch`\n\n###### References:\n[Fork](https://xrpl.org/docs/concepts/consensus-protocol) \u00b7 [Close time](https://xrpl.org/docs/concepts/ledgers/ledger-close-times) \u00b7 [Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#ledger-history-mismatch)",
+      "description": "###### What this is:\n*Rate of built-versus-validated ledger mismatches, broken down by why they diverged.*\n\n###### How it's computed:\n*Per-second rate of mismatch events grouped by reason, per node, over a 5-minute window.*\n\n###### Reading it:\n*Flat at zero is healthy; the reason label tells you the nature of any divergence.*\n\n###### Healthy range:\n*Zero under normal operation.*\n\n###### Watch for:\n*Any sustained rate marks a fork; the reason distinguishes close-time disagreement, sync drift, and transaction-processing differences.*\n\n###### Keywords:\n- **Ledger history mismatch** *(per node)* \u2014 when a locally built ledger's hash does not match the network-validated hash.\n- **Fork** *(network-wide)* \u2014 when nodes validate divergent ledger chains instead of a single agreed history.\n- **Close time** *(network event)* \u2014 the timestamp validators agree to stamp on a ledger, rounded to a shared resolution.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Computed in xrpld code (MetricsRegistry, OpenTelemetry SDK) and exported as a metric; the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[MetricsRegistry.cpp](https://github.com/XRPLF/rippled/blob/develop/src/libxrpl/telemetry/MetricsRegistry.cpp)\n\n###### Function:\n`incrementLedgerHistoryMismatch`\n\n###### References:\n[Fork](https://xrpl.org/docs/concepts/consensus-protocol) \u00b7 [Close time](https://xrpl.org/docs/concepts/ledgers/ledger-close-times) \u00b7 [Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#ledger-history-mismatch)",
       "type": "timeseries",
       "gridPos": {
         "h": 10,
@@ -1196,6 +1271,10 @@
         "y": 144
       },
       "options": {
+        "annotations": {
+          "clustering": -1,
+          "multiLane": true
+        },
         "tooltip": {
           "maxHeight": 600,
           "mode": "multi",
@@ -1214,7 +1293,8 @@
       "fieldConfig": {
         "defaults": {
           "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
-          "unit": "suffix: mismatches/s",
+          "unit": "si: mismatches/s",
+          "decimals": 0,
           "custom": {
             "axisLabel": "Mismatches / Sec",
             "spanNulls": 1800000,

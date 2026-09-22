@@ -18,8 +18,6 @@
 #include <xrpld/app/misc/ValidatorList.h>
 #include <xrpld/overlay/Overlay.h>
 #include <xrpld/overlay/predicates.h>
-#include <xrpld/telemetry/MetricMacros.h>
-#include <xrpld/telemetry/MetricsRegistry.h>
 #include <xrpld/telemetry/PropagationHelpers.h>
 
 #include <xrpl/basics/Log.h>
@@ -66,6 +64,8 @@
 #include <xrpl/shamap/SHAMapItem.h>
 #include <xrpl/shamap/SHAMapMissingNode.h>
 #include <xrpl/shamap/SHAMapTreeNode.h>
+#include <xrpl/telemetry/MetricMacros.h>
+#include <xrpl/telemetry/MetricsRegistry.h>
 #include <xrpl/telemetry/SpanGuard.h>
 
 #include <boost/smart_ptr/intrusive_ptr.hpp>
@@ -637,7 +637,8 @@ RCLConsensus::Adaptor::doAccept(
         : telemetry::SpanGuard::childSpan(cs::acceptApply, roundSpanContext_);
     doAcceptSpan.setAttribute(cs::attr::ledgerSeq, static_cast<int64_t>(prevLedger.seq()) + 1);
     doAcceptSpan.setAttribute(
-        cs::attr::closeTime, static_cast<int64_t>(consensusCloseTime.time_since_epoch().count()));
+        cs::attr::closeTimeRippleEpochS,
+        static_cast<int64_t>(consensusCloseTime.time_since_epoch().count()));
     doAcceptSpan.setAttribute(cs::attr::closeTimeCorrect, closeTimeCorrect);
     doAcceptSpan.setAttribute(
         cs::attr::closeResolutionMs,
@@ -650,10 +651,10 @@ RCLConsensus::Adaptor::doAccept(
     doAcceptSpan.setAttribute(
         cs::attr::roundTimeMs, static_cast<int64_t>(result.roundTime.read().count()));
     doAcceptSpan.setAttribute(
-        cs::attr::parentCloseTime,
+        cs::attr::parentCloseTimeRippleEpochS,
         static_cast<int64_t>(prevLedger.closeTime().time_since_epoch().count()));
     doAcceptSpan.setAttribute(
-        cs::attr::closeTimeSelf,
+        cs::attr::closeTimeSelfRippleEpochS,
         static_cast<int64_t>(rawCloseTimes.self.time_since_epoch().count()));
     doAcceptSpan.setAttribute(
         cs::attr::closeTimeVoteBins, static_cast<int64_t>(rawCloseTimes.peers.size()));
@@ -696,6 +697,11 @@ RCLConsensus::Adaptor::doAccept(
 
     JLOG(j_.debug()) << "Building canonical tx set: " << retriableTxs.key();
 
+    // One tx.included event per transaction of the agreed consensus set, which
+    // is not yet the accepted ledger: buildLCL() below applies these and some
+    // may fail, so the events are a superset of what the ledger ends up with. A
+    // transaction whose bytes cannot be parsed gets no event at all.
+    //
     // txCount and the per-transaction event feed the span and nothing else, so
     // both are guarded on the span being active. Unguarded, every accepted
     // ledger builds one 64-character hash string per transaction that no one
@@ -1167,6 +1173,14 @@ RCLConsensus::Adaptor::onModeChange(ConsensusMode before, ConsensusMode after)
         censorshipDetector_.reset();
 
     mode_ = after;
+
+    // consensus.round is created before the engine applies the mode, so this is
+    // the first point where the round's mode is known. Every mode transition,
+    // including the one at round start, reaches here.
+    if (roundSpan_ && *roundSpan_)
+    {
+        roundSpan_->setAttribute(cs::attr::mode, toDisplayString(after).c_str());
+    }
 }
 
 json::Value
@@ -1352,19 +1366,19 @@ RCLConsensus::Adaptor::startRoundTracing(RCLCxLedger const& prevLgr)
     if (roundSpan_)
         roundSpan_.reset();
 
-    auto const& strategy = app_.getTelemetry().getConsensusTraceStrategy();
+    auto const strategy = app_.getTelemetry().getConsensusTraceStrategy();
 
     telemetry::SpanContext const* const link =
         prevRoundSpanContext_.isValid() ? &prevRoundSpanContext_ : nullptr;
 
-    if (strategy == "attribute")
+    if (strategy == telemetry::ConsensusTraceStrategy::Random)
     {
-        // Non-deterministic strategy: each node gets a random trace_id,
-        // correlated via the consensus_ledger_id attribute rather than a
-        // shared trace_id. Still attach a follows-from link to the prior
-        // round so consecutive rounds stay navigable. linkedSpan is not
-        // TraceCategory-aware, so gate it explicitly to match the gating
-        // of the hashSpan/span factories used below.
+        // Experimental strategy, not used on a live network: each node gets a
+        // random trace_id, so one round arrives as one trace per node, joinable
+        // only by the consensus_ledger_id attribute. Still attach a follows-from
+        // link to the prior round so consecutive rounds stay navigable.
+        // linkedSpan is not TraceCategory-aware, so gate it explicitly to match
+        // the gating of the hashSpan/span factories used below.
         if (link != nullptr && app_.getTelemetry().shouldTraceConsensus())
         {
             roundSpan_.emplace(telemetry::SpanGuard::linkedSpan(cs::round, *link));
@@ -1378,7 +1392,7 @@ RCLConsensus::Adaptor::startRoundTracing(RCLCxLedger const& prevLgr)
     }
     else
     {
-        // "deterministic" (the default): derive the trace_id from the previous
+        // Deterministic (the default): derive the trace_id from the previous
         // ledger hash so all validators tracing the same round share one trace.
         roundSpan_.emplace(
             telemetry::SpanGuard::hashSpan(
@@ -1396,14 +1410,17 @@ RCLConsensus::Adaptor::startRoundTracing(RCLCxLedger const& prevLgr)
 
     roundSpan_->setAttribute(cs::attr::ledgerId, to_string(prevLgr.id()).c_str());
     roundSpan_->setAttribute(cs::attr::ledgerSeq, static_cast<int64_t>(prevLgr.seq()) + 1);
-    roundSpan_->setAttribute(cs::attr::mode, toDisplayString(mode_.load()).c_str());
-    roundSpan_->setAttribute(cs::attr::traceStrategy, strategy.c_str());
+    roundSpan_->setAttribute(cs::attr::traceStrategy, telemetry::strategyName(strategy));
     roundSpan_->setAttribute(cs::attr::roundId, static_cast<int64_t>(prevLgr.seq()) + 1);
     roundSpan_->setAttribute(cs::attr::previousLedgerSeq, static_cast<int64_t>(prevLgr.seq()));
     roundSpan_->setAttribute(cs::attr::previousProposers, static_cast<int64_t>(prevProposers_));
     roundSpan_->setAttribute(
         cs::attr::previousRoundTimeMs, static_cast<int64_t>(prevRoundTime_.load().count()));
     roundSpan_->setAttribute(cs::attr::consensusPhase, cs::val::phaseOpen);
+
+    // consensus_mode is stamped by onModeChange, which the engine calls just
+    // after this with the mode it is applying. Setting it here would record the
+    // previous round's mode.
 
     roundSpan_->addEvent(cs::event::phaseOpen);
 

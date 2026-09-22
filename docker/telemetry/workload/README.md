@@ -32,7 +32,7 @@ run-full-validation.sh (shell orchestrator)
   |
   |-- docker-compose.workload.yaml
   |     |-- otel-collector (otlp receiver: traces + beast::insight metrics;
-  |     |                  filelog receiver: node debug.log -> Loki)
+  |     |                  file_log receiver: node debug.log -> Loki)
   |     |-- tempo (trace backend + TraceQL search API)
   |     |-- prometheus (metrics scraping)
   |     |-- loki (log aggregation for log-trace correlation)
@@ -213,9 +213,9 @@ python3 tx_submitter.py --endpoint ws://localhost:6006 \
 
 Automated validation that all expected telemetry data exists. Every metric in `expected_metrics.json` is required — if it doesn't fire, the validation fails. Spans are required unless the entry carries `"optional": true`.
 
-- **Span validation**: All span types from `expected_spans.json` with required attributes and parent-child hierarchies. Entries marked `"optional": true` only fire under traffic the harness may not produce (HTTP/JSON-RPC client, gRPC client, path-finding RPC — see [Pathfinding is not exercised](#pathfinding-is-not-exercised) — missing-ledger fetch, mode transitions); their absence is recorded as a passing skip, not a failure.
+- **Span validation**: All span types from `expected_spans.json` with required attributes and parent-child hierarchies. The 16 entries marked `"optional": true` are the ones the harness cannot guarantee: no gRPC client, no path-finding RPC (see [Pathfinding is not exercised](#pathfinding-is-not-exercised)), no missing-ledger fetch, no mode transition, no WebSocket handshake, and the six `txq.*` spans only when fee escalation puts something in the queue. `rpc.http_request` and `rpc.process` are marked optional because the generator drives WebSocket rather than HTTP. Their absence is recorded as a passing skip, not a failure.
 - **Metric validation**: All metrics from `expected_metrics.json` — SpanMetrics, `beast::insight` gauges/counters/histograms, `MetricsRegistry` OTLP metrics. Every listed metric must have > 0 series. Uses the Prometheus `/api/v1/series` endpoint (not instant queries), polled until the metric appears or the poll window elapses, so a late-populating or quiet series is not a false negative.
-- **Log-trace correlation**: trace_id/span_id in Loki logs (requires Loki). The two checks are `log.trace_id_present` and `log.trace_id_cross_reference`, and they exist only when `--skip-loki` is **not** passed — `run_validation()` builds them inside an `if not skip_loki` branch, so with the flag they are absent from the report rather than reported as skipped. **CI always passes `--skip-loki`, so these two are never exercised there** — see [CI Integration](#ci-integration).
+- **Log-trace correlation**: trace_id/span_id in Loki logs (requires Loki). The two checks are `log.trace_id_present` and `log.trace_id_cross_reference`, and they exist only when `--skip-loki` is **not** passed — `run_validation()` builds them inside an `if not skip_loki` branch, so with the flag they are absent from the report rather than reported as skipped. The workflow passes no `--skip-loki`, so both checks are built and gated on every CI run — see [CI Integration](#ci-integration).
 - **Dashboard validation**: Every dashboard uid listed under `grafana_dashboards.uids` in `expected_metrics.json` loads with panels. That list currently covers **all 15** dashboards provisioned in `docker/telemetry/grafana/dashboards/`. Note the scope of this check: it asks the Grafana API whether the dashboard exists and returns a panel count — it does **not** run the panels' queries, so a dashboard can pass here while individual panels render empty.
 
 ```bash
@@ -298,19 +298,19 @@ Per-run tuning:
   variance is larger than it cannot be gated at all. **Five keys are excluded**
   for that reason: `span.ledger.validate.p95` and `.p99`, plus
   `span.tx.apply.p50`, `span.ledger.build.p50` and
-  `span.consensus.ledger_close.p50` as of the 2026-08-26 refresh. Each carries
+  `span.consensus.ledger_close.p50`. Each carries
   its measurements in `excluded_keys` in `regression-metrics.json`. Check a key's
   observed maximum across runs against `baseline + bound` before gating it;
   widening the bound is not the fix, and neither is re-baselining until a run
   lands favourably. See `baselines/README.md`.
 - A refresh moves sensitivity in **both** directions, because the trip point is
   derived from the baseline, and a single run carries no information about
-  spread. The 2026-08-26 refresh loosened `job.acceptLedger.running.p95` from a
-  5.74x detection floor to 16.28x (it does not fire, so it stays gated) and cut
-  the three `p50` keys above from a bound that had absorbed their spread to one
-  that could not — `span.tx.apply.p50` read 0.7917 ms in the previous baseline
-  and 0.00597 ms in this one, a 132x move on the same workload, taking its bound
-  from 4.21 ms to 0.0440 ms. Gating those keys again needs a **multi-run
+  spread. `job.acceptLedger.running.p95` has been measured with a 5.74x
+  detection floor on one baseline and 16.28x on another (it does not fire, so it
+  stays gated), and the three `p50` keys above have been measured both inside and
+  outside a bound that absorbs their spread — `span.tx.apply.p50` has read
+  0.7917 ms and 0.00597 ms on the same workload, 132x apart, which moves its
+  bound between 4.21 ms and 0.0440 ms. Gating those keys needs a **multi-run
   baseline** (or a spread measurement captured beside it), not a new threshold.
   All of it is measured in `baselines/README.md`; re-check after every refresh.
 
@@ -359,7 +359,7 @@ from the running nodes, and writes them as JSON. `benchmark.sh` calls it once
 per leg; it is rarely run by hand.
 
 ```bash
-./collect_system_metrics.sh 5020,5021,5022 300 /tmp/metrics.json
+./collect_system_metrics.sh 5020,5021,5022 300 /tmp/metrics.json [pids_csv]
 ```
 
 Processes are selected by matching `argv[0]`'s basename against the daemon
@@ -370,8 +370,12 @@ string, are not sampled — including them diluted the CPU average and
 attributed a foreign process's RSS to the node. `ps -C xrpld` is not usable
 for this: xrpld renames itself, so its `comm` is `xrpld-main`.
 
-Selection covers the whole host, so a second xrpld from another checkout is
-sampled as well. Benchmark on a machine running one cluster only.
+A fourth argument narrows selection to an explicit pid list, and `benchmark.sh`
+always passes its own nodes' pids. It has to: `run-full-validation.sh` leaves its
+five validation nodes running while the benchmark's three start, so host-wide
+selection would average eight processes in both arms and report the largest of
+them as the RSS peak. Without the argument the scope is still the whole host, so
+a second xrpld from another checkout is sampled as well.
 
 The output carries a `metrics_complete` flag. It is `false` when any
 measurement source came back empty — no matching process, no successful RPC
@@ -433,7 +437,7 @@ Categories:
 
 The validation runs as a GitHub Actions workflow (`.github/workflows/telemetry-validation.yml`):
 
-- Triggered manually (`workflow_dispatch`) or on pushes to telemetry branches. There is no cron schedule.
+- Triggered manually (`workflow_dispatch`), or by any push touching the workflow's `paths` globs. There is no branch filter and no cron schedule.
 - Builds xrpld, starts the full stack, runs load, validates
 - Uploads reports as artifacts (and node logs when validation did not succeed)
 - Writes the validation summary and the regression-gate summary to the workflow **Step Summary** (`$GITHUB_STEP_SUMMARY`). It does **not** comment on the PR — the workflow declares no `permissions:` block and calls no GitHub API, so read the summary on the run page.
@@ -446,15 +450,15 @@ them again — load shape comes entirely from `--profile` and
 
 ### Log-trace correlation in CI
 
-The workflow no longer passes `--skip-loki`, so `log.trace_id_present` and
+The workflow passes no `--skip-loki`, so `log.trace_id_present` and
 `log.trace_id_cross_reference` are constructed and gated on every CI run. A green
-`Telemetry Validation` is now evidence that log lines carry trace context and
-that a logged trace id resolves to an exported trace. `integration-test.sh` has
+`Telemetry Validation` is evidence that log lines carry trace context and that a
+logged trace id resolves to an exported trace. `integration-test.sh` has
 its own `check_log_correlation()`, but no workflow runs that script.
 
 Correlation depends on four independent legs, and a failed check on its own names
 none of them: the node must write a `debug.log` line carrying trace ids, the
-collector container must see that file, its `filelog` receiver must parse and
+collector container must see that file, its `file_log` receiver must parse and
 export the line, and Loki must return it for the validator's LogQL.
 `run-full-validation.sh` prints a per-leg diagnostic after the suite whenever the
 Loki checks are enabled — per-node correlated-line counts and severity mix, the
@@ -463,7 +467,7 @@ internal log-record counters, and Loki's own entry counts for the selector with
 and without the line filter. Read that block first; it identifies the broken leg
 without reproducing anything.
 
-Those two entry counts **must** be wrapped in `sum()`. The `filelog` receiver's
+Those two entry counts **must** be wrapped in `sum()`. The `file_log` receiver's
 `regex_parser` leaves `message` and `timestamp` as log-record attributes, and
 Loki's OTLP path stores them as structured metadata that joins the label set of a
 metric query — so an unaggregated `count_over_time` returns one series per log
@@ -506,28 +510,28 @@ docker/telemetry/workload/run-full-validation.sh --xrpld .build/xrpld
 ```
 
 Re-run it after any change to log formatting, span activation, the collector's
-`filelog` receiver, or the Loki exporter.
+`file_log` receiver, or the Loki exporter.
 
 ### Pathfinding is not exercised
 
-`rpc_load_generator.py` stopped issuing `ripple_path_find` on 2026-08-25 — the weight, the request-builder branch and the docstring line went together.
+`rpc_load_generator.py` issues no path-finding RPC: `DEFAULT_WEIGHTS` carries no `ripple_path_find` entry and `build_rpc_request()` has no branch for it.
 
 **Why.** Pathfinding is disabled on every node this harness starts, so those calls could only ever fail:
 
 - `src/xrpld/core/detail/Config.cpp:725-726` sets `pathSearchMax = 0` whenever a `[validation_seed]` or `[validator_token]` section is present — "by default, validators don't have pathfinding enabled".
-- `run-full-validation.sh:308` writes `[validation_seed]` into every generated node cfg, and that script carries no `[path_search]`, `[path_search_fast]` or `[path_search_max]` section to put the default back.
-- `src/xrpld/rpc/handlers/orderbook/RipplePathFind.cpp:48-49` therefore returns `rpcNOT_SUPPORTED`; `PathFind.cpp:39` does the same for `path_find`.
+- `run-full-validation.sh` writes `[validation_seed]` into every generated node cfg, and that script carries no `[path_search]`, `[path_search_fast]` or `[path_search_max]` section to put the default back.
+- `src/xrpld/rpc/handlers/orderbook/RipplePathFind.cpp:59-60` therefore returns `RpcNotSupported`; `PathFind.cpp:50-51` does the same for `path_find`.
 
-**What removing it fixes.** The refusals were not silent. `pathfind.request` is opened at `RipplePathFind.cpp:35`, **above** that guard, so every refused call still exported a span, and the enclosing `rpc.command.ripple_path_find` span carried `rpc_status=error`. At a 3% weight that manufactured a steady ~3% error floor in `span_calls_total{status_code="STATUS_CODE_ERROR"}`. **Any error-rate threshold derived from harness data before this change was measuring the harness, not xrpld** — re-derive it.
+**Why the refusals would not be harmless.** They are not silent. `pathfind.request` is opened at `RipplePathFind.cpp:35`, **above** that guard, so a refused call still exports a span, and the enclosing `rpc.command.ripple_path_find` span carries `rpc_status=error`. At a 3% weight that is a steady ~3% error floor in `span_calls_total{status_code="STATUS_CODE_ERROR"}` — a figure that reads as an xrpld error rate and is not one. **An error-rate threshold derived from a harness run that does issue path-finding load is measuring the harness, not xrpld.**
 
-**What it costs.** Pathfinding now has no coverage here at all. Four spans (`pathfind.request`, `.compute`, `.discover`, `.update_all`) and two histograms (`pathfind_fast_milliseconds`, `pathfind_full_milliseconds`) go unexercised, and `pathfind.request` moved from required to `"optional": true` in `expected_spans.json` for that reason. Until the load returns, verify pathfinding by hand: the **PathFind** row of [`../TESTING.md`](../TESTING.md) carries a `curl` recipe, and `../xrpld-telemetry.cfg` is a non-validator config that already enables pathfinding.
+**What it costs.** Pathfinding has no coverage here at all. Four spans (`pathfind.request`, `.compute`, `.discover`, `.update_all`) and two histograms (`pathfind_fast_milliseconds`, `pathfind_full_milliseconds`) go unexercised, which is why `pathfind.request` is marked `"optional": true` in `expected_spans.json`. Verify pathfinding by hand instead: the **PathFind** row of [`../TESTING.md`](../TESTING.md) carries a `curl` recipe, and `../xrpld-telemetry.cfg` is a non-validator config that already enables pathfinding.
 
-**Putting it back.** All four steps are required. The first two alone just restore the error floor:
+**Enabling it.** All four steps are required. The first two alone produce the error floor described above:
 
 1. Add a `[path_search_max]` section to the node cfg `run-full-validation.sh` generates — or drop `[validation_seed]` and run a non-validator node. The `[path_search*]` block in `../xrpld-telemetry.cfg` is a working example.
-2. Restore the `ripple_path_find` weight in `DEFAULT_WEIGHTS` and its branch in `build_rpc_request()`. `path_find` is a streaming subscription and needs its own phase instead — the generator is strictly one request, one reply.
-3. Set `pathfind.request` back to required in `expected_spans.json`. Step 1 also makes `pathfind.compute` reachable, so the `pathfind.request -> pathfind.compute` relationship can lose its `"skip": true`.
-4. **Re-capture `baselines/baseline-timings.json`.** Restoring the load changes the RPC mix, and `span.rpc.ws_message.{p50,p95,p99}` is a gated key — a baseline captured under a different mix is stale. See [OTel Timings Regression Gate](#otel-timings-regression-gate).
+2. Add a `ripple_path_find` weight to `DEFAULT_WEIGHTS` and a branch for it in `build_rpc_request()`. `path_find` is a streaming subscription and needs its own phase instead — the generator is strictly one request, one reply.
+3. Set `pathfind.request` to required in `expected_spans.json`. Step 1 also makes `pathfind.compute` reachable, so the `pathfind.request -> pathfind.compute` relationship can lose its `"skip": true`.
+4. **Re-capture `baselines/baseline-timings.json`.** Adding the load changes the RPC mix, and `span.rpc.ws_message.{p50,p95,p99}` is a gated key — a baseline captured under a different mix is stale. See [OTel Timings Regression Gate](#otel-timings-regression-gate).
 
 ## Configuration Files
 

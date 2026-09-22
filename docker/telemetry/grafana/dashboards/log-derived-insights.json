@@ -90,7 +90,7 @@
         "query": "label_values(service_name)",
         "datasource": {
           "type": "loki",
-          "uid": "loki"
+          "uid": "${DS_LOKI}"
         },
         "includeAll": true,
         "allValue": ".*",
@@ -110,7 +110,7 @@
         "query": "label_values({service_name=\"xrpld\"}, deployment_environment)",
         "datasource": {
           "type": "loki",
-          "uid": "loki"
+          "uid": "${DS_LOKI}"
         },
         "includeAll": true,
         "allValue": ".*",
@@ -130,7 +130,7 @@
         "query": "label_values({service_name=\"xrpld\"}, service_instance_id)",
         "datasource": {
           "type": "loki",
-          "uid": "loki"
+          "uid": "${DS_LOKI}"
         },
         "includeAll": true,
         "allValue": ".*",
@@ -918,7 +918,8 @@
       "fieldConfig": {
         "defaults": {
           "displayName": "${__field.labels.state} [${__field.labels.service_instance_id}]",
-          "unit": "suffix: transitions/s",
+          "unit": "si: transitions/s",
+          "decimals": 0,
           "min": 0,
           "custom": {
             "drawStyle": "line",
@@ -938,6 +939,10 @@
         "overrides": []
       },
       "options": {
+        "annotations": {
+          "clustering": -1,
+          "multiLane": true
+        },
         "tooltip": {
           "maxHeight": 600,
           "mode": "multi",
@@ -992,9 +997,14 @@
         "overrides": []
       },
       "options": {
+        "annotations": {
+          "clustering": -1,
+          "multiLane": true
+        },
         "showValue": "auto",
         "rowHeight": 0.9,
         "mergeValues": true,
+        "perPage": 5,
         "alignValue": "center",
         "tooltip": {
           "maxHeight": 600,
@@ -1035,7 +1045,7 @@
     {
       "type": "timeseries",
       "title": "Log Line Rate By Severity",
-      "description": "###### What this is:\n*Rate of log lines emitted by xrpld, split by severity.*\n\n###### How it's computed:\n*Per-second count of matching log lines grouped by the severity field parsed out of each line.*\n\n###### Reading it:\n*Use this to confirm the log pipeline is alive, and to see at a glance whether DBG lines are being collected at all.*\n\n###### Healthy range:\n*Workload-dependent. If the DBG series is absent, every panel in a [DBG] row on this dashboard will be empty.*\n\n###### Watch for:\n*A sudden collapse to only WRN and ERR, which means debug logging was turned off and the [DBG] rows have gone blind rather than quiet.*\n\n###### Keywords:\n- **Severity** *(per line)* — xrpld log level: DBG, NFO, WRN, ERR, FTL.\n- **Structured metadata** *(per line)* — Loki fields parsed from the line, filtered with `|` rather than in the stream selector.\n\n###### Computation boundary:\n*Result: Per node per severity — a count of log lines, not of events in the node.*\n*Derived in the Grafana query; the collector's filelog receiver parses severity, xrpld itself exports no such metric.*\n\n###### Source:\n[Log.cpp](https://github.com/XRPLF/rippled/blob/develop/src/libxrpl/basics/Log.cpp)\n\n###### Function:\n`Logs::Sink::write`\n\n###### References:\n[Loki structured metadata](https://grafana.com/docs/loki/latest/get-started/labels/structured-metadata/)",
+      "description": "###### What this is:\n*Rate of log lines emitted by xrpld, split by severity.*\n\n###### How it's computed:\n*Per-second count of matching log lines grouped by the severity field parsed out of each line.*\n\n###### Reading it:\n*Use this to confirm the log pipeline is alive, and to see at a glance whether DBG lines are being collected at all.*\n\n###### Healthy range:\n*Workload-dependent. If the DBG series is absent, every panel in a [DBG] row on this dashboard will be empty.*\n\n###### Watch for:\n*A sudden collapse to only WRN and ERR, which means debug logging was turned off and the [DBG] rows have gone blind rather than quiet.*\n\n###### Keywords:\n- **Severity** *(per line)* — xrpld log level: DBG, NFO, WRN, ERR, FTL.\n- **Structured metadata** *(per line)* — Loki fields parsed from the line, filtered with `|` rather than in the stream selector.\n\n###### Computation boundary:\n*Result: Per node per severity — a count of log lines, not of events in the node.*\n*Derived in the Grafana query; the collector's file_log receiver parses severity, xrpld itself exports no such metric.*\n\n###### Source:\n[Log.cpp](https://github.com/XRPLF/rippled/blob/develop/src/libxrpl/basics/Log.cpp)\n\n###### Function:\n`Logs::Sink::write`\n\n###### References:\n[Loki structured metadata](https://grafana.com/docs/loki/latest/get-started/labels/structured-metadata/)",
       "gridPos": {
         "h": 10,
         "w": 12,
@@ -1045,7 +1055,8 @@
       "fieldConfig": {
         "defaults": {
           "displayName": "${__field.labels.severity} [${__field.labels.service_instance_id}]",
-          "unit": "suffix: lines/s",
+          "unit": "si: lines/s",
+          "decimals": 0,
           "custom": {
             "drawStyle": "line",
             "lineWidth": 1,
@@ -1064,6 +1075,10 @@
         "overrides": []
       },
       "options": {
+        "annotations": {
+          "clustering": -1,
+          "multiLane": true
+        },
         "tooltip": {
           "maxHeight": 600,
           "mode": "multi",
@@ -1105,7 +1120,8 @@
       "fieldConfig": {
         "defaults": {
           "displayName": "${__field.labels.partition} [${__field.labels.service_instance_id}]",
-          "unit": "suffix: lines/s",
+          "unit": "si: lines/s",
+          "decimals": 0,
           "custom": {
             "drawStyle": "line",
             "lineWidth": 1,
@@ -1124,6 +1140,10 @@
         "overrides": []
       },
       "options": {
+        "annotations": {
+          "clustering": -1,
+          "multiLane": true
+        },
         "tooltip": {
           "maxHeight": 600,
           "mode": "multi",
@@ -1178,7 +1198,8 @@
       "fieldConfig": {
         "defaults": {
           "displayName": "${__field.labels.action} [${__field.labels.service_instance_id}]",
-          "unit": "suffix: manifests/s",
+          "unit": "si: manifests/s",
+          "decimals": 0,
           "custom": {
             "drawStyle": "line",
             "lineWidth": 1,
@@ -1197,6 +1218,10 @@
         "overrides": []
       },
       "options": {
+        "annotations": {
+          "clustering": -1,
+          "multiLane": true
+        },
         "tooltip": {
           "maxHeight": 600,
           "mode": "multi",
@@ -1237,7 +1262,8 @@
       },
       "fieldConfig": {
         "defaults": {
-          "unit": "suffix: manifests/s",
+          "unit": "si: manifests/s",
+          "decimals": 0,
           "custom": {
             "drawStyle": "line",
             "lineWidth": 1,
@@ -1256,6 +1282,10 @@
         "overrides": []
       },
       "options": {
+        "annotations": {
+          "clustering": -1,
+          "multiLane": true
+        },
         "tooltip": {
           "maxHeight": 600,
           "mode": "multi",
@@ -1460,7 +1490,8 @@
       "fieldConfig": {
         "defaults": {
           "displayName": "${__field.labels.reason} [${__field.labels.service_instance_id}]",
-          "unit": "suffix: charges/s",
+          "unit": "si: charges/s",
+          "decimals": 0,
           "custom": {
             "drawStyle": "line",
             "lineWidth": 1,
@@ -1479,6 +1510,10 @@
         "overrides": []
       },
       "options": {
+        "annotations": {
+          "clustering": -1,
+          "multiLane": true
+        },
         "tooltip": {
           "maxHeight": 600,
           "mode": "multi",
@@ -1520,7 +1555,8 @@
       "fieldConfig": {
         "defaults": {
           "displayName": "${__field.labels.reason} [${__field.labels.service_instance_id}]",
-          "unit": "suffix: fee/s",
+          "unit": "si: fee/s",
+          "decimals": 0,
           "custom": {
             "drawStyle": "line",
             "lineWidth": 1,
@@ -1539,6 +1575,10 @@
         "overrides": []
       },
       "options": {
+        "annotations": {
+          "clustering": -1,
+          "multiLane": true
+        },
         "tooltip": {
           "maxHeight": 600,
           "mode": "multi",
@@ -1782,6 +1822,10 @@
         "overrides": []
       },
       "options": {
+        "annotations": {
+          "clustering": -1,
+          "multiLane": true
+        },
         "tooltip": {
           "maxHeight": 600,
           "mode": "multi",
@@ -1823,7 +1867,8 @@
       },
       "fieldConfig": {
         "defaults": {
-          "unit": "suffix: nodes/s",
+          "unit": "si: nodes/s",
+          "decimals": 0,
           "custom": {
             "drawStyle": "line",
             "lineWidth": 1,
@@ -1842,6 +1887,10 @@
         "overrides": []
       },
       "options": {
+        "annotations": {
+          "clustering": -1,
+          "multiLane": true
+        },
         "tooltip": {
           "maxHeight": 600,
           "mode": "multi",
@@ -1915,7 +1964,8 @@
       "fieldConfig": {
         "defaults": {
           "displayName": "${__field.labels.outcome} [${__field.labels.service_instance_id}]",
-          "unit": "suffix: events/s",
+          "unit": "si: events/s",
+          "decimals": 0,
           "custom": {
             "drawStyle": "line",
             "lineWidth": 1,
@@ -1934,6 +1984,10 @@
         "overrides": []
       },
       "options": {
+        "annotations": {
+          "clustering": -1,
+          "multiLane": true
+        },
         "tooltip": {
           "maxHeight": 600,
           "mode": "multi",
@@ -1974,7 +2028,8 @@
       },
       "fieldConfig": {
         "defaults": {
-          "unit": "suffix: events/s",
+          "unit": "si: events/s",
+          "decimals": 0,
           "custom": {
             "drawStyle": "line",
             "lineWidth": 1,
@@ -1993,6 +2048,10 @@
         "overrides": []
       },
       "options": {
+        "annotations": {
+          "clustering": -1,
+          "multiLane": true
+        },
         "tooltip": {
           "maxHeight": 600,
           "mode": "multi",
@@ -2057,7 +2116,8 @@
       "fieldConfig": {
         "defaults": {
           "displayName": "${__field.labels.phase} [${__field.labels.service_instance_id}]",
-          "unit": "suffix: transitions/s",
+          "unit": "si: transitions/s",
+          "decimals": 0,
           "custom": {
             "drawStyle": "line",
             "lineWidth": 1,
@@ -2076,6 +2136,10 @@
         "overrides": []
       },
       "options": {
+        "annotations": {
+          "clustering": -1,
+          "multiLane": true
+        },
         "tooltip": {
           "maxHeight": 600,
           "mode": "multi",
@@ -2117,7 +2181,8 @@
       "fieldConfig": {
         "defaults": {
           "displayName": "${__field.labels.mode} [${__field.labels.service_instance_id}]",
-          "unit": "suffix: beats/s",
+          "unit": "si: beats/s",
+          "decimals": 0,
           "custom": {
             "drawStyle": "line",
             "lineWidth": 1,
@@ -2136,6 +2201,10 @@
         "overrides": []
       },
       "options": {
+        "annotations": {
+          "clustering": -1,
+          "multiLane": true
+        },
         "tooltip": {
           "maxHeight": 600,
           "mode": "multi",
@@ -2176,7 +2245,7 @@
       },
       "fieldConfig": {
         "defaults": {
-          "unit": "suffix: validators",
+          "unit": "si: validators",
           "min": 0,
           "custom": {
             "drawStyle": "line",
@@ -2197,6 +2266,10 @@
         "overrides": []
       },
       "options": {
+        "annotations": {
+          "clustering": -1,
+          "multiLane": true
+        },
         "tooltip": {
           "maxHeight": 600,
           "mode": "multi",
@@ -2281,6 +2354,10 @@
         "overrides": []
       },
       "options": {
+        "annotations": {
+          "clustering": -1,
+          "multiLane": true
+        },
         "tooltip": {
           "maxHeight": 600,
           "mode": "multi",
@@ -2322,7 +2399,8 @@
       "fieldConfig": {
         "defaults": {
           "displayName": "${__field.labels.jobname} [${__field.labels.service_instance_id}]",
-          "unit": "suffix: breaches/s",
+          "unit": "si: breaches/s",
+          "decimals": 0,
           "custom": {
             "drawStyle": "line",
             "lineWidth": 1,
@@ -2341,6 +2419,10 @@
         "overrides": []
       },
       "options": {
+        "annotations": {
+          "clustering": -1,
+          "multiLane": true
+        },
         "tooltip": {
           "maxHeight": 600,
           "mode": "multi",
@@ -2402,6 +2484,10 @@
         "overrides": []
       },
       "options": {
+        "annotations": {
+          "clustering": -1,
+          "multiLane": true
+        },
         "tooltip": {
           "maxHeight": 600,
           "mode": "multi",
@@ -2456,7 +2542,8 @@
       "fieldConfig": {
         "defaults": {
           "displayName": "${__field.labels.partition} ${__field.labels.severity} [${__field.labels.service_instance_id}]",
-          "unit": "suffix: lines/s",
+          "unit": "si: lines/s",
+          "decimals": 0,
           "custom": {
             "drawStyle": "line",
             "lineWidth": 1,
@@ -2494,6 +2581,10 @@
         "overrides": []
       },
       "options": {
+        "annotations": {
+          "clustering": -1,
+          "multiLane": true
+        },
         "tooltip": {
           "maxHeight": 600,
           "mode": "multi",

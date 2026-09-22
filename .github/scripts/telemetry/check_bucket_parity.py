@@ -2,13 +2,13 @@
 """Assert the C++ millisecond ladder agrees with the collector's spanmetrics ladder.
 
 The two are specified to match so a span-derived latency panel and a native
-histogram panel can be read on the same scale. They *were* identical when first
-shipped. Then the collector ladder alone was extended -- sub-millisecond edges
-below 1ms and second-scale edges up to 30s -- and nothing checked the other
-side, so the C++ ladder stayed capped at 5s. Every quantile above 5s then read
-back as a flat 5000, because Prometheus returns the second-highest edge for a
-quantile landing in the `+Inf` bucket. That looks like a measurement rather
-than an error, which is why it survived for eleven phases.
+histogram panel can be read on the same scale. Nothing else couples them, so
+extending one ladder alone -- sub-millisecond edges below 1ms, second-scale
+edges up to 30s -- silently leaves the other short. That failure is quiet:
+Prometheus returns the second-highest edge for a quantile landing in the
+`+Inf` bucket, so every quantile above a too-low ceiling reads back as a flat
+number that looks like a measurement rather than an error. This check is what
+makes the drift loud.
 
 The rule is containment, not equality:
 
@@ -17,7 +17,7 @@ The rule is containment, not equality:
   * the C++ ladder MAY carry extra edges ABOVE the collector's highest edge,
     because jobs outlive spans -- the updatepaths job type was measured
     averaging ~60s, which no span approaches. Demanding equality would force a
-    ceiling that censors it, reintroducing the bug this guards against;
+    ceiling that censors it, recreating the failure this guards against;
   * collector edges below 1ms are expected to be ABSENT rather than missing:
     beast::insight::Event rounds every duration up to a whole millisecond
     before it reaches the histogram, so those edges could never collect a
@@ -117,8 +117,10 @@ def main():
         )
     print(
         "\nThe two ladders must agree over their shared range. Extra C++ edges are\n"
-        "permitted only ABOVE the collector's highest edge. Change both sides, or\n"
-        "change the spec in OpenTelemetryPlan/Phase7_taskList.md.",
+        "permitted only ABOVE the collector's highest edge. To re-price the shared\n"
+        f"range, edit the ladder in {HEADER} and the\n"
+        f"spanmetrics 'buckets:' list in {COLLECTOR}\n"
+        "in the same change, so both sides stay in step.",
         file=sys.stderr,
     )
     return 1

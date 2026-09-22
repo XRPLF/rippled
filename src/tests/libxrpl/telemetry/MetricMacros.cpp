@@ -23,7 +23,7 @@
 
 #ifdef XRPL_ENABLE_TELEMETRY
 
-#include <xrpld/telemetry/MetricMacros.h>
+#include <xrpl/telemetry/MetricMacros.h>
 
 #include <gtest/gtest.h>
 #include <opentelemetry/metrics/meter.h>
@@ -60,12 +60,24 @@ public:
     configure(bool enabled, opentelemetry::nostd::shared_ptr<opentelemetry::metrics::Meter> meter)
     {
         enabled_ = enabled;
+        stopped_ = false;
         meter_ = std::move(meter);
     }
 
     /**
+     * Simulate MetricsRegistry::stop(): the recording gate flips closed even
+     * while enabled_ stays true, matching the real class where a call after
+     * stop() must not touch the SDK instrument cache.
+     */
+    void
+    stop() noexcept
+    {
+        stopped_ = true;
+    }
+
+    /**
      * Number of times meter() has been consulted, so a test can assert the
-     * create-once (call_once) and disabled-gating behavior exactly.
+     * create-once (function-local static) and disabled-gating behavior exactly.
      */
     [[nodiscard]] int
     meterCalls() const noexcept
@@ -77,6 +89,16 @@ public:
     isEnabled() const noexcept
     {
         return enabled_;
+    }
+
+    /**
+     * Mirrors MetricsRegistry::recording(): the macros consult this instead of
+     * isEnabled() so a stopped registry records nothing.
+     */
+    [[nodiscard]] bool
+    recording() const noexcept
+    {
+        return enabled_ && !stopped_;
     }
 
     [[nodiscard]] opentelemetry::nostd::shared_ptr<opentelemetry::metrics::Meter>
@@ -91,6 +113,12 @@ private:
      * Master enable flag the macro consults via isEnabled().
      */
     bool enabled_ = true;
+
+    /**
+     * Set by stop() to model the real registry's post-shutdown state:
+     * enabled_ stays true but recording() flips to false.
+     */
+    bool stopped_ = false;
 
     /**
      * Meter handed to the macro; sourced from a bare SDK provider.
@@ -202,7 +230,7 @@ TEST(MetricMacros, counter_inc_creates_once_and_does_not_crash)
             app, "test_macro_counter_total", "Test counter for macro unit test");
     }
 
-    // Create-once proof: std::call_once consults meter() exactly once across
+    // Create-once proof: the function-local static consults meter() exactly once across
     // the three calls at this site, then reuses the cached instrument handle.
     EXPECT_EQ(app.registry().meterCalls(), 1);
 }
@@ -318,6 +346,28 @@ TEST(MetricMacros, observable_counter_and_updown_register_do_not_crash)
 
     // Two observable registrations, each consulting meter() once.
     EXPECT_EQ(app.registry().meterCalls(), 2);
+}
+
+TEST(MetricMacros, stopped_registry_records_nothing)
+{
+    ScopedBareProvider const bareProvider;
+    FakeApp app;
+    wire(app, /*enabled=*/true);
+
+    // Simulate MetricsRegistry::stop(): recording() flips closed even while
+    // isEnabled() stays true, because the OTel provider is torn down in
+    // stop() and a Record on a stale SDK instrument would deref a dangling
+    // AggregationConfig for a first-seen attribute set.
+    app.registry().stop();
+    ASSERT_TRUE(app.registry().isEnabled());
+    ASSERT_FALSE(app.registry().recording());
+
+    XRPL_METRIC_COUNTER_INC(
+        app, "test_macro_stopped_counter_total", "Counter after stop() must be inert");
+
+    // The recording() gate short-circuits before the create-once static path
+    // runs, so meter() is never consulted.
+    EXPECT_EQ(app.registry().meterCalls(), 0);
 }
 
 TEST(MetricMacros, disabled_registry_is_noop)

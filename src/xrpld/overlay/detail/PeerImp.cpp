@@ -24,7 +24,6 @@
 #include <xrpld/overlay/detail/ProtocolVersion.h>
 #include <xrpld/overlay/detail/TrafficCount.h>
 #include <xrpld/overlay/detail/Tuning.h>
-#include <xrpld/telemetry/MetricMacros.h>
 #include <xrpld/telemetry/TxSpanNames.h>
 
 #include <xrpl/basics/Blob.h>
@@ -52,6 +51,7 @@
 #include <xrpl/ledger/Ledger.h>
 #include <xrpl/peerfinder/Slot.h>
 #include <xrpl/peerfinder/Types.h>
+#include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/KeyType.h>
 #include <xrpl/protocol/LedgerHeader.h>
 #include <xrpl/protocol/Protocol.h>
@@ -74,6 +74,7 @@
 #include <xrpl/server/NetworkOPs.h>
 #include <xrpl/shamap/SHAMap.h>
 #include <xrpl/shamap/SHAMapNodeID.h>
+#include <xrpl/telemetry/MetricMacros.h>
 #include <xrpl/telemetry/Recording.h>
 #include <xrpl/telemetry/SpanGuard.h>
 #include <xrpl/telemetry/SpanNames.h>
@@ -438,7 +439,7 @@ PeerImp::crawl() const
 bool
 PeerImp::cluster() const
 {
-    return static_cast<bool>(app_.getCluster().member(publicKey_));
+    return app_.getCluster().isMember(publicKey_);
 }
 
 std::string
@@ -1339,43 +1340,6 @@ PeerImp::handleTransaction(
         auto stx = std::make_shared<STTx const>(sit);
         uint256 const txID = stx->getTransactionID();
 
-        using namespace telemetry;
-        // SpanGuard is thread-free (holds no Scope), so it is safe to hand to
-        // a job-queue worker and end on that thread — no detach step is needed.
-        // Left null when telemetry is compiled out: there is no span to own, so
-        // nothing is allocated for one. Every use below tests it, the job
-        // capture and activateIfLive() accept a null handle, and the transaction
-        // pipeline already takes a null span by default. Without this the
-        // make_shared allocated once per inbound transaction, duplicates
-        // included, to hold an empty object.
-        std::shared_ptr<SpanGuard> span;
-#ifdef XRPL_ENABLE_TELEMETRY
-        span = std::make_shared<SpanGuard>(txReceiveSpan(txID, *m));
-#endif
-        // Guarded on the span being live because these values are not free and
-        // this runs for every inbound transaction, including duplicates: the
-        // hash string allocates, and the open-ledger index takes the ledger
-        // master's lock. With telemetry compiled out the span is null; with it
-        // compiled in the block is skipped when telemetry is disabled at runtime
-        // or the transaction category is off.
-        if (span && *span)
-        {
-            span->setAttribute(tx_span::attr::txHash, to_string(txID).c_str());
-            span->setAttribute(tx_span::attr::peerId, static_cast<int64_t>(id_));
-            // The current (open) ledger index when the relayed tx was received
-            // — the ledger being worked on. Correlates this tx.receive to the
-            // ledger trace; not yet applied to a specific ledger, so no hash.
-            span->setAttribute(
-                tx_span::attr::currentLedgerSeq,
-                static_cast<std::int64_t>(app_.getLedgerMaster().getCurrentLedgerIndex()));
-            if (auto const* fmt = TxFormats::getInstance().findByType(stx->getTxnType()))
-                span->setAttribute(tx_span::attr::txType, fmt->getName().c_str());
-            if (auto const version = getVersion(); !version.empty())
-                span->setAttribute(tx_span::attr::peerVersion, version.c_str());
-        }
-        // Note: suppressed and txStatus are set once at each exit path
-        // (not as defaults here) to avoid OTel SDK attribute duplication.
-
         // Charge strongly for attempting to relay a txn with tfInnerBatchTxn
         // LCOV_EXCL_START
         /*
@@ -1396,8 +1360,6 @@ PeerImp::handleTransaction(
         */
         if (stx->isFlag(tfInnerBatchTxn))
         {
-            if (span)
-                span->setAttribute(tx_span::attr::txStatus, tx_span::val::rejectedInnerBatch);
             JLOG(pJournal_.warn()) << "Ignoring Network relayed Tx containing "
                                       "tfInnerBatchTxn (handleTransaction).";
             fee_.update(resource::kFeeModerateBurdenPeer, "inner batch txn");
@@ -1410,24 +1372,14 @@ PeerImp::handleTransaction(
 
         if (!app_.getHashRouter().shouldProcess(txID, id_, flags, kTxInterval))
         {
-            if (span)
-                span->setAttribute(tx_span::attr::suppressed, true);
             // we have seen this transaction recently
             if (any(flags & HashRouterFlags::BAD))
             {
-                if (span)
-                    span->setAttribute(tx_span::attr::txStatus, tx_span::val::knownBad);
                 fee_.update(resource::kFeeUselessData, "known bad");
                 JLOG(pJournal_.debug()) << "Ignoring known bad tx " << txID;
             }
             else
             {
-                // Recently-seen but not flagged bad — this is the plain
-                // duplicate-suppression path. Mark it explicitly so the
-                // span never exits as "new".
-                if (span)
-                    span->setAttribute(tx_span::attr::txStatus, tx_span::val::suppressed);
-
                 // Erase only if the server has seen this tx. If the server
                 // has not seen this tx then the tx could not have been
                 // queued for this peer.
@@ -1443,8 +1395,47 @@ PeerImp::handleTransaction(
             return;
         }
 
-        if (span)
-            span->setAttribute(tx_span::attr::suppressed, false);
+        using namespace telemetry;
+        // The span starts here, once this node has decided to process the
+        // transaction. A peer relays every transaction it hears, so most
+        // inbound copies are ones the checks above drop, and tracing those
+        // costs a span and its attributes to describe work never done. The
+        // number dropped is reported as the transactions_duplicate traffic
+        // category, which needs no span.
+        //
+        // SpanGuard is thread-free (holds no Scope), so it is safe to hand to
+        // a job-queue worker and end on that thread — no detach step is needed.
+        // Left null when telemetry is compiled out: there is no span to own, so
+        // nothing is allocated for one. Every use below tests it, the job
+        // capture and activateIfLive() accept a null handle, and the transaction
+        // pipeline already takes a null span by default.
+        std::shared_ptr<SpanGuard> span;
+#ifdef XRPL_ENABLE_TELEMETRY
+        span = std::make_shared<SpanGuard>(txReceiveSpan(txID, *m));
+#endif
+        // Guarded on the span being live because these values are not free: the
+        // hash string allocates, and the open-ledger index takes the ledger
+        // master's lock. With telemetry compiled out the span is null; with it
+        // compiled in the block is skipped when telemetry is disabled at runtime
+        // or the transaction category is off.
+        if (span && *span)
+        {
+            span->setAttribute(tx_span::attr::txHash, to_string(txID).c_str());
+            span->setAttribute(tx_span::attr::peerId, static_cast<int64_t>(id_));
+            // The current (open) ledger index when the relayed tx was received
+            // — the ledger being worked on. Correlates this tx.receive to the
+            // ledger trace; not yet applied to a specific ledger, so no hash.
+            span->setAttribute(
+                tx_span::attr::currentLedgerSeq,
+                static_cast<std::int64_t>(app_.getLedgerMaster().getCurrentLedgerIndex()));
+            if (auto const* fmt = TxFormats::getInstance().findByType(stx->getTxnType()))
+                span->setAttribute(tx_span::attr::txType, fmt->getName().c_str());
+            if (auto const version = getVersion(); !version.empty())
+                span->setAttribute(tx_span::attr::peerVersion, version.c_str());
+        }
+        // Note: txStatus is set once at each exit path below (not as a default
+        // here) to avoid OTel SDK attribute duplication.
+
         JLOG(pJournal_.debug()) << "Got tx " << txID;
 
         bool checkSignature = true;
@@ -1502,6 +1493,10 @@ PeerImp::handleTransaction(
     }
     catch (std::exception const& ex)
     {
+        if (fee_.fee < resource::kFeeInvalidData)
+        {
+            fee_.update(resource::kFeeInvalidData, "tx invalid");
+        }
         JLOG(pJournal_.warn()) << "Transaction invalid: " << strHex(m->rawtransaction())
                                << ". Exception: " << ex.what();
     }
@@ -1575,10 +1570,21 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMGetLedger> const& m)
 
     // Verify ledger node counts. Full parsing of the node IDs is deferred to the job, so the I/O
     // thread is not burdened with SHAMapNodeID deserialization for every TMGetLedger message.
-    if (itype != protocol::liBASE && m->nodeids_size() <= 0)
+    if (itype != protocol::liBASE)
     {
-        badData("Invalid ledger node IDs");
-        return;
+        if (m->nodeids_size() <= 0)
+        {
+            badData("Invalid ledger node IDs");
+            return;
+        }
+
+        if (m->nodeids_size() > tuning::kHardMaxReplyNodes)
+        {
+            badData(
+                "Requested number of ledger node IDs must be less than or equal to " +
+                std::to_string(tuning::kHardMaxReplyNodes));
+            return;
+        }
     }
 
     // Verify query type
@@ -1973,10 +1979,12 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMProposeSet> const& m)
 {
     using namespace telemetry;
     // root: inbound peer message entry point (kConsumer); must not inherit
-    // any span left active on this peer thread.
-    auto span =
+    // any span left active on this peer thread. Named after the span it holds,
+    // peer.proposal.receive, to keep it distinct from `proposalSpan` below,
+    // which holds the consensus-level span handed to the job worker.
+    auto proposalReceiveSpan =
         ScopedSpanGuard::freshRoot(TraceCategory::Peer, seg::peer, peer_span::op::proposalReceive);
-    span.setAttribute(peer_span::attr::peerId, static_cast<int64_t>(id_));
+    proposalReceiveSpan.setAttribute(peer_span::attr::peerId, static_cast<int64_t>(id_));
 
     protocol::TMProposeSet const& set = *m;
 
@@ -2004,7 +2012,7 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMProposeSet> const& m)
     // every time a spam packet is received
     PublicKey const publicKey{makeSlice(set.nodepubkey())};
     auto const isTrusted = app_.getValidators().trusted(publicKey);
-    span.setAttribute(peer_span::attr::proposalTrusted, isTrusted);
+    proposalReceiveSpan.setAttribute(peer_span::attr::proposalTrusted, isTrusted);
 
     // If the operator has specified that untrusted proposals be dropped then
     // this happens here I.e. before further wasting CPU verifying the signature
@@ -2578,10 +2586,12 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMValidation> const& m)
 {
     using namespace telemetry;
     // root: inbound peer message entry point (kConsumer); must not inherit
-    // any span left active on this peer thread.
-    auto valSpan = ScopedSpanGuard::freshRoot(
+    // any span left active on this peer thread. Named after the span it holds,
+    // peer.validation.receive, to keep it distinct from the consensus-level
+    // span handed to the job worker below.
+    auto validationReceiveSpan = ScopedSpanGuard::freshRoot(
         TraceCategory::Peer, seg::peer, peer_span::op::validationReceive);
-    valSpan.setAttribute(peer_span::attr::peerId, static_cast<int64_t>(id_));
+    validationReceiveSpan.setAttribute(peer_span::attr::peerId, static_cast<int64_t>(id_));
 
     if (m->validation().size() < 50)
     {
@@ -2622,11 +2632,11 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMValidation> const& m)
         // false when telemetry is compiled out, switched off in the config, or
         // the Peer trace category is disabled; a span that exists but was
         // sampled out still pays.
-        if (valSpan)
+        if (validationReceiveSpan)
         {
-            valSpan.setAttribute(
+            validationReceiveSpan.setAttribute(
                 peer_span::attr::ledgerHash, to_string(val->getLedgerHash()).c_str());
-            valSpan.setAttribute(peer_span::attr::fullValidation, val->isFull());
+            validationReceiveSpan.setAttribute(peer_span::attr::fullValidation, val->isFull());
         }
 
         if (!isCurrent(
@@ -2644,7 +2654,7 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMValidation> const& m)
         // suppression for 30 seconds to avoid doing a relatively expensive
         // lookup every time a spam packet is received
         auto const isTrusted = app_.getValidators().trusted(val->getSignerPublic());
-        valSpan.setAttribute(peer_span::attr::validationTrusted, isTrusted);
+        validationReceiveSpan.setAttribute(peer_span::attr::validationTrusted, isTrusted);
 
         // If the operator has specified that untrusted validations be
         // dropped then this happens here I.e. before further wasting CPU
@@ -2713,12 +2723,29 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMValidation> const& m)
                 static_cast<int64_t>(val->getSignTime().time_since_epoch().count()));
         }
 
+        // validation_receive_status is set once on each exit below, not as a default
+        // here, to avoid OTel SDK attribute duplication. It is what separates
+        // the microsecond drop paths from the queued path, which also covers
+        // job wait and checkValidation.
         if (!isTrusted && (tracking_.load() == Tracking::Diverged))
         {
+            if (span && *span)
+            {
+                span->setAttribute(
+                    telemetry::consensus::span::attr::validationReceiveStatus,
+                    telemetry::consensus::span::val::validationDroppedDiverged);
+            }
             JLOG(pJournal_.debug()) << "Dropping untrusted validation from diverged peer";
         }
         else if (isTrusted || !app_.getFeeTrack().isLoadedLocal())
         {
+            // Set before the handle is moved into the job below.
+            if (span && *span)
+            {
+                span->setAttribute(
+                    telemetry::consensus::span::attr::validationReceiveStatus,
+                    telemetry::consensus::span::val::validationQueued);
+            }
             std::string const name = isTrusted ? "ChkTrust" : "ChkUntrust";
 
             std::weak_ptr<PeerImp> const weak = shared_from_this();
@@ -2732,6 +2759,12 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMValidation> const& m)
         }
         else
         {
+            if (span && *span)
+            {
+                span->setAttribute(
+                    telemetry::consensus::span::attr::validationReceiveStatus,
+                    telemetry::consensus::span::val::validationDroppedLoad);
+            }
             JLOG(pJournal_.debug()) << "Dropping untrusted validation for load";
         }
     }
@@ -3114,6 +3147,13 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMTransactions> const& m)
         return;
     }
 
+    if (m->transactions_size() > reduce_relay::kMaxTxQueueSize)
+    {
+        JLOG(pJournal_.error()) << "TMTransactions: transaction list too large";
+        fee_.update(resource::kFeeMalformedRequest, "Transaction list too large");
+        return;
+    }
+
     JLOG(pJournal_.trace()) << "received TMTransactions " << m->transactions_size();
 
     overlay_.addTxMetrics(m->transactions_size());
@@ -3354,8 +3394,9 @@ PeerImp::checkTransaction(
         if (checkSignature)
         {
             // Check the signature before handing off to the job queue.
-            if (auto [valid, validReason] = checkValidity(
-                    app_.getHashRouter(), *stx, app_.getLedgerMaster().getValidatedRules());
+            auto const& validatedRules = app_.getLedgerMaster().getValidatedRules();
+            if (auto [valid, validReason] =
+                    checkValidity(app_.getHashRouter(), *stx, validatedRules);
                 valid != Validity::Valid)
             {
                 if (!validReason.empty())
@@ -3363,9 +3404,20 @@ PeerImp::checkTransaction(
                     JLOG(pJournal_.debug()) << "Exception checking transaction: " << validReason;
                 }
 
-                // Probably not necessary to set HashRouterFlags::BAD, but
-                // doesn't hurt.
-                app_.getHashRouter().setFlags(stx->getTransactionID(), HashRouterFlags::BAD);
+                // For a role-signature transaction, only cache BAD once
+                // fixCleanup3_4_0 is enabled on this node: the SigBad verdict
+                // then covers the post-fix prefix and cannot flip back.
+                // Before the amendment activates, checkValidity's own
+                // era-scoped cache handles the repeat lookups; setting BAD
+                // would block a correctly new-prefix-signed transaction until
+                // the router entry ages out. Remove the guard together with
+                // the amendment.
+                if (validatedRules.enabled(fixCleanup3_4_0) ||
+                    (!stx->isFieldPresent(sfSponsorSignature) &&
+                     !stx->isFieldPresent(sfCounterpartySignature)))
+                {
+                    app_.getHashRouter().setFlags(stx->getTransactionID(), HashRouterFlags::BAD);
+                }
                 charge(resource::kFeeInvalidSignature, "check transaction signature failure");
                 return;
             }

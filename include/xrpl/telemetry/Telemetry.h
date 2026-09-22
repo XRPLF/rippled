@@ -53,14 +53,18 @@
  *
  * 2. Child span for a sub-operation (scoped child):
  * @code
- * auto parent = SpanGuard::span(
+ * auto parent = ScopedSpanGuard(
  * TraceCategory::Rpc, rpc_span::prefix::rpc, rpc_span::op::process);
  * {
- * auto child = parent.childSpan(rpc_span::op::process);
- * child.setAttribute(rpc_span::attr::version, apiVersion);
+ * auto child = parent.childSpan(rpc_span::prefix::command);
+ * child.setAttribute(rpc_span::attr::version, static_cast<int64_t>(apiVersion));
  * // child ends here
  * }
  * @endcode
+ * childSpan() parents to the ambient scope, so the parent must be a
+ * ScopedSpanGuard. A plain SpanGuard is not ambient: pass its spanContext()
+ * to childSpan(name, ctx) instead. childSpan() takes the name verbatim, so
+ * pass a full dotted constant, never a bare op:: suffix.
  *
  * 3. Unrelated span (cross-scope, same thread):
  * @code
@@ -78,7 +82,7 @@
  * auto ctx = parentGuard.spanContext();
  *
  * // Thread B: create child span with explicit parent
- * auto child = SpanGuard::childSpan(rpc_span::op::process, ctx);
+ * auto child = SpanGuard::childSpan(rpc_span::prefix::command, ctx);
  * @endcode
  *
  * @note Thread safety: The Telemetry interface is safe for concurrent reads
@@ -99,6 +103,7 @@
 
 #ifdef XRPL_ENABLE_TELEMETRY
 #include <opentelemetry/context/context.h>
+#include <opentelemetry/exporters/otlp/otlp_http_exporter_options.h>
 #include <opentelemetry/metrics/meter.h>
 #include <opentelemetry/nostd/shared_ptr.h>
 #include <opentelemetry/trace/span.h>
@@ -129,7 +134,102 @@ inline constexpr std::string_view kMeterName{"xrpld"};
  * OTel instrumentation scope version reported for the meter.
  */
 inline constexpr std::string_view kMeterVersion{"1.0.0"};
+
+/**
+ * A meter whose instruments record nothing.
+ *
+ * For every path that must hand out a usable meter without a pipeline behind
+ * it: telemetry disabled, or an exporter that failed to build. Callers then
+ * need no null check, because an instrument always comes back.
+ *
+ * Shared so every caller passes the same version, @ref kMeterVersion. A
+ * different version gives a different meter identity from the one the
+ * histogram views select on.
+ *
+ * @param name Instrumentation scope name to report.
+ * @return An inert meter. Never empty.
+ */
+[[nodiscard]] opentelemetry::nostd::shared_ptr<opentelemetry::metrics::Meter>
+noopMeter(std::string_view name = kMeterName);
 #endif
+
+/**
+ * Default gap between two metric exports.
+ *
+ * Matches the 1 s scrape the dashboards assume. Declared here, outside the
+ * telemetry #ifdef, because the config parser reads it in every build.
+ */
+inline constexpr auto kDefaultMetricExportInterval = std::chrono::milliseconds{1000};
+
+/**
+ * Default limit on how long one metric export may run.
+ *
+ * Bounds a stalled collector. Must stay below kDefaultMetricExportInterval.
+ */
+inline constexpr auto kDefaultMetricExportTimeout = std::chrono::milliseconds{500};
+
+/**
+ * How a consensus round span picks its trace id.
+ *
+ *   consensus_trace_strategy (xrpld.cfg)
+ *          |
+ *          v
+ *   makeTelemetrySetup()  ──>  Setup::consensusTraceStrategy
+ *          |
+ *          v
+ *   RCLConsensus::Adaptor::startRoundTracing()
+ *          |
+ *          +-- Deterministic ──> SpanGuard::hashSpan(prev ledger hash)
+ *          +-- Random        ──> SpanGuard::span() / linkedSpan()
+ *
+ * Deterministic is the strategy in use. Every validator of a round hashes the
+ * same previous ledger id, so all of them land in one trace.
+ *
+ * Random is experimental and not used. Each node would invent its own trace
+ * id, so one round would arrive as one trace per node, joinable only by the
+ * `consensus_ledger_id` attribute.
+ *
+ * @code
+ * // Branch on the strategy rather than on a string.
+ * if (telemetry.getConsensusTraceStrategy() == ConsensusTraceStrategy::Random)
+ *     span = SpanGuard::span(TraceCategory::Consensus, seg::consensus, op::round);
+ * else
+ *     span = SpanGuard::hashSpan(TraceCategory::Consensus, name, id.data(), id.kBytes);
+ *
+ * // Edge case: the value also goes on a span attribute, so it needs its
+ * // config spelling back.
+ * span.setAttribute(attr::traceStrategy, strategyName(ConsensusTraceStrategy::Random));
+ * @endcode
+ *
+ * @note Adding an enumerator means adding a spelling to strategyName() below
+ * and to the parser in TelemetryConfig.cpp. Both switch without a default, so
+ * the compiler catches a missed one.
+ */
+enum class ConsensusTraceStrategy : std::uint8_t { Deterministic, Random };
+
+/**
+ * Config spelling of a consensus trace strategy.
+ *
+ * This is the same text `consensus_trace_strategy` accepts, and it is what
+ * goes on the `trace_strategy` span attribute, so the two cannot drift.
+ *
+ * @param strategy  Strategy to name.
+ * @return "deterministic" or "random", pointing at a string literal.
+ */
+[[nodiscard]] constexpr char const*
+strategyName(ConsensusTraceStrategy strategy)
+{
+    switch (strategy)
+    {
+        case ConsensusTraceStrategy::Deterministic:
+            return "deterministic";
+        case ConsensusTraceStrategy::Random:
+            return "random";
+    }
+    // The switch covers every enumerator. This return only satisfies the
+    // compiler, which cannot rule out a value outside the enumeration.
+    return "deterministic";
+}
 
 class Telemetry
 {
@@ -149,7 +249,7 @@ public:
      * Get the global Telemetry instance.
      * @return Pointer to the active instance, or nullptr if not started.
      */
-    static Telemetry*
+    [[nodiscard]] static Telemetry*
     getInstance()
     {
         return instance.load(std::memory_order_acquire);
@@ -205,9 +305,18 @@ public:
         std::string nodeId;
 
         /**
-         * OTLP/HTTP endpoint URL where spans are sent.
+         * Full OTLP/HTTP URL where spans are sent, including the signal path.
+         * Used verbatim: no other endpoint is derived from it.
          */
-        std::string exporterEndpoint = "http://localhost:4318/v1/traces";
+        std::string tracesEndpoint = "http://localhost:4318/v1/traces";
+
+        /**
+         * Full OTLP/HTTP URL where metrics are sent, including the signal path.
+         * Used verbatim and independent of tracesEndpoint, so an operator can
+         * point the two signals at different collectors, or at one whose OTLP
+         * paths are not the defaults.
+         */
+        std::string metricsEndpoint = "http://localhost:4318/v1/metrics";
 
         /**
          * Whether to use TLS for the exporter connection.
@@ -260,6 +369,20 @@ public:
         std::uint32_t maxQueueSize = 2048;
 
         /**
+         * Gap between two metric exports, in milliseconds.
+         * Default kDefaultMetricExportInterval (1000 ms). Must be positive.
+         */
+        std::chrono::milliseconds metricExportInterval = kDefaultMetricExportInterval;
+
+        /**
+         * Limit on how long one metric export may run, in milliseconds.
+         * Default kDefaultMetricExportTimeout (500 ms). Must be positive and
+         * below metricExportInterval, or the SDK discards both values and
+         * exports on its own 60 s cadence instead.
+         */
+        std::chrono::milliseconds metricExportTimeout = kDefaultMetricExportTimeout;
+
+        /**
          * Network identifier, added as an OTel resource attribute.
          */
         std::uint32_t networkId = 0;
@@ -296,12 +419,12 @@ public:
         bool traceLedger = true;
 
         /**
-         * Strategy for cross-node consensus trace correlation.
-         * "deterministic" — derive trace_id from ledger hash so all
-         * validators in the same round share the same trace_id.
-         * "attribute" — random trace_id, correlate via ledger_id attribute.
+         * How a consensus round span picks its trace id.
+         *
+         * Read from `consensus_trace_strategy`. Deterministic is the strategy
+         * in use; Random is experimental. See ConsensusTraceStrategy.
          */
-        std::string consensusTraceStrategy = "deterministic";
+        ConsensusTraceStrategy consensusTraceStrategy = ConsensusTraceStrategy::Deterministic;
     };
 
     virtual ~Telemetry() = default;
@@ -318,10 +441,9 @@ public:
      * @param id  The node's base58-encoded public key or custom identifier.
      */
     virtual void
-    setServiceInstanceId(std::string const& id)
+    setServiceInstanceId([[maybe_unused]] std::string const& id)
     {
         // Default no-op for NullTelemetry implementations.
-        (void)id;
     }
 
     /**
@@ -336,10 +458,9 @@ public:
      * @param id  The node's base58-encoded public key.
      */
     virtual void
-    setNodeId(std::string const& id)
+    setNodeId([[maybe_unused]] std::string const& id)
     {
         // Default no-op for NullTelemetry implementations.
-        (void)id;
     }
 
     /**
@@ -393,9 +514,9 @@ public:
     shouldTraceLedger() const = 0;
 
     /**
-     * @return The configured consensus trace correlation strategy.
+     * @return How a consensus round span picks its trace id.
      */
-    [[nodiscard]] virtual std::string const&
+    [[nodiscard]] virtual ConsensusTraceStrategy
     getConsensusTraceStrategy() const = 0;
 
 #ifdef XRPL_ENABLE_TELEMETRY
@@ -405,7 +526,7 @@ public:
      * @param name  Tracer name used to identify the instrumentation library.
      * @return A shared pointer to the Tracer.
      */
-    virtual opentelemetry::nostd::shared_ptr<opentelemetry::trace::Tracer>
+    [[nodiscard]] virtual opentelemetry::nostd::shared_ptr<opentelemetry::trace::Tracer>
     getTracer(std::string_view name = kTracerName) = 0;
 
     /**
@@ -420,7 +541,7 @@ public:
      * @param name  Meter name used to identify the instrumentation scope.
      * @return A shared pointer to the Meter.
      */
-    virtual opentelemetry::nostd::shared_ptr<opentelemetry::metrics::Meter>
+    [[nodiscard]] virtual opentelemetry::nostd::shared_ptr<opentelemetry::metrics::Meter>
     getMeter(std::string_view name = kMeterName) = 0;
 
     /**
@@ -438,7 +559,7 @@ public:
      * - kConsumer: async message receive
      * @return A shared pointer to the new Span.
      */
-    virtual opentelemetry::nostd::shared_ptr<opentelemetry::trace::Span>
+    [[nodiscard]] virtual opentelemetry::nostd::shared_ptr<opentelemetry::trace::Span>
     startSpan(
         std::string_view name,
         opentelemetry::trace::SpanKind kind = opentelemetry::trace::SpanKind::kInternal) = 0;
@@ -454,7 +575,7 @@ public:
      * @param kind           The span kind (defaults to kInternal).
      * @return A shared pointer to the new Span.
      */
-    virtual opentelemetry::nostd::shared_ptr<opentelemetry::trace::Span>
+    [[nodiscard]] virtual opentelemetry::nostd::shared_ptr<opentelemetry::trace::Span>
     startSpan(
         std::string_view name,
         opentelemetry::context::Context const& parentContext,
@@ -487,15 +608,19 @@ makeTelemetry(Telemetry::Setup const& setup, beast::Journal journal);
  * @return A populated Setup struct with defaults for missing values.
  * @throws std::runtime_error  If `enabled` is set and the mutual TLS (mTLS)
  * settings contradict each other: only one of `tls_client_cert`/`tls_client_key`
- * is given, or a client certificate is given while `use_tls` is 0. Also if
+ * is given, a client certificate is given while `use_tls` is 0, or a client
+ * certificate is given while `traces_endpoint` is not an `https://` URL — which
+ * includes leaving `traces_endpoint` at its plain-HTTP default. Also if
  * `enabled` and `use_tls` are both set and a non-empty `tls_ca_cert`,
  * `tls_client_cert` or `tls_client_key` cannot be read; an empty path is skipped,
- * so an empty `tls_ca_cert` still means "use the system CA store". All three
- * checks are skipped when `enabled` is 0.
- * @throws boost::bad_lexical_cast  If any numeric key (`enabled`, `use_tls`,
- * `batch_size`, the trace switches, ...) holds a value Section::valueOr cannot
- * convert. None of the numeric reads sit inside the `enabled` branch, so this
- * escapes whether telemetry is on or off.
+ * so an empty `tls_ca_cert` still means "use the system CA store". All four
+ * checks are skipped when `enabled` is 0. Also if `metric_export_interval_ms`
+ * or `metric_export_timeout_ms` is unreadable, is not positive, or the timeout
+ * is not below the interval. Those three run whether telemetry is on or off.
+ * @throws boost::bad_lexical_cast  If any other numeric key (`enabled`,
+ * `use_tls`, `batch_size`, the trace switches, ...) holds a value
+ * Section::valueOr cannot convert. None of the numeric reads sit inside the
+ * `enabled` branch, so this escapes whether telemetry is on or off.
  */
 Telemetry::Setup
 makeTelemetrySetup(
@@ -513,7 +638,49 @@ makeTelemetrySetup(
  * @param networkId  The network identifier from [network_id] config.
  * @return "mainnet" (0), "testnet" (1), "devnet" (2), or "unknown".
  */
-std::string
+[[nodiscard]] std::string
 networkTypeFromId(std::uint32_t networkId);
+
+#ifdef XRPL_ENABLE_TELEMETRY
+/**
+ * Build the OTLP/HTTP trace exporter options that Setup asks for.
+ *
+ *   Telemetry::Setup ──> makeTraceExporterOptions() ──> OtlpHttpExporterOptions
+ *                                                             |
+ *                                                             v
+ *                                              OtlpHttpExporterFactory::Create
+ *
+ * Named and declared here rather than left inline in start() so the mapping
+ * from config to exporter options can be asserted directly. A swapped
+ * certificate and key, or a CA path written to the wrong field, is invisible
+ * from outside a running exporter.
+ *
+ * TLS fields are set only when `use_tls` is on. Whether the transport is
+ * actually encrypted is decided by the scheme of the URL, not by this function;
+ * makeTelemetrySetup() is what rejects a client certificate on a plain-HTTP
+ * endpoint.
+ *
+ * @code
+ * // Primary use: one-way TLS with a custom CA bundle.
+ * Telemetry::Setup setup;
+ * setup.useTls = true;
+ * setup.tlsCertPath = "/etc/ssl/ca.pem";
+ * auto const opts = makeTraceExporterOptions(setup);   // ssl_ca_cert_path set
+ *
+ * // Edge case: use_tls off leaves every ssl_ field empty, even when paths
+ * // are configured.
+ * setup.useTls = false;
+ * auto const plain = makeTraceExporterOptions(setup);  // ssl_ca_cert_path empty
+ * @endcode
+ *
+ * @param setup  Parsed [telemetry] configuration.
+ * @return Options carrying `traces_endpoint` as the URL, plus the TLS paths
+ * when `use_tls` is on. Every other field keeps its SDK default.
+ * @note Pure: reads `setup` and touches no global state, so it is safe to call
+ * from any thread.
+ */
+[[nodiscard]] opentelemetry::exporter::otlp::OtlpHttpExporterOptions
+makeTraceExporterOptions(Telemetry::Setup const& setup);
+#endif
 
 }  // namespace xrpl::telemetry

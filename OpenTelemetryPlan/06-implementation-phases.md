@@ -120,7 +120,7 @@ gantt
 | ---- | -------------------------------------------------------------------------- |
 | 2.1  | Implement W3C Trace Context HTTP header extraction                         |
 | 2.2  | Instrument `ServerHandler::onRequest()`                                    |
-| 2.3  | Instrument `RPCHandler::doCommand()`                                       |
+| 2.3  | Instrument `xrpl::rpc::doCommand()`                                        |
 | 2.4  | Add RPC-specific attributes                                                |
 | 2.5  | Instrument WebSocket handler                                               |
 | 2.6  | PathFinding instrumentation (`pathfind.request`, `pathfind.compute` spans) |
@@ -182,7 +182,7 @@ and [Phase3_taskList.md Task 3.9](./Phase3_taskList.md) for the full implementat
 - [x] Trace context in Protocol Buffer messages — `message TraceContext`
       (`include/xrpl/proto/xrpl.proto:101`), carried as optional field `1001` on
       three message types (`:130`, `:181`, `:229`)
-- [x] HashRouter deduplication visible in traces — `suppressed` attribute
+- [x] HashRouter deduplication visible — a dropped duplicate produces no span
       (`TxSpanNames.h:71`)
 - [ ] Multi-node integration tests passing — Phase 10 harness
 - [ ] <5% overhead on transaction throughput — needs the Phase 10 benchmark suite
@@ -200,16 +200,16 @@ and [Phase3_taskList.md Task 3.9](./Phase3_taskList.md) for the full implementat
 
 ### Tasks
 
-| Task | Description                                    | Status             |
-| ---- | ---------------------------------------------- | ------------------ |
-| 4.1  | Instrument `RCLConsensusAdaptor::startRound()` | ✅ Done (via 4a.2) |
-| 4.2  | Instrument phase transitions                   | ✅ Done            |
-| 4.3  | Instrument proposal handling                   | ✅ Done            |
-| 4.4  | Instrument validation handling                 | ✅ Done            |
-| 4.5  | Add consensus-specific attributes              | ✅ Done            |
-| 4.6  | Correlate with transaction traces              | ✅ Done            |
-| 4.7  | Build verification and testing                 | ✅ Done            |
-| 4.8  | Validation span enrichment (ext. dashboard)    | ✅ Done (partial)  |
+| Task | Description                                 | Status             |
+| ---- | ------------------------------------------- | ------------------ |
+| 4.1  | Instrument `RCLConsensus::startRound()`     | ✅ Done (via 4a.2) |
+| 4.2  | Instrument phase transitions                | ✅ Done            |
+| 4.3  | Instrument proposal handling                | ✅ Done            |
+| 4.4  | Instrument validation handling              | ✅ Done            |
+| 4.5  | Add consensus-specific attributes           | ✅ Done            |
+| 4.6  | Correlate with transaction traces           | ✅ Done            |
+| 4.7  | Build verification and testing              | ✅ Done            |
+| 4.8  | Validation span enrichment (ext. dashboard) | ✅ Done (partial)  |
 
 **Note**: The original plan doc listed tasks 4.7-4.11 as "Validator list tracing",
 "Amendment voting tracing", "SHAMap sync tracing", "Multi-validator integration tests",
@@ -219,14 +219,14 @@ SHAMap tracing are not implemented.
 
 ### Spans Produced
 
-| Span Name                   | Location           | Attributes                                                                                                                                                                                                       |
-| --------------------------- | ------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `consensus.phase.open`      | `Consensus.h`      | _(none)_                                                                                                                                                                                                         |
-| `consensus.proposal.send`   | `RCLConsensus.cpp` | `consensus_round`                                                                                                                                                                                                |
-| `consensus.ledger_close`    | `RCLConsensus.cpp` | `ledger_seq`, `consensus_mode`                                                                                                                                                                                   |
-| `consensus.accept`          | `RCLConsensus.cpp` | `proposers`, `round_time_ms`, `quorum`                                                                                                                                                                           |
-| `consensus.accept.apply`    | `RCLConsensus.cpp` | `close_time`, `close_time_correct`, `close_resolution_ms`, `consensus_state`, `proposing`, `round_time_ms`, `ledger_seq`, `parent_close_time`, `close_time_self`, `close_time_vote_bins`, `resolution_direction` |
-| `consensus.validation.send` | `RCLConsensus.cpp` | `ledger_seq`, `proposing`                                                                                                                                                                                        |
+| Span Name                   | Location           | Attributes                                                                                                                                                                                                                                                    |
+| --------------------------- | ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `consensus.phase.open`      | `Consensus.h`      | _(none)_                                                                                                                                                                                                                                                      |
+| `consensus.proposal.send`   | `RCLConsensus.cpp` | `consensus_round`                                                                                                                                                                                                                                             |
+| `consensus.ledger_close`    | `RCLConsensus.cpp` | `ledger_seq`, `consensus_mode`                                                                                                                                                                                                                                |
+| `consensus.accept`          | `RCLConsensus.cpp` | `proposers`, `round_time_ms`, `quorum`                                                                                                                                                                                                                        |
+| `consensus.accept.apply`    | `RCLConsensus.cpp` | `close_time_ripple_epoch_s`, `close_time_correct`, `close_resolution_ms`, `consensus_state`, `proposing`, `round_time_ms`, `ledger_seq`, `parent_close_time_ripple_epoch_s`, `close_time_self_ripple_epoch_s`, `close_time_vote_bins`, `resolution_direction` |
+| `consensus.validation.send` | `RCLConsensus.cpp` | `ledger_seq`, `proposing`                                                                                                                                                                                                                                     |
 
 ### Exit Criteria
 
@@ -253,7 +253,8 @@ Phase 4a (establish-phase gap fill & cross-node correlation) adds:
 
 - **Deterministic trace ID** derived from `previousLedger.id()` so all validators
   in the same round share the same `trace_id` (switchable via
-  `consensus_trace_strategy` config: `"deterministic"` or `"attribute"`).
+  `consensus_trace_strategy` config: `"deterministic"`, or `"random"` which is
+  experimental and not used).
   See [Configuration Reference](./05-configuration-reference.md) for full
   configuration options.
 - **Round lifecycle spans**: `consensus.round` with round-to-round span links.
@@ -572,13 +573,14 @@ graph LR
 server=otel              # NEW: uses OTel OTLP metrics exporter
 # No prefix: it applies on the StatsD path only, not this one.
 
-# Endpoint and auth inherited from [telemetry] section:
+# Endpoints and auth come from the [telemetry] section:
 [telemetry]
 enabled=1
-endpoint=http://localhost:4318/v1/traces
+traces_endpoint=http://localhost:4318/v1/traces
+metrics_endpoint=http://localhost:4318/v1/metrics
 ```
 
-The `OTelCollector` reads the OTLP endpoint from `[telemetry]` config (replacing `/v1/traces` with `/v1/metrics` for the metrics exporter). No additional config keys needed.
+Each signal has its own key and each URL is used verbatim, so an operator can send traces and metrics to different collectors, or to one whose OTLP paths are not the defaults.
 
 **Backward compatibility**: `server=statsd` continues to work exactly as before.
 
@@ -631,14 +633,14 @@ See [Phase7_taskList.md](./Phase7_taskList.md) for detailed per-task breakdown.
 
 ### Motivation
 
-xrpld's `beast::Journal` logs and OpenTelemetry traces are currently two disjoint observability signals. When investigating an issue, operators must manually correlate timestamps between log files and Tempo traces. Phase 8 bridges this gap by injecting trace context (`trace_id`, `span_id`) into every log line emitted within an active, sampled span, and ingesting those logs into Grafana Loki via the OTel Collector's filelog receiver.
+xrpld's `beast::Journal` logs and OpenTelemetry traces are currently two disjoint observability signals. When investigating an issue, operators must manually correlate timestamps between log files and Tempo traces. Phase 8 bridges this gap by injecting trace context (`trace_id`, `span_id`) into every log line emitted within an active, sampled span, and ingesting those logs into Grafana Loki via the OTel Collector's file_log receiver.
 
 #### Gains
 
 1. **One-click trace-to-log navigation** — Click a trace in Tempo and immediately see the corresponding log lines in Loki, filtered by `trace_id`.
 2. **Reverse lookup (log-to-trace)** — Loki derived fields make `trace_id` values clickable links back to Tempo.
 3. **Unified observability** — All three pillars (traces, metrics, logs) flow through the same OTel Collector pipeline and are visible in a single Grafana instance.
-4. **Zero new dependencies in xrpld** — Uses existing OTel SDK headers (`GetSpan`, `GetContext`) already linked in Phase 1.
+4. **Zero new dependencies in xrpld** — Uses existing OTel SDK headers (`RuntimeContext`, `SpanContext`) already linked in Phase 1.
 5. **Negligible overhead** — The implementation checks the thread-local context value directly, avoiding heap allocation on the no-span path (~15-20ns). On the active-span path, total cost is ~50ns per log call. At typical logging rates, overhead is negligible.
 
 #### Losses / Risks
@@ -649,32 +651,53 @@ xrpld's `beast::Journal` logs and OpenTelemetry traces are currently two disjoin
 
 #### Decision
 
-The correlation value far outweighs the risks. The log format change is backward-compatible (fields are appended only when a sampled span is active), and the filelog receiver regex is straightforward to maintain.
+The correlation value far outweighs the risks. The log format change is backward-compatible (fields are appended only when a sampled span is active), and the file_log receiver regex is straightforward to maintain.
 
 ### Architecture
 
 Phase 8 has two independent sub-phases that can be developed in parallel:
 
 - **Phase 8a (code change)**: Modify `Logs::format()` in `src/libxrpl/basics/Log.cpp` to append `trace_id=<hex32> span_id=<hex16>` when the current thread has an active OTel span. Guarded by `#ifdef XRPL_ENABLE_TELEMETRY`.
-- **Phase 8b (infra only)**: Add Loki to the Docker Compose stack, configure the OTel Collector's `filelog` receiver to tail xrpld's log file, parse out structured fields (timestamp, partition, severity, trace_id, span_id, message), and export to Loki via OTLP. Configure Grafana Tempo↔Loki bidirectional linking.
+- **Phase 8b (infra only)**: Add Loki to the Docker Compose stack, configure the OTel Collector's `file_log` receiver to tail xrpld's log file, parse out structured fields (timestamp, partition, severity, trace_id, span_id, message), and export to Loki via OTLP. Configure Grafana Tempo↔Loki bidirectional linking.
 
 #### Trace ID Injection Flow
 
 ```mermaid
 flowchart LR
     subgraph xrpld["xrpld process"]
-        JLOG["JLOG(j.info())"]
-        Format["Logs::format()"]
-        OTelCtx["OTel Context<br/>(thread-local)"]
+        JLOG["`**JLOG(j.info())**
+        a log call on some thread`"]
+        Format["`**Logs::format()**
+        builds the log line`"]
+        OTelCtx["`**OTel thread-local context**
+        RuntimeContext::GetCurrent()
+        GetValue(kSpanKey)`"]
         JLOG --> Format
-        OTelCtx -.->|"GetSpan()→GetContext()"| Format
+        OTelCtx -.->|"`GetContext()
+        if IsValid and IsSampled`"| Format
     end
 
-    subgraph output["Log Output"]
-        LogLine["2024-01-15T10:30:45.123Z<br/>LedgerMaster:NFO<br/>trace_id=abc123...<br/>span_id=def456...<br/>Validated ledger 42"]
+    subgraph output["Log output"]
+        LogLine["`2026-Jan-15 10:30:45.123456789 UTC
+        LedgerMaster:NFO
+        trace_id=abc123... span_id=def456...
+        Validated ledger 42`"]
     end
 
     Format --> LogLine
+
+    subgraph legend["Reading the diagram"]
+        direction LR
+        L1["`**Solid arrow**
+        happens on every log call`"]
+        L2["`**Dotted arrow**
+        only adds ids when a sampled span is active on this thread`"]
+        L3["`**kSpanKey lookup**
+        reads the context value directly, so the no-span path allocates nothing`"]
+    end
+
+    L1 ~~~ L2 ~~~ L3
+    output ~~~ legend
 
     style xrpld fill:#1a237e,stroke:#0d1642,color:#fff
     style output fill:#1b5e20,stroke:#0d3d14,color:#fff
@@ -689,16 +712,35 @@ flowchart LR
 ```mermaid
 flowchart LR
     subgraph collector["OTel Collector"]
-        FR["filelog receiver<br/>tails debug.log"]
-        RP["regex_parser<br/>extracts trace_id,<br/>span_id, severity"]
-        BP["batch processor"]
-        LE["otlp/loki exporter"]
+        FR["`**file_log receiver**
+        tails debug.log`"]
+        RP["`**regex_parser**
+        extracts timestamp, partition,
+        severity, trace_id, span_id`"]
+        BP["`**batch processor**`"]
+        LE["`**otlp_http/loki exporter**`"]
         FR --> RP --> BP --> LE
     end
 
-    LogFile["xrpld<br/>debug.log"] --> FR
-    LE --> Loki["Grafana Loki<br/>:3100"]
-    Loki <-->|"derivedFields ↔<br/>tracesToLogs"| Tempo["Grafana Tempo"]
+    LogFile["`**xrpld**
+    debug.log`"] --> FR
+    LE --> Loki["`**Grafana Loki**
+    :3100`"]
+    Loki <-->|"`derivedFields
+    tracesToLogs`"| Tempo["`**Grafana Tempo**`"]
+
+    subgraph legend["Reading the diagram"]
+        direction LR
+        L1["`**Solid arrow**
+        the path every log line takes`"]
+        L2["`**Double arrow**
+        Grafana links the two backends both ways: a trace jumps to its logs, a trace_id in a log jumps back to the trace`"]
+        L3["`**otlp_http, not otlp**
+        Loki is reached over OTLP/HTTP; the old dedicated loki exporter was removed upstream`"]
+    end
+
+    L1 ~~~ L2 ~~~ L3
+    collector ~~~ legend
 
     style collector fill:#e65100,stroke:#bf360c,color:#fff
     style FR fill:#f57c00,stroke:#e65100,color:#fff
@@ -716,7 +758,7 @@ flowchart LR
 | ---- | ---------------------------------------------- |
 | 8.1  | Inject trace_id into Logs::format()            |
 | 8.2  | Add Loki to Docker Compose stack               |
-| 8.3  | Add filelog receiver to OTel Collector         |
+| 8.3  | Add file_log receiver to OTel Collector        |
 | 8.4  | Configure Grafana trace-to-log correlation     |
 | 8.5  | Update integration tests                       |
 | 8.6  | Update documentation (runbook, reference docs) |
@@ -730,15 +772,20 @@ flowchart LR
 - [x] Log lines outside spans have no trace context (no empty fields) — the
       block reads the thread-local span key and appends nothing when it is
       absent or the context is invalid (`Log.cpp:310-318`)
-- [x] Loki ingests xrpld logs via OTel Collector filelog receiver —
-      `otel-collector-config.yaml:38` (`filelog`); `loki` service in
-      `docker-compose.yml:71`
+- [x] Loki ingests xrpld logs via OTel Collector file_log receiver —
+      `otel-collector-config.yaml:38` (`file_log`); `loki` service in
+      `docker-compose.yml:112`
 - [x] Grafana Tempo → Loki one-click correlation works —
       `provisioning/datasources/tempo.yaml:32` (`tracesToLogs`)
 - [x] Grafana Loki → Tempo reverse lookup works via derived field —
       `provisioning/datasources/loki.yaml:16` (`derivedFields`)
-- [ ] Integration test verifies trace_id presence in logs — implemented in the
-      Phase 10 harness, but CI runs it with `--skip-loki`, so it is not gated
+- [ ] Integration test verifies trace_id presence in logs — CI gates this
+      through the Phase 10 harness's `validate_telemetry.py`, whose
+      `log.trace_id_present` and `log.trace_id_cross_reference` checks run
+      because the workflow passes no `--skip-loki`. That harness and
+      `.github/workflows/telemetry-validation.yml` live on the Phase 10 branch,
+      not here. `docker/telemetry/integration-test.sh:79-126` carries a separate
+      trace_id-in-logs check that no workflow under `.github/workflows/` runs
 - [ ] No performance regression from trace_id injection (< 0.1% overhead) —
       needs the Phase 10 benchmark suite
 
@@ -747,8 +794,10 @@ flowchart LR
 ## 6.8.2 Phase 9: Internal Metric Instrumentation Gap Fill (Weeks 14-15)
 
 > **Status**: Complete. Merged on `pratik/otel-phase9-metric-gap-fill`. Shipped
-> artefacts: `src/xrpld/telemetry/MetricsRegistry.{h,cpp}` (~41 KB + ~71 KB),
-> `src/xrpld/telemetry/MetricMacros.h`, `include/xrpl/nodestore/WriteStats.h`,
+> artefacts: `include/xrpl/telemetry/MetricsRegistry.h` (~40 KB) with
+> `src/libxrpl/telemetry/MetricsRegistry.cpp` (~28 KB),
+> `src/xrpld/telemetry/AppMetricGauges.{h,cpp}` (~20 KB + ~56 KB),
+> `include/xrpl/telemetry/MetricMacros.h`, `include/xrpl/nodestore/WriteStats.h`,
 > `src/xrpld/app/ledger/AcquireStats.h`,
 > `include/xrpl/telemetry/GetObjectMetricNames.h`, 10 GTest files under
 > `src/tests/libxrpl/telemetry/`, 4 new Grafana dashboards, provisioned Grafana
@@ -817,7 +866,7 @@ flowchart TB
   `ObservableGauge` async callbacks for NodeStore I/O, cache, TxQ, CountedObjects
   and load factors, plus synchronous counters/histograms for PerfLog RPC and job
   data. Polled at 10s intervals by `PeriodicMetricReader`
-  (`MetricsRegistry.cpp:289`, `export_interval_millis = 10000`).
+  (`MetricsRegistry::initExporterAndProvider`, `export_interval_millis = 10000`).
 - **NodeStore I/O is _not_ a beast::insight extension.** The original plan
   routed it through `Database.cpp` insight registrations; the shipped code
   registers a `nodestore_state` observable gauge instead
@@ -917,7 +966,7 @@ Alert Rules from External Dashboard**.
 
 ## 6.8.3 Phase 10: Synthetic Workload Generation & Telemetry Validation (Weeks 16-17)
 
-> **Status**: Implemented on this branch — `docker/telemetry/workload/` (24
+> **Status**: Implemented on this branch — `docker/telemetry/workload/` (25
 > files) and `.github/workflows/telemetry-validation.yml` are present here.
 > Upstream branches do not carry them, so the exit criteria below only hold from
 > `pratik/otel-phase10-workload-validation` onward.
@@ -1001,10 +1050,10 @@ flowchart LR
 
 - **Transaction submitter and RPC load generator** both use xrpld's native WebSocket command format (`{"command": ...}`) — not JSON-RPC format. Response data lives inside `"result"` with `"status"` at the top level.
 - **Node config** requires `[signing_support] true` for server-side signing, and `[ips]` (not `[ips_fixed]`) to ensure peer connections count in `peer_finder_active_*` metrics.
-- **Metric validation** uses the Prometheus `/api/v1/series` endpoint (not instant queries) to avoid false negatives from stale StatsD gauges. Every metric in `expected_metrics.json` must have > 0 series.
+- **Metric validation** uses the Prometheus `/api/v1/series` endpoint (not instant queries) which polls for late-populating series and ignores Prometheus's staleness horizon. Every metric in `expected_metrics.json` must have > 0 series.
 - **Gauge visibility**: the harness sets `[insight] server=otel` (`run-full-validation.sh`), so `beast::insight` gauges become OTel observable gauges whose callback is invoked on every collection cycle. A gauge that sits at 0 and never changes (e.g. `jobq_job_count`) therefore still reports, and `/api/v1/series` sees it.
 - **I/O latency fix**: `io_latency_sampler` emits unconditionally on first sample, then applies the 10 ms threshold. This ensures `ios_latency` is registered in Prometheus even in low-load CI environments.
-- **tx.receive span**: attribute keys are bare, not dotted — `suppressed` and `tx_status` (`TxSpanNames.h:71,75`). `suppressed` is set on both outcomes (`false` on the accepted path, `true` when the HashRouter suppresses), but `tx_status` is set **only** on the reject/known-bad/dropped paths, so it is absent on a successful receive. Assert on the attribute, not on span status.
+- **tx.receive span**: attribute keys are bare, not dotted — `tx_status` (`TxSpanNames.h`). The span is created only after the node decides to process the transaction, so a relayed duplicate produces no span; how many were dropped is the `transactions_duplicate` traffic category. `tx_status` is set **only** on the paths that drop a transaction after that point, so it is absent on a successful receive. Assert on the attribute, not on span status.
 
 ### Tasks
 
@@ -1068,15 +1117,16 @@ See [Phase10_taskList.md](./Phase10_taskList.md) for the per-task breakdown.
 ### CI Deliverable (Task 10.6)
 
 The Phase 10 CI entry point is `.github/workflows/telemetry-validation.yml`
-(367 lines, on the Phase 10 branch). It runs three jobs — `linux-image-tag`,
+(on the Phase 10 branch). It runs three jobs — `linux-image-tag`,
 `build-xrpld`, `validate-telemetry` — and is triggered by `workflow_dispatch`
-plus `push` on `pratik/otel-phase*`, `feature/otel-*` and
-`feature/telemetry-*`. **There is no cron schedule**, so nothing runs this
-workflow on a timer.
+plus any `push` that touches one of the `paths` globs below. **There is no
+branch filter**: GitHub ANDs `branches` with `paths`, so a branch glob would
+decide validation by what a branch is called rather than by what it changed.
+**There is no cron schedule**, so nothing runs this workflow on a timer.
 
 > **Fixed — the `push` trigger's `paths` filter now covers the C++ telemetry
-> sources.** The branch filter is only half the trigger; `push` also carries a
-> `paths` filter, and it previously read:
+> sources.** The `push` trigger carries a `paths` filter, and it previously
+> read:
 >
 > ```yaml
 > paths:
@@ -1090,14 +1140,14 @@ workflow on a timer.
 > `include/xrpl/basics/Telemetry*.h` nor `src/xrpld/app/misc/Telemetry*` exists.
 > The telemetry code lives in `src/xrpld/telemetry/**` (9 files, including
 > `MetricsRegistry.cpp`), `src/libxrpl/telemetry/**` (7 files) and
-> `include/xrpl/telemetry/**` (10 files), none of which were listed.
+> `include/xrpl/telemetry/**` (13 files), none of which were listed.
 > Consequence at the time: a pure C++ telemetry change — new instrument,
 > renamed metric, changed span attribute — never triggered this workflow on
 > push; only edits under `docker/telemetry/**` or to the workflow file itself
 > did.
 >
-> The two dead globs have been replaced with the three real module directories,
-> so the filter now reads:
+> The two dead globs have been replaced with the real module directories, the
+> name-constant headers and the checkers, so the filter now reads:
 >
 > ```yaml
 > paths:
@@ -1105,15 +1155,22 @@ workflow on a timer.
 >   - "docker/telemetry/**"
 >   - "include/xrpl/telemetry/**"
 >   - "src/libxrpl/telemetry/**"
->   - "src/libxrpl/beast/insight/**"
 >   - "src/xrpld/telemetry/**"
+>   - "include/xrpl/beast/insight/**"
+>   - "src/libxrpl/beast/insight/**"
+>   - "**/*SpanNames.h"
+>   - "**/*MetricNames.h"
+>   - "src/tests/libxrpl/telemetry/**"
+>   - ".github/scripts/otel-naming/**"
+>   - ".github/scripts/telemetry/**"
 > ```
 >
 > `src/libxrpl/beast/insight/**` is included because it holds `OTelCollector.cpp`,
-> the `beast::insight` OTLP export path the harness depends on. Residual gap: the
-> instrumented call sites scattered through `src/xrpld/app/` are not listed, so a
-> change that only adds or moves a span at a call site does not trigger the
-> workflow on push. Those are reachable by manual dispatch.
+> the `beast::insight` OTLP export path the harness depends on. The `*SpanNames.h`
+> and `*MetricNames.h` globs cover the name constants wherever they sit, including
+> under `src/xrpld/app/`. Residual gap: an instrumented call site that adds or
+> moves a span without touching a name header does not trigger the workflow on
+> push. Those are reachable by manual dispatch.
 
 > **Caveat — four inert inputs (documented, not wired).** The workflow declares
 > five `workflow_dispatch` inputs, but only `run_benchmark` changes behaviour.
@@ -1483,7 +1540,7 @@ Clear, measurable criteria for each phase.
 | Relay Ordering        | Protobuf span_id propagation creates parent-child | Tempo trace tree shows relay chain                       |
 | Graceful Degradation  | Old peer drops trace_context                      | Spans still grouped by deterministic trace_id            |
 | Relay Visibility      | relay_count attribute correct                     | Spot check 100 txs                                       |
-| HashRouter            | Deduplication visible in trace                    | Duplicate txs show suppressed=true                       |
+| HashRouter            | Deduplication visible                             | Duplicates produce no span                               |
 | Performance           | TX throughput overhead                            | <5% degradation                                          |
 
 **Definition of Done**: Transaction traces span 3+ nodes in test network with deterministic trace_id correlation, parent-child ordering via protobuf propagation, and performance within bounds.
@@ -1900,13 +1957,13 @@ class ValidationTracker
 
 **Key new files**:
 
-- `src/xrpld/telemetry/ValidationTracker.h`
-- `src/xrpld/telemetry/detail/ValidationTracker.cpp`
+- `include/xrpl/telemetry/ValidationTracker.h`
+- `src/libxrpl/telemetry/detail/ValidationTracker.cpp`
 
 **Key modified files**:
 
-- `src/xrpld/telemetry/MetricsRegistry.h` (add ValidationTracker member)
-- `src/xrpld/telemetry/MetricsRegistry.cpp` (add gauge callback reading from tracker)
+- `include/xrpl/telemetry/MetricsRegistry.h` (add ValidationTracker member)
+- `src/xrpld/telemetry/AppMetricGauges.cpp` (add gauge callback reading from tracker)
 - `src/xrpld/app/consensus/RCLConsensus.cpp` (add recording hooks)
 - `src/xrpld/app/ledger/detail/LedgerMaster.cpp` (add recording hook)
 
@@ -1931,7 +1988,7 @@ New MetricsRegistry observable gauge for amendment, UNL, and quorum health.
 |                    | `unl_expiry_days`   | double | `app_.validators().expires()` → days until expiry |
 |                    | `validation_quorum` | int64  | `app_.validators().quorum()`                      |
 
-**File**: `src/xrpld/telemetry/MetricsRegistry.cpp` (new gauge callback in `registerAsyncGauges()`)
+**File**: `src/xrpld/telemetry/AppMetricGauges.cpp` (new gauge callback in `registerAsyncGauges()`)
 
 **Exit Criteria**:
 
@@ -1954,7 +2011,7 @@ New MetricsRegistry observable gauge for peer health aggregates.
 
 **Implementation note**: The callback iterates `app_.overlay().foreach(...)` to collect per-peer latency and version data. This runs every 10s on the metrics reader thread — acceptable overhead for ~50-200 peers.
 
-**File**: `src/xrpld/telemetry/MetricsRegistry.cpp`
+**File**: `src/xrpld/telemetry/AppMetricGauges.cpp`
 
 **Exit Criteria**:
 
@@ -1977,7 +2034,7 @@ New MetricsRegistry observable gauge for fee and ledger metrics.
 |                  | `ledger_age_seconds` | double | `now - lastValidatedCloseTime`            |
 |                  | `transaction_rate`   | double | Derived: tx count delta / time delta      |
 
-**File**: `src/xrpld/telemetry/MetricsRegistry.cpp`
+**File**: `src/xrpld/telemetry/AppMetricGauges.cpp`
 
 **Exit Criteria**:
 
@@ -2012,7 +2069,7 @@ xrpld's `OperatingMode` enum maps 0-4 (DISCONNECTED through FULL). The external 
 
 **Note**: Values 5-6 require checking both `OperatingMode` and `ConsensusMode`. The callback should derive these from `app_.getOPs().getOperatingMode()` combined with `mConsensus.mode()`. If operating mode is FULL and consensus is proposing → 6; if FULL and validating → 5; otherwise use the raw OperatingMode enum value.
 
-**File**: `src/xrpld/telemetry/MetricsRegistry.cpp`
+**File**: `src/xrpld/telemetry/AppMetricGauges.cpp`
 
 **Exit Criteria**:
 
@@ -2039,7 +2096,7 @@ The label value was `nudb_bytes` through Phase 8 and was renamed in Phase 9: the
 value is read from `Database`, not from the NuDB backend, so a backend prefix
 misdescribed it and the old name implied an on-disk size it never reported.
 
-**File**: `src/xrpld/telemetry/MetricsRegistry.cpp`
+**File**: `src/xrpld/telemetry/AppMetricGauges.cpp`
 
 **Exit Criteria**:
 
@@ -2064,7 +2121,10 @@ New counters incremented at event sites. Declared in MetricsRegistry, recording 
 
 **Key modified files**:
 
-- `src/xrpld/telemetry/MetricsRegistry.h/.cpp` (counter declarations)
+- `include/xrpl/telemetry/MetricsRegistry.h` and
+  `src/libxrpl/telemetry/MetricsRegistry.cpp` (synchronous counter declarations)
+- `src/xrpld/telemetry/AppMetricGauges.cpp` (the three observed as ObservableCounters:
+  `validation_agreements_total`, `validation_missed_total`, `jq_trans_overflow_total`)
 - `src/xrpld/app/consensus/RCLConsensus.cpp` (recording: ledgers_closed, validations_sent)
 - `src/xrpld/app/ledger/detail/LedgerMaster.cpp` (recording: validations_checked)
 - `src/xrpld/app/misc/NetworkOPs.cpp` (recording: state_changes)
@@ -2090,7 +2150,7 @@ Reads from the `ValidationTracker` (Task 7.8) to export rolling window stats.
 |                        | `agreements_24h`    | int64  | `tracker.agreements24h()`   |
 |                        | `missed_24h`        | int64  | `tracker.missed24h()`       |
 
-**File**: `src/xrpld/telemetry/MetricsRegistry.cpp`
+**File**: `src/xrpld/telemetry/AppMetricGauges.cpp`
 
 **Exit Criteria**:
 
@@ -2278,12 +2338,12 @@ Phase 9 additionally ships 9 rules with no external counterpart:
 | Peer Count Critical | `server_info{metric="peers"} < 5`                       | —          |
 
 > **"Not Proposing" is unblocked.** The `state_tracking` gauge **is**
-> implemented: `MetricsRegistry::registerStateTrackingGauge()`
-> (`MetricsRegistry.cpp:1461-1510`) creates
-> `CreateDoubleObservableGauge("state_tracking", …)` at `:1466` and observes
-> `state_value` (`:1497`) and `time_in_current_state_seconds` (`:1502`). It is
-> already consumed by `validator-health.json:765,971` and
-> `ledger-data-sync.json:869`, and documented in
+> implemented: `AppMetricGauges::registerStateTrackingGauge()`
+> (`src/xrpld/telemetry/AppMetricGauges.cpp`) creates
+> `CreateDoubleObservableGauge("state_tracking", …)` and observes `state_value`
+> and `time_in_current_state_seconds`. It is
+> already consumed by `validator-health.json` and
+> `ledger-data-sync.json`, and documented in
 > [09-data-collection-reference.md](./09-data-collection-reference.md) §
 > "State Tracking". Only **3** of the 14 remaining rules are blocked on anything —
 > CPU High, Memory Critical and Disk Warning, all needing `node_exporter`.

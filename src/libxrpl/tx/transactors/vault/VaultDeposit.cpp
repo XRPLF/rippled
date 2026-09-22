@@ -347,36 +347,13 @@ VaultDeposit::doApply()
         if (fix340Enabled)
         {
             // Round down at the posterior sfAssetsTotal scale so the vault is credited by no more
-            // than the depositor paid.
+            // than the depositor paid. Keep the share count from the first round trip: the clamp
+            // only drops a last digit of the new total. Converting the clamped amount back to
+            // shares would mint fewer shares while still charging the N-share debit.
             auto const maybeClamped = clampToAssetsTotalScale(vault, assetsDeposited);
             if (!maybeClamped)
                 return maybeClamped.error();
             assetsDeposited = *maybeClamped;
-
-            // The pre-clamp share count would over-issue by the trimmed ULP and give the depositor
-            // more value than they credited.
-            auto const maybeReShares = assetsToSharesDeposit(vault, sleIssuance, assetsDeposited);
-            if (!maybeReShares)
-                return tecINTERNAL;  // LCOV_EXCL_LINE
-
-            sharesCreated = *maybeReShares;
-
-            if (sharesCreated == beast::kZero)
-                return tecPRECISION_LOSS;
-
-            // The re-derived share count would over-issue if it round-trips back to more assets
-            // than the clamped amount actually paid. Unreachable unless a conversion helper is
-            // broken.
-            // LCOV_EXCL_START
-            auto const maybeReAssets = sharesToAssetsDeposit(vault, sleIssuance, sharesCreated);
-            if (!maybeReAssets)
-                return tecINTERNAL;
-            if (*maybeReAssets > assetsDeposited)
-            {
-                JLOG(j_.error()) << "VaultDeposit: would take more than offered.";
-                return tecINTERNAL;
-            }
-            // LCOV_EXCL_STOP
 
             // The actual deposit amount is truncated to whole shares, converted back to assets,
             // and clamped to the sfAssetsTotal scale (post-fixCleanup3_4_0). Check the depositor's

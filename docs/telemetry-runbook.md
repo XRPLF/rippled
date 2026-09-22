@@ -76,7 +76,7 @@ Add to your `xrpld.cfg`:
 ```ini
 [telemetry]
 enabled=1
-endpoint=http://localhost:4318/v1/traces
+traces_endpoint=http://localhost:4318/v1/traces
 ```
 
 ### 3. Build with telemetry support
@@ -91,6 +91,8 @@ cmake --build . --target xrpld
 
 Conan also writes a `conan-release` CMake preset, so `cmake --preset conan-release -Dtelemetry=ON` works instead of the explicit toolchain line. There is no preset named `default`.
 
+Both telemetry flags are the current default, so omitting them still gives you an instrumented build. Pass them anyway, so the build stays instrumented wherever the default moves.
+
 ### 4. Run against a live network
 
 Two ready-made configs connect a tracking node (no validator credentials) to a
@@ -101,6 +103,13 @@ public network with all tracing and native metrics enabled:
 | `docker/telemetry/xrpld-telemetry.cfg`         | Devnet  |
 | `docker/telemetry/xrpld-telemetry-mainnet.cfg` | Mainnet |
 
+> **Create the validator list file first.** Neither list is tracked in this repo, so make your own before the first run. Each config names one in `[validators_file]`, and xrpld exits at startup when the named file is missing, with `The file specified in [validators_file] does not exist`.
+>
+> | Create this file                          | Needed by                     | What goes in it                                                                                                                                                         |
+> | ----------------------------------------- | ----------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+> | `docker/telemetry/validators-mainnet.txt` | `xrpld-telemetry-mainnet.cfg` | Copy `cfg/validators-example.txt` as it ships — it already trusts the mainnet publishers                                                                                |
+> | `docker/telemetry/validators-devnet.txt`  | `xrpld-telemetry.cfg`         | Same two sections, holding the devnet publisher site and key instead — see the [XRPL test network docs](https://xrpl.org/connect-your-rippled-to-the-xrp-test-net.html) |
+
 ```bash
 .build/xrpld --conf docker/telemetry/xrpld-telemetry-mainnet.cfg
 ```
@@ -109,7 +118,7 @@ Both set `[insight] server=otel` (native metrics → collector → Prometheus, w
 drives the dashboards) and `service_instance_id`, exposed by Prometheus as the
 `service_instance_id` label that the `$node` dashboard variable filters on. The
 mainnet config logs to `/var/log/xrpld/mainnet/debug.log` — the path
-the collector's filelog receiver tails for log-trace correlation.
+the collector's file_log receiver tails for log-trace correlation.
 
 Metrics begin flowing as soon as the node connects to peers (`server_state`
 ≥ `connected`); full ledger and consensus panels populate after sync
@@ -126,40 +135,35 @@ curl -s http://localhost:5015 -d '{"method":"server_info"}' |
 
 ## Configuration Reference
 
-| Option                     | Default                           | Description                                                  |
-| -------------------------- | --------------------------------- | ------------------------------------------------------------ |
-| `enabled`                  | `0`                               | Master switch for telemetry                                  |
-| `endpoint`                 | `http://localhost:4318/v1/traces` | OTLP/HTTP endpoint                                           |
-| `service_name`             | `xrpld`                           | OpenTelemetry service name resource attribute                |
-| `service_instance_id`      | node public key                   | OpenTelemetry service instance ID resource attribute         |
-| `trace_rpc`                | `1`                               | Enable RPC request tracing                                   |
-| `trace_transactions`       | `1`                               | Enable transaction tracing                                   |
-| `trace_consensus`          | `1`                               | Enable consensus tracing                                     |
-| `trace_peer`               | `1`                               | Enable peer message tracing (high volume)                    |
-| `trace_ledger`             | `1`                               | Enable ledger tracing                                        |
-| `consensus_trace_strategy` | `deterministic`                   | Consensus trace ID strategy (`deterministic` or `attribute`) |
-| `batch_size`               | `512`                             | Max spans per batch export                                   |
-| `batch_delay_ms`           | `5000`                            | Delay between batch exports                                  |
-| `max_queue_size`           | `2048`                            | Max spans queued before dropping                             |
-| `use_tls`                  | `0`                               | Use TLS for exporter connection                              |
-| `tls_ca_cert`              | (empty)                           | Path to CA certificate bundle                                |
-| `tls_client_cert`          | (empty)                           | Client cert (PEM) for mTLS; empty = one-way. See note        |
-| `tls_client_key`           | (empty)                           | Private key (PEM) for `tls_client_cert`. See note            |
+| Option                     | Default                           | Description                                                                                           |
+| -------------------------- | --------------------------------- | ----------------------------------------------------------------------------------------------------- |
+| `enabled`                  | `0`                               | Master switch for telemetry                                                                           |
+| `traces_endpoint`          | `http://localhost:4318/v1/traces` | Full OTLP/HTTP URL for spans, used verbatim                                                           |
+| `service_name`             | `xrpld`                           | OpenTelemetry service name resource attribute                                                         |
+| `service_instance_id`      | node public key                   | OpenTelemetry service instance ID resource attribute                                                  |
+| `trace_rpc`                | `1`                               | Enable RPC request tracing                                                                            |
+| `trace_transactions`       | `1`                               | Enable transaction tracing                                                                            |
+| `trace_consensus`          | `1`                               | Enable consensus tracing                                                                              |
+| `trace_peer`               | `1`                               | Enable peer message tracing (high volume)                                                             |
+| `trace_ledger`             | `1`                               | Enable ledger tracing                                                                                 |
+| `consensus_trace_strategy` | `deterministic`                   | Consensus trace ID strategy. `deterministic` is the value to use; `random` is experimental — see note |
+| `batch_size`               | `512`                             | Max spans per batch export                                                                            |
+| `batch_delay_ms`           | `5000`                            | Delay between batch exports                                                                           |
+| `max_queue_size`           | `2048`                            | Max spans queued before dropping                                                                      |
+| `use_tls`                  | `0`                               | Use TLS for exporter connection                                                                       |
+| `tls_ca_cert`              | (empty)                           | Path to CA certificate bundle                                                                         |
+| `tls_client_cert`          | (empty)                           | Client cert (PEM) for mTLS; empty = one-way. See note                                                 |
+| `tls_client_key`           | (empty)                           | Private key (PEM) for `tls_client_cert`. See note                                                     |
 
-> **mTLS (mutual TLS) note**: `tls_client_cert` and `tls_client_key` are optional — leaving both empty gives one-way (server-only) TLS. **If either one is set**, `enabled=1` requires both of them **and** `use_tls=1`, or the node exits at startup; see the Troubleshooting entry for `Unable to start ...: [telemetry] ...`. When `enabled=0` they are read but never validated.
+> **mTLS (mutual TLS) note**: `tls_client_cert` and `tls_client_key` are optional — leaving both empty gives one-way (server-only) TLS. **If either one is set**, `enabled=1` requires both of them, `use_tls=1`, **and** a `traces_endpoint` starting with `https://` — the exporter decides encryption from the URL scheme, so the certificate is only ever presented on an `https://` endpoint. The default `traces_endpoint` is plain HTTP, so mTLS means setting that key too. Breaking any of these makes the node exit at startup; see the Troubleshooting entry for `Unable to start ...: [telemetry] ...`. When `enabled=0` they are read but never validated.
+
+> **`consensus_trace_strategy` note**: only `deterministic` and `random` are accepted, and anything else makes the node exit at startup. Use `deterministic`: it seeds the round's trace ID from the previous ledger hash, so every validator of a round reports into one trace. `random` is experimental and not used — each node would invent its own trace ID, so a single round would arrive as one separate trace per node, joinable only by hand through `consensus_ledger_id`.
 
 > **Traces and metrics also carry `xrpl.node.id`.** xrpld sets it as a resource
 > attribute alongside `service.instance.id`; the value is the node public key
 > (base58, begins with `n`). It comes from the node identity unconditionally, so
 > it is present even when `[telemetry] service_instance_id` is configured.
 > TraceQL filters on it as `resource.xrpl.node.id`.
-
-> **`consensus_trace_strategy` is not validated.** The parser copies the raw
-> string through (`TelemetryConfig.cpp:155-156`) and the only equality test in
-> the code is `strategy == "attribute"` (`RCLConsensus.cpp:1296`). Any other
-> value — including a typo such as `determinstic` — silently selects the
-> deterministic branch. There is no warning in the log. The two accepted values
-> are documented at `include/xrpl/telemetry/Telemetry.h:287-292`.
 
 ## Exporting to Grafana Cloud
 
@@ -213,12 +217,12 @@ To return to local-only export, bring the stack up with just the base
 The prepared config **dual-exports**: data goes to both the local stack and
 Grafana Cloud, so the on-box backends remain a fallback. For cloud-only,
 remove the local exporters (`debug`, `otlp/tempo`, `prometheus`,
-`otlphttp/loki`) from the respective pipelines in
+`otlp_http/loki`) from the respective pipelines in
 `otel-collector-config.grafanacloud.yaml`, leaving only
-`otlphttp/grafanacloud`.
+`otlp_http/grafanacloud`.
 
 > **Note**: shipping logs to Grafana Cloud requires keeping xrpld file
-> logging on (at least `warning` level) so the collector's filelog receiver
+> logging on (at least `warning` level) so the collector's file_log receiver
 > has a `debug.log` to tail. Traces and metrics are unaffected by log level.
 
 ### Importing dashboards to Grafana Cloud
@@ -277,19 +281,19 @@ this span: count successes as total minus error, or filter on `status_code`.
 
 ### Transaction Spans
 
-| Span Name       | Source File     | Attributes                                                                                              | Description                           |
-| --------------- | --------------- | ------------------------------------------------------------------------------------------------------- | ------------------------------------- |
-| `tx.process`    | NetworkOPs.cpp  | `tx_hash`, `local`, `path`, `tx_type`, `fee`, `sequence`, `ter_result`, `applied`, `current_ledger_seq` | Transaction submission and processing |
-| `tx.receive`    | PeerImp.cpp     | `peer_id`, `tx_hash`, `tx_type`, `peer_version`, `suppressed`, `tx_status`, `current_ledger_seq`        | Transaction received from peer relay  |
-| `tx.apply`      | BuildLedger.cpp | `tx_count`, `tx_failed`                                                                                 | Transaction set applied per ledger    |
-| `tx.preflight`  | applySteps.cpp  | `stage`, `tx_type`, `ter_result`                                                                        | Stateless checks stage                |
-| `tx.preclaim`   | applySteps.cpp  | `stage`, `tx_type`, `ter_result`, `current_ledger_seq`, `current_ledger_hash`                           | Ledger-aware checks stage             |
-| `tx.transactor` | Transactor.cpp  | `stage`, `tx_type`, `ter_result`, `applied`, `current_ledger_seq`, `current_ledger_hash`                | Apply stage (transactor runs)         |
+| Span Name       | Source File     | Attributes                                                                                              | Description                                                  |
+| --------------- | --------------- | ------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------ |
+| `tx.process`    | NetworkOPs.cpp  | `tx_hash`, `local`, `path`, `tx_type`, `fee`, `sequence`, `ter_result`, `applied`, `current_ledger_seq` | Transaction submission and processing                        |
+| `tx.receive`    | PeerImp.cpp     | `peer_id`, `tx_hash`, `tx_type`, `peer_version`, `tx_status`, `current_ledger_seq`                      | Transaction this node will process, received from peer relay |
+| `tx.apply`      | BuildLedger.cpp | `tx_count`, `tx_failed`                                                                                 | Transaction set applied per ledger                           |
+| `tx.preflight`  | applySteps.cpp  | `stage`, `tx_type`, `ter_result`                                                                        | Stateless checks stage                                       |
+| `tx.preclaim`   | applySteps.cpp  | `stage`, `tx_type`, `ter_result`, `current_ledger_seq`, `current_ledger_hash`                           | Ledger-aware checks stage                                    |
+| `tx.transactor` | Transactor.cpp  | `stage`, `tx_type`, `ter_result`, `applied`, `current_ledger_seq`, `current_ledger_hash`                | Apply stage (transactor runs)                                |
 
 The three apply-pipeline spans (`tx.preflight`, `tx.preclaim`, `tx.transactor`)
 share a deterministic `trace_id` from `txID[0:16]`, so they group under one
 trace per transaction. The `stage` attribute (`preflight` / `preclaim` /
-`apply`) drives the collector spanmetrics `stage` dimension, giving per-stage
+`apply`) drives the collector span_metrics `stage` dimension, giving per-stage
 RED metrics on the _Transaction Overview_ dashboard.
 
 `current_ledger_seq` is the current (open/in-flight) ledger index a span acted on
@@ -336,7 +340,7 @@ read it from the parent rather than filtering `tx.apply` on it.
 | `consensus.update_positions`   | Consensus.h      | `converge_percent`, `proposers`, `disputes_count`, `avalanche_threshold` (only when peer positions exist), `have_close_time_consensus`, `close_time_threshold`                                                                                                                                                           | Position update and dispute resolution (see Events below)                                                                             |
 | `consensus.check`              | Consensus.h      | `agree_count`, `disagree_count`, `converge_percent`, `have_close_time_consensus`, `threshold_percent`, `proposers_finished`, `consensus_stalled`, `establish_count`, `consensus_result`                                                                                                                                  | Consensus threshold check                                                                                                             |
 | `consensus.accept`             | RCLConsensus.cpp | `proposers`, `round_time_ms`, `quorum`, `disputes_count`, `consensus_state`                                                                                                                                                                                                                                              | Ledger accepted by consensus                                                                                                          |
-| `consensus.accept.apply`       | RCLConsensus.cpp | `ledger_seq`, `close_time`, `close_time_correct`, `close_resolution_ms`, `consensus_state`, `proposing`, `round_time_ms`, `parent_close_time`, `close_time_self`, `close_time_vote_bins`, `resolution_direction`, `tx_count`, `disputes_resolved_count`                                                                  | Ledger application with close time details (see Events below)                                                                         |
+| `consensus.accept.apply`       | RCLConsensus.cpp | `ledger_seq`, `close_time_ripple_epoch_s`, `close_time_correct`, `close_resolution_ms`, `consensus_state`, `proposing`, `round_time_ms`, `parent_close_time_ripple_epoch_s`, `close_time_self_ripple_epoch_s`, `close_time_vote_bins`, `resolution_direction`, `tx_count`, `disputes_resolved_count`                     | Ledger application with close time details (see Events below)                                                                         |
 | `consensus.validation.send`    | RCLConsensus.cpp | `ledger_seq`, `proposing`, `ledger_hash`, `full_validation`, `validation_sign_time`                                                                                                                                                                                                                                      | Validation sent after accept (follows-from link)                                                                                      |
 | `consensus.mode_change`        | RCLConsensus.cpp | `mode_old`, `mode_new`                                                                                                                                                                                                                                                                                                   | Consensus mode transition                                                                                                             |
 | `consensus.proposal.receive`   | PeerImp.cpp      | `proposal_trusted`, `consensus_round`, `prev_ledger_prefix`, `position_hash_prefix`                                                                                                                                                                                                                                      | Proposal received from peer (extracts parent context from TraceContext when present; falls back to standalone span for older peers)   |
@@ -344,17 +348,17 @@ read it from the parent rather than filtering `tx.apply` on it.
 
 #### Consensus Span Events
 
-| Parent Span                  | Event Name         | Event Attributes                                            | Description                                              |
-| ---------------------------- | ------------------ | ----------------------------------------------------------- | -------------------------------------------------------- |
-| `consensus.update_positions` | `dispute.resolve`  | `tx_id`, `dispute_our_vote`, `dispute_yays`, `dispute_nays` | Emitted per dispute when votes are tallied               |
-| `consensus.accept.apply`     | `tx.included`      | `tx_id`                                                     | Emitted per transaction included in the accepted ledger  |
-| `consensus.round`            | `phase.open`       | --                                                          | Round entered the open phase (also re-fired on recovery) |
-| `consensus.round`            | `phase.recovery`   | --                                                          | Round started with `StartRoundReason::Recovered`         |
-| `consensus.round`            | `phase.establish`  | --                                                          | Round entered the establish phase on close               |
-| `consensus.round`            | `phase.accepted`   | --                                                          | Round reached the accepted phase                         |
-| `consensus.round`            | `outcome.yes`      | --                                                          | Round settled with consensus reached                     |
-| `consensus.round`            | `outcome.moved_on` | --                                                          | Round abandoned; the network moved on without us         |
-| `consensus.round`            | `outcome.expired`  | --                                                          | Round expired without settling                           |
+| Parent Span                  | Event Name         | Event Attributes                                            | Description                                                                                |
+| ---------------------------- | ------------------ | ----------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
+| `consensus.update_positions` | `dispute.resolve`  | `tx_id`, `dispute_our_vote`, `dispute_yays`, `dispute_nays` | Emitted per dispute when votes are tallied                                                 |
+| `consensus.accept.apply`     | `tx.included`      | `tx_id`                                                     | Emitted per transaction of the agreed consensus set, before the ledger is built — see note |
+| `consensus.round`            | `phase.open`       | --                                                          | Round entered the open phase (also re-fired on recovery)                                   |
+| `consensus.round`            | `phase.recovery`   | --                                                          | Round started with `StartRoundReason::Recovered`                                           |
+| `consensus.round`            | `phase.establish`  | --                                                          | Round entered the establish phase on close                                                 |
+| `consensus.round`            | `phase.accepted`   | --                                                          | Round reached the accepted phase                                                           |
+| `consensus.round`            | `outcome.yes`      | --                                                          | Round settled with consensus reached                                                       |
+| `consensus.round`            | `outcome.moved_on` | --                                                          | Round abandoned; the network moved on without us                                           |
+| `consensus.round`            | `outcome.expired`  | --                                                          | Round expired without settling                                                             |
 
 The nine events above are the complete set. The seven on `consensus.round`
 carry **no event attributes** — they are timestamps marking phase entry and the
@@ -368,9 +372,16 @@ attribute, which is why `phase.recovery` is the one phase event that leaves
 from `result_->state` at
 [Consensus.h:1517-1525](../include/xrpl/consensus/Consensus.h#L1517).
 
+> **`tx.included` note**: the event is recorded while the canonical transaction set is being assembled, which happens before `buildLCL()` applies anything. So a transaction that fails to apply, or is left over to retry in a later ledger, still has a `tx.included` event. Treat the events as the round's **input** set, not as proof a transaction reached the accepted ledger; `tx_count` on the same span counts the same set. A transaction whose bytes cannot be parsed gets no event, and nothing in the accepted ledger is missing one, so the events are always a superset of the ledger's contents. To confirm a transaction actually applied, read `ter_result` and `applied` on its `tx.transactor` span.
+
 #### Close Time Queries (Tempo TraceQL)
 
-Span attributes are filtered with `span.<attr>` inside `{}`. Combine conditions with `&&`.
+> **TraceQL syntax**: an attribute filter belongs inside the braces, as
+> `{name="x" && span.attr = value}`. The `{name="x"} | attr = value` form used
+> by several examples in this document is rejected by current Tempo with a parse
+> error, so convert an example to the braced form before running it. Numeric
+> attributes such as `consensus_round_id` and `retries_remaining` must be
+> compared unquoted.
 
 ```
 # Find rounds where validators disagreed on close time
@@ -385,21 +396,24 @@ Span attributes are filtered with `span.<attr>` inside `{}`. Combine conditions 
 # Find specific ledger's consensus details
 {name="consensus.accept.apply" && span.ledger_seq = 92345678}
 
-# Find all spans in a consensus round (deterministic trace strategy)
-{name="consensus.round" && span.consensus_round_id = "<round_id>"}
+# Find a consensus round by its id. consensus_round_id is an int64 — the
+# previous ledger sequence plus one — so it must not be quoted, and it is set
+# only on consensus.round.
+{name="consensus.round" && span.consensus_round_id = 92345678}
 
-# Find dispute resolutions
-{name="consensus.update_positions"} >> {event:name="dispute.resolve"}
+# Find dispute resolutions. The event is recorded on the update_positions
+# span itself, so it is a condition on that span, not on a descendant.
+{name="consensus.update_positions" && event:name="dispute.resolve"}
 ```
 
 ### Ledger Spans
 
-| Span Name         | Source File       | Attributes                                                              | Description                                                                                                                   |
-| ----------------- | ----------------- | ----------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
-| `ledger.build`    | BuildLedger.cpp   | `ledger_seq`, `close_time`, `close_time_correct`, `close_resolution_ms` | Ledger build during consensus                                                                                                 |
-| `ledger.validate` | LedgerMaster.cpp  | `ledger_seq`, `validations`                                             | Ledger promoted to validated                                                                                                  |
-| `ledger.store`    | LedgerMaster.cpp  | `ledger_seq`                                                            | Ledger stored in history                                                                                                      |
-| `ledger.acquire`  | InboundLedger.cpp | `ledger_seq`, `acquire_reason`, `timeouts`, `peer_count`, `outcome`     | Fetch a missing ledger from peers (parent varies — see [known issues](#where-telemetry-parenting-differs-from-protocol-flow)) |
+| Span Name         | Source File       | Attributes                                                                             | Description                                                                                                                   |
+| ----------------- | ----------------- | -------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| `ledger.build`    | BuildLedger.cpp   | `ledger_seq`, `close_time_ripple_epoch_s`, `close_time_correct`, `close_resolution_ms` | Ledger build during consensus                                                                                                 |
+| `ledger.validate` | LedgerMaster.cpp  | `ledger_seq`, `validations`                                                            | Ledger promoted to validated                                                                                                  |
+| `ledger.store`    | LedgerMaster.cpp  | `ledger_seq`                                                                           | Ledger stored in history                                                                                                      |
+| `ledger.acquire`  | InboundLedger.cpp | `ledger_seq`, `acquire_reason`, `timeouts`, `peer_count`, `outcome`                    | Fetch a missing ledger from peers (parent varies — see [known issues](#where-telemetry-parenting-differs-from-protocol-flow)) |
 
 `ledger.acquire` sets only `ledger_seq` and `acquire_reason` when the span opens
 in `init()`. `outcome` has three values, written on two different paths:
@@ -583,7 +597,7 @@ flowchart TB
     RELAYOUT(["Overlay::relay fan-out to N peers<br/>(no span; if applied / terQUEUED,<br/>shouldRelay, not tfInnerBatchTxn)"]):::plain
     PREDROP(["Diverged / needNetworkLedger<br/>(no span — dropped before tx.receive)"]):::drop
     RCV["tx.receive<br/>(peer TMTransaction in)"]:::span
-    RCVDROP["tx.receive<br/>tx_status = rejected_inner_batch /<br/>suppressed / dropped_no_sync /<br/>dropped_queue_full"]:::drop
+    RCVDROP["tx.receive<br/>tx_status = dropped_no_sync /<br/>dropped_queue_full"]:::drop
     CHK(["checkTransaction<br/>(JtTransaction worker, no span)"]):::plain
     PRELAY_IN(["TMTransaction in (no span)"]):::plain
 
@@ -980,7 +994,7 @@ flowchart TB
   (`tvc < minVal`) it returns early with no promotion — a built ledger that loses
   is abandoned ([LedgerMaster.cpp:980](../src/xrpld/app/ledger/detail/LedgerMaster.cpp#L980);
   [docs/consensus.md:50](consensus.md)). The `ledger.validate` span is emitted only
-  inside `checkAccept` ([LedgerMaster.cpp:987](../src/xrpld/app/ledger/detail/LedgerMaster.cpp#L987)).
+  inside `checkAccept` ([LedgerMaster.cpp:1003](../src/xrpld/app/ledger/detail/LedgerMaster.cpp#L1003)).
 - **validation-send guard**: broadcast only if
   `validating_ && isCompatible && !consensusFail && canValidateSeq(seq)` — silently
   suppressed for incompatible ledgers or an already-validated seq
@@ -1147,8 +1161,8 @@ are pending a code fix:
 - **`ledger.acquire` / `ledger.store` / `ledger.validate` are not reliably roots
   either.** All three use `SpanGuard::span`
   ([InboundLedger.cpp:113](../src/xrpld/app/ledger/detail/InboundLedger.cpp#L113),
-  [LedgerMaster.cpp:463](../src/xrpld/app/ledger/detail/LedgerMaster.cpp#L463),
-  [987](../src/xrpld/app/ledger/detail/LedgerMaster.cpp#L987)), which inherits the
+  [LedgerMaster.cpp:470](../src/xrpld/app/ledger/detail/LedgerMaster.cpp#L470),
+  [1003](../src/xrpld/app/ledger/detail/LedgerMaster.cpp#L1003)), which inherits the
   ambient span ([SpanGuard.cpp:233](../src/libxrpl/telemetry/SpanGuard.cpp#L233))
   rather than `freshRoot`
   ([245](../src/libxrpl/telemetry/SpanGuard.cpp#L245)) — the same defect as
@@ -1328,7 +1342,7 @@ sum by (stage) (rate(span_calls_total{span_name=~"tx.preflight|tx.preclaim|tx.tr
 > in `otel-collector-config.grafanacloud.yaml` — the base
 > `otel-collector-config.yaml` has no tail sampling at all, so a stock local
 > stack retains every trace. Where that Cloud policy is in force it applies to
-> the trace-storage branch only; spanmetrics run on a separate branch and still
+> the trace-storage branch only; span_metrics run on a separate branch and still
 > see 100% of spans, so the derived RED metrics stay exact either way.
 
 ### Transaction Queue Health
@@ -1340,8 +1354,11 @@ sum by (stage) (rate(span_calls_total{span_name=~"tx.preflight|tx.preclaim|tx.tr
 # Find transactions being retried
 {name="txq.accept_tx" && span.txq_status = "retried"}
 
-# Find transactions that exhausted retries
-{name="txq.accept_tx" && span.txq_status = "retried" && span.retries_remaining = 0}
+# Find transactions dropped because they had no retries left.
+# retries_remaining is recorded before the attempt, and the "retried" branch
+# is only reached while retries are left, so exhaustion always shows up as
+# "failed" with a zero count.
+{name="txq.accept_tx" && span.txq_status = "failed" && span.retries_remaining <= 0}
 
 # Which transaction types get queued most often?
 {name="txq.enqueue" && span.tx_type = "Payment"}
@@ -1548,8 +1565,12 @@ all its normal attributes, it just lacks a cross-node parent link.
 # Trace a transaction across the network by its hash
 {name =~ "tx.*" && span.tx_hash = "<hash>"}
 
-# Find all spans in a cross-node consensus trace
-{resource.service.name="xrpld" && span.consensus_round_id = "<round_id>"}
+# Find a cross-node consensus trace by round id, then open the returned trace
+# to see every node's spans. Under the deterministic strategy all validators of
+# a round share one trace id, so one trace holds all of them. The value is an
+# integer, so it must not be quoted, and it only matches the consensus.round
+# span that carries it.
+{name="consensus.round" && span.consensus_round_id = 92345678}
 
 # Compare latency between sender and receiver for validations
 {name = "consensus.validation.send" || name = "consensus.validation.receive"}
@@ -1557,9 +1578,11 @@ all its normal attributes, it just lacks a cross-node parent link.
 
 ## Prometheus Metrics (Spanmetrics)
 
-The OTel Collector's spanmetrics connector automatically derives RED (Rate, Errors, Duration) metrics from every span. No custom metrics code is needed in xrpld.
+The OTel Collector's span_metrics connector automatically derives RED (Rate, Errors, Duration) metrics from every span. No custom metrics code is needed in xrpld.
 
 ### Generated Metric Names
+
+These names are deliberately generic: the connector emits **one** metric family covering every span, not a metric per span. Which span a series belongs to comes from the `span_name` label, and the rest of the breakdown from the `dimensions` list in `otel-collector-config.yaml`. So a query always names the span in a label selector rather than in the metric name — `span_calls_total{span_name="ledger.build"}`, never a `ledger_build_calls_total`.
 
 | Prometheus Metric                   | Type      | Description                  |
 | ----------------------------------- | --------- | ---------------------------- |
@@ -1567,6 +1590,19 @@ The OTel Collector's spanmetrics connector automatically derives RED (Rate, Erro
 | `span_duration_milliseconds_bucket` | Histogram | Latency distribution buckets |
 | `span_duration_milliseconds_count`  | Histogram | Latency observation count    |
 | `span_duration_milliseconds_sum`    | Histogram | Cumulative latency           |
+
+Only one part of those names is ours to choose. Reading a name left to right:
+
+| Part                                  | Set by                                                                               |
+| ------------------------------------- | ------------------------------------------------------------------------------------ |
+| `span_`                               | the connector's `namespace: "span"` in `otel-collector-config.yaml` — **our choice** |
+| `calls`, `duration`                   | the spanmetrics connector's own metric names                                         |
+| `_milliseconds`                       | the Prometheus exporter, expanding the metric's declared unit                        |
+| `_total`, `_bucket`, `_count`, `_sum` | Prometheus conventions for counters and histograms                                   |
+
+`_milliseconds` rather than `_ms` is therefore not a style decision taken here. The config declares the histogram in milliseconds (`buckets: [1ms, 5ms, ...]`) and never contains the string `milliseconds`; the exporter writes the unit out in full when it translates OTLP to Prometheus. Shortening it would mean renaming the series after export, which would break every dashboard and leave the exported name and the queried name disagreeing.
+
+Drop the `namespace` setting and these become `traces_span_metrics_*` instead — the connector's default. Any query, dashboard panel or test that names one of these metrics has to move with that setting.
 
 ### Metric Labels
 
@@ -1802,8 +1838,10 @@ ledger acquisition deferring". Use `acquire_ledger_deferrals` and
 These five come from the `PerfLog` job hooks, not from beast::insight, so they
 are exported by the `MetricsRegistry` meter. `job_queued_us` and `job_running_us`
 have explicit microsecond bucket views registered
-(`addMicrosecondHistogramView()` calls at MetricsRegistry.cpp:310-311; the helper
-itself is at `:197`) spanning 100 µs to 60 s; without those the SDK default
+(`addMicrosecondHistogramView()`, called from
+`MetricsRegistry::initExporterAndProvider()` — both live in
+`src/libxrpl/telemetry/MetricsRegistry.cpp`) spanning 100 µs to 60 s; without
+those the SDK default
 buckets stop at 10 ms and every quantile saturates.
 
 | Prometheus Metric    | Kind      | Labels                | Description                          |
@@ -1835,7 +1873,7 @@ two production job names embed a ledger sequence number:
 A raw label would mint a new Prometheus series for every ledger — unbounded
 growth at ~1 series every 3-5 s, forever.
 `MetricsRegistry::sanitiseHandler()` (declared inline in
-`src/xrpld/telemetry/MetricsRegistry.h`) therefore applies one rule:
+`include/xrpl/telemetry/MetricsRegistry.h`) therefore applies one rule:
 
 - Keep the name when it is **non-empty and every character is an ASCII letter**.
 - Otherwise return the constant `"other"`. An empty name, a digit, a hyphen, or
@@ -1917,13 +1955,52 @@ Aggregation choices worth knowing when reading these:
 > peer sends an oversized request. Verify its panel with a synthetic oversized
 > request; do not assume it works because the query parses.
 
+#### RPC Request-Count Metrics
+
+Two histograms describing how much work one RPC asks for. Names and descriptions
+are the `constexpr` constants in `include/xrpl/telemetry/RpcMetricNames.h`; both
+are recorded at their call sites and both get an explicit-bucket view in
+`MetricsRegistry.cpp`.
+
+| Prometheus Metric           | Kind      | Labels | Recorded at                                     | Description                                               |
+| --------------------------- | --------- | ------ | ----------------------------------------------- | --------------------------------------------------------- |
+| `rpc_batch_size`            | Histogram | none   | `ServerHandler::processRequest`, `method=batch` | Sub-requests per batch JSON-RPC call                      |
+| `pathfind_discovered_paths` | Histogram | none   | `PathRequest::findPaths`, after the asset loop  | Payment paths produced per pass, across all source assets |
+
+Reading them:
+
+- Each one sits beside a span attribute carrying the same value —
+  `batch_size` and `pathfind_num_paths`. Use the attribute to ask what one slow
+  request did; use the histogram to ask what requests do in general. An attribute
+  cannot answer the second question, because an unsampled trace is never read.
+- `rpc_batch_size` records **only for `method == "batch"`**. A non-batch request
+  is not a batch of one, and recording it would put the value 1 on every RPC and
+  bury the distribution.
+- `pathfind_discovered_paths` counts zero when a pass found no path, and that is
+  the most interesting reading on this instrument. It shares the lowest bucket
+  with "found exactly one path"; everything above is separated.
+- Both use the object-count bucket ladder, not the µs one. They are counts, and
+  the SDK's default boundaries start `0, 5, 10, 25` — which puts every ordinary
+  batch in one bucket and makes each quantile an interpolation on the edge.
+- **`rpc_batch_size` can saturate.** Nothing caps the sub-request count except
+  the 1 MB request-size limit, so a batch above the ladder's 12288 top edge lands
+  in `+Inf`. Read the overflow directly rather than trusting p99 there:
+
+```promql
+rpc_batch_size_count - rpc_batch_size_bucket{le="12288"}
+```
+
+> On a healthy local network `rpc_batch_size` has **no series at all** — nothing
+> issues batch RPCs. An empty panel is the expected reading, not a wiring fault.
+> Verify it by sending one batch request, not by looking for a series.
+
 #### Adding a New Metric
 
 <!-- cspell:ignore ISTOGRAM -->
 <!-- The all-caps macro name XRPL_METRIC_HISTOGRAM_RECORD trips cspell's
      compound-word splitter, which emits the subword "ISTOGRAM"; ignore it here. -->
 
-Use the call-site macros in `src/xrpld/telemetry/MetricMacros.h` -- no
+Use the call-site macros in `include/xrpl/telemetry/MetricMacros.h` -- no
 `MetricsRegistry.h`/`.cpp` edit is needed for any of these:
 
 | Need                                                   | Macro                                                                                                                                                                     |
@@ -1935,7 +2012,7 @@ Use the call-site macros in `src/xrpld/telemetry/MetricMacros.h` -- no
 | Value your own code already tracks, sampled on a timer | `XRPL_METRIC_OBSERVABLE_GAUGE_REGISTER` / `_COUNTER_REGISTER` / `_UPDOWN_REGISTER`                                                                                        |
 
 ```cpp
-#include <xrpld/telemetry/MetricMacros.h>
+#include <xrpl/telemetry/MetricMacros.h>
 
 // Monotonic counter:
 XRPL_METRIC_COUNTER_INC(app_, "my_new_thing_total", "Description of what this counts");
@@ -1952,8 +2029,9 @@ XRPL_METRIC_OBSERVABLE_GAUGE_REGISTER(app_, "my_thing_size", "Current size",
 
 Counters use a `_total` suffix by convention. A histogram whose values can
 exceed ~10,000 units (e.g. a microsecond duration beyond 10ms) still needs one
-line added to `addMicrosecondHistogramView()` in `MetricsRegistry.cpp` -- the
-only case that still touches a central file. There is no way to read a metric's
+line added to `addMicrosecondHistogramView()` in
+`src/libxrpl/telemetry/MetricsRegistry.cpp` -- the only case that still touches a
+central file. There is no way to read a metric's
 current value back from application code -- OTel's API is write-only by design;
 keep your own state if your logic needs to both record and read a running value
 (see the Doxygen header in `MetricMacros.h` for the full explanation).
@@ -2096,7 +2174,7 @@ collector settings make it work, both already enabled:
 
 - `prometheus.resource_to_telemetry_conversion: enabled: true` promotes
   resource attributes to metric labels on the local scrape surface.
-- `spanmetrics.resource_metrics_key_attributes` lists the tier attributes so
+- `span_metrics.resource_metrics_key_attributes` lists the tier attributes so
   span-derived series stay grouped per node and tier.
 
 Traces and logs carry resource attributes natively; Grafana Cloud ingests all
@@ -2223,10 +2301,12 @@ Requires `trace_peer=1` in the `[telemetry]` config section.
 > `{quantile="$quantile"}` matches nothing and reports no error. The job queue
 > exposes two parallel families: `job_running_us` / `job_queued_us`
 > (`MetricsRegistry` instruments, labelled by `job_type` and `handler`,
-> microseconds — what these panels use;
-> [MetricsRegistry.cpp:94-95](../src/xrpld/telemetry/MetricsRegistry.cpp#L94),
-> [363-366](../src/xrpld/telemetry/MetricsRegistry.cpp#L363), recorded from the
-> `PerfLog` job hooks at
+> microseconds — what these panels use; the two names come from the
+> `kJobQueuedDurationUs` / `kJobRunningDurationUs` constants and the microsecond
+> buckets from `addMicrosecondHistogramView()` in
+> `MetricsRegistry::initExporterAndProvider()`, all in
+> [MetricsRegistry.cpp](../src/libxrpl/telemetry/MetricsRegistry.cpp), recorded
+> from the `PerfLog` job hooks at
 > [PerfLogImp.cpp:432](../src/xrpld/perflog/detail/PerfLogImp.cpp#L432)) and
 > `jobq_<jobtype>[_q]_milliseconds`
 > (beast::insight, one instrument per job type, milliseconds —
@@ -2739,7 +2819,7 @@ curl -sG http://localhost:9090/api/v1/query \
 When xrpld is built with `telemetry=ON`, log lines emitted within an active, sampled OpenTelemetry span automatically include `trace_id` and `span_id` fields:
 
 ```
-2024-Jan-15 10:30:45.123456 UTC LedgerMaster:NFO trace_id=abc123def456789012345678abcdef01 span_id=0123456789abcdef Validated ledger 42
+2024-Jan-15 10:30:45.123456789 UTC LedgerMaster:NFO trace_id=abc123def456789012345678abcdef01 span_id=0123456789abcdef Validated ledger 42
 ```
 
 This enables bidirectional navigation between logs and traces in Grafana:
@@ -2775,7 +2855,7 @@ The sampled check is normally satisfied on a self-rooted consensus round — hea
 
 With all four satisfied, `info` is the minimum level at which the `log.trace_id_present` and `log.trace_id_cross_reference` checks pass by construction, and it is what the correlation-checking harnesses generate: the cfgs written by [run-full-validation.sh](../docker/telemetry/workload/run-full-validation.sh) and [integration-test.sh](../docker/telemetry/integration-test.sh) each set `enabled=1`, `trace_consensus=1` and `log_level info` together. `benchmark.sh` deliberately does not — it stays at `warning` to keep log I/O out of the overhead measurement, and it runs no correlation check. At `warning` and above that pair is suppressed and correlation becomes incidental — dependent on a `warn`-or-worse line happening to fire inside some active span.
 
-> **CI exercises both checks.** `log.trace_id_present` and `log.trace_id_cross_reference` are gated on every CI run — see [CI workflow](#ci-workflow) for the invocation and the per-leg diagnostics printed alongside them. Run the same thing locally after any change to log formatting, span activation, the `filelog` receiver or the Loki exporter:
+> **CI exercises both checks.** `log.trace_id_present` and `log.trace_id_cross_reference` are gated on every CI run — see [CI workflow](#ci-workflow) for the invocation and the per-leg diagnostics printed alongside them. Run the same thing locally after any change to log formatting, span activation, the `file_log` receiver or the Loki exporter:
 >
 > ```bash
 > docker/telemetry/workload/run-full-validation.sh --xrpld .build/xrpld
@@ -2785,7 +2865,7 @@ With all four satisfied, `info` is the minimum level at which the `log.trace_id_
 
 `debug` does correlate strictly more: it additionally brings in [`BuildLedger.cpp:81`](../src/xrpld/app/ledger/detail/BuildLedger.cpp#L81) (inside the `ledger.build` `ScopedSpanGuard` at [:55](../src/xrpld/app/ledger/detail/BuildLedger.cpp#L55), once per ledger close) and [`RPCHandler.cpp:188`](../src/xrpld/rpc/detail/RPCHandler.cpp#L188) (inside the `rpc.command.*` `ScopedSpanGuard` at [:168](../src/xrpld/rpc/detail/RPCHandler.cpp#L168), once per RPC command), giving broader multi-subsystem coverage.
 
-But raising the **base** level to `debug` puts synchronous log I/O inside `ledger.build`, `consensus.accept` (including [RCLConsensus.cpp:663](../src/xrpld/app/consensus/RCLConsensus.cpp#L663), which logs **per transaction**) and `tx.apply` — precisely the spans whose p50/p95/p99 latencies `regression-metrics.json` gates. A baseline captured at `debug` bakes that log I/O into the latency numbers permanently, turning the regression gate into a measurement of its own configuration.
+But raising the **base** level to `debug` puts synchronous log I/O inside `ledger.build`, `consensus.accept` (including [RCLConsensus.cpp:715](../src/xrpld/app/consensus/RCLConsensus.cpp#L715), which logs **per transaction**) and `tx.apply` — precisely the spans whose p50/p95/p99 latencies `regression-metrics.json` gates. A baseline captured at `debug` bakes that log I/O into the latency numbers permanently, turning the regression gate into a measurement of its own configuration.
 
 So if you need the broader coverage, enable it **per partition** rather than globally, and only **after** a baseline has been captured at the harness's normal level:
 
@@ -2796,9 +2876,11 @@ log_level RPCHandler debug
 
 ### Log Ingestion Pipeline
 
-Log files are ingested by the OTel Collector's `filelog` receiver, which tails `debug.log` files and parses them with a regex that extracts `timestamp`, `partition`, `severity`, `trace_id`, `span_id`, and `message` fields. Parsed entries are exported to Grafana Loki.
+Log files are ingested by the OTel Collector's `file_log` receiver, which tails `debug.log` files and parses them with a regex that extracts `timestamp`, `partition`, `severity`, `trace_id`, `span_id`, and `message` fields. Parsed entries are exported to Grafana Loki.
 
-The receiver tails `/var/log/xrpld/*/debug.log` inside the collector container. docker-compose bind-mounts the host log root there; the source defaults to the repo-relative `docker/telemetry/data/logs`, which the telemetry configs write to (`data/logs/<network>/debug.log`) and which needs no root. To tail logs from elsewhere, set `XRPLD_LOG_DIR` before `docker compose up` (the integration test does this to point at its own workdir). The single trailing `*` matches one per-network or per-node subdirectory.
+The receiver tails `/var/log/xrpld/*/debug.log` inside the collector container. docker-compose bind-mounts the host log root there; the source defaults to the repo-relative `docker/telemetry/data/logs`, which the telemetry configs write to (`data/logs/<service_instance_id>/debug.log`). To tail logs from elsewhere, set `XRPLD_LOG_DIR` before `docker compose up` (the integration test does this to point at its own workdir). The single trailing `*` matches one per-node subdirectory.
+
+That subdirectory is load-bearing, not cosmetic. Docker creates a missing bind-mount source as root, and `Config::getDebugLogFile()` only warns when it cannot create the log directory, so a root-owned log root produces a healthy-looking node that writes no `debug.log` and an empty Loki with no error at any layer. The `xrpld-logdir-init` service creates the directory and hands it to `XRPLD_UID`/`XRPLD_GID` (default 1000) to prevent that. The receiver also lifts the subdirectory name onto the resource attribute `service.instance.id`, which Loki indexes as the label `service_instance_id`, so each emitter must name its log directory after its own `[telemetry] service_instance_id` or log lines carry a node name that no trace or metric shares.
 
 Each file is read from the beginning, because the receiver's own default (`end`) would skip anything a node wrote before the collector's first poll and would never read a log that has stopped being written to. Read offsets are held in memory by default, so a restarted collector re-reads the files it already ingested. The developer stack avoids that by layering `otel-collector-filestorage.yaml` as a second `--config`, which adds a `file_storage` extension that keeps the offsets on a named volume; a one-shot init service prepares that volume, because the collector runs as a non-root user and a fresh Docker volume is owned by root. Ephemeral stacks such as the workload validation harness create a fresh log directory per run, so they have nothing to resume from and deliberately omit the overlay.
 
@@ -2831,7 +2913,7 @@ after the selector and cannot be discovered by `label_values()`.
 
 # Logs from the last hour containing trace context. `partition`, `severity`, and
 # `trace_id` are already parsed into structured metadata by the collector's
-# filelog receiver, so re-extracting them with regexp is unnecessary work.
+# file_log receiver, so re-extracting them with regexp is unnecessary work.
 {service_name="xrpld"} | trace_id != ""
 
 # Count of traced vs untraced log lines
@@ -3231,7 +3313,7 @@ Then read the answer off the pair:
 | Expensive | Depth over ~1.2 | **Both paths queueing.** Rarer, and neither fix on its own will be enough. Treat the larger of the two costs as the lead.                                                                                                                                     |
 
 **Why the rule is shaped this way.** Three points about the thresholds, each
-learned from a dataset that an earlier version of this table got wrong:
+grounded in a measured dataset rather than a round number:
 
 - **Read cost is a relative judgement, so the band has a floor and a ceiling, not
   one cut.** A cold read on our box measured 31.8 µs mean; a cold read on the
@@ -3287,9 +3369,8 @@ increase(nodestore_state{metric="acquire_ledger_timeouts", service_instance_id=~
 
 #### Measured reference points
 
-**Provenance.** The two columns below are our own measurements: node2 on the AWS
-dev box, build `e3c2f8279a`, 2026-07-27/28, same host and same binary for both
-runs, differing only in the state of the store. Use them as the shape to compare
+**Provenance.** The two columns below are our own measurements: one mainnet node,
+same host and same binary for both runs, differing only in the state of the store. Use them as the shape to compare
 against, not as thresholds. The read figures below come from the `read_mean_us`
 gauge, the only read-latency signal exported; the "highest sample" row is the
 largest value that gauge reached over the run, not a read-latency percentile. The third dataset in this section — the 25-minute devnet stall and its
@@ -3546,9 +3627,9 @@ not a sign the cache is working.
 ### No logs in Loki
 
 - Verify the log file mount in docker-compose.yml points to the correct xrpld log directory (default source `docker/telemetry/data/logs`, or the `XRPLD_LOG_DIR` override) and that xrpld actually writes `debug.log` there
-- Check OTel Collector logs for filelog receiver errors: `docker compose logs otel-collector`
+- Check OTel Collector logs for file_log receiver errors: `docker compose logs otel-collector`
 - Verify Loki is running: `curl http://localhost:3100/ready`
-- Check the filelog receiver glob `/var/log/xrpld/*/debug.log` matches your log layout — the log file must sit one subdirectory below the mount root
+- Check the file_log receiver glob `/var/log/xrpld/*/debug.log` matches your log layout — the log file must sit one subdirectory below the mount root
 
 ## Performance Tuning
 
@@ -3569,7 +3650,7 @@ conan install .. --output-folder . --build missing -o telemetry=False --settings
 cmake -DCMAKE_TOOLCHAIN_FILE:FILEPATH=build/generators/conan_toolchain.cmake -DCMAKE_BUILD_TYPE=Release -Dtelemetry=OFF ..
 ```
 
-Pass the flag explicitly rather than omitting it — an omitted flag resolves to whatever
+Both flags are needed. Pass each explicitly rather than omitting it — an omitted flag resolves to whatever
 the build's current default is. That default is `ON` on the telemetry branches so CI
 compiles the instrumented paths, and `OFF` once the feature is merged; `-Dtelemetry=OFF`
 is correct either way. `-DXRPL_ENABLE_TELEMETRY=OFF` does **not** work: that name is only
@@ -3739,23 +3820,23 @@ Key properties:
   the limiting ladder step for each, and the edges that would fix them.
 - **A baseline refresh can silently move sensitivity in either direction.** The
   trip point is derived from the baseline, so a refresh that lands at the low end
-  of a metric's range tightens the gate and one that lands high loosens it. The
-  2026-08-26 refresh took `job.acceptLedger.running.p95` from a 5.74x floor to
-  16.28x — it does not fire on any observed run, so it stays gated, but the weak
-  floor is recorded rather than left to surprise someone. The same refresh put
-  three `p50` keys below the spread they need, and they are now excluded (below).
-  `baselines/README.md` carries the measurements.
+  of a metric's range tightens the gate and one that lands high loosens it.
+  `job.acceptLedger.running.p95` has been measured with a 5.74x detection floor
+  on one baseline and 16.28x on another — it does not fire on any observed run,
+  so it stays gated, but the weak floor is recorded rather than left to surprise
+  someone. The same effect puts three `p50` keys below the spread they need, and
+  those are excluded (below). `baselines/README.md` carries the measurements.
 - **The bound covers quantization noise only, so a key whose run-to-run variance
   exceeds it cannot be gated. Five keys are excluded for that reason**, leaving
   20 gated. `span.ledger.validate.p95` and `.p99` came first — spreads of 5.9x
   and 66.8x across four CI runs, both reaching past their trip points on healthy
   runs, because the span's duration follows peer-validation arrival timing rather
-  than code speed. The 2026-08-26 refresh added `span.tx.apply.p50`,
-  `span.ledger.build.p50` and `span.consensus.ledger_close.p50`, whose observed
-  maxima sit 46.76x, 4.77x and 2.38x above their new trip points. That is the
-  same rule applied, not a new exception: the decisive evidence is that
-  `span.tx.apply.p50` read 0.7917 ms in the previous baseline and 0.00597 ms in
-  this one — 132x apart on the same workload — so whether the gate worked was
+  than code speed. `span.tx.apply.p50`, `span.ledger.build.p50` and
+  `span.consensus.ledger_close.p50` join them on this baseline, with observed
+  maxima 46.76x, 4.77x and 2.38x above their trip points. That is the same rule
+  applied, not a new exception: the decisive evidence is that
+  `span.tx.apply.p50` has read 0.7917 ms and 0.00597 ms on the same workload
+  — 132x apart — so whether the gate worked was
   decided by where in its own distribution the captured run fell, not by the
   code. All five share one shape: the observed maximum exceeds
   `baseline + bound`, four of them because a low-bucket baseline yields a tiny
@@ -3830,21 +3911,25 @@ CI run so its variance characteristics are preserved. Details in
 
 #### CI workflow
 
-`.github/workflows/telemetry-validation.yml` runs three jobs — `linux-image-tag`
-(reads the CI image tag from the build matrix so this workflow cannot drift onto
-a different compiler than the main CI), `build-xrpld` (self-hosted runner, same
-container as the main CI, so Conan and ccache hit the shared caches), and
-`validate-telemetry` (`ubuntu-latest`, which has Docker).
+[`reusable-telemetry-validation.yml`](../.github/workflows/reusable-telemetry-validation.yml)
+runs two jobs — `build-xrpld` (self-hosted runner, same container as the main
+CI, so Conan and ccache hit the shared caches) and `validate-telemetry`
+(`ubuntu-latest`, which has Docker).
 
-- **Triggers**: `workflow_dispatch`, and `push` on `pratik/otel-phase*`,
-  `feature/otel-*`, `feature/telemetry-*` limited to a `paths` filter covering
-  the workflow file, `docker/telemetry/**`, and the telemetry sources under
-  `include/xrpl/telemetry/**`, `src/libxrpl/telemetry/**` and
-  `src/xrpld/telemetry/**`. There is no cron schedule.
+- **Caller**: [`on-pr.yml`](../.github/workflows/on-pr.yml), on `pull_request`
+  and `merge_group`. It resolves the CI image tag from the build matrix so this
+  build cannot drift onto a different compiler than the main CI, asks Conan
+  whether the recipe compiles telemetry in, and starts the pair only when
+  telemetry-relevant paths changed. There is no cron schedule.
+- **Telemetry gate**: `validate-telemetry` is skipped when telemetry is off,
+  because a build with the tracing compiled out emits no spans and no metrics to
+  assert on. `build-xrpld` runs either way, so the telemetry-off build is still
+  compiled here.
 - **Invocation**: `run-full-validation.sh --xrpld <binary>`, so the default
   `full-validation` profile is used and no category is skipped.
-- **Log-trace correlation is gated**: `--skip-loki` is not passed
-  ([telemetry-validation.yml:237](../.github/workflows/telemetry-validation.yml#L237)),
+- **Log-trace correlation is gated**: `--skip-loki` is not passed by the
+  "Run full telemetry validation" step of
+  [`reusable-telemetry-validation.yml`](../.github/workflows/reusable-telemetry-validation.yml),
   so `log.trace_id_present` and `log.trace_id_cross_reference` are constructed and
   can fail the job. Correlation spans four independent legs — node, mount,
   collector, Loki — and a failed check names none of them, so
@@ -3852,12 +3937,12 @@ container as the main CI, so Conan and ccache hit the shared caches), and
   these checks are enabled: per-node counts of `debug.log` lines carrying the
   injected `trace_id`/`span_id` shape plus the severity mix, the container-side
   listing of `/var/log/xrpld` taken with the collector's own mounts and uid, the
-  `filelog` receiver's watched files, logs-pipeline warnings and internal
+  `file_log` receiver's watched files, logs-pipeline warnings and internal
   log-record counters, and Loki's entry counts for the stream selector with and
   without the line filter. The diagnostics are non-fatal by construction: each
   leg is isolated and a missing container or unreachable endpoint prints a note.
   Those two Loki entry counts are `sum(count_over_time(...))`, and the `sum()` is
-  load-bearing: the `filelog` receiver leaves `message` and `timestamp` as
+  load-bearing: the `file_log` receiver leaves `message` and `timestamp` as
   log-record attributes, Loki's OTLP path stores them as structured metadata, and
   structured metadata joins a metric query's label set — so an unaggregated
   `count_over_time` produces one series per log line and Loki answers `HTTP 400

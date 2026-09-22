@@ -1,13 +1,15 @@
 /**
- * MetricsRegistry implementation — OpenTelemetry metric instruments for xrpld.
+ * AppMetricGauges implementation — the pull-model half of the OTel metric
+ * surface.
  *
  * This file contains:
- * - Construction / destruction logic for the OTel MeterProvider pipeline.
- * - Synchronous instrument creation (counters, histograms) for RPC, job
- *   queue, and NodeStore I/O metrics.
- * - Observable gauge callback registration for cache hit rates, TxQ state,
- *   CountedObject instances, load factors, and NodeStore queue depth.
- * - No-op stubs when XRPL_ENABLE_TELEMETRY is not defined.
+ * - Registration of every observable instrument whose callback samples live
+ *   server state: cache hit rates, TxQ state, CountedObject instances, load
+ *   factors, NodeStore I/O, server info, complete ledger ranges, validator
+ *   health, peer quality, reduce-relay efficiency, ledger economy, state
+ *   tracking, storage detail and validation agreement.
+ * - The nodestore_state helpers those callbacks publish values through.
+ * - The arm and disarm entry points for the whole set.
  */
 
 // On Windows, OTel's spin_lock_mutex.h (transitively included from
@@ -20,26 +22,28 @@
 #include <boost/asio/detail/socket_types.hpp>
 #endif
 
-#include <xrpld/telemetry/MetricsRegistry.h>
+#include <xrpld/telemetry/AppMetricGauges.h>
 
-// Unguarded because the constructor's `beast::Journal journal` parameter is
-// declared in both configurations; only the member it initialises is guarded.
+// Both name types in the constructor signature, which is compiled in either
+// way, so they belong outside the telemetry guard below.
 #include <xrpl/beast/utility/Journal.h>
+#include <xrpl/telemetry/MetricsRegistry.h>
 
 #ifdef XRPL_ENABLE_TELEMETRY
 
 // The app and overlay includes below are why
 // .github/scripts/levelization/results/loops.txt records
-// `xrpld.app <-> xrpld.telemetry` and `xrpld.overlay <-> xrpld.telemetry`, where
-// ordering.txt previously had telemetry strictly below both. The observable
-// gauges are pull-model: their callbacks sample live state when the reader
-// thread fires, so they need the concrete types to call getJqTransOverflow(),
-// size(), getPeerDisconnectCharges(), foreach() and txMetrics().
+// `xrpld.app <-> xrpld.telemetry` and `xrpld.overlay <-> xrpld.telemetry` as
+// cycles, rather than an acyclic ordering.txt entry placing telemetry strictly
+// below both. The observable gauges are pull-model: their callbacks sample live
+// state when the reader thread fires, so they need the concrete types to call
+// getJqTransOverflow(), size(), getPeerDisconnectCharges(), foreach() and
+// txMetrics().
 //
 // The cycle is confined to this translation unit. No telemetry header includes
-// app or overlay (MetricsRegistry.h forward-declares what it needs and takes a
-// ServiceRegistry&), and all of src/xrpld builds into a single CMake target, so
-// there is no header cycle and no link cycle to break.
+// app or overlay -- the callbacks reach every service through the
+// ServiceRegistry reference they are given -- and all of src/xrpld builds into a
+// single CMake target, so there is no header cycle and no link cycle to break.
 //
 // Inverting it properly means declaring a metrics-source interface below overlay
 // and implementing it there, which is deliberately left as follow-up rather than
@@ -65,27 +69,10 @@
 #include <xrpl/rdb/RelationalDatabase.h>
 #include <xrpl/server/LoadFeeTrack.h>
 #include <xrpl/server/NetworkOPs.h>
-#include <xrpl/telemetry/GetObjectMetricNames.h>
-#include <xrpl/telemetry/HistogramBuckets.h>
-#include <xrpl/telemetry/SpanNames.h>
 
-#include <opentelemetry/context/context.h>
-#include <opentelemetry/exporters/otlp/otlp_http_metric_exporter_factory.h>
-#include <opentelemetry/exporters/otlp/otlp_http_metric_exporter_options.h>
 #include <opentelemetry/metrics/observer_result.h>
 #include <opentelemetry/nostd/shared_ptr.h>
 #include <opentelemetry/nostd/variant.h>
-#include <opentelemetry/sdk/metrics/aggregation/aggregation_config.h>
-#include <opentelemetry/sdk/metrics/export/periodic_exporting_metric_reader_factory.h>
-#include <opentelemetry/sdk/metrics/export/periodic_exporting_metric_reader_options.h>
-#include <opentelemetry/sdk/metrics/instruments.h>
-#include <opentelemetry/sdk/metrics/meter_provider_factory.h>
-#include <opentelemetry/sdk/metrics/view/instrument_selector_factory.h>
-#include <opentelemetry/sdk/metrics/view/meter_selector_factory.h>
-#include <opentelemetry/sdk/metrics/view/view_factory.h>
-#include <opentelemetry/sdk/metrics/view/view_registry.h>
-#include <opentelemetry/sdk/resource/resource.h>
-#include <opentelemetry/semconv/incubating/service_attributes.h>
 
 #include <algorithm>
 #include <atomic>
@@ -99,447 +86,78 @@
 #include <utility>
 #include <vector>
 
-namespace metric_sdk = opentelemetry::sdk::metrics;
-namespace otlp_http = opentelemetry::exporter::otlp;
-// Not `resource`: that would collide with xrpl::resource (the resource-accounting
-// namespace), which encloses every use site below. Inner-scope lookup would find
-// that namespace instead of this file-scope alias.
-namespace otel_resource = opentelemetry::sdk::resource;
-
-namespace {
-
-// Microsecond-valued duration histogram instrument names. Each is
-// referenced twice — once to register the explicit-bucket view and once
-// to create the instrument — so they are named constants to keep the two
-// sites in sync (a mismatch would silently drop the bucket override).
-constexpr char kJobQueuedDurationUs[] = "job_queued_us";
-constexpr char kJobRunningDurationUs[] = "job_running_us";
-constexpr char kRpcMethodDurationUs[] = "rpc_method_us";
-
-// Attribute (label) keys for the job instruments. Each is referenced from
-// several record sites, and a counter and its histogram must carry exactly
-// the same key spelling or the two series cannot be joined in a query.
-constexpr char kJobTypeLabel[] = "job_type";
-constexpr char kHandlerLabel[] = "handler";
-
-/**
- * Register an explicit-bucket histogram view.
- *
- * The SDK's default boundaries top out at 10,000, so any instrument whose
- * values exceed that saturates and every quantile reads as the ceiling. The
- * floor matters just as much and is easier to miss: a ladder whose first edge
- * sits above the mass of the distribution makes every low quantile an
- * interpolation inside bucket 0 -- a number derived from the bucket edge
- * rather than from any sample. Both ends are chosen from measured
- * distributions in HistogramBuckets.h.
- *
- * @param views      The registry to add the view to.
- * @param name       Instrument name to match (e.g. "job_running_us").
- * @param boundaries Bucket upper bounds, ascending.
- */
-void
-addHistogramView(
-    metric_sdk::ViewRegistry& views,
-    std::string const& name,
-    std::vector<double> boundaries)
-{
-    auto config = std::make_shared<metric_sdk::HistogramAggregationConfig>();
-    config->boundaries_ = std::move(boundaries);
-
-    auto selector = metric_sdk::InstrumentSelectorFactory::Create(
-        metric_sdk::InstrumentType::kHistogram, name, "");
-    auto meterSelector = metric_sdk::MeterSelectorFactory::Create("xrpld", "1.0.0", "");
-    auto view =
-        metric_sdk::ViewFactory::Create(name, "", metric_sdk::AggregationType::kHistogram, config);
-
-    views.AddView(std::move(selector), std::move(meterSelector), std::move(view));
-}
-
-/**
- * Register the microsecond-ladder view for a duration instrument.
- *
- * Job wait/run times and RPC latencies routinely exceed the SDK default
- * ceiling, so they all share `buckets::kMicrosecondBuckets`.
- *
- * @param views   The registry to add the view to.
- * @param name    Instrument name to match.
- */
-void
-addMicrosecondHistogramView(metric_sdk::ViewRegistry& views, std::string const& name)
-{
-    addHistogramView(
-        views,
-        name,
-        xrpl::telemetry::buckets::toVector(xrpl::telemetry::buckets::kMicrosecondBuckets));
-}
-
-}  // namespace
-
 #endif  // XRPL_ENABLE_TELEMETRY
 
 namespace xrpl::telemetry {
 
-MetricsRegistry::MetricsRegistry(
-    [[maybe_unused]] bool enabled,
+AppMetricGauges::AppMetricGauges(
+    [[maybe_unused]] MetricsRegistry& core,
     [[maybe_unused]] ServiceRegistry& app,
     [[maybe_unused]] beast::Journal journal)
-    : enabled_(enabled)
 #ifdef XRPL_ENABLE_TELEMETRY
+    : core_(core)
     , app_(app)
+    // The core logs through the same partition, so one log-level setting
+    // covers the whole metric pipeline.
     , journal_(journal)
 #endif
 {
 }
 
-MetricsRegistry::~MetricsRegistry()
+AppMetricGauges::~AppMetricGauges()
 {
-    stop();
+    // A last resort, not the teardown path: the flag this sets lives here, so
+    // it cannot protect anything once this object is gone. The safe order is
+    // detachCallbacks(), then the core's stop() to join the reader thread,
+    // then destruction.
+    detachCallbacks();
 }
 
 void
-MetricsRegistry::start(
-    std::string const& endpoint,
-    std::string const& instanceId,
-    std::string const& nodeId)
+AppMetricGauges::startAsyncGauges()
 {
 #ifdef XRPL_ENABLE_TELEMETRY
-    if (!enabled_)
+    if (!core_.isEnabled())
         return;
 
-    JLOG(journal_.info()) << "MetricsRegistry: starting, endpoint=" << endpoint
-                          << ", instanceId=" << instanceId << ", nodeId=" << nodeId;
-
-    // Rule for anything added below: this phase may create only instruments
-    // whose recording is PUSHED from app code -- counters and histograms. An
-    // instrument registered here is live immediately, and the reader thread
-    // may invoke a registered callback before the rest of the Application is
-    // built, so any observable whose callback reads an Application service
-    // belongs in startAsyncGauges(), not here. That includes observable
-    // COUNTERS, not just gauges: jq_trans_overflow_total was created here and
-    // its callback read getOverlay(), which asserts overlay_ is non-null.
-    initExporterAndProvider(endpoint, instanceId, nodeId);
-    initSyncInstruments();
-
-    JLOG(journal_.info()) << "MetricsRegistry: provider and instruments ready";
-#else
-    (void)endpoint;
-    (void)instanceId;
-    (void)nodeId;
-    (void)enabled_;
-#endif  // XRPL_ENABLE_TELEMETRY
-}
-
-void
-MetricsRegistry::startAsyncGauges()
-{
-#ifdef XRPL_ENABLE_TELEMETRY
-    if (!enabled_)
-        return;
-
-    // A mis-ordered call must not crash: without a meter there is nothing to
-    // create instruments on, so registration is skipped entirely.
-    if (!meter_)
+    // One arm per life. A second call would create a second set of
+    // same-named instruments, and a call after stop() would register on a
+    // provider that is gone. Checked before the pipeline, so a call after
+    // stop() is reported as what it is and not as a build failure. The core
+    // is enabled by here, so a false recording() means exactly stopped.
+    bool const stopped = !core_.recording();
+    if (armed_ || stopped)
     {
         JLOG(journal_.warn()) << "MetricsRegistry: startAsyncGauges() called "
-                                 "before start(); no gauges registered";
+                              << (stopped ? "after stop()" : "twice") << "; ignored";
         return;
     }
+
+    // The pipeline failed to build: the meter is a no-op, so registering
+    // gauges on it would only log a success that is not one. armed_ stays
+    // false, so a second call lands here again and logs the same message.
+    // Idempotent.
+    if (!core_.hasPipeline())
+    {
+        JLOG(journal_.warn()) << "MetricsRegistry: startAsyncGauges() without a pipeline; "
+                                 "no gauges registered";
+        return;
+    }
+    armed_ = true;
 
     registerAsyncGauges();
 
     JLOG(journal_.info()) << "MetricsRegistry: started successfully";
-#else
-    (void)enabled_;
 #endif  // XRPL_ENABLE_TELEMETRY
 }
 
-#ifdef XRPL_ENABLE_TELEMETRY
 void
-MetricsRegistry::initExporterAndProvider(
-    std::string const& endpoint,
-    std::string const& instanceId,
-    std::string const& nodeId)
-{
-    // Configure OTLP/HTTP metric exporter.
-    otlp_http::OtlpHttpMetricExporterOptions exporterOpts;
-    exporterOpts.url = endpoint;
-    auto exporter = otlp_http::OtlpHttpMetricExporterFactory::Create(exporterOpts);
-
-    // Configure periodic reader with 10-second export interval.
-    metric_sdk::PeriodicExportingMetricReaderOptions readerOpts;
-    readerOpts.export_interval_millis = std::chrono::milliseconds(10000);
-    readerOpts.export_timeout_millis = std::chrono::milliseconds(5000);
-    auto reader =
-        metric_sdk::PeriodicExportingMetricReaderFactory::Create(std::move(exporter), readerOpts);
-
-    // Configure resource attributes so Prometheus service_instance_id labels
-    // distinguish metrics from different nodes (matches OTelCollector setup).
-    otel_resource::ResourceAttributes attrs;
-    // Use std::string, not a string literal: ResourceAttributes stores an
-    // OTel AttributeValue variant whose char-const* overload binds to bool,
-    // so "xrpld" would be recorded as the boolean true. std::string selects
-    // the string alternative and the value round-trips as service.name=xrpld.
-    attrs[opentelemetry::semconv::service::kServiceName] = std::string("xrpld");
-    if (!instanceId.empty())
-        attrs[opentelemetry::semconv::service::kServiceInstanceId] = instanceId;
-    // xrpl.node.id: the same per-node key the trace resource carries, so
-    // metrics and traces resolve to one node. std::string for the same
-    // variant reason as service.name above.
-    if (!nodeId.empty())
-        attrs[std::string(attr::nodeId)] = nodeId;
-    auto resourceAttrs = otel_resource::Resource::Create(attrs);
-
-    // Build a view registry with explicit microsecond buckets for the
-    // duration histograms. Without this they use the SDK default buckets
-    // (max 10,000 = 10 ms), saturating every quantile at 10 ms.
-    auto views = std::make_unique<metric_sdk::ViewRegistry>();
-    addMicrosecondHistogramView(*views, kJobQueuedDurationUs);
-    addMicrosecondHistogramView(*views, kJobRunningDurationUs);
-    addMicrosecondHistogramView(*views, kRpcMethodDurationUs);
-    // Recorded at its PeerImp.cpp call site, not created here, so the name
-    // comes from the shared constant both sites use.
-    addMicrosecondHistogramView(*views, kGetObjectLookupUs);
-
-    // The remaining two GetObject histograms are not durations, so the
-    // microsecond ladder above does not fit them. Both still need explicit
-    // boundaries: the SDK default stops at 10,000 and both ranges exceed it.
-    //
-    // Object counts run 1..kHardMaxReplyNodes (12288). The honest sync path
-    // asks for at most 8, so the low buckets are fine-grained and the upper
-    // ones follow the charge size bands (64, 1024) up to the hard cap.
-    addHistogramView(
-        *views, kGetObjectRequestObjects, buckets::toVector(buckets::kObjectCountBuckets));
-
-    // Charge values span 0 (free tier) to ~99k for a full-size all-miss
-    // request. Boundaries bracket the resource thresholds that decide a
-    // peer's fate -- kWarningThreshold (5000) and kDropThreshold (25000) --
-    // so a dashboard can show how close charges run to each.
-    addHistogramView(*views, kGetObjectCharge, buckets::toVector(buckets::kChargeBuckets));
-
-    // Create MeterProvider with resource, then attach the metric reader.
-    provider_ = metric_sdk::MeterProviderFactory::Create(std::move(views), resourceAttrs);
-    provider_->AddMetricReader(std::move(reader));
-
-    // Get a meter for all xrpld instruments.
-    meter_ = provider_->GetMeter("xrpld", "1.0.0");
-}
-
-void
-MetricsRegistry::initSyncInstruments()
-{
-    // RPC per-method counters and histogram.
-    rpcStartedCounter_ =
-        meter_->CreateUInt64Counter("rpc_method_started_total", "Total RPC method calls started");
-    rpcFinishedCounter_ = meter_->CreateUInt64Counter(
-        "rpc_method_finished_total", "Total RPC method calls completed successfully");
-    rpcErroredCounter_ = meter_->CreateUInt64Counter(
-        "rpc_method_errored_total", "Total RPC method calls that errored");
-    rpcDurationHistogram_ = meter_->CreateDoubleHistogram(
-        kRpcMethodDurationUs, "RPC method execution time in microseconds");
-
-    // Job queue per-type counters and histograms.
-    jobQueuedCounter_ = meter_->CreateUInt64Counter("job_queued_total", "Total jobs enqueued");
-    jobStartedCounter_ = meter_->CreateUInt64Counter("job_started_total", "Total jobs started");
-    jobFinishedCounter_ = meter_->CreateUInt64Counter("job_finished_total", "Total jobs completed");
-    jobQueuedDurationHistogram_ = meter_->CreateDoubleHistogram(
-        kJobQueuedDurationUs, "Time jobs spent waiting in the queue (microseconds)");
-    jobRunningDurationHistogram_ =
-        meter_->CreateDoubleHistogram(kJobRunningDurationUs, "Job execution time in microseconds");
-
-    // --- External dashboard parity counters ---
-    ledgersClosedCounter_ =
-        meter_->CreateUInt64Counter("ledgers_closed_total", "Total ledgers closed by consensus");
-    validationsSentCounter_ = meter_->CreateUInt64Counter(
-        "validations_sent_total", "Total validations sent by this node");
-    validationsCheckedCounter_ = meter_->CreateUInt64Counter(
-        "validations_checked_total", "Total network validations received and checked");
-    stateChangesCounter_ =
-        meter_->CreateUInt64Counter("state_changes_total", "Total operating mode changes");
-    ledgerHistoryMismatchCounter_ = meter_->CreateUInt64Counter(
-        "ledger_history_mismatch_total", "Total built-vs-validated ledger mismatches by reason");
-    txqExpiredCounter_ = meter_->CreateUInt64Counter(
-        "txq_expired_total", "Total transactions expired out of the transaction queue");
-    txqDroppedCounter_ = meter_->CreateUInt64Counter(
-        "txq_dropped_total", "Total transactions refused admission to the queue by reason");
-    // Note: validation_agreements_total / validation_missed_total are monotonic
-    // ObservableCounters created in registerValidationTotalsCounters() (below).
-}
-#endif  // XRPL_ENABLE_TELEMETRY
-
-void
-MetricsRegistry::detachCallbacks() noexcept
+AppMetricGauges::detachCallbacks() noexcept
 {
 #ifdef XRPL_ENABLE_TELEMETRY
     // Release so every subsequent callback acquire-load sees true.
     callbacksDetached_.store(true, std::memory_order_release);
 #endif  // XRPL_ENABLE_TELEMETRY
-}
-
-void
-MetricsRegistry::stop()
-{
-#ifdef XRPL_ENABLE_TELEMETRY
-    if (!provider_)
-        return;
-
-    JLOG(journal_.info()) << "MetricsRegistry: stopping";
-
-    // Belt-and-suspenders: detachCallbacks() should have already been
-    // called by Application shutdown before any service the callbacks
-    // observe was stopped. Setting the flag here is redundant for a
-    // correct caller but protects against a future caller that forgets
-    // to detach first.
-    callbacksDetached_.store(true, std::memory_order_release);
-
-    // SDK teardown order: Shutdown() stops the PeriodicExportingMetricReader
-    // thread (so no further gauge callbacks fire) and performs the final
-    // collect-and-export drain itself. The trailing ForceFlush() is a
-    // redundant safety net (a no-op once the reader is shut down), then
-    // reset() destroys the provider.
-    provider_->Shutdown();
-    provider_->ForceFlush();
-    provider_.reset();
-
-    JLOG(journal_.info()) << "MetricsRegistry: stopped";
-#endif  // XRPL_ENABLE_TELEMETRY
-}
-
-// -----------------------------------------------------------------
-// Synchronous instrument recording — RPC metrics
-// -----------------------------------------------------------------
-
-void
-MetricsRegistry::recordRpcStarted(std::string_view method)
-{
-#ifdef XRPL_ENABLE_TELEMETRY
-    if (!enabled_ || !rpcStartedCounter_)
-        return;
-    rpcStartedCounter_->Add(1, {{"method", std::string(method)}});
-#else
-    (void)method;
-    (void)enabled_;
-#endif
-}
-
-void
-MetricsRegistry::recordRpcFinished(std::string_view method, std::int64_t durationUs)
-{
-#ifdef XRPL_ENABLE_TELEMETRY
-    if (!enabled_ || !rpcFinishedCounter_)
-        return;
-    rpcFinishedCounter_->Add(1, {{"method", std::string(method)}});
-    if (rpcDurationHistogram_)
-    {
-        rpcDurationHistogram_->Record(
-            static_cast<double>(durationUs),
-            {{"method", std::string(method)}},
-            opentelemetry::context::Context{});
-    }
-#else
-    (void)method;
-    (void)durationUs;
-    (void)enabled_;
-#endif
-}
-
-void
-MetricsRegistry::recordRpcErrored(std::string_view method, std::int64_t durationUs)
-{
-#ifdef XRPL_ENABLE_TELEMETRY
-    if (!enabled_ || !rpcErroredCounter_)
-        return;
-    rpcErroredCounter_->Add(1, {{"method", std::string(method)}});
-    if (rpcDurationHistogram_)
-    {
-        rpcDurationHistogram_->Record(
-            static_cast<double>(durationUs),
-            {{"method", std::string(method)}},
-            opentelemetry::context::Context{});
-    }
-#else
-    (void)method;
-    (void)durationUs;
-    (void)enabled_;
-#endif
-}
-
-// -----------------------------------------------------------------
-// Synchronous instrument recording — Job Queue metrics
-// -----------------------------------------------------------------
-
-void
-MetricsRegistry::recordJobQueued(std::string_view jobType, std::string_view jobName)
-{
-#ifdef XRPL_ENABLE_TELEMETRY
-    if (!enabled_ || !jobQueuedCounter_)
-        return;
-    jobQueuedCounter_->Add(
-        1,
-        {{kJobTypeLabel, std::string(jobType)},
-         {kHandlerLabel, std::string(sanitiseHandler(jobName))}});
-#else
-    (void)jobType;
-    (void)jobName;
-    (void)enabled_;
-#endif
-}
-
-void
-MetricsRegistry::recordJobStarted(
-    std::string_view jobType,
-    std::string_view jobName,
-    std::int64_t queuedDurUs)
-{
-#ifdef XRPL_ENABLE_TELEMETRY
-    if (!enabled_ || !jobStartedCounter_)
-        return;
-    // Build the attribute pair once: both the counter and the histogram
-    // must carry the identical label set or they cannot be joined.
-    std::string const handler(sanitiseHandler(jobName));
-    jobStartedCounter_->Add(1, {{kJobTypeLabel, std::string(jobType)}, {kHandlerLabel, handler}});
-    if (jobQueuedDurationHistogram_ && queuedDurUs >= 0)
-    {
-        // Guard against negative queued durations: the caller derives this
-        // from a steady-clock delta that can go slightly negative under clock
-        // skew or reordering. The OTel SDK rejects negative histogram values
-        // (logging a warning per call), so skip them rather than spam.
-        jobQueuedDurationHistogram_->Record(
-            static_cast<double>(queuedDurUs),
-            {{kJobTypeLabel, std::string(jobType)}, {kHandlerLabel, handler}},
-            opentelemetry::context::Context{});
-    }
-#else
-    (void)jobType;
-    (void)jobName;
-    (void)queuedDurUs;
-    (void)enabled_;
-#endif
-}
-
-void
-MetricsRegistry::recordJobFinished(
-    std::string_view jobType,
-    std::string_view jobName,
-    std::int64_t runningDurUs)
-{
-#ifdef XRPL_ENABLE_TELEMETRY
-    if (!enabled_ || !jobFinishedCounter_)
-        return;
-    std::string const handler(sanitiseHandler(jobName));
-    jobFinishedCounter_->Add(1, {{kJobTypeLabel, std::string(jobType)}, {kHandlerLabel, handler}});
-    if (jobRunningDurationHistogram_)
-    {
-        jobRunningDurationHistogram_->Record(
-            static_cast<double>(runningDurUs),
-            {{kJobTypeLabel, std::string(jobType)}, {kHandlerLabel, handler}},
-            opentelemetry::context::Context{});
-    }
-#else
-    (void)jobType;
-    (void)jobName;
-    (void)runningDurUs;
-    (void)enabled_;
-#endif
 }
 
 // -----------------------------------------------------------------
@@ -549,7 +167,7 @@ MetricsRegistry::recordJobFinished(
 #ifdef XRPL_ENABLE_TELEMETRY
 
 void
-MetricsRegistry::registerAsyncGauges()
+AppMetricGauges::registerAsyncGauges()
 {
     // Each helper creates one observable instrument and attaches one
     // callback. Keeping the registration bodies in separate methods
@@ -575,7 +193,7 @@ MetricsRegistry::registerAsyncGauges()
 }
 
 void
-MetricsRegistry::registerJqTransOverflowCounter()
+AppMetricGauges::registerJqTransOverflowCounter()
 {
     // jq_trans_overflow_total is observed from Overlay's existing cumulative
     // atomic (Overlay::getJqTransOverflow()) rather than pushed. The overlay
@@ -587,11 +205,11 @@ MetricsRegistry::registerJqTransOverflowCounter()
     // callback reads getOverlay(), which asserts overlay_ is non-null. Arming
     // it any earlier would let a reader tick fire before the overlay exists,
     // and an assert is not caught by the try block below.
-    jqTransOverflowObservable_ = meter_->CreateInt64ObservableCounter(
+    jqTransOverflowObservable_ = core_.meter()->CreateInt64ObservableCounter(
         "jq_trans_overflow_total", "Total job queue transaction overflows");
     jqTransOverflowObservable_->AddCallback(
         [](opentelemetry::metrics::ObserverResult result, void* state) {
-            auto* self = static_cast<MetricsRegistry*>(state);
+            auto* self = static_cast<AppMetricGauges*>(state);
             if (self->callbacksDetached_.load(std::memory_order_acquire))
                 return;
             try
@@ -609,14 +227,14 @@ MetricsRegistry::registerJqTransOverflowCounter()
 }
 
 void
-MetricsRegistry::registerCacheHitRateGauge()
+AppMetricGauges::registerCacheHitRateGauge()
 {
     // --- Cache hit rate and size gauges ---
     cacheHitRateGauge_ =
-        meter_->CreateDoubleObservableGauge("cache_metrics", "Cache hit rates and sizes");
+        core_.meter()->CreateDoubleObservableGauge("cache_metrics", "Cache hit rates and sizes");
     cacheHitRateGauge_->AddCallback(
         [](opentelemetry::metrics::ObserverResult result, void* state) {
-            auto* self = static_cast<MetricsRegistry*>(state);
+            auto* self = static_cast<AppMetricGauges*>(state);
             if (self->callbacksDetached_.load(std::memory_order_acquire))
                 return;
             auto& app = self->app_;
@@ -680,13 +298,14 @@ MetricsRegistry::registerCacheHitRateGauge()
 }
 
 void
-MetricsRegistry::registerTxqGauge()
+AppMetricGauges::registerTxqGauge()
 {
     // --- TxQ metrics gauges ---
-    txqGauge_ = meter_->CreateDoubleObservableGauge("txq_metrics", "Transaction queue metrics");
+    txqGauge_ =
+        core_.meter()->CreateDoubleObservableGauge("txq_metrics", "Transaction queue metrics");
     txqGauge_->AddCallback(
         [](opentelemetry::metrics::ObserverResult result, void* state) {
-            auto* self = static_cast<MetricsRegistry*>(state);
+            auto* self = static_cast<AppMetricGauges*>(state);
             if (self->callbacksDetached_.load(std::memory_order_acquire))
                 return;
             auto& app = self->app_;
@@ -727,14 +346,14 @@ MetricsRegistry::registerTxqGauge()
 }
 
 void
-MetricsRegistry::registerObjectCountGauge()
+AppMetricGauges::registerObjectCountGauge()
 {
     // --- Counted object instance gauges ---
-    objectCountGauge_ = meter_->CreateInt64ObservableGauge(
+    objectCountGauge_ = core_.meter()->CreateInt64ObservableGauge(
         "object_count", "Live instance counts for key internal object types");
     objectCountGauge_->AddCallback(
         [](opentelemetry::metrics::ObserverResult result, void* state) {
-            auto* self = static_cast<MetricsRegistry*>(state);
+            auto* self = static_cast<AppMetricGauges*>(state);
             if (self->callbacksDetached_.load(std::memory_order_acquire))
                 return;
             try
@@ -759,14 +378,14 @@ MetricsRegistry::registerObjectCountGauge()
 }
 
 void
-MetricsRegistry::registerLoadFactorGauge()
+AppMetricGauges::registerLoadFactorGauge()
 {
     // --- Load factor breakdown gauges ---
-    loadFactorGauge_ =
-        meter_->CreateDoubleObservableGauge("load_factor_metrics", "Fee load factor breakdown");
+    loadFactorGauge_ = core_.meter()->CreateDoubleObservableGauge(
+        "load_factor_metrics", "Fee load factor breakdown");
     loadFactorGauge_->AddCallback(
         [](opentelemetry::metrics::ObserverResult result, void* state) {
-            auto* self = static_cast<MetricsRegistry*>(state);
+            auto* self = static_cast<AppMetricGauges*>(state);
             if (self->callbacksDetached_.load(std::memory_order_acquire))
                 return;
             auto& app = self->app_;
@@ -832,7 +451,7 @@ MetricsRegistry::registerLoadFactorGauge()
 }
 
 void
-MetricsRegistry::observeNodeStoreTotals(node_store::Database& db, ObserveFn const& observe)
+AppMetricGauges::observeNodeStoreTotals(node_store::Database& db, ObserveFn const& observe)
 {
     // Cumulative counters (monotonically increasing).
     observe("node_reads_total", static_cast<std::int64_t>(db.getFetchTotalCount()));
@@ -851,9 +470,10 @@ MetricsRegistry::observeNodeStoreTotals(node_store::Database& db, ObserveFn cons
     // latency differs. Each mean is omitted rather than reported as zero
     // when nothing has been read or written, so a dashboard shows a gap
     // instead of a plausible wrong number.
-    if (auto const mean = scaledMean(db.getFetchDurationUs(), db.getFetchTotalCount()))
+    if (auto const mean =
+            MetricsRegistry::scaledMean(db.getFetchDurationUs(), db.getFetchTotalCount()))
         observe("read_mean_us", *mean);
-    if (auto const mean = scaledMean(db.getStoreDurationUs(), db.getStoreCount()))
+    if (auto const mean = MetricsRegistry::scaledMean(db.getStoreDurationUs(), db.getStoreCount()))
         observe("write_mean_us", *mean);
 
     // Write load score (instantaneous).
@@ -861,7 +481,7 @@ MetricsRegistry::observeNodeStoreTotals(node_store::Database& db, ObserveFn cons
 }
 
 void
-MetricsRegistry::observeWritePathDetail(node_store::Database const& db, ObserveFn const& observe)
+AppMetricGauges::observeWritePathDetail(node_store::Database const& db, ObserveFn const& observe)
 {
     auto const ws = db.getWriteStats();
     if (!ws)
@@ -870,7 +490,7 @@ MetricsRegistry::observeWritePathDetail(node_store::Database const& db, ObserveF
     observe("nudb_writers_in_flight", static_cast<std::int64_t>(ws->concurrentWriters));
     observe("nudb_insert_max_us", static_cast<std::int64_t>(ws->insertMaxUs));
 
-    if (auto const mean = scaledMean(ws->insertTotalUs, ws->insertCount))
+    if (auto const mean = MetricsRegistry::scaledMean(ws->insertTotalUs, ws->insertCount))
         observe("nudb_insert_mean_us", *mean);
 
     // Mean writer depth times 100. NuDB serializes inserts behind one
@@ -878,12 +498,12 @@ MetricsRegistry::observeWritePathDetail(node_store::Database const& db, ObserveF
     // above 1.0 even under load. An integral gauge would truncate that to 1
     // and lose the whole signal, hence the fixed-point scale -- which the
     // name states, so nobody reads 140 as 140 writers.
-    if (auto const mean = scaledMean(ws->depthSum, ws->depthSamples, 100))
+    if (auto const mean = MetricsRegistry::scaledMean(ws->depthSum, ws->depthSamples, 100))
         observe("nudb_writer_depth_x100", *mean);
 }
 
 void
-MetricsRegistry::observeAcquireStats(AcquireStats const& stats, ObserveFn const& observe)
+AppMetricGauges::observeAcquireStats(AcquireStats const& stats, ObserveFn const& observe)
 {
     // Published unconditionally: for a counter, zero is the meaningful
     // "no such event yet" reading, unlike for a mean. The diagnostic value
@@ -906,7 +526,7 @@ MetricsRegistry::observeAcquireStats(AcquireStats const& stats, ObserveFn const&
 }
 
 void
-MetricsRegistry::observeReadQueue(node_store::Database& db, ObserveFn const& observe)
+AppMetricGauges::observeReadQueue(node_store::Database& db, ObserveFn const& observe)
 {
     json::Value obj(json::ValueType::Object);
     db.getCountsJson(obj);
@@ -923,24 +543,24 @@ MetricsRegistry::observeReadQueue(node_store::Database& db, ObserveFn const& obs
 }
 
 void
-MetricsRegistry::registerNodeStoreGauge()
+AppMetricGauges::registerNodeStoreGauge()
 {
     // --- NodeStore I/O gauges ---
     // The cumulative counters (reads, writes, bytes) are also exposed here
     // as observable gauges.  This avoids adding an xrpld dependency into the
-    // libxrpl nodestore code — the MetricsRegistry reads the existing atomic
+    // libxrpl nodestore code — the callback reads the existing atomic
     // counters from Database via its public accessors.
     //
     // Every value multiplexes onto this one gauge through its `metric`
     // label, so a new value needs no new instrument. The body is split
     // across four helpers, one per domain, to stay inside the per-function
     // line budget and to keep each domain testable on its own.
-    nodeStoreGauge_ = meter_->CreateInt64ObservableGauge(
+    nodeStoreGauge_ = core_.meter()->CreateInt64ObservableGauge(
         "nodestore_state",
         "NodeStore I/O counters, latencies, write-queue depth and acquisition stalls");
     nodeStoreGauge_->AddCallback(
         [](opentelemetry::metrics::ObserverResult result, void* state) {
-            auto* self = static_cast<MetricsRegistry*>(state);
+            auto* self = static_cast<AppMetricGauges*>(state);
             if (self->callbacksDetached_.load(std::memory_order_acquire))
                 return;
             auto& app = self->app_;
@@ -957,10 +577,10 @@ MetricsRegistry::registerNodeStoreGauge()
 
                 // Qualified because the enclosing lambda captures nothing:
                 // these are static members, and the explicit scope says so.
-                MetricsRegistry::observeNodeStoreTotals(db, observe);
-                MetricsRegistry::observeWritePathDetail(db, observe);
-                MetricsRegistry::observeAcquireStats(app.getAcquireStats(), observe);
-                MetricsRegistry::observeReadQueue(db, observe);
+                AppMetricGauges::observeNodeStoreTotals(db, observe);
+                AppMetricGauges::observeWritePathDetail(db, observe);
+                AppMetricGauges::observeAcquireStats(app.getAcquireStats(), observe);
+                AppMetricGauges::observeReadQueue(db, observe);
             }
             catch (...)  // NOLINT(bugprone-empty-catch)
             {
@@ -971,14 +591,14 @@ MetricsRegistry::registerNodeStoreGauge()
 }
 
 void
-MetricsRegistry::registerServerInfoGauge()
+AppMetricGauges::registerServerInfoGauge()
 {
     // --- Server info gauges ---
     serverInfoGauge_ =
-        meter_->CreateInt64ObservableGauge("server_info", "Server-level health metrics");
+        core_.meter()->CreateInt64ObservableGauge("server_info", "Server-level health metrics");
     serverInfoGauge_->AddCallback(
         [](opentelemetry::metrics::ObserverResult result, void* state) {
-            auto* self = static_cast<MetricsRegistry*>(state);
+            auto* self = static_cast<AppMetricGauges*>(state);
             if (self->callbacksDetached_.load(std::memory_order_acquire))
                 return;
             auto& app = self->app_;
@@ -1056,10 +676,11 @@ MetricsRegistry::registerServerInfoGauge()
 }
 
 void
-MetricsRegistry::registerBuildInfoGauge()
+AppMetricGauges::registerBuildInfoGauge()
 {
     // --- Build info gauge ---
-    buildInfoGauge_ = meter_->CreateInt64ObservableGauge("build_info", "Build version information");
+    buildInfoGauge_ =
+        core_.meter()->CreateInt64ObservableGauge("build_info", "Build version information");
     buildInfoGauge_->AddCallback(
         [](opentelemetry::metrics::ObserverResult result, void* /* state */) {
             try
@@ -1076,14 +697,14 @@ MetricsRegistry::registerBuildInfoGauge()
 }
 
 void
-MetricsRegistry::registerCompleteLedgersGauge()
+AppMetricGauges::registerCompleteLedgersGauge()
 {
     // --- Complete ledgers range gauge ---
-    completeLedgersGauge_ = meter_->CreateInt64ObservableGauge(
+    completeLedgersGauge_ = core_.meter()->CreateInt64ObservableGauge(
         "complete_ledgers", "Complete ledger range start/end pairs");
     completeLedgersGauge_->AddCallback(
         [](opentelemetry::metrics::ObserverResult result, void* state) {
-            auto* self = static_cast<MetricsRegistry*>(state);
+            auto* self = static_cast<AppMetricGauges*>(state);
             if (self->callbacksDetached_.load(std::memory_order_acquire))
                 return;
             auto& app = self->app_;
@@ -1095,32 +716,30 @@ MetricsRegistry::registerCompleteLedgersGauge()
                     return;
 
                 // Parse comma-separated ranges like
-                // "32570-50000,50005-75891421".
+                // "32570-50000,50005-75891421". A range of one ledger arrives
+                // as a bare sequence number, so parseLedgerRange() decides what
+                // a segment is; only genuinely unreadable ones are skipped.
                 std::size_t rangeIndex = 0;
                 std::istringstream stream(rangeStr);
                 std::string segment;
                 while (std::getline(stream, segment, ','))
                 {
-                    auto const dashPos = segment.find('-');
-                    if (dashPos == std::string::npos || dashPos == 0 ||
-                        dashPos == segment.size() - 1)
+                    auto const range = MetricsRegistry::parseLedgerRange(segment);
+                    if (!range)
                         continue;
-
-                    auto const startStr = segment.substr(0, dashPos);
-                    auto const endStr = segment.substr(dashPos + 1);
 
                     auto const idxStr = std::to_string(rangeIndex);
 
                     opentelemetry::nostd::get<opentelemetry::nostd::shared_ptr<
                         opentelemetry::metrics::ObserverResultT<int64_t>>>(result)
                         ->Observe(
-                            static_cast<int64_t>(std::stoll(startStr)),
+                            static_cast<int64_t>(range->first),
                             {{"bound", "start"}, {"index", idxStr}});
 
                     opentelemetry::nostd::get<opentelemetry::nostd::shared_ptr<
                         opentelemetry::metrics::ObserverResultT<int64_t>>>(result)
                         ->Observe(
-                            static_cast<int64_t>(std::stoll(endStr)),
+                            static_cast<int64_t>(range->second),
                             {{"bound", "end"}, {"index", idxStr}});
 
                     ++rangeIndex;
@@ -1135,14 +754,14 @@ MetricsRegistry::registerCompleteLedgersGauge()
 }
 
 void
-MetricsRegistry::registerDbMetricsGauge()
+AppMetricGauges::registerDbMetricsGauge()
 {
     // --- Database size and fetch rate gauges ---
-    dbMetricsGauge_ =
-        meter_->CreateInt64ObservableGauge("db_metrics", "Database storage sizes and fetch rates");
+    dbMetricsGauge_ = core_.meter()->CreateInt64ObservableGauge(
+        "db_metrics", "Database storage sizes and fetch rates");
     dbMetricsGauge_->AddCallback(
         [](opentelemetry::metrics::ObserverResult result, void* state) {
-            auto* self = static_cast<MetricsRegistry*>(state);
+            auto* self = static_cast<AppMetricGauges*>(state);
             if (self->callbacksDetached_.load(std::memory_order_acquire))
                 return;
             auto& app = self->app_;
@@ -1174,14 +793,14 @@ MetricsRegistry::registerDbMetricsGauge()
 }
 
 void
-MetricsRegistry::registerValidatorHealthGauge()
+AppMetricGauges::registerValidatorHealthGauge()
 {
     // --- Validator health gauges ---
-    validatorHealthGauge_ =
-        meter_->CreateDoubleObservableGauge("validator_health", "Validator health indicators");
+    validatorHealthGauge_ = core_.meter()->CreateDoubleObservableGauge(
+        "validator_health", "Validator health indicators");
     validatorHealthGauge_->AddCallback(
         [](opentelemetry::metrics::ObserverResult result, void* state) {
-            auto* self = static_cast<MetricsRegistry*>(state);
+            auto* self = static_cast<AppMetricGauges*>(state);
             if (self->callbacksDetached_.load(std::memory_order_acquire))
                 return;
             auto& app = self->app_;
@@ -1221,16 +840,16 @@ MetricsRegistry::registerValidatorHealthGauge()
 }
 
 void
-MetricsRegistry::registerPeerQualityGauge()
+AppMetricGauges::registerPeerQualityGauge()
 {
     // --- Peer quality gauges ---
     // Uses Peer::json() to read latency and version since those accessors
     // are not on the abstract Peer interface (they live on PeerImp).
     peerQualityGauge_ =
-        meter_->CreateDoubleObservableGauge("peer_quality", "Peer network quality metrics");
+        core_.meter()->CreateDoubleObservableGauge("peer_quality", "Peer network quality metrics");
     peerQualityGauge_->AddCallback(
         [](opentelemetry::metrics::ObserverResult result, void* state) {
-            auto* self = static_cast<MetricsRegistry*>(state);
+            auto* self = static_cast<AppMetricGauges*>(state);
             if (self->callbacksDetached_.load(std::memory_order_acquire))
                 return;
             auto& app = self->app_;
@@ -1324,18 +943,18 @@ MetricsRegistry::registerPeerQualityGauge()
 }
 
 void
-MetricsRegistry::registerReduceRelayGauge()
+AppMetricGauges::registerReduceRelayGauge()
 {
     // Transaction reduce-relay efficiency. Overlay::txMetrics() exposes the
     // rolling averages as a JSON object with string values (std::to_string),
     // so parse each field. A high suppressed:selected ratio proves the
     // feature is saving bandwidth; a high not_enabled count means stale peers
     // force full relay.
-    reduceRelayGauge_ = meter_->CreateInt64ObservableGauge(
+    reduceRelayGauge_ = core_.meter()->CreateInt64ObservableGauge(
         "reduce_relay_metrics", "Transaction reduce-relay efficiency metrics");
     reduceRelayGauge_->AddCallback(
         [](opentelemetry::metrics::ObserverResult result, void* state) {
-            auto* self = static_cast<MetricsRegistry*>(state);
+            auto* self = static_cast<AppMetricGauges*>(state);
             if (self->callbacksDetached_.load(std::memory_order_acquire))
                 return;
             auto& app = self->app_;
@@ -1375,14 +994,14 @@ MetricsRegistry::registerReduceRelayGauge()
 }
 
 void
-MetricsRegistry::registerLedgerEconomyGauge()
+AppMetricGauges::registerLedgerEconomyGauge()
 {
     // --- Ledger economy gauges ---
-    ledgerEconomyGauge_ =
-        meter_->CreateDoubleObservableGauge("ledger_economy", "Ledger fee and economy metrics");
+    ledgerEconomyGauge_ = core_.meter()->CreateDoubleObservableGauge(
+        "ledger_economy", "Ledger fee and economy metrics");
     ledgerEconomyGauge_->AddCallback(
         [](opentelemetry::metrics::ObserverResult result, void* state) {
-            auto* self = static_cast<MetricsRegistry*>(state);
+            auto* self = static_cast<AppMetricGauges*>(state);
             if (self->callbacksDetached_.load(std::memory_order_acquire))
                 return;
             auto& app = self->app_;
@@ -1440,14 +1059,14 @@ MetricsRegistry::registerLedgerEconomyGauge()
 }
 
 void
-MetricsRegistry::registerStateTrackingGauge()
+AppMetricGauges::registerStateTrackingGauge()
 {
     // --- State tracking gauges ---
-    stateTrackingGauge_ =
-        meter_->CreateDoubleObservableGauge("state_tracking", "Node state and mode tracking");
+    stateTrackingGauge_ = core_.meter()->CreateDoubleObservableGauge(
+        "state_tracking", "Node state and mode tracking");
     stateTrackingGauge_->AddCallback(
         [](opentelemetry::metrics::ObserverResult result, void* state) {
-            auto* self = static_cast<MetricsRegistry*>(state);
+            auto* self = static_cast<AppMetricGauges*>(state);
             if (self->callbacksDetached_.load(std::memory_order_acquire))
                 return;
             auto& app = self->app_;
@@ -1462,7 +1081,7 @@ MetricsRegistry::registerStateTrackingGauge()
 
                 // State value: 0-4 from OperatingMode, 5=validating, 6=proposing.
                 auto const mode = app.getOPs().getOperatingMode();
-                auto stateValue = static_cast<double>(mode);
+                auto stateValue = static_cast<double>(std::to_underlying(mode));
 
                 // If FULL, refine using consensus info for validating/proposing.
                 if (mode == OperatingMode::FULL)
@@ -1494,7 +1113,7 @@ MetricsRegistry::registerStateTrackingGauge()
 }
 
 void
-MetricsRegistry::registerStorageDetailGauge()
+AppMetricGauges::registerStorageDetailGauge()
 {
     // --- Storage detail gauges ---
     // Reports the cumulative payload bytes handed to the NodeStore. See the
@@ -1502,10 +1121,10 @@ MetricsRegistry::registerStorageDetailGauge()
     // on-disk file size, because no accessor for the latter exists. The label
     // value names it that way so it is not read as a filesystem measurement.
     storageDetailGauge_ =
-        meter_->CreateInt64ObservableGauge("storage_detail", "Storage detail metrics");
+        core_.meter()->CreateInt64ObservableGauge("storage_detail", "Storage detail metrics");
     storageDetailGauge_->AddCallback(
         [](opentelemetry::metrics::ObserverResult result, void* state) {
-            auto* self = static_cast<MetricsRegistry*>(state);
+            auto* self = static_cast<AppMetricGauges*>(state);
             if (self->callbacksDetached_.load(std::memory_order_acquire))
                 return;
             auto& app = self->app_;
@@ -1546,7 +1165,7 @@ MetricsRegistry::registerStorageDetailGauge()
 }
 
 void
-MetricsRegistry::registerValidationAgreementGauge()
+AppMetricGauges::registerValidationAgreementGauge()
 {
     // --- Validation agreement gauges ---
     // Reports rolling-window agreement percentages and counts from
@@ -1554,18 +1173,18 @@ MetricsRegistry::registerValidationAgreementGauge()
     // callback so that pending ledger events are resolved before the
     // window data is read (the callback fires every ~10 s from the
     // PeriodicExportingMetricReader thread).
-    validationAgreementGauge_ = meter_->CreateDoubleObservableGauge(
+    validationAgreementGauge_ = core_.meter()->CreateDoubleObservableGauge(
         "validation_agreement", "Validation agreement percentages and counts (1h/24h windows)");
     validationAgreementGauge_->AddCallback(
         [](opentelemetry::metrics::ObserverResult result, void* state) {
-            auto* self = static_cast<MetricsRegistry*>(state);
+            auto* self = static_cast<AppMetricGauges*>(state);
             if (self->callbacksDetached_.load(std::memory_order_acquire))
                 return;
 
             try
             {
                 // Reconcile pending events before reading window data.
-                self->validationTracker_.reconcile();
+                self->core_.getValidationTracker().reconcile();
 
                 auto observe = [&](char const* name, double value) {
                     opentelemetry::nostd::get<opentelemetry::nostd::shared_ptr<
@@ -1573,21 +1192,29 @@ MetricsRegistry::registerValidationAgreementGauge()
                         ->Observe(value, {{"metric", name}});
                 };
 
-                observe("agreement_pct_1h", self->validationTracker_.agreementPct1h());
-                observe("agreement_pct_24h", self->validationTracker_.agreementPct24h());
+                observe("agreement_pct_1h", self->core_.getValidationTracker().agreementPct1h());
+                observe("agreement_pct_24h", self->core_.getValidationTracker().agreementPct24h());
                 observe(
-                    "agreements_1h", static_cast<double>(self->validationTracker_.agreements1h()));
-                observe("missed_1h", static_cast<double>(self->validationTracker_.missed1h()));
+                    "agreements_1h",
+                    static_cast<double>(self->core_.getValidationTracker().agreements1h()));
+                observe(
+                    "missed_1h",
+                    static_cast<double>(self->core_.getValidationTracker().missed1h()));
                 observe(
                     "agreements_24h",
-                    static_cast<double>(self->validationTracker_.agreements24h()));
-                observe("missed_24h", static_cast<double>(self->validationTracker_.missed24h()));
+                    static_cast<double>(self->core_.getValidationTracker().agreements24h()));
+                observe(
+                    "missed_24h",
+                    static_cast<double>(self->core_.getValidationTracker().missed24h()));
 
                 // 7-day window (matches external xrpl-validator-dashboard).
-                observe("agreement_pct_7d", self->validationTracker_.agreementPct7d());
+                observe("agreement_pct_7d", self->core_.getValidationTracker().agreementPct7d());
                 observe(
-                    "agreements_7d", static_cast<double>(self->validationTracker_.agreements7d()));
-                observe("missed_7d", static_cast<double>(self->validationTracker_.missed7d()));
+                    "agreements_7d",
+                    static_cast<double>(self->core_.getValidationTracker().agreements7d()));
+                observe(
+                    "missed_7d",
+                    static_cast<double>(self->core_.getValidationTracker().missed7d()));
             }
             catch (...)  // NOLINT(bugprone-empty-catch)
             {
@@ -1598,12 +1225,12 @@ MetricsRegistry::registerValidationAgreementGauge()
 }
 
 void
-MetricsRegistry::registerValidationTotalsCounters()
+AppMetricGauges::registerValidationTotalsCounters()
 {
     // Lifetime validation agreement/miss counters.
     //
-    // These are monotonic ObservableCounters (not the sync Counters they used
-    // to be): a Prometheus _total must never decrease, but ValidationTracker's
+    // These are monotonic ObservableCounters rather than synchronous Counters:
+    // a Prometheus _total must never decrease, but ValidationTracker's
     // NET totals are non-monotonic (a late repair decrements the net miss
     // count). We therefore observe the tracker's GROSS lifetime tallies, which
     // count each ledger once at first classification and are never adjusted on
@@ -1613,20 +1240,22 @@ MetricsRegistry::registerValidationTotalsCounters()
     // reconcile() is called first so pending events are resolved before the
     // tallies are read; the callback fires every ~10 s from the
     // PeriodicExportingMetricReader thread.
-    validationAgreementsObservable_ = meter_->CreateInt64ObservableCounter(
+    validationAgreementsObservable_ = core_.meter()->CreateInt64ObservableCounter(
         "validation_agreements_total",
         "Lifetime validations that initially agreed with network consensus");
     validationAgreementsObservable_->AddCallback(
         [](opentelemetry::metrics::ObserverResult result, void* state) {
-            auto* self = static_cast<MetricsRegistry*>(state);
+            auto* self = static_cast<AppMetricGauges*>(state);
             if (self->callbacksDetached_.load(std::memory_order_acquire))
                 return;
             try
             {
-                self->validationTracker_.reconcile();
+                self->core_.getValidationTracker().reconcile();
                 opentelemetry::nostd::get<opentelemetry::nostd::shared_ptr<
                     opentelemetry::metrics::ObserverResultT<int64_t>>>(result)
-                    ->Observe(static_cast<int64_t>(self->validationTracker_.totalAgreementsEver()));
+                    ->Observe(
+                        static_cast<int64_t>(
+                            self->core_.getValidationTracker().totalAgreementsEver()));
             }
             catch (...)  // NOLINT(bugprone-empty-catch)
             {
@@ -1635,19 +1264,20 @@ MetricsRegistry::registerValidationTotalsCounters()
         },
         this);
 
-    validationMissedObservable_ = meter_->CreateInt64ObservableCounter(
+    validationMissedObservable_ = core_.meter()->CreateInt64ObservableCounter(
         "validation_missed_total", "Lifetime validations that initially missed network consensus");
     validationMissedObservable_->AddCallback(
         [](opentelemetry::metrics::ObserverResult result, void* state) {
-            auto* self = static_cast<MetricsRegistry*>(state);
+            auto* self = static_cast<AppMetricGauges*>(state);
             if (self->callbacksDetached_.load(std::memory_order_acquire))
                 return;
             try
             {
-                self->validationTracker_.reconcile();
+                self->core_.getValidationTracker().reconcile();
                 opentelemetry::nostd::get<opentelemetry::nostd::shared_ptr<
                     opentelemetry::metrics::ObserverResultT<int64_t>>>(result)
-                    ->Observe(static_cast<int64_t>(self->validationTracker_.totalMissedEver()));
+                    ->Observe(
+                        static_cast<int64_t>(self->core_.getValidationTracker().totalMissedEver()));
             }
             catch (...)  // NOLINT(bugprone-empty-catch)
             {
@@ -1658,72 +1288,5 @@ MetricsRegistry::registerValidationTotalsCounters()
 }
 
 #endif  // XRPL_ENABLE_TELEMETRY
-
-// -----------------------------------------------------------------
-// External dashboard parity counter increments
-// -----------------------------------------------------------------
-
-void
-MetricsRegistry::incrementLedgersClosed()
-{
-#ifdef XRPL_ENABLE_TELEMETRY
-    if (enabled_ && ledgersClosedCounter_)
-        ledgersClosedCounter_->Add(1);
-#endif
-}
-
-void
-MetricsRegistry::incrementValidationsSent()
-{
-#ifdef XRPL_ENABLE_TELEMETRY
-    if (enabled_ && validationsSentCounter_)
-        validationsSentCounter_->Add(1);
-#endif
-}
-
-void
-MetricsRegistry::incrementValidationsChecked()
-{
-#ifdef XRPL_ENABLE_TELEMETRY
-    if (enabled_ && validationsCheckedCounter_)
-        validationsCheckedCounter_->Add(1);
-#endif
-}
-
-void
-MetricsRegistry::incrementStateChanges()
-{
-#ifdef XRPL_ENABLE_TELEMETRY
-    if (enabled_ && stateChangesCounter_)
-        stateChangesCounter_->Add(1);
-#endif
-}
-
-void
-MetricsRegistry::incrementLedgerHistoryMismatch(std::string_view reason)
-{
-#ifdef XRPL_ENABLE_TELEMETRY
-    if (enabled_ && ledgerHistoryMismatchCounter_)
-        ledgerHistoryMismatchCounter_->Add(1, {{"reason", std::string(reason)}});
-#endif
-}
-
-void
-MetricsRegistry::incrementTxqExpired()
-{
-#ifdef XRPL_ENABLE_TELEMETRY
-    if (enabled_ && txqExpiredCounter_)
-        txqExpiredCounter_->Add(1);
-#endif
-}
-
-void
-MetricsRegistry::incrementTxqDropped(std::string_view reason)
-{
-#ifdef XRPL_ENABLE_TELEMETRY
-    if (enabled_ && txqDroppedCounter_)
-        txqDroppedCounter_->Add(1, {{"reason", std::string(reason)}});
-#endif
-}
 
 }  // namespace xrpl::telemetry

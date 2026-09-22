@@ -765,7 +765,7 @@ before commitment.
       `async_gauges_before_start_does_not_break_start`,
       `async_gauges_respect_the_compile_time_guard`, `destructor_calls_stop`)
 - [x] Async gauge callbacks execute at 10s intervals —
-      `MetricsRegistry.cpp:289`, `readerOpts.export_interval_millis = 10000`.
+      `MetricsRegistry::initExporterAndProvider`, `readerOpts.export_interval_millis = 10000`.
       (The "without performance impact" half is unmeasured — see below.)
 - [x] 4 new Grafana dashboards operational (Fee Market, Job Queue, Validator
       Health, Peer Quality) — all four JSONs are under

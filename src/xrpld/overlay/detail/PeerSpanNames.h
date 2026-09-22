@@ -36,7 +36,14 @@ using ::xrpl::telemetry::attr::ledgerHash;
 using ::xrpl::telemetry::attr::peerId;
 
 /**
- * Trust flag qualified by message type, shared with consensus.*.receive.
+ * Trust flag qualified by message type — whether the sending key is on this
+ * node's UNL.
+ *
+ * The literals match consensus::span::attr::proposalTrusted and
+ * ::validationTrusted, so the peer and consensus receive spans report on one
+ * spanmetrics dimension instead of two. Unlike the constants above these are
+ * declared here rather than re-exported from SpanNames.h, so the two spellings
+ * are only kept equal by hand: change one and the dimension splits silently.
  */
 inline constexpr auto proposalTrusted = makeStr("proposal_trusted");
 inline constexpr auto validationTrusted = makeStr("validation_trusted");

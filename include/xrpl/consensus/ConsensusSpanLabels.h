@@ -3,10 +3,11 @@
 /**
  * Enum-to-label mappings for consensus span attribute values.
  *
- *  Split from ConsensusSpanNames.h so that header stays dependency-free like
- *  its siblings: the span-name and attribute-key constants are included by
- *  overlay and app translation units that have no use for the consensus
- *  enums, while these mappings are needed only by Consensus.h.
+ *  These mappings live in their own header so ConsensusSpanNames.h stays
+ *  dependency-free like its siblings: the span-name and attribute-key
+ *  constants are included by overlay and app translation units that have no
+ *  use for the consensus enums, while these mappings are needed only by
+ *  Consensus.h.
  *
  *      ConsensusSpanNames.h  (constants only, no domain deps)
  *              ^

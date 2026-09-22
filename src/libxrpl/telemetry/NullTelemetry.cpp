@@ -25,7 +25,6 @@
 #ifdef XRPL_ENABLE_TELEMETRY
 #include <opentelemetry/context/context.h>
 #include <opentelemetry/metrics/meter.h>
-#include <opentelemetry/metrics/noop.h>
 #include <opentelemetry/nostd/shared_ptr.h>
 #include <opentelemetry/trace/noop.h>
 #include <opentelemetry/trace/span.h>
@@ -36,7 +35,6 @@
 #endif
 
 #include <memory>
-#include <string>
 #include <utility>
 
 namespace xrpl::telemetry {
@@ -109,14 +107,14 @@ public:
         return false;
     }
 
-    [[nodiscard]] std::string const&
+    [[nodiscard]] ConsensusTraceStrategy
     getConsensusTraceStrategy() const override
     {
         return setup_.consensusTraceStrategy;
     }
 
 #ifdef XRPL_ENABLE_TELEMETRY
-    opentelemetry::nostd::shared_ptr<opentelemetry::trace::Tracer>
+    [[nodiscard]] opentelemetry::nostd::shared_ptr<opentelemetry::trace::Tracer>
     getTracer(std::string_view) override
     {
         static auto noopTracer = opentelemetry::nostd::shared_ptr<opentelemetry::trace::Tracer>(
@@ -124,14 +122,14 @@ public:
         return noopTracer;
     }
 
-    opentelemetry::nostd::shared_ptr<opentelemetry::trace::Span>
+    [[nodiscard]] opentelemetry::nostd::shared_ptr<opentelemetry::trace::Span>
     startSpan(std::string_view, opentelemetry::trace::SpanKind) override
     {
         return opentelemetry::nostd::shared_ptr<opentelemetry::trace::Span>(
             new opentelemetry::trace::NoopSpan(nullptr));
     }
 
-    opentelemetry::nostd::shared_ptr<opentelemetry::trace::Span>
+    [[nodiscard]] opentelemetry::nostd::shared_ptr<opentelemetry::trace::Span>
     startSpan(
         std::string_view,
         opentelemetry::context::Context const&,
@@ -142,11 +140,11 @@ public:
     }
 
     opentelemetry::nostd::shared_ptr<opentelemetry::metrics::Meter>
-    getMeter(std::string_view) override
+    getMeter(std::string_view name) override
     {
-        static auto noopMeter = opentelemetry::nostd::shared_ptr<opentelemetry::metrics::Meter>(
-            new opentelemetry::metrics::NoopMeter());
-        return noopMeter;
+        // Route through the shared helper so the meter identity (name +
+        // kMeterVersion) matches every other noop path in the process.
+        return noopMeter(name);
     }
 #endif
 };

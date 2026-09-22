@@ -121,7 +121,10 @@ inline constexpr auto expiredCount = makeStr("expired_count");
  */
 inline constexpr auto terCode = makeStr("ter_code");
 /**
- * "retries_remaining" — retries left before discard.
+ * "retries_remaining" — retries left as this attempt started, recorded before
+ * the transaction is applied and before any decrement. A span with
+ * txq_status="retried" therefore always shows a non-zero count; exhaustion
+ * shows up as txq_status="failed" with zero.
  */
 inline constexpr auto retriesRemaining = makeStr("retries_remaining");
 /**

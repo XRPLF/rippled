@@ -11,10 +11,8 @@ namespace xrpl::telemetry::buckets {
  * @file HistogramBuckets.h
  * @brief Explicit histogram bucket edges for xrpld's OTel instruments.
  *
- * One header owns every ladder so a reviewer sees all of them at once and a
- * test can assert their invariants. Before this existed the edges lived as
- * file-local `namespace {}` constants, unreachable from any test, and they
- * drifted apart.
+ * One header owns every ladder, so a reviewer sees all of them together and
+ * a test can assert their invariants.
  *
  * Why a ladder is worth this much care: when a quantile falls in the `+Inf`
  * bucket, Prometheus returns the *second-highest* edge, not `+Inf`. A
@@ -68,11 +66,10 @@ namespace xrpl::telemetry::buckets {
  * **This list must contain every representable edge of the collector's
  * spanmetrics ladder, and may extend above it.** Agreement over the shared
  * range is deliberate: it lets a span-derived latency panel and a native
- * histogram panel be read on the same scale. It was specified that way
- * originally, then silently broken when the collector ladder alone was
- * extended, which left this side capped at 5 s while spans reached 30 s and
- * censored every quantile above 5 s. `check_bucket_parity.py` now enforces
- * the containment -- add a collector edge, add it here too.
+ * histogram panel be read on the same scale. Drop an edge the collector
+ * carries and every quantile above it reads back as the top edge instead of
+ * failing. `check_bucket_parity.py` enforces the containment -- add a
+ * collector edge, add it here too.
  *
  * The sub-millisecond edges the collector carries (0.01 to 0.5 ms) are
  * deliberately absent. `beast::insight::Event` rounds every duration up to
@@ -82,12 +79,12 @@ namespace xrpl::telemetry::buckets {
  *
  * The 60 s and 120 s edges exceed the collector's 30 s top on purpose,
  * because jobs outlive spans: the updatepaths job type was measured
- * averaging about 60 s, so a 30 s ceiling would censor its quantiles just
- * as 5 s censors them today. All these Events share one ladder, so its
- * ceiling has to cover the slowest member rather than the typical one.
+ * averaging about 60 s, so a 30 s ceiling would censor its quantiles. All
+ * these Events share one ladder, so its ceiling has to cover the slowest
+ * member rather than the typical one.
  *
- * The 2, 3 and 4 s edges resolve second-scale work that previously had to
- * interpolate across a single four-second-wide bucket.
+ * The 2, 3 and 4 s edges resolve second-scale work, which a single
+ * four-second-wide bucket can only interpolate across.
  */
 inline constexpr std::array kMillisecondBuckets{
     1.0,
@@ -209,7 +206,7 @@ inline constexpr std::array
  * @return true when the ladder is non-empty, starts at or above zero, and
  *         every later edge is strictly greater than its predecessor.
  */
-constexpr bool
+[[nodiscard]] constexpr bool
 isAscendingNonNegative(std::span<double const> ladder) noexcept
 {
     if (ladder.empty() || ladder.front() < 0.0)
@@ -235,7 +232,7 @@ static_assert(isAscendingNonNegative(kChargeBuckets));
  * @param ladder Bucket upper bounds.
  * @return A vector holding the same edges in the same order.
  */
-inline std::vector<double>
+[[nodiscard]] inline std::vector<double>
 toVector(std::span<double const> ladder)
 {
     return std::vector<double>(ladder.begin(), ladder.end());

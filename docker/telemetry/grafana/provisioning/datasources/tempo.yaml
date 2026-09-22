@@ -206,11 +206,6 @@ datasources:
             operator: "="
             scope: span
             type: dynamic
-          - id: tx-suppressed
-            tag: suppressed
-            operator: "="
-            scope: span
-            type: dynamic
           - id: peer-version
             tag: peer_version
             operator: "="

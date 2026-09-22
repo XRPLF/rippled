@@ -97,7 +97,8 @@
       "fieldConfig": {
         "defaults": {
           "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
-          "unit": "suffix: ledgers/s"
+          "unit": "si: ledgers/s",
+          "decimals": 0
         },
         "overrides": []
       },
@@ -135,7 +136,8 @@
       "fieldConfig": {
         "defaults": {
           "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
-          "unit": "suffix: ledgers/s"
+          "unit": "si: ledgers/s",
+          "decimals": 0
         },
         "overrides": []
       },
@@ -155,6 +157,10 @@
         "y": 21
       },
       "options": {
+        "annotations": {
+          "clustering": -1,
+          "multiLane": true
+        },
         "tooltip": {
           "maxHeight": 600,
           "mode": "multi",
@@ -262,6 +268,10 @@
         "y": 32
       },
       "options": {
+        "annotations": {
+          "clustering": -1,
+          "multiLane": true
+        },
         "tooltip": {
           "maxHeight": 600,
           "mode": "multi",
@@ -307,6 +317,10 @@
         "y": 32
       },
       "options": {
+        "annotations": {
+          "clustering": -1,
+          "multiLane": true
+        },
         "tooltip": {
           "maxHeight": 600,
           "mode": "multi",
@@ -325,7 +339,8 @@
       "fieldConfig": {
         "defaults": {
           "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
-          "unit": "suffix: transactions/s",
+          "unit": "si: transactions/s",
+          "decimals": 0,
           "custom": {
             "axisLabel": "Transactions / Sec",
             "spanNulls": 1800000,
@@ -383,7 +398,8 @@
       "fieldConfig": {
         "defaults": {
           "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
-          "unit": "suffix: ledgers/s"
+          "unit": "si: ledgers/s",
+          "decimals": 0
         },
         "overrides": []
       },
@@ -403,6 +419,10 @@
         "y": 53
       },
       "options": {
+        "annotations": {
+          "clustering": -1,
+          "multiLane": true
+        },
         "tooltip": {
           "maxHeight": 600,
           "mode": "multi",
@@ -446,7 +466,7 @@
     },
     {
       "title": "Ledger Close Interval & Age",
-      "description": "###### What this is:\n*The wall-clock time between consecutive ledger closes \u2014 the network close cadence.*\n\n###### How it's computed:\n*Close Interval: 1 / rate(ledgers_closed_total), the average seconds between closes from the monotonic close counter (scrape-independent, unlike a gauge delta which would alias to the scrape period). Last-Close Age: time() minus the last-close network time (server_info last_close_time gauge + Ripple-epoch offset), i.e. seconds since the last ledger closed.*\n\n###### Reading it:\n*A steady line near the network's target close interval.*\n\n###### Healthy range:\n*About 3-5s on mainnet; workload-dependent on test networks.*\n\n###### Watch for:\n*A rising interval (consensus slowing or the node lagging) or a flat line at zero (ledgers no longer closing).*\n\n###### Keywords:\n- **Ledger close** *(network event)* \u2014 the current open ledger is closed and a new closed ledger is built from the agreed transaction set.\n- **Ledger close interval** *(network-wide)* \u2014 the network's steady ledger rhythm \u2014 roughly one closed ledger every 3-5 seconds on Mainnet.\n- **Consensus** *(network event)* \u2014 the protocol by which validators agree on the next ledger's transaction set and close time.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Computed in xrpld code (MetricsRegistry, OpenTelemetry SDK) and exported as a metric; the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[MetricsRegistry.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/telemetry/MetricsRegistry.cpp) \u00b7 [RCLConsensus.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/app/consensus/RCLConsensus.cpp)\n\n###### Function:\n`registerServerInfoGauge (last_close_time) ; ledgers_closed_total`\n\n###### References:\n[Ledger close](https://xrpl.org/docs/concepts/ledgers/open-closed-validated-ledgers) \u00b7 [Ledger close interval](https://xrpl.org/docs/concepts/ledgers/ledger-close-times) \u00b7 [Consensus](https://xrpl.org/docs/concepts/consensus-protocol/consensus-structure) \u00b7 [Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#ledger-close)",
+      "description": "###### What this is:\n*The wall-clock time between consecutive ledger closes \u2014 the network close cadence.*\n\n###### How it's computed:\n*Close Interval: 1 / rate(ledgers_closed_total), the average seconds between closes from the monotonic close counter (scrape-independent, unlike a gauge delta which would alias to the scrape period). Last-Close Age: time() minus the last-close network time (server_info last_close_time gauge + Ripple-epoch offset), i.e. seconds since the last ledger closed.*\n\n###### Reading it:\n*A steady line near the network's target close interval.*\n\n###### Healthy range:\n*About 3-5s on mainnet; workload-dependent on test networks.*\n\n###### Watch for:\n*A rising interval (consensus slowing or the node lagging) or a flat line at zero (ledgers no longer closing).*\n\n###### Keywords:\n- **Ledger close** *(network event)* \u2014 the current open ledger is closed and a new closed ledger is built from the agreed transaction set.\n- **Ledger close interval** *(network-wide)* \u2014 the network's steady ledger rhythm \u2014 roughly one closed ledger every 3-5 seconds on Mainnet.\n- **Consensus** *(network event)* \u2014 the protocol by which validators agree on the next ledger's transaction set and close time.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Computed in xrpld code (MetricsRegistry, OpenTelemetry SDK) and exported as a metric; the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[AppMetricGauges.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/telemetry/AppMetricGauges.cpp) \u00b7 [MetricsRegistry.cpp](https://github.com/XRPLF/rippled/blob/develop/src/libxrpl/telemetry/MetricsRegistry.cpp) \u00b7 [RCLConsensus.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/app/consensus/RCLConsensus.cpp)\n\n###### Function:\n`registerServerInfoGauge (last_close_time) ; ledgers_closed_total`\n\n###### References:\n[Ledger close](https://xrpl.org/docs/concepts/ledgers/open-closed-validated-ledgers) \u00b7 [Ledger close interval](https://xrpl.org/docs/concepts/ledgers/ledger-close-times) \u00b7 [Consensus](https://xrpl.org/docs/concepts/consensus-protocol/consensus-structure) \u00b7 [Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#ledger-close)",
       "type": "timeseries",
       "gridPos": {
         "h": 10,
@@ -455,6 +475,10 @@
         "y": 53
       },
       "options": {
+        "annotations": {
+          "clustering": -1,
+          "multiLane": true
+        },
         "tooltip": {
           "maxHeight": 600,
           "mode": "multi",
