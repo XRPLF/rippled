@@ -321,16 +321,16 @@ public:
 
 #if XRPL_ASSETS_ENABLE_STD_HASH
         testcase("hash_map <std::pair<Issue, Domain>, int>");
-        testIssueDomainMap<hash_map<std::pair<Issue, Domain>, int>>();
+        testIssueDomainMap<HashMap<std::pair<Issue, Domain>, int>>();
 
         testcase("hash_map <std::pair<Issue, Domain>, int>");
-        testIssueDomainMap<hash_map<std::pair<Issue, Domain>, int>>();
+        testIssueDomainMap<HashMap<std::pair<Issue, Domain>, int>>();
 
         testcase("hardened_hash_map <std::pair<Issue, Domain>, int>");
-        testIssueDomainMap<hardened_hash_map<std::pair<Issue, Domain>, int>>();
+        testIssueDomainMap<HardenedHashMap<std::pair<Issue, Domain>, int>>();
 
         testcase("hardened_hash_map <std::pair<Issue, Domain>, int>");
-        testIssueDomainMap<hardened_hash_map<std::pair<Issue, Domain>, int>>();
+        testIssueDomainMap<HardenedHashMap<std::pair<Issue, Domain>, int>>();
 #endif
     }
 
@@ -375,10 +375,10 @@ public:
         testIssueMap<std::unordered_map<Issue, int>>();
 
         testcase("hash_map <Issue, int>");
-        testIssueMap<hash_map<Issue, int>>();
+        testIssueMap<HashMap<Issue, int>>();
 
         testcase("hash_map <Issue, int>");
-        testIssueMap<hash_map<Issue, int>>();
+        testIssueMap<HashMap<Issue, int>>();
 
 #endif
     }
@@ -856,10 +856,10 @@ public:
         testBookMap<std::unordered_map<Book, int>>();
 
         testcase("hash_map <Book, int>");
-        testBookMap<hash_map<Book, int>>();
+        testBookMap<HashMap<Book, int>>();
 
         testcase("hash_map <Book, int>");
-        testBookMap<hash_map<Book, int>>();
+        testBookMap<HashMap<Book, int>>();
 #endif
     }
 
