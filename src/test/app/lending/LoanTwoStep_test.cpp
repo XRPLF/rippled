@@ -1944,6 +1944,46 @@ private:
             }
         }
 
+        // LoanAccept must follow the same Batch policy as the rest of the
+        // lending protocol. Every other lending transaction is on
+        // Batch::kDisabledTxTypes, so an inner LoanAccept must be rejected
+        // with temINVALID_INNER_BATCH. Gated the same way as the inner
+        // LoanSet case above, so the test tracks the list rather than
+        // hard-coding today's policy.
+        {
+            bool const lendingBatchEnabled = !std::ranges::any_of(
+                Batch::kDisabledTxTypes,
+                [](auto const& disabled) { return disabled == ttLOAN_ACCEPT; });
+
+            testcase(
+                lendingBatchEnabled
+                    ? "Two-step: Batch inner LoanAccept accepts the pending loan"
+                    : "Two-step: Batch inner LoanAccept rejected while ttLOAN_ACCEPT is disabled");
+
+            Env env(*this, features);
+            auto const broker = makeBroker(env, AssetType::XRP);
+
+            auto const loanKeylet = nextLoanKeylet(env, broker);
+            propose(env, broker, lender, borrower, (env.now() + 1h).time_since_epoch().count());
+            env.close();
+
+            auto const borrowerSeq = env.seq(borrower);
+            auto const batchFee = batch::calcBatchFee(env, 0, 2);
+
+            env(batch::outer(borrower, borrowerSeq, batchFee, tfAllOrNothing),
+                batch::Inner(accept(borrower, loanKeylet.key), borrowerSeq + 1),
+                batch::Inner(pay(borrower, evan, XRP(1)), borrowerSeq + 2),
+                Ter(lendingBatchEnabled ? TER(tesSUCCESS) : TER(temINVALID_INNER_BATCH)));
+            env.close();
+
+            auto const loan = env.le(loanKeylet);
+            if (!BEAST_EXPECT(loan))
+                return;
+            // While the type is disabled the batch never reaches doApply, so
+            // the loan is still pending.
+            BEAST_EXPECT(loan->isFlag(lsfLoanPending) != lendingBatchEnabled);
+        }
+
         // Cash-basis accounting parity: after a completed two-step lifecycle
         // (propose + accept + full pay + delete) on a V1.1 cash-basis vault
         // the balance sheet must fully close out. Guards against the drift
