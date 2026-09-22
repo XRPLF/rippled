@@ -100,8 +100,6 @@ The top-level `CMakeLists.txt` adds an `XRPL_ENABLE_TELEMETRY` option (default `
 
 > **OTLP** = OpenTelemetry Protocol | **APM** = Application Performance Monitoring
 
-> **Production hardening**: The configurations in this section are starting points. For production deployments where xrpld ships telemetry across a network to a centrally-hosted collector, see [Securing the OTel Pipeline](./secure-OTel.md) for the required mTLS receiver config, NetworkPolicy, and peer trace-context validation.
-
 The authoritative collector config lives in the repo at `docker/telemetry/otel-collector-config.yaml` (with Tempo backend config in `docker/telemetry/tempo.yaml`). The sections below summarize the development and production shapes of that pipeline.
 
 ### 5.5.1 Development Configuration

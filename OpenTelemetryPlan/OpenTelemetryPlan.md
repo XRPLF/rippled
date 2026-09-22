@@ -53,7 +53,6 @@ flowchart TB
         phases["06-implementation-phases.md"]
         backends["07-observability-backends.md"]
         appendix["08-appendix.md"]
-        secure["secure-OTel.md"]
         dataref["09-data-collection-reference.md"]
     end
 
@@ -69,7 +68,6 @@ flowchart TB
     config --> phases
     phases --> backends
     backends --> appendix
-    backends --> secure
     appendix --> dataref
 
     style overview fill:#1b5e20,stroke:#0d3d14,color:#fff,stroke-width:2px
@@ -85,7 +83,6 @@ flowchart TB
     style phases fill:#4a148c,stroke:#2e0d57,color:#fff
     style backends fill:#4a148c,stroke:#2e0d57,color:#fff
     style appendix fill:#4a148c,stroke:#2e0d57,color:#fff
-    style secure fill:#4a148c,stroke:#2e0d57,color:#fff
     style dataref fill:#4a148c,stroke:#2e0d57,color:#fff
 ```
 
@@ -106,7 +103,6 @@ flowchart TB
 | **7**   | [Observability Backends](./07-observability-backends.md)       | Backend selection guide and production architecture                    |
 | **8**   | [Appendix](./08-appendix.md)                                   | Glossary, references, version history                                  |
 | **9**   | [Data Collection Reference](./09-data-collection-reference.md) | Complete inventory of spans, attributes, metrics, and dashboards       |
-| **Sec** | [Securing the OTel Pipeline](./secure-OTel.md)                 | Threat model and hardening (mTLS, peer trace-context validation)       |
 
 ---
 
@@ -209,14 +205,6 @@ The appendix contains a glossary of OpenTelemetry and xrpld-specific terms, refe
 A single-source-of-truth reference documenting every piece of telemetry data collected by xrpld. Covers all 38 OpenTelemetry spans with their 89 attribute rows (78 unique keys), all StatsD metrics (gauges, counters, histograms, overlay traffic), SpanMetrics-derived Prometheus metrics, and all 10 Grafana dashboards. Includes Tempo trace search guides and Prometheus query examples.
 
 ➡️ **[View Data Collection Reference](./09-data-collection-reference.md)**
-
----
-
-## Securing the OTel Pipeline
-
-Threat model and hardening guidance for production deployments where xrpld nodes ship telemetry to a centrally-hosted collector across an untrusted network. Covers the two attack surfaces (collector ingress and peer trace-context spoofing) and the chosen defenses: mTLS as primary collector auth, NetworkPolicy as defense-in-depth, and source-side validation plus per-peer rate limiting for the `protocol::TraceContext` field on peer messages.
-
-➡️ **[View Securing the OTel Pipeline](./secure-OTel.md)**
 
 ---
 
