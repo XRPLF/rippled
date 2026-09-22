@@ -336,45 +336,57 @@ class InvariantsTrustLine_test : public InvariantsBase
         // (from the (a1, g2) line, sign inverted under a1's group) and one
         // receiver (from the (a1, g1) line, sign inverted), defeating the
         // one-sided short-circuit and letting a1's asfGlobalFreeze /
-        // self-freeze bits leak into the check. Post-fix, a1 is not
-        // recorded as issuer (perspective balance stays >= 0 on both
-        // lines) and the swap goes through cleanly.
-        auto const expectLogs = fixEnabled ? std::vector<std::string>{}
-                                           : std::vector<std::string>{
-                                                 "Attempting to move "
-                                                 "frozen funds"};
-        auto const expectTers = fixEnabled
-            ? std::initializer_list<TER>{tesSUCCESS, tesSUCCESS}
-            : std::initializer_list<TER>{tecINVARIANT_FAILED, tefINVARIANT_FAILED};
+        // self-freeze bits leak into the check.
+        //
+        // Post-fix, a1 is not recorded as issuer (perspective balance stays
+        // >= 0 on both lines), so its lsfGlobalFreeze / own-side lsfLow/High
+        // freeze bits stop feeding into the check. Global-freeze and
+        // normal-freeze are issuer-only in the engine (isFrozen /
+        // accountFunds only read the issuer-side bit), so dropping the
+        // holder's bits here matches engine semantics for those cases.
+        auto const passLogs = std::vector<std::string>{};
+        auto const passTers = std::initializer_list<TER>{tesSUCCESS, tesSUCCESS};
+        auto const failLogs = std::vector<std::string>{"Attempting to move frozen funds"};
+        auto const failTers = std::initializer_list<TER>{tecINVARIANT_FAILED, tefINVARIANT_FAILED};
 
         // ttOFFER_CREATE mirrors the real attack vector (a1's poison
         // offer at the top of the USD.g1/USD.g2 book) and, unlike ttCLAWBACK
         // etc., has no OverrideFreeze privilege that would mask the check.
         doInvariantCheck(
             makeEnv(features),
-            expectLogs,
+            fixEnabled ? passLogs : failLogs,
             swapBalances,
             XRPAmount{},
             STTx{ttOFFER_CREATE, [](STObject&) {}},
-            expectTers,
+            fixEnabled ? passTers : failTers,
             a1GlobalFrozen);
 
         doInvariantCheck(
             makeEnv(features),
-            expectLogs,
+            fixEnabled ? passLogs : failLogs,
             swapBalances,
             XRPAmount{},
             STTx{ttOFFER_CREATE, [](STObject&) {}},
-            expectTers,
+            fixEnabled ? passTers : failTers,
             a1SelfFrozenOwnSide);
 
+        // Deep freeze is bilateral in the engine: isDeepFrozen returns true
+        // when either endpoint has the bit set, and getLineIfUsable /
+        // OfferStream both honor that. Pre-fix, the (buggy) holder-keyed
+        // group caught the holder-side deep-freeze bit as a side-effect of
+        // dual-endpoint recording. Post-fix the holder group is gone, and
+        // validateFrozenState is refined under fixCleanup3_5_0 to check
+        // both deep-freeze bits under the issuer's group, so a movement on
+        // a holder-self-deep-frozen line -- a defensive case; the engine
+        // itself already rejects such offers at accountFunds / OfferStream
+        // -- still trips the invariant.
         doInvariantCheck(
             makeEnv(features),
-            expectLogs,
+            failLogs,
             swapBalances,
             XRPAmount{},
             STTx{ttOFFER_CREATE, [](STObject&) {}},
-            expectTers,
+            failTers,
             a1SelfDeepFrozenOwnSide);
     }
 

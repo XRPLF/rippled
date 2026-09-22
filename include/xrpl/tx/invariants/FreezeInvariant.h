@@ -86,6 +86,7 @@ private:
         beast::Journal const& j,
         bool enforce,
         bool fixOverrideFreeze,
+        bool fixIssuerGrouping,
         std::optional<LoanDefaultFreezeExemptAccounts> const& loanDefaultAccounts);
 
     static bool
@@ -97,6 +98,7 @@ private:
         bool enforce,
         bool globalFreeze,
         bool fixOverrideFreeze,
+        bool fixIssuerGrouping,
         std::optional<LoanDefaultFreezeExemptAccounts> const& loanDefaultAccounts);
 };
 

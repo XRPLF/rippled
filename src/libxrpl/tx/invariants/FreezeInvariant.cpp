@@ -79,6 +79,7 @@ TransfersNotFrozen::finalize(
      */
     [[maybe_unused]] bool const enforce = view.rules().enabled(featureDeepFreeze);
     bool const fixOverrideFreeze = view.rules().enabled(fixCleanup3_4_0);
+    bool const fixIssuerGrouping = view.rules().enabled(fixCleanup3_5_0);
 
     /*
      * XLS-0066: a broker must be able to default an already-late loan
@@ -111,7 +112,14 @@ TransfersNotFrozen::finalize(
         }
 
         return validateIssuerChanges(
-            issuerSle, changes, tx, j, enforce, fixOverrideFreeze, loanDefaultAccounts);
+            issuerSle,
+            changes,
+            tx,
+            j,
+            enforce,
+            fixOverrideFreeze,
+            fixIssuerGrouping,
+            loanDefaultAccounts);
     });
 }
 
@@ -279,6 +287,7 @@ TransfersNotFrozen::validateIssuerChanges(
     beast::Journal const& j,
     bool enforce,
     bool fixOverrideFreeze,
+    bool fixIssuerGrouping,
     std::optional<LoanDefaultFreezeExemptAccounts> const& loanDefaultAccounts)
 {
     if (!issuer)
@@ -313,6 +322,7 @@ TransfersNotFrozen::validateIssuerChanges(
                     enforce,
                     globalFreeze,
                     fixOverrideFreeze,
+                    fixIssuerGrouping,
                     loanDefaultAccounts))
             {
                 return false;
@@ -331,11 +341,28 @@ TransfersNotFrozen::validateFrozenState(
     bool enforce,
     bool globalFreeze,
     bool fixOverrideFreeze,
+    bool fixIssuerGrouping,
     std::optional<LoanDefaultFreezeExemptAccounts> const& loanDefaultAccounts)
 {
     bool const freeze =
         change.balanceChangeSign < 0 && change.line->isFlag(high ? lsfLowFreeze : lsfHighFreeze);
-    bool const deepFreeze = change.line->isFlag(high ? lsfLowDeepFreeze : lsfHighDeepFreeze);
+    /* Deep freeze is bilateral in the engine: `isDeepFrozen` (and the
+     * `getLineIfUsable` gate driving `accountHolds`/`accountFunds`) treats a
+     * line as deep-frozen when EITHER `lsfLowDeepFreeze` or `lsfHighDeepFreeze`
+     * is set, and `OfferStream`'s deep-freeze filter mirrors that.
+     *
+     * Pre-fixCleanup3_5_0 the invariant checked only the issuer-side bit here,
+     * but the accompanying dual-endpoint recording made the holder-side bit
+     * visible via the (erroneous) holder-keyed group -- collectively covering
+     * both sides at the cost of the false positives fixed by
+     * fixCleanup3_5_0. Post-fix, only the issuer's group is recorded, so the
+     * deep-freeze predicate must check both bits directly to preserve
+     * end-to-end coverage of the engine's deep-freeze semantics for the
+     * (defensive) case of a movement on a holder-self-deep-frozen line.
+     */
+    bool const deepFreeze = fixIssuerGrouping
+        ? (change.line->isFlag(lsfLowDeepFreeze) || change.line->isFlag(lsfHighDeepFreeze))
+        : change.line->isFlag(high ? lsfLowDeepFreeze : lsfHighDeepFreeze);
     bool const frozen = globalFreeze || deepFreeze || freeze;
 
     if (!frozen)
