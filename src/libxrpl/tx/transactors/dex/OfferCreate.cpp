@@ -6,7 +6,6 @@
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/ApplyView.h>
-#include <xrpl/ledger/OrderBookDB.h>
 #include <xrpl/ledger/PaymentSandbox.h>
 #include <xrpl/ledger/Sandbox.h>
 #include <xrpl/ledger/View.h>
@@ -634,7 +633,7 @@ OfferCreate::applyHybrid(
     bookArr.pushBack(std::move(bookInfo));
 
     if (!bookExists)
-        ctx_.registry.get().getOrderBookDB().addOrderBook(book);
+        ctx_.addOrderBook(book);
 
     sleOffer->setFieldArray(sfAdditionalBooks, bookArr);
     return tesSUCCESS;
@@ -1014,7 +1013,7 @@ OfferCreate::applyGuts(Sandbox& sb, Sandbox& sbCancel)
     sb.insert(sleOffer);
 
     if (!bookExisted)
-        ctx_.registry.get().getOrderBookDB().addOrderBook(book);
+        ctx_.addOrderBook(book);
 
     JLOG(j_.debug()) << "final result: success";
 
