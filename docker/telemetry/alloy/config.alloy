@@ -310,6 +310,12 @@ otelcol.processor.transform "tier" {
 otelcol.connector.spanmetrics "xrpld" {
   namespace = "span"
 
+  // Flush every 15s, matching otel-collector-config.grafanacloud.yaml. Alloy
+  // defaults to 60s, which is longer than [$__rate_interval] at short dashboard
+  // ranges, so a rate() panel gets under two samples per window and renders
+  // "No data". Costs ~4x span-metric datapoints.
+  metrics_flush_interval = "15s"
+
   histogram {
     unit = "ms"
     explicit {
