@@ -319,14 +319,20 @@ constexpr std::uint8_t kVaultDefaultIouScale = 6;
 constexpr std::uint8_t kVaultMaximumIouScale = 18;
 
 /**
- * Vault ledger-entry schema versions. Assigned to newly created
- * Vaults once featureLendingProtocolV1_1 is enabled. Vaults created before
- * activation are left without LEVersion (implicit legacy version 0,
+ * Maximum fixed-precision IOU scale factor for a Vault.
+ */
+constexpr std::uint8_t kVaultMaximumFixedIouScale = 10;
+
+/**
+ * Vault ledger-entry schema versions. Assigned to newly created Vaults by
+ * featureLendingProtocolV1_1 and later protocol amendments. Vaults created
+ * before activation are left without LEVersion (implicit legacy version 0,
  * accrual-basis accounting).
  */
 enum class VaultVersion : uint8_t {
     Legacy = 0,
     CashBasis,
+    FixedPrecision,
 };
 
 /**

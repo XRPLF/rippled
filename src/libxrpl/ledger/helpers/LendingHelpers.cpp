@@ -248,14 +248,13 @@ loanPaymentDeltas(LoanPaymentParts const& parts)
 
 namespace {
 
-// Cash-basis accounting applies only when featureLendingProtocolV1_1 is
-// enabled AND the specific Vault was created under it (LEVersion ==
-// VaultVersion::CashBasis). Vaults created before activation keep accrual-basis
-// accounting forever, even after the amendment later turns on.
+// Cash-basis accounting applies to Vaults created under
+// featureLendingProtocolV1_1 or a later version. Vaults created before
+// activation keep accrual-basis accounting forever.
 bool
 cashBasisEnabled(SLE::const_ref vaultSle)
 {
-    return getVaultVersion(vaultSle) == VaultVersion::CashBasis;
+    return getVaultVersion(vaultSle) >= VaultVersion::CashBasis;
 }
 
 }  // namespace

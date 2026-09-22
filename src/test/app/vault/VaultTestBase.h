@@ -113,7 +113,9 @@ protected:
         return {.vault = vault, .keylet = keylet, .sub = sub, .red = red};
     }
 
-    FeatureBitset const all_{test::jtx::testableAmendments()};
+    // Keep legacy Vault suites on their pre-V1.2 behavior. Tests for the
+    // fixed-precision protocol enable featureLendingProtocolV1_2 explicitly.
+    FeatureBitset const all_{test::jtx::testableAmendments() - featureLendingProtocolV1_2};
     std::string const iouCurrency_{"IOU"};
 };
 

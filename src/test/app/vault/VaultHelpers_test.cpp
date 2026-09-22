@@ -27,10 +27,10 @@
 
 namespace xrpl {
 
-// True unit test of `clampToAssetsTotalScale`. The function under test only
-// reads sfAsset and sfAssetsTotal from the vault SLE and never touches a
-// ledger view or Rules, so a bare in-memory ltVAULT SLE is enough; there is
-// no jtx::Env and no transaction submitted anywhere in this file.
+// True unit test of `clampToAssetsTotalScale`. The function under test reads
+// only fields from the vault SLE and never touches a ledger view or Rules, so
+// a bare in-memory ltVAULT SLE is enough; there is no jtx::Env and no
+// transaction submitted anywhere in this file.
 //
 // Number regime: this suite relies on the default thread_local Number
 // mantissa range, which src/libxrpl/basics/Number.cpp initializes to
@@ -58,11 +58,8 @@ private:
         std::optional<Number> expected;  // nullopt means tecPRECISION_LOSS
     };
 
-    // Builds a bare ltVAULT SLE with only sfAsset and sfAssetsTotal set,
-    // mirroring what a transactor does: set the STNumber field, then call
-    // associateAsset() so it is quantized to the asset's STAmount grid, the
-    // same way VaultDeposit::doApply does for a real vault (see
-    // src/libxrpl/tx/transactors/vault/VaultDeposit.cpp).
+    // Builds a bare ltVAULT SLE with sfLEVersion absent, preserving the
+    // pre-V1.2 Legacy behavior exercised by this existing clamp table.
     static std::shared_ptr<SLE>
     makeVault(Asset const& asset, Number const& assetsTotal)
     {
