@@ -190,23 +190,21 @@ callMethod(JsonContext& context, Handler::Method method, std::string_view name, 
         JLOG(context.j.debug()) << "RPC call " << name << " completed in "
                                 << ((end - start).count() / 1000000000.0) << "seconds";
         perfLog.rpcFinish(name, curId);
-        // Status::operator bool() returns true when there IS an error
-        // (code_ != OK), so the ternary correctly maps error->error, ok->success.
+        // An old-style handler reports its error in the reply, not in the
+        // Status: byRef() returns a default Status whatever happened. Reading
+        // both covers every handler. Status::operator bool() is true when there
+        // IS an error.
+        bool const failed = static_cast<bool>(ret) || containsError(result);
         span.setAttribute(
             rpc_span::attr::rpcStatus,
-            ret ? std::string_view{rpc_span::val::error}
-                : std::string_view{rpc_span::val::success});
-        // Reflect the result in the OTel span status, not just the attribute,
-        // so non-exception RPC errors (rpcTOO_BUSY, rpcNO_PERMISSION, ...) are
-        // visible to {status.code=error} queries.
-        if (ret)
-        {
+            failed ? std::string_view{rpc_span::val::error}
+                   : std::string_view{rpc_span::val::success});
+        // Error so a failed call answers {status.code=error}, for the codes that
+        // never throw (rpcTOO_BUSY, rpcNO_PERMISSION, ...). Success stays Unset:
+        // the spec reserves Ok for an operator asserting verified success, and a
+        // tool may read it as suppressing errors.
+        if (failed)
             span.setError(rpc_span::val::error);
-        }
-        else
-        {
-            span.setOk();
-        }
         return ret;
     }
     catch (std::exception& e)
