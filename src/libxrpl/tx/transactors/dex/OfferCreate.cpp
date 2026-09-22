@@ -101,7 +101,7 @@ OfferCreate::preflight(PreflightContext const& ctx)
     // A zero DomainID is invalid for a PermissionedDomain ledger entry because
     // keylet::permissionedDomain(uint256) uses the DomainID as the ledger key.
     if (auto const domainID = tx[~sfDomainID];
-        ctx.rules.enabled(fixCleanup3_2_0) && domainID && isZeroId(*domainID))
+        ctx.rules.enabled(fixCleanup3_2_0) && isZeroId(domainID))
         return temMALFORMED;
 
     bool const bImmediateOrCancel(tx.isFlag(tfImmediateOrCancel));

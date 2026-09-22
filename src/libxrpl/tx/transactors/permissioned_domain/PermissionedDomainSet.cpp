@@ -40,7 +40,7 @@ PermissionedDomainSet::preflight(PreflightContext const& ctx)
         return err;
 
     auto const domain = ctx.tx.at(~sfDomainID);
-    if (domain && isZeroId(*domain))
+    if (isZeroId(domain))
         return temMALFORMED;
 
     return tesSUCCESS;

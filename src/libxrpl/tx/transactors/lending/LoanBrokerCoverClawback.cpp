@@ -49,7 +49,7 @@ LoanBrokerCoverClawback::preflight(PreflightContext const& ctx)
     if (!brokerID && !amount)
         return temINVALID;
 
-    if (brokerID && isZeroId(*brokerID))
+    if (isZeroId(brokerID))
         return temINVALID;
 
     if (amount)

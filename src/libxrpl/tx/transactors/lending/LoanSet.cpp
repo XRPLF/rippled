@@ -147,7 +147,7 @@ LoanSet::preflight(PreflightContext const& ctx)
             return *ret;
     }
 
-    if (auto const brokerID = ctx.tx[~sfLoanBrokerID]; brokerID && isZeroId(*brokerID))
+    if (auto const brokerID = ctx.tx[~sfLoanBrokerID]; isZeroId(brokerID))
         return temINVALID;
 
     return tesSUCCESS;

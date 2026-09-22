@@ -5,6 +5,7 @@
 #include <xrpl/protocol/UintTypes.h>
 
 #include <cstddef>
+#include <optional>
 
 namespace xrpl {
 
@@ -39,6 +40,16 @@ inline bool
 isZeroId(T const& id)
 {
     return id == beast::kZero;
+}
+
+// Optional-field overload: true iff the field is present and its value is
+// unset/zero. Simplifies the `field && isZeroId(*field)` pattern into a
+// single call.
+template <class T>
+inline bool
+isZeroId(std::optional<T> const& id)
+{
+    return id.has_value() && isZeroId(*id);
 }
 
 // Checks whether an amount is a strictly positive XRP amount.
