@@ -809,7 +809,7 @@ class LedgerEntry_test : public beast::unit_test::Suite
         env.fund(XRP(10000), alice);
         env.close();
 
-        std::uint32_t const checkSeq = env.seq(env.master);
+        auto const checkSeq = env.seq(env.master);
         auto const checkId = keylet::check(env.master, SeqProxy::rawSequence(checkSeq));
 
         env(check::create(env.master, alice, XRP(100)));
@@ -1770,7 +1770,7 @@ class LedgerEntry_test : public beast::unit_test::Suite
             return jv;
         };
 
-        std::uint32_t const payChanSeq = env.seq(alice);
+        auto const payChanSeq = env.seq(alice);
         env(payChanCreate(alice, env.master, XRP(57), 18s, alice.pk()));
         env.close();
 
