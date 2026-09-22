@@ -1518,6 +1518,68 @@ private:
         }
 
         {
+            testcase("Two-step: LoanAccept creating two MPTokens");
+
+            // disburseLoan pays the borrower and, when there is an
+            // origination fee, the broker owner. Either may be missing a
+            // holding, so one LoanAccept can create two MPTokens. The
+            // MayAuthorizeMpt cap in ValidMPT must allow that; the generic
+            // "created + deleted <= 1" cap would reject a valid acceptance
+            // with tecINVARIANT_FAILED. Mirrors
+            // LoanSet_test's testLoanSetOriginationFeeTwoMptCreates for the
+            // two-step flow.
+            Env env(*this, features);
+            auto const broker = makeBroker(env, AssetType::MPT);
+            auto const mptID = broker.asset.raw().get<MPTIssue>().getMptID();
+            MPTTester mptt{env, issuer, mptID};
+
+            auto const borrowerMPToken = keylet::mptoken(mptID, borrower);
+            auto const lenderMPToken = keylet::mptoken(mptID, lender);
+
+            Number const originationFee = broker.asset(5).number();
+            auto const loanKeylet = nextLoanKeylet(env, broker);
+            propose(
+                env,
+                broker,
+                lender,
+                borrower,
+                (env.now() + 1h).time_since_epoch().count(),
+                kLoanOriginationFee(originationFee));
+            env.close();
+
+            // Delete both holdings after the proposal, so acceptance has to
+            // recreate them. The borrower holds nothing; the broker owner's
+            // remaining balance goes back to the issuer first, because an
+            // MPToken with a non-zero balance cannot be deleted.
+            mptt.authorize({.account = borrower, .flags = tfMPTUnauthorize});
+            if (auto const lenderBalance = env.balance(lender, broker.asset);
+                lenderBalance.value() != beast::kZero)
+                env(pay(lender, issuer, lenderBalance));
+            env.close();
+            mptt.authorize({.account = lender, .flags = tfMPTUnauthorize});
+            env.close();
+            BEAST_EXPECT(!env.le(borrowerMPToken));
+            BEAST_EXPECT(!env.le(lenderMPToken));
+
+            env(accept(borrower, loanKeylet.key));
+            env.close();
+
+            // Both holdings exist again and hold the disbursed amounts.
+            if (!BEAST_EXPECT(env.le(borrowerMPToken) && env.le(lenderMPToken)))
+                return;
+            STAmount const netToBorrower{broker.asset, broker.asset(200).number() - originationFee};
+            BEAST_EXPECT(env.balance(borrower, broker.asset).value() == netToBorrower);
+            BEAST_EXPECT(
+                env.balance(lender, broker.asset).value() ==
+                STAmount(broker.asset, originationFee));
+
+            auto const loan = env.le(loanKeylet);
+            if (!BEAST_EXPECT(loan))
+                return;
+            BEAST_EXPECT(!loan->isFlag(lsfLoanPending));
+        }
+
+        {
             testcase("Two-step: LoanSet with unauthorized broker owner (MPT)");
 
             // Covers LoanSet::preclaim's second twoStepFlow requireAuth
