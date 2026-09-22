@@ -19,7 +19,6 @@
 
 #include <bit>
 #include <cstdint>
-#include <memory>
 
 namespace xrpl {
 
