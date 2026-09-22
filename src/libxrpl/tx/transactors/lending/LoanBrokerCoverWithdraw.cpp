@@ -106,7 +106,7 @@ LoanBrokerCoverWithdraw::preclaim(PreclaimContext const& ctx)
 
     auto const roundedAmount = [&] {
         if (getVaultVersion(vault) != VaultVersion::FixedPrecision)
-            return amount;
+            return STAmount{amount};
         // Negate so the posterior is CoverAvailable minus amount.
         return -roundToPosteriorBrokerCoverScale(
             vault, sleBroker, -amount, Number::RoundingMode::TowardsZero);

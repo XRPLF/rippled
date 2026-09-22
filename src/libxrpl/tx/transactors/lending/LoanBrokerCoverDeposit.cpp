@@ -8,6 +8,7 @@
 #include <xrpl/ledger/helpers/VaultHelpers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STLedgerEntry.h>
@@ -106,10 +107,12 @@ LoanBrokerCoverDeposit::preclaim(PreclaimContext const& ctx)
     // failing only in  doApply.
     auto const roundedAmount = [&]() -> STAmount {
         if (getVaultVersion(vault) == VaultVersion::FixedPrecision)
+        {
             return roundToPosteriorBrokerCoverScale(
                 vault, sleBroker, amount, Number::RoundingMode::TowardsZero);
+        }
         if (!fix320Enabled)
-            return amount;
+            return STAmount{amount};
 
         return roundToScale(
             amount,
@@ -165,8 +168,10 @@ LoanBrokerCoverDeposit::doApply()
     bool const fix320Enabled = view().rules().enabled(fixCleanup3_2_0);
     auto const amount = [&]() -> STAmount {
         if (getVaultVersion(vault) == VaultVersion::FixedPrecision)
+        {
             return roundToPosteriorBrokerCoverScale(
                 vault, broker, tx[sfAmount], Number::RoundingMode::TowardsZero);
+        }
         if (!fix320Enabled)
             return tx[sfAmount];
 

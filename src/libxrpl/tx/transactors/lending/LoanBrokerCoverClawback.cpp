@@ -191,7 +191,7 @@ determineClawAmount(
     // Use the vaultAsset here, because it will be the right type in all
     // circumstances. The amount may be an IOU indicating the pseudo-account's
     // asset, which is correct, but not what is needed here.
-    STAmount const requested = [&] {
+    STAmount requested = [&] {
         if (!amount || *amount == beast::kZero)
             return STAmount{vaultAsset, maxClawAmount};
         Number const magnitude{*amount};
@@ -204,7 +204,7 @@ determineClawAmount(
         return requested;
 
     // Negate so the posterior is CoverAvailable minus amount.
-    STAmount const rounded = -roundToPosteriorBrokerCoverScale(
+    STAmount rounded = -roundToPosteriorBrokerCoverScale(
         vaultSle, sleBroker, -requested, Number::RoundingMode::TowardsZero);
     if (rounded == beast::kZero)
         return std::unexpected(tecPRECISION_LOSS);
