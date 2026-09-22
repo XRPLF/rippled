@@ -419,6 +419,9 @@ private:
     // The test pays one period at a time across three LoanPay
     // transactions and verifies the loan completes (paymentRemaining=0)
     // with totals matching the loan's economics (1 principal + 2 interest).
+    // Also run under featureLendingProtocolV1_1: ValidLoan must allow the
+    // two sticking pays (TVO falls, PO does not) and the final clear
+    // (PaymentRemaining 0, NextPaymentDueDate 0).
     void
     testIntegerScalePrincipalSticks(FeatureBitset features)
     {
@@ -450,28 +453,19 @@ private:
         env(pay(issuer, borrower, asset(10'000)));
         env.close();
 
-        Vault const vault{env};
-        auto [vaultTx, vaultKeylet] = vault.create({.owner = lender, .asset = asset});
-        env(vaultTx);
-        env.close();
+        // createVaultAndBroker promotes the vault to ClosedEnded under
+        // featureLendingProtocolV1_1 (LoanBrokerSet rejects open-ended).
+        BrokerParameters const params{
+            .vaultDeposit = Number{5'000},
+            .debtMax = Number{100},
+            .coverRateMin = TenthBips32{0},
+            .coverDeposit = 0,
+            .managementFeeRate = TenthBips16{0},
+            .coverRateLiquidation = TenthBips32{0}};
+        BrokerInfo const broker = createVaultAndBroker(env, asset, lender, params);
 
-        env(vault.deposit({.depositor = lender, .id = vaultKeylet.key, .amount = asset(5'000)}));
-        env.close();
-
-        auto const brokerKeylet =
-            keylet::loanBroker(lender.id(), SeqProxy::rawSequence(env.seq(lender)));
-        env(loan_broker::set(lender, vaultKeylet.key),
-            loan_broker::kDebtMaximum(Number{100}),
-            Fee(env.current()->fees().base * 2));
-        env.close();
-
-        auto const brokerStateBefore = env.le(brokerKeylet);
-        if (!BEAST_EXPECT(brokerStateBefore))
-            return;
-        auto const loanSequence = brokerStateBefore->at(sfLoanSequence);
-        auto const loanKeylet = keylet::loan(brokerKeylet.key, SeqProxy::rawSequence(loanSequence));
-
-        env(loan::set(borrower, brokerKeylet.key, Number{1}),
+        auto const loanKeylet = nextLoanKeylet(env, broker);
+        env(loan::set(borrower, broker.brokerID, Number{1}),
             Sig(sfCounterpartySignature, lender),
             loan::kInterestRate(TenthBips32{50'000}),
             loan::kPaymentTotal(3),
@@ -503,6 +497,8 @@ private:
             BEAST_EXPECT(sle->at(sfPrincipalOutstanding) == expectedPO[i]);
             BEAST_EXPECT(sle->at(sfTotalValueOutstanding) == expectedTVO[i]);
             BEAST_EXPECT(sle->at(sfPaymentRemaining) == expectedRemaining[i]);
+            if (expectedRemaining[i] == 0)
+                BEAST_EXPECT(sle->at(~sfNextPaymentDueDate).value_or(0) == 0);
         }
 
         // Borrower paid 3 total regardless of fee split (1 principal + 2
@@ -1357,6 +1353,9 @@ private:
         testBugVaultWithdrawDustVsAssetsTotal(all_);
         testBugInterestDueDeltaCrash();
         testDeleteLastLoanClearsDebtDust();
+        // all_ excludes V1.1; amendmentCombinations never pairs it with the
+        // sticking schedule. Run that combination explicitly.
+        testIntegerScalePrincipalSticks(all_ | featureLendingProtocolV1_1);
     }
 
     // Tests run under each entry in amendmentCombinations().

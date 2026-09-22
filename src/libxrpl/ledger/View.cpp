@@ -543,12 +543,19 @@ doWithdraw(
 {
     auto const dstSle = ctx.view.read(keylet::account(dstAcct));
 
-    // Create trust line or MPToken for the receiving account
+    // Create a trust line or MPToken for a self-destination only when there
+    // is a payout to credit. Post-fixCleanup3_4_0, a zero-value withdraw
+    // (e.g. share redemption from a fully impaired vault) must not insert
+    // an empty holding: that records a one-sided zero delta and can also
+    // create+delete MPTokens in the same transaction.
     if (dstAcct == senderAcct)
     {
-        if (auto const ter = addEmptyHolding(ctx, senderAcct, priorBalance, amount.asset(), j);
-            !isTesSuccess(ter) && ter != tecDUPLICATE)
-            return ter;
+        if (amount > beast::kZero || !ctx.view.rules().enabled(fixCleanup3_4_0))
+        {
+            if (auto const ter = addEmptyHolding(ctx, senderAcct, priorBalance, amount.asset(), j);
+                !isTesSuccess(ter) && ter != tecDUPLICATE)
+                return ter;
+        }
     }
     else
     {

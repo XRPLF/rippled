@@ -129,7 +129,6 @@ LoanAccept::preclaim(PreclaimContext const& ctx)
     if (auto const ter = checkLoanFreeze(
             ctx.view, tx, asset, vaultPseudo, brokerPseudo, account, brokerOwner, ctx.j))
         return ter;
-        return ter;
 
     // Re-verify that the borrower and broker owner (the two accounts that
     // receive funds at disbursement) are authorised to hold the vault asset.

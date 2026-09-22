@@ -620,7 +620,6 @@ private:
         using namespace jtx;
         using namespace jtx::loan;
         using namespace std::chrono_literals;
-
         Account const issuer{"issuer"};
         Account const lender{"lender"};
         Account const borrower{"borrower"};
@@ -933,6 +932,104 @@ private:
             },
             CaseArgs{.initialXRP = (acctReserve * 2) + (incReserve * 8) + 1});
     }
+    void
+    testLoanSetOriginationFeeTwoMptCreates(FeatureBitset features)
+    {
+        using namespace jtx;
+        using namespace loan;
+
+        bool const fix340Enabled = features[fixCleanup3_4_0];
+        testcase << "LoanSet: borrower and broker owner missing MPToken"
+                 << (fix340Enabled ? "" : " pre-fixCleanup3_4_0");
+
+        Account const issuer{"issuer"};
+        Account const lender{"lender"};
+        Account const borrower{"borrower"};
+
+        Env env(*this, features);
+        env.fund(XRP(1'000'000), issuer, lender, borrower);
+        env.close();
+
+        MPTTester mptt{env, issuer, kMptInitNoFund};
+        mptt.create({.flags = tfMPTCanTransfer | tfMPTCanLock});
+        env.close();
+        PrettyAsset const asset = mptt.issuanceID();
+        mptt.authorize({.account = lender});
+        mptt.authorize({.account = borrower});
+        env.close();
+
+        env(pay(issuer, lender, asset(10'000'000)));
+        env.close();
+
+        auto const broker = createVaultAndBroker(env, asset, lender);
+
+        // Delete borrower's asset MPToken.
+        mptt.authorize({.account = borrower, .flags = tfMPTUnauthorize});
+        env.close();
+
+        // Pay out and delete the broker owner's asset MPToken.
+        auto const lenderMPToken = keylet::mptoken(mptt.issuanceID(), lender);
+        auto const sleLenderMPT = env.le(lenderMPToken);
+        if (!BEAST_EXPECT(sleLenderMPT))
+            return;
+        env(pay(lender, issuer, asset(sleLenderMPT->at(sfMPTAmount))));
+        env.close();
+        mptt.authorize({.account = lender, .flags = tfMPTUnauthorize});
+        env.close();
+
+        auto const borrowerMPToken = keylet::mptoken(mptt.issuanceID(), borrower);
+        auto const brokerKeylet = keylet::loanBroker(broker.brokerID);
+        auto const sleBrokerBefore = env.le(brokerKeylet);
+        if (!BEAST_EXPECT(sleBrokerBefore))
+            return;
+        auto const loanSequence = sleBrokerBefore->at(sfLoanSequence);
+        auto const debtTotalBefore = sleBrokerBefore->at(sfDebtTotal);
+        auto const loanKeylet = keylet::loan(broker.brokerID, SeqProxy::rawSequence(loanSequence));
+
+        auto const sleVaultBefore = env.le(keylet::vault(broker.vaultID));
+        if (!BEAST_EXPECT(sleVaultBefore))
+            return;
+        auto const assetsAvailableBefore = sleVaultBefore->at(sfAssetsAvailable);
+
+        env(set(borrower, broker.brokerID, asset(1'000).value()),
+            kLoanOriginationFee(asset(1).value()),
+            kCounterparty(lender),
+            Sig(sfCounterpartySignature, lender),
+            Fee(env.current()->fees().base * 5),
+            Ter{fix340Enabled ? TER{tesSUCCESS} : TER{tecINVARIANT_FAILED}});
+        env.close();
+
+        auto const sleBorrowerAfter = env.le(borrowerMPToken);
+        auto const sleLenderAfter = env.le(lenderMPToken);
+        auto const sleLoanAfter = env.le(loanKeylet);
+        auto const sleBrokerAfter = env.le(brokerKeylet);
+        auto const sleVaultAfter = env.le(keylet::vault(broker.vaultID));
+        if (!BEAST_EXPECT(sleVaultAfter))
+            return;
+        if (fix340Enabled)
+        {
+            if (!BEAST_EXPECT(sleBorrowerAfter && sleLenderAfter && sleLoanAfter && sleBrokerAfter))
+                return;
+            BEAST_EXPECT(sleBorrowerAfter->at(sfMPTAmount) == 999);
+            BEAST_EXPECT(sleLenderAfter->at(sfMPTAmount) == 1);
+            BEAST_EXPECT(sleLoanAfter->at(sfPrincipalOutstanding) == Number{1'000});
+            BEAST_EXPECT(sleBrokerAfter->at(sfLoanSequence) == loanSequence + 1);
+            BEAST_EXPECT(
+                sleVaultAfter->at(sfAssetsAvailable) == assetsAvailableBefore - Number{1'000});
+        }
+        else
+        {
+            // The whole transaction must roll back.
+            BEAST_EXPECT(!sleBorrowerAfter);
+            BEAST_EXPECT(!sleLenderAfter);
+            BEAST_EXPECT(!sleLoanAfter);
+            if (!BEAST_EXPECT(sleBrokerAfter))
+                return;
+            BEAST_EXPECT(sleBrokerAfter->at(sfLoanSequence) == loanSequence);
+            BEAST_EXPECT(sleBrokerAfter->at(sfDebtTotal) == debtTotalBefore);
+            BEAST_EXPECT(sleVaultAfter->at(sfAssetsAvailable) == assetsAvailableBefore);
+        }
+    }
 
     // LoanSet in a closed-ended vault — phase gating and maturity bound.
     void
@@ -1176,6 +1273,8 @@ public:
         testTwoStepLoanSet();
         testLoanSetClosedEnded();
         testLoanSetExistingLineAfterIssuerClearsDefaultRipple();
+        testLoanSetOriginationFeeTwoMptCreates(all_);
+        testLoanSetOriginationFeeTwoMptCreates(all_ - fixCleanup3_4_0);
     }
 };
 
