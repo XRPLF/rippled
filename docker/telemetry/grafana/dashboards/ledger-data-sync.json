@@ -2340,6 +2340,7 @@
       "id": 38
     }
   ],
+  "refresh": "30s",
   "schemaVersion": 39,
   "tags": ["ledger", "sync"],
   "templating": {
@@ -2365,7 +2366,7 @@
         "query": "label_values(service_name)",
         "datasource": {
           "type": "prometheus",
-          "uid": "prometheus"
+          "uid": "${DS_PROMETHEUS}"
         },
         "includeAll": true,
         "allValue": ".*",
@@ -2385,7 +2386,7 @@
         "query": "label_values(deployment_environment)",
         "datasource": {
           "type": "prometheus",
-          "uid": "prometheus"
+          "uid": "${DS_PROMETHEUS}"
         },
         "includeAll": true,
         "allValue": ".*",
@@ -2405,7 +2406,7 @@
         "query": "label_values(xrpl_network_type)",
         "datasource": {
           "type": "prometheus",
-          "uid": "prometheus"
+          "uid": "${DS_PROMETHEUS}"
         },
         "includeAll": true,
         "allValue": ".*",
@@ -2485,7 +2486,7 @@
         "query": "label_values(target_info, service_instance_id)",
         "datasource": {
           "type": "prometheus",
-          "uid": "prometheus"
+          "uid": "${DS_PROMETHEUS}"
         },
         "includeAll": true,
         "allValue": ".*",
@@ -2505,7 +2506,7 @@
         "query": "label_values(job_queued_total, handler)",
         "datasource": {
           "type": "prometheus",
-          "uid": "prometheus"
+          "uid": "${DS_PROMETHEUS}"
         },
         "includeAll": true,
         "allValue": ".*",

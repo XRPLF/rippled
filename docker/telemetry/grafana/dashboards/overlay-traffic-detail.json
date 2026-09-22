@@ -1135,7 +1135,7 @@
         "query": "label_values(getobject_lookups_total, result)",
         "datasource": {
           "type": "prometheus",
-          "uid": "prometheus"
+          "uid": "${DS_PROMETHEUS}"
         },
         "includeAll": true,
         "allValue": ".*",
@@ -1155,7 +1155,7 @@
         "query": "label_values(getobject_rejected_total, reason)",
         "datasource": {
           "type": "prometheus",
-          "uid": "prometheus"
+          "uid": "${DS_PROMETHEUS}"
         },
         "includeAll": true,
         "allValue": ".*",

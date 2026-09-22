@@ -90,7 +90,7 @@
         "query": "label_values(service_name)",
         "datasource": {
           "type": "loki",
-          "uid": "loki"
+          "uid": "${DS_LOKI}"
         },
         "includeAll": true,
         "allValue": ".*",
@@ -110,7 +110,7 @@
         "query": "label_values({service_name=\"xrpld\"}, deployment_environment)",
         "datasource": {
           "type": "loki",
-          "uid": "loki"
+          "uid": "${DS_LOKI}"
         },
         "includeAll": true,
         "allValue": ".*",
@@ -130,7 +130,7 @@
         "query": "label_values({service_name=\"xrpld\"}, service_instance_id)",
         "datasource": {
           "type": "loki",
-          "uid": "loki"
+          "uid": "${DS_LOKI}"
         },
         "includeAll": true,
         "allValue": ".*",
