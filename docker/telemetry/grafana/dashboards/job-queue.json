@@ -70,12 +70,12 @@
       "id": 1
     },
     {
-      "title": "Slowest Job Types by p99 Latency [$xrpl_network_type]",
-      "description": "###### What this is:\n*At-a-glance p99 of how long jobs wait in the queue and how long they run once started.*\n\n###### How it's computed:\n*99th percentile derived from the job wait-time and run-time histograms over the last 5 minutes.*\n\n###### Reading it:\n*Lower is better; green under 100ms, yellow to 1s, red beyond 1s.*\n\n###### Healthy range:\n*Wait and exec p99 under 100ms.*\n\n###### Watch for:\n*p99 wait climbing into the red, meaning worker threads are saturated and jobs are backing up.*\n\n###### Keywords:\n- **Job queue / job type** *(per node)* \u2014 xrpld's worker-thread pool; every unit of background work is enqueued under a named job type.\n- **Deferred job** *(per node)* \u2014 a job held back because its type is already at its concurrency limit; the leading indicator of queue backpressure.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Recorded in xrpld code as a native metric (beast::insight); the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[MetricsRegistry.cpp](https://github.com/XRPLF/rippled/blob/develop/src/libxrpl/telemetry/MetricsRegistry.cpp)\n\n###### Function:\n`recordJobStarted / recordJobFinished`\n\n###### References:\n[Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#job-queue-job-type)",
+      "title": "Slowest Job Queue Wait by Job Type (p99) [$xrpl_network_type]",
+      "description": "###### What this is:\n*At-a-glance p99 of how long jobs sit in the queue before a worker picks them up, by job type.*\n\n###### How it's computed:\n*99th percentile of the job wait-time histogram over the dashboard's selected time range.*\n\n###### Reading it:\n*Lower is better; green under 100ms, yellow to 1s, red beyond 1s.*\n\n###### Healthy range:\n*Wait p99 under 100ms.*\n\n###### Watch for:\n*Wait p99 climbing into the red, meaning worker threads are saturated and jobs are backing up.*\n\n###### Keywords:\n- **Job queue / job type** *(per node)* \u2014 xrpld's worker-thread pool; every unit of background work is enqueued under a named job type.\n- **Deferred job** *(per node)* \u2014 a job held back because its type is already at its concurrency limit; the leading indicator of queue backpressure.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Recorded in xrpld code as a native metric (beast::insight); the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[MetricsRegistry.cpp](https://github.com/XRPLF/rippled/blob/develop/src/libxrpl/telemetry/MetricsRegistry.cpp)\n\n###### Function:\n`recordJobStarted`\n\n###### References:\n[Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#job-queue-job-type)",
       "type": "bargauge",
       "gridPos": {
         "h": 10,
-        "w": 24,
+        "w": 12,
         "x": 0,
         "y": 1
       },
@@ -108,20 +108,12 @@
           },
           "instant": true,
           "range": false,
-          "expr": "label_replace(histogram_quantile(0.99, sum by (le, job_type, service_instance_id, xrpl_branch, xrpl_node_role, xrpl_work_item) (rate(job_queued_us_bucket{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", job_type=~\"$job_type\", handler=~\"$handler\"}[5m]))), \"series\", \"p99 Wait\", \"\", \"\")"
-        },
-        {
-          "datasource": {
-            "type": "prometheus"
-          },
-          "instant": true,
-          "range": false,
-          "expr": "label_replace(histogram_quantile(0.99, sum by (le, job_type, service_instance_id, xrpl_branch, xrpl_node_role, xrpl_work_item) (rate(job_running_us_bucket{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", job_type=~\"$job_type\", handler=~\"$handler\"}[5m]))), \"series\", \"p99 Exec\", \"\", \"\")"
+          "expr": "histogram_quantile(0.99, sum by (le, job_type, service_instance_id, xrpl_branch, xrpl_node_role, xrpl_work_item) (rate(job_queued_us_bucket{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", job_type=~\"$job_type\", handler=~\"$handler\"}[$__range])))"
         }
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} ${__field.labels.job_type} [${__field.labels.service_instance_id} ${__field.labels.xrpl_branch} ${__field.labels.xrpl_node_role} ${__field.labels.xrpl_work_item}]",
+          "displayName": "${__field.labels.job_type} [${__field.labels.service_instance_id} ${__field.labels.xrpl_branch} ${__field.labels.xrpl_node_role} ${__field.labels.xrpl_work_item}]",
           "unit": "\u00b5s",
           "min": 0,
           "max": 1000000,
@@ -147,8 +139,79 @@
       },
       "id": 2,
       "repeat": "xrpl_network_type",
-      "repeatDirection": "h",
-      "maxPerRow": 1
+      "repeatDirection": "v"
+    },
+    {
+      "title": "Slowest Job Execution by Job Type (p99) [$xrpl_network_type]",
+      "description": "###### What this is:\n*At-a-glance p99 of how long jobs take to run once a worker starts them, by job type.*\n\n###### How it's computed:\n*99th percentile of the job run-time histogram over the dashboard's selected time range.*\n\n###### Reading it:\n*Lower is better; green under 100ms, yellow to 1s, red beyond 1s.*\n\n###### Healthy range:\n*Exec p99 under 100ms.*\n\n###### Watch for:\n*One job type in the red, meaning a single handler is holding a worker thread for a long time.*\n\n###### Keywords:\n- **Job queue / job type** *(per node)* \u2014 xrpld's worker-thread pool; every unit of background work is enqueued under a named job type.\n- **Deferred job** *(per node)* \u2014 a job held back because its type is already at its concurrency limit; the leading indicator of queue backpressure.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Recorded in xrpld code as a native metric (beast::insight); the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[MetricsRegistry.cpp](https://github.com/XRPLF/rippled/blob/develop/src/libxrpl/telemetry/MetricsRegistry.cpp)\n\n###### Function:\n`recordJobFinished`\n\n###### References:\n[Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#job-queue-job-type)",
+      "type": "bargauge",
+      "gridPos": {
+        "h": 10,
+        "w": 12,
+        "x": 12,
+        "y": 1
+      },
+      "options": {
+        "displayMode": "gradient",
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": false
+        },
+        "maxVizHeight": 300,
+        "minVizHeight": 16,
+        "minVizWidth": 8,
+        "namePlacement": "auto",
+        "orientation": "horizontal",
+        "reduceOptions": {
+          "calcs": ["lastNotNull"],
+          "fields": "",
+          "values": false
+        },
+        "showUnfilled": true,
+        "sizing": "manual",
+        "valueMode": "color"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "instant": true,
+          "range": false,
+          "expr": "histogram_quantile(0.99, sum by (le, job_type, service_instance_id, xrpl_branch, xrpl_node_role, xrpl_work_item) (rate(job_running_us_bucket{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", job_type=~\"$job_type\", handler=~\"$handler\"}[$__range])))"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "displayName": "${__field.labels.job_type} [${__field.labels.service_instance_id} ${__field.labels.xrpl_branch} ${__field.labels.xrpl_node_role} ${__field.labels.xrpl_work_item}]",
+          "unit": "\u00b5s",
+          "min": 0,
+          "max": 1000000,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 100000
+              },
+              {
+                "color": "red",
+                "value": 1000000
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "id": 13,
+      "repeat": "xrpl_network_type",
+      "repeatDirection": "v"
     },
     {
       "title": "Throughput",
