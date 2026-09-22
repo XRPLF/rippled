@@ -17,8 +17,9 @@
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STArray.h>
-#include <xrpl/protocol/STXChainBridge.h>
+#include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/SeqProxy.h>
+#include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/jss.h>
 
@@ -139,39 +140,6 @@ parseAMM(
         return std::unexpected(asset2.error());
 
     return keylet::amm(*asset, *asset2).key;
-}
-
-static std::expected<uint256, json::Value>
-parseBridge(
-    json::Value const& params,
-    json::StaticString const fieldName,
-    [[maybe_unused]] unsigned const apiVersion)
-{
-    if (!params.isMember(jss::bridge))
-    {
-        return std::unexpected(ledger_entry_helpers::missingFieldError(jss::bridge));
-    }
-
-    if (params[jss::bridge].isString())
-    {
-        return parseObjectID(params, fieldName);
-    }
-
-    auto const bridge = ledger_entry_helpers::parseBridgeFields(params[jss::bridge]);
-    if (!bridge)
-        return std::unexpected(bridge.error());
-
-    auto const account = ledger_entry_helpers::requiredAccountID(
-        params, jss::bridge_account, "malformedBridgeAccount");
-    if (!account)
-        return std::unexpected(account.error());
-
-    STXChainBridge::ChainType const chainType =
-        STXChainBridge::srcChain(account.value() == bridge->lockingChainDoor());
-    if (account.value() != bridge->door(chainType))
-        return ledger_entry_helpers::malformedError("malformedRequest", "");
-
-    return keylet::bridge(*bridge, chainType).key;
 }
 
 static std::expected<uint256, json::Value>
@@ -799,60 +767,6 @@ parseVault(
     return keylet::vault(*id, seqProxy).key;
 }
 
-static std::expected<uint256, json::Value>
-parseXChainOwnedClaimID(
-    json::Value const& claimId,
-    json::StaticString const fieldName,
-    [[maybe_unused]] unsigned const apiVersion)
-{
-    if (!claimId.isObject())
-    {
-        return parseObjectID(claimId, fieldName);
-    }
-
-    auto const bridgeSpec = ledger_entry_helpers::parseBridgeFields(claimId);
-    if (!bridgeSpec)
-        return std::unexpected(bridgeSpec.error());
-
-    auto const seq = ledger_entry_helpers::requiredUInt32(
-        claimId, jss::xchain_owned_claim_id, "malformedXChainOwnedClaimID");
-    if (!seq)
-    {
-        return std::unexpected(seq.error());
-    }
-
-    Keylet const keylet = keylet::xChainClaimID(*bridgeSpec, *seq);
-    return keylet.key;
-}
-
-static std::expected<uint256, json::Value>
-parseXChainOwnedCreateAccountClaimID(
-    json::Value const& claimId,
-    json::StaticString const fieldName,
-    [[maybe_unused]] unsigned const apiVersion)
-{
-    if (!claimId.isObject())
-    {
-        return parseObjectID(claimId, fieldName);
-    }
-
-    auto const bridgeSpec = ledger_entry_helpers::parseBridgeFields(claimId);
-    if (!bridgeSpec)
-        return std::unexpected(bridgeSpec.error());
-
-    auto const seq = ledger_entry_helpers::requiredUInt32(
-        claimId,
-        jss::xchain_owned_create_account_claim_id,
-        "malformedXChainOwnedCreateAccountClaimID");
-    if (!seq)
-    {
-        return std::unexpected(seq.error());
-    }
-
-    Keylet const keylet = keylet::xChainCreateAccountClaimID(*bridgeSpec, *seq);
-    return keylet.key;
-}
-
 struct LedgerEntry
 {
     json::StaticString fieldName;
@@ -925,15 +839,10 @@ doLedgerEntry(rpc::JsonContext& context)
             if (context.params.isMember(ledgerEntry.fieldName))
             {
                 expectedType = ledgerEntry.expectedType;
-                // `Bridge` is the only type that involves two fields at the
-                // `ledger_entry` param level.
-                // So that parser needs to have the whole `params` field.
-                // All other parsers only need the one field name's info.
-                json::Value const& params = ledgerEntry.fieldName == jss::bridge
-                    ? context.params
-                    : context.params[ledgerEntry.fieldName];
-                auto const result =
-                    ledgerEntry.parseFunction(params, ledgerEntry.fieldName, context.apiVersion);
+                auto const result = ledgerEntry.parseFunction(
+                    context.params[ledgerEntry.fieldName],
+                    ledgerEntry.fieldName,
+                    context.apiVersion);
                 if (!result)
                     return result.error();
 

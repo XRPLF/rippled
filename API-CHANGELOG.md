@@ -22,6 +22,14 @@ API version 2 is available in `xrpld` version 2.0.0 and later. See [API-VERSION-
 
 This version is supported by all `xrpld` versions. For WebSocket and HTTP JSON-RPC requests, it is currently the default API version used when no `api_version` is specified.
 
+## XRP Ledger server version 3.5.0
+
+Version 3.5.0 is not yet released. These changes are available in the 3.5.0 beta releases.
+
+### Breaking changes in 3.5.0
+
+- The `XChainBridge` amendment and its ledger entries and transactions are removed. `XChainBridge` and `fixXChainRewardRounding` are now obsolete and can no longer be voted for; neither was ever enabled on Mainnet. `ledger_entry` no longer accepts `bridge`, `xchain_owned_claim_id`, or `xchain_owned_create_account_claim_id`; `account_objects` no longer accepts those values in `type`; and `server_definitions` no longer lists the removed ledger entry types, transaction types, fields, and the `XChainBridge` serialized type.
+
 ## XRP Ledger server version 3.4.0
 
 Version 3.4.0 is not yet released. These changes are available in the 3.4.0 beta releases.

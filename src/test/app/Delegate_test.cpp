@@ -2674,14 +2674,6 @@ class Delegate_test : public beast::unit_test::Suite
             {"AMMVote", featureAMM},
             {"AMMBid", featureAMM},
             {"AMMDelete", featureAMM},
-            {"XChainCreateClaimID", featureXChainBridge},
-            {"XChainCommit", featureXChainBridge},
-            {"XChainClaim", featureXChainBridge},
-            {"XChainAccountCreateCommit", featureXChainBridge},
-            {"XChainAddClaimAttestation", featureXChainBridge},
-            {"XChainAddAccountCreateAttestation", featureXChainBridge},
-            {"XChainModifyBridge", featureXChainBridge},
-            {"XChainCreateBridge", featureXChainBridge},
             {"DIDSet", featureDID},
             {"DIDDelete", featureDID},
             {"OracleSet", featurePriceOracle},
@@ -2838,7 +2830,7 @@ class Delegate_test : public beast::unit_test::Suite
         // DO NOT modify expectedDelegableCount unless all scenarios, including
         // edge cases, have been fully tested and verified.
         // ====================================================================
-        std::size_t const expectedDelegableCount = 56;
+        std::size_t const expectedDelegableCount = 48;
 
         BEAST_EXPECTS(
             delegableCount == expectedDelegableCount,
