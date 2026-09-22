@@ -222,8 +222,10 @@ public:
         // Mark us as shutting down. A wait error ends the attempt exactly as a
         // timeout does.
         if (!shutdown_)
+        {
             shutdown_ =
                 ecResult ? ecResult : boost::system::error_code{boost::asio::error::timed_out};
+        }
 
         // Cancel any resolving.
         resolver_.cancel();
