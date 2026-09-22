@@ -99,10 +99,17 @@ if(telemetry)
     # libs, so neither the umbrella target nor opentelemetry-cpp::exporter_in_memory
     # puts the archive on the link line. Locate it by path and link it BEFORE
     # the umbrella so its undefined SDK references resolve against the umbrella.
+    # CMakeDeps suffixes its variables with the upper-cased build type, so a
+    # hardcoded _RELEASE hint is empty in any other config and the archive is
+    # then only found by luck. Derive the suffix instead. An empty hint is not
+    # fatal on its own: the Conan toolchain puts the package on
+    # CMAKE_PREFIX_PATH, which find_library searches anyway. REQUIRED turns a
+    # miss into a configure error rather than a link error.
+    string(TOUPPER "${CMAKE_BUILD_TYPE}" otel_build_type)
     find_library(
         OTEL_IN_MEMORY_EXPORTER_LIB
         NAMES opentelemetry_exporter_in_memory
-        HINTS "${opentelemetry-cpp_PACKAGE_FOLDER_RELEASE}/lib"
+        HINTS "${opentelemetry-cpp_LIB_DIRS_${otel_build_type}}"
         REQUIRED
     )
     target_link_libraries(
