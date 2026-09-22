@@ -7,6 +7,7 @@
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
+#include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/ledger/helpers/VaultHelpers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
@@ -418,6 +419,7 @@ ValidVault::finalize(
 {
     bool const enforce = view.rules().enabled(featureSingleAssetVault);
     bool const fix340Enabled = view.rules().enabled(fixCleanup3_4_0);
+    bool const fix350Enabled = view.rules().enabled(fixCleanup3_5_0);
 
     if (!isTesSuccess(ret))
         return true;  // Do not perform checks
@@ -1144,6 +1146,17 @@ ValidVault::finalize(
 
                         auto const localPseudoDeltaAssets =
                             roundToAsset(vaultAsset, vaultPseudoDeltaAssets, localMinScale);
+                        bool const feeAdjustedWithdrawal =
+                            fix350Enabled && distinctDestination && !vaultAsset.native();
+                        auto expectedDestinationDelta = localPseudoDeltaAssets * -1;
+                        if (feeAdjustedWithdrawal)
+                        {
+                            expectedDestinationDelta =
+                                subtractTransferFee(
+                                    STAmount{vaultAsset, expectedDestinationDelta},
+                                    transferRate(view, vaultAsset))
+                                    .value();
+                        }
                         // For IOU assets near a precision boundary the destination's STAmount
                         // exponent can shift, making part of the sent value unrepresentable at
                         // the receiver's new scale — that portion is irreversibly absorbed by the
@@ -1152,7 +1165,8 @@ ValidVault::finalize(
                         // the destination's scale.  Floor rounding is used so that values exactly
                         // at the step boundary are not mistakenly dismissed.  Any representable
                         // discrepancy indicates a real accounting bug and must be caught.
-                        auto const destroyedIsSubUlp = tolerateZeroDelta &&
+                        auto const destroyedIsSubUlp = !feeAdjustedWithdrawal &&
+                            tolerateZeroDelta &&
                             roundToAsset(
                                 vaultAsset,
                                 vaultDeltaAssets.delta * -1 - destinationDelta.delta,
@@ -1160,11 +1174,11 @@ ValidVault::finalize(
                                 Number::RoundingMode::Downward) == kZero;
                         bool const withdrawAddsUp = fix340Enabled
                             ? agreesWithinOneUnit(
-                                  localPseudoDeltaAssets * -1,
+                                  expectedDestinationDelta,
                                   roundedDestinationDelta,
                                   vaultAsset,
                                   localMinScale)
-                            : localPseudoDeltaAssets * -1 == roundedDestinationDelta;
+                            : expectedDestinationDelta == roundedDestinationDelta;
                         if (!destroyedIsSubUlp && !withdrawAddsUp)
                         {
                             JLOG(j.fatal()) << "Invariant failed: " <<  //

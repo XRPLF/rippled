@@ -548,6 +548,12 @@ transferRate(ReadView const& view, STAmount const& amount)
     return transferRate(view, amount.asset());
 }
 
+STAmount
+subtractTransferFee(STAmount const& sourceAmount, Rate const& rate)
+{
+    return divideRound(sourceAmount, rate, sourceAmount.asset(), false);
+}
+
 //------------------------------------------------------------------------------
 //
 // Holding operations
