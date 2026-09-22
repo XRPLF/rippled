@@ -158,6 +158,42 @@ fillHandler(JsonContext& context, Handler const*& result)
     return RpcSuccess;
 }
 
+/**
+ * Names the reason a command failed, for the span's error description.
+ *
+ * jss::error holds the error token, and an old-style handler reports it there
+ * and nowhere else. A failure the reply does not name is described by the
+ * status's own error code, which is the only reason left to report. Every
+ * token is a compile-time string, so no request text reaches the description.
+ *
+ * @param status What the handler returned.
+ * @param result The reply the handler filled in. The returned view can point
+ * into it, so result must outlive the view.
+ * @param replyHasError The caller's containsError(result), passed in so the
+ * reply is not searched twice.
+ * @return The error token, or "error" where neither source carries one.
+ */
+std::string_view
+errorDescription(Status const& status, json::Value const& result, bool replyHasError)
+{
+    if (replyHasError && result[jss::error].isString())
+    {
+        // asCString() asserts the type, then hands back the stored pointer
+        // unchecked, and a string-typed json::Value may hold a null one. Both
+        // checks are needed before that pointer becomes a view.
+        if (char const* const token = result[jss::error].asCString(); token != nullptr)
+            return token;
+    }
+
+    // A TER or a bare integer code has no token in the error registry, so
+    // reading one would name an unrelated error. getErrorInfo() returns a
+    // reference into a static table, so its token outlives this call.
+    if (status.type() == Status::Type::ErrorCodeI)
+        return getErrorInfo(status.toErrorCode()).token.cStr();
+
+    return rpc_span::val::error;
+}
+
 Status
 callMethod(JsonContext& context, Handler::Method method, std::string_view name, json::Value& result)
 {
@@ -190,21 +226,31 @@ callMethod(JsonContext& context, Handler::Method method, std::string_view name, 
         JLOG(context.j.debug()) << "RPC call " << name << " completed in "
                                 << ((end - start).count() / 1000000000.0) << "seconds";
         perfLog.rpcFinish(name, curId);
-        // An old-style handler reports its error in the reply, not in the
-        // Status: byRef() returns a default Status whatever happened. Reading
-        // both covers every handler. Status::operator bool() is true when there
-        // IS an error.
-        bool const failed = static_cast<bool>(ret) || containsError(result);
-        span.setAttribute(
-            rpc_span::attr::rpcStatus,
-            failed ? std::string_view{rpc_span::val::error}
-                   : std::string_view{rpc_span::val::success});
-        // Error so a failed call answers {status.code=error}, for the codes that
-        // never throw (rpcTOO_BUSY, rpcNO_PERMISSION, ...). Success stays Unset:
-        // the spec reserves Ok for an operator asserting verified success, and a
-        // tool may read it as suppressing errors.
-        if (failed)
-            span.setError(rpc_span::val::error);
+        // Everything in here only feeds the span, and searching the reply is
+        // not free, so a null guard pays for none of it. setError() and
+        // setAttribute() are no-ops on a null guard, but their arguments are
+        // not: with telemetry compiled out operator bool() is a constant false.
+        if (span)
+        {
+            // An old-style handler reports its error in the reply, not in the
+            // Status: byRef() returns a default Status whatever happened.
+            // Reading both covers every handler. Status::operator bool() is
+            // true when there IS an error.
+            bool const replyHasError = containsError(result);
+            bool const failed = static_cast<bool>(ret) || replyHasError;
+            // Two values only. rpc_status is a spanmetrics dimension, so every
+            // value it can take becomes a Prometheus label and a metric series.
+            span.setAttribute(
+                rpc_span::attr::rpcStatus,
+                failed ? std::string_view{rpc_span::val::error}
+                       : std::string_view{rpc_span::val::success});
+            // Error so a failed call answers {status.code=error}, for the codes
+            // that never throw (rpcTOO_BUSY, rpcNO_PERMISSION, ...). Success
+            // stays Unset: the spec reserves Ok for an operator asserting
+            // verified success, and a tool may read it as suppressing errors.
+            if (failed)
+                span.setError(errorDescription(ret, result, replyHasError));
+        }
         return ret;
     }
     catch (std::exception& e)
@@ -231,16 +277,11 @@ callMethod(JsonContext& context, Handler::Method method, std::string_view name, 
 #ifdef XRPL_ENABLE_TELEMETRY
 
 // Resolve the span suffix / command attribute for a request that failed in
-// fillHandler. Returns the canonical handler name for a recognized command
-// (a finite, bounded set) or the literal "unknown" for a request that omits
-// both fields, supplies one that is not a string, or names an unregistered
-// command. The raw request value is deliberately NOT used: the command
-// attribute is promoted to a Prometheus label by the spanmetrics connector, so
-// an attacker-controlled string would let arbitrary request input drive
-// unbounded span-name / label cardinality.
-// Resolving against the registry keeps per-command error attribution for real
-// commands (e.g. a submit rejected with rpcTOO_BUSY stays rpc.command.submit)
-// while collapsing garbage input to a single series.
+// fillHandler. The name comes from the handler registry, so only a registered
+// handler name or the "unknown" label can reach the span; request text never
+// does. That bounded set also bounds the Prometheus label the spanmetrics
+// connector derives from it, and a real command still keeps its own error
+// attribution: a submit rejected with rpcTOO_BUSY stays rpc.command.submit.
 std::string_view
 resolveCommandSpanName(JsonContext const& context)
 {
