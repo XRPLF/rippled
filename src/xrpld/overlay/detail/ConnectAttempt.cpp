@@ -307,6 +307,9 @@ ConnectAttempt::onWrite(error_code ec)
         return;
     }
 
+    // The upgrade response is bounded by the same timer as every other step
+    // of the attempt; onRead() cancels it on entry.
+    setTimer();
     boost::beast::http::async_read(
         stream_,
         readBuf_,
