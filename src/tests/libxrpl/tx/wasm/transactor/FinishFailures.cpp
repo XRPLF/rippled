@@ -1,5 +1,6 @@
 #include <xrpl/basics/Slice.h>
 #include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Fees.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/TER.h>
@@ -92,14 +93,30 @@ TEST_F(FinishFailures, FinishIsRefusedWhileSmartEscrowIsDisabled)
     EXPECT_EQ(disabled.submit(builder, carol, XRPAmount{100'000}).ter, temDISABLED);
 }
 
+// The protocol ceiling is bounded in `preflight`, which has no view: no escrow is looked up,
+// so a nonexistent one still reports the allowance problem rather than tecNO_TARGET. That is
+// what separates the ceiling from the voted limit, which is checked in `preclaim`.
+TEST_F(FinishFailures, AnAllowancePastTheProtocolCeilingIsRefusedWithoutAnEscrow)
+{
+    auto builder = transactions::EscrowFinishBuilder{carol, alice, 1};
+    builder.setGas(kMaxGasLimit + 1);
+
+    EXPECT_EQ(env.submit(builder, carol, XRPAmount{10'000'000}).ter, temBAD_LIMIT);
+}
+
 // Execution cannot be bought unbounded just by asking for it.
 TEST_F(FinishFailures, AnAllowancePastTheGasLimitIsRefused)
 {
+    // The escrow has to exist: the voted limit is checked in `preclaim`, which
+    // reads the escrow first and would otherwise report tecNO_TARGET.
+    auto const seq = createEscrow(kReadsLedgerSqn);
+
     auto fees = TestServiceRegistry::defaultFees();
     fees.gasLimit = 1'000;
-    env.getServiceRegistry().setFees(fees);
+    env.setFees(fees);
+    env.close();
 
-    auto builder = transactions::EscrowFinishBuilder{carol, alice, 1};
+    auto builder = transactions::EscrowFinishBuilder{carol, alice, seq};
     builder.setGas(1'001);
 
     EXPECT_EQ(env.submit(builder, carol, XRPAmount{10'000'000}).ter, temBAD_LIMIT);
@@ -112,12 +129,31 @@ TEST_F(FinishFailures, AZeroGasLimitDisablesFinishing)
 
     auto fees = TestServiceRegistry::defaultFees();
     fees.gasLimit = 0;
-    env.getServiceRegistry().setFees(fees);
+    env.setFees(fees);
+    env.close();
 
     auto builder = transactions::EscrowFinishBuilder{carol, alice, seq};
     builder.setGas(1'000);
 
     EXPECT_EQ(env.submit(builder, carol, XRPAmount{10'000'000}).ter, temTEMP_DISABLED);
+}
+
+// The other rung: zeroing the size limit stops new uploads but must leave an existing escrow
+// finishable, so the feature can be wound down without stranding holders until CancelAfter.
+// Folding the two limits into one predicate would leave every other test here passing.
+TEST_F(FinishFailures, AZeroSizeLimitStillAllowsFinishing)
+{
+    auto const seq = createEscrow(kReadsLedgerSqn);
+
+    auto fees = TestServiceRegistry::defaultFees();
+    fees.bytecodeSizeLimit = 0;
+    env.setFees(fees);
+    env.close();
+
+    auto builder = transactions::EscrowFinishBuilder{carol, alice, seq};
+    builder.setGas(1'000);
+
+    EXPECT_EQ(env.submit(builder, carol, XRPAmount{10'000'000}).ter, tesSUCCESS);
 }
 
 TEST_F(FinishFailures, AFinishWithoutAGasFieldIsRefused)

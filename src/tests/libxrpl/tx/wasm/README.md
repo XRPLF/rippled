@@ -86,7 +86,6 @@ test** (compiled guests against a real host) in CI, where the Rust→wasm toolch
 
 Things to know:
 
-- **Fees live in two places and must agree.** A transactor reads its limits from the service
-  registry (`ctx.registry.get().getFees()`), while `calculateBaseFee` reads `view.fees()`. Pass a
-  `Fees` to `TxTest`'s constructor to set both; reach for `getServiceRegistry().setFees` only when
-  a limit has to change _after_ setup.
+- **Fees come from the ledger.** A transactor reads its limits from `view.fees()`, the same place
+  `calculateBaseFee` reads. Pass a `Fees` to `TxTest`'s constructor to set them; call
+  `env.setFees` followed by `env.close()` when a limit has to change _after_ setup.
