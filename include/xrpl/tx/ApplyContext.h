@@ -8,6 +8,7 @@
 #include <xrpl/ledger/ApplyViewImpl.h>
 #include <xrpl/ledger/OpenView.h>
 #include <xrpl/ledger/RawView.h>
+#include <xrpl/protocol/Book.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
@@ -147,6 +148,14 @@ public:
         // NOLINTNEXTLINE(bugprone-unchecked-optional-access) view_ emplaced in constructor
         view_->rawDestroyXRP(fee);
     }
+
+    /**
+     * Registers a newly-created order book directory with the shared,
+     * process-wide OrderBookDB, unless this transaction is being applied
+     * under TapDryRun.
+     */
+    void
+    addOrderBook(Book const& book);
 
     ApplyViewContext
     getApplyViewContext()
