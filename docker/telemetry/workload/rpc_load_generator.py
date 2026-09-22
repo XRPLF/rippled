@@ -411,6 +411,14 @@ async def _recv_matching_reply(
             raise asyncio.TimeoutError(f"{command} (id {request_id}) got no reply")
         raw = await asyncio.wait_for(conn.ws.recv(), timeout=remaining)
         reply = json.loads(raw)
+        # A reply that decodes to an array or a scalar has no .get(), and the
+        # AttributeError that follows names neither the command nor what
+        # arrived. Reject it here so the message carries both.
+        if not isinstance(reply, dict):
+            raise TypeError(
+                f"{command} (id {request_id}) got a JSON "
+                f"{type(reply).__name__} reply, expected an object"
+            )
         # A reply with no id counts as this request's: a few xrpld error paths
         # answer before the id is parsed, and treating those as stale would
         # turn a reported error into a timeout.
@@ -769,6 +777,19 @@ def main() -> None:
     if args.weights:
         try:
             custom = json.loads(args.weights)
+            # A JSON array or scalar decodes fine and then has no .items().
+            # AttributeError is not a ValueError, so the handler below would not
+            # catch it: report the type that arrived instead of a traceback.
+            if not isinstance(custom, dict):
+                logger.error(
+                    "Invalid --weights: expected a JSON object of command to "
+                    "weight, got a JSON %s: %s",
+                    type(custom).__name__,
+                    args.weights,
+                )
+                sys.exit(1)
+            # TypeError covers a non-numeric weight value (null, a list, an
+            # object), which int() rejects with TypeError rather than ValueError.
             weights = {k: int(v) for k, v in custom.items()}
             if not weights or sum(weights.values()) <= 0:
                 logger.error(
@@ -777,7 +798,7 @@ def main() -> None:
                 )
                 sys.exit(1)
             logger.info("Using custom weights: %s", weights)
-        except (json.JSONDecodeError, ValueError) as exc:
+        except (json.JSONDecodeError, TypeError, ValueError) as exc:
             logger.error("Invalid --weights JSON: %s", exc)
             sys.exit(1)
 

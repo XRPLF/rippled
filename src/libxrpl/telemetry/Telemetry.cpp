@@ -22,14 +22,12 @@
 #include <xrpl/beast/insight/OTelCollector.h>
 #include <xrpl/beast/insight/Unit.h>
 #include <xrpl/beast/utility/Journal.h>
-#include <xrpl/telemetry/CoroAwareContextStorage.h>
 #include <xrpl/telemetry/DeterministicIdGenerator.h>
 #include <xrpl/telemetry/DiscardFlag.h>
 #include <xrpl/telemetry/HistogramBuckets.h>
 #include <xrpl/telemetry/SpanNames.h>
 
 #include <opentelemetry/context/context.h>
-#include <opentelemetry/context/runtime_context.h>
 #include <opentelemetry/exporters/otlp/otlp_http_exporter_factory.h>
 #include <opentelemetry/exporters/otlp/otlp_http_exporter_options.h>
 #include <opentelemetry/exporters/otlp/otlp_http_metric_exporter_factory.h>
@@ -317,13 +315,6 @@ class TelemetryImpl : public Telemetry
     std::shared_ptr<metrics_sdk::MeterProvider> meterProvider_;
 
     /**
-     * Coroutine-aware runtime-context storage, installed globally so the OTel
-     * ambient context follows JobQueue coroutines. Held for the process
-     * lifetime because it must outlive every span (SDK requirement).
-     */
-    opentelemetry::nostd::shared_ptr<opentelemetry::context::RuntimeContextStorage> contextStorage_;
-
-    /**
      * Set by stop(), so a second call does nothing.
      */
     bool stopped_{false};
@@ -351,6 +342,16 @@ public:
             JLOG(journal_.error()) << "Telemetry metrics pipeline failed to initialise, "
                                       "continuing without metrics: "
                                    << e.what();
+        }
+        catch (...)
+        {
+            // initMetrics() reaches third-party SDK code, which may throw
+            // something outside std::exception. Escaping a constructor on the
+            // startup path would stop the node starting, so drop the
+            // half-built provider exactly as the clause above does.
+            meterProvider_.reset();
+            JLOG(journal_.error()) << "Telemetry metrics pipeline failed to initialise, "
+                                      "continuing without metrics: unknown exception";
         }
     }
 
@@ -421,17 +422,10 @@ public:
             std::move(sampler),
             std::make_unique<DeterministicIdGenerator>());
 
-        // Install coroutine-aware context storage BEFORE any span is created
-        // so the OTel ambient context follows JobQueue coroutines across
-        // yield/resume (fixes wrong-thread scope pop; keeps log-trace
-        // correlation). Must precede SetTracerProvider and the first span.
-        // Not reset in stop(): resetting the storage while spans may still
-        // exist is undefined behaviour (SDK), and by stop() all spans are
-        // gone, so the storage is simply left installed for process lifetime.
-        contextStorage_ =
-            opentelemetry::nostd::shared_ptr<opentelemetry::context::RuntimeContextStorage>(
-                new CoroAwareContextStorage());
-        opentelemetry::context::RuntimeContext::SetRuntimeContextStorage(contextStorage_);
+        // main() installs the coroutine-aware runtime-context storage while the
+        // process is single-threaded. It cannot be installed here: start() runs
+        // from setup(), by which point the io threads read that global pointer
+        // on every log line.
 
         // Set as global provider
         trace_api::Provider::SetTracerProvider(

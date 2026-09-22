@@ -1807,7 +1807,7 @@ label values rather than reporting them as zero.
 | `nodestore_state{metric="acquire_aborts"}`           | AppMetricGauges.cpp | Acquisitions destroyed before finishing                     |
 | `nodestore_state{metric="acquire_aborts_partial"}`   | AppMetricGauges.cpp | Subset of aborts that discarded partly built maps           |
 | `nodestore_state{metric="acquire_completions"}`      | AppMetricGauges.cpp | Acquisitions that finished successfully                     |
-| `nodestore_state{metric="acquire_sweep_evictions"}`  | AppMetricGauges.cpp | Acquisitions evicted by the 1-minute sweep                  |
+| `nodestore_state{metric="acquire_sweep_evictions"}`  | AppMetricGauges.cpp | Unfinished acquisitions evicted by the 1-minute sweep       |
 
 `nudb_writer_depth_x100` is fixed-point: divide by 100 to read it. The depth sits
 just above 1.0 even under load, so an integer gauge would truncate the whole
@@ -3534,8 +3534,10 @@ Two more pairs from the same family:
 - `acquire_sweep_evictions` rising while `acquire_completions` stays at zero →
   partial work is being discarded and redone. The sweep drops any acquisition
   idle for more than one minute
-  (`src/xrpld/app/ledger/detail/InboundLedgers.cpp:400`), taking whatever it had
-  built with it.
+  (`src/xrpld/app/ledger/detail/InboundLedgers.cpp:402`), taking whatever it had
+  built with it. Only the ones that had not finished are counted: a completed or
+  failed acquisition also waits in the map for the sweep, and counting those
+  would make this rate track ordinary cleanup instead of wasted work.
 - `acquire_aborts_partial` rising → the expensive form of an abort, where partly
   built maps were thrown away. `acquire_aborts` alone does not separate the cheap
   case from this one.
