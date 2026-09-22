@@ -32,6 +32,13 @@
 #include <boost/program_options/value_semantic.hpp>
 #include <boost/program_options/variables_map.hpp>
 
+#ifdef XRPL_ENABLE_TELEMETRY
+#include <xrpl/telemetry/CoroAwareContextStorage.h>
+
+#include <opentelemetry/context/runtime_context.h>
+#include <opentelemetry/nostd/shared_ptr.h>
+#endif  // XRPL_ENABLE_TELEMETRY
+
 #include <algorithm>
 #include <atomic>
 #include <cstdint>
@@ -821,6 +828,36 @@ run(int argc, char** argv)
             std::cerr << "Unable to start " << systemName() << ": " << e.what() << std::endl;
             return -1;
         }
+
+#ifdef XRPL_ENABLE_TELEMETRY
+        // Install the coroutine-aware OTel context storage while the process is
+        // still single-threaded. SetRuntimeContextStorage() writes a
+        // process-global shared_ptr that every log line reads through
+        // RuntimeContext::GetCurrent(), and neither side is atomic; the io
+        // threads start inside makeApplication() below.
+        //
+        // Only the one key is read here, not the whole section: parsing it all
+        // can throw on a contradictory TLS combination, and that error belongs
+        // to the handler below, where it reports today. Read as int to match
+        // makeTelemetrySetup(), which treats any non-zero value as on. A value
+        // that will not convert throws, so install and leave that same parser
+        // to report it.
+        bool telemetryEnabled = true;
+        try
+        {
+            telemetryEnabled = config->section("telemetry").valueOr<int>("enabled", 0) != 0;
+        }
+        catch (...)
+        {
+        }
+
+        if (telemetryEnabled)
+        {
+            opentelemetry::context::RuntimeContext::SetRuntimeContextStorage(
+                opentelemetry::nostd::shared_ptr<opentelemetry::context::RuntimeContextStorage>(
+                    new telemetry::CoroAwareContextStorage()));
+        }
+#endif  // XRPL_ENABLE_TELEMETRY
 
         // Application construction runs member initializers that validate
         // config (for example the [telemetry] section) and can throw. A throw
