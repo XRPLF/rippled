@@ -277,8 +277,9 @@ public:
     {
         polling_.store(false, std::memory_order_release);
 
-        // onTimer holds metricsLock_ across the handler loop, so acquiring it
-        // here waits for a handler that is already running.
+        // onTimer reads polling_ under metricsLock_, so a tick that is going to
+        // call handlers already holds it. Taking it here waits for that tick,
+        // and any later one reads the cleared flag and polls nothing.
         std::scoped_lock const _(metricsLock_);
     }
 
@@ -464,12 +465,17 @@ public:
             return;
         }
 
-        if (polling_.load(std::memory_order_acquire))
         {
+            // Read the gate under the lock. A tick that sees it set therefore
+            // holds metricsLock_, which is what lets onCollectionStopping()
+            // wait for the handlers by taking the same lock.
             std::scoped_lock const _(metricsLock_);
 
-            for (auto& m : metrics_)
-                m.doProcess();
+            if (polling_.load(std::memory_order_acquire))
+            {
+                for (auto& m : metrics_)
+                    m.doProcess();
+            }
         }
 
         // The gate above holds back hook handlers, not socket I/O. Events reach

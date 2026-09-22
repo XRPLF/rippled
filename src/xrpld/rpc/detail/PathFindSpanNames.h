@@ -29,6 +29,10 @@
  *    |  +-----------------------------------------------------------+ |
  *    +----------------------------------------------------------------+
  *
+ *    pathfind.request ends with status error whenever the handler's reply
+ *    carries an rpc error. The description is that error's registry token,
+ *    never request text.
+ *
  *    Async recomputation (ledger close):
  *
  *    +----------------------------------------------------------------+

@@ -27,6 +27,7 @@
 #ifdef XRPL_ENABLE_TELEMETRY
 
 #include <xrpl/basics/LocalValue.h>
+#include <xrpl/basics/scope.h>
 #include <xrpl/consensus/ConsensusSpanNames.h>
 #include <xrpl/telemetry/CoroAwareContextStorage.h>
 #include <xrpl/telemetry/DeterministicIdGenerator.h>
@@ -521,9 +522,15 @@ TEST_F(SpanGuardScopeTest, scopedGuard_survives_localvalue_store_swap)
     xrpl::detail::LocalValues coroStore;
     xrpl::detail::LocalValues workerStore;
 
-    // Detach (do NOT delete) the fixture's active store, run on the coro store,
-    // and remember the original so teardown gets it back.
+    // Detach (do NOT delete) the fixture's active store and run on the coro
+    // store. A failed ASSERT_* returns from the test body, so the restore must be
+    // RAII or the thread pointer keeps owning a stack store that is about to die.
+    // Declared after both stack stores, so it is destroyed before either of them.
     auto* saved = xrpl::detail::getLocalValues().release();
+    xrpl::ScopeExit const restoreStore{[saved]() {
+        xrpl::detail::getLocalValues().release();
+        xrpl::detail::getLocalValues().reset(saved);
+    }};
     xrpl::detail::getLocalValues().reset(&coroStore);
 
     trc::SpanContext captured = trc::SpanContext::GetInvalid();
@@ -553,11 +560,9 @@ TEST_F(SpanGuardScopeTest, scopedGuard_survives_localvalue_store_swap)
     auto afterPop = trc::GetSpan(ctx::RuntimeContext::GetCurrent());
     EXPECT_FALSE(afterPop->GetContext().IsValid());
 
-    // Restore (re-own) the fixture's store for teardown before any stack store
-    // leaves scope, so the thread pointer never dangles.
-    xrpl::detail::getLocalValues().release();
-    xrpl::detail::getLocalValues().reset(saved);
-
+    // restoreStore re-owns the fixture's store from here on: it runs on every
+    // exit path, and the checks below touch no LocalValue.
+    //
     // The span ended exactly once, when the scope popped on resume.
     EXPECT_EQ(countSpans(spanData()->GetSpans(), "rpc.process"), 1u);
 }

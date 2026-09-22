@@ -10,11 +10,13 @@
 
 #include <boost/smart_ptr/make_shared.hpp>
 
+#include <algorithm>
 #include <atomic>
 #include <chrono>
 #include <cstddef>
 #include <cstdint>
 #include <iterator>
+#include <vector>
 
 namespace xrpl::telemetry {
 
@@ -94,6 +96,16 @@ ValidationTracker::note(Slot const& s, bool ours)
 void
 ValidationTracker::decidePending(TimePoint now)
 {
+    // A window only ever moves forward, so a bucket the grid has already
+    // rolled past cannot take a count. pending_ is unordered, so the minutes
+    // are collected here and applied in order below.
+    struct Decision
+    {
+        std::uint64_t minute{0};  // Bucket the event belongs to.
+        bool agreed{false};       // True to count it as an agreement.
+    };
+    std::vector<Decision> decisions;
+
     for (auto& [hash, evt] : pending_)
     {
         if (!evt.decided)
@@ -104,7 +116,7 @@ ValidationTracker::decidePending(TimePoint now)
             evt.decided = true;
             evt.agreed = evt.weValidated && evt.networkValidated;
             noteTallied(hash);
-            addToWindows(evt.minute, evt.agreed);
+            decisions.push_back(Decision{.minute = evt.minute, .agreed = evt.agreed});
             (evt.agreed ? totalAgreements_ : totalMissed_).fetch_add(1, std::memory_order_relaxed);
             // The gross pair records this first classification and is left
             // alone by the repair branch below, so each only ever rises.
@@ -123,6 +135,12 @@ ValidationTracker::decidePending(TimePoint now)
             totalAgreements_.fetch_add(1, std::memory_order_relaxed);
         }
     }
+
+    std::ranges::sort(decisions, [](Decision const& lhs, Decision const& rhs) {
+        return lhs.minute < rhs.minute;
+    });
+    for (auto const& d : decisions)
+        addToWindows(d.minute, d.agreed);
 
     // Nothing can be repaired past the window, so the entry is dead weight.
     auto const cutoff = now - kLateRepairWindow;

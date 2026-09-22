@@ -1425,7 +1425,7 @@ concurrency cap. Observed in `AppMetricGauges::observeNodeStoreTotals()`,
 | `nodestore_state{metric="acquire_aborts"}`           | Gauge | `metric` | Acquisitions destroyed before finishing                 |
 | `nodestore_state{metric="acquire_aborts_partial"}`   | Gauge | `metric` | Subset of aborts that discarded partly built maps       |
 | `nodestore_state{metric="acquire_completions"}`      | Gauge | `metric` | Acquisitions that finished successfully                 |
-| `nodestore_state{metric="acquire_sweep_evictions"}`  | Gauge | `metric` | Acquisitions evicted by the 1-minute sweep              |
+| `nodestore_state{metric="acquire_sweep_evictions"}`  | Gauge | `metric` | Unfinished acquisitions evicted by the 1-minute sweep   |
 
 **Three properties to know before querying these.**
 
