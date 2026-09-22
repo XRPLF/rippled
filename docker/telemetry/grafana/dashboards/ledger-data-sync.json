@@ -1724,6 +1724,7 @@
       "id": 27
     }
   ],
+  "refresh": "30s",
   "schemaVersion": 39,
   "tags": ["ledger", "sync"],
   "templating": {
