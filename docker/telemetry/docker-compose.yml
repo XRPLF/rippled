@@ -30,7 +30,7 @@ services:
       # receiver has no auth, and xrpld runs on the host, so it reaches the
       # collector via 127.0.0.1. Do not expose on 0.0.0.0 in shared setups.
       - "127.0.0.1:8125:8125/udp"
-      - "8889:8889" # Prometheus metrics (span_metrics + statsd)
+      - "127.0.0.1:8889:8889" # Prometheus metrics (span_metrics + statsd)
       - "13133:13133" # Health check
     volumes:
       # Mount collector pipeline config (receivers → processors → exporters)
@@ -59,7 +59,7 @@ services:
     # Pinned to an exact patch release for reproducible, config-stable runs.
     image: prom/prometheus:v3.13.2
     ports:
-      - "9090:9090"
+      - "127.0.0.1:9090:9090"
     volumes:
       - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
     depends_on:
