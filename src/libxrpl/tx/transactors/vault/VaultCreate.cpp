@@ -103,7 +103,7 @@ VaultCreate::preflight(PreflightContext const& ctx)
 
         auto const maximumScale = ctx.rules.enabled(featureLendingProtocolV1_2)
             ? kVaultMaximumFixedIouScale
-            : kVaultMaximumIouScale;
+            : kVaultMaximumLegacyIouScale;
         if (scale > maximumScale)
             return temMALFORMED;
     }

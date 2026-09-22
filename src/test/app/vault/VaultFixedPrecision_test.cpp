@@ -97,7 +97,7 @@ class VaultFixedPrecision_test : public VaultTestBase
 
             Vault const vault{env};
             auto [tx, keylet] = vault.create({.owner = owner, .asset = asset});
-            tx[sfScale] = kVaultMaximumIouScale;
+            tx[sfScale] = kVaultMaximumLegacyIouScale;
             env(tx);
             env.close();
 

@@ -235,11 +235,13 @@ sharesToAssetsWithdraw(
 isSoleShareholder(ReadView const& view, AccountID const& account, SLE::const_ref issuance);
 
 /**
- * Resolves a Vault's LEVersion, the single point every accounting touch
- * point should call to determine which recognition model (instant interest
- * recognition vs. cash-basis) a Vault uses. Vaults created before featureLendingProtocolV1_1
- * activated never have sfLEVersion set, which resolves here to
- * VaultVersion::Legacy.
+ * Resolves a Vault's LEVersion.
+ *
+ * LEVersion is the single point every accounting and rounding helper
+ * should call to decide which protocol a Vault follows. It is written
+ * at VaultCreate and is not updated afterwards, so a Vault created
+ * under an older amendment keeps that behaviour after later amendments
+ * activate. Absent sfLEVersion resolves to VaultVersion::Legacy.
  *
  * @param vault The vault SLE.
  *
