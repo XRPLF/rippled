@@ -198,7 +198,10 @@ jobs:
     strategy:
       fail-fast: false
       matrix: ${{ fromJson(needs.generate-matrix.outputs.matrix) }}
-    name: "publish ${{ matrix.xrpld_artifact_name }}"
+    # The name says which of the two this is, because the job runs either way:
+    # with publish false it passes --dry-run and uploads nothing, and a job
+    # called "publish ..." succeeding on a pull request reads like a release.
+    name: "publish ${{ matrix.xrpld_artifact_name }}${{ !inputs.publish && ' (dry run)' || '' }}"
     permissions:
       contents: read
     runs-on: ["self-hosted", "Linux", "X64", "heavy"]
