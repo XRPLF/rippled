@@ -830,6 +830,155 @@ class InvariantsMisc_test : public InvariantsBase
             }
         }
 
+        // Under featureLendingProtocolV1_1, a pending (two-step) loan is
+        // created without sfOwnerNode and LoanAccept adds it when the borrower
+        // accepts. NoModifiedUnmodifiableFields therefore permits LoanAccept
+        // exactly one transition, absent -> present, and treats every other
+        // shape as a bug. Any other transaction type keeps the field fully
+        // immutable.
+        {
+            enum class OwnerNode { Absent, Zero, One };
+            struct Case
+            {
+                TxType txType;
+                OwnerNode before;
+                OwnerNode after;
+                // Empty means the invariant must pass.
+                std::string expected;
+            };
+            constexpr char const* kAcceptMsg =
+                "sfOwnerNode must be added, and only added, by LoanAccept";
+            constexpr char const* kChangedMsg = "OwnerNode changed on immutable ledger entry";
+            auto const cases = std::to_array<Case>({
+                // The single permitted LoanAccept transition.
+                {.txType = ttLOAN_ACCEPT,
+                 .before = OwnerNode::Absent,
+                 .after = OwnerNode::Zero,
+                 .expected = ""},
+                // LoanAccept that never linked the loan into the owner directory.
+                {.txType = ttLOAN_ACCEPT,
+                 .before = OwnerNode::Absent,
+                 .after = OwnerNode::Absent,
+                 .expected = kAcceptMsg},
+                // LoanAccept against a loan that already had sfOwnerNode.
+                {.txType = ttLOAN_ACCEPT,
+                 .before = OwnerNode::Zero,
+                 .after = OwnerNode::Zero,
+                 .expected = kAcceptMsg},
+                // LoanAccept that moved the loan to a different directory page.
+                {.txType = ttLOAN_ACCEPT,
+                 .before = OwnerNode::Zero,
+                 .after = OwnerNode::One,
+                 .expected = kAcceptMsg},
+                // LoanAccept that removed sfOwnerNode.
+                {.txType = ttLOAN_ACCEPT,
+                 .before = OwnerNode::Zero,
+                 .after = OwnerNode::Absent,
+                 .expected = kAcceptMsg},
+                // Any other transaction may not add sfOwnerNode, even though
+                // LoanAccept may.
+                {.txType = ttACCOUNT_SET,
+                 .before = OwnerNode::Absent,
+                 .after = OwnerNode::Zero,
+                 .expected = kChangedMsg},
+            });
+
+            auto const setOwnerNode = [](SLE::pointer const& sle, OwnerNode value) {
+                switch (value)
+                {
+                    case OwnerNode::Absent:
+                        sle->makeFieldAbsent(sfOwnerNode);
+                        break;
+                    case OwnerNode::Zero:
+                        sle->at(sfOwnerNode) = std::uint64_t{0};
+                        break;
+                    case OwnerNode::One:
+                        sle->at(sfOwnerNode) = std::uint64_t{1};
+                        break;
+                }
+            };
+
+            for (auto const& c : cases)
+            {
+                Env env{*this, all_};
+                Account const a1{"A1"};
+                env.fund(XRP(1000), a1);
+                env.close();
+
+                // The permitted transition must come out as tesSUCCESS, so
+                // every other invariant has to be satisfied too. ValidLoan
+                // requires the loan to reference a live broker and that broker
+                // a live vault, which rules out a fabricated broker keylet.
+                PrettyAsset const xrpAsset{xrpIssue(), 1'000'000};
+                auto const brokerKeylet = this->createLoanBroker(a1, env, xrpAsset);
+                if (!BEAST_EXPECT(env.le(brokerKeylet)))
+                    continue;
+                env.close();
+
+                OpenView ov{*env.current()};
+
+                auto const loanKeylet = keylet::loan(brokerKeylet.key, SeqProxy::rawSequence(1));
+                {
+                    auto sleLoan = makeLoanSle(brokerKeylet.key, 1, a1.id());
+                    sleLoan->at(sfPrincipalOutstanding) = Number(100);
+                    sleLoan->at(sfTotalValueOutstanding) = Number(150);
+                    sleLoan->setFieldU32(sfPaymentRemaining, 1);
+                    setOwnerNode(sleLoan, c.before);
+                    ov.rawInsert(sleLoan);
+                }
+
+                STTx const tx{c.txType, [&](STObject& obj) {
+                                  obj.setAccountID(sfAccount, a1.id());
+                                  if (c.txType == ttLOAN_ACCEPT)
+                                      obj.setFieldH256(sfLoanID, loanKeylet.key);
+                              }};
+                test::StreamSink sink{beast::Severity::Warning};
+                beast::Journal const jlog{sink};
+                ApplyContext ac{
+                    env.app(), ov, tx, tesSUCCESS, env.current()->fees().base, TapNone, jlog};
+                CurrentTransactionRulesGuard const rulesGuard(ov.rules());
+
+                auto sleLoan = ac.view().peek(loanKeylet);
+                if (!BEAST_EXPECT(sleLoan))
+                    continue;
+                setOwnerNode(sleLoan, c.after);
+                ac.view().update(sleLoan);
+
+                // LoanAccept carries Privilege::MustModifyVault, so ValidVault
+                // fails any LoanAccept that leaves every vault untouched.
+                // Register a no-op modification of the broker's vault to keep
+                // that unrelated check out of the way.
+                if (c.txType == ttLOAN_ACCEPT)
+                {
+                    auto const sleBroker = ac.view().read(brokerKeylet);
+                    if (!BEAST_EXPECT(sleBroker))
+                        continue;
+                    auto sleVault = ac.view().peek(keylet::vault(sleBroker->at(sfVaultID)));
+                    if (!BEAST_EXPECT(sleVault))
+                        continue;
+                    ac.view().update(sleVault);
+                }
+
+                auto transactor = makeTransactor(ac);
+                if (!BEAST_EXPECT(transactor))
+                    continue;
+                TER const result = transactor->checkInvariants(
+                    tesSUCCESS, XRPAmount{}, Transactor::InvariantScope::Full);
+                if (c.expected.empty())
+                {
+                    BEAST_EXPECTS(result == tesSUCCESS, transToken(result));
+                    BEAST_EXPECTS(
+                        !sink.messages().str().contains("OwnerNode"), sink.messages().str());
+                }
+                else
+                {
+                    BEAST_EXPECT(result == tecINVARIANT_FAILED);
+                    BEAST_EXPECTS(
+                        sink.messages().str().contains(c.expected), sink.messages().str());
+                }
+            }
+        }
+
         // Pre-featureLendingProtocolV1_1 sibling of the lsfLoanOverpayment
         // cases above: the same set-once immutability was originally enforced
         // by ValidLoan::finalize, so with V1_1 disabled toggling the flag

@@ -1207,19 +1207,20 @@ NoModifiedUnmodifiableFields::finalize(
                     bad = bad || defaultCleared;
 
                     // V1.1 introduces the two-step flow: a pending loan is created without
-                    // sfOwnerNode and LoanAccept adds it when the borrower accepts. Any other tx
-                    // modifying sfOwnerNode is a bug.
+                    // sfOwnerNode and LoanAccept adds it when the borrower accepts. That is
+                    // the only transition LoanAccept may make to the field: it must be absent
+                    // before and present after. Any other tx modifying sfOwnerNode is a bug.
                     if (tx.getTxnType() == ttLOAN_ACCEPT)
                     {
-                        bool const ownerNodeCleared = before->isFieldPresent(sfOwnerNode) &&
-                            !after->isFieldPresent(sfOwnerNode);
-                        if (ownerNodeCleared)
+                        bool const ownerNodeAdded = !before->isFieldPresent(sfOwnerNode) &&
+                            after->isFieldPresent(sfOwnerNode);
+                        if (!ownerNodeAdded)
                         {
-                            JLOG(j.fatal()) << "Invariant failed: sfOwnerNode cleared on immutable "
-                                               "ledger entry in "
+                            JLOG(j.fatal()) << "Invariant failed: sfOwnerNode must be added, "
+                                               "and only added, by LoanAccept in "
                                             << tx.getTransactionID();
                         }
-                        bad = bad || ownerNodeCleared;
+                        bad = bad || !ownerNodeAdded;
                     }
                     else
                     {

@@ -14,6 +14,7 @@
 #include <test/jtx/ter.h>
 #include <test/jtx/trust.h>
 #include <test/jtx/vault.h>
+#include <test/unit_test/SuiteJournal.h>
 
 #include <xrpl/basics/Number.h>
 #include <xrpl/basics/chrono.h>
@@ -27,15 +28,22 @@
 #include <xrpl/ledger/helpers/VaultHelpers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/Keylet.h>
 #include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STObject.h>
+#include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/SeqProxy.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/TxFormats.h>
 #include <xrpl/protocol/Units.h>
+#include <xrpl/tx/ApplyContext.h>
+#include <xrpl/tx/Transactor.h>
+#include <xrpl/tx/transactors/lending/LoanAccept.h>
 #include <xrpl/tx/transactors/system/Batch.h>
 
 #include <algorithm>
@@ -126,33 +134,22 @@ private:
         return createVaultAndBroker(env, asset, fx.lender, params);
     }
 
-    // Retro-actively converts a V1.1 Vault (which VaultCreate stamps as
-    // CashBasis) into an accrual (Legacy) Vault by rewriting sfLEVersion
-    // directly on the open ledger. Simulates a Vault created before V1.1
-    // activated so the two-step flow can be exercised against both
-    // accounting models without spinning up a pre-amendment environment.
-    // NoModifiedUnmodifiableFields locks sfLEVersion at the transactor
-    // boundary; going through OpenLedger::modify bypasses that guard.
-    //
-    // The field is set to VaultVersion::Legacy (0) rather than removed:
-    // makeFieldAbsent does not round-trip cleanly through tx application on
-    // this SoeDefault field, whereas an explicit 0 both resolves through
-    // getVaultVersion (0 → Legacy) and survives the vault's next update().
+    // Rewrites the vault's LEVersion to Legacy (accrual accounting) so the
+    // two-step tests can exercise a vault created before LendingProtocolV1_1,
+    // which no transaction can produce once the amendment is enabled.
     static void
-    makeVaultAccrual(jtx::Env& env, BrokerInfo const& broker)
+    makeVaultInstantRecognition(jtx::Env& env, BrokerInfo const& broker)
     {
-        auto const changed =
-            env.app().getOpenLedger().modify([&](OpenView& view, beast::Journal) -> bool {
-                Sandbox sb(&view, TapNone);
-                auto v = sb.peek(broker.vaultKeylet());
-                if (!v)
-                    return false;
-                v->setFieldU8(sfLEVersion, std::to_underlying(VaultVersion::Legacy));
-                sb.update(v);
-                sb.apply(view);
-                return true;
-            });
-        (void)changed;
+        env.app().getOpenLedger().modify([&](OpenView& view, beast::Journal) -> bool {
+            Sandbox sb(&view, TapNone);
+            auto v = sb.peek(broker.vaultKeylet());
+            if (!v)
+                return false;
+            v->setFieldU8(sfLEVersion, std::to_underlying(VaultVersion::Legacy));
+            sb.update(v);
+            sb.apply(view);
+            return true;
+        });
     }
 
     // The keylet of the next loan the broker will create.
@@ -312,7 +309,7 @@ private:
                 };
                 if (vaultVersion == VaultVersion::Legacy)
                 {
-                    makeVaultAccrual(env, broker);
+                    makeVaultInstantRecognition(env, broker);
                     // Confirm the mutation persisted before proceeding: the
                     // accrual code path is only exercised when the Vault
                     // resolves to VaultVersion::Legacy (absent field or 0).
@@ -508,7 +505,20 @@ private:
                 BEAST_EXPECT(loan->at(sfPaymentRemaining) == payTotal);
             }
 
-            // LoanManage: impair then unimpair.
+            // LoanPay: a regular periodic payment succeeds. Advance just past
+            // StartDate but well within the first payment interval
+            // (payInterval = 200 s), otherwise the pay would be late and
+            // require tfLoanLatePayment.
+            env.close(NetClock::time_point{NetClock::duration{startDate}} + 30s);
+            env(pay(borrower, loanKeylet.key, broker.asset(30)));
+            env.close();
+            if (auto const loan = env.le(loanKeylet); BEAST_EXPECT(loan))
+                BEAST_EXPECT(loan->at(sfPaymentRemaining) < payTotal);
+
+            // LoanManage: impair then unimpair. Under fixCleanup3_4_0 a loan
+            // can only be impaired once its payment is actually late, so
+            // advance past the (now second) NextPaymentDueDate first.
+            advancePastDueDate(env, loanKeylet);
             env(manage(lender, loanKeylet.key, tfLoanImpair));
             env.close();
             if (auto const loan = env.le(loanKeylet); BEAST_EXPECT(loan))
@@ -519,16 +529,12 @@ private:
             if (auto const loan = env.le(loanKeylet); BEAST_EXPECT(loan))
                 BEAST_EXPECT(!loan->isFlag(lsfLoanImpaired));
 
-            // LoanPay: a regular periodic payment succeeds, then the borrower
-            // clears the remainder with tfLoanFullPayment. Advance just past
-            // StartDate but well within the first payment interval
-            // (payInterval = 200 s), otherwise the pay would be late and
-            // require tfLoanLatePayment.
-            env.close(NetClock::time_point{NetClock::duration{startDate}} + 30s);
-            env(pay(borrower, loanKeylet.key, broker.asset(30)));
+            // Unimpairing leaves NextPaymentDueDate alone under
+            // fixCleanup3_4_0, so the loan is still overdue: catch it up with
+            // tfLoanLatePayment before the payoff. The two flags are mutually
+            // exclusive, so this has to be a separate transaction.
+            env(pay(borrower, loanKeylet.key, broker.asset(400), tfLoanLatePayment));
             env.close();
-            if (auto const loan = env.le(loanKeylet); BEAST_EXPECT(loan))
-                BEAST_EXPECT(loan->at(sfPaymentRemaining) < payTotal);
 
             // A generous upper bound (2x principal) clears principal + interest.
             env(pay(borrower, loanKeylet.key, broker.asset(400), tfLoanFullPayment));
@@ -631,6 +637,23 @@ private:
             // XLS-66 flow: two-step preclaim rejects a past StartDate (tecEXPIRED).
             std::uint32_t const pastDate = epoch.time_since_epoch().count();
             propose(env, broker, lender, borrower, pastDate, Ter(tecEXPIRED));
+
+            // A pseudo-account can never sign LoanAccept, so naming one as the
+            // Borrower is rejected up front (tecNO_PERMISSION) rather than
+            // creating a pending loan that ties up AssetsReserved forever.
+            {
+                auto const vaultPseudo = [&]() {
+                    auto const v = env.le(broker.vaultKeylet());
+                    return Account("vault pseudo-account", v->at(sfAccount));
+                }();
+                auto const brokerPseudo = [&]() {
+                    auto const b = env.le(broker.brokerKeylet());
+                    return Account("broker pseudo-account", b->at(sfAccount));
+                }();
+                std::uint32_t const futureDate = (env.now() + 1h).time_since_epoch().count();
+                propose(env, broker, lender, vaultPseudo, futureDate, Ter(tecNO_PERMISSION));
+                propose(env, broker, lender, brokerPseudo, futureDate, Ter(tecNO_PERMISSION));
+            }
 
             // XLS-66 spec 3.8.5.1.2: CounterpartySignature is not present,
             // the transaction is not a Batch inner, and the Borrower field is
@@ -1312,29 +1335,107 @@ private:
         }
 
         {
-            testcase("Two-step: LoanAccept when a holding cannot be added");
+            testcase("Two-step: LoanAccept when a holding cannot be added (IOU)");
 
             // XLS-66 spec 3.9.3.2.10: cannot add asset holding for the
-            // Vault.Asset (tecNO_PERMISSION / terNO_RIPPLE for IOU with
-            // asfDefaultRipple cleared).
-            // Between the LoanSet proposal and the LoanAccept, the IOU
-            // issuer clears asfDefaultRipple, so a fresh holding for the
-            // vault asset can no longer be established. Acceptance must be
-            // rejected by the canAddHolding check in checkLoanFreeze. Only
-            // the IOU path is reachable: for MPT, MPTCanTransfer is required
-            // to create the vault/broker and MPT flags are immutable.
+            // Vault.Asset. For an IOU the cause is the issuer clearing
+            // asfDefaultRipple, and canAddHolding reports it as terNO_RIPPLE.
+            //
+            // Post-fixCleanup3_4_0 the gate only runs when a fund recipient
+            // lacks a holding, and 3.9.4.4 only creates a holding for the
+            // borrower "if one does not exist". The borrower's trust line
+            // from makeBroker is therefore removed first (it holds no
+            // balance yet), so that acceptance genuinely needs to create one.
+            // Then the issuer clears asfDefaultRipple between proposal and
+            // acceptance, and the accept must be rejected in preclaim.
             Env env(*this, features);
             auto const broker = makeBroker(env, AssetType::IOU);
+            Issue const iou = broker.asset.raw().get<Issue>();
 
             auto const loanKeylet = nextLoanKeylet(env, broker);
             propose(env, broker, lender, borrower, (env.now() + 1h).time_since_epoch().count());
             env.close();
+
+            // Remove the borrower's trust line so a fresh holding is
+            // genuinely required at disbursement.
+            auto const borrowerLine = keylet::trustLine(borrower, iou);
+            env.trust(broker.asset(0), borrower);
+            env.close();
+            BEAST_EXPECT(!env.le(borrowerLine));
 
             env(fclear(issuer, asfDefaultRipple));
             env.close();
 
             env(accept(borrower, loanKeylet.key), Ter(terNO_RIPPLE));
             expectStillPending(env, loanKeylet);
+        }
+
+        {
+            testcase("Two-step: LoanAccept canAddHolding gate uses the loan's origination fee");
+
+            // Post-fixCleanup3_4_0, checkLoanFreeze only consults canAddHolding
+            // when a fund recipient lacks a holding. The borrower keeps its
+            // trust line here, so the gate is reached solely through the
+            // broker-owner clause, which depends on the origination fee. A
+            // LoanAccept transaction carries no such field; the helper must
+            // read it from the pending Loan. Between propose and accept the
+            // lender deletes its trust line and the issuer clears
+            // DefaultRipple, so a fresh line for the fee can no longer be
+            // created.
+            //
+            // The full pipeline and disburseLoan's own addEmptyHolding both
+            // surface terNO_RIPPLE, so the result code alone cannot tell
+            // preclaim from doApply. Drive LoanAccept::preclaim directly as
+            // well, so the rejection is attributable to the gate.
+            Env env(*this, features);
+            auto const broker = makeBroker(env, AssetType::IOU);
+            Issue const iou = broker.asset.raw().get<Issue>();
+
+            auto const loanKeylet = nextLoanKeylet(env, broker);
+            propose(
+                env,
+                broker,
+                lender,
+                borrower,
+                (env.now() + 1h).time_since_epoch().count(),
+                kLoanOriginationFee(broker.asset(5).number()));
+            env.close();
+
+            // Remove the lender's trust line. Its balance is already zero:
+            // everything the issuer sent went into the vault deposit and the
+            // first-loss cover. Zeroing the limit on its own is not enough,
+            // though. makeBroker funds the lender with noripple(), so the
+            // account has no lsfDefaultRipple while its side of the line has
+            // no lsfNoRipple, and TrustSet does not consider that pairing to
+            // be the line's default state. Set tfSetNoRipple at the same time
+            // so the line really is deleted.
+            auto const lenderLine = keylet::trustLine(lender, iou);
+            env(trust(lender, broker.asset(0), tfSetNoRipple));
+            env.close();
+            BEAST_EXPECT(!env.le(lenderLine));
+            // The borrower's line is untouched, so the borrower clause of the
+            // gate is false and only the fee-dependent clause can trigger it.
+            BEAST_EXPECT(env.le(keylet::trustLine(borrower, iou)));
+
+            env(fclear(issuer, asfDefaultRipple));
+            env.close();
+
+            // Full pipeline: rejected, and the loan stays pending.
+            env(accept(borrower, loanKeylet.key), Ter(terNO_RIPPLE));
+            expectStillPending(env, loanKeylet);
+
+            // Direct preclaim against a scratch view of the same ledger.
+            STTx const tx{ttLOAN_ACCEPT, [&](STObject& obj) {
+                              obj.setAccountID(sfAccount, borrower.id());
+                              obj.setFieldH256(sfLoanID, loanKeylet.key);
+                          }};
+            OpenView ov{*env.current()};
+            test::StreamSink sink{beast::Severity::Warning};
+            beast::Journal const jlog{sink};
+            ApplyContext ac{
+                env.app(), ov, tx, tesSUCCESS, env.current()->fees().base, TapNone, jlog};
+            PreclaimContext const pctx{env.app(), ac.view(), tesSUCCESS, tx, TapNone, jlog};
+            BEAST_EXPECT(LoanAccept::preclaim(pctx) == TER{terNO_RIPPLE});
         }
 
         {

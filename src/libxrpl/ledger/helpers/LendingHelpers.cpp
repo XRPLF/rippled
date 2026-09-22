@@ -2322,8 +2322,8 @@ loanMakePayment(
 TER
 checkLoanFreeze(
     ReadView const& view,
-    STTx const& tx,
     Asset const& asset,
+    Number const& originationFee,
     AccountID const& vaultPseudo,
     AccountID const& brokerPseudo,
     AccountID const& borrower,
@@ -2341,7 +2341,6 @@ checkLoanFreeze(
     // tecDUPLICATE, which doApply ignores, so run the check only when the
     // borrower lacks a holding, or the origination fee is nonzero and the
     // broker owner lacks one.
-    auto const originationFee = tx[~sfLoanOriginationFee].value_or(Number{});
     if (!view.rules().enabled(fixCleanup3_4_0) || !holdingExists(view, borrower, asset) ||
         (originationFee != beast::kZero && !holdingExists(view, brokerOwner, asset)))
     {

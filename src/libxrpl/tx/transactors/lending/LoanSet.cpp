@@ -84,6 +84,7 @@ struct LoanPlan
     Number assetsTotalDelta;
     Number debtTotalDelta;
     LoanProperties properties;
+    std::uint32_t startDate{};
     std::uint32_t paymentInterval{};
     std::uint32_t paymentTotal{};
 };
@@ -124,10 +125,16 @@ getLoanFlow(STTx const& tx, bool twoStepFlowEnabled)
     return LoanFlow::Invalid;
 }
 
+/**
+ * Returns the loan's start date. In the two-step flow it is the StartDate
+ * field named in the proposal; in the immediate flow it is the current ledger
+ * close time. Callers pass the LoanFlow they have already determined so the
+ * flow is not re-derived here.
+ */
 std::uint32_t
-getStartDate(ReadView const& view, STTx const& tx)
+getStartDate(ReadView const& view, STTx const& tx, LoanFlow flow)
 {
-    if (getLoanFlow(tx, isTwoStepFlowEnabled(view.rules())) == LoanFlow::TwoStep)
+    if (flow == LoanFlow::TwoStep)
     {
         return tx[sfStartDate];
     }
@@ -329,6 +336,7 @@ setupLoan(ApplyContext& ctx, AccountID const& accountID, LoanFlow flow, beast::J
         .assetsTotalDelta = assetsTotalDelta,
         .debtTotalDelta = debtTotalDelta,
         .properties = properties,
+        .startDate = getStartDate(view, tx, flow),
         .paymentInterval = paymentInterval,
         .paymentTotal = paymentTotal};
 }
@@ -350,7 +358,7 @@ buildLoan(ApplyContext& ctx, LoanPlan const& plan, SLE::ref brokerSle, LoanPendi
     auto const& tx = ctx.tx;
 
     // Get shortcuts to the loan property values
-    auto const startDate = getStartDate(ctx.view(), tx);
+    auto const startDate = plan.startDate;
     auto const loanSequence = *brokerSle->at(sfLoanSequence);
 
     // Create the loan
@@ -812,6 +820,9 @@ LoanSet::preclaim(PreclaimContext const& ctx)
     auto const& tx = ctx.tx;
     auto const interval = ctx.tx.at(~sfPaymentInterval).value_or(kDefaultPaymentInterval);
     auto const total = ctx.tx.at(~sfPaymentTotal).value_or(kDefaultPaymentTotal);
+    auto const flow = getLoanFlow(tx, isTwoStepFlowEnabled(ctx.view.rules()));
+    bool const twoStepFlow = flow == LoanFlow::TwoStep;
+    auto const startDate = getStartDate(ctx.view, tx, flow);
 
     {
         // Check for numeric overflow of the schedule before we load any
@@ -824,7 +835,7 @@ LoanSet::preclaim(PreclaimContext const& ctx)
         constexpr timeType kMaxTime = std::numeric_limits<timeType>::max();
         static_assert(kMaxTime == 4'294'967'295);
 
-        auto const timeAvailable = kMaxTime - getStartDate(ctx.view, tx);
+        auto const timeAvailable = kMaxTime - startDate;
 
         auto const interval = ctx.tx.at(~sfPaymentInterval).value_or(kDefaultPaymentInterval);
         auto const total = ctx.tx.at(~sfPaymentTotal).value_or(kDefaultPaymentTotal);
@@ -872,8 +883,6 @@ LoanSet::preclaim(PreclaimContext const& ctx)
         return tecNO_ENTRY;
     }
     auto const brokerOwner = brokerSle->at(sfOwner);
-    auto const flow = getLoanFlow(tx, isTwoStepFlowEnabled(ctx.view.rules()));
-    bool const twoStepFlow = flow == LoanFlow::TwoStep;
     auto const participants = resolveParticipants(tx, brokerSle, account, flow);
 
     // Validate the submitter's permission. In the two-step flow the LoanBroker
@@ -898,12 +907,22 @@ LoanSet::preclaim(PreclaimContext const& ctx)
 
     auto const borrower = participants.borrower;
     auto const brokerPseudo = brokerSle->at(sfAccount);
-    if (auto const borrowerSle = ctx.view.read(keylet::account(borrower)); !borrowerSle)
+    auto const borrowerSle = ctx.view.read(keylet::account(borrower));
+    if (!borrowerSle)
     {
         // It may not be possible to hit this case, because it'll fail the
         // signature check with terNO_ACCOUNT.
         JLOG(ctx.j.warn()) << "Borrower does not exist.";
         return terNO_ACCOUNT;
+    }
+    if (twoStepFlow && isPseudoAccount(borrowerSle))
+    {
+        // In the immediate flow the Borrower must sign, which a pseudo-account
+        // can never do. The two-step flow only names the Borrower, so reject a
+        // pseudo-account here rather than creating a pending loan that can
+        // never be accepted and needlessly ties up the vault's AssetsReserved.
+        JLOG(ctx.j.warn()) << "Borrower is a pseudo-account.";
+        return tecNO_PERMISSION;
     }
 
     auto const vault = ctx.view.read(keylet::vault(brokerSle->at(sfVaultID)));
@@ -928,8 +947,7 @@ LoanSet::preclaim(PreclaimContext const& ctx)
         }
         if (phase == VaultPhase::Investment)
         {
-            auto const finalPayment =
-                std::uint64_t{getStartDate(ctx.view, tx)} + (std::uint64_t{interval} * total);
+            auto const finalPayment = std::uint64_t{startDate} + (std::uint64_t{interval} * total);
             if (finalPayment + kLoanRedemptionBuffer > vault->at(sfRedemptionDate))
             {
                 JLOG(ctx.j.warn())
@@ -970,7 +988,14 @@ LoanSet::preclaim(PreclaimContext const& ctx)
     }
 
     if (auto const ter = checkLoanFreeze(
-            ctx.view, tx, asset, vaultPseudo, brokerPseudo, borrower, brokerOwner, ctx.j))
+            ctx.view,
+            asset,
+            tx[~sfLoanOriginationFee].value_or(Number{}),
+            vaultPseudo,
+            brokerPseudo,
+            borrower,
+            brokerOwner,
+            ctx.j))
         return ter;
 
     if (twoStepFlow)

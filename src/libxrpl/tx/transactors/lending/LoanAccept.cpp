@@ -125,9 +125,16 @@ LoanAccept::preclaim(PreclaimContext const& ctx)
     // 3.9.3.2.9 The LoanBroker.Owner is deep frozen for the asset. (tecFROZEN for IOUs, tecLOCKED
     // for MPTs)
     // 3.9.3.2.10 Cannot add asset holding for the Vault.Asset (e.g., MPToken or TrustLine issues).
-    // (tecNO_PERMISSION)
+    // (terNO_RIPPLE for IOU and tecNO_AUTH for MPT)
     if (auto const ter = checkLoanFreeze(
-            ctx.view, tx, asset, vaultPseudo, brokerPseudo, account, brokerOwner, ctx.j))
+            ctx.view,
+            asset,
+            loanSle->at(sfLoanOriginationFee),
+            vaultPseudo,
+            brokerPseudo,
+            account,
+            brokerOwner,
+            ctx.j))
         return ter;
 
     // Re-verify that the borrower and broker owner (the two accounts that

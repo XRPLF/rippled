@@ -711,12 +711,15 @@ loanMakePayment(
  * fallback fee recipient) is not deep frozen, that the borrower (a future payer
  * and fund recipient) is not frozen, and that the broker owner (a fee
  * recipient) is not deep frozen.
+ *
+ * The origination fee is passed in by the caller: LoanSet reads it from the
+ * transaction, LoanAccept from the pending Loan entry.
  */
 [[nodiscard]] TER
 checkLoanFreeze(
     ReadView const& view,
-    STTx const& tx,
     Asset const& asset,
+    Number const& originationFee,
     AccountID const& vaultPseudo,
     AccountID const& brokerPseudo,
     AccountID const& borrower,
