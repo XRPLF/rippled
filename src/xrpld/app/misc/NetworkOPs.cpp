@@ -1886,11 +1886,21 @@ NetworkOPsImp::apply(std::unique_lock<std::mutex>& batchLock)
 
             if (validatedLedgerIndex)
             {
-                auto [fee, accountSeq, availableSeq] =
-                    registry_.get().getTxQ().getTxRequiredFeeAndSeq(
-                        *newOL, e.transaction->getSTransaction());
-                e.transaction->setCurrentLedgerState(
-                    *validatedLedgerIndex, fee, accountSeq, availableSeq);
+                auto maybeFeeAndSeq = registry_.get().getTxQ().getTxRequiredFeeAndSeq(
+                    *newOL, e.transaction->getSTransaction());
+                if (maybeFeeAndSeq.has_value())
+                {
+                    auto [fee, accountSeq, availableSeq] = *maybeFeeAndSeq;
+                    e.transaction->setCurrentLedgerState(
+                        *validatedLedgerIndex, fee, accountSeq, availableSeq);
+                }
+                else
+                {
+                    JLOG(journal_.debug())
+                        << "Unable to compute current ledger state for tx "
+                        << e.transaction->getID() << " in validated ledger "
+                        << *validatedLedgerIndex << ": " << transToken(maybeFeeAndSeq.error());
+                }
             }
         }
     }
