@@ -70,44 +70,61 @@
       "id": 1
     },
     {
-      "title": "Current Job Latency (p99 Gauge) [$xrpl_network_type]",
+      "title": "Slowest Job Types by p99 Latency [$xrpl_network_type]",
       "description": "###### What this is:\n*At-a-glance p99 of how long jobs wait in the queue and how long they run once started.*\n\n###### How it's computed:\n*99th percentile derived from the job wait-time and run-time histograms over the last 5 minutes.*\n\n###### Reading it:\n*Lower is better; green under 100ms, yellow to 1s, red beyond 1s.*\n\n###### Healthy range:\n*Wait and exec p99 under 100ms.*\n\n###### Watch for:\n*p99 wait climbing into the red, meaning worker threads are saturated and jobs are backing up.*\n\n###### Keywords:\n- **Job queue / job type** *(per node)* \u2014 xrpld's worker-thread pool; every unit of background work is enqueued under a named job type.\n- **Deferred job** *(per node)* \u2014 a job held back because its type is already at its concurrency limit; the leading indicator of queue backpressure.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Recorded in xrpld code as a native metric (beast::insight); the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[MetricsRegistry.cpp](https://github.com/XRPLF/rippled/blob/develop/src/libxrpl/telemetry/MetricsRegistry.cpp)\n\n###### Function:\n`recordJobStarted / recordJobFinished`\n\n###### References:\n[Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#job-queue-job-type)",
-      "type": "gauge",
+      "type": "bargauge",
       "gridPos": {
         "h": 10,
-        "w": 12,
+        "w": 24,
         "x": 0,
         "y": 1
       },
       "options": {
+        "displayMode": "gradient",
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": false
+        },
+        "maxVizHeight": 300,
+        "minVizHeight": 16,
+        "minVizWidth": 8,
+        "namePlacement": "auto",
+        "orientation": "horizontal",
         "reduceOptions": {
           "calcs": ["lastNotNull"],
           "fields": "",
           "values": false
         },
-        "orientation": "auto",
-        "showThresholdLabels": false,
-        "showThresholdMarkers": true
+        "showUnfilled": true,
+        "sizing": "manual",
+        "valueMode": "color"
       },
       "targets": [
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "label_replace(histogram_quantile(0.99, sum by (le, service_instance_id, xrpl_branch, xrpl_node_role, xrpl_work_item) (rate(job_queued_us_bucket{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", job_type=~\"$job_type\", handler=~\"$handler\"}[5m]))), \"series\", \"p99 Wait\", \"\", \"\")"
+          "instant": true,
+          "range": false,
+          "expr": "label_replace(histogram_quantile(0.99, sum by (le, job_type, service_instance_id, xrpl_branch, xrpl_node_role, xrpl_work_item) (rate(job_queued_us_bucket{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", job_type=~\"$job_type\", handler=~\"$handler\"}[5m]))), \"series\", \"p99 Wait\", \"\", \"\")"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "label_replace(histogram_quantile(0.99, sum by (le, service_instance_id, xrpl_branch, xrpl_node_role, xrpl_work_item) (rate(job_running_us_bucket{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", job_type=~\"$job_type\", handler=~\"$handler\"}[5m]))), \"series\", \"p99 Exec\", \"\", \"\")"
+          "instant": true,
+          "range": false,
+          "expr": "label_replace(histogram_quantile(0.99, sum by (le, job_type, service_instance_id, xrpl_branch, xrpl_node_role, xrpl_work_item) (rate(job_running_us_bucket{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", job_type=~\"$job_type\", handler=~\"$handler\"}[5m]))), \"series\", \"p99 Exec\", \"\", \"\")"
         }
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} [${__field.labels.service_instance_id} ${__field.labels.xrpl_branch} ${__field.labels.xrpl_node_role} ${__field.labels.xrpl_work_item}]",
+          "displayName": "${__field.labels.series} ${__field.labels.job_type} [${__field.labels.service_instance_id} ${__field.labels.xrpl_branch} ${__field.labels.xrpl_node_role} ${__field.labels.xrpl_work_item}]",
           "unit": "\u00b5s",
           "min": 0,
+          "max": 1000000,
           "thresholds": {
             "mode": "absolute",
             "steps": [
@@ -131,7 +148,7 @@
       "id": 2,
       "repeat": "xrpl_network_type",
       "repeatDirection": "h",
-      "maxPerRow": 2
+      "maxPerRow": 1
     },
     {
       "title": "Throughput",
@@ -738,7 +755,7 @@
         "label": "Node",
         "description": "Filter by rippled node (service.instance.id)",
         "type": "query",
-        "query": "label_values(target_info, service_instance_id)",
+        "query": "label_values(job_queued_us_count, service_instance_id)",
         "datasource": {
           "type": "prometheus",
           "uid": "${DS_PROMETHEUS}"
