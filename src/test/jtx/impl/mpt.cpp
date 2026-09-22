@@ -1828,6 +1828,9 @@ MPTTester::holderKeyUpdate(MPTHolderKeyUpdate const& arg)
     bool const rotation = (arg.flags.value_or(0) & tfHolderKeyRotation) != 0;
     bool const cancel = (arg.flags.value_or(0) & tfCancelRecovery) != 0;
 
+    // Falls back to a dummy buffer on any failure (missing account/key, no existing
+    // balance, or a decrypt/encrypt failure) to allow testing of failures that occur
+    // prior to re-encryption, e.g. malformed-key or wrong-epoch test cases.
     auto const reencryptOrDummy = [&](EncryptedBalanceType balanceType) {
         if (arg.account && arg.holderPubKey)
         {

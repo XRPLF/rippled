@@ -18,10 +18,10 @@ class ConfidentialMPTHolderKeyUpdateBuilder;
 /**
  * @brief Transaction: ConfidentialMPTHolderKeyUpdate
  *
- * Type: ttCONFIDENTIAL_MPT_HOLDER_KEY_UPDATE (92)
+ * Type: ttCONFIDENTIAL_MPT_HOLDER_KEY_UPDATE (93)
  * Delegable: Delegation::NotDelegable
  * Amendment: featureConfidentialMPTKeyRotation
- * Privileges: NoPriv
+ * Privileges: Privilege::NoPriv
  *
  * Immutable wrapper around STTx providing type-safe field access.
  * Use ConfidentialMPTHolderKeyUpdateBuilder to construct new transactions.

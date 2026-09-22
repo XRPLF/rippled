@@ -785,10 +785,10 @@ ValidConfidentialMPToken::finalize(
                 return false;
             }
 
-            // Among confidential MPT transactions, only ConfidentialMPTSend and
-            // ConfidentialMPTMergeInbox leave coaDelta unmodified. Therefore, if a confidential MPT
-            // transaction reaches here, it must be one of these two types, neither of which will
-            // modify sfOutstandingAmount
+            // Reaching here means this confidential MPT transaction left coaDelta
+            // unmodified (e.g. ConfidentialMPTSend, ConfidentialMPTMergeInbox, or
+            // ConfidentialMPTHolderKeyUpdate/ConfidentialMPTMirrorUpdate, none of which touch
+            // sfConfidentialOutstandingAmount), so it must not modify sfOutstandingAmount either.
             if (checks.outstandingDelta != 0)
             {
                 JLOG(j.fatal()) << "Invariant failed: OutstandingAmount changed "

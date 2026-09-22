@@ -16,6 +16,7 @@
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/Transactor.h>
 
+#include <bit>
 #include <cstdint>
 #include <memory>
 
@@ -42,9 +43,8 @@ ConfidentialMPTHolderKeyUpdate::preflight(PreflightContext const& ctx)
     bool const cancel = ctx.tx.isFlag(tfCancelRecovery);
 
     // Exactly one of the three mode flags must be set.
-    int const modeCount =
-        static_cast<int>(rotation) + static_cast<int>(recovery) + static_cast<int>(cancel);
-    if (modeCount != 1)
+    static constexpr auto modeFlags = tfHolderKeyRotation | tfHolderKeyRecovery | tfCancelRecovery;
+    if (std::popcount(ctx.tx.getFlags() & modeFlags) != 1)
         return temINVALID_FLAG;
 
     auto const account = ctx.tx[sfAccount];
@@ -69,7 +69,7 @@ ConfidentialMPTHolderKeyUpdate::preflight(PreflightContext const& ctx)
         return tesSUCCESS;
     }
 
-    if (!hasHolderKey || !isValidCompressedECPoint(ctx.tx[sfHolderEncryptionKey]))
+    if (!hasHolderKey)
         return temMALFORMED;
 
     // Rotation mode requires re-encrypted balances; Recovery mode must not
@@ -80,24 +80,23 @@ ConfidentialMPTHolderKeyUpdate::preflight(PreflightContext const& ctx)
     if (recovery && (hasSpending || hasInbox))
         return temMALFORMED;
 
-    if (hasSpending)
-    {
-        auto const spending = ctx.tx[sfConfidentialBalanceSpending];
-        if (spending.length() != kEcGamalEncryptedTotalLength || !isValidCiphertext(spending))
-            return temBAD_CIPHERTEXT;
-    }
-
-    if (hasInbox)
-    {
-        auto const inbox = ctx.tx[sfConfidentialBalanceInbox];
-        if (inbox.length() != kEcGamalEncryptedTotalLength || !isValidCiphertext(inbox))
-            return temBAD_CIPHERTEXT;
-    }
-
     // TODO: Rotation and Recovery require a proof field. Length and cryptographic
     // verification are deferred until the mpt-crypto constructions land.
     if (!hasProof)
         return temMALFORMED;
+
+    if (!isValidCompressedECPoint(ctx.tx[sfHolderEncryptionKey]))
+        return temMALFORMED;
+
+    auto const isValidCiphertextField = [](Slice const& s) {
+        return s.length() == kEcGamalEncryptedTotalLength && isValidCiphertext(s);
+    };
+
+    if (hasSpending && !isValidCiphertextField(ctx.tx[sfConfidentialBalanceSpending]))
+        return temBAD_CIPHERTEXT;
+
+    if (hasInbox && !isValidCiphertextField(ctx.tx[sfConfidentialBalanceInbox]))
+        return temBAD_CIPHERTEXT;
 
     return tesSUCCESS;
 }
@@ -183,14 +182,21 @@ ConfidentialMPTHolderKeyUpdate::doApply()
     if (ctx_.tx.isFlag(tfHolderKeyRotation))
     {
         // The holder still controls the current private key: re-encrypted
-        // balances are provided directly and take effect immediately.
+        // balances are provided directly and take effect immediately. This
+        // also supersedes any recovery that was pending, since the holder has
+        // just proven they still hold the key recovery would have replaced.
         (*sleMptoken)[sfHolderEncryptionKey] = newPubKey;
         (*sleMptoken)[sfConfidentialBalanceSpending] = ctx_.tx[sfConfidentialBalanceSpending];
         (*sleMptoken)[sfConfidentialBalanceInbox] = ctx_.tx[sfConfidentialBalanceInbox];
+        sleMptoken->makeFieldAbsent(sfRecoveryKey);
         incrementConfidentialVersion(*sleMptoken);
     }
     else
     {
+        XRPL_ASSERT(
+            ctx_.tx.isFlag(tfHolderKeyRecovery),
+            "xrpl::ConfidentialMPTHolderKeyUpdate::doApply : recovery mode");
+
         // Recovery mode: the holder cannot decrypt their current balances,
         // so only the pending recovery key is recorded. The balances are
         // rewritten separately by the issuer via ConfidentialMPTRecoverBalance.
@@ -202,10 +208,7 @@ ConfidentialMPTHolderKeyUpdate::doApply()
 }
 
 void
-ConfidentialMPTHolderKeyUpdate::visitInvariantEntry(
-    bool,
-    std::shared_ptr<SLE const> const&,
-    std::shared_ptr<SLE const> const&)
+ConfidentialMPTHolderKeyUpdate::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
 {
 }
 
