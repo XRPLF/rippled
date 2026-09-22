@@ -32,9 +32,6 @@ public:
     static NotTEC
     preflight(PreflightContext const& ctx);
 
-    static NotTEC
-    preflightSigValidated(PreflightContext const& ctx);
-
     static TER
     preclaim(PreclaimContext const& ctx);
 

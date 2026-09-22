@@ -146,6 +146,7 @@ words:
   - impls
   - inequation
   - initialiser
+  - Injectivity
   - insuf
   - insuff
   - invasively
@@ -374,7 +375,6 @@ words:
   - venv
   - vfalco
   - vinnie
-  - vkeylet
   - wasmi
   - wasmparser
   - Werror
@@ -398,3 +398,4 @@ words:
   - xxhasher
   - zstdio
   - CGNAT
+  - ungated

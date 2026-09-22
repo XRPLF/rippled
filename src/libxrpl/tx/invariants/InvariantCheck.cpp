@@ -1123,10 +1123,17 @@ NoModifiedUnmodifiableFields::finalize(
     ReadView const& view,
     beast::Journal const& j)
 {
-    static auto const kFieldChanged = [](auto const& before, auto const& after, auto const& field) {
+    auto const kFieldChanged = [&j, &tx](auto const& before, auto const& after, auto const& field) {
         bool const beforeField = before->isFieldPresent(field);
         bool const afterField = after->isFieldPresent(field);
-        return beforeField != afterField || (afterField && before->at(field) != after->at(field));
+        bool const changed =
+            beforeField != afterField || (afterField && before->at(field) != after->at(field));
+        if (changed)
+        {
+            JLOG(j.fatal()) << "Invariant failed: " << field.getName()
+                            << " changed on immutable ledger entry in " << tx.getTransactionID();
+        }
+        return changed;
     };
     for (auto const& slePair : changedEntries_)
     {
@@ -1172,13 +1179,40 @@ NoModifiedUnmodifiableFields::finalize(
                     kFieldChanged(before, after, sfPaymentInterval) ||
                     kFieldChanged(before, after, sfGracePeriod) ||
                     kFieldChanged(before, after, sfLoanScale);
+
+                // lsfLoanOverpayment must never toggle. lsfLoanDefault may only
+                // transition from unset to set, which combined with ValidLoan's rule that
+                // only LoanManage may change it makes the flag write-once.
+                if (view.rules().enabled(featureLendingProtocolV1_1))
+                {
+                    std::uint32_t const beforeFlags = before->getFlags();
+                    std::uint32_t const afterFlags = after->getFlags();
+                    bool const overpaymentChanged =
+                        (beforeFlags & lsfLoanOverpayment) != (afterFlags & lsfLoanOverpayment);
+                    if (overpaymentChanged)
+                    {
+                        JLOG(j.fatal()) << "Invariant failed: lsfLoanOverpayment flag "
+                                           "toggled on immutable ledger entry in "
+                                        << tx.getTransactionID();
+                    }
+                    bad = bad || overpaymentChanged;
+                    bool const defaultCleared =
+                        (beforeFlags & lsfLoanDefault) != 0 && (afterFlags & lsfLoanDefault) == 0;
+                    if (defaultCleared)
+                    {
+                        JLOG(j.fatal()) << "Invariant failed: lsfLoanDefault flag "
+                                           "cleared on immutable ledger entry in "
+                                        << tx.getTransactionID();
+                    }
+                    bad = bad || defaultCleared;
+                }
                 break;
             case ltVAULT:
                 /*
-                 * sfAccount, sfAsset and sfShareMPTID are already
-                 * captured by VaultInvariant. The additional fields
-                 * below are introduced by featureLendingProtocolV1_1
-                 * and only exist on V1_1 vaults.
+                 * All the fields below are only immutable from
+                 * featureLendingProtocolV1_1 onwards; some of them only exist on
+                 * V1_1 vaults. Before that amendment, sfAsset, sfAccount and
+                 * sfShareMPTID are checked by VaultInvariant instead.
                  */
                 if (view.rules().enabled(featureLendingProtocolV1_1))
                 {
@@ -1190,7 +1224,10 @@ NoModifiedUnmodifiableFields::finalize(
                         kFieldChanged(before, after, sfOwner) ||
                         kFieldChanged(before, after, sfWithdrawalPolicy) ||
                         kFieldChanged(before, after, sfScale) ||
-                        kFieldChanged(before, after, sfLEVersion);
+                        kFieldChanged(before, after, sfLEVersion) ||
+                        kFieldChanged(before, after, sfAsset) ||
+                        kFieldChanged(before, after, sfAccount) ||
+                        kFieldChanged(before, after, sfShareMPTID);
                 }
                 break;
             default:

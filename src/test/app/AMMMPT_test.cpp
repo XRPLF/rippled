@@ -15,6 +15,7 @@
 #include <test/jtx/rate.h>
 #include <test/jtx/sendmax.h>
 #include <test/jtx/seq.h>
+#include <test/jtx/tags.h>
 #include <test/jtx/ter.h>
 #include <test/jtx/trust.h>
 #include <test/jtx/txflags.h>
@@ -3316,6 +3317,65 @@ private:
             BEAST_EXPECT(expectMPT(env, alice_, eth(10'000)));
             BEAST_EXPECT(!ammAlice.ammExists());
         }
+    }
+
+    void
+    testWithdrawReserveUsesLiveBalance()
+    {
+        testcase("Withdraw reserve check uses live balance");
+
+        using namespace jtx;
+
+        auto const test = [&](auto&& makeToken) {
+            Env env(*this);
+            env.fund(XRP(30'000), gw_, alice_, bob_);
+            env.close();
+
+            auto const token = makeToken(env);
+            AMM amm(env, gw_, XRP(100), token(100));
+
+            // The EUR trustline is an unrelated owner object. The XRP-only
+            // AMM deposit adds the LP token trustline, so Alice has 2 owners.
+            env.trust(gw_["EUR"](1), alice_);
+            amm.deposit(DepositArg{.account = alice_, .asset1In = XRP(10)});
+            BEAST_EXPECT(env.ownerCount(alice_) == 2);
+            env.require(Balance(alice_, token(kNone)));
+
+            // Drain Alice to one drop below the reserve for a third owner
+            // object, accounting for the fee on the drain payment.
+            auto const reserveForToken = reserve(env, 3);
+            auto const targetBalance = reserveForToken - XRPAmount{1};
+            auto const baseFee = env.current()->fees().base;
+            auto const currentBalance = env.balance(alice_).value().xrp();
+            auto const drainAmount = currentBalance - targetBalance - baseFee;
+            BEAST_EXPECT(drainAmount > XRPAmount{0});
+            env(pay(alice_, bob_, drops(drainAmount)));
+            env.close();
+
+            // AMMWithdraw captures priorBalance before the fee, then the XRP
+            // leg raises the live sandbox balance before the token leg.
+            // XRP(2) keeps the integral MPT side positive after rounding.
+            auto const xrpOut = XRP(2);
+            auto const tokenOut = token(2);
+            auto const priorBalance = env.balance(alice_).value().xrp();
+            auto const liveBalanceAfterXrpLeg = priorBalance - baseFee + xrpOut.value().xrp();
+            BEAST_EXPECT(priorBalance < reserveForToken);
+            BEAST_EXPECT(liveBalanceAfterXrpLeg > priorBalance);
+            BEAST_EXPECT(liveBalanceAfterXrpLeg >= reserveForToken);
+
+            // The XRP leg runs first, so the missing IOU trustline or MPToken
+            // is reserved against the updated sandbox balance.
+            amm.withdraw(
+                WithdrawArg{.account = alice_, .asset1Out = xrpOut, .asset2Out = tokenOut});
+
+            // The withdrawal succeeds only if the missing token holding can be
+            // reserved from the live balance after the XRP leg.
+            BEAST_EXPECT(env.ownerCount(alice_) == 3);
+            BEAST_EXPECT(env.balance(alice_, token).value().signum() > 0);
+        };
+
+        test([&](Env&) -> PrettyAsset { return gw_["USD"]; });
+        test([&](Env& env) -> PrettyAsset { return MPTTester({.env = env, .issuer = gw_}); });
     }
 
     void
@@ -7491,6 +7551,7 @@ private:
         testDeposit();
         testInvalidWithdraw();
         testWithdraw();
+        testWithdrawReserveUsesLiveBalance();
         testInvalidFeeVote();
         testFeeVote();
         testInvalidBid();

@@ -82,8 +82,7 @@ why the three terms in `rel_error` do not all combine in quadrature.
 **`guestInstruction` is the self-test — read it first.** It runs the calibration's own loop body, so
 its `implied_gas` (wall time) and `charged_gas` (the fuel meter) are two independent measurements of
 one quantity. Quiet Release machine: **≈13.7 against 13.007, ~5% high.** A persistent gap much
-beyond that means every other number in the run shares it. It has already caught an estimator
-mismatch worth +40%, and the memory leak below.
+beyond that means every other number in the run shares it.
 
 **`suggested_gas` for an `Impl`-only case is a lower bound** — the crossing floor is measured on a
 call with no input, so a function that moves bytes pays more; `Sha512Half` and `UpdateData` sweep
@@ -127,25 +126,11 @@ The linker rebuild and the fuel-metering overhead are **not** separable from her
 `runEscrowWasm` and `preflightEscrowWasm`. Both need benchmarks inside `xrpl-wasm-vm`, where
 `compile` and `wasm_engine` are `pub(crate)`.
 
-### Compiling leaks — pin your iteration counts
+### Pin your iteration counts
 
-`wasm_engine()` is a process-global `LazyLock<Engine>`, and what `Module::new` adds to it is never
-released. Repeatedly preflighting one **60-byte** module:
-
-| `--benchmark_repetitions` | peak RSS |
-| ------------------------- | -------- |
-| 1                         | 0.41 GB  |
-| 5                         | 1.46 GB  |
-| 15                        | 4.20 GB  |
-
-Linear, at roughly **800 bytes per compile**. Within the suite this is why every `Vm.cpp` case pins
-`->Iterations(...)`: automatic sizing ran `preflightMinimal` ~348k times per repetition, reaching
-7.9 GB at 25 repetitions, after which every later case in the binary failed to compile — 720 errored
-rows, all blaming cases that were innocent.
-
-**Outside the suite it is worth a look.** A validator compiles twice per programmable-escrow
-transaction against that same static engine. Whether that is unbounded growth in production depends
-on wasmi internals not checked here — this is the C++-visible symptom, not a diagnosis.
+Pin `->Iterations(...)`: automatic sizing targets a wall-clock budget, not a compile count,
+so the cheap cases get six-figure counts and `/4096` a handful — leaving no row comparable to
+another or to the last run.
 
 ## Gotchas, each of which has already cost someone an afternoon
 

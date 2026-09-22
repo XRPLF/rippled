@@ -27,10 +27,11 @@
 //! `deny(unreachable_pub)`: cxx's expansion is `pub` throughout by necessity, leaving
 //! the lint nothing but generated code to fire on.
 #![deny(rustdoc::broken_intra_doc_links)]
+#![cfg_attr(coverage_nightly, feature(coverage_attribute))]
 
 use std::any::Any;
 use std::panic::{AssertUnwindSafe, catch_unwind};
-use xrpl_host_functions::{HostError, HostFunctions, HostResult, TraceDataType};
+use xrpl_host_functions::{FloatOrdering, HostError, HostFunctions, HostResult, TraceDataType};
 use xrpl_wasm_vm::{CheckError, RunError, RunFailure, RunOutcome, check, run};
 
 /// [`guarded`] must be able to stop an unwind. Under `panic = "abort"` it cannot,
@@ -105,6 +106,9 @@ mod ffi {
         /// not a fault in the module — which is why it is a status of its own
         /// rather than one more way a contract can be malformed.
         Panic,
+        /// An import of a host function typed as something other than what the
+        /// engine registers it as.
+        Signature,
     }
 
     /// A check's verdict. No cost, because nothing was executed.
@@ -300,7 +304,7 @@ mod ffi {
 
         #[namespace = "xrpl"]
         #[cxx_name = "checkKeylet"]
-        fn check_keylet(self: &HostContext, account: &[u8], seq: i32, out: &mut [u8]) -> i32;
+        fn check_keylet(self: &HostContext, account: &[u8], seq: u32, out: &mut [u8]) -> i32;
 
         #[namespace = "xrpl"]
         #[cxx_name = "credentialKeylet"]
@@ -336,7 +340,7 @@ mod ffi {
 
         #[namespace = "xrpl"]
         #[cxx_name = "escrowKeylet"]
-        fn escrow_keylet(self: &HostContext, account: &[u8], seq: i32, out: &mut [u8]) -> i32;
+        fn escrow_keylet(self: &HostContext, account: &[u8], seq: u32, out: &mut [u8]) -> i32;
 
         #[namespace = "xrpl"]
         #[cxx_name = "trustLineKeylet"]
@@ -353,7 +357,7 @@ mod ffi {
         fn mptoken_issuance_keylet(
             self: &HostContext,
             issuer: &[u8],
-            seq: i32,
+            seq: u32,
             out: &mut [u8],
         ) -> i32;
 
@@ -366,17 +370,17 @@ mod ffi {
         fn nftoken_offer_keylet(
             self: &HostContext,
             account: &[u8],
-            seq: i32,
+            seq: u32,
             out: &mut [u8],
         ) -> i32;
 
         #[namespace = "xrpl"]
         #[cxx_name = "offerKeylet"]
-        fn offer_keylet(self: &HostContext, account: &[u8], seq: i32, out: &mut [u8]) -> i32;
+        fn offer_keylet(self: &HostContext, account: &[u8], seq: u32, out: &mut [u8]) -> i32;
 
         #[namespace = "xrpl"]
         #[cxx_name = "oracleKeylet"]
-        fn oracle_keylet(self: &HostContext, account: &[u8], doc_id: i32, out: &mut [u8]) -> i32;
+        fn oracle_keylet(self: &HostContext, account: &[u8], doc_id: u32, out: &mut [u8]) -> i32;
 
         #[namespace = "xrpl"]
         #[cxx_name = "paychannelKeylet"]
@@ -384,7 +388,7 @@ mod ffi {
             self: &HostContext,
             account: &[u8],
             destination: &[u8],
-            seq: i32,
+            seq: u32,
             out: &mut [u8],
         ) -> i32;
 
@@ -393,7 +397,7 @@ mod ffi {
         fn permissioned_domain_keylet(
             self: &HostContext,
             account: &[u8],
-            seq: i32,
+            seq: u32,
             out: &mut [u8],
         ) -> i32;
 
@@ -403,11 +407,33 @@ mod ffi {
 
         #[namespace = "xrpl"]
         #[cxx_name = "ticketKeylet"]
-        fn ticket_keylet(self: &HostContext, account: &[u8], seq: i32, out: &mut [u8]) -> i32;
+        fn ticket_keylet(self: &HostContext, account: &[u8], seq: u32, out: &mut [u8]) -> i32;
 
         #[namespace = "xrpl"]
         #[cxx_name = "vaultKeylet"]
-        fn vault_keylet(self: &HostContext, account: &[u8], seq: i32, out: &mut [u8]) -> i32;
+        fn vault_keylet(self: &HostContext, account: &[u8], seq: u32, out: &mut [u8]) -> i32;
+
+        #[namespace = "xrpl"]
+        #[cxx_name = "sponsorshipKeylet"]
+        fn sponsorship_keylet(
+            self: &HostContext,
+            sponsor: &[u8],
+            sponsee: &[u8],
+            out: &mut [u8],
+        ) -> i32;
+
+        #[namespace = "xrpl"]
+        #[cxx_name = "loanBrokerKeylet"]
+        fn loan_broker_keylet(self: &HostContext, owner: &[u8], seq: u32, out: &mut [u8]) -> i32;
+
+        #[namespace = "xrpl"]
+        #[cxx_name = "loanKeylet"]
+        fn loan_keylet(
+            self: &HostContext,
+            loan_broker_id: &[u8],
+            loan_seq: u32,
+            out: &mut [u8],
+        ) -> i32;
 
         #[namespace = "xrpl"]
         #[cxx_name = "sha512Half"]
@@ -528,6 +554,15 @@ struct CxxHost<'a> {
     ctx: &'a ffi::HostContext,
 }
 
+/// The error a negative code names, or `InternalFatal`.
+///
+/// **The one place the fallback is decided.** A code outside the ABI is xrpld's
+/// `HostFunctionError` list having outrun this one — the call was not served, whatever
+/// the host meant by it, so the run stops on the one code that says so.
+fn host_error(n: i32) -> HostError {
+    HostError::from_code(n).unwrap_or(HostError::InternalFatal)
+}
+
 /// A byte-producing call's answer: the value's true length, or its error code.
 ///
 /// The conversion *is* the sign test — it fails on exactly the negative values — so
@@ -537,7 +572,7 @@ struct CxxHost<'a> {
 /// involved — `i32`, `Result`, `HostError` — is foreign to this crate, so the orphan
 /// rule forbids the impl.
 fn bytes_written(n: i32) -> HostResult<usize> {
-    usize::try_from(n).map_err(|_| HostError::from_code(n))
+    usize::try_from(n).map_err(|_| host_error(n))
 }
 
 /// The ABI's data type as the shared enum C++ was given a definition of.
@@ -561,9 +596,19 @@ fn crossed(data_type: TraceDataType) -> ffi::TraceDataType {
 /// a non-negative value is that answer, a negative one its error code.
 fn scalar(n: i32) -> HostResult<i32> {
     if n < 0 {
-        return Err(HostError::from_code(n));
+        return Err(host_error(n));
     }
     Ok(n)
+}
+
+/// A call whose answer is a named verdict: [`scalar`]'s split first, then the code must
+/// name a variant.
+///
+/// **This is where the C++ side is held to the ABI.** A code naming no variant is
+/// `WasmCommon.h`'s `FloatOrdering` having drifted from this one — nothing a contract can
+/// act on, hence `InternalFatal` and a stopped run.
+fn float_ordering(n: i32) -> HostResult<FloatOrdering> {
+    FloatOrdering::from_code(scalar(n)?).ok_or(HostError::InternalFatal)
 }
 
 impl HostFunctions for CxxHost<'_> {
@@ -668,7 +713,7 @@ impl HostFunctions for CxxHost<'_> {
         bytes_written(self.ctx.amm_keylet(asset1, asset2, out))
     }
 
-    fn check_keylet(&self, account: &[u8], seq: i32, out: &mut [u8]) -> HostResult<usize> {
+    fn check_keylet(&self, account: &[u8], seq: u32, out: &mut [u8]) -> HostResult<usize> {
         bytes_written(self.ctx.check_keylet(account, seq, out))
     }
 
@@ -707,7 +752,7 @@ impl HostFunctions for CxxHost<'_> {
         bytes_written(self.ctx.did_keylet(account, out))
     }
 
-    fn escrow_keylet(&self, account: &[u8], seq: i32, out: &mut [u8]) -> HostResult<usize> {
+    fn escrow_keylet(&self, account: &[u8], seq: u32, out: &mut [u8]) -> HostResult<usize> {
         bytes_written(self.ctx.escrow_keylet(account, seq, out))
     }
 
@@ -727,7 +772,7 @@ impl HostFunctions for CxxHost<'_> {
     fn mptoken_issuance_keylet(
         &self,
         issuer: &[u8],
-        seq: i32,
+        seq: u32,
         out: &mut [u8],
     ) -> HostResult<usize> {
         bytes_written(self.ctx.mptoken_issuance_keylet(issuer, seq, out))
@@ -737,15 +782,15 @@ impl HostFunctions for CxxHost<'_> {
         bytes_written(self.ctx.mptoken_keylet(mptid, holder, out))
     }
 
-    fn nftoken_offer_keylet(&self, account: &[u8], seq: i32, out: &mut [u8]) -> HostResult<usize> {
+    fn nftoken_offer_keylet(&self, account: &[u8], seq: u32, out: &mut [u8]) -> HostResult<usize> {
         bytes_written(self.ctx.nftoken_offer_keylet(account, seq, out))
     }
 
-    fn offer_keylet(&self, account: &[u8], seq: i32, out: &mut [u8]) -> HostResult<usize> {
+    fn offer_keylet(&self, account: &[u8], seq: u32, out: &mut [u8]) -> HostResult<usize> {
         bytes_written(self.ctx.offer_keylet(account, seq, out))
     }
 
-    fn oracle_keylet(&self, account: &[u8], doc_id: i32, out: &mut [u8]) -> HostResult<usize> {
+    fn oracle_keylet(&self, account: &[u8], doc_id: u32, out: &mut [u8]) -> HostResult<usize> {
         bytes_written(self.ctx.oracle_keylet(account, doc_id, out))
     }
 
@@ -753,7 +798,7 @@ impl HostFunctions for CxxHost<'_> {
         &self,
         account: &[u8],
         destination: &[u8],
-        seq: i32,
+        seq: u32,
         out: &mut [u8],
     ) -> HostResult<usize> {
         bytes_written(self.ctx.paychannel_keylet(account, destination, seq, out))
@@ -762,7 +807,7 @@ impl HostFunctions for CxxHost<'_> {
     fn permissioned_domain_keylet(
         &self,
         account: &[u8],
-        seq: i32,
+        seq: u32,
         out: &mut [u8],
     ) -> HostResult<usize> {
         bytes_written(self.ctx.permissioned_domain_keylet(account, seq, out))
@@ -772,19 +817,41 @@ impl HostFunctions for CxxHost<'_> {
         bytes_written(self.ctx.signer_list_keylet(account, out))
     }
 
-    fn ticket_keylet(&self, account: &[u8], seq: i32, out: &mut [u8]) -> HostResult<usize> {
+    fn ticket_keylet(&self, account: &[u8], seq: u32, out: &mut [u8]) -> HostResult<usize> {
         bytes_written(self.ctx.ticket_keylet(account, seq, out))
     }
 
-    fn vault_keylet(&self, account: &[u8], seq: i32, out: &mut [u8]) -> HostResult<usize> {
+    fn vault_keylet(&self, account: &[u8], seq: u32, out: &mut [u8]) -> HostResult<usize> {
         bytes_written(self.ctx.vault_keylet(account, seq, out))
+    }
+
+    fn sponsorship_keylet(
+        &self,
+        sponsor: &[u8],
+        sponsee: &[u8],
+        out: &mut [u8],
+    ) -> HostResult<usize> {
+        bytes_written(self.ctx.sponsorship_keylet(sponsor, sponsee, out))
+    }
+
+    fn loan_broker_keylet(&self, owner: &[u8], seq: u32, out: &mut [u8]) -> HostResult<usize> {
+        bytes_written(self.ctx.loan_broker_keylet(owner, seq, out))
+    }
+
+    fn loan_keylet(
+        &self,
+        loan_broker_id: &[u8],
+        loan_seq: u32,
+        out: &mut [u8],
+    ) -> HostResult<usize> {
+        bytes_written(self.ctx.loan_keylet(loan_broker_id, loan_seq, out))
     }
 
     fn sha512_half(&self, data: &[u8], out: &mut [u8]) -> HostResult<usize> {
         bytes_written(self.ctx.sha512_half(data, out))
     }
 
-    fn trace(&self, msg: &str, data: &[u8], data_type: TraceDataType) -> HostResult<()> {
+    fn trace(&self, msg: &str, data_type: TraceDataType, data: &[u8]) -> HostResult<()> {
         self.ctx.trace(msg, data, crossed(data_type));
         Ok(())
     }
@@ -817,23 +884,23 @@ impl HostFunctions for CxxHost<'_> {
         bytes_written(self.ctx.get_nft_sequence(nft_id, out))
     }
 
-    fn float_from_int(&self, x: i64, mode: i32, out: &mut [u8]) -> HostResult<usize> {
+    fn float_from_int(&self, x: i64, out: &mut [u8], mode: i32) -> HostResult<usize> {
         bytes_written(self.ctx.float_from_int(x, mode, out))
     }
 
-    fn float_from_uint(&self, x: &[u8], mode: i32, out: &mut [u8]) -> HostResult<usize> {
+    fn float_from_uint(&self, x: &[u8], out: &mut [u8], mode: i32) -> HostResult<usize> {
         bytes_written(self.ctx.float_from_uint(x, mode, out))
     }
 
-    fn float_from_stamount(&self, amount: &[u8], mode: i32, out: &mut [u8]) -> HostResult<usize> {
+    fn float_from_stamount(&self, amount: &[u8], out: &mut [u8], mode: i32) -> HostResult<usize> {
         bytes_written(self.ctx.float_from_stamount(amount, mode, out))
     }
 
-    fn float_from_stnumber(&self, number: &[u8], mode: i32, out: &mut [u8]) -> HostResult<usize> {
+    fn float_from_stnumber(&self, number: &[u8], out: &mut [u8], mode: i32) -> HostResult<usize> {
         bytes_written(self.ctx.float_from_stnumber(number, mode, out))
     }
 
-    fn float_to_int(&self, x: &[u8], mode: i32, out: &mut [u8]) -> HostResult<usize> {
+    fn float_to_int(&self, x: &[u8], out: &mut [u8], mode: i32) -> HostResult<usize> {
         bytes_written(self.ctx.float_to_int(x, mode, out))
     }
 
@@ -850,33 +917,33 @@ impl HostFunctions for CxxHost<'_> {
         &self,
         mantissa: i64,
         exponent: i32,
-        mode: i32,
         out: &mut [u8],
+        mode: i32,
     ) -> HostResult<usize> {
         bytes_written(self.ctx.float_from_mant_exp(mantissa, exponent, mode, out))
     }
 
-    fn float_compare(&self, x: &[u8], y: &[u8]) -> HostResult<i32> {
-        scalar(self.ctx.float_compare(x, y))
+    fn float_compare(&self, x: &[u8], y: &[u8]) -> HostResult<FloatOrdering> {
+        float_ordering(self.ctx.float_compare(x, y))
     }
 
-    fn float_add(&self, x: &[u8], y: &[u8], mode: i32, out: &mut [u8]) -> HostResult<usize> {
+    fn float_add(&self, x: &[u8], y: &[u8], out: &mut [u8], mode: i32) -> HostResult<usize> {
         bytes_written(self.ctx.float_add(x, y, mode, out))
     }
 
-    fn float_subtract(&self, x: &[u8], y: &[u8], mode: i32, out: &mut [u8]) -> HostResult<usize> {
+    fn float_subtract(&self, x: &[u8], y: &[u8], out: &mut [u8], mode: i32) -> HostResult<usize> {
         bytes_written(self.ctx.float_subtract(x, y, mode, out))
     }
 
-    fn float_multiply(&self, x: &[u8], y: &[u8], mode: i32, out: &mut [u8]) -> HostResult<usize> {
+    fn float_multiply(&self, x: &[u8], y: &[u8], out: &mut [u8], mode: i32) -> HostResult<usize> {
         bytes_written(self.ctx.float_multiply(x, y, mode, out))
     }
 
-    fn float_divide(&self, x: &[u8], y: &[u8], mode: i32, out: &mut [u8]) -> HostResult<usize> {
+    fn float_divide(&self, x: &[u8], y: &[u8], out: &mut [u8], mode: i32) -> HostResult<usize> {
         bytes_written(self.ctx.float_divide(x, y, mode, out))
     }
 
-    fn float_power(&self, x: &[u8], n: i32, mode: i32, out: &mut [u8]) -> HostResult<usize> {
+    fn float_power(&self, x: &[u8], n: i32, out: &mut [u8], mode: i32) -> HostResult<usize> {
         bytes_written(self.ctx.float_power(x, n, mode, out))
     }
 }
@@ -1030,6 +1097,7 @@ impl From<&CheckError> for ffi::CheckStatus {
         match error {
             CheckError::Compile(_) => ffi::CheckStatus::Compile,
             CheckError::Import(_) => ffi::CheckStatus::Import,
+            CheckError::Signature(_) => ffi::CheckStatus::Signature,
             CheckError::EntryPoint(_) => ffi::CheckStatus::EntryPoint,
             CheckError::Memory(_) => ffi::CheckStatus::Memory,
             CheckError::Table(_) => ffi::CheckStatus::Table,
@@ -1041,6 +1109,7 @@ impl From<&CheckError> for ffi::CheckStatus {
 /// binary link at all: the C++ side of the bridge exists only in the CMake build, so
 /// a test that called one would fail to link rather than fail.
 #[cfg(test)]
+#[cfg_attr(coverage_nightly, coverage(off))]
 mod tests {
     use super::*;
 
@@ -1073,6 +1142,70 @@ mod tests {
         assert_eq!(crossed.gas_used, 900);
         assert_eq!(crossed.detail, "trap: unreachable");
         assert_eq!(crossed.result, 0, "a failed run returned no value");
+    }
+
+    /// Every code a guest can be handed comes back as the error that produced it, not as
+    /// a neighbouring one.
+    #[test]
+    fn every_wire_code_crosses_back_as_its_error() {
+        for &error in HostError::ALL {
+            assert_eq!(host_error(error.code()), error, "{error:?}");
+        }
+    }
+
+    /// A code from outside the set is `InternalFatal`, the fallback this crate owns.
+    ///
+    /// `-21` is the code xrpld would append next; `i32::MIN + 1` is next to the sentinel
+    /// and unassigned, which is what makes the sentinel a value rather than a range. The
+    /// non-negative codes reach here only once the sign has been read elsewhere.
+    #[test]
+    fn a_code_outside_the_set_is_internal_fatal() {
+        for code in [-21, i32::MIN + 1, 0, 1, i32::MAX] {
+            assert_eq!(host_error(code), HostError::InternalFatal, "{code}");
+        }
+    }
+
+    /// The split every scalar answer crosses on: non-negative is the value, negative is
+    /// the code that names why there is none.
+    #[test]
+    fn a_scalar_splits_its_answer_from_its_error_on_the_sign() {
+        assert_eq!(scalar(0), Ok(0));
+        assert_eq!(scalar(7), Ok(7));
+        assert_eq!(scalar(-19), Err(HostError::FloatInputMalformed));
+    }
+
+    /// `float_cmp`'s three verdicts survive the crossing as themselves.
+    #[test]
+    fn every_verdict_crosses_back_as_itself() {
+        for &ordering in FloatOrdering::ALL {
+            assert_eq!(
+                float_ordering(ordering.code()),
+                Ok(ordering),
+                "{ordering:?}"
+            );
+        }
+    }
+
+    /// **Where the two `FloatOrdering` declarations are held together**, rather than a
+    /// contract being handed a `3` that matches none of its three branches. `0` is not in
+    /// this set: it is `Equal`, not an absent answer.
+    #[test]
+    fn a_code_naming_no_verdict_is_internal_fatal() {
+        for code in [3, 4, 99, i32::MAX] {
+            assert_eq!(
+                float_ordering(code),
+                Err(HostError::InternalFatal),
+                "code {code}"
+            );
+        }
+    }
+
+    /// An error still crosses as an error, and does not become the drift sentinel: the
+    /// sign is read before the code is matched against the variants.
+    #[test]
+    fn a_refused_comparison_keeps_its_own_error() {
+        assert_eq!(float_ordering(-19), Err(HostError::FloatInputMalformed));
+        assert_eq!(float_ordering(-1), Err(HostError::Unimplemented));
     }
 
     /// The `RunError` set as the test *expects* it, not as the conversion reports it:
@@ -1237,6 +1370,7 @@ mod tests {
         vec![
             CheckError::Compile(String::new()),
             CheckError::Import(String::new()),
+            CheckError::Signature(String::new()),
             CheckError::EntryPoint(String::new()),
             CheckError::Memory(String::new()),
             CheckError::Table(String::new()),

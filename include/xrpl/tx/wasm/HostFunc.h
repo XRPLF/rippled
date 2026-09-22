@@ -42,7 +42,7 @@ floatToMantExpImpl(Slice const& x);
 std::expected<Bytes, HostFunctionError>
 floatFromMantExpImpl(int64_t mantissa, int32_t exponent, int32_t mode);
 
-std::expected<int32_t, HostFunctionError>
+std::expected<FloatOrdering, HostFunctionError>
 floatCompareImpl(Slice const& x, Slice const& y);
 
 std::expected<Bytes, HostFunctionError>
@@ -337,6 +337,24 @@ public:
     }
 
     [[nodiscard]] [[nodiscard]] virtual std::expected<Bytes, HostFunctionError>
+    sponsorshipKeylet(AccountID const& sponsor, AccountID const& sponsee) const
+    {
+        return std::unexpected(HostFunctionError::Unimplemented);
+    }
+
+    [[nodiscard]] [[nodiscard]] virtual std::expected<Bytes, HostFunctionError>
+    loanBrokerKeylet(AccountID const& owner, std::uint32_t seq) const
+    {
+        return std::unexpected(HostFunctionError::Unimplemented);
+    }
+
+    [[nodiscard]] [[nodiscard]] virtual std::expected<Bytes, HostFunctionError>
+    loanKeylet(uint256 const& loanBrokerID, std::uint32_t loanSeq) const
+    {
+        return std::unexpected(HostFunctionError::Unimplemented);
+    }
+
+    [[nodiscard]] [[nodiscard]] virtual std::expected<Bytes, HostFunctionError>
     getNFT(AccountID const& account, uint256 const& nftId) const
     {
         return std::unexpected(HostFunctionError::Unimplemented);
@@ -421,7 +439,7 @@ public:
         return std::unexpected(HostFunctionError::Unimplemented);
     }
 
-    [[nodiscard]] [[nodiscard]] virtual std::expected<int32_t, HostFunctionError>
+    [[nodiscard]] virtual std::expected<FloatOrdering, HostFunctionError>
     floatCompare(Slice const& x, Slice const& y) const
     {
         return std::unexpected(HostFunctionError::Unimplemented);

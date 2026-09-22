@@ -13,6 +13,7 @@
 #include <xrpl/ledger/PendingSaves.h>
 #include <xrpl/ledger/View.h>
 #include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Fees.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/Rules.h>
@@ -179,22 +180,28 @@ private:
  */
 class TestServiceRegistry : public ServiceRegistry
 {
+public:
+    /**
+     * @brief The fee settings a test environment starts with.
+     */
     static Fees
     defaultFees()
     {
-        Fees fees{XRPAmount{10}, XRPAmount{10 * kDropsPerXrp}, XRPAmount{2 * kDropsPerXrp}};
-        fees.gasLimit = 1'000'000;
-        fees.bytecodeSizeLimit = 100'000;
-        fees.gasPrice = 1'000'000;
-        return fees;
+        return Fees{
+            XRPAmount{10},
+            XRPAmount{10 * kDropsPerXrp},
+            XRPAmount{2 * kDropsPerXrp},
+            kDefaultGasLimit,
+            kDefaultBytecodeSizeLimit,
+            kDefaultGasPrice};
     }
 
+private:
     TestLogs logs_{beast::Severity::Warning};
     boost::asio::io_context ioContext_;
     TestFamily family_{logs_.journal("TestFamily")};
     LoadFeeTrack feeTrack_{logs_.journal("LoadFeeTrack")};
     TestNetworkIDService networkIDService_;
-    Fees fees_{defaultFees()};
     HashRouter hashRouter_{HashRouter::Setup{}, stopwatch()};
     NodeCache tempNodeCache_{
         "TempNodeCache",
@@ -492,12 +499,6 @@ public:
     getWalletDB() override
     {
         throw std::logic_error("TestServiceRegistry::getWalletDB() not implemented");
-    }
-
-    Fees
-    getFees() const override
-    {
-        return fees_;
     }
 
     // Temporary: Get the underlying Application

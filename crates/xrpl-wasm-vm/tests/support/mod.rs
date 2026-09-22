@@ -10,7 +10,7 @@
 use std::cell::RefCell;
 use std::collections::HashMap;
 
-use xrpl_host_functions::{HostError, HostFunctions, HostResult, TraceDataType};
+use xrpl_host_functions::{FloatOrdering, HostError, HostFunctions, HostResult, TraceDataType};
 use xrpl_wasm_vm::{RunFailure, RunOutcome};
 
 /// The entry point every test module exports.
@@ -116,7 +116,7 @@ pub type CredentialKey = (Vec<u8>, Vec<u8>, Vec<u8>);
 pub type TrustLineKey = (Vec<u8>, Vec<u8>, Vec<u8>);
 
 /// The `(account, destination, seq)` `paychannel_keylet` takes.
-pub type PaychannelKey = (Vec<u8>, Vec<u8>, i32);
+pub type PaychannelKey = (Vec<u8>, Vec<u8>, u32);
 
 /// One call to a float operator over two floats — `float_add`, `float_subtract`,
 /// `float_multiply`, `float_divide` — as `(operator, x, y, mode)`.
@@ -219,9 +219,9 @@ pub struct FakeHost {
     pub amm_keylets_asked: RefCell<Vec<(Vec<u8>, Vec<u8>)>>,
     /// What `check_keylet` answers, by (account bytes, seq). An unlisted key answers
     /// `InvalidAccount`.
-    pub check_keylets: HashMap<(Vec<u8>, i32), Answer>,
+    pub check_keylets: HashMap<(Vec<u8>, u32), Answer>,
     /// Every (account, seq) `check_keylet` was asked for.
-    pub check_keylets_asked: RefCell<Vec<(Vec<u8>, i32)>>,
+    pub check_keylets_asked: RefCell<Vec<(Vec<u8>, u32)>>,
     /// What `credential_keylet` answers, by (subject, issuer, type) bytes. An unlisted
     /// key answers `InvalidAccount`.
     pub credential_keylets: HashMap<CredentialKey, Answer>,
@@ -244,9 +244,9 @@ pub struct FakeHost {
     pub did_keylets_asked: RefCell<Vec<Vec<u8>>>,
     /// What `escrow_keylet` answers, by (account bytes, seq). An unlisted key answers
     /// `InvalidAccount`.
-    pub escrow_keylets: HashMap<(Vec<u8>, i32), Answer>,
+    pub escrow_keylets: HashMap<(Vec<u8>, u32), Answer>,
     /// Every (account, seq) `escrow_keylet` was asked for.
-    pub escrow_keylets_asked: RefCell<Vec<(Vec<u8>, i32)>>,
+    pub escrow_keylets_asked: RefCell<Vec<(Vec<u8>, u32)>>,
     /// What `trust_line_keylet` answers, by (account1, account2, currency) bytes. An
     /// unlisted key answers `InvalidAccount`.
     pub trust_line_keylets: HashMap<TrustLineKey, Answer>,
@@ -254,9 +254,9 @@ pub struct FakeHost {
     pub trust_line_keylets_asked: RefCell<Vec<TrustLineKey>>,
     /// What `mptoken_issuance_keylet` answers, by (issuer bytes, seq). An unlisted key
     /// answers `InvalidAccount`.
-    pub mpt_issuance_keylets: HashMap<(Vec<u8>, i32), Answer>,
+    pub mpt_issuance_keylets: HashMap<(Vec<u8>, u32), Answer>,
     /// Every (issuer, seq) `mptoken_issuance_keylet` was asked for.
-    pub mpt_issuance_keylets_asked: RefCell<Vec<(Vec<u8>, i32)>>,
+    pub mpt_issuance_keylets_asked: RefCell<Vec<(Vec<u8>, u32)>>,
     /// What `mptoken_keylet` answers, by (mptid, holder) bytes. An unlisted key answers
     /// `InvalidParams`.
     pub mptoken_keylets: HashMap<(Vec<u8>, Vec<u8>), Answer>,
@@ -264,19 +264,19 @@ pub struct FakeHost {
     pub mptoken_keylets_asked: RefCell<Vec<(Vec<u8>, Vec<u8>)>>,
     /// What `nftoken_offer_keylet` answers, by (account bytes, seq). An unlisted key
     /// answers `InvalidAccount`.
-    pub nft_offer_keylets: HashMap<(Vec<u8>, i32), Answer>,
+    pub nft_offer_keylets: HashMap<(Vec<u8>, u32), Answer>,
     /// Every (account, seq) `nftoken_offer_keylet` was asked for.
-    pub nft_offer_keylets_asked: RefCell<Vec<(Vec<u8>, i32)>>,
+    pub nft_offer_keylets_asked: RefCell<Vec<(Vec<u8>, u32)>>,
     /// What `offer_keylet` answers, by (account bytes, seq). An unlisted key
     /// answers `InvalidAccount`.
-    pub offer_keylets: HashMap<(Vec<u8>, i32), Answer>,
+    pub offer_keylets: HashMap<(Vec<u8>, u32), Answer>,
     /// Every (account, seq) `offer_keylet` was asked for.
-    pub offer_keylets_asked: RefCell<Vec<(Vec<u8>, i32)>>,
+    pub offer_keylets_asked: RefCell<Vec<(Vec<u8>, u32)>>,
     /// What `oracle_keylet` answers, by (account bytes, doc id). An unlisted key
     /// answers `InvalidAccount`.
-    pub oracle_keylets: HashMap<(Vec<u8>, i32), Answer>,
+    pub oracle_keylets: HashMap<(Vec<u8>, u32), Answer>,
     /// Every (account, doc id) `oracle_keylet` was asked for.
-    pub oracle_keylets_asked: RefCell<Vec<(Vec<u8>, i32)>>,
+    pub oracle_keylets_asked: RefCell<Vec<(Vec<u8>, u32)>>,
     /// What `paychannel_keylet` answers, by (account, destination, seq). An unlisted
     /// key answers `InvalidAccount`.
     pub paychannel_keylets: HashMap<PaychannelKey, Answer>,
@@ -284,9 +284,9 @@ pub struct FakeHost {
     pub paychannel_keylets_asked: RefCell<Vec<PaychannelKey>>,
     /// What `permissioned_domain_keylet` answers, by (account bytes, seq). An unlisted
     /// key answers `InvalidAccount`.
-    pub domain_keylets: HashMap<(Vec<u8>, i32), Answer>,
+    pub domain_keylets: HashMap<(Vec<u8>, u32), Answer>,
     /// Every (account, seq) `permissioned_domain_keylet` was asked for.
-    pub domain_keylets_asked: RefCell<Vec<(Vec<u8>, i32)>>,
+    pub domain_keylets_asked: RefCell<Vec<(Vec<u8>, u32)>>,
     /// What `signer_list_keylet` answers, by account bytes. An unlisted account
     /// answers `InvalidAccount`.
     pub signer_list_keylets: HashMap<Vec<u8>, Answer>,
@@ -294,14 +294,29 @@ pub struct FakeHost {
     pub signer_list_keylets_asked: RefCell<Vec<Vec<u8>>>,
     /// What `ticket_keylet` answers, by (account bytes, seq). An unlisted key answers
     /// `InvalidAccount`.
-    pub ticket_keylets: HashMap<(Vec<u8>, i32), Answer>,
+    pub ticket_keylets: HashMap<(Vec<u8>, u32), Answer>,
     /// Every (account, seq) `ticket_keylet` was asked for.
-    pub ticket_keylets_asked: RefCell<Vec<(Vec<u8>, i32)>>,
+    pub ticket_keylets_asked: RefCell<Vec<(Vec<u8>, u32)>>,
     /// What `vault_keylet` answers, by (account bytes, seq). An unlisted key answers
     /// `InvalidAccount`.
-    pub vault_keylets: HashMap<(Vec<u8>, i32), Answer>,
+    pub vault_keylets: HashMap<(Vec<u8>, u32), Answer>,
     /// Every (account, seq) `vault_keylet` was asked for.
-    pub vault_keylets_asked: RefCell<Vec<(Vec<u8>, i32)>>,
+    pub vault_keylets_asked: RefCell<Vec<(Vec<u8>, u32)>>,
+    /// What `sponsorship_keylet` answers, by (sponsor, sponsee) bytes. An unlisted key
+    /// answers `InvalidAccount`.
+    pub sponsorship_keylets: HashMap<(Vec<u8>, Vec<u8>), Answer>,
+    /// Every (sponsor, sponsee) `sponsorship_keylet` was asked for.
+    pub sponsorship_keylets_asked: RefCell<Vec<(Vec<u8>, Vec<u8>)>>,
+    /// What `loan_broker_keylet` answers, by (owner bytes, seq). An unlisted key
+    /// answers `InvalidAccount`.
+    pub loan_broker_keylets: HashMap<(Vec<u8>, u32), Answer>,
+    /// Every (owner, seq) `loan_broker_keylet` was asked for.
+    pub loan_broker_keylets_asked: RefCell<Vec<(Vec<u8>, u32)>>,
+    /// What `loan_keylet` answers, by (loan broker id bytes, loan seq). An unlisted key
+    /// answers `InvalidParams`.
+    pub loan_keylets: HashMap<(Vec<u8>, u32), Answer>,
+    /// Every (loan broker id, loan seq) `loan_keylet` was asked for.
+    pub loan_keylets_asked: RefCell<Vec<(Vec<u8>, u32)>>,
     /// What `sha512_half` answers, whatever it is given.
     pub digest: Answer,
     /// Every field selector `get_current_ledger_obj_field` was asked for.
@@ -364,7 +379,7 @@ pub struct FakeHost {
     /// Every `(mantissa, exponent, mode)` `float_from_mant_exp` was asked for.
     pub float_from_mant_exp_asked: RefCell<Vec<(i64, i32, i32)>>,
     /// What `float_compare` answers, whatever floats it is given.
-    pub float_compare_answer: HostResult<i32>,
+    pub float_compare_answer: HostResult<FloatOrdering>,
     /// Every `(x, y)` `float_compare` was asked for.
     pub float_compare_asked: RefCell<Vec<(Vec<u8>, Vec<u8>)>>,
     /// Every `(x, y, mode)` the four binary float operators were asked for, tagged by
@@ -456,6 +471,12 @@ impl Default for FakeHost {
             ticket_keylets_asked: RefCell::new(Vec::new()),
             vault_keylets: HashMap::new(),
             vault_keylets_asked: RefCell::new(Vec::new()),
+            sponsorship_keylets: HashMap::new(),
+            sponsorship_keylets_asked: RefCell::new(Vec::new()),
+            loan_broker_keylets: HashMap::new(),
+            loan_broker_keylets_asked: RefCell::new(Vec::new()),
+            loan_keylets: HashMap::new(),
+            loan_keylets_asked: RefCell::new(Vec::new()),
             digest: Answer::filler(32),
             fields_asked: RefCell::new(Vec::new()),
             digested: RefCell::new(Vec::new()),
@@ -484,7 +505,7 @@ impl Default for FakeHost {
             float_mant_exp_answer: (vec![0u8; 8], vec![0u8; 4]),
             float_to_mant_exp_asked: RefCell::new(Vec::new()),
             float_from_mant_exp_asked: RefCell::new(Vec::new()),
-            float_compare_answer: Ok(0),
+            float_compare_answer: Ok(FloatOrdering::Equal),
             float_compare_asked: RefCell::new(Vec::new()),
             float_binary_ops_asked: RefCell::new(Vec::new()),
             float_unary_ops_asked: RefCell::new(Vec::new()),
@@ -620,7 +641,7 @@ impl FakeHost {
     pub fn answering_check_keylet(
         mut self,
         account: Vec<u8>,
-        seq: i32,
+        seq: u32,
         answer: Answer,
     ) -> FakeHost {
         self.check_keylets.insert((account, seq), answer);
@@ -668,7 +689,7 @@ impl FakeHost {
     pub fn answering_escrow_keylet(
         mut self,
         account: Vec<u8>,
-        seq: i32,
+        seq: u32,
         answer: Answer,
     ) -> FakeHost {
         self.escrow_keylets.insert((account, seq), answer);
@@ -690,7 +711,7 @@ impl FakeHost {
     pub fn answering_mpt_issuance_keylet(
         mut self,
         issuer: Vec<u8>,
-        seq: i32,
+        seq: u32,
         answer: Answer,
     ) -> FakeHost {
         self.mpt_issuance_keylets.insert((issuer, seq), answer);
@@ -710,7 +731,7 @@ impl FakeHost {
     pub fn answering_nft_offer_keylet(
         mut self,
         account: Vec<u8>,
-        seq: i32,
+        seq: u32,
         answer: Answer,
     ) -> FakeHost {
         self.nft_offer_keylets.insert((account, seq), answer);
@@ -720,7 +741,7 @@ impl FakeHost {
     pub fn answering_offer_keylet(
         mut self,
         account: Vec<u8>,
-        seq: i32,
+        seq: u32,
         answer: Answer,
     ) -> FakeHost {
         self.offer_keylets.insert((account, seq), answer);
@@ -730,7 +751,7 @@ impl FakeHost {
     pub fn answering_oracle_keylet(
         mut self,
         account: Vec<u8>,
-        doc_id: i32,
+        doc_id: u32,
         answer: Answer,
     ) -> FakeHost {
         self.oracle_keylets.insert((account, doc_id), answer);
@@ -741,7 +762,7 @@ impl FakeHost {
         mut self,
         account: Vec<u8>,
         destination: Vec<u8>,
-        seq: i32,
+        seq: u32,
         answer: Answer,
     ) -> FakeHost {
         self.paychannel_keylets
@@ -752,7 +773,7 @@ impl FakeHost {
     pub fn answering_permissioned_domain_keylet(
         mut self,
         account: Vec<u8>,
-        seq: i32,
+        seq: u32,
         answer: Answer,
     ) -> FakeHost {
         self.domain_keylets.insert((account, seq), answer);
@@ -767,7 +788,7 @@ impl FakeHost {
     pub fn answering_ticket_keylet(
         mut self,
         account: Vec<u8>,
-        seq: i32,
+        seq: u32,
         answer: Answer,
     ) -> FakeHost {
         self.ticket_keylets.insert((account, seq), answer);
@@ -777,10 +798,40 @@ impl FakeHost {
     pub fn answering_vault_keylet(
         mut self,
         account: Vec<u8>,
-        seq: i32,
+        seq: u32,
         answer: Answer,
     ) -> FakeHost {
         self.vault_keylets.insert((account, seq), answer);
+        self
+    }
+
+    pub fn answering_sponsorship_keylet(
+        mut self,
+        sponsor: Vec<u8>,
+        sponsee: Vec<u8>,
+        answer: Answer,
+    ) -> FakeHost {
+        self.sponsorship_keylets.insert((sponsor, sponsee), answer);
+        self
+    }
+
+    pub fn answering_loan_broker_keylet(
+        mut self,
+        owner: Vec<u8>,
+        seq: u32,
+        answer: Answer,
+    ) -> FakeHost {
+        self.loan_broker_keylets.insert((owner, seq), answer);
+        self
+    }
+
+    pub fn answering_loan_keylet(
+        mut self,
+        loan_broker_id: Vec<u8>,
+        loan_seq: u32,
+        answer: Answer,
+    ) -> FakeHost {
+        self.loan_keylets.insert((loan_broker_id, loan_seq), answer);
         self
     }
 
@@ -839,7 +890,7 @@ impl FakeHost {
         self
     }
 
-    pub fn answering_float_compare(mut self, answer: HostResult<i32>) -> FakeHost {
+    pub fn answering_float_compare(mut self, answer: HostResult<FloatOrdering>) -> FakeHost {
         self.float_compare_answer = answer;
         self
     }
@@ -1030,7 +1081,7 @@ impl HostFunctions for FakeHost {
         }
     }
 
-    fn check_keylet(&self, account: &[u8], seq: i32, out: &mut [u8]) -> HostResult<usize> {
+    fn check_keylet(&self, account: &[u8], seq: u32, out: &mut [u8]) -> HostResult<usize> {
         self.check_keylets_asked
             .borrow_mut()
             .push((account.to_vec(), seq));
@@ -1093,7 +1144,7 @@ impl HostFunctions for FakeHost {
         }
     }
 
-    fn escrow_keylet(&self, account: &[u8], seq: i32, out: &mut [u8]) -> HostResult<usize> {
+    fn escrow_keylet(&self, account: &[u8], seq: u32, out: &mut [u8]) -> HostResult<usize> {
         let key = (account.to_vec(), seq);
         self.escrow_keylets_asked.borrow_mut().push(key.clone());
         match self.escrow_keylets.get(&key) {
@@ -1120,7 +1171,7 @@ impl HostFunctions for FakeHost {
     fn mptoken_issuance_keylet(
         &self,
         issuer: &[u8],
-        seq: i32,
+        seq: u32,
         out: &mut [u8],
     ) -> HostResult<usize> {
         let key = (issuer.to_vec(), seq);
@@ -1142,7 +1193,7 @@ impl HostFunctions for FakeHost {
         }
     }
 
-    fn nftoken_offer_keylet(&self, account: &[u8], seq: i32, out: &mut [u8]) -> HostResult<usize> {
+    fn nftoken_offer_keylet(&self, account: &[u8], seq: u32, out: &mut [u8]) -> HostResult<usize> {
         let key = (account.to_vec(), seq);
         self.nft_offer_keylets_asked.borrow_mut().push(key.clone());
         match self.nft_offer_keylets.get(&key) {
@@ -1151,7 +1202,7 @@ impl HostFunctions for FakeHost {
         }
     }
 
-    fn offer_keylet(&self, account: &[u8], seq: i32, out: &mut [u8]) -> HostResult<usize> {
+    fn offer_keylet(&self, account: &[u8], seq: u32, out: &mut [u8]) -> HostResult<usize> {
         let key = (account.to_vec(), seq);
         self.offer_keylets_asked.borrow_mut().push(key.clone());
         match self.offer_keylets.get(&key) {
@@ -1160,7 +1211,7 @@ impl HostFunctions for FakeHost {
         }
     }
 
-    fn oracle_keylet(&self, account: &[u8], doc_id: i32, out: &mut [u8]) -> HostResult<usize> {
+    fn oracle_keylet(&self, account: &[u8], doc_id: u32, out: &mut [u8]) -> HostResult<usize> {
         let key = (account.to_vec(), doc_id);
         self.oracle_keylets_asked.borrow_mut().push(key.clone());
         match self.oracle_keylets.get(&key) {
@@ -1173,7 +1224,7 @@ impl HostFunctions for FakeHost {
         &self,
         account: &[u8],
         destination: &[u8],
-        seq: i32,
+        seq: u32,
         out: &mut [u8],
     ) -> HostResult<usize> {
         let key = (account.to_vec(), destination.to_vec(), seq);
@@ -1187,7 +1238,7 @@ impl HostFunctions for FakeHost {
     fn permissioned_domain_keylet(
         &self,
         account: &[u8],
-        seq: i32,
+        seq: u32,
         out: &mut [u8],
     ) -> HostResult<usize> {
         let key = (account.to_vec(), seq);
@@ -1208,7 +1259,7 @@ impl HostFunctions for FakeHost {
         }
     }
 
-    fn ticket_keylet(&self, account: &[u8], seq: i32, out: &mut [u8]) -> HostResult<usize> {
+    fn ticket_keylet(&self, account: &[u8], seq: u32, out: &mut [u8]) -> HostResult<usize> {
         let key = (account.to_vec(), seq);
         self.ticket_keylets_asked.borrow_mut().push(key.clone());
         match self.ticket_keylets.get(&key) {
@@ -1217,12 +1268,53 @@ impl HostFunctions for FakeHost {
         }
     }
 
-    fn vault_keylet(&self, account: &[u8], seq: i32, out: &mut [u8]) -> HostResult<usize> {
+    fn vault_keylet(&self, account: &[u8], seq: u32, out: &mut [u8]) -> HostResult<usize> {
         let key = (account.to_vec(), seq);
         self.vault_keylets_asked.borrow_mut().push(key.clone());
         match self.vault_keylets.get(&key) {
             Some(answer) => answer.fill(out),
             None => Err(HostError::InvalidAccount),
+        }
+    }
+
+    fn sponsorship_keylet(
+        &self,
+        sponsor: &[u8],
+        sponsee: &[u8],
+        out: &mut [u8],
+    ) -> HostResult<usize> {
+        let key = (sponsor.to_vec(), sponsee.to_vec());
+        self.sponsorship_keylets_asked
+            .borrow_mut()
+            .push(key.clone());
+        match self.sponsorship_keylets.get(&key) {
+            Some(answer) => answer.fill(out),
+            None => Err(HostError::InvalidAccount),
+        }
+    }
+
+    fn loan_broker_keylet(&self, owner: &[u8], seq: u32, out: &mut [u8]) -> HostResult<usize> {
+        let key = (owner.to_vec(), seq);
+        self.loan_broker_keylets_asked
+            .borrow_mut()
+            .push(key.clone());
+        match self.loan_broker_keylets.get(&key) {
+            Some(answer) => answer.fill(out),
+            None => Err(HostError::InvalidAccount),
+        }
+    }
+
+    fn loan_keylet(
+        &self,
+        loan_broker_id: &[u8],
+        loan_seq: u32,
+        out: &mut [u8],
+    ) -> HostResult<usize> {
+        let key = (loan_broker_id.to_vec(), loan_seq);
+        self.loan_keylets_asked.borrow_mut().push(key.clone());
+        match self.loan_keylets.get(&key) {
+            Some(answer) => answer.fill(out),
+            None => Err(HostError::InvalidParams),
         }
     }
 
@@ -1233,7 +1325,7 @@ impl HostFunctions for FakeHost {
 
     /// Records before failing, so a test can tell a host that was called and then
     /// failed from one that was never reached.
-    fn trace(&self, msg: &str, data: &[u8], data_type: TraceDataType) -> HostResult<()> {
+    fn trace(&self, msg: &str, data_type: TraceDataType, data: &[u8]) -> HostResult<()> {
         self.traces.borrow_mut().push(Trace {
             msg: msg.to_owned(),
             data_type,
@@ -1293,33 +1385,33 @@ impl HostFunctions for FakeHost {
         }
     }
 
-    fn float_from_int(&self, x: i64, mode: i32, out: &mut [u8]) -> HostResult<usize> {
+    fn float_from_int(&self, x: i64, out: &mut [u8], mode: i32) -> HostResult<usize> {
         self.float_from_int_asked.borrow_mut().push((x, mode));
         self.float_answer.fill(out)
     }
 
-    fn float_from_uint(&self, x: &[u8], mode: i32, out: &mut [u8]) -> HostResult<usize> {
+    fn float_from_uint(&self, x: &[u8], out: &mut [u8], mode: i32) -> HostResult<usize> {
         self.float_from_uint_asked
             .borrow_mut()
             .push((x.to_vec(), mode));
         self.float_answer.fill(out)
     }
 
-    fn float_from_stamount(&self, amount: &[u8], mode: i32, out: &mut [u8]) -> HostResult<usize> {
+    fn float_from_stamount(&self, amount: &[u8], out: &mut [u8], mode: i32) -> HostResult<usize> {
         self.float_from_stamount_asked
             .borrow_mut()
             .push((amount.to_vec(), mode));
         self.float_answer.fill(out)
     }
 
-    fn float_from_stnumber(&self, number: &[u8], mode: i32, out: &mut [u8]) -> HostResult<usize> {
+    fn float_from_stnumber(&self, number: &[u8], out: &mut [u8], mode: i32) -> HostResult<usize> {
         self.float_from_stnumber_asked
             .borrow_mut()
             .push((number.to_vec(), mode));
         self.float_answer.fill(out)
     }
 
-    fn float_to_int(&self, x: &[u8], mode: i32, out: &mut [u8]) -> HostResult<usize> {
+    fn float_to_int(&self, x: &[u8], out: &mut [u8], mode: i32) -> HostResult<usize> {
         self.float_to_int_asked
             .borrow_mut()
             .push((x.to_vec(), mode));
@@ -1343,8 +1435,8 @@ impl HostFunctions for FakeHost {
         &self,
         mantissa: i64,
         exponent: i32,
-        mode: i32,
         out: &mut [u8],
+        mode: i32,
     ) -> HostResult<usize> {
         self.float_from_mant_exp_asked
             .borrow_mut()
@@ -1352,42 +1444,42 @@ impl HostFunctions for FakeHost {
         self.float_answer.fill(out)
     }
 
-    fn float_compare(&self, x: &[u8], y: &[u8]) -> HostResult<i32> {
+    fn float_compare(&self, x: &[u8], y: &[u8]) -> HostResult<FloatOrdering> {
         self.float_compare_asked
             .borrow_mut()
             .push((x.to_vec(), y.to_vec()));
         self.float_compare_answer
     }
 
-    fn float_add(&self, x: &[u8], y: &[u8], mode: i32, out: &mut [u8]) -> HostResult<usize> {
+    fn float_add(&self, x: &[u8], y: &[u8], out: &mut [u8], mode: i32) -> HostResult<usize> {
         self.float_binary_ops_asked
             .borrow_mut()
             .push(("add", x.to_vec(), y.to_vec(), mode));
         self.float_answer.fill(out)
     }
 
-    fn float_subtract(&self, x: &[u8], y: &[u8], mode: i32, out: &mut [u8]) -> HostResult<usize> {
+    fn float_subtract(&self, x: &[u8], y: &[u8], out: &mut [u8], mode: i32) -> HostResult<usize> {
         self.float_binary_ops_asked
             .borrow_mut()
             .push(("sub", x.to_vec(), y.to_vec(), mode));
         self.float_answer.fill(out)
     }
 
-    fn float_multiply(&self, x: &[u8], y: &[u8], mode: i32, out: &mut [u8]) -> HostResult<usize> {
+    fn float_multiply(&self, x: &[u8], y: &[u8], out: &mut [u8], mode: i32) -> HostResult<usize> {
         self.float_binary_ops_asked
             .borrow_mut()
             .push(("mult", x.to_vec(), y.to_vec(), mode));
         self.float_answer.fill(out)
     }
 
-    fn float_divide(&self, x: &[u8], y: &[u8], mode: i32, out: &mut [u8]) -> HostResult<usize> {
+    fn float_divide(&self, x: &[u8], y: &[u8], out: &mut [u8], mode: i32) -> HostResult<usize> {
         self.float_binary_ops_asked
             .borrow_mut()
             .push(("div", x.to_vec(), y.to_vec(), mode));
         self.float_answer.fill(out)
     }
 
-    fn float_power(&self, x: &[u8], n: i32, mode: i32, out: &mut [u8]) -> HostResult<usize> {
+    fn float_power(&self, x: &[u8], n: i32, out: &mut [u8], mode: i32) -> HostResult<usize> {
         self.float_unary_ops_asked
             .borrow_mut()
             .push(("pow", x.to_vec(), n, mode));
@@ -1451,6 +1543,9 @@ pub mod import {
     pub const SIGNERS_ID: &str = r#"(import "host_lib" "signers_id" (func $signers_id (param i32 i32 i32 i32) (result i32)))"#;
     pub const TICKET_ID: &str = r#"(import "host_lib" "ticket_id" (func $ticket_id (param i32 i32 i32 i32 i32 i32) (result i32)))"#;
     pub const VAULT_ID: &str = r#"(import "host_lib" "vault_id" (func $vault_id (param i32 i32 i32 i32 i32 i32) (result i32)))"#;
+    pub const SPONSORSHIP_ID: &str = r#"(import "host_lib" "sponsorship_id" (func $sponsorship_id (param i32 i32 i32 i32 i32 i32) (result i32)))"#;
+    pub const LOAN_BROKER_ID: &str = r#"(import "host_lib" "loan_broker_id" (func $loan_broker_id (param i32 i32 i32 i32 i32 i32) (result i32)))"#;
+    pub const LOAN_ID: &str = r#"(import "host_lib" "loan_id" (func $loan_id (param i32 i32 i32 i32 i32 i32) (result i32)))"#;
     pub const SHA512_HALF: &str = r#"(import "host_lib" "sha512_half" (func $sha512_half (param i32 i32 i32 i32) (result i32)))"#;
     /// No result, unlike every other import here: `trace` answers the guest nothing.
     pub const TRACE: &str =

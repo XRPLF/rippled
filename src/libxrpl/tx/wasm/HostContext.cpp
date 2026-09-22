@@ -29,6 +29,7 @@
 #include <expected>
 #include <limits>
 #include <optional>
+#include <span>
 #include <string>
 #include <string_view>
 #include <type_traits>
@@ -153,10 +154,7 @@ invokeWithLocator(
         return hfErrorToInt(HostFunctionError::LocatorMalformed);
     }
 
-    std::uint32_t const steps = locator.size() / sizeof(std::int32_t);
-    auto locBuf = std::vector<std::int32_t>(steps);
-    std::memcpy(locBuf.data(), locator.data(), locator.size());
-    auto const fl = FieldLocator{std::move(locBuf)};
+    auto const fl = FieldLocator{std::span{locator.data(), locator.size()}};
 
     auto const value = functor(fl);
     if (!value)
@@ -176,10 +174,7 @@ invokeWithLocator(rust::Slice<std::uint8_t const> locator, Functor&& functor)
         return hfErrorToInt(HostFunctionError::LocatorMalformed);
     }
 
-    std::uint32_t const steps = locator.size() / sizeof(std::int32_t);
-    auto locBuf = std::vector<std::int32_t>(steps);
-    std::memcpy(locBuf.data(), locator.data(), locator.size());
-    auto const fl = FieldLocator{std::move(locBuf)};
+    auto const fl = FieldLocator{std::span{locator.data(), locator.size()}};
 
     auto const value = functor(fl);
     if (!value)
@@ -347,7 +342,16 @@ invoke(Functor&& functor)
         return hfErrorToInt(value.error());
     }
 
-    return *value;
+    // `FloatOrdering` is the one answer not already an `i32`, and a scoped enum does not
+    // convert on its own. Its codes are non-negative, so the two returns stay distinct.
+    if constexpr (std::is_enum_v<std::remove_cvref_t<decltype(*value)>>)
+    {
+        return static_cast<std::int32_t>(*value);
+    }
+    else
+    {
+        return *value;
+    }
 }
 
 // A traced integer, which the guest sends as bytes rather than as a wasm scalar so that one
@@ -686,12 +690,12 @@ HostContext::ammKeylet(
 std::int32_t
 HostContext::checkKeylet(
     rust::Slice<std::uint8_t const> account,
-    std::int32_t seq,
+    std::uint32_t seq,
     rust::Slice<std::uint8_t> out) const noexcept
 {
     return guarded(hostFunctions_.getJournal(), kHostInternal, [&] {
         return invokeWithAccount(account, out, [&](auto const& accountId) {
-            return hostFunctions_.checkKeylet(accountId, static_cast<std::uint32_t>(seq));
+            return hostFunctions_.checkKeylet(accountId, seq);
         });
     });
 }
@@ -754,12 +758,12 @@ HostContext::didKeylet(rust::Slice<std::uint8_t const> account, rust::Slice<std:
 std::int32_t
 HostContext::escrowKeylet(
     rust::Slice<std::uint8_t const> account,
-    std::int32_t seq,
+    std::uint32_t seq,
     rust::Slice<std::uint8_t> out) const noexcept
 {
     return guarded(hostFunctions_.getJournal(), kHostInternal, [&] {
         return invokeWithAccount(account, out, [&](auto const& accountId) {
-            return hostFunctions_.escrowKeylet(accountId, static_cast<std::uint32_t>(seq));
+            return hostFunctions_.escrowKeylet(accountId, seq);
         });
     });
 }
@@ -788,12 +792,12 @@ HostContext::trustLineKeylet(
 std::int32_t
 HostContext::mptokenIssuanceKeylet(
     rust::Slice<std::uint8_t const> issuer,
-    std::int32_t seq,
+    std::uint32_t seq,
     rust::Slice<std::uint8_t> out) const noexcept
 {
     return guarded(hostFunctions_.getJournal(), kHostInternal, [&] {
         return invokeWithAccount(issuer, out, [&](auto const& accountId) {
-            return hostFunctions_.mptokenIssuanceKeylet(accountId, static_cast<std::uint32_t>(seq));
+            return hostFunctions_.mptokenIssuanceKeylet(accountId, seq);
         });
     });
 }
@@ -819,12 +823,12 @@ HostContext::mptokenKeylet(
 std::int32_t
 HostContext::nftokenOfferKeylet(
     rust::Slice<std::uint8_t const> account,
-    std::int32_t seq,
+    std::uint32_t seq,
     rust::Slice<std::uint8_t> out) const noexcept
 {
     return guarded(hostFunctions_.getJournal(), kHostInternal, [&] {
         return invokeWithAccount(account, out, [&](auto const& accountId) {
-            return hostFunctions_.nftokenOfferKeylet(accountId, static_cast<std::uint32_t>(seq));
+            return hostFunctions_.nftokenOfferKeylet(accountId, seq);
         });
     });
 }
@@ -832,12 +836,12 @@ HostContext::nftokenOfferKeylet(
 std::int32_t
 HostContext::offerKeylet(
     rust::Slice<std::uint8_t const> account,
-    std::int32_t seq,
+    std::uint32_t seq,
     rust::Slice<std::uint8_t> out) const noexcept
 {
     return guarded(hostFunctions_.getJournal(), kHostInternal, [&] {
         return invokeWithAccount(account, out, [&](auto const& accountId) {
-            return hostFunctions_.offerKeylet(accountId, static_cast<std::uint32_t>(seq));
+            return hostFunctions_.offerKeylet(accountId, seq);
         });
     });
 }
@@ -845,12 +849,12 @@ HostContext::offerKeylet(
 std::int32_t
 HostContext::oracleKeylet(
     rust::Slice<std::uint8_t const> account,
-    std::int32_t docId,
+    std::uint32_t docId,
     rust::Slice<std::uint8_t> out) const noexcept
 {
     return guarded(hostFunctions_.getJournal(), kHostInternal, [&] {
         return invokeWithAccount(account, out, [&](auto const& accountId) {
-            return hostFunctions_.oracleKeylet(accountId, static_cast<std::uint32_t>(docId));
+            return hostFunctions_.oracleKeylet(accountId, docId);
         });
     });
 }
@@ -859,14 +863,13 @@ std::int32_t
 HostContext::paychannelKeylet(
     rust::Slice<std::uint8_t const> account,
     rust::Slice<std::uint8_t const> destination,
-    std::int32_t seq,
+    std::uint32_t seq,
     rust::Slice<std::uint8_t> out) const noexcept
 {
     return guarded(hostFunctions_.getJournal(), kHostInternal, [&] {
         return invokeWithAccounts(
             account, destination, out, [&](auto const& account1, auto const& account2) {
-                return hostFunctions_.paychannelKeylet(
-                    account1, account2, static_cast<std::uint32_t>(seq));
+                return hostFunctions_.paychannelKeylet(account1, account2, seq);
             });
     });
 }
@@ -874,13 +877,12 @@ HostContext::paychannelKeylet(
 std::int32_t
 HostContext::permissionedDomainKeylet(
     rust::Slice<std::uint8_t const> account,
-    std::int32_t seq,
+    std::uint32_t seq,
     rust::Slice<std::uint8_t> out) const noexcept
 {
     return guarded(hostFunctions_.getJournal(), kHostInternal, [&] {
         return invokeWithAccount(account, out, [&](auto const& accountId) {
-            return hostFunctions_.permissionedDomainKeylet(
-                accountId, static_cast<std::uint32_t>(seq));
+            return hostFunctions_.permissionedDomainKeylet(accountId, seq);
         });
     });
 }
@@ -900,12 +902,12 @@ HostContext::signerListKeylet(
 std::int32_t
 HostContext::ticketKeylet(
     rust::Slice<std::uint8_t const> account,
-    std::int32_t seq,
+    std::uint32_t seq,
     rust::Slice<std::uint8_t> out) const noexcept
 {
     return guarded(hostFunctions_.getJournal(), kHostInternal, [&] {
         return invokeWithAccount(account, out, [&](auto const& accountId) {
-            return hostFunctions_.ticketKeylet(accountId, static_cast<std::uint32_t>(seq));
+            return hostFunctions_.ticketKeylet(accountId, seq);
         });
     });
 }
@@ -913,12 +915,56 @@ HostContext::ticketKeylet(
 std::int32_t
 HostContext::vaultKeylet(
     rust::Slice<std::uint8_t const> account,
-    std::int32_t seq,
+    std::uint32_t seq,
     rust::Slice<std::uint8_t> out) const noexcept
 {
     return guarded(hostFunctions_.getJournal(), kHostInternal, [&] {
         return invokeWithAccount(account, out, [&](auto const& accountId) {
-            return hostFunctions_.vaultKeylet(accountId, static_cast<std::uint32_t>(seq));
+            return hostFunctions_.vaultKeylet(accountId, seq);
+        });
+    });
+}
+
+std::int32_t
+HostContext::sponsorshipKeylet(
+    rust::Slice<std::uint8_t const> sponsor,
+    rust::Slice<std::uint8_t const> sponsee,
+    rust::Slice<std::uint8_t> out) const noexcept
+{
+    return guarded(hostFunctions_.getJournal(), kHostInternal, [&] {
+        return invokeWithAccounts(
+            sponsor, sponsee, out, [&](auto const& sponsorId, auto const& sponseeId) {
+                return hostFunctions_.sponsorshipKeylet(sponsorId, sponseeId);
+            });
+    });
+}
+
+std::int32_t
+HostContext::loanBrokerKeylet(
+    rust::Slice<std::uint8_t const> owner,
+    std::uint32_t seq,
+    rust::Slice<std::uint8_t> out) const noexcept
+{
+    return guarded(hostFunctions_.getJournal(), kHostInternal, [&] {
+        return invokeWithAccount(owner, out, [&](auto const& ownerId) {
+            return hostFunctions_.loanBrokerKeylet(ownerId, seq);
+        });
+    });
+}
+
+std::int32_t
+HostContext::loanKeylet(
+    rust::Slice<std::uint8_t const> loanBrokerID,
+    std::uint32_t loanSeq,
+    rust::Slice<std::uint8_t> out) const noexcept
+{
+    return guarded(hostFunctions_.getJournal(), kHostInternal, [&] {
+        if (loanBrokerID.size() != uint256::size())
+        {
+            return hfErrorToInt(HostFunctionError::InvalidParams);
+        }
+        return invoke<false>(out, [&] {
+            return hostFunctions_.loanKeylet(uint256::fromVoid(loanBrokerID.data()), loanSeq);
         });
     });
 }

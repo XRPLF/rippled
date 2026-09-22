@@ -14,14 +14,15 @@
     clippy::cast_sign_loss,
     clippy::cast_lossless
 )]
+#![cfg_attr(coverage_nightly, feature(coverage_attribute))]
 
 mod abi;
+mod args;
 mod preflight;
-mod region;
 mod register;
 mod vm;
 
-pub use preflight::{CheckError, check};
+pub use preflight::{CheckError, check, check_all};
 pub use vm::{
     MAX_FIELD_BYTES, MAX_MEMORY_BYTES, MAX_MEMORY_PAGES, MAX_TABLE_ELEMENTS, RunError, RunFailure,
     RunOutcome, TRANSFER_LIMIT_BYTES, run,

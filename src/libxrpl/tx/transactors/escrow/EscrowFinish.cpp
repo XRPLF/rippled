@@ -99,17 +99,12 @@ EscrowFinish::preflight(PreflightContext const& ctx)
 
     if (auto const allowance = ctx.tx[~sfGas]; allowance)
     {
-        auto const fees(ctx.registry.get().getFees());
-        if (fees.gasLimit == 0)
-        {
-            JLOG(ctx.j.debug()) << "WASM runtime deactivated by fee voting";
-            return temTEMP_DISABLED;
-        }
+        // Protocol ceiling only; `preflight` has no view.
         if (*allowance == 0)
         {
             return temBAD_LIMIT;
         }
-        if (*allowance > fees.gasLimit)
+        if (*allowance > kMaxGasLimit)
         {
             JLOG(ctx.j.debug()) << "Gas too large: " << *allowance;
             return temBAD_LIMIT;
@@ -265,6 +260,20 @@ EscrowFinish::preclaim(PreclaimContext const& ctx)
                 {
                     JLOG(ctx.j.debug()) << "Bytecode requires Gas";
                     return tefBYTECODE_NOT_INCLUDED;
+                }
+
+                // Earliest step with a view. A `tem` here still claims no fee.
+                auto const& fees = ctx.view.fees();
+                if (isBytecodeExecutionDisabled(fees))
+                {
+                    JLOG(ctx.j.debug()) << "WASM runtime deactivated by fee voting";
+                    return temTEMP_DISABLED;
+                }
+
+                if (ctx.tx[sfGas] > fees.gasLimit)
+                {
+                    JLOG(ctx.j.debug()) << "Gas over voted limit: " << ctx.tx[sfGas];
+                    return temBAD_LIMIT;
                 }
             }
             else
@@ -492,14 +501,12 @@ EscrowFinish::doApply()
 
     auto const reserveToSubtract = calculateAdditionalReserve((*slep)[~sfBytecode]);
 
-    // With the Sponsor amendment, release the escrow reserve before delivery.
-    // Token delivery can auto-create a destination holding, and the same
-    // sponsor (or the same account, for a self-escrow) may cover both the
-    // escrow being removed and the holding being created. Without the
-    // amendment, keep the legacy order: releasing early changes the reserve
-    // arithmetic for self-escrows and would break consensus if not gated.
-    bool const sponsorEnabled = ctx_.view().rules().enabled(featureSponsor);
-    if (sponsorEnabled)
+    // Delivery can auto-create the destination's holding; the removed escrow
+    // must not be counted against its reserve. The two share a reserve payer
+    // for a self-escrow, or when one sponsor covers both.
+    bool const recycleReserve =
+        ctx_.view().rules().enabled(featureSponsor) || ctx_.view().rules().enabled(fixCleanup3_4_0);
+    if (recycleReserve)
         decreaseOwnerCountForObject(ctx_.view(), account, slep, reserveToSubtract, ctx_.journal);
 
     STAmount const amount = slep->getFieldAmount(sfAmount);
@@ -551,8 +558,7 @@ EscrowFinish::doApply()
 
     ctx_.view().update(sled);
 
-    // Adjust source owner count (legacy position, pre-Sponsor)
-    if (!sponsorEnabled)
+    if (!recycleReserve)
         decreaseOwnerCountForObject(ctx_.view(), account, slep, reserveToSubtract, ctx_.journal);
 
     // Remove escrow from ledger

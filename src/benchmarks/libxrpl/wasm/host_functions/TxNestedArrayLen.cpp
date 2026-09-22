@@ -1,9 +1,9 @@
 #include <xrpl/protocol/SField.h>
-#include <xrpl/tx/wasm/WasmCommon.h>
 
 #include <benchmark/benchmark.h>
 #include <benchmarks/libxrpl/wasm/BenchFixtures.h>
 #include <benchmarks/libxrpl/wasm/WasmBench.h>
+#include <tx/wasm/fixtures/OwnedLocator.h>
 
 #include <string_view>
 
@@ -19,7 +19,7 @@ txNestedArrayLenImpl(benchmark::State& state)
         state,
         kWasmName,
         [] { return Fixtures::instance().host(); },
-        [](auto& host) { return host.getTxNestedArrayLen(FieldLocator{{sfMemos.getCode()}}); });
+        [](auto& host) { return host.getTxNestedArrayLen(locator({sfMemos.getCode()})); });
 }
 BENCHMARK(txNestedArrayLenImpl)->UseManualTime()->Iterations(kBenchIterations);
 

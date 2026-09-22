@@ -136,7 +136,7 @@ transResults()
         MAKE_ERROR(tefNO_DST_PARTIAL,              "Partial payment to create account not allowed."),
         MAKE_ERROR(tefBAD_PATH_COUNT,              "Malformed: Too many paths."),
         MAKE_ERROR(tefNO_BYTECODE,                 "There is no WASM code to run, but a WASM-specific field was included."),
-        MAKE_ERROR(tefBYTECODE_NOT_INCLUDED,       "WASM code requires a field to be included that was not included."),
+        MAKE_ERROR(tefBYTECODE_NOT_INCLUDED,       "WASM code requires a field that was not included."),
 
         MAKE_ERROR(telLOCAL_ERROR,            "Local failure."),
         MAKE_ERROR(telBAD_DOMAIN,             "Domain too long."),
