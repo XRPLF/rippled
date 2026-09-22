@@ -7,6 +7,7 @@
 # Each phase adds filters for the span attributes it introduces.
 # Base filters — node identity, service, span name, status.
 # RPC command, status, role filters.
+# Path-finding request, mode and ledger filters.
 # Transaction hash, local/peer origin, status.
 # Consensus mode, round, ledger sequence, close time.
 
@@ -114,6 +115,41 @@ datasources:
           - id: rpc-role
             tag: rpc_role
             operator: "="
+            scope: span
+            type: dynamic
+          # Path-finding filters. Only the attributes that select a request get
+          # a dropdown; pathfind_num_paths, pathfind_num_requests and
+          # pathfind_num_source_assets are measurements read off a span, not
+          # things an operator searches by.
+          - id: pathfind-source-account
+            tag: pathfind_source_account
+            operator: "="
+            scope: span
+            type: dynamic
+          - id: pathfind-dest-account
+            tag: pathfind_dest_account
+            operator: "="
+            scope: span
+            type: dynamic
+          - id: pathfind-dest-currency
+            tag: pathfind_dest_currency
+            operator: "="
+            scope: span
+            type: dynamic
+          - id: pathfind-fast
+            tag: pathfind_fast
+            operator: "="
+            scope: span
+            type: dynamic
+          # Changes every ledger, so it must be dynamic rather than static.
+          - id: pathfind-ledger-index
+            tag: pathfind_ledger_index
+            operator: "="
+            scope: span
+            type: dynamic
+          - id: pathfind-search-level
+            tag: pathfind_search_level
+            operator: ">"
             scope: span
             type: dynamic
           # Transaction tracing filters

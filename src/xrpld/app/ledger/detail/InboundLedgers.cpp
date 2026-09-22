@@ -393,11 +393,15 @@ public:
                 }
                 else if ((la + std::chrono::minutes(1)) < start)
                 {
+                    // Only an unfinished acquisition loses work here, and its
+                    // work then restarts. One that already completed or
+                    // failed was counted when it ended, so counting it again
+                    // would bury the wasteful case in ordinary map cleanup.
+                    auto const& inbound = *it->second;
+                    if (!inbound.isComplete() && !inbound.isFailed())
+                        app_.getAcquireStats().recordSweepEviction();
+
                     stuffToSweep.push_back(it->second);
-                    // An eviction here discards whatever the acquisition had
-                    // built, so the work restarts. Counted to tell that apart
-                    // from an acquisition that ended on its own.
-                    app_.getAcquireStats().recordSweepEviction();
                     // shouldn't cause the actual final delete
                     // since we are holding a reference in the vector.
                     it = ledgers_.erase(it);
