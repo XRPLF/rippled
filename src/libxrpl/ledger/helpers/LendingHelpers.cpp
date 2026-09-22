@@ -179,7 +179,7 @@ isPaymentLate(ReadView const& view, SLE::const_ref loanSle)
                                               : ExpiryComparison::Inclusive);
 }
 
-namespace accrual {
+namespace instant_recognition {
 
 AccountingDeltas
 loanOriginationDeltas(Number const& principalRequested, Number const& interestDue)
@@ -217,7 +217,7 @@ loanPaymentDeltas(LoanPaymentParts const& parts)
         .debtTotalDelta = (parts.principalPaid + parts.interestPaid) - parts.valueChange};
 }
 
-}  // namespace accrual
+}  // namespace instant_recognition
 
 namespace cash_basis {
 
@@ -250,7 +250,7 @@ namespace {
 
 // Cash-basis accounting applies to Vaults created under
 // featureLendingProtocolV1_1 or a later version. Vaults created before
-// activation keep accrual-basis accounting forever.
+// activation keep instant interest recognition forever.
 bool
 cashBasisEnabled(SLE::const_ref vaultSle)
 {
@@ -267,7 +267,7 @@ loanOriginationDeltas(
 {
     return cashBasisEnabled(vaultSle)
         ? cash_basis::loanOriginationDeltas(principalRequested)
-        : accrual::loanOriginationDeltas(principalRequested, interestDue);
+        : instant_recognition::loanOriginationDeltas(principalRequested, interestDue);
 }
 
 bool
@@ -282,21 +282,22 @@ loanOriginationExceedsVaultMaximum(
         return false;
 
     auto const vaultMaximum = vaultSle->at(sfAssetsMaximum);
-    return accrual::loanOriginationExceedsVaultMaximum(vaultMaximum, vaultTotal, interestDue);
+    return instant_recognition::loanOriginationExceedsVaultMaximum(
+        vaultMaximum, vaultTotal, interestDue);
 }
 
 Number
 loanVaultExposure(SLE::const_ref vaultSle, SLE::const_ref loanSle)
 {
     return cashBasisEnabled(vaultSle) ? cash_basis::loanVaultExposure(loanSle)
-                                      : accrual::loanVaultExposure(loanSle);
+                                      : instant_recognition::loanVaultExposure(loanSle);
 }
 
 AccountingDeltas
 loanPaymentDeltas(SLE::const_ref vaultSle, LoanPaymentParts const& parts)
 {
     return cashBasisEnabled(vaultSle) ? cash_basis::loanPaymentDeltas(parts)
-                                      : accrual::loanPaymentDeltas(parts);
+                                      : instant_recognition::loanPaymentDeltas(parts);
 }
 
 namespace detail {

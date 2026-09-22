@@ -1583,14 +1583,10 @@ private:
     // which for an integral MPT asset the destination check would reject if
     // it were reached.
     //
-    // ValidMPTIssuance is a separate checker and still runs. It only trips on
-    // the one arm that both creates and deletes an MPToken: Alice's last
-    // share with the asset MPToken missing, where addEmptyHolding creates the
-    // asset token while her share token is deleted (created + deleted > 1).
-    // Leftover shares with the token missing is create-only, and a last share
-    // with the token present is delete-only; neither exceeds one. Bob still
-    // owns shares throughout, so this is never the vault's final outstanding
-    // share.
+    // ValidMPTIssuance: pre-fixCleanup3_4_0, a VaultWithdraw that both
+    // creates and deletes an MPToken fails. Post-fixCleanup3_4_0 that is
+    // allowed.
+
     //
     // Post-fixCleanup3_4_0, doWithdraw skips addEmptyHolding on a zero
     // payout and zeroDeltaIsLegitimate lets the vault-delta and

@@ -83,9 +83,12 @@ protected:
     // Ensure that all the features needed for Lending Protocol are included,
     // even if they are set to unsupported.
     //
-    // Later Lending amendments are excluded from the default set because
-    // they change accounting and precision behavior. Tests that exercise an
-    // amendment opt it back in explicitly.
+    // featureLendingProtocolV1_1 is excluded from the default set: it changes
+    // Vault/LoanBroker accounting (AssetsTotal/DebtTotal/LossUnrealized), and
+    // most of this file's tests assert instant-interest-recognition-specific expected values
+    // for those fields. Tests that specifically exercise the amendment opt
+    // it back in explicitly (e.g. `all_ | featureLendingProtocolV1_1`).
+    // featureLendingProtocolV1_2 is also excluded: it changes vault precision.
     FeatureBitset const all_{
         jtx::testableAmendments() - featureLendingProtocolV1_1 - featureLendingProtocolV1_2};
     std::string const iouCurrency_{"IOU"};

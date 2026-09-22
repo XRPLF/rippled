@@ -327,7 +327,7 @@ constexpr std::uint8_t kVaultMaximumFixedIouScale = 10;
  * Vault ledger-entry schema versions. Assigned to newly created Vaults by
  * featureLendingProtocolV1_1 and later protocol amendments. Vaults created
  * before activation are left without LEVersion (implicit legacy version 0,
- * accrual-basis accounting).
+ * instant interest recognition).
  */
 enum class VaultVersion : uint8_t {
     Legacy = 0,
