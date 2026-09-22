@@ -101,6 +101,13 @@ public network with all tracing and native metrics enabled:
 | `docker/telemetry/xrpld-telemetry.cfg`         | Devnet  |
 | `docker/telemetry/xrpld-telemetry-mainnet.cfg` | Mainnet |
 
+> **Create the validator list file first.** Neither list is tracked in this repo, so make your own before the first run. Each config names one in `[validators_file]`, and xrpld exits at startup when the named file is missing, with `The file specified in [validators_file] does not exist`.
+>
+> | Create this file                          | Needed by                     | What goes in it                                                                                                                                                         |
+> | ----------------------------------------- | ----------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+> | `docker/telemetry/validators-mainnet.txt` | `xrpld-telemetry-mainnet.cfg` | Copy `cfg/validators-example.txt` as it ships — it already trusts the mainnet publishers                                                                                |
+> | `docker/telemetry/validators-devnet.txt`  | `xrpld-telemetry.cfg`         | Same two sections, holding the devnet publisher site and key instead — see the [XRPL test network docs](https://xrpl.org/connect-your-rippled-to-the-xrp-test-net.html) |
+
 ```bash
 .build/xrpld --conf docker/telemetry/xrpld-telemetry-mainnet.cfg
 ```
