@@ -556,6 +556,10 @@ private:
     /**
      * Decide every pending event past the grace period, repair the ones whose
      * other half arrived late, and drop entries too old to repair.
+     *
+     * Newly decided events reach the windows oldest minute first. The windows
+     * only move forward, so an event counted after a later one would land in a
+     * bucket the grid had already rolled past.
      * @param now Current time point.
      */
     void
