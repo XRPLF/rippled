@@ -9,6 +9,7 @@
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/shamap/SHAMap.h>
 #include <xrpl/shamap/SHAMapAddNode.h>
+#include <xrpl/shamap/SHAMapNodeID.h>
 #include <xrpl/shamap/SHAMapTreeNode.h>
 #include <xrpl/telemetry/Recording.h>
 #include <xrpl/telemetry/SpanGuard.h>

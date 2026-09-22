@@ -793,7 +793,7 @@ SHAMap::hasLeafNode(uint256 const& tag, SHAMapHash const& targetNodeHash) const
 std::optional<std::vector<Blob>>
 SHAMap::getProofPath(uint256 const& key) const
 {
-    SharedPtrNodeStack stack;
+    NodePathStack stack;
     walkTowardsKey(key, &stack);
 
     if (stack.empty())
