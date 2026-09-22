@@ -282,15 +282,16 @@ RCLConsensus::Adaptor::propose(RCLCxPeerPos::Proposal const& proposal)
 
     app_.getHashRouter().addSuppression(suppression);
 
-    // Inject the current thread's active span context (e.g. the consensus
-    // round span) so receiving peers can link their proposal.receive span
-    // as a child of this trace.
+    // Inject this send span's own context, so receiving peers can parent their
+    // proposal.receive span to it. Reading the ambient context instead would
+    // find nothing: no span is activated on either thread that reaches here,
+    // and the round span is deliberately never ambient.
     //
-    // The helper injects only when a span is actually active, so a node with
-    // telemetry compiled out, disabled by config, or simply not tracing this
-    // round sends no TraceContext at all rather than an empty one that makes
-    // every peer take its has_trace_context() branch for nothing.
-    telemetry::injectCurrentContext(prop);
+    // Injection writes only when the span is live, so a node with telemetry
+    // compiled out, disabled by config, or simply not tracing this round sends
+    // no TraceContext at all rather than an empty one that makes every peer
+    // take its has_trace_context() branch for nothing.
+    telemetry::injectSpanContext(span, prop);
 
     app_.getOverlay().broadcast(prop);
 }
@@ -1116,18 +1117,20 @@ RCLConsensus::Adaptor::validate(RCLCxLedger const& ledger, RCLTxSet const& txns,
     // Broadcast to all our peers:
     protocol::TMValidation val;
     val.set_validation(serialized.data(), serialized.size());
-    // Inject the current thread's active span context so receiving
-    // peers can link their validation.receive span as a child.
+    // Inject this validation span's own context, so receiving peers can parent
+    // their validation.receive span to it. Reading the ambient context instead
+    // would find nothing: valSpan is parented through a stored context and is
+    // never activated on this thread.
     //
     // The trace_context appended below is outside the signature on
     // `serialized`, so it is not covered by validation authenticity.
     // Downstream consumers treat it as advisory only. A signature-covered
     // trace context is a possible future enhancement.
     //
-    // As on the proposal path, the helper injects only when a span is actually
-    // active, so a node that is not tracing sends no TraceContext at all
-    // rather than an empty one.
-    telemetry::injectCurrentContext(val);
+    // Injection writes only when the span is live, so a node that is not
+    // tracing sends no TraceContext at all rather than an empty one.
+    if (valSpan)
+        telemetry::injectSpanContext(*valSpan, val);
     app_.getOverlay().broadcast(val);
 
     // Publish to all our subscribers:

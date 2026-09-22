@@ -47,18 +47,28 @@ doPathFind(rpc::JsonContext& context)
             span.setAttribute(pathfind_span::attr::destAccount, redactAccount(dst.asString()));
     }
 
+    // A failed reply carries the rpc error token, so reading the status off the
+    // reply covers every exit, including the ones whose reply is built further
+    // down the call chain. The token set is fixed by the error registry, so it
+    // is safe as a span label; raw request text would not be.
+    auto const finish = [&span](json::Value&& reply) -> json::Value {
+        if (span && rpc::containsError(reply))
+            span.setError(std::as_const(reply)[jss::error].asString());
+        return std::move(reply);
+    };
+
     if (context.app.config().pathSearchMax == 0)
-        return rpcError(RpcNotSupported);
+        return finish(rpcError(RpcNotSupported));
 
     auto lpLedger = context.ledgerMaster.getClosedLedger();
 
     if (!context.params.isMember(jss::subcommand) || !context.params[jss::subcommand].isString())
     {
-        return rpcError(RpcInvalidParams);
+        return finish(rpcError(RpcInvalidParams));
     }
 
     if (!context.infoSub)
-        return rpcError(RpcNoEvents);
+        return finish(rpcError(RpcNoEvents));
 
     context.infoSub->setApiVersion(context.apiVersion);
 
@@ -68,8 +78,8 @@ doPathFind(rpc::JsonContext& context)
     {
         context.loadType = resource::kFeeHeavyBurdenRpc;
         context.infoSub->clearRequest();
-        return context.app.getPathRequestManager().makePathRequest(
-            context.infoSub, lpLedger, context.params);
+        return finish(context.app.getPathRequestManager().makePathRequest(
+            context.infoSub, lpLedger, context.params));
     }
 
     if (sSubCommand == "close")
@@ -77,10 +87,10 @@ doPathFind(rpc::JsonContext& context)
         InfoSubRequest::pointer const request = context.infoSub->getRequest();
 
         if (!request)
-            return rpcError(RpcNoPfRequest);
+            return finish(rpcError(RpcNoPfRequest));
 
         context.infoSub->clearRequest();
-        return request->doClose();
+        return finish(request->doClose());
     }
 
     if (sSubCommand == "status")
@@ -88,12 +98,12 @@ doPathFind(rpc::JsonContext& context)
         InfoSubRequest::pointer const request = context.infoSub->getRequest();
 
         if (!request)
-            return rpcError(RpcNoPfRequest);
+            return finish(rpcError(RpcNoPfRequest));
 
-        return request->doStatus(context.params);
+        return finish(request->doStatus(context.params));
     }
 
-    return rpcError(RpcInvalidParams);
+    return finish(rpcError(RpcInvalidParams));
 }
 
 }  // namespace xrpl
