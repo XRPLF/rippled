@@ -107,7 +107,7 @@ The development collector enables an OTLP receiver on both gRPC (`0.0.0.0:4317`)
 
 ### 5.5.2 Production Configuration
 
-The production collector adds TLS on the OTLP gRPC receiver and a richer processor chain: a `memory_limiter` (OOM guard), `batch` (5s timeout, size 512), `tail_sampling`, and an `attributes` processor that hashes sensitive fields (e.g. `tx_account`) and stamps `deployment.environment`. Tail sampling keeps all `ERROR` traces, slow consensus rounds (>5s) and slow RPC requests (>1s), and probabilistically samples the remainder at 10%. Exporters target Grafana Tempo (TLS) and Elastic APM; `health_check` and `zpages` extensions are enabled for operability.
+The production collector adds TLS on the OTLP gRPC receiver and a richer processor chain: a `memory_limiter` (OOM guard), `batch` (5s timeout, size 512), `tail_sampling`, and an `attributes` processor that stamps `deployment.environment`. Account addresses are public identifiers and are not hashed at any layer. Tail sampling keeps all `ERROR` traces, slow consensus rounds (>5s) and slow RPC requests (>1s), and probabilistically samples the remainder at 10%. Exporters target Grafana Tempo (TLS) and Elastic APM; `health_check` and `zpages` extensions are enabled for operability.
 
 ---
 
