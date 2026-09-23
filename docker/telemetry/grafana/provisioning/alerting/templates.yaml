@@ -7,23 +7,24 @@
 # says. These templates replace that body with the rule's own prose.
 #
 # ---------------------------------------------------------------------------
-# Slack and email need SEPARATE bodies. Do not share one.
+# SLACK ONLY. Email deliberately has no template here.
 # ---------------------------------------------------------------------------
-# Measured against a real email and a real Slack payload:
+# Measured, and the reason this file covers one channel rather than two:
 #
-#   * Email ESCAPES any HTML in the message: a literal `<br>` arrives as
-#     `&lt;br&gt;`. So no tags, and no clickable anchors are possible here.
-#   * Email DOES turn a newline in the template into a real `<br>`, so line
-#     breaks are the only layout tool available.
-#   * Slack markup is meaningless in email. Bold asterisks, backticks and
-#     `:rotating_light:` all arrive as literal characters, and worst of all a
-#     `<url|label>` link cannot become a link, so it dumps the whole URL
-#     inline. Four panel links then bury the prose in a wall of text.
+#   * Email ESCAPES any HTML in the message body, so a literal `<br>` arrives
+#     as `&lt;br&gt;` and no tag or anchor is possible. A custom email body is
+#     therefore plain text and cannot reproduce Grafana's default layout, which
+#     already gives section headings, a label table, clickable annotation links
+#     and the View/Silence buttons. So email keeps the default body.
+#   * Slack markup is meaningless in email anyway: bold asterisks, backticks
+#     and `:rotating_light:` arrive as literal characters, and a `<url|label>`
+#     link cannot become a link, so it dumps the whole URL inline. Four panel
+#     links bury the prose in a wall of text. That is what a shared body did.
 #   * Real emoji CHARACTERS render in both channels; the `:shortcode:` form
 #     only works in Slack.
 #
-# So the email body is plain text with one fact per line and each link on its
-# own labelled line, and the Slack body keeps mrkdwn.
+# The value line Grafana's default email body ends with is made readable by
+# NAMING each rule's query steps (see rules.yaml), not by replacing the body.
 #
 # ---------------------------------------------------------------------------
 # What a template may and may not use
@@ -90,26 +91,6 @@ templates:
       {{ end }}{{ end }}
       {{- with .Alerts.Resolved }}{{ range . }}
       :white_check_mark: *RESOLVED* · *{{ .Labels.alertname }}* on `{{ template "xrpld.node" . }}`
-      {{ .Annotations.description }}
-      {{ end }}{{ end }}
-      {{- end }}
-
-      {{- /* EMAIL body: plain text only. Newlines are the sole layout tool,
-             and each link sits on its own labelled line. */ -}}
-      {{ define "xrpld.email.body" -}}
-      {{ with .Alerts.Firing }}{{ range . }}
-      FIRING - {{ .Labels.alertname }} on {{ template "xrpld.node" . }}
-      {{ .Annotations.description }}
-      {{- with .Annotations.action }}
-      Why it matters: {{ . }}
-      {{- end }}
-      {{- range $key, $url := .Annotations }}
-      {{- if match "^panel_" $key }}
-      {{ title (reReplaceAll "_" " " (reReplaceAll "^panel_" "" $key)) }}: {{ $url }}
-      {{- end }}{{ end }}
-      {{ end }}{{ end }}
-      {{- with .Alerts.Resolved }}{{ range . }}
-      RESOLVED - {{ .Labels.alertname }} on {{ template "xrpld.node" . }}
       {{ .Annotations.description }}
       {{ end }}{{ end }}
       {{- end }}

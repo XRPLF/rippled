@@ -96,16 +96,14 @@ contactPoints:
           addresses: alerts-disabled@xrpld.invalid
           # One message listing all recipients, rather than one message each.
           singleEmail: true
-          # Setting `message` replaces Grafana's default email body, which is
-          # what removes the raw value dump and the label list. Grafana's own
-          # header ("N firing alert instances", "Grouped by") and footer are
-          # fixed chrome and stay.
-          #
-          # This uses the EMAIL body, not the Slack one. Email escapes HTML and
-          # cannot render Slack markup, so a shared body arrives as literal
-          # asterisks and raw URLs. See templates.yaml.
-          subject: '{{ template "xrpld.title" . }}'
-          message: '{{ template "xrpld.email.body" . }}'
+          # DELIBERATELY no `subject`/`message` override here, unlike the Slack
+          # receivers above. Grafana's default email body is the good one: bold
+          # section headings, a styled label table, annotations rendered as real
+          # clickable links, and the View/Silence buttons. Overriding `message`
+          # replaces all of that with plain text, because email escapes HTML, so
+          # a custom body cannot reproduce any of it. The value line the default
+          # body carries is made readable by NAMING each rule's query steps (see
+          # rules.yaml), not by replacing the body.
         disableResolveMessage: false
 
 # To retire a receiver that a running Grafana has already stored, uncomment
