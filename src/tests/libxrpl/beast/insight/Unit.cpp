@@ -64,7 +64,7 @@ public:
 // The unit code is a contract with the collector's Prometheus exporter: it
 // derives the exported name suffix from this string. Assert the exact codes,
 // not merely that they differ.
-TEST(InsightUnit, otelCodeIsTheUcumCodeForEachUnit)
+TEST(InsightUnit, otel_code_is_the_ucum_code_for_each_unit)
 {
     EXPECT_STREQ(otelUnitCode(Unit::Millis), "ms");
     EXPECT_STREQ(otelUnitCode(Unit::Bytes), "By");
@@ -72,13 +72,13 @@ TEST(InsightUnit, otelCodeIsTheUcumCodeForEachUnit)
 
 // The description is what an operator reads in the metric catalogue, so a
 // byte-valued instrument must not describe itself as a duration.
-TEST(InsightUnit, descriptionMatchesWhatTheUnitActuallyMeasures)
+TEST(InsightUnit, description_matches_what_the_unit_actually_measures)
 {
     EXPECT_STREQ(otelUnitDescription(Unit::Millis), "Duration in ms");
     EXPECT_STREQ(otelUnitDescription(Unit::Bytes), "Size in bytes");
 }
 
-TEST(InsightUnit, defaultEventUnitIsMillisForBackwardCompatibility)
+TEST(InsightUnit, default_event_unit_is_millis_for_backward_compatibility)
 {
     // Every pre-existing makeEvent(name) call site records a duration, so the
     // one-argument overload must keep meaning milliseconds.
@@ -88,7 +88,7 @@ TEST(InsightUnit, defaultEventUnitIsMillisForBackwardCompatibility)
     EXPECT_EQ(event.impl()->unit(), Unit::Millis);
 }
 
-TEST(InsightUnit, makeEventCarriesTheRequestedUnitToTheImpl)
+TEST(InsightUnit, make_event_carries_the_requested_unit_to_the_impl)
 {
     auto const collector = NullCollector::make();
     auto const event = collector->makeEvent("size", Unit::Bytes);
@@ -96,7 +96,7 @@ TEST(InsightUnit, makeEventCarriesTheRequestedUnitToTheImpl)
     EXPECT_EQ(event.impl()->unit(), Unit::Bytes);
 }
 
-TEST(InsightUnit, prefixedMakeEventCarriesTheUnit)
+TEST(InsightUnit, prefixed_make_event_carries_the_unit)
 {
     auto const collector = NullCollector::make();
     auto const event = collector->makeEvent("rpc", "size", Unit::Bytes);
@@ -104,7 +104,7 @@ TEST(InsightUnit, prefixedMakeEventCarriesTheUnit)
     EXPECT_EQ(event.impl()->unit(), Unit::Bytes);
 }
 
-TEST(InsightUnit, groupWrapperForwardsTheUnitAlongWithThePrefix)
+TEST(InsightUnit, group_wrapper_forwards_the_unit_along_with_the_prefix)
 {
     // ServerHandler creates its events through a Group, not through the
     // collector directly. If the group's makeEvent override forwards only the
@@ -117,7 +117,7 @@ TEST(InsightUnit, groupWrapperForwardsTheUnitAlongWithThePrefix)
     EXPECT_EQ(event.impl()->unit(), Unit::Bytes);
 }
 
-TEST(InsightUnit, groupWrapperStillDefaultsToMillis)
+TEST(InsightUnit, group_wrapper_still_defaults_to_millis)
 {
     auto const collector = NullCollector::make();
     auto const groups = makeGroups(collector);
@@ -126,7 +126,7 @@ TEST(InsightUnit, groupWrapperStillDefaultsToMillis)
     EXPECT_EQ(event.impl()->unit(), Unit::Millis);
 }
 
-TEST(InsightUnit, rawIntegralNotifyPreservesTheValueExactly)
+TEST(InsightUnit, raw_integral_notify_preserves_the_value_exactly)
 {
     // The byte path must not be rounded or scaled on its way through the
     // duration-typed storage field.
@@ -143,7 +143,7 @@ TEST(InsightUnit, rawIntegralNotifyPreservesTheValueExactly)
     EXPECT_EQ(impl->samples[2].count(), 1'048'577);
 }
 
-TEST(InsightUnit, durationNotifyStillRoundsUpToWholeMilliseconds)
+TEST(InsightUnit, duration_notify_still_rounds_up_to_whole_milliseconds)
 {
     // Pre-existing behaviour, asserted so the new overload cannot quietly
     // change it: Event applies ceil to whole milliseconds, which is why
@@ -161,7 +161,7 @@ TEST(InsightUnit, durationNotifyStillRoundsUpToWholeMilliseconds)
     EXPECT_EQ(impl->samples[2].count(), 7);
 }
 
-TEST(InsightUnit, notifyOnANullEventIsSafeForBothOverloads)
+TEST(InsightUnit, notify_on_a_null_event_is_safe_for_both_overloads)
 {
     // A default-constructed Event has no impl. Both overloads must be no-ops
     // rather than dereferencing null.
