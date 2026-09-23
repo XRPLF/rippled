@@ -45,6 +45,28 @@ liveScale(Number const& reference, Asset const& asset, int baseScale)
     return std::max(baseScale, scale(reference, asset));
 }
 
+[[nodiscard]] int
+posteriorScale(SLE::const_ref vault, Number const& reference, STAmount const& delta)
+{
+    Number const posterior = [&] {
+        NumberRoundModeGuard const rg(Number::RoundingMode::ToNearest);
+        return reference + delta;
+    }();
+
+    switch (getVaultVersion(vault))
+    {
+        case VaultVersion::Legacy:
+        case VaultVersion::CashBasis:
+            return scale(posterior, vault->at(sfAsset));
+        case VaultVersion::FixedPrecision:
+            return liveScale(posterior, vault->at(sfAsset), fixedBaseScale(vault));
+    }
+    // LCOV_EXCL_START
+    UNREACHABLE("xrpl::posteriorScale : valid VaultVersion");
+    return Number::kMinExponent - 1;
+    // LCOV_EXCL_STOP
+}
+
 [[nodiscard]] VaultKind
 decodeVaultKind(std::optional<std::uint8_t> vaultKind)
 {
@@ -101,24 +123,7 @@ getPosteriorVaultScale(SLE::const_ref vault, STAmount const& delta)
     XRPL_ASSERT(
         delta.asset() == vault->at(sfAsset),
         "xrpl::getPosteriorVaultScale : delta and Vault asset match");
-
-    Number const posterior = [&] {
-        NumberRoundModeGuard const rg(Number::RoundingMode::ToNearest);
-        return vault->at(sfAssetsTotal) + delta;
-    }();
-
-    switch (getVaultVersion(vault))
-    {
-        case VaultVersion::Legacy:
-        case VaultVersion::CashBasis:
-            return scale(posterior, vault->at(sfAsset));
-        case VaultVersion::FixedPrecision:
-            return liveScale(posterior, vault->at(sfAsset), fixedBaseScale(vault));
-    }
-    // LCOV_EXCL_START
-    UNREACHABLE("xrpl::getPosteriorVaultScale : valid VaultVersion");
-    return Number::kMinExponent - 1;
-    // LCOV_EXCL_STOP
+    return posteriorScale(vault, vault->at(sfAssetsTotal), delta);
 }
 
 [[nodiscard]] STAmount
@@ -147,6 +152,24 @@ roundToPosteriorVaultScale(
     if (amount.integral())
         return amount;
     return roundToScale(amount, getPosteriorVaultScale(vault, amount), roundingMode);
+}
+
+[[nodiscard]] STAmount
+roundToPosteriorAvailableScale(
+    SLE::const_ref vault,
+    STAmount const& amount,
+    Number::RoundingMode roundingMode)
+{
+    XRPL_ASSERT(
+        vault && vault->getType() == ltVAULT,
+        "xrpl::roundToPosteriorAvailableScale : valid Vault sle");
+    XRPL_ASSERT(
+        amount.asset() == vault->at(sfAsset),
+        "xrpl::roundToPosteriorAvailableScale : amount and Vault asset match");
+    if (amount.integral())
+        return amount;
+    return roundToScale(
+        amount, posteriorScale(vault, vault->at(sfAssetsAvailable), amount), roundingMode);
 }
 
 [[nodiscard]] Number

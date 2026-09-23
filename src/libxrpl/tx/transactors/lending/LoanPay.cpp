@@ -361,6 +361,7 @@ LoanPay::doApply()
     TenthBips32 const coverRateMinimum{brokerSle->at(sfCoverRateMinimum)};
     auto debtTotalProxy = brokerSle->at(sfDebtTotal);
 
+    bool const fixedPrecision = getVaultVersion(vaultSle) == VaultVersion::FixedPrecision;
     auto const vaultScale = getAssetsTotalScale(vaultSle);
 
     // Send the broker fee to the owner if they have sufficient cover available,
@@ -376,8 +377,7 @@ LoanPay::doApply()
         // DebtTotal) use vaultScale. The legacy path below intentionally retains
         // its pre-amendment loanScale behavior.
         auto const minCover = [&]() {
-            if (view.rules().enabled(fixCleanup3_2_0) ||
-                getVaultVersion(vaultSle) == VaultVersion::FixedPrecision)
+            if (view.rules().enabled(fixCleanup3_2_0) || fixedPrecision)
             {
                 return minimumBrokerCover(debtTotalProxy.value(), coverRateMinimum, vaultSle);
             }
@@ -421,6 +421,12 @@ LoanPay::doApply()
         }
     }
 
+    auto const scheduledInterest = [&loanSle] {
+        return loanSle->at(sfTotalValueOutstanding) - loanSle->at(sfPrincipalOutstanding) -
+            loanSle->at(sfManagementFeeOutstanding);
+    };
+    Number const scheduledInterestBefore = fixedPrecision ? scheduledInterest() : kNumZero;
+
     LoanPaymentType const paymentType = [&tx]() {
         // preflight already checked that at most one flag is set.
         if (tx.isFlag(tfLoanLatePayment))
@@ -445,6 +451,9 @@ LoanPay::doApply()
     // If the payment computation completed without error, the loanSle object
     // has been modified.
     view.update(loanSle);
+
+    Number const scheduledInterestDelta =
+        fixedPrecision ? scheduledInterest() - scheduledInterestBefore : kNumZero;
 
     XRPL_ASSERT_PARTS(
         // It is possible to pay 0 principal
@@ -472,32 +481,62 @@ LoanPay::doApply()
         // LCOV_EXCL_STOP
     }
 
-    auto const [assetsTotalDelta, debtTotalDelta] = loanPaymentDeltas(vaultSle, *paymentParts);
-
-    JLOG(j_.debug()) << "Loan Pay: principal paid: " << paymentParts->principalPaid
-                     << ", interest paid: " << paymentParts->interestPaid
-                     << ", fee paid: " << paymentParts->feePaid
-                     << ", assets total delta: " << assetsTotalDelta
-                     << ", debt total delta: " << debtTotalDelta;
-
     //------------------------------------------------------
     // LoanBroker object state changes
     view.update(brokerSle);
 
     auto assetsAvailableProxy = vaultSle->at(sfAssetsAvailable);
     auto assetsTotalProxy = vaultSle->at(sfAssetsTotal);
+    Number const assetsAvailableBefore = *assetsAvailableProxy;
+    Number const assetsTotalBefore = *assetsTotalProxy;
 
     auto const totalPaidToVaultRaw = paymentParts->principalPaid + paymentParts->interestPaid;
-    auto const totalPaidToVaultRounded =
-        roundToAsset(asset, totalPaidToVaultRaw, vaultScale, Number::RoundingMode::Downward);
+    auto const [assetsTotalDelta, debtTotalDelta] = [&] {
+        if (!fixedPrecision)
+            return loanPaymentDeltas(vaultSle, *paymentParts);
+
+        Number const assetsTotalAfter = [&] {
+            NumberRoundModeGuard const rg(Number::RoundingMode::Downward);
+            // The STAmount conversion also clamps integral assets.
+            return Number{STAmount{asset, assetsTotalBefore + paymentParts->interestPaid}};
+        }();
+        return AccountingDeltas{
+            .assetsTotalDelta = assetsTotalAfter - assetsTotalBefore,
+            .debtTotalDelta = paymentParts->principalPaid};
+    }();
+    Number const totalPaidToVaultRounded = [&] {
+        if (!fixedPrecision)
+        {
+            return roundToAsset(
+                asset, totalPaidToVaultRaw, vaultScale, Number::RoundingMode::Downward);
+        }
+
+        Number const creditRaw = paymentParts->principalPaid + assetsTotalDelta;
+        return Number{roundToPosteriorAvailableScale(
+            vaultSle, STAmount{asset, creditRaw}, Number::RoundingMode::Downward)};
+    }();
     XRPL_ASSERT_PARTS(
         !asset.integral() || totalPaidToVaultRaw == totalPaidToVaultRounded,
         "xrpl::LoanPay::doApply",
         "rounding does nothing for integral asset");
-    auto const totalPaidToBroker = paymentParts->feePaid;
+    Number const totalPaidToBrokerRaw = paymentParts->feePaid;
+    Number const totalPaidToBroker = fixedPrecision && !sendBrokerFeeToOwner
+        ? Number{roundToPosteriorBrokerCoverScale(
+              vaultSle,
+              brokerSle,
+              STAmount{asset, totalPaidToBrokerRaw},
+              Number::RoundingMode::TowardsZero)}
+        : totalPaidToBrokerRaw;
+
+    JLOG(j_.debug()) << "Loan Pay: principal paid: " << paymentParts->principalPaid
+                     << ", interest paid: " << paymentParts->interestPaid
+                     << ", fee paid: " << paymentParts->feePaid
+                     << ", assets total delta: " << assetsTotalDelta
+                     << ", debt total delta: " << debtTotalDelta
+                     << ", scheduled interest delta: " << scheduledInterestDelta;
 
     XRPL_ASSERT_PARTS(
-        (totalPaidToVaultRaw + totalPaidToBroker) ==
+        (totalPaidToVaultRaw + totalPaidToBrokerRaw) ==
             (paymentParts->principalPaid + paymentParts->interestPaid + paymentParts->feePaid),
         "xrpl::LoanPay::doApply",
         "payments add up");
@@ -509,17 +548,22 @@ LoanPay::doApply()
         isRounded(asset, debtTotalDelta, loanScale),
         "xrpl::LoanPay::doApply",
         "debtTotalDelta rounding good");
-    // Despite our best efforts, it's possible for rounding errors to accumulate
-    // in the loan broker's debt total. This is because the broker may have more
-    // than one loan with significantly different scales.
-    adjustImpreciseNumber(debtTotalProxy, -debtTotalDelta, asset, vaultScale);
+    if (fixedPrecision)
+    {
+        debtTotalProxy -= debtTotalDelta;
+    }
+    else
+    {
+        // Despite our best efforts, it's possible for rounding errors to accumulate
+        // in the loan broker's debt total. This is because the broker may have more
+        // than one loan with significantly different scales.
+        adjustImpreciseNumber(debtTotalProxy, -debtTotalDelta, asset, vaultScale);
+    }
 
     //------------------------------------------------------
     // Vault object state changes
     view.update(vaultSle);
 
-    Number const assetsAvailableBefore = *assetsAvailableProxy;
-    Number const assetsTotalBefore = *assetsTotalProxy;
 #if !NDEBUG
     {
         Number const pseudoAccountBalanceBefore = accountHolds(
@@ -539,6 +583,13 @@ LoanPay::doApply()
 
     assetsAvailableProxy += totalPaidToVaultRounded;
     assetsTotalProxy += assetsTotalDelta;
+    if (fixedPrecision)
+    {
+        auto yieldUnrealizedProxy = vaultSle->at(sfYieldUnrealized);
+        yieldUnrealizedProxy += scheduledInterestDelta;
+        if (*yieldUnrealizedProxy < beast::kZero)
+            yieldUnrealizedProxy = kNumZero;
+    }
 
     XRPL_ASSERT_PARTS(
         *assetsAvailableProxy <= *assetsTotalProxy,
@@ -559,9 +610,10 @@ LoanPay::doApply()
     if (!sendBrokerFeeToOwner)
     {
         // If there is not enough first-loss capital, add the fee to First Loss
-        // Cover Pool. Note that this moves the entire fee - it does not attempt
-        // to split it. The broker can Withdraw it later if they want, or leave
-        // it for future needs.
+        // Cover Pool. FixedPrecision rounds the redirected fee at the
+        // posterior cover scale; any sub-unit remainder is forgiven. The
+        // broker can Withdraw the credited amount later or leave it for future
+        // needs.
         coverAvailableProxy += totalPaidToBroker;
     }
 

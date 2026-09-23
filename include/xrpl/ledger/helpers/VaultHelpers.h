@@ -60,6 +60,15 @@ roundToPosteriorVaultScale(
     Number::RoundingMode roundingMode);
 
 /**
+ * Round an amount at the posterior live exponent of AssetsAvailable.
+ */
+[[nodiscard]] STAmount
+roundToPosteriorAvailableScale(
+    SLE::const_ref vault,
+    STAmount const& amount,
+    Number::RoundingMode roundingMode);
+
+/**
  * Open-zone capacity ceiling: 9 * 10^(15 + baseScale).
  *
  * Defined only for FixedPrecision Vaults, where this is 9 * 10^(15 - P).
