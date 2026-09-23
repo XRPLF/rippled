@@ -132,7 +132,7 @@ private:
  * would otherwise never be sent and would never exist downstream. Absent and
  * zero must not look the same to an operator.
  */
-TEST(StatsDCollector, UntouchedGaugePublishesInitialZero)
+TEST(StatsDCollector, untouched_gauge_publishes_initial_zero)
 {
     LoopbackStatsDServer server;
     auto const address = ip::Endpoint::fromString("127.0.0.1:" + std::to_string(server.port()));
@@ -159,7 +159,7 @@ TEST(StatsDCollector, UntouchedGaugePublishesInitialZero)
  * comes along as a positive control. One flush tick serves both metrics, so a
  * counter line would have to travel beside the gauge's.
  */
-TEST(StatsDCollector, UntouchedCounterPublishesNothing)
+TEST(StatsDCollector, untouched_counter_publishes_nothing)
 {
     LoopbackStatsDServer server;
     auto const address = ip::Endpoint::fromString("127.0.0.1:" + std::to_string(server.port()));
