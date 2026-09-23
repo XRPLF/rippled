@@ -35,9 +35,15 @@ contract can buy too cheaply, a denial-of-service vector rather than a rounding 
     jq -r '.benchmarks[] | select(.price_ratio) | [.price_ratio, .name] | @tsv' | sort -n
 ```
 
-`unreliable=1` when `rel_error` exceeds 25%, or when `suggested_gas` falls below the crossing floor
+`unreliable=1` when `rel_error` exceeds 25%, or when `implied_gas` falls below the crossing floor
 — a call whose own cost is small next to the crossing is read off the difference of two nearly
 equal numbers.
+
+The two arms catch different failures, and the second is the one that fires in practice. `rel_error`
+is about precision; the floor comparison is about how much of `suggested_gas` was measured for this
+case at all. On a quiet Release machine the floor is ~36 gas, and the cheap `Impl` cases sit near 3 —
+so the floor is over 90% of their price while `rel_error` reads a comfortable 2%. Expect roughly a
+quarter of the priced rows to carry `unreliable=1`, all of them `Impl`.
 
 ### With `--benchmark_repetitions`
 

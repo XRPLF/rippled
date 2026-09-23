@@ -391,7 +391,7 @@ report(
     // equal numbers, so its `suggested_gas` is scatter rather than signal.
     auto const floor = calibration.crossingFloorGas();
     state.counters["unreliable"] =
-        (totalErr > kMaxRelativeSpread || (floor > 0.0 && suggested < floor)) ? 1 : 0;
+        (totalErr > kMaxRelativeSpread || (floor > 0.0 && implied < floor)) ? 1 : 0;
 }
 
 }  // namespace xrpl::test::bench
