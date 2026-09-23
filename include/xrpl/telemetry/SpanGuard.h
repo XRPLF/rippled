@@ -919,6 +919,15 @@ public:
     addEvent(std::string_view name) noexcept;
 
     /**
+     * Add a named event with key-value attributes to the span's timeline.
+     * No-op on a null guard.
+     * @param name   Event name.
+     * @param attrs  Attribute pairs (all string_view for simplicity).
+     */
+    void
+    addEvent(std::string_view name, std::initializer_list<EventAttribute> attrs) noexcept;
+
+    /**
      * Record an exception as a span event and mark status as error.
      * No-op on a null guard.
      * @param e  The exception to record.
@@ -1352,6 +1361,10 @@ public:
     }
     void
     addEvent(std::string_view) noexcept
+    {
+    }
+    void
+    addEvent(std::string_view, std::initializer_list<EventAttribute>) noexcept
     {
     }
     void
