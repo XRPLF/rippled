@@ -1561,10 +1561,16 @@ NetworkOPsImp::processTransaction(
         {
             if (auto const* fmt = TxFormats::getInstance().findByType(stx->getTxnType()))
                 span->setAttribute(tx_span::attr::txType, fmt->getName().c_str());
+            // xrp() throws on a non-XRP fee. preflight rejects such a
+            // transaction with temBAD_FEE, so leave the attribute out rather
+            // than let tracing turn that into an internal error.
+            if (auto const& fee = stx->getFieldAmount(sfFee); fee.native())
+            {
+                span->setAttribute(
+                    tx_span::attr::fee, static_cast<std::int64_t>(fee.xrp().drops()));
+            }
             span->setAttribute(
-                tx_span::attr::fee, static_cast<int64_t>(stx->getFieldAmount(sfFee).xrp().drops()));
-            span->setAttribute(
-                tx_span::attr::sequence, static_cast<int64_t>(stx->getSeqProxy().value()));
+                tx_span::attr::sequence, static_cast<std::int64_t>(stx->getSeqProxy().value()));
         }
     }
 
