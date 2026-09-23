@@ -90,6 +90,12 @@ public:
         return copyForwardTotal_.load(std::memory_order_relaxed);
     }
 
+    [[nodiscard]] std::uint64_t
+    duplicateCopyForwardTotal() const override
+    {
+        return duplicateCopyForwardTotal_.load(std::memory_order_relaxed);
+    }
+
 private:
     std::shared_ptr<Backend> writableBackend_;
     std::shared_ptr<Backend> archiveBackend_;
@@ -113,6 +119,13 @@ private:
     // is its only reader; otherwise it stays 0 and the fetch path does one atomic
     // increment less per copy-forward.
     std::atomic<std::uint64_t> copyForwardTotal_{0};
+
+    // Copy-forwards made on duplicate == true fetches: the rotation's own copy
+    // walk and cache freshen. Kept apart from the two counters above because
+    // those deliberately exclude these events. Always incremented, since the
+    // rotation's log line reads it whether or not telemetry is compiled in.
+    // One relaxed increment per archive-served copy, never on a writable hit.
+    std::atomic<std::uint64_t> duplicateCopyForwardTotal_{0};
 
     std::shared_ptr<NodeObject>
     fetchNodeObject(uint256 const& hash, std::uint32_t, FetchReport& fetchReport, bool duplicate)

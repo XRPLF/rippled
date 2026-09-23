@@ -87,6 +87,26 @@ public:
      */
     [[nodiscard]] virtual std::uint64_t
     copyForwardTotal() const = 0;
+
+    /**
+     * Nodes copied forward from the archive because the caller asked for it.
+     *
+     * The rotation's copy walk and its cache freshen fetch every node with
+     * `duplicate == true`, which copies an archive-served body into the
+     * writable backend. copyForwardTotal() does not count those; it counts
+     * only ordinary reads copied while a rotation is in flight. This total is
+     * the other half: how many of the nodes the rotation asked for were found
+     * only in the archive. That is the yield of the copy walk and of the
+     * freshen, and the caller cannot measure it any other way because it
+     * discards the fetched object.
+     *
+     * Cumulative for the lifetime of the process. The phase code reads it
+     * before and after a step and takes the difference.
+     *
+     * @return Monotonic count of copy-forward writes made on duplicate fetches.
+     */
+    [[nodiscard]] virtual std::uint64_t
+    duplicateCopyForwardTotal() const = 0;
 };
 
 }  // namespace xrpl::node_store
