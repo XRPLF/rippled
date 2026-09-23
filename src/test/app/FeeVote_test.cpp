@@ -29,6 +29,7 @@
 #include <xrpl/tx/apply.h>
 
 #include <cstdint>
+#include <functional>
 #include <limits>
 #include <memory>
 #include <optional>
@@ -351,6 +352,20 @@ class FeeVote_test : public beast::unit_test::Suite
             BEAST_EXPECT(setup.gasLimit == kMaxGasLimit);
             BEAST_EXPECT(setup.bytecodeSizeLimit == kMaxBytecodeSizeLimit);
         }
+        {
+            // Zero is below kMinGasPrice, so the default is kept.
+            Section config;
+            config.append("gas_price = 0");
+            auto const setup = setupFeeVote(config);
+            BEAST_EXPECT(setup.gasPrice == defaultSetup.gasPrice);
+        }
+        {
+            // The floor is inclusive: a configured price of 1 is accepted.
+            Section config;
+            config.append({"gas_price = " + std::to_string(kMinGasPrice)});
+            auto const setup = setupFeeVote(config);
+            BEAST_EXPECT(setup.gasPrice == kMinGasPrice);
+        }
     }
 
     void
@@ -447,7 +462,7 @@ class FeeVote_test : public beast::unit_test::Suite
             BEAST_EXPECT(verifyFeeObject(ledger, ledger->rules(), fields));
         }
 
-        // Test that Smart Escrow limits reject values above their maximums.
+        // Test that Smart Escrow limits reject values outside their bounds.
         {
             jtx::Env env(*this, jtx::testableAmendments());
             auto ledger = std::make_shared<Ledger>(
@@ -479,6 +494,43 @@ class FeeVote_test : public beast::unit_test::Suite
                  .gasLimit = kMaxGasLimit,
                  .bytecodeSizeLimit = kMaxBytecodeSizeLimit + 1,
                  .gasPrice = 300});
+            // gasPrice == 0 is temBAD_FEE; gasLimit == 0 remains a valid kill
+            // switch.
+            testBadFields(
+                {.baseFeeDrops = XRPAmount{10},
+                 .reserveBaseDrops = XRPAmount{200000},
+                 .reserveIncrementDrops = XRPAmount{50000},
+                 .gasLimit = kMaxGasLimit,
+                 .bytecodeSizeLimit = kMaxBytecodeSizeLimit,
+                 .gasPrice = 0});
+        }
+
+        // ttFEE at exactly kMinGasPrice applies and is stored.
+        {
+            jtx::Env env(*this, jtx::testableAmendments());
+            auto ledger = std::make_shared<Ledger>(
+                kCreateGenesis,
+                Rules{env.app().config().features},
+                env.app().config().fees.toFees(),
+                std::vector<uint256>{},
+                env.app().getNodeFamily());
+
+            ledger = std::make_shared<Ledger>(*ledger, env.app().getTimeKeeper().closeTime());
+
+            FeeSettingsFields const fields{
+                .baseFeeDrops = XRPAmount{10},
+                .reserveBaseDrops = XRPAmount{200000},
+                .reserveIncrementDrops = XRPAmount{50000},
+                .gasLimit = 100,
+                .bytecodeSizeLimit = 200,
+                .gasPrice = kMinGasPrice};
+            auto feeTx = createFeeTx(ledger->rules(), ledger->seq(), fields);
+
+            OpenView accum(ledger.get());
+            BEAST_EXPECT(isTesSuccess(applyFeeAndTestResult(env, accum, feeTx)));
+            accum.apply(*ledger);
+
+            BEAST_EXPECT(verifyFeeObject(ledger, ledger->rules(), fields));
         }
 
         // Test that the Smart Escrow fields are rejected if the
@@ -846,6 +898,34 @@ class FeeVote_test : public beast::unit_test::Suite
             BEAST_EXPECT(val->isFieldPresent(sfBaseFee));
             BEAST_EXPECT(val->getFieldU64(sfBaseFee) == setup.referenceFee);
         }
+
+        // A local target of 0 is not emitted on the validation; the field is
+        // omitted so peers treat it as noVote.
+        {
+            Env env(*this, testableAmendments());
+            FeeSetup zeroPrice = setup;
+            zeroPrice.gasPrice = 0;
+            auto feeVote = makeFeeVote(zeroPrice, env.app().getJournal("FeeVote"));
+
+            auto ledger = std::make_shared<Ledger>(
+                kCreateGenesis,
+                Rules{env.app().config().features},
+                env.app().config().fees.toFees(),
+                std::vector<uint256>{},
+                env.app().getNodeFamily());
+
+            auto sec = randomSecretKey();
+            auto pub = derivePublicKey(KeyType::Secp256k1, sec);
+
+            auto val = std::make_shared<STValidation>(
+                env.app().getTimeKeeper().now(), pub, sec, calcNodeID(pub), [](STValidation& v) {
+                    v.setFieldU32(sfLedgerSequence, 12345);
+                });
+
+            feeVote->doValidation(ledger->fees(), ledger->rules(), *val);
+
+            BEAST_EXPECT(!val->isFieldPresent(sfGasPrice));
+        }
     }
 
     void
@@ -952,8 +1032,18 @@ class FeeVote_test : public beast::unit_test::Suite
         BEAST_EXPECT(env.current()->fees().bytecodeSizeLimit == kDefaultBytecodeSizeLimit);
         BEAST_EXPECT(env.current()->fees().gasPrice == kDefaultGasPrice);
 
+        struct SeVoteOpts
+        {
+            // If set, each validation uses the returned price; nullopt omits
+            // sfGasPrice. If unset, every validation uses setup.gasPrice.
+            std::function<std::optional<std::uint32_t>(int)> gasPrice;
+            int nValidations = 5;
+            bool trustAll = false;
+        };
+
         auto const createFeeTxFromVoting =
-            [&](FeeSetup const& setup) -> std::pair<STTx, std::shared_ptr<Ledger>> {
+            [&](FeeSetup const& setup,
+                SeVoteOpts const& opts = {}) -> std::pair<STTx, std::shared_ptr<Ledger>> {
             auto feeVote = makeFeeVote(setup, env.app().getJournal("FeeVote"));
             auto ledger = std::make_shared<Ledger>(
                 kCreateGenesis,
@@ -974,7 +1064,7 @@ class FeeVote_test : public beast::unit_test::Suite
             // Create some mock validations with fee votes
             std::vector<std::shared_ptr<STValidation>> validations;
 
-            for (int i = 0; i < 5; i++)
+            for (int i = 0; i < opts.nValidations; i++)
             {
                 auto sec = randomSecretKey();
                 auto pub = derivePublicKey(KeyType::Secp256k1, sec);
@@ -992,9 +1082,17 @@ class FeeVote_test : public beast::unit_test::Suite
                         v.setFieldAmount(sfReserveIncrementDrops, XRPAmount{setup.ownerReserve});
                         v.setFieldU32(sfGasLimit, setup.gasLimit);
                         v.setFieldU32(sfBytecodeSizeLimit, setup.bytecodeSizeLimit);
-                        v.setFieldU32(sfGasPrice, setup.gasPrice);
+                        if (opts.gasPrice)
+                        {
+                            if (auto const price = opts.gasPrice(i))
+                                v.setFieldU32(sfGasPrice, *price);
+                        }
+                        else
+                        {
+                            v.setFieldU32(sfGasPrice, setup.gasPrice);
+                        }
                     });
-                if (i % 2)
+                if (opts.trustAll || (i % 2))
                     val->setTrusted();
                 validations.push_back(val);
             }
@@ -1081,6 +1179,87 @@ class FeeVote_test : public beast::unit_test::Suite
 
             setup.gasLimit = ledger->fees().gasLimit;
             setup.bytecodeSizeLimit = ledger->fees().bytecodeSizeLimit;
+            checkFeeTx(setup, feeTx, ledger);
+        }
+
+        // Local and peer votes of 0 are ignored; the fee tx keeps the ledger
+        // gas price. Other fee fields still change, so a ttFEE is produced.
+        {
+            FeeSetup setup;
+            setup.referenceFee = 42;
+            setup.accountReserve = 1234567;
+            setup.ownerReserve = 7654321;
+            setup.gasLimit = 100;
+            setup.bytecodeSizeLimit = 200;
+            setup.gasPrice = 0;
+            auto const [feeTx, ledger] = createFeeTxFromVoting(setup);
+
+            setup.gasPrice = ledger->fees().gasPrice;
+            checkFeeTx(setup, feeTx, ledger);
+        }
+
+        // Absent sfGasPrice is an abstention (noVote), not a vote for 0.
+        {
+            FeeSetup setup;
+            setup.referenceFee = 42;
+            setup.accountReserve = 1234567;
+            setup.ownerReserve = 7654321;
+            setup.gasLimit = 100;
+            setup.bytecodeSizeLimit = 200;
+            setup.gasPrice = 300;
+            auto const [feeTx, ledger] = createFeeTxFromVoting(
+                setup,
+                {.gasPrice = [](int) -> std::optional<std::uint32_t> { return std::nullopt; }});
+
+            setup.gasPrice = ledger->fees().gasPrice;
+            checkFeeTx(setup, feeTx, ledger);
+        }
+
+        // Invalid (0) votes are noVote (weight on current), not dropped.
+        // Four zeros and one 300: current outweighs 300. If zeros were
+        // ignored, the local 300 target would still win.
+        {
+            FeeSetup setup;
+            setup.referenceFee = 42;
+            setup.accountReserve = 1234567;
+            setup.ownerReserve = 7654321;
+            setup.gasLimit = 100;
+            setup.bytecodeSizeLimit = 200;
+            setup.gasPrice = 300;
+            auto const [feeTx, ledger] = createFeeTxFromVoting(
+                setup,
+                {.gasPrice = [](int i) -> std::optional<std::uint32_t> { return i == 0 ? 300 : 0; },
+                 .trustAll = true});
+
+            setup.gasPrice = ledger->fees().gasPrice;
+            checkFeeTx(setup, feeTx, ledger);
+        }
+
+        // doVote accepts the inclusive floor (field >= kMinGasPrice).
+        {
+            FeeSetup setup;
+            setup.referenceFee = 42;
+            setup.accountReserve = 1234567;
+            setup.ownerReserve = 7654321;
+            setup.gasLimit = 100;
+            setup.bytecodeSizeLimit = 200;
+            setup.gasPrice = kMinGasPrice;
+            auto const [feeTx, ledger] = createFeeTxFromVoting(setup);
+
+            checkFeeTx(setup, feeTx, ledger);
+        }
+
+        // There is no protocol max for gas price; UINT32_MAX is a legal vote.
+        {
+            FeeSetup setup;
+            setup.referenceFee = 42;
+            setup.accountReserve = 1234567;
+            setup.ownerReserve = 7654321;
+            setup.gasLimit = 100;
+            setup.bytecodeSizeLimit = 200;
+            setup.gasPrice = std::numeric_limits<std::uint32_t>::max();
+            auto const [feeTx, ledger] = createFeeTxFromVoting(setup);
+
             checkFeeTx(setup, feeTx, ledger);
         }
     }

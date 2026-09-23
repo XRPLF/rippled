@@ -1258,7 +1258,7 @@ setupFeeVote(Section const& section)
             setup.gasLimit = temp;
         if (set(temp, Keys::kBytecodeSizeLimit, section) && temp <= kMaxBytecodeSizeLimit)
             setup.bytecodeSizeLimit = temp;
-        if (set(temp, Keys::kGasPrice, section))
+        if (set(temp, Keys::kGasPrice, section) && temp >= kMinGasPrice)
             setup.gasPrice = temp;
     }
     return setup;
