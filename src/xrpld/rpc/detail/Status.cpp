@@ -9,7 +9,7 @@
 #include <sstream>
 #include <string>
 
-namespace xrpl::RPC {
+namespace xrpl::rpc {
 
 std::string
 Status::codeString() const
@@ -25,7 +25,7 @@ Status::codeString() const
         std::string s1, s2;
 
         [[maybe_unused]] auto const success = transResultInfo(toTER(), s1, s2);
-        XRPL_ASSERT(success, "xrpl::RPC::codeString : valid TER result");
+        XRPL_ASSERT(success, "xrpl::rpc::codeString : valid TER result");
 
         return s1 + ": " + s2;
     }
@@ -39,7 +39,7 @@ Status::codeString() const
     }
 
     // LCOV_EXCL_START
-    UNREACHABLE("xrpl::RPC::codeString : invalid type");
+    UNREACHABLE("xrpl::rpc::codeString : invalid type");
     return "";
     // LCOV_EXCL_STOP
 }
@@ -85,4 +85,4 @@ Status::toString() const
     return "";
 }
 
-}  // namespace xrpl::RPC
+}  // namespace xrpl::rpc

@@ -213,7 +213,7 @@ public:
         throw std::logic_error("TestServiceRegistry::peerReservations() not implemented");
     }
 
-    Resource::Manager&
+    resource::Manager&
     getResourceManager() override
     {
         throw std::logic_error("TestServiceRegistry::getResourceManager() not implemented");

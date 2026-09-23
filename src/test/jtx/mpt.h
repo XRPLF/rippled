@@ -20,6 +20,7 @@
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/ConfidentialTransfer.h>
+#include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/UintTypes.h>
@@ -147,7 +148,7 @@ struct MPTCreate
     // if empty vector then pay to either authorize or all holders.
     std::optional<std::pair<std::vector<Account>, std::uint64_t>> pay = std::nullopt;
     std::optional<std::uint32_t> flags = {0};
-    std::optional<std::uint32_t> mutableFlags = std::nullopt;
+    std::optional<std::uint32_t> immutableFlags = std::nullopt;
     bool authHolder = false;
     std::optional<uint256> domainID = std::nullopt;
     std::optional<TER> err = std::nullopt;
@@ -183,7 +184,7 @@ struct MPTInitDef
     std::uint16_t transferFee = 0;
     std::optional<std::uint64_t> pay = std::nullopt;
     std::uint32_t flags = kMptDexFlags;
-    std::optional<std::uint32_t> mutableFlags = std::nullopt;
+    std::optional<std::uint32_t> immutableFlags = std::nullopt;
     bool authHolder = false;
     bool fund = false;
     bool close = true;
@@ -229,7 +230,7 @@ struct MPTSet
     std::optional<std::uint32_t> ownerCount = std::nullopt;
     std::optional<std::uint32_t> holderCount = std::nullopt;
     std::optional<std::uint32_t> flags = std::nullopt;
-    std::optional<std::uint32_t> mutableFlags = std::nullopt;
+    std::optional<std::uint32_t> immutableFlags = std::nullopt;
     std::optional<std::uint16_t> transferFee = std::nullopt;
     std::optional<std::string> metadata = std::nullopt;
     std::optional<Account> delegate = std::nullopt;
@@ -362,6 +363,24 @@ struct MPTConfidentialClawback
 };
 
 /**
+ * @brief Arguments for building a ConfidentialMPTMirrorUpdate test transaction.
+ */
+struct MPTMirrorUpdate
+{
+    std::optional<Account> account = std::nullopt;
+    std::optional<Account> holder = std::nullopt;
+    std::optional<MPTID> id = std::nullopt;
+    std::optional<Buffer> issuerEncryptedAmount = std::nullopt;
+    std::optional<Buffer> auditorEncryptedAmount = std::nullopt;
+    std::optional<Buffer> zkProof = std::nullopt;
+    std::optional<XRPAmount> fee = std::nullopt;
+    std::optional<std::uint32_t> flags = std::nullopt;
+    std::optional<std::uint32_t> ownerCount = std::nullopt;
+    std::optional<std::uint32_t> holderCount = std::nullopt;
+    std::optional<TER> err = std::nullopt;
+};
+
+/**
  * @brief Stores the parameters that are exclusively used to generate a
  * Pedersen linkage proof.
  */
@@ -451,8 +470,10 @@ class MPTTester
     std::optional<Account> const auditor_;
     std::optional<MPTID> id_;
     bool close_;
-    std::unordered_map<AccountID, Buffer> pubKeys_;
-    std::unordered_map<AccountID, Buffer> privKeys_;
+    // Keys generated for each account. Buffer vector's index is the key epoch: index 0 is
+    // the initial pair and each rotation appends.
+    std::unordered_map<AccountID, std::vector<Buffer>> pubKeys_;
+    std::unordered_map<AccountID, std::vector<Buffer>> privKeys_;
 
 public:
     enum class EncryptedBalanceType {
@@ -581,6 +602,9 @@ public:
     void
     confidentialClaw(MPTConfidentialClawback const& arg = MPTConfidentialClawback{});
 
+    void
+    mirrorUpdate(MPTMirrorUpdate const& arg = MPTMirrorUpdate{});
+
     [[nodiscard]] bool
     checkDomainID(std::optional<uint256> expected) const;
 
@@ -608,6 +632,33 @@ public:
 
     [[nodiscard]] bool
     isTransferFeePresent() const;
+
+    [[nodiscard]] bool
+    checkImmutableFlags(std::uint32_t expectedFlags) const;
+
+    // Checks both key epochs on the issuance. Pass std::nullopt for an epoch
+    // that is expected to be absent, which means the key is never rotated.
+    [[nodiscard]] bool
+    checkKeyEpochs(
+        std::optional<std::uint32_t> issuerKeyEpoch,
+        std::optional<std::uint32_t> auditorKeyEpoch) const;
+
+    // Checks both mirror epochs on a holder's MPToken. Pass std::nullopt for an
+    // epoch that is expected to be absent, which means the mirror was written
+    // under the issuance's epoch 0 key.
+    [[nodiscard]] bool
+    checkMirrorEpochs(
+        Account const& holder,
+        std::optional<std::uint32_t> issuerKeyMirrorEpoch,
+        std::optional<std::uint32_t> auditorKeyMirrorEpoch) const;
+
+    // Checks that the issuance carries the encryption keys of the given
+    // accounts. Pass std::nullopt for a key that is expected to be absent,
+    // which means the key is never registered.
+    [[nodiscard]] bool
+    checkEncryptionKeys(
+        std::optional<Account> const& issuerKeyOwner,
+        std::optional<Account> const& auditorKeyOwner) const;
 
     [[nodiscard]] Account const&
     issuer() const
@@ -660,20 +711,31 @@ public:
 
     operator Asset() const;
 
-    void
+    // Generates the account's next key pair and returns the key epoch it landed
+    // at, leaving the earlier ones retrievable.
+    std::uint32_t
     generateKeyPair(Account const& account);
 
+    // Returns the account's public key at the given key epoch, or its latest key when
+    // no epoch is given.
     [[nodiscard]] std::optional<Buffer>
-    getPubKey(Account const& account) const;
+    getPubKey(Account const& account, std::optional<std::uint32_t> epoch = std::nullopt) const;
 
+    // Returns the account's private key at the given key epoch, or its latest key when
+    // no epoch is given.
     [[nodiscard]] std::optional<Buffer>
-    getPrivKey(Account const& account) const;
+    getPrivKey(Account const& account, std::optional<std::uint32_t> epoch = std::nullopt) const;
 
     [[nodiscard]] Buffer
     encryptAmount(Account const& account, uint64_t const amt, Buffer const& blindingFactor) const;
 
+    // Decrypts with the account's key at the given key epoch, or its latest key
+    // when no epoch is given.
     [[nodiscard]] std::optional<uint64_t>
-    decryptAmount(Account const& account, Buffer const& amt) const;
+    decryptAmount(
+        Account const& account,
+        Buffer const& amt,
+        std::optional<std::uint32_t> epoch = std::nullopt) const;
 
     [[nodiscard]] std::optional<uint64_t>
     getDecryptedBalance(Account const& account, EncryptedBalanceType balanceType) const;
@@ -701,7 +763,7 @@ public:
         PedersenProofParams const& amountParams,
         PedersenProofParams const& balanceParams) const;
 
-    [[nodiscard]] Buffer
+    [[nodiscard]] std::optional<Buffer>
     getConvertBackProof(
         Account const& holder,
         std::uint64_t const amount,
@@ -726,6 +788,10 @@ private:
     forObject(
         std::function<bool(SLEP const& sle)> const& cb,
         std::optional<Account> const& holder = std::nullopt) const;
+
+    // Reads one of the holder's mirror key epochs off their MPToken.
+    [[nodiscard]] std::optional<std::uint32_t>
+    getMirrorEpoch(Account const& holder, SF_UINT32 const& field) const;
 
     template <typename A>
     TER
@@ -796,15 +862,28 @@ private:
     [[nodiscard]] std::uint32_t
     getFlags(std::optional<Account> const& holder) const;
 
+    /**
+     * @brief Sets sfMPTokenIssuanceID on jv, falling back to id_ if arg's id is
+     *        not set.
+     *
+     * @param jv The JSON object to set the field on.
+     * @param id The explicit issuance ID override from the caller, if any.
+     */
+    void
+    setIssuanceIdField(json::Value& jv, std::optional<MPTID> const& id) const;
+
+    [[nodiscard]] std::uint32_t
+    ticketOrSeq(
+        std::optional<std::uint32_t> const& ticketSeq,
+        std::optional<Account> const& account) const;
+
     template <typename T>
     void
     fillConversionCiphertexts(
         T const& arg,
         json::Value& jv,
-        Buffer& holderCiphertext,
-        Buffer& issuerCiphertext,
-        std::optional<Buffer>& auditorCiphertext,
-        Buffer& blindingFactor) const;
+        Account const& account,
+        std::uint64_t const amount) const;
 };
 
 }  // namespace xrpl::test::jtx

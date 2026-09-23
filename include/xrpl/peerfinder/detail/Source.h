@@ -7,7 +7,7 @@
 
 #include <string>
 
-namespace xrpl::PeerFinder {
+namespace xrpl::peer_finder {
 
 /**
  * A static or dynamic source of peer addresses.
@@ -46,4 +46,4 @@ public:
     fetch(Results& results, beast::Journal journal) = 0;
 };
 
-}  // namespace xrpl::PeerFinder
+}  // namespace xrpl::peer_finder

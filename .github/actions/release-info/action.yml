@@ -1,0 +1,44 @@
+name: Release info
+description: "Derive the version, release channel and package release number for this build."
+
+outputs:
+  version:
+    description: "The build version number."
+    value: ${{ steps.version.outputs.version }}
+  channel:
+    description: "The release channel this build belongs to."
+    value: ${{ steps.release_info.outputs.channel }}
+  pkg_release:
+    description: "The package release number: 1 for a tag, <run number>.<commit date>git<short commit hash> otherwise."
+    value: ${{ steps.release_info.outputs.pkg_release }}
+
+runs:
+  using: composite
+  steps:
+    # A tag names its own version. Anything else takes it from BuildInfo.cpp and
+    # appends the commit hash as build metadata, joined with a plus sign because a
+    # Conan version cannot contain two hyphens.
+    - name: Determine version
+      id: version
+      shell: bash
+      env:
+        IS_TAG: ${{ startsWith(github.ref, 'refs/tags/') }}
+        REF_NAME: ${{ github.ref_name }}
+        SHA: ${{ github.sha }}
+      run: |
+        if [[ "${IS_TAG}" == "true" ]]; then
+            version="${REF_NAME}"
+        else
+            version="$(awk -F'"' '/versionString =/ { print $2 }' src/libxrpl/protocol/BuildInfo.cpp)"
+            if [[ -z "${version}" ]]; then
+                echo "Unable to read versionString from BuildInfo.cpp." >&2
+                exit 1
+            fi
+            version="${version}+${SHA:0:7}"
+        fi
+
+        echo "version=${version}" | tee -a "${GITHUB_OUTPUT}"
+
+    - name: Determine release channel and package release
+      id: release_info
+      uses: XRPLF/actions/release-info@7cc0e4a8d9d0b838f92c48d312856b190341bbba

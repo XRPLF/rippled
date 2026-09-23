@@ -102,7 +102,7 @@ Sig::operator()(Env& env, JTx& jt) const
         serializeBatch(
             msg,
             stx.getAccountID(sfAccount),
-            stx.getSeqValue(),
+            stx.getSeqProxy().value(),
             stx.getFlags(),
             stx.getBatchTransactionIDs());
         finishMultiSigningData(e.acct.id(), msg);
@@ -146,7 +146,7 @@ Msig::operator()(Env& env, JTx& jt) const
         serializeBatch(
             msg,
             stx.getAccountID(sfAccount),
-            stx.getSeqValue(),
+            stx.getSeqProxy().value(),
             stx.getFlags(),
             stx.getBatchTransactionIDs());
         msg.addBitString(master.id());

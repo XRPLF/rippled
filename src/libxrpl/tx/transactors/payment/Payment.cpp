@@ -281,7 +281,7 @@ Payment::preflight(PreflightContext const& ctx)
         }
     }
 
-    if (auto const err = credentials::checkFields(ctx.tx, ctx.j); !isTesSuccess(err))
+    if (auto const err = credentials::checkFields(ctx.tx, ctx.rules, ctx.j); !isTesSuccess(err))
         return err;
 
     return tesSUCCESS;
@@ -339,17 +339,36 @@ Payment::checkGranularSemantics(
             bool const accountIsHolder =
                 accountIsLow ? rawBalance > beast::kZero : rawBalance < beast::kZero;
 
+            bool const mayIssue =
+                heldGranularPermissions.contains(PaymentMint) && destLimit > beast::kZero;
+
             // PaymentMint requires the destination to be the holder and the account to be the
             // issuer. destLimit > 0: destination is willing to hold account's IOUs (account is the
             // issuer). !accountIsHolder: DirectStepI will issue, not redeem.
-            if (heldGranularPermissions.contains(PaymentMint) && destLimit > beast::kZero &&
-                !accountIsHolder)
+            if (mayIssue && !accountIsHolder)
                 return tesSUCCESS;
 
             // PaymentBurn requires the source account to be the holder and the destination to be
             // the issuer. accountIsHolder: DirectStepI will redeem, not issue.
             if (heldGranularPermissions.contains(PaymentBurn) && accountIsHolder)
-                return tesSUCCESS;
+            {
+                if (view.rules().enabled(fixCleanup3_4_0))
+                {
+                    // Redeeming stops at the balance held; beyond that the payment engine
+                    // crosses zero and issues the account's own IOUs, which is a mint. So with
+                    // only PaymentBurn we must check the amount against the balance held. The
+                    // granular template forbids sfPaths, tfPartialPayment and a cross-asset
+                    // sfSendMax, so this is a single direct step, sfAmount is what the
+                    // trustline is debited.
+                    STAmount const held = accountIsLow ? rawBalance : -rawBalance;
+                    if (dstAmount <= held || mayIssue)
+                        return tesSUCCESS;
+                }
+                else
+                {
+                    return tesSUCCESS;
+                }
+            }
 
             return terNO_DELEGATE_PERMISSION;
         });
@@ -458,11 +477,41 @@ Payment::preclaim(PreclaimContext const& ctx)
 
     if (ctx.tx.isFieldPresent(sfDomainID))
     {
-        if (!permissioned_dex::accountInDomain(ctx.view, ctx.tx[sfAccount], ctx.tx[sfDomainID]))
-            return tecNO_PERMISSION;
+        if (ctx.view.rules().enabled(fixCleanup3_4_0))
+        {
+            auto const domainID = ctx.tx[sfDomainID];
+            auto const sleDomain = ctx.view.read(keylet::permissionedDomain(domainID));
+            if (!sleDomain)
+                return tecNO_PERMISSION;
 
-        if (!permissioned_dex::accountInDomain(ctx.view, ctx.tx[sfDestination], ctx.tx[sfDomainID]))
-            return tecNO_PERMISSION;
+            // Domain owner is always considered in the domain. For other accounts,
+            // suppress tecEXPIRED so doApply can run and delete expired credential
+            // SLEs from the ledger.
+            auto const checkAccount = [&](AccountID const& acct) -> TER {
+                if (sleDomain->getAccountID(sfOwner) == acct)
+                    return tesSUCCESS;
+                // validDomain returns tecNO_AUTH when no matching credential is
+                // found. Map it to tecNO_PERMISSION to preserve existing behavior.
+                if (auto const err = credentials::validDomain(ctx.view, domainID, acct);
+                    !isTesSuccess(err) && err != tecEXPIRED)
+                    return tecNO_PERMISSION;
+                return tesSUCCESS;
+            };
+
+            if (auto const err = checkAccount(ctx.tx[sfAccount]); !isTesSuccess(err))
+                return err;
+            if (auto const err = checkAccount(ctx.tx[sfDestination]); !isTesSuccess(err))
+                return err;
+        }
+        else
+        {
+            if (!permissioned_dex::accountInDomain(ctx.view, ctx.tx[sfAccount], ctx.tx[sfDomainID]))
+                return tecNO_PERMISSION;
+
+            if (!permissioned_dex::accountInDomain(
+                    ctx.view, ctx.tx[sfDestination], ctx.tx[sfDomainID]))
+                return tecNO_PERMISSION;
+        }
     }
 
     return tesSUCCESS;
@@ -471,6 +520,31 @@ Payment::preclaim(PreclaimContext const& ctx)
 TER
 Payment::doApply()
 {
+    // If a DomainID is present, verify both sender and destination are still in
+    // the domain and delete any expired credential SLEs from the ledger.
+    if (ctx_.tx.isFieldPresent(sfDomainID) && ctx_.view().rules().enabled(fixCleanup3_4_0))
+    {
+        auto const domainID = ctx_.tx[sfDomainID];
+        auto const sleDomain = ctx_.view().read(keylet::permissionedDomain(domainID));
+        if (!sleDomain)
+            return tecINTERNAL;  // LCOV_EXCL_LINE
+
+        auto const cleanupFor = [&](AccountID const& acct) -> TER {
+            if (sleDomain->getAccountID(sfOwner) == acct)
+                return tesSUCCESS;
+            return verifyValidDomain(ctx_.view(), acct, domainID, j_);
+        };
+
+        auto const destination = ctx_.tx[sfDestination];
+        auto const senderErr = cleanupFor(accountID_);
+        auto const destinationErr = accountID_ == destination ? senderErr : cleanupFor(destination);
+
+        if (!isTesSuccess(senderErr))
+            return senderErr;
+        if (!isTesSuccess(destinationErr))
+            return destinationErr;
+    }
+
     auto const deliverMin = ctx_.tx[~sfDeliverMin];
 
     // Ripple if source or destination is non-native or if there are paths.

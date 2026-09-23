@@ -55,6 +55,22 @@ class STValidation final : public STObject, public CountedObject<STValidation>
 
 public:
     /**
+     * @struct DeserializeOptions
+     * @brief Options controlling deserialization of a STValidation.
+
+     * @var DeserializeOptions::checkSignature
+     * Whether to verify the data was signed properly
+     *
+     * @var DeserializeOptions::requireCanonicalOrder
+     * Whether to require the fields to be in canonical order
+     */
+    struct DeserializeOptions
+    {
+        bool checkSignature;
+        bool requireCanonicalOrder;
+    };
+
+    /**
      * Construct a STValidation from a peer from serialized data.
      *
      * @param sit Iterator over serialized data
@@ -64,12 +80,12 @@ public:
      *                     that signed the validation. For manifest based
      *                     validators, this should be the NodeID of the master
      *                     public key.
-     * @param checkSignature Whether to verify the data was signed properly
+     * @param options Options controlling deserialization
      *
      * @note Throws if the object is not valid
      */
     template <class LookupNodeID>
-    STValidation(SerialIter& sit, LookupNodeID&& lookupNodeID, bool checkSignature);
+    STValidation(SerialIter& sit, LookupNodeID&& lookupNodeID, DeserializeOptions options);
 
     /**
      * Construct, sign and trust a new STValidation issued by this node.
@@ -108,6 +124,13 @@ public:
     [[nodiscard]] NodeID const&
     getNodeID() const noexcept;
 
+    /**
+     * Whether this validation carries a good signature.
+     *
+     * Reports false if the signature cannot be checked at all, so a caller
+     * cannot tell that apart from a bad signature. Either way the validation is
+     * unusable, and the reason is logged. Only a computed answer is remembered.
+     */
     [[nodiscard]] bool
     isValid() const noexcept;
 
@@ -163,8 +186,8 @@ private:
 };
 
 template <class LookupNodeID>
-STValidation::STValidation(SerialIter& sit, LookupNodeID&& lookupNodeID, bool checkSignature)
-    : STObject(validationFormat(), sit, sfValidation)
+STValidation::STValidation(SerialIter& sit, LookupNodeID&& lookupNodeID, DeserializeOptions options)
+    : STObject(validationFormat(), sit, sfValidation, options.requireCanonicalOrder)
     , signingPubKey_([this]() {
         auto const spk = getFieldVL(sfSigningPubKey);
 
@@ -175,7 +198,7 @@ STValidation::STValidation(SerialIter& sit, LookupNodeID&& lookupNodeID, bool ch
     }())
     , nodeID_(lookupNodeID(signingPubKey_))
 {
-    if (checkSignature && !isValid())
+    if (options.checkSignature && !isValid())
     {
         JLOG(debugLog().error()) << "Invalid signature in validation: "
                                  << getJson(JsonOptions::Values::None);

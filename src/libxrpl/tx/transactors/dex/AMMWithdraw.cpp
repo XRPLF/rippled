@@ -19,6 +19,7 @@
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/Keylet.h>
+#include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
@@ -34,6 +35,7 @@
 #include <cstdint>
 #include <exception>
 #include <optional>
+#include <stdexcept>
 #include <tuple>
 #include <utility>
 
@@ -374,11 +376,10 @@ AMMWithdraw::applyGuts(Sandbox& sb)
     auto const [amountBalance, amount2Balance, lptAMMBalance] = *expected;
     auto const subTxType = ctx_.tx.getFlags() & tfWithdrawSubTx;
 
-    auto const [result, newLPTokenBalance] = [&,
-                                              &amountBalance = amountBalance,
-                                              &amount2Balance = amount2Balance,
-                                              &lptAMMBalance =
-                                                  lptAMMBalance]() -> std::pair<TER, STAmount> {
+    auto dispatchToWithdraw = [&,
+                               &amountBalance = amountBalance,
+                               &amount2Balance = amount2Balance,
+                               &lptAMMBalance = lptAMMBalance]() -> std::pair<TER, STAmount> {
         if (subTxType & tfTwoAsset)
         {
             return equalWithdrawLimit(
@@ -432,6 +433,29 @@ AMMWithdraw::applyGuts(Sandbox& sb)
         JLOG(j_.error()) << "AMM Withdraw: invalid options.";
         return std::make_pair(tecINTERNAL, STAmount{});
         // LCOV_EXCL_STOP
+    };
+
+    auto const [result, newLPTokenBalance] = [&]() -> std::pair<TER, STAmount> {
+        try
+        {
+            return dispatchToWithdraw();
+        }
+        catch (std::runtime_error const& e)
+        {
+            // Defense in-depth for amount overflow/out-of-range: the withdrawal
+            // counterpart of the AMMDeposit guard. Unlike deposit, no known
+            // withdraw path can throw here - preclaim bounds the requested
+            // amounts by the pool balances, and the only historical throw
+            // (denom == 0 in singleWithdrawEPrice) is guarded under
+            // fixCleanup3_3_0. Gated by fixCleanup3_4_0 to preserve the
+            // legacy tefEXCEPTION pre-amendment.
+            if (!sb.rules().enabled(fixCleanup3_4_0))
+                throw;
+            // LCOV_EXCL_START
+            JLOG(j_.error()) << "AMMWithdraw: amount out of range " << e.what();
+            return std::make_pair(tecAMM_FAILED, STAmount{});
+            // LCOV_EXCL_STOP
+        }
     }();
 
     if (!isTesSuccess(result))
@@ -493,6 +517,7 @@ AMMWithdraw::withdraw(
         view,
         ammSle,
         ammAccount,
+        std::nullopt,
         accountID_,
         amountBalance,
         amountWithdraw,
@@ -502,6 +527,7 @@ AMMWithdraw::withdraw(
         tfee,
         issuerFreezeHandling(),
         AuthHandling::ZeroIfUnauthorized,
+        ReserveHandling::EnforceReserve,
         isWithdrawAll(ctx_.tx),
         preFeeBalance_,
         j_);
@@ -513,6 +539,7 @@ AMMWithdraw::withdraw(
     Sandbox& view,
     SLE const& ammSle,
     AccountID const& ammAccount,
+    std::optional<AccountID> const& clawbackIssuer,
     AccountID const& account,
     STAmount const& amountBalance,
     STAmount const& amountWithdraw,
@@ -522,6 +549,7 @@ AMMWithdraw::withdraw(
     std::uint16_t tfee,
     FreezeHandling freezeHandling,
     AuthHandling authHandling,
+    ReserveHandling reserveHandling,
     WithdrawAll withdrawAll,
     XRPAmount const& priorBalance,
     beast::Journal const& journal)
@@ -643,19 +671,26 @@ AMMWithdraw::withdraw(
         mptokenKey = std::nullopt;
         if (!enabledFixAmMv12 || isXRP(asset))
             return tesSUCCESS;
-        bool const isIssue = asset.holds<Issue>();
-        bool const assetNotExists = [&] {
-            if (isIssue)
-                return !view.exists(keylet::trustLine(account, asset.get<Issue>()));
-            auto const issuanceKey = keylet::mptokenIssuance(asset.get<MPTIssue>());
-            mptokenKey = keylet::mptoken(issuanceKey.key, account);
-            if (!view.exists(*mptokenKey))
-                return true;
-            mptokenKey = std::nullopt;
-            return false;
-        }();
+        bool const assetNotExists = asset.visit(
+            [&](Issue const& issue) { return !view.exists(keylet::trustLine(account, issue)); },
+            [&](MPTIssue const& issue) {
+                auto const issuanceKey = keylet::mptokenIssuance(issue);
+                mptokenKey = keylet::mptoken(issuanceKey.key, account);
+                if (!view.exists(*mptokenKey))
+                    return true;
+                mptokenKey = std::nullopt;
+                return false;
+            });
         if (assetNotExists)
         {
+            // Intentionally ignore the reserve check for AMMClawback, so the
+            // holder can not avoid clawback by deleting the trustline/MPToken
+            // and keeping a low spendable balance. AMMClawback has a higher
+            // priority than the reserve check.
+            if (view.rules().enabled(fixCleanup3_4_0) &&
+                reserveHandling == ReserveHandling::IgnoreReserve)
+                return tesSUCCESS;
+
             auto sleAccount = view.peek(keylet::account(account));
             if (!sleAccount)
                 return tecINTERNAL;  // LCOV_EXCL_LINE
@@ -667,7 +702,7 @@ AMMWithdraw::withdraw(
                     ? XRPAmount(beast::kZero)
                     : accountReserve(view, sleAccount, journal, {.ownerCountDelta = 1}));
 
-            auto const balanceAdj = isIssue ? std::max(priorBalance, balance) : priorBalance;
+            auto const balanceAdj = std::max(priorBalance, balance);
             if (balanceAdj < reserve)
                 return tecINSUFFICIENT_RESERVE;
         }
@@ -680,14 +715,48 @@ AMMWithdraw::withdraw(
         if (mptokenKey && account != asset.getIssuer())
         {
             auto const& mptIssue = asset.get<MPTIssue>();
+            std::uint32_t createFlags = 0;
             if (auto const err = requireAuth(view, mptIssue, account, AuthType::WeakAuth);
                 !isTesSuccess(err))
-                return err;
+            {
+                if (authHandling != AuthHandling::IgnoreAuth || err != tecNO_AUTH)
+                {
+                    // Unreachable in practice. Normal withdraws (authHandling
+                    // != IgnoreAuth) are rejected for unauthorized holders in
+                    // preclaim, so they never get here. Under clawback
+                    // (IgnoreAuth) requireAuth returns a non-tecNO_AUTH error
+                    // (e.g. tecEXPIRED) only for a domain-authorized MPT, but no
+                    // such MPT can be in an AMM pool: a directly domain-gated
+                    // RequireAuth MPT fails AMMCreate/deposit with tecNO_AUTH,
+                    // and vault shares (whose recursive auth could yield
+                    // tecEXPIRED) are rejected by AMMCreate with tecWRONG_ASSET.
+                    return err;  // LCOV_EXCL_LINE
+                }
 
-            if (auto const err = checkCreateMPT(view, mptIssue, account, {}, journal);
+                // AMMClawback ignores authorization so the issuer can recover
+                // MPT locked in the pool even if the holder deleted their
+                // MPToken. Only auto-authorize the recreated MPToken for the
+                // clawback issuer's own asset: authorization is granted by an
+                // asset's issuer, and the clawback transaction is signed by
+                // that issuer only for its own asset. For a paired asset issued
+                // by a different account, recreate the MPToken *unauthorized* so
+                // the clawback does not grant authorization on behalf of that
+                // issuer (which would bypass its lsfMPTRequireAuth). The holder
+                // still receives the paired asset (accountSend only requires the
+                // MPToken to exist, not to be authorized); the balance remains
+                // gated by its issuer until that issuer authorizes it.
+                if (clawbackIssuer && asset.getIssuer() == *clawbackIssuer)
+                    createFlags = lsfMPTAuthorized;
+            }
+
+            if (auto const err = checkCreateMPT(view, mptIssue, account, {}, createFlags, journal);
                 !isTesSuccess(err))
             {
-                return err;
+                // checkCreateMPT only fails on tecDIR_FULL (its source line is
+                // itself LCOV-excluded) or a missing account, which cannot
+                // happen since `account` is the withdrawing LP. Defensive and
+                // unreachable in practice.
+                return err;  // LCOV_EXCL_LINE
             }
         }
         return tesSUCCESS;
@@ -781,6 +850,7 @@ AMMWithdraw::equalWithdrawTokens(
         view,
         ammSle,
         accountID_,
+        std::nullopt,
         ammAccount,
         amountBalance,
         amount2Balance,
@@ -790,6 +860,7 @@ AMMWithdraw::equalWithdrawTokens(
         tfee,
         issuerFreezeHandling(),
         AuthHandling::ZeroIfUnauthorized,
+        ReserveHandling::EnforceReserve,
         isWithdrawAll(ctx_.tx),
         preFeeBalance_,
         ctx_.journal);
@@ -833,6 +904,7 @@ AMMWithdraw::equalWithdrawTokens(
     Sandbox& view,
     SLE const& ammSle,
     AccountID const account,
+    std::optional<AccountID> const& clawbackIssuer,
     AccountID const& ammAccount,
     STAmount const& amountBalance,
     STAmount const& amount2Balance,
@@ -842,6 +914,7 @@ AMMWithdraw::equalWithdrawTokens(
     std::uint16_t tfee,
     FreezeHandling freezeHandling,
     AuthHandling authHandling,
+    ReserveHandling reserveHandling,
     WithdrawAll withdrawAll,
     XRPAmount const& priorBalance,
     beast::Journal const& journal)
@@ -855,6 +928,7 @@ AMMWithdraw::equalWithdrawTokens(
                 view,
                 ammSle,
                 ammAccount,
+                clawbackIssuer,
                 account,
                 amountBalance,
                 amountBalance,
@@ -864,6 +938,7 @@ AMMWithdraw::equalWithdrawTokens(
                 tfee,
                 freezeHandling,
                 authHandling,
+                reserveHandling,
                 WithdrawAll::Yes,
                 priorBalance,
                 journal);
@@ -890,6 +965,7 @@ AMMWithdraw::equalWithdrawTokens(
             view,
             ammSle,
             ammAccount,
+            clawbackIssuer,
             account,
             amountBalance,
             amountWithdraw,
@@ -899,6 +975,7 @@ AMMWithdraw::equalWithdrawTokens(
             tfee,
             freezeHandling,
             authHandling,
+            reserveHandling,
             withdrawAll,
             priorBalance,
             journal);

@@ -77,23 +77,29 @@ jobs:
 
             # Keep the paths below in sync with those in `on-trigger.yml`.
             .github/actions/build-deps/**
-            .github/actions/generate-version/**
+            .github/actions/release-info/**
             .github/actions/setup-conan/**
+            .github/actions/setup-nix-env/**
             .github/scripts/strategy-matrix/**
             .github/workflows/reusable-build-test-config.yml
             .github/workflows/reusable-build-test.yml
+            .github/workflows/reusable-check-autogen.yml
             .github/workflows/reusable-clang-tidy.yml
+            .github/workflows/reusable-package-test-install.yml
             .github/workflows/reusable-package.yml
+            .github/workflows/reusable-rust.yml
             .github/workflows/reusable-strategy-matrix.yml
             .github/workflows/reusable-test.yml
             .github/workflows/reusable-upload-recipe.yml
             .clang-tidy
             .codecov.yml
+            bin/check-nix-store-refs.sh
             bin/check-tools.sh
             bin/default-loader-path.sh
             cfg/**
             cmake/**
             conan/**
+            crates/**
             external/**
             include/**
             src/**
@@ -101,6 +107,9 @@ jobs:
             CMakeLists.txt
             conanfile.py
             conan.lock
+            flake.lock
+            flake.nix
+            nix/**
             LICENSE.md
             package/**
             README.md
@@ -125,6 +134,11 @@ jobs:
           cat "${GITHUB_OUTPUT}"
     outputs:
       go: ${{ steps.go.outputs.go == 'true' }}
+
+  check-autogen:
+    needs: should-run
+    if: ${{ needs.should-run.outputs.go == 'true' }}
+    uses: ./.github/workflows/reusable-check-autogen.yml
 
   check-levelization:
     needs: should-run
@@ -162,6 +176,13 @@ jobs:
     secrets:
       CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
+  rust:
+    needs: should-run
+    if: ${{ needs.should-run.outputs.go == 'true' }}
+    uses: ./.github/workflows/reusable-rust.yml
+    secrets:
+      CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+
   package:
     needs: [should-run, build-test]
     # Packaging consumes the debian/rhel release binaries, which are only built
@@ -169,6 +190,12 @@ jobs:
     # matrix (i.e. not yet labeled "Ready to merge" or "Full CI build").
     if: ${{ needs.should-run.outputs.go == 'true' && (github.event_name != 'pull_request' || contains(github.event.pull_request.labels.*.name, 'Ready to merge') || contains(github.event.pull_request.labels.*.name, 'Full CI build')) }}
     uses: ./.github/workflows/reusable-package.yml
+    with:
+      # A pull request builds packages to prove they still build, and publishes
+      # nothing. Stated rather than left to the input's default, so that changing
+      # that default cannot start publishing from pull requests. No secrets are
+      # passed either, which is the second reason a publish here cannot succeed.
+      publish: false
 
   upload-recipe:
     needs:
@@ -200,10 +227,12 @@ jobs:
   passed:
     if: failure() || cancelled()
     needs:
+      - check-autogen
       - check-levelization
       - check-rename
       - clang-tidy
       - build-test
+      - rust
       - package
       - upload-recipe
       - notify-clio

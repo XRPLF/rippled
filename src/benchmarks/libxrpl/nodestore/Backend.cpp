@@ -20,30 +20,32 @@
 namespace xrpl::node_store {
 namespace {
 
-constexpr std::size_t kPoolSizes[] = {1000, 10000, 100000};
-constexpr int kThreadCounts[] = {1, 4, 8};
+constexpr auto kPoolSizes = std::to_array<std::size_t>({1000, 10000, 100000});
+constexpr auto kThreadCounts = std::to_array<std::size_t>({1, 4, 8});
 constexpr std::size_t kBatchSize = 256;
+constexpr std::size_t kMissRatio = 5;
 
 constexpr std::string_view kNamePrefix = "BM_Backend_";
 constexpr std::string_view kNameSeparator = "/";
 
 struct RunState
 {
-    std::unique_ptr<BackendHarness> harness;
-    Batch present;                     // prefix-1 objects, eligible to be stored
-    Batch recent;                      // prefix-1 objects in the "future" key space
-    std::vector<uint256> missing;      // prefix-2 keys that are never stored
-    std::vector<std::size_t> shuffle;  // [0, poolSize) permutation for random-like access
-    std::size_t avgPayload = 0;        // mean getData().size() over `present`
+    std::unique_ptr<BackendHarness> harness;  ///< backend under test, rebuilt per run
+    Batch present;                            ///< prefix-1 objects, eligible to be stored
+    Batch recent;                             ///< prefix-1 objects in the "future" key space
+    std::vector<uint256> missing;             ///< prefix-2 keys that are never stored
+    std::vector<std::size_t> shuffle;         ///< [0, poolSize) permutation for random-like access
+    std::size_t avgPayload = 0;               ///< mean getData().size() over `present`
 
     void
     release()
     {
         harness.reset();
-        Batch{}.swap(present);
-        Batch{}.swap(recent);
-        std::vector<uint256>{}.swap(missing);
-        std::vector<std::size_t>{}.swap(shuffle);
+        present = Batch{};
+        recent = Batch{};
+        missing = std::vector<uint256>{};
+        shuffle = std::vector<std::size_t>{};
+        avgPayload = 0;
     }
 };
 
@@ -85,7 +87,7 @@ Workload const kInsert{
         },
     .iterate =
         [](IterateContext const& ctx) {
-            auto& [rs, backend, index, poolSize] = ctx;
+            auto const& [rs, backend, index, poolSize] = ctx;
             backend.store(rs.present[index % poolSize]);
         },
     .reportBytes = true,
@@ -104,7 +106,7 @@ Workload const kFetch{
         },
     .iterate =
         [](IterateContext const& ctx) {
-            auto& [rs, backend, index, poolSize] = ctx;
+            auto const& [rs, backend, index, poolSize] = ctx;
             std::shared_ptr<NodeObject> result;
             backend.fetch(rs.present[index % poolSize]->getHash(), &result);
             benchmark::DoNotOptimize(result);
@@ -118,7 +120,7 @@ Workload const kMissing{
     .setup = [](SetupContext const& ctx) { ctx.rs.missing = makeMissingKeys(ctx.poolSize); },
     .iterate =
         [](IterateContext const& ctx) {
-            auto& [rs, backend, index, poolSize] = ctx;
+            auto const& [rs, backend, index, poolSize] = ctx;
             std::shared_ptr<NodeObject> result;
             backend.fetch(rs.missing[index % poolSize], &result);
             benchmark::DoNotOptimize(result);
@@ -139,10 +141,10 @@ Workload const kMixed{
         },
     .iterate =
         [](IterateContext const& ctx) {
-            auto& [rs, backend, index, poolSize] = ctx;
+            auto const& [rs, backend, index, poolSize] = ctx;
             std::shared_ptr<NodeObject> result;
             auto const pick = rs.shuffle[index % poolSize];
-            if (index % 5 == 0)
+            if (index % kMissRatio == 0)
             {
                 backend.fetch(rs.missing[pick], &result);
             }
@@ -170,7 +172,7 @@ Workload const kWork{
         },
     .iterate =
         [](IterateContext const& ctx) {
-            auto& [rs, backend, index, poolSize] = ctx;
+            auto const& [rs, backend, index, poolSize] = ctx;
             auto const slot = index % poolSize;
             auto const pick = rs.shuffle[slot];
 
@@ -238,9 +240,13 @@ registerWorkload(BackendConfig const& bc, Workload const& w)
     if (!w.pinToPool)
     {
         auto rs = std::make_shared<RunState>();
-        auto* b = benchmark::RegisterBenchmark(name, makeRunner(w, cfg, rs));
-        b->RangeMultiplier(10)->Range(kPoolSizes[0], kPoolSizes[std::size(kPoolSizes) - 1]);
-        b->Threads(1)->Threads(4)->Threads(8)->UseRealTime();
+        benchmark::RegisterBenchmark(name, makeRunner(w, cfg, rs))
+            ->RangeMultiplier(10)
+            ->Range(kPoolSizes.front(), kPoolSizes.back())
+            ->Threads(1)
+            ->Threads(4)
+            ->Threads(8)
+            ->UseRealTime();
 
         return;
     }
@@ -249,14 +255,14 @@ registerWorkload(BackendConfig const& bc, Workload const& w)
     {
         for (auto const threads : kThreadCounts)
         {
-            if (poolSize % static_cast<std::size_t>(threads) != 0)
+            if (poolSize % threads != 0)
                 continue;
 
             auto rs = std::make_shared<RunState>();
             benchmark::RegisterBenchmark(name, makeRunner(w, cfg, rs))
                 ->Arg(poolSize)
-                ->Iterations(poolSize / static_cast<std::size_t>(threads))
-                ->Threads(threads)
+                ->Iterations(poolSize / threads)
+                ->Threads(static_cast<int>(threads))
                 ->UseRealTime();
         }
     }
@@ -289,7 +295,7 @@ registerStoreBatch(BackendConfig const& bc)
                 rs->harness = std::make_unique<BackendHarness>(cfg);
                 rs->present = makePool(1, poolSize);
                 rs->avgPayload = averagePayload(rs->present);
-                std::vector<Batch> const batches = sliceBatches(rs->present, kBatchSize);
+                std::vector<Batch> const batches = sliceFixedBatches(rs->present, kBatchSize);
                 if (batches.empty())
                 {
                     state.SkipWithError("pool smaller than one batch");

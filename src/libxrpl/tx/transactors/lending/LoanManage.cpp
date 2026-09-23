@@ -104,7 +104,11 @@ LoanManage::preclaim(PreclaimContext const& ctx)
         return tecNO_PERMISSION;
     }
     if (tx.isFlag(tfLoanDefault) &&
-        !hasExpired(ctx.view, loanSle->at(sfNextPaymentDueDate) + loanSle->at(sfGracePeriod)))
+        !hasExpired(
+            ctx.view,
+            loanSle->at(sfNextPaymentDueDate) + loanSle->at(sfGracePeriod),
+            ctx.view.rules().enabled(fixCleanup3_4_0) ? ExpiryComparison::Exclusive
+                                                      : ExpiryComparison::Inclusive))
     {
         JLOG(ctx.j.warn()) << "A loan can not be defaulted before the next payment due date.";
         return tecTOO_SOON;
@@ -127,23 +131,6 @@ LoanManage::preclaim(PreclaimContext const& ctx)
     return tesSUCCESS;
 }
 
-static Number
-owedToVault(SLE::ref loanSle)
-{
-    // Spec section 3.2.3.2, defines the default amount as
-    //
-    // DefaultAmount = (Loan.PrincipalOutstanding + Loan.InterestOutstanding)
-    //
-    // Loan.InterestOutstanding is not stored directly on ledger.
-    // It is computed as
-    //
-    // Loan.TotalValueOutstanding - Loan.PrincipalOutstanding -
-    //      Loan.ManagementFeeOutstanding
-    //
-    // Add that to the original formula, and you get this:
-    return loanSle->at(sfTotalValueOutstanding) - loanSle->at(sfManagementFeeOutstanding);
-}
-
 TER
 LoanManage::defaultLoan(
     ApplyView& view,
@@ -158,7 +145,7 @@ LoanManage::defaultLoan(
     std::int32_t const loanScale = loanSle->at(sfLoanScale);
     auto brokerDebtTotalProxy = brokerSle->at(sfDebtTotal);
 
-    Number const totalDefaultAmount = owedToVault(loanSle);
+    Number const totalDefaultAmount = loanVaultExposure(vaultSle, loanSle);
 
     // Apply the First-Loss Capital to the Default Amount
     TenthBips32 const coverRateMinimum{brokerSle->at(sfCoverRateMinimum)};
@@ -304,7 +291,15 @@ LoanManage::impairLoan(
     Asset const& vaultAsset,
     beast::Journal j)
 {
-    Number const lossUnrealized = owedToVault(loanSle);
+    bool const fixEnabled340 = view.rules().enabled(fixCleanup3_4_0);
+
+    if (fixEnabled340 && !isPaymentLate(view, loanSle))
+    {
+        JLOG(j.warn()) << "Cannot impair a loan that is not late";
+        return tecTOO_SOON;
+    }
+
+    Number const lossUnrealized = loanVaultExposure(vaultSle, loanSle);
 
     // The vault may be at a different scale than the loan. Reduce rounding
     // errors during the accounting by rounding some of the values to that
@@ -318,20 +313,22 @@ LoanManage::impairLoan(
     {
         // Having a loss greater than the vault's unavailable assets
         // will leave the vault in an invalid / inconsistent state.
-        JLOG(j.warn()) << "Vault unrealized loss is too large, and will "
-                          "corrupt the vault.";
+        JLOG(j.warn()) << "Vault unrealized loss is too large, and will corrupt the vault.";
         return tecLIMIT_EXCEEDED;
     }
     view.update(vaultSle);
 
     // Update the Loan object
     loanSle->setFlag(lsfLoanImpaired);
-    auto loanNextDueProxy = loanSle->at(sfNextPaymentDueDate);
-    if (!hasExpired(view, loanNextDueProxy))
+
+    if (!fixEnabled340)
     {
-        // loan payment is not yet late -
-        // move the next payment due date to now
-        loanNextDueProxy = view.parentCloseTime().time_since_epoch().count();
+        auto loanNextDueProxy = loanSle->at(sfNextPaymentDueDate);
+        if (!isPaymentLate(view, loanSle))
+        {
+            // loan payment is not yet late move the next payment due date to now
+            loanNextDueProxy = view.parentCloseTime().time_since_epoch().count();
+        }
     }
     view.update(loanSle);
 
@@ -353,7 +350,7 @@ LoanManage::unimpairLoan(
 
     // Update the Vault object(clear "paper loss")
     auto vaultLossUnrealizedProxy = vaultSle->at(sfLossUnrealized);
-    Number const lossReversed = owedToVault(loanSle);
+    Number const lossReversed = loanVaultExposure(vaultSle, loanSle);
     if (vaultLossUnrealizedProxy < lossReversed)
     {
         // LCOV_EXCL_START
@@ -368,19 +365,24 @@ LoanManage::unimpairLoan(
 
     // Update the Loan object
     loanSle->clearFlag(lsfLoanImpaired);
-    auto const paymentInterval = loanSle->at(sfPaymentInterval);
-    auto const normalPaymentDueDate =
-        std::max(loanSle->at(sfPreviousPaymentDueDate), loanSle->at(sfStartDate)) + paymentInterval;
-    if (!hasExpired(view, normalPaymentDueDate))
+    if (!view.rules().enabled(fixCleanup3_4_0))
     {
-        // loan was unimpaired within the payment interval
-        loanSle->at(sfNextPaymentDueDate) = normalPaymentDueDate;
-    }
-    else
-    {
-        // loan was unimpaired after the original payment due date
-        loanSle->at(sfNextPaymentDueDate) =
-            view.parentCloseTime().time_since_epoch().count() + paymentInterval;
+        auto const paymentInterval = loanSle->at(sfPaymentInterval);
+        auto const normalPaymentDueDate =
+            std::max(loanSle->at(sfPreviousPaymentDueDate), loanSle->at(sfStartDate)) +
+            paymentInterval;
+
+        if (!hasExpired(view, normalPaymentDueDate))
+        {
+            // loan was unimpaired within the payment interval
+            loanSle->at(sfNextPaymentDueDate) = normalPaymentDueDate;
+        }
+        else
+        {
+            // loan was unimpaired after the original payment due date
+            loanSle->at(sfNextPaymentDueDate) =
+                view.parentCloseTime().time_since_epoch().count() + paymentInterval;
+        }
     }
     view.update(loanSle);
 

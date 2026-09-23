@@ -15,6 +15,7 @@
 #include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/SecretKey.h>
+#include <xrpl/protocol/SeqProxy.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol_autogen/ledger_entries/AccountRoot.h>
@@ -42,7 +43,7 @@
 
 namespace xrpl::test {
 
-TEST(AccountSet, NullAccountSet)
+TEST(AccountSet, null_account_set)
 {
     TxTest env;
 
@@ -59,7 +60,7 @@ TEST(AccountSet, NullAccountSet)
     EXPECT_EQ(accountRoot.getFlags(), 0);
 }
 
-TEST(AccountSet, MostFlags)
+TEST(AccountSet, most_flags)
 {
     Account const alice("alice");
 
@@ -174,7 +175,7 @@ TEST(AccountSet, MostFlags)
     });
 }
 
-TEST(AccountSet, SetAndResetAccountTxnID)
+TEST(AccountSet, set_and_reset_account_txn_id)
 {
     TxTest env;
     Account const alice("alice");
@@ -205,7 +206,7 @@ TEST(AccountSet, SetAndResetAccountTxnID)
     EXPECT_EQ(nowFlags, origFlags);
 }
 
-TEST(AccountSet, SetNoFreeze)
+TEST(AccountSet, set_no_freeze)
 {
     TxTest env;
     Account const alice("alice");
@@ -248,7 +249,7 @@ TEST(AccountSet, SetNoFreeze)
     EXPECT_TRUE(env.getAccountRoot(alice).isFlag(lsfNoFreeze));
 }
 
-TEST(AccountSet, Domain)
+TEST(AccountSet, domain)
 {
     TxTest env;
     Account const alice("alice");
@@ -316,7 +317,7 @@ TEST(AccountSet, Domain)
     }
 }
 
-TEST(AccountSet, MessageKey)
+TEST(AccountSet, message_key)
 {
     TxTest env;
     Account const alice("alice");
@@ -357,7 +358,7 @@ TEST(AccountSet, MessageKey)
         telBAD_PUBLIC_KEY);
 }
 
-TEST(AccountSet, WalletID)
+TEST(AccountSet, wallet_id)
 {
     TxTest env;
     Account const alice("alice");
@@ -390,7 +391,7 @@ TEST(AccountSet, WalletID)
     EXPECT_FALSE(env.getAccountRoot(alice).hasWalletLocator());
 }
 
-TEST(AccountSet, EmailHash)
+TEST(AccountSet, email_hash)
 {
     TxTest env;
     Account const alice("alice");
@@ -421,7 +422,7 @@ TEST(AccountSet, EmailHash)
     EXPECT_FALSE(env.getAccountRoot(alice).hasEmailHash());
 }
 
-TEST(AccountSet, TransferRate)
+TEST(AccountSet, transfer_rate)
 {
     struct TestCase
     {
@@ -472,7 +473,7 @@ TEST(AccountSet, TransferRate)
     }
 }
 
-TEST(AccountSet, BadInputs)
+TEST(AccountSet, bad_inputs)
 {
     TxTest env;
     Account const alice("alice");
@@ -552,7 +553,7 @@ TEST(AccountSet, BadInputs)
         tecNO_ALTERNATIVE_KEY);
 }
 
-TEST(AccountSet, RequireAuthWithDir)
+TEST(AccountSet, require_auth_with_dir)
 {
     TxTest env;
     Account const alice("alice");
@@ -600,7 +601,7 @@ TEST(AccountSet, RequireAuthWithDir)
         tesSUCCESS);
 }
 
-TEST(AccountSet, Ticket)
+TEST(AccountSet, ticket)
 {
     TxTest env;
     Account const alice("alice");
@@ -610,7 +611,7 @@ TEST(AccountSet, Ticket)
 
     // Get alice's current sequence - the ticket will be created at seq + 1
     std::uint32_t const aliceSeqBefore = env.getAccountRoot(alice.id()).getSequence();
-    std::uint32_t const ticketSeq = aliceSeqBefore + 1;
+    auto const ticketSeq = SeqProxy::rawTicket(aliceSeqBefore + 1);
 
     // Create a ticket
     EXPECT_EQ(env.submit(transactions::TicketCreateBuilder{alice, 1}, alice).ter, tesSUCCESS);
@@ -623,7 +624,9 @@ TEST(AccountSet, Ticket)
 
     // Try using a ticket that alice doesn't have
     EXPECT_EQ(
-        env.submit(transactions::AccountSetBuilder{alice}.setTicketSequence(ticketSeq + 1), alice)
+        env.submit(
+               transactions::AccountSetBuilder{alice}.setTicketSequence(ticketSeq.value() + 1),
+               alice)
             .ter,
         terPRE_TICKET);
     env.close();
@@ -636,7 +639,9 @@ TEST(AccountSet, Ticket)
 
     // Actually use alice's ticket (noop AccountSet)
     EXPECT_EQ(
-        env.submit(transactions::AccountSetBuilder{alice}.setTicketSequence(ticketSeq), alice).ter,
+        env.submit(
+               transactions::AccountSetBuilder{alice}.setTicketSequence(ticketSeq.value()), alice)
+            .ter,
         tesSUCCESS);
     env.close();
 
@@ -649,11 +654,13 @@ TEST(AccountSet, Ticket)
 
     // Try re-using a ticket that alice already used
     EXPECT_EQ(
-        env.submit(transactions::AccountSetBuilder{alice}.setTicketSequence(ticketSeq), alice).ter,
+        env.submit(
+               transactions::AccountSetBuilder{alice}.setTicketSequence(ticketSeq.value()), alice)
+            .ter,
         tefNO_TICKET);
 }
 
-TEST(AccountSet, BadSigningKey)
+TEST(AccountSet, bad_signing_key)
 {
     TxTest env;
     Account const alice("alice");
@@ -677,7 +684,7 @@ TEST(AccountSet, BadSigningKey)
     EXPECT_FALSE(result.applied);
 }
 
-TEST(AccountSet, Gateway)
+TEST(AccountSet, gateway)
 {
     Account const alice("alice");
     Account const bob("bob");

@@ -157,7 +157,7 @@ protected:
         return port_;
     }
 
-    beast::IP::Endpoint
+    beast::ip::Endpoint
     remoteAddress() override
     {
         return beast::IPAddressConversion::fromAsio(remoteAddress_);

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <xrpl/basics/CountedObject.h>
+#include <xrpl/basics/UnorderedContainers.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/AccountID.h>
@@ -11,6 +12,8 @@
 #include <xrpl/protocol/UintTypes.h>
 
 #include <cstddef>
+#include <cstdint>
+#include <memory>
 #include <optional>
 #include <utility>
 #include <vector>
@@ -64,7 +67,7 @@ public:
         PathAsset const& asset,
         AccountID const& issuer);
 
-    [[nodiscard]] auto
+    [[nodiscard]] std::uint32_t
     getNodeType() const;
 
     [[nodiscard]] bool
@@ -111,13 +114,21 @@ public:
     bool
     operator==(STPathElement const& t) const;
 
-    bool
-    operator!=(STPathElement const& t) const;
-
 private:
     static std::size_t
     getHash(STPathElement const& element);
 };
+
+template <class Hasher>
+void
+hash_append(Hasher& h, STPathElement const& e) noexcept
+{
+    using beast::hash_append;
+    hash_append(h, (e.getNodeType() & STPathElement::TypeAccount) != 0u);
+    hash_append(h, e.getAccountID());
+    hash_append(h, e.getPathAsset());
+    hash_append(h, e.getIssuerID());
+}
 
 class STPath final : public CountedObject<STPath>
 {
@@ -171,6 +182,17 @@ public:
     reserve(size_t s);
 };
 
+template <class Hasher>
+void
+hash_append(Hasher& h, STPath const& p) noexcept
+{
+    using beast::hash_append;
+    for (auto const& e : p)
+    {
+        hash_append(h, e);
+    }
+}
+
 //------------------------------------------------------------------------------
 
 // A set of zero or more payment paths
@@ -178,11 +200,38 @@ class STPathSet final : public STBase, public CountedObject<STPathSet>
 {
     std::vector<STPath> value_;
 
+    /**
+     * Deduplication index over `value_`, for pathfinding.
+     * The use of a std::unique_ptr is intentional as it
+     * only requires 8 additional bytes of storage for the pointer
+     * as opposed to 64 bytes with an optional.  This keeps the size
+     * of the STPathSet to within the `STVar::kMaxSize` limit of 72 bytes.
+     */
+    std::unique_ptr<hardened_hash_set<STPath>> seen_;
+
 public:
+    struct DeduplicationTag
+    {
+    };
+
     STPathSet() = default;
+    /**
+     * Deduplication tagged constructor.
+     * Use when you want to ensure that the STPathSet does not contain duplicate paths.
+     */
+    explicit STPathSet(DeduplicationTag);
 
     STPathSet(SField const& n);
     STPathSet(SerialIter& sit, SField const& name);
+    STPathSet(STPathSet const& other);
+    STPathSet(STPathSet&&) = default;
+
+    STPathSet&
+    operator=(STPathSet const& other);
+    STPathSet&
+    operator=(STPathSet&&) = default;
+
+    ~STPathSet() override = default;
 
     void
     add(Serializer& s) const override;
@@ -192,6 +241,16 @@ public:
     [[nodiscard]] SerializedTypeID
     getSType() const override;
 
+    /**
+     * @brief assembleAdd adds a path to the set by combining a base path and a tail element.
+     *
+     * @param base The base path.
+     * @param tail The tail element.
+     * @return true if the path was added, false if it was a duplicate and not added.
+     * @remarks Requires the STPathSet to be constructed with the DeduplicationTag. The return value
+     * indicates whether the combined path was inserted (true) or rejected as a duplicate (false).
+     * It is fine for callers to ignore the return value.
+     */
     bool
     assembleAdd(STPath const& base, STPathElement const& tail);
 
@@ -205,9 +264,6 @@ public:
     std::vector<STPath>::const_reference
     operator[](std::vector<STPath>::size_type n) const;
 
-    std::vector<STPath>::reference
-    operator[](std::vector<STPath>::size_type n);
-
     [[nodiscard]] std::vector<STPath>::const_iterator
     begin() const;
 
@@ -220,11 +276,37 @@ public:
     [[nodiscard]] bool
     empty() const;
 
-    void
+    /**
+     * @brief pushBack adds a path to the set.
+     *
+     * @param e The path to add.
+     * @return true if the path was added, false if it was a duplicate and not added.
+     * @remarks If the STPathSet was constructed with the DeduplicationTag, then this method will
+     *          check for duplicates and only add the path if it is not already present in the
+     *          set. If the STPathSet was constructed without the DeduplicationTag,
+     *          then this method will always add the path to the set, regardless of duplicates.
+     *          It is fine for callers to ignore the return value.
+     */
+    bool
     pushBack(STPath const& e);
 
+    /**
+     * @brief emplaceBack adds a path to the set.
+     *
+     * @param args The arguments to construct the path with.
+     * @return true if the path was added, false if it was a duplicate and not added.
+     * @remarks If the STPathSet was constructed with the DeduplicationTag, then this method will
+     *          check for duplicates and only add the path if it is not already present in the
+     *          set. If the STPathSet was constructed without the DeduplicationTag,
+     *          then this method will always add the path to the set, regardless of duplicates.
+     *          It is fine for callers to ignore the return value.
+     * @note The path is constructed before the duplicate check, so on a false
+     *       return the constructed path is discarded and any argument
+     *       forwarded as an rvalue is left in a moved-from state.  Use
+     *       pushBack when the caller needs to keep its path on rejection.
+     */
     template <typename... Args>
-    void
+    bool
     emplaceBack(Args&&... args);
 
 private:
@@ -232,6 +314,22 @@ private:
     copy(std::size_t n, void* buf) const override;
     STBase*
     move(std::size_t n, void* buf) override;
+
+    /**
+     * @brief Append a path via `append`, then register it in the deduplication index.
+     *
+     * @param append Invoked with `value_`; must append exactly one path to it.
+     * @return true if the path was kept, false if it was a duplicate and was rolled back.
+     * @remarks Appends to the vector before touching the index, so that a failed allocation
+     *          there leaves both containers untouched rather than leaving the index holding
+     *          a path the vector does not.  If the index insert reports a duplicate, or
+     *          throws, the append is rolled back so the two containers stay consistent; in
+     *          the throwing case the exception propagates.  With no index (constructed
+     *          without the DeduplicationTag) the append is unconditional.
+     */
+    template <typename Append>
+    bool
+    appendUnique(Append&& append);
 
     friend class detail::STVar;
 };
@@ -324,7 +422,7 @@ inline STPathElement::STPathElement(
     hashValue_ = getHash(*this);
 }
 
-inline auto
+inline std::uint32_t
 STPathElement::getNodeType() const
 {
     return type_;
@@ -415,12 +513,6 @@ STPathElement::operator==(STPathElement const& t) const
 {
     return (type_ & TypeAccount) == (t.type_ & TypeAccount) && hashValue_ == t.hashValue_ &&
         accountID_ == t.accountID_ && assetID_ == t.assetID_ && issuerID_ == t.issuerID_;
-}
-
-inline bool
-STPathElement::operator!=(STPathElement const& t) const
-{
-    return !operator==(t);
 }
 
 // ------------ STPath ------------
@@ -515,12 +607,6 @@ STPathSet::operator[](std::vector<STPath>::size_type n) const
     return value_[n];
 }
 
-inline std::vector<STPath>::reference
-STPathSet::operator[](std::vector<STPath>::size_type n)
-{
-    return value_[n];
-}
-
 inline std::vector<STPath>::const_iterator
 STPathSet::begin() const
 {
@@ -545,17 +631,50 @@ STPathSet::empty() const
     return value_.empty();
 }
 
-inline void
+template <typename Append>
+inline bool
+STPathSet::appendUnique(Append&& append)
+{
+    // Append to the vector first, so that a failed allocation there leaves both
+    // containers untouched rather than leaving the index holding a path the
+    // vector does not.
+    append(value_);
+
+    if (seen_ == nullptr)
+    {
+        return true;
+    }
+
+    try
+    {
+        if (!seen_->insert(value_.back()).second)
+        {
+            // Already present: roll back the append.
+            value_.pop_back();
+            return false;
+        }
+    }
+    catch (...)
+    {
+        // The index insert failed, so roll back the append to keep the vector
+        // and the index consistent.
+        value_.pop_back();
+        throw;
+    }
+    return true;
+}
+
+inline bool
 STPathSet::pushBack(STPath const& e)
 {
-    value_.push_back(e);
+    return appendUnique([&](auto& value) { value.push_back(e); });
 }
 
 template <typename... Args>
-inline void
+inline bool
 STPathSet::emplaceBack(Args&&... args)
 {
-    value_.emplace_back(std::forward<Args>(args)...);
+    return appendUnique([&](auto& value) { value.emplace_back(std::forward<Args>(args)...); });
 }
 
 }  // namespace xrpl

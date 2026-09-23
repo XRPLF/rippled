@@ -188,6 +188,6 @@ struct MultiApiJson
 
 // Wrapper for Json for all supported API versions.
 using MultiApiJson =
-    detail::MultiApiJson<RPC::kApiMinimumSupportedVersion, RPC::kApiMaximumValidVersion>;
+    detail::MultiApiJson<rpc::kApiMinimumSupportedVersion, rpc::kApiMaximumValidVersion>;
 
 }  // namespace xrpl

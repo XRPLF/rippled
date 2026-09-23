@@ -57,6 +57,7 @@
 #include <xrpl/shamap/SHAMapMissingNode.h>
 #include <xrpl/shamap/SHAMapTreeNode.h>
 
+#include <boost/icl/concept/interval_associator.hpp>
 #include <boost/icl/concept/interval_set.hpp>
 
 #include <xrpl.pb.h>
@@ -492,7 +493,7 @@ LedgerMaster::setBuildingLedger(LedgerIndex i)
 }
 
 bool
-LedgerMaster::haveLedger(std::uint32_t seq)
+LedgerMaster::haveLedger(std::uint32_t seq) const
 {
     std::scoped_lock const sl(completeLock_);
     return boost::icl::contains(completeLedgers_, seq);
@@ -1042,8 +1043,8 @@ LedgerMaster::checkAccept(std::shared_ptr<Ledger const> const& ledger)
                 if (v->isFieldPresent(sfServerVersion))
                 {
                     auto version = v->getFieldU64(sfServerVersion);
-                    higherVersionCount += BuildInfo::isNewerVersion(version) ? 1 : 0;
-                    xrpldCount += BuildInfo::isXrpldVersion(version) ? 1 : 0;
+                    higherVersionCount += build_info::isNewerVersion(version) ? 1 : 0;
+                    xrpldCount += build_info::isXrpldVersion(version) ? 1 : 0;
                 }
             }
             // We report only if (1) we have accumulated validation messages
@@ -1576,10 +1577,34 @@ LedgerMaster::getPublishedLedger()
 }
 
 std::string
-LedgerMaster::getCompleteLedgers()
+LedgerMaster::getCompleteLedgers() const
 {
     std::scoped_lock const sl(completeLock_);
     return to_string(completeLedgers_);
+}
+
+std::size_t
+LedgerMaster::missingFromCompleteLedgerRange(LedgerIndex first, LedgerIndex last) const
+{
+    if (first > last)
+    {
+        // In expected usage, this will never happen because "first" is generally initialized to
+        // "last", "last" is guaranteed to grow monotonically, and "first" either doesn't change
+        // or grows more slowly.
+        // LCOV_EXCL_START
+        UNREACHABLE("xrpl::LedgerMaster::missingFromCompleteLedgerRange : invalid parameters");
+        return 0;
+        // LCOV_EXCL_STOP
+    }
+
+    RangeSet<LedgerIndex> const target{range(first, last)};
+
+    auto const missing = [&target, this] {
+        std::scoped_lock const sl(completeLock_);
+        return target - completeLedgers_;
+    }();
+
+    return boost::icl::size(missing);
 }
 
 std::optional<NetClock::time_point>
@@ -2088,21 +2113,21 @@ LedgerMaster::makeFetchPack(
     if (!have)
     {
         JLOG(journal_.info()) << "Peer requests fetch pack for ledger we don't have: " << have;
-        peer->charge(Resource::kFeeRequestNoReply, "get_object ledger");
+        peer->charge(resource::kFeeRequestNoReply, "get_object ledger");
         return;
     }
 
     if (have->open())
     {
         JLOG(journal_.warn()) << "Peer requests fetch pack from open ledger: " << have;
-        peer->charge(Resource::kFeeMalformedRequest, "get_object ledger open");
+        peer->charge(resource::kFeeMalformedRequest, "get_object ledger open");
         return;
     }
 
     if (have->header().seq < getEarliestFetch())
     {
         JLOG(journal_.debug()) << "Peer requests fetch pack that is too early";
-        peer->charge(Resource::kFeeMalformedRequest, "get_object ledger early");
+        peer->charge(resource::kFeeMalformedRequest, "get_object ledger early");
         return;
     }
 
@@ -2112,7 +2137,7 @@ LedgerMaster::makeFetchPack(
     {
         JLOG(journal_.info()) << "Peer requests fetch pack for ledger whose predecessor we "
                               << "don't have: " << have;
-        peer->charge(Resource::kFeeRequestNoReply, "get_object ledger no parent");
+        peer->charge(resource::kFeeRequestNoReply, "get_object ledger no parent");
         return;
     }
 
