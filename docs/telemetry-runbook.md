@@ -90,14 +90,14 @@ All spans instrumented in xrpld, grouped by subsystem:
 
 ### Transaction Spans
 
-| Span Name       | Source File     | Attributes                                                                                              | Description                                                  |
-| --------------- | --------------- | ------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------ |
-| `tx.process`    | NetworkOPs.cpp  | `tx_hash`, `local`, `path`, `tx_type`, `fee`, `sequence`, `ter_result`, `applied`, `current_ledger_seq` | Transaction submission and processing                        |
-| `tx.receive`    | PeerImp.cpp     | `peer_id`, `tx_hash`, `tx_type`, `peer_version`, `tx_status`, `current_ledger_seq`                      | Transaction this node will process, received from peer relay |
-| `tx.apply`      | BuildLedger.cpp | `ledger_seq`, `tx_count`, `tx_failed`                                                                   | Transaction set applied per ledger                           |
-| `tx.preflight`  | applySteps.cpp  | `stage`, `tx_type`, `ter_result`                                                                        | Stateless checks stage                                       |
-| `tx.preclaim`   | applySteps.cpp  | `stage`, `tx_type`, `ter_result`, `current_ledger_seq`, `current_ledger_hash`                           | Ledger-aware checks stage                                    |
-| `tx.transactor` | Transactor.cpp  | `stage`, `tx_type`, `ter_result`, `applied`, `current_ledger_seq`, `current_ledger_hash`                | Apply stage (transactor runs)                                |
+| Span Name       | Source File     | Attributes                                                                                                                                                                                                                                                     | Description                                                  |
+| --------------- | --------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------ |
+| `tx.process`    | NetworkOPs.cpp  | `tx_hash`, `local`, `path`, `tx_type`, `fee`, `sequence`, `ter_result`, `applied`, `current_ledger_seq`, `tx_account` and one `tx_<field>` per other account field the transaction carries (`tx_destination`, `tx_owner`, ...; keys in `TxAccountSpanNames.h`) | Transaction submission and processing                        |
+| `tx.receive`    | PeerImp.cpp     | `peer_id`, `tx_hash`, `tx_type`, `peer_version`, `tx_status`, `current_ledger_seq`                                                                                                                                                                             | Transaction this node will process, received from peer relay |
+| `tx.apply`      | BuildLedger.cpp | `ledger_seq`, `tx_count`, `tx_failed`                                                                                                                                                                                                                          | Transaction set applied per ledger                           |
+| `tx.preflight`  | applySteps.cpp  | `stage`, `tx_type`, `ter_result`                                                                                                                                                                                                                               | Stateless checks stage                                       |
+| `tx.preclaim`   | applySteps.cpp  | `stage`, `tx_type`, `ter_result`, `current_ledger_seq`, `current_ledger_hash`                                                                                                                                                                                  | Ledger-aware checks stage                                    |
+| `tx.transactor` | Transactor.cpp  | `stage`, `tx_type`, `ter_result`, `applied`, `current_ledger_seq`, `current_ledger_hash`                                                                                                                                                                       | Apply stage (transactor runs)                                |
 
 The three apply-pipeline spans (`tx.preflight`, `tx.preclaim`, `tx.transactor`)
 share a deterministic `trace_id` from `txID[0:16]`, so they group under one
@@ -125,12 +125,12 @@ hash); `tx.preflight` is stateless and omits both.
 
 ### PathFinding Spans
 
-| Span Name             | Source File                       | Attributes                                         | Description                                             |
-| --------------------- | --------------------------------- | -------------------------------------------------- | ------------------------------------------------------- |
-| `pathfind.request`    | PathFind.cpp / RipplePathFind.cpp | `pathfind_source_account`, `pathfind_dest_account` | Path-find RPC entry (accounts hashed; set when present) |
-| `pathfind.compute`    | PathRequest.cpp                   | `pathfind_fast`, `pathfind_dest_currency`          | Path computation for one request (`doUpdate`)           |
-| `pathfind.discover`   | PathRequest.cpp                   | `pathfind_search_level`, `pathfind_num_paths`      | Graph exploration (one per RPC call in `findPaths`)     |
-| `pathfind.update_all` | PathRequestManager.cpp            | `pathfind_ledger_index`, `pathfind_num_requests`   | Async recomputation of active requests on ledger close  |
+| Span Name             | Source File                       | Attributes                                         | Description                                                                     |
+| --------------------- | --------------------------------- | -------------------------------------------------- | ------------------------------------------------------------------------------- |
+| `pathfind.request`    | PathFind.cpp / RipplePathFind.cpp | `pathfind_source_account`, `pathfind_dest_account` | Path-find RPC entry (raw r-addresses; set when the request field parses as one) |
+| `pathfind.compute`    | PathRequest.cpp                   | `pathfind_fast`, `pathfind_dest_currency`          | Path computation for one request (`doUpdate`)                                   |
+| `pathfind.discover`   | PathRequest.cpp                   | `pathfind_search_level`, `pathfind_num_paths`      | Graph exploration (one per RPC call in `findPaths`)                             |
+| `pathfind.update_all` | PathRequestManager.cpp            | `pathfind_ledger_index`, `pathfind_num_requests`   | Async recomputation of active requests on ledger close                          |
 
 ### Consensus Spans
 

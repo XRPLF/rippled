@@ -318,22 +318,24 @@ The tables below list one row per attribute per subsystem, so a key shared by tw
 
 #### Transaction Attributes
 
-| Attribute             | Type    | Set On                                                       | Description                                                                                                                           |
-| --------------------- | ------- | ------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------- |
-| `tx_hash`             | string  | `tx.process`, `tx.receive`                                   | Transaction hash (hex-encoded)                                                                                                        |
-| `local`               | boolean | `tx.process`                                                 | `true` if locally submitted, `false` if peer-relayed                                                                                  |
-| `path`                | string  | `tx.process`                                                 | Submission path: `"sync"` or `"async"`                                                                                                |
-| `tx_type`             | string  | `tx.process`, `tx.preflight`, `tx.preclaim`, `tx.transactor` | Transaction type name (e.g., `Payment`)                                                                                               |
-| `fee`                 | int64   | `tx.process`                                                 | Transaction fee in drops                                                                                                              |
-| `sequence`            | int64   | `tx.process`                                                 | Transaction sequence number                                                                                                           |
-| `tx_status`           | string  | `tx.receive`                                                 | Transaction status (e.g., `"known_bad"`)                                                                                              |
-| `peer_id`             | int64   | `tx.receive`                                                 | Peer identifier (also set on peer spans)                                                                                              |
-| `peer_version`        | string  | `tx.receive`                                                 | Peer protocol version string                                                                                                          |
-| `stage`               | string  | `tx.preflight`, `tx.preclaim`, `tx.transactor`               | Apply-pipeline stage: `preflight`, `preclaim`, or `apply`                                                                             |
-| `ter_result`          | string  | `tx.preflight`, `tx.preclaim`, `tx.transactor`               | Engine result token for that stage (e.g., `tesSUCCESS`, `terPRE_SEQ`)                                                                 |
-| `applied`             | boolean | `tx.transactor`                                              | `true` if the transaction was applied to the ledger                                                                                   |
-| `current_ledger_seq`  | int64   | `tx.process`, `tx.receive`, `tx.preclaim`, `tx.transactor`   | Seq of the ledger being worked on (open/in-flight, not established) — joins the txID-keyed spans to the ledger trace                  |
-| `current_ledger_hash` | string  | `tx.preclaim`, `tx.transactor`                               | Parent hash of that ledger (= `consensus.round` trace-id seed on the build path). View-bearing stages only; `tx.preflight` omits both |
+| Attribute             | Type    | Set On                                                       | Description                                                                                                                             |
+| --------------------- | ------- | ------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------- |
+| `tx_hash`             | string  | `tx.process`, `tx.receive`                                   | Transaction hash (hex-encoded)                                                                                                          |
+| `local`               | boolean | `tx.process`                                                 | `true` if locally submitted, `false` if peer-relayed                                                                                    |
+| `path`                | string  | `tx.process`                                                 | Submission path: `"sync"` or `"async"`                                                                                                  |
+| `tx_type`             | string  | `tx.process`, `tx.preflight`, `tx.preclaim`, `tx.transactor` | Transaction type name (e.g., `Payment`)                                                                                                 |
+| `fee`                 | int64   | `tx.process`                                                 | Transaction fee in drops                                                                                                                |
+| `sequence`            | int64   | `tx.process`                                                 | Transaction sequence number                                                                                                             |
+| `tx_account`          | string  | `tx.process`                                                 | Sending account, raw r-address                                                                                                          |
+| `tx_<field>`          | string  | `tx.process`                                                 | One per other account-typed top-level field the transaction carries (`tx_destination`, `tx_owner`, ...); keys in `TxAccountSpanNames.h` |
+| `tx_status`           | string  | `tx.receive`                                                 | Transaction status (e.g., `"known_bad"`)                                                                                                |
+| `peer_id`             | int64   | `tx.receive`                                                 | Peer identifier (also set on peer spans)                                                                                                |
+| `peer_version`        | string  | `tx.receive`                                                 | Peer protocol version string                                                                                                            |
+| `stage`               | string  | `tx.preflight`, `tx.preclaim`, `tx.transactor`               | Apply-pipeline stage: `preflight`, `preclaim`, or `apply`                                                                               |
+| `ter_result`          | string  | `tx.preflight`, `tx.preclaim`, `tx.transactor`               | Engine result token for that stage (e.g., `tesSUCCESS`, `terPRE_SEQ`)                                                                   |
+| `applied`             | boolean | `tx.transactor`                                              | `true` if the transaction was applied to the ledger                                                                                     |
+| `current_ledger_seq`  | int64   | `tx.process`, `tx.receive`, `tx.preclaim`, `tx.transactor`   | Seq of the ledger being worked on (open/in-flight, not established) — joins the txID-keyed spans to the ledger trace                    |
+| `current_ledger_hash` | string  | `tx.preclaim`, `tx.transactor`                               | Parent hash of that ledger (= `consensus.round` trace-id seed on the build path). View-bearing stages only; `tx.preflight` omits both   |
 
 **Tempo query**: `{span.tx_hash="<hash>"}` to trace a specific transaction across nodes.
 Join a transaction's work to its ledger with `{span.current_ledger_seq=<N>}`.
@@ -453,8 +455,8 @@ the parent `ledger.build` carries `ledger_seq` and the close-time attributes.
 
 | Attribute                 | Type    | Set On                | Description                              |
 | ------------------------- | ------- | --------------------- | ---------------------------------------- |
-| `pathfind_source_account` | string  | `pathfind.request`    | Originating account for the path search  |
-| `pathfind_dest_account`   | string  | `pathfind.request`    | Destination account                      |
+| `pathfind_source_account` | string  | `pathfind.request`    | Originating account, raw r-address       |
+| `pathfind_dest_account`   | string  | `pathfind.request`    | Destination account, raw r-address       |
 | `pathfind_fast`           | boolean | `pathfind.compute`    | Whether fast pathfinding mode is enabled |
 | `pathfind_search_level`   | int64   | `pathfind.discover`   | Depth of graph exploration               |
 | `pathfind_num_paths`      | int64   | `pathfind.discover`   | Total paths produced                     |
@@ -1029,6 +1031,7 @@ The telemetry system is designed with privacy in mind:
 - **No private keys** are ever included in spans or metrics
 - **No account balances** or financial data is traced
 - **Transaction hashes** are included (public on-ledger data) but not transaction contents
+- **Account addresses** are public ledger identifiers and are emitted raw, never hashed; a request value is emitted only when it parses as an r-address
 - **Peer IDs** are internal identifiers, not IP addresses
 - **All telemetry is opt-in** — disabled by default at build time (`-Dtelemetry=OFF`)
 - **Sampling** — head sampling is fixed at 1.0 (sample everything); reduce data volume with collector-side tail sampling
