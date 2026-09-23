@@ -929,11 +929,16 @@ Transactor::checkSign(
 
         if ((view.rules().enabled(featureLendingProtocol) ||
              view.rules().enabled(featureBatchV1_1) || view.rules().enabled(fixCleanup3_3_0)) &&
-            isPseudoAccount(sle))
+            isPseudoAccount(sle) && !(parentBatchId && sle->isFieldPresent(sfContractID)))
         {
             // Pseudo-accounts can't sign transactions. This check is gated on a
             // few different amendments so that it takes effect as soon as any of
             // them is activated.
+            //
+            // A contract's pseudo-account is the exception for inner transactions:
+            // the contract emits them, and the emit host functions allow only the
+            // running contract's own account. A Batch can't use this, because its
+            // BatchSigners are checked without a parentBatchId.
             return tefBAD_AUTH;
         }
     }

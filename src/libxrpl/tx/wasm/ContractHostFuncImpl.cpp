@@ -973,6 +973,11 @@ ContractHostFunctionsImpl::emitBuiltTxn(std::uint32_t const& index)
             return std::unexpected(HostFunctionError::SubmitTxnFailure);
         }
 
+        // Inner transactions skip the signature check, so a contract may emit
+        // only from its own account.
+        if (stx->getAccountID(sfAccount) != contractCtx.result.contractAccount)
+            return std::unexpected(HostFunctionError::SubmitTxnFailure);
+
         // Use a persistent emit view that is seeded with the
         // transactor's pending state changes (balances, consumed
         // sequence, etc.) so that each emitted transaction validates
@@ -1039,6 +1044,10 @@ ContractHostFunctionsImpl::emitTxn(std::shared_ptr<STTx const> const& stxPtr)
         {
             return std::unexpected(HostFunctionError::SubmitTxnFailure);
         }
+
+        // See emitBuiltTxn: a contract may emit only from its own account.
+        if (txPtr->getAccountID(sfAccount) != contractCtx.result.contractAccount)
+            return std::unexpected(HostFunctionError::SubmitTxnFailure);
 
         // Use a persistent emit view seeded with the transactor's
         // pending state, and do a full apply() for each emission
