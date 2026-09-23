@@ -1,10 +1,10 @@
 {
-  "description": "Expected span inventory for xrpld telemetry validation. Attribute keys follow the 2026-05-13 span-attr naming redesign (bare/underscore form; dotted xrpl.* reserved for resource attributes). Sourced from the *SpanNames.h headers and verified against the emitting call sites. Spans marked \"optional\": true are conditional — they only fire under traffic the harness may not produce (e.g. gRPC client, path-finding RPC, missing-ledger fetch, mode transitions) and are not failed when absent. \"parent\" is documentation only (validate_telemetry.py asserts hierarchy from parent_child_relationships, not from this field) and records the parent as the code actually produces it: null means the span is a root or an explicit freshRoot. required_attributes lists only attributes set on EVERY code path that creates the span — attributes set after an early return are described in the span's note instead, because _validate_span_attributes_otlp samples a single trace and would fail on a legitimate short-circuit path. total_unique_attributes is the size of the union of all required_attributes; total_span_types is len(spans). Span EVENTS (consensus.round phase.*/outcome.*, consensus.update_positions dispute.resolve, consensus.accept.apply tx.included) are NOT represented: validate_telemetry.py reads only span name, attributes and timestamps from Tempo, so an \"events\" key would be silently ignored. They are documented in the relevant span notes until the validator gains event support.",
+  "description": "Expected span inventory for xrpld telemetry validation. Attribute keys follow the 2026-05-13 span-attr naming redesign (bare/underscore form; dotted xrpl.* reserved for resource attributes). Sourced from the *SpanNames.h headers and verified against the emitting call sites. Spans marked \"optional\": true are conditional — they only fire under traffic the harness may not produce (e.g. gRPC client, path-finding RPC, missing-ledger fetch, mode transitions) and are not failed when absent. \"allowed_parents\" is asserted, by validate_span_parents in validate_telemetry.py: every emitted instance of the span must be parented to one of the names listed, so a span declared a root that is emitted as somebody's child now fails a check instead of passing silently. \"ROOT\" means \"no parent from this node\" — a genuine root, an explicit freshRoot, or a span whose parent was created on a different node, because a cross-node parent is the design for the receive spans and is never a violation. A span reachable by two call paths lists every parent either path can give it, and a listed parent may itself be a glob (pathfind.request is declared under rpc.command.*), matched the same way the span names in this file are. Each list is derived from the span's creation factory plus every call path that reaches it — README.md, section \"expected_spans.json Format\", has the rule — so a span note that lists fewer parents than the code can produce is a bug in this file, not a reason to widen the gate at the call site. Three spans list ROOT even though their factory inherits the ambient scope (ledger.acquire, pathfind.update_all, grpc.*): they are created at a boundary or outlive the creating scope, so an observed parent there is an ambient leak to fix in the C++, not an edge to add here. required_attributes lists only attributes set on EVERY code path that creates the span — attributes set after an early return are described in the span's note instead, because _validate_span_attributes_otlp samples a single trace and would fail on a legitimate short-circuit path. total_unique_attributes is the size of the union of all required_attributes; total_span_types is len(spans). Span EVENTS (consensus.round phase.*/outcome.*, consensus.update_positions dispute.resolve, consensus.accept.apply tx.included) are NOT represented: validate_telemetry.py reads only span name, attributes and timestamps from Tempo, so an \"events\" key would be silently ignored. They are documented in the relevant span notes until the validator gains event support.",
   "spans": [
     {
       "name": "rpc.ws_message",
       "category": "rpc",
-      "parent": null,
+      "allowed_parents": ["ROOT"],
       "required_attributes": ["command"],
       "config_flag": "trace_rpc",
       "note": "WebSocket RPC root span. The load generator uses WS, so this is the RPC entry span (not rpc.http_request, which needs an HTTP/JSON-RPC client)."
@@ -12,7 +12,7 @@
     {
       "name": "rpc.ws_upgrade",
       "category": "rpc",
-      "parent": null,
+      "allowed_parents": ["ROOT"],
       "required_attributes": [],
       "config_flag": "trace_rpc",
       "optional": true,
@@ -21,7 +21,7 @@
     {
       "name": "rpc.process",
       "category": "rpc",
-      "parent": "rpc.http_request",
+      "allowed_parents": ["rpc.http_request"],
       "required_attributes": [],
       "config_flag": "trace_rpc",
       "optional": true,
@@ -30,15 +30,15 @@
     {
       "name": "rpc.command.*",
       "category": "rpc",
-      "parent": "rpc.ws_message",
+      "allowed_parents": ["rpc.ws_message", "rpc.process", "ROOT"],
       "required_attributes": ["command", "version", "rpc_role", "rpc_status"],
       "config_flag": "trace_rpc",
-      "note": "Wildcard — matches rpc.command.server_info, rpc.command.ledger, etc. Created as an ambient (scoped) child in rpc::doCommand / rpc::callMethod (RPCHandler.cpp:168, :271), so its parent is whichever transport span is active on the thread: rpc.ws_message on the WebSocket path (the harness workload) and rpc.process on the HTTP/JSON-RPC path."
+      "note": "Wildcard — matches rpc.command.server_info, rpc.command.ledger, etc. Created as a plain ScopedSpanGuard in rpc::callMethod (RPCHandler.cpp:204-205) and, on the fillHandler-rejection path, in rpc::doCommand (:340-341), so its parent is whichever transport span is ambient on the thread. Three call paths, all three exercised by this harness: rpc::doCommand from the WebSocket handler inside the rpc.ws_message scope (ServerHandler.cpp:589 under the freshRoot at :495); from ServerHandler::processRequest inside the rpc.process scope (:1037 under the guard at :734); and from ApplicationImp::setup's [rpc_startup] loop (Application.cpp:1786) on the main thread with no ambient scope, which makes it a ROOT. The third is why ROOT is listed: startTelemetry() runs at Application.cpp:1511, well before that loop, so the startup command really does emit a rooted rpc.command span — run-full-validation.sh writes a [rpc_startup] log_level command for every node, so there are five of them per run."
     },
     {
       "name": "rpc.http_request",
       "category": "rpc",
-      "parent": null,
+      "allowed_parents": ["ROOT"],
       "required_attributes": ["request_payload_size"],
       "config_flag": "trace_rpc",
       "optional": true,
@@ -47,14 +47,14 @@
     {
       "name": "tx.process",
       "category": "transaction",
-      "parent": null,
+      "allowed_parents": ["ROOT"],
       "required_attributes": ["tx_hash", "local", "path"],
       "config_flag": "trace_transactions"
     },
     {
       "name": "tx.receive",
       "category": "transaction",
-      "parent": null,
+      "allowed_parents": ["ROOT"],
       "required_attributes": ["tx_hash", "peer_id"],
       "config_flag": "trace_transactions",
       "note": "Cross-node span: parent context propagated from the sender's tx.process via protobuf. Also carries tx_type and peer_version. The span is created only after the node decides to process the transaction, so a relayed duplicate produces no span at all; how many were dropped is the transactions_duplicate traffic category. tx_status is set only on the paths that drop a transaction after that point, so it is not a required attribute."
@@ -62,15 +62,15 @@
     {
       "name": "tx.apply",
       "category": "transaction",
-      "parent": "ledger.build",
+      "allowed_parents": ["ledger.build"],
       "required_attributes": ["tx_count", "tx_failed"],
       "config_flag": "trace_transactions",
-      "note": "Apply-step span inside BuildLedger. Carries tx_count/tx_failed (ledger_seq lives on the parent ledger.build span)."
+      "note": "Apply-step span inside BuildLedger. Sets its own ledger_seq next to tx_count and tx_failed (BuildLedger.cpp:197-199), so do not re-add the earlier claim that ledger_seq lives on the parent ledger.build span — it does not, and ledger.build sets it independently."
     },
     {
       "name": "tx.preflight",
       "category": "transaction",
-      "parent": null,
+      "allowed_parents": ["ROOT"],
       "required_attributes": ["stage", "tx_type", "ter_result"],
       "config_flag": "trace_transactions",
       "note": "Apply-pipeline stage span (stage=preflight). Shares a deterministic trace_id (txID[0:16]) with tx.preclaim/tx.transactor."
@@ -78,7 +78,7 @@
     {
       "name": "tx.preclaim",
       "category": "transaction",
-      "parent": null,
+      "allowed_parents": ["ROOT"],
       "required_attributes": ["stage", "tx_type", "ter_result"],
       "config_flag": "trace_transactions",
       "note": "Apply-pipeline stage span (stage=preclaim)."
@@ -86,7 +86,7 @@
     {
       "name": "tx.transactor",
       "category": "transaction",
-      "parent": null,
+      "allowed_parents": ["ROOT"],
       "required_attributes": ["stage", "tx_type"],
       "config_flag": "trace_transactions",
       "note": "Apply-pipeline stage span (stage=apply). Also carries applied."
@@ -94,16 +94,21 @@
     {
       "name": "txq.enqueue",
       "category": "transaction",
-      "parent": "tx.process",
+      "allowed_parents": [
+        "tx.process",
+        "consensus.accept.apply",
+        "rpc.command.*",
+        "ROOT"
+      ],
       "required_attributes": ["tx_hash", "tx_type", "txq_status"],
       "config_flag": "trace_transactions",
       "optional": true,
-      "note": "Only fires when a tx is queued (fee below open-ledger level). Requires fee escalation — driven by the txq-burst workload phase. tx_hash/tx_type/txq_status are set on every code path; fee_level_paid/required_fee_level are conditional (TxQ.cpp ~895-898, after the rejected and applied_direct early exits), so they are NOT guaranteed on every txq.enqueue span and cannot be required."
+      "note": "Only fires when a tx is queued (fee below open-ledger level). Requires fee escalation — driven by the txq-burst workload phase. tx_hash/tx_type/txq_status are set on every code path; fee_level_paid/required_fee_level are conditional (TxQ.cpp ~895-898, after the rejected and applied_direct early exits), so they are NOT guaranteed on every txq.enqueue span and cannot be required. Four parents, because TxQ::apply (TxQ.cpp:770) takes an OPTIONAL parent context (:790-795): with a context it is an explicit childSpan, without one it is a plain ScopedSpanGuard that inherits whatever is ambient. tx.process comes from the submission path, which passes the captured context (NetworkOPs.cpp:1803-1810). consensus.accept.apply comes from the open-ledger rebuild, which passes none: OpenLedger.cpp:121 replays local transactions, and OpenLedger::accept is called from inside doAccept (RCLConsensus.cpp:871) where the consensus span is ambient. ROOT comes from that same rebuild reached by the switchLastClosedLedger jump path instead (NetworkOPs.cpp:2313), which has no ambient scope, and from the submission path when the tx.process context is invalid. rpc.command.* comes from the simulate RPC (Simulate.cpp:249), which passes no context and runs inside the command span's scope; the harness never issues simulate, so that parent is unreachable here but is still lawful."
     },
     {
       "name": "txq.apply_direct",
       "category": "transaction",
-      "parent": "txq.enqueue",
+      "allowed_parents": ["txq.enqueue"],
       "required_attributes": [],
       "config_flag": "trace_transactions",
       "optional": true,
@@ -112,24 +117,25 @@
     {
       "name": "txq.batch_clear",
       "category": "transaction",
-      "parent": "txq.enqueue",
-      "required_attributes": ["num_cleared"],
+      "allowed_parents": ["txq.enqueue"],
+      "required_attributes": [],
       "config_flag": "trace_transactions",
-      "optional": true
+      "optional": true,
+      "note": "TxQ::tryClearAccountQueueUpThruTx (TxQ.cpp:571-572). num_cleared is NOT required: it is written only once the batch has actually cleared, inside the `if (txResult.applied)` branch at TxQ.cpp:646. Three earlier returns leave the span without it — a fee-level overflow (:589-590), a batch that did not pay enough (:598-599), and a queued transaction that failed to apply (:632-635) — as does the final doApply failing, which falls past the branch. The span is opened before any of those decisions, so a required num_cleared would fail the check on a legitimate fall-back-to-normal-processing path rather than on a defect."
     },
     {
       "name": "txq.accept",
       "category": "transaction",
-      "parent": null,
+      "allowed_parents": ["consensus.accept.apply", "ROOT"],
       "required_attributes": ["queue_size", "ledger_changed"],
       "config_flag": "trace_transactions",
       "optional": true,
-      "note": "Ledger-close accept loop (TxQ::accept, TxQ.cpp:1499). Only meaningful when the queue is non-empty. Root on BOTH call paths, verified: the consensus path (RCLConsensus.cpp:823, inside doAccept) and the switchLastClosedLedger jump path (NetworkOPs.cpp:2150). The span is a ScopedSpanGuard, so it adopts whatever OTel context is ambient — but consensus.accept and consensus.accept.apply are unscoped thread-free SpanGuards and activate() is never called outside unit tests, so no consensus span is ever the ambient parent on the JtAccept worker. ledger.build's ScopedSpanGuard has already been destroyed by the time OpenLedger::accept runs."
+      "note": "Ledger-close accept loop (TxQ::accept, TxQ.cpp:1499). Only meaningful when the queue is non-empty. Two call paths, and they give it two different parents. On the consensus path (RCLConsensus.cpp:823, inside doAccept) consensus.accept.apply is the ambient scope for the whole of doAccept, so this span is its child. On the switchLastClosedLedger jump path (NetworkOPs.cpp:2150) no consensus span is open on that thread, so the span is a root. The span is a ScopedSpanGuard and adopts whatever OTel context is ambient, which is what makes the parent a property of the caller rather than of this span."
     },
     {
       "name": "txq.accept_tx",
       "category": "transaction",
-      "parent": "txq.accept",
+      "allowed_parents": ["txq.accept"],
       "required_attributes": [
         "tx_hash",
         "ter_code",
@@ -142,16 +148,16 @@
     {
       "name": "txq.cleanup",
       "category": "transaction",
-      "parent": null,
+      "allowed_parents": ["consensus.accept.apply", "ROOT"],
       "required_attributes": ["ledger_seq", "expired_count"],
       "config_flag": "trace_transactions",
       "optional": true,
-      "note": "TxQ::processClosedLedger (TxQ.cpp:1403). Root on BOTH call paths for the same reason as txq.accept: the consensus path (RCLConsensus.cpp:950) and the switchLastClosedLedger jump path (NetworkOPs.cpp:2121) both run with no consensus span activated as ambient context."
+      "note": "TxQ::processClosedLedger (TxQ.cpp:1403). The same two call paths as txq.accept, with the same split: the consensus path (RCLConsensus.cpp:950) runs inside the consensus.accept.apply scope and nests under it, while the switchLastClosedLedger jump path (NetworkOPs.cpp:2121) has no consensus span open and leaves it a root."
     },
     {
       "name": "consensus.round",
       "category": "consensus",
-      "parent": null,
+      "allowed_parents": ["ROOT"],
       "required_attributes": [
         "consensus_ledger_id",
         "ledger_seq",
@@ -165,14 +171,14 @@
     {
       "name": "consensus.phase.open",
       "category": "consensus",
-      "parent": "consensus.round",
+      "allowed_parents": ["consensus.round"],
       "required_attributes": [],
       "config_flag": "trace_consensus"
     },
     {
       "name": "consensus.proposal.send",
       "category": "consensus",
-      "parent": "consensus.round",
+      "allowed_parents": ["consensus.round"],
       "required_attributes": ["consensus_round"],
       "config_flag": "trace_consensus",
       "note": "Also carries is_bow_out."
@@ -180,7 +186,7 @@
     {
       "name": "consensus.ledger_close",
       "category": "consensus",
-      "parent": "consensus.round",
+      "allowed_parents": ["consensus.round"],
       "required_attributes": ["ledger_seq", "consensus_mode"],
       "config_flag": "trace_consensus",
       "note": "Also carries tx_count_open, close_time_resolution_ms."
@@ -188,7 +194,7 @@
     {
       "name": "consensus.establish",
       "category": "consensus",
-      "parent": "consensus.round",
+      "allowed_parents": ["consensus.round"],
       "required_attributes": [
         "converge_percent",
         "establish_count",
@@ -200,7 +206,7 @@
     {
       "name": "consensus.update_positions",
       "category": "consensus",
-      "parent": "consensus.establish",
+      "allowed_parents": ["consensus.establish"],
       "required_attributes": [
         "converge_percent",
         "proposers",
@@ -212,7 +218,7 @@
     {
       "name": "consensus.check",
       "category": "consensus",
-      "parent": "consensus.establish",
+      "allowed_parents": ["consensus.establish"],
       "required_attributes": [
         "agree_count",
         "disagree_count",
@@ -225,14 +231,14 @@
     {
       "name": "consensus.accept",
       "category": "consensus",
-      "parent": "consensus.round",
+      "allowed_parents": ["consensus.round"],
       "required_attributes": ["proposers", "round_time_ms", "quorum"],
       "config_flag": "trace_consensus"
     },
     {
       "name": "consensus.accept.apply",
       "category": "consensus",
-      "parent": "consensus.accept",
+      "allowed_parents": ["consensus.accept", "consensus.round"],
       "required_attributes": [
         "ledger_seq",
         "close_time_ripple_epoch_s",
@@ -242,12 +248,12 @@
         "resolution_direction"
       ],
       "config_flag": "trace_consensus",
-      "note": "Also carries close_time_correct, close_resolution_ms, consensus_state, proposing, round_time_ms, tx_count. Emits a tx.included span EVENT per transaction in the accepted set (RCLConsensus.cpp:720, with a tx_id attribute), which validate_telemetry.py cannot assert (no event support)."
+      "note": "Also carries close_time_correct, close_resolution_ms, consensus_state, proposing, round_time_ms, tx_count. Emits a tx.included span EVENT per transaction in the accepted set (RCLConsensus.cpp:720, with a tx_id attribute), which validate_telemetry.py cannot assert (no event support). Two parents because the factory picks its context at RCLConsensus.cpp:636-638: childSpan of the captured accept context normally, falling back to the round context when the accept span was null. Both are explicit contexts, never ambient, so no third parent is possible — if neither context is valid the factory returns a null guard and no span is emitted at all."
     },
     {
       "name": "consensus.validation.send",
       "category": "consensus",
-      "parent": null,
+      "allowed_parents": ["ROOT"],
       "required_attributes": [
         "ledger_seq",
         "proposing",
@@ -260,7 +266,7 @@
     {
       "name": "consensus.proposal.receive",
       "category": "consensus",
-      "parent": null,
+      "allowed_parents": ["ROOT"],
       "required_attributes": [],
       "config_flag": "trace_consensus",
       "note": "Context-propagated from the sending peer. No required local attributes."
@@ -268,7 +274,7 @@
     {
       "name": "consensus.validation.receive",
       "category": "consensus",
-      "parent": null,
+      "allowed_parents": ["ROOT"],
       "required_attributes": [],
       "config_flag": "trace_consensus",
       "note": "Context-propagated from the sending peer. No required local attributes."
@@ -276,16 +282,16 @@
     {
       "name": "consensus.mode_change",
       "category": "consensus",
-      "parent": "consensus.round",
+      "allowed_parents": ["consensus.round"],
       "required_attributes": ["mode_old", "mode_new"],
       "config_flag": "trace_consensus",
       "optional": true,
-      "note": "childSpan of roundSpanContext_ (RCLConsensus.cpp:1101), so the parent is consensus.round. Only fires on an operating-mode transition; a steady cluster rarely changes mode after warmup. A mode change outside a round leaves roundSpanContext_ invalid, which yields a null (no-op) guard rather than a root span."
+      "note": "childSpan of roundSpanContext_ (RCLConsensus.cpp:1101), so the parent is consensus.round. Only fires on an operating-mode transition; a steady cluster rarely changes mode after warmup. Note the handler itself is called at the start of EVERY round, with the before and after mode equal on almost all of them, so the guard on before != after is the whole reason this span is conditional rather than per-round — without it the span records no change and span.mode_change.records_a_real_change fails. A mode change outside a round leaves roundSpanContext_ invalid, which yields a null (no-op) guard rather than a root span."
     },
     {
       "name": "ledger.build",
       "category": "ledger",
-      "parent": null,
+      "allowed_parents": ["consensus.accept.apply", "ROOT"],
       "required_attributes": [
         "ledger_seq",
         "close_time_ripple_epoch_s",
@@ -293,35 +299,37 @@
         "close_resolution_ms"
       ],
       "config_flag": "trace_ledger",
-      "note": "tx_count/tx_failed live on the child tx.apply span, not here."
+      "note": "tx_count/tx_failed live on the child tx.apply span, not here. Two call paths give it two parents. The consensus path (RCLConsensus.cpp:983-985, inside doAccept) builds the ledger inside the consensus.accept.apply scope, so the span nests under it. The LedgerDeltaAcquire replay path (LedgerDeltaAcquire.cpp:208) rebuilds a historical ledger with no consensus span open on that thread, so the span is a root there."
     },
     {
       "name": "ledger.validate",
       "category": "ledger",
-      "parent": null,
+      "allowed_parents": ["consensus.accept.apply", "ROOT"],
       "required_attributes": ["ledger_seq", "validations"],
-      "config_flag": "trace_ledger"
+      "config_flag": "trace_ledger",
+      "note": "Created in LedgerMaster::checkAccept (LedgerMaster.cpp:1002-1003) with the ambient-inheriting span() factory, so its parent is whatever scope is open on the calling thread. The consensus path reaches it inside doAccept — consensusBuilt (RCLConsensus.cpp:803) calls checkAccept at LedgerMaster.cpp:1149, and the node's own validation takes the same route through handleNewValidation (RCLConsensus.cpp:1115) — so there it nests under the consensus span. ROOT covers the two paths with no ambient scope: an inbound peer validation, which PeerImp defers to a JtValidationT/JtValidationUt job (PeerImp.cpp:2751-2757) carrying only a never-activated SpanGuard handle, and the InboundLedger completion path (InboundLedger.cpp:168, :583)."
     },
     {
       "name": "ledger.store",
       "category": "ledger",
-      "parent": null,
+      "allowed_parents": ["consensus.accept.apply", "ROOT"],
       "required_attributes": ["ledger_seq"],
-      "config_flag": "trace_ledger"
+      "config_flag": "trace_ledger",
+      "note": "Created in LedgerMaster::storeLedger (LedgerMaster.cpp:470) with the ambient-inheriting span() factory. The consensus path reaches it from RCLConsensus.cpp:1001, inside doAccept, so there it nests under the consensus span. ROOT covers every other caller, none of which has an ambient scope: InboundLedger.cpp:164 and :574, LedgerDeltaAcquire.cpp:243, and the genesis/startup stores at Application.cpp:2028 and :2037."
     },
     {
       "name": "ledger.acquire",
       "category": "ledger",
-      "parent": null,
+      "allowed_parents": ["ROOT"],
       "required_attributes": ["ledger_seq", "acquire_reason"],
       "config_flag": "trace_ledger",
       "optional": true,
-      "note": "Only fires when a node must fetch a missing ledger (InboundLedger). A healthy local cluster rarely back-fills history. ledger_seq and acquire_reason are set unconditionally in init() (InboundLedger.cpp:116, :131) and are therefore required. outcome, timeouts and peer_count are set only on the done() path (InboundLedger.cpp:508-515); init() can satisfy the acquisition from the local store or bail on failed_/!complete_ and return without reaching done(), so those three cannot be required."
+      "note": "Only fires when a node must fetch a missing ledger (InboundLedger). A healthy local cluster rarely back-fills history. ledger_seq and acquire_reason are set unconditionally in init() (InboundLedger.cpp:116, :131) and are therefore required. outcome, timeouts and peer_count are set only on the done() path (InboundLedger.cpp:508-515); init() can satisfy the acquisition from the local store or bail on failed_/!complete_ and return without reaching done(), so those three cannot be required. ROOT is the only lawful parent even though the span uses the ambient-inheriting span() factory (InboundLedger.cpp:112-113) and InboundLedgers::acquire is called from a dozen places on several threads, some of them inside a live scope. The span deliberately outlives the creating thread — it is emplaced in init() and reset on a JtLedgerData worker — so parenting it to a transient caller scope would be wrong by construction, not merely surprising. An observed parent here is therefore an ambient leak at the call site to be fixed, not a lawful edge to be added to this list."
     },
     {
       "name": "peer.proposal.receive",
       "category": "peer",
-      "parent": null,
+      "allowed_parents": ["ROOT"],
       "required_attributes": ["peer_id"],
       "config_flag": "trace_peer",
       "note": "peer_id is set immediately after the freshRoot (PeerImp.cpp:1925) and is the only unconditional attribute. proposal_trusted is set at PeerImp.cpp:1953, after several early returns (stale/duplicate/self-originated proposal checks), so a single rejected proposal in the sampled trace would fail the check — it is therefore not required."
@@ -329,7 +337,7 @@
     {
       "name": "peer.validation.receive",
       "category": "peer",
-      "parent": null,
+      "allowed_parents": ["ROOT"],
       "required_attributes": ["peer_id", "ledger_hash", "full_validation"],
       "config_flag": "trace_peer",
       "note": "ledger_hash and full_validation are shared with consensus.validation.send (same keys, told apart by span name). Both are set at PeerImp.cpp:2573-2574, BEFORE the isCurrent() gate, so only a too-small or unparseable validation skips them — they stay required (and validate_telemetry.py's PARITY_SPAN_ATTRS already asserts them independently). validation_trusted is set at PeerImp.cpp:2591, after the isCurrent() early return at :2576-2584, so a single not-current validation in the sampled trace would fail the check — it is therefore not required."
@@ -337,7 +345,7 @@
     {
       "name": "pathfind.request",
       "category": "pathfind",
-      "parent": "rpc.command.*",
+      "allowed_parents": ["rpc.command.*"],
       "required_attributes": [
         "pathfind_source_account",
         "pathfind_dest_account"
@@ -349,16 +357,16 @@
     {
       "name": "pathfind.compute",
       "category": "pathfind",
-      "parent": "pathfind.request",
+      "allowed_parents": ["pathfind.request", "pathfind.update_all"],
       "required_attributes": ["pathfind_fast"],
       "config_flag": "trace_rpc",
       "optional": true,
-      "note": "Created by PathRequest::doUpdate (PathRequest.cpp:749-750), which the harness never reaches: pathfinding is disabled on every harness node, so no PathRequest is ever constructed. Config.cpp:725-726 sets pathSearchMax to 0 when a [validation_seed] or [validator_token] section is present, run-full-validation.sh writes [validation_seed] for every node and has no [path_search*] override, and doRipplePathFind then returns RpcNotSupported at RipplePathFind.cpp:59-60 — above the request-construction branches and below the pathfind.request span guard at :35. Liquidity is not the reason and never was: the call is refused before any path search is attempted, so the outcome does not depend on what the ledger holds. There is a second, independent reason: the harness sends no path-finding RPC at all, since rpc_load_generator.py carries no ripple_path_find weight. Enabling this span therefore needs BOTH a [path_search_max] override (or a non-validator node) in run-full-validation.sh AND the load restored — see the workload README section 'Pathfinding is not exercised'."
+      "note": "Created by PathRequest::doUpdate (PathRequest.cpp:749-750), which the harness never reaches: pathfinding is disabled on every harness node, so no PathRequest is ever constructed. Config.cpp:725-726 sets pathSearchMax to 0 when a [validation_seed] or [validator_token] section is present, run-full-validation.sh writes [validation_seed] for every node and has no [path_search*] override, and doRipplePathFind then returns RpcNotSupported at RipplePathFind.cpp:59-60 — above the request-construction branches and below the pathfind.request span guard at :35. Liquidity is not the reason and never was: the call is refused before any path search is attempted, so the outcome does not depend on what the ledger holds. There is a second, independent reason: the harness sends no path-finding RPC at all, since rpc_load_generator.py carries no ripple_path_find weight. Enabling this span therefore needs BOTH a [path_search_max] override (or a non-validator node) in run-full-validation.sh AND the load restored — see the workload README section 'Pathfinding is not exercised'. Two parents: doUpdate's plain ScopedSpanGuard (PathRequest.cpp:788-789) inherits the ambient scope, and doUpdate has callers under both of them — under pathfind.request via PathRequest.cpp:272 and PathRequestManager.cpp:334, and under pathfind.update_all via PathRequestManager.cpp:161 and :176, where updateAll's own scoped guard is open."
     },
     {
       "name": "pathfind.discover",
       "category": "pathfind",
-      "parent": "pathfind.compute",
+      "allowed_parents": ["pathfind.compute"],
       "required_attributes": ["pathfind_search_level", "pathfind_num_paths"],
       "config_flag": "trace_rpc",
       "optional": true,
@@ -367,20 +375,20 @@
     {
       "name": "pathfind.update_all",
       "category": "pathfind",
-      "parent": null,
+      "allowed_parents": ["ROOT"],
       "required_attributes": ["pathfind_ledger_index", "pathfind_num_requests"],
       "config_flag": "trace_rpc",
       "optional": true,
-      "note": "Async recomputation at ledger close. PathRequestManager::updateAll emits the span only when requests_ is non-empty (PathRequestManager.cpp:88-95), so it needs a live path_find subscription. On the harness requests_ can never become non-empty at all: the only two insertPathRequest call sites are makePathRequest (:268) and makeLegacyPathRequest (:296), and both handlers return RpcNotSupported first because pathfinding is disabled on every node (PathFind.cpp:50-51, RipplePathFind.cpp:59; see the pathfind.compute entry above for the config chain)."
+      "note": "Async recomputation at ledger close. PathRequestManager::updateAll emits the span only when requests_ is non-empty (PathRequestManager.cpp:88-95), so it needs a live path_find subscription. On the harness requests_ can never become non-empty at all: the only two insertPathRequest call sites are makePathRequest (:268) and makeLegacyPathRequest (:296), and both handlers return RpcNotSupported first because pathfinding is disabled on every node (PathFind.cpp:50-51, RipplePathFind.cpp:59; see the pathfind.compute entry above for the config chain). ROOT despite the ambient-inheriting ScopedSpanGuard, because the one caller is LedgerMaster's advance thread (LedgerMaster.cpp:1491) with no scope open. An observed parent is an ambient leak into that thread, not a lawful edge."
     },
     {
       "name": "grpc.*",
       "category": "grpc",
-      "parent": null,
+      "allowed_parents": ["ROOT"],
       "required_attributes": ["method", "grpc_role", "grpc_status"],
       "config_flag": "trace_rpc",
       "optional": true,
-      "note": "Wildcard — grpc.<MethodName>. The harness has no gRPC client, so these do not fire. Tracked for completeness."
+      "note": "Wildcard — grpc.<MethodName>. The harness has no gRPC client, so these do not fire. Tracked for completeness. ROOT despite the ambient-inheriting span() factory (GRPCServer.cpp:174), because the span is created at the inbound boundary on a gRPC handler thread that runs no other instrumented work. An observed parent is an ambient leak onto that thread, not a lawful edge."
     }
   ],
   "parent_child_relationships": [
@@ -519,5 +527,5 @@
     }
   ],
   "total_span_types": 41,
-  "total_unique_attributes": 62
+  "total_unique_attributes": 60
 }
