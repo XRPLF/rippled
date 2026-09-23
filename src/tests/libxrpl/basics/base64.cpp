@@ -14,7 +14,7 @@ check(std::string const& in, std::string const& out)
     EXPECT_EQ(base64Decode(encoded), in);
 }
 
-TEST(base64, base64)
+TEST(Base64, base64)
 {
     // cspell: disable
     check("", "");
