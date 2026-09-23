@@ -356,7 +356,7 @@ protected:
 };
 
 // freshRoot() must ignore the ambient active span and start a brand-new trace.
-TEST_F(SpanGuardScopeTest, spanGuard_freshRoot_is_true_root_ignoring_ambient)
+TEST_F(SpanGuardScopeTest, span_guard_fresh_root_is_true_root_ignoring_ambient)
 {
     {
         // Ambient span becomes the active span on this thread.
@@ -386,7 +386,7 @@ TEST_F(SpanGuardScopeTest, spanGuard_freshRoot_is_true_root_ignoring_ambient)
 
 // A ScopedSpanGuard is the ambient active span on its thread the moment it is
 // constructed: a child created while it is alive parents to its span.
-TEST_F(SpanGuardScopeTest, scopedGuard_is_ambient_on_construct)
+TEST_F(SpanGuardScopeTest, scoped_guard_is_ambient_on_construct)
 {
     opentelemetry::trace::SpanId activeId;
     {
@@ -423,7 +423,7 @@ TEST_F(SpanGuardScopeTest, scopedGuard_is_ambient_on_construct)
 // operator SpanGuard() && pops the Scope eagerly on the origin thread, so the
 // span is no longer ambient here and the resulting thread-free guard can be
 // ended on a worker thread without corrupting this thread's context stack.
-TEST_F(SpanGuardScopeTest, scopedGuard_conversion_pops_scope_on_this_thread)
+TEST_F(SpanGuardScopeTest, scoped_guard_conversion_pops_scope_on_this_thread)
 {
     {
         ScopedSpanGuard s(TraceCategory::Ledger, "ledger", "build");
@@ -466,7 +466,7 @@ TEST_F(SpanGuardScopeTest, scopedGuard_conversion_pops_scope_on_this_thread)
 
 // The SpanGuard produced by the conversion ends the span exactly once: the
 // moved-from ScopedSpanGuard must not re-end it on destruction.
-TEST_F(SpanGuardScopeTest, scopedGuard_conversion_result_ends_span_once)
+TEST_F(SpanGuardScopeTest, scoped_guard_conversion_result_ends_span_once)
 {
     {
         ScopedSpanGuard scoped(TraceCategory::Ledger, "ledger", "build");
@@ -499,7 +499,7 @@ TEST_F(SpanGuardScopeTest, scopedGuard_conversion_result_ends_span_once)
 // stack ignores the LocalValue swap, so the span would stay visible off-store
 // (the EXPECT_NE below would fail). Passes only because the fixture installs the
 // coro-aware storage that binds the ambient stack to the active store.
-TEST_F(SpanGuardScopeTest, scopedGuard_survives_localvalue_store_swap)
+TEST_F(SpanGuardScopeTest, scoped_guard_survives_localvalue_store_swap)
 {
     namespace ctx = opentelemetry::context;
     namespace trc = opentelemetry::trace;
@@ -743,7 +743,7 @@ TEST_F(SpanGuardScopeTest, scopedChildOfCapturedContextIsAmbientForLaterSpans)
 
 // A forced-root span started while a PendingTraceId is active adopts that
 // pinned 16-byte trace_id and remains a true root (no parent).
-TEST_F(SpanGuardScopeTest, deterministicIdGenerator_forced_root_gets_pending_trace_id)
+TEST_F(SpanGuardScopeTest, deterministic_id_generator_forced_root_gets_pending_trace_id)
 {
     auto const h = makeTraceIdBytes();
     {
@@ -764,7 +764,7 @@ TEST_F(SpanGuardScopeTest, deterministicIdGenerator_forced_root_gets_pending_tra
 
 // A forced-root span with NO PendingTraceId gets a random (non-zero) trace_id,
 // never the deterministic hash -- the safety property when no id is pinned.
-TEST_F(SpanGuardScopeTest, deterministicIdGenerator_no_pending_gives_random_root)
+TEST_F(SpanGuardScopeTest, deterministic_id_generator_no_pending_gives_random_root)
 {
     auto const h = makeTraceIdBytes();
     {
@@ -788,7 +788,7 @@ TEST_F(SpanGuardScopeTest, deterministicIdGenerator_no_pending_gives_random_root
 // child, so the pinned id stays available -- proven here by a trailing
 // forced-root span that DOES adopt it (which also consumes the id so
 // ~PendingTraceId's consumed-assert holds; see the report for this choice).
-TEST_F(SpanGuardScopeTest, deterministicIdGenerator_ambient_child_ignores_pending)
+TEST_F(SpanGuardScopeTest, deterministic_id_generator_ambient_child_ignores_pending)
 {
     auto const h = makeTraceIdBytes();
     {
@@ -861,7 +861,7 @@ TEST_F(SpanGuardScopeTest, deterministicIdGenerator_ambient_child_ignores_pendin
 // builds) XRPL_ASSERT is a no-op, and under ENABLE_VOIDSTAR a failed assert
 // continues instead of aborting -- in both cases the worker would not crash and
 // EXPECT_DEATH would report a spurious failure.
-TEST_F(SpanGuardScopeTest, scopedGuard_cross_thread_death_asserts_at_wrong_store_destroy)
+TEST_F(SpanGuardScopeTest, scoped_guard_cross_thread_death_asserts_at_wrong_store_destroy)
 {
 #ifdef NDEBUG
     GTEST_SKIP() << "XRPL_ASSERT compiles to a no-op under NDEBUG (Release builds), so the "
