@@ -235,11 +235,11 @@ The authoritative collector config lives in the repo at `docker/telemetry/otel-c
 `docker/telemetry/otel-collector-config.yaml` is the base config used by the
 local stack and by CI. It carries **three** pipelines, not one:
 
-| Pipeline  | Receivers              | Processors                                                       | Exporters                                  |
-| --------- | ---------------------- | ---------------------------------------------------------------- | ------------------------------------------ |
-| `traces`  | `otlp`                 | `resource/tier`, `resource/stripsdk`, `attributes/hash`, `batch` | `debug`, `otlp_grpc/tempo`, `span_metrics` |
-| `metrics` | `otlp`, `span_metrics` | `resource/tier`, `resource/stripsdk`, `batch`                    | `prometheus`                               |
-| `logs`    | `file_log`             | `resource/logs`, `resource/tier`, `resource/stripsdk`, `batch`   | `otlp_http/loki`                           |
+| Pipeline  | Receivers              | Processors                                                     | Exporters                                  |
+| --------- | ---------------------- | -------------------------------------------------------------- | ------------------------------------------ |
+| `traces`  | `otlp`                 | `resource/tier`, `resource/stripsdk`, `batch`                  | `debug`, `otlp_grpc/tempo`, `span_metrics` |
+| `metrics` | `otlp`, `span_metrics` | `resource/tier`, `resource/stripsdk`, `batch`                  | `prometheus`                               |
+| `logs`    | `file_log`             | `resource/logs`, `resource/tier`, `resource/stripsdk`, `batch` | `otlp_http/loki`                           |
 
 Component detail:
 
@@ -253,8 +253,8 @@ Component detail:
   `xrpl.network.type` only when absent); `resource/stripsdk` (drops the
   `telemetry.sdk.*` attributes); `resource/logs` (`action: upsert` on
   `service.name` and `job` — only the former becomes a Loki stream label, see
-  the known issue in §5.8.5); `attributes/hash` (hashes
-  `pathfind_source_account` and `pathfind_dest_account`).
+  the known issue in §5.8.5). No processor hashes or drops span attributes:
+  account addresses are public identifiers and are stored as emitted.
 - **Connector.** `span_metrics` with `namespace: "span"`
   (`otel-collector-config.yaml:114`) — this is why the derived RED metrics are
   `span_calls_total` / `span_duration_milliseconds_*`. The connector's own
@@ -280,8 +280,7 @@ Component detail:
 
 Deliberately absent from the base config — do not document them as present:
 no `memory_limiter`, no `tail_sampling`, no Elastic APM exporter, and no
-`tx_account` attribute rule (the hashed keys are the two `pathfind_*_account`
-ones).
+attribute hashing or redaction rule (account addresses are emitted raw).
 
 ### 5.5.2 Production Configuration
 
