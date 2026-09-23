@@ -238,7 +238,7 @@
     {
       "name": "consensus.accept.apply",
       "category": "consensus",
-      "allowed_parents": ["consensus.accept", "consensus.round"],
+      "allowed_parents": ["consensus.accept"],
       "required_attributes": [
         "ledger_seq",
         "close_time_ripple_epoch_s",
@@ -248,7 +248,7 @@
         "resolution_direction"
       ],
       "config_flag": "trace_consensus",
-      "note": "Also carries close_time_correct, close_resolution_ms, consensus_state, proposing, round_time_ms, tx_count. Emits a tx.included span EVENT per transaction in the accepted set (RCLConsensus.cpp:720, with a tx_id attribute), which validate_telemetry.py cannot assert (no event support). Two parents because the factory picks its context at RCLConsensus.cpp:636-638: childSpan of the captured accept context normally, falling back to the round context when the accept span was null. Both are explicit contexts, never ambient, so no third parent is possible — if neither context is valid the factory returns a null guard and no span is emitted at all."
+      "note": "Also carries close_time_correct, close_resolution_ms, consensus_state, proposing, round_time_ms, tx_count. Emits a tx.included span EVENT per transaction in the accepted set (RCLConsensus.cpp:720, with a tx_id attribute), which validate_telemetry.py cannot assert (no event support). One parent: a scoped childSpan of the captured accept context (RCLConsensus.cpp doAccept). The context is valid whenever the accept span is live; when it is not, the factory returns a null guard and no span is emitted at all. Scoped, so the txq spans doAccept creates after it are its children."
     },
     {
       "name": "consensus.validation.send",
