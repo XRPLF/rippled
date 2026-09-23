@@ -70,60 +70,58 @@ getStartHint(SLE::const_ref sle, AccountID const& accountID)
 bool
 isRelatedToAccount(ReadView const& ledger, SLE::const_ref sle, AccountID const& accountID)
 {
-    // Generic ownership check: verify that the SLE's key is present in the
-    // account's owner directory. This is the same relationship that
-    // forEachItemAfter relies on when iterating the account's owner
-    // directory, so it works for every ledger-entry type that is inserted
-    // into an owner directory (trust lines, signer lists, tickets, offers,
-    // escrows, payment channels, checks, deposit preauths, NFT offers, DIDs,
-    // oracles, credentials, permissioned domains, MPToken issuances,
-    // MPTokens, vaults, loan brokers, loans, sponsorships, delegates, ...).
+    // Marker validator for account_lines / account_offers / account_channels
+    // pagination. The three RPCs stash the limit-th owner-directory entry's
+    // key in the marker regardless of its ledger-entry type, so this check
+    // is what stops a follow-up request from resuming iteration on an SLE
+    // that does not actually belong in `accountID`'s owner directory.
     //
     // Historically this was a hard-coded allowlist keyed off sfAccount /
     // sfDestination / sfOwner / ltRIPPLE_STATE / ltSIGNER_LIST /
-    // ltNFTOKEN_OFFER. Every owner-directory ledger-entry type added after
-    // that allowlist (e.g. Credential which uses sfSubject / sfIssuer, or
-    // Sponsorship which uses sfSponsee) fell through to `return false`, so
-    // account_lines / account_offers / account_channels pagination markers
-    // that legitimately landed on one of those types were rejected with
-    // rpcInvalidParams. Walking the owner directory here is generic and
-    // stays correct as new ledger-entry types are added.
-    auto const rootKeylet = keylet::ownerDir(accountID);
+    // ltNFTOKEN_OFFER, so every owner-directory ledger-entry type added
+    // after that allowlist (Credential using sfSubject / sfIssuer,
+    // Sponsorship using sfSponsee, Delegate's delegatee side, token Escrow,
+    // etc.) fell through to `return false` and legitimate pagination
+    // markers were rejected with rpcInvalidParams.
+    //
+    // Every owner-directory insertion records the destination page number
+    // on the inserted SLE in an sf*Node UINT64 field (sfOwnerNode,
+    // sfLowNode / sfHighNode for trust lines, sfDestinationNode for the
+    // destination side of Check / Escrow / PayChannel and the delegatee of
+    // Delegate, sfIssuerNode / sfSubjectNode for Credential, sfSponseeNode
+    // for Sponsorship, sfLoanBrokerNode for Loan, and so on). So instead
+    // of enumerating (ledger type, account role) → node field mappings —
+    // which reintroduces the "forgot to update the allowlist when a new
+    // type was added" failure mode — we let the SLE itself tell us which
+    // pages to probe: for each sf*Node UINT64 field set on the SLE, look
+    // up that page in accountID's owner directory and check whether the
+    // SLE's key is stored there. The containment check makes it safe to
+    // probe every candidate: a Node value that refers to some *other*
+    // account's directory cannot spuriously match because the SLE's key
+    // only lives in the pages of its real owners.
+    //
+    // This is bounded by the number of sf*Node fields on the SLE (a small
+    // single-digit constant — no single ledger entry type in the current
+    // schema carries more than three), which matters post-`fixDirectoryLimit`
+    // where owner directories no longer have a per-directory page cap.
+    auto const ownerDir = keylet::ownerDir(accountID);
     auto const& sleKey = sle->key();
 
-    auto const containsKey = [&sleKey](SLE::const_ref page) {
-        auto const& indexes = page->getFieldV256(sfIndexes);
-        return std::find(indexes.begin(), indexes.end(), sleKey) != indexes.end();
-    };
-
-    // Fast path: try the page implied by the SLE's own directory-node hint,
-    // if any. For objects with sfOwnerNode (or, for ltRIPPLE_STATE,
-    // sfLowNode/sfHighNode) this jumps straight to the page containing
-    // sleKey.
-    auto const hint = getStartHint(sle, accountID);
-    if (auto const hintPage = ledger.read(keylet::page(rootKeylet, hint));
-        hintPage && containsKey(hintPage))
-        return true;
-
-    // Slow path: walk every page of the account's owner directory. Owner
-    // directories are bounded (see fixDirectoryLimit) so this is cheap in
-    // practice, and it correctly handles ledger-entry types whose per-account
-    // directory-node field is not sfOwnerNode / sfLowNode / sfHighNode (for
-    // example the subject side of a Credential uses sfSubjectNode, and the
-    // sponsee side of a Sponsorship uses sfSponseeNode).
-    auto currentPage = rootKeylet;
-    while (true)
-    {
-        auto const page = ledger.read(currentPage);
+    auto const pageContainsKey = [&](std::uint64_t node) {
+        auto const page = ledger.read(keylet::page(ownerDir, node));
         if (!page)
             return false;
-        if (containsKey(page))
-            return true;
-        auto const next = page->getFieldU64(sfIndexNext);
-        if (next == 0)
+        auto const& indexes = page->getFieldV256(sfIndexes);
+        return std::ranges::find(indexes, sleKey) != indexes.end();
+    };
+
+    return std::ranges::any_of(*sle, [&](auto const& field) {
+        if (field.getSType() != STI_UINT64)
             return false;
-        currentPage = keylet::page(rootKeylet, next);
-    }
+        if (!field.getFName().getName().ends_with("Node"))
+            return false;
+        return pageContainsKey(sle->getFieldU64(field.getFName()));
+    });
 }
 
 hash_set<AccountID>
