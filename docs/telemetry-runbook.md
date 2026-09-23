@@ -409,12 +409,12 @@ from `result_->state` at
 
 ### Ledger Spans
 
-| Span Name         | Source File       | Attributes                                                                             | Description                                                                                                                   |
-| ----------------- | ----------------- | -------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
-| `ledger.build`    | BuildLedger.cpp   | `ledger_seq`, `close_time_ripple_epoch_s`, `close_time_correct`, `close_resolution_ms` | Ledger build during consensus                                                                                                 |
-| `ledger.validate` | LedgerMaster.cpp  | `ledger_hash`, `ledger_seq`, `validations`                                             | Ledger promoted to validated                                                                                                  |
-| `ledger.store`    | LedgerMaster.cpp  | `ledger_hash`, `ledger_seq`                                                            | Ledger stored in history                                                                                                      |
-| `ledger.acquire`  | InboundLedger.cpp | `ledger_hash`, `ledger_seq`, `acquire_reason`, `timeouts`, `peer_count`, `outcome`     | Fetch a missing ledger from peers (parent varies — see [known issues](#where-telemetry-parenting-differs-from-protocol-flow)) |
+| Span Name         | Source File       | Attributes                                                                             | Description                                                                |
+| ----------------- | ----------------- | -------------------------------------------------------------------------------------- | -------------------------------------------------------------------------- |
+| `ledger.build`    | BuildLedger.cpp   | `ledger_seq`, `close_time_ripple_epoch_s`, `close_time_correct`, `close_resolution_ms` | Ledger build during consensus                                              |
+| `ledger.validate` | LedgerMaster.cpp  | `ledger_hash`, `ledger_seq`, `validations`                                             | Ledger promoted to validated                                               |
+| `ledger.store`    | LedgerMaster.cpp  | `ledger_hash`, `ledger_seq`                                                            | Ledger stored in history                                                   |
+| `ledger.acquire`  | InboundLedger.cpp | `ledger_hash`, `ledger_seq`, `acquire_reason`, `timeouts`, `peer_count`, `outcome`     | Fetch a missing ledger from peers (always a root on the ledger-hash trace) |
 
 `ledger.acquire` sets only `ledger_hash`, `ledger_seq` and `acquire_reason` when the span opens
 in `init()`. `outcome` has three values, written on two different paths:
@@ -1140,7 +1140,7 @@ call edge. Read a trace with these in mind:
 | `consensus.round` uses a deterministic trace ID from the previous ledger hash.                                                        | This makes **all validators share one trace ID** (a cross-node shared root), not a per-node parent. The real round-to-round edge is `endConsensus → beginConsensus`.                                                                                                                                                                                                                       |
 | `consensus.accept` (main thread) and `consensus.accept.apply` (JtAccept worker) are wired via a captured context.                     | The real edge is the queued `JtAccept` job, a thread hand-off ([RCLConsensus.cpp:483](../src/xrpld/app/consensus/RCLConsensus.cpp#L483)). `consensus.accept.apply` is a scoped guard, so the spans `doAccept` creates after it (`ledger.build`, `txq.cleanup`, `txq.accept`, `ledger.store`, `ledger.validate`) nest under it; those are real containment edges.                           |
 | `pathfind.update_all` parents nothing from the original `pathfind.request`.                                                           | The causal link is the ledger-close job on `JtUpdatePf`, not span nesting.                                                                                                                                                                                                                                                                                                                 |
-| `ledger.acquire` and its downstream `ledger.store` / `ledger.validate`.                                                               | Reached via the `AcqDone` job, not parent inheritance. All three are non-scoped `SpanGuard::span` spans, so none of them parents the others; each takes whatever ambient span its own caller happens to have active. See the `ledger.*` known issue below.                                                                                                                                 |
+| `ledger.acquire` and its downstream `ledger.store` / `ledger.validate`.                                                               | Reached via the `AcqDone` job, not parent inheritance. All three are `hashSpan` roots keyed on the ledger hash, so none of them parents the others and none inherits its caller's span; they share one trace instead.                                                                                                                                                                      |
 | `peer.*.receive` (fresh `kConsumer` root) and `consensus.*.receive` on the same message.                                              | Two **sequential stages of one synchronous handler**, not parent/child; on a duplicate/untrusted drop the `consensus.*.receive` is never created.                                                                                                                                                                                                                                          |
 | Receive spans adopt the sender's `trace_id` + `span_id` as a genuine cross-node parent.                                               | Deliberate: the receive span becomes a child of a **different node's** span (a cross-node context marker, not an in-process edge). `tx.receive` is asymmetric — it borrows only the sender's `span_id` and re-derives its own `trace_id` from `txID`.                                                                                                                                      |
 
@@ -1167,41 +1167,15 @@ are pending a code fix:
   happened to be active on the worker that picked the job up. A gRPC call
   appearing beneath an unrelated transaction's trace is this bug, not a real
   call edge.
-- **`ledger.acquire` / `ledger.store` / `ledger.validate` are not reliably roots
-  either.** All three use `SpanGuard::span`
-  ([InboundLedger.cpp:113](../src/xrpld/app/ledger/detail/InboundLedger.cpp#L113),
-  [LedgerMaster.cpp:470](../src/xrpld/app/ledger/detail/LedgerMaster.cpp#L470),
-  [1003](../src/xrpld/app/ledger/detail/LedgerMaster.cpp#L1003)), which inherits the
-  ambient span ([SpanGuard.cpp:233](../src/libxrpl/telemetry/SpanGuard.cpp#L233))
-  rather than `freshRoot`
-  ([245](../src/libxrpl/telemetry/SpanGuard.cpp#L245)) — the same defect as
-  `grpc.*` above. Whether they come out as roots depends purely on the caller:
-  - **Root, as documented.** On the `JtAdvance` / `AcqDone` job path
-    (`LedgerMaster::doAdvance`, `RCLConsensus::Adaptor::acquireLedger` →
-    [RCLConsensus.cpp:171](../src/xrpld/app/consensus/RCLConsensus.cpp#L171)) no
-    span is active on the worker, so nothing is inherited. `acquireSpan_` itself is
-    a non-scoped `SpanGuard`, so it never becomes the ambient parent of the
-    `ledger.store` / `ledger.validate` that follow it.
-  - **Mis-parented.** `InboundLedgers::acquire` is also called **synchronously from
-    an RPC handler** — `ledger_request` → `rpc::getOrAcquireLedger`
-    ([RPCLedgerHelpers.cpp:483](../src/xrpld/rpc/detail/RPCLedgerHelpers.cpp#L483))
-    — which runs inside the scoped `rpc.command.<name>` span
-    ([RPCHandler.cpp:168](../src/xrpld/rpc/detail/RPCHandler.cpp#L168)). There
-    `ledger.acquire` becomes a child of that RPC command, and when `init()` is
-    satisfied from the local store the `ledger.store` / `ledger.validate` it calls
-    ([InboundLedger.cpp:164](../src/xrpld/app/ledger/detail/InboundLedger.cpp#L164),
-    [168](../src/xrpld/app/ledger/detail/InboundLedger.cpp#L168)) land there as
-    siblings. A ledger acquisition nested under an `rpc.command.*` trace is this
-    bug, not a real call edge.
-  - **Nested under `consensus.accept.apply`, by design.** On the consensus path
-    `buildLCL → storeLedger` ([RCLConsensus.cpp:997](../src/xrpld/app/consensus/RCLConsensus.cpp#L997))
-    and `consensusBuilt → checkAccept` ([RCLConsensus.cpp:799](../src/xrpld/app/consensus/RCLConsensus.cpp#L799))
-    run inside `doAccept`, whose `consensus.accept.apply` span is a scoped guard
-    ([RCLConsensus.cpp:634](../src/xrpld/app/consensus/RCLConsensus.cpp#L634)), so the
-    `ledger.store` and `ledger.validate` created there are its children. That is a
-    real containment edge. A `ledger.store` under `consensus.accept.apply` and a
-    second one as a root for the same ledger is the normal shape when a node both
-    builds a ledger and fetches it.
+- **`ledger.acquire` / `ledger.store` / `ledger.validate` are true roots on the
+  ledger-hash trace.** All three use `SpanGuard::hashSpan`
+  ([InboundLedger.cpp:128](../src/xrpld/app/ledger/detail/InboundLedger.cpp#L128),
+  [LedgerMaster.cpp:181](../src/xrpld/app/ledger/detail/LedgerMaster.cpp#L181)), which
+  derives the trace id from the ledger hash and never inherits the ambient span. So
+  the caller does not matter: an acquire started from the `ledger_request` RPC, a
+  store reached from `buildLCL` inside `doAccept`, and a validate reached from
+  `checkAccept` all come out as roots of the same per-ledger trace. Two `ledger.store`
+  roots for one ledger is the normal shape when a node both fetches and builds it.
 
   **`ledger.build` and `tx.apply` use the same ambient-parent construct and land
   on the intended edges.** `ledger.build` is a plain `ScopedSpanGuard`
