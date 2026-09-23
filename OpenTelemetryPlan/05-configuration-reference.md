@@ -298,10 +298,9 @@ graph. The full delta:
 | `otlp_http/grafanacloud` | `:236` | Single OTLP/HTTP exporter fanning all three signals to Grafana Cloud      |
 | `metrics_flush_interval` | `:136` | `spanmetrics` flushes every 15s instead of the 60s default                |
 
-| Removed by the overlay | Consequence                                                                  |
-| ---------------------- | ---------------------------------------------------------------------------- |
-| `attributes/hash`      | **Pathfinding account attributes are not hashed on this config** — see below |
-| `debug`                | No console span dump; collector logs alone when diagnosing ingest            |
+| Removed by the overlay | Consequence                                                       |
+| ---------------------- | ----------------------------------------------------------------- |
+| `debug`                | No console span dump; collector logs alone when diagnosing ingest |
 
 Pipelines go from **three** (`traces`, `metrics`, `logs`) to **five**
 (`:253-280`): `traces/metrics`, `traces/store`, `metrics/local`,
@@ -310,16 +309,6 @@ Pipelines go from **three** (`traces`, `metrics`, `logs`) to **five**
 named `traces`, which does not exist in the overlay. The `traces/metrics`
 branch feeds `spanmetrics` unsampled, so the derived RED metrics stay exact
 while stored traces are ~1/200 of ingested ones.
-
-> **Known issue — the cloud path does not hash pathfinding accounts.** The base
-> config runs `attributes/hash` on its `traces` pipeline
-> (`otel-collector-config.yaml:105-110`), hashing `pathfind_source_account` and
-> `pathfind_dest_account` as defense in depth behind the node-side hashing. The
-> overlay declares no such processor and lists none on any of its five
-> pipelines, so on the Grafana Cloud config those two attributes reach **both**
-> Grafana Cloud and the local Tempo with whatever value the node sent. Any node
-> that emits raw addresses loses its second line of defense. Adding
-> `attributes/hash` to `traces/store` and `traces/metrics` would close the gap.
 
 Hardening a collector for a real deployment (TLS/mTLS on the receiver,
 NetworkPolicy, peer trace-context validation) is covered in
