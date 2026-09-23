@@ -618,11 +618,16 @@ public:
      * @param mantissa      Raw signed mantissa (sign is extracted internally).
      * @param exponent      Raw exponent.
      * @return  The normalized (mantissa, exponent) pair in the target range.
-     *          A zero mantissa is returned as {mantissa=0, exponent=0}; the
-     *          sign of a zero is not preserved.
-     * @note  The result is bit-identical to the two-pass path: an intermediate
-     *        pass to a strictly wider range cannot change the final
-     *        narrower-range result.
+     *          A zero mantissa returns the canonical zero a default-constructed
+     *          Number holds, {0, std::numeric_limits<int>::lowest()}. The sign
+     *          of a zero is not preserved.
+     * @note  Bit-identical to normalizing through a strictly wider range first
+     *        for every exponent reachable through IOUAmount, which bounds its
+     *        own exponent to [STAmount::kMinOffset, STAmount::kMaxOffset]. The
+     *        two diverge only at exponent == kMinExponent: there the wider pass
+     *        has no headroom left to scale a below-minimum mantissa up, so it
+     *        collapses to zero, whereas this one scales down into the target
+     *        range and keeps the value.
      * @note  Thread-safety: reads the thread-local rounding mode only; holds no
      *        shared state of its own. Safe to call concurrently.
      *

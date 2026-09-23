@@ -3234,4 +3234,40 @@ TEST(NumberTest, normalize_to_range_member_static_consistency)
         }
     }
 }
+
+// A zero mantissa short-circuits normalization: the canonical zero is copied
+// out of a default-constructed Number, whose exponent is
+// std::numeric_limits<int>::lowest(), and the exponent handed in is ignored.
+// Pinned because the documented return value names that sentinel.
+TEST(NumberTest, normalize_to_range_zero_mantissa)
+{
+    for (int const e : {Number::kMinExponent, -90, -1, 0, 1, 90, Number::kMaxExponent})
+    {
+        auto const [m, exponent] = onePass(0, e);
+        EXPECT_EQ(m, 0) << "e=" << e;
+        EXPECT_EQ(exponent, std::numeric_limits<int>::lowest()) << "e=" << e;
+    }
+}
+
+// The one-pass and two-pass paths agree on every exponent IOUAmount can reach,
+// but not at Number's exponent floor. There the two-pass path's first
+// normalization has no headroom left to scale a below-minimum mantissa up, so
+// it collapses to zero, while the single pass scales down into the IOU range
+// and keeps the value. Pinned so that divergence stays deliberate. IOUAmount
+// cannot reach this input, because STAmount bounds its exponent to
+// [kMinOffset, kMaxOffset].
+TEST(NumberTest, normalize_to_range_exponent_floor_diverges_from_two_pass)
+{
+    // 10^17: two decades above the IOU minimum, yet still below the default
+    // Large330 minimum of 10^18 that the two-pass path normalizes to first.
+    constexpr std::int64_t kBelowWideMin = kMin * 100;
+
+    auto const [oneM, oneE] = onePass(kBelowWideMin, Number::kMinExponent);
+    EXPECT_EQ(oneM, kMin);
+    EXPECT_EQ(oneE, Number::kMinExponent + 2);
+
+    auto const [twoM, twoE] = twoPass(kBelowWideMin, Number::kMinExponent);
+    EXPECT_EQ(twoM, 0);
+    EXPECT_EQ(twoE, std::numeric_limits<int>::lowest());
+}
 }  // namespace xrpl
