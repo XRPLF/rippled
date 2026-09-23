@@ -3076,7 +3076,7 @@ onePass(std::int64_t mantissa, int exponent)
 // The static primitive must produce bit-identical (mantissa, exponent) to the
 // old two-pass path across a broad sweep of inputs: values needing scale-up,
 // scale-down, rounding cusps, negatives, and exponent extremes.
-TEST(Number, normalizeToRangeEquivalence)
+TEST(NumberTest, normalize_to_range_equivalence)
 {
     // A spread of mantissa magnitudes: tiny (heavy scale-up), mid, at the IOU
     // floor/ceiling, beyond it (scale-down), and int64 extremes.
@@ -3127,7 +3127,7 @@ TEST(Number, normalizeToRangeEquivalence)
 }
 
 // Exact, hand-computed results (state + cause), not just "equals the old path".
-TEST(Number, normalizeToRangeExactValues)
+TEST(NumberTest, normalize_to_range_exact_values)
 {
     // A single digit scales up by 15 powers of ten to reach the floor 10^15,
     // with the exponent dropping by the same 15.
@@ -3173,7 +3173,7 @@ TEST(Number, normalizeToRangeExactValues)
 // CuspRoundingFix::Disabled, whereas the old two-pass path ran an intermediate
 // normalize to the wider range first. Sweep all four modes, including inputs
 // that round at a tie (a trailing digit of exactly 5 when scaling down).
-TEST(Number, normalizeToRangeAllRoundingModes)
+TEST(NumberTest, normalize_to_range_all_rounding_modes)
 {
     // Inputs chosen so scale-down drops a non-zero (and tie) trailing digit.
     std::int64_t const mantissas[] = {
@@ -3214,7 +3214,7 @@ TEST(Number, normalizeToRangeAllRoundingModes)
 
 // The refactored const member overload must forward to the static primitive
 // and yield identical results for the same Number.
-TEST(Number, normalizeToRangeMemberStaticConsistency)
+TEST(NumberTest, normalize_to_range_member_static_consistency)
 {
     std::int64_t const mantissas[] = {3, 42, kMin, kMin + 7, kMax, kMax + 1, 1'234'567'890'123'456};
 
