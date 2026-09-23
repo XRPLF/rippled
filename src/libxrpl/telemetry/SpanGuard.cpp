@@ -864,6 +864,14 @@ ScopedSpanGuard::addEvent(std::string_view name) noexcept
 }
 
 void
+ScopedSpanGuard::addEvent(
+    std::string_view name,
+    std::initializer_list<EventAttribute> attrs) noexcept
+{
+    impl_->guard.addEvent(name, attrs);
+}
+
+void
 ScopedSpanGuard::recordException(std::exception const& e) noexcept
 {
     impl_->guard.recordException(e);
