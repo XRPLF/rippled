@@ -347,10 +347,10 @@ LoanSet::preclaim(PreclaimContext const& ctx)
         }
     }
 
-    // Accrual origination credits interestDue into AssetsTotal, so a vault
+    // Instant interest recognition credits interestDue into AssetsTotal, so a vault
     // already at AssetsMaximum cannot take another loan. Cash-basis origination
     // does not change AssetsTotal (see cash_basis::loanOriginationDeltas), so
-    // this leftover accrual gate must not apply there.
+    // this leftover instant-recognition gate must not apply there.
     if (getVaultVersion(vault) != VaultVersion::CashBasis && vault->at(sfAssetsMaximum) != 0 &&
         vault->at(sfAssetsTotal) >= vault->at(sfAssetsMaximum))
     {
@@ -503,7 +503,7 @@ LoanSet::doApply()
             getVaultVersion(vaultSle) == VaultVersion::CashBasis ||
             *vaultSle->at(sfAssetsMaximum) > *vaultTotalProxy,
         "xrpl::LoanSet::doApply",
-        "accrual vault is below maximum limit");
+        "instant-recognition vault is below maximum limit");
 
     if (loanOriginationExceedsVaultMaximum(vaultSle, vaultTotalProxy, state.interestDue))
     {
