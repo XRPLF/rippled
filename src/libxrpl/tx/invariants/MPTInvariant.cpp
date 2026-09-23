@@ -40,6 +40,7 @@ constexpr auto kConfidentialMptTxTypes = std::to_array<TxType>({
     ttCONFIDENTIAL_MPT_CONVERT_BACK,
     ttCONFIDENTIAL_MPT_MERGE_INBOX,
     ttCONFIDENTIAL_MPT_CLAWBACK,
+    ttCONFIDENTIAL_MPT_MIRROR_UPDATE,
 });
 
 // Clamp to the cap (== INT64_MAX) before the signed conversion. Invariant
@@ -315,27 +316,46 @@ ValidMPTIssuance::finalize(
                     return false;
                 }
             }
-            else if (lendingProtocolEnabled && (mptokensCreated_ + mptokensDeleted_) > 1)
+            else
             {
-                JLOG(j.fatal()) << "Invariant failed: MPT authorize succeeded "
-                                   "but created/deleted bad number mptokens";
-                return false;
-            }
-            else if (submittedByIssuer && (mptokensCreated_ > 0 || mptokensDeleted_ > 0))
-            {
-                JLOG(j.fatal()) << "Invariant failed: MPT authorize submitted by issuer "
-                                   "succeeded but created/deleted mptokens";
-                return false;
-            }
-            else if (
-                !submittedByIssuer && hasPrivilege(tx, Privilege::MustAuthorizeMpt) &&
-                (mptokensCreated_ + mptokensDeleted_ != 1))
-            {
-                // if the holder submitted this tx, then a mptoken must be
-                // either created or deleted.
-                JLOG(j.fatal()) << "Invariant failed: MPT authorize submitted by holder "
-                                   "succeeded but created/deleted bad number of mptokens";
-                return false;
+                // Cap on MPToken creates and deletes while featureLendingProtocol is enabled.
+                // - LoanSet: at most two creates and no deletes.
+                // - VaultWithdraw: at most one create and one delete.
+                // - Other MayAuthorizeMpt types: created + deleted <= 1.
+                // - MustAuthorizeMpt still requires exactly one create or delete below.
+                auto const mptokensExceedAuthorizeCap = [&] {
+                    if (!lendingProtocolEnabled)
+                        return false;
+                    if (rules.enabled(fixCleanup3_4_0))
+                    {
+                        if (txnType == ttLOAN_SET)
+                            return mptokensDeleted_ != 0 || mptokensCreated_ > 2;
+                        if (txnType == ttVAULT_WITHDRAW)
+                            return mptokensCreated_ > 1 || mptokensDeleted_ > 1;
+                    }
+                    return (mptokensCreated_ + mptokensDeleted_) > 1;
+                };
+                if (mptokensExceedAuthorizeCap())
+                {
+                    JLOG(j.fatal()) << "Invariant failed: MPT authorize succeeded "
+                                       "but created/deleted bad number mptokens";
+                    return false;
+                }
+                if (submittedByIssuer && (mptokensCreated_ > 0 || mptokensDeleted_ > 0))
+                {
+                    JLOG(j.fatal()) << "Invariant failed: MPT authorize submitted by issuer "
+                                       "succeeded but created/deleted mptokens";
+                    return false;
+                }
+                if (!submittedByIssuer && hasPrivilege(tx, Privilege::MustAuthorizeMpt) &&
+                    (mptokensCreated_ + mptokensDeleted_ != 1))
+                {
+                    // if the holder submitted this tx, then a mptoken must be
+                    // either created or deleted.
+                    JLOG(j.fatal()) << "Invariant failed: MPT authorize submitted by holder "
+                                       "succeeded but created/deleted bad number of mptokens";
+                    return false;
+                }
             }
 
             return true;

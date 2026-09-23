@@ -28,7 +28,7 @@ account(std::string_view hex)
 // getText() builds its string from eight substitutions of the same type, so a
 // transposed pair would still compile and still type check. Pin the output so
 // the field/value pairing is actually verified.
-TEST(STXChainBridge, getTextPairsEachFieldWithItsValue)
+TEST(STXChainBridge, get_text_pairs_each_field_with_its_value)
 {
     auto const lockingDoor = account("0102030405060708090A0B0C0D0E0F1011121314");
     auto const issuingDoor = account("14131211100F0E0D0C0B0A090807060504030201");
@@ -46,7 +46,7 @@ TEST(STXChainBridge, getTextPairsEachFieldWithItsValue)
     EXPECT_EQ(bridge.getText(), expected);
 }
 
-TEST(STXChainBridge, getTextOnADefaultBridge)
+TEST(STXChainBridge, get_text_on_a_default_bridge)
 {
     STXChainBridge const bridge;
     auto const text = bridge.getText();

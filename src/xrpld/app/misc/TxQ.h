@@ -23,6 +23,7 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <expected>
 #include <limits>
 #include <map>
 #include <memory>
@@ -390,10 +391,10 @@ public:
      *        and first available sequence for transaction
      * @param view current open ledger
      * @param tx the transaction
-     * @return minimum required fee, first sequence in the ledger
+     * @return minimum required fee or an error, first sequence in the ledger
      *         and first available sequence
      */
-    FeeAndSeq
+    std::expected<FeeAndSeq, TER>
     getTxRequiredFeeAndSeq(OpenView const& view, std::shared_ptr<STTx const> const& tx) const;
 
     /**
