@@ -301,10 +301,11 @@ txID-keyed spans can be joined to the ledger trace it targeted
 `tx.transactor`) also carry `current_ledger_hash` (the current ledger's parent
 hash); `tx.preflight` is stateless and omits both.
 
-`tx.apply` carries **no** `ledger_seq` of its own — the sequence is set on its
-parent `ledger.build`
+`tx.apply` carries its own `ledger_seq`, written beside `tx_count` and `tx_failed`
+([BuildLedger.cpp:197](../src/xrpld/app/ledger/detail/BuildLedger.cpp#L197)). Its
+parent `ledger.build` carries the same sequence
 ([BuildLedger.cpp:90](../src/xrpld/app/ledger/detail/BuildLedger.cpp#L90)), so
-read it from the parent rather than filtering `tx.apply` on it.
+either span can be filtered on it.
 
 ### Transaction Queue Spans
 
@@ -1127,7 +1128,7 @@ call edge. Read a trace with these in mind:
 | `tx.process` is a `hashSpan` root from `txID` — an independent trace root ([TxTracing.h:63](../src/xrpld/telemetry/TxTracing.h#L63)). | The real edge is the synchronous `doSubmit → processTransaction` call; it is **not** a child of `rpc.command.submit`.                                                                                                                                                                                                                                                                      |
 | `tx.preflight` / `tx.preclaim` / `tx.transactor` share one `txID`-derived trace ID.                                                   | That shared ID is a correlation trick, not a call edge. The real order is the composed `apply()` at [apply.cpp:118](../src/libxrpl/tx/apply.cpp#L118). They are **not** children of `tx.process` or `tx.apply`. Because nothing else nests under it either, `tx.apply` is **always a leaf** — the stage spans for the transactions it applied sit in the txID-keyed trace, not beneath it. |
 | `consensus.round` uses a deterministic trace ID from the previous ledger hash.                                                        | This makes **all validators share one trace ID** (a cross-node shared root), not a per-node parent. The real round-to-round edge is `endConsensus → beginConsensus`.                                                                                                                                                                                                                       |
-| `consensus.accept` (main thread) and `consensus.accept.apply` (JtAccept worker) are wired via a captured context.                     | The real edge is the queued `JtAccept` job, a thread hand-off ([RCLConsensus.cpp:483](../src/xrpld/app/consensus/RCLConsensus.cpp#L483)).                                                                                                                                                                                                                                                  |
+| `consensus.accept` (main thread) and `consensus.accept.apply` (JtAccept worker) are wired via a captured context.                     | The real edge is the queued `JtAccept` job, a thread hand-off ([RCLConsensus.cpp:483](../src/xrpld/app/consensus/RCLConsensus.cpp#L483)). `consensus.accept.apply` is a scoped guard, so the spans `doAccept` creates after it (`ledger.build`, `txq.cleanup`, `txq.accept`, `ledger.store`, `ledger.validate`) nest under it; those are real containment edges.                           |
 | `pathfind.update_all` parents nothing from the original `pathfind.request`.                                                           | The causal link is the ledger-close job on `JtUpdatePf`, not span nesting.                                                                                                                                                                                                                                                                                                                 |
 | `ledger.acquire` and its downstream `ledger.store` / `ledger.validate`.                                                               | Reached via the `AcqDone` job, not parent inheritance. All three are non-scoped `SpanGuard::span` spans, so none of them parents the others; each takes whatever ambient span its own caller happens to have active. See the `ledger.*` known issue below.                                                                                                                                 |
 | `peer.*.receive` (fresh `kConsumer` root) and `consensus.*.receive` on the same message.                                              | Two **sequential stages of one synchronous handler**, not parent/child; on a duplicate/untrusted drop the `consensus.*.receive` is never created.                                                                                                                                                                                                                                          |
@@ -1182,21 +1183,26 @@ are pending a code fix:
     [168](../src/xrpld/app/ledger/detail/InboundLedger.cpp#L168)) land there as
     siblings. A ledger acquisition nested under an `rpc.command.*` trace is this
     bug, not a real call edge.
+  - **Nested under `consensus.accept.apply`, by design.** On the consensus path
+    `buildLCL → storeLedger` ([RCLConsensus.cpp:997](../src/xrpld/app/consensus/RCLConsensus.cpp#L997))
+    and `consensusBuilt → checkAccept` ([RCLConsensus.cpp:799](../src/xrpld/app/consensus/RCLConsensus.cpp#L799))
+    run inside `doAccept`, whose `consensus.accept.apply` span is a scoped guard
+    ([RCLConsensus.cpp:634](../src/xrpld/app/consensus/RCLConsensus.cpp#L634)), so the
+    `ledger.store` and `ledger.validate` created there are its children. That is a
+    real containment edge. A `ledger.store` under `consensus.accept.apply` and a
+    second one as a root for the same ledger is the normal shape when a node both
+    builds a ledger and fetches it.
 
-  **`ledger.build` and `tx.apply` use the same ambient-parent construct but are
-  safe.** `ledger.build` is a plain `ScopedSpanGuard`
-  ([BuildLedger.cpp:55](../src/xrpld/app/ledger/detail/BuildLedger.cpp#L55)): its
-  only callers are `RCLConsensus::doAccept`
-  ([RCLConsensus.cpp:935-937](../src/xrpld/app/consensus/RCLConsensus.cpp#L935))
-  on the `JtAccept` worker and the replay path
-  ([LedgerDeltaAcquire.cpp:208](../src/xrpld/app/ledger/detail/LedgerDeltaAcquire.cpp#L208)),
-  and every consensus accept span is a non-scoped `SpanGuard`
-  ([RCLConsensus.cpp:598-599](../src/xrpld/app/consensus/RCLConsensus.cpp#L598)),
-  so no ambient span exists to be inherited there. `tx.apply`
+  **`ledger.build` and `tx.apply` use the same ambient-parent construct and land
+  on the intended edges.** `ledger.build` is a plain `ScopedSpanGuard`
+  ([BuildLedger.cpp:55](../src/xrpld/app/ledger/detail/BuildLedger.cpp#L55)): on the
+  consensus path it is created inside `doAccept` after `consensus.accept.apply`
+  opens, so it nests under that span; on the replay path
+  ([LedgerDeltaAcquire.cpp:208](../src/xrpld/app/ledger/detail/LedgerDeltaAcquire.cpp#L208))
+  nothing is ambient and it is a root. `tx.apply`
   ([BuildLedger.cpp:123](../src/xrpld/app/ledger/detail/BuildLedger.cpp#L123)) is
   reached only synchronously from `buildLedgerImpl` while `ledger.build`'s scope is
-  live, so its ambient parent is always `ledger.build` — which is exactly the
-  intended edge.
+  live, so its ambient parent is always `ledger.build`.
 
 - **`consensus.round` is not always a root.** The `consensus_trace_strategy=attribute`
   path has two creation branches; the fallback branch — taken on the first traced
@@ -1318,8 +1324,9 @@ sum by (stage) (rate(span_calls_total{span_name=~"tx.preflight|tx.preclaim|tx.tr
 # Per-stage p95 latency
 histogram_quantile(0.95, sum by (le, stage) (rate(span_duration_milliseconds_bucket{span_name=~"tx.preflight|tx.preclaim|tx.transactor"}[5m])))
 
-# Per-stage failure rate (ter_result != tesSUCCESS; a failing ter completes the
-# span normally, so filter on the attribute, not status_code which only flags exceptions)
+# Per-stage failure rate (ter_result != tesSUCCESS). All three stage spans also set
+# status_code="ERROR" on a failing ter, so status_code counts failures too; the
+# attribute is used here because it names which failure.
 sum by (stage) (rate(span_calls_total{span_name=~"tx.preflight|tx.preclaim|tx.transactor", ter_result!~"tesSUCCESS|"}[5m]))
 ```
 
