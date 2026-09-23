@@ -119,6 +119,7 @@
 #include <xrpl/server/Manifest.h>
 #include <xrpl/shamap/SHAMap.h>
 #include <xrpl/telemetry/SpanGuard.h>
+#include <xrpl/telemetry/TxAccountSpanNames.h>
 #include <xrpl/tx/apply.h>
 
 #include <boost/asio/error.hpp>
@@ -1561,10 +1562,28 @@ NetworkOPsImp::processTransaction(
         {
             if (auto const* fmt = TxFormats::getInstance().findByType(stx->getTxnType()))
                 span->setAttribute(tx_span::attr::txType, fmt->getName().c_str());
+            // xrp() throws on a non-XRP fee. preflight rejects such a
+            // transaction with temBAD_FEE, so leave the attribute out rather
+            // than let tracing turn that into an internal error.
+            if (auto const& fee = stx->getFieldAmount(sfFee); fee.native())
+            {
+                span->setAttribute(
+                    tx_span::attr::fee, static_cast<std::int64_t>(fee.xrp().drops()));
+            }
             span->setAttribute(
-                tx_span::attr::fee, static_cast<int64_t>(stx->getFieldAmount(sfFee).xrp().drops()));
-            span->setAttribute(
-                tx_span::attr::sequence, static_cast<int64_t>(stx->getSeqProxy().value()));
+                tx_span::attr::sequence, static_cast<std::int64_t>(stx->getSeqProxy().value()));
+            // Every account the transaction names, keyed by its role
+            // (tx_account, tx_destination, ...). Addresses are public ledger
+            // identifiers and go out raw; see TxAccountSpanNames.h. A present
+            // but empty account field is skipped rather than rendered as the
+            // all-zero address.
+            for (auto const& field : *stx)
+            {
+                if (field.getSType() != STI_ACCOUNT || field.isDefault())
+                    continue;
+                if (auto const key = accountFieldAttributeKey(field.getFName()))
+                    span->setAttribute(*key, field.getText());
+            }
         }
     }
 
