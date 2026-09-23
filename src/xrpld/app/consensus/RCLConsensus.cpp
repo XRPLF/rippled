@@ -595,10 +595,9 @@ RCLConsensus::Adaptor::doAccept(
 {
     namespace cs = telemetry::consensus::span;
 
-    // Make the accept span ambient for the whole accept so doAccept's log lines
-    // (and any spans created here) correlate to it. Non-owning: acceptSpan still
-    // owns/ends the span. doAccept runs to completion on the JtAccept worker
-    // (no coroutine yield), so this scope is thread-local and safe.
+    // Make the accept span ambient until accept.apply opens below. Non-owning:
+    // acceptSpan still owns and ends the span. doAccept runs to completion on
+    // one thread, so the scope pops on the thread that pushed it.
     auto acceptActivation = telemetry::activateIfLive(acceptSpan);
 
     prevProposers_ = result.proposers;
@@ -627,13 +626,10 @@ RCLConsensus::Adaptor::doAccept(
         closeTimeCorrect = true;
     }
 
-    // Parent accept.apply via the captured accept context (acceptSpanContext_):
-    // the accept span is a thread-free SpanGuard, so an explicit context is
-    // used for both the sync (onForceAccept) and async (onAccept) paths. Falls
-    // back to the round context if the accept span was null.
-    auto doAcceptSpan = acceptSpanContext_.isValid()
-        ? telemetry::SpanGuard::childSpan(cs::acceptApply, acceptSpanContext_)
-        : telemetry::SpanGuard::childSpan(cs::acceptApply, roundSpanContext_);
+    // Scoped: accept.apply is the ambient parent of every span doAccept creates
+    // from here on. Parented through acceptSpanContext_ because the accept span
+    // is a thread-free SpanGuard; the context is valid whenever that span is live.
+    auto doAcceptSpan = telemetry::ScopedSpanGuard::childSpan(cs::acceptApply, acceptSpanContext_);
     doAcceptSpan.setAttribute(cs::attr::ledgerSeq, static_cast<int64_t>(prevLedger.seq()) + 1);
     doAcceptSpan.setAttribute(
         cs::attr::closeTimeRippleEpochS,

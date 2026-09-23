@@ -59,7 +59,9 @@
  *    |     Attrs:   proposers, round_time_ms, quorum
  *    |   |
  *    |   +-- consensus.accept.apply              [jtACCEPT thread, child of accept]
- *    |         Created: Adaptor::doAccept()
+ *    |         Created: Adaptor::doAccept(), scoped: the txq spans doAccept
+ *    |                  goes on to create nest under it; the tx apply-stage
+ *    |                  spans are hash-derived roots and do not
  *    |     Attrs:   ledger_seq, close_time_ripple_epoch_s, close_time_correct,
  *    |              close_resolution_ms, consensus_state, proposing, round_time_ms,
  *    |              parent_close_time_ripple_epoch_s, close_time_self_ripple_epoch_s,

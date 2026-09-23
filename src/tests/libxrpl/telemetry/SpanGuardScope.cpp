@@ -57,6 +57,7 @@
 #include <opentelemetry/trace/trace_id.h>
 #include <opentelemetry/trace/tracer.h>
 
+#include <algorithm>
 #include <array>
 #include <cstddef>
 #include <cstdint>
@@ -686,6 +687,58 @@ TEST_F(SpanGuardScopeTest, scopedGuard_addEvent_records_name_and_attribute_value
     EXPECT_EQ(events.front().GetName(), std::string(kEventName));
     EXPECT_EQ(events.front().GetAttributes().size(), 1u);
     EXPECT_EQ(eventAttribute(events.front(), kTxIdKey), std::string(kTxId));
+}
+
+// A scoped child of a captured context is the ambient parent of the spans
+// created after it on the same thread. A hash-derived root created inside that
+// scope stays a root. consensus.accept.apply relies on both.
+TEST_F(SpanGuardScopeTest, scopedChildOfCapturedContextIsAmbientForLaterSpans)
+{
+    namespace cs = consensus::span;
+
+    auto const h = makeTraceIdBytes();
+    {
+        // consensus.accept: unscoped, thread-free, context captured.
+        auto accept =
+            SpanGuard::freshRoot(TraceCategory::Consensus, seg::consensus, cs::op::accept);
+        ASSERT_TRUE(static_cast<bool>(accept));
+        auto const acceptCtx = accept.spanContext();
+
+        // consensus.accept.apply: scoped child of that context.
+        ScopedSpanGuard const apply = ScopedSpanGuard::childSpan(cs::acceptApply, acceptCtx);
+        ASSERT_TRUE(static_cast<bool>(apply));
+
+        // ledger.build: a plain ambient scoped guard.
+        {
+            ScopedSpanGuard const build(TraceCategory::Ledger, seg::ledger, "build");
+            ASSERT_TRUE(static_cast<bool>(build));
+        }
+
+        // ledger.store: hash-derived, so a deterministic root.
+        {
+            auto store =
+                SpanGuard::hashSpan(TraceCategory::Ledger, "ledger.store", h.data(), h.size());
+            ASSERT_TRUE(static_cast<bool>(store));
+        }
+    }
+
+    auto spans = spanData()->GetSpans();
+    auto* accept = findSpan(spans, cs::accept);
+    auto* apply = findSpan(spans, cs::acceptApply);
+    auto* build = findSpan(spans, "ledger.build");
+    auto* store = findSpan(spans, "ledger.store");
+    ASSERT_NE(accept, nullptr);
+    ASSERT_NE(apply, nullptr);
+    ASSERT_NE(build, nullptr);
+    ASSERT_NE(store, nullptr);
+
+    EXPECT_EQ(apply->GetParentSpanId(), accept->GetSpanId());
+    // build nests under apply, not beside it.
+    EXPECT_EQ(build->GetParentSpanId(), apply->GetSpanId());
+    EXPECT_EQ(build->GetTraceId(), apply->GetTraceId());
+    // The hash-derived span is a root on its own pinned trace id.
+    EXPECT_FALSE(store->GetParentSpanId().IsValid());
+    EXPECT_TRUE(std::ranges::equal(store->GetTraceId().Id(), h));
 }
 
 // A forced-root span started while a PendingTraceId is active adopts that
