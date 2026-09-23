@@ -239,7 +239,7 @@ TEST(ConsensusSpanNames, validation_status_values_are_mutually_distinct)
 // THE RULE, over its whole live domain. The int arguments are
 // static_cast<int>(ValStatus), so this also pins the enumerator order: Current,
 // Stale, BadSeq, Multiple, Conflicting.
-TEST(ConsensusSpanNames, validationStatusValue_maps_every_val_status)
+TEST(ConsensusSpanNames, validation_status_value_maps_every_val_status)
 {
     EXPECT_EQ(consensus::span::validationStatusValue(0), consensus::span::val::statusCurrent);
     EXPECT_EQ(consensus::span::validationStatusValue(1), consensus::span::val::statusStale);
@@ -252,7 +252,7 @@ TEST(ConsensusSpanNames, validationStatusValue_maps_every_val_status)
 // validation was counted for nothing. That split is the diagnostic value of the
 // attribute -- a node stuck below quorum receiving validations that are all
 // stale or bad-seq looks, from the outside, exactly like one receiving good ones.
-TEST(ConsensusSpanNames, validationStatusValue_separates_counted_from_rejected)
+TEST(ConsensusSpanNames, validation_status_value_separates_counted_from_rejected)
 {
     EXPECT_EQ(consensus::span::validationStatusValue(0), "current");
     for (int const rejected : {1, 2, 3, 4})
@@ -265,7 +265,7 @@ TEST(ConsensusSpanNames, validationStatusValue_separates_counted_from_rejected)
 // NEGATIVE: an out-of-domain value yields the sentinel, never an empty string.
 // An empty attribute value would add a blank series to the aggregated dimension,
 // which is worse than a value labelled "unknown".
-TEST(ConsensusSpanNames, validationStatusValue_out_of_domain_is_unknown_not_empty)
+TEST(ConsensusSpanNames, validation_status_value_out_of_domain_is_unknown_not_empty)
 {
     for (int const bad : {-1, 5, 6, 99})
     {
@@ -278,7 +278,7 @@ TEST(ConsensusSpanNames, validationStatusValue_out_of_domain_is_unknown_not_empt
 // The mapping is a compile-time rule, so a wrong value cannot even be built --
 // the strongest form of the guarantee, checked by the compiler rather than at
 // run time.
-TEST(ConsensusSpanNames, validationStatusValue_is_a_compile_time_rule)
+TEST(ConsensusSpanNames, validation_status_value_is_a_compile_time_rule)
 {
     static_assert(consensus::span::validationStatusValue(0) == "current");
     static_assert(consensus::span::validationStatusValue(2) == "bad_seq");

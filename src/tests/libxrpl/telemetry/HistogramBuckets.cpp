@@ -66,7 +66,7 @@ INSTANTIATE_TEST_SUITE_P(
         std::span<double const>{kChargeBuckets},
         std::span<double const>{kRotationPhaseSecondsBuckets}));
 
-TEST(HistogramBucketsRange, rotationPhaseLadderSpansSecondsToAnHour)
+TEST(HistogramBucketsRange, rotation_phase_ladder_spans_seconds_to_an_hour)
 {
     // Phases run from seconds (freshen.keys) to ten minutes or more (copy), and
     // a whole rotation about a quarter of an hour. The floor must sit under the

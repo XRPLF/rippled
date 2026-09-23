@@ -131,13 +131,13 @@ TEST(LedgerSpanNames, acquire_reason_values_mirror_the_reason_enum)
     EXPECT_EQ(std::string_view(ledger_span::val::generic), "generic");
 }
 
-TEST(LedgerSpanNames, acquireOutcome_normal_done_path_is_complete)
+TEST(LedgerSpanNames, acquire_outcome_normal_done_path_is_complete)
 {
     // done() after all data was assembled: complete_ set, failed_ clear.
     EXPECT_EQ(ledger_span::acquireOutcome(/*failed=*/false, /*complete=*/true), "complete");
 }
 
-TEST(LedgerSpanNames, acquireOutcome_local_complete_path_is_complete)
+TEST(LedgerSpanNames, acquire_outcome_local_complete_path_is_complete)
 {
     // The tryDB local-store shortcut in init() reaches the same flag state as
     // done(), so it must produce the same outcome -- this is the exit that used
@@ -145,14 +145,14 @@ TEST(LedgerSpanNames, acquireOutcome_local_complete_path_is_complete)
     EXPECT_EQ(ledger_span::acquireOutcome(/*failed=*/false, /*complete=*/true), "complete");
 }
 
-TEST(LedgerSpanNames, acquireOutcome_failed_path_is_failed)
+TEST(LedgerSpanNames, acquire_outcome_failed_path_is_failed)
 {
     // Terminal error: bad data, a zero account hash, or the retry budget ran
     // out. Reached from done() and from the early-return in init().
     EXPECT_EQ(ledger_span::acquireOutcome(/*failed=*/true, /*complete=*/false), "failed");
 }
 
-TEST(LedgerSpanNames, acquireOutcome_abort_path_is_abandoned)
+TEST(LedgerSpanNames, acquire_outcome_abort_path_is_abandoned)
 {
     // The destructor / sweep path: neither flag set, because the fetch never
     // reached a result. This is the assertion the whole change exists for -- an
@@ -160,7 +160,7 @@ TEST(LedgerSpanNames, acquireOutcome_abort_path_is_abandoned)
     EXPECT_EQ(ledger_span::acquireOutcome(/*failed=*/false, /*complete=*/false), "abandoned");
 }
 
-TEST(LedgerSpanNames, acquireOutcome_failure_wins_over_completion)
+TEST(LedgerSpanNames, acquire_outcome_failure_wins_over_completion)
 {
     // Edge case: both flags set. A fetch that hit a terminal error is not a
     // success regardless of what was assembled, so `failed` must win. Pinned
@@ -169,7 +169,7 @@ TEST(LedgerSpanNames, acquireOutcome_failure_wins_over_completion)
     EXPECT_EQ(ledger_span::acquireOutcome(/*failed=*/true, /*complete=*/true), "failed");
 }
 
-TEST(LedgerSpanNames, acquireOutcome_covers_its_whole_input_domain)
+TEST(LedgerSpanNames, acquire_outcome_covers_its_whole_input_domain)
 {
     // No input combination yields an empty or unknown value, which is the
     // property that guarantees an exit path can never end up with a blank
@@ -191,7 +191,7 @@ TEST(LedgerSpanNames, acquireOutcome_covers_its_whole_input_domain)
     }
 }
 
-TEST(LedgerSpanNames, acquireOutcome_is_a_compile_time_rule)
+TEST(LedgerSpanNames, acquire_outcome_is_a_compile_time_rule)
 {
     // constexpr, so the rule costs nothing at the four call sites and can be
     // asserted by the compiler itself. static_assert here is the strongest
@@ -481,7 +481,7 @@ TEST(LedgerSpanNames, serve_outcome_values_are_the_three_terminal_states)
         std::string_view(ledger_span::val::refused), std::string_view(ledger_span::val::complete));
 }
 
-TEST(LedgerSpanNames, phaseOutcome_normal_completion_is_complete)
+TEST(LedgerSpanNames, phase_outcome_normal_completion_is_complete)
 {
     // A phase whose tree assembled, or a tx set that arrived: complete_ set,
     // nothing else. Reached from receiveNode()/trigger() for a phase and from
@@ -491,7 +491,7 @@ TEST(LedgerSpanNames, phaseOutcome_normal_completion_is_complete)
         "complete");
 }
 
-TEST(LedgerSpanNames, phaseOutcome_bad_data_is_failed)
+TEST(LedgerSpanNames, phase_outcome_bad_data_is_failed)
 {
     // A terminal data fault with no timeout: a peer served a tree or set that
     // would not build. This is the case `timeout` must NOT absorb.
@@ -500,7 +500,7 @@ TEST(LedgerSpanNames, phaseOutcome_bad_data_is_failed)
         "failed");
 }
 
-TEST(LedgerSpanNames, phaseOutcome_exhausted_budget_reports_timeout_not_failed)
+TEST(LedgerSpanNames, phase_outcome_exhausted_budget_reports_timeout_not_failed)
 {
     // THE assertion this rule exists for, and the one that would regress
     // silently. Both emitters' exhausted-budget path sets timedOut_ AND
@@ -513,7 +513,7 @@ TEST(LedgerSpanNames, phaseOutcome_exhausted_budget_reports_timeout_not_failed)
         "timeout");
 }
 
-TEST(LedgerSpanNames, phaseOutcome_timeout_outranks_a_late_completion)
+TEST(LedgerSpanNames, phase_outcome_timeout_outranks_a_late_completion)
 {
     // Edge case: the budget expired and the data then arrived. It still reports
     // `timeout`, because the retry budget was really spent -- counting it as a
@@ -523,7 +523,7 @@ TEST(LedgerSpanNames, phaseOutcome_timeout_outranks_a_late_completion)
         "timeout");
 }
 
-TEST(LedgerSpanNames, phaseOutcome_dropped_mid_fetch_is_abandoned)
+TEST(LedgerSpanNames, phase_outcome_dropped_mid_fetch_is_abandoned)
 {
     // No flag at all: the object was destroyed while still fetching (the
     // InboundLedger sweep, or InboundTransactions::newRound dropping a set).
@@ -534,7 +534,7 @@ TEST(LedgerSpanNames, phaseOutcome_dropped_mid_fetch_is_abandoned)
         "abandoned");
 }
 
-TEST(LedgerSpanNames, phaseOutcome_covers_its_whole_input_domain)
+TEST(LedgerSpanNames, phase_outcome_covers_its_whole_input_domain)
 {
     // No input combination yields an empty or undeclared value, which is the
     // property that guarantees no exit can end up with a blank outcome and that
@@ -569,7 +569,7 @@ TEST(LedgerSpanNames, phaseOutcome_covers_its_whole_input_domain)
     }
 }
 
-TEST(LedgerSpanNames, phaseOutcome_is_a_compile_time_rule)
+TEST(LedgerSpanNames, phase_outcome_is_a_compile_time_rule)
 {
     // constexpr, so the rule costs nothing at its call sites and the mapping is
     // fixed by the compiler itself.
@@ -580,7 +580,7 @@ TEST(LedgerSpanNames, phaseOutcome_is_a_compile_time_rule)
     SUCCEED();
 }
 
-TEST(LedgerSpanNames, serveObjectType_maps_every_protobuf_itype)
+TEST(LedgerSpanNames, serve_object_type_maps_every_protobuf_itype)
 {
     // The exact protobuf TMLedgerInfoType values, which are fixed by the wire
     // protocol: liBASE=0, liTX_NODE=1, liAS_NODE=2, liTS_CANDIDATE=3. Passed as
@@ -591,7 +591,7 @@ TEST(LedgerSpanNames, serveObjectType_maps_every_protobuf_itype)
     EXPECT_EQ(ledger_span::serveObjectType(3), "txset");
 }
 
-TEST(LedgerSpanNames, serveObjectType_never_yields_an_undeclared_value)
+TEST(LedgerSpanNames, serve_object_type_never_yields_an_undeclared_value)
 {
     // Edge case: an out-of-range itype cannot occur -- PeerImp::onMessage
     // rejects the request before the worker runs -- but the rule must still
@@ -605,7 +605,7 @@ TEST(LedgerSpanNames, serveObjectType_never_yields_an_undeclared_value)
     }
 }
 
-TEST(LedgerSpanNames, serveOutcome_empty_reply_is_refused)
+TEST(LedgerSpanNames, serve_outcome_empty_reply_is_refused)
 {
     // Seven of the eight exits of processLedgerRequest send nothing, and all of
     // them reach this through a zero node count. Deriving the value from the
@@ -613,13 +613,13 @@ TEST(LedgerSpanNames, serveOutcome_empty_reply_is_refused)
     EXPECT_EQ(ledger_span::serveOutcome(/*servedNodes=*/0, /*softCap=*/128), "refused");
 }
 
-TEST(LedgerSpanNames, serveOutcome_partial_reply_below_cap_is_complete)
+TEST(LedgerSpanNames, serve_outcome_partial_reply_below_cap_is_complete)
 {
     EXPECT_EQ(ledger_span::serveOutcome(/*servedNodes=*/12, /*softCap=*/128), "complete");
     EXPECT_EQ(ledger_span::serveOutcome(/*servedNodes=*/127, /*softCap=*/128), "complete");
 }
 
-TEST(LedgerSpanNames, serveOutcome_reply_at_the_cap_is_partial)
+TEST(LedgerSpanNames, serve_outcome_reply_at_the_cap_is_partial)
 {
     // Edge case at the exact boundary: the assembly loop stops here, so the
     // requester must come back for the rest. Counting it as a success would
@@ -628,7 +628,7 @@ TEST(LedgerSpanNames, serveOutcome_reply_at_the_cap_is_partial)
     EXPECT_EQ(ledger_span::serveOutcome(/*servedNodes=*/256, /*softCap=*/128), "partial");
 }
 
-TEST(LedgerSpanNames, serveOutcome_never_yields_an_undeclared_value)
+TEST(LedgerSpanNames, serve_outcome_never_yields_an_undeclared_value)
 {
     // Negative counts cannot occur (nodes_size() is non-negative) but must
     // still map to a declared value rather than an empty attribute.
@@ -643,7 +643,7 @@ TEST(LedgerSpanNames, serveOutcome_never_yields_an_undeclared_value)
     }
 }
 
-TEST(LedgerSpanNames, serveOutcome_is_a_compile_time_rule)
+TEST(LedgerSpanNames, serve_outcome_is_a_compile_time_rule)
 {
     static_assert(ledger_span::serveOutcome(0, 128) == std::string_view("refused"));
     static_assert(ledger_span::serveOutcome(1, 128) == std::string_view("complete"));

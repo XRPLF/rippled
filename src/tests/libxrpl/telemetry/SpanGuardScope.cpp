@@ -954,7 +954,7 @@ makeLedgerHashBytes(std::uint8_t seed)
 // THE CONTRACT, positive half: three stages of one ledger, created
 // independently, all land in ONE trace whose id IS the ledger hash. This is what
 // makes a slow ledger readable as one connected trace instead of three orphans.
-TEST_F(SpanGuardScopeTest, ledgerJoin_same_hash_puts_every_stage_in_one_trace)
+TEST_F(SpanGuardScopeTest, ledger_join_same_hash_puts_every_stage_in_one_trace)
 {
     auto const h = makeLedgerHashBytes(0x11);
     {
@@ -997,7 +997,7 @@ TEST_F(SpanGuardScopeTest, ledgerJoin_same_hash_puts_every_stage_in_one_trace)
 // THE CONTRACT, negative half: two different ledgers must never share a trace.
 // Without this the join would be useless -- a single trace would accumulate
 // every ledger the node ever touched.
-TEST_F(SpanGuardScopeTest, ledgerJoin_different_hashes_never_share_a_trace)
+TEST_F(SpanGuardScopeTest, ledger_join_different_hashes_never_share_a_trace)
 {
     auto const first = makeLedgerHashBytes(0x20);
     auto const second = makeLedgerHashBytes(0x60);
@@ -1029,7 +1029,7 @@ TEST_F(SpanGuardScopeTest, ledgerJoin_different_hashes_never_share_a_trace)
 // acquire-completion job and from the consensus thread; if the span inherited an
 // ambient parent it would be swallowed into an unrelated trace on some of those
 // paths and its trace id would no longer be the ledger hash.
-TEST_F(SpanGuardScopeTest, ledgerJoin_ignores_an_ambient_parent)
+TEST_F(SpanGuardScopeTest, ledger_join_ignores_an_ambient_parent)
 {
     auto const h = makeLedgerHashBytes(0x33);
     {
@@ -1061,7 +1061,7 @@ TEST_F(SpanGuardScopeTest, ledgerJoin_ignores_an_ambient_parent)
 // is one trace. It is keyed on the VALIDATED ledger hash -- the key
 // ledger.validate uses -- and deliberately NOT on the previous-ledger hash that
 // seeds the consensus round trace, which stays a separate trace.
-TEST_F(SpanGuardScopeTest, ledgerJoin_validationAccept_joins_the_validated_ledger)
+TEST_F(SpanGuardScopeTest, ledger_join_validation_accept_joins_the_validated_ledger)
 {
     auto const validated = makeLedgerHashBytes(0x41);
     auto const previous = makeLedgerHashBytes(0x81);
@@ -1099,7 +1099,7 @@ TEST_F(SpanGuardScopeTest, ledgerJoin_validationAccept_joins_the_validated_ledge
 // guard rather than a span in a garbage trace. The emitters always pass a full
 // 32-byte hash, so this is the guard rail: a truncated key degrades to "no span"
 // instead of to a wrong join.
-TEST_F(SpanGuardScopeTest, ledgerJoin_too_short_a_key_yields_no_span)
+TEST_F(SpanGuardScopeTest, ledger_join_too_short_a_key_yields_no_span)
 {
     std::array<std::uint8_t, 8> const tooShort{1, 2, 3, 4, 5, 6, 7, 8};
     auto span = SpanGuard::hashSpan(
