@@ -679,7 +679,7 @@
       {
         "name": "xrpl_work_item",
         "label": "Work Item",
-        "description": "Filter by perf-iac work item / ticket (e.g. RIPD-7455)",
+        "description": "Filter by perf-iac work item / ticket",
         "type": "query",
         "query": "label_values(xrpl_work_item)",
         "datasource": {
