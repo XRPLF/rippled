@@ -41,11 +41,14 @@
 # GF_SMTP_ENABLED=true and the relay settings point somewhere real.
 #
 # Grafana Cloud does NOT use this file — Cloud has no provisioning filesystem.
-# Cloud delivery is created over the REST API instead: a single email-only
-# contact point, attached to each rule via per-rule notification_settings.
+# Cloud delivery is created over the REST API instead: one contact point named
+# `xrpld-alerts` holding a Slack receiver AND an email receiver, attached to
+# each rule via per-rule notification_settings. Keep this file's templates and
+# the Cloud receivers' templates in step by hand; nothing syncs them.
 # The notification policy tree must never be pushed to a shared Cloud
 # instance -- there is exactly one tree per org and the PUT endpoint
-# replaces it wholesale.
+# replaces it wholesale. That Cloud instance is shared with other teams, so a
+# change there must be scoped to the `xrpld-` uids and the xrpld folder.
 
 apiVersion: 1
 
@@ -61,12 +64,12 @@ contactPoints:
           # selects Slack webhook mode (no recipient/token required) and keeps
           # provisioning valid. Replace with a real webhook to enable delivery.
           url: https://hooks.slack.invalid/disabled
-          # `rulename` is used rather than CommonLabels.service_instance_id
-          # because on NoData/Error evaluations Grafana replaces the query's
-          # label set with only {datasource_uid, ref_id}, so the node label is
-          # absent and the title would render blank — and several rules are
-          # deliberately configured to fire that way.
-          title: "{{ .CommonLabels.rulename }}"
+          # Title and body both come from templates.yaml. `alertname` is the
+          # label Grafana sets on every alert; `service_instance_id` is a query
+          # label and is absent on NoData/Error evaluations, so the templates
+          # guard it rather than referencing it bare.
+          title: '{{ template "xrpld.title" . }}'
+          text: '{{ template "xrpld.slack.body" . }}'
         disableResolveMessage: false
 
   # --- Critical tier: Slack + email ---
@@ -78,7 +81,10 @@ contactPoints:
         settings:
           # Disabled placeholder — see xrpld-slack-default above.
           url: https://hooks.slack.invalid/disabled
-          title: "[CRITICAL] {{ .CommonLabels.rulename }}"
+          # The title template already carries the severity label, so this tier
+          # needs no separate "[CRITICAL]" prefix.
+          title: '{{ template "xrpld.title" . }}'
+          text: '{{ template "xrpld.slack.body" . }}'
         disableResolveMessage: false
       - uid: xrpld-email-critical
         type: email
@@ -90,6 +96,14 @@ contactPoints:
           addresses: alerts-disabled@xrpld.invalid
           # One message listing all recipients, rather than one message each.
           singleEmail: true
+          # DELIBERATELY no `subject`/`message` override here, unlike the Slack
+          # receivers above. Grafana's default email body is the good one: bold
+          # section headings, a styled label table, annotations rendered as real
+          # clickable links, and the View/Silence buttons. Overriding `message`
+          # replaces all of that with plain text, because email escapes HTML, so
+          # a custom body cannot reproduce any of it. The value line the default
+          # body carries is made readable by NAMING each rule's query steps (see
+          # rules.yaml), not by replacing the body.
         disableResolveMessage: false
 
 # To retire a receiver that a running Grafana has already stored, uncomment
