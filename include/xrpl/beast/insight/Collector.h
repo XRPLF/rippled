@@ -21,6 +21,10 @@ namespace beast::insight {
  * as desired (counters, events, gauges, meters, and an optional hook)
  * using the interface.
  *
+ * Create them there, before the application calls onCollectionReady().
+ * That call is when a collector starts polling and arms its observable
+ * instruments, and it runs once.
+ *
  * @see Counter, Event, Gauge, Hook, Meter
  * @see NullCollector, StatsDCollector
  */
@@ -140,6 +144,9 @@ public:
 
     /**
      * Create a gauge with the specified name.
+     *
+     * Create it before onCollectionReady(); a gauge made after that is
+     * never armed, so it is never exported.
      * @see Gauge
      */
     /** @{ */

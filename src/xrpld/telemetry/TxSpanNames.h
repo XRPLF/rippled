@@ -85,6 +85,9 @@ inline constexpr auto fee = makeStr("fee");
  * "sequence" — transaction sequence number.
  */
 inline constexpr auto sequence = makeStr("sequence");
+// The per-role account keys (tx_account, tx_destination, ...) that tx.process
+// also carries live in <xrpl/telemetry/TxAccountSpanNames.h>, in libxrpl, so a
+// library test can check them against TxFormats.
 /**
  * "ter_result" — engine result code after application.
  */
