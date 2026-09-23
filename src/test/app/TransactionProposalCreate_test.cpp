@@ -234,6 +234,26 @@ struct TransactionProposalCreate_test : public beast::unit_test::Suite
             reject(tx, temBAD_AMOUNT);
         }
 
+        // A payload that fails the local checks a direct submission runs
+        // outside preflight (On-Chain Cosigner spec §5.3.1 rule 2:
+        // "the same [stateless format] checks it would receive if
+        // submitted directly") is rejected as temMALFORMED. Without this
+        // pass the proposal would be storable but statically-dead:
+        // submit-time passesLocalChecks would reject the completed
+        // transaction and the proposal would just squat on the target's
+        // Ticket and owner reserve until Expiration.
+        //
+        // A Memos array whose serialized form exceeds 1024 bytes trips
+        // isMemoOkay. No transactor preflight step bounds memo size, so
+        // without the passesLocalChecks call this payload would be
+        // stored.
+        {
+            json::Value tx = payload();
+            tx[sfMemos.jsonName][0u][sfMemo.jsonName][sfMemoData.jsonName] =
+                strHex(std::string(1100, 'A'));  // > 1024 bytes serialized
+            reject(tx, temMALFORMED);
+        }
+
         // Expiration must be present and non-zero.
         {
             env(proposal::create(target, payload(), 0),
