@@ -35,7 +35,6 @@
 #include <xrpl/resource/Consumer.h>
 #include <xrpl/server/InfoSub.h>
 #include <xrpl/server/LoadFeeTrack.h>
-#include <xrpl/telemetry/Redaction.h>
 #include <xrpl/telemetry/SpanGuard.h>
 #include <xrpl/tx/paths/RippleCalc.h>
 
@@ -780,21 +779,11 @@ PathRequest::doUpdate(
     if (span)
     {
         span.setAttribute(pathfind_span::attr::fast, fast);
-        // to_string(Issue) renders a non-XRP asset as "<issuer>/<currency>" with
-        // the issuer as a plaintext Base58 address, so it cannot be emitted
-        // as-is: every account reaching a span is hashed first. Redact just the
-        // issuer and keep the currency, which is what this attribute is for. An
-        // MPT asset renders as its issuance ID and carries no address, so it
-        // needs no redaction.
-        span.setAttribute(
-            pathfind_span::attr::destCurrency,
-            saDstAmount_.asset().visit(
-                [](Issue const& issue) {
-                    return isXRP(issue.account)
-                        ? to_string(issue.currency)
-                        : redactAccount(toBase58(issue.account)) + "/" + to_string(issue.currency);
-                },
-                [](MPTIssue const& mpt) { return to_string(mpt.getMptID()); }));
+        // to_string(Asset) renders XRP as "XRP", an IOU as "<issuer>/<currency>"
+        // with the issuer's Base58 address, and an MPT as its issuance id. The
+        // issuer is a public ledger identifier, so the asset is emitted as
+        // rendered (see the attribute docs in PathFindSpanNames.h).
+        span.setAttribute(pathfind_span::attr::destCurrency, to_string(saDstAmount_.asset()));
     }
 
     JLOG(journal_.debug()) << iIdentifier_ << " update " << (fast ? "fast" : "normal");
