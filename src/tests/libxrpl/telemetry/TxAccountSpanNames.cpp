@@ -85,8 +85,12 @@ TEST(TxAccountSpanNames, account_fields_no_transaction_carries_have_no_key)
 
     for (auto const* field : all)
     {
+        // Braced on purpose: EXPECT_EQ expands to an if/else, so an unbraced
+        // if around it is a dangling-else error with warnings as errors.
         if (!carried.contains(field))
+        {
             EXPECT_EQ(accountFieldAttributeKey(*field), std::nullopt) << field->getName();
+        }
     }
 }
 
