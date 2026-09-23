@@ -134,7 +134,10 @@ class TxQApplyImpl
     Application& app_;
     OpenView& view_;
     ApplyFlags flags_;
+    // TxQ's own journal (logs_->journal("TxQ"))
     beast::Journal j_;
+    // Passed in by the caller forwarded to the helpers (preflight, tryDirectApply...).
+    beast::Journal jExt_;
     std::shared_ptr<STTx const> const& tx_;
 
     AccountID const accID_;
@@ -180,13 +183,14 @@ public:
         , app_(app)
         , view_(view)
         , flags_(flags)
-        , j_(j)
+        , j_(txq_.j_)
+        , jExt_(j)
         , tx_(tx)
         , accID_(tx_->at(sfAccount))
         , accKey_(keylet::account(accID_))
         , txID_(tx_->getTransactionID())
         , txSeq_(tx_->getSeqProxy())
-        , preflightRes_(preflight(app_, view_.rules(), *tx_, flags_, j_))
+        , preflightRes_(preflight(app_, view_.rules(), *tx_, flags_, jExt_))
     {
     }
 
@@ -219,6 +223,7 @@ private:
     std::optional<ApplyResult>
     checkBlockerInAccQue() const;
 
+    // Returns true if require Multitxn, false if not. Returns ApplyResult in case of error.
     std::expected<bool, ApplyResult>
     checkMultiTxn() const;
 
@@ -666,7 +671,7 @@ TxQApplyImpl::tryClearAccountQueueUpThruTx()
             view_.txCount(),
             flags_,
             *metricsSnapshot_,
-            j_);
+            jExt_);
         // NOLINTEND(bugprone-unchecked-optional-access)
 
         if (result.applied)
@@ -1492,7 +1497,7 @@ TxQApplyImpl::applyImplPrelock()
 {
     // See if the transaction paid a high enough fee that it can go straight
     // into the ledger.
-    if (auto const directApplied = txq_.tryDirectApply(app_, view_, tx_, flags_, j_))
+    if (auto const directApplied = txq_.tryDirectApply(app_, view_, tx_, flags_, jExt_))
         return directApplied;
 
     if ((flags_ & TapDryRun) != 0u)
@@ -1719,7 +1724,7 @@ TxQ::rebuildQueue(OpenView& view)
             byFee_.insert(candidate);
         }
     }
-    XRPL_ASSERT(byFee_.size() == startingSize, "xrpl::TxQ::accept : byFee size match");
+    XRPL_ASSERT(byFee_.size() == startingSize, "xrpl::TxQ::rebuildQueue : byFee size match");
 }
 
 /*
