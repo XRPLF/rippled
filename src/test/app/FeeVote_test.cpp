@@ -353,12 +353,14 @@ class FeeVote_test : public beast::unit_test::Suite
             BEAST_EXPECT(setup.bytecodeSizeLimit == kMaxBytecodeSizeLimit);
         }
         {
+            // Zero is below kMinGasPrice, so the default is kept.
             Section config;
             config.append("gas_price = 0");
             auto const setup = setupFeeVote(config);
             BEAST_EXPECT(setup.gasPrice == defaultSetup.gasPrice);
         }
         {
+            // The floor is inclusive: a configured price of 1 is accepted.
             Section config;
             config.append({"gas_price = " + std::to_string(kMinGasPrice)});
             auto const setup = setupFeeVote(config);
@@ -492,6 +494,8 @@ class FeeVote_test : public beast::unit_test::Suite
                  .gasLimit = kMaxGasLimit,
                  .bytecodeSizeLimit = kMaxBytecodeSizeLimit + 1,
                  .gasPrice = 300});
+            // gasPrice == 0 is temBAD_FEE; gasLimit == 0 remains a valid kill
+            // switch.
             testBadFields(
                 {.baseFeeDrops = XRPAmount{10},
                  .reserveBaseDrops = XRPAmount{200000},
@@ -501,7 +505,7 @@ class FeeVote_test : public beast::unit_test::Suite
                  .gasPrice = 0});
         }
 
-        // The minimum gas price is accepted.
+        // ttFEE at exactly kMinGasPrice applies and is stored.
         {
             jtx::Env env(*this, jtx::testableAmendments());
             auto ledger = std::make_shared<Ledger>(
@@ -895,7 +899,8 @@ class FeeVote_test : public beast::unit_test::Suite
             BEAST_EXPECT(val->getFieldU64(sfBaseFee) == setup.referenceFee);
         }
 
-        // Out-of-range gas price is not written into the validation.
+        // A local target of 0 is not emitted on the validation; the field is
+        // omitted so peers treat it as noVote.
         {
             Env env(*this, testableAmendments());
             FeeSetup zeroPrice = setup;
@@ -1177,6 +1182,8 @@ class FeeVote_test : public beast::unit_test::Suite
             checkFeeTx(setup, feeTx, ledger);
         }
 
+        // Local and peer votes of 0 are ignored; the fee tx keeps the ledger
+        // gas price. Other fee fields still change, so a ttFEE is produced.
         {
             FeeSetup setup;
             setup.referenceFee = 42;
@@ -1228,6 +1235,7 @@ class FeeVote_test : public beast::unit_test::Suite
             checkFeeTx(setup, feeTx, ledger);
         }
 
+        // doVote accepts the inclusive floor (field >= kMinGasPrice).
         {
             FeeSetup setup;
             setup.referenceFee = 42;
@@ -1241,6 +1249,7 @@ class FeeVote_test : public beast::unit_test::Suite
             checkFeeTx(setup, feeTx, ledger);
         }
 
+        // There is no protocol max for gas price; UINT32_MAX is a legal vote.
         {
             FeeSetup setup;
             setup.referenceFee = 42;

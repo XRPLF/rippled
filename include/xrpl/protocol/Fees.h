@@ -11,7 +11,7 @@ namespace xrpl {
 inline constexpr std::uint32_t kFeeUnitsDeprecated = 10;
 
 // Number of micro-drops in one drop.
-constexpr std::uint32_t microDropsPerDrop{1'000'000};
+inline constexpr std::uint32_t microDropsPerDrop{1'000'000};
 
 /**
  * Hard protocol bounds on the Feature Extension fee settings. A voted value
