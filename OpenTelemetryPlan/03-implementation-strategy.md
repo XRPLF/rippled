@@ -12,23 +12,19 @@ The telemetry implementation follows xrpld's existing code organization pattern:
 ```
 include/xrpl/
 ├── telemetry/
-│   ├── Telemetry.h              # Main telemetry interface
+│   ├── Telemetry.h              # Main telemetry interface (global singleton)
 │   ├── TelemetryConfig.h        # Configuration structures
 │   ├── TraceContext.h           # Context propagation utilities
-│   ├── SpanGuard.h              # RAII span management
+│   ├── SpanGuard.h              # RAII span management with factory methods + discard()
+│   ├── DiscardFlag.h            # Thread-local discard flag
 │   └── SpanAttributes.h         # Attribute helper functions
 
 src/libxrpl/
 ├── telemetry/
-│   ├── Telemetry.cpp            # Implementation
+│   ├── Telemetry.cpp            # Implementation + FilteringSpanProcessor
 │   ├── TelemetryConfig.cpp      # Config parsing
 │   ├── TraceContext.cpp         # Context serialization
 │   └── NullTelemetry.cpp        # No-op implementation
-
-src/xrpld/
-├── telemetry/
-│   ├── TracingInstrumentation.h # Instrumentation macros
-│   └── TracingInstrumentation.cpp
 ```
 
 ---
