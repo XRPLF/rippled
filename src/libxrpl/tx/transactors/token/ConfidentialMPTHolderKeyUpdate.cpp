@@ -47,11 +47,8 @@ ConfidentialMPTHolderKeyUpdate::preflight(PreflightContext const& ctx)
     if (std::popcount(ctx.tx.getFlags() & modeFlags) != 1)
         return temINVALID_FLAG;
 
-    auto const account = ctx.tx[sfAccount];
-    auto const issuer = MPTIssue(ctx.tx[sfMPTokenIssuanceID]).getIssuer();
-
     // The issuer cannot hold confidential balances.
-    if (account == issuer)
+    if (ctx.tx[sfAccount] == MPTIssue(ctx.tx[sfMPTokenIssuanceID]).getIssuer())
         return temMALFORMED;
 
     bool const hasHolderKey = ctx.tx.isFieldPresent(sfHolderEncryptionKey);
@@ -69,7 +66,8 @@ ConfidentialMPTHolderKeyUpdate::preflight(PreflightContext const& ctx)
         return tesSUCCESS;
     }
 
-    if (!hasHolderKey)
+    // Rotation and Recovery both require a holder key and a proof.
+    if (!hasHolderKey || !hasProof)
         return temMALFORMED;
 
     // Rotation mode requires re-encrypted balances; Recovery mode must not
@@ -80,22 +78,20 @@ ConfidentialMPTHolderKeyUpdate::preflight(PreflightContext const& ctx)
     if (recovery && (hasSpending || hasInbox))
         return temMALFORMED;
 
-    // TODO: Rotation and Recovery require a proof field. Length and cryptographic
-    // verification are deferred until the mpt-crypto constructions land.
-    if (!hasProof)
-        return temMALFORMED;
+    if (hasSpending &&
+        ctx.tx[sfConfidentialBalanceSpending].length() != kEcGamalEncryptedTotalLength)
+        return temBAD_CIPHERTEXT;
+
+    if (hasInbox && ctx.tx[sfConfidentialBalanceInbox].length() != kEcGamalEncryptedTotalLength)
+        return temBAD_CIPHERTEXT;
 
     if (!isValidCompressedECPoint(ctx.tx[sfHolderEncryptionKey]))
         return temMALFORMED;
 
-    auto const isValidCiphertextField = [](Slice const& s) {
-        return s.length() == kEcGamalEncryptedTotalLength && isValidCiphertext(s);
-    };
-
-    if (hasSpending && !isValidCiphertextField(ctx.tx[sfConfidentialBalanceSpending]))
+    if (hasSpending && !isValidCiphertext(ctx.tx[sfConfidentialBalanceSpending]))
         return temBAD_CIPHERTEXT;
 
-    if (hasInbox && !isValidCiphertextField(ctx.tx[sfConfidentialBalanceInbox]))
+    if (hasInbox && !isValidCiphertext(ctx.tx[sfConfidentialBalanceInbox]))
         return temBAD_CIPHERTEXT;
 
     return tesSUCCESS;

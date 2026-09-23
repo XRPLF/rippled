@@ -1147,7 +1147,8 @@ TRANSACTION(ttCONFIDENTIAL_MPT_MIRROR_UPDATE, 92, ConfidentialMPTMirrorUpdate,
     {sfZKProof, SoeRequired},
 }))
 
-/** This transaction rotates or recovers a confidential MPT holder's ElGamal encryption key. */
+/** This transaction rotates or recovers a confidential MPT holder's ElGamal encryption key,
+    or cancels a recovery. */
 #if TRANSACTION_INCLUDE
 #   include <xrpl/tx/transactors/token/ConfidentialMPTHolderKeyUpdate.h>
 #endif
@@ -1155,9 +1156,6 @@ TRANSACTION(ttCONFIDENTIAL_MPT_HOLDER_KEY_UPDATE, 93, ConfidentialMPTHolderKeyUp
     ({.amendment = featureConfidentialMPTKeyRotation}),
     ({
     {sfMPTokenIssuanceID, SoeRequired},
-    // HolderEncryptionKey and ZKProof are required in Rotation/Recovery mode
-    // (tfHolderKeyRotation/tfHolderKeyRecovery) and forbidden in Cancel mode
-    // (tfCancelRecovery)
     {sfHolderEncryptionKey, SoeOptional},
     {sfConfidentialBalanceSpending, SoeOptional},
     {sfConfidentialBalanceInbox, SoeOptional},
