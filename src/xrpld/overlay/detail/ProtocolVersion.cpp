@@ -151,4 +151,12 @@ isProtocolSupported(ProtocolVersion const& v)
     return std::end(kSupportedProtocolList) != std::ranges::find(kSupportedProtocolList, v);
 }
 
+ProtocolVersion
+newestSupportedProtocolVersion()
+{
+    // Scans rather than reading the sorted list's last entry, so it does not
+    // depend on an invariant kept elsewhere.
+    return *std::ranges::max_element(kSupportedProtocolList);
+}
+
 }  // namespace xrpl
