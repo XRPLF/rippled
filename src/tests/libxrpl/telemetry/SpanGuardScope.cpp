@@ -368,7 +368,7 @@ protected:
 };
 
 // freshRoot() must ignore the ambient active span and start a brand-new trace.
-TEST_F(SpanGuardScopeTest, spanGuard_freshRoot_is_true_root_ignoring_ambient)
+TEST_F(SpanGuardScopeTest, span_guard_fresh_root_is_true_root_ignoring_ambient)
 {
     {
         // Ambient span becomes the active span on this thread.
@@ -398,7 +398,7 @@ TEST_F(SpanGuardScopeTest, spanGuard_freshRoot_is_true_root_ignoring_ambient)
 
 // A ScopedSpanGuard is the ambient active span on its thread the moment it is
 // constructed: a child created while it is alive parents to its span.
-TEST_F(SpanGuardScopeTest, scopedGuard_is_ambient_on_construct)
+TEST_F(SpanGuardScopeTest, scoped_guard_is_ambient_on_construct)
 {
     opentelemetry::trace::SpanId activeId;
     {
@@ -435,7 +435,7 @@ TEST_F(SpanGuardScopeTest, scopedGuard_is_ambient_on_construct)
 // operator SpanGuard() && pops the Scope eagerly on the origin thread, so the
 // span is no longer ambient here and the resulting thread-free guard can be
 // ended on a worker thread without corrupting this thread's context stack.
-TEST_F(SpanGuardScopeTest, scopedGuard_conversion_pops_scope_on_this_thread)
+TEST_F(SpanGuardScopeTest, scoped_guard_conversion_pops_scope_on_this_thread)
 {
     {
         ScopedSpanGuard s(TraceCategory::Ledger, "ledger", "build");
@@ -478,7 +478,7 @@ TEST_F(SpanGuardScopeTest, scopedGuard_conversion_pops_scope_on_this_thread)
 
 // The SpanGuard produced by the conversion ends the span exactly once: the
 // moved-from ScopedSpanGuard must not re-end it on destruction.
-TEST_F(SpanGuardScopeTest, scopedGuard_conversion_result_ends_span_once)
+TEST_F(SpanGuardScopeTest, scoped_guard_conversion_result_ends_span_once)
 {
     {
         ScopedSpanGuard scoped(TraceCategory::Ledger, "ledger", "build");
@@ -511,7 +511,7 @@ TEST_F(SpanGuardScopeTest, scopedGuard_conversion_result_ends_span_once)
 // stack ignores the LocalValue swap, so the span would stay visible off-store
 // (the EXPECT_NE below would fail). Passes only because the fixture installs the
 // coro-aware storage that binds the ambient stack to the active store.
-TEST_F(SpanGuardScopeTest, scopedGuard_survives_localvalue_store_swap)
+TEST_F(SpanGuardScopeTest, scoped_guard_survives_localvalue_store_swap)
 {
     namespace ctx = opentelemetry::context;
     namespace trc = opentelemetry::trace;
@@ -618,7 +618,7 @@ TEST_F(SpanGuardScopeTest, activate_sets_ambient_without_owning)
 // OTel key-value-iterable, so a dropped or mistyped pair would be invisible
 // without reading the exported event back. Values are asserted individually as
 // well as by count: two attributes with one value blanked still counts as two.
-TEST_F(SpanGuardScopeTest, spanGuard_addEvent_records_name_and_attribute_values)
+TEST_F(SpanGuardScopeTest, span_guard_add_event_records_name_and_attribute_values)
 {
     namespace cs = consensus::span;
 
@@ -652,7 +652,7 @@ TEST_F(SpanGuardScopeTest, spanGuard_addEvent_records_name_and_attribute_values)
 // The name-only overload records the event with NO attributes, so a regression
 // that leaked attributes between the two overloads shows up here rather than as
 // an extra key on a production event.
-TEST_F(SpanGuardScopeTest, spanGuard_addEvent_without_attributes_records_bare_event)
+TEST_F(SpanGuardScopeTest, span_guard_add_event_without_attributes_records_bare_event)
 {
     namespace cs = consensus::span;
 
@@ -676,7 +676,7 @@ TEST_F(SpanGuardScopeTest, spanGuard_addEvent_without_attributes_records_bare_ev
 
 // The scoped guard records event attributes too. consensus.accept.apply relies
 // on it for one tx.included event per transaction of the accepted set.
-TEST_F(SpanGuardScopeTest, scopedGuard_addEvent_records_name_and_attribute_values)
+TEST_F(SpanGuardScopeTest, scoped_guard_add_event_records_name_and_attribute_values)
 {
     namespace cs = consensus::span;
 
@@ -704,7 +704,7 @@ TEST_F(SpanGuardScopeTest, scopedGuard_addEvent_records_name_and_attribute_value
 // A scoped child of a captured context is the ambient parent of the spans
 // created after it on the same thread. A hash-derived root created inside that
 // scope stays a root. consensus.accept.apply relies on both.
-TEST_F(SpanGuardScopeTest, scopedChildOfCapturedContextIsAmbientForLaterSpans)
+TEST_F(SpanGuardScopeTest, scoped_child_of_captured_context_is_ambient_for_later_spans)
 {
     namespace cs = consensus::span;
 
@@ -755,7 +755,7 @@ TEST_F(SpanGuardScopeTest, scopedChildOfCapturedContextIsAmbientForLaterSpans)
 
 // A forced-root span started while a PendingTraceId is active adopts that
 // pinned 16-byte trace_id and remains a true root (no parent).
-TEST_F(SpanGuardScopeTest, deterministicIdGenerator_forced_root_gets_pending_trace_id)
+TEST_F(SpanGuardScopeTest, deterministic_id_generator_forced_root_gets_pending_trace_id)
 {
     auto const h = makeTraceIdBytes();
     {
@@ -776,7 +776,7 @@ TEST_F(SpanGuardScopeTest, deterministicIdGenerator_forced_root_gets_pending_tra
 
 // A forced-root span with NO PendingTraceId gets a random (non-zero) trace_id,
 // never the deterministic hash -- the safety property when no id is pinned.
-TEST_F(SpanGuardScopeTest, deterministicIdGenerator_no_pending_gives_random_root)
+TEST_F(SpanGuardScopeTest, deterministic_id_generator_no_pending_gives_random_root)
 {
     auto const h = makeTraceIdBytes();
     {
@@ -800,7 +800,7 @@ TEST_F(SpanGuardScopeTest, deterministicIdGenerator_no_pending_gives_random_root
 // child, so the pinned id stays available -- proven here by a trailing
 // forced-root span that DOES adopt it (which also consumes the id so
 // ~PendingTraceId's consumed-assert holds; see the report for this choice).
-TEST_F(SpanGuardScopeTest, deterministicIdGenerator_ambient_child_ignores_pending)
+TEST_F(SpanGuardScopeTest, deterministic_id_generator_ambient_child_ignores_pending)
 {
     auto const h = makeTraceIdBytes();
     {
@@ -873,7 +873,7 @@ TEST_F(SpanGuardScopeTest, deterministicIdGenerator_ambient_child_ignores_pendin
 // builds) XRPL_ASSERT is a no-op, and under ENABLE_VOIDSTAR a failed assert
 // continues instead of aborting -- in both cases the worker would not crash and
 // EXPECT_DEATH would report a spurious failure.
-TEST_F(SpanGuardScopeTest, scopedGuard_cross_thread_death_asserts_at_wrong_store_destroy)
+TEST_F(SpanGuardScopeTest, scoped_guard_cross_thread_death_asserts_at_wrong_store_destroy)
 {
 #ifdef NDEBUG
     GTEST_SKIP() << "XRPL_ASSERT compiles to a no-op under NDEBUG (Release builds), so the "
@@ -954,7 +954,7 @@ makeLedgerHashBytes(std::uint8_t seed)
 // THE CONTRACT, positive half: three stages of one ledger, created
 // independently, all land in ONE trace whose id IS the ledger hash. This is what
 // makes a slow ledger readable as one connected trace instead of three orphans.
-TEST_F(SpanGuardScopeTest, ledgerJoin_same_hash_puts_every_stage_in_one_trace)
+TEST_F(SpanGuardScopeTest, ledger_join_same_hash_puts_every_stage_in_one_trace)
 {
     auto const h = makeLedgerHashBytes(0x11);
     {
@@ -997,7 +997,7 @@ TEST_F(SpanGuardScopeTest, ledgerJoin_same_hash_puts_every_stage_in_one_trace)
 // THE CONTRACT, negative half: two different ledgers must never share a trace.
 // Without this the join would be useless -- a single trace would accumulate
 // every ledger the node ever touched.
-TEST_F(SpanGuardScopeTest, ledgerJoin_different_hashes_never_share_a_trace)
+TEST_F(SpanGuardScopeTest, ledger_join_different_hashes_never_share_a_trace)
 {
     auto const first = makeLedgerHashBytes(0x20);
     auto const second = makeLedgerHashBytes(0x60);
@@ -1029,7 +1029,7 @@ TEST_F(SpanGuardScopeTest, ledgerJoin_different_hashes_never_share_a_trace)
 // acquire-completion job and from the consensus thread; if the span inherited an
 // ambient parent it would be swallowed into an unrelated trace on some of those
 // paths and its trace id would no longer be the ledger hash.
-TEST_F(SpanGuardScopeTest, ledgerJoin_ignores_an_ambient_parent)
+TEST_F(SpanGuardScopeTest, ledger_join_ignores_an_ambient_parent)
 {
     auto const h = makeLedgerHashBytes(0x33);
     {
@@ -1061,7 +1061,7 @@ TEST_F(SpanGuardScopeTest, ledgerJoin_ignores_an_ambient_parent)
 // is one trace. It is keyed on the VALIDATED ledger hash -- the key
 // ledger.validate uses -- and deliberately NOT on the previous-ledger hash that
 // seeds the consensus round trace, which stays a separate trace.
-TEST_F(SpanGuardScopeTest, ledgerJoin_validationAccept_joins_the_validated_ledger)
+TEST_F(SpanGuardScopeTest, ledger_join_validation_accept_joins_the_validated_ledger)
 {
     auto const validated = makeLedgerHashBytes(0x41);
     auto const previous = makeLedgerHashBytes(0x81);
@@ -1099,7 +1099,7 @@ TEST_F(SpanGuardScopeTest, ledgerJoin_validationAccept_joins_the_validated_ledge
 // guard rather than a span in a garbage trace. The emitters always pass a full
 // 32-byte hash, so this is the guard rail: a truncated key degrades to "no span"
 // instead of to a wrong join.
-TEST_F(SpanGuardScopeTest, ledgerJoin_too_short_a_key_yields_no_span)
+TEST_F(SpanGuardScopeTest, ledger_join_too_short_a_key_yields_no_span)
 {
     std::array<std::uint8_t, 8> const tooShort{1, 2, 3, 4, 5, 6, 7, 8};
     auto span = SpanGuard::hashSpan(
