@@ -31,8 +31,6 @@ namespace {
 // the run rather than at preflight — which couples the two limits: `7 x reached-code-size` is a
 // floor a contract pays before executing one instruction of its own. README.md has the decision
 // rule these cases are meant to feed.
-//
-// Every case pins `->Iterations(...)`; see the note at the top of Vm.cpp.
 
 // `Config.h`'s defaults. Hard-coded because `src/xrpld` is not on a libxrpl benchmark's include
 // path — keep in step with `Config::gasLimit` and `Config::bytecodeSizeLimit`.
@@ -49,9 +47,7 @@ constexpr std::size_t kFillerFunctions = 16;
 // the sweep is there to show. `worstCase` below is where the count is turned up instead.
 constexpr int kSweepWorkCalls = 4;
 
-// `check_sig` and not `sha512_half`, which is the intuitive choice and the wrong one. Measured on
-// an Apple-silicon Release build, `sha512_half` at its 1 KiB maximum input costs 589 ns and
-// `check_sig` 14,576 ns — 25x more, and charged 300 gas against a suggested 26,188. It is both the
+// `check_sig` charged 300 gas against a suggested 26,188. It is both the
 // most expensive thing a contract can ask for and the most underpriced, which is exactly the
 // combination a limit has to be chosen against.
 constexpr std::string_view kImport =
