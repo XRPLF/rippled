@@ -2,26 +2,24 @@
 
 #pragma once
 
+#include <compare>
+#include <concepts>
+
 namespace beast {
 
 /**
  * Zero allows classes to offer efficient comparisons to zero.
  *
- * Zero is a struct to allow classes to efficiently compare with zero without
- * requiring an rvalue construction.
- *
  * It's often the case that we have classes which combine a number and a unit.
  * In such cases, comparisons like t > 0 or t != 0 make sense, but comparisons
- * like t > 1 or t != 1 do not.
+ * like t > 1 or t != 1 do not. Comparing against kZero expresses exactly that,
+ * without constructing a T.
  *
- * The class Zero allows such comparisons to be easily made.
- *
- * The comparing class T either needs to have a method called signum() which
- * returns a positive number, 0, or a negative; or there needs to be a signum
- * function which resolves in the namespace which takes an instance of T and
- * returns a positive, zero or negative number.
+ * A type T participates if either `t.signum()` or an unqualified `signum(t)`
+ * found by argument-dependent lookup returns an integer that is negative,
+ * zero, or positive according to the sign of t. Both `t == kZero` and
+ * `kZero == t` work, as do all six relational operators in either order.
  */
-
 struct Zero
 {
     explicit Zero() = default;
@@ -30,115 +28,44 @@ struct Zero
 inline constexpr Zero kZero{};
 
 /**
- * Default implementation of signum calls the method on the class.
+ * Default implementation of signum: call the member function.
  */
-template <typename T>
-auto
-signum(T const& t)
+template <class T>
+    requires requires(T const& t) {
+        { t.signum() } -> std::integral;
+    }
+[[nodiscard]] constexpr auto
+signum(T const& t) noexcept(noexcept(t.signum()))
 {
     return t.signum();
 }
 
-namespace detail::zero_helper {
+namespace detail {
 
-// For argument dependent lookup to function properly, calls to signum must
-// be made from a namespace that does not include overloads of the function..
+/**
+ * A type with a usable signum: either the member-based default above, or a
+ * `signum(t)` overload in T's own namespace, found by ADL. A user overload
+ * that is a better match than the template wins, as usual.
+ */
 template <class T>
-auto
-callSignum(T const& t)
+concept HasSignum = requires(T const& t) {
+    { signum(t) } -> std::integral;
+};
+
+}  // namespace detail
+
+template <detail::HasSignum T>
+[[nodiscard]] constexpr bool
+operator==(T const& t, Zero) noexcept(noexcept(signum(t)))
 {
-    return signum(t);
+    return signum(t) == 0;
 }
 
-}  // namespace detail::zero_helper
-
-// Handle operators where T is on the left side using signum.
-
-template <typename T>
-bool
-operator==(T const& t, Zero)
+template <detail::HasSignum T>
+[[nodiscard]] constexpr std::strong_ordering
+operator<=>(T const& t, Zero) noexcept(noexcept(signum(t)))
 {
-    return detail::zero_helper::callSignum(t) == 0;
-}
-
-template <typename T>
-bool
-operator!=(T const& t, Zero)
-{
-    return detail::zero_helper::callSignum(t) != 0;
-}
-
-template <typename T>
-bool
-operator<(T const& t, Zero)
-{
-    return detail::zero_helper::callSignum(t) < 0;
-}
-
-template <typename T>
-bool
-operator>(T const& t, Zero)
-{
-    return detail::zero_helper::callSignum(t) > 0;
-}
-
-template <typename T>
-bool
-operator>=(T const& t, Zero)
-{
-    return detail::zero_helper::callSignum(t) >= 0;
-}
-
-template <typename T>
-bool
-operator<=(T const& t, Zero)
-{
-    return detail::zero_helper::callSignum(t) <= 0;
-}
-
-// Handle operators where T is on the right side by
-// reversing the operation, so that T is on the left side.
-
-template <typename T>
-bool
-operator==(Zero, T const& t)
-{
-    return t == kZero;
-}
-
-template <typename T>
-bool
-operator!=(Zero, T const& t)
-{
-    return t != kZero;
-}
-
-template <typename T>
-bool
-operator<(Zero, T const& t)
-{
-    return t > kZero;
-}
-
-template <typename T>
-bool
-operator>(Zero, T const& t)
-{
-    return t < kZero;
-}
-
-template <typename T>
-bool
-operator>=(Zero, T const& t)
-{
-    return t <= kZero;
-}
-
-template <typename T>
-bool
-operator<=(Zero, T const& t)
-{
-    return t >= kZero;
+    return signum(t) <=> 0;
 }
 
 }  // namespace beast
