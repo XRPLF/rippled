@@ -67,9 +67,11 @@ groups:
         annotations:
           summary: "Ledger history mismatch on {{ $labels.service_instance_id }}"
           description: >-
-            Node {{ $labels.service_instance_id }} recorded
-            {{ $values.B.Value }} ledger history mismatch(es) in the last 15m.
-            The node's built ledger diverges from the validated network chain.
+            Ledger history mismatches on {{ $labels.service_instance_id }} in the last
+            15m: {{ printf "%.0f" $values.B.Value }} (threshold: more than 0).
+          action: >-
+            A built ledger diverged from the validated network chain, which can mean
+            corrupt local history. Check byzantine ledger jumps and the node-store.
         data:
           - refId: A
             relativeTimeRange:
@@ -131,9 +133,11 @@ groups:
         annotations:
           summary: "Ledger closing stalled on {{ $labels.service_instance_id }}"
           description: >-
-            Node {{ $labels.service_instance_id }} has closed no ledgers for
-            several minutes (5m rate has decayed to zero). Consensus or ledger
-            advancement is stuck, or the process is gone.
+            Ledger close rate on {{ $labels.service_instance_id }} over 5m: {{ printf
+            "%.4f" $values.B.Value }} ledgers/s (threshold: below 0.001).
+          action: >-
+            Consensus or ledger advancement is stuck, or the process is gone. Check
+            consensus round duration, worker pool saturation and peer supply.
         data:
           - refId: A
             relativeTimeRange:
@@ -206,9 +210,11 @@ groups:
         annotations:
           summary: "Validated ledger stale on {{ $labels.service_instance_id }}"
           description: >-
-            Node {{ $labels.service_instance_id }} has a validated ledger age of
-            {{ $values.B.Value }}s (>60s). The node is not keeping up with the
-            validated network chain.
+            Validated ledger age on {{ $labels.service_instance_id }}: {{ printf "%.0f"
+            $values.B.Value }}s (threshold: over 60s).
+          action: >-
+            The node is no longer tracking the network. Check peer connectivity, node-
+            store IO latency and consensus rounds.
         data:
           - refId: A
             relativeTimeRange:
@@ -285,9 +291,10 @@ groups:
         annotations:
           summary: "Validations missed on {{ $labels.service_instance_id }}"
           description: >-
-            Validator {{ $labels.service_instance_id }} is missing
-            {{ $values.B.Value }} (fraction) of its validations over 15m. Its
-            validations are not agreeing with the validated ledger, which risks
+            Missed-validation fraction on {{ $labels.service_instance_id }} over 15m: {{
+            printf "%.3f" $values.B.Value }} (threshold: over 0.1).
+          action: >-
+            Its validations are not agreeing with the validated ledger, which risks
             removal from UNLs.
         data:
           - refId: A
@@ -358,9 +365,11 @@ groups:
         annotations:
           summary: "No validations checked on {{ $labels.service_instance_id }}"
           description: >-
-            Node {{ $labels.service_instance_id }} has checked no incoming
-            validations for several minutes (5m rate has decayed to zero). The
-            validation stream from peers may have stopped.
+            Validations-checked rate on {{ $labels.service_instance_id }} over 5m: {{
+            printf "%.4f" $values.B.Value }} per s (threshold: below 0.001).
+          action: >-
+            The validation stream from peers may have stopped. Check peer count and the
+            overlay.
         data:
           - refId: A
             relativeTimeRange:
@@ -431,9 +440,11 @@ groups:
         annotations:
           summary: "Job queue transaction overflow on {{ $labels.service_instance_id }}"
           description: >-
-            Node {{ $labels.service_instance_id }} overflowed its transaction
-            job queue {{ $values.B.Value }} time(s) in the last 15m.
-            Transactions are being dropped under load.
+            Transaction job-queue overflows on {{ $labels.service_instance_id }} in the
+            last 15m: {{ printf "%.0f" $values.B.Value }} (threshold: more than 0).
+          action: >-
+            Transactions are being dropped under load. Check job-queue depth and worker
+            saturation.
         data:
           - refId: A
             relativeTimeRange:
@@ -502,9 +513,10 @@ groups:
         annotations:
           summary: "Job queue latency high on {{ $labels.service_instance_id }}"
           description: >-
-            Node {{ $labels.service_instance_id }} has a p99 job-queue wait of
-            {{ $values.B.Value }}µs (>1s) over 5m. The node is saturated and jobs are
-            backing up.
+            p99 job-queue wait on {{ $labels.service_instance_id }} over 5m: {{ printf
+            "%.0f" $values.B.Value }}us (threshold: over 1000000us, i.e. 1s).
+          action: >-
+            The node is saturated and jobs are backing up. Check worker pool saturation.
         data:
           - refId: A
             relativeTimeRange:
@@ -572,9 +584,10 @@ groups:
         annotations:
           summary: "Node store IO latency high on {{ $labels.service_instance_id }}"
           description: >-
-            Node {{ $labels.service_instance_id }} has a p95 node-store IO
-            latency of {{ $values.B.Value }}ms (>1s) over 10m. Check disk
-            utilisation and whether the store is on a slow volume.
+            p95 node-store IO latency on {{ $labels.service_instance_id }} over 10m: {{
+            printf "%.0f" $values.B.Value }}ms (threshold: over 1000ms).
+          action: >-
+            Check disk utilisation and whether the store is on a slow volume.
         data:
           - refId: A
             relativeTimeRange:
@@ -655,11 +668,13 @@ groups:
         annotations:
           summary: "Node state flapping on {{ $labels.service_instance_id }}"
           description: >-
-            Node {{ $labels.service_instance_id }} re-entered the FULL state
-            {{ $values.B.Value }} time(s) in the last hour past its first hour
-            of uptime. It is flapping out of sync rather than holding FULL.
-            Likely the online-delete rotation cache-freshen; check the rotation
-            spans and cache lock-hold peak.
+            FULL-state re-entries on {{ $labels.service_instance_id }} in the last hour:
+            {{ printf "%.0f" $values.B.Value }} (threshold: more than 0, past the first
+            hour of uptime).
+          action: >-
+            The node is flapping out of sync rather than holding FULL. A likely cause is
+            the online-delete rotation cache-freshen; check the rotation spans and the
+            cache lock-hold peak.
         data:
           - refId: A
             relativeTimeRange:
@@ -724,9 +739,12 @@ groups:
         annotations:
           summary: "Node not in FULL state on {{ $labels.service_instance_id }}"
           description: >-
-            Node {{ $labels.service_instance_id }} has been below FULL
-            (state={{ $values.B.Value }}; 0=disconnected 1=connected 2=syncing
-            3=tracking 4=full) for 15m. It is not fully synced with the network.
+            Server state on {{ $labels.service_instance_id }} for the last 15m: {{
+            printf "%.0f" $values.B.Value }} (threshold: below 4; 0=disconnected
+            1=connected 2=syncing 3=tracking 4=full).
+          action: >-
+            The node is not fully synced with the network. Check peer supply and sync
+            progress.
         data:
           - refId: A
             relativeTimeRange:
@@ -807,9 +825,11 @@ groups:
         annotations:
           summary: "Manifest job convoy on {{ $labels.service_instance_id }}"
           description: >-
-            Node {{ $labels.service_instance_id }} has {{ $values.B.Value }}
-            manifest jobs waiting (>3) for 10m. Peer manifest dumps are
-            saturating the job pool and convoying on the manifest cache lock.
+            Manifest jobs waiting on {{ $labels.service_instance_id }} over 10m: {{
+            printf "%.0f" $values.B.Value }} (threshold: more than 3).
+          action: >-
+            Peer manifest dumps are saturating the job pool and convoying on the
+            manifest cache lock.
         data:
           - refId: A
             relativeTimeRange:
@@ -884,9 +904,10 @@ groups:
         annotations:
           summary: "Inbound manifest flood on {{ $labels.service_instance_id }}"
           description: >-
-            Node {{ $labels.service_instance_id }} is receiving
-            {{ $values.B.Value }} B/s of manifest traffic over 10m, above the
-            512 KiB/s (524288 B/s) threshold.
+            Inbound manifest traffic on {{ $labels.service_instance_id }} over 10m: {{
+            printf "%.0f" $values.B.Value }} B/s (threshold: over 524288 B/s, i.e. 512
+            KiB/s).
+          action: >-
             A peer is flooding oversized TMManifests dumps.
         data:
           - refId: A
@@ -955,9 +976,10 @@ groups:
         annotations:
           summary: "Resource-driven peer disconnects on {{ $labels.service_instance_id }}"
           description: >-
-            Node {{ $labels.service_instance_id }} disconnected
-            {{ $values.B.Value }} peer(s) for resource-budget violations in the
-            last 30m. Sustained disconnects can starve the node of peers.
+            Resource-budget peer disconnects on {{ $labels.service_instance_id }} in the
+            last 30m: {{ printf "%.0f" $values.B.Value }} (threshold: more than 5).
+          action: >-
+            Sustained disconnects can starve the node of peers.
         data:
           - refId: A
             relativeTimeRange:
