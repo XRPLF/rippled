@@ -168,6 +168,16 @@ inline constexpr auto kDefaultMetricExportInterval = std::chrono::milliseconds{1
 inline constexpr auto kDefaultMetricExportTimeout = std::chrono::milliseconds{500};
 
 /**
+ * Default OTLP/HTTP URL for metrics, signal path included.
+ *
+ * The collector's standard port on the same host. Declared here so the Setup
+ * member, the config parser's default and the collector's startup log all name
+ * one string. Outside the telemetry #ifdef, because the config parser reads it
+ * in every build.
+ */
+inline constexpr char const* kDefaultMetricsEndpoint = "http://localhost:4318/v1/metrics";
+
+/**
  * How a consensus round span picks its trace id.
  *
  *   consensus_trace_strategy (xrpld.cfg)
@@ -307,7 +317,7 @@ public:
          * point the two signals at different collectors, or at one whose OTLP
          * paths are not the defaults.
          */
-        std::string metricsEndpoint = "http://localhost:4318/v1/metrics";
+        std::string metricsEndpoint = kDefaultMetricsEndpoint;
 
         /**
          * Whether to use TLS for the exporter connection.
