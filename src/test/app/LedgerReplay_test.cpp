@@ -28,17 +28,28 @@
 
 #include <xrpl/basics/Slice.h>
 #include <xrpl/basics/base_uint.h>
+#include <xrpl/basics/random.h>
 #include <xrpl/beast/net/IPAddress.h>
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/beast/utility/Journal.h>
+#include <xrpl/beast/xor_shift_engine.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/ledger/ApplyView.h>
+#include <xrpl/ledger/Ledger.h>
+#include <xrpl/nodestore/Database.h>
+#include <xrpl/nodestore/NodeObject.h>
 #include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/LedgerHeader.h>
 #include <xrpl/protocol/RippleLedgerHash.h>
+#include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/server/Handoff.h>
+#include <xrpl/shamap/Family.h>
+#include <xrpl/shamap/SHAMap.h>
 #include <xrpl/shamap/SHAMapItem.h>
+#include <xrpl/shamap/SHAMapMissingNode.h>  // SHAMapType
+#include <xrpl/shamap/SHAMapTreeNode.h>
 
 #include <boost/asio/ip/address.hpp>
 
@@ -64,6 +75,7 @@
 #include <string>
 #include <thread>
 #include <unordered_set>
+#include <utility>
 #include <vector>
 
 namespace xrpl::test {
@@ -1090,6 +1102,111 @@ struct LedgerReplayer_test : public beast::unit_test::Suite
         }
     }
 
+    /**
+     * A ledger whose transaction map cannot be read in full must draw an error reply
+     * rather than a short transaction list.
+     *
+     * The two maps are built in memory and only part of them is written to the store: the
+     * whole state map, so the ledger loads, and the transaction map's root alone. The
+     * nodes below that root are never written, so the ledger the handler reads back from
+     * the store cannot reach them.
+     */
+    void
+    testReplayDeltaIncompleteTxMap()
+    {
+        static constexpr auto kItems = 200;
+        static constexpr auto kSeed = 0xdeadbeefU;
+
+        // Far enough ahead of the server's own history that the missing-node handler finds
+        // no hash to acquire and returns at once.
+        static constexpr auto kSeqAhead = 1000;
+
+        testcase("ReplayDelta incomplete tx map");
+
+        LedgerServer server(*this, {.initLedgers = 1});
+        auto& family = server.app.getNodeFamily();
+
+        // The items only have to be well formed, because the walk stops before the handler
+        // reads any of them.
+        beast::xor_shift_engine engine{kSeed};
+        auto const makeItem = [&engine]() {
+            static constexpr auto kWordsPerItem = 3;
+
+            Serializer s;
+            for (auto word = 0; word < kWordsPerItem; ++word)
+                s.add32(randInt<std::uint32_t>(engine));
+            return makeShamapitem(s.getSHA512Half(), s.slice());
+        };
+
+        SHAMap stateMap{SHAMapType::STATE, family};
+        SHAMap txMap{SHAMapType::TRANSACTION, family};
+        for (auto i = 0; i < kItems; ++i)
+        {
+            stateMap.addItem(SHAMapNodeType::TnAccountState, makeItem());
+            txMap.addItem(SHAMapNodeType::TnTransactionNm, makeItem());
+        }
+        stateMap.setImmutable();
+        txMap.setImmutable();
+
+        // Read both hashes before storing anything. getHash() is what computes the node
+        // hashes, through unshare(), so storing first would write every node under a stale
+        // hash and nothing would be findable afterwards.
+        LedgerHeader header = server.ledgerMaster.getClosedLedger()->header();
+        header.seq += kSeqAhead;
+        header.accountHash = stateMap.getHash().asUInt256();
+        header.txHash = txMap.getHash().asUInt256();
+        header.hash = calculateLedgerHash(header);
+
+        // Write a map's nodes into the store. visitNodes reports the root first, so
+        // rootOnly lets that one call through and stops at the next.
+        auto const storeMap = [&family](SHAMap const& map, bool rootOnly) {
+            auto stored = 0;
+            map.visitNodes([&family, rootOnly, &stored](SHAMapTreeNode& node) {
+                if (rootOnly && stored > 0)
+                    return false;
+
+                Serializer s;
+                node.serializeWithPrefix(s);
+                family.db().store(
+                    NodeObjectType::AccountNode,
+                    std::move(s.modData()),
+                    node.getHash().asUInt256(),
+                    0);
+                ++stored;
+                return true;
+            });
+            return stored;
+        };
+
+        BEAST_EXPECT(storeMap(stateMap, false) > 1);
+        BEAST_EXPECT(storeMap(txMap, true) == 1);
+
+        bool loaded = false;
+        auto const holed = std::make_shared<Ledger const>(
+            header,
+            loaded,
+            false,
+            server.ledgerMaster.getClosedLedger()->rules(),
+            server.ledgerMaster.getClosedLedger()->fees(),
+            family,
+            server.app.getLogs().journal("Ledger"));
+
+        // Both roots are readable, so the ledger loads and the handler accepts it.
+        BEAST_EXPECT(loaded);
+        BEAST_EXPECT(holed->isImmutable());
+        server.ledgerMaster.storeLedger(holed);
+
+        auto request = std::make_shared<protocol::TMReplayDeltaRequest>();
+        request->set_ledgerhash(header.hash.data(), header.hash.size());
+        auto const reply = server.msgHandler.processReplayDeltaRequest(request);
+
+        // The reply names the missing nodes and carries no partial payload.
+        BEAST_EXPECT(reply.has_error());
+        BEAST_EXPECT(reply.error() == protocol::TMReplyError::reNO_NODE);
+        BEAST_EXPECT(reply.transaction_size() == 0);
+        BEAST_EXPECT(!reply.has_ledgerheader());
+    }
+
     void
     testTaskParameter()
     {
@@ -1492,6 +1609,7 @@ struct LedgerReplayer_test : public beast::unit_test::Suite
     {
         testProofPath();
         testReplayDelta();
+        testReplayDeltaIncompleteTxMap();
         testTruncatedHeader();
         testTaskParameter();
         testConfig();

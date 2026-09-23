@@ -261,12 +261,17 @@ public:
     lowerBound(uint256 const& id) const;
 
     /**
-     * Visit every node in this SHAMap
+     * Visit every node in this SHAMap.
      *
-     * @param function called with every node visited.
-     * If function returns false, visitNodes exits.
+     * The walk ends at the first node it cannot read, so a caller that needs a
+     * complete walk to be correct must check the return value.
+     *
+     * @param function Called with every node visited. Returning false from it
+     *                 ends the walk, which on its own keeps the result true.
+     * @return True when the walk read every node it reached. False when a node
+     *         could not be read.
      */
-    void
+    bool
     visitNodes(std::function<bool(SHAMapTreeNode&)> const& function) const;
 
     /**
@@ -280,11 +285,12 @@ public:
     visitDifferences(SHAMap const* have, std::function<bool(SHAMapTreeNode const&)> const&) const;
 
     /**
-     * Visit every leaf node in this SHAMap
+     * Visit every leaf node in this SHAMap.
      *
-     * @param function called with every non inner node visited.
+     * @param function Called with every non-inner node visited.
+     * @return What visitNodes reports about the walk.
      */
-    void
+    bool
     visitLeaves(std::function<void(boost::intrusive_ptr<SHAMapItem const> const&)> const&) const;
 
     // comparison/sync functions

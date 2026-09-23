@@ -326,9 +326,6 @@ SHAMap::descend(SHAMapInnerNode& parent, unsigned int branch) const
         return node;
 
     node = fetchNode(parent.getChildHash(branch));
-    if (!node)
-        return {};
-
     node = parent.canonicalizeChild(branch, std::move(node));
     return node;
 }
@@ -340,7 +337,7 @@ SHAMap::descendNoStore(SHAMapInnerNode& parent, unsigned int branch) const
 {
     SHAMapTreeNodePtr ret = parent.getChild(branch);
     if (!ret && backed_)
-        ret = fetchNode(parent.getChildHash(branch));
+        ret = fetchNodeNT(parent.getChildHash(branch));
     return ret;
 }
 
