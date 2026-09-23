@@ -3,6 +3,7 @@
 #include <test/jtx/Env.h>
 #include <test/jtx/TestHelpers.h>
 #include <test/jtx/amount.h>
+#include <test/jtx/credentials.h>
 #include <test/jtx/deposit.h>
 #include <test/jtx/escrow.h>
 #include <test/jtx/flags.h>
@@ -518,6 +519,188 @@ public:
     }
 
     void
+    testAccountLinesMarkerNewObjectTypes()
+    {
+        // Regression test for a bug where isRelatedToAccount (a marker
+        // validator shared by account_lines, account_offers and
+        // account_channels) rejected markers that pointed at owner-directory
+        // ledger entries whose types were added after the original hard-coded
+        // allowlist. That allowlist only recognized ltRIPPLE_STATE, objects
+        // carrying sfAccount (optionally sfDestination), ltSIGNER_LIST and
+        // ltNFTOKEN_OFFER; every newer owner-directory type (Credential,
+        // Oracle, PermissionedDomain, MPTokenIssuance, Vault, LoanBroker,
+        // Loan, Sponsorship, ...) fell through to `return false`, so a
+        // legitimately issued marker pointing at one of them was rejected
+        // with rpcInvalidParams and the client could no longer paginate.
+        //
+        // The pagination marker is set to the limit-th object's key
+        // regardless of type, so an account that owns any post-2023
+        // owner-directory object can trigger this on a page boundary.
+        testcase(
+            "Marker on new owner-directory entry types (Credential): "
+            "account_lines");
+
+        using namespace test::jtx;
+        Env env(*this);
+
+        Account const alice{"alice"};
+        Account const issuer{"issuer"};
+        env.fund(XRP(10000), alice, issuer);
+        env.close();
+
+        // One trust line so account_lines has something to enumerate.
+        auto const usd = issuer["USD"];
+        env(trust(alice, usd(200)));
+
+        // Several credentials so that iterating alice's owner directory with
+        // limit=1 is guaranteed to produce a marker whose SLE is a Credential
+        // (the failure mode this test guards against). Credentials are added
+        // to both the issuer's and the subject's owner directories, so alice
+        // owns each of these in her role as sfSubject.
+        for (int i = 0; i < 4; ++i)
+        {
+            env(credentials::create(alice, issuer, std::string("Cred") + std::to_string(i)));
+        }
+        env.close();
+
+        // Walk alice's owner directory one entry at a time. Every follow-up
+        // call re-validates the marker via isRelatedToAccount, which under
+        // the buggy allowlist would reject any Credential marker.
+        std::optional<std::string> marker;
+        int iterations = 0;
+        bool hitInvalidParams = false;
+        for (int guard = 0; guard < 20; ++guard)
+        {
+            json::Value params;
+            params[jss::account] = alice.human();
+            params[jss::limit] = 1;
+            if (marker)
+                params[jss::marker] = *marker;
+            auto const resp = env.rpc("json", "account_lines", to_string(params))[jss::result];
+            ++iterations;
+            if (resp.isMember(jss::error))
+            {
+                hitInvalidParams = resp[jss::error].asString() == "invalidParams";
+                break;
+            }
+            if (!resp.isMember(jss::marker))
+                break;
+            marker = resp[jss::marker].asString();
+        }
+
+        BEAST_EXPECT(!hitInvalidParams);
+        // 5 owner-directory entries (1 trust line + 4 credentials): the
+        // final call reports count == 1 != limit+1 and so returns no marker,
+        // terminating the loop. So the walk visits every entry in exactly 5
+        // iterations.
+        BEAST_EXPECTS(iterations == 5, std::to_string(iterations));
+    }
+
+    void
+    testAccountOffersMarkerNewObjectTypes()
+    {
+        // Same regression as testAccountLinesMarkerNewObjectTypes, but for
+        // account_offers: it shares isRelatedToAccount with account_lines
+        // and sets pagination markers to the limit-th owner-directory entry
+        // regardless of type.
+        testcase(
+            "Marker on new owner-directory entry types (Credential): "
+            "account_offers");
+
+        using namespace test::jtx;
+        Env env(*this);
+
+        Account const alice{"alice"};
+        Account const issuer{"issuer"};
+        env.fund(XRP(10000), alice, issuer);
+        env.close();
+
+        auto const usd = issuer["USD"];
+        env(trust(alice, usd(1000)));
+
+        // A few credentials issued to alice, then walk with limit=1 so the
+        // marker will land on one of them.
+        for (int i = 0; i < 4; ++i)
+        {
+            env(credentials::create(alice, issuer, std::string("OfferCred") + std::to_string(i)));
+        }
+        env.close();
+
+        std::optional<std::string> marker;
+        bool hitInvalidParams = false;
+        for (int guard = 0; guard < 20; ++guard)
+        {
+            json::Value params;
+            params[jss::account] = alice.human();
+            params[jss::limit] = 1;
+            if (marker)
+                params[jss::marker] = *marker;
+            auto const resp = env.rpc("json", "account_offers", to_string(params))[jss::result];
+            if (resp.isMember(jss::error))
+            {
+                hitInvalidParams = resp[jss::error].asString() == "invalidParams";
+                break;
+            }
+            if (!resp.isMember(jss::marker))
+                break;
+            marker = resp[jss::marker].asString();
+        }
+
+        BEAST_EXPECT(!hitInvalidParams);
+    }
+
+    void
+    testAccountChannelsMarkerNewObjectTypes()
+    {
+        // Same regression as testAccountLinesMarkerNewObjectTypes, but for
+        // account_channels: it shares isRelatedToAccount with account_lines
+        // and sets pagination markers to the limit-th owner-directory entry
+        // regardless of type.
+        testcase(
+            "Marker on new owner-directory entry types (Credential): "
+            "account_channels");
+
+        using namespace test::jtx;
+        Env env(*this);
+
+        Account const alice{"alice"};
+        Account const issuer{"issuer"};
+        env.fund(XRP(10000), alice, issuer);
+        env.close();
+
+        auto const usd = issuer["USD"];
+        env(trust(alice, usd(1000)));
+
+        for (int i = 0; i < 4; ++i)
+        {
+            env(credentials::create(alice, issuer, std::string("ChanCred") + std::to_string(i)));
+        }
+        env.close();
+
+        std::optional<std::string> marker;
+        bool hitInvalidParams = false;
+        for (int guard = 0; guard < 20; ++guard)
+        {
+            json::Value params;
+            params[jss::account] = alice.human();
+            params[jss::limit] = 1;
+            if (marker)
+                params[jss::marker] = *marker;
+            auto const resp = env.rpc("json", "account_channels", to_string(params))[jss::result];
+            if (resp.isMember(jss::error))
+            {
+                hitInvalidParams = resp[jss::error].asString() == "invalidParams";
+                break;
+            }
+            if (!resp.isMember(jss::marker))
+                break;
+            marker = resp[jss::marker].asString();
+        }
+
+        BEAST_EXPECT(!hitInvalidParams);
+    }
+
+    void
     testAccountLinesWalkMarkers()
     {
         testcase("Marker can point to any appropriate ledger entry type");
@@ -625,8 +808,8 @@ public:
         env(ticket::create(alice, 2));
 
         // Add another trustline for good measure
-        auto const btCbecky = becky["BTC"];
-        env(trust(alice, btCbecky(200)));
+        auto const btcBecky = becky["BTC"];
+        env(trust(alice, btcBecky(200)));
 
         env.close();
 
@@ -1325,6 +1508,9 @@ public:
         testAccountLines();
         testAccountLinesMarker();
         testAccountLineDelete();
+        testAccountLinesMarkerNewObjectTypes();
+        testAccountOffersMarkerNewObjectTypes();
+        testAccountChannelsMarkerNewObjectTypes();
         testAccountLinesWalkMarkers();
         testAccountLines2();
         testAccountLineDelete2();

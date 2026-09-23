@@ -14,6 +14,7 @@
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/core/ServiceRegistry.h>
+#include <xrpl/ledger/ReadView.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/ErrorCodes.h>
@@ -69,35 +70,60 @@ getStartHint(SLE::const_ref sle, AccountID const& accountID)
 bool
 isRelatedToAccount(ReadView const& ledger, SLE::const_ref sle, AccountID const& accountID)
 {
-    if (sle->getType() == ltRIPPLE_STATE)
-    {
-        return (sle->getFieldAmount(sfLowLimit).getIssuer() == accountID) ||
-            (sle->getFieldAmount(sfHighLimit).getIssuer() == accountID);
-    }
-    if (sle->isFieldPresent(sfAccount))
-    {
-        // If there's an sfAccount present, also test the sfDestination, if
-        // present. This will match objects such as Escrows (ltESCROW), Payment
-        // Channels (ltPAYCHAN), and Checks (ltCHECK) because those are added to
-        // the Destination account's directory. It intentionally EXCLUDES
-        // NFToken Offers (ltNFTOKEN_OFFER). NFToken Offers are NOT added to the
-        // Destination account's directory.
-        return sle->getAccountID(sfAccount) == accountID ||
-            (sle->isFieldPresent(sfDestination) && sle->getAccountID(sfDestination) == accountID);
-    }
-    if (sle->getType() == ltSIGNER_LIST)
-    {
-        Keylet const accountSignerList = keylet::signerList(accountID);
-        return sle->key() == accountSignerList.key;
-    }
-    if (sle->getType() == ltNFTOKEN_OFFER)
-    {
-        // Do not check the sfDestination field. NFToken Offers are NOT added to
-        // the Destination account's directory.
-        return sle->getAccountID(sfOwner) == accountID;
-    }
+    // Generic ownership check: verify that the SLE's key is present in the
+    // account's owner directory. This is the same relationship that
+    // forEachItemAfter relies on when iterating the account's owner
+    // directory, so it works for every ledger-entry type that is inserted
+    // into an owner directory (trust lines, signer lists, tickets, offers,
+    // escrows, payment channels, checks, deposit preauths, NFT offers, DIDs,
+    // oracles, credentials, permissioned domains, MPToken issuances,
+    // MPTokens, vaults, loan brokers, loans, sponsorships, delegates, ...).
+    //
+    // Historically this was a hard-coded allowlist keyed off sfAccount /
+    // sfDestination / sfOwner / ltRIPPLE_STATE / ltSIGNER_LIST /
+    // ltNFTOKEN_OFFER. Every owner-directory ledger-entry type added after
+    // that allowlist (e.g. Credential which uses sfSubject / sfIssuer, or
+    // Sponsorship which uses sfSponsee) fell through to `return false`, so
+    // account_lines / account_offers / account_channels pagination markers
+    // that legitimately landed on one of those types were rejected with
+    // rpcInvalidParams. Walking the owner directory here is generic and
+    // stays correct as new ledger-entry types are added.
+    auto const rootKeylet = keylet::ownerDir(accountID);
+    auto const& sleKey = sle->key();
 
-    return false;
+    auto const containsKey = [&sleKey](SLE::const_ref page) {
+        auto const& indexes = page->getFieldV256(sfIndexes);
+        return std::find(indexes.begin(), indexes.end(), sleKey) != indexes.end();
+    };
+
+    // Fast path: try the page implied by the SLE's own directory-node hint,
+    // if any. For objects with sfOwnerNode (or, for ltRIPPLE_STATE,
+    // sfLowNode/sfHighNode) this jumps straight to the page containing
+    // sleKey.
+    auto const hint = getStartHint(sle, accountID);
+    if (auto const hintPage = ledger.read(keylet::page(rootKeylet, hint));
+        hintPage && containsKey(hintPage))
+        return true;
+
+    // Slow path: walk every page of the account's owner directory. Owner
+    // directories are bounded (see fixDirectoryLimit) so this is cheap in
+    // practice, and it correctly handles ledger-entry types whose per-account
+    // directory-node field is not sfOwnerNode / sfLowNode / sfHighNode (for
+    // example the subject side of a Credential uses sfSubjectNode, and the
+    // sponsee side of a Sponsorship uses sfSponseeNode).
+    auto currentPage = rootKeylet;
+    while (true)
+    {
+        auto const page = ledger.read(currentPage);
+        if (!page)
+            return false;
+        if (containsKey(page))
+            return true;
+        auto const next = page->getFieldU64(sfIndexNext);
+        if (next == 0)
+            return false;
+        currentPage = keylet::page(rootKeylet, next);
+    }
 }
 
 hash_set<AccountID>
