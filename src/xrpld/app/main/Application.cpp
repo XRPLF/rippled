@@ -478,6 +478,11 @@ public:
               // helper, keeping metrics and traces on one network label.
               config_->section("telemetry").valueOr<std::string>("service_name", ""),
               telemetry::networkTypeFromId(config_->networkId),
+              // telemetry_ is declared before this member, so it is already
+              // built. An OTel collector needs the meter provider that only
+              // the telemetry module installs, and this lets the collector
+              // warn instead of silently dropping every metric.
+              telemetry_->isEnabled(),
               logs_->journal("Collector")))
         , jobQueue_(
               std::make_unique<JobQueue>(

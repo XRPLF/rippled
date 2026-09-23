@@ -49,7 +49,7 @@ TEST(MallocTrimReport, structure)
 }
 
 #if defined(__GLIBC__) && BOOST_OS_LINUX
-TEST(parseStatmRSSkB, standard_format)
+TEST(ParseStatmRSSkB, standard_format)
 {
     using xrpl::detail::parseStatmRSSkB;
 
@@ -126,7 +126,7 @@ TEST(parseStatmRSSkB, standard_format)
 // leave the caller with no duration to record on the one kind of node where
 // the trim cost matters. This is the guard for that: with a null sink
 // (nothing is even loggable) every field must still be populated.
-TEST(mallocTrim, measures_without_debug_logging)
+TEST(MallocTrim, measures_without_debug_logging)
 {
     beast::Journal const journal{beast::Journal::getNullSink()};
 
@@ -169,7 +169,7 @@ TEST(mallocTrim, measures_without_debug_logging)
 #endif
 }
 
-TEST(mallocTrim, empty_tag)
+TEST(MallocTrim, empty_tag)
 {
     beast::Journal const journal{beast::Journal::getNullSink()};
     MallocTrimReport const report = mallocTrim("", journal);
@@ -182,7 +182,7 @@ TEST(mallocTrim, empty_tag)
 #endif
 }
 
-TEST(mallocTrim, with_debug_logging)
+TEST(MallocTrim, with_debug_logging)
 {
     struct DebugSink : public beast::Journal::Sink
     {
@@ -225,7 +225,7 @@ TEST(mallocTrim, with_debug_logging)
 #endif
 }
 
-TEST(mallocTrim, repeated_calls)
+TEST(MallocTrim, repeated_calls)
 {
     beast::Journal const journal{beast::Journal::getNullSink()};
 

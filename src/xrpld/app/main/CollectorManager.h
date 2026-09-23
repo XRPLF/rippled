@@ -33,6 +33,10 @@ public:
  * (empty -> the collector defaults it to "xrpld").
  * @param networkType  xrpl.network.type resource attribute for OTel
  * metrics (e.g. "mainnet"), derived from [network_id].
+ * @param telemetryEnabled  Whether the telemetry module is on. The OTel
+ * collector records through the global meter provider, which only the
+ * telemetry module installs, so with this false an OTel collector would
+ * discard every metric. Used to warn, not to change what is built.
  * @param journal      Journal for logging.
  */
 std::unique_ptr<CollectorManager>
@@ -40,6 +44,7 @@ makeCollectorManager(
     Section const& params,
     std::string const& serviceName,
     std::string const& networkType,
+    bool telemetryEnabled,
     beast::Journal journal);
 
 }  // namespace xrpl

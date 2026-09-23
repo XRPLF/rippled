@@ -56,8 +56,7 @@
  *      // Edge case -- an expensive value still needs a block guard,
  *      // because arguments are evaluated even when the method is a no-op.
  *      if constexpr (telemetry::kEnabled)
- *          span.setAttribute(
- *              pathfind_span::attr::sourceAccount, redactAccount(account));
+ *          span.setAttribute(tx_span::attr::txHash, to_string(txId));
  *  @endcode
  */
 

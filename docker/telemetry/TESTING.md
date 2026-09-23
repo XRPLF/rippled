@@ -745,7 +745,6 @@ Differences that change what you will see:
 | Pipelines           | 3: `traces`, `metrics`, `logs`      | 5: `traces/metrics`, `traces/store`, `metrics/local`, `metrics/cloud`, `logs`                       |
 | Trace sampling      | none — 100% of spans reach Tempo    | `tail_sampling` keeps **0.5%** (one `probabilistic` policy, `decision_wait: 10s`) on `traces/store` |
 | `debug` exporter    | present on `traces`                 | dropped                                                                                             |
-| `attributes/hash`   | present on `traces`                 | **omitted**                                                                                         |
 | Cloud metric labels | n/a                                 | `transform/cloudlabels` on `metrics/cloud` only                                                     |
 
 Consequences worth knowing before you debug against the cloud stack:
@@ -756,17 +755,10 @@ Consequences worth knowing before you debug against the cloud stack:
   pipeline, so `span_*` rates stay exact while only ~1 trace in 200 is
   retrievable by trace ID. A trace you can see in a metric may not exist in
   Tempo.
-- **The same account carries a different token on each config.** No raw account
-  address leaves the node: the path-finding handlers under
-  `src/xrpld/rpc/handlers/orderbook/` pass both accounts through
-  `redactAccount()` first, which is a prefix of the address's SHA-512Half digest
-  (contract in `include/xrpl/telemetry/Redaction.h`). The base config's
-  `attributes/hash` processor then hashes that token a second time; no cloud
-  pipeline has it. The token is deterministic, so one account stays correlatable
-  across nodes and restarts — but only within one config. A trace stored while
-  the collector ran the base config must not be joined against a trace stored
-  under the cloud config, because the same account appears under two different
-  tokens.
+- **Account addresses read the same on both configs.** Neither config hashes
+  or drops the `pathfind_*_account` or `tx_*` account attributes: an address is
+  a public ledger identifier and is stored as the node emitted it, so a trace
+  from the base stack joins a trace from the cloud stack by account.
 
 ### Step 4: Verify data reaches Grafana Cloud
 
