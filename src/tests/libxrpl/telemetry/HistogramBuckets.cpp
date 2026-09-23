@@ -33,7 +33,7 @@ class HistogramBucketsTest : public ::testing::TestWithParam<std::span<double co
 {
 };
 
-TEST_P(HistogramBucketsTest, isStrictlyAscending)
+TEST_P(HistogramBucketsTest, is_strictly_ascending)
 {
     auto const ladder = GetParam();
     ASSERT_FALSE(ladder.empty());
@@ -41,7 +41,7 @@ TEST_P(HistogramBucketsTest, isStrictlyAscending)
         EXPECT_LT(ladder[i - 1], ladder[i]) << "edge index " << i << " does not ascend";
 }
 
-TEST_P(HistogramBucketsTest, isNonNegativeAndFinite)
+TEST_P(HistogramBucketsTest, is_non_negative_and_finite)
 {
     for (double const edge : GetParam())
     {
@@ -50,7 +50,7 @@ TEST_P(HistogramBucketsTest, isNonNegativeAndFinite)
     }
 }
 
-TEST_P(HistogramBucketsTest, passesTheCompileTimeValidator)
+TEST_P(HistogramBucketsTest, passes_the_compile_time_validator)
 {
     EXPECT_TRUE(isAscendingNonNegative(GetParam()));
 }
@@ -64,7 +64,7 @@ INSTANTIATE_TEST_SUITE_P(
 
 // The validator must also REJECT. A predicate that only ever returns true
 // would let every ladder above pass while proving nothing.
-TEST(HistogramBucketsValidator, rejectsEmptyDescendingDuplicateAndNegative)
+TEST(HistogramBucketsValidator, rejects_empty_descending_duplicate_and_negative)
 {
     EXPECT_FALSE(isAscendingNonNegative(std::span<double const>{}));
 
@@ -78,7 +78,7 @@ TEST(HistogramBucketsValidator, rejectsEmptyDescendingDuplicateAndNegative)
     EXPECT_FALSE(isAscendingNonNegative(negative));
 }
 
-TEST(HistogramBucketsValidator, acceptsASingleEdgeAndALeadingZero)
+TEST(HistogramBucketsValidator, accepts_a_single_edge_and_a_leading_zero)
 {
     constexpr std::array single{1.0};
     EXPECT_TRUE(isAscendingNonNegative(single));
@@ -89,7 +89,7 @@ TEST(HistogramBucketsValidator, acceptsASingleEdgeAndALeadingZero)
     EXPECT_TRUE(isAscendingNonNegative(leadingZero));
 }
 
-TEST(HistogramBucketsRange, millisecondFloorIsOneAndCeilingCoversTheSlowestJob)
+TEST(HistogramBucketsRange, millisecond_floor_is_one_and_ceiling_covers_the_slowest_job)
 {
     // beast::insight::Event rounds durations up to whole milliseconds, so 1
     // is the smallest edge that can ever collect a sample.
@@ -101,7 +101,7 @@ TEST(HistogramBucketsRange, millisecondFloorIsOneAndCeilingCoversTheSlowestJob)
     EXPECT_GE(kMillisecondBuckets.back(), 120'000.0);
 }
 
-TEST(HistogramBucketsRange, millisecondLadderClearsTheMeasuredCensoringPoint)
+TEST(HistogramBucketsRange, millisecond_ladder_clears_the_measured_censoring_point)
 {
     // rpc_size had 24.9% of samples above the old 5000 ceiling and
     // jobq_updatepaths had 100%. A ceiling at or below 5000 reintroduces the
@@ -109,7 +109,7 @@ TEST(HistogramBucketsRange, millisecondLadderClearsTheMeasuredCensoringPoint)
     EXPECT_GT(kMillisecondBuckets.back(), 5'000.0);
 }
 
-TEST(HistogramBucketsRange, millisecondLadderContainsEveryRepresentableCollectorEdge)
+TEST(HistogramBucketsRange, millisecond_ladder_contains_every_representable_collector_edge)
 {
     // Agreement with the collector's spanmetrics ladder over the shared
     // range is the invariant; edges above its 30 s top are allowed because
@@ -141,7 +141,7 @@ TEST(HistogramBucketsRange, millisecondLadderContainsEveryRepresentableCollector
     }
 }
 
-TEST(HistogramBucketsRange, millisecondLadderResolvesTheOneToFiveSecondBand)
+TEST(HistogramBucketsRange, millisecond_ladder_resolves_the_one_to_five_second_band)
 {
     // Without these the 1 s to 5 s span was one four-second-wide bucket, so
     // any quantile landing inside it was interpolated across four seconds.
@@ -152,7 +152,7 @@ TEST(HistogramBucketsRange, millisecondLadderResolvesTheOneToFiveSecondBand)
     }
 }
 
-TEST(HistogramBucketsRange, byteLadderBracketsTheMeasuredResponseDistribution)
+TEST(HistogramBucketsRange, byte_ladder_brackets_the_measured_response_distribution)
 {
     // Measured: mean 2131 B, half under 1 kB, three quarters under 5 kB, and
     // the tail above 5 kB has a mean of at most 7538 B -- which puts p99
@@ -167,7 +167,7 @@ TEST(HistogramBucketsRange, byteLadderBracketsTheMeasuredResponseDistribution)
     EXPECT_GE(withinWorkingRange, 6) << "too little resolution between 512 B and 64 kB";
 }
 
-TEST(HistogramBucketsRange, byteAndMillisecondLaddersAreDistinct)
+TEST(HistogramBucketsRange, byte_and_millisecond_ladders_are_distinct)
 {
     // A single shared ladder is what put a byte count on a latency scale and
     // censored a quarter of its samples.
@@ -175,14 +175,14 @@ TEST(HistogramBucketsRange, byteAndMillisecondLaddersAreDistinct)
     EXPECT_GT(kByteBuckets.back(), kMillisecondBuckets.back());
 }
 
-TEST(HistogramBucketsConvert, toVectorPreservesOrderAndSize)
+TEST(HistogramBucketsConvert, to_vector_preserves_order_and_size)
 {
     auto const converted = toVector(kByteBuckets);
     ASSERT_EQ(converted.size(), kByteBuckets.size());
     EXPECT_TRUE(std::ranges::equal(converted, kByteBuckets));
 }
 
-TEST(HistogramBucketsConvert, toVectorHandlesAnEmptyLadder)
+TEST(HistogramBucketsConvert, to_vector_handles_an_empty_ladder)
 {
     EXPECT_TRUE(toVector(std::span<double const>{}).empty());
 }
