@@ -743,18 +743,22 @@ Ledger::walkLedger(beast::Journal j, bool parallel) const
     std::vector<SHAMapMissingNode> missingNodes1;
     std::vector<SHAMapMissingNode> missingNodes2;
 
+    // Returning walkMapParallel's result directly would skip the transaction map walk
+    // below, and dropping it would lose an answer missingNodes1 does not carry: a worker
+    // that cannot read the node store reports that through the return value alone.
+    bool stateComplete = true;
+
     if (stateMap_.getHash().isZero() && !header_.accountHash.isZero() &&
         !stateMap_.fetchRoot(SHAMapHash{header_.accountHash}, nullptr))
     {
         missingNodes1.emplace_back(SHAMapType::STATE, SHAMapHash{header_.accountHash});
     }
+    else if (parallel)
+    {
+        stateComplete = stateMap_.walkMapParallel(missingNodes1, 32);
+    }
     else
     {
-        if (parallel)
-        {
-            return stateMap_.walkMapParallel(missingNodes1, 32);
-        }
-
         stateMap_.walkMap(missingNodes1, 32);
     }
 
@@ -785,7 +789,7 @@ Ledger::walkLedger(beast::Journal j, bool parallel) const
             stream << "First: " << missingNodes2[0].what();
         }
     }
-    return missingNodes1.empty() && missingNodes2.empty();
+    return stateComplete && missingNodes1.empty() && missingNodes2.empty();
 }
 
 bool
