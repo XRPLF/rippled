@@ -8,11 +8,13 @@
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/protocol/Serializer.h>
+#include <xrpl/shamap/Family.h>
 #include <xrpl/shamap/SHAMapInnerNode.h>
 #include <xrpl/shamap/SHAMapItem.h>
 #include <xrpl/shamap/SHAMapLeafNode.h>
 #include <xrpl/shamap/SHAMapMissingNode.h>
 #include <xrpl/shamap/SHAMapNodeID.h>
+#include <xrpl/shamap/SHAMapSyncFilter.h>
 #include <xrpl/shamap/SHAMapTreeNode.h>
 
 #include <gtest/gtest.h>
@@ -23,7 +25,9 @@
 #include <array>
 #include <cstddef>
 #include <cstdint>
+#include <map>
 #include <memory>
+#include <optional>
 #include <string>
 #include <string_view>
 #include <type_traits>
@@ -273,8 +277,8 @@ INSTANTIATE_TEST_SUITE_P(
     shamapBackingModeName);
 
 // Exercises the traversal stacks built by belowHelper. Each stack entry pairs a node with the ID
-// naming its position, and SHAMap asserts that pairing on every push, so these traversals fail
-// loudly in a Debug build if a node ID is ever derived from the wrong branch.
+// naming its position, and every push refuses a leaf whose own key does not lie under the branch it
+// was reached through, in Release builds as well as Debug ones.
 class SHAMapTraversal : public ::testing::Test
 {
 protected:
@@ -461,9 +465,8 @@ TEST_F(SHAMapTraversal, bounds_on_empty_map_return_end)
     SHAMap map{SHAMapType::FREE, f};
     map.setUnbacked();
 
-    // The root is a childless inner node, so boundHelper's inner-node branch scans every branch on
-    // the requested side of the one id selects, finds them all empty, and falls through to end()
-    // rather than dereference a child.
+    // An empty map still leaves its root on the path, so end() here is an answer rather than a
+    // refusal. This is what stops boundHelper from reading an empty path as an empty map.
     EXPECT_EQ(map.upperBound(uint256{}), map.end());
     EXPECT_EQ(map.lowerBound(uint256{}), map.end());
 
@@ -481,12 +484,10 @@ TEST_F(SHAMapTraversal, bounds_on_single_item_map_use_the_leaf_below_the_root)
     auto const key = deepFanOutKeys().front();
     fillMap(map, {key});
 
-    // root_ can be a leaf, but only after syncing a single-item map from a peer (addRootNode);
-    // fillMap builds this map in-process via addItem, which always leaves root_ as the inner node
-    // it was constructed with, with the single leaf one level below it. So the stack holds that
-    // inner root plus the leaf, and boundHelper examines the leaf first. Only a probe the leaf
-    // qualifies against is answered there; for the rest the leaf is popped and root_'s own
-    // inner-node scan runs, finds nothing on the requested side, and falls through to end().
+    // fillMap uses addItem, which leaves root_ the inner node the map was constructed with and the
+    // single leaf one level below it. So the path holds both, and boundHelper judges the leaf
+    // first; for a probe the leaf does not qualify against it pops back to the root, whose scan
+    // finds nothing on the requested side.
     uint256 below = key;
     --below;
     uint256 above = key;
@@ -945,6 +946,329 @@ TEST_F(SHAMapPathProof, substituted_leaf_for_other_key_is_rejected)
     auto const [badPath, badRoot] = forgeRootOverLeaf(otherLeaf, kKey);
     ASSERT_EQ(badPath.size(), 2u);
     EXPECT_FALSE(SHAMap::verifyProofPath(badRoot, kKey, badPath));
+}
+
+/**
+ * A filter that resolves exactly one node, by hash.
+ *
+ * Stands in for the real sync filters, which serve a node from a local cache
+ * keyed on its hash and so say nothing about where in a tree it belongs.
+ */
+class OneNodeFilter : public SHAMapSyncFilter
+{
+    std::map<SHAMapHash, Blob> nodes_;
+
+public:
+    OneNodeFilter(SHAMapHash const& hash, Blob blob)
+    {
+        nodes_.emplace(hash, std::move(blob));
+    }
+
+    explicit OneNodeFilter(std::vector<std::pair<SHAMapHash, Blob>> nodes)
+    {
+        for (auto& [hash, blob] : nodes)
+            nodes_.emplace(hash, std::move(blob));
+    }
+
+    void
+    gotNode(
+        bool,
+        SHAMapHash const&,
+        std::uint32_t,
+        Blob&&,  // NOLINT(cppcoreguidelines-rvalue-reference-param-not-moved)
+        SHAMapNodeType) const override
+    {
+    }
+
+    [[nodiscard]] std::optional<Blob>
+    getNode(SHAMapHash const& hash) const override
+    {
+        if (auto const it = nodes_.find(hash); it != nodes_.end())
+            return it->second;
+        return std::nullopt;
+    }
+};
+
+// A tree whose hashes all agree can still put a leaf where its key does not belong, because a hash
+// covers a node's contents rather than its position. Such a tree is what a proposer builds, and it
+// is accepted node by node, so the paths that hook a node are where the position has to be judged.
+class SHAMapMisplacedLeaf : public ::testing::Test
+{
+protected:
+    beast::Journal const j_{TestSink::instance()};
+
+    // An arbitrary key whose first nibble is 1, so its leaf belongs under branch 1 of the root.
+    static constexpr uint256 kKey{
+        "1c8cec8e5e9b0e5e0e0f5b3e2c9f7a1d6b4e8c2a0d7f3b9e5c1a8d4f2b6e0c93"};
+
+    // Any branch other than the one kKey selects at depth 0.
+    static constexpr unsigned int kWrongBranch = 5;
+
+    /**
+     * A genuine leaf holding kKey, in the form a sync filter serves, with its
+     * hash.
+     *
+     * Taken from a map that placed the leaf correctly, so only its position is
+     * ever wrong below. Serialized with its prefix rather than in wire form,
+     * since that is what checkFilter parses.
+     *
+     * @param f the family the throwaway source map belongs to.
+     * @return the leaf's prefixed form and its hash, or an empty blob if the
+     *         map rejected the item.
+     */
+    static std::pair<Blob, SHAMapHash>
+    genuineLeaf(Family& f)
+    {
+        SHAMap source{SHAMapType::FREE, f};
+        source.setUnbacked();
+        if (!source.addItem(
+                SHAMapNodeType::TnAccountState,
+                makeShamapitem(kKey, Slice{kKey.data(), kKey.size()})))
+        {
+            return {};
+        }
+
+        auto const path = source.getProofPath(kKey);
+        if (!path.has_value() || path->empty())
+            return {};
+
+        auto leaf = SHAMapTreeNode::makeFromWire(makeSlice(path->front()));
+        if (!leaf || !leaf->isLeaf())
+            return {};
+        leaf->updateHash();
+
+        Serializer s;
+        leaf->serializeWithPrefix(s);
+        return {s.getData(), leaf->getHash()};
+    }
+
+    /**
+     * Assemble `map` as a root inner node holding a leaf's hash under the
+     * wrong branch.
+     *
+     * The root is installed directly, as a peer's would be, so the leaf itself
+     * stays unresolved until a walk consults the filter for it.
+     *
+     * @param map the map to assemble, which must be synching and empty.
+     * @param leafHash the hash the forged root records under kWrongBranch.
+     * @return whether the root was accepted.
+     */
+    static bool
+    forgeRoot(SHAMap& map, SHAMapHash const& leafHash)
+    {
+        Serializer s;
+        for (auto i = 0u; i < SHAMap::kBranchFactor; ++i)
+            s.addBitString(i == kWrongBranch ? leafHash.asUInt256() : uint256{});
+        s.add8(kWireTypeInner);
+
+        auto root = SHAMapTreeNode::makeFromWire(makeSlice(s.peekData()));
+        if (!root)
+            return false;
+        root->updateHash();
+
+        auto const rootHash = root->getHash();
+        return map.addRootNode(rootHash, std::move(root), nullptr).isGood();
+    }
+};
+
+// getMissingNodes reaches a filter through descendAsync, which hooks whatever it resolves. The
+// verdict lands on the map, since every node from the root down hash-verified to get here.
+TEST_F(SHAMapMisplacedLeaf, walking_for_missing_nodes_invalidates_the_map)
+{
+    tests::TestNodeFamily sourceFamily{j_};
+    auto const [leafBlob, leafHash] = genuineLeaf(sourceFamily);
+    ASSERT_FALSE(leafBlob.empty());
+
+    // Its own family, so the leaf is reachable only through the filter rather than from a cache the
+    // source map warmed.
+    tests::TestNodeFamily targetFamily{j_};
+    SHAMap map{SHAMapType::FREE, uint256{}, targetFamily};
+    map.setUnbacked();
+    ASSERT_TRUE(forgeRoot(map, leafHash));
+    ASSERT_TRUE(map.isValid());
+
+    OneNodeFilter const filter{leafHash, leafBlob};
+    map.getMissingNodes(1, &filter);
+
+    EXPECT_FALSE(map.isValid());
+}
+
+// addKnownNode reaches a filter through the synchronous descend on its way to the position it was
+// given, which is the other route a node takes into a tree during acquisition.
+TEST_F(SHAMapMisplacedLeaf, hooking_a_known_node_invalidates_the_map)
+{
+    tests::TestNodeFamily sourceFamily{j_};
+    auto const [leafBlob, leafHash] = genuineLeaf(sourceFamily);
+    ASSERT_FALSE(leafBlob.empty());
+
+    tests::TestNodeFamily targetFamily{j_};
+    SHAMap map{SHAMapType::FREE, uint256{}, targetFamily};
+    map.setUnbacked();
+    ASSERT_TRUE(forgeRoot(map, leafHash));
+    ASSERT_TRUE(map.isValid());
+
+    // A key whose first nibble is kWrongBranch, so the walk descends the branch holding the leaf.
+    // An inner node is offered rather than a leaf, since a leaf would have to agree with this
+    // position and the point here is to reach the descent, not to hook what is offered.
+    auto const target = SHAMapNodeID::createID(
+        2, uint256{"5000000000000000000000000000000000000000000000000000000000000000"});
+
+    Serializer s;
+    for (auto i = 0u; i < SHAMap::kBranchFactor; ++i)
+        s.addBitString(i == 0u ? uint256{1} : uint256{});
+    s.add8(kWireTypeInner);
+    auto offered = SHAMapTreeNode::makeFromWire(makeSlice(s.peekData()));
+    ASSERT_TRUE(offered);
+    offered->updateHash();
+
+    OneNodeFilter const filter{leafHash, leafBlob};
+    auto const result = map.addKnownNode(target, std::move(offered), &filter);
+
+    EXPECT_FALSE(map.isValid());
+
+    // The verdict matters as much as the state: it is what the acquisition paths charge a peer on,
+    // so a later change to it should fail here rather than pass quietly.
+    EXPECT_TRUE(result.isInvalid());
+    EXPECT_FALSE(result.isGood());
+}
+
+// addKnownNode also hooks the very node it was handed, on the path where the local store has
+// nothing to resolve for that slot. Such a node's position is known only from the ID the caller
+// supplied, so it is judged against the leaf's own key before it is hooked.
+TEST_F(SHAMapMisplacedLeaf, hooking_an_offered_misplaced_leaf_invalidates_the_map)
+{
+    tests::TestNodeFamily sourceFamily{j_};
+    auto const [leafBlob, leafHash] = genuineLeaf(sourceFamily);
+    ASSERT_FALSE(leafBlob.empty());
+
+    tests::TestNodeFamily targetFamily{j_};
+    SHAMap map{SHAMapType::FREE, uint256{}, targetFamily};
+    map.setUnbacked();
+    ASSERT_TRUE(forgeRoot(map, leafHash));
+    ASSERT_TRUE(map.isValid());
+
+    // The branch the forged root files the leaf under, which is not the one kKey selects.
+    uint256 wrongPrefix;
+    wrongPrefix.begin()[0] = static_cast<std::uint8_t>(kWrongBranch << 4);
+    auto const target = SHAMapNodeID::createID(1, wrongPrefix);
+
+    auto offered = SHAMapTreeNode::makeFromPrefix(makeSlice(leafBlob), leafHash);
+    ASSERT_TRUE(offered);
+    ASSERT_TRUE(offered->isLeaf());
+
+    // No filter, so the walk resolves nothing locally and the node offered here is the one that
+    // would be hooked.
+    auto const result = map.addKnownNode(target, std::move(offered), nullptr);
+
+    EXPECT_FALSE(map.isValid());
+    EXPECT_TRUE(result.isInvalid());
+    EXPECT_FALSE(result.isGood());
+}
+
+// A whole subtree can sit under the wrong branch through a single wrong child pointer, and that is
+// cheaper to produce than one misplaced leaf. Every leaf below such a subtree agrees with its own
+// final branch, because the subtree is internally well formed, and disagrees only at the level the
+// pointer is wrong. So judging a leaf against the last branch alone accepts all of them, and only
+// judging it against every branch above it refuses them.
+TEST_F(SHAMapMisplacedLeaf, iterating_a_misplaced_subtree_throws)
+{
+    // Two keys sharing their first nibble, so they hang off one inner node at depth 1.
+    constexpr uint256 kFirst{"a100000000000000000000000000000000000000000000000000000000000000"};
+    constexpr uint256 kSecond{"a200000000000000000000000000000000000000000000000000000000000000"};
+
+    tests::TestNodeFamily sourceFamily{j_};
+    SHAMap source{SHAMapType::FREE, sourceFamily};
+    source.setUnbacked();
+    for (auto const& k : {kFirst, kSecond})
+    {
+        ASSERT_TRUE(source.addItem(
+            SHAMapNodeType::TnAccountState, makeShamapitem(k, Slice{k.data(), k.size()})));
+    }
+    source.invariants();
+
+    // The inner node holding both leaves, as the filter will serve it. It belongs under branch 10,
+    // the nibble the two keys share, and the forged root below files it under kWrongBranch instead.
+    auto const subtree = source.getProofPath(kFirst);
+    ASSERT_TRUE(subtree.has_value());
+    // NOLINTBEGIN(bugprone-unchecked-optional-access) has_value() checked above
+    ASSERT_GE(subtree->size(), 2u);
+
+    // getProofPath returns the path deepest element first, so the element above the leaf is the
+    // inner node the two keys share.
+    auto inner = SHAMapTreeNode::makeFromWire(makeSlice((*subtree)[1]));
+    // NOLINTEND(bugprone-unchecked-optional-access)
+    ASSERT_TRUE(inner);
+    ASSERT_TRUE(inner->isInner());
+    inner->updateHash();
+
+    Serializer innerPrefixed;
+    inner->serializeWithPrefix(innerPrefixed);
+
+    // Both leaves are served as well. Without them the walk would stop on a node it genuinely does
+    // not have, and the throw below would say nothing about position.
+    std::vector<std::pair<SHAMapHash, Blob>> served;
+    served.emplace_back(inner->getHash(), innerPrefixed.getData());
+    for (auto const& k : {kFirst, kSecond})
+    {
+        auto const leafPath = source.getProofPath(k);
+        ASSERT_TRUE(leafPath.has_value());
+        // NOLINTBEGIN(bugprone-unchecked-optional-access) has_value() checked above
+        ASSERT_FALSE(leafPath->empty());
+        auto leaf = SHAMapTreeNode::makeFromWire(makeSlice(leafPath->front()));
+        // NOLINTEND(bugprone-unchecked-optional-access)
+        ASSERT_TRUE(leaf);
+        ASSERT_TRUE(leaf->isLeaf());
+        leaf->updateHash();
+
+        Serializer leafPrefixed;
+        leaf->serializeWithPrefix(leafPrefixed);
+        served.emplace_back(leaf->getHash(), leafPrefixed.getData());
+    }
+
+    tests::TestNodeFamily targetFamily{j_};
+    SHAMap map{SHAMapType::FREE, uint256{}, targetFamily};
+    map.setUnbacked();
+    ASSERT_TRUE(forgeRoot(map, inner->getHash()));
+
+    // The inner node itself carries no key, so nothing about it is out of place. Only a leaf below
+    // it can show that the branch it was reached through disagrees with the keys underneath.
+    OneNodeFilter const filter{std::move(served)};
+    map.getMissingNodes(4, &filter);
+
+    EXPECT_THROW(map.begin(), SHAMapMissingNode);
+
+    // The bounds have to refuse the same map, and refusing is not the same as answering end().
+    // This probe selects kWrongBranch at depth 0 and then the branch holding kFirst, so the walk
+    // reaches the misplaced leaf and clears the path. Both keys in the map are greater than the
+    // probe, so end() here would be the positive and wrong claim that no greater key exists.
+    uint256 probe;
+    probe.begin()[0] = static_cast<std::uint8_t>((kWrongBranch << 4) | 0x1u);
+    ASSERT_GT(kFirst, probe);
+    ASSERT_GT(kSecond, probe);
+
+    EXPECT_THROW(map.upperBound(probe), SHAMapMissingNode);
+    EXPECT_THROW(map.lowerBound(probe), SHAMapMissingNode);
+}
+
+// The descendAsync walk leaves the leaf hooked, since it resolved the node before the position
+// could be judged. Iterating it must not abort an instrumented build, and must not report the map
+// as empty either, which is what a plain nullptr from belowHelper would have meant.
+TEST_F(SHAMapMisplacedLeaf, iterating_a_hooked_misplaced_leaf_throws)
+{
+    tests::TestNodeFamily sourceFamily{j_};
+    auto const [leafBlob, leafHash] = genuineLeaf(sourceFamily);
+    ASSERT_FALSE(leafBlob.empty());
+
+    tests::TestNodeFamily targetFamily{j_};
+    SHAMap map{SHAMapType::FREE, uint256{}, targetFamily};
+    map.setUnbacked();
+    ASSERT_TRUE(forgeRoot(map, leafHash));
+
+    OneNodeFilter const filter{leafHash, leafBlob};
+    map.getMissingNodes(1, &filter);
+    ASSERT_FALSE(map.isValid());
+
+    EXPECT_THROW(map.begin(), SHAMapMissingNode);
 }
 
 }  // namespace xrpl::tests
