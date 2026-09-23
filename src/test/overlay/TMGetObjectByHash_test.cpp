@@ -1,25 +1,16 @@
 #include <test/jtx/Env.h>
-#include <test/overlay/PeerTest.h>
+#include <test/overlay/CapturePeer.h>
 
 #include <xrpld/app/main/Application.h>
 #include <xrpld/overlay/Compression.h>
 #include <xrpld/overlay/detail/OverlayImpl.h>
-#include <xrpld/overlay/detail/PeerImp.h>
-#include <xrpld/overlay/detail/ProtocolVersion.h>
 #include <xrpld/overlay/detail/Tuning.h>
 
 #include <xrpl/basics/Blob.h>
 #include <xrpl/basics/base_uint.h>
-#include <xrpl/basics/make_SSLContext.h>
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/nodestore/NodeObject.h>
 #include <xrpl/protocol/digest.h>
-
-#include <boost/asio/ip/address.hpp>
-#include <boost/asio/ip/tcp.hpp>
-#include <boost/asio/ssl/context.hpp>
-#include <boost/beast/core/tcp_stream.hpp>
-#include <boost/beast/ssl/ssl_stream.hpp>
 
 #include <xrpl.pb.h>
 
@@ -41,8 +32,21 @@ using namespace jtx;
  */
 class TMGetObjectByHash_test : public beast::unit_test::Suite
 {
-    PeerTest::SharedContext context_{makeSslContext("")};
-    ProtocolVersion protocolVersion_{1, 7};
+    /**
+     * Calls the JtLedgerReq-dispatched processor synchronously, so the reply is
+     * visible through `sent()`.
+     */
+    class GetObjectPeer : public CapturePeer
+    {
+    public:
+        using CapturePeer::CapturePeer;
+
+        void
+        runProcessGetObjectByHash(std::shared_ptr<protocol::TMGetObjectByHash> const& m)
+        {
+            processGetObjectByHash(m);
+        }
+    };
 
     static std::shared_ptr<protocol::TMGetObjectByHash>
     createRequest(size_t const numObjects, Env& env)
@@ -90,15 +94,13 @@ class TMGetObjectByHash_test : public beast::unit_test::Suite
         testcase("Reply Object Count");
 
         Env env(*this);
-        PeerTest::resetId();
-
-        auto peer = makePeerTest(env, context_, protocolVersion_);
+        auto peer = makeCapturePeer<GetObjectPeer>(env);
 
         auto request = createRequest(numObjects, env);
         peer->runProcessGetObjectByHash(request);
 
         // Verify that a reply was sent
-        auto sentMessage = peer->getLastSentMessage();
+        auto sentMessage = peer->lastSent();
         BEAST_EXPECT(sentMessage != nullptr);
 
         // Parse the reply message
