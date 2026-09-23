@@ -216,7 +216,8 @@ target_link_libraries(
 # each module's headers: a module can only include xrpl/telemetry/ headers if
 # it links this target, and the target must already exist at that point.
 #
-# Links xrpl.libxrpl.protocol PRIVATELY for sha512Half (digest.h)
+# Links xrpl.libxrpl.protocol PRIVATELY for sha512Half (digest.h) and the
+# SField table behind TxAccountSpanNames.cpp
 add_module(xrpl telemetry)
 target_link_libraries(
     xrpl.libxrpl.telemetry

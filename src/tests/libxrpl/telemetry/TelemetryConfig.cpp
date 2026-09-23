@@ -259,7 +259,7 @@ TEST(TelemetryConfig, parse_full_section)
     section.set("service_name", "my-rippled");
     section.set("service_instance_id", "custom-id");
     section.set("exporter", "otlp_http");
-    section.set("traces_endpoint", "http://collector:4318/v1/traces");
+    section.set("traces_endpoint", "https://collector:4318/v1/traces");
     section.set("use_tls", "1");
     section.set("tls_ca_cert", caCert);
     section.set("batch_size", "256");
@@ -276,7 +276,7 @@ TEST(TelemetryConfig, parse_full_section)
     EXPECT_TRUE(setup.enabled);
     EXPECT_EQ(setup.serviceName, "my-rippled");
     EXPECT_EQ(setup.serviceInstanceId, "custom-id");
-    EXPECT_EQ(setup.tracesEndpoint, "http://collector:4318/v1/traces");
+    EXPECT_EQ(setup.tracesEndpoint, "https://collector:4318/v1/traces");
     EXPECT_TRUE(setup.useTls);
     EXPECT_EQ(setup.tlsCertPath, caCert);
     EXPECT_EQ(setup.batchSize, 256u);
@@ -395,16 +395,19 @@ TEST(TelemetryConfig, mtls_neither_set_is_one_way_tls)
 {
     // Telemetry is on so the checks run, and this config must pass all of
     // them: one-way TLS with a CA bundle and no client certificate. The CA
-    // path has to name a real file, because the parser opens it here.
+    // path has to name a real file, because the parser opens it here. The
+    // endpoint is https because use_tls=1 now requires it.
     TempDir const dir;
     auto const caCert = mtls::writeCertFile(dir.file("ca.pem"));
     Section section = mtls::makeSection(true);
     section.set("use_tls", "1");
+    section.set(mtls::keyEndpoint, mtls::httpsEndpoint);
     section.set("tls_ca_cert", caCert);
 
     auto const setup = mtls::parseSection(section);
     EXPECT_TRUE(setup.enabled);
     EXPECT_TRUE(setup.useTls);
+    EXPECT_EQ(setup.tracesEndpoint, mtls::httpsEndpoint);
     EXPECT_EQ(setup.tlsCertPath, caCert);
     EXPECT_TRUE(setup.tlsClientCertPath.empty());
     EXPECT_TRUE(setup.tlsClientKeyPath.empty());
@@ -454,11 +457,13 @@ TEST(TelemetryConfig, tls_missing_client_key_file_throws)
 TEST(TelemetryConfig, tls_missing_ca_cert_file_throws)
 {
     // One-way TLS with no client certificate, so the CA bundle is the only
-    // path checked.
+    // path checked. The endpoint is https so the scheme guard, which runs
+    // first, cannot be what throws.
     TempDir const dir;
     auto const absentCa = dir.file("absent-ca.pem");
     Section section = mtls::makeSection(true);
     section.set("use_tls", "1");
+    section.set(mtls::keyEndpoint, mtls::httpsEndpoint);
     section.set("tls_ca_cert", absentCa);
 
     EXPECT_THAT(
@@ -634,12 +639,13 @@ TEST(TelemetryConfig, mtls_scheme_check_is_case_sensitive_like_the_exporter)
         ThrowsMessage<std::runtime_error>(HasSubstr(mtls::schemeError)));
 }
 
-TEST(TelemetryConfig, one_way_tls_on_a_plain_http_endpoint_is_accepted)
+TEST(TelemetryConfig, one_way_tls_on_a_plain_http_endpoint_throws)
 {
-    // The control for the guard's scope: same http:// endpoint and use_tls=1,
-    // but no client certificate. Only a client identity can be silently
-    // dropped, so this configuration is left alone. Widen the guard to every
-    // use_tls=1 node and this case starts failing.
+    // use_tls=1 with no client certificate, on an http:// endpoint. The
+    // exporter reads TLS off the scheme, so this config would check the CA
+    // file and then export in the clear. The guard covers every use_tls=1
+    // node, not just the ones presenting a client identity, so it fires here
+    // too. Narrow the guard back to tls_client_cert and this case passes.
     TempDir const dir;
     auto const ca = mtls::writeCertFile(dir.file("ca.pem"));
     Section section = mtls::makeSection(true);
@@ -647,11 +653,12 @@ TEST(TelemetryConfig, one_way_tls_on_a_plain_http_endpoint_is_accepted)
     section.set(mtls::keyEndpoint, mtls::httpEndpoint);
     section.set("tls_ca_cert", ca);
 
-    telemetry::Telemetry::Setup setup;
-    ASSERT_NO_THROW(setup = mtls::parseSection(section));
-    EXPECT_EQ(setup.tracesEndpoint, mtls::httpEndpoint);
-    EXPECT_EQ(setup.tlsCertPath, ca);
-    EXPECT_TRUE(setup.tlsClientCertPath.empty());
+    EXPECT_THAT(
+        [&section] { mtls::parseSection(section); },
+        ThrowsMessage<std::runtime_error>(AllOf(
+            HasSubstr(mtls::schemeError),
+            HasSubstr(mtls::keyEndpoint),
+            HasSubstr(mtls::httpEndpoint))));
 }
 
 TEST(TelemetryConfig, mtls_scheme_not_checked_when_telemetry_disabled)
