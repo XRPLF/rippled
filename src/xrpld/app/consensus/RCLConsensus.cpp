@@ -1135,9 +1135,16 @@ RCLConsensus::Adaptor::onModeChange(ConsensusMode before, ConsensusMode after)
     // thread-free SpanGuard, so parent explicitly via its context). A mode
     // change outside a round leaves roundSpanContext_ invalid, yielding a null
     // guard (no-op).
-    auto span = telemetry::SpanGuard::childSpan(cs::modeChange, roundSpanContext_);
-    span.setAttribute(cs::attr::modeOld, toDisplayString(before).c_str());
-    span.setAttribute(cs::attr::modeNew, toDisplayString(after).c_str());
+    //
+    // Only a real transition gets a span. MonitoredMode::set also calls this
+    // on every round start; the round's mode attribute below still needs that
+    // call, the span does not.
+    if (before != after)
+    {
+        auto span = telemetry::SpanGuard::childSpan(cs::modeChange, roundSpanContext_);
+        span.setAttribute(cs::attr::modeOld, toDisplayString(before).c_str());
+        span.setAttribute(cs::attr::modeNew, toDisplayString(after).c_str());
+    }
 
     JLOG(j_.info()) << "Consensus mode change before=" << to_string(before)
                     << ", after=" << to_string(after);

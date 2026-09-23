@@ -73,7 +73,7 @@
  *    |     Attrs:   ledger_seq, proposing
  *    |
  *    +-- consensus.mode_change                   [main thread]
- *          Created: Adaptor::onModeChange()
+ *          Created: Adaptor::onModeChange(), only when the mode moves
  *          Attrs:   mode_old, mode_new
  *
  *  Standalone spans (no parent, created per-message in overlay):
