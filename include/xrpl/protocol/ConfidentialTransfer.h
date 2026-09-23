@@ -348,6 +348,30 @@ isAuditorMirrorCurrent(SLE const& issuance, SLE const& mptoken);
 areMirrorsCurrent(SLE const& issuance, SLE const& mptoken);
 
 /**
+ * @brief Set the holder's issuer mirror epoch to match the issuance's current issuer key epoch.
+ *
+ * Call this after writing the issuer mirror ciphertext under the issuance's
+ * currently registered issuer key, so that the mirror reads as current afterwards.
+ *
+ * @param issuance The MPTokenIssuance ledger object.
+ * @param mptoken  The holder's MPToken ledger entry to update.
+ */
+void
+setIssuerMirrorEpoch(SLE const& issuance, SLE& mptoken);
+
+/**
+ * @brief Set the holder's auditor mirror epoch to match the issuance's current auditor key epoch.
+ *
+ * Call this after writing the auditor mirror ciphertext under the issuance's
+ * currently registered auditor key. Does nothing when the holder has no auditor mirror.
+ *
+ * @param issuance The MPTokenIssuance ledger object.
+ * @param mptoken  The holder's MPToken ledger entry to update.
+ */
+void
+setAuditorMirrorEpoch(SLE const& issuance, SLE& mptoken);
+
+/**
  * @brief Set the holder's MPToken mirror epochs to match the issuance's current key epochs.
  *
  * Call this after writing mirror ciphertexts under the issuance's currently

@@ -11,7 +11,7 @@
 
 namespace xrpl::test {
 
-TEST(BridgeEntryTests, Constructors)
+TEST(BridgeEntryTests, constructors)
 {
     EntryTestEnv e;
 
