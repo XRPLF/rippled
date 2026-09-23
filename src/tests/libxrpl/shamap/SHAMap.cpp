@@ -276,9 +276,9 @@ INSTANTIATE_TEST_SUITE_P(
     ::testing::Values(kBackedMode, kUnbackedMode),
     shamapBackingModeName);
 
-// Exercises the traversal stacks built by belowHelper. Each stack entry pairs a node with the ID
-// naming its position, and every push refuses a leaf whose own key does not lie under the branch it
-// was reached through, in Release builds as well as Debug ones.
+// Exercises the traversal paths built by belowHelper. A path names each node's position by its own
+// length, and every push refuses a leaf whose key does not lie under the branch it was reached
+// through, in Release builds as well as Debug ones.
 class SHAMapTraversal : public ::testing::Test
 {
 protected:

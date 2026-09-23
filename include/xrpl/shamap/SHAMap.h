@@ -71,20 +71,31 @@ enum class SHAMapState {
 };
 
 /**
- * A SHAMap is both a radix tree with a fan-out of 16 and a Merkle tree.
+ * A SHAMap is both a trie with a fan-out of 16 and a Merkle tree.
  *
- * A radix tree is a tree with two properties:
+ * A trie keeps a key in the position of its nodes rather than in the nodes
+ * themselves: the path from the root down to a node spells out the prefix
+ * every key below it shares (the "prefix property"). A SHAMap spends one
+ * nibble of the 256-bit key per level, so each inner node has at most 16
+ * children, which is the fan-out, and a leaf sits at depth 64 at the deepest.
+ * A leaf also carries its own full key, which is what lets a reader check
+ * that it was reached through the branches that key names.
  *
- *   1. The key for a node is represented by the node's position in the tree
- *      (the "prefix property").
- *   2. A node with only one child is merged with that child
- *      (the "merge property")
+ * A radix tree adds a second property: a node with only one child is merged
+ * with that child (the "merge property"), which is what makes it a compressed
+ * trie. A SHAMap does not maintain that, so it is a trie and not a radix
+ * tree. Adding an item creates an inner node at every nibble the two keys
+ * share, however long that run is, and never merges one away. Deleting does
+ * merge: a chain that reduces to a single leaf collapses, pulling that leaf
+ * up to one nibble below the nearest ancestor still holding two branches.
+ * Either way no edge spans more than one nibble, so two keys agreeing on
+ * their first 63 nibbles give 63 single-child inner nodes, an inner node at
+ * depth 63 holding both branches, and the two leaves at depth 64: one entry
+ * per level with no gaps, and 65 entries at the most. Traversal relies on
+ * that, since it is what makes a path's length name each node's depth.
  *
- * These properties result in a significantly smaller memory footprint for
- * a radix tree.
- *
- * A fan-out of 16 means that each node in the tree has at most 16
- * children. See https://en.wikipedia.org/wiki/Radix_tree
+ * See https://en.wikipedia.org/wiki/Trie and
+ * https://en.wikipedia.org/wiki/Radix_tree
  *
  * A Merkle tree is a tree where each non-leaf node is labelled with the hash
  * of the combined labels of its children nodes.
@@ -133,8 +144,7 @@ private:
 
 public:
     /**
-     * Number of children each non-leaf node has (the 'radix tree' part of the
-     * map)
+     * Number of children each non-leaf node has, which is the trie's fan-out
      */
     static constexpr unsigned int kBranchFactor = SHAMapInnerNode::kBranchFactor;
 
@@ -443,48 +453,86 @@ private:
     }
 
     /**
-     * A path from the root of the map down to some node, pairing each node with the ID naming its
-     * position.
+     * A root-down path of nodes through the map.
      *
-     * The two halves of an entry must agree, and the only way to get that wrong is to compute an ID
-     * from the wrong branch. So this type does not accept an ID at all: every push takes the branch
-     * being descended and derives the ID itself, so a node and its ID cannot disagree. Reads are
-     * exposed through the same accessors a std::stack would offer.
+     * The path itself names each node's position: entry `i` sits at depth
+     * `i`, since a SHAMap does not merge a single-child node away (see the
+     * class docstring above), so every nibble down to a leaf has an inner
+     * node of its own. Nothing is therefore stored per entry but the node.
+     * No consumer needs a whole SHAMapNodeID: every one of them wants a
+     * depth, and reads the nibbles it cares about from the key it already
+     * holds.
+     *
+     * Storing an ID alongside each node would add a second answer to "where
+     * does this node sit", which could then disagree with the first.
+     * Deriving it cannot.
      */
     class NodePathStack
     {
     public:
+        /**
+         * @return whether the path holds no node at all.
+         */
         [[nodiscard]] bool
         empty() const
         {
-            return stack_.empty();
-        }
-
-        [[nodiscard]] std::size_t
-        size() const
-        {
-            return stack_.size();
+            return path_.empty();
         }
 
         /**
-         * The node at the end of the path, paired with its ID.
+         * @return how many nodes the path holds, which is one more than its
+         *         last node's depth.
+         */
+        [[nodiscard]] std::size_t
+        size() const
+        {
+            return path_.size();
+        }
+
+        /**
+         * The node at the end of the path.
          *
-         * Reading an empty stack would be undefined, and the assert alone is
+         * Reading an empty path would be undefined, and the assert alone is
          * stripped in release, so an empty path yields a null node the caller
          * can test instead.
+         *
+         * @return a reference into the path, which a later push may
+         *         invalidate by reallocating. Callers that push and then want
+         *         the node again ask for it again; the node itself does not
+         *         move, only the slot holding the pointer to it.
          */
-        [[nodiscard]] std::pair<SHAMapTreeNodePtr, SHAMapNodeID> const&
+        [[nodiscard]] SHAMapTreeNodePtr const&
         top() const
         {
-            if (stack_.empty())
+            if (path_.empty())
             {
                 // LCOV_EXCL_START
                 UNREACHABLE("xrpl::SHAMap::NodePathStack::top : empty stack");
-                static std::pair<SHAMapTreeNodePtr, SHAMapNodeID> const kEmpty;
+                static SHAMapTreeNodePtr const kEmpty;
                 return kEmpty;
                 // LCOV_EXCL_STOP
             }
-            return stack_.top();
+            return path_.back();
+        }
+
+        /**
+         * The depth of the node at the end of the path.
+         *
+         * @return the depth, which is the entry's own index; zero on an empty
+         *         path, which a caller must not read but which must not be an
+         *         out-of-range subtraction either.
+         */
+        [[nodiscard]] unsigned int
+        topDepth() const
+        {
+            if (path_.empty())
+            {
+                // LCOV_EXCL_START
+                UNREACHABLE("xrpl::SHAMap::NodePathStack::topDepth : empty stack");
+                return 0;
+                // LCOV_EXCL_STOP
+            }
+            return static_cast<unsigned int>(path_.size() - 1);
         }
 
         /**
@@ -496,14 +544,14 @@ private:
         void
         pop()
         {
-            if (stack_.empty())
+            if (path_.empty())
             {
                 // LCOV_EXCL_START
                 UNREACHABLE("xrpl::SHAMap::NodePathStack::pop : empty stack");
                 return;
                 // LCOV_EXCL_STOP
             }
-            stack_.pop();
+            path_.pop_back();
         }
 
         /**
@@ -516,17 +564,15 @@ private:
         void
         clear()
         {
-            stack_ = {};
+            path_.clear();
+            pathKey_ = uint256{};
         }
 
         /**
-         * Shorten the path by one node and hand that node to the caller,
-         * keeping its ID.
+         * Shorten the path by one node and hand that node to the caller.
          *
          * Reading a node out and then popping copies it, which costs an atomic
-         * increment on its refcount. Moving it out does not. A caller that
-         * wants the ID as well reads `top().second` first, which costs the
-         * same either way: `SHAMapNodeID` declares no move constructor.
+         * increment on its refcount. Moving it out does not.
          *
          * @return the node that was at the end of the path, or an empty
          *         pointer if there was none.
@@ -534,20 +580,21 @@ private:
         [[nodiscard]] SHAMapTreeNodePtr
         releaseNode()
         {
-            if (stack_.empty())
+            if (path_.empty())
             {
                 // LCOV_EXCL_START
                 UNREACHABLE("xrpl::SHAMap::NodePathStack::releaseNode : empty stack");
                 return {};
                 // LCOV_EXCL_STOP
             }
-            auto node = std::move(stack_.top().first);
-            stack_.pop();
+            auto node = std::move(path_.back());
+            path_.pop_back();
             return node;
         }
 
         /**
-         * Start a path at the root of the map, whose ID is the zero-depth ID by definition.
+         * Start a path at the root of the map, which sits at depth zero by
+         * definition.
          *
          * @return false, leaving the path unchanged, if a path was already
          *         started. A malformed call must not abort a release build,
@@ -556,37 +603,43 @@ private:
         [[nodiscard]] bool
         pushRoot(SHAMapTreeNodePtr node)
         {
-            if (!stack_.empty())
+            if (!path_.empty())
             {
                 // LCOV_EXCL_START
                 UNREACHABLE("xrpl::SHAMap::NodePathStack::pushRoot : non-empty stack");
                 return false;
                 // LCOV_EXCL_STOP
             }
-            stack_.emplace(std::move(node), SHAMapNodeID{});
+            path_.push_back(std::move(node));
             return true;
         }
 
         /**
-         * Extend the path to the child of the current node reached by `branch`.
+         * Extend the path to the child of the node at its end reached by
+         * `branch`.
          *
-         * A node keeps the depth it was reached at, never a normalized kLeafDepth. Only a leaf may
-         * sit at kLeafDepth, since an inner node there would have no branch left to select.
+         * The branch is not stored. It is only used to judge the node offered,
+         * since the child's position is this path one level longer whichever
+         * branch reached it.
+         *
+         * Only a leaf may sit at kLeafDepth, since an inner node there would
+         * have no branch left to select.
          *
          * @param node the child to append.
          * @param branch the branch of the current node that `node` was
          *               reached through.
-         * @return false, leaving the path unchanged, if there is no node to
-         *         descend from, no node to push, no branch of that number, no
-         *         room left below for the kind of node offered, or a leaf
-         *         whose own key does not lie under `branch`. A malformed call
-         *         or a malformed map must not abort a release build, so
-         *         callers stop walking instead.
+         * @return false if there is no node to descend from, no node to push,
+         *         no branch of that number, no room left below for the kind
+         *         of node offered, or a leaf whose own key does not select
+         *         `branch`. A malformed call or a malformed map must not abort
+         *         a release build, so callers stop walking instead. The path
+         *         keeps its nodes, though the recorded branch chain may
+         *         already name `branch`, which no later read reaches.
          */
         [[nodiscard]] bool
         pushChild(SHAMapTreeNodePtr node, unsigned int branch)
         {
-            if (stack_.empty() || !node || branch >= kBranchFactor)
+            if (path_.empty() || !node || branch >= kBranchFactor)
             {
                 // LCOV_EXCL_START
                 UNREACHABLE("xrpl::SHAMap::NodePathStack::pushChild : no child to push");
@@ -601,11 +654,9 @@ private:
             // the local store has had neither its position nor its type judged. The two-argument
             // SHAMap::descend fetches by the parent's recorded child hash and hooks what comes
             // back, and a parsed node adopts that hash rather than recomputing it, so an inner node
-            // can arrive one level too deep. So this refuses rather than aborting an instrumented
-            // build.
+            // can arrive one level too deep. So this refuses rather than aborting a build.
             //
-            auto const& parentID = stack_.top().second;
-            auto const parentDepth = parentID.getDepth();
+            auto const parentDepth = topDepth();
             bool const tooDeep = pastLeafDepth(parentDepth, *node);
             SOMETIMES(tooDeep, "xrpl::SHAMap::NodePathStack::pushChild : child past leaf depth");
             if (tooDeep)
@@ -613,15 +664,23 @@ private:
                 return false;
             }
 
-            // A leaf's own key names its position, so a leaf reached by this branch must agree with
-            // the ID that branch derives. Where the two disagree the pair is not a path entry at
-            // all, and keeping it would make every later walk read the ID rather than the key.
+            // Record the branch, then judge a leaf against every branch recorded so far. Testing
+            // only this step's nibble would accept a whole subtree hung under the wrong branch:
+            // one wrong child pointer in one inner node leaves every leaf below it agreeing at its
+            // own final nibble, because the subtree is internally well formed, and disagreeing only
+            // at the level where the pointer is wrong.
             //
-            // Not UNREACHABLE, for the reason given above: the paths that hook a node from a peer
-            // reject a misplaced one first (see SHAMap::descend and SHAMap::gmnProcessNodes), but a
+            // This is the one thing a path cannot derive. Its length gives every depth, but whether
+            // the caller descended the branches it says it did is only visible against a real key.
+            //
+            // Reachable for the same reason, and by a wider route: a node arriving through a sync
+            // filter is judged by hash, and a hash says nothing about position. The paths that hook
+            // a node reject a misplaced one first (see SHAMap::descend and gmnProcessNodes), but a
             // map read lazily from the local store never passes through them.
-            auto childID = parentID.getChildNodeID(branch);
-            bool const misplaced = !belongsAt(childID, *node);
+            setNibble(parentDepth, branch);
+
+            bool const misplaced = node->isLeaf() &&
+                !SHAMapNodeID::createID(parentDepth + 1u, pathKey_).isPrefixOf(leafKey(*node));
             SOMETIMES(
                 misplaced, "xrpl::SHAMap::NodePathStack::pushChild : leaf key outside branch");
             if (misplaced)
@@ -629,28 +688,67 @@ private:
                 return false;
             }
 
-            stack_.emplace(std::move(node), std::move(childID));
+            path_.push_back(std::move(node));
             return true;
         }
 
         /**
-         * Extend the path to a node lying on the path to `target`.
+         * Extend the path by one node lying on the way to `target`, starting
+         * it if it is empty.
          *
-         * For nodes not reached by descending a known branch: the walk tracks only the key it is
-         * heading for, or the node is newly created. Either way `target` selects the branch.
+         * For nodes not reached by descending a known branch: the walk tracks
+         * only the key it is heading for, or the node is newly created. Either
+         * way `target` names the branch.
+         *
+         * @param node the node to append.
+         * @param target the key the walk is heading for.
+         * @return whatever pushRoot or pushChild returned.
          */
         [[nodiscard]] bool
         pushNode(SHAMapTreeNodePtr node, uint256 const& target)
         {
-            if (stack_.empty())
+            if (path_.empty())
             {
                 return pushRoot(std::move(node));
             }
-            return pushChild(std::move(node), selectBranch(stack_.top().second, target));
+            return pushChild(std::move(node), selectBranch(topDepth(), target));
         }
 
     private:
-        std::stack<std::pair<SHAMapTreeNodePtr, SHAMapNodeID>> stack_;
+        /**
+         * Write `branch` as the nibble at `depth` of the recorded branch chain.
+         *
+         * @param depth the nibble index to write, which is the depth the
+         *              branch was taken from.
+         * @param branch the branch taken, which the caller has already bounded.
+         */
+        void
+        setNibble(unsigned int depth, unsigned int branch)
+        {
+            auto& byte = *(pathKey_.begin() + (depth / 2));
+            if ((depth & 1) != 0u)
+            {
+                byte = static_cast<unsigned char>((byte & 0xF0u) | branch);
+            }
+            else
+            {
+                byte = static_cast<unsigned char>((byte & 0x0Fu) | (branch << 4));
+            }
+        }
+
+        // path_[i] holds the node at depth i, by construction: pushRoot starts at depth 0 and
+        // pushChild only ever appends one level.
+        std::vector<SHAMapTreeNodePtr> path_;
+
+        // The branches descended, one nibble per level: nibble i is the branch taken from depth i.
+        // One record for the whole path rather than an ID per entry, so path_.size() stays the only
+        // answer to where a node sits and this is only the claim being checked against it.
+        //
+        // A pop leaves the nibbles above the path's end as they were, because no read can reach
+        // them: createID masks this at parentDepth + 1, so a check reads nibbles 0 through
+        // parentDepth only, and those are always the current path's. Level j + 1 exists only if a
+        // push at depth j wrote nibble j, and re-descending at j overwrites it.
+        uint256 pathKey_;
     };
 
     using DeltaRef =
@@ -702,10 +800,17 @@ private:
 
     /**
      * Unshare the node, allowing it to be modified
+     *
+     * @param node the node to unshare.
+     * @param depth the depth the node sits at, which says whether it is the
+     *        root. A clone of the root has to be adopted as the new root; a
+     *        clone of any other node is hooked up by the caller walking back
+     *        up the path.
+     * @return the node, cloned if it was shared.
      */
     template <class Node>
     intr_ptr::SharedPtr<Node>
-    unshareNode(intr_ptr::SharedPtr<Node>, SHAMapNodeID const& nodeID);
+    unshareNode(intr_ptr::SharedPtr<Node> node, unsigned int depth);
 
     /**
      * prepare a node to be modified before flushing

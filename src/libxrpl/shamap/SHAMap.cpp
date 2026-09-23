@@ -111,7 +111,7 @@ SHAMap::dirtyUp(NodePathStack& stack, uint256 const& target, SHAMapTreeNodePtr c
 
     while (!stack.empty())
     {
-        auto const nodeID = stack.top().second;
+        auto const depth = stack.topDepth();
         auto top = stack.releaseNode();
         if (!top->isInner())
         {
@@ -122,9 +122,9 @@ SHAMap::dirtyUp(NodePathStack& stack, uint256 const& target, SHAMapTreeNodePtr c
         }
         auto node = intr_ptr::staticPointerCast<SHAMapInnerNode>(std::move(top));
 
-        auto const branch = selectBranch(nodeID, target);
+        auto const branch = selectBranch(depth, target);
 
-        node = unshareNode(std::move(node), nodeID);
+        node = unshareNode(std::move(node), depth);
         node->setChild(branch, std::move(child));
 
         child = std::move(node);
@@ -147,14 +147,14 @@ SHAMap::walkTowardsKey(uint256 const& id, NodePathStack* stack) const
     }
 
     auto inNode = root_;
-    SHAMapNodeID nodeID;
+    unsigned int noStackDepth = 0;
 
-    // Without a caller-supplied stack, `nodeID` is the only record of position, so it is derived
-    // directly here instead of read back from a push. A push fails when the map is malformed, by
-    // holding a leaf outside the branch it was reached through or a node with no room left below
-    // it, not because `id` is merely absent; the stack is cleared rather than left holding a node
-    // that never became a real path entry. Callers tell the two apart by the path, which is empty
-    // only in the first case.
+    // Without a caller-supplied stack, `noStackDepth` is the only record of position, so it is
+    // counted directly here instead of read back from a push. A push fails when the map is
+    // malformed, by holding a leaf outside the branch it was reached through or a node with no room
+    // left below it, not because `id` is merely absent; the stack is cleared rather than left
+    // holding a node that never became a real path entry. Callers tell the two apart by the path,
+    // which is empty only in the first case.
     auto pushCurrent = [&]() -> bool {
         if (stack == nullptr || stack->pushNode(inNode, id))
         {
@@ -172,7 +172,8 @@ SHAMap::walkTowardsKey(uint256 const& id, NodePathStack* stack) const
         }
 
         auto& inner = safeDowncast<SHAMapInnerNode&>(*inNode);
-        auto const branch = selectBranch(stack != nullptr ? stack->top().second : nodeID, id);
+        auto const depth = stack != nullptr ? stack->topDepth() : noStackDepth;
+        auto const branch = selectBranch(depth, id);
         if (inner.isEmptyBranch(branch))
             return nullptr;
 
@@ -182,14 +183,13 @@ SHAMap::walkTowardsKey(uint256 const& id, NodePathStack* stack) const
             // Shares pastLeafDepth with pushChild, so this mode and the one with a
             // caller-supplied path refuse at the same node. Reachable for the reason that helper
             // gives, so it refuses rather than aborts.
-            auto const depth = nodeID.getDepth();
             bool const tooDeep = pastLeafDepth(depth, *inNode);
             SOMETIMES(tooDeep, "xrpl::SHAMap::walkTowardsKey : child too deep");
             if (tooDeep)
             {
                 return nullptr;
             }
-            nodeID = nodeID.getChildNodeID(branch);
+            ++noStackDepth;
         }
     }
 
@@ -477,7 +477,7 @@ SHAMap::descendAsync(
 
 template <class Node>
 intr_ptr::SharedPtr<Node>
-SHAMap::unshareNode(intr_ptr::SharedPtr<Node> node, SHAMapNodeID const& nodeID)
+SHAMap::unshareNode(intr_ptr::SharedPtr<Node> node, unsigned int depth)
 {
     // make sure the node is suitable for the intended operation (copy on write)
     XRPL_ASSERT(node->cowid() <= cowid_, "xrpl::SHAMap::unshareNode : node valid for cowid");
@@ -486,7 +486,7 @@ SHAMap::unshareNode(intr_ptr::SharedPtr<Node> node, SHAMapNodeID const& nodeID)
         // have a CoW
         XRPL_ASSERT(state_ != SHAMapState::Immutable, "xrpl::SHAMap::unshareNode : not immutable");
         node = intr_ptr::staticPointerCast<Node>(node->clone(cowid_));
-        if (nodeID.isRoot())
+        if (depth == 0)
             root_ = node;
     }
     return node;
@@ -502,14 +502,14 @@ SHAMap::belowHelper(NodePathStack& stack, BelowDirection direction) const
         return nullptr;
         // LCOV_EXCL_STOP
     }
-    if (auto const& top = stack.top().first; top->isLeaf())
+    if (auto const& top = stack.top(); top->isLeaf())
         return safeDowncast<SHAMapLeafNode*>(top.get());
 
-    // The stack owns the node/ID pairing, so descending is only ever "push the branch we took".
+    // The path names each node's position, so descending is only ever "push the node we reached".
     // `scanned` counts how many branches of the current node we have examined; the branch we look
     // at is derived from it, so no index ever goes out of range. `inner` tracks the node on top of
     // the stack, which keeps it alive, so it only needs recomputing after a push.
-    auto* inner = safeDowncast<SHAMapInnerNode*>(stack.top().first.get());
+    auto* inner = safeDowncast<SHAMapInnerNode*>(stack.top().get());
     for (auto scanned = 0u; scanned < kBranchFactor;)
     {
         auto const childBranch =
@@ -521,6 +521,7 @@ SHAMap::belowHelper(NodePathStack& stack, BelowDirection direction) const
             continue;
         }
 
+        auto const parentDepth = stack.topDepth();
         auto descended = descendThrow(*inner, childBranch);
         if (!stack.pushChild(std::move(descended), childBranch))
         {
@@ -536,12 +537,12 @@ SHAMap::belowHelper(NodePathStack& stack, BelowDirection direction) const
             // write would buy nothing, would race those readers, and would make a later compare()
             // trip its own isValid() assertion. A map from peer data is judged where it is
             // assembled (see SHAMap::descend and gmnProcessNodes).
-            JLOG(journal_.warn()) << "Cannot walk below " << stack.top().second << " at branch "
+            JLOG(journal_.warn()) << "Cannot walk below depth " << parentDepth << " at branch "
                                   << childBranch;
             Throw<SHAMapMissingNode>(type_, inner->getChildHash(childBranch));
         }
 
-        auto const& child = stack.top().first;
+        auto const& child = stack.top();
         if (child->isLeaf())
             return safeDowncast<SHAMapLeafNode*>(child.get());
 
@@ -623,14 +624,14 @@ SHAMap::peekNextItem(uint256 const& id, NodePathStack& stack) const
         return nullptr;
         // LCOV_EXCL_STOP
     }
-    XRPL_ASSERT(stack.top().first->isLeaf(), "xrpl::SHAMap::peekNextItem : stack starts with leaf");
+    XRPL_ASSERT(stack.top()->isLeaf(), "xrpl::SHAMap::peekNextItem : stack starts with leaf");
     stack.pop();
     while (!stack.empty())
     {
-        auto const& [node, nodeID] = stack.top();
+        auto const& node = stack.top();
         XRPL_ASSERT(!node->isLeaf(), "xrpl::SHAMap::peekNextItem : another node is not leaf");
         auto& inner = safeDowncast<SHAMapInnerNode&>(*node);
-        for (auto i = selectBranch(nodeID, id) + 1; i < kBranchFactor; ++i)
+        for (auto i = selectBranch(stack.topDepth(), id) + 1; i < kBranchFactor; ++i)
         {
             if (!inner.isEmptyBranch(i))
             {
@@ -696,7 +697,7 @@ SHAMap::boundHelper(uint256 const& id, BelowDirection direction) const
 
     while (!stack.empty())
     {
-        auto const& [node, nodeID] = stack.top();
+        auto const& node = stack.top();
         if (node->isLeaf())
         {
             auto const& item = safeDowncast<SHAMapLeafNode const&>(*node).peekItem();
@@ -706,7 +707,7 @@ SHAMap::boundHelper(uint256 const& id, BelowDirection direction) const
         else
         {
             auto& inner = safeDowncast<SHAMapInnerNode&>(*node);
-            auto const taken = selectBranch(nodeID, id);
+            auto const taken = selectBranch(stack.topDepth(), id);
             auto const remaining = searchingForward ? (kBranchFactor - 1u - taken) : taken;
 
             for (auto scanned = 0u; scanned < remaining; ++scanned)
@@ -780,7 +781,7 @@ SHAMap::delItem(uint256 const& id)
 
     while (!stack.empty())
     {
-        auto const nodeID = stack.top().second;
+        auto const depth = stack.topDepth();
         auto top = stack.releaseNode();
         if (!top->isInner())
         {
@@ -791,15 +792,15 @@ SHAMap::delItem(uint256 const& id)
         }
         auto node = intr_ptr::staticPointerCast<SHAMapInnerNode>(std::move(top));
 
-        node = unshareNode(std::move(node), nodeID);
+        node = unshareNode(std::move(node), depth);
         node->setChild(
-            selectBranch(nodeID, id), std::move(prevNode));  // NOLINT(bugprone-use-after-move)
+            selectBranch(depth, id), std::move(prevNode));  // NOLINT(bugprone-use-after-move)
 
         XRPL_ASSERT(
             not prevNode,  // NOLINT(bugprone-use-after-move)
             "xrpl::SHAMap::delItem : prevNode should be nullptr after std::move");
 
-        if (!nodeID.isRoot())
+        if (depth != 0)
         {
             // we may have made this a node with 1 or 0 children
             // And, if so, we need to remove this branch
@@ -860,7 +861,7 @@ SHAMap::addGiveItem(SHAMapNodeType type, boost::intrusive_ptr<SHAMapItem const> 
     if (stack.empty())
         Throw<SHAMapMissingNode>(type_, tag);
 
-    auto nodeID = stack.top().second;
+    auto depth = stack.topDepth();
     auto node = stack.releaseNode();
 
     if (node->isLeaf())
@@ -869,12 +870,12 @@ SHAMap::addGiveItem(SHAMapNodeType type, boost::intrusive_ptr<SHAMapItem const> 
         if (leaf->peekItem()->key() == tag)
             return false;
     }
-    node = unshareNode(std::move(node), nodeID);
+    node = unshareNode(std::move(node), depth);
     if (node->isInner())
     {
         // easy case, we end on an inner node
         auto inner = intr_ptr::staticPointerCast<SHAMapInnerNode>(node);
-        auto const branch = selectBranch(nodeID, tag);
+        auto const branch = selectBranch(depth, tag);
         XRPL_ASSERT(
             inner->isEmptyBranch(branch), "xrpl::SHAMap::addGiveItem : inner branch is empty");
         inner->setChild(branch, makeTypedLeaf(type, std::move(item), cowid_));
@@ -892,7 +893,7 @@ SHAMap::addGiveItem(SHAMapNodeType type, boost::intrusive_ptr<SHAMapItem const> 
 
         auto b1 = 0u, b2 = 0u;
 
-        while ((b1 = selectBranch(nodeID, tag)) == (b2 = selectBranch(nodeID, otherItem->key())))
+        while ((b1 = selectBranch(depth, tag)) == (b2 = selectBranch(depth, otherItem->key())))
         {
             if (!stack.pushNode(node, tag))
             {
@@ -907,7 +908,7 @@ SHAMap::addGiveItem(SHAMapNodeType type, boost::intrusive_ptr<SHAMapItem const> 
 
             // we need a new inner node, since both go on same branch at this
             // level
-            nodeID = nodeID.getChildNodeID(b1);
+            ++depth;
             node = intr_ptr::makeShared<SHAMapInnerNode>(cowid_);
         }
 
@@ -956,7 +957,7 @@ SHAMap::updateGiveItem(SHAMapNodeType type, boost::intrusive_ptr<SHAMapItem cons
     if (stack.empty())
         Throw<SHAMapMissingNode>(type_, tag);
 
-    auto const nodeID = stack.top().second;
+    auto const depth = stack.topDepth();
     auto top = stack.releaseNode();
 
     // walkTowardsKey pushes an inner node's own entry before testing whether the branch it needs
@@ -984,7 +985,7 @@ SHAMap::updateGiveItem(SHAMapNodeType type, boost::intrusive_ptr<SHAMapItem cons
         return false;
     }
 
-    node = unshareNode(std::move(node), nodeID);
+    node = unshareNode(std::move(node), depth);
 
     if (node->setItem(item))
         dirtyUp(stack, tag, node);
