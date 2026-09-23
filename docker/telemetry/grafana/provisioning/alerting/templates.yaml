@@ -1,0 +1,75 @@
+# Notification templates for the xrpld OTel alerts.
+#
+# Why these exist: Grafana's built-in message body appends a raw dump of every
+# expression node's value and every label, so a notification reads
+# `Value: A=0, B=0, C=1` followed by five `key = value` lines. The refIds carry
+# no meaning to a reader, and the label dump repeats what the title already
+# says. These templates replace that body with the rule's own prose.
+#
+# ---------------------------------------------------------------------------
+# What a template may and may not use
+# ---------------------------------------------------------------------------
+# The function set here is much smaller than Go's text/template plus sprig.
+# Available and used below: `match` (regexp), `reReplaceAll`, `title`, `printf`,
+# `len`, `index`, `eq`. NOT available — each fails the whole template with
+# `function "X" not defined`, which silently ships the raw template text in the
+# notification instead: `hasPrefix`, `hasSuffix`, `contains`, `humanize`,
+# `humanizeDuration`, `humanizePercentage`.
+#
+# A template error does NOT mark the rule unhealthy. Rules keep reporting
+# `health=ok` and the broken text is only visible in the delivered message, so
+# any change here must be checked against a real notification, not against rule
+# state.
+#
+# ---------------------------------------------------------------------------
+# Two label traps
+# ---------------------------------------------------------------------------
+#   * `service_instance_id` is a QUERY label, so it is absent whenever Grafana
+#     evaluates NoData or Error — those evaluations carry only
+#     {datasource_uid, ref_id}. Two rules set `noDataState: Alerting` and so
+#     fire that way deliberately. `xrpld.node` below falls back rather than
+#     rendering an empty string.
+#   * `alertname` is set by Grafana on every alert. There is no `rulename`
+#     label, so referencing one renders blank.
+#
+# Values are deliberately NOT printed. Each rule's `description` already states
+# its own measurement, formatted and with its threshold, which is the readable
+# form of what the raw value dump was trying to say.
+
+apiVersion: 1
+
+templates:
+  - orgId: 1
+    name: xrpld.notifications
+    template: |
+      {{- /* Node identity, or a marker when the query label is absent. */ -}}
+      {{ define "xrpld.node" -}}
+      {{ if .Labels.service_instance_id }}{{ .Labels.service_instance_id }}{{ else }}unknown node (NoData/Error evaluation){{ end }}
+      {{- end }}
+
+      {{- /* One line, used as the Slack title and the email subject. */ -}}
+      {{ define "xrpld.title" -}}
+      {{ if .Alerts.Firing }}🔥 FIRING{{ else }}✅ RESOLVED{{ end }}
+      {{- with .CommonLabels.alertname }} · {{ . }}{{ end }}
+      {{- with .CommonLabels.severity }} ({{ . }}){{ end }}
+      {{- with .CommonLabels.service_instance_id }} · {{ . }}{{ end }}
+      {{- end }}
+
+      {{- /* Message body: one block per alert, prose only. */ -}}
+      {{ define "xrpld.body" -}}
+      {{ with .Alerts.Firing }}{{ range . }}
+      :rotating_light: *FIRING* · *{{ .Labels.alertname }}* on `{{ template "xrpld.node" . }}`
+      {{ .Annotations.description }}
+      {{- with .Annotations.action }}
+      *Why it matters:* {{ . }}
+      {{- end }}
+      {{- range $key, $url := .Annotations }}
+      {{- if match "^panel_" $key }}
+      :chart_with_upwards_trend: <{{ $url }}|{{ title (reReplaceAll "_" " " (reReplaceAll "^panel_" "" $key)) }}>
+      {{- end }}{{ end }}
+      {{ end }}{{ end }}
+      {{- with .Alerts.Resolved }}{{ range . }}
+      :white_check_mark: *RESOLVED* · *{{ .Labels.alertname }}* on `{{ template "xrpld.node" . }}`
+      {{ .Annotations.description }}
+      {{ end }}{{ end }}
+      {{- end }}

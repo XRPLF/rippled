@@ -33,6 +33,7 @@ Usage:
 
 import argparse
 import asyncio
+import collections
 import fnmatch
 import json
 import logging
@@ -389,6 +390,9 @@ async def _tempo_get_trace(
     Returns:
         Flat list of span dicts as Tempo returned them, carrying at least
         'name', 'attributes', 'spanId' and, for non-root spans, 'parentSpanId'.
+        Each span also gains '_instance', the service.instance.id of the batch
+        resource it arrived under, or '' when that resource carries none. The
+        leading underscore marks it as added here rather than sent by Tempo.
         Empty when Tempo has no trace with this id.
 
     Raises:
@@ -416,8 +420,18 @@ async def _tempo_get_trace(
         data = await resp.json()
         spans: list[dict[str, Any]] = []
         for batch in data.get("batches", []):
+            # The resource is per batch and flattening drops it, but which node
+            # a span came from is the difference between a mis-parented span and
+            # an ordinary cross-node parent. Stamp it onto each span.
+            instance = ""
+            for attr in batch.get("resource", {}).get("attributes", []):
+                if attr.get("key") == "service.instance.id":
+                    instance = str(attr.get("value", {}).get("stringValue", ""))
+                    break
             for scope_spans in batch.get("scopeSpans", []):
-                spans.extend(scope_spans.get("spans", []))
+                for span in scope_spans.get("spans", []):
+                    span["_instance"] = instance
+                    spans.append(span)
         return spans
 
 
@@ -519,6 +533,23 @@ def _unaccounted_span_names(emitted: list[str], expected: dict[str, Any]) -> lis
 # ---------------------------------------------------------------------------
 
 
+def _load_expected_spans() -> dict[str, Any]:
+    """Parse expected_spans.json.
+
+    Every span check reads the contract through this one function so that two
+    checks cannot end up disagreeing about it -- an inline open() in each would
+    let one of them be pointed at a different file or key during a refactor
+    while the other kept passing.
+
+    Returns:
+        The parsed contract: a dict with 'spans' and
+        'parent_child_relationships' keys.
+    """
+    with open(EXPECTED_SPANS_FILE) as f:
+        contract: dict[str, Any] = json.load(f)
+    return contract
+
+
 async def validate_spans(
     session: aiohttp.ClientSession,
     tempo_url: str,
@@ -538,8 +569,7 @@ async def validate_spans(
     logger.info("--- Span Validation (Tempo) ---")
 
     # Load expected spans.
-    with open(EXPECTED_SPANS_FILE) as f:
-        expected = json.load(f)
+    expected = _load_expected_spans()
 
     # Check service registration.
     try:
@@ -1067,6 +1097,353 @@ async def _validate_parent_child(
                 category="span",
                 passed=False,
                 message=f"Hierarchy check failed: {exc}",
+            )
+        )
+
+
+_ALLOWED_PARENT_ROOT = "ROOT"
+
+# A parent span id of eight zero bytes is OTLP's "no parent". Tempo 2.9.4 omits
+# the field entirely for a root instead -- measured on a 114-span trace, 80 spans
+# with no parentSpanId, 34 with one, none empty and none all-zero -- but OTLP
+# permits the all-zero id, so an exporter or backend that writes it must not turn
+# every root into an unprovable parent. That would make this gate fail open on
+# exactly the spans it exists to judge, and silently: "nothing was provable"
+# passes. Both encodings a JSON OTLP payload can carry are listed, base64 (what
+# Tempo emits for a real id) and lowercase hex.
+_ROOT_PARENT_SPAN_IDS = frozenset({"AAAAAAAAAAA=", "0000000000000000"})
+
+
+def _observed_parent_label(
+    span: dict[str, Any],
+    by_id: dict[str, dict[str, Any]],
+) -> str | None:
+    """Classify one span's parent as a label, or None when nothing is provable.
+
+    Returns the parent span's name when the parent is in the trace and came from
+    the same node, _ALLOWED_PARENT_ROOT when the span has no parent at all
+    (either because the field is absent or because it holds the all-zero id),
+    and None when the parent is on another node or is not in the trace.
+
+    None is deliberately not a verdict. A cross-node parent is the design for
+    the receive spans, and a parent id the trace does not hold means the parent
+    has not been exported yet, which a rotation in flight produces routinely.
+
+    Args:
+        span:  One OTLP span dict as _tempo_get_trace returned it, so carrying
+               the '_instance' key that function stamps on.
+        by_id: Every span in the same trace, keyed by its spanId.
+
+    Returns:
+        The parent's name, _ALLOWED_PARENT_ROOT, or None.
+    """
+    parent_id = span.get("parentSpanId", "")
+    if not parent_id or parent_id in _ROOT_PARENT_SPAN_IDS:
+        return _ALLOWED_PARENT_ROOT
+    parent = by_id.get(parent_id)
+    if parent is None:
+        return None
+    if parent.get("_instance", "") != span.get("_instance", ""):
+        return None
+    return str(parent.get("name", ""))
+
+
+async def _validate_span_parents_for(
+    session: aiohttp.ClientSession,
+    tempo_url: str,
+    span_def: dict[str, Any],
+    report: ValidationReport,
+) -> None:
+    """Check that every emitted instance of one span has an allowed parent.
+
+    Driven by the span's own allowed_parents list rather than by the declared
+    relationship rows, so it covers every span in the inventory instead of the
+    pairs somebody remembered to declare -- and it is the only check that can
+    fail a span for being parented when it should be a root.
+
+    Args:
+        session:   aiohttp client session.
+        tempo_url: Base URL for Tempo API.
+        span_def:  One entry from expected_spans.json's 'spans' array.
+        report:    ValidationReport to accumulate results.
+    """
+    # Read inside the try, so a contract entry missing its name is reported as
+    # one failed check rather than raised out of validate_span_parents' loop and
+    # taking every remaining span's check with it.
+    name = "<unnamed>"
+    check = "span.parent.<unnamed>"
+    try:
+        name = str(span_def["name"])
+        check = f"span.parent.{name}"
+        allowed = set(span_def.get("allowed_parents", []))
+        if not allowed:
+            return
+        query = (
+            '{resource.service.name="xrpld" && ' + _traceql_name_predicate(name) + "}"
+        )
+        traces = await _tempo_search(session, tempo_url, query, limit=5)
+        if not traces:
+            optional = bool(span_def.get("optional", False))
+            report.add(
+                CheckResult(
+                    name=check,
+                    category="span",
+                    passed=optional,
+                    message=f"{name}: not emitted under this workload, parent not checked",
+                    details={"optional": optional},
+                )
+            )
+            return
+        observed: collections.Counter[str] = collections.Counter()
+        unprovable = 0
+        for summary in traces:
+            trace_id = summary.get("traceID", "")
+            if not trace_id:
+                continue
+            spans = await _tempo_get_trace(session, tempo_url, trace_id)
+            by_id = {s["spanId"]: s for s in spans if s.get("spanId")}
+            for span in spans:
+                if not _span_name_matches(span.get("name", ""), name):
+                    continue
+                label = _observed_parent_label(span, by_id)
+                if label is None:
+                    unprovable += 1
+                else:
+                    observed[label] += 1
+        # An allowed_parents entry may itself be a glob -- pathfind.request is
+        # declared under rpc.command.* -- so membership goes through the same
+        # matcher the contract's span names use rather than a set lookup, which
+        # would read every concrete rpc.command.<x> as a violation.
+        violations = {
+            lbl: n
+            for lbl, n in observed.items()
+            if not any(_span_name_matches(lbl, pattern) for pattern in allowed)
+        }
+        total = sum(observed.values()) + unprovable
+        if violations:
+            worst = max(violations.items(), key=lambda kv: kv[1])
+            message = (
+                f"{name}: parented to {worst[0]} on {worst[1]} of {total} "
+                f"instance(s); allowed: {sorted(allowed)}"
+            )
+        elif observed:
+            message = f"{name}: every provable parent is one of {sorted(allowed)}"
+        else:
+            message = (
+                f"{name}: {unprovable} instance(s), every parent on another node or "
+                "absent from the trace, so nothing was provable"
+            )
+        report.add(
+            CheckResult(
+                name=check,
+                category="span",
+                passed=not violations,
+                message=message,
+                details={
+                    "observed": dict(observed),
+                    "unprovable": unprovable,
+                    "allowed": sorted(allowed),
+                },
+            )
+        )
+    except Exception as exc:  # noqa: BLE001 - a backend fault is a check failure
+        report.add(
+            CheckResult(
+                name=check,
+                category="span",
+                passed=False,
+                message=f"{name}: parent check failed ({exc})",
+            )
+        )
+
+
+async def validate_span_parents(
+    session: aiohttp.ClientSession,
+    tempo_url: str,
+    report: ValidationReport,
+) -> None:
+    """Run the parent gate over every span in the inventory.
+
+    Args:
+        session:   aiohttp client session.
+        tempo_url: Base URL for Tempo API.
+        report:    ValidationReport to accumulate results.
+    """
+    logger.info("--- Span Parent Validation (Tempo) ---")
+    for span_def in _load_expected_spans().get("spans", []):
+        await _validate_span_parents_for(session, tempo_url, span_def, report)
+
+
+_ROUND_REQUIRED_CHILDREN = (
+    "consensus.phase.open",
+    "consensus.ledger_close",
+    "consensus.establish",
+    "consensus.accept",
+)
+
+
+async def validate_consensus_round_shape(
+    session: aiohttp.ClientSession,
+    tempo_url: str,
+    report: ValidationReport,
+) -> None:
+    """Check a consensus round's child set, their order, and mode_change.
+
+    The presence and hierarchy checks judge one span at a time, so a round
+    missing a phase, or running its phases out of order, passes them both. The
+    shape of a round is what an operator reads a trace for, so it is asserted
+    directly: every required child under the same round span, on the same node,
+    and their start times in protocol order. Candidate traces are selected by
+    co-occurrence rather than recency -- see the comment on the query.
+
+    mode_change rides along because it is a child of the same span. Its whole
+    purpose is to record a transition, so mode_old == mode_new is a defect
+    rather than a data point.
+
+    Args:
+        session:   aiohttp client session.
+        tempo_url: Base URL for Tempo API.
+        report:    ValidationReport to accumulate results.
+    """
+    logger.info("--- Consensus Round Shape (Tempo) ---")
+    try:
+        # Select traces holding the round AND its last phase, the way
+        # _validate_parent_child does, rather than the newest rounds. The accept
+        # span always outlives the round span -- the round guard is reset inside
+        # doAccept while the accept span's shared_ptr dies with the JtAccept
+        # lambda -- so with batch_delay_ms=2000 the two can leave in different
+        # export batches and the newest round becomes searchable before its
+        # consensus.accept child arrives. Sampling the newest rounds therefore
+        # reports a missing child on a perfectly shaped round, periodically.
+        query = '{resource.service.name="xrpld" && name="consensus.round"}'
+        traces = await _tempo_search(
+            session,
+            tempo_url,
+            query + ' && {name="consensus.accept"}',
+            limit=5,
+        )
+        if not traces:
+            report.add(
+                CheckResult(
+                    name="span.round.children",
+                    category="span",
+                    passed=False,
+                    message=(
+                        "No trace holds both consensus.round and consensus.accept, "
+                        "so round shape could not be checked"
+                    ),
+                )
+            )
+            return
+        missing: collections.Counter[str] = collections.Counter()
+        # Node ids are collected per failing check, not per round: a red here is
+        # only actionable if it says which node produced the bad shape, and on a
+        # five-node cluster "1 of 5 rounds" does not.
+        missing_nodes: set[str] = set()
+        disordered_nodes: set[str] = set()
+        equal_mode_nodes: set[str] = set()
+        rounds = out_of_order = mode_changes = equal_modes = 0
+        for summary in traces:
+            trace_id = summary.get("traceID", "")
+            if not trace_id:
+                continue
+            spans = await _tempo_get_trace(session, tempo_url, trace_id)
+            for parent in [s for s in spans if s.get("name") == "consensus.round"]:
+                rounds += 1
+                node = str(parent.get("_instance", "")) or "(unknown node)"
+                # Same node as well as same parent id: one trace carries every
+                # validator's view of the round, so a round span from node A and
+                # a phase span from node B must not be read as one round.
+                kids = [
+                    s
+                    for s in spans
+                    if s.get("parentSpanId") == parent.get("spanId")
+                    and s.get("_instance", "") == parent.get("_instance", "")
+                ]
+                by_name = {s.get("name", ""): s for s in kids}
+                for required in _ROUND_REQUIRED_CHILDREN:
+                    if required not in by_name:
+                        missing[required] += 1
+                        missing_nodes.add(node)
+                starts = [
+                    int(by_name[n].get("startTimeUnixNano", "0"))
+                    for n in _ROUND_REQUIRED_CHILDREN
+                    if n in by_name
+                ]
+                if starts != sorted(starts):
+                    out_of_order += 1
+                    disordered_nodes.add(node)
+                for mc in [s for s in kids if s.get("name") == "consensus.mode_change"]:
+                    mode_changes += 1
+                    attrs = {
+                        a["key"]: a.get("value", {}) for a in mc.get("attributes", [])
+                    }
+                    old = attrs.get("mode_old", {}).get("stringValue")
+                    new = attrs.get("mode_new", {}).get("stringValue")
+                    if old is not None and old == new:
+                        equal_modes += 1
+                        equal_mode_nodes.add(node)
+        report.add(
+            CheckResult(
+                name="span.round.children",
+                category="span",
+                passed=not missing,
+                message=(
+                    f"{rounds} round(s): every required child present"
+                    if not missing
+                    else f"{rounds} round(s) missing children: {dict(missing)} "
+                    f"on {sorted(missing_nodes)}"
+                ),
+                details={
+                    "rounds": rounds,
+                    "missing": dict(missing),
+                    "nodes": sorted(missing_nodes),
+                },
+            )
+        )
+        report.add(
+            CheckResult(
+                name="span.round.phase_order",
+                category="span",
+                passed=out_of_order == 0,
+                message=(
+                    f"{rounds} round(s): phases start in protocol order"
+                    if out_of_order == 0
+                    else f"{out_of_order} of {rounds} round(s) started their phases "
+                    f"out of order on {sorted(disordered_nodes)}"
+                ),
+                details={
+                    "rounds": rounds,
+                    "out_of_order": out_of_order,
+                    "nodes": sorted(disordered_nodes),
+                },
+            )
+        )
+        report.add(
+            CheckResult(
+                name="span.mode_change.records_a_real_change",
+                category="span",
+                passed=equal_modes == 0,
+                message=(
+                    f"{mode_changes} mode_change span(s), none with mode_old == mode_new"
+                    if equal_modes == 0
+                    else f"{equal_modes} of {mode_changes} mode_change span(s) recorded "
+                    f"no change (mode_old == mode_new) on {sorted(equal_mode_nodes)}"
+                ),
+                details={
+                    "mode_changes": mode_changes,
+                    "equal": equal_modes,
+                    "nodes": sorted(equal_mode_nodes),
+                },
+            )
+        )
+    except Exception as exc:  # noqa: BLE001 - a backend fault is a check failure
+        report.add(
+            CheckResult(
+                name="span.round.children",
+                category="span",
+                passed=False,
+                message=f"Round shape check failed ({exc})",
             )
         )
 
@@ -2733,6 +3110,8 @@ async def run_validation(
 
     async with aiohttp.ClientSession(timeout=REQUEST_TIMEOUT) as session:
         await validate_spans(session, tempo_url, report)
+        await validate_span_parents(session, tempo_url, report)
+        await validate_consensus_round_shape(session, tempo_url, report)
         await validate_span_durations(session, tempo_url, report)
         await assert_trace_join_groups(session, tempo_url, report)
         await validate_metrics(session, prometheus_url, report)
