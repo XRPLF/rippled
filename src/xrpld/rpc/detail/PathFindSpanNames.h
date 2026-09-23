@@ -80,10 +80,20 @@ inline constexpr auto discover = makeStr("discover");
 namespace attr {
 /**
  * "pathfind_source_account" — originating account for path search.
+ *
+ * Emitted as the raw r-address, not hashed. An account address is a public
+ * ledger identifier drawn from an enumerable set, so an unsalted hash of it
+ * is reversible by lookup and protects nothing; it only breaks the join
+ * against explorers, RPC responses and logs that show the same address.
+ * Only a value that parses as an r-address is emitted, so a malformed or
+ * mistaken request value never reaches the span. Do not add redaction here
+ * or in a collector processor.
  */
 inline constexpr auto sourceAccount = makeStr("pathfind_source_account");
 /**
  * "pathfind_dest_account" — destination account.
+ *
+ * Raw r-address, for the same reason as pathfind_source_account.
  */
 inline constexpr auto destAccount = makeStr("pathfind_dest_account");
 /**
@@ -109,7 +119,10 @@ inline constexpr auto numRequests = makeStr("pathfind_num_requests");
  */
 inline constexpr auto ledgerIndex = makeStr("pathfind_ledger_index");
 /**
- * "pathfind_dest_currency" — destination currency code.
+ * "pathfind_dest_currency" — destination asset as rendered by to_string(Asset):
+ * "XRP", "<issuer r-address>/<currency>" for an IOU, or the 48-hex-char
+ * issuance id for an MPT (its last 20 bytes are the issuer's account id).
+ * The issuer is a public identifier and is not hashed.
  */
 inline constexpr auto destCurrency = makeStr("pathfind_dest_currency");
 /**
