@@ -644,14 +644,14 @@ constexpr auto kNow = netTime(800'000'000);
 constexpr auto kDay = 86'400U;
 
 // Ahead of the deadline: ordinary positive readings.
-static_assert(Registry::daysUntil(netTime(800'000'000 + 7 * kDay), kNow) == 7.0);
-static_assert(Registry::daysUntil(netTime(800'000'000 + kDay / 2), kNow) == 0.5);
+static_assert(Registry::daysUntil(netTime(800'000'000 + (7 * kDay)), kNow) == 7.0);
+static_assert(Registry::daysUntil(netTime(800'000'000 + (kDay / 2)), kNow) == 0.5);
 static_assert(Registry::daysUntil(kNow, kNow) == 0.0);
 
 // Past the deadline: the readings the unsigned subtraction used to wrap.
 static_assert(Registry::daysUntil(netTime(800'000'000 - kDay), kNow) == -1.0);
-static_assert(Registry::daysUntil(netTime(800'000'000 - kDay / 2), kNow) == -0.5);
-static_assert(Registry::daysUntil(netTime(800'000'000 - 30 * kDay), kNow) == -30.0);
+static_assert(Registry::daysUntil(netTime(800'000'000 - (kDay / 2)), kNow) == -0.5);
+static_assert(Registry::daysUntil(netTime(800'000'000 - (30 * kDay)), kNow) == -30.0);
 
 // The sentinel the config path sets for a list that never expires.
 static_assert(
@@ -681,9 +681,9 @@ TEST(MetricsRegistryDaysUntil, readings_decrease_monotonically_as_the_deadline_p
     // anywhere in that walk is a jump upward, so this fails on the exact
     // second the old arithmetic went wrong rather than only on sampled points.
     constexpr auto kHour = 3'600U;
-    auto previous = Registry::daysUntil(netTime(800'000'000 + 7 * kDay), kNow);
+    auto previous = Registry::daysUntil(netTime(800'000'000 + (7 * kDay)), kNow);
 
-    for (std::uint32_t offset = 7 * kDay - kHour; offset > 0; offset -= kHour)
+    for (std::uint32_t offset = (7 * kDay) - kHour; offset > 0; offset -= kHour)
     {
         auto const ahead = Registry::daysUntil(netTime(800'000'000 + offset), kNow);
         EXPECT_LT(ahead, previous) << "ahead of deadline by " << offset << "s";
@@ -698,7 +698,7 @@ TEST(MetricsRegistryDaysUntil, readings_decrease_monotonically_as_the_deadline_p
     }
 
     // Ends a full week past the deadline, which is where the wrap was largest.
-    EXPECT_EQ(Registry::daysUntil(netTime(800'000'000 - 7 * kDay), kNow), -7.0);
+    EXPECT_EQ(Registry::daysUntil(netTime(800'000'000 - (7 * kDay)), kNow), -7.0);
 }
 
 TEST(MetricsRegistryDaysUntil, never_expires_sentinel_outranks_every_finite_reading)
