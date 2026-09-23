@@ -7,6 +7,7 @@
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/Zero.h>
+#include <xrpl/protocol/HashPrefix.h>
 #include <xrpl/protocol/Serializer.h>
 #include <xrpl/shamap/Family.h>
 #include <xrpl/shamap/SHAMapInnerNode.h>
@@ -1302,6 +1303,198 @@ TEST_F(SHAMapMisplacedLeaf, iterating_a_hooked_misplaced_leaf_throws)
     ASSERT_FALSE(map.isValid());
 
     EXPECT_THROW(map.begin(), SHAMapMissingNode);
+}
+
+// A childless inner node cannot be built by this process, since serializing one asserts it has a
+// branch, but it can be parsed from a blob. makeFromPrefix passes hashValid = true and
+// makeFullInner then adopts the hash it was fetched under rather than recomputing it, so sixteen
+// zero child hashes give a node whose own hash is whatever the parent claims for it. Every check
+// on the way in passes: it carries no key, so belongsAt waves it through, and canonicalize and
+// canonicalizeChild both compare against the hash it adopted.
+//
+// The map that results is well formed by every position rule and still cannot be walked, which is
+// the one case where belowHelper returns nullptr on a node it has just pushed. Both entry points
+// that can reach it must refuse rather than report an empty subtree.
+class SHAMapChildlessInner : public ::testing::Test
+{
+protected:
+    beast::Journal const j_{TestSink::instance()};
+
+    // An arbitrary key whose first nibble is 1, so its leaf belongs under branch 1 of the root.
+    static constexpr uint256 kKey{
+        "1c8cec8e5e9b0e5e0e0f5b3e2c9f7a1d6b4e8c2a0d7f3b9e5c1a8d4f2b6e0c93"};
+
+    // A branch above the one kKey selects, so a scan reaches the leaf first and this second.
+    static constexpr unsigned int kEmptyInnerBranch = 5;
+
+    // The hash the forged root claims for the childless inner node. Arbitrary and non-zero: the
+    // node adopts whatever it is fetched under, so this is the one the parent has to record.
+    static constexpr uint256 kEmptyInnerHash{
+        "00000000000000000000000000000000000000000000000000000000000000ff"};
+
+    /**
+     * A leaf holding kKey in the form a sync filter serves, with its hash.
+     *
+     * @param f the family the throwaway source map belongs to.
+     * @return the leaf's prefixed form and its hash, or an empty blob if the
+     *         map rejected the item.
+     */
+    static std::pair<Blob, SHAMapHash>
+    genuineLeaf(Family& f)
+    {
+        SHAMap source{SHAMapType::FREE, f};
+        source.setUnbacked();
+        if (!source.addItem(
+                SHAMapNodeType::TnAccountState,
+                makeShamapitem(kKey, Slice{kKey.data(), kKey.size()})))
+        {
+            return {};
+        }
+
+        auto const path = source.getProofPath(kKey);
+        if (!path.has_value() || path->empty())
+            return {};
+
+        auto leaf = SHAMapTreeNode::makeFromWire(makeSlice(path->front()));
+        if (!leaf || !leaf->isLeaf())
+            return {};
+        leaf->updateHash();
+
+        Serializer s;
+        leaf->serializeWithPrefix(s);
+        return {s.getData(), leaf->getHash()};
+    }
+
+    /**
+     * The prefixed form of an inner node with no children at all.
+     *
+     * Assembled by hand rather than through serializeWithPrefix, which asserts
+     * the node has a branch, and that is exactly the shape being forged.
+     *
+     * @return four prefix bytes followed by sixteen zero child hashes.
+     */
+    static Blob
+    childlessInnerBlob()
+    {
+        Serializer s;
+        s.add32(HashPrefix::InnerNode);
+        for (auto i = 0u; i < SHAMap::kBranchFactor; ++i)
+            s.addBitString(uint256{});
+        return s.getData();
+    }
+
+    /**
+     * Assemble `map` as a root holding the leaf where it belongs and the
+     * childless inner above it.
+     *
+     * @param map the map to assemble, which must be synching and empty.
+     * @param leafHash the hash of the leaf, recorded under the branch kKey
+     *                 selects.
+     * @return whether the root was accepted.
+     */
+    static bool
+    forgeRoot(SHAMap& map, SHAMapHash const& leafHash)
+    {
+        auto const leafBranch = selectBranch(0u, kKey);
+
+        Serializer s;
+        for (auto i = 0u; i < SHAMap::kBranchFactor; ++i)
+        {
+            if (i == leafBranch)
+            {
+                s.addBitString(leafHash.asUInt256());
+            }
+            else if (i == kEmptyInnerBranch)
+            {
+                s.addBitString(kEmptyInnerHash);
+            }
+            else
+            {
+                s.addBitString(uint256{});
+            }
+        }
+        s.add8(kWireTypeInner);
+
+        auto root = SHAMapTreeNode::makeFromWire(makeSlice(s.peekData()));
+        if (!root)
+            return false;
+        root->updateHash();
+
+        auto const rootHash = root->getHash();
+        return map.addRootNode(rootHash, std::move(root), nullptr).isGood();
+    }
+
+    /**
+     * Build a map holding both nodes, hooked in through a getMissingNodes walk.
+     *
+     * @param f the family the map belongs to.
+     * @return the map, or nullptr if any step was refused.
+     */
+    std::shared_ptr<SHAMap>
+    buildMap(Family& f) const
+    {
+        tests::TestNodeFamily sourceFamily{j_};
+        auto const [leafBlob, leafHash] = genuineLeaf(sourceFamily);
+        if (leafBlob.empty())
+            return nullptr;
+
+        auto map = std::make_shared<SHAMap>(SHAMapType::FREE, uint256{}, f);
+        map->setUnbacked();
+        if (!forgeRoot(*map, leafHash))
+            return nullptr;
+
+        std::vector<std::pair<SHAMapHash, Blob>> served;
+        served.emplace_back(leafHash, leafBlob);
+        served.emplace_back(SHAMapHash{kEmptyInnerHash}, childlessInnerBlob());
+
+        OneNodeFilter const filter{std::move(served)};
+
+        // The list has to come back empty. The filter serves both nodes, so anything still missing
+        // means a blob did not resolve, and a throw in the tests below would then come from
+        // descendThrow meeting an absent node rather than from the walk reaching the childless
+        // inner node. isValid() alone does not rule that out, since an unresolved child leaves the
+        // map valid.
+        if (!map->getMissingNodes(4, &filter).empty())
+            return nullptr;
+
+        // Nothing here is out of place, so no position check has anything to say about it.
+        if (!map->isValid())
+            return nullptr;
+        return map;
+    }
+};
+
+// An iterator increment reaches the childless inner node through peekNextItem, which pushes it and
+// then asks belowHelper for a leaf below it. Reporting "no leaf" would end the iteration early and
+// silently drop the rest of the map, so it throws instead.
+TEST_F(SHAMapChildlessInner, incrementing_past_a_childless_inner_node_throws)
+{
+    tests::TestNodeFamily f{j_};
+    auto const map = buildMap(f);
+    ASSERT_NE(map, nullptr);
+
+    auto it = map->begin();
+    ASSERT_NE(it, map->end());
+    EXPECT_EQ(it->key(), kKey);
+
+    EXPECT_THROW(++it, SHAMapMissingNode);
+}
+
+// upperBound reaches it through its own scan past the branch the probe takes. end() there would be
+// the positive claim that no greater key exists, so it throws for the same reason.
+TEST_F(SHAMapChildlessInner, bounding_across_a_childless_inner_node_throws)
+{
+    tests::TestNodeFamily f{j_};
+    auto const map = buildMap(f);
+    ASSERT_NE(map, nullptr);
+
+    // Shares kKey's first nibble, so the walk ends on the leaf, but compares greater, so the leaf
+    // does not qualify and the scan moves up to the root and on to kEmptyInnerBranch.
+    uint256 probe;
+    probe.begin()[0] = static_cast<std::uint8_t>(selectBranch(0u, kKey) << 4 | 0x0fu);
+    ASSERT_GT(probe, kKey);
+
+    EXPECT_THROW(map->upperBound(probe), SHAMapMissingNode);
 }
 
 }  // namespace xrpl::tests
