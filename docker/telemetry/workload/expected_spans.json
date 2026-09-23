@@ -49,7 +49,8 @@
       "category": "transaction",
       "allowed_parents": ["ROOT"],
       "required_attributes": ["tx_hash", "local", "path"],
-      "config_flag": "trace_transactions"
+      "config_flag": "trace_transactions",
+      "note": "Also carries tx_type, fee, sequence, and one attribute per account-typed top-level field of the transaction: tx_account always, plus tx_destination, tx_owner, tx_issuer and so on when the transaction has them (keys in TxAccountSpanNames.h, raw r-addresses). These are set only when the STTx parses, so like tx_type they are not required attributes."
     },
     {
       "name": "tx.receive",
