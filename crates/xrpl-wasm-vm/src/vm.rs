@@ -423,6 +423,32 @@ mod tests {
         }
     }
 
+    /// [`EnforcedLimits::strict`] is the one line in [`wasm_engine`] that takes a
+    /// value rather than stating one — the fields are `pub(crate)`, so the preset is
+    /// the only way to set them.
+    #[test]
+    fn the_enforced_limits_are_pinned() {
+        const EXPECTED: &str = concat!(
+            "EnforcedLimits { ",
+            "max_globals: Some(1000), ",
+            "max_functions: Some(10000), ",
+            "max_tables: Some(100), ",
+            "max_element_segments: Some(1000), ",
+            "max_memories: Some(1), ",
+            "max_data_segments: Some(1000), ",
+            "max_params: Some(32), ",
+            "max_results: Some(32), ",
+            "min_avg_bytes_per_function: Some(AvgBytesPerFunctionLimit { ",
+            "req_funcs_bytes: 1000, min_avg_bytes_per_function: 40 }) }",
+        );
+
+        let config = format!("{:?}", wasm_engine().config());
+        assert!(
+            config.contains(EXPECTED),
+            "expected `{EXPECTED}` in {config}"
+        );
+    }
+
     /// The only place these numbers appear as literals; every other test derives
     /// them from the constants.
     #[test]
