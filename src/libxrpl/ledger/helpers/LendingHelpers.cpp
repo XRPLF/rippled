@@ -378,6 +378,40 @@ loanPaymentDeltas(LoanPaymentParts const& parts)
 
 }  // namespace cash_basis
 
+namespace fixed_precision {
+
+PaymentDeltas
+loanPaymentDeltas(SLE::const_ref vaultSle, LoanPaymentParts const& parts)
+{
+    XRPL_ASSERT(
+        vaultSle && vaultSle->getType() == ltVAULT,
+        "xrpl::fixed_precision::loanPaymentDeltas : valid Vault sle");
+    XRPL_ASSERT(
+        getVaultVersion(vaultSle) == VaultVersion::FixedPrecision,
+        "xrpl::fixed_precision::loanPaymentDeltas : FixedPrecision Vault");
+
+    Asset const asset = vaultSle->at(sfAsset);
+    Number const assetsTotalBefore = vaultSle->at(sfAssetsTotal);
+    Number const assetsTotalAfter = [&] {
+        NumberRoundModeGuard const rg(Number::RoundingMode::Downward);
+        // Floor the posterior rather than the interest delta because a prior
+        // AssetsTotal may be off the posterior grid when this payment coarsens
+        // the Vault. The STAmount conversion also clamps integral assets.
+        return Number{STAmount{asset, assetsTotalBefore + parts.interestPaid}};
+    }();
+    Number const assetsTotalDelta = assetsTotalAfter - assetsTotalBefore;
+    Number const creditRaw = parts.principalPaid + assetsTotalDelta;
+    Number const vaultCredit = roundToPosteriorAvailableScale(
+        vaultSle, STAmount{asset, creditRaw}, Number::RoundingMode::Downward);
+
+    return {
+        .assetsTotalDelta = assetsTotalDelta,
+        .debtTotalDelta = parts.principalPaid,
+        .vaultCredit = vaultCredit};
+}
+
+}  // namespace fixed_precision
+
 namespace {
 
 // Cash-basis accounting applies to Vaults created under

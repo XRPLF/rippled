@@ -60,7 +60,8 @@ roundToPosteriorVaultScale(
     Number::RoundingMode roundingMode);
 
 /**
- * Round an amount at the posterior live exponent of AssetsAvailable.
+ * Round the LoanPay cash-credit delta at the posterior live exponent of
+ * AssetsAvailable. The reference is AssetsAvailable, not AssetsTotal.
  */
 [[nodiscard]] STAmount
 roundToPosteriorAvailableScale(

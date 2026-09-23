@@ -491,30 +491,24 @@ LoanPay::doApply()
     Number const assetsTotalBefore = *assetsTotalProxy;
 
     auto const totalPaidToVaultRaw = paymentParts->principalPaid + paymentParts->interestPaid;
-    auto const [assetsTotalDelta, debtTotalDelta] = [&] {
-        if (!fixedPrecision)
-            return loanPaymentDeltas(vaultSle, *paymentParts);
-
-        Number const assetsTotalAfter = [&] {
-            NumberRoundModeGuard const rg(Number::RoundingMode::Downward);
-            // The STAmount conversion also clamps integral assets.
-            return Number{STAmount{asset, assetsTotalBefore + paymentParts->interestPaid}};
-        }();
-        return AccountingDeltas{
-            .assetsTotalDelta = assetsTotalAfter - assetsTotalBefore,
-            .debtTotalDelta = paymentParts->principalPaid};
-    }();
-    Number const totalPaidToVaultRounded = [&] {
-        if (!fixedPrecision)
-        {
-            return roundToAsset(
-                asset, totalPaidToVaultRaw, vaultScale, Number::RoundingMode::Downward);
-        }
-
-        Number const creditRaw = paymentParts->principalPaid + assetsTotalDelta;
-        return Number{roundToPosteriorAvailableScale(
-            vaultSle, STAmount{asset, creditRaw}, Number::RoundingMode::Downward)};
-    }();
+    Number assetsTotalDelta;
+    Number debtTotalDelta;
+    Number totalPaidToVaultRounded;
+    if (fixedPrecision)
+    {
+        auto const deltas = fixed_precision::loanPaymentDeltas(vaultSle, *paymentParts);
+        assetsTotalDelta = deltas.assetsTotalDelta;
+        debtTotalDelta = deltas.debtTotalDelta;
+        totalPaidToVaultRounded = deltas.vaultCredit;
+    }
+    else
+    {
+        auto const deltas = loanPaymentDeltas(vaultSle, *paymentParts);
+        assetsTotalDelta = deltas.assetsTotalDelta;
+        debtTotalDelta = deltas.debtTotalDelta;
+        totalPaidToVaultRounded =
+            roundToAsset(asset, totalPaidToVaultRaw, vaultScale, Number::RoundingMode::Downward);
+    }
     XRPL_ASSERT_PARTS(
         !asset.integral() || totalPaidToVaultRaw == totalPaidToVaultRounded,
         "xrpl::LoanPay::doApply",
@@ -588,7 +582,11 @@ LoanPay::doApply()
         auto yieldUnrealizedProxy = vaultSle->at(sfYieldUnrealized);
         yieldUnrealizedProxy += scheduledInterestDelta;
         if (*yieldUnrealizedProxy < beast::kZero)
+        {
+            JLOG(j_.warn()) << "LoanPay: YieldUnrealized became negative before clamping: "
+                            << *yieldUnrealizedProxy;
             yieldUnrealizedProxy = kNumZero;
+        }
     }
 
     XRPL_ASSERT_PARTS(
@@ -632,9 +630,10 @@ LoanPay::doApply()
     if (assetsAvailableAfter == assetsAvailableBefore)
     {
         // An unchanged assetsAvailable indicates that the amount paid to the
-        // vault was zero, or rounded to zero. That should be impossible, but I
-        // can't rule it out for extreme edge cases, so fail gracefully if it
-        // happens.
+        // vault was zero, or rounded to zero. FixedPrecision LoanSet requires
+        // positive first-payment principal, and no transaction-generated
+        // schedule currently produces a non-terminal zero-credit payment.
+        // Fail gracefully if an extreme edge case still reaches this branch.
         //
         // LCOV_EXCL_START
         JLOG(j_.warn()) << "LoanPay: Vault assets available unchanged after rounding: "  //

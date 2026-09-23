@@ -1510,18 +1510,19 @@ private:
         env(trust(lender, asset(10'000'000)));
         env(trust(borrower, asset(10'000'000)));
         env(pay(issuer, lender, asset(2'000'000)));
+        env(pay(issuer, borrower, asset(100)));
         env.close();
 
         BrokerParameters brokerParams;
         brokerParams.vaultScale = 6;
-        brokerParams.managementFeeRate = TenthBips16{0};
+        brokerParams.managementFeeRate = TenthBips16{100};
         auto const broker = createVaultAndBroker(env, asset, lender, brokerParams);
         auto const loanKeylet = nextLoanKeylet(env, broker);
 
         env(set(borrower, broker.brokerID, asset(1'000).value()),
             Sig(sfCounterpartySignature, lender),
             kInterestRate(percentageToTenthBips(12)),
-            kPaymentTotal(2),
+            kPaymentTotal(3),
             kPaymentInterval(24 * 60 * 60),
             Fee(env.current()->fees().base * 2));
         env.close();
@@ -1541,8 +1542,11 @@ private:
         Number const yieldBefore = vaultBefore->at(sfYieldUnrealized);
         Number const debtBefore = brokerBefore->at(sfDebtTotal);
         Number const principalBefore = loanBefore->at(sfPrincipalOutstanding);
-        Number const scheduledInterestBefore = loanBefore->at(sfTotalValueOutstanding) -
-            principalBefore - loanBefore->at(sfManagementFeeOutstanding);
+        Number const managementFeeBefore = loanBefore->at(sfManagementFeeOutstanding);
+        Number const scheduledInterestBefore =
+            loanBefore->at(sfTotalValueOutstanding) - principalBefore - managementFeeBefore;
+        Number const lenderBalanceBefore = env.balance(lender, asset).number();
+        BEAST_EXPECT(managementFeeBefore > beast::kZero);
 
         env(pay(borrower, loanKeylet.key, payment));
         env.close();
@@ -1556,8 +1560,9 @@ private:
         Number const principalAfter = loanAfter->at(sfPrincipalOutstanding);
         Number const principalPaid = principalBefore - principalAfter;
         Number const credit = vaultAfter->at(sfAssetsAvailable) - assetsAvailableBefore;
-        Number const scheduledInterestAfter = loanAfter->at(sfTotalValueOutstanding) -
-            principalAfter - loanAfter->at(sfManagementFeeOutstanding);
+        Number const managementFeeAfter = loanAfter->at(sfManagementFeeOutstanding);
+        Number const scheduledInterestAfter =
+            loanAfter->at(sfTotalValueOutstanding) - principalAfter - managementFeeAfter;
         Number const interestPaid = scheduledInterestBefore - scheduledInterestAfter;
         Number const expectedAssetsTotal = [&] {
             NumberRoundModeGuard const rg(Number::RoundingMode::Downward);
@@ -1570,7 +1575,11 @@ private:
             vaultAfter->at(sfAssetsTotal) == expectedAssetsTotal,
             "AssetsTotal expected " + to_string(expectedAssetsTotal) + ", got " +
                 to_string(vaultAfter->at(sfAssetsTotal)));
+        BEAST_EXPECT(expectedAssetsTotal == assetsTotalBefore + interestPaid);
         BEAST_EXPECT(credit == principalPaid + interestActual);
+        BEAST_EXPECT(
+            env.balance(lender, asset).number() - lenderBalanceBefore ==
+            managementFeeBefore - managementFeeAfter);
         BEAST_EXPECT(
             vaultAfter->at(sfYieldUnrealized) ==
             yieldBefore + scheduledInterestAfter - scheduledInterestBefore);
@@ -1579,6 +1588,24 @@ private:
                 assetsTotalBefore + yieldBefore,
             "capacity before " + to_string(assetsTotalBefore + yieldBefore) + ", after " +
                 to_string(vaultAfter->at(sfAssetsTotal) + vaultAfter->at(sfYieldUnrealized)));
+
+        Number const yieldBeforeFull = vaultAfter->at(sfYieldUnrealized);
+        BEAST_EXPECT(scheduledInterestAfter > beast::kZero);
+        BEAST_EXPECT(yieldBeforeFull > beast::kZero);
+
+        Number const fullPaymentMaximum = env.balance(borrower, asset).number();
+        env(pay(borrower, loanKeylet.key, asset(fullPaymentMaximum), tfLoanFullPayment));
+        env.close();
+
+        auto const vaultAfterFull = env.le(broker.vaultKeylet());
+        auto const loanAfterFull = env.le(loanKeylet);
+        if (!BEAST_EXPECT(vaultAfterFull && loanAfterFull))
+            return;
+        BEAST_EXPECT(loanAfterFull->at(sfPaymentRemaining) == 0);
+        BEAST_EXPECT(loanAfterFull->at(sfTotalValueOutstanding) == beast::kZero);
+        BEAST_EXPECT(loanAfterFull->at(sfPrincipalOutstanding) == beast::kZero);
+        BEAST_EXPECT(loanAfterFull->at(sfManagementFeeOutstanding) == beast::kZero);
+        BEAST_EXPECT(vaultAfterFull->at(sfYieldUnrealized) == beast::kZero);
     }
 
     void
@@ -2262,6 +2289,8 @@ private:
         testFixedPrecisionSpecialPayments();
         testFixedPrecisionIntegralPayments();
         testFixedPrecisionYieldAcrossLoans();
+        testOverpaymentManagementFee(
+            all_ | featureLendingProtocolV1_1 | featureLendingProtocolV1_2);
     }
 
     // Tests run under each entry in amendmentCombinations().
