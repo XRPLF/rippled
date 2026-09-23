@@ -43,7 +43,7 @@ batchWrapping(STObject inner)
 }  // namespace
 
 // The happy path — an ordinary Payment is independently submittable.
-TEST(ProposalHelpers, PlainPaymentIsValid)
+TEST(ProposalHelpers, plain_payment_is_valid)
 {
     EXPECT_TRUE(proposal::isValidProposal(txOfType(ttPAYMENT)));
 }
@@ -52,14 +52,14 @@ TEST(ProposalHelpers, PlainPaymentIsValid)
 // this earlier (the payload lacks TransactionProposalCreate's own template
 // fields), but the defense here re-checks that guard so the two cannot
 // drift apart.
-TEST(ProposalHelpers, NestedProposalIsRejected)
+TEST(ProposalHelpers, nested_proposal_is_rejected)
 {
     EXPECT_FALSE(proposal::isValidProposal(txOfType(ttTRANSACTION_PROPOSAL_CREATE)));
 }
 
 // Any pseudo-transaction — see STTx::isPseudoTx. Also normally caught earlier
 // by STTx construction / preflight0.
-TEST(ProposalHelpers, PseudoTxIsRejected)
+TEST(ProposalHelpers, pseudo_tx_is_rejected)
 {
     EXPECT_FALSE(proposal::isValidProposal(txOfType(ttAMENDMENT)));
     EXPECT_FALSE(proposal::isValidProposal(txOfType(ttFEE)));
@@ -70,7 +70,7 @@ TEST(ProposalHelpers, PseudoTxIsRejected)
 // so it must never stand on its own as a proposed transaction. preflight0
 // rejects the standalone case with temINVALID_INNER_BATCH before we get
 // here; the guard is re-checked so the two cannot drift apart.
-TEST(ProposalHelpers, InnerBatchFlagIsRejected)
+TEST(ProposalHelpers, inner_batch_flag_is_rejected)
 {
     STObject tx = txOfType(ttPAYMENT);
     tx.setFieldU32(sfFlags, tfInnerBatchTxn);
@@ -79,7 +79,7 @@ TEST(ProposalHelpers, InnerBatchFlagIsRejected)
 
 // A Flags value that is present but does not include tfInnerBatchTxn must
 // not be rejected — the check is bit-specific, not "any flag present".
-TEST(ProposalHelpers, OtherFlagsAreAccepted)
+TEST(ProposalHelpers, other_flags_are_accepted)
 {
     STObject tx = txOfType(ttPAYMENT);
     tx.setFieldU32(sfFlags, tfFullyCanonicalSig);
@@ -88,19 +88,19 @@ TEST(ProposalHelpers, OtherFlagsAreAccepted)
 
 // A Batch wrapping a plain inner is fine — the loop is only there to catch
 // specifically forbidden inner types.
-TEST(ProposalHelpers, BatchWithPlainInnerIsValid)
+TEST(ProposalHelpers, batch_with_plain_inner_is_valid)
 {
     EXPECT_TRUE(proposal::isValidProposal(batchWrapping(txOfType(ttPAYMENT))));
 }
 
 // A Batch whose inner is itself a proposal must be rejected.
-TEST(ProposalHelpers, BatchWithNestedProposalInnerIsRejected)
+TEST(ProposalHelpers, batch_with_nested_proposal_inner_is_rejected)
 {
     EXPECT_FALSE(proposal::isValidProposal(batchWrapping(txOfType(ttTRANSACTION_PROPOSAL_CREATE))));
 }
 
 // A Batch whose inner is a pseudo-transaction must be rejected.
-TEST(ProposalHelpers, BatchWithPseudoInnerIsRejected)
+TEST(ProposalHelpers, batch_with_pseudo_inner_is_rejected)
 {
     EXPECT_FALSE(proposal::isValidProposal(batchWrapping(txOfType(ttAMENDMENT))));
 }
@@ -108,7 +108,7 @@ TEST(ProposalHelpers, BatchWithPseudoInnerIsRejected)
 // A Batch with no sfRawTransactions field skips the inner-loop entirely.
 // Not something the transactor would ever emit, but the branch exists in the
 // helper (the field is optional at the STObject level) and should hold.
-TEST(ProposalHelpers, BatchWithoutRawTransactionsIsValid)
+TEST(ProposalHelpers, batch_without_raw_transactions_is_valid)
 {
     EXPECT_TRUE(proposal::isValidProposal(txOfType(ttBATCH)));
 }
