@@ -108,10 +108,12 @@
 #include <xrpl/telemetry/ValidationTracker.h>
 #endif
 
+#include <xrpl/basics/chrono.h>
 #include <xrpl/beast/utility/Journal.h>
 
 #include <algorithm>
 #include <charconv>
+#include <chrono>
 #include <cstdint>
 #include <limits>
 #include <optional>
@@ -636,6 +638,62 @@ public:
             return std::nullopt;
 
         return std::pair{*first, *last};
+    }
+
+    /**
+     * Days from @p now until @p deadline, signed, for a NetClock deadline.
+     *
+     * NetClock's rep is std::uint32_t, so subtracting two of its time_points
+     * in the clock's own duration wraps as soon as the deadline is in the
+     * past: a deadline one day gone reads as about +49,709 days. The
+     * subtraction here happens in std::int64_t, which holds the whole
+     * NetClock range on either side of zero, so no case can wrap and no
+     * range check is needed.
+     *
+     * The result is deliberately **not** clamped at zero. A negative reading
+     * is the only signal that the deadline has already passed, and clamping
+     * would make an expired deadline look like one that expires today.
+     *
+     * NetClock::time_point::max() is the sentinel for "no deadline" - the
+     * value ValidatorList gives a list loaded from the config file. It is
+     * reported as positive infinity rather than as a count of days, because
+     * a finite reading of ~40,000 days is indistinguishable from the wrap
+     * this helper exists to prevent, while infinity is below no threshold
+     * and above every real deadline.
+     *
+     * Defined inline for the same reason as sanitiseHandler().
+     *
+     * @param deadline  The moment being counted down to, on NetClock.
+     * @param now       The reference time, on the same clock.
+     * @return Days remaining, negative once @p deadline has passed, or
+     *         positive infinity when @p deadline is the no-deadline sentinel.
+     *
+     * @note Pure and reentrant: holds no state and performs no I/O.
+     * @note Fractional, not truncated: half a day before the deadline reads
+     *       0.5 and half a day after reads -0.5.
+     *
+     * Example:
+     * @code
+     * // The offsets are built from NetClock::duration so that adding one
+     * // keeps the clock's own time_point type.
+     * auto const week = NetClock::duration{7 * 86'400};
+     * auto const day = NetClock::duration{86'400};
+     * daysUntil(now + week, now);                   // 7.0
+     * daysUntil(now - day, now);                    // -1.0  -- already expired
+     * daysUntil(NetClock::time_point::max(), now);  // +inf  -- never expires
+     * @endcode
+     */
+    [[nodiscard]] static constexpr double
+    daysUntil(NetClock::time_point deadline, NetClock::time_point now) noexcept
+    {
+        if (deadline == NetClock::time_point::max())
+            return std::numeric_limits<double>::infinity();
+
+        auto const deadlineSecs = static_cast<std::int64_t>(deadline.time_since_epoch().count());
+        auto const nowSecs = static_cast<std::int64_t>(now.time_since_epoch().count());
+
+        using FractionalDays = std::chrono::duration<double, std::chrono::days::period>;
+        return FractionalDays{std::chrono::seconds{deadlineSecs - nowSecs}}.count();
     }
 
     /**

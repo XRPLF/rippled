@@ -409,6 +409,10 @@ ServerHandler::onWSMessage(
         // Fresh root so each WS message is its own trace.
         auto span = ScopedSpanGuard::freshRoot(
             TraceCategory::Rpc, rpc_span::prefix::rpc, rpc_span::op::wsMessage);
+        // rpc_status is a span-metrics dimension, so leaving it unset emits a
+        // series with a blank label and hides this failure from any query that
+        // selects on error.
+        span.setAttribute(rpc_span::attr::rpcStatus, rpc_span::val::error);
         span.setError(rpc_span::val::invalidJson);
 
         json::Value jvResult(json::ValueType::Object);
@@ -636,8 +640,6 @@ ServerHandler::processSession(
     }
     else
     {
-        if (jr[jss::result].isMember("forwarded") && jr[jss::result]["forwarded"])
-            jr = jr[jss::result];
         jr[jss::status] = jss::success;
         span.setOk();
     }

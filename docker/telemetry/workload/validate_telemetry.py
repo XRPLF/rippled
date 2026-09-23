@@ -2151,9 +2151,14 @@ PARITY_VALUE_SANITY: list[dict[str, Any]] = [
     {
         "name": "unl_expiry_days",
         "query": 'validator_health{metric="unl_expiry_days"}',
-        "lo": 0,
+        # Four reading classes are all legitimate: days remaining, a negative
+        # count once the list has expired, -1 when no published list has been
+        # fetched, and +inf for a config-listed list that never expires. Only a
+        # reading past a century is nonsense, and that means a broken clock.
+        # The wrap this floor used to hide is caught deterministically by the
+        # MetricsRegistry::daysUntil unit tests instead.
+        "lo": -36500,
         "hi": None,
-        "exclusive_lo": True,
     },
     {
         "name": "peer_latency_p90_ms",

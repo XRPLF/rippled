@@ -501,6 +501,21 @@
       "parent": "consensus.establish",
       "child": "consensus.check",
       "description": "The establish phase contains each consensus-reached check."
+    },
+    {
+      "parent": "tx.process",
+      "child": "tx.receive",
+      "description": "CROSS-NODE. The submitting node's tx.process span is the parent of the tx.receive span on every peer the transaction is relayed to. NetworkOPs::apply() injects the tx.process span's own context into the relayed TMTransaction (NetworkOPs.cpp:1979, the span created at :1630 by txProcessSpan), and PeerImp extracts it into a child span. Both ends emit on every run: tx_submitter.py submits to one node and the cluster relays."
+    },
+    {
+      "parent": "consensus.proposal.send",
+      "child": "consensus.proposal.receive",
+      "description": "CROSS-NODE. RCLConsensus::Adaptor::propose() injects the send span's own context into the TMProposeSet, and the receiving peer parents consensus.proposal.receive to it (ConsensusReceiveTracing.h, the has_trace_context() branch). Asserted rather than joined on a hash, because this pair really is parent and child. Until the send side was fixed it injected the AMBIENT context, which is never set on that thread, so every receiver silently took its freshRoot fallback and this relationship held for nobody."
+    },
+    {
+      "parent": "consensus.validation.send",
+      "child": "consensus.validation.receive",
+      "description": "CROSS-NODE. The same pairing for validations, injected by RCLConsensus::Adaptor::validate(). Declared separately from the proposal pair because the two send sites are independent, and a regression in one says nothing about the other."
     }
   ],
   "total_span_types": 41,

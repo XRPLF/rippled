@@ -585,8 +585,6 @@ layer.
 
 > **Key Principle**: Telemetry collects **operational metadata** (timing, counts, hashes) — never **sensitive content** (keys, balances, amounts, raw payloads).
 
-> **See also**: [Securing the OTel Pipeline](./secure-OTel.md) covers transport-level protection for telemetry leaving the node — mTLS to the collector and validation of incoming peer trace context. Privacy controls in this section keep sensitive data out of spans; the security doc keeps the spans themselves out of untrusted hands.
-
 ---
 
 ## 2.5 Context Propagation Design
