@@ -61,12 +61,12 @@ contactPoints:
           # selects Slack webhook mode (no recipient/token required) and keeps
           # provisioning valid. Replace with a real webhook to enable delivery.
           url: https://hooks.slack.invalid/disabled
-          # `rulename` is used rather than CommonLabels.service_instance_id
-          # because on NoData/Error evaluations Grafana replaces the query's
-          # label set with only {datasource_uid, ref_id}, so the node label is
-          # absent and the title would render blank — and several rules are
-          # deliberately configured to fire that way.
-          title: "{{ .CommonLabels.rulename }}"
+          # Title and body both come from templates.yaml. `alertname` is the
+          # label Grafana sets on every alert; `service_instance_id` is a query
+          # label and is absent on NoData/Error evaluations, so the templates
+          # guard it rather than referencing it bare.
+          title: '{{ template "xrpld.title" . }}'
+          text: '{{ template "xrpld.body" . }}'
         disableResolveMessage: false
 
   # --- Critical tier: Slack + email ---
@@ -78,7 +78,10 @@ contactPoints:
         settings:
           # Disabled placeholder — see xrpld-slack-default above.
           url: https://hooks.slack.invalid/disabled
-          title: "[CRITICAL] {{ .CommonLabels.rulename }}"
+          # The title template already carries the severity label, so this tier
+          # needs no separate "[CRITICAL]" prefix.
+          title: '{{ template "xrpld.title" . }}'
+          text: '{{ template "xrpld.body" . }}'
         disableResolveMessage: false
       - uid: xrpld-email-critical
         type: email
@@ -90,6 +93,12 @@ contactPoints:
           addresses: alerts-disabled@xrpld.invalid
           # One message listing all recipients, rather than one message each.
           singleEmail: true
+          # Setting `message` replaces Grafana's default email body, which is
+          # what removes the raw value dump and the label list. Grafana's own
+          # header ("N firing alert instances", "Grouped by") and footer are
+          # fixed chrome and stay.
+          subject: '{{ template "xrpld.title" . }}'
+          message: '{{ template "xrpld.body" . }}'
         disableResolveMessage: false
 
 # To retire a receiver that a running Grafana has already stored, uncomment
