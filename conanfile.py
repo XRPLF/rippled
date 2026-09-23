@@ -239,3 +239,7 @@ class Xrpl(ConanFile):
             libxrpl.requires.append("rocksdb::librocksdb")
         if self.options.telemetry:
             libxrpl.requires.append("opentelemetry-cpp::opentelemetry-cpp")
+            # The public telemetry headers pick their class layout on this
+            # define, so a consumer that does not see it compiles a different
+            # SpanGuard than the one inside the library it links.
+            libxrpl.defines.append("XRPL_ENABLE_TELEMETRY")

@@ -27,7 +27,7 @@ include/xrpl/telemetry/            # libxrpl layer: tracing SDK wrapper
 ├── DeterministicIdGenerator.h     # trace_id from txHash / prevLedgerHash
 ├── TraceContextPropagator.h       # protobuf TraceContext inject/extract (P2P)
 ├── TraceContextValidation.h       # Validation of peer-supplied trace context
-├── Redaction.h                    # redactAccount() — unconditional address hashing
+├── Redaction.h                    # redactAccount() — hashing helper, applied to no span
 └── GetObjectMetricNames.h         # getobject_* metric name constants
 
 src/libxrpl/telemetry/

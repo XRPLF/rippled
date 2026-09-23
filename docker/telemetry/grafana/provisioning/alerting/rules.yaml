@@ -56,7 +56,7 @@ groups:
       # hence increase() over a wide window rather than a decaying rate().
       - uid: xrpld-ledger-history-mismatch
         title: LedgerHistoryMismatch
-        condition: C
+        condition: is_mismatching
         for: 2m
         isPaused: true
         noDataState: NoData
@@ -67,44 +67,46 @@ groups:
         annotations:
           summary: "Ledger history mismatch on {{ $labels.service_instance_id }}"
           description: >-
-            Node {{ $labels.service_instance_id }} recorded
-            {{ $values.B.Value }} ledger history mismatch(es) in the last 15m.
-            The node's built ledger diverges from the validated network chain.
+            Ledger history mismatches on {{ $labels.service_instance_id }} in the last
+            15m: {{ printf "%.0f" $values.mismatches_now.Value }} (threshold: more than 0).
+          action: >-
+            A built ledger diverged from the validated network chain, which can mean
+            corrupt local history. Check byzantine ledger jumps and the node-store.
         data:
-          - refId: A
+          - refId: mismatches_15m
             relativeTimeRange:
               from: 1200
               to: 0
             datasourceUid: prometheus
             model:
-              refId: A
+              refId: mismatches_15m
               expr: sum by (service_instance_id) (increase(ledger_history_mismatch_total{service_name="xrpld"}[15m]))
               instant: true
               range: false
               intervalMs: 1000
               maxDataPoints: 43200
-          - refId: B
+          - refId: mismatches_now
             relativeTimeRange:
               from: 1200
               to: 0
             datasourceUid: __expr__
             model:
-              refId: B
+              refId: mismatches_now
               type: reduce
               reducer: last
-              expression: A
+              expression: mismatches_15m
               datasource:
                 type: __expr__
                 uid: __expr__
-          - refId: C
+          - refId: is_mismatching
             relativeTimeRange:
               from: 1200
               to: 0
             datasourceUid: __expr__
             model:
-              refId: C
+              refId: is_mismatching
               type: threshold
-              expression: B
+              expression: mismatches_now
               conditions:
                 - evaluator:
                     type: gt
@@ -120,7 +122,7 @@ groups:
       # dead node trips the threshold instead of vanishing from the result.
       - uid: xrpld-ledger-close-stalled
         title: LedgerCloseStalled
-        condition: C
+        condition: is_stalled
         for: 3m
         isPaused: true
         noDataState: Alerting
@@ -131,17 +133,19 @@ groups:
         annotations:
           summary: "Ledger closing stalled on {{ $labels.service_instance_id }}"
           description: >-
-            Node {{ $labels.service_instance_id }} has closed no ledgers for
-            several minutes (5m rate has decayed to zero). Consensus or ledger
-            advancement is stuck, or the process is gone.
+            Ledger close rate on {{ $labels.service_instance_id }} over 5m: {{ printf
+            "%.4f" $values.close_rate_now.Value }} ledgers/s (threshold: below 0.001).
+          action: >-
+            Consensus or ledger advancement is stuck, or the process is gone. Check
+            consensus round duration, worker pool saturation and peer supply.
         data:
-          - refId: A
+          - refId: close_rate_5m
             relativeTimeRange:
               from: 600
               to: 0
             datasourceUid: prometheus
             model:
-              refId: A
+              refId: close_rate_5m
               expr: |-
                 sum by (service_instance_id) (rate(ledgers_closed_total{service_name="xrpld"}[5m]))
                   or (0 * max by (service_instance_id) (max_over_time(ledgers_closed_total{service_name="xrpld"}[1h])))
@@ -149,28 +153,28 @@ groups:
               range: false
               intervalMs: 1000
               maxDataPoints: 43200
-          - refId: B
+          - refId: close_rate_now
             relativeTimeRange:
               from: 600
               to: 0
             datasourceUid: __expr__
             model:
-              refId: B
+              refId: close_rate_now
               type: reduce
               reducer: last
-              expression: A
+              expression: close_rate_5m
               datasource:
                 type: __expr__
                 uid: __expr__
-          - refId: C
+          - refId: is_stalled
             relativeTimeRange:
               from: 600
               to: 0
             datasourceUid: __expr__
             model:
-              refId: C
+              refId: is_stalled
               type: threshold
-              expression: B
+              expression: close_rate_now
               conditions:
                 - evaluator:
                     type: lt
@@ -195,7 +199,7 @@ groups:
       # validated ledger is caught by LedgerCloseStalled and NodeNotFull.
       - uid: xrpld-validated-ledger-stale
         title: ValidatedLedgerStale
-        condition: C
+        condition: is_stale
         for: 5m
         isPaused: true
         noDataState: NoData
@@ -206,44 +210,46 @@ groups:
         annotations:
           summary: "Validated ledger stale on {{ $labels.service_instance_id }}"
           description: >-
-            Node {{ $labels.service_instance_id }} has a validated ledger age of
-            {{ $values.B.Value }}s (>60s). The node is not keeping up with the
-            validated network chain.
+            Validated ledger age on {{ $labels.service_instance_id }}: {{ printf "%.0f"
+            $values.ledger_age_now.Value }}s (threshold: over 60s).
+          action: >-
+            The node is no longer tracking the network. Check peer connectivity, node-
+            store IO latency and consensus rounds.
         data:
-          - refId: A
+          - refId: ledger_age_s
             relativeTimeRange:
               from: 600
               to: 0
             datasourceUid: prometheus
             model:
-              refId: A
+              refId: ledger_age_s
               expr: max by (service_instance_id) (ledgermaster_validated_ledger_age{service_name="xrpld"} < 1209600)
               instant: true
               range: false
               intervalMs: 1000
               maxDataPoints: 43200
-          - refId: B
+          - refId: ledger_age_now
             relativeTimeRange:
               from: 600
               to: 0
             datasourceUid: __expr__
             model:
-              refId: B
+              refId: ledger_age_now
               type: reduce
               reducer: last
-              expression: A
+              expression: ledger_age_s
               datasource:
                 type: __expr__
                 uid: __expr__
-          - refId: C
+          - refId: is_stale
             relativeTimeRange:
               from: 600
               to: 0
             datasourceUid: __expr__
             model:
-              refId: C
+              refId: is_stale
               type: threshold
-              expression: B
+              expression: ledger_age_now
               conditions:
                 - evaluator:
                     type: gt
@@ -274,7 +280,7 @@ groups:
       # disagreement among nodes that do validate.
       - uid: xrpld-validations-missed
         title: ValidationsMissed
-        condition: C
+        condition: is_missing_validations
         for: 15m
         isPaused: true
         noDataState: NoData
@@ -285,18 +291,19 @@ groups:
         annotations:
           summary: "Validations missed on {{ $labels.service_instance_id }}"
           description: >-
-            Validator {{ $labels.service_instance_id }} is missing
-            {{ $values.B.Value }} (fraction) of its validations over 15m. Its
-            validations are not agreeing with the validated ledger, which risks
+            Missed-validation fraction on {{ $labels.service_instance_id }} over 15m: {{
+            printf "%.3f" $values.missed_ratio_now.Value }} (threshold: over 0.1).
+          action: >-
+            Its validations are not agreeing with the validated ledger, which risks
             removal from UNLs.
         data:
-          - refId: A
+          - refId: missed_ratio_15m
             relativeTimeRange:
               from: 1200
               to: 0
             datasourceUid: prometheus
             model:
-              refId: A
+              refId: missed_ratio_15m
               expr: |-
                 (
                   sum by (service_instance_id) (rate(validation_missed_total{service_name="xrpld"}[15m]))
@@ -311,28 +318,28 @@ groups:
               range: false
               intervalMs: 1000
               maxDataPoints: 43200
-          - refId: B
+          - refId: missed_ratio_now
             relativeTimeRange:
               from: 1200
               to: 0
             datasourceUid: __expr__
             model:
-              refId: B
+              refId: missed_ratio_now
               type: reduce
               reducer: last
-              expression: A
+              expression: missed_ratio_15m
               datasource:
                 type: __expr__
                 uid: __expr__
-          - refId: C
+          - refId: is_missing_validations
             relativeTimeRange:
               from: 1200
               to: 0
             datasourceUid: __expr__
             model:
-              refId: C
+              refId: is_missing_validations
               type: threshold
-              expression: B
+              expression: missed_ratio_now
               conditions:
                 - evaluator:
                     type: gt
@@ -347,7 +354,7 @@ groups:
       # (see the LedgerCloseStalled comment).
       - uid: xrpld-validations-not-checked
         title: ValidationsNotChecked
-        condition: C
+        condition: is_not_checking
         for: 5m
         isPaused: true
         noDataState: Alerting
@@ -358,17 +365,19 @@ groups:
         annotations:
           summary: "No validations checked on {{ $labels.service_instance_id }}"
           description: >-
-            Node {{ $labels.service_instance_id }} has checked no incoming
-            validations for several minutes (5m rate has decayed to zero). The
-            validation stream from peers may have stopped.
+            Validations-checked rate on {{ $labels.service_instance_id }} over 5m: {{
+            printf "%.4f" $values.check_rate_now.Value }} per s (threshold: below 0.001).
+          action: >-
+            The validation stream from peers may have stopped. Check peer count and the
+            overlay.
         data:
-          - refId: A
+          - refId: check_rate_5m
             relativeTimeRange:
               from: 600
               to: 0
             datasourceUid: prometheus
             model:
-              refId: A
+              refId: check_rate_5m
               expr: |-
                 sum by (service_instance_id) (rate(validations_checked_total{service_name="xrpld"}[5m]))
                   or (0 * max by (service_instance_id) (max_over_time(validations_checked_total{service_name="xrpld"}[1h])))
@@ -376,28 +385,28 @@ groups:
               range: false
               intervalMs: 1000
               maxDataPoints: 43200
-          - refId: B
+          - refId: check_rate_now
             relativeTimeRange:
               from: 600
               to: 0
             datasourceUid: __expr__
             model:
-              refId: B
+              refId: check_rate_now
               type: reduce
               reducer: last
-              expression: A
+              expression: check_rate_5m
               datasource:
                 type: __expr__
                 uid: __expr__
-          - refId: C
+          - refId: is_not_checking
             relativeTimeRange:
               from: 600
               to: 0
             datasourceUid: __expr__
             model:
-              refId: C
+              refId: is_not_checking
               type: threshold
-              expression: B
+              expression: check_rate_now
               conditions:
                 - evaluator:
                     type: lt
@@ -420,7 +429,7 @@ groups:
       # sparse counters).
       - uid: xrpld-jobqueue-tx-overflow
         title: JobQueueTxOverflow
-        condition: C
+        condition: is_overflowing
         for: 2m
         isPaused: true
         noDataState: NoData
@@ -431,44 +440,46 @@ groups:
         annotations:
           summary: "Job queue transaction overflow on {{ $labels.service_instance_id }}"
           description: >-
-            Node {{ $labels.service_instance_id }} overflowed its transaction
-            job queue {{ $values.B.Value }} time(s) in the last 15m.
-            Transactions are being dropped under load.
+            Transaction job-queue overflows on {{ $labels.service_instance_id }} in the
+            last 15m: {{ printf "%.0f" $values.overflows_now.Value }} (threshold: more than 0).
+          action: >-
+            Transactions are being dropped under load. Check job-queue depth and worker
+            saturation.
         data:
-          - refId: A
+          - refId: overflows_15m
             relativeTimeRange:
               from: 1200
               to: 0
             datasourceUid: prometheus
             model:
-              refId: A
+              refId: overflows_15m
               expr: sum by (service_instance_id) (increase(jq_trans_overflow_total{service_name="xrpld"}[15m]))
               instant: true
               range: false
               intervalMs: 1000
               maxDataPoints: 43200
-          - refId: B
+          - refId: overflows_now
             relativeTimeRange:
               from: 1200
               to: 0
             datasourceUid: __expr__
             model:
-              refId: B
+              refId: overflows_now
               type: reduce
               reducer: last
-              expression: A
+              expression: overflows_15m
               datasource:
                 type: __expr__
                 uid: __expr__
-          - refId: C
+          - refId: is_overflowing
             relativeTimeRange:
               from: 1200
               to: 0
             datasourceUid: __expr__
             model:
-              refId: C
+              refId: is_overflowing
               type: threshold
-              expression: B
+              expression: overflows_now
               conditions:
                 - evaluator:
                     type: gt
@@ -491,7 +502,7 @@ groups:
       # healthy p99 and fires only on genuine saturation, which is the intent.
       - uid: xrpld-jobqueue-latency-high
         title: JobQueueLatencyHigh
-        condition: C
+        condition: is_queue_slow
         for: 5m
         isPaused: true
         noDataState: NoData
@@ -502,44 +513,45 @@ groups:
         annotations:
           summary: "Job queue latency high on {{ $labels.service_instance_id }}"
           description: >-
-            Node {{ $labels.service_instance_id }} has a p99 job-queue wait of
-            {{ $values.B.Value }}µs (>1s) over 5m. The node is saturated and jobs are
-            backing up.
+            p99 job-queue wait on {{ $labels.service_instance_id }} over 5m: {{ printf
+            "%.0f" $values.queue_p99_us_now.Value }}us (threshold: over 1000000us, i.e. 1s).
+          action: >-
+            The node is saturated and jobs are backing up. Check worker pool saturation.
         data:
-          - refId: A
+          - refId: queue_p99_us_5m
             relativeTimeRange:
               from: 600
               to: 0
             datasourceUid: prometheus
             model:
-              refId: A
+              refId: queue_p99_us_5m
               expr: histogram_quantile(0.99, sum by (le, service_instance_id) (rate(job_queued_us_bucket{service_name="xrpld"}[5m])))
               instant: true
               range: false
               intervalMs: 1000
               maxDataPoints: 43200
-          - refId: B
+          - refId: queue_p99_us_now
             relativeTimeRange:
               from: 600
               to: 0
             datasourceUid: __expr__
             model:
-              refId: B
+              refId: queue_p99_us_now
               type: reduce
               reducer: last
-              expression: A
+              expression: queue_p99_us_5m
               datasource:
                 type: __expr__
                 uid: __expr__
-          - refId: C
+          - refId: is_queue_slow
             relativeTimeRange:
               from: 600
               to: 0
             datasourceUid: __expr__
             model:
-              refId: C
+              refId: is_queue_slow
               type: threshold
-              expression: B
+              expression: queue_p99_us_now
               conditions:
                 - evaluator:
                     type: gt
@@ -561,7 +573,7 @@ groups:
       # is 12.9ms, far below the threshold.
       - uid: xrpld-nodestore-io-latency-high
         title: NodeStoreIOLatencyHigh
-        condition: C
+        condition: is_io_slow
         for: 10m
         isPaused: true
         noDataState: NoData
@@ -572,44 +584,45 @@ groups:
         annotations:
           summary: "Node store IO latency high on {{ $labels.service_instance_id }}"
           description: >-
-            Node {{ $labels.service_instance_id }} has a p95 node-store IO
-            latency of {{ $values.B.Value }}ms (>1s) over 10m. Check disk
-            utilisation and whether the store is on a slow volume.
+            p95 node-store IO latency on {{ $labels.service_instance_id }} over 10m: {{
+            printf "%.0f" $values.io_p95_ms_now.Value }}ms (threshold: over 1000ms).
+          action: >-
+            Check disk utilisation and whether the store is on a slow volume.
         data:
-          - refId: A
+          - refId: io_p95_ms_10m
             relativeTimeRange:
               from: 900
               to: 0
             datasourceUid: prometheus
             model:
-              refId: A
+              refId: io_p95_ms_10m
               expr: histogram_quantile(0.95, sum by (le, service_instance_id) (rate(ios_latency_milliseconds_bucket{service_name="xrpld"}[10m])))
               instant: true
               range: false
               intervalMs: 1000
               maxDataPoints: 43200
-          - refId: B
+          - refId: io_p95_ms_now
             relativeTimeRange:
               from: 900
               to: 0
             datasourceUid: __expr__
             model:
-              refId: B
+              refId: io_p95_ms_now
               type: reduce
               reducer: last
-              expression: A
+              expression: io_p95_ms_10m
               datasource:
                 type: __expr__
                 uid: __expr__
-          - refId: C
+          - refId: is_io_slow
             relativeTimeRange:
               from: 900
               to: 0
             datasourceUid: __expr__
             model:
-              refId: C
+              refId: is_io_slow
               type: threshold
-              expression: B
+              expression: io_p95_ms_now
               conditions:
                 - evaluator:
                     type: gt
@@ -644,7 +657,7 @@ groups:
       # the gate suppresses that first hour so a restart does not page.
       - uid: xrpld-node-state-flapping
         title: NodeStateFlapping
-        condition: C
+        condition: is_flapping
         for: 15m
         isPaused: true
         noDataState: OK
@@ -655,19 +668,21 @@ groups:
         annotations:
           summary: "Node state flapping on {{ $labels.service_instance_id }}"
           description: >-
-            Node {{ $labels.service_instance_id }} re-entered the FULL state
-            {{ $values.B.Value }} time(s) in the last hour past its first hour
-            of uptime. It is flapping out of sync rather than holding FULL.
-            Likely the online-delete rotation cache-freshen; check the rotation
-            spans and cache lock-hold peak.
+            FULL-state re-entries on {{ $labels.service_instance_id }} in the last hour:
+            {{ printf "%.0f" $values.full_transitions_now.Value }} (threshold: more than 0, past the first
+            hour of uptime).
+          action: >-
+            The node is flapping out of sync rather than holding FULL. A likely cause is
+            the online-delete rotation cache-freshen; check the rotation spans and the
+            cache lock-hold peak.
         data:
-          - refId: A
+          - refId: full_transitions_1h
             relativeTimeRange:
               from: 3900
               to: 0
             datasourceUid: prometheus
             model:
-              refId: A
+              refId: full_transitions_1h
               expr: |-
                 sum by (service_instance_id) (increase(state_accounting_full_transitions{service_name="xrpld"}[1h]))
                   and on (service_instance_id)
@@ -676,28 +691,28 @@ groups:
               range: false
               intervalMs: 1000
               maxDataPoints: 43200
-          - refId: B
+          - refId: full_transitions_now
             relativeTimeRange:
               from: 3900
               to: 0
             datasourceUid: __expr__
             model:
-              refId: B
+              refId: full_transitions_now
               type: reduce
               reducer: last
-              expression: A
+              expression: full_transitions_1h
               datasource:
                 type: __expr__
                 uid: __expr__
-          - refId: C
+          - refId: is_flapping
             relativeTimeRange:
               from: 3900
               to: 0
             datasourceUid: __expr__
             model:
-              refId: C
+              refId: is_flapping
               type: threshold
-              expression: B
+              expression: full_transitions_now
               conditions:
                 - evaluator:
                     type: gt
@@ -713,7 +728,7 @@ groups:
       # SYNCING=2, TRACKING=3, FULL=4.
       - uid: xrpld-node-not-full
         title: NodeNotFull
-        condition: C
+        condition: is_not_full
         for: 15m
         isPaused: true
         noDataState: NoData
@@ -724,17 +739,20 @@ groups:
         annotations:
           summary: "Node not in FULL state on {{ $labels.service_instance_id }}"
           description: >-
-            Node {{ $labels.service_instance_id }} has been below FULL
-            (state={{ $values.B.Value }}; 0=disconnected 1=connected 2=syncing
-            3=tracking 4=full) for 15m. It is not fully synced with the network.
+            Server state on {{ $labels.service_instance_id }} for the last 15m: {{
+            printf "%.0f" $values.server_state_now.Value }} (threshold: below 4; 0=disconnected
+            1=connected 2=syncing 3=tracking 4=full).
+          action: >-
+            The node is not fully synced with the network. Check peer supply and sync
+            progress.
         data:
-          - refId: A
+          - refId: server_state_code
             relativeTimeRange:
               from: 1200
               to: 0
             datasourceUid: prometheus
             model:
-              refId: A
+              refId: server_state_code
               expr: |-
                 max by (service_instance_id) (server_info{service_name="xrpld", metric="server_state"})
                   and on (service_instance_id)
@@ -743,28 +761,28 @@ groups:
               range: false
               intervalMs: 1000
               maxDataPoints: 43200
-          - refId: B
+          - refId: server_state_now
             relativeTimeRange:
               from: 1200
               to: 0
             datasourceUid: __expr__
             model:
-              refId: B
+              refId: server_state_now
               type: reduce
               reducer: last
-              expression: A
+              expression: server_state_code
               datasource:
                 type: __expr__
                 uid: __expr__
-          - refId: C
+          - refId: is_not_full
             relativeTimeRange:
               from: 1200
               to: 0
             datasourceUid: __expr__
             model:
-              refId: C
+              refId: is_not_full
               type: threshold
-              expression: B
+              expression: server_state_now
               conditions:
                 - evaluator:
                     type: lt
@@ -796,7 +814,7 @@ groups:
       # burst (peaks of 5 and 11, lasting well under 10m) from paging.
       - uid: xrpld-manifest-job-convoy
         title: ManifestJobQueueConvoy
-        condition: C
+        condition: is_convoying
         for: 10m
         isPaused: true
         noDataState: NoData
@@ -807,44 +825,46 @@ groups:
         annotations:
           summary: "Manifest job convoy on {{ $labels.service_instance_id }}"
           description: >-
-            Node {{ $labels.service_instance_id }} has {{ $values.B.Value }}
-            manifest jobs waiting (>3) for 10m. Peer manifest dumps are
-            saturating the job pool and convoying on the manifest cache lock.
+            Manifest jobs waiting on {{ $labels.service_instance_id }} over 10m: {{
+            printf "%.0f" $values.manifest_waiting_now.Value }} (threshold: more than 3).
+          action: >-
+            Peer manifest dumps are saturating the job pool and convoying on the
+            manifest cache lock.
         data:
-          - refId: A
+          - refId: manifest_waiting_10m
             relativeTimeRange:
               from: 900
               to: 0
             datasourceUid: prometheus
             model:
-              refId: A
+              refId: manifest_waiting_10m
               expr: sum by (service_instance_id) (jobq_manifest_waiting{service_name="xrpld"})
               instant: true
               range: false
               intervalMs: 1000
               maxDataPoints: 43200
-          - refId: B
+          - refId: manifest_waiting_now
             relativeTimeRange:
               from: 900
               to: 0
             datasourceUid: __expr__
             model:
-              refId: B
+              refId: manifest_waiting_now
               type: reduce
               reducer: last
-              expression: A
+              expression: manifest_waiting_10m
               datasource:
                 type: __expr__
                 uid: __expr__
-          - refId: C
+          - refId: is_convoying
             relativeTimeRange:
               from: 900
               to: 0
             datasourceUid: __expr__
             model:
-              refId: C
+              refId: is_convoying
               type: threshold
-              expression: B
+              expression: manifest_waiting_now
               conditions:
                 - evaluator:
                     type: gt
@@ -873,7 +893,7 @@ groups:
       # alerted. ManifestJobQueueConvoy covers that window via the job pool.
       - uid: xrpld-manifest-flood-inbound
         title: ManifestFloodInbound
-        condition: C
+        condition: is_flooding
         for: 10m
         isPaused: true
         noDataState: NoData
@@ -884,18 +904,19 @@ groups:
         annotations:
           summary: "Inbound manifest flood on {{ $labels.service_instance_id }}"
           description: >-
-            Node {{ $labels.service_instance_id }} is receiving
-            {{ $values.B.Value }} B/s of manifest traffic over 10m, above the
-            512 KiB/s (524288 B/s) threshold.
+            Inbound manifest traffic on {{ $labels.service_instance_id }} over 10m: {{
+            printf "%.0f" $values.manifest_bytes_s_now.Value }} B/s (threshold: over 524288 B/s, i.e. 512
+            KiB/s).
+          action: >-
             A peer is flooding oversized TMManifests dumps.
         data:
-          - refId: A
+          - refId: manifest_bytes_s_10m
             relativeTimeRange:
               from: 900
               to: 0
             datasourceUid: prometheus
             model:
-              refId: A
+              refId: manifest_bytes_s_10m
               expr: |-
                 sum by (service_instance_id) (rate(overhead_manifest_bytes_in{service_name="xrpld"}[10m]))
                   and on (service_instance_id)
@@ -904,28 +925,28 @@ groups:
               range: false
               intervalMs: 1000
               maxDataPoints: 43200
-          - refId: B
+          - refId: manifest_bytes_s_now
             relativeTimeRange:
               from: 900
               to: 0
             datasourceUid: __expr__
             model:
-              refId: B
+              refId: manifest_bytes_s_now
               type: reduce
               reducer: last
-              expression: A
+              expression: manifest_bytes_s_10m
               datasource:
                 type: __expr__
                 uid: __expr__
-          - refId: C
+          - refId: is_flooding
             relativeTimeRange:
               from: 900
               to: 0
             datasourceUid: __expr__
             model:
-              refId: C
+              refId: is_flooding
               type: threshold
-              expression: B
+              expression: manifest_bytes_s_now
               conditions:
                 - evaluator:
                     type: gt
@@ -944,7 +965,7 @@ groups:
       # trips on a node already in trouble.
       - uid: xrpld-peer-resource-disconnects
         title: PeerResourceDisconnects
-        condition: C
+        condition: is_disconnecting
         for: 5m
         isPaused: true
         noDataState: NoData
@@ -955,44 +976,45 @@ groups:
         annotations:
           summary: "Resource-driven peer disconnects on {{ $labels.service_instance_id }}"
           description: >-
-            Node {{ $labels.service_instance_id }} disconnected
-            {{ $values.B.Value }} peer(s) for resource-budget violations in the
-            last 30m. Sustained disconnects can starve the node of peers.
+            Resource-budget peer disconnects on {{ $labels.service_instance_id }} in the
+            last 30m: {{ printf "%.0f" $values.disconnects_now.Value }} (threshold: more than 5).
+          action: >-
+            Sustained disconnects can starve the node of peers.
         data:
-          - refId: A
+          - refId: disconnects_30m
             relativeTimeRange:
               from: 2100
               to: 0
             datasourceUid: prometheus
             model:
-              refId: A
+              refId: disconnects_30m
               expr: sum by (service_instance_id) (increase(server_info{service_name="xrpld", metric="peer_disconnects_resources"}[30m]))
               instant: true
               range: false
               intervalMs: 1000
               maxDataPoints: 43200
-          - refId: B
+          - refId: disconnects_now
             relativeTimeRange:
               from: 2100
               to: 0
             datasourceUid: __expr__
             model:
-              refId: B
+              refId: disconnects_now
               type: reduce
               reducer: last
-              expression: A
+              expression: disconnects_30m
               datasource:
                 type: __expr__
                 uid: __expr__
-          - refId: C
+          - refId: is_disconnecting
             relativeTimeRange:
               from: 2100
               to: 0
             datasourceUid: __expr__
             model:
-              refId: C
+              refId: is_disconnecting
               type: threshold
-              expression: B
+              expression: disconnects_now
               conditions:
                 - evaluator:
                     type: gt
