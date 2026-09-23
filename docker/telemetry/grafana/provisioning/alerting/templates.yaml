@@ -7,19 +7,40 @@
 # says. These templates replace that body with the rule's own prose.
 #
 # ---------------------------------------------------------------------------
+# SLACK ONLY. Email deliberately has no template here.
+# ---------------------------------------------------------------------------
+# Measured, and the reason this file covers one channel rather than two:
+#
+#   * Email ESCAPES any HTML in the message body, so a literal `<br>` arrives
+#     as `&lt;br&gt;` and no tag or anchor is possible. A custom email body is
+#     therefore plain text and cannot reproduce Grafana's default layout, which
+#     already gives section headings, a label table, clickable annotation links
+#     and the View/Silence buttons. So email keeps the default body.
+#   * Slack markup is meaningless in email anyway: bold asterisks, backticks
+#     and `:rotating_light:` arrive as literal characters, and a `<url|label>`
+#     link cannot become a link, so it dumps the whole URL inline. Four panel
+#     links bury the prose in a wall of text. That is what a shared body did.
+#   * Real emoji CHARACTERS render in both channels; the `:shortcode:` form
+#     only works in Slack.
+#
+# The value line Grafana's default email body ends with is made readable by
+# NAMING each rule's query steps (see rules.yaml), not by replacing the body.
+#
+# ---------------------------------------------------------------------------
 # What a template may and may not use
 # ---------------------------------------------------------------------------
-# The function set here is much smaller than Go's text/template plus sprig.
+# The function set is much smaller than Go's text/template plus sprig.
 # Available and used below: `match` (regexp), `reReplaceAll`, `title`, `printf`,
 # `len`, `index`, `eq`. NOT available — each fails the whole template with
-# `function "X" not defined`, which silently ships the raw template text in the
-# notification instead: `hasPrefix`, `hasSuffix`, `contains`, `humanize`,
+# `function "X" not defined`: `hasPrefix`, `hasSuffix`, `contains`, `humanize`,
 # `humanizeDuration`, `humanizePercentage`.
 #
-# A template error does NOT mark the rule unhealthy. Rules keep reporting
-# `health=ok` and the broken text is only visible in the delivered message, so
-# any change here must be checked against a real notification, not against rule
-# state.
+# A template failure is nearly silent, which is the trap. Measured: a missing
+# define logs one `failed to template email message` warning and then delivers
+# Grafana's DEFAULT body — the value dump and label list this file exists to
+# remove — while the rule still reports `health=ok`. So a change here is only
+# verified by reading a real delivered notification, never by rule state, and
+# never by the absence of an obvious error.
 #
 # ---------------------------------------------------------------------------
 # Two label traps
@@ -47,7 +68,7 @@ templates:
       {{ if .Labels.service_instance_id }}{{ .Labels.service_instance_id }}{{ else }}unknown node (NoData/Error evaluation){{ end }}
       {{- end }}
 
-      {{- /* One line, used as the Slack title and the email subject. */ -}}
+      {{- /* One line. Slack title and email subject share this. */ -}}
       {{ define "xrpld.title" -}}
       {{ if .Alerts.Firing }}🔥 FIRING{{ else }}✅ RESOLVED{{ end }}
       {{- with .CommonLabels.alertname }} · {{ . }}{{ end }}
@@ -55,8 +76,8 @@ templates:
       {{- with .CommonLabels.service_instance_id }} · {{ . }}{{ end }}
       {{- end }}
 
-      {{- /* Message body: one block per alert, prose only. */ -}}
-      {{ define "xrpld.body" -}}
+      {{- /* SLACK body: mrkdwn, emoji shortcodes, <url|label> links. */ -}}
+      {{ define "xrpld.slack.body" -}}
       {{ with .Alerts.Firing }}{{ range . }}
       :rotating_light: *FIRING* · *{{ .Labels.alertname }}* on `{{ template "xrpld.node" . }}`
       {{ .Annotations.description }}

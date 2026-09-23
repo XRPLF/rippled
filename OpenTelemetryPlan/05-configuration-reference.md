@@ -235,11 +235,11 @@ The authoritative collector config lives in the repo at `docker/telemetry/otel-c
 `docker/telemetry/otel-collector-config.yaml` is the base config used by the
 local stack and by CI. It carries **three** pipelines, not one:
 
-| Pipeline  | Receivers              | Processors                                                       | Exporters                                  |
-| --------- | ---------------------- | ---------------------------------------------------------------- | ------------------------------------------ |
-| `traces`  | `otlp`                 | `resource/tier`, `resource/stripsdk`, `attributes/hash`, `batch` | `debug`, `otlp_grpc/tempo`, `span_metrics` |
-| `metrics` | `otlp`, `span_metrics` | `resource/tier`, `resource/stripsdk`, `batch`                    | `prometheus`                               |
-| `logs`    | `file_log`             | `resource/logs`, `resource/tier`, `resource/stripsdk`, `batch`   | `otlp_http/loki`                           |
+| Pipeline  | Receivers              | Processors                                                     | Exporters                                  |
+| --------- | ---------------------- | -------------------------------------------------------------- | ------------------------------------------ |
+| `traces`  | `otlp`                 | `resource/tier`, `resource/stripsdk`, `batch`                  | `debug`, `otlp_grpc/tempo`, `span_metrics` |
+| `metrics` | `otlp`, `span_metrics` | `resource/tier`, `resource/stripsdk`, `batch`                  | `prometheus`                               |
+| `logs`    | `file_log`             | `resource/logs`, `resource/tier`, `resource/stripsdk`, `batch` | `otlp_http/loki`                           |
 
 Component detail:
 
@@ -253,8 +253,8 @@ Component detail:
   `xrpl.network.type` only when absent); `resource/stripsdk` (drops the
   `telemetry.sdk.*` attributes); `resource/logs` (`action: upsert` on
   `service.name` and `job` — only the former becomes a Loki stream label, see
-  the known issue in §5.8.5); `attributes/hash` (hashes
-  `pathfind_source_account` and `pathfind_dest_account`).
+  the known issue in §5.8.5). No processor hashes or drops span attributes:
+  account addresses are public identifiers and are stored as emitted.
 - **Connector.** `span_metrics` with `namespace: "span"`
   (`otel-collector-config.yaml:114`) — this is why the derived RED metrics are
   `span_calls_total` / `span_duration_milliseconds_*`. The connector's own
@@ -280,8 +280,7 @@ Component detail:
 
 Deliberately absent from the base config — do not document them as present:
 no `memory_limiter`, no `tail_sampling`, no Elastic APM exporter, and no
-`tx_account` attribute rule (the hashed keys are the two `pathfind_*_account`
-ones).
+attribute hashing or redaction rule (account addresses are emitted raw).
 
 ### 5.5.2 Production Configuration
 
@@ -298,10 +297,9 @@ graph. The full delta:
 | `otlp_http/grafanacloud` | `:236` | Single OTLP/HTTP exporter fanning all three signals to Grafana Cloud      |
 | `metrics_flush_interval` | `:136` | `spanmetrics` flushes every 15s instead of the 60s default                |
 
-| Removed by the overlay | Consequence                                                                  |
-| ---------------------- | ---------------------------------------------------------------------------- |
-| `attributes/hash`      | **Pathfinding account attributes are not hashed on this config** — see below |
-| `debug`                | No console span dump; collector logs alone when diagnosing ingest            |
+| Removed by the overlay | Consequence                                                       |
+| ---------------------- | ----------------------------------------------------------------- |
+| `debug`                | No console span dump; collector logs alone when diagnosing ingest |
 
 Pipelines go from **three** (`traces`, `metrics`, `logs`) to **five**
 (`:253-280`): `traces/metrics`, `traces/store`, `metrics/local`,
@@ -310,16 +308,6 @@ Pipelines go from **three** (`traces`, `metrics`, `logs`) to **five**
 named `traces`, which does not exist in the overlay. The `traces/metrics`
 branch feeds `spanmetrics` unsampled, so the derived RED metrics stay exact
 while stored traces are ~1/200 of ingested ones.
-
-> **Known issue — the cloud path does not hash pathfinding accounts.** The base
-> config runs `attributes/hash` on its `traces` pipeline
-> (`otel-collector-config.yaml:105-110`), hashing `pathfind_source_account` and
-> `pathfind_dest_account` as defense in depth behind the node-side hashing. The
-> overlay declares no such processor and lists none on any of its five
-> pipelines, so on the Grafana Cloud config those two attributes reach **both**
-> Grafana Cloud and the local Tempo with whatever value the node sent. Any node
-> that emits raw addresses loses its second line of defense. Adding
-> `attributes/hash` to `traces/store` and `traces/metrics` would close the gap.
 
 Hardening a collector for a real deployment (TLS/mTLS on the receiver,
 NetworkPolicy, peer trace-context validation) is covered in
