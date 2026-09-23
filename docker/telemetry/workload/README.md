@@ -638,20 +638,33 @@ needs: a pattern that swallows unrelated names defeats the check.
 
 ### expected_spans.json Format
 
-Each span entry defines its name, category, parent (for hierarchy validation),
-required attributes, and the `config_flag` that must be enabled. A trailing `*`
-in `name` is a wildcard. The optional `"optional": true` field marks a span whose
-absence is a skip rather than a failure:
+Each span entry defines its name, category, `allowed_parents`, required
+attributes, and the `config_flag` that must be enabled. A trailing `*` in `name`
+is a wildcard. The optional `"optional": true` field marks a span whose absence
+is a skip rather than a failure:
 
 ```json
 {
   "name": "rpc.command.*",
   "category": "rpc",
-  "parent": "rpc.process",
+  "allowed_parents": ["rpc.ws_message", "rpc.process", "ROOT"],
   "required_attributes": ["command", "version", "rpc_role", "rpc_status"],
   "config_flag": "trace_rpc"
 }
 ```
+
+`allowed_parents` is asserted, by `validate_span_parents`: every emitted instance
+of the span must be parented to one of the names listed, so a span declared a
+root that is emitted as somebody's child fails a check instead of passing
+silently. The list is derived from the span's creation factory plus every call
+path that reaches it — `SpanGuard::span(...)` and a plain `ScopedSpanGuard`
+inherit the ambient scope, so they take one entry per ambient scope their callers
+can be under; `freshRoot`, `linkedSpan` and the standalone `hashSpan` are roots;
+`childSpan(name, ctx)` names its parent exactly. `ROOT` means "no parent from
+this node", which covers a genuine root and a span whose parent was created on a
+different node, since a cross-node parent is the design for the receive spans and
+is never a violation. An entry may itself be a glob, matched the same way span
+names are.
 
 ## Node Configuration Notes
 

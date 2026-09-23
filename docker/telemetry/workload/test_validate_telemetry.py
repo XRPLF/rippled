@@ -17,12 +17,29 @@ query itself and on the answer the check derives from a known corpus.
 import asyncio
 import json
 import sys
+import tempfile
 from pathlib import Path
 from typing import Any
 
 sys.path.insert(0, str(Path(__file__).parent))
 
 import validate_telemetry as vt  # noqa: E402
+
+# The node a corpus entry belongs to unless it says otherwise. Named rather than
+# repeated, because a test that writes it out for one span and relies on the
+# default for another is asserting the two are the same node.
+DEFAULT_INSTANCE = "node-1"
+
+# Arbitrary, and only the relative order matters. Non-zero so that a span whose
+# start time went missing somewhere reads as earlier than every real one rather
+# than tying with them.
+START_TIME_BASE_NANOS = 1_000_000_000
+
+# A corpus entry naming this as its parent gets the all-zero span id written out
+# as its parentSpanId, instead of an id resolved from another span's name. That is
+# OTLP's second spelling of "no parent": Tempo omits the field, but the field is
+# optional rather than forbidden, so a root can arrive spelled this way.
+ROOT_PARENT_SPAN_ID = "AAAAAAAAAAA="
 
 
 class FakeResponse:
@@ -51,15 +68,25 @@ class FakeTempo:
     Args:
         traces: Maps a trace id to the spans that trace contains, ordered newest
                 first, which is the order /api/search returns. Each entry is
-                either a bare span name (a root span, no parent) or a
-                ``(name, parent_name)`` pair. A parent_name that no span in the
-                trace carries yields a parentSpanId pointing at a span the trace
-                does not hold, which is how a dangling chain is expressed.
+                either a bare span name (a root span, no parent) or a tuple
+                ``(name, parent_name[, instance[, attributes]])``. A parent_name
+                that no span in the trace carries yields a parentSpanId pointing
+                at a span the trace does not hold, which is how a dangling chain
+                is expressed, and the sentinel ROOT_PARENT_SPAN_ID writes OTLP's
+                all-zero "no parent" id verbatim. ``instance`` is the exporting
+                node's service.instance.id and defaults to DEFAULT_INSTANCE, so
+                a cross-node parent is written by giving the two spans different
+                ones. ``attributes`` is a plain str-to-str mapping, emitted in
+                OTLP stringValue form.
 
     Span ids are generated as ``<trace id>-<index>``. Their spelling does not
     matter: the code under test compares parentSpanId to spanId as opaque
     strings, exactly because Tempo's own encoding of those fields (hex or
     base64) is not something the validator should depend on.
+
+    Start times follow the corpus order, one nanosecond apart, so listing spans
+    in the order they ran is how a test states that order. That is what lets the
+    round-shape check's phase-order assertion be exercised at all.
     """
 
     def __init__(self, traces: dict[str, list[Any]]) -> None:
@@ -76,10 +103,16 @@ class FakeTempo:
             span: dict[str, Any] = {
                 "name": names[i],
                 "spanId": ids[i],
-                "attributes": [],
+                "attributes": [
+                    {"key": k, "value": {"stringValue": v}}
+                    for k, v in _entry_attributes(entry).items()
+                ],
+                "startTimeUnixNano": str(START_TIME_BASE_NANOS + i),
             }
             parent = entry[1] if isinstance(entry, tuple) else None
-            if parent is not None:
+            if parent == ROOT_PARENT_SPAN_ID:
+                span["parentSpanId"] = ROOT_PARENT_SPAN_ID
+            elif parent is not None:
                 # An unknown parent name deliberately produces an id no span in
                 # this trace owns, so the walk up the chain hits a gap.
                 span["parentSpanId"] = (
@@ -89,6 +122,36 @@ class FakeTempo:
                 )
             spans.append(span)
         return spans
+
+    def _batches_for(self, tid: str) -> list[dict[str, Any]]:
+        """Group one trace's spans into one OTLP batch per exporting node.
+
+        Tempo carries service.instance.id on the batch resource, not on the
+        span, so a trace that spans two nodes genuinely arrives as two batches.
+        The parent gate reads that field to tell a same-node parent from a
+        cross-node one, and a single batch could not express the difference --
+        every span would claim the same node and a cross-node parent would read
+        as a mis-parenting.
+        """
+        spans = self._spans_for(tid)
+        instances = [_entry_instance(e) for e in self.traces.get(tid, [])]
+        grouped: dict[str, list[dict[str, Any]]] = {}
+        for span, instance in zip(spans, instances):
+            grouped.setdefault(instance, []).append(span)
+        return [
+            {
+                "resource": {
+                    "attributes": [
+                        {
+                            "key": "service.instance.id",
+                            "value": {"stringValue": instance},
+                        }
+                    ]
+                },
+                "scopeSpans": [{"spans": batch}],
+            }
+            for instance, batch in grouped.items()
+        ]
 
     def get(self, url: str, params: dict[str, str] | None = None) -> FakeResponse:
         params = params or {}
@@ -103,15 +166,27 @@ class FakeTempo:
             return FakeResponse({"traces": [{"traceID": t} for t in matched[:limit]]})
         if "/api/traces/" in url:
             tid = url.rsplit("/", 1)[-1]
-            return FakeResponse(
-                {"batches": [{"scopeSpans": [{"spans": self._spans_for(tid)}]}]}
-            )
+            return FakeResponse({"batches": self._batches_for(tid)})
         raise AssertionError(f"unexpected request: {url}")
 
 
 def _entry_name(entry: Any) -> str:
-    """The span name of a corpus entry, whether bare or a (name, parent) pair."""
+    """The span name of a corpus entry, whether bare or a tuple."""
     return entry[0] if isinstance(entry, tuple) else entry
+
+
+def _entry_instance(entry: Any) -> str:
+    """The exporting node of a corpus entry, defaulting to DEFAULT_INSTANCE."""
+    if isinstance(entry, tuple) and len(entry) > 2 and entry[2] is not None:
+        return str(entry[2])
+    return DEFAULT_INSTANCE
+
+
+def _entry_attributes(entry: Any) -> dict[str, str]:
+    """The span attributes of a corpus entry, defaulting to none."""
+    if isinstance(entry, tuple) and len(entry) > 3 and entry[3] is not None:
+        return dict(entry[3])
+    return {}
 
 
 def _query_matches_trace(query: str, names: list[str]) -> bool:
@@ -557,6 +632,514 @@ def test_literal_predicate_uses_equality() -> None:
     assert vt._traceql_name_predicate("txq.accept_tx") == 'name="txq.accept_tx"'
     assert vt._span_name_matches("txq.accept_tx", "txq.accept_tx")
     assert not vt._span_name_matches("txq.accept_tx_extra", "txq.accept_tx")
+
+
+def test_span_declared_root_that_is_a_same_node_child_fails() -> None:
+    """The audit finding: ledger.build declared ROOT, emitted under accept."""
+    tempo = FakeTempo(
+        {"t1": ["consensus.accept", ("ledger.build", "consensus.accept")]}
+    )
+    report = Report()
+    run(
+        vt._validate_span_parents_for(
+            tempo,
+            "http://tempo",
+            {"name": "ledger.build", "allowed_parents": ["ROOT"]},
+            report,
+        )
+    )
+    assert len(report.results) == 1, report.results
+    assert not report.results[0].passed, report.results[0].message
+    assert "consensus.accept" in report.results[0].message
+
+
+def test_cross_node_parent_is_not_a_violation() -> None:
+    """Review Focus 1: tx.receive's parent is the sender's span, on another node."""
+    tempo = FakeTempo(
+        {"t1": [("tx.process", None, "node-2"), ("tx.receive", "tx.process", "node-1")]}
+    )
+    report = Report()
+    run(
+        vt._validate_span_parents_for(
+            tempo,
+            "http://tempo",
+            {"name": "tx.receive", "allowed_parents": ["ROOT"]},
+            report,
+        )
+    )
+    assert len(report.results) == 1, report.results
+    assert report.results[0].passed, report.results[0].message
+
+
+def test_same_node_parent_of_a_receive_span_is_a_violation() -> None:
+    """The control for the test above: the node id is what excuses the parent.
+
+    Identical corpus except that both spans came from one node, which is the
+    shape a genuine mis-parenting of tx.receive would have. Without this, the
+    cross-node test passes just as happily against a gate that never reads
+    _instance at all and treats every in-trace parent as unprovable.
+    """
+    tempo = FakeTempo(
+        {"t1": [("tx.process", None, "node-1"), ("tx.receive", "tx.process", "node-1")]}
+    )
+    report = Report()
+    run(
+        vt._validate_span_parents_for(
+            tempo,
+            "http://tempo",
+            {"name": "tx.receive", "allowed_parents": ["ROOT"]},
+            report,
+        )
+    )
+    assert len(report.results) == 1, report.results
+    assert not report.results[0].passed, report.results[0].message
+    assert "tx.process" in report.results[0].message
+
+
+def test_second_call_path_parent_is_allowed_when_listed() -> None:
+    """Review Focus 2: txq.accept is a child on one path and a root on the other."""
+    tempo = FakeTempo(
+        {
+            "t1": ["consensus.accept.apply", ("txq.accept", "consensus.accept.apply")],
+            "t2": ["txq.accept"],
+        }
+    )
+    report = Report()
+    run(
+        vt._validate_span_parents_for(
+            tempo,
+            "http://tempo",
+            {
+                "name": "txq.accept",
+                "allowed_parents": ["consensus.accept.apply", "ROOT"],
+            },
+            report,
+        )
+    )
+    assert len(report.results) == 1, report.results
+    assert report.results[0].passed, report.results[0].message
+
+
+def test_absent_optional_span_skips_rather_than_fails() -> None:
+    """Review Focus 3: a span the harness never emits has nothing to judge."""
+    tempo = FakeTempo({"t1": ["consensus.round"]})
+    report = Report()
+    run(
+        vt._validate_span_parents_for(
+            tempo,
+            "http://tempo",
+            {
+                "name": "nodestore.rotate.swap",
+                "allowed_parents": ["nodestore.rotate"],
+                "optional": True,
+            },
+            report,
+        )
+    )
+    assert len(report.results) == 1, report.results
+    assert report.results[0].passed, report.results[0].message
+    assert "not emitted" in report.results[0].message
+
+
+def test_absent_required_span_fails_rather_than_skips() -> None:
+    """A span the contract does NOT mark optional must fail when absent.
+
+    The control for the skip above. A gate that returned passed=True for every
+    absent span would report green on a node that stopped emitting consensus
+    spans entirely, which is the loudest failure the harness exists to catch.
+    """
+    tempo = FakeTempo({"t1": ["consensus.round"]})
+    report = Report()
+    run(
+        vt._validate_span_parents_for(
+            tempo,
+            "http://tempo",
+            {"name": "ledger.build", "allowed_parents": ["ROOT"]},
+            report,
+        )
+    )
+    assert len(report.results) == 1, report.results
+    assert not report.results[0].passed, report.results[0].message
+    assert "not emitted" in report.results[0].message
+
+
+def test_parent_id_absent_from_the_trace_is_inconclusive() -> None:
+    """Review Focus 4: a rotation still in flight has not exported its root."""
+    tempo = FakeTempo({"t1": [("nodestore.rotate.copy", "nodestore.rotate")]})
+    report = Report()
+    run(
+        vt._validate_span_parents_for(
+            tempo,
+            "http://tempo",
+            {
+                "name": "nodestore.rotate.copy",
+                "allowed_parents": ["nodestore.rotate"],
+                "optional": True,
+            },
+            report,
+        )
+    )
+    assert len(report.results) == 1, report.results
+    assert report.results[0].passed, report.results[0].message
+    assert "nothing was provable" in report.results[0].message
+
+
+def test_a_glob_in_allowed_parents_matches_the_family() -> None:
+    """pathfind.request's only lawful parent is written as rpc.command.*.
+
+    The contract allows a glob on the parent side as well as on the span's own
+    name, and the concrete command varies per request, so plain set membership
+    would read every real parent as a violation. Asserted here because the
+    pathfinding family is never emitted on the harness, so a live run cannot
+    reach this path and would not notice it being wrong.
+    """
+    tempo = FakeTempo(
+        {"t1": ["rpc.command.fee", ("pathfind.request", "rpc.command.fee")]}
+    )
+    report = Report()
+    run(
+        vt._validate_span_parents_for(
+            tempo,
+            "http://tempo",
+            {"name": "pathfind.request", "allowed_parents": ["rpc.command.*"]},
+            report,
+        )
+    )
+    assert len(report.results) == 1, report.results
+    assert report.results[0].passed, report.results[0].message
+
+
+def test_round_missing_a_required_child_fails() -> None:
+    """A round whose phases are incomplete must fail, naming the phase.
+
+    consensus.accept is present on purpose: it is the trace-selection predicate,
+    so a corpus without it exercises the "no trace holds both" path instead and
+    the test would be red for the wrong reason. The genuinely missing phase here
+    is consensus.ledger_close.
+    """
+    tempo = FakeTempo(
+        {
+            "t1": [
+                "consensus.round",
+                ("consensus.phase.open", "consensus.round"),
+                ("consensus.establish", "consensus.round"),
+                ("consensus.accept", "consensus.round"),
+            ]
+        }
+    )
+    report = Report()
+    run(vt.validate_consensus_round_shape(tempo, "http://tempo", report))
+    children = next(r for r in report.results if r.name == "span.round.children")
+    assert not children.passed, children.message
+    assert "consensus.ledger_close" in children.message
+    # The node id is the whole point of a red here: a five-node cluster gives no
+    # way to act on "1 of 5 rounds" without it.
+    assert DEFAULT_INSTANCE in children.message, children.message
+
+
+def test_round_without_accept_in_the_newest_trace_is_not_a_missing_child() -> None:
+    """Item 3: a round exported before its accept span must not read as broken.
+
+    The accept span always outlives the round span, and with a two-second export
+    batch delay the newest round can reach Tempo while its consensus.accept child
+    is still in the exporter. Selecting the newest rounds reports a missing child
+    on a healthy cluster; selecting traces that hold both does not.
+
+    The production change that makes this fail: dropping the
+    `&& {name="consensus.accept"}` term from the search query.
+    """
+    tempo = FakeTempo(
+        {
+            # Newest first, as /api/search returns. The newest round has not had
+            # its accept exported yet.
+            "t2": ["consensus.round", ("consensus.phase.open", "consensus.round")],
+            "t1": [
+                "consensus.round",
+                ("consensus.phase.open", "consensus.round"),
+                ("consensus.ledger_close", "consensus.round"),
+                ("consensus.establish", "consensus.round"),
+                ("consensus.accept", "consensus.round"),
+            ],
+        }
+    )
+    report = Report()
+    run(vt.validate_consensus_round_shape(tempo, "http://tempo", report))
+    assert all(r.passed for r in report.results), [r.message for r in report.results]
+
+
+def test_no_trace_holding_both_round_and_accept_is_its_own_message() -> None:
+    """Nothing to judge is a distinct failure from a badly shaped round.
+
+    Reporting it as a missing child would send whoever reads it looking for a
+    consensus bug when the real state is that Tempo holds no usable trace.
+    """
+    tempo = FakeTempo({"t1": ["ledger.build"]})
+    report = Report()
+    run(vt.validate_consensus_round_shape(tempo, "http://tempo", report))
+    assert len(report.results) == 1, report.results
+    assert not report.results[0].passed
+    assert "No trace holds both" in report.results[0].message
+
+
+def test_a_round_is_not_shaped_from_another_nodes_phase_spans() -> None:
+    """A round's children are its OWN node's children, not the trace's.
+
+    The deterministic trace strategy derives the trace_id from the previous
+    ledger hash, so all five validators' round spans arrive in one trace. Here
+    node-1's round span has no phases of its own and every phase span in the
+    trace was exported by node-2 while naming node-1's round as its parent --
+    which is precisely the case a parentSpanId-only filter cannot tell apart from
+    a healthy round. node-1's round is missing all four phases, and that is what
+    the gate must report.
+
+    The production change that makes this fail: dropping the _instance
+    comparison from the child filter, which makes node-1's round look complete.
+    """
+    tempo = FakeTempo(
+        {
+            "t1": [
+                "consensus.round",
+                ("consensus.phase.open", "consensus.round", "node-2"),
+                ("consensus.ledger_close", "consensus.round", "node-2"),
+                ("consensus.establish", "consensus.round", "node-2"),
+                ("consensus.accept", "consensus.round", "node-2"),
+            ]
+        }
+    )
+    report = Report()
+    run(vt.validate_consensus_round_shape(tempo, "http://tempo", report))
+    children = next(r for r in report.results if r.name == "span.round.children")
+    assert not children.passed, children.message
+    assert children.details["missing"] == {
+        "consensus.phase.open": 1,
+        "consensus.ledger_close": 1,
+        "consensus.establish": 1,
+        "consensus.accept": 1,
+    }, children.details
+    assert DEFAULT_INSTANCE in children.message, children.message
+
+
+def test_round_with_all_children_in_order_passes() -> None:
+    tempo = FakeTempo(
+        {
+            "t1": [
+                "consensus.round",
+                ("consensus.phase.open", "consensus.round"),
+                ("consensus.ledger_close", "consensus.round"),
+                ("consensus.establish", "consensus.round"),
+                ("consensus.accept", "consensus.round"),
+            ]
+        }
+    )
+    report = Report()
+    run(vt.validate_consensus_round_shape(tempo, "http://tempo", report))
+    assert all(r.passed for r in report.results), [r.message for r in report.results]
+
+
+def test_round_with_phases_out_of_order_fails() -> None:
+    """The control for the pass above: the order has to be read, not assumed.
+
+    Every required child is present, so span.round.children passes; only
+    span.round.phase_order can catch accept having started before open. Without
+    this test the positive case above passes against a gate that never compares
+    start times at all.
+    """
+    tempo = FakeTempo(
+        {
+            "t1": [
+                "consensus.round",
+                ("consensus.accept", "consensus.round"),
+                ("consensus.phase.open", "consensus.round"),
+                ("consensus.ledger_close", "consensus.round"),
+                ("consensus.establish", "consensus.round"),
+            ]
+        }
+    )
+    report = Report()
+    run(vt.validate_consensus_round_shape(tempo, "http://tempo", report))
+    children = next(r for r in report.results if r.name == "span.round.children")
+    assert children.passed, children.message
+    order = next(r for r in report.results if r.name == "span.round.phase_order")
+    assert not order.passed, order.message
+    assert "out of order" in order.message
+
+
+def test_mode_change_with_equal_modes_fails() -> None:
+    """Finding 2: a mode_change span that records no change."""
+    tempo = FakeTempo(
+        {
+            "t1": [
+                "consensus.round",
+                ("consensus.phase.open", "consensus.round"),
+                ("consensus.ledger_close", "consensus.round"),
+                ("consensus.establish", "consensus.round"),
+                ("consensus.accept", "consensus.round"),
+                (
+                    "consensus.mode_change",
+                    "consensus.round",
+                    "node-1",
+                    {"mode_old": "Observing", "mode_new": "Observing"},
+                ),
+            ]
+        }
+    )
+    report = Report()
+    run(vt.validate_consensus_round_shape(tempo, "http://tempo", report))
+    mc = next(
+        r for r in report.results if r.name == "span.mode_change.records_a_real_change"
+    )
+    assert not mc.passed, mc.message
+
+
+def test_mode_change_recording_a_real_change_passes() -> None:
+    """The control: a transition must not be reported as a defect.
+
+    Same corpus as the failing case with one mode differing, so the gate is
+    shown to be reading the two attributes rather than failing on the span's
+    mere presence -- which would make every real mode transition red.
+    """
+    tempo = FakeTempo(
+        {
+            "t1": [
+                "consensus.round",
+                ("consensus.phase.open", "consensus.round"),
+                ("consensus.ledger_close", "consensus.round"),
+                ("consensus.establish", "consensus.round"),
+                ("consensus.accept", "consensus.round"),
+                (
+                    "consensus.mode_change",
+                    "consensus.round",
+                    "node-1",
+                    {"mode_old": "Observing", "mode_new": "Proposing"},
+                ),
+            ]
+        }
+    )
+    report = Report()
+    run(vt.validate_consensus_round_shape(tempo, "http://tempo", report))
+    mc = next(
+        r for r in report.results if r.name == "span.mode_change.records_a_real_change"
+    )
+    assert mc.passed, mc.message
+    assert "1 mode_change span(s)" in mc.message
+
+
+def test_root_written_as_the_all_zero_span_id_still_counts_as_root() -> None:
+    """OTLP's other spelling of "no parent" must not read as unprovable.
+
+    Tempo omits parentSpanId for a root, so this shape does not occur against it
+    today. An exporter or backend that writes the all-zero id instead would make
+    EVERY root unprovable, and an unprovable parent passes -- so the gate would
+    go quietly fail-open on exactly the spans it exists to judge.
+
+    The message is asserted, not just the verdict: without the all-zero handling
+    this test still sees passed=True, because the id matches no span in the trace
+    and the span is counted as unprovable instead.
+    """
+    tempo = FakeTempo({"t1": [("ledger.build", ROOT_PARENT_SPAN_ID)]})
+    report = Report()
+    run(
+        vt._validate_span_parents_for(
+            tempo,
+            "http://tempo",
+            {"name": "ledger.build", "allowed_parents": ["ROOT"]},
+            report,
+        )
+    )
+    assert len(report.results) == 1, report.results
+    assert report.results[0].passed, report.results[0].message
+    message = report.results[0].message
+    assert "every provable parent" in message, message
+    assert report.results[0].details["observed"] == {"ROOT": 1}, report.results[
+        0
+    ].details
+    assert report.results[0].details["unprovable"] == 0, report.results[0].details
+
+
+def test_validate_span_parents_checks_every_contract_entry() -> None:
+    """The sweep must visit the whole inventory, one result per entry.
+
+    _validate_span_parents_for is well covered on its own, but nothing proved
+    that the caller iterates -- a loop that returned after the first entry, or
+    read a different key than 'spans', would leave 40 spans unchecked while the
+    report still looked healthy. Driven through a real file so the loader is
+    exercised too, rather than by stubbing _load_expected_spans.
+    """
+    contract = {
+        "spans": [
+            {"name": "consensus.round", "allowed_parents": ["ROOT"]},
+            {
+                "name": "consensus.accept",
+                "allowed_parents": ["consensus.round"],
+            },
+        ]
+    }
+    tempo = FakeTempo(
+        {"t1": ["consensus.round", ("consensus.accept", "consensus.round")]}
+    )
+    report = Report()
+    original = vt.EXPECTED_SPANS_FILE
+    with tempfile.TemporaryDirectory() as tmp:
+        scratch = Path(tmp) / "expected_spans.json"
+        scratch.write_text(json.dumps(contract))
+        vt.EXPECTED_SPANS_FILE = scratch
+        try:
+            run(vt.validate_span_parents(tempo, "http://tempo", report))
+        finally:
+            vt.EXPECTED_SPANS_FILE = original
+    assert [r.name for r in report.results] == [
+        "span.parent.consensus.round",
+        "span.parent.consensus.accept",
+    ], [r.name for r in report.results]
+    assert all(r.passed for r in report.results), [r.message for r in report.results]
+
+
+def test_a_contract_entry_with_no_name_fails_only_itself() -> None:
+    """A malformed entry must not abort the sweep over the rest.
+
+    Reading span_def["name"] outside the try raised KeyError out of the loop, so
+    one bad entry silently cost every later span its check. Now it is one failed
+    result and the sweep continues.
+    """
+    contract = {
+        "spans": [
+            {"allowed_parents": ["ROOT"]},
+            {"name": "consensus.round", "allowed_parents": ["ROOT"]},
+        ]
+    }
+    tempo = FakeTempo({"t1": ["consensus.round"]})
+    report = Report()
+    original = vt.EXPECTED_SPANS_FILE
+    with tempfile.TemporaryDirectory() as tmp:
+        scratch = Path(tmp) / "expected_spans.json"
+        scratch.write_text(json.dumps(contract))
+        vt.EXPECTED_SPANS_FILE = scratch
+        try:
+            run(vt.validate_span_parents(tempo, "http://tempo", report))
+        finally:
+            vt.EXPECTED_SPANS_FILE = original
+    assert len(report.results) == 2, [r.name for r in report.results]
+    assert not report.results[0].passed, report.results[0].message
+    assert report.results[0].name == "span.parent.<unnamed>"
+    assert report.results[1].passed, report.results[1].message
+
+
+def test_every_contract_span_declares_allowed_parents() -> None:
+    """The contract itself: no entry may be left without the new key.
+
+    validate_span_parents returns early on an entry with an empty or missing
+    allowed_parents, so a span that kept the old `parent` key would be silently
+    unchecked -- the exact failure mode this change exists to remove. Asserted
+    against the real file rather than a fixture, because the file is the thing
+    that can drift.
+    """
+    contract = vt._load_expected_spans()
+    spans = contract["spans"]
+    assert spans, "expected_spans.json declares no spans"
+    missing = [s["name"] for s in spans if not s.get("allowed_parents")]
+    assert not missing, f"entries with no allowed_parents: {missing}"
+    stale = [s["name"] for s in spans if "parent" in s]
+    assert not stale, f"entries still carrying the old parent key: {stale}"
 
 
 def main() -> int:
