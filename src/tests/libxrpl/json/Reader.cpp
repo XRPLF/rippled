@@ -17,8 +17,8 @@ namespace xrpl {
 
 TEST(JsonReader, rejects_duplicate_keys)
 {
-    json::Value root;
-    json::Reader reader;
+    auto root = json::Value{};
+    auto reader = json::Reader{};
 
     EXPECT_FALSE(reader.parse(std::string{R"({"a":1,"a":2})"}, root));
     EXPECT_NE(reader.getFormattedErrorMessages().find("appears twice"), std::string::npos)
@@ -27,16 +27,16 @@ TEST(JsonReader, rejects_duplicate_keys)
 
 TEST(JsonReader, rejects_duplicate_keys_in_a_nested_object)
 {
-    json::Value root;
-    json::Reader reader;
+    auto root = json::Value{};
+    auto reader = json::Reader{};
 
     EXPECT_FALSE(reader.parse(std::string{R"({"outer":{"a":1,"a":2}})"}, root));
 }
 
 TEST(JsonReader, allows_the_same_key_in_sibling_objects)
 {
-    json::Value root;
-    json::Reader reader;
+    auto root = json::Value{};
+    auto reader = json::Reader{};
 
     ASSERT_TRUE(reader.parse(std::string{R"({"x":{"a":1},"y":{"a":2}})"}, root))
         << reader.getFormattedErrorMessages();
@@ -49,8 +49,8 @@ TEST(JsonReader, requires_an_object_array_or_null_document)
 {
     for (auto const* scalar : {R"("a string")", "42", "2.5", "true", "false"})
     {
-        json::Value root;
-        json::Reader reader;
+        auto root = json::Value{};
+        auto reader = json::Reader{};
 
         EXPECT_FALSE(reader.parse(std::string{scalar}, root)) << scalar;
         EXPECT_NE(
@@ -61,8 +61,8 @@ TEST(JsonReader, requires_an_object_array_or_null_document)
 
     for (auto const* document : {"{}", "[]", "null", R"({"a":1})", "[1,2]"})
     {
-        json::Value root;
-        json::Reader reader;
+        auto root = json::Value{};
+        auto reader = json::Reader{};
 
         EXPECT_TRUE(reader.parse(std::string{document}, root))
             << document << ": " << reader.getFormattedErrorMessages();
@@ -71,8 +71,8 @@ TEST(JsonReader, requires_an_object_array_or_null_document)
 
 TEST(JsonReader, builds_the_expected_tree)
 {
-    json::Value root;
-    json::Reader reader;
+    auto root = json::Value{};
+    auto reader = json::Reader{};
 
     ASSERT_TRUE(reader.parse(std::string{R"({"b":[1,2.5,true,null],"a":"x"})"}, root))
         << reader.getFormattedErrorMessages();
@@ -90,8 +90,8 @@ TEST(JsonReader, builds_the_expected_tree)
 
 TEST(JsonReader, members_come_back_sorted_regardless_of_document_order)
 {
-    json::Value root;
-    json::Reader reader;
+    auto root = json::Value{};
+    auto reader = json::Reader{};
 
     ASSERT_TRUE(reader.parse(std::string{R"({"z":1,"m":2,"a":3})"}, root))
         << reader.getFormattedErrorMessages();
@@ -101,10 +101,10 @@ TEST(JsonReader, members_come_back_sorted_regardless_of_document_order)
 
 TEST(JsonReader, is_reusable_across_parses)
 {
-    json::Reader reader;
+    auto reader = json::Reader{};
 
     {
-        json::Value root;
+        auto root = json::Value{};
         ASSERT_TRUE(reader.parse(std::string{R"({"a":1})"}, root))
             << reader.getFormattedErrorMessages();
         EXPECT_EQ(root["a"].asInt(), 1);
@@ -112,13 +112,13 @@ TEST(JsonReader, is_reusable_across_parses)
 
     {
         // A failure must not leak errors into the next parse.
-        json::Value root;
+        auto root = json::Value{};
         EXPECT_FALSE(reader.parse(std::string{R"({"a":})"}, root));
         EXPECT_FALSE(reader.getFormattedErrorMessages().empty());
     }
 
     {
-        json::Value root;
+        auto root = json::Value{};
         ASSERT_TRUE(reader.parse(std::string{R"({"b":[2]})"}, root))
             << reader.getFormattedErrorMessages();
         EXPECT_EQ(root["b"][0u].asInt(), 2);
@@ -129,10 +129,10 @@ TEST(JsonReader, is_reusable_across_parses)
 
 TEST(JsonReader, parses_from_a_character_range)
 {
-    std::string const document{R"({"a":1})"};
+    auto const document = std::string{R"({"a":1})"};
 
-    json::Value root;
-    json::Reader reader;
+    auto root = json::Value{};
+    auto reader = json::Reader{};
 
     ASSERT_TRUE(reader.parse(document.data(), document.data() + document.size(), root))
         << reader.getFormattedErrorMessages();
@@ -141,10 +141,10 @@ TEST(JsonReader, parses_from_a_character_range)
 
 TEST(JsonReader, parses_from_a_stream)
 {
-    std::istringstream input{R"({"a":1})"};
+    auto input = std::istringstream{R"({"a":1})"};
 
-    json::Value root;
-    json::Reader reader;
+    auto root = json::Value{};
+    auto reader = json::Reader{};
 
     ASSERT_TRUE(reader.parse(input, root)) << reader.getFormattedErrorMessages();
     EXPECT_EQ(root["a"].asInt(), 1);
@@ -154,14 +154,14 @@ TEST(JsonReader, parses_a_buffer_sequence_from_a_temporary_reader)
 {
     // ServerHandler parses request bodies this way: a temporary Reader over a
     // multi-fragment buffer sequence.
-    std::string const head{R"({"a":)"};
-    std::string const tail{R"(1})"};
+    auto const head = std::string{R"({"a":)"};
+    auto const tail = std::string{R"(1})"};
 
-    std::vector<boost::asio::const_buffer> const buffers{
+    auto const buffers = std::vector<boost::asio::const_buffer>{
         boost::asio::const_buffer{head.data(), head.size()},
         boost::asio::const_buffer{tail.data(), tail.size()}};
 
-    json::Value root;
+    auto root = json::Value{};
     ASSERT_TRUE(json::Reader{}.parse(root, buffers));
     EXPECT_TRUE(root.isObject());
     EXPECT_EQ(root["a"].asInt(), 1);
@@ -169,13 +169,13 @@ TEST(JsonReader, parses_a_buffer_sequence_from_a_temporary_reader)
 
 TEST(JsonReader, stream_extraction_throws_on_bad_input)
 {
-    json::Value root;
-    std::istringstream good{R"({"a":1})"};
+    auto root = json::Value{};
+    auto good = std::istringstream{R"({"a":1})"};
     EXPECT_NO_THROW(good >> root);
     EXPECT_EQ(root["a"].asInt(), 1);
 
-    std::istringstream bad{R"({"a":)"};
-    json::Value other;
+    auto bad = std::istringstream{R"({"a":)"};
+    auto other = json::Value{};
     EXPECT_ANY_THROW(bad >> other);
 }
 
@@ -188,11 +188,15 @@ namespace {
 std::string
 nestedObject(unsigned depth)
 {
-    std::string s = "{";
+    auto s = std::string{"{"};
     for (unsigned i = 0; i < depth; ++i)
+    {
         s += R"("o":{)";
+    }
     for (unsigned i = 0; i < depth; ++i)
+    {
         s += "}";
+    }
     return s + "}";
 }
 
@@ -201,15 +205,15 @@ nestedObject(unsigned depth)
 TEST(JsonReader, enforces_the_nesting_limit_at_the_boundary)
 {
     {
-        json::Value root;
-        json::Reader reader;
+        auto root = json::Value{};
+        auto reader = json::Reader{};
         EXPECT_TRUE(reader.parse(nestedObject(json::Reader::kNestLimit), root))
             << reader.getFormattedErrorMessages();
     }
 
     {
-        json::Value root;
-        json::Reader reader;
+        auto root = json::Value{};
+        auto reader = json::Reader{};
         EXPECT_FALSE(reader.parse(nestedObject(json::Reader::kNestLimit + 1), root));
         EXPECT_NE(
             reader.getFormattedErrorMessages().find("maximum nesting depth"), std::string::npos)
@@ -228,24 +232,24 @@ TEST(JsonReader, accepts_comments)
              R"({"a":1} // trailing)",
          })
     {
-        json::Value root;
-        json::Reader reader;
+        auto root = json::Value{};
+        auto reader = json::Reader{};
         ASSERT_TRUE(reader.parse(std::string{document}, root))
             << document << ": " << reader.getFormattedErrorMessages();
         EXPECT_EQ(root["a"].asInt(), 1) << document;
     }
 
     {
-        json::Value root;
-        json::Reader reader;
+        auto root = json::Value{};
+        auto reader = json::Reader{};
         ASSERT_TRUE(reader.parse(std::string{R"({"a":1,/*c*/"b":2})"}, root))
             << reader.getFormattedErrorMessages();
         EXPECT_EQ(root["b"].asInt(), 2);
     }
 
     {
-        json::Value root;
-        json::Reader reader;
+        auto root = json::Value{};
+        auto reader = json::Reader{};
         ASSERT_TRUE(reader.parse(std::string{"[1,//x\n2]"}, root))
             << reader.getFormattedErrorMessages();
         EXPECT_EQ(root.size(), 2u);
@@ -256,12 +260,12 @@ TEST(JsonReader, rejects_comments_in_the_two_places_it_never_allowed_them)
 {
     // Comments are skipped where a value is expected, but the member separator
     // and the first element of an array are read without skipping them.
-    json::Value betweenKeyAndColon;
-    json::Reader first;
+    auto betweenKeyAndColon = json::Value{};
+    auto first = json::Reader{};
     EXPECT_FALSE(first.parse(std::string{R"({"a"/*c*/:1})"}, betweenKeyAndColon));
 
-    json::Value commentOnlyArray;
-    json::Reader second;
+    auto commentOnlyArray = json::Value{};
+    auto second = json::Reader{};
     EXPECT_FALSE(second.parse(std::string{"[/*c*/]"}, commentOnlyArray));
 }
 
@@ -269,16 +273,16 @@ TEST(JsonReader, accepts_trailing_content_after_the_document)
 {
     // Nothing checks that the document is the whole input.
     {
-        json::Value root;
-        json::Reader reader;
+        auto root = json::Value{};
+        auto reader = json::Reader{};
         ASSERT_TRUE(reader.parse(std::string{"[1,2,3] garbage"}, root))
             << reader.getFormattedErrorMessages();
         EXPECT_EQ(root.size(), 3u);
     }
 
     {
-        json::Value root;
-        json::Reader reader;
+        auto root = json::Value{};
+        auto reader = json::Reader{};
         ASSERT_TRUE(reader.parse(std::string{R"({"a":1} {"b":2})"}, root))
             << reader.getFormattedErrorMessages();
         EXPECT_EQ(root["a"].asInt(), 1);
@@ -288,8 +292,8 @@ TEST(JsonReader, accepts_trailing_content_after_the_document)
 
 TEST(JsonReader, decodes_string_escapes)
 {
-    json::Value root;
-    json::Reader reader;
+    auto root = json::Value{};
+    auto reader = json::Reader{};
 
     ASSERT_TRUE(reader.parse(std::string{R"({"v":"a\nb\tc\"d\\e\/f\bg\fh"})"}, root))
         << reader.getFormattedErrorMessages();
@@ -300,8 +304,8 @@ TEST(JsonReader, decodes_string_escapes)
 TEST(JsonReader, decodes_unicode_escapes)
 {
     {
-        json::Value root;
-        json::Reader reader;
+        auto root = json::Value{};
+        auto reader = json::Reader{};
         ASSERT_TRUE(reader.parse(std::string{R"({"v":"\u0041\u00e9\u20AC"})"}, root))
             << reader.getFormattedErrorMessages();
         // U+0041 is 1 byte, U+00E9 is 2, U+20AC is 3.
@@ -310,8 +314,8 @@ TEST(JsonReader, decodes_unicode_escapes)
 
     {
         // A surrogate pair combines into one 4-byte code point.
-        json::Value root;
-        json::Reader reader;
+        auto root = json::Value{};
+        auto reader = json::Reader{};
         ASSERT_TRUE(reader.parse(std::string{R"({"v":"\uD83D\uDE00"})"}, root))
             << reader.getFormattedErrorMessages();
         EXPECT_EQ(root["v"].asString(), "\xF0\x9F\x98\x80");
@@ -330,16 +334,16 @@ TEST(JsonReader, rejects_malformed_escapes)
              R"({"v":"\uD800"})",          // leading surrogate, truncated
          })
     {
-        json::Value root;
-        json::Reader reader;
+        auto root = json::Value{};
+        auto reader = json::Reader{};
         EXPECT_FALSE(reader.parse(std::string{document}, root)) << document;
     }
 }
 
 TEST(JsonReader, parses_empty_containers)
 {
-    json::Value root;
-    json::Reader reader;
+    auto root = json::Value{};
+    auto reader = json::Reader{};
 
     ASSERT_TRUE(reader.parse(std::string{R"({"a":{},"b":[]})"}, root))
         << reader.getFormattedErrorMessages();

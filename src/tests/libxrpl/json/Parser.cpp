@@ -138,7 +138,7 @@ struct CountKeys
 {
     using ReturnType = std::expected<void, std::string>;
 
-    std::size_t keys{0};
+    std::size_t keys{};
 
     ReturnType
     onKey(std::string_view)
@@ -150,14 +150,10 @@ struct CountKeys
 
 }  // namespace
 
-// ---------------------------------------------------------------------------
-// Event stream
-// ---------------------------------------------------------------------------
-
 TEST(JsonParser, reports_events_in_document_order)
 {
-    Trace trace;
-    json::Parser parser{trace};
+    auto trace = Trace{};
+    auto parser = json::Parser{trace};
 
     ASSERT_TRUE(parser.parse(std::string{R"({"b":[1,2.5,true,null],"a":"x"})"}))
         << parser.getFormattedErrorMessages();
@@ -184,8 +180,8 @@ TEST(JsonParser, does_not_sort_keys)
 {
     // json::Value stores members in a std::map and therefore iterates them
     // sorted. The parser reports them in the order they appear in the text.
-    Trace trace;
-    json::Parser parser{trace};
+    auto trace = Trace{};
+    auto parser = json::Parser{trace};
 
     ASSERT_TRUE(parser.parse(std::string{R"({"z":1,"m":2,"a":3})"}))
         << parser.getFormattedErrorMessages();
@@ -207,8 +203,8 @@ TEST(JsonParser, does_not_sort_keys)
 
 TEST(JsonParser, empty_containers_are_balanced)
 {
-    Trace trace;
-    json::Parser parser{trace};
+    auto trace = Trace{};
+    auto parser = json::Parser{trace};
 
     ASSERT_TRUE(parser.parse(std::string{R"({"a":{},"b":[]})"}))
         << parser.getFormattedErrorMessages();
@@ -230,8 +226,8 @@ TEST(JsonParser, empty_containers_are_balanced)
 
 TEST(JsonParser, reports_comments)
 {
-    Trace trace;
-    json::Parser parser{trace};
+    auto trace = Trace{};
+    auto parser = json::Parser{trace};
 
     ASSERT_TRUE(parser.parse(std::string{"[1 /*hi*/ , 2]"})) << parser.getFormattedErrorMessages();
 
@@ -243,23 +239,21 @@ TEST(JsonParser, reports_comments)
 
 TEST(JsonParser, no_document_end_when_parsing_fails)
 {
-    Trace trace;
-    json::Parser parser{trace};
+    auto trace = Trace{};
+    auto parser = json::Parser{trace};
 
     EXPECT_FALSE(parser.parse(std::string{R"({"a":})"}));
 
     for (auto const& event : trace.events)
+    {
         EXPECT_FALSE(event.starts_with("doc}")) << event;
+    }
 }
-
-// ---------------------------------------------------------------------------
-// Visitors
-// ---------------------------------------------------------------------------
 
 TEST(JsonParser, every_callback_is_optional)
 {
-    Silent silent;
-    json::Parser parser{silent};
+    auto silent = Silent{};
+    auto parser = json::Parser{silent};
 
     EXPECT_TRUE(parser.parse(std::string{R"({"a":[1,"b",null,true,2.5]})"}))
         << parser.getFormattedErrorMessages();
@@ -269,8 +263,8 @@ TEST(JsonParser, visitors_are_held_by_reference)
 {
     // Whatever a visitor accumulates must be visible through the caller's own
     // object, not a copy owned by the Parser.
-    Trace trace;
-    json::Parser parser{trace};
+    auto trace = Trace{};
+    auto parser = json::Parser{trace};
 
     ASSERT_TRUE(parser.parse(std::string{"[1]"})) << parser.getFormattedErrorMessages();
 
@@ -280,8 +274,8 @@ TEST(JsonParser, visitors_are_held_by_reference)
 
 TEST(JsonParser, a_rejecting_visitor_fails_the_parse)
 {
-    RejectKey reject;
-    json::Parser parser{reject};
+    auto reject = RejectKey{};
+    auto parser = json::Parser{reject};
 
     EXPECT_FALSE(parser.parse(std::string{R"({"a":1})"}));
     EXPECT_NE(parser.getFormattedErrorMessages().find("rejected key 'a'"), std::string::npos);
@@ -291,9 +285,9 @@ TEST(JsonParser, rejection_short_circuits_later_visitors)
 {
     // Visitors run in declaration order, and the first failure stops the rest
     // from seeing that event.
-    RejectKey reject;
-    CountKeys counter;
-    json::Parser parser{reject, counter};
+    auto reject = RejectKey{};
+    auto counter = CountKeys{};
+    auto parser = json::Parser{reject, counter};
 
     EXPECT_FALSE(parser.parse(std::string{R"({"a":1})"}));
     EXPECT_EQ(counter.keys, 0u);
@@ -301,22 +295,18 @@ TEST(JsonParser, rejection_short_circuits_later_visitors)
 
 TEST(JsonParser, earlier_visitors_still_see_the_event)
 {
-    CountKeys counter;
-    RejectKey reject;
-    json::Parser parser{counter, reject};
+    auto counter = CountKeys{};
+    auto reject = RejectKey{};
+    auto parser = json::Parser{counter, reject};
 
     EXPECT_FALSE(parser.parse(std::string{R"({"a":1})"}));
     EXPECT_EQ(counter.keys, 1u);
 }
 
-// ---------------------------------------------------------------------------
-// Numbers
-// ---------------------------------------------------------------------------
-
 TEST(JsonParser, int_and_uint_split_at_the_signed_boundary)
 {
-    Trace trace;
-    json::Parser parser{trace};
+    auto trace = Trace{};
+    auto parser = json::Parser{trace};
 
     ASSERT_TRUE(parser.parse(std::string{"[2147483647,2147483648,-2147483648]"}))
         << parser.getFormattedErrorMessages();
@@ -337,8 +327,8 @@ TEST(JsonParser, integer_above_uint_range_is_an_error)
 {
     // Deliberately an error rather than a promotion to double, matching what
     // json::Value can hold.
-    Trace trace;
-    json::Parser parser{trace};
+    auto trace = Trace{};
+    auto parser = json::Parser{trace};
 
     EXPECT_FALSE(parser.parse(std::string{"[4294967296]"}));
     EXPECT_NE(
@@ -347,20 +337,16 @@ TEST(JsonParser, integer_above_uint_range_is_an_error)
 
 TEST(JsonParser, rejects_out_of_range_double)
 {
-    Trace trace;
-    json::Parser parser{trace};
+    auto trace = Trace{};
+    auto parser = json::Parser{trace};
 
     EXPECT_FALSE(parser.parse(std::string{"[1e400]"}));
 }
 
-// ---------------------------------------------------------------------------
-// Strings and unicode
-// ---------------------------------------------------------------------------
-
 TEST(JsonParser, decodes_escapes_and_surrogate_pairs)
 {
-    Trace trace;
-    json::Parser parser{trace};
+    auto trace = Trace{};
+    auto parser = json::Parser{trace};
 
     ASSERT_TRUE(parser.parse(std::string{R"(["a\nb\u0041\uD83D\uDE00"])"}))
         << parser.getFormattedErrorMessages();
@@ -371,8 +357,8 @@ TEST(JsonParser, decodes_escapes_and_surrogate_pairs)
 
 TEST(JsonParser, rejects_unpaired_trailing_surrogate)
 {
-    Trace trace;
-    json::Parser parser{trace};
+    auto trace = Trace{};
+    auto parser = json::Parser{trace};
 
     EXPECT_FALSE(parser.parse(std::string{R"(["\uDC00"])"}));
     EXPECT_NE(
@@ -382,8 +368,8 @@ TEST(JsonParser, rejects_unpaired_trailing_surrogate)
 TEST(JsonParser, rejects_leading_surrogate_followed_by_non_surrogate)
 {
     // Without the range check this silently computed the wrong code point.
-    Trace trace;
-    json::Parser parser{trace};
+    auto trace = Trace{};
+    auto parser = json::Parser{trace};
 
     EXPECT_FALSE(parser.parse(std::string{R"(["\uD800\uD800zzzz"])"}));
 
@@ -391,21 +377,17 @@ TEST(JsonParser, rejects_leading_surrogate_followed_by_non_surrogate)
     EXPECT_NE(message.find("trailing surrogate to complete"), std::string::npos) << message;
 }
 
-// ---------------------------------------------------------------------------
-// Limits
-// ---------------------------------------------------------------------------
-
 TEST(JsonParser, enforces_depth_limit)
 {
-    Trace trace;
-    json::Parser parser{trace};
+    auto trace = Trace{};
+    auto parser = json::Parser{trace};
     parser.depthLimit = 4;
 
     EXPECT_TRUE(parser.parse(std::string(4, '[') + std::string(4, ']')))
         << parser.getFormattedErrorMessages();
 
-    Trace deeper;
-    json::Parser tooDeep{deeper};
+    auto deeper = Trace{};
+    auto tooDeep = json::Parser{deeper};
     tooDeep.depthLimit = 4;
 
     EXPECT_FALSE(tooDeep.parse(std::string(6, '[') + std::string(6, ']')));
@@ -416,8 +398,8 @@ TEST(JsonParser, enforces_depth_limit)
 
 TEST(JsonParser, enforces_document_size_limit)
 {
-    Trace trace;
-    json::Parser parser{trace};
+    auto trace = Trace{};
+    auto parser = json::Parser{trace};
     parser.documentSizeLimit = 4;
 
     EXPECT_FALSE(parser.parse(std::string{R"({"a":1})"}));
@@ -426,8 +408,8 @@ TEST(JsonParser, enforces_document_size_limit)
 
 TEST(JsonParser, enforces_key_size_limit)
 {
-    Trace trace;
-    json::Parser parser{trace};
+    auto trace = Trace{};
+    auto parser = json::Parser{trace};
     parser.keySizeLimit = 2;
 
     EXPECT_FALSE(parser.parse(std::string{R"({"abc":1})"}));
@@ -436,8 +418,8 @@ TEST(JsonParser, enforces_key_size_limit)
 
 TEST(JsonParser, enforces_string_size_limit)
 {
-    Trace trace;
-    json::Parser parser{trace};
+    auto trace = Trace{};
+    auto parser = json::Parser{trace};
     parser.stringSizeLimit = 2;
 
     EXPECT_FALSE(parser.parse(std::string{R"(["abc"])"}));
@@ -446,8 +428,8 @@ TEST(JsonParser, enforces_string_size_limit)
 
 TEST(JsonParser, enforces_object_member_limit)
 {
-    Trace trace;
-    json::Parser parser{trace};
+    auto trace = Trace{};
+    auto parser = json::Parser{trace};
     parser.objectMembersLimit = 1;
 
     EXPECT_FALSE(parser.parse(std::string{R"({"a":1,"b":2})"}));
@@ -457,8 +439,8 @@ TEST(JsonParser, enforces_object_member_limit)
 
 TEST(JsonParser, enforces_array_element_limit)
 {
-    Trace trace;
-    json::Parser parser{trace};
+    auto trace = Trace{};
+    auto parser = json::Parser{trace};
     parser.arrayElementsLimit = 2;
 
     EXPECT_FALSE(parser.parse(std::string{"[1,2,3]"}));
@@ -466,14 +448,10 @@ TEST(JsonParser, enforces_array_element_limit)
         parser.getFormattedErrorMessages().find("array element count exceeds"), std::string::npos);
 }
 
-// ---------------------------------------------------------------------------
-// Errors
-// ---------------------------------------------------------------------------
-
 TEST(JsonParser, error_messages_carry_a_location)
 {
-    Trace trace;
-    json::Parser parser{trace};
+    auto trace = Trace{};
+    auto parser = json::Parser{trace};
 
     EXPECT_FALSE(parser.parse(std::string{"{\n  \"a\" 1\n}"}));
 
@@ -484,8 +462,8 @@ TEST(JsonParser, error_messages_carry_a_location)
 
 TEST(JsonParser, no_errors_reported_on_success)
 {
-    Trace trace;
-    json::Parser parser{trace};
+    auto trace = Trace{};
+    auto parser = json::Parser{trace};
 
     ASSERT_TRUE(parser.parse(std::string{R"({"a":1})"}));
     EXPECT_TRUE(parser.getFormattedErrorMessages().empty());
@@ -495,16 +473,16 @@ TEST(JsonParser, handles_a_bare_buffer_without_a_terminator)
 {
     // parse(begin, end) is public, so the tokenizer may not assume the
     // document is NUL terminated.
-    Trace trace;
-    json::Parser parser{trace};
+    auto trace = Trace{};
+    auto parser = json::Parser{trace};
 
     std::vector<char> const buffer{'[', '1', ']'};
     ASSERT_TRUE(parser.parse(buffer.data(), buffer.data() + buffer.size()))
         << parser.getFormattedErrorMessages();
 
-    std::vector<char> const truncated{'['};
-    Trace other;
-    json::Parser second{other};
+    auto const truncated = std::vector<char>{'['};
+    auto other = Trace{};
+    auto second = json::Parser{other};
     EXPECT_FALSE(second.parse(truncated.data(), truncated.data() + truncated.size()));
 }
 

@@ -26,7 +26,9 @@ Reader::ValueBuilder::ReturnType
 Reader::ValueBuilder::onDocumentBegin()
 {
     while (!nodes_.empty())
+    {
         nodes_.pop();
+    }
 
     pendingKey_.clear();
     return {};
@@ -86,7 +88,9 @@ Reader::ValueBuilder::onKey(std::string_view key)
     // Reject duplicate names. The enclosing object already holds every member
     // seen so far, so no separate bookkeeping is needed.
     if (nodes_.top()->isMember(name))
+    {
         return std::unexpected("Key '" + name + "' appears twice.");
+    }
 
     pendingKey_ = std::move(name);
     return {};
@@ -138,7 +142,9 @@ Value&
 Reader::ValueBuilder::place()
 {
     if (nodes_.empty())
+    {
         return *root_;
+    }
 
     Value& parent = *nodes_.top();
 
@@ -197,7 +203,9 @@ operator>>(std::istream& sin, Value& root)
 
     // XRPL_ASSERT(ok, "json::operator>>() : parse succeeded");
     if (!ok)
+    {
         xrpl::Throw<std::runtime_error>(reader.getFormattedErrorMessages());
+    }
 
     return sin;
 }
