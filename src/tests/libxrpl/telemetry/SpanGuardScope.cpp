@@ -661,6 +661,33 @@ TEST_F(SpanGuardScopeTest, spanGuard_addEvent_without_attributes_records_bare_ev
     EXPECT_EQ(events.front().GetAttributes().size(), 0u);
 }
 
+// The scoped guard records event attributes too. consensus.accept.apply relies
+// on it for one tx.included event per transaction of the accepted set.
+TEST_F(SpanGuardScopeTest, scopedGuard_addEvent_records_name_and_attribute_values)
+{
+    namespace cs = consensus::span;
+
+    static constexpr std::string_view kEventName{cs::event::txIncluded};
+    static constexpr std::string_view kTxIdKey{cs::attr::txId};
+    static constexpr std::string_view kTxId{"6B5F1A2C3D4E5F60718293A4B5C6D7E8"};
+
+    {
+        ScopedSpanGuard guard(TraceCategory::Consensus, seg::consensus, cs::op::acceptApply);
+        ASSERT_TRUE(static_cast<bool>(guard));
+        guard.addEvent(kEventName, {{kTxIdKey, kTxId}});
+    }
+
+    auto spans = spanData()->GetSpans();
+    auto* applySpan = findSpan(spans, cs::acceptApply);
+    ASSERT_NE(applySpan, nullptr);
+
+    auto const& events = applySpan->GetEvents();
+    ASSERT_EQ(events.size(), 1u);
+    EXPECT_EQ(events.front().GetName(), std::string(kEventName));
+    EXPECT_EQ(events.front().GetAttributes().size(), 1u);
+    EXPECT_EQ(eventAttribute(events.front(), kTxIdKey), std::string(kTxId));
+}
+
 // A forced-root span started while a PendingTraceId is active adopts that
 // pinned 16-byte trace_id and remains a true root (no parent).
 TEST_F(SpanGuardScopeTest, deterministicIdGenerator_forced_root_gets_pending_trace_id)
