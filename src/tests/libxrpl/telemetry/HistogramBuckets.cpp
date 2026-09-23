@@ -65,7 +65,7 @@ INSTANTIATE_TEST_SUITE_P(
         std::span<double const>{kObjectCountBuckets},
         std::span<double const>{kChargeBuckets}));
 
-TEST(HistogramBucketsRange, microsecondFloorLandsBelowTheMeasuredMass)
+TEST(HistogramBucketsRange, microsecond_floor_lands_below_the_measured_mass)
 {
     // Measured: 99.3% of job_queued_us samples sat below the old 100 us floor,
     // so p75/p95/p99 all interpolated inside bucket 0 and returned
@@ -79,14 +79,14 @@ TEST(HistogramBucketsRange, microsecondFloorLandsBelowTheMeasuredMass)
     EXPECT_GE(belowHundred, 5) << "too little resolution below 100 us";
 }
 
-TEST(HistogramBucketsRange, microsecondCeilingStillReachesOneMinute)
+TEST(HistogramBucketsRange, microsecond_ceiling_still_reaches_one_minute)
 {
     // Job waits and RPC latencies routinely exceed the SDK default ceiling of
     // 10,000; multi-second stalls must stay measurable rather than censored.
     EXPECT_EQ(kMicrosecondBuckets.back(), 60'000'000.0);
 }
 
-TEST(HistogramBucketsRange, objectCountLadderCannotSaturate)
+TEST(HistogramBucketsRange, object_count_ladder_cannot_saturate)
 {
     // GetObject counts run 1..kHardMaxReplyNodes, so the top edge IS the hard
     // cap and censoring is impossible by construction.
@@ -94,7 +94,7 @@ TEST(HistogramBucketsRange, objectCountLadderCannotSaturate)
     EXPECT_EQ(kObjectCountBuckets.back(), 12'288.0);
 }
 
-TEST(HistogramBucketsRange, chargeLadderBracketsTheResourceThresholds)
+TEST(HistogramBucketsRange, charge_ladder_brackets_the_resource_thresholds)
 {
     // The two edges that decide a peer's fate must be present so a dashboard
     // can show how close charges run to each: warning at 5000, drop at 25000.
