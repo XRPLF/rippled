@@ -606,7 +606,7 @@ TEST_F(SpanGuardScopeTest, activate_sets_ambient_without_owning)
 // OTel key-value-iterable, so a dropped or mistyped pair would be invisible
 // without reading the exported event back. Values are asserted individually as
 // well as by count: two attributes with one value blanked still counts as two.
-TEST_F(SpanGuardScopeTest, spanGuard_addEvent_records_name_and_attribute_values)
+TEST_F(SpanGuardScopeTest, span_guard_add_event_records_name_and_attribute_values)
 {
     namespace cs = consensus::span;
 
@@ -640,7 +640,7 @@ TEST_F(SpanGuardScopeTest, spanGuard_addEvent_records_name_and_attribute_values)
 // The name-only overload records the event with NO attributes, so a regression
 // that leaked attributes between the two overloads shows up here rather than as
 // an extra key on a production event.
-TEST_F(SpanGuardScopeTest, spanGuard_addEvent_without_attributes_records_bare_event)
+TEST_F(SpanGuardScopeTest, span_guard_add_event_without_attributes_records_bare_event)
 {
     namespace cs = consensus::span;
 
@@ -664,7 +664,7 @@ TEST_F(SpanGuardScopeTest, spanGuard_addEvent_without_attributes_records_bare_ev
 
 // The scoped guard records event attributes too. consensus.accept.apply relies
 // on it for one tx.included event per transaction of the accepted set.
-TEST_F(SpanGuardScopeTest, scopedGuard_addEvent_records_name_and_attribute_values)
+TEST_F(SpanGuardScopeTest, scoped_guard_add_event_records_name_and_attribute_values)
 {
     namespace cs = consensus::span;
 
@@ -692,7 +692,7 @@ TEST_F(SpanGuardScopeTest, scopedGuard_addEvent_records_name_and_attribute_value
 // A scoped child of a captured context is the ambient parent of the spans
 // created after it on the same thread. A hash-derived root created inside that
 // scope stays a root. consensus.accept.apply relies on both.
-TEST_F(SpanGuardScopeTest, scopedChildOfCapturedContextIsAmbientForLaterSpans)
+TEST_F(SpanGuardScopeTest, scoped_child_of_captured_context_is_ambient_for_later_spans)
 {
     namespace cs = consensus::span;
 
