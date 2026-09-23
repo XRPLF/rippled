@@ -574,7 +574,14 @@ public:
     setAttribute(std::string_view key, std::string_view value) noexcept;
 
     /**
-     * Set a string attribute (C-string overload). No-op on a null guard.
+     * Set a string attribute from a C string. No-op on a null guard.
+     *
+     * @param key   Attribute key.
+     * @param value Null-terminated text. A null pointer records nothing, since
+     * an empty value is already a meaningful value here.
+     * @note This overload is required, not a convenience. Without it a string
+     * literal binds to the bool overload, because pointer-to-bool is a standard
+     * conversion and beats the std::string_view one.
      */
     void
     setAttribute(std::string_view key, char const* value) noexcept;
@@ -875,7 +882,14 @@ public:
     setAttribute(std::string_view key, std::string_view value) noexcept;
 
     /**
-     * Set a string attribute (C-string overload). No-op on a null guard.
+     * Set a string attribute from a C string. No-op on a null guard.
+     *
+     * @param key   Attribute key.
+     * @param value Null-terminated text. A null pointer records nothing, since
+     * an empty value is already a meaningful value here.
+     * @note This overload is required, not a convenience. Without it a string
+     * literal binds to the bool overload, because pointer-to-bool is a standard
+     * conversion and beats the std::string_view one.
      */
     void
     setAttribute(std::string_view key, char const* value) noexcept;

@@ -209,7 +209,9 @@ flowchart LR
 
     subgraph links["Span Links"]
         direction TB
-        X["Span X\n(Trace 1)"] -.-|link| Y["Span Y\n(Trace 2)"]
+        X["`Span X
+(Trace 1)`"] -.-|link| Y["`Span Y
+(Trace 2)`"]
     end
 
     parent_child ~~~ follows_from ~~~ links
@@ -354,9 +356,11 @@ flowchart TB
         Fn["trace_id = f(ledger_hash)"]:::note --> F1["fetch.request"] --> F2["fetch.receive"] --> F3["fetch.apply"]
     end
 
-    C1 -.-|"span link\n(tx traces)"| T3
+    C1 -.-|"`span link
+(tx traces)`"| T3
     C3 --> V1
-    F1 -.-|"span link\n(target ledger)"| C3
+    F1 -.-|"`span link
+(target ledger)`"| C3
 
     classDef note fill:none,stroke:#888,stroke-dasharray:5 5,color:#333,font-style:italic
     style T1 fill:#0d47a1,stroke:#082f6a,color:#ffffff
