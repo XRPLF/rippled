@@ -176,7 +176,13 @@ public:
     void
     stop() override
     {
-        Telemetry::setInstance(nullptr);
+        // Clear the global instance only if this object is the one that
+        // published it. A process with two of these, as the test binary has,
+        // would otherwise let one unregister the other.
+        if (Telemetry::getInstance() == this)
+        {
+            Telemetry::setInstance(nullptr);
+        }
     }
 
     [[nodiscard]] bool
@@ -369,8 +375,12 @@ public:
     {
         JLOG(journal_.info()) << "Telemetry stopping";
 
-        // Unregister global instance before tearing down the pipeline.
-        Telemetry::setInstance(nullptr);
+        // Unregister global instance before tearing down the pipeline, but only
+        // if this object is the one that published it.
+        if (Telemetry::getInstance() == this)
+        {
+            Telemetry::setInstance(nullptr);
+        }
 
         if (sdkProvider_)
         {
