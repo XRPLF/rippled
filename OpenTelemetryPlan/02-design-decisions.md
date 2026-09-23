@@ -236,16 +236,17 @@ keys (the dotted form is reserved for resource scope per §2.3.3).
 
 #### Transaction Attributes
 
-| Key                  | Type   | Description                           |
-| -------------------- | ------ | ------------------------------------- |
-| `tx_hash`            | string | Transaction hash (hex)                |
-| `tx_type`            | string | `"Payment"`, `"OfferCreate"`, etc.    |
-| `tx_account`         | string | Source account, raw r-address         |
-| `tx_sequence`        | int64  | Account sequence number               |
-| `tx_fee`             | int64  | Fee in drops                          |
-| `tx_result`          | string | `"tesSUCCESS"`, `"tecPATH_DRY"`, etc. |
-| `current_ledger_seq` | int64  | Open ledger the transaction targeted  |
-| `relay_count`        | int64  | Peers the transaction was relayed to  |
+| Key                  | Type   | Description                                                                                                                                                   |
+| -------------------- | ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `tx_hash`            | string | Transaction hash (hex)                                                                                                                                        |
+| `tx_type`            | string | `"Payment"`, `"OfferCreate"`, etc.                                                                                                                            |
+| `tx_account`         | string | Sending account, raw r-address                                                                                                                                |
+| `tx_<field>`         | string | One per account-typed top-level field the transaction carries (`tx_destination`, `tx_owner`, `tx_issuer`, ...), raw r-address; keys in `TxAccountSpanNames.h` |
+| `tx_sequence`        | int64  | Account sequence number                                                                                                                                       |
+| `tx_fee`             | int64  | Fee in drops                                                                                                                                                  |
+| `tx_result`          | string | `"tesSUCCESS"`, `"tecPATH_DRY"`, etc.                                                                                                                         |
+| `current_ledger_seq` | int64  | Open ledger the transaction targeted                                                                                                                          |
+| `relay_count`        | int64  | Peers the transaction was relayed to                                                                                                                          |
 
 > **Note:** `current_ledger_seq` and `ledger_seq` are the same concept — a ledger's sequence number — but they name different ledgers, so the design keeps two keys rather than one. `current_ledger_seq` is the open or in-flight ledger a transaction's work was applied into; it is named after the RPC field `ledger_current_index`. `ledger_seq` (see [Ledger & Job Attributes](#ledger--job-attributes)) is a closed or validated ledger, set by the ledger and consensus spans. Neither is spelled `ledger_index`: per rule 2 of [Telemetry span attribute naming](../CONTRIBUTING.md#telemetry-span-attribute-naming), one concept gets one key reused verbatim, and a different referent is disambiguated with a prefix rather than a synonym.
 
