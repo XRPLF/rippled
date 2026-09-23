@@ -2048,7 +2048,7 @@ one dashboard set serves every deployment:
 | Service     | `service.name`           | xrpld cfg  | `xrpld`, `xrpld-validator`                       |
 | Network     | `xrpl.network.type`      | xrpld node | `mainnet`, `testnet`, `devnet`, `perf`           |
 | Environment | `deployment.environment` | collector  | `local`, `test`, `ci`, `prod`                    |
-| Work Item   | `xrpl.work.item`         | perf-iac   | `RIPD-7455` (empty outside perf runs)            |
+| Work Item   | `xrpl.work.item`         | perf-iac   | the work-item key (empty outside perf runs)      |
 | Branch      | `xrpl.branch`            | perf-iac   | `baseline:<ref>:<commit>`, `test:<ref>:<commit>` |
 | Node Role   | `xrpl.node.role`         | perf-iac   | `validator`, `peer`                              |
 
