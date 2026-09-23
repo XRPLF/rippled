@@ -22,6 +22,10 @@ public:
     // getFieldBytesFromSTData(xrpl::STData const& funcParam, std::uint32_t
     // stTypeId);
 
+    // TODO: `updateData` is inherited from the escrow host and is not refused here, so a
+    // contract calling `set_data` is told how many bytes it stored and then has them
+    // dropped: `ContractCall::doApply` never drains `getData()`. Refusing it needs an error
+    // a contract can read, which `Unimplemented` is not — see the note in HostFunc.h.
     std::expected<Bytes, HostFunctionError>
     instanceParam(std::uint32_t index, std::uint32_t stTypeId) override;
 

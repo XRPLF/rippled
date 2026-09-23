@@ -479,6 +479,25 @@ public:
         return std::unexpected(HostFunctionError::Unimplemented);
     }
 
+    // Smart-contract host functions. `WasmHostFunctionsImpl`, the escrow host, leaves every
+    // one of them at the `Unimplemented` default below, and `ContractHostFunctionsImpl`
+    // overrides them.
+    //
+    // TODO: that default is the only thing separating the two groups, and it separates them
+    // too late and in one direction only. The ABI is one flat table in one `host_lib`
+    // namespace, so screening accepts an escrow whose bytecode imports `emit_built_txn`:
+    // `EscrowCreate` stores it, and the escrow fails at finish with `tecINTERNAL`, because
+    // `Unimplemented` is a fatal fault rather than a code a contract reads. The other
+    // direction does not fail at all — `ContractHostFunctionsImpl` inherits `updateData`,
+    // and only `EscrowFinish::doApply` ever drains it, so a contract's write returns a byte
+    // count and is discarded.
+    //
+    // Both want the same thing: screening has to know which subset of
+    // `HostFunctionSpec::ALL` the host being built for actually serves, so a module
+    // importing the wrong group is refused at create with `temINVALID_BYTECODE`.
+    // `docs/wasm-amendment-gating.md` designs that transport for amendments (a gate
+    // bitfield threaded into `check()` and `register_host_functions`); this needs the same
+    // transport keyed on which host is running.
     virtual std::expected<Bytes, HostFunctionError>
     instanceParam(std::uint32_t index, std::uint32_t stTypeId)
     {
