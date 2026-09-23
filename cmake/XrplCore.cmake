@@ -224,10 +224,13 @@ target_link_libraries(
 # When telemetry=ON, links the Conan-provided umbrella target
 # opentelemetry-cpp::opentelemetry-cpp (individual component targets like
 # ::api, ::sdk are not available in the Conan package).
+#
+# Links xrpl.libxrpl.protocol PRIVATELY for sha512Half (digest.h)
 add_module(xrpl telemetry)
 target_link_libraries(
     xrpl.libxrpl.telemetry
     PUBLIC xrpl.libxrpl.basics xrpl.libxrpl.beast xrpl.libxrpl.config
+    PRIVATE xrpl.libxrpl.protocol
 )
 if(telemetry)
     target_link_libraries(

@@ -2,6 +2,8 @@
 #include <xrpld/rpc/Context.h>
 #include <xrpld/rpc/Role.h>
 #include <xrpld/rpc/detail/LegacyPathFind.h>
+#include <xrpld/rpc/detail/PathFindSpanAttributes.h>
+#include <xrpld/rpc/detail/PathFindSpanNames.h>
 #include <xrpld/rpc/detail/PathRequest.h>
 #include <xrpld/rpc/detail/PathRequestManager.h>
 #include <xrpld/rpc/detail/RPCLedgerHelpers.h>
@@ -13,6 +15,7 @@
 #include <xrpl/protocol/RPCErr.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/resource/Fees.h>
+#include <xrpl/telemetry/SpanGuard.h>
 
 #include <memory>
 #include <utility>
@@ -23,8 +26,45 @@ namespace xrpl {
 json::Value
 doRipplePathFind(rpc::JsonContext& context)
 {
+    using namespace telemetry;
+    // pathfind.request nests under rpc.command. This scope is held across
+    // context.coro->yield() below; the coro-aware OTel context storage moves it
+    // with the coroutine on resume (it is never stranded on a worker's
+    // thread-local stack), so the scope pops on the correct store and the
+    // span's log lines stay trace-correlated.
+    auto span = ScopedSpanGuard(
+        TraceCategory::Rpc, pathfind_span::prefix::pathfind, pathfind_span::op::request);
+    // Guarded on the span being live because the account parse below is not
+    // free and runs on every ripple_path_find call otherwise. The compiled-out
+    // guard's operator bool() is a literal false, so the block disappears
+    // entirely in that build; with telemetry compiled in it is skipped when
+    // telemetry is disabled at runtime or the category is off.
+    if (span)
+    {
+        // Read through a const reference: the non-const json::Value::operator[]
+        // inserts a null for a missing key, which would make
+        // PathRequest::parseJson's isMember() checks see an absent field as
+        // present and return Malformed instead of Missing. Reading for
+        // telemetry must not alter what the request looks like.
+        auto const& params = std::as_const(context.params);
+        pathfind_span::setAccountAttribute(
+            span, pathfind_span::attr::sourceAccount, params[jss::source_account]);
+        pathfind_span::setAccountAttribute(
+            span, pathfind_span::attr::destAccount, params[jss::destination_account]);
+    }
+
+    // A failed reply carries the rpc error token, so reading the status off the
+    // reply covers every exit, including the ones whose reply is built further
+    // down the call chain. The token set is fixed by the error registry, so it
+    // is safe as a span label; raw request text would not be.
+    auto const finish = [&span](json::Value&& reply) -> json::Value {
+        if (span && rpc::containsError(reply))
+            span.setError(std::as_const(reply)[jss::error].asString());
+        return std::move(reply);
+    };
+
     if (context.app.config().pathSearchMax == 0)
-        return rpcError(RpcNotSupported);
+        return finish(rpcError(RpcNotSupported));
 
     context.loadType = resource::kFeeHeavyBurdenRpc;
 
@@ -40,8 +80,8 @@ doRipplePathFind(rpc::JsonContext& context)
             rpc::tuning::kMaxValidatedLedgerAge)
         {
             if (context.apiVersion == 1)
-                return rpcError(RpcNoNetwork);
-            return rpcError(RpcNotSynced);
+                return finish(rpcError(RpcNoNetwork));
+            return finish(rpcError(RpcNotSynced));
         }
 
         PathRequest::pointer request;
@@ -142,17 +182,17 @@ doRipplePathFind(rpc::JsonContext& context)
             jvResult = request->doStatus(context.params);
         }
 
-        return jvResult;
+        return finish(std::move(jvResult));
     }
 
     // The caller specified a ledger
     jvResult = rpc::lookupLedger(lpLedger, context);
     if (!lpLedger)
-        return jvResult;
+        return finish(std::move(jvResult));
 
     rpc::LegacyPathFind const lpf(isUnlimited(context.role), context.app);
     if (!lpf.isOk())
-        return rpcError(RpcTooBusy);
+        return finish(rpcError(RpcTooBusy));
 
     auto result = context.app.getPathRequestManager().doLegacyPathRequest(
         context.consumer, lpLedger, context.params);
@@ -160,7 +200,7 @@ doRipplePathFind(rpc::JsonContext& context)
     for (auto& fieldName : jvResult.getMemberNames())
         result[fieldName] = std::move(jvResult[fieldName]);
 
-    return result;
+    return finish(std::move(result));
 }
 
 }  // namespace xrpl

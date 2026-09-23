@@ -232,6 +232,9 @@ callMethod(JsonContext& context, Handler::Method method, std::string_view name, 
         // not: with telemetry compiled out operator bool() is a constant false.
         if (span)
         {
+            // Read after the handler ran, because a handler may raise its own
+            // load type (pathfind charges a heavy burden).
+            span.setAttribute(rpc_span::attr::loadType, context.loadType.label().c_str());
             // An old-style handler reports its error in the reply, not in the
             // Status: byRef() returns a default Status whatever happened.
             // Reading both covers every handler. Status::operator bool() is
