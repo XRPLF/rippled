@@ -222,7 +222,8 @@ target_link_libraries(
 # opentelemetry-cpp::opentelemetry-cpp (individual component targets like
 # ::api, ::sdk are not available in the Conan package).
 #
-# Links xrpl.libxrpl.protocol PRIVATELY for sha512Half (digest.h)
+# Links xrpl.libxrpl.protocol PRIVATELY for sha512Half (digest.h) and the
+# SField table behind TxAccountSpanNames.cpp
 add_module(xrpl telemetry)
 target_link_libraries(
     xrpl.libxrpl.telemetry

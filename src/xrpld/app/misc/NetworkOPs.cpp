@@ -119,6 +119,7 @@
 #include <xrpl/server/Manifest.h>
 #include <xrpl/shamap/SHAMap.h>
 #include <xrpl/telemetry/SpanGuard.h>
+#include <xrpl/telemetry/TxAccountSpanNames.h>
 #include <xrpl/tx/apply.h>
 
 #include <boost/asio/error.hpp>
@@ -1571,6 +1572,18 @@ NetworkOPsImp::processTransaction(
             }
             span->setAttribute(
                 tx_span::attr::sequence, static_cast<std::int64_t>(stx->getSeqProxy().value()));
+            // Every account the transaction names, keyed by its role
+            // (tx_account, tx_destination, ...). Addresses are public ledger
+            // identifiers and go out raw; see TxAccountSpanNames.h. A present
+            // but empty account field is skipped rather than rendered as the
+            // all-zero address.
+            for (auto const& field : *stx)
+            {
+                if (field.getSType() != STI_ACCOUNT || field.isDefault())
+                    continue;
+                if (auto const key = accountFieldAttributeKey(field.getFName()))
+                    span->setAttribute(*key, field.getText());
+            }
         }
     }
 
