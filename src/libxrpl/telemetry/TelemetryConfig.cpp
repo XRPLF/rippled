@@ -207,14 +207,14 @@ requireReadableFile(std::string const& path, char const* configKey)
 }
 
 /**
- * Throw unless an endpoint URL is one the client certificate can be used on.
+ * Throw unless an endpoint URL is one TLS can actually be used on.
  *
  * The OTLP/HTTP exporter turns TLS on from the URL scheme alone, and matches
- * "https:" exactly and case-sensitively. So a client certificate only reaches
- * the collector on an https endpoint, and this check is what holds that
- * invariant: with a client certificate configured, the endpoint is an https URL.
- * "https://" is required in full, which is stricter than the exporter's own
- * test, so anything this accepts the exporter also treats as TLS.
+ * "https:" exactly and case-sensitively. So the certificate settings only mean
+ * anything on an https endpoint, and this check is what holds that invariant:
+ * with TLS asked for, the endpoint is an https URL. "https://" is required in
+ * full, which is stricter than the exporter's own test, so anything this
+ * accepts the exporter also treats as TLS.
  *
  * @param endpoint   Endpoint URL from the config, or the built-in default.
  * @param configKey  Config key the URL came from, named in the message.
@@ -230,8 +230,8 @@ requireHttpsEndpoint(std::string const& endpoint, char const* configKey)
 
     Throw<std::runtime_error>(
         std::string("Invalid value '") + configKey + "' in " + kSectionLabel +
-        ": must start with '" + std::string{kHttpsPrefix} + "' when " + key::tlsClientCert +
-        " is set, but is '" + endpoint + "'.");
+        ": must start with '" + std::string{kHttpsPrefix} + "' when " + key::useTls +
+        "=1, but is '" + endpoint + "'.");
 }
 
 /**
@@ -318,12 +318,14 @@ makeTelemetrySetup(
 
         // Still inside the enabled branch, and checked before the files are
         // opened so a scheme problem is not hidden behind a path problem. The
-        // exporter reads TLS off the endpoint scheme, so a client certificate is
-        // only presented on an https endpoint. tls_ca_cert is left out of this
-        // check: it only names a trust store, while a client certificate is this
-        // node's own identity and has to reach the collector to mean anything.
-        if (!setup.tlsClientCertPath.empty())
+        // exporter reads TLS off the endpoint scheme alone, so use_tls=1 on an
+        // http endpoint would validate the certificate files and then still
+        // export in the clear. An operator who asks for TLS gets TLS or a
+        // startup error, never plaintext.
+        if (setup.useTls)
+        {
             requireHttpsEndpoint(setup.tracesEndpoint, key::tracesEndpoint);
+        }
 
         // Still inside the enabled branch. The exporter opens these files only
         // when TLS is on, so check them only then: a bad path behind use_tls=0
