@@ -405,13 +405,33 @@ other layer must match them. A CI check enforces this end to end.
 5. Span names use `<subsystem>[.<component>]` (dotted). Only attribute _keys_
    follow rules 1–4.
 
+All attribute keys are `lower_snake_case` (lowercase letters, digits, and
+underscores; each dot-separated segment of a resource key likewise). No
+camelCase, uppercase, or spaces.
+
 Standard OpenTelemetry semantic-convention keys keep their canonical dotted
 form (e.g. `service.*` resource attributes, `http.*` span attributes); the
 "no dotted form" rule above applies to xrpl-custom keys, not to OTel-standard
 conventions.
 
-Always reference the `*SpanNames.h` constants — never pass string literals as
-attribute keys or values to `setAttribute`/`addEvent`.
+Always reference the `*SpanNames.h` constants for attribute keys and span
+names — never pass a string literal as a key or as a `span`/`childSpan` name
+argument. (Attribute _values_ may be runtime data.)
+
+These rules are enforced by `.github/scripts/otel-naming/check_otel_naming.py`,
+run in CI on every pull request. The check derives the set of valid keys
+directly from the `*SpanNames.h` constants and the resource attributes the code
+registers, so there is no separate list to keep in sync. It cross-validates the
+collector, Tempo, dashboards, and docs against those keys, and each rule runs
+only when the file it needs is present — so it works whether telemetry changes
+land in one pull request or several. Run it locally with:
+
+```
+python .github/scripts/otel-naming/check_otel_naming.py
+```
+
+See [.github/scripts/otel-naming/README.md](.github/scripts/otel-naming/README.md)
+for the full rule list.
 
 ## Contracts and instrumentation
 
