@@ -88,10 +88,10 @@ All spans instrumented in xrpld, grouped by subsystem:
 
 ### Transaction Spans
 
-| Span Name    | Source File    | Attributes                                                                                              | Description                           |
-| ------------ | -------------- | ------------------------------------------------------------------------------------------------------- | ------------------------------------- |
-| `tx.process` | NetworkOPs.cpp | `tx_hash`, `local`, `path`, `tx_type`, `fee`, `sequence`, `ter_result`, `applied`, `current_ledger_seq` | Transaction submission and processing |
-| `tx.receive` | PeerImp.cpp    | `peer_id`, `tx_hash`, `tx_type`, `peer_version`, `suppressed`, `tx_status`, `current_ledger_seq`        | Transaction received from peer relay  |
+| Span Name    | Source File    | Attributes                                                                                                                                                                                                                                                     | Description                           |
+| ------------ | -------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------- |
+| `tx.process` | NetworkOPs.cpp | `tx_hash`, `local`, `path`, `tx_type`, `fee`, `sequence`, `ter_result`, `applied`, `current_ledger_seq`, `tx_account` and one `tx_<field>` per other account field the transaction carries (`tx_destination`, `tx_owner`, ...; keys in `TxAccountSpanNames.h`) | Transaction submission and processing |
+| `tx.receive` | PeerImp.cpp    | `peer_id`, `tx_hash`, `tx_type`, `peer_version`, `suppressed`, `tx_status`, `current_ledger_seq`                                                                                                                                                               | Transaction received from peer relay  |
 
 `current_ledger_seq` is the current (open) ledger index at submit/receive time —
 the ledger being worked on, not an established one. It lets a transaction's
