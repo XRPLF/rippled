@@ -841,7 +841,7 @@ by perf-comparison run:
 | `$service_name`           | `service_name`           | Filter by service (`service.name`, e.g. `xrpld`)                 |
 | `$deployment_environment` | `deployment_environment` | Filter by deployment tier (`local` / `test` / `ci` / `prod`)     |
 | `$xrpl_network_type`      | `xrpl_network_type`      | Filter by network (`mainnet` / `testnet` / `devnet` / `perf`)    |
-| `$xrpl_work_item`         | `xrpl_work_item`         | Filter by perf-iac work item / ticket (e.g. `RIPD-7455`)         |
+| `$xrpl_work_item`         | `xrpl_work_item`         | Filter by perf-iac work item / ticket                            |
 | `$xrpl_branch`            | `xrpl_branch`            | Filter by comparison side (`baseline:<ref>:<commit>` / `test:…`) |
 | `$xrpl_node_role`         | `xrpl_node_role`         | Filter by node role (`validator` / `peer`)                       |
 
