@@ -166,11 +166,7 @@ class ValidConfidentialMPToken
         std::int64_t outstandingDelta = 0;
         SLE::const_pointer issuance;
         bool deletedWithEncrypted = false;
-        // Pre-transaction public balance of an erased MPToken. Only captured
-        // while fixCleanup3_5_0 is disabled, to reproduce the legacy
-        // behaviour where a non-zero `before` balance also fed the
-        // confidential gate, rejecting the erase whenever the issuance's COA
-        // was non-zero.
+        // True when an erased MPToken had a non-zero pre-tx public balance.
         bool deletedWithBalanceBefore = false;
         bool badConsistency = false;
         bool badCOA = false;

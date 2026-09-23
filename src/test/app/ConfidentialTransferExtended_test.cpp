@@ -638,18 +638,10 @@ class ConfidentialTransferExtended_test : public ConfidentialTransferTestBase
         }
     }
 
-    // A full AMMWithdraw drains the AMM pseudo-account's MPToken to zero and
-    // deletes the AMM -- erasing that MPToken -- inside a single doApply.
-    // Before fixCleanup3_5_0, ValidConfidentialMPToken read the erased
-    // MPToken's pre-transaction balance, flagged the erase as "deleted with
-    // encrypted state", and the issuance-wide ConfidentialOutstandingAmount
-    // gate rejected the whole transaction. The AMM pseudo-account holds no
-    // confidential fields and carol never interacts with the pool, so the
-    // rejection was driven entirely by an unrelated third party.
-    //
-    // Unlike the LoanBrokerDelete path there is no way to split this across
-    // two transactions: zeroing LPTokenBalance is what triggers the deletion,
-    // so pre-amendment the last LP can never close the position.
+    // A full AMMWithdraw must succeed even when an unrelated third party
+    // holds a confidential balance. Pre-fixCleanup3_5_0 the erase of the
+    // AMM pseudo-account's MPToken was rejected in this case, permanently
+    // stranding the last LP's position.
     void
     testAMMWithdrawAllBlockedByUnrelatedCOA(FeatureBitset features)
     {
