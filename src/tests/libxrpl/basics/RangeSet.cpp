@@ -10,7 +10,7 @@
 
 using namespace xrpl;
 
-TEST(RangeSet, prevMissing)
+TEST(RangeSet, prev_missing)
 {
     // Set will include:
     // [ 0, 5]
@@ -36,7 +36,7 @@ TEST(RangeSet, prevMissing)
     }
 }
 
-TEST(RangeSet, toString)
+TEST(RangeSet, to_string)
 {
     RangeSet<std::uint32_t> set;
     EXPECT_EQ(to_string(set), "empty");
@@ -54,7 +54,7 @@ TEST(RangeSet, toString)
     EXPECT_EQ(to_string(set), "1-2,6");
 }
 
-TEST(RangeSet, fromString)
+TEST(RangeSet, from_string)
 {
     RangeSet<std::uint32_t> set;
 

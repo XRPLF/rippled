@@ -116,6 +116,7 @@ test.jtx > xrpl.config
 test.jtx > xrpl.core
 test.jtx > xrpld.app
 test.jtx > xrpld.core
+test.jtx > xrpld.overlay
 test.jtx > xrpld.rpc
 test.jtx > xrpl.json
 test.jtx > xrpl.ledger
