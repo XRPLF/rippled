@@ -784,8 +784,9 @@ PathRequest::doUpdate(
         // the issuer as a plaintext Base58 address, so it cannot be emitted
         // as-is: every account reaching a span is hashed first. Redact just the
         // issuer and keep the currency, which is what this attribute is for. An
-        // MPT asset renders as its issuance ID and carries no address, so it
-        // needs no redaction.
+        // MPT issuance id ends with the issuer's account id, so hash the whole
+        // id: that still gives one stable token per asset, without publishing
+        // the issuer.
         span.setAttribute(
             pathfind_span::attr::destCurrency,
             saDstAmount_.asset().visit(
@@ -794,7 +795,7 @@ PathRequest::doUpdate(
                         ? to_string(issue.currency)
                         : redactAccount(toBase58(issue.account)) + "/" + to_string(issue.currency);
                 },
-                [](MPTIssue const& mpt) { return to_string(mpt.getMptID()); }));
+                [](MPTIssue const& mpt) { return redactAccount(to_string(mpt.getMptID())); }));
     }
 
     JLOG(journal_.debug()) << iIdentifier_ << " update " << (fast ? "fast" : "normal");
