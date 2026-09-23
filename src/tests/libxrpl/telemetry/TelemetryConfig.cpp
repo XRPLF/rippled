@@ -487,6 +487,7 @@ TEST(TelemetryConfig, mtls_neither_set_is_one_way_tls)
     auto const setup = mtls::parseSection(section);
     EXPECT_TRUE(setup.enabled);
     EXPECT_TRUE(setup.useTls);
+    EXPECT_EQ(setup.tracesEndpoint, mtls::httpsEndpoint);
     EXPECT_EQ(setup.tlsCertPath, caCert);
     EXPECT_TRUE(setup.tlsClientCertPath.empty());
     EXPECT_TRUE(setup.tlsClientKeyPath.empty());

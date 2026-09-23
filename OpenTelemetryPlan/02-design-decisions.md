@@ -236,16 +236,17 @@ keys (the dotted form is reserved for resource scope per §2.3.3).
 
 #### Transaction Attributes
 
-| Key                  | Type   | Description                           |
-| -------------------- | ------ | ------------------------------------- |
-| `tx_hash`            | string | Transaction hash (hex)                |
-| `tx_type`            | string | `"Payment"`, `"OfferCreate"`, etc.    |
-| `tx_account`         | string | Source account (redacted in prod)     |
-| `tx_sequence`        | int64  | Account sequence number               |
-| `tx_fee`             | int64  | Fee in drops                          |
-| `tx_result`          | string | `"tesSUCCESS"`, `"tecPATH_DRY"`, etc. |
-| `current_ledger_seq` | int64  | Open ledger the transaction targeted  |
-| `relay_count`        | int64  | Peers the transaction was relayed to  |
+| Key                  | Type   | Description                                                                                                                                                   |
+| -------------------- | ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `tx_hash`            | string | Transaction hash (hex)                                                                                                                                        |
+| `tx_type`            | string | `"Payment"`, `"OfferCreate"`, etc.                                                                                                                            |
+| `tx_account`         | string | Sending account, raw r-address                                                                                                                                |
+| `tx_<field>`         | string | One per account-typed top-level field the transaction carries (`tx_destination`, `tx_owner`, `tx_issuer`, ...), raw r-address; keys in `TxAccountSpanNames.h` |
+| `tx_sequence`        | int64  | Account sequence number                                                                                                                                       |
+| `tx_fee`             | int64  | Fee in drops                                                                                                                                                  |
+| `tx_result`          | string | `"tesSUCCESS"`, `"tecPATH_DRY"`, etc.                                                                                                                         |
+| `current_ledger_seq` | int64  | Open ledger the transaction targeted                                                                                                                          |
+| `relay_count`        | int64  | Peers the transaction was relayed to                                                                                                                          |
 
 > **Note:** `current_ledger_seq` and `ledger_seq` are the same concept — a ledger's sequence number — but they name different ledgers, so the design keeps two keys rather than one. `current_ledger_seq` is the open or in-flight ledger a transaction's work was applied into; it is named after the RPC field `ledger_current_index`. `ledger_seq` (see [Ledger & Job Attributes](#ledger--job-attributes)) is a closed or validated ledger, set by the ledger and consensus spans. Neither is spelled `ledger_index`: per rule 2 of [Telemetry span attribute naming](../CONTRIBUTING.md#telemetry-span-attribute-naming), one concept gets one key reused verbatim, and a different referent is disambiguated with a prefix rather than a synonym.
 
@@ -316,12 +317,14 @@ Establish-phase gap fill and cross-node correlation attributes (Phase 4a):
 
 #### PathFinding Attributes
 
-| Key                        | Type   | Description               |
-| -------------------------- | ------ | ------------------------- |
-| `pathfind_source_currency` | string | Source currency code      |
-| `pathfind_dest_currency`   | string | Destination currency code |
-| `pathfind_path_count`      | int64  | Number of paths found     |
-| `pathfind_cache_hit`       | bool   | RippleLineCache hit       |
+| Key                        | Type   | Description                                                            |
+| -------------------------- | ------ | ---------------------------------------------------------------------- |
+| `pathfind_source_account`  | string | Source r-address, raw                                                  |
+| `pathfind_dest_account`    | string | Destination r-address, raw                                             |
+| `pathfind_source_currency` | string | Source currency code                                                   |
+| `pathfind_dest_currency`   | string | Destination asset: `XRP`, `<issuer>/<currency>`, or an MPT issuance id |
+| `pathfind_path_count`      | int64  | Number of paths found                                                  |
+| `pathfind_cache_hit`       | bool   | RippleLineCache hit                                                    |
 
 #### TxQ Attributes
 
@@ -400,50 +403,50 @@ The following data is explicitly **excluded** from telemetry collection:
 
 #### Privacy Protection Mechanisms
 
-| Mechanism                     | Description                                                                                                                                                                                            |
-| ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **Account Hashing**           | Account addresses are hashed both SDK-side (`pathfind_source_account`, `pathfind_dest_account` — always hashed before emission) and again at the collector level, so raw addresses never reach storage |
-| **Configurable Redaction**    | Sensitive fields can be excluded via `[telemetry]` config section                                                                                                                                      |
-| **Collector Tail Sampling**   | xrpld head sampling is fixed at 1.0 (every span emitted); the collector retains ~10% of non-error traces, reducing stored data exposure                                                                |
-| **Sampling**                  | Only 10% of traces recorded by default, reducing data exposure                                                                                                                                         |
-| **Local Control**             | Node operators have full control over what gets exported                                                                                                                                               |
-| **No Raw Payloads**           | Transaction content is never recorded, only metadata (hash, type, result)                                                                                                                              |
-| **Collector-Level Filtering** | Additional redaction/hashing can be configured at OTel Collector                                                                                                                                       |
+| Mechanism                     | Description                                                                                                                                                                                         |
+| ----------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Account Addresses**         | Emitted raw (`pathfind_source_account`, `pathfind_dest_account`). An account address is a public ledger identifier; hashing it protects nothing and breaks the join against explorers, RPC and logs |
+| **Collector Tail Sampling**   | xrpld head sampling is fixed at 1.0 (every span emitted); the collector retains ~10% of non-error traces, reducing stored data exposure                                                             |
+| **Sampling**                  | Only 10% of traces recorded by default, reducing data exposure                                                                                                                                      |
+| **Local Control**             | Node operators have full control over what gets exported                                                                                                                                            |
+| **No Raw Payloads**           | Transaction content is never recorded, only metadata (hash, type, result)                                                                                                                           |
+| **Collector-Level Filtering** | Available for a future genuinely sensitive attribute via an `attributes` processor. None is shipped, and none must be added for account addresses                                                   |
 
-#### Account Address Hashing
+#### Account Addresses
 
-Account addresses are **always** hashed before they reach the telemetry
-backend — there is no opt-out flag and therefore no insecure-by-default
-failure mode. Protection is applied in two independent layers:
+Account addresses are emitted **raw**, at every layer:
 
-1. **SDK-side** (this node): the path-finding RPC handlers call
-   `redactAccount()` (`xrpl::telemetry`, `Redaction.h`) before setting the
-   `pathfind_source_account` / `pathfind_dest_account` span attributes. The
-   helper emits the first 16 characters of `sha512Half(address)` as
-   lowercase hex — deterministic (spans for one account still correlate)
-   but non-reversible.
-2. **Collector-side** (defense-in-depth): an `attributes/hash` processor in
-   the OpenTelemetry Collector re-hashes those same attributes, so any node
-   that emitted a raw value is still redacted before storage.
+1. **SDK-side** (this node): the path-finding RPC handlers set
+   `pathfind_source_account` / `pathfind_dest_account` to the request's
+   r-address, only when it parses as one, and `pathfind_dest_currency` to `to_string(Asset)`,
+   which carries the IOU issuer's r-address. The rationale sits on the attribute
+   constants in `PathFindSpanNames.h`.
+2. **Collector-side**: no collector configuration in this repository hashes
+   or deletes these attributes.
+
+Why raw: an r-address is a public, enumerable identifier on the ledger. An
+unsalted hash of it is reversible by table lookup, so it protects nothing, and
+it breaks the one thing the attribute is for: joining a span to the account as
+explorers, RPC responses and logs show it. The helper `redactAccount()`
+(`xrpl::telemetry`, `Redaction.h`) remains available for a value that is
+genuinely private, but it is applied to no span.
 
 #### Collector-Level Data Protection
 
-The OpenTelemetry Collector can be configured (via an `attributes` processor)
-to hash or redact sensitive attributes before export — for example, hashing
-`pathfind_source_account` / `pathfind_dest_account`, deleting `peer_address`
-to drop IP addresses, and deleting `params` to redact request parameters.
+No hashing or redaction processor is shipped. If a future span introduces a
+genuinely sensitive attribute, an `attributes` processor in the collector is the
+place to strip it, and the attribute is added to the §2.4 catalogue with that
+note in the same change. Account addresses are not such an attribute.
 
 #### Configuration Options for Privacy
 
 In `xrpld.cfg`, operators control data collection granularity through the
 `[telemetry]` section. Besides `enabled`, per-component toggles
 (`trace_transactions`, `trace_consensus`, `trace_rpc`, `trace_peer` — the last
-often disabled due to high volume) select which spans are emitted. Account
-address hashing is not configurable: addresses are hashed unconditionally by
-the SDK helper described above, with collector-level hashing as a second
-layer.
+often disabled due to high volume) select which spans are emitted. There is no
+redaction setting: account addresses are public and are emitted raw.
 
-> **Key Principle**: Telemetry collects **operational metadata** (timing, counts, hashes) — never **sensitive content** (keys, balances, amounts, raw payloads).
+> **Key Principle**: Telemetry collects **operational metadata** (timing, counts, hashes, public identifiers) — never **sensitive content** (keys, balances, amounts, raw payloads).
 
 ---
 
