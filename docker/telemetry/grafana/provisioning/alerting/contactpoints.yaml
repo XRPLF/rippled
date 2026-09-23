@@ -41,11 +41,14 @@
 # GF_SMTP_ENABLED=true and the relay settings point somewhere real.
 #
 # Grafana Cloud does NOT use this file — Cloud has no provisioning filesystem.
-# Cloud delivery is created over the REST API instead: a single email-only
-# contact point, attached to each rule via per-rule notification_settings.
+# Cloud delivery is created over the REST API instead: one contact point named
+# `xrpld-alerts` holding a Slack receiver AND an email receiver, attached to
+# each rule via per-rule notification_settings. Keep this file's templates and
+# the Cloud receivers' templates in step by hand; nothing syncs them.
 # The notification policy tree must never be pushed to a shared Cloud
 # instance -- there is exactly one tree per org and the PUT endpoint
-# replaces it wholesale.
+# replaces it wholesale. That Cloud instance is shared with other teams, so a
+# change there must be scoped to the `xrpld-` uids and the xrpld folder.
 
 apiVersion: 1
 
@@ -66,7 +69,7 @@ contactPoints:
           # label and is absent on NoData/Error evaluations, so the templates
           # guard it rather than referencing it bare.
           title: '{{ template "xrpld.title" . }}'
-          text: '{{ template "xrpld.body" . }}'
+          text: '{{ template "xrpld.slack.body" . }}'
         disableResolveMessage: false
 
   # --- Critical tier: Slack + email ---
@@ -81,7 +84,7 @@ contactPoints:
           # The title template already carries the severity label, so this tier
           # needs no separate "[CRITICAL]" prefix.
           title: '{{ template "xrpld.title" . }}'
-          text: '{{ template "xrpld.body" . }}'
+          text: '{{ template "xrpld.slack.body" . }}'
         disableResolveMessage: false
       - uid: xrpld-email-critical
         type: email
@@ -97,8 +100,12 @@ contactPoints:
           # what removes the raw value dump and the label list. Grafana's own
           # header ("N firing alert instances", "Grouped by") and footer are
           # fixed chrome and stay.
+          #
+          # This uses the EMAIL body, not the Slack one. Email escapes HTML and
+          # cannot render Slack markup, so a shared body arrives as literal
+          # asterisks and raw URLs. See templates.yaml.
           subject: '{{ template "xrpld.title" . }}'
-          message: '{{ template "xrpld.body" . }}'
+          message: '{{ template "xrpld.email.body" . }}'
         disableResolveMessage: false
 
 # To retire a receiver that a running Grafana has already stored, uncomment
