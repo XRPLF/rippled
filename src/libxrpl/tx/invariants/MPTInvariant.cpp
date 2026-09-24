@@ -721,7 +721,7 @@ ValidConfidentialMPToken::finalize(
     if (result != tesSUCCESS)
         return true;
 
-    bool const cleanupEnabled = view.rules().enabled(fixCleanup3_5_0);
+    bool const fix350Enabled = view.rules().enabled(fixCleanup3_5_0);
 
     for (auto const& [id, checks] : changes_)
     {
@@ -746,7 +746,7 @@ ValidConfidentialMPToken::finalize(
         // held a confidential balance. The COA gate itself is correct for
         // ciphertext and mirrors MPTokenAuthorize::preclaim; only the public
         // balance leg was misplaced.
-        bool const deletedWithEncrypted = cleanupEnabled
+        bool const deletedWithEncrypted = fix350Enabled
             ? checks.deletedWithEncrypted
             : (checks.deletedWithEncrypted || checks.deletedWithBalanceBefore);
 
