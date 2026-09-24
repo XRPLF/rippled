@@ -8,6 +8,7 @@
 
 #include <boost/asio/basic_waitable_timer.hpp>
 
+#include <atomic>
 #include <chrono>
 #include <cstdint>
 #include <memory>
@@ -132,8 +133,30 @@ protected:
      */
     uint256 const hash_;
     int timeouts_{0};
-    bool complete_{false};
-    bool failed_{false};
+
+    // complete_ and failed_ are read without mtx_: isComplete() and isFailed() are plain
+    // accessors, and InboundLedgers::acquire() calls both outside every lock it takes. Atomic
+    // rather than guarded, so a reader that sees a flag set also sees the work the writer did
+    // before setting it.
+    static_assert(std::atomic<bool>::is_always_lock_free);
+
+    /**
+     * Whether the task finished successfully.
+     *
+     * Published, not merely shared: a reader that sees this set also sees
+     * everything the publishing thread did first, which is what lets
+     * InboundLedger::done() settle a ledger and only then report it
+     * complete.
+     */
+    std::atomic<bool> complete_{false};
+
+    /**
+     * Whether the task gave up.
+     *
+     * Published for the same reason as complete_.
+     */
+    std::atomic<bool> failed_{false};
+
     /**
      * Whether forward progress has been made.
      */
