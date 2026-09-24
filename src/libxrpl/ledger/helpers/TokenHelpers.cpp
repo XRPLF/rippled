@@ -1,6 +1,7 @@
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 
 #include <xrpl/basics/Log.h>
+#include <xrpl/basics/MathUtilities.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/beast/utility/instrumentation.h>
@@ -1155,6 +1156,10 @@ accountSendMultiIOU(
 
         if (receiver)
         {
+            // Confirm the running debit will not overflow before crediting.
+            if (!checkedAdd(takeFromSender.xrp().drops(), amount.xrp().drops()))
+                return tecINTERNAL;
+
             // Increment XRP balance.
             auto const rcvBal = receiver->getFieldAmount(sfBalance);
             receiver->setFieldAmount(sfBalance, rcvBal + amount);
@@ -1162,7 +1167,7 @@ accountSendMultiIOU(
 
             view.update(receiver);
 
-            // Take what is actually sent
+            // Take what is actually sent.
             takeFromSender += amount;
         }
 
@@ -1438,6 +1443,8 @@ directSendNoLimitMultiMPT(
             }
 
             // Direct send: redeeming MPTs and/or sending own MPTs.
+            if (!checkedAdd(actual.mpt().value(), amount.mpt().value()))
+                return tecINTERNAL;
             if (auto const ter = directSendNoFeeMPT(view, senderID, receiverID, amount, j);
                 !isTesSuccess(ter))
                 return ter;
@@ -1451,6 +1458,10 @@ directSendNoLimitMultiMPT(
         STAmount const actualSend = (waiveFee == WaiveTransferFee::Yes)
             ? amount
             : multiply(amount, transferRate(view, amount.get<MPTIssue>().getMptID()));
+        // actual is a superset of takeFromSender, so checking it before both add
+        // sites also protects the debit accumulator.
+        if (!checkedAdd(actual.mpt().value(), actualSend.mpt().value()))
+            return tecINTERNAL;
         actual += actualSend;
         takeFromSender += actualSend;
 
