@@ -2,7 +2,7 @@
 
 This guide covers opening the xrpld Conan/CMake project in [CLion](https://www.jetbrains.com/clion/).
 
-Build xrpld from the command line first, following [BUILD.md](../../BUILD.md), to ensure there are no dependency issues. 
+Build xrpld from the command line first, following [BUILD.md](../../BUILD.md), to ensure there are no dependency issues.
 
 If this is your first time opening the project in CLion, skip ahead to [Configure CLion](#configure-clion). The cache-reset step below is only needed to clear out a broken previous attempt.
 
