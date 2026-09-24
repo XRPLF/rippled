@@ -100,10 +100,11 @@ export TSAN_OPTIONS="include=sanitizers/suppressions/runtime-tsan-options.txt:su
 More details [here](https://github.com/google/sanitizers/wiki/ThreadSanitizerCppManual).
 
 > [!IMPORTANT]
-> The `ubuntu-clang-debug-amd64-tsan` CI config runs TSan in the full matrix
-> only, and reports nothing back. `runtime-tsan-options.txt` sets
-> `halt_on_error=false`, so the run continues past a finding, and the workflow
-> appends `exitcode=0` to `TSAN_OPTIONS`, so the finding does not fail the job.
+> The `ubuntu-clang-debug-amd64-tsan` CI config runs TSan in the extended matrix
+> only, which is the nightly schedule and a manual run, and it reports nothing
+> back. `runtime-tsan-options.txt` sets `halt_on_error=false`, so the run
+> continues past a finding, and the workflow appends `exitcode=0` to
+> `TSAN_OPTIONS`, so the finding does not fail the job.
 > Both are needed: TSan exits 66 on its own once it has reported anything. Read
 > the job log to see findings. A test that must fail on one has to run in its own
 > step with `halt_on_error=1` and `exitcode=66`.
