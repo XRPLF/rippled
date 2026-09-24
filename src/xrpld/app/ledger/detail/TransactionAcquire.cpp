@@ -193,12 +193,20 @@ TransactionAcquire::takeNodes(
 {
     ScopedLockType sl(mtx_);
 
+    // Both read before the call, which settles the acquisition on some paths and trigger()s the
+    // sender on others, enrolling it in requestedPeers_.
+    bool const wasSettled = isDone();
+    bool const wasAsked = requestedPeers_.contains(peer->id());
+
     auto const san = takeNodesLocked(std::move(data), peer, sl);
 
-    // A batch that advanced the map must keep the next timer tick from counting a timeout against
-    // it. A duplicate counts as an answer: an honest second responder to trigger()'s fan-out has
-    // replied, so no timeout is owed.
-    if (san.isUseful() || san.getDuplicate() > 0)
+    // A batch that answered must keep the next timer tick from counting a timeout against it. A
+    // duplicate counts as an answer, since the flag decides whether onTimer() treats the
+    // acquisition as stalled and a peer sending nodes we already hold has answered. Only from a
+    // peer we asked, whose reply says something about the peers being waited on, and only while
+    // the acquisition was running, since a settled one has no timer left to postpone.
+    bool const answered = san.isUseful() || (san.getDuplicate() > 0 && wasAsked);
+    if (!wasSettled && answered)
         progress_ = true;
 
     return san;
@@ -229,7 +237,6 @@ TransactionAcquire::takeNodesLocked(
     if (isDone())
     {
         JLOG(journal_.trace()) << (complete_ ? "TX set complete" : "TX set failed");
-
         chargeLateReply(peer, sl);
 
         // Reported as a duplicate rather than as bad, unless the map itself is why the set failed:
