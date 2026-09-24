@@ -830,7 +830,7 @@ class InvariantsMisc_test : public InvariantsBase
             }
         }
 
-        // Under featureLendingProtocolV1_1, a pending (two-step) loan is
+        // Under featureLendingProtocolV1_2, a pending (two-step) loan is
         // created without sfOwnerNode and LoanAccept adds it when the borrower
         // accepts. NoModifiedUnmodifiableFields therefore permits LoanAccept
         // exactly one transition, absent -> present, and treats every other

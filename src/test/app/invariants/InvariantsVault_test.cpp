@@ -299,6 +299,39 @@ class InvariantsVault_test : public InvariantsBase
                 return true;
             });
 
+        // LoanDelete may only modify a vault (when deleting a pending loan)
+        // once featureLendingProtocolV1_2 is enabled. Before that it must be
+        // rejected like any other non-vault transaction.
+        for (auto const lendingV12 : {false, true})
+        {
+            auto const amendments = lendingV12 ? all_ : all_ - featureLendingProtocolV1_2;
+            auto const expectLogs = lendingV12
+                ? std::vector<std::string>{}
+                : std::vector<std::string>{"vault updated by a wrong transaction type"};
+            TER const expected = lendingV12 ? TER{tesSUCCESS} : TER{tecINVARIANT_FAILED};
+            doInvariantCheck(
+                makeEnv(amendments),
+                expectLogs,
+                [&](Account const& a1, Account const& a2, ApplyContext& ac) {
+                    auto const keylet =
+                        keylet::vault(a1.id(), SeqProxy::rawSequence(ac.view().seq()));
+                    auto sleVault = ac.view().peek(keylet);
+                    if (!sleVault)
+                        return false;
+                    ac.view().update(sleVault);
+                    return true;
+                },
+                XRPAmount{},
+                STTx{ttLOAN_DELETE, [](STObject&) {}},
+                {expected, expected},
+                [&](Account const& a1, Account const& a2, Env& env) {
+                    Vault const vault{env};
+                    auto [tx, _] = vault.create({.owner = a1, .asset = xrpIssue()});
+                    env(tx);
+                    return true;
+                });
+        }
+
         doInvariantCheck(
             {"vault updated by a wrong transaction type",
              "deleted Vault without deleting its pseudo-account"},

@@ -20,7 +20,7 @@ class LoanAcceptBuilder;
  *
  * Type: ttLOAN_ACCEPT (83)
  * Delegable: Delegation::NotDelegable
- * Amendment: featureLendingProtocolV1_1
+ * Amendment: featureLendingProtocolV1_2
  * Privileges: Privilege::MayAuthorizeMpt | Privilege::MustModifyVault
  *
  * Immutable wrapper around STTx providing type-safe field access.

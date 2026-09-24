@@ -127,7 +127,7 @@ private:
                 {
                     testCaseWrapper(
                         env, mptt, assets, broker, loanAmount, interestExponent, LoanFlow::OneStep);
-                    if (features[featureLendingProtocolV1_1])
+                    if (features[featureLendingProtocolV1_2])
                     {
                         testCaseWrapper(
                             env,
@@ -322,7 +322,7 @@ private:
             bool const twoStep = flow == LoanFlow::TwoStep;
 
             Env env(*this);
-            BEAST_EXPECT(env.enabled(featureLendingProtocolV1_1));
+            BEAST_EXPECT(env.enabled(featureLendingProtocolV1_2));
 
             env.fund(XRP(1'000), issuer, lender);
 
@@ -620,11 +620,11 @@ private:
             }
         }
 
-        // XLS-66 flow (Batch + V1.1): a Batch inner LoanSet may name a
+        // XLS-66 flow (Batch + V1.2): a Batch inner LoanSet may name a
         // Borrower (with a StartDate) instead of a Counterparty: the
         // borrower is identified explicitly on the inner tx and no
         // CounterpartySignature is required. Preflight must accept it.
-        if (features[featureLendingProtocolV1_1])
+        if (features[featureLendingProtocolV1_2])
         {
             auto const jtx = env.jt(
                 set(lender, broker.brokerID, principalRequest),
@@ -638,7 +638,7 @@ private:
                 BEAST_EXPECT(Transactor::invokePreflight<LoanSet>(pfCtx) == tesSUCCESS);
             }
 
-            // XLS-66 flow (Batch + V1.1): a Batch inner LoanSet with
+            // XLS-66 flow (Batch + V1.2): a Batch inner LoanSet with
             // Borrower but no StartDate is not a valid two-step proposal
             // and no longer masquerades as a missing-Counterparty error:
             // it is rejected as temINVALID by getLoanFlow, past the
@@ -660,14 +660,14 @@ private:
             }
         }
 
-        // XLS-66 flow (Batch + V1.1) success: a Batch containing an inner
+        // XLS-66 flow (Batch + V1.2) success: a Batch containing an inner
         // LoanSet that names a Counterparty (but carries no
         // CounterpartySignature) is accepted when the counterparty signs
         // the outer Batch. The immediate flow's counterparty consent is
         // satisfied by the batch signature rather than an inner
         // CounterpartySignature. Requires both the Batch and
-        // LendingProtocolV1_1 amendments.
-        if (features[featureLendingProtocolV1_1] && lendingBatchEnabled)
+        // LendingProtocolV1_2 amendments.
+        if (lendingBatchEnabled)
         {
             auto const lenderSeq = env.seq(lender);
             auto const batchFee = batch::calcBatchFee(env, 1, 2);
@@ -826,10 +826,9 @@ public:
     {
         runAmendmentIndependent();
         for (auto const& features : jtx::amendmentCombinations(
-                 {fixCleanup3_1_3, fixCleanup3_2_0, featureMPTokensV2}, all_))
+                 {fixCleanup3_1_3, fixCleanup3_2_0, featureMPTokensV2, featureLendingProtocolV1_2},
+                 all_))
             runAmendmentSensitive(features);
-        testBatchBypassCounterparty(all_ | featureLendingProtocolV1_1);
-        testLifecycle(all_ | featureLendingProtocolV1_1);
     }
 };
 

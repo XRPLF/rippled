@@ -917,7 +917,7 @@ set(AccountID const& account,
 
 auto const kCounterparty = JTxFieldWrapper<AccountIdField>(sfCounterparty);
 
-// Two-step (LendingProtocolV1_1) proposal fields.
+// Two-step (LendingProtocolV1_2) proposal fields.
 auto const kBorrower = JTxFieldWrapper<AccountIdField>(sfBorrower);
 
 auto const kStartDate = simpleField<SF_UINT32>(sfStartDate);
@@ -953,7 +953,7 @@ auto const kGracePeriod = simpleField<SF_UINT32>(sfGracePeriod);
 json::Value
 manage(AccountID const& account, uint256 const& loanID, std::uint32_t flags);
 
-// Two-step (LendingProtocolV1_1) acceptance of a pending loan proposal.
+// Two-step (LendingProtocolV1_2) acceptance of a pending loan proposal.
 json::Value
 accept(AccountID const& account, uint256 const& loanID, std::uint32_t flags = 0);
 

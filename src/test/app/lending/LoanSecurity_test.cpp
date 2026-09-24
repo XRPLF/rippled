@@ -386,10 +386,10 @@ private:
         auto const assetType = AssetType::MPT;
 
         // Exercise both creation flows where supported. The two-step
-        // (propose + accept) flow requires featureLendingProtocolV1_1; when the
+        // (propose + accept) flow requires featureLendingProtocolV1_2; when the
         // amendment is disabled only the one-step flow is run.
         std::vector<LoanFlow> flows{LoanFlow::OneStep};
-        if (features[featureLendingProtocolV1_1])
+        if (features[featureLendingProtocolV1_2])
             flows.push_back(LoanFlow::TwoStep);
 
         for (auto const flow : flows)
@@ -1218,9 +1218,9 @@ public:
     {
         runAmendmentIndependent();
         for (auto const& features : jtx::amendmentCombinations(
-                 {fixCleanup3_1_3, fixCleanup3_2_0, featureMPTokensV2}, all_))
+                 {fixCleanup3_1_3, fixCleanup3_2_0, featureMPTokensV2, featureLendingProtocolV1_2},
+                 all_))
             runAmendmentSensitive(features);
-        testRIPD3459(all_ | featureLendingProtocolV1_1);
     }
 };
 

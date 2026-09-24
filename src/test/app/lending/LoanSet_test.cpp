@@ -613,7 +613,7 @@ private:
     //     to LoanAccept, yielding tecINSUFFICIENT_RESERVE /
     //     tecNO_LINE_INSUF_RESERVE on accept rather than on set.
     //
-    // Requires featureLendingProtocolV1_1.
+    // Requires featureLendingProtocolV1_2.
     void
     testTwoStepLoanSet()
     {
@@ -638,7 +638,7 @@ private:
                                   std::function<void(Env&, BrokerInfo const&)> iouTest,
                                   CaseArgs args = {}) {
             Env env(*this);
-            BEAST_EXPECT(env.enabled(featureLendingProtocolV1_1));
+            BEAST_EXPECT(env.enabled(featureLendingProtocolV1_2));
             env.fund(XRP(args.initialXRP), issuer, lender, borrower);
             env.close();
             if (args.requireAuth)
@@ -932,6 +932,7 @@ private:
             },
             CaseArgs{.initialXRP = (acctReserve * 2) + (incReserve * 8) + 1});
     }
+
     void
     testLoanSetOriginationFeeTwoMptCreates(FeatureBitset features)
     {

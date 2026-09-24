@@ -578,7 +578,7 @@ private:
             bool const twoStep = flow == LoanFlow::TwoStep;
 
             Env env(*this);
-            if (twoStep && !env.enabled(featureLendingProtocolV1_1))
+            if (twoStep && !env.enabled(featureLendingProtocolV1_2))
                 continue;
 
             env.fund(XRP(100'000), issuer, lender, borrower);

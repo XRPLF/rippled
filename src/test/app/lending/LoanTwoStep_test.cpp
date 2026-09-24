@@ -239,12 +239,12 @@ private:
             Ter(temDISABLED));
 
         // XLS-66 spec 3.8.5.2.1: CounterpartySignature is not present
-        // (temBAD_SIGNER). With V1.1 disabled, the immediate flow still
+        // (temBAD_SIGNER). With V1.2 disabled, the immediate flow still
         // requires a CounterpartySignature; no Batch inner, no Borrower.
         env(set(fx.lender, broker.brokerID, broker.asset(200).number()), Ter(temBAD_SIGNER));
 
         // XLS-66 amendment gate: LoanAccept is introduced by
-        // featureLendingProtocolV1_1, so with the amendment disabled the
+        // featureLendingProtocolV1_2, so with the amendment disabled the
         // transaction type itself is rejected (temDISABLED).
         env(accept(fx.borrower, keylet::loan(broker.brokerID, SeqProxy::rawSequence(1)).key),
             Ter(temDISABLED));
@@ -1860,7 +1860,7 @@ private:
                 BEAST_EXPECT(l1->isFlag(lsfLoanPending));
         }
 
-        // XLS-66 flow (Batch + V1.1) two-step: a Batch containing an inner
+        // XLS-66 flow (Batch + V1.2) two-step: a Batch containing an inner
         // LoanSet with Borrower + StartDate (no Counterparty, no
         // CounterpartySignature) is the analogue of the immediate-flow
         // batch-success path (LoanLifecycle_test.cpp "Batch Bypass
@@ -2393,7 +2393,7 @@ private:
         }
     }
 
-    // Top-level dispatcher: gates on featureLendingProtocolV1_1 and delegates
+    // Top-level dispatcher: gates on featureLendingProtocolV1_2 and delegates
     // to the amendment-disabled path or the individual enabled-feature groups.
     void
     testTwoStep(FeatureBitset features)
@@ -2405,7 +2405,7 @@ private:
             .borrower = jtx::Account{"borrower"},
             .evan = jtx::Account{"evan"}};
 
-        if ((features & featureLendingProtocolV1_1).none())
+        if ((features & featureLendingProtocolV1_2).none())
         {
             testTwoStepAmendmentDisabled(fx);
             return;
@@ -2422,7 +2422,7 @@ public:
     void
     run() override
     {
-        testTwoStep(all_);
+        testTwoStep((all_ | featureLendingProtocolV1_1) - featureLendingProtocolV1_2);
         testTwoStep(all_ | featureLendingProtocolV1_1);
     }
 };

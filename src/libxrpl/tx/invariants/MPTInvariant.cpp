@@ -312,7 +312,7 @@ ValidMPTIssuance::finalize(
                 auto const mptokensExceedAuthorizeCap = [&] {
                     if (!lendingProtocolEnabled)
                         return false;
-                    // ttLOAN_ACCEPT is gated on featureLendingProtocolV1_1, so it needs
+                    // ttLOAN_ACCEPT is gated on featureLendingProtocolV1_2, so it needs
                     // no further amendment gate of its own.
                     if (txnType == ttLOAN_ACCEPT)
                         return mptokensDeleted_ != 0 || mptokensCreated_ > 2;

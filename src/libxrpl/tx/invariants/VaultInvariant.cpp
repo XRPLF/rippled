@@ -436,8 +436,17 @@ ValidVault::finalize(
 
         return true;  // Not a vault operation
     }
+
+    // LoanDelete gained MayModifyVault with the two-step flow, where deleting a
+    // pending loan releases the reserved principal back to the vault. Before
+    // featureLendingProtocolV1_2 it must not modify a vault.
+    bool const isLoanDelete = tx.getTxnType() == ttLOAN_DELETE;
+    bool const lendingV12Enabled = view.rules().enabled(featureLendingProtocolV1_2);
+    bool const allowLoanDeleteModify = !isLoanDelete || lendingV12Enabled;
+
     if (!(hasPrivilege(tx, Privilege::MustModifyVault) ||
-          hasPrivilege(tx, Privilege::MayModifyVault)))
+          hasPrivilege(tx, Privilege::MayModifyVault)) ||
+        !allowLoanDeleteModify)
     {
         JLOG(j.fatal()) <<  //
             "Invariant failed: vault updated by a wrong transaction type";

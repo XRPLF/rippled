@@ -1027,7 +1027,7 @@ TRANSACTION(ttLOAN_MANAGE, 82, LoanManage,
 TRANSACTION(ttLOAN_ACCEPT, 83, LoanAccept,
     ({
         .delegable = Delegation::NotDelegable,
-        .amendment = featureLendingProtocolV1_1,
+        .amendment = featureLendingProtocolV1_2,
         .privileges = Privilege::MayAuthorizeMpt | Privilege::MustModifyVault,
     }),
     ({

@@ -98,7 +98,7 @@ currentLedgerCloseTime(ReadView const& view)
 bool
 isTwoStepFlowEnabled(Rules const& rules)
 {
-    return rules.enabled(featureLendingProtocolV1_1);
+    return rules.enabled(featureLendingProtocolV1_2);
 }
 
 /**
@@ -745,7 +745,7 @@ LoanSet::checkSign(PreclaimContext const& ctx)
     if (auto ret = Transactor::checkSign(ctx))
         return ret;
 
-    // In the two-step (Borrower) flow introduced by V1.1 there is no
+    // In the two-step (Borrower) flow introduced by V1.2 there is no
     // counterparty, so there is no CounterpartySignature to check.
     if (getLoanFlow(ctx.tx, isTwoStepFlowEnabled(ctx.view.rules())) == LoanFlow::TwoStep)
         return tesSUCCESS;
@@ -1005,7 +1005,7 @@ LoanSet::preclaim(PreclaimContext const& ctx)
         // rather than creating a loan that can never be disbursed by LoanAccept.
         // WeakAuth is used because the holdings need not exist yet; they are
         // created at disbursement. This is confined to the two-step flow (gated
-        // by featureLendingProtocolV1_1); the immediate flow already fails in
+        // by featureLendingProtocolV1_2); the immediate flow already fails in
         // doApply if disbursement is not possible.
         if (auto const ter = requireAuth(ctx.view, asset, borrower, AuthType::WeakAuth))
             return ter;
