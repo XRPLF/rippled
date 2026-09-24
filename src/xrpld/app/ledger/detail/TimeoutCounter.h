@@ -98,9 +98,15 @@ protected:
 
     /**
      * Hook called from invokeOnTimer().
+     *
+     * @param progress Whether the subtype recorded progress since the
+     *        last call.
+     * @param sl Proof mtx_ is held for the whole call. mtx_ is recursive, so a
+     *        nested lock taken inside this call releases nothing when it goes
+     *        out of scope.
      */
     virtual void
-    onTimer(bool progress, ScopedLockType&) = 0;
+    onTimer(bool progress, ScopedLockType& sl) = 0;
 
     /**
      * Return a weak pointer to this.
