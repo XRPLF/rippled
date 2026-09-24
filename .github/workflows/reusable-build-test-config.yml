@@ -117,6 +117,12 @@ jobs:
       VOIDSTAR_ENABLED: ${{ contains(inputs.cmake_args, '-Dvoidstar=ON') }}
       VALIDATOR_KEYS_ENABLED: ${{ contains(inputs.cmake_args, '-Dvalidator_keys=ON') }}
       SANITIZERS_ENABLED: ${{ inputs.sanitizers != '' }}
+      # One flag per sanitizer, so that a step needing only one of them does not
+      # have to parse the list. conan/profiles/sanitizers rejects any name that is
+      # not one of these three, so an unrecognized one never reaches a step.
+      ASAN_ENABLED: ${{ contains(inputs.sanitizers, 'address') }}
+      TSAN_ENABLED: ${{ contains(inputs.sanitizers, 'thread') }}
+      UBSAN_ENABLED: ${{ contains(inputs.sanitizers, 'undefinedbehavior') }}
       # The binaries reusable-package.yml consumes. A private repository skips
       # them except on a tag push, which is what produces its release packages.
       PACKAGING_ARTIFACTS_ENABLED: ${{ github.event.repository.visibility == 'public' || startsWith(github.ref, 'refs/tags/') }}
@@ -221,7 +227,12 @@ jobs:
               ASAN_OPTS="${ASAN_OPTS}:alloc_dealloc_mismatch=0"
           fi
           echo "ASAN_OPTIONS=${ASAN_OPTS}" >>${GITHUB_ENV}
-          echo "TSAN_OPTIONS=include=${SUPP}/runtime-tsan-options.txt:suppressions=${SUPP}/tsan.supp" >>${GITHUB_ENV}
+          # exitcode=0 is set here rather than in runtime-tsan-options.txt,
+          # because that file is also what the documented local command reads,
+          # and a local run must still exit nonzero on a finding. TSan exits 66
+          # on its own once it has reported anything, which would fail the job.
+          TSAN_OPTS="include=${SUPP}/runtime-tsan-options.txt:suppressions=${SUPP}/tsan.supp"
+          echo "TSAN_OPTIONS=${TSAN_OPTS}:exitcode=0" >>${GITHUB_ENV}
           echo "UBSAN_OPTIONS=include=${SUPP}/runtime-ubsan-options.txt:suppressions=${SUPP}/ubsan.supp" >>${GITHUB_ENV}
           echo "LSAN_OPTIONS=include=${SUPP}/runtime-lsan-options.txt:suppressions=${SUPP}/lsan.supp" >>${GITHUB_ENV}
 
@@ -329,11 +340,102 @@ jobs:
               exit 1
           fi
 
+      # Catch a build configured without the instrumentation it was asked for,
+      # which would otherwise run every test, pass, and report nothing.
+      #
+      # A sanitizer is checked by the symbols the binary carries, because
+      # instrumented code calls into its runtime, so those references are present
+      # whether the runtime is linked statically or as a shared library. That is
+      # what proves the -fsanitize flags reached the compiler. The version string
+      # cannot: cmake sets the SANITIZERS macro separately from those flags, so it
+      # names a sanitizer in a binary carrying none. It is checked as well, on top
+      # rather than instead, because BuildInfo.cpp is what a bug report quotes and
+      # it should agree with the binary.
+      #
+      # Asking each runtime to print its flag list was tried and dropped: GCC's
+      # libubsan ignores UBSAN_OPTIONS=help=1, so it called an instrumented gcc
+      # UBSan build uninstrumented.
+      #
+      # voidstar is a linked library rather than instrumentation, so the version
+      # string is all there is to check for it.
+      #
+      # The version call's exit code is ignored on purpose. ASan leaves leak
+      # reporting on and UBSan sets halt_on_error, either of which can end it
+      # nonzero on a healthy binary. Only the text decides, and it is printed.
       - name: Verify presence of instrumentation (Linux)
-        if: ${{ runner.os == 'Linux' && env.VOIDSTAR_ENABLED == 'true' }}
+        if: ${{ runner.os == 'Linux' && (env.VOIDSTAR_ENABLED == 'true' || env.SANITIZERS_ENABLED == 'true') }}
         working-directory: ${{ env.BUILD_DIR }}
         run: |
-          ./xrpld --version | grep libvoidstar
+          version="$(./xrpld --version 2>&1 || true)"
+          echo "${version}"
+          status=0
+
+          named() {
+              if grep -q "$2" <<<"${version}"; then
+                  echo "${1}: the version string names '${2}'."
+              else
+                  echo "${1} is enabled, but the version string does not name '${2}'."
+                  status=1
+              fi
+          }
+
+          if [ "${SANITIZERS_ENABLED}" = 'true' ]; then
+              # Whichever of these the image ships. Stopping here beats a check
+              # that quietly stops checking.
+              symbols="$(mktemp)"
+              if command -v nm >/dev/null 2>&1; then
+                  nm ./xrpld >"${symbols}" 2>/dev/null || true
+              elif command -v readelf >/dev/null 2>&1; then
+                  readelf -sW ./xrpld >"${symbols}" 2>/dev/null || true
+              elif command -v objdump >/dev/null 2>&1; then
+                  objdump -t ./xrpld >"${symbols}" 2>/dev/null || true
+              else
+                  echo 'Found none of nm, readelf or objdump, so the binary cannot be inspected.'
+                  exit 1
+              fi
+              if [ ! -s "${symbols}" ]; then
+                  echo 'Read no symbols from ./xrpld, so the instrumentation cannot be confirmed.'
+                  exit 1
+              fi
+
+              # Each pattern names the calls a sanitizer plants at an instrumented
+              # operation, rather than the ones that only prove its runtime is
+              # present. __asan_init and __tsan_init appear as soon as the flags
+              # reach the linker, so matching those would pass a build whose
+              # compile step never saw them. __tsan_func_entry is no better: it
+              # survives an ignorelist, while the read and write calls do not.
+              #
+              # How much this buys depends on how the runtime is linked, and both
+              # kinds are in the matrix. GCC links libasan and libubsan
+              # dynamically, so an instrumented call site is the only thing that
+              # can put these symbols in the binary. Clang links the TSan runtime
+              # statically, so the runtime's own definitions are there either way
+              # and this narrows to a check that the sanitizer reached the link.
+              # Nothing cheap distinguishes the two cases, and the flags come from
+              # one cmake variable, so losing only the compile half is unlikely.
+              instrumented() {
+                  if grep -qE "$2" "${symbols}"; then
+                      echo "${1}: the binary calls into its runtime, matching '${2}'."
+                  else
+                      echo "${1} is enabled, but no instrumented call site matches '${2}'."
+                      status=1
+                  fi
+              }
+
+              [ "${ASAN_ENABLED}" = 'true' ] &&
+                  instrumented address '__asan_report|__asan_memcpy|__asan_stack_malloc'
+              [ "${TSAN_ENABLED}" = 'true' ] &&
+                  instrumented thread '__tsan_read|__tsan_write|__tsan_atomic'
+              [ "${UBSAN_ENABLED}" = 'true' ] &&
+                  instrumented undefinedbehavior '__ubsan_handle'
+          fi
+
+          [ "${VOIDSTAR_ENABLED}" = 'true' ] && named voidstar libvoidstar
+          [ "${ASAN_ENABLED}" = 'true' ] && named address ASAN
+          [ "${TSAN_ENABLED}" = 'true' ] && named thread TSAN
+          [ "${UBSAN_ENABLED}" = 'true' ] && named undefinedbehavior UBSAN
+
+          exit "${status}"
 
       - name: Run the separate tests
         if: ${{ !inputs.build_only }}
@@ -349,6 +451,16 @@ jobs:
           set -o pipefail
           # Coverage builds are slower due to instrumentation; use fewer parallel jobs to avoid flakiness
           [ "$COVERAGE_ENABLED" = "true" ] && BUILD_NPROC=$((BUILD_NPROC - 2))
+
+          # TSan keeps shadow memory for every byte a process touches, so each job
+          # costs several times what it does uninstrumented, and too many at once
+          # exhausts the machine. Cap the count rather than subtract from it,
+          # because the ceiling is total memory and does not scale with the core
+          # count. Raise it only against a run, and expect one of two failures:
+          # the OOM killer ends the process with code 137 before any suite
+          # finishes, or, worse, the runner loses contact with the server and the
+          # job stops with no log and no failing step.
+          [ "$TSAN_ENABLED" = "true" ] && BUILD_NPROC=4
 
           # The resolver/preload workaround is only correct for the ASan build:
           # a regular build doesn't hit the __dn_expand interceptor bug, and must

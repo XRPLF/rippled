@@ -21,6 +21,19 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       matrix: ${{ steps.generate.outputs.matrix }}
+    # Set at job level rather than on the step, so that the generate step and the
+    # check after it read the same values and cannot disagree.
+    env:
+      GENERATE_CONFIG: ${{ inputs.os != '' && format('--config={0}', inputs.os) || '' }}
+      # Run only the minimal matrix for pull requests that are not yet
+      # labeled "Ready to merge" or "Full CI build". Any other event (merge
+      # queue, push, schedule, manual dispatch) runs the full matrix.
+      GENERATE_MINIMAL: ${{ (github.event_name == 'pull_request' && !contains(github.event.pull_request.labels.*.name, 'Ready to merge') && !contains(github.event.pull_request.labels.*.name, 'Full CI build')) && '--minimal' || '' }}
+      # Configs flagged "extended" in the JSON are too expensive to run per
+      # pull request, so only the nightly schedule adds them. A manual run
+      # counts as well, because otherwise the only way to exercise one is to
+      # wait for the night.
+      GENERATE_EXTENDED: ${{ (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') && '--extended' || '' }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -33,10 +46,22 @@ jobs:
       - name: Generate strategy matrix
         working-directory: .github/scripts/strategy-matrix
         id: generate
+        run: ./generate.py ${GENERATE_CONFIG} ${GENERATE_MINIMAL} ${GENERATE_EXTENDED} >>"${GITHUB_OUTPUT}"
+
+      # generate.py checks that the extended matrix holds every config flagged
+      # "extended", but it never sees the event, so it cannot tell whether this
+      # run asked for them. A GENERATE_EXTENDED that stops matching the events
+      # would drop those configs and fail nothing, because CI runs only the jobs
+      # the matrix names. So compare what was generated against the extended
+      # matrix, on the events that must produce it.
+      - name: Check the extended configs reached the matrix
+        if: ${{ env.GENERATE_EXTENDED != '' }}
+        working-directory: .github/scripts/strategy-matrix
         env:
-          GENERATE_CONFIG: ${{ inputs.os != '' && format('--config={0}', inputs.os) || '' }}
-          # Run only the minimal matrix for pull requests that are not yet
-          # labeled "Ready to merge" or "Full CI build". Any other event (merge
-          # queue, push, schedule, manual dispatch) runs the full matrix.
-          GENERATE_MINIMAL: ${{ (github.event_name == 'pull_request' && !contains(github.event.pull_request.labels.*.name, 'Ready to merge') && !contains(github.event.pull_request.labels.*.name, 'Full CI build')) && '--minimal' || '' }}
-        run: ./generate.py ${GENERATE_CONFIG} ${GENERATE_MINIMAL} >>"${GITHUB_OUTPUT}"
+          GENERATED: ${{ steps.generate.outputs.matrix }}
+        run: |
+          expected="$(./generate.py ${GENERATE_CONFIG} --extended)"
+          if [[ "matrix=${GENERATED}" != "${expected}" ]]; then
+              echo "::error::the ${GITHUB_EVENT_NAME} matrix is not the extended one"
+              exit 1
+          fi
