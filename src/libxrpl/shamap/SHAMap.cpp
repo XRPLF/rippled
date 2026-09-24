@@ -577,9 +577,6 @@ SHAMap::peekItem(uint256 const& id, SHAMapHash& hash) const
 SHAMap::ConstIterator
 SHAMap::boundHelper(uint256 const& id, BelowDirection direction) const
 {
-    // Walk back up the path to `id` looking for the nearest leaf on the requested side. At each
-    // inner node the branches beyond the one `id` takes hold the candidates; the first non-empty
-    // one is the closest, and the extreme leaf below it is the answer.
     auto const searchingForward = direction == BelowDirection::First;
 
     NodePathStack stack;

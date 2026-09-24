@@ -592,7 +592,17 @@ private:
     SHAMapLeafNode*
     belowHelper(NodePathStack& stack, BelowDirection direction) const;
 
-    // helper function for upperBound and lowerBound
+    /**
+     * Returns the nearest item strictly past `id`, in the given direction.
+     *
+     * Walks back up the path to `id`. At each inner node the branches beyond the one `id` takes
+     * hold the candidates, so the first non-empty one is the closest and the extreme leaf below
+     * it is the answer.
+     *
+     * @param id The key to search from, which need not be in the map.
+     * @param direction First to search upwards from `id`, Last to search downwards.
+     * @return An iterator to the item found, or end() if no item lies on that side of `id`.
+     */
     ConstIterator
     boundHelper(uint256 const& id, BelowDirection direction) const;
 

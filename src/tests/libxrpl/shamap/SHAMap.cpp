@@ -481,22 +481,22 @@ TEST_F(SHAMapTraversal, bounds_on_single_item_map_use_the_leaf_below_the_root)
     auto const key = deepFanOutKeys().front();
     fillMap(map, {key});
 
-    // root_ can be a leaf, but only after syncing a single-item map from a peer (addRootNode);
-    // fillMap builds this map in-process via addItem, which always leaves root_ as the inner node
-    // it was constructed with, with the single leaf one level below it. So the stack holds that
-    // inner root plus the leaf, and boundHelper examines the leaf first. Only a probe the leaf
-    // qualifies against is answered there; for the rest the leaf is popped and root_'s own
-    // inner-node scan runs, finds nothing on the requested side, and falls through to end().
+    // fillMap adds items in-process, so root_ stays an inner node with the single leaf below it.
+    // The stack holds both, so boundHelper examines the leaf first.
     uint256 below = key;
     --below;
     uint256 above = key;
     ++above;
 
-    EXPECT_EQ(map.upperBound(below)->key(), key);
+    auto const upper = map.upperBound(below);
+    ASSERT_NE(upper, map.end());
+    EXPECT_EQ(upper->key(), key);
     EXPECT_EQ(map.upperBound(key), map.end());
     EXPECT_EQ(map.upperBound(above), map.end());
 
-    EXPECT_EQ(map.lowerBound(above)->key(), key);
+    auto const lower = map.lowerBound(above);
+    ASSERT_NE(lower, map.end());
+    EXPECT_EQ(lower->key(), key);
     EXPECT_EQ(map.lowerBound(key), map.end());
     EXPECT_EQ(map.lowerBound(below), map.end());
 }
