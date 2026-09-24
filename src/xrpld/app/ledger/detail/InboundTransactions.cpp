@@ -96,11 +96,12 @@ public:
             {
                 if (acquire)
                 {
-                    it->second.seq = seq_;
-                    if (it->second.acquire)
-                    {
-                        it->second.acquire->stillNeed();
-                    }
+                    // Refreshed only while there is still something to wait for. An acquisition
+                    // that failed on an invalid map can never be revived, so refreshing it would
+                    // hold a dead entry - a set that stays null forever - out of newRound()'s reach
+                    // for as long as anything keeps asking.
+                    if (!it->second.acquire || it->second.acquire->stillNeed())
+                        it->second.seq = seq_;
                 }
                 return it->second.set;
             }

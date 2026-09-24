@@ -76,13 +76,19 @@ public:
     init(int startPeers);
 
     /**
-     * Resume a timed-out acquisition, or leave a running one alone.
+     * Resume a timed-out acquisition, or leave it alone.
      *
-     * Always clamps the timeout count. An acquisition that failed has its timer
-     * chain stopped, so this also clears the failed flag and restarts the timer;
-     * one that is still running already has a timer pending.
+     * Always clamps the timeout count. An acquisition that failed with
+     * its map still valid has its timer chain stopped, so this also
+     * clears the failed flag and restarts the timer. One that failed
+     * because its map went invalid cannot be satisfied by any peer (see
+     * SHAMap::addKnownNode), so it stays failed.
+     *
+     * @return Whether the set is still worth keeping. False only for one that
+     *         cannot be revived, so the caller stops refreshing the window that
+     *         decides when it is swept.
      */
-    void
+    [[nodiscard]] bool
     stillNeed();
 
 protected:

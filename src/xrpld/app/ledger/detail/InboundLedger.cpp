@@ -992,7 +992,25 @@ InboundLedger::receiveNode(
             {
                 JLOG(journal_.warn()) << "Got invalid node " << *nodeID << " for ledger " << hash_
                                       << " from peer " << peer->id();
-                peer->charge(resource::kFeeInvalidData, "ledger_node invalid");
+                if (!map.isValid())
+                {
+                    // A node that leaves the map invalid cannot belong to any valid tree, so it is
+                    // charged at the malformed tier rather than the merely-wrong one. No other peer
+                    // can repair the map either (see SHAMap::addKnownNode), so fail now rather than
+                    // time out.
+                    peer->charge(resource::kFeeMalformedData, "ledger_node makes map invalid");
+                    failed_ = true;
+                    done();
+
+                    // Nothing in this packet is worth counting: the nodes ahead of the bad one
+                    // belong to a tree that cannot exist. Matches
+                    // TransactionAcquire::takeNodesLocked().
+                    san = SHAMapAddNode::invalid();
+                }
+                else
+                {
+                    peer->charge(resource::kFeeInvalidData, "ledger_node invalid");
+                }
                 return;
             }
         }
@@ -1250,7 +1268,9 @@ InboundLedger::processData(std::shared_ptr<Peer> peer, protocol::TMLedgerData co
 
         // `san` accumulates across the whole packet, so `isInvalid()` (bad_ > 0) does not mean the
         // packet had no useful nodes: credit whatever good/useful nodes were sent rather than
-        // discarding everything because one node in an otherwise-good packet was bad.
+        // discarding everything because one node in an otherwise-good packet was bad. The one
+        // exception is a node that leaves the map invalid, which receiveNode() does discard
+        // everything for, since the nodes ahead of it belong to a tree that cannot exist.
         // Note: Peer charges for invalid/malformed data are issued from within receiveNode at the
         // exact failure site, so the peer is only charged for problems they are responsible for.
         if (san.isUseful())

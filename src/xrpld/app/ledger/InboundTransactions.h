@@ -39,7 +39,9 @@ public:
      *
      * @param setHash The transaction set ID (digest of the SHAMap root node).
      * @param acquire Whether to fetch the transaction set from the network if
-     * it is missing.
+     *        it is missing. An acquisition whose map has been proven impossible
+     *        is not refreshed, since no peer can complete it; the entry is left
+     *        for newRound() to sweep.
      * @return The transaction set with ID setHash, or nullptr if it is
      * missing.
      */
