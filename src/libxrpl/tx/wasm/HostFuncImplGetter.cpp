@@ -4,6 +4,7 @@
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/MPTIssue.h>
+#include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STBase.h>
 #include <xrpl/protocol/STBitString.h>
@@ -77,6 +78,10 @@ getAnyFieldData(STBase const* obj)
         case STI_VL: {
             auto const* vl(static_cast<STBlob const*>(obj));  // NOLINT
             auto const& data = vl->value();
+            if (data.size() > kMaxWasmDataLength)
+            {
+                return std::unexpected{HostFunctionError::DataFieldTooLarge};
+            }
             return Bytes{data.begin(), data.end()};
         }
 
