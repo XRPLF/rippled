@@ -521,9 +521,8 @@ public:
     void
     testAccountLinesMarkerNewObjectTypes()
     {
-        // Verify that paginating account_lines across an owner directory
-        // that also contains a Credential does not reject the marker with
-        // rpcInvalidParams, and that the walk visits every entry.
+        // Verify account_lines pagination does not reject a marker whose
+        // SLE is a Credential (or any post-2023 owner-directory entry).
         testcase(
             "Marker on new owner-directory entry types (Credential): "
             "account_lines");
@@ -539,9 +538,6 @@ public:
         auto const usd = issuer["USD"];
         env(trust(alice, usd(200)));
 
-        // Credentials are inserted into the subject's owner directory, so
-        // walking alice's directory with limit=1 will land the marker on
-        // one of these Credential SLEs.
         for (int i = 0; i < 4; ++i)
         {
             env(credentials::create(alice, issuer, std::string("Cred") + std::to_string(i)));
@@ -571,15 +567,14 @@ public:
         }
 
         BEAST_EXPECT(!hitInvalidParams);
-        // 1 trust line + 4 credentials = 5 owner-directory entries.
+        // 1 trust line + 4 credentials.
         BEAST_EXPECTS(iterations == 5, std::to_string(iterations));
     }
 
     void
     testAccountOffersMarkerNewObjectTypes()
     {
-        // Same regression as testAccountLinesMarkerNewObjectTypes, exercised
-        // through account_offers.
+        // Same regression, exercised through account_offers.
         testcase(
             "Marker on new owner-directory entry types (Credential): "
             "account_offers");
@@ -627,8 +622,7 @@ public:
     void
     testAccountChannelsMarkerNewObjectTypes()
     {
-        // Same regression as testAccountLinesMarkerNewObjectTypes, exercised
-        // through account_channels.
+        // Same regression, exercised through account_channels.
         testcase(
             "Marker on new owner-directory entry types (Credential): "
             "account_channels");

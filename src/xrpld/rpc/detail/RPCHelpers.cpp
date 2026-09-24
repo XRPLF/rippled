@@ -66,20 +66,37 @@ getStartHint(SLE::const_ref sle, AccountID const& accountID)
     return sle->getFieldU64(sfOwnerNode);
 }
 
+namespace {
+
+// UINT64 sf*Node fields that record a page number in an owner directory.
+// Keep in sync with sfields.macro; the xrpl.rpc.RPCHelpers test enforces it.
+std::array<SField const*, 9> const kOwnerDirNodeFields{
+    &sfOwnerNode,
+    &sfLowNode,
+    &sfHighNode,
+    &sfDestinationNode,
+    &sfIssuerNode,
+    &sfSubjectNode,
+    &sfSponseeNode,
+    &sfLoanBrokerNode,
+    &sfVaultNode,
+};
+
+}  // namespace
+
+std::span<SField const* const>
+ownerDirNodeFields()
+{
+    return kOwnerDirNodeFields;
+}
+
 bool
 isRelatedToAccount(ReadView const& ledger, SLE::const_ref sle, AccountID const& accountID)
 {
     // Marker validator for account_lines / account_offers / account_channels
-    // pagination: returns true iff `sle` is stored in `accountID`'s owner
-    // directory.
-    //
-    // Every owner-directory insertion records its page number on the
-    // inserted SLE in an sf*Node UINT64 field. We probe each such field as a
-    // page in `accountID`'s owner directory and confirm the SLE's key is
-    // stored there; the containment check makes it safe to try every
-    // candidate. This is bounded by the number of Node fields on the SLE (a
-    // small constant), which matters post-`fixDirectoryLimit` where owner
-    // directories no longer have a per-directory page cap.
+    // pagination: probes each owner-directory page-hint field on `sle` and
+    // returns true iff `sle`'s key is present on that page in `accountID`'s
+    // owner directory. Bounded by kOwnerDirNodeFields.size() ledger reads.
     auto const ownerDir = keylet::ownerDir(accountID);
     auto const& sleKey = sle->key();
 
@@ -91,12 +108,8 @@ isRelatedToAccount(ReadView const& ledger, SLE::const_ref sle, AccountID const& 
         return std::ranges::find(indexes, sleKey) != indexes.end();
     };
 
-    return std::ranges::any_of(*sle, [&](auto const& field) {
-        if (field.getSType() != STI_UINT64)
-            return false;
-        if (!field.getFName().getName().ends_with("Node"))
-            return false;
-        return pageContainsKey(sle->getFieldU64(field.getFName()));
+    return std::ranges::any_of(kOwnerDirNodeFields, [&](SField const* field) {
+        return sle->isFieldPresent(*field) && pageContainsKey(sle->getFieldU64(*field));
     });
 }
 

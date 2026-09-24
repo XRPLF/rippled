@@ -14,6 +14,7 @@
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/PublicKey.h>
+#include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STLedgerEntry.h>  // IWYU pragma: keep
 #include <xrpl/protocol/SecretKey.h>
 #include <xrpl/protocol/Seed.h>
@@ -21,6 +22,7 @@
 
 #include <cstdint>
 #include <optional>
+#include <span>
 #include <utility>
 
 namespace xrpl {
@@ -59,6 +61,13 @@ getStartHint(SLE::const_ref sle, AccountID const& accountID);
  */
 bool
 isRelatedToAccount(ReadView const& ledger, SLE::const_ref sle, AccountID const& accountID);
+
+/**
+ * @brief Owner-directory page-hint fields probed by `isRelatedToAccount`.
+ * Coverage is enforced by the `xrpl.rpc.RPCHelpers` test.
+ */
+std::span<SField const* const>
+ownerDirNodeFields();
 
 /**
  * @brief Parses an array of account IDs from a JSON value.

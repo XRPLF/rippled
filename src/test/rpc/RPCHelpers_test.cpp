@@ -5,7 +5,11 @@
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/jss.h>
+
+#include <set>
+#include <string>
 
 namespace xrpl::test {
 
@@ -67,9 +71,42 @@ public:
     }
 
     void
+    testOwnerDirNodeFieldsCoverage()
+    {
+        // Every UINT64 sf*Node field must be classified: either it is an
+        // owner-directory page hint (rpc::ownerDirNodeFields()) or it
+        // belongs to a book directory (exclusion set below). Adding a new
+        // sfXxxNode UINT64 without updating one of these lists trips this
+        // test.
+        testcase("Owner-directory Node fields coverage");
+
+        // Book-directory page hints, not owner-directory. sfBookNode: offer
+        // book. sfNFTokenOfferNode: NFT bid/ask book.
+        std::set<SField const*> const nonOwnerDirNodes{
+            &sfBookNode,
+            &sfNFTokenOfferNode,
+        };
+
+        auto const ownerFields = rpc::ownerDirNodeFields();
+        std::set<SField const*> const ownerDirNodes(ownerFields.begin(), ownerFields.end());
+
+        for (auto const& [_, sf] : SField::getKnownCodeToField())
+        {
+            if (sf->fieldType != STI_UINT64 || !sf->getName().ends_with("Node"))
+                continue;
+            BEAST_EXPECTS(
+                ownerDirNodes.contains(sf) || nonOwnerDirNodes.contains(sf),
+                "sf" + sf->getName() +
+                    ": add to kOwnerDirNodeFields (owner-dir page hint) "
+                    "or to nonOwnerDirNodes (book-dir).");
+        }
+    }
+
+    void
     run() override
     {
         testChooseLedgerEntryType();
+        testOwnerDirNodeFieldsCoverage();
     }
 };
 
