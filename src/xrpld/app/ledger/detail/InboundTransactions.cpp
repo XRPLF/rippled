@@ -168,18 +168,8 @@ public:
             data.emplace_back(*nodeID, std::move(treeNode));
         }
 
-        auto const san = ta->takeNodes(std::move(data), peer);
-        if (san.isInvalid())
-        {
-            peer->charge(resource::kFeeInvalidData, "ledger_data invalid");
-        }
-        else if (!san.isGood())
-        {
-            // Good rather than useful: a batch of nodes we already hold is what an honest second
-            // responder to trigger()'s fan-out sends, and is not the same as one that was never
-            // examined.
-            peer->charge(resource::kFeeUselessData, "ledger_data useless");
-        }
+        // takeNodes() charges the peer itself, under the lock that classifies the data.
+        ta->takeNodes(std::move(data), peer);
     }
 
     void
