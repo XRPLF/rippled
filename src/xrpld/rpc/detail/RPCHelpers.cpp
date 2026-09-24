@@ -40,6 +40,7 @@
 #include <format>
 #include <functional>
 #include <optional>
+#include <span>
 #include <tuple>
 #include <utility>
 
