@@ -1,8 +1,8 @@
 use std::cell::Cell;
 use std::fmt;
 use wasmi::{
-    CompilationMode, Config, Engine, Export, Linker, Memory, Module, Store, StoreLimits,
-    StoreLimitsBuilder, TrapCode,
+    CompilationMode, Config, CustomFuelCosts, EnforcedLimits, Engine, Export, Linker, Memory,
+    Module, Store, StoreLimits, StoreLimitsBuilder, TrapCode,
 };
 use xrpl_host_functions::HostFunctions;
 
@@ -262,6 +262,17 @@ pub(crate) fn wasm_engine() -> Engine {
     // config.wasm_memory64(false);
     config.wasm_wide_arithmetic(false);
     config.allow_start_fn(false);
+    config.enforced_limits(EnforcedLimits::strict());
+
+    let fuel_costs = CustomFuelCosts {
+        bytes_copied_per_fuel: 64,
+        fuel_per_bytes_translated: 7,
+        fuel_per_bytes_validated: 2,
+    };
+    config.fuel_cost(fuel_costs);
+    // config.operator_costs is already guarded by the probe_fuel test under budgets.rs
+    // in that a change to operator costs in a future version will be a loud failure.
+
     config.compilation_mode(CompilationMode::LazyTranslation);
     Engine::new(&config)
 }
@@ -394,6 +405,48 @@ mod tests {
         assert_eq!(limits.instances(), 1);
         assert_eq!(limits.tables(), 1);
         assert_eq!(limits.memories(), 1);
+    }
+
+    /// The three size-proportional fuel rates, read back off the engine. wasmi
+    /// takes its own defaults for these unless told otherwise, so an upgrade that
+    /// changed one would retune our gas silently. `Config` keeps them
+    /// `pub(crate)` and exposes them only through `Debug`.
+    #[test]
+    fn the_dynamic_fuel_costs_are_pinned() {
+        let config = format!("{:?}", wasm_engine().config());
+        for rate in [
+            "bytes_copied_per_fuel: 64",
+            "fuel_per_bytes_translated: 7",
+            "fuel_per_bytes_validated: 2",
+        ] {
+            assert!(config.contains(rate), "expected `{rate}` in {config}");
+        }
+    }
+
+    /// [`EnforcedLimits::strict`] is the one line in [`wasm_engine`] that takes a
+    /// value rather than stating one — the fields are `pub(crate)`, so the preset is
+    /// the only way to set them.
+    #[test]
+    fn the_enforced_limits_are_pinned() {
+        const EXPECTED: &str = concat!(
+            "EnforcedLimits { ",
+            "max_globals: Some(1000), ",
+            "max_functions: Some(10000), ",
+            "max_tables: Some(100), ",
+            "max_element_segments: Some(1000), ",
+            "max_memories: Some(1), ",
+            "max_data_segments: Some(1000), ",
+            "max_params: Some(32), ",
+            "max_results: Some(32), ",
+            "min_avg_bytes_per_function: Some(AvgBytesPerFunctionLimit { ",
+            "req_funcs_bytes: 1000, min_avg_bytes_per_function: 40 }) }",
+        );
+
+        let config = format!("{:?}", wasm_engine().config());
+        assert!(
+            config.contains(EXPECTED),
+            "expected `{EXPECTED}` in {config}"
+        );
     }
 
     /// The only place these numbers appear as literals; every other test derives

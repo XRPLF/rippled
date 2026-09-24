@@ -168,7 +168,8 @@ fn a_declared_table_maximum_past_the_cap_is_allowed_but_unreachable() {
 /// One row per feature `wasm_engine` turns off: the smallest module that uses
 /// it, and the fragment of wasmi's refusal that names the feature. A row declaring
 /// its own memory omits [`ONE_PAGE`], or it is refused for having two memories
-/// instead.
+/// instead — except `wasm_multi_memory`, where two memories are the point and one
+/// of them has to be imported to reach the feature check at all.
 fn disabled_features() -> Vec<(&'static str, Vec<&'static str>, &'static str, &'static str)> {
     vec![
         (
@@ -223,9 +224,14 @@ fn disabled_features() -> Vec<(&'static str, Vec<&'static str>, &'static str, &'
             "(global.get $g)",
             "non-constant operator",
         ),
+        // One memory imported, one defined. `EnforcedLimits::strict()` caps memories
+        // at one and checks the memory *section* before the validator sees it
+        // (`module/parser/mod.rs`, `process_memories`), so two *defined* memories are
+        // refused for exceeding the cap and never reach the feature check. An import
+        // is not in that section, so this is the shape that names the proposal.
         (
             "wasm_multi_memory",
-            vec![ONE_PAGE, "(memory 1)"],
+            vec![r#"(import "host_lib" "mem" (memory 1))"#, ONE_PAGE],
             "(i32.const 0)",
             "multiple memories",
         ),
@@ -278,7 +284,7 @@ fn every_disabled_feature_is_refused_by_name() {
     }
 }
 
-/// The three knobs [`every_disabled_feature_is_refused_by_name`] cannot cover. The
+/// The knobs [`every_disabled_feature_is_refused_by_name`] cannot cover. The
 /// configuration is the same for every engine `wasm_engine` builds, so a test
 /// observes the one `wasm_engine` makes: a knob masked by another, or with no
 /// caller-visible effect, has no distinguishing module.
@@ -292,6 +298,14 @@ fn the_knobs_without_a_module_of_their_own() {
     let refusal = failure(&wat, &host).to_string();
     assert!(refusal.contains("floating-point"), "{refusal}");
     assert!(!refusal.contains("saturating"), "{refusal}");
+
+    // `EnforcedLimits::strict()`'s `max_memories: Some(1)`, which masks
+    // `wasm_multi_memory(false)` for every module that defines its two memories
+    // rather than importing one — the case a real contract would hit. The feature
+    // flag itself is covered by name in [`disabled_features`].
+    let wat = module(&[ONE_PAGE, "(memory 1)"], "(i32.const 0)");
+    let refusal = assert_stage!(failure(&wat, &host), RunError::Compile(_)).to_string();
+    assert!(refusal.contains("limit of 1 memories"), "{refusal}");
 
     // `ignore_custom_sections(true)`: governs whether wasmi retains custom
     // sections, not accept/reject, so this pins only that one is harmless.
@@ -647,20 +661,36 @@ fn unbounded_recursion_is_stopped_by_the_call_stack_limit() {
     assert_stage!(failure(&wat, &host), RunError::Trap(_));
 }
 
-/// A module with many functions currently compiles and runs: wasmi's only cap is its
-/// 1,000,000 hard limit.
+/// The CodeMap-DoS defense, from the guest's side: a module of thousands of tiny
+/// functions is refused in `Module::new`, before anything is translated.
+///
+/// Both of `EnforcedLimits::strict()`'s function rules are load-bearing here, which
+/// is why the second half exists — dropping under the count cap does not get a
+/// module past the defense, because the bodies then fail the minimum average. The
+/// values themselves are pinned in `vm.rs`'s `the_enforced_limits_are_pinned`.
 #[test]
-#[ignore = "CodeMap-DoS unmitigated; a function-count limit is deferred to preflight parsing"]
-fn many_functions_currently_run_unbounded() {
+fn a_module_of_too_many_functions_is_refused() {
     let host = FakeHost::new();
-    let funcs: String = (0..24_000)
-        .map(|i| format!("(func $f{i} (result i32) (i32.const {}))", i % 7))
-        .collect();
-    let wat =
-        format!("(module {ONE_PAGE} {funcs} (func (export \"finish\") (result i32) (call $f0)))");
+
+    let tiny_funcs = |count: usize| {
+        let funcs: String = (0..count)
+            .map(|i| format!("(func $f{i} (result i32) (i32.const {}))", i % 7))
+            .collect();
+        format!("(module {ONE_PAGE} {funcs} (func (export \"finish\") (result i32) (call $f0)))")
+    };
+
+    // `max_functions: Some(10000)`, checked before the bodies are looked at.
+    let wat = tiny_funcs(10_001);
+    let refusal = assert_stage!(failure(&wat, &host), RunError::Compile(_)).to_string();
+    assert!(refusal.contains("limit of 10000 functions"), "{refusal}");
+
+    // `min_avg_bytes_per_function: 40`, enforced once the bodies total 1 KiB. These
+    // average five bytes, so the count cap is not the only thing holding.
+    let wat = tiny_funcs(9_999);
+    let refusal = assert_stage!(failure(&wat, &host), RunError::Compile(_)).to_string();
     assert!(
-        run(&wat, &host).is_ok(),
-        "a large-function module currently compiles and runs"
+        refusal.contains("minimum average bytes per function of 40"),
+        "{refusal}"
     );
 }
 
