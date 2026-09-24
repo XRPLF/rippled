@@ -50,6 +50,33 @@ namespace xrpl::test {
 class LoanPay_test : public LoanTestBase
 {
 private:
+    struct FixedPrecisionIOU
+    {
+        jtx::Env env;
+        jtx::Account const issuer{"issuer"};
+        jtx::Account const lender{"lender"};
+        jtx::Account const borrower{"borrower"};
+        jtx::PrettyAsset const asset;
+
+        explicit FixedPrecisionIOU(beast::unit_test::Suite& suite, FeatureBitset features)
+            : env{suite, features}, asset{issuer["USD"]}
+        {
+            env.fund(jtx::XRP(100'000), issuer, lender, borrower);
+            env.close();
+        }
+
+        void
+        fund(Number const& trustLimit, Number const& lenderAmount, Number const& borrowerAmount)
+        {
+            using namespace jtx;
+            env(trust(lender, asset(trustLimit)));
+            env(trust(borrower, asset(trustLimit)));
+            env(pay(issuer, lender, asset(lenderAmount)));
+            env(pay(issuer, borrower, asset(borrowerAmount)));
+            env.close();
+        }
+    };
+
 #if LOAN_TODO
     void
     testLoanPayLateFullPaymentBypassesPenalties(FeatureBitset features)
@@ -1498,20 +1525,13 @@ private:
 
         FeatureBitset const features{
             all_ | featureLendingProtocolV1_1 | featureLendingProtocolV1_2};
-        Env env{*this, features};
-        Account const issuer{"issuer"};
-        Account const lender{"lender"};
-        Account const borrower{"borrower"};
-
-        env.fund(XRP(100'000), issuer, lender, borrower);
-        env.close();
-
-        PrettyAsset const asset = issuer["USD"];
-        env(trust(lender, asset(10'000'000)));
-        env(trust(borrower, asset(10'000'000)));
-        env(pay(issuer, lender, asset(2'000'000)));
-        env(pay(issuer, borrower, asset(100)));
-        env.close();
+        FixedPrecisionIOU f{*this, features};
+        auto& env = f.env;
+        auto const& issuer = f.issuer;
+        auto const& lender = f.lender;
+        auto const& borrower = f.borrower;
+        auto const& asset = f.asset;
+        f.fund(10'000'000, 2'000'000, 100);
 
         BrokerParameters brokerParams;
         brokerParams.vaultScale = 6;
@@ -1618,21 +1638,13 @@ private:
 
         FeatureBitset const features{
             all_ | featureLendingProtocolV1_1 | featureLendingProtocolV1_2};
-        Env env{*this, features};
-        Account const issuer{"issuer"};
-        Account const lender{"lender"};
-        Account const borrower{"borrower"};
-
-        env.fund(XRP(100'000), issuer, lender, borrower);
-        env.close();
-
-        PrettyAsset const asset = issuer["USD"];
-        Number const trustLimit{2, 10};
-        env(trust(lender, asset(trustLimit)));
-        env(trust(borrower, asset(trustLimit)));
-        env(pay(issuer, lender, asset(Number{1, 10})));
-        env(pay(issuer, borrower, asset(Number{2, 9})));
-        env.close();
+        FixedPrecisionIOU f{*this, features};
+        auto& env = f.env;
+        auto const& issuer = f.issuer;
+        auto const& lender = f.lender;
+        auto const& borrower = f.borrower;
+        auto const& asset = f.asset;
+        f.fund(Number{2, 10}, Number{1, 10}, Number{2, 9});
 
         BrokerParameters brokerParams;
         brokerParams.vaultScale = 6;
@@ -1723,21 +1735,12 @@ private:
 
         FeatureBitset const features{
             all_ | featureLendingProtocolV1_1 | featureLendingProtocolV1_2};
-        Env env{*this, features};
-        Account const issuer{"issuer"};
-        Account const lender{"lender"};
-        Account const borrower{"borrower"};
-
-        env.fund(XRP(100'000), issuer, lender, borrower);
-        env.close();
-
-        PrettyAsset const asset = issuer["USD"];
-        Number const trustLimit{3, 10};
-        env(trust(lender, asset(trustLimit)));
-        env(trust(borrower, asset(trustLimit)));
-        env(pay(issuer, lender, asset(Number{11, 9})));
-        env(pay(issuer, borrower, asset(Number{15, 9})));
-        env.close();
+        FixedPrecisionIOU f{*this, features};
+        auto& env = f.env;
+        auto const& lender = f.lender;
+        auto const& borrower = f.borrower;
+        auto const& asset = f.asset;
+        f.fund(Number{3, 10}, Number{11, 9}, Number{15, 9});
 
         BrokerParameters brokerParams;
         brokerParams.vaultDeposit = Number{9, 9};
@@ -1838,21 +1841,12 @@ private:
 
         FeatureBitset const features{
             all_ | featureLendingProtocolV1_1 | featureLendingProtocolV1_2};
-        Env env{*this, features};
-        Account const issuer{"issuer"};
-        Account const lender{"lender"};
-        Account const borrower{"borrower"};
-
-        env.fund(XRP(100'000), issuer, lender, borrower);
-        env.close();
-
-        PrettyAsset const asset = issuer["USD"];
-        Number const trustLimit{3, 10};
-        env(trust(lender, asset(trustLimit)));
-        env(trust(borrower, asset(trustLimit)));
-        env(pay(issuer, lender, asset(Number{11, 9})));
-        env(pay(issuer, borrower, asset(Number{5, 9})));
-        env.close();
+        FixedPrecisionIOU f{*this, features};
+        auto& env = f.env;
+        auto const& lender = f.lender;
+        auto const& borrower = f.borrower;
+        auto const& asset = f.asset;
+        f.fund(Number{3, 10}, Number{11, 9}, Number{5, 9});
 
         BrokerParameters brokerParams;
         brokerParams.vaultDeposit = Number{9, 9};
@@ -1932,21 +1926,12 @@ private:
 
         FeatureBitset const features{
             all_ | featureLendingProtocolV1_1 | featureLendingProtocolV1_2};
-        Env env{*this, features};
-        Account const issuer{"issuer"};
-        Account const lender{"lender"};
-        Account const borrower{"borrower"};
-
-        env.fund(XRP(100'000), issuer, lender, borrower);
-        env.close();
-
-        PrettyAsset const asset = issuer["USD"];
-        Number const trustLimit{3, 10};
-        env(trust(lender, asset(trustLimit)));
-        env(trust(borrower, asset(trustLimit)));
-        env(pay(issuer, lender, asset(Number{1, 10})));
-        env(pay(issuer, borrower, asset(Number{5, 9})));
-        env.close();
+        FixedPrecisionIOU f{*this, features};
+        auto& env = f.env;
+        auto const& lender = f.lender;
+        auto const& borrower = f.borrower;
+        auto const& asset = f.asset;
+        f.fund(Number{3, 10}, Number{1, 10}, Number{5, 9});
 
         BrokerParameters brokerParams;
         brokerParams.vaultDeposit = Number{85, 8};
@@ -2034,19 +2019,12 @@ private:
         {
             testcase("FixedPrecision base-scale overpayment");
 
-            Env env{*this, features};
-            Account const issuer{"issuer"};
-            Account const lender{"lender"};
-            Account const borrower{"borrower"};
-            env.fund(XRP(100'000), issuer, lender, borrower);
-            env.close();
-
-            PrettyAsset const asset = issuer["USD"];
-            env(trust(lender, asset(5'000'000)));
-            env(trust(borrower, asset(5'000'000)));
-            env(pay(issuer, lender, asset(2'000'000)));
-            env(pay(issuer, borrower, asset(500'000)));
-            env.close();
+            FixedPrecisionIOU f{*this, features};
+            auto& env = f.env;
+            auto const& lender = f.lender;
+            auto const& borrower = f.borrower;
+            auto const& asset = f.asset;
+            f.fund(5'000'000, 2'000'000, 500'000);
 
             BrokerParameters brokerParams;
             brokerParams.debtMax = 500'000;
@@ -2083,19 +2061,12 @@ private:
         {
             testcase("FixedPrecision base-scale late payment");
 
-            Env env{*this, features};
-            Account const issuer{"issuer"};
-            Account const lender{"lender"};
-            Account const borrower{"borrower"};
-            env.fund(XRP(100'000), issuer, lender, borrower);
-            env.close();
-
-            PrettyAsset const asset = issuer["USD"];
-            env(trust(lender, asset(5'000'000)));
-            env(trust(borrower, asset(5'000'000)));
-            env(pay(issuer, lender, asset(2'000'000)));
-            env(pay(issuer, borrower, asset(500'000)));
-            env.close();
+            FixedPrecisionIOU f{*this, features};
+            auto& env = f.env;
+            auto const& lender = f.lender;
+            auto const& borrower = f.borrower;
+            auto const& asset = f.asset;
+            f.fund(5'000'000, 2'000'000, 500'000);
 
             BrokerParameters brokerParams;
             brokerParams.debtMax = 500'000;
@@ -2200,19 +2171,12 @@ private:
 
         FeatureBitset const features{
             all_ | featureLendingProtocolV1_1 | featureLendingProtocolV1_2};
-        Env env{*this, features};
-        Account const issuer{"issuer"};
-        Account const lender{"lender"};
-        Account const borrower{"borrower"};
-        env.fund(XRP(100'000), issuer, lender, borrower);
-        env.close();
-
-        PrettyAsset const asset = issuer["USD"];
-        env(trust(lender, asset(10'000'000)));
-        env(trust(borrower, asset(10'000'000)));
-        env(pay(issuer, lender, asset(3'000'000)));
-        env(pay(issuer, borrower, asset(1'000'000)));
-        env.close();
+        FixedPrecisionIOU f{*this, features};
+        auto& env = f.env;
+        auto const& lender = f.lender;
+        auto const& borrower = f.borrower;
+        auto const& asset = f.asset;
+        f.fund(10'000'000, 3'000'000, 1'000'000);
 
         BrokerParameters brokerParams;
         brokerParams.vaultDeposit = 2'000'000;
