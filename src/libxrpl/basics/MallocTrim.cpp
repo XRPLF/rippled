@@ -7,7 +7,8 @@
 
 #include <string_view>
 
-#if defined(__GLIBC__) && BOOST_OS_LINUX
+// jemalloc manages its own arenas; glibc trimming and metrics do not apply.
+#if defined(__GLIBC__) && BOOST_OS_LINUX && !defined(PROFILE_JEMALLOC)
 #include <sys/resource.h>
 
 #include <malloc.h>
@@ -43,7 +44,7 @@ namespace detail {
 
 // cSpell:ignore statm
 
-#if defined(__GLIBC__) && BOOST_OS_LINUX
+#if defined(__GLIBC__) && BOOST_OS_LINUX && !defined(PROFILE_JEMALLOC)
 
 inline int
 mallocTrimWithPad(std::size_t padBytes)
@@ -69,7 +70,7 @@ parseStatmRSSkB(std::string const& statm)
     return (resident * pageSize) / 1024;
 }
 
-#endif  // __GLIBC__ && BOOST_OS_LINUX
+#endif  // __GLIBC__ && BOOST_OS_LINUX && !PROFILE_JEMALLOC
 
 }  // namespace detail
 
@@ -80,8 +81,9 @@ mallocTrim(std::string_view tag, beast::Journal journal)
 
     MallocTrimReport report;
 
-#if !(defined(__GLIBC__) && BOOST_OS_LINUX)
-    JLOG(journal.debug()) << "malloc_trim not supported on this platform (tag=" << tag << ")";
+#if !(defined(__GLIBC__) && BOOST_OS_LINUX) || defined(PROFILE_JEMALLOC)
+    JLOG(journal.debug()) << "malloc_trim not supported by this build's platform or allocator (tag="
+                          << tag << ")";
 #else
     // Keep glibc malloc_trim padding at 0 (default): 12h Mainnet tests across 0/256KB/1MB/16MB
     // showed no clear, consistent benefit from custom padding—0 provided the best overall balance

@@ -52,7 +52,7 @@ class Xrpl(ConanFile):
         "benchmark": True,
         "coverage": False,
         "fPIC": True,
-        "jemalloc": False,
+        "jemalloc": True,
         "rocksdb": True,
         "shared": False,
         "static": True,
@@ -228,5 +228,7 @@ class Xrpl(ConanFile):
             "xxhash::xxhash",
             "zlib::zlib",
         ]
+        if self.options.jemalloc:
+            libxrpl.requires.append("jemalloc::jemalloc")
         if self.options.rocksdb:
             libxrpl.requires.append("rocksdb::librocksdb")

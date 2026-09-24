@@ -98,6 +98,8 @@ tools.info.package_id:confs+=["tools.build:cxxflags", "tools.build:exelinkflags"
 &:tools.cmake.cmaketoolchain:extra_variables={"SANITIZERS": "{{ sanitizers }}", "SANITIZERS_COMPILER_FLAGS": "{{ sanitizer_compiler_flags | join(' ') }}", "SANITIZERS_LINKER_FLAGS": "{{ sanitizer_linker_flags | join(' ') }}"}
 
 [options]
+# Let sanitizers intercept the system allocator rather than jemalloc.
+&:jemalloc=False
 {% if enable_asan %}
     # Build Boost.Context with ucontext backend (not fcontext) so that
     # ASAN fiber-switching annotations (__sanitizer_start/finish_switch_fiber)

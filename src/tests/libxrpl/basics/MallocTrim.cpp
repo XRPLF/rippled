@@ -12,7 +12,7 @@ using namespace xrpl;
 
 // cSpell:ignore statm
 
-#if defined(__GLIBC__) && BOOST_OS_LINUX
+#if defined(__GLIBC__) && BOOST_OS_LINUX && !defined(PROFILE_JEMALLOC)
 namespace xrpl::detail {
 long
 parseStatmRSSkB(std::string const& statm);
@@ -48,7 +48,7 @@ TEST(MallocTrimReport, structure)
     EXPECT_EQ(report.deltaKB(), 0);
 }
 
-#if defined(__GLIBC__) && BOOST_OS_LINUX
+#if defined(__GLIBC__) && BOOST_OS_LINUX && !defined(PROFILE_JEMALLOC)
 TEST(ParseStatmRSSkB, standard_format)
 {
     using xrpl::detail::parseStatmRSSkB;
@@ -127,7 +127,7 @@ TEST(MallocTrim, without_debug_logging)
 
     MallocTrimReport const report = mallocTrim("without_debug", journal);
 
-#if defined(__GLIBC__) && BOOST_OS_LINUX
+#if defined(__GLIBC__) && BOOST_OS_LINUX && !defined(PROFILE_JEMALLOC)
     EXPECT_EQ(report.supported, true);
     EXPECT_GE(report.trimResult, 0);
     EXPECT_EQ(report.durationUs, std::chrono::microseconds{-1});
@@ -149,7 +149,7 @@ TEST(MallocTrim, empty_tag)
     beast::Journal const journal{beast::Journal::getNullSink()};
     MallocTrimReport const report = mallocTrim("", journal);
 
-#if defined(__GLIBC__) && BOOST_OS_LINUX
+#if defined(__GLIBC__) && BOOST_OS_LINUX && !defined(PROFILE_JEMALLOC)
     EXPECT_EQ(report.supported, true);
     EXPECT_GE(report.trimResult, 0);
 #else
@@ -179,7 +179,7 @@ TEST(MallocTrim, with_debug_logging)
 
     MallocTrimReport const report = mallocTrim("debug_test", journal);
 
-#if defined(__GLIBC__) && BOOST_OS_LINUX
+#if defined(__GLIBC__) && BOOST_OS_LINUX && !defined(PROFILE_JEMALLOC)
     EXPECT_EQ(report.supported, true);
     EXPECT_GE(report.trimResult, 0);
     EXPECT_GE(report.durationUs.count(), 0);
@@ -188,9 +188,12 @@ TEST(MallocTrim, with_debug_logging)
 #else
     EXPECT_EQ(report.supported, false);
     EXPECT_EQ(report.trimResult, -1);
+    EXPECT_EQ(report.rssBeforeKB, -1);
+    EXPECT_EQ(report.rssAfterKB, -1);
     EXPECT_EQ(report.durationUs, std::chrono::microseconds{-1});
     EXPECT_EQ(report.minfltDelta, -1);
     EXPECT_EQ(report.majfltDelta, -1);
+    EXPECT_EQ(report.deltaKB(), 0);
 #endif
 }
 
@@ -203,7 +206,7 @@ TEST(MallocTrim, repeated_calls)
     {
         MallocTrimReport const report = mallocTrim("iteration_" + std::to_string(i), journal);
 
-#if defined(__GLIBC__) && BOOST_OS_LINUX
+#if defined(__GLIBC__) && BOOST_OS_LINUX && !defined(PROFILE_JEMALLOC)
         EXPECT_EQ(report.supported, true);
         EXPECT_GE(report.trimResult, 0);
 #else

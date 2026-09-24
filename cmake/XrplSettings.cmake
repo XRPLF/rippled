@@ -131,7 +131,17 @@ else()
     set(use_lld OFF CACHE BOOL "try lld linker, clang only" FORCE)
 endif()
 
-option(jemalloc "Enables jemalloc for heap profiling" OFF)
+# Sanitizers need to intercept the system allocator.
+if(SANITIZERS_ENABLED)
+    set(JEMALLOC_DEFAULT OFF)
+else()
+    set(JEMALLOC_DEFAULT ON)
+endif()
+option(
+    jemalloc
+    "Use jemalloc instead of the system allocator"
+    ${JEMALLOC_DEFAULT}
+)
 option(werr "treat warnings as errors" OFF)
 option(
     local_protobuf

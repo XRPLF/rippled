@@ -304,6 +304,7 @@ See [Sanitizers docs](./docs/build/sanitizers.md) for more details.
 | ---------------- | ------------- | ----------------------------------------------------------------------------- |
 | `assert`         | OFF           | Force enabling assertions.                                                    |
 | `coverage`       | OFF           | Prepare the coverage report.                                                  |
+| `jemalloc`       | ON            | Use jemalloc instead of the system allocator; disables glibc malloc trimming. |
 | `rust`           | OFF           | Build the Rust crates and the C++ code that depends on them.                  |
 | `tests`          | OFF           | Build tests.                                                                  |
 | `unity`          | OFF           | Configure a unity build.                                                      |
@@ -316,6 +317,26 @@ See [Sanitizers docs](./docs/build/sanitizers.md) for more details.
 memory) since they concatenate sources into fewer translation units. Non-unity
 builds may be faster for incremental builds, and can be helpful for detecting
 `#include` omissions.
+
+### Memory allocator
+
+Conan and CMake use jemalloc by default. In jemalloc builds, `mallocTrim` does
+not call glibc's `malloc_trim` or collect trim metrics; jemalloc manages its own
+arenas and memory reclamation.
+
+To use the system allocator instead (GNU/glibc malloc with the existing
+`malloc_trim(0)` behavior on Linux/glibc), add `--options '&:jemalloc=False'`
+to each `conan install` command and `-Djemalloc=OFF` to the CMake configure
+command. Keep the Conan and CMake options consistent. To switch an existing
+system-allocator build to jemalloc, rerun Conan with
+`--options '&:jemalloc=True'` and configure CMake with `-Djemalloc=ON`, since
+existing build directories may cache the old option value.
+
+The `sanitizers` Conan profile disables jemalloc when sanitizer instrumentation
+is enabled so that sanitizers can intercept the system allocator. CMake also
+defaults to the system allocator when `SANITIZERS` is set; use `-Djemalloc=OFF`
+if reusing a build directory previously configured with jemalloc. Platforms
+other than Linux/glibc do not support malloc trimming, regardless of this option.
 
 ### Rust crates
 

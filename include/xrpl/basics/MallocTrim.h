@@ -13,11 +13,11 @@ namespace xrpl {
 // -----------------------------------------------------------------------------
 // Allocator interaction note:
 // - This facility invokes glibc's malloc_trim(0) on Linux/glibc to request that
-//   ptmalloc return free heap pages to the OS.
-// - If an alternative allocator (e.g. jemalloc or tcmalloc) is linked or
-//   preloaded (LD_PRELOAD), calling glibc's malloc_trim typically has no effect
-//   on the *active* heap. The call is harmless but may not reclaim memory
-//   because those allocators manage their own arenas.
+//   ptmalloc return free heap pages to the OS, unless built with jemalloc.
+// - Builds with jemalloc disable trimming and its instrumentation entirely.
+// - Other linked or preloaded allocators (LD_PRELOAD) are not detected. Calling
+//   glibc's malloc_trim typically has no effect on their heaps because those
+//   allocators manage their own arenas.
 // - Only glibc sbrk/arena space is eligible for trimming; large mmap-backed
 //   allocations are usually returned to the OS on free regardless of trimming.
 // - Call at known reclamation points (e.g., after cache sweeps / online delete)
@@ -47,18 +47,16 @@ struct MallocTrimReport
  * @brief Attempt to return freed memory to the operating system.
  *
  * On Linux with glibc malloc, this issues ::malloc_trim(0), which may release
- * free space from ptmalloc arenas back to the kernel. On other platforms, or if
- * a different allocator is in use, this function is a no-op and the report will
- * indicate that trimming is unsupported or had no effect.
+ * free space from ptmalloc arenas back to the kernel. On other platforms, or
+ * when built with jemalloc, this function performs no trimming or instrumentation
+ * and returns a default report with supported=false.
  *
  * @param tag     Identifier for logging/debugging purposes.
  * @param journal Journal for diagnostic logging.
  * @return Report containing before/after metrics and the trim result.
  *
- * @note If an alternative allocator (jemalloc/tcmalloc) is linked or preloaded,
- *       calling glibc's malloc_trim may have no effect on the active heap. The
- *       call is harmless but typically does not reclaim memory under those
- *       allocators.
+ * @note Other linked or preloaded allocators are not detected at runtime.
+ *       Calling glibc's malloc_trim may have no effect on their heaps.
  *
  * @note Only memory served from glibc's sbrk/arena heaps is eligible for trim.
  *       Large allocations satisfied via mmap are usually returned on free
