@@ -521,21 +521,9 @@ public:
     void
     testAccountLinesMarkerNewObjectTypes()
     {
-        // Regression test for a bug where isRelatedToAccount (a marker
-        // validator shared by account_lines, account_offers and
-        // account_channels) rejected markers that pointed at owner-directory
-        // ledger entries whose types were added after the original hard-coded
-        // allowlist. That allowlist only recognized ltRIPPLE_STATE, objects
-        // carrying sfAccount (optionally sfDestination), ltSIGNER_LIST and
-        // ltNFTOKEN_OFFER; every newer owner-directory type (Credential,
-        // Oracle, PermissionedDomain, MPTokenIssuance, Vault, LoanBroker,
-        // Loan, Sponsorship, ...) fell through to `return false`, so a
-        // legitimately issued marker pointing at one of them was rejected
-        // with rpcInvalidParams and the client could no longer paginate.
-        //
-        // The pagination marker is set to the limit-th object's key
-        // regardless of type, so an account that owns any post-2023
-        // owner-directory object can trigger this on a page boundary.
+        // Verify that paginating account_lines across an owner directory
+        // that also contains a Credential does not reject the marker with
+        // rpcInvalidParams, and that the walk visits every entry.
         testcase(
             "Marker on new owner-directory entry types (Credential): "
             "account_lines");
@@ -548,24 +536,18 @@ public:
         env.fund(XRP(10000), alice, issuer);
         env.close();
 
-        // One trust line so account_lines has something to enumerate.
         auto const usd = issuer["USD"];
         env(trust(alice, usd(200)));
 
-        // Several credentials so that iterating alice's owner directory with
-        // limit=1 is guaranteed to produce a marker whose SLE is a Credential
-        // (the failure mode this test guards against). Credentials are added
-        // to both the issuer's and the subject's owner directories, so alice
-        // owns each of these in her role as sfSubject.
+        // Credentials are inserted into the subject's owner directory, so
+        // walking alice's directory with limit=1 will land the marker on
+        // one of these Credential SLEs.
         for (int i = 0; i < 4; ++i)
         {
             env(credentials::create(alice, issuer, std::string("Cred") + std::to_string(i)));
         }
         env.close();
 
-        // Walk alice's owner directory one entry at a time. Every follow-up
-        // call re-validates the marker via isRelatedToAccount, which under
-        // the buggy allowlist would reject any Credential marker.
         std::optional<std::string> marker;
         int iterations = 0;
         bool hitInvalidParams = false;
@@ -589,20 +571,15 @@ public:
         }
 
         BEAST_EXPECT(!hitInvalidParams);
-        // 5 owner-directory entries (1 trust line + 4 credentials): the
-        // final call reports count == 1 != limit+1 and so returns no marker,
-        // terminating the loop. So the walk visits every entry in exactly 5
-        // iterations.
+        // 1 trust line + 4 credentials = 5 owner-directory entries.
         BEAST_EXPECTS(iterations == 5, std::to_string(iterations));
     }
 
     void
     testAccountOffersMarkerNewObjectTypes()
     {
-        // Same regression as testAccountLinesMarkerNewObjectTypes, but for
-        // account_offers: it shares isRelatedToAccount with account_lines
-        // and sets pagination markers to the limit-th owner-directory entry
-        // regardless of type.
+        // Same regression as testAccountLinesMarkerNewObjectTypes, exercised
+        // through account_offers.
         testcase(
             "Marker on new owner-directory entry types (Credential): "
             "account_offers");
@@ -618,8 +595,6 @@ public:
         auto const usd = issuer["USD"];
         env(trust(alice, usd(1000)));
 
-        // A few credentials issued to alice, then walk with limit=1 so the
-        // marker will land on one of them.
         for (int i = 0; i < 4; ++i)
         {
             env(credentials::create(alice, issuer, std::string("OfferCred") + std::to_string(i)));
@@ -652,10 +627,8 @@ public:
     void
     testAccountChannelsMarkerNewObjectTypes()
     {
-        // Same regression as testAccountLinesMarkerNewObjectTypes, but for
-        // account_channels: it shares isRelatedToAccount with account_lines
-        // and sets pagination markers to the limit-th owner-directory entry
-        // regardless of type.
+        // Same regression as testAccountLinesMarkerNewObjectTypes, exercised
+        // through account_channels.
         testcase(
             "Marker on new owner-directory entry types (Credential): "
             "account_channels");

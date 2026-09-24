@@ -70,39 +70,16 @@ bool
 isRelatedToAccount(ReadView const& ledger, SLE::const_ref sle, AccountID const& accountID)
 {
     // Marker validator for account_lines / account_offers / account_channels
-    // pagination. The three RPCs stash the limit-th owner-directory entry's
-    // key in the marker regardless of its ledger-entry type, so this check
-    // is what stops a follow-up request from resuming iteration on an SLE
-    // that does not actually belong in `accountID`'s owner directory.
+    // pagination: returns true iff `sle` is stored in `accountID`'s owner
+    // directory.
     //
-    // Historically this was a hard-coded allowlist keyed off sfAccount /
-    // sfDestination / sfOwner / ltRIPPLE_STATE / ltSIGNER_LIST /
-    // ltNFTOKEN_OFFER, so every owner-directory ledger-entry type added
-    // after that allowlist (Credential using sfSubject / sfIssuer,
-    // Sponsorship using sfSponsee, Delegate's delegatee side, token Escrow,
-    // etc.) fell through to `return false` and legitimate pagination
-    // markers were rejected with rpcInvalidParams.
-    //
-    // Every owner-directory insertion records the destination page number
-    // on the inserted SLE in an sf*Node UINT64 field (sfOwnerNode,
-    // sfLowNode / sfHighNode for trust lines, sfDestinationNode for the
-    // destination side of Check / Escrow / PayChannel and the delegatee of
-    // Delegate, sfIssuerNode / sfSubjectNode for Credential, sfSponseeNode
-    // for Sponsorship, sfLoanBrokerNode for Loan, and so on). So instead
-    // of enumerating (ledger type, account role) → node field mappings —
-    // which reintroduces the "forgot to update the allowlist when a new
-    // type was added" failure mode — we let the SLE itself tell us which
-    // pages to probe: for each sf*Node UINT64 field set on the SLE, look
-    // up that page in accountID's owner directory and check whether the
-    // SLE's key is stored there. The containment check makes it safe to
-    // probe every candidate: a Node value that refers to some *other*
-    // account's directory cannot spuriously match because the SLE's key
-    // only lives in the pages of its real owners.
-    //
-    // This is bounded by the number of sf*Node fields on the SLE (a small
-    // single-digit constant — no single ledger entry type in the current
-    // schema carries more than three), which matters post-`fixDirectoryLimit`
-    // where owner directories no longer have a per-directory page cap.
+    // Every owner-directory insertion records its page number on the
+    // inserted SLE in an sf*Node UINT64 field. We probe each such field as a
+    // page in `accountID`'s owner directory and confirm the SLE's key is
+    // stored there; the containment check makes it safe to try every
+    // candidate. This is bounded by the number of Node fields on the SLE (a
+    // small constant), which matters post-`fixDirectoryLimit` where owner
+    // directories no longer have a per-directory page cap.
     auto const ownerDir = keylet::ownerDir(accountID);
     auto const& sleKey = sle->key();
 
