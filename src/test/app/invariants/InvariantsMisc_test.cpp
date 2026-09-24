@@ -923,6 +923,13 @@ class InvariantsMisc_test : public InvariantsBase
                     sleLoan->at(sfPrincipalOutstanding) = Number(100);
                     sleLoan->at(sfTotalValueOutstanding) = Number(150);
                     sleLoan->setFieldU32(sfPaymentRemaining, 1);
+                    // ValidLoan only accepts a LoanAccept that finalizes a
+                    // pending loan whose StartDate is still in the future.
+                    if (c.txType == ttLOAN_ACCEPT)
+                    {
+                        sleLoan->setFieldU32(sfFlags, lsfLoanPending);
+                        sleLoan->setFieldU32(sfStartDate, 0xFFFFFFFFu);
+                    }
                     setOwnerNode(sleLoan, c.before);
                     ov.rawInsert(sleLoan);
                 }
@@ -941,6 +948,8 @@ class InvariantsMisc_test : public InvariantsBase
                 auto sleLoan = ac.view().peek(loanKeylet);
                 if (!BEAST_EXPECT(sleLoan))
                     continue;
+                if (c.txType == ttLOAN_ACCEPT)
+                    sleLoan->clearFlag(lsfLoanPending);
                 setOwnerNode(sleLoan, c.after);
                 ac.view().update(sleLoan);
 

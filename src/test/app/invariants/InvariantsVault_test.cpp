@@ -1595,6 +1595,396 @@ class InvariantsVault_test : public InvariantsBase
                 precloseLoan);
         }
 
+        // LoanAccept restrictions: LoanAccept may only modify a loan that is
+        // pending acceptance, and the OwnerNode of an existing loan may only
+        // be added (never removed or changed), and only by LoanAccept. These
+        // need a loan that already exists in the base ledger, hence the
+        // bespoke view construction below.
+        {
+            // The loan's Borrower is the account that a valid LoanAccept must be
+            // submitted by; stranger stands in for any other account.
+            Account const borrower{"borrower"};
+            Account const stranger{"stranger"};
+
+            // startDate defaults to the far future so the "StartDate must be in
+            // the future" check passes unless a test overrides it.
+            auto const testLoanUpdate = [&, this](
+                                            STTx const& tx,
+                                            std::uint32_t baseFlags,
+                                            std::optional<std::uint64_t> baseNode,
+                                            auto&& mutate,
+                                            std::optional<std::string> const& expected,
+                                            std::uint32_t startDate = 0xFFFFFFFFu) {
+                Env env{*this, all_};
+                Account const a1{"A1"};
+                Account const a2{"A2"};
+                env.fund(XRP(10'000), a1, a2);
+                env.close();
+
+                // Create a real broker (and vault) so that the loan resolves to
+                // live ledger entries.
+                PrettyAsset const xrpAsset{xrpIssue(), 1'000'000};
+                auto const brokerKeylet = createLoanBroker(a1, env, xrpAsset);
+                auto const brokerSle = env.le(brokerKeylet);
+                if (!BEAST_EXPECT(brokerSle))
+                    return;
+                auto const vaultKeylet = keylet::vault(brokerSle->at(sfVaultID));
+                env.close();
+
+                OpenView ov{*env.current()};
+                auto const loanKeylet = keylet::loan(brokerKeylet.key, SeqProxy::rawSequence(1));
+                {
+                    auto sleLoan = makeLoanSle(brokerKeylet.key, 1, borrower.id());
+                    sleLoan->at(sfPrincipalOutstanding) = Number(100);
+                    sleLoan->at(sfTotalValueOutstanding) = Number(150);
+                    sleLoan->setFieldU32(sfPaymentRemaining, 2);
+                    sleLoan->setFieldU32(sfStartDate, startDate);
+                    if (baseFlags != 0)
+                        sleLoan->setFieldU32(sfFlags, baseFlags);
+                    if (baseNode)
+                        sleLoan->setFieldU64(sfOwnerNode, *baseNode);
+                    else
+                        sleLoan->makeFieldAbsent(sfOwnerNode);
+                    ov.rawInsert(sleLoan);
+                }
+
+                test::StreamSink sink{beast::Severity::Warning};
+                beast::Journal const jlog{sink};
+                ApplyContext ac{
+                    env.app(), ov, tx, tesSUCCESS, env.current()->fees().base, TapNone, jlog};
+                CurrentTransactionRulesGuard const rulesGuard(ov.rules());
+
+                auto sleLoan = ac.view().peek(loanKeylet);
+                if (!BEAST_EXPECT(sleLoan))
+                    return;
+                mutate(sleLoan);
+                ac.view().update(sleLoan);
+
+                // LoanAccept carries Privilege::MustModifyVault, so ValidVault
+                // fails any LoanAccept that leaves every vault untouched.
+                // Register a no-op modification of the broker's vault to keep
+                // that unrelated check out of the way.
+                if (tx.getTxnType() == ttLOAN_ACCEPT)
+                {
+                    auto sleVault = ac.view().peek(vaultKeylet);
+                    if (!BEAST_EXPECT(sleVault))
+                        return;
+                    ac.view().update(sleVault);
+                }
+
+                auto transactor = makeTransactor(ac);
+                if (!BEAST_EXPECT(transactor))
+                    return;
+                TER const result = transactor->checkInvariants(
+                    tesSUCCESS, XRPAmount{}, Transactor::InvariantScope::Full);
+                if (expected)
+                {
+                    BEAST_EXPECT(result == tecINVARIANT_FAILED);
+                    BEAST_EXPECTS(sink.messages().str().contains(*expected), *expected);
+                }
+                else
+                {
+                    BEAST_EXPECTS(
+                        result == tesSUCCESS,
+                        sink.messages().str() + " expected logs: " + expected.value_or("<none>"));
+                }
+            };
+
+            STTx const acceptTx{
+                ttLOAN_ACCEPT, [&](STObject& tx) { tx.setAccountID(sfAccount, borrower.id()); }};
+
+            // ttLOAN_ACCEPT: modifying an active (non-pending) loan fails,
+            // even if the modification is otherwise harmless.
+            testLoanUpdate(
+                acceptTx,
+                0,
+                0,
+                [](SLE::pointer const& sle) { sle->setFieldU32(sfPaymentRemaining, 1); },
+                "LoanAccept modified a Loan that was not pending");
+
+            // ttLOAN_ACCEPT: removing the OwnerNode while accepting fails.
+            testLoanUpdate(
+                acceptTx,
+                lsfLoanPending,
+                0,
+                [](SLE::pointer const& sle) {
+                    sle->clearFlag(lsfLoanPending);
+                    sle->makeFieldAbsent(sfOwnerNode);
+                },
+                "Loan OwnerNode removed or changed");
+
+            // ttLOAN_ACCEPT: changing the OwnerNode while accepting fails.
+            testLoanUpdate(
+                acceptTx,
+                lsfLoanPending,
+                0,
+                [](SLE::pointer const& sle) {
+                    sle->clearFlag(lsfLoanPending);
+                    sle->setFieldU64(sfOwnerNode, 1);
+                },
+                "Loan OwnerNode removed or changed");
+
+            // Only LoanAccept may add the OwnerNode to an existing loan.
+            testLoanUpdate(
+                STTx{ttACCOUNT_SET, [](STObject&) {}},
+                0,
+                std::nullopt,
+                [](SLE::pointer const& sle) { sle->setFieldU64(sfOwnerNode, 0); },
+                "Loan OwnerNode added by an unauthorized transaction");
+
+            // ttLOAN_ACCEPT: the legitimate transition passes: clear the
+            // pending flag and link the loan into the borrower's directory.
+            testLoanUpdate(
+                acceptTx,
+                lsfLoanPending,
+                std::nullopt,
+                [](SLE::pointer const& sle) {
+                    sle->clearFlag(lsfLoanPending);
+                    sle->setFieldU64(sfOwnerNode, 0);
+                },
+                std::nullopt);
+
+            // ttLOAN_ACCEPT: an account other than the loan's Borrower must not
+            // accept the loan, even for an otherwise legitimate transition.
+            testLoanUpdate(
+                STTx{
+                    ttLOAN_ACCEPT,
+                    [&](STObject& tx) { tx.setAccountID(sfAccount, stranger.id()); }},
+                lsfLoanPending,
+                std::nullopt,
+                [](SLE::pointer const& sle) {
+                    sle->clearFlag(lsfLoanPending);
+                    sle->setFieldU64(sfOwnerNode, 0);
+                },
+                "LoanAccept submitted by an account other than the Borrower");
+
+            // ttLOAN_ACCEPT: the loan's StartDate must still be in the future;
+            // accepting a loan whose StartDate has passed is a violation.
+            testLoanUpdate(
+                acceptTx,
+                lsfLoanPending,
+                std::nullopt,
+                [](SLE::pointer const& sle) {
+                    sle->clearFlag(lsfLoanPending);
+                    sle->setFieldU64(sfOwnerNode, 0);
+                },
+                "LoanAccept processed a Loan whose StartDate is not in the future",
+                1u);
+
+            // The pending flag may only be cleared by LoanAccept: any other
+            // transaction clearing it is a violation.
+            testLoanUpdate(
+                STTx{ttACCOUNT_SET, [](STObject&) {}},
+                lsfLoanPending,
+                std::nullopt,
+                [](SLE::pointer const& sle) { sle->clearFlag(lsfLoanPending); },
+                "Loan Pending flag changed by an unauthorized transaction");
+
+            // The pending flag may never be set on an existing loan (it is only
+            // set at creation by LoanSet), not even by LoanAccept.
+            testLoanUpdate(
+                acceptTx,
+                0,
+                0,
+                [](SLE::pointer const& sle) { sle->setFlag(lsfLoanPending); },
+                "Loan Pending flag changed by an unauthorized transaction");
+        }
+
+        // LoanSet malformedness: with the two-step flow enabled a LoanSet that
+        // creates a loan must use exactly one of two mutually exclusive paths -
+        // it either names a Borrower with a StartDate, or it carries a
+        // CounterpartySignature. A LoanSet that breaks these rules must never
+        // be applied. Each case creates a loan directly under a ttLOAN_SET
+        // whose fields break one of the rules.
+        {
+            Account const borrower{"borrower"};
+            Account const counterparty{"counterparty"};
+
+            // Create a real broker (and closed-ended vault) so the created loan
+            // resolves to live ledger entries, then move the vault into the
+            // Investment phase so that loan origination is permitted.
+            Keylet brokerKeylet = keylet::amendments();
+            Preclose const createBroker = [&brokerKeylet, this](
+                                              Account const& a1, Account const&, Env& env) {
+                PrettyAsset const xrpAsset{xrpIssue(), 1'000'000};
+                brokerKeylet = createLoanBroker(a1, env, xrpAsset);
+                if (!BEAST_EXPECT(env.le(brokerKeylet)))
+                    return false;
+                env.close(std::chrono::seconds{61});
+                return true;
+            };
+
+            // Creates a loan, optionally flagged pending, so that only the
+            // LoanSet creation checks fire.
+            auto const createLoan = [&brokerKeylet](
+                                        bool pending,
+                                        std::optional<std::uint32_t> startDate = std::nullopt,
+                                        AccountID const& borrower = AccountID{}) {
+                return [&brokerKeylet, pending, startDate, borrower](
+                           Account const&, Account const&, ApplyContext& ac) {
+                    // LoanSet carries Privilege::MustModifyVault, so ValidVault
+                    // fails any LoanSet that leaves every vault untouched.
+                    // Register a no-op modification of the broker's vault to
+                    // keep that unrelated check out of the way.
+                    auto const sleBroker = ac.view().read(brokerKeylet);
+                    if (!sleBroker)
+                        return false;
+                    auto sleVault = ac.view().peek(keylet::vault(sleBroker->at(sfVaultID)));
+                    if (!sleVault)
+                        return false;
+                    ac.view().update(sleVault);
+
+                    auto sleLoan = makeLoanSle(brokerKeylet.key, 1, borrower);
+                    sleLoan->at(sfPrincipalOutstanding) = Number(200);
+                    sleLoan->at(sfTotalValueOutstanding) = Number(200);
+                    sleLoan->setFieldU32(sfPaymentRemaining, 1);
+                    if (pending)
+                    {
+                        sleLoan->setFlag(lsfLoanPending);
+                        sleLoan->makeFieldAbsent(sfOwnerNode);
+                    }
+                    if (startDate)
+                        sleLoan->setFieldU32(sfStartDate, *startDate);
+                    ac.view().insert(sleLoan);
+                    return true;
+                };
+            };
+
+            // One-step flow must not be accompanied by a Borrower.
+            doInvariantCheck(
+                Env{*this, all_},
+                {"Invariant failed: LoanSet specified a Borrower with a CounterpartySignature"},
+                createLoan(false, std::nullopt, borrower.id()),
+                XRPAmount{},
+                STTx{
+                    ttLOAN_SET,
+                    [&](STObject& tx) {
+                        tx.makeFieldPresent(sfCounterpartySignature);
+                        tx.makeFieldPresent(sfBorrower);
+                    }},
+                {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+                createBroker);
+
+            // Two-step flow must not be accompanied by a Counterparty.
+            doInvariantCheck(
+                Env{*this, all_},
+                {"Invariant failed: LoanSet specified a Borrower with a StartDate and a "
+                 "Counterparty"},
+                createLoan(false, std::nullopt, borrower.id()),
+                XRPAmount{},
+                STTx{
+                    ttLOAN_SET,
+                    [&](STObject& tx) {
+                        tx.setAccountID(sfBorrower, borrower.id());
+                        tx.at(sfStartDate) = 0;
+                        tx.setAccountID(sfCounterparty, counterparty.id());
+                    }},
+                {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+                createBroker);
+
+            // A LoanSet must use one of the two creation paths.
+            doInvariantCheck(
+                Env{*this, all_},
+                {"Invariant failed: LoanSet specified neither a Borrower with a StartDate nor a "
+                 "CounterpartySignature"},
+                createLoan(false, std::nullopt, borrower.id()),
+                XRPAmount{},
+                STTx{ttLOAN_SET, [](STObject&) {}},
+                {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+                createBroker);
+
+            // A two-step LoanSet (Borrower and StartDate, no Counterparty or
+            // CounterpartySignature) must create a pending loan; creating a
+            // non-pending loan instead is a violation.
+            doInvariantCheck(
+                Env{*this, all_},
+                {"LoanSet pending flag does not match the two-step flow inputs"},
+                createLoan(false, std::nullopt, borrower.id()),
+                XRPAmount{},
+                STTx{
+                    ttLOAN_SET,
+                    [&](STObject& tx) {
+                        tx.setAccountID(sfBorrower, borrower.id());
+                        tx.setFieldU32(sfStartDate, 0xFFFF'FFFF);
+                    }},
+                {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+                createBroker);
+
+            // A Counterparty + CounterpartySignature LoanSet must create an
+            // active (non-pending) loan; creating a pending loan instead is a
+            // violation.
+            doInvariantCheck(
+                Env{*this, all_},
+                {"LoanSet pending flag does not match the two-step flow inputs"},
+                createLoan(true, std::nullopt, borrower.id()),
+                XRPAmount{},
+                STTx{
+                    ttLOAN_SET,
+                    [&](STObject& tx) {
+                        tx.setAccountID(sfCounterparty, counterparty.id());
+                        tx.makeFieldPresent(sfCounterpartySignature);
+                    }},
+                {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+                createBroker);
+
+            // A created loan must record its Borrower: an otherwise well-formed
+            // LoanSet that leaves the loan without a Borrower is a violation.
+            // createLoan defaults the Borrower to the zero account, so a
+            // Counterparty + CounterpartySignature LoanSet (which passes the
+            // mutual-exclusion and pending-flag checks) reaches and trips this
+            // check.
+            doInvariantCheck(
+                Env{*this, all_},
+                {"LoanSet did not set the Loan Borrower"},
+                createLoan(false),
+                XRPAmount{},
+                STTx{
+                    ttLOAN_SET,
+                    [&](STObject& tx) {
+                        tx.setAccountID(sfCounterparty, counterparty.id());
+                        tx.makeFieldPresent(sfCounterpartySignature);
+                    }},
+                {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+                createBroker);
+
+            // In the two-step flow the named Borrower must differ from the
+            // submitting account; a LoanSet where they are equal is a violation.
+            doInvariantCheck(
+                Env{*this, all_},
+                {"LoanSet Borrower is the submitting account"},
+                createLoan(false, std::nullopt, borrower.id()),
+                XRPAmount{},
+                STTx{
+                    ttLOAN_SET,
+                    [&](STObject& tx) {
+                        tx.setAccountID(sfAccount, borrower.id());
+                        tx.setAccountID(sfBorrower, borrower.id());
+                        tx.setFieldU32(sfStartDate, 0xFFFF'FFFF);
+                    }},
+                {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+                createBroker);
+
+            // A pending loan created by the two-step flow must have a StartDate
+            // in the future; creating one with a past StartDate is a violation.
+            // createLoan(true, 1) makes a pending loan whose StartDate (1) is in
+            // the past, and the Borrower + StartDate LoanSet keeps the pending
+            // flag consistent so this check is reached.
+            doInvariantCheck(
+                Env{*this, all_},
+                {"LoanSet created a pending Loan whose StartDate is not in the "
+                 "future"},
+                createLoan(true, 1u),
+                XRPAmount{},
+                STTx{
+                    ttLOAN_SET,
+                    [&](STObject& tx) {
+                        tx.setAccountID(sfBorrower, borrower.id());
+                        tx.setFieldU32(sfStartDate, 0xFFFF'FFFF);
+                    }},
+                {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+                createBroker);
+        }
+
         STTx const loanSetTx{
             ttLOAN_SET, [](STObject& tx) { tx.at(sfPrincipalRequested) = Number(0); }};
 
