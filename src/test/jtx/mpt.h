@@ -76,13 +76,19 @@ private:
     MPTTester& tester_;
     std::uint32_t flags_;
     std::optional<Account> holder_;
+    // Test call site (forwarded from the MPTTester method).
+    std::source_location testLoc_;
+    // The site where this check object was constructed (usually in mpt.cpp).
+    std::source_location checkLoc_;
 
 public:
     MptFlags(
         MPTTester& tester,
         std::uint32_t flags,
-        std::optional<Account> const& holder = std::nullopt)
-        : tester_(tester), flags_(flags), holder_(holder)
+        std::optional<Account> const& holder = std::nullopt,
+        std::source_location const& testLoc = std::source_location::current(),
+        std::source_location const& checkLoc = std::source_location::current())
+        : tester_(tester), flags_(flags), holder_(holder), testLoc_(testLoc), checkLoc_(checkLoc)
     {
     }
 
@@ -99,10 +105,23 @@ private:
     MPTTester const& tester_;
     Account const& account_;
     std::int64_t const amount_;
+    // Test call site (forwarded from the MPTTester method).
+    std::source_location testLoc_;
+    // The site where this check object was constructed (usually in mpt.cpp).
+    std::source_location checkLoc_;
 
 public:
-    MptBalance(MPTTester& tester, Account const& account, std::int64_t amount)
-        : tester_(tester), account_(account), amount_(amount)
+    MptBalance(
+        MPTTester& tester,
+        Account const& account,
+        std::int64_t amount,
+        std::source_location const& testLoc = std::source_location::current(),
+        std::source_location const& checkLoc = std::source_location::current())
+        : tester_(tester)
+        , account_(account)
+        , amount_(amount)
+        , testLoc_(testLoc)
+        , checkLoc_(checkLoc)
     {
     }
 
@@ -117,9 +136,17 @@ class RequireAny
 {
 private:
     std::function<bool()> cb_;
+    // Test call site (forwarded from the MPTTester method).
+    std::source_location testLoc_;
+    // The site where this check object was constructed (usually in mpt.cpp).
+    std::source_location checkLoc_;
 
 public:
-    RequireAny(std::function<bool()> const& cb) : cb_(cb)
+    RequireAny(
+        std::function<bool()> const& cb,
+        std::source_location const& testLoc = std::source_location::current(),
+        std::source_location const& checkLoc = std::source_location::current())
+        : cb_(cb), testLoc_(testLoc), checkLoc_(checkLoc)
     {
     }
 
@@ -489,8 +516,14 @@ public:
     static constexpr auto holderEncryptedSpending = EncryptedBalanceType::HolderEncryptedSpending;
     static constexpr auto auditorEncryptedBalance = EncryptedBalanceType::AuditorEncryptedBalance;
 
-    MPTTester(Env& env, Account issuer, MPTInit const& constr = {});
-    MPTTester(MPTInitDef const& constr);
+    MPTTester(
+        Env& env,
+        Account issuer,
+        MPTInit const& constr = {},
+        std::source_location const& loc = std::source_location::current());
+    MPTTester(
+        MPTInitDef const& constr,
+        std::source_location const& loc = std::source_location::current());
     MPTTester(
         Env& env,
         Account issuer,
@@ -524,7 +557,9 @@ public:
     authorizeJV(MPTAuthorize const& arg = MPTAuthorize{});
 
     void
-    authorizeHolders(Holders const& holders);
+    authorizeHolders(
+        Holders const& holders,
+        std::source_location const& loc = std::source_location::current());
 
     void
     set(MPTSet const& set = {}, std::source_location const& loc = std::source_location::current());
@@ -620,7 +655,9 @@ public:
         std::source_location const& loc = std::source_location::current());
 
     void
-    mirrorUpdate(MPTMirrorUpdate const& arg = MPTMirrorUpdate{});
+    mirrorUpdate(
+        MPTMirrorUpdate const& arg = MPTMirrorUpdate{},
+        std::source_location const& loc = std::source_location::current());
 
     [[nodiscard]] bool
     checkDomainID(std::optional<uint256> expected) const;
@@ -690,14 +727,16 @@ public:
         Account const& dest,
         std::int64_t amount,
         std::optional<TER> err = std::nullopt,
-        std::optional<std::vector<std::string>> credentials = std::nullopt);
+        std::optional<std::vector<std::string>> credentials = std::nullopt,
+        std::source_location const& loc = std::source_location::current());
 
     void
     claw(
         Account const& issuer,
         Account const& holder,
         std::int64_t amount,
-        std::optional<TER> err = std::nullopt);
+        std::optional<TER> err = std::nullopt,
+        std::source_location const& loc = std::source_location::current());
 
     [[nodiscard]] PrettyAmount
     mpt(std::int64_t amount) const;
