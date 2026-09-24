@@ -1,5 +1,6 @@
 #include <xrpl/core/PeerReservationTable.h>
 
+#include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/jss.h>
@@ -62,6 +63,8 @@ PeerReservationTable::load(DatabaseCon& connection)
 std::optional<PeerReservation>
 PeerReservationTable::insertOrAssign(PeerReservation const& reservation)
 {
+    XRPL_ASSERT(connection_, "xrpl::PeerReservationTable::insertOrAssign : connection is set");
+
     std::optional<PeerReservation> previous;
 
     std::scoped_lock const lock(mutex_);
@@ -96,6 +99,8 @@ PeerReservationTable::insertOrAssign(PeerReservation const& reservation)
 std::optional<PeerReservation>
 PeerReservationTable::erase(PublicKey const& nodeId)
 {
+    XRPL_ASSERT(connection_, "xrpl::PeerReservationTable::erase : connection is set");
+
     std::optional<PeerReservation> previous;
 
     std::scoped_lock const lock(mutex_);
