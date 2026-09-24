@@ -7,6 +7,8 @@
 #include <expected>
 #include <string>
 #include <string_view>
+#include <type_traits>
+#include <utility>
 #include <vector>
 
 namespace xrpl {
@@ -484,6 +486,88 @@ TEST(JsonParser, handles_a_bare_buffer_without_a_terminator)
     auto other = Trace{};
     auto second = json::Parser{other};
     EXPECT_FALSE(second.parse(truncated.data(), truncated.data() + truncated.size()));
+}
+
+TEST(JsonParser, is_movable_but_not_copyable)
+{
+    using P = json::Parser<Trace>;
+    static_assert(!std::is_copy_constructible_v<P>);
+    static_assert(!std::is_copy_assignable_v<P>);
+    static_assert(std::is_nothrow_move_constructible_v<P>);
+    static_assert(std::is_nothrow_move_assignable_v<P>);
+}
+
+TEST(JsonParser, a_move_keeps_reporting_to_the_same_visitor)
+{
+    auto trace = Trace{};
+    auto source = json::Parser{trace};
+
+    auto moved = json::Parser{std::move(source)};
+    ASSERT_TRUE(moved.parse(std::string{"[1]"})) << moved.getFormattedErrorMessages();
+
+    EXPECT_EQ(&moved.visitor<0>(), &trace);
+    EXPECT_FALSE(trace.events.empty());
+}
+
+TEST(JsonParser, visitors_rebinds_the_parser_onto_a_new_visitor)
+{
+    auto first = Trace{};
+    auto second = Trace{};
+    auto parser = json::Parser{first};
+
+    parser.visitors(second);
+    ASSERT_TRUE(parser.parse(std::string{"[1]"})) << parser.getFormattedErrorMessages();
+
+    EXPECT_EQ(&parser.visitor<0>(), &second);
+    EXPECT_FALSE(second.events.empty());
+    EXPECT_TRUE(first.events.empty());
+}
+
+TEST(JsonParser, a_move_carries_error_locations_across_intact)
+{
+    // See the equivalent JsonReader test for why the parser is reused.
+    auto trace = Trace{};
+    auto source = json::Parser{trace};
+    ASSERT_FALSE(source.parse(std::string{R"({"a":})"}));
+    ASSERT_EQ(source.getFormattedErrorMessages().find("* Line 1, Column 6"), 0u)
+        << source.getFormattedErrorMessages();
+
+    auto moved = json::Parser{std::move(source)};
+
+    source = json::Parser{trace};
+    ASSERT_TRUE(source.parse(std::string{"\n\n\n\n[1]"})) << source.getFormattedErrorMessages();
+
+    EXPECT_EQ(moved.getFormattedErrorMessages().find("* Line 1, Column 6"), 0u)
+        << moved.getFormattedErrorMessages();
+}
+
+TEST(JsonParser, a_move_preserves_error_locations_into_a_caller_owned_buffer)
+{
+    auto const document = std::string{R"({"a":})"};
+
+    auto trace = Trace{};
+    auto source = json::Parser{trace};
+    ASSERT_FALSE(source.parse(document.data(), document.data() + document.size()));
+
+    auto const moved = json::Parser{std::move(source)};
+
+    EXPECT_EQ(moved.getFormattedErrorMessages().find("* Line 1, Column 6"), 0u)
+        << moved.getFormattedErrorMessages();
+}
+
+TEST(JsonParser, formats_errors_for_an_empty_null_range)
+{
+    // An empty std::vector<char> has a null data(), so begin_, end_ and every
+    // recorded location are null.
+    auto const empty = std::vector<char>{};
+    ASSERT_EQ(empty.data(), nullptr);
+
+    auto trace = Trace{};
+    auto parser = json::Parser{trace};
+
+    EXPECT_FALSE(parser.parse(empty.data(), empty.data()));
+    EXPECT_EQ(parser.getFormattedErrorMessages().find("* Line 1, Column 1"), 0u)
+        << parser.getFormattedErrorMessages();
 }
 
 }  // namespace xrpl

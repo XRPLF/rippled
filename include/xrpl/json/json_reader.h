@@ -31,11 +31,17 @@ public:
      */
     Reader();
 
-    // The parser holds its visitor by reference, so a copied Reader would
-    // report into the original's builder.
+    /**
+     * @brief Readers are movable but not copyable: parser_ reports into
+     * builder_, so a compiler-generated copy would write into the original's
+     * builder. The move operations rebind it.
+     */
     Reader(Reader const&) = delete;
     Reader&
     operator=(Reader const&) = delete;
+    Reader(Reader&& other) noexcept;
+    Reader&
+    operator=(Reader&& other) noexcept;
 
     /**
      * clang-format off

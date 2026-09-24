@@ -7,6 +7,8 @@
 
 #include <sstream>
 #include <string>
+#include <type_traits>
+#include <utility>
 #include <vector>
 
 namespace xrpl {
@@ -352,6 +354,112 @@ TEST(JsonReader, parses_empty_containers)
     EXPECT_EQ(root["a"].size(), 0u);
     EXPECT_TRUE(root["b"].isArray());
     EXPECT_EQ(root["b"].size(), 0u);
+}
+
+TEST(JsonReader, is_movable_but_not_copyable)
+{
+    static_assert(!std::is_copy_constructible_v<json::Reader>);
+    static_assert(!std::is_copy_assignable_v<json::Reader>);
+    static_assert(std::is_nothrow_move_constructible_v<json::Reader>);
+    static_assert(std::is_nothrow_move_assignable_v<json::Reader>);
+}
+
+TEST(JsonReader, a_move_constructed_reader_parses_into_its_own_target)
+{
+    auto sourceRoot = json::Value{};
+    auto source = json::Reader{};
+    ASSERT_TRUE(source.parse(std::string{R"({"from":"source"})"}, sourceRoot))
+        << source.getFormattedErrorMessages();
+
+    auto moved = json::Reader{std::move(source)};
+
+    auto movedRoot = json::Value{};
+    ASSERT_TRUE(moved.parse(std::string{R"({"from":"moved"})"}, movedRoot))
+        << moved.getFormattedErrorMessages();
+
+    EXPECT_EQ(movedRoot["from"].asString(), "moved");
+    // The original's target must not have been written through.
+    EXPECT_EQ(sourceRoot["from"].asString(), "source");
+}
+
+TEST(JsonReader, a_move_assigned_reader_parses_into_its_own_target)
+{
+    auto sourceRoot = json::Value{};
+    auto source = json::Reader{};
+    ASSERT_TRUE(source.parse(std::string{R"({"from":"source"})"}, sourceRoot))
+        << source.getFormattedErrorMessages();
+
+    auto moved = json::Reader{};
+    moved = std::move(source);
+
+    auto movedRoot = json::Value{};
+    ASSERT_TRUE(moved.parse(std::string{R"({"from":"moved"})"}, movedRoot))
+        << moved.getFormattedErrorMessages();
+
+    EXPECT_EQ(movedRoot["from"].asString(), "moved");
+    EXPECT_EQ(sourceRoot["from"].asString(), "source");
+}
+
+TEST(JsonReader, a_move_carries_error_messages_across_intact)
+{
+    // A short document lives in the string's inline buffer, so the move
+    // relocates it and the error locations must be rebased. Re-parsing through
+    // the source afterwards is what makes a missed rebase observable: it
+    // refills that same buffer with newlines ahead of the recorded offset, so
+    // a stale location reports a different line.
+    auto root = json::Value{};
+    auto source = json::Reader{};
+    ASSERT_FALSE(source.parse(std::string{R"({"a":})"}, root));
+    ASSERT_EQ(source.getFormattedErrorMessages().find("* Line 1, Column 6"), 0u)
+        << source.getFormattedErrorMessages();
+
+    auto moved = json::Reader{std::move(source)};
+
+    source = json::Reader{};
+    auto reuseRoot = json::Value{};
+    ASSERT_TRUE(source.parse(std::string{"\n\n\n\n[1]"}, reuseRoot))
+        << source.getFormattedErrorMessages();
+
+    EXPECT_EQ(moved.getFormattedErrorMessages().find("* Line 1, Column 6"), 0u)
+        << moved.getFormattedErrorMessages();
+}
+
+TEST(JsonReader, a_move_preserves_error_locations_into_a_caller_owned_buffer)
+{
+    // Locations into a caller-owned buffer must be left alone.
+    auto const document = std::string{R"({"a":})"};
+
+    auto root = json::Value{};
+    auto source = json::Reader{};
+    ASSERT_FALSE(source.parse(document.data(), document.data() + document.size(), root));
+
+    auto const moved = json::Reader{std::move(source)};
+
+    EXPECT_EQ(moved.getFormattedErrorMessages().find("* Line 1, Column 6"), 0u)
+        << moved.getFormattedErrorMessages();
+}
+
+TEST(JsonReader, survives_relocation_inside_a_vector)
+{
+    auto readers = std::vector<json::Reader>{};
+    readers.reserve(1);
+    readers.emplace_back();
+
+    auto first = json::Value{};
+    ASSERT_FALSE(readers.front().parse(std::string{R"({"a":})"}, first));
+
+    while (readers.size() < 8)
+    {
+        readers.emplace_back();
+    }
+
+    EXPECT_EQ(readers.front().getFormattedErrorMessages().find("* Line 1, Column 6"), 0u)
+        << readers.front().getFormattedErrorMessages();
+
+    auto root = json::Value{};
+    ASSERT_TRUE(readers.back().parse(std::string{R"({"a":1})"}, root))
+        << readers.back().getFormattedErrorMessages();
+    EXPECT_EQ(root["a"].asInt(), 1);
 }
 
 }  // namespace xrpl

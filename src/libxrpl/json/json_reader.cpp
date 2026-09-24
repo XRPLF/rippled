@@ -168,6 +168,27 @@ Reader::Reader()
     parser_.depthLimit = kNestLimit;
 }
 
+Reader::Reader(Reader&& other) noexcept
+    : builder_{std::move(other.builder_)}, parser_{std::move(other.parser_)}
+{
+    parser_.visitors(builder_);
+}
+
+Reader&
+Reader::operator=(Reader&& other) noexcept
+{
+    if (this == &other)
+    {
+        return *this;
+    }
+
+    builder_ = std::move(other.builder_);
+    parser_ = std::move(other.parser_);
+    parser_.visitors(builder_);
+
+    return *this;
+}
+
 bool
 Reader::parse(std::string const& document, Value& root)
 {

@@ -54,34 +54,34 @@ namespace json {
  * };
  * clang-format on
  */
-#define DISPATCH_VISITORS(__TOKEN__, ...)                                 \
-    {                                                                     \
-        auto __dispatchResult__ = true;                                   \
-        auto __errorString__ = std::string{};                             \
-        std::apply(                                                       \
-            [&](auto&&... __visitor__) {                                  \
-                (([&] {                                                   \
-                     if (!__dispatchResult__)                             \
-                     {                                                    \
-                         return;                                          \
-                     }                                                    \
-                     if constexpr (requires { __visitor__.__VA_ARGS__; }) \
-                     {                                                    \
-                         auto __result__ = __visitor__.__VA_ARGS__;       \
-                         if (!__result__.has_value())                     \
-                         {                                                \
-                             __dispatchResult__ = false;                  \
-                             __errorString__ = __result__.error();        \
-                         }                                                \
-                     }                                                    \
-                 }()),                                                    \
-                 ...);                                                    \
-            },                                                            \
-            visitors_);                                                   \
-        if (!__dispatchResult__)                                          \
-        {                                                                 \
-            return addError(__errorString__, __TOKEN__);                  \
-        }                                                                 \
+#define DISPATCH_VISITORS(__TOKEN__, ...)                                  \
+    {                                                                      \
+        auto __dispatchResult__ = true;                                    \
+        auto __errorString__ = std::string{};                              \
+        std::apply(                                                        \
+            [&](auto&&... __visitor__) {                                   \
+                (([&] {                                                    \
+                     if (!__dispatchResult__)                              \
+                     {                                                     \
+                         return;                                           \
+                     }                                                     \
+                     if constexpr (requires { __visitor__->__VA_ARGS__; }) \
+                     {                                                     \
+                         auto __result__ = __visitor__->__VA_ARGS__;       \
+                         if (!__result__.has_value())                      \
+                         {                                                 \
+                             __dispatchResult__ = false;                   \
+                             __errorString__ = __result__.error();         \
+                         }                                                 \
+                     }                                                     \
+                 }()),                                                     \
+                 ...);                                                     \
+            },                                                             \
+            visitors_);                                                    \
+        if (!__dispatchResult__)                                           \
+        {                                                                  \
+            return addError(__errorString__, __TOKEN__);                   \
+        }                                                                  \
     }
 
 template <typename... Visitor>
@@ -99,9 +99,16 @@ public:
      *     caller's own object once parsing completes.
      * clang-format on
      */
-    explicit Parser(Visitor&... visitors) : visitors_{visitors...}
+    explicit Parser(Visitor&... visitors) : visitors_{&visitors...}
     {
     }
+
+    Parser(Parser const&) = delete;
+    Parser&
+    operator=(Parser const&) = delete;
+    Parser(Parser&& other) noexcept;
+    Parser&
+    operator=(Parser&& other) noexcept;
 
     /**
      * @brief The maximum depth of the JSON document.
@@ -132,7 +139,18 @@ public:
     auto&
     visitor()
     {
-        return std::get<I>(visitors_);
+        return *std::get<I>(visitors_);
+    }
+
+    /**
+     * @brief Re-point the parser at @a visitors, which must outlive it. A move
+     * carries the source's visitor pointers across, so an owner holding its
+     * visitors as members must rebind them.
+     */
+    void
+    visitors(Visitor&... visitors)
+    {
+        visitors_ = {&visitors...};
     }
 
     /**
@@ -285,23 +303,114 @@ private:
     getLocationLineAndColumn(Location location) const;
     void
     skipCommentTokens(Token& token);
+    void
+    rebaseLocations();
 
-    std::tuple<Visitor&...> visitors_;
+    std::tuple<Visitor*...> visitors_;
     Errors errors_;
     std::string document_;
     Location begin_{};
     Location end_{};
     Location current_{};
+    // Whether the Locations above point into document_ rather than a caller's
+    // buffer. Only the former move with this parser, so only they are rebased.
+    bool ownsDocument_{false};
 };
+
+template <typename... Visitor>
+Parser<Visitor...>::Parser(Parser&& other) noexcept
+    : depthLimit{other.depthLimit}
+    , documentSizeLimit{other.documentSizeLimit}
+    , keySizeLimit{other.keySizeLimit}
+    , stringSizeLimit{other.stringSizeLimit}
+    , objectMembersLimit{other.objectMembersLimit}
+    , arrayElementsLimit{other.arrayElementsLimit}
+    , visitors_{std::move(other.visitors_)}
+    , errors_{std::move(other.errors_)}
+    , document_{std::move(other.document_)}
+    , begin_{other.begin_}
+    , end_{other.end_}
+    , current_{other.current_}
+    , ownsDocument_{other.ownsDocument_}
+{
+    rebaseLocations();
+}
+
+template <typename... Visitor>
+Parser<Visitor...>&
+Parser<Visitor...>::operator=(Parser&& other) noexcept
+{
+    if (this == &other)
+    {
+        return *this;
+    }
+
+    depthLimit = other.depthLimit;
+    documentSizeLimit = other.documentSizeLimit;
+    keySizeLimit = other.keySizeLimit;
+    stringSizeLimit = other.stringSizeLimit;
+    objectMembersLimit = other.objectMembersLimit;
+    arrayElementsLimit = other.arrayElementsLimit;
+    visitors_ = other.visitors_;
+    errors_ = std::move(other.errors_);
+    begin_ = other.begin_;
+    end_ = other.end_;
+    current_ = other.current_;
+    ownsDocument_ = other.ownsDocument_;
+    document_ = std::move(other.document_);
+    rebaseLocations();
+
+    return *this;
+}
+
+template <typename... Visitor>
+void
+Parser<Visitor...>::rebaseLocations()
+{
+    // A caller's buffer was not relocated by the move.
+    if (!ownsDocument_)
+    {
+        return;
+    }
+
+    // begin_ still holds the pre-move base, since parse(std::string) leaves it
+    // at document_.data() and the shifts below have not run yet.
+    auto const delta = document_.data() - begin_;
+    if (delta == 0)
+    {
+        return;
+    }
+
+    auto const shift = [delta](Location& location) {
+        if (location != nullptr)
+        {
+            location += delta;
+        }
+    };
+
+    shift(begin_);
+    shift(end_);
+    shift(current_);
+
+    for (auto& error : errors_)
+    {
+        shift(error.token.start);
+        shift(error.token.end);
+        shift(error.extra);
+    }
+}
 
 template <typename... Visitor>
 bool
 Parser<Visitor...>::parse(std::string document)
 {
     document_ = std::move(document);
-    char const* begin = document_.c_str();
-    char const* end = begin + document_.length();
-    return parse(begin, end);
+    auto const* begin = document_.c_str();
+    auto const* end = begin + document_.length();
+    auto const successful = parse(begin, end);
+    // parse(begin, end) assumes a caller-owned buffer; this overload owns it.
+    ownsDocument_ = true;
+    return successful;
 }
 
 template <typename... Visitor>
@@ -315,7 +424,7 @@ Parser<Visitor...>::parse(std::istream& sin)
 
     // Since std::string is reference-counted, this at least does not
     // create an extra copy.
-    std::string doc;
+    auto doc = std::string{};
     std::getline(sin, doc, (char)EOF);
     return parse(std::move(doc));
 }
@@ -328,18 +437,22 @@ Parser<Visitor...>::parse(char const* beginDoc, char const* endDoc)
     end_ = endDoc;
     current_ = begin_;
     errors_.clear();
+    ownsDocument_ = false;
 
     auto documentSize = static_cast<std::size_t>(end_ - begin_);
+
+    auto token = Token{};
+    token.start = begin_;
+    token.end = begin_;
 
     if (documentSize > documentSizeLimit)
     {
         return addError(
             "Syntax error: document size exceeds the maximum allowed size of " +
                 std::to_string(documentSizeLimit) + " bytes",
-            Token{});
+            token);
     }
 
-    auto token = Token{};
     DISPATCH_VISITORS(token, onDocumentBegin());
     auto const successful = readValue(0);
     skipCommentTokens(token);
@@ -1283,6 +1396,13 @@ void
 Parser<Visitor...>::getLocationLineAndColumn(Location location, int64_t& line, int64_t& column)
     const
 {
+    if (begin_ == nullptr || location == nullptr)
+    {
+        line = 1;
+        column = 1;
+        return;
+    }
+
     auto current = begin_;
     auto lastLineStart = current;
     line = 0;
