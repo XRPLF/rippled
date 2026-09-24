@@ -45,27 +45,12 @@ TransactionProposalCreate::preflight(PreflightContext const& ctx)
     // The proposed transaction must pass "the same [stateless format]
     // checks it would receive if submitted directly" (On-Chain Cosigner
     // spec §5.3.1 rule 2), so no statically-dead proposal can be stored.
-    // This also guarantees every field common to all transactions
-    // (TransactionType, Account, Fee, Sequence, ...) is present, since
-    // applyTemplate throws otherwise; the checks below can therefore read
-    // those fields directly without re-checking presence.
-    //
-    // A direct submission is validated by two independent stateless passes
-    // in checkValidity (see xrpl::apply in apply.cpp): xrpl::preflight
-    // (the transactor's own preflight chain, run below) and
-    // passesLocalChecks (memo/account-field/MPT-slot/batch-inner checks,
-    // run below). Both must run here to keep the spec's promise that an
-    // invalid proposal cannot "gather signatures only to fail later".
-    // State-dependent (preclaim) checks are deferred to submission time.
-    //
-    // TapDryRun accepts the unsigned canonical form without a signature
-    // check; TapProposal additionally skips signature-presence checks
-    // (e.g. Batch signer matching, LoanSet CounterpartySignature), which
-    // are the specific exceptions the spec carves out for missing
-    // signatures (§5.3.1 rule 2, §5.3.1.2). A proposedTx that fails here
-    // is rejected with its own type's preflight code (or temMALFORMED if
-    // it isn't even a valid instance of that type), ahead of the
-    // Cosigner-specific structural checks below.
+    // That is exactly the pair checkValidity runs on a direct submission:
+    // xrpl::preflight (the transactor's own preflight chain) and
+    // passesLocalChecks. TapDryRun accepts the unsigned canonical form;
+    // TapProposal skips signature-presence checks (§5.3.1.2). A failure
+    // surfaces the proposed type's own code, or temMALFORMED if the
+    // payload is not even a valid instance of that type.
     try
     {
         STTx const stx{STObject{proposedTx}};
@@ -76,28 +61,12 @@ TransactionProposalCreate::preflight(PreflightContext const& ctx)
             JLOG(ctx.j.debug()) << "TransactionProposalCreate: proposed txn "
                                    "failed preflight: "
                                 << transHuman(inner.ter);
-            // Surface the proposed transaction type's own preflight code
-            // rather than collapsing it to a generic error (On-Chain Cosigner
-            // spec §5.3.1).
             return inner.ter;
         }
-
-        // Local checks are stateless but sit outside the transactor
-        // preflight chain: memo size/format (isMemoOkay), no STAccount
-        // field deserialized from an empty blob (isAccountFieldOkay), no
-        // pseudo-transaction (isPseudoTx; already covered structurally
-        // below but redundant here mirrors the direct-submit path), no
-        // MPT amount in a slot that does not support it
-        // (invalidMPTAmountInTx), and, for a Batch, recursion into each
-        // inner transaction's own local checks (isBatchRawTransactionOkay).
-        // Skipping them here would leave a payload that xrpl::preflight
-        // accepts but that submit-time checkValidity would reject as
-        // temMALFORMED, i.e. the exact statically-dead proposal §5.3.1
-        // rule 2 forbids.
         if (std::string reason; !passesLocalChecks(stx, reason))
         {
-            JLOG(ctx.j.debug()) << "TransactionProposalCreate: proposed txn fails local "
-                                   "checks: "
+            JLOG(ctx.j.debug()) << "TransactionProposalCreate: proposed txn "
+                                   "fails local checks: "
                                 << reason;
             return temMALFORMED;
         }
