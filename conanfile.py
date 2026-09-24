@@ -36,6 +36,7 @@ class Xrpl(ConanFile):
         "nudb/2.0.9",
         "openssl/3.6.3",
         "soci/4.0.3",
+        "xrpl-rpc-spec/0.1.17",
         "zlib/1.3.2",
     ]
 
@@ -114,6 +115,7 @@ class Xrpl(ConanFile):
         "soci/*:shared": False,
         "soci/*:with_sqlite3": True,
         "soci/*:with_boost": True,
+        "xrpl-rpc-spec/*:server": "xrpld",
         "xxhash/*:shared": False,
     }
 
