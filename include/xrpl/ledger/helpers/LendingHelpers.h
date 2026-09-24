@@ -414,6 +414,22 @@ loanPaymentDeltas(LoanPaymentParts const& parts);
 
 }  // namespace cash_basis
 
+// FixedPrecision payment accounting records interest into AssetsTotal before
+// deriving the cash credit sent to the Vault pseudo-account.
+namespace fixed_precision {
+
+struct PaymentDeltas
+{
+    Number assetsTotalDelta;
+    Number debtTotalDelta;
+    Number vaultCredit;
+};
+
+PaymentDeltas
+loanPaymentDeltas(SLE::const_ref vaultSle, LoanPaymentParts const& parts);
+
+}  // namespace fixed_precision
+
 // Public dispatchers: pick cash_basis:: if featureLendingProtocolV1_1 is
 // enabled AND the Vault's LEVersion (VaultHelpers::getVaultVersion) is
 // VaultVersion::CashBasis, else instant_recognition::. These are the only entry points

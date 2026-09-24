@@ -1668,6 +1668,32 @@ class LendingHelpers_test : public beast::unit_test::Suite
     }
 
     void
+    testFixedPrecisionLoanPaymentDeltas()
+    {
+        testcase("fixed_precision::loanPaymentDeltas floors posterior AssetsTotal");
+
+        using namespace jtx;
+
+        Env const env{*this};
+        Account const issuer{"issuer"};
+        PrettyAsset const asset = issuer["USD"];
+        auto vault = std::make_shared<SLE>(ltVAULT, uint256{2u});
+        vault->setFieldIssue(sfAsset, STIssue{sfAsset, asset});
+        vault->at(sfAssetsTotal) = Number{9'999'999'999'999'999, -6};
+        vault->at(sfAssetsAvailable) = Number{9'999'999'999'999'999, -6};
+        vault->at(sfScale) = 6;
+        vault->at(sfLEVersion) = std::to_underlying(VaultVersion::FixedPrecision);
+        associateAsset(*vault, asset);
+
+        LoanPaymentParts const parts{.principalPaid = Number{1, -5}, .interestPaid = Number{5, -6}};
+        auto const deltas = fixed_precision::loanPaymentDeltas(vault, parts);
+
+        BEAST_EXPECT((deltas.assetsTotalDelta == Number{1, -6}));
+        BEAST_EXPECT(deltas.debtTotalDelta == parts.principalPaid);
+        BEAST_EXPECT((deltas.vaultCredit == Number{1, -5}));
+    }
+
+    void
     testLoanOriginationDeltasDispatcher()
     {
         using namespace jtx;
@@ -2050,6 +2076,7 @@ public:
         testInstantRecognitionLoanVaultExposure();
         testCashBasisLoanVaultExposure();
         testLoanPaymentDeltas();
+        testFixedPrecisionLoanPaymentDeltas();
         testLoanOriginationDeltasDispatcher();
         testLoanOriginationExceedsVaultMaximumDispatcher();
         testLoanVaultExposureDispatcher();

@@ -60,6 +60,16 @@ roundToPosteriorVaultScale(
     Number::RoundingMode roundingMode);
 
 /**
+ * Round the LoanPay cash-credit delta at the posterior live exponent of
+ * AssetsAvailable. The reference is AssetsAvailable, not AssetsTotal.
+ */
+[[nodiscard]] STAmount
+roundToPosteriorAvailableScale(
+    SLE::const_ref vault,
+    STAmount const& amount,
+    Number::RoundingMode roundingMode);
+
+/**
  * Open-zone capacity ceiling: 9 * 10^(15 + baseScale).
  *
  * Defined only for FixedPrecision Vaults, where this is 9 * 10^(15 - P).
