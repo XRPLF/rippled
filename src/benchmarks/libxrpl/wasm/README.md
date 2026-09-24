@@ -138,6 +138,89 @@ Pin `->Iterations(...)`: automatic sizing targets a wall-clock budget, not a com
 so the cheap cases get six-figure counts and `/4096` a handful — leaving no row comparable to
 another or to the last run.
 
+## Setting the two limits (`Limits.cpp`)
+
+`Vm.cpp` prices a run's overhead in wall time, none of which a contract is charged for.
+**Translation is the exception**: wasmi 2.0 bills **7 fuel per byte of reached function body** as
+it lowers that body to IR, out of the run's own fuel, on the first call into each function. So
+`gasLimit` and `bytecodeSizeLimit` are not independent — `7 × reached-code-size` is a floor a
+contract pays before executing one instruction of its own, and these cases measure where that floor
+lands against both ceilings.
+
+| case                 | measures                                                                                                             |
+| -------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| `fullyReached/bytes` | a module of `bytes` with every function called. The worst case a size limit has to survive                           |
+| `neverReached/bytes` | the same sizes with nothing called: validated, never translated. The wall time a validator eats for free             |
+| `partiallyReached/n` | at `kMaxBytecodeSizeLimit`, `n` sixteenths of the module reached. `7 × bytecodeSizeLimit` is the bound, not the bill |
+| `worstCase/gas/size` | a fully-reached module of `size` spending every remaining unit of `gas` on the most underpriced call there is        |
+
+On top of the `Vm.cpp` counters these report `charged_gas` (what the fuel meter billed, translation
+included), `translation_gas` and `translation_share` (against a same-sized module with nothing
+reached), and the one that answers the gas question: **`pct_gas_limit`**. At 100 the contract's
+entire budget goes to getting itself running; past 100 it cannot be finished at all. `charge_ratio`
+is `charged_gas / gas_equivalent` — below 1 partly because the run's compile and instantiate stages
+are timed here and charged to nobody, and partly because of what `worstCase` is built to show.
+
+The filler bodies are dead code after a `return`: translated in full, executed in two instructions.
+That isolates the rate from execution, and it is also the shape an attacker would send, since it
+maximizes translation cost per byte. Padding is what keeps work and size independent — adding a call
+to the entry point displaces nops rather than growing the module.
+
+**The expensive call is `check_sig`, not `sha512_half`.** Measured here, `sha512_half` at its 1 KiB
+maximum costs 589 ns and `check_sig` 14,576 ns — 25x more, charged 300 gas against a suggested
+26,188 (`price_ratio` 0.011). It is simultaneously the most expensive thing a contract can ask for
+and the most underpriced, which is what `worstCase` exploits.
+
+### The decision rule
+
+A fully-reached module of `B` bytes charges `7·B` almost exactly; execution and scaffolding are
+rounding error next to it. Measured on an Apple-silicon Release build:
+
+| case                  | `charged_gas` | `pct_gas_limit` |  `ns_per_op` |
+| --------------------- | ------------: | --------------: | -----------: |
+| `fullyReached/25000`  |       173,442 |            17.3 |       243 µs |
+| `fullyReached/50000`  |       348,442 |            34.8 |       431 µs |
+| `fullyReached/100000` |       698,442 |            69.8 |       792 µs |
+| `fullyReached/200000` |     1,398,442 |       **139.8** |      1.49 ms |
+| `neverReached/*`      |         1,808 |             0.2 | 125 – 470 µs |
+
+(`pct_gas_limit` is against the 1,000,000 default in both cases.)
+
+So the quantity a limit pair has to be chosen against is the **ratio** `gasLimit /
+bytecodeSizeLimit`. Below 7 a full-size contract cannot run at all; at 7 it runs and can do nothing.
+Both of today's pairs sit at 10, which spends 70% of the budget before the contract starts. The two
+limits are voted independently through `FeeVoteImpl`, so the pairing is not guaranteed: size voted
+to `kMaxBytecodeSizeLimit` with gas left at its default is the 139.8% row, a contract that cannot be
+finished on that network at all.
+
+`neverReached` bills a **constant** 1,808 whatever the module size, while its wall time grows 4x
+across the sweep. Validation is real work charged to nobody, so a size limit is a wall-time decision
+independently of any gas question.
+
+### What actually bounds the wall time
+
+`worstCase` is the row to size a network against — the longest one `EscrowFinish` can be made to
+take at a given pair:
+
+| pair (gas / size)   | `check_sig_calls` | `ms_per_op` | `translation_share` | `charge_ratio` |
+| ------------------- | ----------------: | ----------: | ------------------: | -------------: |
+| 1,000,000 / 100,000 |               983 |        15.6 |                0.57 |          0.039 |
+| 2,000,000 / 200,000 |             1,957 |        31.1 |                0.57 |          0.039 |
+| 2,000,000 / 100,000 |             4,229 |    **64.9** |                0.07 |          0.019 |
+
+The third row is the one to read twice. A **smaller** module is worse, because the gas translation
+does not take is gas available for calls that are underpriced 90x — so raising `gasLimit` without
+repricing `check_sig` costs more wall time than raising `bytecodeSizeLimit` does. `charge_ratio`
+0.019 says it directly: that run is billed one fiftieth of what its wall time is worth at the rate a
+guest instruction pays.
+
+Translation is therefore the lesser of the two problems, and the two levers are not interchangeable:
+`bytecodeSizeLimit` bounds a cost that is _charged_, while `gasLimit` bounds one that is not. And
+the 7 is about right — `fullyReached/200000` minus `neverReached/200000` is 1.02 ms of translation
+over 200,000 bytes, or 5.1 ns/byte, which at this machine's ~0.61 ns per gas is 8.4 gas/byte of real
+cost against 7 charged. Retuning it would move the limits question very little. Fix the
+host-function prices first.
+
 ## Gotchas, each of which has already cost someone an afternoon
 
 - **The wasm ABI is not the trait's argument order.** `float_add(x, y, mode, out)` in Rust is
@@ -162,8 +245,9 @@ another or to the last run.
 One `.cpp` per host function under `host_functions/`, mirroring
 `src/tests/libxrpl/tx/wasm/host_functions/`, so adding a host function is a two-file checklist
 rather than a judgement call. `Crossing.cpp` holds the harness's own reference points, `Vm.cpp` the
-per-run overhead around them, `WasmBench.*` the measurement machinery, `BenchFixtures.*` the shared
-ledger (one ledger, funded once, for the whole binary).
+per-run overhead around them, `Limits.cpp` the `gasLimit`/`bytecodeSizeLimit` pairing, `WasmBench.*`
+the measurement machinery, `BenchFixtures.*` the shared ledger (one ledger, funded once, for the
+whole binary).
 
 The ledger and real host come from `xrpl.testkit.wasm` — a framework-free library built alongside
 the tests — so this target links **no GTest and no GMock**. See
