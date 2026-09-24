@@ -630,15 +630,19 @@ LoanPay::doApply()
     if (assetsAvailableAfter == assetsAvailableBefore)
     {
         // An unchanged assetsAvailable indicates that the amount paid to the
-        // vault was zero, or rounded to zero. FixedPrecision LoanSet requires
-        // positive first-payment principal, and no transaction-generated
-        // schedule currently produces a non-terminal zero-credit payment.
-        // Fail gracefully if an extreme edge case still reaches this branch.
+        // vault was zero, or rounded to zero. LoanSet requires positive
+        // first-payment principal, so an interest-only schedule is not
+        // originated. A FixedPrecision payment can still reach this branch
+        // when AssetsAvailable is coarsened and principal plus recorded
+        // interest is below one AssetsAvailable live unit.
         //
         // LCOV_EXCL_START
         JLOG(j_.warn()) << "LoanPay: Vault assets available unchanged after rounding: "  //
                         << "Before: " << assetsAvailableBefore                           //
-                        << ", After: " << assetsAvailableAfter;
+                        << ", After: " << assetsAvailableAfter                           //
+                        << ", Credit: " << totalPaidToVaultRounded                       //
+                        << ", Principal: " << paymentParts->principalPaid                //
+                        << ", Interest: " << paymentParts->interestPaid;
         return tecPRECISION_LOSS;
         // LCOV_EXCL_STOP
     }
