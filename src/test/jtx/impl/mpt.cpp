@@ -2171,4 +2171,33 @@ MPTTester::convertBackJV(MPTConvertBack const& arg, std::uint32_t seq)
     return jv;
 }
 
+void
+MPTTester::mirrorUpdate(MPTMirrorUpdate const& arg)
+{
+    json::Value jv;
+    jv[jss::TransactionType] = jss::ConfidentialMPTMirrorUpdate;
+
+    setAccountField(jv, arg.account);
+    setIssuanceIdField(jv, arg.id);
+
+    if (arg.holder)
+        jv[sfHolder] = arg.holder->human();
+    if (arg.issuerEncryptedAmount)
+        jv[sfIssuerEncryptedAmount] = strHex(*arg.issuerEncryptedAmount);
+    if (arg.auditorEncryptedAmount)
+        jv[sfAuditorEncryptedAmount] = strHex(*arg.auditorEncryptedAmount);
+
+    // Placeholder for proof, the logic will be added in the future
+    if (arg.zkProof)
+    {
+        jv[sfZKProof] = strHex(*arg.zkProof);
+    }
+    else
+    {
+        jv[sfZKProof] = strHex(gMakeZeroBuffer(kEcEqualityProofLength));
+    }
+
+    submit(arg, jv);
+}
+
 }  // namespace xrpl::test::jtx

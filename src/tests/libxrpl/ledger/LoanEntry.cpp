@@ -9,7 +9,7 @@
 
 namespace xrpl::test {
 
-TEST(LoanEntryTests, Constructors)
+TEST(LoanEntryTests, constructors)
 {
     EntryTestEnv e;
 

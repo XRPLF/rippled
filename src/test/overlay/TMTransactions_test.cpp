@@ -1,28 +1,21 @@
 #include <test/jtx/CheckMessageLogs.h>
 #include <test/jtx/Env.h>
 #include <test/jtx/envconfig.h>
-#include <test/overlay/PeerTest.h>
+#include <test/overlay/CapturePeer.h>
 
 #include <xrpld/overlay/ReduceRelayCommon.h>
-#include <xrpld/overlay/detail/OverlayImpl.h>
-#include <xrpld/overlay/detail/PeerImp.h>
-#include <xrpld/overlay/detail/ProtocolVersion.h>
-#include <xrpld/overlay/detail/Tuning.h>
+#include <xrpld/overlay/detail/Handshake.h>
 
-#include <xrpl/basics/make_SSLContext.h>
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/resource/Fees.h>
-
-#include <boost/asio/ip/address.hpp>
-#include <boost/asio/ip/tcp.hpp>
-#include <boost/asio/ssl/context.hpp>
-#include <boost/beast/core/tcp_stream.hpp>
-#include <boost/beast/ssl/ssl_stream.hpp>
+#include <xrpl/server/Handoff.h>
 
 #include <xrpl.pb.h>
 
 #include <cstddef>
 #include <memory>
+#include <optional>
+#include <utility>
 
 namespace xrpl::test {
 
@@ -30,9 +23,6 @@ using namespace jtx;
 
 class TMTransactions_test : public beast::unit_test::Suite
 {
-    PeerTest::SharedContext context_{makeSslContext("")};
-    ProtocolVersion protocolVersion_{1, 7};
-
     static std::shared_ptr<protocol::TMTransactions>
     createRequest(std::size_t const numTransactions)
     {
@@ -55,13 +45,17 @@ class TMTransactions_test : public beast::unit_test::Suite
             *this,
             envconfig(),
             std::make_unique<CheckMessageLogs>(kLimitExceededMessage, &foundExpectedLog)};
-        PeerTest::resetId();
 
-        auto peer = makePeerTest(env, context_, protocolVersion_);
-        peer->txReduceRelayEnabled(true);
+        // `PeerImp` decides `txReduceRelayEnabled()` in its constructor, from
+        // the config and the handshake header, so set this first.
+        env.app().config().txReduceRelayEnable = true;
+        HttpRequestType request;
+        request.insert("X-Protocol-Ctl", makeFeaturesRequestHeader(false, false, true, false));
+
+        auto peer = makeCapturePeer(env, std::nullopt, std::move(request));
         peer->onMessage(createRequest(numTransactions));
 
-        auto fee = peer->getCurrentFeeCharge();
+        auto fee = peer->feeCharge();
         if (expectRejected)
         {
             BEAST_EXPECT(fee == resource::kFeeMalformedRequest);

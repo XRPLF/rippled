@@ -575,8 +575,10 @@ SHAMap::peekItem(UInt256 const& id, SHAMapHash& hash) const
 }
 
 SHAMap::ConstIterator
-SHAMap::upperBound(UInt256 const& id) const
+SHAMap::boundHelper(UInt256 const& id, BelowDirection direction) const
 {
+    auto const searchingForward = direction == BelowDirection::First;
+
     NodePathStack stack;
     walkTowardsKey(id, &stack);
     while (!stack.empty())
@@ -584,63 +586,45 @@ SHAMap::upperBound(UInt256 const& id) const
         auto const [node, nodeID] = stack.top();
         if (node->isLeaf())
         {
-            auto leaf = safeDowncast<SHAMapLeafNode*>(node.get());
-            if (leaf->peekItem()->key() > id)
-                return ConstIterator(this, leaf->peekItem().get(), std::move(stack));
+            auto const& item = safeDowncast<SHAMapLeafNode const&>(*node).peekItem();
+            if (searchingForward ? (item->key() > id) : (item->key() < id))
+                return ConstIterator(this, item.get(), std::move(stack));
         }
         else
         {
             auto& inner = safeDowncast<SHAMapInnerNode&>(*node);
-            for (auto branch = selectBranch(nodeID, id) + 1; branch < kBranchFactor; ++branch)
+            auto const taken = selectBranch(nodeID, id);
+            auto const remaining = searchingForward ? (kBranchFactor - 1u - taken) : taken;
+
+            for (auto scanned = 0u; scanned < remaining; ++scanned)
             {
-                if (!inner.isEmptyBranch(branch))
-                {
-                    stack.pushChild(descendThrow(inner, branch), branch);
-                    auto leaf = belowHelper(stack, BelowDirection::First);
-                    if (leaf == nullptr)
-                        Throw<SHAMapMissingNode>(type_, id);
-                    return ConstIterator(this, leaf->peekItem().get(), std::move(stack));
-                }
+                auto const branch =
+                    searchingForward ? (taken + 1u + scanned) : (taken - 1u - scanned);
+                if (inner.isEmptyBranch(branch))
+                    continue;
+
+                stack.pushChild(descendThrow(inner, branch), branch);
+                auto const leaf = belowHelper(stack, direction);
+                if (leaf == nullptr)
+                    Throw<SHAMapMissingNode>(type_, id);
+                return ConstIterator(this, leaf->peekItem().get(), std::move(stack));
             }
         }
         stack.pop();
     }
     return end();
 }
+
+SHAMap::ConstIterator
+SHAMap::upperBound(UInt256 const& id) const
+{
+    return boundHelper(id, BelowDirection::First);
+}
+
 SHAMap::ConstIterator
 SHAMap::lowerBound(UInt256 const& id) const
 {
-    NodePathStack stack;
-    walkTowardsKey(id, &stack);
-    while (!stack.empty())
-    {
-        auto const [node, nodeID] = stack.top();
-        if (node->isLeaf())
-        {
-            auto leaf = safeDowncast<SHAMapLeafNode*>(node.get());
-            if (leaf->peekItem()->key() < id)
-                return ConstIterator(this, leaf->peekItem().get(), std::move(stack));
-        }
-        else
-        {
-            auto& inner = safeDowncast<SHAMapInnerNode&>(*node);
-            for (auto branch = selectBranch(nodeID, id); branch > 0u;)
-            {
-                --branch;
-                if (!inner.isEmptyBranch(branch))
-                {
-                    stack.pushChild(descendThrow(inner, branch), branch);
-                    auto leaf = belowHelper(stack, BelowDirection::Last);
-                    if (leaf == nullptr)
-                        Throw<SHAMapMissingNode>(type_, id);
-                    return ConstIterator(this, leaf->peekItem().get(), std::move(stack));
-                }
-            }
-        }
-        stack.pop();
-    }
-    // TODO: what to return here?
-    return end();
+    return boundHelper(id, BelowDirection::Last);
 }
 
 bool

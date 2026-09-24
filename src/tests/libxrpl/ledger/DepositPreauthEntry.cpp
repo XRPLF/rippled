@@ -14,7 +14,7 @@
 
 namespace xrpl::test {
 
-TEST(DepositPreauthEntryTests, Constructors)
+TEST(DepositPreauthEntryTests, constructors)
 {
     EntryTestEnv e;
 

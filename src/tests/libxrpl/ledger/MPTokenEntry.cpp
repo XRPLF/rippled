@@ -8,7 +8,7 @@
 
 namespace xrpl::test {
 
-TEST(MPTokenEntryTests, Constructors)
+TEST(MPTokenEntryTests, constructors)
 {
     EntryTestEnv e;
 
