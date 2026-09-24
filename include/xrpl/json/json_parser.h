@@ -301,7 +301,7 @@ private:
     getLocationLineAndColumn(Location location, int64_t& line, int64_t& column) const;
     std::string
     getLocationLineAndColumn(Location location) const;
-    void
+    bool
     skipCommentTokens(Token& token);
     void
     rebaseLocations();
@@ -375,16 +375,21 @@ Parser<Visitor...>::rebaseLocations()
 
     // begin_ still holds the pre-move base, since parse(std::string) leaves it
     // at document_.data() and the shifts below have not run yet.
-    auto const delta = document_.data() - begin_;
-    if (delta == 0)
+    auto const* const oldBase = begin_;
+    auto const* const newBase = document_.data();
+
+    if (oldBase == newBase)
     {
         return;
     }
 
-    auto const shift = [delta](Location& location) {
+    // Each location is turned into an offset within the old buffer and then
+    // reapplied to the new one. Differencing the two bases directly would be
+    // pointer arithmetic across unrelated arrays.
+    auto const shift = [oldBase, newBase](Location& location) {
         if (location != nullptr)
         {
-            location += delta;
+            location = newBase + (location - oldBase);
         }
     };
 
@@ -454,8 +459,11 @@ Parser<Visitor...>::parse(char const* beginDoc, char const* endDoc)
     }
 
     DISPATCH_VISITORS(token, onDocumentBegin());
-    auto const successful = readValue(0);
-    skipCommentTokens(token);
+
+    // Trailing comments are skipped, and a visitor rejecting one fails the
+    // parse even though the document itself was read successfully.
+    auto const successful = readValue(0) && skipCommentTokens(token);
+
     if (successful)
     {
         DISPATCH_VISITORS(token, onDocumentEnd(documentSize));
@@ -788,13 +796,20 @@ Parser<Visitor...>::readToken(Token& token)
 }
 
 template <typename... Visitor>
-void
+bool
 Parser<Visitor...>::skipCommentTokens(Token& token)
 {
     do
     {
-        readToken(token);
+        // A visitor rejecting onComment fails readToken while leaving the type
+        // as Comment, so the result has to be checked rather than the type.
+        if (!readToken(token))
+        {
+            return false;
+        }
     } while (token.type == TokenType::Comment);
+
+    return true;
 }
 
 template <typename... Visitor>
@@ -1182,7 +1197,12 @@ bool
 Parser<Visitor...>::readValue(std::size_t depth)
 {
     auto token = Token{};
-    skipCommentTokens(token);
+
+    if (!skipCommentTokens(token))
+    {
+        return false;  // error already recorded
+    }
+
     if (depth > depthLimit)
     {
         return addError("Syntax error: maximum nesting depth exceeded", token);

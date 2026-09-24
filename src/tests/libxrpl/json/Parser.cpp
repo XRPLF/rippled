@@ -134,6 +134,20 @@ struct RejectKey
 };
 
 /**
+ * A visitor that rejects every comment it is offered.
+ */
+struct RejectComment
+{
+    using ReturnType = std::expected<void, std::string>;
+
+    static ReturnType
+    onComment(std::string_view value)
+    {
+        return std::unexpected("rejected comment '" + std::string(value) + "'");
+    }
+};
+
+/**
  * Counts how many events it saw, to prove short-circuiting.
  */
 struct CountKeys
@@ -553,6 +567,28 @@ TEST(JsonParser, a_move_preserves_error_locations_into_a_caller_owned_buffer)
 
     EXPECT_EQ(moved.getFormattedErrorMessages().find("* Line 1, Column 6"), 0u)
         << moved.getFormattedErrorMessages();
+}
+
+TEST(JsonParser, a_rejected_comment_fails_the_parse_wherever_it_appears)
+{
+    // Comments outside any container are skipped by skipCommentTokens, which
+    // has to propagate the rejection: a visitor failing onComment leaves the
+    // token type as Comment, so the loop cannot use the type to detect it.
+    for (auto const* document : {
+             "/*c*/{\"a\":1}",   // before the root
+             "{\"a\":1} /*c*/",  // trailing
+             "{\"a\":1} //c",    // trailing, cpp style
+             "[1 /*c*/, 2]",     // inside an array
+             "{/*c*/\"a\":1}",   // inside an object
+         })
+    {
+        auto reject = RejectComment{};
+        auto parser = json::Parser{reject};
+
+        EXPECT_FALSE(parser.parse(std::string{document})) << document;
+        EXPECT_NE(parser.getFormattedErrorMessages().find("rejected comment"), std::string::npos)
+            << document << ": " << parser.getFormattedErrorMessages();
+    }
 }
 
 TEST(JsonParser, formats_errors_for_an_empty_null_range)
