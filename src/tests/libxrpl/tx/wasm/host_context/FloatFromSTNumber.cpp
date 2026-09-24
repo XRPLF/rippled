@@ -92,6 +92,71 @@ TEST_F(FloatFromSTNumberCall, MalformedBytesAreRefusedWithoutAskingHost)
         hfErrorToInt(HostFunctionError::InvalidParams));
 }
 
+// Decoding is where the rounding happens, so the guest's mode has to be installed before it.
+struct FloatFromSTNumberRounding : HostContextTest
+{
+    // Declared first so the range is in force while the expectations below are built.
+    NumberMantissaScaleGuard const scale{MantissaRange::MantissaScale::Small};
+
+    // Seventeen digits against a sixteen-digit range: normalizing drops the last one and the
+    // mode decides its fate. A dropped `7` rounds up under `ToNearest`, a dropped `3` down, so
+    // each case below disagrees with `ToNearest` and fails if the decode does not honour the
+    // mode it was given.
+    std::int32_t const exponent = 0;
+    Bytes const dropsSeven = serialized(12'345'678'901'234'567, exponent);
+    Bytes const dropsThree = serialized(12'345'678'901'234'563, exponent);
+
+    STNumber const truncated{sfGeneric, Number{1'234'567'890'123'456, 1}};
+    STNumber const raised{sfGeneric, Number{1'234'567'890'123'457, 1}};
+
+    void
+    expectDecodedAs(Bytes const& wire, Number::RoundingMode mode, STNumber const& expected)
+    {
+        auto const asInt = static_cast<std::int32_t>(mode);
+        auto const result = Bytes{1, 2, 3};
+        EXPECT_CALL(host, floatFromSTNumber(testing::Eq(expected), asInt))
+            .WillOnce(testing::Return(result));
+
+        auto out = OutRegion{32};
+        EXPECT_EQ(
+            hostContext.floatFromSTNumber(bytesOf(wire), asInt, out.slice()),
+            static_cast<std::int32_t>(result.size()));
+    }
+};
+
+TEST_F(FloatFromSTNumberRounding, TowardsZeroTruncatesInsteadOfRoundingToNearest)
+{
+    expectDecodedAs(dropsSeven, Number::RoundingMode::TowardsZero, truncated);
+}
+
+TEST_F(FloatFromSTNumberRounding, UpwardRoundsAwayInsteadOfRoundingToNearest)
+{
+    expectDecodedAs(dropsThree, Number::RoundingMode::Upward, raised);
+}
+
+TEST_F(FloatFromSTNumberRounding, DownwardTruncatesInsteadOfRoundingToNearest)
+{
+    expectDecodedAs(dropsSeven, Number::RoundingMode::Downward, truncated);
+}
+
+TEST_F(FloatFromSTNumberRounding, ToNearestIsUnchanged)
+{
+    expectDecodedAs(dropsSeven, Number::RoundingMode::ToNearest, raised);
+    expectDecodedAs(dropsThree, Number::RoundingMode::ToNearest, truncated);
+}
+
+TEST_F(FloatFromSTNumberRounding, AnInvalidModeStillReachesTheHost)
+{
+    constexpr auto kNotAMode = std::int32_t{99};
+    EXPECT_CALL(host, floatFromSTNumber(testing::_, kNotAMode))
+        .WillOnce(testing::Return(std::unexpected(HostFunctionError::FloatInputMalformed)));
+
+    auto out = OutRegion{32};
+    EXPECT_EQ(
+        hostContext.floatFromSTNumber(bytesOf(dropsSeven), kNotAMode, out.slice()),
+        hfErrorToInt(HostFunctionError::FloatInputMalformed));
+}
+
 // The out-region contract: write only if the whole value fits, and return the true length
 // either way.
 TEST_F(FloatFromSTNumberCall, ShortOutRegionWritesNothingAndReturnsTrueLength)
