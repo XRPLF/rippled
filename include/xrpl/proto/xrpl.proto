@@ -93,14 +93,15 @@ message TMPublicKey {
 // collide with protocol-semantic fields (which historically use 1-99).
 // Older peers that do not understand field 1001 will simply ignore it
 // per protobuf wire-format rules, preserving backwards compatibility.
-//
-// trace_state is reserved for future use. It is currently neither
-// populated on inject nor read on extract; consumers must not rely on it.
 message TraceContext {
   optional bytes trace_id = 1;      // 16-byte trace identifier
   optional bytes span_id = 2;       // 8-byte parent span identifier
-  optional uint32 trace_flags = 3;  // bit 0 = sampled
-  optional string trace_state = 4;  // RESERVED — see TraceContext header note
+  optional uint32 trace_flags = 3;  // bit 0 = sampled, bit 1 = random
+
+  // Field 4 is held for trace_state (W3C tracestate). It will be added
+  // here later, with a size limit.
+  reserved 4;
+  reserved "trace_state";
 }
 
 enum TransactionStatus {

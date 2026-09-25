@@ -25,7 +25,7 @@ This document explains how to build xrpld with OpenTelemetry distributed tracing
 ## Overview
 
 xrpld supports optional [OpenTelemetry](https://opentelemetry.io/) distributed tracing.
-When enabled, it instruments RPC requests with trace spans that are exported via
+When enabled, it instruments RPC requests and the transaction lifecycle with trace spans that are exported via
 OTLP/HTTP to an OpenTelemetry Collector, which forwards them to a tracing backend
 such as Grafana Tempo.
 
@@ -248,7 +248,7 @@ boundary.
 
 Pass the **whole message** to the injection helpers, never `*msg.mutable_trace_context()`.
 
-On a protobuf `optional` submessage, `mutable_` allocates the submessage and sets its has-bit, and that happens at the call site before the helper runs. A caller that dereferences it therefore puts an empty `TraceContext` on the wire whenever nothing is recorded, and every receiving peer takes its `has_trace_context()` branch to extract nothing from it. `trace_context` is field 1001, so the wasted bytes are a 2-byte tag plus a zero length.
+On a protobuf `optional` submessage, `mutable_` allocates the submessage and sets its has-bit, and that happens at the call site before the helper runs. A caller that dereferences it therefore puts an empty `TraceContext` on the wire whenever nothing is recorded, and every receiving peer parses it only to drop it. `trace_context` is field 1001, so the wasted bytes are a 2-byte tag plus a zero length.
 
 ```cpp
 // Right: the helper decides whether the submessage is created at all.

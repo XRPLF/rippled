@@ -73,8 +73,8 @@ injectSpanContext(SpanGuard const& span, protocol::TraceContext& proto)
  *  create the submessage stays here. `mutable_trace_context()` on a protobuf
  *  optional field allocates the submessage and sets its has-bit, so a caller
  *  that passes `*msg.mutable_trace_context()` puts an empty TraceContext on
- *  the wire whenever nothing is recorded, and makes receiving peers take
- *  their has_trace_context() branch for nothing.
+ *  the wire whenever nothing is recorded, which each receiving peer parses
+ *  only to drop.
  *
  * @param span  The span whose context to propagate; may be inactive.
  * @param msg   The message to populate. Untouched when nothing is recorded.
