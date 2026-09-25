@@ -617,7 +617,14 @@ ManifestCache::load(
     std::vector<std::string> const& configRevocation)
 {
     load(dbCon, dbTable);
+    return load(configManifest, configRevocation);
+}
 
+bool
+ManifestCache::load(
+    std::string const& configManifest,
+    std::vector<std::string> const& configRevocation)
+{
     if (!configManifest.empty())
     {
         auto mo = deserializeManifest(base64Decode(configManifest));

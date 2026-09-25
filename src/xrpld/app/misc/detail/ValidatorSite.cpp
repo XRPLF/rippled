@@ -7,6 +7,7 @@
 #include <xrpld/app/misc/detail/WorkPlain.h>
 #include <xrpld/app/misc/detail/WorkSSL.h>
 
+#include <xrpl/basics/FileUtilities.h>
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/StringUtilities.h>
 #include <xrpl/basics/chrono.h>
@@ -37,6 +38,7 @@
 #include <sstream>
 #include <stdexcept>
 #include <string>
+#include <system_error>
 #include <tuple>
 #include <utility>
 #include <vector>
@@ -143,6 +145,23 @@ ValidatorSite::load(std::vector<std::string> const& siteURIs)
     std::scoped_lock const lock{sitesMutex_};
 
     return load(siteURIs, lock);
+}
+
+void
+ValidatorSite::validate(std::vector<std::string> const& siteURIs)
+{
+    for (auto const& uri : siteURIs)
+    {
+        Site::Resource const resource{uri};
+        if (resource.pUrl.scheme == "file")
+        {
+            std::error_code ec;
+            getFileContents(ec, resource.pUrl.path);
+            if (ec)
+                throw std::runtime_error(
+                    "Failed to read validator list '" + uri + "': " + ec.message());
+        }
+    }
 }
 
 bool

@@ -303,7 +303,12 @@ Config::setupControl(bool bQuiet, bool bSilent, bool bStandalone)
 }
 
 void
-Config::setup(std::string const& strConf, bool bQuiet, bool bSilent, bool bStandalone)
+Config::setup(
+    std::string const& strConf,
+    bool bQuiet,
+    bool bSilent,
+    bool bStandalone,
+    SetupMode mode)
 {
     setupControl(bQuiet, bSilent, bStandalone);
 
@@ -380,7 +385,7 @@ Config::setup(std::string const& strConf, bool bQuiet, bool bSilent, bool bStand
     }
 
     // Update default values
-    load();
+    load(mode);
     {
         // load() may have set a new value for the dataDir
         std::string const dbPath(legacy(Sections::kDatabasePath));
@@ -396,14 +401,25 @@ Config::setup(std::string const& strConf, bool bQuiet, bool bSilent, bool bStand
 
     if (!dataDir.empty())
     {
-        std::error_code ec;
-        std::filesystem::create_directories(dataDir, ec);
+        if (mode == SetupMode::Normal)
+        {
+            std::error_code ec;
+            std::filesystem::create_directories(dataDir, ec);
 
-        if (ec)
-            Throw<std::runtime_error>(std::format("Can not create {}", dataDir.string()));
+            if (ec)
+                Throw<std::runtime_error>(std::format("Can not create {}", dataDir.string()));
+        }
+        else if (std::filesystem::exists(dataDir) && !std::filesystem::is_directory(dataDir))
+        {
+            Throw<std::runtime_error>("database_path is not a directory: " + dataDir.string());
+        }
 
         legacy(Sections::kDatabasePath, std::filesystem::absolute(dataDir).string());
     }
+
+    if (mode == SetupMode::Validate && !sslVerifyDir.empty() &&
+        !std::filesystem::is_directory(sslVerifyDir))
+        Throw<std::runtime_error>("Invalid [ssl_verify_dir]: " + sslVerifyDir);
 
     HTTPClient::initializeSSLContext(this->sslVerifyDir, this->sslVerifyFile, this->sslVerify, j_);
 
@@ -446,7 +462,7 @@ checkZeroPorts(Config const& config)
 }
 
 void
-Config::load()
+Config::load(SetupMode mode)
 {
     // NOTE: this writes to cerr because we want cout to be reserved
     // for the writing of the json response (so that stdout can be part of a
@@ -455,10 +471,18 @@ Config::load()
         std::cerr << "Loading: " << configFile_ << "\n";
 
     std::error_code ec;
+    if (mode == SetupMode::Validate && !std::filesystem::is_regular_file(configFile_, ec))
+        Throw<std::runtime_error>(
+            "Failed to read '" + configFile_.string() +
+            "': " + (ec ? ec.message() : "not a regular file"));
     auto const fileContents = getFileContents(ec, configFile_);
 
     if (ec)
     {
+        if (mode == SetupMode::Validate)
+            Throw<std::runtime_error>(
+                "Failed to read '" + configFile_.string() + "': " + ec.message());
+
         std::cerr << "Failed to read '" << configFile_ << "'." << ec.value() << ": " << ec.message()
                   << std::endl;
         return;

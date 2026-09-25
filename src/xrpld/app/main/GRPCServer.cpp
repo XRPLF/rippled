@@ -333,13 +333,12 @@ GRPCServerImpl::CallData<Request, Response>::getUsage()
     Throw<std::runtime_error>("Failed to get client endpoint");
 }
 
-GRPCServerImpl::GRPCServerImpl(Application& app)
-    : app_(app), journal_(app_.getJournal("gRPC Server"))
+GRPCServerConfig::GRPCServerConfig(Config const& config, beast::Journal journal)
 {
     // if present, get endpoint from config
-    if (app_.config().exists(Sections::kPortGrpc))
+    if (config.exists(Sections::kPortGrpc))
     {
-        Section const& section = app_.config().section(Sections::kPortGrpc);
+        Section const& section = config.section(Sections::kPortGrpc);
 
         auto const optIp = section.get(Keys::kIp);
         if (!optIp)
@@ -355,11 +354,11 @@ GRPCServerImpl::GRPCServerImpl(Application& app)
 
             std::stringstream ss;
             ss << endpoint;
-            serverAddress_ = ss.str();
+            serverAddress = ss.str();
         }
         catch (std::exception const&)
         {
-            JLOG(journal_.error()) << "Error setting grpc server address";
+            JLOG(journal.error()) << "Error setting grpc server address";
             Throw<std::runtime_error>("Error setting grpc server address");
         }
 
@@ -377,45 +376,43 @@ GRPCServerImpl::GRPCServerImpl(Application& app)
 
                     if (addr.is_unspecified())
                     {
-                        JLOG(journal_.error()) << "Can't pass unspecified IP in "
-                                               << "secure_gateway section of port_grpc";
+                        JLOG(journal.error()) << "Can't pass unspecified IP in "
+                                              << "secure_gateway section of port_grpc";
                         Throw<std::runtime_error>("Unspecified IP in secure_gateway section");
                     }
 
-                    secureGatewayIPs_.emplace_back(addr);
+                    secureGatewayIPs.emplace_back(addr);
                 }
             }
             catch (std::exception const&)
             {
-                JLOG(journal_.error()) << "Error parsing secure gateway IPs for grpc server";
+                JLOG(journal.error()) << "Error parsing secure gateway IPs for grpc server";
                 Throw<std::runtime_error>("Error parsing secure_gateway section");
             }
         }
 
         // Read TLS certificate configuration (optional)
-        sslCertPath_ = section.get(Keys::kSslCert);
-        sslKeyPath_ = section.get(Keys::kSslKey);
-        sslCertChainPath_ = section.get(Keys::kSslCertChain);
-        sslClientCAPath_ = section.get(Keys::kSslClientCa);
+        sslCertPath = section.get(Keys::kSslCert);
+        sslKeyPath = section.get(Keys::kSslKey);
+        sslCertChainPath = section.get(Keys::kSslCertChain);
+        sslClientCAPath = section.get(Keys::kSslClientCa);
 
         // If cert or key is specified, both must be specified
-        if (sslCertPath_.has_value() || sslKeyPath_.has_value())
+        if (sslCertPath.has_value() || sslKeyPath.has_value())
         {
-            if (!sslCertPath_.has_value() || !sslKeyPath_.has_value())
+            if (!sslCertPath.has_value() || !sslKeyPath.has_value())
             {
-                JLOG(journal_.error())
-                    << "Both ssl_cert and ssl_key must be specified for gRPC TLS";
+                JLOG(journal.error()) << "Both ssl_cert and ssl_key must be specified for gRPC TLS";
                 Throw<std::runtime_error>("Incomplete TLS configuration for gRPC");
             }
-            JLOG(journal_.info()) << "gRPC TLS enabled with certificate: " << *sslCertPath_;
+            JLOG(journal.info()) << "gRPC TLS enabled with certificate: " << *sslCertPath;
         }
 
         // Validate TLS configuration consistency: ssl_cert_chain only makes sense when TLS is
         // enabled
-        if (sslCertChainPath_.has_value() &&
-            (!sslCertPath_.has_value() || !sslKeyPath_.has_value()))
+        if (sslCertChainPath.has_value() && (!sslCertPath.has_value() || !sslKeyPath.has_value()))
         {
-            JLOG(journal_.error())
+            JLOG(journal.error())
                 << "ssl_cert_chain specified for gRPC without both ssl_cert and ssl_key; "
                 << "this is an invalid TLS configuration";
             Throw<std::runtime_error>(
@@ -425,15 +422,22 @@ GRPCServerImpl::GRPCServerImpl(Application& app)
 
         // Validate TLS configuration consistency: ssl_client_ca only makes sense when TLS is
         // enabled
-        if (sslClientCAPath_.has_value() && (!sslCertPath_.has_value() || !sslKeyPath_.has_value()))
+        if (sslClientCAPath.has_value() && (!sslCertPath.has_value() || !sslKeyPath.has_value()))
         {
-            JLOG(journal_.error())
+            JLOG(journal.error())
                 << "ssl_client_ca specified for gRPC without both ssl_cert and ssl_key; "
                 << "this is an invalid TLS configuration";
             Throw<std::runtime_error>(
                 "Invalid gRPC TLS configuration: ssl_client_ca requires both ssl_cert and ssl_key");
         }
     }
+}
+
+GRPCServerImpl::GRPCServerImpl(Application& app)
+    : app_(app)
+    , config_(app.config(), app.getJournal("gRPC Server"))
+    , journal_(app.getJournal("gRPC Server"))
+{
 }
 
 void
@@ -547,7 +551,7 @@ GRPCServerImpl::setupListeners()
                 &org::xrpl::rpc::v1::XRPLedgerAPIService::Stub::GetLedger,
                 Condition::NoCondition,
                 resource::kFeeMediumBurdenRpc,
-                secureGatewayIPs_));
+                config_.secureGatewayIPs));
     }
     {
         using cd = CallData<
@@ -564,7 +568,7 @@ GRPCServerImpl::setupListeners()
                 &org::xrpl::rpc::v1::XRPLedgerAPIService::Stub::GetLedgerData,
                 Condition::NoCondition,
                 resource::kFeeMediumBurdenRpc,
-                secureGatewayIPs_));
+                config_.secureGatewayIPs));
     }
     {
         using cd = CallData<
@@ -581,7 +585,7 @@ GRPCServerImpl::setupListeners()
                 &org::xrpl::rpc::v1::XRPLedgerAPIService::Stub::GetLedgerDiff,
                 Condition::NoCondition,
                 resource::kFeeMediumBurdenRpc,
-                secureGatewayIPs_));
+                config_.secureGatewayIPs));
     }
     {
         using cd = CallData<
@@ -598,21 +602,21 @@ GRPCServerImpl::setupListeners()
                 &org::xrpl::rpc::v1::XRPLedgerAPIService::Stub::GetLedgerEntry,
                 Condition::NoCondition,
                 resource::kFeeMediumBurdenRpc,
-                secureGatewayIPs_));
+                config_.secureGatewayIPs));
     }
     return requests;
 }
 
 std::shared_ptr<grpc::ServerCredentials>
-GRPCServerImpl::createServerCredentials()
+GRPCServerConfig::createServerCredentials(beast::Journal journal) const
 {
-    if (not sslCertPath_.has_value() or not sslKeyPath_.has_value())
+    if (not sslCertPath.has_value() or not sslKeyPath.has_value())
     {
-        JLOG(journal_.info()) << "Configuring gRPC server without TLS";
+        JLOG(journal.info()) << "Configuring gRPC server without TLS";
         return grpc::InsecureServerCredentials();
     }
 
-    JLOG(journal_.info()) << "Configuring gRPC server with TLS";
+    JLOG(journal.info()) << "Configuring gRPC server with TLS";
 
     try
     {
@@ -620,19 +624,19 @@ GRPCServerImpl::createServerCredentials()
         grpc::SslServerCredentialsOptions sslOpts;
         grpc::SslServerCredentialsOptions::PemKeyCertPair keyCertPair;
 
-        std::string const certContents = getFileContents(ec, *sslCertPath_);
+        std::string const certContents = getFileContents(ec, *sslCertPath);
         if (ec)
         {
-            JLOG(journal_.error()) << "Failed to read gRPC SSL certificate file: " << *sslCertPath_
-                                   << " - " << ec.message();  // LCOV_EXCL_LINE
+            JLOG(journal.error()) << "Failed to read gRPC SSL certificate file: " << *sslCertPath
+                                  << " - " << ec.message();  // LCOV_EXCL_LINE
             return nullptr;
         }
 
-        std::string const keyContents = getFileContents(ec, *sslKeyPath_);
+        std::string const keyContents = getFileContents(ec, *sslKeyPath);
         if (ec)
         {
-            JLOG(journal_.error()) << "Failed to read gRPC SSL key file: " << *sslKeyPath_ << " - "
-                                   << ec.message();  // LCOV_EXCL_LINE
+            JLOG(journal.error()) << "Failed to read gRPC SSL key file: " << *sslKeyPath << " - "
+                                  << ec.message();  // LCOV_EXCL_LINE
             return nullptr;
         }
 
@@ -640,34 +644,34 @@ GRPCServerImpl::createServerCredentials()
 
         // Read intermediate CA certificates for server certificate chain (optional)
         std::string certChainContents;
-        if (sslCertChainPath_.has_value())
+        if (sslCertChainPath.has_value())
         {
-            certChainContents = getFileContents(ec, *sslCertChainPath_);
+            certChainContents = getFileContents(ec, *sslCertChainPath);
             if (ec)
             {
-                JLOG(journal_.error())
-                    << "Failed to read gRPC SSL cert chain file: " << *sslCertChainPath_ << " - "
+                JLOG(journal.error())
+                    << "Failed to read gRPC SSL cert chain file: " << *sslCertChainPath << " - "
                     << ec.message();  // LCOV_EXCL_LINE
                 return nullptr;
             }
         }
 
         // Read CA certificate for client verification (mTLS, optional)
-        if (sslClientCAPath_.has_value())
+        if (sslClientCAPath.has_value())
         {
-            auto const clientCAContents = getFileContents(ec, *sslClientCAPath_);
+            auto const clientCAContents = getFileContents(ec, *sslClientCAPath);
             if (ec)
             {
-                JLOG(journal_.error())
-                    << "Failed to read gRPC SSL client CA file: " << *sslClientCAPath_ << " - "
+                JLOG(journal.error())
+                    << "Failed to read gRPC SSL client CA file: " << *sslClientCAPath << " - "
                     << ec.message();  // LCOV_EXCL_LINE
                 return nullptr;
             }
 
             if (clientCAContents.empty())
             {
-                JLOG(journal_.error())
-                    << "Empty/truncated gRPC SSL client CA file: " << *sslClientCAPath_
+                JLOG(journal.error())
+                    << "Empty/truncated gRPC SSL client CA file: " << *sslClientCAPath
                     << " - failed to configure mutual TLS";  // LCOV_EXCL_LINE
                 return nullptr;
             }
@@ -675,8 +679,8 @@ GRPCServerImpl::createServerCredentials()
             sslOpts.pem_root_certs = clientCAContents;
             sslOpts.client_certificate_request =
                 GRPC_SSL_REQUEST_AND_REQUIRE_CLIENT_CERTIFICATE_AND_VERIFY;
-            JLOG(journal_.info()) << "gRPC mutual TLS enabled - client certificates will be "
-                                     "required and verified";
+            JLOG(journal.info()) << "gRPC mutual TLS enabled - client certificates will be "
+                                    "required and verified";
         }
 
         // Combine server cert with intermediate CA certs for complete chain
@@ -684,19 +688,19 @@ GRPCServerImpl::createServerCredentials()
         if (!certChainContents.empty())
         {
             keyCertPair.cert_chain += '\n' + certChainContents;
-            JLOG(journal_.info()) << "gRPC server certificate chain configured with "
-                                     "intermediate CA certificates";  // LCOV_EXCL_LINE
+            JLOG(journal.info()) << "gRPC server certificate chain configured with "
+                                    "intermediate CA certificates";  // LCOV_EXCL_LINE
         }
 
         sslOpts.pem_key_cert_pairs.push_back(keyCertPair);
 
-        JLOG(journal_.info()) << "gRPC TLS credentials configured successfully";  // LCOV_EXCL_LINE
+        JLOG(journal.info()) << "gRPC TLS credentials configured successfully";  // LCOV_EXCL_LINE
         return grpc::SslServerCredentials(sslOpts);
     }
     catch (std::exception const& e)
     {
-        JLOG(journal_.error()) << "Exception while configuring gRPC TLS: "
-                               << e.what();  // LCOV_EXCL_LINE
+        JLOG(journal.error()) << "Exception while configuring gRPC TLS: "
+                              << e.what();  // LCOV_EXCL_LINE
         return nullptr;
     }
 }
@@ -705,12 +709,12 @@ bool
 GRPCServerImpl::start()
 {
     // if config does not specify a grpc server address, don't start
-    if (serverAddress_.empty())
+    if (config_.serverAddress.empty())
         return false;
 
     // Determine TLS mode for logging
-    bool const tlsEnabled = sslCertPath_.has_value() && sslKeyPath_.has_value();
-    bool const mtlsEnabled = tlsEnabled && sslClientCAPath_.has_value();
+    bool const tlsEnabled = config_.sslCertPath.has_value() && config_.sslKeyPath.has_value();
+    bool const mtlsEnabled = tlsEnabled && config_.sslClientCAPath.has_value();
 
     std::string tlsMode = "without TLS";
     if (mtlsEnabled)
@@ -722,24 +726,24 @@ GRPCServerImpl::start()
         tlsMode = "with TLS";
     }
 
-    JLOG(journal_.info()) << "Starting gRPC server at " << serverAddress_ << " "
+    JLOG(journal_.info()) << "Starting gRPC server at " << config_.serverAddress << " "
                           << tlsMode;  // LCOV_EXCL_LINE
 
     grpc::ServerBuilder builder;
     int port = 0;
 
     // Create credentials (TLS or insecure) based on configuration
-    auto credentials = createServerCredentials();
+    auto credentials = config_.createServerCredentials(journal_);
     if (!credentials)
     {
-        JLOG(journal_.error()) << "Failed to create gRPC server credentials for " << serverAddress_
-                               << " (TLS mode: " << tlsMode
+        JLOG(journal_.error()) << "Failed to create gRPC server credentials for "
+                               << config_.serverAddress << " (TLS mode: " << tlsMode
                                << ") - server will not start";  // LCOV_EXCL_LINE
         return false;
     }
 
     // Add listening port with appropriate credentials
-    builder.AddListeningPort(serverAddress_, credentials, &port);
+    builder.AddListeningPort(config_.serverAddress, credentials, &port);
 
     // Register "service_" as the instance through which we'll communicate with
     // clients. In this case it corresponds to an *asynchronous* service.
@@ -760,7 +764,8 @@ GRPCServerImpl::start()
     else
     {
         JLOG(journal_.error())
-            << "Failed to start gRPC server at " << serverAddress_ << " (TLS mode: " << tlsMode
+            << "Failed to start gRPC server at " << config_.serverAddress
+            << " (TLS mode: " << tlsMode
             << "); Possible causes: address already in use, invalid address format, or permission "
                "denied";  // LCOV_EXCL_LINE
     }
@@ -771,7 +776,8 @@ GRPCServerImpl::start()
 boost::asio::ip::tcp::endpoint
 GRPCServerImpl::getEndpoint() const
 {
-    std::string const addr = serverAddress_.substr(0, serverAddress_.find_last_of(':'));
+    std::string const addr =
+        config_.serverAddress.substr(0, config_.serverAddress.find_last_of(':'));
     return boost::asio::ip::tcp::endpoint(boost::asio::ip::make_address(addr), serverPort_);
 }
 

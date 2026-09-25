@@ -24,6 +24,7 @@
 #include <ctime>
 #include <exception>
 #include <memory>
+#include <stdexcept>
 #include <string>
 
 namespace xrpl {
@@ -248,7 +249,8 @@ initAuthenticated(
         context.use_certificate_file(certFile, boost::asio::ssl::context::pem, ec);
 
         if (ec)
-            logicError("Problem with SSL certificate file" + fmtError(ec));
+            Throw<std::runtime_error>(
+                "Problem with SSL certificate file '" + certFile + "'" + fmtError(ec));
 
         certSet = true;
     }
@@ -260,8 +262,8 @@ initAuthenticated(
 
         if (f == nullptr)
         {
-            logicError(
-                "Problem opening SSL chain file" +
+            Throw<std::runtime_error>(
+                "Problem opening SSL chain file '" + chainFile + "'" +
                 fmtError(boost::system::error_code(errno, boost::system::generic_category())));
         }
 
@@ -278,7 +280,7 @@ initAuthenticated(
                 {
                     if (SSL_CTX_use_certificate(ssl, x) != 1)
                     {
-                        logicError(
+                        Throw<std::runtime_error>(
                             "Problem retrieving SSL certificate from chain "
                             "file.");
                     }
@@ -288,7 +290,7 @@ initAuthenticated(
                 else if (SSL_CTX_add_extra_chain_cert(ssl, x) != 1)
                 {
                     X509_free(x);
-                    logicError("Problem adding SSL chain certificate.");
+                    Throw<std::runtime_error>("Problem adding SSL chain certificate.");
                 }
             }
 
@@ -297,7 +299,7 @@ initAuthenticated(
         catch (std::exception const& ex)
         {
             fclose(f);
-            logicError(
+            Throw<std::runtime_error>(
                 std::string("Reading the SSL chain file generated an exception: ") + ex.what());
         }
     }
@@ -311,13 +313,14 @@ initAuthenticated(
 
         if (ec)
         {
-            logicError("Problem using the SSL private key file" + fmtError(ec));
+            Throw<std::runtime_error>(
+                "Problem using the SSL private key file '" + keyFile + "'" + fmtError(ec));
         }
     }
 
     if (SSL_CTX_check_private_key(ssl) != 1)
     {
-        logicError("Invalid key in SSL private key file.");
+        Throw<std::runtime_error>("Invalid key in SSL private key file.");
     }
 }
 
@@ -336,7 +339,7 @@ getContext(std::string cipherList)
         cipherList = kDefaultCipherList;
 
     if (auto result = SSL_CTX_set_cipher_list(c->native_handle(), cipherList.c_str()); result != 1)
-        logicError("SSL_CTX_set_cipher_list failed");
+        Throw<std::runtime_error>("SSL_CTX_set_cipher_list failed");
 
     c->use_tmp_dh({std::addressof(detail::kDefaultDh), sizeof(kDefaultDh)});
 

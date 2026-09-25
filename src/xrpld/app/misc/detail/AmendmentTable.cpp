@@ -1,5 +1,7 @@
 #include <xrpl/ledger/AmendmentTable.h>
 
+#include <xrpld/app/misc/AmendmentTableConfig.h>
+
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/UnorderedContainers.h>
 #include <xrpl/basics/base_uint.h>
@@ -79,6 +81,13 @@ parseSection(Section const& section)
     }
 
     return names;
+}
+
+void
+validateAmendmentConfig(Section const& enabled, Section const& vetoed)
+{
+    parseSection(enabled);
+    parseSection(vetoed);
 }
 
 /**
