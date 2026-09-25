@@ -106,9 +106,9 @@ injectToProtobuf(opentelemetry::context::Context const& ctx, protocol::TraceCont
     // Serialize flags
     proto.set_trace_flags(spanCtx.trace_flags().flags());
 
-    // TODO: add trace_state back to the protobuf TraceContext (field 4 is
-    // reserved for it in xrpl.proto) with a size limit, then write it here
-    // and read it in extractFromProtobuf above.
+    // TODO: add a trace_state field to the protobuf TraceContext (field 4
+    // is reserved for it in xrpl.proto) with a size limit, then write it
+    // here and read it in extractFromProtobuf above.
 }
 
 }  // namespace xrpl::telemetry
