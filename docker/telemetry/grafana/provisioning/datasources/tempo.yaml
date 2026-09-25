@@ -158,6 +158,29 @@ datasources:
             operator: "="
             scope: span
             type: static
+          # One filter per account role a transaction names. tx_account is on
+          # every transaction; the rest appear only on the types that carry
+          # that field, so they are dynamic.
+          - id: tx-account
+            tag: tx_account
+            operator: "="
+            scope: span
+            type: static
+          - id: tx-destination
+            tag: tx_destination
+            operator: "="
+            scope: span
+            type: dynamic
+          - id: tx-owner
+            tag: tx_owner
+            operator: "="
+            scope: span
+            type: dynamic
+          - id: tx-issuer
+            tag: tx_issuer
+            operator: "="
+            scope: span
+            type: dynamic
           - id: tx-origin
             tag: local
             operator: "="

@@ -90,7 +90,7 @@ Code in `libxrpl` cannot use these macros and always goes through `beast::insigh
 
 ## 1. OpenTelemetry Spans
 
-### 1.1 Complete Span Inventory (41 spans)
+### 1.1 Complete Span Inventory (42 spans)
 
 > **41 emitted span-name families.** The count is derived from the `*SpanNames.h`
 > headers and their call sites, one family per distinct span name
@@ -113,13 +113,14 @@ Code in `libxrpl` cannot use these macros and always goes through `beast::insigh
 
 Controlled by `trace_rpc=1` in `[telemetry]` config.
 
-| Span Name            | Parent             | Source File       | Description                                                              |
-| -------------------- | ------------------ | ----------------- | ------------------------------------------------------------------------ |
-| `rpc.http_request`   | —                  | ServerHandler.cpp | Top-level HTTP JSON-RPC request entry point                              |
-| `rpc.ws_message`     | —                  | ServerHandler.cpp | WebSocket message handling (one per inbound frame)                       |
-| `rpc.ws_upgrade`     | —                  | ServerHandler.cpp | WebSocket upgrade handshake (records handshake failures)                 |
-| `rpc.process`        | `rpc.http_request` | ServerHandler.cpp | RPC processing pipeline (single or batch request)                        |
-| `rpc.command.<name>` | `rpc.process`      | RPCHandler.cpp    | Per-command span (e.g., `rpc.command.server_info`, `rpc.command.ledger`) |
+| Span Name            | Parent                                         | Source File       | Description                                                              |
+| -------------------- | ---------------------------------------------- | ----------------- | ------------------------------------------------------------------------ |
+| `rpc.http_request`   | —                                              | ServerHandler.cpp | Top-level HTTP JSON-RPC request entry point                              |
+| `rpc.ws_message`     | —                                              | ServerHandler.cpp | WebSocket message handling (one per inbound frame)                       |
+| `rpc.ws_upgrade`     | —                                              | ServerHandler.cpp | WebSocket upgrade handshake (records handshake failures)                 |
+| `rpc.process`        | `rpc.http_request`                             | ServerHandler.cpp | RPC processing pipeline (single or batch request)                        |
+| `rpc.command.<name>` | `rpc.process`, `rpc.ws_message`, `rpc.startup` | RPCHandler.cpp    | Per-command span (e.g., `rpc.command.server_info`, `rpc.command.ledger`) |
+| `rpc.startup`        | —                                              | Application.cpp   | `[rpc_startup]` batch run during setup; parent of its command spans      |
 
 **Where to find**: Tempo → TraceQL: `{resource.service.name="xrpld" && name=~"rpc.http_request|rpc.command.*"}`
 
