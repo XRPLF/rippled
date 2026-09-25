@@ -165,7 +165,7 @@ fixConfigPorts(Config& config, Endpoints const& endpoints);
 static telemetry::MetricsRegistry::Options
 makeMetricsRegistryOptions(Config const& config, std::string const& nodeKey)
 {
-    auto const& section = config.section("telemetry");
+    auto const& section = config.section(Sections::kTelemetry);
     telemetry::MetricsRegistry::Options options;
 
     // metrics_endpoint is a full URL of its own, not a host to be joined. The
