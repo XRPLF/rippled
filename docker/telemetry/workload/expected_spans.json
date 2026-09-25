@@ -28,12 +28,20 @@
       "note": "HTTP-only. Created solely in ServerHandler::processRequest() (ServerHandler.cpp:718), which is reached only from processSession(Session, coro) (ServerHandler.cpp:646) — the HTTP/JSON-RPC path that roots rpc.http_request at ServerHandler.cpp:640-641. The WebSocket path (processSession(WSSession, coro, jv), ServerHandler.cpp:467) never calls processRequest, so this span never appears under a WebSocket request. It does still appear under this harness, 5 traces on a normal run, because run-full-validation.sh polls each node over HTTP with curl (:449, :502) and those requests take the HTTP path. Note that the harness does speak HTTP: a reader concluding this span is unreachable here would go looking for a way to add HTTP traffic that already exists."
     },
     {
+      "name": "rpc.startup",
+      "category": "rpc",
+      "allowed_parents": ["ROOT"],
+      "required_attributes": [],
+      "config_flag": "trace_rpc",
+      "note": "Wraps the [rpc_startup] batch ApplicationImp::setup() runs, so the rpc.command.* spans those commands create have a parent. A freshRoot, created only when the section has lines. Required here because every harness node config writes one [rpc_startup] command. No attributes: the command names are on its children."
+    },
+    {
       "name": "rpc.command.*",
       "category": "rpc",
-      "allowed_parents": ["rpc.ws_message", "rpc.process", "ROOT"],
+      "allowed_parents": ["rpc.ws_message", "rpc.process", "rpc.startup"],
       "required_attributes": ["command", "version", "rpc_role", "rpc_status"],
       "config_flag": "trace_rpc",
-      "note": "Wildcard — matches rpc.command.server_info, rpc.command.ledger, etc. Created as a plain ScopedSpanGuard in rpc::callMethod (RPCHandler.cpp:204-205) and, on the fillHandler-rejection path, in rpc::doCommand (:340-341), so its parent is whichever transport span is ambient on the thread. Three call paths, all three exercised by this harness: rpc::doCommand from the WebSocket handler inside the rpc.ws_message scope (ServerHandler.cpp:589 under the freshRoot at :495); from ServerHandler::processRequest inside the rpc.process scope (:1037 under the guard at :734); and from ApplicationImp::setup's [rpc_startup] loop (Application.cpp:1786) on the main thread with no ambient scope, which makes it a ROOT. The third is why ROOT is listed: startTelemetry() runs at Application.cpp:1511, well before that loop, so the startup command really does emit a rooted rpc.command span — run-full-validation.sh writes a [rpc_startup] log_level command for every node, so there are five of them per run."
+      "note": "Wildcard — matches rpc.command.server_info, rpc.command.ledger, etc. Created as a plain ScopedSpanGuard in rpc::callMethod (RPCHandler.cpp:204-205) and, on the fillHandler-rejection path, in rpc::doCommand (:340-341), so its parent is whichever transport span is ambient on the thread. Three call paths, all three exercised by this harness: rpc::doCommand from the WebSocket handler inside the rpc.ws_message scope (ServerHandler.cpp:589 under the freshRoot at :495); from ServerHandler::processRequest inside the rpc.process scope (:1037 under the guard at :734); and from ApplicationImp::setup's [rpc_startup] loop, inside the rpc.startup scope that loop opens. startTelemetry() runs well before that loop, so a startup command does emit a command span, and with rpc.startup as its parent every rpc.command span has one. run-full-validation.sh writes a [rpc_startup] log_level command for every node, so there are five of them per run."
     },
     {
       "name": "rpc.http_request",
@@ -411,6 +419,11 @@
       "description": "Processing span contains the per-command span, on the HTTP/JSON-RPC path. Not skipped, for the same reason as the WebSocket pair above: the validator globs a wildcard child via _span_name_matches(), so no single literal command has to be sampled. Both ends emit: rpc.process reports 5 traces on a normal run, not from the WebSocket-only load generator but because run-full-validation.sh polls each node's HTTP port with curl for readiness and validated-ledger progress (:449, :502), and every such request runs a command."
     },
     {
+      "parent": "rpc.startup",
+      "child": "rpc.command.*",
+      "description": "The startup batch contains the per-command spans it runs. Asserted rather than skipped: the parent is a literal name, so the Tempo query that selects candidate traces resolves, and the wildcard child is globbed by _span_name_matches as it is for the two transport parents."
+    },
+    {
       "parent": "ledger.build",
       "child": "tx.apply",
       "description": "Ledger build contains transaction application"
@@ -527,6 +540,6 @@
       "description": "CROSS-NODE. The same pairing for validations, injected by RCLConsensus::Adaptor::validate(). Declared separately from the proposal pair because the two send sites are independent, and a regression in one says nothing about the other."
     }
   ],
-  "total_span_types": 41,
+  "total_span_types": 42,
   "total_unique_attributes": 60
 }
