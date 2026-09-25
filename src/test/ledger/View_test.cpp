@@ -792,6 +792,7 @@ class View_test : public beast::unit_test::Suite
                     usd.currency,
                     gw,
                     FreezeHandling::ZeroIfFrozen,
+                    AuthHandling::IgnoreAuth,
                     env.journal));
 
             // Thaw gw and try again.
@@ -817,6 +818,7 @@ class View_test : public beast::unit_test::Suite
                     usd.currency,
                     gw,
                     FreezeHandling::ZeroIfFrozen,
+                    AuthHandling::IgnoreAuth,
                     env.journal));
 
             // gw thaws bob's trust line.  bob gets his money back.
@@ -830,6 +832,7 @@ class View_test : public beast::unit_test::Suite
                     usd.currency,
                     gw,
                     FreezeHandling::ZeroIfFrozen,
+                    AuthHandling::IgnoreAuth,
                     env.journal));
         }
         {
@@ -846,6 +849,7 @@ class View_test : public beast::unit_test::Suite
                     eur.currency,
                     gw,
                     FreezeHandling::ZeroIfFrozen,
+                    AuthHandling::IgnoreAuth,
                     env.journal));
 
             // But carol does have USD.
@@ -857,6 +861,7 @@ class View_test : public beast::unit_test::Suite
                     usd.currency,
                     gw,
                     FreezeHandling::ZeroIfFrozen,
+                    AuthHandling::IgnoreAuth,
                     env.journal));
 
             // carol's XRP balance should be her holdings minus her reserve.
@@ -866,6 +871,7 @@ class View_test : public beast::unit_test::Suite
                 xrpCurrency(),
                 xrpAccount(),
                 FreezeHandling::ZeroIfFrozen,
+                AuthHandling::IgnoreAuth,
                 env.journal);
             // carol's XRP balance:              10000
             // base reserve:                      -200
@@ -888,30 +894,51 @@ class View_test : public beast::unit_test::Suite
                     xrpCurrency(),
                     gw,
                     FreezeHandling::ZeroIfFrozen,
+                    AuthHandling::IgnoreAuth,
                     env.journal));
         }
         {
             // accountFunds().
             // Gateways have whatever funds they claim to have.
             auto const gwUSD = accountFunds(
-                *env.closed(), gw, usd(314159), FreezeHandling::ZeroIfFrozen, env.journal);
+                *env.closed(),
+                gw,
+                usd(314159),
+                FreezeHandling::ZeroIfFrozen,
+                AuthHandling::IgnoreAuth,
+                env.journal);
             BEAST_EXPECT(gwUSD == usd(314159));
 
             // carol has funds from the gateway.
             auto carolsUSD = accountFunds(
-                *env.closed(), carol, usd(0), FreezeHandling::ZeroIfFrozen, env.journal);
+                *env.closed(),
+                carol,
+                usd(0),
+                FreezeHandling::ZeroIfFrozen,
+                AuthHandling::IgnoreAuth,
+                env.journal);
             BEAST_EXPECT(carolsUSD == usd(50));
 
             // If carol's funds are frozen she has no funds...
             env(fset(gw, asfGlobalFreeze));
             env.close();
             carolsUSD = accountFunds(
-                *env.closed(), carol, usd(0), FreezeHandling::ZeroIfFrozen, env.journal);
+                *env.closed(),
+                carol,
+                usd(0),
+                FreezeHandling::ZeroIfFrozen,
+                AuthHandling::IgnoreAuth,
+                env.journal);
             BEAST_EXPECT(carolsUSD == usd(0));
 
             // ... unless the query ignores the FROZEN state.
             carolsUSD = accountFunds(
-                *env.closed(), carol, usd(0), FreezeHandling::IgnoreFreeze, env.journal);
+                *env.closed(),
+                carol,
+                usd(0),
+                FreezeHandling::IgnoreFreeze,
+                AuthHandling::IgnoreAuth,
+                env.journal);
             BEAST_EXPECT(carolsUSD == usd(50));
 
             // Just to be tidy, thaw gw.
