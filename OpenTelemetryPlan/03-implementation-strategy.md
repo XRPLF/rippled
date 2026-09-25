@@ -356,8 +356,8 @@ There is no sampling decision on the node. `samplingRatio` is a
 `static constexpr double = 1.0` (`Telemetry.h:234`) and `TelemetryConfig.cpp:139`
 records why nothing is parsed: a per-node ratio would let two nodes make
 opposite keep/drop decisions for the same distributed trace, yielding partial
-traces. The ratio sampler is wrapped in a `ParentBasedSampler` so a span with a
-remote parent honours the upstream flag. The only node-local way to drop a span
+traces. A span with a remote parent is decided by the same ratio sampler, not by
+the peer's sampled flag (`makeHeadSampler`). The only node-local way to drop a span
 is the explicit, per-call-site `SpanGuard::discard()`, enforced downstream by
 `FilteringSpanProcessor`.
 
