@@ -207,11 +207,12 @@ public:
          * Head-based sampling ratio. Intentionally fixed at 1.0 (sample
          * everything) and NOT read from config. A per-node ratio would let
          * nodes make divergent keep/drop decisions for the same distributed
-         * trace, producing broken/partial traces. The ratio sampler is wrapped
-         * in a ParentBasedSampler (see Telemetry.cpp) so spans inheriting a
-         * remote parent honor the upstream sampled flag. Volume reduction is
-         * delegated to the collector's tail sampling; for node-local post-hoc
-         * dropping see SpanGuard::discard().
+         * trace, producing broken/partial traces. makeHeadSampler() applies
+         * this ratio to spans with no parent or a remote parent, so a peer's
+         * sampled flag cannot turn our spans off or on; spans with a local
+         * parent follow it. Volume reduction is delegated to the collector's
+         * tail sampling; for node-local post-hoc dropping see
+         * SpanGuard::discard().
          */
         static constexpr double samplingRatio = 1.0;
 
