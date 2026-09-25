@@ -63,6 +63,7 @@ struct Sections
     static constexpr auto kSslVerifyDir = "ssl_verify_dir";
     static constexpr auto kSslVerifyFile = "ssl_verify_file";
     static constexpr auto kSweepInterval = "sweep_interval";
+    static constexpr auto kTelemetry = "telemetry";
     static constexpr auto kTransactionQueue = "transaction_queue";
     static constexpr auto kValidationSeed = "validation_seed";
     static constexpr auto kValidatorKeys = "validator_keys";
