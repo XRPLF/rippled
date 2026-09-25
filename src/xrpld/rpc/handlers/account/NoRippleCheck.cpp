@@ -17,6 +17,7 @@
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/jss.h>
+#include <xrpl/resource/Fees.h>
 #include <xrpl/server/LoadFeeTrack.h>
 
 #include <cstdint>
@@ -187,6 +188,8 @@ doNoRippleCheck(rpc::JsonContext& context)
 
     if (transactions)
         result[jss::transactions] = std::move(jvTransactions);
+
+    context.loadType = Resource::kFeeMediumBurdenRpc;
     return result;
 }
 
