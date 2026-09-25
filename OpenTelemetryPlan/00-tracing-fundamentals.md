@@ -518,9 +518,10 @@ Request arrives → Random N% chance → Record or skip entire trace
 > **xrpld note**: xrpld intentionally fixes head sampling at 100% (sample
 > everything) and does not expose a configurable ratio. A per-node ratio
 > would let different nodes make divergent keep/drop decisions for the same
-> distributed trace, producing broken/partial traces. xrpld uses a
-> `ParentBased` sampler so spans with a remote parent honor the upstream
-> decision. Volume reduction is delegated to collector-side tail sampling.
+> distributed trace, producing broken/partial traces. A span with a remote
+> parent is decided by the same trace-id ratio sampler, not by the peer's
+> sampled flag, so nodes still agree on every trace. Volume reduction is
+> delegated to collector-side tail sampling.
 
 ### Tail Sampling (after trace completes)
 

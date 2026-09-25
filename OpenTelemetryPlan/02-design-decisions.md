@@ -427,7 +427,7 @@ flowchart TB
     end
 
     subgraph protobuf["Protocol Buffers (P2P)"]
-        proto["message TraceContext {<br/>  bytes trace_id = 1;  // 16 bytes<br/>  bytes span_id = 2;   // 8 bytes<br/>  uint32 trace_flags = 3;<br/>  string trace_state = 4;<br/>}"]
+        proto["message TraceContext {<br/>  bytes trace_id = 1;  // 16 bytes<br/>  bytes span_id = 2;   // 8 bytes<br/>  uint32 trace_flags = 3;<br/>  reserved 4;  // trace_state, later<br/>}"]
     end
 
     subgraph jobqueue["JobQueue (Internal Async)"]
