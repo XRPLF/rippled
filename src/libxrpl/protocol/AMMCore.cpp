@@ -6,10 +6,8 @@
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Concepts.h>
-#include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/MPTIssue.h>
-#include <xrpl/protocol/Rules.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STInteger.h>  // IWYU pragma: keep
@@ -123,12 +121,6 @@ ammAuctionTimeSlot(std::uint64_t current, STObject const& auctionSlot)
         }
     }
     return std::nullopt;
-}
-
-bool
-ammEnabled(Rules const& rules)
-{
-    return rules.enabled(featureAMM);
 }
 
 }  // namespace xrpl
