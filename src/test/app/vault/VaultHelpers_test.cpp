@@ -20,10 +20,12 @@
 #include <algorithm>
 #include <array>
 #include <cstddef>
+#include <cstdint>
 #include <expected>
 #include <memory>
 #include <optional>
 #include <string>
+#include <utility>
 
 namespace xrpl {
 
@@ -462,6 +464,225 @@ private:
         runCases(xrp, xrpCases);
     }
 
+    // Builds the minimal vault + share-issuance pair that the share<->asset
+    // conversions read: they only touch sfAsset, sfAssetsTotal, sfShareMPTID,
+    // sfScale and sfLossUnrealized on the vault, plus sfOutstandingAmount on
+    // the issuance. No ledger view and no Rules are involved.
+    static std::pair<std::shared_ptr<SLE>, std::shared_ptr<SLE>>
+    makeVaultAndIssuance(
+        Asset const& asset,
+        MPTID const& shareMPT,
+        Number const& assetsTotal,
+        std::uint64_t sharesTotal)
+    {
+        auto vault = std::make_shared<SLE>(keylet::vault(uint256(1)));
+        vault->setFieldIssue(sfAsset, STIssue{sfAsset, asset});
+        vault->at(sfShareMPTID) = shareMPT;
+        vault->at(sfScale) = std::uint8_t(0);
+        vault->at(sfAssetsTotal) = assetsTotal;
+        vault->at(sfLossUnrealized) = Number(0);
+        associateAsset(*vault, asset);
+
+        auto issuance = std::make_shared<SLE>(keylet::mptokenIssuance(shareMPT));
+        issuance->at(sfOutstandingAmount) = sharesTotal;
+        return {vault, issuance};
+    }
+
+    // Common Prefix formal-verification finding: VaultDeposit charges the
+    // depositor via sharesToAssetsDeposit, which quantized the exchange under
+    // round-to-nearest. When the vault holds an integral asset (MPT/XRP) at a
+    // non-unit exchange rate, the charge for freshly minted shares can be
+    // rounded *down* below their fair value. The depositor then receives
+    // shares worth more than the assets they pay in, diluting the existing
+    // shareholders.
+    //
+    // Post-fixCleanup3_5_0 the charge rounds Upward (in the pool's favor), so
+    // a depositor always pays at least the fair value of the shares they
+    // receive and the assets-per-share price never decreases for existing
+    // holders.
+    //
+    // Note this is only load-bearing for integral assets. For an IOU the
+    // fixCleanup3_4_0 clamp in VaultDeposit::doApply re-floors the charge onto
+    // the posterior sfAssetsTotal grid, whereas clampToAssetsTotalScale
+    // returns integral magnitudes unchanged (see testIntegralAssets above).
+    //
+    // This exercises sharesToAssetsDeposit directly: the ToNearest overload is
+    // the pre-amendment behavior, the Upward overload is the fix. For an
+    // integral asset the difference is a full unit, so the undercharge is
+    // unambiguous.
+    void
+    testDepositRoundingFavorsPool(MPTIssue const& assetMPT, MPTID const& shareMPT)
+    {
+        testcase("Deposit: share-to-asset rounding favors the pool");
+
+        Asset const vaultAsset{assetMPT};
+
+        // Charge for `minted` shares against a vault holding `assetsTotal`
+        // integral assets backed by `sharesTotal` shares.
+        auto const charge = [&](std::int64_t assetsTotal,
+                                std::uint64_t sharesTotal,
+                                std::uint64_t minted,
+                                Number::RoundingMode mode) -> std::uint64_t {
+            auto const [vault, issuance] =
+                makeVaultAndIssuance(vaultAsset, shareMPT, Number(assetsTotal), sharesTotal);
+            STAmount const shares{MPTIssue{shareMPT}, Number(minted)};
+            auto const assets = sharesToAssetsDeposit(vault, issuance, shares, mode);
+            BEAST_EXPECT(assets.has_value());
+            return assets ? assets->mantissa() : 0;
+        };
+
+        // rate 100/3: charging 1 share is worth 33.33 assets.
+        //   ToNearest -> 33 (undercharges: 33 * 3 = 99 < 100 -> dilution)
+        //   Upward    -> 34 (favors pool: 34 * 3 = 102 >= 100)
+        {
+            std::uint64_t const nearest = charge(100, 3, 1, Number::RoundingMode::ToNearest);
+            std::uint64_t const up = charge(100, 3, 1, Number::RoundingMode::Upward);
+            BEAST_EXPECT(nearest == 33);
+            BEAST_EXPECT(up == 34);
+            // Pre-fix undercharges (dilutes); post-fix never does.
+            BEAST_EXPECT(nearest * 3 < 100 * 1);
+            BEAST_EXPECT(up * 3 >= 100 * 1);
+        }
+
+        // rate 100/3, 2 shares -> 66.67. ToNearest already rounds up here, so
+        // both agree and neither dilutes: the fix only ever raises the charge.
+        {
+            std::uint64_t const nearest = charge(100, 3, 2, Number::RoundingMode::ToNearest);
+            std::uint64_t const up = charge(100, 3, 2, Number::RoundingMode::Upward);
+            BEAST_EXPECT(nearest == 67);
+            BEAST_EXPECT(up == 67);
+            BEAST_EXPECT(up * 3 >= 100 * 2);
+        }
+
+        // Exact rate: no rounding, the fix is a no-op.
+        {
+            std::uint64_t const nearest = charge(100, 4, 2, Number::RoundingMode::ToNearest);
+            std::uint64_t const up = charge(100, 4, 2, Number::RoundingMode::Upward);
+            BEAST_EXPECT(nearest == 50);
+            BEAST_EXPECT(up == 50);
+        }
+
+        // A large, awkward rate: Upward is always the ceiling of the exact
+        // fair value, so the pool is never shortchanged.
+        //   fair = 1'000'003 * 7 / 999'983 = 7'000'021 / 999'983 = 7.00014...
+        //   ToNearest -> 7 (7 * 999'983 = 6'999'881 < 7'000'021 -> dilution)
+        //   Upward    -> 8 (8 * 999'983 = 7'999'864 >= 7'000'021)
+        {
+            std::int64_t const assetsTotal = 1'000'003;
+            std::uint64_t const sharesTotal = 999'983;  // coprime-ish
+            std::uint64_t const minted = 7;
+            std::uint64_t const up =
+                charge(assetsTotal, sharesTotal, minted, Number::RoundingMode::Upward);
+            std::uint64_t const nearest =
+                charge(assetsTotal, sharesTotal, minted, Number::RoundingMode::ToNearest);
+            // up == ceil(assetsTotal * minted / sharesTotal)
+            std::uint64_t const num = assetsTotal * minted;
+            std::uint64_t const expectedUp = (num + sharesTotal - 1) / sharesTotal;
+            BEAST_EXPECT(up == expectedUp);
+            BEAST_EXPECT(up * sharesTotal >= num);      // no dilution
+            BEAST_EXPECT(nearest * sharesTotal < num);  // pre-fix dilutes
+        }
+    }
+
+    // Common Prefix formal-verification finding (mirror of the deposit case):
+    // VaultWithdraw pays the withdrawing shareholder via
+    // sharesToAssetsWithdraw, which quantized the exchange under
+    // round-to-nearest. When the vault holds an integral asset (MPT/XRP) at a
+    // non-unit exchange rate, the payout for burned shares can be rounded *up*
+    // above their fair value. The shareholder then receives assets worth more
+    // than the shares they burn, diluting the remaining shareholders.
+    //
+    // Post-fixCleanup3_5_0 the payout rounds Downward (in the pool's favor), so
+    // a withdrawer always receives at most the fair value of the shares they
+    // burn and the assets-per-share price never decreases for the holders who
+    // remain.
+    //
+    // As with the deposit case this is only load-bearing for integral assets:
+    // for an IOU the fixCleanup3_4_0 clamp in VaultWithdraw::doApply already
+    // floors the payout onto the posterior sfAssetsTotal grid.
+    //
+    // This exercises sharesToAssetsWithdraw directly: the ToNearest overload is
+    // the pre-amendment behavior, the Downward overload is the fix. For an
+    // integral asset the difference is a full unit, so the overpayment is
+    // unambiguous.
+    void
+    testWithdrawRoundingFavorsPool(MPTIssue const& assetMPT, MPTID const& shareMPT)
+    {
+        testcase("Withdraw: share-to-asset rounding favors the pool");
+
+        Asset const vaultAsset{assetMPT};
+
+        // Pay out for burning `burned` shares against a vault holding
+        // `assetsTotal` integral assets backed by `sharesTotal` shares. The
+        // vault carries no unrealized loss, so the waive flag is irrelevant.
+        auto const payout = [&](std::int64_t assetsTotal,
+                                std::uint64_t sharesTotal,
+                                std::uint64_t burned,
+                                Number::RoundingMode mode) -> std::uint64_t {
+            auto const [vault, issuance] =
+                makeVaultAndIssuance(vaultAsset, shareMPT, Number(assetsTotal), sharesTotal);
+            STAmount const shares{MPTIssue{shareMPT}, Number(burned)};
+            auto const assets =
+                sharesToAssetsWithdraw(vault, issuance, shares, WaiveUnrealizedLoss::No, mode);
+            BEAST_EXPECT(assets.has_value());
+            return assets ? assets->mantissa() : 0;
+        };
+
+        // rate 100/3: burning 1 share is worth 33.33 assets.
+        //   ToNearest -> 33 (fair: 33 * 3 = 99 <= 100, no dilution here)
+        //   Downward  -> 33 (favors pool: 33 * 3 = 99 <= 100)
+        {
+            std::uint64_t const nearest = payout(100, 3, 1, Number::RoundingMode::ToNearest);
+            std::uint64_t const down = payout(100, 3, 1, Number::RoundingMode::Downward);
+            BEAST_EXPECT(nearest == 33);
+            BEAST_EXPECT(down == 33);
+            BEAST_EXPECT(down * 3 <= 100 * 1);  // pool never shortchanged
+        }
+
+        // rate 100/3, 2 shares -> 66.67. ToNearest rounds *up* to 67 and
+        // overpays (67 * 3 = 201 > 200 -> dilution); Downward floors to 66.
+        {
+            std::uint64_t const nearest = payout(100, 3, 2, Number::RoundingMode::ToNearest);
+            std::uint64_t const down = payout(100, 3, 2, Number::RoundingMode::Downward);
+            BEAST_EXPECT(nearest == 67);
+            BEAST_EXPECT(down == 66);
+            // Pre-fix overpays (dilutes remaining holders); post-fix never does.
+            BEAST_EXPECT(nearest * 3 > 100 * 2);
+            BEAST_EXPECT(down * 3 <= 100 * 2);
+        }
+
+        // Exact rate: no rounding, the fix is a no-op.
+        {
+            std::uint64_t const nearest = payout(100, 4, 2, Number::RoundingMode::ToNearest);
+            std::uint64_t const down = payout(100, 4, 2, Number::RoundingMode::Downward);
+            BEAST_EXPECT(nearest == 50);
+            BEAST_EXPECT(down == 50);
+        }
+
+        // A large, awkward rate whose fair value has a fractional part above
+        // 0.5, so ToNearest rounds *up* and overpays. Downward is always the
+        // floor of the exact fair value, so the remaining shareholders are
+        // never shortchanged.
+        //   fair = 1'000'003 * 3 / 7 = 3'000'009 / 7 = 428'572.71...
+        //   ToNearest -> 428'573 (428'573 * 7 = 3'000'011 > 3'000'009 -> dilution)
+        //   Downward  -> 428'572 (428'572 * 7 = 3'000'004 <= 3'000'009)
+        {
+            std::int64_t const assetsTotal = 1'000'003;
+            std::uint64_t const sharesTotal = 7;  // coprime-ish
+            std::uint64_t const burned = 3;
+            std::uint64_t const down =
+                payout(assetsTotal, sharesTotal, burned, Number::RoundingMode::Downward);
+            std::uint64_t const nearest =
+                payout(assetsTotal, sharesTotal, burned, Number::RoundingMode::ToNearest);
+            // down == floor(assetsTotal * burned / sharesTotal)
+            std::uint64_t const num = assetsTotal * burned;
+            std::uint64_t const expectedDown = num / sharesTotal;
+            BEAST_EXPECT(down == expectedDown);
+            BEAST_EXPECT(down * sharesTotal <= num);    // no dilution
+            BEAST_EXPECT(nearest * sharesTotal > num);  // pre-fix dilutes
+        }
+    }
+
 public:
     void
     run() override
@@ -476,6 +697,10 @@ public:
         testIouDebits(iou);
         testIouCredits(iou);
         testIntegralAssets(mpt, xrp);
+
+        MPTID const shareMPT = makeMptID(2, issuer.id());
+        testDepositRoundingFavorsPool(mpt, shareMPT);
+        testWithdrawRoundingFavorsPool(mpt, shareMPT);
     }
 };
 
