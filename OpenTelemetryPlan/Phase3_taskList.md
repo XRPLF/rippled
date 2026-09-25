@@ -552,4 +552,4 @@ This gives the best of both worlds: guaranteed cross-node correlation via determ
 
 ### trace_state is not a proto field yet
 
-`TraceContext` in `xrpl.proto` has no `trace_state` field: number 4 and the name `trace_state` are `reserved` for W3C `tracestate` vendor-specific key-value pairs. When cross-vendor trace propagation is needed, add the field back with a size limit and wire it through `TraceContextPropagator`. Until then a peer-sent field 4 is an unknown field, which the parser drops.
+`TraceContext` in `xrpl.proto` has no `trace_state` field: number 4 and the name `trace_state` are `reserved` for W3C `tracestate` vendor-specific key-value pairs. When cross-vendor trace propagation is needed, add the field with a size limit and wire it through `TraceContextPropagator`. Until then a peer-sent field 4 is an unknown field, which the parser drops.
