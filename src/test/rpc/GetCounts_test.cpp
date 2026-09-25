@@ -9,6 +9,7 @@
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/jss.h>
 
+#include <algorithm>
 #include <thread>
 
 namespace xrpl {
@@ -52,36 +53,59 @@ class GetCounts_test : public beast::unit_test::Suite
             // check counts, default params
             result = env.rpc("get_counts")[jss::result];
             BEAST_EXPECT(result[jss::status] == "success");
-            // compare with values reported by CountedObjects
-            auto const& objectCounts = CountedObjects::getInstance().getCounts(10);
-            for (auto const& it : objectCounts)
+
+            // compare with values reported by the registry
+            auto const& counters = result[jss::counters];
+
+            for (auto const& c : gCountedObjects)
             {
-                BEAST_EXPECTS(result.isMember(it.first), it.first);
-                BEAST_EXPECTS(result[it.first].asInt() == it.second, it.first);
+                if (auto const count = c.count(); count >= 10)
+                {
+                    BEAST_EXPECTS(counters.isMember(c.name()), c.name());
+                    BEAST_EXPECTS(counters[c.name()][jss::current].asUInt() == count, c.name());
+                }
             }
+
             BEAST_EXPECT(!result.isMember(jss::local_txs));
         }
-
         {
             // make request with min threshold 100 and verify
-            // that only STObject and NodeObject are reported
+            // that only counters at or above the threshold are reported
             result = env.rpc("get_counts", "100")[jss::result];
             BEAST_EXPECT(result[jss::status] == "success");
 
-            // compare with values reported by CountedObjects
-            auto const& objectCounts = CountedObjects::getInstance().getCounts(100);
-            for (auto const& it : objectCounts)
-            {
-                BEAST_EXPECTS(result.isMember(it.first), it.first);
-                BEAST_EXPECTS(result[it.first].asInt() == it.second, it.first);
-            }
-            BEAST_EXPECT(!result.isMember("Transaction"));
-            BEAST_EXPECT(!result.isMember("STTx"));
-            BEAST_EXPECT(!result.isMember("STArray"));
-            BEAST_EXPECT(!result.isMember("HashRouterEntry"));
-            BEAST_EXPECT(!result.isMember("STLedgerEntry"));
-        }
+            auto const& counters = result[jss::counters];
 
+            // every registry counter at/above threshold must be reported, with
+            // a matching current value
+            for (auto const& c : gCountedObjects)
+            {
+                if (auto const count = c.count(); count >= 100)
+                {
+                    BEAST_EXPECTS(counters.isMember(c.name()), c.name());
+                    BEAST_EXPECTS(counters[c.name()][jss::current].asUInt() == count, c.name());
+                }
+            }
+
+            // conversely, every reported entry must be a known counter that met
+            // the threshold, and its maximum must be consistent
+            for (auto const& name : counters.getMemberNames())
+            {
+                auto const it = std::ranges::find_if(
+                    gCountedObjects, [&](auto const& c) { return c.name() == name; });
+                BEAST_EXPECTS(it != gCountedObjects.end(), name);
+
+                auto const& entry = counters[name];
+                BEAST_EXPECTS(entry[jss::current].asUInt() >= 100, name);
+                BEAST_EXPECTS(entry[jss::maximum].asUInt() >= entry[jss::current].asUInt(), name);
+            }
+
+            BEAST_EXPECT(!counters.isMember("xrpl::Transaction"));
+            BEAST_EXPECT(!counters.isMember("xrpl::STTx"));
+            BEAST_EXPECT(!counters.isMember("xrpl::STArray"));
+            BEAST_EXPECT(!counters.isMember("xrpl::HashRouterEntry"));
+            BEAST_EXPECT(!counters.isMember("xrpl::STLedgerEntry"));
+        }
         {
             // local_txs field will exist when there are open Txs
             env(pay(alice, bob, alice["USD"](5)));
