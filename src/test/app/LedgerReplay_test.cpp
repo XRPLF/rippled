@@ -1,5 +1,6 @@
 #include <test/jtx/Account.h>
 #include <test/jtx/Env.h>
+#include <test/jtx/PeerStub.h>
 #include <test/jtx/amount.h>
 #include <test/jtx/batch.h>
 #include <test/jtx/envconfig.h>
@@ -21,7 +22,6 @@
 #include <xrpld/app/ledger/detail/LedgerReplayMsgHandler.h>
 #include <xrpld/app/ledger/detail/SkipListAcquire.h>
 #include <xrpld/core/Config.h>
-#include <xrpld/overlay/Message.h>
 #include <xrpld/overlay/Peer.h>
 #include <xrpld/overlay/PeerSet.h>
 #include <xrpld/overlay/detail/Handshake.h>
@@ -29,19 +29,14 @@
 #include <xrpl/basics/Slice.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/net/IPAddress.h>
-#include <xrpl/beast/net/IPEndpoint.h>
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/protocol/Indexes.h>
-#include <xrpl/protocol/KeyType.h>
-#include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/RippleLedgerHash.h>
-#include <xrpl/protocol/SecretKey.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
-#include <xrpl/resource/Charge.h>
 #include <xrpl/server/Handoff.h>
 #include <xrpl/shamap/SHAMapItem.h>
 
@@ -274,136 +269,33 @@ enum class PeerFeature {
  * Simulate a network peer.
  * Depending on the configured PeerFeature,
  * it either supports the ProtocolFeature::LedgerReplay or not
+ *
+ * `PeerStub` supplies the rest of the `Peer` interface as no-ops.
  */
-class TestPeer : public Peer
+class TestPeer : public PeerStub
 {
 public:
-    TestPeer(bool enableLedgerReplay)
-        : ledgerReplayEnabled_(enableLedgerReplay)
-        , nodePublicKey_(derivePublicKey(KeyType::Ed25519, randomSecretKey()))
+    // Arbitrary but fixed: the replay code only compares ids.
+    explicit TestPeer(bool enableLedgerReplay)
+        : PeerStub(1234), ledgerReplayEnabled_(enableLedgerReplay)
     {
     }
 
-    void
-    send(std::shared_ptr<Message> const& m) override
-    {
-    }
-    [[nodiscard]] beast::ip::Endpoint
-    getRemoteAddress() const override
-    {
-        return {};
-    }
-    void
-    charge(resource::Charge const& fee, std::string const& context = {}) override
-    {
-    }
-    [[nodiscard]] id_t
-    id() const override
-    {
-        return 1234;
-    }
-    [[nodiscard]] bool
-    cluster() const override
-    {
-        return false;
-    }
-    [[nodiscard]] bool
-    isHighLatency() const override
-    {
-        return false;
-    }
-    [[nodiscard]] int
-    getScore(bool) const override
-    {
-        return 0;
-    }
-    [[nodiscard]] PublicKey const&
-    getNodePublic() const override
-    {
-        return nodePublicKey_;
-    }
-    json::Value
-    json() override
-    {
-        return {};
-    }
     [[nodiscard]] bool
     supportsFeature(ProtocolFeature f) const override
     {
         return f == ProtocolFeature::LedgerReplay && ledgerReplayEnabled_;
     }
-    [[nodiscard]] std::optional<std::size_t>
-    publisherListSequence(PublicKey const&) const override
-    {
-        return {};
-    }
-    void
-    setPublisherListSequence(PublicKey const&, std::size_t const) override
-    {
-    }
-    [[nodiscard]] uint256
-    getClosedLedgerHash() const override
-    {
-        static uint256 const kHash{};
-        return kHash;
-    }
+
+    // The replay code only asks peers that already have the ledger.
     [[nodiscard]] bool
-    hasLedger(uint256 const& hash, std::uint32_t seq) const override
+    hasLedger(uint256 const&, std::uint32_t) const override
     {
         return true;
     }
-    void
-    ledgerRange(std::uint32_t& minSeq, std::uint32_t& maxSeq) const override
-    {
-    }
-    [[nodiscard]] bool
-    hasTxSet(uint256 const& hash) const override
-    {
-        return false;
-    }
-    void
-    cycleStatus() override
-    {
-    }
-    bool
-    hasRange(std::uint32_t uMin, std::uint32_t uMax) override
-    {
-        return false;
-    }
-    [[nodiscard]] bool
-    compressionEnabled() const override
-    {
-        return false;
-    }
-    void
-    sendTxQueue() override
-    {
-    }
-    void
-    addTxQueue(uint256 const&) override
-    {
-    }
-    void
-    removeTxQueue(uint256 const&) override
-    {
-    }
-    [[nodiscard]] bool
-    txReduceRelayEnabled() const override
-    {
-        return false;
-    }
 
-    [[nodiscard]] std::string const&
-    fingerprint() const override
-    {
-        return fingerprint_;
-    }
-
-    // NOLINTBEGIN(readability-identifier-naming)
-    std::string fingerprint_;
+private:
     bool ledgerReplayEnabled_;
-    PublicKey nodePublicKey_;
-    // NOLINTEND(readability-identifier-naming)
 };
 
 enum class PeerSetBehavior {
