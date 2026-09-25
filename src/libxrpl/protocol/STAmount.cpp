@@ -1643,7 +1643,9 @@ divRoundImpl(STAmount const& num, STAmount const& den, Asset const& asset, bool 
 
     bool const resultNegative = (num.negative() != den.negative());
 
-    if (asset.holds<MPTIssue>() && isFeatureEnabled(featureMPTokensV2, false))
+    // fixCleanup3_5_0: the legacy path below overflows on large MPT amounts.
+    if (asset.holds<MPTIssue>() &&
+        (isFeatureEnabled(featureMPTokensV2, false) || isFeatureEnabled(fixCleanup3_5_0, false)))
     {
         // Match the multiply path above: Number performs the rounded
         // operation, then STAmount materializes the final MPT amount using the

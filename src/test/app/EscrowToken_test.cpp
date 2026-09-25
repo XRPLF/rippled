@@ -3856,10 +3856,15 @@ struct EscrowToken_test : public beast::unit_test::Suite
         auto const gw = Account("gw");
 
         for (auto const testFeatures :
-             {features - featureMPTokensV2 - fixCleanup3_4_0,
+             {features - featureMPTokensV2 - fixCleanup3_4_0 - fixCleanup3_5_0,
+              features - featureMPTokensV2 - fixCleanup3_4_0,
+              features - featureMPTokensV2 - fixCleanup3_5_0,
               features - featureMPTokensV2,
+              (features | featureMPTokensV2) - fixCleanup3_4_0 - fixCleanup3_5_0,
               (features | featureMPTokensV2) - fixCleanup3_4_0,
-              features | featureMPTokensV2})
+              (features | featureMPTokensV2) - fixCleanup3_5_0,
+              features | featureMPTokensV2,
+              features | fixCleanup3_5_0})
         {
             bool const mptV2 = testFeatures[featureMPTokensV2];
             bool const tokenEscrowV1 = testFeatures[fixTokenEscrowV1];
@@ -3867,10 +3872,11 @@ struct EscrowToken_test : public beast::unit_test::Suite
             // legacy divideRound(amount, lockedRate, ...) path, which runs when
             // fixCleanup3_4_0 is disabled. With fixCleanup3_4_0 the split uses
             // mulRatio (128-bit intermediate), which cannot overflow. Without
-            // it, this large amount overflows unless the MPTokensV2 Number path
-            // is active. So the finish succeeds when either amendment is enabled.
+            // it, this large amount overflows unless divideRound takes the
+            // Number path, which MPTokensV2 or fixCleanup3_5_0 enables. So the
+            // finish succeeds when any of these amendments is enabled.
             bool const cleanup340 = testFeatures[fixCleanup3_4_0];
-            bool const noOverflow = cleanup340 || mptV2;
+            bool const noOverflow = cleanup340 || mptV2 || testFeatures[fixCleanup3_5_0];
             auto const expectedErr = noOverflow ? Ter(tesSUCCESS) : Ter(tefEXCEPTION);
 
             // Finish with a large MPT amount and non-zero transfer fee. When the
