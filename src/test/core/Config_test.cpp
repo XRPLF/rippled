@@ -593,6 +593,28 @@ main
 
         BEAST_EXPECT(error.empty());
         BEAST_EXPECT(c.networkId == 10000);
+
+        // A trailing inline comment on a single-value section must be
+        // stripped, not passed to lexicalCast. Before the fix this threw
+        // beast::BadLexicalCast (a std::bad_cast, not a std::runtime_error),
+        // which escaped as an uncaught terminate at startup. Catch
+        // std::exception so a regression fails the test rather than aborting
+        // the test binary. See issue #7545.
+        error.clear();
+        try
+        {
+            c.loadFromString(R"xrpldConfig(
+[network_id]
+1024  # inline comment after the value
+)xrpldConfig");
+        }
+        catch (std::exception const& e)
+        {
+            error = e.what();
+        }
+
+        BEAST_EXPECT(error.empty());
+        BEAST_EXPECT(c.networkId == 1024);
     }
 
     void
