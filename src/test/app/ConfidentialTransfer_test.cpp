@@ -2,6 +2,7 @@
 #include <test/jtx/ConfidentialTransfer.h>
 #include <test/jtx/Env.h>
 #include <test/jtx/amount.h>
+#include <test/jtx/delegate.h>
 #include <test/jtx/flags.h>
 #include <test/jtx/mpt.h>
 #include <test/jtx/pay.h>
@@ -3133,6 +3134,102 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
         BEAST_EXPECT(
             mptAlice.getDecryptedBalance(
                 bob, MPTTester::holderEncryptedInbox, recoveryKey.second) == 0);
+    }
+
+    void
+    testRecoverBalanceDelegated(FeatureBitset features)
+    {
+        if (!features[featureConfidentialMPTKeyRotation])
+            return;
+
+        testcase("test ConfidentialMPTRecoverBalance delegated");
+        using namespace test::jtx;
+
+        Env env{*this, features};
+        Account const alice("alice");  // issuer
+        Account const bob("bob");      // holder
+        Account const dgt("dgt");      // delegate acting for the issuer
+        env.fund(XRP(1000), dgt);
+        MPTTester mptAlice(env, alice, {.holders = {bob}});
+
+        mptAlice.create({
+            .ownerCount = 1,
+            .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanHoldConfidentialBalance,
+        });
+
+        mptAlice.authorize({.account = bob});
+        mptAlice.pay(alice, bob, 100);
+
+        // Generate keys for alice (issuer)
+        mptAlice.generateKeyPair(alice);
+        mptAlice.set({.account = alice, .issuerPubKey = mptAlice.getPubKey(alice)});
+
+        // Bob converts funds to confidential
+        mptAlice.generateKeyPair(bob);
+        mptAlice.convert({
+            .account = bob,
+            .amt = 60,
+            .holderPubKey = mptAlice.getPubKey(bob),
+        });
+
+        // Generate recovery key for bob and register it (issuer submits).
+        auto recoveryKey = mptAlice.generateKeyPair();
+        mptAlice.set({
+            .account = alice,
+            .holder = bob,
+            .holderPubKey = recoveryKey.first,
+            .recoveryKey = true,
+        });
+
+        auto const baseFee = env.current()->fees().base;
+        auto const expectedFee = baseFee * (kConfidentialFeeMultiplier + 1);
+
+        // Failure: a delegate without permission cannot recover, and no fee is
+        // deducted for terNO_DELEGATE_PERMISSION.
+        {
+            auto const dgtBalance = env.balance(dgt);
+            mptAlice.recover({
+                .account = alice,
+                .holder = bob,
+                .recoveryPrivKey = recoveryKey.second,
+                .delegate = dgt,
+                .fee = expectedFee,
+                .err = terNO_DELEGATE_PERMISSION,
+            });
+            BEAST_EXPECT(env.balance(dgt) == dgtBalance);
+        }
+
+        // Grant the delegate permission for ConfidentialMPTRecoverBalance.
+        env(delegate::set(alice, dgt, {"ConfidentialMPTRecoverBalance"}));
+        env.close();
+
+        // Success: the delegate recovers on behalf of the issuer and pays the fee.
+        {
+            auto const dgtBalance = env.balance(dgt);
+            mptAlice.recover({
+                .account = alice,
+                .holder = bob,
+                .recoveryPrivKey = recoveryKey.second,
+                .delegate = dgt,
+                .fee = expectedFee,
+            });
+            // The delegate (signer) pays the fee.
+            BEAST_EXPECT(dgtBalance - env.balance(dgt) == expectedFee);
+        }
+
+        // Verify holder encryption key has been updated to the recovery key.
+        auto const mptokenID = keylet::mptoken(mptAlice.issuanceID(), bob.id());
+        auto const sleAfter = env.le(mptokenID);
+        BEAST_EXPECT(sleAfter);
+        auto const holderKey = sleAfter->getFieldVL(sfHolderEncryptionKey);
+        BEAST_EXPECT(Buffer(holderKey.data(), holderKey.size()) == recoveryKey.first);
+        // Verify RecoveryKey field has been removed.
+        BEAST_EXPECT(!sleAfter->isFieldPresent(sfRecoveryKey));
+
+        // Verify confidential balance can be decrypted with the recovery key.
+        BEAST_EXPECT(
+            mptAlice.getDecryptedBalance(
+                bob, MPTTester::holderEncryptedSpending, recoveryKey.second) == 60);
     }
 
     void
@@ -8948,6 +9045,7 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
 
         // ConfidentialMPTRecoverBalance
         testRecoverBalance(features);
+        testRecoverBalanceDelegated(features);
         testRecoverBalanceBadParams(features);
         testRecoverBalanceWithKeyRotation(features);
 

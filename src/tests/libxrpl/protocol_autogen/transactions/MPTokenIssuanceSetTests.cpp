@@ -36,8 +36,8 @@ TEST(TransactionsMPTokenIssuanceSetTests, BuilderSettersRoundTrip)
     auto const transferFeeValue = canonical_UINT16();
     auto const immutableFlagsValue = canonical_UINT32();
     auto const issuerEncryptionKeyValue = canonical_VL();
-    auto const holderEncryptionKeyValue = canonical_VL();
     auto const auditorEncryptionKeyValue = canonical_VL();
+    auto const holderEncryptionKeyValue = canonical_VL();
     auto const recoveryKeyValue = canonical_VL();
 
     MPTokenIssuanceSetBuilder builder{
@@ -54,8 +54,8 @@ TEST(TransactionsMPTokenIssuanceSetTests, BuilderSettersRoundTrip)
     builder.setTransferFee(transferFeeValue);
     builder.setImmutableFlags(immutableFlagsValue);
     builder.setIssuerEncryptionKey(issuerEncryptionKeyValue);
-    builder.setHolderEncryptionKey(holderEncryptionKeyValue);
     builder.setAuditorEncryptionKey(auditorEncryptionKeyValue);
+    builder.setHolderEncryptionKey(holderEncryptionKeyValue);
     builder.setRecoveryKey(recoveryKeyValue);
 
     auto tx = builder.build(publicKey, secretKey);
@@ -129,19 +129,19 @@ TEST(TransactionsMPTokenIssuanceSetTests, BuilderSettersRoundTrip)
     }
 
     {
-        auto const& expected = holderEncryptionKeyValue;
-        auto const actualOpt = tx.getHolderEncryptionKey();
-        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfHolderEncryptionKey should be present";
-        expectEqualField(expected, *actualOpt, "sfHolderEncryptionKey");
-        EXPECT_TRUE(tx.hasHolderEncryptionKey());
-    }
-
-    {
         auto const& expected = auditorEncryptionKeyValue;
         auto const actualOpt = tx.getAuditorEncryptionKey();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfAuditorEncryptionKey should be present";
         expectEqualField(expected, *actualOpt, "sfAuditorEncryptionKey");
         EXPECT_TRUE(tx.hasAuditorEncryptionKey());
+    }
+
+    {
+        auto const& expected = holderEncryptionKeyValue;
+        auto const actualOpt = tx.getHolderEncryptionKey();
+        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfHolderEncryptionKey should be present";
+        expectEqualField(expected, *actualOpt, "sfHolderEncryptionKey");
+        EXPECT_TRUE(tx.hasHolderEncryptionKey());
     }
 
     {
@@ -175,8 +175,8 @@ TEST(TransactionsMPTokenIssuanceSetTests, BuilderFromStTxRoundTrip)
     auto const transferFeeValue = canonical_UINT16();
     auto const immutableFlagsValue = canonical_UINT32();
     auto const issuerEncryptionKeyValue = canonical_VL();
-    auto const holderEncryptionKeyValue = canonical_VL();
     auto const auditorEncryptionKeyValue = canonical_VL();
+    auto const holderEncryptionKeyValue = canonical_VL();
     auto const recoveryKeyValue = canonical_VL();
 
     // Build an initial transaction
@@ -193,8 +193,8 @@ TEST(TransactionsMPTokenIssuanceSetTests, BuilderFromStTxRoundTrip)
     initialBuilder.setTransferFee(transferFeeValue);
     initialBuilder.setImmutableFlags(immutableFlagsValue);
     initialBuilder.setIssuerEncryptionKey(issuerEncryptionKeyValue);
-    initialBuilder.setHolderEncryptionKey(holderEncryptionKeyValue);
     initialBuilder.setAuditorEncryptionKey(auditorEncryptionKeyValue);
+    initialBuilder.setHolderEncryptionKey(holderEncryptionKeyValue);
     initialBuilder.setRecoveryKey(recoveryKeyValue);
 
     auto initialTx = initialBuilder.build(publicKey, secretKey);
@@ -263,17 +263,17 @@ TEST(TransactionsMPTokenIssuanceSetTests, BuilderFromStTxRoundTrip)
     }
 
     {
-        auto const& expected = holderEncryptionKeyValue;
-        auto const actualOpt = rebuiltTx.getHolderEncryptionKey();
-        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfHolderEncryptionKey should be present";
-        expectEqualField(expected, *actualOpt, "sfHolderEncryptionKey");
-    }
-
-    {
         auto const& expected = auditorEncryptionKeyValue;
         auto const actualOpt = rebuiltTx.getAuditorEncryptionKey();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfAuditorEncryptionKey should be present";
         expectEqualField(expected, *actualOpt, "sfAuditorEncryptionKey");
+    }
+
+    {
+        auto const& expected = holderEncryptionKeyValue;
+        auto const actualOpt = rebuiltTx.getHolderEncryptionKey();
+        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfHolderEncryptionKey should be present";
+        expectEqualField(expected, *actualOpt, "sfHolderEncryptionKey");
     }
 
     {
@@ -352,10 +352,10 @@ TEST(TransactionsMPTokenIssuanceSetTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(tx.getImmutableFlags().has_value());
     EXPECT_FALSE(tx.hasIssuerEncryptionKey());
     EXPECT_FALSE(tx.getIssuerEncryptionKey().has_value());
-    EXPECT_FALSE(tx.hasHolderEncryptionKey());
-    EXPECT_FALSE(tx.getHolderEncryptionKey().has_value());
     EXPECT_FALSE(tx.hasAuditorEncryptionKey());
     EXPECT_FALSE(tx.getAuditorEncryptionKey().has_value());
+    EXPECT_FALSE(tx.hasHolderEncryptionKey());
+    EXPECT_FALSE(tx.getHolderEncryptionKey().has_value());
     EXPECT_FALSE(tx.hasRecoveryKey());
     EXPECT_FALSE(tx.getRecoveryKey().has_value());
 }
