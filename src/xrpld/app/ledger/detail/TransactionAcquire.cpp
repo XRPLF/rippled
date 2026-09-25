@@ -199,50 +199,67 @@ TransactionAcquire::takeNodes(
 {
     ScopedLockType sl(mtx_);
 
+    // Both read before the call, which settles the acquisition on some paths and trigger()s the
+    // sender on others, enrolling it in requestedPeers_.
+    bool const wasSettled = isDone();
+    bool const wasAsked = requestedPeers_.contains(peer->id());
+
     auto const san = takeNodesLocked(std::move(data), peer, sl);
 
-    // Recorded here rather than on each of takeNodesLocked()'s exits, several of which stop the
-    // batch early: a batch that advanced the map must keep the next timer tick from counting a
-    // timeout against it, and nothing in the compiler would catch an exit that forgot to say so.
+    // Recorded on this one exit rather than on each of takeNodesLocked()'s, several of which stop
+    // the batch early: a batch that answered must keep the next timer tick from counting a timeout
+    // against it, and nothing in the compiler would catch an exit that forgot to say so.
     //
-    // Useful rather than good: a batch of nothing but duplicates advanced nothing, so it records no
-    // progress even though it was not the sender's fault. That costs retry budget on the ordinary
-    // second responder to a fan-out and nothing else.
-    if (san.isUseful())
+    // A duplicate counts as an answer, since the flag decides whether onTimer() treats the
+    // acquisition as stalled and a peer sending nodes we already hold has answered. Only from a
+    // peer we asked, whose reply says something about the peers being waited on, and only while
+    // the acquisition was running, since a settled one has no timer left to postpone.
+    bool const answered = san.isUseful() || (san.getDuplicate() > 0 && wasAsked);
+    if (!wasSettled && answered)
         progress_ = true;
 
     return san;
+}
+
+void
+TransactionAcquire::chargeLateReply(std::shared_ptr<Peer> const& peer, ScopedLockType&)
+{
+    // One free reply per peer asked, since trigger() sends to every peer it is given and that many
+    // replies can be in flight when the set settles. Beyond that the sender is replaying, which is
+    // not free work while the object lingers until newRound() sweeps it.
+    //
+    // Keyed by identity rather than counted, so one peer's replays cannot exhaust the pass another
+    // peer in requestedPeers_ is still owed.
+    if (!requestedPeers_.contains(peer->id()) || !lateReplyGranted_.insert(peer->id()).second)
+        peer->charge(resource::kFeeUselessData, "tx_set data after the set was settled");
+}
+
+bool
+TransactionAcquire::wantsReplyFrom(std::shared_ptr<Peer> const& peer)
+{
+    ScopedLockType sl(mtx_);
+
+    if (!isDone())
+        return true;
+
+    JLOG(journal_.trace()) << (complete_ ? "TX set complete" : "TX set failed");
+    chargeLateReply(peer, sl);
+    return false;
 }
 
 SHAMapAddNode
 TransactionAcquire::takeNodesLocked(
     std::vector<std::pair<SHAMapNodeID, SHAMapTreeNodePtr>> data,
     std::shared_ptr<Peer> const& peer,
-    ScopedLockType&)
+    ScopedLockType& sl)
 {
-    // A reply that arrives after the set is settled - by completing it, or by a different packet
-    // failing it. trigger() sends to every peer it was given, so any of their replies, including
-    // another packet from the same peer whose data failed the set, can already be in flight and
-    // could not have known the outcome. Those are solicited, and free: one per peer we asked,
-    // which is what bounds the honest case.
-    //
-    // Past that bound, further data for this hash is a replay - a resend of data already
-    // accepted or now known worthless, not a first-time reply - and serving it is not free work.
-    // InboundTransactions::gotData() deserializes and hashes the whole node list before this
-    // point, up to kHardMaxReplyNodes of them, and the object lingers until newRound() sweeps it,
-    // so an unbounded number of replays would otherwise cost only the trivial per-message fee.
+    // A reply that arrives after the set is settled, from a caller that did not ask
+    // wantsReplyFrom() or that had the set settle after asking. Either way the allowance has not
+    // been spent for this reply, since a reply wantsReplyFrom() turned away never reaches here.
     if (isDone())
     {
         JLOG(journal_.trace()) << (complete_ ? "TX set complete" : "TX set failed");
-
-        // Free only the first time this specific peer shows up here, not merely the first
-        // reply of however many arrive: a peer outside requestedPeers_ was never asked at all,
-        // and one already in lateReplyGranted_ has already spent the one pass requestedPeers_
-        // earned it. Keyed by identity rather than counted, so one peer resending its own
-        // already-accepted reply cannot exhaust the pass a different, genuinely honest peer in
-        // requestedPeers_ is still owed.
-        if (!requestedPeers_.contains(peer->id()) || !lateReplyGranted_.insert(peer->id()).second)
-            peer->charge(resource::kFeeUselessData, "tx_set data after the set was settled");
+        chargeLateReply(peer, sl);
 
         // Reported as a duplicate rather than as bad, unless the map itself is why the set failed:
         // no reply for such a hash can ever be useful to anyone.
