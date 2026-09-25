@@ -11,9 +11,11 @@ This document explains how to build xrpld with OpenTelemetry distributed tracing
       - [Call CMake](#call-cmake)
       - [Build](#build)
   - [Building without telemetry](#building-without-telemetry)
+  - [Viewing traces locally](#viewing-traces-locally)
   - [Troubleshooting](#troubleshooting)
     - [Conan lockfile error](#conan-lockfile-error)
     - [CMake target not found](#cmake-target-not-found)
+    - [No traces in Grafana](#no-traces-in-grafana)
   - [Conditional compilation](#conditional-compilation)
   - [Span lifetime and cross-thread handling](#span-lifetime-and-cross-thread-handling)
     - [`SpanGuard` versus `ScopedSpanGuard`](#spanguard-versus-scopedspanguard)
@@ -109,6 +111,20 @@ the `XRPL_ENABLE_TELEMETRY` preprocessor define will not be set,
 and all tracing macros will compile to no-ops.
 The resulting binary is identical to one built before telemetry support was added.
 
+## Viewing traces locally
+
+[`docker/telemetry/docker-compose.yml`](../../docker/telemetry/docker-compose.yml) runs a local backend: an OpenTelemetry Collector, Grafana Tempo and Grafana. Its header comment lists each service and port.
+
+1. Build xrpld with telemetry, as in [Building with Telemetry](#building-with-telemetry).
+2. From the repository root, start the stack: `docker compose -f docker/telemetry/docker-compose.yml up -d`.
+3. Set `enabled=1` in the `[telemetry]` section of your xrpld config. The default `traces_endpoint` already points at this collector, so no other key is needed. Section 11 of [`cfg/xrpld-example.cfg`](../../cfg/xrpld-example.cfg) documents every key.
+4. Start xrpld.
+5. Open Grafana at `http://localhost:3000` (no login), go to **Explore**, pick the **Tempo** data source, and search for `service.name` = `xrpld`.
+
+Spans are exported in batches, so a span reaches Tempo a few seconds after the work it records.
+
+To stop the stack, run `docker compose -f docker/telemetry/docker-compose.yml down`. Add `-v` to also delete the stored traces.
+
 ## Troubleshooting
 
 ### Conan lockfile error
@@ -124,6 +140,14 @@ ensure you ran `conan install` with `-o telemetry=True` and that the
 Conan-generated toolchain file is being used.
 The Conan package provides a single umbrella target
 `opentelemetry-cpp::opentelemetry-cpp` (not individual component targets).
+
+### No traces in Grafana
+
+Check each hop in order:
+
+1. The CMake output shows `-- OpenTelemetry tracing enabled`. If it does not, tracing is not compiled in.
+2. The xrpld log shows `Telemetry started successfully` from the `Telemetry` partition at `info` level. If it does not, `enabled=1` is not set.
+3. `docker compose -f docker/telemetry/docker-compose.yml logs otel-collector` prints every span the collector receives. If spans appear there but not in Grafana, the fault is between the collector and Tempo. If they do not appear, xrpld cannot reach `traces_endpoint`.
 
 ## Conditional compilation
 
