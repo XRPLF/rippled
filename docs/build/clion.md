@@ -39,13 +39,20 @@ If CMake is configured correctly, you should see a toolbar with green icons for 
 
 ### Using a Compilation Database
 
-From your Conan build directory (e.g. `.build`), generate a `compile_commands.json` file. If you
-installed with `build_type=Debug`, replace `Release` with `Debug` below:
+From your Conan build directory, generate a `compile_commands.json` file. If you installed with `build_type=Debug`, replace `Release` with `Debug`:
 
 ```bash
 cmake -DCMAKE_EXPORT_COMPILE_COMMANDS=1 -DCMAKE_TOOLCHAIN_FILE:FILEPATH=build/generators/conan_toolchain.cmake -DCMAKE_BUILD_TYPE=Release ..
 ```
 
-Then open the CLion project with the `compile_commands.json` file. After import, go to `Tools ->
-Compilation Database -> Change Project Root`. This gives CLion code insight (navigation, completion,
-analysis) for the project; continue building and running xrpld from the command line as usual.
+This only works with a single-configuration generator (for example, `Unix Makefiles` or `Ninja`). Multi-configuration generators (for example, `Visual Studio`) don't support `CMAKE_EXPORT_COMPILE_COMMANDS`. If your build directory uses one, create a separate build directory (for example, `.build-db`) that forces a single-configuration generator:
+
+```bash
+mkdir .build-db
+cd .build-db
+conan install .. --output-folder . --build missing --settings build_type=Release -c tools.cmake.cmaketoolchain:generator=Ninja
+```
+
+Then run the `cmake` command above again, from `.build-db` instead of your main build directory.
+
+Once you have a `compile_commands.json` file, open the CLion project with it. After import, go to `Tools -> Compilation Database -> Change Project Root`. This gives CLion code insight (navigation, completion, analysis) for the project; continue building and running xrpld from the command line as usual.
