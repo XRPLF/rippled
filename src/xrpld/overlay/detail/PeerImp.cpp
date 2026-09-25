@@ -19,6 +19,7 @@
 #include <xrpld/overlay/detail/ProtocolVersion.h>
 #include <xrpld/overlay/detail/TrafficCount.h>
 #include <xrpld/overlay/detail/Tuning.h>
+#include <xrpld/telemetry/TxSpanNames.h>
 
 #include <xrpl/basics/Blob.h>
 #include <xrpl/basics/Log.h>
@@ -53,6 +54,7 @@
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/TxFlags.h>
+#include <xrpl/protocol/TxFormats.h>
 #include <xrpl/protocol/digest.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/protocol/tokens.h>
@@ -66,6 +68,7 @@
 #include <xrpl/server/NetworkOPs.h>
 #include <xrpl/shamap/SHAMap.h>
 #include <xrpl/shamap/SHAMapNodeID.h>
+#include <xrpl/telemetry/SpanGuard.h>
 #include <xrpl/tx/apply.h>
 
 #include <boost/algorithm/string/predicate.hpp>
@@ -103,6 +106,13 @@
 #include <tuple>
 #include <utility>
 #include <vector>
+
+// Needed only by the tx.receive span in handleTransaction(), which is compiled
+// out when telemetry is off. Without the same guard here it would be an unused
+// include in that build, which clang-tidy's misc-include-cleaner rejects.
+#ifdef XRPL_ENABLE_TELEMETRY
+#include <xrpld/telemetry/TxTracing.h>
+#endif  // XRPL_ENABLE_TELEMETRY
 
 using namespace std::chrono_literals;
 
@@ -1352,12 +1362,15 @@ PeerImp::handleTransaction(
                 fee_.update(resource::kFeeUselessData, "known bad");
                 JLOG(pJournal_.debug()) << "Ignoring known bad tx " << txID;
             }
-
-            // Erase only if the server has seen this tx. If the server has not
-            // seen this tx then the tx could not has been queued for this peer.
-            else if (eraseTxQueue && txReduceRelayEnabled())
+            else
             {
-                removeTxQueue(txID);
+                // Erase only if the server has seen this tx. If the server
+                // has not seen this tx then the tx could not have been
+                // queued for this peer.
+                if (eraseTxQueue && txReduceRelayEnabled())
+                {
+                    removeTxQueue(txID);
+                }
             }
 
             overlay_.reportInboundTraffic(
@@ -1365,6 +1378,47 @@ PeerImp::handleTransaction(
 
             return;
         }
+
+        using namespace telemetry;
+        // The span starts here, once this node has decided to process the
+        // transaction. A peer relays every transaction it hears, so most
+        // inbound copies are ones the checks above drop, and tracing those
+        // costs a span and its attributes to describe work never done. The
+        // number dropped is reported as the transactions_duplicate traffic
+        // category, which needs no span.
+        //
+        // SpanGuard is thread-free (holds no Scope), so it is safe to hand to
+        // a job-queue worker and end on that thread — no detach step is needed.
+        // Left null when telemetry is compiled out: there is no span to own, so
+        // nothing is allocated for one. Every use below tests it, the job
+        // capture and activateIfLive() accept a null handle, and the transaction
+        // pipeline already takes a null span by default.
+        std::shared_ptr<SpanGuard> span;
+#ifdef XRPL_ENABLE_TELEMETRY
+        span = std::make_shared<SpanGuard>(txReceiveSpan(txID, *m));
+#endif
+        // Guarded on the span being live because these values are not free: the
+        // hash string allocates, and the open-ledger index takes the ledger
+        // master's lock. With telemetry compiled out the span is null; with it
+        // compiled in the block is skipped when telemetry is disabled at runtime
+        // or the transaction category is off.
+        if (span && *span)
+        {
+            span->setAttribute(tx_span::attr::txHash, to_string(txID).c_str());
+            span->setAttribute(tx_span::attr::peerId, static_cast<int64_t>(id_));
+            // The current (open) ledger index when the relayed tx was received
+            // — the ledger being worked on. Correlates this tx.receive to the
+            // ledger trace; not yet applied to a specific ledger, so no hash.
+            span->setAttribute(
+                tx_span::attr::currentLedgerSeq,
+                static_cast<std::int64_t>(app_.getLedgerMaster().getCurrentLedgerIndex()));
+            if (auto const* fmt = TxFormats::getInstance().findByType(stx->getTxnType()))
+                span->setAttribute(tx_span::attr::txType, fmt->getName().c_str());
+            if (auto const version = getVersion(); !version.empty())
+                span->setAttribute(tx_span::attr::peerVersion, version.c_str());
+        }
+        // Note: txStatus is set once at each exit path below (not as a default
+        // here) to avoid OTel SDK attribute duplication.
 
         JLOG(pJournal_.debug()) << "Got tx " << txID;
 
@@ -1390,10 +1444,14 @@ PeerImp::handleTransaction(
 
         if (app_.getLedgerMaster().getValidatedLedgerAge() > 4min)
         {
+            if (span)
+                span->setAttribute(tx_span::attr::txStatus, tx_span::val::droppedNoSync);
             JLOG(pJournal_.trace()) << "No new transactions until synchronized";
         }
         else if (app_.getJobQueue().getJobCount(JtTransaction) > app_.config().maxTransactions)
         {
+            if (span)
+                span->setAttribute(tx_span::attr::txStatus, tx_span::val::droppedQueueFull);
             overlay_.incJqTransOverflow();
             JLOG(pJournal_.info()) << "Transaction queue is full";
         }
@@ -1406,7 +1464,12 @@ PeerImp::handleTransaction(
                  flags,
                  checkSignature,
                  batch,
-                 stx]() {
+                 stx,
+                 sp = std::move(span)]() {
+                    // Activate the tx.receive span so checkTransaction's log
+                    // lines carry its trace_id. Non-owning; sp still owns/ends
+                    // the span. This job body runs to completion on one worker.
+                    auto activation = telemetry::activateIfLive(sp);
                     if (auto peer = weak.lock())
                         peer->checkTransaction(flags, checkSignature, stx, batch);
                 });

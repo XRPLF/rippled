@@ -8,6 +8,7 @@
 # Base filters — node identity, service, span name, status.
 # RPC command, status, role filters.
 # Path-finding request, mode and ledger filters.
+# Transaction hash, local/peer origin, status.
 
 apiVersion: 1
 
@@ -140,5 +141,44 @@ datasources:
           - id: pathfind-search-level
             tag: pathfind_search_level
             operator: ">"
+            scope: span
+            type: dynamic
+          # Transaction tracing filters
+          - id: tx-hash
+            tag: tx_hash
+            operator: "="
+            scope: span
+            type: static
+          # One filter per account role a transaction names. tx_account is on
+          # every transaction; the rest appear only on the types that carry
+          # that field, so they are dynamic.
+          - id: tx-account
+            tag: tx_account
+            operator: "="
+            scope: span
+            type: static
+          - id: tx-destination
+            tag: tx_destination
+            operator: "="
+            scope: span
+            type: dynamic
+          - id: tx-owner
+            tag: tx_owner
+            operator: "="
+            scope: span
+            type: dynamic
+          - id: tx-issuer
+            tag: tx_issuer
+            operator: "="
+            scope: span
+            type: dynamic
+          - id: tx-origin
+            tag: local
+            operator: "="
+            scope: span
+            type: dynamic
+          - id: tx-status
+            tag: tx_status
+            operator: "="
             scope: span
             type: dynamic
