@@ -29,8 +29,8 @@
     message TraceContext {
         bytes trace_id = 1;      // 16-byte trace identifier
         bytes span_id = 2;       // 8-byte span identifier
-        uint32 trace_flags = 3;  // bit 0 = sampled
-        string trace_state = 4;  // W3C tracestate value
+        uint32 trace_flags = 3;  // bit 0 = sampled, bit 1 = random
+        reserved 4;              // trace_state (W3C tracestate), added later
     }
     ```
   - Add `optional TraceContext trace_context = 1001;` to:
