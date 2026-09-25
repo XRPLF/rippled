@@ -19,8 +19,11 @@
 #include <xrpl/git/Git.h>
 #include <xrpl/json/json_writer.h>
 #include <xrpl/protocol/BuildInfo.h>
+#include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/SystemParameters.h>
+#include <xrpl/protocol/tokens.h>
 #include <xrpl/server/Vacuum.h>
+#include <xrpl/telemetry/Telemetry.h>
 
 #include <boost/algorithm/string/classification.hpp>
 #include <boost/algorithm/string/split.hpp>
@@ -359,6 +362,39 @@ runUnitTests(
 
 #endif  // ENABLE_TESTS
 //------------------------------------------------------------------------------
+
+namespace {
+
+/**
+ * Parse the [telemetry] section, or log why it cannot be parsed.
+ *
+ * run() calls this before any thread starts, while it still owns the logs. A
+ * bad value then stops startup like any other config error.
+ *
+ * @param config The loaded server config.
+ * @param nodeKey The node public key, the default service instance id.
+ * @param j Journal the reason is written to.
+ * @return The parsed section, or std::nullopt after logging the reason.
+ */
+std::optional<telemetry::Telemetry::Setup>
+readTelemetrySetup(Config const& config, PublicKey const& nodeKey, beast::Journal j)
+{
+    try
+    {
+        return telemetry::makeTelemetrySetup(
+            config.section("telemetry"),
+            toBase58(TokenType::NodePublic, nodeKey),
+            build_info::getVersionString(),
+            config.networkId);
+    }
+    catch (std::exception const& e)
+    {
+        JLOG(j.fatal()) << e.what();
+        return std::nullopt;
+    }
+}
+
+}  // namespace
 
 int
 run(int argc, char** argv)
@@ -829,29 +865,18 @@ run(int argc, char** argv)
             return -1;
         }
 
+        auto const telemetrySetup =
+            readTelemetrySetup(*config, nodeIdentity->first, logs->journal("Application"));
+        if (!telemetrySetup)
+            return -1;
+
 #ifdef XRPL_ENABLE_TELEMETRY
         // Install the coroutine-aware OTel context storage while the process is
         // still single-threaded. SetRuntimeContextStorage() writes a
         // process-global shared_ptr that every log line reads through
         // RuntimeContext::GetCurrent(), and neither side is atomic; the io
         // threads start inside makeApplication() below.
-        //
-        // Only the one key is read here, not the whole section: parsing it all
-        // can throw on a contradictory TLS combination, and that error belongs
-        // to the handler below, where it reports today. Read as int to match
-        // makeTelemetrySetup(), which treats any non-zero value as on. A value
-        // that will not convert throws, so install and leave that same parser
-        // to report it.
-        bool telemetryEnabled = true;
-        try
-        {
-            telemetryEnabled = config->section("telemetry").valueOr<int>("enabled", 0) != 0;
-        }
-        catch (...)
-        {
-        }
-
-        if (telemetryEnabled)
+        if (telemetrySetup->enabled)
         {
             opentelemetry::context::RuntimeContext::SetRuntimeContextStorage(
                 opentelemetry::nostd::shared_ptr<opentelemetry::context::RuntimeContextStorage>(
@@ -860,19 +885,16 @@ run(int argc, char** argv)
 #endif  // XRPL_ENABLE_TELEMETRY
 
         // Application construction runs member initializers that validate
-        // config (for example the [telemetry] section) and can throw. A throw
-        // from a member-initializer list cannot be recovered inside the
-        // constructor, so catch it here. Left uncaught it reaches
-        // std::terminate, whose default handler prints a C++ terminate dump
-        // and raises SIGABRT, leaving a core file where the system allows one;
-        // the catch replaces that with two operator-readable lines on stderr
-        // and a non-zero exit status.
+        // config and can throw. A throw from a member-initializer list cannot
+        // be recovered inside the constructor, so catch it here. Left uncaught
+        // it reaches std::terminate, whose default handler prints a C++
+        // terminate dump and raises SIGABRT, leaving a core file where the
+        // system allows one; the catch replaces that with two operator-readable
+        // lines on stderr and a non-zero exit status.
         //
-        // Only the construction is covered. The [telemetry] section is parsed
-        // near the top of the member list, before the job queue and node store
-        // are built, so unwinding that throw destroys little. setup() is
-        // left outside deliberately: it starts subsystems whose shutdown order
-        // is delicate, and only the normal stop sequence gets that order right.
+        // Only the construction is covered. setup() is left outside
+        // deliberately: it starts subsystems whose shutdown order is delicate,
+        // and only the normal stop sequence gets that order right.
         std::unique_ptr<Application> app;
         try
         {
