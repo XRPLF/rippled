@@ -35,13 +35,13 @@
 
 #include <algorithm>
 #include <array>
+#include <cstddef>
 #include <cstdint>
 #include <cstring>
 #include <format>
 #include <functional>
 #include <optional>
 #include <tuple>
-#include <unordered_set>
 #include <utility>
 
 namespace xrpl::rpc {
@@ -71,7 +71,7 @@ namespace {
 
 // UINT64 sf*Node fields that record a page number in an owner directory.
 // Keep in sync with sfields.macro; the xrpl.rpc.RPCHelpers test enforces it.
-std::unordered_set<SField const*> const kOwnerDirNodeFields{
+constexpr std::array<SField const*, 9> kOwnerDirNodeFields{
     &sfOwnerNode,
     &sfLowNode,
     &sfHighNode,
@@ -83,12 +83,23 @@ std::unordered_set<SField const*> const kOwnerDirNodeFields{
     &sfVaultNode,
 };
 
+// Catch accidental duplicates in kOwnerDirNodeFields at compile time.
+static_assert(
+    []() consteval {
+        for (std::size_t i = 0; i < kOwnerDirNodeFields.size(); ++i)
+            for (std::size_t j = i + 1; j < kOwnerDirNodeFields.size(); ++j)
+                if (kOwnerDirNodeFields[i] == kOwnerDirNodeFields[j])
+                    return false;
+        return true;
+    }(),
+    "kOwnerDirNodeFields must not contain duplicates");
+
 }  // namespace
 
 bool
 isOwnerDirNodeField(SField const& field)
 {
-    return kOwnerDirNodeFields.contains(&field);
+    return std::ranges::find(kOwnerDirNodeFields, &field) != kOwnerDirNodeFields.end();
 }
 
 bool
