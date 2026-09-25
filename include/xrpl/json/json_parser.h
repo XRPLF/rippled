@@ -156,10 +156,13 @@ public:
 
     /**
      * clang-format off
-     * @brief Read a Value from a <a HREF="http://www.json.org">JSON</a> document.
-     * @param document UTF-8 encoded string containing the document to read.
-     * @return @c true if the document was successfully parsed, @c false if an
-     *     error occurred.
+     * @brief Report a <a HREF="http://www.json.org">JSON</a> document to the
+     *     visitors as a stream of events. No Value is built; a caller wanting a
+     *     tree should use json::Reader.
+     * @param document UTF-8 encoded document. Taken by value and retained for
+     *     the lifetime of the parse, so error locations point into it.
+     * @return @c true if the document was parsed and every visitor accepted
+     *     every event, @c false otherwise. See getFormattedErrorMessages().
      * clang-format on
      */
     bool
@@ -167,10 +170,14 @@ public:
 
     /**
      * clang-format off
-     * @brief Read a Value from a <a HREF="http://www.json.org">JSON</a> document.
-     * @param document UTF-8 encoded string containing the document to read.
-     * @return @c true if the document was successfully parsed, @c false if an
-     *     error occurred.
+     * @brief Report the document in [@a beginDoc, @a endDoc) to the visitors as
+     *     a stream of events.
+     * @param beginDoc Start of a UTF-8 encoded document owned by the caller,
+     *     which must outlive both the parse and any error messages read back
+     *     from it.
+     * @param endDoc One past the end of that document.
+     * @return @c true if the document was parsed and every visitor accepted
+     *     every event, @c false otherwise. See getFormattedErrorMessages().
      * clang-format on
      */
     bool
@@ -178,8 +185,8 @@ public:
 
     /**
      * clang-format off
-     * @brief Parse from input stream.
-     * @see json::operator>>(std::istream&, json::Value&).
+     * @brief Read @a is to end of stream and parse it.
+     * @see parse(std::string).
      * clang-format on
      */
     bool
@@ -187,10 +194,9 @@ public:
 
     /**
      * clang-format off
-     * @brief Read a Value from a <a HREF="http://www.json.org">JSON</a> buffer sequence.
-     * @param UTF-8 encoded buffer sequence.
-     * @return @c true if the buffer was successfully parsed, @c false if an error
-     *     occurred.
+     * @brief Flatten a buffer sequence into one document and parse it.
+     * @param bs UTF-8 encoded buffer sequence.
+     * @see parse(std::string).
      * clang-format on
      */
     template <class BufferSequence>
@@ -748,7 +754,10 @@ Parser<Visitor...>::readToken(Token& token)
         case '/': {
             token.type = TokenType::Comment;
             ok = readComment();
-            DISPATCH_VISITORS(token, onComment(std::string(token.start, current_)));
+            if (ok)
+            {
+                DISPATCH_VISITORS(token, onComment(std::string(token.start, current_)));
+            }
         }
         break;
 

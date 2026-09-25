@@ -3,6 +3,7 @@
 
 #include <gtest/gtest.h>
 
+#include <algorithm>
 #include <array>
 #include <cstddef>
 #include <expected>
@@ -590,6 +591,45 @@ TEST(JsonParser, a_rejected_comment_fails_the_parse_wherever_it_appears)
         EXPECT_NE(parser.getFormattedErrorMessages().find("rejected comment"), std::string::npos)
             << document << ": " << parser.getFormattedErrorMessages();
     }
+}
+
+TEST(JsonParser, a_malformed_comment_reaches_no_visitor)
+{
+    // readComment() consumes the candidate before deciding it is not a comment,
+    // so onComment must stay behind that check or visitors see the malformed
+    // text as a well formed comment event.
+    for (auto const* document : {
+             "/x{}",          // neither * nor /
+             "/",             // nothing after the slash
+             "/* {} ",        // unterminated c style
+             "{} /y",         // trailing, neither * nor /
+             "[1, /z 2]",     // inside an array
+             "{/w \"a\":1}",  // inside an object
+         })
+    {
+        auto trace = Trace{};
+        auto parser = json::Parser{trace};
+
+        // Whether the document as a whole fails is a separate matter: garbage
+        // after a complete value has always been tolerated. What must hold is
+        // that no visitor was told this text was a comment.
+        parser.parse(std::string{document});
+
+        auto const comments = std::ranges::count_if(
+            trace.events, [](std::string const& event) { return event.starts_with("cmt("); });
+        EXPECT_EQ(comments, 0) << document << ": got " << comments << " comment event(s)";
+    }
+}
+
+TEST(JsonParser, a_well_formed_comment_still_reaches_the_visitor)
+{
+    auto trace = Trace{};
+    auto parser = json::Parser{trace};
+
+    ASSERT_TRUE(parser.parse(std::string{"/*c*/{} //trailing"}))
+        << parser.getFormattedErrorMessages();
+    EXPECT_EQ(std::ranges::count(trace.events, "cmt(/*c*/)"), 1);
+    EXPECT_EQ(std::ranges::count(trace.events, "cmt(//trailing)"), 1);
 }
 
 TEST(JsonParser, formats_errors_for_an_empty_range)
