@@ -482,13 +482,12 @@ Parser<Visitor...>::parse(char const* beginDoc, char const* endDoc)
 
 template <typename... Visitor>
 template <class BufferSequence>
-        requires requires(BufferSequence const& buffers) { boost::asio::buffer_size(buffers); }
+    requires requires(BufferSequence const& buffers) { boost::asio::buffer_size(buffers); }
 bool
 Parser<Visitor...>::parse(BufferSequence const& bs)
 {
     using namespace boost::asio;
-    auto size = buffer_size(bs);
-    if (size > documentSizeLimit)
+    if (buffer_size(bs) > documentSizeLimit)
     {
         auto token = Token{};
         token.start = begin_;
@@ -499,10 +498,10 @@ Parser<Visitor...>::parse(BufferSequence const& bs)
             token);
     }
     auto s = std::string{};
-    s.reserve(size);
+    s.reserve(buffer_size(bs));
     for (auto const& b : bs)
     {
-        s.append(static_cast<char const*>(b.data()), size);
+        s.append(static_cast<char const*>(b.data()), buffer_size(bs));
     }
     return parse(std::move(s));
 }
