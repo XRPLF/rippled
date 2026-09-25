@@ -456,6 +456,15 @@ public:
         ErrorCodeI& ec) = 0;
 
     /**
+     * @brief transactionDbHasSpace Checks if the transaction database has
+     *        enough space for new transactions.
+     * @param config Configuration object.
+     * @return True if there is enough space, false otherwise.
+     */
+    virtual bool
+    transactionDbHasSpace(class Config const& config) = 0;
+
+    /**
      * @brief getKBUsedAll Returns the amount of space used by all databases.
      * @return Space in kilobytes.
      */

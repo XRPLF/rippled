@@ -78,10 +78,17 @@ public:
         acquire(hash, seq);
     }
 
+    [[nodiscard]] bool
+    isNullBackend() const override
+    {
+        return isNullBackend_;
+    }
+
 private:
     Application& app_;
     node_store::Database& db_;
     beast::Journal const j_;
+    bool const isNullBackend_;
 
     std::shared_ptr<FullBelowCache> fbCache_;
     std::shared_ptr<TreeNodeCache> tnCache_;

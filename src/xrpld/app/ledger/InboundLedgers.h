@@ -76,10 +76,13 @@ public:
     fetchRate() = 0;
 
     /**
-     * Called when a complete ledger is obtained.
+     * Called when a complete history ledger is obtained.
      */
     virtual void
-    onLedgerFetched() = 0;
+    onLedgerFetched(std::shared_ptr<InboundLedger> const& inbound, bool countFetch) = 0;
+
+    virtual std::shared_ptr<Ledger const>
+    getClosestFullyWiredLedger(std::shared_ptr<Ledger const> const& targetLedger) = 0;
 
     virtual void
     gotFetchPack() = 0;

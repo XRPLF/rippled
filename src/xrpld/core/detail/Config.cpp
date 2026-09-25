@@ -408,7 +408,16 @@ Config::setup(std::string const& strConf, bool bQuiet, bool bSilent, bool bStand
     HTTPClient::initializeSSLContext(this->sslVerifyDir, this->sslVerifyFile, this->sslVerify, j_);
 
     if (runStandalone_)
-        ledgerHistory = 0;
+    {
+        // Standalone normally advertises no history. RWDB is an exception:
+        // the in-memory node store cannot re-fetch dropped objects, so
+        // ledger_history sizes the retain window. Do not zero a configured
+        // or default value; SHAMapStore still rejects ledger_history=full
+        // and substitutes a standalone floor when the value is 0.
+        Section const& nodeDb{section(Sections::kNodeDatabase)};
+        if (!boost::iequals(get(nodeDb, Keys::kType), "rwdb"))
+            ledgerHistory = 0;
+    }
 
     Section const ledgerTxTablesSection = section(Sections::kLedgerTxTables);
     getIfExists(ledgerTxTablesSection, Keys::kUseTxTables, useTxTables_);

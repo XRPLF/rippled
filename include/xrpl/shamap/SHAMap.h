@@ -419,6 +419,14 @@ public:
     void
     invariants() const;
 
+    /**
+     * Child pointers copied from a discarded same-hash inner onto the
+     * TreeNodeCache winner during canonicalize. Diagnostic for the
+     * richer-loser / shell-winner race.
+     */
+    static std::uint64_t
+    canonicalInnerBranchesHarvested();
+
 private:
     /**
      * A path from the root of the map down to some node, pairing each node with the ID naming its
