@@ -561,7 +561,7 @@ public:
      * @return true if path request successfully placed.
      */
     bool
-    newPathRequest();  // Returns true if path request successfully placed.
+    newPathRequest();
 
     /**
      * @return true if a new pathfinding request arrived since the last call.
