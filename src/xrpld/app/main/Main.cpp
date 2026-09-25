@@ -382,7 +382,7 @@ readTelemetrySetup(Config const& config, PublicKey const& nodeKey, beast::Journa
     try
     {
         return telemetry::makeTelemetrySetup(
-            config.section("telemetry"),
+            config.section(Sections::kTelemetry),
             toBase58(TokenType::NodePublic, nodeKey),
             build_info::getVersionString(),
             config.networkId);
