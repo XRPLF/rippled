@@ -12,6 +12,7 @@
 #include <test/jtx/offer.h>
 #include <test/jtx/paths.h>
 #include <test/jtx/pay.h>
+#include <test/jtx/paychan.h>
 #include <test/jtx/rate.h>
 #include <test/jtx/sendmax.h>
 #include <test/jtx/seq.h>
