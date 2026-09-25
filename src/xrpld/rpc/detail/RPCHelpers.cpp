@@ -14,13 +14,13 @@
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/core/ServiceRegistry.h>
+#include <xrpl/ledger/ReadView.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/KeyType.h>
-#include <xrpl/protocol/Keylet.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/RPCErr.h>
@@ -35,6 +35,7 @@
 
 #include <algorithm>
 #include <array>
+#include <cstddef>
 #include <cstdint>
 #include <cstring>
 #include <format>
@@ -66,38 +67,62 @@ getStartHint(SLE::const_ref sle, AccountID const& accountID)
     return sle->getFieldU64(sfOwnerNode);
 }
 
+namespace {
+
+// UINT64 sf*Node fields that record a page number in an owner directory.
+// Keep in sync with sfields.macro; the xrpl.rpc.RPCHelpers test enforces it.
+constexpr std::array<SField const*, 9> kOwnerDirNodeFields{
+    &sfOwnerNode,
+    &sfLowNode,
+    &sfHighNode,
+    &sfDestinationNode,
+    &sfIssuerNode,
+    &sfSubjectNode,
+    &sfSponseeNode,
+    &sfLoanBrokerNode,
+    &sfVaultNode,
+};
+
+// Catch accidental duplicates in kOwnerDirNodeFields at compile time.
+static_assert(
+    []() consteval {
+        for (std::size_t i = 0; i < kOwnerDirNodeFields.size(); ++i)
+            for (std::size_t j = i + 1; j < kOwnerDirNodeFields.size(); ++j)
+                if (kOwnerDirNodeFields[i] == kOwnerDirNodeFields[j])
+                    return false;
+        return true;
+    }(),
+    "kOwnerDirNodeFields must not contain duplicates");
+
+}  // namespace
+
+bool
+isOwnerDirNodeField(SField const& field)
+{
+    return std::ranges::find(kOwnerDirNodeFields, &field) != kOwnerDirNodeFields.end();
+}
+
 bool
 isRelatedToAccount(ReadView const& ledger, SLE::const_ref sle, AccountID const& accountID)
 {
-    if (sle->getType() == ltRIPPLE_STATE)
-    {
-        return (sle->getFieldAmount(sfLowLimit).getIssuer() == accountID) ||
-            (sle->getFieldAmount(sfHighLimit).getIssuer() == accountID);
-    }
-    if (sle->isFieldPresent(sfAccount))
-    {
-        // If there's an sfAccount present, also test the sfDestination, if
-        // present. This will match objects such as Escrows (ltESCROW), Payment
-        // Channels (ltPAYCHAN), and Checks (ltCHECK) because those are added to
-        // the Destination account's directory. It intentionally EXCLUDES
-        // NFToken Offers (ltNFTOKEN_OFFER). NFToken Offers are NOT added to the
-        // Destination account's directory.
-        return sle->getAccountID(sfAccount) == accountID ||
-            (sle->isFieldPresent(sfDestination) && sle->getAccountID(sfDestination) == accountID);
-    }
-    if (sle->getType() == ltSIGNER_LIST)
-    {
-        Keylet const accountSignerList = keylet::signerList(accountID);
-        return sle->key() == accountSignerList.key;
-    }
-    if (sle->getType() == ltNFTOKEN_OFFER)
-    {
-        // Do not check the sfDestination field. NFToken Offers are NOT added to
-        // the Destination account's directory.
-        return sle->getAccountID(sfOwner) == accountID;
-    }
+    // Marker validator for account_lines / account_offers / account_channels
+    // pagination: probes each owner-directory page-hint field on `sle` and
+    // returns true iff `sle`'s key is present on that page in `accountID`'s
+    // owner directory. Bounded by kOwnerDirNodeFields.size() ledger reads.
+    auto const ownerDir = keylet::ownerDir(accountID);
+    auto const& sleKey = sle->key();
 
-    return false;
+    auto const pageContainsKey = [&](std::uint64_t node) {
+        auto const page = ledger.read(keylet::page(ownerDir, node));
+        if (!page)
+            return false;
+        auto const& indexes = page->getFieldV256(sfIndexes);
+        return std::ranges::find(indexes, sleKey) != indexes.end();
+    };
+
+    return std::ranges::any_of(kOwnerDirNodeFields, [&](SField const* field) {
+        return sle->isFieldPresent(*field) && pageContainsKey(sle->getFieldU64(*field));
+    });
 }
 
 hash_set<AccountID>
