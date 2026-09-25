@@ -102,6 +102,7 @@
 
 #ifdef XRPL_ENABLE_TELEMETRY
 #include <opentelemetry/context/context.h>
+#include <opentelemetry/exporters/otlp/otlp_http_exporter_options.h>
 #include <opentelemetry/nostd/shared_ptr.h>
 #include <opentelemetry/trace/span.h>
 #include <opentelemetry/trace/span_metadata.h>
@@ -265,6 +266,19 @@ public:
          * Path to a CA certificate bundle for TLS verification.
          */
         std::string tlsCertPath;
+
+        /**
+         * Path to this node's client certificate (PEM), presented to the
+         * collector for mutual TLS. Empty disables client-side auth, in
+         * which case only server (one-way) TLS is used.
+         */
+        std::string tlsClientCertPath;
+
+        /**
+         * Path to the private key (PEM) for tlsClientCertPath. Required
+         * whenever tlsClientCertPath is set.
+         */
+        std::string tlsClientKeyPath;
 
         /**
          * Head-based sampling ratio. Intentionally fixed at 1.0 (sample
@@ -465,8 +479,10 @@ public:
 /**
  * Create a Telemetry instance.
  *
- * Returns a TelemetryImpl when setup.enabled is true, or a
- * NullTelemetry no-op stub otherwise.
+ * With XRPL_ENABLE_TELEMETRY defined, returns a TelemetryImpl when
+ * setup.enabled is true, or a no-op stub otherwise. Without it, the only
+ * definition of this factory always returns the no-op stub and never reads
+ * setup.enabled.
  *
  * @param setup    Configuration from the [telemetry] config section.
  * @param journal  Journal for log output during initialization.
@@ -483,6 +499,19 @@ makeTelemetry(Telemetry::Setup const& setup, beast::Journal journal);
  * @param networkId      Network identifier from [network_id] config
  * (0 = mainnet, 1 = testnet, 2 = devnet).
  * @return A populated Setup struct with defaults for missing values.
+ * @throws std::runtime_error  If `enabled` is set and the mutual TLS (mTLS)
+ * settings contradict each other: only one of `tls_client_cert`/`tls_client_key`
+ * is given, a client certificate is given while `use_tls` is 0, or a client
+ * certificate is given while `traces_endpoint` is not an `https://` URL — which
+ * includes leaving `traces_endpoint` at its plain-HTTP default. Also if
+ * `enabled` and `use_tls` are both set and a non-empty `tls_ca_cert`,
+ * `tls_client_cert` or `tls_client_key` cannot be read; an empty path is skipped,
+ * so an empty `tls_ca_cert` still means "use the system CA store". All four
+ * checks are skipped when `enabled` is 0.
+ * @throws boost::bad_lexical_cast  If any numeric key (`enabled`, `use_tls`,
+ * `batch_size`, the trace switches, ...) holds a value Section::valueOr cannot
+ * convert. None of the numeric reads sit inside the `enabled` branch, so this
+ * escapes whether telemetry is on or off.
  */
 Telemetry::Setup
 makeTelemetrySetup(
@@ -490,5 +519,47 @@ makeTelemetrySetup(
     std::string const& nodePublicKey,
     std::string const& version,
     std::uint32_t networkId);
+
+#ifdef XRPL_ENABLE_TELEMETRY
+/**
+ * Build the OTLP/HTTP trace exporter options that Setup asks for.
+ *
+ *   Telemetry::Setup ──> makeTraceExporterOptions() ──> OtlpHttpExporterOptions
+ *                                                             |
+ *                                                             v
+ *                                              OtlpHttpExporterFactory::Create
+ *
+ * Named and declared here rather than left inline in start() so the mapping
+ * from config to exporter options can be asserted directly. A swapped
+ * certificate and key, or a CA path written to the wrong field, is invisible
+ * from outside a running exporter.
+ *
+ * TLS fields are set only when `use_tls` is on. Whether the transport is
+ * actually encrypted is decided by the scheme of the URL, not by this function;
+ * makeTelemetrySetup() is what rejects a client certificate on a plain-HTTP
+ * endpoint.
+ *
+ * @code
+ * // Primary use: one-way TLS with a custom CA bundle.
+ * Telemetry::Setup setup;
+ * setup.useTls = true;
+ * setup.tlsCertPath = "/etc/ssl/ca.pem";
+ * auto const opts = makeTraceExporterOptions(setup);   // ssl_ca_cert_path set
+ *
+ * // Edge case: use_tls off leaves every ssl_ field empty, even when paths
+ * // are configured.
+ * setup.useTls = false;
+ * auto const plain = makeTraceExporterOptions(setup);  // ssl_ca_cert_path empty
+ * @endcode
+ *
+ * @param setup  Parsed [telemetry] configuration.
+ * @return Options carrying `traces_endpoint` as the URL, plus the TLS paths
+ * when `use_tls` is on. Every other field keeps its SDK default.
+ * @note Pure: reads `setup` and touches no global state, so it is safe to call
+ * from any thread.
+ */
+[[nodiscard]] opentelemetry::exporter::otlp::OtlpHttpExporterOptions
+makeTraceExporterOptions(Telemetry::Setup const& setup);
+#endif
 
 }  // namespace xrpl::telemetry
