@@ -84,7 +84,7 @@ always goes through `beast::insight` instead.
 
 ## 1. OpenTelemetry Spans
 
-### 1.1 Complete Span Inventory (38 spans)
+### 1.1 Complete Span Inventory (39 spans)
 
 > **See also**: [02-design-decisions.md §2.3](./02-design-decisions.md#23-span-naming-conventions) for naming conventions and the full span catalog with rationale. [04-code-samples.md §4.6](./04-code-samples.md#46-span-flow-visualization) for span flow diagrams.
 
@@ -92,13 +92,14 @@ always goes through `beast::insight` instead.
 
 Controlled by `trace_rpc=1` in `[telemetry]` config.
 
-| Span Name            | Parent             | Source File       | Description                                                              |
-| -------------------- | ------------------ | ----------------- | ------------------------------------------------------------------------ |
-| `rpc.http_request`   | —                  | ServerHandler.cpp | Top-level HTTP RPC request entry point                                   |
-| `rpc.process`        | `rpc.http_request` | ServerHandler.cpp | RPC processing pipeline                                                  |
-| `rpc.ws_message`     | —                  | ServerHandler.cpp | WebSocket message handling                                               |
-| `rpc.ws_upgrade`     | —                  | ServerHandler.cpp | WebSocket upgrade handshake (error path)                                 |
-| `rpc.command.<name>` | `rpc.process`      | RPCHandler.cpp    | Per-command span (e.g., `rpc.command.server_info`, `rpc.command.ledger`) |
+| Span Name            | Parent                                         | Source File       | Description                                                              |
+| -------------------- | ---------------------------------------------- | ----------------- | ------------------------------------------------------------------------ |
+| `rpc.http_request`   | —                                              | ServerHandler.cpp | Top-level HTTP RPC request entry point                                   |
+| `rpc.process`        | `rpc.http_request`                             | ServerHandler.cpp | RPC processing pipeline                                                  |
+| `rpc.ws_message`     | —                                              | ServerHandler.cpp | WebSocket message handling                                               |
+| `rpc.ws_upgrade`     | —                                              | ServerHandler.cpp | WebSocket upgrade handshake (error path)                                 |
+| `rpc.command.<name>` | `rpc.process`, `rpc.ws_message`, `rpc.startup` | RPCHandler.cpp    | Per-command span (e.g., `rpc.command.server_info`, `rpc.command.ledger`) |
+| `rpc.startup`        | —                                              | Application.cpp   | `[rpc_startup]` batch run during setup; parent of its command spans      |
 
 **Where to find**: Tempo → TraceQL: `{resource.service.name="xrpld" && name=~"rpc.http_request|rpc.command.*"}`
 
@@ -900,7 +901,7 @@ All span names and attributes are defined as compile-time constants in colocated
 
 | Header File                                     | Subsystem     | Span Count | Attribute Count | Notes                                       |
 | ----------------------------------------------- | ------------- | ---------- | --------------- | ------------------------------------------- |
-| `src/xrpld/rpc/detail/RpcSpanNames.h`           | RPC (HTTP/WS) | 5          | 5               | Includes `rpc.ws_upgrade` error path        |
+| `src/xrpld/rpc/detail/RpcSpanNames.h`           | RPC (HTTP/WS) | 6          | 5               | Includes `rpc.ws_upgrade` error path        |
 | `src/xrpld/rpc/detail/PathFindSpanNames.h`      | PathFind      | 5          | 8               | Covers one-shot and subscription paths      |
 | `src/xrpld/app/main/GrpcSpanNames.h`            | gRPC          | 1          | 3               | Flat single-span structure per request      |
 | `src/xrpld/telemetry/TxSpanNames.h`             | Transaction   | 2          | 7               | Includes peer context attributes            |
@@ -910,7 +911,7 @@ All span names and attributes are defined as compile-time constants in colocated
 | `src/xrpld/app/ledger/detail/LedgerSpanNames.h` | Ledger        | 4          | 7               | Build, store, validate, tx.apply            |
 | `src/xrpld/overlay/detail/PeerSpanNames.h`      | Peer Overlay  | 2          | 5               | Proposal and validation receive             |
 
-Column totals: **38 spans** and **89 attribute rows**, matching §1.1 and §1.2. `tx.apply` is counted under `LedgerSpanNames.h`, which defines it; §1.1 lists it with the transaction spans.
+Column totals: **39 spans** and **89 attribute rows**, matching §1.1 and §1.2. `tx.apply` is counted under `LedgerSpanNames.h`, which defines it; §1.1 lists it with the transaction spans.
 
 > **Design convention**: SpanNames headers are colocated with their subsystem classes rather than centralized in `telemetry/`. See [memory/feedback_span-names-colocation.md](../.claude/memory/feedback_span-names-colocation.md) for rationale.
 
