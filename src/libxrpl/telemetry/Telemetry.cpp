@@ -7,8 +7,9 @@
  * - FilteringSpanProcessor: decorator that drops spans marked with
  * kDiscardedAttr before they enter the batch export queue.
  * - TelemetryImpl: configures the OTel SDK with an OTLP/HTTP exporter,
- * FilteringSpanProcessor wrapping a batch span processor,
- * trace-ID-ratio sampler, and resource attributes.
+ * FilteringSpanProcessor wrapping a batch span processor, the head
+ * sampler from makeHeadSampler(), and resource attributes.
+ * - makeHeadSampler(): builds the head sampler (see HeadSampler.h).
  * - NullTelemetryOtel: no-op fallback used when telemetry is compiled in
  * but disabled at runtime (enabled=0 in config).
  * - makeTelemetry(): factory that selects the appropriate implementation.
@@ -23,6 +24,7 @@
 #include <xrpl/telemetry/CoroAwareContextStorage.h>
 #include <xrpl/telemetry/DeterministicIdGenerator.h>
 #include <xrpl/telemetry/DiscardFlag.h>
+#include <xrpl/telemetry/HeadSampler.h>
 #include <xrpl/telemetry/SpanNames.h>
 
 #include <opentelemetry/context/context.h>
@@ -35,6 +37,8 @@
 #include <opentelemetry/sdk/trace/batch_span_processor_options.h>
 #include <opentelemetry/sdk/trace/processor.h>
 #include <opentelemetry/sdk/trace/sampler.h>
+#include <opentelemetry/sdk/trace/samplers/always_off.h>
+#include <opentelemetry/sdk/trace/samplers/always_on.h>
 #include <opentelemetry/sdk/trace/samplers/parent_factory.h>
 #include <opentelemetry/sdk/trace/samplers/trace_id_ratio.h>
 #include <opentelemetry/sdk/trace/tracer_provider.h>
@@ -328,15 +332,11 @@ public:
             {std::string(attr::networkType), setup_.networkType},  // LCOV_EXCL_LINE
         });
 
-        // Configure sampler. Head sampling is fixed at 1.0 (sample everything);
-        // setup_.samplingRatio is not config-driven. Wrap the ratio sampler in a
-        // ParentBasedSampler so spans with a remote parent honor the upstream
-        // sampled flag — this keeps keep/drop decisions coherent for a single
-        // distributed trace spanning multiple nodes. Volume reduction is left to
-        // the collector's tail sampling.
-        auto rootSampler =
-            std::make_shared<trace_sdk::TraceIdRatioBasedSampler>(setup_.samplingRatio);
-        auto sampler = trace_sdk::ParentBasedSamplerFactory::Create(std::move(rootSampler));
+        // Head sampling is fixed at 1.0. Spans with no parent or a remote parent use the
+        // trace-id ratio sampler, so a peer's sampled flag cannot turn our spans off or on.
+        // Spans with a local parent follow it. The ratio sampler reads only the trace id,
+        // so nodes agree on every trace. Collector tail sampling reduces volume.
+        auto sampler = makeHeadSampler(setup_.samplingRatio);
 
         // Create TracerProvider with a DeterministicIdGenerator. It returns a
         // deterministic trace_id when a PendingTraceId is active on the thread,
@@ -494,6 +494,20 @@ makeTraceExporterOptions(Telemetry::Setup const& setup)
         opts.ssl_client_key_path = setup.tlsClientKeyPath;
     }
     return opts;
+}
+
+std::unique_ptr<trace_sdk::Sampler>
+makeHeadSampler(double ratio)
+{
+    // One ratio sampler serves the root case and both remote-parent cases.
+    std::shared_ptr<trace_sdk::Sampler> const ratioSampler =
+        std::make_shared<trace_sdk::TraceIdRatioBasedSampler>(ratio);
+    return trace_sdk::ParentBasedSamplerFactory::Create(
+        ratioSampler,
+        ratioSampler,
+        ratioSampler,
+        std::make_shared<trace_sdk::AlwaysOnSampler>(),
+        std::make_shared<trace_sdk::AlwaysOffSampler>());
 }
 
 std::unique_ptr<Telemetry>

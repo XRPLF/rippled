@@ -109,8 +109,8 @@ injectSpanContext(SpanGuard const& span, Message& msg)
  *  telemetry compiled out, disabled by config, or simply not tracing this
  *  round sends no TraceContext submessage at all. Calling
  *  mutable_trace_context() unconditionally would create it and set its
- *  has-bit, putting an empty TraceContext on the wire and making every
- *  receiving peer take its has_trace_context() branch for nothing.
+ *  has-bit, putting an empty TraceContext on the wire that every receiving
+ *  peer parses only to drop.
  *
  * @param msg  The message to populate. Untouched when no span is active.
  */
