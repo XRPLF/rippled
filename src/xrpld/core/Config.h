@@ -79,6 +79,16 @@ struct FeeSetup
     }
 };
 
+static_assert(
+    FeeSetup{}.referenceFee == XRPAmount{10},
+    "Default FeeSetup.referenceFee has been modified, please verify if change is correct.");
+static_assert(
+    FeeSetup{}.accountReserve == XRPAmount{1'000'000},
+    "Default FeeSetup.accountReserve has been modified, please verify if change is correct.");
+static_assert(
+    FeeSetup{}.ownerReserve == XRPAmount{200'000},
+    "Default FeeSetup.ownerReserve has been modified, please verify if change is correct.");
+
 //  This entire derived class is deprecated.
 //  For new config information use the style implied
 //  in the base class. For existing config information
