@@ -2,6 +2,7 @@
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/base_uint.h>
+#include <xrpl/beast/utility/Zero.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/ApplyView.h>
@@ -203,6 +204,13 @@ SponsorshipTransfer::preflight(PreflightContext const& ctx)
     if (isAccountReserveSponsorship && !ctx.tx.isFieldPresent(sfSponsorSignature))
     {
         JLOG(ctx.j.debug()) << "preflight: account sponsorship requires sfSponsorSignature";
+        return temMALFORMED;
+    }
+
+    if (auto const objectID = ctx.tx[~sfObjectID];
+        ctx.rules.enabled(fixCleanup3_5_0) && objectID && *objectID == beast::kZero)
+    {
+        JLOG(ctx.j.debug()) << "preflight: sfObjectID must not be zero";
         return temMALFORMED;
     }
 
