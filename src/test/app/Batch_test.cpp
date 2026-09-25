@@ -5897,6 +5897,129 @@ class Batch_test : public beast::unit_test::Suite
     }
 
     void
+    testInnerLastLedgerSequence(FeatureBitset features)
+    {
+        testcase("inner last ledger sequence");
+
+        using namespace test::jtx;
+
+        auto const alice = Account("alice");
+        auto const bob = Account("bob");
+
+        // An inner whose LastLedgerSequence is ahead of the ledger applies.
+        {
+            Env env{*this, features};
+            env.fund(XRP(10000), alice, bob);
+            env.close();
+
+            auto const preBob = env.balance(bob);
+            auto const seq = env.seq(alice);
+            auto const batchFee = batch::calcBatchFee(env, 0, 2);
+            auto tx1 = batch::Inner(pay(alice, bob, XRP(1)), seq + 1);
+            tx1[sfLastLedgerSequence.jsonName] = env.current()->seq() + 5;
+            auto const [txIDs, batchID] = submitBatch(
+                env,
+                tesSUCCESS,
+                batch::outer(alice, seq, batchFee, tfAllOrNothing),
+                tx1,
+                batch::Inner(pay(alice, bob, XRP(2)), seq + 2));
+            env.close();
+
+            std::vector<TestLedgerData> const testCases = {
+                {.index = 0,
+                 .txType = "Batch",
+                 .result = "tesSUCCESS",
+                 .txHash = batchID,
+                 .batchID = std::nullopt},
+                {.index = 1,
+                 .txType = "Payment",
+                 .result = "tesSUCCESS",
+                 .txHash = txIDs[0],
+                 .batchID = batchID},
+                {.index = 2,
+                 .txType = "Payment",
+                 .result = "tesSUCCESS",
+                 .txHash = txIDs[1],
+                 .batchID = batchID},
+            };
+            validateClosedLedger(env, testCases);
+
+            BEAST_EXPECT(env.seq(alice) == seq + 3);
+            BEAST_EXPECT(env.balance(bob) == preBob + XRP(3));
+        }
+
+        // An inner whose LastLedgerSequence has passed fails tefMAX_LEDGER in
+        // preclaim. Under tfAllOrNothing no inner applies.
+        {
+            Env env{*this, features};
+            env.fund(XRP(10000), alice, bob);
+            env.close();
+
+            auto const preBob = env.balance(bob);
+            auto const seq = env.seq(alice);
+            auto const batchFee = batch::calcBatchFee(env, 0, 2);
+            auto tx2 = batch::Inner(pay(alice, bob, XRP(2)), seq + 2);
+            tx2[sfLastLedgerSequence.jsonName] = env.current()->seq() - 1;
+            auto const [txIDs, batchID] = submitBatch(
+                env,
+                tesSUCCESS,
+                batch::outer(alice, seq, batchFee, tfAllOrNothing),
+                batch::Inner(pay(alice, bob, XRP(1)), seq + 1),
+                tx2);
+            env.close();
+
+            std::vector<TestLedgerData> const testCases = {
+                {.index = 0,
+                 .txType = "Batch",
+                 .result = "tesSUCCESS",
+                 .txHash = batchID,
+                 .batchID = std::nullopt},
+            };
+            validateClosedLedger(env, testCases);
+
+            BEAST_EXPECT(env.seq(alice) == seq + 1);
+            BEAST_EXPECT(env.balance(bob) == preBob);
+        }
+
+        // Under tfIndependent only the expired inner fails.
+        {
+            Env env{*this, features};
+            env.fund(XRP(10000), alice, bob);
+            env.close();
+
+            auto const preBob = env.balance(bob);
+            auto const seq = env.seq(alice);
+            auto const batchFee = batch::calcBatchFee(env, 0, 2);
+            auto tx2 = batch::Inner(pay(alice, bob, XRP(2)), seq + 2);
+            tx2[sfLastLedgerSequence.jsonName] = env.current()->seq() - 1;
+            auto const [txIDs, batchID] = submitBatch(
+                env,
+                tesSUCCESS,
+                batch::outer(alice, seq, batchFee, tfIndependent),
+                batch::Inner(pay(alice, bob, XRP(1)), seq + 1),
+                tx2);
+            env.close();
+
+            std::vector<TestLedgerData> const testCases = {
+                {.index = 0,
+                 .txType = "Batch",
+                 .result = "tesSUCCESS",
+                 .txHash = batchID,
+                 .batchID = std::nullopt},
+                {.index = 1,
+                 .txType = "Payment",
+                 .result = "tesSUCCESS",
+                 .txHash = txIDs[0],
+                 .batchID = batchID},
+            };
+            validateClosedLedger(env, testCases);
+
+            BEAST_EXPECT(env.seq(alice) == seq + 2);
+            BEAST_EXPECT(env.balance(bob) == preBob + XRP(1));
+        }
+    }
+
+    void
     testWithFeats(FeatureBitset features)
     {
         testEnable(features);
@@ -5935,6 +6058,7 @@ class Batch_test : public beast::unit_test::Suite
         testOuterBinding(features);
         testUnsortedBatchSigners(features);
         testBatchSigCache(features);
+        testInnerLastLedgerSequence(features);
     }
 
 public:
