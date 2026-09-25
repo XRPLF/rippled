@@ -281,6 +281,13 @@ simulateTxn(rpc::JsonContext& context, std::shared_ptr<Transaction> transaction)
 
     if (result.metadata)
     {
+        if (result.metadata->getVMReturnCode().has_value())
+        {
+            // WASM code was executed during this simulation.
+            // Charge more for that since gas is not charged during simulation.
+            context.loadType = resource::kFeeHeavyBurdenRpc;
+        }
+
         if (isBinaryOutput)
         {
             auto const metaBlob = result.metadata->getAsObject().getSerializer().getData();
