@@ -85,6 +85,7 @@ All spans instrumented in xrpld, grouped by subsystem:
 | `rpc.ws_message`     | ServerHandler.cpp | `command`                                                   | WebSocket RPC message                                 |
 | `rpc.process`        | ServerHandler.cpp | `is_batch`, `batch_size`                                    | RPC processing (child of rpc.http_request/ws_message) |
 | `rpc.command.<name>` | RPCHandler.cpp    | `command`, `version`, `rpc_role`, `rpc_status`, `load_type` | Per-command span (e.g., `rpc.command.server_info`)    |
+| `rpc.startup`        | Application.cpp   | —                                                           | `[rpc_startup]` batch; parent of its command spans    |
 
 ### Transaction Spans
 
@@ -585,6 +586,7 @@ Three dashboards are pre-provisioned in `docker/telemetry/grafana/dashboards/`:
 | `rpc.ws_message`               | `{span_name="rpc.ws_message"}`               | -- (available but not paneled)                |
 | `rpc.process`                  | `{span_name="rpc.process"}`                  | -- (available but not paneled)                |
 | `rpc.command.*`                | `{span_name=~"rpc.command.*"}`               | RPC Performance (all 4 panels)                |
+| `rpc.startup`                  | `{span_name="rpc.startup"}`                  | -- (available but not paneled)                |
 | `tx.process`                   | `{span_name="tx.process"}`                   | Transaction Overview (3 panels)               |
 | `tx.receive`                   | `{span_name="tx.receive"}`                   | Transaction Overview (2 panels)               |
 | `txq.enqueue`                  | `{span_name="txq.enqueue"}`                  | -- (available but not paneled)                |
