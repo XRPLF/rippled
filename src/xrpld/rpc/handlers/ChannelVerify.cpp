@@ -57,6 +57,9 @@ doChannelVerify(rpc::JsonContext& context)
     }
 
     uint256 channelId;
+
+    if (!params[jss::channel_id].isString())
+        return rpcError(rpcINVALID_PARAMS);
     if (!channelId.parseHex(params[jss::channel_id].asString()))
         return rpcError(RpcChannelMalformed);
 
@@ -67,6 +70,9 @@ doChannelVerify(rpc::JsonContext& context)
         return rpcError(RpcChannelAmtMalformed);
 
     std::uint64_t const drops = *optDrops;
+
+    if (!params[jss::signature].isString())
+        return rpcError(rpcINVALID_PARAMS);
 
     auto sig = strUnHex(params[jss::signature].asString());
     if (!sig || sig->empty())
