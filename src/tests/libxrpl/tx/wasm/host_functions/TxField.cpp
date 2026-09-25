@@ -185,7 +185,7 @@ bytecodeTx(Account const& acct, std::size_t size)
 
 }  // namespace
 
-TEST_F(TxFieldImpl, AnOversizedBlobIsRefusedWhereItIsRead)
+TEST_F(TxFieldImpl, an_oversized_blob_is_refused_where_it_is_read)
 {
     auto const owner = Account{"owner"};
     ledger.createAccount(owner, XRP(1000));
@@ -196,7 +196,7 @@ TEST_F(TxFieldImpl, AnOversizedBlobIsRefusedWhereItIsRead)
         HostFunctionError::DataFieldTooLarge);
 }
 
-TEST_F(TxFieldImpl, ABlobAtTheCapIsStillRead)
+TEST_F(TxFieldImpl, a_blob_at_the_cap_is_still_read)
 {
     auto const owner = Account{"owner"};
     ledger.createAccount(owner, XRP(1000));
