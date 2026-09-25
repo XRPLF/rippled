@@ -14,10 +14,12 @@
 #include <cstdint>
 #include <cstdio>
 #include <deque>
+#include <expected>
 #include <istream>
 #include <iterator>
 #include <limits>
 #include <string>
+#include <string_view>
 #include <system_error>
 #include <tuple>
 #include <utility>
@@ -193,6 +195,7 @@ public:
      * clang-format on
      */
     template <class BufferSequence>
+        requires requires(BufferSequence const& buffers) { boost::asio::buffer_size(buffers); }
     bool
     parse(BufferSequence const& bs);
 
@@ -484,11 +487,22 @@ bool
 Parser<Visitor...>::parse(BufferSequence const& bs)
 {
     using namespace boost::asio;
+    auto size = buffer_size(bs);
+    if (size > documentSizeLimit)
+    {
+        auto token = Token{};
+        token.start = begin_;
+        token.end = begin_;
+        return addError(
+            "Syntax error: document size exceeds the maximum allowed size of " +
+                std::to_string(documentSizeLimit) + " bytes",
+            token);
+    }
     auto s = std::string{};
-    s.reserve(buffer_size(bs));
+    s.reserve(size);
     for (auto const& b : bs)
     {
-        s.append(static_cast<char const*>(b.data()), buffer_size(b));
+        s.append(static_cast<char const*>(b.data()), size);
     }
     return parse(std::move(s));
 }
