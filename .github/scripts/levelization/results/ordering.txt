@@ -176,6 +176,7 @@ test.server > xrpld.app
 test.server > xrpld.core
 test.server > xrpl.json
 test.server > xrpl.protocol
+test.server > xrpl.resource
 test.server > xrpl.server
 test.unit_test > xrpl.basics
 test.unit_test > xrpl.protocol
