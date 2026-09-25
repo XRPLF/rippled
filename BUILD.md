@@ -201,6 +201,9 @@ install ccache --version 4.11.3 --allow-downgrade`.
    The location of `xrpld` binary in your build directory depends on your
    CMake generator. Pass `--help` to see the rest of the command line options.
 
+> [!TIP]
+> To build with CLion instead of the command line, see [CLion setup](./docs/build/clion.md).
+
 ## Code generation
 
 The protocol wrapper classes in `include/xrpl/protocol_autogen/` are generated
