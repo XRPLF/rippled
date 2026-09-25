@@ -208,7 +208,8 @@ public:
      * This is the last ledger we published to clients and can lag the validated
      * ledger.
      *
-     * @return That ledger, or null until the first publication.
+     * @return That ledger, or null until one is recorded. The first one recorded
+     * is a starting point and is not sent to clients.
      */
     std::shared_ptr<ReadView const>
     getPublishedLedger();

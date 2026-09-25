@@ -1149,19 +1149,28 @@ LedgerMaster::consensusBuilt(
     auto validations =
         app_.getValidators().negativeUNLFilter(app_.getValidations().currentTrusted());
 
-    // Track validation counts with sequence numbers.
-    //
-    // One tally per ledger hash, built while scanning the current trusted
-    // validations. Every validation carries a sequence; the first nonzero one
-    // seen for a hash is kept. Instances live only inside this function, so no
-    // locking is needed.
+    /** @cond */
+    /**
+     * Track validation counts with sequence numbers.
+     *
+     * One tally per ledger hash, built while scanning the current trusted
+     * validations. Every validation carries a sequence; the first nonzero one
+     * seen for a hash is kept.
+     *
+     * @note Not thread-safe, and not intended to be: instances live only inside
+     * this function.
+     */
     class ValSeq
     {
     public:
         ValSeq() = default;
 
-        // Counts one more validation for this ledger. seq is adopted only if
-        // no sequence is known yet; zero leaves the sequence unknown.
+        /**
+         * Counts one more validation for this ledger.
+         *
+         * @param seq Sequence the validation reported. Adopted only if no
+         * sequence is known yet; zero leaves the tally's sequence unknown.
+         */
         void
         mergeValidation(LedgerIndex seq)
         {
@@ -1172,12 +1181,17 @@ LedgerMaster::consensusBuilt(
                 ledgerSeq = seq;
         }
 
-        // How many trusted validations named this ledger.
+        /**
+         * How many trusted validations named this ledger.
+         */
         std::size_t valCount{0};
 
-        // Sequence of this ledger, or 0 while still unknown.
+        /**
+         * Sequence of this ledger, or 0 while still unknown.
+         */
         LedgerIndex ledgerSeq{0};
     };
+    /** @endcond */
 
     // Count the number of current, trusted validations
     hash_map<uint256, ValSeq> count;
