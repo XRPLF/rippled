@@ -1,4 +1,5 @@
 #include <test/app/invariants/InvariantsBase.h>
+#include <test/jtx/AMM.h>
 #include <test/jtx/Account.h>
 #include <test/jtx/Env.h>
 #include <test/jtx/TestHelpers.h>
@@ -10,6 +11,7 @@
 #include <test/unit_test/SuiteJournal.h>
 
 #include <xrpl/basics/Number.h>
+#include <xrpl/basics/Slice.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/beast/utility/Journal.h>
@@ -28,6 +30,7 @@
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/SeqProxy.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/TxFormats.h>
@@ -731,11 +734,185 @@ class InvariantsPseudoAccount_test : public InvariantsBase
         }
     }
 
+    // Fabricate a credential with the given subject and link it into the
+    // subject's owner directory, as a transactor bug bypassing the
+    // CredentialCreate guard would.
+    static bool
+    pinCredential(AccountID const& subject, AccountID const& issuer, ApplyContext& ac)
+    {
+        Slice const credType{"pinned", 6};
+        auto cred = std::make_shared<SLE>(keylet::credential(subject, issuer, credType));
+        cred->setAccountID(sfSubject, subject);
+        cred->setAccountID(sfIssuer, issuer);
+        cred->setFieldVL(sfCredentialType, credType);
+        auto const page =
+            ac.view().dirInsert(keylet::ownerDir(subject), cred->key(), describeOwnerDir(subject));
+        if (!page)
+            return false;
+        cred->setFieldU64(sfSubjectNode, *page);
+        ac.view().insert(cred);
+        return true;
+    }
+
+    // Pin an object of the given type to a pseudo-account. The invariant
+    // rejects it only once fixCleanup3_5_0 is enabled.
+    void
+    checkPinned(
+        FeatureBitset features,
+        std::string const& typeName,
+        Precheck const& pin,
+        Preclose const& setup)
+    {
+        if (features[fixCleanup3_5_0])
+        {
+            doInvariantCheck(
+                makeEnv(features),
+                {"may not own an object of type " + typeName},
+                pin,
+                XRPAmount{},
+                STTx{ttACCOUNT_SET, [](STObject&) {}},
+                {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
+                setup);
+        }
+        else
+        {
+            doInvariantCheck(
+                makeEnv(features),
+                {},
+                pin,
+                XRPAmount{},
+                STTx{ttACCOUNT_SET, [](STObject&) {}},
+                {tesSUCCESS, tesSUCCESS},
+                setup);
+        }
+    }
+
+    static char const*
+    cleanupLabel(FeatureBitset features)
+    {
+        return features[fixCleanup3_5_0] ? "post-Cleanup3.5" : "pre-Cleanup3.5";
+    }
+
+    void
+    testVaultOwnership(FeatureBitset features)
+    {
+        using namespace jtx;
+
+        std::optional<Keylet> vaultKeylet;
+        Preclose const createVault = [&](Account const& a1, Account const&, Env& env) -> bool {
+            Vault const vault{env};
+            auto [tx, k] = vault.create({.owner = a1, .asset = xrpIssue()});
+            env(tx);
+            env.close();
+            vaultKeylet = k;
+            return true;
+        };
+
+        auto const vaultPseudo = [&](ApplyContext& ac) -> std::optional<AccountID> {
+            if (!vaultKeylet)
+                return std::nullopt;
+            auto const sleVault = ac.view().read(*vaultKeylet);
+            if (!sleVault)
+                return std::nullopt;
+            return sleVault->at(sfAccount);
+        };
+
+        testcase << "vault pseudo-account pinned by a credential, " << cleanupLabel(features);
+        checkPinned(
+            features,
+            "Credential",
+            [&](Account const&, Account const& a2, ApplyContext& ac) {
+                auto const pseudo = vaultPseudo(ac);
+                return pseudo && pinCredential(*pseudo, a2.id(), ac);
+            },
+            createVault);
+
+        testcase << "vault pseudo-account pinned by a check, " << cleanupLabel(features);
+        vaultKeylet.reset();
+        checkPinned(
+            features,
+            "Check",
+            [&](Account const&, Account const& a2, ApplyContext& ac) {
+                auto const pseudo = vaultPseudo(ac);
+                if (!pseudo)
+                    return false;
+
+                auto const sleAcct = ac.view().peek(keylet::account(a2.id()));
+                if (!sleAcct)
+                    return false;
+
+                auto check = std::make_shared<SLE>(
+                    keylet::check(a2.id(), SeqProxy::rawSequence((*sleAcct)[sfSequence])));
+                check->setAccountID(sfAccount, a2.id());
+                check->setAccountID(sfDestination, *pseudo);
+                auto const page = ac.view().dirInsert(
+                    keylet::ownerDir(*pseudo), check->key(), describeOwnerDir(*pseudo));
+                if (!page)
+                    return false;
+                check->setFieldU64(sfDestinationNode, *page);
+                ac.view().insert(check);
+                return true;
+            },
+            createVault);
+    }
+
+    void
+    testLoanBrokerOwnership(FeatureBitset features)
+    {
+        using namespace jtx;
+
+        testcase << "loan broker pseudo-account pinned by a credential, " << cleanupLabel(features);
+        std::optional<Keylet> brokerKeylet;
+        checkPinned(
+            features,
+            "Credential",
+            [&](Account const&, Account const& a2, ApplyContext& ac) {
+                if (!brokerKeylet)
+                    return false;
+                auto const sleBroker = ac.view().read(*brokerKeylet);
+                if (!sleBroker)
+                    return false;
+                AccountID const pseudo = sleBroker->at(sfAccount);
+                return pinCredential(pseudo, a2.id(), ac);
+            },
+            [&, this](Account const& a1, Account const&, Env& env) -> bool {
+                PrettyAsset const xrpAsset{xrpIssue(), 1'000'000};
+                brokerKeylet = createLoanBroker(a1, env, xrpAsset);
+                return brokerKeylet.has_value();
+            });
+    }
+
+    void
+    testAMMOwnership(FeatureBitset features)
+    {
+        using namespace jtx;
+
+        testcase << "AMM pseudo-account pinned by a credential, " << cleanupLabel(features);
+        std::optional<AccountID> ammAccount;
+        checkPinned(
+            features,
+            "Credential",
+            [&](Account const&, Account const& a2, ApplyContext& ac) {
+                return ammAccount && pinCredential(*ammAccount, a2.id(), ac);
+            },
+            [&](Account const& a1, Account const&, Env& env) -> bool {
+                AMM const amm(env, a1, XRP(100), a1["USD"](100));
+                ammAccount = amm.ammAccount();
+                return true;
+            });
+    }
+
     void
     run() override
     {
         testValidPseudoAccounts();
         testValidLoanBroker();
+        testVaultOwnership(all_);
+        testVaultOwnership(all_ - fixCleanup3_5_0);
+        testLoanBrokerOwnership(all_);
+        testLoanBrokerOwnership(all_ - fixCleanup3_5_0);
+        testAMMOwnership(all_);
+        testAMMOwnership(all_ - fixCleanup3_5_0);
     }
 };
 

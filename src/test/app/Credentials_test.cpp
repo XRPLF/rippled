@@ -579,10 +579,17 @@ struct Credentials_test : public beast::unit_test::Suite
                 if (!BEAST_EXPECT(sleVault))
                     return;
                 Account const vaultPseudo{"vault", sleVault->at(sfAccount)};
-                auto const expectedResult =
-                    features[fixCleanup3_3_0] ? Ter(tecPSEUDO_ACCOUNT) : Ter(tesSUCCESS);
+                // Without the CredentialCreate guard, the ownership invariant
+                // is the backstop that rejects the pin.
+                auto const expectedResult = [&]() -> TER {
+                    if (features[fixCleanup3_3_0])
+                        return tecPSEUDO_ACCOUNT;
+                    if (features[fixCleanup3_5_0])
+                        return tecINVARIANT_FAILED;
+                    return tesSUCCESS;
+                }();
 
-                env(credentials::create(vaultPseudo, issuer, credType), expectedResult);
+                env(credentials::create(vaultPseudo, issuer, credType), Ter(expectedResult));
                 env.close();
             }
         }
@@ -1175,6 +1182,7 @@ struct Credentials_test : public beast::unit_test::Suite
         testCreateFailed(all);
         testCreateFailed(all - fixDirectoryLimit);
         testCreateFailed(all - fixCleanup3_3_0);
+        testCreateFailed(all - fixCleanup3_3_0 - fixCleanup3_5_0);
         testAcceptFailed(all);
         testDeleteFailed(all);
         testFeatureFailed(all - featureCredentials);
