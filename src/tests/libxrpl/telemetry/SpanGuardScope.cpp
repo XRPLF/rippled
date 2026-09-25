@@ -59,6 +59,7 @@
 #include <opentelemetry/trace/trace_id.h>
 #include <opentelemetry/trace/tracer.h>
 
+#include <algorithm>
 #include <array>
 #include <cstddef>
 #include <cstdint>
@@ -367,7 +368,7 @@ protected:
 };
 
 // freshRoot() must ignore the ambient active span and start a brand-new trace.
-TEST_F(SpanGuardScopeTest, spanGuard_freshRoot_is_true_root_ignoring_ambient)
+TEST_F(SpanGuardScopeTest, span_guard_fresh_root_is_true_root_ignoring_ambient)
 {
     {
         // Ambient span becomes the active span on this thread.
@@ -397,7 +398,7 @@ TEST_F(SpanGuardScopeTest, spanGuard_freshRoot_is_true_root_ignoring_ambient)
 
 // A ScopedSpanGuard is the ambient active span on its thread the moment it is
 // constructed: a child created while it is alive parents to its span.
-TEST_F(SpanGuardScopeTest, scopedGuard_is_ambient_on_construct)
+TEST_F(SpanGuardScopeTest, scoped_guard_is_ambient_on_construct)
 {
     opentelemetry::trace::SpanId activeId;
     {
@@ -434,7 +435,7 @@ TEST_F(SpanGuardScopeTest, scopedGuard_is_ambient_on_construct)
 // operator SpanGuard() && pops the Scope eagerly on the origin thread, so the
 // span is no longer ambient here and the resulting thread-free guard can be
 // ended on a worker thread without corrupting this thread's context stack.
-TEST_F(SpanGuardScopeTest, scopedGuard_conversion_pops_scope_on_this_thread)
+TEST_F(SpanGuardScopeTest, scoped_guard_conversion_pops_scope_on_this_thread)
 {
     {
         ScopedSpanGuard s(TraceCategory::Ledger, "ledger", "build");
@@ -477,7 +478,7 @@ TEST_F(SpanGuardScopeTest, scopedGuard_conversion_pops_scope_on_this_thread)
 
 // The SpanGuard produced by the conversion ends the span exactly once: the
 // moved-from ScopedSpanGuard must not re-end it on destruction.
-TEST_F(SpanGuardScopeTest, scopedGuard_conversion_result_ends_span_once)
+TEST_F(SpanGuardScopeTest, scoped_guard_conversion_result_ends_span_once)
 {
     {
         ScopedSpanGuard scoped(TraceCategory::Ledger, "ledger", "build");
@@ -510,7 +511,7 @@ TEST_F(SpanGuardScopeTest, scopedGuard_conversion_result_ends_span_once)
 // stack ignores the LocalValue swap, so the span would stay visible off-store
 // (the EXPECT_NE below would fail). Passes only because the fixture installs the
 // coro-aware storage that binds the ambient stack to the active store.
-TEST_F(SpanGuardScopeTest, scopedGuard_survives_localvalue_store_swap)
+TEST_F(SpanGuardScopeTest, scoped_guard_survives_localvalue_store_swap)
 {
     namespace ctx = opentelemetry::context;
     namespace trc = opentelemetry::trace;
@@ -617,7 +618,7 @@ TEST_F(SpanGuardScopeTest, activate_sets_ambient_without_owning)
 // OTel key-value-iterable, so a dropped or mistyped pair would be invisible
 // without reading the exported event back. Values are asserted individually as
 // well as by count: two attributes with one value blanked still counts as two.
-TEST_F(SpanGuardScopeTest, spanGuard_addEvent_records_name_and_attribute_values)
+TEST_F(SpanGuardScopeTest, span_guard_add_event_records_name_and_attribute_values)
 {
     namespace cs = consensus::span;
 
@@ -651,7 +652,7 @@ TEST_F(SpanGuardScopeTest, spanGuard_addEvent_records_name_and_attribute_values)
 // The name-only overload records the event with NO attributes, so a regression
 // that leaked attributes between the two overloads shows up here rather than as
 // an extra key on a production event.
-TEST_F(SpanGuardScopeTest, spanGuard_addEvent_without_attributes_records_bare_event)
+TEST_F(SpanGuardScopeTest, span_guard_add_event_without_attributes_records_bare_event)
 {
     namespace cs = consensus::span;
 
@@ -673,9 +674,88 @@ TEST_F(SpanGuardScopeTest, spanGuard_addEvent_without_attributes_records_bare_ev
     EXPECT_EQ(events.front().GetAttributes().size(), 0u);
 }
 
+// The scoped guard records event attributes too. consensus.accept.apply relies
+// on it for one tx.included event per transaction of the accepted set.
+TEST_F(SpanGuardScopeTest, scoped_guard_add_event_records_name_and_attribute_values)
+{
+    namespace cs = consensus::span;
+
+    static constexpr std::string_view kEventName{cs::event::txIncluded};
+    static constexpr std::string_view kTxIdKey{cs::attr::txId};
+    static constexpr std::string_view kTxId{"6B5F1A2C3D4E5F60718293A4B5C6D7E8"};
+
+    {
+        ScopedSpanGuard guard(TraceCategory::Consensus, seg::consensus, cs::op::acceptApply);
+        ASSERT_TRUE(static_cast<bool>(guard));
+        guard.addEvent(kEventName, {{kTxIdKey, kTxId}});
+    }
+
+    auto spans = spanData()->GetSpans();
+    auto* applySpan = findSpan(spans, cs::acceptApply);
+    ASSERT_NE(applySpan, nullptr);
+
+    auto const& events = applySpan->GetEvents();
+    ASSERT_EQ(events.size(), 1u);
+    EXPECT_EQ(events.front().GetName(), std::string(kEventName));
+    EXPECT_EQ(events.front().GetAttributes().size(), 1u);
+    EXPECT_EQ(eventAttribute(events.front(), kTxIdKey), std::string(kTxId));
+}
+
+// A scoped child of a captured context is the ambient parent of the spans
+// created after it on the same thread. A hash-derived root created inside that
+// scope stays a root. consensus.accept.apply relies on both.
+TEST_F(SpanGuardScopeTest, scoped_child_of_captured_context_is_ambient_for_later_spans)
+{
+    namespace cs = consensus::span;
+
+    auto const h = makeTraceIdBytes();
+    {
+        // consensus.accept: unscoped, thread-free, context captured.
+        auto accept =
+            SpanGuard::freshRoot(TraceCategory::Consensus, seg::consensus, cs::op::accept);
+        ASSERT_TRUE(static_cast<bool>(accept));
+        auto const acceptCtx = accept.spanContext();
+
+        // consensus.accept.apply: scoped child of that context.
+        ScopedSpanGuard const apply = ScopedSpanGuard::childSpan(cs::acceptApply, acceptCtx);
+        ASSERT_TRUE(static_cast<bool>(apply));
+
+        // ledger.build: a plain ambient scoped guard.
+        {
+            ScopedSpanGuard const build(TraceCategory::Ledger, seg::ledger, "build");
+            ASSERT_TRUE(static_cast<bool>(build));
+        }
+
+        // ledger.store: hash-derived, so a deterministic root.
+        {
+            auto store =
+                SpanGuard::hashSpan(TraceCategory::Ledger, "ledger.store", h.data(), h.size());
+            ASSERT_TRUE(static_cast<bool>(store));
+        }
+    }
+
+    auto spans = spanData()->GetSpans();
+    auto* accept = findSpan(spans, cs::accept);
+    auto* apply = findSpan(spans, cs::acceptApply);
+    auto* build = findSpan(spans, "ledger.build");
+    auto* store = findSpan(spans, "ledger.store");
+    ASSERT_NE(accept, nullptr);
+    ASSERT_NE(apply, nullptr);
+    ASSERT_NE(build, nullptr);
+    ASSERT_NE(store, nullptr);
+
+    EXPECT_EQ(apply->GetParentSpanId(), accept->GetSpanId());
+    // build nests under apply, not beside it.
+    EXPECT_EQ(build->GetParentSpanId(), apply->GetSpanId());
+    EXPECT_EQ(build->GetTraceId(), apply->GetTraceId());
+    // The hash-derived span is a root on its own pinned trace id.
+    EXPECT_FALSE(store->GetParentSpanId().IsValid());
+    EXPECT_TRUE(std::ranges::equal(store->GetTraceId().Id(), h));
+}
+
 // A forced-root span started while a PendingTraceId is active adopts that
 // pinned 16-byte trace_id and remains a true root (no parent).
-TEST_F(SpanGuardScopeTest, deterministicIdGenerator_forced_root_gets_pending_trace_id)
+TEST_F(SpanGuardScopeTest, deterministic_id_generator_forced_root_gets_pending_trace_id)
 {
     auto const h = makeTraceIdBytes();
     {
@@ -696,7 +776,7 @@ TEST_F(SpanGuardScopeTest, deterministicIdGenerator_forced_root_gets_pending_tra
 
 // A forced-root span with NO PendingTraceId gets a random (non-zero) trace_id,
 // never the deterministic hash -- the safety property when no id is pinned.
-TEST_F(SpanGuardScopeTest, deterministicIdGenerator_no_pending_gives_random_root)
+TEST_F(SpanGuardScopeTest, deterministic_id_generator_no_pending_gives_random_root)
 {
     auto const h = makeTraceIdBytes();
     {
@@ -720,7 +800,7 @@ TEST_F(SpanGuardScopeTest, deterministicIdGenerator_no_pending_gives_random_root
 // child, so the pinned id stays available -- proven here by a trailing
 // forced-root span that DOES adopt it (which also consumes the id so
 // ~PendingTraceId's consumed-assert holds; see the report for this choice).
-TEST_F(SpanGuardScopeTest, deterministicIdGenerator_ambient_child_ignores_pending)
+TEST_F(SpanGuardScopeTest, deterministic_id_generator_ambient_child_ignores_pending)
 {
     auto const h = makeTraceIdBytes();
     {
@@ -793,7 +873,7 @@ TEST_F(SpanGuardScopeTest, deterministicIdGenerator_ambient_child_ignores_pendin
 // builds) XRPL_ASSERT is a no-op, and under ENABLE_VOIDSTAR a failed assert
 // continues instead of aborting -- in both cases the worker would not crash and
 // EXPECT_DEATH would report a spurious failure.
-TEST_F(SpanGuardScopeTest, scopedGuard_cross_thread_death_asserts_at_wrong_store_destroy)
+TEST_F(SpanGuardScopeTest, scoped_guard_cross_thread_death_asserts_at_wrong_store_destroy)
 {
 #ifdef NDEBUG
     GTEST_SKIP() << "XRPL_ASSERT compiles to a no-op under NDEBUG (Release builds), so the "

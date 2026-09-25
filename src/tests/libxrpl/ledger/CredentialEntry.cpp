@@ -11,7 +11,7 @@
 
 namespace xrpl::test {
 
-TEST(CredentialEntryTests, Constructors)
+TEST(CredentialEntryTests, constructors)
 {
     EntryTestEnv e;
 

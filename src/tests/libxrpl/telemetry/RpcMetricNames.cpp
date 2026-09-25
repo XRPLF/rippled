@@ -92,7 +92,7 @@ inline constexpr int kMinBatchItemBytes = 3;
 
 }  // namespace
 
-TEST(RpcMetricNames, namesAreTheExactExportedSeriesNames)
+TEST(RpcMetricNames, names_are_the_exact_exported_series_names)
 {
     // These strings ARE the Prometheus series. Changing one is a
     // dashboard-breaking change, so it has to be a deliberate edit here too.
@@ -100,7 +100,7 @@ TEST(RpcMetricNames, namesAreTheExactExportedSeriesNames)
     EXPECT_EQ(std::string_view{kPathfindDiscoveredPaths}, "pathfind_discovered_paths");
 }
 
-TEST(RpcMetricNames, descriptionsAreTheExactExportedHelpText)
+TEST(RpcMetricNames, descriptions_are_the_exact_exported_help_text)
 {
     // The description becomes the Prometheus `# HELP` line, so it is part of
     // the exported surface, not a code comment.
@@ -110,7 +110,7 @@ TEST(RpcMetricNames, descriptionsAreTheExactExportedHelpText)
         "Payment paths produced per pathfinding pass, across all source assets");
 }
 
-TEST(RpcMetricNames, namesAreLowerSnakeCase)
+TEST(RpcMetricNames, names_are_lower_snake_case)
 {
     for (std::string_view const name :
          {std::string_view{kRpcBatchSize}, std::string_view{kPathfindDiscoveredPaths}})
@@ -129,7 +129,7 @@ TEST(RpcMetricNames, namesAreLowerSnakeCase)
     }
 }
 
-TEST(RpcMetricNames, namesEndInTheCountedNounAndNotAUnitOrCounterSuffix)
+TEST(RpcMetricNames, names_end_in_the_counted_noun_and_not_a_unit_or_counter_suffix)
 {
     // Both instruments count things. `_total` is the Prometheus counter suffix
     // and `_count`/`_sum`/`_bucket` are the ones the exporter appends to a
@@ -151,7 +151,7 @@ TEST(RpcMetricNames, namesEndInTheCountedNounAndNotAUnitOrCounterSuffix)
     }
 }
 
-TEST(RpcMetricBucketFit, objectCountLadderSeparatesTheSmallestCounts)
+TEST(RpcMetricBucketFit, object_count_ladder_separates_the_smallest_counts)
 {
     using buckets::kObjectCountBuckets;
 
@@ -177,7 +177,7 @@ TEST(RpcMetricBucketFit, objectCountLadderSeparatesTheSmallestCounts)
     EXPECT_EQ(bucketIndex(ladder, 16.0), 4u);
 }
 
-TEST(RpcMetricBucketFit, theSdkDefaultLadderWouldCollapseEverySmallBatch)
+TEST(RpcMetricBucketFit, the_sdk_default_ladder_would_collapse_every_small_batch)
 {
     // This is why both instruments get an explicit-bucket view. On the SDK
     // default ladder every batch from 1 to 5 sub-requests lands in one bucket,
@@ -197,7 +197,7 @@ TEST(RpcMetricBucketFit, theSdkDefaultLadderWouldCollapseEverySmallBatch)
     EXPECT_EQ(bucketIndex(chosen, 5.0), 3u);
 }
 
-TEST(RpcMetricBucketFit, aMaximumSizedBatchStillOverflowsTheLadderCeiling)
+TEST(RpcMetricBucketFit, a_maximum_sized_batch_still_overflows_the_ladder_ceiling)
 {
     // The documented limitation of rpc_batch_size, as an executable fact.
     // Nothing caps the sub-request count except the request-size limit, so the
@@ -218,7 +218,7 @@ TEST(RpcMetricBucketFit, aMaximumSizedBatchStillOverflowsTheLadderCeiling)
 
 // The placement helper must also disagree with the ladder when it should. A
 // helper that always returned 0 would let every index assertion above pass.
-TEST(RpcMetricBucketFit, bucketIndexPlacesAboveAndBelowEveryEdge)
+TEST(RpcMetricBucketFit, bucket_index_places_above_and_below_every_edge)
 {
     constexpr std::array probe{10.0, 20.0};
     std::span<double const> const ladder{probe};

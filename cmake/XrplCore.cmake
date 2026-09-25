@@ -231,6 +231,7 @@ target_link_libraries(
 #
 # Links xrpl.libxrpl.protocol and xrpl.libxrpl.core PUBLICLY: ValidationTracker.h
 # takes LedgerIndex and MetricMacros.h takes ServiceRegistry, both in interfaces.
+# TxAccountSpanNames.cpp also reads the SField table from xrpl.libxrpl.protocol.
 add_module(xrpl telemetry)
 target_link_libraries(
     xrpl.libxrpl.telemetry

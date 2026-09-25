@@ -138,7 +138,7 @@ The OpenTelemetry C++ SDK is selected for its CNCF backing, active development, 
 
 Span naming follows a hierarchical `<component>.<operation>` convention (e.g., `rpc.command.server_info`, `tx.process`, `consensus.round`). Context propagation uses W3C Trace Context headers for HTTP and embedded Protocol Buffer fields for P2P messages. The implementation coexists with existing PerfLog and Insight observability systems through correlation IDs.
 
-**Data Collection & Privacy**: Telemetry collects only operational metadata (timing, counts, hashes) — never sensitive content (private keys, balances, amounts, raw payloads). Account addresses are hashed **unconditionally** by the SDK helper and hashed again at the collector; there is no redaction config key and therefore no insecure-by-default state. Trace volume is _not_ reduced on the node (head sampling is fixed at 100%); reduction, where wanted, is a collector-side tail-sampling decision. Node operators control which subsystems are traced via the `[telemetry]` per-component toggles.
+**Data Collection & Privacy**: Telemetry collects only operational metadata (timing, counts, hashes, public identifiers) — never sensitive content (private keys, balances, amounts, raw payloads). Account addresses are public ledger identifiers and are emitted raw; there is no redaction setting and no collector-side hashing. Trace volume is _not_ reduced on the node (head sampling is fixed at 100%); reduction, where wanted, is a collector-side tail-sampling decision. Node operators control which subsystems are traced via the `[telemetry]` per-component toggles.
 
 ➡️ **[Read full Design Decisions](./02-design-decisions.md)**
 

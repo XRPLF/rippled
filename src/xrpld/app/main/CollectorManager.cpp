@@ -10,6 +10,7 @@
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/config/BasicConfig.h>
 #include <xrpl/config/Constants.h>
+#include <xrpl/telemetry/Telemetry.h>
 
 #include <memory>
 #include <string>
@@ -29,6 +30,7 @@ public:
         Section const& params,
         std::string const& serviceName,
         std::string const& networkType,
+        bool telemetryEnabled,
         beast::Journal journal)
         : journal_(journal)
     {
@@ -45,11 +47,24 @@ public:
         // LCOV_EXCL_START -- OTel collector path is not exercised in unit tests
         else if (server == "otel")
         {
-            // Read OTLP metrics endpoint from [insight] section.
-            // Default to the standard OTLP/HTTP metrics path on localhost.
+            // The collector records through the global meter provider, and only
+            // the telemetry module installs one. With telemetry off it attaches
+            // to the SDK's noop provider and every metric is dropped, which
+            // otherwise looks like a clean start with empty dashboards. Say so
+            // rather than change what is built.
+            if (!telemetryEnabled && journal_.warn())
+            {
+                journal_.warn() << "[insight] server=otel needs [telemetry] enabled=1. "
+                                   "Telemetry is off, so no metric will be exported.";
+            }
+
+            // Read OTLP metrics endpoint from [insight] section, falling back
+            // to the same default the [telemetry] parser uses.
             std::string endpoint = get(params, "endpoint");
             if (endpoint.empty())
-                endpoint = "http://localhost:4318/v1/metrics";
+            {
+                endpoint = telemetry::kDefaultMetricsEndpoint;
+            }
             std::string const& prefix(get(params, "prefix"));
 
             // Read for signature uniformity only. OTelCollector ignores it:
@@ -100,9 +115,11 @@ makeCollectorManager(
     Section const& params,
     std::string const& serviceName,
     std::string const& networkType,
+    bool telemetryEnabled,
     beast::Journal journal)
 {
-    return std::make_unique<CollectorManagerImp>(params, serviceName, networkType, journal);
+    return std::make_unique<CollectorManagerImp>(
+        params, serviceName, networkType, telemetryEnabled, journal);
 }
 
 }  // namespace xrpl

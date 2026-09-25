@@ -455,6 +455,52 @@ TEST_F(SHAMapTraversal, bounds_agree_with_iteration_for_absent_keys)
     }
 }
 
+TEST_F(SHAMapTraversal, bounds_on_empty_map_return_end)
+{
+    tests::TestNodeFamily f{j_};
+    SHAMap map{SHAMapType::FREE, f};
+    map.setUnbacked();
+
+    // The root is a childless inner node, so boundHelper's inner-node branch scans every branch on
+    // the requested side of the one id selects, finds them all empty, and falls through to end()
+    // rather than dereference a child.
+    EXPECT_EQ(map.upperBound(uint256{}), map.end());
+    EXPECT_EQ(map.lowerBound(uint256{}), map.end());
+
+    uint256 probe;
+    std::fill_n(probe.begin(), probe.size(), std::uint8_t{0xff});
+    EXPECT_EQ(map.upperBound(probe), map.end());
+    EXPECT_EQ(map.lowerBound(probe), map.end());
+}
+
+TEST_F(SHAMapTraversal, bounds_on_single_item_map_use_the_leaf_below_the_root)
+{
+    tests::TestNodeFamily f{j_};
+    SHAMap map{SHAMapType::FREE, f};
+
+    auto const key = deepFanOutKeys().front();
+    fillMap(map, {key});
+
+    // fillMap adds items in-process, so root_ stays an inner node with the single leaf below it.
+    // The stack holds both, so boundHelper examines the leaf first.
+    uint256 below = key;
+    --below;
+    uint256 above = key;
+    ++above;
+
+    auto const upper = map.upperBound(below);
+    ASSERT_NE(upper, map.end());
+    EXPECT_EQ(upper->key(), key);
+    EXPECT_EQ(map.upperBound(key), map.end());
+    EXPECT_EQ(map.upperBound(above), map.end());
+
+    auto const lower = map.lowerBound(above);
+    ASSERT_NE(lower, map.end());
+    EXPECT_EQ(lower->key(), key);
+    EXPECT_EQ(map.lowerBound(key), map.end());
+    EXPECT_EQ(map.lowerBound(below), map.end());
+}
+
 TEST_F(SHAMapTraversal, iteration_survives_deletions)
 {
     tests::TestNodeFamily f{j_};

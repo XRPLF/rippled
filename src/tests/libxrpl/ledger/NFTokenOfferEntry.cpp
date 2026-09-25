@@ -8,7 +8,7 @@
 
 namespace xrpl::test {
 
-TEST(NFTokenOfferEntryTests, Constructors)
+TEST(NFTokenOfferEntryTests, constructors)
 {
     EntryTestEnv e;
 

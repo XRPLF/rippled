@@ -558,7 +558,11 @@ SpanGuard::setAttribute(std::string_view key, std::string_view value) noexcept
 void
 SpanGuard::setAttribute(std::string_view key, char const* value) noexcept
 {
-    setAttribute(key, std::string_view(value));
+    // A std::string_view built from a pointer reads that pointer to find its
+    // length, so a null one is undefined behaviour. A null pointer carries no
+    // text, and an empty value already means something here, so record nothing.
+    if (value != nullptr)
+        setAttribute(key, std::string_view(value));
 }
 
 void
@@ -862,6 +866,14 @@ void
 ScopedSpanGuard::addEvent(std::string_view name) noexcept
 {
     impl_->guard.addEvent(name);
+}
+
+void
+ScopedSpanGuard::addEvent(
+    std::string_view name,
+    std::initializer_list<EventAttribute> attrs) noexcept
+{
+    impl_->guard.addEvent(name, attrs);
 }
 
 void

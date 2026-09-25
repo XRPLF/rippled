@@ -40,7 +40,7 @@ namespace telemetry = xrpl::telemetry;
  * the same in both configurations, which is what lets a caller report these
  * accessors without knowing which build it is in.
  */
-TEST(AcquireStatsTest, StartsAtZero)
+TEST(AcquireStatsTest, starts_at_zero)
 {
     // Braces matter: without telemetry the counters hold no state, so the type
     // is trivially default constructible and MSVC rejects a const instance left
@@ -62,7 +62,7 @@ TEST(AcquireStatsTest, StartsAtZero)
  * divergence that identifies the stall, so each step asserts both the counter
  * that should have moved and the ones that must not have.
  */
-TEST(AcquireStatsTest, CountersAdvanceIndependently)
+TEST(AcquireStatsTest, counters_advance_independently)
 {
     AcquireStats stats;
 
@@ -142,7 +142,7 @@ TEST(AcquireStatsTest, CountersAdvanceIndependently)
  * that had built nothing yet, and the cheap one must leave the partial-work
  * counter untouched.
  */
-TEST(AcquireStatsTest, AbortDistinguishesPartialWork)
+TEST(AcquireStatsTest, abort_distinguishes_partial_work)
 {
     AcquireStats stats;
 
@@ -180,7 +180,7 @@ TEST(AcquireStatsTest, AbortDistinguishesPartialWork)
  * discarding partial work. Timeouts staying at exactly zero is what proves the
  * give-up path cannot fire, so that assertion is the point of the test.
  */
-TEST(AcquireStatsTest, StalledShapeIsDistinguishable)
+TEST(AcquireStatsTest, stalled_shape_is_distinguishable)
 {
     AcquireStats stalled;
     for (int i = 0; i < 1000; ++i)
@@ -221,7 +221,7 @@ TEST(AcquireStatsTest, StalledShapeIsDistinguishable)
  * completions dominate. The same seven counters, read the opposite way, which
  * is what makes the stalled reading above meaningful.
  */
-TEST(AcquireStatsTest, HealthyShapeIsDistinguishable)
+TEST(AcquireStatsTest, healthy_shape_is_distinguishable)
 {
     AcquireStats healthy;
     for (int i = 0; i < 10; ++i)
@@ -262,7 +262,7 @@ TEST(AcquireStatsTest, HealthyShapeIsDistinguishable)
  * from the loop bounds would make the assertion agree with the loop by
  * construction and pass even if every increment were lost.
  */
-TEST(AcquireStatsTest, ConcurrentRecordingLosesNothing)
+TEST(AcquireStatsTest, concurrent_recording_loses_nothing)
 {
     AcquireStats stats;
     constexpr int kThreads = 4;

@@ -267,6 +267,7 @@ All spans instrumented in xrpld, grouped by subsystem:
 | `rpc.ws_message`     | ServerHandler.cpp | `command`, `rpc_status`                                     | WebSocket RPC message                                 |
 | `rpc.process`        | ServerHandler.cpp | `is_batch`, `batch_size`                                    | RPC processing (child of rpc.http_request/ws_message) |
 | `rpc.command.<name>` | RPCHandler.cpp    | `command`, `version`, `rpc_role`, `rpc_status`, `load_type` | Per-command span (e.g., `rpc.command.server_info`)    |
+| `rpc.startup`        | Application.cpp   | —                                                           | `[rpc_startup]` batch; parent of its command spans    |
 
 On `rpc.ws_message`, `rpc_status` is set **on four of the five error paths**
 (resource threshold exceeded, bad API version / missing command, caught
@@ -281,14 +282,14 @@ this span: count successes as total minus error, or filter on `status_code`.
 
 ### Transaction Spans
 
-| Span Name       | Source File     | Attributes                                                                                              | Description                                                  |
-| --------------- | --------------- | ------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------ |
-| `tx.process`    | NetworkOPs.cpp  | `tx_hash`, `local`, `path`, `tx_type`, `fee`, `sequence`, `ter_result`, `applied`, `current_ledger_seq` | Transaction submission and processing                        |
-| `tx.receive`    | PeerImp.cpp     | `peer_id`, `tx_hash`, `tx_type`, `peer_version`, `tx_status`, `current_ledger_seq`                      | Transaction this node will process, received from peer relay |
-| `tx.apply`      | BuildLedger.cpp | `tx_count`, `tx_failed`                                                                                 | Transaction set applied per ledger                           |
-| `tx.preflight`  | applySteps.cpp  | `stage`, `tx_type`, `ter_result`                                                                        | Stateless checks stage                                       |
-| `tx.preclaim`   | applySteps.cpp  | `stage`, `tx_type`, `ter_result`, `current_ledger_seq`, `current_ledger_hash`                           | Ledger-aware checks stage                                    |
-| `tx.transactor` | Transactor.cpp  | `stage`, `tx_type`, `ter_result`, `applied`, `current_ledger_seq`, `current_ledger_hash`                | Apply stage (transactor runs)                                |
+| Span Name       | Source File     | Attributes                                                                                                                                                                                                                                                     | Description                                                  |
+| --------------- | --------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------ |
+| `tx.process`    | NetworkOPs.cpp  | `tx_hash`, `local`, `path`, `tx_type`, `fee`, `sequence`, `ter_result`, `applied`, `current_ledger_seq`, `tx_account` and one `tx_<field>` per other account field the transaction carries (`tx_destination`, `tx_owner`, ...; keys in `TxAccountSpanNames.h`) | Transaction submission and processing                        |
+| `tx.receive`    | PeerImp.cpp     | `peer_id`, `tx_hash`, `tx_type`, `peer_version`, `tx_status`, `current_ledger_seq`                                                                                                                                                                             | Transaction this node will process, received from peer relay |
+| `tx.apply`      | BuildLedger.cpp | `tx_count`, `tx_failed`                                                                                                                                                                                                                                        | Transaction set applied per ledger                           |
+| `tx.preflight`  | applySteps.cpp  | `stage`, `tx_type`, `ter_result`                                                                                                                                                                                                                               | Stateless checks stage                                       |
+| `tx.preclaim`   | applySteps.cpp  | `stage`, `tx_type`, `ter_result`, `current_ledger_seq`, `current_ledger_hash`                                                                                                                                                                                  | Ledger-aware checks stage                                    |
+| `tx.transactor` | Transactor.cpp  | `stage`, `tx_type`, `ter_result`, `applied`, `current_ledger_seq`, `current_ledger_hash`                                                                                                                                                                       | Apply stage (transactor runs)                                |
 
 The three apply-pipeline spans (`tx.preflight`, `tx.preclaim`, `tx.transactor`)
 share a deterministic `trace_id` from `txID[0:16]`, so they group under one
@@ -303,10 +304,11 @@ txID-keyed spans can be joined to the ledger trace it targeted
 `tx.transactor`) also carry `current_ledger_hash` (the current ledger's parent
 hash); `tx.preflight` is stateless and omits both.
 
-`tx.apply` carries **no** `ledger_seq` of its own — the sequence is set on its
-parent `ledger.build`
+`tx.apply` carries its own `ledger_seq`, written beside `tx_count` and `tx_failed`
+([BuildLedger.cpp:197](../src/xrpld/app/ledger/detail/BuildLedger.cpp#L197)). Its
+parent `ledger.build` carries the same sequence
 ([BuildLedger.cpp:90](../src/xrpld/app/ledger/detail/BuildLedger.cpp#L90)), so
-read it from the parent rather than filtering `tx.apply` on it.
+either span can be filtered on it.
 
 ### Transaction Queue Spans
 
@@ -321,12 +323,12 @@ read it from the parent rather than filtering `tx.apply` on it.
 
 ### PathFinding Spans
 
-| Span Name             | Source File                       | Attributes                                                                  | Description                                             |
-| --------------------- | --------------------------------- | --------------------------------------------------------------------------- | ------------------------------------------------------- |
-| `pathfind.request`    | PathFind.cpp / RipplePathFind.cpp | `pathfind_source_account`, `pathfind_dest_account`                          | Path-find RPC entry (accounts hashed; set when present) |
-| `pathfind.compute`    | PathRequest.cpp                   | `pathfind_fast`, `pathfind_dest_currency`                                   | Path computation for one request (`doUpdate`)           |
-| `pathfind.discover`   | PathRequest.cpp                   | `pathfind_search_level`, `pathfind_num_paths`, `pathfind_num_source_assets` | Graph exploration (one per RPC call in `findPaths`)     |
-| `pathfind.update_all` | PathRequestManager.cpp            | `pathfind_ledger_index`, `pathfind_num_requests`                            | Async recomputation of active requests on ledger close  |
+| Span Name             | Source File                       | Attributes                                                                  | Description                                                                     |
+| --------------------- | --------------------------------- | --------------------------------------------------------------------------- | ------------------------------------------------------------------------------- |
+| `pathfind.request`    | PathFind.cpp / RipplePathFind.cpp | `pathfind_source_account`, `pathfind_dest_account`                          | Path-find RPC entry (raw r-addresses; set when the request field parses as one) |
+| `pathfind.compute`    | PathRequest.cpp                   | `pathfind_fast`, `pathfind_dest_currency`                                   | Path computation for one request (`doUpdate`)                                   |
+| `pathfind.discover`   | PathRequest.cpp                   | `pathfind_search_level`, `pathfind_num_paths`, `pathfind_num_source_assets` | Graph exploration (one per RPC call in `findPaths`)                             |
+| `pathfind.update_all` | PathRequestManager.cpp            | `pathfind_ledger_index`, `pathfind_num_requests`                            | Async recomputation of active requests on ledger close                          |
 
 ### Consensus Spans
 
@@ -1129,7 +1131,7 @@ call edge. Read a trace with these in mind:
 | `tx.process` is a `hashSpan` root from `txID` — an independent trace root ([TxTracing.h:63](../src/xrpld/telemetry/TxTracing.h#L63)). | The real edge is the synchronous `doSubmit → processTransaction` call; it is **not** a child of `rpc.command.submit`.                                                                                                                                                                                                                                                                      |
 | `tx.preflight` / `tx.preclaim` / `tx.transactor` share one `txID`-derived trace ID.                                                   | That shared ID is a correlation trick, not a call edge. The real order is the composed `apply()` at [apply.cpp:118](../src/libxrpl/tx/apply.cpp#L118). They are **not** children of `tx.process` or `tx.apply`. Because nothing else nests under it either, `tx.apply` is **always a leaf** — the stage spans for the transactions it applied sit in the txID-keyed trace, not beneath it. |
 | `consensus.round` uses a deterministic trace ID from the previous ledger hash.                                                        | This makes **all validators share one trace ID** (a cross-node shared root), not a per-node parent. The real round-to-round edge is `endConsensus → beginConsensus`.                                                                                                                                                                                                                       |
-| `consensus.accept` (main thread) and `consensus.accept.apply` (JtAccept worker) are wired via a captured context.                     | The real edge is the queued `JtAccept` job, a thread hand-off ([RCLConsensus.cpp:483](../src/xrpld/app/consensus/RCLConsensus.cpp#L483)).                                                                                                                                                                                                                                                  |
+| `consensus.accept` (main thread) and `consensus.accept.apply` (JtAccept worker) are wired via a captured context.                     | The real edge is the queued `JtAccept` job, a thread hand-off ([RCLConsensus.cpp:483](../src/xrpld/app/consensus/RCLConsensus.cpp#L483)). `consensus.accept.apply` is a scoped guard, so the spans `doAccept` creates after it (`ledger.build`, `txq.cleanup`, `txq.accept`, `ledger.store`, `ledger.validate`) nest under it; those are real containment edges.                           |
 | `pathfind.update_all` parents nothing from the original `pathfind.request`.                                                           | The causal link is the ledger-close job on `JtUpdatePf`, not span nesting.                                                                                                                                                                                                                                                                                                                 |
 | `ledger.acquire` and its downstream `ledger.store` / `ledger.validate`.                                                               | Reached via the `AcqDone` job, not parent inheritance. All three are non-scoped `SpanGuard::span` spans, so none of them parents the others; each takes whatever ambient span its own caller happens to have active. See the `ledger.*` known issue below.                                                                                                                                 |
 | `peer.*.receive` (fresh `kConsumer` root) and `consensus.*.receive` on the same message.                                              | Two **sequential stages of one synchronous handler**, not parent/child; on a duplicate/untrusted drop the `consensus.*.receive` is never created.                                                                                                                                                                                                                                          |
@@ -1184,21 +1186,26 @@ are pending a code fix:
     [168](../src/xrpld/app/ledger/detail/InboundLedger.cpp#L168)) land there as
     siblings. A ledger acquisition nested under an `rpc.command.*` trace is this
     bug, not a real call edge.
+  - **Nested under `consensus.accept.apply`, by design.** On the consensus path
+    `buildLCL → storeLedger` ([RCLConsensus.cpp:997](../src/xrpld/app/consensus/RCLConsensus.cpp#L997))
+    and `consensusBuilt → checkAccept` ([RCLConsensus.cpp:799](../src/xrpld/app/consensus/RCLConsensus.cpp#L799))
+    run inside `doAccept`, whose `consensus.accept.apply` span is a scoped guard
+    ([RCLConsensus.cpp:634](../src/xrpld/app/consensus/RCLConsensus.cpp#L634)), so the
+    `ledger.store` and `ledger.validate` created there are its children. That is a
+    real containment edge. A `ledger.store` under `consensus.accept.apply` and a
+    second one as a root for the same ledger is the normal shape when a node both
+    builds a ledger and fetches it.
 
-  **`ledger.build` and `tx.apply` use the same ambient-parent construct but are
-  safe.** `ledger.build` is a plain `ScopedSpanGuard`
-  ([BuildLedger.cpp:55](../src/xrpld/app/ledger/detail/BuildLedger.cpp#L55)): its
-  only callers are `RCLConsensus::doAccept`
-  ([RCLConsensus.cpp:935-937](../src/xrpld/app/consensus/RCLConsensus.cpp#L935))
-  on the `JtAccept` worker and the replay path
-  ([LedgerDeltaAcquire.cpp:208](../src/xrpld/app/ledger/detail/LedgerDeltaAcquire.cpp#L208)),
-  and every consensus accept span is a non-scoped `SpanGuard`
-  ([RCLConsensus.cpp:598-599](../src/xrpld/app/consensus/RCLConsensus.cpp#L598)),
-  so no ambient span exists to be inherited there. `tx.apply`
+  **`ledger.build` and `tx.apply` use the same ambient-parent construct and land
+  on the intended edges.** `ledger.build` is a plain `ScopedSpanGuard`
+  ([BuildLedger.cpp:55](../src/xrpld/app/ledger/detail/BuildLedger.cpp#L55)): on the
+  consensus path it is created inside `doAccept` after `consensus.accept.apply`
+  opens, so it nests under that span; on the replay path
+  ([LedgerDeltaAcquire.cpp:208](../src/xrpld/app/ledger/detail/LedgerDeltaAcquire.cpp#L208))
+  nothing is ambient and it is a root. `tx.apply`
   ([BuildLedger.cpp:123](../src/xrpld/app/ledger/detail/BuildLedger.cpp#L123)) is
   reached only synchronously from `buildLedgerImpl` while `ledger.build`'s scope is
-  live, so its ambient parent is always `ledger.build` — which is exactly the
-  intended edge.
+  live, so its ambient parent is always `ledger.build`.
 
 - **`consensus.round` is not always a root.** The `consensus_trace_strategy=attribute`
   path has two creation branches; the fallback branch — taken on the first traced
@@ -1320,8 +1327,9 @@ sum by (stage) (rate(span_calls_total{span_name=~"tx.preflight|tx.preclaim|tx.tr
 # Per-stage p95 latency
 histogram_quantile(0.95, sum by (le, stage) (rate(span_duration_milliseconds_bucket{span_name=~"tx.preflight|tx.preclaim|tx.transactor"}[5m])))
 
-# Per-stage failure rate (ter_result != tesSUCCESS; a failing ter completes the
-# span normally, so filter on the attribute, not status_code which only flags exceptions)
+# Per-stage failure rate (ter_result != tesSUCCESS). All three stage spans also set
+# status_code="ERROR" on a failing ter, so status_code counts failures too; the
+# attribute is used here because it names which failure.
 sum by (stage) (rate(span_calls_total{span_name=~"tx.preflight|tx.preclaim|tx.transactor", ter_result!~"tesSUCCESS|"}[5m]))
 ```
 
@@ -2416,6 +2424,7 @@ enforces that in CI, because the two silently drifted once already.
 | `rpc.ws_message`               | `{span_name="rpc.ws_message"}`               | RPC Performance (WebSocket Rate)              |
 | `rpc.process`                  | `{span_name="rpc.process"}`                  | RPC Performance (Overall Throughput)          |
 | `rpc.command.*`                | `{span_name=~"rpc.command.*"}`               | RPC Performance (Rate, Latency, Error, Top)   |
+| `rpc.startup`                  | `{span_name="rpc.startup"}`                  | -- (available but not paneled)                |
 | `tx.process`                   | `{span_name="tx.process"}`                   | Transaction Overview (Rate, Latency, Heatmap) |
 | `tx.receive`                   | `{span_name="tx.receive"}`                   | Transaction Overview (Rate, Receive)          |
 | `tx.apply`                     | `{span_name="tx.apply"}`                     | Transaction Overview + Ledger Ops (Apply)     |
@@ -2840,7 +2849,7 @@ A plain `SpanGuard` that is **never activated** makes no span current — it "ne
 
 Severity does not affect injection, but `JLOG` filters on severity **before** `format()` runs, so the configured log level decides whether a qualifying line is emitted at all.
 
-**The dependably correlated line at `info`** is the consensus accept pair at [RCLConsensus.cpp:736/740](../src/xrpld/app/consensus/RCLConsensus.cpp#L736) — an `if`/`else`, so exactly one of the two fires on every accepted round. `doAccept` activates the accept span as ambient over its whole body at [:565](../src/xrpld/app/consensus/RCLConsensus.cpp#L565) (`activateIfLive(acceptSpan)`, commented "Make the accept span ambient for the whole accept so doAccept's log lines ... correlate to it"), and the activation lives to the end of the function, so both branches are inside it. At roughly one round every 4 s this yields dozens of correlated lines per run.
+**The dependably correlated line at `info`** is the consensus accept pair at [RCLConsensus.cpp:736/740](../src/xrpld/app/consensus/RCLConsensus.cpp#L736) — an `if`/`else`, so exactly one of the two fires on every accepted round. `doAccept` activates the accept span as ambient (`activateIfLive(acceptSpan)`) and then opens `consensus.accept.apply` as a scoped guard ([RCLConsensus.cpp:634](../src/xrpld/app/consensus/RCLConsensus.cpp#L634)), which stays ambient to the end of the function. Both branches of the pair sit inside it, so their lines carry the round's `trace_id` and `consensus.accept.apply`'s `span_id`. At roughly one round every 4 s this yields dozens of correlated lines per run.
 
 That is a dependable pair rather than an unconditional one: `info` severity is necessary but not sufficient. Four preconditions must all hold, and each has its own bail-out that silently yields an uncorrelated line rather than an error:
 
@@ -3709,7 +3718,7 @@ stands today.
 
 | Category         | Checks                                                                                                                                                                               | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
 | ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Spans            | Every **required** entry in `expected_spans.json` — 41 span types at the time of writing: 25 required, 16 marked `"optional": true`                                                  | Span name found in Tempo carrying its `required_attributes`, plus the declared parent-child relationships. An `"optional": true` entry that does not fire is recorded as a skip, not a failure — it needs traffic the harness may not generate (HTTP/JSON-RPC client, gRPC client, missing-ledger fetch, mode transitions) or that it deliberately no longer generates (path-finding RPC — see "Pathfinding is not exercised" in [the workload README](../docker/telemetry/workload/README.md)).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| Spans            | Every **required** entry in `expected_spans.json` — 42 span types at the time of writing: 26 required, 16 marked `"optional": true`                                                  | Span name found in Tempo carrying its `required_attributes`, plus the declared parent-child relationships. An `"optional": true` entry that does not fire is recorded as a skip, not a failure — it needs traffic the harness may not generate (HTTP/JSON-RPC client, gRPC client, missing-ledger fetch, mode transitions) or that it deliberately no longer generates (path-finding RPC — see "Pathfinding is not exercised" in [the workload README](../docker/telemetry/workload/README.md)).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
 | Metrics          | Every entry in every asserted category of `expected_metrics.json` — 84 checks across 25 asserting categories at the time of writing: 79 metric names plus 5 `required_labels` checks | SpanMetrics, `beast::insight` gauges/counters exported over OTLP, and the `MetricsRegistry` OTLP metrics. Each must have > 0 Prometheus series; none are optional. A category may also declare `required_labels`, and each label there becomes one additional check that at least one of that category's series carries it with a non-empty value (matched as `<label>!=""`, because Prometheus cannot distinguish an absent label from an empty one). Those labels were declared but never actually read until the check was generalised, so they were documented as required while going unverified; `spanmetrics` contributes 4 and `job_queue` 1. The separate `not_asserted` group lists metrics deliberately left out of the gate because they are workload-gated or defect-gated; it has neither a `metrics` nor a `required_labels` key, so the validator skips it entirely.                                                                                                                                                                                                                                                                  |
 | Logs             | 2 checks                                                                                                                                                                             | `trace_id`/`span_id` present in Loki, and a logged trace id resolves in Tempo. Gated in CI. `run-full-validation.sh` prints a four-leg diagnostic (node, mount, collector, Loki) after the suite whenever these run, so a failure names the leg that broke.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
 | Parity           | 10 checks                                                                                                                                                                            | 6 span attributes the external-parity dashboard panels read, plus 4 metric value-sanity bounds.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
