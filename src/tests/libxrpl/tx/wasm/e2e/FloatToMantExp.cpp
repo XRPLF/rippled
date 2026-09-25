@@ -23,7 +23,7 @@ struct FloatToMantExpE2e : RealVmTest
 {
 };
 
-TEST_F(FloatToMantExpE2e, ContractReadsBothHalvesOfASplitFloat)
+TEST_F(FloatToMantExpE2e, contract_reads_both_halves_of_a_split_float)
 {
     // Pi's canonical encoding in, mantissa to offset 64, exponent to offset 128. The
     // contract returns the low half of the mantissa so the assertion checks that real bytes

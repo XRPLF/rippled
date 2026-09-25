@@ -23,7 +23,7 @@ struct LedgerObjNestedArrayLenCall : HostContextTest
     Bytes const locatorBytes = bytesOfSteps(steps);
 };
 
-TEST_F(LedgerObjNestedArrayLenCall, LocatorBytesBecomeFieldLocatorHostReturnsCount)
+TEST_F(LedgerObjNestedArrayLenCall, locator_bytes_become_field_locator_host_returns_count)
 {
     EXPECT_CALL(host, getLedgerObjNestedArrayLen(cacheIdx, LocatorEquals(steps)))
         .WillOnce(testing::Return(7));
@@ -33,7 +33,7 @@ TEST_F(LedgerObjNestedArrayLenCall, LocatorBytesBecomeFieldLocatorHostReturnsCou
 
 // `NoArray` - the field the locator resolves to is not an array - is the error this shape
 // most plausibly returns, so it stands in for axis B.
-TEST_F(LedgerObjNestedArrayLenCall, HostErrorBecomesContractReturnValue)
+TEST_F(LedgerObjNestedArrayLenCall, host_error_becomes_contract_return_value)
 {
     EXPECT_CALL(host, getLedgerObjNestedArrayLen(cacheIdx, LocatorEquals(steps)))
         .WillOnce(testing::Return(std::unexpected(HostFunctionError::NoArray)));
@@ -43,7 +43,7 @@ TEST_F(LedgerObjNestedArrayLenCall, HostErrorBecomesContractReturnValue)
         hfErrorToInt(HostFunctionError::NoArray));
 }
 
-TEST_F(LedgerObjNestedArrayLenCall, EmptyLocatorIsRefusedWithoutAskingHost)
+TEST_F(LedgerObjNestedArrayLenCall, empty_locator_is_refused_without_asking_host)
 {
     EXPECT_CALL(host, getLedgerObjNestedArrayLen).Times(0);
 
@@ -53,7 +53,7 @@ TEST_F(LedgerObjNestedArrayLenCall, EmptyLocatorIsRefusedWithoutAskingHost)
 }
 
 // Distinct from an empty locator: `invokeWithLocator` checks the two conditions separately.
-TEST_F(LedgerObjNestedArrayLenCall, MisalignedLocatorLengthIsRefusedWithoutAskingHost)
+TEST_F(LedgerObjNestedArrayLenCall, misaligned_locator_length_is_refused_without_asking_host)
 {
     Bytes const oddLength{1, 2, 3};
     EXPECT_CALL(host, getLedgerObjNestedArrayLen).Times(0);
@@ -63,7 +63,7 @@ TEST_F(LedgerObjNestedArrayLenCall, MisalignedLocatorLengthIsRefusedWithoutAskin
         hfErrorToInt(HostFunctionError::LocatorMalformed));
 }
 
-TEST_F(LedgerObjNestedArrayLenCall, HostExceptionBecomesInternalFatalAndIsLogged)
+TEST_F(LedgerObjNestedArrayLenCall, host_exception_becomes_internal_fatal_and_is_logged)
 {
     EXPECT_CALL(host, getLedgerObjNestedArrayLen(cacheIdx, LocatorEquals(steps)))
         .WillOnce(testing::Throw(std::runtime_error{"ledger obj nested array len came apart"}));
@@ -77,7 +77,7 @@ TEST_F(LedgerObjNestedArrayLenCall, HostExceptionBecomesInternalFatalAndIsLogged
 
 // `cacheIdx` is signed the whole way to the host, so 0 and a negative slot both cross
 // unchanged.
-TEST_F(LedgerObjNestedArrayLenCall, ZeroCacheIdxArrivesAtHostUnchanged)
+TEST_F(LedgerObjNestedArrayLenCall, zero_cache_idx_arrives_at_host_unchanged)
 {
     EXPECT_CALL(host, getLedgerObjNestedArrayLen(0, LocatorEquals(steps)))
         .WillOnce(testing::Return(7));
@@ -85,7 +85,7 @@ TEST_F(LedgerObjNestedArrayLenCall, ZeroCacheIdxArrivesAtHostUnchanged)
     EXPECT_EQ(hostContext.getLedgerObjNestedArrayLen(0, bytesOf(locatorBytes)), 7);
 }
 
-TEST_F(LedgerObjNestedArrayLenCall, NegativeCacheIdxArrivesAtHostUnchanged)
+TEST_F(LedgerObjNestedArrayLenCall, negative_cache_idx_arrives_at_host_unchanged)
 {
     std::int32_t const negativeCacheIdx = -3;
     EXPECT_CALL(host, getLedgerObjNestedArrayLen(negativeCacheIdx, LocatorEquals(steps)))

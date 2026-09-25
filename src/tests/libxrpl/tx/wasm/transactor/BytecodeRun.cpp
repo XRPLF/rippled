@@ -106,7 +106,7 @@ struct BytecodeRun : testing::Test
 
 // The whole point: it refuses while its predicate is false and releases once the ledger
 // makes it true, with nothing resubmitted differently.
-TEST_F(BytecodeRun, AContractRejectsUntilItsConditionHoldsThenReleases)
+TEST_F(BytecodeRun, a_contract_rejects_until_its_condition_holds_then_releases)
 {
     auto const threshold = currentSeq() + 3;
     auto const wasm = assembleWat(gatedOnLedgerSqn(threshold));
@@ -137,7 +137,7 @@ TEST_F(BytecodeRun, AContractRejectsUntilItsConditionHoldsThenReleases)
     EXPECT_TRUE(meta.isFieldPresent(sfGasUsed));
 }
 
-TEST_F(BytecodeRun, TheBytecodeReserveIsHeldWhileTheEscrowLivesAndReleasedWhenItGoes)
+TEST_F(BytecodeRun, the_bytecode_reserve_is_held_while_the_escrow_lives_and_released_when_it_goes)
 {
     EXPECT_EQ(env.getOwnerCount(alice), 0U);
 
@@ -158,7 +158,7 @@ TEST_F(BytecodeRun, TheBytecodeReserveIsHeldWhileTheEscrowLivesAndReleasedWhenIt
     EXPECT_EQ(env.getOwnerCount(alice), 0U);
 }
 
-TEST(BytecodeReserve, TheBytecodeReserveIsCeilingDivision)
+TEST(BytecodeReserve, the_bytecode_reserve_is_ceiling_division)
 {
     auto const reserveFor = [](std::size_t size) {
         return calculateAdditionalReserve(std::optional{Bytes(size, 0x00)});
@@ -176,7 +176,7 @@ TEST(BytecodeReserve, TheBytecodeReserveIsCeilingDivision)
     EXPECT_EQ(reserveFor(200'000), 400);  // kMaxBytecodeSizeLimit
 }
 
-TEST_F(BytecodeRun, CreatingChargesTheAmountAndTheFee)
+TEST_F(BytecodeRun, creating_charges_the_amount_and_the_fee)
 {
     auto const before = env.getXrpBalance(alice);
 
@@ -189,7 +189,7 @@ TEST_F(BytecodeRun, CreatingChargesTheAmountAndTheFee)
 
 // The condition is the outer gate: without a fulfillment the contract is never reached, even
 // though it would have approved.
-TEST_F(BytecodeRun, AConditionIsCheckedBeforeTheContractRuns)
+TEST_F(BytecodeRun, a_condition_is_checked_before_the_contract_runs)
 {
     auto const threshold = currentSeq() + 2;
     auto const wasm = assembleWat(gatedOnLedgerSqn(threshold));

@@ -22,7 +22,9 @@ struct FloatToMantExpCall : HostContextTest
     FloatPair const pair{mantissa, exponent};
 };
 
-TEST_F(FloatToMantExpCall, OperandIsForwardedMantissaAndExponentWrittenAsLittleEndianBytes)
+TEST_F(
+    FloatToMantExpCall,
+    operand_is_forwarded_mantissa_and_exponent_written_as_little_endian_bytes)
 {
     EXPECT_CALL(host, floatToMantExp(BytesAre("mantexp"))).WillOnce(testing::Return(pair));
 
@@ -33,7 +35,7 @@ TEST_F(FloatToMantExpCall, OperandIsForwardedMantissaAndExponentWrittenAsLittleE
     EXPECT_TRUE(exponentOut.holds(bytesOf(bytesOfScalar(exponent))));
 }
 
-TEST_F(FloatToMantExpCall, HostErrorBecomesContractReturnValue)
+TEST_F(FloatToMantExpCall, host_error_becomes_contract_return_value)
 {
     EXPECT_CALL(host, floatToMantExp(BytesAre("mantexp")))
         .WillOnce(testing::Return(std::unexpected(HostFunctionError::FloatComputationError)));
@@ -47,7 +49,7 @@ TEST_F(FloatToMantExpCall, HostErrorBecomesContractReturnValue)
     EXPECT_FALSE(exponentOut.wasWritten());
 }
 
-TEST_F(FloatToMantExpCall, HostExceptionBecomesInternalFatalAndIsLogged)
+TEST_F(FloatToMantExpCall, host_exception_becomes_internal_fatal_and_is_logged)
 {
     EXPECT_CALL(host, floatToMantExp(BytesAre("mantexp")))
         .WillOnce(testing::Throw(std::runtime_error{"float to mant exp came apart"}));
@@ -63,7 +65,7 @@ TEST_F(FloatToMantExpCall, HostExceptionBecomesInternalFatalAndIsLogged)
 
 // Each region is checked independently: a short mantissa region does not stop the exponent
 // from being written, and the sum still counts the mantissa's true length.
-TEST_F(FloatToMantExpCall, ShortMantissaRegionWritesNothingThereSumStillCountsIt)
+TEST_F(FloatToMantExpCall, short_mantissa_region_writes_nothing_there_sum_still_counts_it)
 {
     EXPECT_CALL(host, floatToMantExp(BytesAre("mantexp"))).WillOnce(testing::Return(pair));
 
@@ -74,7 +76,7 @@ TEST_F(FloatToMantExpCall, ShortMantissaRegionWritesNothingThereSumStillCountsIt
     EXPECT_TRUE(exponentOut.holds(bytesOf(bytesOfScalar(exponent))));
 }
 
-TEST_F(FloatToMantExpCall, ShortExponentRegionWritesNothingThereSumStillCountsIt)
+TEST_F(FloatToMantExpCall, short_exponent_region_writes_nothing_there_sum_still_counts_it)
 {
     EXPECT_CALL(host, floatToMantExp(BytesAre("mantexp"))).WillOnce(testing::Return(pair));
 
@@ -87,7 +89,7 @@ TEST_F(FloatToMantExpCall, ShortExponentRegionWritesNothingThereSumStillCountsIt
 
 // No length rule exists at this layer: a differently sized operand still reaches the host
 // rather than being refused.
-TEST_F(FloatToMantExpCall, OddSizedOperandReachesHostUnchanged)
+TEST_F(FloatToMantExpCall, odd_sized_operand_reaches_host_unchanged)
 {
     Bytes const oddX{0x2a};
     EXPECT_CALL(host, floatToMantExp(testing::_)).WillOnce(testing::Return(pair));

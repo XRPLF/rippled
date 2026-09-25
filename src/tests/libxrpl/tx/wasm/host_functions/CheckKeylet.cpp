@@ -13,7 +13,7 @@ struct CheckKeyletImpl : RealHostFixture
 {
 };
 
-TEST_F(CheckKeyletImpl, MatchesCheckKeyletFunction)
+TEST_F(CheckKeyletImpl, matches_check_keylet_function)
 {
     auto const owner = fund("owner");
 
@@ -22,7 +22,7 @@ TEST_F(CheckKeyletImpl, MatchesCheckKeyletFunction)
         keylet::check(owner.id(), SeqProxy::rawSequence(1u)));
 }
 
-TEST_F(CheckKeyletImpl, UnsetAccountIsInvalidAccount)
+TEST_F(CheckKeyletImpl, unset_account_is_invalid_account)
 {
     expectError(makeHost()->checkKeylet(AccountID{}, 1u), HostFunctionError::InvalidAccount);
 }

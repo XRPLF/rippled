@@ -18,7 +18,7 @@ struct BaseFeeCall : HostContextTest
     Bytes const expectedBytes = bytesOfScalar(kBaseFee);
 };
 
-TEST_F(BaseFeeCall, HostValueIsWrittenAsLittleEndianBytes)
+TEST_F(BaseFeeCall, host_value_is_written_as_little_endian_bytes)
 {
     EXPECT_CALL(host, getBaseFee()).WillOnce(testing::Return(kBaseFee));
 
@@ -27,7 +27,7 @@ TEST_F(BaseFeeCall, HostValueIsWrittenAsLittleEndianBytes)
     EXPECT_TRUE(out.holds(bytesOf(expectedBytes)));
 }
 
-TEST_F(BaseFeeCall, HostErrorBecomesContractReturnValue)
+TEST_F(BaseFeeCall, host_error_becomes_contract_return_value)
 {
     EXPECT_CALL(host, getBaseFee())
         .WillOnce(testing::Return(std::unexpected(HostFunctionError::Unimplemented)));
@@ -37,7 +37,7 @@ TEST_F(BaseFeeCall, HostErrorBecomesContractReturnValue)
     EXPECT_FALSE(out.wasWritten());
 }
 
-TEST_F(BaseFeeCall, HostExceptionBecomesInternalFatalAndIsLogged)
+TEST_F(BaseFeeCall, host_exception_becomes_internal_fatal_and_is_logged)
 {
     EXPECT_CALL(host, getBaseFee())
         .WillOnce(testing::Throw(std::runtime_error{"base fee came apart"}));
@@ -50,7 +50,7 @@ TEST_F(BaseFeeCall, HostExceptionBecomesInternalFatalAndIsLogged)
 
 // The out-region contract: write only if the whole value fits, and return the true length
 // either way.
-TEST_F(BaseFeeCall, ShortOutRegionWritesNothingAndReturnsTrueLength)
+TEST_F(BaseFeeCall, short_out_region_writes_nothing_and_returns_true_length)
 {
     EXPECT_CALL(host, getBaseFee()).WillOnce(testing::Return(kBaseFee));
 
@@ -59,7 +59,7 @@ TEST_F(BaseFeeCall, ShortOutRegionWritesNothingAndReturnsTrueLength)
     EXPECT_FALSE(out.wasWritten());
 }
 
-TEST_F(BaseFeeCall, OutRegionOfExactSizeIsWritten)
+TEST_F(BaseFeeCall, out_region_of_exact_size_is_written)
 {
     EXPECT_CALL(host, getBaseFee()).WillOnce(testing::Return(kBaseFee));
 
@@ -74,7 +74,7 @@ TEST_F(BaseFeeCall, OutRegionOfExactSizeIsWritten)
 // and `NoMemExported` cross the same as any other. `InternalFatal` sits outside the -1..-20
 // run other codes occupy (it is `INT32_MIN`), and crosses the same whether the host returns it
 // directly or `guarded` supplies it for a throw.
-TEST_F(BaseFeeCall, EveryHostFunctionErrorCodeCrossesHfErrorToIntUnchanged)
+TEST_F(BaseFeeCall, every_host_function_error_code_crosses_hf_error_to_int_unchanged)
 {
     static constexpr HostFunctionError kAllErrors[] = {
         HostFunctionError::Unimplemented,       HostFunctionError::FieldNotFound,

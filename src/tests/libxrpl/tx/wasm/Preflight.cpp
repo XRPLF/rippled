@@ -54,13 +54,13 @@ struct PreflightTest : testing::Test
     }
 };
 
-TEST_F(PreflightTest, RunnableContractPasses)
+TEST_F(PreflightTest, runnable_contract_passes)
 {
     EXPECT_EQ(preflight(kRunnableWat), tesSUCCESS);
     EXPECT_TRUE(logged().empty()) << logged();
 }
 
-TEST_F(PreflightTest, GarbageIsRefused)
+TEST_F(PreflightTest, garbage_is_refused)
 {
     EXPECT_EQ(preflightBytes(Bytes{}), temINVALID_BYTECODE);
     EXPECT_EQ(preflightBytes(Bytes{0x00, 0x61, 0x73, 0x6d}), temINVALID_BYTECODE);
@@ -69,7 +69,7 @@ TEST_F(PreflightTest, GarbageIsRefused)
 // The engine takes wasm binaries, and text is not one. The suite writes its modules as text
 // and assembles them, so this feeds the engine the very text the other tests assemble: a
 // transaction's validity must not depend on whether an assembler was linked in.
-TEST_F(PreflightTest, TextFormatModuleIsRefused)
+TEST_F(PreflightTest, text_format_module_is_refused)
 {
     Bytes const text{kRunnableWat.begin(), kRunnableWat.end()};
 
@@ -77,7 +77,7 @@ TEST_F(PreflightTest, TextFormatModuleIsRefused)
     EXPECT_EQ(preflight(kRunnableWat), tesSUCCESS) << "the same module, assembled first";
 }
 
-TEST_F(PreflightTest, ImportOfAnUnknownHostFunctionIsRefused)
+TEST_F(PreflightTest, import_of_an_unknown_host_function_is_refused)
 {
     constexpr std::string_view wat = R"wat(
     (module
@@ -92,7 +92,7 @@ TEST_F(PreflightTest, ImportOfAnUnknownHostFunctionIsRefused)
 
 // Host functions are registered under one module name. `env` is what plain clang emits, so a
 // contract built without the SDK's import attributes lands here.
-TEST_F(PreflightTest, ImportFromAnotherModuleIsRefused)
+TEST_F(PreflightTest, import_from_another_module_is_refused)
 {
     constexpr std::string_view wat = R"wat(
     (module
@@ -107,7 +107,7 @@ TEST_F(PreflightTest, ImportFromAnotherModuleIsRefused)
 
 // A contract asking for more linear memory than the engine grants can never run, so it is
 // refused before it can be escrowed. The cap itself is granted.
-TEST_F(PreflightTest, MemoryPastTheCapIsRefused)
+TEST_F(PreflightTest, memory_past_the_cap_is_refused)
 {
     constexpr std::string_view tooMuch = R"wat(
     (module
@@ -130,7 +130,7 @@ TEST_F(PreflightTest, MemoryPastTheCapIsRefused)
 // A table is allocated in full at instantiation, before any gas is charged, so an oversized
 // one is refused before it can be escrowed. Screening sees only an *exported* table; the
 // store's limiter is what refuses the table a contract keeps to itself.
-TEST_F(PreflightTest, TablePastTheCapIsRefused)
+TEST_F(PreflightTest, table_past_the_cap_is_refused)
 {
     constexpr std::string_view tooMuch = R"wat(
     (module
@@ -152,7 +152,7 @@ TEST_F(PreflightTest, TablePastTheCapIsRefused)
     EXPECT_EQ(preflight(atTheCap), tesSUCCESS);
 }
 
-TEST_F(PreflightTest, MissingEntryPointIsRefused)
+TEST_F(PreflightTest, missing_entry_point_is_refused)
 {
     constexpr std::string_view wat = R"wat(
     (module
@@ -164,7 +164,7 @@ TEST_F(PreflightTest, MissingEntryPointIsRefused)
     EXPECT_THAT(logged(), testing::HasSubstr("no entry point 'escrow_finish'"));
 }
 
-TEST_F(PreflightTest, EntryPointOfTheWrongTypeIsRefused)
+TEST_F(PreflightTest, entry_point_of_the_wrong_type_is_refused)
 {
     constexpr std::string_view wat = R"wat(
     (module
@@ -178,7 +178,7 @@ TEST_F(PreflightTest, EntryPointOfTheWrongTypeIsRefused)
 
 // Screening is for the entry point the caller names, as a run is: a contract screened for one
 // export says nothing about another.
-TEST_F(PreflightTest, EntryPointIsTheNameTheCallerGives)
+TEST_F(PreflightTest, entry_point_is_the_name_the_caller_gives)
 {
     constexpr std::string_view wat = R"wat(
     (module
@@ -193,7 +193,7 @@ TEST_F(PreflightTest, EntryPointIsTheNameTheCallerGives)
 // Every refusal is logged with the engine's own description and the TER: without it a node
 // operator has a `temINVALID_BYTECODE` and no way to tell a contract author which of the three
 // stages refused the module.
-TEST_F(PreflightTest, RefusalNamesTheReasonAndTheTer)
+TEST_F(PreflightTest, refusal_names_the_reason_and_the_ter)
 {
     EXPECT_EQ(preflightBytes(Bytes{0x00, 0x61, 0x73, 0x6d}), temINVALID_BYTECODE);
 
@@ -204,7 +204,7 @@ TEST_F(PreflightTest, RefusalNamesTheReasonAndTheTer)
 // A module that passes screening still has to pass the run's own stages, and one that fails
 // screening would have failed the run. Same modules through both entry points, so the two do
 // not have to be trusted to agree.
-TEST_F(PreflightTest, ScreeningAgreesWithARun)
+TEST_F(PreflightTest, screening_agrees_with_a_run)
 {
     struct Case
     {

@@ -22,7 +22,7 @@ struct NFTTransferFeeCall : HostContextTest
     uint256 const nftId = uint256::fromVoid(nftIdBytes.data());
 };
 
-TEST_F(NFTTransferFeeCall, NftIdBytesBecomeTypedArgumentHostIsAskedFor)
+TEST_F(NFTTransferFeeCall, nft_id_bytes_become_typed_argument_host_is_asked_for)
 {
     static constexpr std::int32_t kTransferFee = 314;
     EXPECT_CALL(host, getNFTTransferFee(testing::Eq(nftId)))
@@ -31,7 +31,7 @@ TEST_F(NFTTransferFeeCall, NftIdBytesBecomeTypedArgumentHostIsAskedFor)
     EXPECT_EQ(hostContext.getNFTTransferFee(bytesOf(nftIdBytes)), kTransferFee);
 }
 
-TEST_F(NFTTransferFeeCall, HostErrorBecomesContractReturnValue)
+TEST_F(NFTTransferFeeCall, host_error_becomes_contract_return_value)
 {
     EXPECT_CALL(host, getNFTTransferFee(testing::Eq(nftId)))
         .WillOnce(testing::Return(std::unexpected(HostFunctionError::LedgerObjNotFound)));
@@ -41,7 +41,7 @@ TEST_F(NFTTransferFeeCall, HostErrorBecomesContractReturnValue)
         hfErrorToInt(HostFunctionError::LedgerObjNotFound));
 }
 
-TEST_F(NFTTransferFeeCall, HostExceptionBecomesInternalFatalAndIsLogged)
+TEST_F(NFTTransferFeeCall, host_exception_becomes_internal_fatal_and_is_logged)
 {
     EXPECT_CALL(host, getNFTTransferFee(testing::Eq(nftId)))
         .WillOnce(testing::Throw(std::runtime_error{"nft transfer fee came apart"}));
@@ -53,7 +53,7 @@ TEST_F(NFTTransferFeeCall, HostExceptionBecomesInternalFatalAndIsLogged)
     EXPECT_THAT(logged(), testing::HasSubstr("getNFTTransferFee"));
 }
 
-TEST_F(NFTTransferFeeCall, MalformedNftIdIsRefusedWithoutAskingHost)
+TEST_F(NFTTransferFeeCall, malformed_nft_id_is_refused_without_asking_host)
 {
     Bytes const malformedNftId(uint256::size() - 1, 0xff);
     EXPECT_CALL(host, getNFTTransferFee).Times(0);

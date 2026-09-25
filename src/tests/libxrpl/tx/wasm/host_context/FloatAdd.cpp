@@ -21,7 +21,7 @@ struct FloatAddCall : HostContextTest
     std::int32_t const mode = 7;
 };
 
-TEST_F(FloatAddCall, OperandsAndModeAreForwardedResultIsWritten)
+TEST_F(FloatAddCall, operands_and_mode_are_forwarded_result_is_written)
 {
     Bytes const result{9, 8, 7};
     EXPECT_CALL(host, floatAdd(BytesAre("add-x"), BytesAre("add-yy"), mode))
@@ -34,7 +34,7 @@ TEST_F(FloatAddCall, OperandsAndModeAreForwardedResultIsWritten)
     EXPECT_TRUE(out.holds(bytesOf(result)));
 }
 
-TEST_F(FloatAddCall, HostErrorBecomesContractReturnValue)
+TEST_F(FloatAddCall, host_error_becomes_contract_return_value)
 {
     EXPECT_CALL(host, floatAdd(BytesAre("add-x"), BytesAre("add-yy"), mode))
         .WillOnce(testing::Return(std::unexpected(HostFunctionError::FloatComputationError)));
@@ -46,7 +46,7 @@ TEST_F(FloatAddCall, HostErrorBecomesContractReturnValue)
     EXPECT_FALSE(out.wasWritten());
 }
 
-TEST_F(FloatAddCall, HostExceptionBecomesInternalFatalAndIsLogged)
+TEST_F(FloatAddCall, host_exception_becomes_internal_fatal_and_is_logged)
 {
     EXPECT_CALL(host, floatAdd(BytesAre("add-x"), BytesAre("add-yy"), mode))
         .WillOnce(testing::Throw(std::runtime_error{"float add came apart"}));
@@ -61,7 +61,7 @@ TEST_F(FloatAddCall, HostExceptionBecomesInternalFatalAndIsLogged)
 
 // The out-region contract: write only if the whole value fits, and return the true length
 // either way.
-TEST_F(FloatAddCall, ShortOutRegionWritesNothingAndReturnsTrueLength)
+TEST_F(FloatAddCall, short_out_region_writes_nothing_and_returns_true_length)
 {
     Bytes const result{9, 8, 7};
     EXPECT_CALL(host, floatAdd(BytesAre("add-x"), BytesAre("add-yy"), mode))
@@ -76,7 +76,7 @@ TEST_F(FloatAddCall, ShortOutRegionWritesNothingAndReturnsTrueLength)
 
 // No length rule exists at this layer: a differently sized operand still reaches the host
 // rather than being refused.
-TEST_F(FloatAddCall, OddSizedOperandReachesHostUnchanged)
+TEST_F(FloatAddCall, odd_sized_operand_reaches_host_unchanged)
 {
     Bytes const shortX{0x2a};
     EXPECT_CALL(host, floatAdd(testing::_, BytesAre("add-yy"), mode))

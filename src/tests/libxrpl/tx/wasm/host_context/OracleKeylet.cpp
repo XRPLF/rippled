@@ -20,7 +20,7 @@ struct OracleKeyletCall : HostContextTest
     std::uint32_t const docId = 12345;
 };
 
-TEST_F(OracleKeyletCall, AccountAndDocIdAreForwardedKeyletIsWritten)
+TEST_F(OracleKeyletCall, account_and_doc_id_are_forwarded_keylet_is_written)
 {
     Bytes const keylet(32, 0xab);
     EXPECT_CALL(host, oracleKeylet(account, docId)).WillOnce(testing::Return(keylet));
@@ -32,7 +32,7 @@ TEST_F(OracleKeyletCall, AccountAndDocIdAreForwardedKeyletIsWritten)
     EXPECT_TRUE(out.holds(bytesOf(keylet)));
 }
 
-TEST_F(OracleKeyletCall, HostErrorBecomesContractReturnValue)
+TEST_F(OracleKeyletCall, host_error_becomes_contract_return_value)
 {
     EXPECT_CALL(host, oracleKeylet(account, docId))
         .WillOnce(testing::Return(std::unexpected(HostFunctionError::LedgerObjNotFound)));
@@ -44,7 +44,7 @@ TEST_F(OracleKeyletCall, HostErrorBecomesContractReturnValue)
     EXPECT_FALSE(out.wasWritten());
 }
 
-TEST_F(OracleKeyletCall, ShortAccountIsRefusedWithoutAskingHost)
+TEST_F(OracleKeyletCall, short_account_is_refused_without_asking_host)
 {
     Bytes const shortAccount(AccountID::size() - 1, 0x01);
     EXPECT_CALL(host, oracleKeylet).Times(0);
@@ -55,7 +55,7 @@ TEST_F(OracleKeyletCall, ShortAccountIsRefusedWithoutAskingHost)
         hfErrorToInt(HostFunctionError::InvalidParams));
 }
 
-TEST_F(OracleKeyletCall, LongAccountIsRefusedWithoutAskingHost)
+TEST_F(OracleKeyletCall, long_account_is_refused_without_asking_host)
 {
     Bytes const longAccount(AccountID::size() + 1, 0x01);
     EXPECT_CALL(host, oracleKeylet).Times(0);
@@ -66,7 +66,7 @@ TEST_F(OracleKeyletCall, LongAccountIsRefusedWithoutAskingHost)
         hfErrorToInt(HostFunctionError::InvalidParams));
 }
 
-TEST_F(OracleKeyletCall, EmptyAccountIsRefusedWithoutAskingHost)
+TEST_F(OracleKeyletCall, empty_account_is_refused_without_asking_host)
 {
     EXPECT_CALL(host, oracleKeylet).Times(0);
 
@@ -76,7 +76,7 @@ TEST_F(OracleKeyletCall, EmptyAccountIsRefusedWithoutAskingHost)
         hfErrorToInt(HostFunctionError::InvalidParams));
 }
 
-TEST_F(OracleKeyletCall, HostExceptionBecomesInternalFatalAndIsLogged)
+TEST_F(OracleKeyletCall, host_exception_becomes_internal_fatal_and_is_logged)
 {
     EXPECT_CALL(host, oracleKeylet(account, docId))
         .WillOnce(testing::Throw(std::runtime_error{"oracle keylet came apart"}));
@@ -91,7 +91,7 @@ TEST_F(OracleKeyletCall, HostExceptionBecomesInternalFatalAndIsLogged)
 
 // The out-region contract: write only if the whole value fits, and return the true length
 // either way.
-TEST_F(OracleKeyletCall, ShortOutRegionWritesNothingAndReturnsTrueLength)
+TEST_F(OracleKeyletCall, short_out_region_writes_nothing_and_returns_true_length)
 {
     Bytes const keylet(32, 0xab);
     EXPECT_CALL(host, oracleKeylet(account, docId)).WillOnce(testing::Return(keylet));
@@ -103,7 +103,7 @@ TEST_F(OracleKeyletCall, ShortOutRegionWritesNothingAndReturnsTrueLength)
     EXPECT_FALSE(out.wasWritten());
 }
 
-TEST_F(OracleKeyletCall, OutRegionOfExactSizeIsWritten)
+TEST_F(OracleKeyletCall, out_region_of_exact_size_is_written)
 {
     Bytes const keylet(32, 0xab);
     EXPECT_CALL(host, oracleKeylet(account, docId)).WillOnce(testing::Return(keylet));
@@ -115,7 +115,7 @@ TEST_F(OracleKeyletCall, OutRegionOfExactSizeIsWritten)
     EXPECT_TRUE(out.holds(bytesOf(keylet)));
 }
 
-TEST_F(OracleKeyletCall, EmptyResultAnswersZeroAndWritesNothing)
+TEST_F(OracleKeyletCall, empty_result_answers_zero_and_writes_nothing)
 {
     EXPECT_CALL(host, oracleKeylet(account, docId)).WillOnce(testing::Return(Bytes{}));
 

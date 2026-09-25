@@ -12,7 +12,7 @@ struct IsAmendmentEnabledImpl : RealHostFixture
 {
 };
 
-TEST_F(IsAmendmentEnabledImpl, EnabledAmendmentByIdReadsOne)
+TEST_F(IsAmendmentEnabledImpl, enabled_amendment_by_id_reads_one)
 {
     auto const id = getRegisteredFeature("TokenEscrow");
     ASSERT_TRUE(id.has_value());
@@ -20,14 +20,14 @@ TEST_F(IsAmendmentEnabledImpl, EnabledAmendmentByIdReadsOne)
     expectValue(result, 1);
 }
 
-TEST_F(IsAmendmentEnabledImpl, EnabledAmendmentByNameReadsOne)
+TEST_F(IsAmendmentEnabledImpl, enabled_amendment_by_name_reads_one)
 {
     auto const result = makeHost()->isAmendmentEnabled(std::string_view{"TokenEscrow"});
 
     expectValue(result, 1);
 }
 
-TEST_F(IsAmendmentEnabledImpl, UnknownAmendmentByIdReadsZero)
+TEST_F(IsAmendmentEnabledImpl, unknown_amendment_by_id_reads_zero)
 {
     auto const result = makeHost()->isAmendmentEnabled(
         uint256{"DEADBEEF00000000000000000000000000000000000000000000000000000000"});
@@ -35,7 +35,7 @@ TEST_F(IsAmendmentEnabledImpl, UnknownAmendmentByIdReadsZero)
     expectValue(result, 0);
 }
 
-TEST_F(IsAmendmentEnabledImpl, UnknownAmendmentNameReadsZero)
+TEST_F(IsAmendmentEnabledImpl, unknown_amendment_name_reads_zero)
 {
     auto const result = makeHost()->isAmendmentEnabled(std::string_view{"DEADBEEF"});
 

@@ -7,7 +7,7 @@ struct LedgerSqnImpl : RealHostFixture
 {
 };
 
-TEST_F(LedgerSqnImpl, MatchesLedger)
+TEST_F(LedgerSqnImpl, matches_ledger)
 {
     expectValue(makeHost()->getLedgerSqn(), ledger.getOpenLedger().header().seq);
 }
