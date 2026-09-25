@@ -350,10 +350,10 @@ concept Integral64 = std::is_same_v<T, std::int64_t> || std::is_same_v<T, std::u
 class Number final
 {
     using rep = std::int64_t;
-    using internalrep = MantissaRange::rep;
+    using InternalRep = MantissaRange::rep;
 
     bool negative_{false};
-    internalrep mantissa_{0};
+    InternalRep mantissa_{0};
     int exponent_{std::numeric_limits<int>::lowest()};
 
 public:
@@ -361,10 +361,10 @@ public:
     static constexpr int kMinExponent = -32768;
     static constexpr int kMaxExponent = 32768;
 
-    static constexpr internalrep kMaxRep = std::numeric_limits<rep>::max();
+    static constexpr InternalRep kMaxRep = std::numeric_limits<rep>::max();
     static_assert(kMaxRep == 9'223'372'036'854'775'807);
     static_assert(-kMaxRep == std::numeric_limits<rep>::min() + 1);
-    static constexpr internalrep kMaxRepUp = ((kMaxRep / 10) + 1) * 10;
+    static constexpr InternalRep kMaxRepUp = ((kMaxRep / 10) + 1) * 10;
     static_assert(kMaxRepUp == 9'223'372'036'854'775'810ULL);
 
     // May need to make unchecked private
@@ -388,15 +388,15 @@ public:
     explicit Number(rep mantissa, int exponent);
     explicit constexpr Number(
         bool negative,
-        internalrep mantissa,
+        InternalRep mantissa,
         int exponent,
         Unchecked) noexcept;
     // Assume unsigned values are... unsigned. i.e. positive
-    explicit constexpr Number(internalrep mantissa, int exponent, Unchecked) noexcept;
+    explicit constexpr Number(InternalRep mantissa, int exponent, Unchecked) noexcept;
     // Only unit tests are expected to use this ctor
-    explicit Number(bool negative, internalrep mantissa, int exponent, Normalized);
+    explicit Number(bool negative, InternalRep mantissa, int exponent, Normalized);
     // Assume unsigned values are... unsigned. i.e. positive
-    explicit Number(internalrep mantissa, int exponent, Normalized);
+    explicit Number(InternalRep mantissa, int exponent, Normalized);
 
     [[nodiscard]] constexpr rep
     mantissa() const noexcept;
@@ -558,13 +558,13 @@ public:
     static void
     setMantissaScale(MantissaRange::MantissaScale scale);
 
-    static internalrep
+    static InternalRep
     minMantissa()
     {
         return kRange.get().min;
     }
 
-    static internalrep
+    static InternalRep
     maxMantissa()
     {
         return kRange.get().max;
@@ -591,7 +591,7 @@ public:
     // is negative, returns the positive value. This takes a little extra work
     // because converting std::numeric_limits<std::int64_t>::min() flirts with
     // UB, and can vary across compilers.
-    static internalrep
+    static InternalRep
     externalToInternal(rep mantissa);
 
 private:
@@ -625,8 +625,8 @@ private:
         bool& negative,
         T& mantissa,
         int& exponent,
-        internalrep const& minMantissa,
-        internalrep const& maxMantissa,
+        InternalRep const& minMantissa,
+        InternalRep const& maxMantissa,
         MantissaRange::CuspRoundingFix cuspRoundingFix);
 
     template <class T>
@@ -650,25 +650,25 @@ private:
     shiftExponent(int exponentDelta) const;
 };
 
-constexpr Number::Number(bool negative, internalrep mantissa, int exponent, Unchecked) noexcept
+constexpr Number::Number(bool negative, InternalRep mantissa, int exponent, Unchecked) noexcept
     : negative_(negative), mantissa_{mantissa}, exponent_{exponent}
 {
 }
 
-constexpr Number::Number(internalrep mantissa, int exponent, Unchecked) noexcept
+constexpr Number::Number(InternalRep mantissa, int exponent, Unchecked) noexcept
     : Number(false, mantissa, exponent, Unchecked{})
 {
 }
 
 static constexpr Number kNumZero{};
 
-inline Number::Number(bool negative, internalrep mantissa, int exponent, Normalized)
+inline Number::Number(bool negative, InternalRep mantissa, int exponent, Normalized)
     : Number(negative, mantissa, exponent, Unchecked{})
 {
     normalize(kRange);
 }
 
-inline Number::Number(internalrep mantissa, int exponent, Normalized)
+inline Number::Number(InternalRep mantissa, int exponent, Normalized)
     : Number(false, mantissa, exponent, Normalized{})
 {
 }
@@ -853,7 +853,7 @@ Number::normalizeToRange() const
     static_assert((kMAX + 1) / 10 == kMIN);
 
     bool negative = negative_;
-    internalrep mantissa = mantissa_;
+    InternalRep mantissa = mantissa_;
     int exponent = exponent_;
 
     if constexpr (std::is_unsigned_v<T>)

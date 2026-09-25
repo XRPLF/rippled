@@ -166,7 +166,7 @@ Change::preCompute()
 TER
 Change::applyAmendment()
 {
-    uint256 const amendment(ctx_.tx.getFieldH256(sfAmendment));
+    UInt256 const amendment(ctx_.tx.getFieldH256(sfAmendment));
 
     auto const k = keylet::amendments();
 
@@ -415,7 +415,7 @@ Change::applyUNLModify()
 }
 
 void
-Change::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
+Change::visitInvariantEntry(bool, SLE::ConstRef, SLE::ConstRef)
 {
     // No transaction-specific invariants yet (future work).
 }

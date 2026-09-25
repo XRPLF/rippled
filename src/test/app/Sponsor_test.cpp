@@ -1168,7 +1168,7 @@ public:
             // Pre-fixCleanup3_5_0 path is unreachable so it is not testable.
             if (features[fixCleanup3_5_0])
             {
-                uint256 const zeroObjectID{};
+                UInt256 const zeroObjectID{};
 
                 env(sponsor::transfer(alice, tfSponsorshipEnd, zeroObjectID), Ter(temMALFORMED));
 
@@ -1863,7 +1863,7 @@ public:
             env.fund(XRP(10000), alice, sponsor);
             env.close();
 
-            auto const checkBlocked = [&](Account const& account, uint256 const& objectID) {
+            auto const checkBlocked = [&](Account const& account, UInt256 const& objectID) {
                 env(sponsor::transfer(account, tfSponsorshipCreate, objectID),
                     sponsor::As(sponsor, spfSponsorReserve),
                     Sig(sfSponsorSignature, sponsor),
@@ -2207,7 +2207,7 @@ public:
                 BEAST_EXPECT(
                     env.le(keylet::sponsorship(sponsor, alice))->isFieldPresent(sfFeeAmount));
                 auto sponsorAvailableFee = sponsor::sponsorshipFeeBalance(env, sponsor, alice);
-                env(check::cancel(alice, uint256(1)),
+                env(check::cancel(alice, UInt256(1)),
                     Fee(sponsorAvailableFee),
                     sponsor::As(sponsor, spfSponsorFee),
                     Ter(tecNO_ENTRY));
@@ -4087,7 +4087,7 @@ public:
             // PayChanCreate
             auto const pk = alice.pk();
             auto const settleDelay = 10s;
-            uint256 chan;
+            UInt256 chan;
             testEachSponsorship(
                 env,
                 cosigning,
@@ -5315,7 +5315,7 @@ public:
         checkBlocked(token::mint(alice, 0u));
         checkBlocked(sponsor::set(alice, 0, 10, XRP(10)));
         checkBlocked(acctdelete(alice, bob));
-        checkBlocked(loan::set(alice, uint256(1), Number{1}));
+        checkBlocked(loan::set(alice, UInt256(1), Number{1}));
     }
 
     void

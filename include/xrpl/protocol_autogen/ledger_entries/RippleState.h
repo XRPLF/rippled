@@ -488,7 +488,7 @@ public:
      * @return The constructed ledger entry wrapper.
      */
     RippleState
-    build(uint256 const& index)
+    build(UInt256 const& index)
     {
         return RippleState{std::make_shared<SLE>(std::move(object_), index)};
     }

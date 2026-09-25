@@ -67,9 +67,9 @@ public:
      */
     CapturePeer(
         Application& app,
-        Peer::id_t id,
+        Peer::ID id,
         std::shared_ptr<peer_finder::Slot> const& slot,
-        http_request_type request,
+        HttpRequestType request,
         PublicKey const& publicKey,
         ProtocolVersion protocol,
         resource::Consumer consumer,
@@ -153,10 +153,10 @@ inline constexpr std::uint16_t kCapturePeerPort = 51235;
  *
  * @return The next unused connection id.
  */
-inline Peer::id_t
+inline Peer::ID
 nextCapturePeerId()
 {
-    static Peer::id_t id{0};
+    static Peer::ID id{0};
     return ++id;
 }
 
@@ -209,7 +209,7 @@ std::shared_ptr<PeerType>
 makeCapturePeer(
     jtx::Env& env,
     std::optional<PublicKey> key = std::nullopt,
-    http_request_type request = {})
+    HttpRequestType request = {})
 {
     auto& overlay = dynamic_cast<OverlayImpl&>(env.app().getOverlay());
     auto streamPtr = std::make_unique<CapturePeer::StreamType>(

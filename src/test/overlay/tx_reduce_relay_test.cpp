@@ -105,7 +105,7 @@ class tx_reduce_relay_test : public beast::unit_test::Suite
         using CapturePeer::CapturePeer;
 
         void
-        addTxQueue(uint256 const&) override
+        addTxQueue(UInt256 const&) override
         {
             ++queued_;
         }
@@ -149,7 +149,7 @@ class tx_reduce_relay_test : public beast::unit_test::Suite
         if (disabled)
             --nDisabled;
 
-        http_request_type request;
+        HttpRequestType request;
         if (!disabled)
             request.insert("X-Protocol-Ctl", makeFeaturesRequestHeader(false, false, true, false));
 
@@ -202,7 +202,7 @@ class tx_reduce_relay_test : public beast::unit_test::Suite
 
         // Skip the peers built first, so the skip set overlaps the disabled
         // peers as the expected counts assume.
-        std::set<Peer::id_t> toSkip;
+        std::set<Peer::ID> toSkip;
         for (std::size_t i = 0; i < nSkip; ++i)
             toSkip.insert(peers[i]->id());
 
@@ -215,7 +215,7 @@ class tx_reduce_relay_test : public beast::unit_test::Suite
             m.set_rawtransaction(s.data(), s.size());
             m.set_deferred(false);
             m.set_status(protocol::TransactionStatus::tsNEW);
-            env.app().getOverlay().relay(uint256{0}, m, toSkip);
+            env.app().getOverlay().relay(UInt256{0}, m, toSkip);
 
             std::size_t sendTx = 0;
             std::size_t queueTx = 0;

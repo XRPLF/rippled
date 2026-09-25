@@ -32,7 +32,7 @@ public:
     }
 
     explicit OfferEntry(
-        uint256 const& offerID,
+        UInt256 const& offerID,
         Base::ViewRefType view,
         beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
         : Base(keylet::offer(offerID), view, j)

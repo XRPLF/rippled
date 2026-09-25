@@ -195,7 +195,7 @@ protected:
     getForgedBulletproof(
         std::array<uint64_t, 2> const& values,
         std::array<Buffer, 2> const& blindingFactors,
-        uint256 const& contextHash);
+        UInt256 const& contextHash);
 
     // Generate a forged single bulletproof for a single value and blinding factor.
     // Used to test ConvertBack overdraft prevention via bulletproof verification.
@@ -203,7 +203,7 @@ protected:
     getForgedSingleBulletproof(
         uint64_t value,
         Buffer const& blindingFactor,
-        uint256 const& contextHash);
+        UInt256 const& contextHash);
 
     // Forges a ConvertBack proof (compact sigma + single bulletproof) whose
     // sigma component claims claimedBalance (which may be wrong) while binding
@@ -222,7 +222,7 @@ protected:
         Buffer const& pedersenCommitment,
         Buffer const& encryptedSpendingBalance,
         Buffer const& pcBlindingFactor,
-        uint256 const& contextHash);
+        UInt256 const& contextHash);
 
     // Forges a ConfidentialMPTSend proof (compact sigma + double bulletproof)
     // for setup.sendAmount against setup's real balance commitment/ciphertext.

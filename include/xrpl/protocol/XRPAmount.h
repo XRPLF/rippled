@@ -27,7 +27,7 @@ class XRPAmount : private boost::totally_ordered<XRPAmount>,
                   private boost::additive<XRPAmount, std::int64_t>
 {
 public:
-    using unit_type = unit::dropTag;
+    using UnitType = unit::dropTag;
     using value_type = std::int64_t;
 
 private:

@@ -20,7 +20,7 @@ class OfferCancelBuilder;
  *
  * Type: ttOFFER_CANCEL (8)
  * Delegable: Delegation::Delegable
- * Amendment: uint256{}
+ * Amendment: UInt256{}
  * Privileges: Privilege::NoPriv
  *
  * Immutable wrapper around STTx providing type-safe field access.

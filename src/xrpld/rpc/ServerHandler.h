@@ -76,8 +76,8 @@ public:
     };
 
 private:
-    using socket_type = boost::beast::tcp_stream;
-    using stream_type = boost::beast::ssl_stream<socket_type>;
+    using SocketType = boost::beast::tcp_stream;
+    using StreamType = boost::beast::ssl_stream<SocketType>;
 
     Application& app_;
     resource::Manager& resourceManager_;
@@ -155,17 +155,17 @@ public:
     Handoff
     onHandoff(
         Session& session,
-        std::unique_ptr<stream_type>&& bundle,
-        http_request_type&& request,
+        std::unique_ptr<StreamType>&& bundle,
+        HttpRequestType&& request,
         boost::asio::ip::tcp::endpoint const& remoteAddress);
 
     Handoff
     onHandoff(
         Session& session,
-        http_request_type&& request,  // NOLINT(cppcoreguidelines-rvalue-reference-param-not-moved)
+        HttpRequestType&& request,  // NOLINT(cppcoreguidelines-rvalue-reference-param-not-moved)
         boost::asio::ip::tcp::endpoint const& remoteAddress)
     {
-        return onHandoff(session, {}, std::forward<http_request_type>(request), remoteAddress);
+        return onHandoff(session, {}, std::forward<HttpRequestType>(request), remoteAddress);
     }
 
     void
@@ -203,7 +203,7 @@ private:
         std::string_view user);
 
     [[nodiscard]] Handoff
-    statusResponse(http_request_type const& request) const;
+    statusResponse(HttpRequestType const& request) const;
 };
 
 ServerHandler::Setup

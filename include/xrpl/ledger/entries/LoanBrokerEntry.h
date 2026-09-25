@@ -32,7 +32,7 @@ public:
     }
 
     explicit LoanBrokerEntry(
-        uint256 const& loanBrokerID,
+        UInt256 const& loanBrokerID,
         Base::ViewRefType view,
         beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
         : Base(keylet::loanBroker(loanBrokerID), view, j)

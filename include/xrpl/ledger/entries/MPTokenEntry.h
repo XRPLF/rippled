@@ -32,7 +32,7 @@ public:
     }
 
     explicit MPTokenEntry(
-        uint256 const& issuanceKey,
+        UInt256 const& issuanceKey,
         AccountID const& holder,
         Base::ViewRefType view,
         beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
@@ -41,7 +41,7 @@ public:
     }
 
     explicit MPTokenEntry(
-        uint256 const& mptokenKey,
+        UInt256 const& mptokenKey,
         Base::ViewRefType view,
         beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
         : Base(keylet::mptoken(mptokenKey), view, j)

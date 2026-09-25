@@ -704,8 +704,8 @@ private:
         testcase("LoanSet closed-ended: phase and maturity bound");
         using namespace jtx;
         using namespace loan;
-        using d = NetClock::duration;
-        using tp = NetClock::time_point;
+        using D = NetClock::duration;
+        using Tp = NetClock::time_point;
 
         Account const issuer{"issuer"};
         Account const lender{"lender"};
@@ -754,9 +754,9 @@ private:
             auto const broker = createVaultAndBroker(
                 env, asset, lender, BrokerParameters{.vaultKind = VaultKind::ClosedEnded});
             BEAST_EXPECT(broker.redemptionDate.has_value());
-            using d = NetClock::duration;
-            using tp = NetClock::time_point;
-            env.close(tp{d{*broker.redemptionDate + 1}});
+            using D = NetClock::duration;
+            using Tp = NetClock::time_point;
+            env.close(Tp{D{*broker.redemptionDate + 1}});
             setLoan(env, broker, tecEXPIRED);
         });
 
@@ -852,7 +852,7 @@ private:
             };
 
             // First Investment ledger: the minimum schedule still clears the buffer.
-            env.close(tp{d{*broker.subscriptionDate + 1}});
+            env.close(Tp{D{*broker.subscriptionDate + 1}});
             BEAST_EXPECT(startDate() > *broker.subscriptionDate);
             BEAST_EXPECT(startDate() + LoanSet::kMinPaymentInterval + kLoanRedemptionBuffer <= red);
             minLoan(tesSUCCESS);

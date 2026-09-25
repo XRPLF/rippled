@@ -28,7 +28,7 @@ namespace xrpl {
 
 namespace detail {
 
-using clock_type = std::chrono::steady_clock;
+using ClockType = std::chrono::steady_clock;
 
 struct CaseResults
 {
@@ -47,7 +47,7 @@ struct SuiteResults
     std::size_t cases = 0;
     std::size_t total = 0;
     std::size_t failed = 0;
-    clock_type::time_point start = clock_type::now();
+    ClockType::time_point start = ClockType::now();
 
     explicit SuiteResults(std::string name = "") : name(std::move(name))
     {
@@ -59,10 +59,10 @@ struct SuiteResults
 
 struct Results
 {
-    using static_string = boost::beast::static_string<256>;
+    using StaticString = boost::beast::static_string<256>;
     // results may be stored in shared memory. Use `static_string` to ensure
     // pointers from different memory spaces do not co-mingle
-    using run_time = std::pair<static_string, clock_type::duration>;
+    using RunTime = std::pair<StaticString, ClockType::duration>;
 
     static constexpr auto kMaxTop = 10;
 
@@ -70,8 +70,8 @@ struct Results
     std::size_t cases = 0;
     std::size_t total = 0;
     std::size_t failed = 0;
-    boost::container::static_vector<run_time, kMaxTop> top;
-    clock_type::time_point start = clock_type::now();
+    boost::container::static_vector<RunTime, kMaxTop> top;
+    ClockType::time_point start = ClockType::now();
 
     void
     add(SuiteResults const& r);

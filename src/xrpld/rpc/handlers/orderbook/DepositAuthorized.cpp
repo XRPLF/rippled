@@ -118,7 +118,7 @@ doDepositAuthorized(rpc::JsonContext& context)
                         jss::credentials, "an array of CredentialID(hash256)"));
             }
 
-            uint256 credH;
+            UInt256 credH;
             auto const credS = jo.asString();
             if (!credH.parseHex(credS))
             {

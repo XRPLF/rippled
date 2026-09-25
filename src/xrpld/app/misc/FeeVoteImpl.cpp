@@ -293,7 +293,7 @@ FeeVoteImpl::doVoting(
             }
         });
 
-        uint256 const txID = feeTx.getTransactionID();
+        UInt256 const txID = feeTx.getTransactionID();
 
         JLOG(journal_.warn()) << "Vote: " << txID;
 

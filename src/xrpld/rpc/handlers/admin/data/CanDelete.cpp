@@ -57,7 +57,7 @@ doCanDelete(rpc::JsonContext& context)
                 if (canDeleteSeq == 0u)
                     return rpc::makeError(RpcNotReady);
             }
-            else if (uint256 lh; lh.parseHex(canDeleteStr))
+            else if (UInt256 lh; lh.parseHex(canDeleteStr))
             {
                 auto ledger = context.ledgerMaster.getLedgerByHash(lh);
 

@@ -71,15 +71,15 @@ private:
     bool const standalone_;
 
     // Maps order books by "asset in" to "asset out":
-    hardened_hash_map<Asset, hardened_hash_set<Asset>> allBooks_;
+    HardenedHashMap<Asset, HardenedHashSet<Asset>> allBooks_;
 
-    hardened_hash_map<std::pair<Asset, Domain>, hardened_hash_set<Asset>> domainBooks_;
-
-    // does an order book to XRP exist
-    hash_set<Asset> xrpBooks_;
+    HardenedHashMap<std::pair<Asset, Domain>, HardenedHashSet<Asset>> domainBooks_;
 
     // does an order book to XRP exist
-    hash_set<std::pair<Asset, Domain>> xrpDomainBooks_;
+    HashSet<Asset> xrpBooks_;
+
+    // does an order book to XRP exist
+    HashSet<std::pair<Asset, Domain>> xrpDomainBooks_;
 
     std::recursive_mutex lock_;
 

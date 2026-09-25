@@ -79,7 +79,7 @@ protected:
 
     TimeoutCounter(
         Application& app,
-        uint256 const& targetHash,
+        UInt256 const& targetHash,
         std::chrono::milliseconds timeoutInterval,
         QueueJobParameter&& jobParameter,
         beast::Journal journal);
@@ -124,7 +124,7 @@ protected:
      * The hash of the object (in practice, always a ledger) we are trying to
      * fetch.
      */
-    uint256 const hash_;
+    UInt256 const hash_;
     int timeouts_{0};
     bool complete_{false};
     bool failed_{false};

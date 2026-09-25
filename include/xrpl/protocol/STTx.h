@@ -41,7 +41,7 @@ enum class TxnSql : char {
 
 class STTx final : public STObject, public CountedObject<STTx>
 {
-    uint256 tid_;
+    UInt256 tid_;
     TxType txType_;
 
 public:
@@ -83,7 +83,7 @@ public:
         return getSignature(*this);
     }
 
-    [[nodiscard]] uint256
+    [[nodiscard]] UInt256
     getSigningHash() const;
 
     [[nodiscard]] TxType
@@ -98,7 +98,7 @@ public:
     [[nodiscard]] boost::container::flat_set<AccountID>
     getMentionedAccounts() const;
 
-    [[nodiscard]] uint256
+    [[nodiscard]] UInt256
     getTransactionID() const;
 
     [[nodiscard]] json::Value
@@ -163,7 +163,7 @@ public:
     /**
      * The IDs of the inner transactions of a Batch.
      */
-    [[nodiscard]] std::vector<uint256>
+    [[nodiscard]] std::vector<UInt256>
     getBatchTransactionIDs() const;
 
     /**
@@ -204,10 +204,10 @@ private:
     checkMultiSign(STObject const& sigObject, HashPrefix prefix) const;
 
     [[nodiscard]] std::expected<void, std::string>
-    checkBatchSingleSign(STObject const& batchSigner, std::vector<uint256> const& txIds) const;
+    checkBatchSingleSign(STObject const& batchSigner, std::vector<UInt256> const& txIds) const;
 
     [[nodiscard]] std::expected<void, std::string>
-    checkBatchMultiSign(STObject const& batchSigner, std::vector<uint256> const& txIds) const;
+    checkBatchMultiSign(STObject const& batchSigner, std::vector<UInt256> const& txIds) const;
 
     void
     buildBatchTxns();
@@ -258,7 +258,7 @@ STTx::getSigningPubKey() const
     return getFieldVL(sfSigningPubKey);
 }
 
-inline uint256
+inline UInt256
 STTx::getTransactionID() const
 {
     return tid_;

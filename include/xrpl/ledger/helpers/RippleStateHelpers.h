@@ -147,8 +147,8 @@ trustCreate(
     bool const bSrcHigh,
     AccountID const& uSrcAccountID,
     AccountID const& uDstAccountID,
-    uint256 const& uIndex,      // --> ripple state entry
-    SLE::ref sleAccount,        // --> the account being set.
+    UInt256 const& uIndex,      // --> ripple state entry
+    SLE::Ref sleAccount,        // --> the account being set.
     bool const bAuth,           // --> authorize account.
     bool const bNoRipple,       // --> others cannot ripple through
     bool const bFreeze,         // --> funds cannot leave
@@ -159,13 +159,13 @@ trustCreate(
                                 // Issuer should be the account being set.
     std::uint32_t uQualityIn,
     std::uint32_t uQualityOut,
-    SLE::ref sponsorSle,
+    SLE::Ref sponsorSle,
     beast::Journal j);
 
 [[nodiscard]] TER
 trustDelete(
     ApplyView& view,
-    SLE::ref sleRippleState,
+    SLE::Ref sleRippleState,
     AccountID const& uLowAccountID,
     AccountID const& uHighAccountID,
     beast::Journal j);
@@ -182,7 +182,7 @@ issueIOU(
     AccountID const& account,
     STAmount const& amount,
     Issue const& issue,
-    SLE::ref sponsorSle,
+    SLE::Ref sponsorSle,
     beast::Journal j);
 
 [[nodiscard]] TER

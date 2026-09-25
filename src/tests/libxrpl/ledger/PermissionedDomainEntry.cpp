@@ -22,7 +22,7 @@ TEST(PermissionedDomainEntryTests, constructors)
         seq);
 
     expectKeylet<PermissionedDomainEntry>(
-        e, keylet::permissionedDomain(e.someID()), "permissionedDomain(uint256)", e.someID());
+        e, keylet::permissionedDomain(e.someID()), "permissionedDomain(UInt256)", e.someID());
 }
 
 }  // namespace xrpl::test

@@ -38,7 +38,7 @@ namespace xrpl {
 [[nodiscard]] TER
 canApplyToBrokerCover(
     ReadView const& view,
-    SLE::const_ref sleBroker,
+    SLE::ConstRef sleBroker,
     Asset const& vaultAsset,
     STAmount const& amount,
     beast::Journal j,
@@ -170,7 +170,7 @@ isRounded(Asset const& asset, Number const& value, std::int32_t scale)
 }
 
 [[nodiscard]] bool
-isPaymentLate(ReadView const& view, SLE::const_ref loanSle)
+isPaymentLate(ReadView const& view, SLE::ConstRef loanSle)
 {
     return hasExpired(
         view,
@@ -204,7 +204,7 @@ DefaultAmount = (Loan.PrincipalOutstanding + Loan.InterestOutstanding)
 Which is equivalent to (Loan.TotalValueOutstanding - Loan.ManagementFeeOutstanding)
 */
 Number
-loanVaultExposure(SLE::const_ref loanSle)
+loanVaultExposure(SLE::ConstRef loanSle)
 {
     return loanSle->at(sfTotalValueOutstanding) - loanSle->at(sfManagementFeeOutstanding);
 }
@@ -233,7 +233,7 @@ loanOriginationDeltas(Number const& principalRequested)
  * DefaultAmount = Loan.PrincipalOutstanding
  */
 Number
-loanVaultExposure(SLE::const_ref loanSle)
+loanVaultExposure(SLE::ConstRef loanSle)
 {
     return loanSle->at(sfPrincipalOutstanding);
 }
@@ -253,7 +253,7 @@ namespace {
 // VaultVersion::CashBasis). Vaults created before activation keep instant
 // interest recognition forever, even after the amendment later turns on.
 bool
-cashBasisEnabled(SLE::const_ref vaultSle)
+cashBasisEnabled(SLE::ConstRef vaultSle)
 {
     return getVaultVersion(vaultSle) == VaultVersion::CashBasis;
 }
@@ -262,7 +262,7 @@ cashBasisEnabled(SLE::const_ref vaultSle)
 
 AccountingDeltas
 loanOriginationDeltas(
-    SLE::const_ref vaultSle,
+    SLE::ConstRef vaultSle,
     Number const& principalRequested,
     Number const& interestDue)
 {
@@ -273,7 +273,7 @@ loanOriginationDeltas(
 
 bool
 loanOriginationExceedsVaultMaximum(
-    SLE::const_ref vaultSle,
+    SLE::ConstRef vaultSle,
     Number const& vaultTotal,
     Number const& interestDue)
 {
@@ -288,14 +288,14 @@ loanOriginationExceedsVaultMaximum(
 }
 
 Number
-loanVaultExposure(SLE::const_ref vaultSle, SLE::const_ref loanSle)
+loanVaultExposure(SLE::ConstRef vaultSle, SLE::ConstRef loanSle)
 {
     return cashBasisEnabled(vaultSle) ? cash_basis::loanVaultExposure(loanSle)
                                       : instant_recognition::loanVaultExposure(loanSle);
 }
 
 AccountingDeltas
-loanPaymentDeltas(SLE::const_ref vaultSle, LoanPaymentParts const& parts)
+loanPaymentDeltas(SLE::ConstRef vaultSle, LoanPaymentParts const& parts)
 {
     return cashBasisEnabled(vaultSle) ? cash_basis::loanPaymentDeltas(parts)
                                       : instant_recognition::loanPaymentDeltas(parts);
@@ -579,7 +579,7 @@ loanAccruedInterest(
  * a computed payment.
  */
 LoanPaymentParts
-doPayment(ExtendedPaymentComponents const& payment, SLE::ref loan)
+doPayment(ExtendedPaymentComponents const& payment, SLE::Ref loan)
 {
     auto totalValueOutstandingProxy = loan->at(sfTotalValueOutstanding);
     auto principalOutstandingProxy = loan->at(sfPrincipalOutstanding);
@@ -905,7 +905,7 @@ doOverpayment(
     Asset const& asset,
     std::int32_t loanScale,
     ExtendedPaymentComponents const& overpaymentComponents,
-    SLE::ref loan,
+    SLE::Ref loan,
     Number const& periodicRate,
     TenthBips16 const managementFeeRate,
     beast::Journal j)
@@ -1047,7 +1047,7 @@ std::expected<ExtendedPaymentComponents, TER>
 computeLatePayment(
     Asset const& asset,
     ReadView const& view,
-    SLE::const_ref loan,
+    SLE::ConstRef loan,
     ExtendedPaymentComponents const& periodic,
     STAmount const& amount,
     TenthBips16 managementFeeRate,
@@ -1143,7 +1143,7 @@ std::expected<ExtendedPaymentComponents, TER>
 computeFullPayment(
     Asset const& asset,
     ReadView const& view,
-    SLE::const_ref loan,
+    SLE::ConstRef loan,
     Number const& periodicRate,
     STAmount const& amount,
     TenthBips16 managementFeeRate,
@@ -1489,7 +1489,7 @@ PaymentComponents
 computePaymentComponents(
     Rules const& rules,
     Asset const& asset,
-    SLE::ref loan,
+    SLE::Ref loan,
     Number const& periodicRate,
     TenthBips16 managementFeeRate)
 {
@@ -1587,7 +1587,7 @@ computeOverpaymentComponents(
  * interest rate.
  */
 std::pair<TenthBips16, Number>
-loanRatesFor(SLE::const_ref loan, SLE::const_ref brokerSle)
+loanRatesFor(SLE::ConstRef loan, SLE::ConstRef brokerSle)
 {
     TenthBips16 const managementFeeRate{brokerSle->at(sfManagementFeeRate)};
     TenthBips32 const interestRate{loan->at(sfInterestRate)};
@@ -1604,8 +1604,8 @@ std::expected<LoanPaymentParts, TER>
 makeFullPayment(
     Asset const& asset,
     ApplyView& view,
-    SLE::ref loan,
-    SLE::const_ref brokerSle,
+    SLE::Ref loan,
+    SLE::ConstRef brokerSle,
     STAmount const& amount,
     beast::Journal j)
 {
@@ -1629,8 +1629,8 @@ std::expected<LoanPaymentParts, TER>
 makeLatePayment(
     Asset const& asset,
     ApplyView const& view,
-    SLE::ref loan,
-    SLE::const_ref brokerSle,
+    SLE::Ref loan,
+    SLE::ConstRef brokerSle,
     STAmount const& amount,
     beast::Journal j)
 {
@@ -1663,8 +1663,8 @@ std::expected<LoanPaymentParts, TER>
 makeRegularPayment(
     Asset const& asset,
     ApplyView const& view,
-    SLE::ref loan,
-    SLE::const_ref brokerSle,
+    SLE::Ref loan,
+    SLE::ConstRef brokerSle,
     STAmount const& amount,
     LoanPaymentType const paymentType,
     beast::Journal j)
@@ -2100,7 +2100,7 @@ constructLoanState(
 }
 
 LoanState
-constructLoanState(SLE::const_ref loan)
+constructLoanState(SLE::ConstRef loan)
 {
     XRPL_ASSERT(loan && loan->getType() == ltLOAN, "xrpl::constructLoanState : valid loan SLE");
 
@@ -2254,8 +2254,8 @@ std::expected<LoanPaymentParts, TER>
 loanMakePayment(
     Asset const& asset,
     ApplyView& view,
-    SLE::ref loan,
-    SLE::const_ref brokerSle,
+    SLE::Ref loan,
+    SLE::ConstRef brokerSle,
     STAmount const& amount,
     LoanPaymentType const paymentType,
     beast::Journal j)

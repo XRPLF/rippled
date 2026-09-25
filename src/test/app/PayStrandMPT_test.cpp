@@ -166,12 +166,12 @@ struct PayStrandMPT_test : public beast::unit_test::Suite
                 Env env(*this, features);
                 env.fund(XRP(10'000), alice, bob, carol, gw);
                 auto usd = issue1({.env = env, .token = "USD", .issuer = gw, .limit = 1'000});
-                using tUSD = std::decay_t<decltype(usd)>;
+                using TUsd = std::decay_t<decltype(usd)>;
                 auto eur = issue2({.env = env, .token = "EUR", .issuer = gw, .limit = 1'000});
-                using tEUR = std::decay_t<decltype(eur)>;
+                using TEur = std::decay_t<decltype(eur)>;
 
                 auto const err = [&]() {
-                    if constexpr (std::is_same_v<tUSD, MPT>)
+                    if constexpr (std::is_same_v<TUsd, MPT>)
                     {
                         return tecNO_AUTH;
                     }
@@ -182,7 +182,7 @@ struct PayStrandMPT_test : public beast::unit_test::Suite
                 }();
                 test(env, usd, std::nullopt, STPath(), err);
 
-                if constexpr (std::is_same_v<tUSD, MPT>)
+                if constexpr (std::is_same_v<TUsd, MPT>)
                 {
                     MPTTester(env, gw, usd).authorizeHolders({alice, bob, carol});
                 }
@@ -205,7 +205,7 @@ struct PayStrandMPT_test : public beast::unit_test::Suite
                     tesSUCCESS,
                     makeEndpointStep(alice, gw, usd),
                     makeEndpointStep(gw, bob, usd));
-                if constexpr (std::is_same_v<tEUR, MPT>)
+                if constexpr (std::is_same_v<TEur, MPT>)
                 {
                     MPTTester(env, gw, eur).authorizeHolders({alice, bob});
                 }

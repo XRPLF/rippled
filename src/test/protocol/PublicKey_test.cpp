@@ -19,7 +19,7 @@ namespace xrpl {
 class PublicKey_test : public beast::unit_test::Suite
 {
 public:
-    using blob = std::vector<std::uint8_t>;
+    using Blob = std::vector<std::uint8_t>;
 
     template <class FwdIter, class Container>
     static void
@@ -56,10 +56,10 @@ public:
         }
     }
 
-    static blob
+    static Blob
     sig(std::string const& hex)
     {
-        blob b;
+        Blob b;
         hexToBinary(hex.begin(), hex.end(), b);
         return b;
     }

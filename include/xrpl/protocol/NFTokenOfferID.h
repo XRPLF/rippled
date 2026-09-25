@@ -22,7 +22,7 @@ canHaveNFTokenOfferID(
     std::shared_ptr<STTx const> const& serializedTx,
     TxMeta const& transactionMeta);
 
-std::optional<uint256>
+std::optional<UInt256>
 getOfferIDFromCreatedOffer(TxMeta const& transactionMeta);
 
 void

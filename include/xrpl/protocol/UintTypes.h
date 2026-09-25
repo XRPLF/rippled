@@ -140,7 +140,7 @@ struct hash<xrpl::Directory> : xrpl::Directory::hasher
 };
 
 template <>
-struct hash<xrpl::uint256> : xrpl::uint256::hasher
+struct hash<xrpl::UInt256> : xrpl::UInt256::hasher
 {
     hash() = default;
 };

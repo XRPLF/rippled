@@ -56,7 +56,7 @@ MPTokenIssuanceDestroy::doApply()
 }
 
 void
-MPTokenIssuanceDestroy::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
+MPTokenIssuanceDestroy::visitInvariantEntry(bool, SLE::ConstRef, SLE::ConstRef)
 {
     // No transaction-specific invariants yet (future work).
 }

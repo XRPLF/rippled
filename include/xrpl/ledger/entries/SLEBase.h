@@ -309,7 +309,7 @@ public:
      * @throws std::logic_error same as keylet(): for read-only entries,
      *         if exists() is false.
      */
-    [[nodiscard]] uint256
+    [[nodiscard]] UInt256
     key() const
     {
         return keylet().key;
@@ -490,8 +490,8 @@ protected:
  * otherwise prefer the per-type entries (e.g. AccountRootEntry.h), which
  * additionally enforce the entry type at compile time.
  *
- *   SLE::const_pointer / SLE::const_ref  ->  ReadOnlySLE
- *   SLE::pointer       / SLE::ref        ->  WritableSLE
+ *   SLE::const_pointer / SLE::ConstRef  ->  ReadOnlySLE
+ *   SLE::pointer       / SLE::Ref        ->  WritableSLE
  */
 using ReadOnlySLE = SLEBase<ReadView>;
 using WritableSLE = SLEBase<ApplyView>;

@@ -4,12 +4,7 @@
 #include <type_traits>
 #include <utility>
 
-namespace beast {
-
-template <bool, bool, class, class, class, class, class>
-class aged_ordered_container;
-
-namespace detail {
+namespace beast::detail {
 
 // If Iterator is SCARY then this iterator will be as well.
 template <bool IsConst, class Iterator>
@@ -144,6 +139,4 @@ private:
     Iterator iter_;
 };
 
-}  // namespace detail
-
-}  // namespace beast
+}  // namespace beast::detail

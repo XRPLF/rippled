@@ -356,7 +356,7 @@ PreflightResult
 preflight(
     ServiceRegistry& registry,
     Rules const& rules,
-    uint256 const& parentBatchId,
+    UInt256 const& parentBatchId,
     STTx const& tx,
     ApplyFlags flags,
     beast::Journal j)

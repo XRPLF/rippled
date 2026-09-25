@@ -20,12 +20,12 @@ class PlainHTTPPeer : public BaseHTTPPeer<Handler, PlainHTTPPeer<Handler>>,
 {
 private:
     friend class BaseHTTPPeer<Handler, PlainHTTPPeer>;
-    using socket_type = boost::asio::ip::tcp::socket;
-    using stream_type = boost::beast::tcp_stream;
-    using endpoint_type = boost::asio::ip::tcp::endpoint;
+    using SocketType = boost::asio::ip::tcp::socket;
+    using StreamType = boost::beast::tcp_stream;
+    using EndpointType = boost::asio::ip::tcp::endpoint;
 
-    stream_type stream_;
-    socket_type& socket_;
+    StreamType stream_;
+    SocketType& socket_;
 
 public:
     template <class ConstBufferSequence>
@@ -34,9 +34,9 @@ public:
         Handler& handler,
         boost::asio::io_context& ioc,
         beast::Journal journal,
-        endpoint_type remoteAddress,
+        EndpointType remoteAddress,
         ConstBufferSequence const& buffers,
-        stream_type&& stream);
+        StreamType&& stream);
 
     void
     run();
@@ -61,9 +61,9 @@ PlainHTTPPeer<Handler>::PlainHTTPPeer(
     Handler& handler,
     boost::asio::io_context& ioc,
     beast::Journal journal,
-    endpoint_type remoteEndpoint,
+    EndpointType remoteEndpoint,
     ConstBufferSequence const& buffers,
-    stream_type&& stream)
+    StreamType&& stream)
     : BaseHTTPPeer<Handler, PlainHTTPPeer>(
           port,
           handler,
@@ -131,7 +131,7 @@ PlainHTTPPeer<Handler>::doRequest()
     {
         // half-close on Connection: close
         if (!what.keepAlive)
-            socket_.shutdown(socket_type::shutdown_receive, ec);
+            socket_.shutdown(SocketType::shutdown_receive, ec);
         if (ec)
             return this->fail(ec, "request");
         return this->write(what.response, what.keepAlive);
@@ -139,7 +139,7 @@ PlainHTTPPeer<Handler>::doRequest()
 
     // Perform half-close when Connection: close and not SSL
     if (!beast::rfc2616::isKeepAlive(this->message_))
-        socket_.shutdown(socket_type::shutdown_receive, ec);
+        socket_.shutdown(SocketType::shutdown_receive, ec);
     if (ec)
         return this->fail(ec, "request");
     // legacy
@@ -151,7 +151,7 @@ void
 PlainHTTPPeer<Handler>::doClose()
 {
     boost::system::error_code ec;
-    socket_.shutdown(socket_type::shutdown_send, ec);
+    socket_.shutdown(SocketType::shutdown_send, ec);
 }
 
 }  // namespace xrpl

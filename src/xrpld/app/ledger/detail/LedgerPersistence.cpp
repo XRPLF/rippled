@@ -131,7 +131,7 @@ finishLoadByIndexOrHash(std::shared_ptr<Ledger> const& ledger, beast::Journal j)
     ledger->setFull();
 }
 
-std::tuple<std::shared_ptr<Ledger>, std::uint32_t, uint256>
+std::tuple<std::shared_ptr<Ledger>, std::uint32_t, UInt256>
 getLatestLedger(Rules const& rules, Fees const& fees, ServiceRegistry& registry)
 {
     std::optional<LedgerHeader> const info = registry.getRelationalDatabase().getNewestLedgerInfo();
@@ -160,7 +160,7 @@ loadByIndex(
 
 std::shared_ptr<Ledger>
 loadByHash(
-    uint256 const& ledgerHash,
+    UInt256 const& ledgerHash,
     Rules const& rules,
     Fees const& fees,
     ServiceRegistry& registry,

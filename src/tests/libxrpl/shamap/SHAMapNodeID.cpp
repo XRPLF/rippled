@@ -12,13 +12,13 @@ namespace xrpl::tests {
 
 // An arbitrary 32-byte key reused across tests below that don't care about its specific value,
 // only that it is a well-formed key.
-constexpr uint256 kTestKey("b92891fe4ef6cee585fdc6fda1e09eb4d386363158ec3321b8123e5a772c6ca8");
+constexpr UInt256 kTestKey("b92891fe4ef6cee585fdc6fda1e09eb4d386363158ec3321b8123e5a772c6ca8");
 
 TEST(SHAMapNodeIDTest, root_is_prefix_of_every_key)
 {
     SHAMapNodeID const root;
     EXPECT_EQ(root.getDepth(), 0u);
-    EXPECT_TRUE(root.isPrefixOf(uint256{}));
+    EXPECT_TRUE(root.isPrefixOf(UInt256{}));
     EXPECT_TRUE(root.isPrefixOf(kTestKey));
 }
 
@@ -54,7 +54,7 @@ TEST(SHAMapNodeIDTest, wrong_branch_is_not_prefix_of_key)
 TEST(SHAMapNodeIDTest, prefix_check_is_depth_sensitive)
 {
     // kTestKey and kOther agree on the first two nibbles ("b9") and then diverge.
-    constexpr uint256 kOther("b99891fe4ef6cee585fdc6fda1e09eb4d386363158ec3321b8123e5a772c6ca8");
+    constexpr UInt256 kOther("b99891fe4ef6cee585fdc6fda1e09eb4d386363158ec3321b8123e5a772c6ca8");
 
     auto id = SHAMapNodeID{}.getChildNodeID(selectBranch(SHAMapNodeID{}, kTestKey));
     EXPECT_TRUE(id.isPrefixOf(kTestKey));
@@ -76,7 +76,7 @@ TEST(SHAMapNodeIDTest, leaf_id_from_key_is_prefix_of_that_key)
     EXPECT_TRUE(leaf.isPrefixOf(kTestKey));
 
     // At full depth the prefix is the whole key, so nothing else matches.
-    constexpr uint256 kOther("b92891fe4ef6cee585fdc6fda1e09eb4d386363158ec3321b8123e5a772c6ca9");
+    constexpr UInt256 kOther("b92891fe4ef6cee585fdc6fda1e09eb4d386363158ec3321b8123e5a772c6ca9");
     EXPECT_FALSE(leaf.isPrefixOf(kOther));
 }
 
@@ -129,7 +129,7 @@ TEST(SHAMapNodeIDDeathTest, out_of_range_depth_is_clamped)
     }
 
     // The constructor clamps on its own, for the paths that do not go through createID.
-    SHAMapNodeID const direct{SHAMap::kLeafDepth + 1u, uint256{}};
+    SHAMapNodeID const direct{SHAMap::kLeafDepth + 1u, UInt256{}};
     EXPECT_EQ(direct.getDepth(), SHAMap::kLeafDepth);
 #else
     EXPECT_DEATH(
@@ -171,7 +171,7 @@ TEST(SHAMapNodeIDTest, deserialize_rejects_out_of_range_depth)
     // assertion, so an out-of-range depth here is built by hand instead.
     auto serializeWithRawDepth = [](unsigned int depth) {
         Serializer s;
-        s.addBitString(uint256{});
+        s.addBitString(UInt256{});
         s.add8(static_cast<unsigned char>(depth));
         return s.getString();
     };
@@ -184,7 +184,7 @@ TEST(SHAMapNodeIDTest, deserialize_rejects_out_of_range_depth)
 
     // A depth-64 ID is legal, since leaves live there, but it has no children.
     auto const id =
-        deserializeSHAMapNodeID(SHAMapNodeID{SHAMap::kLeafDepth, uint256{}}.getRawString());
+        deserializeSHAMapNodeID(SHAMapNodeID{SHAMap::kLeafDepth, UInt256{}}.getRawString());
     ASSERT_TRUE(id.has_value());
     // NOLINTNEXTLINE(bugprone-unchecked-optional-access) has_value checked above
     EXPECT_THROW((void)id->getChildNodeID(0), std::logic_error);

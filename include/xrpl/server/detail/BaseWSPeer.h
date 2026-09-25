@@ -38,16 +38,16 @@ template <class Handler, class Impl>
 class BaseWSPeer : public BasePeer<Handler, Impl>, public WSSession
 {
 protected:
-    using clock_type = std::chrono::system_clock;
-    using error_code = boost::system::error_code;
-    using endpoint_type = boost::asio::ip::tcp::endpoint;
-    using waitable_timer = boost::asio::basic_waitable_timer<clock_type>;
+    using ClockType = std::chrono::system_clock;
+    using ErrorCode = boost::system::error_code;
+    using EndpointType = boost::asio::ip::tcp::endpoint;
+    using WaitableTimer = boost::asio::basic_waitable_timer<ClockType>;
     using BasePeer<Handler, Impl>::strand_;
 
 private:
     friend class BasePeer<Handler, Impl>;
 
-    http_request_type request_;
+    HttpRequestType request_;
     boost::beast::multi_buffer rb_;
     boost::beast::multi_buffer wb_;
     std::list<std::shared_ptr<WSMsg>> wq_;
@@ -58,11 +58,11 @@ private:
      */
     bool doClose_ = false;
     boost::beast::websocket::close_reason cr_;
-    waitable_timer timer_;
+    WaitableTimer timer_;
     bool closeOnTimer_ = false;
     bool pingActive_ = false;
     boost::beast::websocket::ping_data payload_;
-    error_code ec_;
+    ErrorCode ec_;
     std::function<void(boost::beast::websocket::frame_type, std::string_view)> controlCallback_;
 
 public:
@@ -71,8 +71,8 @@ public:
         Port const& port,
         Handler& handler,
         boost::asio::executor const& executor,
-        waitable_timer timer,
-        endpoint_type remoteAddress,
+        WaitableTimer timer,
+        EndpointType remoteAddress,
         boost::beast::http::request<Body, Headers>&& request,
         beast::Journal journal);
 
@@ -89,7 +89,7 @@ public:
         return this->port_;
     }
 
-    [[nodiscard]] http_request_type const&
+    [[nodiscard]] HttpRequestType const&
     request() const override
     {
         return this->request_;
@@ -121,25 +121,25 @@ protected:
     }
 
     void
-    onWsHandshake(error_code const& ec);
+    onWsHandshake(ErrorCode const& ec);
 
     void
     doWrite();
 
     void
-    onWrite(error_code const& ec);
+    onWrite(ErrorCode const& ec);
 
     void
-    onWriteFin(error_code const& ec);
+    onWriteFin(ErrorCode const& ec);
 
     void
     doRead();
 
     void
-    onRead(error_code const& ec);
+    onRead(ErrorCode const& ec);
 
     void
-    onClose(error_code const& ec);
+    onClose(ErrorCode const& ec);
 
     void
     startTimer();
@@ -148,17 +148,17 @@ protected:
     cancelTimer();
 
     void
-    onPing(error_code const& ec);
+    onPing(ErrorCode const& ec);
 
     void
     onPingPong(boost::beast::websocket::frame_type kind, std::string_view payload);
 
     void
-    onTimer(error_code ec);
+    onTimer(ErrorCode ec);
 
     template <class String>
     void
-    fail(error_code ec, String const& what);
+    fail(ErrorCode ec, String const& what);
 };
 
 //------------------------------------------------------------------------------
@@ -169,8 +169,8 @@ BaseWSPeer<Handler, Impl>::BaseWSPeer(
     Port const& port,
     Handler& handler,
     boost::asio::executor const& executor,
-    waitable_timer timer,
-    endpoint_type remoteAddress,
+    WaitableTimer timer,
+    EndpointType remoteAddress,
     boost::beast::http::request<Body, Headers>&& request,
     beast::Journal journal)
     : BasePeer<Handler, Impl>(port, handler, executor, remoteAddress, journal)
@@ -199,7 +199,7 @@ BaseWSPeer<Handler, Impl>::run()
         res.set(boost::beast::http::field::server, build_info::getFullVersionString());
     }));
     impl().ws_.async_accept(
-        request_, bind_executor(strand_, [self = impl().shared_from_this()](error_code const& ec) {
+        request_, bind_executor(strand_, [self = impl().shared_from_this()](ErrorCode const& ec) {
             self->onWsHandshake(ec);
         }));
 }
@@ -271,7 +271,7 @@ BaseWSPeer<Handler, Impl>::complete()
 
 template <class Handler, class Impl>
 void
-BaseWSPeer<Handler, Impl>::onWsHandshake(error_code const& ec)
+BaseWSPeer<Handler, Impl>::onWsHandshake(ErrorCode const& ec)
 {
     if (ec)
         return fail(ec, "on_ws_handshake");
@@ -290,7 +290,7 @@ BaseWSPeer<Handler, Impl>::doWrite()
 
 template <class Handler, class Impl>
 void
-BaseWSPeer<Handler, Impl>::onWrite(error_code const& ec)
+BaseWSPeer<Handler, Impl>::onWrite(ErrorCode const& ec)
 {
     if (ec)
         return fail(ec, "write");
@@ -305,7 +305,7 @@ BaseWSPeer<Handler, Impl>::onWrite(error_code const& ec)
             static_cast<bool>(result.first),
             result.second,
             bind_executor(
-                strand_, [self = impl().shared_from_this()](error_code const& ec, std::size_t) {
+                strand_, [self = impl().shared_from_this()](ErrorCode const& ec, std::size_t) {
                     self->onWrite(ec);
                 }));
     }
@@ -315,7 +315,7 @@ BaseWSPeer<Handler, Impl>::onWrite(error_code const& ec)
             static_cast<bool>(result.first),
             result.second,
             bind_executor(
-                strand_, [self = impl().shared_from_this()](error_code const& ec, std::size_t) {
+                strand_, [self = impl().shared_from_this()](ErrorCode const& ec, std::size_t) {
                     self->onWriteFin(ec);
                 }));
     }
@@ -323,7 +323,7 @@ BaseWSPeer<Handler, Impl>::onWrite(error_code const& ec)
 
 template <class Handler, class Impl>
 void
-BaseWSPeer<Handler, Impl>::onWriteFin(error_code const& ec)
+BaseWSPeer<Handler, Impl>::onWriteFin(ErrorCode const& ec)
 {
     if (ec)
         return fail(ec, "write_fin");
@@ -331,7 +331,7 @@ BaseWSPeer<Handler, Impl>::onWriteFin(error_code const& ec)
     if (doClose_)
     {
         impl().ws_.async_close(
-            cr_, bind_executor(strand_, [self = impl().shared_from_this()](error_code const& ec) {
+            cr_, bind_executor(strand_, [self = impl().shared_from_this()](ErrorCode const& ec) {
                 self->onClose(ec);
             }));
     }
@@ -350,14 +350,14 @@ BaseWSPeer<Handler, Impl>::doRead()
     impl().ws_.async_read(
         rb_,
         bind_executor(
-            strand_, [self = impl().shared_from_this()](error_code const& ec, std::size_t) {
+            strand_, [self = impl().shared_from_this()](ErrorCode const& ec, std::size_t) {
                 self->onRead(ec);
             }));
 }
 
 template <class Handler, class Impl>
 void
-BaseWSPeer<Handler, Impl>::onRead(error_code const& ec)
+BaseWSPeer<Handler, Impl>::onRead(ErrorCode const& ec)
 {
     if (ec == boost::beast::websocket::error::closed)
         return onClose({});
@@ -373,7 +373,7 @@ BaseWSPeer<Handler, Impl>::onRead(error_code const& ec)
 
 template <class Handler, class Impl>
 void
-BaseWSPeer<Handler, Impl>::onClose(error_code const& ec)
+BaseWSPeer<Handler, Impl>::onClose(ErrorCode const& ec)
 {
     cancelTimer();
 }
@@ -396,7 +396,7 @@ BaseWSPeer<Handler, Impl>::startTimer()
     }
 
     timer_.async_wait(bind_executor(
-        strand_, [self = impl().shared_from_this()](error_code const& ec) { self->onTimer(ec); }));
+        strand_, [self = impl().shared_from_this()](ErrorCode const& ec) { self->onTimer(ec); }));
 }
 
 // Convenience for discarding the error code
@@ -416,7 +416,7 @@ BaseWSPeer<Handler, Impl>::cancelTimer()
 
 template <class Handler, class Impl>
 void
-BaseWSPeer<Handler, Impl>::onPing(error_code const& ec)
+BaseWSPeer<Handler, Impl>::onPing(ErrorCode const& ec)
 {
     if (ec == boost::asio::error::operation_aborted)
         return;
@@ -449,7 +449,7 @@ BaseWSPeer<Handler, Impl>::onPingPong(
 
 template <class Handler, class Impl>
 void
-BaseWSPeer<Handler, Impl>::onTimer(error_code ec)
+BaseWSPeer<Handler, Impl>::onTimer(ErrorCode ec)
 {
     if (ec == boost::asio::error::operation_aborted)
         return;
@@ -464,7 +464,7 @@ BaseWSPeer<Handler, Impl>::onTimer(error_code ec)
             beast::rngfill(payload_.begin(), payload_.size(), cryptoPrng());
             impl().ws_.async_ping(
                 payload_,
-                bind_executor(strand_, [self = impl().shared_from_this()](error_code const& ec) {
+                bind_executor(strand_, [self = impl().shared_from_this()](ErrorCode const& ec) {
                     self->onPing(ec);
                 }));
             JLOG(this->j_.trace()) << "sent ping";
@@ -478,7 +478,7 @@ BaseWSPeer<Handler, Impl>::onTimer(error_code ec)
 template <class Handler, class Impl>
 template <class String>
 void
-BaseWSPeer<Handler, Impl>::fail(error_code ec, String const& what)
+BaseWSPeer<Handler, Impl>::fail(ErrorCode ec, String const& what)
 {
     XRPL_ASSERT(strand_.running_in_this_thread(), "xrpl::BaseWSPeer::fail : strand in this thread");
 

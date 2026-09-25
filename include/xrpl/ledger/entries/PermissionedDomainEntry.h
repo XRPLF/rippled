@@ -32,7 +32,7 @@ public:
     }
 
     explicit PermissionedDomainEntry(
-        uint256 const& domainID,
+        UInt256 const& domainID,
         Base::ViewRefType view,
         beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
         : Base(keylet::permissionedDomain(domainID), view, j)

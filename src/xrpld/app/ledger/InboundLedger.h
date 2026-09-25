@@ -35,7 +35,7 @@ class InboundLedger final : public TimeoutCounter,
                             public CountedObject<InboundLedger>
 {
 public:
-    using clock_type = beast::AbstractClock<std::chrono::steady_clock>;
+    using ClockType = beast::AbstractClock<std::chrono::steady_clock>;
 
     // These are the reasons we might acquire a ledger
     enum class Reason {
@@ -46,10 +46,10 @@ public:
 
     InboundLedger(
         Application& app,
-        uint256 const& hash,
+        UInt256 const& hash,
         std::uint32_t seq,
         Reason reason,
-        clock_type&,
+        ClockType&,
         std::unique_ptr<PeerSet> peerSet);
 
     ~InboundLedger() override;
@@ -96,7 +96,7 @@ public:
     bool
     gotData(std::weak_ptr<Peer>, std::shared_ptr<protocol::TMLedgerData> const&);
 
-    using neededHash_t = std::pair<protocol::TMGetObjectByHash::ObjectType, uint256>;
+    using NeededHashT = std::pair<protocol::TMGetObjectByHash::ObjectType, UInt256>;
 
     /**
      * Return a json::ValueType::Object.
@@ -113,7 +113,7 @@ public:
         lastAction_ = clock_.now();
     }
 
-    clock_type::time_point
+    ClockType::time_point
     getLastAction() const
     {
         return lastAction_;
@@ -123,12 +123,12 @@ private:
     enum class TriggerReason { Added, Reply, Timeout };
 
     void
-    filterNodes(std::vector<std::pair<SHAMapNodeID, uint256>>& nodes, TriggerReason reason);
+    filterNodes(std::vector<std::pair<SHAMapNodeID, UInt256>>& nodes, TriggerReason reason);
 
     void
     trigger(std::shared_ptr<Peer> const&, TriggerReason);
 
-    std::vector<neededHash_t>
+    std::vector<NeededHashT>
     getNeededHashes();
 
     void
@@ -167,14 +167,14 @@ private:
     bool
     takeAsRootNode(std::string_view data, SHAMapAddNode& san);
 
-    std::vector<uint256>
+    std::vector<UInt256>
     neededTxHashes(int max, SHAMapSyncFilter const* filter) const;
 
-    std::vector<uint256>
+    std::vector<UInt256>
     neededStateHashes(int max, SHAMapSyncFilter const* filter) const;
 
-    clock_type& clock_;
-    clock_type::time_point lastAction_;
+    ClockType& clock_;
+    ClockType::time_point lastAction_;
 
     std::shared_ptr<Ledger> ledger_;
     bool haveHeader_{false};
@@ -185,7 +185,7 @@ private:
     std::uint32_t seq_;
     Reason const reason_;
 
-    std::set<uint256> recentNodes_;
+    std::set<UInt256> recentNodes_;
 
     SHAMapAddNode stats_;
 

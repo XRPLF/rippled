@@ -36,7 +36,7 @@ TEST(DepositPreauthEntryTests, constructors)
         authCreds);
 
     expectKeylet<DepositPreauthEntry>(
-        e, keylet::depositPreauth(e.someID()), "depositPreauth(uint256)", e.someID());
+        e, keylet::depositPreauth(e.someID()), "depositPreauth(UInt256)", e.someID());
 
     // Owner and preauthorized are both AccountIDs, so the assertion above
     // only has teeth if their order matters.

@@ -29,7 +29,7 @@ class SHAMapSyncTest : public ::testing::Test
 {
 protected:
     beast::Journal const j_{TestSink::instance()};
-    beast::xor_shift_engine eng_;
+    beast::XorShiftEngine eng_;
 
     boost::intrusive_ptr<SHAMapItem>
     makeRandomAS()
@@ -50,7 +50,7 @@ protected:
         // map should be the same
         SHAMapHash const beforeHash = map.getHash();
 
-        std::list<uint256> items;
+        std::list<UInt256> items;
 
         for (auto i = 0uz; i < count; ++i)
         {

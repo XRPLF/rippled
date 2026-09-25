@@ -16,7 +16,7 @@ struct JsonContext;
 
 // Result:
 // {
-//   random: <uint256>
+//   random: <UInt256>
 // }
 json::Value
 doRandom(rpc::JsonContext& context)
@@ -25,7 +25,7 @@ doRandom(rpc::JsonContext& context)
     // top level too.
     try
     {
-        uint256 rand;
+        UInt256 rand;
         beast::rngfill(rand.begin(), rand.size(), cryptoPrng());
 
         json::Value jvResult;

@@ -22,7 +22,7 @@ public:
     using Base::Base;
 
     explicit LoanEntry(
-        uint256 const& loanBrokerID,
+        UInt256 const& loanBrokerID,
         SeqProxy const& loanSeq,
         Base::ViewRefType view,
         beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
@@ -31,7 +31,7 @@ public:
     }
 
     explicit LoanEntry(
-        uint256 const& loanID,
+        UInt256 const& loanID,
         Base::ViewRefType view,
         beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
         : Base(keylet::loan(loanID), view, j)

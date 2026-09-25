@@ -24,9 +24,9 @@ WorkSSL::WorkSSL(
     boost::asio::io_context& ios,
     beast::Journal j,
     Config const& config,
-    endpoint_type const& lastEndpoint,
+    EndpointType const& lastEndpoint,
     bool lastStatus,
-    callback_type cb)
+    CallbackType cb)
     : WorkBase(host, path, port, ios, lastEndpoint, lastStatus, cb)
     , context_(
           config.sslVerifyDir,
@@ -42,7 +42,7 @@ WorkSSL::WorkSSL(
 }
 
 void
-WorkSSL::onConnect(error_code const& ec)
+WorkSSL::onConnect(ErrorCode const& ec)
 {
     auto err = ec ? ec : context_.postConnectVerify(stream_, host_);
     if (err)
@@ -54,11 +54,11 @@ WorkSSL::onConnect(error_code const& ec)
     stream_.async_handshake(
         boost::asio::ssl::stream_base::client,
         boost::asio::bind_executor(
-            strand_, [self = shared_from_this()](error_code const& ec) { self->onHandshake(ec); }));
+            strand_, [self = shared_from_this()](ErrorCode const& ec) { self->onHandshake(ec); }));
 }
 
 void
-WorkSSL::onHandshake(error_code const& ec)
+WorkSSL::onHandshake(ErrorCode const& ec)
 {
     if (ec)
     {

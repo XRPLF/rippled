@@ -289,7 +289,7 @@ public:
         for (auto c : kPayload8)
             v.push_back(c);
 
-        beast::xor_shift_engine g(148979842);
+        beast::XorShiftEngine g(148979842);
 
         for (std::size_t i = 0; i != v.size(); ++i)
         {

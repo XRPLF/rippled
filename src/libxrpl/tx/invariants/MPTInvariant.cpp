@@ -67,7 +67,7 @@ subtractMPTAmountDelta(std::int64_t delta, std::uint64_t amount)
 }  // namespace
 
 void
-ValidMPTIssuance::visitEntry(bool isDelete, SLE::const_ref before, SLE::const_ref after)
+ValidMPTIssuance::visitEntry(bool isDelete, SLE::ConstRef before, SLE::ConstRef after)
 {
     // The sfReferenceHolding tracking and the deleted-holding capture are
     // only meaningful post-fixCleanup3_2_0 (the field is never set
@@ -428,7 +428,7 @@ ValidMPTIssuance::finalize(
 }
 
 void
-ValidMPTBalanceChanges::visitEntry(bool, SLE::const_ref before, SLE::const_ref after)
+ValidMPTBalanceChanges::visitEntry(bool, SLE::ConstRef before, SLE::ConstRef after)
 {
     if (overflow_)
         return;
@@ -562,7 +562,7 @@ ValidConfidentialMPToken::visitEntry(
     std::shared_ptr<SLE const> const& after)
 {
     // Helper to get MPToken Issuance ID safely
-    auto const getMptID = [](std::shared_ptr<SLE const> const& sle) -> uint192 {
+    auto const getMptID = [](std::shared_ptr<SLE const> const& sle) -> UInt192 {
         if (!sle)
             return beast::kZero;
         if (sle->getType() == ltMPTOKEN)
@@ -574,7 +574,7 @@ ValidConfidentialMPToken::visitEntry(
 
     if (before && before->getType() == ltMPTOKEN)
     {
-        uint192 const id = getMptID(before);
+        UInt192 const id = getMptID(before);
         auto& change = changes_[id];
         change.mptAmountDelta =
             subtractMPTAmountDelta(change.mptAmountDelta, before->getFieldU64(sfMPTAmount));
@@ -595,7 +595,7 @@ ValidConfidentialMPToken::visitEntry(
 
     if (after && after->getType() == ltMPTOKEN)
     {
-        uint192 const id = getMptID(after);
+        UInt192 const id = getMptID(after);
         auto& change = changes_[id];
         change.mptAmountDelta =
             addMPTAmountDelta(change.mptAmountDelta, after->getFieldU64(sfMPTAmount));
@@ -634,7 +634,7 @@ ValidConfidentialMPToken::visitEntry(
 
     if (before && before->getType() == ltMPTOKEN_ISSUANCE)
     {
-        uint192 const id = getMptID(before);
+        UInt192 const id = getMptID(before);
         auto& change = changes_[id];
         if (before->isFieldPresent(sfConfidentialOutstandingAmount))
         {
@@ -647,7 +647,7 @@ ValidConfidentialMPToken::visitEntry(
 
     if (after && after->getType() == ltMPTOKEN_ISSUANCE)
     {
-        uint192 const id = getMptID(after);
+        UInt192 const id = getMptID(after);
         auto& change = changes_[id];
 
         bool const hasCOA = after->isFieldPresent(sfConfidentialOutstandingAmount);
@@ -667,7 +667,7 @@ ValidConfidentialMPToken::visitEntry(
 
     if (before && after && before->getType() == ltMPTOKEN && after->getType() == ltMPTOKEN)
     {
-        uint192 const id = getMptID(after);
+        UInt192 const id = getMptID(after);
 
         // sfConfidentialBalanceVersion must change when spending changes
         auto const spendingBefore = (*before)[~sfConfidentialBalanceSpending];

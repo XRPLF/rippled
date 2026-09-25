@@ -28,7 +28,7 @@ namespace xrpl {
 static TER
 incrementSponsorCount(
     ApplyView& view,
-    SLE::ref sle,
+    SLE::Ref sle,
     SF_UINT32 const& field,
     std::uint32_t const delta)
 {
@@ -50,7 +50,7 @@ incrementSponsorCount(
 static TER
 decrementSponsorCount(
     ApplyView& view,
-    SLE::ref sle,
+    SLE::Ref sle,
     SF_UINT32 const& field,
     std::uint32_t const delta)
 {
@@ -71,7 +71,7 @@ decrementSponsorCount(
 // Consume the sponsor's pre-funded reserve budget and lowers the Sponsorship
 // object's RemainingOwnerCount.
 static TER
-decrementPrefundedReserveCount(ApplyView& view, SLE::ref sponsorshipSle, std::uint32_t const delta)
+decrementPrefundedReserveCount(ApplyView& view, SLE::Ref sponsorshipSle, std::uint32_t const delta)
 {
     if (delta == 0)
         return tesSUCCESS;  // LCOV_EXCL_LINE
@@ -313,7 +313,7 @@ SponsorshipTransfer::doApply()
     if (!sponseeSle)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
-    auto const balanceBeforeFee = [&](SLE::const_ref sle) -> XRPAmount {
+    auto const balanceBeforeFee = [&](SLE::ConstRef sle) -> XRPAmount {
         if (sle->getAccountID(sfAccount) == accountID_)
             return preFeeBalance_;
         return sle->getFieldAmount(sfBalance).xrp();
@@ -548,7 +548,7 @@ SponsorshipTransfer::doApply()
 }
 
 void
-SponsorshipTransfer::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
+SponsorshipTransfer::visitInvariantEntry(bool, SLE::ConstRef, SLE::ConstRef)
 {
 }
 

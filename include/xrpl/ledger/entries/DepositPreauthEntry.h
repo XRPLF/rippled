@@ -44,7 +44,7 @@ public:
     }
 
     explicit DepositPreauthEntry(
-        uint256 const& preauthID,
+        UInt256 const& preauthID,
         Base::ViewRefType view,
         beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
         : Base(keylet::depositPreauth(preauthID), view, j)

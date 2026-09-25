@@ -31,7 +31,7 @@ public:
     }
 
     explicit AMMEntry(
-        uint256 const& ammID,
+        UInt256 const& ammID,
         Base::ViewRefType view,
         beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
         : Base(keylet::amm(ammID), view, j)

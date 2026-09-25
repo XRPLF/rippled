@@ -93,14 +93,14 @@ public:
     void
     missingNodeAcquireBySeq(
         [[maybe_unused]] std::uint32_t refNum,
-        [[maybe_unused]] uint256 const& nodeHash) override
+        [[maybe_unused]] UInt256 const& nodeHash) override
     {
         Throw<std::runtime_error>("missing node");
     }
 
     void
     missingNodeAcquireByHash(
-        [[maybe_unused]] uint256 const& refHash,
+        [[maybe_unused]] UInt256 const& refHash,
         [[maybe_unused]] std::uint32_t refNum) override
     {
         Throw<std::runtime_error>("missing node");
