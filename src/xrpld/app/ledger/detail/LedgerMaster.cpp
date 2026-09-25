@@ -98,8 +98,8 @@ static constexpr int kMaxLedgerGap{100};
 static constexpr std::chrono::minutes kMaxLedgerAgeAcquire{1};
 
 /**
- * Don't acquire history if write load is too high. Node-store write queue
- * depth, in pending writes, above which back-filling is skipped.
+ * Don't acquire history if write load is too high. The load is the number of
+ * node objects waiting in the backend's write batch; NuDB always reports 0.
  */
 static constexpr int kMaxWriteLoadAcquire{8192};
 
@@ -109,7 +109,8 @@ static constexpr int kMaxWriteLoadAcquire{8192};
  *
  * @param currentLedger Sequence of the newest validated ledger.
  * @param ledgerHistory How many ledgers of history the operator asked to keep.
- * @param minimumOnline Lowest sequence the node must keep online, if known.
+ * @param minimumOnline Online-delete floor, or the oldest SQL ledger when
+ * online delete is off; nullopt if unknown.
  * @param candidateLedger Sequence of the missing ledger being considered.
  * @param j Log sink for the decision.
  * @return true when the candidate may be the current ledger, falls inside the
@@ -1148,27 +1149,19 @@ LedgerMaster::consensusBuilt(
     auto validations =
         app_.getValidators().negativeUNLFilter(app_.getValidations().currentTrusted());
 
-    /**
-     * Track validation counts with sequence numbers.
-     *
-     * One tally per ledger hash, built while scanning the current trusted
-     * validations. A validation names a hash but not always a usable sequence,
-     * so the first nonzero sequence seen for a hash is kept.
-     *
-     * @note Not thread-safe, and not intended to be: instances live only inside
-     * the loop below, which holds no lock.
-     */
+    // Track validation counts with sequence numbers.
+    //
+    // One tally per ledger hash, built while scanning the current trusted
+    // validations. Every validation carries a sequence; the first nonzero one
+    // seen for a hash is kept. Instances live only inside this function, so no
+    // locking is needed.
     class ValSeq
     {
     public:
         ValSeq() = default;
 
-        /**
-         * Counts one more validation for this ledger.
-         *
-         * @param seq Sequence the validation reported. Adopted only if no
-         * sequence is known yet; zero leaves the tally's sequence unknown.
-         */
+        // Counts one more validation for this ledger. seq is adopted only if
+        // no sequence is known yet; zero leaves the sequence unknown.
         void
         mergeValidation(LedgerIndex seq)
         {
@@ -1179,14 +1172,10 @@ LedgerMaster::consensusBuilt(
                 ledgerSeq = seq;
         }
 
-        /**
-         * How many trusted validations named this ledger.
-         */
+        // How many trusted validations named this ledger.
         std::size_t valCount{0};
 
-        /**
-         * Sequence of this ledger, or 0 while still unknown.
-         */
+        // Sequence of this ledger, or 0 while still unknown.
         LedgerIndex ledgerSeq{0};
     };
 
