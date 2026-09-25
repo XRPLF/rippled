@@ -634,6 +634,28 @@ private:
                 (env.now() + 1h).time_since_epoch().count(),
                 Ter(tecNO_PERMISSION));
 
+            // XLS-66 flow: the proposer must not name itself as the Borrower
+            // (temINVALID). Such a loan would have Borrower ==
+            // LoanBroker.Owner and be caught by the ValidLoan invariant only
+            // after it had been applied.
+            propose(
+                env,
+                broker,
+                lender,
+                lender,
+                (env.now() + 1h).time_since_epoch().count(),
+                Ter(temINVALID));
+
+            // The self-borrower check is in preflight, so it fires before the
+            // preclaim check that the submitter owns the LoanBroker.
+            propose(
+                env,
+                broker,
+                evan,
+                evan,
+                (env.now() + 1h).time_since_epoch().count(),
+                Ter(temINVALID));
+
             // XLS-66 flow: two-step preclaim rejects a past StartDate (tecEXPIRED).
             std::uint32_t const pastDate = epoch.time_since_epoch().count();
             propose(env, broker, lender, borrower, pastDate, Ter(tecEXPIRED));

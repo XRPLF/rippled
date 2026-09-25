@@ -680,6 +680,16 @@ LoanSet::preflight(PreflightContext const& ctx)
         return temINVALID;
     }
 
+    // In the two-step flow the LoanBroker owner proposes a loan to another
+    // account, so the named Borrower must not be the submitting account. The
+    // ValidLoan invariant also enforces this, so reject it here rather than
+    // let an account trigger an invariant failure at will.
+    if (auto const borrower = tx[~sfBorrower]; borrower && *borrower == tx[sfAccount])
+    {
+        JLOG(ctx.j.warn()) << "LoanSet Borrower must not be the submitting account.";
+        return temINVALID;
+    }
+
     if (counterPartySig)
     {
         if (auto const ret = xrpl::detail::preflightCheckSigningKey(*counterPartySig, ctx.j))
