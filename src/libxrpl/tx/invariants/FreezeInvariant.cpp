@@ -11,6 +11,7 @@
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/Rules.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STTx.h>
@@ -42,13 +43,14 @@ TransfersNotFrozen::visitEntry(bool isDelete, SLE::const_ref before, SLE::const_
         return;
     }
 
-    auto const balanceChange = calculateBalanceChange(before, after, isDelete);
+    auto const balances = calculateEffectiveBalances(before, after, isDelete);
+    auto const balanceChange = balances.after - balances.before;
     if (balanceChange.signum() == 0)
     {
         return;
     }
 
-    recordBalanceChanges(after, balanceChange);
+    recordBalanceChanges(after, balances, balanceChange);
 }
 
 bool
@@ -77,6 +79,7 @@ TransfersNotFrozen::finalize(
      */
     [[maybe_unused]] bool const enforce = view.rules().enabled(featureDeepFreeze);
     bool const fixOverrideFreeze = view.rules().enabled(fixCleanup3_4_0);
+    bool const fixIssuerGrouping = view.rules().enabled(fixCleanup3_5_0);
 
     /*
      * XLS-0066: a broker must be able to default an already-late loan
@@ -109,7 +112,14 @@ TransfersNotFrozen::finalize(
         }
 
         return validateIssuerChanges(
-            issuerSle, changes, tx, j, enforce, fixOverrideFreeze, loanDefaultAccounts);
+            issuerSle,
+            changes,
+            tx,
+            j,
+            enforce,
+            fixOverrideFreeze,
+            fixIssuerGrouping,
+            loanDefaultAccounts);
     });
 }
 
@@ -138,8 +148,8 @@ TransfersNotFrozen::isValidEntry(SLE::const_ref before, SLE::const_ref after)
     return after->getType() == ltRIPPLE_STATE && (!before || before->getType() == ltRIPPLE_STATE);
 }
 
-STAmount
-TransfersNotFrozen::calculateBalanceChange(
+TransfersNotFrozen::EffectiveBalances
+TransfersNotFrozen::calculateEffectiveBalances(
     SLE::const_ref before,
     SLE::const_ref after,
     bool isDelete)
@@ -163,7 +173,7 @@ TransfersNotFrozen::calculateBalanceChange(
      */
     auto const balanceAfter = getBalance(after, before, isDelete);
 
-    return balanceAfter - balanceBefore;
+    return {.before = balanceBefore, .after = balanceAfter};
 }
 
 void
@@ -185,20 +195,77 @@ TransfersNotFrozen::recordBalance(Issue const& issue, BalanceChange change)
 }
 
 void
-TransfersNotFrozen::recordBalanceChanges(SLE::const_ref after, STAmount const& balanceChange)
+TransfersNotFrozen::recordBalanceChanges(
+    SLE::const_ref after,
+    EffectiveBalances const& balances,
+    STAmount const& balanceChange)
 {
     auto const balanceChangeSign = balanceChange.signum();
     auto const currency = after->at(sfBalance).get<Issue>().currency;
 
-    // Change from low account's perspective, which is trust line default
-    recordBalance(
-        {currency, after->at(sfHighLimit).getIssuer()},
-        {.line = after, .balanceChangeSign = balanceChangeSign});
+    /* Pre-fixCleanup3_5_0: this recorded every modified trust line under both
+     * endpoints (high and low), treating each as if it were the issuer. That
+     * conflates "party to a trust line" with "issuer of that currency": for a
+     * line whose key account is a mere holder (perspective balance strictly
+     * positive), the account's lsfGlobalFreeze and own-side freeze bits are
+     * engine-irrelevant, but validateIssuerChanges would still apply them.
+     * Combined with the fact that a same-currency cross-issuer trade (e.g.
+     * USD.gwA <-> USD.gwB via a shared holder X) produces a two-sided group
+     * under {USD, X} -- which the one-sided short-circuit in
+     * validateIssuerChanges does not cover -- any holder that has set
+     * asfGlobalFreeze or self-frozen a side of their own trust line would
+     * silently and unavoidably trip tecINVARIANT_FAILED on every crossing
+     * offer or routed payment, with no engine-level diagnostic. Because
+     * Transactor::reset(fee)/ApplyContext::discard drop the apply view on
+     * tecINVARIANT_FAILED, the offering account keeps its funding and its
+     * offer, so a single attacker can grief an entire same-currency
+     * cross-issuer book indefinitely at the cost of one owner reserve.
+     *
+     * Post-fixCleanup3_5_0: only record under an endpoint that is genuinely
+     * acting as an issuer for this specific trust line during the change --
+     * i.e., its perspective balance was strictly negative (owing tokens to
+     * the counterparty) at some point across before/after. A pure holder
+     * (perspective balance >= 0 both before and after) is not recorded on
+     * that endpoint's group and its freeze flags no longer contribute
+     * spurious violations. Groups keyed on genuine issuers are unchanged,
+     * so pre-existing detections (issuer or authorized-privilege moving a
+     * frozen holder's funds) still fire.
+     */
+    bool recordUnderHigh = true;
+    bool recordUnderLow = true;
+    if (isFeatureEnabled(fixCleanup3_5_0))
+    {
+        /* Trust-line balance is stored from the Low account's perspective:
+         *   balance > 0  <=>  High owes Low  (Low is holder, High is issuer)
+         *   balance < 0  <=>  Low owes High  (Low is issuer, High is holder)
+         *   balance == 0 <=>  neither endpoint is currently an issuer
+         * The High account's perspective balance is the negation, so:
+         *   Low  ever an issuer  iff  min(before, after) <  0  (from Low)
+         *   High ever an issuer  iff  max(before, after) >  0  (from Low)
+         * balanceChange is nonzero here, so at least one endpoint is a
+         * genuine issuer and at least one of the two records is emitted.
+         */
+        int const beforeSign = balances.before.signum();
+        int const afterSign = balances.after.signum();
+        recordUnderLow = beforeSign < 0 || afterSign < 0;
+        recordUnderHigh = beforeSign > 0 || afterSign > 0;
+    }
 
-    // Change from high account's perspective, which reverses the sign.
-    recordBalance(
-        {currency, after->at(sfLowLimit).getIssuer()},
-        {.line = after, .balanceChangeSign = -balanceChangeSign});
+    if (recordUnderHigh)
+    {
+        // Change from low account's perspective, which is trust line default
+        recordBalance(
+            {currency, after->at(sfHighLimit).getIssuer()},
+            {.line = after, .balanceChangeSign = balanceChangeSign});
+    }
+
+    if (recordUnderLow)
+    {
+        // Change from high account's perspective, which reverses the sign.
+        recordBalance(
+            {currency, after->at(sfLowLimit).getIssuer()},
+            {.line = after, .balanceChangeSign = -balanceChangeSign});
+    }
 }
 
 SLE::const_pointer
@@ -220,6 +287,7 @@ TransfersNotFrozen::validateIssuerChanges(
     beast::Journal const& j,
     bool enforce,
     bool fixOverrideFreeze,
+    bool fixIssuerGrouping,
     std::optional<LoanDefaultFreezeExemptAccounts> const& loanDefaultAccounts)
 {
     if (!issuer)
@@ -254,6 +322,7 @@ TransfersNotFrozen::validateIssuerChanges(
                     enforce,
                     globalFreeze,
                     fixOverrideFreeze,
+                    fixIssuerGrouping,
                     loanDefaultAccounts))
             {
                 return false;
@@ -272,11 +341,28 @@ TransfersNotFrozen::validateFrozenState(
     bool enforce,
     bool globalFreeze,
     bool fixOverrideFreeze,
+    bool fixIssuerGrouping,
     std::optional<LoanDefaultFreezeExemptAccounts> const& loanDefaultAccounts)
 {
     bool const freeze =
         change.balanceChangeSign < 0 && change.line->isFlag(high ? lsfLowFreeze : lsfHighFreeze);
-    bool const deepFreeze = change.line->isFlag(high ? lsfLowDeepFreeze : lsfHighDeepFreeze);
+    /* Deep freeze is bilateral in the engine: `isDeepFrozen` (and the
+     * `getLineIfUsable` gate driving `accountHolds`/`accountFunds`) treats a
+     * line as deep-frozen when EITHER `lsfLowDeepFreeze` or `lsfHighDeepFreeze`
+     * is set, and `OfferStream`'s deep-freeze filter mirrors that.
+     *
+     * Pre-fixCleanup3_5_0 the invariant checked only the issuer-side bit here,
+     * but the accompanying dual-endpoint recording made the holder-side bit
+     * visible via the (erroneous) holder-keyed group -- collectively covering
+     * both sides at the cost of the false positives fixed by
+     * fixCleanup3_5_0. Post-fix, only the issuer's group is recorded, so the
+     * deep-freeze predicate must check both bits directly to preserve
+     * end-to-end coverage of the engine's deep-freeze semantics for the
+     * (defensive) case of a movement on a holder-self-deep-frozen line.
+     */
+    bool const deepFreeze = fixIssuerGrouping
+        ? (change.line->isFlag(lsfLowDeepFreeze) || change.line->isFlag(lsfHighDeepFreeze))
+        : change.line->isFlag(high ? lsfLowDeepFreeze : lsfHighDeepFreeze);
     bool const frozen = globalFreeze || deepFreeze || freeze;
 
     if (!frozen)
