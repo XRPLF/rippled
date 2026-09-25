@@ -19,7 +19,7 @@ struct CurrentLedgerObjNestedFieldCall : HostContextTest
     Bytes const locatorBytes = bytesOfSteps(steps);
 };
 
-TEST_F(CurrentLedgerObjNestedFieldCall, LocatorBytesBecomeFieldLocatorHostIsAskedFor)
+TEST_F(CurrentLedgerObjNestedFieldCall, locator_bytes_become_field_locator_host_is_asked_for)
 {
     Bytes const value{1, 2, 3};
     EXPECT_CALL(host, getCurrentLedgerObjNestedField(LocatorEquals(steps)))
@@ -32,7 +32,7 @@ TEST_F(CurrentLedgerObjNestedFieldCall, LocatorBytesBecomeFieldLocatorHostIsAske
     EXPECT_TRUE(out.holds(bytesOf(value)));
 }
 
-TEST_F(CurrentLedgerObjNestedFieldCall, HostErrorBecomesContractReturnValue)
+TEST_F(CurrentLedgerObjNestedFieldCall, host_error_becomes_contract_return_value)
 {
     EXPECT_CALL(host, getCurrentLedgerObjNestedField(LocatorEquals(steps)))
         .WillOnce(testing::Return(std::unexpected(HostFunctionError::NotLeafField)));
@@ -44,7 +44,7 @@ TEST_F(CurrentLedgerObjNestedFieldCall, HostErrorBecomesContractReturnValue)
     EXPECT_FALSE(out.wasWritten());
 }
 
-TEST_F(CurrentLedgerObjNestedFieldCall, EmptyLocatorIsRefusedWithoutAskingHost)
+TEST_F(CurrentLedgerObjNestedFieldCall, empty_locator_is_refused_without_asking_host)
 {
     EXPECT_CALL(host, getCurrentLedgerObjNestedField).Times(0);
 
@@ -55,7 +55,7 @@ TEST_F(CurrentLedgerObjNestedFieldCall, EmptyLocatorIsRefusedWithoutAskingHost)
 }
 
 // Distinct from an empty locator: `invokeWithLocator` checks the two conditions separately.
-TEST_F(CurrentLedgerObjNestedFieldCall, MisalignedLocatorLengthIsRefusedWithoutAskingHost)
+TEST_F(CurrentLedgerObjNestedFieldCall, misaligned_locator_length_is_refused_without_asking_host)
 {
     Bytes const oddLength{1, 2, 3};
     EXPECT_CALL(host, getCurrentLedgerObjNestedField).Times(0);
@@ -66,7 +66,7 @@ TEST_F(CurrentLedgerObjNestedFieldCall, MisalignedLocatorLengthIsRefusedWithoutA
         hfErrorToInt(HostFunctionError::LocatorMalformed));
 }
 
-TEST_F(CurrentLedgerObjNestedFieldCall, HostExceptionBecomesInternalFatalAndIsLogged)
+TEST_F(CurrentLedgerObjNestedFieldCall, host_exception_becomes_internal_fatal_and_is_logged)
 {
     EXPECT_CALL(host, getCurrentLedgerObjNestedField(LocatorEquals(steps)))
         .WillOnce(testing::Throw(std::runtime_error{"current ledger obj nested field came apart"}));
@@ -81,7 +81,7 @@ TEST_F(CurrentLedgerObjNestedFieldCall, HostExceptionBecomesInternalFatalAndIsLo
 
 // The out-region contract: write only if the whole value fits, and return the true length
 // either way.
-TEST_F(CurrentLedgerObjNestedFieldCall, ShortOutRegionWritesNothingAndReturnsTrueLength)
+TEST_F(CurrentLedgerObjNestedFieldCall, short_out_region_writes_nothing_and_returns_true_length)
 {
     Bytes const value{1, 2, 3};
     EXPECT_CALL(host, getCurrentLedgerObjNestedField(LocatorEquals(steps)))
@@ -94,7 +94,7 @@ TEST_F(CurrentLedgerObjNestedFieldCall, ShortOutRegionWritesNothingAndReturnsTru
     EXPECT_FALSE(out.wasWritten());
 }
 
-TEST_F(CurrentLedgerObjNestedFieldCall, OutRegionOfExactSizeIsWritten)
+TEST_F(CurrentLedgerObjNestedFieldCall, out_region_of_exact_size_is_written)
 {
     Bytes const value{1, 2, 3};
     EXPECT_CALL(host, getCurrentLedgerObjNestedField(LocatorEquals(steps)))
@@ -107,7 +107,7 @@ TEST_F(CurrentLedgerObjNestedFieldCall, OutRegionOfExactSizeIsWritten)
     EXPECT_TRUE(out.holds(bytesOf(value)));
 }
 
-TEST_F(CurrentLedgerObjNestedFieldCall, EmptyResultAnswersZeroAndWritesNothing)
+TEST_F(CurrentLedgerObjNestedFieldCall, empty_result_answers_zero_and_writes_nothing)
 {
     EXPECT_CALL(host, getCurrentLedgerObjNestedField(LocatorEquals(steps)))
         .WillOnce(testing::Return(Bytes{}));

@@ -25,7 +25,7 @@ struct NFTCall : HostContextTest
     uint256 const nftId = uint256::fromVoid(nftIdBytes.data());
 };
 
-TEST_F(NFTCall, AccountAndNftIdBecomeTypedArgumentsHostIsAskedFor)
+TEST_F(NFTCall, account_and_nft_id_become_typed_arguments_host_is_asked_for)
 {
     Bytes const value{1, 2, 3};
     EXPECT_CALL(host, getNFT(testing::Eq(account), testing::Eq(nftId)))
@@ -38,7 +38,7 @@ TEST_F(NFTCall, AccountAndNftIdBecomeTypedArgumentsHostIsAskedFor)
     EXPECT_TRUE(out.holds(bytesOf(value)));
 }
 
-TEST_F(NFTCall, HostErrorBecomesContractReturnValue)
+TEST_F(NFTCall, host_error_becomes_contract_return_value)
 {
     EXPECT_CALL(host, getNFT(testing::Eq(account), testing::Eq(nftId)))
         .WillOnce(testing::Return(std::unexpected(HostFunctionError::LedgerObjNotFound)));
@@ -50,7 +50,7 @@ TEST_F(NFTCall, HostErrorBecomesContractReturnValue)
     EXPECT_FALSE(out.wasWritten());
 }
 
-TEST_F(NFTCall, HostExceptionBecomesInternalFatalAndIsLogged)
+TEST_F(NFTCall, host_exception_becomes_internal_fatal_and_is_logged)
 {
     EXPECT_CALL(host, getNFT(testing::Eq(account), testing::Eq(nftId)))
         .WillOnce(testing::Throw(std::runtime_error{"nft came apart"}));
@@ -63,7 +63,7 @@ TEST_F(NFTCall, HostExceptionBecomesInternalFatalAndIsLogged)
     EXPECT_THAT(logged(), testing::HasSubstr("getNFT"));
 }
 
-TEST_F(NFTCall, MalformedAccountIsRefusedWithoutAskingHost)
+TEST_F(NFTCall, malformed_account_is_refused_without_asking_host)
 {
     Bytes const malformedAccount(AccountID::size() - 1, 0xff);
     EXPECT_CALL(host, getNFT).Times(0);
@@ -76,7 +76,7 @@ TEST_F(NFTCall, MalformedAccountIsRefusedWithoutAskingHost)
 
 // Distinct from a malformed account: the account is well-formed here, so this exercises the
 // nft id's own check rather than the account's.
-TEST_F(NFTCall, MalformedNftIdIsRefusedWithoutAskingHost)
+TEST_F(NFTCall, malformed_nft_id_is_refused_without_asking_host)
 {
     Bytes const malformedNftId(uint256::size() - 1, 0xff);
     EXPECT_CALL(host, getNFT).Times(0);
@@ -89,7 +89,7 @@ TEST_F(NFTCall, MalformedNftIdIsRefusedWithoutAskingHost)
 
 // The account's length is checked before the nft id's, but both checks answer `InvalidParams`,
 // so which one fired is not observable here. What is: neither argument reaches the host.
-TEST_F(NFTCall, BothArgumentsMalformedIsRefusedWithoutAskingHost)
+TEST_F(NFTCall, both_arguments_malformed_is_refused_without_asking_host)
 {
     Bytes const malformedAccount(AccountID::size() - 1, 0xff);
     Bytes const malformedNftId(uint256::size() - 1, 0xff);
@@ -103,7 +103,7 @@ TEST_F(NFTCall, BothArgumentsMalformedIsRefusedWithoutAskingHost)
 
 // The out-region contract: write only if the whole value fits, and return the true length
 // either way.
-TEST_F(NFTCall, ShortOutRegionWritesNothingAndReturnsTrueLength)
+TEST_F(NFTCall, short_out_region_writes_nothing_and_returns_true_length)
 {
     Bytes const value{1, 2, 3};
     EXPECT_CALL(host, getNFT(testing::Eq(account), testing::Eq(nftId)))
@@ -116,7 +116,7 @@ TEST_F(NFTCall, ShortOutRegionWritesNothingAndReturnsTrueLength)
     EXPECT_FALSE(out.wasWritten());
 }
 
-TEST_F(NFTCall, OutRegionOfExactSizeIsWritten)
+TEST_F(NFTCall, out_region_of_exact_size_is_written)
 {
     Bytes const value{1, 2, 3};
     EXPECT_CALL(host, getNFT(testing::Eq(account), testing::Eq(nftId)))
@@ -129,7 +129,7 @@ TEST_F(NFTCall, OutRegionOfExactSizeIsWritten)
     EXPECT_TRUE(out.holds(bytesOf(value)));
 }
 
-TEST_F(NFTCall, EmptyResultAnswersZeroAndWritesNothing)
+TEST_F(NFTCall, empty_result_answers_zero_and_writes_nothing)
 {
     EXPECT_CALL(host, getNFT(testing::Eq(account), testing::Eq(nftId)))
         .WillOnce(testing::Return(Bytes{}));

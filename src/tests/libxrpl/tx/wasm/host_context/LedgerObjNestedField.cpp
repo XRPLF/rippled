@@ -20,7 +20,7 @@ struct LedgerObjNestedFieldCall : HostContextTest
     Bytes const locatorBytes = bytesOfSteps(steps);
 };
 
-TEST_F(LedgerObjNestedFieldCall, LocatorBytesBecomeFieldLocatorHostIsAskedFor)
+TEST_F(LedgerObjNestedFieldCall, locator_bytes_become_field_locator_host_is_asked_for)
 {
     Bytes const value{1, 2, 3};
     EXPECT_CALL(host, getLedgerObjNestedField(cacheIdx, LocatorEquals(steps)))
@@ -33,7 +33,7 @@ TEST_F(LedgerObjNestedFieldCall, LocatorBytesBecomeFieldLocatorHostIsAskedFor)
     EXPECT_TRUE(out.holds(bytesOf(value)));
 }
 
-TEST_F(LedgerObjNestedFieldCall, HostErrorBecomesContractReturnValue)
+TEST_F(LedgerObjNestedFieldCall, host_error_becomes_contract_return_value)
 {
     EXPECT_CALL(host, getLedgerObjNestedField(cacheIdx, LocatorEquals(steps)))
         .WillOnce(testing::Return(std::unexpected(HostFunctionError::NotLeafField)));
@@ -45,7 +45,7 @@ TEST_F(LedgerObjNestedFieldCall, HostErrorBecomesContractReturnValue)
     EXPECT_FALSE(out.wasWritten());
 }
 
-TEST_F(LedgerObjNestedFieldCall, EmptyLocatorIsRefusedWithoutAskingHost)
+TEST_F(LedgerObjNestedFieldCall, empty_locator_is_refused_without_asking_host)
 {
     EXPECT_CALL(host, getLedgerObjNestedField).Times(0);
 
@@ -56,7 +56,7 @@ TEST_F(LedgerObjNestedFieldCall, EmptyLocatorIsRefusedWithoutAskingHost)
 }
 
 // Distinct from an empty locator: `invokeWithLocator` checks the two conditions separately.
-TEST_F(LedgerObjNestedFieldCall, MisalignedLocatorLengthIsRefusedWithoutAskingHost)
+TEST_F(LedgerObjNestedFieldCall, misaligned_locator_length_is_refused_without_asking_host)
 {
     Bytes const oddLength{1, 2, 3};
     EXPECT_CALL(host, getLedgerObjNestedField).Times(0);
@@ -67,7 +67,7 @@ TEST_F(LedgerObjNestedFieldCall, MisalignedLocatorLengthIsRefusedWithoutAskingHo
         hfErrorToInt(HostFunctionError::LocatorMalformed));
 }
 
-TEST_F(LedgerObjNestedFieldCall, HostExceptionBecomesInternalFatalAndIsLogged)
+TEST_F(LedgerObjNestedFieldCall, host_exception_becomes_internal_fatal_and_is_logged)
 {
     EXPECT_CALL(host, getLedgerObjNestedField(cacheIdx, LocatorEquals(steps)))
         .WillOnce(testing::Throw(std::runtime_error{"ledger obj nested field came apart"}));
@@ -82,7 +82,7 @@ TEST_F(LedgerObjNestedFieldCall, HostExceptionBecomesInternalFatalAndIsLogged)
 
 // The out-region contract: write only if the whole value fits, and return the true length
 // either way.
-TEST_F(LedgerObjNestedFieldCall, ShortOutRegionWritesNothingAndReturnsTrueLength)
+TEST_F(LedgerObjNestedFieldCall, short_out_region_writes_nothing_and_returns_true_length)
 {
     Bytes const value{1, 2, 3};
     EXPECT_CALL(host, getLedgerObjNestedField(cacheIdx, LocatorEquals(steps)))
@@ -95,7 +95,7 @@ TEST_F(LedgerObjNestedFieldCall, ShortOutRegionWritesNothingAndReturnsTrueLength
     EXPECT_FALSE(out.wasWritten());
 }
 
-TEST_F(LedgerObjNestedFieldCall, OutRegionOfExactSizeIsWritten)
+TEST_F(LedgerObjNestedFieldCall, out_region_of_exact_size_is_written)
 {
     Bytes const value{1, 2, 3};
     EXPECT_CALL(host, getLedgerObjNestedField(cacheIdx, LocatorEquals(steps)))
@@ -108,7 +108,7 @@ TEST_F(LedgerObjNestedFieldCall, OutRegionOfExactSizeIsWritten)
     EXPECT_TRUE(out.holds(bytesOf(value)));
 }
 
-TEST_F(LedgerObjNestedFieldCall, EmptyResultAnswersZeroAndWritesNothing)
+TEST_F(LedgerObjNestedFieldCall, empty_result_answers_zero_and_writes_nothing)
 {
     EXPECT_CALL(host, getLedgerObjNestedField(cacheIdx, LocatorEquals(steps)))
         .WillOnce(testing::Return(Bytes{}));
@@ -120,7 +120,7 @@ TEST_F(LedgerObjNestedFieldCall, EmptyResultAnswersZeroAndWritesNothing)
 
 // `cacheIdx` is signed the whole way to the host, so 0 and a negative slot both cross
 // unchanged.
-TEST_F(LedgerObjNestedFieldCall, ZeroCacheIdxArrivesAtHostUnchanged)
+TEST_F(LedgerObjNestedFieldCall, zero_cache_idx_arrives_at_host_unchanged)
 {
     Bytes const value{1, 2, 3};
     EXPECT_CALL(host, getLedgerObjNestedField(0, LocatorEquals(steps)))
@@ -132,7 +132,7 @@ TEST_F(LedgerObjNestedFieldCall, ZeroCacheIdxArrivesAtHostUnchanged)
         static_cast<std::int32_t>(value.size()));
 }
 
-TEST_F(LedgerObjNestedFieldCall, NegativeCacheIdxArrivesAtHostUnchanged)
+TEST_F(LedgerObjNestedFieldCall, negative_cache_idx_arrives_at_host_unchanged)
 {
     std::int32_t const negativeCacheIdx = -3;
     Bytes const value{1, 2, 3};

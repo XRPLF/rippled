@@ -12,14 +12,14 @@ struct DidKeyletImpl : RealHostFixture
 {
 };
 
-TEST_F(DidKeyletImpl, MatchesDidKeyletFunction)
+TEST_F(DidKeyletImpl, matches_did_keylet_function)
 {
     auto const owner = fund("owner");
 
     expectKeyletMatches(makeHost()->didKeylet(owner.id()), keylet::did(owner.id()));
 }
 
-TEST_F(DidKeyletImpl, InvalidAccount)
+TEST_F(DidKeyletImpl, invalid_account)
 {
     expectError(makeHost()->didKeylet(AccountID{}), HostFunctionError::InvalidAccount);
 }

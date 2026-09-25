@@ -24,7 +24,7 @@ struct EscrowKeyletCall : HostContextTest
     std::uint32_t const seq = 12345;
 };
 
-TEST_F(EscrowKeyletCall, AccountAndSeqAreForwardedKeyletIsWritten)
+TEST_F(EscrowKeyletCall, account_and_seq_are_forwarded_keylet_is_written)
 {
     Bytes const keylet(32, 0xab);
     EXPECT_CALL(host, escrowKeylet(account, seq)).WillOnce(testing::Return(keylet));
@@ -36,7 +36,7 @@ TEST_F(EscrowKeyletCall, AccountAndSeqAreForwardedKeyletIsWritten)
     EXPECT_TRUE(out.holds(bytesOf(keylet)));
 }
 
-TEST_F(EscrowKeyletCall, HostErrorBecomesContractReturnValue)
+TEST_F(EscrowKeyletCall, host_error_becomes_contract_return_value)
 {
     EXPECT_CALL(host, escrowKeylet(account, seq))
         .WillOnce(testing::Return(std::unexpected(HostFunctionError::LedgerObjNotFound)));
@@ -48,7 +48,7 @@ TEST_F(EscrowKeyletCall, HostErrorBecomesContractReturnValue)
     EXPECT_FALSE(out.wasWritten());
 }
 
-TEST_F(EscrowKeyletCall, ShortAccountIsRefusedWithoutAskingHost)
+TEST_F(EscrowKeyletCall, short_account_is_refused_without_asking_host)
 {
     Bytes const shortAccount(AccountID::size() - 1, 0x01);
     EXPECT_CALL(host, escrowKeylet).Times(0);
@@ -59,7 +59,7 @@ TEST_F(EscrowKeyletCall, ShortAccountIsRefusedWithoutAskingHost)
         hfErrorToInt(HostFunctionError::InvalidParams));
 }
 
-TEST_F(EscrowKeyletCall, LongAccountIsRefusedWithoutAskingHost)
+TEST_F(EscrowKeyletCall, long_account_is_refused_without_asking_host)
 {
     Bytes const longAccount(AccountID::size() + 1, 0x01);
     EXPECT_CALL(host, escrowKeylet).Times(0);
@@ -70,7 +70,7 @@ TEST_F(EscrowKeyletCall, LongAccountIsRefusedWithoutAskingHost)
         hfErrorToInt(HostFunctionError::InvalidParams));
 }
 
-TEST_F(EscrowKeyletCall, EmptyAccountIsRefusedWithoutAskingHost)
+TEST_F(EscrowKeyletCall, empty_account_is_refused_without_asking_host)
 {
     EXPECT_CALL(host, escrowKeylet).Times(0);
 
@@ -80,7 +80,7 @@ TEST_F(EscrowKeyletCall, EmptyAccountIsRefusedWithoutAskingHost)
         hfErrorToInt(HostFunctionError::InvalidParams));
 }
 
-TEST_F(EscrowKeyletCall, HostExceptionBecomesInternalFatalAndIsLogged)
+TEST_F(EscrowKeyletCall, host_exception_becomes_internal_fatal_and_is_logged)
 {
     EXPECT_CALL(host, escrowKeylet(account, seq))
         .WillOnce(testing::Throw(std::runtime_error{"escrow keylet came apart"}));
@@ -95,7 +95,7 @@ TEST_F(EscrowKeyletCall, HostExceptionBecomesInternalFatalAndIsLogged)
 
 // The out-region contract: write only if the whole value fits, and return the true length
 // either way.
-TEST_F(EscrowKeyletCall, ShortOutRegionWritesNothingAndReturnsTrueLength)
+TEST_F(EscrowKeyletCall, short_out_region_writes_nothing_and_returns_true_length)
 {
     Bytes const keylet(32, 0xab);
     EXPECT_CALL(host, escrowKeylet(account, seq)).WillOnce(testing::Return(keylet));
@@ -107,7 +107,7 @@ TEST_F(EscrowKeyletCall, ShortOutRegionWritesNothingAndReturnsTrueLength)
     EXPECT_FALSE(out.wasWritten());
 }
 
-TEST_F(EscrowKeyletCall, OutRegionOfExactSizeIsWritten)
+TEST_F(EscrowKeyletCall, out_region_of_exact_size_is_written)
 {
     Bytes const keylet(32, 0xab);
     EXPECT_CALL(host, escrowKeylet(account, seq)).WillOnce(testing::Return(keylet));
@@ -119,7 +119,7 @@ TEST_F(EscrowKeyletCall, OutRegionOfExactSizeIsWritten)
     EXPECT_TRUE(out.holds(bytesOf(keylet)));
 }
 
-TEST_F(EscrowKeyletCall, EmptyResultAnswersZeroAndWritesNothing)
+TEST_F(EscrowKeyletCall, empty_result_answers_zero_and_writes_nothing)
 {
     EXPECT_CALL(host, escrowKeylet(account, seq)).WillOnce(testing::Return(Bytes{}));
 

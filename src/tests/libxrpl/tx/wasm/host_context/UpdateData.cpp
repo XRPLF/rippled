@@ -18,14 +18,14 @@ struct UpdateDataCall : HostContextTest
     Bytes const data{'h', 'e', 'l', 'l', 'o'};
 };
 
-TEST_F(UpdateDataCall, DataForwardedByteCountReturned)
+TEST_F(UpdateDataCall, data_forwarded_byte_count_returned)
 {
     EXPECT_CALL(host, updateData(BytesAre("hello"))).WillOnce(testing::Return(5));
 
     EXPECT_EQ(hostContext.updateData(bytesOf(data)), 5);
 }
 
-TEST_F(UpdateDataCall, HostErrorBecomesContractReturnValue)
+TEST_F(UpdateDataCall, host_error_becomes_contract_return_value)
 {
     EXPECT_CALL(host, updateData(BytesAre("hello")))
         .WillOnce(testing::Return(std::unexpected(HostFunctionError::DataFieldTooLarge)));
@@ -34,7 +34,7 @@ TEST_F(UpdateDataCall, HostErrorBecomesContractReturnValue)
         hostContext.updateData(bytesOf(data)), hfErrorToInt(HostFunctionError::DataFieldTooLarge));
 }
 
-TEST_F(UpdateDataCall, HostExceptionBecomesInternalFatalAndIsLogged)
+TEST_F(UpdateDataCall, host_exception_becomes_internal_fatal_and_is_logged)
 {
     EXPECT_CALL(host, updateData(BytesAre("hello")))
         .WillOnce(testing::Throw(std::runtime_error{"update data came apart"}));
@@ -47,7 +47,7 @@ TEST_F(UpdateDataCall, HostExceptionBecomesInternalFatalAndIsLogged)
 
 // An empty `rust::Slice` has a null `data()`; `updateData` forwards it as an empty `Slice`
 // rather than treating it as malformed.
-TEST_F(UpdateDataCall, EmptyInputRegionForwardsAsEmptySlice)
+TEST_F(UpdateDataCall, empty_input_region_forwards_as_empty_slice)
 {
     EXPECT_CALL(host, updateData(testing::Property(&Slice::empty, true)))
         .WillOnce(testing::Return(0));

@@ -21,7 +21,7 @@ struct Sha512HalfDirectCall : HostContextTest
     Hash const digest = uint256::fromVoid(digestBytes.data());
 };
 
-TEST_F(Sha512HalfDirectCall, DataForwardedAndDigestWritten)
+TEST_F(Sha512HalfDirectCall, data_forwarded_and_digest_written)
 {
     EXPECT_CALL(host, computeSha512HalfHash(BytesAre("abc"))).WillOnce(testing::Return(digest));
 
@@ -30,7 +30,7 @@ TEST_F(Sha512HalfDirectCall, DataForwardedAndDigestWritten)
     EXPECT_TRUE(out.holds(bytesOf(digestBytes)));
 }
 
-TEST_F(Sha512HalfDirectCall, HostErrorBecomesContractReturnValue)
+TEST_F(Sha512HalfDirectCall, host_error_becomes_contract_return_value)
 {
     EXPECT_CALL(host, computeSha512HalfHash)
         .WillOnce(testing::Return(std::unexpected(HostFunctionError::InvalidParams)));
@@ -42,7 +42,7 @@ TEST_F(Sha512HalfDirectCall, HostErrorBecomesContractReturnValue)
     EXPECT_FALSE(out.wasWritten());
 }
 
-TEST_F(Sha512HalfDirectCall, HostExceptionBecomesInternalFatalAndIsLogged)
+TEST_F(Sha512HalfDirectCall, host_exception_becomes_internal_fatal_and_is_logged)
 {
     EXPECT_CALL(host, computeSha512HalfHash)
         .WillOnce(testing::Throw(std::runtime_error{"sha512 half came apart"}));
@@ -57,7 +57,7 @@ TEST_F(Sha512HalfDirectCall, HostExceptionBecomesInternalFatalAndIsLogged)
 
 // The out-region contract: write only if the whole value fits, and return the true length
 // either way.
-TEST_F(Sha512HalfDirectCall, ShortOutRegionWritesNothingAndReturnsTrueLength)
+TEST_F(Sha512HalfDirectCall, short_out_region_writes_nothing_and_returns_true_length)
 {
     EXPECT_CALL(host, computeSha512HalfHash(BytesAre("abc"))).WillOnce(testing::Return(digest));
 
@@ -68,7 +68,7 @@ TEST_F(Sha512HalfDirectCall, ShortOutRegionWritesNothingAndReturnsTrueLength)
 
 // Nothing in the hash requires a non-empty input, so an empty slice is hashed like any other,
 // not refused.
-TEST_F(Sha512HalfDirectCall, EmptyInputIsHashedLikeAnyOther)
+TEST_F(Sha512HalfDirectCall, empty_input_is_hashed_like_any_other)
 {
     EXPECT_CALL(host, computeSha512HalfHash(testing::Property(&Slice::empty, true)))
         .WillOnce(testing::Return(digest));

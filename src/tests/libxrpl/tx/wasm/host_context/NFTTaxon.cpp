@@ -22,7 +22,7 @@ struct NFTTaxonCall : HostContextTest
     Bytes const expectedBytes = bytesOfScalar(kTaxon);
 };
 
-TEST_F(NFTTaxonCall, NftIdBytesBecomeTypedArgumentHostIsAskedFor)
+TEST_F(NFTTaxonCall, nft_id_bytes_become_typed_argument_host_is_asked_for)
 {
     EXPECT_CALL(host, getNFTTaxon(testing::Eq(nftId))).WillOnce(testing::Return(kTaxon));
 
@@ -31,7 +31,7 @@ TEST_F(NFTTaxonCall, NftIdBytesBecomeTypedArgumentHostIsAskedFor)
     EXPECT_TRUE(out.holds(bytesOf(expectedBytes)));
 }
 
-TEST_F(NFTTaxonCall, HostErrorBecomesContractReturnValue)
+TEST_F(NFTTaxonCall, host_error_becomes_contract_return_value)
 {
     EXPECT_CALL(host, getNFTTaxon(testing::Eq(nftId)))
         .WillOnce(testing::Return(std::unexpected(HostFunctionError::LedgerObjNotFound)));
@@ -43,7 +43,7 @@ TEST_F(NFTTaxonCall, HostErrorBecomesContractReturnValue)
     EXPECT_FALSE(out.wasWritten());
 }
 
-TEST_F(NFTTaxonCall, HostExceptionBecomesInternalFatalAndIsLogged)
+TEST_F(NFTTaxonCall, host_exception_becomes_internal_fatal_and_is_logged)
 {
     EXPECT_CALL(host, getNFTTaxon(testing::Eq(nftId)))
         .WillOnce(testing::Throw(std::runtime_error{"nft taxon came apart"}));
@@ -56,7 +56,7 @@ TEST_F(NFTTaxonCall, HostExceptionBecomesInternalFatalAndIsLogged)
     EXPECT_THAT(logged(), testing::HasSubstr("getNFTTaxon"));
 }
 
-TEST_F(NFTTaxonCall, MalformedNftIdIsRefusedWithoutAskingHost)
+TEST_F(NFTTaxonCall, malformed_nft_id_is_refused_without_asking_host)
 {
     Bytes const malformedNftId(uint256::size() - 1, 0xff);
     EXPECT_CALL(host, getNFTTaxon).Times(0);
@@ -69,7 +69,7 @@ TEST_F(NFTTaxonCall, MalformedNftIdIsRefusedWithoutAskingHost)
 
 // The out-region contract: write only if the whole value fits, and return the true length
 // either way.
-TEST_F(NFTTaxonCall, ShortOutRegionWritesNothingAndReturnsTrueLength)
+TEST_F(NFTTaxonCall, short_out_region_writes_nothing_and_returns_true_length)
 {
     EXPECT_CALL(host, getNFTTaxon(testing::Eq(nftId))).WillOnce(testing::Return(kTaxon));
 
@@ -78,7 +78,7 @@ TEST_F(NFTTaxonCall, ShortOutRegionWritesNothingAndReturnsTrueLength)
     EXPECT_FALSE(out.wasWritten());
 }
 
-TEST_F(NFTTaxonCall, OutRegionOfExactSizeIsWritten)
+TEST_F(NFTTaxonCall, out_region_of_exact_size_is_written)
 {
     EXPECT_CALL(host, getNFTTaxon(testing::Eq(nftId))).WillOnce(testing::Return(kTaxon));
 

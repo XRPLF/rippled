@@ -14,7 +14,7 @@ struct CredentialKeyletImpl : RealHostFixture
 {
 };
 
-TEST_F(CredentialKeyletImpl, MatchesCredentialKeyletFunction)
+TEST_F(CredentialKeyletImpl, matches_credential_keylet_function)
 {
     auto const owner = fund("owner");
 
@@ -26,7 +26,7 @@ TEST_F(CredentialKeyletImpl, MatchesCredentialKeyletFunction)
         keylet::credential(owner.id(), owner.id(), credType));
 }
 
-TEST_F(CredentialKeyletImpl, CredentialTypeStringTooLong)
+TEST_F(CredentialKeyletImpl, credential_type_string_too_long)
 {
     auto const owner = fund("owner");
 
@@ -41,7 +41,7 @@ TEST_F(CredentialKeyletImpl, CredentialTypeStringTooLong)
         HostFunctionError::InvalidParams);
 }
 
-TEST_F(CredentialKeyletImpl, InvalidAccount)
+TEST_F(CredentialKeyletImpl, invalid_account)
 {
     auto const owner = fund("owner");
 

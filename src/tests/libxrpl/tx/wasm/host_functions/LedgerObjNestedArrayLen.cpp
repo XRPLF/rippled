@@ -28,14 +28,14 @@ struct LedgerObjNestedArrayLenImpl : RealHostFixture
     }
 };
 
-TEST_F(LedgerObjNestedArrayLenImpl, SignerEntriesLength)
+TEST_F(LedgerObjNestedArrayLenImpl, signer_entries_length)
 {
     auto const owner = fund("owner");
     auto h = makeHost(owner);
     expectValue(h->getLedgerObjNestedArrayLen(1, locator({sfSignerEntries.getCode()})), 2);
 }
 
-TEST_F(LedgerObjNestedArrayLenImpl, NonArrayFieldNoArray)
+TEST_F(LedgerObjNestedArrayLenImpl, non_array_field_no_array)
 {
     auto const owner = fund("owner");
     auto h = makeHost(owner);
@@ -44,7 +44,7 @@ TEST_F(LedgerObjNestedArrayLenImpl, NonArrayFieldNoArray)
         HostFunctionError::NoArray);
 }
 
-TEST_F(LedgerObjNestedArrayLenImpl, MissingFieldNotFound)
+TEST_F(LedgerObjNestedArrayLenImpl, missing_field_not_found)
 {
     auto const owner = fund("owner");
     auto h = makeHost(owner);
@@ -53,7 +53,7 @@ TEST_F(LedgerObjNestedArrayLenImpl, MissingFieldNotFound)
         HostFunctionError::FieldNotFound);
 }
 
-TEST_F(LedgerObjNestedArrayLenImpl, SlotErrors)
+TEST_F(LedgerObjNestedArrayLenImpl, slot_errors)
 {
     auto const owner = fund("owner");
     auto h = makeHost(owner);
@@ -68,7 +68,7 @@ TEST_F(LedgerObjNestedArrayLenImpl, SlotErrors)
         HostFunctionError::EmptySlot);
 }
 
-TEST_F(LedgerObjNestedArrayLenImpl, NestIntoNonContainerMalformed)
+TEST_F(LedgerObjNestedArrayLenImpl, nest_into_non_container_malformed)
 {
     auto const owner = fund("owner");
     auto h = makeHost(owner);

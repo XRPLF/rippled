@@ -41,7 +41,7 @@ struct CurrentLedgerObjFieldE2e : RealVmTest
     }
 };
 
-TEST_F(CurrentLedgerObjFieldE2e, ContractReadsAFieldOfItsRealEscrow)
+TEST_F(CurrentLedgerObjFieldE2e, contract_reads_a_field_of_its_real_escrow)
 {
     auto const owner = Account{"owner"};
     auto const escrow = makeEscrow(owner, Account{"dest"});

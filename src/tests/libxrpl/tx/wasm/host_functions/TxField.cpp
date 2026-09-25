@@ -40,7 +40,7 @@ struct TxFieldImpl : RealHostFixture
     }
 };
 
-TEST_F(TxFieldImpl, MPTokenIssuanceCreateTxMatchesScale)
+TEST_F(TxFieldImpl, mptoken_issuance_create_tx_matches_scale)
 {
     auto const owner = Account{"owner"};
     ledger.createAccount(owner, XRP(1000));
@@ -50,7 +50,7 @@ TEST_F(TxFieldImpl, MPTokenIssuanceCreateTxMatchesScale)
     });
 }
 
-TEST_F(TxFieldImpl, AmmDepositTxUSDMatchesAsset)
+TEST_F(TxFieldImpl, amm_deposit_tx_usd_matches_asset)
 {
     auto const owner = Account{"owner"};
     ledger.createAccount(owner, XRP(1000));
@@ -59,7 +59,7 @@ TEST_F(TxFieldImpl, AmmDepositTxUSDMatchesAsset)
         owner, sfAsset, ammDepositTx(owner, xrpIssue(), usdIssue), [&] { return Bytes(20, 0); });
 }
 
-TEST_F(TxFieldImpl, AmmDepositTxUSDMatchesAsset2)
+TEST_F(TxFieldImpl, amm_deposit_tx_usd_matches_asset2)
 {
     auto const owner = Account{"owner"};
     ledger.createAccount(owner, XRP(1000));
@@ -69,7 +69,7 @@ TEST_F(TxFieldImpl, AmmDepositTxUSDMatchesAsset2)
     });
 }
 
-TEST_F(TxFieldImpl, AmmDepositTxGBPMatchesAsset)
+TEST_F(TxFieldImpl, amm_deposit_tx_gbp_matches_asset)
 {
     auto const owner = Account{"owner"};
     ledger.createAccount(owner, XRP(1000));
@@ -81,7 +81,7 @@ TEST_F(TxFieldImpl, AmmDepositTxGBPMatchesAsset)
     });
 }
 
-TEST_F(TxFieldImpl, AmmDepositTxGBPMatchesAsset2)
+TEST_F(TxFieldImpl, amm_deposit_tx_gbp_matches_asset2)
 {
     auto const owner = Account{"owner"};
     ledger.createAccount(owner, XRP(1000));
@@ -93,7 +93,7 @@ TEST_F(TxFieldImpl, AmmDepositTxGBPMatchesAsset2)
     });
 }
 
-TEST_F(TxFieldImpl, EscrowTxMatchesAccount)
+TEST_F(TxFieldImpl, escrow_tx_matches_account)
 {
     auto const owner = Account{"owner"};
     ledger.createAccount(owner, XRP(1000));
@@ -102,7 +102,7 @@ TEST_F(TxFieldImpl, EscrowTxMatchesAccount)
     });
 }
 
-TEST_F(TxFieldImpl, EscrowTxMatchesOwner)
+TEST_F(TxFieldImpl, escrow_tx_matches_owner)
 {
     auto const owner = Account{"owner"};
     ledger.createAccount(owner, XRP(1000));
@@ -111,7 +111,7 @@ TEST_F(TxFieldImpl, EscrowTxMatchesOwner)
     });
 }
 
-TEST_F(TxFieldImpl, EscrowTxMatchesTransactionType)
+TEST_F(TxFieldImpl, escrow_tx_matches_transaction_type)
 {
     auto const owner = Account{"owner"};
     ledger.createAccount(owner, XRP(1000));
@@ -120,7 +120,7 @@ TEST_F(TxFieldImpl, EscrowTxMatchesTransactionType)
     });
 }
 
-TEST_F(TxFieldImpl, EscrowTxMatchesOfferSequence)
+TEST_F(TxFieldImpl, escrow_tx_matches_offer_sequence)
 {
     auto const owner = Account{"owner"};
     ledger.createAccount(owner, XRP(1000));
@@ -129,7 +129,7 @@ TEST_F(TxFieldImpl, EscrowTxMatchesOfferSequence)
     });
 }
 
-TEST_F(TxFieldImpl, EscrowTxMatchesDestination)
+TEST_F(TxFieldImpl, escrow_tx_matches_destination)
 {
     auto const owner = Account{"owner"};
     ledger.createAccount(owner, XRP(1000));
@@ -137,7 +137,7 @@ TEST_F(TxFieldImpl, EscrowTxMatchesDestination)
         owner, sfDestination, escrowFinishTx(ledger, owner), HostFunctionError::FieldNotFound);
 }
 
-TEST_F(TxFieldImpl, EscrowTxMatchesMemos)
+TEST_F(TxFieldImpl, escrow_tx_matches_memos)
 {
     auto const owner = Account{"owner"};
     ledger.createAccount(owner, XRP(1000));
@@ -145,7 +145,7 @@ TEST_F(TxFieldImpl, EscrowTxMatchesMemos)
         owner, sfMemos, escrowFinishTx(ledger, owner), HostFunctionError::NotLeafField);
 }
 
-TEST_F(TxFieldImpl, EscrowTxMatchesCredentialIDs)
+TEST_F(TxFieldImpl, escrow_tx_matches_credential_ids)
 {
     auto const owner = Account{"owner"};
     ledger.createAccount(owner, XRP(1000));
@@ -153,7 +153,7 @@ TEST_F(TxFieldImpl, EscrowTxMatchesCredentialIDs)
         owner, sfCredentialIDs, escrowFinishTx(ledger, owner), HostFunctionError::NotLeafField);
 }
 
-TEST_F(TxFieldImpl, EscrowTxMatchesInvalid)
+TEST_F(TxFieldImpl, escrow_tx_matches_invalid)
 {
     auto const owner = Account{"owner"};
     ledger.createAccount(owner, XRP(1000));
@@ -161,7 +161,7 @@ TEST_F(TxFieldImpl, EscrowTxMatchesInvalid)
         owner, sfInvalid, escrowFinishTx(ledger, owner), HostFunctionError::FieldNotFound);
 }
 
-TEST_F(TxFieldImpl, EscrowTxMatchesGeneric)
+TEST_F(TxFieldImpl, escrow_tx_matches_generic)
 {
     auto const owner = Account{"owner"};
     ledger.createAccount(owner, XRP(1000));

@@ -22,7 +22,7 @@ struct NFTSequenceCall : HostContextTest
     Bytes const expectedBytes = bytesOfScalar(kSequence);
 };
 
-TEST_F(NFTSequenceCall, NftIdBytesBecomeTypedArgumentHostIsAskedFor)
+TEST_F(NFTSequenceCall, nft_id_bytes_become_typed_argument_host_is_asked_for)
 {
     EXPECT_CALL(host, getNFTSequence(testing::Eq(nftId))).WillOnce(testing::Return(kSequence));
 
@@ -31,7 +31,7 @@ TEST_F(NFTSequenceCall, NftIdBytesBecomeTypedArgumentHostIsAskedFor)
     EXPECT_TRUE(out.holds(bytesOf(expectedBytes)));
 }
 
-TEST_F(NFTSequenceCall, HostErrorBecomesContractReturnValue)
+TEST_F(NFTSequenceCall, host_error_becomes_contract_return_value)
 {
     EXPECT_CALL(host, getNFTSequence(testing::Eq(nftId)))
         .WillOnce(testing::Return(std::unexpected(HostFunctionError::LedgerObjNotFound)));
@@ -43,7 +43,7 @@ TEST_F(NFTSequenceCall, HostErrorBecomesContractReturnValue)
     EXPECT_FALSE(out.wasWritten());
 }
 
-TEST_F(NFTSequenceCall, HostExceptionBecomesInternalFatalAndIsLogged)
+TEST_F(NFTSequenceCall, host_exception_becomes_internal_fatal_and_is_logged)
 {
     EXPECT_CALL(host, getNFTSequence(testing::Eq(nftId)))
         .WillOnce(testing::Throw(std::runtime_error{"nft sequence came apart"}));
@@ -56,7 +56,7 @@ TEST_F(NFTSequenceCall, HostExceptionBecomesInternalFatalAndIsLogged)
     EXPECT_THAT(logged(), testing::HasSubstr("getNFTSequence"));
 }
 
-TEST_F(NFTSequenceCall, MalformedNftIdIsRefusedWithoutAskingHost)
+TEST_F(NFTSequenceCall, malformed_nft_id_is_refused_without_asking_host)
 {
     Bytes const malformedNftId(uint256::size() - 1, 0xff);
     EXPECT_CALL(host, getNFTSequence).Times(0);
@@ -69,7 +69,7 @@ TEST_F(NFTSequenceCall, MalformedNftIdIsRefusedWithoutAskingHost)
 
 // The out-region contract: write only if the whole value fits, and return the true length
 // either way.
-TEST_F(NFTSequenceCall, ShortOutRegionWritesNothingAndReturnsTrueLength)
+TEST_F(NFTSequenceCall, short_out_region_writes_nothing_and_returns_true_length)
 {
     EXPECT_CALL(host, getNFTSequence(testing::Eq(nftId))).WillOnce(testing::Return(kSequence));
 
@@ -78,7 +78,7 @@ TEST_F(NFTSequenceCall, ShortOutRegionWritesNothingAndReturnsTrueLength)
     EXPECT_FALSE(out.wasWritten());
 }
 
-TEST_F(NFTSequenceCall, OutRegionOfExactSizeIsWritten)
+TEST_F(NFTSequenceCall, out_region_of_exact_size_is_written)
 {
     EXPECT_CALL(host, getNFTSequence(testing::Eq(nftId))).WillOnce(testing::Return(kSequence));
 

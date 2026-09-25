@@ -18,7 +18,7 @@ struct FloatFromIntCall : HostContextTest
     std::int32_t const mode = 1;
 };
 
-TEST_F(FloatFromIntCall, ValueAndModeAreForwardedResultIsWritten)
+TEST_F(FloatFromIntCall, value_and_mode_are_forwarded_result_is_written)
 {
     Bytes const result{1, 2, 3};
     EXPECT_CALL(host, floatFromInt(x, mode)).WillOnce(testing::Return(result));
@@ -31,7 +31,7 @@ TEST_F(FloatFromIntCall, ValueAndModeAreForwardedResultIsWritten)
 
 // `mode` is forwarded verbatim: this layer validates nothing about it, so a nonsense value
 // still reaches the host unchanged.
-TEST_F(FloatFromIntCall, ModeIsForwardedVerbatim)
+TEST_F(FloatFromIntCall, mode_is_forwarded_verbatim)
 {
     std::int32_t const nonsenseMode = -12345;
     Bytes const result{1};
@@ -43,7 +43,7 @@ TEST_F(FloatFromIntCall, ModeIsForwardedVerbatim)
         static_cast<std::int32_t>(result.size()));
 }
 
-TEST_F(FloatFromIntCall, HostErrorBecomesContractReturnValue)
+TEST_F(FloatFromIntCall, host_error_becomes_contract_return_value)
 {
     EXPECT_CALL(host, floatFromInt(x, mode))
         .WillOnce(testing::Return(std::unexpected(HostFunctionError::FloatComputationError)));
@@ -55,7 +55,7 @@ TEST_F(FloatFromIntCall, HostErrorBecomesContractReturnValue)
     EXPECT_FALSE(out.wasWritten());
 }
 
-TEST_F(FloatFromIntCall, HostExceptionBecomesInternalFatalAndIsLogged)
+TEST_F(FloatFromIntCall, host_exception_becomes_internal_fatal_and_is_logged)
 {
     EXPECT_CALL(host, floatFromInt(x, mode))
         .WillOnce(testing::Throw(std::runtime_error{"float from int came apart"}));
@@ -70,7 +70,7 @@ TEST_F(FloatFromIntCall, HostExceptionBecomesInternalFatalAndIsLogged)
 
 // The out-region contract: write only if the whole value fits, and return the true length
 // either way.
-TEST_F(FloatFromIntCall, ShortOutRegionWritesNothingAndReturnsTrueLength)
+TEST_F(FloatFromIntCall, short_out_region_writes_nothing_and_returns_true_length)
 {
     Bytes const result{1, 2, 3};
     EXPECT_CALL(host, floatFromInt(x, mode)).WillOnce(testing::Return(result));

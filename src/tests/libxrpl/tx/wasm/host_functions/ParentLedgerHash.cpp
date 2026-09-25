@@ -7,7 +7,7 @@ struct ParentLedgerHashImpl : RealHostFixture
 {
 };
 
-TEST_F(ParentLedgerHashImpl, MatchesLedger)
+TEST_F(ParentLedgerHashImpl, matches_ledger)
 {
     expectValue(makeHost()->getParentLedgerHash(), ledger.getOpenLedger().header().parentHash);
 }

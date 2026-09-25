@@ -21,7 +21,7 @@ struct FloatDivideCall : HostContextTest
     std::int32_t const mode = 42;
 };
 
-TEST_F(FloatDivideCall, OperandsAndModeAreForwardedResultIsWritten)
+TEST_F(FloatDivideCall, operands_and_mode_are_forwarded_result_is_written)
 {
     Bytes const result{9, 8, 7};
     EXPECT_CALL(host, floatDivide(BytesAre("div-x"), BytesAre("div-yy"), mode))
@@ -34,7 +34,7 @@ TEST_F(FloatDivideCall, OperandsAndModeAreForwardedResultIsWritten)
     EXPECT_TRUE(out.holds(bytesOf(result)));
 }
 
-TEST_F(FloatDivideCall, HostErrorBecomesContractReturnValue)
+TEST_F(FloatDivideCall, host_error_becomes_contract_return_value)
 {
     EXPECT_CALL(host, floatDivide(BytesAre("div-x"), BytesAre("div-yy"), mode))
         .WillOnce(testing::Return(std::unexpected(HostFunctionError::FloatComputationError)));
@@ -46,7 +46,7 @@ TEST_F(FloatDivideCall, HostErrorBecomesContractReturnValue)
     EXPECT_FALSE(out.wasWritten());
 }
 
-TEST_F(FloatDivideCall, HostExceptionBecomesInternalFatalAndIsLogged)
+TEST_F(FloatDivideCall, host_exception_becomes_internal_fatal_and_is_logged)
 {
     EXPECT_CALL(host, floatDivide(BytesAre("div-x"), BytesAre("div-yy"), mode))
         .WillOnce(testing::Throw(std::runtime_error{"float divide came apart"}));
@@ -61,7 +61,7 @@ TEST_F(FloatDivideCall, HostExceptionBecomesInternalFatalAndIsLogged)
 
 // The out-region contract: write only if the whole value fits, and return the true length
 // either way.
-TEST_F(FloatDivideCall, ShortOutRegionWritesNothingAndReturnsTrueLength)
+TEST_F(FloatDivideCall, short_out_region_writes_nothing_and_returns_true_length)
 {
     Bytes const result{9, 8, 7};
     EXPECT_CALL(host, floatDivide(BytesAre("div-x"), BytesAre("div-yy"), mode))
@@ -76,7 +76,7 @@ TEST_F(FloatDivideCall, ShortOutRegionWritesNothingAndReturnsTrueLength)
 
 // No length rule exists at this layer: a differently sized operand still reaches the host
 // rather than being refused.
-TEST_F(FloatDivideCall, OddSizedOperandReachesHostUnchanged)
+TEST_F(FloatDivideCall, odd_sized_operand_reaches_host_unchanged)
 {
     Bytes const shortX{0x2a};
     EXPECT_CALL(host, floatDivide(testing::_, BytesAre("div-yy"), mode))

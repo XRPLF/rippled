@@ -22,7 +22,7 @@ struct CurrentLedgerObjNestedArrayLenCall : HostContextTest
     Bytes const locatorBytes = bytesOfSteps(steps);
 };
 
-TEST_F(CurrentLedgerObjNestedArrayLenCall, LocatorBytesBecomeFieldLocatorHostReturnsCount)
+TEST_F(CurrentLedgerObjNestedArrayLenCall, locator_bytes_become_field_locator_host_returns_count)
 {
     EXPECT_CALL(host, getCurrentLedgerObjNestedArrayLen(LocatorEquals(steps)))
         .WillOnce(testing::Return(7));
@@ -32,7 +32,7 @@ TEST_F(CurrentLedgerObjNestedArrayLenCall, LocatorBytesBecomeFieldLocatorHostRet
 
 // `NoArray` - the field the locator resolves to is not an array - is the error this shape
 // most plausibly returns, so it stands in for axis B.
-TEST_F(CurrentLedgerObjNestedArrayLenCall, HostErrorBecomesContractReturnValue)
+TEST_F(CurrentLedgerObjNestedArrayLenCall, host_error_becomes_contract_return_value)
 {
     EXPECT_CALL(host, getCurrentLedgerObjNestedArrayLen(LocatorEquals(steps)))
         .WillOnce(testing::Return(std::unexpected(HostFunctionError::NoArray)));
@@ -42,7 +42,7 @@ TEST_F(CurrentLedgerObjNestedArrayLenCall, HostErrorBecomesContractReturnValue)
         hfErrorToInt(HostFunctionError::NoArray));
 }
 
-TEST_F(CurrentLedgerObjNestedArrayLenCall, EmptyLocatorIsRefusedWithoutAskingHost)
+TEST_F(CurrentLedgerObjNestedArrayLenCall, empty_locator_is_refused_without_asking_host)
 {
     EXPECT_CALL(host, getCurrentLedgerObjNestedArrayLen).Times(0);
 
@@ -52,7 +52,7 @@ TEST_F(CurrentLedgerObjNestedArrayLenCall, EmptyLocatorIsRefusedWithoutAskingHos
 }
 
 // Distinct from an empty locator: `invokeWithLocator` checks the two conditions separately.
-TEST_F(CurrentLedgerObjNestedArrayLenCall, MisalignedLocatorLengthIsRefusedWithoutAskingHost)
+TEST_F(CurrentLedgerObjNestedArrayLenCall, misaligned_locator_length_is_refused_without_asking_host)
 {
     Bytes const oddLength{1, 2, 3};
     EXPECT_CALL(host, getCurrentLedgerObjNestedArrayLen).Times(0);
@@ -62,7 +62,7 @@ TEST_F(CurrentLedgerObjNestedArrayLenCall, MisalignedLocatorLengthIsRefusedWitho
         hfErrorToInt(HostFunctionError::LocatorMalformed));
 }
 
-TEST_F(CurrentLedgerObjNestedArrayLenCall, HostExceptionBecomesInternalFatalAndIsLogged)
+TEST_F(CurrentLedgerObjNestedArrayLenCall, host_exception_becomes_internal_fatal_and_is_logged)
 {
     EXPECT_CALL(host, getCurrentLedgerObjNestedArrayLen(LocatorEquals(steps)))
         .WillOnce(

@@ -20,7 +20,7 @@ struct NFTIssuerCall : HostContextTest
     uint256 const nftId = uint256::fromVoid(nftIdBytes.data());
 };
 
-TEST_F(NFTIssuerCall, NftIdBytesBecomeTypedArgumentHostIsAskedFor)
+TEST_F(NFTIssuerCall, nft_id_bytes_become_typed_argument_host_is_asked_for)
 {
     Bytes const value{1, 2, 3};
     EXPECT_CALL(host, getNFTIssuer(testing::Eq(nftId))).WillOnce(testing::Return(value));
@@ -32,7 +32,7 @@ TEST_F(NFTIssuerCall, NftIdBytesBecomeTypedArgumentHostIsAskedFor)
     EXPECT_TRUE(out.holds(bytesOf(value)));
 }
 
-TEST_F(NFTIssuerCall, HostErrorBecomesContractReturnValue)
+TEST_F(NFTIssuerCall, host_error_becomes_contract_return_value)
 {
     EXPECT_CALL(host, getNFTIssuer(testing::Eq(nftId)))
         .WillOnce(testing::Return(std::unexpected(HostFunctionError::LedgerObjNotFound)));
@@ -44,7 +44,7 @@ TEST_F(NFTIssuerCall, HostErrorBecomesContractReturnValue)
     EXPECT_FALSE(out.wasWritten());
 }
 
-TEST_F(NFTIssuerCall, HostExceptionBecomesInternalFatalAndIsLogged)
+TEST_F(NFTIssuerCall, host_exception_becomes_internal_fatal_and_is_logged)
 {
     EXPECT_CALL(host, getNFTIssuer(testing::Eq(nftId)))
         .WillOnce(testing::Throw(std::runtime_error{"nft issuer came apart"}));
@@ -57,7 +57,7 @@ TEST_F(NFTIssuerCall, HostExceptionBecomesInternalFatalAndIsLogged)
     EXPECT_THAT(logged(), testing::HasSubstr("getNFTIssuer"));
 }
 
-TEST_F(NFTIssuerCall, MalformedNftIdIsRefusedWithoutAskingHost)
+TEST_F(NFTIssuerCall, malformed_nft_id_is_refused_without_asking_host)
 {
     Bytes const malformedNftId(uint256::size() - 1, 0xff);
     EXPECT_CALL(host, getNFTIssuer).Times(0);
@@ -70,7 +70,7 @@ TEST_F(NFTIssuerCall, MalformedNftIdIsRefusedWithoutAskingHost)
 
 // The out-region contract: write only if the whole value fits, and return the true length
 // either way.
-TEST_F(NFTIssuerCall, ShortOutRegionWritesNothingAndReturnsTrueLength)
+TEST_F(NFTIssuerCall, short_out_region_writes_nothing_and_returns_true_length)
 {
     Bytes const value{1, 2, 3};
     EXPECT_CALL(host, getNFTIssuer(testing::Eq(nftId))).WillOnce(testing::Return(value));
@@ -82,7 +82,7 @@ TEST_F(NFTIssuerCall, ShortOutRegionWritesNothingAndReturnsTrueLength)
     EXPECT_FALSE(out.wasWritten());
 }
 
-TEST_F(NFTIssuerCall, OutRegionOfExactSizeIsWritten)
+TEST_F(NFTIssuerCall, out_region_of_exact_size_is_written)
 {
     Bytes const value{1, 2, 3};
     EXPECT_CALL(host, getNFTIssuer(testing::Eq(nftId))).WillOnce(testing::Return(value));
@@ -94,7 +94,7 @@ TEST_F(NFTIssuerCall, OutRegionOfExactSizeIsWritten)
     EXPECT_TRUE(out.holds(bytesOf(value)));
 }
 
-TEST_F(NFTIssuerCall, EmptyResultAnswersZeroAndWritesNothing)
+TEST_F(NFTIssuerCall, empty_result_answers_zero_and_writes_nothing)
 {
     EXPECT_CALL(host, getNFTIssuer(testing::Eq(nftId))).WillOnce(testing::Return(Bytes{}));
 

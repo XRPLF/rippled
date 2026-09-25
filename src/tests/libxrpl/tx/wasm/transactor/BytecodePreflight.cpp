@@ -42,7 +42,7 @@ struct BytecodePreflight : testing::Test
     }
 };
 
-TEST_F(BytecodePreflight, BytecodeIsRefusedWhileSmartEscrowIsDisabled)
+TEST_F(BytecodePreflight, bytecode_is_refused_while_smart_escrow_is_disabled)
 {
     auto env = TxTest{allFeatures() - featureSmartEscrow};
     createAccounts(env, XRP(5'000), alice, carol);
@@ -61,7 +61,7 @@ TEST_F(BytecodePreflight, BytecodeIsRefusedWhileSmartEscrowIsDisabled)
 // A zero limit is how fee voting turns the runtime off, and it has to be distinguishable
 // from "your contract is too big" — `temTEMP_DISABLED` says come back later, `temMALFORMED`
 // says never.
-TEST_F(BytecodePreflight, AZeroSizeLimitDisablesUploadsRatherThanRejectingThem)
+TEST_F(BytecodePreflight, a_zero_size_limit_disables_uploads_rather_than_rejecting_them)
 {
     auto fees = TestServiceRegistry::defaultFees();
     fees.bytecodeSizeLimit = 0;
@@ -77,7 +77,7 @@ TEST_F(BytecodePreflight, AZeroSizeLimitDisablesUploadsRatherThanRejectingThem)
 // Deliberately not valid wasm: with uploads switched off the module must never be compiled,
 // so the answer is `temTEMP_DISABLED` rather than `temINVALID_BYTECODE`. An operator who has
 // disabled uploads should not be paying to validate what arrives.
-TEST_F(BytecodePreflight, AZeroSizeLimitAnswersBeforeTheModuleIsCompiled)
+TEST_F(BytecodePreflight, a_zero_size_limit_answers_before_the_module_is_compiled)
 {
     auto fees = TestServiceRegistry::defaultFees();
     fees.bytecodeSizeLimit = 0;
@@ -90,7 +90,7 @@ TEST_F(BytecodePreflight, AZeroSizeLimitAnswersBeforeTheModuleIsCompiled)
         temTEMP_DISABLED);
 }
 
-TEST_F(BytecodePreflight, AZeroGasLimitDisablesUploads)
+TEST_F(BytecodePreflight, a_zero_gas_limit_disables_uploads)
 {
     auto fees = TestServiceRegistry::defaultFees();
     fees.gasLimit = 0;
@@ -103,7 +103,7 @@ TEST_F(BytecodePreflight, AZeroGasLimitDisablesUploads)
         temTEMP_DISABLED);
 }
 
-TEST_F(BytecodePreflight, EmptyBytecodeIsRefused)
+TEST_F(BytecodePreflight, empty_bytecode_is_refused)
 {
     auto env = TxTest{};
     createAccounts(env, XRP(5'000), alice, carol);
@@ -115,7 +115,7 @@ TEST_F(BytecodePreflight, EmptyBytecodeIsRefused)
 
 // Screening reaches into the module: this one is structurally valid wasm that asks for a
 // host function nobody serves.
-TEST_F(BytecodePreflight, BytecodeImportingAnUnknownHostFunctionIsRefused)
+TEST_F(BytecodePreflight, bytecode_importing_an_unknown_host_function_is_refused)
 {
     auto env = TxTest{};
     createAccounts(env, XRP(5'000), alice, carol);
@@ -126,7 +126,7 @@ TEST_F(BytecodePreflight, BytecodeImportingAnUnknownHostFunctionIsRefused)
         temINVALID_BYTECODE);
 }
 
-TEST_F(BytecodePreflight, DataWithoutBytecodeIsRefused)
+TEST_F(BytecodePreflight, data_without_bytecode_is_refused)
 {
     auto env = TxTest{};
     createAccounts(env, XRP(5'000), alice, carol);
@@ -138,7 +138,7 @@ TEST_F(BytecodePreflight, DataWithoutBytecodeIsRefused)
     EXPECT_EQ(env.submit(builder, alice, XRPAmount{100'000}).ter, temMALFORMED);
 }
 
-TEST_F(BytecodePreflight, DataPastItsMaximumIsRefused)
+TEST_F(BytecodePreflight, data_past_its_maximum_is_refused)
 {
     auto env = TxTest{};
     createAccounts(env, XRP(5'000), alice, carol);
@@ -153,7 +153,7 @@ TEST_F(BytecodePreflight, DataPastItsMaximumIsRefused)
 // A contract needs a deadline. Without `CancelAfter` the escrow could never be reclaimed if
 // the contract never approves, so every combination lacking it is refused — including the
 // ones that look complete because they carry a `FinishAfter` or a condition.
-TEST_F(BytecodePreflight, BytecodeWithoutACancelTimeIsRefused)
+TEST_F(BytecodePreflight, bytecode_without_a_cancel_time_is_refused)
 {
     auto env = TxTest{};
     createAccounts(env, XRP(5'000), alice, carol);
@@ -174,7 +174,7 @@ TEST_F(BytecodePreflight, BytecodeWithoutACancelTimeIsRefused)
     EXPECT_EQ(env.submit(withFinish, alice, fee).ter, temBAD_EXPIRATION);
 }
 
-TEST_F(BytecodePreflight, BytecodeWithACancelTimeIsAccepted)
+TEST_F(BytecodePreflight, bytecode_with_a_cancel_time_is_accepted)
 {
     auto env = TxTest{};
     createAccounts(env, XRP(5'000), alice, carol);
@@ -184,7 +184,7 @@ TEST_F(BytecodePreflight, BytecodeWithACancelTimeIsAccepted)
         env.submit(escrowCreate(env, wasm), alice, escrowCreateFee(env, wasm)).ter, tesSUCCESS);
 }
 
-TEST_F(BytecodePreflight, BytecodeWithAFinishAndCancelTimeIsAccepted)
+TEST_F(BytecodePreflight, bytecode_with_a_finish_and_cancel_time_is_accepted)
 {
     auto env = TxTest{};
     createAccounts(env, XRP(5'000), alice, carol);
@@ -199,7 +199,7 @@ TEST_F(BytecodePreflight, BytecodeWithAFinishAndCancelTimeIsAccepted)
 // The per-byte charge is enforced, not advisory. One drop short is refused — which also
 // confirms the fee helper the other tests rely on is computing the real number rather than
 // something merely generous.
-TEST_F(BytecodePreflight, AFeeOneDropShortIsRefused)
+TEST_F(BytecodePreflight, a_fee_one_drop_short_is_refused)
 {
     TxTest env;
     createAccounts(env, XRP(5'000), alice, carol);

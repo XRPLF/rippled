@@ -34,7 +34,7 @@ struct FloatFromSTAmountCall : HostContextTest
     std::int32_t const mode = 1;
 };
 
-TEST_F(FloatFromSTAmountCall, SerializedAmountDecodesToValueHostIsAskedFor)
+TEST_F(FloatFromSTAmountCall, serialized_amount_decodes_to_value_host_is_asked_for)
 {
     Bytes const result{1, 2, 3};
     EXPECT_CALL(host, floatFromSTAmount(testing::Eq(amount), mode))
@@ -47,7 +47,7 @@ TEST_F(FloatFromSTAmountCall, SerializedAmountDecodesToValueHostIsAskedFor)
     EXPECT_TRUE(out.holds(bytesOf(result)));
 }
 
-TEST_F(FloatFromSTAmountCall, HostErrorBecomesContractReturnValue)
+TEST_F(FloatFromSTAmountCall, host_error_becomes_contract_return_value)
 {
     EXPECT_CALL(host, floatFromSTAmount(testing::Eq(amount), mode))
         .WillOnce(testing::Return(std::unexpected(HostFunctionError::FloatComputationError)));
@@ -59,7 +59,7 @@ TEST_F(FloatFromSTAmountCall, HostErrorBecomesContractReturnValue)
     EXPECT_FALSE(out.wasWritten());
 }
 
-TEST_F(FloatFromSTAmountCall, HostExceptionBecomesInternalFatalAndIsLogged)
+TEST_F(FloatFromSTAmountCall, host_exception_becomes_internal_fatal_and_is_logged)
 {
     EXPECT_CALL(host, floatFromSTAmount(testing::Eq(amount), mode))
         .WillOnce(testing::Throw(std::runtime_error{"float from st amount came apart"}));
@@ -73,7 +73,7 @@ TEST_F(FloatFromSTAmountCall, HostExceptionBecomesInternalFatalAndIsLogged)
 }
 
 // `parseST` catches its own failure: a malformed buffer never reaches the host at all.
-TEST_F(FloatFromSTAmountCall, MalformedBytesAreRefusedWithoutAskingHost)
+TEST_F(FloatFromSTAmountCall, malformed_bytes_are_refused_without_asking_host)
 {
     Bytes const malformedBytes{0xff, 0xff, 0xff};
     EXPECT_CALL(host, floatFromSTAmount).Times(0);
@@ -86,7 +86,7 @@ TEST_F(FloatFromSTAmountCall, MalformedBytesAreRefusedWithoutAskingHost)
 
 // The out-region contract: write only if the whole value fits, and return the true length
 // either way.
-TEST_F(FloatFromSTAmountCall, ShortOutRegionWritesNothingAndReturnsTrueLength)
+TEST_F(FloatFromSTAmountCall, short_out_region_writes_nothing_and_returns_true_length)
 {
     Bytes const result{1, 2, 3};
     EXPECT_CALL(host, floatFromSTAmount(testing::Eq(amount), mode))

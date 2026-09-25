@@ -53,21 +53,21 @@ struct Sha512HalfCall : HostCallTest
 
 // Both directions in one call: the guest's bytes reach the host borrowed from its memory, and
 // the answer comes back into the same memory through the engine's buffer.
-TEST_F(Sha512HalfCall, GuestBytesReachHostAndDigestComesBack)
+TEST_F(Sha512HalfCall, guest_bytes_reach_host_and_digest_comes_back)
 {
     EXPECT_CALL(host, computeSha512HalfHash(BytesAre("abc"))).WillOnce(Return(digest()));
 
     EXPECT_EQ(hostAnswer(), 0x0a0b0c0d) << "the digest's first four bytes, little-endian";
 }
 
-TEST_F(Sha512HalfCall, DigestIsThirtyTwoBytes)
+TEST_F(Sha512HalfCall, digest_is_thirty_two_bytes)
 {
     EXPECT_CALL(host, computeSha512HalfHash).WillOnce(Return(digest()));
 
     EXPECT_EQ(hostAnswer("digest_length"), 32);
 }
 
-TEST_F(Sha512HalfCall, HostErrorBecomesContractReturnValue)
+TEST_F(Sha512HalfCall, host_error_becomes_contract_return_value)
 {
     EXPECT_CALL(host, computeSha512HalfHash)
         .WillOnce(Return(std::unexpected(HostFunctionError::InvalidParams)));

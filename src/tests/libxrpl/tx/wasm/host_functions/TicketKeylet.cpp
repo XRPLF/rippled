@@ -13,7 +13,7 @@ struct TicketKeyletImpl : RealHostFixture
 {
 };
 
-TEST_F(TicketKeyletImpl, MatchesTicketFunction)
+TEST_F(TicketKeyletImpl, matches_ticket_function)
 {
     auto const owner = fund("owner");
 
@@ -22,7 +22,7 @@ TEST_F(TicketKeyletImpl, MatchesTicketFunction)
         keylet::ticket(owner.id(), SeqProxy::rawTicket(1u)));
 }
 
-TEST_F(TicketKeyletImpl, InvalidAccount)
+TEST_F(TicketKeyletImpl, invalid_account)
 {
     expectError(makeHost()->ticketKeylet(AccountID{}, 1u), HostFunctionError::InvalidAccount);
 }

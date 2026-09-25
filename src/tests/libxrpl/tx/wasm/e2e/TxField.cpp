@@ -19,7 +19,7 @@ struct TxFieldE2e : RealVmTest
 {
 };
 
-TEST_F(TxFieldE2e, ContractReadsAFieldOfItsTransaction)
+TEST_F(TxFieldE2e, contract_reads_a_field_of_its_transaction)
 {
     auto const owner = Account{"owner"};
     ledger.createAccount(owner, XRP(1000));

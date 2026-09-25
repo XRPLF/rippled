@@ -18,7 +18,7 @@ struct CurrentLedgerObjArrayLenCall : HostContextTest
     std::int32_t fieldCode = sfBalance.getCode();
 };
 
-TEST_F(CurrentLedgerObjArrayLenCall, FieldCodeBecomesSFieldHostIsAskedFor)
+TEST_F(CurrentLedgerObjArrayLenCall, field_code_becomes_sfield_host_is_asked_for)
 {
     EXPECT_CALL(host, getCurrentLedgerObjArrayLen(testing::Ref(sfBalance)))
         .WillOnce(testing::Return(5));
@@ -28,7 +28,7 @@ TEST_F(CurrentLedgerObjArrayLenCall, FieldCodeBecomesSFieldHostIsAskedFor)
 
 // `NoArray` is what a field that is not an array actually answers, so it stands in for axis B
 // here rather than an arbitrary code.
-TEST_F(CurrentLedgerObjArrayLenCall, HostErrorBecomesContractReturnValue)
+TEST_F(CurrentLedgerObjArrayLenCall, host_error_becomes_contract_return_value)
 {
     EXPECT_CALL(host, getCurrentLedgerObjArrayLen(testing::Ref(sfBalance)))
         .WillOnce(testing::Return(std::unexpected(HostFunctionError::NoArray)));
@@ -38,7 +38,7 @@ TEST_F(CurrentLedgerObjArrayLenCall, HostErrorBecomesContractReturnValue)
         hfErrorToInt(HostFunctionError::NoArray));
 }
 
-TEST_F(CurrentLedgerObjArrayLenCall, HostExceptionBecomesInternalFatalAndIsLogged)
+TEST_F(CurrentLedgerObjArrayLenCall, host_exception_becomes_internal_fatal_and_is_logged)
 {
     EXPECT_CALL(host, getCurrentLedgerObjArrayLen(testing::Ref(sfBalance)))
         .WillOnce(testing::Throw(std::runtime_error{"current ledger obj array len came apart"}));
@@ -50,7 +50,7 @@ TEST_F(CurrentLedgerObjArrayLenCall, HostExceptionBecomesInternalFatalAndIsLogge
     EXPECT_THAT(logged(), testing::HasSubstr("getCurrentLedgerObjArrayLen"));
 }
 
-TEST_F(CurrentLedgerObjArrayLenCall, UnknownFieldCodeIsRefusedWithoutAskingHost)
+TEST_F(CurrentLedgerObjArrayLenCall, unknown_field_code_is_refused_without_asking_host)
 {
     fieldCode = 0x7fff'0000;  // a code nothing is registered under
     EXPECT_CALL(host, getCurrentLedgerObjArrayLen).Times(0);

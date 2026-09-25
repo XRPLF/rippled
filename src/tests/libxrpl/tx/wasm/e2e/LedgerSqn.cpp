@@ -13,7 +13,7 @@ struct LedgerSqnE2e : RealVmTest
 {
 };
 
-TEST_F(LedgerSqnE2e, ContractReadsTheRealLedgerSequence)
+TEST_F(LedgerSqnE2e, contract_reads_the_real_ledger_sequence)
 {
     // Ask the host for the ledger sequence into offset 0, then return the i32 stored there.
     static constexpr auto kWat = std::string_view{R"wat(

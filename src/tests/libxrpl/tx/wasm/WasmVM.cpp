@@ -57,7 +57,7 @@ class WasmVMTest : public MockVmTest
 {
 };
 
-TEST_F(WasmVMTest, ContractReturnValueReachesCaller)
+TEST_F(WasmVMTest, contract_return_value_reaches_caller)
 {
     auto const outcome = run(kEngineWat);
 
@@ -67,7 +67,7 @@ TEST_F(WasmVMTest, ContractReturnValueReachesCaller)
     EXPECT_LT(outcome->cost, kAmpleGas);
 }
 
-TEST_F(WasmVMTest, GuestTrapIsChargedAsContractFault)
+TEST_F(WasmVMTest, guest_trap_is_charged_as_contract_fault)
 {
     auto const outcome = run(kEngineWat, kAmpleGas, "traps");
 
@@ -77,7 +77,7 @@ TEST_F(WasmVMTest, GuestTrapIsChargedAsContractFault)
     EXPECT_GT(*outcome.error().cost, 0);  // NOLINT(bugprone-unchecked-optional-access)
 }
 
-TEST_F(WasmVMTest, NonTerminatingContractSpendsWholeBudget)
+TEST_F(WasmVMTest, non_terminating_contract_spends_whole_budget)
 {
     auto const outcome = run(kEngineWat, kAmpleGas, "never_returns");
 
@@ -95,7 +95,7 @@ TEST_F(WasmVMTest, NonTerminatingContractSpendsWholeBudget)
 
 // A budget too small to reach the first host charge is still out of gas, whatever the engine
 // can account for by then.
-TEST_F(WasmVMTest, BudgetTooSmallToRunIsOutOfGas)
+TEST_F(WasmVMTest, budget_too_small_to_run_is_out_of_gas)
 {
     auto const outcome = run(kEngineWat, 1, "calls_the_host");
 
@@ -106,7 +106,7 @@ TEST_F(WasmVMTest, BudgetTooSmallToRunIsOutOfGas)
 
 // A host call needs a memory to resolve its byte regions against, and the export is not
 // optional for a contract that makes one.
-TEST_F(WasmVMTest, HostCallWithNoExportedMemoryFails)
+TEST_F(WasmVMTest, host_call_with_no_exported_memory_fails)
 {
     auto const outcome = run(kNoMemoryWat);
 
@@ -118,7 +118,7 @@ TEST_F(WasmVMTest, HostCallWithNoExportedMemoryFails)
 // A module that will not instantiate is the contract's fault and is charged, not the node's.
 // Screening does not see every way this happens - a linear memory the module keeps to itself
 // is absent from its exports - so such a module can pass preflight and still be refused here.
-TEST_F(WasmVMTest, ModuleThatWillNotInstantiateIsChargedToTheContract)
+TEST_F(WasmVMTest, module_that_will_not_instantiate_is_charged_to_the_contract)
 {
     // 129 pages, not exported, so nothing outside the module declares it.
     static constexpr std::string_view wat = R"wat(
@@ -139,7 +139,7 @@ TEST_F(WasmVMTest, ModuleThatWillNotInstantiateIsChargedToTheContract)
 
 // Preflight is meant to refuse these with `temINVALID_BYTECODE`; reaching apply means the screening
 // did not happen, which is the node's fault and not the transaction's.
-TEST_F(WasmVMTest, UnrunnableModuleIsNodeSideFault)
+TEST_F(WasmVMTest, unrunnable_module_is_node_side_fault)
 {
     struct Case
     {
@@ -177,7 +177,7 @@ TEST_F(WasmVMTest, UnrunnableModuleIsNodeSideFault)
 // put an assembler on the consensus path and make a module's validity a build flag. The
 // engine turns that feature off; this is the guest-side proof, using the very text the rest
 // of this file assembles.
-TEST_F(WasmVMTest, TextFormatModuleIsRejected)
+TEST_F(WasmVMTest, text_format_module_is_rejected)
 {
     Bytes const text{kEngineWat.begin(), kEngineWat.end()};
 
@@ -198,7 +198,7 @@ TEST_F(WasmVMTest, TextFormatModuleIsRejected)
 // The two exclusions are the codes the Rust engine converts into a fault, which stops the run
 // instead of reaching the guest: -1 `Unimplemented` and -14 `NoMemExported`. Both say the call
 // was not served at all.
-TEST_F(WasmVMTest, SoftHostErrorCodesCrossUnchanged)
+TEST_F(WasmVMTest, soft_host_error_codes_cross_unchanged)
 {
     static constexpr HostFunctionError kSoftErrors[] = {
         HostFunctionError::FieldNotFound,
@@ -240,7 +240,7 @@ TEST_F(WasmVMTest, SoftHostErrorCodesCrossUnchanged)
 
 // The counterpart: a fatal code stops the run rather than reaching the contract, so a host
 // that cannot serve a call cannot be second-guessed by the contract.
-TEST_F(WasmVMTest, FatalHostErrorStopsRun)
+TEST_F(WasmVMTest, fatal_host_error_stops_run)
 {
     auto refused = HostFunctionError::Unimplemented;
     EXPECT_CALL(host, getLedgerSqn())
@@ -263,7 +263,7 @@ TEST_F(WasmVMTest, FatalHostErrorStopsRun)
 
 // The point of the bridge's C++ half: an exception must not reach the Rust frames that called
 // the host, and must not take the node with it.
-TEST_F(WasmVMTest, ThrowingHostFunctionBecomesInternal)
+TEST_F(WasmVMTest, throwing_host_function_becomes_internal)
 {
     EXPECT_CALL(host, getLedgerSqn())
         .WillOnce([]() -> std::expected<std::uint32_t, HostFunctionError> {
@@ -287,7 +287,7 @@ struct WasmVMDeathTest : WasmVMTest
 
 // No gas is not a small budget, it is a malformed transaction — refused before the engine is
 // asked to run anything.
-TEST_F(WasmVMDeathTest, NoGasIsRefusedAsMalformedRatherThanRun)
+TEST_F(WasmVMDeathTest, no_gas_is_refused_as_malformed_rather_than_run)
 {
     for (auto const gas : {std::int64_t{0}, std::int64_t{-1}})
     {
@@ -306,7 +306,7 @@ TEST_F(WasmVMDeathTest, NoGasIsRefusedAsMalformedRatherThanRun)
 // The host caches the current ledger object, the slot table and the contract's data for the
 // length of one run, so a reused one would answer a later contract out of an earlier
 // contract's state.
-TEST_F(WasmVMDeathTest, DirtyHostIsRefusedBeforeContractRuns)
+TEST_F(WasmVMDeathTest, dirty_host_is_refused_before_contract_runs)
 {
     EXPECT_DEBUG_DEATH(
         {
