@@ -490,9 +490,8 @@ Parser<Visitor...>::parse(BufferSequence const& bs)
     auto size = buffer_size(bs);
     if (size > documentSizeLimit)
     {
+        errors_.clear();
         auto token = Token{};
-        token.start = begin_;
-        token.end = begin_;
         return addError(
             "Syntax error: document size exceeds the maximum allowed size of " +
                 std::to_string(documentSizeLimit) + " bytes",

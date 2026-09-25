@@ -3,6 +3,7 @@
 
 #include <gtest/gtest.h>
 
+#include <array>
 #include <cstddef>
 #include <expected>
 #include <string>
@@ -591,19 +592,22 @@ TEST(JsonParser, a_rejected_comment_fails_the_parse_wherever_it_appears)
     }
 }
 
-TEST(JsonParser, formats_errors_for_an_empty_null_range)
+TEST(JsonParser, formats_errors_for_an_empty_range)
 {
-    // An empty std::vector<char> has a null data(), so begin_, end_ and every
-    // recorded location are null.
-    auto const empty = std::vector<char>{};
-    ASSERT_EQ(empty.data(), nullptr);
+    // A caller can express an empty document either way: an empty
+    // std::vector<char> may yield a null data(), leaving begin_, end_ and every
+    // recorded location null, or the range may be empty but addressable.
+    auto const addressable = std::array<char, 1>{};
 
-    auto trace = Trace{};
-    auto parser = json::Parser{trace};
+    for (auto const* begin : {static_cast<char const*>(nullptr), addressable.data()})
+    {
+        auto trace = Trace{};
+        auto parser = json::Parser{trace};
 
-    EXPECT_FALSE(parser.parse(empty.data(), empty.data()));
-    EXPECT_EQ(parser.getFormattedErrorMessages().find("* Line 1, Column 1"), 0u)
-        << parser.getFormattedErrorMessages();
+        EXPECT_FALSE(parser.parse(begin, begin));
+        EXPECT_EQ(parser.getFormattedErrorMessages().find("* Line 1, Column 1"), 0u)
+            << parser.getFormattedErrorMessages();
+    }
 }
 
 }  // namespace xrpl
