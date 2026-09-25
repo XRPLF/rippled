@@ -84,8 +84,7 @@ proposalReceiveSpan([[maybe_unused]] protocol::TMProposeSet const& msg)
                 tc.trace_id().size(),
                 reinterpret_cast<std::uint8_t const*>(tc.span_id().data()),
                 tc.span_id().size(),
-                tc.has_trace_flags() ? static_cast<std::uint8_t>(tc.trace_flags())
-                                     : std::uint8_t{0});
+                traceFlagsByte(tc));
         }
     }
 #endif
@@ -122,8 +121,7 @@ validationReceiveSpan([[maybe_unused]] protocol::TMValidation const& msg)
                 tc.trace_id().size(),
                 reinterpret_cast<std::uint8_t const*>(tc.span_id().data()),
                 tc.span_id().size(),
-                tc.has_trace_flags() ? static_cast<std::uint8_t>(tc.trace_flags())
-                                     : std::uint8_t{0});
+                traceFlagsByte(tc));
         }
     }
 #endif

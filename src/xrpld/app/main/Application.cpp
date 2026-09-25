@@ -472,7 +472,7 @@ public:
               // same service.name as traces when [insight] omits it. Network
               // type is derived from [network_id] via the shared telemetry
               // helper, keeping metrics and traces on one network label.
-              config_->section("telemetry").valueOr<std::string>("service_name", ""),
+              config_->section(Sections::kTelemetry).valueOr<std::string>("service_name", ""),
               telemetry::networkTypeFromId(config_->networkId),
               // telemetry_ is declared before this member, so it is already
               // built. An OTel collector needs the meter provider that only

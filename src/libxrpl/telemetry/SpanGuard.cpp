@@ -663,8 +663,8 @@ SpanGuard::discard() noexcept
             // Today every valid guard wraps a recording span (head sampling is
             // 1.0), so OnEnd() always runs — but scoping set/clear keeps the
             // flag leak-proof if a later phase can hand back a non-recording
-            // span (e.g. honoring a non-sampled remote parent during
-            // propagation), so it can never spill onto the next span.
+            // span (e.g. a head ratio below 1.0), so it can never spill onto
+            // the next span.
             DiscardScope const discardScope;
             impl_->span->End();
         }
