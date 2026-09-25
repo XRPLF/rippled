@@ -180,6 +180,7 @@ words:
   - libxrpl
   - llection
   - LOCALGOOD
+  - logql
   - logwstream
   - Lombrozo
   - lresolv
@@ -238,6 +239,7 @@ words:
   - onlatest
   - ostr
   - otelc
+  - otelcol
   - otool
   - oxalica
   - pargs
