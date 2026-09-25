@@ -320,13 +320,11 @@ Logs::format(
             auto spanCtx = span->GetContext();
             // Require the sampled flag as well as a valid context. A dropped
             // span still carries its parent's ids, so a valid context does
-            // not imply the span reaches the backend. An unsampled remote
-            // parent arrives either because an upstream node propagated
-            // sampled=0, or because a peer omitted trace_flags entirely and
-            // it defaults to 0 (TraceContextPropagator, TxTracing,
-            // ConsensusReceiveTracing). Either way the ParentBasedSampler
-            // drops the local span, while the tracer still returns a no-op
-            // span with a valid context.
+            // not imply the span reaches the backend. A span is dropped when
+            // its local parent was dropped, or when the head sampler's ratio
+            // rejects its trace id; a peer's sampled flag does not decide it
+            // (see makeHeadSampler). Either way the tracer still returns a
+            // no-op span with a valid context.
             // Logging those ids would advertise a trace that was never
             // exported, leaving the log-to-trace link resolving to nothing.
             if (spanCtx.IsValid() && spanCtx.IsSampled())

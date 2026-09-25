@@ -29,8 +29,8 @@
     message TraceContext {
         bytes trace_id = 1;      // 16-byte trace identifier
         bytes span_id = 2;       // 8-byte span identifier
-        uint32 trace_flags = 3;  // bit 0 = sampled
-        string trace_state = 4;  // W3C tracestate value
+        uint32 trace_flags = 3;  // bit 0 = sampled, bit 1 = random
+        reserved 4;              // trace_state (W3C tracestate), added later
     }
     ```
   - Add `optional TraceContext trace_context = 1001;` to:
@@ -563,9 +563,6 @@ This gives the best of both worlds: guaranteed cross-node correlation via determ
 
 ## Known Issues / Future Work
 
-### Unused trace_state proto field
+### trace_state is not a proto field yet
 
-The `TraceContext.trace_state` field (field 4) in `xrpl.proto` is reserved for
-W3C `tracestate` vendor-specific key-value pairs but is not read or written by
-`TraceContextPropagator`. Wire it when cross-vendor trace propagation is needed.
-No wire cost since proto `optional` fields are zero-cost when absent.
+`TraceContext` in `xrpl.proto` has no `trace_state` field: number 4 and the name `trace_state` are `reserved` for W3C `tracestate` vendor-specific key-value pairs. When cross-vendor trace propagation is needed, add the field with a size limit and wire it through `TraceContextPropagator`. Until then a peer-sent field 4 is an unknown field, which the parser drops.

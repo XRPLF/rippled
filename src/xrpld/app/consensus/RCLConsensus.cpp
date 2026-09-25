@@ -294,8 +294,8 @@ RCLConsensus::Adaptor::propose(RCLCxPeerPos::Proposal const& proposal)
     //
     // Injection writes only when the span is live, so a node with telemetry
     // compiled out, disabled by config, or simply not tracing this round sends
-    // no TraceContext at all rather than an empty one that makes every peer
-    // take its has_trace_context() branch for nothing.
+    // no TraceContext at all rather than an empty one that every peer would
+    // parse only to drop.
     telemetry::injectSpanContext(span, prop);
 
     app_.getOverlay().broadcast(prop);
