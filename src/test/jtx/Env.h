@@ -702,6 +702,7 @@ public:
     /**
      * Return an account root.
      * @return empty if the account does not exist.
+     * @note "le" stands for "ledger entry".
      */
     [[nodiscard]] SLE::const_pointer
     le(Account const& account) const;
@@ -709,6 +710,7 @@ public:
     /**
      * Return a ledger entry.
      * @return empty if the ledger entry does not exist
+     * @note "le" stands for "ledger entry".
      */
     [[nodiscard]] SLE::const_pointer
     le(Keylet const& k) const;
