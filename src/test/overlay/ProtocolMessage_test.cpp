@@ -3,12 +3,14 @@
 #include <xrpld/overlay/detail/ProtocolMessage.h>
 
 #include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/telemetry/TraceContextValidation.h>
 
 #include <boost/asio/buffer.hpp>
 #include <boost/system/errc.hpp>
 
 #include <xrpl.pb.h>
 
+#include <algorithm>
 #include <array>
 #include <cstddef>
 #include <cstdint>
@@ -16,6 +18,7 @@
 #include <memory>
 #include <optional>
 #include <string>
+#include <string_view>
 #include <utility>
 #include <vector>
 
@@ -31,6 +34,8 @@ class ProtocolMessage_test : public beast::unit_test::Suite
         int endCount = 0;
         int unknownCount = 0;
         std::uint16_t lastType = 0;
+        // The last message dispatched, as the parser produced it.
+        std::shared_ptr<::google::protobuf::Message> lastMessage;
 
         [[nodiscard]] bool
         compressionEnabled() const
@@ -59,9 +64,10 @@ class ProtocolMessage_test : public beast::unit_test::Suite
 
         template <class T>
         void
-        onMessage(std::shared_ptr<T> const&)
+        onMessage(std::shared_ptr<T> const& m)
         {
             ++messageCount;
+            lastMessage = m;
         }
 
         void
@@ -157,6 +163,84 @@ class ProtocolMessage_test : public beast::unit_test::Suite
         auto const seq = std::array<boost::asio::const_buffer, 1>{boost::asio::buffer(buffer)};
         auto hint = 0uz;
         return invokeProtocolMessage(seq, handler, hint);
+    }
+
+    // Stand-in bytes for the required bytes fields of the messages below.
+    static constexpr std::string_view kBlob = "blob";
+
+    // The TraceContext field number reserved for trace_state in xrpl.proto.
+    static constexpr int kReservedTraceStateField = 4;
+
+    // A payload size well over the one below which Message sends a frame
+    // uncompressed. parseFromPeer checks the frame really is compressed.
+    static constexpr std::size_t kCompressiblePayloadSize = 1024;
+
+    // Bytes 1, 2, 3, ... of the given size, so every byte is non-zero.
+    static std::string
+    sequenceBytes(std::size_t size)
+    {
+        auto bytes = std::string(size, '\0');
+        std::ranges::generate(bytes, [next = '\0']() mutable { return ++next; });
+        return bytes;
+    }
+
+    // A trace context that passes every check.
+    static protocol::TraceContext
+    validTraceContext()
+    {
+        auto tc = protocol::TraceContext{};
+        tc.set_trace_id(sequenceBytes(telemetry::kTraceIdSize));
+        tc.set_span_id(sequenceBytes(telemetry::kSpanIdSize));
+        return tc;
+    }
+
+    static protocol::TMValidation
+    validationWith(protocol::TraceContext const& tc)
+    {
+        auto validation = protocol::TMValidation{};
+        validation.set_validation(kBlob);
+        *validation.mutable_trace_context() = tc;
+        return validation;
+    }
+
+    static protocol::TMTransaction
+    transactionWith(protocol::TraceContext const& tc)
+    {
+        auto tx = protocol::TMTransaction{};
+        tx.set_rawtransaction(kBlob);
+        tx.set_status(protocol::tsNEW);
+        *tx.mutable_trace_context() = tc;
+        return tx;
+    }
+
+    // Sends `message` through the parser as a peer would. Returns the
+    // message the handler got, or null if it is not a T.
+    template <class T>
+    std::shared_ptr<T>
+    parseFromPeer(
+        ::google::protobuf::Message const& message,
+        protocol::MessageType type,
+        compression::Compressed compressed = compression::Compressed::Off)
+    {
+        auto framed = Message{message, type};
+        auto const& buffer = framed.getBuffer(compressed);
+        if (compressed == compression::Compressed::On)
+        {
+            // Message falls back to an uncompressed frame when compressing
+            // does not help, so confirm the header says LZ4.
+            auto headerEc = boost::system::error_code{};
+            auto const seq = std::array<boost::asio::const_buffer, 1>{boost::asio::buffer(buffer)};
+            auto const header = xrpl::detail::parseMessageHeader(headerEc, seq, buffer.size());
+            BEAST_EXPECT(header.has_value() && header->algorithm == compression::Algorithm::LZ4);
+        }
+
+        auto handler = TestHandler{};
+        handler.compression = compressed == compression::Compressed::On;
+        auto const [bytes, ec] = invoke(buffer, handler);
+        BEAST_EXPECT(!ec);
+        BEAST_EXPECT(bytes == buffer.size());
+        BEAST_EXPECT(handler.messageCount == 1);
+        return std::dynamic_pointer_cast<T>(handler.lastMessage);
     }
 
     void
@@ -282,12 +366,144 @@ class ProtocolMessage_test : public beast::unit_test::Suite
     }
 
     void
+    testPeerTraceContextSanitized()
+    {
+        testcase("peer trace context sanitized on parse");
+
+        // A trace_id of the wrong size drops the whole context.
+        {
+            auto tc = validTraceContext();
+            tc.set_trace_id(sequenceBytes(telemetry::kTraceIdSize - 1));
+            auto const parsed =
+                parseFromPeer<protocol::TMValidation>(validationWith(tc), protocol::mtVALIDATION);
+            if (BEAST_EXPECT(parsed != nullptr))
+            {
+                BEAST_EXPECT(!parsed->has_trace_context());
+                BEAST_EXPECT(parsed->validation() == kBlob);
+            }
+        }
+
+        // A valid context is kept, with its unknown flag bits cleared.
+        {
+            auto tc = validTraceContext();
+            tc.set_trace_flags(telemetry::kMaxTraceFlags);
+            auto const parsed =
+                parseFromPeer<protocol::TMValidation>(validationWith(tc), protocol::mtVALIDATION);
+            if (BEAST_EXPECT(parsed != nullptr) && BEAST_EXPECT(parsed->has_trace_context()))
+            {
+                auto const& kept = parsed->trace_context();
+                BEAST_EXPECT(kept.trace_id() == tc.trace_id());
+                BEAST_EXPECT(kept.span_id() == tc.span_id());
+                BEAST_EXPECT(kept.trace_flags() == telemetry::kKnownTraceFlags);
+            }
+        }
+
+        // In a batch, only the transaction with the bad context loses it.
+        {
+            auto bad = validTraceContext();
+            bad.set_span_id(std::string(telemetry::kSpanIdSize, '\0'));
+            auto good = validTraceContext();
+            good.set_trace_flags(telemetry::kMaxTraceFlags);
+            auto batch = protocol::TMTransactions{};
+            *batch.add_transactions() = transactionWith(bad);
+            *batch.add_transactions() = transactionWith(good);
+
+            auto const parsed =
+                parseFromPeer<protocol::TMTransactions>(batch, protocol::mtTRANSACTIONS);
+            if (BEAST_EXPECT(parsed != nullptr) && BEAST_EXPECT(parsed->transactions_size() == 2))
+            {
+                BEAST_EXPECT(!parsed->transactions(0).has_trace_context());
+                auto const& kept = parsed->transactions(1);
+                BEAST_EXPECT(kept.has_trace_context());
+                BEAST_EXPECT(kept.trace_context().trace_id() == good.trace_id());
+                BEAST_EXPECT(kept.trace_context().span_id() == good.span_id());
+                BEAST_EXPECT(kept.trace_context().trace_flags() == telemetry::kKnownTraceFlags);
+            }
+        }
+    }
+
+    void
+    testPeerTraceContextUnknownFieldDropped()
+    {
+        testcase("unknown field in peer trace context dropped on parse");
+
+        auto const tc = validTraceContext();
+        auto validation = validationWith(tc);
+        validation.mutable_trace_context()->mutable_unknown_fields()->AddLengthDelimited(
+            kReservedTraceStateField, "state");
+        BEAST_EXPECT(validation.trace_context().unknown_fields().field_count() == 1);
+
+        auto const parsed =
+            parseFromPeer<protocol::TMValidation>(validation, protocol::mtVALIDATION);
+        if (BEAST_EXPECT(parsed != nullptr) && BEAST_EXPECT(parsed->has_trace_context()))
+        {
+            auto const& kept = parsed->trace_context();
+            BEAST_EXPECT(kept.trace_id() == tc.trace_id());
+            BEAST_EXPECT(kept.span_id() == tc.span_id());
+            BEAST_EXPECT(kept.unknown_fields().field_count() == 0);
+        }
+    }
+
+    void
+    testPeerTraceContextSanitizedOnProposal()
+    {
+        testcase("peer trace context sanitized on a proposal");
+
+        auto tc = validTraceContext();
+        tc.set_trace_id(std::string(telemetry::kTraceIdSize, '\0'));
+        auto proposal = protocol::TMProposeSet{};
+        proposal.set_proposeseq(1);
+        proposal.set_currenttxhash(kBlob);
+        proposal.set_nodepubkey(kBlob);
+        proposal.set_closetime(1);
+        proposal.set_signature(kBlob);
+        proposal.set_previousledger(kBlob);
+        *proposal.mutable_trace_context() = tc;
+        BEAST_EXPECT(proposal.IsInitialized());
+
+        // Everything but the trace context must arrive unchanged.
+        auto expected = proposal;
+        expected.clear_trace_context();
+
+        auto const parsed =
+            parseFromPeer<protocol::TMProposeSet>(proposal, protocol::mtPROPOSE_LEDGER);
+        if (BEAST_EXPECT(parsed != nullptr))
+        {
+            BEAST_EXPECT(!parsed->has_trace_context());
+            BEAST_EXPECT(parsed->SerializeAsString() == expected.SerializeAsString());
+        }
+    }
+
+    void
+    testPeerTraceContextSanitizedWhenCompressed()
+    {
+        testcase("peer trace context sanitized on a compressed message");
+
+        auto bad = validTraceContext();
+        bad.set_span_id(std::string(telemetry::kSpanIdSize, '\0'));
+        auto tx = transactionWith(bad);
+        tx.set_rawtransaction(std::string(kCompressiblePayloadSize, 'A'));
+
+        auto const parsed = parseFromPeer<protocol::TMTransaction>(
+            tx, protocol::mtTRANSACTION, compression::Compressed::On);
+        if (BEAST_EXPECT(parsed != nullptr))
+        {
+            BEAST_EXPECT(!parsed->has_trace_context());
+            BEAST_EXPECT(parsed->rawtransaction() == tx.rawtransaction());
+        }
+    }
+
+    void
     run() override
     {
         testOversizedPingRejected();
         testOversizedPingRejectedFromHeaderAlone();
         testNormalPingDispatched();
         testPingWithSmallUnknownFieldDispatched();
+        testPeerTraceContextSanitized();
+        testPeerTraceContextUnknownFieldDropped();
+        testPeerTraceContextSanitizedOnProposal();
+        testPeerTraceContextSanitizedWhenCompressed();
     }
 };
 

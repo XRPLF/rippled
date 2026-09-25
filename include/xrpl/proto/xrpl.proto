@@ -96,7 +96,7 @@ message TMPublicKey {
 message TraceContext {
   optional bytes trace_id = 1;      // 16-byte trace identifier
   optional bytes span_id = 2;       // 8-byte parent span identifier
-  optional uint32 trace_flags = 3;  // bit 0 = sampled
+  optional uint32 trace_flags = 3;  // bit 0 = sampled, bit 1 = random
 
   // Field 4 is held for trace_state (W3C tracestate). It will be added
   // here later, with a size limit.
