@@ -69,6 +69,7 @@ words:
   - Btrfs
   - Buildx
   - canonicality
+  - CGNAT
   - canonicalised
   - cctools
   - changespq
@@ -121,6 +122,7 @@ words:
   - envrc
   - exceptioned
   - EXPECT_STREQ
+  - exfiltration
   - Falco
   - fcontext
   - finalizers
@@ -129,6 +131,8 @@ words:
   - fsanitize
   - funclets
   - Gamal
+  - gantt
+  - Gantt
   - gcov
   - gcovr
   - ghead
@@ -138,6 +142,8 @@ words:
   - gpgkey
   - Hinnant
   - hotwallet
+  - hicpp
+  - htpasswd
   - hwaddress
   - hwrap
   - ifndef
@@ -179,11 +185,10 @@ words:
   - mathbunnyru
   - mcmodel
   - MEMORYSTATUSEX
-  - MPTAMM
-  - MPTDEX
   - Merkle
   - misprediction
   - missingok
+  - MPTAMM
   - mptbalance
   - MPTDEX
   - mptflags
@@ -218,6 +223,7 @@ words:
   - nonxrp
   - noreplace
   - noripple
+  - nostd
   - nostdinc
   - notifempty
   - nudb
@@ -226,6 +232,7 @@ words:
   - Nyffenegger
   - onlatest
   - ostr
+  - otelc
   - otool
   - oxalica
   - pargs
@@ -236,6 +243,7 @@ words:
   - permdex
   - perminute
   - permissioned
+  - pimpl
   - pointee
   - populator
   - preauth
@@ -327,6 +335,7 @@ words:
   - TMEndpointv2
   - toolchain
   - tparam
+  - traceql
   - trixie
   - tx
   - txid
@@ -334,6 +343,7 @@ words:
   - txjson
   - txn
   - txns
+  - txqueue
   - txs
   - ubsan
   - UBSAN
@@ -348,6 +358,7 @@ words:
   - unfindable
   - unflatten
   - unfund
+  - ungated
   - unimpair
   - unroutable
   - unscalable
@@ -386,6 +397,8 @@ words:
   - xrplf
   - xxhash
   - xxhasher
+  - xychart
+  - zpages
   - zstdio
-  - CGNAT
-  - ungated
+  - pratik
+  - dedup

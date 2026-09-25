@@ -1,3 +1,5 @@
+{# Read SANITIZERS first: the next line rebinds `os` from the module to the OS name. #}
+{% set sanitizers = os.getenv("SANITIZERS", "") %}
 {% set os = detect_api.detect_os() %}
 {% set arch = detect_api.detect_arch() %}
 {% set compiler, version, compiler_exe = detect_api.detect_default_compiler() %}
@@ -49,6 +51,17 @@ tools.build:compiler_executables={'c':'{{ cc_exe }}','cpp':'{{ cxx_exe }}'}
 user.package:cppstd_version=23
 tools.info.package_id:confs+=["user.package:cppstd_version"]
 
+{# opentelemetry-cpp is an external dependency: sanitizer reports from its own #}
+{# code are not ours to fix, so build it without sanitizer checks. #}
+{# TSan stays on, because it must see the library's atomics or it reports false races. #}
+{% if sanitizers and compiler != "msvc" %}
+{% set otel_sanitizer_flags = ["-fno-sanitize=all"] %}
+{% if "thread" in sanitizers %}
+{% set _ = otel_sanitizer_flags.append("-fsanitize=thread") %}
+{% endif %}
+opentelemetry-cpp/*:tools.build:cxxflags+={{ otel_sanitizer_flags }}
+{% endif %}
+
 {% if os == "Macos" %}
 [buildenv]
 {# os.version adds -mmacosx-version-min to compiler command lines, #}
@@ -57,4 +70,19 @@ tools.info.package_id:confs+=["user.package:cppstd_version"]
 {# clang's assembler honors this env var regardless, pinning them. #}
 {# Scoped to boost/* since it is the only gap. #}
 boost/*:MACOSX_DEPLOYMENT_TARGET={{ min_macos_version }}
+{% endif %}
+{% if compiler == "gcc" and compiler_version < 13 %}
+tools.build:cxxflags+=['-Wno-restrict']
+{% endif %}
+{% if os == "Windows" %}
+# opentelemetry-cpp's recipe removes the `shared` option on Windows and never
+# sets BUILD_SHARED_LIBS, so its upstream CMake defaults the protobuf-generated
+# `opentelemetry_proto` target to a DLL (opentelemetry_proto.dll). The rest of
+# the project links statically and nothing deploys that DLL next to the
+# executables, so the telemetry unit test fails to start with
+# STATUS_DLL_NOT_FOUND (0xC0000135). Force the dependency to build fully static
+# so no runtime DLL is produced. The conf is folded into the package id so a
+# fresh static binary is built instead of reusing a previously cached one.
+opentelemetry-cpp/*:tools.cmake.cmaketoolchain:extra_variables={"BUILD_SHARED_LIBS": "OFF"}
+opentelemetry-cpp/*:tools.info.package_id:confs+=["tools.cmake.cmaketoolchain:extra_variables"]
 {% endif %}

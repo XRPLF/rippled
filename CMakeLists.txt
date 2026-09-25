@@ -140,6 +140,20 @@ if(rocksdb)
     target_link_libraries(xrpl_libs INTERFACE RocksDB::rocksdb)
 endif()
 
+# OpenTelemetry distributed tracing (optional).
+# When on, links against opentelemetry-cpp and defines XRPL_ENABLE_TELEMETRY
+# so that SpanGuard factory methods produce real OTel spans.
+# When off, all tracing code compiles to no-ops with zero overhead.
+#
+# There is no CMake option. The one switch is `conan install -o telemetry=`,
+# which decides whether opentelemetry-cpp is fetched and sets the variable read
+# below through the generated toolchain.
+if(telemetry)
+    find_package(opentelemetry-cpp CONFIG REQUIRED)
+    add_compile_definitions(XRPL_ENABLE_TELEMETRY)
+    message(STATUS "OpenTelemetry tracing enabled")
+endif()
+
 # Work around changes to Conan recipe for now.
 if(TARGET nudb::core)
     set(nudb nudb::core)

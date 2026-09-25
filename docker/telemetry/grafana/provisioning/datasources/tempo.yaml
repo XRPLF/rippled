@@ -1,0 +1,184 @@
+# Grafana datasource provisioning for Grafana Tempo.
+# Auto-configures Tempo as a trace data source on Grafana startup.
+# Access Grafana at http://localhost:3000, then use Explore -> Tempo
+# to browse xrpld traces using TraceQL.
+#
+# Search filters provide pre-configured dropdowns in the Explore UI.
+# Each phase adds filters for the span attributes it introduces.
+# Base filters — node identity, service, span name, status.
+# RPC command, status, role filters.
+# Path-finding request, mode and ledger filters.
+# Transaction hash, local/peer origin, status.
+
+apiVersion: 1
+
+datasources:
+  - name: Tempo
+    type: tempo
+    access: proxy
+    url: http://tempo:3200
+    uid: tempo
+    jsonData:
+      nodeGraph:
+        enabled: true
+      # Service map and traces-to-metrics require a Prometheus datasource
+      # (not included in this stack). These features are inactive until a
+      # Prometheus service is added to docker-compose.yml.
+      serviceMap:
+        datasourceUid: prometheus
+      tracesToMetrics:
+        datasourceUid: prometheus
+        spanStartTimeShift: "-1h"
+        spanEndTimeShift: "1h"
+      search:
+        filters:
+          # --- Node identification filters ---
+          # service.name: logical service name (default: "xrpld").
+          #   Useful when running multiple service types in the same collector.
+          - id: service-name
+            tag: service.name
+            operator: "="
+            scope: resource
+            type: dynamic
+          # service.instance.id: unique node identifier — defaults to the
+          #   node's public key (e.g., nHB1X37...). Distinguishes individual
+          #   nodes in a multi-node cluster or network.
+          - id: node-id
+            tag: service.instance.id
+            operator: "="
+            scope: resource
+            type: dynamic
+          # service.version: xrpld build version (e.g., "2.4.0-b1").
+          #   Filter traces from specific software releases.
+          - id: node-version
+            tag: service.version
+            operator: "="
+            scope: resource
+            type: dynamic
+          # xrpl.network.id: numeric network identifier
+          #   (0 = mainnet, 1 = testnet, 2 = devnet, etc.).
+          #   Derived from the [network_id] config section.
+          - id: network-id
+            tag: xrpl.network.id
+            operator: "="
+            scope: resource
+            type: dynamic
+          # xrpl.network.type: human-readable network name derived from
+          #   network ID ("mainnet", "testnet", "devnet", "unknown").
+          - id: network-type
+            tag: xrpl.network.type
+            operator: "="
+            scope: resource
+            type: dynamic
+          # --- Span intrinsic filters ---
+          # name: the span operation name (e.g., "rpc.command.server_info").
+          #   Use to find traces for a specific RPC command or subsystem.
+          - id: span-name
+            tag: name
+            operator: "="
+            scope: intrinsic
+            type: dynamic
+          # status: span completion status ("ok", "error", "unset").
+          #   Filter for failed operations to diagnose errors.
+          - id: span-status
+            tag: status
+            operator: "="
+            scope: intrinsic
+            type: dynamic
+          # duration: span wall-clock duration. Use with ">" operator
+          #   to find slow operations (e.g., duration > 500ms).
+          - id: span-duration
+            tag: duration
+            operator: ">"
+            scope: intrinsic
+            type: dynamic
+          # RPC tracing filters
+          - id: rpc-command
+            tag: command
+            operator: "="
+            scope: span
+            type: dynamic
+          - id: rpc-status
+            tag: rpc_status
+            operator: "="
+            scope: span
+            type: dynamic
+          - id: rpc-role
+            tag: rpc_role
+            operator: "="
+            scope: span
+            type: dynamic
+          # Path-finding filters. Only the attributes that select a request get
+          # a dropdown; pathfind_num_paths, pathfind_num_requests and
+          # pathfind_num_source_assets are measurements read off a span, not
+          # things an operator searches by.
+          - id: pathfind-source-account
+            tag: pathfind_source_account
+            operator: "="
+            scope: span
+            type: dynamic
+          - id: pathfind-dest-account
+            tag: pathfind_dest_account
+            operator: "="
+            scope: span
+            type: dynamic
+          - id: pathfind-dest-currency
+            tag: pathfind_dest_currency
+            operator: "="
+            scope: span
+            type: dynamic
+          - id: pathfind-fast
+            tag: pathfind_fast
+            operator: "="
+            scope: span
+            type: dynamic
+          # Changes every ledger, so it must be dynamic rather than static.
+          - id: pathfind-ledger-index
+            tag: pathfind_ledger_index
+            operator: "="
+            scope: span
+            type: dynamic
+          - id: pathfind-search-level
+            tag: pathfind_search_level
+            operator: ">"
+            scope: span
+            type: dynamic
+          # Transaction tracing filters
+          - id: tx-hash
+            tag: tx_hash
+            operator: "="
+            scope: span
+            type: static
+          # One filter per account role a transaction names. tx_account is on
+          # every transaction; the rest appear only on the types that carry
+          # that field, so they are dynamic.
+          - id: tx-account
+            tag: tx_account
+            operator: "="
+            scope: span
+            type: static
+          - id: tx-destination
+            tag: tx_destination
+            operator: "="
+            scope: span
+            type: dynamic
+          - id: tx-owner
+            tag: tx_owner
+            operator: "="
+            scope: span
+            type: dynamic
+          - id: tx-issuer
+            tag: tx_issuer
+            operator: "="
+            scope: span
+            type: dynamic
+          - id: tx-origin
+            tag: local
+            operator: "="
+            scope: span
+            type: dynamic
+          - id: tx-status
+            tag: tx_status
+            operator: "="
+            scope: span
+            type: dynamic
