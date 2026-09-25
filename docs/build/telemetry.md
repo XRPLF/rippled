@@ -25,7 +25,7 @@ This document explains how to build xrpld with OpenTelemetry distributed tracing
 ## Overview
 
 xrpld supports optional [OpenTelemetry](https://opentelemetry.io/) distributed tracing.
-When enabled, it instruments RPC requests with trace spans that are exported via
+When enabled, it instruments RPC requests and the transaction lifecycle with trace spans that are exported via
 OTLP/HTTP to an OpenTelemetry Collector, which forwards them to a tracing backend
 such as Grafana Tempo.
 
