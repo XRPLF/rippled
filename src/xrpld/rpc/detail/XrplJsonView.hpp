@@ -1,5 +1,6 @@
 #pragma once
 
+#include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/json/json_value.h>
 
 #include <rpcspec/Concepts.hpp>
@@ -7,6 +8,7 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <limits>
 #include <string>
 #include <string_view>
 #include <type_traits>
@@ -221,10 +223,28 @@ public:
     }
 
     // Only reachable from a modifier, which only ever runs against a mutable view.
+    //
+    // json::Value has no 64-bit integer type, so the value goes into whichever of its two
+    // 32-bit types can hold it. Casting everything to json::Int would wrap anything above
+    // INT32_MAX, and the spec's toNumber modifier deliberately produces values up to
+    // UINT32_MAX (ledger_entry's oracle_document_id), which the boost backend stores fine.
     void
     set(std::int64_t value)
     {
-        *writeValue_ = static_cast<json::Int>(value);
+        if (value >= 0)
+        {
+            XRPL_ASSERT(
+                value <= std::numeric_limits<json::UInt>::max(),
+                "xrpl::rpc::XrplJsonFieldView::set : value representable as json::UInt");
+            *writeValue_ = static_cast<json::UInt>(value);
+        }
+        else
+        {
+            XRPL_ASSERT(
+                value >= std::numeric_limits<json::Int>::min(),
+                "xrpl::rpc::XrplJsonFieldView::set : value representable as json::Int");
+            *writeValue_ = static_cast<json::Int>(value);
+        }
     }
 
     void
@@ -310,3 +330,14 @@ public:
 static_assert(::rpc::spec::SomeObjectView<XrplJsonObjectView>);
 
 }  // namespace xrpl::rpc
+
+namespace rpc::spec {
+
+// Binds json::Value to xrpld's view, so a spec can be handed request params directly.
+template <>
+struct ObjectViewFor<::json::Value>
+{
+    using Type = ::xrpl::rpc::XrplJsonObjectView;
+};
+
+}  // namespace rpc::spec

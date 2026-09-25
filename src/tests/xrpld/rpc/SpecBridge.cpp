@@ -9,10 +9,12 @@
 #include <gtest/gtest.h>
 #include <rpcspec/Errors.hpp>
 #include <rpcspec/Types.hpp>
+#include <rpcspec/handlers/ledger/Spec.hpp>
 
 #include <cstdint>
 #include <string>
 #include <string_view>
+#include <variant>
 
 namespace xrpl {
 
@@ -198,6 +200,26 @@ TEST(XrplJsonView, field_set)
     EXPECT_EQ(params["obj"]["inner"].asString(), "changed");
 }
 
+TEST(XrplJsonView, field_set_spans_both_32_bit_types)
+{
+    auto params = makeParams();
+    ObjectView root{params};
+
+    // The spec's toNumber modifier produces values up to UINT32_MAX. json::Int is 32 bits,
+    // so routing everything through it would wrap those negative and lose the value.
+    root.child("num").set(std::int64_t{3000000000});
+    auto const big = root.child("num");
+    EXPECT_TRUE(big.isUint32());
+    EXPECT_EQ(big.asUint32(), 3000000000U);
+    EXPECT_EQ(big.asInt64(), 3000000000LL);
+
+    root.child("neg").set(std::int64_t{-2000000000});
+    auto const negative = root.child("neg");
+    EXPECT_TRUE(negative.isInt64());
+    EXPECT_EQ(negative.asInt64(), -2000000000LL);
+    EXPECT_FALSE(negative.isUint32());
+}
+
 TEST(XrplJsonView, object_root)
 {
     auto params = makeParams();
@@ -216,6 +238,43 @@ TEST(XrplJsonView, object_root)
     EXPECT_TRUE(arrayRoot.isArray());
     EXPECT_FALSE(arrayRoot.isObject());
     EXPECT_FALSE(arrayRoot.child("anything").present());
+}
+
+TEST(SpecBridge, shared_spec_parses_json_value)
+{
+    json::Value params{json::ValueType::Object};
+    params["ledger_index"] = 42U;
+    params["binary"] = true;
+    params["transactions"] = true;
+
+    auto const input = ::rpc::spec::handlers::ledger::kSpec.parse(params, 2);
+    ASSERT_TRUE(input.has_value());
+
+    EXPECT_TRUE(input->binary);
+    EXPECT_TRUE(input->transactions);
+    EXPECT_FALSE(input->expand);
+    ASSERT_TRUE(std::holds_alternative<std::uint32_t>(input->ledger.value));
+    EXPECT_EQ(std::get<std::uint32_t>(input->ledger.value), 42U);
+}
+
+TEST(SpecBridge, shared_spec_reports_a_bad_json_value)
+{
+    json::Value params{json::ValueType::Object};
+    params["ledger_index"] = "not-a-ledger";
+
+    auto const input = ::rpc::spec::handlers::ledger::kSpec.parse(params, 2);
+    ASSERT_FALSE(input.has_value());
+    EXPECT_EQ(std::get<::rpc::RippledError>(input.error().code), RpcInvalidParams);
+}
+
+TEST(SpecBridge, shared_spec_warns_on_a_deprecated_field)
+{
+    json::Value params{json::ValueType::Object};
+    params["type"] = "hashes";
+
+    auto const warnings = ::rpc::spec::handlers::ledger::kSpec.check(params, 2);
+    ASSERT_EQ(warnings.size(), 1U);
+    EXPECT_EQ(warnings[0].code, ::rpc::WarningCode::WarnRpcDeprecated);
 }
 
 TEST(SpecBridge, inject_spec_warnings)
