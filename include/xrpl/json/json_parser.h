@@ -14,7 +14,6 @@
 #include <cstdint>
 #include <cstdio>
 #include <deque>
-#include <expected>
 #include <istream>
 #include <iterator>
 #include <limits>
@@ -483,6 +482,7 @@ Parser<Visitor...>::parse(char const* beginDoc, char const* endDoc)
 
 template <typename... Visitor>
 template <class BufferSequence>
+        requires requires(BufferSequence const& buffers) { boost::asio::buffer_size(buffers); }
 bool
 Parser<Visitor...>::parse(BufferSequence const& bs)
 {
