@@ -10,6 +10,25 @@ namespace xrpl {
 // This was the reference fee units used in the old fee calculation.
 inline constexpr std::uint32_t kFeeUnitsDeprecated = 10;
 
+// Number of micro-drops in one drop.
+inline constexpr std::uint32_t microDropsPerDrop{1'000'000};
+
+/**
+ * Hard protocol bounds on the Feature Extension fee settings. A voted value
+ * can never fall outside these, so `preflight`, which has no view, may bound
+ * against them. Gas and bytecode limits are capped; gas price has a floor
+ * (zero would make WASM execution effectively free).
+ */
+inline constexpr std::uint32_t kMaxGasLimit{2'000'000};
+inline constexpr std::uint32_t kMaxBytecodeSizeLimit{200'000};
+inline constexpr std::uint32_t kMinGasPrice{1};
+
+// The following default values of fee settings will seed into FeeSettings
+// and write to the ledger on featureSmartEscrow activation.
+inline constexpr std::uint32_t kDefaultGasLimit{1'000'000};
+inline constexpr std::uint32_t kDefaultBytecodeSizeLimit{100'000};
+inline constexpr std::uint32_t kDefaultGasPrice{1'000'000};
+
 /**
  * Reflects the fee settings for a particular ledger.
  *
@@ -33,13 +52,42 @@ struct Fees
      */
     XRPAmount increment{0};
 
+    /**
+     * @brief Gas limit for Feature Extensions (instructions).
+     *
+     * This and the one below default to the protocol values rather than 0,
+     * because an explicit 0 is the voted kill switch.
+     */
+    std::uint32_t gasLimit{kDefaultGasLimit};
+
+    /**
+     * @brief Bytecode size limit for Feature Extensions (bytes).
+     */
+    std::uint32_t bytecodeSizeLimit{kDefaultBytecodeSizeLimit};
+
+    /**
+     * @brief Price of WASM gas (micro-drops).
+     */
+    std::uint32_t gasPrice{kDefaultGasPrice};
+
     explicit Fees() = default;
     Fees(Fees const&) = default;
     Fees&
     operator=(Fees const&) = default;
 
-    Fees(XRPAmount base, XRPAmount reserve, XRPAmount increment)
-        : base(base), reserve(reserve), increment(increment)
+    Fees(
+        XRPAmount base,
+        XRPAmount reserve,
+        XRPAmount increment,
+        std::uint32_t gasLimit,
+        std::uint32_t bytecodeSizeLimit,
+        std::uint32_t gasPrice)
+        : base{base}
+        , reserve{reserve}
+        , increment{increment}
+        , gasLimit{gasLimit}
+        , bytecodeSizeLimit{bytecodeSizeLimit}
+        , gasPrice{gasPrice}
     {
     }
 

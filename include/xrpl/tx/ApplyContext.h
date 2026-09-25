@@ -16,6 +16,7 @@
 #include <xrpl/protocol/XRPAmount.h>
 
 #include <cstddef>
+#include <cstdint>
 #include <functional>
 #include <optional>
 
@@ -96,6 +97,24 @@ public:
     }
 
     /**
+     * Sets the gas used in the metadata
+     */
+    void
+    setGasUsed(std::uint32_t const gasUsed)
+    {
+        gasUsed_ = gasUsed;
+    }
+
+    /**
+     * Sets the gas used in the metadata
+     */
+    void
+    setVMReturnCode(std::int32_t const vmReturnCode)
+    {
+        vmReturnCode_ = vmReturnCode;
+    }
+
+    /**
      * Discard changes and start fresh.
      */
     void
@@ -154,6 +173,8 @@ private:
 
     // The ID of the batch transaction we are executing under, if set.
     std::optional<uint256 const> parentBatchId_;
+    std::optional<std::uint32_t> gasUsed_;
+    std::optional<std::int32_t> vmReturnCode_;
 };
 
 }  // namespace xrpl

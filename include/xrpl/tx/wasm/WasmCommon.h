@@ -1,0 +1,194 @@
+#pragma once
+
+#include <xrpl/basics/Log.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/basics/contract.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/protocol/TER.h>
+
+#include <bit>
+#include <cstddef>
+#include <cstdint>
+#include <cstring>
+#include <exception>
+#include <limits>
+#include <optional>
+#include <source_location>
+#include <span>
+#include <stdexcept>
+#include <type_traits>
+#include <utility>
+#include <vector>
+
+namespace xrpl {
+
+using Bytes = std::vector<std::uint8_t>;
+using Hash = xrpl::uint256;
+using FloatPair = std::pair<int64_t, int32_t>;
+
+enum class HostFunctionError : int32_t {
+    Unimplemented = -1,
+    FieldNotFound = -2,
+    BufferTooSmall = -3,
+    NoArray = -4,
+    NotLeafField = -5,
+    LocatorMalformed = -6,
+    SlotOutRange = -7,
+    SlotsFull = -8,
+    EmptySlot = -9,
+    LedgerObjNotFound = -10,
+    OutOfTransferLimit = -11,
+    DataFieldTooLarge = -12,
+    PointerOutOfBounds = -13,
+    NoMemExported = -14,
+    InvalidParams = -15,
+    InvalidAccount = -16,
+    InvalidField = -17,
+    IndexOutOfBounds = -18,
+    FloatInputMalformed = -19,
+    FloatComputationError = -20,
+
+    // The call was not served at all, so the engine stops the run and the transaction is
+    // tecINTERNAL rather than the contract being handed a code to interpret. `guarded`
+    // answers it for a host body that throws.
+    //
+    // The only entry outside the -1 ..= -20 range a contract reads: it needs no number
+    // there, and INT32_MIN cannot collide with a code appended above. Negative so that a
+    // reader treating it as an ordinary failure is still right.
+    InternalFatal = std::numeric_limits<int32_t>::min(),
+};
+
+// The verdict `floatCompare` answers, read as the placing of `x` against `y`. Wire values
+// shared with the guest: append only, never renumber, never negative — a verdict and a
+// `HostFunctionError` share one `i32`, split by sign. The second declaration of
+// `xrpl_host_functions::FloatOrdering`, which links into the guest and so cannot use `cxx`.
+enum class FloatOrdering : int32_t {
+    Equal = 0,
+    Greater = 1,
+    Less = 2,
+};
+
+template <typename T>
+struct WasmResult
+{
+    T result;
+    int64_t cost;
+};
+using EscrowResult = WasmResult<int32_t>;
+
+// Engine error when wasm does not run to completion. `cost` is the gas consumed
+// when meaningful (tecOUT_OF_GAS / tecFAILED_PROCESSING; caller writes it to tx
+// metadata); std::nullopt for tecINTERNAL and malformed input (no gas reported).
+struct WasmTER
+{
+    TER ter;
+    std::optional<int64_t> cost;
+};
+
+template <typename T, size_t Size = sizeof(T)>
+constexpr T
+adjustWasmEndianessHlp(T x)
+{
+    static_assert(std::is_integral_v<T>, "Only integral types");
+    if constexpr (Size > 1)
+    {
+        using U = std::make_unsigned_t<T>;
+        U u = static_cast<U>(x);
+        U const low = (u & 0xFF) << ((Size - 1) << 3);
+        u = adjustWasmEndianessHlp<U, Size - 1>(u >> 8);
+        return static_cast<T>(low | u);
+    }
+
+    return x;
+}
+
+template <typename T, size_t Size = sizeof(T)>
+constexpr T
+adjustWasmEndianess(T x)
+{
+    // LCOV_EXCL_START
+    static_assert(std::is_integral_v<T>, "Only integral types");
+    if constexpr (std::endian::native == std::endian::big)
+    {
+        return adjustWasmEndianessHlp(x);
+    }
+    return x;
+    // LCOV_EXCL_STOP
+}
+
+class FieldLocator
+{
+    std::span<uint8_t const> bytes_;
+
+public:
+    explicit FieldLocator(std::span<uint8_t const> bytes) : bytes_(bytes)
+    {
+    }
+
+    FieldLocator(FieldLocator const&) = delete;
+    FieldLocator&
+    operator=(FieldLocator const&) = delete;
+    FieldLocator(FieldLocator&&) = default;
+    FieldLocator&
+    operator=(FieldLocator&&) = default;
+
+    int32_t
+    operator[](size_t i) const
+    {
+        if (i >= size())
+        {
+            // LCOV_EXCL_START
+            UNREACHABLE("xrpl::FieldLocator::operator[] : index out of bounds");
+            Throw<std::runtime_error>("index out of bounds");
+            // LCOV_EXCL_STOP
+        }
+        auto step = int32_t{};
+        std::memcpy(&step, bytes_.data() + (i * sizeof(int32_t)), sizeof(int32_t));
+        return adjustWasmEndianess(step);
+    }
+
+    [[nodiscard]] size_t
+    size() const
+    {
+        return bytes_.size() / sizeof(int32_t);
+    }
+};
+
+constexpr int32_t
+hfErrorToInt(HostFunctionError e)
+{
+    return static_cast<int32_t>(e);
+}
+
+constexpr int32_t
+floatOrderingToInt(FloatOrdering o)
+{
+    return static_cast<int32_t>(o);
+}
+
+template <class Body>
+std::invoke_result_t<Body>
+guarded(
+    beast::Journal journal,
+    std::invoke_result_t<Body> onThrow,
+    Body&& body,
+    std::source_location const location = std::source_location::current()) noexcept
+{
+    try
+    {
+        return body();
+    }
+    catch (std::exception const& e)
+    {
+        JLOG(journal.error()) << "wasm: " << location.function_name() << " threw: " << e.what();
+    }
+    catch (...)
+    {
+        JLOG(journal.error()) << "wasm: " << location.function_name() << " threw";
+    }
+
+    return onThrow;
+}
+
+}  // namespace xrpl

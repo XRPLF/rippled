@@ -153,8 +153,12 @@ class Xrpl(ConanFile):
         "CMakeLists.txt",
         "cfg/*",
         "cmake/*",
+        "crates/*",
+        "crates/.cargo/*",
+        "!crates/target/*",
         "external/*",
         "include/*",
+        "rust-toolchain.toml",
         "src/*",
     )
 

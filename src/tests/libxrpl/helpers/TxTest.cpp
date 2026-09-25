@@ -16,6 +16,8 @@
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/TxMeta.h>
+#include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/protocol_autogen/ledger_entries/AccountRoot.h>
 #include <xrpl/protocol_autogen/ledger_entries/RippleState.h>
 #include <xrpl/protocol_autogen/transactions/AccountSet.h>
@@ -24,6 +26,7 @@
 
 #include <helpers/Account.h>
 #include <helpers/IOU.h>
+#include <helpers/TestServiceRegistry.h>
 
 #include <cstdint>
 #include <memory>
@@ -56,10 +59,20 @@ allFeatures()
 }
 
 //------------------------------------------------------------------------------
+// TxTest free helpers
+//------------------------------------------------------------------------------
+
+std::uint32_t
+closeTimeOffset(TxTest const& env, std::uint32_t seconds)
+{
+    return static_cast<std::uint32_t>(env.getCloseTime().time_since_epoch().count()) + seconds;
+}
+
+//------------------------------------------------------------------------------
 // TxTest
 //------------------------------------------------------------------------------
 
-TxTest::TxTest(std::optional<FeatureBitset> features)
+TxTest::TxTest(std::optional<FeatureBitset> features, std::optional<Fees> feesOverride)
 {
     // Convert FeatureBitset to unordered_set for Rules constructor
     auto const featureBits = features.value_or(allFeatures());
@@ -68,8 +81,7 @@ TxTest::TxTest(std::optional<FeatureBitset> features)
     // Create rules with the specified features
     rules_.emplace(featureSet_);
 
-    // Default fees for testing
-    Fees const fees{XRPAmount{10}, XRPAmount{10000000}, XRPAmount{2000000}};
+    Fees const fees = feesOverride.value_or(TestServiceRegistry::defaultFees());
 
     // Create a genesis ledger as the base
     closedLedger_ = std::make_shared<Ledger>(
@@ -155,6 +167,18 @@ TxTest::getAccountRoot(AccountID const& id) const
     return ledger_entries::AccountRoot{std::const_pointer_cast<SLE const>(sle)};
 }
 
+std::uint32_t
+TxTest::getOwnerCount(AccountID const& id) const
+{
+    return getAccountRoot(id).getOwnerCount();
+}
+
+XRPAmount
+TxTest::getXrpBalance(AccountID const& id) const
+{
+    return getAccountRoot(id).getBalance().xrp();
+}
+
 OpenView&
 TxTest::getOpenLedger()
 {
@@ -190,10 +214,21 @@ TxTest::close()
 
     auto newLedger = std::make_shared<Ledger>(prevLedger, ledgerCloseTime);
 
+    if (pendingFees_)
+    {
+        auto sle = std::make_shared<SLE>(*newLedger->read(keylet::feeSettings()));
+        sle->at(sfGasLimit) = pendingFees_->gasLimit;
+        sle->at(sfBytecodeSizeLimit) = pendingFees_->bytecodeSizeLimit;
+        sle->at(sfGasPrice) = pendingFees_->gasPrice;
+        newLedger->rawReplace(sle);
+        pendingFees_.reset();
+    }
+
     CanonicalTXSet txSet(prevLedger.header().hash);
     for (auto const& tx : pendingTxs_)
         txSet.insert(tx);
 
+    closedMetadata_.clear();
     {
         OpenView accum(&*newLedger);
         for (auto const& [key, tx] : txSet)
@@ -202,6 +237,11 @@ TxTest::close()
             if (!result.applied)
             {
                 throw std::runtime_error("TxTest::close: failed to apply transaction");
+            }
+            // `accum` is not an open view, so this is the apply that produces metadata.
+            if (result.metadata.has_value())
+            {
+                closedMetadata_.emplace(tx->getTransactionID(), *std::move(result).metadata);
             }
         }
         accum.apply(*newLedger);
@@ -216,6 +256,17 @@ TxTest::close()
     openLedger_ =
         // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
         std::make_shared<OpenView>(kOpenLedger, closedLedger_.get(), *rules_, closedLedger_);
+}
+
+std::optional<TxMeta>
+TxTest::getMetadata(uint256 const& txId) const
+{
+    auto const it = closedMetadata_.find(txId);
+    if (it == std::end(closedMetadata_))
+    {
+        return std::nullopt;
+    }
+    return it->second;
 }
 
 void
@@ -249,6 +300,12 @@ TxTest::getBalance(AccountID const& account, IOU const& iou) const
     if (account > iou.issue().account)
         balance.negate();
     return balance;
+}
+
+void
+TxTest::setFees(Fees const& fees)
+{
+    pendingFees_ = fees;
 }
 
 }  // namespace xrpl::test

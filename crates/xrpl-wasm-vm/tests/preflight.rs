@@ -1,0 +1,803 @@
+//! What screening refuses, and that it refuses nothing a run would have served.
+//!
+//! `check` reaches its verdict from the compiled module alone, so these tests take
+//! no host — except the ones that put the same module through `run` to compare the
+//! two.
+//!
+//! These screen with `check`, which reports the earliest refusal; the last section
+//! is what `check_all` adds.
+
+mod support;
+
+use support::{ENTRY, FakeHost, ONE_PAGE, PLENTY_OF_GAS, assemble, import, module};
+use xrpl_host_functions::{HostFunctionSpec, WasmValType};
+use xrpl_wasm_vm::{CheckError, MAX_MEMORY_PAGES, MAX_TABLE_ELEMENTS, RunError};
+
+/// Assert which stage screening refused a module at, because the caller maps the
+/// stages separately. The error comes back out for the tests that also read its
+/// message.
+macro_rules! assert_stage {
+    ($refusal:expr, $stage:pat) => {{
+        let refusal = $refusal;
+        assert!(
+            matches!(refusal, $stage),
+            concat!("expected a ", stringify!($stage), " refusal, got: {}"),
+            refusal
+        );
+        refusal
+    }};
+}
+
+/// Screens `wat`, which must assemble.
+fn check(wat: &str) -> Result<(), CheckError> {
+    xrpl_wasm_vm::check(&assemble(wat), ENTRY)
+}
+
+fn refusal(wat: &str) -> CheckError {
+    check(wat).expect_err(&format!("expected this module to be refused:\n{wat}"))
+}
+
+fn passes(wat: &str) {
+    if let Err(refusal) = check(wat) {
+        panic!("expected this module to pass, but: {refusal}\n{wat}");
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Compiling
+// ---------------------------------------------------------------------------
+
+/// A contract that imports a host function, exports its memory and exports the
+/// entry point is what screening is looking for.
+#[test]
+fn a_runnable_contract_passes() {
+    passes(&module(
+        &[import::LDGR_INDEX, ONE_PAGE],
+        "(call $ldgr_index (i32.const 0) (i32.const 4))",
+    ));
+}
+
+/// Bytes that are not a wasm module at all.
+#[test]
+fn garbage_does_not_pass() {
+    for bytes in [b"".as_slice(), b"not wasm", &[0x00, 0x61, 0x73, 0x6d]] {
+        let refusal = xrpl_wasm_vm::check(bytes, ENTRY).expect_err("garbage must not pass");
+        assert_stage!(refusal, CheckError::Compile(_));
+    }
+}
+
+/// Screening takes wasm binaries, and text is not one — the same rule the VM
+/// applies, from the same `wasmi` built without its `wat` feature. Turning that
+/// feature on would make this transaction blob valid at both ends.
+#[test]
+fn a_text_format_module_does_not_pass() {
+    let text = module(&[ONE_PAGE], "(i32.const 0)");
+
+    let refusal =
+        xrpl_wasm_vm::check(text.as_bytes(), ENTRY).expect_err("text must not pass as a module");
+    assert_stage!(refusal, CheckError::Compile(_));
+
+    // The same module, assembled first, passes: the text is sound and only the
+    // format was refused.
+    passes(&text);
+}
+
+/// A feature the engine disables is refused here too, because both stages compile
+/// against engines built from the same configuration. `vm_limits.rs` walks every
+/// disabled feature; this pins that screening sees that configuration.
+#[test]
+fn a_disabled_feature_does_not_pass() {
+    let refusal = refusal(&module(
+        &[ONE_PAGE],
+        "(drop (f64.add (f64.const 1) (f64.const 2))) (i32.const 0)",
+    ));
+    let refusal = assert_stage!(refusal, CheckError::Compile(_)).to_string();
+    assert!(refusal.contains("floating-point"), "{refusal}");
+}
+
+// ---------------------------------------------------------------------------
+// Imports
+// ---------------------------------------------------------------------------
+
+/// Every host function the ABI declares, spelled as a guest imports it, full
+/// signatures and hand-written. The count is asserted against the ABI so a
+/// function added to it cannot be left out here.
+///
+/// Hand-written is the point: these are a statement of the wire the ABI's derived
+/// table did not produce, so putting them through `check` compares the two rather
+/// than comparing the table with itself.
+const ALL_IMPORTS: [&str; 63] = [
+    import::LDGR_INDEX,
+    import::PARENT_LDGR_TIME,
+    import::PARENT_LDGR_HASH,
+    import::BASE_FEE,
+    import::AMENDMENT_ENABLED,
+    import::CACHE_LE,
+    import::TX_FIELD,
+    import::HOME_LE_FIELD,
+    import::LE_FIELD,
+    import::TX_INNER,
+    import::HOME_LE_INNER,
+    import::LE_INNER,
+    import::TX_ARR_LEN,
+    import::HOME_LE_ARR_LEN,
+    import::LE_ARR_LEN,
+    import::TX_INNER_ARR_LEN,
+    import::HOME_LE_INNER_ARR_LEN,
+    import::LE_INNER_ARR_LEN,
+    import::CHECK_SIG,
+    import::ACCOUNTROOT_ID,
+    import::AMM_ID,
+    import::CHECK_ID,
+    import::CREDENTIAL_ID,
+    import::DELEGATE_ID,
+    import::DEPOSIT_PREAUTH_ID,
+    import::DID_ID,
+    import::ESCROW_ID,
+    import::TRUSTLINE_ID,
+    import::MPT_ISSUANCE_ID,
+    import::MPTOKEN_ID,
+    import::NFT_OFFER_ID,
+    import::OFFER_ID,
+    import::ORACLE_ID,
+    import::PAYCHAN_ID,
+    import::PERMISSIONED_DOMAIN_ID,
+    import::SIGNERS_ID,
+    import::TICKET_ID,
+    import::VAULT_ID,
+    import::SPONSORSHIP_ID,
+    import::LOAN_BROKER_ID,
+    import::LOAN_ID,
+    import::SHA512_HALF,
+    import::TRACE,
+    import::SET_DATA,
+    import::NFT_URI,
+    import::NFT_ISSUER,
+    import::NFT_TAXON,
+    import::NFT_FLAGS,
+    import::NFT_XFER_FEE,
+    import::NFT_SERIAL,
+    import::FLOAT_FROM_INT,
+    import::FLOAT_FROM_UINT,
+    import::FLOAT_FROM_STAMOUNT,
+    import::FLOAT_FROM_STNUMBER,
+    import::FLOAT_TO_INT,
+    import::FLOAT_TO_MANT_EXP,
+    import::FLOAT_FROM_MANT_EXP,
+    import::FLOAT_CMP,
+    import::FLOAT_ADD,
+    import::FLOAT_SUB,
+    import::FLOAT_MULT,
+    import::FLOAT_DIV,
+    import::FLOAT_POW,
+];
+
+#[test]
+fn every_declared_host_function_may_be_imported() {
+    assert_eq!(
+        ALL_IMPORTS.len(),
+        HostFunctionSpec::ALL.len(),
+        "the ABI gained a host function with no import declaration in this test"
+    );
+
+    let mut parts = ALL_IMPORTS.to_vec();
+    parts.push(ONE_PAGE);
+    passes(&module(&parts, "(i32.const 0)"));
+}
+
+/// A module may import fewer host functions than are registered, but not more.
+#[test]
+fn an_unknown_host_function_does_not_pass() {
+    let refusal = refusal(&module(
+        &[
+            r#"(import "host_lib" "no_such_function" (func $f (param i32) (result i32)))"#,
+            ONE_PAGE,
+        ],
+        "(call $f (i32.const 0))",
+    ));
+    let refusal = assert_stage!(refusal, CheckError::Import(_)).to_string();
+    assert!(
+        refusal.contains("no host function 'no_such_function'"),
+        "{refusal}"
+    );
+}
+
+/// Host functions live under one module name — `host_lib` — and an import naming
+/// another is refused even when the function name is real. `env` is in the list
+/// because that is what plain clang emits.
+#[test]
+fn an_import_from_another_module_does_not_pass() {
+    for module_name in ["host", "env", ""] {
+        let refusal = refusal(&module(
+            &[
+                &format!(
+                    r#"(import "{module_name}" "ldgr_index" (func $f (param i32 i32) (result i32)))"#
+                ),
+                ONE_PAGE,
+            ],
+            "(call $f (i32.const 0) (i32.const 4))",
+        ));
+        let refusal = assert_stage!(refusal, CheckError::Import(_)).to_string();
+        assert!(refusal.contains("is not from 'host_lib'"), "{refusal}");
+    }
+}
+
+/// A host function's name imported as something other than a function. The engine
+/// defines it as a function and nothing else, so this does not link either.
+#[test]
+fn a_host_function_imported_as_a_global_does_not_pass() {
+    let refusal = refusal(&module(
+        &[
+            r#"(import "host_lib" "ldgr_index" (global $g i32))"#,
+            ONE_PAGE,
+        ],
+        "(global.get $g)",
+    ));
+    let refusal = assert_stage!(refusal, CheckError::Import(_)).to_string();
+    assert!(
+        refusal.contains("'host_lib::ldgr_index' is not a function"),
+        "{refusal}"
+    );
+}
+
+/// A module faulty at two stages is refused by the earlier one — it imports what no
+/// engine serves *and* exports no entry point. The imports are what the rest of the
+/// module depends on, so that is the message worth having.
+#[test]
+fn the_earlier_stage_is_the_one_reported() {
+    let refusal = refusal(
+        r#"(module
+             (import "host_lib" "no_such_function" (func $f (result i32)))
+             (memory (export "memory") 1)
+             (func (export "not_the_entry_point") (result i32) (call $f)))"#,
+    );
+
+    assert_stage!(refusal, CheckError::Import(_));
+}
+
+/// An import naming a real host function with the wrong type is refused, at a
+/// stage of its own since the ABI does have the function the guest asked for.
+///
+/// The run half is what the refusal is worth: without it this module reaches the
+/// engine and parts from the linker at instantiation, which is a fault a node
+/// discovers rather than one a transaction is turned away for.
+#[test]
+fn an_import_with_the_wrong_signature_does_not_pass() {
+    let wat = module(
+        &[
+            r#"(import "host_lib" "ldgr_index" (func $f (param i64 i64) (result i32)))"#,
+            ONE_PAGE,
+        ],
+        "(i32.const 0)",
+    );
+
+    let refusal = assert_stage!(refusal(&wat), CheckError::Signature(_)).to_string();
+    assert_eq!(
+        refusal,
+        "signature: 'ldgr_index' expected '(i32, i32) -> i32', found '(i64, i64) -> i32'"
+    );
+
+    let host = FakeHost::new();
+    let failure = xrpl_wasm_vm::run(&assemble(&wat), PLENTY_OF_GAS, &host, ENTRY)
+        .expect_err("a mistyped import must not link");
+    assert!(
+        matches!(failure.error, RunError::Instantiate(_)),
+        "{failure}"
+    );
+}
+
+// ---------------------------------------------------------------------------
+// The entry point
+// ---------------------------------------------------------------------------
+
+#[test]
+fn a_missing_entry_point_does_not_pass() {
+    let refusal = refusal(
+        r#"(module (memory (export "memory") 1)
+                              (func (export "other") (result i32) (i32.const 0)))"#,
+    );
+    let refusal = assert_stage!(refusal, CheckError::EntryPoint(_)).to_string();
+    assert_eq!(refusal, "no entry point 'finish'");
+}
+
+/// The entry point is looked up by the name the caller asks for, as a run looks it
+/// up: screening a contract for one entry point says nothing about another.
+#[test]
+fn the_entry_point_is_the_name_the_caller_gives() {
+    let wasm = assemble(
+        r#"(module (memory (export "memory") 1)
+             (func (export "other") (result i32) (i32.const 0)))"#,
+    );
+
+    assert!(xrpl_wasm_vm::check(&wasm, "other").is_ok());
+    assert!(xrpl_wasm_vm::check(&wasm, ENTRY).is_err());
+}
+
+/// Both halves of the entry point's type are screened: a module returning the
+/// wrong thing, or taking anything at all, would fail the run's typed lookup.
+#[test]
+fn an_entry_point_of_the_wrong_type_does_not_pass() {
+    for (signature, body) in [
+        ("(result i64)", "(i64.const 0)"),
+        ("(param i32) (result i32)", "(i32.const 0)"),
+        ("", "(nop)"),
+    ] {
+        let refusal = refusal(&format!(
+            r#"(module (memory (export "memory") 1)
+                 (func (export "finish") {signature} {body}))"#
+        ));
+        let refusal = assert_stage!(refusal, CheckError::EntryPoint(_)).to_string();
+        assert_eq!(
+            refusal, "entry point 'finish' has the wrong signature, expected '() -> i32'",
+            "{signature}"
+        );
+    }
+}
+
+/// An export of the entry point's name that is not a function at all is a third
+/// case, and named as such: nothing is missing and no signature is wrong.
+#[test]
+fn an_entry_point_that_is_not_a_function_does_not_pass() {
+    let refusal = refusal(
+        r#"(module (memory (export "memory") 1) (global (export "finish") i32 (i32.const 0)))"#,
+    );
+    let refusal = assert_stage!(refusal, CheckError::EntryPoint(_)).to_string();
+    assert_eq!(refusal, "export 'finish' is not a function");
+}
+
+// ---------------------------------------------------------------------------
+// Agreement with a run
+// ---------------------------------------------------------------------------
+
+/// A module with no linear memory to export passes. A contract that makes no host
+/// call needs none, and one that does is refused at the call and charged — a
+/// runtime fault, not a malformed module.
+#[test]
+fn a_module_exporting_no_memory_passes() {
+    let wat = r#"(module (func (export "finish") (result i32) (i32.const 0)))"#;
+    passes(wat);
+
+    let host = FakeHost::new();
+    assert_eq!(
+        xrpl_wasm_vm::run(&assemble(wat), PLENTY_OF_GAS, &host, ENTRY)
+            .expect("a module that calls no host function needs no memory")
+            .result,
+        0
+    );
+}
+
+/// Modules spanning what screening decides, each also put through a run.
+fn modules() -> Vec<(&'static str, String)> {
+    vec![
+        (
+            "a runnable contract",
+            module(&[import::LDGR_INDEX, ONE_PAGE], "(i32.const 0)"),
+        ),
+        (
+            "a contract that traps",
+            module(&[ONE_PAGE], "(unreachable)"),
+        ),
+        (
+            "a disabled feature",
+            module(&[ONE_PAGE], "(i32.extend8_s (i32.const 1))"),
+        ),
+        (
+            "an unknown host function",
+            module(
+                &[
+                    r#"(import "host_lib" "nope" (func $f (result i32)))"#,
+                    ONE_PAGE,
+                ],
+                "(call $f)",
+            ),
+        ),
+        (
+            "an import from another module",
+            module(
+                &[
+                    r#"(import "env" "ldgr_index" (func $f (param i32 i32) (result i32)))"#,
+                    ONE_PAGE,
+                ],
+                "(i32.const 0)",
+            ),
+        ),
+        (
+            "a host function imported as a global",
+            module(
+                &[r#"(import "host_lib" "trace" (global $g i32))"#, ONE_PAGE],
+                "(global.get $g)",
+            ),
+        ),
+        (
+            "an import with the wrong signature",
+            module(
+                &[
+                    r#"(import "host_lib" "ldgr_index" (func $f (param i64 i64) (result i32)))"#,
+                    ONE_PAGE,
+                ],
+                "(i32.const 0)",
+            ),
+        ),
+        (
+            "no entry point",
+            r#"(module (memory (export "memory") 1)
+                 (func (export "other") (result i32) (i32.const 0)))"#
+                .to_string(),
+        ),
+        (
+            "an entry point of the wrong type",
+            r#"(module (memory (export "memory") 1)
+                 (func (export "finish") (result i64) (i64.const 0)))"#
+                .to_string(),
+        ),
+    ]
+}
+
+/// Screening refuses a module exactly when a run would refuse it at one of the
+/// three stages screening covers — nothing it rejects would have run, and nothing
+/// it passes stops before the entry point is called. The exceptions are the ones
+/// [`what_static_screening_cannot_see`] lists.
+#[test]
+fn screening_and_a_run_agree() {
+    let host = FakeHost::new();
+
+    for (label, wat) in modules() {
+        let wasm = assemble(&wat);
+        let refused_early = match xrpl_wasm_vm::run(&wasm, PLENTY_OF_GAS, &host, ENTRY) {
+            Err(failure) => matches!(
+                failure.error,
+                RunError::Compile(_) | RunError::Instantiate(_) | RunError::EntryPoint(_)
+            ),
+            Ok(_) => false,
+        };
+
+        assert_eq!(
+            xrpl_wasm_vm::check(&wasm, ENTRY).is_err(),
+            refused_early,
+            "{label}"
+        );
+    }
+}
+
+/// The signatures screening derives are the ones the linker registers: a module
+/// importing all 60 host functions at the type `HostFunctionSpec` derives must
+/// instantiate.
+///
+/// Unlike [`ALL_IMPORTS`], the other side of this is live code — the registration
+/// as it is rather than a description of it — so it is what a changed engine has to
+/// answer to. **What it cannot see is the table and the linker being wrong the same
+/// way**, the closures being generated from this very table; that is what
+/// [`ALL_IMPORTS`] and `generated_abi.rs`'s 60 literals are for.
+#[test]
+fn the_derived_signatures_are_what_the_linker_registers() {
+    let declarations: Vec<String> = HostFunctionSpec::ALL
+        .iter()
+        .copied()
+        .map(derived_import)
+        .collect();
+    let mut parts: Vec<&str> = declarations.iter().map(String::as_str).collect();
+    parts.push(ONE_PAGE);
+
+    let host = FakeHost::new();
+    let wasm = assemble(&module(&parts, "(i32.const 0)"));
+    let outcome = xrpl_wasm_vm::run(&wasm, PLENTY_OF_GAS, &host, ENTRY)
+        .expect("every import built from the ABI's table must link");
+
+    assert_eq!(outcome.result, 0);
+}
+
+/// One `(import …)` declaration, spelled out of the ABI's derived signature rather
+/// than by hand — the opposite of [`ALL_IMPORTS`].
+fn derived_import(function: HostFunctionSpec) -> String {
+    let types: Vec<&str> = function
+        .wasm_params()
+        .iter()
+        .copied()
+        .map(spelled)
+        .collect();
+    let params = match types.as_slice() {
+        [] => String::new(),
+        types => format!(" (param {})", types.join(" ")),
+    };
+    let result = match function.wasm_result() {
+        Some(result) => format!(" (result {})", spelled(result)),
+        None => String::new(),
+    };
+
+    format!(
+        r#"(import "host_lib" "{}" (func{params}{result}))"#,
+        function.wasm_name()
+    )
+}
+
+fn spelled(declared: WasmValType) -> &'static str {
+    match declared {
+        WasmValType::I32 => "i32",
+        WasmValType::I64 => "i64",
+    }
+}
+
+/// A module asking for more memory than the engine grants is refused, so the
+/// contract that could never run does not reach the ledger. The cap itself passes.
+#[test]
+fn an_exported_memory_past_the_cap_does_not_pass() {
+    let wat = module(
+        &[&format!(
+            r#"(memory (export "memory") {})"#,
+            MAX_MEMORY_PAGES + 1
+        )],
+        "(i32.const 0)",
+    );
+    let refusal = assert_stage!(refusal(&wat), CheckError::Memory(_)).to_string();
+    assert!(refusal.contains("past the 128-page cap"), "{refusal}");
+
+    passes(&module(
+        &[&format!(r#"(memory (export "memory") {MAX_MEMORY_PAGES})"#)],
+        "(i32.const 0)",
+    ));
+}
+
+/// A declared *maximum* past the cap is legal and simply unreachable, so screening
+/// must not turn it away: `vm_limits` runs this very module to completion.
+#[test]
+fn a_declared_maximum_past_the_cap_still_passes() {
+    passes(&module(
+        &[&format!(
+            r#"(memory (export "memory") 1 {})"#,
+            MAX_MEMORY_PAGES + 1
+        )],
+        "(i32.const 0)",
+    ));
+}
+
+/// A module asking for more table than the engine grants is refused for the same
+/// reason a memory is. The cap itself passes.
+#[test]
+fn an_exported_table_past_the_cap_does_not_pass() {
+    let wat = module(
+        &[&format!(
+            r#"(table (export "t") {} funcref)"#,
+            MAX_TABLE_ELEMENTS + 1
+        )],
+        "(i32.const 0)",
+    );
+    let refusal = assert_stage!(refusal(&wat), CheckError::Table(_)).to_string();
+    assert!(refusal.contains("past the 1024-element cap"), "{refusal}");
+
+    passes(&module(
+        &[&format!(
+            r#"(table (export "t") {MAX_TABLE_ELEMENTS} funcref)"#
+        )],
+        "(i32.const 0)",
+    ));
+}
+
+/// Both caps are applied in one pass over the exports, so neither may end the walk
+/// early: a passing memory must not hide a failing table declared after it, and a
+/// passing table must not hide a failing memory.
+#[test]
+fn one_pass_screens_both_resources() {
+    let after_a_passing_memory = refusal(&module(
+        &[
+            ONE_PAGE,
+            &format!(r#"(table (export "t") {} funcref)"#, MAX_TABLE_ELEMENTS + 1),
+        ],
+        "(i32.const 0)",
+    ));
+    assert_stage!(after_a_passing_memory, CheckError::Table(_));
+
+    let after_a_passing_table = refusal(&module(
+        &[
+            r#"(table (export "t") 1 funcref)"#,
+            &format!(r#"(memory (export "memory") {})"#, MAX_MEMORY_PAGES + 1),
+        ],
+        "(i32.const 0)",
+    ));
+    assert_stage!(after_a_passing_table, CheckError::Memory(_));
+}
+
+/// As with memory, a declared *maximum* past the cap is unreachable rather than
+/// wrong: `vm_limits` runs this very module to completion.
+#[test]
+fn a_declared_table_maximum_past_the_cap_still_passes() {
+    passes(&module(
+        &[&format!(
+            r#"(table (export "t") 1 {} funcref)"#,
+            MAX_TABLE_ELEMENTS + 1
+        )],
+        "(i32.const 0)",
+    ));
+}
+
+/// The gap, listed rather than described. A memory or a table a module keeps to
+/// itself is not in its exports, so these are the modules that pass screening and
+/// then fail to *instantiate* — which is why a run's refusal at that stage cannot be
+/// read as the node's fault.
+///
+/// The two entries are not equally remote. A contract needs an exported memory to
+/// make any host call, so the memory row can do nothing but compute and the SDK does
+/// not produce one. A table, though, is *normally* unexported — Rust exports
+/// `__indirect_function_table` only under `--export-table` — so the table row is the
+/// shape a hostile module actually takes, and the store's limiter is the only thing
+/// standing in front of it.
+#[test]
+fn what_static_screening_cannot_see() {
+    let host = FakeHost::new();
+
+    for (label, declaration) in [
+        ("memory", format!("(memory {})", MAX_MEMORY_PAGES + 1)),
+        (
+            "table",
+            format!("(table {} funcref)", MAX_TABLE_ELEMENTS + 1),
+        ),
+    ] {
+        let wat = format!(
+            r#"(module {declaration}
+                 (func (export "finish") (result i32) (i32.const 0)))"#
+        );
+
+        passes(&wat);
+
+        let failure = match xrpl_wasm_vm::run(&assemble(&wat), PLENTY_OF_GAS, &host, ENTRY) {
+            Err(failure) => failure,
+            Ok(outcome) => panic!(
+                "the store's limiter must refuse the {label}, but the module returned {}",
+                outcome.result
+            ),
+        };
+        assert!(
+            matches!(failure.error, RunError::Instantiate(_)),
+            "{label}: {failure}"
+        );
+    }
+}
+
+/// A start section runs guest code at instantiation, before the entry point. The
+/// engine disallows it, so screening refuses the module outright rather than letting
+/// any code run ahead of the entry point.
+#[test]
+fn a_start_section_is_refused_by_screening() {
+    let wat = format!(
+        r#"(module {ONE_PAGE}
+             (func $init (unreachable))
+             (start $init)
+             (func (export "finish") (result i32) (i32.const 0)))"#
+    );
+
+    let refusal = assert_stage!(refusal(&wat), CheckError::Compile(_)).to_string();
+    assert!(refusal.contains("start"), "{refusal}");
+}
+
+#[test]
+fn a_memory64_memory_is_refused_by_screening() {
+    let wat = r#"(module
+        (memory i64 1)
+        (func (export "finish") (result i32) (i32.const 0)))"#;
+
+    let refusal = assert_stage!(refusal(wat), CheckError::Compile(_)).to_string();
+    assert!(
+        refusal.contains("memory64") || refusal.contains("i64"),
+        "{refusal}"
+    );
+}
+
+/// The corruption fixtures below are written as hex strings, which is how the old Beast suite
+/// carried them — the bytes are deliberately malformed, so there is nothing to assemble them
+/// from.
+fn hex(s: &str) -> Vec<u8> {
+    (0..s.len())
+        .step_by(2)
+        .map(|i| u8::from_str_radix(&s[i..i + 2], 16).unwrap())
+        .collect()
+}
+
+/// Malformed modules crafted to abuse the parser rather than merely be invalid — a vector
+/// length that lies about its size, a section that overruns its payload, a locals-count bomb,
+/// and a non-terminating LEB128 — are refused at compile like any other garbage. These guard
+/// the parser against resource-exhaustion shapes (ported from the old Beast section-corruption
+/// fixtures); the plainer "bad magic / wrong version" shapes are covered by `garbage_does_not_pass`.
+#[test]
+fn parser_abuse_shapes_are_refused() {
+    let cases = [
+        ("vector length lies", "0061736d010000000105ffffffff0f"),
+        ("section overruns its payload", "0061736d01000000010a0160"),
+        (
+            "locals-count bomb",
+            "0061736d01000000010401600000030201000a0f010d01ffffffff0f7f0b",
+        ),
+        (
+            "non-terminating LEB128",
+            "0061736d0100000001058080808080808080808080808080808080808080808080808080808080808080808080808080808080808080808080808080808080808080808080808080808080808080808080808080808080808080808080808080808080808080808080808080808080808080808080",
+        ),
+    ];
+    for (label, h) in cases {
+        let refusal = xrpl_wasm_vm::check(&hex(h), ENTRY).expect_err(label);
+        assert_stage!(refusal, CheckError::Compile(_));
+    }
+}
+
+/// The plain structurally-malformed modules from the old section-corruption fixtures — a
+/// corrupt magic, a wrong version, a lying section length, sections out of order, junk after
+/// the last section, an unknown section id — are all refused at compile. Belt-and-suspenders
+/// alongside `garbage_does_not_pass`: guards against a wasmi upgrade loosening the validator.
+#[test]
+fn structurally_malformed_modules_are_refused() {
+    let cases = [
+        ("corrupt magic number", "0161736d01000000"),
+        ("wrong version", "0061736d02000000"),
+        ("lying section length", "0061736d01000000018080808008"),
+        ("sections out of order", "0061736d010000000a02000b03020000"),
+        (
+            "junk after last section",
+            "0061736d01000000010a01600000000000000000",
+        ),
+        ("unknown section id", "0061736d01000000ff0100"),
+    ];
+    for (label, h) in cases {
+        let refusal = xrpl_wasm_vm::check(&hex(h), ENTRY).expect_err(label);
+        assert_stage!(refusal, CheckError::Compile(_));
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Reporting every refusal
+// ---------------------------------------------------------------------------
+
+/// A module that breaks every rule past compiling, once each.
+fn a_module_faulting_at_every_stage() -> String {
+    format!(
+        r#"(module
+             (import "host_lib" "no_such_function" (func (param i32) (result i32)))
+             (import "host_lib" "ldgr_index" (func (param i64 i64) (result i32)))
+             (memory (export "memory") {pages})
+             (table (export "t") {elements} funcref)
+             (func (export "{ENTRY}") (result i64) (i64.const 0)))"#,
+        pages = MAX_MEMORY_PAGES + 1,
+        elements = MAX_TABLE_ELEMENTS + 1,
+    )
+}
+
+#[test]
+fn check_all_reports_a_refusal_from_every_stage() {
+    let refusals = xrpl_wasm_vm::check_all(&assemble(&a_module_faulting_at_every_stage()), ENTRY)
+        .expect_err("this module breaks every rule past compiling");
+
+    assert!(
+        matches!(
+            refusals.as_slice(),
+            [
+                CheckError::Import(_),
+                CheckError::Signature(_),
+                CheckError::EntryPoint(_),
+                CheckError::Memory(_),
+                CheckError::Table(_),
+            ]
+        ),
+        "{refusals:?}"
+    );
+}
+
+/// What lets the consensus path keep fail-fast without a second implementation of
+/// the stage order to drift from.
+#[test]
+fn check_reports_what_check_all_reports_first() {
+    let wasm = assemble(&a_module_faulting_at_every_stage());
+
+    let first = xrpl_wasm_vm::check(&wasm, ENTRY).expect_err("five faults");
+    let all = xrpl_wasm_vm::check_all(&wasm, ENTRY).expect_err("five faults");
+
+    assert_eq!(first.to_string(), all[0].to_string());
+}
+
+/// Nothing to report is `Ok`, never an empty `Vec`.
+#[test]
+fn check_all_passes_a_runnable_contract() {
+    let wat = module(
+        &[import::LDGR_INDEX, ONE_PAGE],
+        "(call $ldgr_index (i32.const 0) (i32.const 4))",
+    );
+
+    if let Err(refusals) = xrpl_wasm_vm::check_all(&assemble(&wat), ENTRY) {
+        panic!("expected this module to pass, but: {refusals:?}\n{wat}");
+    }
+}

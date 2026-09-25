@@ -198,6 +198,12 @@ Ledger::Ledger(
                 sle->at(sfReserveIncrement) = *f;
             sle->at(sfReferenceFeeUnits) = kFeeUnitsDeprecated;
         }
+        if (std::ranges::find(amendments, featureSmartEscrow) != amendments.end())
+        {
+            sle->at(sfGasLimit) = fees.gasLimit;
+            sle->at(sfBytecodeSizeLimit) = fees.bytecodeSizeLimit;
+            sle->at(sfGasPrice) = fees.gasPrice;
+        }
         rawInsert(sle);
     }
 
@@ -564,6 +570,7 @@ Ledger::setup()
         {
             bool oldFees = false;
             bool newFees = false;
+            bool extensionFees = false;
             {
                 auto const baseFee = sle->at(~sfBaseFee);
                 auto const reserveBase = sle->at(~sfReserveBase);
@@ -580,6 +587,7 @@ Ledger::setup()
                 auto const baseFeeXRP = sle->at(~sfBaseFeeDrops);
                 auto const reserveBaseXRP = sle->at(~sfReserveBaseDrops);
                 auto const reserveIncrementXRP = sle->at(~sfReserveIncrementDrops);
+
                 auto assign = [&ret](XRPAmount& dest, std::optional<STAmount> const& src) {
                     if (src)
                     {
@@ -598,6 +606,20 @@ Ledger::setup()
                 assign(fees_.increment, reserveIncrementXRP);
                 newFees = baseFeeXRP || reserveBaseXRP || reserveIncrementXRP;
             }
+            {
+                auto const gasLimit = sle->at(~sfGasLimit);
+                auto const bytecodeSizeLimit = sle->at(~sfBytecodeSizeLimit);
+                auto const gasPrice = sle->at(~sfGasPrice);
+
+                // An absent field resolves to the protocol constant.
+                if (rules_.enabled(featureSmartEscrow))
+                {
+                    fees_.gasLimit = gasLimit.value_or(kDefaultGasLimit);
+                    fees_.bytecodeSizeLimit = bytecodeSizeLimit.value_or(kDefaultBytecodeSizeLimit);
+                    fees_.gasPrice = gasPrice.value_or(kDefaultGasPrice);
+                }
+                extensionFees = gasLimit || bytecodeSizeLimit || gasPrice;
+            }
             if (oldFees && newFees)
             {
                 // Should be all of one or the other, but not both
@@ -606,6 +628,12 @@ Ledger::setup()
             if (!rules_.enabled(featureXRPFees) && newFees)
             {
                 // Can't populate the new fees before the amendment is enabled
+                ret = false;
+            }
+            if (!rules_.enabled(featureSmartEscrow) && extensionFees)
+            {
+                // Can't populate the extension fees before the amendment is
+                // enabled
                 ret = false;
             }
         }
