@@ -1,6 +1,7 @@
 #pragma once
 
 #include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/json/json_forwards.h>
 #include <xrpl/json/json_value.h>
 
 #include <rpcspec/Concepts.hpp>
@@ -8,7 +9,7 @@
 
 #include <cstddef>
 #include <cstdint>
-#include <limits>
+#include <limits>  // IWYU pragma: keep
 #include <string>
 #include <string_view>
 #include <type_traits>
@@ -205,21 +206,37 @@ public:
     is() const noexcept
     {
         if constexpr (std::is_same_v<T, std::int64_t>)
+        {
             return isInt64();
+        }
         else if constexpr (std::is_same_v<T, std::uint32_t>)
+        {
             return isUint32();
+        }
         else if constexpr (std::is_same_v<T, bool>)
+        {
             return isBool();
+        }
         else if constexpr (std::is_same_v<T, std::string>)
+        {
             return isString();
+        }
         else if constexpr (std::is_same_v<T, double>)
+        {
             return isDouble();
+        }
         else if constexpr (std::is_same_v<T, ::rpc::spec::JsonObject>)
+        {
             return isObject();
+        }
         else if constexpr (std::is_same_v<T, ::rpc::spec::JsonArray>)
+        {
             return isArray();
+        }
         else
+        {
             static_assert(false, "xrpl::rpc::XrplJsonFieldView::is : unsupported type");
+        }
     }
 
     // Only reachable from a modifier, which only ever runs against a mutable view.

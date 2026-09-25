@@ -264,7 +264,7 @@ TEST(SpecBridge, shared_spec_reports_a_bad_json_value)
 
     auto const input = ::rpc::spec::handlers::ledger::kSpec.parse(params, 2);
     ASSERT_FALSE(input.has_value());
-    EXPECT_EQ(std::get<::rpc::RippledError>(input.error().code), RpcInvalidParams);
+    EXPECT_EQ(std::get<::rpc::XrpldError>(input.error().code), RpcInvalidParams);
 }
 
 TEST(SpecBridge, shared_spec_warns_on_a_deprecated_field)
