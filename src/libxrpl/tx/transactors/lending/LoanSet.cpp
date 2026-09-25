@@ -7,6 +7,7 @@
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
+#include <xrpl/ledger/helpers/CredentialHelpers.h>
 #include <xrpl/ledger/helpers/LendingHelpers.h>
 #include <xrpl/ledger/helpers/SponsorHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
@@ -424,6 +425,22 @@ LoanSet::preclaim(PreclaimContext const& ctx)
         return ret;
     }
 
+    if (ctx.view.rules().enabled(featureLendingProtocolV1_2) &&
+        brokerSle->isFlag(lsfLoanBrokerPrivate))
+    {
+        auto const domainID = brokerSle->at(~sfDomainID);
+        if (!domainID)
+        {
+            JLOG(ctx.j.warn()) << "Private LoanBroker must have a DomainID.";
+            return tecNO_AUTH;
+        }
+
+        // validDomain returns tecOBJECT_NOT_FOUND if the domain was deleted
+        if (auto const ter = credentials::validDomain(ctx.view, *domainID, borrower);
+            !isTesSuccess(ter) && ter != tecEXPIRED)
+            return ter;
+    }
+
     return tesSUCCESS;
 }
 
@@ -463,6 +480,20 @@ LoanSet::doApply()
     {
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
     }
+
+    if (ctx_.view().rules().enabled(featureLendingProtocolV1_2) &&
+        brokerSle->isFlag(lsfLoanBrokerPrivate))
+    {
+        auto const domainID = brokerSle->at(~sfDomainID);
+        if (!domainID)
+        {
+            return tefBAD_LEDGER;  // LCOV_EXCL_LINE
+        }
+
+        if (auto const ter = verifyValidDomain(view, borrower, *domainID, j_); !isTesSuccess(ter))
+            return ter;
+    }
+
     auto const principalRequested = tx[sfPrincipalRequested];
 
     auto vaultAvailableProxy = vaultSle->at(sfAssetsAvailable);

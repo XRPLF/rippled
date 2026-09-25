@@ -454,6 +454,44 @@ class InvariantsPseudoAccount_test : public InvariantsBase
                 {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
                 createLoanBroker);
 
+            doInvariantCheck(
+                {{"DomainID is set on public Loan Broker"}},
+                [&](Account const&, Account const&, ApplyContext& ac) {
+                    if (loanBrokerKeylet.type != ltLOAN_BROKER)
+                        return false;
+                    auto sleBroker = ac.view().peek(loanBrokerKeylet);
+                    if (!sleBroker)
+                        return false;
+                    // Set DomainID without lsfLoanBrokerPrivate flag
+                    sleBroker->clearFlag(lsfLoanBrokerPrivate);
+                    sleBroker->at(sfDomainID) = uint256(42);
+                    ac.view().update(sleBroker);
+                    return true;
+                },
+                XRPAmount{},
+                STTx{ttLOAN_BROKER_SET, [](STObject& tx) {}},
+                {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
+                createLoanBroker);
+
+            doInvariantCheck(
+                {{"Loan Broker DomainID is zero"}},
+                [&](Account const&, Account const&, ApplyContext& ac) {
+                    if (loanBrokerKeylet.type != ltLOAN_BROKER)
+                        return false;
+                    auto sleBroker = ac.view().peek(loanBrokerKeylet);
+                    if (!sleBroker)
+                        return false;
+                    // Private broker with a zero DomainID
+                    sleBroker->setFlag(lsfLoanBrokerPrivate);
+                    sleBroker->at(sfDomainID) = uint256{};
+                    ac.view().update(sleBroker);
+                    return true;
+                },
+                XRPAmount{},
+                STTx{ttLOAN_BROKER_SET, [](STObject& tx) {}},
+                {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
+                createLoanBroker);
+
             // Deleting the IOU holding while leaving the broker unchanged must
             // still expose CoverAvailable exceeding the now-zero balance: the
             // broker is discovered through the deleted trust line. XRP has no

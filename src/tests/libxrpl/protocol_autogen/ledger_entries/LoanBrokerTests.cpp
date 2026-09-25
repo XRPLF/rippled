@@ -37,6 +37,7 @@ TEST(LoanBrokerTests, BuilderSettersRoundTrip)
     auto const coverAvailableValue = canonical_NUMBER();
     auto const coverRateMinimumValue = canonical_UINT32();
     auto const coverRateLiquidationValue = canonical_UINT32();
+    auto const domainIDValue = canonical_UINT256();
 
     LoanBrokerBuilder builder{
         previousTxnIDValue,
@@ -58,6 +59,7 @@ TEST(LoanBrokerTests, BuilderSettersRoundTrip)
     builder.setCoverAvailable(coverAvailableValue);
     builder.setCoverRateMinimum(coverRateMinimumValue);
     builder.setCoverRateLiquidation(coverRateLiquidationValue);
+    builder.setDomainID(domainIDValue);
 
     builder.setLedgerIndex(index);
     builder.setFlags(0x1u);
@@ -186,6 +188,14 @@ TEST(LoanBrokerTests, BuilderSettersRoundTrip)
         EXPECT_TRUE(entry.hasCoverRateLiquidation());
     }
 
+    {
+        auto const& expected = domainIDValue;
+        auto const actualOpt = entry.getDomainID();
+        ASSERT_TRUE(actualOpt.has_value());
+        expectEqualField(expected, *actualOpt, "sfDomainID");
+        EXPECT_TRUE(entry.hasDomainID());
+    }
+
     EXPECT_TRUE(entry.hasLedgerIndex());
     auto const ledgerIndex = entry.getLedgerIndex();
     ASSERT_TRUE(ledgerIndex.has_value());
@@ -216,6 +226,7 @@ TEST(LoanBrokerTests, BuilderFromSleRoundTrip)
     auto const coverAvailableValue = canonical_NUMBER();
     auto const coverRateMinimumValue = canonical_UINT32();
     auto const coverRateLiquidationValue = canonical_UINT32();
+    auto const domainIDValue = canonical_UINT256();
 
     auto sle = std::make_shared<SLE>(LoanBroker::entryType, index);
 
@@ -236,6 +247,7 @@ TEST(LoanBrokerTests, BuilderFromSleRoundTrip)
     sle->at(sfCoverAvailable) = coverAvailableValue;
     sle->at(sfCoverRateMinimum) = coverRateMinimumValue;
     sle->at(sfCoverRateLiquidation) = coverRateLiquidationValue;
+    sle->at(sfDomainID) = domainIDValue;
 
     LoanBrokerBuilder builderFromSle{sle};
     EXPECT_TRUE(builderFromSle.validate());
@@ -440,6 +452,19 @@ TEST(LoanBrokerTests, BuilderFromSleRoundTrip)
         expectEqualField(expected, *fromBuilderOpt, "sfCoverRateLiquidation");
     }
 
+    {
+        auto const& expected = domainIDValue;
+
+        auto const fromSleOpt = entryFromSle.getDomainID();
+        auto const fromBuilderOpt = entryFromBuilder.getDomainID();
+
+        ASSERT_TRUE(fromSleOpt.has_value());
+        ASSERT_TRUE(fromBuilderOpt.has_value());
+
+        expectEqualField(expected, *fromSleOpt, "sfDomainID");
+        expectEqualField(expected, *fromBuilderOpt, "sfDomainID");
+    }
+
     EXPECT_EQ(entryFromSle.getKey(), index);
     EXPECT_EQ(entryFromBuilder.getKey(), index);
 }
@@ -526,5 +551,7 @@ TEST(LoanBrokerTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(entry.getCoverRateMinimum().has_value());
     EXPECT_FALSE(entry.hasCoverRateLiquidation());
     EXPECT_FALSE(entry.getCoverRateLiquidation().has_value());
+    EXPECT_FALSE(entry.hasDomainID());
+    EXPECT_FALSE(entry.getDomainID().has_value());
 }
 }

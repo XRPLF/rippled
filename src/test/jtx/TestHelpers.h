@@ -903,6 +903,8 @@ auto const kCoverRateLiquidation =
 
 auto const kDestination = JTxFieldWrapper<AccountIdField>(sfDestination);
 
+auto const kDomainId = JTxFieldWrapper<UInt256Field>(sfDomainID);
+
 }  // namespace loan_broker
 
 /* Loan */
