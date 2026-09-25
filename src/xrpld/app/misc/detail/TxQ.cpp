@@ -781,8 +781,9 @@ TxQ::apply(
     // is ambient, and this ScopedSpanGuard's scope is RAII-bounded to this fully
     // synchronous call (no coroutine yield), so no unrelated parent leaks in and
     // its scope cannot leak out onto a reused worker.
-    // On the open-ledger rebuild path parentCtx is null and this is a root; the
-    // current_ledger_seq attribute below correlates it to the ledger instead.
+    // On the open-ledger rebuild path parentCtx is null, so the span nests under
+    // the ambient span: consensus.accept.apply inside doAccept, a root on the
+    // switchLastClosedLedger jump. current_ledger_seq below ties it to a ledger.
     // A lambda (not a ternary) picks the factory: ScopedSpanGuard's move ctor is
     // deleted, so guaranteed copy elision on each return is the only way to
     // construct it conditionally.
