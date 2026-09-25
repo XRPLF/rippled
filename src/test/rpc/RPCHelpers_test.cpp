@@ -74,9 +74,9 @@ public:
     testOwnerDirNodeFieldsCoverage()
     {
         // Every UINT64 sf*Node field must be classified: either it is an
-        // owner-directory page hint (rpc::ownerDirNodeFields()) or it
+        // owner-directory page hint (rpc::isOwnerDirNodeField()) or it
         // belongs to a book directory (exclusion set below). Adding a new
-        // sfXxxNode UINT64 without updating one of these lists trips this
+        // sf*Node UINT64 without updating one of these lists trips this
         // test.
         testcase("Owner-directory Node fields coverage");
 
@@ -87,15 +87,12 @@ public:
             &sfNFTokenOfferNode,
         };
 
-        auto const ownerFields = rpc::ownerDirNodeFields();
-        std::set<SField const*> const ownerDirNodes(ownerFields.begin(), ownerFields.end());
-
         for (auto const& [_, sf] : SField::getKnownCodeToField())
         {
             if (sf->fieldType != STI_UINT64 || !sf->getName().ends_with("Node"))
                 continue;
             BEAST_EXPECTS(
-                ownerDirNodes.contains(sf) || nonOwnerDirNodes.contains(sf),
+                rpc::isOwnerDirNodeField(*sf) || nonOwnerDirNodes.contains(sf),
                 "sf" + sf->getName() +
                     ": add to kOwnerDirNodeFields (owner-dir page hint) "
                     "or to nonOwnerDirNodes (book-dir).");

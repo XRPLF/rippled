@@ -22,7 +22,6 @@
 
 #include <cstdint>
 #include <optional>
-#include <span>
 #include <utility>
 
 namespace xrpl {
@@ -63,11 +62,15 @@ bool
 isRelatedToAccount(ReadView const& ledger, SLE::const_ref sle, AccountID const& accountID);
 
 /**
- * @brief Owner-directory page-hint fields probed by `isRelatedToAccount`.
- * Coverage is enforced by the `xrpl.rpc.RPCHelpers` test.
+ * @brief Checks whether an SField is a UINT64 sf*Node owner-directory
+ *        page-hint field probed by `isRelatedToAccount`.
+ *
+ * @param field The SField to test.
+ * @return true if the field is one of the owner-directory page-hint
+ *         fields, false otherwise.
  */
-std::span<SField const* const>
-ownerDirNodeFields();
+bool
+isOwnerDirNodeField(SField const& field);
 
 /**
  * @brief Parses an array of account IDs from a JSON value.

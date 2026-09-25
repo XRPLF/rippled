@@ -519,152 +519,68 @@ public:
     }
 
     void
-    testAccountLinesMarkerNewObjectTypes()
+    testMarkerNewObjectTypes()
     {
-        // Verify account_lines pagination does not reject a marker whose
-        // SLE is a Credential (or any post-2023 owner-directory entry).
-        testcase(
-            "Marker on new owner-directory entry types (Credential): "
-            "account_lines");
+        // Regression: pagination across account_lines / account_offers /
+        // account_channels must not reject a marker whose SLE is a
+        // Credential (or any post-2023 owner-directory entry).
+        testcase("Marker on new owner-directory entry types (Credential)");
 
         using namespace test::jtx;
-        Env env(*this);
 
-        Account const alice{"alice"};
-        Account const issuer{"issuer"};
-        env.fund(XRP(10000), alice, issuer);
-        env.close();
-
-        auto const usd = issuer["USD"];
-        env(trust(alice, usd(200)));
-
-        for (int i = 0; i < 4; ++i)
-        {
-            env(credentials::create(alice, issuer, std::string("Cred") + std::to_string(i)));
-        }
-        env.close();
-
-        std::optional<std::string> marker;
-        int iterations = 0;
-        bool hitInvalidParams = false;
-        for (int guard = 0; guard < 20; ++guard)
-        {
-            json::Value params;
-            params[jss::account] = alice.human();
-            params[jss::limit] = 1;
-            if (marker)
-                params[jss::marker] = *marker;
-            auto const resp = env.rpc("json", "account_lines", to_string(params))[jss::result];
-            ++iterations;
-            if (resp.isMember(jss::error))
+        // Walk the owner directory via `rpcMethod` at limit=1 and return
+        // the total number of paged calls plus whether the RPC ever
+        // returned "invalidParams" during pagination.
+        auto walkPages = [](Env& env, Account const& account, char const* rpcMethod) {
+            std::optional<std::string> marker;
+            int iterations = 0;
+            bool hitInvalidParams = false;
+            for (int guard = 0; guard < 20; ++guard)
             {
-                hitInvalidParams = resp[jss::error].asString() == "invalidParams";
-                break;
+                json::Value params;
+                params[jss::account] = account.human();
+                params[jss::limit] = 1;
+                if (marker)
+                    params[jss::marker] = *marker;
+                auto const resp = env.rpc("json", rpcMethod, to_string(params))[jss::result];
+                ++iterations;
+                if (resp.isMember(jss::error))
+                {
+                    hitInvalidParams = resp[jss::error].asString() == "invalidParams";
+                    break;
+                }
+                if (!resp.isMember(jss::marker))
+                    break;
+                marker = resp[jss::marker].asString();
             }
-            if (!resp.isMember(jss::marker))
-                break;
-            marker = resp[jss::marker].asString();
-        }
+            return std::pair{iterations, hitInvalidParams};
+        };
 
-        BEAST_EXPECT(!hitInvalidParams);
-        // 1 trust line + 4 credentials.
-        BEAST_EXPECTS(iterations == 5, std::to_string(iterations));
-    }
-
-    void
-    testAccountOffersMarkerNewObjectTypes()
-    {
-        // Same regression, exercised through account_offers.
-        testcase(
-            "Marker on new owner-directory entry types (Credential): "
-            "account_offers");
-
-        using namespace test::jtx;
-        Env env(*this);
-
-        Account const alice{"alice"};
-        Account const issuer{"issuer"};
-        env.fund(XRP(10000), alice, issuer);
-        env.close();
-
-        auto const usd = issuer["USD"];
-        env(trust(alice, usd(1000)));
-
-        for (int i = 0; i < 4; ++i)
+        for (char const* rpcMethod : {"account_lines", "account_offers", "account_channels"})
         {
-            env(credentials::create(alice, issuer, std::string("OfferCred") + std::to_string(i)));
-        }
-        env.close();
+            Env env(*this);
 
-        std::optional<std::string> marker;
-        bool hitInvalidParams = false;
-        for (int guard = 0; guard < 20; ++guard)
-        {
-            json::Value params;
-            params[jss::account] = alice.human();
-            params[jss::limit] = 1;
-            if (marker)
-                params[jss::marker] = *marker;
-            auto const resp = env.rpc("json", "account_offers", to_string(params))[jss::result];
-            if (resp.isMember(jss::error))
+            Account const alice{"alice"};
+            Account const issuer{"issuer"};
+            env.fund(XRP(10000), alice, issuer);
+            env.close();
+
+            auto const usd = issuer["USD"];
+            env(trust(alice, usd(200)));
+
+            for (int i = 0; i < 4; ++i)
             {
-                hitInvalidParams = resp[jss::error].asString() == "invalidParams";
-                break;
+                env(credentials::create(alice, issuer, std::string("Cred") + std::to_string(i)));
             }
-            if (!resp.isMember(jss::marker))
-                break;
-            marker = resp[jss::marker].asString();
+            env.close();
+
+            auto const [iterations, hitInvalidParams] = walkPages(env, alice, rpcMethod);
+            BEAST_EXPECTS(!hitInvalidParams, rpcMethod);
+            // 1 trust line + 4 credentials — pagination walks all owner-dir
+            // entries regardless of which the RPC includes in its results.
+            BEAST_EXPECTS(
+                iterations == 5, std::string(rpcMethod) + ": " + std::to_string(iterations));
         }
-
-        BEAST_EXPECT(!hitInvalidParams);
-    }
-
-    void
-    testAccountChannelsMarkerNewObjectTypes()
-    {
-        // Same regression, exercised through account_channels.
-        testcase(
-            "Marker on new owner-directory entry types (Credential): "
-            "account_channels");
-
-        using namespace test::jtx;
-        Env env(*this);
-
-        Account const alice{"alice"};
-        Account const issuer{"issuer"};
-        env.fund(XRP(10000), alice, issuer);
-        env.close();
-
-        auto const usd = issuer["USD"];
-        env(trust(alice, usd(1000)));
-
-        for (int i = 0; i < 4; ++i)
-        {
-            env(credentials::create(alice, issuer, std::string("ChanCred") + std::to_string(i)));
-        }
-        env.close();
-
-        std::optional<std::string> marker;
-        bool hitInvalidParams = false;
-        for (int guard = 0; guard < 20; ++guard)
-        {
-            json::Value params;
-            params[jss::account] = alice.human();
-            params[jss::limit] = 1;
-            if (marker)
-                params[jss::marker] = *marker;
-            auto const resp = env.rpc("json", "account_channels", to_string(params))[jss::result];
-            if (resp.isMember(jss::error))
-            {
-                hitInvalidParams = resp[jss::error].asString() == "invalidParams";
-                break;
-            }
-            if (!resp.isMember(jss::marker))
-                break;
-            marker = resp[jss::marker].asString();
-        }
-
-        BEAST_EXPECT(!hitInvalidParams);
     }
 
     void
@@ -1475,9 +1391,7 @@ public:
         testAccountLines();
         testAccountLinesMarker();
         testAccountLineDelete();
-        testAccountLinesMarkerNewObjectTypes();
-        testAccountOffersMarkerNewObjectTypes();
-        testAccountChannelsMarkerNewObjectTypes();
+        testMarkerNewObjectTypes();
         testAccountLinesWalkMarkers();
         testAccountLines2();
         testAccountLineDelete2();

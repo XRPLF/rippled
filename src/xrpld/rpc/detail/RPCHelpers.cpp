@@ -40,8 +40,8 @@
 #include <format>
 #include <functional>
 #include <optional>
-#include <span>
 #include <tuple>
+#include <unordered_set>
 #include <utility>
 
 namespace xrpl::rpc {
@@ -71,7 +71,7 @@ namespace {
 
 // UINT64 sf*Node fields that record a page number in an owner directory.
 // Keep in sync with sfields.macro; the xrpl.rpc.RPCHelpers test enforces it.
-std::array<SField const*, 9> const kOwnerDirNodeFields{
+std::unordered_set<SField const*> const kOwnerDirNodeFields{
     &sfOwnerNode,
     &sfLowNode,
     &sfHighNode,
@@ -85,10 +85,10 @@ std::array<SField const*, 9> const kOwnerDirNodeFields{
 
 }  // namespace
 
-std::span<SField const* const>
-ownerDirNodeFields()
+bool
+isOwnerDirNodeField(SField const& field)
 {
-    return kOwnerDirNodeFields;
+    return kOwnerDirNodeFields.contains(&field);
 }
 
 bool
