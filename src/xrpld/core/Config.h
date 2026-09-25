@@ -59,12 +59,12 @@ struct FeeSetup
     /**
      * The account reserve requirement in drops.
      */
-    XRPAmount accountReserve{10 * kDropsPerXrp};
+    XRPAmount accountReserve{1'000'000};
 
     /**
      * The per-owned item reserve requirement in drops.
      */
-    XRPAmount ownerReserve{2 * kDropsPerXrp};
+    XRPAmount ownerReserve{200'000};
 
     /* (Remember to update the example cfg files when changing any of these
      * values.) */
