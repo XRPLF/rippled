@@ -6,17 +6,13 @@
 #include <xrpl/beast/utility/Journal.h>
 
 #include <gtest/gtest.h>
+#include <helpers/ManualMetricReader.h>
 #include <opentelemetry/metrics/meter_provider.h>
 #include <opentelemetry/metrics/provider.h>
-#include <opentelemetry/nostd/function_ref.h>
 #include <opentelemetry/nostd/shared_ptr.h>
-#include <opentelemetry/sdk/metrics/export/metric_producer.h>
-#include <opentelemetry/sdk/metrics/instruments.h>
 #include <opentelemetry/sdk/metrics/meter_provider.h>
 #include <opentelemetry/sdk/metrics/meter_provider_factory.h>
-#include <opentelemetry/sdk/metrics/metric_reader.h>
 
-#include <chrono>
 #include <cstddef>
 #include <memory>
 #include <string>
@@ -27,54 +23,10 @@ namespace beast::insight {
 namespace metrics_api = opentelemetry::metrics;
 namespace metrics_sdk = opentelemetry::sdk::metrics;
 
-/**
- * A MetricReader that collects only when the test asks it to.
- *
- * The SDK ships only PeriodicExportingMetricReader, whose background thread
- * would make these tests depend on timing. MetricReader::Collect() is public
- * and synchronous, so a minimal subclass lets a test drive one collection pass
- * on the calling thread. That pass is what invokes an observable gauge's
- * callback, which is the only path that reaches the collector's hooks.
- *
- * @code
- * auto reader = std::make_shared<ManualMetricReader>();
- * provider->AddMetricReader(reader);
- * reader->collectOnce();  // runs every registered observable callback
- * @endcode
- */
-class ManualMetricReader : public metrics_sdk::MetricReader
-{
-public:
-    /**
-     * @brief Run exactly one collection pass, discarding the metric data.
-     *
-     * The tests assert on hook side effects, not on exported points, so the
-     * callback returns true without inspecting what it was handed.
-     */
-    void
-    collectOnce()
-    {
-        Collect([](metrics_sdk::ResourceMetrics&) { return true; });
-    }
-
-    [[nodiscard]] metrics_sdk::AggregationTemporality
-    GetAggregationTemporality(metrics_sdk::InstrumentType) const noexcept override
-    {
-        return metrics_sdk::AggregationTemporality::kCumulative;
-    }
-
-    bool
-    OnForceFlush(std::chrono::microseconds) noexcept override
-    {
-        return true;
-    }
-
-    bool
-    OnShutDown(std::chrono::microseconds) noexcept override
-    {
-        return true;
-    }
-};
+// The reader is not specific to this suite -- any test that needs a real SDK
+// provider without a background export thread wants it -- so its one
+// definition lives in the test helpers.
+using xrpl::test::ManualMetricReader;
 
 /**
  * Installs a real SDK MeterProvider so observable gauges actually fire.

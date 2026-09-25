@@ -121,8 +121,8 @@ TEST(TraceContextPropagator, inject_invalid_span)
 
 TEST(TraceContextPropagator, flags_preservation)
 {
-    std::uint8_t traceIdBuf[16] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16};
-    std::uint8_t spanIdBuf[8] = {1, 2, 3, 4, 5, 6, 7, 8};
+    std::uint8_t const traceIdBuf[16] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16};
+    std::uint8_t const spanIdBuf[8] = {1, 2, 3, 4, 5, 6, 7, 8};
 
     // Test with flags NOT sampled (flags = 0)
     trace::TraceFlags const flags(0);

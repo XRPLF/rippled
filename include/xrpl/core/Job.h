@@ -110,6 +110,20 @@ public:
     getType() const;
 
     /**
+     * Returns the job name supplied to JobQueue::addJob.
+     *
+     * Several job types have more than one producer (for example both
+     * RcvGetLedger and RcvGetObjByHash run as JtLedgerReq), so the name is
+     * the only thing that tells them apart. It is read by the JobQueue
+     * PerfLog hooks and exported as the `handler` metric label.
+     *
+     * Empty for the default and index-only constructors, which carry no
+     * name; callers must treat an empty name as "unknown".
+     */
+    [[nodiscard]] std::string const&
+    getName() const;
+
+    /**
      * Returns the time when the job was queued.
      */
     [[nodiscard]] clock_type::time_point const&

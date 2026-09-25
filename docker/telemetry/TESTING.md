@@ -10,13 +10,14 @@ pipeline end-to-end, from span generation through the observability stack
 
 ### Build xrpld with telemetry
 
-```bash
-conan install . --build=missing -o telemetry=True
-cmake --preset default -Dtelemetry=ON
-cmake --build --preset default --target xrpld
-```
+Build as [BUILD.md](../../BUILD.md) **§ Steps** describes, adding
+`-o telemetry=True` to the `conan install` line. That is the only change:
+Conan carries `telemetry=ON` into the generated CMake toolchain, so no extra
+CMake flag is needed. For the full telemetry build, including how to turn it
+off, see [`docs/build/telemetry.md`](../../docs/build/telemetry.md).
 
-The binary is at `.build/xrpld`.
+This document assumes the `.build/` layout, so the binary is at `.build/xrpld`
+and every command below runs from the repo root.
 
 ### Required tools
 
@@ -57,8 +58,9 @@ XRPLD_UID=$(id -u) XRPLD_GID=$(id -g) \
 Wait for services to be ready:
 
 ```bash
-# otel-collector health
-curl -sf http://localhost:13133/ && echo "collector ready"
+# otel-collector readiness: the health_check extension answers on 13133, which
+# docker-compose.yml publishes.
+curl -sf http://localhost:13133/ >/dev/null && echo "collector ready"
 
 # Tempo readiness
 curl -sf http://localhost:3200/ready >/dev/null && echo "tempo ready"
@@ -66,11 +68,20 @@ curl -sf http://localhost:3200/ready >/dev/null && echo "tempo ready"
 
 ### Step 2: Start xrpld in standalone mode
 
+`xrpld-telemetry.cfg` is a Devnet config whose `[node_db]`, `[database_path]` and `[debug_logfile]` all resolve under `docker/telemetry/data`. Standalone builds its own private chain, so pointing it at that store leaves one NuDB holding two unrelated chains. This is the same rule stated for the key-generation node in Test 2, and the reason the sibling mainnet config keeps its store under `data/mainnet/`. Give standalone its own prefix:
+
 ```bash
-.build/xrpld --conf docker/telemetry/xrpld-telemetry.cfg -a --start
+sed -e 's|^path=docker/telemetry/data/nudb$|path=docker/telemetry/data/standalone/nudb|' \
+    -e 's|^docker/telemetry/data$|docker/telemetry/data/standalone|' \
+    -e 's|^data/logs/xrpld-devnet/debug.log$|data/logs/xrpld-standalone/debug.log|' \
+    docker/telemetry/xrpld-telemetry.cfg >/tmp/xrpld-standalone.cfg
+
+.build/xrpld --conf /tmp/xrpld-standalone.cfg -a --start
 ```
 
 Wait a few seconds for the node to initialize.
+
+> Separating the store is required whether or not `--start` is passed. `--start` selects `StartUpType::Fresh`, but the default `Normal` reaches `startGenesisLedger()` through the same branch chain in `ApplicationImp::setup`, so every standalone run writes a genesis ledger into whichever store the config names. Dropping the flag does not avoid it; only a separate path does. `--start` additionally seeds the amendments this build desires into that genesis ledger.
 
 ### Step 3: Exercise RPC spans
 
@@ -245,34 +256,82 @@ If you prefer to run the steps manually:
 #### Step 1: Start observability stack
 
 ```bash
-docker compose -f docker/telemetry/docker-compose.yml up -d
+XRPLD_LOG_DIR=/tmp/xrpld-integration \
+    docker compose -f docker/telemetry/docker-compose.yml up -d
 ```
+
+The override is required here. The collector's log mount defaults to the
+repo-relative `docker/telemetry/data/logs`, but this test writes its logs under
+`/tmp/xrpld-integration`, so without it the `file_log` receiver tails the wrong
+root, no log line reaches Loki, and Test 3 Step 3 finds nothing with no error.
 
 #### Step 2: Generate validator keys
 
-Start a temporary standalone xrpld:
+Give the throwaway node a config of its own, under the same temp root the rest
+of this test uses:
 
 ```bash
-.build/xrpld --conf docker/telemetry/xrpld-telemetry.cfg -a --start &
+mkdir -p /tmp/xrpld-integration/temp-keygen
+cat >/tmp/xrpld-integration/temp-keygen/xrpld.cfg <<'EOCFG'
+[server]
+port_rpc_temp
+
+[port_rpc_temp]
+port = 5099
+ip = 127.0.0.1
+admin = 127.0.0.1
+protocol = http
+
+[node_db]
+type=NuDB
+path=/tmp/xrpld-integration/temp-keygen/nudb
+online_delete=256
+
+[database_path]
+/tmp/xrpld-integration/temp-keygen/db
+
+[debug_logfile]
+/tmp/xrpld-integration/temp-keygen/debug.log
+
+[ssl_verify]
+0
+EOCFG
+```
+
+Do not point this node at `docker/telemetry/xrpld-telemetry.cfg`. That is a
+Devnet config whose `[node_db]`, `[database_path]` and `[debug_logfile]` all
+resolve under `docker/telemetry/data`, so `--start` (a fresh-genesis start)
+would write a genesis chain into the Devnet store, and deleting that directory
+afterwards would also destroy the sibling mainnet node's store and every log
+under `data/logs/`. Its RPC port is 5005, which is node 1's port later in this
+test.
+
+Start it and wait for RPC before asking for keys:
+
+```bash
+.build/xrpld --conf /tmp/xrpld-integration/temp-keygen/xrpld.cfg -a --start &
 TEMP_PID=$!
-sleep 5
+until curl -sf http://localhost:5099 -d '{"method":"server_info"}' >/dev/null; do
+    sleep 1
+done
 ```
 
 Generate 6 key pairs:
 
 ```bash
 for i in $(seq 1 6); do
-    curl -s http://localhost:5005 \
+    curl -s http://localhost:5099 \
         -d '{"method":"validation_create"}' | jq '.result'
 done
 ```
 
 Record the `validation_seed` and `validation_public_key` for each.
-Kill the temporary node:
+Stop the temporary node and remove only its own directory:
 
 ```bash
 kill $TEMP_PID
-rm -rf docker/telemetry/data/
+wait $TEMP_PID 2>/dev/null
+rm -rf /tmp/xrpld-integration/temp-keygen
 ```
 
 #### Step 3: Create node configs
@@ -294,6 +353,9 @@ protocol = http
 port = {51234 + node_number}
 ip = 0.0.0.0
 protocol = peer
+
+[network_id]
+1025
 
 [node_db]
 type=NuDB
@@ -346,6 +408,14 @@ server=otel
 [ssl_verify]
 0
 ```
+
+`[network_id]` has to be a private id (anything other than 0, 1 or 2), because
+the config default is id 0 and the telemetry resource maps that to `mainnet` —
+without the stanza every span and metric this local cluster emits is stamped
+`xrpl.network.type=mainnet` and lands on the same dashboard series as real
+mainnet data. Only 0, 1 and 2 have names, so a private id is stamped
+`xrpl.network.type=unknown`. That is the value to select in the dashboards'
+Network Type filter when looking at this cluster.
 
 The per-node directory name must equal `[telemetry] service_instance_id`: the
 collector reads the node name off the log file's path and stamps it as the Loki
@@ -434,30 +504,68 @@ See the "Verification Queries" section below.
 
 ## Expected Span Catalog
 
-A smoke-test subset: the spans a short local run reliably produces, and how to trigger each. This is not the full catalog — the authoritative span list, with the attributes each span carries, is [docs/telemetry-runbook.md § Span Reference](../../docs/telemetry-runbook.md#span-reference).
+What follows is a **trigger** catalogue, not an attribute reference: one row per
+span-name family, saying which config toggle gates it and what you have to do to
+make it appear. It covers all 41 span-name families the code emits, in eight
+subsystem groups — RPC (5), gRPC (1), Transaction (6), TxQ (6), Consensus (13),
+Ledger (4), Peer (2), PathFind (4).
 
-Attributes are deliberately not repeated here. Keeping a second copy is how this table came to list attribute keys that no longer exist anywhere in the code.
+For each span's **attributes** — span name, source file, full attribute set and
+description, per subsystem — see
+[`docs/telemetry-runbook.md`](../../docs/telemetry-runbook.md) **§ Span
+Reference**; its **§ Protocol Span Flow** gives the parent/child shape of a trace
+and calls out where telemetry parenting deliberately differs from the protocol
+flow. Both are kept in step with the code, so they are the reference to trust.
+One hole worth knowing: the runbook's Span Reference tables have no row for
+`grpc.<MethodName>` (it appears only in Protocol Span Flow). Its attributes are
+`method`, `grpc_role` and `grpc_status`, emitted from `GRPCServer.cpp` with the
+key constants in `src/xrpld/app/main/GrpcSpanNames.h`.
 
-| Span Name                   | Source File       | How to Trigger            |
-| --------------------------- | ----------------- | ------------------------- |
-| `rpc.http_request`          | ServerHandler.cpp | Any HTTP RPC call         |
-| `rpc.ws_upgrade`            | ServerHandler.cpp | WebSocket upgrade         |
-| `rpc.ws_message`            | ServerHandler.cpp | WebSocket RPC message     |
-| `rpc.process`               | ServerHandler.cpp | RPC processing            |
-| `rpc.command.<name>`        | RPCHandler.cpp    | Any RPC command           |
-| `tx.process`                | NetworkOPs.cpp    | Submit transaction        |
-| `tx.receive`                | PeerImp.cpp       | Peer relays transaction   |
-| `consensus.proposal.send`   | RCLConsensus.cpp  | Consensus proposing phase |
-| `consensus.ledger_close`    | RCLConsensus.cpp  | Ledger close event        |
-| `consensus.accept`          | RCLConsensus.cpp  | Ledger accepted           |
-| `consensus.validation.send` | RCLConsensus.cpp  | Validation sent           |
-| `consensus.accept.apply`    | RCLConsensus.cpp  | Ledger apply + close time |
-| `tx.apply`                  | BuildLedger.cpp   | Ledger close (tx set)     |
-| `ledger.build`              | BuildLedger.cpp   | Ledger build              |
-| `ledger.validate`           | LedgerMaster.cpp  | Ledger validated          |
-| `ledger.store`              | LedgerMaster.cpp  | Ledger stored             |
-| `peer.proposal.receive`     | PeerImp.cpp       | Peer sends proposal       |
-| `peer.validation.receive`   | PeerImp.cpp       | Peer sends validation     |
+### Span → How to Trigger
+
+"Test" is the section of this file that exercises the family. `T1` = Test 1
+(standalone), `T2` = Test 2 (6-node network).
+
+| Span family (count)                                                                                                             | Config toggle        | How to trigger                                                                                                                                                                                                                                                     | Test    |
+| ------------------------------------------------------------------------------------------------------------------------------- | -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------- |
+| **RPC** (5 total, 3 here): `rpc.http_request`, `rpc.process`, `rpc.command.<name>`                                              | `trace_rpc=1`        | Any HTTP JSON-RPC call: `curl -s http://localhost:5005 -d '{"method":"server_info"}'`. `rpc.command.<name>` is one family — the command name is part of the span name.                                                                                             | T1      |
+| **RPC** (cont.): `rpc.ws_message`, `rpc.ws_upgrade`                                                                             | `trace_rpc=1`        | Needs a WebSocket client against `[port_ws_public]` (**6005**) or `[port_ws_admin_local]` (6006). `rpc.ws_upgrade` covers the handshake — force a failure to see its error path. `curl` alone will not do it.                                                      | —       |
+| **gRPC** (1): `grpc.<MethodName>`                                                                                               | `trace_rpc=1`        | Call a gRPC method (`GetLedger`, `GetLedgerData`, …). **Requires a `[port_grpc]` stanza — the shipped `xrpld-telemetry*.cfg` files define none**, so add one first.                                                                                                | —       |
+| **Transaction** (6 total, 4 here): `tx.process`, `tx.preflight`, `tx.preclaim`, `tx.transactor`                                 | `trace_transactions` | Submit any transaction (T1 Step 4). The three apply-stage spans share the tx's deterministic trace id; the `stage` attribute says where a failing tx stopped.                                                                                                      | T1      |
+| **Transaction** (cont.): `tx.receive`                                                                                           | `trace_transactions` | A **peer** relays a transaction. Never appears in standalone — submit on one node of the cluster and look on another.                                                                                                                                              | T2      |
+| **Transaction** (cont.): `tx.apply`                                                                                             | `trace_transactions` | Ledger close with a non-empty transaction set: submit, then `ledger_accept` (T1) or wait for consensus (T2).                                                                                                                                                       | T1 / T2 |
+| **TxQ** (6): `txq.enqueue`, `txq.apply_direct`, `txq.batch_clear`, `txq.accept`, `txq.accept_tx`, `txq.cleanup`                 | `trace_transactions` | `txq.enqueue`/`apply_direct` on every submission; `txq.accept`/`accept_tx`/`cleanup` on every ledger close. To force real queueing, submit faster than ledgers close or with a fee below the required fee level.                                                   | T1      |
+| **Consensus** (13 total, 6 here): `consensus.round`, `.phase.open`, `.mode_change`, `.ledger_close`, `.accept`, `.accept.apply` | `trace_consensus=1`  | A standalone `ledger_accept` drives a whole simulated round, so these six fire in T1 as well as on every real close in T2. Note `consensus.round` is ended by the **next** round's start, so a single `ledger_accept` leaves it open and Tempo will not return it. | T1 / T2 |
+| **Consensus** (cont., 3): `.establish`, `.update_positions`, `.check`                                                           | `trace_consensus=1`  | Need the establish phase, which the simulated round skips by jumping straight to `Accepted`. Bring up T2 and wait for a timer-driven round.                                                                                                                        | T2      |
+| **Consensus** (cont., 2): `.proposal.send`, `.validation.send`                                                                  | `trace_consensus=1`  | Need the node to propose, which needs a **validator key** — not peers. The shipped `xrpld-telemetry*.cfg` set no `[validation_seed]`/`[validator_token]`, so a standalone node only observes.                                                                      | T2      |
+| **Consensus** (cont., 2): `.proposal.receive`, `.validation.receive`                                                            | `trace_consensus=1`  | A peer's consensus message arriving. T2 only.                                                                                                                                                                                                                      | T2      |
+| **Ledger** (4 total, 2 here): `ledger.build`, `ledger.store`                                                                    | `trace_ledger=1`     | Any ledger close: `ledger_accept` in standalone, or consensus in T2.                                                                                                                                                                                               | T1 / T2 |
+| **Ledger** (cont.): `ledger.validate`                                                                                           | `trace_ledger=1`     | Belongs to `LedgerMaster::checkAccept`, which standalone never reaches — `consensusBuilt` returns early and `switchLCL` takes its standalone branch instead. Needs peers or an inbound validation.                                                                 | T2      |
+| **Ledger** (cont.): `ledger.acquire`                                                                                            | `trace_ledger=1`     | Node fetches a **missing** ledger from peers. Start a node with no history against a running cluster, or restart one node after the others have advanced.                                                                                                          | T2      |
+| **Peer** (2): `peer.proposal.receive`, `peer.validation.receive`                                                                | `trace_peer=1`       | Inbound consensus messages from peers; fresh trace roots. T2 only, and high volume.                                                                                                                                                                                | T2      |
+| **PathFind** (4): `pathfind.request`, `pathfind.compute`, `pathfind.discover`, `pathfind.update_all`                            | `trace_rpc=1`        | `curl -s http://localhost:5005 -d '{"method":"ripple_path_find","params":[{"source_account":"…","destination_account":"…","destination_amount":"100"}]}'`. `pathfind.update_all` fires on ledger close while a request is active.                                  | T1      |
+
+Notes that matter when a span you expect is missing:
+
+- **Toggles are per-subsystem and all default to on** (`trace_rpc`,
+  `trace_transactions`, `trace_consensus`, `trace_peer`, `trace_ledger`), but
+  `[telemetry] enabled` defaults to **0** — nothing is emitted until it is `1`.
+- **`peer.*` cannot be produced in standalone mode.** Both peer spans are created
+  in inbound message handlers, and `-a` turns peerfinder's `autoConnect` off, so
+  the node opens no outbound peer connections and receives nothing. If Test 1
+  shows none, that is correct behaviour, not a regression.
+- **`consensus.*` is only partly absent in standalone.** `consensus.round`,
+  `.phase.open`, `.mode_change`, `.ledger_close`, `.accept` and `.accept.apply`
+  all fire on a `ledger_accept`; the other seven need the establish phase, a
+  validator key, or a peer — see the Consensus rows above.
+- **`rpc.ws_*` and `grpc.*` need a client and a port the quick tests do not
+  use.** Absence in T1/T2 is expected.
+- Trace ids are deterministic for transactions (from `txID`) and consensus rounds
+  (from `prevLedgerHash`): the trace id is the hash's first **16 bytes**, so from
+  a hex-printed hash take the first **32 characters**. This holds under the
+  default `consensus_trace_strategy=deterministic`; set it to `random` and each
+  node gives its round a random trace id instead, joinable only by the
+  `consensus_ledger_id` attribute.
 
 ---
 
@@ -556,7 +664,7 @@ curl -s "$PROM/api/v1/query?query=span_duration_milliseconds_count" |
 
 # RPC calls by command
 curl -s "$PROM/api/v1/query?query=span_calls_total{span_name=~\"rpc.command.*\"}" |
-    jq '.data.result[] | {command: .metric.command, count: .value[1]}'
+    jq '.data.result[] | {command: .metric["command"], count: .value[1]}'
 
 # Deployment-tier labels present on metrics (set by the collector's
 # resource/tier processor and promoted via resource_to_telemetry_conversion).
@@ -569,19 +677,108 @@ curl -s "$PROM/api/v1/query?query=span_calls_total" |
 
 Open http://localhost:3000 (anonymous admin access enabled).
 
-Pre-configured dashboards:
+Pre-configured dashboards: every `.json` under
+`docker/telemetry/grafana/dashboards/` is provisioned into the `xrpld` folder —
+`provisioning/dashboards/dashboards.yaml` points the file provider at
+`/var/lib/grafana/dashboards`, which `docker-compose.yml` bind-mounts from that
+directory. Adding a file there is all that is needed; there is no per-dashboard
+registration.
 
-- **RPC Performance**: Request rates, latency percentiles by command, top commands, WebSocket rate
-- **Transaction Overview**: Transaction processing rates, apply duration, peer relay, failed tx rate
-- **Consensus Health**: Consensus round duration, proposer counts, mode tracking, accept heatmap
-- **Ledger Operations**: Build/validate/store rates and durations, TX apply metrics
-- **Peer Network**: Proposal/validation receive rates, trusted vs untrusted breakdown (requires `trace_peer=1`)
+For what each dashboard covers, see
+[`docs/telemetry-runbook.md`](../../docs/telemetry-runbook.md) **§ Grafana
+Dashboards**. That reference is partial: 9 of the 15 provisioned dashboards have
+a section there, and six — `fee-market`, `job-queue`, `ledger-data-sync`,
+`overlay-traffic-detail`, `peer-quality` and `validator-health` — do not. For
+those, open a panel's info icon in Grafana; the panel descriptions carry the same
+reference format.
 
 Pre-configured datasources:
 
 - **Tempo**: Trace data at `http://tempo:3200`
 - **Prometheus**: Metrics at `http://prometheus:9090`
 - **Loki**: Log data at `http://loki:3100` (via Grafana Explore)
+
+---
+
+## Exporting to Grafana Cloud
+
+Instead of (or alongside) the local backends, the collector can forward
+traces, metrics, and logs to a hosted **Grafana Cloud** stack. This is a
+runtime choice layered on top of the base stack — xrpld and the base
+`docker-compose.yml` are unchanged.
+
+### Step 1: Get Grafana Cloud OTLP credentials
+
+From **Grafana Cloud → Connections → OpenTelemetry (OTLP)**, note the OTLP
+gateway endpoint (ends in `/otlp`), the numeric instance id, and an
+access-policy token with `metrics:write`, `traces:write`, and `logs:write`.
+
+### Step 2: Fill in the env file
+
+```bash
+cp docker/telemetry/.env.grafanacloud.example docker/telemetry/.env.grafanacloud
+# edit .env.grafanacloud:
+#   GRAFANA_CLOUD_OTLP_ENDPOINT=https://otlp-gateway-<zone>.grafana.net/otlp
+#   GRAFANA_CLOUD_INSTANCE_ID=<instance id>
+#   GRAFANA_CLOUD_API_TOKEN=<token>
+```
+
+`.env.grafanacloud` is gitignored — never commit real tokens.
+
+### Step 3: Start the stack with cloud export enabled
+
+```bash
+docker compose -f docker/telemetry/docker-compose.yml \
+    -f docker/telemetry/docker-compose.grafanacloud.yaml up -d
+```
+
+The override swaps the collector onto `otel-collector-config.grafanacloud.yaml`.
+It keeps the local Tempo/Prometheus/Loki exporters and adds an
+`otlphttp/grafanacloud` exporter, but it is **not** the base config plus one
+exporter — it restructures the pipelines. Bring the stack up with just the base
+file to return to local-only.
+
+Differences that change what you will see:
+
+|                     | Base (`otel-collector-config.yaml`) | Cloud override                                                                                      |
+| ------------------- | ----------------------------------- | --------------------------------------------------------------------------------------------------- |
+| Pipelines           | 3: `traces`, `metrics`, `logs`      | 5: `traces/metrics`, `traces/store`, `metrics/local`, `metrics/cloud`, `logs`                       |
+| Trace sampling      | none — 100% of spans reach Tempo    | `tail_sampling` keeps **0.5%** (one `probabilistic` policy, `decision_wait: 10s`) on `traces/store` |
+| `debug` exporter    | present on `traces`                 | dropped                                                                                             |
+| Cloud metric labels | n/a                                 | `transform/cloudlabels` on `metrics/cloud` only                                                     |
+
+Consequences worth knowing before you debug against the cloud stack:
+
+- **Traces are sampled, span metrics are not.** Sampling sits only on
+  `traces/store` (the pipeline feeding Tempo _and_ Grafana Cloud). The
+  `spanmetrics` connector is fed by the separate, unsampled `traces/metrics`
+  pipeline, so `span_*` rates stay exact while only ~1 trace in 200 is
+  retrievable by trace ID. A trace you can see in a metric may not exist in
+  Tempo.
+- **Account addresses read the same on both configs.** Neither config hashes
+  or drops the `pathfind_*_account` or `tx_*` account attributes: an address is
+  a public ledger identifier and is stored as the node emitted it, so a trace
+  from the base stack joins a trace from the cloud stack by account.
+
+### Step 4: Verify data reaches Grafana Cloud
+
+After exercising RPC/transaction workflows (Tests 1 or 2), open your Grafana
+Cloud instance and confirm:
+
+- **Traces**: Explore → hosted Tempo datasource → search `{resource.service.name="xrpld"}`
+- **Metrics**: Explore → hosted Prometheus/Mimir → query `span_calls_total`
+- **Logs**: Explore → hosted Loki → query `{service_name="xrpld"}` (requires file logging, at a level low enough to keep the correlated lines — the shipped devnet config's `debug` does, the mainnet config's `warning` suppresses them). **Not `{job="xrpld"}`** — see the note under Test 3 Step 3.
+
+If nothing appears, check the collector logs for auth/export errors:
+
+```bash
+docker compose -f docker/telemetry/docker-compose.yml \
+    -f docker/telemetry/docker-compose.grafanacloud.yaml \
+    logs otel-collector | grep -iE 'grafanacloud|401|403|export'
+```
+
+A `401`/`403` means the instance id or token is wrong; a connection error
+means the endpoint URL is wrong or missing the `/otlp` path.
 
 ---
 
@@ -594,10 +791,13 @@ end-to-end log-trace correlation pipeline.
 ### Step 1: Verify trace_id in log output
 
 After running Test 1 or Test 2 (which generate RPC spans), check the
-xrpld debug.log for trace context:
+xrpld debug.log for trace context. A Test 1 run writes
+`docker/telemetry/data/logs/xrpld-devnet/debug.log`; the mainnet config writes
+`docker/telemetry/data/logs/mainnet/debug.log` instead.
 
 ```bash
-grep 'trace_id=[a-f0-9]\{32\} span_id=[a-f0-9]\{16\}' /path/to/debug.log
+grep 'trace_id=[a-f0-9]\{32\} span_id=[a-f0-9]\{16\}' \
+    docker/telemetry/data/logs/xrpld-devnet/debug.log
 ```
 
 Expected: log lines with `trace_id=<32hex> span_id=<16hex>` between the
@@ -621,7 +821,8 @@ NOT have trace context — this is expected.
 Extract a `trace_id` from the log and verify it exists in Tempo:
 
 ```bash
-TRACE_ID=$(grep -m1 -o 'trace_id=[a-f0-9]\{32\}' /path/to/debug.log | cut -d= -f2)
+TRACE_ID=$(grep -m1 -o 'trace_id=[a-f0-9]\{32\}' \
+    docker/telemetry/data/logs/xrpld-devnet/debug.log | cut -d= -f2)
 echo "Checking trace: $TRACE_ID"
 curl -s "http://localhost:3200/api/traces/$TRACE_ID" | jq '.batches | length'
 ```
@@ -657,6 +858,26 @@ Only metric queries such as `sum(count_over_time(...))` are allowed there, so a
 check that needs a count rather than the lines themselves can use the instant
 endpoint. `query_range` timestamps are unix nanoseconds.
 Counting `.data.result | length` would count streams, not log lines.
+
+> **Use `service_name`, not `job`.** The local stack's `resource/logs` processor
+> sets one key, `service.name=xrpld`, in `otel-collector-config.yaml`; its
+> comment there explains that a custom `job` attribute is not promoted to a
+> stream label and tells you to select on `service_name`. Only the Grafana Cloud
+> variant also sets `job=xrpld`, in `otel-collector-config.grafanacloud.yaml`.
+> Either way `{job="xrpld"}` does not work as a selector: on OTLP ingest Loki
+> promotes only an allow-listed set of resource attributes to indexed stream
+> labels. On the pinned `grafana/loki:3.7.6` that list is a fixed 18 keys,
+> including `service.name` → `service_name`, `service.namespace`,
+> `service.instance.id`, `deployment.environment` and `container.name`. `k8s.*`
+> and `cloud.*` are enumerated key lists (ten and two entries), not wildcards.
+> `job` is not on the list. This repo mounts no Loki config override — the `loki`
+> service runs the image's built-in `/etc/loki/local-config.yaml`
+> named in `docker-compose.yml` — so `job` lands in **structured metadata**, which
+> cannot be a stream selector. `{job="xrpld"}` therefore returns **zero results
+> with no error**, which reads exactly like "logs are not being ingested". If
+> this query is empty, check `{service_name="xrpld"}` before debugging the
+> pipeline. All 35 Loki queries in the shipped dashboards select on
+> `service_name`; none uses `job`.
 
 ### Step 4: Verify Grafana Tempo-to-Loki correlation
 
@@ -696,10 +917,9 @@ Counting `.data.result | length` would count streams, not log lines.
    docker compose -f docker/telemetry/docker-compose.yml logs otel-collector
    ```
 2. Verify xrpld telemetry config has `enabled=1` and correct endpoint
-3. Check that otel-collector port 4318 is accessible:
-   ```bash
-   curl -sf http://localhost:4318 && echo "reachable"
-   ```
+3. Check the collector is up — the readiness check in Test 1 Step 1. Probe
+   `health_check` on 13133, not the OTLP/HTTP port 4318, which answers 404 to a
+   `GET /`
 4. Increase `batch_delay_ms` or decrease `batch_size` in xrpld config
 
 ### Nodes not reaching "proposing" state
@@ -774,14 +994,23 @@ Counting `.data.result | length` would count streams, not log lines.
 ### Spanmetrics not appearing in Prometheus
 
 1. Verify otel-collector config has `span_metrics` connector
-2. Check that the metrics pipeline is configured:
+2. Check that the metrics pipeline matches `otel-collector-config.yaml`
+   verbatim:
    ```yaml
    service:
      pipelines:
        metrics:
-         receivers: [span_metrics]
+         receivers: [otlp, span_metrics]
+         processors: [resource/tier, resource/stripsdk, batch]
          exporters: [prometheus]
    ```
+   Both receivers are required. `span_metrics` carries the span-derived
+   `span_*` series; `otlp` carries the node's native `beast::insight` /
+   MetricsRegistry metrics, which arrive on the same OTLP port. Dropping
+   `otlp` silently removes every native metric while the `span_*` ones keep
+   working — so the dashboards only half-break. (The cloud config,
+   `otel-collector-config.grafanacloud.yaml`, spells the same connector
+   `spanmetrics`; both are valid ids for it.)
 3. Verify Prometheus can reach collector:
    ```bash
    curl -s http://localhost:9090/api/v1/targets | jq '.data.activeTargets'

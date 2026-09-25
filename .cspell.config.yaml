@@ -116,6 +116,7 @@ words:
   - distro
   - doxyfile
   - dsymutil
+  - dthms
   - dxrpl
   - elgamal
   - enabled
@@ -152,6 +153,7 @@ words:
   - hwrap
   - ifndef
   - inequation
+  - initialiser
   - Injectivity
   - insuf
   - insuff
@@ -163,6 +165,7 @@ words:
   - itype
   - jemalloc
   - jlog
+  - jmeter
   - jtnofill
   - keylet
   - keylets
@@ -271,6 +274,7 @@ words:
   - qalloc
   - qbsprofile
   - queuable
+  - ransitioned
   - Raphson
   - rcflags
   - reparent
@@ -301,6 +305,11 @@ words:
   - rustfmt
   - rustup
   - sahyadri
+  - sanitisation
+  - sanitise
+  - sanitised
+  - sanitiser
+  - sanitising
   - Satoshi
   - scons
   - Schnorr
@@ -321,6 +330,7 @@ words:
   - soci
   - socidb
   - Sonatype
+  - speciality
   - sponsee
   - sponsees
   - SRPMS
@@ -328,6 +338,7 @@ words:
   - statsd
   - STATSDCOLLECTOR
   - stissue
+  - stledgerentry
   - stnum
   - stobj
   - stobject
@@ -341,6 +352,7 @@ words:
   - superpeer
   - superpeers
   - Swatinem
+  - synthesise
   - takergets
   - takerpays
   - ters
@@ -371,6 +383,7 @@ words:
   - unflatten
   - unfund
   - ungated
+  - unheld
   - unimpair
   - unroutable
   - unscalable
@@ -381,17 +394,20 @@ words:
   - unsquelch
   - unsquelched
   - unsquelching
+  - unstored
   - unsuffixed
   - unvalidated
   - unveto
   - unvetoed
   - upvotes
   - USDB
+  - utilisation
   - variadics
   - venv
   - vfalco
   - vinnie
   - wasmi
+  - werror
   - wextra
   - wptr
   - writeme
@@ -412,3 +428,5 @@ words:
   - xychart
   - zpages
   - zstdio
+  - ripplex
+  - mseconds
