@@ -339,6 +339,14 @@ ServerHandler::onWSMessage(
     auto const size = boost::asio::buffer_size(buffers);
     if (size > rpc::tuning::kMaxRequestSize || !json::Reader{}.parse(jv, buffers) || !jv.isObject())
     {
+        auto const wsInfoSub = std::static_pointer_cast<WSInfoSub>(session->appDefined);
+        auto& consumer = wsInfoSub->getConsumer();
+        consumer.charge(resource::kFeeMalformedRpc);
+        if (consumer.disconnect(journal_))
+        {
+            session->close({boost::beast::websocket::policy_error, "threshold exceeded"});
+            return;
+        }
         json::Value jvResult(json::ValueType::Object);
         jvResult[jss::type] = jss::error;
         jvResult[jss::error] = "jsonInvalid";
