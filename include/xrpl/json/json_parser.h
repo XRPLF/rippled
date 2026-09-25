@@ -487,6 +487,7 @@ bool
 Parser<Visitor...>::parse(BufferSequence const& bs)
 {
     using namespace boost::asio;
+    auto size = buffer_size(bs);
     if (buffer_size(bs) > documentSizeLimit)
     {
         auto token = Token{};
@@ -501,7 +502,7 @@ Parser<Visitor...>::parse(BufferSequence const& bs)
     s.reserve(buffer_size(bs));
     for (auto const& b : bs)
     {
-        s.append(static_cast<char const*>(b.data()), buffer_size(bs));
+        s.append(static_cast<char const*>(b.data()), buffer_size(b));
     }
     return parse(std::move(s));
 }
