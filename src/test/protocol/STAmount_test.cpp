@@ -1072,6 +1072,39 @@ public:
             BEAST_EXPECT(down.signum() > 0);
             BEAST_EXPECT(up >= down);
         }
+
+        {
+            // An MPT operand with a non-MPT result. The legacy path assumes
+            // 16-digit mantissas and overflows on a 63-bit MPT mantissa; under
+            // MPTokensV2 any MPT operand, not only an MPT result, takes the
+            // Number path. This is OfferCreate::flowCross recomputing the
+            // remainder of a partially crossed large MPT offer, and
+            // Quality::ceilIn/ceilOut partially filling one.
+            Issue const usd{Currency(0x5553440000000000), AccountID(0x4985601)};
+            STAmount const bigMpt{asset, UINT64_C(5'000'000'000'000'000'000)};
+            STAmount const milli{noIssue(), UINT64_C(1'000'000'000'000'000), -18};     // 1e-3
+            STAmount const kilo{noIssue(), UINT64_C(1'000'000'000'000'000), -12};      // 1e3
+            STAmount const tenMicro{noIssue(), UINT64_C(1'000'000'000'000'000), -20};  // 1e-5
+            STAmount const usdResult{usd, UINT64_C(5'000'000'000'000'000)};
+            XRPAmount const xrpResult{50'000'000'000'000};
+
+            {
+                CurrentTransactionRulesGuard const rg(rules(false));
+                throwsOverflow([&] { (void)mulRound(bigMpt, milli, usd, true); });
+                throwsOverflow([&] { (void)mulRound(bigMpt, tenMicro, xrpIssue(), true); });
+                throwsOverflow([&] { (void)divRound(bigMpt, kilo, usd, true); });
+                throwsOverflow([&] { (void)divRoundStrict(bigMpt, kilo, usd, false); });
+            }
+
+            {
+                CurrentTransactionRulesGuard const rg(rules(true));
+                BEAST_EXPECT(mulRound(bigMpt, milli, usd, true) == usdResult);
+                BEAST_EXPECT(mulRound(bigMpt, milli, usd, false) == usdResult);
+                BEAST_EXPECT(mulRound(bigMpt, tenMicro, xrpIssue(), true) == STAmount{xrpResult});
+                BEAST_EXPECT(divRound(bigMpt, kilo, usd, true) == usdResult);
+                BEAST_EXPECT(divRoundStrict(bigMpt, kilo, usd, false) == usdResult);
+            }
+        }
     }
 
     void

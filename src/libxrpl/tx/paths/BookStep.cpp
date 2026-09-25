@@ -83,6 +83,11 @@ protected:
     std::optional<AMMLiquidity<TIn, TOut>> ammLiquidity_;
     beast::Journal const j_;
     Asset const strandDeliver_;
+    // MaximumAmount of book_.in if it is an MPT. Taking an MPT offer has the
+    // issuer send TakerPays to the owner, and a send above the cap is rejected
+    // (isMPTOverflow). forEachOffer limits the offer's input to the cap so it
+    // fills partially instead of failing the strand.
+    std::optional<TIn> maxIn_;
 
     struct Cache
     {
@@ -106,6 +111,12 @@ private:
         , j_(ctx.j)
         , strandDeliver_(ctx.strandDeliver)
     {
+        if constexpr (std::is_same_v<TIn, MPTAmount>)
+        {
+            if (auto const max = maxMPTAmount(ctx.view, in.get<MPTIssue>().getMptID()))
+                maxIn_.emplace(*max);
+        }
+
         if (auto const ammSle = ctx.view.read(keylet::amm(in, out));
             ammSle && ammSle->getFieldAmount(sfLPTokenBalance) != beast::kZero)
         {
@@ -817,31 +828,56 @@ BookStep<TIn, TOut, TDerived>::forEachOffer(
                 ofrAmt = offer.limitOut(ofrAmt, stpAmt.out, /*roundUp*/ false);
 
                 stpAmt.in = mulRatio(ofrAmt.in, ofrInRate, QUALITY_ONE, /*roundUp*/ true);
-            }
 
-            // Limit offer's input if MPT, BookStep is the first step (an issuer
-            // is making a cross-currency payment), and this offer is not owned
-            // by the issuer. Otherwise, OutstandingAmount may overflow.
-            auto const& issuer = assetIn.getIssuer();
-            if (isAssetInMPT && !prevStep_ && offer.owner() != issuer)
-            {
-                // Funds available to issue
-                auto const available = toAmount<TIn>(accountFunds(
-                    sb,
-                    issuer,
-                    assetIn,  // STAmount{0}, but the default is not used
-                    FreezeHandling::IgnoreFreeze,
-                    AuthHandling::IgnoreAuth,
-                    j_));
-                if (stpAmt.in > available)
+                // Fee-adjusted funds can't produce one unit of out. A zero
+                // consume leaves the offer at the tip, dries the strand, and
+                // blocks the book. OfferStream's dust check is fee-blind, so
+                // it misses this. MPT hits it with ordinary sizes; IOU only
+                // at the smallest amount — V2 because that IOU outcome changes.
+                if (stpAmt.out <= beast::kZero && sb.rules().enabled(featureMPTokensV2))
                 {
-                    limitStepIn(
-                        offer, ofrAmt, stpAmt, ownerGives, ofrInRate, ofrOutRate, available);
+                    removeOffer("Removing offer whose funded output rounds to zero");
+                    return true;
                 }
             }
 
+            // Limit offer's input if MPT and the offer is not owned by the
+            // issuer (an issuer's send to itself is a no-op).
+            bool inLimited = false;
+            std::optional<TIn> limitIn;
+            auto const& issuer = assetIn.getIssuer();
+            if (isAssetInMPT && offer.owner() != issuer)
+            {
+                if (!prevStep_)
+                {
+                    // BookStep is the first step (an issuer is making a
+                    // cross-currency payment). Limit to the funds available to
+                    // issue, otherwise OutstandingAmount may overflow.
+                    auto const available = toAmount<TIn>(accountFunds(
+                        sb,
+                        issuer,
+                        assetIn,  // STAmount{0}, but the default is not used
+                        FreezeHandling::IgnoreFreeze,
+                        AuthHandling::IgnoreAuth,
+                        j_));
+                    if (stpAmt.in > available)
+                        limitIn = available;
+                }
+                else if (maxIn_ && ofrAmt.in > *maxIn_)
+                {
+                    // Limit to MaximumAmount (see maxIn_). The remainder is
+                    // still funded, so the callback keeps the offer instead of
+                    // consuming it. The grossed-up cap can't overflow since
+                    // ofrAmt.in > maxIn_ did not.
+                    inLimited = true;
+                    limitIn = mulRatio(*maxIn_, ofrInRate, QUALITY_ONE, /*roundUp*/ true);
+                }
+            }
+            if (limitIn)
+                limitStepIn(offer, ofrAmt, stpAmt, ownerGives, ofrInRate, ofrOutRate, *limitIn);
+
             offerAttempted = true;
-            return callback(offer, ofrAmt, stpAmt, ownerGives, ofrInRate, ofrOutRate);
+            return callback(offer, ofrAmt, stpAmt, ownerGives, ofrInRate, ofrOutRate, inLimited);
         }
         catch (std::overflow_error const&)
         {
@@ -1091,7 +1127,8 @@ BookStep<TIn, TOut, TDerived>::revImp(
                          TAmounts<TIn, TOut> const& stpAmt,
                          TOut const& ownerGives,
                          std::uint32_t transferRateIn,
-                         std::uint32_t transferRateOut) mutable -> bool {
+                         std::uint32_t transferRateOut,
+                         bool inLimited) mutable -> bool {
         if (remainingOut <= beast::kZero)
             return false;
 
@@ -1103,8 +1140,10 @@ BookStep<TIn, TOut, TDerived>::revImp(
             remainingOut = out - result.out;
             this->consumeOffer(sb, offer, ofrAmt, stpAmt, ownerGives);
             // return true b/c even if the payment is satisfied,
-            // we need to consume the offer
-            return true;
+            // we need to consume the offer. An offer limited to the issuance
+            // cap is not consumed, though: its remainder is still funded, and
+            // no more of that MPT can flow through this step anyway.
+            return !inLimited;
         }
 
         auto ofrAdjAmt = ofrAmt;
@@ -1207,7 +1246,8 @@ BookStep<TIn, TOut, TDerived>::fwdImp(
                          TAmounts<TIn, TOut> const& stpAmt,
                          TOut const& ownerGives,
                          std::uint32_t transferRateIn,
-                         std::uint32_t transferRateOut) mutable -> bool {
+                         std::uint32_t transferRateOut,
+                         bool inLimited) mutable -> bool {
         XRPL_ASSERT(cache_, "xrpl::BookStep::fwdImp::eachOffer : cache is set");
 
         if (remainingIn <= beast::kZero)
@@ -1237,8 +1277,10 @@ BookStep<TIn, TOut, TDerived>::fwdImp(
             savedInsAdj.insert(stpAmt.in);
             lastOut = savedOutsAdj.insert(stpAmt.out);
             resultAdj = TAmounts<TIn, TOut>(sum(savedInsAdj), sum(savedOutsAdj));
-            // consume the offer even if stepAmt.in == remainingIn
-            processMore = true;
+            // consume the offer even if stepAmt.in == remainingIn, unless it
+            // was limited to the issuance cap: its remainder is still funded
+            // and must stay on the book.
+            processMore = !inLimited;
         }
         else
         {
