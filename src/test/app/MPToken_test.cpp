@@ -7824,7 +7824,7 @@ class MPToken_test : public beast::unit_test::Suite
                 // The transfer fee is redeemed to the issuer, so
                 // OutstandingAmount shrinks by that fee.
                 BEAST_EXPECT(carolBal == expectedDelivered);
-                BEAST_EXPECT(bobBal == 0 || bobBal == 1);
+                BEAST_EXPECT(bobBal == 0);
                 BEAST_EXPECT(mptAlice.checkMPTokenOutstandingAmount(bobBal + carolBal));
             }
 
