@@ -63,6 +63,7 @@ ValidVault::Vault::make(SLE const& from)
     self.assetsAvailable = from.at(sfAssetsAvailable);
     self.assetsMaximum = from.at(sfAssetsMaximum);
     self.lossUnrealized = from.at(sfLossUnrealized);
+    self.assetsReserved = from.at(sfAssetsReserved);
     self.vaultKind = from[~sfVaultKind];
     self.subscriptionDate = from[~sfSubscriptionDate];
     self.redemptionDate = from[~sfRedemptionDate];
@@ -309,7 +310,7 @@ ValidVault::deltaShares(AccountID const& id) const
 bool
 ValidVault::isVaultEmpty(Vault const& vault)
 {
-    return vault.assetsAvailable == 0 && vault.assetsTotal == 0;
+    return vault.assetsAvailable == 0 && vault.assetsTotal == 0 && vault.assetsReserved == 0;
 }
 
 bool
@@ -435,8 +436,17 @@ ValidVault::finalize(
 
         return true;  // Not a vault operation
     }
+
+    // LoanDelete gained MayModifyVault with the two-step flow, where deleting a
+    // pending loan releases the reserved principal back to the vault. Before
+    // featureLendingProtocolV1_2 it must not modify a vault.
+    bool const isLoanDelete = tx.getTxnType() == ttLOAN_DELETE;
+    bool const lendingV12Enabled = view.rules().enabled(featureLendingProtocolV1_2);
+    bool const allowLoanDeleteModify = !isLoanDelete || lendingV12Enabled;
+
     if (!(hasPrivilege(tx, Privilege::MustModifyVault) ||
-          hasPrivilege(tx, Privilege::MayModifyVault)))
+          hasPrivilege(tx, Privilege::MayModifyVault)) ||
+        !allowLoanDeleteModify)
     {
         JLOG(j.fatal()) <<  //
             "Invariant failed: vault updated by a wrong transaction type";
@@ -646,6 +656,19 @@ ValidVault::finalize(
     if (afterVault.assetsMaximum < kZero)
     {
         JLOG(j.fatal()) << "Invariant failed: assets maximum must not be negative";
+        result = false;
+    }
+
+    if (afterVault.assetsReserved < kZero)
+    {
+        JLOG(j.fatal()) << "Invariant failed: assets reserved must be positive or zero";
+        result = false;
+    }
+
+    if (afterVault.assetsAvailable + afterVault.assetsReserved > afterVault.assetsTotal)
+    {
+        JLOG(j.fatal()) << "Invariant failed: sum of assets available and "
+                           "reserved must not be greater than assets outstanding";
         result = false;
     }
 
@@ -1342,6 +1365,8 @@ ValidVault::finalize(
                 return finalizeLoanSet(view, j);
             case ttLOAN_MANAGE:
             case ttLOAN_PAY:
+            case ttLOAN_ACCEPT:
+            case ttLOAN_DELETE:
                 return true;
 
             default:

@@ -1162,7 +1162,6 @@ NoModifiedUnmodifiableFields::finalize(
                 break;
             case ltLOAN:
                 bad = bad || kFieldChanged(before, after, sfSequence) ||
-                    kFieldChanged(before, after, sfOwnerNode) ||
                     kFieldChanged(before, after, sfLoanBrokerNode) ||
                     kFieldChanged(before, after, sfLoanBrokerID) ||
                     kFieldChanged(before, after, sfBorrower) ||
@@ -1205,6 +1204,27 @@ NoModifiedUnmodifiableFields::finalize(
                                         << tx.getTransactionID();
                     }
                     bad = bad || defaultCleared;
+                }
+
+                {
+                    // V1.2 introduces the two-step flow: a pending loan is created without
+                    // sfOwnerNode and LoanAccept adds it when the borrower accepts. That is
+                    // the only transition LoanAccept may make to the field: it must be absent
+                    // before and present after. Any other tx modifying sfOwnerNode is a bug.
+                    auto const lendingV12Enabled = view.rules().enabled(featureLendingProtocolV1_2);
+                    auto ownerNodeChangeExempted = tx.getTxnType() == ttLOAN_ACCEPT &&
+                        !before->isFieldPresent(sfOwnerNode) &&
+                        after->isFieldPresent(sfOwnerNode) && lendingV12Enabled;
+                    if (!ownerNodeChangeExempted)
+                    {
+                        if (auto const ownerNodeChanged = kFieldChanged(before, after, sfOwnerNode))
+                        {
+                            JLOG(j.fatal()) << "Invariant failed: sfOwnerNode must be added, "
+                                               "and only added, by LoanAccept in "
+                                            << tx.getTransactionID();
+                            bad = bad || ownerNodeChanged;
+                        }
+                    }
                 }
                 break;
             case ltVAULT:

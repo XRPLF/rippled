@@ -70,6 +70,7 @@ public:
         ttLOAN_BROKER_COVER_WITHDRAW,
         ttLOAN_BROKER_COVER_CLAWBACK,
         ttLOAN_SET,
+        ttLOAN_ACCEPT,
         ttLOAN_DELETE,
         ttLOAN_MANAGE,
         ttLOAN_PAY,

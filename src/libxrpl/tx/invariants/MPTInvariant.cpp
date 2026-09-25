@@ -303,13 +303,19 @@ ValidMPTIssuance::finalize(
             else
             {
                 // Cap on MPToken creates and deletes while featureLendingProtocol is enabled.
-                // - LoanSet: at most two creates and no deletes.
+                // - LoanSet / LoanAccept: at most two creates and no deletes. Both
+                //   disburse a loan, which may have to create a holding for the
+                //   borrower and another for the broker owner (origination fee).
                 // - VaultWithdraw: at most one create and one delete.
                 // - Other MayAuthorizeMpt types: created + deleted <= 1.
                 // - MustAuthorizeMpt still requires exactly one create or delete below.
                 auto const mptokensExceedAuthorizeCap = [&] {
                     if (!lendingProtocolEnabled)
                         return false;
+                    // ttLOAN_ACCEPT is gated on featureLendingProtocolV1_2, so it needs
+                    // no further amendment gate of its own.
+                    if (txnType == ttLOAN_ACCEPT)
+                        return mptokensDeleted_ != 0 || mptokensCreated_ > 2;
                     if (rules.enabled(fixCleanup3_4_0))
                     {
                         if (txnType == ttLOAN_SET)
