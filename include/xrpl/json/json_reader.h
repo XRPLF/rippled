@@ -1,20 +1,23 @@
 #pragma once
 
 #include <xrpl/json/json_forwards.h>
+#include <xrpl/json/json_parser.h>
 #include <xrpl/json/json_value.h>
 
-#include <boost/asio/buffer.hpp>
-
-#include <deque>
+#include <cstddef>
+#include <expected>
 #include <istream>
 #include <stack>
 #include <string>
+#include <string_view>
 
 namespace json {
 
 /**
+ * clang-format off
  * @brief Unserialize a <a HREF="http://www.json.org">JSON</a> document into a
  * Value.
+ * clang-format on
  */
 class Reader
 {
@@ -26,53 +29,82 @@ public:
      * @brief Constructs a Reader allowing all features
      * for parsing.
      */
-    Reader() = default;
+    Reader();
 
     /**
+     * @brief Readers are movable but not copyable: parser_ reports into
+     * builder_, so a compiler-generated copy would write into the original's
+     * builder. The move operations rebind it.
+     */
+    Reader(Reader const&) = delete;
+    Reader&
+    operator=(Reader const&) = delete;
+    Reader(Reader&& other) noexcept;
+    Reader&
+    operator=(Reader&& other) noexcept;
+
+    /**
+     * clang-format off
      * @brief Read a Value from a <a HREF="http://www.json.org">JSON</a>
-     * document. @param document UTF-8 encoded string containing the document to
-     * read. @param root [out] Contains the root value of the document if it was
-     *             successfully parsed.
+     * document.
+     * @param document UTF-8 encoded string containing the document to
+     * read.
+     * @param root [out] Contains the root value of the document if it was
+     * successfully parsed.
      * @return @c true if the document was successfully parsed, @c false if an
      * error occurred.
+     * clang-format on
      */
     bool
     parse(std::string const& document, Value& root);
 
     /**
+     * clang-format off
      * @brief Read a Value from a <a HREF="http://www.json.org">JSON</a>
-     * document. @param document UTF-8 encoded string containing the document to
-     * read. @param root [out] Contains the root value of the document if it was
-     *             successfully parsed.
+     * document.
+     * @param document UTF-8 encoded string containing the document to
+     * read.
+     * @param root [out] Contains the root value of the document if it was
+     * successfully parsed.
      * @return @c true if the document was successfully parsed, @c false if an
      * error occurred.
+     * clang-format on
      */
     bool
     parse(char const* beginDoc, char const* endDoc, Value& root);
 
     /**
+     * clang-format off
      * @brief Parse from input stream.
      * @see json::operator>>(std::istream&, json::Value&).
+     * clang-format on
      */
     bool
     parse(std::istream& is, Value& root);
 
     /**
+     * clang-format off
      * @brief Read a Value from a <a HREF="http://www.json.org">JSON</a> buffer
-     * sequence. @param root [out] Contains the root value of the document if it
-     * was successfully parsed. @param UTF-8 encoded buffer sequence. @return @c
-     * true if the buffer was successfully parsed, @c false if an error
+     * sequence.
+     * @param root [out] Contains the root value of the document if it
+     * was successfully parsed.
+     * @param UTF-8 encoded buffer sequence.
+     * @return @c true if the buffer was successfully parsed, @c false if an error
      * occurred.
+     * clang-format on
      */
     template <class BufferSequence>
     bool
     parse(Value& root, BufferSequence const& bs);
 
     /**
+     * clang-format off
      * @brief Returns a user friendly string that list errors in the parsed
-     * document. @return Formatted error message with the list of errors with
+     * document.
+     * @return Formatted error message with the list of errors with
      * their location in the parsed document. An empty string is returned if no
      * error occurred during parsing.
+     * clang-format on
      */
     [[nodiscard]] std::string
     getFormattedErrorMessages() const;
@@ -80,129 +112,80 @@ public:
     static constexpr unsigned kNestLimit{25};
 
 private:
-    enum class TokenType {
-        EndOfStream = 0,
-        ObjectBegin,
-        ObjectEnd,
-        ArrayBegin,
-        ArrayEnd,
-        String,
-        Integer,
-        Double,
-        True,
-        False,
-        Null,
-        ArraySeparator,
-        MemberSeparator,
-        Comment,
-        Error
-    };
-
-    class Token
+    /**
+     * clang-format off
+     * @brief A json::Parser visitor that builds a Value tree.
+     *
+     * Members are placed into a std::map, so the resulting tree iterates in
+     * sorted key order regardless of the order they appeared in the document.
+     * clang-format on
+     */
+    class ValueBuilder
     {
     public:
-        explicit Token() = default;
+        using ReturnType = std::expected<void, std::string>;
 
-        TokenType type;
-        Location start;
-        Location end;
+        /**
+         * Point the builder at the Value the next parse should populate.
+         */
+        void
+        target(Value& root);
+
+        ReturnType
+        onDocumentBegin();
+        ReturnType
+        onDocumentEnd(std::size_t documentSize);
+        ReturnType
+        onObjectBegin();
+        ReturnType
+        onObjectEnd(std::size_t memberCount);
+        ReturnType
+        onArrayBegin();
+        ReturnType
+        onArrayEnd(std::size_t elementCount);
+        ReturnType
+        onKey(std::string_view key);
+        ReturnType
+        onString(std::string_view value);
+        ReturnType
+        onInt(Value::Int value);
+        ReturnType
+        onUInt(Value::UInt value);
+        ReturnType
+        onDouble(double value);
+        ReturnType
+        onBool(bool value);
+        ReturnType
+        onNull();
+
+    private:
+        /**
+         * @brief Returns the slot the next value belongs in, creating it if
+         * need be: the root, the member named by the pending key, or one past
+         * the end of the enclosing array.
+         */
+        Value&
+        place();
+
+        Value* root_{nullptr};
+        std::stack<Value*> nodes_;
+        std::string pendingKey_;
     };
 
-    class ErrorInfo
-    {
-    public:
-        explicit ErrorInfo() = default;
-
-        Token token{};
-        std::string message;
-        Location extra{};
-    };
-
-    using Errors = std::deque<ErrorInfo>;
-
-    bool
-    expectToken(TokenType type, Token& token, char const* message);
-    bool
-    readToken(Token& token);
-    void
-    skipSpaces();
-    bool
-    match(Location pattern, int patternLength);
-    bool
-    readComment();
-    bool
-    readCStyleComment();
-    bool
-    readCppStyleComment();
-    bool
-    readString();
-    Reader::TokenType
-    readNumber();
-    bool
-    readValue(unsigned depth);
-    bool
-    readObject(Token& token, unsigned depth);
-    bool
-    readArray(Token& token, unsigned depth);
-    bool
-    decodeNumber(Token& token);
-    bool
-    decodeString(Token& token);
-    bool
-    decodeString(Token& token, std::string& decoded);
-    bool
-    decodeDouble(Token& token);
-    bool
-    decodeUnicodeCodePoint(Token& token, Location& current, Location end, unsigned int& unicode);
-    bool
-    decodeUnicodeEscapeSequence(
-        Token& token,
-        Location& current,
-        Location end,
-        unsigned int& unicode);
-    bool
-    addError(std::string const& message, Token& token, Location extra = nullptr);
-    bool
-    recoverFromError(TokenType skipUntilToken);
-    bool
-    addErrorAndRecover(std::string const& message, Token& token, TokenType skipUntilToken);
-    void
-    skipUntilSpace();
-    Value&
-    currentValue();
-    Char
-    getNextChar();
-    void
-    getLocationLineAndColumn(Location location, int& line, int& column) const;
-    std::string
-    getLocationLineAndColumn(Location location) const;
-    void
-    skipCommentTokens(Token& token);
-
-    using Nodes = std::stack<Value*>;
-    Nodes nodes_;
-    Errors errors_;
-    std::string document_;
-    Location begin_{};
-    Location end_{};
-    Location current_{};
-    Location lastValueEnd_{};
-    Value* lastValue_{};
+    ValueBuilder builder_;
+    Parser<ValueBuilder> parser_{builder_};
 };
 
 template <class BufferSequence>
 bool
 Reader::parse(Value& root, BufferSequence const& bs)
 {
-    using namespace boost::asio;
-    std::string s;
-    s.reserve(buffer_size(bs));
-    for (auto const& b : bs)
-        s.append(static_cast<char const*>(b.data()), buffer_size(b));
-    return parse(s, root);
+    builder_.target(root);
+    return parser_.parse(bs);
 }
 
 /**
+ * clang-format off
  * @brief Read from 'sin' into 'root'.
  *
  * Always keep comments from the input JSON.
@@ -226,6 +209,7 @@ Reader::parse(Value& root, BufferSequence const& bs)
  * @endverbatim
  * @throws std::exception on parse error.
  * @see json::operator<<()
+ * clang-format on
  */
 std::istream&
 operator>>(std::istream&, Value&);
