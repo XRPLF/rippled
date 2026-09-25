@@ -855,6 +855,10 @@ fn a_write_may_deliver_what_is_left_of_the_budget_and_not_a_byte_more() {
 /// guest memory, so there are no copied bytes to charge. What bounds how many reads
 /// a run can make is gas, which every host call pays before its body runs.
 ///
+/// `set_data` is the one input that *is* charged - see
+/// [`set_data_spends_the_transfer_budget`] - because its bytes are copied out of
+/// guest memory into the ledger rather than borrowed for the length of the call.
+///
 /// The observation is the write at the end, not the reads: the module reads four
 /// times the whole budget first, so a rule that charged reads would have nothing
 /// left, and the write would answer `OutOfTransferLimit` instead of a byte count.
@@ -939,6 +943,76 @@ fn only_the_output_half_of_a_read_write_spends_the_budget() {
     assert_eq!(
         outcome.result, HASH_LEN as i32,
         "only the digests are charged, and they fit"
+    );
+}
+
+/// `set_data` is the exception to the rule above: an input-only call that is charged
+/// all the same, because its bytes are copied into the ledger object rather than
+/// aliasing guest memory the way a `trace` or a `sha512_half` input does.
+///
+/// The count is the assertion worth reading. `write_into` asks the host first and
+/// charges after, so [`writes_spend_the_transfer_budget`] sees one call past the
+/// budget; here the charge precedes the call, so the refused one never arrives.
+#[test]
+fn set_data_spends_the_transfer_budget() {
+    /// 1 KiB blobs, exactly the whole budget.
+    const CALLS: u64 = TRANSFER_LIMIT_BYTES / MAX_FIELD_BYTES as u64;
+
+    let host = FakeHost::new().answering_update_data(Ok(MAX_FIELD_BYTES as i32));
+    let wat = until_refused(
+        import::SET_DATA,
+        &format!("(call $set_data (i32.const 0) (i32.const {MAX_FIELD_BYTES}))"),
+        WHILE_POSITIVE,
+    );
+
+    let outcome = run(&wat, &host).expect("the module should run");
+    assert_eq!(outcome.result, code(HostError::OutOfTransferLimit));
+    assert_eq!(
+        host.update_data_asked.borrow().len() as u64,
+        CALLS,
+        "the refused call must not reach the host at all"
+    );
+}
+
+/// What charging first costs: a call the host refuses has spent its bytes anyway.
+///
+/// That is the deliberate half of the trade. `set_data` mutates the ledger and the
+/// engine cannot undo it, so a charge applied afterwards could fail with the data
+/// already stored - answering `OutOfTransferLimit` for a call that happened. An
+/// overcharge on a refused call is the lesser fault, and gas behaves the same way:
+/// a failed host call keeps the gas it was charged before its body ran.
+///
+/// The budget is read back through a `home_le_field` write, since the refusals
+/// themselves report the host's error rather than the budget's.
+#[test]
+fn a_failed_set_data_still_spends_the_budget() {
+    const CALLS: u64 = TRANSFER_LIMIT_BYTES / MAX_FIELD_BYTES as u64;
+
+    let host = FakeHost::new()
+        .answering_update_data(Err(HostError::InvalidParams))
+        .answering_field(1, Answer::filler(MAX_FIELD_BYTES));
+    let wat = module(
+        &[import::SET_DATA, import::HOME_LE_FIELD, ONE_PAGE],
+        &format!(
+            "(local $i i32)
+             (loop $l
+               (drop (call $set_data (i32.const 0) (i32.const {MAX_FIELD_BYTES})))
+               (local.set $i (i32.add (local.get $i) (i32.const 1)))
+               (br_if $l (i32.lt_u (local.get $i) (i32.const {CALLS}))))
+             (call $home_le_field (i32.const 1) (i32.const 0) (i32.const {MAX_FIELD_BYTES}))"
+        ),
+    );
+
+    let outcome = run(&wat, &host).expect("the module should run");
+    assert_eq!(
+        host.update_data_asked.borrow().len() as u64,
+        CALLS,
+        "every call should have reached the host and been refused by it"
+    );
+    assert_eq!(
+        outcome.result,
+        code(HostError::OutOfTransferLimit),
+        "the refused calls spent the budget all the same"
     );
 }
 
