@@ -29,6 +29,7 @@
 #pragma once
 
 #include <condition_variable>
+#include <cstddef>
 #include <mutex>
 
 namespace xrpl {
@@ -44,14 +45,17 @@ private:
 public:
     using size_type = std::size_t;
 
-    /** Create the semaphore, with an optional initial count.
-        If unspecified, the initial count is zero.
-    */
+    /**
+     * Create the semaphore, with an optional initial count.
+     * If unspecified, the initial count is zero.
+     */
     explicit BasicSemaphore(size_type count = 0) : count_(count)
     {
     }
 
-    /** Increment the count and unblock one waiting thread. */
+    /**
+     * Increment the count and unblock one waiting thread.
+     */
     void
     notify()
     {
@@ -60,7 +64,9 @@ public:
         cond_.notify_one();
     }
 
-    /** Block until notify is called. */
+    /**
+     * Block until notify is called.
+     */
     void
     wait()
     {
@@ -70,9 +76,10 @@ public:
         --count_;
     }
 
-    /** Perform a non-blocking wait.
-        @return `true` If the wait would be satisfied.
-    */
+    /**
+     * Perform a non-blocking wait.
+     * @return `true` If the wait would be satisfied.
+     */
     bool
     tryWait()
     {

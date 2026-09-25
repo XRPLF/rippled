@@ -6,17 +6,22 @@
 
 #include <xrpl/beast/unit_test/detail/const_container.h>
 
+#include <cstddef>
 #include <string>
 #include <utility>
 #include <vector>
 
 namespace beast::unit_test {
 
-/** Holds a set of test condition outcomes in a testcase. */
+/**
+ * Holds a set of test condition outcomes in a testcase.
+ */
 class CaseResults
 {
 public:
-    /** Holds the result of evaluating one test condition. */
+    /**
+     * Holds the result of evaluating one test condition.
+     */
     struct Test
     {
         explicit Test(bool pass) : pass(pass)
@@ -40,28 +45,36 @@ private:
     public:
         TestsT() = default;
 
-        /** Returns the total number of test conditions. */
+        /**
+         * Returns the total number of test conditions.
+         */
         [[nodiscard]] std::size_t
         total() const
         {
             return cont().size();
         }
 
-        /** Returns the number of failed test conditions. */
+        /**
+         * Returns the number of failed test conditions.
+         */
         [[nodiscard]] std::size_t
         failed() const
         {
             return failed_;
         }
 
-        /** Register a successful test condition. */
+        /**
+         * Register a successful test condition.
+         */
         void
         pass()
         {
             cont().emplace_back(true);
         }
 
-        /** Register a failed test condition. */
+        /**
+         * Register a failed test condition.
+         */
         void
         fail(std::string const& reason = "")
         {
@@ -73,7 +86,9 @@ private:
     class LogT : public detail::ConstContainer<std::vector<std::string>>
     {
     public:
-        /** Insert a string into the log. */
+        /**
+         * Insert a string into the log.
+         */
         void
         insert(std::string const& s)
         {
@@ -88,23 +103,31 @@ public:
     {
     }
 
-    /** Returns the name of this testcase. */
+    /**
+     * Returns the name of this testcase.
+     */
     [[nodiscard]] std::string const&
     name() const
     {
         return name_;
     }
 
-    /** Memberspace for a container of test condition outcomes. */
+    /**
+     * Memberspace for a container of test condition outcomes.
+     */
     TestsT tests;
 
-    /** Memberspace for a container of testcase log messages. */
+    /**
+     * Memberspace for a container of testcase log messages.
+     */
     LogT log;
 };
 
 //--------------------------------------------------------------------------
 
-/** Holds the set of testcase results in a suite. */
+/**
+ * Holds the set of testcase results in a suite.
+ */
 class SuiteResults : public detail::ConstContainer<std::vector<CaseResults>>
 {
 private:
@@ -117,28 +140,36 @@ public:
     {
     }
 
-    /** Returns the name of this suite. */
+    /**
+     * Returns the name of this suite.
+     */
     [[nodiscard]] std::string const&
     name() const
     {
         return name_;
     }
 
-    /** Returns the total number of test conditions. */
+    /**
+     * Returns the total number of test conditions.
+     */
     [[nodiscard]] std::size_t
     total() const
     {
         return total_;
     }
 
-    /** Returns the number of failures. */
+    /**
+     * Returns the number of failures.
+     */
     [[nodiscard]] std::size_t
     failed() const
     {
         return failed_;
     }
 
-    /** Insert a set of testcase results. */
+    /**
+     * Insert a set of testcase results.
+     */
     /** @{ */
     void
     insert(CaseResults&& r)
@@ -161,7 +192,9 @@ public:
 //------------------------------------------------------------------------------
 
 // VFALCO TODO Make this a template class using scoped allocators
-/** Holds the results of running a set of testsuites. */
+/**
+ * Holds the results of running a set of testsuites.
+ */
 class Results : public detail::ConstContainer<std::vector<SuiteResults>>
 {
 private:
@@ -172,28 +205,36 @@ private:
 public:
     Results() = default;
 
-    /** Returns the total number of test cases. */
+    /**
+     * Returns the total number of test cases.
+     */
     [[nodiscard]] std::size_t
     cases() const
     {
         return cases_;
     }
 
-    /** Returns the total number of test conditions. */
+    /**
+     * Returns the total number of test conditions.
+     */
     [[nodiscard]] std::size_t
     total() const
     {
         return total_;
     }
 
-    /** Returns the number of failures. */
+    /**
+     * Returns the number of failures.
+     */
     [[nodiscard]] std::size_t
     failed() const
     {
         return failed_;
     }
 
-    /** Insert a set of suite results. */
+    /**
+     * Insert a set of suite results.
+     */
     /** @{ */
     void
     insert(SuiteResults&& r)

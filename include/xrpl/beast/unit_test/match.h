@@ -7,6 +7,7 @@
 #include <xrpl/beast/unit_test/suite_info.h>
 
 #include <string>
+#include <utility>
 
 namespace beast::unit_test {
 
@@ -41,7 +42,7 @@ private:
 
 public:
     template <class = void>
-    explicit Selector(ModeT mode, std::string const& pattern = "");
+    explicit Selector(ModeT mode, std::string pattern = "");
 
     template <class = void>
     bool
@@ -51,9 +52,9 @@ public:
 //------------------------------------------------------------------------------
 
 template <class>
-Selector::Selector(ModeT mode, std::string const& pattern) : mode_(mode), pat_(pattern)
+Selector::Selector(ModeT mode, std::string pattern) : mode_(mode), pat_(std::move(pattern))
 {
-    if (mode_ == ModeT::Automatch && pattern.empty())
+    if (mode_ == ModeT::Automatch && pat_.empty())
         mode_ = ModeT::All;
 }
 
@@ -120,42 +121,48 @@ Selector::operator()(SuiteInfo const& s)
 
 // Utility functions for producing predicates to select suites.
 
-/** Returns a predicate that implements a smart matching rule.
-    The predicate checks the suite, module, and library fields of the
-    SuiteInfo in that order. When it finds a match, it changes modes
-    depending on what was found:
-
-        If a suite is matched first, then only the suite is selected. The
-        suite may be marked manual.
-
-        If a module is matched first, then only suites from that module
-        and library not marked manual are selected from then on.
-
-        If a library is matched first, then only suites from that library
-        not marked manual are selected from then on.
-
-*/
+/**
+ * Returns a predicate that implements a smart matching rule.
+ * The predicate checks the suite, module, and library fields of the
+ * SuiteInfo in that order. When it finds a match, it changes modes
+ * depending on what was found:
+ *
+ *     If a suite is matched first, then only the suite is selected. The
+ *     suite may be marked manual.
+ *
+ *     If a module is matched first, then only suites from that module
+ *     and library not marked manual are selected from then on.
+ *
+ *     If a library is matched first, then only suites from that library
+ *     not marked manual are selected from then on.
+ */
 inline Selector
 matchAuto(std::string const& name)
 {
     return Selector(Selector::ModeT::Automatch, name);
 }
 
-/** Return a predicate that matches all suites not marked manual. */
+/**
+ * Return a predicate that matches all suites not marked manual.
+ */
 inline Selector
 matchAll()
 {
     return Selector(Selector::ModeT::All);
 }
 
-/** Returns a predicate that matches a specific suite. */
+/**
+ * Returns a predicate that matches a specific suite.
+ */
 inline Selector
 matchSuite(std::string const& name)
 {
     return Selector(Selector::ModeT::Suite, name);
 }
 
-/** Returns a predicate that matches all suites in a library. */
+/**
+ * Returns a predicate that matches all suites in a library.
+ */
 inline Selector
 matchLibrary(std::string const& name)
 {

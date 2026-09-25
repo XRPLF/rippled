@@ -1,32 +1,42 @@
 #pragma once
 
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/chrono.h>
 #include <xrpl/beast/hash/uhash.h>
+#include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/ledger/OwnerCounts.h>
 #include <xrpl/ledger/detail/ReadViewFwdRange.h>
+#include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Fees.h>
-#include <xrpl/protocol/IOUAmount.h>
-#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/Issue.h>  // IWYU pragma: keep
+#include <xrpl/protocol/Keylet.h>
 #include <xrpl/protocol/LedgerHeader.h>
+#include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/Rules.h>
+#include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/STTx.h>
 
 #include <cstdint>
+#include <memory>
 #include <optional>
 #include <unordered_set>
+#include <utility>
 
 namespace xrpl {
 
 //------------------------------------------------------------------------------
 
-/** A view into a ledger.
-
-    This interface provides read access to state
-    and transaction items. There is no checkpointing
-    or calculation of metadata.
-*/
+/**
+ * A view into a ledger.
+ *
+ * This interface provides read access to state
+ * and transaction items. There is no checkpointing
+ * or calculation of metadata.
+ */
 class ReadView
 {
 public:
@@ -77,72 +87,87 @@ public:
     {
     }
 
-    /** Returns information about the ledger. */
+    /**
+     * Returns information about the ledger.
+     */
     [[nodiscard]] virtual LedgerHeader const&
     header() const = 0;
 
-    /** Returns true if this reflects an open ledger. */
+    /**
+     * Returns true if this reflects an open ledger.
+     */
     [[nodiscard]] virtual bool
     open() const = 0;
 
-    /** Returns the close time of the previous ledger. */
+    /**
+     * Returns the close time of the previous ledger.
+     */
     [[nodiscard]] NetClock::time_point
     parentCloseTime() const
     {
         return header().parentCloseTime;
     }
 
-    /** Returns the sequence number of the base ledger. */
+    /**
+     * Returns the sequence number of the base ledger.
+     */
     [[nodiscard]] LedgerIndex
     seq() const
     {
         return header().seq;
     }
 
-    /** Returns the fees for the base ledger. */
+    /**
+     * Returns the fees for the base ledger.
+     */
     [[nodiscard]] virtual Fees const&
     fees() const = 0;
 
-    /** Returns the tx processing rules. */
+    /**
+     * Returns the tx processing rules.
+     */
     [[nodiscard]] virtual Rules const&
     rules() const = 0;
 
-    /** Determine if a state item exists.
-
-        @note This can be more efficient than calling read.
-
-        @return `true` if a SLE is associated with the
-                specified key.
-    */
+    /**
+     * Determine if a state item exists.
+     *
+     * @note This can be more efficient than calling read.
+     *
+     * @return `true` if a SLE is associated with the
+     *         specified key.
+     */
     [[nodiscard]] virtual bool
     exists(Keylet const& k) const = 0;
 
-    /** Return the key of the next state item.
-
-        This returns the key of the first state item
-        whose key is greater than the specified key. If
-        no such key is present, std::nullopt is returned.
-
-        If `last` is engaged, returns std::nullopt when
-        the key returned would be outside the open
-        interval (key, last).
-    */
+    /**
+     * Return the key of the next state item.
+     *
+     * This returns the key of the first state item
+     * whose key is greater than the specified key. If
+     * no such key is present, std::nullopt is returned.
+     *
+     * If `last` is engaged, returns std::nullopt when
+     * the key returned would be outside the open
+     * interval (key, last).
+     */
     [[nodiscard]] virtual std::optional<key_type>
     succ(key_type const& key, std::optional<key_type> const& last = std::nullopt) const = 0;
 
-    /** Return the state item associated with a key.
-
-        Effects:
-            If the key exists, gives the caller ownership
-            of the non-modifiable corresponding SLE.
-
-        @note While the returned SLE is `const` from the
-              perspective of the caller, it can be changed
-              by other callers through raw operations.
-
-        @return `nullptr` if the key is not present or
-                if the type does not match.
-    */
+    /**
+     * Return the state item associated with a key.
+     *
+     * Effects:
+     *     If the key exists, gives the caller ownership
+     *     of the non-modifiable corresponding SLE.
+     *
+     * @note While the returned SLE is `const` from the
+     *       perspective of the caller, it can be changed
+     *       by other callers through raw operations.
+     *
+     * @return `nullptr` if the key is not present or
+     *         if the type does not match.
+     */
     [[nodiscard]] virtual SLE::const_pointer
     read(Keylet const& k) const = 0;
 
@@ -182,8 +207,8 @@ public:
     // changes that accounts make during a payment. `ownerCountHook` adjusts the
     // ownerCount so it returns the max value of the ownerCount so far.
     // This is required to support PaymentSandbox.
-    [[nodiscard]] virtual std::uint32_t
-    ownerCountHook(AccountID const& account, std::uint32_t count) const
+    [[nodiscard]] virtual OwnerCounts
+    ownerCountHook(AccountID const& account, OwnerCounts const& count) const
     {
         return count;
     }
@@ -208,22 +233,24 @@ public:
     [[nodiscard]] virtual std::unique_ptr<TxsType::iter_base>
     txsEnd() const = 0;
 
-    /** Returns `true` if a tx exists in the tx map.
-
-        A tx exists in the map if it is part of the
-        base ledger, or if it is a newly inserted tx.
-    */
+    /**
+     * Returns `true` if a tx exists in the tx map.
+     *
+     * A tx exists in the map if it is part of the
+     * base ledger, or if it is a newly inserted tx.
+     */
     [[nodiscard]] virtual bool
     txExists(key_type const& key) const = 0;
 
-    /** Read a transaction from the tx map.
-
-        If the view represents an open ledger,
-        the metadata object will be empty.
-
-        @return A pair of nullptr if the
-                key is not found in the tx map.
-    */
+    /**
+     * Read a transaction from the tx map.
+     *
+     * If the view represents an open ledger,
+     * the metadata object will be empty.
+     *
+     * @return A pair of nullptr if the
+     *         key is not found in the tx map.
+     */
     [[nodiscard]] virtual tx_type
     txRead(key_type const& key) const = 0;
 
@@ -231,11 +258,12 @@ public:
     // Memberspaces
     //
 
-    /** Iterable range of ledger state items.
-
-        @note Visiting each state entry in the ledger can
-              become quite expensive as the ledger grows.
-    */
+    /**
+     * Iterable range of ledger state items.
+     *
+     * @note Visiting each state entry in the ledger can
+     *       become quite expensive as the ledger grows.
+     */
     SlesType sles;
 
     // The range of transactions
@@ -244,7 +272,9 @@ public:
 
 //------------------------------------------------------------------------------
 
-/** ReadView that associates keys with digests. */
+/**
+ * ReadView that associates keys with digests.
+ */
 class DigestAwareReadView : public ReadView
 {
 public:
@@ -253,10 +283,11 @@ public:
     DigestAwareReadView() = default;
     DigestAwareReadView(DigestAwareReadView const&) = default;
 
-    /** Return the digest associated with the key.
-
-        @return std::nullopt if the item does not exist.
-    */
+    /**
+     * Return the digest associated with the key.
+     *
+     * @return std::nullopt if the item does not exist.
+     */
     [[nodiscard]] virtual std::optional<digest_type>
     digest(key_type const& key) const = 0;
 };

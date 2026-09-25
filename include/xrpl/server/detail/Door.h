@@ -2,6 +2,8 @@
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/contract.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/server/Port.h>
 #include <xrpl/server/detail/PlainHTTPPeer.h>
 #include <xrpl/server/detail/SSLHTTPPeer.h>
 #include <xrpl/server/detail/io_list.h>
@@ -19,6 +21,9 @@
 #include <boost/container/flat_map.hpp>
 #include <boost/predef.h>
 
+#include <exception>
+#include <stdexcept>
+
 #if !BOOST_OS_WINDOWS
 #include <sys/resource.h>
 
@@ -28,7 +33,6 @@
 #include <algorithm>
 #include <chrono>
 #include <cstdint>
-#include <functional>
 #include <memory>
 #include <optional>
 #include <sstream>
@@ -36,7 +40,9 @@
 
 namespace xrpl {
 
-/** A listening socket. */
+/**
+ * A listening socket.
+ */
 template <class Handler>
 class Door : public IOList::Work, public std::enable_shared_from_this<Door<Handler>>
 {
@@ -125,12 +131,13 @@ public:
     void
     run();
 
-    /** Close the Door listening socket and connections.
-        The listening socket is closed, and all open connections
-        belonging to the Door are closed.
-        Thread Safety:
-            May be called concurrently
-    */
+    /**
+     * Close the Door listening socket and connections.
+     * The listening socket is closed, and all open connections
+     * belonging to the Door are closed.
+     * Thread Safety:
+     *     May be called concurrently
+     */
     void
     close() override;
 
@@ -177,7 +184,7 @@ void
 Door<Handler>::Detector::run()
 {
     util::spawn(
-        strand_, std::bind(&Detector::doDetect, this->shared_from_this(), std::placeholders::_1));
+        strand_, [self = this->shared_from_this()](yield_context yield) { self->doDetect(yield); });
 }
 
 template <class Handler>
@@ -292,8 +299,7 @@ void
 Door<Handler>::run()
 {
     util::spawn(
-        strand_,
-        std::bind(&Door<Handler>::doAccept, this->shared_from_this(), std::placeholders::_1));
+        strand_, [self = this->shared_from_this()](yield_context yield) { self->doAccept(yield); });
 }
 
 template <class Handler>
@@ -302,8 +308,7 @@ Door<Handler>::close()
 {
     if (!strand_.running_in_this_thread())
     {
-        return boost::asio::post(
-            strand_, std::bind(&Door<Handler>::close, this->shared_from_this()));
+        return boost::asio::post(strand_, [self = this->shared_from_this()] { self->close(); });
     }
     backoffTimer_.cancel();
     error_code ec;

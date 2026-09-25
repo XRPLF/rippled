@@ -1,14 +1,19 @@
 #pragma once
 
-#include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/json/json_value.h>
+#include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/UintTypes.h>
+
+#include <compare>
+#include <ostream>
+#include <string>
 
 namespace xrpl {
 
-/** A currency issued by an account.
-    @see Currency, AccountID, Issue, Book
-*/
+/**
+ * A currency issued by an account.
+ * @see Currency, AccountID, Issue, Book
+ */
 class Issue
 {
 public:
@@ -66,7 +71,9 @@ hash_append(Hasher& h, Issue const& r)
     hash_append(h, r.currency, r.account);
 }
 
-/** Equality comparison. */
+/**
+ * Equality comparison.
+ */
 /** @{ */
 [[nodiscard]] constexpr bool
 operator==(Issue const& lhs, Issue const& rhs)
@@ -75,12 +82,14 @@ operator==(Issue const& lhs, Issue const& rhs)
 }
 /** @} */
 
-/** Strict weak ordering. */
+/**
+ * Strict weak ordering.
+ */
 /** @{ */
 [[nodiscard]] constexpr std::weak_ordering
 operator<=>(Issue const& lhs, Issue const& rhs)
 {
-    if (auto const c{lhs.currency <=> rhs.currency}; c != 0)
+    if (auto const c{lhs.currency <=> rhs.currency}; c != 0)  // NOLINT(modernize-use-nullptr)
         return c;
 
     if (isXRP(lhs.currency))
@@ -92,7 +101,9 @@ operator<=>(Issue const& lhs, Issue const& rhs)
 
 //------------------------------------------------------------------------------
 
-/** Returns an asset specifier that represents XRP. */
+/**
+ * Returns an asset specifier that represents XRP.
+ */
 inline Issue const&
 xrpIssue()
 {
@@ -100,7 +111,9 @@ xrpIssue()
     return kIssue;
 }
 
-/** Returns an asset specifier that represents no account and currency. */
+/**
+ * Returns an asset specifier that represents no account and currency.
+ */
 inline Issue const&
 noIssue()
 {

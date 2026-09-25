@@ -3,6 +3,7 @@
 #include <xrpl/basics/Number.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/beast/utility/Zero.h>
+#include <xrpl/json/json_forwards.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/Units.h>
 
@@ -10,7 +11,11 @@
 #include <boost/operators.hpp>
 
 #include <cstdint>
+#include <istream>
+#include <limits>
 #include <optional>
+#include <ostream>
+#include <stdexcept>
 #include <string>
 #include <type_traits>
 
@@ -133,7 +138,9 @@ public:
         return drops_ < other.drops_;
     }
 
-    /** Returns true if the amount is not zero */
+    /**
+     * Returns true if the amount is not zero
+     */
     explicit constexpr
     operator bool() const noexcept
     {
@@ -145,7 +152,9 @@ public:
         return drops();
     }
 
-    /** Return the sign of the amount */
+    /**
+     * Return the sign of the amount
+     */
     [[nodiscard]] constexpr int
     signum() const noexcept
     {
@@ -154,7 +163,9 @@ public:
         return (drops_ != 0) ? 1 : 0;
     }
 
-    /** Returns the number of drops */
+    /**
+     * Returns the number of drops
+     */
     [[nodiscard]] constexpr value_type
     drops() const
     {
@@ -212,10 +223,11 @@ public:
         return static_cast<json::Int>(drops_);
     }
 
-    /** Returns the underlying value. Code SHOULD NOT call this
-        function unless the type has been abstracted away,
-        e.g. in a templated function.
-    */
+    /**
+     * Returns the underlying value. Code SHOULD NOT call this
+     * function unless the type has been abstracted away,
+     * e.g. in a templated function.
+     */
     [[nodiscard]] constexpr value_type
     value() const
     {
@@ -236,7 +248,9 @@ public:
     }
 };
 
-/** Number of drops per 1 XRP */
+/**
+ * Number of drops per 1 XRP
+ */
 constexpr XRPAmount kDropsPerXrp{1'000'000};
 
 constexpr double

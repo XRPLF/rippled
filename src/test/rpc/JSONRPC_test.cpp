@@ -12,12 +12,12 @@
 #include <test/jtx/trust.h>
 
 #include <xrpld/app/misc/TxQ.h>
-#include <xrpld/core/ConfigSections.h>
 #include <xrpld/rpc/Role.h>
 #include <xrpld/rpc/detail/TransactionSign.h>
 
 #include <xrpl/basics/contract.h>
 #include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/config/Constants.h>
 #include <xrpl/json/json_reader.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/json/to_string.h>
@@ -36,7 +36,7 @@
 #include <stdexcept>
 #include <tuple>
 
-namespace xrpl::RPC {
+namespace xrpl::rpc {
 
 struct TxnTestData
 {
@@ -2238,7 +2238,7 @@ public:
 
         {
             json::Value req;
-            json::Reader().parse("{ \"fee_mult_max\" : 1, \"tx_json\" : { } } ", req);
+            json::Reader().parse(R"({ "fee_mult_max" : 1, "tx_json" : { } } )", req);
             json::Value const result = checkFee(
                 req,
                 Role::ADMIN,
@@ -2248,7 +2248,7 @@ public:
                 env.app().getTxQ(),
                 env.app());
 
-            BEAST_EXPECT(!RPC::containsError(result));
+            BEAST_EXPECT(!rpc::containsError(result));
             BEAST_EXPECT(
                 req[jss::tx_json].isMember(jss::Fee) && req[jss::tx_json][jss::Fee] == baseFee);
         }
@@ -2268,14 +2268,14 @@ public:
                 env.app().getTxQ(),
                 env.app());
 
-            BEAST_EXPECT(!RPC::containsError(result));
+            BEAST_EXPECT(!rpc::containsError(result));
             BEAST_EXPECT(
                 req[jss::tx_json].isMember(jss::Fee) && req[jss::tx_json][jss::Fee] == baseFee);
         }
 
         {
             json::Value req;
-            json::Reader().parse("{ \"fee_mult_max\" : 0, \"tx_json\" : { } } ", req);
+            json::Reader().parse(R"({ "fee_mult_max" : 0, "tx_json" : { } } )", req);
             json::Value const result = checkFee(
                 req,
                 Role::ADMIN,
@@ -2285,7 +2285,7 @@ public:
                 env.app().getTxQ(),
                 env.app());
 
-            BEAST_EXPECT(RPC::containsError(result));
+            BEAST_EXPECT(rpc::containsError(result));
             BEAST_EXPECT(!req[jss::tx_json].isMember(jss::Fee));
         }
 
@@ -2306,7 +2306,7 @@ public:
                 env.app().getTxQ(),
                 env.app());
 
-            BEAST_EXPECT(RPC::containsError(result));
+            BEAST_EXPECT(rpc::containsError(result));
             BEAST_EXPECT(!req[jss::tx_json].isMember(jss::Fee));
         }
 
@@ -2325,7 +2325,7 @@ public:
                 env.app().getTxQ(),
                 env.app());
 
-            BEAST_EXPECT(RPC::containsError(result));
+            BEAST_EXPECT(rpc::containsError(result));
             BEAST_EXPECT(!req[jss::tx_json].isMember(jss::Fee));
         }
 
@@ -2344,7 +2344,7 @@ public:
                 env.app().getTxQ(),
                 env.app());
 
-            BEAST_EXPECT(RPC::containsError(result));
+            BEAST_EXPECT(rpc::containsError(result));
             BEAST_EXPECT(!req[jss::tx_json].isMember(jss::Fee));
         }
 
@@ -2375,8 +2375,9 @@ public:
         testcase("autofill escalated fees");
         using namespace test::jtx;
         Env env{*this, envconfig([](std::unique_ptr<Config> cfg) {
-                    cfg->loadFromString("[" SECTION_SIGNING_SUPPORT "]\ntrue");
-                    cfg->section("transaction_queue").set("minimum_txn_in_ledger_standalone", "3");
+                    cfg->loadFromString(std::string("[") + Sections::kSigningSupport + "]\ntrue");
+                    cfg->section(Sections::kTransactionQueue)
+                        .set(Keys::kMinimumTxnInLedgerStandalone, "3");
                     return cfg;
                 })};
         LoadFeeTrack const& feeTrackOuter = env.app().getFeeTrack();
@@ -2399,7 +2400,7 @@ public:
                 env.app().getTxQ(),
                 env.app());
 
-            BEAST_EXPECT(!RPC::containsError(result));
+            BEAST_EXPECT(!rpc::containsError(result));
             BEAST_EXPECT(req[jss::tx_json].isMember(jss::Fee) && req[jss::tx_json][jss::Fee] == 10);
         }
 
@@ -2421,7 +2422,7 @@ public:
                 env.app().getTxQ(),
                 env.app());
 
-            BEAST_EXPECT(!RPC::containsError(result));
+            BEAST_EXPECT(!rpc::containsError(result));
             BEAST_EXPECT(req[jss::tx_json].isMember(jss::Fee) && req[jss::tx_json][jss::Fee] == 10);
         }
 
@@ -2449,7 +2450,7 @@ public:
                 env.app().getTxQ(),
                 env.app());
 
-            BEAST_EXPECT(!RPC::containsError(result));
+            BEAST_EXPECT(!rpc::containsError(result));
             BEAST_EXPECT(
                 req[jss::tx_json].isMember(jss::Fee) && req[jss::tx_json][jss::Fee] == 8889);
         }
@@ -2472,7 +2473,7 @@ public:
                 env.app().getTxQ(),
                 env.app());
 
-            BEAST_EXPECT(RPC::containsError(result));
+            BEAST_EXPECT(rpc::containsError(result));
             BEAST_EXPECT(!req[jss::tx_json].isMember(jss::Fee));
         }
 
@@ -2495,7 +2496,7 @@ public:
                 env.app().getTxQ(),
                 env.app());
 
-            BEAST_EXPECT(RPC::containsError(result));
+            BEAST_EXPECT(rpc::containsError(result));
             BEAST_EXPECT(!req[jss::tx_json].isMember(jss::Fee));
         }
 
@@ -2518,7 +2519,7 @@ public:
                 env.app().getTxQ(),
                 env.app());
 
-            BEAST_EXPECT(!RPC::containsError(result));
+            BEAST_EXPECT(!rpc::containsError(result));
             BEAST_EXPECT(
                 req[jss::tx_json].isMember(jss::Fee) && req[jss::tx_json][jss::Fee] == 8889);
         }
@@ -2541,7 +2542,7 @@ public:
                 env.app().getTxQ(),
                 env.app());
 
-            BEAST_EXPECT(RPC::containsError(result));
+            BEAST_EXPECT(rpc::containsError(result));
         }
 
         {
@@ -2562,7 +2563,7 @@ public:
                 env.app().getTxQ(),
                 env.app());
 
-            BEAST_EXPECT(RPC::containsError(result));
+            BEAST_EXPECT(rpc::containsError(result));
         }
 
         {
@@ -2584,7 +2585,7 @@ public:
                 env.app().getTxQ(),
                 env.app());
 
-            BEAST_EXPECT(RPC::containsError(result));
+            BEAST_EXPECT(rpc::containsError(result));
         }
 
         env.close();
@@ -2597,7 +2598,7 @@ public:
             auto rpcResult = env.rpc("json", "sign", to_string(toSign));
             auto result = rpcResult[jss::result];
 
-            BEAST_EXPECT(!RPC::containsError(result));
+            BEAST_EXPECT(!rpc::containsError(result));
             BEAST_EXPECT(
                 result[jss::tx_json].isMember(jss::Fee) && result[jss::tx_json][jss::Fee] == "10");
             BEAST_EXPECT(
@@ -2623,7 +2624,7 @@ public:
             auto rpcResult = env.rpc("json", "sign", to_string(toSign));
             auto result = rpcResult[jss::result];
 
-            BEAST_EXPECT(!RPC::containsError(result));
+            BEAST_EXPECT(!rpc::containsError(result));
             BEAST_EXPECT(
                 result[jss::tx_json].isMember(jss::Fee) &&
                 result[jss::tx_json][jss::Fee] == "7813");
@@ -2650,7 +2651,7 @@ public:
             auto rpcResult = env.rpc("json", "sign", to_string(toSign));
             auto result = rpcResult[jss::result];
 
-            BEAST_EXPECT(!RPC::containsError(result));
+            BEAST_EXPECT(!rpc::containsError(result));
             BEAST_EXPECT(
                 result[jss::tx_json].isMember(jss::Fee) && result[jss::tx_json][jss::Fee] == "47");
             BEAST_EXPECT(
@@ -2681,7 +2682,7 @@ public:
             auto rpcResult = env.rpc("json", "sign", to_string(toSign));
             auto result = rpcResult[jss::result];
 
-            BEAST_EXPECT(!RPC::containsError(result));
+            BEAST_EXPECT(!rpc::containsError(result));
             BEAST_EXPECT(
                 result[jss::tx_json].isMember(jss::Fee) &&
                 result[jss::tx_json][jss::Fee] == "6806");
@@ -2710,7 +2711,7 @@ public:
             auto rpcResult = env.rpc("json", "sign", to_string(toSign));
             auto result = rpcResult[jss::result];
 
-            BEAST_EXPECT(!RPC::containsError(result));
+            BEAST_EXPECT(!rpc::containsError(result));
             BEAST_EXPECT(
                 result[jss::tx_json].isMember(jss::NetworkID) &&
                 result[jss::tx_json][jss::NetworkID] == 1025);
@@ -2790,7 +2791,7 @@ public:
             {
                 json::Value req;
                 json::Reader().parse(txnTest.json, req);
-                if (RPC::containsError(req))
+                if (rpc::containsError(req))
                     Throw<std::runtime_error>("Internal JSONRPC_test error.  Bad test JSON.");
 
                 static Role const kTestedRoles[] = {
@@ -2814,7 +2815,7 @@ public:
                     }
 
                     std::string errStr;
-                    if (RPC::containsError(result))
+                    if (rpc::containsError(result))
                         errStr = result["error_message"].asString();
 
                     if (errStr == txnTest.expMsg[get<3>(testFunc)])
@@ -2847,4 +2848,4 @@ public:
 
 BEAST_DEFINE_TESTSUITE(JSONRPC, rpc, xrpl);
 
-}  // namespace xrpl::RPC
+}  // namespace xrpl::rpc

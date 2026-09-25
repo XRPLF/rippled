@@ -30,10 +30,11 @@ on:
       - ".github/scripts/strategy-matrix/**"
       - conanfile.py
       - conan.lock
+      - conan/profiles/**
 
 env:
   CONAN_REMOTE_NAME: xrplf
-  CONAN_REMOTE_URL: https://conan.ripplex.io
+  CONAN_REMOTE_URL: https://conan.xrplf.org/repository/conan/
   NPROC_SUBTRACT: 2
 
 concurrency:
@@ -64,12 +65,17 @@ jobs:
         uses: XRPLF/actions/cleanup-workspace@c7d9ce5ebb03c752a354889ecd870cadfc2b1cd4
 
       - name: Checkout repository
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Prepare runner
-        uses: XRPLF/actions/prepare-runner@90f11ee655d1687824fb8793db770477d52afbab
+        uses: XRPLF/actions/prepare-runner@b3e255d74d785d053e4903da8ac90983cd7d9e82
         with:
           enable_ccache: false
+
+      # Before any step that uses a build tool, composite actions included.
+      - name: Setup Nix environment
+        if: ${{ matrix.toolchain == 'nix' }}
+        uses: ./.github/actions/setup-nix-env
 
       - name: Print build environment
         uses: XRPLF/actions/print-build-env@59dec886e4afb05a1724443af08baccbc045b574
@@ -86,7 +92,9 @@ jobs:
         with:
           compiler: ${{ matrix.compiler }}
 
+      # `setup-nix-env` already did this for the Nix toolchain.
       - name: Setup Conan
+        if: ${{ matrix.toolchain != 'nix' }}
         env:
           SANITIZERS: ${{ matrix.sanitizers }}
         uses: ./.github/actions/setup-conan
@@ -105,12 +113,18 @@ jobs:
           log_verbosity: ${{ runner.os == 'Windows' && 'quiet' || 'verbose' }}
           sanitizers: ${{ matrix.sanitizers }}
 
+      - name: Check the Conan cache for Nix store references (Nix toolchain)
+        if: ${{ matrix.toolchain == 'nix' }}
+        run: ./bin/check-nix-store-refs.sh "${CONAN_HOME}"
+
       - name: Log into Conan remote
         if: ${{ github.repository == 'XRPLF/rippled' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') }}
-        run: conan remote login "${CONAN_REMOTE_NAME}" "${{ secrets.CONAN_REMOTE_USERNAME }}" --password "${{ secrets.CONAN_REMOTE_PASSWORD }}"
+        run: conan remote login "${CONAN_REMOTE_NAME}" "${{ secrets.NEXUS_REMOTE_USERNAME }}" --password "${{ secrets.NEXUS_REMOTE_PASSWORD }}"
 
       - name: Upload Conan packages
         if: ${{ github.repository == 'XRPLF/rippled' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') }}
         env:
           FORCE_OPTION: ${{ github.event.inputs.force_upload == 'true' && '--force' || '' }}
+          CONAN_LOGIN_USERNAME_XRPLF: ${{ secrets.NEXUS_REMOTE_USERNAME }}
+          CONAN_PASSWORD_XRPLF: ${{ secrets.NEXUS_REMOTE_PASSWORD }}
         run: conan upload "*" --remote="${CONAN_REMOTE_NAME}" --confirm ${FORCE_OPTION}

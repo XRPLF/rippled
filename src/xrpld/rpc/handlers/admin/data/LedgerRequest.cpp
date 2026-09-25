@@ -13,10 +13,10 @@ namespace xrpl {
 //   ledger_index : <ledger_index>
 // }
 json::Value
-doLedgerRequest(RPC::JsonContext& context)
+doLedgerRequest(rpc::JsonContext& context)
 {
-    context.loadType = Resource::kFeeHeavyBurdenRpc;
-    auto res = RPC::getOrAcquireLedger(context);
+    context.loadType = resource::kFeeHeavyBurdenRpc;
+    auto res = rpc::getOrAcquireLedger(context);
 
     if (!res.has_value())
         return res.error();

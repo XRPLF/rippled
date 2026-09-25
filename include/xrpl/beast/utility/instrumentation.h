@@ -11,6 +11,8 @@
 // Macros below are copied from antithesis_sdk.h and slightly simplified
 // The duplication is because Visual Studio 2019 cannot compile that header
 // even with the option -Zc:__cplusplus added.
+// NOTE: cond must not contain bare commas outside () or []. Commas inside {}
+// are not protected by the preprocessor and would be parsed as extra arguments.
 #define ALWAYS(cond, message, ...) assert((message) && (cond))
 #define ALWAYS_OR_UNREACHABLE(cond, message) assert((message) && (cond))
 #define SOMETIMES(cond, message, ...)
@@ -22,6 +24,8 @@
 #define XRPL_ASSERT_PARTS(cond, function, description, ...) \
     XRPL_ASSERT(cond, function " : " description)
 
+#define XRPL_ASSERT_IF(guard, cond, message) XRPL_ASSERT(!(guard) || (cond), message)
+
 // How to use the instrumentation macros:
 //
 // * XRPL_ASSERT if cond must be true but the line might not be reached during
@@ -29,6 +33,14 @@
 // * XRPL_ASSERT_PARTS is for convenience, and works like XRPL_ASSERT, but
 //   splits the message param into "function" and "description", then joins
 //   them with " : " before passing to XRPL_ASSERT.
+// * XRPL_ASSERT_IF(guard, cond, message) asserts the implication
+//   `guard => cond`: it can only fail when guard is true (e.g. an amendment
+//   is enabled) and cond is false. Unlike `if (guard) XRPL_ASSERT(...)`, the
+//   assertion site is always evaluated, so the fuzzer registers it
+//   unconditionally; cond itself is short-circuited and only evaluated when
+//   guard is true. NOTE: do not rely on side effects in guard — in release
+//   builds the assertion body is stripped, and the compiler may optimize away
+//   a side-effect-free guard entirely.
 // * ALWAYS if cond must be true _and_ the line must be reached during fuzzing.
 //   Same like `assert` in normal use.
 // * REACHABLE if the line must be reached during fuzzing

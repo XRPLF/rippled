@@ -2,6 +2,7 @@
 
 #include <boost/asio/io_context.hpp>
 
+#include <cstddef>
 #include <optional>
 #include <thread>
 #include <vector>

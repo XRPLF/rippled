@@ -22,8 +22,8 @@
 
 namespace xrpl {
 
-AssetCache::AssetCache(std::shared_ptr<ReadView const> const& ledger, beast::Journal j)
-    : ledger_(ledger), journal_(j)
+AssetCache::AssetCache(std::shared_ptr<ReadView const> ledger, beast::Journal j)
+    : ledger_(std::move(ledger)), journal_(j)
 {
     JLOG(journal_.debug()) << "created for ledger " << ledger_->header().seq;
 }
@@ -136,7 +136,7 @@ AssetCache::getMPTs(xrpl::AccountID const& account)
             auto const mptID = sle->getFieldH192(sfMPTokenIssuanceID);
             bool const zeroBalance = sle->at(sfMPTAmount) == 0;
             bool const maxedOut = [&] {
-                if (auto const sleIssuance = ledger_->read(keylet::mptIssuance(mptID)))
+                if (auto const sleIssuance = ledger_->read(keylet::mptokenIssuance(mptID)))
                 {
                     return sleIssuance->at(sfOutstandingAmount) == maxMPTAmount(*sleIssuance);
                 }

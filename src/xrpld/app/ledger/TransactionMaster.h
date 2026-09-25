@@ -4,9 +4,18 @@
 
 #include <xrpl/basics/RangeSet.h>
 #include <xrpl/basics/TaggedCache.h>
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/protocol/ErrorCodes.h>
+#include <xrpl/protocol/TxMeta.h>
+#include <xrpl/protocol/TxSearched.h>
 #include <xrpl/shamap/SHAMapItem.h>
 #include <xrpl/shamap/SHAMapTreeNode.h>
+
+#include <cstdint>
+#include <memory>
+#include <optional>
+#include <utility>
+#include <variant>
 
 namespace xrpl {
 
@@ -59,7 +68,7 @@ public:
     canonicalize(std::shared_ptr<Transaction>* pTransaction);
 
     void
-    sweep(void);
+    sweep();
 
     TaggedCache<uint256, Transaction>&
     getCache();

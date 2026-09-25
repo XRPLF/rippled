@@ -1,6 +1,19 @@
 #pragma once
 
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/core/ServiceRegistry.h>
+#include <xrpl/ledger/ReadView.h>
+#include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/XRPAmount.h>
+#include <xrpl/tx/ApplyContext.h>
 #include <xrpl/tx/Transactor.h>
+
+#include <cstdint>
+#include <optional>
+#include <tuple>
 
 namespace xrpl {
 class Sandbox;
@@ -43,7 +56,8 @@ private:
     TER
     applyGuts(Sandbox& view);
 
-    /** Withdraw both assets by providing maximum amount of asset1,
+    /**
+     * Withdraw both assets by providing maximum amount of asset1,
      * asset2's amount will be calculated according to the current proportion.
      * Since it is two-asset withdrawal, tfee is omitted.
      * @param view

@@ -1,8 +1,13 @@
 #pragma once
 
+#include <test/jtx/Account.h>
 #include <test/jtx/Env.h>
+#include <test/jtx/JTx.h>
+#include <test/jtx/amount.h>
 
-#include <xrpl/protocol/Issue.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Asset.h>
 
 #include <type_traits>
 
@@ -11,7 +16,9 @@ class STPath;
 
 namespace test::jtx {
 
-/** Set Paths, SendMax on a JTx. */
+/**
+ * Set Paths, SendMax on a JTx.
+ */
 class Paths
 {
 private:
@@ -31,10 +38,11 @@ public:
 
 //------------------------------------------------------------------------------
 
-/** Add a path.
-
-    If no paths are present, a new one is created.
-*/
+/**
+ * Add a path.
+ *
+ * If no paths are present, a new one is created.
+ */
 class Path
 {
 private:
@@ -62,8 +70,9 @@ private:
     appendOne(AccountID const& account);
 
     template <class T>
-    std::enable_if_t<std::is_constructible_v<Account, T>>
+    void
     appendOne(T const& t)
+        requires(std::is_constructible_v<Account, T>)
     {
         appendOne(Account{t});
     }

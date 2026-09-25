@@ -180,7 +180,7 @@ Ledger::Ledger(
     }
 
     {
-        auto sle = std::make_shared<SLE>(keylet::fees());
+        auto sle = std::make_shared<SLE>(keylet::feeSettings());
         // Whether featureXRPFees is supported will depend on startup options.
         if (std::ranges::find(amendments, featureXRPFees) != amendments.end())
         {
@@ -560,7 +560,7 @@ Ledger::setup()
 
     try
     {
-        if (auto const sle = read(keylet::fees()))
+        if (auto const sle = read(keylet::feeSettings()))
         {
             bool oldFees = false;
             bool newFees = false;

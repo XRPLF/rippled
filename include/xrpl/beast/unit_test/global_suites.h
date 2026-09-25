@@ -10,7 +10,9 @@ namespace beast::unit_test {
 
 namespace detail {
 
-/// Holds test suites registered during static initialization.
+/**
+ * Holds test suites registered during static initialization.
+ */
 inline SuiteList&
 globalSuites()
 {
@@ -34,7 +36,9 @@ struct InsertSuite
 
 }  // namespace detail
 
-/// Holds test suites registered during static initialization.
+/**
+ * Holds test suites registered during static initialization.
+ */
 inline SuiteList const&
 globalSuites()
 {

@@ -5,13 +5,15 @@
 #include <lz4.h>
 
 #include <algorithm>
+#include <cstddef>
 #include <cstdint>
 #include <stdexcept>
 #include <vector>
 
 namespace xrpl::compression_algorithms {
 
-/** LZ4 block compression.
+/**
+ * LZ4 block compression.
  * @tparam BufferFactory Callable object or lambda.
  *     Takes the requested buffer size and returns allocated buffer pointer.
  * @param in Data to compress
@@ -79,7 +81,8 @@ lz4Decompress(
     return decompressedSize;
 }
 
-/** LZ4 block decompression.
+/**
+ * LZ4 block decompression.
  * @tparam InputStream ZeroCopyInputStream
  * @param in Input source stream
  * @param inSize Size of compressed data

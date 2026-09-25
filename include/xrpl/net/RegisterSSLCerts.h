@@ -1,17 +1,18 @@
 #pragma once
 
-#include <xrpl/basics/Log.h>
+#include <xrpl/beast/utility/Journal.h>
 
 #include <boost/asio/ssl/context.hpp>
 
 namespace xrpl {
-/** Register default SSL certificates.
-
-    Register the system default SSL root certificates. On linux/mac,
-    this just calls asio's `set_default_verify_paths` to look in standard
-    operating system locations. On windows, it uses the OS certificate
-    store accessible via CryptoAPI.
-*/
+/**
+ * Register default SSL certificates.
+ *
+ * Register the system default SSL root certificates. On linux/mac,
+ * this just calls asio's `set_default_verify_paths` to look in standard
+ * operating system locations. On windows, it uses the OS certificate
+ * store accessible via CryptoAPI.
+ */
 void
 registerSSLCerts(boost::asio::ssl::context&, boost::system::error_code&, beast::Journal j);
 

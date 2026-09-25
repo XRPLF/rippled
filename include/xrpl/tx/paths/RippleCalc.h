@@ -1,11 +1,16 @@
 #pragma once
 
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/PaymentSandbox.h>
+#include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/STPathSet.h>
 #include <xrpl/protocol/TER.h>
 
 #include <boost/container/flat_set.hpp>
+
+#include <optional>
 
 namespace xrpl {
 class Config;
@@ -15,11 +20,12 @@ namespace detail {
 struct FlowDebugInfo;
 }  // namespace detail
 
-/** RippleCalc calculates the quality of a payment path.
-
-    Quality is the amount of input required to produce a given output along a
-    specified path - another name for this is exchange rate.
-*/
+/**
+ * RippleCalc calculates the quality of a payment path.
+ *
+ * Quality is the amount of input required to produce a given output along a
+ * specified path - another name for this is exchange rate.
+ */
 class RippleCalc
 {
 public:

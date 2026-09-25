@@ -1,35 +1,42 @@
 #pragma once
 
 #include <xrpl/basics/CountedObject.h>
-#include <xrpl/ledger/View.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/ledger/ReadView.h>
+#include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/Rate.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 
 #include <cstdint>
 #include <optional>
+#include <vector>
 
 namespace xrpl {
 
-/** Describes how an account was found in a path, and how to find the next set
-of paths. "Outgoing" is defined as the source account, or an account found via a
-trustline that has rippling enabled on the account's side.
-"Incoming" is defined as an account found via a trustline that has rippling
-disabled on the account's side. Any trust lines for an incoming account that
-have rippling disabled are unusable in paths.
-*/
+/**
+ * Describes how an account was found in a path, and how to find the next set
+ * of paths. "Outgoing" is defined as the source account, or an account found via a
+ * trustline that has rippling enabled on the account's side.
+ * "Incoming" is defined as an account found via a trustline that has rippling
+ * disabled on the account's side. Any trust lines for an incoming account that
+ * have rippling disabled are unusable in paths.
+ */
 enum class LineDirection : bool { Incoming = false, Outgoing = true };
 
-/** Wraps a trust line SLE for convenience.
-    The complication of trust lines is that there is a
-    "low" account and a "high" account. This wraps the
-    SLE and expresses its data from the perspective of
-    a chosen account on the line.
-
-    This wrapper is primarily used in the path finder and there can easily be
-    tens of millions of instances of this class. When modifying this class think
-    carefully about the memory implications.
-*/
+/**
+ * Wraps a trust line SLE for convenience.
+ * The complication of trust lines is that there is a
+ * "low" account and a "high" account. This wraps the
+ * SLE and expresses its data from the perspective of
+ * a chosen account on the line.
+ *
+ * This wrapper is primarily used in the path finder and there can easily be
+ * tens of millions of instances of this class. When modifying this class think
+ * carefully about the memory implications.
+ */
 class TrustLineBase
 {
 public:
@@ -46,7 +53,9 @@ protected:
     TrustLineBase(TrustLineBase&&) = default;
 
 public:
-    /** Returns the state map key for the ledger entry. */
+    /**
+     * Returns the state map key for the ledger entry.
+     */
     [[nodiscard]] uint256 const&
     key() const
     {
@@ -104,28 +113,36 @@ public:
         return getNoRipplePeer() ? LineDirection::Incoming : LineDirection::Outgoing;
     }
 
-    /** Have we set the freeze flag on our peer */
+    /**
+     * Have we set the freeze flag on our peer
+     */
     [[nodiscard]] bool
     getFreeze() const
     {
         return (flags_ & (viewLowest_ ? lsfLowFreeze : lsfHighFreeze)) != 0u;
     }
 
-    /** Have we set the deep freeze flag on our peer */
+    /**
+     * Have we set the deep freeze flag on our peer
+     */
     [[nodiscard]] bool
     getDeepFreeze() const
     {
         return (flags_ & (viewLowest_ ? lsfLowDeepFreeze : lsfHighDeepFreeze)) != 0u;
     }
 
-    /** Has the peer set the freeze flag on us */
+    /**
+     * Has the peer set the freeze flag on us
+     */
     [[nodiscard]] bool
     getFreezePeer() const
     {
         return (flags_ & (!viewLowest_ ? lsfLowFreeze : lsfHighFreeze)) != 0u;
     }
 
-    /** Has the peer set the deep freeze flag on us */
+    /**
+     * Has the peer set the deep freeze flag on us
+     */
     [[nodiscard]] bool
     getDeepFreezePeer() const
     {

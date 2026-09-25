@@ -22,6 +22,11 @@ static_assert(
 static_assert(
     kBoundaries.back() == SHAMapInnerNode::kBranchFactor,
     "Last element of boundaries must be number of children in a dense array");
+static_assert(
+    kBoundaries.front() >= 1,
+    "TaggedPointer.ipp subtracts 1 from a numAllocated value derived from "
+    "kBoundaries, as an unsigned quantity, in several places; the smallest "
+    "boundary must stay non-zero or those subtractions underflow.");
 
 // Terminology: A chunk is the memory being allocated from a block. A block
 // contains multiple chunks. This is the terminology the boost documentation
@@ -148,16 +153,16 @@ TaggedPointer::iterChildren(std::uint16_t isBranch, F&& f) const
     if (numAllocated == SHAMapInnerNode::kBranchFactor)
     {
         // dense case
-        for (int i = 0; i < SHAMapInnerNode::kBranchFactor; ++i)
+        for (auto i = 0u; i < SHAMapInnerNode::kBranchFactor; ++i)
             f(hashes[i]);
     }
     else
     {
         // sparse case
-        int curHashI = 0;
-        for (int i = 0; i < SHAMapInnerNode::kBranchFactor; ++i)
+        auto curHashI = 0u;
+        for (auto i = 0u; i < SHAMapInnerNode::kBranchFactor; ++i)
         {
-            if ((1 << i) & isBranch)
+            if ((1u << i) & isBranch)
             {
                 f(hashes[curHashI++]);
             }
@@ -176,9 +181,9 @@ TaggedPointer::iterNonEmptyChildIndexes(std::uint16_t isBranch, F&& f) const
     if (capacity() == SHAMapInnerNode::kBranchFactor)
     {
         // dense case
-        for (int i = 0; i < SHAMapInnerNode::kBranchFactor; ++i)
+        for (auto i = 0u; i < SHAMapInnerNode::kBranchFactor; ++i)
         {
-            if ((1 << i) & isBranch)
+            if ((1u << i) & isBranch)
             {
                 f(i, i);
             }
@@ -187,10 +192,10 @@ TaggedPointer::iterNonEmptyChildIndexes(std::uint16_t isBranch, F&& f) const
     else
     {
         // sparse case
-        int curHashI = 0;
-        for (int i = 0; i < SHAMapInnerNode::kBranchFactor; ++i)
+        auto curHashI = 0u;
+        for (auto i = 0u; i < SHAMapInnerNode::kBranchFactor; ++i)
         {
-            if ((1 << i) & isBranch)
+            if ((1u << i) & isBranch)
             {
                 f(i, curHashI++);
             }
@@ -216,14 +221,14 @@ TaggedPointer::destroyHashesAndChildren()
     deallocateArrays(tag, ptr);
 }
 
-inline std::optional<int>
-TaggedPointer::getChildIndex(std::uint16_t isBranch, int i) const
+inline std::optional<unsigned int>
+TaggedPointer::getChildIndex(std::uint16_t isBranch, unsigned int i) const
 {
     if (isDense())
         return i;
 
     // Sparse case
-    if ((isBranch & (1 << i)) == 0)
+    if ((isBranch & (1u << i)) == 0u)
     {
         // Empty branch. Sparse children do not store empty branches
         return {};
@@ -273,10 +278,10 @@ inline TaggedPointer::TaggedPointer(
         *this = std::move(other);
         auto [srcDstNumAllocated, srcDstHashes, srcDstChildren] = getHashesAndChildren();
         bool const srcDstIsDense = isDense();
-        int srcDstIndex = 0;
-        for (int i = 0; i < SHAMapInnerNode::kBranchFactor; ++i)
+        auto srcDstIndex = 0u;
+        for (auto i = 0u; i < SHAMapInnerNode::kBranchFactor; ++i)
         {
-            auto const mask = (1 << i);
+            auto const mask = (1u << i);
             bool const inSrc = (srcBranches & mask) != 0;
             bool const inDst = (dstBranches & mask) != 0;
             if (inSrc && inDst)
@@ -298,13 +303,13 @@ inline TaggedPointer::TaggedPointer(
                     // sparse
                     // need to shift all the elements to the left by
                     // one
-                    for (int c = srcDstIndex; c < srcDstNumAllocated - 1; ++c)
+                    for (auto c = srcDstIndex; c + 1 < srcDstNumAllocated; ++c)
                     {
                         srcDstHashes[c] = srcDstHashes[c + 1];
                         srcDstChildren[c] = std::move(srcDstChildren[c + 1]);
                     }
-                    srcDstHashes[srcDstNumAllocated - 1].zero();
-                    srcDstChildren[srcDstNumAllocated - 1].reset();
+                    srcDstHashes[srcDstNumAllocated - 1u].zero();
+                    srcDstChildren[srcDstNumAllocated - 1u].reset();
                     // do not increment the index
                 }
             }
@@ -321,7 +326,7 @@ inline TaggedPointer::TaggedPointer(
                     // sparse
                     // need to create a hole by shifting all the elements to the
                     // right by one
-                    for (int c = srcDstNumAllocated - 1; c > srcDstIndex; --c)
+                    for (auto c = srcDstNumAllocated - 1u; c > srcDstIndex; --c)
                     {
                         srcDstHashes[c] = srcDstHashes[c - 1];
                         srcDstChildren[c] = std::move(srcDstChildren[c - 1]);
@@ -352,10 +357,10 @@ inline TaggedPointer::TaggedPointer(
         auto [srcNumAllocated, srcHashes, srcChildren] = src.getHashesAndChildren();
         bool const srcIsDense = src.isDense();
         bool const dstIsDense = dst.isDense();
-        int srcIndex = 0, dstIndex = 0;
-        for (int i = 0; i < SHAMapInnerNode::kBranchFactor; ++i)
+        auto srcIndex = 0u, dstIndex = 0u;
+        for (auto i = 0u; i < SHAMapInnerNode::kBranchFactor; ++i)
         {
-            auto const mask = (1 << i);
+            auto const mask = (1u << i);
             bool const inSrc = (srcBranches & mask) != 0;
             bool const inDst = (dstBranches & mask) != 0;
             if (inSrc && inDst)
@@ -409,7 +414,7 @@ inline TaggedPointer::TaggedPointer(
             !dstIsDense || dstIndex == dstNumAllocated,
             "xrpl::TaggedPointer::TaggedPointer(TaggedPointer&& ...) : "
             "non-sparse or valid sparse");
-        for (int i = dstIndex; i < dstNumAllocated; ++i)
+        for (auto i = dstIndex; i < dstNumAllocated; ++i)
         {
             new (&dstHashes[i]) SHAMapHash{};
             new (&dstChildren[i]) SHAMapTreeNodePtr{};
@@ -448,9 +453,9 @@ inline TaggedPointer::TaggedPointer(
             new (&newChildren[branchNum]) SHAMapTreeNodePtr{std::move(oldChildren[indexNum])};
         });
         // Run the constructors for the remaining elements
-        for (int i = 0; i < SHAMapInnerNode::kBranchFactor; ++i)
+        for (auto i = 0u; i < SHAMapInnerNode::kBranchFactor; ++i)
         {
-            if (((1 << i) & isBranch) != 0)
+            if (((1u << i) & isBranch) != 0u)
                 continue;
             new (&newHashes[i]) SHAMapHash{};
             new (&newChildren[i]) SHAMapTreeNodePtr{};
@@ -459,7 +464,7 @@ inline TaggedPointer::TaggedPointer(
     else
     {
         // new arrays are sparse, old arrays may be sparse or dense
-        int curCompressedIndex = 0;
+        auto curCompressedIndex = 0u;
         iterNonEmptyChildIndexes(isBranch, [&](auto branchNum, auto indexNum) {
             new (&newHashes[curCompressedIndex]) SHAMapHash{oldHashes[indexNum]};
             new (&newChildren[curCompressedIndex])
@@ -467,7 +472,7 @@ inline TaggedPointer::TaggedPointer(
             ++curCompressedIndex;
         });
         // Run the constructors for the remaining elements
-        for (int i = curCompressedIndex; i < newNumAllocated; ++i)
+        for (auto i = curCompressedIndex; i < newNumAllocated; ++i)
         {
             new (&newHashes[i]) SHAMapHash{};
             new (&newChildren[i]) SHAMapTreeNodePtr{};
@@ -507,6 +512,9 @@ TaggedPointer::operator=(TaggedPointer&& other)
 [[nodiscard]] inline std::pair<std::uint8_t, void*>
 TaggedPointer::decode() const
 {
+    // tp_ packs a raw pointer together with the tag bits; recovering the
+    // pointer inherently requires an integer-to-pointer cast.
+    // NOLINTNEXTLINE(performance-no-int-to-ptr)
     return {tp_ & kTagMask, reinterpret_cast<void*>(tp_ & kPtrMask)};
 }
 
@@ -535,6 +543,9 @@ TaggedPointer::getHashesAndChildren() const
 [[nodiscard]] inline SHAMapHash*
 TaggedPointer::getHashes() const
 {
+    // tp_ packs a raw pointer together with the tag bits; recovering the
+    // pointer inherently requires an integer-to-pointer cast.
+    // NOLINTNEXTLINE(performance-no-int-to-ptr)
     return reinterpret_cast<SHAMapHash*>(tp_ & kPtrMask);
 };
 

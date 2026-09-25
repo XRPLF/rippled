@@ -14,7 +14,7 @@
 #include <xrpl/ledger/OpenView.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/protocol/Rules.h>
-#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/SField.h>  // IWYU pragma: keep
 #include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/Serializer.h>
@@ -32,6 +32,7 @@
 #include <mutex>
 #include <sstream>
 #include <string>
+#include <string_view>
 #include <utility>
 #include <vector>
 
@@ -82,7 +83,7 @@ OpenLedger::accept(
     bool retriesFirst,
     OrderedTxs& retries,
     ApplyFlags flags,
-    std::string const& suffix,
+    std::string_view suffix,
     modify_type const& f)
 {
     JLOG(j_.trace()) << "accept ledger " << ledger->seq() << " " << suffix;

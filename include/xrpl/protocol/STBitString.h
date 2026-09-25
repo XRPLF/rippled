@@ -1,8 +1,15 @@
 #pragma once
 
 #include <xrpl/basics/CountedObject.h>
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/Zero.h>
+#include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STBase.h>
+#include <xrpl/protocol/Serializer.h>
+
+#include <cstddef>
+#include <string>
 
 namespace xrpl {
 
@@ -141,7 +148,7 @@ template <int Bits>
 bool
 STBitString<Bits>::isEquivalent(STBase const& t) const
 {
-    STBitString const* v = dynamic_cast<STBitString const*>(&t);
+    auto const* v = dynamic_cast<STBitString const*>(&t);
     return v && (value_ == v->value_);
 }
 
@@ -163,7 +170,7 @@ STBitString<Bits>::setValue(BaseUInt<Bits, Tag> const& v)
 }
 
 template <int Bits>
-typename STBitString<Bits>::value_type const&
+STBitString<Bits>::value_type const&
 STBitString<Bits>::value() const
 {
     return value_;

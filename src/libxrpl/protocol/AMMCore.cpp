@@ -12,6 +12,7 @@
 #include <xrpl/protocol/Rules.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/STInteger.h>  // IWYU pragma: keep
 #include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/UintTypes.h>
@@ -127,7 +128,7 @@ ammAuctionTimeSlot(std::uint64_t current, STObject const& auctionSlot)
 bool
 ammEnabled(Rules const& rules)
 {
-    return rules.enabled(featureAMM) && rules.enabled(fixUniversalNumber);
+    return rules.enabled(featureAMM);
 }
 
 }  // namespace xrpl

@@ -3,14 +3,18 @@
 #include <xrpl/basics/contract.h>
 #include <xrpl/protocol/SField.h>
 
+#include <cstddef>
 #include <functional>
 #include <initializer_list>
 #include <stdexcept>
+#include <string>
 #include <vector>
 
 namespace xrpl {
 
-/** Kind of element in each entry of an SOTemplate. */
+/**
+ * Kind of element in each entry of an SOTemplate.
+ */
 // 2026 usages, 129 files
 // NOLINTNEXTLINE(cppcoreguidelines-use-enum-class)
 enum SOEStyle {
@@ -23,13 +27,17 @@ enum SOEStyle {
 };
 
 // Part of a Python-parsed DSL (transactions.macro); bare enumerator names required by the parser
-/** Amount fields that can support MPT */
+/**
+ * Amount fields that can support MPT
+ */
 // NOLINTNEXTLINE(cppcoreguidelines-use-enum-class)
 enum SOETxMPTIssue { SoeMptNone, SoeMptSupported, SoeMptNotSupported };
 
 //------------------------------------------------------------------------------
 
-/** An element in a SOTemplate. */
+/**
+ * An element in a SOTemplate.
+ */
 class SOElement
 {
     // Use std::reference_wrapper so SOElement can be stored in a std::vector.
@@ -88,10 +96,11 @@ public:
 
 //------------------------------------------------------------------------------
 
-/** Defines the fields and their attributes within a STObject.
-    Each subclass of SerializedObject will provide its own template
-    describing the available fields and their metadata attributes.
-*/
+/**
+ * Defines the fields and their attributes within a STObject.
+ * Each subclass of SerializedObject will provide its own template
+ * describing the available fields and their metadata attributes.
+ */
 class SOTemplate
 {
 public:
@@ -101,14 +110,16 @@ public:
     SOTemplate&
     operator=(SOTemplate&& other) = default;
 
-    /** Create a template populated with all fields.
-        After creating the template fields cannot be added, modified, or removed.
-    */
+    /**
+     * Create a template populated with all fields.
+     * After creating the template fields cannot be added, modified, or removed.
+     */
     SOTemplate(std::vector<SOElement> uniqueFields, std::vector<SOElement> commonFields = {});
 
-    /** Create a template populated with all fields.
-        Note: Defers to the vector constructor above.
-    */
+    /**
+     * Create a template populated with all fields.
+     * Note: Defers to the vector constructor above.
+     */
     SOTemplate(
         std::initializer_list<SOElement> uniqueFields,
         std::initializer_list<SOElement> commonFields = {});
@@ -138,14 +149,18 @@ public:
         return end();
     }
 
-    /** The number of entries in this template */
+    /**
+     * The number of entries in this template
+     */
     [[nodiscard]] std::size_t
     size() const
     {
         return elements_.size();
     }
 
-    /** Retrieve the position of a named field. */
+    /**
+     * Retrieve the position of a named field.
+     */
     [[nodiscard]] int
     getIndex(SField const&) const;
 

@@ -1,9 +1,37 @@
 #pragma once
 
 #include <xrpl/basics/IntrusivePointer.ipp>
+#include <xrpl/basics/Log.h>  // IWYU pragma: keep
 #include <xrpl/basics/TaggedCache.h>
+#include <xrpl/basics/scope.h>
+
+#include <algorithm>
 
 namespace xrpl {
+
+namespace detail {
+
+// Replace-policy tags selecting how TaggedCache::canonicalizeImpl resolves a
+// collision when the key already exists:
+//   - ReplaceCached: always replace the cached value with `data`. `data` is
+//     never written back and may be const.
+//   - ReplaceClient: keep the cached value and write it back into `data` (the
+//     client's pointer), which must therefore be writable.
+//   - ReplaceDynamically: call the supplied callback to decide per call; `data`
+//     is written back when the cached value is kept, so it must be writable.
+struct ReplaceCached
+{
+};
+
+struct ReplaceClient
+{
+};
+
+struct ReplaceDynamically
+{
+};
+
+}  // namespace detail
 
 template <
     class Key,
@@ -32,7 +60,10 @@ inline TaggedCache<
         beast::insight::Collector::ptr const& collector)
     : journal_(journal)
     , clock_(clock)
-    , stats_(name, std::bind(&TaggedCache::collectMetrics, this), collector)
+    , stats_(
+          name,
+          [this] { collectMetrics(); },
+          collector)
     , name_(name)
     , targetSize_(size)
     , targetAge_(expiration)
@@ -300,13 +331,29 @@ template <
     class Hash,
     class KeyEqual,
     class Mutex>
-template <class R>
+template <class Policy, class Callback>
 inline bool
 TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash, KeyEqual, Mutex>::
-    canonicalize(key_type const& key, SharedPointerType& data, R&& replaceCallback)
+    canonicalizeImpl(
+        key_type const& key,
+        CanonicalizeClientPointerType<Policy> data,
+        [[maybe_unused]] Policy policy,
+        [[maybe_unused]] Callback&& replaceCallback)
 {
     // Return canonical value, store if needed, refresh in cache
     // Return values: true=we had the data already
+
+    // `Policy` is one of:
+    //   - detail::ReplaceCached: always replace the cached value with `data`;
+    //     `data` is never written back and may be const.
+    //   - detail::ReplaceClient: keep the cached value and write it back into
+    //     `data` (the client's pointer), which must therefore be writable.
+    //   - detail::ReplaceDynamically: call `replaceCallback` to decide at run
+    //     time; `data` must be writable.
+    // For the latter two the write-back below requires a mutable `data`, so
+    // passing a const argument is a compile error.
+    constexpr bool replaceCached = std::is_same_v<Policy, detail::ReplaceCached>;
+
     std::scoped_lock const lock(mutex_);
 
     auto cit = cache_.find(key);
@@ -324,13 +371,14 @@ TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash,
     Entry& entry = cit->second;
     entry.touch(clock_.now());
 
-    auto shouldReplace = [&] {
-        if constexpr (std::is_invocable_r_v<bool, R>)
+    auto shouldReplaceCached = [&] {
+        if constexpr (replaceCached)
         {
-            // The reason for this extra complexity is for intrusive
-            // strong/weak combo getting a strong is relatively expensive
-            // and not needed for many cases.
-            return replaceCallback();
+            return true;
+        }
+        else if constexpr (std::is_same_v<Policy, detail::ReplaceClient>)
+        {
+            return false;
         }
         else
         {
@@ -340,11 +388,11 @@ TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash,
 
     if (entry.isCached())
     {
-        if (shouldReplace())
+        if (shouldReplaceCached())
         {
             entry.ptr = data;
         }
-        else
+        else if constexpr (!replaceCached)
         {
             data = entry.ptr.getStrong();
         }
@@ -356,11 +404,11 @@ TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash,
 
     if (cachedData)
     {
-        if (shouldReplace())
+        if (shouldReplaceCached())
         {
             entry.ptr = data;
         }
-        else
+        else if constexpr (!replaceCached)
         {
             entry.ptr.convertToStrong();
             data = cachedData;
@@ -385,11 +433,29 @@ template <
     class Hash,
     class KeyEqual,
     class Mutex>
+template <class Callback>
+inline bool
+TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash, KeyEqual, Mutex>::
+    canonicalize(key_type const& key, SharedPointerType& data, Callback&& replaceCallback)
+{
+    return canonicalizeImpl(
+        key, data, detail::ReplaceDynamically{}, std::forward<Callback>(replaceCallback));
+}
+
+template <
+    class Key,
+    class T,
+    bool IsKeyCache,
+    class SharedWeakUnionPointer,
+    class SharedPointerType,
+    class Hash,
+    class KeyEqual,
+    class Mutex>
 inline bool
 TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash, KeyEqual, Mutex>::
     canonicalizeReplaceCache(key_type const& key, SharedPointerType const& data)
 {
-    return canonicalize(key, const_cast<SharedPointerType&>(data), []() { return true; });
+    return canonicalizeImpl(key, data, detail::ReplaceCached{});
 }
 
 template <
@@ -405,7 +471,7 @@ inline bool
 TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash, KeyEqual, Mutex>::
     canonicalizeReplaceClient(key_type const& key, SharedPointerType& data)
 {
-    return canonicalize(key, data, []() { return false; });
+    return canonicalizeImpl(key, data, detail::ReplaceClient{});
 }
 
 template <
@@ -440,7 +506,8 @@ template <
 template <class ReturnType>
 inline auto
 TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash, KeyEqual, Mutex>::
-    insert(key_type const& key, T const& value) -> std::enable_if_t<!IsKeyCache, ReturnType>
+    insert(key_type const& key, T const& value) -> ReturnType
+    requires(!IsKeyCache)
 {
     static_assert(
         std::is_same_v<std::shared_ptr<T>, SharedPointerType> ||
@@ -470,7 +537,8 @@ template <
 template <class ReturnType>
 inline auto
 TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash, KeyEqual, Mutex>::
-    insert(key_type const& key) -> std::enable_if_t<IsKeyCache, ReturnType>
+    insert(key_type const& key) -> ReturnType
+    requires IsKeyCache
 {
     std::scoped_lock const lock(mutex_);
     clock_type::time_point const now(clock_.now());
@@ -536,8 +604,42 @@ TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash,
     std::vector<key_type> v;
 
     {
-        std::scoped_lock const lock(mutex_);
-        v.reserve(cache_.size());
+        // Keep track of how many iterations are needed. Exit the loop if the number of retries gets
+        // absurd. (Note that if this somehow ever happens, one more allocation will be done under
+        // lock, which is undesirable, but really should be almost impossible.)
+        std::size_t allocationIterations = 0;
+        std::unique_lock lock(mutex_);
+        for (auto size = cache_.size(); v.capacity() < size && allocationIterations < 20;
+             size = cache_.size())
+        {
+            ScopeUnlock const unlock(lock);
+            if (allocationIterations > 0)
+            {
+                JLOG(journal_.info())
+                    << "getKeys(): Cache grew beyond allocated capacity after "
+                    << allocationIterations << " prior attempt(s). Have " << v.capacity()
+                    << ", need " << size << ". Retrying allocation";
+            }
+            // Allocate the current size plus a little extra, in case the cache grows while
+            // allocating. Each time another allocation is needed, the extra also gets bigger until
+            // it ultimately doubles the size + 1.
+            constexpr std::size_t baseShift = 5;
+            auto const bufferOffset = std::min(allocationIterations, std::size_t{baseShift});
+            auto const bufferShift = baseShift - bufferOffset;
+            size += (size >> bufferShift) + 1;
+            v.reserve(size);
+            ++allocationIterations;
+        }
+        if (v.capacity() < cache_.size())
+        {
+            // LCOV_EXCL_START
+            UNREACHABLE("xrpl::TaggedCache::getKeys(): failed to allocate sufficient capacity");
+            v.reserve(cache_.size());
+            // LCOV_EXCL_STOP
+        }
+        XRPL_ASSERT(lock.owns_lock(), "xrpl::TaggedCache::getKeys(): owns lock");
+        XRPL_ASSERT(
+            v.capacity() >= cache_.size(), "xrpl::TaggedCache::getKeys(): sufficient capacity");
         for (auto const& _ : cache_)
             v.push_back(_.first);
     }
@@ -676,7 +778,7 @@ TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash,
     sweepHelper(
         clock_type::time_point const& whenExpire,
         [[maybe_unused]] clock_type::time_point const& now,
-        typename KeyValueCacheType::map_type& partition,
+        KeyValueCacheType::map_type& partition,
         SweptPointersVector& stuffToSweep,
         std::atomic<int>& allRemovals,
         std::scoped_lock<std::recursive_mutex> const&)
@@ -756,7 +858,7 @@ TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash,
     sweepHelper(
         clock_type::time_point const& whenExpire,
         clock_type::time_point const& now,
-        typename KeyOnlyCacheType::map_type& partition,
+        KeyOnlyCacheType::map_type& partition,
         SweptPointersVector&,
         std::atomic<int>& allRemovals,
         std::scoped_lock<std::recursive_mutex> const&)

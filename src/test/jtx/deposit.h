@@ -1,16 +1,29 @@
 #pragma once
 
 #include <test/jtx/Account.h>
-#include <test/jtx/Env.h>
 
-/** Deposit preauthorize operations */
+#include <xrpl/basics/strHex.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/jss.h>
+
+#include <string>
+#include <vector>
+
+/**
+ * Deposit preauthorize operations
+ */
 namespace xrpl::test::jtx::deposit {
 
-/** Preauthorize for deposit.  Invoke as deposit::auth. */
+/**
+ * Preauthorize for deposit.  Invoke as deposit::auth.
+ */
 json::Value
 auth(Account const& account, Account const& auth);
 
-/** Remove pre-authorization for deposit.  Invoke as deposit::unauth. */
+/**
+ * Remove pre-authorization for deposit.  Invoke as deposit::unauth.
+ */
 json::Value
 unauth(Account const& account, Account const& unauth);
 

@@ -1,10 +1,15 @@
 #pragma once
 
 #include <test/jtx/Env.h>
+#include <test/jtx/JTx.h>
+
+#include <cstdint>
 
 namespace xrpl::test::jtx {
 
-/** Set the destination tag on a JTx*/
+/**
+ * Set the destination tag on a JTx
+ */
 struct Dtag
 {
 private:
@@ -19,7 +24,9 @@ public:
     operator()(Env&, JTx& jt) const;
 };
 
-/** Set the source tag on a JTx*/
+/**
+ * Set the source tag on a JTx
+ */
 struct Stag
 {
 private:

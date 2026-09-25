@@ -8,9 +8,9 @@
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/CredentialHelpers.h>
-#include <xrpl/ledger/helpers/DelegateHelpers.h>
 #include <xrpl/ledger/helpers/MPTokenHelpers.h>
 #include <xrpl/ledger/helpers/PermissionedDEXHelpers.h>
+#include <xrpl/ledger/helpers/SponsorHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Asset.h>
@@ -29,7 +29,6 @@
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
-#include <xrpl/protocol/TxFormats.h>
 #include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/protocol/jss.h>
@@ -39,6 +38,7 @@
 
 #include <algorithm>
 #include <cstdint>
+#include <limits>
 #include <memory>
 #include <optional>
 #include <unordered_set>
@@ -121,6 +121,21 @@ Payment::preflight(PreflightContext const& ctx)
 
     if (!ctx.rules.enabled(featureMPTokensV1) && isDstMPT)
         return temDISABLED;
+
+    if (tx.isFlag(tfSponsorCreatedAccount))
+    {
+        if (!ctx.rules.enabled(featureSponsor))
+            return temDISABLED;
+
+        if (tx.isFlag(tfNoRippleDirect) || tx.isFlag(tfPartialPayment) || tx.isFlag(tfLimitQuality))
+            return temINVALID_FLAG;
+
+        if (tx.isFieldPresent(sfSendMax) || tx.isFieldPresent(sfPaths))
+            return temINVALID;
+
+        if (!dstAmount.native())
+            return temBAD_AMOUNT;
+    }
 
     if (!mpTokensV2 && isDstMPT && ctx.tx.isFieldPresent(sfPaths))
         return temMALFORMED;
@@ -266,49 +281,97 @@ Payment::preflight(PreflightContext const& ctx)
         }
     }
 
-    if (auto const err = credentials::checkFields(ctx.tx, ctx.j); !isTesSuccess(err))
+    if (auto const err = credentials::checkFields(ctx.tx, ctx.rules, ctx.j); !isTesSuccess(err))
         return err;
 
     return tesSUCCESS;
 }
 
 NotTEC
-Payment::checkPermission(ReadView const& view, STTx const& tx)
+Payment::checkGranularSemantics(
+    ReadView const& view,
+    STTx const& tx,
+    std::unordered_set<GranularPermissionType> const& heldGranularPermissions)
 {
-    auto const delegate = tx[~sfDelegate];
-    if (!delegate)
-        return tesSUCCESS;
-
-    auto const delegateKey = keylet::delegate(tx[sfAccount], *delegate);
-    auto const sle = view.read(delegateKey);
-
-    if (!sle)
-        return terNO_DELEGATE_PERMISSION;
-
-    if (isTesSuccess(checkTxPermission(sle, tx)))
-        return tesSUCCESS;
-
-    std::unordered_set<GranularPermissionType> granularPermissions;
-    loadGranularPermission(sle, ttPAYMENT, granularPermissions);
-
     auto const& dstAmount = tx.getFieldAmount(sfAmount);
     auto const& amountAsset = dstAmount.asset();
 
     // Granular permissions are only valid for direct payments.
-    if ((tx.isFieldPresent(sfSendMax) && tx[sfSendMax].asset() != amountAsset) ||
-        tx.isFieldPresent(sfPaths))
+    if (tx.isFieldPresent(sfSendMax) && tx[sfSendMax].asset() != amountAsset)
         return terNO_DELEGATE_PERMISSION;
 
-    // PaymentMint and PaymentBurn apply to both IOU and MPT direct payments.
-    if (granularPermissions.contains(PaymentMint) && !isXRP(amountAsset) &&
-        amountAsset.getIssuer() == tx[sfAccount])
-        return tesSUCCESS;
+    if (isXRP(amountAsset))
+        return terNO_DELEGATE_PERMISSION;
 
-    if (granularPermissions.contains(PaymentBurn) && !isXRP(amountAsset) &&
-        amountAsset.getIssuer() == tx[sfDestination])
-        return tesSUCCESS;
+    return amountAsset.visit(
+        [&](MPTIssue const& mptIssue) -> NotTEC {
+            // For MPT payments, the MPTokenIssuanceID encodes the issuer unambiguously,
+            // unlike IOU, there is no endpoint aliasing where either side of the
+            // trustline can appear as the issuer.
+            if (heldGranularPermissions.contains(PaymentMint) &&
+                mptIssue.getIssuer() == tx[sfAccount])
+                return tesSUCCESS;
+            if (heldGranularPermissions.contains(PaymentBurn) &&
+                mptIssue.getIssuer() == tx[sfDestination])
+                return tesSUCCESS;
+            return terNO_DELEGATE_PERMISSION;
+        },
+        [&](Issue const& issue) -> NotTEC {
+            // For IOU payments, either endpoint may be encoded as the issuer in
+            // sfAmount. PaySteps normalizes those endpoint aliases, so sfAmount.issuer
+            // alone does not reliably identify whether the transaction issues or redeems
+            // IOUs. We determine PaymentMint vs PaymentBurn from the trustline balance
+            // direction instead.
+            auto const account = tx[sfAccount];
+            auto const destination = tx[sfDestination];
 
-    return terNO_DELEGATE_PERMISSION;
+            // Reject if neither endpoint is the issuer.
+            if (issue.getIssuer() != account && issue.getIssuer() != destination)
+                return terNO_DELEGATE_PERMISSION;
+
+            auto const sle = view.read(keylet::trustLine(account, destination, issue.currency));
+            if (!sle)
+                return terNO_DELEGATE_PERMISSION;
+
+            bool const accountIsLow = (account < destination);
+            auto const destLimit = sle->getFieldAmount(accountIsLow ? sfHighLimit : sfLowLimit);
+            auto const rawBalance = sle->getFieldAmount(sfBalance);
+            bool const accountIsHolder =
+                accountIsLow ? rawBalance > beast::kZero : rawBalance < beast::kZero;
+
+            bool const mayIssue =
+                heldGranularPermissions.contains(PaymentMint) && destLimit > beast::kZero;
+
+            // PaymentMint requires the destination to be the holder and the account to be the
+            // issuer. destLimit > 0: destination is willing to hold account's IOUs (account is the
+            // issuer). !accountIsHolder: DirectStepI will issue, not redeem.
+            if (mayIssue && !accountIsHolder)
+                return tesSUCCESS;
+
+            // PaymentBurn requires the source account to be the holder and the destination to be
+            // the issuer. accountIsHolder: DirectStepI will redeem, not issue.
+            if (heldGranularPermissions.contains(PaymentBurn) && accountIsHolder)
+            {
+                if (view.rules().enabled(fixCleanup3_4_0))
+                {
+                    // Redeeming stops at the balance held; beyond that the payment engine
+                    // crosses zero and issues the account's own IOUs, which is a mint. So with
+                    // only PaymentBurn we must check the amount against the balance held. The
+                    // granular template forbids sfPaths, tfPartialPayment and a cross-asset
+                    // sfSendMax, so this is a single direct step, sfAmount is what the
+                    // trustline is debited.
+                    STAmount const held = accountIsLow ? rawBalance : -rawBalance;
+                    if (dstAmount <= held || mayIssue)
+                        return tesSUCCESS;
+                }
+                else
+                {
+                    return tesSUCCESS;
+                }
+            }
+
+            return terNO_DELEGATE_PERMISSION;
+        });
 }
 
 TER
@@ -336,29 +399,47 @@ Payment::preclaim(PreclaimContext const& ctx)
             // transaction would succeed.
             return tecNO_DST;
         }
-        if (ctx.view.open() && partialPaymentAllowed)
+        // A partial payment may not fund a new account.
+        if (partialPaymentAllowed)
         {
-            // You cannot fund an account with a partial payment.
-            // Make retry work smaller, by rejecting this.
-            JLOG(ctx.j.trace()) << "Delay transaction: Partial payment not "
-                                   "allowed to create account.";
-
-            // Another transaction could create the account and then this
-            // transaction would succeed.
-            return telNO_DST_PARTIAL;
+            // Open view: the soft tel (unchanged).
+            if (ctx.view.open())
+            {
+                // Make retry work smaller, by rejecting this.
+                JLOG(ctx.j.trace()) << "Delay transaction: Partial payment not "
+                                       "allowed to create account.";
+                return telNO_DST_PARTIAL;
+            }
+            // Inner batch txns are claimed on a closed view, where a tel is
+            // invalid, so use the tef.
+            if (ctx.parentBatchId && ctx.view.rules().enabled(featureBatchV1_1))
+                return tefNO_DST_PARTIAL;
         }
         if (dstAmount < STAmount(ctx.view.fees().reserve))
         {
             // accountReserve is the minimum amount that an account can have.
             // Reserve is not scaled by load.
-            JLOG(ctx.j.trace()) << "Delay transaction: Destination account does not exist. "
-                                << "Insufficent payment to create account.";
+            if (!ctx.tx.isFlag(tfSponsorCreatedAccount))
+            {
+                // The minimum amount when creating a Sponsored Account is 1 drop.
+                // Since the reserve is covered by the sponsor, you don't need to hold the
+                // 1-increment reserve yourself.
+                JLOG(ctx.j.trace()) << "Delay transaction: Destination account does not exist. "
+                                    << "Insufficient payment to create account.";
 
-            // TODO: de-dupe
-            // Another transaction could create the account and then this
-            // transaction would succeed.
-            return tecNO_DST_INSUF_XRP;
+                // TODO: de-dupe
+                // Another transaction could create the account and then this
+                // transaction would succeed.
+                return tecNO_DST_INSUF_XRP;
+            }
         }
+    }
+    else if (ctx.tx.isFlag(tfSponsorCreatedAccount))
+    {
+        // The tfSponsorCreatedAccount flag is specific to account creation via
+        // sponsorship. If the destination account already exists, applying this
+        // flag is invalid.
+        return tecNO_SPONSOR_PERMISSION;
     }
     else if (sleDst->isFlag(lsfRequireDestTag) && !ctx.tx.isFieldPresent(sfDestinationTag))
     {
@@ -373,7 +454,7 @@ Payment::preclaim(PreclaimContext const& ctx)
     }
 
     // Payment with at least one intermediate step and uses transitive balances.
-    if ((hasPaths || sendMax || !dstAmount.native()) && ctx.view.open())
+    if (hasPaths || sendMax || !dstAmount.native())
     {
         STPathSet const& paths = ctx.tx.getFieldPathSet(sfPaths);
 
@@ -381,7 +462,12 @@ Payment::preclaim(PreclaimContext const& ctx)
                 return path.size() > kMaxPathLength;
             }))
         {
-            return telBAD_PATH_COUNT;
+            // Open view: the soft tel (unchanged). Inner batch txns are claimed
+            // on a closed view, where a tel is invalid, so use the tef.
+            if (ctx.view.open())
+                return telBAD_PATH_COUNT;
+            if (ctx.parentBatchId && ctx.view.rules().enabled(featureBatchV1_1))
+                return tefBAD_PATH_COUNT;
         }
     }
 
@@ -391,11 +477,41 @@ Payment::preclaim(PreclaimContext const& ctx)
 
     if (ctx.tx.isFieldPresent(sfDomainID))
     {
-        if (!permissioned_dex::accountInDomain(ctx.view, ctx.tx[sfAccount], ctx.tx[sfDomainID]))
-            return tecNO_PERMISSION;
+        if (ctx.view.rules().enabled(fixCleanup3_4_0))
+        {
+            auto const domainID = ctx.tx[sfDomainID];
+            auto const sleDomain = ctx.view.read(keylet::permissionedDomain(domainID));
+            if (!sleDomain)
+                return tecNO_PERMISSION;
 
-        if (!permissioned_dex::accountInDomain(ctx.view, ctx.tx[sfDestination], ctx.tx[sfDomainID]))
-            return tecNO_PERMISSION;
+            // Domain owner is always considered in the domain. For other accounts,
+            // suppress tecEXPIRED so doApply can run and delete expired credential
+            // SLEs from the ledger.
+            auto const checkAccount = [&](AccountID const& acct) -> TER {
+                if (sleDomain->getAccountID(sfOwner) == acct)
+                    return tesSUCCESS;
+                // validDomain returns tecNO_AUTH when no matching credential is
+                // found. Map it to tecNO_PERMISSION to preserve existing behavior.
+                if (auto const err = credentials::validDomain(ctx.view, domainID, acct);
+                    !isTesSuccess(err) && err != tecEXPIRED)
+                    return tecNO_PERMISSION;
+                return tesSUCCESS;
+            };
+
+            if (auto const err = checkAccount(ctx.tx[sfAccount]); !isTesSuccess(err))
+                return err;
+            if (auto const err = checkAccount(ctx.tx[sfDestination]); !isTesSuccess(err))
+                return err;
+        }
+        else
+        {
+            if (!permissioned_dex::accountInDomain(ctx.view, ctx.tx[sfAccount], ctx.tx[sfDomainID]))
+                return tecNO_PERMISSION;
+
+            if (!permissioned_dex::accountInDomain(
+                    ctx.view, ctx.tx[sfDestination], ctx.tx[sfDomainID]))
+                return tecNO_PERMISSION;
+        }
     }
 
     return tesSUCCESS;
@@ -404,6 +520,31 @@ Payment::preclaim(PreclaimContext const& ctx)
 TER
 Payment::doApply()
 {
+    // If a DomainID is present, verify both sender and destination are still in
+    // the domain and delete any expired credential SLEs from the ledger.
+    if (ctx_.tx.isFieldPresent(sfDomainID) && ctx_.view().rules().enabled(fixCleanup3_4_0))
+    {
+        auto const domainID = ctx_.tx[sfDomainID];
+        auto const sleDomain = ctx_.view().read(keylet::permissionedDomain(domainID));
+        if (!sleDomain)
+            return tecINTERNAL;  // LCOV_EXCL_LINE
+
+        auto const cleanupFor = [&](AccountID const& acct) -> TER {
+            if (sleDomain->getAccountID(sfOwner) == acct)
+                return tesSUCCESS;
+            return verifyValidDomain(ctx_.view(), acct, domainID, j_);
+        };
+
+        auto const destination = ctx_.tx[sfDestination];
+        auto const senderErr = cleanupFor(accountID_);
+        auto const destinationErr = accountID_ == destination ? senderErr : cleanupFor(destination);
+
+        if (!isTesSuccess(senderErr))
+            return senderErr;
+        if (!isTesSuccess(destinationErr))
+            return destinationErr;
+    }
+
     auto const deliverMin = ctx_.tx[~sfDeliverMin];
 
     // Ripple if source or destination is non-native or if there are paths.
@@ -432,6 +573,27 @@ Payment::doApply()
         sleDst->setAccountID(sfAccount, dstAccountID);
         sleDst->setFieldU32(sfSequence, view().seq());
         sleDst->setFieldAmount(sfBalance, XRPAmount(beast::kZero));
+
+        if (ctx_.tx.isFlag(tfSponsorCreatedAccount))
+        {
+            auto const sponsor = view().peek(keylet::account(accountID_));
+            if (!sponsor)
+                return tefINTERNAL;  // LCOV_EXCL_LINE
+            auto const currentSponsoringAccountCount =
+                sponsor->getFieldU32(sfSponsoringAccountCount);
+            if (currentSponsoringAccountCount == std::numeric_limits<std::uint32_t>::max())
+            {
+                // LCOV_EXCL_START
+                JLOG(j_.fatal()) << "Sponsoring account count overflow for account "
+                                 << to_string(accountID_);
+                return tecINTERNAL;
+                // LCOV_EXCL_STOP
+            }
+            sponsor->setFieldU32(sfSponsoringAccountCount, currentSponsoringAccountCount + 1);
+
+            addSponsorToLedgerEntry(sleDst, sponsor);
+            view().update(sponsor);
+        }
 
         view().insert(sleDst);
     }
@@ -599,16 +761,12 @@ Payment::doApply()
     if (!sleSrc)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
-    // ownerCount is the number of entries in this ledger for this
-    // account that require a reserve.
-    auto const ownerCount = sleSrc->getFieldU32(sfOwnerCount);
+    // the number of reserves in this ledger for this account that require a
+    // reserve.
+    auto const reserve = accountReserve(view(), sleSrc, j_);
 
-    // This is the total reserve in drops.
-    auto const reserve = view().fees().accountReserve(ownerCount);
-
-    // In a delegated payment, the fee payer is the delegated account,
-    // not the source account (accountID_).
-    bool const accountIsPayer = (ctx_.tx.getFeePayer() == accountID_);
+    // In a delegated / fee sponsored payment, the fee payer is not the source account (accountID_).
+    bool const accountIsPayer = ctx_.tx.getFeePayerID() == accountID_;
 
     // preFeeBalance_ is the balance on the source account (accountID_) BEFORE the fees
     // were charged. If source account is the fee payer, it must also cover the fee.

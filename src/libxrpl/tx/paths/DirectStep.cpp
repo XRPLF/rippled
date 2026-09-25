@@ -4,6 +4,7 @@
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/PaymentSandbox.h>
+#include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/RippleStateHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
@@ -344,7 +345,7 @@ DirectIPaymentStep::quality(ReadView const& sb, QualityDirection qDir) const
     if (src_ == dst_)
         return QUALITY_ONE;
 
-    auto const sle = sb.read(keylet::line(dst_, src_, currency_));
+    auto const sle = sb.read(keylet::trustLine(dst_, src_, currency_));
 
     if (!sle)
         return QUALITY_ONE;
@@ -420,7 +421,7 @@ DirectIPaymentStep::check(StrandContext const& ctx, SLE::const_ref sleSrc) const
     // Since this is a payment a trust line must be present.  Perform all
     // trust line related checks.
     {
-        auto const sleLine = ctx.view.read(keylet::line(src_, dst_, currency_));
+        auto const sleLine = ctx.view.read(keylet::trustLine(src_, dst_, currency_));
         if (!sleLine)
         {
             JLOG(j_.trace()) << "DirectStepI: No credit line. " << *this;
@@ -845,8 +846,14 @@ DirectStepI<TDerived>::check(StrandContext const& ctx) const
     // pure issue/redeem can't be frozen
     if (!(ctx.isLast && ctx.isFirst))
     {
-        auto const ter = checkFreeze(ctx.view, src_, dst_, currency_);
-        if (!isTesSuccess(ter))
+        if (auto const ter = checkFreeze(ctx.view, src_, dst_, currency_); !isTesSuccess(ter))
+            return ter;
+
+        // An LPToken redeemed against its AMM (dst_ is the LPToken issuer on
+        // this hop) cannot move if a pool asset is an MPT that forbids
+        // transfers between these accounts. A no-op unless dst_ is an AMM whose
+        // pool holds such an MPT (so it is implicitly gated by featureMPTokensV2).
+        if (auto const ter = canTransferLPToken(ctx.view, src_, dst_, dst_); !isTesSuccess(ter))
             return ter;
     }
 

@@ -3,6 +3,7 @@
 #include <boost/container/flat_map.hpp>
 
 #include <condition_variable>
+#include <cstddef>
 #include <functional>
 #include <memory>
 #include <mutex>
@@ -11,7 +12,9 @@
 
 namespace xrpl {
 
-/** Manages a set of objects performing asynchronous I/O. */
+/**
+ * Manages a set of objects performing asynchronous I/O.
+ */
 class IOList final
 {
 public:
@@ -30,12 +33,13 @@ public:
             destroy();
         }
 
-        /** Return the IOList associated with the work.
-
-            Requirements:
-                The call to IOList::emplace to
-                create the work has already returned.
-        */
+        /**
+         * Return the IOList associated with the work.
+         *
+         * Requirements:
+         *     The call to IOList::emplace to
+         *     create the work has already returned.
+         */
         IOList&
         ios()
         {
@@ -61,71 +65,74 @@ private:
 public:
     IOList() = default;
 
-    /** Destroy the list.
-
-        Effects:
-            Closes the IOList if it was not previously
-                closed. No finisher is invoked in this case.
-
-            Blocks until all work is destroyed.
-    */
+    /**
+     * Destroy the list.
+     *
+     * Effects:
+     *     Closes the IOList if it was not previously
+     *         closed. No finisher is invoked in this case.
+     *
+     *     Blocks until all work is destroyed.
+     */
     ~IOList()
     {
         destroy();
     }
 
-    /** Return `true` if the list is closed.
-
-        Thread Safety:
-            Undefined result if called concurrently
-            with close().
-    */
+    /**
+     * Return `true` if the list is closed.
+     *
+     * Thread Safety:
+     *     Undefined result if called concurrently
+     *     with close().
+     */
     [[nodiscard]] bool
     closed() const
     {
         return closed_;
     }
 
-    /** Create associated work if not closed.
-
-        Requirements:
-            `std::is_base_of_v<Work, T> == true`
-
-        Thread Safety:
-            May be called concurrently.
-
-        Effects:
-            Atomically creates, inserts, and returns new
-            work T, or returns nullptr if the io_list is
-            closed,
-
-        If the call succeeds and returns a new object,
-        it is guaranteed that a subsequent call to close
-        will invoke Work::close on the object.
-
-    */
+    /**
+     * Create associated work if not closed.
+     *
+     * Requirements:
+     *     `std::is_base_of_v<Work, T> == true`
+     *
+     * Thread Safety:
+     *     May be called concurrently.
+     *
+     * Effects:
+     *     Atomically creates, inserts, and returns new
+     *     work T, or returns nullptr if the io_list is
+     *     closed,
+     *
+     * If the call succeeds and returns a new object,
+     * it is guaranteed that a subsequent call to close
+     * will invoke Work::close on the object.
+     */
     template <class T, class... Args>
     std::shared_ptr<T>
     emplace(Args&&... args);
 
-    /** Cancel active I/O.
-
-        Thread Safety:
-            May not be called concurrently.
-
-        Effects:
-            Associated work is closed.
-
-            Finisher if provided, will be called when
-            all associated work is destroyed. The finisher
-            may be called from a foreign thread, or within
-            the call to this function.
-
-            Only the first call to close will set the
-            finisher.
-
-            No effect after the first call.
-    */
+    /**
+     * Cancel active I/O.
+     *
+     * Thread Safety:
+     *     May not be called concurrently.
+     *
+     * Effects:
+     *     Associated work is closed.
+     *
+     *     Finisher if provided, will be called when
+     *     all associated work is destroyed. The finisher
+     *     may be called from a foreign thread, or within
+     *     the call to this function.
+     *
+     *     Only the first call to close will set the
+     *     finisher.
+     *
+     *     No effect after the first call.
+     */
     template <class Finisher>
     void
     close(Finisher&& f);
@@ -136,20 +143,21 @@ public:
         close([] {});
     }
 
-    /** Block until the io_list stops.
-
-        Effects:
-            The caller is blocked until the io_list is
-            closed and all associated work is destroyed.
-
-        Thread safety:
-            May be called concurrently.
-
-        Preconditions:
-            No call to io_context::run on any io_context
-            used by work objects associated with this io_list
-            exists in the caller's call stack.
-    */
+    /**
+     * Block until the io_list stops.
+     *
+     * Effects:
+     *     The caller is blocked until the io_list is
+     *     closed and all associated work is destroyed.
+     *
+     * Thread safety:
+     *     May be called concurrently.
+     *
+     * Preconditions:
+     *     No call to io_context::run on any io_context
+     *     used by work objects associated with this io_list
+     *     exists in the caller's call stack.
+     */
     template <class = void>
     void
     join();

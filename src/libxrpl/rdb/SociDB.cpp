@@ -1,22 +1,21 @@
-#include <xrpl/basics/BasicConfig.h>
 #include <xrpl/basics/Log.h>
+#include <xrpl/config/BasicConfig.h>
+#include <xrpl/config/Constants.h>
 #include <xrpl/core/Job.h>
 #include <xrpl/core/JobQueue.h>
 #include <xrpl/core/ServiceRegistry.h>
-
-#include <boost/filesystem/operations.hpp>
-#include <boost/filesystem/path.hpp>
 
 #include <soci/blob.h>
 
 #include <cstddef>
 #include <cstdint>
+#include <filesystem>
 #include <mutex>
 #include <stdexcept>
 #include <string>
 #include <utility>
 #include <vector>
-#if defined(__clang__)
+#ifdef __clang__
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wdeprecated"
 #endif
@@ -44,8 +43,8 @@ getSociSqliteInit(std::string const& name, std::string const& dir, std::string c
         Throw<std::runtime_error>(
             "Sqlite databases must specify a dir and a name. Name: " + name + " Dir: " + dir);
     }
-    boost::filesystem::path file(dir);
-    if (is_directory(file))
+    std::filesystem::path file(dir);
+    if (std::filesystem::is_directory(file))
         file /= name + ext;
     return file.string();
 }
@@ -53,13 +52,13 @@ getSociSqliteInit(std::string const& name, std::string const& dir, std::string c
 std::string
 getSociInit(BasicConfig const& config, std::string const& dbName)
 {
-    auto const& section = config.section("sqdb");
-    auto const backendName = get(section, "backend", "sqlite");
+    auto const& section = config.section(Sections::kSqdb);
+    auto const backendName = get(section, Keys::kBackend, "sqlite");
 
     if (backendName != "sqlite")
         Throw<std::runtime_error>("Unsupported soci backend: " + backendName);
 
-    auto const path = config.legacy("database_path");
+    auto const path = config.legacy(Sections::kDatabasePath);
     auto const ext = dbName == "validators" || dbName == "peerfinder" ? ".sqlite" : ".db";
     return detail::getSociSqliteInit(dbName, path, ext);
 }
@@ -187,14 +186,15 @@ convert(std::string const& from, soci::blob& to)
 
 namespace {
 
-/** Run a thread to checkpoint the write ahead log (wal) for
-    the given soci::session every 1000 pages. This is only implemented
-    for sqlite databases.
-
-    Note: According to: https://www.sqlite.org/wal.html#ckpt this
-    is the default behavior of sqlite. We may be able to remove this
-    class.
-*/
+/**
+ * Run a thread to checkpoint the write ahead log (wal) for
+ * the given soci::session every 1000 pages. This is only implemented
+ * for sqlite databases.
+ *
+ * Note: According to: https://www.sqlite.org/wal.html#ckpt this
+ * is the default behavior of sqlite. We may be able to remove this
+ * class.
+ */
 
 class WALCheckpointer : public Checkpointer
 {
@@ -212,6 +212,12 @@ public:
         if (auto [conn, keepAlive] = getConnection(); conn)
         {
             (void)keepAlive;
+            // The checkpointer is identified to the C callback by an integer id
+            // (resolved via checkpointerFromId) rather than a raw `this`, so it
+            // cannot dangle if the checkpointer is destroyed. Passing the id
+            // through sqlite's void* user-data requires an integer-to-pointer
+            // cast.
+            // NOLINTNEXTLINE(performance-no-int-to-ptr)
             sqlite_api::sqlite3_wal_hook(conn, &sqliteWALHook, reinterpret_cast<void*>(id_));
         }
     }
@@ -334,6 +340,6 @@ makeCheckpointer(
 
 }  // namespace xrpl
 
-#if defined(__clang__)
+#ifdef __clang__
 #pragma clang diagnostic pop
 #endif

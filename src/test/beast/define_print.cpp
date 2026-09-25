@@ -15,7 +15,9 @@
 
 namespace beast::unit_test {
 
-/** A suite that prints the list of globally defined suites. */
+/**
+ * A suite that prints the list of globally defined suites.
+ */
 class print_test : public Suite
 {
 public:

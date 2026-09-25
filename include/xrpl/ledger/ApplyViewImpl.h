@@ -1,18 +1,30 @@
 #pragma once
 
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/OpenView.h>
+#include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/detail/ApplyViewBase.h>
 #include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/TxMeta.h>
+
+#include <cstddef>
+#include <functional>
+#include <optional>
 
 namespace xrpl {
 
-/** Editable, discardable view that can build metadata for one tx.
-
-    Iteration of the tx map is delegated to the base.
-
-    @note Presented as ApplyView to clients.
-*/
+/**
+ * Editable, discardable view that can build metadata for one tx.
+ *
+ * Iteration of the tx map is delegated to the base.
+ *
+ * @note Presented as ApplyView to clients.
+ */
 class ApplyViewImpl final : public detail::ApplyViewBase
 {
 public:
@@ -26,12 +38,13 @@ public:
     ApplyViewImpl(ApplyViewImpl&&) = default;
     ApplyViewImpl(ReadView const* base, ApplyFlags flags);
 
-    /** Apply the transaction.
-
-        After a call to `apply`, the only valid
-        operation on this object is to call the
-        destructor.
-    */
+    /**
+     * Apply the transaction.
+     *
+     * After a call to `apply`, the only valid
+     * operation on this object is to call the
+     * destructor.
+     */
     std::optional<TxMeta>
     apply(
         OpenView& to,
@@ -41,25 +54,28 @@ public:
         bool isDryRun,
         beast::Journal j);
 
-    /** Set the amount of currency delivered.
-
-        This value is used when generating metadata
-        for payments, to set the DeliveredAmount field.
-        If the amount is not specified, the field is
-        excluded from the resulting metadata.
-    */
+    /**
+     * Set the amount of currency delivered.
+     *
+     * This value is used when generating metadata
+     * for payments, to set the DeliveredAmount field.
+     * If the amount is not specified, the field is
+     * excluded from the resulting metadata.
+     */
     void
     deliver(STAmount const& amount)
     {
         deliver_ = amount;
     }
 
-    /** Get the number of modified entries
+    /**
+     * Get the number of modified entries
      */
     std::size_t
     size();
 
-    /** Visit modified entries
+    /**
+     * Visit modified entries
      */
     void
     visit(

@@ -5,12 +5,12 @@
 #include <xrpld/app/main/BasicApp.h>
 #include <xrpld/app/misc/ValidatorSite.h>
 #include <xrpld/core/Config.h>
-#include <xrpld/core/ConfigSections.h>
 
 #include <xrpl/basics/UnorderedContainers.h>
 #include <xrpl/basics/chrono.h>
 #include <xrpl/basics/strHex.h>
 #include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/config/Constants.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/KeyType.h>
 #include <xrpl/protocol/PublicKey.h>
@@ -90,7 +90,7 @@ public:
             *this,
             envconfig([&keys](std::unique_ptr<Config> cfg) {
                 for (auto const& key : keys)
-                    cfg->section(SECTION_VALIDATORS).append(key);
+                    cfg->section(Sections::kValidators).append(key);
                 return cfg;
             }),
         };
@@ -200,8 +200,8 @@ public:
             Env env{
                 *this,
                 envconfig([&](std::unique_ptr<Config> cfg) {
-                    cfg->section(SECTION_VALIDATOR_LIST_SITES).append(siteURI);
-                    cfg->section(SECTION_VALIDATOR_LIST_KEYS)
+                    cfg->section(Sections::kValidatorListSites).append(siteURI);
+                    cfg->section(Sections::kValidatorListKeys)
                         .append(strHex(server->publisherPublic()));
                     return cfg;
                 }),
@@ -260,8 +260,8 @@ public:
             Env env{
                 *this,
                 envconfig([&](std::unique_ptr<Config> cfg) {
-                    cfg->section(SECTION_VALIDATOR_LIST_SITES).append(siteURI);
-                    cfg->section(SECTION_VALIDATOR_LIST_KEYS)
+                    cfg->section(Sections::kValidatorListSites).append(siteURI);
+                    cfg->section(Sections::kValidatorListKeys)
                         .append(strHex(server->publisherPublic()));
                     return cfg;
                 }),
@@ -323,8 +323,8 @@ public:
             Env env{
                 *this,
                 envconfig([&](std::unique_ptr<Config> cfg) {
-                    cfg->section(SECTION_VALIDATOR_LIST_SITES).append(siteURI);
-                    cfg->section(SECTION_VALIDATOR_LIST_KEYS)
+                    cfg->section(Sections::kValidatorListSites).append(siteURI);
+                    cfg->section(Sections::kValidatorListKeys)
                         .append(strHex(server->publisherPublic()));
                     return cfg;
                 }),
@@ -416,8 +416,8 @@ public:
             Env env{
                 *this,
                 envconfig([&](std::unique_ptr<Config> cfg) {
-                    cfg->section(SECTION_VALIDATOR_LIST_SITES).append(siteURI);
-                    cfg->section(SECTION_VALIDATOR_LIST_KEYS)
+                    cfg->section(Sections::kValidatorListSites).append(siteURI);
+                    cfg->section(Sections::kValidatorListKeys)
                         .append(strHex(server->publisherPublic()));
                     return cfg;
                 }),

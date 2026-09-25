@@ -66,7 +66,7 @@ public:
 class StatsDHookImpl : public HookImpl, public StatsDMetricBase
 {
 public:
-    StatsDHookImpl(HandlerType handler, std::shared_ptr<StatsDCollectorImp> const& impl);
+    StatsDHookImpl(HandlerType handler, std::shared_ptr<StatsDCollectorImp> impl);
 
     ~StatsDHookImpl() override;
 
@@ -86,7 +86,7 @@ private:
 class StatsDCounterImpl : public CounterImpl, public StatsDMetricBase
 {
 public:
-    StatsDCounterImpl(std::string name, std::shared_ptr<StatsDCollectorImp> const& impl);
+    StatsDCounterImpl(std::string name, std::shared_ptr<StatsDCollectorImp> impl);
 
     ~StatsDCounterImpl() override;
 
@@ -115,7 +115,7 @@ private:
 class StatsDEventImpl : public EventImpl
 {
 public:
-    StatsDEventImpl(std::string name, std::shared_ptr<StatsDCollectorImp> const& impl);
+    StatsDEventImpl(std::string name, std::shared_ptr<StatsDCollectorImp> impl);
 
     ~StatsDEventImpl() override = default;
 
@@ -140,7 +140,7 @@ private:
 class StatsDGaugeImpl : public GaugeImpl, public StatsDMetricBase
 {
 public:
-    StatsDGaugeImpl(std::string name, std::shared_ptr<StatsDCollectorImp> const& impl);
+    StatsDGaugeImpl(std::string name, std::shared_ptr<StatsDCollectorImp> impl);
 
     ~StatsDGaugeImpl() override;
 
@@ -174,7 +174,7 @@ private:
 class StatsDMeterImpl : public MeterImpl, public StatsDMetricBase
 {
 public:
-    explicit StatsDMeterImpl(std::string name, std::shared_ptr<StatsDCollectorImp> const& impl);
+    explicit StatsDMeterImpl(std::string name, std::shared_ptr<StatsDCollectorImp> impl);
 
     ~StatsDMeterImpl() override;
 
@@ -207,7 +207,7 @@ private:
     static constexpr auto kMaxPacketSize = 1472;
 
     Journal journal_;
-    IP::Endpoint address_;
+    ip::Endpoint address_;
     std::string prefix_;
     boost::asio::io_context ioContext_;
     std::optional<boost::asio::executor_work_guard<boost::asio::io_context::executor_type>> work_;
@@ -222,13 +222,13 @@ private:
     std::thread thread_;
 
     static boost::asio::ip::udp::endpoint
-    toEndpoint(IP::Endpoint const& ep)
+    toEndpoint(ip::Endpoint const& ep)
     {
         return boost::asio::ip::udp::endpoint(ep.address(), ep.port());
     }
 
 public:
-    StatsDCollectorImp(IP::Endpoint address, std::string prefix, Journal journal)
+    StatsDCollectorImp(ip::Endpoint address, std::string prefix, Journal journal)
         : journal_(journal)
         , address_(std::move(address))
         , prefix_(std::move(prefix))
@@ -325,9 +325,9 @@ public:
     postBuffer(std::string&& buffer)
     {
         boost::asio::dispatch(
-            ioContext_,
-            boost::asio::bind_executor(
-                strand_, std::bind(&StatsDCollectorImp::doPostBuffer, this, std::move(buffer))));
+            ioContext_, boost::asio::bind_executor(strand_, [this, buffer = std::move(buffer)] {
+                doPostBuffer(buffer);
+            }));
     }
 
     // The keepAlive parameter makes sure the buffers sent to
@@ -392,12 +392,10 @@ public:
                 log(buffers);
                 socket_.async_send(
                     buffers,
-                    std::bind(
-                        &StatsDCollectorImp::onSend,
-                        this,
-                        keepAlive,
-                        std::placeholders::_1,
-                        std::placeholders::_2));
+                    [this, keepAlive](
+                        boost::system::error_code const& ec, std::size_t bytesTransferred) {
+                        onSend(keepAlive, ec, bytesTransferred);
+                    });
                 buffers.clear();
                 size = 0;
             }
@@ -411,12 +409,10 @@ public:
             log(buffers);
             socket_.async_send(
                 buffers,
-                std::bind(
-                    &StatsDCollectorImp::onSend,
-                    this,
-                    keepAlive,
-                    std::placeholders::_1,
-                    std::placeholders::_2));
+                [this, keepAlive](
+                    boost::system::error_code const& ec, std::size_t bytesTransferred) {
+                    onSend(keepAlive, ec, bytesTransferred);
+                });
         }
     }
 
@@ -425,7 +421,7 @@ public:
     {
         using namespace std::chrono_literals;
         timer_.expires_after(1s);
-        timer_.async_wait(std::bind(&StatsDCollectorImp::onTimer, this, std::placeholders::_1));
+        timer_.async_wait([this](boost::system::error_code const& ec) { onTimer(ec); });
     }
 
     void
@@ -478,8 +474,8 @@ public:
 
 //------------------------------------------------------------------------------
 
-StatsDHookImpl::StatsDHookImpl(HandlerType handler, std::shared_ptr<StatsDCollectorImp> const& impl)
-    : impl_(impl), handler_(std::move(handler))
+StatsDHookImpl::StatsDHookImpl(HandlerType handler, std::shared_ptr<StatsDCollectorImp> impl)
+    : impl_(std::move(impl)), handler_(std::move(handler))
 {
     impl_->add(*this);
 }
@@ -497,10 +493,8 @@ StatsDHookImpl::doProcess()
 
 //------------------------------------------------------------------------------
 
-StatsDCounterImpl::StatsDCounterImpl(
-    std::string name,
-    std::shared_ptr<StatsDCollectorImp> const& impl)
-    : impl_(impl), name_(std::move(name))
+StatsDCounterImpl::StatsDCounterImpl(std::string name, std::shared_ptr<StatsDCollectorImp> impl)
+    : impl_(std::move(impl)), name_(std::move(name))
 {
     impl_->add(*this);
 }
@@ -515,10 +509,9 @@ StatsDCounterImpl::increment(CounterImpl::value_type amount)
 {
     boost::asio::dispatch(
         impl_->getIoContext(),
-        std::bind(
-            &StatsDCounterImpl::doIncrement,
-            std::static_pointer_cast<StatsDCounterImpl>(shared_from_this()),
-            amount));
+        [self = std::static_pointer_cast<StatsDCounterImpl>(shared_from_this()), amount] {
+            self->doIncrement(amount);
+        });
 }
 
 void
@@ -550,8 +543,8 @@ StatsDCounterImpl::doProcess()
 
 //------------------------------------------------------------------------------
 
-StatsDEventImpl::StatsDEventImpl(std::string name, std::shared_ptr<StatsDCollectorImp> const& impl)
-    : impl_(impl), name_(std::move(name))
+StatsDEventImpl::StatsDEventImpl(std::string name, std::shared_ptr<StatsDCollectorImp> impl)
+    : impl_(std::move(impl)), name_(std::move(name))
 {
 }
 
@@ -560,10 +553,9 @@ StatsDEventImpl::notify(EventImpl::value_type const& value)
 {
     boost::asio::dispatch(
         impl_->getIoContext(),
-        std::bind(
-            &StatsDEventImpl::doNotify,
-            std::static_pointer_cast<StatsDEventImpl>(shared_from_this()),
-            value));
+        [self = std::static_pointer_cast<StatsDEventImpl>(shared_from_this()), value] {
+            self->doNotify(value);
+        });
 }
 
 void
@@ -577,8 +569,8 @@ StatsDEventImpl::doNotify(EventImpl::value_type const& value)
 
 //------------------------------------------------------------------------------
 
-StatsDGaugeImpl::StatsDGaugeImpl(std::string name, std::shared_ptr<StatsDCollectorImp> const& impl)
-    : impl_(impl), name_(std::move(name))
+StatsDGaugeImpl::StatsDGaugeImpl(std::string name, std::shared_ptr<StatsDCollectorImp> impl)
+    : impl_(std::move(impl)), name_(std::move(name))
 {
     impl_->add(*this);
 }
@@ -593,10 +585,9 @@ StatsDGaugeImpl::set(GaugeImpl::value_type value)
 {
     boost::asio::dispatch(
         impl_->getIoContext(),
-        std::bind(
-            &StatsDGaugeImpl::doSet,
-            std::static_pointer_cast<StatsDGaugeImpl>(shared_from_this()),
-            value));
+        [self = std::static_pointer_cast<StatsDGaugeImpl>(shared_from_this()), value] {
+            self->doSet(value);
+        });
 }
 
 void
@@ -604,10 +595,9 @@ StatsDGaugeImpl::increment(GaugeImpl::difference_type amount)
 {
     boost::asio::dispatch(
         impl_->getIoContext(),
-        std::bind(
-            &StatsDGaugeImpl::doIncrement,
-            std::static_pointer_cast<StatsDGaugeImpl>(shared_from_this()),
-            amount));
+        [self = std::static_pointer_cast<StatsDGaugeImpl>(shared_from_this()), amount] {
+            self->doIncrement(amount);
+        });
 }
 
 void
@@ -642,14 +632,14 @@ StatsDGaugeImpl::doIncrement(GaugeImpl::difference_type amount)
 
     if (amount > 0)
     {
-        GaugeImpl::value_type const d(static_cast<GaugeImpl::value_type>(amount));
+        auto const d = static_cast<GaugeImpl::value_type>(amount);
         value += (d >= std::numeric_limits<GaugeImpl::value_type>::max() - value_)
             ? std::numeric_limits<GaugeImpl::value_type>::max() - value_
             : d;
     }
     else if (amount < 0)
     {
-        GaugeImpl::value_type const d(static_cast<GaugeImpl::value_type>(-amount));
+        auto const d = static_cast<GaugeImpl::value_type>(-amount);
         value = (d >= value) ? 0 : value - d;
     }
 
@@ -664,8 +654,8 @@ StatsDGaugeImpl::doProcess()
 
 //------------------------------------------------------------------------------
 
-StatsDMeterImpl::StatsDMeterImpl(std::string name, std::shared_ptr<StatsDCollectorImp> const& impl)
-    : impl_(impl), name_(std::move(name))
+StatsDMeterImpl::StatsDMeterImpl(std::string name, std::shared_ptr<StatsDCollectorImp> impl)
+    : impl_(std::move(impl)), name_(std::move(name))
 {
     impl_->add(*this);
 }
@@ -680,10 +670,9 @@ StatsDMeterImpl::increment(MeterImpl::value_type amount)
 {
     boost::asio::dispatch(
         impl_->getIoContext(),
-        std::bind(
-            &StatsDMeterImpl::doIncrement,
-            std::static_pointer_cast<StatsDMeterImpl>(shared_from_this()),
-            amount));
+        [self = std::static_pointer_cast<StatsDMeterImpl>(shared_from_this()), amount] {
+            self->doIncrement(amount);
+        });
 }
 
 void
@@ -718,7 +707,7 @@ StatsDMeterImpl::doProcess()
 //------------------------------------------------------------------------------
 
 std::shared_ptr<StatsDCollector>
-StatsDCollector::make(IP::Endpoint const& address, std::string const& prefix, Journal journal)
+StatsDCollector::make(ip::Endpoint const& address, std::string const& prefix, Journal journal)
 {
     return std::make_shared<detail::StatsDCollectorImp>(address, prefix, journal);
 }

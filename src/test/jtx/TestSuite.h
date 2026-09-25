@@ -1,7 +1,9 @@
 #pragma once
 
-#include <xrpl/beast/unit_test.h>
+#include <xrpl/beast/unit_test/suite.h>
 
+#include <exception>
+#include <sstream>
 #include <string>
 
 namespace xrpl {

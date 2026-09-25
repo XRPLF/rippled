@@ -1,8 +1,19 @@
 #pragma once
 
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/nodestore/Backend.h>
+#include <xrpl/nodestore/Database.h>
+#include <xrpl/nodestore/Factory.h>
 #include <xrpl/nodestore/Manager.h>
+#include <xrpl/nodestore/Scheduler.h>
 
-namespace xrpl::NodeStore {
+#include <cstddef>
+#include <memory>
+#include <mutex>
+#include <string>
+#include <vector>
+
+namespace xrpl::node_store {
 
 class ManagerImp : public Manager
 {
@@ -46,4 +57,4 @@ public:
         beast::Journal journal) override;
 };
 
-}  // namespace xrpl::NodeStore
+}  // namespace xrpl::node_store

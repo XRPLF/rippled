@@ -2,12 +2,12 @@
 #include <test/jtx/Env.h>
 
 #include <xrpld/app/consensus/RCLValidations.h>
-#include <xrpld/consensus/LedgerTrie.h>
 #include <xrpld/core/Config.h>
 
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/chrono.h>
 #include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/consensus/LedgerTrie.h>
 #include <xrpl/ledger/Ledger.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/KeyType.h>
@@ -97,7 +97,7 @@ class RCLValidations_test : public beast::unit_test::Suite
             auto next = std::make_shared<Ledger>(*prev, env.app().getTimeKeeper().closeTime());
             // Force a different hash on the first iteration
             next->updateSkipList();
-            BEAST_EXPECT(next->read(keylet::fees()));
+            BEAST_EXPECT(next->read(keylet::feeSettings()));
             if (forceHash)
             {
                 next->setImmutable();

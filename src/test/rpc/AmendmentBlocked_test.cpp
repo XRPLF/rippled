@@ -9,10 +9,10 @@
 #include <test/jtx/sig.h>
 
 #include <xrpld/core/Config.h>
-#include <xrpld/core/ConfigSections.h>
 
 #include <xrpl/basics/strHex.h>
 #include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/config/Constants.h>
 #include <xrpl/json/to_string.h>
 #include <xrpl/protocol/KeyType.h>
 #include <xrpl/protocol/Serializer.h>
@@ -20,6 +20,7 @@
 #include <xrpl/server/NetworkOPs.h>
 
 #include <memory>
+#include <string>
 
 namespace xrpl {
 
@@ -30,7 +31,7 @@ class AmendmentBlocked_test : public beast::unit_test::Suite
     {
         using namespace test::jtx;
         Env env{*this, envconfig([](std::unique_ptr<Config> cfg) {
-                    cfg->loadFromString("[" SECTION_SIGNING_SUPPORT "]\ntrue");
+                    cfg->loadFromString(std::string("[") + Sections::kSigningSupport + "]\ntrue");
                     return cfg;
                 })};
         auto const gw = Account{"gateway"};

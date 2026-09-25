@@ -1,17 +1,21 @@
 #pragma once
 
-#include <xrpl/ledger/View.h>
-#include <xrpl/protocol/Indexes.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/ledger/ApplyView.h>
+#include <xrpl/protocol/Book.h>
 #include <xrpl/protocol/Quality.h>
+#include <xrpl/protocol/STLedgerEntry.h>
 
 namespace xrpl {
 
 class Logs;
 
-/** Iterates and consumes raw offers in an order book.
-    Offers are presented from highest quality to lowest quality. This will
-    return all offers present including missing, invalid, unfunded, etc.
-*/
+/**
+ * Iterates and consumes raw offers in an order book.
+ * Offers are presented from highest quality to lowest quality. This will
+ * return all offers present including missing, invalid, unfunded, etc.
+ */
 class BookTip
 {
 private:
@@ -25,7 +29,9 @@ private:
     Quality quality_{};
 
 public:
-    /** Create the iterator. */
+    /**
+     * Create the iterator.
+     */
     BookTip(ApplyView& view, Book const& book);
 
     [[nodiscard]] uint256 const&
@@ -52,10 +58,11 @@ public:
         return entry_;
     }
 
-    /** Erases the current offer and advance to the next offer.
-        Complexity: Constant
-        @return `true` if there is a next offer
-    */
+    /**
+     * Erases the current offer and advance to the next offer.
+     * Complexity: Constant
+     * @return `true` if there is a next offer
+     */
     bool
     step(beast::Journal j);
 };

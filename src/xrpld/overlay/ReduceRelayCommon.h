@@ -1,6 +1,8 @@
 #pragma once
 
 #include <chrono>
+#include <cstddef>
+#include <cstdint>
 
 // Blog post explaining the rationale behind reduction of flooding gossip
 // protocol:

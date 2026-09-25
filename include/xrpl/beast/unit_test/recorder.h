@@ -6,10 +6,16 @@
 
 #include <xrpl/beast/unit_test/results.h>
 #include <xrpl/beast/unit_test/runner.h>
+#include <xrpl/beast/unit_test/suite_info.h>
+
+#include <string>
+#include <utility>
 
 namespace beast::unit_test {
 
-/** A test runner that stores the results. */
+/**
+ * A test runner that stores the results.
+ */
 class Recorder : public Runner
 {
 private:
@@ -20,7 +26,9 @@ private:
 public:
     Recorder() = default;
 
-    /** Returns a report with the results of all completed suites. */
+    /**
+     * Returns a report with the results of all completed suites.
+     */
     [[nodiscard]] Results const&
     report() const
     {

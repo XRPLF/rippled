@@ -39,7 +39,7 @@ estimateEntropy(std::string const& input)
     {
         (void)_;
         auto x = f / input.length();
-        se += (x)*log2(x);
+        se += x * log2(x);
     }
 
     // We multiply it by the length, to get an estimate of
@@ -52,7 +52,7 @@ estimateEntropy(std::string const& input)
 //  passphrase: <string>
 // }
 json::Value
-doWalletPropose(RPC::JsonContext& context)
+doWalletPropose(rpc::JsonContext& context)
 {
     return walletPropose(context.params);
 }
@@ -68,7 +68,7 @@ walletPropose(json::Value const& params)
     {
         if (!params[jss::key_type].isString())
         {
-            return RPC::expectedFieldError(jss::key_type, "string");
+            return rpc::expectedFieldError(jss::key_type, "string");
         }
 
         keyType = keyTypeFromString(params[jss::key_type].asString());
@@ -83,11 +83,11 @@ walletPropose(json::Value const& params)
     {
         if (params.isMember(jss::passphrase))
         {
-            seed = RPC::parseXrplLibSeed(params[jss::passphrase]);
+            seed = rpc::parseXrplLibSeed(params[jss::passphrase]);
         }
         else if (params.isMember(jss::seed))
         {
-            seed = RPC::parseXrplLibSeed(params[jss::seed]);
+            seed = rpc::parseXrplLibSeed(params[jss::seed]);
         }
 
         if (seed)
@@ -110,7 +110,7 @@ walletPropose(json::Value const& params)
         {
             json::Value err;
 
-            seed = RPC::getSeedFromRPC(params, err);
+            seed = rpc::getSeedFromRPC(params, err);
 
             if (!seed)
                 return err;

@@ -1,6 +1,6 @@
 #pragma once
 
-#include <xrpl/beast/insight/Insight.h>
+#include <xrpl/beast/insight/Collector.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/core/JobQueue.h>
 #include <xrpl/core/ServiceRegistry.h>
@@ -8,6 +8,7 @@
 
 #include <boost/asio.hpp>
 
+#include <cstddef>
 #include <memory>
 
 namespace xrpl {

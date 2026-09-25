@@ -31,6 +31,8 @@ TEST(RippleStateTests, BuilderSettersRoundTrip)
     auto const highNodeValue = canonical_UINT64();
     auto const highQualityInValue = canonical_UINT32();
     auto const highQualityOutValue = canonical_UINT32();
+    auto const highSponsorValue = canonical_ACCOUNT();
+    auto const lowSponsorValue = canonical_ACCOUNT();
 
     RippleStateBuilder builder{
         balanceValue,
@@ -46,6 +48,8 @@ TEST(RippleStateTests, BuilderSettersRoundTrip)
     builder.setHighNode(highNodeValue);
     builder.setHighQualityIn(highQualityInValue);
     builder.setHighQualityOut(highQualityOutValue);
+    builder.setHighSponsor(highSponsorValue);
+    builder.setLowSponsor(lowSponsorValue);
 
     builder.setLedgerIndex(index);
     builder.setFlags(0x1u);
@@ -134,6 +138,22 @@ TEST(RippleStateTests, BuilderSettersRoundTrip)
         EXPECT_TRUE(entry.hasHighQualityOut());
     }
 
+    {
+        auto const& expected = highSponsorValue;
+        auto const actualOpt = entry.getHighSponsor();
+        ASSERT_TRUE(actualOpt.has_value());
+        expectEqualField(expected, *actualOpt, "sfHighSponsor");
+        EXPECT_TRUE(entry.hasHighSponsor());
+    }
+
+    {
+        auto const& expected = lowSponsorValue;
+        auto const actualOpt = entry.getLowSponsor();
+        ASSERT_TRUE(actualOpt.has_value());
+        expectEqualField(expected, *actualOpt, "sfLowSponsor");
+        EXPECT_TRUE(entry.hasLowSponsor());
+    }
+
     EXPECT_TRUE(entry.hasLedgerIndex());
     auto const ledgerIndex = entry.getLedgerIndex();
     ASSERT_TRUE(ledgerIndex.has_value());
@@ -158,6 +178,8 @@ TEST(RippleStateTests, BuilderFromSleRoundTrip)
     auto const highNodeValue = canonical_UINT64();
     auto const highQualityInValue = canonical_UINT32();
     auto const highQualityOutValue = canonical_UINT32();
+    auto const highSponsorValue = canonical_ACCOUNT();
+    auto const lowSponsorValue = canonical_ACCOUNT();
 
     auto sle = std::make_shared<SLE>(RippleState::entryType, index);
 
@@ -172,6 +194,8 @@ TEST(RippleStateTests, BuilderFromSleRoundTrip)
     sle->at(sfHighNode) = highNodeValue;
     sle->at(sfHighQualityIn) = highQualityInValue;
     sle->at(sfHighQualityOut) = highQualityOutValue;
+    sle->at(sfHighSponsor) = highSponsorValue;
+    sle->at(sfLowSponsor) = lowSponsorValue;
 
     RippleStateBuilder builderFromSle{sle};
     EXPECT_TRUE(builderFromSle.validate());
@@ -310,6 +334,32 @@ TEST(RippleStateTests, BuilderFromSleRoundTrip)
         expectEqualField(expected, *fromBuilderOpt, "sfHighQualityOut");
     }
 
+    {
+        auto const& expected = highSponsorValue;
+
+        auto const fromSleOpt = entryFromSle.getHighSponsor();
+        auto const fromBuilderOpt = entryFromBuilder.getHighSponsor();
+
+        ASSERT_TRUE(fromSleOpt.has_value());
+        ASSERT_TRUE(fromBuilderOpt.has_value());
+
+        expectEqualField(expected, *fromSleOpt, "sfHighSponsor");
+        expectEqualField(expected, *fromBuilderOpt, "sfHighSponsor");
+    }
+
+    {
+        auto const& expected = lowSponsorValue;
+
+        auto const fromSleOpt = entryFromSle.getLowSponsor();
+        auto const fromBuilderOpt = entryFromBuilder.getLowSponsor();
+
+        ASSERT_TRUE(fromSleOpt.has_value());
+        ASSERT_TRUE(fromBuilderOpt.has_value());
+
+        expectEqualField(expected, *fromSleOpt, "sfLowSponsor");
+        expectEqualField(expected, *fromBuilderOpt, "sfLowSponsor");
+    }
+
     EXPECT_EQ(entryFromSle.getKey(), index);
     EXPECT_EQ(entryFromBuilder.getKey(), index);
 }
@@ -384,5 +434,9 @@ TEST(RippleStateTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(entry.getHighQualityIn().has_value());
     EXPECT_FALSE(entry.hasHighQualityOut());
     EXPECT_FALSE(entry.getHighQualityOut().has_value());
+    EXPECT_FALSE(entry.hasHighSponsor());
+    EXPECT_FALSE(entry.getHighSponsor().has_value());
+    EXPECT_FALSE(entry.hasLowSponsor());
+    EXPECT_FALSE(entry.getLowSponsor().has_value());
 }
 }

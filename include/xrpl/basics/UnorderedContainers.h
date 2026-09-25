@@ -2,12 +2,14 @@
 
 #include <xrpl/basics/hardened_hash.h>
 #include <xrpl/basics/partitioned_unordered_map.h>
-#include <xrpl/beast/hash/hash_append.h>
 #include <xrpl/beast/hash/uhash.h>
 #include <xrpl/beast/hash/xxhasher.h>
 
+#include <functional>
+#include <memory>
 #include <unordered_map>
 #include <unordered_set>
+#include <utility>
 
 /**
  * Use hash_* containers for keys that do not need a cryptographically secure

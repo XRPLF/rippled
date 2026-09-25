@@ -7,7 +7,6 @@
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/OpenView.h>
-#include <xrpl/protocol/IOUAmount.h>
 #include <xrpl/protocol/Rules.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/SeqProxy.h>
@@ -18,6 +17,7 @@
 
 #include <cstdint>
 #include <exception>
+#include <expected>
 #include <memory>
 #include <optional>
 #include <utility>
@@ -70,10 +70,9 @@ withTxnType(Rules const& rules, TxType txnType, F&& f)
     //
     // See also Transactor::operator().
     //
-    std::optional<NumberSO> stNumberSO;
     std::optional<CurrentTransactionRulesGuard> rulesGuard;
     std::optional<NumberMantissaScaleGuard> mantissaScaleGuard;
-    createGuards(rules, stNumberSO, rulesGuard, mantissaScaleGuard);
+    createGuards(rules, rulesGuard, mantissaScaleGuard);
 
     switch (txnType)
     {
@@ -183,7 +182,11 @@ invokePreclaim(PreclaimContext const& ctx)
                         if (NotTEC const result = T::checkPriorTxAndLastLedger(ctx))
                             return result;
 
-                        if (NotTEC const result = T::checkPermission(ctx.view, ctx.tx))
+                        if (NotTEC const result = T::checkSponsor(ctx.view, ctx.tx))
+                            return result;
+
+                        if (NotTEC const result =
+                                Transactor::invokeCheckPermission<T>(ctx.view, ctx.tx))
                             return result;
 
                         if (NotTEC const result = T::checkSign(ctx))
@@ -193,7 +196,12 @@ invokePreclaim(PreclaimContext const& ctx)
                     }())
                     return preSigResult;
 
-                if (TER const result = T::checkFee(ctx, calculateBaseFee(ctx.view, ctx.tx)))
+                // We can't check the fee if we can't compute it, so reject.
+                auto const baseFee = calculateBaseFee(ctx.view, ctx.tx);
+                if (!baseFee)
+                    return baseFee.error();
+
+                if (TER const result = T::checkFee(ctx, *baseFee))
                     return result;
             }
 
@@ -221,13 +229,12 @@ invokePreclaim(PreclaimContext const& ctx)
  *
  * @param view The ledger view to use for fee calculation.
  * @param tx The transaction for which the base fee is to be calculated.
- * @return The calculated base fee as an XRPAmount.
+ * @return The calculated base fee. Returns `std::unexpected(temUNKNOWN)` if the transaction
+ * type is not recognized, and `std::unexpected(tefEXCEPTION)` if the transactor's
+ * `calculateBaseFee` threw.
  *
- * @throws std::exception If an error occurs during fee calculation, including
- * but not limited to unknown transaction types or internal errors, the function
- * logs an error and returns an XRPAmount of zero.
  */
-static XRPAmount
+static std::expected<XRPAmount, TER>
 invokeCalculateBaseFee(ReadView const& view, STTx const& tx)
 {
     try
@@ -236,12 +243,24 @@ invokeCalculateBaseFee(ReadView const& view, STTx const& tx)
             return T::calculateBaseFee(view, tx);
         });
     }
-    catch (UnknownTxnType const& e)
+    catch (UnknownTxnType const&)
     {
         // LCOV_EXCL_START
         UNREACHABLE("xrpl::invoke_calculateBaseFee : unknown transaction type");
-        return XRPAmount{0};
+        return std::unexpected(temUNKNOWN);
         // LCOV_EXCL_STOP
+    }
+    catch (std::exception const& e)
+    {
+        JLOG(debugLog().error()) << "calculateBaseFee: " << tx.getTransactionID()
+                                 << " threw an exception: " << e.what();
+        return std::unexpected(tefEXCEPTION);
+    }
+    catch (...)
+    {
+        JLOG(debugLog().error()) << "calculateBaseFee: " << tx.getTransactionID()
+                                 << " threw an unknown exception";
+        return std::unexpected(tefEXCEPTION);
     }
 }
 
@@ -249,7 +268,7 @@ TxConsequences::TxConsequences(NotTEC pfResult)
     : isBlocker_(false)
     , fee_(beast::kZero)
     , potentialSpend_(beast::kZero)
-    , seqProx_(SeqProxy::sequence(0))
+    , seqProx_(SeqProxy::rawSequence(0))
     , sequencesConsumed_(0)
 {
     XRPL_ASSERT(
@@ -414,7 +433,7 @@ preclaim(PreflightResult const& preflightResult, ServiceRegistry& registry, Open
     }
 }
 
-XRPAmount
+std::expected<XRPAmount, TER>
 calculateBaseFee(ReadView const& view, STTx const& tx)
 {
     return invokeCalculateBaseFee(view, tx);
@@ -439,13 +458,26 @@ doApply(PreclaimResult const& preclaimResult, ServiceRegistry& registry, OpenVie
     {
         if (!preclaimResult.likelyToClaimFee)
             return {preclaimResult.ter, false};
+
+        // For any tx with a real account, preclaim already computed this fee
+        // successfully against this same view.
+        auto const baseFee = calculateBaseFee(view, preclaimResult.tx);
+        if (!baseFee)
+        {
+            // LCOV_EXCL_START
+            JLOG(preclaimResult.j.error())
+                << "apply: could not compute base fee: " << transToken(baseFee.error());
+            return {tefINTERNAL, false};
+            // LCOV_EXCL_STOP
+        }
+
         ApplyContext ctx(
             registry,
             view,
             preclaimResult.parentBatchId,
             preclaimResult.tx,
             preclaimResult.ter,
-            calculateBaseFee(view, preclaimResult.tx),
+            *baseFee,
             preclaimResult.flags,
             preclaimResult.j);
         return invokeApply(ctx);

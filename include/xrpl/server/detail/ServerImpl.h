@@ -1,7 +1,8 @@
 #pragma once
 
-#include <xrpl/basics/chrono.h>
-#include <xrpl/beast/core/List.h>
+#include <xrpl/basics/contract.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/server/Port.h>
 #include <xrpl/server/detail/Door.h>
 #include <xrpl/server/detail/io_list.h>
 
@@ -11,47 +12,59 @@
 
 #include <array>
 #include <chrono>
+#include <cstddef>
+#include <memory>
 #include <mutex>
 #include <optional>
+#include <stdexcept>
+#include <string>
 #include <unordered_map>
+#include <utility>
+#include <vector>
 
 namespace xrpl {
 
 using Endpoints = std::unordered_map<std::string, boost::asio::ip::tcp::endpoint>;
 
-/** A multi-protocol server.
-
-    This server maintains multiple configured listening ports,
-    with each listening port allows for multiple protocols including
-    HTTP, HTTP/S, WebSocket, Secure WebSocket, and the Peer protocol.
-*/
+/**
+ * A multi-protocol server.
+ *
+ * This server maintains multiple configured listening ports,
+ * with each listening port allows for multiple protocols including
+ * HTTP, HTTP/S, WebSocket, Secure WebSocket, and the Peer protocol.
+ */
 class Server
 {
 public:
-    /** Destroy the server.
-        The server is closed if it is not already closed. This call
-        blocks until the server has stopped.
-    */
+    /**
+     * Destroy the server.
+     * The server is closed if it is not already closed. This call
+     * blocks until the server has stopped.
+     */
     virtual ~Server() = default;
 
-    /** Returns the Journal associated with the server. */
+    /**
+     * Returns the Journal associated with the server.
+     */
     virtual beast::Journal
     journal() = 0;
 
-    /** Set the listening port settings.
-        This may only be called once.
-    */
+    /**
+     * Set the listening port settings.
+     * This may only be called once.
+     */
     virtual Endpoints
     ports(std::vector<Port> const& v) = 0;
 
-    /** Close the server.
-        The close is performed asynchronously. The handler will be notified
-        when the server has stopped. The server is considered stopped when
-        there are no pending I/O completion handlers and all connections
-        have closed.
-        Thread safety:
-            Safe to call concurrently from any thread.
-    */
+    /**
+     * Close the server.
+     * The close is performed asynchronously. The handler will be notified
+     * when the server has stopped. The server is considered stopped when
+     * there are no pending I/O completion handlers and all connections
+     * have closed.
+     * Thread safety:
+     *     Safe to call concurrently from any thread.
+     */
     virtual void
     close() = 0;
 };

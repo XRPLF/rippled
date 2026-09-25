@@ -56,10 +56,15 @@ STObject::STObject(SOTemplate const& type, SField const& name) : STBase(name)
     set(type);
 }
 
-STObject::STObject(SOTemplate const& type, SerialIter& sit, SField const& name) : STBase(name)
+STObject::STObject(
+    SOTemplate const& type,
+    SerialIter& sit,
+    SField const& name,
+    bool requireCanonicalOrder)
+    : STBase(name)
 {
     v_.reserve(type.size());
-    set(sit);
+    set(sit, 0, requireCanonicalOrder);
     applyTemplate(type);  // May throw
 }
 
@@ -78,12 +83,10 @@ STObject::makeInnerObject(SField const& name)
     // The if is complicated because inner object templates were added in
     // two phases:
     //  1. If there are no available Rules, then always apply the template.
-    //  2. fixInnerObjTemplate added templates to two AMM inner objects.
-    //  3. fixInnerObjTemplate2 added templates to all remaining inner objects.
+    //  2. fixInnerObjTemplate2 added templates to all remaining inner objects.
     std::optional<Rules> const& rules = getCurrentTransactionRules();
     bool const isAMMObj = name == sfAuctionSlot || name == sfVoteEntry;
-    if (!rules || (rules->enabled(fixInnerObjTemplate) && isAMMObj) ||
-        (rules->enabled(fixInnerObjTemplate2) && !isAMMObj))
+    if (!rules || isAMMObj || rules->enabled(fixInnerObjTemplate2))
     {
         if (SOTemplate const* elements =
                 InnerObjectFormats::getInstance().findSOTemplateBySField(name))
@@ -210,12 +213,13 @@ STObject::applyTemplateFromSField(SField const& sField)
 
 // return true = terminated with end-of-object
 bool
-STObject::set(SerialIter& sit, int depth)
+STObject::set(SerialIter& sit, int depth, bool requireCanonicalOrder)
 {
     bool reachedEndOfObject = false;
 
     v_.clear();
 
+    std::optional<int> prevFieldCode;
     // Consume data in the pipe until we run out or reach the end
     while (!sit.empty())
     {
@@ -240,13 +244,19 @@ STObject::set(SerialIter& sit, int depth)
         }
 
         auto const& fn = SField::getField(type, field);
-
         if (fn.isInvalid())
         {
             JLOG(debugLog().error())
                 << "Unknown field: field_type=" << type << ", field_name=" << field;
             Throw<std::runtime_error>("Unknown field");
         }
+
+        if (requireCanonicalOrder && prevFieldCode.has_value() && fn.fieldCodeMem <= *prevFieldCode)
+        {
+            JLOG(debugLog().error()) << "Fields in object are not in canonical order";
+            Throw<std::runtime_error>("Fields in object are not in canonical order");
+        }
+        prevFieldCode = fn.fieldCodeMem;
 
         // Unflatten the field
         v_.emplace_back(sit, fn, depth + 1);
@@ -340,7 +350,7 @@ STObject::getText() const
 bool
 STObject::isEquivalent(STBase const& t) const
 {
-    STObject const* v = dynamic_cast<STObject const*>(&t);
+    auto const* v = dynamic_cast<STObject const*>(&t);
 
     if (v == nullptr)
         return false;
@@ -476,7 +486,7 @@ STObject::peekFieldArray(SField const& field)
 bool
 STObject::setFlag(std::uint32_t f)
 {
-    STUInt32* t = dynamic_cast<STUInt32*>(getPField(sfFlags, true));
+    auto* t = dynamic_cast<STUInt32*>(getPField(sfFlags, true));
 
     if (t == nullptr)
         return false;
@@ -488,7 +498,7 @@ STObject::setFlag(std::uint32_t f)
 bool
 STObject::clearFlag(std::uint32_t f)
 {
-    STUInt32* t = dynamic_cast<STUInt32*>(getPField(sfFlags));
+    auto* t = dynamic_cast<STUInt32*>(getPField(sfFlags));
 
     if (t == nullptr)
         return false;
@@ -504,9 +514,9 @@ STObject::isFlag(std::uint32_t f) const
 }
 
 std::uint32_t
-STObject::getFlags(void) const
+STObject::getFlags() const
 {
-    STUInt32 const* t = dynamic_cast<STUInt32 const*>(peekAtPField(sfFlags));
+    auto const* t = dynamic_cast<STUInt32 const*>(peekAtPField(sfFlags));
 
     if (t == nullptr)
         return 0;
@@ -639,7 +649,7 @@ Blob
 STObject::getFieldVL(SField const& field) const
 {
     STBlob const empty;
-    STBlob const& b = getFieldByConstRef<STBlob>(field, empty);
+    auto const& b = getFieldByConstRef<STBlob>(field, empty);
     return Blob(b.data(), b.data() + b.size());
 }
 
@@ -698,7 +708,7 @@ STObject::getFieldNumber(SField const& field) const
 void
 STObject::set(std::unique_ptr<STBase> v)
 {
-    set(std::move(*v.get()));
+    set(std::move(*v));
 }
 
 void
@@ -901,6 +911,10 @@ STObject::add(Serializer& s, WhichFields whichFields) const
         XRPL_ASSERT(
             (sType != STI_OBJECT) || (field->getFName().fieldType == STI_OBJECT),
             "xrpl::STObject::add : valid field type");
+        XRPL_ASSERT(
+            getStyle(field->getFName()) != SoeDefault || !field->isDefault(),
+            "xrpl::STObject::add : non-default value");
+
         field->addFieldID(s);
         field->add(s);
         if (sType == STI_ARRAY || sType == STI_OBJECT)

@@ -15,6 +15,7 @@ class Xrpl(ConanFile):
     settings = "os", "compiler", "build_type", "arch"
     options = {
         "assertions": [True, False],
+        "benchmark": [True, False],
         "coverage": [True, False],
         "fPIC": [True, False],
         "jemalloc": [True, False],
@@ -27,12 +28,13 @@ class Xrpl(ConanFile):
     }
 
     requires = [
+        "corrosion/0.6.1",
         "ed25519/2015.03",
-        "grpc/1.78.1",
+        "fast_float/8.2.10",
+        "grpc/1.81.1",
         "libarchive/3.8.7",
         "nudb/2.0.9",
-        "openssl/3.6.2",
-        "secp256k1/0.7.1",
+        "openssl/3.6.3",
         "soci/4.0.3",
         "zlib/1.3.2",
     ]
@@ -47,6 +49,7 @@ class Xrpl(ConanFile):
 
     default_options = {
         "assertions": False,
+        "benchmark": True,
         "coverage": False,
         "fPIC": True,
         "jemalloc": False,
@@ -130,18 +133,23 @@ class Xrpl(ConanFile):
             self.options["boost"].without_cobalt = True
 
     def requirements(self):
+        if self.options.benchmark:
+            self.requires("benchmark/1.9.5")
         self.requires("boost/1.91.0", force=True, transitive_headers=True)
         self.requires("date/3.0.4", transitive_headers=True)
-        self.requires("lz4/1.10.0", force=True)
-        self.requires("protobuf/6.33.5", force=True)
-        self.requires("sqlite3/3.53.0", force=True)
         if self.options.jemalloc:
             self.requires("jemalloc/5.3.1")
+        self.requires("lz4/1.10.0", force=True)
+        self.requires("mpt-crypto/1.0.2", transitive_headers=True)
+        self.requires("protobuf/6.33.5", force=True)
         if self.options.rocksdb:
             self.requires("rocksdb/10.5.1")
+        self.requires("secp256k1/0.7.1", transitive_headers=True)
+        self.requires("sqlite3/3.53.0", force=True)
         self.requires("xxhash/0.8.3", transitive_headers=True)
 
     exports_sources = (
+        "bin/default-loader-path.sh",
         "CMakeLists.txt",
         "cfg/*",
         "cmake/*",
@@ -161,6 +169,7 @@ class Xrpl(ConanFile):
     def generate(self):
         tc = CMakeToolchain(self)
         tc.variables["tests"] = self.options.tests
+        tc.variables["benchmark"] = self.options.benchmark
         tc.variables["assert"] = self.options.assertions
         tc.variables["coverage"] = self.options.coverage
         tc.variables["jemalloc"] = self.options.jemalloc
@@ -205,9 +214,11 @@ class Xrpl(ConanFile):
             "boost::thread",
             "date::date",
             "ed25519::ed25519",
+            "fast_float::fast_float",
             "grpc::grpc++",
             "libarchive::libarchive",
             "lz4::lz4",
+            "mpt-crypto::mpt-crypto",
             "nudb::nudb",
             "openssl::crypto",
             "protobuf::libprotobuf",

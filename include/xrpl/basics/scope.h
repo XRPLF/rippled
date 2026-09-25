@@ -46,11 +46,9 @@ public:
     operator=(ScopeExit&&) = delete;
 
     template <class EFP>
-    explicit ScopeExit(
-        EFP&& f,
-        std::enable_if_t<
-            !std::is_same_v<std::remove_cv_t<EFP>, ScopeExit> &&
-            std::is_constructible_v<EF, EFP>>* = 0) noexcept
+    explicit ScopeExit(EFP&& f) noexcept
+        requires(
+            !std::is_same_v<std::remove_cv_t<EFP>, ScopeExit> && std::is_constructible_v<EF, EFP>)
         : exitFunction_{std::forward<EFP>(f)}
     {
         static_assert(std::is_nothrow_constructible_v<EF, decltype(std::forward<EFP>(f))>);
@@ -93,11 +91,9 @@ public:
     operator=(ScopeFail&&) = delete;
 
     template <class EFP>
-    explicit ScopeFail(
-        EFP&& f,
-        std::enable_if_t<
-            !std::is_same_v<std::remove_cv_t<EFP>, ScopeFail> &&
-            std::is_constructible_v<EF, EFP>>* = 0) noexcept
+    explicit ScopeFail(EFP&& f) noexcept
+        requires(
+            !std::is_same_v<std::remove_cv_t<EFP>, ScopeFail> && std::is_constructible_v<EF, EFP>)
         : exitFunction_{std::forward<EFP>(f)}
     {
         static_assert(std::is_nothrow_constructible_v<EF, decltype(std::forward<EFP>(f))>);
@@ -140,12 +136,11 @@ public:
     operator=(ScopeSuccess&&) = delete;
 
     template <class EFP>
-    explicit ScopeSuccess(
-        EFP&& f,
-        std::enable_if_t<
+    explicit ScopeSuccess(EFP&& f) noexcept(
+        std::is_nothrow_constructible_v<EF, EFP> || std::is_nothrow_constructible_v<EF, EFP&>)
+        requires(
             !std::is_same_v<std::remove_cv_t<EFP>, ScopeSuccess> &&
-            std::is_constructible_v<EF, EFP>>* =
-            0) noexcept(std::is_nothrow_constructible_v<EF, EFP> || std::is_nothrow_constructible_v<EF, EFP&>)
+            std::is_constructible_v<EF, EFP>)
         : exitFunction_{std::forward<EFP>(f)}
     {
     }
@@ -161,41 +156,41 @@ template <class EF>
 ScopeSuccess(EF) -> ScopeSuccess<EF>;
 
 /**
-    Automatically unlocks and re-locks a unique_lock object.
-
-    This is the reverse of a std::unique_lock object - instead of locking the
-   mutex for the lifetime of this object, it unlocks it.
-
-    Make sure you don't try to unlock mutexes that aren't actually locked!
-
-    This is essentially a less-versatile boost::reverse_lock.
-
-    e.g. @code
-
-    std::mutex mut;
-
-    for (;;)
-    {
-        std::unique_lock myScopedLock{mut};
-        // mut is now locked
-
-        ... do some stuff with it locked ..
-
-        while (xyz)
-        {
-            ... do some stuff with it locked ..
-
-            scope_unlock unlocker{myScopedLock};
-
-            // mut is now unlocked for the remainder of this block,
-            // and re-locked at the end.
-
-            ...do some stuff with it unlocked ...
-        }  // mut gets locked here.
-
-    }  // mut gets unlocked here
-    @endcode
-*/
+ * Automatically unlocks and re-locks a unique_lock object.
+ *
+ * This is the reverse of a std::unique_lock object - instead of locking the
+ * mutex for the lifetime of this object, it unlocks it.
+ *
+ * Make sure you don't try to unlock mutexes that aren't actually locked!
+ *
+ * This is essentially a less-versatile boost::reverse_lock.
+ *
+ * e.g. @code
+ *
+ * std::mutex mut;
+ *
+ * for (;;)
+ * {
+ *     std::unique_lock myScopedLock{mut};
+ *     // mut is now locked
+ *
+ *     ... do some stuff with it locked ..
+ *
+ *     while (xyz)
+ *     {
+ *         ... do some stuff with it locked ..
+ *
+ *         scope_unlock unlocker{myScopedLock};
+ *
+ *         // mut is now unlocked for the remainder of this block,
+ *         // and re-locked at the end.
+ *
+ *         ...do some stuff with it unlocked ...
+ *     }  // mut gets locked here.
+ *
+ * }  // mut gets unlocked here
+ * @endcode
+ */
 
 template <class Mutex>
 class ScopeUnlock

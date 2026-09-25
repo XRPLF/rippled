@@ -36,6 +36,19 @@ elseif(is_gcc)
     endif()
 endif()
 
+# A Nix compiler is only meant to be used from a managed environment: the xrpld
+# dev shell (which exports XRPL_DEVSHELL) or the CI image. Using one from a bare
+# shell usually means a leaked toolchain (picked up via PATH or a Conan profile)
+# and leads to confusing breakage, so fail early with guidance.
+if(is_nix_compiler AND NOT is_ci_image AND NOT DEFINED ENV{XRPL_DEVSHELL})
+    message(
+        FATAL_ERROR
+        "A Nix compiler (${CMAKE_CXX_COMPILER}) is being used outside the xrpld "
+        "dev shell. Enter it with `nix develop` (see docs/build/nix.md) before "
+        "configuring the build."
+    )
+endif()
+
 # check for in-source build and fail
 if("${CMAKE_CURRENT_SOURCE_DIR}" STREQUAL "${CMAKE_BINARY_DIR}")
     message(

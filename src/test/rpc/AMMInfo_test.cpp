@@ -65,6 +65,26 @@ public:
             BEAST_EXPECT(jv[jss::error_message] == "Account malformed.");
         });
 
+        // Account is not a string
+        testAMM([&](AMM& ammAlice, Env&) {
+            auto const jv =
+                ammAlice.ammRpcInfo(json::Value{42}, std::nullopt, XRP, USD, std::nullopt, true, 3);
+            BEAST_EXPECT(jv[jss::error_message] == "Account malformed.");
+        });
+
+        // AMM Account is not a string
+        testAMM([&](AMM& ammAlice, Env&) {
+            auto const jv = ammAlice.ammRpcInfo(
+                json::Value{to_string(ammAlice.ammAccount())},
+                std::nullopt,
+                XRP,
+                USD,
+                json::Value{42},
+                false,
+                3);
+            BEAST_EXPECT(jv[jss::error_message] == "Account malformed.");
+        });
+
         std::vector<std::tuple<std::optional<Issue>, std::optional<Issue>, TestAccount, bool>> const
             invalidParams = {
                 {xrpIssue(), std::nullopt, TestAccount::None, false},

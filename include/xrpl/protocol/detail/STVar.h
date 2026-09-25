@@ -5,6 +5,7 @@
 #include <xrpl/protocol/Serializer.h>
 
 #include <cstddef>
+#include <tuple>
 #include <type_traits>
 
 namespace xrpl::detail {
@@ -33,11 +34,12 @@ concept ValidConstructSTArgs =
 // and includes a small-object allocation optimization.
 class STVar
 {
-private:
+public:
     // The largest "small object" we can accommodate
     static constexpr std::size_t kMaxSize = 72;
 
-    std::aligned_storage<kMaxSize>::type d_ = {};
+private:
+    alignas(std::max_align_t) std::byte d_[kMaxSize] = {};
     STBase* p_ = nullptr;
 
 public:
@@ -49,14 +51,13 @@ public:
     STVar&
     operator=(STVar&& rhs);
 
-    STVar(STBase&& t)  // NOLINT(cppcoreguidelines-rvalue-reference-param-not-moved)
+    // NOLINTNEXTLINE(cppcoreguidelines-rvalue-reference-param-not-moved)
+    STVar(STBase&& t) : p_(t.move(kMaxSize, &d_))
     {
-        p_ = t.move(kMaxSize, &d_);
     }
 
-    STVar(STBase const& t)
+    STVar(STBase const& t) : p_(t.copy(kMaxSize, &d_))
     {
-        p_ = t.copy(kMaxSize, &d_);
     }
 
     STVar(DefaultObjectT, SField const& name);
@@ -120,7 +121,8 @@ private:
         }
     }
 
-    /** Construct requested Serializable Type according to id.
+    /**
+     * Construct requested Serializable Type according to id.
      * The variadic args are: (SField), or (SerialIter, SField).
      * depth is ignored in former case.
      */
@@ -149,12 +151,6 @@ inline bool
 operator==(STVar const& lhs, STVar const& rhs)
 {
     return lhs.get().isEquivalent(rhs.get());
-}
-
-inline bool
-operator!=(STVar const& lhs, STVar const& rhs)
-{
-    return !(lhs == rhs);
 }
 
 }  // namespace xrpl::detail

@@ -1,12 +1,19 @@
 #pragma once
 
+#include <xrpl/basics/UnorderedContainers.h>
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/ledger/Ledger.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/UintTypes.h>
 
+#include <cstddef>
+#include <cstdint>
+#include <memory>
+#include <mutex>
 #include <optional>
+#include <vector>
 
 namespace xrpl {
 
@@ -134,8 +141,8 @@ private:
      * Pick one candidate from a vector of candidates.
      *
      * @param randomPadData the data used for picking a candidate.
-     *        @note Nodes must use the same randomPadData for picking the same
-     *        candidate. The hash of the parent ledger is used.
+     * @note Nodes must use the same randomPadData for picking the same
+     *       candidate. The hash of the parent ledger is used.
      * @param candidates the vector of candidates
      * @return the picked candidate
      */

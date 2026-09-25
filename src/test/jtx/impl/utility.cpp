@@ -13,14 +13,17 @@
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/HashPrefix.h>
 #include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/STParsedJSON.h>
 #include <xrpl/protocol/SecretKey.h>
 #include <xrpl/protocol/Serializer.h>
+#include <xrpl/protocol/Sign.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/protocol/jss.h>
 
+#include <stdexcept>
 #include <utility>
 #include <vector>
 
@@ -35,12 +38,22 @@ parse(json::Value const& jv)
     return std::move(*p.object);
 }
 
+SignatureRole
+signatureRole(SField const* subField)
+{
+    if (subField == nullptr)
+        return SignatureRole::Transaction;
+    if (auto const role = xrpl::signatureRole(*subField))
+        return *role;
+    Throw<std::runtime_error>(subField->getName() + " does not hold a transaction signature.");
+}
+
 void
-sign(json::Value& jv, Account const& account, json::Value& sigObject)
+sign(json::Value& jv, Account const& account, json::Value& sigObject, HashPrefix prefix)
 {
     sigObject[jss::SigningPubKey] = strHex(account.pk().slice());
     Serializer ss;
-    ss.add32(HashPrefix::TxSign);
+    ss.add32(prefix);
     parse(jv).addWithoutSigningFields(ss);
     auto const sig = xrpl::sign(account.pk(), account.sk(), ss.slice());
     sigObject[jss::TxnSignature] = strHex(Slice{sig.data(), sig.size()});
@@ -57,7 +70,22 @@ fillFee(json::Value& jv, ReadView const& view)
 {
     if (jv.isMember(jss::Fee))
         return;
-    jv[jss::Fee] = to_string(view.fees().base);
+
+    auto const base = view.fees().base;
+
+    // For confidential transactions, the fee is higher because confidential
+    // transaction processing is more expensive.
+    auto const txType = jv[jss::TransactionType].asString();
+    if (txType == jss::ConfidentialMPTConvert || txType == jss::ConfidentialMPTConvertBack ||
+        txType == jss::ConfidentialMPTSend || txType == jss::ConfidentialMPTMergeInbox ||
+        txType == jss::ConfidentialMPTClawback || txType == jss::ConfidentialMPTMirrorUpdate)
+    {
+        jv[jss::Fee] = to_string(base * (kConfidentialFeeMultiplier + 1));
+    }
+    else
+    {
+        jv[jss::Fee] = to_string(base);
+    }
 }
 
 void
@@ -100,5 +128,4 @@ cmdToJSONRPC(std::vector<std::string> const& args, beast::Journal j, unsigned in
         jv[jss::id] = paramsObj[jss::id];
     return jv;
 }
-
 }  // namespace xrpl::test::jtx

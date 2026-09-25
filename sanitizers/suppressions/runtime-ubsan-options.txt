@@ -1,1 +1,1 @@
-halt_on_error=false
+halt_on_error=true

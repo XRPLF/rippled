@@ -1,6 +1,5 @@
 #include <xrpld/app/consensus/RCLConsensus.h>
 
-#include <xrpld/app/consensus/RCLCensorshipDetector.h>
 #include <xrpld/app/consensus/RCLCxLedger.h>
 #include <xrpld/app/consensus/RCLCxPeerPos.h>
 #include <xrpld/app/consensus/RCLCxTx.h>
@@ -17,8 +16,6 @@
 #include <xrpld/app/misc/TxQ.h>
 #include <xrpld/app/misc/ValidatorKeys.h>
 #include <xrpld/app/misc/ValidatorList.h>
-#include <xrpld/consensus/Consensus.h>
-#include <xrpld/consensus/ConsensusTypes.h>
 #include <xrpld/overlay/Overlay.h>
 #include <xrpld/overlay/predicates.h>
 
@@ -32,6 +29,9 @@
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/consensus/CensorshipDetector.h>
+#include <xrpl/consensus/Consensus.h>
+#include <xrpl/consensus/ConsensusTypes.h>
 #include <xrpl/core/HashRouter.h>
 #include <xrpl/core/Job.h>
 #include <xrpl/crypto/csprng.h>
@@ -389,7 +389,7 @@ RCLConsensus::Adaptor::onClose(
     if (!wrongLCL)
     {
         LedgerIndex const seq = prevLedger->header().seq + 1;
-        RCLCensorshipDetector<TxID, LedgerIndex>::TxIDSeqVec proposed;
+        CensorshipDetector<TxID, LedgerIndex>::TxIDSeqVec proposed;
 
         initialSet->visitLeaves(
             [&proposed, seq](boost::intrusive_ptr<SHAMapItem const> const& item) {
@@ -580,7 +580,9 @@ RCLConsensus::Adaptor::doAccept(
         JLOG(j_.info()) << "CNF Val " << newLCLHash;
     }
     else
+    {
         JLOG(j_.info()) << "CNF buildLCL " << newLCLHash;
+    }
 
     // See if we can accept a ledger as fully-validated
     ledgerMaster_.consensusBuilt(built.ledger, result.txns.id(), std::move(consensusJson));
@@ -684,28 +686,17 @@ RCLConsensus::Adaptor::doAccept(
     //  close time reports, and update our clock.
     if ((mode == ConsensusMode::Proposing || mode == ConsensusMode::Observing) && !consensusFail)
     {
-        auto closeTime = rawCloseTimes.self;
-
-        JLOG(j_.info()) << "We closed at " << closeTime.time_since_epoch().count();
-        using usec64_t = std::chrono::duration<std::uint64_t>;
-        usec64_t closeTotal = std::chrono::duration_cast<usec64_t>(closeTime.time_since_epoch());
+        JLOG(j_.info()) << "We closed at " << rawCloseTimes.self.time_since_epoch().count();
         int closeCount = 1;
-
         for (auto const& [t, v] : rawCloseTimes.peers)
         {
             JLOG(j_.info()) << std::to_string(v) << " time votes for "
                             << std::to_string(t.time_since_epoch().count());
             closeCount += v;
-            closeTotal += std::chrono::duration_cast<usec64_t>(t.time_since_epoch()) * v;
         }
 
-        closeTotal += usec64_t(closeCount / 2);  // for round to nearest
-        closeTotal /= closeCount;
-
-        // Use signed times since we are subtracting
-        using duration = std::chrono::duration<std::int32_t>;
-        using time_point = std::chrono::time_point<NetClock, duration>;
-        auto offset = time_point{closeTotal} - std::chrono::time_point_cast<duration>(closeTime);
+        // Median handles outliers better than mean.
+        auto const offset = medianCloseOffset(rawCloseTimes);
         JLOG(j_.info()) << "Our close offset is estimated at " << offset.count() << " ("
                         << closeCount << ")";
 
@@ -796,7 +787,9 @@ RCLConsensus::Adaptor::buildLCL(
         JLOG(j_.debug()) << "Consensus built ledger we were acquiring";
     }
     else
+    {
         JLOG(j_.debug()) << "Consensus built new ledger";
+    }
     return RCLCxLedger{std::move(built)};
 }
 
@@ -843,7 +836,7 @@ RCLConsensus::Adaptor::validate(RCLCxLedger const& ledger, RCLTxSet const& txns,
 
             // Report our server version every flag ledger:
             if (ledger.ledger->isVotingLedger())
-                v.setFieldU64(sfServerVersion, BuildInfo::getEncodedVersion());
+                v.setFieldU64(sfServerVersion, build_info::getEncodedVersion());
 
             // Report our load
             {
@@ -951,7 +944,9 @@ RCLConsensus::gotTxSet(NetClock::time_point const& now, RCLTxSet const& txSet)
     }
 }
 
-//! @see Consensus::simulate
+/**
+ * @see Consensus::simulate
+ */
 
 void
 RCLConsensus::simulate(

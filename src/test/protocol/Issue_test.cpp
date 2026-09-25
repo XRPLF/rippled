@@ -1,10 +1,12 @@
 #include <xrpl/basics/UnorderedContainers.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/json/json_value.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Book.h>
 #include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/UintTypes.h>
+#include <xrpl/protocol/jss.h>
 
 #include <functional>
 #include <map>
@@ -864,6 +866,101 @@ public:
     //--------------------------------------------------------------------------
 
     void
+    testIssueFromJson()
+    {
+        testcase("issueFromJson");
+
+        // Valid XRP — no issuer field
+        {
+            json::Value jv;
+            jv[jss::currency] = "XRP";
+            auto const issue = issueFromJson(jv);
+            BEAST_EXPECT(isXRP(issue));
+        }
+
+        // Valid IOU — legitimate issuer
+        {
+            json::Value jv;
+            jv[jss::currency] = "USD";
+            jv[jss::issuer] = "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh";
+            auto const issue = issueFromJson(jv);
+            BEAST_EXPECT(!isXRP(issue));
+            BEAST_EXPECT(issue.account != noAccount());
+        }
+
+        // noAccount() is the MPT sentinel in binary serialization - must be
+        // rejected
+        try
+        {
+            json::Value jv;
+            jv[jss::currency] = "USD";
+            jv[jss::issuer] = to_string(noAccount());
+            issueFromJson(jv);
+            fail("noAccount() accepted as IOU issuer");
+        }
+        catch (...)
+        {
+            pass();
+        }
+
+        // xrpAccount() is the XRP sentinel (all zeros) - must be rejected
+        // as IOU issuer
+        try
+        {
+            json::Value jv;
+            jv[jss::currency] = "USD";
+            jv[jss::issuer] = to_string(xrpAccount());
+            issueFromJson(jv);
+            fail("xrpAccount() accepted as IOU issuer");
+        }
+        catch (...)
+        {
+            pass();
+        }
+
+        // Invalid base58 — must be rejected
+        try
+        {
+            json::Value jv;
+            jv[jss::currency] = "USD";
+            jv[jss::issuer] = "not_a_valid_address";
+            issueFromJson(jv);
+            fail("invalid base58 accepted as IOU issuer");
+        }
+        catch (...)
+        {
+            pass();
+        }
+
+        // Non-XRP currency with no issuer field — must be rejected
+        try
+        {
+            json::Value jv;
+            jv[jss::currency] = "USD";
+            issueFromJson(jv);
+            fail("missing issuer accepted");
+        }
+        catch (...)
+        {
+            pass();
+        }
+
+        // XRP with an issuer field — must be rejected
+        try
+        {
+            json::Value jv;
+            jv[jss::currency] = "XRP";
+            jv[jss::issuer] = "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh";
+            issueFromJson(jv);
+            fail("XRP with issuer accepted");
+        }
+        catch (...)
+        {
+            pass();
+        }
+    }
+
+    void
     run() override
     {
         testcase("Currency");
@@ -897,6 +994,9 @@ public:
         // ---
         testIssueDomainSets();
         testIssueDomainMaps();
+
+        // ---
+        testIssueFromJson();
     }
 };
 

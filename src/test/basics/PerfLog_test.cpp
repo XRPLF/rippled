@@ -1,9 +1,7 @@
 #include <test/jtx/Env.h>
-#include <test/jtx/TestHelpers.h>
 #include <test/jtx/envconfig.h>
 
-#include <xrpld/rpc/detail/Handler.h>
-
+#include <xrpl/basics/StringUtilities.h>
 #include <xrpl/basics/random.h>
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/beast/utility/Journal.h>
@@ -15,14 +13,11 @@
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/jss.h>
 
-#include <boost/filesystem/file_status.hpp>
-#include <boost/filesystem/operations.hpp>
-#include <boost/filesystem/path.hpp>
-#include <boost/system/detail/error_code.hpp>
-
 #include <algorithm>
+#include <array>
 #include <chrono>
 #include <cstdint>
+#include <filesystem>
 #include <fstream>
 #include <ios>
 #include <iterator>
@@ -30,7 +25,10 @@
 #include <memory>
 #include <ostream>
 #include <random>
+#include <ranges>
 #include <string>
+#include <string_view>
+#include <system_error>
 #include <thread>
 #include <utility>
 #include <vector>
@@ -43,7 +41,22 @@ class PerfLog_test : public beast::unit_test::Suite
 {
     enum class WithFile : bool { No = false, Yes = true };
 
-    using path = boost::filesystem::path;
+    using path = std::filesystem::path;
+
+    // The method names to count. PerfLog treats them as opaque keys, so these are
+    // made up rather than taken from the dispatch table: this test then needs no
+    // knowledge of the RPC layer, and does not change shape when a method is
+    // added or removed.
+    //
+    // String literals because PerfLog reads them back as C strings, which is what
+    // NullTerminatedView requires, and they must outlive the PerfLog. Sorted,
+    // because the counters are reported in sorted order.
+    static constexpr std::array kMethodNames{
+        NullTerminatedView{"method_a"},
+        NullTerminatedView{"method_b"},
+        NullTerminatedView{"method_c"},
+        NullTerminatedView{"method_d"},
+        NullTerminatedView{"method_e"}};
 
     // We're only using Env for its Journal.  That Journal gives better
     // coverage in unit tests.
@@ -66,14 +79,14 @@ class PerfLog_test : public beast::unit_test::Suite
             // The error code is intentionally ignored: if the path doesn't
             // exist (the common case on a clean runner) remove_all returns
             // an error, and that's fine — there's nothing to clean up.
-            using namespace boost::filesystem;
-            boost::system::error_code ec;
+            using namespace std::filesystem;
+            std::error_code ec;
             remove_all(logDir(), ec);
         }
 
         ~Fixture()
         {
-            using namespace boost::filesystem;
+            using namespace std::filesystem;
 
             auto const dir{logDir()};
             auto const file{logFile()};
@@ -96,7 +109,7 @@ class PerfLog_test : public beast::unit_test::Suite
         static path
         logDir()
         {
-            using namespace boost::filesystem;
+            using namespace std::filesystem;
             return temp_directory_path() / "perf_log_test_dir";
         }
 
@@ -117,7 +130,7 @@ class PerfLog_test : public beast::unit_test::Suite
         {
             perf::PerfLog::Setup const setup{
                 .perfLog = withFile == WithFile::No ? "" : logFile(), .logInterval = logInterval()};
-            return perf::makePerfLog(setup, app, j, [this]() {
+            return perf::makePerfLog(setup, app, kMethodNames, j, [this]() {
                 signalStop();
                 return;
             });
@@ -129,7 +142,7 @@ class PerfLog_test : public beast::unit_test::Suite
         static void
         wait()
         {
-            using namespace boost::filesystem;
+            using namespace std::filesystem;
 
             auto const path = logFile();
             if (!exists(path))
@@ -201,7 +214,7 @@ public:
     void
     testFileCreation()
     {
-        using namespace boost::filesystem;
+        using namespace std::filesystem;
 
         {
             // Verify a PerfLog creates its file when constructed.
@@ -250,28 +263,30 @@ public:
             // Put a write protected file where PerfLog wants to write its
             // file.  Make sure that PerfLog tries to shutdown the server
             // since it can't open its file.
+            using std::filesystem::perms;
+
             Fixture fixture{env_.app(), j_};
             if (!BEAST_EXPECT(!exists(fixture.logDir())))
                 return;
 
             // Construct and write protect a file to prevent PerfLog
             // from creating its file.
-            boost::system::error_code ec;
-            boost::filesystem::create_directories(fixture.logDir(), ec);
+            std::error_code ec;
+            std::filesystem::create_directories(fixture.logDir(), ec);
             if (!BEAST_EXPECT(!ec))
                 return;
 
-            auto fileWriteable = [](boost::filesystem::path const& p) -> bool {
-                return std::ofstream{p.c_str(), std::ios::out | std::ios::app}.is_open();
+            auto fileWriteable = [](std::filesystem::path const& p) -> bool {
+                return std::ofstream{p, std::ios::out | std::ios::app}.is_open();
             };
 
             if (!BEAST_EXPECT(fileWriteable(fixture.logFile())))
                 return;
 
-            boost::filesystem::permissions(
+            std::filesystem::permissions(
                 fixture.logFile(),
-                perms::remove_perms | perms::owner_write | perms::others_write |
-                    perms::group_write);
+                perms::owner_write | perms::others_write | perms::group_write,
+                std::filesystem::perm_options::remove);
 
             // If the test is running as root, then the write protect may have
             // no effect.  Make sure write protect worked before proceeding.
@@ -295,9 +310,10 @@ public:
             perfLog->stop();
 
             // Fix file permissions so the file can be cleaned up.
-            boost::filesystem::permissions(
+            std::filesystem::permissions(
                 fixture.logFile(),
-                perms::add_perms | perms::owner_write | perms::others_write | perms::group_write);
+                perms::owner_write | perms::others_write | perms::group_write,
+                std::filesystem::perm_options::add);
         }
     }
 
@@ -310,9 +326,11 @@ public:
         auto perfLog{fixture.perfLog(withFile)};
         perfLog->start();
 
-        // Get the all the labels we can use for RPC interfaces without
-        // causing an assert.
-        std::vector<char const*> labels = test::jtx::makeVector(xrpl::RPC::getHandlerNames());
+        // The only labels the RPC interface accepts: those the PerfLog was
+        // constructed with, since rpcStart() reaches UNREACHABLE for any other.
+        // Copied into a vector because they are shuffled below, then paired
+        // positionally with the request ids.
+        auto labels = std::ranges::to<std::vector>(kMethodNames);
         std::shuffle(labels.begin(), labels.end(), defaultPrng());
 
         // Get two IDs to associate with each label.  Errors tend to happen at
@@ -347,7 +365,7 @@ public:
             for (auto& label : labels)
             {
                 // Expect every label in labels to have the same contents.
-                json::Value const& counter{countersJson[label]};
+                json::Value const& counter{countersJson[std::string{label}]};
                 BEAST_EXPECT(counter[jss::duration_us] == "0");
                 BEAST_EXPECT(counter[jss::errored] == "0");
                 BEAST_EXPECT(counter[jss::finished] == "0");
@@ -370,7 +388,7 @@ public:
             std::uint64_t prevDur = std::numeric_limits<std::uint64_t>::max();
             for (int i = 0; i < currents.size(); ++i)
             {
-                BEAST_EXPECT(currents[i].name == labels[i / 2]);
+                BEAST_EXPECT(currents[i].name == labels[i / 2].view());
                 BEAST_EXPECT(prevDur > currents[i].dur);
                 prevDur = currents[i].dur;
             }
@@ -404,7 +422,7 @@ public:
             // their durations with the appropriate labels.
             {
                 // The first label is special.  It should have "errored" : "0".
-                json::Value const& first = rpc[labels[0]];
+                json::Value const& first = rpc[std::string{labels[0]}];
                 BEAST_EXPECT(first[jss::duration_us] != "0");
                 BEAST_EXPECT(first[jss::errored] == "0");
                 BEAST_EXPECT(first[jss::finished] == "1");
@@ -415,7 +433,7 @@ public:
             std::uint64_t prevDur = std::numeric_limits<std::uint64_t>::max();
             for (int i = 1; i < labels.size(); ++i)
             {
-                json::Value const& counter{rpc[labels[i]]};
+                json::Value const& counter{rpc[std::string{labels[i]}]};
                 std::uint64_t const dur{jsonToUInt64(counter[jss::duration_us])};
                 BEAST_EXPECT(dur != 0 && dur < prevDur);
                 prevDur = dur;
@@ -447,7 +465,7 @@ public:
             BEAST_EXPECT(only.size() == 2);
             BEAST_EXPECT(only.isObject());
             BEAST_EXPECT(only[jss::duration_us] != "0");
-            BEAST_EXPECT(only[jss::method] == labels[0]);
+            BEAST_EXPECT(only[jss::method] == std::string{labels[0]});
         };
 
         // Validate the final state of the PerfLog.
@@ -483,7 +501,7 @@ public:
 
             json::Value parsedLastLine;
             json::Reader().parse(lastLine, parsedLastLine);
-            if (!BEAST_EXPECT(!RPC::containsError(parsedLastLine)))
+            if (!BEAST_EXPECT(!rpc::containsError(parsedLastLine)))
             {
                 // Avoid cascade of failures
                 return;
@@ -619,7 +637,7 @@ public:
 
                 // Total queued duration is triangle number of (i + 1).
                 BEAST_EXPECT(
-                    jsonToUInt64(total[jss::queued_duration_us]) == (((i * i) + 3 * i + 2) / 2));
+                    jsonToUInt64(total[jss::queued_duration_us]) == (((i * i) + (3 * i) + 2) / 2));
                 BEAST_EXPECT(total[jss::running_duration_us] == "0");
             }
 
@@ -804,7 +822,7 @@ public:
 
             json::Value parsedLastLine;
             json::Reader().parse(lastLine, parsedLastLine);
-            if (!BEAST_EXPECT(!RPC::containsError(parsedLastLine)))
+            if (!BEAST_EXPECT(!rpc::containsError(parsedLastLine)))
             {
                 // Avoid cascade of failures
                 return;
@@ -944,7 +962,7 @@ public:
 
             json::Value parsedLastLine;
             json::Reader().parse(lastLine, parsedLastLine);
-            if (!BEAST_EXPECT(!RPC::containsError(parsedLastLine)))
+            if (!BEAST_EXPECT(!rpc::containsError(parsedLastLine)))
             {
                 // Avoid cascade of failures
                 return;
@@ -962,7 +980,7 @@ public:
         // We can't fully test rotate because unit tests must run on Windows,
         // and Windows doesn't (may not?) support rotate.  But at least call
         // the interface and see that it doesn't crash.
-        using namespace boost::filesystem;
+        using namespace std::filesystem;
 
         Fixture fixture{env_.app(), j_};
         BEAST_EXPECT(!exists(fixture.logDir()));
@@ -1012,6 +1030,35 @@ public:
         }
     }
 
+    // makePerfLog() copies the range of names it is given, so only the names have
+    // to outlive the PerfLog. Here the range does not: it is destroyed before the
+    // counters are read. Retaining it instead is a use-after-free, which a
+    // sanitizer build reports directly and which otherwise surfaces as a failed
+    // assertion or a Debug-mode heap-corruption abort, not a silent pass.
+    void
+    testCallerRangeNeedNotOutlive()
+    {
+        testcase("Caller's range need not outlive the PerfLog");
+
+        Fixture const fixture{env_.app(), j_};
+
+        std::unique_ptr<perf::PerfLog> perfLog;
+        {
+            std::vector<NullTerminatedView> const names{kMethodNames.begin(), kMethodNames.end()};
+            perf::PerfLog::Setup const setup{.perfLog = "", .logInterval = fixture.logInterval()};
+            perfLog = perf::makePerfLog(setup, env_.app(), names, j_, []() {});
+        }
+
+        perfLog->start();
+        perfLog->rpcStart(kMethodNames[0], 1);
+        perfLog->rpcFinish(kMethodNames[0], 1);
+
+        // Reads the retained names, which is where a dangling range would surface.
+        json::Value const counters{perfLog->countersJson()[jss::rpc]};
+        BEAST_EXPECT(counters.isMember(std::string{kMethodNames[0].view()}));
+        perfLog->stop();
+    }
+
     void
     run() override
     {
@@ -1024,6 +1071,7 @@ public:
         testInvalidID(WithFile::Yes);
         testRotate(WithFile::No);
         testRotate(WithFile::Yes);
+        testCallerRangeNeedNotOutlive();
     }
 };
 

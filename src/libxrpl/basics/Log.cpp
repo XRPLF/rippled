@@ -5,10 +5,10 @@
 #include <xrpl/beast/utility/instrumentation.h>
 
 #include <boost/algorithm/string/predicate.hpp>
-#include <boost/filesystem/path.hpp>
 
 #include <chrono>
 #include <cstring>
+#include <filesystem>
 #include <fstream>
 #include <functional>
 #include <iostream>
@@ -54,14 +54,15 @@ Logs::File::isOpen() const noexcept
 }
 
 bool
-Logs::File::open(boost::filesystem::path const& path)
+Logs::File::open(std::filesystem::path const& path)
 {
     close();
 
     bool wasOpened = false;
 
     // VFALCO TODO Make this work with Unicode file paths
-    std::unique_ptr<std::ofstream> stream(new std::ofstream(path.c_str(), std::fstream::app));
+    std::unique_ptr<std::ofstream> stream =
+        std::make_unique<std::ofstream>(path.c_str(), std::fstream::app);
 
     if (stream->good())
     {
@@ -113,7 +114,7 @@ Logs::Logs(beast::Severity thresh) : thresh_(thresh)  // default severity
 }
 
 bool
-Logs::open(boost::filesystem::path const& pathToLogFile)
+Logs::open(std::filesystem::path const& pathToLogFile)
 {
     return file_.open(pathToLogFile);
 }

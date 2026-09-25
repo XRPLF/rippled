@@ -7,8 +7,12 @@
 #include <xrpl/protocol/SField.h>
 
 #include <charconv>
+#include <cstdint>
 #include <exception>
 #include <optional>
+#include <string>
+#include <system_error>
+#include <utility>
 
 namespace json {
 struct JsonMissingKeyError : std::exception
