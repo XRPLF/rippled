@@ -265,6 +265,7 @@ All spans instrumented in xrpld, grouped by subsystem:
 | `rpc.ws_message`     | ServerHandler.cpp | `command`, `rpc_status`                                     | WebSocket RPC message                                 |
 | `rpc.process`        | ServerHandler.cpp | `is_batch`, `batch_size`                                    | RPC processing (child of rpc.http_request/ws_message) |
 | `rpc.command.<name>` | RPCHandler.cpp    | `command`, `version`, `rpc_role`, `rpc_status`, `load_type` | Per-command span (e.g., `rpc.command.server_info`)    |
+| `rpc.startup`        | Application.cpp   | —                                                           | `[rpc_startup]` batch; parent of its command spans    |
 
 On `rpc.ws_message`, `rpc_status` is set **on four of the five error paths**
 (resource threshold exceeded, bad API version / missing command, caught
@@ -2421,6 +2422,7 @@ enforces that in CI, because the two silently drifted once already.
 | `rpc.ws_message`               | `{span_name="rpc.ws_message"}`               | RPC Performance (WebSocket Rate)              |
 | `rpc.process`                  | `{span_name="rpc.process"}`                  | RPC Performance (Overall Throughput)          |
 | `rpc.command.*`                | `{span_name=~"rpc.command.*"}`               | RPC Performance (Rate, Latency, Error, Top)   |
+| `rpc.startup`                  | `{span_name="rpc.startup"}`                  | -- (available but not paneled)                |
 | `tx.process`                   | `{span_name="tx.process"}`                   | Transaction Overview (Rate, Latency, Heatmap) |
 | `tx.receive`                   | `{span_name="tx.receive"}`                   | Transaction Overview (Rate, Receive)          |
 | `tx.apply`                     | `{span_name="tx.apply"}`                     | Transaction Overview + Ledger Ops (Apply)     |
