@@ -197,7 +197,7 @@ flowchart LR
 
 **Reading the diagram:**
 
-- **Head Sampling (Node)**: xrpld pins head sampling at 100% (sample everything) and does not expose a configurable ratio. This is intentional: a per-node ratio would let different nodes make divergent keep/drop decisions for the same distributed trace, producing broken/partial traces. xrpld uses a `ParentBased` sampler so spans inheriting a remote parent honor the upstream decision. Volume reduction is delegated to the collector's tail sampling.
+- **Head Sampling (Node)**: xrpld pins head sampling at 100% (sample everything) and does not expose a configurable ratio. This is intentional: a per-node ratio would let different nodes make divergent keep/drop decisions for the same distributed trace, producing broken/partial traces. A span inheriting a remote parent is decided by the same ratio sampler, not by the peer's sampled flag. Volume reduction is delegated to the collector's tail sampling.
 - **Tail Sampling (Collector)**: The second filter -- the collector inspects completed traces and applies rules: keep all errors, keep anything slower than 5 seconds, and keep 10% of the remainder.
 - **Arrow head → tail**: All head-sampled traces flow to the collector, where tail sampling further reduces volume while preserving the most valuable data.
 - **Final Traces**: The output after both sampling stages; this is what gets stored and queried. The two-stage approach balances cost with debuggability.
