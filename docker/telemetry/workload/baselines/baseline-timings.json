@@ -1,0 +1,87 @@
+{
+  "captured_at": "2026-09-10T18:05:00Z",
+  "git_sha": "a0385c53cb8f1e9ab77379b5584367a92d0a9014",
+  "metrics": {
+    "job.acceptLedger.queued.p95": {
+      "unit": "us",
+      "value": 95.58333333333331
+    },
+    "job.acceptLedger.running.p95": {
+      "unit": "us",
+      "value": 15967.741935483866
+    },
+    "job.transaction.queued.p95": {
+      "unit": "us",
+      "value": 403.74177631578937
+    },
+    "job.transaction.running.p95": {
+      "unit": "us",
+      "value": 376.7512077294688
+    },
+    "span.consensus.accept.p50": {
+      "unit": "ms",
+      "value": 1.4363636363636365
+    },
+    "span.consensus.accept.p95": {
+      "unit": "ms",
+      "value": 8.811111111111114
+    },
+    "span.consensus.accept.p99": {
+      "unit": "ms",
+      "value": 20.928571428571445
+    },
+    "span.consensus.ledger_close.p95": {
+      "unit": "ms",
+      "value": 0.6749999999999998
+    },
+    "span.consensus.ledger_close.p99": {
+      "unit": "ms",
+      "value": 3.049999999999991
+    },
+    "span.ledger.build.p95": {
+      "unit": "ms",
+      "value": 4.7714285714285705
+    },
+    "span.ledger.validate.p50": {
+      "unit": "ms",
+      "value": 0.059761904761904766
+    },
+    "span.rpc.ws_message.p50": {
+      "unit": "ms",
+      "value": 0.16282758747645082
+    },
+    "span.rpc.ws_message.p95": {
+      "unit": "ms",
+      "value": 0.8122454466253443
+    },
+    "span.rpc.ws_message.p99": {
+      "unit": "ms",
+      "value": 0.9872660098522166
+    },
+    "span.tx.apply.p95": {
+      "unit": "ms",
+      "value": 4.639716312056738
+    },
+    "span.tx.apply.p99": {
+      "unit": "ms",
+      "value": 4.9733333333333345
+    },
+    "span.tx.process.p50": {
+      "unit": "ms",
+      "value": 0.21390674968918655
+    },
+    "span.tx.process.p95": {
+      "unit": "ms",
+      "value": 0.49949970576841685
+    },
+    "span.tx.process.p99": {
+      "unit": "ms",
+      "value": 0.9939697679594013
+    }
+  },
+  "profile": "full-validation",
+  "schema_version": 1,
+  "source_runs": [34495527952, 34505215266, 34507425933],
+  "statistic": "median of three clean full-validation runs",
+  "window": "3m"
+}
