@@ -489,6 +489,80 @@ struct InboundLedger_test : public beast::unit_test::Suite
     }
 
     /**
+     * A packet racing a concurrent invalidation must fail rather than be
+     * read as the map finishing.
+     *
+     * addKnownNode() reports every node a duplicate rather than invalid once
+     * the map is no longer Synching (see SHAMap::addKnownNode), so
+     * receiveNode() cannot tell that apart from the map finishing by
+     * isSynching() alone: a walk elsewhere can invalidate the map with mtx_
+     * released between two packets, and the next one in is read the same
+     * way a packet that just completed the map would be. Reproduced by
+     * invalidating the map directly, standing in for that concurrent walk,
+     * and then feeding receiveNode() an ordinary packet through the real
+     * dispatch.
+     *
+     * The tx hash never resolves, so haveTransactions_ stays false and
+     * nothing but the check under test can make this packet report success.
+     *
+     * @param env The environment to run in.
+     */
+    void
+    testConcurrentlyInvalidatedMapFailsReceiveNode(jtx::Env& env)
+    {
+        testcase("A packet racing a concurrent invalidation fails rather than completes");
+
+        // The fabricated chain, so feeding it to the state map invalidates the map.
+        DeepChain const chain{nextSeed()};
+
+        auto const header = makeHeader(uint256{777}, chain.rootHash.asUInt256());
+        storeHeader(env, header);
+
+        auto acquire = std::make_shared<TestableInboundLedger>(
+            env.app(),
+            header.hash,
+            header.seq,
+            InboundLedger::Reason::GENERIC,
+            stopwatch(),
+            std::make_unique<RequestCountingPeerSet>());
+
+        BEAST_EXPECT(!acquire->checkLocal());
+        BEAST_EXPECT(!acquire->isFailed());
+        BEAST_EXPECT(!acquire->getJson(0)[jss::have_state].asBool());
+
+        // Invalidate the state map directly, standing in for a concurrent trigger() walk that
+        // reached the same verdict with mtx_ released.
+        auto const ledger = mutableLedger(*acquire);
+        BEAST_EXPECT(ledger != nullptr);
+        if (!ledger)
+            return;
+
+        auto& stateMap = ledger->stateMap();
+        BEAST_EXPECT(stateMap.addRootNode(chain.rootHash, chain.nodeAt(0), nullptr).isGood());
+        for (auto const& [nodeID, node] : chain.nodesBelowRoot())
+            stateMap.addKnownNode(nodeID, node, nullptr);
+        BEAST_EXPECT(!stateMap.isValid());
+
+        // An ordinary state-node packet, arriving as if it were already in flight when the
+        // invalidation above happened. addKnownNode()'s "while not synching" branch reports it a
+        // duplicate, whatever it contains, since the map is no longer Synching.
+        auto const latePeer = std::make_shared<ChargeRecordingPeer>();
+        BEAST_EXPECT(acquire->gotData(
+            latePeer, stateNodePacket(header, chain, {{chain.idAt(1), chain.nodeAt(1)}})));
+        acquire->runData();
+
+        // Not this packet's fault, so nothing is charged, but the acquisition must fail rather
+        // than read the duplicate verdict as the map finishing.
+        BEAST_EXPECT(latePeer->charges().empty());
+        BEAST_EXPECT(acquire->isFailed());
+        BEAST_EXPECT(!acquire->isComplete());
+
+        // Without the isValid() check, this would instead be marked satisfied, even though the
+        // map behind it is broken.
+        BEAST_EXPECT(!acquire->getJson(0)[jss::have_state].asBool());
+    }
+
+    /**
      * An acquisition that fails on local data must still signal.
      *
      * Both entry points that reach tryDB() are covered, since without
@@ -904,6 +978,7 @@ struct InboundLedger_test : public beast::unit_test::Suite
         testLocalLedgerCompletesAcquire(env);
         testWalkSettlesBeforeReportingComplete(env);
         testInvalidatedLedgerFailsInDone(env);
+        testConcurrentlyInvalidatedMapFailsReceiveNode(env);
         testLocalFailureSignalsDone(env);
         testFabricatedChainFailsAcquire(env);
         testWrongStateNodeKeepsAcquireAlive(env);
