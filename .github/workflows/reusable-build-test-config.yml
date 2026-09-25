@@ -257,6 +257,7 @@ jobs:
         run: |
           ./bin/check-nix-store-refs.sh "${BUILD_DIR}/xrpld"
           ./bin/check-nix-store-refs.sh "${BUILD_DIR}/xrpl_tests"
+          ./bin/check-nix-store-refs.sh "${BUILD_DIR}/xrpld_tests"
 
       - name: Show ccache statistics
         if: ${{ inputs.ccache_enabled }}
@@ -338,7 +339,9 @@ jobs:
       - name: Run the separate tests
         if: ${{ !inputs.build_only }}
         working-directory: ${{ runner.os == 'Windows' && format('{0}/{1}', env.BUILD_DIR, inputs.build_type) || env.BUILD_DIR }}
-        run: ./xrpl_tests
+        run: |
+          ./xrpl_tests
+          ./xrpld_tests
 
       - name: Run the embedded tests
         if: ${{ !inputs.build_only }}
