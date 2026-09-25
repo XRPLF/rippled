@@ -99,7 +99,8 @@ static constexpr std::chrono::minutes kMaxLedgerAgeAcquire{1};
 
 /**
  * Don't acquire history if write load is too high. The load is the number of
- * node objects waiting in the backend's write batch; NuDB always reports 0.
+ * node objects queued or being written by the backend's batch writer; NuDB
+ * always reports 0.
  */
 static constexpr int kMaxWriteLoadAcquire{8192};
 

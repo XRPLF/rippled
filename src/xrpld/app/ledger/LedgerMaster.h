@@ -269,8 +269,9 @@ public:
      *
      * @param ledger Ledger to accept.
      * @param isSynchronous true to write it to the database before returning.
-     * @param isCurrent true when the ledger is part of the live stream rather
-     * than back-filled history; only current ledgers enter the index.
+     * @param isCurrent true adds the ledger to the in-memory sequence index and
+     * saves it as a current ledger, at the higher job priority. Only the
+     * publish path passes true; standalone, startup and back-fill pass false.
      */
     void
     setFullLedger(std::shared_ptr<Ledger const> const& ledger, bool isSynchronous, bool isCurrent);
