@@ -5,6 +5,7 @@
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/OracleHelpers.h>
+#include <xrpl/ledger/helpers/ProposalHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
@@ -56,6 +57,7 @@ isReserveSponsorAllowed(TxType txType)
         ttACCOUNT_SET,
         ttREGULAR_KEY_SET,
         ttSPONSORSHIP_TRANSFER,
+        ttTRANSACTION_PROPOSAL_CREATE,
     };
     return kReserveSponsorAllowed.contains(txType);
 }
@@ -255,6 +257,8 @@ isLedgerEntryOwner(ReadView const& view, SLE const& sle, AccountID const& accoun
             // to tecNO_PERMISSION.
             return false;
         }
+        case ltTRANSACTION_PROPOSAL:
+            return sle.getAccountID(sfOwner) == account;
         default:
             // LCOV_EXCL_START
             UNREACHABLE("xrpl::isLedgerEntryOwner : object is not supported by sponsorship.");
@@ -278,6 +282,7 @@ isLedgerEntrySupportedBySponsorship(SLE const& sle)
         case ltSIGNER_LIST:
         case ltCREDENTIAL:
         case ltRIPPLE_STATE:
+        case ltTRANSACTION_PROPOSAL:
             return true;
         default:
             return false;
@@ -304,6 +309,11 @@ getLedgerEntryOwnerCount(SLE const& sle)
                 return 1;
             return 2 + static_cast<std::uint32_t>(sle.getFieldArray(sfSignerEntries).size());
         }
+        case ltTRANSACTION_PROPOSAL:
+            // Mirror TransactionProposalCreate's own reserve sizing so that
+            // creation and sponsorship accounting agree: a proposed Batch
+            // reserves more than an ordinary proposal.
+            return proposal::proposalOwnerCount(sle.getFieldObject(sfProposedTransaction));
         case ltACCOUNT_ROOT:
             // LCOV_EXCL_START
             UNREACHABLE("AccountRoots are not supported by object sponsorship.");

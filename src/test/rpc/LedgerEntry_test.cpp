@@ -15,6 +15,7 @@
 #include <test/jtx/offer.h>
 #include <test/jtx/pay.h>
 #include <test/jtx/permissioned_domains.h>
+#include <test/jtx/proposal.h>
 #include <test/jtx/sponsor.h>
 #include <test/jtx/ticket.h>
 #include <test/jtx/token.h>
@@ -327,6 +328,7 @@ class LedgerEntry_test : public beast::unit_test::Suite
         FieldType const typeID,
         std::string const& expectedError,
         bool required = true,
+        std::optional<std::string> typeNameOverride = std::nullopt,
         std::source_location const location = std::source_location::current())
     {
         forAllApiVersions([&, this](unsigned apiVersion) {
@@ -349,8 +351,8 @@ class LedgerEntry_test : public beast::unit_test::Suite
                 correctRequest[fieldName] = fieldValue;
                 json::Value const jrr = env.rpc(
                     apiVersion, "json", "ledger_entry", to_string(correctRequest))[jss::result];
-                auto const expectedErrMsg =
-                    rpc::expectedFieldMessage(fieldName, getTypeName(typeID));
+                auto const expectedErrMsg = rpc::expectedFieldMessage(
+                    fieldName, typeNameOverride.value_or(getTypeName(typeID)));
                 checkErrorValue(jrr, expectedError, expectedErrMsg, location);
             };
 
@@ -426,6 +428,7 @@ class LedgerEntry_test : public beast::unit_test::Suite
             FieldType::HashField,
             "malformedRequest",
             true,
+            std::nullopt,
             location);
     }
 
@@ -441,6 +444,7 @@ class LedgerEntry_test : public beast::unit_test::Suite
         test::jtx::Env& env,
         json::StaticString const& parentField,
         std::vector<Subfield> const& subfields,
+        std::optional<std::string> parentTypeNameOverride = std::nullopt,
         std::source_location const location = std::source_location::current())
     {
         testMalformedField(
@@ -450,6 +454,7 @@ class LedgerEntry_test : public beast::unit_test::Suite
             FieldType::HashOrObjectField,
             "malformedRequest",
             true,
+            parentTypeNameOverride,
             location);
 
         json::Value correctOutput;
@@ -2028,6 +2033,87 @@ class LedgerEntry_test : public beast::unit_test::Suite
     }
 
     void
+    testTransactionProposal()
+    {
+        testcase("TransactionProposal");
+        using namespace test::jtx;
+        using namespace std::literals::chrono_literals;
+
+        Env env{*this};
+
+        Account const target{"target"};
+        Account const bob{"bob"};
+        env.fund(XRP(10000), target, bob);
+        env.close();
+
+        // A ticket for the proposal to be built against, and the proposal
+        // itself (an unsigned Payment payload).
+        std::uint32_t const ticketSeq = proposal::createTicket(env, target);
+        env(proposal::create(
+                target,
+                proposal::unsignedPayload(env, pay(target, bob, XRP(1)), ticketSeq),
+                proposal::expiration(env, 100s)),
+            proposal::verify::create());
+        env.close();
+
+        std::string const ledgerHash{to_string(env.closed()->header().hash)};
+        auto const proposalIndex = to_string(keylet::txProposal(target.id(), ticketSeq).key);
+
+        {
+            // Request by target account and ticket sequence.
+            json::Value jvParams;
+            jvParams[jss::transaction_proposal][jss::account] = target.human();
+            jvParams[jss::transaction_proposal][jss::ticket_seq] = ticketSeq;
+            jvParams[jss::ledger_hash] = ledgerHash;
+            auto const jrr = env.rpc("json", "ledger_entry", to_string(jvParams))[jss::result];
+            BEAST_EXPECT(jrr[jss::node][sfLedgerEntryType.jsonName] == jss::TransactionProposal);
+            BEAST_EXPECT(proposalIndex == jrr[jss::node][jss::index].asString());
+        }
+        {
+            // Request by object index (hex string form).
+            json::Value jvParams;
+            jvParams[jss::transaction_proposal] = proposalIndex;
+            jvParams[jss::ledger_hash] = ledgerHash;
+            auto const jrr = env.rpc("json", "ledger_entry", to_string(jvParams))[jss::result];
+            BEAST_EXPECT(jrr[jss::node][sfLedgerEntryType.jsonName] == jss::TransactionProposal);
+            BEAST_EXPECT(proposalIndex == jrr[jss::node][jss::index].asString());
+        }
+        {
+            // No proposal exists against this (account, ticket_seq) pair.
+            json::Value jvParams;
+            jvParams[jss::transaction_proposal][jss::account] = target.human();
+            jvParams[jss::transaction_proposal][jss::ticket_seq] = ticketSeq + 1;
+            jvParams[jss::ledger_hash] = ledgerHash;
+            auto const jrr = env.rpc("json", "ledger_entry", to_string(jvParams))[jss::result];
+            checkErrorValue(jrr, "entryNotFound", "Entry not found.");
+        }
+        {
+            // Lookup by an index of the wrong entry type.
+            json::Value jvParams;
+            jvParams[jss::transaction_proposal] = to_string(keylet::account(target).key);
+            jvParams[jss::ledger_hash] = ledgerHash;
+            auto const jrr = env.rpc("json", "ledger_entry", to_string(jvParams))[jss::result];
+            checkErrorValue(jrr, "unexpectedLedgerType", "Unexpected ledger type.");
+        }
+
+        {
+            // Malformed cases (missing / wrong-type subfields, and a
+            // non-object non-hex-string parent value). Once the parent has
+            // been shown not to be an object, parseTransactionProposal names
+            // "hex string" — not "hex string or object" — as the form still
+            // on the table.
+            runLedgerEntryTest(
+                env,
+                jss::transaction_proposal,
+                {
+                    {.fieldName = jss::account, .malformedErrorMsg = "malformedAddress"},
+                    {.fieldName = jss::ticket_seq, .malformedErrorMsg = "malformedRequest"},
+                },
+                "hex string");
+        }
+    }
+
+    void
     testDID()
     {
         testcase("DID");
@@ -2747,6 +2833,7 @@ public:
         testSignerList();
         testSponsorship();
         testTicket();
+        testTransactionProposal();
         testDID();
         testInvalidOracleLedgerEntry();
         testOracleLedgerEntry();

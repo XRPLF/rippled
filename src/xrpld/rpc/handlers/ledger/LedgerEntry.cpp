@@ -752,6 +752,35 @@ parseSponsorship(
 }
 
 static std::expected<uint256, json::Value>
+parseTransactionProposal(
+    json::Value const& params,
+    json::StaticString const fieldName,
+    [[maybe_unused]] unsigned const apiVersion)
+{
+    // In the non-object branch the caller must supply the proposal ID as a
+    // hex string (the object form is the {account, ticket_seq} pair handled
+    // below). Passing "hex string" here — rather than the more general
+    // "hex string or object" default — makes the error message name the
+    // exact form still on the table once an object has been ruled out.
+    if (!params.isObject())
+        return parseObjectID(params, fieldName, "hex string");
+
+    auto const targetID =
+        ledger_entry_helpers::requiredAccountID(params, jss::account, "malformedAddress");
+    if (!targetID)
+        return std::unexpected(targetID.error());
+
+    // The proposed transaction's TicketSequence (a proposed transaction is
+    // ticket-only), mirroring how parseTicket looks up a Ticket object.
+    auto const ticketSequence =
+        ledger_entry_helpers::requiredUInt32(params, jss::ticket_seq, "malformedRequest");
+    if (!ticketSequence)
+        return std::unexpected(ticketSequence.error());
+
+    return keylet::txProposal(*targetID, *ticketSequence).key;
+}
+
+static std::expected<uint256, json::Value>
 parseTicket(
     json::Value const& params,
     json::StaticString const fieldName,
