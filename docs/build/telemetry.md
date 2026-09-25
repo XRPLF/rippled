@@ -248,7 +248,7 @@ boundary.
 
 Pass the **whole message** to the injection helpers, never `*msg.mutable_trace_context()`.
 
-On a protobuf `optional` submessage, `mutable_` allocates the submessage and sets its has-bit, and that happens at the call site before the helper runs. A caller that dereferences it therefore puts an empty `TraceContext` on the wire whenever nothing is recorded, and every receiving peer takes its `has_trace_context()` branch to extract nothing from it. `trace_context` is field 1001, so the wasted bytes are a 2-byte tag plus a zero length.
+On a protobuf `optional` submessage, `mutable_` allocates the submessage and sets its has-bit, and that happens at the call site before the helper runs. A caller that dereferences it therefore puts an empty `TraceContext` on the wire whenever nothing is recorded, and every receiving peer parses it only to drop it. `trace_context` is field 1001, so the wasted bytes are a 2-byte tag plus a zero length.
 
 ```cpp
 // Right: the helper decides whether the submessage is created at all.
