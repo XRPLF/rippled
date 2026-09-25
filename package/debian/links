@@ -1,0 +1,3 @@
+# Legacy compatibility for pre-FHS package layouts.
+# TODO: remove after rippled fully deprecated.
+usr/bin/xrpld          usr/local/bin/rippled

@@ -12,6 +12,7 @@
 #include <chrono>
 #include <cstddef>
 #include <cstdint>
+#include <limits>
 
 namespace xrpl {
 
@@ -321,7 +322,7 @@ constexpr std::uint8_t kVaultMaximumIouScale = 18;
  * Vault ledger-entry schema versions. Assigned to newly created
  * Vaults once featureLendingProtocolV1_1 is enabled. Vaults created before
  * activation are left without LEVersion (implicit legacy version 0,
- * accrual-basis accounting).
+ * instant interest recognition).
  */
 enum class VaultVersion : uint8_t {
     Legacy = 0,
@@ -406,16 +407,6 @@ using TxID = uint256;
  * deletion cleanup.
  */
 constexpr std::uint16_t kMaxDeletableAmmTrustLines = 512;
-
-/**
- * The maximum number of owner-directory entries to walk when clearing
- * credentials pinned to a pseudo-account, in a single transaction.
- *
- * The walk stops after this many entries whether or not each one turns out to
- * be a credential, so a directory that also holds other objects yields fewer
- * deletions per transaction.
- */
-constexpr std::uint16_t kMaxDeletablePseudoAccountCredentials = 512;
 
 /**
  * The maximum length of a URI inside an Oracle
@@ -550,9 +541,19 @@ constexpr std::size_t kEcConvertBackProofLength =
 constexpr std::size_t kEcClawbackProofLength = SECP256K1_COMPACT_CLAWBACK_PROOF_SIZE;
 
 /**
+ * Length of compact equality proof.
+ */
+constexpr std::size_t kEcEqualityProofLength = 128;
+
+/**
  * Extra base fee multiplier charged to confidential MPT transactions.
  */
 constexpr std::uint32_t kConfidentialFeeMultiplier = 9;
+
+/**
+ * Maximum value a confidential MPT key epoch may reach.
+ */
+constexpr std::uint32_t kMaxKeyEpoch = std::numeric_limits<std::uint32_t>::max();
 
 /**
  * Compressed EC point prefix for even y-coordinate

@@ -44,6 +44,7 @@
 #include <xrpl/ledger/Ledger.h>
 #include <xrpl/peerfinder/Slot.h>
 #include <xrpl/peerfinder/Types.h>
+#include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/KeyType.h>
 #include <xrpl/protocol/LedgerHeader.h>
 #include <xrpl/protocol/Protocol.h>
@@ -412,7 +413,7 @@ PeerImp::crawl() const
 bool
 PeerImp::cluster() const
 {
-    return static_cast<bool>(app_.getCluster().member(publicKey_));
+    return app_.getCluster().isMember(publicKey_);
 }
 
 std::string
@@ -1413,6 +1414,10 @@ PeerImp::handleTransaction(
     }
     catch (std::exception const& ex)
     {
+        if (fee_.fee < resource::kFeeInvalidData)
+        {
+            fee_.update(resource::kFeeInvalidData, "tx invalid");
+        }
         JLOG(pJournal_.warn()) << "Transaction invalid: " << strHex(m->rawtransaction())
                                << ". Exception: " << ex.what();
     }
@@ -1486,10 +1491,21 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMGetLedger> const& m)
 
     // Verify ledger node counts. Full parsing of the node IDs is deferred to the job, so the I/O
     // thread is not burdened with SHAMapNodeID deserialization for every TMGetLedger message.
-    if (itype != protocol::liBASE && m->nodeids_size() <= 0)
+    if (itype != protocol::liBASE)
     {
-        badData("Invalid ledger node IDs");
-        return;
+        if (m->nodeids_size() <= 0)
+        {
+            badData("Invalid ledger node IDs");
+            return;
+        }
+
+        if (m->nodeids_size() > tuning::kHardMaxReplyNodes)
+        {
+            badData(
+                "Requested number of ledger node IDs must be less than or equal to " +
+                std::to_string(tuning::kHardMaxReplyNodes));
+            return;
+        }
     }
 
     // Verify query type
@@ -2847,6 +2863,13 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMTransactions> const& m)
         return;
     }
 
+    if (m->transactions_size() > reduce_relay::kMaxTxQueueSize)
+    {
+        JLOG(pJournal_.error()) << "TMTransactions: transaction list too large";
+        fee_.update(resource::kFeeMalformedRequest, "Transaction list too large");
+        return;
+    }
+
     JLOG(pJournal_.trace()) << "received TMTransactions " << m->transactions_size();
 
     overlay_.addTxMetrics(m->transactions_size());
@@ -3087,8 +3110,9 @@ PeerImp::checkTransaction(
         if (checkSignature)
         {
             // Check the signature before handing off to the job queue.
-            if (auto [valid, validReason] = checkValidity(
-                    app_.getHashRouter(), *stx, app_.getLedgerMaster().getValidatedRules());
+            auto const& validatedRules = app_.getLedgerMaster().getValidatedRules();
+            if (auto [valid, validReason] =
+                    checkValidity(app_.getHashRouter(), *stx, validatedRules);
                 valid != Validity::Valid)
             {
                 if (!validReason.empty())
@@ -3096,9 +3120,20 @@ PeerImp::checkTransaction(
                     JLOG(pJournal_.debug()) << "Exception checking transaction: " << validReason;
                 }
 
-                // Probably not necessary to set HashRouterFlags::BAD, but
-                // doesn't hurt.
-                app_.getHashRouter().setFlags(stx->getTransactionID(), HashRouterFlags::BAD);
+                // For a role-signature transaction, only cache BAD once
+                // fixCleanup3_4_0 is enabled on this node: the SigBad verdict
+                // then covers the post-fix prefix and cannot flip back.
+                // Before the amendment activates, checkValidity's own
+                // era-scoped cache handles the repeat lookups; setting BAD
+                // would block a correctly new-prefix-signed transaction until
+                // the router entry ages out. Remove the guard together with
+                // the amendment.
+                if (validatedRules.enabled(fixCleanup3_4_0) ||
+                    (!stx->isFieldPresent(sfSponsorSignature) &&
+                     !stx->isFieldPresent(sfCounterpartySignature)))
+                {
+                    app_.getHashRouter().setFlags(stx->getTransactionID(), HashRouterFlags::BAD);
+                }
                 charge(resource::kFeeInvalidSignature, "check transaction signature failure");
                 return;
             }

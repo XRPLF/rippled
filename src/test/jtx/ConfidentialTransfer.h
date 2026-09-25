@@ -3,28 +3,19 @@
 #include <test/jtx/Account.h>
 #include <test/jtx/Env.h>
 #include <test/jtx/mpt.h>
-#include <test/jtx/vault.h>
 
 #include <xrpl/basics/Buffer.h>
-#include <xrpl/basics/Slice.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/contract.h>
-#include <xrpl/basics/strHex.h>
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/protocol/ConfidentialTransfer.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 
-#include <utility/mpt_utility.h>
-
-#include <secp256k1.h>
-#include <secp256k1_mpt.h>
-
 #include <array>
 #include <cstddef>
 #include <cstdint>
-#include <cstring>
 #include <functional>
 #include <optional>
 #include <stdexcept>
@@ -54,156 +45,66 @@ protected:
         return *value;
     }
 
-    // Offset where the bulletproof begins in a send proof blob.
-    // Proof layout: [compact_sigma | bulletproof]
-    static constexpr size_t kBulletproofOffset = kEcSendProofLength - kEcDoubleBulletproofLength;
-
-    // Generate a forged aggregated bulletproof (double bulletproof) for
-    // the given values and blinding factors. Used to test that splicing
-    // a bulletproof claiming a different remaining balance is rejected.
-    // secp256k1 convention: returns 1 on success, 0 on failure.
-    static Buffer
-    getForgedBulletproof(
-        std::array<uint64_t, 2> const& values,
-        std::array<Buffer, 2> const& blindingFactors,
-        uint256 const& contextHash)
+    // Creates the MPT issuance on the given Env, authorizes and funds each
+    // holder, generates keys for the issuer, holders and optional auditor,
+    // registers the issuer/auditor keys, and converts part of each holder's
+    // balance to a confidential balance.
+    struct ConfidentialEnv
     {
-        auto* const ctx = mpt_secp256k1_context();
-
-        secp256k1_pubkey h;
-        secp256k1_mpt_get_h_generator(ctx, &h);
-
-        Buffer proof(kEcDoubleBulletproofLength);
-        size_t proofLen = kEcDoubleBulletproofLength;
-
-        unsigned char blindings[64];
-        std::memcpy(blindings, blindingFactors[0].data(), 32);
-        std::memcpy(blindings + 32, blindingFactors[1].data(), 32);
-
-        if (secp256k1_bulletproof_prove_agg(
-                ctx,
-                proof.data(),
-                &proofLen,
-                values.data(),
-                blindings,
-                2,
-                &h,
-                contextHash.data()) == 0)
-            Throw<std::runtime_error>("Failed to generate forged bulletproof");
-
-        return proof;
-    }
-
-    // Generate a forged single bulletproof for a single value and blinding factor.
-    // Used to test ConvertBack overdraft prevention via bulletproof verification.
-    static Buffer
-    getForgedSingleBulletproof(
-        uint64_t value,
-        Buffer const& blindingFactor,
-        uint256 const& contextHash)
-    {
-        auto* const ctx = mpt_secp256k1_context();
-
-        secp256k1_pubkey h;
-        secp256k1_mpt_get_h_generator(ctx, &h);
-
-        Buffer proof(kEcSingleBulletproofLength);
-        size_t proofLen = kEcSingleBulletproofLength;
-
-        if (secp256k1_bulletproof_prove_agg(
-                ctx,
-                proof.data(),
-                &proofLen,
-                &value,
-                blindingFactor.data(),
-                1,  // m = 1 (single bulletproof)
-                &h,
-                contextHash.data()) == 0)
-            Throw<std::runtime_error>("Failed to generate forged single bulletproof");
-
-        return proof;
-    }
-
-    // Get a bad ciphertext with valid structure but cryptographic invalid for
-    // testing purposes. For preflight test purposes.
-    static Buffer const&
-    getBadCiphertext()
-    {
-        static Buffer const kBadCiphertext = []() {
-            Buffer buf(kEcGamalEncryptedTotalLength);
-            std::memset(buf.data(), 0xFF, kEcGamalEncryptedTotalLength);
-
-            buf.data()[0] = kEcCompressedPrefixEvenY;
-            buf.data()[kEcCiphertextComponentLength] = kEcCompressedPrefixEvenY;
-            return buf;
-        }();
-
-        return kBadCiphertext;
-    }
-
-    // Get a trivial buffer that is structurally and mathematically valid, but
-    // contains invalid data that does not match the ledger state. For preclaim
-    // test purposes.
-    static Buffer const&
-    getTrivialCiphertext()
-    {
-        static Buffer const kTrivialCiphertext = []() {
-            Buffer buf(kEcGamalEncryptedTotalLength);
-            std::memset(buf.data(), 0, kEcGamalEncryptedTotalLength);
-
-            buf.data()[0] = kEcCompressedPrefixEvenY;
-            buf.data()[kEcCiphertextComponentLength] = kEcCompressedPrefixEvenY;
-
-            buf.data()[kEcCiphertextComponentLength - 1] = 0x01;
-            buf.data()[kEcGamalEncryptedTotalLength - 1] = 0x01;
-
-            return buf;
-        }();
-
-        return kTrivialCiphertext;
-    }
-
-    // Returns a valid compressed EC point (33 bytes) that can pass preflight
-    // validation but contains invalid data for preclaim test purposes.
-    static Buffer const&
-    getTrivialCommitment()
-    {
-        static Buffer const kTrivialCommitment = []() {
-            Buffer buf(kEcPedersenCommitmentLength);
-            std::memset(buf.data(), 0, kEcPedersenCommitmentLength);
-
-            buf.data()[0] = kEcCompressedPrefixEvenY;
-            // Set last byte to make it a valid x-coordinate on the curve
-            buf.data()[kEcPedersenCommitmentLength - 1] = 0x01;
-
-            return buf;
-        }();
-
-        return kTrivialCommitment;
-    }
-
-    static std::string
-    getTrivialSendProofHex()
-    {
-        Buffer buf(kEcSendProofLength);
-        std::memset(buf.data(), 0, kEcSendProofLength);
-
-        for (std::size_t i = 0; i < kEcSendProofLength; i += kEcCiphertextComponentLength)
+        // Per-holder configuration: the account, how much MPT to fund it
+        // with, and how much of that to convert to a confidential balance.
+        struct HolderInit
         {
-            buf.data()[i] = kEcCompressedPrefixEvenY;
-            if (i + kEcCiphertextComponentLength - 1 < kEcSendProofLength)
-                buf.data()[i + kEcCiphertextComponentLength - 1] = 0x01;
-        }
+            test::jtx::Account account;
+            std::uint64_t payAmount = 1000;
+            std::uint64_t convertAmount = 100;
+        };
 
-        return strHex(buf);
-    }
+        test::jtx::MPTTester mpt;
+
+        ConfidentialEnv(
+            test::jtx::Env& env,
+            test::jtx::Account const& issuer,
+            std::vector<HolderInit> const& holders,
+            std::uint32_t flags = tfMPTCanLock | tfMPTCanHoldConfidentialBalance | tfMPTCanTransfer,
+            std::optional<test::jtx::Account> auditor = std::nullopt);
+
+    private:
+        static std::vector<test::jtx::Account>
+        extractAccounts(std::vector<HolderInit> const& holders);
+    };
+
+    // Create an issuance that can hold confidential balances, with the listed
+    // holders funded and authorized, and a key pair generated for the issuer,
+    // every holder, and every extra key owner. The keys are
+    // generated but not registered.
+    static void
+    setupConfidentialIssuance(
+        test::jtx::MPTTester& mpt,
+        test::jtx::Account const& issuer,
+        std::vector<test::jtx::Account> const& holders,
+        std::vector<test::jtx::Account> const& keyOwners = {},
+        std::uint32_t flags = tfMPTCanTransfer | tfMPTCanHoldConfidentialBalance);
+
+    // Set up an MPT environment suitable for batch testing.
+    // alice is issuer; bob has 'bobAmt' in confidential spending; carol has
+    // 'carolAmt' in confidential spending; dave is initialised with pubkey but
+    // zero spending/inbox.
+    static void
+    setupBatchEnv(
+        test::jtx::MPTTester& mpt,
+        test::jtx::Account const& alice,
+        test::jtx::Account const& bob,
+        test::jtx::Account const& carol,
+        test::jtx::Account const& dave,
+        std::uint64_t bobAmt,
+        std::uint64_t carolAmt);
 
     // Helper struct to encapsulate common setup for integration tests.
     struct ConfidentialSendSetup
     {
         // Constants
         uint64_t sendAmount;
-        size_t nRecipients;
         uint32_t version;
 
         // Blinding factors
@@ -243,55 +144,7 @@ protected:
             test::jtx::Account const& dest,
             test::jtx::Account const& issuer,
             uint64_t amount,
-            std::optional<std::reference_wrapper<test::jtx::Account const>> auditor = std::nullopt)
-            : sendAmount(amount)
-            , nRecipients(auditor ? 4 : 3)
-            , version(mpt.getMPTokenVersion(sender))
-            , blindingFactor(generateBlindingFactor())
-            , amountBlindingFactor(blindingFactor)
-            , balanceBlindingFactor(generateBlindingFactor())
-            , senderAmt(mpt.encryptAmount(sender, amount, blindingFactor))
-            , destAmt(mpt.encryptAmount(dest, amount, blindingFactor))
-            , issuerAmt(mpt.encryptAmount(issuer, amount, blindingFactor))
-            , auditorAmt(
-                  auditor ? std::optional<Buffer>(
-                                mpt.encryptAmount(auditor->get(), amount, blindingFactor))
-                          : std::nullopt)
-            , amountCommitment(mpt.getPedersenCommitment(amount, amountBlindingFactor))
-            , senderPubKey(requireOptional(mpt.getPubKey(sender), "Missing sender public key"))
-            , destPubKey(requireOptional(mpt.getPubKey(dest), "Missing destination public key"))
-            , issuerPubKey(requireOptional(mpt.getPubKey(issuer), "Missing issuer public key"))
-            , auditorPubKey(auditor ? mpt.getPubKey(auditor->get()) : std::nullopt)
-            , prevSpending(requireOptional(
-                  mpt.getDecryptedBalance(sender, test::jtx::MPTTester::holderEncryptedSpending),
-                  "Missing sender spending balance"))
-            , prevEncryptedSpending(requireOptional(
-                  mpt.getEncryptedBalance(sender, test::jtx::MPTTester::holderEncryptedSpending),
-                  "Missing sender encrypted spending balance"))
-            , balanceCommitment(mpt.getPedersenCommitment(prevSpending, balanceBlindingFactor))
-        {
-            recipients.push_back({
-                .publicKey = Slice(senderPubKey),
-                .encryptedAmount = senderAmt,
-            });
-            recipients.push_back({
-                .publicKey = Slice(destPubKey),
-                .encryptedAmount = destAmt,
-            });
-            recipients.push_back({
-                .publicKey = Slice(issuerPubKey),
-                .encryptedAmount = issuerAmt,
-            });
-            if (auditor)
-            {
-                recipients.push_back({
-                    .publicKey =
-                        Slice(requireOptionalRef(auditorPubKey, "Missing auditor public key")),
-                    .encryptedAmount =
-                        requireOptionalRef(auditorAmt, "Missing auditor encrypted amount"),
-                });
-            }
-        }
+            std::optional<std::reference_wrapper<test::jtx::Account const>> auditor = std::nullopt);
 
         // Generate proof with current account sequence
         std::optional<Buffer>
@@ -299,206 +152,89 @@ protected:
             test::jtx::MPTTester& mpt,
             test::jtx::Env& env,
             test::jtx::Account const& sender,
-            test::jtx::Account const& dest) const
-        {
-            auto const ctxHash = getSendContextHash(
-                sender.id(), mpt.issuanceID(), env.seq(sender), dest.id(), version);
-
-            return mpt.getConfidentialSendProof(
-                sender,
-                sendAmount,
-                recipients,
-                blindingFactor,
-                ctxHash,
-                {
-                    .pedersenCommitment = amountCommitment,
-                    .amt = sendAmount,
-                    .encryptedAmt = senderAmt,
-                    .blindingFactor = amountBlindingFactor,
-                },
-                {
-                    .pedersenCommitment = balanceCommitment,
-                    .amt = prevSpending,
-                    .encryptedAmt = prevEncryptedSpending,
-                    .blindingFactor = balanceBlindingFactor,
-                });
-        }
+            test::jtx::Account const& dest) const;
 
         [[nodiscard]] test::jtx::MPTConfidentialSend
         sendArgs(
             test::jtx::Account const& sender,
             test::jtx::Account const& dest,
             Buffer const& proof,
-            std::optional<TER> err = std::nullopt) const
-        {
-            return {
-                .account = sender,
-                .dest = dest,
-                .amt = sendAmount,
-                .proof = strHex(proof),
-                .senderEncryptedAmt = senderAmt,
-                .destEncryptedAmt = destAmt,
-                .issuerEncryptedAmt = issuerAmt,
-                .auditorEncryptedAmt = auditorAmt,
-                .amountCommitment = amountCommitment,
-                .balanceCommitment = balanceCommitment,
-                .err = err,
-            };
-        }
+            std::optional<TER> err = std::nullopt) const;
     };
 
-    // Helper that wraps the boilerplate setup: Env + MPT creation, funding, key
-    // generation, and seeding each holder with a confidential balance.
-    // The caller supplies the issuer and any number of holders.
-    struct ConfidentialEnv
-    {
-        // Per-holder configuration: the account, how much MPT to fund it
-        // with, and how much of that to convert to a confidential balance.
-        struct HolderInit
-        {
-            test::jtx::Account account;
-            std::uint64_t payAmount = 1000;
-            std::uint64_t convertAmount = 100;
-        };
+    // Get a bad ciphertext with valid structure but cryptographic invalid for
+    // testing purposes. For preflight test purposes.
+    static Buffer const&
+    getBadCiphertext();
 
-        test::jtx::MPTTester mpt;
+    // Get a trivial buffer that is structurally and mathematically valid, but
+    // contains invalid data that does not match the ledger state. For preclaim
+    // test purposes.
+    static Buffer const&
+    getTrivialCiphertext();
 
-        ConfidentialEnv(
-            test::jtx::Env& env,
-            test::jtx::Account const& issuer,
-            std::vector<HolderInit> const& holders,
-            std::uint32_t flags = tfMPTCanLock | tfMPTCanHoldConfidentialBalance | tfMPTCanTransfer,
-            std::optional<test::jtx::Account> auditor = std::nullopt)
-            : mpt{env, issuer, {.holders = extractAccounts(holders), .auditor = auditor}}
-        {
-            mpt.create({.ownerCount = 1, .flags = flags});
+    // Returns a valid compressed EC point (33 bytes) that can pass preflight
+    // validation but contains invalid data for preclaim test purposes.
+    static Buffer const&
+    getTrivialCommitment();
 
-            for (auto const& h : holders)
-            {
-                mpt.authorize({.account = h.account});
-                if ((flags & tfMPTRequireAuth) != 0)
-                    mpt.authorize({.account = issuer, .holder = h.account});
-                mpt.pay(issuer, h.account, h.payAmount);
-            }
+    // Returns a hex-encoded send proof of the correct length filled with
+    // placeholder data. It passes the proof length check in preflight but
+    // fails proof verification.
+    static std::string
+    getTrivialSendProofHex();
 
-            mpt.generateKeyPair(issuer);
-            for (auto const& h : holders)
-                mpt.generateKeyPair(h.account);
-            if (auditor)
-                mpt.generateKeyPair(requireOptionalRef(auditor, "Missing auditor"));
+    // Offset where the bulletproof begins in a send proof blob.
+    // Proof layout: [compact_sigma | bulletproof]
+    static constexpr size_t kBulletproofOffset = kEcSendProofLength - kEcDoubleBulletproofLength;
 
-            mpt.set({
-                .account = issuer,
-                .issuerPubKey = mpt.getPubKey(issuer),
-                .auditorPubKey = auditor
-                    ? mpt.getPubKey(requireOptionalRef(auditor, "Missing auditor"))
-                    : std::optional<Buffer>{},
-            });
+    // Generate a forged aggregated bulletproof (double bulletproof) for
+    // the given values and blinding factors. Used to test that splicing
+    // a bulletproof claiming a different remaining balance is rejected.
+    static Buffer
+    getForgedBulletproof(
+        std::array<uint64_t, 2> const& values,
+        std::array<Buffer, 2> const& blindingFactors,
+        uint256 const& contextHash);
 
-            for (auto const& h : holders)
-            {
-                mpt.convert({
-                    .account = h.account,
-                    .amt = h.convertAmount,
-                    .holderPubKey = mpt.getPubKey(h.account),
-                });
-                mpt.mergeInbox({.account = h.account});
-            }
-        }
+    // Generate a forged single bulletproof for a single value and blinding factor.
+    // Used to test ConvertBack overdraft prevention via bulletproof verification.
+    static Buffer
+    getForgedSingleBulletproof(
+        uint64_t value,
+        Buffer const& blindingFactor,
+        uint256 const& contextHash);
 
-    private:
-        static std::vector<test::jtx::Account>
-        extractAccounts(std::vector<HolderInit> const& holders)
-        {
-            std::vector<test::jtx::Account> accounts;
-            accounts.reserve(holders.size());
-            for (auto const& h : holders)
-                accounts.push_back(h.account);
-            return accounts;
-        }
-    };
-
-    // Set up an MPT environment suitable for batch testing.
-    // alice is issuer; bob has 'bobAmt' in confidential spending; carol has
-    // 'carolAmt' in confidential spending; dave is initialised with pubkey but
-    // zero spending/inbox.
-    static void
-    setupBatchEnv(
+    // Forges a ConvertBack proof (compact sigma + single bulletproof) whose
+    // sigma component claims claimedBalance (which may be wrong) while binding
+    // to the real pedersen commitment and to the encrypted spending balance
+    // already on the ledger. The bulletproof component is built from the real
+    // remaining balance (realBalance - amt) so it stays honest.
+    // mpt_get_convert_back_proof validates its inputs before proving, so it
+    // cannot be used to build such an inconsistent proof.
+    static Buffer
+    getForgedConvertBackProof(
         test::jtx::MPTTester& mpt,
-        test::jtx::Account const& alice,
-        test::jtx::Account const& bob,
-        test::jtx::Account const& carol,
-        test::jtx::Account const& dave,
-        std::uint64_t bobAmt,
-        std::uint64_t carolAmt)
-    {
-        using namespace test::jtx;
-        mpt.create({
-            .ownerCount = 1,
-            .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanHoldConfidentialBalance,
-        });
-        mpt.authorize({.account = bob});
-        mpt.authorize({.account = carol});
-        mpt.authorize({.account = dave});
+        test::jtx::Account const& holder,
+        uint64_t claimedBalance,
+        uint64_t realBalance,
+        uint64_t amt,
+        Buffer const& pedersenCommitment,
+        Buffer const& encryptedSpendingBalance,
+        Buffer const& pcBlindingFactor,
+        uint256 const& contextHash);
 
-        if (bobAmt > 0)
-            mpt.pay(alice, bob, bobAmt);
-        if (carolAmt > 0)
-            mpt.pay(alice, carol, carolAmt);
-
-        mpt.generateKeyPair(alice);
-        mpt.generateKeyPair(bob);
-        mpt.generateKeyPair(carol);
-        mpt.generateKeyPair(dave);
-
-        mpt.set({
-            .account = alice,
-            .issuerPubKey = mpt.getPubKey(alice),
-        });
-
-        if (bobAmt > 0)
-        {
-            mpt.convert({
-                .account = bob,
-                .amt = bobAmt,
-                .holderPubKey = mpt.getPubKey(bob),
-            });
-            mpt.mergeInbox({.account = bob});
-        }
-        else
-        {
-            mpt.convert({
-                .account = bob,
-                .amt = 0,
-                .holderPubKey = mpt.getPubKey(bob),
-            });
-        }
-
-        if (carolAmt > 0)
-        {
-            mpt.convert({
-                .account = carol,
-                .amt = carolAmt,
-                .holderPubKey = mpt.getPubKey(carol),
-            });
-            mpt.mergeInbox({.account = carol});
-        }
-        else
-        {
-            mpt.convert({
-                .account = carol,
-                .amt = 0,
-                .holderPubKey = mpt.getPubKey(carol),
-            });
-        }
-
-        // dave: register pubkey only (0 spending/inbox)
-        mpt.convert({
-            .account = dave,
-            .amt = 0,
-            .holderPubKey = mpt.getPubKey(dave),
-        });
-    }
+    // Forges a ConfidentialMPTSend proof (compact sigma + double bulletproof)
+    // for setup.sendAmount against setup's real balance commitment/ciphertext.
+    // mpt_get_confidential_send_proof does not allow to build a proof whose amount
+    // exceeds the sender's claimed balance.
+    static Buffer
+    getForgedSendProof(
+        test::jtx::MPTTester& mpt,
+        test::jtx::Env& env,
+        test::jtx::Account const& sender,
+        test::jtx::Account const& dest,
+        ConfidentialSendSetup const& setup);
 };
 
 }  // namespace xrpl

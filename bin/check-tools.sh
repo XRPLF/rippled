@@ -158,6 +158,7 @@ if [ "${os}" = "linux" ] || [ "${os}" = "macos" ]; then
     check cargo-nextest cargo nextest --version
     check clippy-driver
     check rust-analyzer
+    check rust-nightly rust-nightly run rustc --version
     check rustc
     check rustfmt
 fi
