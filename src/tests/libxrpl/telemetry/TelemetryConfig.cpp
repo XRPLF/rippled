@@ -27,6 +27,7 @@ namespace key {
 constexpr char const* batchSize = "batch_size";
 constexpr char const* batchDelayMs = "batch_delay_ms";
 constexpr char const* maxQueueSize = "max_queue_size";
+constexpr char const* consensusTraceStrategy = "consensus_trace_strategy";
 }  // namespace key
 
 /**
@@ -104,6 +105,7 @@ TEST(TelemetryConfig, setup_defaults)
     EXPECT_TRUE(s.traceRpc);
     EXPECT_TRUE(s.tracePeer);
     EXPECT_TRUE(s.traceLedger);
+    EXPECT_EQ(s.consensusTraceStrategy, telemetry::ConsensusTraceStrategy::Deterministic);
 }
 
 TEST(TelemetryConfig, parse_empty_section)
@@ -284,6 +286,71 @@ TEST(TelemetryConfig, batch_size_equal_to_max_queue_size_is_accepted)
     auto const setup = parseBatch({{key::batchSize, "512"}, {key::maxQueueSize, "512"}});
     EXPECT_EQ(setup.batchSize, 512u);
     EXPECT_EQ(setup.maxQueueSize, 512u);
+}
+
+TEST(TelemetryConfig, consensus_trace_strategy_names_match_the_config_spellings)
+{
+    // strategyName() feeds both the parser and the trace_strategy span
+    // attribute, so these two strings are the whole public vocabulary.
+    EXPECT_STREQ(
+        telemetry::strategyName(telemetry::ConsensusTraceStrategy::Deterministic), "deterministic");
+    EXPECT_STREQ(telemetry::strategyName(telemetry::ConsensusTraceStrategy::Random), "random");
+}
+
+TEST(TelemetryConfig, consensus_trace_strategy_defaults_to_deterministic)
+{
+    // The key is absent, so the default applies. Deterministic is the only
+    // strategy in use, and a default of Random would break cross-node
+    // correlation on every node that omits the key.
+    EXPECT_EQ(
+        parseBatch({}).consensusTraceStrategy, telemetry::ConsensusTraceStrategy::Deterministic);
+}
+
+TEST(TelemetryConfig, consensus_trace_strategy_accepts_deterministic)
+{
+    EXPECT_EQ(
+        parseBatch({{key::consensusTraceStrategy, "deterministic"}}).consensusTraceStrategy,
+        telemetry::ConsensusTraceStrategy::Deterministic);
+}
+
+TEST(TelemetryConfig, consensus_trace_strategy_accepts_random)
+{
+    // Random is experimental and unused, but it is a documented spelling, so
+    // the parser must still map it to its own enumerator rather than reject it
+    // or fold it into the default.
+    EXPECT_EQ(
+        parseBatch({{key::consensusTraceStrategy, "random"}}).consensusTraceStrategy,
+        telemetry::ConsensusTraceStrategy::Random);
+}
+
+TEST(TelemetryConfig, consensus_trace_strategy_empty_value_is_the_default)
+{
+    // `consensus_trace_strategy=` with nothing after it. An empty value means
+    // the operator wrote the key and no value, which is the default, not a typo.
+    EXPECT_EQ(
+        parseBatch({{key::consensusTraceStrategy, ""}}).consensusTraceStrategy,
+        telemetry::ConsensusTraceStrategy::Deterministic);
+}
+
+TEST(TelemetryConfig, consensus_trace_strategy_rejects_an_undocumented_value)
+{
+    // "attribute" is not a spelling this parser accepts. Rejecting rather than
+    // defaulting is the point: a silent fallback would leave the operator
+    // believing a setting took effect.
+    EXPECT_EQ(
+        batchRejection({{key::consensusTraceStrategy, "attribute"}}),
+        "Invalid value 'consensus_trace_strategy' in [telemetry]: must be 'deterministic' or "
+        "'random'.");
+}
+
+TEST(TelemetryConfig, consensus_trace_strategy_matching_is_case_sensitive)
+{
+    // Every other value in this section is matched exactly, so "Random" is a
+    // typo and must be reported as one.
+    EXPECT_EQ(
+        batchRejection({{key::consensusTraceStrategy, "Random"}}),
+        "Invalid value 'consensus_trace_strategy' in [telemetry]: must be 'deterministic' or "
+        "'random'.");
 }
 
 TEST(TelemetryConfig, null_telemetry_factory)

@@ -122,6 +122,69 @@ namespace xrpl::telemetry {
 inline constexpr std::string_view kTracerName{"xrpld"};
 #endif
 
+/**
+ * How a consensus round span picks its trace id.
+ *
+ *   consensus_trace_strategy (xrpld.cfg)
+ *          |
+ *          v
+ *   makeTelemetrySetup()  ──>  Setup::consensusTraceStrategy
+ *          |
+ *          v
+ *   RCLConsensus::Adaptor::startRoundTracing()
+ *          |
+ *          +-- Deterministic ──> SpanGuard::hashSpan(prev ledger hash)
+ *          +-- Random        ──> SpanGuard::span() / linkedSpan()
+ *
+ * Deterministic is the strategy in use. Every validator of a round hashes the
+ * same previous ledger id, so all of them land in one trace.
+ *
+ * Random is experimental and not used. Each node would invent its own trace
+ * id, so one round would arrive as one trace per node, joinable only by the
+ * `consensus_ledger_id` attribute.
+ *
+ * @code
+ * // Branch on the strategy rather than on a string.
+ * if (telemetry.getConsensusTraceStrategy() == ConsensusTraceStrategy::Random)
+ *     span = SpanGuard::span(TraceCategory::Consensus, seg::consensus, op::round);
+ * else
+ *     span = SpanGuard::hashSpan(TraceCategory::Consensus, name, id.data(), id.kBytes);
+ *
+ * // Edge case: the value also goes on a span attribute, so it needs its
+ * // config spelling back.
+ * span.setAttribute(attr::traceStrategy, strategyName(ConsensusTraceStrategy::Random));
+ * @endcode
+ *
+ * @note Adding an enumerator means adding a spelling to strategyName() below
+ * and to the parser in TelemetryConfig.cpp. Both switch without a default, so
+ * the compiler catches a missed one.
+ */
+enum class ConsensusTraceStrategy : std::uint8_t { Deterministic, Random };
+
+/**
+ * Config spelling of a consensus trace strategy.
+ *
+ * This is the same text `consensus_trace_strategy` accepts, and it is what
+ * goes on the `trace_strategy` span attribute, so the two cannot drift.
+ *
+ * @param strategy  Strategy to name.
+ * @return "deterministic" or "random", pointing at a string literal.
+ */
+[[nodiscard]] constexpr char const*
+strategyName(ConsensusTraceStrategy strategy)
+{
+    switch (strategy)
+    {
+        case ConsensusTraceStrategy::Deterministic:
+            return "deterministic";
+        case ConsensusTraceStrategy::Random:
+            return "random";
+    }
+    // The switch covers every enumerator. This return only satisfies the
+    // compiler, which cannot rule out a value outside the enumeration.
+    return "deterministic";
+}
+
 class Telemetry
 {
     /**
@@ -265,6 +328,14 @@ public:
          * Enable tracing for ledger close/accept.
          */
         bool traceLedger = true;
+
+        /**
+         * How a consensus round span picks its trace id.
+         *
+         * Read from `consensus_trace_strategy`. Deterministic is the strategy
+         * in use; Random is experimental. See ConsensusTraceStrategy.
+         */
+        ConsensusTraceStrategy consensusTraceStrategy = ConsensusTraceStrategy::Deterministic;
     };
 
     virtual ~Telemetry() = default;
@@ -335,6 +406,12 @@ public:
      */
     [[nodiscard]] virtual bool
     shouldTraceLedger() const = 0;
+
+    /**
+     * @return How a consensus round span picks its trace id.
+     */
+    [[nodiscard]] virtual ConsensusTraceStrategy
+    getConsensusTraceStrategy() const = 0;
 
 #ifdef XRPL_ENABLE_TELEMETRY
     /**

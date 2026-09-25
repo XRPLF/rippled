@@ -9,6 +9,7 @@
 # RPC command, status, role filters.
 # Path-finding request, mode and ledger filters.
 # Transaction hash, local/peer origin, status.
+# Consensus mode, round, ledger sequence, close time.
 
 apiVersion: 1
 
@@ -179,6 +180,37 @@ datasources:
             type: dynamic
           - id: tx-status
             tag: tx_status
+            operator: "="
+            scope: span
+            type: dynamic
+          # Consensus tracing filters
+          - id: consensus-mode
+            tag: consensus_mode
+            operator: "="
+            scope: span
+            type: static
+          - id: consensus-round
+            tag: consensus_round
+            operator: "="
+            scope: span
+            type: dynamic
+          - id: consensus-ledger-seq
+            tag: ledger_seq
+            operator: "="
+            scope: span
+            type: static
+          - id: consensus-close-time-correct
+            tag: close_time_correct
+            operator: "="
+            scope: span
+            type: static
+          - id: consensus-state
+            tag: consensus_state
+            operator: "="
+            scope: span
+            type: static
+          - id: consensus-close-resolution
+            tag: close_resolution_ms
             operator: "="
             scope: span
             type: dynamic
