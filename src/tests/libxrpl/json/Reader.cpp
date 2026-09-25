@@ -60,6 +60,21 @@ TEST(JsonReader, requires_an_object_array_or_null_document)
             std::string::npos)
             << scalar;
     }
+}
+
+TEST(JsonReader, reports_a_rejected_bare_scalar_at_the_start_of_the_document)
+{
+    // The rejection comes from onDocumentEnd, by which point the parser has
+    // consumed the value, so it must not be pinned to the end-of-input token.
+    for (auto const* scalar : {"42", R"("a string")", "true", "  42", "\n\n  42"})
+    {
+        auto root = json::Value{};
+        auto reader = json::Reader{};
+
+        ASSERT_FALSE(reader.parse(std::string{scalar}, root)) << scalar;
+        EXPECT_EQ(reader.getFormattedErrorMessages().find("* Line 1, Column 1"), 0u)
+            << scalar << ": " << reader.getFormattedErrorMessages();
+    }
 
     for (auto const* document : {"{}", "[]", "null", R"({"a":1})", "[1,2]"})
     {

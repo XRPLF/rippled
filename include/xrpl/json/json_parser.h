@@ -466,7 +466,14 @@ Parser<Visitor...>::parse(char const* beginDoc, char const* endDoc)
 
     if (successful)
     {
-        DISPATCH_VISITORS(token, onDocumentEnd(documentSize));
+        // onDocumentEnd rejects the document as a whole, so its errors belong at
+        // the start rather than at whatever token parsing stopped on.
+        auto documentToken = Token{};
+        documentToken.type = TokenType::Error;
+        documentToken.start = begin_;
+        documentToken.end = end_;
+
+        DISPATCH_VISITORS(documentToken, onDocumentEnd(documentSize));
     }
     return successful;
 }
@@ -902,6 +909,11 @@ Parser<Visitor...>::readObject(Token& tokenStart, std::size_t depth)
         while (comma.type == TokenType::Comment && finalizeTokenOk)
         {
             finalizeTokenOk = readToken(comma);
+        }
+
+        if (!finalizeTokenOk)
+        {
+            return recoverFromError(TokenType::ObjectEnd);
         }
 
         if (comma.type == TokenType::ObjectEnd)
