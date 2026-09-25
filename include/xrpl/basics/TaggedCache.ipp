@@ -6,6 +6,7 @@
 #include <xrpl/basics/scope.h>
 
 #include <algorithm>
+#include <thread>
 
 namespace xrpl {
 
@@ -261,14 +262,23 @@ TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash,
                 << " aging at " << (now - whenExpire).count() << " of " << targetAge_.count();
         }
 
+        // Worker w takes partitions w, w + workerCount, w + 2 * workerCount
+        // and so on, covering every partition exactly once.
+        std::size_t const workerCount = std::min(cache_.partitions(), kMaxSweepThreads);
+
         std::vector<std::thread> workers;
-        workers.reserve(cache_.partitions());
+        workers.reserve(workerCount);
         std::atomic<int> allRemovals = 0;
 
-        for (std::size_t p = 0; p < cache_.partitions(); ++p)
+        for (std::size_t w = 0; w < workerCount; ++w)
         {
-            workers.push_back(sweepHelper(
-                whenExpire, now, cache_.map()[p], allStuffToSweep[p], allRemovals, lock));
+            workers.emplace_back([&, this, w]() {
+                for (std::size_t p = w; p < cache_.partitions(); p += workerCount)
+                {
+                    sweepPartition(
+                        whenExpire, now, cache_.map()[p], allStuffToSweep[p], allRemovals, lock);
+                }
+            });
         }
         for (std::thread& worker : workers)
             worker.join();
@@ -773,9 +783,9 @@ template <
     class Hash,
     class KeyEqual,
     class Mutex>
-inline std::thread
+inline void
 TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash, KeyEqual, Mutex>::
-    sweepHelper(
+    sweepPartition(
         clock_type::time_point const& whenExpire,
         [[maybe_unused]] clock_type::time_point const& now,
         KeyValueCacheType::map_type& partition,
@@ -783,65 +793,63 @@ TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash,
         std::atomic<int>& allRemovals,
         std::scoped_lock<std::recursive_mutex> const&)
 {
-    return std::thread([&, this]() {
-        int cacheRemovals = 0;
-        int mapRemovals = 0;
+    int cacheRemovals = 0;
+    int mapRemovals = 0;
 
-        // Keep references to all the stuff we sweep
-        // so that we can destroy them outside the lock.
-        stuffToSweep.reserve(partition.size());
+    // Keep references to all the stuff we sweep
+    // so that we can destroy them outside the lock.
+    stuffToSweep.reserve(partition.size());
+    {
+        auto cit = partition.begin();
+        while (cit != partition.end())
         {
-            auto cit = partition.begin();
-            while (cit != partition.end())
+            if (cit->second.isWeak())
             {
-                if (cit->second.isWeak())
+                // weak
+                if (cit->second.isExpired())
                 {
-                    // weak
-                    if (cit->second.isExpired())
-                    {
-                        stuffToSweep.emplace_back(std::move(cit->second.ptr));
-                        ++mapRemovals;
-                        cit = partition.erase(cit);
-                    }
-                    else
-                    {
-                        ++cit;
-                    }
-                }
-                else if (cit->second.lastAccess <= whenExpire)
-                {
-                    // strong, expired
-                    ++cacheRemovals;
-                    if (cit->second.ptr.useCount() == 1)
-                    {
-                        stuffToSweep.emplace_back(std::move(cit->second.ptr));
-                        ++mapRemovals;
-                        cit = partition.erase(cit);
-                    }
-                    else
-                    {
-                        // remains weakly cached
-                        cit->second.ptr.convertToWeak();
-                        ++cit;
-                    }
+                    stuffToSweep.emplace_back(std::move(cit->second.ptr));
+                    ++mapRemovals;
+                    cit = partition.erase(cit);
                 }
                 else
                 {
-                    // strong, not expired
                     ++cit;
                 }
             }
+            else if (cit->second.lastAccess <= whenExpire)
+            {
+                // strong, expired
+                ++cacheRemovals;
+                if (cit->second.ptr.useCount() == 1)
+                {
+                    stuffToSweep.emplace_back(std::move(cit->second.ptr));
+                    ++mapRemovals;
+                    cit = partition.erase(cit);
+                }
+                else
+                {
+                    // remains weakly cached
+                    cit->second.ptr.convertToWeak();
+                    ++cit;
+                }
+            }
+            else
+            {
+                // strong, not expired
+                ++cit;
+            }
         }
+    }
 
-        if (mapRemovals || cacheRemovals)
-        {
-            JLOG(journal_.debug())
-                << "TaggedCache partition sweep " << name_ << ": cache = " << partition.size()
-                << "-" << cacheRemovals << ", map-=" << mapRemovals;
-        }
+    if (mapRemovals > 0 || cacheRemovals > 0)
+    {
+        JLOG(journal_.debug()) << "TaggedCache partition sweep " << name_
+                               << ": cache = " << partition.size() << "-" << cacheRemovals
+                               << ", map-=" << mapRemovals;
+    }
 
-        allRemovals += cacheRemovals;
-    });
+    allRemovals += cacheRemovals;
 }
 
 template <
@@ -853,9 +861,9 @@ template <
     class Hash,
     class KeyEqual,
     class Mutex>
-inline std::thread
+inline void
 TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash, KeyEqual, Mutex>::
-    sweepHelper(
+    sweepPartition(
         clock_type::time_point const& whenExpire,
         clock_type::time_point const& now,
         KeyOnlyCacheType::map_type& partition,
@@ -863,43 +871,41 @@ TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash,
         std::atomic<int>& allRemovals,
         std::scoped_lock<std::recursive_mutex> const&)
 {
-    return std::thread([&, this]() {
-        // NOLINTBEGIN https://github.com/XRPLF/rippled/issues/7056
-        int cacheRemovals = 0;
-        int mapRemovals = 0;
-        // NOLINTEND
+    // NOLINTBEGIN https://github.com/XRPLF/rippled/issues/7056
+    int cacheRemovals = 0;
+    int mapRemovals = 0;
+    // NOLINTEND
 
-        // Keep references to all the stuff we sweep
-        // so that we can destroy them outside the lock.
+    // Keep references to all the stuff we sweep
+    // so that we can destroy them outside the lock.
+    {
+        auto cit = partition.begin();
+        while (cit != partition.end())
         {
-            auto cit = partition.begin();
-            while (cit != partition.end())
+            if (cit->second.lastAccess > now)
             {
-                if (cit->second.lastAccess > now)
-                {
-                    cit->second.lastAccess = now;
-                    ++cit;
-                }
-                else if (cit->second.lastAccess <= whenExpire)
-                {
-                    cit = partition.erase(cit);
-                }
-                else
-                {
-                    ++cit;
-                }
+                cit->second.lastAccess = now;
+                ++cit;
+            }
+            else if (cit->second.lastAccess <= whenExpire)
+            {
+                cit = partition.erase(cit);
+            }
+            else
+            {
+                ++cit;
             }
         }
+    }
 
-        if (mapRemovals > 0 || cacheRemovals > 0)
-        {
-            JLOG(journal_.debug())
-                << "TaggedCache partition sweep " << name_ << ": cache = " << partition.size()
-                << "-" << cacheRemovals << ", map-=" << mapRemovals;
-        }
+    if (mapRemovals > 0 || cacheRemovals > 0)
+    {
+        JLOG(journal_.debug()) << "TaggedCache partition sweep " << name_
+                               << ": cache = " << partition.size() << "-" << cacheRemovals
+                               << ", map-=" << mapRemovals;
+    }
 
-        allRemovals += cacheRemovals;
-    });
+    allRemovals += cacheRemovals;
 }
 
 }  // namespace xrpl
