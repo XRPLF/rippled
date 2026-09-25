@@ -1,3 +1,5 @@
+{# Read SANITIZERS first: the next line rebinds `os` from the module to the OS name. #}
+{% set sanitizers = os.getenv("SANITIZERS", "") %}
 {% set os = detect_api.detect_os() %}
 {% set arch = detect_api.detect_arch() %}
 {% set compiler, version, compiler_exe = detect_api.detect_default_compiler() %}
@@ -48,6 +50,17 @@ tools.build:compiler_executables={'c':'{{ cc_exe }}','cpp':'{{ cxx_exe }}'}
 {# More info: https://docs.conan.io/2/reference/extensions/binary_compatibility.html #}
 user.package:cppstd_version=23
 tools.info.package_id:confs+=["user.package:cppstd_version"]
+
+{# opentelemetry-cpp is an external dependency: sanitizer reports from its own #}
+{# code are not ours to fix, so build it without sanitizer checks. #}
+{# TSan stays on, because it must see the library's atomics or it reports false races. #}
+{% if sanitizers and compiler != "msvc" %}
+{% set otel_sanitizer_flags = ["-fno-sanitize=all"] %}
+{% if "thread" in sanitizers %}
+{% set _ = otel_sanitizer_flags.append("-fsanitize=thread") %}
+{% endif %}
+opentelemetry-cpp/*:tools.build:cxxflags+={{ otel_sanitizer_flags }}
+{% endif %}
 
 {% if os == "Macos" %}
 [buildenv]
