@@ -1158,8 +1158,11 @@ NoModifiedUnmodifiableFields::finalize(
                     kFieldChanged(before, after, sfOwner) ||
                     kFieldChanged(before, after, sfManagementFeeRate) ||
                     kFieldChanged(before, after, sfCoverRateMinimum) ||
-                    kFieldChanged(before, after, sfCoverRateLiquidation) ||
-                    kFieldChanged(before, after, sfFlags);
+                    kFieldChanged(before, after, sfCoverRateLiquidation);
+                // LoanBroker flags (lsfLoanBrokerPrivate) only exist from
+                // featureLendingProtocolV1_2 onwards and are set at creation.
+                if (view.rules().enabled(featureLendingProtocolV1_2))
+                    bad = bad || kFieldChanged(before, after, sfFlags);
                 break;
             case ltLOAN:
                 bad = bad || kFieldChanged(before, after, sfSequence) ||

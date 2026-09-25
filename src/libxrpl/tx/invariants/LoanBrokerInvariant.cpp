@@ -225,9 +225,16 @@ ValidLoanBroker::finalize(
 
         if (view.rules().enabled(featureLendingProtocolV1_2))
         {
-            if (after->at(~sfDomainID) && !after->isFlag(lsfLoanBrokerPrivate))
+            auto const domainID = after->at(~sfDomainID);
+            if (domainID && !after->isFlag(lsfLoanBrokerPrivate))
             {
                 JLOG(j.fatal()) << "Invariant failed: DomainID is set on public Loan Broker";
+                return false;
+            }
+            // LoanBrokerSet rejects a zero DomainID
+            if (domainID && *domainID == beast::kZero)
+            {
+                JLOG(j.fatal()) << "Invariant failed: Loan Broker DomainID is zero";
                 return false;
             }
         }

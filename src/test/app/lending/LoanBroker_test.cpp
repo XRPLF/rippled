@@ -2980,7 +2980,7 @@ class LoanBroker_test : public beast::unit_test::Suite
         Account const credIssuer{"credIssuer"};
         std::string const credType = "LoanCredential";
 
-        Env env{*this};
+        Env env{*this, all_};
         Vault const vault{env};
 
         env.fund(XRP(100'000), issuer, alice, credIssuer);
@@ -2998,7 +2998,7 @@ class LoanBroker_test : public beast::unit_test::Suite
         env.close();
 
         // Create a permissioned domain
-        pdomain::Credentials const credentials{{credIssuer, credType}};
+        pdomain::Credentials const credentials{{.issuer = credIssuer, .credType = credType}};
         env(pdomain::setTx(credIssuer, credentials));
         env.close();
         auto const domainId = pdomain::getNewDomain(env.meta());
@@ -3006,8 +3006,7 @@ class LoanBroker_test : public beast::unit_test::Suite
 
         // Test 1: Cannot set tfLoanBrokerPrivate without featureLendingProtocolV1_2
         {
-            Env envNoFix{*this};
-            envNoFix.disableFeature(featureLendingProtocolV1_2);
+            Env envNoFix{*this, all_ - featureLendingProtocolV1_2};
             Vault const vault2{envNoFix};
 
             envNoFix.fund(XRP(100'000), issuer, alice);
@@ -3081,7 +3080,7 @@ class LoanBroker_test : public beast::unit_test::Suite
         Account const credIssuer{"credIssuer"};
         std::string const credType = "LoanCredential";
 
-        Env env{*this};
+        Env env{*this, all_};
         Vault const vault{env};
 
         env.fund(XRP(100'000), issuer, alice, credIssuer);
@@ -3099,7 +3098,7 @@ class LoanBroker_test : public beast::unit_test::Suite
         env.close();
 
         // Create two permissioned domains
-        pdomain::Credentials const credentials{{credIssuer, credType}};
+        pdomain::Credentials const credentials{{.issuer = credIssuer, .credType = credType}};
         env(pdomain::setTx(credIssuer, credentials));
         env.close();
         auto const domainId1 = pdomain::getNewDomain(env.meta());
@@ -3146,6 +3145,26 @@ class LoanBroker_test : public beast::unit_test::Suite
             BEAST_EXPECT(sleBroker);
             if (sleBroker)
             {
+                BEAST_EXPECT(sleBroker->at(~sfDomainID) == domainId1);
+            }
+        }
+
+        uint256 fakeDomainId;
+        BEAST_EXPECT(fakeDomainId.parseHex(
+            "1234567890ABCDEF1234567890ABCDEF1234567890ABCDEF1234567890ABCDEF"));
+
+        // Test 3b: Cannot modify DomainID to a non-existent domain
+        env(set(alice, vaultKeylet.key),
+            kLoanBrokerId(brokerKeylet.key),
+            kDomainId(fakeDomainId),
+            Ter(tecOBJECT_NOT_FOUND));
+        env.close();
+        {
+            auto const sleBroker = env.le(brokerKeylet);
+            BEAST_EXPECT(sleBroker);
+            if (sleBroker)
+            {
+                // DomainID must be unchanged
                 BEAST_EXPECT(sleBroker->at(~sfDomainID) == domainId1);
             }
         }
@@ -3217,6 +3236,34 @@ class LoanBroker_test : public beast::unit_test::Suite
             kDomainId(beast::kZero),
             Ter(tecNO_PERMISSION));
         env.close();
+
+        // A non-existent domain on a public broker is rejected for the missing
+        // domain first: the domain check precedes the broker checks.
+        env(set(alice, vaultKeylet.key),
+            kLoanBrokerId(publicBrokerKeylet.key),
+            kDomainId(fakeDomainId),
+            Ter(tecOBJECT_NOT_FOUND));
+        env.close();
+    }
+
+    // Build a LoanSet with fixed terms, signed by the counterparty
+    static jtx::JTx
+    makeLoanSet(
+        jtx::Env& env,
+        jtx::Account const& submitter,
+        uint256 const& brokerId,
+        jtx::Account const& counterparty,
+        jtx::PrettyAsset const& asset)
+    {
+        using namespace jtx;
+        auto setTx = env.jt(loan::set(submitter, brokerId, asset(100).number()));
+        Sig(sfCounterpartySignature, counterparty)(env, setTx);
+        Fee{env.current()->fees().base * 2}(env, setTx);
+        loan::kCounterparty(counterparty)(env, setTx);
+        loan::kInterestRate(TenthBips32{1000})(env, setTx);
+        loan::kPaymentTotal(2)(env, setTx);
+        loan::kPaymentInterval(100)(env, setTx);
+        return setTx;
     }
 
     void
@@ -3232,7 +3279,7 @@ class LoanBroker_test : public beast::unit_test::Suite
         Account const credIssuer{"credIssuer"};
         std::string const credType = "LoanCredential";
 
-        Env env{*this};
+        Env env{*this, all_};
         Vault const vault{env};
 
         env.fund(XRP(100'000), issuer, alice, bob, credIssuer);
@@ -3256,7 +3303,7 @@ class LoanBroker_test : public beast::unit_test::Suite
         env.close();
 
         // Create a permissioned domain
-        pdomain::Credentials const credentials{{credIssuer, credType}};
+        pdomain::Credentials const credentials{{.issuer = credIssuer, .credType = credType}};
         env(pdomain::setTx(credIssuer, credentials));
         env.close();
         auto const domainId = pdomain::getNewDomain(env.meta());
@@ -3280,14 +3327,7 @@ class LoanBroker_test : public beast::unit_test::Suite
         // Bob can create a loan (has credentials, domain is set)
         {
             auto const loanKeylet = keylet::loan(brokerKeylet.key, SeqProxy::rawSequence(1));
-            auto setTx = env.jt(loan::set(bob, brokerKeylet.key, asset(100).number()));
-            Sig(sfCounterpartySignature, alice)(env, setTx);
-            Fee{env.current()->fees().base * 2}(env, setTx);
-            loan::kCounterparty(alice)(env, setTx);
-            loan::kInterestRate(TenthBips32{1000})(env, setTx);
-            loan::kPaymentTotal(2)(env, setTx);
-            loan::kPaymentInterval(100)(env, setTx);
-            env(setTx);
+            env(makeLoanSet(env, bob, brokerKeylet.key, alice, asset));
             env.close();
 
             BEAST_EXPECT(env.le(loanKeylet));
@@ -3311,14 +3351,8 @@ class LoanBroker_test : public beast::unit_test::Suite
         // Bob cannot create a new loan (private broker has no domain configured)
         {
             auto const loanKeylet2 = keylet::loan(brokerKeylet.key, SeqProxy::rawSequence(2));
-            auto setTx = env.jt(loan::set(bob, brokerKeylet.key, asset(100).number()));
-            Sig(sfCounterpartySignature, alice)(env, setTx);
-            Fee{env.current()->fees().base * 2}(env, setTx);
-            loan::kCounterparty(alice)(env, setTx);
-            loan::kInterestRate(TenthBips32{1000})(env, setTx);
-            loan::kPaymentTotal(2)(env, setTx);
-            loan::kPaymentInterval(100)(env, setTx);
-            env(setTx, Ter(tecNO_AUTH));
+            env(makeLoanSet(env, bob, brokerKeylet.key, alice, asset), Ter(tecNO_AUTH));
+            env.close();
 
             BEAST_EXPECT(!env.le(loanKeylet2));
         }
@@ -3330,18 +3364,30 @@ class LoanBroker_test : public beast::unit_test::Suite
         // Now bob can create a loan again
         {
             auto const loanKeylet3 = keylet::loan(brokerKeylet.key, SeqProxy::rawSequence(2));
-            auto setTx = env.jt(loan::set(bob, brokerKeylet.key, asset(100).number()));
-            Sig(sfCounterpartySignature, alice)(env, setTx);
-            Fee{env.current()->fees().base * 2}(env, setTx);
-            loan::kCounterparty(alice)(env, setTx);
-            loan::kInterestRate(TenthBips32{1000})(env, setTx);
-            loan::kPaymentTotal(2)(env, setTx);
-            loan::kPaymentInterval(100)(env, setTx);
-            env(setTx);
+            env(makeLoanSet(env, bob, brokerKeylet.key, alice, asset));
             env.close();
 
             BEAST_EXPECT(env.le(loanKeylet3));
         }
+
+        // The domain owner deletes the domain while the broker still refers to it
+        env(pdomain::deleteTx(credIssuer, domainId));
+        env.close();
+        BEAST_EXPECT(!env.le(keylet::permissionedDomain(domainId)));
+
+        // Bob cannot create a loan (the broker's domain no longer exists)
+        {
+            auto const loanKeylet4 = keylet::loan(brokerKeylet.key, SeqProxy::rawSequence(3));
+            env(makeLoanSet(env, bob, brokerKeylet.key, alice, asset), Ter(tecOBJECT_NOT_FOUND));
+
+            BEAST_EXPECT(!env.le(loanKeylet4));
+        }
+
+        // The broker owner can still recover by clearing the stale DomainID
+        env(set(alice, vaultKeylet.key), kLoanBrokerId(brokerKeylet.key), kDomainId(beast::kZero));
+        env.close();
+        if (auto const sleBroker = env.le(brokerKeylet); BEAST_EXPECT(sleBroker))
+            BEAST_EXPECT(!sleBroker->at(~sfDomainID));
     }
 
     void
@@ -3358,7 +3404,7 @@ class LoanBroker_test : public beast::unit_test::Suite
         Account const credIssuer{"credIssuer"};
         std::string const credType = "LoanCredential";
 
-        Env env{*this};
+        Env env{*this, all_};
         Vault const vault{env};
 
         env.fund(XRP(100'000), issuer, alice, bob, carol, credIssuer);
@@ -3384,7 +3430,7 @@ class LoanBroker_test : public beast::unit_test::Suite
         env.close();
 
         // Create a permissioned domain
-        pdomain::Credentials const creds{{credIssuer, credType}};
+        pdomain::Credentials const creds{{.issuer = credIssuer, .credType = credType}};
         env(pdomain::setTx(credIssuer, creds));
         env.close();
         auto const domainId = pdomain::getNewDomain(env.meta());
@@ -3407,27 +3453,13 @@ class LoanBroker_test : public beast::unit_test::Suite
 
         // Carol (no credentials) cannot create a loan
         {
-            auto setTx = env.jt(loan::set(carol, brokerKeylet.key, asset(100).number()));
-            Sig(sfCounterpartySignature, alice)(env, setTx);
-            Fee{env.current()->fees().base * 2}(env, setTx);
-            loan::kCounterparty(alice)(env, setTx);
-            loan::kInterestRate(TenthBips32{1000})(env, setTx);
-            loan::kPaymentTotal(2)(env, setTx);
-            loan::kPaymentInterval(100)(env, setTx);
-            env(setTx, Ter(tecNO_AUTH));
+            env(makeLoanSet(env, carol, brokerKeylet.key, alice, asset), Ter(tecNO_AUTH));
         }
 
         // Bob (has credentials) can create a loan
         {
             auto const loanKeylet = keylet::loan(brokerKeylet.key, SeqProxy::rawSequence(1));
-            auto setTx = env.jt(loan::set(bob, brokerKeylet.key, asset(100).number()));
-            Sig(sfCounterpartySignature, alice)(env, setTx);
-            Fee{env.current()->fees().base * 2}(env, setTx);
-            loan::kCounterparty(alice)(env, setTx);
-            loan::kInterestRate(TenthBips32{1000})(env, setTx);
-            loan::kPaymentTotal(2)(env, setTx);
-            loan::kPaymentInterval(100)(env, setTx);
-            env(setTx);
+            env(makeLoanSet(env, bob, brokerKeylet.key, alice, asset));
             env.close();
 
             BEAST_EXPECT(env.le(loanKeylet));
@@ -3448,7 +3480,7 @@ class LoanBroker_test : public beast::unit_test::Suite
         Account const credIssuer{"credIssuer"};
         std::string const credType = "LoanCredential";
 
-        Env env{*this};
+        Env env{*this, all_};
         Vault const vault{env};
 
         env.fund(XRP(100'000), issuer, alice, bob, carol, credIssuer);
@@ -3474,7 +3506,7 @@ class LoanBroker_test : public beast::unit_test::Suite
         env.close();
 
         // Create a permissioned domain
-        pdomain::Credentials const credentials{{credIssuer, credType}};
+        pdomain::Credentials const credentials{{.issuer = credIssuer, .credType = credType}};
         env(pdomain::setTx(credIssuer, credentials));
         env.close();
         auto const domainId = pdomain::getNewDomain(env.meta());
@@ -3491,14 +3523,7 @@ class LoanBroker_test : public beast::unit_test::Suite
 
         // Test 1: Borrower without credentials cannot create loan
         {
-            auto setTx = env.jt(loan::set(carol, brokerKeylet.key, asset(100).number()));
-            Sig(sfCounterpartySignature, alice)(env, setTx);
-            Fee{env.current()->fees().base * 2}(env, setTx);
-            loan::kCounterparty(alice)(env, setTx);
-            loan::kInterestRate(TenthBips32{1000})(env, setTx);
-            loan::kPaymentTotal(2)(env, setTx);
-            loan::kPaymentInterval(100)(env, setTx);
-            env(setTx, Ter(tecNO_AUTH));
+            env(makeLoanSet(env, carol, brokerKeylet.key, alice, asset), Ter(tecNO_AUTH));
         }
 
         // Create credential for bob and accept it
@@ -3510,14 +3535,7 @@ class LoanBroker_test : public beast::unit_test::Suite
         // Test 2: Borrower with valid credentials can create loan
         {
             auto const loanKeylet = keylet::loan(brokerKeylet.key, SeqProxy::rawSequence(1));
-            auto setTx = env.jt(loan::set(bob, brokerKeylet.key, asset(100).number()));
-            Sig(sfCounterpartySignature, alice)(env, setTx);
-            Fee{env.current()->fees().base * 2}(env, setTx);
-            loan::kCounterparty(alice)(env, setTx);
-            loan::kInterestRate(TenthBips32{1000})(env, setTx);
-            loan::kPaymentTotal(2)(env, setTx);
-            loan::kPaymentInterval(100)(env, setTx);
-            env(setTx);
+            env(makeLoanSet(env, bob, brokerKeylet.key, alice, asset));
             env.close();
 
             BEAST_EXPECT(env.le(loanKeylet));
@@ -3535,14 +3553,7 @@ class LoanBroker_test : public beast::unit_test::Suite
             env.close();
 
             // Even bob with credentials should fail - broker has no domain configured
-            auto setTx = env.jt(loan::set(bob, broker2Keylet.key, asset(100).number()));
-            Sig(sfCounterpartySignature, alice)(env, setTx);
-            Fee{env.current()->fees().base * 2}(env, setTx);
-            loan::kCounterparty(alice)(env, setTx);
-            loan::kInterestRate(TenthBips32{1000})(env, setTx);
-            loan::kPaymentTotal(2)(env, setTx);
-            loan::kPaymentInterval(100)(env, setTx);
-            env(setTx, Ter(tecNO_AUTH));
+            env(makeLoanSet(env, bob, broker2Keylet.key, alice, asset), Ter(tecNO_AUTH));
         }
 
         // Test 4: Public broker allows anyone to create loan
@@ -3557,14 +3568,7 @@ class LoanBroker_test : public beast::unit_test::Suite
 
             // Carol without credentials can create loan on public broker
             auto const loanKeylet = keylet::loan(publicBrokerKeylet.key, SeqProxy::rawSequence(1));
-            auto setTx = env.jt(loan::set(carol, publicBrokerKeylet.key, asset(100).number()));
-            Sig(sfCounterpartySignature, alice)(env, setTx);
-            Fee{env.current()->fees().base * 2}(env, setTx);
-            loan::kCounterparty(alice)(env, setTx);
-            loan::kInterestRate(TenthBips32{1000})(env, setTx);
-            loan::kPaymentTotal(2)(env, setTx);
-            loan::kPaymentInterval(100)(env, setTx);
-            env(setTx);
+            env(makeLoanSet(env, carol, publicBrokerKeylet.key, alice, asset));
             env.close();
 
             BEAST_EXPECT(env.le(loanKeylet));
@@ -3576,14 +3580,7 @@ class LoanBroker_test : public beast::unit_test::Suite
         // bug that checked the submitter instead of the borrower would let a
         // borrower without credentials (carol) through.
         {
-            auto setTx = env.jt(loan::set(alice, brokerKeylet.key, asset(100).number()));
-            Sig(sfCounterpartySignature, carol)(env, setTx);
-            Fee{env.current()->fees().base * 2}(env, setTx);
-            loan::kCounterparty(carol)(env, setTx);
-            loan::kInterestRate(TenthBips32{1000})(env, setTx);
-            loan::kPaymentTotal(2)(env, setTx);
-            loan::kPaymentInterval(100)(env, setTx);
-            env(setTx, Ter(tecNO_AUTH));
+            env(makeLoanSet(env, alice, brokerKeylet.key, carol, asset), Ter(tecNO_AUTH));
         }
 
         // Test 6: Broker owner submits with a credentialed borrower (bob) as
@@ -3591,17 +3588,41 @@ class LoanBroker_test : public beast::unit_test::Suite
         // borrower's credentials regardless of who submits.
         {
             auto const loanKeylet = keylet::loan(brokerKeylet.key, SeqProxy::rawSequence(2));
-            auto setTx = env.jt(loan::set(alice, brokerKeylet.key, asset(100).number()));
-            Sig(sfCounterpartySignature, bob)(env, setTx);
-            Fee{env.current()->fees().base * 2}(env, setTx);
-            loan::kCounterparty(bob)(env, setTx);
-            loan::kInterestRate(TenthBips32{1000})(env, setTx);
-            loan::kPaymentTotal(2)(env, setTx);
-            loan::kPaymentInterval(100)(env, setTx);
-            env(setTx);
+            env(makeLoanSet(env, alice, brokerKeylet.key, bob, asset));
             env.close();
 
             BEAST_EXPECT(env.le(loanKeylet));
+        }
+
+        // Test 7: Borrower whose only credential has expired. Preclaim lets
+        // tecEXPIRED through so doApply can delete the expired credential; the
+        // transaction fails with tecEXPIRED but the deletion persists.
+        {
+            using namespace std::chrono_literals;
+
+            auto jv = credentials::create(carol, credIssuer, credType);
+            std::uint32_t const expiration =
+                env.current()->header().parentCloseTime.time_since_epoch().count() + 100;
+            jv[sfExpiration.jsonName] = expiration;
+            env(jv);
+            env(credentials::accept(carol, credIssuer, credType));
+            env.close();
+
+            auto const credKeylet = credentials::keylet(carol, credIssuer, credType);
+
+            // Advance time past expiration
+            env.close(150s);
+            BEAST_EXPECT(env.le(credKeylet));
+
+            env(makeLoanSet(env, carol, brokerKeylet.key, alice, asset), Ter(tecEXPIRED));
+            env.close();
+
+            // The expired credential was deleted despite the tec result
+            BEAST_EXPECT(!env.le(credKeylet));
+
+            // With the credential gone, preclaim now rejects outright
+            env(makeLoanSet(env, carol, brokerKeylet.key, alice, asset), Ter(tecNO_AUTH));
+            env.close();
         }
     }
 
@@ -3618,7 +3639,7 @@ class LoanBroker_test : public beast::unit_test::Suite
         Account const credIssuer{"credIssuer"};
         std::string const credType = "LoanCredential";
 
-        Env env{*this};
+        Env env{*this, all_};
         Vault const vault{env};
 
         env.fund(XRP(100'000), issuer, alice, bob, credIssuer);
@@ -3642,7 +3663,7 @@ class LoanBroker_test : public beast::unit_test::Suite
         env.close();
 
         // Create a permissioned domain
-        pdomain::Credentials const credentials{{credIssuer, credType}};
+        pdomain::Credentials const credentials{{.issuer = credIssuer, .credType = credType}};
         env(pdomain::setTx(credIssuer, credentials));
         env.close();
         auto const domainId = pdomain::getNewDomain(env.meta());
@@ -3666,14 +3687,7 @@ class LoanBroker_test : public beast::unit_test::Suite
         // Create a loan for bob
         auto const loanKeylet = keylet::loan(brokerKeylet.key, SeqProxy::rawSequence(1));
         {
-            auto setTx = env.jt(loan::set(bob, brokerKeylet.key, asset(100).number()));
-            Sig(sfCounterpartySignature, alice)(env, setTx);
-            Fee{env.current()->fees().base * 2}(env, setTx);
-            loan::kCounterparty(alice)(env, setTx);
-            loan::kInterestRate(TenthBips32{1000})(env, setTx);
-            loan::kPaymentTotal(2)(env, setTx);
-            loan::kPaymentInterval(100)(env, setTx);
-            env(setTx);
+            env(makeLoanSet(env, bob, brokerKeylet.key, alice, asset));
             env.close();
 
             BEAST_EXPECT(env.le(loanKeylet));
@@ -3720,14 +3734,7 @@ class LoanBroker_test : public beast::unit_test::Suite
         // Bob should NOT be able to create a NEW loan (no credentials)
         {
             auto const newLoanKeylet = keylet::loan(brokerKeylet.key, SeqProxy::rawSequence(2));
-            auto setTx = env.jt(loan::set(bob, brokerKeylet.key, asset(100).number()));
-            Sig(sfCounterpartySignature, alice)(env, setTx);
-            Fee{env.current()->fees().base * 2}(env, setTx);
-            loan::kCounterparty(alice)(env, setTx);
-            loan::kInterestRate(TenthBips32{1000})(env, setTx);
-            loan::kPaymentTotal(2)(env, setTx);
-            loan::kPaymentInterval(100)(env, setTx);
-            env(setTx, Ter(tecNO_AUTH));
+            env(makeLoanSet(env, bob, brokerKeylet.key, alice, asset), Ter(tecNO_AUTH));
 
             BEAST_EXPECT(!env.le(newLoanKeylet));
         }

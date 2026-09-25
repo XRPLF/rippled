@@ -54,13 +54,8 @@ LoanBrokerSet::preflight(PreflightContext const& ctx)
     if (!validNumericRange(tx[~sfDebtMaximum], Number(kMaxMpTokenAmount), Number(0)))
         return temINVALID;
 
-    if (!ctx.rules.enabled(featureLendingProtocolV1_2))
-    {
-        if (tx.isFlag(tfLoanBrokerPrivate) || tx.isFieldPresent(sfDomainID))
-        {
-            return temDISABLED;
-        }
-    }
+    if (!ctx.rules.enabled(featureLendingProtocolV1_2) && tx.isFieldPresent(sfDomainID))
+        return temDISABLED;
 
     if (tx.isFieldPresent(sfLoanBrokerID))
     {
@@ -74,13 +69,10 @@ LoanBrokerSet::preflight(PreflightContext const& ctx)
         if (tx[sfLoanBrokerID] == beast::kZero)
             return temINVALID;
 
-        if (ctx.rules.enabled(featureLendingProtocolV1_2))
+        // Cannot change private flag on existing broker
+        if (tx.isFlag(tfLoanBrokerPrivate))
         {
-            // Cannot change private flag on existing broker
-            if (tx.isFlag(tfLoanBrokerPrivate))
-            {
-                return temINVALID;
-            }
+            return temINVALID;
         }
     }
     else
@@ -380,7 +372,7 @@ LoanBrokerSet::doApply()
             if (tx.isFlag(tfLoanBrokerPrivate))
             {
                 broker->setFlag(lsfLoanBrokerPrivate);
-                if (auto domainID = tx[~sfDomainID])
+                if (auto const domainID = tx[~sfDomainID])
                     broker->setFieldH256(sfDomainID, *domainID);
             }
         }

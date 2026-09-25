@@ -762,6 +762,26 @@ class InvariantsMisc_test : public InvariantsBase
             }
         }
 
+        // LoanBroker sfFlags immutability is gated on featureLendingProtocolV1_2,
+        // so without it a flag change is not caught by this invariant.
+        {
+            doInvariantCheck(
+                Env{*this, all_ - featureLendingProtocolV1_2},
+                {},
+                [&](Account const&, Account const&, ApplyContext& ac) {
+                    auto sle = ac.view().peek(loanBrokerKeylet);
+                    if (!sle)
+                        return false;
+                    sle->setFlag(lsfLoanBrokerPrivate);
+                    ac.view().update(sle);
+                    return true;
+                },
+                XRPAmount{},
+                STTx{ttACCOUNT_SET, [](STObject&) {}},
+                {tesSUCCESS, tesSUCCESS},
+                createLoanBroker);
+        }
+
         // Loan flag immutability lives in NoModifiedUnmodifiableFields's
         // ltLOAN case: lsfLoanOverpayment must never toggle in either
         // direction, and lsfLoanDefault (gated on featureLendingProtocolV1_1)

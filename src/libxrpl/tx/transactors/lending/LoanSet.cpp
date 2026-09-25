@@ -435,13 +435,7 @@ LoanSet::preclaim(PreclaimContext const& ctx)
             return tecNO_AUTH;
         }
 
-        auto const sleDomain = ctx.view.read(keylet::permissionedDomain(*domainID));
-        if (!sleDomain)
-        {
-            JLOG(ctx.j.warn()) << "Domain does not exist.";  // LCOV_EXCL_LINE
-            return tecOBJECT_NOT_FOUND;                      // LCOV_EXCL_LINE
-        }
-
+        // validDomain returns tecOBJECT_NOT_FOUND if the domain was deleted
         if (auto const ter = credentials::validDomain(ctx.view, *domainID, borrower);
             !isTesSuccess(ter) && ter != tecEXPIRED)
             return ter;
