@@ -59,7 +59,7 @@ class ConfidentialMPTKeyRotation_test : public ConfidentialTransferTestBase
         mptAlice.set({
             .account = alice,
             .issuerPubKey = mptAlice.getPubKey(bob),
-            .err = rotationEnabled ? TER(tesSUCCESS) : TER(tecNO_PERMISSION),
+            .err = rotationEnabled ? TER(tesSUCCESS) : TER(temDISABLED),
         });
 
         // A rotation replaces the issuer key and bumps its epoch. The auditor
@@ -124,7 +124,7 @@ class ConfidentialMPTKeyRotation_test : public ConfidentialTransferTestBase
             .account = alice,
             .issuerPubKey = mptAlice.getPubKey(bob),
             .auditorPubKey = mptAlice.getPubKey(alice),
-            .err = rotationEnabled ? TER(tesSUCCESS) : TER(tecNO_PERMISSION),
+            .err = rotationEnabled ? TER(tesSUCCESS) : TER(temDISABLED),
         });
 
         if (rotationEnabled)
@@ -440,7 +440,7 @@ class ConfidentialMPTKeyRotation_test : public ConfidentialTransferTestBase
         mptAlice.set({
             .account = alice,
             .issuerPubKey = mptAlice.getPubKey(carol),
-            .err = rotationEnabled ? TER(tesSUCCESS) : TER(tecNO_PERMISSION),
+            .err = rotationEnabled ? TER(tesSUCCESS) : TER(temDISABLED),
         });
 
         auto const sleIssuance = env.le(keylet::mptokenIssuance(mptAlice.issuanceID()));

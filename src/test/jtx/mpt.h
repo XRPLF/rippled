@@ -265,6 +265,8 @@ struct MPTSet
     std::optional<uint256> domainID = std::nullopt;
     std::optional<Buffer> issuerPubKey = std::nullopt;
     std::optional<Buffer> auditorPubKey = std::nullopt;
+    std::optional<Buffer> holderPubKey = std::nullopt;
+    bool recoveryKey = false;
     std::optional<std::uint32_t> ticketSeq = std::nullopt;
     std::optional<TER> err = std::nullopt;
 };
@@ -405,6 +407,25 @@ struct MPTMirrorUpdate
     std::optional<std::uint32_t> flags = std::nullopt;
     std::optional<std::uint32_t> ownerCount = std::nullopt;
     std::optional<std::uint32_t> holderCount = std::nullopt;
+    std::optional<TER> err = std::nullopt;
+};
+
+/**
+ * @brief Arguments for building a ConfidentialMPTRecoverBalance test transaction.
+ */
+struct MPTConfidentialRecover
+{
+    std::optional<Account> account = std::nullopt;
+    std::optional<Account> holder = std::nullopt;
+    std::optional<MPTID> id = std::nullopt;
+    std::optional<Buffer> recoveryPrivKey = std::nullopt;
+    std::optional<std::string> proof = std::nullopt;
+    std::optional<Account> delegate = std::nullopt;
+    std::optional<std::uint32_t> ticketSeq = std::nullopt;
+    std::optional<std::uint32_t> ownerCount = std::nullopt;
+    std::optional<std::uint32_t> holderCount = std::nullopt;
+    std::optional<std::uint32_t> flags = std::nullopt;
+    std::optional<XRPAmount> fee = std::nullopt;
     std::optional<TER> err = std::nullopt;
 };
 
@@ -659,6 +680,11 @@ public:
         MPTMirrorUpdate const& arg = MPTMirrorUpdate{},
         std::source_location const& loc = std::source_location::current());
 
+    void
+    recover(
+        MPTConfidentialRecover const& arg = MPTConfidentialRecover{},
+        std::source_location const& loc = std::source_location::current());
+
     [[nodiscard]] bool
     checkDomainID(std::optional<uint256> expected) const;
 
@@ -772,6 +798,9 @@ public:
     std::uint32_t
     generateKeyPair(Account const& account);
 
+    [[nodiscard]] static std::pair<Buffer, Buffer>
+    generateKeyPair();
+
     // Returns the account's public key at the given key epoch, or its latest key when
     // no epoch is given.
     [[nodiscard]] std::optional<Buffer>
@@ -785,6 +814,9 @@ public:
     [[nodiscard]] Buffer
     encryptAmount(Account const& account, uint64_t const amt, Buffer const& blindingFactor) const;
 
+    [[nodiscard]] static Buffer
+    encryptAmountWithPubKey(Buffer const& pubKey, uint64_t const amt, Buffer const& blindingFactor);
+
     // Decrypts with the account's key at the given key epoch, or its latest key
     // when no epoch is given.
     [[nodiscard]] std::optional<uint64_t>
@@ -793,8 +825,17 @@ public:
         Buffer const& amt,
         std::optional<std::uint32_t> epoch = std::nullopt) const;
 
+    [[nodiscard]] static std::optional<uint64_t>
+    decryptAmount(Buffer const& privKey, Buffer const& amt);
+
     [[nodiscard]] std::optional<uint64_t>
     getDecryptedBalance(Account const& account, EncryptedBalanceType balanceType) const;
+
+    [[nodiscard]] std::optional<uint64_t>
+    getDecryptedBalance(
+        Account const& account,
+        EncryptedBalanceType balanceType,
+        Buffer const& privKey) const;
 
     [[nodiscard]] std::optional<std::int64_t>
     getIssuanceOutstandingBalance() const;

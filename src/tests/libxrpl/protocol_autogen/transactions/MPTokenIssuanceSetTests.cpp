@@ -37,6 +37,8 @@ TEST(TransactionsMPTokenIssuanceSetTests, BuilderSettersRoundTrip)
     auto const immutableFlagsValue = canonical_UINT32();
     auto const issuerEncryptionKeyValue = canonical_VL();
     auto const auditorEncryptionKeyValue = canonical_VL();
+    auto const holderEncryptionKeyValue = canonical_VL();
+    auto const recoveryKeyValue = canonical_VL();
 
     MPTokenIssuanceSetBuilder builder{
         accountValue,
@@ -53,6 +55,8 @@ TEST(TransactionsMPTokenIssuanceSetTests, BuilderSettersRoundTrip)
     builder.setImmutableFlags(immutableFlagsValue);
     builder.setIssuerEncryptionKey(issuerEncryptionKeyValue);
     builder.setAuditorEncryptionKey(auditorEncryptionKeyValue);
+    builder.setHolderEncryptionKey(holderEncryptionKeyValue);
+    builder.setRecoveryKey(recoveryKeyValue);
 
     auto tx = builder.build(publicKey, secretKey);
 
@@ -132,6 +136,22 @@ TEST(TransactionsMPTokenIssuanceSetTests, BuilderSettersRoundTrip)
         EXPECT_TRUE(tx.hasAuditorEncryptionKey());
     }
 
+    {
+        auto const& expected = holderEncryptionKeyValue;
+        auto const actualOpt = tx.getHolderEncryptionKey();
+        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfHolderEncryptionKey should be present";
+        expectEqualField(expected, *actualOpt, "sfHolderEncryptionKey");
+        EXPECT_TRUE(tx.hasHolderEncryptionKey());
+    }
+
+    {
+        auto const& expected = recoveryKeyValue;
+        auto const actualOpt = tx.getRecoveryKey();
+        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfRecoveryKey should be present";
+        expectEqualField(expected, *actualOpt, "sfRecoveryKey");
+        EXPECT_TRUE(tx.hasRecoveryKey());
+    }
+
 }
 
 // 2 & 4) Start from an STTx, construct a builder from it, build a new wrapper,
@@ -156,6 +176,8 @@ TEST(TransactionsMPTokenIssuanceSetTests, BuilderFromStTxRoundTrip)
     auto const immutableFlagsValue = canonical_UINT32();
     auto const issuerEncryptionKeyValue = canonical_VL();
     auto const auditorEncryptionKeyValue = canonical_VL();
+    auto const holderEncryptionKeyValue = canonical_VL();
+    auto const recoveryKeyValue = canonical_VL();
 
     // Build an initial transaction
     MPTokenIssuanceSetBuilder initialBuilder{
@@ -172,6 +194,8 @@ TEST(TransactionsMPTokenIssuanceSetTests, BuilderFromStTxRoundTrip)
     initialBuilder.setImmutableFlags(immutableFlagsValue);
     initialBuilder.setIssuerEncryptionKey(issuerEncryptionKeyValue);
     initialBuilder.setAuditorEncryptionKey(auditorEncryptionKeyValue);
+    initialBuilder.setHolderEncryptionKey(holderEncryptionKeyValue);
+    initialBuilder.setRecoveryKey(recoveryKeyValue);
 
     auto initialTx = initialBuilder.build(publicKey, secretKey);
 
@@ -245,6 +269,20 @@ TEST(TransactionsMPTokenIssuanceSetTests, BuilderFromStTxRoundTrip)
         expectEqualField(expected, *actualOpt, "sfAuditorEncryptionKey");
     }
 
+    {
+        auto const& expected = holderEncryptionKeyValue;
+        auto const actualOpt = rebuiltTx.getHolderEncryptionKey();
+        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfHolderEncryptionKey should be present";
+        expectEqualField(expected, *actualOpt, "sfHolderEncryptionKey");
+    }
+
+    {
+        auto const& expected = recoveryKeyValue;
+        auto const actualOpt = rebuiltTx.getRecoveryKey();
+        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfRecoveryKey should be present";
+        expectEqualField(expected, *actualOpt, "sfRecoveryKey");
+    }
+
 }
 
 // 3) Verify wrapper throws when constructed from wrong transaction type.
@@ -316,6 +354,10 @@ TEST(TransactionsMPTokenIssuanceSetTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(tx.getIssuerEncryptionKey().has_value());
     EXPECT_FALSE(tx.hasAuditorEncryptionKey());
     EXPECT_FALSE(tx.getAuditorEncryptionKey().has_value());
+    EXPECT_FALSE(tx.hasHolderEncryptionKey());
+    EXPECT_FALSE(tx.getHolderEncryptionKey().has_value());
+    EXPECT_FALSE(tx.hasRecoveryKey());
+    EXPECT_FALSE(tx.getRecoveryKey().has_value());
 }
 
 }
