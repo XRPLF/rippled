@@ -4,6 +4,7 @@
 #include <test/jtx/amount.h>
 #include <test/jtx/deposit.h>
 #include <test/jtx/envconfig.h>
+#include <test/jtx/fee.h>
 #include <test/jtx/multisign.h>
 #include <test/jtx/offer.h>
 #include <test/jtx/owners.h>  // IWYU pragma: keep
@@ -15,6 +16,7 @@
 #include <test/jtx/token.h>
 #include <test/jtx/trust.h>
 #include <test/jtx/txflags.h>
+#include <test/jtx/vault.h>
 #include <test/jtx/xchain_bridge.h>
 
 #include <xrpl/basics/base_uint.h>
@@ -26,6 +28,7 @@
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/Seed.h>
 #include <xrpl/protocol/SeqProxy.h>
@@ -1700,12 +1703,68 @@ public:
     }
 
     void
+    testLendingDeletionBlockers()
+    {
+        testcase("Lending deletion blockers");
+
+        using namespace jtx;
+        Env env(*this);
+        Account const lender{"lender"};
+        Account const borrower{"borrower"};
+        env.fund(XRP(10'000), lender, borrower);
+        env.close();
+
+        Vault const vault{env};
+        auto const [create, vaultKey, subscriptionDate] =
+            vault.createClosedEnded({.owner = lender, .asset = xrpIssue()});
+        env(create);
+        env.close();
+        env(vault.deposit({.depositor = lender, .id = vaultKey.key, .amount = XRP(100)}));
+        vault.closePastSubscription(subscriptionDate);
+
+        auto const brokerKey =
+            keylet::loanBroker(lender.id(), SeqProxy::rawSequence(env.seq(lender)));
+        env(loan_broker::set(lender, vaultKey.key));
+        env.close();
+        env(loan::set(borrower, brokerKey.key, XRP(10).value()),
+            Sig(sfCounterpartySignature, lender),
+            loan::kPaymentTotal(1),
+            loan::kPaymentInterval(60),
+            Fee(env.current()->fees().base * 2));
+        env.close();
+
+        auto const query = [&](json::Value const& params) {
+            auto const result = env.rpc("json", "account_objects", to_string(params))[jss::result];
+            BEAST_EXPECT(result[jss::status] == "success");
+            return result[jss::account_objects];
+        };
+
+        for (auto const type : {jss::loan, jss::loan_broker})
+        {
+            json::Value params;
+            params[jss::account] = (type == jss::loan ? borrower : lender).human();
+            params[jss::type] = type;
+            auto const objects = query(params);
+            if (!BEAST_EXPECT(objects.size() == 1))
+                continue;
+
+            params[jss::deletion_blockers_only] = true;
+            BEAST_EXPECT(query(params) == objects);
+
+            params.removeMember(jss::type);
+            auto const blockers = query(params);
+            BEAST_EXPECT(std::ranges::find(blockers, objects[0u]) != blockers.end());
+        }
+    }
+
+    void
     run() override
     {
         testErrors();
         testUnsteppedThenStepped();
         testUnsteppedThenSteppedWithNFTs();
         testObjectTypes();
+        testLendingDeletionBlockers();
         testNFTsMarker();
         testAccountNFTs();
         testAccountObjectMarker();
