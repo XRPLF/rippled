@@ -748,12 +748,13 @@ issueHelperMPT(IssuerArgs const& args)
 namespace loan_broker {
 
 json::Value
-set(AccountID const& account, uint256 const& vaultId, uint32_t flags)
+set(AccountID const& account, std::optional<uint256> const& vaultId, uint32_t flags)
 {
     json::Value jv;
     jv[sfTransactionType] = jss::LoanBrokerSet;
     jv[sfAccount] = to_string(account);
-    jv[sfVaultID] = to_string(vaultId);
+    if (vaultId)
+        jv[sfVaultID] = to_string(*vaultId);
     jv[sfFlags] = flags;
     return jv;
 }
