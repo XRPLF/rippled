@@ -38,6 +38,7 @@
 #include <xrpld/rpc/detail/Handler.h>
 #include <xrpld/rpc/detail/PathRequestManager.h>
 #include <xrpld/rpc/detail/Pathfinder.h>
+#include <xrpld/rpc/detail/RpcSpanNames.h>
 #include <xrpld/shamap/NodeFamily.h>
 
 #include <xrpl/basics/ByteUtilities.h>
@@ -103,6 +104,7 @@
 #include <xrpl/shamap/SHAMap.h>
 #include <xrpl/shamap/SHAMapMissingNode.h>
 #include <xrpl/shamap/TreeNodeCache.h>
+#include <xrpl/telemetry/SpanGuard.h>
 #include <xrpl/telemetry/Telemetry.h>
 #include <xrpl/tx/apply.h>
 
@@ -348,7 +350,7 @@ public:
         , telemetry_(
               telemetry::makeTelemetry(
                   telemetry::makeTelemetrySetup(
-                      config_->section("telemetry"),
+                      config_->section(Sections::kTelemetry),
                       toBase58(TokenType::NodePublic, nodeIdentity_.first),
                       build_info::getVersionString(),
                       config_->networkId),
@@ -1325,7 +1327,7 @@ ApplicationImp::setup(boost::program_options::variables_map const& cmdline)
     // The metrics resource was fixed at construction, but the tracer resource is
     // built by start() below, so the stored key still reaches spans if it
     // differs from the resolved one.
-    if (!config_->section("telemetry").exists("service_instance_id"))
+    if (!config_->section(Sections::kTelemetry).exists("service_instance_id"))
         telemetry_->setServiceInstanceId(toBase58(TokenType::NodePublic, nodeIdentity_.first));
 
     // Start telemetry here, not in start(). Spans are emitted during the rest
@@ -1576,43 +1578,55 @@ ApplicationImp::setup(boost::program_options::variables_map const& cmdline)
     //
     // Execute start up rpc commands.
     //
-    for (auto const& cmd : config_->section(Sections::kRpcStartup).lines())
+    // One span over the batch, so each startup command's rpc.command.* span has
+    // a parent. A fresh root, created only when the section has commands.
+    auto const& startupCommands = config_->section(Sections::kRpcStartup).lines();
+    if (!startupCommands.empty())
     {
-        json::Reader jrReader;
-        json::Value jvCommand;
+        auto const startupSpan = telemetry::ScopedSpanGuard::freshRoot(
+            telemetry::TraceCategory::Rpc,
+            telemetry::rpc_span::prefix::rpc,
+            telemetry::rpc_span::op::startup,
+            telemetry::SpanRole::Internal);
 
-        if (!jrReader.parse(cmd, jvCommand))
+        for (auto const& cmd : startupCommands)
         {
-            JLOG(journal_.fatal())
-                << "Couldn't parse entry in [" << Sections::kRpcStartup << "]: '" << cmd;
-        }
+            json::Reader jrReader;
+            json::Value jvCommand;
 
-        if (!config_->quiet())
-        {
-            JLOG(journal_.fatal()) << "Startup RPC: " << jvCommand << std::endl;
-        }
+            if (!jrReader.parse(cmd, jvCommand))
+            {
+                JLOG(journal_.fatal())
+                    << "Couldn't parse entry in [" << Sections::kRpcStartup << "]: '" << cmd;
+            }
 
-        resource::Charge loadType = resource::kFeeReferenceRpc;
-        resource::Consumer c;
-        rpc::JsonContext context{
-            {.j = getJournal("RPCHandler"),
-             .app = *this,
-             .loadType = loadType,
-             .netOps = getOPs(),
-             .ledgerMaster = getLedgerMaster(),
-             .consumer = c,
-             .role = Role::ADMIN,
-             .coro = {},
-             .infoSub = {},
-             .apiVersion = rpc::kApiMaximumSupportedVersion},
-            jvCommand};
+            if (!config_->quiet())
+            {
+                JLOG(journal_.fatal()) << "Startup RPC: " << jvCommand << std::endl;
+            }
 
-        json::Value jvResult;
-        rpc::doCommand(context, jvResult);
+            resource::Charge loadType = resource::kFeeReferenceRpc;
+            resource::Consumer c;
+            rpc::JsonContext context{
+                {.j = getJournal("RPCHandler"),
+                 .app = *this,
+                 .loadType = loadType,
+                 .netOps = getOPs(),
+                 .ledgerMaster = getLedgerMaster(),
+                 .consumer = c,
+                 .role = Role::ADMIN,
+                 .coro = {},
+                 .infoSub = {},
+                 .apiVersion = rpc::kApiMaximumSupportedVersion},
+                jvCommand};
 
-        if (!config_->quiet())
-        {
-            JLOG(journal_.fatal()) << "Result: " << jvResult << std::endl;
+            json::Value jvResult;
+            rpc::doCommand(context, jvResult);
+
+            if (!config_->quiet())
+            {
+                JLOG(journal_.fatal()) << "Result: " << jvResult << std::endl;
+            }
         }
     }
 

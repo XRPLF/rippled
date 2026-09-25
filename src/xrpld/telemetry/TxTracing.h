@@ -18,7 +18,7 @@
 #include <xrpl/telemetry/SpanGuard.h>
 
 #ifdef XRPL_ENABLE_TELEMETRY
-// The span-id validator and std::uint8_t are named only by the
+// The trace-context helpers and std::uint8_t are named only by the
 // telemetry-enabled branches below.
 #include <xrpl/telemetry/TraceContextValidation.h>
 
@@ -44,8 +44,9 @@ txReceiveSpan(uint256 const& txID, [[maybe_unused]] protocol::TMTransaction cons
     if (msg.has_trace_context())
     {
         auto const& tc = msg.trace_context();
-        // Only the span_id is taken from the peer here; the trace_id is
-        // derived locally from txID, so validate the span_id alone.
+        // Only the span_id is taken from the peer; the trace_id comes from
+        // txID. A message from the parser is already clean (both ids
+        // valid); this check covers a message built elsewhere.
         if (tc.has_span_id() && isValidSpanId(tc.span_id()))
         {
             return SpanGuard::hashSpan(
@@ -55,8 +56,7 @@ txReceiveSpan(uint256 const& txID, [[maybe_unused]] protocol::TMTransaction cons
                 txID.kBytes,
                 reinterpret_cast<std::uint8_t const*>(tc.span_id().data()),
                 tc.span_id().size(),
-                tc.has_trace_flags() ? static_cast<std::uint8_t>(tc.trace_flags())
-                                     : std::uint8_t{0});
+                traceFlagsByte(tc));
         }
     }
 #endif
