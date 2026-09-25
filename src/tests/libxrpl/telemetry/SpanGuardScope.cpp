@@ -40,6 +40,8 @@
 #include <opentelemetry/context/runtime_context.h>
 #include <opentelemetry/exporters/memory/in_memory_span_data.h>
 #include <opentelemetry/exporters/memory/in_memory_span_exporter_factory.h>
+#include <opentelemetry/metrics/meter.h>
+#include <opentelemetry/metrics/meter_provider.h>
 #include <opentelemetry/nostd/shared_ptr.h>
 #include <opentelemetry/nostd/variant.h>
 #include <opentelemetry/sdk/resource/resource.h>
@@ -183,6 +185,16 @@ public:
     getTracer(std::string_view name) override
     {
         return provider_->GetTracer(std::string(name));
+    }
+
+    /**
+     * @return A meter from a noop provider; the scope tests exercise only
+     * tracing, so metrics instruments are inert.
+     */
+    opentelemetry::nostd::shared_ptr<opentelemetry::metrics::Meter>
+    getMeter(std::string_view name) override
+    {
+        return noopMeter(name);
     }
 
     opentelemetry::nostd::shared_ptr<opentelemetry::trace::Span>

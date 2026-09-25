@@ -4,11 +4,13 @@
 #include <xrpl/beast/insight/Group.h>
 #include <xrpl/beast/insight/Groups.h>
 #include <xrpl/beast/insight/NullCollector.h>
+#include <xrpl/beast/insight/OTelCollector.h>
 #include <xrpl/beast/insight/StatsDCollector.h>
 #include <xrpl/beast/net/IPEndpoint.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/config/BasicConfig.h>
 #include <xrpl/config/Constants.h>
+#include <xrpl/telemetry/Telemetry.h>
 
 #include <memory>
 #include <string>
@@ -24,7 +26,13 @@ public:
     std::unique_ptr<beast::insight::Groups> groups_;
     // NOLINTEND(readability-identifier-naming)
 
-    CollectorManagerImp(Section const& params, beast::Journal journal) : journal_(journal)
+    CollectorManagerImp(
+        Section const& params,
+        std::string const& serviceName,
+        std::string const& networkType,
+        bool telemetryEnabled,
+        beast::Journal journal)
+        : journal_(journal)
     {
         std::string const& server = get(params, Keys::kServer);
 
@@ -36,6 +44,47 @@ public:
 
             collector_ = beast::insight::StatsDCollector::make(address, prefix, journal);
         }
+        // LCOV_EXCL_START -- OTel collector path is not exercised in unit tests
+        else if (server == "otel")
+        {
+            // The collector records through the global meter provider, and only
+            // the telemetry module installs one. With telemetry off it attaches
+            // to the SDK's noop provider and every metric is dropped, which
+            // otherwise looks like a clean start with empty dashboards. Say so
+            // rather than change what is built.
+            if (!telemetryEnabled && journal_.warn())
+            {
+                journal_.warn() << "[insight] server=otel needs [telemetry] enabled=1. "
+                                   "Telemetry is off, so no metric will be exported.";
+            }
+
+            // Read OTLP metrics endpoint from [insight] section, falling back
+            // to the same default the [telemetry] parser uses.
+            std::string endpoint = get(params, "endpoint");
+            if (endpoint.empty())
+            {
+                endpoint = telemetry::kDefaultMetricsEndpoint;
+            }
+            std::string const& prefix(get(params, "prefix"));
+
+            // Read for signature uniformity only. OTelCollector ignores it:
+            // the service.instance.id resource attribute comes from
+            // [telemetry], and the otel-collector promotes that attribute to
+            // the service_instance_id Prometheus label.
+            std::string const instanceId = get(params, "service_instance_id");
+
+            // Also ignored by OTelCollector. The telemetry module owns the
+            // service.name and xrpl.network.type resource attributes, so
+            // metrics and traces already share one service and network
+            // identity without these values.
+            std::string serviceNameCfg = get(params, "service_name");
+            if (serviceNameCfg.empty())
+                serviceNameCfg = serviceName;
+
+            collector_ = beast::insight::OTelCollector::New(
+                endpoint, prefix, instanceId, serviceNameCfg, networkType, journal);
+        }
+        // LCOV_EXCL_STOP
         else
         {
             collector_ = beast::insight::NullCollector::make();
@@ -62,9 +111,15 @@ public:
 //------------------------------------------------------------------------------
 
 std::unique_ptr<CollectorManager>
-makeCollectorManager(Section const& params, beast::Journal journal)
+makeCollectorManager(
+    Section const& params,
+    std::string const& serviceName,
+    std::string const& networkType,
+    bool telemetryEnabled,
+    beast::Journal journal)
 {
-    return std::make_unique<CollectorManagerImp>(params, journal);
+    return std::make_unique<CollectorManagerImp>(
+        params, serviceName, networkType, telemetryEnabled, journal);
 }
 
 }  // namespace xrpl

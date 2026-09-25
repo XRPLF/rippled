@@ -104,6 +104,8 @@ words:
   - dearmor
   - decryptor
   - dedented
+  - Dedup
+  - dedup
   - deleteme
   - demultiplexer
   - deserializaton
@@ -141,6 +143,7 @@ words:
   - godexsoft
   - gpgcheck
   - gpgkey
+  - havetxset
   - Hinnant
   - hotwallet
   - hicpp
@@ -250,6 +253,7 @@ words:
   - pimpl
   - pointee
   - populator
+  - pratik
   - preauth
   - preauthorization
   - preauthorize
@@ -406,5 +410,3 @@ words:
   - xychart
   - zpages
   - zstdio
-  - pratik
-  - dedup

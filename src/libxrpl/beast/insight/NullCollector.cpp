@@ -11,6 +11,7 @@
 #include <xrpl/beast/insight/HookImpl.h>
 #include <xrpl/beast/insight/Meter.h>
 #include <xrpl/beast/insight/MeterImpl.h>
+#include <xrpl/beast/insight/Unit.h>
 
 #include <memory>
 #include <string>
@@ -49,7 +50,15 @@ public:
 class NullEventImpl : public EventImpl
 {
 public:
-    explicit NullEventImpl() = default;
+    /**
+     * @param unit What the samples would measure. Recorded even though
+     *             nothing is collected, so a caller can still read back the
+     *             unit it asked for -- which is what makes the null collector
+     *             usable for testing the unit plumbing.
+     */
+    explicit NullEventImpl(Unit unit = Unit::Millis) : EventImpl(unit)
+    {
+    }
 
     void
     notify(value_type const&) override
@@ -119,10 +128,18 @@ public:
         return Counter(std::make_shared<detail::NullCounterImpl>());
     }
 
+    using Collector::makeEvent;
+
     Event
     makeEvent(std::string const&) override
     {
         return Event(std::make_shared<detail::NullEventImpl>());
+    }
+
+    Event
+    makeEvent(std::string const&, Unit unit) override
+    {
+        return Event(std::make_shared<detail::NullEventImpl>(unit));
     }
 
     Gauge

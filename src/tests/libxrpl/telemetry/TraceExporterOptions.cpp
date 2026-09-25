@@ -32,6 +32,14 @@ constexpr char const* clientKey = "/etc/xrpl/tls/node-client-private-key.pem";
 constexpr char const* kHttpsEndpoint = "https://collector.example:4318/v1/traces";
 
 /**
+ * The metric endpoint the section-parsing case needs.
+ *
+ * A client certificate requires https on both endpoints, so a case that parses
+ * a whole section has to set this one as well or the parse throws.
+ */
+constexpr char const* kHttpsMetricsEndpoint = "https://collector.example:4318/v1/metrics";
+
+/**
  * Build a Setup with mutual TLS configured and nothing else set.
  *
  * The struct is filled directly rather than parsed, so these cases isolate the
@@ -133,6 +141,7 @@ TEST(TraceExporterOptions, config_section_reaches_the_exporter_options)
     Section section;
     section.set("enabled", "1");
     section.set("traces_endpoint", kHttpsEndpoint);
+    section.set("metrics_endpoint", kHttpsMetricsEndpoint);
     section.set("use_tls", "1");
     section.set("tls_client_cert", cert);
     section.set("tls_client_key", key);
