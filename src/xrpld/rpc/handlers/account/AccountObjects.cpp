@@ -313,6 +313,8 @@ doAccountObjects(rpc::JsonContext& context)
             {.name = jss::mptoken, .type = ltMPTOKEN},
             {.name = jss::permissioned_domain, .type = ltPERMISSIONED_DOMAIN},
             {.name = jss::vault, .type = ltVAULT},
+            {.name = jss::loan, .type = ltLOAN},
+            {.name = jss::loan_broker, .type = ltLOAN_BROKER},
             {.name = jss::sponsorship, .type = ltSPONSORSHIP},
         };
 
