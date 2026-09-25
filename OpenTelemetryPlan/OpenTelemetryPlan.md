@@ -53,6 +53,7 @@ flowchart TB
         phases["06-implementation-phases.md"]
         backends["07-observability-backends.md"]
         appendix["08-appendix.md"]
+        dataref["09-data-collection-reference.md"]
     end
 
     overview --> fundamentals
@@ -67,6 +68,7 @@ flowchart TB
     config --> phases
     phases --> backends
     backends --> appendix
+    appendix --> dataref
 
     style overview fill:#1b5e20,stroke:#0d3d14,color:#fff,stroke-width:2px
     style fundamentals fill:#00695c,stroke:#004d40,color:#fff
@@ -81,6 +83,7 @@ flowchart TB
     style phases fill:#4a148c,stroke:#2e0d57,color:#fff
     style backends fill:#4a148c,stroke:#2e0d57,color:#fff
     style appendix fill:#4a148c,stroke:#2e0d57,color:#fff
+    style dataref fill:#4a148c,stroke:#2e0d57,color:#fff
 ```
 
 </div>
@@ -89,16 +92,17 @@ flowchart TB
 
 ## Table of Contents
 
-| Section | Document                                                   | Description                                                            |
-| ------- | ---------------------------------------------------------- | ---------------------------------------------------------------------- |
-| **0**   | [Tracing Fundamentals](./00-tracing-fundamentals.md)       | Distributed tracing concepts, span relationships, context propagation  |
-| **1**   | [Architecture Analysis](./01-architecture-analysis.md)     | xrpld component analysis, trace points, instrumentation priorities     |
-| **2**   | [Design Decisions](./02-design-decisions.md)               | SDK selection, exporters, span naming, attributes, context propagation |
-| **3**   | [Implementation Strategy](./03-implementation-strategy.md) | Directory structure, key principles, performance optimization          |
-| **5**   | [Configuration Reference](./05-configuration-reference.md) | xrpld config, CMake integration, Collector configurations              |
-| **6**   | [Implementation Phases](./06-implementation-phases.md)     | 5-phase timeline, tasks, risks, success metrics                        |
-| **7**   | [Observability Backends](./07-observability-backends.md)   | Backend selection guide and production architecture                    |
-| **8**   | [Appendix](./08-appendix.md)                               | Glossary, references, version history                                  |
+| Section | Document                                                       | Description                                                            |
+| ------- | -------------------------------------------------------------- | ---------------------------------------------------------------------- |
+| **0**   | [Tracing Fundamentals](./00-tracing-fundamentals.md)           | Distributed tracing concepts, span relationships, context propagation  |
+| **1**   | [Architecture Analysis](./01-architecture-analysis.md)         | xrpld component analysis, trace points, instrumentation priorities     |
+| **2**   | [Design Decisions](./02-design-decisions.md)                   | SDK selection, exporters, span naming, attributes, context propagation |
+| **3**   | [Implementation Strategy](./03-implementation-strategy.md)     | Directory structure, key principles, performance optimization          |
+| **5**   | [Configuration Reference](./05-configuration-reference.md)     | xrpld config, CMake integration, Collector configurations              |
+| **6**   | [Implementation Phases](./06-implementation-phases.md)         | 5-phase timeline, tasks, risks, success metrics                        |
+| **7**   | [Observability Backends](./07-observability-backends.md)       | Backend selection guide and production architecture                    |
+| **8**   | [Appendix](./08-appendix.md)                                   | Glossary, references, version history                                  |
+| **9**   | [Data Collection Reference](./09-data-collection-reference.md) | Complete inventory of spans, attributes, metrics, and dashboards       |
 
 ---
 
@@ -193,6 +197,14 @@ The recommended production architecture uses a gateway collector pattern with re
 The appendix contains a glossary of OpenTelemetry and xrpld-specific terms, references to external documentation and specifications, version history for this implementation plan, and a complete document index.
 
 ➡️ **[View Appendix](./08-appendix.md)**
+
+---
+
+## 9. Data Collection Reference
+
+A single-source-of-truth reference documenting every piece of telemetry data collected by xrpld. Covers all 38 OpenTelemetry spans with their 89 attribute rows (78 unique keys), all StatsD metrics (gauges, counters, histograms, overlay traffic), SpanMetrics-derived Prometheus metrics, and all 10 Grafana dashboards. Includes Tempo trace search guides and Prometheus query examples.
+
+➡️ **[View Data Collection Reference](./09-data-collection-reference.md)**
 
 ---
 
