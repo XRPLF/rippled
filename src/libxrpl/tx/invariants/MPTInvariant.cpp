@@ -41,6 +41,7 @@ constexpr auto kConfidentialMptTxTypes = std::to_array<TxType>({
     ttCONFIDENTIAL_MPT_MERGE_INBOX,
     ttCONFIDENTIAL_MPT_CLAWBACK,
     ttCONFIDENTIAL_MPT_MIRROR_UPDATE,
+    ttCONFIDENTIAL_MPT_HOLDER_KEY_UPDATE,
 });
 
 // Clamp to the cap (== INT64_MAX) before the signed conversion. Invariant
@@ -784,10 +785,10 @@ ValidConfidentialMPToken::finalize(
                 return false;
             }
 
-            // Among confidential MPT transactions, only ConfidentialMPTSend and
-            // ConfidentialMPTMergeInbox leave coaDelta unmodified. Therefore, if a confidential MPT
-            // transaction reaches here, it must be one of these two types, neither of which will
-            // modify sfOutstandingAmount
+            // Reaching here means this confidential MPT transaction left coaDelta
+            // unmodified (e.g. ConfidentialMPTSend, ConfidentialMPTMergeInbox, or
+            // ConfidentialMPTHolderKeyUpdate/ConfidentialMPTMirrorUpdate, none of which touch
+            // sfConfidentialOutstandingAmount), so it must not modify sfOutstandingAmount either.
             if (checks.outstandingDelta != 0)
             {
                 JLOG(j.fatal()) << "Invariant failed: OutstandingAmount changed "

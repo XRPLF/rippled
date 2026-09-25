@@ -1147,6 +1147,21 @@ TRANSACTION(ttCONFIDENTIAL_MPT_MIRROR_UPDATE, 92, ConfidentialMPTMirrorUpdate,
     {sfZKProof, SoeRequired},
 }))
 
+/** This transaction rotates or recovers a confidential MPT holder's ElGamal encryption key,
+    or cancels a recovery. */
+#if TRANSACTION_INCLUDE
+#   include <xrpl/tx/transactors/token/ConfidentialMPTHolderKeyUpdate.h>
+#endif
+TRANSACTION(ttCONFIDENTIAL_MPT_HOLDER_KEY_UPDATE, 93, ConfidentialMPTHolderKeyUpdate,
+    ({.amendment = featureConfidentialMPTKeyRotation}),
+    ({
+    {sfMPTokenIssuanceID, SoeRequired},
+    {sfHolderEncryptionKey, SoeOptional},
+    {sfConfidentialBalanceSpending, SoeOptional},
+    {sfConfidentialBalanceInbox, SoeOptional},
+    {sfZKProof, SoeOptional},
+}))
+
 /** This system-generated transaction type is used to update the status of the various amendments.
 
     For details, see: https://xrpl.org/amendments.html
