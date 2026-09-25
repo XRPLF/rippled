@@ -294,6 +294,15 @@ if(xrpld)
             "${CMAKE_CURRENT_SOURCE_DIR}/src/test/*.cpp"
         )
         target_sources(xrpld PRIVATE ${sources})
+
+        find_package(Python3 COMPONENTS Interpreter REQUIRED)
+        add_test(
+            NAME check_config
+            COMMAND
+                ${Python3_EXECUTABLE}
+                ${CMAKE_CURRENT_SOURCE_DIR}/tests/check_config.py
+                $<TARGET_FILE:xrpld>
+        )
     endif()
 
     target_link_libraries(xrpld Xrpl::boost Xrpl::opts Xrpl::libs xrpl.libxrpl)

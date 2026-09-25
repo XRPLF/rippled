@@ -24,6 +24,33 @@ class TransactionMaster;
 class SHAMapStore
 {
 public:
+    /**
+     * Parse node store settings without opening the store or its state database.
+     */
+    struct Setup
+    {
+        std::uint32_t deleteInterval = 0;
+        bool advisoryDelete = false;
+        std::uint32_t deleteBatch = 100;
+        std::chrono::milliseconds backOff{100};
+        std::chrono::seconds ageThreshold{60};
+        /**
+         * If the node is out of sync, or any recent ledgers are not
+         * available during an online_delete healthWait() call, sleep
+         * the thread for this time, and continue checking until recovery.
+         * See also: "recovery_wait_seconds" in xrpld-example.cfg
+         */
+        std::chrono::seconds recoveryWaitTime{2};
+        /**
+         * If the rotation stays "unhealthy" for a very long time, the process is aborted, and tried
+         * again later. This value represents the number of ledgers that must be validated without
+         * making rotation progress before the process is aborted.
+         */
+        std::uint32_t maxWaitingLedgers = deleteBatch;
+
+        explicit Setup(Config& config);
+    };
+
     virtual ~SHAMapStore() = default;
 
     /**

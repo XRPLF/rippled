@@ -103,8 +103,21 @@ SHAMapStoreImp::SHAMapStoreImp(
     , journal_(journal)
     , working_(true)
     , canDelete_(std::numeric_limits<LedgerIndex>::max())
+    , setup_(app.config())
 {
-    Config& config{app.config()};
+    if (setup_.deleteInterval != 0u)
+    {
+        stateDb_.init(app.config(), dbName_);
+        dbPaths();
+    }
+}
+
+SHAMapStore::Setup::Setup(Config& config)
+{
+    // minimum # of ledgers to maintain for health of network
+    static std::uint32_t const kMinimumDeletionInterval = 256;
+    // minimum # of ledgers required for standalone mode.
+    static std::uint32_t const kMinimumDeletionIntervalSa = 8;
 
     Section& section{config.section(Sections::kNodeDatabase)};
     if (section.empty())
@@ -126,19 +139,19 @@ SHAMapStoreImp::SHAMapStoreImp(
             section.set(Keys::kFilterBits, "10");
     }
 
-    getIfExists(section, Keys::kOnlineDelete, deleteInterval_);
+    getIfExists(section, Keys::kOnlineDelete, deleteInterval);
 
-    if (deleteInterval_ != 0u)
+    if (deleteInterval != 0u)
     {
         auto const minInterval =
             config.standalone() ? kMinimumDeletionIntervalSa : kMinimumDeletionInterval;
-        if (deleteInterval_ < minInterval)
+        if (deleteInterval < minInterval)
         {
             Throw<std::runtime_error>(
                 "online_delete must be at least " + std::to_string(minInterval));
         }
 
-        if (config.ledgerHistory > deleteInterval_)
+        if (config.ledgerHistory > deleteInterval)
         {
             Throw<std::runtime_error>(
                 "online_delete must not be less than ledger_history "
@@ -147,41 +160,38 @@ SHAMapStoreImp::SHAMapStoreImp(
         }
 
         // Configuration that affects the behavior of online delete
-        getIfExists(section, Keys::kDeleteBatch, deleteBatch_);
+        getIfExists(section, Keys::kDeleteBatch, deleteBatch);
         std::uint32_t temp = 0;
         if (getIfExists(section, Keys::kBackOffMilliseconds, temp) ||
             // Included for backward compatibility with an undocumented setting
             getIfExists(section, Keys::kBackOff, temp))
         {
-            backOff_ = std::chrono::milliseconds{temp};
+            backOff = std::chrono::milliseconds{temp};
         }
         if (getIfExists(section, Keys::kAgeThresholdSeconds, temp))
-            ageThreshold_ = std::chrono::seconds{temp};
+            ageThreshold = std::chrono::seconds{temp};
         if (getIfExists(section, Keys::kRecoveryWaitSeconds, temp))
-            recoveryWaitTime_ = std::chrono::seconds{temp};
-        if (recoveryWaitTime_ < std::chrono::seconds{1})
+            recoveryWaitTime = std::chrono::seconds{temp};
+        if (recoveryWaitTime < std::chrono::seconds{1})
             Throw<std::runtime_error>("recovery_wait_seconds must be at least 1 second");
 
-        getIfExists(section, Keys::kAdvisoryDelete, advisoryDelete_);
+        getIfExists(section, Keys::kAdvisoryDelete, advisoryDelete);
 
         if (getIfExists(section, Keys::kMaxWaitingLedgers, temp))
         {
-            maxWaitingLedgers_ = temp;
+            maxWaitingLedgers = temp;
         }
         else
         {
-            maxWaitingLedgers_ = deleteInterval_;
+            maxWaitingLedgers = deleteInterval;
         }
 
         auto const minWaiting = minInterval / 4;
-        if (maxWaitingLedgers_ < minWaiting)
+        if (maxWaitingLedgers < minWaiting)
         {
             Throw<std::runtime_error>(
                 "max_waiting_ledgers must be at least " + std::to_string(minWaiting));
         }
-
-        stateDb_.init(config, dbName_);
-        dbPaths();
     }
 }
 
@@ -207,7 +217,7 @@ SHAMapStoreImp::makeNodeStore(int readThreads)
 
     std::unique_ptr<node_store::Database> db;
 
-    if (deleteInterval_ != 0u)
+    if (setup_.deleteInterval != 0u)
     {
         SavedState state = stateDb_.getState();
         auto writableBackend = makeBackendRotating(state.writableDb);
@@ -321,7 +331,7 @@ SHAMapStoreImp::run()
     fullBelowCache_ = &(*app_.getNodeFamily().getFullBelowCache());
     treeNodeCache_ = &(*app_.getNodeFamily().getTreeNodeCache());
 
-    if (advisoryDelete_)
+    if (setup_.advisoryDelete)
         canDelete_ = stateDb_.getCanDelete();
 
     while (true)
@@ -358,7 +368,7 @@ SHAMapStoreImp::run()
         // We're starting a new cycle, so reset back to the default.
         lastSuccessfulHealthCheck_ = 0;
 
-        bool const readyToRotate = validatedSeq >= lastRotated + deleteInterval_ &&
+        bool const readyToRotate = validatedSeq >= lastRotated + setup_.deleteInterval &&
             canDelete_ >= lastRotated - 1 && healthWait() == HealthResult::KeepGoing;
 
         {
@@ -388,7 +398,7 @@ SHAMapStoreImp::run()
         if (readyToRotate)
         {
             JLOG(journal_.warn()) << "rotating  validatedSeq " << validatedSeq << " lastRotated "
-                                  << lastRotated << " deleteInterval " << deleteInterval_
+                                  << lastRotated << " deleteInterval " << setup_.deleteInterval
                                   << " canDelete_ " << canDelete_ << " state "
                                   << app_.getOPs().strOperatingMode(false) << " age "
                                   << ledgerMaster_->getValidatedLedgerAge().count()
@@ -633,7 +643,7 @@ SHAMapStoreImp::clearSql(
     std::function<std::optional<LedgerIndex>()> const& getMinSeq,
     std::function<void(LedgerIndex)> const& deleteBeforeSeq)
 {
-    XRPL_ASSERT(deleteInterval_, "xrpl::SHAMapStoreImp::clearSql : nonzero delete interval");
+    XRPL_ASSERT(setup_.deleteInterval, "xrpl::SHAMapStoreImp::clearSql : nonzero delete interval");
     LedgerIndex min = std::numeric_limits<LedgerIndex>::max();
 
     {
@@ -661,16 +671,16 @@ SHAMapStoreImp::clearSql(
         // The very first sleep is, arguably wasted, but clearSql is called multiple times for
         // different tables, so the time is amortized among all the operations. This results in
         // a backoff in between each set of tables, too.
-        std::this_thread::sleep_for(backOff_);
+        std::this_thread::sleep_for(setup_.backOff);
         if (healthWait() != HealthResult::KeepGoing)
             return;
 
-        min = std::min(lastRotated, min + deleteBatch_);
-        JLOG(journal_.trace()) << "Begin: Delete up to " << deleteBatch_
+        min = std::min(lastRotated, min + setup_.deleteBatch);
+        JLOG(journal_.trace()) << "Begin: Delete up to " << setup_.deleteBatch
                                << " rows with LedgerSeq < " << min << " from: " << tableName;
         deleteBeforeSeq(min);
-        JLOG(journal_.trace()) << "End: Delete up to " << deleteBatch_ << " rows with LedgerSeq < "
-                               << min << " from: " << tableName;
+        JLOG(journal_.trace()) << "End: Delete up to " << setup_.deleteBatch
+                               << " rows with LedgerSeq < " << min << " from: " << tableName;
     }
     JLOG(journal_.debug()) << "finished deleting from: " << tableName;
 }
@@ -775,8 +785,8 @@ SHAMapStoreImp::healthWait()
 
     std::unique_lock lock(mutex_);
 
-    auto const waitTime = recoveryWaitTime_;
-    auto const ageThreshold = ageThreshold_;
+    auto const waitTime = setup_.recoveryWaitTime;
+    auto const ageThreshold = setup_.ageThreshold;
     {
         auto const lowerBound = lastGoodValidatedLedger_;
 
@@ -788,7 +798,7 @@ SHAMapStoreImp::healthWait()
     // HealthWait::Expired. This depends on index being initialized, so it must be after
     // readServerStatus().
     auto const lastSuccess = lastSuccessfulHealthCheck_ == 0 ? index : lastSuccessfulHealthCheck_;
-    auto const circuitBreaker = lastSuccess + maxWaitingLedgers_;
+    auto const circuitBreaker = lastSuccess + setup_.maxWaitingLedgers;
 
     auto healthy = [&] {
         // Special case: If the server is disconnected, it's not doing any ledger I/O, because
@@ -818,7 +828,7 @@ SHAMapStoreImp::healthWait()
             [mode, age, ageThreshold, buildingIndex, waitTime, index, lastSuccess, this]
             -> std::pair<beast::Journal::Stream, std::chrono::milliseconds> {
                 if (mode != OperatingMode::FULL || age > ageThreshold ||
-                    (index - lastSuccess > maxWaitingLedgers_ / 4))
+                    (index - lastSuccess > setup_.maxWaitingLedgers / 4))
                     return {journal_.warn(), waitTime};
                 if (buildingIndex)
                 {
@@ -849,7 +859,7 @@ SHAMapStoreImp::healthWait()
         if (index < circuitBreaker)
             return HealthResult::KeepGoing;
         JLOG(journal_.error()) << "online_delete rotation has been unable to make progress for "
-                               << maxWaitingLedgers_ << " ledgers. "
+                               << setup_.maxWaitingLedgers << " ledgers. "
                                << "validated ledger index: " << index
                                << ", last successful health check index: "
                                << lastSuccessfulHealthCheck_
@@ -883,7 +893,7 @@ SHAMapStoreImp::minimumOnline() const
 {
     // minimumOnline_ with 0 value is equivalent to unknown/not set.
     // Don't attempt to acquire ledgers if that value is unknown.
-    if ((deleteInterval_ != 0u) && (minimumOnline_ != 0u))
+    if ((setup_.deleteInterval != 0u) && (minimumOnline_ != 0u))
         return minimumOnline_.load();
     return app_.getLedgerMaster().minSqlSeq();
 }
