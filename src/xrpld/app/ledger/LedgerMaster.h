@@ -50,9 +50,9 @@ class Transaction;
  * Four ledgers are tracked, and they can all differ:
  *
  *   current    open ledger new transactions go into (owned by OpenLedger)
- *   closed     most recently closed ledger, not yet fully validated
+ *   closed     most recently closed ledger; may already be validated
  *   validated  highest ledger with a quorum of trusted validations
- *   published  highest ledger handed to subscribed clients; lags validated
+ *   published  highest ledger handed to subscribed clients; can lag validated
  *
  *   RCLConsensus ──switchLCL/consensusBuilt──> LedgerMaster
  *   PeerImp ──────gotFetchPack/makeFetchPack─>     │
@@ -577,7 +577,7 @@ public:
      * @return true if able to fulfill request.
      */
     bool
-    newOrderBookDB();  // Returns true if able to fulfill request.
+    newOrderBookDB();
 
     /**
      * Corrects the cached sequence-to-hash mapping for one ledger.

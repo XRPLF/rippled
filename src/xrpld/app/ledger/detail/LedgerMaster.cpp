@@ -1153,7 +1153,7 @@ LedgerMaster::consensusBuilt(
      *
      * One tally per ledger hash, built while scanning the current trusted
      * validations. A validation names a hash but not always a usable sequence,
-     * so the first sequence seen for a hash is kept and later ones ignored.
+     * so the first nonzero sequence seen for a hash is kept.
      *
      * @note Not thread-safe, and not intended to be: instances live only inside
      * the loop below, which holds no lock.
