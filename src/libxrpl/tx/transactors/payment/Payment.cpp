@@ -725,8 +725,20 @@ Payment::doApply()
         if (partialPaymentAllowed && requiredMaxSourceAmount > maxSourceAmount)
         {
             requiredMaxSourceAmount = maxSourceAmount;
-            // No rounding. It'll change once MPT integrated into DEX.
-            amountDeliver = divide(maxSourceAmount, rate);
+            if (view().rules().enabled(fixCleanup3_5_0))
+            {
+                // The legacy divide() can overflow on large MPT amounts: it
+                // either throws or wraps and delivers zero. Round down so
+                // that the sender is never charged more than SendMax.
+                amountDeliver = divideRound(maxSourceAmount, rate, false);
+                if (amountDeliver <= beast::kZero)
+                    return tecPATH_PARTIAL;
+            }
+            else
+            {
+                // No rounding. It'll change once MPT integrated into DEX.
+                amountDeliver = divide(maxSourceAmount, rate);
+            }
         }
 
         if (requiredMaxSourceAmount > maxSourceAmount ||
