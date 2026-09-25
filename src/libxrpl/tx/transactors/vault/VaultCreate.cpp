@@ -45,6 +45,7 @@ VaultCreate::checkExtraFeatures(PreflightContext const& ctx)
         return false;
 
     if (!ctx.rules.enabled(featureLendingProtocolV1_1) &&
+        !ctx.rules.enabled(featureLendingProtocolV1_2) &&
         (ctx.tx.isFieldPresent(sfVaultKind) || ctx.tx.isFieldPresent(sfSubscriptionDate) ||
          ctx.tx.isFieldPresent(sfRedemptionDate)))
         return false;
@@ -101,7 +102,10 @@ VaultCreate::preflight(PreflightContext const& ctx)
         if (vaultAsset.holds<MPTIssue>() || vaultAsset.native())
             return temMALFORMED;
 
-        if (scale > kVaultMaximumIouScale)
+        auto const maximumScale = ctx.rules.enabled(featureLendingProtocolV1_2)
+            ? kVaultMaximumFixedIouScale
+            : kVaultMaximumLegacyIouScale;
+        if (scale > maximumScale)
             return temMALFORMED;
     }
 
@@ -273,10 +277,24 @@ VaultCreate::doApply()
     }
     if (scale != 0u)
         vault->at(sfScale) = scale;
-    if (view().rules().enabled(featureLendingProtocolV1_1))
+    // Treat featureLendingProtocolV1_2 as implying V1.1 when creating a vault;
+    // there is no FeatureBitset-level dependency lock. YieldUnrealized is
+    // SoeDefault, so writing zero stores the field as absent, matching
+    // LossUnrealized.
+    bool const fixedPrecision = view().rules().enabled(featureLendingProtocolV1_2);
+    bool const cashBasis = view().rules().enabled(featureLendingProtocolV1_1) || fixedPrecision;
+    if (fixedPrecision)
+    {
+        vault->at(sfLEVersion) = std::to_underlying(VaultVersion::FixedPrecision);
+        vault->at(sfYieldUnrealized) = Number(0);
+    }
+    else if (cashBasis)
     {
         vault->at(sfLEVersion) = std::to_underlying(VaultVersion::CashBasis);
+    }
 
+    if (fixedPrecision || cashBasis)
+    {
         auto const kind = getVaultKind(tx);
         vault->at(sfVaultKind) = std::to_underlying(kind);
         if (kind == VaultKind::ClosedEnded)

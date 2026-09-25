@@ -65,7 +65,26 @@ private:
         auto const maxPeriod = kMaxInvestmentPeriod;
         auto const closedEnded = std::to_underlying(VaultKind::ClosedEnded);
 
-        // Gate: the three new fields require featureLendingProtocolV1_1.
+        // Gate: the three new fields require featureLendingProtocolV1_1 OR
+        // featureLendingProtocolV1_2 (VaultCreate.cpp treats V1.2 as
+        // implying V1.1). Only disabled when BOTH are absent.
+        withEnv(
+            testableAmendments() - featureLendingProtocolV1_1 - featureLendingProtocolV1_2,
+            [&](Env& env, Account const& owner, Vault& vault) {
+                auto const sub = env.now().time_since_epoch().count() + 60;
+                auto [tx, keylet] = vault.create(
+                    {.owner = owner,
+                     .asset = asset,
+                     .vaultKind = closedEnded,
+                     .subscriptionDate = sub,
+                     .redemptionDate = sub + minPeriod});
+                env(tx, Ter{temDISABLED});
+            });
+
+        // V1.2 alone (no V1.1) still satisfies the gate for closed-ended
+        // vaults, same as it does for open-ended vaults in
+        // VaultFixedPrecision_test.cpp's "VaultCreate treats V1.2 as
+        // implying V1.1" case.
         withEnv(
             testableAmendments() - featureLendingProtocolV1_1,
             [&](Env& env, Account const& owner, Vault& vault) {
@@ -76,7 +95,11 @@ private:
                      .vaultKind = closedEnded,
                      .subscriptionDate = sub,
                      .redemptionDate = sub + minPeriod});
-                env(tx, Ter{temDISABLED});
+                env(tx);
+                env.close();
+                auto const sle = env.le(keylet);
+                if (BEAST_EXPECT(sle))
+                    BEAST_EXPECT(sle->at(sfVaultKind) == closedEnded);
             });
 
         /*

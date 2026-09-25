@@ -18,6 +18,69 @@ namespace xrpl {
 class STTx;
 
 /**
+ * Return the Vault's current live exponent.
+ *
+ * Legacy and CashBasis Vaults use the exponent of AssetsTotal. FixedPrecision
+ * Vaults floor that exponent at their lifetime base exponent.
+ */
+[[nodiscard]] int
+getVaultScale(SLE::const_ref vault);
+
+/**
+ * Return the Vault's base exponent.
+ *
+ * Legacy and CashBasis Vaults use their current live exponent. FixedPrecision
+ * Vaults use -Scale, or 0 for integral assets.
+ */
+[[nodiscard]] int
+getVaultBaseScale(SLE::const_ref vault);
+
+/**
+ * Return the Vault's posterior live exponent after applying an unrounded delta.
+ */
+[[nodiscard]] int
+getPosteriorVaultScale(SLE::const_ref vault, STAmount const& delta);
+
+/**
+ * Round an amount at the Vault's current live exponent.
+ *
+ * Reserved for LoanPay. Vault deposit, withdraw, and clawback round at the
+ * posterior live exponent instead.
+ */
+[[nodiscard]] STAmount
+roundToVaultScale(SLE::const_ref vault, STAmount const& amount, Number::RoundingMode roundingMode);
+
+/**
+ * Round an amount at the Vault's posterior live exponent.
+ */
+[[nodiscard]] STAmount
+roundToPosteriorVaultScale(
+    SLE::const_ref vault,
+    STAmount const& amount,
+    Number::RoundingMode roundingMode);
+
+/**
+ * Open-zone capacity ceiling: 9 * 10^(15 + baseScale).
+ *
+ * Defined only for FixedPrecision Vaults, where this is 9 * 10^(15 - P).
+ */
+[[nodiscard]] Number
+getVaultOpenLimit(SLE::const_ref vault);
+
+/**
+ * Check whether `amount` is an admissible optional inflow.
+ *
+ * Legacy and CashBasis Vaults always succeed. FixedPrecision Vaults must
+ * remain at their base scale after applying the rounded amount, and the
+ * posterior capacity (AssetsTotal + YieldUnrealized + rounded amount) must
+ * stay within the Open zone.
+ *
+ * The amount is rounded toward zero at the posterior live exponent.
+ */
+[[nodiscard]] TER
+checkOptionalVaultInflow(SLE::const_ref vault, STAmount const& amount);
+
+/**
  * From the perspective of a vault, return the number of shares to give
  * depositor when they offer a fixed amount of assets. Note, since shares are
  * MPT, this number is integral and always truncated in this calculation.
@@ -53,9 +116,10 @@ sharesToAssetsDeposit(SLE::const_ref vault, SLE::const_ref issuance, STAmount co
  * Rounding strategy:
  * - Debits (withdrawals): Rounds down `|delta|` on the new scale to prevent
  *   paying out more than requested.
- * - Credits (deposits): Floors the resulting total asset balance and returns the
- *   difference from the current total. This prevents crediting the vault with
- *   more assets than the user deposited.
+ * - Legacy/CashBasis credits: Floors the resulting total asset balance and
+ *   returns the difference from the current total.
+ * - FixedPrecision credits: Rounds the delta toward zero at the posterior live
+ *   scale.
  *
  * Key rules:
  * - The returned magnitude never exceeds `|delta|`.
@@ -171,11 +235,13 @@ sharesToAssetsWithdraw(
 isSoleShareholder(ReadView const& view, AccountID const& account, SLE::const_ref issuance);
 
 /**
- * Resolves a Vault's LEVersion, the single point every accounting touch
- * point should call to determine which recognition model (instant interest
- * recognition vs. cash-basis) a Vault uses. Vaults created before featureLendingProtocolV1_1
- * activated never have sfLEVersion set, which resolves here to
- * VaultVersion::Legacy.
+ * Resolves a Vault's LEVersion.
+ *
+ * LEVersion is the single point every accounting and rounding helper
+ * should call to decide which protocol a Vault follows. It is written
+ * at VaultCreate and is not updated afterwards, so a Vault created
+ * under an older amendment keeps that behaviour after later amendments
+ * activate. Absent sfLEVersion resolves to VaultVersion::Legacy.
  *
  * @param vault The vault SLE.
  *

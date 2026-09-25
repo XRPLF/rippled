@@ -77,7 +77,7 @@ private:
             // attaching a loan broker). featureLendingProtocolV1_1 adds a
             // closed-ended vault gate on LoanBrokerSet::preclaim and is
             // orthogonal to what this suite asserts, so strip it here.
-            Env env{*this, testableAmendments() - featureLendingProtocolV1_1};
+            Env env{*this, all_ - featureLendingProtocolV1_1};
             Account const owner{"owner"};
             Account const issuer{"issuer"};
             Account const depositor{"depositor"};
@@ -1018,7 +1018,7 @@ private:
 
         using namespace test::jtx;
 
-        Env env{*this, testableAmendments()};
+        Env env{*this, all_};
         Account const owner{"owner"};
         Account const issuer{"issuer"};
 

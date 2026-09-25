@@ -31,24 +31,6 @@
 
 namespace xrpl {
 
-[[nodiscard]]
-static STAmount
-roundToVaultScale(STAmount const& amount, SLE::const_ref vault)
-{
-    XRPL_ASSERT(vault && vault->getType() == ltVAULT, "xrpl::roundToVaultScale : valid vault sle");
-    XRPL_ASSERT(
-        amount.asset() == vault->at(sfAsset), "xrpl::roundToVaultScale : valid vault asset");
-
-    if (amount.integral())
-        return amount;
-
-    int const postScale = [&]() {
-        NumberRoundModeGuard const rg(Number::RoundingMode::ToNearest);
-        return scale(vault->at(sfAssetsTotal) + amount, vault->at(sfAsset));
-    }();
-    return roundToScale(amount, postScale, Number::RoundingMode::Downward);
-}
-
 // True if debiting `assets` would leave the depositor's balance where it started, so the deposit
 // would mint shares against a transfer that never happened. Asking the balance directly whether it
 // notices the debit avoids having to infer the rounding step: it has to be the stored balance that
@@ -187,7 +169,9 @@ VaultDeposit::preclaim(PreclaimContext const& ctx)
     if (auto const ter = requireAuth(ctx.view, vaultAsset, account); !isTesSuccess(ter))
         return ter;
 
-    auto const roundedAmount = fix320Enabled ? roundToVaultScale(amount, vault) : amount;
+    auto const roundedAmount = fix320Enabled
+        ? roundToPosteriorVaultScale(vault, amount, Number::RoundingMode::TowardsZero)
+        : amount;
 
     if (fix320Enabled && roundedAmount == beast::kZero)
     {
@@ -237,10 +221,11 @@ VaultDeposit::doApply()
         return tefINTERNAL;  // LCOV_EXCL_LINE
     auto const vaultAsset = vault->at(sfAsset);
 
-    // Post-amendment IOU only: round Downward to the AssetsTotal precision so
+    // Post-amendment IOU only: round toward zero to the AssetsTotal precision so
     // a sub-ULP tail can't be silently absorbed by one rail and not the other.
-    auto const amount =
-        fix320Enabled ? roundToVaultScale(ctx_.tx[sfAmount], vault) : ctx_.tx[sfAmount];
+    auto const amount = fix320Enabled
+        ? roundToPosteriorVaultScale(vault, ctx_.tx[sfAmount], Number::RoundingMode::TowardsZero)
+        : ctx_.tx[sfAmount];
 
     // We validated zero-amount in preclaim, if we ended up with zero now, fail hard.
     if (amount == beast::kZero)
@@ -344,7 +329,7 @@ VaultDeposit::doApply()
         // Post-fixCleanup3_4_0: round the deposit to the sfAssetsTotal scale so all accounting
         // fields (trust line / MPT, sfAssetsAvailable, sfAssetsTotal) change by the same
         // representable delta.
-        if (fix340Enabled)
+        if (fix340Enabled || getVaultVersion(vault) == VaultVersion::FixedPrecision)
         {
             // Round down at the posterior sfAssetsTotal scale so the vault is credited by no more
             // than the depositor paid. Keep the share count from the first round trip: the clamp
@@ -373,6 +358,9 @@ VaultDeposit::doApply()
             << ", sharesTotal=" << sleIssuance->at(sfOutstandingAmount) << ", amount=" << amount;
         return tecPATH_DRY;
     }
+
+    if (auto const ter = checkOptionalVaultInflow(vault, assetsDeposited); !isTesSuccess(ter))
+        return ter;
 
     XRPL_ASSERT(
         sharesCreated.asset() != assetsDeposited.asset(),

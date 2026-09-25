@@ -347,7 +347,7 @@ LoanSet::preclaim(PreclaimContext const& ctx)
     // already at AssetsMaximum cannot take another loan. Cash-basis origination
     // does not change AssetsTotal (see cash_basis::loanOriginationDeltas), so
     // this leftover instant-recognition gate must not apply there.
-    if (getVaultVersion(vault) != VaultVersion::CashBasis && vault->at(sfAssetsMaximum) != 0 &&
+    if (getVaultVersion(vault) < VaultVersion::CashBasis && vault->at(sfAssetsMaximum) != 0 &&
         vault->at(sfAssetsTotal) >= vault->at(sfAssetsMaximum))
     {
         JLOG(ctx.j.warn()) << "Vault at maximum assets limit. Can't add another loan.";
@@ -496,7 +496,7 @@ LoanSet::doApply()
 
     XRPL_ASSERT_PARTS(
         *vaultSle->at(sfAssetsMaximum) == 0 ||
-            getVaultVersion(vaultSle) == VaultVersion::CashBasis ||
+            getVaultVersion(vaultSle) >= VaultVersion::CashBasis ||
             *vaultSle->at(sfAssetsMaximum) > *vaultTotalProxy,
         "xrpl::LoanSet::doApply",
         "instant-recognition vault is below maximum limit");
