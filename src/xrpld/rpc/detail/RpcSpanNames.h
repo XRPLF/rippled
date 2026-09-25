@@ -98,6 +98,7 @@
  *    - WebSocket message parse errors (invalid JSON, oversized)
  *    - WebSocket upgrade failures (protocol handshake errors)
  *    - Admin CLI (connects via HTTP internally)
+ *    - [rpc_startup] commands run during setup, under rpc.startup
  *    - Command dispatch rejections (unknown cmd, too busy, no perm)
  *    - gRPC endpoints (GetLedger, GetLedgerData, GetLedgerDiff,
  *      GetLedgerEntry)
@@ -134,6 +135,11 @@ inline constexpr auto wsMessage = makeStr("ws_message");
 inline constexpr auto wsUpgrade = makeStr("ws_upgrade");
 inline constexpr auto httpRequest = makeStr("http_request");
 inline constexpr auto process = makeStr("process");
+/**
+ * "startup" — the [rpc_startup] batch run during setup. Parent of the
+ * rpc.command.* spans its commands create.
+ */
+inline constexpr auto startup = makeStr("startup");
 }  // namespace op
 
 // ===== Attribute keys ======================================================
