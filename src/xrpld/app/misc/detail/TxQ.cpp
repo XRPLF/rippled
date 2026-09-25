@@ -533,7 +533,7 @@ TxQApplyImpl::processAccountTxs()
     if (!prevTxs_)
     {
         UNREACHABLE("xrpl::TxQApplyImpl::processAccountTxs !prevTxs_");  // LCOV_EXCL_LINE
-        return ApplyResult{tecINTERNAL, false};                          // LCOV_EXCL_LINE
+        return ApplyResult{tefINTERNAL, false};                          // LCOV_EXCL_LINE
     }
     TxQ::TxQAccount const& txQAcct = byAccountIter_->second;
     if (auto const err = checkFrontTx(txQAcct.getPrevTx(txSeq_), prevTxs_->second); err.has_value())
