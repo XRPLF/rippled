@@ -31,15 +31,16 @@ doesn't currently support building or running a project through a compilation da
    [Build and Test](../../BUILD.md#build-and-test).
 2. Set the "Build directory" field to the same directory you ran `conan install` in (e.g. `.build`). The
    `-DCMAKE_TOOLCHAIN_FILE` path below is resolved relative to this directory, not the repository root.
-3. Pass `-DCMAKE_TOOLCHAIN_FILE=build/generators/conan_toolchain.cmake` in the "CMake options" field, as
-   described in the same section.
+3. Pass `-DCMAKE_TOOLCHAIN_FILE:FILEPATH=build/generators/conan_toolchain.cmake` in the "CMake options"
+   field, as described in the same section.
 4. The `Toolchain` and `Generator` fields can be left at their defaults.
 
 If CMake is configured correctly, you should see a toolbar with green icons for build and run.
 
 ### Using a Compilation Database
 
-From your Conan build directory (e.g. `.build`), generate a `compile_commands.json` file:
+From your Conan build directory (e.g. `.build`), generate a `compile_commands.json` file. If you
+installed with `build_type=Debug`, replace `Release` with `Debug` below:
 
 ```bash
 cmake -DCMAKE_EXPORT_COMPILE_COMMANDS=1 -DCMAKE_TOOLCHAIN_FILE:FILEPATH=build/generators/conan_toolchain.cmake -DCMAKE_BUILD_TYPE=Release ..
