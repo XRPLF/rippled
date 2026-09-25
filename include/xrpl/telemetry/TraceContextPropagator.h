@@ -36,6 +36,12 @@
 
 namespace xrpl::telemetry {
 
+// The wire limits in TraceContextValidation.h must match the OTel types the
+// peer's bytes are copied into here.
+static_assert(kTraceIdSize == opentelemetry::trace::TraceId::kSize);
+static_assert(kSpanIdSize == opentelemetry::trace::SpanId::kSize);
+static_assert(kKnownTraceFlags == opentelemetry::trace::TraceFlags::kAllW3CTraceContext2Flags);
+
 /**
  * Extract OTel context from a protobuf TraceContext message.
  *
@@ -48,8 +54,8 @@ extractFromProtobuf(protocol::TraceContext const& proto)
 {
     namespace trace = opentelemetry::trace;
 
-    // Reject malformed or all-zero ids from the peer before trusting
-    // them as a parent. See TraceContextValidation.h.
+    // Reject a malformed context (bad ids or flags) from the peer before
+    // trusting it as a parent. See TraceContextValidation.h.
     if (!isValidTraceContext(proto))
     {
         return opentelemetry::context::Context{};
@@ -58,11 +64,10 @@ extractFromProtobuf(protocol::TraceContext const& proto)
     auto const* rawTraceId = reinterpret_cast<std::uint8_t const*>(proto.trace_id().data());
     auto const* rawSpanId = reinterpret_cast<std::uint8_t const*>(proto.span_id().data());
     trace::TraceId const traceId(
-        opentelemetry::nostd::span<std::uint8_t const, 16>(rawTraceId, 16));
-    trace::SpanId const spanId(opentelemetry::nostd::span<std::uint8_t const, 8>(rawSpanId, 8));
-    trace::TraceFlags const flags(
-        proto.has_trace_flags() ? static_cast<std::uint8_t>(proto.trace_flags())
-                                : static_cast<std::uint8_t>(0));
+        opentelemetry::nostd::span<std::uint8_t const, kTraceIdSize>(rawTraceId, kTraceIdSize));
+    trace::SpanId const spanId(
+        opentelemetry::nostd::span<std::uint8_t const, kSpanIdSize>(rawSpanId, kSpanIdSize));
+    trace::TraceFlags const flags(traceFlagsByte(proto));
 
     trace::SpanContext const spanCtx(traceId, spanId, flags, /* remote = */ true);
 

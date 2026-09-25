@@ -4,6 +4,7 @@
 
 #include <xrpl/proto/xrpl.pb.h>
 #include <xrpl/telemetry/TraceContextPropagator.h>
+#include <xrpl/telemetry/TraceContextValidation.h>
 
 #include <opentelemetry/context/context.h>
 #include <opentelemetry/nostd/shared_ptr.h>
@@ -19,8 +20,23 @@
 
 #include <cstdint>
 #include <cstring>
+#include <string>
 
 namespace trace = opentelemetry::trace;
+
+namespace {
+
+// A protobuf context with valid ids and no flags.
+protocol::TraceContext
+protoWithValidIds()
+{
+    protocol::TraceContext proto;
+    proto.set_trace_id(std::string(xrpl::telemetry::kTraceIdSize, '\x01'));
+    proto.set_span_id(std::string(xrpl::telemetry::kSpanIdSize, '\xaa'));
+    return proto;
+}
+
+}  // namespace
 
 TEST(TraceContextPropagator, round_trip)
 {
@@ -105,6 +121,31 @@ TEST(TraceContextPropagator, extract_wrong_size_span_id)
 
     auto ctx = xrpl::telemetry::extractFromProtobuf(proto);
     auto span = trace::GetSpan(ctx);
+    ASSERT_NE(span, nullptr);
+    EXPECT_FALSE(span->GetContext().IsValid());
+}
+
+TEST(TraceContextPropagator, extract_clears_unknown_flag_bits)
+{
+    auto proto = protoWithValidIds();
+    proto.set_trace_flags(xrpl::telemetry::kMaxTraceFlags);
+
+    auto const ctx = xrpl::telemetry::extractFromProtobuf(proto);
+    auto const span = trace::GetSpan(ctx);
+    ASSERT_NE(span, nullptr);
+    ASSERT_TRUE(span->GetContext().IsValid());
+    EXPECT_EQ(
+        std::uint32_t{span->GetContext().trace_flags().flags()}, xrpl::telemetry::kKnownTraceFlags);
+}
+
+TEST(TraceContextPropagator, extract_flags_above_max)
+{
+    ASSERT_TRUE(xrpl::telemetry::isValidTraceContext(protoWithValidIds()));
+    auto proto = protoWithValidIds();
+    proto.set_trace_flags(xrpl::telemetry::kMaxTraceFlags + 1);
+
+    auto const ctx = xrpl::telemetry::extractFromProtobuf(proto);
+    auto const span = trace::GetSpan(ctx);
     ASSERT_NE(span, nullptr);
     EXPECT_FALSE(span->GetContext().IsValid());
 }

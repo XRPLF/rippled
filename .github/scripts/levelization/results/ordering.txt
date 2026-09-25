@@ -157,6 +157,7 @@ test.overlay > xrpl.protocol
 test.overlay > xrpl.resource
 test.overlay > xrpl.server
 test.overlay > xrpl.shamap
+test.overlay > xrpl.telemetry
 test.protocol > test.jtx
 test.protocol > test.unit_test
 test.protocol > xrpl.basics

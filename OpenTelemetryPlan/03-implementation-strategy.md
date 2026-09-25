@@ -28,6 +28,7 @@ include/xrpl/telemetry/            # libxrpl layer: tracing SDK wrapper
 ├── TraceContextPropagator.h       # protobuf TraceContext inject/extract (P2P)
 ├── TraceContextValidation.h       # Validation of peer-supplied trace context
 ├── Redaction.h                    # redactAccount() — hashing helper, applied to no span
+├── TxAccountSpanNames.h           # tx_<account field> keys + accountFieldAttributeKey()
 └── GetObjectMetricNames.h         # getobject_* metric name constants
 
 src/libxrpl/telemetry/
@@ -37,6 +38,7 @@ src/libxrpl/telemetry/
 ├── CoroAwareContextStorage.cpp
 ├── DeterministicIdGenerator.cpp
 ├── Redaction.cpp
+├── TxAccountSpanNames.cpp         # SField code -> attribute key table
 └── NullTelemetry.cpp              # No-op impl — ALWAYS compiled (in-source #ifdef)
 
 src/xrpld/telemetry/               # xrpld layer: native metrics + tx tracing helpers
@@ -53,7 +55,9 @@ src/xrpld/telemetry/               # xrpld layer: native metrics + tx tracing he
 Per-class span-name headers deliberately live next to their owning class rather
 than in `telemetry/` — see `ConsensusSpanNames.h`, `TxApplySpanNames.h`,
 `LedgerSpanNames.h`, `RpcSpanNames.h`, `PathFindSpanNames.h`,
-`PeerSpanNames.h`, `TxQSpanNames.h`, `GrpcSpanNames.h`.
+`PeerSpanNames.h`, `TxQSpanNames.h`, `GrpcSpanNames.h`. `TxAccountSpanNames.h` is
+the exception and sits in `telemetry/`: its key table is checked against `TxFormats`
+by a libxrpl test, which cannot include a daemon header.
 
 ---
 
