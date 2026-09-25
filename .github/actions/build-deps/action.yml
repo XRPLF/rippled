@@ -10,6 +10,10 @@ inputs:
   build_nproc:
     description: "The number of processors to use for building."
     required: true
+  build_dir:
+    description: "The directory in which to generate the Conan files."
+    required: false
+    default: "build"
   force_build:
     description: 'Force building of all dependencies ("true", "false").'
     required: false
@@ -29,6 +33,7 @@ runs:
     - name: Install Conan dependencies
       shell: bash
       env:
+        BUILD_DIR: ${{ inputs.build_dir }}
         BUILD_NPROC: ${{ inputs.build_nproc }}
         BUILD_OPTION: ${{ inputs.force_build == 'true' && '*' || 'missing' }}
         BUILD_TYPE: ${{ inputs.build_type }}
@@ -36,6 +41,7 @@ runs:
         SANITIZERS: ${{ inputs.sanitizers }}
       run: |
         conan install \
+            --output-folder "${BUILD_DIR}" \
             --profile:all ci \
             --build="${BUILD_OPTION}" \
             --options:host='&:tests=True' \
