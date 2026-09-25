@@ -22,6 +22,21 @@ class TxQ;
 
 namespace rpc {
 
+/**
+ * Populate augmented submit fields into a JSON result.
+ * This helper populates the submit result flags (accepted, applied,
+ * broadcast, queued, kept) and current ledger state fields
+ * (account_sequence_next, account_sequence_available, open_ledger_cost,
+ * validated_ledger_index) from a Transaction pointer.
+ *
+ * @param jvResult The JSON result to populate
+ * @param transaction The transaction containing the submit result and state
+ */
+void
+populateAugmentedSubmitFields(
+    json::Value& jvResult,
+    std::shared_ptr<Transaction> const& transaction);
+
 json::Value
 getCurrentNetworkFee(
     Role const role,

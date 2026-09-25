@@ -6,7 +6,6 @@
 
 #include <xrpl/basics/Slice.h>
 #include <xrpl/basics/StringUtilities.h>
-#include <xrpl/basics/safe_cast.h>
 #include <xrpl/basics/strHex.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/ErrorCodes.h>
@@ -14,7 +13,6 @@
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/TER.h>
-#include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/resource/Fees.h>
 #include <xrpl/tx/apply.h>
@@ -155,24 +153,7 @@ doSubmit(rpc::JsonContext& context)
             jvResult[jss::engine_result_code] = transaction->getResult();
             jvResult[jss::engine_result_message] = sHuman;
 
-            auto const submitResult = transaction->getSubmitResult();
-
-            jvResult[jss::accepted] = submitResult.any();
-            jvResult[jss::applied] = submitResult.applied;
-            jvResult[jss::broadcast] = submitResult.broadcast;
-            jvResult[jss::queued] = submitResult.queued;
-            jvResult[jss::kept] = submitResult.kept;
-
-            if (auto currentLedgerState = transaction->getCurrentLedgerState())
-            {
-                jvResult[jss::account_sequence_next] =
-                    safeCast<json::Value::UInt>(currentLedgerState->accountSeqNext);
-                jvResult[jss::account_sequence_available] =
-                    safeCast<json::Value::UInt>(currentLedgerState->accountSeqAvail);
-                jvResult[jss::open_ledger_cost] = to_string(currentLedgerState->minFeeRequired);
-                jvResult[jss::validated_ledger_index] =
-                    safeCast<json::Value::UInt>(currentLedgerState->validatedLedger);
-            }
+            rpc::populateAugmentedSubmitFields(jvResult, transaction);
         }
 
         return jvResult;
