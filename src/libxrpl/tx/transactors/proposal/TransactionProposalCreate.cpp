@@ -27,6 +27,7 @@
 #include <exception>
 #include <expected>
 #include <memory>
+#include <string>
 
 namespace xrpl {
 
@@ -41,18 +42,15 @@ TransactionProposalCreate::preflight(PreflightContext const& ctx)
 
     STObject const proposedTx = ctx.tx.getFieldObject(sfProposedTransaction);
 
-    // The proposed transaction must pass its own static checks under the
-    // current rules, so no statically-dead proposal can be stored. This also
-    // guarantees every field common to all transactions (TransactionType,
-    // Account, Fee, Sequence, ...) is present, since applyTemplate throws
-    // otherwise; the checks below can therefore read those fields directly
-    // without re-checking presence. TapDryRun accepts the unsigned canonical
-    // form without a signature check; TapProposal additionally skips
-    // signature-presence checks (e.g. Batch signer matching), which are
-    // deferred to submission time (On-Chain Cosigner spec §5.3.1.2). A
-    // proposedTx that fails here is rejected with its own type's preflight
-    // code (or temMALFORMED if it isn't even a valid instance of that type),
-    // ahead of the Cosigner-specific structural checks below.
+    // The proposed transaction must pass "the same [stateless format]
+    // checks it would receive if submitted directly" (On-Chain Cosigner
+    // spec §5.3.1 rule 2), so no statically-dead proposal can be stored.
+    // That is exactly the pair checkValidity runs on a direct submission:
+    // xrpl::preflight (the transactor's own preflight chain) and
+    // passesLocalChecks. TapDryRun accepts the unsigned canonical form;
+    // TapProposal skips signature-presence checks (§5.3.1.2). A failure
+    // surfaces the proposed type's own code, or temMALFORMED if the
+    // payload is not even a valid instance of that type.
     try
     {
         STTx const stx{STObject{proposedTx}};
@@ -63,10 +61,14 @@ TransactionProposalCreate::preflight(PreflightContext const& ctx)
             JLOG(ctx.j.debug()) << "TransactionProposalCreate: proposed txn "
                                    "failed preflight: "
                                 << transHuman(inner.ter);
-            // Surface the proposed transaction type's own preflight code
-            // rather than collapsing it to a generic error (On-Chain Cosigner
-            // spec §5.3.1).
             return inner.ter;
+        }
+        if (std::string reason; !passesLocalChecks(stx, reason))
+        {
+            JLOG(ctx.j.debug()) << "TransactionProposalCreate: proposed txn "
+                                   "fails local checks: "
+                                << reason;
+            return temMALFORMED;
         }
     }
     catch (std::exception const& e)

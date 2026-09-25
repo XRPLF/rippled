@@ -234,6 +234,17 @@ struct TransactionProposalCreate_test : public beast::unit_test::Suite
             reject(tx, temBAD_AMOUNT);
         }
 
+        // A payload that fails passesLocalChecks (On-Chain Cosigner spec
+        // §5.3.1 rule 2) is rejected as temMALFORMED. An oversized Memos
+        // array trips isMemoOkay; no transactor preflight step bounds
+        // memo size.
+        {
+            json::Value tx = payload();
+            tx[sfMemos.jsonName][0u][sfMemo.jsonName][sfMemoData.jsonName] =
+                strHex(std::string(1100, 'A'));  // > 1024 bytes serialized
+            reject(tx, temMALFORMED);
+        }
+
         // Expiration must be present and non-zero.
         {
             env(proposal::create(target, payload(), 0),
