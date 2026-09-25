@@ -103,8 +103,10 @@ struct TransactionAcquire_test : public beast::unit_test::Suite
     /**
      * Whether takeNodes() declined to look at the data at all.
      *
-     * TimeoutCounter::complete_ and failed_ are both protected, so this stands in
-     * for either: a done acquisition returns a verdict accounting for nothing.
+     * TimeoutCounter::complete_ and failed_ are both protected, so this
+     * stands in for either. A done acquisition returns a bare duplicate,
+     * which is also what "we already have this root" reports, so the
+     * cases below pair this with a request count to tell the two apart.
      *
      * @param san The verdict a takeNodes() call returned.
      * @return Whether that verdict shows the data was never looked at.
@@ -112,7 +114,24 @@ struct TransactionAcquire_test : public beast::unit_test::Suite
     static bool
     wasIgnored(SHAMapAddNode const& san)
     {
-        return tallyIs(san, 0, 0, 0);
+        return tallyIs(san, 0, 0, 1);
+    }
+
+    /**
+     * Whether takeNodes() declined the data and held the sender responsible.
+     *
+     * The counterpart to wasIgnored(): a set whose map cannot be
+     * satisfied rejects further replies outright rather than reporting
+     * them as merely unwanted. Both cost the sender the same, so this is
+     * about the verdict rather than the fee.
+     *
+     * @param san The verdict a takeNodes() call returned.
+     * @return Whether that verdict shows the sender was held responsible.
+     */
+    static bool
+    wasRejected(SHAMapAddNode const& san)
+    {
+        return tallyIs(san, 0, 1, 0);
     }
 
     /**
@@ -245,8 +264,92 @@ struct TransactionAcquire_test : public beast::unit_test::Suite
     }
 
     /**
+     * A chain reaching kLeafDepth must end the acquisition outright.
+     *
+     * @param env The environment to run in.
+     */
+    void
+    testFabricatedChainFailsAcquire(jtx::Env& env)
+    {
+        testcase("A chain reaching kLeafDepth fails the acquire");
+
+        DeepChain const chain{nextSeed()};
+
+        auto peerSet = std::make_unique<RequestCountingPeerSet>();
+        auto* const peerSetPtr = peerSet.get();
+
+        auto const acquire = std::make_shared<TestableTransactionAcquire>(
+            env.app(), chain.rootHash.asUInt256(), std::move(peerSet));
+        auto const peer = std::make_shared<ChargeRecordingPeer>();
+
+        // The root hashes to the set we asked for, so it is accepted.
+        auto const rootResult = acquire->takeNodes({{SHAMapNodeID{}, chain.nodeAt(0)}}, peer);
+        BEAST_EXPECTS(tallyIs(rootResult, 1, 0, 0), rootResult.get());
+        BEAST_EXPECT(acquire->isMapValid());
+
+        // Accepting the root asks the peer for more, which is what the failure below has to stop.
+        int const requestsWhileAlive = peerSetPtr->requests();
+        BEAST_EXPECT(requestsWhileAlive > 0);
+
+        // Now the rest of the chain, ending in the inner node at kLeafDepth that no valid tree
+        // can hold.
+        auto const result = acquire->takeNodes(chain.nodesBelowRoot(), peer);
+
+        BEAST_EXPECTS(tallyIs(result, 0, 1, 0), result.get());
+        BEAST_EXPECT(!acquire->isMapValid());
+
+        // The acquisition is now dead: further data is not examined and no further requests go
+        // out, so the failure is recorded where the map is found invalid rather than left to a
+        // later trigger(). Rejected rather than merely ignored, since a later reply for a hash with
+        // no valid tree is worthless to everyone.
+        auto const afterFailure = acquire->takeNodes({{SHAMapNodeID{}, chain.nodeAt(0)}}, peer);
+        BEAST_EXPECT(wasRejected(afterFailure));
+        BEAST_EXPECT(peerSetPtr->requests() == requestsWhileAlive);
+
+        // stillNeed() revives a timed-out acquire, but must not revive this one: no valid tree
+        // exists for the hash, so re-arming it would only re-fail on the next packet. It says so,
+        // which is what stops InboundTransactions holding the entry out of newRound()'s reach.
+        BEAST_EXPECT(!acquire->stillNeed());
+        BEAST_EXPECT(wasRejected(acquire->takeNodes({{SHAMapNodeID{}, chain.nodeAt(0)}}, peer)));
+        BEAST_EXPECT(peerSetPtr->requests() == requestsWhileAlive);
+    }
+
+    /**
+     * A node that is merely wrong must leave the acquisition alive, so another
+     * peer can still complete it.
+     *
+     * @param env The environment to run in.
+     */
+    void
+    testWrongNodeKeepsAcquireAlive(jtx::Env& env)
+    {
+        testcase("A merely-wrong node leaves the acquire recoverable");
+
+        DeepChain const chain{nextSeed()};
+
+        auto const acquire = std::make_shared<TestableTransactionAcquire>(
+            env.app(), chain.rootHash.asUInt256(), std::make_unique<RequestCountingPeerSet>());
+        auto const peer = std::make_shared<ChargeRecordingPeer>();
+
+        auto const rootResult = acquire->takeNodes({{SHAMapNodeID{}, chain.nodeAt(0)}}, peer);
+        BEAST_EXPECTS(tallyIs(rootResult, 1, 0, 0), rootResult.get());
+
+        // nodeAt(1) is exactly the node the root is missing and its hash matches, but we label it
+        // as living at depth 2. It cannot be hooked anywhere, yet the map stays sound.
+        auto const result =
+            acquire->takeNodes({{SHAMapNodeID{2, uint256{}}, chain.nodeAt(1)}}, peer);
+
+        BEAST_EXPECTS(tallyIs(result, 0, 1, 0), result.get());
+        BEAST_EXPECT(acquire->isMapValid());
+
+        // Still alive: the next packet is examined rather than ignored.
+        BEAST_EXPECT(
+            !wasIgnored(acquire->takeNodes({{SHAMapNodeID{2, uint256{}}, chain.nodeAt(1)}}, peer)));
+    }
+
+    /**
      * A root that does not hash to the set we asked for is a plain mismatch,
-     * and has to leave the acquisition able to try another peer.
+     * not a structural impossibility.
      *
      * @param env The environment to run in.
      */
@@ -269,16 +372,108 @@ struct TransactionAcquire_test : public beast::unit_test::Suite
         // is untouched.
         BEAST_EXPECT(acquire->isMapValid());
 
+        // Charged at the recoverable tier, not the fabrication one: a mismatched root proves
+        // nothing about the tree behind the hash we asked for.
+        BEAST_EXPECT(peer->charges() == std::vector{resource::kFeeInvalidData});
+
         // Still alive: the next packet is examined rather than waved through.
         BEAST_EXPECT(!wasIgnored(acquire->takeNodes({{SHAMapNodeID{}, chain.nodeAt(0)}}, peer)));
     }
 
     /**
+     * A reply carrying no nodes at all is charged for.
+     *
+     * PeerImp rejects an empty node list before dispatch, so this is
+     * defensive, but it is still the one rejection whose charge is
+     * decided before any data is looked at. An empty reply says nothing
+     * about the map, so the acquisition stays alive.
+     *
+     * @param env The environment to run in.
+     */
+    void
+    testEmptyReplyIsCharged(jtx::Env& env)
+    {
+        testcase("A reply carrying no nodes is charged as invalid data");
+
+        DeepChain const chain{nextSeed()};
+
+        auto const acquire = std::make_shared<TestableTransactionAcquire>(
+            env.app(), chain.rootHash.asUInt256(), std::make_unique<RequestCountingPeerSet>());
+        auto const peer = std::make_shared<ChargeRecordingPeer>();
+
+        auto const result = acquire->takeNodes({}, peer);
+
+        BEAST_EXPECTS(tallyIs(result, 0, 1, 0), result.get());
+        BEAST_EXPECT(peer->charges() == std::vector{resource::kFeeInvalidData});
+
+        // Nothing was touched, so another peer can still complete the set.
+        BEAST_EXPECT(acquire->isMapValid());
+        BEAST_EXPECT(!wasIgnored(acquire->takeNodes({{SHAMapNodeID{}, chain.nodeAt(0)}}, peer)));
+    }
+
+    /**
+     * The fee tier split, driven through InboundTransactions::gotData().
+     *
+     * Goes through the real dispatch rather than reproducing its branch, so
+     * charging the wrong tier - or dropping the distinction - fails here.
+     *
+     * @param env The environment to run in.
+     */
+    void
+    testFeeTierDistinguishesFabrication(jtx::Env& env)
+    {
+        testcase("Map-invalidating data is charged more harshly than wrong data");
+
+        // Guard the premise: if the tiers were equal, the distinction would be cosmetic.
+        BEAST_EXPECT(resource::kFeeMalformedData.cost() > resource::kFeeInvalidData.cost());
+
+        DeepChain const chain{nextSeed()};
+        auto& inbound = env.app().getInboundTransactions();
+
+        // getSet() with acquire=true registers the TransactionAcquire that gotData() looks up.
+        uint256 const setHash = chain.rootHash.asUInt256();
+        BEAST_EXPECT(inbound.getSet(setHash, true) == nullptr);
+
+        // Feed the root first, so the acquire has somewhere to hook the rest.
+        auto const rootPeer = std::make_shared<ChargeRecordingPeer>();
+        inbound.gotData(setHash, rootPeer, packetFor(chain, {{SHAMapNodeID{}, chain.nodeAt(0)}}));
+        BEAST_EXPECT(rootPeer->charges().empty());
+
+        // A real node labeled with the wrong position: wrong, but the map stays sound, so this is
+        // the generic tier.
+        auto const wrongPeer = std::make_shared<ChargeRecordingPeer>();
+        inbound.gotData(
+            setHash, wrongPeer, packetFor(chain, {{SHAMapNodeID{2, uint256{}}, chain.nodeAt(1)}}));
+        BEAST_EXPECT(wrongPeer->charges() == std::vector{resource::kFeeInvalidData});
+
+        // The chain, ending in an inner node at kLeafDepth. This invalidates the map, so it costs
+        // the harsher tier.
+        auto const fabricatingPeer = std::make_shared<ChargeRecordingPeer>();
+        inbound.gotData(setHash, fabricatingPeer, packetFor(chain, chain.nodesBelowRoot()));
+        BEAST_EXPECT(fabricatingPeer->charges() == std::vector{resource::kFeeMalformedData});
+
+        // Data arriving after the set is over costs the useless tier, not the harsher one: the
+        // sender of this packet is not the one that broke the set. rootPeer's accepted root
+        // earned the one targeted follow-up request that is this test's only source of an
+        // allowance to spend - there are no other real peers here. Its own late reply is free;
+        // a second one from it has already spent that pass and is a replay. See
+        // testLateReplyIsFreeOncePerPeerAsked() for the peer-identity cases (a stranger nobody
+        // asked, and a second reply from the same peer) in isolation.
+        inbound.gotData(setHash, rootPeer, packetFor(chain, {{SHAMapNodeID{}, chain.nodeAt(0)}}));
+        BEAST_EXPECT(rootPeer->charges().empty());
+
+        inbound.gotData(setHash, rootPeer, packetFor(chain, {{SHAMapNodeID{}, chain.nodeAt(0)}}));
+        BEAST_EXPECT(rootPeer->charges() == std::vector{resource::kFeeUselessData});
+    }
+
+    /**
      * A second reply carrying a root we already have must stay free.
      *
-     * This is what an honest second responder to the initial fan-out sends:
-     * trigger() broadcasts to every tracked peer, so several answer the same
-     * request and all but the first carry nothing new. Charging for that would
+     * This is what an honest second responder to the initial fan-out
+     * sends: trigger() broadcasts to every tracked peer, so several
+     * answer the same request and all but the first carry nothing new.
+     * takeNodes() therefore tests isGood() rather than isUseful(): an
+     * all-duplicate batch is good but not useful, and charging it would
      * penalize peers for answering.
      *
      * Covers the root specifically, which takeNodes() short-circuits on
@@ -356,6 +551,183 @@ struct TransactionAcquire_test : public beast::unit_test::Suite
     }
 
     /**
+     * A reply arriving after the set is settled is free once for the peer
+     * we asked, and charged after that.
+     *
+     * trigger() sends to every peer it was given, so when one of them
+     * settles the set the others' replies are already in flight and none
+     * of those senders could have known - including when what settled
+     * the set was a failure another peer caused. Charging them taxes
+     * honest peers for someone else's doing. The pass belongs to the
+     * specific peer requestedPeers_ says was asked, not to whichever late
+     * reply happens to arrive first: a peer nobody asked gets no benefit
+     * from it, and a peer that already spent it is replaying. What must
+     * not be free at all is a replay: InboundTransactions::gotData()
+     * deserializes and hashes the whole node list before takeNodes() ever
+     * sees it, so an unbounded number of them would otherwise cost a
+     * sender nothing but the per-message fee.
+     *
+     * @param env The environment to run in.
+     */
+    void
+    testLateReplyIsFreeOncePerPeerAsked(jtx::Env& env)
+    {
+        testcase("A late reply is free once per peer we asked");
+
+        // A chain ending in a leaf, so the set settles rather than failing.
+        auto const chain = DeepChain::toLeaf(1, nextSeed());
+
+        // One peer asked, so it is the only one whose late reply can legitimately be free.
+        auto const candidate = std::make_shared<ChargeRecordingPeer>();
+        auto peerSet =
+            std::make_unique<RequestCountingPeerSet>(std::vector<std::shared_ptr<Peer>>{candidate});
+        auto* const peerSetPtr = peerSet.get();
+
+        auto const acquire = std::make_shared<TransactionAcquire>(
+            env.app(), chain.rootHash.asUInt256(), std::move(peerSet), kFastRetry);
+
+        acquire->init(1);
+        BEAST_EXPECT(peerSetPtr->addedPeers() == std::set<Peer::id_t>{candidate->id()});
+
+        // The whole chain in one batch, from a different peer, which settles the set.
+        auto data = chain.nodesBelowRoot();
+        data.emplace(data.begin(), SHAMapNodeID{}, chain.nodeAt(0));
+
+        auto const supplier = std::make_shared<ChargeRecordingPeer>();
+        BEAST_EXPECT(acquire->takeNodes(std::move(data), supplier).isUseful());
+        BEAST_EXPECT(supplier->charges().empty());
+
+        // A peer nobody asked is charged immediately: the allowance belongs to candidate, not
+        // to whichever late reply happens to arrive first.
+        auto const stranger = std::make_shared<ChargeRecordingPeer>();
+        BEAST_EXPECT(wasIgnored(acquire->takeNodes({{SHAMapNodeID{}, chain.nodeAt(0)}}, stranger)));
+        BEAST_EXPECT(stranger->charges() == std::vector{resource::kFeeUselessData});
+
+        // candidate's own late reply is the one that was genuinely in flight, and is free.
+        BEAST_EXPECT(
+            wasIgnored(acquire->takeNodes({{SHAMapNodeID{}, chain.nodeAt(0)}}, candidate)));
+        BEAST_EXPECT(candidate->charges().empty());
+
+        // A second reply from candidate has already spent its pass: this one is a replay.
+        BEAST_EXPECT(
+            wasIgnored(acquire->takeNodes({{SHAMapNodeID{}, chain.nodeAt(0)}}, candidate)));
+        BEAST_EXPECT(candidate->charges() == std::vector{resource::kFeeUselessData});
+
+        acquire->cancel();
+    }
+
+    /**
+     * One peer replaying its own late reply must not spend a different,
+     * genuinely honest peer's allowance.
+     *
+     * The allowance is tracked by which specific peers in requestedPeers_
+     * have redeemed it (lateReplyGranted_), not by a shared count compared
+     * against requestedPeers_.size(). A count cannot tell whose slot a
+     * reply is spending, so one peer resending its own already-accepted
+     * reply several times would exhaust the whole allowance and leave a
+     * second, honestly-asked peer's first and only late reply charged for
+     * someone else's replaying.
+     *
+     * @param env The environment to run in.
+     */
+    void
+    testOnePeersReplaysDoNotStarveAnother(jtx::Env& env)
+    {
+        testcase("One peer's replays do not spend a different peer's allowance");
+
+        auto const chain = DeepChain::toLeaf(1, nextSeed());
+
+        // Two peers asked, so each earns its own pass.
+        auto const spammer = std::make_shared<ChargeRecordingPeer>();
+        auto const honest = std::make_shared<ChargeRecordingPeer>();
+        auto peerSet = std::make_unique<RequestCountingPeerSet>(
+            std::vector<std::shared_ptr<Peer>>{spammer, honest});
+
+        auto const acquire = std::make_shared<TransactionAcquire>(
+            env.app(), chain.rootHash.asUInt256(), std::move(peerSet), kFastRetry);
+
+        acquire->init(2);
+
+        // A third peer supplies the whole chain, so both spammer's and honest's replies below
+        // are late.
+        auto data = chain.nodesBelowRoot();
+        data.emplace(data.begin(), SHAMapNodeID{}, chain.nodeAt(0));
+        auto const supplier = std::make_shared<ChargeRecordingPeer>();
+        BEAST_EXPECT(acquire->takeNodes(std::move(data), supplier).isUseful());
+
+        // spammer's first late reply is free - its own pass - but every one after that is its
+        // own replay, not anyone else's slot to spend.
+        BEAST_EXPECT(wasIgnored(acquire->takeNodes({{SHAMapNodeID{}, chain.nodeAt(0)}}, spammer)));
+        BEAST_EXPECT(spammer->charges().empty());
+        for (int i = 0; i < 5; ++i)
+            acquire->takeNodes({{SHAMapNodeID{}, chain.nodeAt(0)}}, spammer);
+        BEAST_EXPECT(spammer->charges().size() == 5);
+
+        // honest's own, single late reply is still free. A shared count would have let
+        // spammer's five replays above exhaust the allowance before honest ever got here.
+        BEAST_EXPECT(wasIgnored(acquire->takeNodes({{SHAMapNodeID{}, chain.nodeAt(0)}}, honest)));
+        BEAST_EXPECT(honest->charges().empty());
+
+        acquire->cancel();
+    }
+
+    /**
+     * A revived acquisition's late-reply allowance starts over, rather than
+     * carrying over the round that just failed.
+     *
+     * The allowance is one pass per peer asked, for the round that settled -
+     * that peer's reply can still be in flight when it does. stillNeed()
+     * reviving a timed-out acquisition starts a fresh round; a peer that
+     * already spent its pass in the round before must not have that carry
+     * over and mischarge the fresh pass the new round owes it. Both rounds
+     * here are settled with cancel() alone, so no real data has to flow to
+     * demonstrate it: only lateReplyGranted_'s behavior across the revival is
+     * under test.
+     *
+     * @param env The environment to run in.
+     */
+    void
+    testLateReplyAllowanceResetsOnRevival(jtx::Env& env)
+    {
+        testcase("A revived acquisition's late-reply allowance is not carried over");
+
+        DeepChain const chain{nextSeed()};
+
+        // One peer asked, so it is the one whose pass is under test in both rounds.
+        auto const candidate = std::make_shared<ChargeRecordingPeer>();
+        auto peerSet =
+            std::make_unique<RequestCountingPeerSet>(std::vector<std::shared_ptr<Peer>>{candidate});
+
+        auto const acquire = std::make_shared<TransactionAcquire>(
+            env.app(), chain.rootHash.asUInt256(), std::move(peerSet), kFastRetry);
+
+        acquire->init(1);
+
+        // The first round fails, and candidate's one allowed late reply arrives and is free,
+        // spending its pass for this round.
+        acquire->cancel();
+        BEAST_EXPECT(
+            wasIgnored(acquire->takeNodes({{SHAMapNodeID{}, chain.nodeAt(0)}}, candidate)));
+        BEAST_EXPECT(candidate->charges().empty());
+
+        // Revived: the map is still valid, so stillNeed() clears the failure, restarts the
+        // timer, and hands out a fresh pass for the round that follows.
+        BEAST_EXPECT(acquire->stillNeed());
+
+        // The second round fails too - cancel() alone settles it, so no data has to flow.
+        acquire->cancel();
+
+        // candidate's late reply here is the second round's own pass, not a reuse of the first
+        // round's already-spent one. Without clearing lateReplyGranted_ on revival, this would
+        // be charged as a repeat instead.
+        BEAST_EXPECT(
+            wasIgnored(acquire->takeNodes({{SHAMapNodeID{}, chain.nodeAt(0)}}, candidate)));
+        BEAST_EXPECT(candidate->charges().empty());
+
+        acquire->cancel();
+    }
+
+    /**
      * A reply whose node data cannot be deserialized is charged for.
      *
      * gotData() rejects the packet before the acquisition is handed
@@ -392,6 +764,48 @@ struct TransactionAcquire_test : public beast::unit_test::Suite
         inbound.gotData(setHash, peer, packet);
 
         BEAST_EXPECT(peer->charges() == std::vector{resource::kFeeInvalidData});
+    }
+
+    /**
+     * Each peer is charged for its own packet, not for whatever the map happens
+     * to look like afterwards.
+     *
+     * takeNodes() classifies and charges under one lock hold. Reading the
+     * tier back after it returns would let a second packet arriving in
+     * between - up to five run concurrently under JtTxnData - invalidate
+     * the map and make the first peer pay the fabrication tier for data
+     * it did not send.
+     *
+     * @param env The environment to run in.
+     */
+    void
+    testChargeIsNotDecidedAfterTheLock(jtx::Env& env)
+    {
+        testcase("A peer is charged for its own packet only");
+
+        DeepChain const chain{nextSeed()};
+
+        auto const acquire = std::make_shared<TestableTransactionAcquire>(
+            env.app(), chain.rootHash.asUInt256(), std::make_unique<RequestCountingPeerSet>());
+
+        auto const rootPeer = std::make_shared<ChargeRecordingPeer>();
+        acquire->takeNodes({{SHAMapNodeID{}, chain.nodeAt(0)}}, rootPeer);
+        BEAST_EXPECT(rootPeer->charges().empty());
+
+        // A misplaced node: wrong, but the map survives, so the generic tier.
+        auto const wrongPeer = std::make_shared<ChargeRecordingPeer>();
+        acquire->takeNodes({{SHAMapNodeID{2, uint256{}}, chain.nodeAt(1)}}, wrongPeer);
+        BEAST_EXPECT(wrongPeer->charges() == std::vector{resource::kFeeInvalidData});
+
+        // Now a second peer invalidates the map, which must leave the earlier verdicts alone.
+        auto const fabricatingPeer = std::make_shared<ChargeRecordingPeer>();
+        acquire->takeNodes(chain.nodesBelowRoot(), fabricatingPeer);
+        BEAST_EXPECT(fabricatingPeer->charges() == std::vector{resource::kFeeMalformedData});
+        BEAST_EXPECT(!acquire->isMapValid());
+
+        // The earlier peers' charges must be untouched by that.
+        BEAST_EXPECT(wrongPeer->charges() == std::vector{resource::kFeeInvalidData});
+        BEAST_EXPECT(rootPeer->charges().empty());
     }
 
     /**
@@ -442,6 +856,9 @@ struct TransactionAcquire_test : public beast::unit_test::Suite
         BEAST_EXPECT(acquire->madeProgress());
         BEAST_EXPECT(acquire->isMapValid());
 
+        // The bad node is still charged for, at the recoverable tier.
+        BEAST_EXPECT(peer->charges() == std::vector{resource::kFeeInvalidData});
+
         // A batch of nothing but the root we already have: counted as a duplicate rather than
         // reaching the clean exit with nothing counted, so it is neither reported as useful nor
         // allowed to postpone the timeout.
@@ -465,8 +882,8 @@ struct TransactionAcquire_test : public beast::unit_test::Suite
         BEAST_EXPECT(withDuplicateRoot.isUseful());
         BEAST_EXPECT(acquire->madeProgress());
 
-        // takeNodes() charges nobody: InboundTransactions::gotData() reads the verdict and decides.
-        BEAST_EXPECT(peer->charges().empty());
+        // None of that cost the sender anything beyond the one bad node above.
+        BEAST_EXPECT(peer->charges() == std::vector{resource::kFeeInvalidData});
     }
 
     /**
@@ -565,14 +982,16 @@ struct TransactionAcquire_test : public beast::unit_test::Suite
         // kNormTimeouts rather than to zero, so the very next tick broadcasts to every peer
         // already tracked - the only way a peer already selected once is asked again, and so
         // what shows the timer chain was restarted rather than just the failed flag cleared.
-        acquire->stillNeed();
+        BEAST_EXPECT(acquire->stillNeed());
         BEAST_EXPECT(waitFor([&] { return peerSetPtr->requests() > requestsBeforeRevival; }));
 
-        // Data is examined again too: the real root is accepted, and asks for the next level.
+        // Data is examined again too: the real root is accepted and asks for the next level, and
+        // the sender is not charged for data we are asking for once more.
         auto const peer = std::make_shared<ChargeRecordingPeer>();
         auto const revived = acquire->takeNodes({{SHAMapNodeID{}, chain.nodeAt(0)}}, peer);
         BEAST_EXPECT(!wasIgnored(revived));
         BEAST_EXPECT(revived.isUseful());
+        BEAST_EXPECT(peer->charges().empty());
 
         // Stop the retry loop, which would otherwise keep asking for as long as this case runs.
         acquire->cancel();
@@ -617,7 +1036,7 @@ struct TransactionAcquire_test : public beast::unit_test::Suite
         // Ask again far faster than the interval, the way a short consensus round would. Every ask
         // clamps the timeout count, so the acquisition cannot give up while this runs.
         auto const askAgainRepeatedly = [&] {
-            acquire->stillNeed();
+            static_cast<void>(acquire->stillNeed());
             std::this_thread::sleep_for(std::chrono::milliseconds{20});
             return peerSetPtr->requests() > requestsFromInit;
         };
@@ -685,10 +1104,18 @@ struct TransactionAcquire_test : public beast::unit_test::Suite
 
         testHappyPathCompletesAcquisition(env);
         testTwoPeersEachSupplyPartOfTheSet(env);
+        testFabricatedChainFailsAcquire(env);
+        testWrongNodeKeepsAcquireAlive(env);
         testBadRootKeepsAcquireAlive(env);
+        testEmptyReplyIsCharged(env);
+        testFeeTierDistinguishesFabrication(env);
         testDuplicateRootReplyIsFree(env);
         testDuplicateNonRootReplyIsFree(env);
+        testLateReplyIsFreeOncePerPeerAsked(env);
+        testOnePeersReplaysDoNotStarveAnother(env);
+        testLateReplyAllowanceResetsOnRevival(env);
         testUndeserializableNodeIsCharged(env);
+        testChargeIsNotDecidedAfterTheLock(env);
         testPartialBatchIsCounted(env);
         testInitAsksOnlyPeersWithTheSet(env);
         testStillNeedLeavesARunningAcquireAlone(env);

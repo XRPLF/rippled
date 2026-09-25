@@ -10,6 +10,7 @@
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/core/Job.h>
+#include <xrpl/resource/Fees.h>
 #include <xrpl/server/NetworkOPs.h>
 #include <xrpl/shamap/SHAMap.h>
 #include <xrpl/shamap/SHAMapAddNode.h>
@@ -145,6 +146,8 @@ TransactionAcquire::trigger(std::shared_ptr<Peer> const& peer)
             tmGL.set_querytype(protocol::qtINDIRECT);
 
         *(tmGL.add_nodeids()) = SHAMapNodeID().getRawString();
+        if (peer)
+            requestedPeers_.insert(peer->id());
         peerSet_->sendRequest(tmGL, peer);
     }
     else if (!map_->isValid())
@@ -183,6 +186,8 @@ TransactionAcquire::trigger(std::shared_ptr<Peer> const& peer)
         {
             *tmGL.add_nodeids() = node.first.getRawString();
         }
+        if (peer)
+            requestedPeers_.insert(peer->id());
         peerSet_->sendRequest(tmGL, peer);
     }
 }
@@ -215,16 +220,33 @@ TransactionAcquire::takeNodesLocked(
     std::shared_ptr<Peer> const& peer,
     ScopedLockType&)
 {
-    if (complete_)
+    // A reply that arrives after the set is settled - by completing it, or by a different packet
+    // failing it. trigger() sends to every peer it was given, so any of their replies, including
+    // another packet from the same peer whose data failed the set, can already be in flight and
+    // could not have known the outcome. Those are solicited, and free: one per peer we asked,
+    // which is what bounds the honest case.
+    //
+    // Past that bound, further data for this hash is a replay - a resend of data already
+    // accepted or now known worthless, not a first-time reply - and serving it is not free work.
+    // InboundTransactions::gotData() deserializes and hashes the whole node list before this
+    // point, up to kHardMaxReplyNodes of them, and the object lingers until newRound() sweeps it,
+    // so an unbounded number of replays would otherwise cost only the trivial per-message fee.
+    if (isDone())
     {
-        JLOG(journal_.trace()) << "TX set complete";
-        return SHAMapAddNode();
-    }
+        JLOG(journal_.trace()) << (complete_ ? "TX set complete" : "TX set failed");
 
-    if (failed_)
-    {
-        JLOG(journal_.trace()) << "TX set failed";
-        return SHAMapAddNode();
+        // Free only the first time this specific peer shows up here, not merely the first
+        // reply of however many arrive: a peer outside requestedPeers_ was never asked at all,
+        // and one already in lateReplyGranted_ has already spent the one pass requestedPeers_
+        // earned it. Keyed by identity rather than counted, so one peer resending its own
+        // already-accepted reply cannot exhaust the pass a different, genuinely honest peer in
+        // requestedPeers_ is still owed.
+        if (!requestedPeers_.contains(peer->id()) || !lateReplyGranted_.insert(peer->id()).second)
+            peer->charge(resource::kFeeUselessData, "tx_set data after the set was settled");
+
+        // Reported as a duplicate rather than as bad, unless the map itself is why the set failed:
+        // no reply for such a hash can ever be useful to anyone.
+        return map_->isValid() ? SHAMapAddNode::duplicate() : SHAMapAddNode::invalid();
     }
 
     // Accumulated across the batch, so a packet ending in one bad node still counts the nodes
@@ -234,7 +256,11 @@ TransactionAcquire::takeNodesLocked(
     try
     {
         if (data.empty())
+        {
+            // Defensive: PeerImp rejects an empty node list before dispatch.
+            peer->charge(resource::kFeeInvalidData, "tx_set empty");
             return SHAMapAddNode::invalid();
+        }
 
         ConsensusTransSetSF sf(app_, app_.getTempNodeCache());
 
@@ -257,6 +283,9 @@ TransactionAcquire::takeNodesLocked(
                 {
                     JLOG(journal_.warn()) << "TX acquire got bad root node for TX set " << hash_
                                           << " from peer " << peer->id();
+                    // addRootNode only rejects a hash mismatch, which never invalidates the map,
+                    // so there is nothing to fail here: the timer will retry with another peer.
+                    peer->charge(resource::kFeeInvalidData, "tx_set root hash mismatch");
                     return san;
                 }
 
@@ -271,6 +300,27 @@ TransactionAcquire::takeNodesLocked(
             {
                 JLOG(journal_.warn()) << "TX acquire got bad non-root node " << d.first
                                       << " for TX set " << hash_ << " from peer " << peer->id();
+                if (!map_->isValid())
+                {
+                    // No peer can complete this hash (see SHAMap::addKnownNode), so fail the
+                    // acquisition rather than retrying; stillNeed() will not revive it either.
+                    // Charged more harshly than data that is merely wrong, and charged here, under
+                    // the lock that reached the verdict, so a concurrent packet cannot decide this
+                    // peer's fee. A deterrent rather than a control even so: such a node can reach
+                    // a map by paths with no peer to charge (see SHAMap::addKnownNode), so nothing
+                    // may rely on the sender having paid.
+                    peer->charge(resource::kFeeMalformedData, "tx_set node makes map invalid");
+                    failed_ = true;
+                    done();
+
+                    // Nothing in this batch is worth counting: the nodes ahead of the bad one
+                    // belong to a tree that cannot exist, and the acquisition is over.
+                    return SHAMapAddNode::invalid();
+                }
+
+                // Any other bad node leaves the map sound, so leave that retry to the timer
+                // rather than re-requesting from the peer that just sent us bad data.
+                peer->charge(resource::kFeeInvalidData, "tx_set node invalid");
                 return san;
             }
         }
@@ -282,6 +332,7 @@ TransactionAcquire::takeNodesLocked(
     {
         JLOG(journal_.error()) << "Peer " << peer->id()
                                << " sent us junky transaction node data: " << ex.what();
+        peer->charge(resource::kFeeInvalidData, "tx_set junky node data");
         san.incInvalid();
         return san;
     }
@@ -306,7 +357,7 @@ TransactionAcquire::init(int numPeers)
     setTimer(sl);
 }
 
-void
+bool
 TransactionAcquire::stillNeed()
 {
     ScopedLockType sl(mtx_);
@@ -316,13 +367,28 @@ TransactionAcquire::stillNeed()
     // Nothing to revive: leave a running acquisition on the wait it has, rather than restarting it
     // for every consensus round that asks for the set again.
     if (!failed_)
-        return;
+        return true;
+
+    // An invalid map is not a timeout: no peer can complete such a hash (see
+    // SHAMap::addKnownNode), so this one stays failed. Reported, so the caller stops holding its
+    // retention window open for a set nothing can ever finish.
+    if (!map_->isValid())
+        return false;
 
     failed_ = false;
+
+    // The free allowance in takeNodesLocked() is "one per peer asked", which belongs to the round
+    // that just failed. Reviving starts a new round of asks, so a stale record of who already
+    // spent their pass must not carry over and eat into it, mischarging a reply the new round is
+    // still owed. requestedPeers_ is not reset alongside it: a peer already asked stays one we
+    // asked, in whichever round its reply arrives, just as peerSet_->getPeerIds() was never reset
+    // here either.
+    lateReplyGranted_.clear();
 
     // Restarting the timer is what resumes the acquisition. expires_after() cancels any pending
     // wait, so this cannot leave two timer chains running.
     setTimer(sl);
+    return true;
 }
 
 }  // namespace xrpl
