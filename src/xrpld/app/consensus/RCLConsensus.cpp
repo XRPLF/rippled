@@ -391,6 +391,8 @@ RCLConsensus::Adaptor::onClose(
         LedgerIndex const seq = prevLedger->header().seq + 1;
         CensorshipDetector<TxID, LedgerIndex>::TxIDSeqVec proposed;
 
+        // initialSet is unbacked, so the walk has no node store to fail to read and
+        // cannot report an incomplete result.
         initialSet->visitLeaves(
             [&proposed, seq](boost::intrusive_ptr<SHAMapItem const> const& item) {
                 proposed.emplace_back(item->key(), seq);
@@ -539,6 +541,8 @@ RCLConsensus::Adaptor::doAccept(
     {
         std::vector<TxID> accepted;
 
+        // The consensus transaction set is unbacked, so the walk has no node store to
+        // fail to read and cannot report an incomplete result.
         result.txns.map->visitLeaves(
             [&accepted](boost::intrusive_ptr<SHAMapItem const> const& item) {
                 accepted.push_back(item->key());
