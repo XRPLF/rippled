@@ -333,7 +333,7 @@ public:
         , telemetry_(
               telemetry::makeTelemetry(
                   telemetry::makeTelemetrySetup(
-                      config_->section("telemetry"),
+                      config_->section(Sections::kTelemetry),
                       "",  // Updated later via setServiceInstanceId()
                       build_info::getVersionString(),
                       config_->networkId),
@@ -1270,7 +1270,7 @@ ApplicationImp::setup(boost::program_options::variables_map const& cmdline)
     // custom service_instance_id in [telemetry].  The Telemetry object
     // was constructed with an empty serviceInstanceId because
     // nodeIdentity_ is not available in the member initializer list.
-    if (!config_->section("telemetry").exists("service_instance_id"))
+    if (!config_->section(Sections::kTelemetry).exists("service_instance_id"))
         telemetry_->setServiceInstanceId(toBase58(TokenType::NodePublic, nodeIdentity_->first));
 
     // Start telemetry here, not in start(). Spans are emitted during the rest
