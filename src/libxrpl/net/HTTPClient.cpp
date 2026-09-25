@@ -22,7 +22,6 @@
 
 #include <chrono>
 #include <cstddef>
-#include <cstdlib>
 #include <deque>
 #include <functional>
 #include <iterator>
@@ -155,6 +154,11 @@ public:
             boost::asio::ip::resolver_query_base::numeric_service);
         query_ = query;
 
+        // Each site starts with a clean error state. shutdown_ records the first
+        // failure of the current attempt only, so a fallback to the next entry
+        // in deqSites_ is resolved and connected like a fresh request.
+        shutdown_.clear();
+
         try
         {
             deadline_.expires_after(timeout_);
@@ -164,13 +168,16 @@ public:
             shutdown_ = e.code();
 
             JLOG(j_.trace()) << "expires_after: " << shutdown_.message();
-            deadline_.async_wait([self = shared_from_this()](boost::system::error_code const& ec) {
-                self->handleDeadline(ec);
-            });
         }
 
         if (!shutdown_)
         {
+            // A set expiry fires only if a waiter is registered, so the wait
+            // is armed whenever expires_after succeeded.
+            deadline_.async_wait([self = shared_from_this()](boost::system::error_code const& ec) {
+                self->handleDeadline(ec);
+            });
+
             JLOG(j_.trace()) << "Resolving: " << deqSites_[0];
 
             resolver_.async_resolve(
@@ -183,9 +190,10 @@ public:
                     self->handleResolve(ecResult, results);
                 });
         }
-
-        if (shutdown_)
+        else
+        {
             invokeComplete(shutdown_);
+        }
     }
 
     void
@@ -195,41 +203,42 @@ public:
         {
             // Timer canceled because deadline no longer needed.
             JLOG(j_.trace()) << "Deadline cancelled.";
-
-            // Aborter is done.
+            return;
         }
-        else if (ecResult)
-        {
-            JLOG(j_.trace()) << "Deadline error: " << deqSites_[0] << ": " << ecResult.message();
 
-            // Can't do anything sound.
-            std::abort();
+        // A handler that was already queued when httpsNext() re-armed the
+        // timer for the next site sees an expiry in the future. It belongs to
+        // the finished attempt and must leave the new one alone. Strictly
+        // greater: a genuine expiry observed within the same clock tick has
+        // expiry == now and must still be acted on.
+        if (deadline_.expiry() > std::chrono::steady_clock::now())
+        {
+            JLOG(j_.trace()) << "Stale deadline ignored.";
+            return;
         }
-        else
+
+        JLOG(j_.trace()) << "Deadline: " << (ecResult ? ecResult.message() : "arrived");
+
+        // Mark us as shutting down. A wait error ends the attempt exactly as a
+        // timeout does.
+        if (!shutdown_)
         {
-            JLOG(j_.trace()) << "Deadline arrived.";
-
-            // Mark us as shutting down.
-            // XXX Use our own error code.
-            shutdown_ = boost::system::error_code{
-                boost::system::errc::bad_address, boost::system::system_category()};
-
-            // Cancel any resolving.
-            resolver_.cancel();
-
-            // Stop the transaction.
-            socket_.asyncShutdown([self = shared_from_this()](boost::system::error_code const& ec) {
-                self->handleShutdown(ec);
-            });
+            shutdown_ =
+                ecResult ? ecResult : boost::system::error_code{boost::asio::error::timed_out};
         }
-    }
 
-    void
-    handleShutdown(boost::system::error_code const& ecResult)
-    {
-        if (ecResult)
+        // Cancel any resolving.
+        resolver_.cancel();
+
+        // Close the transport rather than negotiating a TLS shutdown: the
+        // negotiation waits on the peer, and the deadline has already
+        // passed. The pending operation's handler then runs with
+        // shutdown_ set and reports the timeout.
+        boost::system::error_code ec;
+        socket_.lowestLayer().close(ec);
+        if (ec)
         {
-            JLOG(j_.trace()) << "Shutdown error: " << deqSites_[0] << ": " << ecResult.message();
+            JLOG(j_.trace()) << "Deadline close error: " << ec.message();
         }
     }
 
@@ -366,6 +375,18 @@ public:
     void
     handleHeader(boost::system::error_code const& ecResult, std::size_t bytesTransferred)
     {
+        // A read error, or a deadline that closed the transport while this read
+        // was pending, ends the attempt here rather than parsing an incomplete
+        // header. The deadline records its own code first, so it wins.
+        if (!shutdown_)
+            shutdown_ = ecResult;
+
+        if (shutdown_)
+        {
+            invokeComplete(shutdown_);
+            return;
+        }
+
         std::string strHeader{
             {std::istreambuf_iterator<char>(&header_)}, std::istreambuf_iterator<char>()};
         JLOG(j_.trace()) << "Header: \"" << strHeader << "\"";
