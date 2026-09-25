@@ -8,10 +8,13 @@
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/consensus/ConsensusParms.h>
 #include <xrpl/consensus/ConsensusProposal.h>
+#include <xrpl/consensus/ConsensusSpanLabels.h>
+#include <xrpl/consensus/ConsensusSpanNames.h>
 #include <xrpl/consensus/ConsensusTypes.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/json/json_writer.h>
 #include <xrpl/ledger/LedgerTiming.h>
+#include <xrpl/telemetry/SpanGuard.h>
 
 #include <algorithm>
 #include <chrono>
@@ -24,15 +27,41 @@
 #include <ranges>
 #include <sstream>
 #include <string>
+#include <string_view>
 #include <utility>
 
 namespace xrpl {
+
+/**
+ * Determines why the current ledger should close at this time.
+ *
+ * Holds the close decision. shouldCloseLedger() delegates here and adds only
+ * a comparison, so the logging happens once either way; call whichever suits.
+ * Parameters match shouldCloseLedger().
+ *
+ * @return The deciding branch, or KeepOpen if no close condition is met.
+ */
+LedgerCloseReason
+whyCloseLedger(
+    bool anyTransactions,
+    std::size_t prevProposers,
+    std::size_t proposersClosed,
+    std::size_t proposersValidated,
+    std::chrono::milliseconds prevRoundTime,
+    std::chrono::milliseconds timeSincePrevClose,
+    std::chrono::milliseconds openTime,
+    std::chrono::milliseconds idleInterval,
+    ConsensusParms const& parms,
+    beast::Journal j,
+    std::unique_ptr<std::stringstream> const& clog = {});
 
 /**
  * Determines whether the current ledger should close at this time.
  *
  * This function should be called when a ledger is open and there is no close
  * in progress, or when a transaction is received and no close is in progress.
+ *
+ * Equivalent to `whyCloseLedger(...) != LedgerCloseReason::KeepOpen`.
  *
  * @param anyTransactions indicates whether any transactions have been received
  * @param prevProposers proposers in the last closing
@@ -447,13 +476,29 @@ public:
     getJson(bool full) const;
 
 private:
+    /**
+     * Why startRoundInternal is being entered.
+     *
+     *  Distinguishes the normal Initial entry (from public startRound)
+     *  from a Recovered re-entry (from handleWrongLedger after the
+     *  correct prior ledger was acquired mid-round). The Recovered path
+     *  resets phase to Open within the SAME round, which is a state
+     *  transition that would otherwise be invisible in traces — the
+     *  recovery flag drives a `phase.recovery` event on the round span.
+     */
+    enum class StartRoundReason : std::uint8_t {
+        Initial,
+        Recovered,
+    };
+
     void
     startRoundInternal(
         NetClock::time_point const& now,
         Ledger_t::ID const& prevLedgerID,
         Ledger_t const& prevLedger,
         ConsensusMode mode,
-        std::unique_ptr<std::stringstream> const& clog);
+        std::unique_ptr<std::stringstream> const& clog,
+        StartRoundReason reason = StartRoundReason::Initial);
 
     // Change our view of the previous ledger
     void
@@ -627,6 +672,67 @@ private:
     // nodes that have bowed out of this consensus process
     hash_set<NodeID_t> deadNodes_;
 
+    /**
+     * Span for the establish phase of consensus.
+     *  Created when the ledger closes and we enter phaseEstablish;
+     *  cleared (ended) when consensus is reached. A thread-free SpanGuard,
+     *  emplaced and reset() on different job workers.
+     */
+    std::optional<xrpl::telemetry::SpanGuard> establishSpan_;
+
+    /**
+     * Captured context of establishSpan_ (its own span context). Children
+     *  (update_positions, check) build from this explicit context.
+     */
+    xrpl::telemetry::SpanContext establishSpanContext_;
+
+    /**
+     * Span for the open phase of consensus.
+     *  Created in startRoundInternal(); cleared (ended) in closeLedger().
+     *  A thread-free SpanGuard, emplaced and reset() on different job workers.
+     */
+    std::optional<xrpl::telemetry::SpanGuard> openSpan_;
+
+    /**
+     * Record how the open-phase span began.
+     *
+     * @param reason      Which startRoundInternal() entry path created it.
+     * @param prevLedger  The prior ledger, read before previousLedger_ is set.
+     */
+    void
+    annotateOpenStart(StartRoundReason reason, Ledger_t const& prevLedger);
+
+    /**
+     * Record what ended the open phase.
+     *
+     * @param closeReason         The deciding whyCloseLedger() branch.
+     * @param proposersValidated  Trusted peers already past the prior ledger.
+     */
+    void
+    annotateOpenClose(LedgerCloseReason closeReason, std::size_t proposersValidated);
+
+    /**
+     * Create the establish-phase span if not yet active.
+     *  Called on each phaseEstablish() invocation; no-op while span is live.
+     */
+    void
+    startEstablishTracing();
+
+    /**
+     * Overwrite convergence metrics on the establish span each iteration.
+     *  Final span attributes always reflect the last state before consensus.
+     */
+    void
+    updateEstablishTracing();
+
+    /**
+     * End the establish span, recording its terminal regime.
+     *  Also called from startRoundInternal() on a wrongLedger recovery, so a
+     *  round that never reaches Accepted still reports the regime it reached.
+     */
+    void
+    endEstablishTracing();
+
     // Journal for debugging
     beast::Journal const j_;
 };
@@ -690,13 +796,52 @@ Consensus<Adaptor>::startRoundInternal(
     Ledger_t::ID const& prevLedgerID,
     Ledger_t const& prevLedger,
     ConsensusMode mode,
-    std::unique_ptr<std::stringstream> const& clog)
+    std::unique_ptr<std::stringstream> const& clog,
+    StartRoundReason const reason)
 {
+    // Recovery path: handleWrongLedger acquired the correct prior ledger
+    // and re-entered startRoundInternal mid-round. The roundSpan_ owned by
+    // the adaptor is still the SAME span as before — startRoundTracing is
+    // not called on the recovery path, so we record the recovery as an
+    // event on the surviving round span. Pass empty phaseLabel to leave
+    // consensus_phase unchanged (the actual phase reset to open is marked
+    // separately by the new openSpan_ being emplaced below).
+    if (reason == StartRoundReason::Recovered)
+    {
+        adaptor_.onPhaseEvent(telemetry::consensus::span::event::phaseRecovery, "");
+    }
+
     phase_ = ConsensusPhase::Open;
     JLOG(j_.debug()) << "transitioned to ConsensusPhase::Open ";
     CLOG(clog) << "startRoundInternal transitioned to ConsensusPhase::Open, "
                   "previous ledgerID: "
                << prevLedgerID << ", seq: " << prevLedger.seq() << ". ";
+    // End establishSpan_ so a wrongLedger recovery mid-establish doesn't leak
+    // the prior round's span into the new one (startEstablishTracing
+    // early-returns when establishSpan_ is populated). Via
+    // endEstablishTracing() so the recovered round still records its terminal
+    // regime; closeTimeAvalancheState_ is not reset until further down.
+    endEstablishTracing();
+    // Child of the round span via its captured context: parent phase.open
+    // explicitly under roundSpanContext_. An invalid round context (round span
+    // not yet created) yields a null guard. openSpan_ is a thread-free
+    // SpanGuard emplaced here on one job worker and reset() on another; no
+    // scope to strip.
+    openSpan_.emplace(
+        telemetry::SpanGuard::childSpan(
+            telemetry::consensus::span::phaseOpen, adaptor_.roundSpanContext()));
+    annotateOpenStart(reason, prevLedger);
+    // On the Recovered path, fire phase.open here because startRoundTracing
+    // (which fires it for the Initial path) is not called on re-entry. On
+    // the Initial path this is a no-op because the round span hasn't been
+    // created yet — the phase.open event is fired later by startRoundTracing
+    // after the new round span is in place.
+    if (reason == StartRoundReason::Recovered)
+    {
+        adaptor_.onPhaseEvent(
+            telemetry::consensus::span::event::phaseOpen,
+            telemetry::consensus::span::val::phaseOpen);
+    }
     mode_.set(mode, adaptor_);
     now_ = now;
     prevLedgerID_ = prevLedgerID;
@@ -720,10 +865,21 @@ Consensus<Adaptor>::startRoundInternal(
     playbackProposals();
     CLOG(clog) << "number of peer proposals,previous proposers: " << currPeerPositions_.size()
                << ',' << prevProposers_ << ". ";
-    if (currPeerPositions_.size() > (prevProposers_ / 2))
+    // We may be falling behind, don't wait for the timer
+    // consider closing the ledger immediately
+    bool const closeImmediately = currPeerPositions_.size() > (prevProposers_ / 2);
+    // Annotate before the timerEntry() below, which can end this span.
+    if (openSpan_ && *openSpan_)
     {
-        // We may be falling behind, don't wait for the timer
-        // consider closing the ledger immediately
+        namespace cs = telemetry::consensus::span;
+        // Head start after playbackProposals() replayed the buffered
+        // positions. Pairs with peer_positions_at_close.
+        openSpan_->setAttribute(
+            cs::attr::peerPositionsAtOpen, static_cast<int64_t>(currPeerPositions_.size()));
+        openSpan_->setAttribute(cs::attr::earlyCloseTriggered, closeImmediately);
+    }
+    if (closeImmediately)
+    {
         CLOG(clog) << "consider closing the ledger immediately. ";
         timerEntry(now_, clog);
     }
@@ -947,6 +1103,9 @@ Consensus<Adaptor>::simulate(
     result_->proposers = prevProposers_ = currPeerPositions_.size();
     prevRoundTime_ = result_->roundTime.read();
     phase_ = ConsensusPhase::Accepted;
+    adaptor_.onPhaseEvent(
+        telemetry::consensus::span::event::phaseAccepted,
+        telemetry::consensus::span::val::phaseAccepted);
     adaptor_.onForceAccept(
         *result_, previousLedger_, closeResolution_, rawCloseTimes_, mode_.get(), getJson(true));
     // NOLINTEND(bugprone-unchecked-optional-access)
@@ -1095,7 +1254,13 @@ Consensus<Adaptor>::handleWrongLedger(
     {
         JLOG(j_.info()) << "Have the consensus ledger " << prevLedgerID_;
         CLOG(clog) << "Have the consensus ledger " << prevLedgerID_ << ". ";
-        startRoundInternal(now_, lgrId, *newLedger, ConsensusMode::SwitchedLedger, clog);
+        startRoundInternal(
+            now_,
+            lgrId,
+            *newLedger,
+            ConsensusMode::SwitchedLedger,
+            clog,
+            StartRoundReason::Recovered);
     }
     else
     {
@@ -1203,20 +1368,23 @@ Consensus<Adaptor>::phaseOpen(std::unique_ptr<std::stringstream> const& clog)
                << ", previous ledger close time resolution: "
                << previousLedger_.closeTimeResolution().count() << "ms. ";
 
-    // Decide if we should close the ledger
-    if (shouldCloseLedger(
-            anyTransactions,
-            prevProposers_,
-            proposersClosed,
-            proposersValidated,
-            prevRoundTime_,
-            sinceClose,
-            openTime_.read(),
-            idleInterval,
-            adaptor_.parms(),
-            j_,
-            clog))
+    // Decide if we should close the ledger. whyCloseLedger() so the deciding
+    // branch can be recorded; it logs the same, so only one is called.
+    LedgerCloseReason const closeReason = whyCloseLedger(
+        anyTransactions,
+        prevProposers_,
+        proposersClosed,
+        proposersValidated,
+        prevRoundTime_,
+        sinceClose,
+        openTime_.read(),
+        idleInterval,
+        adaptor_.parms(),
+        j_,
+        clog);
+    if (closeReason != LedgerCloseReason::KeepOpen)
     {
+        annotateOpenClose(closeReason, proposersValidated);
         CLOG(clog) << "closing ledger. ";
         closeLedger(clog);
     }
@@ -1356,6 +1524,8 @@ Consensus<Adaptor>::phaseEstablish(std::unique_ptr<std::stringstream> const& clo
     XRPL_ASSERT(result_, "xrpl::Consensus::phaseEstablish : result is set");
     // NOLINTBEGIN(bugprone-unchecked-optional-access) assert above
 
+    startEstablishTracing();
+
     ++peerUnchangedCounter_;
     ++establishCounter_;
 
@@ -1383,6 +1553,8 @@ Consensus<Adaptor>::phaseEstablish(std::unique_ptr<std::stringstream> const& clo
 
     updateOurPositions(clog);
 
+    updateEstablishTracing();
+
     // Nothing to do if too many laggards or we don't have consensus.
     if (shouldPause(clog) || !haveConsensus(clog))
         return;
@@ -1400,7 +1572,26 @@ Consensus<Adaptor>::phaseEstablish(std::unique_ptr<std::stringstream> const& clo
     adaptor_.updateOperatingMode(currPeerPositions_.size());
     prevProposers_ = currPeerPositions_.size();
     prevRoundTime_ = result_->roundTime.read();
+    endEstablishTracing();
+    {
+        namespace cs = telemetry::consensus::span;
+        if (result_->state == ConsensusState::Yes)
+        {
+            adaptor_.onOutcomeEvent(cs::event::outcomeYes);
+        }
+        else if (result_->state == ConsensusState::MovedOn)
+        {
+            adaptor_.onOutcomeEvent(cs::event::outcomeMovedOn);
+        }
+        else if (result_->state == ConsensusState::Expired)
+        {
+            adaptor_.onOutcomeEvent(cs::event::outcomeExpired);
+        }
+    }
     phase_ = ConsensusPhase::Accepted;
+    adaptor_.onPhaseEvent(
+        telemetry::consensus::span::event::phaseAccepted,
+        telemetry::consensus::span::val::phaseAccepted);
     JLOG(j_.debug()) << "transitioned to ConsensusPhase::Accepted";
     adaptor_.onAccept(
         *result_,
@@ -1420,7 +1611,26 @@ Consensus<Adaptor>::closeLedger(std::unique_ptr<std::stringstream> const& clog)
     // We should not be closing if we already have a position
     XRPL_ASSERT(!result_, "xrpl::Consensus::closeLedger : result is not set");
 
+    // Annotate the open-phase span with end-of-phase metadata before
+    // ending it, so a Tempo/Jaeger query for consensus.phase.open shows
+    // how long the phase ran and how many peer positions arrived during it.
+    openTime_.tick(clock_.now());
+    if (openSpan_ && *openSpan_)
+    {
+        namespace cs = telemetry::consensus::span;
+        openSpan_->setAttribute(
+            cs::attr::openDurationMs, static_cast<int64_t>(openTime_.read().count()));
+        openSpan_->setAttribute(
+            cs::attr::peerPositionsAtClose, static_cast<int64_t>(currPeerPositions_.size()));
+        // Read before our own position is added below, so this counts only
+        // what peers shared.
+        openSpan_->setAttribute(cs::attr::txSetsAcquired, static_cast<int64_t>(acquired_.size()));
+    }
+    openSpan_.reset();
     phase_ = ConsensusPhase::Establish;
+    adaptor_.onPhaseEvent(
+        telemetry::consensus::span::event::phaseEstablish,
+        telemetry::consensus::span::val::phaseEstablish);
     JLOG(j_.debug()) << "transitioned to ConsensusPhase::Establish";
     rawCloseTimes_.self = now_;
     peerUnchangedCounter_ = 0;
@@ -1477,6 +1687,18 @@ Consensus<Adaptor>::updateOurPositions(std::unique_ptr<std::stringstream> const&
     // We must have a position if we are updating it
     XRPL_ASSERT(result_, "xrpl::Consensus::updateOurPositions : result is set");
     // NOLINTBEGIN(bugprone-unchecked-optional-access) assert above
+    using namespace telemetry;
+    // Child of the establish span via its captured context (establishSpan_ is
+    // a thread-free SpanGuard, so parent explicitly via its context). A null
+    // context — the establish phase has not started — yields a null guard, so
+    // the setAttribute calls below are no-ops.
+    auto span = SpanGuard::childSpan(consensus::span::updatePositions, establishSpanContext_);
+    span.setAttribute(
+        consensus::span::attr::convergePercent, static_cast<int64_t>(convergePercent_));
+    span.setAttribute(
+        consensus::span::attr::proposers, static_cast<int64_t>(currPeerPositions_.size()));
+    span.setAttribute(
+        consensus::span::attr::disputesCount, static_cast<int64_t>(result_->disputes.size()));
     ConsensusParms const& parms = adaptor_.parms();
 
     // Compute a cutoff time
@@ -1536,6 +1758,24 @@ Consensus<Adaptor>::updateOurPositions(std::unique_ptr<std::stringstream> const&
                     // now a no
                     mutableSet->erase(txId);
                 }
+
+                // The event exists only for the span, so it is guarded on the
+                // span being active. Unguarded, every dispute that flips
+                // position builds a 64-character tx hash plus two number
+                // strings, on every establish tick.
+                if (span)
+                {
+                    auto const yaysStr = std::to_string(dispute.getYays());
+                    auto const naysStr = std::to_string(dispute.getNays());
+                    span.addEvent(
+                        consensus::span::event::disputeResolve,
+                        {{consensus::span::attr::txId, to_string(txId)},
+                         {consensus::span::attr::disputeOurVote,
+                          dispute.getOurVote() ? std::string_view{consensus::span::val::yes}
+                                               : std::string_view{consensus::span::val::no}},
+                         {consensus::span::attr::disputeYays, yaysStr},
+                         {consensus::span::attr::disputeNays, naysStr}});
+                }
             }
         }
 
@@ -1560,6 +1800,8 @@ Consensus<Adaptor>::updateOurPositions(std::unique_ptr<std::stringstream> const&
         if (newState)
             closeTimeAvalancheState_ = *newState;
         CLOG(clog) << "neededWeight " << neededWeight << ". ";
+        span.setAttribute(
+            consensus::span::attr::avalancheThreshold, static_cast<int64_t>(neededWeight));
 
         int participants = currPeerPositions_.size();
         if (mode_.get() == ConsensusMode::Proposing)
@@ -1614,6 +1856,10 @@ Consensus<Adaptor>::updateOurPositions(std::unique_ptr<std::stringstream> const&
         }
     }
 
+    span.setAttribute(consensus::span::attr::haveCloseTimeConsensus, haveCloseTimeConsensus_);
+    span.setAttribute(
+        consensus::span::attr::closeTimeThreshold, static_cast<int64_t>(parms.avCtConsensusPct));
+
     if (!ourNewSet &&
         ((consensusCloseTime != asCloseTime(result_->position.closeTime())) ||
          result_->position.isStale(ourCutoff)))
@@ -1665,6 +1911,10 @@ Consensus<Adaptor>::haveConsensus(std::unique_ptr<std::stringstream> const& clog
     // Must have a stance if we are checking for consensus
     XRPL_ASSERT(result_, "xrpl::Consensus::haveConsensus : has result");
     // NOLINTBEGIN(bugprone-unchecked-optional-access) assert above
+    using namespace telemetry;
+    // Child of the establish span via its captured context (establishSpan_ is
+    // a thread-free SpanGuard, so parent explicitly via its context).
+    auto span = SpanGuard::childSpan(consensus::span::check, establishSpanContext_);
 
     // CHECKME: should possibly count unacquired TX sets as disagreeing
     int agree = 0, disagree = 0;
@@ -1722,6 +1972,38 @@ Consensus<Adaptor>::haveConsensus(std::unique_ptr<std::stringstream> const& clog
         mode_.get() == ConsensusMode::Proposing,
         j_,
         clog);
+
+    // Set span attributes before the early-return branches below so the
+    // consensus.check span carries diagnostic data even when consensus is
+    // not reached (the No / Expired paths return early).
+    span.setAttribute(consensus::span::attr::agreeCount, static_cast<int64_t>(agree));
+    span.setAttribute(consensus::span::attr::disagreeCount, static_cast<int64_t>(disagree));
+    span.setAttribute(
+        consensus::span::attr::convergePercent, static_cast<int64_t>(convergePercent_));
+    span.setAttribute(consensus::span::attr::haveCloseTimeConsensus, haveCloseTimeConsensus_);
+    span.setAttribute(
+        consensus::span::attr::thresholdPercent,
+        static_cast<int64_t>(adaptor_.parms().avCtConsensusPct));
+    span.setAttribute(
+        consensus::span::attr::proposersFinished, static_cast<int64_t>(currentFinished));
+    span.setAttribute(consensus::span::attr::consensusStalled, stalled);
+    span.setAttribute(
+        consensus::span::attr::establishCount, static_cast<int64_t>(establishCounter_));
+
+    std::string_view stateStr = consensus::span::val::no;
+    if (result_->state == ConsensusState::Yes)
+    {
+        stateStr = consensus::span::val::yes;
+    }
+    else if (result_->state == ConsensusState::MovedOn)
+    {
+        stateStr = consensus::span::val::movedOn;
+    }
+    else if (result_->state == ConsensusState::Expired)
+    {
+        stateStr = consensus::span::val::expired;
+    }
+    span.setAttribute(consensus::span::attr::consensusResult, stateStr);
 
     if (result_->state == ConsensusState::No)
     {
@@ -1883,6 +2165,91 @@ NetClock::time_point
 Consensus<Adaptor>::asCloseTime(NetClock::time_point raw) const
 {
     return roundCloseTime(raw, closeResolution_);
+}
+
+template <class Adaptor>
+void
+Consensus<Adaptor>::annotateOpenStart(StartRoundReason const reason, Ledger_t const& prevLedger)
+{
+    if (!openSpan_ || !*openSpan_)
+        return;
+    namespace cs = telemetry::consensus::span;
+    openSpan_->setAttribute(
+        cs::attr::startReason,
+        reason == StartRoundReason::Recovered ? std::string_view{cs::val::startRecovered}
+                                              : std::string_view{cs::val::startInitial});
+    // From the parameter: previousLedger_ is not assigned until later.
+    openSpan_->setAttribute(cs::attr::previousCloseAgree, prevLedger.closeAgree());
+}
+
+template <class Adaptor>
+void
+Consensus<Adaptor>::annotateOpenClose(
+    LedgerCloseReason const closeReason,
+    std::size_t const proposersValidated)
+{
+    // Called before closeLedger() ends the span, and only on the closing tick,
+    // so each attribute is written once per round.
+    if (!openSpan_ || !*openSpan_)
+        return;
+    namespace cs = telemetry::consensus::span;
+    openSpan_->setAttribute(cs::attr::closeReason, cs::closeReasonLabel(closeReason));
+    openSpan_->setAttribute(cs::attr::proposersValidated, static_cast<int64_t>(proposersValidated));
+}
+
+template <class Adaptor>
+void
+Consensus<Adaptor>::startEstablishTracing()
+{
+    if (establishSpan_)
+        return;
+    // Child of the round span via its captured context: parent establish
+    // explicitly under roundSpanContext_. An invalid round context (round span
+    // not yet created) yields a null guard.
+    establishSpan_.emplace(
+        telemetry::SpanGuard::childSpan(
+            telemetry::consensus::span::establish, adaptor_.roundSpanContext()));
+    // Capture the establish context; children (update_positions, check) parent
+    // to it explicitly via establishSpanContext_. establishSpan_ is a
+    // thread-free SpanGuard reset() on a different worker than it is emplaced
+    // on -- no scope work.
+    if (*establishSpan_)
+    {
+        establishSpanContext_ = establishSpan_->spanContext();
+    }
+}
+
+template <class Adaptor>
+void
+Consensus<Adaptor>::updateEstablishTracing()
+{
+    if (!establishSpan_)
+        return;
+    namespace cs = telemetry::consensus::span;
+    establishSpan_->setAttribute(cs::attr::convergePercent, static_cast<int64_t>(convergePercent_));
+    establishSpan_->setAttribute(cs::attr::establishCount, static_cast<int64_t>(establishCounter_));
+    establishSpan_->setAttribute(
+        cs::attr::proposers, static_cast<int64_t>(currPeerPositions_.size()));
+    if (result_)
+    {
+        establishSpan_->setAttribute(
+            cs::attr::disputesCount, static_cast<int64_t>(result_->disputes.size()));
+    }
+}
+
+template <class Adaptor>
+void
+Consensus<Adaptor>::endEstablishTracing()
+{
+    // Terminal convergence regime, recorded once before the span ends.
+    if (establishSpan_ && *establishSpan_)
+    {
+        namespace cs = telemetry::consensus::span;
+        establishSpan_->setAttribute(
+            cs::attr::closeTimeAvalancheState, cs::avalancheStateLabel(closeTimeAvalancheState_));
+    }
+    establishSpan_.reset();
+    establishSpanContext_ = telemetry::SpanContext{};
 }
 
 }  // namespace xrpl

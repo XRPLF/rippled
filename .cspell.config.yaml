@@ -69,6 +69,7 @@ words:
   - Btrfs
   - Buildx
   - canonicality
+  - CGNAT
   - canonicalised
   - cctools
   - changespq
@@ -103,6 +104,8 @@ words:
   - dearmor
   - decryptor
   - dedented
+  - Dedup
+  - dedup
   - deleteme
   - demultiplexer
   - deserializaton
@@ -113,14 +116,17 @@ words:
   - distro
   - doxyfile
   - dsymutil
+  - dthms
   - dxrpl
   - elgamal
   - enabled
   - enablerepo
   - endmacro
   - envrc
+  - EOCFG
   - exceptioned
   - EXPECT_STREQ
+  - exfiltration
   - Falco
   - fcontext
   - finalizers
@@ -129,6 +135,8 @@ words:
   - fsanitize
   - funclets
   - Gamal
+  - gantt
+  - Gantt
   - gcov
   - gcovr
   - ghead
@@ -136,12 +144,16 @@ words:
   - godexsoft
   - gpgcheck
   - gpgkey
+  - havetxset
   - Hinnant
   - hotwallet
+  - hicpp
+  - htpasswd
   - hwaddress
   - hwrap
   - ifndef
   - inequation
+  - initialiser
   - Injectivity
   - insuf
   - insuff
@@ -153,6 +165,7 @@ words:
   - itype
   - jemalloc
   - jlog
+  - jmeter
   - jtnofill
   - keylet
   - keylets
@@ -170,6 +183,7 @@ words:
   - libxrpl
   - llection
   - LOCALGOOD
+  - logql
   - logwstream
   - Lombrozo
   - lresolv
@@ -179,11 +193,10 @@ words:
   - mathbunnyru
   - mcmodel
   - MEMORYSTATUSEX
-  - MPTAMM
-  - MPTDEX
   - Merkle
   - misprediction
   - missingok
+  - MPTAMM
   - mptbalance
   - MPTDEX
   - mptflags
@@ -213,11 +226,13 @@ words:
   - nixfmt
   - nixos
   - nixpkgs
+  - NETOP
   - NOLINT
   - NOLINTNEXTLINE
   - nonxrp
   - noreplace
   - noripple
+  - nostd
   - nostdinc
   - notifempty
   - nudb
@@ -226,6 +241,8 @@ words:
   - Nyffenegger
   - onlatest
   - ostr
+  - otelc
+  - otelcol
   - otool
   - oxalica
   - pargs
@@ -236,8 +253,12 @@ words:
   - permdex
   - perminute
   - permissioned
+  - pgrep
+  - pkill
+  - pimpl
   - pointee
   - populator
+  - pratik
   - preauth
   - preauthorization
   - preauthorize
@@ -253,11 +274,14 @@ words:
   - qalloc
   - qbsprofile
   - queuable
+  - ransitioned
   - Raphson
   - rcflags
+  - reparent
   - replayer
   - repodata
   - repomd
+  - reqps
   - rerandomize
   - rerandomization
   - rerandomized
@@ -281,6 +305,11 @@ words:
   - rustfmt
   - rustup
   - sahyadri
+  - sanitisation
+  - sanitise
+  - sanitised
+  - sanitiser
+  - sanitising
   - Satoshi
   - scons
   - Schnorr
@@ -301,6 +330,7 @@ words:
   - soci
   - socidb
   - Sonatype
+  - speciality
   - sponsee
   - sponsees
   - SRPMS
@@ -308,6 +338,7 @@ words:
   - statsd
   - STATSDCOLLECTOR
   - stissue
+  - stledgerentry
   - stnum
   - stobj
   - stobject
@@ -321,12 +352,14 @@ words:
   - superpeer
   - superpeers
   - Swatinem
+  - synthesise
   - takergets
   - takerpays
   - ters
   - TMEndpointv2
   - toolchain
   - tparam
+  - traceql
   - trixie
   - tx
   - txid
@@ -334,6 +367,7 @@ words:
   - txjson
   - txn
   - txns
+  - txqueue
   - txs
   - ubsan
   - UBSAN
@@ -348,6 +382,8 @@ words:
   - unfindable
   - unflatten
   - unfund
+  - ungated
+  - unheld
   - unimpair
   - unroutable
   - unscalable
@@ -358,17 +394,20 @@ words:
   - unsquelch
   - unsquelched
   - unsquelching
+  - unstored
   - unsuffixed
   - unvalidated
   - unveto
   - unvetoed
   - upvotes
   - USDB
+  - utilisation
   - variadics
   - venv
   - vfalco
   - vinnie
   - wasmi
+  - werror
   - wextra
   - wptr
   - writeme
@@ -386,6 +425,8 @@ words:
   - xrplf
   - xxhash
   - xxhasher
+  - xychart
+  - zpages
   - zstdio
-  - CGNAT
-  - ungated
+  - ripplex
+  - mseconds

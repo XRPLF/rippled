@@ -21,6 +21,12 @@ set_target_properties(
 )
 # Lets test sources include the shared helpers as <helpers/...>.
 target_include_directories(xrpl_tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+# Two tests reach a header under src/xrpld/ rather than in libxrpl:
+# ledger/AcquireStats.cpp includes <xrpld/app/ledger/AcquireStats.h> and
+# telemetry/RpcMetricNames.cpp includes <xrpld/rpc/detail/Tuning.h>. Put src/ on
+# the include path so both resolve as <xrpld/...>. This is unconditional because
+# those headers are header-only and testable in every build, telemetry or not.
+target_include_directories(xrpl_tests PRIVATE ${CMAKE_SOURCE_DIR}/src)
 target_link_libraries(xrpl_tests PRIVATE GTest::gtest GTest::gmock xrpl.libxrpl)
 
 # One source subdirectory per module. Network unit tests are currently not
@@ -40,6 +46,7 @@ set(test_modules
     tx
     protocol_autogen
     server
+    telemetry
 )
 if(NOT WIN32)
     list(APPEND test_modules net)
@@ -87,6 +94,36 @@ target_sources(xrpl_tests PRIVATE ${csf_sources})
 # so verify them against the test binary's own compile environment.
 if(verify_headers)
     verify_target_headers(xrpl_tests "${CMAKE_CURRENT_SOURCE_DIR}")
+endif()
+
+# The telemetry test module exercises SpanGuard/Telemetry, which link against
+# the OpenTelemetry SDK when the telemetry build option is enabled.
+if(telemetry)
+    # The SpanGuardScope tests drive an InMemorySpanExporter to read exported
+    # spans (test-only; production never uses it). The Conan package ships
+    # libopentelemetry_exporter_in_memory.a but declares the component with no
+    # libs, so neither the umbrella target nor opentelemetry-cpp::exporter_in_memory
+    # puts the archive on the link line. Locate it by path and link it BEFORE
+    # the umbrella so its undefined SDK references resolve against the umbrella.
+    # CMakeDeps suffixes its variables with the upper-cased build type, so a
+    # hardcoded _RELEASE hint is empty in any other config and the archive is
+    # then only found by luck. Derive the suffix instead. An empty hint is not
+    # fatal on its own: the Conan toolchain puts the package on
+    # CMAKE_PREFIX_PATH, which find_library searches anyway. REQUIRED turns a
+    # miss into a configure error rather than a link error.
+    string(TOUPPER "${CMAKE_BUILD_TYPE}" otel_build_type)
+    find_library(
+        OTEL_IN_MEMORY_EXPORTER_LIB
+        NAMES opentelemetry_exporter_in_memory
+        HINTS "${opentelemetry-cpp_LIB_DIRS_${otel_build_type}}"
+        REQUIRED
+    )
+    target_link_libraries(
+        xrpl_tests
+        PRIVATE
+            "${OTEL_IN_MEMORY_EXPORTER_LIB}"
+            opentelemetry-cpp::opentelemetry-cpp
+    )
 endif()
 
 gtest_discover_tests(xrpl_tests DISCOVERY_TIMEOUT 60)

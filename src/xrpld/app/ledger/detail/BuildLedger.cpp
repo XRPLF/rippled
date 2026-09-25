@@ -2,6 +2,7 @@
 
 #include <xrpld/app/ledger/LedgerReplay.h>
 #include <xrpld/app/ledger/OpenLedger.h>
+#include <xrpld/app/ledger/detail/LedgerSpanNames.h>
 #include <xrpld/app/main/Application.h>
 
 #include <xrpl/basics/Log.h>
@@ -18,9 +19,13 @@
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SystemParameters.h>  // IWYU pragma: keep
 #include <xrpl/protocol/TxFlags.h>
+#include <xrpl/telemetry/SpanGuard.h>
+#include <xrpl/telemetry/SpanNames.h>
 #include <xrpl/tx/apply.h>
 
+#include <chrono>
 #include <cstddef>
+#include <cstdint>
 #include <exception>
 #include <memory>
 #include <set>
@@ -44,6 +49,11 @@ buildLedgerImpl(
     beast::Journal j,
     ApplyTxs&& applyTxs)
 {
+    using namespace telemetry;
+    // Scoped so tx.apply (created synchronously below during applyTxs on this
+    // thread) nests under it. buildLedgerImpl runs synchronously with no yield.
+    auto buildSpan = ScopedSpanGuard(TraceCategory::Ledger, seg::ledger, ledger_span::op::build);
+
     auto built = std::make_shared<Ledger>(*parent, closeTime);
 
     if (built->isFlagLedger())
@@ -77,6 +87,15 @@ buildLedgerImpl(
         built->header().seq < kXrpLedgerEarliestFees || built->read(keylet::feeSettings()),
         "xrpl::buildLedgerImpl : valid ledger fees");
     built->setAccepted(closeTime, closeResolution, closeTimeCorrect);
+    buildSpan.setAttribute(ledger_span::attr::ledgerSeq, static_cast<int64_t>(built->header().seq));
+    buildSpan.setAttribute(
+        ledger_span::attr::closeTimeRippleEpochS,
+        static_cast<int64_t>(closeTime.time_since_epoch().count()));
+    buildSpan.setAttribute(ledger_span::attr::closeTimeCorrect, closeTimeCorrect);
+    buildSpan.setAttribute(
+        ledger_span::attr::closeResolutionMs,
+        static_cast<int64_t>(
+            std::chrono::duration_cast<std::chrono::milliseconds>(closeResolution).count()));
 
     return built;
 }
@@ -101,6 +120,9 @@ applyTransactions(
     OpenView& view,
     beast::Journal j)
 {
+    using namespace telemetry;
+    auto applySpan = SpanGuard::span(TraceCategory::Transactions, seg::tx, ledger_span::op::apply);
+
     bool certainRetry = true;
     std::size_t count = 0;
 
@@ -167,6 +189,14 @@ applyTransactions(
     // If there are any transactions left, we must have
     // tried them in at least one final pass
     XRPL_ASSERT(txns.empty() || !certainRetry, "xrpl::applyTransactions : retry transactions");
+    // Repeated from the parent ledger.build span on purpose: TraceQL cannot
+    // reach a parent's attributes from a child, so without it no query can
+    // select this span by ledger. `view` is the accumulator over the ledger
+    // being built and copies its header, so this is the same sequence number
+    // the parent reports.
+    applySpan.setAttribute(ledger_span::attr::ledgerSeq, static_cast<int64_t>(view.seq()));
+    applySpan.setAttribute(ledger_span::attr::txCount, static_cast<int64_t>(count));
+    applySpan.setAttribute(ledger_span::attr::txFailed, static_cast<int64_t>(failed.size()));
     return count;
 }
 

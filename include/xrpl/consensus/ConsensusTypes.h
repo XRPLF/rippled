@@ -81,9 +81,31 @@ to_string(ConsensusMode m)
 }
 
 /**
+ * Title Case display name for telemetry attributes and dashboards.
+ * Separate from to_string() which is used in logs and must remain stable.
+ */
+inline std::string
+toDisplayString(ConsensusMode m)
+{
+    switch (m)
+    {
+        case ConsensusMode::Proposing:
+            return "Proposing";
+        case ConsensusMode::Observing:
+            return "Observing";
+        case ConsensusMode::WrongLedger:
+            return "Wrong Ledger";
+        case ConsensusMode::SwitchedLedger:
+            return "Switched Ledger";
+        default:
+            return "Unknown";
+    }
+}
+
+/**
  * Phases of consensus for a single ledger round.
  *
- *  @code
+ * @code
  *        "close"             "accept"
  *   open ------- > establish ---------> accepted
  *     ^               |                    |
@@ -131,6 +153,41 @@ to_string(ConsensusPhase p)
             return "unknown";
     }
 }
+
+/**
+ * Why the open ledger should, or should not, close right now.
+ *
+ * Returned by whyCloseLedger(); shouldCloseLedger() reduces it to a bool.
+ *
+ * @note KeepOpen is not a close reason. Compare against it rather than
+ * treating the enum as a flag.
+ */
+enum class LedgerCloseReason : std::uint8_t {
+    /**
+     * No close condition is met yet.
+     */
+    KeepOpen,
+
+    /**
+     * Timings out of range; close defensively.
+     */
+    Anomaly,
+
+    /**
+     * More than half the network has closed or validated.
+     */
+    OthersClosed,
+
+    /**
+     * Nothing waiting and the idle interval elapsed.
+     */
+    Idle,
+
+    /**
+     * Transactions waiting and both minimum-open floors met.
+     */
+    Normal,
+};
 
 /**
  * Measures the duration of phases of consensus

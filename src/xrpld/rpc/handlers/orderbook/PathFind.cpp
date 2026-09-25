@@ -1,6 +1,8 @@
 #include <xrpld/app/ledger/LedgerMaster.h>
 #include <xrpld/app/main/Application.h>
 #include <xrpld/rpc/Context.h>
+#include <xrpld/rpc/detail/PathFindSpanAttributes.h>
+#include <xrpld/rpc/detail/PathFindSpanNames.h>
 #include <xrpld/rpc/detail/PathRequestManager.h>
 
 #include <xrpl/json/json_value.h>
@@ -9,24 +11,61 @@
 #include <xrpl/protocol/jss.h>
 #include <xrpl/resource/Fees.h>
 #include <xrpl/server/InfoSub.h>
+#include <xrpl/telemetry/SpanGuard.h>
+
+#include <utility>
 
 namespace xrpl {
 
 json::Value
 doPathFind(rpc::JsonContext& context)
 {
+    using namespace telemetry;
+    // Scoped so pathfind.compute/discover (created synchronously below on this
+    // thread) nest under it. doPathFind does not yield, so scoping is safe.
+    auto span = ScopedSpanGuard(
+        TraceCategory::Rpc, pathfind_span::prefix::pathfind, pathfind_span::op::request);
+    // Guarded on the span being live because the account parse below is not
+    // free and runs on every path_find call otherwise. The compiled-out
+    // guard's operator bool() is a literal false, so the block disappears
+    // entirely in that build; with telemetry compiled in it is skipped when
+    // telemetry is disabled at runtime or the category is off.
+    if (span)
+    {
+        // Read through a const reference: the non-const json::Value::operator[]
+        // inserts a null for a missing key, which would make
+        // PathRequest::parseJson's isMember() checks see an absent field as
+        // present and return Malformed instead of Missing. Reading for
+        // telemetry must not alter what the request looks like.
+        auto const& params = std::as_const(context.params);
+        pathfind_span::setAccountAttribute(
+            span, pathfind_span::attr::sourceAccount, params[jss::source_account]);
+        pathfind_span::setAccountAttribute(
+            span, pathfind_span::attr::destAccount, params[jss::destination_account]);
+    }
+
+    // A failed reply carries the rpc error token, so reading the status off the
+    // reply covers every exit, including the ones whose reply is built further
+    // down the call chain. The token set is fixed by the error registry, so it
+    // is safe as a span label; raw request text would not be.
+    auto const finish = [&span](json::Value&& reply) -> json::Value {
+        if (span && rpc::containsError(reply))
+            span.setError(std::as_const(reply)[jss::error].asString());
+        return std::move(reply);
+    };
+
     if (context.app.config().pathSearchMax == 0)
-        return rpcError(RpcNotSupported);
+        return finish(rpcError(RpcNotSupported));
 
     auto lpLedger = context.ledgerMaster.getClosedLedger();
 
     if (!context.params.isMember(jss::subcommand) || !context.params[jss::subcommand].isString())
     {
-        return rpcError(RpcInvalidParams);
+        return finish(rpcError(RpcInvalidParams));
     }
 
     if (!context.infoSub)
-        return rpcError(RpcNoEvents);
+        return finish(rpcError(RpcNoEvents));
 
     context.infoSub->setApiVersion(context.apiVersion);
 
@@ -36,8 +75,8 @@ doPathFind(rpc::JsonContext& context)
     {
         context.loadType = resource::kFeeHeavyBurdenRpc;
         context.infoSub->clearRequest();
-        return context.app.getPathRequestManager().makePathRequest(
-            context.infoSub, lpLedger, context.params);
+        return finish(context.app.getPathRequestManager().makePathRequest(
+            context.infoSub, lpLedger, context.params));
     }
 
     if (sSubCommand == "close")
@@ -45,10 +84,10 @@ doPathFind(rpc::JsonContext& context)
         InfoSubRequest::pointer const request = context.infoSub->getRequest();
 
         if (!request)
-            return rpcError(RpcNoPfRequest);
+            return finish(rpcError(RpcNoPfRequest));
 
         context.infoSub->clearRequest();
-        return request->doClose();
+        return finish(request->doClose());
     }
 
     if (sSubCommand == "status")
@@ -56,12 +95,12 @@ doPathFind(rpc::JsonContext& context)
         InfoSubRequest::pointer const request = context.infoSub->getRequest();
 
         if (!request)
-            return rpcError(RpcNoPfRequest);
+            return finish(rpcError(RpcNoPfRequest));
 
-        return request->doStatus(context.params);
+        return finish(request->doStatus(context.params));
     }
 
-    return rpcError(RpcInvalidParams);
+    return finish(rpcError(RpcInvalidParams));
 }
 
 }  // namespace xrpl
