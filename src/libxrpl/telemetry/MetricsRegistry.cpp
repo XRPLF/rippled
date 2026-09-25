@@ -30,6 +30,7 @@
 #include <xrpl/basics/Log.h>
 #include <xrpl/telemetry/GetObjectMetricNames.h>
 #include <xrpl/telemetry/HistogramBuckets.h>
+#include <xrpl/telemetry/MetricNames.h>
 #include <xrpl/telemetry/RpcMetricNames.h>
 #include <xrpl/telemetry/SpanNames.h>
 // For networkTypeFromId(), the one xrpl.network.type mapping both export
@@ -79,11 +80,18 @@ constexpr char kJobQueuedDurationUs[] = "job_queued_us";
 constexpr char kJobRunningDurationUs[] = "job_running_us";
 constexpr char kRpcMethodDurationUs[] = "rpc_method_us";
 
-// Attribute (label) keys for the job instruments. Each is referenced from
-// several record sites, and a counter and its histogram must carry exactly
-// the same key spelling or the two series cannot be joined in a query.
-constexpr char kJobTypeLabel[] = "job_type";
-constexpr char kHandlerLabel[] = "handler";
+// Millisecond-valued duration histogram instrument names. Same
+// register-then-create pairing as the microsecond names above, so the same
+// reason applies for naming them: the view and the record site must agree.
+//
+// consensus_round_duration_ms is recorded from RCLConsensus at the call site
+// (via XRPL_METRIC_HISTOGRAM_RECORD, which creates the instrument lazily
+// there), not created here. Only the VIEW is registered here, because a view
+// matches by instrument name and must exist before the instrument is first
+// used — the MeterProvider is built with the view registry, and the round
+// histogram is not created until the first consensus round completes, well
+// after start().
+constexpr char kConsensusRoundDurationMs[] = "consensus_round_duration_ms";
 
 /**
  * Register an explicit-bucket histogram view.
@@ -125,8 +133,8 @@ addHistogramView(
  * Job wait/run times and RPC latencies routinely exceed the SDK default
  * ceiling, so they all share `buckets::kMicrosecondBuckets`.
  *
- * @param views   The registry to add the view to.
- * @param name    Instrument name to match.
+ * @param views The registry to add the view to.
+ * @param name  Instrument name to match (e.g. "job_running_us").
  */
 void
 addMicrosecondHistogramView(metric_sdk::ViewRegistry& views, std::string const& name)
@@ -135,6 +143,65 @@ addMicrosecondHistogramView(metric_sdk::ViewRegistry& views, std::string const& 
         views,
         name,
         xrpl::telemetry::buckets::toVector(xrpl::telemetry::buckets::kMicrosecondBuckets));
+}
+
+/**
+ * Register the explicit-bucket view for a consensus-round duration in
+ * MILLISECONDS.
+ *
+ * The round histogram needs its own boundaries for two reasons. The SDK
+ * default tops out at 10,000 ms, and a recovering or stalled node routinely
+ * rounds slower than that — the consensus parameters themselves allow up to
+ * `ledgerAbandonConsensus` = 120 s — so the default would collapse exactly the
+ * slow rounds this signal exists to show into one saturated top bucket. And a
+ * healthy round is about 3-4 s, which the default's coarse spacing near that
+ * value cannot resolve, so a round drifting from 3 s to 5 s would not move any
+ * quantile.
+ *
+ * Boundaries: 500ms, 1s, 2s, 3s, 4s, 5s, 7.5s, 10s, 15s, 20s, 30s, 60s, 120s.
+ * Dense across the healthy 2-5 s band, then widening to the 120 s abandon
+ * limit so a stalled round still lands in a real bucket.
+ *
+ * @param views The registry to add the view to.
+ * @param name  Instrument name to match ("consensus_round_duration_ms").
+ */
+void
+addRoundDurationHistogramView(metric_sdk::ViewRegistry& views, std::string const& name)
+{
+    addHistogramView(
+        views,
+        name,
+        {500.0,
+         1'000.0,
+         2'000.0,
+         3'000.0,
+         4'000.0,
+         5'000.0,
+         7'500.0,
+         10'000.0,
+         15'000.0,
+         20'000.0,
+         30'000.0,
+         60'000.0,
+         120'000.0});
+}
+
+/**
+ * Register the seconds-ladder view for an online-delete rotation phase.
+ *
+ * Rotation phases run from seconds to many minutes, far past the SDK default
+ * ceiling, so they share `buckets::kRotationPhaseSecondsBuckets`.
+ *
+ * @param views The registry to add the view to.
+ * @param name  Instrument name to match ("rotation_phase_duration_seconds").
+ */
+void
+addRotationPhaseHistogramView(metric_sdk::ViewRegistry& views, std::string const& name)
+{
+    addHistogramView(
+        views,
+        name,
+        xrpl::telemetry::buckets::toVector(xrpl::telemetry::buckets::kRotationPhaseSecondsBuckets));
 }
 
 }  // namespace
@@ -271,16 +338,80 @@ MetricsRegistry::initExporterAndProvider(Options const& options)
         attrs[std::string(attr::nodeId)] = options.nodeId;
     auto resourceAttrs = otel_resource::Resource::Create(attrs);
 
-    // Build a view registry with explicit microsecond buckets for the
-    // duration histograms. Without this they use the SDK default buckets
-    // (max 10,000 = 10 ms), saturating every quantile at 10 ms.
+    // Build a view registry with explicit buckets for the duration
+    // histograms. Without this they use the SDK default buckets (max 10,000),
+    // which saturates every quantile at 10 ms for the µs instruments and at
+    // 10 s for the round histogram.
     auto views = std::make_unique<metric_sdk::ViewRegistry>();
     addMicrosecondHistogramView(*views, kJobQueuedDurationUs);
     addMicrosecondHistogramView(*views, kJobRunningDurationUs);
     addMicrosecondHistogramView(*views, kRpcMethodDurationUs);
+    // Millisecond-scale: recorded at the RCLConsensus call site, so only the
+    // view is declared here (see the constant's comment).
+    addRoundDurationHistogramView(*views, kConsensusRoundDurationMs);
+
+    // Recorded at its SHAMapStoreImp RotationPhase destructor, only the view
+    // lives here. Seconds ladder from HistogramBuckets.h.
+    addRotationPhaseHistogramView(*views, metric::rotationPhaseDurationSeconds);
+
     // Recorded at its PeerImp.cpp call site, not created here, so the name
     // comes from the shared constant both sites use.
     addMicrosecondHistogramView(*views, kGetObjectLookupUs);
+
+    // Sweep malloc_trim duration. Shares the microsecond ladder rather than
+    // getting a bespoke one, and the ladder is what makes it readable: a trim on
+    // a small heap lands in the tens-of-microseconds buckets, while a trim on a
+    // multi-gigabyte resident heap runs well past 10 ms -- which is exactly the
+    // large-existing-database case this signal exists to catch. With the SDK
+    // default ceiling of 10,000 every one of those would collapse into the
+    // overflow bucket and p95 would read exactly 10 ms however bad it got. The
+    // shared ladder's upper reaches (25 ms, 50 ms, 100 ms, 250 ms, 500 ms, 1 s
+    // and beyond) resolve those, and its lower reaches (100 us, 500 us) resolve
+    // the healthy fresh-node case, so a per-instrument ladder would add a second
+    // thing to maintain for no extra resolution.
+    addMicrosecondHistogramView(*views, metric::sweepMallocTrimUs);
+
+    // Millisecond dial/resolve latencies. Both exceed the SDK default ceiling
+    // of 10,000: the dial timer is 15 s, so without an explicit ladder every
+    // timed-out dial lands in the overflow bucket and p95 reads exactly 10 s
+    // however bad it gets. The 15 s boundary sits on its own so a timeout is
+    // distinguishable from merely slow.
+    addHistogramView(
+        *views,
+        metric::dnsResolveLatencyMs,
+        {1.0,
+         5.0,
+         10.0,
+         25.0,
+         50.0,
+         100.0,
+         250.0,
+         500.0,
+         1'000.0,
+         2'500.0,
+         5'000.0,
+         10'000.0,
+         15'000.0,
+         20'000.0,
+         30'000.0});
+    addHistogramView(
+        *views,
+        metric::overlayDialLatencyMs,
+        {1.0,
+         5.0,
+         10.0,
+         25.0,
+         50.0,
+         100.0,
+         250.0,
+         500.0,
+         1'000.0,
+         2'500.0,
+         5'000.0,
+         10'000.0,
+         15'000.0,
+         20'000.0,
+         30'000.0});
 
     // The remaining two GetObject histograms are not durations, so the
     // microsecond ladder above does not fit them. Both still need explicit
@@ -339,6 +470,8 @@ MetricsRegistry::initSyncInstruments()
     jobQueuedCounter_ = meter_->CreateUInt64Counter("job_queued_total", "Total jobs enqueued");
     jobStartedCounter_ = meter_->CreateUInt64Counter("job_started_total", "Total jobs started");
     jobFinishedCounter_ = meter_->CreateUInt64Counter("job_finished_total", "Total jobs completed");
+    jobStallCounter_ = meter_->CreateUInt64Counter(
+        metric::jobqStallTotal, "Jobs whose run time reached the 1 s stall threshold");
     jobQueuedDurationHistogram_ = meter_->CreateDoubleHistogram(
         kJobQueuedDurationUs, "Time jobs spent waiting in the queue (microseconds)");
     jobRunningDurationHistogram_ =
@@ -351,10 +484,12 @@ MetricsRegistry::initSyncInstruments()
         "validations_sent_total", "Total validations sent by this node");
     validationsCheckedCounter_ = meter_->CreateUInt64Counter(
         "validations_checked_total", "Total network validations received and checked");
-    stateChangesCounter_ =
-        meter_->CreateUInt64Counter("state_changes_total", "Total operating mode changes");
+    // state_changes_total is NOT created here. It is emitted at its call site
+    // (NetworkOPsImp::setMode) through XRPL_METRIC_COUNTER_INC_LABELED so it
+    // can carry the {from,to} transition labels; a registry-owned instrument
+    // would only give an unlabelled total.
     ledgerHistoryMismatchCounter_ = meter_->CreateUInt64Counter(
-        "ledger_history_mismatch_total", "Total built-vs-validated ledger mismatches by reason");
+        metric::ledgerHistoryMismatchTotal, "Total built-vs-validated ledger mismatches by reason");
     txqExpiredCounter_ = meter_->CreateUInt64Counter(
         "txq_expired_total", "Total transactions expired out of the transaction queue");
     txqDroppedCounter_ = meter_->CreateUInt64Counter(
@@ -485,8 +620,8 @@ MetricsRegistry::recordJobQueued(
         return;
     jobQueuedCounter_->Add(
         1,
-        {{kJobTypeLabel, std::string(jobType)},
-         {kHandlerLabel, std::string(sanitiseHandler(jobName))}});
+        {{label::jobType, std::string(jobType)},
+         {label::handler, std::string(sanitiseHandler(jobName))}});
 #endif
 }
 
@@ -502,7 +637,7 @@ MetricsRegistry::recordJobStarted(
     // Build the attribute pair once: both the counter and the histogram
     // must carry the identical label set or they cannot be joined.
     std::string const handler(sanitiseHandler(jobName));
-    jobStartedCounter_->Add(1, {{kJobTypeLabel, std::string(jobType)}, {kHandlerLabel, handler}});
+    jobStartedCounter_->Add(1, {{label::jobType, std::string(jobType)}, {label::handler, handler}});
     if (jobQueuedDurationHistogram_ && queuedDurUs >= 0)
     {
         // Guard against negative queued durations: the caller derives this
@@ -511,7 +646,7 @@ MetricsRegistry::recordJobStarted(
         // (logging a warning per call), so skip them rather than spam.
         jobQueuedDurationHistogram_->Record(
             static_cast<double>(queuedDurUs),
-            {{kJobTypeLabel, std::string(jobType)}, {kHandlerLabel, handler}},
+            {{label::jobType, std::string(jobType)}, {label::handler, handler}},
             opentelemetry::context::Context{});
     }
 #endif
@@ -527,14 +662,19 @@ MetricsRegistry::recordJobFinished(
     if (!recording() || !jobFinishedCounter_)
         return;
     std::string const handler(sanitiseHandler(jobName));
-    jobFinishedCounter_->Add(1, {{kJobTypeLabel, std::string(jobType)}, {kHandlerLabel, handler}});
+    jobFinishedCounter_->Add(
+        1, {{label::jobType, std::string(jobType)}, {label::handler, handler}});
     if (jobRunningDurationHistogram_)
     {
         jobRunningDurationHistogram_->Record(
             static_cast<double>(runningDurUs),
-            {{kJobTypeLabel, std::string(jobType)}, {kHandlerLabel, handler}},
+            {{label::jobType, std::string(jobType)}, {label::handler, handler}},
             opentelemetry::context::Context{});
     }
+    // One compare per job finish. A process-wide freeze shows up here as
+    // several job types crossing the bar in the same second.
+    if (runningDurUs >= kJobStallThresholdUs && jobStallCounter_)
+        jobStallCounter_->Add(1, {{label::jobType, std::string(jobType)}});
 #endif
 }
 
@@ -566,15 +706,6 @@ MetricsRegistry::incrementValidationsChecked()
 #ifdef XRPL_ENABLE_TELEMETRY
     if (recording() && validationsCheckedCounter_)
         validationsCheckedCounter_->Add(1);
-#endif
-}
-
-void
-MetricsRegistry::incrementStateChanges()
-{
-#ifdef XRPL_ENABLE_TELEMETRY
-    if (recording() && stateChangesCounter_)
-        stateChangesCounter_->Add(1);
 #endif
 }
 

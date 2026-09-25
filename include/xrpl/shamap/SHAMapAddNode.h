@@ -24,6 +24,28 @@ public:
     reset();
     [[nodiscard]] int
     getGood() const;
+    /**
+     * Nodes rejected as invalid in this tally.
+     *
+     * Complements getGood(): isInvalid() only answers "was there at least one",
+     * which cannot distinguish one bad node from a peer sending nothing but bad
+     * data. Exposed for the acquire telemetry counters, which need the count.
+     *
+     * @return Number of invalid nodes; 0 if none.
+     */
+    [[nodiscard]] int
+    getBad() const;
+    /**
+     * Nodes already held, so re-receiving them was wasted work.
+     *
+     * A high duplicate share against a low good share means peers are re-sending
+     * data the node already has, which looks like healthy traffic but makes no
+     * acquire progress.
+     *
+     * @return Number of duplicate nodes; 0 if none.
+     */
+    [[nodiscard]] int
+    getDuplicate() const;
     [[nodiscard]] bool
     isGood() const;
     [[nodiscard]] bool
@@ -84,6 +106,18 @@ inline int
 SHAMapAddNode::getGood() const
 {
     return good_;
+}
+
+inline int
+SHAMapAddNode::getBad() const
+{
+    return bad_;
+}
+
+inline int
+SHAMapAddNode::getDuplicate() const
+{
+    return duplicate_;
 }
 
 inline bool

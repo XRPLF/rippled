@@ -39,6 +39,7 @@
 #include <xrpld/rpc/detail/Handler.h>
 #include <xrpld/rpc/detail/PathRequestManager.h>
 #include <xrpld/rpc/detail/Pathfinder.h>
+#include <xrpld/rpc/detail/RpcSpanNames.h>
 #include <xrpld/shamap/NodeFamily.h>
 #include <xrpld/telemetry/AppMetricGauges.h>
 
@@ -105,7 +106,14 @@
 #include <xrpl/shamap/SHAMap.h>
 #include <xrpl/shamap/SHAMapMissingNode.h>
 #include <xrpl/shamap/TreeNodeCache.h>
+#include <xrpl/telemetry/MetricMacros.h>
+#ifdef XRPL_ENABLE_TELEMETRY
+// The metric-name constants are named only as macro arguments, which the
+// macros drop when telemetry is compiled out.
+#include <xrpl/telemetry/MetricNames.h>
+#endif
 #include <xrpl/telemetry/MetricsRegistry.h>
+#include <xrpl/telemetry/SpanGuard.h>
 #include <xrpl/telemetry/Telemetry.h>
 #include <xrpl/tx/apply.h>
 
@@ -438,7 +446,7 @@ public:
         , telemetry_(
               telemetry::makeTelemetry(
                   telemetry::makeTelemetrySetup(
-                      config_->section("telemetry"),
+                      config_->section(Sections::kTelemetry),
                       toBase58(TokenType::NodePublic, nodeIdentity_.first),
                       build_info::getVersionString(),
                       config_->networkId),
@@ -1309,10 +1317,84 @@ public:
                                    << "; size after: " << cachedSLEs_.size();
         }
 
-        mallocTrim("doSweep", journal_);
+        trimHeapAndRecord();
 
         // Set timer to do another sweep later.
         setSweepTimer();
+    }
+
+    /**
+     * Return free heap pages to the OS at the end of a sweep, and record what
+     * that cost.
+     *
+     * Kept separate from doSweep() so the metric emit site is one small unit
+     * rather than a further three statements on an already-long function.
+     *
+     * Why this is instrumented: `malloc_trim` runs after EVERY cache sweep, and
+     * its cost scales with the resident heap, so a node with a large existing
+     * database pays a per-sweep penalty a fresh one does not -- the leading
+     * explanation for "an existing database syncs slower than an empty one" on
+     * glibc. This is the only site that reads mallocTrim()'s report, so it is
+     * the only place that cost can be made visible.
+     *
+     *      doSweep()  ->  trimHeapAndRecord()  ->  mallocTrim()
+     *                            |                      |
+     *                            |            MallocTrimReport (duration,
+     *                            |            minor faults, RSS before/after)
+     *                            v
+     *                     3 OTel instruments
+     *
+     * Cost: one histogram Record and two counter Adds per sweep, at a cadence
+     * of SizedItem::SweepInterval (10-120 s), so this is free.
+     *
+     * @note The minor-fault count covers the trim call only. It cannot show the
+     *       faults taken later, as the caches refill and touch the pages the
+     *       trim handed back -- see the runbook branch for how to read it.
+     */
+    // Not const: with telemetry enabled the metric macros below call
+    // getMetricsRegistry() on *this, which is non-const (ServiceRegistry.h).
+    // Only the compiled-out build makes this look like a const method.
+    void
+    trimHeapAndRecord()  // NOLINT(readability-make-member-function-const)
+    {
+        MallocTrimReport const report = mallocTrim("doSweep", journal_);
+
+        // Nothing was measured: not Linux/glibc, so there is no trim to report
+        // and a zero would falsely claim a free one.
+        if (!report.supported)
+            return;
+
+        if (report.durationUs.count() >= 0)
+        {
+            XRPL_METRIC_HISTOGRAM_RECORD(
+                *this,
+                telemetry::metric::sweepMallocTrimUs,
+                "Duration of the malloc_trim call ending each cache sweep (microseconds)",
+                report.durationUs.count());
+        }
+
+        if (report.minfltDelta > 0)
+        {
+            XRPL_METRIC_COUNTER_ADD(
+                *this,
+                telemetry::metric::sweepMallocTrimMinorFaultsTotal,
+                "Minor page faults taken inside the sweep's malloc_trim call",
+                static_cast<std::uint64_t>(report.minfltDelta));
+        }
+
+        // deltaKB() is after-minus-before, so a successful trim is NEGATIVE.
+        // Publish the reclaimed amount as a positive cumulative total and drop
+        // the case where RSS grew across the call (another thread allocating
+        // faster than the trim released): a counter cannot go down, and "grew"
+        // is not a reclaim of a negative size.
+        if (auto const deltaKB = report.deltaKB(); deltaKB < 0)
+        {
+            XRPL_METRIC_COUNTER_ADD(
+                *this,
+                telemetry::metric::sweepMallocTrimReclaimedKbTotal,
+                "Resident kilobytes returned to the OS by the sweep's malloc_trim",
+                static_cast<std::uint64_t>(-deltaKB));
+        }
     }
 
     LedgerIndex
@@ -1491,7 +1573,9 @@ ApplicationImp::setup(boost::program_options::variables_map const& cmdline)
     // matching makeMetricsRegistryOptions() and makeTelemetrySetup(), so the
     // trace side does not keep an empty instance id while the metrics side
     // holds the node key.
-    if (config_->section("telemetry").valueOr<std::string>("service_instance_id", "").empty())
+    if (config_->section(Sections::kTelemetry)
+            .valueOr<std::string>("service_instance_id", "")
+            .empty())
         telemetry_->setServiceInstanceId(toBase58(TokenType::NodePublic, nodeIdentity_.first));
 
     // xrpl.node.id always carries the node public key. Unlike
@@ -1756,43 +1840,55 @@ ApplicationImp::setup(boost::program_options::variables_map const& cmdline)
     //
     // Execute start up rpc commands.
     //
-    for (auto const& cmd : config_->section(Sections::kRpcStartup).lines())
+    // One span over the batch, so each startup command's rpc.command.* span has
+    // a parent. A fresh root, created only when the section has commands.
+    auto const& startupCommands = config_->section(Sections::kRpcStartup).lines();
+    if (!startupCommands.empty())
     {
-        json::Reader jrReader;
-        json::Value jvCommand;
+        auto const startupSpan = telemetry::ScopedSpanGuard::freshRoot(
+            telemetry::TraceCategory::Rpc,
+            telemetry::rpc_span::prefix::rpc,
+            telemetry::rpc_span::op::startup,
+            telemetry::SpanRole::Internal);
 
-        if (!jrReader.parse(cmd, jvCommand))
+        for (auto const& cmd : startupCommands)
         {
-            JLOG(journal_.fatal())
-                << "Couldn't parse entry in [" << Sections::kRpcStartup << "]: '" << cmd;
-        }
+            json::Reader jrReader;
+            json::Value jvCommand;
 
-        if (!config_->quiet())
-        {
-            JLOG(journal_.fatal()) << "Startup RPC: " << jvCommand << std::endl;
-        }
+            if (!jrReader.parse(cmd, jvCommand))
+            {
+                JLOG(journal_.fatal())
+                    << "Couldn't parse entry in [" << Sections::kRpcStartup << "]: '" << cmd;
+            }
 
-        resource::Charge loadType = resource::kFeeReferenceRpc;
-        resource::Consumer c;
-        rpc::JsonContext context{
-            {.j = getJournal("RPCHandler"),
-             .app = *this,
-             .loadType = loadType,
-             .netOps = getOPs(),
-             .ledgerMaster = getLedgerMaster(),
-             .consumer = c,
-             .role = Role::ADMIN,
-             .coro = {},
-             .infoSub = {},
-             .apiVersion = rpc::kApiMaximumSupportedVersion},
-            jvCommand};
+            if (!config_->quiet())
+            {
+                JLOG(journal_.fatal()) << "Startup RPC: " << jvCommand << std::endl;
+            }
 
-        json::Value jvResult;
-        rpc::doCommand(context, jvResult);
+            resource::Charge loadType = resource::kFeeReferenceRpc;
+            resource::Consumer c;
+            rpc::JsonContext context{
+                {.j = getJournal("RPCHandler"),
+                 .app = *this,
+                 .loadType = loadType,
+                 .netOps = getOPs(),
+                 .ledgerMaster = getLedgerMaster(),
+                 .consumer = c,
+                 .role = Role::ADMIN,
+                 .coro = {},
+                 .infoSub = {},
+                 .apiVersion = rpc::kApiMaximumSupportedVersion},
+                jvCommand};
 
-        if (!config_->quiet())
-        {
-            JLOG(journal_.fatal()) << "Result: " << jvResult << std::endl;
+            json::Value jvResult;
+            rpc::doCommand(context, jvResult);
+
+            if (!config_->quiet())
+            {
+                JLOG(journal_.fatal()) << "Result: " << jvResult << std::endl;
+            }
         }
     }
 

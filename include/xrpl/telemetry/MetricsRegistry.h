@@ -38,7 +38,6 @@
  * |       +-- ledgers_closed_total
  * |       +-- validations_sent_total
  * |       +-- validations_checked_total
- * |       +-- state_changes_total
  * |       +-- ledger_history_mismatch_total{reason}
  * |       +-- txq_expired_total
  * |       +-- txq_dropped_total{reason}
@@ -136,6 +135,14 @@
 #endif
 
 namespace xrpl::telemetry {
+
+/**
+ * Run time at which a finished job counts as a stall, in microseconds.
+ * Equal to LoadMonitor's 1 s warn threshold (LoadMonitor.cpp
+ * addLoadSample) so this counter and the "Job: ... run:" log line
+ * describe the same event.
+ */
+inline constexpr std::int64_t kJobStallThresholdUs = 1'000'000;
 
 /**
  * Central OpenTelemetry metric registry.
@@ -760,14 +767,6 @@ public:
     incrementValidationsChecked();
 
     /**
-     * Increment the state_changes_total counter.
-     * Called from NetworkOPsImp::setMode() when the server operating mode
-     * changes (e.g. CONNECTED -> SYNCING -> TRACKING -> FULL).
-     */
-    void
-    incrementStateChanges();
-
-    /**
      * Increment the ledger_history_mismatch_total counter for a reason.
      * Called from LedgerHistory::handleMismatch() once the mismatch has
      * been classified. The reason label turns fork diagnosis from a
@@ -919,6 +918,11 @@ private:
      */
     opentelemetry::nostd::unique_ptr<opentelemetry::metrics::Counter<uint64_t>> jobFinishedCounter_;
     /**
+     * Counter: jobq_stall_total{job_type="<name>"} — one per finished job
+     * whose run time reached kJobStallThresholdUs.
+     */
+    opentelemetry::nostd::unique_ptr<opentelemetry::metrics::Counter<uint64_t>> jobStallCounter_;
+    /**
      * Histogram: job_queued_us{job_type="<name>",handler="<name>"}
      */
     opentelemetry::nostd::unique_ptr<opentelemetry::metrics::Histogram<double>>
@@ -946,11 +950,6 @@ private:
      */
     opentelemetry::nostd::unique_ptr<opentelemetry::metrics::Counter<uint64_t>>
         validationsCheckedCounter_;
-    /**
-     * Counter: state_changes_total — incremented on operating mode transitions.
-     */
-    opentelemetry::nostd::unique_ptr<opentelemetry::metrics::Counter<uint64_t>>
-        stateChangesCounter_;
     /**
      * Counter: ledger_history_mismatch_total{reason} — incremented per classified
      * built-vs-validated ledger mismatch.

@@ -10,12 +10,15 @@
 #include <xrpl/beast/utility/WrappedSink.h>
 #include <xrpl/peerfinder/Slot.h>
 #include <xrpl/resource/Consumer.h>
+#include <xrpl/telemetry/SpanGuard.h>
 
 #include <chrono>
 #include <cstdint>
 #include <memory>
+#include <optional>
 #include <sstream>
 #include <string>
+#include <string_view>
 
 namespace xrpl {
 
@@ -51,6 +54,47 @@ private:
     response_type response_;
     std::shared_ptr<peer_finder::Slot> slot_;
     request_type req_;
+
+    // The three members below are the dial's telemetry state. They are declared
+    // unconditionally, so the class has one shape in every build, but every
+    // write to them is compiled out with telemetry: in that build dialStart_ and
+    // dialSpan_ stay default-constructed and outcomeReported_ stays false.
+
+    /**
+     * When the dial began, set at the top of run() before any async
+     * operation is started. Base for the `overlay_dial_latency_ms`
+     * measurement.
+     */
+    std::chrono::steady_clock::time_point dialStart_;
+
+    /**
+     * True once this attempt's outcome has been reported, so the first
+     * (most specific) terminal path wins and each attempt is counted at
+     * most once. Not atomic on purpose -- see reportOutcome().
+     *
+     * Read and written only by reportOutcome(), whose body is compiled out
+     * with telemetry, leaving this field unused in that build. Marked rather
+     * than guarded so the member set is the same in both configurations, as it
+     * is for the two members either side of it.
+     */
+    [[maybe_unused]] bool outcomeReported_{false};
+
+    /**
+     * Spans this dial: started in run() beside `dialStart_`, ended by
+     * reportOutcome() on whichever terminal path the state machine takes, and
+     * by the destructor for an attempt torn down without one.
+     *
+     * The dial-failure counters answer "how many dials failed, and at which
+     * stage". This span answers what they cannot: which peer, and how the time
+     * was spent inside one slow attempt. Both are needed because a dial that
+     * hangs is invisible in a rate.
+     *
+     * Thread-free (a SpanGuard holds no thread-local scope). All the completion
+     * handlers that end it are bound through `bind_executor(strand_, ...)`, so
+     * every access after run() is on one strand; run() itself writes it before
+     * any async operation is started, so those handlers see it safely.
+     */
+    std::optional<telemetry::SpanGuard> dialSpan_;
 
 public:
     ConnectAttempt(
@@ -97,6 +141,76 @@ private:
     onShutdown(error_code ec);
     void
     processResponse();
+
+    /**
+     * Record how this outbound dial ended, exactly once per attempt.
+     *
+     * Every terminal path in the dial state machine funnels here, so the
+     * emit code and its cached instruments live in one place instead of
+     * being repeated per branch. The first call wins: later calls return
+     * immediately, which keeps the reported outcome the most specific one
+     * (e.g. a "timeout" is not later overwritten by the "tcp_fail" that
+     * the cancelled socket operation reports).
+     *
+     * Emits:
+     *   - `overlay_dial_latency_ms` histogram, no labels
+     *   - `overlay_connect_total` counter, label `outcome`
+     *   - ends the `peer.dial` span with the same `outcome` value plus
+     *     `remote_endpoint` and `duration_ms`
+     *
+     * The span shares this funnel rather than being ended per branch, so the
+     * span's outcome and the counter's label can never disagree, and the
+     * first-call-wins guard makes the span exactly-once for free.
+     *
+     * Dial state machine and where each outcome is reported:
+     *
+     *   run() ---- dialStart_ = now
+     *     |
+     *     +-- onTimer  ................................. "timeout"
+     *     +-- onConnect      (connect / local_endpoint) . "tcp_fail"
+     *     +-- onHandshake
+     *     |     +-- TLS handshake / shared value ....... "tls_fail"
+     *     |     +-- PeerFinder rejects our own address . "self_connection"
+     *     +-- onWrite / onRead / onShutdown ............. "upgrade_fail"
+     *     +-- processResponse
+     *           +-- bad status / protocol / activate ... "upgrade_fail"
+     *           +-- PeerImp created + addActive ........ "connected"
+     *
+     * The slot branch is drawn separately from the TLS one because
+     * `Logic::onConnected` fails for exactly one reason -- the remote address is
+     * ours -- and that is a local misconfiguration rather than an unreachable
+     * peer.
+     *
+     * @param outcome One of the `peer_span::val` dial-outcome constants:
+     *        `connected`, `tcpFail`, `tlsFail`, `selfConnection`, `upgradeFail`,
+     *        `timeout`. Taken as a string_view over a compile-time constant, so
+     *        no allocation happens on the caller side. The constants are the
+     *        single source for both the counter label and the span attribute, so
+     *        the two cannot drift apart.
+     *
+     * @note Per-connection path: one dial per outbound peer, so this is not
+     *       a hot loop.
+     * @note Thread safety: every completion handler that calls this is bound
+     *       through `bind_executor(strand_, ...)`, so all callers of this
+     *       method run on the same strand and `outcomeReported_` needs no
+     *       atomic or mutex. `dialStart_` is written once in run(), before
+     *       any async operation is initiated, so it is safely visible to
+     *       those handlers even though run() itself may execute on the
+     *       calling thread rather than the strand.
+     * @note Known limitation: an attempt torn down by overlay shutdown
+     *       mid-dial (stop() -> close(), or the operation_aborted early
+     *       returns) is deliberately not counted -- it has no network
+     *       outcome to attribute. The span is still ended, by the destructor,
+     *       with no `outcome` attribute: a span whose duration is real but
+     *       whose outcome is absent is exactly what "torn down mid-dial"
+     *       means, and dropping it would instead hide the attempt.
+     * @note MetricsRegistry is already started when this runs:
+     *       ApplicationImp::setup() calls startTelemetry() before
+     *       ApplicationImp::start() calls overlay_->start(). No-op when
+     *       telemetry is compiled out or disabled at runtime.
+     */
+    void
+    reportOutcome(std::string_view outcome);
 
     template <class = void>
     static boost::asio::ip::tcp::endpoint

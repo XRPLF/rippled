@@ -11,9 +11,11 @@ This document explains how to build xrpld with OpenTelemetry distributed tracing
       - [Call CMake](#call-cmake)
       - [Build](#build)
   - [Building without telemetry](#building-without-telemetry)
+  - [Viewing traces locally](#viewing-traces-locally)
   - [Troubleshooting](#troubleshooting)
     - [Conan lockfile error](#conan-lockfile-error)
     - [CMake target not found](#cmake-target-not-found)
+    - [No traces in Grafana](#no-traces-in-grafana)
   - [Conditional compilation](#conditional-compilation)
   - [Recording utilities](#recording-utilities)
   - [Span lifetime and cross-thread handling](#span-lifetime-and-cross-thread-handling)
@@ -26,7 +28,7 @@ This document explains how to build xrpld with OpenTelemetry distributed tracing
 ## Overview
 
 xrpld supports optional [OpenTelemetry](https://opentelemetry.io/) distributed tracing.
-When enabled, it instruments RPC requests with trace spans that are exported via
+When enabled, it instruments RPC requests and the transaction lifecycle with trace spans that are exported via
 OTLP/HTTP to an OpenTelemetry Collector, which forwards them to a tracing backend
 such as Grafana Tempo.
 
@@ -121,6 +123,20 @@ The resulting binary is identical to one built before telemetry support was adde
 > configuration under `Manually-specified variables were not used by the project`.
 > Use `-o telemetry=False` on `conan install`.
 
+## Viewing traces locally
+
+[`docker/telemetry/docker-compose.yml`](../../docker/telemetry/docker-compose.yml) runs a local backend: an OpenTelemetry Collector, Grafana Tempo and Grafana. Its header comment lists each service and port.
+
+1. Build xrpld with telemetry, as in [Building with Telemetry](#building-with-telemetry).
+2. From the repository root, start the stack: `docker compose -f docker/telemetry/docker-compose.yml up -d`.
+3. Set `enabled=1` in the `[telemetry]` section of your xrpld config. The default `traces_endpoint` already points at this collector, so no other key is needed. Section 11 of [`cfg/xrpld-example.cfg`](../../cfg/xrpld-example.cfg) documents every key.
+4. Start xrpld.
+5. Open Grafana at `http://localhost:3000` (no login), go to **Explore**, pick the **Tempo** data source, and search for `service.name` = `xrpld`.
+
+Spans are exported in batches, so a span reaches Tempo a few seconds after the work it records.
+
+To stop the stack, run `docker compose -f docker/telemetry/docker-compose.yml down`. Add `-v` to also delete the stored traces.
+
 ## Troubleshooting
 
 ### Conan lockfile error
@@ -136,6 +152,14 @@ ensure you ran `conan install` with `-o telemetry=True` and that the
 Conan-generated toolchain file is being used.
 The Conan package provides a single umbrella target
 `opentelemetry-cpp::opentelemetry-cpp` (not individual component targets).
+
+### No traces in Grafana
+
+Check each hop in order:
+
+1. The CMake output shows `-- OpenTelemetry tracing enabled`. If it does not, tracing is not compiled in.
+2. The xrpld log shows `Telemetry started successfully` from the `Telemetry` partition at `info` level. If it does not, `enabled=1` is not set.
+3. `docker compose -f docker/telemetry/docker-compose.yml logs otel-collector` prints every span the collector receives. If spans appear there but not in Grafana, the fault is between the collector and Tempo. If they do not appear, xrpld cannot reach `traces_endpoint`.
 
 ## Conditional compilation
 
@@ -166,11 +190,12 @@ Some state exists only to be reported: a timestamp read to measure something, a 
 
 `xrpl/telemetry/Recording.h` holds that state in types that carry a real member when telemetry is compiled in and are empty types with no-op methods when it is not. Declare the member unconditionally: its storage collapses to padding, and its work disappears.
 
-| Utility      | Use it for                                                                                  | With telemetry compiled out                      |
-| ------------ | ------------------------------------------------------------------------------------------- | ------------------------------------------------ |
-| `kEnabled`   | `if constexpr (telemetry::kEnabled)` around a telemetry-only block that has no span to test | `false`, so the block is discarded               |
-| `Stopwatch`  | an elapsed time measured only in order to report it                                         | holds nothing; `elapsedUs()` returns exactly `0` |
-| `Counter<T>` | a count with no reader outside telemetry                                                    | holds nothing; `load()` returns `T{}`            |
+| Utility      | Use it for                                                                                  | With telemetry compiled out                                                          |
+| ------------ | ------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
+| `kEnabled`   | `if constexpr (telemetry::kEnabled)` around a telemetry-only block that has no span to test | `false`, so the block is discarded                                                   |
+| `Stopwatch`  | an elapsed time measured only in order to report it                                         | holds nothing; `elapsedUs()` returns exactly `0`                                     |
+| `Counter<T>` | a count with no reader outside telemetry                                                    | holds nothing; `load()` returns `T{}`                                                |
+| `Mirror<T>`  | a value kept only so that a change in it can be reported                                    | holds nothing; `changedTo()` returns `false`, so the reporting branch is never taken |
 
 ```cpp
 // Times a loop with no preprocessor branch anywhere. The clock is not read at
@@ -187,6 +212,16 @@ Two constraints decide whether these are usable at a given site:
 - **`if constexpr` still type-checks the branch it discards** in non-template code, so use it only where the block names no `opentelemetry::` type. `SpanGuard` exists to keep those types out of call sites, so that is the usual case; a block that does name them stays behind `#ifdef`.
 
 `Counter` declares copy and move deleted, matching the `std::atomic` it holds when telemetry is compiled in, so a class that owns one has the same copy semantics in both builds.
+
+`Mirror<T>` covers the compare-then-store shape: read whether an incoming value differs from the last one, store it, and report only on a change. `changedTo()` does all three in one call, which is what keeps a once-per-round event from becoming one per proposal.
+
+```cpp
+// True only on a real change, and only when telemetry is compiled in.
+if (lastRound.changedTo(roundParentHash))
+    span->addEvent(event::newRequester);
+```
+
+It holds a plain `T`, not an atomic, and is deliberately not synchronized: guard it the way you guard the state beside it. A value read from another thread — a gauge callback, typically — must stay an atomic of its own, and `Mirror` is not a substitute for one. It requires a copyable `T`, asserted in the class, so that its own copy semantics cannot differ between builds.
 
 ## Span lifetime and cross-thread handling
 
@@ -288,7 +323,7 @@ boundary.
 
 Pass the **whole message** to the injection helpers, never `*msg.mutable_trace_context()`.
 
-On a protobuf `optional` submessage, `mutable_` allocates the submessage and sets its has-bit, and that happens at the call site before the helper runs. A caller that dereferences it therefore puts an empty `TraceContext` on the wire whenever nothing is recorded, and every receiving peer takes its `has_trace_context()` branch to extract nothing from it. `trace_context` is field 1001, so the wasted bytes are a 2-byte tag plus a zero length.
+On a protobuf `optional` submessage, `mutable_` allocates the submessage and sets its has-bit, and that happens at the call site before the helper runs. A caller that dereferences it therefore puts an empty `TraceContext` on the wire whenever nothing is recorded, and every receiving peer parses it only to drop it. `trace_context` is field 1001, so the wasted bytes are a 2-byte tag plus a zero length.
 
 ```cpp
 // Right: the helper decides whether the submessage is created at all.

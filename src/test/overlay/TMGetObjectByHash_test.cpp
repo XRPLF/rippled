@@ -468,7 +468,9 @@ class TMGetObjectByHash_test : public beast::unit_test::Suite
         auto reply = parseReply(peer);
         BEAST_EXPECT(reply.has_value());
         if (reply)
+        {
             BEAST_EXPECT(reply->objects_size() == 0);
+        }
 
         // Positive counterpart to the oversize test: because the handler did
         // run, a differential charge was applied, and it is exactly the

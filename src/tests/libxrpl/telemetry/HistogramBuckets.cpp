@@ -63,7 +63,18 @@ INSTANTIATE_TEST_SUITE_P(
         std::span<double const>{kByteBuckets},
         std::span<double const>{kMicrosecondBuckets},
         std::span<double const>{kObjectCountBuckets},
-        std::span<double const>{kChargeBuckets}));
+        std::span<double const>{kChargeBuckets},
+        std::span<double const>{kRotationPhaseSecondsBuckets}));
+
+TEST(HistogramBucketsRange, rotation_phase_ladder_spans_seconds_to_an_hour)
+{
+    // Phases run from seconds (freshen.keys) to ten minutes or more (copy), and
+    // a whole rotation about a quarter of an hour. The floor must sit under the
+    // shortest phase; the ceiling above a whole rotation with headroom.
+    EXPECT_EQ(kRotationPhaseSecondsBuckets.front(), 1.0);
+    EXPECT_LE(kRotationPhaseSecondsBuckets.front(), 5.0);
+    EXPECT_EQ(kRotationPhaseSecondsBuckets.back(), 3600.0);
+}
 
 TEST(HistogramBucketsRange, microsecond_floor_lands_below_the_measured_mass)
 {

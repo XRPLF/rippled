@@ -107,6 +107,7 @@ inline constexpr auto tx = makeStr("tx");
 inline constexpr auto consensus = makeStr("consensus");
 inline constexpr auto peer = makeStr("peer");
 inline constexpr auto ledger = makeStr("ledger");
+inline constexpr auto nodestore = makeStr("nodestore");
 inline constexpr auto network = makeStr("network");
 inline constexpr auto node = makeStr("node");
 inline constexpr auto link = makeStr("link");
