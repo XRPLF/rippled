@@ -137,7 +137,7 @@ struct FloatFromSTAmountBounds : HostContextTest
     }
 };
 
-TEST_F(FloatFromSTAmountBounds, AnMptMagnitudeAtTheSignBitIsRefused)
+TEST_F(FloatFromSTAmountBounds, an_mpt_magnitude_at_the_sign_bit_is_refused)
 {
     EXPECT_CALL(host, floatFromSTAmount).Times(0);
 
@@ -148,7 +148,7 @@ TEST_F(FloatFromSTAmountBounds, AnMptMagnitudeAtTheSignBitIsRefused)
         hfErrorToInt(HostFunctionError::InvalidParams));
 }
 
-TEST_F(FloatFromSTAmountBounds, AnMptMagnitudePastTheProtocolMaximumIsRefused)
+TEST_F(FloatFromSTAmountBounds, an_mpt_magnitude_past_the_protocol_maximum_is_refused)
 {
     EXPECT_CALL(host, floatFromSTAmount).Times(0);
 
@@ -160,7 +160,7 @@ TEST_F(FloatFromSTAmountBounds, AnMptMagnitudePastTheProtocolMaximumIsRefused)
 }
 
 // MPT amounts are non-negative by protocol invariant, which is why `isLegalMPT` asks.
-TEST_F(FloatFromSTAmountBounds, ANegativeMptIsRefused)
+TEST_F(FloatFromSTAmountBounds, a_negative_mpt_is_refused)
 {
     EXPECT_CALL(host, floatFromSTAmount).Times(0);
 
@@ -173,7 +173,7 @@ TEST_F(FloatFromSTAmountBounds, ANegativeMptIsRefused)
 
 // `isLegalNet`'s half: the XRP branch skips `canonicalize` too, so drops past the network
 // maximum reach the host unchallenged without this.
-TEST_F(FloatFromSTAmountBounds, XrpDropsPastTheNetworkMaximumAreRefused)
+TEST_F(FloatFromSTAmountBounds, xrp_drops_past_the_network_maximum_are_refused)
 {
     EXPECT_CALL(host, floatFromSTAmount).Times(0);
 
@@ -184,7 +184,7 @@ TEST_F(FloatFromSTAmountBounds, XrpDropsPastTheNetworkMaximumAreRefused)
         hfErrorToInt(HostFunctionError::InvalidParams));
 }
 
-TEST_F(FloatFromSTAmountBounds, TheMaximaThemselvesStillReachTheHost)
+TEST_F(FloatFromSTAmountBounds, the_maxima_themselves_still_reach_the_host)
 {
     auto const result = Bytes{1, 2, 3};
     EXPECT_CALL(host, floatFromSTAmount(testing::_, mode))

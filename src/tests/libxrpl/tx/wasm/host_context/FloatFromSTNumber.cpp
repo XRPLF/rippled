@@ -124,28 +124,28 @@ struct FloatFromSTNumberRounding : HostContextTest
     }
 };
 
-TEST_F(FloatFromSTNumberRounding, TowardsZeroTruncatesInsteadOfRoundingToNearest)
+TEST_F(FloatFromSTNumberRounding, towards_zero_truncates_instead_of_rounding_to_nearest)
 {
     expectDecodedAs(dropsSeven, Number::RoundingMode::TowardsZero, truncated);
 }
 
-TEST_F(FloatFromSTNumberRounding, UpwardRoundsAwayInsteadOfRoundingToNearest)
+TEST_F(FloatFromSTNumberRounding, upward_rounds_away_instead_of_rounding_to_nearest)
 {
     expectDecodedAs(dropsThree, Number::RoundingMode::Upward, raised);
 }
 
-TEST_F(FloatFromSTNumberRounding, DownwardTruncatesInsteadOfRoundingToNearest)
+TEST_F(FloatFromSTNumberRounding, downward_truncates_instead_of_rounding_to_nearest)
 {
     expectDecodedAs(dropsSeven, Number::RoundingMode::Downward, truncated);
 }
 
-TEST_F(FloatFromSTNumberRounding, ToNearestIsUnchanged)
+TEST_F(FloatFromSTNumberRounding, to_nearest_is_unchanged)
 {
     expectDecodedAs(dropsSeven, Number::RoundingMode::ToNearest, raised);
     expectDecodedAs(dropsThree, Number::RoundingMode::ToNearest, truncated);
 }
 
-TEST_F(FloatFromSTNumberRounding, AnInvalidModeStillReachesTheHost)
+TEST_F(FloatFromSTNumberRounding, an_invalid_mode_still_reaches_the_host)
 {
     constexpr auto kNotAMode = std::int32_t{99};
     EXPECT_CALL(host, floatFromSTNumber(testing::_, kNotAMode))
