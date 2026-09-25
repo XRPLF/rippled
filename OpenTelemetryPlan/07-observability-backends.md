@@ -194,7 +194,7 @@ exists in this repo.** What ships is below.
 ```mermaid
 flowchart LR
     subgraph head["Head Sampling (Node) — fixed"]
-        hs["ParentBased(TraceIdRatio 1.0)<br/>samplingRatio is static constexpr<br/>no config key exists<br/>100% of spans exported"]
+        hs["TraceIdRatio 1.0 for root and remote-parent spans<br/>local-parent spans follow the parent<br/>samplingRatio is static constexpr<br/>no config key exists<br/>100% of spans exported"]
     end
 
     subgraph tail["Tail Sampling (Collector) — opt-in"]
@@ -221,8 +221,8 @@ flowchart LR
   `TelemetryConfig.cpp:139` records that there is nothing to parse. This is
   intentional: a per-node ratio would let different nodes make divergent
   keep/drop decisions for the same distributed trace, producing broken/partial
-  traces. The ratio sampler is wrapped in a `ParentBased` sampler so spans
-  inheriting a remote parent honour the upstream decision.
+  traces. A span inheriting a remote parent is decided by the same ratio
+  sampler, not by the peer's sampled flag.
 - **Tail Sampling (Collector)** — the base config
   (`docker/telemetry/otel-collector-config.yaml`) has **no** `tail_sampling`
   processor, so the local and CI stacks keep 100% of traces. The only shipped
