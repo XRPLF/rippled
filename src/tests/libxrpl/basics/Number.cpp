@@ -1296,6 +1296,46 @@ TEST(NumberTest, root)
     }
 }
 
+TEST(NumberTest, root_cycles)
+{
+    auto const cases = std::to_array<std::pair<int, unsigned>>(
+        {{298, 4}, {380, 4}, {438, 4}, {147, 3}, {573, 4}, {612, 4}, {-147, 3}});
+
+    for (auto const scale : MantissaRange::getAllScales())
+    {
+        NumberMantissaScaleGuard const sg{scale};
+        for (auto const mode :
+             {Number::RoundingMode::ToNearest,
+              Number::RoundingMode::TowardsZero,
+              Number::RoundingMode::Downward,
+              Number::RoundingMode::Upward})
+        {
+            NumberRoundModeGuard const rg{mode};
+            for (auto const& [mantissa, degree] : cases)
+            {
+                for (int const exponent : {-60, 0, 60})
+                {
+                    Number const input{mantissa, exponent};
+                    SCOPED_TRACE(
+                        to_string(scale) + " " + to_string(mode) + " root(" + to_string(input) +
+                        ", " + std::to_string(degree) + ")");
+                    Dec expected = boost::multiprecision::pow(
+                        Dec{mantissa < 0 ? -mantissa : mantissa}, Dec{1} / degree);
+                    expected *= pow10(exponent / static_cast<int>(degree));
+                    if (mantissa < 0)
+                        expected = -expected;
+
+                    auto const result = root(input, degree);
+                    Dec const actual = Dec{result.mantissa()} * pow10(result.exponent());
+                    // Account for rounding in the individual Newton steps.
+                    EXPECT_LE(abs(actual - expected), 10 * pow10(result.exponent()));
+                    EXPECT_EQ(power(input, 1, degree), result);
+                }
+            }
+        }
+    }
+}
+
 TEST(NumberTest, root2)
 {
     for (auto const mantissaScale : MantissaRange::getAllScales())
