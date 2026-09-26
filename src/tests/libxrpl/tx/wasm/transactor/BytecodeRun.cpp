@@ -21,6 +21,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <optional>
+#include <string>
 
 namespace xrpl::test {
 namespace {
@@ -36,6 +37,22 @@ constexpr auto kCondition = std::array<std::uint8_t, 39>{
     {0xA0, 0x25, 0x80, 0x20, 0xE3, 0xB0, 0xC4, 0x42, 0x98, 0xFC, 0x1C, 0x14, 0x9A,
      0xFB, 0xF4, 0xC8, 0x99, 0x6F, 0xB9, 0x24, 0x27, 0xAE, 0x41, 0xE4, 0x64, 0x9B,
      0x93, 0x4C, 0xA4, 0x95, 0x99, 0x1B, 0x78, 0x52, 0xB8, 0x55, 0x81, 0x01, 0x00}};
+
+// A working contract padded past a chosen size, for the reserve arithmetic.
+Bytes
+paddedContract(std::size_t padding)
+{
+    auto const wat =
+        std::string{
+            "(module\n"
+            "  (memory (export \"memory\") 1)\n"
+            "  (data (i32.const 0) \""} +
+        std::string(padding, 'A') +
+        "\")\n"
+        "  (func (export \"escrow_finish\") (result i32)\n"
+        "    (i32.const 1)))";
+    return assembleWat(wat);
+}
 
 struct BytecodeRun : testing::Test
 {
@@ -156,6 +173,38 @@ TEST_F(BytecodeRun, TheBytecodeReserveIsHeldWhileTheEscrowLivesAndReleasedWhenIt
     ASSERT_EQ(finish(created.seq).ter, tesSUCCESS);
 
     EXPECT_EQ(env.getOwnerCount(alice), 0U);
+}
+
+TEST_F(BytecodeRun, a_lock_leaving_the_owner_short_of_the_bytecode_reserve_is_refused)
+{
+    auto const wasm = paddedContract(600);
+    ASSERT_EQ(calculateAdditionalReserve(std::optional{wasm}), 2);
+
+    auto const& fees = env.getOpenLedger().fees();
+    auto const oneUnit = fees.accountReserve(1, 1);
+    auto const twoUnits = fees.accountReserve(2, 1);
+    ASSERT_LT(oneUnit, twoUnits);
+
+    auto const amount = XRP(1'000);
+    auto const fee = escrowCreateFee(env, wasm);
+
+    auto const create = [&](Account const& owner) {
+        auto builder = transactions::EscrowCreateBuilder{owner, carol, STAmount{amount}};
+        builder.setBytecode(makeSlice(wasm));
+        builder.setCancelAfter(closeTimeOffset(env, 1'000));
+        return env.submit(builder, owner, fee).ter;
+    };
+
+    // Funded so the lock leaves exactly one reserve unit: enough for the owner count a
+    // bytecode-free escrow would add, one increment short of the two this one adds.
+    Account const dave{"dave"};
+    env.createAccount(dave, oneUnit + amount + fee);
+    EXPECT_EQ(create(dave), tecUNFUNDED);
+
+    // One increment more and the lock clears the reserve the escrow really costs.
+    Account const erin{"erin"};
+    env.createAccount(erin, twoUnits + amount + fee);
+    EXPECT_EQ(create(erin), tesSUCCESS);
 }
 
 TEST(BytecodeReserve, TheBytecodeReserveIsCeilingDivision)
