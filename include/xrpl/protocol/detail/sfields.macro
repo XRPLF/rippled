@@ -128,6 +128,7 @@ TYPED_SFIELD(sfBytecodeSizeLimit,        UINT32,    82)
 TYPED_SFIELD(sfGasPrice,                 UINT32,    83)
 TYPED_SFIELD(sfGas,                      UINT32,    84)
 TYPED_SFIELD(sfGasUsed,                  UINT32,    85)
+TYPED_SFIELD(sfDeliverAfter,             UINT32,    86)
 
 // 64-bit integers (common)
 TYPED_SFIELD(sfIndexNext,                UINT64,     1)

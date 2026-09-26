@@ -981,6 +981,32 @@ public:
 };
 
 /**
+ * Set DeliverAfter on a JTx.
+ */
+class DeliverAfter
+{
+private:
+    std::uint32_t const deliverAfter_;
+
+public:
+    explicit DeliverAfter(NetClock::time_point const& deliverAfter)
+        : deliverAfter_{deliverAfter.time_since_epoch().count()}
+    {
+    }
+
+    explicit DeliverAfter(std::uint32_t deliverAfter)
+        : deliverAfter_{deliverAfter}
+    {
+    }
+
+    void
+    operator()(Env&, JTx& jt) const
+    {
+        jt[sfDeliverAfter.jsonName] = deliverAfter_;
+    }
+};
+
+/**
  * Set SourceTag on a JTx.
  */
 class SourceTag

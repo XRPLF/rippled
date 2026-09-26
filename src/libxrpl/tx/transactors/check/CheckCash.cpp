@@ -136,6 +136,18 @@ CheckCash::preclaim(PreclaimContext const& ctx)
         return tecEXPIRED;
     }
 
+    if (ctx.view.rules().enabled(featurePostDatedChecks))
+    {
+        if (auto const deliverAfter = sleCheck->at(~sfDeliverAfter))
+        {
+            if (!after(ctx.view.parentCloseTime(), *deliverAfter))
+            {
+                JLOG(ctx.j.warn()) << "Cashing a check before deliver after time.";
+                return tecNO_PERMISSION;
+            }
+        }
+    }
+
     {
         // Preflight verified exactly one of Amount or DeliverMin is present.
         // Make sure the requested amount is reasonable.
