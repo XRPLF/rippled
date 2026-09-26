@@ -2565,7 +2565,29 @@ class Check_test : public beast::unit_test::Suite
             BEAST_EXPECT(checksOnAccount(env, bob).empty());
         }
 
-        // 3. Dynamic sweep with DeliverMin (Dead-man switch / inheritance)
+        // 3. Strict boundary test: parentCloseTime == DeliverAfter must fail with tecNO_PERMISSION
+        {
+            Env env{*this, features | featurePostDatedChecks};
+            env.fund(XRP(1000), alice, bob);
+            env.close();
+
+            auto const parentTime = env.closed()->header().closeTime;
+            uint256 const chkId{getCheckIndex(alice, env.seq(alice))};
+            env(check::create(alice, bob, XRP(100)),
+                DeliverAfter(parentTime.time_since_epoch().count()));
+
+            // In the open ledger, parentCloseTime == DeliverAfter -> rejected (strict inequality)
+            env(check::cash(bob, chkId, XRP(100)), Ter(tecNO_PERMISSION));
+
+            // Advance ledger past DeliverAfter -> succeeds
+            env.close();
+            env(check::cash(bob, chkId, XRP(100)));
+            env.close();
+            BEAST_EXPECT(checksOnAccount(env, alice).empty());
+            BEAST_EXPECT(checksOnAccount(env, bob).empty());
+        }
+
+        // 4. Dynamic sweep with DeliverMin (Dead-man switch / inheritance)
         {
             Env env{*this, features | featurePostDatedChecks};
             env.fund(XRP(1000), alice, bob);
