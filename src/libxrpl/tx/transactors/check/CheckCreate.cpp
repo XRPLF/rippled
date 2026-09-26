@@ -62,11 +62,30 @@ CheckCreate::preflight(PreflightContext const& ctx)
         }
     }
 
+    auto const optDeliverAfter = ctx.tx[~sfDeliverAfter];
+    if (optDeliverAfter)
+    {
+        if (!ctx.rules.enabled(featurePostDatedChecks))
+            return temDISABLED;
+
+        if (*optDeliverAfter == 0)
+        {
+            JLOG(ctx.j.warn()) << "Malformed transaction: bad deliver after";
+            return temBAD_EXPIRATION;
+        }
+    }
+
     if (auto const optExpiry = ctx.tx[~sfExpiration])
     {
         if (*optExpiry == 0)
         {
             JLOG(ctx.j.warn()) << "Malformed transaction: bad expiration";
+            return temBAD_EXPIRATION;
+        }
+
+        if (optDeliverAfter && *optExpiry <= *optDeliverAfter)
+        {
+            JLOG(ctx.j.warn()) << "Malformed transaction: expiration must be after deliver after";
             return temBAD_EXPIRATION;
         }
     }
@@ -217,6 +236,8 @@ CheckCreate::doApply()
         sleCheck->setFieldH256(sfInvoiceID, *invoiceId);
     if (auto const expiry = ctx_.tx[~sfExpiration])
         sleCheck->setFieldU32(sfExpiration, *expiry);
+    if (auto const deliverAfter = ctx_.tx[~sfDeliverAfter])
+        sleCheck->setFieldU32(sfDeliverAfter, *deliverAfter);
 
     view().insert(sleCheck);
 

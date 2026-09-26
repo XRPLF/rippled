@@ -2489,6 +2489,127 @@ class Check_test : public beast::unit_test::Suite
     }
 
     void
+    testPostDatedChecks(FeatureBitset features)
+    {
+        testcase("PostDatedChecks");
+
+        using namespace test::jtx;
+        using namespace std::chrono_literals;
+
+        Account const alice{"alice"};
+        Account const bob{"bob"};
+
+        // 1. Amendment disabled behavior
+        {
+            Env env{*this, features - featurePostDatedChecks};
+            env.fund(XRP(1000), alice, bob);
+            env.close();
+
+            env(check::create(alice, bob, XRP(100)),
+                DeliverAfter(env.now() + 100s),
+                Ter(temDISABLED));
+            env.close();
+        }
+
+        // 2. Amendment enabled behavior
+        {
+            Env env{*this, features | featurePostDatedChecks};
+            env.fund(XRP(1000), alice, bob);
+            env.close();
+
+            // Zero DeliverAfter
+            env(check::create(alice, bob, XRP(100)),
+                DeliverAfter(NetClock::time_point{}),
+                Ter(temBAD_EXPIRATION));
+            env.close();
+
+            // DeliverAfter >= Expiration
+            env(check::create(alice, bob, XRP(100)),
+                DeliverAfter(env.now() + 100s),
+                Expiration(env.now() + 100s),
+                Ter(temBAD_EXPIRATION));
+            env.close();
+
+            env(check::create(alice, bob, XRP(100)),
+                DeliverAfter(env.now() + 200s),
+                Expiration(env.now() + 100s),
+                Ter(temBAD_EXPIRATION));
+            env.close();
+
+            // Valid post-dated check with maturity in future
+            auto const maturity = env.now() + 100s;
+            auto const expiry = env.now() + 200s;
+            uint256 const chkId{getCheckIndex(alice, env.seq(alice))};
+            env(check::create(alice, bob, XRP(100)),
+                DeliverAfter(maturity),
+                Expiration(expiry));
+            env.close();
+
+            // Verify SLE has DeliverAfter
+            auto const sleCheck = env.le(keylet::check(chkId));
+            BEAST_EXPECT(sleCheck != nullptr);
+            BEAST_EXPECT(sleCheck->isFieldPresent(sfDeliverAfter));
+            BEAST_EXPECT((*sleCheck)[sfDeliverAfter] == maturity.time_since_epoch().count());
+
+            // Bob attempts to cash prematurely -> tecNO_PERMISSION
+            env(check::cash(bob, chkId, XRP(100)), Ter(tecNO_PERMISSION));
+            env.close();
+
+            // Advance ledger time past maturity
+            env.close(maturity + 1s);
+
+            // Bob cashes successfully now that maturity has passed
+            env(check::cash(bob, chkId, XRP(100)));
+            env.close();
+            BEAST_EXPECT(checksOnAccount(env, alice).empty());
+            BEAST_EXPECT(checksOnAccount(env, bob).empty());
+        }
+
+        // 3. Dynamic sweep with DeliverMin (Dead-man switch / inheritance)
+        {
+            Env env{*this, features | featurePostDatedChecks};
+            env.fund(XRP(1000), alice, bob);
+            env.close();
+
+            auto const maturity = env.now() + 100s;
+            uint256 const chkId{getCheckIndex(alice, env.seq(alice))};
+            env(check::create(alice, bob, XRP(500)),
+                DeliverAfter(maturity));
+            env.close();
+
+            // Advance time past maturity
+            env.close(maturity + 1s);
+
+            // Beneficiary cashes with DeliverMin: 1 drop
+            env(check::cash(bob, chkId, check::DeliverMin(drops(1))));
+            env.close();
+            BEAST_EXPECT(checksOnAccount(env, alice).empty());
+            BEAST_EXPECT(checksOnAccount(env, bob).empty());
+        }
+
+        // 4. Creator unilateral cancellation before maturity (Heartbeat / Revocation)
+        {
+            Env env{*this, features | featurePostDatedChecks};
+            env.fund(XRP(1000), alice, bob);
+            env.close();
+
+            auto const maturity = env.now() + 100s;
+            uint256 const chkId{getCheckIndex(alice, env.seq(alice))};
+            env(check::create(alice, bob, XRP(200)),
+                DeliverAfter(maturity));
+            env.close();
+
+            BEAST_EXPECT(checksOnAccount(env, alice).size() == 1);
+
+            // Alice unilaterally cancels before maturity
+            env(check::cancel(alice, chkId));
+            env.close();
+
+            BEAST_EXPECT(checksOnAccount(env, alice).empty());
+        }
+    }
+
+    void
     testWithFeats(FeatureBitset features)
     {
         testEnabled(features);
@@ -2504,6 +2625,7 @@ class Check_test : public beast::unit_test::Suite
         testCancelInvalid(features);
         testDeliveredAmountForCheckCashTxn(features);
         testWithTickets(features);
+        testPostDatedChecks(features);
     }
 
 public:
