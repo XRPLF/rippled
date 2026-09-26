@@ -629,10 +629,6 @@ SHAMap::addKnownNode(
 {
     XRPL_ASSERT(!nodeID.isRoot(), "xrpl::SHAMap::addKnownNode : valid node");
     XRPL_ASSERT(treeNode, "xrpl::SHAMap::addKnownNode : non-null tree node");
-    XRPL_ASSERT_IF(
-        treeNode->isLeaf(),
-        nodeID.isPrefixOf(leafKey(*treeNode)),
-        "xrpl::SHAMap::addKnownNode : leaf position consistent with node ID");
 
     if (!isSynching())
     {
@@ -672,6 +668,17 @@ SHAMap::addKnownNode(
         auto prevNode = inner;
         std::tie(currNode, currNodeID) = descend(inner, currNodeID, branch, filter);
 
+        if (!isValid())
+        {
+            // descend judged a node on the way down and condemned the map. Stops here rather than
+            // falling through, for two reasons: `childHash` was read before that descent, so the
+            // hash comparison below would report a corrupt node against a sender that sent nothing
+            // wrong, and if the node descend refused is the one offered here, that comparison would
+            // instead succeed and hook it after all.
+            JLOG(journal_.warn()) << "Node " << nodeID << " cannot be hooked into an invalid map";
+            return SHAMapAddNode::invalid();
+        }
+
         if (currNode != nullptr)
             continue;
 
@@ -707,6 +714,22 @@ SHAMap::addKnownNode(
         {
             JLOG(journal_.warn()) << "Unable to hook node " << nodeID << ", stuck at "
                                   << currNodeID;
+            return SHAMapAddNode::invalid();
+        }
+
+        // A leaf's own key names its position, so a leaf offered for this slot has to agree with
+        // the ID it was offered under. The hash test above already proves the parent records this
+        // exact leaf here, so a disagreement is a property of the map rather than of the sender.
+        //
+        // Below the badPosition test on purpose. A node carrying a label that does not match where
+        // it landed is still obtainable from another sender, so it has to be refused there. Above
+        // that test, one relabelled leaf would let a peer condemn a sound map, and Invalid is
+        // terminal.
+        if (!belongsAt(nodeID, *treeNode))
+        {
+            JLOG(journal_.warn()) << "Leaf " << treeNode->getHash() << " does not belong at "
+                                  << nodeID << ", map is invalid";
+            setInvalid();
             return SHAMapAddNode::invalid();
         }
 

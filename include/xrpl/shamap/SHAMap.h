@@ -147,6 +147,10 @@ private:
      * clearSynching(), while whatever drives the acquisition reads it.
      * Nothing here requires the caller to hold a lock across the walk, and
      * the acquisition code does not, so this is atomic rather than guarded.
+     *
+     * Mutable because reaching the Invalid verdict is not a modification of
+     * the map the caller asked for: descend() resolves a node, judges its
+     * position and records the verdict, all while const.
      */
     mutable std::atomic<SHAMapState> state_;
     SHAMapType const type_;
@@ -422,9 +426,12 @@ public:
      * @param filter Optional sync filter to track received nodes.
      * @return Status indicating whether the node was useful, duplicate, or invalid.
      *
-     * @note This function expects the treeNode to be a valid, deserialized SHAMapTreeNode. The
-     *       caller is responsible for deserialization and basic validation before calling this
-     *       function. This also means that the nodeID must be consistent with the node's content.
+     * @note This function expects the treeNode to be a valid, deserialized
+     *       SHAMapTreeNode. The caller is responsible for deserialization
+     *       before calling this function. The position is not the caller's
+     *       to guarantee: a leaf whose key does not lie under nodeID leaves
+     *       the map invalid and returns invalid(), and so does a node
+     *       offered to a map an earlier descent already condemned.
      */
     SHAMapAddNode
     addKnownNode(
@@ -745,9 +752,13 @@ private:
      * Private because only the map itself can prove that, from a node that
      * contradicts the hashes it is syncing against. Cannot fail, since
      * Invalid outranks every other state; see trySetState().
+     *
+     * Const because a read-only walk is one of the places that can reach this
+     * verdict: descend() judges a node's position while resolving it, and
+     * descend() is const.
      */
     void
-    setInvalid();
+    setInvalid() const;
 
     /**
      * Move the map to a new state, atomically.
@@ -757,12 +768,16 @@ private:
      * always stored, while every other transition is refused once the map
      * is Invalid, which is what makes that verdict terminal.
      *
+     * Const so that setInvalid() can be const too. state_ is mutable, which is
+     * what makes that legal. The non-const transitions stay non-const, so this
+     * does not make a const map settleable.
+     *
      * @param desired The state to move to.
      * @return false if the map is Invalid and the requested state is not,
      *         leaving it unchanged; true otherwise.
      */
     bool
-    trySetState(SHAMapState desired);
+    trySetState(SHAMapState desired) const;
 
     // tree node cache operations
     SHAMapTreeNodePtr
@@ -1008,7 +1023,7 @@ SHAMap::state() const
 }
 
 inline bool
-SHAMap::trySetState(SHAMapState desired)
+SHAMap::trySetState(SHAMapState desired) const
 {
     // Invalid is stored outright: a walk reaching that verdict has to win against a thread
     // settling the map.
@@ -1080,7 +1095,7 @@ SHAMap::isValid() const
 }
 
 inline void
-SHAMap::setInvalid()
+SHAMap::setInvalid() const
 {
     // Through trySetState() like every other transition, so nothing writes state_ behind its back.
     trySetState(SHAMapState::Invalid);

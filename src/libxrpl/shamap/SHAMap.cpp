@@ -407,11 +407,28 @@ SHAMap::descend(
         !parent->isEmptyBranch(branch), "xrpl::SHAMap::descend : parent branch is non-empty");
 
     SHAMapTreeNode* child = parent->getChildPointer(branch);  // NOLINT(misc-const-correctness)
+    auto childID = parentID.getChildNodeID(branch);
 
     if (child == nullptr)
     {
         auto const& childHash = parent->getChildHash(branch);
         SHAMapTreeNodePtr childNode = fetchNodeNT(childHash, filter);
+
+        if (childNode && !belongsAt(childID, *childNode))
+        {
+            // A node arriving through the filter is judged by hash, and a hash covers a node's
+            // contents rather than its position, so this is where a leaf that belongs elsewhere
+            // enters the map. Judged before canonicalizeChild, after which every later walk would
+            // see it as part of the tree.
+            //
+            // The map is the verdict rather than the node, because refusing one node would only
+            // make the walk fetch the same thing again: the filter answers from a local cache, so
+            // the next attempt resolves the same blob to the same place.
+            JLOG(journal_.warn()) << "Leaf " << childHash << " does not belong at " << childID
+                                  << ", map is invalid";
+            setInvalid();
+            return std::make_pair(nullptr, std::move(childID));
+        }
 
         if (childNode)
         {
@@ -420,7 +437,7 @@ SHAMap::descend(
         }
     }
 
-    return std::make_pair(child, parentID.getChildNodeID(branch));
+    return std::make_pair(child, std::move(childID));
 }
 
 SHAMapTreeNode*
