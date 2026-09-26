@@ -1,9 +1,12 @@
 #include <xrpl/basics/Slice.h>
 #include <xrpl/ledger/helpers/EscrowHelpers.h>
 #include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/SeqProxy.h>
+#include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxMeta.h>
 #include <xrpl/protocol/XRPAmount.h>
@@ -17,6 +20,7 @@
 #include <tx/wasm/fixtures/EscrowWasm.h>
 #include <tx/wasm/fixtures/WasmRun.h>
 
+#include <algorithm>
 #include <array>
 #include <cstddef>
 #include <cstdint>
@@ -52,6 +56,28 @@ paddedContract(std::size_t padding)
         "  (func (export \"escrow_finish\") (result i32)\n"
         "    (i32.const 1)))";
     return assembleWat(wat);
+}
+
+// The metadata mentions the escrow at all. Without this, "the metadata does not carry the
+// contract" would pass vacuously on metadata that never touched the escrow.
+bool
+mentionsEscrow(TxMeta const& meta)
+{
+    return std::ranges::any_of(meta.getNodes(), [](STObject const& node) {
+        return node.getFieldU16(sfLedgerEntryType) == ltESCROW;
+    });
+}
+
+// Whether the contract's bytes appear anywhere in the serialized metadata. Serialized
+// rather than walked field by field: what matters is that the bytes are not persisted, in
+// whatever shape a later metadata change might give them.
+bool
+carries(TxMeta const& meta, Bytes const& wasm)
+{
+    auto s = Serializer{};
+    meta.getAsObject().add(s);
+    auto const& blob = s.peekData();
+    return !std::ranges::search(blob, wasm).empty();
 }
 
 struct BytecodeRun : testing::Test
@@ -173,6 +199,47 @@ TEST_F(BytecodeRun, TheBytecodeReserveIsHeldWhileTheEscrowLivesAndReleasedWhenIt
     ASSERT_EQ(finish(created.seq).ter, tesSUCCESS);
 
     EXPECT_EQ(env.getOwnerCount(alice), 0U);
+}
+
+// The contract is persisted once, in the EscrowCreate blob.
+TEST_F(BytecodeRun, the_contract_is_never_copied_into_transaction_metadata)
+{
+    auto const threshold = currentSeq() + 2;
+    auto const wasm = assembleWat(gatedOnLedgerSqn(threshold));
+
+    auto const seq = env.getAccountRoot(alice).getSequence();
+    auto builder = transactions::EscrowCreateBuilder{alice, carol, STAmount{XRP(1'000)}};
+    builder.setBytecode(makeSlice(wasm));
+    builder.setCancelAfter(closeTimeOffset(env, 1'000));
+    auto const created = env.submitAndClose(builder, alice, escrowCreateFee(env, wasm));
+
+    ASSERT_EQ(created.ter, tesSUCCESS);
+    ASSERT_TRUE(created.meta.has_value());
+    // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
+    EXPECT_TRUE(mentionsEscrow(*created.meta));
+    // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
+    EXPECT_FALSE(carries(*created.meta, wasm)) << "creation metadata must not repeat the contract";
+
+    // Only the metadata drops it: the escrow still holds the contract, which is what
+    // `EscrowFinish` runs.
+    auto const slep = env.getOpenLedger().read(keylet::escrow(alice, SeqProxy::rawSequence(seq)));
+    ASSERT_NE(slep, nullptr);
+    EXPECT_EQ(slep->getFieldVL(sfBytecode), wasm);
+
+    while (currentSeq() < threshold)
+    {
+        env.close();
+    }
+
+    auto const finished = finish(seq);
+    ASSERT_EQ(finished.ter, tesSUCCESS);
+    ASSERT_FALSE(escrowExists(seq));
+    ASSERT_TRUE(finished.meta.has_value());
+    // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
+    EXPECT_TRUE(mentionsEscrow(*finished.meta));
+    // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
+    EXPECT_FALSE(carries(*finished.meta, wasm))
+        << "deletion metadata must not carry the contract into every full node";
 }
 
 TEST_F(BytecodeRun, a_lock_leaving_the_owner_short_of_the_bytecode_reserve_is_refused)
