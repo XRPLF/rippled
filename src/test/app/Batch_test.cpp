@@ -462,7 +462,7 @@ class Batch_test : public beast::unit_test::Suite
         {
             auto jtx = env.jt(pay(alice, bob, XRP(1)));
             PreflightContext const pfCtx(
-                env.app(), *jtx.stx, uint256{1}, env.current()->rules(), TapBatch, env.journal);
+                env.app(), *jtx.stx,  uint256{1}, env.current()->rules(), TapBatch, env.journal);
             auto const pf = Transactor::invokePreflight<Payment>(pfCtx);
             BEAST_EXPECT(pf == temINVALID_INNER_BATCH);
         }
@@ -4381,7 +4381,7 @@ class Batch_test : public beast::unit_test::Suite
 
         STTx const stx = STTx(ttAMENDMENT, [&](auto& obj) {
             obj.setAccountID(sfAccount, AccountID());
-            obj.setFieldH256(sfAmendment, uint256(2));
+            obj.setFieldH256(sfAmendment,  uint256{2});
             obj.setFieldU32(sfLedgerSequence, env.seq(alice));
             obj.setFieldU32(sfFlags, tfInnerBatchTxn);
         });

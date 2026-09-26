@@ -33,7 +33,20 @@ public:
 
     STBitString(SField const& n);
     STBitString(value_type const& v);
+
+    template <typename Tag>
+        requires(!std::is_void_v<Tag>)
+    STBitString(BaseUInt<Bits, Tag> const& v) : value_(v)
+    {
+    }
+
     STBitString(SField const& n, value_type const& v);
+    template <typename Tag>
+        requires(!std::is_void_v<Tag>)
+    STBitString(SField const& n, BaseUInt<Bits, Tag> const& v) : STBase(n), value_(v)
+    {
+    }
+
     STBitString(SerialIter& sit, SField const& name);
 
     [[nodiscard]] SerializedTypeID
@@ -166,7 +179,7 @@ template <typename Tag>
 void
 STBitString<Bits>::setValue(BaseUInt<Bits, Tag> const& v)
 {
-    value_ = v;
+    value_ = value_type{v};
 }
 
 template <int Bits>

@@ -18,7 +18,7 @@ namespace xrpl::ledger_entries {
 // builder's STObject and the wrapper's SLE.
 TEST(PermissionedDomainTests, BuilderSettersRoundTrip)
 {
-    uint256 const index{1u};
+    uint256 const index{1};
 
     auto const ownerValue = canonical_ACCOUNT();
     auto const sequenceValue = canonical_UINT32();
@@ -93,7 +93,7 @@ TEST(PermissionedDomainTests, BuilderSettersRoundTrip)
 // from that SLE, build a new wrapper, and verify all fields (and validate()).
 TEST(PermissionedDomainTests, BuilderFromSleRoundTrip)
 {
-    uint256 const index{2u};
+    uint256 const index{2};
 
     auto const ownerValue = canonical_ACCOUNT();
     auto const sequenceValue = canonical_UINT32();
@@ -187,7 +187,7 @@ TEST(PermissionedDomainTests, BuilderFromSleRoundTrip)
 // 3) Verify wrapper throws when constructed from wrong ledger entry type.
 TEST(PermissionedDomainTests, WrapperThrowsOnWrongEntryType)
 {
-    uint256 const index{3u};
+    uint256 const index{3};
 
     // Build a valid ledger entry of a different type
     // Ticket requires: Account, OwnerNode, TicketSequence, PreviousTxnID, PreviousTxnLgrSeq
@@ -206,7 +206,7 @@ TEST(PermissionedDomainTests, WrapperThrowsOnWrongEntryType)
 // 4) Verify builder throws when constructed from wrong ledger entry type.
 TEST(PermissionedDomainTests, BuilderThrowsOnWrongEntryType)
 {
-    uint256 const index{4u};
+    uint256 const index{4};
 
     // Build a valid ledger entry of a different type
     TicketBuilder wrongBuilder{

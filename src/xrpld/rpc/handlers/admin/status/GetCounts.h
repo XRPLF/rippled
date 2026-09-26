@@ -4,9 +4,11 @@
 
 #include <xrpl/json/json_value.h>
 
+#include <cstdint>
+
 namespace xrpl {
 
 json::Value
-getCountsJson(Application& app, int minObjectCount);
+getCountsJson(Application& app, std::uint32_t minObjectCount);
 
 }  // namespace xrpl

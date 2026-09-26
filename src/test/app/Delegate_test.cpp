@@ -25,6 +25,7 @@
 #include <test/jtx/ter.h>
 #include <test/jtx/trust.h>
 #include <test/jtx/txflags.h>
+#include <test/jtx/utility.h>
 #include <test/jtx/vault.h>
 
 #include <xrpl/basics/Number.h>

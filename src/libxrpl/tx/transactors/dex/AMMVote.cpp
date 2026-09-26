@@ -89,7 +89,7 @@ applyVote(ApplyContext& ctx, Sandbox& sb, AccountID const& accountID, beast::Jou
     auto const lpTokensNew = ammLPHolds(sb, *ammSle, accountID, ctx.journal);
     std::optional<STAmount> minTokens;
     std::size_t minPos{0};
-    AccountID minAccount{0};
+    AccountID minAccount;
     std::uint32_t minFee{0};
     STArray updatedVoteSlots;
     Number num{0};

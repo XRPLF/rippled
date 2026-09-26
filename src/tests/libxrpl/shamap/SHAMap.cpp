@@ -740,13 +740,12 @@ TEST_F(SHAMapPathProof, verify_proof_path)
     uint256 rootHash;
     std::vector<Blob> goodPath;
 
-    static constexpr unsigned char kFirstKey = 1;
     static constexpr unsigned char kKeyCount = 100;
-    static constexpr unsigned char kLastKey = kKeyCount - 1;
+    static constexpr auto kFirstKey = uint256{1};
+    static constexpr auto kLastKey = uint256{kKeyCount - 1};
 
-    for (unsigned char c = kFirstKey; c < kKeyCount; ++c)
+    for (auto k = kFirstKey; k <= kLastKey; ++k)
     {
-        uint256 k(c);
         map.addItem(SHAMapNodeType::TnAccountState, makeShamapitem(k, Slice{k.data(), k.size()}));
         map.invariants();
 
@@ -760,16 +759,15 @@ TEST_F(SHAMapPathProof, verify_proof_path)
         auto& proofPath = *path;
 
         EXPECT_TRUE(map.verifyProofPath(root, k, proofPath));
-        if (c == kFirstKey)
+        if (k == kFirstKey)
         {
             // extra node
             proofPath.insert(proofPath.begin(), proofPath.front());
             EXPECT_FALSE(map.verifyProofPath(root, k, proofPath));
             // wrong key
-            uint256 const wrongKey(c + 1);
-            EXPECT_FALSE(map.getProofPath(wrongKey));
+            EXPECT_FALSE(map.getProofPath(k.next()));
         }
-        if (c == kLastKey)
+        if (k == kLastKey)
         {
             key = k;
             rootHash = root;

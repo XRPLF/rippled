@@ -602,8 +602,8 @@ private:
 
             // Invalid tokens - bogus currency
             {
-                auto const iss1 = Issue{Currency(0xabc), gw_.id()};
-                auto const iss2 = Issue{Currency(0xdef), gw_.id()};
+                auto const iss1 = Issue{Currency{0xabc}, gw_.id()};
+                auto const iss2 = Issue{Currency{0xdef}, gw_.id()};
                 ammAlice.deposit(
                     alice_,
                     1'000,

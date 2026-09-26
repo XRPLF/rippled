@@ -28,48 +28,38 @@ STIssue::STIssue(SField const& name) : STBase{name}
 
 STIssue::STIssue(SerialIter& sit, SField const& name) : STBase{name}
 {
+    // Either the currency of an Issue or the issuer of an MPT; the
+    // following 160 bits disambiguate.
     auto const currencyOrAccount = sit.get160();
 
-    if (isXRP(Currency::fromRaw(currencyOrAccount)))
+    if (isXRP(Currency{currencyOrAccount}))
     {
         asset_ = xrpIssue();
+        return;
     }
-    // Check if MPT
-    else
+    
+    // MPT is serialized as:
+    // - 160 bits MPT issuer account
+    // - 160 bits black hole account
+    // - 32 bits sequence
+    AccountID const account{sit.get160()};
+
+    // MPT
+    if (noAccount() == account)
     {
-        // MPT is serialized as:
-        // - 160 bits MPT issuer account
-        // - 160 bits black hole account
-        // - 32 bits sequence
-        AccountID const account = AccountID::fromRaw(sit.get160());
-        // MPT
-        if (noAccount() == account)
-        {
-            MPTID mptID;
-            std::uint32_t sequence = sit.get32();
-            // MPTID stores the sequence in canonical big-endian bytes. STIssue
-            // ledger bytes are the legacy LE-host encoding, so convert the
-            // native get32() value to LE bytes before copying into the MPTID.
-            sequence = boost::endian::native_to_little(sequence);
-            static_assert(MPTID::size() == sizeof(sequence) + sizeof(currencyOrAccount));
-            memcpy(mptID.data(), &sequence, sizeof(sequence));
-            memcpy(
-                mptID.data() + sizeof(sequence),
-                currencyOrAccount.data(),
-                sizeof(currencyOrAccount));
-            MPTIssue const issue{mptID};
-            asset_ = issue;
-        }
-        else
-        {
-            Issue issue;
-            issue.currency = currencyOrAccount;
-            issue.account = account;
-            if (!isConsistent(issue))
-                Throw<std::runtime_error>("invalid issue: currency and account native mismatch");
-            asset_ = issue;
-        }
+        // MPT: issuer (160), noAccount() (160), sequence (32). The sequence
+        // is stored in little-endian and get32() reads big-endian, so 
+        // reverse it before building the canonical ID.
+        asset_ = MPTIssue{std::byteswap(sit.get32()), AccountID{currencyOrAccount}};
+        return;
     }
+
+    Issue const issue{Currency{currencyOrAccount}, account};
+    
+    if (!isConsistent(issue))
+        Throw<std::runtime_error>("invalid issue: currency and account native mismatch");
+    
+    asset_ = issue;
 }
 
 SerializedTypeID

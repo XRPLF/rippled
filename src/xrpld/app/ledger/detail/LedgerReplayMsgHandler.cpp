@@ -44,24 +44,25 @@ LedgerReplayMsgHandler::processProofPathRequest(
     protocol::TMProofPathRequest& packet = *msg;
     protocol::TMProofPathResponse reply;
 
-    if (!packet.has_key() || !packet.has_ledgerhash() || !packet.has_type() ||
-        packet.ledgerhash().size() != uint256::size() || packet.key().size() != uint256::size() ||
+    auto const key = uint256::fromRaw(packet.key());
+    auto const ledgerHash = uint256::fromRaw(packet.ledgerhash());
+
+    if (!key || !ledgerHash || !packet.has_type() ||
         !protocol::TMLedgerMapType_IsValid(packet.type()))
     {
         JLOG(journal_.debug()) << "getProofPath: Invalid request";
         reply.set_error(protocol::TMReplyError::reBAD_REQUEST);
         return reply;
     }
+
     reply.set_key(packet.key());
     reply.set_ledgerhash(packet.ledgerhash());
     reply.set_type(packet.type());
 
-    uint256 const key = uint256::fromRaw(packet.key());
-    uint256 const ledgerHash = uint256::fromRaw(packet.ledgerhash());
-    auto ledger = app_.getLedgerMaster().getLedgerByHash(ledgerHash);
+    auto ledger = app_.getLedgerMaster().getLedgerByHash(*ledgerHash);
     if (!ledger)
     {
-        JLOG(journal_.debug()) << "getProofPath: Don't have ledger " << ledgerHash;
+        JLOG(journal_.debug()) << "getProofPath: Don't have ledger " << *ledgerHash;
         reply.set_error(protocol::TMReplyError::reNO_LEDGER);
         return reply;
     }
@@ -70,9 +71,9 @@ LedgerReplayMsgHandler::processProofPathRequest(
         switch (packet.type())
         {
             case protocol::lmACCOUNT_STATE:
-                return ledger->stateMap().getProofPath(key);
+                return ledger->stateMap().getProofPath(*key);
             case protocol::lmTRANSACTION:
-                return ledger->txMap().getProofPath(key);
+                return ledger->txMap().getProofPath(*key);
             default:
                 // should not be here
                 // because already tested with TMLedgerMapType_IsValid()
@@ -82,8 +83,8 @@ LedgerReplayMsgHandler::processProofPathRequest(
 
     if (!path)
     {
-        JLOG(journal_.debug()) << "getProofPath: Don't have the node " << key << " of ledger "
-                               << ledgerHash;
+        JLOG(journal_.debug()) << "getProofPath: Don't have the node " << *key << " of ledger "
+                               << *ledgerHash;
         reply.set_error(protocol::TMReplyError::reNO_NODE);
         return reply;
     }
@@ -96,7 +97,7 @@ LedgerReplayMsgHandler::processProofPathRequest(
     for (auto const& b : *path)
         reply.add_path(b.data(), b.size());
 
-    JLOG(journal_.debug()) << "getProofPath for the node " << key << " of ledger " << ledgerHash
+    JLOG(journal_.debug()) << "getProofPath for the node " << *key << " of ledger " << *ledgerHash
                            << " path length " << path->size();
     return reply;
 }
@@ -106,14 +107,18 @@ LedgerReplayMsgHandler::processProofPathResponse(
     std::shared_ptr<protocol::TMProofPathResponse> const& msg)
 {
     protocol::TMProofPathResponse const& reply = *msg;
+
     if (reply.has_error())
     {
         JLOG(journal_.debug()) << "ProofPathResponse: peer reported error";
         return ReplayMsgStatus::BadData;
     }
-    if (!reply.has_key() || !reply.has_ledgerhash() || !reply.has_type() ||
-        !reply.has_ledgerheader() || reply.path_size() == 0 ||
-        reply.ledgerhash().size() != uint256::size() || reply.key().size() != uint256::size())
+
+    auto const replyHash = uint256::fromRaw(reply.ledgerhash());
+    auto const key = uint256::fromRaw(reply.key());
+
+    if (!replyHash || !key || !reply.has_type() || !reply.has_ledgerheader() ||
+        reply.path_size() == 0)
     {
         JLOG(journal_.debug()) << "ProofPathResponse: malformed (missing or wrong-size fields)";
         return ReplayMsgStatus::Malformed;
@@ -136,30 +141,27 @@ LedgerReplayMsgHandler::processProofPathResponse(
         JLOG(journal_.debug()) << "ProofPathResponse: malformed header (" << e.what() << ")";
         return ReplayMsgStatus::Malformed;
     }
-    uint256 const replyHash = uint256::fromRaw(reply.ledgerhash());
-    if (calculateLedgerHash(info) != replyHash)
+
+    if (calculateLedgerHash(info) != *replyHash)
     {
         JLOG(journal_.debug()) << "ProofPathResponse: malformed (hash mismatch)";
         return ReplayMsgStatus::Malformed;
     }
-    info.hash = replyHash;
+    info.hash = *replyHash;
 
-    uint256 const key = uint256::fromRaw(reply.key());
-    if (key != keylet::skip().key)
+    if (*key != keylet::skip().key)
     {
-        JLOG(journal_.debug()) << "ProofPathResponse: malformed (unexpected key " << key << ")";
+        JLOG(journal_.debug()) << "ProofPathResponse: malformed (unexpected key " << *key << ")";
         return ReplayMsgStatus::Malformed;
     }
 
     // verify the skip list
     std::vector<Blob> path;
     path.reserve(reply.path_size());
-    for (int i = 0; i < reply.path_size(); ++i)
-    {
-        path.emplace_back(reply.path(i).begin(), reply.path(i).end());
-    }
+    for (auto const& node : reply.path())
+        path.emplace_back(node.begin(), node.end());
 
-    if (!SHAMap::verifyProofPath(info.accountHash, key, path))
+    if (!SHAMap::verifyProofPath(info.accountHash, *key, path))
     {
         JLOG(journal_.debug()) << "ProofPathResponse: malformed (proof path verify failed)";
         return ReplayMsgStatus::Malformed;
@@ -176,6 +178,7 @@ LedgerReplayMsgHandler::processProofPathResponse(
         JLOG(journal_.debug()) << "ProofPathResponse: malformed SHAMap node (" << e.what() << ")";
         return ReplayMsgStatus::Malformed;
     }
+
     if (!node || !node->isLeaf())
     {
         JLOG(journal_.debug()) << "ProofPathResponse: malformed (not a leaf node)";
@@ -199,7 +202,9 @@ LedgerReplayMsgHandler::processReplayDeltaRequest(
     protocol::TMReplayDeltaRequest const& packet = *msg;
     protocol::TMReplayDeltaResponse reply;
 
-    if (!packet.has_ledgerhash() || packet.ledgerhash().size() != uint256::size())
+    auto const ledgerHash = uint256::fromRaw(packet.ledgerhash());
+
+    if (!ledgerHash)
     {
         JLOG(journal_.debug()) << "getReplayDelta: Invalid request";
         reply.set_error(protocol::TMReplyError::reBAD_REQUEST);
@@ -207,11 +212,10 @@ LedgerReplayMsgHandler::processReplayDeltaRequest(
     }
     reply.set_ledgerhash(packet.ledgerhash());
 
-    uint256 const ledgerHash = uint256::fromRaw(packet.ledgerhash());
-    auto ledger = app_.getLedgerMaster().getLedgerByHash(ledgerHash);
+    auto ledger = app_.getLedgerMaster().getLedgerByHash(*ledgerHash);
     if (!ledger || !ledger->isImmutable())
     {
-        JLOG(journal_.debug()) << "getReplayDelta: Don't have ledger " << ledgerHash;
+        JLOG(journal_.debug()) << "getReplayDelta: Don't have ledger " << *ledgerHash;
         reply.set_error(protocol::TMReplyError::reNO_LEDGER);
         return reply;
     }
@@ -226,7 +230,7 @@ LedgerReplayMsgHandler::processReplayDeltaRequest(
         reply.add_transaction(txNode->data(), txNode->size());
     });
 
-    JLOG(journal_.debug()) << "getReplayDelta for ledger " << ledgerHash << " txMap hash "
+    JLOG(journal_.debug()) << "getReplayDelta for ledger " << *ledgerHash << " txMap hash "
                            << txMap.getHash().asUInt256();
     return reply;
 }
@@ -241,14 +245,17 @@ LedgerReplayMsgHandler::processReplayDeltaResponse(
         JLOG(journal_.debug()) << "ReplayDeltaResponse: peer reported error";
         return ReplayMsgStatus::BadData;
     }
-    if (!reply.has_ledgerheader() || !reply.has_ledgerhash() ||
-        reply.ledgerhash().size() != uint256::size())
+
+    auto const replyHash = uint256::fromRaw(reply.ledgerhash());
+
+    if (!reply.has_ledgerheader() || !replyHash)
     {
         JLOG(journal_.debug()) << "ReplayDeltaResponse: malformed (missing or wrong-size fields)";
         return ReplayMsgStatus::Malformed;
     }
 
     LedgerHeader info;
+
     try
     {
         info = deserializeHeader(makeSlice(reply.ledgerheader()));
@@ -258,13 +265,14 @@ LedgerReplayMsgHandler::processReplayDeltaResponse(
         JLOG(journal_.debug()) << "ReplayDeltaResponse: malformed header (" << e.what() << ")";
         return ReplayMsgStatus::Malformed;
     }
-    uint256 const replyHash = uint256::fromRaw(reply.ledgerhash());
+
     if (calculateLedgerHash(info) != replyHash)
     {
         JLOG(journal_.debug()) << "ReplayDeltaResponse: malformed (hash mismatch)";
         return ReplayMsgStatus::Malformed;
     }
-    info.hash = replyHash;
+
+    info.hash = *replyHash;
 
     auto numTxns = reply.transaction_size();
     std::map<std::uint32_t, std::shared_ptr<STTx const>> orderedTxns;

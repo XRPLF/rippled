@@ -69,7 +69,7 @@ parseSection(Section const& section)
 
         uint256 id;
 
-        if (!id.parseHex(match[1]))
+        if (!id.parseHex(match[1].str()))
         {
             Throw<std::runtime_error>(
                 "Invalid amendment ID '" + match[1] + "' in [" + section.name() + "]");

@@ -776,7 +776,7 @@ PeerImp::PeerImp(
     : Child(overlay)
     , app_(app)
     , id_(id)
-    , fingerprint_(getFingerprint(slot->remoteEndpoint(), publicKey, to_string(id_)))
+    , fingerprint_(getFingerprint(slot->remoteEndpoint(), publicKey, std::to_string(id_)))
     , prefix_(makePrefix(fingerprint_))
     , sink_(app_.getJournal("Peer"), prefix_)
     , pSink_(app_.getJournal("Protocol"), prefix_)

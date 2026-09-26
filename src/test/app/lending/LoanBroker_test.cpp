@@ -307,7 +307,7 @@ class LoanBroker_test : public beast::unit_test::Suite
                 };
 
             // Test Cover funding before allowing alterations
-            env(coverDeposit(alice, uint256(0), vault.asset(10)), Ter(temINVALID));
+            env(coverDeposit(alice, uint256{0}, vault.asset(10)), Ter(temINVALID));
             env(coverDeposit(evan, keylet.key, vault.asset(10)), Ter(tecNO_PERMISSION));
             env(coverDeposit(evan, keylet.key, vault.asset(0)), Ter(temBAD_AMOUNT));
             env(coverDeposit(evan, keylet.key, vault.asset(-10)), Ter(temBAD_AMOUNT));
@@ -318,7 +318,7 @@ class LoanBroker_test : public beast::unit_test::Suite
             // Test cover clawback failure cases BEFORE depositing any cover
             // Need one of brokerID or amount
             env(coverClawback(alice), Ter(temINVALID));
-            env(coverClawback(alice), kLoanBrokerId(uint256(0)), Ter(temINVALID));
+            env(coverClawback(alice), kLoanBrokerId(uint256{0}), Ter(temINVALID));
             env(coverClawback(alice), kAmount(XRP(1000)), Ter(temBAD_AMOUNT));
             env(coverClawback(alice), kAmount(vault.asset(-10)), Ter(temBAD_AMOUNT));
             // Clawbacks with an MPT need to specify the broker ID
@@ -377,7 +377,7 @@ class LoanBroker_test : public beast::unit_test::Suite
             verifyCoverAmount(10);
 
             // Test withdrawal failure cases
-            env(coverWithdraw(alice, uint256(0), vault.asset(10)), Ter(temINVALID));
+            env(coverWithdraw(alice, uint256{0}, vault.asset(10)), Ter(temINVALID));
             env(coverWithdraw(evan, keylet.key, vault.asset(10)), Ter(tecNO_PERMISSION));
             env(coverWithdraw(evan, keylet.key, vault.asset(0)), Ter(temBAD_AMOUNT));
             env(coverWithdraw(evan, keylet.key, vault.asset(-10)), Ter(temBAD_AMOUNT));

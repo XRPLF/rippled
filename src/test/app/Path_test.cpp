@@ -1930,23 +1930,14 @@ public:
     {
         testcase("STPathSet::assembleAdd deduplication — O(N^2) regression");
 
-        static constexpr std::string_view kAccount1 = "A3F19C7B2E5D08146FB93A7C0E2D5184BC6F3A09";
-        static constexpr std::string_view kAccount2 = "1D7E4B90C2A6F3851E0B9D47A2C5F8136E0A4B7D";
-        static constexpr std::string_view kAccount3 = "F08C36A1D95E27B40CA1F63E8D204B7950E1C3A6";
-        static constexpr std::string_view kAccount4 = "4B6209E7F1A3C85D0E94B27Af3D6018C5A7E92B4";
-        static constexpr std::string_view kAccount5 = "9E2D7041BCA3F6589D013E7B2A4C6F80159D3E7A";
-        static constexpr std::string_view kAccount6 = "7C5A91E384F2D06BA19C4E73D820F516B3A9C0E4";
-        static constexpr std::string_view kAccount7 = "2F8B043C6A1E9D75B0C38E14F6A2D509731BC4E8";
-        static constexpr std::string_view kAccount8 = "E61D9A30F47C285BA0D31E96C7B4F802513A8D6F";
-
-        static constexpr AccountID kAccountID1{kAccount1};
-        static constexpr AccountID kAccountID2{kAccount2};
-        static constexpr AccountID kAccountID3{kAccount3};
-        static constexpr AccountID kAccountID4{kAccount4};
-        static constexpr AccountID kAccountID5{kAccount5};
-        static constexpr AccountID kAccountID6{kAccount6};
-        static constexpr AccountID kAccountID7{kAccount7};
-        static constexpr AccountID kAccountID8{kAccount8};
+        constexpr AccountID kAccountID1{"A3F19C7B2E5D08146FB93A7C0E2D5184BC6F3A09"};
+        constexpr AccountID kAccountID2{"1D7E4B90C2A6F3851E0B9D47A2C5F8136E0A4B7D"};
+        constexpr AccountID kAccountID3{"F08C36A1D95E27B40CA1F63E8D204B7950E1C3A6"};
+        constexpr AccountID kAccountID4{"4B6209E7F1A3C85D0E94B27Af3D6018C5A7E92B4"};
+        constexpr AccountID kAccountID5{"9E2D7041BCA3F6589D013E7B2A4C6F80159D3E7A"};
+        constexpr AccountID kAccountID6{"7C5A91E384F2D06BA19C4E73D820F516B3A9C0E4"};
+        constexpr AccountID kAccountID7{"2F8B043C6A1E9D75B0C38E14F6A2D509731BC4E8"};
+        constexpr AccountID kAccountID8{"E61D9A30F47C285BA0D31E96C7B4F802513A8D6F"};
 
         auto ps = STPathSet{STPathSet::DeduplicationTag{}};
 

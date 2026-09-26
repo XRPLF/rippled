@@ -35,7 +35,7 @@ constexpr std::size_t kIsoCodeLength = 3;
 std::string
 to_string(Currency const& currency)
 {
-    if (currency == beast::kZero)
+    if (currency == xrpCurrency())
         return systemCurrencyCode();
 
     if (currency == noCurrency())
@@ -62,7 +62,7 @@ to_string(Currency const& currency)
 }
 
 bool
-toCurrency(Currency& currency, std::string const& code)
+toCurrency(Currency& currency, std::string_view code)
 {
     if (code.empty() || code == systemCurrencyCode())
     {
@@ -87,33 +87,12 @@ toCurrency(Currency& currency, std::string const& code)
 }
 
 Currency
-toCurrency(std::string const& code)
+toCurrency(std::string_view code)
 {
     Currency currency;
     if (!toCurrency(currency, code))
         currency = noCurrency();
     return currency;
-}
-
-Currency const&
-xrpCurrency()
-{
-    static Currency const kCurrency(beast::kZero);
-    return kCurrency;
-}
-
-Currency const&
-noCurrency()
-{
-    static Currency const kCurrency(1);
-    return kCurrency;
-}
-
-Currency const&
-badCurrency()
-{
-    static Currency const kCurrency(0x5852500000000000);
-    return kCurrency;
 }
 
 }  // namespace xrpl

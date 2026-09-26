@@ -61,14 +61,22 @@ parseBase58(std::string const& s);
 /**
  * A special account that's used as the "issuer" for XRP.
  */
-AccountID const&
-xrpAccount();
+constexpr inline AccountID const&
+xrpAccount() noexcept
+{
+    static constexpr AccountID kAccount(beast::kZero);
+    return kAccount;
+}
 
 /**
  * A placeholder for empty accounts.
  */
-AccountID const&
-noAccount();
+constexpr inline AccountID const&
+noAccount() noexcept
+{
+    static constexpr AccountID kAccount = xrpAccount().next();
+    return kAccount;
+}
 
 /**
  * Convert hex or base58 string to AccountID.
@@ -80,10 +88,10 @@ bool
 toIssuer(AccountID&, std::string const&);
 
 // DEPRECATED Should be checking the currency or native flag
-inline bool
-isXRP(AccountID const& c)
+constexpr inline bool
+isXRP(AccountID const& c) noexcept
 {
-    return c == beast::kZero;
+    return c == xrpAccount();
 }
 
 // DEPRECATED
@@ -100,22 +108,6 @@ operator<<(std::ostream& os, AccountID const& x)
     os << to_string(x);
     return os;
 }
-
-/**
- * Initialize the global cache used to map AccountID to base58 conversions.
- *
- * The cache is optional and need not be initialized. But because conversion
- * is expensive (it requires a SHA-256 operation) in most cases the overhead
- * of the cache is worth the benefit.
- *
- * @param count The number of entries the cache should accommodate. Zero will
- *              disable the cache, releasing any memory associated with it.
- *
- * @note The function will only initialize the cache the first time it is
- *       invoked. Subsequent invocations do nothing.
- */
-void
-initAccountIdCache(std::size_t count);
 
 }  // namespace xrpl
 

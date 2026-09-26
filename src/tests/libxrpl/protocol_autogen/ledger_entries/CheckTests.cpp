@@ -18,7 +18,7 @@ namespace xrpl::ledger_entries {
 // builder's STObject and the wrapper's SLE.
 TEST(CheckTests, BuilderSettersRoundTrip)
 {
-    uint256 const index{1u};
+    uint256 const index{1};
 
     auto const accountValue = canonical_ACCOUNT();
     auto const destinationValue = canonical_ACCOUNT();
@@ -149,7 +149,7 @@ TEST(CheckTests, BuilderSettersRoundTrip)
 // from that SLE, build a new wrapper, and verify all fields (and validate()).
 TEST(CheckTests, BuilderFromSleRoundTrip)
 {
-    uint256 const index{2u};
+    uint256 const index{2};
 
     auto const accountValue = canonical_ACCOUNT();
     auto const destinationValue = canonical_ACCOUNT();
@@ -327,7 +327,7 @@ TEST(CheckTests, BuilderFromSleRoundTrip)
 // 3) Verify wrapper throws when constructed from wrong ledger entry type.
 TEST(CheckTests, WrapperThrowsOnWrongEntryType)
 {
-    uint256 const index{3u};
+    uint256 const index{3};
 
     // Build a valid ledger entry of a different type
     // Ticket requires: Account, OwnerNode, TicketSequence, PreviousTxnID, PreviousTxnLgrSeq
@@ -346,7 +346,7 @@ TEST(CheckTests, WrapperThrowsOnWrongEntryType)
 // 4) Verify builder throws when constructed from wrong ledger entry type.
 TEST(CheckTests, BuilderThrowsOnWrongEntryType)
 {
-    uint256 const index{4u};
+    uint256 const index{4};
 
     // Build a valid ledger entry of a different type
     TicketBuilder wrongBuilder{
@@ -363,7 +363,7 @@ TEST(CheckTests, BuilderThrowsOnWrongEntryType)
 // 5) Build with only required fields and verify optional fields return nullopt.
 TEST(CheckTests, OptionalFieldsReturnNullopt)
 {
-    uint256 const index{3u};
+    uint256 const index{3};
 
     auto const accountValue = canonical_ACCOUNT();
     auto const destinationValue = canonical_ACCOUNT();

@@ -30,7 +30,7 @@ using PeerKey = std::pair<PeerID, std::uint32_t>;
  */
 class Validation
 {
-    Ledger::ID ledgerID_{0};
+    Ledger::ID ledgerID_{};
     Ledger::Seq seq_{0};
 
     NetClock::time_point signTime_;

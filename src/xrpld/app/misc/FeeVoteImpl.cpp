@@ -226,27 +226,22 @@ FeeVoteImpl::doVoting(
         auto doVote = [](std::shared_ptr<STValidation> const& val,
                          detail::VotableValue& value,
                          auto const& valueField) {
-            if (auto const field = val->at(~valueField))
+            using XRPType = XRPAmount::value_type;
+
+            if (auto const field = val->at(~valueField); field && std::in_range<XRPType>(*field))
             {
-                using XRPType = XRPAmount::value_type;
-                auto const vote = *field;
-                if (vote <= std::numeric_limits<XRPType>::max() &&
-                    isLegalAmountSigned(XRPAmount{unsafeCast<XRPType>(vote)}))
+                if (auto const amount = XRPAmount{checkedCast<XRPType>(*field)};
+                    isLegalAmountSigned(amount))
                 {
-                    value.addVote(XRPAmount{unsafeCast<XRPType>(vote)});
-                }
-                else
-                {
-                    // Invalid amounts will be treated as if they're
-                    // not provided. Don't throw because this value is
-                    // provided by an external entity.
-                    value.noVote();
+                    value.addVote(amount);
+                    return;
                 }
             }
-            else
-            {
-                value.noVote();
-            }
+
+            // Invalid or missing amounts are treated as if they're not
+            // provided. Don't throw because this value is provided by an
+            // external entity.
+            value.noVote();
         };
 
         for (auto const& val : set)

@@ -32,9 +32,9 @@ public:
     void
     testUnsigned()
     {
-        Unsigned const u1(1);
-        Unsigned const u2(2);
-        Unsigned const u3(3);
+        Unsigned const u1{1};
+        Unsigned const u2{2};
+        Unsigned const u3{3};
 
         BEAST_EXPECT(u1 != u2);
         BEAST_EXPECT(u1 < u2);
@@ -62,12 +62,12 @@ public:
     void
     testIssue()
     {
-        Currency const c1(1);
-        AccountID const i1(1);
-        Currency const c2(2);
-        AccountID const i2(2);
-        Currency const c3(3);
-        AccountID const i3(3);
+        Currency const c1{1};
+        AccountID const i1{1};
+        Currency const c2{2};
+        AccountID const i2{2};
+        Currency const c3{3};
+        AccountID const i3{3};
 
         BEAST_EXPECT(Issue(c1, i1) != Issue(c2, i1));
         BEAST_EXPECT(Issue(c1, i1) < Issue(c2, i1));
@@ -111,10 +111,10 @@ public:
     void
     testIssueSet()
     {
-        Currency const c1(1);
-        AccountID const i1(1);
-        Currency const c2(2);
-        AccountID const i2(2);
+        Currency const c1{1};
+        AccountID const i1{1};
+        Currency const c2{2};
+        AccountID const i2{2};
         Issue const a1(c1, i1);
         Issue const a2(c2, i2);
 
@@ -172,10 +172,10 @@ public:
     void
     testIssueMap()
     {
-        Currency const c1(1);
-        AccountID const i1(1);
-        Currency const c2(2);
-        AccountID const i2(2);
+        Currency const c1{1};
+        AccountID const i1{1};
+        Currency const c2{2};
+        AccountID const i2{2};
         Issue const a1(c1, i1);
         Issue const a2(c2, i2);
 
@@ -224,10 +224,10 @@ public:
     void
     testIssueDomainSet()
     {
-        Currency const c1(1);
-        AccountID const i1(1);
-        Currency const c2(2);
-        AccountID const i2(2);
+        Currency const c1{1};
+        AccountID const i1{1};
+        Currency const c2{2};
+        AccountID const i2{2};
         Issue const a1(c1, i1);
         Issue const a2(c2, i2);
         uint256 const domain1{1};
@@ -261,10 +261,10 @@ public:
     void
     testIssueDomainMap()
     {
-        Currency const c1(1);
-        AccountID const i1(1);
-        Currency const c2(2);
-        AccountID const i2(2);
+        Currency const c1{1};
+        AccountID const i1{1};
+        Currency const c2{2};
+        AccountID const i2{2};
         Issue const a1(c1, i1);
         Issue const a2(c2, i2);
         uint256 const domain1{1};
@@ -390,12 +390,12 @@ public:
     void
     testBook()
     {
-        Currency const c1(1);
-        AccountID const i1(1);
-        Currency const c2(2);
-        AccountID const i2(2);
-        Currency const c3(3);
-        AccountID const i3(3);
+        Currency const c1{1};
+        AccountID const i1{1};
+        Currency const c2{2};
+        AccountID const i2{2};
+        Currency const c3{3};
+        AccountID const i3{3};
 
         Issue const a1(c1, i1);
         Issue const a2(c1, i2);
@@ -553,10 +553,10 @@ public:
     void
     testBookSet()
     {
-        Currency const c1(1);
-        AccountID const i1(1);
-        Currency const c2(2);
-        AccountID const i2(2);
+        Currency const c1{1};
+        AccountID const i1{1};
+        Currency const c2{2};
+        AccountID const i2{2};
         Issue const a1(c1, i1);
         Issue const a2(c2, i2);
         Book const b1(a1, a2, std::nullopt);
@@ -684,10 +684,10 @@ public:
     void
     testBookMap()
     {
-        Currency const c1(1);
-        AccountID const i1(1);
-        Currency const c2(2);
-        AccountID const i2(2);
+        Currency const c1{1};
+        AccountID const i1{1};
+        Currency const c2{2};
+        AccountID const i2{2};
         Issue const a1(c1, i1);
         Issue const a2(c2, i2);
         Book const b1(a1, a2, std::nullopt);
