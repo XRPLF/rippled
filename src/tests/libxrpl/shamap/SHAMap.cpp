@@ -1442,4 +1442,71 @@ TEST_F(SHAMapMisplacedLeaf, hooking_an_offered_misplaced_leaf_invalidates_the_ma
     EXPECT_TRUE(result.isInvalid());
     EXPECT_FALSE(result.isGood());
 }
+
+// getMissingNodes reaches a filter through descendAsync, which hooks whatever it resolves. The
+// verdict lands on the map, since every node from the root down hash-verified to get here.
+TEST_F(SHAMapMisplacedLeaf, walking_for_missing_nodes_invalidates_the_map)
+{
+    tests::TestNodeFamily sourceFamily{j_};
+    auto const [leafBlob, leafHash] = genuineLeaf(sourceFamily);
+    ASSERT_FALSE(leafBlob.empty());
+
+    // Its own family, so the leaf is reachable only through the filter rather than from a cache the
+    // source map warmed.
+    tests::TestNodeFamily targetFamily{j_};
+    SHAMap map{SHAMapType::FREE, uint256{}, targetFamily};
+    map.setUnbacked();
+    ASSERT_TRUE(forgeRoot(map, {{.branch = kWrongBranch, .hash = leafHash}}));
+    ASSERT_TRUE(map.isValid());
+
+    FixedNodeFilter const filter{leafHash, leafBlob};
+    map.getMissingNodes(1, &filter);
+
+    EXPECT_FALSE(map.isValid());
+}
+
+// The descendAsync walk leaves the leaf hooked, since it resolved the node before the position
+// could be judged. Iterating it must not be treated as unreachable, and must not report the map
+// as empty either, which is what a plain nullptr from belowHelper would have meant.
+TEST_F(SHAMapMisplacedLeaf, iterating_a_hooked_misplaced_leaf_throws)
+{
+    tests::TestNodeFamily sourceFamily{j_};
+    auto const [leafBlob, leafHash] = genuineLeaf(sourceFamily);
+    ASSERT_FALSE(leafBlob.empty());
+
+    tests::TestNodeFamily targetFamily{j_};
+    SHAMap map{SHAMapType::FREE, uint256{}, targetFamily};
+    map.setUnbacked();
+    ASSERT_TRUE(forgeRoot(map, {{.branch = kWrongBranch, .hash = leafHash}}));
+
+    FixedNodeFilter const filter{leafHash, leafBlob};
+    map.getMissingNodes(1, &filter);
+    ASSERT_FALSE(map.isValid());
+
+    EXPECT_THROW(map.begin(), SHAMapMissingNode);
+}
+
+// The walk that resolves a node through descendAsync is the production path, since a backed map
+// posts asynchronous reads rather than fetching inline. The synchronous cases above leave that
+// guard untested, because an unbacked map with a filter never reaches it.
+TEST_F(SHAMapMisplacedLeaf, an_async_read_resolving_a_misplaced_leaf_invalidates_the_map)
+{
+    tests::TestNodeFamily sourceFamily{j_};
+    auto const [leafBlob, leafHash] = genuineLeaf(sourceFamily);
+    ASSERT_FALSE(leafBlob.empty());
+
+    // Backed and with the leaf in the store, so asyncFetch resolves it. No filter is passed, which
+    // is what forces the walk down the asynchronous route rather than through checkFilter.
+    tests::TestNodeFamily targetFamily{j_};
+    targetFamily.db().store(
+        NodeObjectType::AccountNode, Blob{leafBlob}, leafHash.asUInt256(), kStoredLedgerSeq);
+
+    SHAMap map{SHAMapType::FREE, uint256{}, targetFamily};
+    map.setLedgerSeq(kStoredLedgerSeq);
+    ASSERT_TRUE(forgeRoot(map, {{.branch = kWrongBranch, .hash = leafHash}}));
+
+    map.getMissingNodes(1, nullptr);
+
+    EXPECT_FALSE(map.isValid());
+}
 }  // namespace xrpl::tests

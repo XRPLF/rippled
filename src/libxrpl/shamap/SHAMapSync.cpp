@@ -264,6 +264,27 @@ SHAMap::gmnProcessNodes(MissingNodes& mn, MissingNodes::StackEntry& se)
                 if (--mn.max <= 0)
                     return;
             }
+            // Only a leaf has a position of its own to judge, so the type is tested first: that
+            // also keeps getChildNodeID, which builds a SHAMapNodeID, off every inner child on the
+            // walk. The depth conjunct bounds the ID this arm builds rather than the descent, since
+            // getChildNodeID has no room past kLeafDepth. The arm below bounds the descent.
+            else if (
+                d->isLeaf() && nodeID.getDepth() < kLeafDepth &&
+                !belongsAt(nodeID.getChildNodeID(branch), *d))
+            {
+                // The same judgment SHAMap::descend makes, for the path that consults the filter
+                // through descendAsync instead. descendAsync hooks what it resolves, so the node is
+                // already part of the tree and refusing it here would not remove it.
+                //
+                // `fullBelow` is cleared to match the missing-node path above, not to close a
+                // hazard: getMissingNodes leaves its walk as soon as this verdict lands, so nothing
+                // reaches the full-below test with the flag still set.
+                JLOG(journal_.warn()) << "Leaf " << childHash << " does not belong below " << nodeID
+                                      << " at branch " << branch << ", map is invalid";
+                fullBelow = false;
+                setInvalid();
+                return;
+            }
             else if (d->isInner() && isLeafDepth(nodeID.getDepth() + 1))
             {
                 // Only a leaf belongs that deep (see isLeafDepth and SHAMap::addKnownNode). A node
@@ -328,6 +349,29 @@ SHAMap::gmnProcessDeferredReads(MissingNodes& mn)
         auto branch = std::get<2>(deferredNode);
         auto nodePtr = std::get<3>(deferredNode);
         auto const& nodeHash = parent->getChildHash(branch);
+
+        // Guarded on depth for the same reason as the sibling test in gmnProcessNodes: a deferred
+        // entry carries the position the walk held when it posted the read, and the `pending`
+        // branch there records that position without building a child ID from it. So a child ID is
+        // asked for here only where the tree has room for one, which is the bound getChildNodeID
+        // keeps for itself.
+        if (nodePtr && nodePtr->isLeaf() && parentID.getDepth() < kLeafDepth &&
+            !belongsAt(parentID.getChildNodeID(branch), *nodePtr))
+        {
+            // The same judgment the two synchronous paths make (see SHAMap::descend and the
+            // descendAsync case in gmnProcessNodes), for a node an async read resolved. Every site
+            // that knows the position a node is about to take judges it here, which is what lets
+            // the traversal treat a misplaced leaf as a rarity rather than a routine case.
+            //
+            // Skips this node rather than returning: the reads still outstanding hold a pointer to
+            // `mn`, which lives in getMissingNodes' frame, and this loop is the only thing that
+            // waits for them. Returning early would let that frame go while a read was still due
+            // to write through it.
+            JLOG(journal_.warn()) << "Leaf " << nodeHash << " does not belong below " << parentID
+                                  << " at branch " << branch << ", map is invalid";
+            setInvalid();
+            continue;
+        }
 
         if (nodePtr)
         {  // Got the node
