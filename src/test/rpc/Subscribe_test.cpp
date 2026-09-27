@@ -1353,6 +1353,47 @@ public:
     }
 
     void
+    testUnsubBookChanges()
+    {
+        testcase("UnsubBookChanges");
+        using namespace jtx;
+        using namespace std::chrono_literals;
+
+        Env env{*this, singleThreadIo(envconfig())};
+        auto wsc = makeWSClient(env.app().config());
+        json::Value stream;
+
+        {
+            // RPC subscribe to book_changes stream
+            stream[jss::streams] = json::ValueType::Array;
+            stream[jss::streams].append("book_changes");
+            auto jv = wsc->invoke("subscribe", stream);
+            BEAST_EXPECT(jv[jss::status] == "success");
+        }
+
+        {
+            // A bookChanges message is published on every ledger close, even
+            // when no offers changed
+            BEAST_EXPECT(env.syncClose());
+            BEAST_EXPECT(
+                wsc->findMsg(5s, [&](auto const& jv) { return jv[jss::type] == "bookChanges"; }));
+        }
+
+        {
+            // RPC unsubscribe
+            auto jv = wsc->invoke("unsubscribe", stream);
+            BEAST_EXPECTS(jv[jss::status] == "success", to_string(jv));
+        }
+
+        {
+            // No stream update after unsubscribing
+            BEAST_EXPECT(env.syncClose());
+            auto jvo = wsc->getMsg(10ms);
+            BEAST_EXPECTS(!jvo, "getMsg: " + to_string(jvo.value()));
+        }
+    }
+
+    void
     testNFToken(FeatureBitset features)
     {
         // `nftoken_id` is added for `transaction` stream in the `subscribe`
@@ -1983,6 +2024,7 @@ public:
         testSubByUrl();
         testHistoryTxStream();
         testSubBookChanges();
+        testUnsubBookChanges();
         testNFToken(all);
         testNFToken(all - featureNFTokenMintOffer);
         testAsyncTeardownDoesNotStall();
