@@ -196,6 +196,35 @@ public:
         bool inbound);
 
     /**
+     * Holds a category to what the sender is entitled to report.
+     *
+     * `categorize` reads the message and its type, which is all an outbound
+     * message can be judged by. Inbound, the sender is also known, and one
+     * category means more than the type it was derived from: Cluster is read as
+     * traffic between configured cluster members. Any peer can send that type,
+     * so a peer outside the cluster is held to Unknown instead, leaving the
+     * category to mean what an operator reads it to mean.
+     *
+     * @param cat The category the message's type belongs to.
+     * @param isFromCluster Invoked to ask whether the sender is a configured
+     *                      cluster member. Taken as a callable, and called only
+     *                      for the one category that depends on the answer,
+     *                      because answering it takes a lock: a plain `bool`
+     *                      argument would be evaluated for every message
+     *                      regardless, function arguments not being sequenced.
+     * @return The category to account the message under.
+     */
+    template <class IsFromCluster>
+    [[nodiscard]] static Category
+    attribute(Category cat, IsFromCluster&& isFromCluster)
+    {
+        if (cat != Category::Cluster)
+            return cat;
+
+        return isFromCluster() ? Category::Cluster : Category::Unknown;
+    }
+
+    /**
      * Account for traffic associated with the given category
      */
     void

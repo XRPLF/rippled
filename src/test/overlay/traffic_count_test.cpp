@@ -41,6 +41,49 @@ public:
         BEAST_EXPECT(unknown == TrafficCount::Category::Unknown);
     }
 
+    void
+    testAttribute()
+    {
+        testcase("attribute");
+
+        auto const outsider = [] { return false; };
+        auto const member = [] { return true; };
+
+        // Cluster is read as traffic between configured cluster members, and any
+        // peer can send that type, so a sender outside the cluster is held to
+        // unknown rather than counted as one.
+        BEAST_EXPECT(
+            TrafficCount::attribute(TrafficCount::Category::Cluster, outsider) ==
+            TrafficCount::Category::Unknown);
+        BEAST_EXPECT(
+            TrafficCount::attribute(TrafficCount::Category::Cluster, member) ==
+            TrafficCount::Category::Cluster);
+
+        // Every other category is derived from the message alone, so membership
+        // does not enter into it either way.
+        for (auto const cat : {TrafficCount::Category::Base, TrafficCount::Category::Unknown})
+        {
+            BEAST_EXPECT(TrafficCount::attribute(cat, outsider) == cat);
+            BEAST_EXPECT(TrafficCount::attribute(cat, member) == cat);
+        }
+
+        // Answering the question takes a lock, so it must not be asked for a
+        // category that does not depend on the answer.
+        auto asked = 0;
+        auto const counted = [&asked] {
+            ++asked;
+            return true;
+        };
+        BEAST_EXPECT(
+            TrafficCount::attribute(TrafficCount::Category::Base, counted) ==
+            TrafficCount::Category::Base);
+        BEAST_EXPECT(asked == 0);
+        BEAST_EXPECT(
+            TrafficCount::attribute(TrafficCount::Category::Cluster, counted) ==
+            TrafficCount::Category::Cluster);
+        BEAST_EXPECT(asked == 1);
+    }
+
     struct TestCase
     {
         std::string name;
@@ -129,6 +172,7 @@ public:
     run() override
     {
         testCategorize();
+        testAttribute();
         testAddCount();
         testToString();
     }
