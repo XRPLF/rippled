@@ -2,6 +2,8 @@
 
 `xrpld` is published to Docker Hub as [`xrplf/xrpld`](https://hub.docker.com/r/xrplf/xrpld):
 the `xrpld` DEB package installed on Ubuntu 26.04, running as the `xrpld` user.
+Each release is tagged with its version, e.g. `xrplf/xrpld:3.4.0`, and `latest`
+follows the `develop` branch.
 See [`package/README.md`](../package/README.md#docker-image) for how it is built
 and tagged.
 
