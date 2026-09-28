@@ -254,6 +254,84 @@ public:
     {
         return this->tx_->isFieldPresent(sfReserveIncrementDrops);
     }
+
+    /**
+     * @brief Get sfGasLimit (SoeOptional)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_UINT32::type::value_type>
+    getGasLimit() const
+    {
+        if (hasGasLimit())
+        {
+            return this->tx_->at(sfGasLimit);
+        }
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfGasLimit is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasGasLimit() const
+    {
+        return this->tx_->isFieldPresent(sfGasLimit);
+    }
+
+    /**
+     * @brief Get sfBytecodeSizeLimit (SoeOptional)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_UINT32::type::value_type>
+    getBytecodeSizeLimit() const
+    {
+        if (hasBytecodeSizeLimit())
+        {
+            return this->tx_->at(sfBytecodeSizeLimit);
+        }
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfBytecodeSizeLimit is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasBytecodeSizeLimit() const
+    {
+        return this->tx_->isFieldPresent(sfBytecodeSizeLimit);
+    }
+
+    /**
+     * @brief Get sfGasPrice (SoeOptional)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_UINT32::type::value_type>
+    getGasPrice() const
+    {
+        if (hasGasPrice())
+        {
+            return this->tx_->at(sfGasPrice);
+        }
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfGasPrice is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasGasPrice() const
+    {
+        return this->tx_->isFieldPresent(sfGasPrice);
+    }
 };
 
 /**
@@ -383,6 +461,39 @@ public:
     setReserveIncrementDrops(std::decay_t<typename SF_AMOUNT::type::value_type> const& value)
     {
         object_[sfReserveIncrementDrops] = value;
+        return *this;
+    }
+
+    /**
+     * @brief Set sfGasLimit (SoeOptional)
+     * @return Reference to this builder for method chaining.
+     */
+    SetFeeBuilder&
+    setGasLimit(std::decay_t<typename SF_UINT32::type::value_type> const& value)
+    {
+        object_[sfGasLimit] = value;
+        return *this;
+    }
+
+    /**
+     * @brief Set sfBytecodeSizeLimit (SoeOptional)
+     * @return Reference to this builder for method chaining.
+     */
+    SetFeeBuilder&
+    setBytecodeSizeLimit(std::decay_t<typename SF_UINT32::type::value_type> const& value)
+    {
+        object_[sfBytecodeSizeLimit] = value;
+        return *this;
+    }
+
+    /**
+     * @brief Set sfGasPrice (SoeOptional)
+     * @return Reference to this builder for method chaining.
+     */
+    SetFeeBuilder&
+    setGasPrice(std::decay_t<typename SF_UINT32::type::value_type> const& value)
+    {
+        object_[sfGasPrice] = value;
         return *this;
     }
 

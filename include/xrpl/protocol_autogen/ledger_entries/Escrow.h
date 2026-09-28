@@ -175,6 +175,54 @@ public:
     }
 
     /**
+     * @brief Get sfBytecode (SoeOptional)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_VL::type::value_type>
+    getBytecode() const
+    {
+        if (hasBytecode())
+            return this->sle_->at(sfBytecode);
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfBytecode is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasBytecode() const
+    {
+        return this->sle_->isFieldPresent(sfBytecode);
+    }
+
+    /**
+     * @brief Get sfData (SoeOptional)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_VL::type::value_type>
+    getData() const
+    {
+        if (hasData())
+            return this->sle_->at(sfData);
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfData is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasData() const
+    {
+        return this->sle_->isFieldPresent(sfData);
+    }
+
+    /**
      * @brief Get sfSourceTag (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
@@ -450,6 +498,28 @@ public:
     setFinishAfter(std::decay_t<typename SF_UINT32::type::value_type> const& value)
     {
         object_[sfFinishAfter] = value;
+        return *this;
+    }
+
+    /**
+     * @brief Set sfBytecode (SoeOptional)
+     * @return Reference to this builder for method chaining.
+     */
+    EscrowBuilder&
+    setBytecode(std::decay_t<typename SF_VL::type::value_type> const& value)
+    {
+        object_[sfBytecode] = value;
+        return *this;
+    }
+
+    /**
+     * @brief Set sfData (SoeOptional)
+     * @return Reference to this builder for method chaining.
+     */
+    EscrowBuilder&
+    setData(std::decay_t<typename SF_VL::type::value_type> const& value)
+    {
+        object_[sfData] = value;
         return *this;
     }
 

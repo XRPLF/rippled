@@ -98,7 +98,7 @@ def main() -> None:
     )
     parser.add_argument(
         "--nexus-url",
-        default="https://packages.xrplf.org",
+        default="https://packages-upload.xrplf.org",
         help="the Nexus instance to publish to (default: %(default)s)",
     )
     parser.add_argument(
