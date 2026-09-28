@@ -36,7 +36,6 @@ gmon.out
 !.github/scripts/levelization/results/ordering.txt
 
 # Customized configs.
-/rippled.cfg
 /xrpld.cfg
 /validators.txt
 
