@@ -87,9 +87,15 @@ constexpr std::array<SField const*, 9> kOwnerDirNodeFields{
 static_assert(
     []() consteval {
         for (std::size_t i = 0; i < kOwnerDirNodeFields.size(); ++i)
+        {
             for (std::size_t j = i + 1; j < kOwnerDirNodeFields.size(); ++j)
+            {
                 if (kOwnerDirNodeFields[i] == kOwnerDirNodeFields[j])
+                {
                     return false;
+                }
+            }
+        }
         return true;
     }(),
     "kOwnerDirNodeFields must not contain duplicates");
