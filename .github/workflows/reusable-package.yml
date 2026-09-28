@@ -252,25 +252,10 @@ jobs:
       contents: read
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    env:
-      IMAGE_CONTEXT: image-context
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-
-      - name: Download package artifacts
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
-        with:
-          pattern: "*-pkg"
-          merge-multiple: true
-          path: ${{ env.PACKAGE_DIR }}
-
-      - name: Stage the package
-        run: |
-          mkdir -p "${IMAGE_CONTEXT}"
-          find "${PACKAGE_DIR}" -type f -name 'xrpld_[0-9]*.deb' -exec cp {} "${IMAGE_CONTEXT}/" \;
-          test -n "$(ls -A "${IMAGE_CONTEXT}")"
 
       - name: Determine release info
         id: release_info
@@ -291,10 +276,22 @@ jobs:
           # A Docker tag cannot contain '+'.
           echo "image=xrplf/xrpld:${tag//+/_}" | tee -a "${GITHUB_OUTPUT}"
 
+      - name: Download package artifacts
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          pattern: "*-pkg"
+          merge-multiple: true
+          path: ${{ env.PACKAGE_DIR }}
+
       - name: Build image
         env:
+          CONTEXT: image-context
           IMAGE: ${{ steps.image.outputs.image }}
-        run: docker build --pull --file package/image/Dockerfile --tag "${IMAGE}" "${IMAGE_CONTEXT}"
+        run: |
+          mkdir -p "${CONTEXT}"
+          find "${PACKAGE_DIR}" -type f -name 'xrpld_[0-9]*.deb' -exec cp {} "${CONTEXT}/" \;
+          test -n "$(ls -A "${CONTEXT}")"
+          docker build --pull --file package/image/Dockerfile --tag "${IMAGE}" "${CONTEXT}"
 
       - name: Run xrpld
         env:
