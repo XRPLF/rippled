@@ -445,8 +445,17 @@ setIssuerMirrorEpoch(SLE const& issuance, SLE& mptoken)
 
     // Unlike the auditor mirror, the issuer mirror is not optional: every
     // confidential MPToken carries one, so there is no existence check here.
+    //
+    // The mirror is re-encrypted under the issuance's current issuer key, so
+    // stamp both the epoch and the key it is encrypted under. By I17,
+    // sfIssuerMirrorEncryptionKey is present iff sfIssuerKeyMirrorEpoch is
+    // present, so at epoch 0 both are left absent and the epoch 0 key is
+    // recovered from the issuance's sfInitialIssuerEncryptionKey instead.
     if (auto const epoch = issuance[~sfIssuerKeyEpoch].value_or(0); epoch != 0)
+    {
         mptoken[sfIssuerKeyMirrorEpoch] = epoch;
+        mptoken[sfIssuerMirrorEncryptionKey] = issuance[sfIssuerEncryptionKey];
+    }
 }
 
 void

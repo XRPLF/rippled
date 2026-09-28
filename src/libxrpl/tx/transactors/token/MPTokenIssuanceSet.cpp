@@ -454,6 +454,14 @@ MPTokenIssuanceSet::doApply()
 
         // NOTE: presence must be checked before the key is overwritten below.
         bool const isRotation = sle->isFieldPresent(keyField);
+
+        // On the first issuer key rotation, preserve the key it replaces as
+        // sfInitialIssuerEncryptionKey, so that the epoch 0 key remains
+        // recoverable from ledger state (spec 5.3.3, invariants I15/I16).
+        bool const isIEK = &keyField == &sfIssuerEncryptionKey;
+        if (isRotation && isIEK && !sle->isFieldPresent(epochField))
+            sle->at(sfInitialIssuerEncryptionKey) = sle->at(keyField);
+
         sle->setFieldVL(keyField, *pubKey);
 
         if (isRotation)

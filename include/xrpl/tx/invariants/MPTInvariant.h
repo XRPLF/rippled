@@ -152,6 +152,21 @@ public:
  * Confidential outstanding balance cannot exceed total outstanding.
  * - Verifies sfConfidentialBalanceVersion is changed whenever sfConfidentialBalanceSpending is
  * modified on an MPToken.
+ *
+ * Under featureConfidentialMPTKeyRotation, additionally verifies the key
+ * rotation invariants for sfInitialIssuerEncryptionKey and
+ * sfIssuerMirrorEncryptionKey:
+ * - I15: sfInitialIssuerEncryptionKey on MPTokenIssuance is present iff
+ *   sfIssuerKeyEpoch is present, and must be a 33-byte compressed point.
+ * - I16: sfInitialIssuerEncryptionKey is immutable once written.
+ * - I17: sfIssuerMirrorEncryptionKey on MPToken is present iff
+ *   sfIssuerKeyMirrorEpoch is present.
+ * - I18: sfIssuerMirrorEncryptionKey, if present, must be a 33-byte compressed
+ *   point and sfIssuerEncryptedBalance must also be present.
+ * - I19: when sfIssuerKeyMirrorEpoch equals the issuance's sfIssuerKeyEpoch,
+ *   sfIssuerMirrorEncryptionKey must equal the issuance's sfIssuerEncryptionKey.
+ * - I20: a transaction that rewrites sfIssuerEncryptedBalance without advancing
+ *   sfIssuerKeyMirrorEpoch must leave sfIssuerMirrorEncryptionKey unchanged.
  */
 class ValidConfidentialMPToken
 {
@@ -166,6 +181,18 @@ class ValidConfidentialMPToken
         bool badCOA = false;
         bool changesConfidentialFields = false;
         bool badVersion = false;
+
+        // Key rotation checks (featureConfidentialMPTKeyRotation).
+
+        // I16: sfInitialIssuerEncryptionKey present before the transaction but
+        // absent or changed afterwards.
+        bool initialIssuerKeyMutated = false;
+        // The holder MPToken after the transaction, used by finalize() to
+        // evaluate the mirror-key invariants against its issuance.
+        SLE::const_pointer mptoken;
+        // I20: sfIssuerEncryptedBalance was rewritten without advancing
+        // sfIssuerKeyMirrorEpoch, yet sfIssuerMirrorEncryptionKey changed.
+        bool mirrorKeyChangedWithoutEpoch = false;
     };
     std::map<UInt192, Changes> changes_;
 
