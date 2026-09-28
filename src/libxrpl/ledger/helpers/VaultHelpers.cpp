@@ -8,6 +8,7 @@
 #include <xrpl/ledger/helpers/CredentialHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Asset.h>
+#include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/LedgerFormats.h>  // IWYU pragma: keep
 #include <xrpl/protocol/Protocol.h>
@@ -17,6 +18,7 @@
 #include <xrpl/protocol/STNumber.h>  // IWYU pragma: keep
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/Units.h>
 
 #include <algorithm>
 #include <cstdint>
@@ -303,6 +305,50 @@ clampToAssetsTotalScale(SLE::const_ref vault, STAmount const& delta)
         return std::unexpected(tecPRECISION_LOSS);
 
     return actualDelta;
+}
+
+[[nodiscard]] TenthBips32
+getApplicableEarlyExitFeeRate(ReadView const& view, SLE::const_ref vault, bool isFinalWithdrawal)
+{
+    XRPL_ASSERT(
+        vault && vault->getType() == ltVAULT,
+        "xrpl::getApplicableEarlyExitFeeRate : valid Vault sle");
+
+    if (!view.rules().enabled(featureLendingProtocolV1_2) || isFinalWithdrawal)
+        return TenthBips32{0};
+
+    auto const feeRate = vault->at(~sfEarlyExitFeeRate);
+    if (!feeRate || getVaultPhase(view, vault) != VaultPhase::Investment)
+        return TenthBips32{0};
+
+    return TenthBips32{*feeRate};
+}
+
+[[nodiscard]] STAmount
+calculateEarlyExitFee(STAmount const& assets, TenthBips32 rate, int scale)
+{
+    XRPL_ASSERT(!assets.negative(), "xrpl::calculateEarlyExitFee : non-negative assets");
+    XRPL_ASSERT(rate <= kMaxEarlyExitFeeRate, "xrpl::calculateEarlyExitFee : valid fee rate");
+
+    if (rate == TenthBips32{0} || assets == beast::kZero)
+        return STAmount{assets.asset()};
+
+    // Round up so a non-zero rate always charges at least one unit at the
+    // target scale; rounding down would let depositors exit fee-free by
+    // splitting a withdrawal into slices too small to carry a fee.
+    NumberRoundModeGuard const rg(Number::RoundingMode::Upward);
+    STAmount const fee{
+        assets.asset(),
+        roundToAsset(
+            assets.asset(),
+            tenthBipsOfValue(Number{assets}, rate),
+            scale,
+            Number::RoundingMode::Upward)};
+
+    // The fee rate is at most 100% and assets already lie on the grid at
+    // scale, so rounding up can never exceed assets.
+    XRPL_ASSERT(fee <= assets, "xrpl::calculateEarlyExitFee : fee does not exceed assets");
+    return fee;
 }
 
 [[nodiscard]] Number

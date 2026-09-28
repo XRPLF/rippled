@@ -41,6 +41,8 @@ Vault::create(CreateArgs const& args) const
         jv[sfRedemptionDate] = *args.redemptionDate;
     if (args.leVersion)
         jv[sfLEVersion] = std::to_underlying(*args.leVersion);
+    if (args.earlyExitFeeRate)
+        jv[sfEarlyExitFeeRate] = *args.earlyExitFeeRate;
     return {jv, keylet};
 }
 

@@ -20,6 +20,7 @@
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFormats.h>
+#include <xrpl/protocol/Units.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/Transactor.h>
 #include <xrpl/tx/invariants/InvariantCheckPrivilege.h>
@@ -66,6 +67,8 @@ ValidVault::Vault::make(SLE const& from)
     self.vaultKind = from[~sfVaultKind];
     self.subscriptionDate = from[~sfSubscriptionDate];
     self.redemptionDate = from[~sfRedemptionDate];
+    self.earlyExitFeeRate = from[~sfEarlyExitFeeRate];
+    self.leVersion = from[~sfLEVersion];
     return self;
 }
 
@@ -418,6 +421,7 @@ ValidVault::finalize(
 {
     bool const enforce = view.rules().enabled(featureSingleAssetVault);
     bool const fix340Enabled = view.rules().enabled(fixCleanup3_4_0);
+    bool const lendingV12Enabled = view.rules().enabled(featureLendingProtocolV1_2);
 
     if (!isTesSuccess(ret))
         return true;  // Do not perform checks
@@ -635,6 +639,24 @@ ValidVault::finalize(
     {
         JLOG(j.fatal()) << "Invariant failed: loss unrealized must not be negative";
         result = false;
+    }
+
+    if (lendingV12Enabled && afterVault.earlyExitFeeRate)
+    {
+        bool const hasVersion = afterVault.leVersion &&
+            *afterVault.leVersion >= std::to_underlying(VaultVersion::CashBasis);
+        if (!isClosedEnded(afterVault.vaultKind) || !hasVersion)
+        {
+            JLOG(j.fatal()) << "Invariant failed: early-exit fee rate only allowed on a "
+                               "closed-ended vault with LEVersion >= CashBasis";
+            result = false;
+        }
+        if (TenthBips32{*afterVault.earlyExitFeeRate} > kMaxEarlyExitFeeRate)
+        {
+            JLOG(j.fatal()) << "Invariant failed: early-exit fee rate must not exceed "
+                               "MAX_EARLY_EXIT_FEE_RATE";
+            result = false;
+        }
     }
 
     if (afterVault.assetsTotal < kZero)
@@ -1011,8 +1033,11 @@ ValidVault::finalize(
                 auto const& beforeVault = beforeVault_[0];
 
                 // Withdrawal from a closed-ended vault is not allowed during the Investment phase
-                // (strictly past SubscriptionDate, before RedemptionDate).
-                if (getVaultPhase(
+                // (strictly past SubscriptionDate, before RedemptionDate), unless the vault was
+                // created with an early-exit fee.
+                bool const earlyExitAllowed = lendingV12Enabled && afterVault.earlyExitFeeRate;
+                if (!earlyExitAllowed &&
+                    getVaultPhase(
                         view,
                         afterVault.vaultKind,
                         afterVault.subscriptionDate,
@@ -1036,8 +1061,15 @@ ValidVault::finalize(
                 // value merely rounds down to zero, so a missing delta while
                 // the pool still held positive effective value indicates a
                 // real accounting bug, not this exception.
-                bool const zeroDeltaIsLegitimate = fix340Enabled && !maybeVaultDeltaAssets &&
-                    beforeVault.assetsTotal == beforeVault.lossUnrealized;
+                //
+                // Post-featureLendingProtocolV1_2: the bounds are relaxed to "the vault balance
+                // must not increase" and "the destination balance must not decrease", so a zero
+                // payout is legitimate in any vault. An early exit at a 100% fee burns shares and
+                // pays out nothing.
+                bool const relaxedBounds = lendingV12Enabled;
+                bool const zeroDeltaIsLegitimate = !maybeVaultDeltaAssets &&
+                    (relaxedBounds ||
+                     (fix340Enabled && beforeVault.assetsTotal == beforeVault.lossUnrealized));
 
                 if (!maybeVaultDeltaAssets && !zeroDeltaIsLegitimate)
                 {
@@ -1054,7 +1086,9 @@ ValidVault::finalize(
                 auto const vaultPseudoDeltaAssets =
                     roundToAsset(vaultAsset, vaultDeltaAssets.delta, minScale);
 
-                if (!zeroDeltaIsLegitimate && vaultPseudoDeltaAssets >= kZero)
+                bool const vaultBalanceInvalid = relaxedBounds ? vaultPseudoDeltaAssets > kZero
+                                                               : vaultPseudoDeltaAssets >= kZero;
+                if (!zeroDeltaIsLegitimate && vaultBalanceInvalid)
                 {
                     JLOG(j.fatal()) << "Invariant failed: withdrawal must decrease vault balance";
                     result = false;
@@ -1132,7 +1166,7 @@ ValidVault::finalize(
                         // XRP and MPT remain strict for rounding artifacts.
                         bool const tolerateZeroDelta =
                             view.rules().enabled(fixCleanup3_2_0) && !vaultAsset.integral();
-                        auto const invalidBalanceChange = tolerateZeroDelta
+                        auto const invalidBalanceChange = (relaxedBounds || tolerateZeroDelta)
                             ? roundedDestinationDelta < kZero
                             : roundedDestinationDelta <= kZero;
                         if (invalidBalanceChange)

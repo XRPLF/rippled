@@ -8,6 +8,7 @@
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/Units.h>
 
 #include <cstdint>
 #include <expected>
@@ -134,6 +135,36 @@ sharesToAssetsDeposit(SLE::const_ref vault, SLE::const_ref issuance, STAmount co
  */
 [[nodiscard]] std::expected<STAmount, TER>
 clampToAssetsTotalScale(SLE::const_ref vault, STAmount const& delta);
+
+/**
+ * Returns the early-exit fee rate that applies to a withdrawal from `vault`.
+ * The rate is zero when no fee applies: before featureLendingProtocolV1_2,
+ * on a vault without sfEarlyExitFeeRate, outside the Investment phase, or
+ * when the withdrawal burns every outstanding share (a retained fee would be
+ * left behind in a vault with no shares).
+ *
+ * @param view The ledger view whose parent close time is used as the clock.
+ * @param vault The vault SLE.
+ * @param isFinalWithdrawal Whether the withdrawal burns every outstanding share.
+ */
+[[nodiscard]] TenthBips32
+getApplicableEarlyExitFeeRate(ReadView const& view, SLE::const_ref vault, bool isFinalWithdrawal);
+
+/**
+ * Computes the early-exit fee charged on a withdrawal from a closed-ended
+ * vault during its Investment phase: `assets * rate`, rounded up at `scale`.
+ * A non-zero rate always yields at least one unit at `scale` (one drop for
+ * XRP, one unit for MPT). A zero rate or zero assets yields zero.
+ *
+ * @param assets The pre-fee withdrawal amount, already rounded to `scale`.
+ * @param rate The vault's sfEarlyExitFeeRate, in 1/10 bips.
+ * @param scale The posterior live exponent the pre-fee amount was rounded
+ *              at, see getPosteriorVaultScale. Ignored for XRP and MPT.
+ *
+ * @return The fee, never greater than `assets`.
+ */
+[[nodiscard]] STAmount
+calculateEarlyExitFee(STAmount const& assets, TenthBips32 rate, int scale);
 
 /**
  * Controls whether to truncate shares instead of rounding.
