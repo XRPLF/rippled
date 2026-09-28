@@ -1261,11 +1261,21 @@ divide(STAmount const& num, STAmount const& den, Asset const& asset)
     // numerator by 10^17 (the product is in the range of
     // 10^32 to 10^33) followed by a division, so the result
     // is in the range of 10^16 to 10^15.
-    return STAmount(
-        asset,
-        muldiv(numVal, kTenTO17, denVal) + 5,
-        numOffset - denOffset - 17,
-        num.negative() != den.negative());
+    std::uint64_t quotient = muldiv(numVal, kTenTO17, denVal);
+    int offset = numOffset - denOffset - 17;
+
+    // An integral (XRP or MPT) numerator is not scaled down to 16 digits, so
+    // the quotient can land in [2^63, 2^64). The STAmount constructor reads
+    // that as a negative IOU mantissa, and the +5 can wrap. Drop a digit
+    // first; the result is canonicalized to 16 digits anyway.
+    if (quotient > static_cast<std::uint64_t>(std::numeric_limits<std::int64_t>::max()) - 5 &&
+        isFeatureEnabled(featureMPTokensV2, /*resultIfNoRules*/ true))
+    {
+        quotient /= 10;
+        ++offset;
+    }
+
+    return STAmount(asset, quotient + 5, offset, num.negative() != den.negative());
 }
 
 STAmount

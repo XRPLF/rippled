@@ -1309,6 +1309,61 @@ public:
         test(features);
     }
 
+    // An MPT TakerPays whose legacy divide() quotient lands in [2^63, 2^64)
+    // used to be read as a negative rate, and getRate() dropped the sign, so
+    // the offer was indexed at a far better quality than its amounts. It must
+    // rest at its true quality, behind a normally priced offer.
+    void
+    testMPTOfferLargeTakerPaysQuality(FeatureBitset features)
+    {
+        testcase("MPT offer with a large TakerPays rests at its true quality");
+
+        using namespace jtx;
+
+        Account const gw{"gateway"};
+        Account const alice{"alice"};
+        Account const carol{"carol"};
+        auto const usd = gw["USD"];
+
+        Env env{*this, features};
+        env.fund(XRP(10'000), gw, alice, carol);
+        env.close();
+
+        MPT const mpt = MPTTester({.env = env, .issuer = gw, .holders = {alice, carol}});
+
+        env.trust(usd(10'000), alice, carol);
+        env.close();
+
+        STAmount const dust{usd.issue(), 1, -7};
+        env(pay(gw, alice, dust));
+        env(pay(gw, carol, usd(100)));
+        env.close();
+
+        auto const carolOfferSeq = env.seq(carol);
+        env(offer(carol, mpt(100), usd(100)));
+        env.close();
+
+        STAmount const largeMpt = mpt(184'467'440'737'095'516);
+        auto const aliceOfferSeq = env.seq(alice);
+        env(offer(alice, largeMpt, dust));
+        env.close();
+
+        auto const dirQuality = [&](Account const& owner, std::uint32_t seq) {
+            auto const sle = env.le(keylet::offer(owner.id(), SeqProxy::rawSequence(seq)));
+            BEAST_EXPECT(sle != nullptr);
+            if (!sle)
+                return STAmount{};
+            return amountFromQuality(getQuality(sle->getFieldH256(sfBookDirectory)));
+        };
+
+        auto const aliceRate = dirQuality(alice, aliceOfferSeq);
+        auto const carolRate = dirQuality(carol, carolOfferSeq);
+        BEAST_EXPECT(aliceRate == STAmount(noIssue(), Number{largeMpt} / Number{dust}));
+        BEAST_EXPECT(carolRate == STAmount(noIssue(), 1));
+        // A higher rate is a worse quality: Carol's offer is the tip.
+        BEAST_EXPECT(carolRate < aliceRate);
+    }
+
     void
     testPartiallyFundedMPTInputOfferZeroInput(FeatureBitset features)
     {
@@ -7604,6 +7659,7 @@ public:
         testMPTOfferFeeZeroInUnblocksBook(features);
         testMPTOfferFeePartialInStillFills(features);
         testXRPOfferFeeZeroInSlice(features);
+        testMPTOfferLargeTakerPaysQuality(features);
         testPartiallyFundedMPTInputOfferZeroInput(features);
         testFillOrKill(features);
         testTickSize(features);

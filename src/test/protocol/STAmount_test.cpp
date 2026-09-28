@@ -1370,6 +1370,62 @@ public:
     //--------------------------------------------------------------------------
 
     void
+    testMPTGetRate()
+    {
+        testcase("getRate with a large integral numerator");
+
+        MPTIssue const asset{makeMptID(1, AccountID(0x4985601))};
+        Issue const usd{Currency(0x5553440000000000), AccountID(0x4985601)};
+
+        auto rules = [](bool const mptV2) {
+            static std::unordered_set<uint256, beast::Uhash<>> const kNoFeatures;
+            static std::unordered_set<uint256, beast::Uhash<>> const kMptV2Features{
+                featureMPTokensV2};
+            return Rules{mptV2 ? kMptV2Features : kNoFeatures};
+        };
+
+        // TakerPays / TakerGets = 184467440737095516 / 1e-7. The legacy
+        // divide() quotient is 2^64 - 11, which the signed IOU mantissa reads
+        // as -11: getRate records 1.1e6 instead of ~1.8e24.
+        STAmount const dust{usd, UINT64_C(1'000'000'000'000'000), -22};  // 1e-7
+        STAmount const largeMpt{asset, UINT64_C(184'467'440'737'095'516)};
+        STAmount const trueRate{noIssue(), Number{largeMpt} / Number{dust}};
+
+        // Quotient above 2^64: muldiv throws and getRate returns 0 either way.
+        STAmount const one{usd, UINT64_C(1'000'000'000'000'000), -15};
+        STAmount const hugeMpt{asset, UINT64_C(5'000'000'000'000'000'000)};
+
+        // XRP numerator in the same band: 9.5e16 drops over a mantissa of
+        // 1e15 gives a legacy quotient of 9.5e18.
+        STAmount const hugeXrp{XRPAmount{95'000'000'000'000'000}};
+        STAmount const hugeXrpRate{noIssue(), UINT64_C(9'500'000'000'000'000), 1};
+
+        {
+            CurrentTransactionRulesGuard const rg(rules(false));
+
+            BEAST_EXPECT(
+                amountFromQuality(getRate(dust, largeMpt)) ==
+                STAmount(noIssue(), UINT64_C(1'100'000'000'000'000), -9));
+            BEAST_EXPECT(getRate(one, hugeMpt) == 0);
+            BEAST_EXPECT(getRate(one, hugeXrp) != 0);
+            BEAST_EXPECT(amountFromQuality(getRate(one, hugeXrp)) != hugeXrpRate);
+        }
+
+        {
+            CurrentTransactionRulesGuard const rg(rules(true));
+
+            BEAST_EXPECT(amountFromQuality(getRate(dust, largeMpt)) == trueRate);
+            BEAST_EXPECT(getRate(one, hugeMpt) == 0);
+            BEAST_EXPECT(amountFromQuality(getRate(one, hugeXrp)) == hugeXrpRate);
+            BEAST_EXPECT(!divide(largeMpt, dust, noIssue()).negative());
+        }
+
+        // No rules (RPC): same as post-amendment.
+        BEAST_EXPECT(amountFromQuality(getRate(dust, largeMpt)) == trueRate);
+        BEAST_EXPECT(amountFromQuality(getRate(one, hugeXrp)) == hugeXrpRate);
+    }
+
+    void
     run() override
     {
         testSetValue();
@@ -1385,6 +1441,7 @@ public:
         testCanAddIOU();
         testCanAddMPT();
         testMPTRateRounding();
+        testMPTGetRate();
         testCanSubtractXRP();
         testCanSubtractIOU();
         testCanSubtractMPT();
