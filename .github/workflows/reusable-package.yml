@@ -1,5 +1,5 @@
 # Build, verify and publish Linux packages from the pre-built xrpld and
-# validator-keys artifacts, in three stages:
+# validator-keys artifacts, in these stages:
 #
 #   - 'package' builds and signs one format per config that carries a "package"
 #     map in linux.json; that map names the container image and the format
@@ -9,6 +9,8 @@
 #     never reaches Nexus
 #   - 'publish' uploads with the image's publish_pkg.py, doing a --dry-run
 #     unless 'publish: true'
+#   - 'docker' builds an Ubuntu image from the tested DEB, pushing it to Docker
+#     Hub only with 'publish: true'
 #
 # Only linux/amd64 is supported; the runner is hardcoded in the jobs below.
 name: Package
@@ -36,6 +38,9 @@ on:
         required: false
       signing_key:
         description: "Armoured PGP private key used to sign the RPMs. Required when publishing."
+        required: false
+      docker_token:
+        description: "A Docker Hub access token for the xrplf account. Required when publishing."
         required: false
 
 defaults:
@@ -198,9 +203,6 @@ jobs:
     strategy:
       fail-fast: false
       matrix: ${{ fromJson(needs.generate-matrix.outputs.matrix) }}
-    # The name says which of the two this is, because the job runs either way:
-    # with publish false it passes --dry-run and uploads nothing, and a job
-    # called "publish ..." succeeding on a pull request reads like a release.
     name: "publish ${{ matrix.xrpld_artifact_name }}${{ !inputs.publish && ' (dry run)' || '' }}"
     permissions:
       contents: read
@@ -242,3 +244,91 @@ jobs:
               --package-dir "${PACKAGE_DIR}" \
               --nexus-url "${NEXUS_URL}" \
               ${DRY_RUN_OPTION}
+
+  docker:
+    needs: [test-install-deb]
+    name: "docker${{ !inputs.publish && ' (dry run)' || '' }}"
+    permissions:
+      contents: read
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      IMAGE_CONTEXT: image-context
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Download package artifacts
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          pattern: "*-pkg"
+          merge-multiple: true
+          path: ${{ env.PACKAGE_DIR }}
+
+      - name: Stage the package
+        run: |
+          mkdir -p "${IMAGE_CONTEXT}"
+          find "${PACKAGE_DIR}" -type f -name 'xrpld_[0-9]*.deb' -exec cp {} "${IMAGE_CONTEXT}/" \;
+          test -n "$(ls -A "${IMAGE_CONTEXT}")"
+
+      - name: Determine release info
+        id: release_info
+        uses: ./.github/actions/release-info
+
+      - name: Determine image name
+        id: image
+        env:
+          IS_TAG: ${{ startsWith(github.ref, 'refs/tags/') }}
+          PKG_RELEASE: ${{ steps.release_info.outputs.pkg_release }}
+          VERSION: ${{ steps.release_info.outputs.version }}
+        run: |
+          if [[ "${IS_TAG}" == "true" ]]; then
+              tag="${VERSION}"
+          else
+              tag="${VERSION%%+*}-${PKG_RELEASE}"
+          fi
+          # A Docker tag cannot contain '+'.
+          echo "image=xrplf/xrpld:${tag//+/_}" | tee -a "${GITHUB_OUTPUT}"
+
+      - name: Build image
+        env:
+          IMAGE: ${{ steps.image.outputs.image }}
+        run: docker build --pull --file package/image/Dockerfile --tag "${IMAGE}" "${IMAGE_CONTEXT}"
+
+      - name: Run xrpld
+        env:
+          IMAGE: ${{ steps.image.outputs.image }}
+        run: docker run --rm "${IMAGE}" --version
+
+      - name: Start the server
+        env:
+          IMAGE: ${{ steps.image.outputs.image }}
+        run: |
+          container="$(docker run --detach "${IMAGE}" --standalone --conf /etc/xrpld/xrpld.cfg)"
+          trap 'docker rm --force "${container}" >/dev/null' EXIT
+
+          for _ in $(seq 30); do
+              if docker exec "${container}" xrpld --conf /etc/xrpld/xrpld.cfg server_info |
+                  grep -q '"status" : "success"'; then
+                  exit 0
+              fi
+              sleep 2
+          done
+
+          docker logs "${container}"
+          exit 1
+
+      # Docker Hub is public, so a private build never reaches it.
+      - name: Log in to Docker Hub
+        if: ${{ inputs.publish && steps.release_info.outputs.channel != 'private' }}
+        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
+        with:
+          username: xrplf
+          password: ${{ secrets.docker_token }}
+
+      - name: Push image
+        if: ${{ inputs.publish && steps.release_info.outputs.channel != 'private' }}
+        env:
+          IMAGE: ${{ steps.image.outputs.image }}
+        run: docker push "${IMAGE}"

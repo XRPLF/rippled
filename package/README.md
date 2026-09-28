@@ -13,6 +13,8 @@ package/
   docker/
     Dockerfile          Packaging image, built by `build-packaging-images.yml`; installs its tooling with `bin/install-packaging-tools.sh`
     publish_pkg.py      Uploads built packages to the XRPLF Nexus repositories (called by CI, and shipped in that image)
+  image/
+    Dockerfile          The xrpld Docker image, installing the built DEB on Ubuntu (see "Docker image")
   rpm/
     xrpld.spec      RPM spec
   debian/           Debian control files (control.in, lintian-overrides.in, rules, copyright, docs, links, source/format).
@@ -106,7 +108,7 @@ Operators switch between the flavours as described in
 ### Via CI
 
 Caller workflows (`on-pr.yml`, `on-tag.yml`, `on-trigger.yml`) call
-`reusable-package.yml`, which runs in three stages:
+`reusable-package.yml`, which runs in these stages:
 
 1. `package` fans out one job per config carrying a `package` map, building and
    signing in that config's container, and uploading `<config>-pkg` alongside
@@ -117,6 +119,8 @@ Caller workflows (`on-pr.yml`, `on-tag.yml`, `on-trigger.yml`) call
    in the container of every distro that format targets and running the binaries
    there, so one that cannot be installed never reaches Nexus.
 3. `publish` uploads both artifacts, or lists what it would upload.
+4. `docker` builds the [Docker image](#docker-image) from the tested DEB, and
+   pushes it when publishing.
 
 The packaging script derives the package version from the downloaded binary's
 `xrpld --version` output; no CMake configure or build step is needed inside the
@@ -263,6 +267,15 @@ Nexus owns the repository metadata; nothing here indexes anything. Worth knowing
 `publish_pkg.py` knows nothing about `xrpld`, so the packaging image
 installs it at `/usr/local/bin/publish_pkg.py` for other XRPLF repositories that
 build their packages elsewhere.
+
+## Docker image
+
+The `docker` job installs the tested `xrpld` DEB on `ubuntu:26.04` using
+[`image/Dockerfile`](image/Dockerfile), checks that the server starts, and,
+with `publish: true`, pushes it to `xrplf/xrpld` on Docker Hub using the
+`DOCKERHUB_TOKEN` secret. A tag's image is tagged with the tag name, e.g.
+`xrplf/xrpld:3.4.0`; a develop image with the version and package release, e.g.
+`xrplf/xrpld:3.5.0-b0-1204.20260928git6641896`. Private builds are never pushed.
 
 ## How `build_pkg.py` works
 
