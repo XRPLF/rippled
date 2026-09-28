@@ -42,6 +42,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <cstring>
+#include <filesystem>
 #include <functional>
 #include <optional>
 #include <source_location>
@@ -175,22 +176,41 @@ keyAtEpoch(
 
 }  // namespace
 
+namespace {
+// Renders the check's own construction site (usually in mpt.cpp) so it can be
+// embedded as the "reason" alongside the test call site reported as file/line.
+std::string
+checkSiteReason(std::source_location const& checkLoc)
+{
+    return std::string("check ") + std::filesystem::path{checkLoc.file_name()}.filename().string() +
+        "(" + std::to_string(checkLoc.line()) + ")";
+}
+}  // namespace
+
 void
 MptFlags::operator()(Env& env) const
 {
-    env.test.expect(tester_.checkFlags(flags_, holder_));
+    env.test.expect(
+        tester_.checkFlags(flags_, holder_),
+        checkSiteReason(checkLoc_),
+        testLoc_.file_name(),
+        testLoc_.line());
 }
 
 void
 MptBalance::operator()(Env& env) const
 {
-    env.test.expect(amount_ == tester_.getBalance(account_));
+    env.test.expect(
+        amount_ == tester_.getBalance(account_),
+        checkSiteReason(checkLoc_),
+        testLoc_.file_name(),
+        testLoc_.line());
 }
 
 void
 RequireAny::operator()(Env& env) const
 {
-    env.test.expect(cb_());
+    env.test.expect(cb_(), checkSiteReason(checkLoc_), testLoc_.file_name(), testLoc_.line());
 }
 
 std::unordered_map<std::string, Account>
@@ -206,7 +226,7 @@ MPTTester::makeHolders(std::vector<Account> const& holders)
     return accounts;
 }
 
-MPTTester::MPTTester(Env& env, Account issuer, MPTInit const& arg)
+MPTTester::MPTTester(Env& env, Account issuer, MPTInit const& arg, std::source_location const& loc)
     : env_(env)
     , issuer_(std::move(issuer))
     , holders_(makeHolders(arg.holders))
@@ -238,7 +258,7 @@ MPTTester::MPTTester(Env& env, Account issuer, MPTInit const& arg)
             env_.require(Owners(*arg.auditor, 0));
     }
     if (arg.create)
-        create(*arg.create);
+        create(*arg.create, loc);
 }
 
 MPTTester::MPTTester(
@@ -273,7 +293,7 @@ makeMPTCreate(MPTInitDef const& arg)
         .authHolder = arg.authHolder};
 }
 
-MPTTester::MPTTester(MPTInitDef const& arg)
+MPTTester::MPTTester(MPTInitDef const& arg, std::source_location const& loc)
     : MPTTester{
           arg.env,
           arg.issuer,
@@ -282,7 +302,8 @@ MPTTester::MPTTester(MPTInitDef const& arg)
               .fund = arg.fund,
               .close = arg.close,
               .create = makeMPTCreate(arg),
-          }}
+          },
+          loc}
 {
 }
 
@@ -319,7 +340,7 @@ MPTTester::createJV(MPTCreate const& arg)
 }
 
 void
-MPTTester::create(MPTCreate const& arg)
+MPTTester::create(MPTCreate const& arg, std::source_location const& loc)
 {
     if (id_)
         Throw<std::runtime_error>("MPT can't be reused");
@@ -332,30 +353,30 @@ MPTTester::create(MPTCreate const& arg)
          .metadata = arg.metadata,
          .immutableFlags = arg.immutableFlags,
          .domainID = arg.domainID});
-    if (!isTesSuccess(submit(arg, jv)))
+    if (!isTesSuccess(submit(arg, {jv, loc})))
     {
         // Verify issuance doesn't exist
         env_.require(RequireAny(
-            [&]() -> bool { return env_.le(keylet::mptokenIssuance(*id_)) == nullptr; }));
+            [&]() -> bool { return env_.le(keylet::mptokenIssuance(*id_)) == nullptr; }, loc));
 
         id_.reset();
     }
     else
     {
-        env_.require(MptFlags(*this, arg.flags.value_or(0)));
+        env_.require(MptFlags(*this, arg.flags.value_or(0), std::nullopt, loc));
         auto authAndPay = [&](auto const& accts, auto const&& getAcct) {
             for (auto const& it : accts)
             {
-                authorize({.account = getAcct(it)});
+                authorize({.account = getAcct(it)}, loc);
                 if ((arg.flags.value_or(0) & tfMPTRequireAuth) && arg.authHolder)
-                    authorize({.account = issuer_, .holder = getAcct(it)});
+                    authorize({.account = issuer_, .holder = getAcct(it)}, loc);
                 if (arg.pay && arg.pay->first.empty())
-                    pay(issuer_, getAcct(it), arg.pay->second);
+                    pay(issuer_, getAcct(it), arg.pay->second, std::nullopt, std::nullopt, loc);
             }
             if (arg.pay)
             {
                 for (auto const& p : arg.pay->first)
-                    pay(issuer_, p, arg.pay->second);
+                    pay(issuer_, p, arg.pay->second, std::nullopt, std::nullopt, loc);
             }
         };
         if (arg.authorize)
@@ -397,13 +418,13 @@ MPTTester::destroyJV(MPTDestroy const& arg)
 }
 
 void
-MPTTester::destroy(MPTDestroy const& arg)
+MPTTester::destroy(MPTDestroy const& arg, std::source_location const& loc)
 {
     if (!arg.id && !id_)
         Throw<std::runtime_error>("MPT has not been created");
     json::Value const jv =
         destroyJV({.issuer = arg.issuer ? arg.issuer : issuer_, .id = arg.id ? arg.id : id_});
-    submit(arg, jv);
+    submit(arg, {jv, loc});
 }
 
 Account const&
@@ -431,7 +452,7 @@ MPTTester::authorizeJV(MPTAuthorize const& arg)
 }
 
 void
-MPTTester::authorize(MPTAuthorize const& arg)
+MPTTester::authorize(MPTAuthorize const& arg, std::source_location const& loc)
 {
     if (!arg.id && !id_)
         Throw<std::runtime_error>("MPT has not been created");
@@ -440,7 +461,7 @@ MPTTester::authorize(MPTAuthorize const& arg)
         .holder = arg.holder,
         .id = arg.id ? arg.id : id_,
     });
-    if (auto const result = submit(arg, jv); isTesSuccess(result))
+    if (auto const result = submit(arg, {jv, loc}); isTesSuccess(result))
     {
         // Issuer authorizes
         if (!arg.account || *arg.account == issuer_)
@@ -449,12 +470,12 @@ MPTTester::authorize(MPTAuthorize const& arg)
             // issuer un-authorizes the holder
             if (arg.flags.value_or(0) == tfMPTUnauthorize)
             {
-                env_.require(MptFlags(*this, flags, arg.holder));
+                env_.require(MptFlags(*this, flags, arg.holder, loc));
                 // issuer authorizes the holder
             }
             else
             {
-                env_.require(MptFlags(*this, flags | lsfMPTAuthorized, arg.holder));
+                env_.require(MptFlags(*this, flags | lsfMPTAuthorized, arg.holder, loc));
             }
         }
         // Holder authorizes
@@ -462,13 +483,17 @@ MPTTester::authorize(MPTAuthorize const& arg)
         {
             auto const flags = getFlags(arg.account);
             // holder creates a token
-            env_.require(MptFlags(*this, flags, arg.account));
-            env_.require(MptBalance(*this, *arg.account, 0));
+            env_.require(MptFlags(*this, flags, arg.account, loc));
+            env_.require(MptBalance(*this, *arg.account, 0, loc));
         }
         else
         {
             // Verify that the MPToken doesn't exist.
-            forObject([&](SLEP const& sle) { return env_.test.BEAST_EXPECT(!sle); }, arg.account);
+            forObject(
+                [&](SLEP const& sle) {
+                    return env_.test.expect(!sle, "", loc.file_name(), loc.line());
+                },
+                arg.account);
         }
     }
     else if (
@@ -477,27 +502,31 @@ MPTTester::authorize(MPTAuthorize const& arg)
         if (result == tecDUPLICATE)
         {
             // Verify that MPToken already exists
-            env_.require(RequireAny([&]() -> bool {
-                return env_.le(keylet::mptoken(*id_, arg.account->id())) != nullptr;
-            }));
+            env_.require(RequireAny(
+                [&]() -> bool {
+                    return env_.le(keylet::mptoken(*id_, arg.account->id())) != nullptr;
+                },
+                loc));
         }
         else
         {
             // Verify MPToken doesn't exist if holder failed authorizing(unless
             // it already exists)
-            env_.require(RequireAny([&]() -> bool {
-                return env_.le(keylet::mptoken(*id_, arg.account->id())) == nullptr;
-            }));
+            env_.require(RequireAny(
+                [&]() -> bool {
+                    return env_.le(keylet::mptoken(*id_, arg.account->id())) == nullptr;
+                },
+                loc));
         }
     }
 }
 
 void
-MPTTester::authorizeHolders(Holders const& holders)
+MPTTester::authorizeHolders(Holders const& holders, std::source_location const& loc)
 {
     for (auto const& holder : holders)
     {
-        authorize({.account = holder});
+        authorize({.account = holder}, loc);
     }
 }
 
@@ -545,7 +574,7 @@ MPTTester::setJV(MPTSet const& arg)
 }
 
 void
-MPTTester::set(MPTSet const& arg)
+MPTTester::set(MPTSet const& arg, std::source_location const& loc)
 {
     if (!arg.id && !id_)
         Throw<std::runtime_error>("MPT has not been created");
@@ -560,7 +589,7 @@ MPTTester::set(MPTSet const& arg)
          .domainID = arg.domainID,
          .issuerPubKey = arg.issuerPubKey,
          .auditorPubKey = arg.auditorPubKey});
-    if (submit(arg, jv) == tesSUCCESS && arg.flags.value_or(0) != 0u)
+    if (submit(arg, {jv, loc}) == tesSUCCESS && arg.flags.value_or(0) != 0u)
     {
         auto require = [&](std::optional<Account> const& holder, bool unchanged) {
             auto flags = getFlags(holder);
@@ -586,7 +615,7 @@ MPTTester::set(MPTSet const& arg)
                     }
                 }
             }
-            env_.require(MptFlags(*this, flags, holder));
+            env_.require(MptFlags(*this, flags, holder, loc));
         };
         if (arg.account)
             require(std::nullopt, arg.holder.has_value());
@@ -595,43 +624,48 @@ MPTTester::set(MPTSet const& arg)
 
         if (arg.issuerPubKey)
         {
-            env_.require(RequireAny([&]() -> bool {
-                return forObject([&](SLEP const& sle) -> bool {
-                    if (sle)
-                    {
-                        auto const issuerPubKey = getPubKey(issuer_);
-                        if (!issuerPubKey)
+            env_.require(RequireAny(
+                [&]() -> bool {
+                    return forObject([&](SLEP const& sle) -> bool {
+                        if (sle)
                         {
-                            Throw<std::runtime_error>("MPTTester::set: issuer's pubkey is not set");
-                        }
+                            auto const issuerPubKey = getPubKey(issuer_);
+                            if (!issuerPubKey)
+                            {
+                                Throw<std::runtime_error>(
+                                    "MPTTester::set: issuer's pubkey is not set");
+                            }
 
-                        return strHex((*sle)[sfIssuerEncryptionKey]) == strHex(*issuerPubKey);
-                    }
-                    return false;
-                });
-            }));
+                            return strHex((*sle)[sfIssuerEncryptionKey]) == strHex(*issuerPubKey);
+                        }
+                        return false;
+                    });
+                },
+                loc));
         }
         if (arg.auditorPubKey)
         {
-            env_.require(RequireAny([&]() -> bool {
-                return forObject([&](SLEP const& sle) -> bool {
-                    if (sle)
-                    {
-                        if (!auditor_.has_value())
-                            Throw<std::runtime_error>("MPTTester::set: auditor is not set");
-
-                        auto const auditorPubKey = getPubKey(*auditor_);
-                        if (!auditorPubKey)
+            env_.require(RequireAny(
+                [&]() -> bool {
+                    return forObject([&](SLEP const& sle) -> bool {
+                        if (sle)
                         {
-                            Throw<std::runtime_error>(
-                                "MPTTester::set: auditor's pubkey is not set");
-                        }
+                            if (!auditor_.has_value())
+                                Throw<std::runtime_error>("MPTTester::set: auditor is not set");
 
-                        return strHex((*sle)[sfAuditorEncryptionKey]) == strHex(*auditorPubKey);
-                    }
-                    return false;
-                });
-            }));
+                            auto const auditorPubKey = getPubKey(*auditor_);
+                            if (!auditorPubKey)
+                            {
+                                Throw<std::runtime_error>(
+                                    "MPTTester::set: auditor's pubkey is not set");
+                            }
+
+                            return strHex((*sle)[sfAuditorEncryptionKey]) == strHex(*auditorPubKey);
+                        }
+                        return false;
+                    });
+                },
+                loc));
         }
     }
 }
@@ -794,7 +828,8 @@ MPTTester::pay(
     Account const& dest,
     std::int64_t amount,
     std::optional<TER> err,
-    std::optional<std::vector<std::string>> credentials)
+    std::optional<std::vector<std::string>> credentials,
+    std::source_location const& loc)
 {
     if (!id_)
         Throw<std::runtime_error>("MPT has not been created");
@@ -805,13 +840,15 @@ MPTTester::pay(
     if (credentials)
     {
         env_(
-            jtx::pay(src, dest, mpt(amount)),
+            WithSourceLocation<json::Value>{jtx::pay(src, dest, mpt(amount)), loc},
             Ter(err.value_or(tesSUCCESS)),
             credentials::Ids(*credentials));
     }
     else
     {
-        env_(jtx::pay(src, dest, mpt(amount)), Ter(err.value_or(tesSUCCESS)));
+        env_(
+            WithSourceLocation<json::Value>{jtx::pay(src, dest, mpt(amount)), loc},
+            Ter(err.value_or(tesSUCCESS)));
     }
 
     if (!isTesSuccess(env_.ter()))
@@ -820,23 +857,23 @@ MPTTester::pay(
         env_.close();
     if (src == issuer_)
     {
-        env_.require(MptBalance(*this, src, srcAmt + amount));
-        env_.require(MptBalance(*this, dest, destAmt + amount));
+        env_.require(MptBalance(*this, src, srcAmt + amount, loc));
+        env_.require(MptBalance(*this, dest, destAmt + amount, loc));
     }
     else if (dest == issuer_)
     {
-        env_.require(MptBalance(*this, src, srcAmt - amount));
-        env_.require(MptBalance(*this, dest, destAmt - amount));
+        env_.require(MptBalance(*this, src, srcAmt - amount, loc));
+        env_.require(MptBalance(*this, dest, destAmt - amount, loc));
     }
     else
     {
         STAmount const saAmount = {*id_, amount};
         auto const actual = multiply(saAmount, transferRate(*env_.current(), *id_)).mpt().value();
         // Sender pays the transfer fee if any
-        env_.require(MptBalance(*this, src, srcAmt - actual));
-        env_.require(MptBalance(*this, dest, destAmt + amount));
+        env_.require(MptBalance(*this, src, srcAmt - actual, loc));
+        env_.require(MptBalance(*this, dest, destAmt + amount, loc));
         // Outstanding amount is reduced by the transfer fee if any
-        env_.require(MptBalance(*this, issuer_, outstandingAmt - (actual - amount)));
+        env_.require(MptBalance(*this, issuer_, outstandingAmt - (actual - amount), loc));
     }
 }
 
@@ -845,20 +882,23 @@ MPTTester::claw(
     Account const& issuer,
     Account const& holder,
     std::int64_t amount,
-    std::optional<TER> err)
+    std::optional<TER> err,
+    std::source_location const& loc)
 {
     if (!id_)
         Throw<std::runtime_error>("MPT has not been created");
     auto const issuerAmt = getBalance(issuer);
     auto const holderAmt = getBalance(holder);
-    env_(jtx::claw(issuer, mpt(amount), holder), Ter(err.value_or(tesSUCCESS)));
+    env_(
+        WithSourceLocation<json::Value>{jtx::claw(issuer, mpt(amount), holder), loc},
+        Ter(err.value_or(tesSUCCESS)));
     if (!isTesSuccess(env_.ter()))
         amount = 0;
     if (close_)
         env_.close();
 
-    env_.require(MptBalance(*this, issuer, issuerAmt - std::min(holderAmt, amount)));
-    env_.require(MptBalance(*this, holder, holderAmt - std::min(holderAmt, amount)));
+    env_.require(MptBalance(*this, issuer, issuerAmt - std::min(holderAmt, amount), loc));
+    env_.require(MptBalance(*this, holder, holderAmt - std::min(holderAmt, amount), loc));
 }
 
 PrettyAmount
@@ -1223,7 +1263,7 @@ MPTTester::fillConversionCiphertexts(
 }
 
 void
-MPTTester::convert(MPTConvert const& arg)
+MPTTester::convert(MPTConvert const& arg, std::source_location const& loc)
 {
     json::Value const jv = convertJV(arg, ticketOrSeq(arg.ticketSeq, arg.account));
 
@@ -1255,27 +1295,37 @@ MPTTester::convert(MPTConvert const& arg)
 
     auto const prevOutstanding = getIssuanceOutstandingBalance();
 
-    if (submit(arg, jv) == tesSUCCESS)
+    if (submit(arg, {jv, loc}) == tesSUCCESS)
     {
         auto const postConfidentialOutstanding = getIssuanceConfidentialBalance();
         auto const postOutstanding = getIssuanceOutstandingBalance();
-        env_.require(MptBalance(*this, account, holderAmt - amt));
-        env_.require(RequireAny([&]() -> bool {
-            return prevOutstanding && postOutstanding && *prevOutstanding == *postOutstanding;
-        }));
-        env_.require(RequireAny([&]() -> bool {
-            return prevConfidentialOutstanding + amt == postConfidentialOutstanding;
-        }));
+        env_.require(MptBalance(*this, account, holderAmt - amt, loc));
+        env_.require(RequireAny(
+            [&]() -> bool {
+                return prevOutstanding && postOutstanding && *prevOutstanding == *postOutstanding;
+            },
+            loc));
+        env_.require(RequireAny(
+            [&]() -> bool {
+                return prevConfidentialOutstanding + amt == postConfidentialOutstanding;
+            },
+            loc));
 
-        env_.require(RequireAny([&]() -> bool {
-            return getEncryptedBalance(account, holderEncryptedInbox).has_value();
-        }));
-        env_.require(RequireAny([&]() -> bool {
-            return getEncryptedBalance(account, holderEncryptedSpending).has_value();
-        }));
-        env_.require(RequireAny([&]() -> bool {
-            return getEncryptedBalance(account, issuerEncryptedBalance).has_value();
-        }));
+        env_.require(RequireAny(
+            [&]() -> bool {
+                return getEncryptedBalance(account, holderEncryptedInbox).has_value();
+            },
+            loc));
+        env_.require(RequireAny(
+            [&]() -> bool {
+                return getEncryptedBalance(account, holderEncryptedSpending).has_value();
+            },
+            loc));
+        env_.require(RequireAny(
+            [&]() -> bool {
+                return getEncryptedBalance(account, issuerEncryptedBalance).has_value();
+            },
+            loc));
 
         auto const postInboxBalance = getDecryptedBalance(account, holderEncryptedInbox);
         auto const postIssuerBalance = getDecryptedBalance(account, issuerEncryptedBalance);
@@ -1291,53 +1341,60 @@ MPTTester::convert(MPTConvert const& arg)
             if (!postAuditorBalance)
                 Throw<std::runtime_error>("Failed to get post-convert auditor balance");
 
-            env_.require(RequireAny([&]() -> bool {
-                return getEncryptedBalance(account, auditorEncryptedBalance).has_value();
-            }));
+            env_.require(RequireAny(
+                [&]() -> bool {
+                    return getEncryptedBalance(account, auditorEncryptedBalance).has_value();
+                },
+                loc));
 
             // auditor's encrypted balance is updated correctly
             env_.require(RequireAny(
-                [&]() -> bool { return *prevAuditorBalance + amt == *postAuditorBalance; }));
+                [&]() -> bool { return *prevAuditorBalance + amt == *postAuditorBalance; }, loc));
         }
         // spending balance should not change
-        env_.require(
-            RequireAny([&]() -> bool { return *postSpendingBalance == *prevSpendingBalance; }));
+        env_.require(RequireAny(
+            [&]() -> bool { return *postSpendingBalance == *prevSpendingBalance; }, loc));
 
         // issuer's encrypted balance is updated correctly
-        env_.require(
-            RequireAny([&]() -> bool { return *prevIssuerBalance + amt == *postIssuerBalance; }));
+        env_.require(RequireAny(
+            [&]() -> bool { return *prevIssuerBalance + amt == *postIssuerBalance; }, loc));
 
         // holder's inbox balance is updated correctly
-        env_.require(
-            RequireAny([&]() -> bool { return *prevInboxBalance + amt == *postInboxBalance; }));
+        env_.require(RequireAny(
+            [&]() -> bool { return *prevInboxBalance + amt == *postInboxBalance; }, loc));
 
         // sum of holder's inbox and spending balance should equal to issuer's
         // encrypted balance
-        env_.require(RequireAny([&]() -> bool {
-            return *postInboxBalance + *postSpendingBalance == *postIssuerBalance;
-        }));
+        env_.require(RequireAny(
+            [&]() -> bool {
+                return *postInboxBalance + *postSpendingBalance == *postIssuerBalance;
+            },
+            loc));
 
         if (arg.holderPubKey)
         {
-            env_.require(RequireAny([&]() -> bool {
-                return forObject(
-                    [&](SLEP const& sle) -> bool {
-                        if (sle)
-                        {
-                            auto const holderPubKey = getPubKey(account);
-                            if (!holderPubKey)
+            env_.require(RequireAny(
+                [&]() -> bool {
+                    return forObject(
+                        [&](SLEP const& sle) -> bool {
+                            if (sle)
                             {
-                                Throw<std::runtime_error>(
-                                    "MPTTester::convert: holder's pubkey is "
-                                    "not set");
-                            }
+                                auto const holderPubKey = getPubKey(account);
+                                if (!holderPubKey)
+                                {
+                                    Throw<std::runtime_error>(
+                                        "MPTTester::convert: holder's pubkey is "
+                                        "not set");
+                                }
 
-                            return strHex((*sle)[sfHolderEncryptionKey]) == strHex(*holderPubKey);
-                        }
-                        return false;
-                    },
-                    account);
-            }));
+                                return strHex((*sle)[sfHolderEncryptionKey]) ==
+                                    strHex(*holderPubKey);
+                            }
+                            return false;
+                        },
+                        account);
+                },
+                loc));
         }
     }
 }
@@ -1372,7 +1429,7 @@ MPTTester::convertJV(MPTConvert const& arg, std::uint32_t seq)
 }
 
 void
-MPTTester::send(MPTConfidentialSend const& arg)
+MPTTester::send(MPTConfidentialSend const& arg, std::source_location const& loc)
 {
     json::Value const jv = sendJV(arg, ticketOrSeq(arg.ticketSeq, arg.account));
 
@@ -1419,7 +1476,7 @@ MPTTester::send(MPTConfidentialSend const& arg)
     auto const prevCOA = getIssuanceConfidentialBalance();
     auto const prevOA = getIssuanceOutstandingBalance();
 
-    if (submit(arg, jv) == tesSUCCESS)
+    if (submit(arg, {jv, loc}) == tesSUCCESS)
     {
         auto const postCOA = getIssuanceConfidentialBalance();
         auto const postOA = getIssuanceOutstandingBalance();
@@ -1441,39 +1498,48 @@ MPTTester::send(MPTConfidentialSend const& arg)
             Throw<std::runtime_error>("Failed to get Post-send balance");
 
         // Public balances unchanged
-        env_.require(MptBalance(*this, account, senderPubAmt));
-        env_.require(MptBalance(*this, dest, destPubAmt));
+        env_.require(MptBalance(*this, account, senderPubAmt, loc));
+        env_.require(MptBalance(*this, dest, destPubAmt, loc));
 
         // OA and COA unchanged
-        env_.require(RequireAny([&]() -> bool { return prevOA && postOA && *prevOA == *postOA; }));
-        env_.require(RequireAny([&]() -> bool { return prevCOA == postCOA; }));
+        env_.require(
+            RequireAny([&]() -> bool { return prevOA && postOA && *prevOA == *postOA; }, loc));
+        env_.require(RequireAny([&]() -> bool { return prevCOA == postCOA; }, loc));
 
         // Verify sender changes
-        env_.require(RequireAny([&]() -> bool {
-            return *prevSenderSpending >= amt && *postSenderSpending == *prevSenderSpending - amt;
-        }));
-        env_.require(RequireAny([&]() -> bool { return postSenderInbox == prevSenderInbox; }));
-        env_.require(RequireAny([&]() -> bool {
-            return *prevSenderIssuer >= amt && *postSenderIssuer == *prevSenderIssuer - amt;
-        }));
+        env_.require(RequireAny(
+            [&]() -> bool {
+                return *prevSenderSpending >= amt &&
+                    *postSenderSpending == *prevSenderSpending - amt;
+            },
+            loc));
+        env_.require(RequireAny([&]() -> bool { return postSenderInbox == prevSenderInbox; }, loc));
+        env_.require(RequireAny(
+            [&]() -> bool {
+                return *prevSenderIssuer >= amt && *postSenderIssuer == *prevSenderIssuer - amt;
+            },
+            loc));
 
         // Verify destination changes
-        env_.require(RequireAny([&]() -> bool { return *postDestInbox == *prevDestInbox + amt; }));
-        env_.require(RequireAny([&]() -> bool { return *postDestSpending == *prevDestSpending; }));
         env_.require(
-            RequireAny([&]() -> bool { return *postDestIssuer == *prevDestIssuer + amt; }));
+            RequireAny([&]() -> bool { return *postDestInbox == *prevDestInbox + amt; }, loc));
+        env_.require(
+            RequireAny([&]() -> bool { return *postDestSpending == *prevDestSpending; }, loc));
+        env_.require(
+            RequireAny([&]() -> bool { return *postDestIssuer == *prevDestIssuer + amt; }, loc));
 
         // Cross checks
         env_.require(RequireAny(
-            [&]() -> bool { return *postSenderInbox + *postSenderSpending == *postSenderIssuer; }));
+            [&]() -> bool { return *postSenderInbox + *postSenderSpending == *postSenderIssuer; },
+            loc));
         env_.require(RequireAny(
-            [&]() -> bool { return *postDestInbox + *postDestSpending == *postDestIssuer; }));
+            [&]() -> bool { return *postDestInbox + *postDestSpending == *postDestIssuer; }, loc));
 
         // Version: sender increments by 1; receiver version is unchanged by incoming sends
         env_.require(RequireAny(
-            [&]() -> bool { return getMPTokenVersion(account) == prevSenderVersion + 1; }));
+            [&]() -> bool { return getMPTokenVersion(account) == prevSenderVersion + 1; }, loc));
         env_.require(
-            RequireAny([&]() -> bool { return getMPTokenVersion(dest) == prevDestVersion; }));
+            RequireAny([&]() -> bool { return getMPTokenVersion(dest) == prevDestVersion; }, loc));
 
         if (arg.auditorEncryptedAmt || auditor_)
         {
@@ -1482,19 +1548,24 @@ MPTTester::send(MPTConfidentialSend const& arg)
             if (!postSenderAuditor || !postDestAuditor)
                 Throw<std::runtime_error>("Failed to get Post-send balance");
 
-            env_.require(RequireAny([&]() -> bool {
-                return *postSenderAuditor == *postSenderIssuer &&
-                    *postDestAuditor == *postDestIssuer;
-            }));
+            env_.require(RequireAny(
+                [&]() -> bool {
+                    return *postSenderAuditor == *postSenderIssuer &&
+                        *postDestAuditor == *postDestIssuer;
+                },
+                loc));
 
             // verify sender
-            env_.require(RequireAny([&]() -> bool {
-                return *prevSenderAuditor >= amt && *postSenderAuditor == *prevSenderAuditor - amt;
-            }));
+            env_.require(RequireAny(
+                [&]() -> bool {
+                    return *prevSenderAuditor >= amt &&
+                        *postSenderAuditor == *prevSenderAuditor - amt;
+                },
+                loc));
 
             // verify dest
-            env_.require(
-                RequireAny([&]() -> bool { return *postDestAuditor == *prevDestAuditor + amt; }));
+            env_.require(RequireAny(
+                [&]() -> bool { return *postDestAuditor == *prevDestAuditor + amt; }, loc));
         }
     }
 }
@@ -1726,7 +1797,7 @@ computeNextSendChainState(
 }
 
 void
-MPTTester::confidentialClaw(MPTConfidentialClawback const& arg)
+MPTTester::confidentialClaw(MPTConfidentialClawback const& arg, std::source_location const& loc)
 {
     json::Value jv;
     auto const account = arg.account ? *arg.account : issuer_;
@@ -1766,34 +1837,39 @@ MPTTester::confidentialClaw(MPTConfidentialClawback const& arg)
     auto const prevOA = getIssuanceOutstandingBalance();
     auto const prevVersion = getMPTokenVersion(holder);
 
-    if (submit(arg, jv) == tesSUCCESS)
+    if (submit(arg, {jv, loc}) == tesSUCCESS)
     {
         auto const postCOA = getIssuanceConfidentialBalance();
         auto const postOA = getIssuanceOutstandingBalance();
         auto const postVersion = getMPTokenVersion(holder);
 
         // Verify holder's public balance is unchanged
-        env_.require(MptBalance(*this, holder, holderPubAmt));
+        env_.require(MptBalance(*this, holder, holderPubAmt, loc));
 
         // Verify COA and OA are reduced correctly
         env_.require(
-            RequireAny([&]() -> bool { return prevCOA >= amt && postCOA == prevCOA - amt; }));
-        env_.require(RequireAny([&]() -> bool {
-            return prevOA && postOA && *prevOA >= amt && *postOA == *prevOA - amt;
-        }));
+            RequireAny([&]() -> bool { return prevCOA >= amt && postCOA == prevCOA - amt; }, loc));
+        env_.require(RequireAny(
+            [&]() -> bool {
+                return prevOA && postOA && *prevOA >= amt && *postOA == *prevOA - amt;
+            },
+            loc));
 
         // Verify holder's confidential balances are zeroed out
         env_.require(RequireAny(
-            [&]() -> bool { return getDecryptedBalance(holder, holderEncryptedInbox) == 0; }));
+            [&]() -> bool { return getDecryptedBalance(holder, holderEncryptedInbox) == 0; }, loc));
         env_.require(RequireAny(
-            [&]() -> bool { return getDecryptedBalance(holder, holderEncryptedSpending) == 0; }));
+            [&]() -> bool { return getDecryptedBalance(holder, holderEncryptedSpending) == 0; },
+            loc));
         env_.require(RequireAny(
-            [&]() -> bool { return getDecryptedBalance(holder, issuerEncryptedBalance) == 0; }));
+            [&]() -> bool { return getDecryptedBalance(holder, issuerEncryptedBalance) == 0; },
+            loc));
         env_.require(RequireAny(
-            [&]() -> bool { return getDecryptedBalance(holder, auditorEncryptedBalance) == 0; }));
+            [&]() -> bool { return getDecryptedBalance(holder, auditorEncryptedBalance) == 0; },
+            loc));
 
         // Verify version is incremented
-        env_.require(RequireAny([&]() -> bool { return postVersion == prevVersion + 1; }));
+        env_.require(RequireAny([&]() -> bool { return postVersion == prevVersion + 1; }, loc));
     }
 }
 
@@ -1925,7 +2001,7 @@ MPTTester::mergeInboxJV(MPTMergeInbox const& arg) const
 }
 
 void
-MPTTester::mergeInbox(MPTMergeInbox const& arg)
+MPTTester::mergeInbox(MPTMergeInbox const& arg, std::source_location const& loc)
 {
     json::Value const jv = mergeInboxJV(arg);
     Account const& account = requireValue(arg.account, "account");
@@ -1943,7 +2019,7 @@ MPTTester::mergeInbox(MPTMergeInbox const& arg)
     if (!prevInboxBalance || !prevSpendingBalance || !prevIssuerBalance)
         Throw<std::runtime_error>("Failed to get pre-mergeInbox balances");
 
-    if (submit(arg, jv) == tesSUCCESS)
+    if (submit(arg, {jv, loc}) == tesSUCCESS)
     {
         auto const postCOA = getIssuanceConfidentialBalance();
         auto const postOA = getIssuanceOutstandingBalance();
@@ -1959,17 +2035,20 @@ MPTTester::mergeInbox(MPTMergeInbox const& arg)
             !prevIssuerEncrypted || !postInboxEncrypted || !postIssuerEncrypted)
             Throw<std::runtime_error>("Failed to get post-mergeInbox balances");
 
-        env_.require(MptBalance(*this, account, holderPubAmt));
-        env_.require(RequireAny([&]() -> bool { return prevOA && postOA && *prevOA == *postOA; }));
-        env_.require(RequireAny([&]() -> bool { return prevCOA == postCOA; }));
+        env_.require(MptBalance(*this, account, holderPubAmt, loc));
+        env_.require(
+            RequireAny([&]() -> bool { return prevOA && postOA && *prevOA == *postOA; }, loc));
+        env_.require(RequireAny([&]() -> bool { return prevCOA == postCOA; }, loc));
 
-        env_.require(RequireAny([&]() -> bool {
-            return *postSpendingBalance == *prevInboxBalance + *prevSpendingBalance &&
-                *postInboxBalance == 0;
-        }));
+        env_.require(RequireAny(
+            [&]() -> bool {
+                return *postSpendingBalance == *prevInboxBalance + *prevSpendingBalance &&
+                    *postInboxBalance == 0;
+            },
+            loc));
 
         env_.require(
-            RequireAny([&]() -> bool { return *prevIssuerBalance == *postIssuerBalance; }));
+            RequireAny([&]() -> bool { return *prevIssuerBalance == *postIssuerBalance; }, loc));
 
         auto const holderPubKey = getPubKey(account);
         if (!holderPubKey)
@@ -1980,18 +2059,23 @@ MPTTester::mergeInbox(MPTMergeInbox const& arg)
         if (!expectedInbox)
             Throw<std::runtime_error>("Failed to get canonical zero encryption");
 
-        env_.require(RequireAny([&]() -> bool { return *postInboxEncrypted == *expectedInbox; }));
         env_.require(
-            RequireAny([&]() -> bool { return *postIssuerEncrypted == *prevIssuerEncrypted; }));
-        env_.require(RequireAny([&]() -> bool {
-            return postAuditorEncrypted.has_value() == prevAuditorEncrypted.has_value() &&
-                (!postAuditorEncrypted || *postAuditorEncrypted == *prevAuditorEncrypted);
-        }));
-        env_.require(RequireAny([&]() -> bool { return postVersion == prevVersion + 1; }));
+            RequireAny([&]() -> bool { return *postInboxEncrypted == *expectedInbox; }, loc));
+        env_.require(RequireAny(
+            [&]() -> bool { return *postIssuerEncrypted == *prevIssuerEncrypted; }, loc));
+        env_.require(RequireAny(
+            [&]() -> bool {
+                return postAuditorEncrypted.has_value() == prevAuditorEncrypted.has_value() &&
+                    (!postAuditorEncrypted || *postAuditorEncrypted == *prevAuditorEncrypted);
+            },
+            loc));
+        env_.require(RequireAny([&]() -> bool { return postVersion == prevVersion + 1; }, loc));
 
-        env_.require(RequireAny([&]() -> bool {
-            return *postSpendingBalance + *postInboxBalance == *postIssuerBalance;
-        }));
+        env_.require(RequireAny(
+            [&]() -> bool {
+                return *postSpendingBalance + *postInboxBalance == *postIssuerBalance;
+            },
+            loc));
     }
 }
 
@@ -2026,7 +2110,7 @@ MPTTester::getMPTokenVersion(Account const account) const
 }
 
 void
-MPTTester::convertBack(MPTConvertBack const& arg)
+MPTTester::convertBack(MPTConvertBack const& arg, std::source_location const& loc)
 {
     json::Value const jv = convertBackJV(arg, ticketOrSeq(arg.ticketSeq, arg.account));
 
@@ -2054,18 +2138,22 @@ MPTTester::convertBack(MPTConvertBack const& arg)
     auto const prevOutstanding = getIssuanceOutstandingBalance();
     auto const prevVersion = getMPTokenVersion(account);
 
-    if (submit(arg, jv) == tesSUCCESS)
+    if (submit(arg, {jv, loc}) == tesSUCCESS)
     {
         auto const postConfidentialOutstanding = getIssuanceConfidentialBalance();
         auto const postOutstanding = getIssuanceOutstandingBalance();
         auto const postVersion = getMPTokenVersion(account);
-        env_.require(MptBalance(*this, account, holderAmt + amt));
-        env_.require(RequireAny([&]() -> bool {
-            return prevOutstanding && postOutstanding && *prevOutstanding == *postOutstanding;
-        }));
-        env_.require(RequireAny([&]() -> bool {
-            return prevConfidentialOutstanding - amt == postConfidentialOutstanding;
-        }));
+        env_.require(MptBalance(*this, account, holderAmt + amt, loc));
+        env_.require(RequireAny(
+            [&]() -> bool {
+                return prevOutstanding && postOutstanding && *prevOutstanding == *postOutstanding;
+            },
+            loc));
+        env_.require(RequireAny(
+            [&]() -> bool {
+                return prevConfidentialOutstanding - amt == postConfidentialOutstanding;
+            },
+            loc));
 
         auto const postInboxBalance = getDecryptedBalance(account, holderEncryptedInbox);
         auto const postIssuerBalance = getDecryptedBalance(account, issuerEncryptedBalance);
@@ -2083,28 +2171,31 @@ MPTTester::convertBack(MPTConvertBack const& arg)
 
             // auditor's encrypted balance is updated correctly
             env_.require(RequireAny(
-                [&]() -> bool { return *prevAuditorBalance - amt == *postAuditorBalance; }));
+                [&]() -> bool { return *prevAuditorBalance - amt == *postAuditorBalance; }, loc));
         }
 
         // inbox balance should not change
-        env_.require(RequireAny([&]() -> bool { return *postInboxBalance == *prevInboxBalance; }));
+        env_.require(
+            RequireAny([&]() -> bool { return *postInboxBalance == *prevInboxBalance; }, loc));
 
         // issuer's encrypted balance is updated correctly
-        env_.require(
-            RequireAny([&]() -> bool { return *prevIssuerBalance - amt == *postIssuerBalance; }));
+        env_.require(RequireAny(
+            [&]() -> bool { return *prevIssuerBalance - amt == *postIssuerBalance; }, loc));
 
         // holder's spending balance is updated correctly
         env_.require(RequireAny(
-            [&]() -> bool { return *prevSpendingBalance - amt == *postSpendingBalance; }));
+            [&]() -> bool { return *prevSpendingBalance - amt == *postSpendingBalance; }, loc));
 
         // holder's confidential balance version is updated correctly
-        env_.require(RequireAny([&]() -> bool { return postVersion == prevVersion + 1; }));
+        env_.require(RequireAny([&]() -> bool { return postVersion == prevVersion + 1; }, loc));
 
         // sum of holder's inbox and spending balance should equal to issuer's
         // encrypted balance
-        env_.require(RequireAny([&]() -> bool {
-            return *postInboxBalance + *postSpendingBalance == *postIssuerBalance;
-        }));
+        env_.require(RequireAny(
+            [&]() -> bool {
+                return *postInboxBalance + *postSpendingBalance == *postIssuerBalance;
+            },
+            loc));
     }
 }
 
@@ -2172,7 +2263,7 @@ MPTTester::convertBackJV(MPTConvertBack const& arg, std::uint32_t seq)
 }
 
 void
-MPTTester::mirrorUpdate(MPTMirrorUpdate const& arg)
+MPTTester::mirrorUpdate(MPTMirrorUpdate const& arg, std::source_location const& loc)
 {
     json::Value jv;
     jv[jss::TransactionType] = jss::ConfidentialMPTMirrorUpdate;
@@ -2197,7 +2288,7 @@ MPTTester::mirrorUpdate(MPTMirrorUpdate const& arg)
         jv[sfZKProof] = strHex(gMakeZeroBuffer(kEcEqualityProofLength));
     }
 
-    submit(arg, jv);
+    submit(arg, {jv, loc});
 }
 
 }  // namespace xrpl::test::jtx
