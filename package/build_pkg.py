@@ -21,6 +21,14 @@ SRC_DIR = Path(__file__).resolve().parents[1]
 
 PRE_RELEASE = re.compile(r"^(b|rc)(0|[1-9][0-9]*)(\+.*)?$")
 
+# The package name a variant suffixes, and the name every variant keeps for its
+# on-disk paths (/usr/bin/xrpld, /etc/xrpld, xrpld.service).
+BASE_NAME = "xrpld"
+
+# The flavours that can be built, '' being the plain xrpld package. A variant
+# needs a config in linux.json to be built by CI; see package/README.md.
+VARIANTS = ("", "assert")
+
 # Files both packaging systems consume, staged under the same names.
 STAGED_FROM_BUILD = ("xrpld", "validator-keys", "validator-keys-LICENSE")
 STAGED_FROM_SRC = {
@@ -30,6 +38,18 @@ STAGED_FROM_SRC = {
     "README.md": "README.md",
 }
 STAGED_UNITS = ("xrpld.service", "xrpld.sysusers", "xrpld.tmpfiles", "xrpld.logrotate")
+
+# debian/ files debhelper keys by package name, staged as '<package>.<name>'.
+DEBIAN_PKG_FILES = ("docs", "links")
+
+# Debian control files have no conditionals, so what makes a variant replace the
+# plain package is rendered into control.in rather than written there.
+DEB_VARIANT_FIELDS = """\
+Conflicts: xrpld
+Replaces: xrpld
+Provides: xrpld (= ${binary:Version})"""
+
+TOKEN = re.compile(r"@[A-Z_]+@")
 
 
 def run(*command: object, cwd: Path | None = None) -> None:
@@ -73,6 +93,28 @@ def package_version(reported: str) -> str:
         "e.g. 3.2.0-b1 or 3.2.0-rc2."
     )
     return version
+
+
+def render(template: Path, dest: Path, values: dict[str, str]) -> None:
+    """Write template to dest with its @TOKEN@ placeholders substituted.
+
+    A token left without a value fails the build rather than reaching dpkg.
+    """
+    text = template.read_text()
+    for token, value in values.items():
+        text = text.replace(f"@{token}@", value)
+
+    missing = sorted(set(TOKEN.findall(text)))
+    assert not missing, f"{template}: no value for {', '.join(missing)}"
+
+    # An empty value at the end of a stanza would otherwise leave a blank line,
+    # which is what ends a stanza.
+    dest.write_text(text.rstrip("\n") + "\n")
+
+
+def package_name(variant: str) -> str:
+    """The binary package name for a variant: '' -> xrpld, 'assert' -> xrpld-assert."""
+    return f"{BASE_NAME}-{variant}" if variant else BASE_NAME
 
 
 def read_version(xrpld: Path) -> str:
@@ -135,17 +177,18 @@ def stage_common(build_dir: Path, dest: Path) -> None:
         shutil.copy2(SRC_DIR / source, dest / name)
 
 
-def stage_units(dest: Path) -> None:
+def stage_units(dest: Path, *, prefix: str = "") -> None:
     """Copy the systemd, sysusers, tmpfiles and logrotate files into dest.
 
-    Each format wants them somewhere else: rpmbuild reads them from SOURCES,
-    debhelper from debian/.
+    Each format wants them somewhere else: rpmbuild reads them from SOURCES by
+    path, debhelper from debian/ by package name -- hence 'prefix', which makes
+    the copies 'xrpld-assert.xrpld.service' and so on.
     """
     for name in STAGED_UNITS:
-        shutil.copy2(SRC_DIR / "package" / "shared" / name, dest / name)
+        shutil.copy2(SRC_DIR / "package" / "shared" / name, dest / f"{prefix}{name}")
 
 
-def build_rpm(build_dir: Path, *, version: str, pkg_release: str) -> None:
+def build_rpm(build_dir: Path, *, version: str, pkg_release: str, variant: str) -> None:
     """Stage the spec and its sources, then build the binary RPMs."""
     topdir = build_dir / "rpmbuild"
     for name in ("BUILD", "BUILDROOT", "RPMS", "SOURCES", "SPECS", "SRPMS"):
@@ -155,6 +198,9 @@ def build_rpm(build_dir: Path, *, version: str, pkg_release: str) -> None:
     shutil.copy2(SRC_DIR / "package" / "rpm" / "xrpld.spec", spec)
     stage_common(build_dir, topdir / "SOURCES")
     stage_units(topdir / "SOURCES")
+
+    # The spec defaults it to nothing, so a plain build is unchanged.
+    variant_defines = ["--define", f"pkg_variant {variant}"] if variant else []
 
     run(
         "rpmbuild",
@@ -168,8 +214,27 @@ def build_rpm(build_dir: Path, *, version: str, pkg_release: str) -> None:
         # The image tracks the newest distro, but the packages target el9.
         "--define",
         "dist .el9",
+        *variant_defines,
         spec,
     )
+
+
+def stage_debian(dest: Path, name: str) -> None:
+    """Stage the debian directory for the package name being built."""
+    source = SRC_DIR / "package" / "debian"
+    shutil.copytree(
+        source, dest, ignore=shutil.ignore_patterns("*.in", *DEBIAN_PKG_FILES)
+    )
+
+    values = {
+        "PKG": name,
+        "VARIANT_FIELDS": "" if name == BASE_NAME else DEB_VARIANT_FIELDS,
+    }
+    render(source / "control.in", dest / "control", values)
+    render(source / "lintian-overrides.in", dest / f"{name}.lintian-overrides", values)
+
+    for suffix in DEBIAN_PKG_FILES:
+        shutil.copy2(source / suffix, dest / f"{name}.{suffix}")
 
 
 def build_deb(
@@ -180,21 +245,23 @@ def build_deb(
     pkg_release: str,
     channel: str,
     epoch: int,
+    name: str,
 ) -> None:
     """Stage the debian directory and its sources, then build the binary DEBs."""
     staging = build_dir / "debbuild" / "source"
     stage_common(build_dir, staging)
-    shutil.copytree(SRC_DIR / "package" / "debian", staging / "debian")
+    stage_debian(staging / "debian", name)
 
-    # debhelper picks these up from debian/ automatically.
-    stage_units(staging / "debian")
+    # Prefixed whether it is a variant's name or not: debian/rules names them
+    # explicitly either way.
+    stage_units(staging / "debian", prefix=f"{name}.")
 
     date = datetime.fromtimestamp(epoch, timezone.utc).strftime(
         "%a, %d %b %Y %H:%M:%S %z"
     )
     # The leading spaces are significant to dpkg.
     changelog = textwrap.dedent(f"""\
-        xrpld ({version}-{pkg_release}) {channel}; urgency=medium
+        {name} ({version}-{pkg_release}) {channel}; urgency=medium
           * Release {reported}.
 
          -- XRPL Foundation <contact@xrplf.org>  {date}
@@ -224,6 +291,14 @@ def main() -> None:
         help="package release iteration (default: %(default)s)",
     )
     parser.add_argument(
+        "--variant",
+        default="",
+        choices=VARIANTS,
+        help="the flavour of the package to build: 'assert' produces "
+        "xrpld-assert, which ships the same paths as xrpld and replaces it "
+        "(default: the plain xrpld package)",
+    )
+    parser.add_argument(
         "--channel",
         required=True,
         choices=("stable", "rc", "beta", "develop", "private", "UNRELEASED"),
@@ -234,6 +309,8 @@ def main() -> None:
     build_dir: Path = args.build_dir.resolve()
     pkg_release: str = args.pkg_release
     channel: str = args.channel
+    variant: str = args.variant
+    name = package_name(variant)
 
     assert build_dir.is_dir(), (
         f"build directory not found: {build_dir}. Build the binaries before "
@@ -253,6 +330,8 @@ def main() -> None:
     for tree in ("debbuild", "rpmbuild"):
         shutil.rmtree(build_dir / tree, ignore_errors=True)
 
+    print(f"Building {package_type} {name} {version}-{pkg_release}", flush=True)
+
     if package_type == "deb":
         build_deb(
             build_dir,
@@ -261,9 +340,10 @@ def main() -> None:
             pkg_release=pkg_release,
             channel=channel,
             epoch=epoch,
+            name=name,
         )
     else:
-        build_rpm(build_dir, version=version, pkg_release=pkg_release)
+        build_rpm(build_dir, version=version, pkg_release=pkg_release, variant=variant)
 
 
 if __name__ == "__main__":

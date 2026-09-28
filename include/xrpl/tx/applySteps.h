@@ -12,6 +12,7 @@
 #include <xrpl/protocol/XRPAmount.h>
 
 #include <cstdint>
+#include <expected>
 #include <optional>
 #include <utility>
 
@@ -410,16 +411,21 @@ invokeCheckPermission(ReadView const& view, STTx const& tx);
  *
  * No validation is done or implied by this function.
  *
- * Caller is responsible for handling any exceptions.
- * Since none should be thrown, that will usually
- * mean terminating.
- *
+ * Callers do not expect this function to throw; exceptions from a transactor's
+ * `calculateBaseFee` are caught and reported as an error instead.
  * @param view The current open ledger.
  * @param tx The transaction to be checked.
  *
- * @return The base fee.
+ * @return The base fee on success. Returns `std::unexpected(temUNKNOWN)` if the transaction
+ * type is not recognized, and `std::unexpected(tefEXCEPTION)` if the transactor's
+ * `calculateBaseFee` threw.
+ *
+ * @note Failure is reported as an error rather than a fee of zero because a
+ * zero (or default) fee would pass checkFee and let the transaction be
+ * applied for less than it owes. Callers that only need a fee hint may fall
+ * back to a default; callers deciding whether to apply should reject.
  */
-XRPAmount
+[[nodiscard]] std::expected<XRPAmount, TER>
 calculateBaseFee(ReadView const& view, STTx const& tx);
 
 /**

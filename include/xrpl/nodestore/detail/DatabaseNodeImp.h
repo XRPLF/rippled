@@ -92,7 +92,7 @@ public:
     void
     importDatabase(Database& source) override
     {
-        importInternal(*backend_.get(), source);
+        importInternal(*backend_, source);
     }
 
     void
