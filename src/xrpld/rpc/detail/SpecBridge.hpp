@@ -36,6 +36,8 @@ injectSpecWarnings(json::Value& object, ::rpc::spec::Warnings const& warnings)
         std::string message{::rpc::getWarningInfo(code).message};
         for (auto const& detail : messages)
         {
+            if (detail.empty())
+                continue;
             message += ' ';
             message += detail;
         }

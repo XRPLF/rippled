@@ -240,6 +240,19 @@ TEST(XrplJsonView, object_root)
     EXPECT_FALSE(arrayRoot.child("anything").present());
 }
 
+TEST(XrplJsonView, mutable_root_over_const_source_reads)
+{
+    auto const params = makeParams();
+    ObjectView root{params};
+
+    auto const str = root.child("str");
+    ASSERT_TRUE(str.present());
+    EXPECT_EQ(str.asString(), "hello");
+    EXPECT_EQ(root.child("obj").child("inner").asString(), "deep");
+    EXPECT_EQ(root.child("arr").element(1).asString(), "b");
+    EXPECT_FALSE(root.child("nope").present());
+}
+
 TEST(SpecBridge, shared_spec_parses_json_value)
 {
     json::Value params{json::ValueType::Object};
@@ -346,6 +359,9 @@ TEST(SpecBridge, inject_spec_warnings)
         EXPECT_EQ(
             out[jss::warnings][0u][jss::id].asInt(),
             static_cast<int>(::rpc::WarningCode::WarnRpcOutdated));
+        EXPECT_EQ(
+            out[jss::warnings][0u][jss::message],
+            std::string{::rpc::getWarningInfo(::rpc::WarningCode::WarnRpcOutdated).message});
         EXPECT_EQ(out[jss::warnings][1u][jss::id].asInt(), WarnRpcFieldsDeprecated);
     }
     {

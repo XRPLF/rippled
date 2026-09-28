@@ -13,6 +13,7 @@
 #include <string>
 #include <string_view>
 #include <type_traits>
+#include <utility>
 
 namespace xrpl::rpc {
 
@@ -328,8 +329,11 @@ public:
     [[nodiscard]] XrplJsonFieldView
     child(std::string_view key)
     {
+        if (writeValue_ == nullptr)
+            return std::as_const(*this).child(key);
+
         std::string const name{key};
-        if (writeValue_ == nullptr || !writeValue_->isObject() || !writeValue_->isMember(name))
+        if (!writeValue_->isObject() || !writeValue_->isMember(name))
             return XrplJsonFieldView::absentMutable(key);
         return {&(*writeValue_)[name], key};
     }
