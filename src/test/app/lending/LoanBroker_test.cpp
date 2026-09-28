@@ -3575,9 +3575,8 @@ class LoanBroker_test : public beast::unit_test::Suite
         }
 
         // Test 5: When the broker owner submits, the domain check must validate
-        // the borrower (the counterparty), not the submitting account. The
-        // broker owner (alice) is the domain owner and holds credentials, so a
-        // bug that checked the submitter instead of the borrower would let a
+        // the borrower (the counterparty), not the submitting account. A bug
+        // that checked the submitter instead of the borrower would let a
         // borrower without credentials (carol) through.
         {
             env(makeLoanSet(env, alice, brokerKeylet.key, carol, asset), Ter(tecNO_AUTH));
@@ -3623,6 +3622,118 @@ class LoanBroker_test : public beast::unit_test::Suite
             // With the credential gone, preclaim now rejects outright
             env(makeLoanSet(env, carol, brokerKeylet.key, alice, asset), Ter(tecNO_AUTH));
             env.close();
+        }
+    }
+
+    void
+    testPrivateBrokerDomainOwner()
+    {
+        testcase("Private broker treats the domain owner as a member");
+        using namespace jtx;
+        using namespace loan_broker;
+
+        Account const issuer{"issuer"};
+        Account const alice{"alice"};  // Broker owner
+        Account const bob{"bob"};      // Domain owner, holds no credentials
+        Account const carol{"carol"};  // Neither owner nor member
+        Account const credIssuer{"credIssuer"};
+        std::string const credType = "LoanCredential";
+
+        Env env{*this, all_};
+        Vault const vault{env};
+
+        env.fund(XRP(100'000), issuer, alice, bob, carol, credIssuer);
+        env.close();
+
+        env(trust(alice, issuer["IOU"](1'000'000)));
+        env(trust(bob, issuer["IOU"](1'000'000)));
+        env(trust(carol, issuer["IOU"](1'000'000)));
+        env.close();
+        PrettyAsset const asset{issuer["IOU"]};
+        env(pay(issuer, alice, asset(100'000)));
+        env(pay(issuer, bob, asset(10'000)));
+        env(pay(issuer, carol, asset(10'000)));
+        env.close();
+
+        auto [tx, vaultKeylet] = vault.create({.owner = alice, .asset = asset});
+        env(tx);
+        env.close();
+        env(vault.deposit({.depositor = alice, .id = vaultKeylet.key, .amount = asset(50'000)}));
+        env.close();
+
+        // Bob owns the domain. Nobody holds a credential in it.
+        pdomain::Credentials const credentials{{.issuer = credIssuer, .credType = credType}};
+        env(pdomain::setTx(bob, credentials));
+        env.close();
+        auto const domainId = pdomain::getNewDomain(env.meta());
+        BEAST_EXPECT(!env.le(credentials::keylet(bob, credIssuer, credType)));
+
+        // Alice creates a private broker attached to bob's domain
+        auto const brokerKeylet =
+            keylet::loanBroker(alice.id(), SeqProxy::rawSequence(env.seq(alice)));
+        env(set(alice, vaultKeylet.key, tfLoanBrokerPrivate), kDomainId(domainId));
+        env.close();
+        env(coverDeposit(alice, brokerKeylet.key, asset(1000)));
+        env.close();
+
+        // Test 1: The domain owner can borrow without holding a credential
+        {
+            auto const loanKeylet = keylet::loan(brokerKeylet.key, SeqProxy::rawSequence(1));
+            env(makeLoanSet(env, bob, brokerKeylet.key, alice, asset));
+            env.close();
+
+            BEAST_EXPECT(env.le(loanKeylet));
+        }
+
+        // Test 2: Anyone else without a credential is still rejected
+        {
+            env(makeLoanSet(env, carol, brokerKeylet.key, alice, asset), Ter(tecNO_AUTH));
+        }
+
+        // Test 3: The exemption applies to the borrower, not the submitter.
+        // Broker owner submits with the domain owner as counterparty.
+        {
+            auto const loanKeylet = keylet::loan(brokerKeylet.key, SeqProxy::rawSequence(2));
+            env(makeLoanSet(env, alice, brokerKeylet.key, bob, asset));
+            env.close();
+
+            BEAST_EXPECT(env.le(loanKeylet));
+        }
+
+        // Test 4: Broker owner who also owns the domain. Alice creates her own
+        // domain and a second private broker attached to it.
+        {
+            env(pdomain::setTx(alice, credentials));
+            env.close();
+            auto const aliceDomainId = pdomain::getNewDomain(env.meta());
+
+            auto const broker2Keylet =
+                keylet::loanBroker(alice.id(), SeqProxy::rawSequence(env.seq(alice)));
+            env(set(alice, vaultKeylet.key, tfLoanBrokerPrivate), kDomainId(aliceDomainId));
+            env.close();
+            env(coverDeposit(alice, broker2Keylet.key, asset(1000)));
+            env.close();
+
+            // Being the domain owner does not let alice lend to a non-member
+            env(makeLoanSet(env, alice, broker2Keylet.key, carol, asset), Ter(tecNO_AUTH));
+
+            // Alice can take a self-loan from her own private broker without
+            // holding a credential, because she owns the domain
+            auto const loanKeylet = keylet::loan(broker2Keylet.key, SeqProxy::rawSequence(1));
+            env(makeLoanSet(env, alice, broker2Keylet.key, alice, asset));
+            env.close();
+
+            BEAST_EXPECT(env.le(loanKeylet));
+        }
+
+        // Test 5: Once the domain is deleted, the former owner gets the same
+        // error as everyone else
+        {
+            env(pdomain::deleteTx(bob, domainId));
+            env.close();
+            BEAST_EXPECT(!env.le(keylet::permissionedDomain(domainId)));
+
+            env(makeLoanSet(env, bob, brokerKeylet.key, alice, asset), Ter(tecOBJECT_NOT_FOUND));
         }
     }
 
@@ -3781,6 +3892,7 @@ public:
         testPrivateBrokerUnsetDomainBlocksLoans();
         testPrivateBrokerRejectsNonMember();
         testPrivateBrokerCredentials();
+        testPrivateBrokerDomainOwner();
         testPrivateBrokerLoanPayAfterCredentialRevoked();
 
         // featureMPTokensV2 independently makes ValidMPTTransfer enforcing,

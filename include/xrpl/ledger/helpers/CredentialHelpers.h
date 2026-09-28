@@ -50,6 +50,13 @@ valid(STTx const& tx, ReadView const& view, AccountID const& src, beast::Journal
 TER
 validDomain(ReadView const& view, uint256 domainID, AccountID const& subject);
 
+// Like validDomain, but the domain owner is always considered a member and
+// does not need a credential. Returns tecOBJECT_NOT_FOUND if the domain does
+// not exist. Same preclaim/doApply pairing rules as validDomain: if this
+// returns tecEXPIRED, call verifyValidDomainOrOwner in doApply.
+TER
+validDomainOrOwner(ReadView const& view, uint256 domainID, AccountID const& subject);
+
 // This function is only called when we are about to return tecNO_PERMISSION
 // because all the checks for the DepositPreauth authorization failed.
 TER
@@ -70,6 +77,16 @@ checkArray(STArray const& credentials, unsigned maxSize, beast::Journal j);
 // object
 TER
 verifyValidDomain(ApplyView& view, AccountID const& account, uint256 domainID, beast::Journal j);
+
+// Like verifyValidDomain, but the domain owner is always considered a member
+// and does not need a credential. For any other account, expired credentials
+// are deleted. Returns tecOBJECT_NOT_FOUND if the domain does not exist.
+TER
+verifyValidDomainOrOwner(
+    ApplyView& view,
+    AccountID const& account,
+    uint256 domainID,
+    beast::Journal j);
 
 /**
  * @brief Check whether src is authorized to deposit to dst.

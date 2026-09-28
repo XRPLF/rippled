@@ -246,6 +246,19 @@ validDomain(ReadView const& view, uint256 domainID, AccountID const& subject)
 }
 
 TER
+validDomainOrOwner(ReadView const& view, uint256 domainID, AccountID const& subject)
+{
+    auto const slePD = view.read(keylet::permissionedDomain(domainID));
+    if (!slePD)
+        return tecOBJECT_NOT_FOUND;
+
+    if (slePD->at(sfOwner) == subject)
+        return tesSUCCESS;
+
+    return validDomain(view, domainID, subject);
+}
+
+TER
 authorizedDepositPreauth(ReadView const& view, STVector256 const& credIDs, AccountID const& dst)
 {
     std::set<std::pair<AccountID, Slice>> sorted;
@@ -365,6 +378,23 @@ verifyValidDomain(ApplyView& view, AccountID const& account, uint256 domainID, b
     }
 
     return *foundExpired ? tecEXPIRED : tecNO_PERMISSION;
+}
+
+TER
+verifyValidDomainOrOwner(
+    ApplyView& view,
+    AccountID const& account,
+    uint256 domainID,
+    beast::Journal j)
+{
+    auto const slePD = view.read(keylet::permissionedDomain(domainID));
+    if (!slePD)
+        return tecOBJECT_NOT_FOUND;
+
+    if (slePD->at(sfOwner) == account)
+        return tesSUCCESS;
+
+    return verifyValidDomain(view, account, domainID, j);
 }
 
 TER

@@ -435,8 +435,10 @@ LoanSet::preclaim(PreclaimContext const& ctx)
             return tecNO_AUTH;
         }
 
-        // validDomain returns tecOBJECT_NOT_FOUND if the domain was deleted
-        if (auto const ter = credentials::validDomain(ctx.view, *domainID, borrower);
+        // The domain owner is always a member and does not need a credential.
+        // Returns tecOBJECT_NOT_FOUND if the domain was deleted. tecEXPIRED is
+        // let through so that doApply can delete the expired credential.
+        if (auto const ter = credentials::validDomainOrOwner(ctx.view, *domainID, borrower);
             !isTesSuccess(ter) && ter != tecEXPIRED)
             return ter;
     }
@@ -490,7 +492,8 @@ LoanSet::doApply()
             return tefBAD_LEDGER;  // LCOV_EXCL_LINE
         }
 
-        if (auto const ter = verifyValidDomain(view, borrower, *domainID, j_); !isTesSuccess(ter))
+        if (auto const ter = verifyValidDomainOrOwner(view, borrower, *domainID, j_);
+            !isTesSuccess(ter))
             return ter;
     }
 
