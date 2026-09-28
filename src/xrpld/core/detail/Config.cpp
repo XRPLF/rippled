@@ -401,7 +401,8 @@ Config::setup(std::string const& strConf, bool bQuiet, bool bSilent, bool bStand
     }
 
     // Update default values
-    load(*configFile);
+    if (!load(*configFile))
+        return false;
     {
         // load() may have set a new value for the dataDir
         std::string const dbPath(legacy(Sections::kDatabasePath));
@@ -468,7 +469,7 @@ checkZeroPorts(Config const& config)
     }
 }
 
-void
+bool
 Config::load(std::filesystem::path const& configFile)
 {
     // Report the path as a plain string. There is no std::formatter for
@@ -489,11 +490,13 @@ Config::load(std::filesystem::path const& configFile)
     {
         std::cerr << std::format(
             "Failed to read '{}': {} (error {})\n", fileName, ec.message(), ec.value());
-        return;
+        return false;
     }
 
     loadFromString(fileContents);
     checkZeroPorts(*this);
+
+    return true;
 }
 
 void

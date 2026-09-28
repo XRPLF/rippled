@@ -109,10 +109,12 @@ private:
     /**
      * Reads and parses the given config file.
      *
-     * @param configFile Path of the config file to read. A read failure is
-     *        reported to stderr, and leaves the configuration unchanged.
+     * @param configFile Path of the config file to read.
+     * @return True when the file was read, false when it could not be, in
+     *         which case the reason has been written to stderr and the
+     *         configuration is left unchanged.
      */
-    void
+    [[nodiscard]] bool
     load(std::filesystem::path const& configFile);
     beast::Journal const j_;
 
@@ -341,8 +343,10 @@ public:
      * the XDG config directory, and the system config directory, in that
      * order, and takes the first one that holds a config file under either the
      * current or the legacy name. When none of them does, writes the searched
-     * directories to stderr and returns false, leaving the configuration
-     * unusable.
+     * directories to stderr and fails.
+     *
+     * Failing to read the config file, whether it was named or found, is also
+     * a failure, and writes the reason to stderr.
      *
      * Be very careful to make sure these bool params are in the right order.
      *
@@ -350,10 +354,10 @@ public:
      * @param bQuiet Whether to minimize logging verbosity.
      * @param bSilent Whether to write no console output after startup.
      * @param bStandalone Whether to operate in stand-alone mode.
-     * @return True when a config file was named, or found in one of the
-     *         searched directories. False when no config file was found in any
-     *         searched directory, in which case those directories have been
-     *         written to stderr.
+     * @return True when a config file was named or found, and read. False when
+     *         no config file could be found in any searched directory, or when
+     *         the file that was named or found could not be read. Both cases
+     *         have written their reason to stderr first.
      * @throws std::runtime_error When the config file contents are invalid, or
      *         when the data directory cannot be created. Invalid contents are
      *         reported this way rather than through the return value.

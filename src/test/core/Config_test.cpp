@@ -482,6 +482,14 @@ port_wss_admin
                 "/Users/dummy/xrpld/config/log/debug.log");
         }
 
+        // A named config file that cannot be read. Naming one is an explicit
+        // request for that file, so setup() must not fall back to defaults.
+        {
+            TempDir const td;
+            Config c;
+            BEAST_EXPECT(!c.setup(td.file("does_not_exist.cfg"), true, false, true));
+        }
+
         // Config file in HOME or XDG_CONFIG_HOME directory.
 #if BOOST_OS_LINUX || BOOST_OS_MACOS
         for (auto const& configFile : configFiles)
