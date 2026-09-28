@@ -166,6 +166,7 @@ private:
                     continue;
                 }
 
+                // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
                 STAmount const expected{asset, *c.expected};
                 if (!BEAST_EXPECTS(
                         result.has_value(),
