@@ -18,6 +18,7 @@
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/MPTAmount.h>
 #include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/Permissions.h>
 #include <xrpl/protocol/Quality.h>
