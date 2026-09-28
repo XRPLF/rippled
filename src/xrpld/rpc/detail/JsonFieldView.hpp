@@ -13,7 +13,6 @@
 #include <string>
 #include <string_view>
 #include <type_traits>
-#include <utility>
 
 namespace xrpl::rpc {
 
@@ -27,7 +26,7 @@ namespace xrpl::rpc {
  * of the two pointers is set carries const-correctness: a view built from a const value
  * cannot be written through, so a modifier cannot run during the check phase.
  */
-class XrplJsonFieldView
+class JsonFieldView
 {
     json::Value const* readValue_;
     json::Value* writeValue_;
@@ -35,24 +34,18 @@ class XrplJsonFieldView
     std::string_view key_;
 
 public:
-    XrplJsonFieldView(json::Value* value, std::string_view key) noexcept
+    JsonFieldView(json::Value* value, std::string_view key) noexcept
         : readValue_(value), writeValue_(value), key_(key)
     {
     }
 
-    XrplJsonFieldView(json::Value const* value, std::string_view key) noexcept
+    JsonFieldView(json::Value const* value, std::string_view key) noexcept
         : readValue_(value), writeValue_(nullptr), key_(key)
     {
     }
 
-    [[nodiscard]] static XrplJsonFieldView
-    absentMutable(std::string_view key) noexcept
-    {
-        return {static_cast<json::Value*>(nullptr), key};
-    }
-
-    [[nodiscard]] static XrplJsonFieldView
-    absentConst(std::string_view key) noexcept
+    [[nodiscard]] static JsonFieldView
+    absent(std::string_view key) noexcept
     {
         return {static_cast<json::Value const*>(nullptr), key};
     }
@@ -168,7 +161,7 @@ public:
         return readValue_->size();
     }
 
-    [[nodiscard]] XrplJsonFieldView
+    [[nodiscard]] JsonFieldView
     child(std::string_view childKey) const
     {
         // Guarded rather than indexed: the non-const operator[] inserts a null member.
@@ -177,28 +170,28 @@ public:
         if (writeValue_ != nullptr)
         {
             if (!writeValue_->isObject() || !writeValue_->isMember(key))
-                return absentMutable(childKey);
+                return absent(childKey);
             return {&(*writeValue_)[key], childKey};
         }
 
         if (readValue_ == nullptr || !readValue_->isObject() || !readValue_->isMember(key))
-            return absentConst(childKey);
+            return absent(childKey);
         return {&(*readValue_)[key], childKey};
     }
 
     // Inherits this field's key, so an error about an element names the array.
-    [[nodiscard]] XrplJsonFieldView
+    [[nodiscard]] JsonFieldView
     element(std::size_t idx) const
     {
         if (writeValue_ != nullptr)
         {
             if (!writeValue_->isArray() || idx >= writeValue_->size())
-                return absentMutable(key_);
+                return absent(key_);
             return {&(*writeValue_)[static_cast<json::UInt>(idx)], key_};
         }
 
         if (readValue_ == nullptr || !readValue_->isArray() || idx >= readValue_->size())
-            return absentConst(key_);
+            return absent(key_);
         return {&(*readValue_)[static_cast<json::UInt>(idx)], key_};
     }
 
@@ -236,7 +229,7 @@ public:
         }
         else
         {
-            static_assert(false, "xrpl::rpc::XrplJsonFieldView::is : unsupported type");
+            static_assert(false, "xrpl::rpc::JsonFieldView::is : unsupported type");
         }
     }
 
@@ -253,14 +246,14 @@ public:
         {
             XRPL_ASSERT(
                 value <= std::numeric_limits<json::UInt>::max(),
-                "xrpl::rpc::XrplJsonFieldView::set : value representable as json::UInt");
+                "xrpl::rpc::JsonFieldView::set : value representable as json::UInt");
             *writeValue_ = static_cast<json::UInt>(value);
         }
         else
         {
             XRPL_ASSERT(
                 value >= std::numeric_limits<json::Int>::min(),
-                "xrpl::rpc::XrplJsonFieldView::set : value representable as json::Int");
+                "xrpl::rpc::JsonFieldView::set : value representable as json::Int");
             *writeValue_ = static_cast<json::Int>(value);
         }
     }
@@ -290,75 +283,6 @@ public:
     }
 };
 
-static_assert(::rpc::spec::SomeFieldView<XrplJsonFieldView>);
-
-/**
- * The request params object the spec DSL resolves fields from.
- *
- * A separate type from XrplJsonFieldView, as in the boost backend, so that a root — which
- * has no key of its own — cannot be passed where a field is expected.
- */
-class XrplJsonObjectView
-{
-    json::Value const* readValue_;
-    json::Value* writeValue_;
-
-public:
-    explicit XrplJsonObjectView(json::Value& value) noexcept
-        : readValue_(&value), writeValue_(&value)
-    {
-    }
-
-    explicit XrplJsonObjectView(json::Value const& value) noexcept
-        : readValue_(&value), writeValue_(nullptr)
-    {
-    }
-
-    [[nodiscard]] bool
-    isObject() const noexcept
-    {
-        return readValue_->isObject();
-    }
-
-    [[nodiscard]] bool
-    isArray() const noexcept
-    {
-        return readValue_->isArray();
-    }
-
-    [[nodiscard]] XrplJsonFieldView
-    child(std::string_view key)
-    {
-        if (writeValue_ == nullptr)
-            return std::as_const(*this).child(key);
-
-        std::string const name{key};
-        if (!writeValue_->isObject() || !writeValue_->isMember(name))
-            return XrplJsonFieldView::absentMutable(key);
-        return {&(*writeValue_)[name], key};
-    }
-
-    [[nodiscard]] XrplJsonFieldView
-    child(std::string_view key) const
-    {
-        std::string const name{key};
-        if (!readValue_->isObject() || !readValue_->isMember(name))
-            return XrplJsonFieldView::absentConst(key);
-        return {&(*readValue_)[name], key};
-    }
-};
-
-static_assert(::rpc::spec::SomeObjectView<XrplJsonObjectView>);
+static_assert(::rpc::spec::SomeFieldView<JsonFieldView>);
 
 }  // namespace xrpl::rpc
-
-namespace rpc::spec {
-
-// Binds json::Value to xrpld's view, so a spec can be handed request params directly.
-template <>
-struct ObjectViewFor<::json::Value>
-{
-    using Type = ::xrpl::rpc::XrplJsonObjectView;
-};
-
-}  // namespace rpc::spec

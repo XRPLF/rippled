@@ -1,6 +1,6 @@
 #include <xrpld/rpc/detail/SpecBridge.hpp>
 
-#include <xrpld/rpc/detail/XrplJsonView.hpp>
+#include <xrpld/rpc/detail/JsonObjectView.hpp>
 
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/ErrorCodes.h>
@@ -20,7 +20,7 @@ namespace xrpl {
 
 namespace {
 
-using ObjectView = rpc::XrplJsonObjectView;
+using ObjectView = rpc::JsonObjectView;
 
 json::Value
 makeParams()
@@ -48,7 +48,7 @@ makeParams()
 
 }  // namespace
 
-TEST(XrplJsonView, field_types)
+TEST(JsonView, field_types)
 {
     auto params = makeParams();
     ObjectView const root{params};
@@ -123,7 +123,7 @@ TEST(XrplJsonView, field_types)
     EXPECT_EQ(arr.objectSize(), 0U);
 }
 
-TEST(XrplJsonView, field_absent)
+TEST(JsonView, field_absent)
 {
     auto params = makeParams();
     ObjectView const root{params};
@@ -154,7 +154,7 @@ TEST(XrplJsonView, field_absent)
     EXPECT_FALSE(root.child("str").element(0).present());
 }
 
-TEST(XrplJsonView, field_navigation)
+TEST(JsonView, field_navigation)
 {
     auto params = makeParams();
     ObjectView const root{params};
@@ -173,7 +173,7 @@ TEST(XrplJsonView, field_navigation)
     EXPECT_FALSE(root.child("arr").element(2).present());
 }
 
-TEST(XrplJsonView, field_set)
+TEST(JsonView, field_set)
 {
     auto params = makeParams();
     ObjectView root{params};
@@ -199,7 +199,7 @@ TEST(XrplJsonView, field_set)
     EXPECT_EQ(params["obj"]["inner"].asString(), "changed");
 }
 
-TEST(XrplJsonView, field_set_spans_both_32_bit_types)
+TEST(JsonView, field_set_spans_both_32_bit_types)
 {
     auto params = makeParams();
     ObjectView root{params};
@@ -219,7 +219,7 @@ TEST(XrplJsonView, field_set_spans_both_32_bit_types)
     EXPECT_FALSE(negative.isUint32());
 }
 
-TEST(XrplJsonView, object_root)
+TEST(JsonView, object_root)
 {
     auto params = makeParams();
 
@@ -239,7 +239,7 @@ TEST(XrplJsonView, object_root)
     EXPECT_FALSE(arrayRoot.child("anything").present());
 }
 
-TEST(XrplJsonView, mutable_root_over_const_source_reads)
+TEST(JsonView, mutable_root_over_const_source_reads)
 {
     auto const params = makeParams();
     ObjectView root{params};
