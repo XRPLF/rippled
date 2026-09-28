@@ -2,8 +2,6 @@
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/beast/utility/Zero.h>
-#include <xrpl/core/ServiceRegistry.h>
-#include <xrpl/ledger/OrderBookDB.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/Sandbox.h>
 #include <xrpl/ledger/View.h>
@@ -397,7 +395,7 @@ applyCreate(ApplyContext& ctx, Sandbox& sb, AccountID const& account, beast::Jou
         Book const book{assetIn, assetOut, std::nullopt};
         auto const dir = keylet::quality(keylet::book(book), uRate);
         if (auto const bookExisted = static_cast<bool>(sb.read(dir)); !bookExisted)
-            ctx.registry.get().getOrderBookDB().addOrderBook(book);
+            ctx.addOrderBook(book);
     };
     addOrderBook(amount.asset(), amount2.asset(), getRate(amount2, amount));
     addOrderBook(amount2.asset(), amount.asset(), getRate(amount, amount2));

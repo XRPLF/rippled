@@ -795,6 +795,86 @@ private:
             },
             {.requireAuth = false});
 
+        auto const redeemAllNoAssetMpt = [this](TER expected) {
+            return [this, expected](
+                       Env& env,
+                       Account const&,
+                       Account const& owner,
+                       Account const& depositor,
+                       Asset const& asset,
+                       Vault& vault,
+                       MPTTester& mptt) {
+                testcase << "MPT non-owner redeems all shares with no asset MPToken"
+                         << (isTesSuccess(expected) ? "" : " pre-fixCleanup3_4_0");
+
+                auto [tx, keylet] = vault.create({.owner = owner, .asset = asset});
+                env(tx);
+                env.close();
+
+                tx = vault.deposit(
+                    {.depositor = depositor,
+                     .id = keylet.key,
+                     .amount = asset(1000)});  // all assets held by depositor
+                env(tx);
+                env.close();
+
+                auto const vaultSle = env.le(keylet);
+                if (!BEAST_EXPECT(vaultSle))
+                    return;
+                auto const shareMPTID = vaultSle->at(sfShareMPTID);
+
+                // Depositor's asset MPToken balance is now zero; delete it.
+                mptt.authorize({.account = depositor, .flags = tfMPTUnauthorize});
+                env.close();
+
+                auto const mptoken = keylet::mptoken(mptt.issuanceID(), depositor);
+
+                auto const shareKeylet = keylet::mptoken(shareMPTID, depositor.id());
+                auto const sleShareBefore = env.le(shareKeylet);
+                if (!BEAST_EXPECT(sleShareBefore))
+                    return;
+                auto const shareAmountBefore = sleShareBefore->at(sfMPTAmount);
+                auto const assetsTotalBefore = vaultSle->at(sfAssetsTotal);
+                auto const assetsAvailableBefore = vaultSle->at(sfAssetsAvailable);
+
+                // Redeeming ALL shares in one transaction both erases the
+                // now-empty share MPToken and re-creates the asset MPToken.
+                tx = vault.withdraw(
+                    {.depositor = depositor, .id = keylet.key, .amount = asset(1000)});
+                env(tx, Ter{expected});
+                env.close();
+
+                auto const sleAsset = env.le(mptoken);
+                auto const sleShare = env.le(shareKeylet);
+                auto const vaultAfter = env.le(keylet);
+                if (!BEAST_EXPECT(vaultAfter))
+                    return;
+                if (isTesSuccess(expected))
+                {
+                    if (!BEAST_EXPECT(sleAsset))
+                        return;
+                    BEAST_EXPECT(sleAsset->at(sfMPTAmount) == 1000);
+                    BEAST_EXPECT(!sleShare);
+                    BEAST_EXPECT(vaultAfter->at(sfAssetsTotal) == beast::kZero);
+                    BEAST_EXPECT(vaultAfter->at(sfAssetsAvailable) == beast::kZero);
+                }
+                else
+                {
+                    BEAST_EXPECT(!sleAsset);
+                    if (!BEAST_EXPECT(sleShare))
+                        return;
+                    BEAST_EXPECT(sleShare->at(sfMPTAmount) == shareAmountBefore);
+                    BEAST_EXPECT(vaultAfter->at(sfAssetsTotal) == assetsTotalBefore);
+                    BEAST_EXPECT(vaultAfter->at(sfAssetsAvailable) == assetsAvailableBefore);
+                }
+            };
+        };
+
+        testCase(redeemAllNoAssetMpt(tesSUCCESS), {.requireAuth = false});
+        testCase(
+            redeemAllNoAssetMpt(tecINVARIANT_FAILED),
+            {.requireAuth = false, .features = testableAmendments() - fixCleanup3_4_0});
+
         auto const [acctReserve, incReserve] = [this]() -> std::pair<int, int> {
             Env const env{*this, testableAmendments()};
             return {
