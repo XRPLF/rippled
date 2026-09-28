@@ -829,14 +829,17 @@ BookStep<TIn, TOut, TDerived>::forEachOffer(
 
                 stpAmt.in = mulRatio(ofrAmt.in, ofrInRate, QUALITY_ONE, /*roundUp*/ true);
 
-                // Fee-adjusted funds can't produce one unit of out. A zero
-                // consume leaves the offer at the tip, dries the strand, and
-                // blocks the book. OfferStream's dust check is fee-blind, so
-                // it misses this. MPT hits it with ordinary sizes; IOU only
-                // at the smallest amount — V2 because that IOU outcome changes.
-                if (stpAmt.out <= beast::kZero && sb.rules().enabled(featureMPTokensV2))
+                // Fee clip can floor in or out to 0. OfferStream is
+                // fee-blind, so it misses both: out==0 blocks the book;
+                // in==0 / out>0 consumes ownerGives for free. MPT at
+                // ordinary sizes; IOU only at the smallest out — V2
+                // because that IOU outcome changes.
+                if (sb.rules().enabled(featureMPTokensV2) &&
+                    (stpAmt.out <= beast::kZero || ofrAmt.in <= beast::kZero))
                 {
-                    removeOffer("Removing offer whose funded output rounds to zero");
+                    removeOffer(
+                        "Removing offer whose fee-clipped amount rounds to "
+                        "zero");
                     return true;
                 }
             }
