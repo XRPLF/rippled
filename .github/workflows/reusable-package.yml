@@ -253,7 +253,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     env:
-      IMAGE: xrplf/xrpld:${{ github.ref_type == 'tag' && github.ref_name || 'latest' }}
+      IMAGE: xrplf/xrpld:${{ github.ref_type == 'tag' && github.ref_name || 'develop' }}
 
     steps:
       - name: Checkout repository

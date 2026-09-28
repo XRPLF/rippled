@@ -273,9 +273,9 @@ build their packages elsewhere.
 The `docker` job installs the tested `xrpld` DEB on `ubuntu:26.04` using
 [`image/Dockerfile`](image/Dockerfile), checks that the server starts, and,
 with `publish: true`, pushes it to `xrplf/xrpld` on Docker Hub using the
-`DOCKERHUB_TOKEN` secret, an organization access token for `xrplf`. A tag's image is tagged with the tag name, e.g.
-`xrplf/xrpld:3.4.0`, and a develop image as `xrplf/xrpld:latest`. Private
-builds are never pushed.
+`DOCKERHUB_TOKEN` secret, an organization access token for `xrplf`. A tag's
+image is tagged with the tag name, `xrplf/xrpld:<version>`, and a develop image
+as `xrplf/xrpld:develop`. Private builds are never pushed.
 
 ## How `build_pkg.py` works
 
