@@ -29,7 +29,7 @@ doesn't currently support building or running a project through a compilation da
 
 1. Make sure the "Build type" field matches the one you passed to the `conan install` command; see
    [Build and Test](../../BUILD.md#build-and-test).
-2. Set the "Build directory" field to the same directory you ran `conan install` in (e.g. `.build`). The
+2. Set the "Build directory" field to the same directory you ran `conan install` in (for example, `.build`). The
    `-DCMAKE_TOOLCHAIN_FILE` path below is resolved relative to this directory, not the repository root.
 3. Pass `-DCMAKE_TOOLCHAIN_FILE:FILEPATH=build/generators/conan_toolchain.cmake` in the "CMake options"
    field, as described in the same section.
@@ -45,7 +45,7 @@ From your Conan build directory, generate a `compile_commands.json` file. If you
 cmake -DCMAKE_EXPORT_COMPILE_COMMANDS=1 -DCMAKE_TOOLCHAIN_FILE:FILEPATH=build/generators/conan_toolchain.cmake -DCMAKE_BUILD_TYPE=Release ..
 ```
 
-This only works with a single-configuration generator (for example, `Unix Makefiles` or `Ninja`). Multi-configuration generators (for example, `Visual Studio`) don't support `CMAKE_EXPORT_COMPILE_COMMANDS`. If your build directory uses one, create a separate build directory (for example, `.build-db`) that forces a single-configuration generator:
+This only works with a single-configuration generator (for example, `Unix Makefiles` or `Ninja`). Multi-configuration generators (for example, `Visual Studio`) don't support `CMAKE_EXPORT_COMPILE_COMMANDS`. If your build directory uses one, create a separate build directory (for example, `.build-db`) that forces a single-configuration generator. From the repository root:
 
 ```bash
 mkdir .build-db
@@ -53,6 +53,10 @@ cd .build-db
 conan install .. --output-folder . --build missing --settings build_type=Release -c tools.cmake.cmaketoolchain:generator=Ninja
 ```
 
-Then run the `cmake` command above again, from `.build-db` instead of your main build directory.
+Then, from `.build-db` instead of your main build directory, run the same `cmake` command as above but with `-G Ninja` added. `conan install` only tells Conan which generator it should expect. It does not change which generator a plain `cmake` invocation defaults to, so it must still be passed explicitly:
+
+```bash
+cmake -G Ninja -DCMAKE_EXPORT_COMPILE_COMMANDS=1 -DCMAKE_TOOLCHAIN_FILE:FILEPATH=build/generators/conan_toolchain.cmake -DCMAKE_BUILD_TYPE=Release ..
+```
 
 Once you have a `compile_commands.json` file, open the CLion project with it. After import, go to `Tools -> Compilation Database -> Change Project Root`. This gives CLion code insight (navigation, completion, analysis) for the project; continue building and running xrpld from the command line as usual.
