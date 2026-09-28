@@ -90,7 +90,6 @@ class Config : public BasicConfig
 public:
     // Settings related to the configuration file location and directories
     static constexpr std::string_view kConfigFileName = "xrpld.cfg";
-    static constexpr std::string_view kConfigLegacyName = "rippled.cfg";
     static constexpr std::string_view kDatabaseDirName = "db";
     static constexpr std::string_view kValidatorsFileName = "validators.txt";
 
@@ -339,7 +338,7 @@ public:
      *
      * When no config file is named, searches the working directory, then the XDG
      * config directory when HOME is set, then the system config directory, and
-     * takes the first holding a config file under either name.
+     * takes the first holding a config file.
      *
      * Be very careful to make sure these bool params are in the right order.
      *
