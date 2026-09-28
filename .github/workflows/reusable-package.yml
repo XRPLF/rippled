@@ -251,7 +251,7 @@ jobs:
     permissions:
       contents: read
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 5
     env:
       IMAGE: xrplf/xrpld:${{ github.ref_type == 'tag' && github.ref_name || 'latest' }}
 
