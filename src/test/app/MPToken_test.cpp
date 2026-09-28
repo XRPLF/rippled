@@ -7769,8 +7769,9 @@ class MPToken_test : public beast::unit_test::Suite
         // hit STAmount::divide's unchecked `muldiv(...) + 5` wrap and return a
         // zero delivered amount that is nevertheless accepted as tesSUCCESS by
         // the legacy direct-MPT branch. fixCleanup3_5_0 computes the
-        // delivered amount with Number arithmetic instead. Under MPTokensV2 the
-        // payment is routed through RippleCalc, which also uses Number.
+        // delivered amount with mulRatio (exact 128-bit arithmetic) instead.
+        // Under MPTokensV2 the payment is routed through RippleCalc, which uses
+        // Number.
 
         using namespace test::jtx;
         Account const alice("alice");  // issuer

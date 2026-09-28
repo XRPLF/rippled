@@ -728,9 +728,12 @@ Payment::doApply()
             if (view().rules().enabled(fixCleanup3_5_0))
             {
                 // The legacy divide() can overflow on large MPT amounts: it
-                // either throws or wraps and delivers zero. Round down so
-                // that the sender is never charged more than SendMax.
-                amountDeliver = divideRound(maxSourceAmount, rate, false);
+                // either throws or wraps and delivers zero. MPTs are
+                // integral, so round the delivered amount down so that the
+                // sender is never charged more than SendMax.
+                auto const delivered =
+                    mulRatio(maxSourceAmount.mpt(), QUALITY_ONE, rate.value, false);
+                amountDeliver = STAmount(maxSourceAmount.asset(), delivered.value());
                 if (amountDeliver <= beast::kZero)
                     return tecPATH_PARTIAL;
             }

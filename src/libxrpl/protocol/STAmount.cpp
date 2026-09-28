@@ -1645,7 +1645,7 @@ divRoundImpl(STAmount const& num, STAmount const& den, Asset const& asset, bool 
 
     // fixCleanup3_5_0: the legacy path below overflows on large MPT amounts.
     if (asset.holds<MPTIssue>() &&
-        (isFeatureEnabled(featureMPTokensV2, false) || isFeatureEnabled(fixCleanup3_5_0, false)))
+        (isFeatureEnabled(featureMPTokensV2, true) || isFeatureEnabled(fixCleanup3_5_0, true)))
     {
         // Match the multiply path above: Number performs the rounded
         // operation, then STAmount materializes the final MPT amount using the
