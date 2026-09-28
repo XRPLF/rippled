@@ -3,11 +3,7 @@ include(GoogleTest)
 find_package(GTest REQUIRED)
 
 # kept separate from xrpl_tests so that the libxrpl test binary stays free of server code.
-add_executable(
-    xrpld_tests
-    main.cpp
-    "${CMAKE_SOURCE_DIR}/src/xrpld/rpc/detail/Status.cpp"
-)
+add_executable(xrpld_tests main.cpp)
 patch_nix_binary(xrpld_tests)
 set_target_properties(
     xrpld_tests

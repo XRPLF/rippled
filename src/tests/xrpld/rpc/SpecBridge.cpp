@@ -2,6 +2,7 @@
 
 #include <xrpld/rpc/detail/JsonObjectView.hpp>
 
+#include <xrpl/json/json_reader.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/jss.h>
@@ -25,23 +26,20 @@ using ObjectView = rpc::JsonObjectView;
 json::Value
 makeParams()
 {
-    json::Value params{json::ValueType::Object};
-    params["str"] = "hello";
-    params["num"] = 42;
-    params["big"] = 3000000000U;
-    params["neg"] = -7;
-    params["real"] = 1.5;
-    params["flag"] = true;
-    params["nothing"] = json::Value{json::ValueType::Null};
+    static constexpr auto kParams = R"JSON({
+        "str": "hello",
+        "num": 42,
+        "big": 3000000000,
+        "neg": -7,
+        "real": 1.5,
+        "flag": true,
+        "nothing": null,
+        "obj": {"inner": "deep"},
+        "arr": ["a", "b"]
+    })JSON";
 
-    json::Value nested{json::ValueType::Object};
-    nested["inner"] = "deep";
-    params["obj"] = nested;
-
-    json::Value list{json::ValueType::Array};
-    list.append("a");
-    list.append("b");
-    params["arr"] = list;
+    json::Value params;
+    EXPECT_TRUE(json::Reader{}.parse(kParams, params));
 
     return params;
 }
