@@ -38,9 +38,11 @@ namespace xrpl {
  *    f. A Loan must reference a live `ltLOAN_BROKER`, and that broker must
  *       reference a live `ltVAULT`.
  *    g. Post-conditions for the Loan paid down by a successful `ttLOAN_PAY`:
- *       `PaymentRemaining > 0` after: `PrincipalOutstanding` and
- *          `PaymentRemaining` strictly decrease; `NextPaymentDueDate`
- *          advances by N * `PaymentInterval`, N > 0.
+ *       `PaymentRemaining > 0` after: neither `PrincipalOutstanding` nor
+ *          `TotalValueOutstanding` increases, and at least one of them
+ *          strictly decreases;
+ *          `PaymentRemaining` strictly decreases;
+ *          `NextPaymentDueDate` advances by N * `PaymentInterval`, N > 0.
  *       `PaymentRemaining == 0` after: pinned by checks 1 and 5b.
  *
  */
