@@ -16,6 +16,7 @@
 #include <xrpl/protocol/STNumber.h>  // IWYU pragma: keep
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/TxFormats.h>
 #include <xrpl/protocol/XRPAmount.h>
 
@@ -199,7 +200,9 @@ ValidLoan::finalize(
         }
         // On creation, LoanSet must use exactly one of two mutually exclusive
         // paths: it either names a Borrower with a StartDate (starting the
-        // two-step flow) or carries a CounterpartySignature. A Borrower with a
+        // two-step flow) or is authorised by the counterparty in one step,
+        // through a CounterpartySignature or, for a Batch inner transaction,
+        // through the counterparty signing the outer Batch. A Borrower with a
         // StartDate and no CounterpartySignature or Counterparty starts the
         // two-step flow and must create a pending loan; any other LoanSet must
         // create an active (non-pending) loan.
@@ -211,13 +214,19 @@ ValidLoan::finalize(
                 bool const hasCounterpartySig = tx.isFieldPresent(sfCounterpartySignature);
                 bool const hasStartDate = tx.isFieldPresent(sfStartDate);
                 bool const hasCounterparty = tx.isFieldPresent(sfCounterparty);
+                bool const isInnerBatch = tx.isFlag(tfInnerBatchTxn);
                 bool const isTwoStepFlow = hasBorrower && hasStartDate;
-                bool const isOneStepFlow = hasCounterpartySig;
+                // A Batch inner LoanSet carries no CounterpartySignature, as the
+                // counterparty signs the outer Batch instead. It is only a
+                // one-step LoanSet when it does not use the two-step fields.
+                bool const isOneStepFlow =
+                    hasCounterpartySig || (isInnerBatch && !hasBorrower && !hasStartDate);
 
                 if (!isTwoStepFlow && !isOneStepFlow)
                 {
                     JLOG(j.fatal()) << "Invariant failed: LoanSet specified neither "
-                                       "a Borrower with a StartDate nor a CounterpartySignature";
+                                       "a Borrower with a StartDate nor a CounterpartySignature "
+                                       "or Batch inner transaction";
                     return false;
                 }
 
@@ -289,7 +298,8 @@ ValidLoan::finalize(
             }
             // Without the two-step flow amendment, LoanSet must not make use of any
             // of its inputs: it must not create a pending loan, must not be given a
-            // Borrower, and must always carry a CounterpartySignature.
+            // Borrower, and must carry a CounterpartySignature unless it is a Batch
+            // inner transaction.
             if (!lpV12Enabled && !before && txType == ttLOAN_SET)
             {
                 if (after->isFlag(lsfLoanPending))
@@ -304,7 +314,7 @@ ValidLoan::finalize(
                                        "Borrower when the amendment is not enabled";
                     return false;
                 }
-                if (!tx.isFieldPresent(sfCounterpartySignature))
+                if (!tx.isFieldPresent(sfCounterpartySignature) && !tx.isFlag(tfInnerBatchTxn))
                 {
                     JLOG(j.fatal()) << "Invariant failed: LoanSet omitted the "
                                        "CounterpartySignature when the amendment is "
