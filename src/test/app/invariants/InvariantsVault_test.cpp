@@ -1034,9 +1034,10 @@ class InvariantsVault_test : public InvariantsBase
         // ttLOAN_SET pre-featureLendingProtocolV1_1: finalizeLoanSet short-
         // circuits and returns success without inspecting the loan or the
         // vault. The same state that trips the principal-outstanding check
-        // under V1_1 must be silently accepted here.
+        // under V1_1 must be silently accepted here. V1_2 builds on V1_1, so it
+        // is disabled too; otherwise its LoanSet creation checks would apply.
         doInvariantCheck(
-            makeEnv(all_ - featureLendingProtocolV1_1),
+            makeEnv(all_ - featureLendingProtocolV1_1 - featureLendingProtocolV1_2),
             {},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                 auto const keylet = keylet::vault(a1.id(), SeqProxy::rawSequence(ac.view().seq()));
@@ -1054,7 +1055,12 @@ class InvariantsVault_test : public InvariantsBase
                         }});
             },
             XRPAmount{},
-            STTx{ttLOAN_SET, [](STObject& tx) { tx.at(sfPrincipalRequested) = Number(200); }},
+            STTx{
+                ttLOAN_SET,
+                [](STObject& tx) {
+                    tx.at(sfPrincipalRequested) = Number(200);
+                    tx.makeFieldPresent(sfCounterpartySignature);
+                }},
             {tesSUCCESS, tesSUCCESS},
             precloseXrp);
 
@@ -1642,9 +1648,13 @@ class InvariantsVault_test : public InvariantsBase
                     if (baseFlags != 0)
                         sleLoan->setFieldU32(sfFlags, baseFlags);
                     if (baseNode)
+                    {
                         sleLoan->setFieldU64(sfOwnerNode, *baseNode);
+                    }
                     else
+                    {
                         sleLoan->makeFieldAbsent(sfOwnerNode);
+                    }
                     ov.rawInsert(sleLoan);
                 }
 
@@ -1985,8 +1995,12 @@ class InvariantsVault_test : public InvariantsBase
                 createBroker);
         }
 
-        STTx const loanSetTx{
-            ttLOAN_SET, [](STObject& tx) { tx.at(sfPrincipalRequested) = Number(0); }};
+        // A one-step LoanSet (with a CounterpartySignature), so the V1_2 LoanSet
+        // flow checks pass and the loan-level check under test is reached.
+        STTx const loanSetTx{ttLOAN_SET, [](STObject& tx) {
+                                 tx.at(sfPrincipalRequested) = Number(0);
+                                 tx.makeFieldPresent(sfCounterpartySignature);
+                             }};
 
         // Loan interest due (total value less principal and management fee) must
         // never be negative. The loan below carries a total value short of its
@@ -2136,7 +2150,7 @@ class InvariantsVault_test : public InvariantsBase
 
             doInvariantCheck(
                 {"Loan broker vault does not exist"},
-                [&brokerKeylet](Account const&, Account const&, ApplyContext& ac) {
+                [&brokerKeylet](Account const&, Account const& a2, ApplyContext& ac) {
                     auto sleBroker = ac.view().peek(brokerKeylet);
                     if (!sleBroker)
                         return false;
@@ -2149,6 +2163,7 @@ class InvariantsVault_test : public InvariantsBase
                         keylet::loan(brokerKeylet.key, SeqProxy::rawSequence(1));
                     auto sleLoan = std::make_shared<SLE>(loanKeylet);
                     sleLoan->at(sfLoanBrokerID) = brokerKeylet.key;
+                    sleLoan->at(sfBorrower) = a2.id();
                     sleLoan->at(sfPrincipalOutstanding) = Number(0);
                     sleLoan->at(sfTotalValueOutstanding) = Number(0);
                     sleLoan->at(sfManagementFeeOutstanding) = Number(0);

@@ -1211,19 +1211,22 @@ NoModifiedUnmodifiableFields::finalize(
                     // sfOwnerNode and LoanAccept adds it when the borrower accepts. That is
                     // the only transition LoanAccept may make to the field: it must be absent
                     // before and present after. Any other tx modifying sfOwnerNode is a bug.
-                    auto const lendingV12Enabled = view.rules().enabled(featureLendingProtocolV1_2);
-                    auto ownerNodeChangeExempted = tx.getTxnType() == ttLOAN_ACCEPT &&
-                        !before->isFieldPresent(sfOwnerNode) &&
-                        after->isFieldPresent(sfOwnerNode) && lendingV12Enabled;
-                    if (!ownerNodeChangeExempted)
+                    bool const lendingV12Enabled = view.rules().enabled(featureLendingProtocolV1_2);
+                    if (lendingV12Enabled && tx.getTxnType() == ttLOAN_ACCEPT)
                     {
-                        if (auto const ownerNodeChanged = kFieldChanged(before, after, sfOwnerNode))
+                        bool const ownerNodeAdded = !before->isFieldPresent(sfOwnerNode) &&
+                            after->isFieldPresent(sfOwnerNode);
+                        if (!ownerNodeAdded)
                         {
                             JLOG(j.fatal()) << "Invariant failed: sfOwnerNode must be added, "
                                                "and only added, by LoanAccept in "
                                             << tx.getTransactionID();
-                            bad = bad || ownerNodeChanged;
                         }
+                        bad = bad || !ownerNodeAdded;
+                    }
+                    else
+                    {
+                        bad = bad || kFieldChanged(before, after, sfOwnerNode);
                     }
                 }
                 break;
