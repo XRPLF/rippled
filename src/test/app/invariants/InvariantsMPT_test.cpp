@@ -1553,6 +1553,26 @@ class InvariantsMPT_test : public InvariantsBase
             {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
             precloseConfidential);
 
+        // RecoverBalance also leaves coaDelta == 0 and must not change
+        // OutstandingAmount.
+        doInvariantCheck(
+            {"Invariant failed: OutstandingAmount changed "
+             "by confidential transaction that should not "
+             "modify it for MPT"},
+            [&mptID](Account const& a1, Account const& a2, ApplyContext& ac) {
+                auto sleIssuance = ac.view().peek(keylet::mptokenIssuance(mptID));
+                if (!sleIssuance)
+                    return false;
+                sleIssuance->setFieldU64(
+                    sfOutstandingAmount, sleIssuance->getFieldU64(sfOutstandingAmount) + 1);
+                ac.view().update(sleIssuance);
+                return true;
+            },
+            XRPAmount{},
+            STTx{ttCONFIDENTIAL_MPT_RECOVER_BALANCE, [](STObject&) {}},
+            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            precloseConfidential);
+
         // Send/MergeInbox and zero-COA-delta confidential transactions must not
         // change public holder MPTAmount.
         doInvariantCheck(
