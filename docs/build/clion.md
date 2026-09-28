@@ -13,11 +13,10 @@ compilation runs:
 
 1. `rm -rf .idea`
 2. `rm -rf cmake-build-*`
-3. `rm -rf cmake-release-*`
-4. `rm -f CMakeUserPresets.json` (if present — Conan's `CMakeToolchain` generator can create this file
+3. `rm -f CMakeUserPresets.json` (if present — Conan's `CMakeToolchain` generator can create this file
    at the repository root)
-5. CLion Toolbar -> File -> Invalidate Caches (click both options)
-6. Remove the project from the CLion Quickstart menu
+4. CLion Toolbar -> File -> Invalidate Caches (click both options)
+5. Remove the project from the CLion Quickstart menu
 
 ## Configure CLion
 
@@ -45,18 +44,6 @@ From your Conan build directory, generate a `compile_commands.json` file. If you
 cmake -DCMAKE_EXPORT_COMPILE_COMMANDS=1 -DCMAKE_TOOLCHAIN_FILE:FILEPATH=build/generators/conan_toolchain.cmake -DCMAKE_BUILD_TYPE=Release ..
 ```
 
-This only works with a single-configuration generator (for example, `Unix Makefiles` or `Ninja`). Multi-configuration generators (for example, `Visual Studio`) don't support `CMAKE_EXPORT_COMPILE_COMMANDS`. If your build directory uses one, create a separate build directory (for example, `.build-db`) that forces a single-configuration generator. From the repository root:
-
-```bash
-mkdir .build-db
-cd .build-db
-conan install .. --output-folder . --build missing --settings build_type=Release -c tools.cmake.cmaketoolchain:generator=Ninja
-```
-
-Then, from `.build-db` instead of your main build directory, run the same `cmake` command as above but with `-G Ninja` added. `conan install` only tells Conan which generator it should expect. It does not change which generator a plain `cmake` invocation defaults to, so it must still be passed explicitly:
-
-```bash
-cmake -G Ninja -DCMAKE_EXPORT_COMPILE_COMMANDS=1 -DCMAKE_TOOLCHAIN_FILE:FILEPATH=build/generators/conan_toolchain.cmake -DCMAKE_BUILD_TYPE=Release ..
-```
+This only works with `Makefile` or `Ninja` generators. [Other generators](https://cmake.org/cmake/help/latest/variable/CMAKE_EXPORT_COMPILE_COMMANDS.html), like `Visual Studio`, ignore it. If you use one of those generators, configure a separate build directory with a single-configuration generator instead. See [Build and Test](../../BUILD.md#build-and-test) for more information on multi-configuration generators.
 
 Once you have a `compile_commands.json` file, open the CLion project with it. After import, go to `Tools -> Compilation Database -> Change Project Root`. This gives CLion code insight (navigation, completion, analysis) for the project; continue building and running xrpld from the command line as usual.
