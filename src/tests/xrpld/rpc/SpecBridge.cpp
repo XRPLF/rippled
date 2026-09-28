@@ -219,6 +219,30 @@ TEST(JsonView, field_set_spans_both_32_bit_types)
     EXPECT_FALSE(negative.isUint32());
 }
 
+TEST(JsonView, mutable_navigation)
+{
+    auto params = makeParams();
+    ObjectView root{params};
+
+    EXPECT_FALSE(root.child("nope").present());
+    EXPECT_FALSE(root.child("obj").child("nope").present());
+    EXPECT_FALSE(root.child("str").child("inner").present());
+    EXPECT_FALSE(root.child("arr").element(2).present());
+    EXPECT_FALSE(root.child("str").element(0).present());
+    EXPECT_FALSE(params.isMember("nope"));
+    EXPECT_FALSE(params["obj"].isMember("nope"));
+
+    auto second = root.child("arr").element(1);
+    ASSERT_TRUE(second.present());
+    EXPECT_EQ(second.key(), "arr");
+    second.set(std::string_view{"z"});
+    EXPECT_EQ(params["arr"][1u].asString(), "z");
+
+    json::Value array{json::ValueType::Array};
+    ObjectView arrayRoot{array};
+    EXPECT_FALSE(arrayRoot.child("anything").present());
+}
+
 TEST(JsonView, object_root)
 {
     auto params = makeParams();
