@@ -246,7 +246,7 @@ jobs:
               ${DRY_RUN_OPTION}
 
   docker:
-    needs: [test-install-deb]
+    needs: [test-install-deb, test-install-rpm]
     name: "docker${{ !inputs.publish && ' (dry run)' || '' }}"
     permissions:
       contents: read
@@ -305,7 +305,7 @@ jobs:
         env:
           IMAGE: ${{ steps.image.outputs.image }}
         run: |
-          container="$(docker run --detach "${IMAGE}" --standalone --conf /etc/xrpld/xrpld.cfg)"
+          container="$(docker run --detach "${IMAGE}" --standalone --silent --conf /etc/xrpld/xrpld.cfg)"
           trap 'docker rm --force "${container}" >/dev/null' EXIT
 
           for _ in $(seq 30); do
