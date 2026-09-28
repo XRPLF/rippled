@@ -178,7 +178,7 @@ TEST(LedgerTrieTest, remove_in_trie_but_with_0_tip_support)
     EXPECT_TRUE(t.branchSupport(h["abc"]) == 2);
 }
 
-TEST(LedgerTrieTest, remove_in_trie_with_1_tip_support)
+TEST(LedgerTrieTest, remove_in_trie_with_multiple_tip_support)
 {
     using namespace csf;
 
@@ -249,7 +249,7 @@ TEST(LedgerTrieTest, remove_in_trie_with_1_tip_support_1_child)
     EXPECT_TRUE(t.branchSupport(h["abcd"]) == 1);
 }
 
-TEST(LedgerTrieTest, remove_in_trie_with_1_tip_support_1_children)
+TEST(LedgerTrieTest, remove_in_trie_with_1_tip_support_multiple_children)
 {
     using namespace csf;
 

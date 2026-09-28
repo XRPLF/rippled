@@ -346,15 +346,16 @@ TEST(IntrusiveSharedTest, shared_weak_union_assignment)
 
     // 2) Test self-assignment
     EXPECT_TRUE(union1.isStrong());
-    EXPECT_EQ(TIBase::getState(id1), TrackedState::Alive);
-    int const initialRefCount = strong1->useCount();
+    EXPECT_EQ(TIBase::getState(id2), TrackedState::Alive);
+    int const initialRefCount = strong2->useCount();
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wself-assign-overloaded"
     union1 = union1;  // Self-assignment
 #pragma clang diagnostic pop
     EXPECT_TRUE(union1.isStrong());
-    EXPECT_EQ(TIBase::getState(id1), TrackedState::Alive);
-    EXPECT_EQ(strong1->useCount(), initialRefCount);
+    EXPECT_EQ(union1.get(), strong2.get());
+    EXPECT_EQ(TIBase::getState(id2), TrackedState::Alive);
+    EXPECT_EQ(strong2->useCount(), initialRefCount);
 
     // 3) Test assignment from null union pointer
     union1 = SharedWeakUnion<TIBase>();
