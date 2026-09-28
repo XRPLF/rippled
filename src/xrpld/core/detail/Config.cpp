@@ -298,7 +298,7 @@ Config::setupControl(bool bQuiet, bool bSilent, bool bStandalone)
     XRPL_ASSERT(nodeSize <= 4, "xrpl::Config::setupControl : node size is set");
 }
 
-void
+bool
 Config::setup(std::string const& strConf, bool bQuiet, bool bSilent, bool bStandalone)
 {
     setupControl(bQuiet, bSilent, bStandalone);
@@ -310,11 +310,15 @@ Config::setup(std::string const& strConf, bool bQuiet, bool bSilent, bool bStand
     // directory.
     std::filesystem::path dataDir;
 
+    // The config file to read. It stays unset when the search for one finds
+    // nothing, which is the only way this function fails.
+    std::optional<std::filesystem::path> configFile;
+
     if (!strConf.empty())
     {
         // --conf=<path> : everything is relative that file.
-        configFile_ = strConf;
-        configDir = std::filesystem::absolute(configFile_);
+        configFile = strConf;
+        configDir = std::filesystem::absolute(*configFile);
         configDir.remove_filename();
         dataDir = configDir / kDatabaseDirName;
     }
@@ -361,31 +365,43 @@ Config::setup(std::string const& strConf, bool bQuiet, bool bSilent, bool bStand
         candidates.emplace_back("/etc/" + systemName(), "/var/lib/" + systemName());
 
         // Take the first candidate directory holding a config file under either
-        // name. When none of them does, configFile_ keeps the last name tried,
-        // while configDir and dataDir keep the values of the last candidate.
+        // name. When none of them does, configFile stays unset, while configDir
+        // and dataDir keep the values of the last candidate.
         for (auto const& candidate : candidates)
         {
             configDir = candidate.configDir;
             dataDir = candidate.dataDir;
 
-            bool found = false;
             for (std::string_view const fileName : {kConfigFileName, kConfigLegacyName})
             {
-                configFile_ = configDir / fileName;
-                if (std::filesystem::exists(configFile_))
+                auto candidateFile = configDir / fileName;
+                if (std::filesystem::exists(candidateFile))
                 {
-                    found = true;
+                    configFile = std::move(candidateFile);
                     break;
                 }
             }
 
-            if (found)
+            if (configFile)
                 break;
+        }
+
+        if (!configFile)
+        {
+            // Report every directory searched. Naming only the last one would
+            // suggest it is the only place a config file is expected. Report
+            // this even when quiet, because it is the reason for failing.
+            std::cerr << std::format(
+                "No {} or {} found. Searched:\n", kConfigFileName, kConfigLegacyName);
+            for (auto const& candidate : candidates)
+                std::cerr << std::format("  {}\n", candidate.configDir.string());
+
+            return false;
         }
     }
 
     // Update default values
-    load();
+    load(*configFile);
     {
         // load() may have set a new value for the dataDir
         std::string const dbPath(legacy(Sections::kDatabasePath));
@@ -420,6 +436,8 @@ Config::setup(std::string const& strConf, bool bQuiet, bool bSilent, bool bStand
 
     Section const& nodeDbSection{section(Sections::kNodeDatabase)};
     getIfExists(nodeDbSection, Keys::kFastLoad, fastLoad);
+
+    return true;
 }
 
 // 0 ports are allowed for unit tests, but still not allowed to be present in
@@ -451,21 +469,26 @@ checkZeroPorts(Config const& config)
 }
 
 void
-Config::load()
+Config::load(std::filesystem::path const& configFile)
 {
+    // Report the path as a plain string. There is no std::formatter for
+    // std::filesystem::path, and streaming one adds quotes of its own, which
+    // would double up with the quotes written here.
+    auto const fileName = configFile.string();
+
     // NOTE: this writes to cerr because we want cout to be reserved
     // for the writing of the json response (so that stdout can be part of a
     // pipeline, for instance)
     if (!quiet_)
-        std::cerr << "Loading: " << configFile_ << "\n";
+        std::cerr << std::format("Loading: '{}'\n", fileName);
 
     std::error_code ec;
-    auto const fileContents = getFileContents(ec, configFile_);
+    auto const fileContents = getFileContents(ec, configFile);
 
     if (ec)
     {
-        std::cerr << "Failed to read '" << configFile_ << "'." << ec.value() << ": " << ec.message()
-                  << std::endl;
+        std::cerr << std::format(
+            "Failed to read '{}': {} (error {})\n", fileName, ec.message(), ec.value());
         return;
     }
 

@@ -574,9 +574,23 @@ run(int argc, char** argv)
 
     auto configFile = vm.contains("conf") ? vm["conf"].as<std::string>() : std::string();
 
-    // config file, quiet flag.
-    config->setup(
-        configFile, vm.contains("quiet"), vm.contains("silent"), vm.contains("standalone"));
+    // config file, quiet flag. Setup reports a config file it cannot find by
+    // returning false, and invalid config contents by throwing, so both are
+    // handled here rather than left to escape.
+    try
+    {
+        if (!config->setup(
+                configFile, vm.contains("quiet"), vm.contains("silent"), vm.contains("standalone")))
+        {
+            // setup() has already reported the directories it searched.
+            return 1;
+        }
+    }
+    catch (std::exception const& e)
+    {
+        std::cerr << "xrpld: invalid configuration: " << e.what() << std::endl;
+        return 1;
+    }
 
     if (vm.contains("vacuum"))
     {

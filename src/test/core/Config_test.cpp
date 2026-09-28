@@ -20,10 +20,13 @@
 #include <filesystem>
 #include <format>
 #include <fstream>
+#include <iostream>
 #include <optional>
 #include <ostream>
 #include <regex>
+#include <sstream>
 #include <stdexcept>
+#include <streambuf>
 #include <string>
 #include <string_view>
 #include <typeinfo>
@@ -210,6 +213,62 @@ public:
 #endif  // BOOST_OS_LINUX || BOOST_OS_MACOS
 
 /**
+ * Send a stream's output to a buffer of our own, and restore it when done.
+ *
+ * Restoring in the destructor means an assertion that throws cannot leave the
+ * redirect in place. A leaked redirect on std::cerr would swallow the output of
+ * every later test case in the run.
+ */
+class StreamRedirectGuard
+{
+private:
+    // Declaration order matters here. The constructor initializes saved_ from
+    // captured_.rdbuf(), and members initialize in declaration order, so
+    // captured_ must stay declared before saved_. Moving saved_ above it would
+    // call rdbuf() on an unconstructed stream, which no warning reports because
+    // the member initializer list is already in declaration order.
+    std::ostream& stream_;
+    std::ostringstream captured_;
+    std::streambuf* const saved_;
+
+public:
+    /**
+     * Send the stream's output to this guard's own buffer.
+     *
+     * @param stream Stream to redirect for the guard's lifetime.
+     */
+    explicit StreamRedirectGuard(std::ostream& stream)
+        : stream_(stream), saved_(stream.rdbuf(captured_.rdbuf()))
+    {
+    }
+
+    StreamRedirectGuard(StreamRedirectGuard const&) = delete;
+    StreamRedirectGuard&
+    operator=(StreamRedirectGuard const&) = delete;
+
+    /**
+     * Read what the stream has written so far.
+     *
+     * @return Everything written to the stream since construction.
+     */
+    [[nodiscard]] std::string
+    str() const
+    {
+        return captured_.str();
+    }
+
+    /**
+     * Send the stream's output back where it went before.
+     */
+    ~StreamRedirectGuard()
+    {
+        // std::ios::rdbuf(std::streambuf*) does not throw, so this destructor
+        // needs no try/catch.
+        stream_.rdbuf(saved_);
+    }
+};
+
+/**
  * Write an xrpld config file and remove when done.
  */
 class FileCfgGuard : public xrpl::detail::FileDirGuard
@@ -243,11 +302,13 @@ public:
             dataDir_ = subdir() / path(Config::kDatabaseDirName);
 
         rmDataDir_ = !exists(dataDir_);
-        config_.setup(
-            file_.string(),
-            /* bQuiet */ true,
-            /* bSilent */ false,
-            /* bStandalone */ false);
+        test_.expect(
+            config_.setup(
+                file_.string(),
+                /* bQuiet */ true,
+                /* bSilent */ false,
+                /* bStandalone */ false),
+            "setup failed for " + file_.string());
     }
 
     [[nodiscard]] Config const&
@@ -414,7 +475,7 @@ port_wss_admin
 
             // Load the config file from the current directory and verify it.
             Config c;
-            c.setup("", true, false, true);
+            BEAST_EXPECT(c.setup("", true, false, true));
             BEAST_EXPECT(c.section(Sections::kDebugLogfile).values().size() == 1);
             BEAST_EXPECT(
                 c.section(Sections::kDebugLogfile).values()[0] ==
@@ -452,7 +513,7 @@ port_wss_admin
 
                 // Load the config file from the config directory and verify it.
                 Config c;
-                c.setup("", true, false, true);
+                BEAST_EXPECT(c.setup("", true, false, true));
                 BEAST_EXPECT(c.section(Sections::kDebugLogfile).values().size() == 1);
                 BEAST_EXPECT(
                     c.section(Sections::kDebugLogfile).values()[0] ==
@@ -484,11 +545,66 @@ port_wss_admin
 
                 // Load the config file from the config directory and verify it.
                 Config c;
-                c.setup("", true, false, true);
+                BEAST_EXPECT(c.setup("", true, false, true));
                 BEAST_EXPECT(c.section(Sections::kDebugLogfile).values().size() == 1);
                 BEAST_EXPECT(
                     c.section(Sections::kDebugLogfile).values()[0] ==
                     "/Users/dummy/xrpld/config/log/debug.log");
+            }
+        }
+
+        // No config file under either name in any searched directory.
+        {
+            // The system config directory is the last one searched and is not
+            // under the test's control, so only run this when it holds no
+            // config file.
+            path const systemDir = path("/etc") / systemName();
+            if (exists(systemDir / std::string{Config::kConfigFileName}) ||
+                exists(systemDir / std::string{Config::kConfigLegacyName}))
+            {
+                log << "Skipping: " << systemDir.string() << " holds a config file." << std::endl;
+            }
+            else
+            {
+                // Point the working directory and HOME at empty temporary
+                // directories, so neither holds a config file. The guards are
+                // declared after tc, so they restore before it is removed.
+                TempDir const td;
+                current_path(td.path());
+                TempDir const tc;
+
+                detail::EnvVarGuard const homeGuard("HOME", tc.path());
+                detail::EnvVarGuard const xdgGuard("XDG_CONFIG_HOME", std::nullopt);
+
+                // The three directories setup() is expected to search and
+                // report. Read the working directory back rather than reusing
+                // td.path(), because current_path() can resolve a symlink and
+                // return a different spelling of the same directory.
+                path const searchedCwd = current_path();
+                std::string const searchedXdgDir = tc.path() + "/.config/" + systemName();
+                std::string const searchedSystemDir = systemDir.string();
+
+                // setup() must report the failure rather than fall back to the
+                // last directory it searched. Capture and restore stderr around
+                // the call only, so that an assertion below cannot have its own
+                // output swallowed by the capture.
+                Config c;
+                bool setupResult = true;
+                std::string reported;
+                {
+                    detail::StreamRedirectGuard const capture(std::cerr);
+                    setupResult = c.setup("", true, false, true);
+                    reported = capture.str();
+                }
+
+                BEAST_EXPECT(!setupResult);
+
+                // Assert on the directory paths rather than on the wording of
+                // the header, so that a later change to that sentence does not
+                // break this.
+                BEAST_EXPECT(reported.contains(searchedCwd.string()));
+                BEAST_EXPECT(reported.contains(searchedXdgDir));
+                BEAST_EXPECT(reported.contains(searchedSystemDir));
             }
         }
 #endif
@@ -1085,11 +1201,11 @@ trust-these-validators.gov
         */
         {
             Config config;
-            config.setup(
+            BEAST_EXPECT(config.setup(
                 cfg.configFile(),
                 /*bQuiet*/ false,
                 /* bSilent */ false,
-                /* bStandalone */ false);
+                /* bStandalone */ false));
             BEAST_EXPECT(!config.quiet());
             BEAST_EXPECT(!config.silent());
             BEAST_EXPECT(!config.standalone());
@@ -1098,11 +1214,11 @@ trust-these-validators.gov
         }
         {
             Config config;
-            config.setup(
+            BEAST_EXPECT(config.setup(
                 cfg.configFile(),
                 /*bQuiet*/ true,
                 /* bSilent */ false,
-                /* bStandalone */ false);
+                /* bStandalone */ false));
             BEAST_EXPECT(config.quiet());
             BEAST_EXPECT(!config.silent());
             BEAST_EXPECT(!config.standalone());
@@ -1111,11 +1227,11 @@ trust-these-validators.gov
         }
         {
             Config config;
-            config.setup(
+            BEAST_EXPECT(config.setup(
                 cfg.configFile(),
                 /*bQuiet*/ false,
                 /* bSilent */ true,
-                /* bStandalone */ false);
+                /* bStandalone */ false));
             BEAST_EXPECT(config.quiet());
             BEAST_EXPECT(config.silent());
             BEAST_EXPECT(!config.standalone());
@@ -1124,11 +1240,11 @@ trust-these-validators.gov
         }
         {
             Config config;
-            config.setup(
+            BEAST_EXPECT(config.setup(
                 cfg.configFile(),
                 /*bQuiet*/ true,
                 /* bSilent */ true,
-                /* bStandalone */ false);
+                /* bStandalone */ false));
             BEAST_EXPECT(config.quiet());
             BEAST_EXPECT(config.silent());
             BEAST_EXPECT(!config.standalone());
@@ -1137,11 +1253,11 @@ trust-these-validators.gov
         }
         {
             Config config;
-            config.setup(
+            BEAST_EXPECT(config.setup(
                 cfg.configFile(),
                 /*bQuiet*/ false,
                 /* bSilent */ false,
-                /* bStandalone */ true);
+                /* bStandalone */ true));
             BEAST_EXPECT(!config.quiet());
             BEAST_EXPECT(!config.silent());
             BEAST_EXPECT(config.standalone());
@@ -1150,11 +1266,11 @@ trust-these-validators.gov
         }
         {
             Config config;
-            config.setup(
+            BEAST_EXPECT(config.setup(
                 cfg.configFile(),
                 /*bQuiet*/ true,
                 /* bSilent */ false,
-                /* bStandalone */ true);
+                /* bStandalone */ true));
             BEAST_EXPECT(config.quiet());
             BEAST_EXPECT(!config.silent());
             BEAST_EXPECT(config.standalone());
@@ -1163,11 +1279,11 @@ trust-these-validators.gov
         }
         {
             Config config;
-            config.setup(
+            BEAST_EXPECT(config.setup(
                 cfg.configFile(),
                 /*bQuiet*/ false,
                 /* bSilent */ true,
-                /* bStandalone */ true);
+                /* bStandalone */ true));
             BEAST_EXPECT(config.quiet());
             BEAST_EXPECT(config.silent());
             BEAST_EXPECT(config.standalone());
@@ -1176,11 +1292,11 @@ trust-these-validators.gov
         }
         {
             Config config;
-            config.setup(
+            BEAST_EXPECT(config.setup(
                 cfg.configFile(),
                 /*bQuiet*/ true,
                 /* bSilent */ true,
-                /* bStandalone */ true);
+                /* bStandalone */ true));
             BEAST_EXPECT(config.quiet());
             BEAST_EXPECT(config.silent());
             BEAST_EXPECT(config.standalone());
