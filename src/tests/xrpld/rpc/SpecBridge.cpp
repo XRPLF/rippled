@@ -20,7 +20,6 @@ namespace xrpl {
 
 namespace {
 
-using FieldView = rpc::XrplJsonFieldView;
 using ObjectView = rpc::XrplJsonObjectView;
 
 json::Value
