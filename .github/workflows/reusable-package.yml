@@ -39,7 +39,7 @@ on:
       signing_key:
         description: "Armoured PGP private key used to sign the RPMs. Required when publishing."
         required: false
-      docker_token:
+      dockerhub_token:
         description: "A Docker Hub organization access token for xrplf, with push access to xrplf/xrpld. Required when publishing."
         required: false
 
@@ -296,7 +296,7 @@ jobs:
         uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
         with:
           username: xrplf
-          password: ${{ secrets.docker_token }}
+          password: ${{ secrets.dockerhub_token }}
 
       - name: Push image
         if: ${{ inputs.publish && github.event.repository.visibility == 'public' }}
