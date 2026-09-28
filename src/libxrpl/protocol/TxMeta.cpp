@@ -20,6 +20,7 @@
 #include <boost/container/flat_set.hpp>
 
 #include <cstdint>
+#include <flat_set>
 #include <limits>
 #include <stdexcept>
 
@@ -148,10 +149,10 @@ TxMeta::getAffectedAccounts() const
     return list;
 }
 
-boost::container::flat_set<MPTID>
+std::flat_set<MPTID>
 TxMeta::getAffectedMPTs() const
 {
-    boost::container::flat_set<MPTID> list;
+    std::flat_set<MPTID> list;
 
     for (auto const& it : nodes_)
     {

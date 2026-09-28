@@ -102,10 +102,15 @@ InfoSub::~InfoSub()
     safeUnsub(seq_, [&] { source_.unsubPeerStatus(seq_); }, j);
     safeUnsub(seq_, [&] { source_.unsubConsensus(seq_); }, j);
 
-    // MPT subscriptions are torn down in one bulk call keyed on seq_, so the
-    // server-side lock is taken once rather than per issuance.
-    if (!mptSubscriptions_.empty())
-        safeUnsub(seq_, [&] { source_.unsubMPTInternal(seq_, mptSubscriptions_); }, j);
+    // MPT subscriptions are torn down inline here, keyed on seq_, like books
+    // below. The set is capped; each unsubMPTInternal takes mptLock_ for a
+    // single O(1) erase and releases it, so a competing MPT publish can
+    // interleave between erases. Use the internal variant so it does not write
+    // back to mptSubscriptions_ on this partially-destroyed object.
+    for (auto const& mptID : mptSubscriptions_)
+    {
+        safeUnsub(seq_, [&] { source_.unsubMPTInternal(seq_, mptID); }, j);
+    }
 
     // Book subscriptions are torn down inline here, keyed on seq_, rather than
     // through the chunked account cleanup below. The book set is not capped, so
@@ -169,7 +174,7 @@ InfoSub::onSendEmpty()
 }
 
 std::size_t
-InfoSub::subscriptionCount(scoped_lock const&) const
+InfoSub::subscriptionCount(ScopedLock const&) const
 {
     return normalSubscriptions_.size() + realTimeSubscriptions_.size() +
         accountHistorySubscriptions_.size() + mptSubscriptions_.size();

@@ -152,8 +152,20 @@ public:
             AccountID const& account,
             bool historyOnly) = 0;
 
+        /**
+         * Remove an MPT issuance subscription during InfoSub teardown.
+         *
+         * Removes only the server-side entry from subMPT_. Does NOT touch
+         * InfoSub::mptSubscriptions_ because the InfoSub is being destroyed.
+         * Called by ~InfoSub() for each issuance in mptSubscriptions_.
+         *
+         * @param uListener The sequence number of the subscriber being torn down.
+         * @param mptID     The MPT issuance to remove.
+         *
+         * @note Thread-safety: acquires mptLock_ internally.
+         */
         virtual void
-        unsubMPTInternal(std::uint64_t uListener, hash_set<MPTID> const& mptIDs) = 0;
+        unsubMPTInternal(std::uint64_t uListener, MPTID const& mptID) = 0;
 
         /**
          * Schedule the server-side teardown of a disconnecting connection's
@@ -454,7 +466,7 @@ protected:
 
 private:
     // The lock type guarding this instance's subscription sets.
-    using scoped_lock = std::scoped_lock<decltype(lock_)>;
+    using ScopedLock = std::scoped_lock<decltype(lock_)>;
 
     /**
      * The combined tally the per-connection cap is enforced against.
@@ -462,7 +474,7 @@ private:
      * @param lock Proof that `lock_` is held; unused otherwise.
      */
     [[nodiscard]] std::size_t
-    subscriptionCount(scoped_lock const& lock) const;
+    subscriptionCount(ScopedLock const& lock) const;
 
     Consumer consumer_;
     Source& source_;

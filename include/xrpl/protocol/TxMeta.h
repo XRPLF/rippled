@@ -17,6 +17,7 @@
 #include <boost/container/flat_set.hpp>
 
 #include <cstdint>
+#include <flat_set>
 #include <optional>
 
 namespace xrpl {
@@ -116,7 +117,7 @@ public:
         parentBatchID_ = id;
     }
 
-    [[nodiscard]] boost::container::flat_set<MPTID>
+    [[nodiscard]] std::flat_set<MPTID>
     getAffectedMPTs() const;
 
 private:

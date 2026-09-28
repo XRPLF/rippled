@@ -578,7 +578,7 @@ public:
     void
     unsubMPT(InfoSub::ref ispListener, hash_set<MPTID> const& mptIDs) override;
     void
-    unsubMPTInternal(std::uint64_t seq, hash_set<MPTID> const& mptIDs) override;
+    unsubMPTInternal(std::uint64_t seq, MPTID const& mptID) override;
 
     ErrorCodeI
     subAccountHistory(InfoSub::ref ispListener, AccountID const& account) override;
@@ -742,8 +742,7 @@ private:
         TER result,
         bool validated,
         std::shared_ptr<ReadView const> const& ledger,
-        std::optional<std::reference_wrapper<TxMeta const>> meta,
-        std::string const& type = "transaction");
+        std::optional<std::reference_wrapper<TxMeta const>> meta);
 
     void
     pubValidatedTransaction(
@@ -811,9 +810,7 @@ private:
     void
     pubConsensus(ConsensusPhase phase);
     void
-    pubMPTTransaction(
-        std::shared_ptr<ReadView const> const& ledger,
-        AcceptedLedgerTx const& transaction);
+    pubMPTTransaction(AcceptedLedgerTx const& transaction, MultiApiJson const& jvObj);
 
     std::string
     getHostId(bool forAdmin);
@@ -3490,8 +3487,7 @@ NetworkOPsImp::transJson(
     TER result,
     bool validated,
     std::shared_ptr<ReadView const> const& ledger,
-    std::optional<std::reference_wrapper<TxMeta const>> meta,
-    std::string const& type)
+    std::optional<std::reference_wrapper<TxMeta const>> meta)
 {
     json::Value jvObj(json::ValueType::Object);
     std::string sToken;
@@ -3499,7 +3495,7 @@ NetworkOPsImp::transJson(
 
     transResultInfo(result, sToken, sHuman);
 
-    jvObj[jss::type] = type;
+    jvObj[jss::type] = "transaction";
     // NOTE jvObj is not a finished object for either API version. After
     // it's populated, we need to finish it for a specific API version. This is
     // done in a loop, near the end of this function.
@@ -3653,7 +3649,7 @@ NetworkOPsImp::pubValidatedTransaction(
         pubBookTransaction(transaction, jvObj);
 
     pubAccountTransaction(ledger, transaction, last);
-    pubMPTTransaction(ledger, transaction);
+    pubMPTTransaction(transaction, jvObj);
 }
 
 void
@@ -4146,24 +4142,28 @@ NetworkOPsImp::scheduleAccountCleanup(
 }
 
 void
-NetworkOPsImp::pubMPTTransaction(
-    std::shared_ptr<ReadView const> const& ledger,
-    AcceptedLedgerTx const& transaction)
+NetworkOPsImp::pubMPTTransaction(AcceptedLedgerTx const& alTx, MultiApiJson const& jvObj)
 {
+    {
+        std::scoped_lock const sl(mptLock_);
+        if (subMPT_.empty())
+            return;
+    }
+
+    // getAffectedMPTs derives the issuance id for MPTokenIssuance entries from
+    // the metadata, so it also covers transactions whose top-level STTx carries
+    // no MPTokenIssuanceID, such as the inner transactions of a Batch. It reads
+    // only the metadata, so it runs outside mptLock_.
+    auto const affectedMPTs = alTx.getMeta().getAffectedMPTs();
+    if (affectedMPTs.empty())
+        return;
+
+    // Declared before the lock so a last-reference ~InfoSub runs after
+    // mptLock_ is released (see the deferred-destruction rule).
     hash_set<InfoSub::pointer> notify;
-    auto const& stTxn = transaction.getTxn();
 
     {
         std::scoped_lock const sl(mptLock_);
-
-        if (subMPT_.empty())
-            return;
-
-        // getAffectedMPTs derives the issuance id for MPTokenIssuance entries
-        // from the metadata, so it also covers transactions whose top-level
-        // STTx carries no MPTokenIssuanceID, such as the inner transactions
-        // of a Batch.
-        auto const affectedMPTs = transaction.getMeta().getAffectedMPTs();
 
         for (auto const& affectedMPT : affectedMPTs)
         {
@@ -4191,14 +4191,14 @@ NetworkOPsImp::pubMPTTransaction(
     if (notify.empty())
         return;
 
-    // Create two different Json objects, for different API versions
-    auto const metaRef = std::ref(transaction.getMeta());
-    auto const trResult = transaction.getResult();
-    MultiApiJson jvObj = transJson(stTxn, trResult, true, ledger, metaRef, "mptTransaction");
+    // Reuse the transaction JSON built by pubValidatedTransaction; only the
+    // message type differs for this stream.
+    MultiApiJson jvMPT = jvObj;
+    jvMPT.set(jss::type, "mptTransaction");
 
     for (InfoSub::ref isrListener : notify)
     {
-        jvObj.visit(isrListener->getApiVersion(), [&](json::Value const& jv) {
+        jvMPT.visit(isrListener->getApiVersion(), [&](json::Value const& jv) {
             isrListener->send(jv, true);
         });
     }
@@ -4221,14 +4221,14 @@ NetworkOPsImp::subMPT(InfoSub::ref isrListener, hash_set<MPTID> const& mptIDs)
         auto simIterator = subMPT_.find(mptID);
         if (simIterator == subMPT_.end())
         {
-            // Not found, note that account has a new single listener.
+            // Not found, note that the MPT issuance has a new single listener.
             SubMapType usisElement;
             usisElement[isrListener->getSeq()] = isrListener;
             subMPT_.insert(simIterator, make_pair(mptID, usisElement));
         }
         else
         {
-            // Found, note that the account has another listener.
+            // Found, note that the MPT issuance has another listener.
             simIterator->second[isrListener->getSeq()] = isrListener;
         }
     }
@@ -4239,34 +4239,29 @@ NetworkOPsImp::unsubMPT(InfoSub::ref isrListener, hash_set<MPTID> const& mptIDs)
 {
     for (auto const& mptID : mptIDs)
     {
-        // Remove from the InfoSub
+        // Remove from the InfoSub first so ~InfoSub does not re-issue an
+        // unsubMPTInternal for an issuance the caller already removed, then
+        // remove from the server.
         isrListener->deleteSubMPTInfo(mptID);
+        unsubMPTInternal(isrListener->getSeq(), mptID);
     }
-
-    // Remove from the server
-    unsubMPTInternal(isrListener->getSeq(), mptIDs);
 }
 
 void
-NetworkOPsImp::unsubMPTInternal(std::uint64_t uSeq, hash_set<MPTID> const& mptIDs)
+NetworkOPsImp::unsubMPTInternal(std::uint64_t uSeq, MPTID const& mptID)
 {
+    // Only weak_ptrs are erased, so no InfoSub can be destroyed under the lock.
     std::scoped_lock const sl(mptLock_);
 
-    for (auto const& mptID : mptIDs)
+    auto simIterator = subMPT_.find(mptID);
+    if (simIterator == subMPT_.end())
+        return;
+
+    simIterator->second.erase(uSeq);
+    if (simIterator->second.empty())
     {
-        auto simIterator = subMPT_.find(mptID);
-
-        if (simIterator != subMPT_.end())
-        {
-            // Found
-            simIterator->second.erase(uSeq);
-
-            if (simIterator->second.empty())
-            {
-                // Don't need hash entry.
-                subMPT_.erase(simIterator);
-            }
-        }
+        // Don't need hash entry.
+        subMPT_.erase(simIterator);
     }
 }
 
