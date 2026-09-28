@@ -42,16 +42,33 @@ bool
 isGlobalFrozen(ReadView const& view, MPTIssue const& mptIssue)
 {
     if (auto const sle = view.read(keylet::mptokenIssuance(mptIssue.getMptID())))
-        return sle->isFlag(lsfMPTLocked);
+        return isGlobalFrozen(*sle);
     return false;
+}
+
+bool
+isGlobalFrozen(SLE const& issuanceSle)
+{
+    XRPL_ASSERT(
+        issuanceSle.getType() == ltMPTOKEN_ISSUANCE, "xrpl::isGlobalFrozen : MPTokenIssuance SLE");
+
+    return issuanceSle.isFlag(lsfMPTLocked);
 }
 
 bool
 isIndividualFrozen(ReadView const& view, AccountID const& account, MPTIssue const& mptIssue)
 {
     if (auto const sle = view.read(keylet::mptoken(mptIssue.getMptID(), account)))
-        return sle->isFlag(lsfMPTLocked);
+        return isIndividualFrozen(*sle);
     return false;
+}
+
+bool
+isIndividualFrozen(SLE const& mptSle)
+{
+    XRPL_ASSERT(mptSle.getType() == ltMPTOKEN, "xrpl::isIndividualFrozen : MPToken SLE");
+
+    return mptSle.isFlag(lsfMPTLocked);
 }
 
 bool
@@ -65,6 +82,34 @@ isFrozen(
         isVaultPseudoAccountFrozen(view, account, mptIssue, depth);
 }
 
+bool
+isFrozen(ReadView const& view, AccountID const& account, SLE const& sle, std::uint8_t depth)
+{
+    XRPL_ASSERT(
+        sle.getType() == ltMPTOKEN || sle.getType() == ltMPTOKEN_ISSUANCE,
+        "xrpl::isFrozen : MPToken or MPTokenIssuance SLE");
+
+    if (sle.getType() == ltMPTOKEN)
+    {
+        XRPL_ASSERT(sle[sfAccount] == account, "xrpl::isFrozen : valid MPToken holder");
+
+        MPTID const mptID = sle[sfMPTokenIssuanceID];
+        auto const issuanceSle = view.read(keylet::mptokenIssuance(mptID));
+
+        if ((issuanceSle && isGlobalFrozen(*issuanceSle)) || isIndividualFrozen(sle))
+            return true;
+
+        if (issuanceSle)
+            return isVaultPseudoAccountFrozen(view, account, *issuanceSle, depth);
+
+        return isVaultPseudoAccountFrozen(view, account, MPTIssue{mptID}, depth);
+    }
+
+    MPTIssue const mptIssue{sle[sfSequence], sle[sfIssuer]};
+    return isGlobalFrozen(sle) || isIndividualFrozen(view, account, mptIssue) ||
+        isVaultPseudoAccountFrozen(view, account, sle, depth);
+}
+
 [[nodiscard]] bool
 isAnyFrozen(
     ReadView const& view,
@@ -72,7 +117,8 @@ isAnyFrozen(
     MPTIssue const& mptIssue,
     std::uint8_t depth)
 {
-    if (isGlobalFrozen(view, mptIssue))
+    auto const issuanceSle = view.read(keylet::mptokenIssuance(mptIssue.getMptID()));
+    if (issuanceSle && isGlobalFrozen(*issuanceSle))
         return true;
 
     for (auto const& account : accounts)
@@ -81,9 +127,15 @@ isAnyFrozen(
             return true;
     }
 
-    return std::ranges::any_of(accounts, [&](auto const& account) {
-        return isVaultPseudoAccountFrozen(view, account, mptIssue, depth);
-    });
+    // Pass the issuance SLE when we have it to avoid re-reading it per account;
+    // otherwise defer to the MPTIssue overload, which handles a missing issuance.
+    auto const anyVaultFrozen = [&](auto const& shareOrIssuance) {
+        return std::ranges::any_of(accounts, [&](auto const& account) {
+            return isVaultPseudoAccountFrozen(view, account, shareOrIssuance, depth);
+        });
+    };
+
+    return issuanceSle ? anyVaultFrozen(*issuanceSle) : anyVaultFrozen(mptIssue);
 }
 
 Rate
@@ -132,6 +184,8 @@ addEmptyHolding(
     auto const mpt = ctx.view.peek(keylet::mptokenIssuance(mptID));
     if (!mpt)
         return tefINTERNAL;  // LCOV_EXCL_LINE
+    // Unlike IOU addEmptyHolding (post-fixCleanup3_4_0), a locked issuance is
+    // still rejected before the "MPToken already exists" short circuit.
     if (mpt->isFlag(lsfMPTLocked))
         return tefINTERNAL;  // LCOV_EXCL_LINE
     if (ctx.view.peek(keylet::mptoken(mptID, accountID)))
@@ -332,8 +386,7 @@ requireAuth(
     // They are implicitly authorized for any MPT they hold, including vault shares whose
     // underlying asset would otherwise require auth.
     auto const isPseudoAccountExempt = [&] {
-        return (featureSAVEnabled || featureMPTV2Enabled) &&
-            isPseudoAccount(view, account, {&sfVaultID, &sfLoanBrokerID, &sfAMMID});
+        return (featureSAVEnabled || featureMPTV2Enabled) && isPseudoAccount(view, account);
     };
 
     auto const mptID = keylet::mptokenIssuance(mptIssue.getMptID());

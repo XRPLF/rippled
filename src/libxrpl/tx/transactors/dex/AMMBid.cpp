@@ -193,10 +193,10 @@ applyBid(ApplyContext& ctx, Sandbox& sb, AccountID const& account, beast::Journa
     auto const current =
         duration_cast<seconds>(ctx.view().header().parentCloseTime.time_since_epoch()).count();
     // Auction slot discounted fee
-    auto const discountedFee = (*ammSle)[sfTradingFee] / kAuctionSlotDiscountedFeeFraction;
-    auto const tradingFee = getFee((*ammSle)[sfTradingFee]);
+    auto const ammTradingFee = (*ammSle)[sfTradingFee];
+    auto const discountedFee = ammTradingFee / kAuctionSlotDiscountedFeeFraction;
     // Min price
-    auto const minSlotPrice = lptAMMBalance * tradingFee / kAuctionSlotMinFeeFraction;
+    auto const minSlotPrice = ammAuctionMinSlotPrice(lptAMMBalance, ammTradingFee);
 
     static constexpr std::uint32_t kTailingSlot = kAuctionSlotTimeIntervals - 1;
 
@@ -260,31 +260,37 @@ applyBid(ApplyContext& ctx, Sandbox& sb, AccountID const& account, beast::Journa
     auto const bidMax = ctx.tx[~sfBidMax];
 
     auto getPayPrice = [&](Number const& computedPrice) -> std::expected<Number, TER> {
+        auto effectivePrice = computedPrice;
+        if (ctx.view().rules().enabled(fixCleanup3_4_0) && ammTradingFee == 0)
+        {
+            // Prevent zero-fee pools from granting auction slots at zero or dust prices.
+            effectivePrice = std::max(effectivePrice, ammAuctionMinSlotPrice(lptAMMBalance, 1));
+        }
         auto const payPrice = [&]() -> std::optional<Number> {
             // Both min/max bid price are defined
             if (bidMin && bidMax)
             {
-                if (computedPrice <= *bidMax)
-                    return std::max(computedPrice, Number(*bidMin));
-                JLOG(ctx.journal.debug()) << "AMM Bid: not in range " << computedPrice << " "
+                if (effectivePrice <= *bidMax)
+                    return std::max(effectivePrice, Number(*bidMin));
+                JLOG(ctx.journal.debug()) << "AMM Bid: not in range " << effectivePrice << " "
                                           << *bidMin << " " << *bidMax;
                 return std::nullopt;
             }
-            // Bidder pays max(bidPrice, computedPrice)
+            // Bidder pays max(bidPrice, effectivePrice)
             if (bidMin)
             {
-                return std::max(computedPrice, Number(*bidMin));
+                return std::max(effectivePrice, Number(*bidMin));
             }
             if (bidMax)
             {
-                if (computedPrice <= *bidMax)
-                    return computedPrice;
+                if (effectivePrice <= *bidMax)
+                    return effectivePrice;
                 JLOG(ctx.journal.debug())
-                    << "AMM Bid: not in range " << computedPrice << " " << *bidMax;
+                    << "AMM Bid: not in range " << effectivePrice << " " << *bidMax;
                 return std::nullopt;
             }
 
-            return computedPrice;
+            return effectivePrice;
         }();
         if (!payPrice)
         {

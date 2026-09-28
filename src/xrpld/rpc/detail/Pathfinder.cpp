@@ -224,7 +224,7 @@ Pathfinder::Pathfinder(
     , dstAmount_(saDstAmount)
     , srcPathAsset_(uSrcPathAsset)
     , srcIssuer_(uSrcIssuer)
-    , srcAmount_(amountFromPathAsset(uSrcPathAsset, uSrcIssuer, uSrcAccount))
+    , srcAmount_(srcAmount.value_or(amountFromPathAsset(uSrcPathAsset, uSrcIssuer, uSrcAccount)))
     , convertAll_(convertAllCheck(dstAmount_))
     , domain_(domain)
     , ledger_(cache->getLedger())
@@ -815,8 +815,8 @@ Pathfinder::getPathsOut(
                 {
                     for (auto const& mpt : *mpts)
                     {
-                        if (pathAsset.get<MPTID>() != mpt.getMptID() || mpt.isZeroBalance() ||
-                            mpt.isMaxedOut() || bAuthRequired)
+                        if (pathAsset.get<MPTID>() != mpt.getMptID() || !mpt.canSend(account) ||
+                            bAuthRequired)
                             continue;
                         if (isDstAsset && dstAccount == getMPTIssuer(mpt))
                         {
@@ -862,10 +862,11 @@ Pathfinder::addPathsForType(
         return it->second;
 
     // Otherwise, if the type has no nodes, return the empty path.
-    if (pathType.empty())
-        return paths_[pathType];
-    if (continueCallback && !continueCallback())
-        return paths_[{}];
+    if (pathType.empty() || (continueCallback && !continueCallback()))
+    {
+        static auto const kEmptyPath = PathType{};
+        return paths_.try_emplace(kEmptyPath, STPathSet::DeduplicationTag{}).first->second;
+    }
 
     // Otherwise, get the paths for the parent PathType by calling
     // addPathsForType recursively.
@@ -873,7 +874,7 @@ Pathfinder::addPathsForType(
     parentPathType.pop_back();
 
     STPathSet const& parentPaths = addPathsForType(parentPathType, continueCallback);
-    STPathSet& pathsOut = paths_[pathType];
+    STPathSet& pathsOut = paths_.try_emplace(pathType, STPathSet::DeduplicationTag{}).first->second;
 
     JLOG(j_.debug()) << "getPaths< adding onto '" << pathTypeToString(parentPathType)
                      << "' to get '" << pathTypeToString(pathType) << "'";
@@ -960,15 +961,6 @@ Pathfinder::isNoRippleOut(STPath const& currentPath)
 }
 
 void
-addUniquePath(STPathSet& pathSet, STPath const& path)
-{
-    if (!pathSet.contains(path))
-    {
-        pathSet.pushBack(path);
-    }
-}
-
-void
 Pathfinder::addLink(
     STPath const& currentPath,   // The path to build from
     STPathSet& incompletePaths,  // The set of partial paths we add to
@@ -999,7 +991,7 @@ Pathfinder::addLink(
             {  // non-default path to XRP destination
                 JLOG(j_.trace()) << "complete path found ax: "
                                  << currentPath.getJson(JsonOptions::Values::None);
-                addUniquePath(completePaths_, currentPath);
+                completePaths_.pushBack(currentPath);
             }
         }
         else
@@ -1079,7 +1071,10 @@ Pathfinder::addLink(
                             }
                             if constexpr (kIsMpt)
                             {
-                                return asset.isZeroBalance() || asset.isMaxedOut() ||
+                                // `asset` came from uEndAccount's cached MPTs.
+                                // `acct` is the next issuer hop, not the
+                                // account whose balance is being tested.
+                                return !asset.canSend(uEndAccount) ||
                                     requireAuth(*ledger_, MPTIssue{asset}, acct);
                             }
                         };
@@ -1104,7 +1099,7 @@ Pathfinder::addLink(
                                         JLOG(j_.trace())
                                             << "complete path found ae: "
                                             << currentPath.getJson(JsonOptions::Values::None);
-                                        addUniquePath(completePaths_, currentPath);
+                                        completePaths_.pushBack(currentPath);
                                     }
                                 }
                                 else if (!bDestOnly)
@@ -1234,11 +1229,12 @@ Pathfinder::addLink(
                             // complete
                             JLOG(j_.trace()) << "complete path found bx: "
                                              << currentPath.getJson(JsonOptions::Values::None);
-                            addUniquePath(completePaths_, newPath);
+                            completePaths_.pushBack(newPath);
                         }
                         else
                         {
-                            incompletePaths.pushBack(newPath);
+                            [[maybe_unused]] auto result = incompletePaths.pushBack(newPath);
+                            XRPL_ASSERT(result, "xrpl::Pathfinder::addLink : unique path");
                         }
                     }
                     else if (!currentPath.hasSeen(
@@ -1280,7 +1276,7 @@ Pathfinder::addLink(
                            // complete
                             JLOG(j_.trace()) << "complete path found ba: "
                                              << currentPath.getJson(JsonOptions::Values::None);
-                            addUniquePath(completePaths_, newPath);
+                            completePaths_.pushBack(newPath);
                         }
                         else
                         {

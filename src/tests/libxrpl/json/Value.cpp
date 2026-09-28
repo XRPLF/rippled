@@ -21,7 +21,7 @@
 
 namespace xrpl {
 
-TEST(json_value, limits)
+TEST(JsonValue, limits)
 {
     using namespace json;
     static_assert(Value::kMinInt == Int(~(UInt(-1) / 2)));
@@ -29,7 +29,7 @@ TEST(json_value, limits)
     static_assert(Value::kMaxUInt == UInt(-1));
 }
 
-TEST(json_value, construct_and_compare_json_static_string)
+TEST(JsonValue, construct_and_compare_json_static_string)
 {
     static constexpr char kSample[]{"Contents of a json::StaticString"};
 
@@ -52,7 +52,7 @@ TEST(json_value, construct_and_compare_json_static_string)
     EXPECT_NE(kTest3, str);
 }
 
-TEST(json_value, type_null)
+TEST(JsonValue, type_null)
 {
     auto testCopy = [](json::ValueType typ) {
         json::Value val{typ};
@@ -77,7 +77,7 @@ TEST(json_value, type_null)
     EXPECT_TRUE(nullV.isObjectOrNull());
 }
 
-TEST(json_value, type_int)
+TEST(JsonValue, type_int)
 {
     auto testCopy = [](json::ValueType typ) {
         json::Value val{typ};
@@ -102,7 +102,7 @@ TEST(json_value, type_int)
     EXPECT_FALSE(intV.isObjectOrNull());
 }
 
-TEST(json_value, type_uint)
+TEST(JsonValue, type_uint)
 {
     auto testCopy = [](json::ValueType typ) {
         json::Value val{typ};
@@ -127,7 +127,7 @@ TEST(json_value, type_uint)
     EXPECT_FALSE(uintV.isObjectOrNull());
 }
 
-TEST(json_value, type_real)
+TEST(JsonValue, type_real)
 {
     auto testCopy = [](json::ValueType typ) {
         json::Value val{typ};
@@ -152,7 +152,7 @@ TEST(json_value, type_real)
     EXPECT_FALSE(realV.isObjectOrNull());
 }
 
-TEST(json_value, type_string)
+TEST(JsonValue, type_string)
 {
     auto testCopy = [](json::ValueType typ) {
         json::Value val{typ};
@@ -177,7 +177,7 @@ TEST(json_value, type_string)
     EXPECT_FALSE(stringV.isObjectOrNull());
 }
 
-TEST(json_value, type_static_string)
+TEST(JsonValue, type_static_string)
 {
     static constexpr json::StaticString kStaticStr{"staticStr"};
 
@@ -201,7 +201,7 @@ TEST(json_value, type_static_string)
     EXPECT_FALSE(staticStrV.isObjectOrNull());
 }
 
-TEST(json_value, type_bool)
+TEST(JsonValue, type_bool)
 {
     auto testCopy = [](json::ValueType typ) {
         json::Value val{typ};
@@ -226,7 +226,7 @@ TEST(json_value, type_bool)
     EXPECT_FALSE(boolV.isObjectOrNull());
 }
 
-TEST(json_value, type_array)
+TEST(JsonValue, type_array)
 {
     auto testCopy = [](json::ValueType typ) {
         json::Value val{typ};
@@ -251,7 +251,7 @@ TEST(json_value, type_array)
     EXPECT_FALSE(arrayV.isObjectOrNull());
 }
 
-TEST(json_value, type_object)
+TEST(JsonValue, type_object)
 {
     auto testCopy = [](json::ValueType typ) {
         json::Value val{typ};
@@ -276,7 +276,7 @@ TEST(json_value, type_object)
     EXPECT_TRUE(objectV.isObjectOrNull());
 }
 
-TEST(json_value, compare_strings)
+TEST(JsonValue, compare_strings)
 {
     auto doCompare = [&](json::Value const& lhs,
                          json::Value const& rhs,
@@ -630,7 +630,7 @@ TEST(json_value, compare_strings)
 #pragma pop_macro("DO_COMPARE")
 }
 
-TEST(json_value, bool)
+TEST(JsonValue, bool)
 {
     EXPECT_FALSE(json::Value());
 
@@ -653,7 +653,7 @@ TEST(json_value, bool)
     EXPECT_TRUE(bool(object));
 }
 
-TEST(json_value, bad_json)
+TEST(JsonValue, bad_json)
 {
     char const* s(R"({"method":"ledger","params":[{"ledger_index":1e300}]})");
 
@@ -677,7 +677,7 @@ parseValue(std::string const& doc)
 
 }  // namespace
 
-TEST(json_value, parse_double_valid)
+TEST(JsonValue, parse_double_valid)
 {
     // 1e300 is large but still representable, so it parses (unlike the out-of-range cases below).
     for (auto const& [text, expected] :
@@ -697,14 +697,14 @@ TEST(json_value, parse_double_valid)
     }
 }
 
-TEST(json_value, parse_double_out_of_range)
+TEST(JsonValue, parse_double_out_of_range)
 {
     // Magnitudes with no finite double representation are rejected.
     for (char const* oor : {"1e400", "-1e400", "0.001e500", "1e-400", "-1e-400", "123e-500"})
         EXPECT_FALSE(parseValue(oor).has_value()) << oor;
 }
 
-TEST(json_value, parse_double_malformed)
+TEST(JsonValue, parse_double_malformed)
 {
     // readNumber() collects any run of digits and '.eE+-' into a single Double
     // token, so these malformed tokens reach decodeDouble. Each has a valid
@@ -714,7 +714,7 @@ TEST(json_value, parse_double_malformed)
         EXPECT_FALSE(parseValue(bad).has_value()) << bad;
 }
 
-TEST(json_value, parses_integers_at_the_edges_of_the_32_bit_range)
+TEST(JsonValue, parses_integers_at_the_edges_of_the_32_bit_range)
 {
     std::uint32_t const maxUInt = std::numeric_limits<std::uint32_t>::max();
     std::int32_t const maxInt = std::numeric_limits<std::int32_t>::max();
@@ -755,7 +755,7 @@ TEST(json_value, parses_integers_at_the_edges_of_the_32_bit_range)
     EXPECT_LT(j1["a_small_int"], aUInt);
 }
 
-TEST(json_value, rejects_an_unsigned_value_one_past_the_maximum)
+TEST(JsonValue, rejects_an_unsigned_value_one_past_the_maximum)
 {
     std::uint32_t const maxUInt = std::numeric_limits<std::uint32_t>::max();
 
@@ -771,7 +771,7 @@ TEST(json_value, rejects_an_unsigned_value_one_past_the_maximum)
     EXPECT_FALSE(r2.parse(json, j2));
 }
 
-TEST(json_value, rejects_a_signed_value_one_below_the_minimum)
+TEST(JsonValue, rejects_a_signed_value_one_below_the_minimum)
 {
     std::int32_t const minInt = std::numeric_limits<std::int32_t>::min();
 
@@ -787,7 +787,7 @@ TEST(json_value, rejects_a_signed_value_one_below_the_minimum)
     EXPECT_FALSE(r3.parse(json, j3));
 }
 
-TEST(json_value, converting_a_string_valued_json_number)
+TEST(JsonValue, converting_a_string_valued_json_number)
 {
     std::uint32_t const maxUInt = std::numeric_limits<std::uint32_t>::max();
 
@@ -832,7 +832,7 @@ TEST(json_value, converting_a_string_valued_json_number)
     EXPECT_EQ(intString.asAbsUInt(), 2147483649);
 }
 
-TEST(json_value, converting_a_real_valued_json_number)
+TEST(JsonValue, converting_a_real_valued_json_number)
 {
     json::Value intReal{4294967297.0};
     EXPECT_THROW([&] { return intReal.asUInt(); }(), json::Error);
@@ -873,7 +873,7 @@ TEST(json_value, converting_a_real_valued_json_number)
     EXPECT_EQ(intReal.asAbsUInt(), 2147483649);
 }
 
-TEST(json_value, copy)
+TEST(JsonValue, copy)
 {
     json::Value v1{2.5};
     EXPECT_TRUE(v1.isDouble());
@@ -894,7 +894,7 @@ TEST(json_value, copy)
     EXPECT_EQ(v1, v2);
 }
 
-TEST(json_value, move)
+TEST(JsonValue, move)
 {
     json::Value v1{2.5};
     EXPECT_TRUE(v1.isDouble());
@@ -913,7 +913,7 @@ TEST(json_value, move)
     EXPECT_NE(v1, v2);  // NOLINT(bugprone-use-after-move)
 }
 
-TEST(json_value, comparisons)
+TEST(JsonValue, comparisons)
 {
     json::Value a, b;
     auto testEquals = [&](std::string const& name) {
@@ -968,7 +968,7 @@ TEST(json_value, comparisons)
     testGreaterThan("big");
 }
 
-TEST(json_value, compact)
+TEST(JsonValue, compact)
 {
     json::Value j;
     json::Reader r;
@@ -991,7 +991,7 @@ TEST(json_value, compact)
     }
 }
 
-TEST(json_value, converts_null)
+TEST(JsonValue, converts_null)
 {
     // null
     json::Value const val;
@@ -1014,7 +1014,7 @@ TEST(json_value, converts_null)
     EXPECT_TRUE(val.isConvertibleTo(json::ValueType::Object));
 }
 
-TEST(json_value, converts_int)
+TEST(JsonValue, converts_int)
 {
     // int
     json::Value const val = -1234;
@@ -1037,7 +1037,7 @@ TEST(json_value, converts_int)
     EXPECT_FALSE(val.isConvertibleTo(json::ValueType::Object));
 }
 
-TEST(json_value, converts_uint)
+TEST(JsonValue, converts_uint)
 {
     // uint
     json::Value const val = 1234U;
@@ -1060,7 +1060,7 @@ TEST(json_value, converts_uint)
     EXPECT_FALSE(val.isConvertibleTo(json::ValueType::Object));
 }
 
-TEST(json_value, converts_real)
+TEST(JsonValue, converts_real)
 {
     // real
     json::Value const val = 2.0;
@@ -1083,7 +1083,7 @@ TEST(json_value, converts_real)
     EXPECT_FALSE(val.isConvertibleTo(json::ValueType::Object));
 }
 
-TEST(json_value, converts_numeric_string)
+TEST(JsonValue, converts_numeric_string)
 {
     // numeric string
     json::Value const val = "54321";
@@ -1106,7 +1106,7 @@ TEST(json_value, converts_numeric_string)
     EXPECT_FALSE(val.isConvertibleTo(json::ValueType::Object));
 }
 
-TEST(json_value, converts_non_numeric_string)
+TEST(JsonValue, converts_non_numeric_string)
 {
     // non-numeric string
     json::Value const val(json::ValueType::String);
@@ -1129,7 +1129,7 @@ TEST(json_value, converts_non_numeric_string)
     EXPECT_FALSE(val.isConvertibleTo(json::ValueType::Object));
 }
 
-TEST(json_value, converts_bool_false)
+TEST(JsonValue, converts_bool_false)
 {
     // bool false
     json::Value const val = false;
@@ -1152,7 +1152,7 @@ TEST(json_value, converts_bool_false)
     EXPECT_FALSE(val.isConvertibleTo(json::ValueType::Object));
 }
 
-TEST(json_value, converts_bool_true)
+TEST(JsonValue, converts_bool_true)
 {
     // bool true
     json::Value const val = true;
@@ -1175,7 +1175,7 @@ TEST(json_value, converts_bool_true)
     EXPECT_FALSE(val.isConvertibleTo(json::ValueType::Object));
 }
 
-TEST(json_value, converts_array_type)
+TEST(JsonValue, converts_array_type)
 {
     // array type
     json::Value const val(json::ValueType::Array);
@@ -1198,7 +1198,7 @@ TEST(json_value, converts_array_type)
     EXPECT_FALSE(val.isConvertibleTo(json::ValueType::Object));
 }
 
-TEST(json_value, converts_object_type)
+TEST(JsonValue, converts_object_type)
 {
     // object type
     json::Value const val(json::ValueType::Object);
@@ -1221,7 +1221,7 @@ TEST(json_value, converts_object_type)
     EXPECT_TRUE(val.isConvertibleTo(json::ValueType::Object));
 }
 
-TEST(json_value, access_members)
+TEST(JsonValue, access_members)
 {
     json::Value val;
     EXPECT_EQ(val.type(), json::ValueType::Null);
@@ -1314,7 +1314,7 @@ TEST(json_value, access_members)
     }
 }
 
-TEST(json_value, remove_members)
+TEST(JsonValue, remove_members)
 {
     json::Value val;
     EXPECT_EQ(val.removeMember(std::string("member")).type(), json::ValueType::Null);
@@ -1341,7 +1341,7 @@ TEST(json_value, remove_members)
     EXPECT_EQ(val.size(), 0);
 }
 
-TEST(json_value, iterator)
+TEST(JsonValue, iterator)
 {
     {
         // Iterating an array.
@@ -1427,7 +1427,7 @@ TEST(json_value, iterator)
     }
 }
 
-TEST(json_value, nest_limits)
+TEST(JsonValue, nest_limits)
 {
     json::Reader r;
     {
@@ -1473,7 +1473,7 @@ TEST(json_value, nest_limits)
     }
 }
 
-TEST(json_value, memory_leak)
+TEST(JsonValue, memory_leak)
 {
     // When run with the address sanitizer, this test confirms there is no
     // memory leak with the scenarios below.

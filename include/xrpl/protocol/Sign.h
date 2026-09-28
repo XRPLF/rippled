@@ -4,12 +4,64 @@
 #include <xrpl/protocol/HashPrefix.h>
 #include <xrpl/protocol/KeyType.h>
 #include <xrpl/protocol/PublicKey.h>
+#include <xrpl/protocol/Rules.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/SecretKey.h>
 #include <xrpl/protocol/Serializer.h>
 
+#include <optional>
+
 namespace xrpl {
+
+/**
+ * The signature slots on a transaction.
+ *
+ * Each role signs different bytes, so a signature cannot be moved from the
+ * role that made it into another role. See signingPrefix.
+ */
+enum class SignatureRole {
+    /**
+     * The transaction's own signature, in sfTxnSignature or sfSigners.
+     */
+    Transaction,
+    /**
+     * The counterparty's signature, in sfCounterpartySignature.
+     */
+    Counterparty,
+    /**
+     * The sponsor's signature, in sfSponsorSignature.
+     */
+    Sponsor
+};
+
+/**
+ * The field that holds this role's signature.
+ *
+ * @return The signature field, or nullptr for SignatureRole::Transaction,
+ * whose signature lives at the top level of the transaction.
+ */
+[[nodiscard]] SField const*
+signatureField(SignatureRole role);
+
+/**
+ * The role that signs into the given field.
+ *
+ * @return The role, or an unseated optional if the field does not hold a
+ * transaction signature.
+ */
+[[nodiscard]] std::optional<SignatureRole>
+signatureRole(SField const& sigField);
+
+/**
+ * The hash prefix that binds a transaction signature to the role that made it.
+ *
+ * @param role The role making the signature.
+ * @param multiSigning Whether the signature is a multi-signature.
+ * @param rules The current ledger rules.
+ */
+[[nodiscard]] HashPrefix
+signingPrefix(SignatureRole role, bool multiSigning, Rules const& rules);
 
 /**
  * Sign an STObject
@@ -49,9 +101,12 @@ verify(
 
 /**
  * Return a Serializer suitable for computing a multisigning TxnSignature.
+ *
+ * @param prefix Prefix to insert before the serialized object. Get it from
+ * signingPrefix, so that the signature is bound to the role making it.
  */
 Serializer
-buildMultiSigningData(STObject const& obj, AccountID const& signingID);
+buildMultiSigningData(STObject const& obj, AccountID const& signingID, HashPrefix prefix);
 
 /**
  * Break the multi-signing hash computation into 2 parts for optimization.
@@ -67,7 +122,7 @@ buildMultiSigningData(STObject const& obj, AccountID const& signingID);
  *     signer's unique data.
  */
 Serializer
-startMultiSigningData(STObject const& obj);
+startMultiSigningData(STObject const& obj, HashPrefix prefix);
 
 inline void
 finishMultiSigningData(AccountID const& signingID, Serializer& s)

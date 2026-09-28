@@ -21,7 +21,7 @@ class NFTokenCancelOfferBuilder;
  * Type: ttNFTOKEN_CANCEL_OFFER (28)
  * Delegable: Delegation::Delegable
  * Amendment: uint256{}
- * Privileges: NoPriv
+ * Privileges: Privilege::NoPriv
  *
  * Immutable wrapper around STTx providing type-safe field access.
  * Use NFTokenCancelOfferBuilder to construct new transactions.

@@ -1,4 +1,5 @@
 #include <test/jtx/Env.h>
+#include <test/jtx/PeerStub.h>
 #include <test/jtx/envconfig.h>
 
 #include <xrpld/app/main/Application.h>
@@ -12,10 +13,8 @@
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/random.h>
 #include <xrpl/beast/net/IPAddress.h>
-#include <xrpl/beast/net/IPEndpoint.h>
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/beast/utility/Journal.h>
-#include <xrpl/json/json_value.h>
 #include <xrpl/protocol/KeyType.h>
 #include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/SecretKey.h>
@@ -27,7 +26,6 @@
 #include <algorithm>
 #include <cassert>
 #include <chrono>
-#include <cstddef>
 #include <cstdint>
 #include <functional>
 #include <iostream>
@@ -67,16 +65,16 @@ static constexpr std::uint32_t kMaxMessages = 200000;
 /**
  * Simulate two entities - peer directly connected to the server
  * (via squelch in PeerSim) and PeerImp (via Overlay)
+ *
+ * `PeerStub` supplies the rest of the `Peer` interface as no-ops.
  */
-class PeerPartial : public Peer
+class PeerPartial : public PeerStub
 {
 public:
-    PeerPartial() : nodePublicKey(derivePublicKey(KeyType::Ed25519, randomSecretKey()))
-    {
-    }
+    using PeerStub::PeerStub;
+    // Keep the base overload visible; the one below would otherwise hide it.
+    using PeerStub::send;
 
-    PublicKey nodePublicKey;
-    ~PeerPartial() override = default;
     virtual void
     onMessage(MessageSPtr const& m, SquelchCB f) = 0;
     virtual void
@@ -85,111 +83,6 @@ public:
     send(protocol::TMSquelch const& squelch)
     {
         onMessage(squelch);
-    }
-
-    // dummy implementation
-    void
-    send(std::shared_ptr<Message> const& m) override
-    {
-    }
-    [[nodiscard]] beast::ip::Endpoint
-    getRemoteAddress() const override
-    {
-        return {};
-    }
-    void
-    charge(resource::Charge const& fee, std::string const& context = {}) override
-    {
-    }
-    [[nodiscard]] bool
-    cluster() const override
-    {
-        return false;
-    }
-    [[nodiscard]] bool
-    isHighLatency() const override
-    {
-        return false;
-    }
-    [[nodiscard]] int
-    getScore(bool) const override
-    {
-        return 0;
-    }
-    [[nodiscard]] PublicKey const&
-    getNodePublic() const override
-    {
-        return nodePublicKey;
-    }
-    json::Value
-    json() override
-    {
-        return {};
-    }
-    [[nodiscard]] bool
-    supportsFeature(ProtocolFeature f) const override
-    {
-        return false;
-    }
-    [[nodiscard]] std::optional<std::size_t>
-    publisherListSequence(PublicKey const&) const override
-    {
-        return {};
-    }
-    void
-    setPublisherListSequence(PublicKey const&, std::size_t const) override
-    {
-    }
-    [[nodiscard]] uint256
-    getClosedLedgerHash() const override
-    {
-        static uint256 const kHash{};
-        return kHash;
-    }
-    [[nodiscard]] bool
-    hasLedger(uint256 const& hash, std::uint32_t seq) const override
-    {
-        return false;
-    }
-    void
-    ledgerRange(std::uint32_t& minSeq, std::uint32_t& maxSeq) const override
-    {
-    }
-    [[nodiscard]] bool
-    hasTxSet(uint256 const& hash) const override
-    {
-        return false;
-    }
-    void
-    cycleStatus() override
-    {
-    }
-    bool
-    hasRange(std::uint32_t uMin, std::uint32_t uMax) override
-    {
-        return false;
-    }
-    [[nodiscard]] bool
-    compressionEnabled() const override
-    {
-        return false;
-    }
-    [[nodiscard]] bool
-    txReduceRelayEnabled() const override
-    {
-        return false;
-    }
-    void
-    sendTxQueue() override
-    {
-    }
-    void
-    addTxQueue(uint256 const&) override
-    {
-    }
-    void
-    removeTxQueue(uint256 const&) override
-    {
     }
 };
 
@@ -466,23 +359,12 @@ class PeerSim : public PeerPartial, public std::enable_shared_from_this<PeerSim>
 {
 public:
     using id_t = Peer::id_t;
-    PeerSim(Overlay& overlay, beast::Journal journal) : overlay_(overlay), squelch_(journal)
+    PeerSim(Overlay& overlay, beast::Journal journal)
+        : PeerPartial(sid++), overlay_(overlay), squelch_(journal)
     {
     }
 
     ~PeerSim() override = default;
-
-    id_t
-    id() const override
-    {
-        return id_;
-    }
-
-    std::string const&
-    fingerprint() const override
-    {
-        return fingerprint_;
-    }
 
     static void
     resetId()
@@ -525,8 +407,6 @@ public:
 
 private:
     inline static id_t sid = 0;
-    std::string fingerprint_;
-    id_t id_{sid++};
     Overlay& overlay_;
     reduce_relay::Squelch<ManualClock> squelch_;
 };

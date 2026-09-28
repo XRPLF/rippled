@@ -623,8 +623,6 @@ public:
     void
     onMessage(std::shared_ptr<protocol::TMHaveTransactionSet> const& m);
     void
-    onMessage(std::shared_ptr<protocol::TMValidatorList> const& m);
-    void
     onMessage(std::shared_ptr<protocol::TMValidatorListCollection> const& m);
     void
     onMessage(std::shared_ptr<protocol::TMValidation> const& m);
@@ -698,18 +696,11 @@ private:
     std::shared_ptr<SHAMap const>
     getTxSet(std::shared_ptr<protocol::TMGetLedger> const& m) const;
 
+protected:
     void
     processLedgerRequest(
         std::shared_ptr<protocol::TMGetLedger> const& m,
         std::vector<SHAMapNodeID> nodeIDs);
-
-protected:
-    // Kept `protected` so test subclasses (see
-    // TMGetObjectByHash_test) can drive the
-    // synchronous processor and the differential-pricing helper without
-    // routing through the JobQueue or going through `friend` plumbing.
-    // Production callers reach these members only via
-    // `onMessage(TMGetObjectByHash)` → JobQueue → `processGetObjectByHash`.
 
     /**
      * Process a generic-query TMGetObjectByHash message.

@@ -26,36 +26,48 @@ parseVault(json::Value const& params, json::Value& jvResult)
     uint256 uNodeIndex = beast::kZero;
     if (hasVaultId && !hasOwner && !hasSeq)
     {
-        if (!uNodeIndex.parseHex(params[jss::vault_id].asString()))
+        // asString() throws on an object or an array, so the type comes first.
+        auto const& vaultId = params[jss::vault_id];
+        if (!vaultId.isString() || !uNodeIndex.parseHex(vaultId.asString()))
         {
-            rpc::injectError(RpcInvalidParams, jvResult);
+            rpc::injectError(
+                RpcInvalidParams, rpc::expectedFieldMessage(jss::vault_id, "hex string"), jvResult);
             return std::nullopt;
         }
         // else uNodeIndex holds the value we need
     }
     else if (!hasVaultId && hasOwner && hasSeq)
     {
-        auto const id = parseBase58<AccountID>(params[jss::owner].asString());
+        auto const& owner = params[jss::owner];
+        auto const id = owner.isString() ? parseBase58<AccountID>(owner.asString())
+                                         : std::optional<AccountID>{};
         if (!id)
         {
-            rpc::injectError(RpcActMalformed, jvResult);
-            return std::nullopt;
-        }
-        if (!(params[jss::seq].isInt() || params[jss::seq].isUInt()) ||
-            params[jss::seq].asDouble() <= 0.0 ||
-            params[jss::seq].asDouble() > double(json::Value::kMaxUInt))
-        {
-            rpc::injectError(RpcInvalidParams, jvResult);
+            rpc::injectError(
+                RpcActMalformed, rpc::expectedFieldMessage(jss::owner, "AccountID"), jvResult);
             return std::nullopt;
         }
 
-        auto const seq = SeqProxy::rawSequence(params[jss::seq].asUInt());
+        // Int and UInt are both 32 bits wide, so the type check is the only upper bound needed.
+        auto const& seqField = params[jss::seq];
+        if (!(seqField.isInt() || seqField.isUInt()) || seqField.asDouble() <= 0.0)
+        {
+            rpc::injectError(
+                RpcInvalidParams,
+                rpc::expectedFieldMessage(jss::seq, "a positive 32-bit integer"),
+                jvResult);
+            return std::nullopt;
+        }
+
+        auto const seq = SeqProxy::rawSequence(seqField.asUInt());
         uNodeIndex = keylet::vault(*id, seq).key;
     }
     else
     {
-        // Invalid combination of fields vault_id/owner/seq
-        rpc::injectError(RpcInvalidParams, jvResult);
+        rpc::injectError(
+            RpcInvalidParams,
+            "Must specify either 'vault_id' or both 'owner' and 'seq'.",
+            jvResult);
         return std::nullopt;
     }
 
@@ -71,20 +83,25 @@ doVaultInfo(rpc::JsonContext& context)
     if (!lpLedger)
         return jvResult;
 
-    auto const uNodeIndex = parseVault(context.params, jvResult).value_or(beast::kZero);
-    if (uNodeIndex == beast::kZero)
+    // No key means the request could not be turned into one, and parseVault has already said why.
+    auto const uNodeIndex = parseVault(context.params, jvResult);
+    if (!uNodeIndex)
+        return jvResult;
+
+    // A zero key names an entry that cannot exist, and the ledger refuses to be asked for one.
+    if (*uNodeIndex == beast::kZero)
     {
-        jvResult[jss::error] = "malformedRequest";
+        rpc::injectError(RpcEntryNotFound, jvResult);
         return jvResult;
     }
 
-    auto const sleVault = lpLedger->read(keylet::vault(uNodeIndex));
+    auto const sleVault = lpLedger->read(keylet::vault(*uNodeIndex));
     auto const sleIssuance = sleVault == nullptr  //
         ? nullptr
         : lpLedger->read(keylet::mptokenIssuance(sleVault->at(sfShareMPTID)));
     if (!sleVault || !sleIssuance)
     {
-        jvResult[jss::error] = "entryNotFound";
+        rpc::injectError(RpcEntryNotFound, jvResult);
         return jvResult;
     }
 

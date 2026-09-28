@@ -376,11 +376,11 @@ public:
     }
 
     void
-    testSingleSigning()
+    testSingleSigning(FeatureBitset features)
     {
         testcase("Single signing");
         using namespace test::jtx;
-        Env env{*this, testableAmendments()};
+        Env env{*this, features};
         Account const alice("alice");
         Account const sponsor("sponsor");
         Account const invalid("invalid");
@@ -415,11 +415,11 @@ public:
     }
 
     void
-    testMultiSigning()
+    testMultiSigning(FeatureBitset features)
     {
         testcase("Multi signing");
         using namespace test::jtx;
-        Env env{*this, testableAmendments()};
+        Env env{*this, features};
         Account const alice("alice");
         Account const bob("bob");
         Account const sponsor("sponsor");
@@ -1073,14 +1073,17 @@ public:
     }
 
     void
-    testTransferSponsor()
+    testTransferSponsor(FeatureBitset features)
     {
-        testcase("Transfer Sponsor");
+        testcase(
+            std::string("Transfer Sponsor ") +
+            (features[fixCleanup3_4_0] ? "(fixCleanup3_4_0 enabled)"
+                                       : "(fixCleanup3_4_0 disabled)"));
         using namespace test::jtx;
 
         // Verify preflight checks
         {
-            Env env{*this, testableAmendments()};
+            Env env{*this, features};
             Account const alice("alice");
             Account const bob("bob");
             Account const sponsor("sponsor");
@@ -1160,11 +1163,30 @@ public:
                     sponsor::SponseeAcc(alice),
                     Ter(temMALFORMED));
             }
+
+            // Post-fixCleanup3_5_0, a zero ObjectID is malformed.
+            // Pre-fixCleanup3_5_0 path is unreachable so it is not testable.
+            if (features[fixCleanup3_5_0])
+            {
+                uint256 const zeroObjectID{};
+
+                env(sponsor::transfer(alice, tfSponsorshipEnd, zeroObjectID), Ter(temMALFORMED));
+
+                env(sponsor::transfer(alice, tfSponsorshipCreate, zeroObjectID),
+                    sponsor::As(sponsor, spfSponsorReserve),
+                    Sig(sfSponsorSignature, sponsor),
+                    Ter(temMALFORMED));
+
+                env(sponsor::transfer(alice, tfSponsorshipReassign, zeroObjectID),
+                    sponsor::As(sponsor, spfSponsorReserve),
+                    Sig(sfSponsorSignature, sponsor),
+                    Ter(temMALFORMED));
+            }
         }
 
         {
             // Invalid SponsorshipEnd permission (sponsor object/sponsor account)
-            Env env{*this, testableAmendments()};
+            Env env{*this, features};
             Account const alice("alice");
             Account const bob("bob");
             Account const charlie("charlie");
@@ -1209,7 +1231,7 @@ public:
 
         {
             // sponsor account
-            Env env{*this, testableAmendments()};
+            Env env{*this, features};
             Account const alice("alice");
             Account const bob("bob");
             Account const sponsor1("sponsor1");
@@ -1340,7 +1362,7 @@ public:
         }
         {
             // dissolve account sponsorship from sponsor
-            Env env{*this, testableAmendments()};
+            Env env{*this, features};
             Account const alice("alice");
             Account const bob("bob");
             Account const sponsor("sponsor");
@@ -1364,7 +1386,7 @@ public:
 
         {
             // sponsor object (co-signing)
-            Env env{*this, testableAmendments()};
+            Env env{*this, features};
             Account const alice("alice");
             Account const bob("bob");
             Account const sponsor1("sponsor1");
@@ -1473,9 +1495,19 @@ public:
             BEAST_EXPECT(sle2->isFieldPresent(sfSponsor));
             BEAST_EXPECT(sle2->getAccountID(sfSponsor) == sponsor2.id());
 
-            // dissolve sponsor: ending an object sponsorship succeeds even
-            // when the sponsee lacks sufficient reserve to reclaim the object.
+            // dissolve sponsor: ending an object sponsorship now (fixCleanup3_4_0) requires the
+            // sponsee to be able to self-fund the object's reserve.
             adjustAccountXRPBalance(env, alice, reserve(env, 1) - drops(1));
+
+            if (features[fixCleanup3_4_0])
+            {
+                // Under-funded: End is rejected until alice can self-fund.
+                env(sponsor::transfer(alice, tfSponsorshipEnd, checkId),
+                    Ter(tecINSUFFICIENT_RESERVE));
+                env.close();
+
+                adjustAccountXRPBalance(env, alice, reserve(env, 1));
+            }
 
             env(sponsor::transfer(alice, tfSponsorshipEnd, checkId));
             env.close();
@@ -1509,7 +1541,7 @@ public:
         }
         {
             // sponsor object (pre-funded + no ltSponsorship entry)
-            Env env{*this, testableAmendments()};
+            Env env{*this, features};
             Account const alice("alice");
             Account const bob("bob");
             Account const sponsor1("sponsor1");
@@ -1543,7 +1575,7 @@ public:
         }
         {
             // sponsor object (pre-funded)
-            Env env{*this, testableAmendments()};
+            Env env{*this, features};
             Account const alice("alice");
             Account const bob("bob");
             Account const sponsor1("sponsor1");
@@ -1646,7 +1678,7 @@ public:
 
         {
             // Dissolve object sponsorship from sponsor(no-ltSponsorship)
-            Env env{*this, testableAmendments()};
+            Env env{*this, features};
             Account const alice("alice");
             Account const bob("bob");
             Account const sponsor("sponsor");
@@ -1686,7 +1718,7 @@ public:
 
         {
             // Dissolve object sponsorship from sponsor (with ltSponsorship)
-            Env env{*this, testableAmendments()};
+            Env env{*this, features};
             Account const alice("alice");
             Account const bob("bob");
             Account const sponsor("sponsor");
@@ -1744,7 +1776,7 @@ public:
 
             for (bool const isIssuerHigh : {false, true})
             {
-                Env env{*this, testableAmendments()};
+                Env env{*this, features};
                 env.fund(XRP(10000), alice, bob, sponsor);
                 env.close();
 
@@ -1788,7 +1820,7 @@ public:
 
         {
             // invalid transfer
-            Env env{*this, testableAmendments()};
+            Env env{*this, features};
             Account const alice("alice");
             Account const bob("bob");
             Account const sponsor("sponsor");
@@ -1825,7 +1857,7 @@ public:
         {
             // existing owner objects that are outside the v1 SponsorshipTransfer
             // object allow-list
-            Env env{*this, testableAmendments()};
+            Env env{*this, features};
             Account const alice("alice");
             Account const sponsor("sponsor");
             env.fund(XRP(10000), alice, sponsor);
@@ -1864,13 +1896,19 @@ public:
 
             PrettyAsset const xrpAsset{xrpIssue(), 1'000'000};
             Vault const vault{env};
-            auto [vaultTx, vaultKeylet] = vault.create({.owner = alice, .asset = xrpAsset});
+            // Under featureLendingProtocolV1_1 LoanBrokerSet::preclaim only
+            // accepts closed-ended vaults; build one and advance past
+            // SubscriptionDate before creating a loan.
+            auto [vaultTx, vaultKeylet, subscriptionDate] =
+                vault.createClosedEnded({.owner = alice, .asset = xrpAsset});
             env(vaultTx);
             env.close();
 
             env(vault.deposit(
                 {.depositor = alice, .id = vaultKeylet.key, .amount = xrpAsset(1000)}));
             env.close();
+
+            vault.closePastSubscription(subscriptionDate);
 
             auto const brokerKeylet =
                 keylet::loanBroker(alice.id(), SeqProxy::rawSequence(env.seq(alice)));
@@ -5448,13 +5486,12 @@ public:
         using namespace test::jtx;
         using namespace std::chrono_literals;
 
-        // Finishing a self-escrow (source == destination) whose trust line
-        // was deleted while the escrow was outstanding auto-creates the line,
-        // and the outcome of that reserve check depends on whether the escrow
-        // reserve is released before delivery (Sponsor) or after (legacy).
-        // With the source's balance in the one-increment window
-        // [reserve(1), reserve(2)), the legacy order requires reserve(2) and
-        // fails, while the Sponsor order requires reserve(1) and succeeds.
+        // Finishing a self-escrow (source == destination) whose trust line was
+        // deleted while the escrow was outstanding auto-creates the line. With
+        // the source's balance in the one-increment window
+        // [reserve(1), reserve(2)), the finish succeeds only when the escrow
+        // reserve is released before delivery, which either featureSponsor or
+        // fixCleanup3_4_0 does.
         auto runTest = [&](FeatureBitset features, TER expected) {
             Account const alice("alice");
             Account const gw("gw");
@@ -5519,11 +5556,9 @@ public:
             }
         };
 
-        // Pre-amendment: legacy order — the escrow still counts against the
-        // reserve while the auto-created line is checked.
-        runTest(testableAmendments() - featureSponsor, tecNO_LINE_INSUF_RESERVE);
-
-        // Post-amendment: the escrow reserve is recycled into the new line.
+        runTest(testableAmendments() - featureSponsor - fixCleanup3_4_0, tecNO_LINE_INSUF_RESERVE);
+        runTest(testableAmendments() - featureSponsor, tesSUCCESS);
+        runTest(testableAmendments() - fixCleanup3_4_0, tesSUCCESS);
         runTest(testableAmendments(), tesSUCCESS);
     }
 
@@ -5566,9 +5601,9 @@ public:
             Ter(tesSUCCESS));
         env.close();
 
-        // The same helper (deltaAssetsTxAccount) drives the withdraw path, so a
-        // fee-sponsored withdrawal back to the depositor's own account also
-        // passes on the destination side.
+        // The same fee-correction logic (ValidVault::deltaAssetsForParty)
+        // drives the withdraw path, so a fee-sponsored withdrawal back to
+        // the depositor's own account also passes on the destination side.
         env(vault.withdraw({.depositor = alice, .id = vaultKeylet.key, .amount = xrpAsset(50)}),
             Fee(XRP(1)),
             sponsor::As(sponsor, spfSponsorFee),
@@ -5659,8 +5694,12 @@ protected:
         testInvalidSponsorshipSet();
         testPseudoAccountSponsorship();
 
-        testSingleSigning();
-        testMultiSigning();
+        // The signing prefix of an alternate signature field changes with
+        // fixCleanup3_4_0, so sign and verify under both rule sets.
+        testSingleSigning(jtx::testableAmendments());
+        testSingleSigning(jtx::testableAmendments() - fixCleanup3_4_0);
+        testMultiSigning(jtx::testableAmendments());
+        testMultiSigning(jtx::testableAmendments() - fixCleanup3_4_0);
 
         testInvalidSponsorField();
 
@@ -5671,7 +5710,8 @@ protected:
         testPreFundAndCosign();
         testSponsoredFreeTierReserve();
 
-        testTransferSponsor();
+        testTransferSponsor(jtx::testableAmendments());
+        testTransferSponsor(jtx::testableAmendments() - fixCleanup3_4_0);
         testLegacySignerListReserve();
         testSponsorFee();
         testSponsorAccount();

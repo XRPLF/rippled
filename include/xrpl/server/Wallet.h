@@ -10,6 +10,10 @@
 #include <xrpl/rdb/DatabaseCon.h>
 #include <xrpl/server/Manifest.h>
 
+// boost::optional (not std::optional) appears in the declarations below,
+// because SOCI's into()/use() bindings only support boost::optional.
+#include <boost/optional/optional.hpp>
+
 #include <functional>
 #include <memory>
 #include <string>
