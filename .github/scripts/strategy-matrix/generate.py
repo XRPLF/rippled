@@ -52,18 +52,25 @@ def get_cmake_args(build_type: str, extra_args: str) -> str:
     return " ".join(args)
 
 
+# The three matrix tiers, in nesting order: a config with an earlier event
+# also appears in every later event's matrix.
+_EVENTS = ("pull_request", "ready_to_merge", "schedule")
+
+
+def _event_index(event: str) -> int:
+    """The position of 'event' in the nesting order, smallest matrix first."""
+    return _EVENTS.index(event)
+
+
 # ---------------------------------------------------------------------------
 # Input types — shapes of the JSON config files
 # ---------------------------------------------------------------------------
 
 
-# Every config must declare 'minimal'. Minimal configs form the reduced matrix
-# built for pull requests by default; the full matrix adds the rest.
-#
-# A Linux config may instead declare 'extended'. Neither the minimal nor the full
-# matrix includes such a config; only the extended matrix does, which the nightly
-# schedule and a manual run ask for. Use it for a config too expensive to run per
-# pull request. It is Linux only because nothing else needs it yet.
+# Every config must declare 'event': the earliest of 'pull_request',
+# 'ready_to_merge', or 'schedule' that builds it. Each later event's matrix
+# includes every config an earlier one does, and adds more. Use 'schedule' for
+# a Linux config too expensive to run per pull request; only Linux has one yet.
 #
 # Configs may also opt into 'benchmark' to smoke-run the benchmarks, or carry a
 # 'package' map to be packaged as well. Note that either applies to every entry
@@ -98,8 +105,7 @@ class LinuxConfig:
     compiler: list[str]
     build_type: list[str]
     arch: list[str]
-    minimal: bool
-    extended: bool = False
+    event: str
     benchmark: bool = False  # if true, smoke-run the benchmarks after testing
     sanitizers: list[str] = dataclasses.field(default_factory=list)
     suffix: str = ""
@@ -109,13 +115,9 @@ class LinuxConfig:
     def __post_init__(self) -> None:
         if isinstance(self.package, dict):
             self.package = PackageConfig(**self.package)
-        # The two flags pull in opposite directions: 'minimal' asks for the
-        # smallest matrix, 'extended' for the largest. The filtering would drop
-        # such a config from the minimal matrix, which reads as the opposite of
-        # what it declared, so reject the pair instead.
-        assert not (
-            self.minimal and self.extended
-        ), "a config cannot be both 'minimal' and 'extended'."
+        assert (
+            self.event in _EVENTS
+        ), f"unsupported event {self.event!r}: use one of {', '.join(_EVENTS)}."
 
 
 @dataclasses.dataclass
@@ -142,7 +144,7 @@ class PlatformConfig:
     """One entry in macos.json's or windows.json's 'configs' array."""
 
     build_type: list[str]
-    minimal: bool
+    event: str
     build_only: bool = False  # if true, skip tests (e.g. macos/Windows Debug)
     benchmark: bool = False  # if true, smoke-run the benchmarks after testing
     extra_cmake_args: str = ""
@@ -153,6 +155,11 @@ class PlatformConfig:
     def __post_init__(self) -> None:
         if isinstance(self.build_type, str):
             self.build_type = [self.build_type]
+        # Neither platform has a config expensive enough to reserve for the
+        # nightly/manual 'schedule' tier.
+        assert (
+            self.event in _EVENTS[:2]
+        ), f"unsupported event {self.event!r}: use one of {', '.join(_EVENTS[:2])}."
 
 
 @dataclasses.dataclass
@@ -233,15 +240,9 @@ def expand_linux_config(
 ) -> list[MatrixEntry]:
     """Expand one Linux config over the cross-product of its lists.
 
-    Kept apart from the size filtering in expand_linux_matrix so that
+    Kept apart from the event filtering in expand_linux_matrix so that
     validate_linux_matrices can ask what a single config expands to without
     repeating the cross-product.
-
-    @param distro The distro key the config is listed under in linux.json.
-    @param cfg The config to expand.
-    @param image_tag The tag of the nix image the entries build in.
-    @return One entry per (compiler, build type, sanitizer, architecture)
-        combination the config's lists produce.
     """
     # An empty sanitizers list means "one entry with no sanitizer".
     effective_sanitizers = cfg.sanitizers or [""]
@@ -271,30 +272,18 @@ def expand_linux_config(
     ]
 
 
-def expand_linux_matrix(
-    linux: LinuxFile, minimal: bool, extended: bool = False
-) -> list[MatrixEntry]:
-    """Expand a LinuxFile into a flat list of matrix entries.
+def expand_linux_matrix(linux: LinuxFile, event: str) -> list[MatrixEntry]:
+    """Expand a LinuxFile into the flat matrix 'event' builds.
 
-    Each config entry is expanded over the cross-product of its
-    compiler, build_type, sanitizers, and architecture lists. When 'minimal' is
-    true, only configs flagged as minimal are included.
-
-    @param linux The parsed linux.json.
-    @param minimal Emit only the configs flagged 'minimal'.
-    @param extended Emit the configs flagged 'extended'. Both the minimal and
-        the full matrix leave those out, so this is the only way to get them.
-    @return One entry per combination the surviving configs expand into.
-    @note Do not set both 'minimal' and 'extended'. The command line rejects the
-        pair, but a direct caller gets the minimal matrix rather than an error.
+    Each config entry is expanded over the cross-product of its compiler,
+    build_type, sanitizers, and architecture lists. A config is included when
+    its own event is no later than 'event', per the nesting order in _EVENTS.
     """
     entries: list[MatrixEntry] = []
 
     for distro, configs in linux.configs.items():
         for cfg in configs:
-            if minimal and not cfg.minimal:
-                continue
-            if not extended and cfg.extended:
+            if _event_index(cfg.event) > _event_index(event):
                 continue
             entries += expand_linux_config(distro, cfg, linux.image_tag)
 
@@ -302,23 +291,18 @@ def expand_linux_matrix(
 
 
 def validate_linux_matrices(linux: LinuxFile) -> None:
-    """Check that the three matrix sizes nest, and hold the configs they should.
+    """Check that the three event matrices nest, and hold the configs they should.
 
     CI runs only the jobs this script emits, so a config that falls out of the
-    size it belongs to takes its coverage with it and fails nothing. These checks
-    run on every invocation, so the drop fails matrix generation instead.
+    event it belongs to takes its coverage with it and fails nothing. These
+    checks run on every invocation, so the drop fails matrix generation instead.
 
-    The checks name no config, only the flags, so adding or removing a config
+    The checks name no config, only the events, so adding or removing a config
     needs no edit here.
-
-    @param linux The parsed linux.json.
-    @raise AssertionError If two configs expand to the same name, if the sizes do
-        not nest, or if a config reaches a size it does not belong to.
     """
-    minimal_names = {e.config_name for e in expand_linux_matrix(linux, minimal=True)}
-    full_names = {e.config_name for e in expand_linux_matrix(linux, minimal=False)}
-    extended_names = {
-        e.config_name for e in expand_linux_matrix(linux, minimal=False, extended=True)
+    names_by_event = {
+        event: {e.config_name for e in expand_linux_matrix(linux, event)}
+        for event in _EVENTS
     }
 
     # The names each config expands to, paired with the config, so that the
@@ -340,47 +324,33 @@ def validate_linux_matrices(linux: LinuxFile) -> None:
     duplicates = sorted({n for n in all_names if all_names.count(n) > 1})
     assert not duplicates, f"configs expand to duplicate names: {duplicates}."
 
-    # The sizes nest, so a larger one only ever adds. Were 'extended' to replace
-    # the full matrix rather than widen it, the nightly would test less than a
-    # labeled pull request does, which is the opposite of the intent.
-    assert minimal_names <= full_names, (
-        "the minimal matrix is not part of the full one, missing: "
-        f"{sorted(minimal_names - full_names)}."
-    )
-    assert full_names <= extended_names, (
-        "the full matrix is not part of the extended one, missing: "
-        f"{sorted(full_names - extended_names)}."
-    )
+    # A later event's matrix only ever adds to an earlier one's.
+    for earlier, later in zip(_EVENTS, _EVENTS[1:]):
+        assert names_by_event[earlier] <= names_by_event[later], (
+            f"the {earlier} matrix is not part of the {later} one, missing: "
+            f"{sorted(names_by_event[earlier] - names_by_event[later])}."
+        )
 
-    # Every config reaches the sizes its flags ask for, and no others.
+    # Every config reaches the events its own event asks for, and no earlier one.
     for distro, cfg, names in per_config:
-        if cfg.extended:
-            assert names <= extended_names, (
-                f"{distro} config flagged 'extended' is missing from the "
-                f"extended matrix: {sorted(names - extended_names)}."
+        for event in _EVENTS[_event_index(cfg.event) :]:
+            assert names <= names_by_event[event], (
+                f"{distro} config declaring {cfg.event!r} is missing from the "
+                f"{event} matrix: {sorted(names - names_by_event[event])}."
             )
-            assert not names & full_names, (
-                f"{distro} config flagged 'extended' also reaches the full "
-                f"matrix: {sorted(names & full_names)}."
-            )
-        else:
-            assert names <= full_names, (
-                f"{distro} config is missing from the full matrix: "
-                f"{sorted(names - full_names)}."
-            )
-        if cfg.minimal:
-            assert names <= minimal_names, (
-                f"{distro} config flagged 'minimal' is missing from the "
-                f"minimal matrix: {sorted(names - minimal_names)}."
+        for event in _EVENTS[: _event_index(cfg.event)]:
+            assert not names & names_by_event[event], (
+                f"{distro} config declaring {cfg.event!r} also reaches the "
+                f"{event} matrix: {sorted(names & names_by_event[event])}."
             )
 
-    # The 'extended' tier costs a flag here, a condition in
+    # The 'schedule' tier costs a branch here, a condition in
     # reusable-strategy-matrix.yml, and the check after it. An empty tier leaves
     # all three as dead weight that still reads as working, so require a holder.
     # Checked last, because the checks above name the config that went missing.
-    assert extended_names > full_names, (
-        "no config is flagged 'extended', so the extended matrix is the full one. "
-        "Either flag the config that needs the tier, or remove the tier."
+    assert names_by_event["schedule"] > names_by_event["ready_to_merge"], (
+        "no config declares 'schedule', so its matrix is the ready_to_merge one. "
+        "Either give the config that needs the tier that event, or remove the tier."
     )
 
 
@@ -438,17 +408,14 @@ def package_names_by_type(entries: list[PackagingEntry]) -> dict[str, list[str]]
     }
 
 
-def expand_platform_matrix(pf: PlatformFile, minimal: bool) -> list[MatrixEntry]:
-    """Expand a PlatformFile (macOS or Windows) into matrix entries.
-
-    When 'minimal' is true, only configs flagged as minimal are included.
-    """
+def expand_platform_matrix(pf: PlatformFile, event: str) -> list[MatrixEntry]:
+    """Expand a PlatformFile (macOS or Windows) into the matrix 'event' builds."""
     platform_name, arch = pf.platform.split("/")
     is_windows = platform_name == "windows"
 
     entries: list[MatrixEntry] = []
     for cfg in pf.configs:
-        if minimal and not cfg.minimal:
+        if _event_index(cfg.event) > _event_index(event):
             continue
         for build_type in cfg.build_type:
             name = f"{platform_name}-{arch}-{build_type.lower()}"
@@ -492,26 +459,15 @@ if __name__ == "__main__":
         help="Emit the Linux packaging matrix instead of the build/test matrix.",
         action="store_true",
     )
-    # Each flag picks a matrix size, and the sizes nest: minimal is a subset of
-    # the full matrix, which is a subset of extended. So one flag narrows and the
-    # other widens the same default, and asking for both has no answer. Argparse
-    # rejects the pair rather than letting the filters intersect into a surprise.
-    size = parser.add_mutually_exclusive_group()
-    size.add_argument(
-        "-m",
-        "--minimal",
-        help="Emit only the minimal matrix (the configs flagged 'minimal'), "
-        "used for pull requests by default. If omitted, the full matrix is "
-        "emitted.",
-        action="store_true",
-    )
-    size.add_argument(
-        "-x",
-        "--extended",
-        help="Emit the extended matrix: the full one plus the configs flagged "
-        "'extended', which no other matrix includes. Used for the nightly "
-        "schedule and for a manual run.",
-        action="store_true",
+    parser.add_argument(
+        "-e",
+        "--event",
+        help="The event driving generation, which picks the matrix: "
+        "'pull_request' emits the smallest, 'ready_to_merge' (the default) "
+        "widens it for a labeled pull request, and 'schedule' widens it "
+        "further for the nightly run and a manual dispatch.",
+        choices=_EVENTS,
+        default="ready_to_merge",
     )
     args = parser.parse_args()
 
@@ -530,14 +486,14 @@ if __name__ == "__main__":
             print(f"{package_type}_package_names={json.dumps(names)}")
     else:
         if args.config in ("linux", None):
-            matrix += expand_linux_matrix(linux, args.minimal, args.extended)
+            matrix += expand_linux_matrix(linux, args.event)
         if args.config in ("macos", None):
             matrix += expand_platform_matrix(
-                PlatformFile.load(THIS_DIR / "macos.json"), args.minimal
+                PlatformFile.load(THIS_DIR / "macos.json"), args.event
             )
         if args.config in ("windows", None):
             matrix += expand_platform_matrix(
-                PlatformFile.load(THIS_DIR / "windows.json"), args.minimal
+                PlatformFile.load(THIS_DIR / "windows.json"), args.event
             )
 
     print(f"matrix={json.dumps({'include': [dataclasses.asdict(e) for e in matrix]})}")

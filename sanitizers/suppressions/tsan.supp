@@ -54,27 +54,17 @@ race:pipe
 
 # Deadlock / lock-order-inversion suppressions: deliberately none.
 #
-# The TSan job exists to find lock-order inversions, and it cannot fail a build,
-# so a suppression here costs a finding and buys nothing. Ten used to sit below:
+# The TSan job exists to find lock-order inversions and cannot fail a build, so
+# a suppression here costs a finding and buys nothing. Ten used to sit below,
+# naming either a locking primitive (turning off checking for every lock of that
+# kind in the tree, not just the one call site) or a source file. Removing the
+# Manifest.cpp one surfaced a real deadlock 52 times in one run: ManifestCache::
+# save() calls the caller's predicate while holding its own lock, and the
+# validator list takes the same pair the other way.
 #
-#   - pthread_create, pthread_rwlock_rdlock and boost::asio, which name locking
-#     primitives rather than source files. Each of those turns lock-order
-#     checking off for every lock of that kind in the tree, which for
-#     pthread_rwlock_rdlock is every std::shared_mutex read lock, and between
-#     them they covered any inversion reached through a strand or a thread start.
-#   - ValidatorList.cpp and ValidatorSite.cpp.
-#   - beast_Journal.cpp, beast_PropertyStream.cpp, the PropertyStream test,
-#     Workers.cpp and Manifest.cpp.
-#
-# Manifest.cpp was the expensive one. ManifestCache::save() invokes the caller's
-# predicate while holding its own lock, and the validator list takes the pair the
-# other way, so the two deadlock. Removing that one line surfaced the cycle 52
-# times in a single run, on the shutdown path.
-#
-# If one has to come back, it must name a source file, and check that the file is
-# where the pattern says: a suppression naming a moved file protects nothing.
-# Note also that GCC's TSAN may not fully support all deadlock suppression
-# patterns.
+# If one has to come back, it must name a source file that still exists at that
+# path, because a suppression naming a moved file protects nothing. GCC's TSan
+# may not fully honor deadlock suppression patterns.
 
 signal:src/libxrpl/beast/utility/beast_Journal.cpp
 signal:src/libxrpl/core/detail/Workers.cpp

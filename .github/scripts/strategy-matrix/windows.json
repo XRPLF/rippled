@@ -2,11 +2,11 @@
   "platform": "windows/amd64",
   "runner": ["self-hosted", "Windows", "dev-box-windows-2026"],
   "configs": [
-    { "build_type": "Release", "minimal": true },
+    { "build_type": "Release", "event": "pull_request" },
     {
       "build_type": "Debug",
       "build_only": true,
-      "minimal": false
+      "event": "ready_to_merge"
     }
   ]
 }
