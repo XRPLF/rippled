@@ -43,6 +43,7 @@
 #include <sstream>
 #include <stdexcept>
 #include <string>
+#include <string_view>
 #include <system_error>
 #include <thread>
 #include <type_traits>
@@ -319,59 +320,68 @@ Config::setup(std::string const& strConf, bool bQuiet, bool bSilent, bool bStand
     }
     else
     {
-        do
+        // A config directory to search, paired with the data directory that
+        // goes with it.
+        struct Candidate
         {
-            // Check if either of the config files exist in the current working
-            // directory, in which case the databases will be stored in a
-            // subdirectory.
-            configDir = std::filesystem::current_path();
-            dataDir = configDir / kDatabaseDirName;
-            configFile_ = configDir / kConfigFileName;
-            if (std::filesystem::exists(configFile_))
-                break;
-            configFile_ = configDir / kConfigLegacyName;
-            if (std::filesystem::exists(configFile_))
-                break;
+            std::filesystem::path configDir;
+            std::filesystem::path dataDir;
+        };
 
-            // Check if the home directory is set, and optionally the XDG config
-            // and/or data directories, as the config may be there. See
-            // http://standards.freedesktop.org/basedir-spec/basedir-spec-latest.html.
-            auto const strHome = getEnvVar("HOME");
-            if (!strHome.empty())
+        // The candidates to search, in order. There are at most three.
+        std::vector<Candidate> candidates;
+        candidates.reserve(3);
+
+        // The current working directory, with the databases in a subdirectory.
+        auto const cwd = std::filesystem::current_path();
+        candidates.emplace_back(cwd, cwd / kDatabaseDirName);
+
+        // The XDG config and data directories, which only apply when the home
+        // directory is set. See
+        // http://standards.freedesktop.org/basedir-spec/basedir-spec-latest.html.
+        if (auto const strHome = getEnvVar("HOME"); !strHome.empty())
+        {
+            auto strXdgConfigHome = getEnvVar("XDG_CONFIG_HOME");
+            if (strXdgConfigHome.empty())
             {
-                auto strXdgConfigHome = getEnvVar("XDG_CONFIG_HOME");
-                auto strXdgDataHome = getEnvVar("XDG_DATA_HOME");
-                if (strXdgConfigHome.empty())
-                {
-                    // $XDG_CONFIG_HOME was not set, use default based on $HOME.
-                    strXdgConfigHome = strHome + "/.config";
-                }
-                if (strXdgDataHome.empty())
-                {
-                    // $XDG_DATA_HOME was not set, use default based on $HOME.
-                    strXdgDataHome = strHome + "/.local/share";
-                }
+                // $XDG_CONFIG_HOME was not set, use default based on $HOME.
+                strXdgConfigHome = strHome + "/.config";
+            }
+            auto strXdgDataHome = getEnvVar("XDG_DATA_HOME");
+            if (strXdgDataHome.empty())
+            {
+                // $XDG_DATA_HOME was not set, use default based on $HOME.
+                strXdgDataHome = strHome + "/.local/share";
+            }
+            candidates.emplace_back(
+                strXdgConfigHome + "/" + systemName(), strXdgDataHome + "/" + systemName());
+        }
 
-                // Check if either of the config files exist in the XDG config
-                // dir.
-                dataDir = strXdgDataHome + "/" + systemName();
-                configDir = strXdgConfigHome + "/" + systemName();
-                configFile_ = configDir / kConfigFileName;
+        // The system config directory, as a last resort.
+        candidates.emplace_back("/etc/" + systemName(), "/var/lib/" + systemName());
+
+        // Take the first candidate directory holding a config file under either
+        // name. When none of them does, configFile_ keeps the last name tried,
+        // while configDir and dataDir keep the values of the last candidate.
+        for (auto const& candidate : candidates)
+        {
+            configDir = candidate.configDir;
+            dataDir = candidate.dataDir;
+
+            bool found = false;
+            for (std::string_view const fileName : {kConfigFileName, kConfigLegacyName})
+            {
+                configFile_ = configDir / fileName;
                 if (std::filesystem::exists(configFile_))
+                {
+                    found = true;
                     break;
-                configFile_ = configDir / kConfigLegacyName;
-                if (std::filesystem::exists(configFile_))
-                    break;
+                }
             }
 
-            // As a last resort, check the system config directory.
-            dataDir = "/var/lib/" + systemName();
-            configDir = "/etc/" + systemName();
-            configFile_ = configDir / kConfigFileName;
-            if (std::filesystem::exists(configFile_))
+            if (found)
                 break;
-            configFile_ = configDir / kConfigLegacyName;
-        } while (false);
+        }
     }
 
     // Update default values
