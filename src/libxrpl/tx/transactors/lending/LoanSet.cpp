@@ -846,9 +846,6 @@ LoanSet::preclaim(PreclaimContext const& ctx)
         static_assert(kMaxTime == 4'294'967'295);
 
         auto const timeAvailable = kMaxTime - startDate;
-
-        auto const interval = ctx.tx.at(~sfPaymentInterval).value_or(kDefaultPaymentInterval);
-        auto const total = ctx.tx.at(~sfPaymentTotal).value_or(kDefaultPaymentTotal);
         auto const grace = ctx.tx.at(~sfGracePeriod).value_or(kDefaultGracePeriod);
 
         // The grace period can't be larger than the interval. Check it first,
