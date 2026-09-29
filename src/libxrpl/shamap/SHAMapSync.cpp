@@ -698,7 +698,7 @@ SHAMap::addKnownNode(
             JLOG(journal_.warn()) << "Node " << nodeID << " makes the map invalid at "
                                   << currNodeID;
             setInvalid();
-            return SHAMapAddNode::invalid();
+            return SHAMapAddNode::mapInvalidated();
         }
 
         // The data hashes to the child at currNodeID but claims to belong at nodeID, so it is not

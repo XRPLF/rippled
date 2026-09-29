@@ -411,7 +411,7 @@ public:
      *
      * A node that no valid tree can hold makes the map Invalid, which is
      * terminal: the root hash committed to an impossible shape, so no peer
-     * can satisfy it.
+     * can satisfy it. An acquisition reaching this verdict gives up.
      *
      * @param nodeID The position in the tree where this node belongs.
      * @param treeNode A deserialized tree node to add.
