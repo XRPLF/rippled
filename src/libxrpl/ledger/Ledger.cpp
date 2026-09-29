@@ -297,7 +297,8 @@ Ledger::Ledger(Ledger const& prevLedger, NetClock::time_point closeTime)
 }
 
 Ledger::Ledger(LedgerHeader const& info, Rules rules, Family& family)
-    : immutable_(true)
+    : immutable_(false)
+    , mapHashesFromHeader_(true)
     , txMap_(SHAMapType::TRANSACTION, info.txHash, family)
     , stateMap_(SHAMapType::STATE, info.accountHash, family)
     , rules_(std::move(rules))
@@ -329,31 +330,29 @@ Ledger::Ledger(
 bool
 Ledger::setImmutable(bool rehash)
 {
-    // A map found structurally invalid during sync must never be made immutable: isValid() tests
-    // only for Invalid, and an immutable ledger is treated as persistable. Asked before anything is
-    // written, so a refusal leaves the header exactly as it was rather than half relabeled.
+    // An immutable ledger is treated as persistable, so an invalid map must never become
+    // immutable. The validity test runs before anything is written, so a refusal leaves
+    // the header as it was.
     if (!mapsValid())
         return false;
 
-    // Read here but written to the header below, once the maps are settled: getHash() can unshare a
-    // dirty tree, so it has to run while the map is still mutable, while a write to the header must
-    // wait until both maps have made it. Skipped once the ledger is immutable, since its maps can
-    // no longer change.
-    bool const deriveMapHashes = !immutable_ && rehash;
+    // Read now but written to the header below: getHash() can unshare a dirty tree, so it must run
+    // while the map is still mutable, while the header may only be written once both maps are
+    // settled. Skipped when the ledger is already immutable or when the header supplied these.
+    bool const deriveMapHashes = !immutable_ && !mapHashesFromHeader_ && rehash;
     UInt256 const txHash = deriveMapHashes ? txMap_.getHash().asUInt256() : UInt256{};
     UInt256 const accountHash = deriveMapHashes ? stateMap_.getHash().asUInt256() : UInt256{};
 
-    // Both were valid at the check above, but a concurrent walk can invalidate one in between (see
-    // SHAMap::state_), so the result is checked. setInvalid() outranks Immutable and can land
-    // after both maps have been settled, so this narrows the window it guards.
+    // A concurrent walk can invalidate a map between the check above and here (see
+    // SHAMap::state_), so the result is checked. That narrows the window rather than closing it,
+    // since setInvalid() outranks Immutable.
     bool const bothImmutable = setMapsImmutable();
     SOMETIMES(!bothImmutable, "xrpl::Ledger::setImmutable : map invalidated while going immutable");
     if (!bothImmutable)
-        return false;
+        return false;  // LCOV_EXCL_LINE: only the walk named above reaches this, so no test does
 
-    // Written only now, so losing the race above leaves the header describing what the ledger was
-    // built from rather than a map that has since been abandoned. Forced rather than conditional,
-    // since this is the only place the hash transitions to valid.
+    // Written only now, so failing the check above leaves the header describing what the ledger was
+    // built from. Forced, since this is the only place the hash transitions to valid.
     if (deriveMapHashes)
     {
         header_.txHash = txHash;

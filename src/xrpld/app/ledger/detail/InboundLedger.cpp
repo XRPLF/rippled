@@ -506,9 +506,11 @@ InboundLedger::done()
 
     // mtx_ is held, so this may only post the work rather than do it.
     app_.getJobQueue().addJob(JtLedgerData, "AcqDone", [self = shared_from_this()]() {
-        if (self->complete_ && !self->failed_)
+        // Read through getLedger(), which consults failed_ itself, so failure and a null ledger_
+        // are both refused by one check. checkAccept() requires a non-null ledger.
+        if (auto const ledger = self->getLedger(); self->complete_ && ledger)
         {
-            self->app_.getLedgerMaster().checkAccept(self->getLedger());
+            self->app_.getLedgerMaster().checkAccept(ledger);
             self->app_.getLedgerMaster().tryAdvance();
         }
         else
