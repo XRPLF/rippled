@@ -375,11 +375,12 @@ struct MPTConvertBack
  * @brief Arguments for building a ConfidentialMPTHolderKeyUpdate test transaction.
  *
  * Select the mode via flags = tfHolderKeyRotation, flags = tfHolderKeyRecovery,
- * or flags = tfCancelRecovery. In Rotation mode, spendingCiphertext/inboxCiphertext
- * are auto-filled by decrypting the account's current balances (with its
- * currently-registered private key) and re-encrypting them under holderPubKey,
- * unless overridden. In Cancel mode, none of holderPubKey/ciphertexts/proof are
- * auto-filled; set them explicitly to exercise malformed-transaction tests.
+ * or flags = tfCancelRecovery. holderPubKey, ciphertexts,
+ * and proof are serialized only if explicitly set. To exercise a working
+ * Rotation-mode call, callers must decrypt the account's current balances
+ * themselves (e.g. via decryptAmount) and pass the re-encrypted ciphertexts
+ * (via encryptAmount) explicitly - see testConfidentialMPTHolderKeyUpdateDoApply
+ * for the pattern.
  */
 struct MPTHolderKeyUpdate
 {
