@@ -525,15 +525,15 @@ TEST_F(SHAMapSyncTest, full_below_entry_does_not_answer_at_another_position)
     auto const chain = DeepChain::toLeaf(2);
     auto const subtree = chain.nodeAt(1);
 
-    auto const realBranch = selectBranch(SHAMapNodeID{}, chain.pathKey);
+    auto const realBranch = selectBranch(0u, chain.pathKey);
     auto const otherBranch = (realBranch + 1) % SHAMap::kBranchFactor;
 
-    // The entry an earlier walk of that chain would have left behind: complete, at its own
-    // position.
+    // A walk of that chain would record this same entry. The subtree is complete, and the entry
+    // sits at the subtree's own position.
     f.getFullBelowCache()->insert(subtree->getHash().asUInt256(), chain.idAt(1));
 
     // A root recording the same subtree one branch over. Nothing in the subtree's hash contradicts
-    // that placement, which is why the lookup is the only thing standing between the two.
+    // that placement.
     auto const rootAtOtherBranch =
         makeCompressedInnerNode({{.branch = otherBranch, .hash = subtree->getHash()}});
     ASSERT_TRUE(rootAtOtherBranch != nullptr);

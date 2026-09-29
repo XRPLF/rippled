@@ -31,25 +31,6 @@
 
 namespace xrpl {
 
-namespace {
-
-/**
- * Whether a depth is at or past the deepest an inner node may occupy.
- *
- * Nibbles run out at SHAMap::kLeafDepth, so only a leaf may sit there. True for
- * every deeper position too, which lies past the end of a key.
- *
- * @param depth The depth to judge.
- * @return Whether an inner node at that depth makes the map impossible.
- */
-[[nodiscard]] bool
-isLeafDepth(unsigned int depth)
-{
-    return depth >= SHAMap::kLeafDepth;
-}
-
-}  // namespace
-
 void
 SHAMap::visitLeaves(
     std::function<void(boost::intrusive_ptr<SHAMapItem const> const& item)> const& leafFunction)
@@ -162,13 +143,10 @@ SHAMap::visitDifferences(
         if (!function(*node))
             return;
 
-        // Nibbles run out at kLeafDepth, so only a leaf belongs there. addKnownNode marks the map
-        // invalid on meeting an inner node at that depth, and fetch-pack data is hash-verified
-        // against a validated root, so reaching this means a defect or a corrupt store. The
-        // node is still reported, since the wire form carries no depth and the recipient hooks
-        // blobs in by hash. Its children are skipped, since getChildNodeID has no answer past
-        // kLeafDepth.
-        if (nodeID.getDepth() >= kLeafDepth)
+        // Only a leaf belongs at kLeafDepth. The node is still reported, since the wire form
+        // carries no depth and the recipient hooks blobs by hash. Its children are skipped, since
+        // getChildNodeID has no answer past kLeafDepth.
+        if (isLeafDepth(nodeID.getDepth()))
         {
             // LCOV_EXCL_START
             UNREACHABLE("xrpl::SHAMap::visitDifferences : inner node at leaf depth");
@@ -262,41 +240,22 @@ SHAMap::gmnProcessNodes(MissingNodes& mn, MissingNodes::StackEntry& se)
                 if (--mn.max <= 0)
                     return;
             }
-            // Only a leaf has a position of its own to judge, so the type is tested first: that
-            // also keeps the position test off every inner child on the walk. The depth conjunct
-            // bounds the branch this arm names rather than the descent, since a position at
-            // kLeafDepth has no nibble left to name one. The arm below bounds the descent.
+            // Only a leaf has a position of its own to judge, so the type is tested first. The
+            // depth test bounds the branch this arm names, and the arm below bounds the descent.
             else if (
-                d->isLeaf() && nodeID.getDepth() < kLeafDepth && !belongsAt(nodeID, branch, *d))
+                d->isLeaf() && !isLeafDepth(nodeID.getDepth()) && !belongsAt(nodeID, branch, *d))
             {
-                // The same judgment SHAMap::descend makes, for the path that consults the filter
-                // through descendAsync. descendAsync hooks what it resolves, so the node is
-                // already part of the tree and the verdict lands on the map.
-                //
-                // Reached only for a child the full-below lookup above did not answer for. That
-                // key carries the child's own node ID, so a hit answers for one position, and this
-                // test judges every child the walk does descend to. Each does its own job: the
-                // lookup decides which children the walk visits, and this decides whether a
-                // visited leaf belongs where the branches above it put it.
-                //
-                // `fullBelow` is cleared to match the missing-node path above, so the two paths
-                // leave the flag in the same state. getMissingNodes leaves its walk as soon as
-                // this verdict lands.
-                JLOG(journal_.warn()) << "Leaf " << childHash << " does not belong below " << nodeID
-                                      << " at branch " << branch << ", map is invalid";
+                // The judgment SHAMap::descend makes, for the descendAsync path, which hooks what
+                // it resolves before this runs. `fullBelow` is cleared as on the missing path.
                 fullBelow = false;
-                setInvalid();
+                condemn(*d, childHash, nodeID.getChildNodeID(branch));
                 return;
             }
-            else if (d->isInner() && isLeafDepth(nodeID.getDepth() + 1))
+            else if (pastLeafDepth(nodeID.getDepth(), *d))
             {
-                // Only a leaf belongs that deep (see isLeafDepth and SHAMap::addKnownNode). A node
-                // resolved locally reaches the walk without passing through addKnownNode(), so the
-                // walk reaches this verdict itself. Ordered ahead of the full-below test below,
-                // which canonicalization shares across maps.
-                JLOG(journal_.warn()) << "Inner node at branch " << branch << " below " << nodeID
-                                      << " makes the map invalid";
-                setInvalid();
+                // A node resolved locally never passes through addKnownNode(), so the walk judges
+                // it here. The bound also covers nodeID, which the descent below writes.
+                condemn(*d, childHash, nodeID.getChildNodeID(branch));
                 return;
             }
             // The node's own full-below flag is not read here. The node object is shared by hash
@@ -359,35 +318,22 @@ SHAMap::gmnProcessDeferredReads(MissingNodes& mn)
         auto nodePtr = std::get<3>(deferredNode);
         auto const& nodeHash = parent->getChildHash(branch);
 
-        // Guarded on depth for the same reason as the sibling test in gmnProcessNodes: a deferred
-        // entry carries the position the walk held when it posted the read, and the `pending`
-        // branch there records that position. So a branch below it is named here only where the
-        // tree has room for one, which is the bound selectBranch keeps for itself.
-        if (nodePtr && nodePtr->isLeaf() && parentID.getDepth() < kLeafDepth &&
+        // A deferred entry carries the position the walk held when it posted the read, so a branch
+        // below it is named here only where the tree has room for one.
+        if (nodePtr && nodePtr->isLeaf() && !isLeafDepth(parentID.getDepth()) &&
             !belongsAt(parentID, branch, *nodePtr))
         {
-            // The same judgment the two synchronous paths make (see SHAMap::descend and the
-            // descendAsync case in gmnProcessNodes), for a node an async read resolved. Every
-            // site that knows the position a node is about to take judges it, so the traversal
-            // treats a misplaced leaf as a rarity.
-            //
-            // Skips this node so the loop keeps draining the outstanding reads. They hold a
-            // pointer to `mn`, which lives in getMissingNodes' frame, and this loop is what
-            // waits for them.
-            JLOG(journal_.warn()) << "Leaf " << nodeHash << " does not belong below " << parentID
-                                  << " at branch " << branch << ", map is invalid";
-            setInvalid();
+            // The judgment the synchronous paths make, for a node an async read resolved. Skips
+            // rather than returns, since every posted read must be drained while `mn` is alive.
+            condemn(*nodePtr, nodeHash, parentID.getChildNodeID(branch));
             continue;
         }
 
-        // Only a leaf belongs at kLeafDepth, so an inner node an async read resolved there
-        // condemns the map, matching the arm gmnProcessNodes carries beside its leaf test.
-        // Skips this node so the loop drains the reads still holding a pointer to `mn`.
-        if (nodePtr && nodePtr->isInner() && isLeafDepth(parentID.getDepth() + 1))
+        // The depth bound gmnProcessNodes carries beside its leaf test, for a node an async read
+        // resolved. Skips for the same reason as above.
+        if (nodePtr && pastLeafDepth(parentID.getDepth(), *nodePtr))
         {
-            JLOG(journal_.warn()) << "Inner node at branch " << branch << " below " << parentID
-                                  << " makes the map invalid";
-            setInvalid();
+            condemn(*nodePtr, nodeHash, parentID.getChildNodeID(branch));
             continue;
         }
 
@@ -945,7 +891,7 @@ SHAMap::getProofPath(UInt256 const& key) const
         return {};
     }
 
-    if (auto const& node = stack.top().first; !node || node->isInner() ||
+    if (auto const& node = stack.top(); !node || node->isInner() ||
         intr_ptr::staticPointerCast<SHAMapLeafNode>(node)->peekItem()->key() != key)
     {
         JLOG(journal_.debug()) << "no path to " << key;
@@ -957,7 +903,7 @@ SHAMap::getProofPath(UInt256 const& key) const
     while (!stack.empty())
     {
         Serializer s;
-        stack.top().first->serializeForWire(s);
+        stack.top()->serializeForWire(s);
         path.emplace_back(std::move(s.modData()));
         stack.pop();
     }
@@ -992,8 +938,8 @@ SHAMap::verifyProofPath(UInt256 const& rootHash, UInt256 const& key, std::vector
                 // there. These nodes come off the wire, so a peer can still claim an inner one;
                 // reject it rather than passing this depth to selectBranch.
                 SOMETIMES(
-                    depth >= kLeafDepth, "xrpl::SHAMap::verifyProofPath : inner at leaf depth");
-                if (depth >= kLeafDepth)
+                    isLeafDepth(depth), "xrpl::SHAMap::verifyProofPath : inner at leaf depth");
+                if (isLeafDepth(depth))
                     return false;
 
                 auto nodeId = SHAMapNodeID::createID(depth, key);
