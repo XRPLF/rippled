@@ -244,13 +244,11 @@ TEST_F(IntrusiveTaggedCacheTest, canonicalize_replace_cache_replaces_a_swept_ent
 TEST_F(IntrusiveTaggedCacheTest, an_entry_can_be_reinserted_after_del)
 {
     intrPtrCache.canonicalizeReplaceCache(1, intr_ptr::makeShared<TestRefCountObject>("one"));
-    {
-        // Load-bearing: without this, del() converts the last strong ref to a
-        // weak one, which hits an unsigned underflow in
-        // IntrusiveRefCounts::releaseWeakRef.
-        auto const held = intrPtrCache.fetch(1);
-        intrPtrCache.del(1, true);
-    }
+
+    // Nothing else holds the entry, so del() drops it from the map too.
+    EXPECT_TRUE(intrPtrCache.del(1, true));
+    EXPECT_EQ(intrPtrCache.getCacheSize(), 0);
+    EXPECT_EQ(intrPtrCache.size(), 0);
 
     intrPtrCache.canonicalizeReplaceCache(
         1, intr_ptr::makeShared<TestRefCountObject>("one_replaced_3"));
