@@ -234,7 +234,7 @@ ValidLoan::finalize(
                 {
                     // A pending loan is accepted in a later ledger, so its StartDate
                     // must be strictly in the future at creation to remain in the
-                    // future when LoanAccept finalises it.
+                    // future when LoanAccept finalizes it.
                     if (after->getFieldU32(sfStartDate) <=
                         view.parentCloseTime().time_since_epoch().count())
                     {
