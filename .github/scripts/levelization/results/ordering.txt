@@ -194,6 +194,9 @@ tests.libxrpl > xrpl.resource
 tests.libxrpl > xrpl.server
 tests.libxrpl > xrpl.shamap
 tests.libxrpl > xrpl.tx
+tests.xrpld > xrpld.rpc
+tests.xrpld > xrpl.json
+tests.xrpld > xrpl.protocol
 xrpl.conditions > xrpl.basics
 xrpl.conditions > xrpl.protocol
 xrpl.config > xrpl.basics

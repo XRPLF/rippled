@@ -7,6 +7,7 @@
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/core/ServiceRegistry.h>
+#include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
@@ -108,7 +109,7 @@ isTwoStepFlowEnabled(Rules const& rules)
  * fields are reported as Invalid.
  */
 LoanFlow
-getLoanFlow(STTx const& tx, bool twoStepFlowEnabled)
+getLoanFlow(STTx const& tx, ApplyFlags applyFlags, bool twoStepFlowEnabled)
 {
     bool const isBatch = tx.isFlag(tfInnerBatchTxn);
     bool const hasCounterparty = tx.isFieldPresent(sfCounterparty);
@@ -120,7 +121,8 @@ getLoanFlow(STTx const& tx, bool twoStepFlowEnabled)
     if (twoStepFlowEnabled && hasBorrower && hasStartDate && !hasCounterparty &&
         !hasCounterpartySignature)
         return LoanFlow::TwoStep;
-    if ((hasCounterpartySignature || isBatch) && !hasBorrowerOrStartDate)
+    if ((hasCounterpartySignature || isBatch || (applyFlags & TapProposal) != 0) &&
+        !hasBorrowerOrStartDate)
         return LoanFlow::OneStep;
     return LoanFlow::Invalid;
 }
@@ -663,7 +665,7 @@ LoanSet::preflight(PreflightContext const& ctx)
     }();
 
     bool const twoStepFlowEnabled = isTwoStepFlowEnabled(ctx.rules);
-    if (getLoanFlow(tx, twoStepFlowEnabled) == LoanFlow::Invalid)
+    if (getLoanFlow(tx, ctx.flags, twoStepFlowEnabled) == LoanFlow::Invalid)
     {
         // 3.8.5.1.2 CounterpartySignature is not present and the transaction is not part of a Batch
         // inner transaction and the Borrower field is not specified. (temBAD_SIGNER)
@@ -757,7 +759,7 @@ LoanSet::checkSign(PreclaimContext const& ctx)
 
     // In the two-step (Borrower) flow introduced by V1.2 there is no
     // counterparty, so there is no CounterpartySignature to check.
-    if (getLoanFlow(ctx.tx, isTwoStepFlowEnabled(ctx.view.rules())) == LoanFlow::TwoStep)
+    if (getLoanFlow(ctx.tx, ctx.flags, isTwoStepFlowEnabled(ctx.view.rules())) == LoanFlow::TwoStep)
         return tesSUCCESS;
 
     // Counter signer is optional. If it's not specified, it's assumed to be
@@ -830,7 +832,7 @@ LoanSet::preclaim(PreclaimContext const& ctx)
     auto const& tx = ctx.tx;
     auto const interval = ctx.tx.at(~sfPaymentInterval).value_or(kDefaultPaymentInterval);
     auto const total = ctx.tx.at(~sfPaymentTotal).value_or(kDefaultPaymentTotal);
-    auto const flow = getLoanFlow(tx, isTwoStepFlowEnabled(ctx.view.rules()));
+    auto const flow = getLoanFlow(tx, ctx.flags, isTwoStepFlowEnabled(ctx.view.rules()));
     bool const twoStepFlow = flow == LoanFlow::TwoStep;
     auto const startDate = getStartDate(ctx.view, tx, flow);
 
@@ -1035,7 +1037,7 @@ LoanSet::doApply()
     // The pending (two-step) and immediate flows each own their full sequence
     // of ledger mutations; nothing here is reordered relative to the prior
     // implementation.
-    auto const flow = getLoanFlow(ctx_.tx, isTwoStepFlowEnabled(ctx_.view().rules()));
+    auto const flow = getLoanFlow(ctx_.tx, ctx_.flags(), isTwoStepFlowEnabled(ctx_.view().rules()));
     auto const plan = setupLoan(ctx_, accountID_, flow, j_);
     if (!plan)
         return plan.error();
