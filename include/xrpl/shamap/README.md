@@ -278,11 +278,14 @@ This cache remembers which trie keys have all of their children resident in a
 when creating the missing nodes list. Missing nodes are those nodes that a
 `SHAMap` refers to but that are not stored in the local database.
 
-As a depth-first walk of a `SHAMap` is performed, if an inner node answers true to
-`isFullBelow()` then it is known that none of this node's children are missing
-nodes, and thus that subtree does not need to be walked. These nodes are stored
-in the FullBelowCache. Subsequent walks check the FullBelowCache first when
-encountering a node, and ignore that subtree if found.
+As a depth-first walk of a `SHAMap` completes an inner node, meaning none of the
+nodes below it are missing, the node's hash and position are stored in the
+FullBelowCache. Subsequent walks check the FullBelowCache when encountering a
+child, and skip that subtree if found. The entry is keyed by position as well as
+hash, since a hash commits to a node's contents rather than its place, and the
+same node object is shared by hash between maps and positions. For the same
+reason the inner node's own `isFullBelow()` flag is written and read for a
+walk's root alone, where the position is fixed.
 
 ## `SHAMapTreeNode`
 
