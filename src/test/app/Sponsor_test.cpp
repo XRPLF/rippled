@@ -57,6 +57,7 @@
 #include <xrpl/tx/apply.h>
 #include <xrpl/tx/applySteps.h>
 
+#include <cstddef>
 #include <cstdint>
 #include <functional>
 #include <limits>
@@ -3454,6 +3455,101 @@ public:
             BEAST_EXPECT(sponsoringOwnerCount(env, sponsor2) == 0);
         }
 
+        {
+            // Bytecode Escrow: its reserve scales with the Bytecode size, so
+            // every leg of a sponsorship has to move the whole weight.
+            auto env = Env{*this, testableAmendments()};
+
+            env.fund(XRP(1000000), alice, bob, sponsor, sponsor2);
+            env.close();
+
+            auto const seq = env.seq(alice);
+            env(escrow::create(alice, bob, XRP(100)),
+                escrow::kCondition(escrow::kCb1),
+                escrow::kCancelTime(env.now() + 100s));
+            env.close();
+
+            auto const escrowKeylet = keylet::escrow(alice, SeqProxy::rawSequence(seq));
+            std::size_t const bytecodeSize = 1200;
+            std::uint32_t const bytecodeWeight = 3;  // ceil(1200 / 500)
+
+            if (!cosigning)
+            {
+                env(sponsor::set_reserve(sponsor, 0, bytecodeWeight), sponsor::SponseeAcc(alice));
+                env(sponsor::set_reserve(sponsor2, 0, bytecodeWeight), sponsor::SponseeAcc(alice));
+                env.close();
+            }
+
+            // EscrowCreate's preclaim runs the WASM preflight, so a real
+            // 1200-byte contract cannot be assembled from here; the Bytecode
+            // field is injected directly and the owner's OwnerCount restored
+            // to the weight such a create would have charged.
+            env.app().getOpenLedger().modify([&](OpenView& view, beast::Journal) -> bool {
+                auto const existing = view.read(escrowKeylet);
+                if (!existing)
+                {
+                    return false;
+                }
+                auto escrowSle = std::make_shared<SLE>(*existing);
+                auto account = std::make_shared<SLE>(*view.read(keylet::account(alice.id())));
+                escrowSle->setFieldVL(sfBytecode, Blob(bytecodeSize, 0x00));
+                account->setFieldU32(sfOwnerCount, bytecodeWeight);
+                view.rawReplace(escrowSle);
+                view.rawReplace(account);
+                return true;
+            });
+            BEAST_EXPECT(ownerCount(env, alice) == bytecodeWeight);
+
+            std::optional<Sig> const sponsorSig =
+                cosigning ? std::optional<Sig>(Sig(sfSponsorSignature, sponsor)) : std::nullopt;
+            std::optional<Sig> const sponsor2Sig =
+                cosigning ? std::optional<Sig>(Sig(sfSponsorSignature, sponsor2)) : std::nullopt;
+
+            // create sponsor: charges the whole bytecode weight, not 1
+            if (sponsorSig)
+            {
+                env(sponsor::transfer(alice, tfSponsorshipCreate, escrowKeylet.key),
+                    sponsor::As(sponsor, spfSponsorReserve),
+                    *sponsorSig);
+            }
+            else
+            {
+                env(sponsor::transfer(alice, tfSponsorshipCreate, escrowKeylet.key),
+                    sponsor::As(sponsor, spfSponsorReserve));
+            }
+
+            BEAST_EXPECT(sponsoredOwnerCount(env, alice) == bytecodeWeight);
+            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == bytecodeWeight);
+            BEAST_EXPECT(env.le(escrowKeylet)->getAccountID(sfSponsor) == sponsor.id());
+
+            // transfer sponsor: moves the whole weight between the two sponsors
+            if (sponsor2Sig)
+            {
+                env(sponsor::transfer(alice, tfSponsorshipReassign, escrowKeylet.key),
+                    sponsor::As(sponsor2, spfSponsorReserve),
+                    *sponsor2Sig);
+            }
+            else
+            {
+                env(sponsor::transfer(alice, tfSponsorshipReassign, escrowKeylet.key),
+                    sponsor::As(sponsor2, spfSponsorReserve));
+            }
+
+            BEAST_EXPECT(sponsoredOwnerCount(env, alice) == bytecodeWeight);
+            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 0);
+            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor2) == bytecodeWeight);
+            BEAST_EXPECT(env.le(escrowKeylet)->getAccountID(sfSponsor) == sponsor2.id());
+
+            // end sponsor: hands the whole weight back to the owner
+            env(sponsor::transfer(alice, tfSponsorshipEnd, escrowKeylet.key));
+
+            BEAST_EXPECT(ownerCount(env, alice) == bytecodeWeight);
+            BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 0);
+            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 0);
+            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor2) == 0);
+            BEAST_EXPECT(!env.le(escrowKeylet)->isFieldPresent(sfSponsor));
+        }
+
         Account const gw("gw");
         auto const usd = gw["usd"];
         {
@@ -4307,6 +4403,89 @@ public:
         BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 0);
         if (auto const sle = env.le(sponsorKeylet); BEAST_EXPECT(sle))
             BEAST_EXPECT(!sle->isFieldPresent(sfRemainingOwnerCount));
+    }
+
+    // An escrow carrying Bytecode costs one owner count per 500 bytes, so
+    // sponsoring one must move that full weight rather than a single unit.
+    void
+    testBytecodeEscrowReserve()
+    {
+        testcase("Bytecode escrow sponsorship reserve");
+        using namespace test::jtx;
+        using namespace std::chrono_literals;
+
+        auto const alice = Account{"alice"};
+        auto const bob = Account{"bob"};
+        auto const sponsor = Account{"sponsor"};
+
+        auto env = Env{*this, testableAmendments()};
+        env.fund(XRP(1000000), alice, bob, sponsor);
+        env.close();
+
+        auto const seq = env.seq(alice);
+        env(escrow::create(alice, bob, XRP(100)),
+            escrow::kCondition(escrow::kCb1),
+            escrow::kCancelTime(env.now() + 100s));
+        env.close();
+
+        auto const escrowKeylet = keylet::escrow(alice, SeqProxy::rawSequence(seq));
+        auto const sponsorKeylet = keylet::sponsorship(sponsor.id(), alice.id());
+        std::size_t const bytecodeSize = 1200;
+        std::uint32_t const bytecodeWeight = 3;  // ceil(1200 / 500)
+        BEAST_EXPECT(ownerCount(env, alice) == 1);
+
+        // Pre-fund exactly the bytecode weight
+        env(sponsor::set_reserve(sponsor, 0, bytecodeWeight), sponsor::SponseeAcc(alice));
+        env.close();
+        if (auto const sle = env.le(sponsorKeylet); BEAST_EXPECT(sle))
+        {
+            BEAST_EXPECT(sle->getFieldU32(sfRemainingOwnerCount) == bytecodeWeight);
+        }
+
+        // Synthesize a bytecode escrow. EscrowCreate's preclaim runs the WASM
+        // preflight, so a real 1200-byte contract cannot be assembled from
+        // here; the Bytecode field is injected directly and the owner's
+        // OwnerCount restored to the weight such a create would have charged.
+        env.app().getOpenLedger().modify([&](OpenView& view, beast::Journal) -> bool {
+            auto const existing = view.read(escrowKeylet);
+            if (!existing)
+            {
+                return false;
+            }
+            auto escrowSle = std::make_shared<SLE>(*existing);
+            auto account = std::make_shared<SLE>(*view.read(keylet::account(alice.id())));
+            escrowSle->setFieldVL(sfBytecode, Blob(bytecodeSize, 0x00));
+            account->setFieldU32(sfOwnerCount, bytecodeWeight);
+            view.rawReplace(escrowSle);
+            view.rawReplace(account);
+            return true;
+        });
+        BEAST_EXPECT(ownerCount(env, alice) == bytecodeWeight);
+
+        // Create must charge the full bytecode weight (3), not 1: counting the
+        // escrow as a single unit would leave 2 pre-funded units unspent.
+        env(sponsor::transfer(alice, tfSponsorshipCreate, escrowKeylet.key),
+            sponsor::As(sponsor, spfSponsorReserve));
+
+        BEAST_EXPECT(sponsoredOwnerCount(env, alice) == bytecodeWeight);
+        BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == bytecodeWeight);
+        // All pre-funded units consumed (drained to absent).
+        if (auto const sle = env.le(sponsorKeylet); BEAST_EXPECT(sle))
+        {
+            BEAST_EXPECT(!sle->isFieldPresent(sfRemainingOwnerCount));
+        }
+
+        // End hands the same weight back; create bumped by the same amount, so
+        // the counters return to 0 (counting 1 here would underflow).
+        env(sponsor::transfer(alice, tfSponsorshipEnd, escrowKeylet.key));
+
+        BEAST_EXPECT(ownerCount(env, alice) == bytecodeWeight);
+        BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 0);
+        BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 0);
+        if (auto const sle = env.le(escrowKeylet); BEAST_EXPECT(sle))
+        {
+            BEAST_EXPECT(!sle->isFieldPresent(sfSponsor));
+        }
     }
 
     void
@@ -5694,6 +5873,7 @@ protected:
         testTransferSponsor(jtx::testableAmendments());
         testTransferSponsor(jtx::testableAmendments() - fixCleanup3_4_0);
         testLegacySignerListReserve();
+        testBytecodeEscrowReserve();
         testSponsorFee();
         testSponsorAccount();
 
