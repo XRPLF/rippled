@@ -81,7 +81,11 @@ struct IntrusiveRefCounts
     // Calling this function may cause other threads to delete the object
     // pointed to by `o`, so `o` should never be used after calling this
     // function. The parameter will be set to a `nullptr` after calling this
-    // function to emphasize that it should not be used.
+// pointed to by `o`, so `o` should never be used after calling this
+// function (unless the caller holds its own weak reference, which keeps
+// the object alive — see SharedWeakUnion::convertToWeak). The parameter
+// will be set to a `nullptr` after calling this function to emphasize
+// that it should not be used.
     // Note: This is intentionally NOT called at the end of `partialDestructor`.
     // The reason for this is if new classes are written to support this smart
     // pointer class, they need to write their own `partialDestructor` function
