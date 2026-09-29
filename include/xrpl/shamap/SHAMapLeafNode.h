@@ -75,4 +75,20 @@ leafKey(SHAMapTreeNode const& node)
     return safeDowncast<SHAMapLeafNode const&>(node).peekItem()->key();
 }
 
+/**
+ * Whether a node may occupy a position in a SHAMap.
+ *
+ * A leaf's own key names its position. An inner node carries no key, so every
+ * position agrees with it and a caller's own depth rules are what bound it.
+ *
+ * @param nodeID the position the node is claimed to occupy.
+ * @param node the node to judge.
+ * @return whether the node's own key agrees with that position.
+ */
+[[nodiscard]] inline bool
+belongsAt(SHAMapNodeID const& nodeID, SHAMapTreeNode const& node)
+{
+    return !node.isLeaf() || nodeID.isPrefixOf(leafKey(node));
+}
+
 }  // namespace xrpl
