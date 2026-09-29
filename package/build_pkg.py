@@ -19,7 +19,7 @@ from pathlib import Path
 # This script lives in the repository it packages.
 SRC_DIR = Path(__file__).resolve().parents[1]
 
-PRE_RELEASE = re.compile(r"^(b|rc)(0|[1-9][0-9]*)(\+.*)?$")
+PRE_RELEASE = re.compile(r"^(b|rc)(0|[1-9][0-9]*)$")
 
 # Channels a tag of any version is published to, rather than only bN/rcN.
 ANY_VERSION_CHANNELS = ("custom", "private")
@@ -76,13 +76,16 @@ def package_version(reported: str, channel: str) -> str:
 
     A pre-release switches to '~' (3.2.0-b1 -> 3.2.0~b1), which also sorts before
     the final 3.2.0; a no-op for a final release. The custom and private
-    channels accept any pre-release and build metadata, with any further '-' in
-    the pre-release switched to '.' (3.4.0-custom-1 -> 3.4.0~custom.1).
+    channels accept any pre-release and build metadata, with any '-' inside
+    either switched to '.' (3.4.0-custom-1 -> 3.4.0~custom.1).
     """
-    base, _, pre_release = reported.partition("-")
+    # Metadata first, as it may contain '-' too.
+    release, plus, metadata = reported.partition("+")
+    base, _, pre_release = release.partition("-")
     if channel in ANY_VERSION_CHANNELS:
         pre_release = pre_release.replace("-", ".")
-    version = f"{base}~{pre_release}" if pre_release else base
+        metadata = metadata.replace("-", ".")
+    version = (f"{base}~{pre_release}" if pre_release else base) + plus + metadata
 
     # BuildInfo already SemVer-validates the version. Packaging adds one narrower
     # constraint: after normalisation the version must not contain '-', because
@@ -93,7 +96,7 @@ def package_version(reported: str, channel: str) -> str:
     )
     if channel in ANY_VERSION_CHANNELS:
         return version
-    assert pre_release or "+" not in reported, (
+    assert pre_release or not plus, (
         f"unsupported version {reported!r}: "
         "build metadata is only supported on bN/rcN pre-releases."
     )

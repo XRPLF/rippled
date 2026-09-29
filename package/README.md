@@ -325,8 +325,8 @@ convention for a build that targets no channel at all — what local and CMake
 builds pass, since nothing publishes them. An unsupported pre-release, and
 build metadata on a final release such as `3.2.0+abc123`, are both rejected,
 except in the `custom` and `private` channels, which accept any version and
-switch each further `-` in its pre-release to `.`, so `3.4.0-custom-1` packages
-as `3.4.0~custom.1`.
+switch each `-` inside the pre-release or build metadata to `.`, so
+`3.4.0-custom-1` packages as `3.4.0~custom.1`.
 
 The RPM path intentionally uses `~` in `Version`, matching the Debian
 pre-release ordering convention, so RPM filenames/NVRs begin with forms like
