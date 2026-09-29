@@ -7,23 +7,30 @@
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/Zero.h>
+#include <xrpl/nodestore/Database.h>
+#include <xrpl/nodestore/NodeObject.h>
 #include <xrpl/protocol/Serializer.h>
+#include <xrpl/shamap/Family.h>
 #include <xrpl/shamap/SHAMapInnerNode.h>
 #include <xrpl/shamap/SHAMapItem.h>
 #include <xrpl/shamap/SHAMapLeafNode.h>
 #include <xrpl/shamap/SHAMapMissingNode.h>
 #include <xrpl/shamap/SHAMapNodeID.h>
+#include <xrpl/shamap/SHAMapSyncFilter.h>
 #include <xrpl/shamap/SHAMapTreeNode.h>
 
 #include <gtest/gtest.h>
 #include <helpers/TestSink.h>
+#include <shamap/InnerNode.h>
 #include <shamap/common.h>
 
 #include <algorithm>
 #include <array>
 #include <cstddef>
 #include <cstdint>
+#include <map>
 #include <memory>
+#include <optional>
 #include <string>
 #include <string_view>
 #include <type_traits>
@@ -229,8 +236,11 @@ TEST_P(SHAMapTest, add_traverse_snapshot_build_tear_and_iterate)
             EXPECT_EQ(map.getHash().asUInt256(), kHashes[k]);
             map.invariants();
         }
-        for (std::size_t k = kKeys.size(); k-- > 0;)
+        // The decrement is in the body, so the counter never steps below zero.
+        // UndefinedBehaviorSanitizer reports that wraparound.
+        for (std::size_t k = kKeys.size(); k > 0;)
         {
+            --k;
             EXPECT_EQ(map.getHash().asUInt256(), kHashes[k]);
             EXPECT_TRUE(map.delItem(kKeys[k]));
             map.invariants();
@@ -273,8 +283,8 @@ INSTANTIATE_TEST_SUITE_P(
     shamapBackingModeName);
 
 // Exercises the traversal stacks built by belowHelper. Each stack entry pairs a node with the ID
-// naming its position, and SHAMap asserts that pairing on every push, so these traversals fail
-// loudly in a Debug build if a node ID is ever derived from the wrong branch.
+// naming its position, and every push refuses a leaf whose own key does not lie under the branch it
+// was reached through, in Release builds as well as Debug ones.
 class SHAMapTraversal : public ::testing::Test
 {
 protected:
@@ -461,9 +471,8 @@ TEST_F(SHAMapTraversal, bounds_on_empty_map_return_end)
     SHAMap map{SHAMapType::FREE, f};
     map.setUnbacked();
 
-    // The root is a childless inner node, so boundHelper's inner-node branch scans every branch on
-    // the requested side of the one id selects, finds them all empty, and falls through to end()
-    // rather than dereference a child.
+    // An empty map still leaves its root on the path, so boundHelper reads a non-empty path and
+    // answers end() from it.
     EXPECT_EQ(map.upperBound(UInt256{}), map.end());
     EXPECT_EQ(map.lowerBound(UInt256{}), map.end());
 
@@ -804,7 +813,7 @@ TEST_F(SHAMapPathProof, verify_proof_path)
 
 // A legitimate proof path for two keys sharing all 63 leading nibbles is 65 elements: inner nodes
 // at depths 0..63 plus the leaf at depth 64. This pins that the 65 bound is real, so the fix for
-// the forged-path case below must not simply tighten the length limit.
+// the built-path case below must not simply tighten the length limit.
 TEST_F(SHAMapPathProof, legitimate_deep_path_is_sixty_five_elements)
 {
     tests::TestNodeFamily f{j_};
@@ -837,7 +846,7 @@ TEST_F(SHAMapPathProof, legitimate_deep_path_is_sixty_five_elements)
     // NOLINTEND(bugprone-unchecked-optional-access)
 }
 
-// A forged path of 65 hash-chained inner nodes reaches depth kLeafDepth, where only the leaf
+// A built path of 65 hash-chained inner nodes reaches depth kLeafDepth, where only the leaf
 // terminating the path may sit. Such a path must be rejected.
 TEST_F(SHAMapPathProof, all_inner_path_at_leaf_depth_is_rejected)
 {
@@ -849,8 +858,11 @@ TEST_F(SHAMapPathProof, all_inner_path_at_leaf_depth_is_rejected)
     std::vector<Blob> path;
     SHAMapHash childHash{UInt256{1}};
 
-    for (auto depth = SHAMap::kLeafDepth + 1u; depth-- > 0;)
+    // The decrement is in the body, so the counter never steps below zero.
+    // UndefinedBehaviorSanitizer reports that wraparound.
+    for (auto depth = SHAMap::kLeafDepth + 1u; depth > 0;)
     {
+        --depth;
         auto const id = SHAMapNodeID::createID(std::min(depth, SHAMap::kLeafDepth - 1u), kTestKey);
         auto const branch = selectBranch(id, kTestKey);
 
@@ -904,7 +916,7 @@ forgeRootOverLeaf(Blob const& leafBlob, UInt256 const& key)
 }
 
 // The hash chain above a leaf proves nothing about which key that leaf holds, so a peer can graft a
-// genuine leaf from elsewhere in the map onto a path forged for another key. Comparing the terminal
+// genuine leaf from elsewhere in the map onto a path built for another key. Comparing the terminal
 // leaf's own key against the key being proved is what rejects it.
 TEST_F(SHAMapPathProof, substituted_leaf_for_other_key_is_rejected)
 {
@@ -945,6 +957,503 @@ TEST_F(SHAMapPathProof, substituted_leaf_for_other_key_is_rejected)
     auto const [badPath, badRoot] = forgeRootOverLeaf(otherLeaf, kKey);
     ASSERT_EQ(badPath.size(), 2u);
     EXPECT_FALSE(SHAMap::verifyProofPath(badRoot, kKey, badPath));
+}
+
+/**
+ * Run `call` and check it throws SHAMapMissingNode naming a key, not a hash.
+ *
+ * A walk that decides it cannot go on names the key it was searching for, while
+ * a failure to fetch names the hash. Both throw the same type, so the payload
+ * is what tells the two apart.
+ *
+ * @param call the call expected to throw.
+ */
+template <class Call>
+void
+expectThrowNamingKey(Call&& call)
+{
+    try
+    {
+        call();
+        ADD_FAILURE() << "expected SHAMapMissingNode, nothing was thrown";
+    }
+    catch (SHAMapMissingNode const& e)
+    {
+        std::string const what{e.what()};
+        EXPECT_NE(what.find(": id "), std::string::npos) << what;
+        EXPECT_EQ(what.find(": hash "), std::string::npos) << what;
+    }
+}
+
+/**
+ * A filter that resolves a fixed set of nodes, by hash.
+ *
+ * Stands in for the real sync filters, which serve a node from a local cache
+ * keyed on its hash, so the hash is all they check.
+ */
+class FixedNodeFilter : public SHAMapSyncFilter
+{
+    std::map<SHAMapHash, Blob> nodes_;
+
+public:
+    FixedNodeFilter(SHAMapHash const& hash, Blob blob)
+    {
+        nodes_.emplace(hash, std::move(blob));
+    }
+
+    explicit FixedNodeFilter(std::vector<std::pair<SHAMapHash, Blob>> nodes)
+    {
+        for (auto& [hash, blob] : nodes)
+            nodes_.emplace(hash, std::move(blob));
+    }
+
+    void
+    gotNode(
+        bool,
+        SHAMapHash const&,
+        std::uint32_t,
+        Blob&&,  // NOLINT(cppcoreguidelines-rvalue-reference-param-not-moved)
+        SHAMapNodeType) const override
+    {
+    }
+
+    [[nodiscard]] std::optional<Blob>
+    getNode(SHAMapHash const& hash) const override
+    {
+        if (auto const it = nodes_.find(hash); it != nodes_.end())
+            return it->second;
+        return std::nullopt;
+    }
+};
+
+// A tree whose hashes all agree can still put a leaf where its key does not belong, because a hash
+// covers a node's contents rather than its position.
+class SHAMapMisplacedLeaf : public ::testing::Test
+{
+protected:
+    beast::Journal const j_{TestSink::instance()};
+
+    // An arbitrary key whose first nibble is 1, so its leaf belongs under branch 1 of the root.
+    static constexpr UInt256 kKey{
+        "1c8cec8e5e9b0e5e0e0f5b3e2c9f7a1d6b4e8c2a0d7f3b9e5c1a8d4f2b6e0c93"};
+
+    // Any branch other than the one kKey selects at depth 0.
+    static constexpr unsigned int kWrongBranch = 5;
+
+    // The sequence a test writes stored nodes under, and sets on the map that reads them back. Any
+    // value serves: the nodestore is keyed by hash and takes this only as a lookup hint.
+    static constexpr std::uint32_t kStoredLedgerSeq = 11;
+
+    /**
+     * A genuine leaf holding kKey, in the form a sync filter serves, with its
+     * hash.
+     *
+     * Taken from a map that placed the leaf correctly, so only its position is
+     * ever wrong below. Serialized with its prefix rather than in wire form,
+     * since that is what checkFilter parses.
+     *
+     * @param f the family the throwaway source map belongs to.
+     * @return the leaf's prefixed form and its hash, or an empty blob if the
+     *         map rejected the item.
+     */
+    static std::pair<Blob, SHAMapHash>
+    genuineLeaf(Family& f)
+    {
+        SHAMap source{SHAMapType::FREE, f};
+        source.setUnbacked();
+        if (!source.addItem(
+                SHAMapNodeType::TnAccountState,
+                makeShamapitem(kKey, Slice{kKey.data(), kKey.size()})))
+        {
+            return {};
+        }
+
+        auto const path = source.getProofPath(kKey);
+        if (!path.has_value() || path->empty())
+            return {};
+
+        auto leaf = SHAMapTreeNode::makeFromWire(makeSlice(path->front()));
+        if (!leaf || !leaf->isLeaf())
+            return {};
+        leaf->updateHash();
+
+        Serializer s;
+        leaf->serializeWithPrefix(s);
+        return {s.getData(), leaf->getHash()};
+    }
+
+    /**
+     * Assemble `map` as a root inner node holding the given children.
+     *
+     * The root is installed directly, as a peer's would be, so each child stays
+     * unresolved until a walk consults the filter for it. Takes a list rather
+     * than one hash because a walk only reaches the sideways scans in
+     * peekNextItem and boundHelper from a branch it can already resolve, which
+     * needs a second, well-placed child.
+     *
+     * @param map the map to assemble, which must be synching and empty.
+     * @param children the branch and hash of each child the forged root
+     *        records.
+     * @return whether the root was accepted.
+     */
+    static bool
+    forgeRoot(SHAMap& map, std::vector<InnerChild> const& children)
+    {
+        auto root = makeFullInnerNode(children);
+        if (!root)
+            return false;
+
+        auto const rootHash = root->getHash();
+        return map.addRootNode(rootHash, std::move(root), nullptr).isGood();
+    }
+
+    /**
+     * A correctly-built leaf for the given key, in the form a sync filter
+     * serves.
+     *
+     * Serialized with its prefix rather than in wire form, since that is what
+     * checkFilter parses.
+     *
+     * @param f the family the source map belongs to.
+     * @param key the key to build the leaf for.
+     * @return the leaf's prefixed form and its hash, or an empty blob if the
+     *         map rejected the item.
+     */
+    static std::pair<Blob, SHAMapHash>
+    leafFor(Family& f, UInt256 const& key)
+    {
+        SHAMap source{SHAMapType::FREE, f};
+        source.setUnbacked();
+        if (!source.addItem(
+                SHAMapNodeType::TnAccountState, makeShamapitem(key, Slice{key.data(), key.size()})))
+        {
+            return {};
+        }
+
+        auto const path = source.getProofPath(key);
+        if (!path.has_value() || path->empty())
+            return {};
+
+        // NOLINTNEXTLINE(bugprone-unchecked-optional-access) has_value() checked above
+        auto const leaf = SHAMapTreeNode::makeFromWire(makeSlice(path->front()));
+        if (!leaf || !leaf->isLeaf())
+            return {};
+
+        Serializer s;
+        leaf->serializeWithPrefix(s);
+        return {s.getData(), leaf->getHash()};
+    }
+
+    /**
+     * A key whose first nibble equals its last.
+     *
+     * Any key builds a chain. This one also lets a refusal be told apart from
+     * an accident: a walk that ignored the depth bound selects, at the level
+     * past kLeafDepth, the one branch the node there occupies, and so reports
+     * a child it could not fetch instead of answering.
+     */
+    static constexpr UInt256 kChainKeyPastLeafDepth{
+        "b92891fe4ef6cee585fdc6fda1e09eb4d386363158ec3321b8123e5a772c6cab"};
+
+    /**
+     * Store a chain of single-child inner nodes running one level past
+     * kLeafDepth.
+     *
+     * Built bottom-up, so each parent records the hash of the node below it and
+     * the chain verifies at every level. The deepest node points at a child the
+     * store does not hold.
+     *
+     * @param f the family whose store the chain is written to.
+     * @param key the key whose nibbles choose the branch at every level.
+     * @return the chain's root and the hash of the node at kLeafDepth, or an
+     *         empty pair if a node could not be built.
+     */
+    static std::pair<SHAMapTreeNodePtr, SHAMapHash>
+    storeInnerChainPastLeafDepth(tests::TestNodeFamily& f, UInt256 const& key)
+    {
+        SHAMapHash childHash{UInt256{1}};
+        SHAMapTreeNodePtr node;
+        SHAMapHash deepestHash;
+
+        // The decrement is in the body, so the counter never steps below zero.
+        // UndefinedBehaviorSanitizer reports that wraparound.
+        for (auto depth = SHAMap::kLeafDepth + 1u; depth > 0;)
+        {
+            --depth;
+            auto const id = SHAMapNodeID::createID(std::min(depth, SHAMap::kLeafDepth - 1u), key);
+            node = makeFullInnerNode({{.branch = selectBranch(id, key), .hash = childHash}});
+            if (!node)
+                return {};
+
+            Serializer prefixed;
+            node->serializeWithPrefix(prefixed);
+            f.db().store(
+                NodeObjectType::AccountNode,
+                prefixed.getData(),
+                node->getHash().asUInt256(),
+                kStoredLedgerSeq);
+
+            childHash = node->getHash();
+            if (depth == SHAMap::kLeafDepth)
+                deepestHash = childHash;
+        }
+
+        return {std::move(node), deepestHash};
+    }
+};
+
+// Every branch above a leaf is judged, not only the last one, so a leaf under a subtree recorded on
+// a branch its key does not select is refused.
+TEST_F(SHAMapMisplacedLeaf, iterating_a_misplaced_subtree_throws)
+{
+    // A key greater than the probe below, so a greater key exists for that probe to find.
+    constexpr UInt256 kDeepKey{"a100000000000000000000000000000000000000000000000000000000000000"};
+
+    tests::TestNodeFamily sourceFamily{j_};
+    auto const [leafBlob, leafHash] = leafFor(sourceFamily, kDeepKey);
+    ASSERT_FALSE(leafBlob.empty());
+
+    // The subtree holds exactly one child, on the branch its key selects at depth 1. One occupied
+    // branch is reached the same way whichever branch the scan starts from, so which node the walk
+    // resolves does not depend on the random start.
+    //
+    // Assembled here rather than taken from a source map, because a one-item map puts its leaf
+    // directly under the root and so holds no inner node to borrow.
+    auto const leafBranch = selectBranch(SHAMapNodeID::createID(1, kDeepKey), kDeepKey);
+    auto const inner = makeFullInnerNode({{.branch = leafBranch, .hash = leafHash}});
+    ASSERT_TRUE(inner);
+
+    Serializer innerPrefixed;
+    inner->serializeWithPrefix(innerPrefixed);
+
+    // The leaf is served as well, so the walk reaches it and the throw below is about position.
+    std::vector<std::pair<SHAMapHash, Blob>> served;
+    served.emplace_back(inner->getHash(), innerPrefixed.getData());
+    served.emplace_back(leafHash, leafBlob);
+
+    tests::TestNodeFamily targetFamily{j_};
+    SHAMap map{SHAMapType::FREE, UInt256{}, targetFamily};
+    map.setUnbacked();
+    ASSERT_TRUE(forgeRoot(map, {{.branch = kWrongBranch, .hash = inner->getHash()}}));
+
+    // The inner node carries no key, so the leaf below it is what shows the branch it was reached
+    // through disagrees with the key underneath.
+    FixedNodeFilter const filter{std::move(served)};
+    map.getMissingNodes(4, &filter);
+
+    EXPECT_THROW(map.begin(), SHAMapMissingNode);
+
+    // The bounds refuse the same map, and a refusal throws where end() answers. The probe selects
+    // kWrongBranch at depth 0 and leafBranch at depth 1, so the descent walks straight into the
+    // misplaced leaf and clears the path. The one key in the map is greater than the probe.
+    UInt256 probe;
+    probe.begin()[0] = static_cast<std::uint8_t>((kWrongBranch << 4) | leafBranch);
+    ASSERT_GT(kDeepKey, probe);
+
+    EXPECT_THROW(map.upperBound(probe), SHAMapMissingNode);
+    EXPECT_THROW(map.lowerBound(probe), SHAMapMissingNode);
+}
+
+// peekNextItem scans the branches beyond the one a key takes and judges each node it resolves
+// there. The root holds a well-placed leaf so the scan starts, and a misplaced one for it to reach.
+TEST_F(SHAMapMisplacedLeaf, iterating_past_a_leaf_into_a_misplaced_sibling_throws)
+{
+    // First nibble 10, so this leaf sits where it belongs. kKey's first nibble is 1, so its leaf
+    // does not belong on kStrayBranch, which is above 10 and so within the forward scan's reach.
+    constexpr UInt256 kPlacedKey{
+        "a000000000000000000000000000000000000000000000000000000000000000"};
+    static constexpr unsigned int kStrayBranch = 12;
+
+    tests::TestNodeFamily sourceFamily{j_};
+    auto const [placedBlob, placedHash] = leafFor(sourceFamily, kPlacedKey);
+    ASSERT_FALSE(placedBlob.empty());
+    auto const [strayBlob, strayHash] = genuineLeaf(sourceFamily);
+    ASSERT_FALSE(strayBlob.empty());
+
+    // Both leaves go in the store rather than a filter, because the scan reaches them through
+    // descendThrow(), which consults no filter. Served from the store, the throw is about
+    // position.
+    tests::TestNodeFamily targetFamily{j_};
+    targetFamily.db().store(
+        NodeObjectType::AccountNode, Blob{placedBlob}, placedHash.asUInt256(), kStoredLedgerSeq);
+    targetFamily.db().store(
+        NodeObjectType::AccountNode, Blob{strayBlob}, strayHash.asUInt256(), kStoredLedgerSeq);
+
+    SHAMap map{SHAMapType::FREE, UInt256{}, targetFamily};
+    map.setLedgerSeq(kStoredLedgerSeq);
+
+    auto const placedBranch = selectBranch(SHAMapNodeID{}, kPlacedKey);
+    ASSERT_LT(placedBranch, kStrayBranch);
+    ASSERT_TRUE(forgeRoot(
+        map,
+        {{.branch = placedBranch, .hash = placedHash},
+         {.branch = kStrayBranch, .hash = strayHash}}));
+
+    // The store really holds both, so a refusal below is about position.
+    ASSERT_NE(targetFamily.db().fetchNodeObject(placedHash.asUInt256(), kStoredLedgerSeq), nullptr);
+    ASSERT_NE(targetFamily.db().fetchNodeObject(strayHash.asUInt256(), kStoredLedgerSeq), nullptr);
+
+    // The well-placed leaf resolves, so iteration starts.
+    auto it = map.begin();
+    ASSERT_NE(it, map.end());
+    EXPECT_EQ(it->key(), kPlacedKey);
+
+    // Advancing scans past placedBranch, resolves the stray leaf out of the store, and pushChild
+    // refuses it. The payload check narrows this to peekNextItem's two id-form throws, of which
+    // only the refused push can occur against this fixture.
+    expectThrowNamingKey([&] { ++it; });
+}
+
+// boundHelper runs the same sideways scan as peekNextItem and has its own throw for a node it
+// cannot push. Reached the same way, from a probe whose own branch resolves.
+TEST_F(SHAMapMisplacedLeaf, a_bound_scanning_into_a_misplaced_sibling_throws)
+{
+    constexpr UInt256 kPlacedKey{
+        "a000000000000000000000000000000000000000000000000000000000000000"};
+    static constexpr unsigned int kStrayBranch = 12;
+
+    tests::TestNodeFamily sourceFamily{j_};
+    auto const [placedBlob, placedHash] = leafFor(sourceFamily, kPlacedKey);
+    ASSERT_FALSE(placedBlob.empty());
+    auto const [strayBlob, strayHash] = genuineLeaf(sourceFamily);
+    ASSERT_FALSE(strayBlob.empty());
+
+    tests::TestNodeFamily targetFamily{j_};
+    targetFamily.db().store(
+        NodeObjectType::AccountNode, Blob{placedBlob}, placedHash.asUInt256(), kStoredLedgerSeq);
+    targetFamily.db().store(
+        NodeObjectType::AccountNode, Blob{strayBlob}, strayHash.asUInt256(), kStoredLedgerSeq);
+
+    SHAMap map{SHAMapType::FREE, UInt256{}, targetFamily};
+    map.setLedgerSeq(kStoredLedgerSeq);
+
+    auto const placedBranch = selectBranch(SHAMapNodeID{}, kPlacedKey);
+    ASSERT_LT(placedBranch, kStrayBranch);
+    ASSERT_TRUE(forgeRoot(
+        map,
+        {{.branch = placedBranch, .hash = placedHash},
+         {.branch = kStrayBranch, .hash = strayHash}}));
+
+    ASSERT_NE(targetFamily.db().fetchNodeObject(placedHash.asUInt256(), kStoredLedgerSeq), nullptr);
+    ASSERT_NE(targetFamily.db().fetchNodeObject(strayHash.asUInt256(), kStoredLedgerSeq), nullptr);
+
+    // upperBound from the well-placed key descends to its leaf, then scans above it and reaches the
+    // misplaced one, whose own key is greater than the probe. Narrowed to boundHelper's two id-form
+    // throws, of which only the refused push can occur against this fixture.
+    expectThrowNamingKey([&] { static_cast<void>(map.upperBound(kPlacedKey)); });
+}
+
+// walkTowardsKey refuses a node past kLeafDepth in both its modes. The mode that records a path for
+// its caller refuses through pushChild and clears the path, so the caller reads an empty path as a
+// refusal.
+TEST_F(SHAMapMisplacedLeaf, a_keyed_walk_recording_a_path_refuses_a_node_past_leaf_depth)
+{
+    tests::TestNodeFamily targetFamily{j_};
+    auto [root, deepestHash] = storeInnerChainPastLeafDepth(targetFamily, kChainKeyPastLeafDepth);
+    ASSERT_TRUE(root);
+    ASSERT_TRUE(deepestHash.isNonZero());
+
+    // The node the walk has to refuse is really in the store, so the refusal is about depth.
+    ASSERT_NE(
+        targetFamily.db().fetchNodeObject(deepestHash.asUInt256(), kStoredLedgerSeq), nullptr);
+
+    SHAMap map{SHAMapType::FREE, UInt256{}, targetFamily};
+    map.setLedgerSeq(kStoredLedgerSeq);
+    auto const rootHash = root->getHash();
+    ASSERT_TRUE(map.addRootNode(rootHash, std::move(root), nullptr).isGood());
+
+    // delItem hands walkTowardsKey a path to fill, reads the cleared path as a refusal, and names
+    // the key it was walking to.
+    expectThrowNamingKey([&] { static_cast<void>(map.delItem(kChainKeyPastLeafDepth)); });
+}
+
+// The other mode: a walk with no path at all tracks a depth of its own and refuses at the same
+// bound, answering rather than throwing.
+TEST_F(SHAMapMisplacedLeaf, a_keyed_walk_with_no_path_refuses_a_node_past_leaf_depth)
+{
+    tests::TestNodeFamily targetFamily{j_};
+    auto [root, deepestHash] = storeInnerChainPastLeafDepth(targetFamily, kChainKeyPastLeafDepth);
+    ASSERT_TRUE(root);
+    ASSERT_TRUE(deepestHash.isNonZero());
+
+    ASSERT_NE(
+        targetFamily.db().fetchNodeObject(deepestHash.asUInt256(), kStoredLedgerSeq), nullptr);
+
+    SHAMap map{SHAMapType::FREE, UInt256{}, targetFamily};
+    map.setLedgerSeq(kStoredLedgerSeq);
+    auto const rootHash = root->getHash();
+    ASSERT_TRUE(map.addRootNode(rootHash, std::move(root), nullptr).isGood());
+
+    // hasItem reaches findKey, which walks with no path. The walk reports the refusal and stops, so
+    // the key reads as absent.
+    bool found = true;
+    ASSERT_NO_THROW(found = map.hasItem(kChainKeyPastLeafDepth));
+    EXPECT_FALSE(found);
+}
+
+// A path of inner nodes running past kLeafDepth has no room for the leaf it leads to, so the
+// traversal refuses it. The chain is resolvable, so the throw is about depth.
+TEST_F(SHAMapMisplacedLeaf, a_path_of_inner_nodes_past_leaf_depth_is_refused)
+{
+    // An arbitrary key. Only the branches it selects matter here.
+    constexpr UInt256 kChainKey{"b92891fe4ef6cee585fdc6fda1e09eb4d386363158ec3321b8123e5a772c6ca8"};
+
+    tests::TestNodeFamily targetFamily{j_};
+
+    // Built bottom-up, so each parent records the hash of the node below it and the chain verifies
+    // at every level. The deepest node points at a child the store does not hold.
+    SHAMapHash childHash{UInt256{1}};
+    SHAMapTreeNodePtr node;
+
+    // The node at kLeafDepth, which is the one the traversal has to refuse. Recorded so the refusal
+    // can be told apart from a failure to fetch the sentinel the chain ends on.
+    SHAMapHash deepestHash;
+
+    // The decrement is in the body, so the counter never steps below zero.
+    // UndefinedBehaviorSanitizer reports that wraparound.
+    for (auto depth = SHAMap::kLeafDepth + 1u; depth > 0;)
+    {
+        --depth;
+        auto const id = SHAMapNodeID::createID(std::min(depth, SHAMap::kLeafDepth - 1u), kChainKey);
+        node = makeFullInnerNode({{.branch = selectBranch(id, kChainKey), .hash = childHash}});
+        ASSERT_TRUE(node);
+
+        Serializer prefixed;
+        node->serializeWithPrefix(prefixed);
+        targetFamily.db().store(
+            NodeObjectType::AccountNode,
+            prefixed.getData(),
+            node->getHash().asUInt256(),
+            kStoredLedgerSeq);
+
+        childHash = node->getHash();
+        if (depth == SHAMap::kLeafDepth)
+            deepestHash = childHash;
+    }
+    ASSERT_TRUE(deepestHash.isNonZero());
+
+    SHAMap map{SHAMapType::FREE, UInt256{}, targetFamily};
+    map.setLedgerSeq(kStoredLedgerSeq);
+    ASSERT_TRUE(map.addRootNode(childHash, std::move(node), nullptr).isGood());
+
+    // The chain is really readable, so the refusal below is about depth.
+    ASSERT_NE(targetFamily.db().fetchNodeObject(childHash.asUInt256(), kStoredLedgerSeq), nullptr);
+
+    // Refused with SHAMapMissingNode, which is pushChild's other refusal shape: too deep rather
+    // than misplaced. The depth bound applies before getChildNodeID is asked for a child.
+    try
+    {
+        static_cast<void>(map.begin());
+        ADD_FAILURE() << "the traversal did not refuse the path";
+    }
+    catch (SHAMapMissingNode const& e)
+    {
+        // belowHelper's refusal reports the hash of the child it refused, where the scan sites
+        // above report the key they were searching for. So the node named here is the one at
+        // kLeafDepth.
+        std::string const what{e.what()};
+        EXPECT_NE(what.find(to_string(deepestHash)), std::string::npos) << what;
+    }
 }
 
 }  // namespace xrpl::tests
