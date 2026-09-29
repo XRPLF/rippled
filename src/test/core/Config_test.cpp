@@ -122,6 +122,83 @@ backend=sqlite
     return std::format(kConfigContentsTemplate, dbPathSection, valFileSection);
 }
 
+// setenv and unsetenv are POSIX only.
+#if BOOST_OS_LINUX || BOOST_OS_MACOS
+
+/**
+ * Set an environment variable and restore its previous value when done.
+ *
+ * The previous value is copied, because POSIX allows a later `setenv` to release
+ * the string `getenv` returned.
+ */
+class EnvVarGuard
+{
+private:
+    std::string const name_;
+    std::optional<std::string> const saved_;
+
+    /**
+     * Read an environment variable into a value this guard owns.
+     *
+     * @param name Name of the environment variable to read.
+     * @return The value, or std::nullopt when the variable is not set.
+     */
+    [[nodiscard]] static std::optional<std::string>
+    read(char const* name)
+    {
+        if (char const* const value = std::getenv(name); value != nullptr)
+            return std::string{value};
+
+        return std::nullopt;
+    }
+
+    /**
+     * Give an environment variable a value, or remove it.
+     *
+     * @param name Name of the environment variable to write.
+     * @param value Value to set, or std::nullopt to remove the variable.
+     */
+    static void
+    apply(char const* name, std::optional<std::string> const& value) noexcept
+    {
+        if (value)
+        {
+            setenv(name, value->c_str(), 1);
+        }
+        else
+        {
+            unsetenv(name);
+        }
+    }
+
+public:
+    /**
+     * Save the variable's current value, then write the given one.
+     *
+     * @param name Name of the environment variable to set.
+     * @param value Value to set, or std::nullopt to remove the variable.
+     */
+    EnvVarGuard(char const* name, std::optional<std::string> const& value)
+        : name_(name), saved_(read(name))
+    {
+        apply(name_.c_str(), value);
+    }
+
+    EnvVarGuard(EnvVarGuard const&) = delete;
+    EnvVarGuard&
+    operator=(EnvVarGuard const&) = delete;
+
+    /**
+     * Restore the value the variable held before construction.
+     */
+    ~EnvVarGuard()
+    {
+        apply(name_.c_str(), saved_);
+    }
+};
+
+#endif  // BOOST_OS_LINUX || BOOST_OS_MACOS
+
 /**
  * Write an xrpld config file and remove when done.
  */
@@ -348,13 +425,11 @@ port_wss_admin
             {
                 TempDir const tc;
 
-                // Set the HOME and XDG_CONFIG_HOME environment variables. The
-                // HOME variable is not used when XDG_CONFIG_HOME is set, but
-                // must be set.
-                char const* h = getenv("HOME");
-                setenv("HOME", tc.path().c_str(), 1);
-                char const* x = getenv("XDG_CONFIG_HOME");
-                setenv("XDG_CONFIG_HOME", tc.path().c_str(), 1);
+                // The HOME variable is not used when XDG_CONFIG_HOME is set,
+                // but must be set. Both guards are declared after tc, so they
+                // restore before it is removed.
+                detail::EnvVarGuard const homeGuard("HOME", tc.path());
+                detail::EnvVarGuard const xdgGuard("XDG_CONFIG_HOME", tc.path());
 
                 // Create the config file in '${XDG_CONFIG_HOME}/[systemName]'.
                 path p = tc.file(systemName());
@@ -371,10 +446,6 @@ port_wss_admin
                 BEAST_EXPECT(
                     c.section(Sections::kDebugLogfile).values()[0] ==
                     "/Users/dummy/xrpld/config/log/debug.log");
-
-                // Restore the environment variables.
-                (h != nullptr) ? setenv("HOME", h, 1) : unsetenv("HOME");
-                (x != nullptr) ? setenv("XDG_CONFIG_HOME", x, 1) : unsetenv("XDG_CONFIG_HOME");
             }
 
             // The XDG config directory is not set: the config file must be in a
@@ -382,11 +453,10 @@ port_wss_admin
             {
                 TempDir const tc;
 
-                // Set only the HOME environment variable.
-                char const* h = getenv("HOME");
-                setenv("HOME", tc.path().c_str(), 1);
-                char const* x = getenv("XDG_CONFIG_HOME");
-                unsetenv("XDG_CONFIG_HOME");
+                // Both guards are declared after tc, so they restore before it
+                // is removed.
+                detail::EnvVarGuard const homeGuard("HOME", tc.path());
+                detail::EnvVarGuard const xdgGuard("XDG_CONFIG_HOME", std::nullopt);
 
                 // Create the config file in '${HOME}/.config/[systemName]'.
                 std::string s = ".config";
@@ -407,11 +477,6 @@ port_wss_admin
                 BEAST_EXPECT(
                     c.section(Sections::kDebugLogfile).values()[0] ==
                     "/Users/dummy/xrpld/config/log/debug.log");
-
-                // Restore the environment variables.
-                (h != nullptr) ? setenv("HOME", h, 1) : unsetenv("HOME");
-                if (x != nullptr)
-                    setenv("XDG_CONFIG_HOME", x, 1);
             }
         }
 #endif
