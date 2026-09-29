@@ -141,6 +141,12 @@ public:
             return;
         }
 
+        // The test runs before the loop below, which costs a hash per node, since a settled
+        // acquisition discards the result. It charges the peer itself when the reply is
+        // outside its allowance.
+        if (!ta->wantsReplyFrom(peer))
+            return;
+
         std::vector<std::pair<SHAMapNodeID, SHAMapTreeNodePtr>> data;
         data.reserve(packet.nodes().size());
 
@@ -192,7 +198,16 @@ public:
                 inboundSet.set = set;
             }
 
-            inboundSet.acquire.reset();
+            // Reset only when something other than the acquisition supplied the set, since
+            // dropping the pointer cancels an acquisition still in flight. Keeping it lets a late
+            // reply for this hash still reach takeNodesLocked()'s allowance, and newRound() sweeps
+            // the entry.
+            //
+            // Keyed by the hash alone, not by which acquisition finished. addRootNode() refuses a
+            // root that does not hash to the hash asked for, so every acquisition for a hash ends
+            // with the same map, and installing it is correct whichever entry map_[hash] names.
+            if (!fromAcquire)
+                inboundSet.acquire.reset();
         }
 
         if (isNew)
