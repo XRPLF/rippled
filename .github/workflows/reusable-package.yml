@@ -269,8 +269,8 @@ jobs:
     env:
       CONTEXT: image-context
       IMAGE: ${{ matrix.target == 'voidstar' && 'xrpld-voidstar' || 'xrplf/xrpld' }}:${{ github.ref_type == 'tag' && github.ref_name || 'develop' }}
-      # Docker Hub is public, so a private build never reaches it; the
-      # Antithesis registry is not, so both repositories push there.
+      # Docker Hub is public, so a private build never reaches it;
+      # the Antithesis registry is not.
       PUSH: ${{ inputs.publish && (matrix.target == 'voidstar' || github.event.repository.visibility == 'public') }}
 
     steps:
@@ -284,7 +284,6 @@ jobs:
           merge-multiple: true
           path: ${{ env.PACKAGE_DIR }}
 
-      # Named after the voidstar config in linux.json.
       - name: Download voidstar binary
         if: ${{ matrix.target == 'voidstar' }}
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
