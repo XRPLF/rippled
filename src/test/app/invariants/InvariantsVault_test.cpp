@@ -2315,6 +2315,7 @@ class InvariantsVault_test : public InvariantsBase
 
         testcase << "Vault withdrawal";
         doInvariantCheck(
+            makeEnv(all_ - featureLendingProtocolV1_2),
             {"withdrawal must change vault balance"},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                 auto const keylet = keylet::vault(a1.id(), SeqProxy::rawSequence(ac.view().seq()));
@@ -2326,6 +2327,26 @@ class InvariantsVault_test : public InvariantsBase
             STTx{ttVAULT_WITHDRAW, [](STObject&) {}},
             {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
             precloseXrp);
+
+        // Post-featureLendingProtocolV1_2 (XLS-65.4 3.4.4) the bounds are relaxed so a
+        // withdrawal may burn shares for a zero payout, as an early exit at a 100% fee does.
+        doInvariantCheck(
+            makeEnv(all_ | featureLendingProtocolV1_2),
+            {},
+            [&](Account const& a1, Account const& a2, ApplyContext& ac) {
+                auto const keylet = keylet::vault(a1.id(), SeqProxy::rawSequence(ac.view().seq()));
+                return kAdjust(ac.view(), keylet, kArgs(a2.id(), -10, [](Adjustments& sample) {
+                                   sample.assetsTotal.reset();
+                                   sample.assetsAvailable.reset();
+                                   sample.vaultAssets.reset();
+                                   sample.accountAssets.reset();
+                               }));
+            },
+            XRPAmount{},
+            STTx{ttVAULT_WITHDRAW, [](STObject&) {}},
+            {tesSUCCESS, tesSUCCESS},
+            precloseXrp,
+            TxAccount::A2);
 
         // Almost identical to the really convoluted test for deposit, where the
         // depositor spends only the transaction fee. In case of withdrawal,
@@ -2814,6 +2835,87 @@ class InvariantsVault_test : public InvariantsBase
                 std::uint32_t const sub = 1'000'000'000;
                 std::uint32_t const red = sub + kMaxInvestmentPeriod;
                 return insertBareClosedEndedVault(ac, a1, sub, red);
+            },
+            XRPAmount{},
+            STTx{ttVAULT_CREATE, [](STObject&) {}},
+            {tecINVARIANT_FAILED, tefINVARIANT_FAILED});
+
+        // EarlyExitFeeRate is only allowed on a closed-ended vault with LEVersion >= CashBasis,
+        // and must not exceed MAX_EARLY_EXIT_FEE_RATE. Insert a bare closed-ended vault with
+        // valid dates, then adjust it so only the early-exit fee rate invariant under test fires.
+        auto const insertEarlyExitFeeVault = [&](ApplyContext& ac,
+                                                 Account const& owner,
+                                                 bool openEnded,
+                                                 std::optional<VaultVersion> version,
+                                                 std::uint32_t rate = 1) -> bool {
+            std::uint32_t const sub = 1'000'000'000;
+            std::uint32_t const red = sub + kMinInvestmentPeriod;
+            if (!insertBareClosedEndedVault(ac, owner, sub, red))
+                return false;
+            auto sleVault =
+                ac.view().peek(keylet::vault(owner.id(), SeqProxy::rawSequence(ac.view().seq())));
+            if (!sleVault)
+                return false;
+            if (openEnded)
+            {
+                sleVault->at(sfVaultKind) = std::to_underlying(VaultKind::OpenEnded);
+                sleVault->makeFieldAbsent(sfSubscriptionDate);
+                sleVault->makeFieldAbsent(sfRedemptionDate);
+            }
+            if (version)
+                sleVault->at(sfLEVersion) = std::to_underlying(*version);
+            sleVault->at(sfEarlyExitFeeRate) = rate;
+            ac.view().update(sleVault);
+            return true;
+        };
+
+        testcase << "Vault create early-exit fee rate placement";
+
+        // Closed-ended vault without LEVersion.
+        doInvariantCheck(
+            {"early-exit fee rate only allowed on a closed-ended vault with "
+             "LEVersion >= CashBasis"},
+            [&](Account const& a1, Account const&, ApplyContext& ac) {
+                return insertEarlyExitFeeVault(ac, a1, /*openEnded=*/false, std::nullopt);
+            },
+            XRPAmount{},
+            STTx{ttVAULT_CREATE, [](STObject&) {}},
+            {tecINVARIANT_FAILED, tefINVARIANT_FAILED});
+
+        // Closed-ended vault with LEVersion below CashBasis.
+        doInvariantCheck(
+            {"early-exit fee rate only allowed on a closed-ended vault with "
+             "LEVersion >= CashBasis"},
+            [&](Account const& a1, Account const&, ApplyContext& ac) {
+                return insertEarlyExitFeeVault(ac, a1, /*openEnded=*/false, VaultVersion::Legacy);
+            },
+            XRPAmount{},
+            STTx{ttVAULT_CREATE, [](STObject&) {}},
+            {tecINVARIANT_FAILED, tefINVARIANT_FAILED});
+
+        // Open-ended vault, even with a sufficient LEVersion.
+        doInvariantCheck(
+            {"early-exit fee rate only allowed on a closed-ended vault with "
+             "LEVersion >= CashBasis"},
+            [&](Account const& a1, Account const&, ApplyContext& ac) {
+                return insertEarlyExitFeeVault(ac, a1, /*openEnded=*/true, VaultVersion::CashBasis);
+            },
+            XRPAmount{},
+            STTx{ttVAULT_CREATE, [](STObject&) {}},
+            {tecINVARIANT_FAILED, tefINVARIANT_FAILED});
+
+        testcase << "Vault create early-exit fee rate bound";
+
+        // Valid placement, but the rate is one above MAX_EARLY_EXIT_FEE_RATE.
+        doInvariantCheck(
+            {"early-exit fee rate must not exceed MAX_EARLY_EXIT_FEE_RATE"},
+            [&](Account const& a1, Account const&, ApplyContext& ac) {
+                return insertEarlyExitFeeVault(
+                    ac,
+                    a1,
+                    /*openEnded=*/false,
+                    VaultVersion::CashBasis,
+                    kMaxEarlyExitFeeRate.value() + 1);
             },
             XRPAmount{},
             STTx{ttVAULT_CREATE, [](STObject&) {}},

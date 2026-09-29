@@ -36,6 +36,8 @@ struct Vault
             std::nullopt;  // NOLINT(readability-redundant-member-init)
         std::optional<VaultVersion> leVersion =
             std::nullopt;  // NOLINT(readability-redundant-member-init)
+        std::optional<std::uint32_t> earlyExitFeeRate =
+            std::nullopt;  // NOLINT(readability-redundant-member-init)
     };
 
     /**

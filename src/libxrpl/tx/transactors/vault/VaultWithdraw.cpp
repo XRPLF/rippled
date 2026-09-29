@@ -23,6 +23,7 @@
 #include <xrpl/protocol/STTakesAsset.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/Units.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/Transactor.h>
 
@@ -89,7 +90,11 @@ VaultWithdraw::preclaim(PreclaimContext const& ctx)
 
     if (ctx.view.rules().enabled(featureLendingProtocolV1_1))
     {
-        if (getVaultPhase(ctx.view, vault) == VaultPhase::Investment)
+        // Post-featureLendingProtocolV1_2: a vault created with sfEarlyExitFeeRate
+        // (even zero) permits withdrawal during the Investment phase.
+        bool const earlyExitAllowed = ctx.view.rules().enabled(featureLendingProtocolV1_2) &&
+            vault->isFieldPresent(sfEarlyExitFeeRate);
+        if (!earlyExitAllowed && getVaultPhase(ctx.view, vault) == VaultPhase::Investment)
         {
             JLOG(ctx.j.debug())
                 << "VaultWithdraw: vault withdrawal is not allowed in the investment phase.";
@@ -388,6 +393,17 @@ VaultWithdraw::doApply()
     auto assetsTotal = vault->at(sfAssetsTotal);
     auto const lossUnrealized = vault->at(sfLossUnrealized);
 
+    // Shares are burned against the pre-fee amount while only the post-fee
+    // payout leaves the vault; the fee stays behind and accrues to the
+    // remaining shareholders.
+    TenthBips32 const feeRate = getApplicableEarlyExitFeeRate(view(), vault, isFinalWithdrawal);
+    bool const chargesFee = feeRate > TenthBips32{0};
+    // sfEarlyExitFeeRate is only set under featureLendingProtocolV1_2, which creates
+    // FixedPrecision vaults, so the fee is always computed in the rounding block below.
+    XRPL_ASSERT(
+        !chargesFee || getVaultVersion(vault) == VaultVersion::FixedPrecision,
+        "xrpl::VaultWithdraw::doApply : early-exit fee requires a FixedPrecision vault");
+
     if (fix340Enabled && !isFinalWithdrawal)
     {
         // Fixed-shares path: a small share count can round to zero assets even though the vault has
@@ -458,7 +474,10 @@ VaultWithdraw::doApply()
         // reports tecINSUFFICIENT_FUNDS rather than tecPRECISION_LOSS. The clamp below only ever
         // shrinks assetsWithdrawn, so this check stays valid; the post-clamp check further down
         // remains in place to catch the (now smaller) clamped value too.
-        if (*assetsAvailable < assetsWithdrawn)
+        //
+        // With an early-exit fee only the post-fee payout leaves the vault, so availability is
+        // checked against it below instead.
+        if (!chargesFee && *assetsAvailable < assetsWithdrawn)
         {
             JLOG(j_.debug()) << "VaultWithdraw: vault doesn't hold enough assets";
             return tecINSUFFICIENT_FUNDS;
@@ -473,7 +492,40 @@ VaultWithdraw::doApply()
             auto const maybeClamped = clampToAssetsTotalScale(vault, -assetsWithdrawn);
             if (!maybeClamped)
                 return maybeClamped.error();
-            assetsWithdrawn = *maybeClamped;
+
+            if (chargesFee)
+            {
+                // The fee is rounded up at the scale derived from the pre-fee amount, and the
+                // payout is not rounded again. Deriving the scale from the payout would be
+                // circular, since the payout depends on the fee.
+                auto const feeScale = getPosteriorVaultScale(vault, -assetsWithdrawn);
+                auto const fee = calculateEarlyExitFee(*maybeClamped, feeRate, feeScale);
+
+                // Below 100%, a fee that consumes the whole withdrawal is a rounding artifact;
+                // refuse rather than burn shares for nothing. At 100% it is the intended setting.
+                if (fee >= *maybeClamped && feeRate < kMaxEarlyExitFeeRate)
+                {
+                    JLOG(j_.debug()) << "VaultWithdraw: early-exit fee consumes the withdrawal";
+                    return tecPRECISION_LOSS;
+                }
+
+                assetsWithdrawn = *maybeClamped - fee;
+
+                // A non-zero payout must still change the stored vault balance.
+                if (debitIsNonZeroDust(vaultAsset, assetsTotal, assetsWithdrawn))
+                {
+                    JLOG(j_.debug()) << "VaultWithdraw: post-fee payout too small to change"
+                                        " stored vault balance";
+                    return tecPRECISION_LOSS;
+                }
+
+                JLOG(j_.trace()) << "VaultWithdraw: early-exit fee=" << fee.getText()
+                                 << " payout=" << assetsWithdrawn.getText();
+            }
+            else
+            {
+                assetsWithdrawn = *maybeClamped;
+            }
         }
         // LCOV_EXCL_START
         catch (std::overflow_error const&)

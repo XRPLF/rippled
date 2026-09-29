@@ -40,6 +40,7 @@ TEST(VaultTests, BuilderSettersRoundTrip)
     auto const vaultKindValue = canonical_UINT8();
     auto const subscriptionDateValue = canonical_UINT32();
     auto const redemptionDateValue = canonical_UINT32();
+    auto const earlyExitFeeRateValue = canonical_UINT32();
 
     VaultBuilder builder{
         previousTxnIDValue,
@@ -64,6 +65,7 @@ TEST(VaultTests, BuilderSettersRoundTrip)
     builder.setVaultKind(vaultKindValue);
     builder.setSubscriptionDate(subscriptionDateValue);
     builder.setRedemptionDate(redemptionDateValue);
+    builder.setEarlyExitFeeRate(earlyExitFeeRateValue);
 
     builder.setLedgerIndex(index);
     builder.setFlags(0x1u);
@@ -216,6 +218,14 @@ TEST(VaultTests, BuilderSettersRoundTrip)
         EXPECT_TRUE(entry.hasRedemptionDate());
     }
 
+    {
+        auto const& expected = earlyExitFeeRateValue;
+        auto const actualOpt = entry.getEarlyExitFeeRate();
+        ASSERT_TRUE(actualOpt.has_value());
+        expectEqualField(expected, *actualOpt, "sfEarlyExitFeeRate");
+        EXPECT_TRUE(entry.hasEarlyExitFeeRate());
+    }
+
     EXPECT_TRUE(entry.hasLedgerIndex());
     auto const ledgerIndex = entry.getLedgerIndex();
     ASSERT_TRUE(ledgerIndex.has_value());
@@ -249,6 +259,7 @@ TEST(VaultTests, BuilderFromSleRoundTrip)
     auto const vaultKindValue = canonical_UINT8();
     auto const subscriptionDateValue = canonical_UINT32();
     auto const redemptionDateValue = canonical_UINT32();
+    auto const earlyExitFeeRateValue = canonical_UINT32();
 
     auto sle = std::make_shared<SLE>(Vault::entryType, index);
 
@@ -272,6 +283,7 @@ TEST(VaultTests, BuilderFromSleRoundTrip)
     sle->at(sfVaultKind) = vaultKindValue;
     sle->at(sfSubscriptionDate) = subscriptionDateValue;
     sle->at(sfRedemptionDate) = redemptionDateValue;
+    sle->at(sfEarlyExitFeeRate) = earlyExitFeeRateValue;
 
     VaultBuilder builderFromSle{sle};
     EXPECT_TRUE(builderFromSle.validate());
@@ -515,6 +527,19 @@ TEST(VaultTests, BuilderFromSleRoundTrip)
         expectEqualField(expected, *fromBuilderOpt, "sfRedemptionDate");
     }
 
+    {
+        auto const& expected = earlyExitFeeRateValue;
+
+        auto const fromSleOpt = entryFromSle.getEarlyExitFeeRate();
+        auto const fromBuilderOpt = entryFromBuilder.getEarlyExitFeeRate();
+
+        ASSERT_TRUE(fromSleOpt.has_value());
+        ASSERT_TRUE(fromBuilderOpt.has_value());
+
+        expectEqualField(expected, *fromSleOpt, "sfEarlyExitFeeRate");
+        expectEqualField(expected, *fromBuilderOpt, "sfEarlyExitFeeRate");
+    }
+
     EXPECT_EQ(entryFromSle.getKey(), index);
     EXPECT_EQ(entryFromBuilder.getKey(), index);
 }
@@ -607,5 +632,7 @@ TEST(VaultTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(entry.getSubscriptionDate().has_value());
     EXPECT_FALSE(entry.hasRedemptionDate());
     EXPECT_FALSE(entry.getRedemptionDate().has_value());
+    EXPECT_FALSE(entry.hasEarlyExitFeeRate());
+    EXPECT_FALSE(entry.getEarlyExitFeeRate().has_value());
 }
 }
