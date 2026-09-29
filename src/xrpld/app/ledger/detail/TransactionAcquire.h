@@ -52,20 +52,18 @@ public:
     /**
      * Add nodes a peer sent us to the set we are acquiring.
      *
-     * Charges the peer for data it declines, since only this function holds the
-     * lock that decides the tier. A node that leaves the map invalid also fails
-     * the acquisition; see SHAMap::addKnownNode for why that verdict is final.
-     * A late reply is bounded by a per-peer allowance; see
-     * lateReplyGranted_.
+     * Takes mtx_, the lock that reaches the verdict, so the charge for
+     * declined data is issued here. A node that leaves the map invalid also
+     * fails the acquisition. A late reply is bounded by the per-peer allowance
+     * in lateReplyGranted_.
      *
      * @param data The nodes to add, each with its claimed position.
      * @param peer The peer that sent them, charged here if the data is
      *        declined.
      * @return The tally of useful, duplicate, and bad nodes in the batch.
-     *         Useful and bad can both be nonzero, since only the node the
-     *         batch stops on is bad.
+     *         Useful and bad can both be nonzero.
      */
-    SHAMapAddNode
+    [[nodiscard]] SHAMapAddNode
     takeNodes(
         std::vector<std::pair<SHAMapNodeID, SHAMapTreeNodePtr>> data,
         std::shared_ptr<Peer> const& peer);
@@ -90,68 +88,58 @@ public:
     /**
      * Resume a timed-out acquisition, or leave it alone.
      *
-     * Always clamps the timeout count. An acquisition that failed with
-     * its map still valid has its timer chain stopped, so this also
-     * clears the failed flag and restarts the timer. One that failed
-     * because its map went invalid stays failed; see
-     * SHAMap::addKnownNode for why that verdict holds for every peer.
+     * Takes mtx_. Clamps the timeout count, then clears the failed flag and
+     * restarts the timer if the map is still valid. An invalid map stays
+     * failed. See SHAMap::addKnownNode for why that verdict is final.
      *
-     * @return Whether the set is still worth keeping. False for one whose
-     *         map went invalid, so the caller stops refreshing the window
-     *         that decides when it is swept.
+     * @return Whether the set is still worth keeping, which is false once its
+     *         map is invalid.
      */
     [[nodiscard]] bool
     stillNeed();
 
 protected:
-    // Kept protected so a test subclass can read the map's state.
-    // Production callers reach a set through InboundTransactions.
+    // Protected so a test subclass can read the map's state.
     std::shared_ptr<SHAMap> map_;
 
 private:
     bool haveRoot_{false};
 
     /**
-     * Every peer a request has actually been sent to.
-     *
-     * Holds the peers addPeers() selected and trigger() then built a request
-     * for, the unsolicited senders takeNodesLocked() trigger()s directly
-     * outside addPeers(), and the whole of peerSet_->getPeerIds() once a
-     * broadcast has gone out. Selection alone does not enroll a peer: trigger()
-     * records it at the two branches that build a request, so one reached while
-     * the map is invalid, while nothing is missing, or after the acquisition
-     * settled is left out. Recording every peer a request went to, however it
-     * was chosen, bounds the free allowance to peers with a reply in flight.
-     * stillNeed() keeps this set, since a peer already asked stays asked
-     * whichever round its reply arrives in.
+     * Every peer a request has actually been sent to, which is what earns a
+     * peer the free late-reply pass. trigger() records a peer where it builds
+     * the request, so selection alone does not enroll one. Survives a
+     * stillNeed() revival. Guarded by mtx_.
      */
     std::set<Peer::ID> requestedPeers_;
 
     /**
-     * Peers in requestedPeers_ that have already spent the free late reply
-     * their last request earned.
-     *
-     * Membership rather than a count, so each peer's pass is its own: a
-     * peer already in requestedPeers_ is granted one free late reply the
-     * first time it reaches takeNodesLocked()'s isDone() branch, and is
-     * charged on every later one. recordAsked() renews a pass wherever it
-     * records a request, for a targeted request and for a broadcast alike,
-     * so a peer earns one pass per request actually sent to it. A revival on
-     * its own renews nothing.
+     * Peers in requestedPeers_ that have spent the free late reply their last
+     * request earned. One pass per request actually sent. recordAsked()
+     * renews a pass wherever it records a request, for a targeted request and
+     * for a broadcast alike, so a revival on its own renews nothing. Guarded
+     * by mtx_.
      */
     std::set<Peer::ID> lateReplyGranted_;
+
+    /**
+     * Consecutive timer intervals a duplicate-only reply has postponed, with no
+     * useful node in between. Bounded by kMaxDuplicateCredits, so the timeout
+     * count always resumes. Reset by a batch that advances the set, and by
+     * stillNeed() on revival.
+     */
+    int duplicateCredits_{0};
 
     std::unique_ptr<PeerSet> peerSet_;
 
     /**
-     * Add nodes a peer sent us, on the lock takeNodes() holds.
-     *
-     * Split out so recording what the batch achieved happens on one exit,
-     * covering the paths that stop the batch early as well.
+     * Add nodes a peer sent us, on the lock takeNodes() holds. Reached only for
+     * an acquisition still running.
      *
      * @param data The nodes to add, each with its claimed position.
      * @param peer The peer that sent them, charged here if the data is
      *        declined.
+     * @param sl Proof mtx_ is held.
      * @return The tally of useful, duplicate, and bad nodes in the batch.
      */
     SHAMapAddNode
@@ -197,6 +185,16 @@ private:
      */
     void
     recordAsked(std::shared_ptr<Peer> const& peer);
+
+    /**
+     * Whether a request has ever gone to this peer, in any round. Call under
+     * mtx_.
+     *
+     * @param peer The peer to ask about, which must be non-null.
+     * @return Whether a request was sent to this peer.
+     */
+    [[nodiscard]] bool
+    hasAsked(std::shared_ptr<Peer> const& peer) const;
 
     void
     trigger(std::shared_ptr<Peer> const&);
