@@ -29,6 +29,7 @@
 #include <xrpl/protocol/TxFormats.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/resource/Fees.h>
+#include <xrpl/tx/wasm/WasmVM.h>
 
 #include <cstdint>
 #include <exception>
@@ -246,6 +247,8 @@ simulateTxn(rpc::JsonContext& context, std::shared_ptr<Transaction> transaction)
     json::Value jvResult;
     // Process the transaction
     OpenView view = *context.app.getOpenLedger().current();
+
+    auto const wasm = WasmScope{};
     auto const result = context.app.getTxQ().apply(
         context.app, view, transaction->getSTransaction(), TapDryRun, context.j);
 
@@ -279,15 +282,15 @@ simulateTxn(rpc::JsonContext& context, std::shared_ptr<Transaction> transaction)
         jvResult[jss::engine_result_message] = "The simulated transaction would have been applied.";
     }
 
+    if (wasm.entered())
+    {
+        // WASM ran, at whatever stage and to whatever outcome. Charge more for that,
+        // since gas is not charged during simulation.
+        context.loadType = resource::kFeeHeavyBurdenRpc;
+    }
+
     if (result.metadata)
     {
-        if (result.metadata->getVMReturnCode().has_value())
-        {
-            // WASM code was executed during this simulation.
-            // Charge more for that since gas is not charged during simulation.
-            context.loadType = resource::kFeeHeavyBurdenRpc;
-        }
-
         if (isBinaryOutput)
         {
             auto const metaBlob = result.metadata->getAsObject().getSerializer().getData();
