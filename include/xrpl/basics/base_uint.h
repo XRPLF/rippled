@@ -580,6 +580,12 @@ using UInt160 = BaseUInt<160>;
 using UInt256 = BaseUInt<256>;
 using UInt192 = BaseUInt<192>;
 
+// Legacy names still used by external consumers of libxrpl (e.g. rpc-spec).
+// Do not use in new code; remove once those consumers have migrated.
+using uint160 = UInt160;  // NOLINT(readability-identifier-naming)
+using uint256 = UInt256;  // NOLINT(readability-identifier-naming)
+using uint192 = UInt192;  // NOLINT(readability-identifier-naming)
+
 template <std::size_t Bits, class Tag>
 [[nodiscard]] constexpr std::strong_ordering
 operator<=>(BaseUInt<Bits, Tag> const& lhs, BaseUInt<Bits, Tag> const& rhs)
