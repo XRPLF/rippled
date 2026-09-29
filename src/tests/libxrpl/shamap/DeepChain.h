@@ -192,14 +192,14 @@ struct DeepChain
     }
 
     /**
-     * Offer the deepest node, which for a fabricated chain is the inner node at
+     * Offer the deepest node, which without a leaf is the inner node at
      * SHAMap::kLeafDepth, a depth only a leaf may occupy.
      *
      * @param map The map to offer the node to, filled by fill() first.
      * @return The verdict addKnownNode() reached.
      */
     [[nodiscard]] SHAMapAddNode
-    addOffendingNode(SHAMap& map) const
+    addRejectedNode(SHAMap& map) const
     {
         return map.addKnownNode(idAt(deepestDepth), nodeAt(deepestDepth), nullptr);
     }
