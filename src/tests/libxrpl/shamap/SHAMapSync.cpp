@@ -11,6 +11,7 @@
 #include <xrpl/protocol/Rules.h>
 #include <xrpl/protocol/Serializer.h>
 #include <xrpl/shamap/SHAMap.h>
+#include <xrpl/shamap/SHAMapAddNode.h>
 #include <xrpl/shamap/SHAMapItem.h>
 #include <xrpl/shamap/SHAMapMissingNode.h>
 #include <xrpl/shamap/SHAMapNodeID.h>
@@ -21,6 +22,7 @@
 
 #include <gtest/gtest.h>
 #include <helpers/TestSink.h>
+#include <shamap/DeepChain.h>
 #include <shamap/InnerNode.h>
 #include <shamap/common.h>
 
@@ -48,6 +50,29 @@ static constexpr int kMaxNodesPerRequest = 2048;
 noAmendments()
 {
     return Rules{std::unordered_set<UInt256, beast::Uhash<>>{}};
+}
+
+/**
+ * Whether a verdict carries exactly the given counts.
+ *
+ * The counts rather than get(): that string is a log format, not an API. It is
+ * pinned once, in the SHAMapAddNode tests, and read here only to describe a
+ * failure.
+ *
+ * @param san The verdict to check.
+ * @param good How many nodes the batch should have hooked in.
+ * @param bad How many it should have rejected.
+ * @param duplicate How many it should have already held.
+ * @return Whether the verdict matches, naming the actual tally if it does not.
+ */
+[[nodiscard]] static ::testing::AssertionResult
+tallyIs(SHAMapAddNode const& san, int good, int bad, int duplicate)
+{
+    if (san.getGood() == good && san.getBad() == bad && san.getDuplicate() == duplicate)
+        return ::testing::AssertionSuccess();
+
+    return ::testing::AssertionFailure() << "tally is " << san.get() << ", expected good:" << good
+                                         << " bad:" << bad << " dupe:" << duplicate;
 }
 
 class SHAMapSyncTest : public ::testing::Test
@@ -204,6 +229,126 @@ protected:
         }
     };
 };
+
+// Only a leaf may sit at kLeafDepth. An inner node there is reported as bad data and leaves the
+// map invalid.
+TEST_F(SHAMapSyncTest, inner_node_at_leaf_depth)
+{
+    TestNodeFamily f{j_};
+    DeepChain const chain;
+
+    SHAMap map{SHAMapType::FREE, f};
+    map.setSynching();
+
+    ASSERT_TRUE(chain.fill(map));
+    ASSERT_TRUE(map.isValid());
+
+    auto const result = chain.addOffendingNode(map);
+
+    EXPECT_TRUE(tallyIs(result, 0, 1, 0));
+    EXPECT_FALSE(result.isGood());
+    EXPECT_FALSE(map.isValid());
+}
+
+// A node the descent rejects is bad data: the batch counts it bad and the map stays usable for
+// another sender. All three ways of getting there are covered, since they share that verdict.
+TEST_F(SHAMapSyncTest, node_that_cannot_be_hooked_is_bad_data)
+{
+    TestNodeFamily f{j_};
+    DeepChain const chain;
+
+    SHAMap map{SHAMapType::FREE, f};
+    map.setSynching();
+
+    ASSERT_TRUE(map.addRootNode(chain.rootHash, chain.nodeAt(0), nullptr).isGood());
+
+    // nodeAt(1) is the node the root is missing and its hash matches, but we claim depth 2.
+    auto const wrongDepth = map.addKnownNode(SHAMapNodeID{2, UInt256{}}, chain.nodeAt(1), nullptr);
+
+    EXPECT_TRUE(tallyIs(wrongDepth, 0, 1, 0));
+    EXPECT_FALSE(wrongDepth.isUseful());
+
+    // The chain sits on branch 0 at every depth, so a node claiming a position on branch 1 asks the
+    // descent to follow a branch the root leaves empty.
+    UInt256 otherBranch;
+    otherBranch.begin()[0] = 0x10;
+    auto const emptyBranch =
+        map.addKnownNode(SHAMapNodeID{1, otherBranch}, chain.nodeAt(1), nullptr);
+
+    EXPECT_TRUE(tallyIs(emptyBranch, 0, 1, 0));
+
+    // The right position this time, but the data hashes to something other than the child the root
+    // says belongs there.
+    auto const corrupt = map.addKnownNode(SHAMapNodeID{1, UInt256{}}, chain.nodeAt(2), nullptr);
+
+    EXPECT_TRUE(tallyIs(corrupt, 0, 1, 0));
+
+    // The verdict is bad data alone, so the map stays usable.
+    EXPECT_TRUE(map.isValid());
+}
+
+// A root is installed once and a map is synced against one hash, so a root offered under a hash the
+// map does not hold names another tree and is bad data. The same root under the hash the map does
+// hold is the duplicate it is.
+TEST_F(SHAMapSyncTest, add_root_node_judges_the_hash_asked_for)
+{
+    TestNodeFamily f{j_};
+    DeepChain const chain;
+
+    SHAMap map{SHAMapType::FREE, f};
+    map.setSynching();
+
+    ASSERT_TRUE(map.addRootNode(chain.rootHash, chain.nodeAt(0), nullptr).isGood());
+
+    // The same root under the hash the map holds: already held, and reported as such.
+    auto const same = map.addRootNode(chain.rootHash, chain.nodeAt(0), nullptr);
+
+    EXPECT_TRUE(tallyIs(same, 0, 0, 1));
+    EXPECT_TRUE(same.isGood());
+
+    // A hash the map does not hold. nodeAt(1) is a real node of the same chain, so this is a
+    // well-formed hash that names another tree.
+    auto const other = map.addRootNode(chain.nodeAt(1)->getHash(), chain.nodeAt(0), nullptr);
+
+    EXPECT_TRUE(tallyIs(other, 0, 1, 0));
+    EXPECT_FALSE(other.isGood());
+    EXPECT_TRUE(other.isInvalid());
+
+    // The refusal is about the hash asked for, so the root the map holds stays in place and the map
+    // stays usable.
+    EXPECT_EQ(map.getHash(), chain.rootHash);
+    EXPECT_TRUE(map.isValid());
+}
+
+// The verdict outranks the full-below cache. That cache is keyed by node hash and shared by every
+// map of a family, and a hash covers a node's children but not its depth, so an earlier walk can
+// mark the same subtree hash complete at one depth while this map reaches it at kLeafDepth, with no
+// collision involved. The descent therefore skips the lookup at that boundary and reaches the depth
+// verdict first. This case seeds the entry a lookup would match, so dropping the skip turns the
+// verdict back into a duplicate.
+TEST_F(SHAMapSyncTest, map_invalidating_node_is_judged_before_the_cache_is_read)
+{
+    TestNodeFamily f{j_};
+    DeepChain const chain;
+
+    SHAMap map{SHAMapType::FREE, f};
+    map.setSynching();
+
+    ASSERT_TRUE(chain.fill(map));
+    ASSERT_TRUE(map.isValid());
+
+    // This case seeds the entry a lookup at the boundary would match: the offending node's own
+    // hash. The descent skips the lookup there, so the entry is never read and the depth verdict
+    // stands. Drop the skip and the hit returns for the whole branch, so the tally below becomes
+    // a duplicate.
+    f.getFullBelowCache()->insert(chain.nodeAt(SHAMap::kLeafDepth)->getHash().asUInt256());
+
+    auto const result = chain.addOffendingNode(map);
+
+    EXPECT_TRUE(tallyIs(result, 0, 1, 0));
+    EXPECT_FALSE(result.isGood());
+    EXPECT_FALSE(map.isValid());
+}
 
 // A map marked complete in the database withdraws that claim the first time a read misses, and
 // reports the miss once so the ledger can be re-acquired. Sixteen unresolvable branches are posted
