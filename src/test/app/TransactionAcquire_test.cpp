@@ -242,6 +242,99 @@ struct TransactionAcquire_test : public beast::unit_test::Suite
     }
 
     /**
+     * The late-reply allowance survives giveSet().
+     *
+     * giveSet() resets the acquisition only when something else supplied the
+     * set (the fromAcquire guard), so a reply after completion still reaches
+     * the per-peer allowance wantsReplyFrom() judges in gotData().
+     *
+     * @param env The environment to run in.
+     */
+    void
+    testLateReplyAllowanceSurvivesGiveSet(jtx::Env& env)
+    {
+        testcase("The late-reply allowance survives giveSet()");
+
+        auto const chain = DeepChain::toLeaf(3, nextSeed());
+        auto& inbound = env.app().getInboundTransactions();
+
+        UInt256 const setHash = chain.rootHash.asUInt256();
+        BEAST_EXPECT(inbound.getSet(setHash, true) == nullptr);
+
+        // One peer supplies the whole chain, so it alone holds the allowance's one slot.
+        auto const rootPeer = std::make_shared<ChargeRecordingPeer>();
+        inbound.gotData(setHash, rootPeer, packetFor(chain, {{SHAMapNodeID{}, chain.nodeAt(0)}}));
+        BEAST_EXPECT(rootPeer->charges().empty());
+
+        inbound.gotData(setHash, rootPeer, packetFor(chain, chain.nodesBelowRoot()));
+        BEAST_EXPECT(rootPeer->charges().empty());
+
+        // The set completed and handed off through done() and giveSet().
+        auto const delivered = waitForDeliveredSet(env, setHash);
+        BEAST_EXPECT(delivered != nullptr);
+
+        // giveSet() keeps the acquisition registered, so rootPeer's late reply reaches its free
+        // slot in wantsReplyFrom() rather than gotData()'s no-acquisition charge.
+        inbound.gotData(setHash, rootPeer, packetFor(chain, {{SHAMapNodeID{}, chain.nodeAt(0)}}));
+        BEAST_EXPECT(rootPeer->charges().empty());
+
+        // A second reply from rootPeer has already spent that slot: this one is a replay.
+        inbound.gotData(setHash, rootPeer, packetFor(chain, {{SHAMapNodeID{}, chain.nodeAt(0)}}));
+        BEAST_EXPECT(rootPeer->charges() == std::vector{resource::kFeeUselessData});
+    }
+
+    /**
+     * A late reply is turned away before its nodes are parsed.
+     *
+     * The fee tier is what the order is visible in: the same packet charges
+     * kFeeInvalidData once parsed, as testUndeserializableNodeIsCharged shows.
+     *
+     * @param env The environment to run in.
+     */
+    void
+    testLateReplyIsTurnedAwayBeforeParsing(jtx::Env& env)
+    {
+        testcase("A late reply is turned away before its nodes are parsed");
+
+        auto const chain = DeepChain::toLeaf(3, nextSeed());
+        auto& inbound = env.app().getInboundTransactions();
+
+        UInt256 const setHash = chain.rootHash.asUInt256();
+        BEAST_EXPECT(inbound.getSet(setHash, true) == nullptr);
+
+        // One peer supplies the whole chain, so it alone holds the allowance's one slot. Delivered
+        // in two replies, since only a peer we asked holds a slot and it is the follow-up request
+        // the root-only reply provokes that enrolls it in requestedPeers_.
+        auto const rootPeer = std::make_shared<ChargeRecordingPeer>();
+        inbound.gotData(setHash, rootPeer, packetFor(chain, {{SHAMapNodeID{}, chain.nodeAt(0)}}));
+        inbound.gotData(setHash, rootPeer, packetFor(chain, chain.nodesBelowRoot()));
+
+        BEAST_EXPECT(waitForDeliveredSet(env, setHash) != nullptr);
+        BEAST_EXPECT(rootPeer->charges().empty());
+
+        // Node data getTreeNode() rejects, as in testUndeserializableNodeIsCharged.
+        auto const garbage = [&] {
+            auto packet = std::make_shared<protocol::TMLedgerData>();
+            packet->set_ledgerhash(setHash.data(), UInt256::size());
+            packet->set_ledgerseq(0);
+            packet->set_type(protocol::liTS_CANDIDATE);
+
+            auto* const node = packet->add_nodes();
+            node->set_nodedata("\xff", 1);
+            node->set_id(SHAMapNodeID{}.getRawString());
+            return packet;
+        };
+
+        // Free, so it was turned away before the parse, which would have charged kFeeInvalidData.
+        inbound.gotData(setHash, rootPeer, garbage());
+        BEAST_EXPECT(rootPeer->charges().empty());
+
+        // The slot is spent, so this one is charged as a replay rather than as bad data.
+        inbound.gotData(setHash, rootPeer, garbage());
+        BEAST_EXPECT(rootPeer->charges() == std::vector{resource::kFeeUselessData});
+    }
+
+    /**
      * A chain reaching kLeafDepth must end the acquisition outright.
      *
      * @param env The environment to run in.
@@ -1286,6 +1379,8 @@ struct TransactionAcquire_test : public beast::unit_test::Suite
 
         testHappyPathCompletesAcquisition(env);
         testTwoPeersEachSupplyPartOfTheSet(env);
+        testLateReplyAllowanceSurvivesGiveSet(env);
+        testLateReplyIsTurnedAwayBeforeParsing(env);
         testFabricatedChainFailsAcquire(env);
         testWrongNodeKeepsAcquireAlive(env);
         testBadRootKeepsAcquireAlive(env);
