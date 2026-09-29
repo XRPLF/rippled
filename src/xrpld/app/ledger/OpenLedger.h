@@ -240,7 +240,20 @@ OpenLedger::apply(
         auto iter = retries.begin();
         while (iter != retries.end())
         {
-            switch (applyOne(app, view, iter->second, retry, flags, j))
+            // A transaction that cannot be applied counts as a failure, as it does in the pass
+            // above, so it leaves the set and counts as no change. Every entry gets a verdict on
+            // every pass, so the set shrinks.
+            auto result = Result::Failure;
+            try
+            {
+                result = applyOne(app, view, iter->second, retry, flags, j);
+            }
+            catch (std::exception const& e)
+            {
+                JLOG(j.error()) << "OpenLedger::apply: Caught exception: " << e.what();
+            }
+
+            switch (result)
             {
                 case Result::Success:
                     ++changes;
