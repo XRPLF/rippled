@@ -351,19 +351,21 @@ InboundLedger::tryDB(node_store::Database& srcDB)
         return;
     }
 
-    if (haveTransactions_ && haveState_)
+    if (haveEverything())
     {
         XRPL_ASSERT(
             ledger_->header().seq < kXrpLedgerEarliestFees || ledger_->read(keylet::feeSettings()),
             "xrpl::InboundLedger::tryDB : valid ledger fees");
-        // Settled before complete_ is published, so a caller that reads the flag sees a ledger
-        // this function has finished with. Reached despite the guard above because trigger()
-        // walks the state map with mtx_ released, so that walk can reach the verdict in between.
+        // Settled before complete_ is published, so a caller that reads the flag sees a finished
+        // ledger. Reachable despite the guard above, since trigger() walks the state map with
+        // mtx_ released.
         if (!ledger_->setImmutable())
         {
+            // LCOV_EXCL_START: only the walk named above reaches this, so no test does
             JLOG(journal_.warn()) << "Ledger " << hash_ << " found locally is invalid";
             failed_ = true;
             return;
+            // LCOV_EXCL_STOP
         }
 
         JLOG(journal_.debug()) << "Had everything locally";
@@ -453,28 +455,23 @@ InboundLedger::done()
     signaled_ = true;
     touch();
 
-    // Settled here, and complete_ published only once it is settled. isComplete() is read without
-    // mtx_, by InboundLedgers::acquire() among others, and LedgerHistory::insert() and
-    // LedgerHolder::set() each require an immutable ledger. tryDB() already settles its own
-    // result and sets complete_ itself, so that path arrives here with the ledger immutable and
-    // only the reporting below left to do.
-    bool const haveEverything = haveHeader_ && haveState_ && haveTransactions_;
-    if (!failed_ && ledger_ && (complete_ || haveEverything))
+    // complete_ is published only for a settled, valid ledger, since isComplete() is read without
+    // mtx_. The complete_ arm is for tryDB(), which settles its own result and sets the flag before
+    // calling, so that path arrives with only the reporting below left to do.
+    if (!failed_ && ledger_ && (complete_ || haveEverything()))
     {
         XRPL_ASSERT(
             ledger_->header().seq < kXrpLedgerEarliestFees || ledger_->read(keylet::feeSettings()),
             "xrpl::InboundLedger::done : valid ledger fees");
-        // trigger() walks the state map with mtx_ released, so that walk can reach the verdict
-        // after the flags said there was nothing left to fetch. A race rather than a broken
-        // invariant, and one that peer data produces, so this recovers rather than asserts.
-        // setInvalid() outranks Immutable, so a walk that reaches the verdict after both maps
-        // have been settled leaves an immutable ledger with an invalid map.
+        // trigger() walks the state map with mtx_ released, so the verdict can land after the
+        // flags said there was nothing left to fetch. A race rather than a broken invariant, so
+        // this recovers rather than asserts. setInvalid() outranks Immutable, so an immutable
+        // ledger can still hold an invalid map.
         SOMETIMES(hasInvalidMap(), "xrpl::InboundLedger::done : map invalidated by a race");
         if (!ledger_->setImmutable())
         {
             JLOG(journal_.warn()) << "Acquired ledger " << hash_ << " is invalid";
-            // Withdrawn as well as failed, so a caller that already read complete_, or that
-            // checks it before failed_, sees the claim withdrawn.
+            // Withdrawn as well as failed, for a caller that checks complete_ before failed_.
             complete_ = false;
             failed_ = true;
         }
@@ -798,11 +795,9 @@ InboundLedger::trigger(std::shared_ptr<Peer> const& peer, TriggerReason reason)
         }
     }
 
-    // Having every part is not yet a completed acquisition: done() settles the ledger first and
-    // only then publishes complete_. Called with mtx_ still held, as done() documents, so the flags
-    // it writes are not written unlocked; mtx_ is recursive, so a caller that already holds it is
-    // unaffected.
-    if (failed_ || (haveHeader_ && haveState_ && haveTransactions_))
+    // done() settles the ledger before publishing complete_, and requires mtx_, which is still
+    // held here.
+    if (failed_ || haveEverything())
     {
         JLOG(journal_.debug()) << "Done:" << (failed_ ? " failed " : " have everything ")
                                << ledger_->header().seq;
@@ -918,8 +913,17 @@ InboundLedger::takeHeader(std::string_view data)
 }
 
 /**
- * Process node data received from a peer
- * Call with a lock
+ * Judge one peer's map-node reply, hooking in what it carries.
+ *
+ * Call with mtx_ held. A node that cannot be hooked costs its sender the
+ * recoverable tier, and one that proves the map impossible costs the harsher
+ * one. The second verdict is read off the batch rather than off the map, since
+ * a getMissingNodes() walk can invalidate the map while this runs.
+ *
+ * @param peer The sender, charged at whichever site judged its data.
+ * @param packet The reply, which names the map it is for.
+ * @param san The running tally, added to as each node is judged, and reset to a
+ *        single rejection if the map turns out to be abandoned.
  */
 void
 InboundLedger::receiveNode(
@@ -999,7 +1003,32 @@ InboundLedger::receiveNode(
             {
                 JLOG(journal_.warn()) << "Got invalid node " << *nodeID << " for ledger " << hash_
                                       << " from peer " << peer->id();
-                peer->charge(resource::kFeeInvalidData, "ledger_node invalid");
+                // The charge test below reads the verdict rather than the map, because a
+                // getMissingNodes() walk runs with mtx_ released (see trigger()) and can
+                // invalidate the map while this packet is judged, and that verdict is not this
+                // sender's doing.
+                if (result.invalidatedMap())
+                {
+                    // This node commits to a shape no valid tree has. See SHAMap::addKnownNode for
+                    // why that verdict holds for every peer.
+                    peer->charge(resource::kFeeMalformedData, "ledger_node makes map invalid");
+                }
+                else
+                {
+                    peer->charge(resource::kFeeInvalidData, "ledger_node invalid");
+                }
+
+                if (!map.isValid())
+                {
+                    // The map is abandoned, whichever walk reached that verdict, so the
+                    // acquisition fails here.
+                    failed_ = true;
+                    done();
+
+                    // The whole packet is discarded, since the nodes ahead of the bad one belong to
+                    // the same impossible tree. Matches TransactionAcquire::takeNodesLocked().
+                    san = SHAMapAddNode::invalid();
+                }
                 return;
             }
         }
@@ -1026,7 +1055,7 @@ InboundLedger::receiveNode(
 
         // done() settles the ledger before publishing complete_, so having every part is reported
         // there rather than here.
-        if (haveTransactions_ && haveState_)
+        if (haveEverything())
             done();
     }
 }
@@ -1237,11 +1266,7 @@ InboundLedger::processData(std::shared_ptr<Peer> peer, protocol::TMLedgerData co
             return -1;
         }
 
-        if (san.isUseful())
-            progress_ = true;
-
-        stats_ += san;
-        return san.getGood();
+        return recordPacket(san);
     }
 
     if ((packet.type() == protocol::liTX_NODE) || (packet.type() == protocol::liAS_NODE))
@@ -1262,19 +1287,22 @@ InboundLedger::processData(std::shared_ptr<Peer> peer, protocol::TMLedgerData co
                                << ((packet.type() == protocol::liTX_NODE) ? "TX" : "AS")
                                << " node stats: " << san.get();
 
-        // `san` accumulates across the whole packet, so `isInvalid()` (bad_ > 0) does not mean the
-        // packet had no useful nodes: credit whatever good/useful nodes were sent rather than
-        // discarding everything because one node in an otherwise-good packet was bad.
-        // Note: Peer charges for invalid/malformed data are issued from within receiveNode at the
-        // exact failure site, so the peer is only charged for problems they are responsible for.
-        if (san.isUseful())
-            progress_ = true;
-
-        stats_ += san;
-        return san.getGood();
+        // receiveNode() charges the peer at the site that judged the data, and discards the whole
+        // packet only for a node that leaves the map invalid.
+        return recordPacket(san);
     }
 
     return -1;
+}
+
+int
+InboundLedger::recordPacket(SHAMapAddNode const& san)
+{
+    if (san.isUseful())
+        progress_ = true;
+
+    stats_ += san;
+    return san.getGood();
 }
 
 namespace detail {

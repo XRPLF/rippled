@@ -306,6 +306,78 @@ TEST_F(SHAMapSyncTest, inner_node_at_leaf_depth)
     EXPECT_FALSE(map.setImmutable());
 }
 
+// A rejection says what the node did, so only the arm that proved the map impossible reports
+// invalidatedMap(). InboundLedger::receiveNode() reads that rather than the map's current state,
+// which a getMissingNodes() walk on another thread can flip while a packet is being judged.
+//
+// One family throughout: nothing here runs a walk, so the full-below cache it shares stays empty
+// and no map's verdict can be answered from another's.
+TEST_F(SHAMapSyncTest, only_the_map_invalidating_arm_reports_it)
+{
+    TestNodeFamily f{j_};
+    DeepChain const chain;
+
+    // Every refusal that leaves the map usable, on a map holding just the root.
+    SHAMap sound{SHAMapType::FREE, f};
+    sound.setSynching();
+    ASSERT_TRUE(sound.addRootNode(chain.rootHash, chain.nodeAt(0), nullptr).isGood());
+
+    // A depth the node does not sit at.
+    auto const wrongDepth =
+        sound.addKnownNode(SHAMapNodeID{2, UInt256{}}, chain.nodeAt(1), nullptr);
+    EXPECT_TRUE(wrongDepth.isInvalid());
+    EXPECT_FALSE(wrongDepth.invalidatedMap());
+
+    // A branch the root leaves empty. The chain sits on branch 0 at every depth.
+    UInt256 otherBranch;
+    otherBranch.begin()[0] = 0x10;
+    auto const emptyBranch =
+        sound.addKnownNode(SHAMapNodeID{1, otherBranch}, chain.nodeAt(1), nullptr);
+    EXPECT_TRUE(emptyBranch.isInvalid());
+    EXPECT_FALSE(emptyBranch.invalidatedMap());
+
+    // The right position, but data that hashes to something the root does not name there. This is
+    // the arm the racing packet of the defect takes.
+    auto const corrupt = sound.addKnownNode(SHAMapNodeID{1, UInt256{}}, chain.nodeAt(2), nullptr);
+    EXPECT_TRUE(corrupt.isInvalid());
+    EXPECT_FALSE(corrupt.invalidatedMap());
+
+    // A root offered under a hash the map does not hold names another tree.
+    auto const otherRoot = sound.addRootNode(chain.nodeAt(1)->getHash(), chain.nodeAt(0), nullptr);
+    EXPECT_TRUE(otherRoot.isInvalid());
+    EXPECT_FALSE(otherRoot.invalidatedMap());
+
+    EXPECT_TRUE(sound.isValid());
+
+    // A root whose data does not hash to the hash it is offered under, on a map with no root yet.
+    SHAMap rootless{SHAMapType::FREE, f};
+    rootless.setSynching();
+    auto const corruptRoot =
+        rootless.addRootNode(chain.nodeAt(1)->getHash(), chain.nodeAt(0), nullptr);
+    EXPECT_TRUE(corruptRoot.isInvalid());
+    EXPECT_FALSE(corruptRoot.invalidatedMap());
+    EXPECT_TRUE(rootless.isValid());
+
+    // The one arm that proves the map impossible: an inner node at kLeafDepth.
+    SHAMap condemned{SHAMapType::FREE, f};
+    condemned.setSynching();
+    ASSERT_TRUE(chain.fill(condemned));
+    ASSERT_TRUE(condemned.isValid());
+
+    auto const offending = chain.addOffendingNode(condemned);
+    EXPECT_TRUE(offending.isInvalid());
+    EXPECT_TRUE(offending.invalidatedMap());
+    EXPECT_FALSE(condemned.isValid());
+
+    // The flag reads off a packet's running tally too, which is how receiveNode() would see it had
+    // the offending node arrived behind an accepted one.
+    SHAMapAddNode tally;
+    tally += SHAMapAddNode::useful();
+    EXPECT_FALSE(tally.invalidatedMap());
+    tally += offending;
+    EXPECT_TRUE(tally.invalidatedMap());
+}
+
 // A node the descent cannot hook in is bad data: the batch counts it bad and the map stays usable
 // for another sender. All three refusals are covered: a depth the node does not sit at, a branch
 // the root leaves empty, and a hash the root does not name.
