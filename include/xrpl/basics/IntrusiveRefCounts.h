@@ -334,15 +334,11 @@ IntrusiveRefCounts::addWeakReleaseStrongRef() const
         ReleaseStrongRefAction action = NoOp;
         if (prevVal.strong == 1)
         {
-            if (prevVal.weak == 0)
-            {
-                action = NoOp;
-            }
-            else
-            {
-                nextIntVal |= kPartialDestroyStartedMask;
-                action = PartialDestroy;
-            }
+            // The weak ref added here keeps the weak count non-zero, so
+            // releasing the last strong ref always starts a partial destroy,
+            // regardless of the previous weak count.
+            nextIntVal |= kPartialDestroyStartedMask;
+            action = PartialDestroy;
         }
         if (refCounts_.compare_exchange_weak(prevIntVal, nextIntVal, std::memory_order_acq_rel))
         {
@@ -358,24 +354,26 @@ IntrusiveRefCounts::addWeakReleaseStrongRef() const
 inline ReleaseWeakRefAction
 IntrusiveRefCounts::releaseWeakRef() const
 {
-    auto prevIntVal = refCounts_.fetch_sub(kWeakDelta, std::memory_order_acq_rel);
-    RefCountPair prev = prevIntVal;
+    auto const prevIntVal = refCounts_.fetch_sub(kWeakDelta, std::memory_order_acq_rel);
+    RefCountPair const prev = prevIntVal;
     if (prev.weak == 1 && prev.strong == 0)
     {
+        // `wait` blocks while the value equals its argument, so it must be
+        // given the value as it is after the decrement above.
+        auto curIntVal = prevIntVal - kWeakDelta;
         if (prev.partialDestroyStartedBit == 0u)
         {
             // This case should only be hit if the partialDestroyStartedBit is
             // set non-atomically (and even then very rarely). The code is kept
             // in case we need to set the flag non-atomically for perf reasons.
-            refCounts_.wait(prevIntVal, std::memory_order_acquire);
-            prevIntVal = refCounts_.load(std::memory_order_acquire);
-            prev = RefCountPair{prevIntVal};
+            refCounts_.wait(curIntVal, std::memory_order_acquire);
+            curIntVal = refCounts_.load(std::memory_order_acquire);
         }
-        if (prev.partialDestroyFinishedBit == 0u)
+        if (RefCountPair{curIntVal}.partialDestroyFinishedBit == 0u)
         {
             // partial destroy MUST finish before running a full destroy (when
             // using weak pointers)
-            refCounts_.wait(prevIntVal - kWeakDelta, std::memory_order_acquire);
+            refCounts_.wait(curIntVal, std::memory_order_acquire);
         }
         return ReleaseWeakRefAction::Destroy;
     }
