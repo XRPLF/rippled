@@ -5982,6 +5982,57 @@ public:
                 BEAST_EXPECT(secondOffer[jss::taker_pays_funded] == "500000000");
             });
 
+        // The running balance charged for an earlier offer must round the
+        // owner's fee-grossed cost up, as BookStep does. With the smallest fee
+        // (rate 1.00001), a maker holding 3 MPT with two 1-MPT offers pays 2
+        // for the first, leaving 1: not enough for the second. Rounding to
+        // nearest charged 1 and reported the second offer as fully funded.
+        {
+            Env env{*this, features};
+            env.fund(XRP(10'000), issuer, maker, buyer);
+            env.close();
+
+            MPT const usd = MPTTester(
+                {.env = env,
+                 .issuer = issuer,
+                 .holders = {maker, buyer},
+                 .transferFee = 1,
+                 .pay = 3});
+
+            auto const firstOfferSeq = env.seq(maker);
+            env(offer(maker, XRP(1), usd(1)));
+            auto const secondOfferSeq = env.seq(maker);
+            env(offer(maker, XRP(1), usd(1)));
+            env.close();
+
+            json::Value const jrr = getBookOffers(env, XRP, usd);
+            json::Value const& bookOffers = jrr[jss::offers];
+            BEAST_EXPECT(bookOffers.isArray());
+            if (BEAST_EXPECT(bookOffers.size() == 2))
+            {
+                json::Value const& firstOffer = bookOffers[0u];
+                BEAST_EXPECT(firstOffer[sfSequence.jsonName] == firstOfferSeq);
+                BEAST_EXPECT(firstOffer[jss::owner_funds] == "3");
+                BEAST_EXPECT(!firstOffer.isMember(jss::taker_gets_funded));
+                BEAST_EXPECT(!firstOffer.isMember(jss::taker_pays_funded));
+
+                json::Value const& secondOffer = bookOffers[1u];
+                BEAST_EXPECT(secondOffer[sfSequence.jsonName] == secondOfferSeq);
+                BEAST_EXPECT(secondOffer.isMember(jss::taker_gets_funded));
+                BEAST_EXPECT(secondOffer[jss::taker_gets_funded][jss::value] == "0");
+                BEAST_EXPECT(secondOffer.isMember(jss::taker_pays_funded));
+                BEAST_EXPECT(secondOffer[jss::taker_pays_funded] == "0");
+            }
+
+            // Execution on the same ledger state agrees: the buyer gets 1 MPT
+            // from the first offer, the maker pays 2, and the second offer
+            // delivers nothing. (.pay funded the buyer with 3 as well.)
+            env(offer(buyer, usd(2), XRP(2)));
+            env.close();
+            BEAST_EXPECT(env.balance(buyer, usd) == usd(3 + 1));
+            BEAST_EXPECT(env.balance(maker, usd) == usd(3 - 2));
+        }
+
         // A large MPT balance used to overflow the fee adjustment. divide()
         // assumes an IOU mantissa, always normalized into [1e15, 1e16), and
         // scales the numerator by 1e17. An MPT mantissa is the raw int64
