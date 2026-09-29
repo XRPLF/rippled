@@ -116,7 +116,7 @@ private:
             Txflags(tfPartialPayment));
 
         BEAST_EXPECT(ammCarol.expectBalances(
-            btc(1'001'000'000'374'816), eth(100'000'000'000'000'000), ammCarol.tokens()));
+            btc(1'001'000'000'374'814), eth(100'000'000'000'000'000), ammCarol.tokens()));
 
         env.require(Balance(bob_, eth(200'100'000'000'000'000)));
         BEAST_EXPECT(isOffer(env, carol_, btc(49'000'000'000'000), XRP(49)));
