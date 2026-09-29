@@ -663,9 +663,8 @@ private:
         auto currentMetrics = collectSystemMetrics();
         metrics_tracker_.addSample(currentMetrics);
 
-        // Slimmed for this fork (3.2.0-b0): ledger ranges, DB debug-counters and
-        // the object-count map are omitted (divergent accessors). The packet is
-        // just the fixed header with core node + OS metrics.
+        // Ledger ranges and the object-count map are omitted on this fork; the
+        // packet is the fixed header (core node + OS metrics + DebugCounters).
         std::vector<uint8_t> buffer(sizeof(ServerInfoHeader));
         auto* header = reinterpret_cast<ServerInfoHeader*>(buffer.data());
         memset(header, 0, sizeof(ServerInfoHeader));
@@ -811,6 +810,7 @@ private:
                                                        : build_info::getVersionString().size());
 
         header->ledger_range_count = 0;
+        header->dbg_counters = getDebugCounters().first;
         return buffer;
     }
     void
