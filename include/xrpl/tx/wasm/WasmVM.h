@@ -47,8 +47,7 @@ preflightEscrowWasm(
     beast::Journal j,
     std::string_view funcName = escrowFunctionName) noexcept;
 
-// Whether the engine was entered since construction, on the calling thread. The two
-// functions above are its only entry points and both count before anything can fail, so a
+// Whether the engine was entered since construction, on the calling thread. So a
 // trap, an exhausted budget, a screening refusal of any kind and a panic all count.
 class WasmScope
 {
