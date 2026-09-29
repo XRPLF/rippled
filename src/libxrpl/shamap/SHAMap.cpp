@@ -26,6 +26,7 @@
 
 #include <boost/smart_ptr/intrusive_ptr.hpp>
 
+#include <atomic>
 #include <cstdint>
 #include <exception>
 #include <functional>
@@ -77,14 +78,14 @@ SHAMap::SHAMap(SHAMap const& other, bool isMutable)
     : f_(other.f_)
     , journal_(other.f_.journal())
     , cowid_(other.cowid_ + 1)
-    , ledgerSeq_(other.ledgerSeq_)
+    , ledgerSeq_(other.ledgerSeq())
     , root_(other.root_)
     , state_(isMutable ? SHAMapState::Modifying : SHAMapState::Immutable)
     , type_(other.type_)
     , backed_(other.backed_)
 {
     // If either map may change, they cannot share nodes
-    if ((state_ != SHAMapState::Immutable) || (other.state_ != SHAMapState::Immutable))
+    if ((state() != SHAMapState::Immutable) || (other.state() != SHAMapState::Immutable))
     {
         unshare();
     }
@@ -105,7 +106,7 @@ SHAMap::dirtyUp(NodePathStack& stack, UInt256 const& target, SHAMapTreeNodePtr c
     // child can be an inner node or a leaf
 
     XRPL_ASSERT(
-        (state_ != SHAMapState::Synching) && (state_ != SHAMapState::Immutable),
+        (state() != SHAMapState::Synching) && (state() != SHAMapState::Immutable),
         "xrpl::SHAMap::dirtyUp : valid state");
     XRPL_ASSERT(child && (child->cowid() == cowid_), "xrpl::SHAMap::dirtyUp : valid child input");
 
@@ -170,7 +171,7 @@ SHAMapTreeNodePtr
 SHAMap::fetchNodeFromDB(SHAMapHash const& hash) const
 {
     XRPL_ASSERT(backed_, "xrpl::SHAMap::fetchNodeFromDB : is backed");
-    auto obj = f_.db().fetchNodeObject(hash.asUInt256(), ledgerSeq_);
+    auto obj = f_.db().fetchNodeObject(hash.asUInt256(), ledgerSeq());
     return finishFetch(hash, obj);
 }
 
@@ -183,10 +184,14 @@ SHAMap::finishFetch(SHAMapHash const& hash, std::shared_ptr<NodeObject> const& o
     {
         if (!object)
         {
-            if (full_)
+            // A missing node disproves full_, so withdraw it and report the gap. The acq_rel
+            // exchange orders the report and makes exactly one reader report it. The load ahead
+            // of it is relaxed, since all it decides is whether to try the exchange: a stale true
+            // costs one exchange that loses, and a stale false means another reader won already.
+            if (full_.load(std::memory_order_relaxed) &&
+                full_.exchange(false, std::memory_order_acq_rel))
             {
-                full_ = false;
-                f_.missingNodeAcquireBySeq(ledgerSeq_, hash.asUInt256());
+                f_.missingNodeAcquireBySeq(ledgerSeq(), hash.asUInt256());
             }
             return {};
         }
@@ -219,7 +224,7 @@ SHAMap::checkFilter(SHAMapHash const& hash, SHAMapSyncFilter const* filter) cons
             auto node = SHAMapTreeNode::makeFromPrefix(makeSlice(*nodeData), hash);
             if (node)
             {
-                filter->gotNode(true, hash, ledgerSeq_, std::move(*nodeData), node->getType());
+                filter->gotNode(true, hash, ledgerSeq(), std::move(*nodeData), node->getType());
                 if (backed_)
                     canonicalize(hash, node);
             }
@@ -399,7 +404,7 @@ SHAMap::descendAsync(
         {
             f_.db().asyncFetch(
                 hash.asUInt256(),
-                ledgerSeq_,
+                ledgerSeq(),
                 [this, hash, cb{std::move(callback)}](std::shared_ptr<NodeObject> const& object) {
                     auto node = finishFetch(hash, object);
                     cb(node, hash);
@@ -424,7 +429,7 @@ SHAMap::unshareNode(intr_ptr::SharedPtr<Node> node, SHAMapNodeID const& nodeID)
     if (node->cowid() != cowid_)
     {
         // have a CoW
-        XRPL_ASSERT(state_ != SHAMapState::Immutable, "xrpl::SHAMap::unshareNode : not immutable");
+        XRPL_ASSERT(state() != SHAMapState::Immutable, "xrpl::SHAMap::unshareNode : not immutable");
         node = intr_ptr::staticPointerCast<Node>(node->clone(cowid_));
         if (nodeID.isRoot())
             root_ = node;
@@ -637,7 +642,7 @@ bool
 SHAMap::delItem(UInt256 const& id)
 {
     // delete the item with this ID
-    XRPL_ASSERT(state_ != SHAMapState::Immutable, "xrpl::SHAMap::delItem : not immutable");
+    XRPL_ASSERT(state() != SHAMapState::Immutable, "xrpl::SHAMap::delItem : not immutable");
 
     NodePathStack stack;
     walkTowardsKey(id, &stack);
@@ -719,7 +724,7 @@ SHAMap::delItem(UInt256 const& id)
 bool
 SHAMap::addGiveItem(SHAMapNodeType type, boost::intrusive_ptr<SHAMapItem const> item)
 {
-    XRPL_ASSERT(state_ != SHAMapState::Immutable, "xrpl::SHAMap::addGiveItem : not immutable");
+    XRPL_ASSERT(state() != SHAMapState::Immutable, "xrpl::SHAMap::addGiveItem : not immutable");
     XRPL_ASSERT(type != SHAMapNodeType::TnInner, "xrpl::SHAMap::addGiveItem : valid type input");
 
     // add the specified item, does not update
@@ -810,7 +815,7 @@ SHAMap::updateGiveItem(SHAMapNodeType type, boost::intrusive_ptr<SHAMapItem cons
     // can't change the tag but can change the hash
     UInt256 const tag = item->key();
 
-    XRPL_ASSERT(state_ != SHAMapState::Immutable, "xrpl::SHAMap::updateGiveItem : not immutable");
+    XRPL_ASSERT(state() != SHAMapState::Immutable, "xrpl::SHAMap::updateGiveItem : not immutable");
 
     NodePathStack stack;
     walkTowardsKey(tag, &stack);
@@ -901,7 +906,7 @@ SHAMap::writeNode(NodeObjectType t, SHAMapTreeNodePtr node) const
 
     Serializer s;
     node->serializeWithPrefix(s);
-    f_.db().store(t, std::move(s.modData()), node->getHash().asUInt256(), ledgerSeq_);
+    f_.db().store(t, std::move(s.modData()), node->getHash().asUInt256(), ledgerSeq());
     return node;
 }
 
