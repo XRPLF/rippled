@@ -107,7 +107,7 @@ fillJsonBinary(json::Value& json, bool closed, LedgerHeader const& info)
 
         Serializer s;
         addRaw(info, s);
-        json[jss::ledger_data] = strHex(s.peekData());
+        json[jss::ledger_data] = strHex(s.slice());
     }
 }
 

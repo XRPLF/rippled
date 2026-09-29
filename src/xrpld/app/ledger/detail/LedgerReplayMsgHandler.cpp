@@ -92,7 +92,7 @@ LedgerReplayMsgHandler::processProofPathRequest(
     // pack header
     Serializer nData(128);
     addRaw(ledger->header(), nData);
-    reply.set_ledgerheader(nData.getDataPtr(), nData.getLength());
+    reply.set_ledgerheader(nData.data(), nData.size());
     // pack path
     for (auto const& b : *path)
         reply.add_path(b.data(), b.size());
@@ -223,7 +223,7 @@ LedgerReplayMsgHandler::processReplayDeltaRequest(
     // pack header
     Serializer nData(128);
     addRaw(ledger->header(), nData);
-    reply.set_ledgerheader(nData.getDataPtr(), nData.getLength());
+    reply.set_ledgerheader(nData.data(), nData.size());
     // pack transactions
     auto const& txMap = ledger->txMap();
     txMap.visitLeaves([&](boost::intrusive_ptr<SHAMapItem const> const& txNode) {
@@ -281,16 +281,13 @@ LedgerReplayMsgHandler::processReplayDeltaResponse(
     {
         for (int i = 0; i < numTxns; ++i)
         {
-            // deserialize:
-            // -- TxShaMapItem for building a ShaMap for verification
-            // -- Tx
-            // -- TxMetaData for Tx ordering
-            Serializer const shaMapItemData(
-                reply.transaction(i).data(), reply.transaction(i).size());
+            // Each entry is a VL-encoded transaction followed by VL-encoded
+            // metadata. The whole entry, unparsed, is also the SHAMap item.
+            auto const item = makeSlice(reply.transaction(i));
 
-            SerialIter txMetaSit(makeSlice(reply.transaction(i)));
-            SerialIter txSit(txMetaSit.getSlice(txMetaSit.getVLDataLength()));
-            SerialIter metaSit(txMetaSit.getSlice(txMetaSit.getVLDataLength()));
+            SerialIter itemSit(item);
+            SerialIter txSit(itemSit.getVL());
+            SerialIter metaSit(itemSit.getVL());
 
             auto tx = std::make_shared<STTx const>(txSit);
             if (!tx)
@@ -302,8 +299,7 @@ LedgerReplayMsgHandler::processReplayDeltaResponse(
             STObject meta(metaSit, sfMetadata);
             orderedTxns.emplace(meta[sfTransactionIndex], std::move(tx));
 
-            if (!txMap.addGiveItem(
-                    SHAMapNodeType::TnTransactionMd, makeShamapitem(tid, shaMapItemData.slice())))
+            if (!txMap.addGiveItem(SHAMapNodeType::TnTransactionMd, makeShamapitem(tid, item)))
             {
                 JLOG(journal_.debug()) << "ReplayDeltaResponse: malformed (tx map add)";
                 return ReplayMsgStatus::Malformed;

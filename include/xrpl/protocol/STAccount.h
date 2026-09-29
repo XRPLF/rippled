@@ -19,8 +19,8 @@ private:
     // But an STAccount is always 160 bits, so we can store it with less
     // overhead in an xrpl::UInt160.  However, so the serialized format of the
     // STAccount stays unchanged, we serialize and deserialize like an STBlob.
-    AccountID value_;
-    bool default_;
+    AccountID value_{};
+    bool default_{true};
 
 public:
     using value_type = AccountID;
@@ -28,7 +28,6 @@ public:
     STAccount();
 
     STAccount(SField const& n);
-    STAccount(SField const& n, Buffer const& v);
     STAccount(SerialIter& sit, SField const& name);
     STAccount(SField const& n, AccountID const& v);
 

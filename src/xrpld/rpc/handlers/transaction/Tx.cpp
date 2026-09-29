@@ -150,7 +150,7 @@ doTxHelp(rpc::Context& context, TxArgs args)
     {
         if (args.binary)
         {
-            result.meta = meta->getAsObject().getSerializer().getData();
+            result.meta = meta->getAsObject().getSerializer().takeData();
         }
         else
         {

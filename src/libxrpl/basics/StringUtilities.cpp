@@ -1,6 +1,5 @@
 #include <xrpl/basics/StringUtilities.h>
 
-#include <xrpl/basics/Blob.h>
 #include <xrpl/beast/core/LexicalCast.h>
 #include <xrpl/beast/net/IPEndpoint.h>
 
@@ -20,7 +19,7 @@
 namespace xrpl {
 
 std::string
-sqlBlobLiteral(Blob const& blob)
+sqlBlobLiteral(Slice blob)
 {
     std::string j;
 

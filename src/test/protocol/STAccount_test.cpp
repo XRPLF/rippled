@@ -27,7 +27,7 @@ struct STAccount_test : public beast::unit_test::Suite
                 Serializer s;
                 defaultAcct.add(s);  // Asserts in debug build
                 BEAST_EXPECT(s.size() == 1);
-                BEAST_EXPECT(strHex(s) == "00");
+                BEAST_EXPECT(strHex(s.slice()) == "00");
                 SerialIter sit(s.slice());
                 STAccount const deserializedDefault(sit, sfAccount);
                 BEAST_EXPECT(deserializedDefault.isEquivalent(defaultAcct));
@@ -36,7 +36,7 @@ struct STAccount_test : public beast::unit_test::Suite
             {
                 // Construct a deserialized default STAccount.
                 Serializer s;
-                s.addVL(nullptr, 0);
+                s.addVL({});
                 SerialIter sit(s.slice());
                 STAccount const deserializedDefault(sit, sfAccount);
                 BEAST_EXPECT(deserializedDefault.isEquivalent(defaultAcct));
@@ -53,7 +53,7 @@ struct STAccount_test : public beast::unit_test::Suite
                 Serializer s;
                 sfAcct.add(s);
                 BEAST_EXPECT(s.size() == 1);
-                BEAST_EXPECT(strHex(s) == "00");
+                BEAST_EXPECT(strHex(s.slice()) == "00");
                 SerialIter sit(s.slice());
                 STAccount const deserializedSf(sit, sfAccount);
                 BEAST_EXPECT(deserializedSf.isEquivalent(sfAcct));
@@ -70,26 +70,37 @@ struct STAccount_test : public beast::unit_test::Suite
                 Serializer s;
                 zeroAcct.add(s);
                 BEAST_EXPECT(s.size() == 21);
-                BEAST_EXPECT(strHex(s) == "140000000000000000000000000000000000000000");
+                BEAST_EXPECT(strHex(s.slice()) == "140000000000000000000000000000000000000000");
                 SerialIter sit(s.slice());
                 STAccount const deserializedZero(sit, sfAccount);
                 BEAST_EXPECT(deserializedZero.isEquivalent(zeroAcct));
             }
+
             {
                 // Construct from a VL that is not exactly 160 bits.
-                Serializer s;
-                std::uint8_t const bits128[]{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
-                s.addVL(bits128, sizeof(bits128));
-                SerialIter sit(s.slice());
-                try
-                {
-                    // Constructing an STAccount with a bad size should throw.
-                    STAccount const deserializedBadSize(sit, sfAccount);
-                }
-                catch (std::runtime_error const& ex)
-                {
-                    BEAST_EXPECT(ex.what() == std::string("Invalid STAccount size"));
-                }
+                std::uint8_t const data[AccountID::kBytes + 1]{};
+
+                auto test = [](Slice d) {
+                    Serializer s;
+                    s.addVL(d);
+
+                    try
+                    {
+                        // Constructing an STAccount with a bad size should throw.
+                        SerialIter sit{s.slice()};
+                        STAccount const deserializedBadSize{sit, sfAccount};
+                    }
+                    catch (std::runtime_error const& ex)
+                    {
+                        if (ex.what() == std::string("Invalid STAccount size"))
+                            return true;
+                    }
+
+                    return false;
+                };
+
+                BEAST_EXPECT(test(Slice{data, AccountID::kBytes - 1}));
+                BEAST_EXPECT(test(Slice{data, AccountID::kBytes + 1}));
             }
 
             // Interestingly, equal values but different types are equivalent!

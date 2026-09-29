@@ -104,7 +104,7 @@ inline STBitString<Bits>::STBitString(SField const& n, value_type const& v) : ST
 
 template <int Bits>
 inline STBitString<Bits>::STBitString(SerialIter& sit, SField const& name)
-    : STBitString(name, sit.getBitString<Bits>())
+    : STBitString(name, sit.getBitString<value_type>())
 {
 }
 
@@ -171,7 +171,7 @@ STBitString<Bits>::add(Serializer& s) const
 {
     XRPL_ASSERT(getFName().isBinary(), "xrpl::STBitString::add : field is binary");
     XRPL_ASSERT(getFName().fieldType == getSType(), "xrpl::STBitString::add : field type match");
-    s.addBitString<Bits>(value_);
+    s.addBitString(value_);
 }
 
 template <int Bits>

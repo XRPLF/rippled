@@ -18,7 +18,7 @@ serializeBlob(Object const& o)
 {
     Serializer s;
     o.add(s);
-    return s.peekData();
+    return s.takeData();
 }
 
 /**

@@ -461,17 +461,18 @@ SHAMap::getNodeFat(
     std::stack<std::tuple<SHAMapTreeNode*, SHAMapNodeID, std::uint32_t>> stack;
     stack.emplace(node, nodeID, depth);
 
-    Serializer s(8192);
-
     while (!stack.empty())
     {
         std::tie(node, nodeID, depth) = stack.top();
         stack.pop();
 
         // Add this node to the reply
-        s.erase();
-        node->serializeForWire(s);
-        data.emplace_back(nodeID, node->isLeaf(), s.getData());
+
+        data.emplace_back(nodeID, node->isLeaf(), [&node]() {
+            Serializer s(1024);
+            node->serializeForWire(s);
+            return s.takeData();
+        }());
 
         if (node->isInner())
         {
@@ -499,9 +500,9 @@ SHAMap::getNodeFat(
                         else if (childNode->isInner() || fatLeaves)
                         {
                             // Just include this node
-                            s.erase();
+                            Serializer s(1024);
                             childNode->serializeForWire(s);
-                            data.emplace_back(childID, childNode->isLeaf(), s.getData());
+                            data.emplace_back(childID, childNode->isLeaf(), s.takeData());
                         }
                     }
                 }
@@ -554,8 +555,7 @@ SHAMap::addRootNode(
     {
         Serializer s;
         root_->serializeWithPrefix(s);
-        filter->gotNode(
-            false, root_->getHash(), ledgerSeq_, std::move(s.modData()), root_->getType());
+        filter->gotNode(false, root_->getHash(), ledgerSeq_, s.takeData(), root_->getType());
     }
 
     return SHAMapAddNode::useful();
@@ -646,8 +646,7 @@ SHAMap::addKnownNode(
         {
             Serializer s;
             treeNode->serializeWithPrefix(s);
-            filter->gotNode(
-                false, childHash, ledgerSeq_, std::move(s.modData()), treeNode->getType());
+            filter->gotNode(false, childHash, ledgerSeq_, s.takeData(), treeNode->getType());
         }
 
         return SHAMapAddNode::useful();
@@ -815,7 +814,7 @@ SHAMap::getProofPath(UInt256 const& key) const
     {
         Serializer s;
         stack.top().first->serializeForWire(s);
-        path.emplace_back(std::move(s.modData()));
+        path.emplace_back(s.takeData());
         stack.pop();
     }
 

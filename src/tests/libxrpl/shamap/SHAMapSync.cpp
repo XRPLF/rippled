@@ -5,6 +5,7 @@
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/xor_shift_engine.h>
 #include <xrpl/protocol/Serializer.h>
+#include <xrpl/protocol/digest.h>
 #include <xrpl/shamap/SHAMap.h>
 #include <xrpl/shamap/SHAMapItem.h>
 #include <xrpl/shamap/SHAMapMissingNode.h>
@@ -40,7 +41,7 @@ protected:
 
         for (auto word = 0uz; word < kWordsPerState; ++word)
             s.add32(randInt<std::uint32_t>(eng_));
-        return makeShamapitem(s.getSHA512Half(), s.slice());
+        return makeShamapitem(sha512Half(s), s.slice());
     }
 
     bool

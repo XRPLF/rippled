@@ -7,6 +7,7 @@
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/Serializer.h>
+#include <xrpl/protocol/digest.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/protocol/tokens.h>
 
@@ -66,7 +67,7 @@ proposalUniqueId(
     s.addVL(publicKey);
     s.addVL(signature);
 
-    return s.getSHA512Half();
+    return sha512Half(s);
 }
 
 }  // namespace xrpl

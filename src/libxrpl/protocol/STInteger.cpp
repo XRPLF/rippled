@@ -64,7 +64,8 @@ STUInt8::getJson(JsonOptions) const
             return token;
 
         // LCOV_EXCL_START
-        JLOG(debugLog().error()) << "Unknown result code in metadata: " << value_;
+        JLOG(debugLog().error()) << "Unknown result code in metadata: "
+                                 << safeCast<std::uint32_t>(value_);
         // LCOV_EXCL_STOP
     }
 
@@ -221,7 +222,7 @@ STUInt64::getJson(JsonOptions) const
 
 template <>
 STInteger<std::int32_t>::STInteger(SerialIter& sit, SField const& name)
-    : STInteger(name, sit.get32())
+    : STInteger(name, sit.geti32())
 {
 }
 

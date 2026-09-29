@@ -19,7 +19,7 @@ namespace xrpl {
 
 STVector256::STVector256(SerialIter& sit, SField const& name) : STBase(name)
 {
-    auto slice = sit.getSlice(sit.getVLDataLength());
+    auto const slice = sit.getVL();
 
     if (slice.size() % UInt256::size() != 0)
     {
@@ -27,14 +27,12 @@ STVector256::STVector256(SerialIter& sit, SField const& name) : STBase(name)
             std::format("Bad serialization for STVector256: {}", slice.size()));
     }
 
-    value_.reserve(slice.size() / UInt256::size());
+    value_.reserve(slice.size() / UInt256::kBytes);
 
-    while (!slice.empty())
-    {
-        value_.emplace_back(
-            std::span<std::uint8_t const, UInt256::size()>{slice.data(), UInt256::size()});
-        slice += UInt256::size();
-    }
+    SerialIter inner{slice};
+
+    while (!inner.empty())
+        value_.push_back(inner.get256());
 }
 
 STBase*
@@ -66,7 +64,11 @@ STVector256::add(Serializer& s) const
 {
     XRPL_ASSERT(getFName().isBinary(), "xrpl::STVector256::add : field is binary");
     XRPL_ASSERT(getFName().fieldType == STI_VECTOR256, "xrpl::STVector256::add : valid field type");
-    s.addVL(value_.begin(), value_.end(), value_.size() * (256 / 8));
+
+    // Because uint256 has no padding and the container stores the values
+    // contiguously, they are already in wire layout, so we can serialize
+    // them in one go:
+    s.addVL(Slice{value_.data(), value_.size() * UInt256::size()});
 }
 
 bool

@@ -17,33 +17,29 @@
 
 namespace xrpl {
 
-STAccount::STAccount() : value_(beast::kZero), default_(true)
+STAccount::STAccount()
 {
 }
 
-STAccount::STAccount(SField const& n) : STBase(n), value_(beast::kZero), default_(true)
+STAccount::STAccount(SField const& n) : STBase(n)
 {
 }
 
-STAccount::STAccount(SField const& n, Buffer const& v) : STAccount(n)
+STAccount::STAccount(SerialIter& sit, SField const& name) : STAccount(name)
 {
-    if (v.empty())
-        return;  // Zero is a valid size for a defaulted STAccount.
+    if (auto const s = sit.getVL(); !s.empty())
+    {
+        // Throwing from constructors can be awkward, but this is only
+        // called from STVar::STVar (SerialIter&, SField const&) which
+        // also throws.
+        auto const id = AccountID::fromRaw(s);
 
-    // Is it safe to throw from this constructor?  Today (November 2015)
-    // the only place that calls this constructor is
-    //    STVar::STVar (SerialIter&, SField const&)
-    // which throws.  If STVar can throw in its constructor, then so can
-    // STAccount.
-    if (v.size() != UInt160::kBytes)
-        Throw<std::runtime_error>("Invalid STAccount size");
+        if (!id) [[unlikely]]
+            Throw<std::runtime_error>("Invalid STAccount size");
 
-    default_ = false;
-    memcpy(value_.begin(), v.data(), UInt160::kBytes);
-}
-
-STAccount::STAccount(SerialIter& sit, SField const& name) : STAccount(name, sit.getVLBuffer())
-{
+        value_ = *id;
+        default_ = false;
+    }
 }
 
 STAccount::STAccount(SField const& n, AccountID const& v) : STBase(n), value_(v), default_(false)
@@ -77,8 +73,13 @@ STAccount::add(Serializer& s) const
     // Preserve the serialization behavior of an STBlob:
     //  o If we are default (all zeros) serialize as an empty blob.
     //  o Otherwise serialize 160 bits.
-    int const size = isDefault() ? 0 : UInt160::kBytes;
-    s.addVL(value_.data(), size);
+    if (isDefault())
+    {
+        s.addVL(Slice{});
+        return;
+    }
+
+    s.addVL(Slice{value_.data(), value_.size()});
 }
 
 bool

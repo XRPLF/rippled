@@ -16,11 +16,12 @@ namespace xrpl {
 template <typename Integer>
 class STInteger : public STBase, public CountedObject<STInteger<Integer>>
 {
+    static_assert(
+        SerializableInteger<Integer>,
+        "STInteger requires an integer type that Serializer can append");
+
 public:
     using value_type = Integer;
-
-private:
-    Integer value_;
 
 public:
     explicit STInteger(Integer v);
@@ -62,6 +63,8 @@ private:
     move(std::size_t n, void* buf) override;
 
     friend class xrpl::detail::STVar;
+
+    Integer value_;
 };
 
 using STUInt8 = STInteger<unsigned char>;
@@ -101,7 +104,15 @@ STInteger<Integer>::add(Serializer& s) const
 {
     XRPL_ASSERT(getFName().isBinary(), "xrpl::STInteger::add : field is binary");
     XRPL_ASSERT(getFName().fieldType == getSType(), "xrpl::STInteger::add : field type match");
-    s.addInteger(value_);
+
+    if constexpr (sizeof(Integer) == 1)
+        s.add8(value_);
+    else if constexpr (sizeof(Integer) == 2)
+        s.add16(value_);
+    else if constexpr (sizeof(Integer) == 4)
+        s.add32(value_);
+    else
+        s.add64(value_);
 }
 
 template <typename Integer>

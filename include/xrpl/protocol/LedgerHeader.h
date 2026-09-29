@@ -76,12 +76,6 @@ LedgerHeader
 deserializeHeader(Slice data, bool hasHash = false);
 
 /**
- * Deserialize a ledger header (prefixed with 4 bytes) from a byte array.
- */
-LedgerHeader
-deserializePrefixedHeader(Slice data, bool hasHash = false);
-
-/**
  * Calculate the hash of a ledger header.
  */
 UInt256

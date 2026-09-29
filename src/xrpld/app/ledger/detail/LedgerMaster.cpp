@@ -1666,19 +1666,23 @@ std::optional<NetClock::time_point>
 LedgerMaster::getCloseTimeByHash(LedgerHash const& ledgerHash, std::uint32_t index)
 {
     auto nodeObject = app_.getNodeStore().fetchNodeObject(ledgerHash, index);
-    if (nodeObject && (nodeObject->getData().size() >= 120))
-    {
-        SerialIter it(nodeObject->getData().data(), nodeObject->getData().size());
-        if (safeCast<HashPrefix>(it.get32()) == HashPrefix::LedgerMaster)
-        {
-            it.skip(
-                4 + 8 + 32 +   // seq drops parentHash
-                32 + 32 + 4);  // txHash acctHash parentClose
-            return NetClock::time_point{NetClock::duration{it.get32()}};
-        }
-    }
 
-    return std::nullopt;
+    if (!nodeObject)
+        return std::nullopt;
+
+    try
+    {
+        SerialIter sit(makeSlice(nodeObject->getData()));
+
+        if (safeCast<HashPrefix>(sit.get32()) != HashPrefix::LedgerMaster)
+            return std::nullopt;
+
+        return deserializeHeader(sit.slice()).closeTime;
+    }
+    catch (std::exception const&)
+    {
+        return std::nullopt;
+    }
 }
 
 UInt256
@@ -2125,7 +2129,7 @@ populateFetchPack(
         protocol::TMIndexedObject* obj = into->add_objects();
         obj->set_ledgerseq(seq);
         obj->set_hash(hash.data(), hash.size());
-        obj->set_data(s.getDataPtr(), s.getLength());
+        obj->set_data(s.data(), s.size());
 
         return --cnt != 0;
     });
@@ -2221,7 +2225,7 @@ LedgerMaster::makeFetchPack(
                 // Add the data
                 protocol::TMIndexedObject* obj = reply.add_objects();
                 obj->set_hash(want->header().hash.data(), want->header().hash.size());
-                obj->set_data(hdr.getDataPtr(), hdr.getLength());
+                obj->set_data(hdr.data(), hdr.size());
                 obj->set_ledgerseq(lSeq);
             }
 

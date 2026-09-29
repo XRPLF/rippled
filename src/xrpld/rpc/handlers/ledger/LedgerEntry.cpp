@@ -1027,7 +1027,7 @@ doLedgerEntry(rpc::JsonContext& context)
 
         sleNode->add(s);
 
-        jvResult[jss::node_binary] = strHex(s.peekData());
+        jvResult[jss::node_binary] = strHex(s.slice());
     }
     else
     {
@@ -1077,7 +1077,7 @@ doLedgerEntryGrpc(rpc::GRPCContext<org::xrpl::rpc::v1::GetLedgerEntryRequest>& c
     sleNode->add(s);
 
     auto& stateObject = *response.mutable_ledger_object();
-    stateObject.set_data(s.peekData().data(), s.getLength());
+    stateObject.set_data(s.data(), s.size());
     stateObject.set_key(request.key());
     *(response.mutable_ledger()) = request.ledger();
     return {response, status};

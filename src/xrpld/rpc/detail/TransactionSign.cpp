@@ -732,18 +732,17 @@ transactionConstructImpl(
         // to the initial transaction then there's something wrong with the
         // passed-in STTx.
         {
-            Serializer s;
-            tpTrans->getSTransaction()->add(s);
-            Blob const transBlob = s.getData();
-            SerialIter sit{makeSlice(transBlob)};
+            // Round-trip through the wire format to canonicalize the transaction
+            // before checking its signature.
+            auto sttxNew = sterilize(*tpTrans->getSTransaction());
 
             // Check the signature if that's called for.
-            auto sttxNew = std::make_shared<STTx const>(sit);
             if (!app.checkSigs())
             {
                 forceValidity(
                     app.getHashRouter(), sttxNew->getTransactionID(), Validity::SigGoodOnly);
             }
+
             if (checkValidity(app.getHashRouter(), *sttxNew, rules).first != Validity::Valid)
             {
                 ret.first = rpc::makeError(RpcInternal, "Invalid signature.");
@@ -751,16 +750,13 @@ transactionConstructImpl(
             }
 
             std::string reason;
+
             auto tpTransNew = std::make_shared<Transaction>(sttxNew, reason, app);
 
-            if (tpTransNew)
-            {
-                if (!tpTransNew->getSTransaction()->isEquivalent(*tpTrans->getSTransaction()))
-                {
-                    tpTransNew.reset();
-                }
-                tpTrans = std::move(tpTransNew);
-            }
+            if (!tpTransNew->getSTransaction()->isEquivalent(*tpTrans->getSTransaction()))
+                tpTransNew.reset();
+
+            tpTrans = std::move(tpTransNew);
         }
     }
     catch (std::exception&)
@@ -797,7 +793,7 @@ transactionFormatResultImpl(Transaction::pointer tpTrans, unsigned apiVersion)
         rpc::insertDeliverMax(
             jvResult[jss::tx_json], tpTrans->getSTransaction()->getTxnType(), apiVersion);
 
-        jvResult[jss::tx_blob] = strHex(tpTrans->getSTransaction()->getSerializer().peekData());
+        jvResult[jss::tx_blob] = strHex(tpTrans->getSTransaction()->getSerializer().slice());
 
         if (temUNCERTAIN != tpTrans->getResult())
         {

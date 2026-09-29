@@ -2,6 +2,7 @@
 
 #include <xrpl/basics/Blob.h>
 #include <xrpl/basics/CountedObject.h>
+#include <xrpl/basics/Slice.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/AccountID.h>
@@ -152,13 +153,6 @@ public:
 
     [[nodiscard]] std::string
     getMetaSQL(std::uint32_t inLedger, std::string const& escapedMetaData) const;
-
-    [[nodiscard]] std::string
-    getMetaSQL(
-        Serializer rawTxn,
-        std::uint32_t inLedger,
-        TxnSql status,
-        std::string const& escapedMetaData) const;
 
     /**
      * The IDs of the inner transactions of a Batch.

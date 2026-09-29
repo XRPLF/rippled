@@ -76,9 +76,7 @@ STTx::STTx(STObject&& object)
 
 STTx::STTx(SerialIter& sit) : STObject(sfTransaction)
 {
-    int const length = sit.getBytesLeft();
-
-    if ((length < kTxMinSizeBytes) || (length > kTxMaxSizeBytes))
+    if (auto const sz = sit.size(); (sz < kTxMinSizeBytes) || (sz > kTxMaxSizeBytes))
         Throw<std::runtime_error>("Transaction length invalid");
 
     if (set(sit))
@@ -172,7 +170,7 @@ getSigningData(STTx const& that, HashPrefix prefix)
     Serializer s;
     s.add32(prefix);
     that.addWithoutSigningFields(s);
-    return s.getData();
+    return s.takeData();
 }
 
 UInt256
@@ -363,8 +361,7 @@ STTx::getJson(JsonOptions options, bool binary) const
 
     if (binary)
     {
-        Serializer const s = STObject::getSerializer();
-        std::string const dataBin = strHex(s.peekData());
+        std::string const dataBin = strHex(getSerializer().slice());
 
         if (v1)
         {
@@ -399,22 +396,7 @@ STTx::getMetaSQLInsertReplaceHeader()
 std::string
 STTx::getMetaSQL(std::uint32_t inLedger, std::string const& escapedMetaData) const
 {
-    Serializer s;
-    add(s);
-    return getMetaSQL(s, inLedger, TxnSql::Validated, escapedMetaData);
-}
-
-// VFALCO This could be a free function elsewhere
-std::string
-STTx::getMetaSQL(
-    Serializer rawTxn,
-    std::uint32_t inLedger,
-    TxnSql status,
-    std::string const& escapedMetaData) const
-{
-    std::string rTxn = sqlBlobLiteral(rawTxn.peekData());
-
-    auto format = TxFormats::getInstance().findByType(txType_);
+    auto const format = TxFormats::getInstance().findByType(txType_);
     XRPL_ASSERT(format, "xrpl::STTx::getMetaSQL : non-null type format");
 
     return std::format(
@@ -424,8 +406,8 @@ STTx::getMetaSQL(
         toBase58(getAccountID(sfAccount)),
         getFieldU32(sfSequence),
         inLedger,
-        safeCast<char>(status),
-        rTxn,
+        safeCast<char>(TxnSql::Validated),
+        sqlBlobLiteral(getSerializer().slice()),
         escapedMetaData);
 }
 
@@ -694,7 +676,7 @@ isMemoOkay(STObject const& st, std::string& reason)
     memos.add(s);
 
     // FIXME move the memo limit into a config tunable
-    if (s.getDataLength() > 1024)
+    if (s.size() > 1024)
     {
         reason = "The memo exceeds the maximum allowed size.";
         return false;

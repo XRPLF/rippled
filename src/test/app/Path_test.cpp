@@ -2214,7 +2214,7 @@ public:
         // ...and re-serializing reproduces the original bytes exactly.
         auto serialized = Serializer{};
         parsed.add(serialized);
-        BEAST_EXPECT(serialized.getData() == s.getData());
+        BEAST_EXPECT(serialized.slice() == s.slice());
 
         // A parsed set holds no index, so appending to it stays append-only.
         auto appended = parsed;

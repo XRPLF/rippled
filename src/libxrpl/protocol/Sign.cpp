@@ -95,7 +95,7 @@ verify(STObject const& st, HashPrefix const& prefix, PublicKey const& pk, SF_VL 
     Serializer ss;
     ss.add32(prefix);
     st.addWithoutSigningFields(ss);
-    return verify(pk, Slice(ss.data(), ss.size()), Slice(sig->data(), sig->size()));
+    return verify(pk, ss.slice(), *sig);
 }
 
 // Questions regarding buildMultiSigningData:

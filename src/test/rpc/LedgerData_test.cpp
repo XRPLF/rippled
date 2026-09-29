@@ -244,14 +244,20 @@ public:
             auto jrr = env.rpc("json", "ledger_data", to_string(jvParams))[jss::result];
             if (BEAST_EXPECT(jrr.isMember(jss::ledger)))
             {
-                auto data = strUnHex(jrr[jss::ledger][jss::ledger_data].asString());
-                if (BEAST_EXPECT(data); data.has_value())
+                // The ledger header starts with the sequence number.
+                std::optional<std::uint32_t> seq;
+
+                try
                 {
-                    Serializer s(data->data(), data->size());
-                    std::uint32_t seq = 0;
-                    BEAST_EXPECT(s.getInteger<std::uint32_t>(seq, 0));
-                    BEAST_EXPECT(seq == 3);
+                    if (auto const data = strUnHex(jrr[jss::ledger][jss::ledger_data].asString()))
+                        seq = SerialIter{makeSlice(*data)}.get32();
                 }
+                catch (std::exception const&)
+                {
+                    seq.reset();
+                }
+
+                BEAST_EXPECT(seq == 3);
             }
         }
         {

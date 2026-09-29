@@ -4,6 +4,7 @@
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/protocol/Serializer.h>
+#include <xrpl/protocol/digest.h>
 #include <xrpl/shamap/SHAMap.h>
 #include <xrpl/shamap/SHAMapAccountStateLeafNode.h>
 #include <xrpl/shamap/SHAMapInnerNode.h>
@@ -29,7 +30,7 @@ class LedgerNodeHelpers_test : public beast::unit_test::Suite
         s.add32(seed);
         s.add32(seed + 1);
         s.add32(seed + 2);
-        return makeShamapitem(s.getSHA512Half(), s.slice());
+        return makeShamapitem(sha512Half(s), s.slice());
     }
 
     static std::string

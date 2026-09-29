@@ -1,13 +1,11 @@
 #include <xrpl/protocol/STObject.h>
 
-#include <xrpl/basics/Blob.h>
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/Slice.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/json/json_value.h>
-#include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/HashPrefix.h>
 #include <xrpl/protocol/InnerObjectFormats.h>
@@ -28,6 +26,7 @@
 #include <xrpl/protocol/STVector256.h>
 #include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/detail/STVar.h>
+#include <xrpl/protocol/digest.h>
 
 #include <algorithm>
 #include <cstddef>
@@ -377,7 +376,7 @@ STObject::getHash(HashPrefix prefix) const
     Serializer s;
     s.add32(prefix);
     add(s, WhichFields::WithAllFields);
-    return s.getSHA512Half();
+    return sha512Half(s);
 }
 
 UInt256
@@ -386,7 +385,7 @@ STObject::getSigningHash(HashPrefix prefix) const
     Serializer s;
     s.add32(prefix);
     add(s, WhichFields::OmitSigningFields);
-    return s.getSHA512Half();
+    return sha512Half(s);
 }
 
 int

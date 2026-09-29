@@ -50,16 +50,13 @@ ConsensusTransSetSF::gotNode(
         try
         {
             // skip prefix
-            Serializer const s(nodeData.data() + 4, nodeData.size() - 4);
-            SerialIter sit(s.slice());
-            auto stx = std::make_shared<STTx const>(std::ref(sit));
+            auto const stx = std::make_shared<STTx const>(SerialIter{makeSlice(nodeData) + 4});
             XRPL_ASSERT(
                 stx->getTransactionID() == nodeHash.asUInt256(),
-                "xrpl::ConsensusTransSetSF::gotNode : transaction hash "
-                "match");
-            auto const pap = &app_;
-            app_.getJobQueue().addJob(
-                JtTransaction, "TxsToTxn", [pap, stx]() { pap->getOPs().submitTransaction(stx); });
+                "xrpl::ConsensusTransSetSF::gotNode : transaction hash match");
+            app_.getJobQueue().addJob(JtTransaction, "TxsToTxn", [pap = &app_, stx]() {
+                pap->getOPs().submitTransaction(stx);
+            });
         }
         catch (std::exception const& ex)
         {
@@ -88,8 +85,7 @@ ConsensusTransSetSF::getNode(SHAMapHash const& nodeHash) const
         XRPL_ASSERT(
             sha512Half(s.slice()) == nodeHash.asUInt256(),
             "xrpl::ConsensusTransSetSF::getNode : transaction hash match");
-        nodeData = s.peekData();
-        return nodeData;
+        return s.takeData();
     }
 
     return std::nullopt;

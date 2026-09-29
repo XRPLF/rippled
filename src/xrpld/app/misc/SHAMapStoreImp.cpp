@@ -298,7 +298,7 @@ SHAMapStoreImp::copyNode(std::uint64_t& nodeCount, SHAMapTreeNode const& node)
         auto const hash = node.getHash().asUInt256();
         Serializer s;
         node.serializeWithPrefix(s);
-        dbRotating_->store(NodeObjectType::AccountNode, std::move(s.modData()), hash, 0);
+        dbRotating_->store(NodeObjectType::AccountNode, s.takeData(), hash, 0);
         JLOG(journal_.warn()) << "copyNode: re-stored node missing from both backends, hash="
                               << hash << " type=" << static_cast<int>(node.getType());
     }
