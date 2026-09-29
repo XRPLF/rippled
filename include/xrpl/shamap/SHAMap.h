@@ -999,10 +999,29 @@ private:
     };
 
     // getMissingNodes helper functions
+
+    /**
+     * Examine the remaining branches of one inner node, recording or
+     * requesting what is missing.
+     *
+     * @param mn the walk's shared state, which collects the missing nodes.
+     * @param node the walk's current position, updated to the node to process
+     *             next.
+     */
     void
-    gmnProcessNodes(MissingNodes&, MissingNodes::StackEntry& node);
-    static void
-    gmnProcessDeferredReads(MissingNodes&);
+    gmnProcessNodes(MissingNodes& mn, MissingNodes::StackEntry& node);
+
+    /**
+     * Wait for every read this pass posted, then hook up or record what each
+     * one resolved.
+     *
+     * Drains all of them even after judging the map, since an outstanding read
+     * holds a pointer to `mn`.
+     *
+     * @param mn the walk's shared state, holding the posted reads.
+     */
+    void
+    gmnProcessDeferredReads(MissingNodes& mn);
 
     // fetch from DB helper function
     SHAMapTreeNodePtr

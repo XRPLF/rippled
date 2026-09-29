@@ -9,6 +9,8 @@
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/xor_shift_engine.h>
 #include <xrpl/ledger/Ledger.h>
+#include <xrpl/nodestore/Database.h>
+#include <xrpl/nodestore/NodeObject.h>
 #include <xrpl/protocol/Fees.h>
 #include <xrpl/protocol/LedgerHeader.h>
 #include <xrpl/protocol/Rules.h>
@@ -17,6 +19,7 @@
 #include <xrpl/shamap/SHAMapAddNode.h>
 #include <xrpl/shamap/SHAMapInnerNode.h>
 #include <xrpl/shamap/SHAMapItem.h>
+#include <xrpl/shamap/SHAMapLeafNode.h>
 #include <xrpl/shamap/SHAMapMissingNode.h>
 #include <xrpl/shamap/SHAMapNodeID.h>
 #include <xrpl/shamap/SHAMapSyncFilter.h>
@@ -281,6 +284,32 @@ protected:
             hash = node->getHash();
         }
     };
+
+    /**
+     * A root inner node naming one leaf's hash under two branches: the one the
+     * leaf's key selects and the next one over.
+     *
+     * Nothing in the root's hash contradicts the second reference, since the
+     * wire form is a list of child hashes with no claim about the keys below
+     * them. Only the leaf's own key tells the two references apart.
+     */
+    struct SharedLeafRoot
+    {
+        // The leaf one level down, so the root names it directly.
+        DeepChain chain{DeepChain::toLeaf(1)};
+        SHAMapTreeNodePtr leaf{chain.nodeAt(1)};
+
+        unsigned int realBranch{selectBranch(SHAMapNodeID{}, chain.pathKey)};
+        unsigned int otherBranch{(realBranch + 1) % SHAMap::kBranchFactor};
+
+        SHAMapTreeNodePtr root{makeCompressedInnerNode(
+            {{.branch = realBranch, .hash = leaf->getHash()},
+             {.branch = otherBranch, .hash = leaf->getHash()}})};
+
+        // Where each reference puts the leaf.
+        SHAMapNodeID realID{chain.idAt(1)};
+        SHAMapNodeID otherID{SHAMapNodeID{}.getChildNodeID(otherBranch)};
+    };
 };
 
 // Only a leaf may sit at kLeafDepth. An inner node there is reported as bad data and leaves the
@@ -539,12 +568,101 @@ TEST_F(SHAMapSyncTest, full_below_entry_does_not_answer_at_another_position)
     EXPECT_FALSE(map.setImmutable());
 }
 
+// A leaf hooked at the branch its key selects, and named again one branch over, where nothing holds
+// it. Every lookup the walk makes is keyed by hash alone, so only the pointer the root holds tells
+// the resident leaf from the misplaced reference, and the walk has nothing to judge at the wrong
+// branch. It reports that reference as missing and leaves the map Synching and valid. The node a
+// peer then supplies for that position is the same leaf, which addKnownNode() refuses at the wrong
+// branch and condemns the map for, without hooking it there.
+//
+// This pins the outcome for both visit orders, since the walk starts at a random branch. The wrong
+// branch first leaves the leaf's hash in missingHashes, so the valid branch is skipped, where there
+// was nothing to judge. The valid branch first judges the resident leaf, which belongs, and the
+// wrong branch is then asked for on its own.
+TEST_F(SHAMapSyncTest, shared_leaf_hash_is_judged_where_a_peer_answers_for_it)
+{
+    // Enough rounds that both visit orders are all but certain to run.
+    static constexpr auto kRounds = 16uz;
+
+    for (auto round = 0uz; round < kRounds; ++round)
+    {
+        TestNodeFamily f{j_};
+        SharedLeafRoot const shared;
+        ASSERT_TRUE(shared.root != nullptr);
+
+        // Unbacked, with no filter, so the pointer the root holds is the only place the leaf can be
+        // found.
+        SHAMap map{SHAMapType::FREE, f};
+        map.setUnbacked();
+        map.setSynching();
+        ASSERT_TRUE(map.addRootNode(shared.root->getHash(), shared.root, nullptr).isGood());
+
+        // Hooked at the branch its key selects, a position addKnownNode() judges and accepts.
+        ASSERT_TRUE(map.addKnownNode(shared.realID, shared.leaf, nullptr).isUseful());
+        ASSERT_TRUE(map.isValid());
+
+        // An unbacked map holds the root object it was offered, so this reads the map's own root.
+        auto* const root = safeDowncast<SHAMapInnerNode*>(shared.root.get());
+        ASSERT_TRUE(root->getChildPointer(shared.realBranch) == shared.leaf.get());
+        ASSERT_TRUE(root->getChildPointer(shared.otherBranch) == nullptr);
+
+        // The misplaced reference is the one thing the walk cannot resolve.
+        auto const missing = map.getMissingNodes(kMaxNodesPerRequest, nullptr);
+        ASSERT_EQ(missing.size(), 1u) << "round " << round;
+        EXPECT_EQ(missing[0].first, shared.otherID) << "round " << round;
+        EXPECT_EQ(missing[0].second, shared.leaf->getHash().asUInt256()) << "round " << round;
+        EXPECT_TRUE(map.isValid()) << "round " << round;
+        EXPECT_TRUE(map.isSynching()) << "round " << round;
+
+        // The only bytes that hash to what was asked for are the leaf's, and its key does not sit
+        // under otherBranch.
+        auto const result = map.addKnownNode(shared.otherID, shared.leaf, nullptr);
+        EXPECT_TRUE(result.isInvalid()) << "round " << round;
+        EXPECT_TRUE(result.invalidatedMap()) << "round " << round;
+        EXPECT_FALSE(map.isValid()) << "round " << round;
+        EXPECT_TRUE(root->getChildPointer(shared.otherBranch) == nullptr) << "round " << round;
+        EXPECT_TRUE(root->getChildPointer(shared.realBranch) == shared.leaf.get())
+            << "round " << round;
+    }
+}
+
+// The same root, with the leaf obtainable through the sync filter for both branches. The walk
+// resolves it at the wrong branch, whichever branch it visits first, and the position test on the
+// walk's filter path condemns the map there. Nothing is reported missing, and the map does not
+// finish.
+TEST_F(SHAMapSyncTest, shared_leaf_hash_resolved_at_the_wrong_branch_condemns_the_map)
+{
+    // Enough rounds that both visit orders are all but certain to run.
+    static constexpr auto kRounds = 16uz;
+
+    for (auto round = 0uz; round < kRounds; ++round)
+    {
+        TestNodeFamily f{j_};
+        SharedLeafRoot const shared;
+        ASSERT_TRUE(shared.root != nullptr);
+
+        // Serves the leaf alone, by hash, so both branches resolve to it.
+        ChainFilter const filter{shared.chain, 1, 1};
+
+        SHAMap map{SHAMapType::FREE, f};
+        map.setUnbacked();
+        map.setSynching();
+        ASSERT_TRUE(map.addRootNode(shared.root->getHash(), shared.root, &filter).isGood());
+
+        auto const missing = map.getMissingNodes(kMaxNodesPerRequest, &filter);
+        EXPECT_TRUE(missing.empty()) << "round " << round;
+        EXPECT_FALSE(map.isValid()) << "round " << round;
+        EXPECT_FALSE(map.setImmutable()) << "round " << round;
+    }
+}
+
 // The full-below flag lives on the node object, which the TreeNodeCache shares by hash across maps
 // and positions, so a flag one walk set says nothing about the same object hooked somewhere else.
 // The flag is therefore written and read for a walk's root alone, and the position-keyed cache is
 // the only memo below it. This case has an honest map complete a subtree, then checks that a root
-// recording the same subtree one branch over re-derives it at that position rather than reading the
-// flag, and that the subtree, used as a root itself, is walked rather than trusted.
+// recording the same subtree one branch over descends it rather than reading the flag, and that the
+// subtree, used as a root itself, is walked rather than trusted. The walk judges the leaf it then
+// meets, which lies off its key at both positions, so both maps end Invalid.
 TEST_F(SHAMapSyncTest, full_below_flag_answers_for_the_root_alone)
 {
     TestNodeFamily f{j_};
@@ -579,8 +697,8 @@ TEST_F(SHAMapSyncTest, full_below_flag_answers_for_the_root_alone)
     EXPECT_FALSE(sharedInner->isFullBelow(gen));
 
     // A root recording the same subtree one branch over. The walk resolves the shared object from
-    // the cache and descends it rather than reading its flag, which files an entry at this position
-    // too.
+    // the cache and descends it rather than reading its flag, then condemns the map at the leaf,
+    // so no entry is filed for this position.
     auto const otherBranch = (realBranch + 1) % SHAMap::kBranchFactor;
     auto const rootAtOtherBranch =
         makeCompressedInnerNode({{.branch = otherBranch, .hash = subtree->getHash()}});
@@ -591,17 +709,20 @@ TEST_F(SHAMapSyncTest, full_below_flag_answers_for_the_root_alone)
     ASSERT_TRUE(
         shifted.addRootNode(rootAtOtherBranch->getHash(), rootAtOtherBranch, nullptr).isGood());
     EXPECT_TRUE(shifted.getMissingNodes(kMaxNodesPerRequest, &filter).empty());
-    EXPECT_TRUE(f.getFullBelowCache()->touchIfExists(
+    EXPECT_FALSE(shifted.isValid());
+    EXPECT_FALSE(shifted.setImmutable());
+    EXPECT_FALSE(f.getFullBelowCache()->touchIfExists(
         subtree->getHash().asUInt256(), SHAMapNodeID{}, otherBranch));
 
-    // The subtree as a root. Its flag is clear, so the walk runs, and completing it as a root is
-    // what sets the flag.
+    // The subtree as a root. Its flag is clear, so the walk runs, meets the leaf one level
+    // shallower than its key says, and condemns the map, so the flag stays clear.
     SHAMap rooted{SHAMapType::FREE, f};
     rooted.setSynching();
     ASSERT_TRUE(rooted.addRootNode(subtree->getHash(), subtree, nullptr).isGood());
     EXPECT_TRUE(rooted.getMissingNodes(kMaxNodesPerRequest, &filter).empty());
-    EXPECT_FALSE(rooted.isSynching());
-    EXPECT_TRUE(sharedInner->isFullBelow(gen));
+    EXPECT_FALSE(rooted.isValid());
+    EXPECT_FALSE(rooted.setImmutable());
+    EXPECT_FALSE(sharedInner->isFullBelow(gen));
 }
 
 // An entry is filed under a node's own position and looked up from the node above it plus the
@@ -1010,6 +1131,55 @@ TEST_F(SHAMapSyncTest, get_missing_nodes_drains_posted_reads_when_invalidated)
     EXPECT_FALSE(map.setImmutable());
 }
 
+// The depth rule holds for a node an asynchronous read resolves, and not only for one the walk
+// resolves in line: a read carries a hash, which covers a node's contents and not its depth. Only a
+// leaf may sit at kLeafDepth, so the inner node offered there is refused and the map is abandoned.
+//
+// The drain has to be what reaches that verdict. A cap of one node, with a read outstanding for a
+// decoy at every level, spends the cap inside the drain, so the walk returns as soon as the drain
+// ends. It never reaches the further pass in which gmnProcessNodes would condemn a node the drain
+// had hooked in. Dropping the drain's own test therefore leaves a valid map with a node to report,
+// and both expectations below refuse that.
+TEST_F(SHAMapSyncTest, get_missing_nodes_rejects_inner_node_at_leaf_depth_from_an_async_read)
+{
+    // A seed of this case's own, so the node it stores answers for no other chain: the memory
+    // nodestore is keyed by path, and every test family in this binary opens the same one.
+    static constexpr unsigned int kOwnChainSeed = 41;
+
+    // Any value serves: the nodestore is keyed by hash and takes this only as a lookup hint.
+    static constexpr std::uint32_t kStoredLedgerSeq = 7;
+
+    TestNodeFamily f{j_};
+
+    // A decoy at every level, so reads are still outstanding when the drain reaches the deepest
+    // node and the one-node cap is spent within that same drain.
+    auto const chain = DeepChain::withDecoys(kOwnChainSeed);
+
+    // Backed, so descendAsync() posts a real asynchronous read for a child no filter answers for.
+    SHAMap map{SHAMapType::FREE, f};
+    map.setSynching();
+
+    // Only the store holds the node at kLeafDepth, so the read for it reaches the database.
+    f.db().store(
+        NodeObjectType::AccountNode,
+        chain.prefixedNodeAt(SHAMap::kLeafDepth),
+        chain.nodeAt(SHAMap::kLeafDepth)->getHash().asUInt256(),
+        kStoredLedgerSeq);
+
+    ASSERT_TRUE(map.addRootNode(chain.rootHash, chain.nodeAt(0), nullptr).isGood());
+    ASSERT_TRUE(map.isValid());
+
+    // Served no deeper than the level above kLeafDepth, so the walk descends to there in line and
+    // nothing answers for the deepest node synchronously.
+    ChainFilter const filter{chain, SHAMap::kLeafDepth - 1};
+
+    // One node, so the cap is spent on a decoy inside the drain and the walk returns straight
+    // after it.
+    EXPECT_TRUE(map.getMissingNodes(1, &filter).empty());
+    EXPECT_FALSE(map.isValid());
+    EXPECT_FALSE(map.setImmutable());
+}
+
 // A walk that only meets legitimate depths must be left alone. Stopping one level short of
 // kLeafDepth leaves a deepest node whose child is genuinely missing, so the walk reports it and
 // the map stays valid.
@@ -1056,6 +1226,66 @@ TEST_F(SHAMapSyncTest, get_missing_nodes_accepts_leaf_at_leaf_depth)
     EXPECT_TRUE(map.isValid());
     EXPECT_FALSE(map.isSynching());
     EXPECT_TRUE(map.setImmutable());
+}
+
+// The parent-and-branch overload of belongsAt has to agree with the id-taking one on every input. A
+// child's id is a prefix of a leaf's key exactly when the parent's id is a prefix of that key and
+// the parent's nibble names the branch taken, so both terms are swept: parents on the leaf's path
+// and parents naming another subtree, at three depths, over all sixteen branches.
+TEST_F(SHAMapSyncTest, belongs_at_by_branch_agrees_with_belongs_at_by_child_id)
+{
+    // A leaf two levels down, with an inner node above it, so both kinds of node are real.
+    auto const chain = DeepChain::toLeaf(2);
+
+    auto const leaf = chain.nodeAt(2);
+    ASSERT_TRUE(leaf != nullptr);
+    ASSERT_TRUE(leaf->isLeaf());
+
+    auto const inner = chain.nodeAt(1);
+    ASSERT_TRUE(inner != nullptr);
+    ASSERT_TRUE(inner->isInner());
+
+    // The leaf's own key with its first nibble moved, so a parent built from it below the root
+    // names a subtree the leaf does not sit under. selectBranch reads the high nibble of a byte at
+    // an even depth, so flipping a bit of byte 0's high nibble moves depth 0 alone.
+    UInt256 offPathKey = chain.pathKey;
+    offPathKey.begin()[0] = static_cast<unsigned char>(offPathKey.begin()[0] ^ 0x10u);
+
+    for (auto const& parentKey : {chain.pathKey, offPathKey})
+    {
+        for (auto depth = 0u; depth < 3u; ++depth)
+        {
+            auto const parentID = SHAMapNodeID::createID(depth, parentKey);
+
+            for (auto branch = 0u; branch < SHAMap::kBranchFactor; ++branch)
+            {
+                EXPECT_EQ(
+                    belongsAt(parentID, branch, *leaf),
+                    belongsAt(parentID.getChildNodeID(branch), *leaf))
+                    << "depth " << depth << " branch " << branch;
+
+                // An inner node carries no key, so every position holds for it.
+                EXPECT_TRUE(belongsAt(parentID, branch, *inner))
+                    << "depth " << depth << " branch " << branch;
+            }
+        }
+    }
+
+    // Both verdicts are reached, so the sweep above is not agreement between two constant answers.
+    // A parent one subtree over refuses the branch a parent on the leaf's path accepts. The root is
+    // left out of that second check, since every key shares it.
+    for (auto depth = 0u; depth < 3u; ++depth)
+    {
+        auto const onPath = SHAMapNodeID::createID(depth, chain.pathKey);
+        auto const ownBranch = selectBranch(onPath, chain.pathKey);
+        EXPECT_TRUE(belongsAt(onPath, ownBranch, *leaf)) << "depth " << depth;
+
+        if (depth > 0u)
+        {
+            EXPECT_FALSE(belongsAt(SHAMapNodeID::createID(depth, offPathKey), ownBranch, *leaf))
+                << "depth " << depth;
+        }
+    }
 }
 
 // The clearSynching() call site in addRootNode() needs a leaf root, and so a zero root hash. An
