@@ -20,7 +20,7 @@ struct FloatFromUintCall : HostContextTest
     std::int32_t const mode = 1;
 };
 
-TEST_F(FloatFromUintCall, LittleEndianWireBytesDecodeToValueHostIsAskedFor)
+TEST_F(FloatFromUintCall, little_endian_wire_bytes_decode_to_value_host_is_asked_for)
 {
     Bytes const result{1, 2, 3};
     EXPECT_CALL(host, floatFromUint(value, mode)).WillOnce(testing::Return(result));
@@ -32,7 +32,7 @@ TEST_F(FloatFromUintCall, LittleEndianWireBytesDecodeToValueHostIsAskedFor)
     EXPECT_TRUE(out.holds(bytesOf(result)));
 }
 
-TEST_F(FloatFromUintCall, ModeIsForwardedVerbatim)
+TEST_F(FloatFromUintCall, mode_is_forwarded_verbatim)
 {
     std::int32_t const nonsenseMode = -12345;
     Bytes const result{1};
@@ -44,7 +44,7 @@ TEST_F(FloatFromUintCall, ModeIsForwardedVerbatim)
         static_cast<std::int32_t>(result.size()));
 }
 
-TEST_F(FloatFromUintCall, HostErrorBecomesContractReturnValue)
+TEST_F(FloatFromUintCall, host_error_becomes_contract_return_value)
 {
     EXPECT_CALL(host, floatFromUint(value, mode))
         .WillOnce(testing::Return(std::unexpected(HostFunctionError::FloatInputMalformed)));
@@ -56,7 +56,7 @@ TEST_F(FloatFromUintCall, HostErrorBecomesContractReturnValue)
     EXPECT_FALSE(out.wasWritten());
 }
 
-TEST_F(FloatFromUintCall, HostExceptionBecomesInternalFatalAndIsLogged)
+TEST_F(FloatFromUintCall, host_exception_becomes_internal_fatal_and_is_logged)
 {
     EXPECT_CALL(host, floatFromUint(value, mode))
         .WillOnce(testing::Throw(std::runtime_error{"uint came apart"}));
@@ -69,7 +69,7 @@ TEST_F(FloatFromUintCall, HostExceptionBecomesInternalFatalAndIsLogged)
     EXPECT_THAT(logged(), testing::HasSubstr("floatFromUint"));
 }
 
-TEST_F(FloatFromUintCall, SevenByteRegionIsRefusedWithoutAskingHost)
+TEST_F(FloatFromUintCall, seven_byte_region_is_refused_without_asking_host)
 {
     Bytes const shortBytes(7, 0);
     EXPECT_CALL(host, floatFromUint).Times(0);
@@ -80,7 +80,7 @@ TEST_F(FloatFromUintCall, SevenByteRegionIsRefusedWithoutAskingHost)
         hfErrorToInt(HostFunctionError::InvalidParams));
 }
 
-TEST_F(FloatFromUintCall, NineByteRegionIsRefusedWithoutAskingHost)
+TEST_F(FloatFromUintCall, nine_byte_region_is_refused_without_asking_host)
 {
     Bytes const longBytes(9, 0);
     EXPECT_CALL(host, floatFromUint).Times(0);
@@ -91,7 +91,7 @@ TEST_F(FloatFromUintCall, NineByteRegionIsRefusedWithoutAskingHost)
         hfErrorToInt(HostFunctionError::InvalidParams));
 }
 
-TEST_F(FloatFromUintCall, EmptyRegionIsRefusedWithoutAskingHost)
+TEST_F(FloatFromUintCall, empty_region_is_refused_without_asking_host)
 {
     EXPECT_CALL(host, floatFromUint).Times(0);
 
@@ -103,7 +103,7 @@ TEST_F(FloatFromUintCall, EmptyRegionIsRefusedWithoutAskingHost)
 
 // The out-region contract: write only if the whole value fits, and return the true length
 // either way.
-TEST_F(FloatFromUintCall, ShortOutRegionWritesNothingAndReturnsTrueLength)
+TEST_F(FloatFromUintCall, short_out_region_writes_nothing_and_returns_true_length)
 {
     Bytes const result{1, 2, 3};
     EXPECT_CALL(host, floatFromUint(value, mode)).WillOnce(testing::Return(result));
@@ -115,7 +115,7 @@ TEST_F(FloatFromUintCall, ShortOutRegionWritesNothingAndReturnsTrueLength)
     EXPECT_FALSE(out.wasWritten());
 }
 
-TEST_F(FloatFromUintCall, OutRegionOfExactSizeIsWritten)
+TEST_F(FloatFromUintCall, out_region_of_exact_size_is_written)
 {
     Bytes const result{1, 2, 3};
     EXPECT_CALL(host, floatFromUint(value, mode)).WillOnce(testing::Return(result));

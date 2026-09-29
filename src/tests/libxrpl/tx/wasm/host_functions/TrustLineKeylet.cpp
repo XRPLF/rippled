@@ -13,7 +13,7 @@ struct TrustlineKeyletImpl : RealHostFixture
 {
 };
 
-TEST_F(TrustlineKeyletImpl, MatchesTrustlineKeyletFunction)
+TEST_F(TrustlineKeyletImpl, matches_trustline_keylet_function)
 {
     auto const owner = fund("owner");
     auto const destination = fund("destination");
@@ -25,7 +25,7 @@ TEST_F(TrustlineKeyletImpl, MatchesTrustlineKeyletFunction)
         keylet::trustLine(owner.id(), destination.id(), usd));
 }
 
-TEST_F(TrustlineKeyletImpl, InvalidCurrency)
+TEST_F(TrustlineKeyletImpl, invalid_currency)
 {
     auto const owner = fund("owner");
     auto const destination = fund("destination");
@@ -35,7 +35,7 @@ TEST_F(TrustlineKeyletImpl, InvalidCurrency)
         HostFunctionError::InvalidParams);
 }
 
-TEST_F(TrustlineKeyletImpl, CantTrustlineToSelf)
+TEST_F(TrustlineKeyletImpl, cant_trustline_to_self)
 {
     auto const owner = fund("owner");
 
@@ -45,7 +45,7 @@ TEST_F(TrustlineKeyletImpl, CantTrustlineToSelf)
         makeHost()->trustLineKeylet(owner.id(), owner.id(), usd), HostFunctionError::InvalidParams);
 }
 
-TEST_F(TrustlineKeyletImpl, InvalidAccount)
+TEST_F(TrustlineKeyletImpl, invalid_account)
 {
     auto const owner = fund("owner");
 

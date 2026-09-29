@@ -27,28 +27,28 @@ struct LedgerObjArrayLenImpl : RealHostFixture
     }
 };
 
-TEST_F(LedgerObjArrayLenImpl, SignerEntriesLength)
+TEST_F(LedgerObjArrayLenImpl, signer_entries_length)
 {
     auto const owner = fund("owner");
     auto h = makeHost(owner);
     expectValue(h->getLedgerObjArrayLen(1, sfSignerEntries), 2);
 }
 
-TEST_F(LedgerObjArrayLenImpl, NonArrayFieldNoArray)
+TEST_F(LedgerObjArrayLenImpl, non_array_field_no_array)
 {
     auto const owner = fund("owner");
     auto h = makeHost(owner);
     expectError(h->getLedgerObjArrayLen(1, sfAccount), HostFunctionError::NoArray);
 }
 
-TEST_F(LedgerObjArrayLenImpl, MissingArrayFieldNotFound)
+TEST_F(LedgerObjArrayLenImpl, missing_array_field_not_found)
 {
     auto const owner = fund("owner");
     auto h = makeHost(owner);
     expectError(h->getLedgerObjArrayLen(1, sfMemos), HostFunctionError::FieldNotFound);
 }
 
-TEST_F(LedgerObjArrayLenImpl, SlotErrors)
+TEST_F(LedgerObjArrayLenImpl, slot_errors)
 {
     auto const owner = fund("owner");
     auto h = makeHost(owner);

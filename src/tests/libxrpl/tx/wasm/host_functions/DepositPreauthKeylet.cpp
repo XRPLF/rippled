@@ -12,7 +12,7 @@ struct DepositPreauthKeyletImpl : RealHostFixture
 {
 };
 
-TEST_F(DepositPreauthKeyletImpl, MatchesDepositPreauthKeyletFunction)
+TEST_F(DepositPreauthKeyletImpl, matches_deposit_preauth_keylet_function)
 {
     auto const owner = fund("owner");
     auto const destination = fund("destination");
@@ -22,7 +22,7 @@ TEST_F(DepositPreauthKeyletImpl, MatchesDepositPreauthKeyletFunction)
         keylet::depositPreauth(owner.id(), destination.id()));
 }
 
-TEST_F(DepositPreauthKeyletImpl, CantPreauthToSelf)
+TEST_F(DepositPreauthKeyletImpl, cant_preauth_to_self)
 {
     auto const owner = fund("owner");
 
@@ -30,7 +30,7 @@ TEST_F(DepositPreauthKeyletImpl, CantPreauthToSelf)
         makeHost()->depositPreauthKeylet(owner.id(), owner.id()), HostFunctionError::InvalidParams);
 }
 
-TEST_F(DepositPreauthKeyletImpl, InvalidAccount)
+TEST_F(DepositPreauthKeyletImpl, invalid_account)
 {
     auto const owner = fund("owner");
 

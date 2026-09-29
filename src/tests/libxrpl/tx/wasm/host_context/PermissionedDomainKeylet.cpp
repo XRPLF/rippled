@@ -20,7 +20,7 @@ struct PermissionedDomainKeyletCall : HostContextTest
     std::uint32_t const seq = 12345;
 };
 
-TEST_F(PermissionedDomainKeyletCall, AccountAndSeqAreForwardedKeyletIsWritten)
+TEST_F(PermissionedDomainKeyletCall, account_and_seq_are_forwarded_keylet_is_written)
 {
     Bytes const keylet(32, 0xab);
     EXPECT_CALL(host, permissionedDomainKeylet(account, seq)).WillOnce(testing::Return(keylet));
@@ -32,7 +32,7 @@ TEST_F(PermissionedDomainKeyletCall, AccountAndSeqAreForwardedKeyletIsWritten)
     EXPECT_TRUE(out.holds(bytesOf(keylet)));
 }
 
-TEST_F(PermissionedDomainKeyletCall, HostErrorBecomesContractReturnValue)
+TEST_F(PermissionedDomainKeyletCall, host_error_becomes_contract_return_value)
 {
     EXPECT_CALL(host, permissionedDomainKeylet(account, seq))
         .WillOnce(testing::Return(std::unexpected(HostFunctionError::LedgerObjNotFound)));
@@ -44,7 +44,7 @@ TEST_F(PermissionedDomainKeyletCall, HostErrorBecomesContractReturnValue)
     EXPECT_FALSE(out.wasWritten());
 }
 
-TEST_F(PermissionedDomainKeyletCall, ShortAccountIsRefusedWithoutAskingHost)
+TEST_F(PermissionedDomainKeyletCall, short_account_is_refused_without_asking_host)
 {
     Bytes const shortAccount(AccountID::size() - 1, 0x01);
     EXPECT_CALL(host, permissionedDomainKeylet).Times(0);
@@ -55,7 +55,7 @@ TEST_F(PermissionedDomainKeyletCall, ShortAccountIsRefusedWithoutAskingHost)
         hfErrorToInt(HostFunctionError::InvalidParams));
 }
 
-TEST_F(PermissionedDomainKeyletCall, LongAccountIsRefusedWithoutAskingHost)
+TEST_F(PermissionedDomainKeyletCall, long_account_is_refused_without_asking_host)
 {
     Bytes const longAccount(AccountID::size() + 1, 0x01);
     EXPECT_CALL(host, permissionedDomainKeylet).Times(0);
@@ -66,7 +66,7 @@ TEST_F(PermissionedDomainKeyletCall, LongAccountIsRefusedWithoutAskingHost)
         hfErrorToInt(HostFunctionError::InvalidParams));
 }
 
-TEST_F(PermissionedDomainKeyletCall, EmptyAccountIsRefusedWithoutAskingHost)
+TEST_F(PermissionedDomainKeyletCall, empty_account_is_refused_without_asking_host)
 {
     EXPECT_CALL(host, permissionedDomainKeylet).Times(0);
 
@@ -76,7 +76,7 @@ TEST_F(PermissionedDomainKeyletCall, EmptyAccountIsRefusedWithoutAskingHost)
         hfErrorToInt(HostFunctionError::InvalidParams));
 }
 
-TEST_F(PermissionedDomainKeyletCall, HostExceptionBecomesInternalFatalAndIsLogged)
+TEST_F(PermissionedDomainKeyletCall, host_exception_becomes_internal_fatal_and_is_logged)
 {
     EXPECT_CALL(host, permissionedDomainKeylet(account, seq))
         .WillOnce(testing::Throw(std::runtime_error{"permissioned domain keylet came apart"}));
@@ -91,7 +91,7 @@ TEST_F(PermissionedDomainKeyletCall, HostExceptionBecomesInternalFatalAndIsLogge
 
 // The out-region contract: write only if the whole value fits, and return the true length
 // either way.
-TEST_F(PermissionedDomainKeyletCall, ShortOutRegionWritesNothingAndReturnsTrueLength)
+TEST_F(PermissionedDomainKeyletCall, short_out_region_writes_nothing_and_returns_true_length)
 {
     Bytes const keylet(32, 0xab);
     EXPECT_CALL(host, permissionedDomainKeylet(account, seq)).WillOnce(testing::Return(keylet));
@@ -103,7 +103,7 @@ TEST_F(PermissionedDomainKeyletCall, ShortOutRegionWritesNothingAndReturnsTrueLe
     EXPECT_FALSE(out.wasWritten());
 }
 
-TEST_F(PermissionedDomainKeyletCall, OutRegionOfExactSizeIsWritten)
+TEST_F(PermissionedDomainKeyletCall, out_region_of_exact_size_is_written)
 {
     Bytes const keylet(32, 0xab);
     EXPECT_CALL(host, permissionedDomainKeylet(account, seq)).WillOnce(testing::Return(keylet));
@@ -115,7 +115,7 @@ TEST_F(PermissionedDomainKeyletCall, OutRegionOfExactSizeIsWritten)
     EXPECT_TRUE(out.holds(bytesOf(keylet)));
 }
 
-TEST_F(PermissionedDomainKeyletCall, EmptyResultAnswersZeroAndWritesNothing)
+TEST_F(PermissionedDomainKeyletCall, empty_result_answers_zero_and_writes_nothing)
 {
     EXPECT_CALL(host, permissionedDomainKeylet(account, seq)).WillOnce(testing::Return(Bytes{}));
 

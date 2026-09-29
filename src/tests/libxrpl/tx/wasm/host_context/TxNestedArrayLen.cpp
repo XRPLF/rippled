@@ -22,7 +22,7 @@ struct TxNestedArrayLenCall : HostContextTest
     Bytes const locatorBytes = bytesOfSteps(steps);
 };
 
-TEST_F(TxNestedArrayLenCall, LocatorBytesBecomeFieldLocatorHostReturnsCount)
+TEST_F(TxNestedArrayLenCall, locator_bytes_become_field_locator_host_returns_count)
 {
     EXPECT_CALL(host, getTxNestedArrayLen(LocatorEquals(steps))).WillOnce(testing::Return(7));
 
@@ -31,7 +31,7 @@ TEST_F(TxNestedArrayLenCall, LocatorBytesBecomeFieldLocatorHostReturnsCount)
 
 // `NoArray` - the field the locator resolves to is not an array - is the error this shape
 // most plausibly returns, so it stands in for axis B.
-TEST_F(TxNestedArrayLenCall, HostErrorBecomesContractReturnValue)
+TEST_F(TxNestedArrayLenCall, host_error_becomes_contract_return_value)
 {
     EXPECT_CALL(host, getTxNestedArrayLen(LocatorEquals(steps)))
         .WillOnce(testing::Return(std::unexpected(HostFunctionError::NoArray)));
@@ -41,7 +41,7 @@ TEST_F(TxNestedArrayLenCall, HostErrorBecomesContractReturnValue)
         hfErrorToInt(HostFunctionError::NoArray));
 }
 
-TEST_F(TxNestedArrayLenCall, EmptyLocatorIsRefusedWithoutAskingHost)
+TEST_F(TxNestedArrayLenCall, empty_locator_is_refused_without_asking_host)
 {
     EXPECT_CALL(host, getTxNestedArrayLen).Times(0);
 
@@ -51,7 +51,7 @@ TEST_F(TxNestedArrayLenCall, EmptyLocatorIsRefusedWithoutAskingHost)
 }
 
 // Distinct from an empty locator: `invokeWithLocator` checks the two conditions separately.
-TEST_F(TxNestedArrayLenCall, MisalignedLocatorLengthIsRefusedWithoutAskingHost)
+TEST_F(TxNestedArrayLenCall, misaligned_locator_length_is_refused_without_asking_host)
 {
     Bytes const oddLength{1, 2, 3};
     EXPECT_CALL(host, getTxNestedArrayLen).Times(0);
@@ -61,7 +61,7 @@ TEST_F(TxNestedArrayLenCall, MisalignedLocatorLengthIsRefusedWithoutAskingHost)
         hfErrorToInt(HostFunctionError::LocatorMalformed));
 }
 
-TEST_F(TxNestedArrayLenCall, HostExceptionBecomesInternalFatalAndIsLogged)
+TEST_F(TxNestedArrayLenCall, host_exception_becomes_internal_fatal_and_is_logged)
 {
     EXPECT_CALL(host, getTxNestedArrayLen(LocatorEquals(steps)))
         .WillOnce(testing::Throw(std::runtime_error{"tx nested array len came apart"}));

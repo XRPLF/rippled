@@ -7,7 +7,7 @@ struct ParentLedgerTimeImpl : RealHostFixture
 {
 };
 
-TEST_F(ParentLedgerTimeImpl, MatchesLedger)
+TEST_F(ParentLedgerTimeImpl, matches_ledger)
 {
     expectValue(
         makeHost()->getParentLedgerTime(),
