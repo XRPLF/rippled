@@ -2838,12 +2838,16 @@ class ConfidentialMPTKeyRotation_test : public ConfidentialTransferTestBase
                 ct.mpt.getEncryptedBalance(bob, MPTTester::holderEncryptedSpending);
             auto const prevInboxCt =
                 ct.mpt.getEncryptedBalance(bob, MPTTester::holderEncryptedInbox);
-            if (!BEAST_EXPECT(prevSpendingCt) || !BEAST_EXPECT(prevInboxCt))
+            BEAST_EXPECT(prevSpendingCt);
+            BEAST_EXPECT(prevInboxCt);
+            if (!prevSpendingCt || !prevInboxCt)
                 return;
 
             auto const prevSpendingAmt = ct.mpt.decryptAmount(bob, *prevSpendingCt);
             auto const prevInboxAmt = ct.mpt.decryptAmount(bob, *prevInboxCt);
-            if (!BEAST_EXPECT(prevSpendingAmt) || !BEAST_EXPECT(prevInboxAmt))
+            BEAST_EXPECT(prevSpendingAmt);
+            BEAST_EXPECT(prevInboxAmt);
+            if (!prevSpendingAmt || !prevInboxAmt)
                 return;
 
             ct.mpt.holderKeyUpdate({
