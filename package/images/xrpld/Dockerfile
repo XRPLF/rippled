@@ -20,7 +20,8 @@ FROM xrpld AS voidstar
 
 USER root
 
-ADD --chmod=644 https://antithesis.com/assets/instrumentation/libvoidstar.so /usr/lib/libvoidstar.so
+ADD --chmod=644 --checksum=sha256:d080cc85f1d8d96452bdaf0021a10fa3e4cc3c319840f1fadd2d33904e607095 \
+    https://antithesis.com/assets/instrumentation/libvoidstar.so /usr/lib/libvoidstar.so
 
 RUN --mount=type=bind,source=xrpld,target=/tmp/xrpld \
     install -m 755 /tmp/xrpld /usr/bin/xrpld \
