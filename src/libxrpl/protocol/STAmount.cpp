@@ -1232,6 +1232,19 @@ divide(STAmount const& num, STAmount const& den, Asset const& asset)
     if (num == beast::kZero)
         return {asset};
 
+    // The legacy path below assumes 16-digit mantissas. An MPT mantissa is
+    // the raw 63-bit value and is never scaled down, so an MPT numerator can
+    // overflow the quotient and an MPT denominator shortens it, moving the +5
+    // nudge into a significant digit. Use Number arithmetic under
+    // MPTokensV2 whenever an MPT is involved, as mulRound/divRound do. Pin
+    // the rounding mode so the result does not depend on the caller's.
+    if (isFeatureEnabled(featureMPTokensV2, /*resultIfNoRules*/ true) &&
+        (asset.holds<MPTIssue>() || num.holds<MPTIssue>() || den.holds<MPTIssue>()))
+    {
+        NumberRoundModeGuard const rg(Number::RoundingMode::ToNearest);
+        return STAmount{asset, Number{num} / Number{den}};
+    }
+
     std::uint64_t numVal = num.mantissa();
     std::uint64_t denVal = den.mantissa();
     int numOffset = num.exponent();
@@ -1264,8 +1277,8 @@ divide(STAmount const& num, STAmount const& den, Asset const& asset)
     std::uint64_t quotient = muldiv(numVal, kTenTO17, denVal);
     int offset = numOffset - denOffset - 17;
 
-    // An integral (XRP or MPT) numerator is not scaled down to 16 digits, so
-    // the quotient can land in [2^63, 2^64). The STAmount constructor reads
+    // An integral (XRP) numerator is not scaled down to 16 digits, so the
+    // quotient can land in [2^63, 2^64). The STAmount constructor reads
     // that as a negative IOU mantissa, and the +5 can wrap. Drop a digit
     // first; the result is canonicalized to 16 digits anyway.
     if (quotient > static_cast<std::uint64_t>(std::numeric_limits<std::int64_t>::max()) - 5 &&

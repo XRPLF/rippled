@@ -1379,8 +1379,9 @@ public:
 
         auto rules = [](bool const mptV2) {
             static std::unordered_set<uint256, beast::Uhash<>> const kNoFeatures;
+            // MPTokensV2 with the large Number mantissa (SAV enables it).
             static std::unordered_set<uint256, beast::Uhash<>> const kMptV2Features{
-                featureMPTokensV2};
+                featureMPTokensV2, featureSingleAssetVault, fixCleanup3_3_0};
             return Rules{mptV2 ? kMptV2Features : kNoFeatures};
         };
 
@@ -1391,9 +1392,20 @@ public:
         STAmount const largeMpt{asset, UINT64_C(184'467'440'737'095'516)};
         STAmount const trueRate{noIssue(), Number{largeMpt} / Number{dust}};
 
-        // Quotient above 2^64: muldiv throws and getRate returns 0 either way.
+        // Quotient above 2^64: muldiv throws, so getRate returns 0
+        // pre-amendment.
         STAmount const one{usd, UINT64_C(1'000'000'000'000'000), -15};
         STAmount const hugeMpt{asset, UINT64_C(5'000'000'000'000'000'000)};
+        STAmount const hugeMptRate{noIssue(), UINT64_C(5'000'000'000'000'000), 3};
+
+        // Over the smallest IOU the rate is beyond the IOU exponent range, so
+        // getRate returns 0 either way.
+        STAmount const tiny{usd, STAmount::kMinValue, STAmount::kMinOffset};
+
+        // An integral result keeps every digit, so it must come out exact.
+        STAmount const maxMpt{asset, static_cast<std::uint64_t>(kMaxMpTokenAmount)};
+        STAmount const oneAndHalf{noIssue(), UINT64_C(1'500'000'000'000'000), -15};
+        STAmount const e18Mpt{asset, UINT64_C(1'000'000'000'000'000'000)};
 
         // XRP numerator in the same band: 9.5e16 drops over a mantissa of
         // 1e15 gives a legacy quotient of 9.5e18.
@@ -1407,21 +1419,47 @@ public:
                 amountFromQuality(getRate(dust, largeMpt)) ==
                 STAmount(noIssue(), UINT64_C(1'100'000'000'000'000), -9));
             BEAST_EXPECT(getRate(one, hugeMpt) == 0);
+            BEAST_EXPECT(getRate(tiny, hugeMpt) == 0);
             BEAST_EXPECT(getRate(one, hugeXrp) != 0);
             BEAST_EXPECT(amountFromQuality(getRate(one, hugeXrp)) != hugeXrpRate);
+
+            bool threw = false;
+            try
+            {
+                (void)divide(hugeMpt, one, asset);
+            }
+            catch (std::overflow_error const&)
+            {
+                threw = true;
+            }
+            BEAST_EXPECT(threw);
         }
 
         {
             CurrentTransactionRulesGuard const rg(rules(true));
 
             BEAST_EXPECT(amountFromQuality(getRate(dust, largeMpt)) == trueRate);
-            BEAST_EXPECT(getRate(one, hugeMpt) == 0);
+            BEAST_EXPECT(amountFromQuality(getRate(one, hugeMpt)) == hugeMptRate);
+            BEAST_EXPECT(getRate(tiny, hugeMpt) == 0);
             BEAST_EXPECT(amountFromQuality(getRate(one, hugeXrp)) == hugeXrpRate);
             BEAST_EXPECT(!divide(largeMpt, dust, noIssue()).negative());
+
+            BEAST_EXPECT(divide(hugeMpt, one, asset) == hugeMpt);
+            BEAST_EXPECT(divide(maxMpt, one, asset) == maxMpt);
+            BEAST_EXPECT(
+                divide(STAmount{asset, UINT64_C(9'000'000'000'000'000'000)}, oneAndHalf, asset) ==
+                STAmount(asset, UINT64_C(6'000'000'000'000'000'000)));
+
+            // An unscaled MPT denominator no longer moves the +5 nudge into
+            // the 15th digit: 9e15 / 1e18 is exactly 0.009.
+            BEAST_EXPECT(
+                divide(STAmount{usd, UINT64_C(9'000'000'000'000'000)}, e18Mpt, noIssue()) ==
+                STAmount(noIssue(), UINT64_C(9'000'000'000'000'000), -18));
         }
 
         // No rules (RPC): same as post-amendment.
         BEAST_EXPECT(amountFromQuality(getRate(dust, largeMpt)) == trueRate);
+        BEAST_EXPECT(amountFromQuality(getRate(one, hugeMpt)) == hugeMptRate);
         BEAST_EXPECT(amountFromQuality(getRate(one, hugeXrp)) == hugeXrpRate);
     }
 

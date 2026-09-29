@@ -1443,14 +1443,7 @@ struct FlowMPT_test : public beast::unit_test::Suite
             {
                 auto const offer = *offerPtr;
                 BEAST_EXPECT(offer[sfLedgerEntryType] == ltOFFER);
-                if constexpr (std::is_same_v<std::decay_t<decltype(eur)>, IOU>)
-                {
-                    BEAST_EXPECT(offer[sfTakerGets] == eur(5'988));
-                }
-                else
-                {
-                    BEAST_EXPECT(offer[sfTakerGets] == eur(5'989));
-                }
+                BEAST_EXPECT(offer[sfTakerGets] == eur(5'988));
                 BEAST_EXPECT(offer[sfTakerPays] == usd(4'990));
             }
         };
@@ -1489,10 +1482,8 @@ struct FlowMPT_test : public beast::unit_test::Suite
             // OutstandingAmount since it doesn't know if the
             // BookStep redeems or not. The BookStep then has 600EUR
             // available. Consequently, the entire offer is crossed.
-            // Note remaining takerGets is 541 rather than 540 due to integral
-            // rounding. XRP has a similar result.
             return TokenData<MPT, MPT>{
-                .gets = eur, .pays = usd, .remTakerGets = eur(541), .remTakerPays = usd(450)};
+                .gets = eur, .pays = usd, .remTakerGets = eur(540), .remTakerPays = usd(450)};
         };
 
         auto initXRP = [&](Env& env) {
@@ -1502,13 +1493,8 @@ struct FlowMPT_test : public beast::unit_test::Suite
             // OutstandingAmount since it doesn't know if the
             // BookStep redeems or not. The BookStep then has 600EUR
             // available. Consequently, the entire offer is crossed.
-            // Note remaining takerGets is 540.000001 rather than 540 due to
-            // integral rounding.
             return TokenData<XrpT, MPT>{
-                .gets = XRP,
-                .pays = usd,
-                .remTakerGets = XRP(540.000001),
-                .remTakerPays = usd(450)};
+                .gets = XRP, .pays = usd, .remTakerGets = XRP(540), .remTakerPays = usd(450)};
         };
 
         auto initIOU = [&](Env& env) {
