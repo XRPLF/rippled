@@ -12,7 +12,7 @@ struct SetDataE2e : RealVmTest
 {
 };
 
-TEST_F(SetDataE2e, ContractWritesItsData)
+TEST_F(SetDataE2e, contract_writes_its_data)
 {
     // `set_data` over 8 bytes of (zero-initialized) memory returns the byte count it stored.
     static constexpr auto kWat = std::string_view{R"wat(

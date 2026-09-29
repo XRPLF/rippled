@@ -14,14 +14,14 @@ struct NFTIssuerImpl : NFTTest
 {
 };
 
-TEST_F(NFTIssuerImpl, IssuerDecodesFromId)
+TEST_F(NFTIssuerImpl, issuer_decodes_from_id)
 {
     auto const issuer = Account{"issuer"};
     expectValue(
         makeHost()->getNFTIssuer(makeNftId(issuer.id())), RealHostFixture::toBytes(issuer.id()));
 }
 
-TEST_F(NFTIssuerImpl, IssuerZeroIsInvalidParams)
+TEST_F(NFTIssuerImpl, issuer_zero_is_invalid_params)
 {
     expectError(makeHost()->getNFTIssuer(makeNftId(AccountID{})), HostFunctionError::InvalidParams);
 }

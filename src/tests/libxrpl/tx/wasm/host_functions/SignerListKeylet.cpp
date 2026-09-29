@@ -12,14 +12,14 @@ struct SignerListKeyletImpl : RealHostFixture
 {
 };
 
-TEST_F(SignerListKeyletImpl, MatchesSignerListFunction)
+TEST_F(SignerListKeyletImpl, matches_signer_list_function)
 {
     auto const owner = fund("owner");
 
     expectKeyletMatches(makeHost()->signerListKeylet(owner.id()), keylet::signerList(owner.id()));
 }
 
-TEST_F(SignerListKeyletImpl, InvalidAccount)
+TEST_F(SignerListKeyletImpl, invalid_account)
 {
     expectError(makeHost()->signerListKeylet(AccountID{}), HostFunctionError::InvalidAccount);
 }

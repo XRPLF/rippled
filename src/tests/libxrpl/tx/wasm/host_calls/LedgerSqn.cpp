@@ -39,7 +39,7 @@ struct LedgerSqnCall : HostCallTest
     }
 };
 
-TEST_F(LedgerSqnCall, SequenceReachesGuestAsFourLittleEndianBytes)
+TEST_F(LedgerSqnCall, sequence_reaches_guest_as_four_little_endian_bytes)
 {
     EXPECT_CALL(host, getLedgerSqn()).WillOnce(Return(0x01020304u));
 
@@ -48,7 +48,7 @@ TEST_F(LedgerSqnCall, SequenceReachesGuestAsFourLittleEndianBytes)
     EXPECT_EQ(hostAnswer(), 0x01020304);
 }
 
-TEST_F(LedgerSqnCall, HostErrorBecomesContractReturnValue)
+TEST_F(LedgerSqnCall, host_error_becomes_contract_return_value)
 {
     EXPECT_CALL(host, getLedgerSqn())
         .WillOnce(Return(std::unexpected(HostFunctionError::LedgerObjNotFound)));
@@ -59,7 +59,7 @@ TEST_F(LedgerSqnCall, HostErrorBecomesContractReturnValue)
 // The engine decides the fit, not the host: the host is never told the guest's capacity, it
 // reports the value's true length and the engine turns a length past the buffer into
 // `BufferTooSmall` — with nothing written.
-TEST_F(LedgerSqnCall, BufferTooSmallIsRefusedWholeNotTruncated)
+TEST_F(LedgerSqnCall, buffer_too_small_is_refused_whole_not_truncated)
 {
     EXPECT_CALL(host, getLedgerSqn()).WillOnce(Return(0x01020304u));
 

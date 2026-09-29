@@ -12,7 +12,7 @@ struct MptokenKeyletImpl : RealHostFixture
 {
 };
 
-TEST_F(MptokenKeyletImpl, MatchesMptokenKeyletFunction)
+TEST_F(MptokenKeyletImpl, matches_mptoken_keylet_function)
 {
     auto const owner = fund("owner");
     auto const anotherAccount = fund("account");
@@ -23,13 +23,13 @@ TEST_F(MptokenKeyletImpl, MatchesMptokenKeyletFunction)
         keylet::mptoken(mpt, anotherAccount.id()));
 }
 
-TEST_F(MptokenKeyletImpl, InvalidMpt)
+TEST_F(MptokenKeyletImpl, invalid_mpt)
 {
     auto const owner = fund("owner");
     expectError(makeHost()->mptokenKeylet(MPTID{}, owner.id()), HostFunctionError::InvalidParams);
 }
 
-TEST_F(MptokenKeyletImpl, InvalidAccount)
+TEST_F(MptokenKeyletImpl, invalid_account)
 {
     auto const owner = fund("owner");
 

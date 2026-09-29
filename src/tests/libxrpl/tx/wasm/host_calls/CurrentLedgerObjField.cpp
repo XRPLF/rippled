@@ -37,7 +37,7 @@ struct CurrentLedgerObjFieldCall : HostCallTest
 
 // The shim turns the guest's `i32` into the `SField` the C++ interface takes; asserting on
 // the argument is what pins that translation rather than assuming it.
-TEST_F(CurrentLedgerObjFieldCall, FieldCodeBecomesSFieldHostIsAskedFor)
+TEST_F(CurrentLedgerObjFieldCall, field_code_becomes_sfield_host_is_asked_for)
 {
     EXPECT_CALL(host, getCurrentLedgerObjField(testing::Ref(sfBalance)))
         .WillOnce(Return(Bytes{1, 2, 3}));
@@ -45,7 +45,7 @@ TEST_F(CurrentLedgerObjFieldCall, FieldCodeBecomesSFieldHostIsAskedFor)
     EXPECT_EQ(hostAnswer(), 3) << "the length the host reported";
 }
 
-TEST_F(CurrentLedgerObjFieldCall, UnknownFieldCodeIsRefusedWithoutAskingHost)
+TEST_F(CurrentLedgerObjFieldCall, unknown_field_code_is_refused_without_asking_host)
 {
     fieldCode = 0x7fff'0000;  // a type nothing is registered under
     EXPECT_CALL(host, getCurrentLedgerObjField).Times(0);
@@ -53,7 +53,7 @@ TEST_F(CurrentLedgerObjFieldCall, UnknownFieldCodeIsRefusedWithoutAskingHost)
     EXPECT_EQ(hostAnswer(), hfErrorToInt(HostFunctionError::InvalidField));
 }
 
-TEST_F(CurrentLedgerObjFieldCall, HostErrorBecomesContractReturnValue)
+TEST_F(CurrentLedgerObjFieldCall, host_error_becomes_contract_return_value)
 {
     EXPECT_CALL(host, getCurrentLedgerObjField)
         .WillOnce(Return(std::unexpected(HostFunctionError::FieldNotFound)));
@@ -63,7 +63,7 @@ TEST_F(CurrentLedgerObjFieldCall, HostErrorBecomesContractReturnValue)
 
 // The field cap bounds the status, not just the bytes: a host reporting a length past
 // `kMaxWasmDataLength` is too large whatever the guest's buffer was.
-TEST_F(CurrentLedgerObjFieldCall, FieldPastProtocolCapIsTooLarge)
+TEST_F(CurrentLedgerObjFieldCall, field_past_protocol_cap_is_too_large)
 {
     EXPECT_CALL(host, getCurrentLedgerObjField)
         .WillOnce(Return(Bytes(kMaxWasmDataLength + 1, 0xab)));

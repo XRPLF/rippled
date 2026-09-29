@@ -21,7 +21,7 @@ struct LoanKeyletCall : HostContextTest
     std::uint32_t const loanSeq = 12345;
 };
 
-TEST_F(LoanKeyletCall, LoanBrokerIdAndSeqAreForwardedKeyletIsWritten)
+TEST_F(LoanKeyletCall, loan_broker_id_and_seq_are_forwarded_keylet_is_written)
 {
     Bytes const keylet(32, 0xab);
     EXPECT_CALL(host, loanKeylet(testing::Eq(loanBrokerId), loanSeq))
@@ -34,7 +34,7 @@ TEST_F(LoanKeyletCall, LoanBrokerIdAndSeqAreForwardedKeyletIsWritten)
     EXPECT_TRUE(out.holds(bytesOf(keylet)));
 }
 
-TEST_F(LoanKeyletCall, HostErrorBecomesContractReturnValue)
+TEST_F(LoanKeyletCall, host_error_becomes_contract_return_value)
 {
     EXPECT_CALL(host, loanKeylet(testing::Eq(loanBrokerId), loanSeq))
         .WillOnce(testing::Return(std::unexpected(HostFunctionError::LedgerObjNotFound)));
@@ -46,7 +46,7 @@ TEST_F(LoanKeyletCall, HostErrorBecomesContractReturnValue)
     EXPECT_FALSE(out.wasWritten());
 }
 
-TEST_F(LoanKeyletCall, MalformedLoanBrokerIdIsRefusedWithoutAskingHost)
+TEST_F(LoanKeyletCall, malformed_loan_broker_id_is_refused_without_asking_host)
 {
     Bytes const malformedLoanBrokerId(uint256::size() - 1, 0x51);
     EXPECT_CALL(host, loanKeylet).Times(0);
@@ -57,7 +57,7 @@ TEST_F(LoanKeyletCall, MalformedLoanBrokerIdIsRefusedWithoutAskingHost)
         hfErrorToInt(HostFunctionError::InvalidParams));
 }
 
-TEST_F(LoanKeyletCall, HostExceptionBecomesInternalFatalAndIsLogged)
+TEST_F(LoanKeyletCall, host_exception_becomes_internal_fatal_and_is_logged)
 {
     EXPECT_CALL(host, loanKeylet(testing::Eq(loanBrokerId), loanSeq))
         .WillOnce(testing::Throw(std::runtime_error{"loan keylet came apart"}));
@@ -72,7 +72,7 @@ TEST_F(LoanKeyletCall, HostExceptionBecomesInternalFatalAndIsLogged)
 
 // The out-region contract: write only if the whole value fits, and return the true length
 // either way.
-TEST_F(LoanKeyletCall, ShortOutRegionWritesNothingAndReturnsTrueLength)
+TEST_F(LoanKeyletCall, short_out_region_writes_nothing_and_returns_true_length)
 {
     Bytes const keylet(32, 0xab);
     EXPECT_CALL(host, loanKeylet(testing::Eq(loanBrokerId), loanSeq))
@@ -85,7 +85,7 @@ TEST_F(LoanKeyletCall, ShortOutRegionWritesNothingAndReturnsTrueLength)
     EXPECT_FALSE(out.wasWritten());
 }
 
-TEST_F(LoanKeyletCall, OutRegionOfExactSizeIsWritten)
+TEST_F(LoanKeyletCall, out_region_of_exact_size_is_written)
 {
     Bytes const keylet(32, 0xab);
     EXPECT_CALL(host, loanKeylet(testing::Eq(loanBrokerId), loanSeq))
@@ -98,7 +98,7 @@ TEST_F(LoanKeyletCall, OutRegionOfExactSizeIsWritten)
     EXPECT_TRUE(out.holds(bytesOf(keylet)));
 }
 
-TEST_F(LoanKeyletCall, EmptyResultAnswersZeroAndWritesNothing)
+TEST_F(LoanKeyletCall, empty_result_answers_zero_and_writes_nothing)
 {
     EXPECT_CALL(host, loanKeylet(testing::Eq(loanBrokerId), loanSeq))
         .WillOnce(testing::Return(Bytes{}));

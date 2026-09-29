@@ -13,7 +13,7 @@ struct CheckSignatureImpl : RealHostFixture
 {
 };
 
-TEST_F(CheckSignatureImpl, ValidSignature)
+TEST_F(CheckSignatureImpl, valid_signature)
 {
     auto const kp = generateKeyPair(KeyType::Secp256k1, randomSeed());
     auto const& pk = kp.first;
@@ -26,7 +26,7 @@ TEST_F(CheckSignatureImpl, ValidSignature)
     expectValue(result, std::int32_t{1});
 }
 
-TEST_F(CheckSignatureImpl, InvalidSignature)
+TEST_F(CheckSignatureImpl, invalid_signature)
 {
     auto const kp = generateKeyPair(KeyType::Secp256k1, randomSeed());
     auto const& pk = kp.first;
@@ -40,7 +40,7 @@ TEST_F(CheckSignatureImpl, InvalidSignature)
     expectValue(result, std::int32_t{0});
 }
 
-TEST_F(CheckSignatureImpl, InvalidPublicKey)
+TEST_F(CheckSignatureImpl, invalid_public_key)
 {
     auto const kp = generateKeyPair(KeyType::Secp256k1, randomSeed());
     auto const kp2 = generateKeyPair(KeyType::Secp256k1, randomSeed());
@@ -54,7 +54,7 @@ TEST_F(CheckSignatureImpl, InvalidPublicKey)
     expectValue(result, std::int32_t{0});
 }
 
-TEST_F(CheckSignatureImpl, EmptySignature)
+TEST_F(CheckSignatureImpl, empty_signature)
 {
     auto const kp = generateKeyPair(KeyType::Secp256k1, randomSeed());
     auto const& pk = kp.first;
@@ -65,7 +65,7 @@ TEST_F(CheckSignatureImpl, EmptySignature)
     expectValue(result, std::int32_t{0});
 }
 
-TEST_F(CheckSignatureImpl, EmptyMessage)
+TEST_F(CheckSignatureImpl, empty_message)
 {
     auto const kp = generateKeyPair(KeyType::Secp256k1, randomSeed());
     auto const& pk = kp.first;

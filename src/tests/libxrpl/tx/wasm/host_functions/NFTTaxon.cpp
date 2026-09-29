@@ -10,7 +10,7 @@ struct NFTTaxonImpl : NFTTest
 {
 };
 
-TEST_F(NFTTaxonImpl, TaxonDecodesFromId)
+TEST_F(NFTTaxonImpl, taxon_decodes_from_id)
 {
     auto const issuer = Account{"issuer"};
     expectValue(makeHost()->getNFTTaxon(makeNftId(issuer.id())), kTaxon);
