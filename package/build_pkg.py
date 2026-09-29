@@ -21,6 +21,9 @@ SRC_DIR = Path(__file__).resolve().parents[1]
 
 PRE_RELEASE = re.compile(r"^(b|rc)(0|[1-9][0-9]*)(\+.*)?$")
 
+# Channels a tag of any version is published to, rather than only bN/rcN.
+ANY_VERSION_CHANNELS = ("custom", "private")
+
 # The package name a variant suffixes, and the name every variant keeps for its
 # on-disk paths (/usr/bin/xrpld, /etc/xrpld, xrpld.service).
 BASE_NAME = "xrpld"
@@ -68,13 +71,17 @@ def capture(*command: object) -> str:
     ).stdout.strip()
 
 
-def package_version(reported: str) -> str:
+def package_version(reported: str, channel: str) -> str:
     """Normalise a reported version into one the package formats accept.
 
     A pre-release switches to '~' (3.2.0-b1 -> 3.2.0~b1), which also sorts before
-    the final 3.2.0; a no-op for a final release.
+    the final 3.2.0; a no-op for a final release. The custom and private
+    channels accept any pre-release and build metadata, with any further '-' in
+    the pre-release switched to '.' (3.4.0-custom-1 -> 3.4.0~custom.1).
     """
     base, _, pre_release = reported.partition("-")
+    if channel in ANY_VERSION_CHANNELS:
+        pre_release = pre_release.replace("-", ".")
     version = f"{base}~{pre_release}" if pre_release else base
 
     # BuildInfo already SemVer-validates the version. Packaging adds one narrower
@@ -84,6 +91,8 @@ def package_version(reported: str) -> str:
         f"unsupported version {reported!r}: {version!r} cannot contain '-'. "
         "Use a single-token pre-release like 3.2.0-b1 or 3.2.0-rc2."
     )
+    if channel in ANY_VERSION_CHANNELS:
+        return version
     assert pre_release or "+" not in reported, (
         f"unsupported version {reported!r}: "
         "build metadata is only supported on bN/rcN pre-releases."
@@ -301,7 +310,7 @@ def main() -> None:
     parser.add_argument(
         "--channel",
         required=True,
-        choices=("stable", "rc", "beta", "develop", "private", "UNRELEASED"),
+        choices=("stable", "rc", "beta", "custom", "develop", "private", "UNRELEASED"),
         help="release channel, written to debian/changelog",
     )
     args = parser.parse_args()
@@ -319,7 +328,7 @@ def main() -> None:
 
     check_binaries(build_dir)
     reported = read_version(build_dir / "xrpld")
-    version = package_version(reported)
+    version = package_version(reported, channel)
     epoch = source_date_epoch()
 
     # rpmbuild and dpkg-buildpackage both honour this for file timestamps.
