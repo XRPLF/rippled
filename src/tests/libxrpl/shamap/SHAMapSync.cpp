@@ -22,7 +22,6 @@
 #include <xrpl/shamap/SHAMapLeafNode.h>
 #include <xrpl/shamap/SHAMapMissingNode.h>
 #include <xrpl/shamap/SHAMapNodeID.h>
-#include <xrpl/shamap/SHAMapSyncFilter.h>
 #include <xrpl/shamap/SHAMapTreeNode.h>
 
 #include <boost/smart_ptr/intrusive_ptr.hpp>
@@ -31,6 +30,8 @@
 #include <helpers/TestSink.h>
 #include <shamap/DeepChain.h>
 #include <shamap/InnerNode.h>
+#include <shamap/SyncFilter.h>
+#include <shamap/Tally.h>
 #include <shamap/common.h>
 
 #include <atomic>
@@ -38,7 +39,6 @@
 #include <cstddef>
 #include <cstdint>
 #include <list>
-#include <map>
 #include <optional>
 #include <thread>
 #include <unordered_set>
@@ -62,22 +62,37 @@ noAmendments()
 }
 
 /**
- * Whether a verdict carries exactly the given counts.
+ * A header naming the given transaction map root, with a hash derived from its
+ * own fields.
  *
- * The counts rather than get(): that string is a log format, not an API. It is
- * pinned once, in the SHAMapAddNode tests, and read here only to describe a
- * failure.
+ * @param txHash The transaction map root.
+ * @param seq The ledger sequence.
+ * @return The header.
+ */
+[[nodiscard]] static LedgerHeader
+headerWithTxRoot(UInt256 const& txHash, std::uint32_t seq = 2)
+{
+    LedgerHeader header;
+    header.seq = seq;
+    header.txHash = txHash;
+    header.hash = calculateLedgerHash(header);
+    return header;
+}
+
+/**
+ * tallyIs() as a gtest assertion, naming the actual tally when it does not
+ * match.
  *
  * @param san The verdict to check.
  * @param good How many nodes the batch should have hooked in.
  * @param bad How many it should have rejected.
  * @param duplicate How many it should have already held.
- * @return Whether the verdict matches, naming the actual tally if it does not.
+ * @return The assertion result.
  */
 [[nodiscard]] static ::testing::AssertionResult
-tallyIs(SHAMapAddNode const& san, int good, int bad, int duplicate)
+tallyMatches(SHAMapAddNode const& san, int good, int bad, int duplicate)
 {
-    if (san.getGood() == good && san.getBad() == bad && san.getDuplicate() == duplicate)
+    if (tallyIs(san, good, bad, duplicate))
         return ::testing::AssertionSuccess();
 
     return ::testing::AssertionFailure() << "tally is " << san.get() << ", expected good:" << good
@@ -142,13 +157,9 @@ protected:
     }
 
     /**
-     * A sync filter that records every node it is told about, and serves back
-     * only the ones it was explicitly asked to hold.
-     *
-     * Serving is opt-in: the sync path consults the filter before deciding
-     * a node is missing, so each case serves only the node it wants resolved.
+     * A serving filter that also records every node it is told about.
      */
-    class RecordingFilter : public SHAMapSyncFilter
+    class RecordingFilter : public ServingFilter
     {
     public:
         // What one gotNode() call was told, in the order the calls arrived.
@@ -170,27 +181,6 @@ protected:
             reports_.push_back({.fromFilter = fromFilter, .hash = hash, .ledgerSeq = ledgerSeq});
         }
 
-        [[nodiscard]] std::optional<Blob>
-        getNode(SHAMapHash const& hash) const override
-        {
-            if (auto const it = served_.find(hash); it != served_.end())
-                return it->second;
-            return std::nullopt;
-        }
-
-        /**
-         * Offer a node back to the map, as a fetch pack does.
-         *
-         * @param node The node to serve, keyed by its own hash.
-         */
-        void
-        serve(SHAMapTreeNodePtr const& node)
-        {
-            Serializer s;
-            node->serializeWithPrefix(s);
-            served_.emplace(node->getHash(), s.modData());
-        }
-
         [[nodiscard]] std::vector<Report> const&
         reports() const
         {
@@ -198,21 +188,17 @@ protected:
         }
 
     private:
-        // Mutable because the whole interface is const: a filter is handed to the map by
-        // const pointer, so recording has to happen through one.
+        // Mutable because a filter is handed to the map by const pointer, so recording happens
+        // through a const method.
         mutable std::vector<Report> reports_;
-        std::map<SHAMapHash, Blob> served_;
     };
 
     /**
-     * A sync filter that serves a range of a DeepChain's nodes, by hash.
+     * A serving filter holding a range of a DeepChain's nodes.
      *
-     * Stands in for a fetch pack, which is checked against each node's own
-     * hash alone, so a walk resolves nodes locally through the filter
-     * rather than through addKnownNode(). Anything outside the range,
-     * including a decoy child, looks unavailable.
+     * Anything outside the range, including a decoy child, looks unavailable.
      */
-    class ChainFilter : public SHAMapSyncFilter
+    class ChainFilter : public ServingFilter
     {
     public:
         /**
@@ -226,38 +212,16 @@ protected:
             unsigned int minDepth = 0)
         {
             for (auto depth = minDepth; depth <= maxDepth; ++depth)
-                nodes_.emplace(chain.nodeAt(depth)->getHash(), chain.prefixedNodeAt(depth));
+                serve(chain.nodeAt(depth)->getHash(), chain.prefixedNodeAt(depth));
         }
-
-        void
-        gotNode(
-            bool,
-            SHAMapHash const&,
-            std::uint32_t,
-            Blob&&,  // NOLINT(cppcoreguidelines-rvalue-reference-param-not-moved)
-            SHAMapNodeType) const override
-        {
-        }
-
-        [[nodiscard]] std::optional<Blob>
-        getNode(SHAMapHash const& hash) const override
-        {
-            if (auto const it = nodes_.find(hash); it != nodes_.end())
-                return it->second;
-            return std::nullopt;
-        }
-
-    private:
-        std::map<SHAMapHash, Blob> nodes_;
     };
 
     /**
      * A root inner node with all 16 branches occupied and not one of them
      * resolvable.
      *
-     * A walk of a backed map posts an asynchronous read for every branch in a
-     * single pass, so the nodestore reader threads run finishFetch() for the
-     * same map at the same time.
+     * A walk of a backed map posts a read for every branch in one pass, so the
+     * nodestore reader threads run finishFetch() for one map concurrently.
      */
     struct WideRoot
     {
@@ -325,9 +289,9 @@ TEST_F(SHAMapSyncTest, inner_node_at_leaf_depth)
     ASSERT_TRUE(chain.fill(map));
     ASSERT_TRUE(map.isValid());
 
-    auto const result = chain.addOffendingNode(map);
+    auto const result = chain.addRejectedNode(map);
 
-    EXPECT_TRUE(tallyIs(result, 0, 1, 0));
+    EXPECT_TRUE(tallyMatches(result, 0, 1, 0));
     EXPECT_FALSE(result.isGood());
     EXPECT_FALSE(map.isValid());
 
@@ -393,7 +357,7 @@ TEST_F(SHAMapSyncTest, only_the_map_invalidating_arm_reports_it)
     ASSERT_TRUE(chain.fill(condemned));
     ASSERT_TRUE(condemned.isValid());
 
-    auto const offending = chain.addOffendingNode(condemned);
+    auto const offending = chain.addRejectedNode(condemned);
     EXPECT_TRUE(offending.isInvalid());
     EXPECT_TRUE(offending.invalidatedMap());
     EXPECT_FALSE(condemned.isValid());
@@ -420,34 +384,34 @@ TEST_F(SHAMapSyncTest, node_that_cannot_be_hooked_is_bad_data)
 
     ASSERT_TRUE(map.addRootNode(chain.rootHash, chain.nodeAt(0), nullptr).isGood());
 
-    // nodeAt(1) is the node the root is missing and its hash matches, but we claim depth 2.
+    // The node the root is missing, with a matching hash, offered under depth 2.
     auto const wrongDepth = map.addKnownNode(SHAMapNodeID{2, UInt256{}}, chain.nodeAt(1), nullptr);
 
-    EXPECT_TRUE(tallyIs(wrongDepth, 0, 1, 0));
+    EXPECT_TRUE(tallyMatches(wrongDepth, 0, 1, 0));
     EXPECT_FALSE(wrongDepth.isUseful());
 
-    // The chain sits on branch 0 at every depth, so a node claiming a position on branch 1 asks the
-    // descent to follow a branch the root leaves empty.
+    // The chain sits on branch 0 at every depth, so a position on branch 1 names a branch the root
+    // leaves empty.
     UInt256 otherBranch;
     otherBranch.begin()[0] = 0x10;
     auto const emptyBranch =
         map.addKnownNode(SHAMapNodeID{1, otherBranch}, chain.nodeAt(1), nullptr);
 
-    EXPECT_TRUE(tallyIs(emptyBranch, 0, 1, 0));
+    EXPECT_TRUE(tallyMatches(emptyBranch, 0, 1, 0));
 
     // The right position this time, but the data hashes to something other than the child the root
-    // says belongs there.
-    auto const corrupt = map.addKnownNode(SHAMapNodeID{1, UInt256{}}, chain.nodeAt(2), nullptr);
+    // names there.
+    auto const hashMismatch =
+        map.addKnownNode(SHAMapNodeID{1, UInt256{}}, chain.nodeAt(2), nullptr);
 
-    EXPECT_TRUE(tallyIs(corrupt, 0, 1, 0));
+    EXPECT_TRUE(tallyMatches(hashMismatch, 0, 1, 0));
 
     // The verdict is bad data alone, so the map stays usable.
     EXPECT_TRUE(map.isValid());
 }
 
-// A root is installed once and a map is synced against one hash, so a root offered under a hash the
-// map does not hold names another tree and is bad data. The same root under the hash the map does
-// hold is the duplicate it is.
+// A map is synced against one root hash. A root offered under another hash names another tree and
+// is bad data, while the same root under the hash the map holds is a duplicate.
 TEST_F(SHAMapSyncTest, add_root_node_judges_the_hash_asked_for)
 {
     TestNodeFamily f{j_};
@@ -461,30 +425,26 @@ TEST_F(SHAMapSyncTest, add_root_node_judges_the_hash_asked_for)
     // The same root under the hash the map holds: already held, and reported as such.
     auto const same = map.addRootNode(chain.rootHash, chain.nodeAt(0), nullptr);
 
-    EXPECT_TRUE(tallyIs(same, 0, 0, 1));
+    EXPECT_TRUE(tallyMatches(same, 0, 0, 1));
     EXPECT_TRUE(same.isGood());
 
-    // A hash the map does not hold. nodeAt(1) is a real node of the same chain, so this is a
-    // well-formed hash that names another tree.
+    // A well-formed hash the map does not hold, taken from a real node of the same chain.
     auto const other = map.addRootNode(chain.nodeAt(1)->getHash(), chain.nodeAt(0), nullptr);
 
-    EXPECT_TRUE(tallyIs(other, 0, 1, 0));
+    EXPECT_TRUE(tallyMatches(other, 0, 1, 0));
     EXPECT_FALSE(other.isGood());
     EXPECT_TRUE(other.isInvalid());
 
-    // The refusal is about the hash asked for, so the root the map holds stays in place and the map
-    // stays usable.
+    // The refusal is about the hash asked for, so the root in place and the map both stand.
     EXPECT_EQ(map.getHash(), chain.rootHash);
     EXPECT_TRUE(map.isValid());
 }
 
-// The verdict outranks the full-below cache. That cache is keyed by node hash and shared by every
-// map of a family, and a hash covers a node's children but not its depth, so an earlier walk can
-// mark the same subtree hash complete at one depth while this map reaches it at kLeafDepth, with no
-// collision involved. The descent therefore skips the lookup at that boundary and reaches the depth
-// verdict first. This case seeds the entry a lookup would match, so dropping the skip turns the
-// verdict back into a duplicate.
-TEST_F(SHAMapSyncTest, map_invalidating_node_is_judged_before_the_cache_is_read)
+// The depth rule outranks the full-below cache. That cache is keyed by node hash and position, and
+// a hash covers a node's children but not its depth, so a hit cannot stand in for the depth check.
+// The descent skips the lookup at that boundary and reaches the depth verdict first. This case
+// seeds the entry a lookup would match, so dropping the skip turns the verdict into a duplicate.
+TEST_F(SHAMapSyncTest, inner_node_at_leaf_depth_is_judged_before_the_cache_is_read)
 {
     TestNodeFamily f{j_};
     DeepChain const chain;
@@ -495,27 +455,24 @@ TEST_F(SHAMapSyncTest, map_invalidating_node_is_judged_before_the_cache_is_read)
     ASSERT_TRUE(chain.fill(map));
     ASSERT_TRUE(map.isValid());
 
-    // This case seeds the entry a lookup at the boundary would match: the offending node's hash
-    // at its own position. The descent skips the lookup there, so the entry is never read and
-    // the depth verdict stands. Drop the skip and the hit returns for the whole branch, so the
-    // tally below becomes a duplicate.
+    // This case seeds the entry a lookup at the boundary would match: the node offered below, at
+    // its own position. The descent skips the lookup there, so the entry is never read and the
+    // depth verdict stands. Drop the skip and the hit returns for the whole branch instead.
     f.getFullBelowCache()->insert(
         chain.nodeAt(SHAMap::kLeafDepth)->getHash().asUInt256(), chain.idAt(SHAMap::kLeafDepth));
 
-    auto const result = chain.addOffendingNode(map);
+    auto const result = chain.addRejectedNode(map);
 
-    EXPECT_TRUE(tallyIs(result, 0, 1, 0));
+    EXPECT_TRUE(tallyMatches(result, 0, 1, 0));
     EXPECT_FALSE(result.isGood());
     EXPECT_FALSE(map.isValid());
     EXPECT_FALSE(map.setImmutable());
 }
 
-// A full-below entry answers only for the position the walk that filed it finished at. One cache
-// serves every map of a family, and a node's hash covers its children rather than its place, so a
-// subtree completed under one node ID must not satisfy a lookup for the same hash under another.
-// This case files a real subtree at its own position, has a root record that subtree one branch
-// over, and checks that the walk descends and reaches the leaf below rather than taking the
-// shortcut. An inner node fits any position, so the leaf is what the position test can refuse.
+// A full-below entry answers only for the position it was filed under. A node's hash covers its
+// children rather than its place, so the same hash under another node ID must miss. This case files
+// a subtree at its own position, has a root record it one branch over, and checks that the walk
+// descends to the leaf below rather than taking the shortcut.
 TEST_F(SHAMapSyncTest, full_below_entry_does_not_answer_at_another_position)
 {
     TestNodeFamily f{j_};
@@ -774,8 +731,8 @@ TEST_F(SHAMapSyncTest, invalid_tx_map_blocks_immutable_ledger)
     ledger.txMap().setSynching();
     ASSERT_TRUE(chain.fill(ledger.txMap()));
 
-    auto const result = chain.addOffendingNode(ledger.txMap());
-    ASSERT_TRUE(tallyIs(result, 0, 1, 0));
+    auto const result = chain.addRejectedNode(ledger.txMap());
+    ASSERT_TRUE(tallyMatches(result, 0, 1, 0));
     ASSERT_FALSE(ledger.txMap().isValid());
 
     // The state map is untouched, so only the transaction map can be refusing.
@@ -798,8 +755,8 @@ TEST_F(SHAMapSyncTest, invalid_state_map_blocks_immutable_ledger)
     ledger.stateMap().setSynching();
     ASSERT_TRUE(chain.fill(ledger.stateMap()));
 
-    auto const result = chain.addOffendingNode(ledger.stateMap());
-    ASSERT_TRUE(tallyIs(result, 0, 1, 0));
+    auto const result = chain.addRejectedNode(ledger.stateMap());
+    ASSERT_TRUE(tallyMatches(result, 0, 1, 0));
     ASSERT_FALSE(ledger.stateMap().isValid());
 
     // The transaction map is untouched, so only the state map can be refusing.
@@ -809,31 +766,29 @@ TEST_F(SHAMapSyncTest, invalid_state_map_blocks_immutable_ledger)
     EXPECT_FALSE(ledger.isImmutable());
 }
 
-// A refusal leaves the header exactly as it was. setImmutable() derives the map hashes from the
-// maps and then the ledger hash from the header, and writes them only after every check has
-// passed. The up-front check covers this case, and the re-test after the maps are settled shares
-// the rule, which is why the header is written only once that one has passed too.
+// A refusal leaves the header exactly as it was. setImmutable() derives the map hashes and then the
+// ledger hash, and writes them only once every check has passed.
 TEST_F(SHAMapSyncTest, refused_settle_leaves_the_header_alone)
 {
     TestNodeFamily f{j_};
     DeepChain const chain;
 
-    // Not the header constructor: this one derives its map hashes, which is what must not happen.
+    // Not the header constructor: this one derives its map hashes on settling.
     Ledger ledger{1, NetClock::time_point{}, noAmendments(), Fees{}, f};
     ASSERT_FALSE(ledger.isImmutable());
     ASSERT_TRUE(ledger.header().txHash.isZero());
     ASSERT_TRUE(ledger.header().accountHash.isZero());
     auto const hashBefore = ledger.header().hash;
 
-    // A transaction map that hashes to something, so a derived header hash differs from the one
-    // the ledger has now.
+    // A transaction map that hashes to something, so a derived header hash differs from the current
+    // one.
     ASSERT_TRUE(ledger.txMap().addItem(SHAMapNodeType::TnTransactionNm, makeRandomAS()));
     ASSERT_TRUE(ledger.txMap().getHash().isNonZero());
 
     // And a state map the chain abandons, so settling has to refuse.
     ledger.stateMap().setSynching();
     ASSERT_TRUE(chain.fill(ledger.stateMap()));
-    ASSERT_TRUE(chain.addOffendingNode(ledger.stateMap()).isInvalid());
+    ASSERT_TRUE(chain.addRejectedNode(ledger.stateMap()).isInvalid());
     ASSERT_FALSE(ledger.stateMap().isValid());
 
     EXPECT_FALSE(ledger.setImmutable());
@@ -845,18 +800,14 @@ TEST_F(SHAMapSyncTest, refused_settle_leaves_the_header_alone)
     EXPECT_EQ(ledger.header().hash, hashBefore);
 }
 
-// A ledger built from a header must not claim to be immutable before setImmutable() has found both
-// maps sound: they start out Synching and are filled in afterwards, and LedgerHistory::insert() and
-// LedgerReplayMsgHandler both gate on that claim to catch exactly that case.
+// A ledger built from a header claims to be immutable only once setImmutable() has found both maps
+// sound. LedgerHistory::insert() and LedgerReplayMsgHandler both gate on that claim.
 TEST_F(SHAMapSyncTest, ledger_from_header_is_not_immutable_until_settled)
 {
     TestNodeFamily f{j_};
     DeepChain const chain;
 
-    LedgerHeader header;
-    header.seq = 2;
-    header.txHash = chain.rootHash.asUInt256();
-    header.hash = calculateLedgerHash(header);
+    auto const header = headerWithTxRoot(chain.rootHash.asUInt256());
 
     Ledger ledger{header, noAmendments(), f};
 
@@ -866,25 +817,21 @@ TEST_F(SHAMapSyncTest, ledger_from_header_is_not_immutable_until_settled)
     EXPECT_FALSE(ledger.isImmutable());
 
     ASSERT_TRUE(chain.fill(ledger.txMap()));
-    ASSERT_TRUE(chain.addOffendingNode(ledger.txMap()).isInvalid());
+    ASSERT_TRUE(chain.addRejectedNode(ledger.txMap()).isInvalid());
     ASSERT_FALSE(ledger.txMap().isValid());
 
     EXPECT_FALSE(ledger.setImmutable());
     EXPECT_FALSE(ledger.isImmutable());
 }
 
-// The header's own map hashes are what the maps are synced against, so settling keeps them. The
-// transaction map is left empty while the header names a chain root, so the two differ and the
-// kept value is observable.
+// The maps are synced against the header's own map hashes, so settling keeps them. The transaction
+// map is left empty while the header names a chain root, so the kept value is observable.
 TEST_F(SHAMapSyncTest, ledger_from_header_keeps_the_map_hashes_it_was_given)
 {
     TestNodeFamily f{j_};
     DeepChain const chain;
 
-    LedgerHeader header;
-    header.seq = 2;
-    header.txHash = chain.rootHash.asUInt256();
-    header.hash = calculateLedgerHash(header);
+    auto const header = headerWithTxRoot(chain.rootHash.asUInt256());
     auto const verifiedHash = header.hash;
 
     Ledger ledger{header, noAmendments(), f};
@@ -911,19 +858,18 @@ TEST_F(SHAMapSyncTest, invalid_state_is_terminal)
     map.setSynching();
 
     ASSERT_TRUE(chain.fill(map));
-    ASSERT_TRUE(chain.addOffendingNode(map).isInvalid());
+    ASSERT_TRUE(chain.addRejectedNode(map).isInvalid());
     ASSERT_FALSE(map.isValid());
 
-    // Repeated attempts must each fail, and must not leave the map reporting a valid state.
+    // Every attempt fails and leaves the map invalid.
     for (auto attempt = 0; attempt < 3; ++attempt)
     {
         EXPECT_FALSE(map.setImmutable()) << "attempt " << attempt;
         EXPECT_FALSE(map.isValid()) << "attempt " << attempt;
     }
 
-    // Nor does clearSynching(), which keeps an abandoned map from being moved back to Modifying and
-    // passing isValid() again. It refuses rather than treating that as unreachable, since a
-    // concurrent walk can invalidate a map between a caller's own check and this call.
+    // clearSynching() likewise cannot move an invalid map back to Modifying. It refuses rather than
+    // treating that as unreachable, since a walk on another thread can reach the verdict first.
     for (auto attempt = 0; attempt < 3; ++attempt)
     {
         map.clearSynching();
@@ -962,12 +908,12 @@ TEST_F(SHAMapSyncTest, snapshot_of_invalid_map_stays_invalid)
 
     ASSERT_TRUE(chain.fill(map));
 
-    auto const result = chain.addOffendingNode(map);
-    ASSERT_TRUE(tallyIs(result, 0, 1, 0));
+    auto const result = chain.addRejectedNode(map);
+    ASSERT_TRUE(tallyMatches(result, 0, 1, 0));
     ASSERT_FALSE(map.isValid());
 
-    // Both flavors: the immutable snapshot is the one the store reads, and the
-    // mutable one is the one that sets Modifying.
+    // Both flavors: the immutable snapshot the store reads, and the mutable one that sets
+    // Modifying.
     for (bool const isMutable : {false, true})
     {
         auto const snapshot = map.snapShot(isMutable);
@@ -1021,8 +967,8 @@ TEST_F(SHAMapSyncTest, get_missing_nodes_refuses_invalid_map)
 
     ASSERT_TRUE(chain.fill(map));
 
-    auto const offendingResult = chain.addOffendingNode(map);
-    ASSERT_TRUE(tallyIs(offendingResult, 0, 1, 0));
+    auto const offendingResult = chain.addRejectedNode(map);
+    ASSERT_TRUE(tallyMatches(offendingResult, 0, 1, 0));
     ASSERT_FALSE(map.isValid());
 
     // Only the node the map rejected, offered back as a fetch pack does.
@@ -1124,8 +1070,7 @@ TEST_F(SHAMapSyncTest, get_missing_nodes_drains_posted_reads_when_invalidated)
     ChainFilter const filter{chain};
 
     // The walk descends the chain, posting a read per level for the decoy child, and marks the map
-    // invalid on reaching kLeafDepth. Returning empty is the visible part; draining first is the
-    // part only a sanitizer can see.
+    // invalid on reaching kLeafDepth. Returning empty is the part the expectations reach.
     EXPECT_TRUE(map.getMissingNodes(kMaxNodesPerRequest, &filter).empty());
     EXPECT_FALSE(map.isValid());
     EXPECT_FALSE(map.setImmutable());
@@ -1143,7 +1088,7 @@ TEST_F(SHAMapSyncTest, get_missing_nodes_drains_posted_reads_when_invalidated)
 TEST_F(SHAMapSyncTest, get_missing_nodes_rejects_inner_node_at_leaf_depth_from_an_async_read)
 {
     // A seed of this case's own, so the node it stores answers for no other chain: the memory
-    // nodestore is keyed by path, and every test family in this binary opens the same one.
+    // nodestore is shared by path across every test family in this binary.
     static constexpr unsigned int kOwnChainSeed = 41;
 
     // Any value serves: the nodestore is keyed by hash and takes this only as a lookup hint.
@@ -1180,9 +1125,9 @@ TEST_F(SHAMapSyncTest, get_missing_nodes_rejects_inner_node_at_leaf_depth_from_a
     EXPECT_FALSE(map.setImmutable());
 }
 
-// A walk that only meets legitimate depths must be left alone. Stopping one level short of
-// kLeafDepth leaves a deepest node whose child is genuinely missing, so the walk reports it and
-// the map stays valid.
+// A walk that meets only legitimate depths is left alone. Stopping one level short of kLeafDepth
+// leaves a deepest node whose child is genuinely missing, so the walk reports it and the map stays
+// valid.
 TEST_F(SHAMapSyncTest, get_missing_nodes_accepts_inner_node_above_leaf_depth)
 {
     TestNodeFamily f{j_};
@@ -1302,13 +1247,13 @@ TEST_F(SHAMapSyncTest, add_root_node_leaves_invalid_map_invalid)
 
     ASSERT_TRUE(chain.fill(map));
 
-    auto const offendingResult = chain.addOffendingNode(map);
-    ASSERT_TRUE(tallyIs(offendingResult, 0, 1, 0));
+    auto const offendingResult = chain.addRejectedNode(map);
+    ASSERT_TRUE(tallyMatches(offendingResult, 0, 1, 0));
     ASSERT_FALSE(map.isValid());
 
     // A duplicate: counted as good, and counted in the duplicate tally.
     auto const result = map.addRootNode(chain.rootHash, chain.nodeAt(0), nullptr);
-    EXPECT_TRUE(tallyIs(result, 0, 0, 1));
+    EXPECT_TRUE(tallyMatches(result, 0, 0, 1));
     EXPECT_TRUE(result.isGood());
     EXPECT_FALSE(result.isUseful());
 
@@ -1454,26 +1399,20 @@ TEST_F(SHAMapSyncTest, sync_filter_is_told_the_ledger_sequence)
 }
 
 // Ledger::setFull() publishes each map's ledger sequence alongside the flag that lets the first
-// nodestore miss report a gap. The sequence is what the lookup resolving that gap reads.
-//
-// This pins that setFull() sets the sequence. Only a ThreadSanitizer build observes the order of
-// the two stores.
+// nodestore miss report a gap. Only a ThreadSanitizer build observes the order of the two stores.
 TEST_F(SHAMapSyncTest, ledger_set_full_publishes_the_ledger_sequence)
 {
     static constexpr std::uint32_t kLedgerSeq = 7;
 
     TestNodeFamily f{j_};
 
-    LedgerHeader header;
-    header.seq = kLedgerSeq;
     // Non-zero, so the map has a root to look for and the lookup can miss.
-    header.txHash = UInt256{1};
-    header.hash = calculateLedgerHash(header);
+    auto const header = headerWithTxRoot(UInt256{1}, kLedgerSeq);
 
     Ledger ledger{header, noAmendments(), f};
 
-    // The constructor already looked for that root and missed. The map becomes complete only at
-    // setFull() below, so the report count is still zero here.
+    // The constructor already looked for that root and missed. The map has no claim to withdraw
+    // until setFull() below, so nothing is reported yet.
     ASSERT_EQ(f.missingBySeqReports(), 0uz);
 
     ledger.setFull();
