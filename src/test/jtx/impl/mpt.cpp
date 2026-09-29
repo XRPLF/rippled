@@ -1955,7 +1955,7 @@ MPTTester::holderKeyUpdate(MPTHolderKeyUpdate const& arg)
     }
     else if (!cancel && !arg.omitProof.value_or(false))
     {
-        // TODO: Proof verification lands in a follow-up. Rotation/Recovery still
+        // Proof verification lands in a follow-up. Rotation/Recovery still
         // require the field to be present; any blob satisfies that check.
         // Cancel mode carries no proof.
         jv[sfZKProof.jsonName] = strHex(gMakeZeroBuffer(1));

@@ -113,12 +113,12 @@ ConfidentialMPTHolderKeyUpdate::preclaim(PreclaimContext const& ctx)
     if (!sleIssuance)
         return tecOBJECT_NOT_FOUND;
 
+    if (!sleIssuance->isFlag(lsfMPTCanHoldConfidentialBalance))
+        return tecNO_PERMISSION;
+
     auto const sleMptoken = ctx.view.read(keylet::mptoken(mptIssuanceID, account));
     if (!sleMptoken)
         return tecOBJECT_NOT_FOUND;
-
-    if (!sleIssuance->isFlag(lsfMPTCanHoldConfidentialBalance))
-        return tecNO_PERMISSION;
 
     if (!sleMptoken->isFieldPresent(sfHolderEncryptionKey) ||
         !sleMptoken->isFieldPresent(sfConfidentialBalanceSpending) ||

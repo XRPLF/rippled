@@ -18,7 +18,7 @@ class TransactionProposalCreateBuilder;
 /**
  * @brief Transaction: TransactionProposalCreate
  *
- * Type: ttTRANSACTION_PROPOSAL_CREATE (95)
+ * Type: ttTRANSACTION_PROPOSAL_CREATE (94)
  * Delegable: Delegation::NotDelegable
  * Amendment: featureCosign
  * Privileges: Privilege::NoPriv

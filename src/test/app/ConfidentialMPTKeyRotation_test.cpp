@@ -2748,7 +2748,7 @@ class ConfidentialMPTKeyRotation_test : public ConfidentialTransferTestBase
                 .account = bob,
                 .holderPubKey = ct.mpt.getPubKey(bob),
                 .flags = tfHolderKeyRecovery,
-                .err = tecNO_PERMISSION,
+                .err = tecDUPLICATE,
             });
         }
 
