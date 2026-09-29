@@ -43,8 +43,9 @@ setCurrentTransactionRules(std::optional<Rules> r)
     auto const range = [&r]() {
         // If any new conditions with new amendments are added to "enableLargeNumbers", those
         // amendments must also be added to useRulesGuards.
-        bool const enableLargeNumbers =
-            !r || (r->enabled(featureSingleAssetVault) || r->enabled(featureLendingProtocol));
+        bool const enableLargeNumbers = !r ||
+            (r->enabled(featureSingleAssetVault) || r->enabled(featureLendingProtocol) ||
+             r->enabled(featureMPTokensV2));
         // If enableLargeNumbers is true, then useRulesGuards must also return true.
         // However, the reverse is not true. Other amendments can cause the rules guard to be used,
         // even though large numbers are _not_ used.
@@ -84,7 +85,8 @@ useRulesGuards(Rules const& rules)
     // with createGuards, and any other callers, and the first set of guards can be created directly
     // at the call site, without using optional.
     return rules.enabled(featureSingleAssetVault) || rules.enabled(featureLendingProtocol) ||
-        rules.enabled(fixCleanup3_2_0) || rules.enabled(fixCleanup3_3_0);
+        rules.enabled(fixCleanup3_2_0) || rules.enabled(fixCleanup3_3_0) ||
+        rules.enabled(featureMPTokensV2);
 }
 
 void
