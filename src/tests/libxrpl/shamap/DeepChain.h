@@ -57,12 +57,27 @@ struct DeepChain
      * A chain of inner nodes reaching SHAMap::kLeafDepth, a depth only a leaf
      * may occupy.
      *
-     * @param seed Varies the whole chain, so two chains coexist with distinct
-     *        nodes. Caches and fetch packs are keyed by hash, so
-     *        identically-seeded chains are the same chain.
+     * @param seed Varies the chain's nodes. Two chains built from one seed hold
+     *        the same nodes, which caches and fetch packs key by hash.
      */
     explicit DeepChain(unsigned int seed = 1) : DeepChain(std::nullopt, seed, Decoy::No)
     {
+    }
+
+    /**
+     * The same chain, with an unresolvable second child at every level, so a
+     * backed map's descendAsync() posts a real asynchronous read per level.
+     *
+     * Offered only for this shape: the decoy sits on branch 1, which is free
+     * only while pathKey is zero.
+     *
+     * @param seed Varies the whole chain. See the constructor.
+     * @return The chain.
+     */
+    [[nodiscard]] static DeepChain
+    withDecoys(unsigned int seed = 1)
+    {
+        return DeepChain{std::nullopt, seed, Decoy::Yes};
     }
 
     /**

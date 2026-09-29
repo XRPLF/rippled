@@ -142,9 +142,10 @@ private:
     /**
      * The map's state.
      *
-     * A getMissingNodes() walk writes it, through clearSynching(), while whatever
-     * drives the acquisition reads it. Atomic rather than guarded, since the
-     * acquisition code releases its lock across that walk.
+     * A getMissingNodes() walk writes it, through setInvalid() and
+     * clearSynching(), while whatever drives the acquisition reads it.
+     * The walk runs with the acquisition's lock released, so this is atomic
+     * rather than guarded.
      */
     mutable std::atomic<SHAMapState> state_;
     SHAMapType const type_;
@@ -337,9 +338,13 @@ public:
      * concurrency, to discover nodes referenced in the
      * SHAMap but not available locally.
      *
+     * Only a leaf may occupy a position at or beyond kLeafDepth. A map that
+     * breaks that is marked Invalid and the traversal is abandoned, so callers
+     * ask isValid() to tell an empty result from a satisfied map.
+     *
      * @param maxNodes The maximum number of found nodes to return
      * @param filter The filter to use when retrieving nodes
-     * @param return The nodes known to be missing
+     * @return The nodes known to be missing, or empty if the map is Invalid
      */
     std::vector<std::pair<SHAMapNodeID, UInt256>>
     getMissingNodes(int maxNodes, SHAMapSyncFilter const* filter);
