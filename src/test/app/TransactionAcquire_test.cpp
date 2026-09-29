@@ -11,6 +11,7 @@
 #include <xrpl/shamap/SHAMap.h>
 #include <xrpl/shamap/SHAMapAddNode.h>
 #include <xrpl/shamap/SHAMapNodeID.h>
+#include <xrpl/shamap/SHAMapTreeNode.h>
 
 #include <xrpl.pb.h>
 
@@ -370,6 +371,79 @@ struct TransactionAcquire_test : public beast::unit_test::Suite
     }
 
     /**
+     * A batch that ends on a bad node still counts the good nodes ahead of
+     * it, and a batch of nodes already held still counts as an answer.
+     *
+     * The recorded progress is what the verdict is for: it stops the
+     * next timer tick from counting a timeout, so a batch that hooked
+     * any node reports progress. A batch of nodes already held counts as
+     * well, because the peer answered what it was asked, and that answer
+     * earns the same postponement.
+     * The flag is read rather than the returned tally, which only stands
+     * in for it, and cleared between batches so each reading is about the
+     * batch just fed.
+     *
+     * @param env The environment to run in.
+     */
+    void
+    testPartialBatchIsCounted(jtx::Env& env)
+    {
+        testcase("A batch ending on a bad node still counts the good nodes");
+
+        DeepChain const chain{nextSeed()};
+
+        auto const acquire = std::make_shared<TestableTransactionAcquire>(
+            env.app(), chain.rootHash.asUInt256(), std::make_unique<RequestCountingPeerSet>());
+        auto const peer = std::make_shared<ChargeRecordingPeer>();
+
+        // The root is useful, so it records progress.
+        static_cast<void>(acquire->takeNodes({{SHAMapNodeID{}, chain.nodeAt(0)}}, peer));
+        BEAST_EXPECT(acquire->madeProgress());
+        acquire->clearProgress();
+
+        // Good nodes at depths 1 and 2, then a further chain node mislabeled at a position only a
+        // leaf may occupy. The map stays sound, so only the last node is bad.
+        std::vector<std::pair<SHAMapNodeID, SHAMapTreeNodePtr>> batch;
+        batch.emplace_back(chain.idAt(1), chain.nodeAt(1));
+        batch.emplace_back(chain.idAt(2), chain.nodeAt(2));
+        batch.emplace_back(SHAMapNodeID{9, UInt256{}}, chain.nodeAt(3));
+
+        auto const san = acquire->takeNodes(batch, peer);
+
+        // The verdict names both halves. The batch stops on the bad node, so one bad node is
+        // counted however many were left unexamined behind it.
+        BEAST_EXPECTS(tallyIs(san, 2, 1, 0), san.get());
+        BEAST_EXPECT(san.isUseful());
+        BEAST_EXPECT(acquire->madeProgress());
+        BEAST_EXPECT(acquire->isMapValid());
+
+        // A batch holding only the root we already have: counted as a duplicate. The duplicate
+        // tally is what makes it an answer, so it postpones the timeout.
+        acquire->clearProgress();
+        auto const repeatedRoot = acquire->takeNodes({{SHAMapNodeID{}, chain.nodeAt(0)}}, peer);
+
+        BEAST_EXPECTS(tallyIs(repeatedRoot, 0, 0, 1), repeatedRoot.get());
+        BEAST_EXPECT(repeatedRoot.isGood());
+        BEAST_EXPECT(!repeatedRoot.isUseful());
+        BEAST_EXPECT(acquire->madeProgress());
+
+        // The same root alongside a node we do need: the duplicate is reported as one, and the
+        // node that did hook in is what records the progress.
+        std::vector<std::pair<SHAMapNodeID, SHAMapTreeNodePtr>> mixed;
+        mixed.emplace_back(SHAMapNodeID{}, chain.nodeAt(0));
+        mixed.emplace_back(SHAMapNodeID{3, UInt256{}}, chain.nodeAt(3));
+
+        auto const withDuplicateRoot = acquire->takeNodes(mixed, peer);
+
+        BEAST_EXPECTS(tallyIs(withDuplicateRoot, 1, 0, 1), withDuplicateRoot.get());
+        BEAST_EXPECT(withDuplicateRoot.isUseful());
+        BEAST_EXPECT(acquire->madeProgress());
+
+        // takeNodes() charges nobody: InboundTransactions::gotData() reads the verdict and decides.
+        BEAST_EXPECT(peer->charges().empty());
+    }
+
+    /**
      * init() passes hasTxSet() to addPeers() as its candidate filter.
      *
      * init() hands addPeers() hasTxSet(hash_) as its hasItem callback and
@@ -581,6 +655,7 @@ struct TransactionAcquire_test : public beast::unit_test::Suite
         testDuplicateRootReplyIsFree(env);
         testDuplicateNonRootReplyIsFree(env);
         testUndeserializableNodeIsCharged(env);
+        testPartialBatchIsCounted(env);
         testInitFiltersCandidatesByHasTxSet(env);
         testStillNeedLeavesARunningAcquireAlone(env);
 
