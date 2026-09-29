@@ -523,6 +523,74 @@ struct InboundLedger_test : public beast::unit_test::Suite
     }
 
     /**
+     * A packet for an abandoned map must fail rather than be read as the map
+     * finishing.
+     *
+     * addKnownNode() reports every node a duplicate rather than invalid once
+     * the map is no longer Synching (see SHAMap::addKnownNode), so
+     * receiveNode() must read isValid() rather than isSynching() alone.
+     *
+     * The tx hash never resolves, so haveTransactions_ stays false and
+     * nothing but the check under test can make this packet report success.
+     *
+     * @param env The environment to run in.
+     */
+    void
+    testInvalidatedMapFailsReceiveNode(jtx::Env& env)
+    {
+        testcase("A packet for an abandoned map fails rather than completes");
+
+        // The fabricated chain, so feeding it to the state map invalidates the map.
+        DeepChain const chain{nextSeed()};
+
+        auto const header = makeHeader(UInt256{777}, chain.rootHash.asUInt256());
+        storeHeader(env, header);
+
+        auto acquire = std::make_shared<TestableInboundLedger>(
+            env.app(),
+            header.hash,
+            header.seq,
+            InboundLedger::Reason::GENERIC,
+            stopwatch(),
+            std::make_unique<RequestCountingPeerSet>());
+
+        BEAST_EXPECT(!acquire->checkLocal());
+        BEAST_EXPECT(!acquire->isFailed());
+        BEAST_EXPECT(!acquire->getJson(0)[jss::have_state].asBool());
+
+        // Invalidate the state map directly, standing in for a concurrent trigger() walk that
+        // reached the same verdict with mtx_ released.
+        auto const ledger = mutableLedger(*acquire);
+        BEAST_EXPECT(ledger != nullptr);
+        if (!ledger)
+            return;
+
+        auto& stateMap = ledger->stateMap();
+        BEAST_EXPECT(stateMap.addRootNode(chain.rootHash, chain.nodeAt(0), nullptr).isGood());
+        for (auto const& [nodeID, node] : chain.nodesBelowRoot())
+            stateMap.addKnownNode(nodeID, node, nullptr);
+        BEAST_EXPECT(!stateMap.isValid());
+
+        // An ordinary state-node packet, arriving as if it were already in flight when the
+        // invalidation above happened. addKnownNode()'s "while not synching" branch reports it a
+        // duplicate, whatever it contains, since the map is no longer Synching.
+        auto const latePeer = std::make_shared<ChargeRecordingPeer>();
+        BEAST_EXPECT(acquire->gotData(
+            latePeer, stateNodePacket(header, chain, {{chain.idAt(1), chain.nodeAt(1)}})));
+        acquire->runData();
+
+        // The verdict belongs to the concurrent walk, so the sender keeps its fee and the
+        // acquisition fails, leaving the duplicate verdict unread as a finished map.
+        BEAST_EXPECT(latePeer->charges().empty());
+        BEAST_EXPECT(acquire->isFailed());
+        BEAST_EXPECT(!acquire->isComplete());
+
+        // This assertion pins the isValid() check, which is what fails the acquisition while the
+        // map behind it is broken.
+        BEAST_EXPECT(!acquire->getJson(0)[jss::have_state].asBool());
+    }
+
+    /**
      * An acquisition that fails on local data must still signal.
      *
      * Both entry points that reach tryDB() are covered. done() is what
@@ -629,10 +697,7 @@ struct InboundLedger_test : public beast::unit_test::Suite
         BEAST_EXPECT(!acquire->isFailed());
 
         // The root, then the rest of the chain ending in the inner node at kLeafDepth.
-        std::vector<std::pair<SHAMapNodeID, SHAMapTreeNodePtr>> data;
-        data.emplace_back(SHAMapNodeID{}, chain.nodeAt(0));
-        for (auto const& node : chain.nodesBelowRoot())
-            data.push_back(node);
+        auto const data = chain.allNodes();
 
         // The header counted as progress, so clear it to see what the packet below records.
         acquire->clearProgress();
@@ -1099,26 +1164,99 @@ struct InboundLedger_test : public beast::unit_test::Suite
         BEAST_EXPECT(!acquire->isComplete());
         BEAST_EXPECT(peerSetPtr->requests() > requestsFromInit);
 
-        // done() remembered the hash. This case reaches getLedger() with no ledger ever built, so
-        // both arms of the failed_ gate answer null here. The local-chain case above is what
-        // covers the gate itself: tryDB() builds a partial ledger and then fails, so the gate is
-        // the only reason the answer is null.
+        // No ledger was ever built here, so both arms of the failed_ gate answer null. The
+        // local-chain case above covers the gate itself.
         BEAST_EXPECT(acquire->getLedger() == nullptr);
         BEAST_EXPECT(
             waitFor([&] { return env.app().getInboundLedgers().isFailure(kUnknownLedger); }));
     }
 
+    /**
+     * A packet that leaves nothing to fetch must settle the ledger itself,
+     * rather than count on a later walk to notice.
+     *
+     * A map holding one item has that item's leaf for its root, so rooting it
+     * stops it synching on the spot. The packet here offers that root to a map
+     * that already holds it, which counts no good nodes, so runData() takes the
+     * sender for one that returned nothing and asks it nothing further. That
+     * leaves receiveNode() as the only thing that can settle this ledger.
+     *
+     * @param env The environment to run in.
+     */
+    void
+    testCompletesWhenNothingIsLeftToFetch(jtx::Env& env)
+    {
+        testcase("A packet that leaves nothing to fetch settles the ledger");
+
+        // A leaf at the root, so the state map holds exactly one item. No transactions, which
+        // leaves the state map the only part the acquisition needs.
+        auto const chain = DeepChain::toLeaf(0, nextSeed());
+        auto const header = makeHeader(chain);
+
+        // Only the header is local, so the state map starts with no root of its own.
+        storeHeader(env, header);
+
+        auto peerSet = std::make_unique<RequestCountingPeerSet>();
+        auto* const peerSetPtr = peerSet.get();
+
+        auto acquire = std::make_shared<TestableInboundLedger>(
+            env.app(),
+            header.hash,
+            header.seq,
+            InboundLedger::Reason::GENERIC,
+            stopwatch(),
+            std::move(peerSet));
+
+        BEAST_EXPECT(!acquire->checkLocal());
+        BEAST_EXPECT(!acquire->isComplete());
+        BEAST_EXPECT(!acquire->isFailed());
+        BEAST_EXPECT(!acquire->getJson(0)[jss::have_state].asBool());
+
+        // Root the map directly, standing in for a trigger() walk that got that far. The flag is
+        // the acquisition's own, so it stays clear while the map is already whole.
+        auto const ledger = mutableLedger(*acquire);
+        BEAST_EXPECT(ledger != nullptr);
+        if (!ledger)
+            return;
+
+        auto& stateMap = ledger->stateMap();
+        BEAST_EXPECT(stateMap.addRootNode(chain.rootHash, chain.nodeAt(0), nullptr).isUseful());
+        BEAST_EXPECT(!stateMap.isSynching());
+        BEAST_EXPECT(!acquire->getJson(0)[jss::have_state].asBool());
+
+        // The same root again. A leaf carries its own key, so a depth of zero names the root and
+        // the node goes through addRootNode(), which reports a node already held.
+        auto const sender = std::make_shared<ChargeRecordingPeer>();
+        BEAST_EXPECT(acquire->gotData(sender, stateNodePacket(header, chain, chain.allNodes())));
+        acquire->runData();
+
+        // Nothing was asked of the sender afterwards, so no walk ran to reach the same verdict.
+        BEAST_EXPECT(!acquire->madeProgress());
+        BEAST_EXPECT(peerSetPtr->requests() == 0);
+
+        // The sender offered nothing bad, so it keeps its fee, and the map is now reported held.
+        BEAST_EXPECT(sender->charges().empty());
+        BEAST_EXPECT(acquire->getJson(0)[jss::have_state].asBool());
+
+        // Settled, reported complete and handed on, all from this one packet.
+        BEAST_EXPECT(acquire->isComplete());
+        BEAST_EXPECT(!acquire->isFailed());
+        BEAST_EXPECT(ledger->isImmutable());
+
+        BEAST_EXPECT(env.app().getLedgerMaster().getLedgerByHash(header.hash) != nullptr);
+        BEAST_EXPECT(!env.app().getInboundLedgers().isFailure(header.hash));
+    }
+
     void
     run() override
     {
-        // One Env for the suite, since building one costs far more than any case here. Safe
-        // because every chain is seeded through nextSeed(): the node store, the fetch packs and
-        // the remembered failures are all shared, and all three are keyed by hash.
+        // One Env for the suite, shared safely because every chain is seeded through nextSeed().
         jtx::Env env{*this};
 
         testLocalLedgerCompletesAcquire(env);
         testWalkSettlesBeforeReportingComplete(env);
         testInvalidatedLedgerFailsInDone(env);
+        testInvalidatedMapFailsReceiveNode(env);
         testLocalFailureSignalsDone(env);
         testPeerZeroAccountHashFails(env);
         testPeerHeaderWithoutTransactionsCompletes(env);
@@ -1127,6 +1265,7 @@ struct InboundLedger_test : public beast::unit_test::Suite
         testLocalChainFailsAcquire(env);
         testAggressiveRetryJudgesLocalMap(env);
         testWalkJudgesMapOnOrdinaryTrigger(env);
+        testCompletesWhenNothingIsLeftToFetch(env);
 
         // Last: the only case that waits out a whole timeout chain.
         testTimerRetriesThenGivesUp(env);
