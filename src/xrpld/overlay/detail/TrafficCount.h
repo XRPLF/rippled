@@ -198,7 +198,7 @@ public:
     /**
      * Whether a message's sender is a configured cluster member.
      */
-    enum class IsFromCluster { No = 1, Yes };
+    enum class IsFromCluster : bool { No = false, Yes };
 
     /**
      * Holds a category to what the sender is entitled to report.
