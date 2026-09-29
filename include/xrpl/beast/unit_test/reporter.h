@@ -250,4 +250,8 @@ Reporter<Unused>::onLog(std::string const& s)
 
 using Reporter = detail::Reporter<>;
 
+// TODO [#8340]: Legacy name still used by external consumers of libxrpl (e.g. validator-keys-tool).
+// Do not use in new code; remove once those consumers have migrated.
+using reporter = Reporter;  // NOLINT(readability-identifier-naming)
+
 }  // namespace beast::unit_test
