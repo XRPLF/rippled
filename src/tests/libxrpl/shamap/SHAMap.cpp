@@ -1456,4 +1456,144 @@ TEST_F(SHAMapMisplacedLeaf, a_path_of_inner_nodes_past_leaf_depth_is_refused)
     }
 }
 
+// addKnownNode reaches a filter through the synchronous descend on its way to the position it was
+// given, which is the other route a node takes into a tree during acquisition.
+//
+// What this pins is the verdict addKnownNode reports and that the map ends invalid.
+TEST_F(SHAMapMisplacedLeaf, hooking_a_known_node_invalidates_the_map)
+{
+    tests::TestNodeFamily sourceFamily{j_};
+    auto const [leafBlob, leafHash] = genuineLeaf(sourceFamily);
+    ASSERT_FALSE(leafBlob.empty());
+
+    tests::TestNodeFamily targetFamily{j_};
+    SHAMap map{SHAMapType::FREE, UInt256{}, targetFamily};
+    map.setUnbacked();
+    ASSERT_TRUE(forgeRoot(map, {{.branch = kWrongBranch, .hash = leafHash}}));
+    ASSERT_TRUE(map.isValid());
+
+    // A key whose first nibble is kWrongBranch, so the walk descends the branch holding the leaf.
+    // An inner node is offered rather than a leaf, so the walk reaches the descent and judges
+    // what it resolves there.
+    auto const target = SHAMapNodeID::createID(
+        2, UInt256{"5000000000000000000000000000000000000000000000000000000000000000"});
+
+    Serializer s;
+    for (auto i = 0u; i < SHAMap::kBranchFactor; ++i)
+        s.addBitString(i == 0u ? UInt256{1} : UInt256{});
+    s.add8(kWireTypeInner);
+    auto offered = SHAMapTreeNode::makeFromWire(makeSlice(s.peekData()));
+    ASSERT_TRUE(offered);
+    offered->updateHash();
+
+    FixedNodeFilter const filter{leafHash, leafBlob};
+    auto const result = map.addKnownNode(target, std::move(offered), &filter);
+
+    EXPECT_FALSE(map.isValid());
+
+    // The verdict matters as much as the state: it is what the acquisition paths charge a peer on,
+    // so a later change to it should fail here rather than pass quietly.
+    EXPECT_TRUE(result.isInvalid());
+    EXPECT_FALSE(result.isGood());
+}
+
+// The filter descent judges depth as well as position, and this case reaches the depth arm. It
+// serves an inner node, for which belongsAt holds by definition, so the verdict below can only come
+// from pastLeafDepth. Removing that conjunct from descend() makes this case fail.
+//
+// The whole chain is served through the filter and nothing is written to the store, because the
+// memory nodestore is shared by path across every test family in this binary.
+TEST_F(SHAMapMisplacedLeaf, a_filter_serving_an_inner_node_at_leaf_depth_invalidates_the_map)
+{
+    // A key of this case's own, so the chain it builds is its own too.
+    constexpr UInt256 kOwnChainKey{
+        "3f0e1d2c3b4a59687766554433221100ffeeddccbbaa99887766554433221100"};
+
+    // Built bottom-up, so each parent records the hash of the node below it. Every node goes to the
+    // filter, including the one at kLeafDepth, which is the one the descent has to refuse.
+    std::vector<std::pair<SHAMapHash, Blob>> served;
+    SHAMapHash childHash{UInt256{1}};
+    SHAMapTreeNodePtr node;
+
+    // The decrement is in the body, so the counter never steps below zero.
+    // UndefinedBehaviorSanitizer reports that wraparound.
+    for (auto depth = SHAMap::kLeafDepth + 1u; depth > 0;)
+    {
+        --depth;
+        auto const id =
+            SHAMapNodeID::createID(std::min(depth, SHAMap::kLeafDepth - 1u), kOwnChainKey);
+        node = makeFullInnerNode({{.branch = selectBranch(id, kOwnChainKey), .hash = childHash}});
+        ASSERT_TRUE(node);
+        ASSERT_TRUE(node->isInner());
+
+        Serializer prefixed;
+        node->serializeWithPrefix(prefixed);
+        served.emplace_back(node->getHash(), prefixed.getData());
+
+        childHash = node->getHash();
+    }
+    ASSERT_EQ(served.size(), SHAMap::kLeafDepth + 1u);
+
+    tests::TestNodeFamily targetFamily{j_};
+    SHAMap map{SHAMapType::FREE, UInt256{}, targetFamily};
+    map.setUnbacked();
+    ASSERT_TRUE(map.addRootNode(childHash, std::move(node), nullptr).isGood());
+    ASSERT_TRUE(map.isValid());
+
+    // kLeafDepth is the deepest ID the tree allows, so the walk descends from kLeafDepth - 1 once
+    // more and consults the filter for a child at kLeafDepth.
+    auto const target = SHAMapNodeID::createID(SHAMap::kLeafDepth, kOwnChainKey);
+
+    Serializer offeredWire;
+    for (auto i = 0u; i < SHAMap::kBranchFactor; ++i)
+        offeredWire.addBitString(i == 0u ? UInt256{1} : UInt256{});
+    offeredWire.add8(kWireTypeInner);
+    auto offered = SHAMapTreeNode::makeFromWire(makeSlice(offeredWire.peekData()));
+    ASSERT_TRUE(offered);
+    offered->updateHash();
+
+    FixedNodeFilter const filter{std::move(served)};
+    static_cast<void>(map.addKnownNode(target, std::move(offered), &filter));
+
+    EXPECT_FALSE(map.isValid());
+}
+
+// addKnownNode also hooks the very node it was handed, on the path where the local store has
+// nothing to resolve for that slot. Such a node's position is known only from the ID the caller
+// supplied, so it is judged against the leaf's own key before it is hooked.
+TEST_F(SHAMapMisplacedLeaf, hooking_an_offered_misplaced_leaf_invalidates_the_map)
+{
+    tests::TestNodeFamily sourceFamily{j_};
+    auto const [leafBlob, leafHash] = genuineLeaf(sourceFamily);
+    ASSERT_FALSE(leafBlob.empty());
+
+    tests::TestNodeFamily targetFamily{j_};
+    SHAMap map{SHAMapType::FREE, UInt256{}, targetFamily};
+    map.setUnbacked();
+    ASSERT_TRUE(forgeRoot(map, {{.branch = kWrongBranch, .hash = leafHash}}));
+    ASSERT_TRUE(map.isValid());
+
+    // The branch the forged root files the leaf under, which is not the one kKey selects.
+    UInt256 wrongPrefix;
+    wrongPrefix.begin()[0] = static_cast<std::uint8_t>(kWrongBranch << 4);
+    auto const target = SHAMapNodeID::createID(1, wrongPrefix);
+
+    auto offered = SHAMapTreeNode::makeFromPrefix(makeSlice(leafBlob), leafHash);
+    ASSERT_TRUE(offered);
+    ASSERT_TRUE(offered->isLeaf());
+
+    // No filter, so the walk resolves nothing locally and the node offered here is the one hooked.
+    auto const result = map.addKnownNode(target, std::move(offered), nullptr);
+
+    EXPECT_FALSE(map.isValid());
+    EXPECT_TRUE(result.isInvalid());
+    EXPECT_FALSE(result.isGood());
+
+    // The verdict names which arm refused, not just that one did. This arm condemned the map, so
+    // it reports mapInvalidated(); the arm that only rejects a misplaced label reports the plain
+    // invalid() and leaves the map usable, which
+    // SHAMapSyncTest.only_the_map_invalidating_arm_reports_it holds the other side of. The two
+    // decide which fee InboundLedger::receiveNode() charges, so the names cannot be swapped.
+    EXPECT_TRUE(result.invalidatedMap());
+}
 }  // namespace xrpl::tests
