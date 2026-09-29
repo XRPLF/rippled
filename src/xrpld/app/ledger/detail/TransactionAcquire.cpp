@@ -10,6 +10,7 @@
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/core/Job.h>
+#include <xrpl/resource/Fees.h>
 #include <xrpl/server/NetworkOPs.h>
 #include <xrpl/shamap/SHAMap.h>
 #include <xrpl/shamap/SHAMapAddNode.h>
@@ -111,6 +112,25 @@ TransactionAcquire::pmDowncast()
 }
 
 void
+TransactionAcquire::recordAsked(std::shared_ptr<Peer> const& peer)
+{
+    // Each request renews the pass chargeLateReply() reads, so a peer answering the request
+    // just sent to it is free whatever it answered in an earlier round.
+    if (peer)
+    {
+        requestedPeers_.insert(peer->id());
+        lateReplyGranted_.erase(peer->id());
+        return;
+    }
+
+    // A broadcast goes to every peer the set tracks, so each of them has been asked.
+    auto const& ids = peerSet_->getPeerIds();
+    requestedPeers_.insert(ids.begin(), ids.end());
+    for (auto const id : ids)
+        lateReplyGranted_.erase(id);
+}
+
+void
 TransactionAcquire::trigger(std::shared_ptr<Peer> const& peer)
 {
     if (complete_)
@@ -137,6 +157,7 @@ TransactionAcquire::trigger(std::shared_ptr<Peer> const& peer)
             tmGL.set_querytype(protocol::qtINDIRECT);
 
         *(tmGL.add_nodeids()) = SHAMapNodeID().getRawString();
+        recordAsked(peer);
         peerSet_->sendRequest(tmGL, peer);
     }
     else if (!map_->isValid())
@@ -175,6 +196,7 @@ TransactionAcquire::trigger(std::shared_ptr<Peer> const& peer)
         {
             *tmGL.add_nodeids() = node.first.getRawString();
         }
+        recordAsked(peer);
         peerSet_->sendRequest(tmGL, peer);
     }
 }
@@ -186,12 +208,16 @@ TransactionAcquire::takeNodes(
 {
     ScopedLockType sl(mtx_);
 
+    // Read before the call below, which can settle the set itself.
+    bool const wasSettled = isDone();
+
     auto const san = takeNodesLocked(std::move(data), peer, sl);
 
     // A batch that advanced the map must keep the next timer tick from counting a timeout against
     // it. A duplicate counts as an answer: an honest second responder to trigger()'s fan-out has
-    // replied, so no timeout is owed.
-    if (san.isUseful() || san.getDuplicate() > 0)
+    // replied, so no timeout is owed. A reply to a set already settled on entry owes nothing,
+    // since the allowance it spends belongs to the round that ended.
+    if (!wasSettled && (san.isUseful() || san.getDuplicate() > 0))
         progress_ = true;
 
     return san;
@@ -201,18 +227,24 @@ SHAMapAddNode
 TransactionAcquire::takeNodesLocked(
     std::vector<std::pair<SHAMapNodeID, SHAMapTreeNodePtr>> data,
     std::shared_ptr<Peer> const& peer,
-    ScopedLockType&)
+    ScopedLockType& sl)
 {
-    if (complete_)
+    // A reply that arrives after the set is settled - by completing it, or by a different packet
+    // failing it. trigger() sends to every peer it was given, so any of their replies, including
+    // another packet from the same peer whose data failed the set, can already be in flight and
+    // could not have known the outcome. Those are solicited, and free: one per peer we asked,
+    // which is what bounds the honest case.
+    //
+    // Past that bound, further data for this hash is a replay - a resend of data already
+    // accepted or now known worthless, not a first-time reply - and serving it is not free
+    // work, so it is charged.
+    if (isDone())
     {
-        JLOG(journal_.trace()) << "TX set complete";
-        return SHAMapAddNode();
-    }
+        JLOG(journal_.trace()) << (complete_ ? "TX set complete" : "TX set failed");
 
-    if (failed_)
-    {
-        JLOG(journal_.trace()) << "TX set failed";
-        return SHAMapAddNode();
+        chargeLateReply(peer, sl);
+
+        return SHAMapAddNode::duplicate();
     }
 
     // Accumulated across the batch, so a packet ending in one bad node still counts the nodes
@@ -222,7 +254,11 @@ TransactionAcquire::takeNodesLocked(
     try
     {
         if (data.empty())
+        {
+            // Defensive: PeerImp rejects an empty node list before dispatch.
+            peer->charge(resource::kFeeInvalidData, "tx_set empty");
             return SHAMapAddNode::invalid();
+        }
 
         ConsensusTransSetSF sf(app_, app_.getTempNodeCache());
 
@@ -245,6 +281,9 @@ TransactionAcquire::takeNodesLocked(
                 {
                     JLOG(journal_.warn()) << "TX acquire got bad root node for TX set " << hash_
                                           << " from peer " << peer->id();
+                    // addRootNode only rejects a hash mismatch, so the timer will retry with
+                    // another peer.
+                    peer->charge(resource::kFeeInvalidData, "tx_set root hash mismatch");
                     return san;
                 }
 
@@ -259,6 +298,9 @@ TransactionAcquire::takeNodesLocked(
             {
                 JLOG(journal_.warn()) << "TX acquire got bad non-root node " << d.first
                                       << " for TX set " << hash_ << " from peer " << peer->id();
+                // A bad node leaves the map sound, so leave that retry to the timer rather than
+                // re-requesting from the peer that just sent us bad data.
+                peer->charge(resource::kFeeInvalidData, "tx_set node invalid");
                 return san;
             }
         }
@@ -268,8 +310,11 @@ TransactionAcquire::takeNodesLocked(
     }
     catch (std::exception const& ex)
     {
-        JLOG(journal_.error()) << "Peer " << peer->id()
-                               << " sent us junky transaction node data: " << ex.what();
+        JLOG(journal_.error()) << "TX acquire threw while taking nodes for TX set " << hash_
+                               << " from peer " << peer->id() << ": " << ex.what();
+        // Whatever the batch hooked in before the throw stands, so the tally it reached is what
+        // the caller is told. The timer owns the retry. The sender keeps its fee, since the
+        // classes that reach here are raised by this code rather than by the data.
         san.incInvalid();
         return san;
     }
@@ -295,6 +340,13 @@ TransactionAcquire::init(int numPeers)
 }
 
 void
+TransactionAcquire::chargeLateReply(std::shared_ptr<Peer> const& peer, ScopedLockType&)
+{
+    if (!requestedPeers_.contains(peer->id()) || !lateReplyGranted_.insert(peer->id()).second)
+        peer->charge(resource::kFeeUselessData, "tx_set data after the set was settled");
+}
+
+void
 TransactionAcquire::stillNeed()
 {
     ScopedLockType sl(mtx_);
@@ -307,6 +359,10 @@ TransactionAcquire::stillNeed()
         return;
 
     failed_ = false;
+
+    // lateReplyGranted_ is left alone. The free allowance is earned one request at a time, so a
+    // peer keeps the pass it already spent until recordAsked() records another request to it. The
+    // timer restarted below is what sends those requests.
 
     // Restarting the timer is what resumes the acquisition. expires_after() cancels whatever wait
     // was outstanding, so the timer holds at most one wait at a time. A job queueJob() already
