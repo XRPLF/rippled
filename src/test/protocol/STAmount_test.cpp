@@ -1465,6 +1465,42 @@ public:
     }
 
     void
+    testMPTRoundUpUnderflow()
+    {
+        testcase("Rounded-up MPT operand with an IOU result below the minimum");
+
+        MPTIssue const asset{makeMptID(1, AccountID(0x4985601))};
+        Issue const usd{Currency(0x5553440000000000), AccountID(0x4985601)};
+
+        auto rules = [](bool const mptV2) {
+            static std::unordered_set<uint256, beast::Uhash<>> const kNoFeatures;
+            static std::unordered_set<uint256, beast::Uhash<>> const kMptV2Features{
+                featureMPTokensV2};
+            return Rules{mptV2 ? kMptV2Features : kNoFeatures};
+        };
+
+        // 1 MPT / 1e95 = 1e-95, below the smallest IOU (1e-81). Rounding up
+        // must still give the smallest positive IOU.
+        STAmount const oneMpt{asset, 1};
+        STAmount const huge{noIssue(), STAmount::kMinValue, STAmount::kMaxOffset};  // 1e95
+        STAmount const smallestUsd{usd, STAmount::kMinValue, STAmount::kMinOffset};
+
+        {
+            CurrentTransactionRulesGuard const rg(rules(false));
+            BEAST_EXPECT(divRound(oneMpt, huge, usd, true) == smallestUsd);
+        }
+
+        {
+            // An MPT operand now takes the Number path even though the result
+            // is an IOU. Materializing 1e-95 as an IOU flushes to zero, so
+            // roundNumberResult snaps it up to the smallest positive IOU.
+            CurrentTransactionRulesGuard const rg(rules(true));
+            BEAST_EXPECT(divRound(oneMpt, huge, usd, true) == smallestUsd);
+            BEAST_EXPECT(divRoundStrict(oneMpt, huge, usd, true) == smallestUsd);
+        }
+    }
+
+    void
     run() override
     {
         testSetValue();
@@ -1485,6 +1521,7 @@ public:
         testCanSubtractIOU();
         testCanSubtractMPT();
         testIsZeroAtScale();
+        testMPTRoundUpUnderflow();
     }
 };
 

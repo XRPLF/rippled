@@ -1573,6 +1573,57 @@ public:
     }
 
     void
+    testDestroyedMPTIssuanceBookInput(FeatureBitset features)
+    {
+        testcase("Book with destroyed MPT issuance as input");
+
+        using namespace jtx;
+
+        Account const issuer{"issuer"};
+        Account const gw{"gw"};
+        Account const alice{"alice"};
+        Account const carol{"carol"};
+
+        Env env{*this, features};
+        env.fund(XRP(10'000), issuer, gw, alice, carol);
+        env.close();
+
+        auto const usd = gw["USD"];
+        env.trust(usd(1'000), alice, carol);
+        env(pay(gw, carol, usd(100)));
+        env.close();
+
+        MPTTester bond({.env = env, .issuer = issuer, .holders = {carol}});
+
+        // carol buys musd. The offer doesn't add to OutstandingAmount, so the
+        // issuer can still destroy the issuance while the offer is on the book.
+        auto const carolOfferSeq = env.seq(carol);
+        env(offer(carol, bond(10), usd(10)));
+        env.close();
+
+        bond.destroy();
+        env.close();
+        BEAST_EXPECT(!env.le(keylet::mptokenIssuance(bond.issuanceID())));
+
+        auto const carolOffer = keylet::offer(carol.id(), SeqProxy::rawSequence(carolOfferSeq));
+        BEAST_EXPECT(env.le(carolOffer) != nullptr);
+
+        // The issuer is the strand source, so the musd -> usd BookStep is the
+        // first step. It's built with no MaximumAmount cap because the
+        // issuance is gone, then its check() rejects the missing issuance.
+        env(pay(issuer, alice, usd(10)),
+            Sendmax(bond(10)),
+            Path(~usd),
+            Txflags(tfNoRippleDirect),
+            Ter(tecOBJECT_NOT_FOUND));
+        env.close();
+
+        BEAST_EXPECT(env.le(carolOffer) != nullptr);
+        BEAST_EXPECT(env.balance(alice, usd) == usd(0));
+        BEAST_EXPECT(env.balance(carol, usd) == usd(100));
+    }
+
+    void
     testInsufficientReserve(FeatureBitset features)
     {
         testcase("Insufficient Reserve");
@@ -7650,6 +7701,7 @@ public:
         testXRPOfferFeeZeroInSlice(features);
         testMPTOfferLargeTakerPaysQuality(features);
         testPartiallyFundedMPTInputOfferZeroInput(features);
+        testDestroyedMPTIssuanceBookInput(features);
         testFillOrKill(features);
         testTickSize(features);
         testMPTOfferZeroRate(features);

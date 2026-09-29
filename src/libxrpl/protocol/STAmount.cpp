@@ -1494,28 +1494,28 @@ roundNumberResult(
     // and for materializing the final integral amount.
     NumberRoundModeGuard const finalRound(roundMode(resultNegative, roundUp));
     auto result = STAmount{asset, number};
+    // An integral result can't underflow: when roundUp is set, roundMode()
+    // above selects Upward, and materializing a Number into an integral
+    // STAmount honors that mode (Number::operator rep()), so any positive
+    // value rounds up to at least 1.
     [[maybe_unused]] bool const nonzeroPositiveRoundUp =
         roundUp && !resultNegative && number != beast::kZero;
     ALWAYS(
-        !nonzeroPositiveRoundUp || result != beast::kZero,
-        "xrpl::roundNumberResult : positive rounded-up MPT result is representable");
+        !nonzeroPositiveRoundUp || !asset.integral() || result != beast::kZero,
+        "xrpl::roundNumberResult : positive rounded-up integral result is representable");
 
     if (roundUp && !resultNegative && !result)
     {
-        // Intended to preserve existing mulRound/divRound behavior for a
-        // positive result too small to represent in the target asset.
-        //
-        // Unreachable in practice: when roundUp is set, roundMode() above
-        // selects Upward, and materializing a Number into an STAmount honors
-        // that mode (Number::operator rep()), so any positive value rounds up
-        // to at least the smallest representable unit. Hence, a positive result
-        // is never !result here; the only zero case is a zero operand, which
-        // the mulRound/divRound callers handle before reaching this function.
-        // LCOV_EXCL_START
+        // Preserve existing mulRound/divRound behavior for a positive result
+        // too small to represent in the target asset. An IOU result with an
+        // MPT operand (e.g. 1 MPT / 1e95) below the smallest IOU is flushed to
+        // zero by IOUAmount normalization regardless of the rounding mode, so
+        // snap it up to the smallest positive IOU. The only zero case for an
+        // integral result is a zero operand, which the mulRound/divRound
+        // callers handle before reaching this function.
         if (asset.integral())
-            return STAmount{asset, 1};
+            return STAmount{asset, 1};  // LCOV_EXCL_LINE
         return STAmount{asset, STAmount::kMinValue, STAmount::kMinOffset, false};
-        // LCOV_EXCL_STOP
     }
 
     return result;
