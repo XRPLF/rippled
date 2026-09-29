@@ -3864,14 +3864,16 @@ class MPToken_test : public beast::unit_test::Suite
 
             // Bob can pay carol
             MPT const mptc = mptAlice;
-            if (!features[featureMPTokensV2])
+            if (!features[featureMPTokensV2] && !features[fixCleanup3_5_0])
             {
                 mptAlice.pay(bob, carol, 50);
                 BEAST_EXPECT(env.balance(carol, mptc) == mptc(50));
             }
             else
             {
-                // The difference is due to the rounding in MPT/DEX.
+                // The transfer fee (0.05) is rounded up, so delivering 50
+                // costs 51, which exceeds the implicit SendMax.
+                mptAlice.pay(bob, carol, 50, tecPATH_PARTIAL);
                 // 1 MPTC is the transfer fee paid by bob to the issuer.
                 env(pay(bob, carol, mptAlice(50)), Txflags(tfPartialPayment));
                 BEAST_EXPECT(env.balance(carol, mptc) == mptc(49));
@@ -7713,8 +7715,8 @@ class MPToken_test : public beast::unit_test::Suite
         testcase("Partial payment rounding");
 
         // With fixCleanup3_5_0, the legacy direct-MPT partial payment rounds the
-        // delivered amount down instead of to nearest, so the sender is never
-        // charged more than SendMax.
+        // delivered amount down instead of to nearest and the transfer fee up,
+        // so the sender is never charged more than SendMax. This matches V2.
 
         using namespace test::jtx;
         Account const alice("alice");  // issuer
@@ -7735,18 +7737,12 @@ class MPToken_test : public beast::unit_test::Suite
 
         auto const mpt = mptAlice["MPT"];
         env(pay(bob, carol, mpt(100)), Sendmax(mpt(90)), Txflags(tfPartialPayment));
-        if (features[featureMPTokensV2])
+        if (features[featureMPTokensV2] || features[fixCleanup3_5_0])
         {
-            // In V2 the payments are executed via the payment engine:
-            // 81 to carol, 9 to issuer
+            // 81 to carol, 9 to issuer (90 / 1.1 ~ 81.81 (rounded down) =
+            // 81, 81 * 1.1 = 89.1 (rounded up) = 90). In V2 the payments are
+            // executed via the payment engine, which rounds the same way.
             BEAST_EXPECT(mptAlice.checkMPTokenAmount(bob, 690));
-            BEAST_EXPECT(mptAlice.checkMPTokenAmount(carol, 81));
-        }
-        else if (features[fixCleanup3_5_0])
-        {
-            // 81 to carol, 8 to issuer (90 / 1.1 ~ 81.81 (rounded down) =
-            // 81, 81 * 1.1 = 89.1 (rounded to nearest) = 89)
-            BEAST_EXPECT(mptAlice.checkMPTokenAmount(bob, 691));
             BEAST_EXPECT(mptAlice.checkMPTokenAmount(carol, 81));
         }
         else
@@ -7884,6 +7880,44 @@ class MPToken_test : public beast::unit_test::Suite
             }
         }
 
+        // The cost of delivering kMaxMpTokenAmount with a transfer fee doesn't
+        // fit in an MPT amount. Without the fix, the legacy
+        // multiply(Amount, rate) throws. With it, or under MPTokensV2, the
+        // overflowing cost is treated as exceeding SendMax.
+        {
+            Env env{*this, features};
+
+            MPTTester mptAlice(env, alice, {.holders = {bob, carol}});
+            mptAlice.create(
+                {.maxAmt = kMaxMpTokenAmount,
+                 .transferFee = 3,
+                 .ownerCount = 1,
+                 .holderCount = 0,
+                 .flags = tfMPTCanTransfer});
+
+            mptAlice.authorize({.account = bob});
+            mptAlice.authorize({.account = carol});
+            mptAlice.pay(alice, bob, 1'000);
+
+            auto const mpt = mptAlice["MPT"];
+
+            // Not a partial payment: the cost exceeds SendMax.
+            env(pay(bob, carol, mpt(kMaxMpTokenAmount)),
+                Sendmax(mpt(1'000)),
+                fixed ? Ter(tecPATH_PARTIAL) : Ter(tefEXCEPTION));
+            BEAST_EXPECT(mptAlice.getBalance(bob) == 1'000);
+            BEAST_EXPECT(mptAlice.getBalance(carol) == 0);
+
+            // Partial payment: deliver floor(1000 / 1.00003) = 999 for a cost
+            // of ceil(999 * 1.00003) = 1000.
+            env(pay(bob, carol, mpt(kMaxMpTokenAmount)),
+                Sendmax(mpt(1'000)),
+                Txflags(tfPartialPayment),
+                fixed ? Ter(tesSUCCESS) : Ter(tefEXCEPTION));
+            BEAST_EXPECT(mptAlice.getBalance(bob) == (fixed ? 0 : 1'000));
+            BEAST_EXPECT(mptAlice.getBalance(carol) == (fixed ? 999 : 0));
+        }
+
         // With the fix, a partial payment that would deliver zero fails
         // instead of succeeding without moving any funds.
         if (!features[featureMPTokensV2] && features[fixCleanup3_5_0])
@@ -7907,6 +7941,83 @@ class MPToken_test : public beast::unit_test::Suite
 
             BEAST_EXPECT(mptAlice.getBalance(bob) == 10);
             BEAST_EXPECT(mptAlice.getBalance(carol) == 0);
+        }
+    }
+
+    void
+    testPartialPaymentSendMax(FeatureBitset features)
+    {
+        testcase("Partial payment does not exceed SendMax");
+
+        // A partial payment must not charge bob more than SendMax. Without
+        // fixCleanup3_5_0, the cost is computed with Number, which rounds large
+        // amounts when it has only 16 digits (SingleAssetVault and
+        // LendingProtocol disabled). bob is funded with 1000 extra so that an
+        // overcharge shows up in his balance.
+        //
+        // SendMax = 122'354'741'735'175'090, transfer fee 3 (rate 1.00003):
+        //
+        // | Config                          | bob pays     | carol receives   |
+        // |---------------------------------|--------------|------------------|
+        // | fixCleanup3_5_0 or MPTokensV2   | SendMax      | ...998 (floor)   |
+        // | neither, Number with 19 digits  | SendMax      | ...999 (nearest) |
+        // | neither, Number with 16 digits  | SendMax + 10 | ...999 (nearest) |
+
+        using namespace test::jtx;
+        Account const alice("alice");  // issuer
+        Account const bob("bob");      // holder / sender
+        Account const carol("carol");  // holder / receiver
+
+        bool const fixed = features[featureMPTokensV2] || features[fixCleanup3_5_0];
+        bool const smallNumber =
+            !features[featureSingleAssetVault] && !features[featureLendingProtocol];
+
+        // Small enough that the legacy divide() doesn't overflow. Larger
+        // amounts are covered by testPartialPaymentDivideOverflow.
+        constexpr std::int64_t sendMax = 122'354'741'735'175'090;
+
+        Env env{*this, features};
+
+        MPTTester mptAlice(env, alice, {.holders = {bob, carol}});
+        mptAlice.create(
+            {.maxAmt = kMaxMpTokenAmount,
+             .transferFee = 3,
+             .ownerCount = 1,
+             .holderCount = 0,
+             .flags = tfMPTCanTransfer});
+
+        mptAlice.authorize({.account = bob});
+        mptAlice.authorize({.account = carol});
+        mptAlice.pay(alice, bob, sendMax + 1'000);
+
+        auto const mpt = mptAlice["MPT"];
+
+        env(pay(bob, carol, mpt(sendMax)), Sendmax(mpt(sendMax)), Txflags(tfPartialPayment));
+
+        if (fixed)
+        {
+            // fixCleanup3_5_0 or MPTokensV2: bob pays exactly SendMax, carol
+            // receives floor(SendMax / rate)
+            BEAST_EXPECT(mptAlice.getBalance(bob) == 1'000);
+            BEAST_EXPECT(mptAlice.getBalance(carol) == 122'351'071'203'038'998);
+        }
+        else if (!smallNumber)
+        {
+            // Neither, Number with 19 digits: the Number cost is precise
+            // enough, so bob pays exactly SendMax
+            BEAST_EXPECT(mptAlice.getBalance(bob) == 1'000);
+            // The legacy divide() rounds to nearest, so carol receives one
+            // more than floor(SendMax / rate)
+            BEAST_EXPECT(mptAlice.getBalance(carol) == 122'351'071'203'038'999);
+        }
+        else
+        {
+            // Neither, Number with 16 digits: the Number cost is rounded 10
+            // above SendMax
+            BEAST_EXPECT(mptAlice.getBalance(bob) == 1'000 - 10);
+            // The legacy divide() rounds to nearest, so carol receives one
+            // more than floor(SendMax / rate)
+            BEAST_EXPECT(mptAlice.getBalance(carol) == 122'351'071'203'038'999);
         }
     }
 
@@ -8035,6 +8146,18 @@ public:
         testPartialPaymentDivideOverflow(all);
         testPartialPaymentDivideOverflow(all - featureMPTokensV2);
         testPartialPaymentDivideOverflow(all - featureMPTokensV2 - fixCleanup3_5_0);
+
+        // Number has a 16-digit mantissa without these amendments.
+        auto const smallNumber =
+            all - featureMPTokensV2 - featureSingleAssetVault - featureLendingProtocol;
+        testPartialPaymentRounding(smallNumber);
+        testPartialPaymentRounding(smallNumber - fixCleanup3_5_0);
+        testPartialPaymentSendMax(smallNumber);
+        testPartialPaymentSendMax(smallNumber - fixCleanup3_5_0);
+        testPartialPaymentSendMax(smallNumber | featureMPTokensV2);
+        testPartialPaymentSendMax((smallNumber | featureMPTokensV2) - fixCleanup3_5_0);
+        testPartialPaymentSendMax(all);
+        testPartialPaymentSendMax(all - featureMPTokensV2 - fixCleanup3_5_0);
     }
 };
 
