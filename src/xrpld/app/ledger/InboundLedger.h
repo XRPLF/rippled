@@ -88,7 +88,7 @@ public:
     }
 
     /**
-     * Returns false if we failed to get the data.
+     * @return Whether the acquisition has failed.
      */
     bool
     isFailed() const
@@ -96,10 +96,19 @@ public:
         return failed_;
     }
 
+    /**
+     * The acquired ledger.
+     *
+     * A failed acquisition may still hold a partially built ledger, which
+     * getJson() reports on, so ledger_ is kept while this answers nullptr.
+     *
+     * @return The ledger, or nullptr before a header is obtained and once the
+     *         acquisition has failed.
+     */
     std::shared_ptr<Ledger const>
     getLedger() const
     {
-        return ledger_;
+        return failed_ ? nullptr : ledger_;
     }
 
     std::uint32_t
