@@ -28,8 +28,8 @@ using namespace jtx;
  * The `traffic_count` suite covers what `TrafficCount::attribute` returns. This
  * suite covers which counter a real peer's bytes reach, which is what an
  * operator reads. A call site that passed the wrong argument, or reported the
- * category it held before attributing it, would satisfy the first and fail this
- * one.
+ * category it held before attributing it, would still satisfy `traffic_count`
+ * and fail this suite.
  */
 class traffic_attribution_test : public beast::unit_test::Suite
 {
@@ -93,8 +93,8 @@ class traffic_attribution_test : public beast::unit_test::Suite
         Env env{*this, envconfig()};
 
         // The outsider takes a fresh random key, which no `[cluster_nodes]`
-        // entry names. The member's key is registered before the peer is built,
-        // since `cluster()` asks the cluster map on every message.
+        // entry names. `cluster()` reads the cluster map on every message, so
+        // the member's key can be registered either side of its peer.
         auto const outsider = makeCapturePeer(env);
         PublicKey const memberKey = randomKeyPair(KeyType::Ed25519).first;
         BEAST_EXPECT(env.app().getCluster().update(memberKey, "test-member"));

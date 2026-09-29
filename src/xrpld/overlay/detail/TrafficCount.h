@@ -201,7 +201,7 @@ public:
     enum class IsFromCluster : bool { No = false, Yes };
 
     /**
-     * Holds a category to what the sender is entitled to report.
+     * Limits a category to what the sender can report.
      *
      * `categorize` reads the message and its type, which is all an outbound
      * message can be judged by. Inbound, the sender is also known, and one
