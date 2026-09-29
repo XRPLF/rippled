@@ -5,6 +5,7 @@
 #include <xrpld/app/ledger/InboundLedgers.h>
 #include <xrpld/app/ledger/LedgerMaster.h>
 
+#include <xrpl/basics/Blob.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/chrono.h>
 #include <xrpl/beast/unit_test/suite.h>
@@ -13,6 +14,7 @@
 #include <xrpl/protocol/HashPrefix.h>
 #include <xrpl/protocol/LedgerHeader.h>
 #include <xrpl/protocol/Serializer.h>
+#include <xrpl/protocol/jss.h>
 
 #include <chrono>
 #include <memory>
@@ -54,6 +56,37 @@ struct TestableInboundLedger final : InboundLedger
     triggerAdded()
     {
         trigger(nullptr, TriggerReason::Added);
+    }
+
+    /**
+     * The same, as the timer chain does.
+     */
+    void
+    triggerTimeout()
+    {
+        trigger(nullptr, TriggerReason::Timeout);
+    }
+
+    /**
+     * Record how many timeouts have elapsed.
+     *
+     * @param timeouts The count to record.
+     */
+    void
+    setTimeouts(int timeouts)
+    {
+        ScopedLockType const sl(mtx_);
+        timeouts_ = timeouts;
+    }
+
+    /**
+     * Forget any recorded progress.
+     */
+    void
+    clearProgress()
+    {
+        ScopedLockType const sl(mtx_);
+        progress_ = false;
     }
 
     /**
@@ -431,19 +464,252 @@ struct InboundLedger_test : public beast::unit_test::Suite
     }
 
     /**
+     * A ledger assembled from local data must be judged even when only
+     * one map is settled.
+     *
+     * tryDB() walks both maps to see what is on hand, and a fetch pack is
+     * checked against each node's own hash rather than the shape it
+     * implies, so a whole chain can resolve locally without passing
+     * through addKnownNode().
+     *
+     * The asymmetry is the point: the transaction map is the chain, so
+     * its walk abandons it, while the state root is a hash no fetch pack
+     * supplies, leaving that map merely incomplete. tryDB() therefore
+     * sets neither flag and has to reach the verdict itself, since the
+     * setImmutable() call further down needs both.
+     *
+     * @param env The environment to run in.
+     */
+    void
+    testLocalChainFailsAcquire(jtx::Env& env)
+    {
+        testcase("A chain found locally fails the acquire");
+
+        DeepChain const chain{nextSeed()};
+
+        // The chain as the transaction root, and an arbitrary hash, seeded nowhere, as the state
+        // root.
+        auto const header = makeHeader(chain.rootHash.asUInt256(), UInt256{99});
+        auto& ledgerMaster = env.app().getLedgerMaster();
+
+        // The header, prefixed the way tryDB() expects to find it in a fetch pack.
+        Serializer hs;
+        hs.add32(HashPrefix::LedgerMaster);
+        addRaw(header, hs);
+        ledgerMaster.addFetchPack(header.hash, std::make_shared<Blob>(hs.modData()));
+
+        // Every node of the chain, keyed by its own hash. TransactionStateSF::getNode() reads
+        // these, so the transaction-map walk resolves the whole chain with no peer involved.
+        for (auto depth = 0u; depth <= SHAMap::kLeafDepth; ++depth)
+        {
+            ledgerMaster.addFetchPack(
+                chain.nodeAt(depth)->getHash().asUInt256(),
+                std::make_shared<Blob>(chain.prefixedNodeAt(depth)));
+        }
+
+        auto acquire = std::make_shared<InboundLedger>(
+            env.app(),
+            header.hash,
+            header.seq,
+            InboundLedger::Reason::GENERIC,
+            stopwatch(),
+            std::make_unique<RequestCountingPeerSet>());
+
+        // checkLocal() routes into tryDB() without any peer data having arrived. It reports true
+        // only because the acquisition ended, which is what this case is about.
+        BEAST_EXPECT(acquire->checkLocal());
+
+        BEAST_EXPECT(acquire->isFailed());
+        BEAST_EXPECT(!acquire->isComplete());
+    }
+
+    /**
+     * The aggressive-retry branch of trigger() must judge a map the walk
+     * abandoned.
+     *
+     * That branch reads an empty getNeededHashes() result as a complete map,
+     * and the walk it runs can reach the invalid verdict itself once nodes
+     * resolve from local storage. Only the root is local when tryDB() runs, so
+     * the state map holds a root and the walk stops one level down. The branch
+     * also needs a timeout count above kLedgerBecomeAggressiveThreshold, which
+     * the case records directly rather than waiting out the timer chain.
+     *
+     * @param env The environment to run in.
+     */
+    void
+    testAggressiveRetryJudgesLocalMap(jtx::Env& env)
+    {
+        testcase("An aggressive retry judges a map the walk abandoned");
+
+        DeepChain const chain{nextSeed()};
+
+        // The chain as the state root, and no transactions, so only the state map is in play.
+        auto const header = makeHeader(chain);
+        auto& ledgerMaster = env.app().getLedgerMaster();
+
+        Serializer hs;
+        hs.add32(HashPrefix::LedgerMaster);
+        addRaw(header, hs);
+        ledgerMaster.addFetchPack(header.hash, std::make_shared<Blob>(hs.modData()));
+
+        // Only the root, so the state map gets a root but the walk stops one level down.
+        ledgerMaster.addFetchPack(
+            chain.nodeAt(0)->getHash().asUInt256(),
+            std::make_shared<Blob>(chain.prefixedNodeAt(0)));
+
+        auto acquire = std::make_shared<TestableInboundLedger>(
+            env.app(),
+            header.hash,
+            header.seq,
+            InboundLedger::Reason::GENERIC,
+            stopwatch(),
+            std::make_unique<RequestCountingPeerSet>());
+
+        // The acquisition is alive: it has the header and a state root, and still wants the rest.
+        BEAST_EXPECT(!acquire->checkLocal());
+        BEAST_EXPECT(!acquire->isFailed());
+        BEAST_EXPECT(acquire->getJson(0)[jss::have_header].asBool());
+        BEAST_EXPECT(!acquire->getJson(0)[jss::have_state].asBool());
+
+        auto const ledger = mutableLedger(*acquire);
+        BEAST_EXPECT(ledger != nullptr);
+        if (!ledger)
+            return;
+        BEAST_EXPECT(ledger->stateMap().isValid());
+
+        // The rest of the chain becomes resolvable only now, which places the verdict in this walk.
+        for (auto depth = 1u; depth <= SHAMap::kLeafDepth; ++depth)
+        {
+            ledgerMaster.addFetchPack(
+                chain.nodeAt(depth)->getHash().asUInt256(),
+                std::make_shared<Blob>(chain.prefixedNodeAt(depth)));
+        }
+
+        // kLedgerBecomeAggressiveThreshold is 4 and file-local, so name the requirement here.
+        acquire->setTimeouts(5);
+        acquire->clearProgress();
+        acquire->triggerTimeout();
+
+        // The walk resolved the chain locally and abandoned the map, and trigger() recorded that
+        // rather than reading the empty result as a finished acquisition.
+        BEAST_EXPECT(!ledger->stateMap().isValid());
+        BEAST_EXPECT(acquire->isFailed());
+        BEAST_EXPECT(!acquire->isComplete());
+
+        // have_state is the discriminating assertion: only this guard leaves it false, since every
+        // have-flag is set on the way to the setImmutable() backstop in done().
+        BEAST_EXPECT(!acquire->getJson(0)[jss::have_state].asBool());
+
+        // The same branch with no header, which is the other arm of hasInvalidMap(): no map, so
+        // the arm answers false. getNeededHashes() has asked for the header, so the non-empty
+        // branch is the right one and the acquisition stays alive.
+        auto headerless = std::make_shared<TestableInboundLedger>(
+            env.app(),
+            UInt256{7},
+            0,
+            InboundLedger::Reason::GENERIC,
+            stopwatch(),
+            std::make_unique<RequestCountingPeerSet>());
+
+        headerless->setTimeouts(5);
+        headerless->clearProgress();
+        headerless->triggerTimeout();
+
+        BEAST_EXPECT(mutableLedger(*headerless) == nullptr);
+        BEAST_EXPECT(!headerless->isFailed());
+        BEAST_EXPECT(!headerless->isComplete());
+    }
+
+    /**
+     * The ordinary trigger() path must judge a map its own walk abandoned.
+     *
+     * Covers the state-map walk trigger() runs with mtx_ released, where the
+     * case above covers the empty getNeededHashes() branch. That verdict has to
+     * be read before the flags below it. Staged as that case is, with the
+     * timeout count left at zero to stay off the aggressive branch.
+     *
+     * @param env The environment to run in.
+     */
+    void
+    testWalkJudgesMapOnOrdinaryTrigger(jtx::Env& env)
+    {
+        testcase("An ordinary trigger judges a map its walk abandoned");
+
+        DeepChain const chain{nextSeed()};
+
+        auto const header = makeHeader(chain);
+        auto& ledgerMaster = env.app().getLedgerMaster();
+
+        Serializer hs;
+        hs.add32(HashPrefix::LedgerMaster);
+        addRaw(header, hs);
+        ledgerMaster.addFetchPack(header.hash, std::make_shared<Blob>(hs.modData()));
+
+        // Only the root, so the state map gets a root but the walk stops one level down.
+        ledgerMaster.addFetchPack(
+            chain.nodeAt(0)->getHash().asUInt256(),
+            std::make_shared<Blob>(chain.prefixedNodeAt(0)));
+
+        auto peerSet = std::make_unique<RequestCountingPeerSet>();
+        auto* const peerSetPtr = peerSet.get();
+
+        auto acquire = std::make_shared<TestableInboundLedger>(
+            env.app(),
+            header.hash,
+            header.seq,
+            InboundLedger::Reason::GENERIC,
+            stopwatch(),
+            std::move(peerSet));
+
+        BEAST_EXPECT(!acquire->checkLocal());
+        BEAST_EXPECT(!acquire->isFailed());
+        BEAST_EXPECT(acquire->getJson(0)[jss::have_header].asBool());
+        BEAST_EXPECT(!acquire->getJson(0)[jss::have_state].asBool());
+
+        auto const ledger = mutableLedger(*acquire);
+        BEAST_EXPECT(ledger != nullptr);
+        if (!ledger)
+            return;
+        BEAST_EXPECT(ledger->stateMap().isValid());
+
+        // The rest of the chain becomes resolvable only now, which places the verdict in this walk.
+        for (auto depth = 1u; depth <= SHAMap::kLeafDepth; ++depth)
+        {
+            ledgerMaster.addFetchPack(
+                chain.nodeAt(depth)->getHash().asUInt256(),
+                std::make_shared<Blob>(chain.prefixedNodeAt(depth)));
+        }
+
+        // Sound going in, which is the first half of the tripwire below.
+        BEAST_EXPECT(ledger->stateMap().isValid());
+
+        int const requestsBefore = peerSetPtr->requests();
+        acquire->triggerAdded();
+
+        // The walk resolved the chain locally and abandoned the map, and trigger() recorded that
+        // rather than reading the empty node list as a finished state map.
+        BEAST_EXPECT(!ledger->stateMap().isValid());
+        BEAST_EXPECT(acquire->isFailed());
+
+        // have_state is the discriminating assertion. isComplete() is not: it reads false whether
+        // this guard fired or the setImmutable() backstop in done() did.
+        BEAST_EXPECT(!acquire->getJson(0)[jss::have_state].asBool());
+
+        // A tripwire that keeps this case on the branch it names: the aggressive branch needs both
+        // a TIMEOUT reason and a count above kLedgerBecomeAggressiveThreshold.
+        BEAST_EXPECT(acquire->getJson(0)[jss::timeouts].asInt() == 0);
+
+        // The request count is unchanged after the verdict, so the guard ended the round.
+        BEAST_EXPECT(peerSetPtr->requests() == requestsBefore);
+    }
+
+    /**
      * The retry timer re-asks, then gives up and signals.
      *
-     * The only case that drives onTimer() rather than trigger() directly,
-     * which is what covers the give-up: past kLedgerTimeoutRetriesMax the
-     * acquisition fails itself and done() records that, so the same
-     * doomed ledger is not asked for again on the next round. It is also
-     * what the retry interval is a constructor parameter for, since the
-     * chain runs past kLedgerTimeoutRetriesMax ticks of three seconds
-     * apiece in production.
-     *
-     * The store is empty for this hash and no reply arrives, so every tick
-     * counts a timeout and the count climbs to the limit. A hash of its own,
-     * so this case owns its entry in the failure list.
+     * The only case that drives onTimer() rather than trigger() directly. Past
+     * kLedgerTimeoutRetriesMax the acquisition fails itself and done() records
+     * that, so the same ledger is not asked for again. The store is empty for
+     * this hash and no reply arrives, so every tick counts a timeout.
      *
      * @param env The environment to run in.
      */
@@ -500,6 +766,9 @@ struct InboundLedger_test : public beast::unit_test::Suite
         testLocalLedgerCompletesAcquire(env);
         testInvalidatedLedgerFailsInDone(env);
         testLocalFailureSignalsDone(env);
+        testLocalChainFailsAcquire(env);
+        testAggressiveRetryJudgesLocalMap(env);
+        testWalkJudgesMapOnOrdinaryTrigger(env);
 
         // Last: the only case that waits out a whole timeout chain.
         testTimerRetriesThenGivesUp(env);
