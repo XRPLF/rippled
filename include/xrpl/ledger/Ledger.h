@@ -105,6 +105,16 @@ public:
         std::vector<UInt256> const& amendments,
         Family& family);
 
+    /**
+     * Create a ledger from a header whose maps are filled in afterwards.
+     *
+     * Both maps start Synching against the hashes the header carries, which are
+     * input rather than derived, so setImmutable() leaves them alone.
+     *
+     * @param info The header to build from.
+     * @param rules The rules in force.
+     * @param family The SHAMap family the maps belong to.
+     */
     Ledger(LedgerHeader const& info, Rules rules, Family& family);
 
     /**
@@ -278,23 +288,25 @@ public:
     /**
      * Mark this ledger as immutable, so it can no longer be modified.
      *
-     * A ledger built or loaded locally cannot have an invalid map, since only
-     * a map syncing against hashes from outside can be proven impossible (see
-     * SHAMap::addKnownNode), so a caller on such a path may treat a false
-     * return as a broken internal invariant. A caller assembling a ledger from
-     * peer data may not: for it, false is an outcome a peer can produce.
+     * Only a map syncing against hashes from outside can be found unsound (see
+     * SHAMap::addKnownNode), so a caller whose ledger was built or loaded
+     * locally treats a false return as a broken internal invariant.
      *
      * @param rehash Whether to recompute the ledger hash from the header
      *        fields. The transaction and account hashes are recomputed from the
-     *        maps too, but only the first time.
+     *        maps too, but only the first time and only if the header did not
+     *        supply them.
      * @return false if either map is Invalid, leaving the immutable flag unset
-     *         and the header untouched. A map invalidated partway through can
-     *         still leave the other one immutable, so a false return means the
-     *         ledger must be discarded rather than retried.
+     *         and the header untouched. The ledger must then be discarded
+     *         rather than retried, since one map may already be immutable.
      */
     [[nodiscard]] bool
     setImmutable(bool rehash = true);
 
+    /**
+     * @return Whether both maps have been settled, so the ledger can no longer
+     *         change.
+     */
     bool
     isImmutable() const
     {
@@ -474,6 +486,15 @@ private:
     }
 
     bool immutable_;
+
+    /**
+     * Whether the header supplied the transaction and account hashes, so they
+     * must not be derived from the maps.
+     *
+     * True only for a ledger built from a header, which stays verified against
+     * the hash it was asked for. Fixed at construction, unlike immutable_.
+     */
+    bool const mapHashesFromHeader_ = false;
 
     // A SHAMap containing the transactions associated with this ledger.
     SHAMap mutable txMap_;

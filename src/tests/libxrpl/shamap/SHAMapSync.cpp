@@ -490,9 +490,63 @@ TEST_F(SHAMapSyncTest, refused_settle_leaves_the_header_alone)
     EXPECT_EQ(ledger.header().hash, hashBefore);
 }
 
-// Invalid is terminal: setImmutable() and clearSynching() offer no way back out of it, however
-// many times they are called. setSynching() is left alone, since it is unreachable on an invalid
-// map today and says so with an UNREACHABLE.
+// A ledger built from a header must not claim to be immutable before setImmutable() has found both
+// maps sound: they start out Synching and are filled in afterwards, and LedgerHistory::insert() and
+// LedgerReplayMsgHandler both gate on that claim to catch exactly that case.
+TEST_F(SHAMapSyncTest, ledger_from_header_is_not_immutable_until_settled)
+{
+    TestNodeFamily f{j_};
+    DeepChain const chain;
+
+    LedgerHeader header;
+    header.seq = 2;
+    header.txHash = chain.rootHash.asUInt256();
+    header.hash = calculateLedgerHash(header);
+
+    Ledger ledger{header, noAmendments(), f};
+
+    // Both maps are still syncing, so the ledger reports mutable.
+    EXPECT_TRUE(ledger.txMap().isSynching());
+    EXPECT_TRUE(ledger.stateMap().isSynching());
+    EXPECT_FALSE(ledger.isImmutable());
+
+    ASSERT_TRUE(chain.fill(ledger.txMap()));
+    ASSERT_TRUE(chain.addOffendingNode(ledger.txMap()).isInvalid());
+    ASSERT_FALSE(ledger.txMap().isValid());
+
+    EXPECT_FALSE(ledger.setImmutable());
+    EXPECT_FALSE(ledger.isImmutable());
+}
+
+// The header's own map hashes are what the maps are synced against, so settling keeps them. The
+// transaction map is left empty while the header names a chain root, so the two differ and the
+// kept value is observable.
+TEST_F(SHAMapSyncTest, ledger_from_header_keeps_the_map_hashes_it_was_given)
+{
+    TestNodeFamily f{j_};
+    DeepChain const chain;
+
+    LedgerHeader header;
+    header.seq = 2;
+    header.txHash = chain.rootHash.asUInt256();
+    header.hash = calculateLedgerHash(header);
+    auto const verifiedHash = header.hash;
+
+    Ledger ledger{header, noAmendments(), f};
+    ASSERT_FALSE(ledger.isImmutable());
+
+    // The map is empty, so it hashes to zero. Both maps are still valid, so settling succeeds.
+    ASSERT_TRUE(ledger.txMap().getHash().isZero());
+    ASSERT_TRUE(ledger.setImmutable());
+    EXPECT_TRUE(ledger.isImmutable());
+
+    EXPECT_EQ(ledger.header().txHash, chain.rootHash.asUInt256());
+    EXPECT_EQ(ledger.header().hash, verifiedHash);
+}
+
+// Invalid is terminal: neither setImmutable() nor clearSynching() leads back out of it, however
+// many times they are called. setSynching() is left out, since an invalid map cannot reach it,
+// which its UNREACHABLE states.
 TEST_F(SHAMapSyncTest, invalid_state_is_terminal)
 {
     TestNodeFamily f{j_};
