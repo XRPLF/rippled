@@ -22,6 +22,9 @@ namespace test {
 class InvariantsMisc_test;
 }  // namespace test
 
+/**
+ * A serialized ledger entry, commonly abbreviated "SLE".
+ */
 class STLedgerEntry final : public STObject, public CountedObject<STLedgerEntry>
 {
     uint256 key_;
