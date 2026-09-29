@@ -22,7 +22,7 @@ namespace xrpl::tests {
 
 /**
  * A chain of inner nodes in wire form, from the root down to one deepest node,
- * each with one real child.
+ * each with one real child and, under withDecoys(), an unresolvable second one.
  *
  * Built bottom-up, so every node hashes correctly and the root hash commits to
  * the whole shape. Each node sits on the branch pathKey selects at its depth.
@@ -57,12 +57,27 @@ struct DeepChain
      * A chain of inner nodes reaching SHAMap::kLeafDepth, a depth only a leaf
      * may occupy.
      *
-     * @param seed Varies the whole chain, so two chains coexist with distinct
-     *        nodes. Caches and fetch packs are keyed by hash, so
-     *        identically-seeded chains are the same chain.
+     * @param seed Varies the chain's nodes. Two chains built from one seed hold
+     *        the same nodes, which caches and fetch packs key by hash.
      */
-    explicit DeepChain(unsigned int seed = 1) : DeepChain(std::nullopt, seed)
+    explicit DeepChain(unsigned int seed = 1) : DeepChain(std::nullopt, seed, Decoy::No)
     {
+    }
+
+    /**
+     * The same chain, with an unresolvable second child at every level, so a
+     * backed map's descendAsync() posts a real asynchronous read per level.
+     *
+     * Offered only for this shape: the decoy sits on branch 1, which is free
+     * only while pathKey is zero.
+     *
+     * @param seed Varies the whole chain. See the constructor.
+     * @return The chain.
+     */
+    [[nodiscard]] static DeepChain
+    withDecoys(unsigned int seed = 1)
+    {
+        return DeepChain{std::nullopt, seed, Decoy::Yes};
     }
 
     /**
@@ -81,7 +96,7 @@ struct DeepChain
     {
         if (depth > SHAMap::kLeafDepth)
             Throw<std::logic_error>("DeepChain: leaf depth past SHAMap::kLeafDepth");
-        return DeepChain{std::optional{depth}, seed};
+        return DeepChain{std::optional{depth}, seed, Decoy::No};
     }
 
     /**
@@ -180,21 +195,25 @@ struct DeepChain
     }
 
 private:
+    // Whether each level carries a second child that stays unresolvable.
+    enum class Decoy { No, Yes };
+
     /**
      * Build any of the shapes.
      *
      * @param leafDepth Where a real transaction leaf sits, or nullopt to run
      *        inner nodes all the way to SHAMap::kLeafDepth instead.
      * @param seed Varies the chain's contents. See the public entry points.
+     * @param decoy Whether every level carries an unresolvable second child.
      */
-    DeepChain(std::optional<unsigned int> leafDepth, unsigned int seed)
+    DeepChain(std::optional<unsigned int> leafDepth, unsigned int seed, Decoy decoy)
         : nodes(leafDepth.value_or(SHAMap::kLeafDepth) + 1)
     {
         if (!leafDepth)
         {
             // With no leaf depth given, the deepest inner node points at a child that stays
             // unresolvable.
-            buildInnersDownTo(SHAMap::kLeafDepth, SHAMapHash{UInt256{seed}});
+            buildInnersDownTo(SHAMap::kLeafDepth, SHAMapHash{UInt256{seed}}, decoy);
             return;
         }
 
@@ -226,21 +245,23 @@ private:
             return;
         }
 
-        buildInnersDownTo(*leafDepth - 1, leaf->getHash());
+        buildInnersDownTo(*leafDepth - 1, leaf->getHash(), decoy);
     }
 
     /**
-     * Fill in inner nodes, each with one real child, from the root down to the
-     * given depth, and record the root hash.
+     * Fill in inner nodes, each with one real child (and, under Decoy::Yes, an
+     * additional unresolvable second child), from the root down to the given depth,
+     * and record the root hash.
      *
      * Bottom-up, since each node's hash covers the child hash below it.
      *
      * @param deepest The depth of the deepest inner node to build. May be
      *        SHAMap::kLeafDepth, which is the fabricated chain's whole point.
      * @param childHash What that deepest inner node points at.
+     * @param decoy Whether to add an unresolvable second child at every level.
      */
     void
-    buildInnersDownTo(unsigned int deepest, SHAMapHash childHash)
+    buildInnersDownTo(unsigned int deepest, SHAMapHash childHash, Decoy decoy)
     {
         for (auto depth = deepest + 1; depth-- > 0;)
         {
@@ -253,6 +274,23 @@ private:
             Serializer s;
             s.addBitString(childHash.asUInt256());
             s.add8(static_cast<unsigned char>(branch));
+
+            if (decoy == Decoy::Yes)
+            {
+                // The decoy sits at branch 1, which is free while pathKey is zero, so the
+                // compressed-inner-node parser sees two distinct branches.
+                if (branch == 1)
+                    Throw<std::logic_error>("DeepChain: decoy branch collides with real child");
+
+                // Derived from the depth, so each level posts its own read. No node stands behind
+                // this hash, so a read for it stays outstanding.
+                UInt256 decoyHash;
+                decoyHash.begin()[0] = 0xDE;
+                decoyHash.begin()[1] = 0xC0;
+                decoyHash.begin()[2] = static_cast<unsigned char>(depth);
+                s.addBitString(decoyHash);
+                s.add8(1);
+            }
 
             s.add8(kWireTypeCompressedInner);
 
