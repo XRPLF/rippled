@@ -49,12 +49,29 @@ maskedToDepth(UInt256 const& key, unsigned int depth)
     return key & depthMask(depth);
 }
 
-// Whether `id` at `depth` is what `key` looks like once masked down to that depth, i.e.
-// whether an ID with this depth and id names a subtree that `key` falls under.
+// Whether `key` masked to `depth` equals `id`. Asymmetric: `id` is not masked, so this also
+// refuses an id carrying bits below its own depth.
 static bool
 isPrefixOfAtDepth(UInt256 const& id, unsigned int depth, UInt256 const& key)
 {
     return maskedToDepth(key, depth) == id;
+}
+
+bool
+samePositionAtDepth(unsigned int depth, UInt256 const& lhs, UInt256 const& rhs)
+{
+    // The mask is chosen here, so an out-of-range depth would index depthMask's table past its
+    // last entry. kLeafDepth itself is in range, unlike in selectBranch: the position at the leaf
+    // depth is the whole key. A public helper has to hold its own bound.
+    if (depth > SHAMap::kLeafDepth)
+    {
+        // LCOV_EXCL_START
+        UNREACHABLE("xrpl::samePositionAtDepth : depth within tree");
+        depth = SHAMap::kLeafDepth;
+        // LCOV_EXCL_STOP
+    }
+
+    return maskedToDepth(lhs, depth) == maskedToDepth(rhs, depth);
 }
 
 // canonicalize the hash to a node ID for this depth
@@ -131,7 +148,7 @@ SHAMapNodeID::getChildNodeID(unsigned int branch) const
     XRPL_ASSERT(
         depth_ <= SHAMap::kLeafDepth, "xrpl::SHAMapNodeID::getChildNodeID : maximum leaf depth");
 
-    if (depth_ >= SHAMap::kLeafDepth)
+    if (SHAMap::isLeafDepth(depth_))
         Throw<std::logic_error>("Request for child node ID of " + to_string(*this));
 
     if (!isPrefixOf(id_))
@@ -167,16 +184,16 @@ deserializeSHAMapNodeID(void const* data, std::size_t size)
 }
 
 [[nodiscard]] unsigned int
-selectBranch(SHAMapNodeID const& id, UInt256 const& hash)
+selectBranch(unsigned int depth, UInt256 const& hash)
 {
-    XRPL_ASSERT(id.getDepth() < SHAMap::kLeafDepth, "xrpl::selectBranch : depth below leaf depth");
+    XRPL_ASSERT(depth < SHAMap::kLeafDepth, "xrpl::selectBranch : depth below leaf depth");
 
-    // A depth-64 ID has no nibble left to select. Callers must not ask, but clamp anyway to keep
-    // the read below the end of the 32-byte key.
-    auto const depth = std::min(id.getDepth(), SHAMap::kLeafDepth - 1u);
-    auto branch = static_cast<unsigned int>(*(hash.begin() + (depth / 2)));
+    // Only a depth below kLeafDepth has a nibble to select, so clamp to the last one that does.
+    auto const clamped = std::min(depth, SHAMap::kLeafDepth - 1u);
+    auto branch = static_cast<unsigned int>(*(hash.begin() + (clamped / 2)));
 
-    if ((depth & 1) != 0u)
+    // The byte index and the nibble choice both read `clamped`, so they cannot disagree.
+    if ((clamped & 1) != 0u)
     {
         branch &= 0xf;
     }

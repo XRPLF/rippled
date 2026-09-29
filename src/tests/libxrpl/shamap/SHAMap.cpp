@@ -282,9 +282,8 @@ INSTANTIATE_TEST_SUITE_P(
     ::testing::Values(kBackedMode, kUnbackedMode),
     shamapBackingModeName);
 
-// Exercises the traversal stacks built by belowHelper. Each stack entry pairs a node with the ID
-// naming its position, and every push refuses a leaf whose own key does not lie under the branch it
-// was reached through, in Release builds as well as Debug ones.
+// Exercises the traversal paths built by belowHelper. A path names each node's position by its own
+// length, and every push requires a leaf's key to lie under the branch it was reached through.
 class SHAMapTraversal : public ::testing::Test
 {
 protected:
@@ -933,25 +932,25 @@ TEST_F(SHAMapPathProof, all_inner_path_at_leaf_depth_is_rejected)
 }
 
 /**
- * Wrap a leaf blob in a forged root inner node whose branch for `key` carries that leaf's hash.
+ * Wrap a leaf blob in a built root inner node whose branch for `key` carries that leaf's hash.
  *
  * The resulting two-element path hash-chains for `key` no matter which leaf sits at the bottom,
  * which is exactly the substitution a peer could attempt.
  *
  * @param leafBlob the wire form of the leaf to place at the bottom of the path.
- * @param key the key the forged path claims to prove.
- * @return the path (deepest element first) and the forged root hash, or an empty path if the leaf
+ * @param key the key the built path claims to prove.
+ * @return the path (deepest element first) and the built root hash, or an empty path if the leaf
  *         blob does not parse.
  */
 static std::pair<std::vector<Blob>, UInt256>
-forgeRootOverLeaf(Blob const& leafBlob, UInt256 const& key)
+buildRootOverLeaf(Blob const& leafBlob, UInt256 const& key)
 {
     auto leaf = SHAMapTreeNode::makeFromWire(makeSlice(leafBlob));
     if (!leaf || !leaf->isLeaf())
         return {};
     leaf->updateHash();
 
-    auto const branch = selectBranch(SHAMapNodeID::createID(0, key), key);
+    auto const branch = selectBranch(0u, key);
     Serializer s;
     for (auto i = 0u; i < SHAMap::kBranchFactor; ++i)
         s.addBitString(i == branch ? leaf->getHash().asUInt256() : UInt256{});
@@ -996,15 +995,15 @@ TEST_F(SHAMapPathProof, substituted_leaf_for_other_key_is_rejected)
     auto const& otherLeaf = otherPath->front();
     // NOLINTEND(bugprone-unchecked-optional-access)
 
-    // Control: the forged root is accepted when the leaf below it really is kKey's leaf, so the
+    // Control: the built root is accepted when the leaf below it really is kKey's leaf, so the
     // rejection below can only come from the leaf key comparison.
-    auto const [goodPath, goodRoot] = forgeRootOverLeaf(ownLeaf, kKey);
+    auto const [goodPath, goodRoot] = buildRootOverLeaf(ownLeaf, kKey);
     ASSERT_EQ(goodPath.size(), 2u);
     EXPECT_TRUE(SHAMap::verifyProofPath(goodRoot, kKey, goodPath));
 
-    // Same forged root, but kOtherKey's leaf substituted at the bottom: the hash chain still
+    // Same built root, but kOtherKey's leaf substituted at the bottom: the hash chain still
     // validates, yet the path does not prove anything about kKey.
-    auto const [badPath, badRoot] = forgeRootOverLeaf(otherLeaf, kKey);
+    auto const [badPath, badRoot] = buildRootOverLeaf(otherLeaf, kKey);
     ASSERT_EQ(badPath.size(), 2u);
     EXPECT_FALSE(SHAMap::verifyProofPath(badRoot, kKey, badPath));
 }
@@ -1263,13 +1262,9 @@ TEST_F(SHAMapMisplacedLeaf, iterating_a_misplaced_subtree_throws)
     auto const [leafBlob, leafHash] = leafFor(sourceFamily, kDeepKey);
     ASSERT_FALSE(leafBlob.empty());
 
-    // The subtree holds exactly one child, on the branch its key selects at depth 1. One occupied
-    // branch is reached the same way whichever branch the scan starts from, so which node the walk
-    // resolves does not depend on the random start.
-    //
-    // Assembled here rather than taken from a source map, because a one-item map puts its leaf
-    // directly under the root and so holds no inner node to borrow.
-    auto const leafBranch = selectBranch(SHAMapNodeID::createID(1, kDeepKey), kDeepKey);
+    // The subtree holds exactly one child, on the branch its key selects at depth 1, so the walk
+    // resolves the same node whichever branch the random scan starts from.
+    auto const leafBranch = selectBranch(1u, kDeepKey);
     auto const inner = makeFullInnerNode({{.branch = leafBranch, .hash = leafHash}});
     ASSERT_TRUE(inner);
 
