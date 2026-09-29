@@ -2840,6 +2840,87 @@ class InvariantsVault_test : public InvariantsBase
             STTx{ttVAULT_CREATE, [](STObject&) {}},
             {tecINVARIANT_FAILED, tefINVARIANT_FAILED});
 
+        // EarlyExitFeeRate is only allowed on a closed-ended vault with LEVersion >= CashBasis,
+        // and must not exceed MAX_EARLY_EXIT_FEE_RATE. Insert a bare closed-ended vault with
+        // valid dates, then adjust it so only the early-exit fee rate invariant under test fires.
+        auto const insertEarlyExitFeeVault = [&](ApplyContext& ac,
+                                                 Account const& owner,
+                                                 bool openEnded,
+                                                 std::optional<VaultVersion> version,
+                                                 std::uint32_t rate = 1) -> bool {
+            std::uint32_t const sub = 1'000'000'000;
+            std::uint32_t const red = sub + kMinInvestmentPeriod;
+            if (!insertBareClosedEndedVault(ac, owner, sub, red))
+                return false;
+            auto sleVault =
+                ac.view().peek(keylet::vault(owner.id(), SeqProxy::rawSequence(ac.view().seq())));
+            if (!sleVault)
+                return false;
+            if (openEnded)
+            {
+                sleVault->at(sfVaultKind) = std::to_underlying(VaultKind::OpenEnded);
+                sleVault->makeFieldAbsent(sfSubscriptionDate);
+                sleVault->makeFieldAbsent(sfRedemptionDate);
+            }
+            if (version)
+                sleVault->at(sfLEVersion) = std::to_underlying(*version);
+            sleVault->at(sfEarlyExitFeeRate) = rate;
+            ac.view().update(sleVault);
+            return true;
+        };
+
+        testcase << "Vault create early-exit fee rate placement";
+
+        // Closed-ended vault without LEVersion.
+        doInvariantCheck(
+            {"early-exit fee rate only allowed on a closed-ended vault with "
+             "LEVersion >= CashBasis"},
+            [&](Account const& a1, Account const&, ApplyContext& ac) {
+                return insertEarlyExitFeeVault(ac, a1, /*openEnded=*/false, std::nullopt);
+            },
+            XRPAmount{},
+            STTx{ttVAULT_CREATE, [](STObject&) {}},
+            {tecINVARIANT_FAILED, tefINVARIANT_FAILED});
+
+        // Closed-ended vault with LEVersion below CashBasis.
+        doInvariantCheck(
+            {"early-exit fee rate only allowed on a closed-ended vault with "
+             "LEVersion >= CashBasis"},
+            [&](Account const& a1, Account const&, ApplyContext& ac) {
+                return insertEarlyExitFeeVault(ac, a1, /*openEnded=*/false, VaultVersion::Legacy);
+            },
+            XRPAmount{},
+            STTx{ttVAULT_CREATE, [](STObject&) {}},
+            {tecINVARIANT_FAILED, tefINVARIANT_FAILED});
+
+        // Open-ended vault, even with a sufficient LEVersion.
+        doInvariantCheck(
+            {"early-exit fee rate only allowed on a closed-ended vault with "
+             "LEVersion >= CashBasis"},
+            [&](Account const& a1, Account const&, ApplyContext& ac) {
+                return insertEarlyExitFeeVault(ac, a1, /*openEnded=*/true, VaultVersion::CashBasis);
+            },
+            XRPAmount{},
+            STTx{ttVAULT_CREATE, [](STObject&) {}},
+            {tecINVARIANT_FAILED, tefINVARIANT_FAILED});
+
+        testcase << "Vault create early-exit fee rate bound";
+
+        // Valid placement, but the rate is one above MAX_EARLY_EXIT_FEE_RATE.
+        doInvariantCheck(
+            {"early-exit fee rate must not exceed MAX_EARLY_EXIT_FEE_RATE"},
+            [&](Account const& a1, Account const&, ApplyContext& ac) {
+                return insertEarlyExitFeeVault(
+                    ac,
+                    a1,
+                    /*openEnded=*/false,
+                    VaultVersion::CashBasis,
+                    kMaxEarlyExitFeeRate.value() + 1);
+            },
+            XRPAmount{},
+            STTx{ttVAULT_CREATE, [](STObject&) {}},
+            {tecINVARIANT_FAILED, tefINVARIANT_FAILED});
+
         testcase << "Vault deposit closed-ended";
 
         // A deposit into a closed-ended vault that has advanced past SubscriptionDate. kArgs
