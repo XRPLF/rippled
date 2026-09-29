@@ -94,8 +94,12 @@ InboundLedger::init(ScopedLockType& collectionLock)
     collectionLock.unlock();
 
     tryDB(app_.getNodeFamily().db());
+    // done() is what wakes whatever is waiting and records the hash in recentFailures_.
     if (failed_)
+    {
+        done();
         return;
+    }
 
     if (!complete_)
     {
@@ -494,6 +498,7 @@ InboundLedger::trigger(std::shared_ptr<Peer> const& peer, TriggerReason reason)
         if (failed_)
         {
             JLOG(journal_.warn()) << " failed local for " << hash_;
+            done();
             return;
         }
     }
