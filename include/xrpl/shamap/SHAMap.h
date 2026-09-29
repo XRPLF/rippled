@@ -2,6 +2,7 @@
 
 #include <xrpl/basics/Blob.h>
 #include <xrpl/basics/IntrusivePointer.h>
+#include <xrpl/basics/Log.h>
 #include <xrpl/basics/SHAMapHash.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/Journal.h>
@@ -178,7 +179,14 @@ public:
     SHAMap&
     operator=(SHAMap const&) = delete;
 
-    // Take a snapshot of the given map:
+    /**
+     * Take a snapshot of the given map.
+     *
+     * @param other The map to snapshot. An Invalid source yields an Invalid
+     *        snapshot.
+     * @param isMutable Whether the snapshot may be modified. Ignored when other
+     *        is Invalid.
+     */
     SHAMap(SHAMap const& other, bool isMutable);
 
     // build new map
@@ -216,8 +224,15 @@ public:
 
     //--------------------------------------------------------------------------
 
-    // Returns a new map that's a snapshot of this one.
-    // Handles copy on write for mutable snapshots.
+    /**
+     * Return a new map that is a snapshot of this one.
+     *
+     * Handles copy on write for mutable snapshots. An invalid map yields an
+     * invalid snapshot.
+     *
+     * @param isMutable Whether the snapshot may be modified.
+     * @return The snapshot.
+     */
     std::shared_ptr<SHAMap>
     snapShot(bool isMutable) const;
 
@@ -389,8 +404,9 @@ public:
      * is inserted at the position specified by nodeID. The node must already have been
      * deserialized.
      *
-     * A node that no valid tree can hold makes the map Invalid: the root hash
-     * committed to an impossible shape, so no peer can satisfy it.
+     * A node that no valid tree can hold makes the map Invalid, which is
+     * terminal: the root hash committed to an impossible shape, so no peer
+     * can satisfy it.
      *
      * @param nodeID The position in the tree where this node belongs.
      * @param treeNode A deserialized tree node to add.
@@ -407,7 +423,13 @@ public:
         SHAMapTreeNodePtr treeNode,
         SHAMapSyncFilter const* filter);
 
-    void
+    /**
+     * Mark this map as immutable, so it can no longer be modified.
+     *
+     * @return false if the map is Invalid and was left unchanged, true
+     *         otherwise.
+     */
+    [[nodiscard]] bool
     setImmutable();
 
     /**
@@ -416,8 +438,30 @@ public:
      */
     [[nodiscard]] bool
     isSynching() const;
+
+    /**
+     * @return Whether the map is settled, with its hash and nodes fixed.
+     */
+    [[nodiscard]] bool
+    isImmutable() const;
+
+    /**
+     * Mark this map as syncing, fixing its hash while still allowing missing
+     * nodes to be added.
+     *
+     * The map must be freshly constructed. The body asserts that the map is not
+     * Invalid, so a caller that ignores the precondition stops a build with
+     * assertions enabled.
+     */
     void
     setSynching();
+
+    /**
+     * Mark this map as no longer syncing, so it can be modified again.
+     *
+     * Moves only a Synching map. An Immutable map stays settled, a Modifying
+     * map has nothing to clear, and Invalid is terminal.
+     */
     void
     clearSynching();
 
@@ -592,10 +636,27 @@ private:
      * Record that the map is provably not the one it claims to be.
      *
      * Private because only the map itself can prove that, from a node that
-     * contradicts the hashes it is syncing against.
+     * contradicts the hashes it is syncing against. Cannot fail, since
+     * Invalid outranks every other state; see trySetState().
      */
     void
     setInvalid();
+
+    /**
+     * Move the map to a new state, atomically.
+     *
+     * With clearSynching(), the only writer of state_ past construction, so
+     * the order between the states lives in one place: Invalid outranks all
+     * of them and is always stored, while every other transition is refused
+     * once the map is Invalid, which is what makes that verdict terminal.
+     * clearSynching() is narrower and moves only Synching.
+     *
+     * @param desired The state to move to.
+     * @return false if the map is Invalid and the requested state is not,
+     *         leaving it unchanged; true otherwise.
+     */
+    bool
+    trySetState(SHAMapState desired);
 
     // tree node cache operations
     SHAMapTreeNodePtr
@@ -835,11 +896,36 @@ SHAMap::state() const
     return state_.load(std::memory_order_acquire);
 }
 
-inline void
+inline bool
+SHAMap::trySetState(SHAMapState desired)
+{
+    // Invalid is stored outright: a walk reaching that verdict has to win against a thread
+    // settling the map.
+    if (desired == SHAMapState::Invalid)
+    {
+        state_.store(SHAMapState::Invalid, std::memory_order_release);
+        return true;
+    }
+
+    // A failed exchange both reports the state and refreshes expected, so no load is needed
+    // ahead of the loop.
+    auto expected = SHAMapState::Modifying;
+    while (expected != SHAMapState::Invalid)
+    {
+        if (state_.compare_exchange_weak(
+                expected, desired, std::memory_order_acq_rel, std::memory_order_acquire))
+        {
+            return true;
+        }
+    }
+    return false;
+}
+
+inline bool
 SHAMap::setImmutable()
 {
-    XRPL_ASSERT(isValid(), "xrpl::SHAMap::setImmutable : state is valid");
-    state_.store(SHAMapState::Immutable, std::memory_order_release);
+    SOMETIMES(!isValid(), "xrpl::SHAMap::setImmutable : map is invalid");
+    return trySetState(SHAMapState::Immutable);
 }
 
 inline bool
@@ -848,16 +934,45 @@ SHAMap::isSynching() const
     return state() == SHAMapState::Synching;
 }
 
+inline bool
+SHAMap::isImmutable() const
+{
+    return state() == SHAMapState::Immutable;
+}
+
 inline void
 SHAMap::setSynching()
 {
-    state_.store(SHAMapState::Synching, std::memory_order_release);
+    // Guarded, so this is not a way out of Invalid.
+    if (!trySetState(SHAMapState::Synching))
+    {
+        // Only ever called on a freshly constructed map.
+        // LCOV_EXCL_START
+        UNREACHABLE("xrpl::SHAMap::setSynching : map is invalid");
+        // LCOV_EXCL_STOP
+    }
 }
 
 inline void
 SHAMap::clearSynching()
 {
-    state_.store(SHAMapState::Modifying, std::memory_order_release);
+    // Only Synching moves. A walk can end after the ledger settled, and then the map stays
+    // Immutable; a Modifying map has nothing to clear; an invalid map stays invalid. Only that
+    // last refusal is logged, since a concurrent walk is what produces it.
+    auto expected = SHAMapState::Synching;
+    if (state_.compare_exchange_strong(
+            expected, SHAMapState::Modifying, std::memory_order_acq_rel, std::memory_order_acquire))
+    {
+        return;
+    }
+
+    bool const invalid = expected == SHAMapState::Invalid;
+    SOMETIMES(invalid, "xrpl::SHAMap::clearSynching : map is invalid");
+    if (invalid)
+    {
+        JLOG(journal_.warn()) << "Refused to clear synching on an invalid map, root hash "
+                              << root_->getHash();
+    }
 }
 
 inline bool
@@ -869,7 +984,8 @@ SHAMap::isValid() const
 inline void
 SHAMap::setInvalid()
 {
-    state_.store(SHAMapState::Invalid, std::memory_order_release);
+    // Through trySetState() like every other transition, so state_ has one writer funnel.
+    trySetState(SHAMapState::Invalid);
 }
 
 inline void
