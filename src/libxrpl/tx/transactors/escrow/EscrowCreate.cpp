@@ -536,11 +536,15 @@ EscrowCreate::doApply()
         // checkReserve) because that helper diverts to the sponsor's balance
         // when a sponsor is present and would ignore the source's post-lock
         // balance entirely. ownerCountDelta differs by case:
-        // - sponsored:   0  — sponsor covers the new owner increment, so the
-        //                source only owes reserve for its current owners.
-        // - unsponsored: 1  — source owes reserve including the new increment.
+        // - sponsored:   0            — sponsor covers the new owner increment, so
+        //                the source only owes reserve for its current owners.
+        // - unsponsored: reserveToAdd — source owes reserve including the new
+        //                increment, which Bytecode can make larger than one unit.
         auto const sourceReserve = accountReserve(
-            ctx_.view(), sle, j_, {.ownerCountDelta = getTxReserveSponsorID(ctx_.tx) ? 0 : 1});
+            ctx_.view(),
+            sle,
+            j_,
+            {.ownerCountDelta = getTxReserveSponsorID(ctx_.tx) ? 0 : reserveToAdd});
         if (balance - STAmount(amount).xrp() < sourceReserve)
             return tecUNFUNDED;
     }
