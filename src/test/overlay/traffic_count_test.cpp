@@ -5,6 +5,7 @@
 #include <xrpl.pb.h>
 
 #include <algorithm>
+#include <cstddef>
 #include <cstdint>
 
 namespace xrpl::test {
@@ -46,8 +47,8 @@ public:
     {
         testcase("attribute");
 
-        auto const outsider = [] { return false; };
-        auto const member = [] { return true; };
+        auto const outsider = TrafficCount::IsFromCluster::No;
+        auto const member = TrafficCount::IsFromCluster::Yes;
 
         // Cluster is read as traffic between configured cluster members, and any
         // peer can send that type, so a sender outside the cluster is held to
@@ -60,28 +61,19 @@ public:
             TrafficCount::Category::Cluster);
 
         // Every other category is derived from the message alone, so membership
-        // does not enter into it either way.
-        for (auto const cat : {TrafficCount::Category::Base, TrafficCount::Category::Unknown})
+        // does not enter into it either way. Base is the first category and
+        // Unknown the last, so the walk covers all of them.
+        for (auto i = static_cast<std::size_t>(TrafficCount::Category::Base);
+             i <= static_cast<std::size_t>(TrafficCount::Category::Unknown);
+             ++i)
         {
+            auto const cat = static_cast<TrafficCount::Category>(i);
+            if (cat == TrafficCount::Category::Cluster)
+                continue;
+
             BEAST_EXPECT(TrafficCount::attribute(cat, outsider) == cat);
             BEAST_EXPECT(TrafficCount::attribute(cat, member) == cat);
         }
-
-        // Answering the question takes a lock, so it must not be asked for a
-        // category that does not depend on the answer.
-        auto asked = 0;
-        auto const counted = [&asked] {
-            ++asked;
-            return true;
-        };
-        BEAST_EXPECT(
-            TrafficCount::attribute(TrafficCount::Category::Base, counted) ==
-            TrafficCount::Category::Base);
-        BEAST_EXPECT(asked == 0);
-        BEAST_EXPECT(
-            TrafficCount::attribute(TrafficCount::Category::Cluster, counted) ==
-            TrafficCount::Category::Cluster);
-        BEAST_EXPECT(asked == 1);
     }
 
     struct TestCase

@@ -1058,7 +1058,7 @@ PeerImp::onMessageBegin(
 
     auto const category = TrafficCount::attribute(
         TrafficCount::categorize(*m, static_cast<protocol::MessageType>(type), true),
-        [this] { return cluster(); });
+        cluster() ? TrafficCount::IsFromCluster::Yes : TrafficCount::IsFromCluster::No);
 
     // report total incoming traffic
     overlay_.reportInboundTraffic(TrafficCount::Category::Total, static_cast<int>(size));

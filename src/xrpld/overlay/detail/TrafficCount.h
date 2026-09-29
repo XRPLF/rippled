@@ -196,6 +196,11 @@ public:
         bool inbound);
 
     /**
+     * Whether a message's sender is a configured cluster member.
+     */
+    enum class IsFromCluster { No = 1, Yes };
+
+    /**
      * Holds a category to what the sender is entitled to report.
      *
      * `categorize` reads the message and its type, which is all an outbound
@@ -206,23 +211,11 @@ public:
      * category to mean what an operator reads it to mean.
      *
      * @param cat The category the message's type belongs to.
-     * @param isFromCluster Invoked to ask whether the sender is a configured
-     *                      cluster member. Taken as a callable, and called only
-     *                      for the one category that depends on the answer,
-     *                      because answering it takes a lock: a plain `bool`
-     *                      argument would be evaluated for every message
-     *                      regardless, function arguments not being sequenced.
+     * @param isFromCluster Whether the sender is a configured cluster member.
      * @return The category to account the message under.
      */
-    template <class IsFromCluster>
     [[nodiscard]] static Category
-    attribute(Category cat, IsFromCluster&& isFromCluster)
-    {
-        if (cat != Category::Cluster)
-            return cat;
-
-        return isFromCluster() ? Category::Cluster : Category::Unknown;
-    }
+    attribute(Category cat, IsFromCluster isFromCluster);
 
     /**
      * Account for traffic associated with the given category
