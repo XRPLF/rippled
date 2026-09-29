@@ -144,17 +144,9 @@ mutableLedger(InboundLedger const& acquire)
 struct InboundLedger_test : public beast::unit_test::Suite
 {
     /**
-     * A retry interval short enough that a whole timeout chain costs a fraction
-     * of a second. TimeoutCounter refuses anything at or below 10ms.
-     */
-    static constexpr auto kFastRetry = std::chrono::milliseconds{20};
-
-    /**
-     * A seed unique to this chain within the suite.
-     *
-     * The Env below is shared, and its node store, fetch packs and remembered
-     * failures are all keyed by hash. A fresh seed per chain gives every chain
-     * distinct hashes, so each case resolves only its own nodes.
+     * A seed unique to this chain within the suite. The shared Env keys its
+     * node store, fetch packs and remembered failures by hash, so a fresh seed
+     * per chain keeps each case resolving only its own nodes.
      *
      * @return The seed.
      */
@@ -499,20 +491,18 @@ struct InboundLedger_test : public beast::unit_test::Suite
         if (!ledger)
             return;
 
-        // The state of affairs done() is handed: every part fetched, as far as the caller can tell.
+        // The state done() is handed: every part fetched, as far as the caller can tell.
         acquire->markComplete();
 
         // And the walk that has since reached the verdict.
         auto& stateMap = ledger->stateMap();
-        BEAST_EXPECT(stateMap.addRootNode(chain.rootHash, chain.nodeAt(0), nullptr).isGood());
-        for (auto const& [nodeID, node] : chain.nodesBelowRoot())
-            stateMap.addKnownNode(nodeID, node, nullptr);
+        BEAST_EXPECT(chain.fill(stateMap));
+        BEAST_EXPECT(chain.addRejectedNode(stateMap).isInvalid());
         BEAST_EXPECT(!stateMap.isValid());
 
         acquire->signalDone();
 
-        // complete_ is withdrawn alongside the failure, or every guard that checks it before
-        // failed_ keeps treating this ledger as delivered.
+        // complete_ is withdrawn alongside the failure, since a guard may check it before failed_.
         BEAST_EXPECT(!acquire->isComplete());
         BEAST_EXPECT(acquire->isFailed());
 
@@ -558,46 +548,42 @@ struct InboundLedger_test : public beast::unit_test::Suite
         BEAST_EXPECT(!acquire->isFailed());
         BEAST_EXPECT(!acquire->getJson(0)[jss::have_state].asBool());
 
-        // Invalidate the state map directly, standing in for a concurrent trigger() walk that
-        // reached the same verdict with mtx_ released.
+        // Invalidate the state map directly, standing in for a trigger() walk that reached the
+        // same verdict.
         auto const ledger = mutableLedger(*acquire);
         BEAST_EXPECT(ledger != nullptr);
         if (!ledger)
             return;
 
         auto& stateMap = ledger->stateMap();
-        BEAST_EXPECT(stateMap.addRootNode(chain.rootHash, chain.nodeAt(0), nullptr).isGood());
-        for (auto const& [nodeID, node] : chain.nodesBelowRoot())
-            stateMap.addKnownNode(nodeID, node, nullptr);
+        BEAST_EXPECT(chain.fill(stateMap));
+        BEAST_EXPECT(chain.addRejectedNode(stateMap).isInvalid());
         BEAST_EXPECT(!stateMap.isValid());
 
-        // An ordinary state-node packet, arriving as if it were already in flight when the
-        // invalidation above happened. addKnownNode()'s "while not synching" branch reports it a
+        // An ordinary state-node packet. addKnownNode()'s "while not synching" branch reports it a
         // duplicate, whatever it contains, since the map is no longer Synching.
         auto const latePeer = std::make_shared<ChargeRecordingPeer>();
         BEAST_EXPECT(acquire->gotData(
             latePeer, stateNodePacket(header, chain, {{chain.idAt(1), chain.nodeAt(1)}})));
         acquire->runData();
 
-        // The verdict belongs to the concurrent walk, so the sender keeps its fee and the
-        // acquisition fails, leaving the duplicate verdict unread as a finished map.
+        // The verdict is not this sender's, so it keeps its fee, and the duplicate verdict is not
+        // read as a finished map.
         BEAST_EXPECT(latePeer->charges().empty());
         BEAST_EXPECT(acquire->isFailed());
         BEAST_EXPECT(!acquire->isComplete());
 
-        // This assertion pins the isValid() check, which is what fails the acquisition while the
-        // map behind it is broken.
+        // Pins the isValid() check, which is what fails the acquisition while the map is abandoned.
         BEAST_EXPECT(!acquire->getJson(0)[jss::have_state].asBool());
     }
 
     /**
-     * An acquisition that fails on local data must still signal.
+     * An acquisition that fails on local data must still signal. Both entry
+     * points that reach tryDB() are covered.
      *
-     * Both entry points that reach tryDB() are covered. done() is what
-     * signals, runs logFailure(), and lands the hash in recentFailures_,
-     * which stops the next round asking for the same ledger.
-     * recentFailures_ is what the assertions watch, since it is the
-     * caller-visible consequence of having signaled.
+     * done() signals and lands the hash in recentFailures_, which stops the
+     * next round asking for the same ledger. That list is what the assertions
+     * watch, since it is the caller-visible consequence of having signaled.
      *
      * @param env The environment to run in.
      */
