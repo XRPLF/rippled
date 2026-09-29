@@ -8,6 +8,7 @@
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/chrono.h>
 #include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/ledger/Ledger.h>
 #include <xrpl/nodestore/NodeObject.h>
 #include <xrpl/protocol/HashPrefix.h>
 #include <xrpl/protocol/LedgerHeader.h>
@@ -54,7 +55,40 @@ struct TestableInboundLedger final : InboundLedger
     {
         trigger(nullptr, TriggerReason::Added);
     }
+
+    /**
+     * Record that every part has been fetched.
+     */
+    void
+    markComplete()
+    {
+        ScopedLockType const sl(mtx_);
+        complete_ = true;
+    }
+
+    /**
+     * Settle the acquisition and signal whatever is waiting on it.
+     */
+    void
+    signalDone()
+    {
+        ScopedLockType const sl(mtx_);
+        done();
+    }
 };
+
+/**
+ * The ledger an acquisition is assembling, as a pointer that can modify it.
+ *
+ * @param acquire The acquisition to read from.
+ * @return The ledger, or nullptr if there is none to report.
+ */
+[[nodiscard]] static std::shared_ptr<Ledger>
+mutableLedger(InboundLedger const& acquire)
+{
+    // Sound because the acquisition holds a non-const ledger and only hands out a const view.
+    return std::const_pointer_cast<Ledger>(acquire.getLedger());
+}
 
 struct InboundLedger_test : public beast::unit_test::Suite
 {
@@ -198,15 +232,47 @@ struct InboundLedger_test : public beast::unit_test::Suite
             BEAST_EXPECT(acquired->header().hash == header.hash);
         }
 
-        // init() hands a ledger it completed to LedgerMaster itself, which is what makes it
-        // available to everything else.
+        // init() hands a ledger it completed to LedgerMaster itself.
         BEAST_EXPECT(env.app().getLedgerMaster().getLedgerByHash(header.hash) != nullptr);
 
         // The failure list stays clear, which is the other arm of done().
         BEAST_EXPECT(!env.app().getInboundLedgers().isFailure(header.hash));
 
-        // The same ledger through checkLocal(), which unlike init() reaches done(). Everything it
-        // needs is still in the store, since the first acquisition read rather than consumed it.
+        // The reason decides where a settled ledger goes: HISTORY counts it toward the fetch rate
+        // instead of handing it to LedgerMaster.
+        {
+            auto const historyChain = DeepChain::toLeaf(2, nextSeed());
+            auto const historyHeader = makeHeader(historyChain);
+
+            storeHeader(env, historyHeader);
+            storeStateNodes(env, historyHeader, historyChain, historyChain.deepestDepth);
+
+            // onLedgerFetched() is the only writer of this rate, and done() calls it before it
+            // posts any work, so the read below is not racing the job queue.
+            auto const rateBefore = env.app().getInboundLedgers().fetchRate();
+
+            auto history = std::make_shared<InboundLedger>(
+                env.app(),
+                historyHeader.hash,
+                historyHeader.seq,
+                InboundLedger::Reason::HISTORY,
+                stopwatch(),
+                std::make_unique<RequestCountingPeerSet>());
+
+            BEAST_EXPECT(history->checkLocal());
+            BEAST_EXPECT(history->isComplete());
+            BEAST_EXPECT(!history->isFailed());
+
+            // The switch the rate check reads is reached only once the ledger has been settled.
+            auto const historyLedger = history->getLedger();
+            BEAST_EXPECT(historyLedger != nullptr);
+            if (historyLedger)
+                BEAST_EXPECT(historyLedger->isImmutable());
+
+            BEAST_EXPECT(env.app().getInboundLedgers().fetchRate() > rateBefore);
+        }
+
+        // The same ledger through checkLocal(), which unlike init() reaches done().
         auto again = std::make_shared<InboundLedger>(
             env.app(),
             header.hash,
@@ -226,6 +292,68 @@ struct InboundLedger_test : public beast::unit_test::Suite
             BEAST_EXPECT(settled->isImmutable());
 
         BEAST_EXPECT(!env.app().getInboundLedgers().isFailure(header.hash));
+    }
+
+    /**
+     * A ledger whose map goes invalid on the way to being settled must be
+     * discarded rather than delivered.
+     *
+     * done() settles the ledger before it logs or acts on the outcome, and an
+     * abandoned map makes settling refuse, so the acquisition records a
+     * failure.
+     *
+     * @param env The environment to run in.
+     */
+    void
+    testInvalidatedLedgerFailsInDone(jtx::Env& env)
+    {
+        testcase("A ledger invalidated on its way to being settled fails");
+
+        // The fabricated chain, so feeding it to the state map invalidates the map.
+        DeepChain const chain{nextSeed()};
+
+        // Only the header is local, so the acquisition holds a ledger with an empty state map.
+        auto const header = makeHeader(chain);
+        storeHeader(env, header);
+
+        auto acquire = std::make_shared<TestableInboundLedger>(
+            env.app(),
+            header.hash,
+            header.seq,
+            InboundLedger::Reason::GENERIC,
+            stopwatch(),
+            std::make_unique<RequestCountingPeerSet>());
+
+        BEAST_EXPECT(!acquire->checkLocal());
+        BEAST_EXPECT(!acquire->isFailed());
+        BEAST_EXPECT(!acquire->isComplete());
+
+        auto const ledger = mutableLedger(*acquire);
+        BEAST_EXPECT(ledger != nullptr);
+        if (!ledger)
+            return;
+
+        // The state of affairs done() is handed: every part fetched, as far as the caller can tell.
+        acquire->markComplete();
+
+        // And the walk that has since reached the verdict.
+        auto& stateMap = ledger->stateMap();
+        BEAST_EXPECT(stateMap.addRootNode(chain.rootHash, chain.nodeAt(0), nullptr).isGood());
+        for (auto const& [nodeID, node] : chain.nodesBelowRoot())
+            stateMap.addKnownNode(nodeID, node, nullptr);
+        BEAST_EXPECT(!stateMap.isValid());
+
+        acquire->signalDone();
+
+        // complete_ is withdrawn alongside the failure, or every guard that checks it before
+        // failed_ keeps treating this ledger as delivered.
+        BEAST_EXPECT(!acquire->isComplete());
+        BEAST_EXPECT(acquire->isFailed());
+
+        // getLedgerByHash answers null for the hash, and the hash is remembered as a failure,
+        // which defers re-acquisition.
+        BEAST_EXPECT(env.app().getLedgerMaster().getLedgerByHash(header.hash) == nullptr);
+        BEAST_EXPECT(waitFor([&] { return env.app().getInboundLedgers().isFailure(header.hash); }));
     }
 
     /**
@@ -370,6 +498,7 @@ struct InboundLedger_test : public beast::unit_test::Suite
         jtx::Env env{*this};
 
         testLocalLedgerCompletesAcquire(env);
+        testInvalidatedLedgerFailsInDone(env);
         testLocalFailureSignalsDone(env);
 
         // Last: the only case that waits out a whole timeout chain.
