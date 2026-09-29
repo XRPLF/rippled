@@ -70,7 +70,7 @@ struct VmScope : testing::Test
 };
 
 // The baseline, and the only case the metadata could also have answered.
-TEST_F(VmScope, ACompletedRunCounts)
+TEST_F(VmScope, a_completed_run_counts)
 {
     auto const result = finish(createEscrow(kReadsLedgerSqn));
 
@@ -81,7 +81,7 @@ TEST_F(VmScope, ACompletedRunCounts)
 // The case that motivated the scope: the most expensive thing a simulation can ask for is
 // also the one the metadata says least about. A contract that loops forever burns the
 // whole allowance and reports no return code at all.
-TEST_F(VmScope, RunningOutOfGasCountsThoughNoReturnCodeIsRecorded)
+TEST_F(VmScope, running_out_of_gas_counts_though_no_return_code_is_recorded)
 {
     auto const result = finish(createEscrow(kLoopsForever));
 
@@ -90,7 +90,7 @@ TEST_F(VmScope, RunningOutOfGasCountsThoughNoReturnCodeIsRecorded)
 }
 
 // A fault, not a rejection: gas is recorded, a return code is not.
-TEST_F(VmScope, ATrapCounts)
+TEST_F(VmScope, a_trap_counts)
 {
     auto const result = finish(createEscrow(kTraps));
 
@@ -101,7 +101,7 @@ TEST_F(VmScope, ATrapCounts)
 // Bytecode screening happens in preclaim and compiles the module before it can refuse it.
 // That work is on the way to a `tem`, which claims no fee and so builds no metadata at
 // all — there is no field such an answer could have been written to.
-TEST_F(VmScope, ScreeningRejectedBytecodeCounts)
+TEST_F(VmScope, screening_rejected_bytecode_counts)
 {
     auto const wasm = assembleWat(kImportsUnknownHostFunction);
 
@@ -117,7 +117,7 @@ TEST_F(VmScope, ScreeningRejectedBytecodeCounts)
     EXPECT_FALSE(result.metadata.has_value()) << "so no metadata field could have carried it";
 }
 
-TEST_F(VmScope, ScreeningAcceptedBytecodeCounts)
+TEST_F(VmScope, screening_accepted_bytecode_counts)
 {
     auto const wasm = assembleWat(kReadsLedgerSqn);
 
@@ -132,7 +132,7 @@ TEST_F(VmScope, ScreeningAcceptedBytecodeCounts)
 
 // The other direction: something that never goes near the engine must not count, or the
 // heavier rate stops meaning anything.
-TEST_F(VmScope, ATransactionThatNeverRunsWasmDoesNotCount)
+TEST_F(VmScope, a_transaction_that_never_runs_wasm_does_not_count)
 {
     auto const scope = WasmScope{};
     auto const result =
@@ -142,7 +142,7 @@ TEST_F(VmScope, ATransactionThatNeverRunsWasmDoesNotCount)
     EXPECT_FALSE(scope.entered());
 }
 
-TEST_F(VmScope, AnEscrowWithoutBytecodeDoesNotCount)
+TEST_F(VmScope, an_escrow_without_bytecode_does_not_count)
 {
     auto const seq = env.getAccountRoot(alice).getSequence();
 
@@ -161,7 +161,7 @@ TEST_F(VmScope, AnEscrowWithoutBytecodeDoesNotCount)
 
 // Scopes nest and do not disturb each other, which is why the count is a count rather
 // than a flag. A scope opened after the work is done reports nothing.
-TEST_F(VmScope, ScopesMeasureTheirOwnSpan)
+TEST_F(VmScope, scopes_measure_their_own_span)
 {
     auto const seq = createEscrow(kReadsLedgerSqn);
 
