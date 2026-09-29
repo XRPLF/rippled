@@ -20,6 +20,7 @@
 #include <test/jtx/paths.h>
 #include <test/jtx/pay.h>
 #include <test/jtx/paychan.h>
+#include <test/jtx/regkey.h>
 #include <test/jtx/sendmax.h>
 #include <test/jtx/seq.h>
 #include <test/jtx/sig.h>
@@ -413,6 +414,59 @@ public:
             sponsor::As(sponsor, spfSponsorReserve),
             Sig(sfSponsorSignature, sponsor),
             Ter(tesSUCCESS));
+
+        // Sponsor authorizes with its regular key -> tesSUCCESS
+        Account const regKey("regKey");
+        Account const other("other");
+        env.fund(XRP(10000), regKey, other);
+        env.close();
+        env(regkey(sponsor, regKey));
+        env.close();
+        env(noop(alice),
+            Fee(XRP(1)),
+            sponsor::As(sponsor, spfSponsorReserve),
+            Sig(sfSponsorSignature, regKey),
+            Ter(tesSUCCESS));
+
+        // Sponsor slot signed by an unrelated funded account's key -> tefBAD_AUTH
+        env(noop(alice),
+            Fee(XRP(1)),
+            sponsor::As(sponsor, spfSponsorReserve),
+            Sig(sfSponsorSignature, other),
+            Ter(tefBAD_AUTH));
+
+        // Sponsor with master key disabled signing with its master key
+        // -> tefMASTER_DISABLED
+        Account const sponsorDM("sponsorDM");
+        env.fund(XRP(10000), sponsorDM);
+        env.close();
+        env(regkey(sponsorDM, regKey));
+        env(fset(sponsorDM, asfDisableMaster), Sig(sponsorDM));
+        env.close();
+        env(noop(alice),
+            Fee(XRP(1)),
+            sponsor::As(sponsorDM, spfSponsorReserve),
+            Sig(sfSponsorSignature, sponsorDM),
+            Ter(tefMASTER_DISABLED));
+
+        // Sponsor keyed by a pseudo-account that carries a SponsorSignature
+        // -> tefBAD_AUTH (pseudo-accounts can't authorize signatures)
+        Account const gw("gw");
+        env.fund(XRP(1000000), gw);
+        env.close();
+        Vault const vault{env};
+        auto [vtx, vkey] = vault.create({.owner = alice, .asset = gw["IOU"].asset()});
+        env(vtx);
+        env.close();
+        auto const vaultSle = env.le(vkey);
+        BEAST_EXPECT(vaultSle);
+        Account const pseudoAcc("vault", vaultSle->getAccountID(sfAccount));
+        env.memoize(pseudoAcc);
+        env(noop(alice),
+            Fee(XRP(1)),
+            sponsor::As(pseudoAcc, spfSponsorReserve),
+            Sig(sfSponsorSignature, other),
+            Ter(tefBAD_AUTH));
     }
 
     void
@@ -471,6 +525,24 @@ public:
             sponsor::As(sponsor, spfSponsorReserve),
             Msig(sfSponsorSignature, {signer1, signer2}),
             Ter(tesSUCCESS));
+        env.close();
+
+        // Quorum is 2 but only one signer signs -> tefBAD_QUORUM
+        env(noop(alice),
+            Fee(XRP(1)),
+            sponsor::As(sponsor, spfSponsorReserve),
+            Msig(sfSponsorSignature, {signer1}),
+            Ter(tefBAD_QUORUM));
+
+        // Signer that is not on the sponsor's signer list -> tefBAD_SIGNATURE
+        Account const stranger("stranger");
+        env.fund(XRP(10000), stranger);
+        env.close();
+        env(noop(alice),
+            Fee(XRP(1)),
+            sponsor::As(sponsor, spfSponsorReserve),
+            Msig(sfSponsorSignature, {stranger}),
+            Ter(tefBAD_SIGNATURE));
     }
 
     void
