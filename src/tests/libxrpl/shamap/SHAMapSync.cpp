@@ -1452,4 +1452,157 @@ TEST_F(SHAMapSyncTest, add_known_node_reports_duplicate_once_a_map_stops_synchin
     EXPECT_TRUE(notNeeded.isGood()) << "a node that was not needed counts on the accepted side";
 }
 
+// `visitDifferences` walks this map and reports the nodes the other map lacks, which is how a fetch
+// pack is assembled (see LedgerMaster's populateFetchPack). It decides what to skip through the
+// private `hasInnerNode` and `hasLeafNode`, so it is the only route a test has to them. The cases
+// below pin both answers: a node reported, and a node skipped.
+
+// `visitDifferences` returns early while the root hash is still zero, so a map built here is sealed
+// first. `setImmutable` only moves the state, and `getHash` is what unshares the tree and makes the
+// hashes real.
+//
+// A failed ASSERT_ returns from this helper alone, not from the calling test, so every call site
+// wraps it in ASSERT_NO_FATAL_FAILURE.
+static void
+finalize(SHAMap& map)
+{
+    ASSERT_TRUE(map.setImmutable());
+    ASSERT_FALSE(map.getHash().isZero());
+}
+
+TEST_F(SHAMapSyncTest, visit_differences_reports_only_what_is_missing)
+{
+    TestNodeFamily f{j_};
+
+    // Enough shared items to build inner nodes of their own, so the walk has whole matching
+    // subtrees to skip.
+    std::vector<boost::intrusive_ptr<SHAMapItem>> shared;
+    shared.reserve(64);
+    for (int i = 0; i < 64; ++i)
+    {
+        shared.push_back(makeRandomAS());
+    }
+
+    auto const extra = makeRandomAS();
+
+    SHAMap have{SHAMapType::FREE, f};
+    for (auto const& item : shared)
+    {
+        ASSERT_TRUE(have.addItem(SHAMapNodeType::TnAccountState, item));
+    }
+    ASSERT_NO_FATAL_FAILURE(finalize(have));
+
+    SHAMap want{SHAMapType::FREE, f};
+    for (auto const& item : shared)
+    {
+        ASSERT_TRUE(want.addItem(SHAMapNodeType::TnAccountState, item));
+    }
+    ASSERT_TRUE(want.addItem(SHAMapNodeType::TnAccountState, extra));
+    ASSERT_NO_FATAL_FAILURE(finalize(want));
+
+    std::vector<UInt256> leaves;
+    std::size_t inners = 0;
+    want.visitDifferences(&have, [&leaves, &inners](SHAMapTreeNode const& node) {
+        if (node.isLeaf())
+        {
+            leaves.push_back(leafKey(node));
+        }
+        else
+        {
+            ++inners;
+        }
+        return true;
+    });
+
+    // Every shared leaf is already on the far side, so only `extra` is worth sending.
+    EXPECT_EQ(leaves, std::vector<UInt256>{extra->key()});
+
+    // The inner nodes on `extra`'s path are reported and the matching subtrees are skipped, so the
+    // walk visits fewer inner nodes than the tree holds.
+    std::size_t allInners = 0;
+    want.visitNodes([&allInners](SHAMapTreeNode& node) {
+        if (!node.isLeaf())
+        {
+            ++allInners;
+        }
+        return true;
+    });
+    EXPECT_GT(inners, 0u);
+    EXPECT_LT(inners, allInners);
+}
+
+TEST_F(SHAMapSyncTest, visit_differences_against_identical_map_reports_nothing)
+{
+    TestNodeFamily f{j_};
+
+    auto const item = makeRandomAS();
+
+    SHAMap have{SHAMapType::FREE, f};
+    ASSERT_TRUE(have.addItem(SHAMapNodeType::TnAccountState, item));
+    ASSERT_NO_FATAL_FAILURE(finalize(have));
+
+    SHAMap want{SHAMapType::FREE, f};
+    ASSERT_TRUE(want.addItem(SHAMapNodeType::TnAccountState, item));
+    ASSERT_NO_FATAL_FAILURE(finalize(want));
+    ASSERT_EQ(want.getHash(), have.getHash());
+
+    std::size_t visited = 0;
+    want.visitDifferences(&have, [&visited]([[maybe_unused]] SHAMapTreeNode const& node) {
+        ++visited;
+        return true;
+    });
+
+    EXPECT_EQ(visited, 0u);
+}
+
+TEST_F(SHAMapSyncTest, visit_differences_against_no_map_reports_every_node)
+{
+    TestNodeFamily f{j_};
+
+    SHAMap want{SHAMapType::FREE, f};
+    for (int i = 0; i < 32; ++i)
+    {
+        ASSERT_TRUE(want.addItem(SHAMapNodeType::TnAccountState, makeRandomAS()));
+    }
+    ASSERT_NO_FATAL_FAILURE(finalize(want));
+
+    // A null `have` means the far side holds nothing, so every node counts as missing. Compared
+    // against visitNodes, which does no such filtering.
+    std::size_t differences = 0;
+    want.visitDifferences(nullptr, [&differences]([[maybe_unused]] SHAMapTreeNode const& node) {
+        ++differences;
+        return true;
+    });
+
+    std::size_t all = 0;
+    want.visitNodes([&all]([[maybe_unused]] SHAMapTreeNode& node) {
+        ++all;
+        return true;
+    });
+
+    EXPECT_GT(differences, 0u);
+    EXPECT_EQ(differences, all);
+}
+
+TEST_F(SHAMapSyncTest, visit_differences_stops_when_callback_returns_false)
+{
+    TestNodeFamily f{j_};
+
+    SHAMap want{SHAMapType::FREE, f};
+    for (int i = 0; i < 32; ++i)
+    {
+        ASSERT_TRUE(want.addItem(SHAMapNodeType::TnAccountState, makeRandomAS()));
+    }
+    ASSERT_NO_FATAL_FAILURE(finalize(want));
+
+    // Returning false is how populateFetchPack stops once the pack is full.
+    std::size_t visited = 0;
+    want.visitDifferences(nullptr, [&visited]([[maybe_unused]] SHAMapTreeNode const& node) {
+        ++visited;
+        return visited < 3;
+    });
+
+    EXPECT_EQ(visited, 3u);
+}
+
 }  // namespace xrpl::tests
