@@ -8,6 +8,7 @@
 
 #include <boost/asio/basic_waitable_timer.hpp>
 
+#include <atomic>
 #include <chrono>
 #include <cstdint>
 #include <memory>
@@ -131,10 +132,26 @@ protected:
      */
     UInt256 const hash_;
     int timeouts_{0};
-    bool complete_{false};
-    bool failed_{false};
+
+    // complete_ and failed_ are read without mtx_, so they are atomic rather than guarded: a
+    // reader that sees either flag set also sees the work the writer did before setting it.
+    static_assert(std::atomic<bool>::is_always_lock_free);
+
     /**
-     * Whether forward progress has been made.
+     * Whether the task finished successfully. Atomic, so a reader may test it
+     * without taking mtx_.
+     */
+    std::atomic<bool> complete_{false};
+
+    /**
+     * Whether the task gave up.
+     */
+    std::atomic<bool> failed_{false};
+
+    /**
+     * Whether forward progress has been made since invokeOnTimer() last ran.
+     * Each subtype defines what counts as progress, and may read this for
+     * decisions of its own.
      */
     bool progress_{false};
     /**
