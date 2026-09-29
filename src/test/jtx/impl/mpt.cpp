@@ -1874,94 +1874,27 @@ MPTTester::confidentialClaw(MPTConfidentialClawback const& arg, std::source_loca
 }
 
 void
-MPTTester::holderKeyUpdate(MPTHolderKeyUpdate const& arg)
+MPTTester::holderKeyUpdate(MPTHolderKeyUpdate const& arg, std::source_location const& loc)
 {
     json::Value jv;
-    if (arg.account)
-    {
-        jv[sfAccount] = arg.account->human();
-    }
-    else
-    {
-        Throw<std::runtime_error>("Account not specified");
-    }
-
     jv[jss::TransactionType] = jss::ConfidentialMPTHolderKeyUpdate;
-    if (arg.id)
-    {
-        jv[sfMPTokenIssuanceID] = to_string(*arg.id);
-    }
-    else
-    {
-        if (!id_)
-            Throw<std::runtime_error>("MPT has not been created");
-        jv[sfMPTokenIssuanceID] = to_string(*id_);
-    }
+
+    setAccountField(jv, arg.account);
+    setIssuanceIdField(jv, arg.id);
 
     if (arg.holderPubKey)
         jv[sfHolderEncryptionKey.jsonName] = strHex(*arg.holderPubKey);
 
-    bool const rotation = (arg.flags.value_or(0) & tfHolderKeyRotation) != 0;
-    bool const cancel = (arg.flags.value_or(0) & tfCancelRecovery) != 0;
-
-    // Falls back to a dummy buffer on any failure (missing account/key, no existing
-    // balance, or a decrypt/encrypt failure) to allow testing of failures that occur
-    // prior to re-encryption, e.g. malformed-key or wrong-epoch test cases.
-    //
-    // decryptAmount(*arg.account, ...) below has no epoch argument, so it decrypts
-    // with *arg.account's latest key. Callers must generate the new key pair under
-    // a separate Account (e.g. "bobNewKey"), not by calling generateKeyPair on
-    // arg.account itself
-    auto const reencryptOrDummy = [&](EncryptedBalanceType balanceType) {
-        if (arg.account && arg.holderPubKey)
-        {
-            if (auto const curCiphertext = getEncryptedBalance(*arg.account, balanceType))
-            {
-                if (auto const amt = decryptAmount(*arg.account, *curCiphertext))
-                {
-                    if (auto const reencrypted =
-                            xrpl::encryptAmount(*amt, *arg.holderPubKey, generateBlindingFactor()))
-                    {
-                        return *reencrypted;
-                    }
-                }
-            }
-        }
-        return gMakeZeroBuffer(kEcGamalEncryptedTotalLength);
-    };
-
     if (arg.spendingCiphertext)
-    {
         jv[sfConfidentialBalanceSpending.jsonName] = strHex(*arg.spendingCiphertext);
-    }
-    else if (rotation && !arg.omitCiphertexts.value_or(false))
-    {
-        jv[sfConfidentialBalanceSpending.jsonName] =
-            strHex(reencryptOrDummy(holderEncryptedSpending));
-    }
 
     if (arg.inboxCiphertext)
-    {
         jv[sfConfidentialBalanceInbox.jsonName] = strHex(*arg.inboxCiphertext);
-    }
-    else if (rotation && !arg.omitCiphertexts.value_or(false))
-    {
-        jv[sfConfidentialBalanceInbox.jsonName] = strHex(reencryptOrDummy(holderEncryptedInbox));
-    }
 
     if (arg.proof)
-    {
         jv[sfZKProof.jsonName] = strHex(*arg.proof);
-    }
-    else if (!cancel && !arg.omitProof.value_or(false))
-    {
-        // Proof verification lands in a follow-up. Rotation/Recovery still
-        // require the field to be present; any blob satisfies that check.
-        // Cancel mode carries no proof.
-        jv[sfZKProof.jsonName] = strHex(gMakeZeroBuffer(1));
-    }
 
-    submit(arg, jv);
+    submit(arg, {jv, loc});
 }
 
 std::uint32_t

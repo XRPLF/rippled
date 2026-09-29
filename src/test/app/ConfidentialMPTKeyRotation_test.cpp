@@ -2528,6 +2528,7 @@ class ConfidentialMPTKeyRotation_test : public ConfidentialTransferTestBase
         ct.mpt.holderKeyUpdate({
             .account = bob,
             .holderPubKey = Buffer(kEcPubKeyLength - 1),
+            .proof = gMakeZeroBuffer(1),
             .flags = tfHolderKeyRecovery,
             .err = temMALFORMED,
         });
@@ -2537,6 +2538,7 @@ class ConfidentialMPTKeyRotation_test : public ConfidentialTransferTestBase
         ct.mpt.holderKeyUpdate({
             .account = bob,
             .holderPubKey = gMakeZeroBuffer(kEcPubKeyLength),
+            .proof = gMakeZeroBuffer(1),
             .flags = tfHolderKeyRecovery,
             .err = temMALFORMED,
         });
@@ -2545,6 +2547,7 @@ class ConfidentialMPTKeyRotation_test : public ConfidentialTransferTestBase
         // the wrong length or format).
         ct.mpt.holderKeyUpdate({
             .account = bob,
+            .proof = gMakeZeroBuffer(1),
             .flags = tfHolderKeyRecovery,
             .err = temMALFORMED,
         });
@@ -2553,7 +2556,7 @@ class ConfidentialMPTKeyRotation_test : public ConfidentialTransferTestBase
         ct.mpt.holderKeyUpdate({
             .account = bob,
             .holderPubKey = ct.mpt.getPubKey(bobNewKey),
-            .omitCiphertexts = true,
+            .proof = gMakeZeroBuffer(1),
             .flags = tfHolderKeyRotation,
             .err = temMALFORMED,
         });
@@ -2564,6 +2567,7 @@ class ConfidentialMPTKeyRotation_test : public ConfidentialTransferTestBase
             .holderPubKey = ct.mpt.getPubKey(bobNewKey),
             .spendingCiphertext = gMakeZeroBuffer(kEcGamalEncryptedTotalLength),
             .inboxCiphertext = gMakeZeroBuffer(kEcGamalEncryptedTotalLength),
+            .proof = gMakeZeroBuffer(1),
             .flags = tfHolderKeyRecovery,
             .err = temMALFORMED,
         });
@@ -2573,6 +2577,8 @@ class ConfidentialMPTKeyRotation_test : public ConfidentialTransferTestBase
             .account = bob,
             .holderPubKey = ct.mpt.getPubKey(bobNewKey),
             .spendingCiphertext = gMakeZeroBuffer(kEcGamalEncryptedTotalLength - 1),
+            .inboxCiphertext = ct.mpt.encryptAmount(bobNewKey, 0, generateBlindingFactor()),
+            .proof = gMakeZeroBuffer(1),
             .flags = tfHolderKeyRotation,
             .err = temBAD_CIPHERTEXT,
         });
@@ -2581,7 +2587,9 @@ class ConfidentialMPTKeyRotation_test : public ConfidentialTransferTestBase
         ct.mpt.holderKeyUpdate({
             .account = bob,
             .holderPubKey = ct.mpt.getPubKey(bobNewKey),
+            .spendingCiphertext = ct.mpt.encryptAmount(bobNewKey, 0, generateBlindingFactor()),
             .inboxCiphertext = gMakeZeroBuffer(kEcGamalEncryptedTotalLength - 1),
+            .proof = gMakeZeroBuffer(1),
             .flags = tfHolderKeyRotation,
             .err = temBAD_CIPHERTEXT,
         });
@@ -2592,6 +2600,8 @@ class ConfidentialMPTKeyRotation_test : public ConfidentialTransferTestBase
             .account = bob,
             .holderPubKey = ct.mpt.getPubKey(bobNewKey),
             .spendingCiphertext = gMakeZeroBuffer(kEcGamalEncryptedTotalLength),
+            .inboxCiphertext = ct.mpt.encryptAmount(bobNewKey, 0, generateBlindingFactor()),
+            .proof = gMakeZeroBuffer(1),
             .flags = tfHolderKeyRotation,
             .err = temBAD_CIPHERTEXT,
         });
@@ -2601,7 +2611,9 @@ class ConfidentialMPTKeyRotation_test : public ConfidentialTransferTestBase
         ct.mpt.holderKeyUpdate({
             .account = bob,
             .holderPubKey = ct.mpt.getPubKey(bobNewKey),
+            .spendingCiphertext = ct.mpt.encryptAmount(bobNewKey, 0, generateBlindingFactor()),
             .inboxCiphertext = gMakeZeroBuffer(kEcGamalEncryptedTotalLength),
+            .proof = gMakeZeroBuffer(1),
             .flags = tfHolderKeyRotation,
             .err = temBAD_CIPHERTEXT,
         });
@@ -2610,7 +2622,6 @@ class ConfidentialMPTKeyRotation_test : public ConfidentialTransferTestBase
         ct.mpt.holderKeyUpdate({
             .account = bob,
             .holderPubKey = ct.mpt.getPubKey(bobNewKey),
-            .omitProof = true,
             .flags = tfHolderKeyRecovery,
             .err = temMALFORMED,
         });
@@ -2706,6 +2717,7 @@ class ConfidentialMPTKeyRotation_test : public ConfidentialTransferTestBase
             mptAlice.holderKeyUpdate({
                 .account = carol,
                 .holderPubKey = mptAlice.getPubKey(carolNewKey),
+                .proof = gMakeZeroBuffer(1),
                 .flags = tfHolderKeyRecovery,
                 .err = tecOBJECT_NOT_FOUND,
             });
@@ -2731,6 +2743,7 @@ class ConfidentialMPTKeyRotation_test : public ConfidentialTransferTestBase
             mptAlice.holderKeyUpdate({
                 .account = bob,
                 .holderPubKey = mptAlice.getPubKey(bobNewKey),
+                .proof = gMakeZeroBuffer(1),
                 .flags = tfHolderKeyRecovery,
                 .err = tecNO_PERMISSION,
             });
@@ -2747,6 +2760,7 @@ class ConfidentialMPTKeyRotation_test : public ConfidentialTransferTestBase
             ct.mpt.holderKeyUpdate({
                 .account = bob,
                 .holderPubKey = ct.mpt.getPubKey(bob),
+                .proof = gMakeZeroBuffer(1),
                 .flags = tfHolderKeyRecovery,
                 .err = tecDUPLICATE,
             });
@@ -2766,6 +2780,7 @@ class ConfidentialMPTKeyRotation_test : public ConfidentialTransferTestBase
             ct.mpt.holderKeyUpdate({
                 .account = bob,
                 .holderPubKey = ct.mpt.getPubKey(bobRecoveryKey),
+                .proof = gMakeZeroBuffer(1),
                 .flags = tfHolderKeyRecovery,
             });
 
@@ -2774,6 +2789,7 @@ class ConfidentialMPTKeyRotation_test : public ConfidentialTransferTestBase
             ct.mpt.holderKeyUpdate({
                 .account = bob,
                 .holderPubKey = ct.mpt.getPubKey(bobRecoveryKey2),
+                .proof = gMakeZeroBuffer(1),
                 .flags = tfHolderKeyRecovery,
                 .err = tecNO_PERMISSION,
             });
@@ -2816,9 +2832,28 @@ class ConfidentialMPTKeyRotation_test : public ConfidentialTransferTestBase
             Account const bobNewKey("bobNewKey");
             ct.mpt.generateKeyPair(bobNewKey);
 
+            // Decrypt the current balances under bob's still-registered key,
+            // then re-encrypt them under the new key
+            auto const prevSpendingCt =
+                ct.mpt.getEncryptedBalance(bob, MPTTester::holderEncryptedSpending);
+            auto const prevInboxCt =
+                ct.mpt.getEncryptedBalance(bob, MPTTester::holderEncryptedInbox);
+            if (!BEAST_EXPECT(prevSpendingCt) || !BEAST_EXPECT(prevInboxCt))
+                return;
+
+            auto const prevSpendingAmt = ct.mpt.decryptAmount(bob, *prevSpendingCt);
+            auto const prevInboxAmt = ct.mpt.decryptAmount(bob, *prevInboxCt);
+            if (!BEAST_EXPECT(prevSpendingAmt) || !BEAST_EXPECT(prevInboxAmt))
+                return;
+
             ct.mpt.holderKeyUpdate({
                 .account = bob,
                 .holderPubKey = ct.mpt.getPubKey(bobNewKey),
+                .spendingCiphertext =
+                    ct.mpt.encryptAmount(bobNewKey, *prevSpendingAmt, generateBlindingFactor()),
+                .inboxCiphertext =
+                    ct.mpt.encryptAmount(bobNewKey, *prevInboxAmt, generateBlindingFactor()),
+                .proof = gMakeZeroBuffer(1),
                 .flags = tfHolderKeyRotation,
             });
 
@@ -2869,6 +2904,7 @@ class ConfidentialMPTKeyRotation_test : public ConfidentialTransferTestBase
             ct.mpt.holderKeyUpdate({
                 .account = bob,
                 .holderPubKey = ct.mpt.getPubKey(bobRecoveryKey),
+                .proof = gMakeZeroBuffer(1),
                 .flags = tfHolderKeyRecovery,
             });
 
@@ -2906,6 +2942,7 @@ class ConfidentialMPTKeyRotation_test : public ConfidentialTransferTestBase
             ct.mpt.holderKeyUpdate({
                 .account = bob,
                 .holderPubKey = ct.mpt.getPubKey(bobRecoveryKey),
+                .proof = gMakeZeroBuffer(1),
                 .flags = tfHolderKeyRecovery,
             });
 

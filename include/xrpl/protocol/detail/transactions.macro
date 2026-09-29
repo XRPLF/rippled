@@ -1167,7 +1167,7 @@ TRANSACTION(ttCONFIDENTIAL_MPT_HOLDER_KEY_UPDATE, 93, ConfidentialMPTHolderKeyUp
 #if TRANSACTION_INCLUDE
 #   include <xrpl/tx/transactors/proposal/TransactionProposalCreate.h>
 #endif
-TRANSACTION(ttTRANSACTION_PROPOSAL_CREATE, 94, TransactionProposalCreate,
+TRANSACTION(ttTRANSACTION_PROPOSAL_CREATE, 95, TransactionProposalCreate,
     ({.amendment = featureCosign}),
     ({
     {sfProposedTransaction, SoeRequired},

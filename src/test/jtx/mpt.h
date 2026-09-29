@@ -388,12 +388,7 @@ struct MPTHolderKeyUpdate
     std::optional<Buffer> holderPubKey = std::nullopt;
     std::optional<Buffer> spendingCiphertext = std::nullopt;
     std::optional<Buffer> inboxCiphertext = std::nullopt;
-    // Testing-only: skip auto-filling spending/inbox ciphertexts in Rotation
-    // mode, to exercise the "missing ciphertext" malformed-transaction path.
-    std::optional<bool> omitCiphertexts = std::nullopt;
     std::optional<Buffer> proof = std::nullopt;
-    // Testing-only: skip auto-filling ZKProof in Rotation/Recovery mode.
-    std::optional<bool> omitProof = std::nullopt;
     std::optional<Account> delegate = std::nullopt;
     std::optional<std::uint32_t> ticketSeq = std::nullopt;
     std::optional<std::uint32_t> ownerCount = std::nullopt;
@@ -692,7 +687,9 @@ public:
         std::source_location const& loc = std::source_location::current());
 
     void
-    holderKeyUpdate(MPTHolderKeyUpdate const& arg = MPTHolderKeyUpdate{});
+    holderKeyUpdate(
+        MPTHolderKeyUpdate const& arg = MPTHolderKeyUpdate{},
+        std::source_location const& loc = std::source_location::current());
 
     [[nodiscard]] bool
     checkDomainID(std::optional<uint256> expected) const;
