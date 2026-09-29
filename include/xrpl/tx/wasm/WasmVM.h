@@ -47,18 +47,4 @@ preflightEscrowWasm(
     beast::Journal j,
     std::string_view funcName = escrowFunctionName) noexcept;
 
-// Whether the engine was entered since construction, on the calling thread. So a
-// trap, an exhausted budget, a screening refusal of any kind and a panic all count.
-class WasmScope
-{
-public:
-    WasmScope();
-
-    [[nodiscard]] bool
-    entered() const;
-
-private:
-    std::uint64_t const start_{};
-};
-
 }  // namespace xrpl

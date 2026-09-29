@@ -24,10 +24,6 @@ namespace {
 using RunStatus = rs::wasm_vm::RunStatus;
 using CheckStatus = rs::wasm_vm::CheckStatus;
 
-// Entries into the engine on this thread. Unexposed because only a difference across a
-// span means anything; read it through `WasmScope`.
-thread_local std::uint64_t gEngineEntries = 0;
-
 // The engine's outcome as the caller's: a value with its gas cost, or a TER with the gas cost
 // to record beside it.
 //
@@ -141,9 +137,6 @@ runEscrowWasm(
 
     auto const nodeSideFault = std::unexpected{WasmTER{.ter = tecINTERNAL, .cost = std::nullopt}};
 
-    // Before `guarded`, so a panic inside the engine still counts.
-    ++gEngineEntries;
-
     return guarded(hfs.getJournal(), nodeSideFault, [&]() -> std::expected<EscrowResult, WasmTER> {
         // The host caches the current ledger object, the slot table and the
         // contract's data for the length of one run, so a reused one would answer a
@@ -176,9 +169,6 @@ runEscrowWasm(
 NotTEC
 preflightEscrowWasm(Bytes const& wasmCode, beast::Journal j, std::string_view funcName) noexcept
 {
-    // Screening compiles the module whatever verdict it reaches.
-    ++gEngineEntries;
-
     return guarded(j, NotTEC{telFAILED_PROCESSING}, [&]() {
         auto const checked = rs::wasm_vm::check_escrow(
             rust::Slice<std::uint8_t const>{wasmCode.data(), wasmCode.size()},
@@ -193,16 +183,6 @@ preflightEscrowWasm(Bytes const& wasmCode, beast::Journal j, std::string_view fu
         }
         return ter;
     });
-}
-
-WasmScope::WasmScope() : start_{gEngineEntries}
-{
-}
-
-bool
-WasmScope::entered() const
-{
-    return gEngineEntries != start_;
 }
 
 }  // namespace xrpl

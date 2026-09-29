@@ -29,7 +29,6 @@
 #include <xrpl/protocol/TxFormats.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/resource/Fees.h>
-#include <xrpl/tx/wasm/WasmVM.h>
 
 #include <cstdint>
 #include <exception>
@@ -247,8 +246,6 @@ simulateTxn(rpc::JsonContext& context, std::shared_ptr<Transaction> transaction)
     json::Value jvResult;
     // Process the transaction
     OpenView view = *context.app.getOpenLedger().current();
-
-    auto const wasm = WasmScope{};
     auto const result = context.app.getTxQ().apply(
         context.app, view, transaction->getSTransaction(), TapDryRun, context.j);
 
@@ -280,13 +277,6 @@ simulateTxn(rpc::JsonContext& context, std::shared_ptr<Transaction> transaction)
     if (token == "tesSUCCESS")
     {
         jvResult[jss::engine_result_message] = "The simulated transaction would have been applied.";
-    }
-
-    if (wasm.entered())
-    {
-        // WASM ran, at whatever stage and to whatever outcome. Charge more for that,
-        // since gas is not charged during simulation.
-        context.loadType = resource::kFeeHeavyBurdenRpc;
     }
 
     if (result.metadata)
@@ -378,6 +368,15 @@ doSimulate(rpc::JsonContext& context)
     {
         return rpc::makeError(
             RpcInvalidParams, "tfInnerBatchTxn flag is not allowed on top-level transactions.");
+    }
+
+    // These enter the WASM engine, which is far costlier than the default simulate load
+    // and collects no gas to pay for it. Charged on shape, so a request refused before
+    // reaching the engine pays too. Exhaustive: `ttBATCH` is refused above.
+    if ((stTx->getTxnType() == ttESCROW_CREATE && stTx->isFieldPresent(sfBytecode)) ||
+        (stTx->getTxnType() == ttESCROW_FINISH && stTx->isFieldPresent(sfGas)))
+    {
+        context.loadType = resource::kFeeHeavyBurdenRpc;
     }
 
     std::string reason;
