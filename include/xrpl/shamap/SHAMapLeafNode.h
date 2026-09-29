@@ -91,4 +91,25 @@ belongsAt(SHAMapNodeID const& nodeID, SHAMapTreeNode const& node)
     return !node.isLeaf() || nodeID.isPrefixOf(leafKey(node));
 }
 
+/**
+ * Whether a node may occupy the child position a branch leads to.
+ *
+ * The overload above, asked about a child without building the child's id.
+ *
+ * @param parentID the position of the node above, whose depth must be below
+ *                 SHAMap::kLeafDepth.
+ * @param branch the branch of that node leading to the position judged.
+ * @param node the node to judge.
+ * @return whether the node's own key agrees with that position.
+ */
+[[nodiscard]] inline bool
+belongsAt(SHAMapNodeID const& parentID, unsigned int branch, SHAMapTreeNode const& node)
+{
+    if (!node.isLeaf())
+        return true;
+
+    auto const& key = leafKey(node);
+    return parentID.isPrefixOf(key) && selectBranch(parentID, key) == branch;
+}
+
 }  // namespace xrpl
