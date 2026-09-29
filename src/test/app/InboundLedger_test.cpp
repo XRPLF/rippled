@@ -328,6 +328,60 @@ struct InboundLedger_test : public beast::unit_test::Suite
     }
 
     /**
+     * A ledger completed by a walk rather than by tryDB() is settled before it
+     * is reported complete.
+     *
+     * The order is visible only to a reader of isComplete(), which is read
+     * without mtx_, so this case pins the invariant instead: every ledger the
+     * acquisition reports is immutable.
+     *
+     * @param env The environment to run in.
+     */
+    void
+    testWalkSettlesBeforeReportingComplete(jtx::Env& env)
+    {
+        testcase("A ledger completed by a walk is settled before it is reported");
+
+        auto const chain = DeepChain::toLeaf(2, nextSeed());
+        auto const header = makeHeader(chain);
+
+        // Everything except the leaf, so tryDB() can root the state map but its walk still has
+        // something to ask for, which leaves the completion to trigger().
+        storeHeader(env, header);
+        storeStateNodes(env, header, chain, chain.deepestDepth - 1);
+
+        auto acquire = std::make_shared<TestableInboundLedger>(
+            env.app(),
+            header.hash,
+            header.seq,
+            InboundLedger::Reason::GENERIC,
+            stopwatch(),
+            std::make_unique<RequestCountingPeerSet>());
+
+        BEAST_EXPECT(!acquire->checkLocal());
+        BEAST_EXPECT(!acquire->isComplete());
+        BEAST_EXPECT(!acquire->isFailed());
+
+        // The walk can finish only now, which places the completion in the walk.
+        storeStateNodes(env, header, chain, chain.deepestDepth);
+
+        acquire->triggerAdded();
+
+        BEAST_EXPECT(acquire->isComplete());
+        BEAST_EXPECT(!acquire->isFailed());
+
+        auto const settled = acquire->getLedger();
+        BEAST_EXPECT(settled != nullptr);
+        if (settled)
+            BEAST_EXPECT(settled->isImmutable());
+
+        // done()'s success arm ran, so the ledger reached LedgerMaster and the hash is absent
+        // from the failure list.
+        BEAST_EXPECT(env.app().getLedgerMaster().getLedgerByHash(header.hash) != nullptr);
+        BEAST_EXPECT(!env.app().getInboundLedgers().isFailure(header.hash));
+    }
+
+    /**
      * A ledger whose map goes invalid on the way to being settled must be
      * discarded rather than delivered.
      *
@@ -764,6 +818,7 @@ struct InboundLedger_test : public beast::unit_test::Suite
         jtx::Env env{*this};
 
         testLocalLedgerCompletesAcquire(env);
+        testWalkSettlesBeforeReportingComplete(env);
         testInvalidatedLedgerFailsInDone(env);
         testLocalFailureSignalsDone(env);
         testLocalChainFailsAcquire(env);

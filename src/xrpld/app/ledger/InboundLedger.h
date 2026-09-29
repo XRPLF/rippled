@@ -75,7 +75,11 @@ public:
     update(std::uint32_t seq);
 
     /**
-     * Returns true if we got all the data.
+     * Whether the acquisition succeeded and its ledger has been settled. Every
+     * path that sets this settles the ledger first, so a caller that sees it
+     * may use the ledger directly.
+     *
+     * @return Whether the ledger is complete and settled.
      */
     bool
     isComplete() const
@@ -152,8 +156,10 @@ protected:
     trigger(std::shared_ptr<Peer> const& peer, TriggerReason reason);
 
     /**
-     * Settle the acquisition and signal whatever is waiting on it. Runs at most
-     * once. Call under mtx_, which the flags written here require.
+     * Settle the acquisition, publish its outcome, and signal whatever is
+     * waiting on it. Runs at most once. Call under mtx_, which the flags
+     * written here require. Settles before publishing, since isComplete() is
+     * read without mtx_.
      */
     void
     done();
