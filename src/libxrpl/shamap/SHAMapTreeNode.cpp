@@ -35,12 +35,12 @@ SHAMapTreeNode::makeTransaction(Slice data, SHAMapHash const& hash, bool hashVal
             "Short TXN node: {} bytes (minimum {} required)", data.size(), kMinShaMapItemBytes));
     }
 
-    auto item = makeShamapitem(sha512Half(HashPrefix::TransactionId, data), data);
+    // A transaction's key is also its node hash, so this digest serves as both.
+    auto const key = sha512Half(HashPrefix::TransactionId, data);
+    auto item = makeShamapitem(key, data);
 
-    if (hashValid)
-        return intr_ptr::makeShared<SHAMapTxLeafNode>(std::move(item), 0, hash);
-
-    return intr_ptr::makeShared<SHAMapTxLeafNode>(std::move(item), 0);
+    return intr_ptr::makeShared<SHAMapTxLeafNode>(
+        std::move(item), 0, hashValid ? hash : SHAMapHash{key});
 }
 
 SHAMapTreeNodePtr
