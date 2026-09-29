@@ -277,6 +277,7 @@ SHAMap::checkFilter(SHAMapHash const& hash, SHAMapSyncFilter const* filter) cons
     {
         try
         {
+            // Adopts the hash, which SHAMapSyncFilter::getNode()'s postcondition guarantees.
             auto node = SHAMapTreeNode::makeFromPrefix(makeSlice(*nodeData), hash);
             if (node)
             {
