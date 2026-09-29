@@ -136,14 +136,11 @@ ConfidentialMPTHolderKeyUpdate::preclaim(PreclaimContext const& ctx)
         return tesSUCCESS;
     }
 
-    auto const newPubKey = ctx.tx[sfHolderEncryptionKey];
-    if (newPubKey == (*sleMptoken)[sfHolderEncryptionKey])
-        return tecNO_PERMISSION;
-
-    bool const rotation = ctx.tx.isFlag(tfHolderKeyRotation);
+    if (ctx.tx[sfHolderEncryptionKey] == (*sleMptoken)[sfHolderEncryptionKey])
+        return tecDUPLICATE;
 
     // Recovery mode: reject if a recovery is already pending
-    if (!rotation && sleMptoken->isFieldPresent(sfRecoveryKey))
+    if (!ctx.tx.isFlag(tfHolderKeyRotation) && sleMptoken->isFieldPresent(sfRecoveryKey))
         return tecNO_PERMISSION;
 
     return tesSUCCESS;

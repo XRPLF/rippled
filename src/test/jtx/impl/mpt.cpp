@@ -1907,6 +1907,11 @@ MPTTester::holderKeyUpdate(MPTHolderKeyUpdate const& arg)
     // Falls back to a dummy buffer on any failure (missing account/key, no existing
     // balance, or a decrypt/encrypt failure) to allow testing of failures that occur
     // prior to re-encryption, e.g. malformed-key or wrong-epoch test cases.
+    //
+    // decryptAmount(*arg.account, ...) below has no epoch argument, so it decrypts
+    // with *arg.account's latest key. Callers must generate the new key pair under
+    // a separate Account (e.g. "bobNewKey"), not by calling generateKeyPair on
+    // arg.account itself
     auto const reencryptOrDummy = [&](EncryptedBalanceType balanceType) {
         if (arg.account && arg.holderPubKey)
         {

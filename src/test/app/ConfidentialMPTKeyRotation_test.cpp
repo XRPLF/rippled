@@ -2586,6 +2586,26 @@ class ConfidentialMPTKeyRotation_test : public ConfidentialTransferTestBase
             .err = temBAD_CIPHERTEXT,
         });
 
+        // Spending ciphertext has the correct length, but is not a
+        // well-formed EC ElGamal ciphertext.
+        ct.mpt.holderKeyUpdate({
+            .account = bob,
+            .holderPubKey = ct.mpt.getPubKey(bobNewKey),
+            .spendingCiphertext = gMakeZeroBuffer(kEcGamalEncryptedTotalLength),
+            .flags = tfHolderKeyRotation,
+            .err = temBAD_CIPHERTEXT,
+        });
+
+        // Inbox ciphertext has the correct length, but is not a well-formed
+        // EC ElGamal ciphertext.
+        ct.mpt.holderKeyUpdate({
+            .account = bob,
+            .holderPubKey = ct.mpt.getPubKey(bobNewKey),
+            .inboxCiphertext = gMakeZeroBuffer(kEcGamalEncryptedTotalLength),
+            .flags = tfHolderKeyRotation,
+            .err = temBAD_CIPHERTEXT,
+        });
+
         // Rotation/Recovery mode requires a ZKProof.
         ct.mpt.holderKeyUpdate({
             .account = bob,
