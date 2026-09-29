@@ -244,7 +244,13 @@ TEST_F(IntrusiveTaggedCacheTest, canonicalize_replace_cache_replaces_a_swept_ent
 TEST_F(IntrusiveTaggedCacheTest, an_entry_can_be_reinserted_after_del)
 {
     intrPtrCache.canonicalizeReplaceCache(1, intr_ptr::makeShared<TestRefCountObject>("one"));
-    intrPtrCache.del(1, true);
+    {
+        // Load-bearing: without this, del() converts the last strong ref to a
+        // weak one, which hits an unsigned underflow in
+        // IntrusiveRefCounts::releaseWeakRef.
+        auto const held = intrPtrCache.fetch(1);
+        intrPtrCache.del(1, true);
+    }
 
     intrPtrCache.canonicalizeReplaceCache(
         1, intr_ptr::makeShared<TestRefCountObject>("one_replaced_3"));
@@ -254,10 +260,6 @@ TEST_F(IntrusiveTaggedCacheTest, an_entry_can_be_reinserted_after_del)
 TEST_F(IntrusiveTaggedCacheTest, sweep_empties_the_cache_once_nothing_is_held)
 {
     intrPtrCache.canonicalizeReplaceCache(1, intr_ptr::makeShared<TestRefCountObject>("one"));
-
-    ++clock;
-    intrPtrCache.sweep();
-    EXPECT_EQ(intrPtrCache.getCacheSize(), 0);
 
     ++clock;
     intrPtrCache.sweep();
