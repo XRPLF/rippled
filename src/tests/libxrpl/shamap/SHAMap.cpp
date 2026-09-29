@@ -465,6 +465,56 @@ TEST_F(SHAMapTraversal, bounds_agree_with_iteration_for_absent_keys)
     }
 }
 
+TEST_F(SHAMapTraversal, update_give_item_on_absent_key_returns_false)
+{
+    tests::TestNodeFamily f{j_};
+    auto keys = deepFanOutKeys();
+    SHAMap map{SHAMapType::FREE, f};
+    fillMap(map, keys);
+
+    // A key absent from a fanned-out map, so the walk ends on an inner node with an empty branch.
+    auto const absentKey = UInt256{std::string_view{std::string(64, '0')}};
+    Buffer vuc{32};
+    std::fill_n(vuc.data(), vuc.size(), std::uint8_t{2});
+    EXPECT_FALSE(map.updateGiveItem(
+        SHAMapNodeType::TnAccountState, makeShamapitem(absentKey, std::move(vuc))));
+
+    // A single-item map probed with a key that selects the same root branch, so the walk ends on
+    // the leaf it reached, whose key is not the one asked for.
+    SHAMap single{SHAMapType::FREE, f};
+    fillMap(single, {keys.front()});
+
+    auto probe = keys.front();
+    std::fill_n(probe.begin() + 1, probe.size() - 1, std::uint8_t{0});
+    ASSERT_NE(probe, keys.front());
+
+    Buffer other{32};
+    std::fill_n(other.data(), other.size(), std::uint8_t{3});
+    EXPECT_FALSE(single.updateGiveItem(
+        SHAMapNodeType::TnAccountState, makeShamapitem(probe, std::move(other))));
+}
+
+TEST_F(SHAMapTraversal, del_item_on_absent_key_returns_false)
+{
+    tests::TestNodeFamily f{j_};
+    auto keys = deepFanOutKeys();
+    SHAMap map{SHAMapType::FREE, f};
+    fillMap(map, keys);
+
+    auto const before = map.getHash();
+
+    // Every key of this map shares its first nibble, so the root leaves the branch this key selects
+    // empty and the walk ends with an inner node on top of the path rather than a leaf.
+    auto const absentKey = UInt256{std::string_view{std::string(64, '0')}};
+    EXPECT_FALSE(map.delItem(absentKey));
+
+    // The refusal leaves the map as it was, which an answer of false alone does not say.
+    EXPECT_EQ(map.getHash(), before);
+    map.invariants();
+    for (auto const& key : keys)
+        EXPECT_TRUE(map.hasItem(key)) << to_string(key);
+}
+
 TEST_F(SHAMapTraversal, bounds_on_empty_map_return_end)
 {
     tests::TestNodeFamily f{j_};
