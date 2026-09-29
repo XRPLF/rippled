@@ -112,8 +112,8 @@ InboundLedger::init(ScopedLockType& collectionLock)
     XRPL_ASSERT(
         ledger_->header().seq < kXrpLedgerEarliestFees || ledger_->read(keylet::feeSettings()),
         "xrpl::InboundLedger::init : valid ledger fees");
-    // tryDB() verified both maps before setting complete_ and mtx_ has been held since, so
-    // nothing can have invalidated them.
+    // tryDB() verified both maps before setting complete_ and mtx_ has been held since, so both
+    // maps are still sound here.
     if (!ledger_->setImmutable())
     {
         // LCOV_EXCL_START
@@ -236,6 +236,12 @@ InboundLedger::neededStateHashes(int max, SHAMapSyncFilter const* filter) const
     return neededHashes(ledger_->header().accountHash, ledger_->stateMap(), max, filter);
 }
 
+bool
+InboundLedger::hasInvalidMap() const
+{
+    return ledger_ && !ledger_->mapsValid();
+}
+
 // See how much of the ledger data is stored locally
 // Data found in a fetch pack will be stored
 void
@@ -339,13 +345,23 @@ InboundLedger::tryDB(node_store::Database& srcDB)
         }
     }
 
+    // Judged here rather than at the setImmutable() below, which runs only once both flags are
+    // set: one map can be abandoned while the other is merely incomplete.
+    if (hasInvalidMap())
+    {
+        JLOG(journal_.warn()) << "Ledger " << hash_ << " found locally has an invalid map";
+        failed_ = true;
+        return;
+    }
+
     if (haveTransactions_ && haveState_)
     {
         XRPL_ASSERT(
             ledger_->header().seq < kXrpLedgerEarliestFees || ledger_->read(keylet::feeSettings()),
             "xrpl::InboundLedger::tryDB : valid ledger fees");
-        // Settled before complete_ is published, so a caller that reads the flag never sees a
-        // ledger this function has not finished with.
+        // Settled before complete_ is published, so a caller that reads the flag sees a ledger
+        // this function has finished with. Reached despite the guard above because trigger()
+        // walks the state map with mtx_ released, so that walk can reach the verdict in between.
         if (!ledger_->setImmutable())
         {
             JLOG(journal_.warn()) << "Ledger " << hash_ << " found locally is invalid";
@@ -447,16 +463,17 @@ InboundLedger::done()
         XRPL_ASSERT(
             ledger_->header().seq < kXrpLedgerEarliestFees || ledger_->read(keylet::feeSettings()),
             "xrpl::InboundLedger::done : valid ledger fees");
-        // Recovers rather than asserting: peer data produces this verdict, so a caller cannot know
-        // its map is still sound. Recovering rather than asserting is therefore the contract.
-        // Best-effort even so: setInvalid() outranks Immutable, so a walk that reaches the verdict
-        // after both maps have been settled leaves an immutable ledger with an invalid map. It
-        // narrows the window rather than closing it.
+        // trigger() walks the state map with mtx_ released, so that walk can reach the verdict
+        // after the flags said there was nothing left to fetch. A race rather than a broken
+        // invariant, and one that peer data produces, so this recovers rather than asserts.
+        // setInvalid() outranks Immutable, so a walk that reaches the verdict after both maps
+        // have been settled leaves an immutable ledger with an invalid map.
+        SOMETIMES(hasInvalidMap(), "xrpl::InboundLedger::done : map invalidated by a race");
         if (!ledger_->setImmutable())
         {
             JLOG(journal_.warn()) << "Acquired ledger " << hash_ << " is invalid";
-            // Withdrawn as well as failed, so a caller that already read complete_ - or that checks
-            // it before failed_ - cannot go on treating this ledger as delivered.
+            // Withdrawn as well as failed, so a caller that already read complete_, or that
+            // checks it before failed_, sees the claim withdrawn.
             complete_ = false;
             failed_ = true;
         }
@@ -552,7 +569,20 @@ InboundLedger::trigger(std::shared_ptr<Peer> const& peer, TriggerReason reason)
         {
             auto need = getNeededHashes();
 
-            if (!need.empty())
+            // The validity check runs ahead of the emptiness test, since getNeededHashes() walks
+            // both maps and can reach the verdict itself. The result is read once, so the hint
+            // below and the test it feeds share one observation of a map another thread can be
+            // invalidating. The claim is withdrawn alongside the failure, so failed_ and
+            // complete_ never both read true.
+            bool const invalidMap = hasInvalidMap();
+            SOMETIMES(invalidMap, "xrpl::InboundLedger::trigger : map is invalid");
+            if (invalidMap)
+            {
+                JLOG(journal_.warn()) << "Acquire " << hash_ << " has an invalid map";
+                failed_ = true;
+                complete_ = false;
+            }
+            else if (!need.empty())
             {
                 protocol::TMGetObjectByHash tmBH;
                 bool typeSet = false;
@@ -661,22 +691,29 @@ InboundLedger::trigger(std::shared_ptr<Peer> const& peer, TriggerReason reason)
             auto nodes = ledger_->stateMap().getMissingNodes(kMissingNodesFind, &filter);
             sl.lock();
 
+            // The validity check runs ahead of the flags below and outside their guard, since the
+            // verdict is about the map rather than about this round: it holds even when another
+            // thread reported this ledger complete while the lock was released. The claim is
+            // withdrawn alongside the failure for the same reason.
+            bool const walkAbandonedMap = hasInvalidMap();
+            SOMETIMES(walkAbandonedMap, "xrpl::InboundLedger::trigger : map abandoned by its walk");
+            if (walkAbandonedMap)
+            {
+                JLOG(journal_.warn()) << "Ledger " << hash_ << " has a map its walk abandoned";
+                failed_ = true;
+                complete_ = false;
+            }
             // Make sure nothing happened while we released the lock
-            if (!failed_ && !complete_ && !haveState_)
+            else if (!failed_ && !complete_ && !haveState_)
             {
                 if (nodes.empty())
                 {
-                    if (!ledger_->stateMap().isValid())
-                    {
-                        failed_ = true;
-                    }
-                    else
-                    {
-                        haveState_ = true;
+                    // Sound rather than merely finished: the test ahead of this one catches a map
+                    // the walk above abandoned.
+                    haveState_ = true;
 
-                        if (haveTransactions_)
-                            complete_ = true;
-                    }
+                    if (haveTransactions_)
+                        complete_ = true;
                 }
                 else
                 {
