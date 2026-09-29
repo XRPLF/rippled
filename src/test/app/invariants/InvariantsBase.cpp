@@ -221,7 +221,9 @@ InvariantsBase::makeLoanSle(
     sleLoan->at(sfLoanBrokerID) = loanBrokerID;
     sleLoan->at(sfLoanSequence) = loanSeq;
     sleLoan->at(sfBorrower) = borrower;
-    sleLoan->at(sfStartDate) = 0u;
+    // A non-zero StartDate, as ValidLoan rejects a Loan whose StartDate is
+    // still the default.
+    sleLoan->at(sfStartDate) = 1u;
     sleLoan->at(sfPaymentInterval) = 1u;
     sleLoan->at(sfPeriodicPayment) = Number(1);
     // SoeDefault fields, materialized so that an invariant reading them through
