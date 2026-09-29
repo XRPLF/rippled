@@ -43,7 +43,14 @@ enum ApplyFlags : std::uint32_t {
 
     // Transaction shouldn't be applied
     // Signatures shouldn't be checked
-    TapDryRun = 0x1000
+    TapDryRun = 0x1000,
+
+    // Transaction is being preflighted as the payload of a
+    // TransactionProposalCreate. Its signatures are collected on-ledger
+    // afterward, so signature-presence checks (e.g. Batch signer matching)
+    // are skipped at proposal-creation time (On-Chain Cosigner spec
+    // §5.3.1.2).
+    TapProposal = 0x2000
 };
 
 constexpr ApplyFlags

@@ -1147,6 +1147,18 @@ TRANSACTION(ttCONFIDENTIAL_MPT_MIRROR_UPDATE, 92, ConfidentialMPTMirrorUpdate,
     {sfZKProof, SoeRequired},
 }))
 
+/** This transaction posts an unsigned transaction on-ledger as a
+    TransactionProposal, pending multi-signature collection. */
+#if TRANSACTION_INCLUDE
+#   include <xrpl/tx/transactors/proposal/TransactionProposalCreate.h>
+#endif
+TRANSACTION(ttTRANSACTION_PROPOSAL_CREATE, 93, TransactionProposalCreate,
+    ({.amendment = featureCosign}),
+    ({
+    {sfProposedTransaction, SoeRequired},
+    {sfExpiration, SoeRequired},
+}))
+
 /** This system-generated transaction type is used to update the status of the various amendments.
 
     For details, see: https://xrpl.org/amendments.html

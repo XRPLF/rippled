@@ -444,6 +444,95 @@ TEST(IntrusiveSharedTest, partial_delete)
     EXPECT_TRUE(destructorRan.load() && partialDeleteRan.load());
 }
 
+TEST(IntrusiveSharedTest, convert_last_strong_to_weak)
+{
+    using enum TrackedState;
+
+    TIBase::ResetStatesGuard const rsg{true};
+
+    SharedWeakUnion<TIBase> p = makeSharedIntrusive<TIBase>();
+    auto const id = p.get()->id;
+    EXPECT_EQ(TIBase::getState(id), Alive);
+
+    EXPECT_TRUE(p.convertToWeak());
+    EXPECT_TRUE(p.isWeak());
+    EXPECT_TRUE(p.expired());
+    EXPECT_EQ(TIBase::getState(id), PartiallyDeleted);
+
+    p.reset();
+    EXPECT_EQ(TIBase::getState(id), Deleted);
+}
+
+TEST(IntrusiveSharedTest, multithreaded_convert_to_weak_partial_delete)
+{
+    using enum TrackedState;
+
+    TIBase::ResetStatesGuard const rsg{true};
+
+    SharedWeakUnion<TIBase> converted = makeSharedIntrusive<TIBase>();
+    SharedWeakUnion<TIBase> other = converted;
+    EXPECT_TRUE(other.convertToWeak());
+    EXPECT_EQ(converted.useCount(), 1);
+    auto const id = converted.get()->id;
+
+    std::atomic<bool> destructorRan{false};
+    std::atomic<bool> partialDeleteRan{false};
+    std::latch partialDeleteStartedSyncPoint{1};
+    std::latch otherReleasedSyncPoint{1};
+
+    TIBase::tracingCallback = [&](TrackedState cur, std::optional<TrackedState> next) {
+        if (!next)
+            return;
+
+        switch (*next)
+        {
+            case DeletedStarted:
+                EXPECT_EQ(cur, PartiallyDeleted);
+                break;
+
+            case PartiallyDeletedStarted:
+                partialDeleteStartedSyncPoint.count_down();
+                // Keep the partial delete running until the other weak pointer has been released.
+                otherReleasedSyncPoint.wait();
+                break;
+
+            case PartiallyDeleted:
+                EXPECT_FALSE(partialDeleteRan.exchange(true) || destructorRan.load());
+                break;
+
+            case Deleted:
+                EXPECT_FALSE(destructorRan.exchange(true));
+                break;
+
+            case Uninitialized:
+            case Alive:
+                break;
+        }
+    };
+
+    std::thread t1{[&] {
+        partialDeleteStartedSyncPoint.wait();
+        other.reset();  // Not the last weak ref, so must not trigger a delete
+        otherReleasedSyncPoint.count_down();
+    }};
+
+    std::thread t2{[&] {
+        EXPECT_TRUE(converted.convertToWeak());  // Trigger a partial delete
+    }};
+
+    t1.join();
+    t2.join();
+
+    EXPECT_TRUE(partialDeleteRan.load());
+    EXPECT_FALSE(destructorRan.load());
+    EXPECT_TRUE(converted.isWeak());
+    EXPECT_EQ(TIBase::getState(id), PartiallyDeleted);
+
+    converted.reset();  // Release the last weak ref
+    EXPECT_TRUE(destructorRan.load());
+    EXPECT_EQ(TIBase::getState(id), Deleted);
+}
+
 TEST(IntrusiveSharedTest, destructor)
 {
     // This test creates two threads. One with a strong pointer and one

@@ -341,6 +341,19 @@ preflight(
     beast::Journal j)
 {
     PreflightContext const pfCtx(registry, tx, rules, flags, j);
+
+    // XRPL_ASSERT_IF in the PreflightContext constructor only fires in debug
+    // builds; re-check the same invariant here so a release build can't
+    // silently skip a proposed transaction's signature-presence checks
+    // outside of a dry run.
+    if ((flags & TapProposal) != TapNone && (flags & TapDryRun) == TapNone)
+    {
+        // LCOV_EXCL_START
+        JLOG(j.fatal()) << "apply (preflight): TapProposal set without TapDryRun.";
+        return {pfCtx, {tefEXCEPTION, TxConsequences{tx}}};
+        // LCOV_EXCL_STOP
+    }
+
     try
     {
         return {pfCtx, invokePreflight(pfCtx)};
@@ -362,6 +375,16 @@ preflight(
     beast::Journal j)
 {
     PreflightContext const pfCtx(registry, tx, parentBatchId, rules, flags, j);
+
+    // See the comment in the other preflight() overload above.
+    if ((flags & TapProposal) != TapNone && (flags & TapDryRun) == TapNone)
+    {
+        // LCOV_EXCL_START
+        JLOG(j.fatal()) << "apply (preflight): TapProposal set without TapDryRun.";
+        return {pfCtx, {tefEXCEPTION, TxConsequences{tx}}};
+        // LCOV_EXCL_STOP
+    }
+
     try
     {
         return {pfCtx, invokePreflight(pfCtx)};
@@ -371,6 +394,27 @@ preflight(
         JLOG(j.fatal()) << "apply (preflight): " << e.what();
         return {pfCtx, {tefEXCEPTION, TxConsequences{tx}}};
     }
+}
+
+NotTEC
+invokeCheckPermission(ReadView const& view, STTx const& tx)
+{
+    try
+    {
+        return withTxnType(view.rules(), tx.getTxnType(), [&]<typename T>() {
+            return Transactor::invokeCheckPermission<T>(view, tx);
+        });
+    }
+    // LCOV_EXCL_START
+    catch (UnknownTxnType const& e)
+    {
+        // Should never happen
+        JLOG(debugLog().fatal()) << "Unknown transaction type in invokeCheckPermission: "
+                                 << e.txnType;
+        UNREACHABLE("xrpl::invokeCheckPermission : unknown transaction type");
+        return temUNKNOWN;
+    }
+    // LCOV_EXCL_STOP
 }
 
 PreclaimResult
