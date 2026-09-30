@@ -12,6 +12,10 @@
 //    pops that Scope eagerly on the origin store and yields a thread-free
 //    SpanGuard; destroying it while a different store is active trips an
 //    owner-store assertion.
+//  - A category that is off gets a null guard from SpanGuard::span,
+//    SpanGuard::freshRoot, the ScopedSpanGuard constructor and
+//    ScopedSpanGuard::freshRoot, and the methods called on a null
+//    ScopedSpanGuard are safe no-ops.
 //  - DeterministicIdGenerator (installed by the test TracerProvider) mints a
 //    caller-pinned trace_id for a forced-root span. PendingTraceId pins the id
 //    for one root span; an ambient child under a live parent never adopts it.
@@ -55,6 +59,8 @@
 #include <cstdint>
 #include <cstring>
 #include <memory>
+#include <set>
+#include <stdexcept>
 #include <string>
 #include <string_view>
 #include <thread>
@@ -70,12 +76,12 @@ namespace otel_memory = opentelemetry::exporter::memory;
 /**
  * In-memory Telemetry backing for SpanGuard scope tests.
  *
- * Reports every trace category as enabled and creates spans through an SDK
- * TracerProvider whose SimpleSpanProcessor forwards ended spans to an
- * InMemorySpanExporter, so a test can read the exact exported SpanData
- * (trace id, span id, parent id, name). The provider is built with a
- * DeterministicIdGenerator so PendingTraceId can pin the trace_id of a
- * forced-root span.
+ * Reports every trace category as enabled until a test turns some off with
+ * setDisabledCategories(). Creates spans through an SDK TracerProvider whose
+ * SimpleSpanProcessor forwards ended spans to an InMemorySpanExporter, so a
+ * test can read the exact exported SpanData (trace id, span id, parent id,
+ * name). The provider is built with a DeterministicIdGenerator so
+ * PendingTraceId can pin the trace_id of a forced-root span.
  *
  * Inheritance:
  *
@@ -120,6 +126,18 @@ public:
         return spanData_;
     }
 
+    /**
+     * Turn trace categories off, replacing the set from any earlier call.
+     * Call it only while no other thread is creating spans.
+     * @param categories Categories whose shouldTrace*() returns false. Every
+     * other category returns true.
+     */
+    void
+    setDisabledCategories(std::set<TraceCategory> categories)
+    {
+        disabled_ = std::move(categories);
+    }
+
     void
     start() override
     {
@@ -137,27 +155,27 @@ public:
     [[nodiscard]] bool
     shouldTraceTransactions() const override
     {
-        return true;
+        return isCategoryOn(TraceCategory::Transactions);
     }
     [[nodiscard]] bool
     shouldTraceConsensus() const override
     {
-        return true;
+        return isCategoryOn(TraceCategory::Consensus);
     }
     [[nodiscard]] bool
     shouldTraceRpc() const override
     {
-        return true;
+        return isCategoryOn(TraceCategory::Rpc);
     }
     [[nodiscard]] bool
     shouldTracePeer() const override
     {
-        return true;
+        return isCategoryOn(TraceCategory::Peer);
     }
     [[nodiscard]] bool
     shouldTraceLedger() const override
     {
-        return true;
+        return isCategoryOn(TraceCategory::Ledger);
     }
 
     opentelemetry::nostd::shared_ptr<opentelemetry::trace::Tracer>
@@ -188,6 +206,16 @@ public:
 
 private:
     /**
+     * @param cat Category to look up.
+     * @return false if a test turned cat off, else true.
+     */
+    [[nodiscard]] bool
+    isCategoryOn(TraceCategory cat) const
+    {
+        return !disabled_.contains(cat);
+    }
+
+    /**
      * SDK provider owning the export pipeline.
      */
     std::shared_ptr<otel_sdk_trace::TracerProvider> provider_;
@@ -196,6 +224,11 @@ private:
      * Shared buffer that receives ended spans from the exporter.
      */
     std::shared_ptr<otel_memory::InMemorySpanData> spanData_;
+
+    /**
+     * Categories a test turned off. Empty by default, so every category is on.
+     */
+    std::set<TraceCategory> disabled_;
 };
 
 /**
@@ -513,6 +546,124 @@ TEST_F(SpanGuardScopeTest, scoped_guard_survives_localvalue_store_swap)
     //
     // The span ended exactly once, when the scope popped on resume.
     EXPECT_EQ(countSpans(spanData()->GetSpans(), "rpc.process"), 1u);
+}
+
+// A category that is off gets a null guard from SpanGuard::span,
+// SpanGuard::freshRoot, the ScopedSpanGuard constructor and
+// ScopedSpanGuard::freshRoot, while a category that is on keeps exporting.
+// Each category is off once, with the next one as the control, so each is also
+// seen exporting.
+TEST_F(SpanGuardScopeTest, disabled_category_gets_null_guard_from_span_factories)
+{
+    constexpr std::array cases{
+        std::pair{TraceCategory::Rpc, TraceCategory::Transactions},
+        std::pair{TraceCategory::Transactions, TraceCategory::Consensus},
+        std::pair{TraceCategory::Consensus, TraceCategory::Peer},
+        std::pair{TraceCategory::Peer, TraceCategory::Ledger},
+        std::pair{TraceCategory::Ledger, TraceCategory::Rpc},
+    };
+
+    for (auto const& [off, on] : cases)
+    {
+        SCOPED_TRACE(::testing::Message() << "category off: " << std::to_underlying(off));
+        telemetry_->setDisabledCategories({off});
+        {
+            auto const plain = SpanGuard::span(off, "off", "span");
+            auto const root = SpanGuard::freshRoot(off, "off", "fresh_root");
+            ScopedSpanGuard const scoped(off, "off", "scoped");
+            auto const scopedRoot = ScopedSpanGuard::freshRoot(off, "off", "scoped_fresh_root");
+            EXPECT_FALSE(static_cast<bool>(plain));
+            EXPECT_FALSE(static_cast<bool>(root));
+            EXPECT_FALSE(static_cast<bool>(scoped));
+            EXPECT_FALSE(static_cast<bool>(scopedRoot));
+
+            auto const control = SpanGuard::span(on, "control", "span");
+            EXPECT_TRUE(static_cast<bool>(control));
+        }
+
+        // Only the control span reached the exporter.
+        auto const spans = spanData()->GetSpans();
+        ASSERT_EQ(spans.size(), 1u);
+        EXPECT_EQ(nameOf(*spans[0]), "control.span");
+    }
+}
+
+/**
+ * Build null ScopedSpanGuards in cat and call the ScopedSpanGuard methods
+ * below on them.
+ *
+ * Every guard a method returns must be null, and the context invalid. The
+ * caller first makes guards in cat null, by removing the Telemetry or by
+ * turning cat off.
+ *
+ * @param cat Category to build the guards in.
+ */
+void
+callMethodsOnNullScopedGuard(TraceCategory cat)
+{
+    {
+        ScopedSpanGuard guard(cat, "null", "scoped");
+        ASSERT_FALSE(static_cast<bool>(guard));
+
+        char const* const noText = nullptr;
+        guard.setAttribute("string_key", std::string_view{"value"});
+        guard.setAttribute("c_string_key", "value");
+        guard.setAttribute("null_c_string_key", noText);
+        guard.setAttribute("int_key", std::int64_t{42});
+        guard.setAttribute("double_key", 0.5);
+        guard.setAttribute("bool_key", true);
+        guard.addEvent("event");
+        guard.setOk();
+        guard.setError("error");
+        guard.recordException(std::runtime_error("error"));
+
+        auto const ctx = guard.spanContext();
+        EXPECT_FALSE(ctx.isValid());
+        {
+            auto const child = guard.childSpan("null.child");
+            auto const linked = guard.linkedSpan("null.linked");
+            auto const ctxChild = ScopedSpanGuard::childSpan("null.ctx_child", ctx);
+            auto const ctxLinked = ScopedSpanGuard::linkedSpan("null.ctx_linked", ctx);
+            EXPECT_FALSE(static_cast<bool>(child));
+            EXPECT_FALSE(static_cast<bool>(linked));
+            EXPECT_FALSE(static_cast<bool>(ctxChild));
+            EXPECT_FALSE(static_cast<bool>(ctxLinked));
+        }
+
+        guard.discard();
+        EXPECT_FALSE(static_cast<bool>(guard));
+    }
+
+    // The handoff uses up its guard, so it gets a guard of its own.
+    ScopedSpanGuard handoff(cat, "null", "handoff");
+    ASSERT_FALSE(static_cast<bool>(handoff));
+    SpanGuard const bare = std::move(handoff);
+    EXPECT_FALSE(static_cast<bool>(bare));
+}
+
+// The helper's calls on a null ScopedSpanGuard are safe when no Telemetry is
+// installed. Nothing can export here, so the check is that no call crashes and
+// none hands back a live guard or a valid context.
+TEST_F(SpanGuardScopeTest, null_scoped_guard_methods_are_safe_when_telemetry_absent)
+{
+    Telemetry::setInstance(nullptr);
+    callMethodsOnNullScopedGuard(TraceCategory::Rpc);
+}
+
+// The same calls with telemetry live and only the guard's category off. A span
+// in a category that is on still exports, and it is the only span exported.
+TEST_F(SpanGuardScopeTest, null_scoped_guard_methods_are_safe_when_category_disabled)
+{
+    telemetry_->setDisabledCategories({TraceCategory::Rpc});
+    callMethodsOnNullScopedGuard(TraceCategory::Rpc);
+    {
+        auto const control = SpanGuard::span(TraceCategory::Ledger, "control", "span");
+        ASSERT_TRUE(static_cast<bool>(control));
+    }
+
+    auto const spans = spanData()->GetSpans();
+    ASSERT_EQ(spans.size(), 1u);
+    EXPECT_EQ(nameOf(*spans[0]), "control.span");
 }
 
 // SpanGuard::activate() makes an already-owned span the ambient context for the
