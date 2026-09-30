@@ -188,7 +188,9 @@ VaultDeposit::preclaim(PreclaimContext const& ctx)
 
     if (ctx.view.rules().enabled(featureLendingProtocolV1_2))
     {
-        // Regular deposits into an insolvent vault are undefined. A donation
+        // With AssetsTotal zero and shares outstanding, assetsToSharesDeposit
+        // would mint at par, so a new depositor would be diluted by the
+        // worthless existing shares. Refuse regular deposits. A donation
         // credits assets without minting shares, so it can recapitalize.
         if (isVaultInsolvent(vault, sleShareIssuance) && !isVaultDonate(ctx.view.rules(), ctx.tx))
         {
