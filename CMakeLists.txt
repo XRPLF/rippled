@@ -148,6 +148,10 @@ endif()
 # There is no CMake option. The one switch is `conan install -o telemetry=`,
 # which decides whether opentelemetry-cpp is fetched and sets the variable read
 # below through the generated toolchain.
+#
+# The define is set for every target in this project, and also PUBLIC on
+# xrpl.libxrpl.telemetry (cmake/XrplCore.cmake), so a parent project that
+# adds this one with add_subdirectory() and links that module gets it too.
 if(telemetry)
     find_package(opentelemetry-cpp CONFIG REQUIRED)
     add_compile_definitions(XRPL_ENABLE_TELEMETRY)

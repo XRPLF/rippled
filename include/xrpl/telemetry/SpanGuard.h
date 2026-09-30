@@ -537,13 +537,17 @@ public:
 /**
  * RAII guard that activates a span on the current context store (scoped).
  *
- * Wraps a SpanGuard (which owns the span) plus an OTel Scope that
+ * Holds a SpanGuard (which owns the span) plus an OTel Scope that
  * pushes the span onto the active context store's stack for the
  * guard's lifetime, so child spans created under that store inherit
  * it as parent. On destruction the Scope pops BEFORE the span ends
- * (member order: guard first, scope second). Non-copyable and
+ * (member order: guard_ first, impl_ second). Non-copyable and
  * non-movable — factories return unnamed temporaries, so guaranteed
  * copy elision (C++17) covers `auto s = ScopedSpanGuard::freshRoot(...)`.
+ *
+ * The Scope and the store it was pushed onto sit behind the pimpl, which
+ * is allocated only for a live span. A null guard, such as one made while
+ * telemetry is off, allocates nothing here.
  *
  * When the span must outlive the current store (e.g. handed to a job
  * queue), convert to a plain SpanGuard with `operator SpanGuard() &&`:
@@ -552,10 +556,12 @@ public:
  *
  * ScopedSpanGuard dependency diagram:
  *
+ * @code
  *     +--------------------------------------------+
  *     |              ScopedSpanGuard               |
  *     |            (scoped, store-bound)           |
  *     +--------------------------------------------+
+ *     | - guard_ : SpanGuard              (inline) |
  *     | - impl_ : unique_ptr<ScopedImpl>  (pimpl)  |
  *     +--------------------------------------------+
  *     | + (cat, prefix, name)             [ctor]   |
@@ -567,14 +573,14 @@ public:
  *     | + spanContext() / discard()                |
  *     | + operator bool()                          |
  *     +--------------------------------------------+
- *                     |  hides (pimpl)
- *              +------+--------------------+
- *              |                           |
+ *              |                        |  hides (pimpl)
+ *              | owns                   |
  *         +----------+     +-----------------------------+
- *         | SpanGuard|     |     optional<Scope>         |
+ *         | SpanGuard|     |  ScopedImpl: Scope + owner  |
  *         |  (span)  |     | (OTel, store-bound;         |
- *         |          |     |  present : span active)     |
+ *         |          |     |  null : guard_ is null)     |
  *         +----------+     +-----------------------------+
+ * @endcode
  *
  * Usage examples:
  *
@@ -622,7 +628,18 @@ public:
  */
 class ScopedSpanGuard
 {
+    /**
+     * Owns the span. Declared before impl_ so it is destroyed after it: the
+     * Scope pops before the span ends.
+     */
+    SpanGuard guard_;
+
     struct ScopedImpl;
+
+    /**
+     * The active OTel Scope and the store it was pushed onto. Null when
+     * guard_ is null, and after the handoff or discard() pops the Scope.
+     */
     std::unique_ptr<ScopedImpl> impl_;
 
     explicit ScopedSpanGuard(SpanGuard&& guard) noexcept;
