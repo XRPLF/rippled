@@ -5,6 +5,7 @@
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/entries/AccountRootEntry.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Keylet.h>
@@ -211,7 +212,7 @@ canWithdraw(
     ReadView const& view,
     AccountID const& from,
     AccountID const& to,
-    SLE::ConstRef toSle,
+    AccountRootEntryR const& toSle,
     STAmount const& amount,
     bool hasDestinationTag,
     std::optional<std::vector<UInt256>> const& credentialIDs = std::nullopt);
