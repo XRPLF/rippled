@@ -20,6 +20,7 @@
 #include <xrpl/core/JobQueue.h>
 #include <xrpl/core/PerfLog.h>
 #include <xrpl/json/json_value.h>
+#include <xrpl/ledger/Ledger.h>
 #include <xrpl/protocol/RippleLedgerHash.h>
 #include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/jss.h>
@@ -31,6 +32,7 @@
 #include <chrono>
 #include <cstddef>
 #include <cstdint>
+#include <deque>
 #include <exception>
 #include <functional>
 #include <memory>
@@ -95,6 +97,11 @@ public:
                 }
 
                 auto it = ledgers_.find(hash);
+                if (it != ledgers_.end() && it->second->isRetryableFailure())
+                {
+                    ledgers_.erase(it);
+                    it = ledgers_.end();
+                }
                 if (it != ledgers_.end())
                 {
                     isNew = false;
@@ -277,6 +284,7 @@ public:
 
         recentFailures_.clear();
         ledgers_.clear();
+        recentHistoryLedgers_.clear();
     }
 
     std::size_t
@@ -289,10 +297,40 @@ public:
     // Should only be called with an inboundledger that has
     // a reason of history
     void
-    onLedgerFetched() override
+    onLedgerFetched(std::shared_ptr<InboundLedger> const& inbound, bool countFetch) override
     {
-        std::scoped_lock const lock(fetchRateMutex_);
-        fetchRate_.add(1, clock_.now());
+        if (countFetch)
+        {
+            std::scoped_lock const lock(fetchRateMutex_);
+            fetchRate_.add(1, clock_.now());
+        }
+
+        if (inbound)
+        {
+            auto const ledger = inbound->getLedger();
+            if (ledger && ledger->isFullyWired())
+            {
+                ScopedLockType const sl(lock_);
+                constexpr std::size_t historyPrimingCacheSize = 10;
+                recentHistoryLedgers_.push_back(ledger);
+                while (recentHistoryLedgers_.size() > historyPrimingCacheSize)
+                    recentHistoryLedgers_.pop_front();
+            }
+        }
+    }
+
+    std::shared_ptr<Ledger const>
+    getClosestFullyWiredLedger(std::shared_ptr<Ledger const> const& targetLedger) override
+    {
+        if (!targetLedger)
+            return {};
+
+        std::vector<std::shared_ptr<Ledger const>> candidates;
+        {
+            ScopedLockType const sl(lock_);
+            candidates.assign(recentHistoryLedgers_.begin(), recentHistoryLedgers_.end());
+        }
+        return closestFullyWiredLedger(targetLedger, candidates, j_);
     }
 
     json::Value
@@ -420,6 +458,7 @@ public:
         stopping_ = true;
         ledgers_.clear();
         recentFailures_.clear();
+        recentHistoryLedgers_.clear();
     }
 
     std::size_t
@@ -444,6 +483,8 @@ private:
     beast::insight::Counter counter_;
 
     std::unique_ptr<PeerSetBuilder> peerSetBuilder_;
+
+    std::deque<std::shared_ptr<Ledger const>> recentHistoryLedgers_;
 
     std::set<uint256> pendingAcquires_;
     std::mutex acquiresMutex_;

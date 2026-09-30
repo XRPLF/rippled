@@ -127,12 +127,56 @@ SHAMapStoreImp::SHAMapStoreImp(
     }
 
     getIfExists(section, Keys::kOnlineDelete, deleteInterval_);
+    isNullBackend_ = boost::iequals(get(section, Keys::kType), "rwdb");
+
+    if (isNullBackend_)
+    {
+        if (config.ledgerHistory == std::numeric_limits<std::uint32_t>::max())
+        {
+            Throw<std::runtime_error>(
+                "RWDB does not support ledger_history=full; "
+                "set a finite ledger_history");
+        }
+        if (config.ledgerHistory == 0)
+        {
+            if (!config.standalone())
+            {
+                Throw<std::runtime_error>("RWDB null mode requires ledger_history > 0");
+            }
+            // Config::setup() forces ledger_history=0 in standalone for disk
+            // backends. If that zero still reaches us (or the operator set
+            // ledger_history=none), use the standalone online_delete floor
+            // so LedgerMaster's retain window is live.
+            config.ledgerHistory = kMinimumDeletionIntervalSa;
+            JLOG(journal_.info()) << "RWDB standalone mode: ledger_history was 0; "
+                                  << "defaulting retain window to " << config.ledgerHistory;
+        }
+        JLOG(journal_.info()) << "RWDB null mode: node store is ephemeral, "
+                              << "retaining " << config.ledgerHistory << " ledgers in memory";
+
+        auto const rdbBackend =
+            get(config.section(Sections::kRelationalDb), "backend", std::string{"sqlite"});
+        if (!boost::iequals(rdbBackend, "rwdb"))
+        {
+            JLOG(journal_.warn()) << "node_db type=rwdb but [relational_db] backend is '"
+                                  << rdbBackend << "'; SQLite ledger/tx files will still be "
+                                  << "created. Set backend=rwdb for a fully in-memory node.";
+        }
+    }
+
+    // For RWDB, default online_delete to ledger_history. Do not raise it
+    // to the disk-backend minimum: LedgerMaster pins max(ledger_history,
+    // online_delete) SHAMaps, so the advertised purge window stays servable.
+    if (isNullBackend_ && deleteInterval_ == 0)
+        deleteInterval_ = config.ledgerHistory;
 
     if (deleteInterval_ != 0u)
     {
         auto const minInterval =
             config.standalone() ? kMinimumDeletionIntervalSa : kMinimumDeletionInterval;
-        if (deleteInterval_ < minInterval)
+        // Disk backends also require a platform minimum. RWDB does not:
+        // a smaller window is a valid way to bound memory.
+        if (!isNullBackend_ && deleteInterval_ < minInterval)
         {
             Throw<std::runtime_error>(
                 "online_delete must be at least " + std::to_string(minInterval));
@@ -173,7 +217,8 @@ SHAMapStoreImp::SHAMapStoreImp(
             maxWaitingLedgers_ = deleteInterval_;
         }
 
-        auto const minWaiting = minInterval / 4;
+        auto const minWaiting =
+            (isNullBackend_ ? std::min(minInterval, deleteInterval_) : minInterval) / 4;
         if (maxWaitingLedgers_ < minWaiting)
         {
             Throw<std::runtime_error>(
@@ -181,7 +226,8 @@ SHAMapStoreImp::SHAMapStoreImp(
         }
 
         stateDb_.init(config, dbName_);
-        dbPaths();
+        if (!isNullBackend_)
+            dbPaths();
     }
 }
 
@@ -190,24 +236,49 @@ SHAMapStoreImp::makeNodeStore(int readThreads)
 {
     auto nscfg = app_.config().section(Sections::kNodeDatabase);
 
-    // Provide default values.
-    if (!nscfg.exists(Keys::kCacheSize))
+    if (isNullBackend_)
     {
-        nscfg.set(
-            Keys::kCacheSize,
-            std::to_string(app_.config().getValueFor(SizedItem::TreeCacheSize, std::nullopt)));
+        // The backend cannot reload objects. A DatabaseNodeImp object
+        // cache would make tryDB treat a recently store()'d header as a
+        // local hit and primeInboundLedgerForUse would mark it fully
+        // wired without a real acquire.
+        nscfg.set(Keys::kCacheSize, "0");
+        nscfg.set(Keys::kCacheAge, "0");
     }
-
-    if (!nscfg.exists(Keys::kCacheAge))
+    else
     {
-        nscfg.set(
-            Keys::kCacheAge,
-            std::to_string(app_.config().getValueFor(SizedItem::TreeCacheAge, std::nullopt)));
+        // Provide default values.
+        if (!nscfg.exists(Keys::kCacheSize))
+        {
+            nscfg.set(
+                Keys::kCacheSize,
+                std::to_string(app_.config().getValueFor(SizedItem::TreeCacheSize, std::nullopt)));
+        }
+
+        if (!nscfg.exists(Keys::kCacheAge))
+        {
+            nscfg.set(
+                Keys::kCacheAge,
+                std::to_string(app_.config().getValueFor(SizedItem::TreeCacheAge, std::nullopt)));
+        }
     }
 
     std::unique_ptr<node_store::Database> db;
 
-    if (deleteInterval_ != 0u)
+    if (isNullBackend_ || deleteInterval_ == 0u)
+    {
+        // Null mode (and non-rotating disk): create a plain Database.
+        // No DatabaseRotatingImp, no rotation thread. dbRotating_ stays
+        // nullptr. [node_db] type=rwdb uses NullBackend via RWDBFactory.
+        db = node_store::Manager::instance().makeDatabase(
+            megabytes(app_.config().getValueFor(SizedItem::BurstSize, std::nullopt)),
+            scheduler_,
+            readThreads,
+            nscfg,
+            app_.getJournal(kNodeStoreName));
+        fdRequired_ += db->fdRequired();
+    }
+    else
     {
         SavedState state = stateDb_.getState();
         auto writableBackend = makeBackendRotating(state.writableDb);
@@ -231,16 +302,6 @@ SHAMapStoreImp::makeNodeStore(int readThreads)
         fdRequired_ += dbr->fdRequired();
         dbRotating_ = dbr.get();
         db.reset(dynamic_cast<node_store::Database*>(dbr.release()));
-    }
-    else
-    {
-        db = node_store::Manager::instance().makeDatabase(
-            megabytes(app_.config().getValueFor(SizedItem::BurstSize, std::nullopt)),
-            scheduler_,
-            readThreads,
-            nscfg,
-            app_.getJournal(kNodeStoreName));
-        fdRequired_ += db->fdRequired();
     }
     return db;
 }
@@ -358,7 +419,10 @@ SHAMapStoreImp::run()
         // We're starting a new cycle, so reset back to the default.
         lastSuccessfulHealthCheck_ = 0;
 
-        bool const readyToRotate = validatedSeq >= lastRotated + deleteInterval_ &&
+        // Use 64-bit addition so deleteInterval_ == UINT32_MAX cannot wrap
+        // to lastRotated-1 and rotate on every ledger.
+        bool const readyToRotate = static_cast<std::uint64_t>(validatedSeq) >=
+                static_cast<std::uint64_t>(lastRotated) + deleteInterval_ &&
             canDelete_ >= lastRotated - 1 && healthWait() == HealthResult::KeepGoing;
 
         {
@@ -403,6 +467,24 @@ SHAMapStoreImp::run()
                     continue;
                 case HealthResult::KeepGoing:
                     break;
+            }
+
+            if (isNullBackend_)
+            {
+                // In null mode the backend never stores anything.
+                // Skip clearCaches / makeBackendRotating / rotate
+                // entirely — the TreeNodeCache IS the node store and
+                // evicting it causes irrecoverable SHAMapMissingNode.
+                // Only sqlite cleanup (clearPrior above) is needed.
+                JLOG(journal_.info()) << "RWDB null: skipping rotation, "
+                                         "updating lastRotated to "
+                                      << validatedSeq;
+
+                lastRotated = validatedSeq;
+                stateDb_.setLastRotated(lastRotated);
+
+                JLOG(journal_.warn()) << "finished null-mode cleanup " << validatedSeq;
+                continue;
             }
 
             JLOG(journal_.debug()) << "copying ledger " << validatedSeq;
@@ -679,6 +761,15 @@ void
 SHAMapStoreImp::clearCaches(LedgerIndex validatedSeq)
 {
     ledgerMaster_->clearLedgerCachePrior(validatedSeq);
+
+    if (isNullBackend_)
+    {
+        // In null mode the TreeNodeCache is the only node store.
+        // Do NOT clear FullBelowCache or freshen TreeNodeCache —
+        // evicted entries are irrecoverable without a real backend.
+        return;
+    }
+
     // Also clear the FullBelowCache so its generation counter is bumped.
     // This prevents stale "full below" markers from persisting across
     // backend rotation/online deletion and interfering with SHAMap sync.

@@ -2,6 +2,7 @@
 
 #include <xrpld/app/ledger/LedgerMaster.h>
 #include <xrpld/app/misc/detail/AccountTxPaging.h>
+#include <xrpld/app/rdb/backend/RWDBDatabase.h>
 #include <xrpld/app/rdb/backend/detail/Node.h>
 #include <xrpld/core/Config.h>
 
@@ -10,6 +11,8 @@
 #include <xrpl/basics/RangeSet.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/contract.h>
+#include <xrpl/config/BasicConfig.h>
+#include <xrpl/config/Constants.h>
 #include <xrpl/ledger/Ledger.h>
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/LedgerHeader.h>
@@ -18,6 +21,8 @@
 #include <xrpl/rdb/DatabaseCon.h>
 #include <xrpl/rdb/RelationalDatabase.h>
 #include <xrpl/rdb/SociDB.h>
+
+#include <boost/algorithm/string/predicate.hpp>
 
 #include <cstddef>
 #include <cstdint>
@@ -652,10 +657,37 @@ SQLiteDatabase::SQLiteDatabase(ServiceRegistry& registry, Config const& config, 
     }
 }
 
-SQLiteDatabase
+std::unique_ptr<RelationalDatabase>
 setupRelationalDatabase(ServiceRegistry& registry, Config const& config, JobQueue& jobQueue)
 {
-    return {registry, config, jobQueue};
+    auto const& rdbSection = config.section(xrpl::Sections::kRelationalDb);
+    auto const backend = rdbSection.valueOr("backend", std::string{"sqlite"});
+
+    if (boost::iequals(backend, "rwdb"))
+    {
+        auto const nodeType = get(config.section(Sections::kNodeDatabase), "type", "");
+        if (!boost::iequals(nodeType, "rwdb"))
+        {
+            std::uint32_t onlineDelete = 0;
+            getIfExists(config.section(Sections::kNodeDatabase), Keys::kOnlineDelete, onlineDelete);
+            if (onlineDelete == 0 && !config.standalone())
+            {
+                Throw<std::runtime_error>(
+                    "[relational_db] backend=rwdb with a disk node store "
+                    "requires [node_db] online_delete to bound memory");
+            }
+            if (onlineDelete == 0)
+            {
+                JLOG(registry.getJournal("Application").warn())
+                    << "[relational_db] backend=rwdb with a disk node store "
+                    << "has no automatic memory bound unless online_delete "
+                    << "is set";
+            }
+        }
+        return std::make_unique<RWDBDatabase>(registry, config, jobQueue);
+    }
+
+    return std::make_unique<SQLiteDatabase>(registry, config, jobQueue);
 }
 
 }  // namespace xrpl

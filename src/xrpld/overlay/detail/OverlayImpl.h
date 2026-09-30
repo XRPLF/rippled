@@ -9,7 +9,6 @@
 #include <xrpld/overlay/detail/Handshake.h>
 #include <xrpld/overlay/detail/TrafficCount.h>
 #include <xrpld/overlay/detail/TxMetrics.h>
-#include <xrpld/peerfinder/detail/StoreSqdb.h>
 #include <xrpld/rpc/ServerHandler.h>
 
 #include <xrpl/basics/Resolver.h>
@@ -26,6 +25,7 @@
 #include <xrpl/json/json_value.h>
 #include <xrpl/peerfinder/PeerfinderManager.h>
 #include <xrpl/peerfinder/Slot.h>
+#include <xrpl/peerfinder/detail/Store.h>
 #include <xrpl/resource/ResourceManager.h>
 #include <xrpl/server/Handoff.h>
 #include <xrpl/server/Writer.h>
@@ -118,7 +118,8 @@ private:
     beast::Journal const journal_;
     ServerHandler& serverHandler_;
     resource::Manager& resourceManager_;
-    peer_finder::StoreSqdb store_;
+    // SQLite (StoreSqdb) by default; InMemoryStore when relational_db is RWDB.
+    std::unique_ptr<peer_finder::Store> store_;
     std::unique_ptr<peer_finder::Manager> peerFinder_;
     TrafficCount traffic_;
     hash_map<std::shared_ptr<peer_finder::Slot>, std::weak_ptr<PeerImp>> peers_;

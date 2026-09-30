@@ -11,6 +11,7 @@
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/LedgerTiming.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/View.h>
 #include <xrpl/nodestore/NodeObject.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Fees.h>
@@ -203,6 +204,7 @@ Ledger::Ledger(
 
     stateMap_.flushDirty(NodeObjectType::AccountNode);
     setImmutable();
+    setFullyWired();
 }
 
 Ledger::Ledger(
@@ -259,6 +261,9 @@ Ledger::Ledger(Ledger const& prevLedger, NetClock::time_point closeTime)
     , rules_(prevLedger.rules_)
     , j_(beast::Journal(beast::Journal::getNullSink()))
 {
+    // Do not inherit fullyWired_. Mutations after this snapshot are new
+    // nodes; the flag is set when the ledger is accepted (setFullLedger)
+    // or primed after inbound sync.
     header_.seq = prevLedger.header_.seq + 1;
     header_.parentCloseTime = prevLedger.header_.closeTime;
     header_.hash = prevLedger.header().hash + uint256(1);
@@ -326,6 +331,23 @@ Ledger::setImmutable(bool rehash)
     txMap_.setImmutable();
     stateMap_.setImmutable();
     setup();
+}
+
+bool
+Ledger::fullWireForUse(beast::Journal journal, char const* context) const
+{
+    if (!stateMap_.family().isNullBackend() || isFullyWired())
+        return true;
+
+    // Do not walk the full state tree. Iterating every leaf was a prototype
+    // way to force-link via descend; on mainnet that is 70M+ leaves and
+    // longer than a consensus round. Linkage is kept by merging child
+    // pointers at SHAMap::canonicalize. Inbound ledgers are primed with a
+    // delta walk or sync pinning. A header-only load cannot be rebuilt
+    // from the null store.
+    JLOG(journal.warn()) << context << ": ledger " << header_.seq
+                         << " is not fully wired; refusing a full state walk";
+    return false;
 }
 
 void
@@ -900,6 +922,49 @@ Ledger::invariants() const
 {
     stateMap_.invariants();
     txMap_.invariants();
+}
+
+std::optional<std::uint32_t>
+sameChainDistance(
+    std::shared_ptr<Ledger const> const& target,
+    std::shared_ptr<Ledger const> const& candidate,
+    beast::Journal journal)
+{
+    if (!target || !candidate || !candidate->isFullyWired())
+        return std::nullopt;
+    if (candidate->header().hash == target->header().hash)
+        return std::nullopt;
+
+    bool sameChain = false;
+    try
+    {
+        if (candidate->header().seq < target->header().seq)
+        {
+            if (auto const hash = hashOfSeq(*target, candidate->header().seq, journal);
+                hash && *hash == candidate->header().hash)
+            {
+                sameChain = true;
+            }
+        }
+        else if (candidate->header().seq > target->header().seq)
+        {
+            if (auto const hash = hashOfSeq(*candidate, target->header().seq, journal);
+                hash && *hash == target->header().hash)
+            {
+                sameChain = true;
+            }
+        }
+    }
+    catch (std::exception const&)
+    {
+        sameChain = false;
+    }
+
+    if (!sameChain)
+        return std::nullopt;
+    return candidate->header().seq < target->header().seq
+        ? target->header().seq - candidate->header().seq
+        : candidate->header().seq - target->header().seq;
 }
 
 }  // namespace xrpl

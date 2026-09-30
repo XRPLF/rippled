@@ -76,6 +76,15 @@ public:
         return failed_;
     }
 
+    // True when this acquire failed only because priming was incomplete.
+    // acquire() may replace the entry. Timeout/exhausted failures stay
+    // cached until sweep so we do not re-spam peers.
+    bool
+    isRetryableFailure() const
+    {
+        return failed_ && retryableFailure_;
+    }
+
     std::shared_ptr<Ledger const>
     getLedger() const
     {
@@ -182,6 +191,7 @@ private:
     bool haveTransactions_{false};
     bool signaled_{false};
     bool byHash_{true};
+    bool retryableFailure_{false};
     std::uint32_t seq_;
     Reason const reason_;
 
