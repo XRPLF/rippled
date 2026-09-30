@@ -15,29 +15,150 @@
 #include <xrpld/rpc/detail/RPCHelpers.h>
 
 #include <xrpl/basics/Slice.h>
+#include <xrpl/basics/StringUtilities.h>
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/chrono.h>
+#include <xrpl/basics/strHex.h>
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/json/json_value.h>
+#include <xrpl/json/to_string.h>
 #include <xrpl/ledger/Dir.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/Protocol.h>
+#include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/SeqProxy.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/jss.h>
+#include <xrpl/protocol/tokens.h>
 
 #include <algorithm>
 #include <array>
 #include <cstdint>
 #include <iterator>
+#include <string>
 
 namespace xrpl::test {
 struct PayChanToken_test : public beast::unit_test::Suite
 {
+    /**
+     * Sign `authAmt` for `chan` with channel_authorize, check the signature
+     * against jtx signClaimAuth and channel_verify, then submit it in a
+     * PaymentChannelClaim from `dst`.
+     */
+    void
+    checkAuthVerifyRPC(
+        jtx::Env& env,
+        jtx::Account const& src,
+        jtx::Account const& dst,
+        uint256 const& chan,
+        STAmount const& authAmt,
+        STAmount const& otherAmt)
+    {
+        using namespace jtx;
+
+        auto const chanStr = to_string(chan);
+        auto const pkStr = toBase58(TokenType::AccountPublic, src.pk());
+        auto const jvAmount = authAmt.getJson(JsonOptions::Values::None);
+        auto const expectedSig = strHex(paychan::signClaimAuth(src.pk(), src.sk(), chan, authAmt));
+
+        auto authorize = [&](json::Value const& amount) {
+            json::Value args{json::ValueType::Object};
+            args[jss::channel_id] = chanStr;
+            args[jss::secret] = src.name();
+            args[jss::amount] = amount;
+            return env.rpc("json", "channel_authorize", to_string(args))[jss::result];
+        };
+        auto verify = [&](json::Value const& amount, std::string const& sig) {
+            json::Value args{json::ValueType::Object};
+            args[jss::channel_id] = chanStr;
+            args[jss::public_key] = pkStr;
+            args[jss::amount] = amount;
+            args[jss::signature] = sig;
+            return env.rpc("json", "channel_verify", to_string(args))[jss::result];
+        };
+
+        // JSON request: the signature matches signClaimAuth and verifies
+        auto const rs = authorize(jvAmount);
+        auto const sig = rs[jss::signature].asString();
+        BEAST_EXPECT(sig == expectedSig);
+        BEAST_EXPECT(verify(jvAmount, sig)[jss::signature_verified].asBool());
+
+        // Command line: the amount argument carries the JSON object
+        {
+            auto const rsCli =
+                env.rpc("channel_authorize", src.name(), chanStr, to_string(jvAmount));
+            BEAST_EXPECT(rsCli[jss::result][jss::signature].asString() == expectedSig);
+            auto const rvCli = env.rpc("channel_verify", pkStr, chanStr, to_string(jvAmount), sig);
+            BEAST_EXPECT(rvCli[jss::result][jss::signature_verified].asBool());
+        }
+
+        // A different amount or asset, or a drops string, does not verify
+        auto expectNotVerified = [&](json::Value const& amount) {
+            auto const verified = verify(amount, sig)[jss::signature_verified];
+            BEAST_EXPECT(verified.isBool() && !verified.asBool());
+        };
+        expectNotVerified(otherAmt.getJson(JsonOptions::Values::None));
+        expectNotVerified("10");
+
+        // Malformed amount objects
+        auto expectMalformed = [&](json::Value const& amount) {
+            BEAST_EXPECT(authorize(amount)[jss::error] == "channelAmtMalformed");
+            BEAST_EXPECT(verify(amount, sig)[jss::error] == "channelAmtMalformed");
+        };
+        {
+            json::Value xrpObject{json::ValueType::Object};
+            xrpObject[jss::currency] = "XRP";
+            xrpObject[jss::value] = "10";
+            expectMalformed(xrpObject);
+        }
+        {
+            auto negative = jvAmount;
+            negative[jss::value] = "-" + jvAmount[jss::value].asString();
+            expectMalformed(negative);
+        }
+        {
+            auto badValue = jvAmount;
+            badValue[jss::value] = "ten";
+            expectMalformed(badValue);
+        }
+        if (authAmt.holds<Issue>())
+        {
+            auto noIssuer = jvAmount;
+            noIssuer.removeMember(jss::issuer);
+            expectMalformed(noIssuer);
+        }
+        else
+        {
+            auto fractional = jvAmount;
+            fractional[jss::value] = "1.5";
+            expectMalformed(fractional);
+        }
+        {
+            json::Value array{json::ValueType::Array};
+            array.append(jvAmount[jss::value]);
+            expectMalformed(array);
+        }
+        {
+            auto const rvCli = env.rpc("channel_verify", pkStr, chanStr, "{\"value\":", sig);
+            BEAST_EXPECT(rvCli[jss::error] == "channelAmtMalformed");
+        }
+
+        // PaymentChannelClaim accepts the RPC signature
+        auto const sigBlob = strUnHex(sig);
+        if (!BEAST_EXPECT(sigBlob))
+            return;
+        env(paychan::claim(dst, chan, authAmt, authAmt, makeSlice(*sigBlob), src.pk()),
+            Ter(tesSUCCESS));
+        env.close();
+        BEAST_EXPECT(paychan::channelBalance(*env.current(), chan) == authAmt);
+    }
+
     void
     testIOUEnablement(FeatureBitset features)
     {
@@ -4580,6 +4701,60 @@ struct PayChanToken_test : public beast::unit_test::Suite
     }
 
     void
+    testIOUAuthVerifyRPC(FeatureBitset features)
+    {
+        testcase("IOU Auth/Verify RPC");
+        using namespace jtx;
+        using namespace std::literals;
+
+        Env env{*this, features};
+        auto const alice = Account("alice");
+        auto const bob = Account("bob");
+        auto const gw = Account{"gateway"};
+        auto const usd = gw["USD"];
+        env.fund(XRP(5000), alice, bob, gw);
+        env(fset(gw, asfAllowTrustLineLocking));
+        env.close();
+        env.trust(usd(10'000), alice, bob);
+        env.close();
+        env(pay(gw, alice, usd(5'000)));
+        env.close();
+
+        auto const chan = paychan::channel(alice, bob, env.seq(alice));
+        env(paychan::create(alice, bob, usd(1'000), 100s, alice.pk()), Ter(tesSUCCESS));
+        env.close();
+
+        checkAuthVerifyRPC(env, alice, bob, chan, usd(10.5), gw["EUR"](10.5));
+    }
+
+    void
+    testMPTAuthVerifyRPC(FeatureBitset features)
+    {
+        testcase("MPT Auth/Verify RPC");
+        using namespace jtx;
+        using namespace std::literals;
+
+        Env env{*this, features};
+        auto const alice = Account("alice");
+        auto const bob = Account("bob");
+        auto const gw = Account("gw");
+        MPTTester mptGw(env, gw, {.holders = {alice, bob}});
+        mptGw.create(
+            {.ownerCount = 1, .holderCount = 0, .flags = tfMPTCanEscrow | tfMPTCanTransfer});
+        mptGw.authorize({.account = alice});
+        mptGw.authorize({.account = bob});
+        auto const mpt = mptGw["MPT"];
+        env(pay(gw, alice, mpt(10'000)));
+        env.close();
+
+        auto const chan = paychan::channel(alice, bob, env.seq(alice));
+        env(paychan::create(alice, bob, mpt(1'000), 100s, alice.pk()), Ter(tesSUCCESS));
+        env.close();
+
+        checkAuthVerifyRPC(env, alice, bob, chan, mpt(10), mpt(11));
+    }
+
+    void
     testIOUWithFeats(FeatureBitset features)
     {
         testIOUEnablement(features);
@@ -4610,6 +4785,7 @@ struct PayChanToken_test : public beast::unit_test::Suite
         testIOUMultiChannelDrain(features);
         testIOUPrecisionLoss(features);
         testIOUClawbackInteraction(features);
+        testIOUAuthVerifyRPC(features);
     }
 
     void
@@ -4637,6 +4813,7 @@ struct PayChanToken_test : public beast::unit_test::Suite
         testMPTCanEscrowRequired(features);
         testMPTDestroy(features);
         testMPTClawbackInteraction(features);
+        testMPTAuthVerifyRPC(features);
     }
 
 public:

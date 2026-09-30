@@ -22,6 +22,12 @@ API version 2 is available in `xrpld` version 2.0.0 and later. See [API-VERSION-
 
 This version is supported by all `xrpld` versions. For WebSocket and HTTP JSON-RPC requests, it is currently the default API version used when no `api_version` is specified.
 
+## Unreleased
+
+### Additions
+
+- `channel_authorize`, `channel_verify`: `amount` now also accepts the transaction `Amount` JSON object for a token payment channel (`currency`, `issuer` and `value` for a trust line token; `mpt_issuance_id` and `value` for an MPT), and the claim authorization is serialized for that token. A string of drops is still used for an XRP channel. An object that names XRP, is negative or is malformed returns `channelAmtMalformed`. On the command line, the amount argument may be that JSON object as a single argument. ([#7935](https://github.com/XRPLF/rippled/pull/7935))
+
 ## XRP Ledger server version 3.4.0
 
 Version 3.4.0 is not yet released. These changes are available in the 3.4.0 beta releases.

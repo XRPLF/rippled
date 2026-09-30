@@ -3,21 +3,17 @@
 #include <xrpld/rpc/Role.h>
 #include <xrpld/rpc/detail/RPCHelpers.h>
 
-#include <xrpl/basics/StringUtilities.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/strHex.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/ErrorCodes.h>
-#include <xrpl/protocol/PayChan.h>
 #include <xrpl/protocol/RPCErr.h>
 #include <xrpl/protocol/SecretKey.h>
 #include <xrpl/protocol/Serializer.h>
-#include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/resource/Fees.h>
 
-#include <cstdint>
 #include <exception>
 #include <optional>
 #include <utility>
@@ -28,7 +24,7 @@ namespace xrpl {
 //   secret_key: <signing_secret_key>
 //   key_type: optional; either ed25519 or secp256k1 (default to secp256k1)
 //   channel_id: 256-bit channel id
-//   drops: 64-bit uint (as string)
+//   amount: drops as a string (XRP channel) or an Amount object (token channel)
 // }
 json::Value
 doChannelAuthorize(rpc::JsonContext& context)
@@ -70,16 +66,9 @@ doChannelAuthorize(rpc::JsonContext& context)
     if (!channelId.parseHex(params[jss::channel_id].asString()))
         return rpcError(RpcChannelMalformed);
 
-    std::optional<std::uint64_t> const optDrops =
-        params[jss::amount].isString() ? toUInt64(params[jss::amount].asString()) : std::nullopt;
-
-    if (!optDrops)
-        return rpcError(RpcChannelAmtMalformed);
-
-    std::uint64_t const drops = *optDrops;
-
     Serializer msg;
-    serializePayChanAuthorization(msg, channelId, XRPAmount(drops));
+    if (!rpc::serializeChannelAuthorization(msg, channelId, params[jss::amount]))
+        return rpcError(RpcChannelAmtMalformed);
 
     try
     {
