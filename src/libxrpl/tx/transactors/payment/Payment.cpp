@@ -7,7 +7,6 @@
 #include <xrpl/ledger/PaymentSandbox.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/entries/AccountRootEntry.h>
-#include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/CredentialHelpers.h>
 #include <xrpl/ledger/helpers/MPTokenHelpers.h>
 #include <xrpl/ledger/helpers/PermissionedDEXHelpers.h>
@@ -801,7 +800,7 @@ Payment::doApply()
     // transaction types. Note, this is not amendment-gated because all writes
     // to pseudo-account discriminator fields **are** amendment gated, hence the
     // behaviour of this check will always match the active amendments.
-    if (isPseudoAccount(sleDst))
+    if (sleDst.isPseudoAccount())
         return tecNO_PERMISSION;
 
     // The source account does have enough money.  Make sure the

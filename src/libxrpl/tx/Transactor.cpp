@@ -930,7 +930,7 @@ Transactor::checkSign(
 
         if ((view.rules().enabled(featureLendingProtocol) ||
              view.rules().enabled(featureBatchV1_1) || view.rules().enabled(fixCleanup3_3_0)) &&
-            isPseudoAccount(sle))
+            sle.isPseudoAccount())
         {
             // Pseudo-accounts can't sign transactions. This check is gated on a
             // few different amendments so that it takes effect as soon as any of
