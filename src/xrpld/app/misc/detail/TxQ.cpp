@@ -781,11 +781,13 @@ TxQ::apply(
     // is ambient, and this ScopedSpanGuard's scope is RAII-bounded to this fully
     // synchronous call (no coroutine yield), so no unrelated parent leaks in and
     // its scope cannot leak out onto a reused worker.
-    // On the open-ledger rebuild path parentCtx is null and this is a root; the
-    // current_ledger_seq attribute below correlates it to the ledger instead.
-    // A lambda (not a ternary) picks the factory: ScopedSpanGuard's move ctor is
-    // deleted, so guaranteed copy elision on each return is the only way to
-    // construct it conditionally.
+    // With no context it inherits the span active on the calling thread, or is
+    // a root if there is none. An RPC thread (simulate, a local submit that runs
+    // the batch, standalone ledger_accept) lends its rpc.command span; the batch
+    // job, the accept job and the consensus timer have none. current_ledger_seq
+    // below ties a root to its ledger.
+    // A lambda picks the factory. ScopedSpanGuard cannot move, so each branch
+    // returns a prvalue that initializes span in place.
     auto span = [&]() -> ScopedSpanGuard {
         if (parentCtx && parentCtx->isValid())
             return ScopedSpanGuard::childSpan(txq_span::enqueue, *parentCtx);
@@ -793,9 +795,9 @@ TxQ::apply(
             TraceCategory::Transactions, txq_span::prefix::txq, txq_span::op::enqueue);
     }();
     // Guarded on the span being recorded: this runs for every transaction and
-    // again for each one replayed on an open-ledger rebuild, and the two hash
-    // strings each allocate. The compiled-out guard's operator bool() is a
-    // literal false, so the block disappears in that build.
+    // again for each local transaction doAccept replays into the new open
+    // ledger, and the two hash strings each allocate. The compiled-out guard's
+    // operator bool() is a literal false, so the block disappears in that build.
     if (span)
     {
         span.setAttribute(txq_span::attr::txHash, to_string(tx->getTransactionID()).c_str());

@@ -1791,8 +1791,10 @@ NetworkOPsImp::apply(std::unique_lock<std::mutex>& batchLock)
 
                     // Parent the txq.enqueue span to this tx's tx.process span
                     // via an explicit captured context (the parent is explicit,
-                    // not ambient-inherited). Null on the open-ledger rebuild
-                    // path, where no tx.process span exists.
+                    // not ambient-inherited). No context is passed when the
+                    // entry has no live tx.process span: held transactions,
+                    // queued by processTransactionSet and by the submitHeld
+                    // push below, carry none.
                     auto const txProcessCtx =
                         (e.span && *e.span) ? e.span->spanContext() : telemetry::SpanContext{};
                     auto const result = registry_.get().getTxQ().apply(
