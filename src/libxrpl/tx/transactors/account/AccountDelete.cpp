@@ -12,7 +12,6 @@
 #include <xrpl/ledger/entries/NFTokenOfferEntry.h>
 #include <xrpl/ledger/helpers/CredentialHelpers.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
-#include <xrpl/ledger/helpers/NFTokenHelpers.h>
 #include <xrpl/ledger/helpers/OfferHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
@@ -133,7 +132,7 @@ removeNFTokenOfferFromLedger(
     beast::Journal j)
 {
     NFTokenOfferEntryW offer(Keylet(ltNFTOKEN_OFFER, delIndex), view, j);
-    if (!nft::deleteTokenOffer(view, offer))
+    if (!offer.removeFromLedger())
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
 
     return tesSUCCESS;
