@@ -140,6 +140,19 @@ public:
     void
     issuerSelfDebitHook(std::uint64_t amount)
         requires Base::kIsWritable;
+
+    /**
+     * Returns true if @p account is frozen through the vault behind this
+     * issuance: if these are vault shares, checks whether the issuer (the
+     * vault pseudo-account) or @p account is frozen for the vault's
+     * underlying asset, recursing up to kMaxAssetCheckDepth. Returns false
+     * if featureSingleAssetVault is disabled or the issuance does not exist.
+     *
+     * @param depth Current recursion depth; callers outside the freeze
+     *              checks should pass 0.
+     */
+    [[nodiscard]] bool
+    isVaultPseudoAccountFrozen(AccountID const& account, std::uint8_t depth) const;
 };
 
 using MPTokenIssuanceEntryR = MPTokenIssuanceEntry<ReadView>;
