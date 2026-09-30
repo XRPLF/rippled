@@ -129,6 +129,15 @@ public:
      */
     [[nodiscard]] STAmount
     issuerFundsToSelfIssue() const;
+
+    /**
+     * Records @p amount of this MPT sold by the issuer through an
+     * issuer-owned sell offer, via the view's issuerSelfDebitHookMPT().
+     * See ApplyView::issuerSelfDebitHookMPT().
+     */
+    void
+    issuerSelfDebitHook(std::uint64_t amount)
+        requires Base::kIsWritable;
 };
 
 using MPTokenIssuanceEntryR = MPTokenIssuanceEntry<ReadView>;
