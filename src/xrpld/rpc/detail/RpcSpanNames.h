@@ -106,8 +106,9 @@
  *    - Per-command attributes: name, API version, rpc_role, rpc_status
  *
  *  Known gaps (not yet instrumented):
- *    - Early validation errors in processRequest() before rpc.process
- *      span (malformed JSON, auth failures, oversized requests)
+ *    - The port, authorization and shutdown checks in onRequest(), the
+ *      shutdown close in onWSMessage() and the non-WS upgrade refusal in
+ *      onHandoff(), which reply before any span exists
  *    - Subscription push notifications (server-initiated, not RPC)
  */
 
@@ -188,7 +189,8 @@ inline constexpr auto admin = makeStr("admin");
 inline constexpr auto user = makeStr("user");
 inline constexpr auto unknownCommand = makeStr("unknown");
 /**
- * "invalid_json" — WS message parse failure or oversize.
+ * "invalid_json" — request parse failure or oversize. Span error text on
+ * rpc.ws_message and rpc.process.
  */
 inline constexpr auto invalidJson = makeStr("invalid_json");
 }  // namespace val

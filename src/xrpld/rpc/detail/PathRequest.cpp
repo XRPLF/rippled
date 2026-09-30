@@ -603,9 +603,14 @@ PathRequest::findPaths(
     // spans inside the loop body therefore requires either making this a
     // ScopedSpanGuard or passing its context explicitly via childSpan(); a
     // child created here today would parent to this span's parent, not to it.
+    //
+    // Internal, not Server: this runs under pathfind.compute.
     using namespace telemetry;
     auto span = SpanGuard::span(
-        TraceCategory::Rpc, pathfind_span::prefix::pathfind, pathfind_span::op::discover);
+        TraceCategory::Rpc,
+        pathfind_span::prefix::pathfind,
+        pathfind_span::op::discover,
+        SpanRole::Internal);
     span.setAttribute(pathfind_span::attr::searchLevel, static_cast<int64_t>(level));
     span.setAttribute(
         pathfind_span::attr::numSourceAssets, static_cast<int64_t>(sourceAssets.size()));
@@ -764,9 +769,13 @@ PathRequest::doUpdate(
     using namespace std::chrono;
     using namespace telemetry;
     // Scoped so pathfind.discover (created synchronously below via findPaths)
-    // nests under it. doUpdate does not yield, so scoping is safe.
+    // nests under it. doUpdate does not yield, so scoping is safe. Internal, not
+    // Server: this runs under pathfind.request or pathfind.update_all.
     auto span = ScopedSpanGuard(
-        TraceCategory::Rpc, pathfind_span::prefix::pathfind, pathfind_span::op::compute);
+        TraceCategory::Rpc,
+        pathfind_span::prefix::pathfind,
+        pathfind_span::op::compute,
+        SpanRole::Internal);
     // Guarded on the span being live because setAttribute's arguments are
     // evaluated whatever the build, and doUpdate is hot: PathRequestManager
     // calls it once per active path_find subscription on every ledger close, so
