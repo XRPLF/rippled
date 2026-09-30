@@ -801,7 +801,7 @@ flowchart LR
 > `src/xrpld/app/ledger/AcquireStats.h`,
 > `include/xrpl/telemetry/GetObjectMetricNames.h`, 10 GTest files under
 > `src/tests/libxrpl/telemetry/`, 4 new Grafana dashboards, provisioned Grafana
-> alerting (13 rules), and the Phase 9 sections of
+> alerting (14 rules), and the Phase 9 sections of
 > `09-data-collection-reference.md` and `docs/telemetry-runbook.md`.
 > Tasks 9.14-9.17 remain open by design — see
 > [Phase9_taskList.md](./Phase9_taskList.md).
@@ -901,7 +901,7 @@ flowchart TB
 | 9.7a | push_metrics.py parity gauges                           | ✅ Done                       |
 | 9.8  | New Grafana dashboards (4 new, 2 updated)               | ✅ Done                       |
 | 9.9  | Update documentation                                    | ✅ Done                       |
-| 9.9a | Provisioned Grafana alerting (13 rules / 5 groups)      | ✅ Done                       |
+| 9.9a | Provisioned Grafana alerting (14 rules / 5 groups)      | ✅ Done                       |
 | 9.10 | Integration tests / `MetricsRegistry` unit tests        | ✅ Done (unit tests)          |
 | 9.11 | Validator Health dashboard                              | ✅ Done                       |
 | 9.12 | Peer Quality dashboard                                  | ✅ Done                       |
@@ -917,13 +917,13 @@ including the four open items (9.14-9.17) and why each is blocked.
 ### Provisioned Grafana Alerting (Task 9.9a)
 
 Phase 9 also ships the first provisioned Grafana alerting for the OTel stack —
-**13 rules in 5 groups**, 2 contact points, and a two-level notification policy
+**14 rules in 5 groups**, 2 contact points, and a two-level notification policy
 tree, auto-loaded from the existing `provisioning/` mount (no docker-compose
 change):
 
 | File                                                                | Contents                                                                                                                            |
 | ------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
-| `docker/telemetry/grafana/provisioning/alerting/rules.yaml`         | 13 rules across `xrpld-consensus` (3), `xrpld-validator` (2), `xrpld-jobqueue` (3), `xrpld-node-state` (2), `xrpld-overlay` (3)     |
+| `docker/telemetry/grafana/provisioning/alerting/rules.yaml`         | 14 rules across `xrpld-consensus` (3), `xrpld-validator` (2), `xrpld-jobqueue` (3), `xrpld-node-state` (2), `xrpld-overlay` (4)     |
 | `docker/telemetry/grafana/provisioning/alerting/contactpoints.yaml` | `xrpld-default` (Slack) and `xrpld-critical` (Slack + email)                                                                        |
 | `docker/telemetry/grafana/provisioning/alerting/policies.yaml`      | Root route → `xrpld-default`; child route `severity = critical` → `xrpld-critical`. Grouped by `alertname` + `service_instance_id`. |
 
@@ -931,8 +931,8 @@ Shipped rules: `LedgerHistoryMismatch`, `LedgerCloseStalled`,
 `ValidatedLedgerStale`, `ValidationsMissed`, `ValidationsNotChecked`,
 `JobQueueTxOverflow`, `JobQueueLatencyHigh`, `NodeStoreIOLatencyHigh`,
 `NodeStateFlapping`, `NodeNotFull`, `ManifestJobQueueConvoy`,
-`ManifestFloodInbound`, `PeerResourceDisconnects`. Three carry
-`severity: critical`, ten `severity: warning`.
+`ManifestFloodInbound`, `PeerResourceDisconnects`, `UntrustedValidationFlood`.
+Three carry `severity: critical`, eleven `severity: warning`.
 
 Operator documentation for each alert lives in the **Alerting** section of
 `docs/telemetry-runbook.md`. The remaining, genuinely-unshipped rules from the
@@ -959,7 +959,7 @@ Alert Rules from External Dashboard**.
       `09-data-collection-reference.md` §5b "Internal Metric Gap Fill (Phase 9)"
       and "Phase 9: OTel SDK-Exported Metrics (MetricsRegistry)";
       `docs/telemetry-runbook.md` § Alerting
-- [x] Provisioned Grafana alerting shipped (13 rules / 5 groups, 2 contact
+- [x] Provisioned Grafana alerting shipped (14 rules / 5 groups, 2 contact
       points, nested notification policy)
 
 ---
@@ -1465,9 +1465,9 @@ Clear, measurable criteria for each phase.
 | Phase 6  | StatsD metrics in Prometheus                                       | 3 dashboards operational                      | End of Week 10 | Active             |
 | Phase 7  | All metrics via OTLP                                               | No StatsD dependency                          | End of Week 12 | Active             |
 | Phase 8  | trace_id in logs + Loki                                            | Tempo↔Loki correlation                        | End of Week 13 | Active             |
-| Phase 9  | 68+ new internal metrics in Prom                                   | 4 new dashboards + 13 provisioned alert rules | End of Week 15 | Complete           |
+| Phase 9  | 68+ new internal metrics in Prom                                   | 4 new dashboards + 14 provisioned alert rules | End of Week 15 | Complete           |
 | Phase 10 | Full telemetry stack validated; OTel-sourced regression gate in CI | < 3% CPU overhead proven                      | End of Week 17 | On Phase 10 branch |
-| Phase 11 | Third-party metrics via receiver                                   | 4 new dashboards + 14 remaining alert rules   | End of Week 20 | Not started        |
+| Phase 11 | Third-party metrics via receiver                                   | 4 new dashboards + 14 external rules to build | End of Week 20 | Not started        |
 
 ---
 
@@ -1598,11 +1598,11 @@ Integrate 29 missing metrics, 18 alert rules, and enriched span attributes from 
 | Network     | 3     | Peer drop >10%/30%, P90 latency + disconnect correlation                                                                |
 | Performance | 7     | CPU >80%, memory >90%, disk >85%, job queue overflow, upgrade recommended, tx rate drop, stale ledger                   |
 
-> Phase 9 ships **13 provisioned rules in 5 groups** against xrpld's own metric
+> Phase 9 ships **14 provisioned rules in 5 groups** against xrpld's own metric
 > surface; 4 of them address external rules — **fully** for unhealthy state and
 > job queue overflow, only **partially** for IO latency and stale ledger (looser
 > thresholds and longer windows; see the coverage table under Task 11.9). The 14
-> genuinely-remaining rules are scoped under Task 11.9 below.
+> external-dashboard rules not yet built are scoped under Task 11.9 below.
 
 ---
 
@@ -2181,7 +2181,7 @@ no fixed "N of N" figure is asserted here.
 > `docker/telemetry/grafana/alerting/{alert-rules,contact-points,notification-policies}.yaml`
 > — that directory has never existed. It shipped on **Phase 9** (`7cabf91a0d`)
 > at `docker/telemetry/grafana/provisioning/alerting/{rules,contactpoints,policies}.yaml`
-> with **13 rules in 5 groups**, 2 contact points and a nested notification
+> with **14 rules in 5 groups**, 2 contact points and a nested notification
 > policy. See §6.8.2 → "Provisioned Grafana Alerting (Task 9.9a)".
 
 Of the 18 external-dashboard rules originally listed here, **4 are addressed** by
@@ -2202,10 +2202,11 @@ reproduced.
 > Phase 9 thresholds against the measured evidence, or add the tighter external
 > variants alongside them under Task 11.12 — do not treat them as done.
 
-Phase 9 additionally ships 9 rules with no external counterpart:
+Phase 9 additionally ships 10 rules with no external counterpart:
 `LedgerHistoryMismatch`, `LedgerCloseStalled`, `ValidationsMissed`,
 `ValidationsNotChecked`, `JobQueueLatencyHigh`, `NodeStateFlapping`,
-`ManifestJobQueueConvoy`, `ManifestFloodInbound`, `PeerResourceDisconnects`.
+`ManifestJobQueueConvoy`, `ManifestFloodInbound`, `PeerResourceDisconnects`,
+`UntrustedValidationFlood`.
 
 **Remaining open work for Phase 11 — 14 rules that genuinely do not exist yet:**
 
@@ -2276,7 +2277,7 @@ Document the external dashboard's "fast path" pattern as a future optimization f
 
 #### `docs/telemetry-runbook.md` (on Phase 9 branch) — partially done
 
-- [x] **Alerting** section — shipped; documents all 13 provisioned rules,
+- [x] **Alerting** section — shipped; documents all 14 provisioned rules,
       thresholds, likely causes, and how to point a contact point at a real
       receiver.
       Six dashboard reference sections remain unwritten (`fee-market`, `job-queue`,
@@ -2327,13 +2328,14 @@ Phase 6 (StatsD bridge: peerDisconnectsCharges)
     │
 Phase 7 (ValidationTracker + 7 gauges + 7 counters + agreement gauge)
     │
-Phase 9 (4 new dashboards + ledger economy panels + 13 provisioned
+Phase 9 (4 new dashboards + ledger economy panels + 14 provisioned
          alert rules + data-collection-ref; runbook Alerting only)
     │
 Phase 10 (new validation checks in validate_telemetry.py
           + .github/workflows/telemetry-validation.yml)
     │
-Phase 11 (14 remaining alert rules + dual-datasource docs)
+Phase 11 (14 external-dashboard alert rules not yet built
+          + dual-datasource docs)
 ```
 
 ### Rebase Strategy

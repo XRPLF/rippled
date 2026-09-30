@@ -304,7 +304,7 @@ exported by this receiver.
 > **Scope note — do not duplicate Phase 9.** Phase 9 already ships provisioned
 > **Grafana** alerting at
 > `docker/telemetry/grafana/provisioning/alerting/{rules,contactpoints,policies}.yaml`
-> — 13 rules in 5 groups, 2 contact points (`xrpld-default` Slack,
+> — 14 rules in 5 groups, 2 contact points (`xrpld-default` Slack,
 > `xrpld-critical` Slack + email), and a nested notification policy keyed on
 > `severity = critical`. Four of the rules below overlap it:
 >

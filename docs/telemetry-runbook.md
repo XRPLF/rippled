@@ -2454,7 +2454,7 @@ enforces that in CI, because the two silently drifted once already.
 
 ## Alerting
 
-xrpld provisions thirteen Grafana alert rules on the health-critical metrics, so
+xrpld provisions fourteen Grafana alert rules on the health-critical metrics, so
 a stock stack alerts out of the box with no UI setup. Rules are provisioned from
 `docker/telemetry/grafana/provisioning/alerting/` and load automatically when
 the Grafana container starts. They appear under **Alerting → Alert rules**,
@@ -2476,21 +2476,24 @@ fleet exporting some of these names (`state_accounting_*` in particular) with no
 xrpld resource attributes, and without the selector those series get summed in.
 Alerts fire only after the condition holds for the `for` dwell time.
 
-| Alert                     | Severity | Fires when                                         | For |
-| ------------------------- | -------- | -------------------------------------------------- | --- |
-| `LedgerHistoryMismatch`   | critical | `increase(ledger_history_mismatch_total[15m])` > 0 | 2m  |
-| `LedgerCloseStalled`      | critical | `rate(ledgers_closed_total)` ≈ 0                   | 3m  |
-| `ValidatedLedgerStale`    | critical | `ledgermaster_validated_ledger_age` > 60s          | 5m  |
-| `ValidationsMissed`       | warning  | validator miss _ratio_ > 0.1                       | 15m |
-| `ValidationsNotChecked`   | warning  | `rate(validations_checked_total)` ≈ 0              | 5m  |
-| `JobQueueTxOverflow`      | warning  | `increase(jq_trans_overflow_total[15m])` > 0       | 2m  |
-| `JobQueueLatencyHigh`     | warning  | p99 `job_queued_us` > 1s                           | 5m  |
-| `NodeStoreIOLatencyHigh`  | warning  | p95 `ios_latency_milliseconds` > 1s                | 10m |
-| `NodeStateFlapping`       | warning  | > 3 re-entries into FULL per hour                  | 15m |
-| `NodeNotFull`             | warning  | `server_state` < 4 (FULL)                          | 15m |
-| `ManifestJobQueueConvoy`  | warning  | `jobq_manifest_waiting` > 3                        | 10m |
-| `ManifestFloodInbound`    | warning  | `rate(overhead_manifest_bytes_in)` > 512 KiB/s     | 10m |
-| `PeerResourceDisconnects` | warning  | > 5 resource-driven peer disconnects per 30m       | 5m  |
+| Alert                      | Severity | Fires when                                              | For |
+| -------------------------- | -------- | ------------------------------------------------------- | --- |
+| `LedgerHistoryMismatch`    | critical | `increase(ledger_history_mismatch_total[15m])` > 0      | 2m  |
+| `LedgerCloseStalled`       | critical | `rate(ledgers_closed_total)` ≈ 0                        | 3m  |
+| `ValidatedLedgerStale`     | critical | `ledgermaster_validated_ledger_age` > 60s               | 5m  |
+| `ValidationsMissed`        | warning  | validator miss _ratio_ > 0.1                            | 15m |
+| `ValidationsNotChecked`    | warning  | `rate(validations_checked_total)` ≈ 0                   | 5m  |
+| `JobQueueTxOverflow`       | warning  | `increase(jq_trans_overflow_total[15m])` > 0            | 2m  |
+| `JobQueueLatencyHigh`      | warning  | p99 `job_queued_us` > 1s                                | 5m  |
+| `NodeStoreIOLatencyHigh`   | warning  | p95 `ios_latency_milliseconds` > 1s                     | 10m |
+| `NodeStateFlapping`        | warning  | > 0 re-entries into FULL per hour                       | 15m |
+| `NodeNotFull`              | warning  | `server_state` < 4 (FULL)                               | 15m |
+| `ManifestJobQueueConvoy`   | warning  | `jobq_manifest_waiting` > 3                             | 10m |
+| `ManifestFloodInbound`     | warning  | `rate(overhead_manifest_bytes_in)` > 512 KiB/s          | 10m |
+| `PeerResourceDisconnects`  | warning  | > 5 resource-driven peer disconnects per 30m            | 5m  |
+| `UntrustedValidationFlood` | warning  | `rate(validations_untrusted_messages_in)` > 3x baseline | 1m  |
+
+Rules labelled `page_oncall: "true"` (`ManifestJobQueueConvoy`, `ManifestFloodInbound` and `UntrustedValidationFlood`) are the ones meant to page on-call. The provisioned Slack template does not read the label; to tag an on-call group, add a mention for it to your own Slack template.
 
 Two expression idioms recur and are load-bearing — do not "simplify" them away:
 
@@ -2582,10 +2585,7 @@ is 37-49ms on healthy nodes and 488-566ms on nodes that are actively flapping.
 
 #### Node operating state
 
-**NodeStateFlapping** — The node is oscillating `full → syncing/connected → full`
-instead of holding sync. Measured: a flapping node re-enters `full` 4-6 times per
-hour sustained, while a healthy node manages 0-1, so the `> 3` threshold sits
-between the two populations with roughly a 3x margin.
+**NodeStateFlapping** — The node is oscillating `full → syncing/connected → full` instead of holding sync. The rule fires on any re-entry into `full` in the last hour (`> 0`) once the node has been up for an hour: one `full → syncing → full` round is a single re-entry, and that one round is the flap this rule exists to catch.
 
 The rule counts `state_accounting_full_transitions`, which counts transitions
 _into_ `full` and is exported as a cumulative gauge — `increase()` is therefore
@@ -2644,11 +2644,15 @@ threshold sits ~280x above healthy p99 and ~5x below the peaks.
 exceeding resource budgets. Sustained disconnects starve the node of peers and
 precede sync loss.
 
+**UntrustedValidationFlood** — Validations from untrusted validators are arriving at more than 3x their baseline rate. Peers relay untrusted validations by default, so the normal rate depends on the network's validator count and on this node's peer count. The rule therefore divides the last 2m rate of `validations_untrusted_messages_in` by a baseline: the average rate over the hour that ended 10m earlier. This lets one threshold fit any network with more than 50 msg/s of untrusted traffic. Measured over 30 days, the ratio stayed below 1.2 except in two events. A real flood peaked at about 20x and stayed above 3 for about 4 minutes; the rule would have fired on its second minute. A smaller 2.4x burst would not have fired. When it fires, check peer latency, consensus round time and whether the node left `full`. It is a burst detector: a flood that keeps going enters the baseline 10 minutes after it starts. The alert then resolves within about 30 minutes of the start, even while the flood goes on. Before treating a resolve as the end of the flood, check the Untrusted In series on the Network Traffic dashboard's "Validation Traffic" panel.
+
+> **Two guards keep this rule quiet on healthy nodes.** The baseline has a floor of 50 msg/s (`clamp_min(..., 50)`), so a network with almost no untrusted traffic needs more than 150 msg/s to fire instead of dividing by zero. An `uptime > 4200` gate (the 1h baseline plus its 10m offset) skips the first 70 minutes after boot. After a stop of an hour or more, the baseline hour holds only minutes of samples, so it reads far too low. Over the same 30 days, without the gate the ratio passed 3 for up to about 20 minutes after such a stop, peaking at about 4.5. A flood in the first 70 minutes after boot is not alerted.
+
 ### Tuning thresholds
 
 Thresholds live in
 `docker/telemetry/grafana/provisioning/alerting/rules.yaml` as the `params`
-array of each rule's `C` (threshold) node. Common tunables:
+array of each rule's `threshold` node (the node its `condition` names). Common tunables:
 
 - **`JobQueueLatencyHigh`** — `params: [1000000]` is 1 000 000 µs (1s). Lower
   it for latency-sensitive deployments.
@@ -2793,7 +2797,7 @@ in `.env.alerting`. Neither is ever written to a tracked file.
 After the stack is up:
 
 ```bash
-# All thirteen rules present, and is each one paused?
+# All fourteen rules present, and is each one paused?
 curl -s http://localhost:3000/api/v1/provisioning/alert-rules |
     jq -r '.[] | "\(.title)\tpaused=\(.isPaused)"'
 

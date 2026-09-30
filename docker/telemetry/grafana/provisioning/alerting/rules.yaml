@@ -2,16 +2,20 @@
 #
 # Alerting on health-critical internal metrics.
 #
-# Thirteen rules across five subsystems: consensus/ledger health, validator
-# health, the job queue, node operating state, and the overlay (manifests).
+# Fourteen rules across five subsystems: consensus/ledger health, validator
+# health, the job queue, node operating state, and the overlay (manifests,
+# peer disconnects and untrusted validation traffic).
 #
-# Rule shape (Grafana server-side evaluation):
-#   A  Prometheus query  — a rate / increase / histogram_quantile, aggregated
-#                          `by (service_instance_id)` so each node evaluates
-#                          independently. Alert rules run headless and cannot
-#                          use the dashboards' `$node` template variable.
-#   B  reduce (last)      — collapse A's series to its most recent value.
-#   C  threshold          — the firing condition; `condition: C`.
+# Rule shape (Grafana server-side evaluation). Each rule has three nodes with
+# named refIds, for example mismatches_15m -> mismatches_now -> is_mismatching:
+#   query      a PromQL query (a rate, an increase, a quantile or a gauge
+#              read) on the Prometheus datasource, aggregated
+#              `by (service_instance_id)` so each node evaluates
+#              independently. Alert rules run headless and cannot use the
+#              dashboards' `$node` template variable.
+#   reduce     `last`: collapse the query's series to its most recent value.
+#              Annotations read it as `$values.<reduce refId>.Value`.
+#   threshold  the firing condition; the rule's `condition` names this node.
 #
 # Conventions that are load-bearing — do not "simplify" these away:
 #
@@ -34,6 +38,10 @@
 #     zero via `or (0 * max_over_time(...))`, because `sum by()` returns rows
 #     only for still-reporting nodes: a single dead node's row just disappears
 #     and noDataState never triggers.
+#
+#   * `page_oncall: "true"` marks the rules meant to page on-call. The
+#     provisioned Slack template does not read it; to tag an on-call group,
+#     add a mention for it to your own Slack template.
 #
 # Thresholds are documented in docs/telemetry-runbook.md (Alerting section)
 # and are derived from measured values across a 7-node dev/devnet population.
@@ -822,6 +830,7 @@ groups:
         labels:
           severity: warning
           category: overlay
+          page_oncall: "true"
         annotations:
           summary: "Manifest job convoy on {{ $labels.service_instance_id }}"
           description: >-
@@ -901,6 +910,7 @@ groups:
         labels:
           severity: warning
           category: overlay
+          page_oncall: "true"
         annotations:
           summary: "Inbound manifest flood on {{ $labels.service_instance_id }}"
           description: >-
@@ -1019,6 +1029,100 @@ groups:
                 - evaluator:
                     type: gt
                     params: [5]
+              datasource:
+                type: __expr__
+                uid: __expr__
+
+      # Untrusted-validation flood. Peers relay validations from untrusted
+      # validators by default, so this rate follows the network's validator
+      # count and this node's peer count. A burst far above that level means
+      # peers are relaying far more validations than usual.
+      #
+      # The rule divides the last 2m rate by the average over the hour that
+      # ended 10m earlier, so one threshold fits any peer count, on any
+      # network with more than 50 msg/s of untrusted traffic. Measured over
+      # 30 days (uptime-gated, mainnet and devnet nodes), the healthy ratio
+      # stayed below 1.2 at every 1m step. A real flood peaked at about 20x
+      # and stayed above 3 for about 4 minutes. A smaller burst reached 2.4x
+      # for one step. Above 3 on two evaluations in a row (for: 1m) fires on
+      # the flood and stays quiet on the burst.
+      #
+      # clamp_min(..., 50) gives a network with almost no untrusted traffic
+      # (devnet: 0 at p99, at most 36/s) a floor instead of a divide by zero,
+      # so there the rule needs more than 150 msg/s to fire.
+      #
+      # The uptime gate is load-bearing. After a stop of an hour or more, the
+      # baseline hour holds only minutes of samples, so it reads far too low.
+      # Over the same 30 days, without the gate the ratio then passed 3 for up
+      # to about 20 minutes, peaking at about 4.5. 4200s is the 1h baseline
+      # plus its 10m offset. The gate takes the max, not the sum, of
+      # the uptime series, so overlapping series cannot inflate it.
+      # noDataState is OK because the gate returns no rows while every node is
+      # in its first 70 minutes, for example after a fleet-wide restart.
+      - uid: xrpld-untrusted-validation-flood
+        title: UntrustedValidationFlood
+        condition: is_flooding
+        for: 1m
+        isPaused: true
+        noDataState: OK
+        execErrState: Error
+        labels:
+          severity: warning
+          category: overlay
+          page_oncall: "true"
+        annotations:
+          summary: "Untrusted validation flood on {{ $labels.service_instance_id }}"
+          description: >-
+            Untrusted validations on {{ $labels.service_instance_id }} over the last 2m: {{
+            printf "%.1f" $values.flood_ratio_now.Value }}x the baseline. The baseline is the
+            rate over the hour that ended 10m earlier, never below 50 msg/s. The rule fires
+            above 3x, which is always more than 150 msg/s.
+          action: >-
+            Peers are relaying far more validations from untrusted validators than usual.
+            Check peer latency, consensus round time and whether the node left FULL.
+        data:
+          - refId: flood_ratio_2m
+            relativeTimeRange:
+              from: 4800
+              to: 0
+            datasourceUid: prometheus
+            model:
+              refId: flood_ratio_2m
+              expr: |-
+                sum by (service_instance_id) (rate(validations_untrusted_messages_in{service_name="xrpld"}[2m]))
+                  / clamp_min(sum by (service_instance_id) (rate(validations_untrusted_messages_in{service_name="xrpld"}[1h] offset 10m)), 50)
+                  and on (service_instance_id)
+                    (max by (service_instance_id) (server_info{service_name="xrpld", metric="uptime"}) > 4200)
+              instant: true
+              range: false
+              intervalMs: 1000
+              maxDataPoints: 43200
+          - refId: flood_ratio_now
+            relativeTimeRange:
+              from: 4800
+              to: 0
+            datasourceUid: __expr__
+            model:
+              refId: flood_ratio_now
+              type: reduce
+              reducer: last
+              expression: flood_ratio_2m
+              datasource:
+                type: __expr__
+                uid: __expr__
+          - refId: is_flooding
+            relativeTimeRange:
+              from: 4800
+              to: 0
+            datasourceUid: __expr__
+            model:
+              refId: is_flooding
+              type: threshold
+              expression: flood_ratio_now
+              conditions:
+                - evaluator:
+                    type: gt
+                    params: [3]
               datasource:
                 type: __expr__
                 uid: __expr__
