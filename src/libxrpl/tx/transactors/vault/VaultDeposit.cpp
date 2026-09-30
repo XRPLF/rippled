@@ -32,24 +32,6 @@
 
 namespace xrpl {
 
-[[nodiscard]]
-static STAmount
-roundToVaultScale(STAmount const& amount, VaultEntryR const& vault)
-{
-    XRPL_ASSERT(vault && vault->getType() == ltVAULT, "xrpl::roundToVaultScale : valid vault sle");
-    XRPL_ASSERT(
-        amount.asset() == vault->at(sfAsset), "xrpl::roundToVaultScale : valid vault asset");
-
-    if (amount.integral())
-        return amount;
-
-    int const postScale = [&]() {
-        NumberRoundModeGuard const rg(Number::RoundingMode::ToNearest);
-        return scale(vault->at(sfAssetsTotal) + amount, vault->at(sfAsset));
-    }();
-    return roundToScale(amount, postScale, Number::RoundingMode::Downward);
-}
-
 // True if debiting `assets` would leave the depositor's balance where it started, so the deposit
 // would mint shares against a transfer that never happened. Asking the balance directly whether it
 // notices the debit avoids having to infer the rounding step: it has to be the stored balance that
@@ -188,7 +170,7 @@ VaultDeposit::preclaim(PreclaimContext const& ctx)
     if (auto const ter = requireAuth(ctx.view, vaultAsset, account); !isTesSuccess(ter))
         return ter;
 
-    auto const roundedAmount = fix320Enabled ? roundToVaultScale(amount, vault) : amount;
+    auto const roundedAmount = fix320Enabled ? vault.roundToScale(amount) : amount;
 
     if (fix320Enabled && roundedAmount == beast::kZero)
     {
@@ -240,8 +222,7 @@ VaultDeposit::doApply()
 
     // Post-amendment IOU only: round Downward to the AssetsTotal precision so
     // a sub-ULP tail can't be silently absorbed by one rail and not the other.
-    auto const amount =
-        fix320Enabled ? roundToVaultScale(ctx_.tx[sfAmount], vault) : ctx_.tx[sfAmount];
+    auto const amount = fix320Enabled ? vault.roundToScale(ctx_.tx[sfAmount]) : ctx_.tx[sfAmount];
 
     // We validated zero-amount in preclaim, if we ended up with zero now, fail hard.
     if (amount == beast::kZero)
