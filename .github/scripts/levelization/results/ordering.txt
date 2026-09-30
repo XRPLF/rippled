@@ -194,6 +194,7 @@ tests.libxrpl > xrpl.resource
 tests.libxrpl > xrpl.server
 tests.libxrpl > xrpl.shamap
 tests.libxrpl > xrpl.tx
+tests.xrpld > xrpld.app
 tests.xrpld > xrpld.rpc
 tests.xrpld > xrpl.json
 tests.xrpld > xrpl.protocol
