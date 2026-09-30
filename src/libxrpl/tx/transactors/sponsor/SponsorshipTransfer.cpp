@@ -21,7 +21,6 @@
 #include <bit>
 #include <cstdint>
 #include <limits>
-#include <memory>
 #include <optional>
 
 namespace xrpl {
