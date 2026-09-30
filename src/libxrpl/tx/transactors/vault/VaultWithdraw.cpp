@@ -395,7 +395,7 @@ VaultWithdraw::doApply()
         // backing value. Reject rather than burn shares for a zero payout. The fixed-assets branch
         // above has already rejected zero via the sharesRedeemed check.
         if (amount.asset() == share && assetsWithdrawn == beast::kZero &&
-            assetsTotalForWithdrawal(vault, waiveUnrealizedLoss) != beast::kZero)
+            vault.assetsTotalForWithdrawal(waiveUnrealizedLoss) != beast::kZero)
         {
             JLOG(j_.debug()) << "VaultWithdraw: fixed-share withdrawal rounds to zero assets";
             return tecPRECISION_LOSS;

@@ -124,6 +124,16 @@ VaultEntry<ViewT>::clampToAssetsTotalScale(STAmount const& delta) const
     return actualDelta;
 }
 
+template <typename ViewT>
+Number
+VaultEntry<ViewT>::assetsTotalForWithdrawal(WaiveUnrealizedLoss waive) const
+{
+    Number assetTotal = (*this)->at(sfAssetsTotal);
+    if (waive == WaiveUnrealizedLoss::No)
+        assetTotal -= (*this)->at(sfLossUnrealized);
+    return assetTotal;
+}
+
 template class VaultEntry<ReadView>;
 template class VaultEntry<ApplyView>;
 
