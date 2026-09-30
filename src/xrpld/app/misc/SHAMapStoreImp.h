@@ -212,6 +212,10 @@ private:
      *
      * `cache` names the cache a freshen phase worked on (lval::freshen_cache)
      * and is empty for every other phase.
+     *
+     * The record leaves out time spent in a phase opened inside this one (a
+     * health_wait), which is recorded under its own stage, so a wait is
+     * counted once. The span still covers the whole phase.
      */
     class RotationPhase
     {
@@ -225,27 +229,33 @@ private:
             : owner_(owner)
             , stage_(stage)
             , cache_(cache)
+            , enclosing_(owner.openPhase_)
             , span_(telemetry::TraceCategory::Ledger, telemetry::nodestore_span::rotateFull, phase)
         {
+            owner_.openPhase_ = this;
             if (!cache_.empty())
                 span_.setAttribute(telemetry::nodestore_span::attr::cache, cache_);
         }
 
         ~RotationPhase()
         {
+            auto const elapsed = std::chrono::steady_clock::now() - start_;
             // [[maybe_unused]] so a -DXRPL_ENABLE_TELEMETRY=0 build (macro
             // expands to `do {} while (false)`) keeps compiling under -Werror.
             [[maybe_unused]] auto const seconds =
-                std::chrono::duration<double>(std::chrono::steady_clock::now() - start_).count();
+                std::chrono::duration<double>(elapsed - nested_).count();
             // One label set for every phase, so this stays one histogram
             // instrument. `cache` is empty on the non-freshen phases, and
             // Prometheus treats an empty label as absent.
             XRPL_METRIC_HISTOGRAM_RECORD_LABELED(
                 owner_.app_,
                 telemetry::metric::rotationPhaseDurationSeconds,
-                "Wall-clock seconds spent in one online-delete rotation phase",
+                "Seconds spent in one online-delete rotation phase, less nested waits",
                 seconds,
                 {{telemetry::label::stage, stage_}, {telemetry::label::cache, cache_}});
+            if (enclosing_ != nullptr)
+                enclosing_->nested_ += elapsed;
+            owner_.openPhase_ = enclosing_;
         }
 
         RotationPhase(RotationPhase const&) = delete;
@@ -263,15 +273,19 @@ private:
         }
 
     private:
-        // The three below are read only inside the metric macro in the
+        SHAMapStoreImp& owner_;
+        // The two below are read only inside the metric macro in the
         // destructor, so a -DXRPL_ENABLE_TELEMETRY=0 build sees no use at all.
-        [[maybe_unused]] SHAMapStoreImp& owner_;
         // Owned copies: the constructor takes views so callers can pass the
         // label constants, but a view stored in a member would only be valid
         // as long as the caller's text was. A phase is built a handful of
         // times per rotation, so two small strings cost nothing.
         [[maybe_unused]] std::string const stage_;
         [[maybe_unused]] std::string const cache_;
+        // The phase this one runs inside, or null.
+        RotationPhase* const enclosing_;
+        // Time spent in phases opened inside this one.
+        std::chrono::steady_clock::duration nested_{};
         std::chrono::steady_clock::time_point start_ = std::chrono::steady_clock::now();
         telemetry::ScopedSpanGuard span_;
     };
@@ -279,6 +293,10 @@ private:
     // True while run() is inside its rotation block. Read and written on the
     // SHAMapStore thread only, so it needs no lock.
     bool rotating_ = false;
+
+    // The innermost open RotationPhase, or null. SHAMapStore thread only, so
+    // it needs no lock.
+    RotationPhase* openPhase_ = nullptr;
 
     /**
      * Re-fetch every key of one cache so any node only the archive still
