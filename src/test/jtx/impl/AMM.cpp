@@ -259,7 +259,7 @@ AMM::balances(Asset const& asset1, Asset const& asset2, std::optional<AccountID>
             AuthHandling::IgnoreAuth,
             env_.journal);
         auto const lptAMMBalance = account
-            ? ammLPHolds(*env_.current(), AMMEntryR(amm, *env_.current()), *account, env_.journal)
+            ? AMMEntryR(amm, *env_.current(), env_.journal).lpHolds(*account)
             : amm->getFieldAmount(sfLPTokenBalance);
         return {asset1Balance, asset2Balance, lptAMMBalance};
     }
@@ -298,8 +298,7 @@ AMM::expectLPTokens(AccountID const& account, IOUAmount const& expTokens) const
 {
     if (auto const amm = env_.current()->read(keylet::amm(asset1_.asset(), asset2_.asset())))
     {
-        auto const lptAMMBalance =
-            ammLPHolds(*env_.current(), AMMEntryR(amm, *env_.current()), account, env_.journal);
+        auto const lptAMMBalance = AMMEntryR(amm, *env_.current(), env_.journal).lpHolds(account);
         return lptAMMBalance == STAmount{expTokens, lptIssue_};
     }
     return false;
