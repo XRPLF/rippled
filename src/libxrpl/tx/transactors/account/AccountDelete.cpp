@@ -9,6 +9,7 @@
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/View.h>
+#include <xrpl/ledger/entries/NFTokenOfferEntry.h>
 #include <xrpl/ledger/helpers/CredentialHelpers.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/ledger/helpers/NFTokenHelpers.h>
@@ -128,10 +129,11 @@ removeNFTokenOfferFromLedger(
     ApplyView& view,
     AccountID const& account,
     UInt256 const& delIndex,
-    SLE::Ref sleDel,
-    beast::Journal)
+    SLE::Ref,
+    beast::Journal j)
 {
-    if (!nft::deleteTokenOffer(view, sleDel))
+    NFTokenOfferEntryW offer(Keylet(ltNFTOKEN_OFFER, delIndex), view, j);
+    if (!nft::deleteTokenOffer(view, offer))
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
 
     return tesSUCCESS;
