@@ -1057,8 +1057,10 @@ issuerFundsToSelfIssue(ReadView const& view, MPTIssue const& issue)
 void
 issuerSelfDebitHookMPT(ApplyView& view, MPTIssue const& issue, std::uint64_t amount)
 {
-    auto const available = availableMPTAmount(view, issue);
-    view.issuerSelfDebitHookMPT(issue, amount, available);
+    MPTokenIssuanceEntryW sle(issue.getMptID(), view);
+    if (!sle)
+        Throw<std::runtime_error>(transHuman(tecINTERNAL));
+    sle.issuerSelfDebitHook(amount);
 }
 
 }  // namespace xrpl
