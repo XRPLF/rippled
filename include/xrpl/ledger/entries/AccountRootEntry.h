@@ -104,6 +104,18 @@ public:
     checkReserve(ApplyViewContext ctx, XRPAmount accBalance, Adjustment adj) const;
 
     /**
+     * Returns true if and only if this entry is a pseudo-account of any kind
+     * (i.e. carries at least one field flagged with SField::kSmdPseudoAccount).
+     *
+     * Returns false if the entry:
+     * - is NOT a pseudo-account OR
+     * - is NOT a ltACCOUNT_ROOT OR
+     * - does not exist
+     */
+    [[nodiscard]] bool
+    isPseudoAccount() const;
+
+    /**
      * Increase owner-count fields when the caller supplies the sponsor.
      *
      * This helper does not create a ledger object. It updates reserve accounting

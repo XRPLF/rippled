@@ -108,7 +108,7 @@ DepositPreauth::preclaim(PreclaimContext const& ctx)
         if (!sleAuth)
             return tecNO_TARGET;
 
-        if (ctx.view.rules().enabled(fixCleanup3_3_0) && isPseudoAccount(sleAuth))
+        if (ctx.view.rules().enabled(fixCleanup3_3_0) && sleAuth.isPseudoAccount())
         {
             JLOG(ctx.j.debug()) << "Authorized account is a pseudo-account.";
             return tecPSEUDO_ACCOUNT;

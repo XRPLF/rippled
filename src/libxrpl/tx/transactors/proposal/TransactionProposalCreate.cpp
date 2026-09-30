@@ -5,7 +5,6 @@
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/View.h>
 #include <xrpl/ledger/entries/AccountRootEntry.h>
-#include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/ledger/helpers/ProposalHelpers.h>
 #include <xrpl/ledger/helpers/SponsorHelpers.h>
@@ -169,7 +168,7 @@ TransactionProposalCreate::preclaim(PreclaimContext const& ctx)
     }
 
     // A pseudo-account cannot authorize a transaction through a SignerList.
-    if (isPseudoAccount(sleTarget))
+    if (sleTarget.isPseudoAccount())
         return tecNO_PERMISSION;
 
     // Only the target account itself, an account on its SignerList, or (if

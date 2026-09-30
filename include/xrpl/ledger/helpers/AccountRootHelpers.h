@@ -249,24 +249,12 @@ pseudoAccountAddress(ReadView const& view, UInt256 const& pseudoOwnerKey);
 getPseudoAccountFields();
 
 /**
- * Returns true if and only if sleAcct is a pseudo-account of any kind
- * (i.e. carries at least one field flagged with SField::kSmdPseudoAccount).
- *
- * Returns false if sleAcct is:
- * - NOT a pseudo-account OR
- * - NOT a ltACCOUNT_ROOT OR
- * - null pointer
- */
-[[nodiscard]] bool
-isPseudoAccount(AccountRootEntryR const& sleAcct);
-
-/**
  * Convenience overload that reads the account from the view.
  */
 [[nodiscard]] inline bool
 isPseudoAccount(ReadView const& view, AccountID const& accountId)
 {
-    return isPseudoAccount(AccountRootEntryR(accountId, view));
+    return AccountRootEntryR(accountId, view).isPseudoAccount();
 }
 
 /**
