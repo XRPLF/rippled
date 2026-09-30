@@ -336,16 +336,16 @@ VaultDeposit::doApply()
         }
     }
     STAmount sharesCreated = {vault->at(sfShareMPTID)}, assetsDeposited;
-    if (isDonate)
+    // Number arithmetic can throw overflow_error when Scale and totals are large. Caught below.
+    try
     {
-        XRPL_ASSERT(
-            accountID_ == vault->at(sfOwner), "xrpl::VaultDeposit::doApply : account is owner");
-        assetsDeposited = amount;
-    }
-    else
-    {
-        // Number arithmetic can throw overflow_error when Scale and totals are large. Caught below.
-        try
+        if (isDonate)
+        {
+            XRPL_ASSERT(
+                accountID_ == vault->at(sfOwner), "xrpl::VaultDeposit::doApply : account is owner");
+            assetsDeposited = amount;
+        }
+        else
         {
             // Compute exchange before transferring any amounts.
             {
@@ -376,40 +376,39 @@ VaultDeposit::doApply()
                 // LCOV_EXCL_STOP
             }
             assetsDeposited = *maybeAssets;
-
-            // Post-fixCleanup3_4_0: round the deposit to the sfAssetsTotal scale so all accounting
-            // fields (trust line / MPT, sfAssetsAvailable, sfAssetsTotal) change by the same
-            // representable delta.
-            if (fix340Enabled)
-            {
-                // Round down at the posterior sfAssetsTotal scale so the vault is credited by no
-                // more than the depositor paid. Keep the share count from the first round trip: the
-                // clamp only drops a last digit of the new total. Converting the clamped amount
-                // back to shares would mint fewer shares while still charging the N-share debit.
-                auto const maybeClamped = clampToAssetsTotalScale(vault, assetsDeposited);
-                if (!maybeClamped)
-                    return maybeClamped.error();
-                assetsDeposited = *maybeClamped;
-
-                // The actual deposit amount is truncated to whole shares, converted back to assets,
-                // and clamped to the sfAssetsTotal scale (post-fixCleanup3_4_0). Check the
-                // depositor's balance here—after clamping—before making any state changes.
-                if (roundsToZeroForDepositor(view(), accountID_, assetsDeposited, j_))
-                    return tecPRECISION_LOSS;
-            }
         }
-        catch (std::overflow_error const&)
+
+        // Post-fixCleanup3_4_0: round the deposit to the sfAssetsTotal scale so all accounting
+        // fields (trust line / MPT, sfAssetsAvailable, sfAssetsTotal) change by the same
+        // representable delta. This applies to donations as well as ordinary deposits.
+        if (fix340Enabled)
         {
-            // It's easy to hit this exception from Number with large enough Scale
-            // so we avoid spamming the log and only use debug here.
-            JLOG(j_.debug())  //
-                << "VaultDeposit: overflow error with"
-                << " scale=" << (int)vault->at(sfScale).value()  //
-                << ", assetsTotal=" << vault->at(sfAssetsTotal).value()
-                << ", sharesTotal=" << sleIssuance->at(sfOutstandingAmount)
-                << ", amount=" << amount;
-            return tecPATH_DRY;
+            // Round down at the posterior sfAssetsTotal scale so the vault is credited by no
+            // more than the depositor paid. Keep the share count from the first round trip: the
+            // clamp only drops a last digit of the new total. Converting the clamped amount
+            // back to shares would mint fewer shares while still charging the N-share debit.
+            auto const maybeClamped = clampToAssetsTotalScale(vault, assetsDeposited);
+            if (!maybeClamped)
+                return maybeClamped.error();
+            assetsDeposited = *maybeClamped;
+
+            // The actual deposit amount is truncated to whole shares, converted back to assets,
+            // and clamped to the sfAssetsTotal scale (post-fixCleanup3_4_0). Check the
+            // depositor's balance here, after clamping, before making any state changes.
+            if (roundsToZeroForDepositor(view(), accountID_, assetsDeposited, j_))
+                return tecPRECISION_LOSS;
         }
+    }
+    catch (std::overflow_error const&)
+    {
+        // It's easy to hit this exception from Number with large enough Scale
+        // so we avoid spamming the log and only use debug here.
+        JLOG(j_.debug())  //
+            << "VaultDeposit: overflow error with"
+            << " scale=" << (int)vault->at(sfScale).value()  //
+            << ", assetsTotal=" << vault->at(sfAssetsTotal).value()
+            << ", sharesTotal=" << sleIssuance->at(sfOutstandingAmount) << ", amount=" << amount;
+        return tecPATH_DRY;
     }
 
     XRPL_ASSERT(
@@ -453,12 +452,8 @@ VaultDeposit::doApply()
         }
     }
 
-    if (isDonate)
-    {
-        XRPL_ASSERT(
-            sharesCreated == beast::kZero, "xrpl::VaultDeposit::doApply : donation issued shares");
-    }
-    else
+    // Donations issue no shares.
+    if (!isDonate)
     {
         // Transfer shares from vault to depositor.
         if (auto const ter = accountSend(

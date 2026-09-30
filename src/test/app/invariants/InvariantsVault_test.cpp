@@ -2352,6 +2352,51 @@ class InvariantsVault_test : public InvariantsBase
             precloseXrp,
             TxAccount::A2);
 
+        doInvariantCheck(
+            {"donation must be made by the vault owner"},
+            [&](Account const& a1, Account const& a2, ApplyContext& ac) {
+                auto const keylet = keylet::vault(a1.id(), SeqProxy::rawSequence(ac.view().seq()));
+                return kAdjust(ac.view(), keylet, kArgs(a2.id(), 10, [&](Adjustments& sample) {
+                                   sample.sharesTotal = std::nullopt;
+                                   sample.accountShares = std::nullopt;
+                               }));
+            },
+            XRPAmount{},
+            STTx{
+                ttVAULT_DEPOSIT,
+                [](STObject& tx) {
+                    tx[sfAmount] = XRPAmount(10);
+                    tx[sfFlags] = tfVaultDonate;
+                }},
+            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            precloseXrp,
+            TxAccount::A2);
+
+        doInvariantCheck(
+            {"donation requires outstanding shares"},
+            [&](Account const& a1, Account const& a2, ApplyContext& ac) {
+                auto const keylet = keylet::vault(a1.id(), SeqProxy::rawSequence(ac.view().seq()));
+                return kAdjust(ac.view(), keylet, kArgs(a1.id(), 10, [&](Adjustments& sample) {
+                                   sample.sharesTotal = std::nullopt;
+                                   sample.accountShares = std::nullopt;
+                               }));
+            },
+            XRPAmount{},
+            STTx{
+                ttVAULT_DEPOSIT,
+                [](STObject& tx) {
+                    tx[sfAmount] = XRPAmount(10);
+                    tx[sfFlags] = tfVaultDonate;
+                }},
+            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            [&](Account const& a1, Account const&, Env& env) -> bool {
+                Vault const vault{env};
+                auto [tx, keylet] = vault.create({.owner = a1, .asset = xrpIssue()});
+                env(tx);
+                return true;
+            },
+            TxAccount::A1);
+
         testcase << "Vault withdrawal";
         doInvariantCheck(
             {"withdrawal must change vault balance"},
