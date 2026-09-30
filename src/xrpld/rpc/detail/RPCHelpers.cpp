@@ -94,7 +94,7 @@ static_assert(
 bool
 isOwnerDirNodeField(SField const& field)
 {
-    return std::ranges::find(kOwnerDirNodeFields, &field) != kOwnerDirNodeFields.end();
+    return std::ranges::contains(kOwnerDirNodeFields, &field);
 }
 
 bool
@@ -105,14 +105,10 @@ isRelatedToAccount(ReadView const& ledger, SLE::const_ref sle, AccountID const& 
     // returns true iff `sle`'s key is present on that page in `accountID`'s
     // owner directory. Bounded by kOwnerDirNodeFields.size() ledger reads.
     auto const ownerDir = keylet::ownerDir(accountID);
-    auto const& sleKey = sle->key();
 
     auto const pageContainsKey = [&](std::uint64_t node) {
         auto const page = ledger.read(keylet::page(ownerDir, node));
-        if (!page)
-            return false;
-        auto const& indexes = page->getFieldV256(sfIndexes);
-        return std::ranges::find(indexes, sleKey) != indexes.end();
+        return page && std::ranges::contains(page->getFieldV256(sfIndexes), sle->key());
     };
 
     return std::ranges::any_of(kOwnerDirNodeFields, [&](SField const* field) {
