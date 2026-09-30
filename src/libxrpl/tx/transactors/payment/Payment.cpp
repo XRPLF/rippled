@@ -6,6 +6,7 @@
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/PaymentSandbox.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/entries/PermissionedDomainEntry.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/CredentialHelpers.h>
 #include <xrpl/ledger/helpers/MPTokenHelpers.h>
@@ -480,7 +481,7 @@ Payment::preclaim(PreclaimContext const& ctx)
         if (ctx.view.rules().enabled(fixCleanup3_4_0))
         {
             auto const domainID = ctx.tx[sfDomainID];
-            auto const sleDomain = ctx.view.read(keylet::permissionedDomain(domainID));
+            PermissionedDomainEntryR const sleDomain(domainID, ctx.view);
             if (!sleDomain)
                 return tecNO_PERMISSION;
 
@@ -492,7 +493,7 @@ Payment::preclaim(PreclaimContext const& ctx)
                     return tesSUCCESS;
                 // validDomain returns tecNO_AUTH when no matching credential is
                 // found. Map it to tecNO_PERMISSION to preserve existing behavior.
-                if (auto const err = credentials::validDomain(ctx.view, domainID, acct);
+                if (auto const err = credentials::validDomain(sleDomain, acct);
                     !isTesSuccess(err) && err != tecEXPIRED)
                     return tecNO_PERMISSION;
                 return tesSUCCESS;
@@ -525,14 +526,14 @@ Payment::doApply()
     if (ctx_.tx.isFieldPresent(sfDomainID) && ctx_.view().rules().enabled(fixCleanup3_4_0))
     {
         auto const domainID = ctx_.tx[sfDomainID];
-        auto const sleDomain = ctx_.view().read(keylet::permissionedDomain(domainID));
+        PermissionedDomainEntryR const sleDomain(domainID, ctx_.view());
         if (!sleDomain)
             return tecINTERNAL;  // LCOV_EXCL_LINE
 
         auto const cleanupFor = [&](AccountID const& acct) -> TER {
             if (sleDomain->getAccountID(sfOwner) == acct)
                 return tesSUCCESS;
-            return verifyValidDomain(ctx_.view(), acct, domainID, j_);
+            return verifyValidDomain(ctx_.view(), acct, sleDomain, j_);
         };
 
         auto const destination = ctx_.tx[sfDestination];

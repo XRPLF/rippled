@@ -7,6 +7,7 @@
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/entries/PermissionedDomainEntry.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
@@ -205,16 +206,16 @@ valid(STTx const& tx, ReadView const& view, AccountID const& src, beast::Journal
 }
 
 TER
-validDomain(ReadView const& view, UInt256 domainID, AccountID const& subject)
+validDomain(PermissionedDomainEntryR const& domain, AccountID const& subject)
 {
     // Note, permissioned domain objects can be deleted at any time
-    auto const slePD = view.read(keylet::permissionedDomain(domainID));
-    if (!slePD)
+    if (!domain)
         return tecOBJECT_NOT_FOUND;
 
+    auto const& view = domain.readView();
     auto const closeTime = view.header().parentCloseTime;
     bool foundExpired = false;
-    for (auto const& h : slePD->getFieldArray(sfAcceptedCredentials))
+    for (auto const& h : domain->getFieldArray(sfAcceptedCredentials))
     {
         auto const issuer = h.getAccountID(sfIssuer);
         auto const type = h.getFieldVL(sfCredentialType);
@@ -332,16 +333,19 @@ checkArray(STArray const& credentials, unsigned maxSize, beast::Journal j)
 }  // namespace credentials
 
 TER
-verifyValidDomain(ApplyView& view, AccountID const& account, UInt256 domainID, beast::Journal j)
+verifyValidDomain(
+    ApplyView& view,
+    AccountID const& account,
+    PermissionedDomainEntryR const& domain,
+    beast::Journal j)
 {
-    auto const slePD = view.read(keylet::permissionedDomain(domainID));
-    if (!slePD)
+    if (!domain)
         return tecOBJECT_NOT_FOUND;
 
     // Collect all matching credentials on a side, so we can remove expired ones
     // We may finish the loop with this collection empty, it's fine.
     STVector256 credentials;
-    for (auto const& h : slePD->getFieldArray(sfAcceptedCredentials))
+    for (auto const& h : domain->getFieldArray(sfAcceptedCredentials))
     {
         auto const issuer = h.getAccountID(sfIssuer);
         auto const type = h.getFieldVL(sfCredentialType);
