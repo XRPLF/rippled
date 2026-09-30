@@ -471,7 +471,7 @@ CheckCash::doApply()
                         STAmount initialBalance(flowDeliver.asset());
                         initialBalance.get<Issue>().account = noAccount();
 
-                        if (TER const ter = trustCreate(
+                        if (TER const ter = RippleStateEntryW::create(
                                 psb,                                // payment sandbox
                                 destLow,                            // is dest low?
                                 deliverIssuer,                      // source
