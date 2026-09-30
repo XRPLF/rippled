@@ -5,7 +5,6 @@
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/ledger/entries/VaultEntry.h>
-#include <xrpl/ledger/helpers/VaultHelpers.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Issue.h>
@@ -112,7 +111,7 @@ private:
             for (auto const mode : modes)
             {
                 NumberRoundModeGuard const rg(mode);
-                auto const result = clampToAssetsTotalScale(VaultEntryR(vault, *view), delta);
+                auto const result = VaultEntryR(vault, *view).clampToAssetsTotalScale(delta);
 
                 // The function must be insensitive to the caller's ambient
                 // rounding mode: every mode must agree with the first one
