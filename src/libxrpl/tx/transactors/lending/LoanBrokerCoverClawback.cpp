@@ -248,7 +248,7 @@ LoanBrokerCoverClawback::preclaim(PreclaimContext const& ctx)
     auto const brokerID = *findBrokerID;
     auto const amount = tx[~sfAmount];
 
-    LoanBrokerEntryR const sleBroker(brokerID, ctx.view);
+    LoanBrokerEntryR const sleBroker(brokerID, ctx.view, ctx.j);
     if (!sleBroker)
     {
         JLOG(ctx.j.warn()) << "LoanBroker does not exist.";
@@ -305,8 +305,8 @@ LoanBrokerCoverClawback::preclaim(PreclaimContext const& ctx)
     }
     STAmount const& clawAmount = *findClawAmount;
 
-    if (auto const ret = canApplyToBrokerCover(
-            ctx.view, sleBroker, vaultAsset, clawAmount, ctx.j, "LoanBrokerCoverClawback"))
+    if (auto const ret =
+            sleBroker.canApplyToCover(vaultAsset, clawAmount, "LoanBrokerCoverClawback"))
         return ret;
 
     // Explicitly check the balance of the trust line / MPT to make sure the
