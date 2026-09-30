@@ -538,13 +538,7 @@ findToken(ReadView const& view, AccountID const& owner, UInt256 const& nftokenID
         return std::nullopt;
 
     // We found a candidate page, but the given NFT may not be in it.
-    for (auto const& t : page->getFieldArray(sfNFTokens))
-    {
-        if (t[sfNFTokenID] == nftokenID)
-            return t;
-    }
-
-    return std::nullopt;
+    return page.findToken(nftokenID);
 }
 
 std::optional<TokenAndPage>
