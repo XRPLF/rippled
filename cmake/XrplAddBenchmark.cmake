@@ -29,6 +29,14 @@ function(xrpl_add_benchmark name)
     # XrplCore.cmake. Each file compiles fine on its own.
     set_target_properties(${target} PROPERTIES UNITY_BUILD OFF)
 
+    # Land next to `xrpl_tests` in the build root rather than buried under
+    # `src/benchmarks/libxrpl/`. A benchmark is something a person runs by hand,
+    # repeatedly, and comparing two of them should not mean typing two long paths.
+    set_target_properties(
+        ${target}
+        PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}"
+    )
+
     isolate_headers(
         ${target}
         "${CMAKE_SOURCE_DIR}/src"

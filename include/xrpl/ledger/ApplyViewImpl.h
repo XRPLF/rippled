@@ -13,6 +13,7 @@
 #include <xrpl/protocol/TxMeta.h>
 
 #include <cstddef>
+#include <cstdint>
 #include <functional>
 #include <optional>
 
@@ -68,6 +69,18 @@ public:
         deliver_ = amount;
     }
 
+    void
+    setGasUsed(std::optional<std::uint32_t> const gasUsed)
+    {
+        gasUsed_ = gasUsed;
+    }
+
+    void
+    setVMReturnCode(std::int32_t const vmReturnCode)
+    {
+        vmReturnCode_ = vmReturnCode;
+    }
+
     /**
      * Get the number of modified entries
      */
@@ -88,6 +101,8 @@ public:
 
 private:
     std::optional<STAmount> deliver_;
+    std::optional<std::uint32_t> gasUsed_;
+    std::optional<std::int32_t> vmReturnCode_;
 };
 
 }  // namespace xrpl

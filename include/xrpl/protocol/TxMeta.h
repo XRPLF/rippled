@@ -95,6 +95,12 @@ public:
 
         if (obj.isFieldPresent(sfParentBatchID))
             parentBatchID_ = obj.getFieldH256(sfParentBatchID);
+
+        if (obj.isFieldPresent(sfGasUsed))
+            gasUsed_ = obj.getFieldU32(sfGasUsed);
+
+        if (obj.isFieldPresent(sfVMReturnCode))
+            vmReturnCode_ = obj.getFieldI32(sfVMReturnCode);
     }
 
     [[nodiscard]] std::optional<STAmount> const&
@@ -115,6 +121,30 @@ public:
         parentBatchID_ = id;
     }
 
+    void
+    setGasUsed(std::optional<std::uint32_t> const gasUsed)
+    {
+        gasUsed_ = gasUsed;
+    }
+
+    [[nodiscard]] std::optional<std::uint32_t> const&
+    getGasUsed() const
+    {
+        return gasUsed_;
+    }
+
+    void
+    setVMReturnCode(std::optional<std::int32_t> const vmReturnCode)
+    {
+        vmReturnCode_ = vmReturnCode;
+    }
+
+    [[nodiscard]] std::optional<std::int32_t> const&
+    getVMReturnCode() const
+    {
+        return vmReturnCode_;
+    }
+
 private:
     uint256 transactionID_;
     std::uint32_t ledgerSeq_;
@@ -123,6 +153,8 @@ private:
 
     std::optional<STAmount> deliveredAmount_;
     std::optional<uint256> parentBatchID_;
+    std::optional<std::uint32_t> gasUsed_;
+    std::optional<std::int32_t> vmReturnCode_;
 
     STArray nodes_;
 };

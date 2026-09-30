@@ -12,7 +12,6 @@ _BASE_CMAKE_ARGS = [
     "-Dwerr=ON",
     "-Dxrpld=ON",
     "-Dwextra=ON",
-    "-Drust=ON",
 ]
 
 # The package formats a config can be packaged as, each with its own
