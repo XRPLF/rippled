@@ -8,7 +8,6 @@
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
-#include <xrpl/ledger/View.h>
 #include <xrpl/ledger/entries/LoanEntry.h>
 #include <xrpl/ledger/helpers/VaultHelpers.h>
 #include <xrpl/protocol/Asset.h>
@@ -168,16 +167,6 @@ isRounded(Asset const& asset, Number const& value, std::int32_t scale)
 {
     return roundToAsset(asset, value, scale, Number::RoundingMode::Downward) ==
         roundToAsset(asset, value, scale, Number::RoundingMode::Upward);
-}
-
-[[nodiscard]] bool
-isPaymentLate(ReadView const& view, LoanEntryR const& loanSle)
-{
-    return hasExpired(
-        view,
-        loanSle->at(sfNextPaymentDueDate),
-        view.rules().enabled(fixCleanup3_4_0) ? ExpiryComparison::Exclusive
-                                              : ExpiryComparison::Inclusive);
 }
 
 namespace instant_recognition {
@@ -1062,7 +1051,7 @@ computeLatePayment(
     // regular payment path on whether the loan is actually late at the
     // exact due date boundary (amendment-gated: Exclusive once
     // fixCleanup3_4_0 is enabled, Inclusive otherwise).
-    if (!isPaymentLate(view, loan))
+    if (!loan.isPaymentLate())
         return std::unexpected(tecTOO_SOON);
 
     // Calculate the penalty interest based on how long the payment is overdue.
@@ -2274,7 +2263,7 @@ loanMakePayment(
 
     // -------------------------------------------------------------
     // A late payment not flagged as late overrides all other options.
-    if (paymentType != LoanPaymentType::Late && isPaymentLate(view, loan))
+    if (paymentType != LoanPaymentType::Late && loan.isPaymentLate())
     {
         // If the payment is late, and the late flag was not set, it's not
         // valid
