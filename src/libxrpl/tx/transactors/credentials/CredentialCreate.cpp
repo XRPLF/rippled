@@ -160,7 +160,7 @@ CredentialCreate::doApply()
             return tecDIR_FULL;
         sleCred->setFieldU64(sfIssuerNode, *page);
 
-        increaseOwnerCount(ctx_.getApplyViewContext(), sleIssuer, 1, j_);
+        sleIssuer.increaseOwnerCount(ctx_.getApplyViewContext(), 1);
         addSponsorToLedgerEntry(ctx_.getApplyViewContext(), sleCred);
     }
 

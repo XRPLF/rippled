@@ -6,7 +6,6 @@
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/entries/AccountRootEntry.h>
-#include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Keylet.h>
@@ -82,8 +81,6 @@ TicketCreate::doApply()
         sleAccountRoot.reserve({.ownerCountDelta = static_cast<std::int32_t>(ticketCount)}))
         return tecINSUFFICIENT_RESERVE;
 
-    beast::Journal const viewJ{ctx_.registry.get().getJournal("View")};
-
     // The starting ticket sequence is the same as the current account
     // root sequence.  Before we got here to doApply(), the transaction
     // machinery already incremented the account root sequence if that
@@ -126,7 +123,7 @@ TicketCreate::doApply()
 
     // Every added Ticket counts against the creator's reserve.
     std::optional<AccountRootEntryW> noSponsor;
-    increaseOwnerCount(view(), sleAccountRoot, noSponsor, ticketCount, viewJ);
+    sleAccountRoot.increaseOwnerCount(noSponsor, ticketCount);
 
     // TicketCreate is the only transaction that can cause an account root's
     // Sequence field to increase by more than one.  October 2018.

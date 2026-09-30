@@ -6,7 +6,6 @@
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/entries/AccountRootEntry.h>
-#include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/ledger/helpers/SponsorHelpers.h>
 #include <xrpl/protocol/Feature.h>
@@ -203,7 +202,7 @@ MPTokenIssuanceCreate::create(
     }
 
     // Update owner count.
-    increaseOwnerCount(ctx.view, acct, sponsorSle, 1, journal);
+    acct.increaseOwnerCount(sponsorSle, 1);
 
     return mptId;
 }

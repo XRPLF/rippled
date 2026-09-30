@@ -331,7 +331,6 @@ SignerListSet::replaceSignerList()
     view().insert(signerList);
     writeSignersToSLE(signerList, flags);
 
-    auto viewJ = ctx_.registry.get().getJournal("View");
     // Add the signer list to the account's directory.
     auto const page =
         ctx_.view().dirInsert(ownerDirKeylet, signerListKeylet, describeOwnerDir(accountID_));
@@ -346,7 +345,7 @@ SignerListSet::replaceSignerList()
 
     // If we succeeded, the new entry counts against the
     // creator's reserve.
-    increaseOwnerCount(ctx_.getApplyViewContext(), sle, kAddedOwnerCount, viewJ);
+    sle.increaseOwnerCount(ctx_.getApplyViewContext(), kAddedOwnerCount);
     addSponsorToLedgerEntry(ctx_.getApplyViewContext(), signerList);
     return tesSUCCESS;
 }

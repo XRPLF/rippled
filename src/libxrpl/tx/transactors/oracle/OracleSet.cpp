@@ -188,15 +188,14 @@ adjustOracleOwnerCount(ApplyContext& ctx, int count)
 {
     XRPL_ASSERT(std::abs(count) <= 2, "xrpl::adjustOracleOwnerCount abs(counter) <= 2");
 
-    auto sleAccount = AccountRootEntryW(ctx.tx[sfAccount], ctx.view());
+    auto sleAccount = AccountRootEntryW(ctx.tx[sfAccount], ctx.view(), ctx.journal);
     if (!sleAccount)
         return false;  // LCOV_EXCL_LINE
 
     std::optional<AccountRootEntryW> noSponsor;
     if (count > 0)
     {
-        increaseOwnerCount(
-            ctx.view(), sleAccount, noSponsor, static_cast<std::uint32_t>(count), ctx.journal);
+        sleAccount.increaseOwnerCount(noSponsor, static_cast<std::uint32_t>(count));
     }
     else if (count < 0)
     {
