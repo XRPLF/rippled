@@ -955,7 +955,7 @@ Integrate 29 missing metrics, 18 alert rules, and enriched span attributes from 
 | Category             | Metrics                                                                                                                                                                                                                            | Count |
 | -------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----- |
 | Validation Agreement | `validations_sent_total`, `validations_checked_total`, `validation_agreements_total`, `validation_missed_total`, `validation_agreement_pct_1h/24h`, `validation_agreements_1h/24h`, `validation_missed_1h/24h`, `validation_event` | 11    |
-| Ledger Economy       | `ledgers_closed_total`, `ledger_age_seconds`, `base_fee_xrp`, `reserve_base_xrp`, `reserve_inc_xrp`, `transaction_rate`                                                                                                            | 6     |
+| Ledger Economy       | `ledgers_closed_total`, `ledger_age_seconds`, `base_fee_drops`, `reserve_base_drops`, `reserve_inc_drops`, `transaction_rate`                                                                                                      | 6     |
 | State Tracking       | `time_in_current_state_seconds`, `state_changes_total`, `validator_state_info`                                                                                                                                                     | 3     |
 | Peer Quality         | `peers_insane`, `peer_latency_p90_ms`                                                                                                                                                                                              | 2     |
 | Validator Health     | `amendment_blocked`, `unl_expiry_days`                                                                                                                                                                                             | 2     |
@@ -1239,9 +1239,9 @@ New MetricsRegistry observable gauge for fee and ledger metrics.
 
 | Gauge Name       | Label `metric=`      | Type   | Source                                    |
 | ---------------- | -------------------- | ------ | ----------------------------------------- |
-| `ledger_economy` | `base_fee_xrp`       | double | `app_.getFeeTrack().getBaseFee()` → drops |
-|                  | `reserve_base_xrp`   | double | From validated ledger fee settings        |
-|                  | `reserve_inc_xrp`    | double | From validated ledger fee settings        |
+| `ledger_economy` | `base_fee_drops`     | double | `app_.getFeeTrack().getBaseFee()` → drops |
+|                  | `reserve_base_drops` | double | From validated ledger fee settings        |
+|                  | `reserve_inc_drops`  | double | From validated ledger fee settings        |
 |                  | `ledger_age_seconds` | double | `now - lastValidatedCloseTime`            |
 |                  | `transaction_rate`   | double | Derived: tx count delta / time delta      |
 
@@ -1413,9 +1413,9 @@ Add a "Ledger Economy" row to the existing `node-health.json` dashboard:
 
 | Panel                | Type       | PromQL                                        |
 | -------------------- | ---------- | --------------------------------------------- |
-| Base Fee (drops)     | stat       | `ledger_economy{metric="base_fee_xrp"}`       |
-| Reserve Base (drops) | stat       | `ledger_economy{metric="reserve_base_xrp"}`   |
-| Reserve Inc (drops)  | stat       | `ledger_economy{metric="reserve_inc_xrp"}`    |
+| Base Fee (drops)     | stat       | `ledger_economy{metric="base_fee_drops"}`     |
+| Reserve Base (drops) | stat       | `ledger_economy{metric="reserve_base_drops"}` |
+| Reserve Inc (drops)  | stat       | `ledger_economy{metric="reserve_inc_drops"}`  |
 | Ledger Age           | stat       | `ledger_economy{metric="ledger_age_seconds"}` |
 | Transaction Rate     | timeseries | `ledger_economy{metric="transaction_rate"}`   |
 
@@ -1452,7 +1452,7 @@ Add checks to `validate_telemetry.py` for all new span attributes and metrics.
 | `validator_health{metric="unl_expiry_days"}`       |
 | `peer_quality{metric="peer_latency_p90_ms"}`       |
 | `peer_quality{metric="peers_insane_count"}`        |
-| `ledger_economy{metric="base_fee_xrp"}`            |
+| `ledger_economy{metric="base_fee_drops"}`          |
 | `ledger_economy{metric="transaction_rate"}`        |
 | `state_tracking{metric="state_value"}`             |
 | `ledgers_closed_total`                             |
