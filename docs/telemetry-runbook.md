@@ -4225,11 +4225,14 @@ panel it reads.
       peer or at a network-id mismatch.
       Then read _Peer Disconnects (Count By Reason & Direction)_
       (`peer_disconnect_total`, by `reason` and `direction`). One disconnect
-      count cannot separate the two causes; the label can:
-    - `large_sendq`, `charge_resources` — **our fault.** This node could not
-      keep up with what it owed the peer, or charged it past the resource
-      limit, so it shed the connection as backpressure. The fix is local
-      capacity, not the peer list, and it sends you back to steps 9 and 10.
+      count cannot separate the causes; the label can:
+    - `large_sendq` — **a slow peer or path.** The peer, or the network path
+      to it, did not take data as fast as this node sent it. Its send queue
+      stayed full for several minutes, so this node dropped the peer. On many
+      peers at once, suspect this node's own uplink instead.
+    - `charge_resources` — **the peer's fault.** The peer's traffic (too many
+      messages, costly requests, or bad data) used up its resource allowance,
+      so this node cut it off. There is nothing to fix locally.
     - `not_useful`, `ping_timeout`, `read_error` — topology or network
       faults. The peer is on a different chain or unreachable, so the fix is
       the peer set.
