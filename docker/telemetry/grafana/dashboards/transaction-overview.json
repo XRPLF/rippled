@@ -150,7 +150,7 @@
     },
     {
       "title": "Transaction Receive Rate",
-      "description": "**What:** Transactions received from peers that this node went on to process.\n**How it's computed:** Per-second rate of the tx.receive span over a 5-minute window, per node.\n**Reading it:** Tracks the useful inbound transaction load. Copies dropped as duplicates are not counted here, because the span starts after the duplicate check; their volume is the transactions_duplicate traffic category.\n**Healthy range:** Workload-dependent.\n**Watch for:** A fall to zero while peers are connected means inbound relay has stopped.\n**Source:** src/xrpld/overlay/detail/PeerImp.cpp:PeerImp::handleTransaction",
+      "description": "**What:** Transactions received from peers that this node went on to process.\n**How it's computed:** Per-second rate of the tx.receive span over the dashboard's rate interval, per node.\n**Reading it:** Tracks the useful inbound transaction load. Copies dropped as duplicates are not counted here, because the span starts after the duplicate check; their volume is the transactions_duplicate traffic category.\n**Healthy range:** Workload-dependent.\n**Watch for:** A fall to zero while peers are connected means inbound relay has stopped.\n**Source:** src/xrpld/overlay/detail/PeerImp.cpp:PeerImp::handleTransaction",
       "type": "timeseries",
       "gridPos": {
         "h": 8,

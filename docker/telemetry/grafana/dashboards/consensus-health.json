@@ -233,7 +233,7 @@
     },
     {
       "title": "Close Time Agreement",
-      "description": "**What:** Whether validators agreed on the ledger close time (agreed) or agreed to disagree and used a fallback (disagreed), per round.\n**How it's computed:** Per-second rate of rounds split by agreement outcome over a 5-minute window, per node.\n**Reading it:** Nearly all rounds should show agreement.\n**Healthy range:** Overwhelmingly agreement; occasional disagreement is tolerable.\n**Watch for:** A rising disagreement share signals clock drift or network latency across validators.\n**Source:** src/xrpld/app/consensus/RCLConsensus.cpp:RCLConsensus::Adaptor::doAccept",
+      "description": "**What:** Whether validators agreed on the ledger close time (agreed) or agreed to disagree and used a fallback (disagreed), per round.\n**How it's computed:** Per-second rate of rounds split by agreement outcome over the dashboard's rate interval, per node.\n**Reading it:** Nearly all rounds should show agreement.\n**Healthy range:** Overwhelmingly agreement; occasional disagreement is tolerable.\n**Watch for:** A rising disagreement share signals clock drift or network latency across validators.\n**Source:** src/xrpld/app/consensus/RCLConsensus.cpp:RCLConsensus::Adaptor::doAccept",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
