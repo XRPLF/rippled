@@ -1,44 +1,53 @@
 #pragma once
 
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/ledger/ReadView.h>
-#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/Keylet.h>
+#include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/STVector256.h>
+
+#include <cstddef>
+#include <iterator>
+#include <optional>
+#include <vector>
 
 namespace xrpl {
 
-/** A class that simplifies iterating ledger directory pages
-
-    The Dir class provides a forward iterator for walking through
-    the uint256 values contained in ledger directories.
-
-    The Dir class also allows accelerated directory walking by
-    stepping directly from one page to the next using the next_page()
-    member function.
-
-    As of July 2024, the Dir class is only being used with NFTokenOffer
-    directories and for unit tests.
-*/
+/**
+ * A class that simplifies iterating ledger directory pages
+ *
+ * The Dir class provides a forward iterator for walking through
+ * the UInt256 values contained in ledger directories.
+ *
+ * The Dir class also allows accelerated directory walking by
+ * stepping directly from one page to the next using the next_page()
+ * member function.
+ *
+ * As of July 2024, the Dir class is only being used with NFTokenOffer
+ * directories and for unit tests.
+ */
 class Dir
 {
 private:
     ReadView const* view_ = nullptr;
     Keylet root_;
-    std::shared_ptr<SLE const> sle_;
+    SLE::const_pointer sle_;
     STVector256 const* indexes_ = nullptr;
 
 public:
-    class const_iterator;
-    using value_type = std::shared_ptr<SLE const>;
+    class ConstIterator;
+    using value_type = SLE::const_pointer;
 
     Dir(ReadView const&, Keylet const&);
 
-    [[nodiscard]] const_iterator
+    [[nodiscard]] ConstIterator
     begin() const;
 
-    [[nodiscard]] const_iterator
+    [[nodiscard]] ConstIterator
     end() const;
 };
 
-class Dir::const_iterator
+class Dir::ConstIterator
 {
 public:
     using value_type = Dir::value_type;
@@ -48,13 +57,7 @@ public:
     using iterator_category = std::forward_iterator_tag;
 
     bool
-    operator==(const_iterator const& other) const;
-
-    bool
-    operator!=(const_iterator const& other) const
-    {
-        return !(*this == other);
-    }
+    operator==(ConstIterator const& other) const;
 
     reference
     operator*() const;
@@ -65,17 +68,17 @@ public:
         return &**this;
     }
 
-    const_iterator&
+    ConstIterator&
     operator++();
 
-    const_iterator
+    ConstIterator
     operator++(int);
 
-    const_iterator&
-    next_page();
+    ConstIterator&
+    nextPage();
 
     std::size_t
-    page_size();
+    pageSize();
 
     Keylet const&
     page() const
@@ -83,7 +86,7 @@ public:
         return page_;
     }
 
-    uint256
+    UInt256
     index() const
     {
         return index_;
@@ -92,7 +95,7 @@ public:
 private:
     friend class Dir;
 
-    const_iterator(ReadView const& view, Keylet const& root, Keylet const& page)
+    ConstIterator(ReadView const& view, Keylet const& root, Keylet const& page)
         : view_(&view), root_(root), page_(page)
     {
     }
@@ -100,11 +103,11 @@ private:
     ReadView const* view_ = nullptr;
     Keylet root_;
     Keylet page_;
-    uint256 index_;
+    UInt256 index_;
     std::optional<value_type> mutable cache_;
-    std::shared_ptr<SLE const> sle_;
+    SLE::const_pointer sle_;
     STVector256 const* indexes_ = nullptr;
-    std::vector<uint256>::const_iterator it_;
+    std::vector<UInt256>::const_iterator it_;
 };
 
 }  // namespace xrpl

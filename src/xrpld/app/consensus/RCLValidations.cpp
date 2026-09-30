@@ -5,12 +5,12 @@
 #include <xrpld/app/ledger/LedgerMaster.h>
 #include <xrpld/app/main/Application.h>
 #include <xrpld/app/misc/ValidatorList.h>
-#include <xrpld/consensus/Validations.h>
 #include <xrpld/core/TimeKeeper.h>
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/chrono.h>
 #include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/consensus/Validations.h>
 #include <xrpl/core/Job.h>
 #include <xrpl/core/JobQueue.h>
 #include <xrpl/core/PerfLog.h>
@@ -46,8 +46,10 @@ RCLValidatedLedger::RCLValidatedLedger(
         ancestors_ = hashIndex->getFieldV256(sfHashes).value();
     }
     else
+    {
         JLOG(j_.warn()) << "Ledger " << ledgerSeq_ << ":" << ledgerID_
                         << " missing recent ancestor hashes";
+    }
 }
 
 auto
@@ -130,7 +132,7 @@ RCLValidationsAdaptor::acquire(LedgerHash const& hash)
 
         Application* pApp = &app_;
 
-        app_.getJobQueue().addJob(jtADVANCE, "GetConsL2", [pApp, hash, this]() {
+        app_.getJobQueue().addJob(JtAdvance, "GetConsL2", [pApp, hash, this]() {
             JLOG(j_.debug()) << "JOB advanceLedger getConsensusLedger2 started";
             pApp->getInboundLedgers().acquireAsync(hash, 0, InboundLedger::Reason::CONSENSUS);
         });
@@ -173,11 +175,11 @@ handleNewValidation(
     // masterKey is seated only if validator is trusted or listed
     auto const outcome = validations.add(calcNodeID(masterKey.value_or(signingKey)), val);
 
-    if (outcome == ValStatus::current)
+    if (outcome == ValStatus::Current)
     {
         if (val->isTrusted())
         {
-            if (bypassAccept == BypassAccept::yes)
+            if (bypassAccept == BypassAccept::Yes)
             {
                 XRPL_ASSERT(j, "xrpl::handleNewValidation : journal is available");
                 if (j.has_value())
@@ -215,14 +217,14 @@ handleNewValidation(
             return ret;
         }();
 
-        if (outcome == ValStatus::conflicting)
+        if (outcome == ValStatus::Conflicting)
         {
             ls << "Byzantine Behavior Detector: " << (val->isTrusted() ? "trusted " : "untrusted ")
                << id << ": Conflicting validation for " << seq << "!\n["
                << val->getSerializer().slice() << "]";
         }
 
-        if (outcome == ValStatus::multiple)
+        if (outcome == ValStatus::Multiple)
         {
             ls << "Byzantine Behavior Detector: " << (val->isTrusted() ? "trusted " : "untrusted ")
                << id << ": Multiple validations for " << seq << "/" << hash << "!\n["

@@ -6,10 +6,11 @@
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/ApplyView.h>
-#include <xrpl/ledger/OrderBookDB.h>
 #include <xrpl/ledger/PaymentSandbox.h>
+#include <xrpl/ledger/Sandbox.h>
 #include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
+#include <xrpl/ledger/helpers/CredentialHelpers.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/ledger/helpers/MPTokenHelpers.h>
 #include <xrpl/ledger/helpers/OfferHelpers.h>
@@ -33,6 +34,7 @@
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STPathSet.h>
 #include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/SeqProxy.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/UintTypes.h>
@@ -57,7 +59,7 @@ OfferCreate::makeTxConsequences(PreflightContext const& ctx)
 {
     auto calculateMaxXRPSpend = [](STTx const& tx) -> XRPAmount {
         auto const& amount{tx[sfTakerGets]};
-        return amount.native() ? amount.xrp() : beast::zero;
+        return amount.native() ? amount.xrp() : beast::kZero;
     };
 
     return TxConsequences{ctx.tx, calculateMaxXRPSpend(ctx.tx)};
@@ -91,13 +93,17 @@ OfferCreate::preflight(PreflightContext const& ctx)
     auto& tx = ctx.tx;
     auto& j = ctx.j;
 
-    std::uint32_t const uTxFlags = tx.getFlags();
-
     if (tx.isFlag(tfHybrid) && !tx.isFieldPresent(sfDomainID))
         return temINVALID_FLAG;
 
-    bool const bImmediateOrCancel((uTxFlags & tfImmediateOrCancel) != 0u);
-    bool const bFillOrKill((uTxFlags & tfFillOrKill) != 0u);
+    // A zero DomainID is invalid for a PermissionedDomain ledger entry because
+    // keylet::permissionedDomain(UInt256) uses the DomainID as the ledger key.
+    if (auto const domainID = tx[~sfDomainID];
+        ctx.rules.enabled(fixCleanup3_2_0) && domainID && *domainID == beast::kZero)
+        return temMALFORMED;
+
+    bool const bImmediateOrCancel(tx.isFlag(tfImmediateOrCancel));
+    bool const bFillOrKill(tx.isFlag(tfFillOrKill));
 
     if (bImmediateOrCancel && bFillOrKill)
     {
@@ -130,7 +136,7 @@ OfferCreate::preflight(PreflightContext const& ctx)
         JLOG(j.debug()) << "Malformed offer: redundant (XRP for XRP)";
         return temBAD_OFFER;
     }
-    if (saTakerPays <= beast::zero || saTakerGets <= beast::zero)
+    if (saTakerPays <= beast::kZero || saTakerGets <= beast::kZero)
     {
         JLOG(j.debug()) << "Malformed offer: bad amount";
         return temBAD_OFFER;
@@ -183,17 +189,26 @@ OfferCreate::preclaim(PreclaimContext const& ctx)
 
     auto viewJ = ctx.registry.get().getJournal("View");
 
-    if (isGlobalFrozen(ctx.view, saTakerPays.asset()) ||
-        isGlobalFrozen(ctx.view, saTakerGets.asset()))
+    if (auto const ter = checkGlobalFrozen(ctx.view, saTakerPays.asset()); !isTesSuccess(ter))
     {
-        JLOG(ctx.j.debug()) << "Offer involves frozen asset";
-        return tecFROZEN;
+        JLOG(ctx.j.debug()) << "Offer involves frozen or locked asset";
+        return ter;
+    }
+    if (auto const ter = checkGlobalFrozen(ctx.view, saTakerGets.asset()); !isTesSuccess(ter))
+    {
+        JLOG(ctx.j.debug()) << "Offer involves frozen or locked asset";
+        return ter;
     }
 
     // Allow unfunded MPT for issuer (OutstandingAmount >= MaximumAmount)
     if ((!saTakerGets.holds<MPTIssue>() || saTakerGets.getIssuer() != id) &&
-        accountFunds(ctx.view, id, saTakerGets, fhZERO_IF_FROZEN, ahZERO_IF_UNAUTHORIZED, viewJ) <=
-            beast::zero)
+        accountFunds(
+            ctx.view,
+            id,
+            saTakerGets,
+            FreezeHandling::ZeroIfFrozen,
+            AuthHandling::ZeroIfUnauthorized,
+            viewJ) <= beast::kZero)
     {
         JLOG(ctx.j.debug()) << "delay: Offers must be at least partially funded.";
         return tecUNFUNDED_OFFER;
@@ -227,8 +242,31 @@ OfferCreate::preclaim(PreclaimContext const& ctx)
     // is part of the domain
     if (ctx.tx.isFieldPresent(sfDomainID))
     {
-        if (!permissioned_dex::accountInDomain(ctx.view, id, ctx.tx[sfDomainID]))
-            return tecNO_PERMISSION;
+        if (ctx.view.rules().enabled(fixCleanup3_4_0))
+        {
+            auto const domainID = ctx.tx[sfDomainID];
+            auto const sleDomain = ctx.view.read(keylet::permissionedDomain(domainID));
+            if (!sleDomain)
+                return tecNO_PERMISSION;
+
+            // Domain owner is always considered in the domain, no credential check
+            // needed. For all other accounts, use validDomain which detects expired
+            // credentials. Suppress tecEXPIRED here so doApply can run and delete
+            // the expired credential SLEs from the ledger.
+            if (sleDomain->getAccountID(sfOwner) != id)
+            {
+                // validDomain returns tecNO_AUTH when no matching credential is
+                // found. Map it to tecNO_PERMISSION to preserve existing behavior.
+                if (auto const err = credentials::validDomain(ctx.view, domainID, id);
+                    !isTesSuccess(err) && err != tecEXPIRED)
+                    return tecNO_PERMISSION;
+            }
+        }
+        else
+        {
+            if (!permissioned_dex::accountInDomain(ctx.view, id, ctx.tx[sfDomainID]))
+                return tecNO_PERMISSION;
+        }
     }
 
     if (auto const ter = canTrade(ctx.view, saTakerPays.asset()); !isTesSuccess(ter))
@@ -257,7 +295,7 @@ OfferCreate::checkAcceptAsset(
         JLOG(j.debug()) << "delay: can't receive IOUs from non-existent issuer: "
                         << to_string(asset.getIssuer());
 
-        return ((flags & tapRETRY) != 0u) ? TER{terNO_ACCOUNT} : TER{tecNO_ISSUER};
+        return ((flags & TapRetry) != 0u) ? TER{terNO_ACCOUNT} : TER{tecNO_ISSUER};
     }
 
     // An account cannot create a trustline to itself, so no line can exist
@@ -269,34 +307,44 @@ OfferCreate::checkAcceptAsset(
     return asset.visit(
         [&](Issue const& issue) -> TER {
             auto const& issuer = issue.getIssuer();
-            if (((*issuerAccount)[sfFlags] & lsfRequireAuth) != 0u)
-            {
-                auto const trustLine = view.read(keylet::line(id, issuer, issue.currency));
+            auto const trustLine = view.read(keylet::trustLine(id, issuer, issue.currency));
 
+            // Check if the issuer has lsfDisallowIncomingTrustline set.
+            // If so, the account must already have a trustline to receive tokens.
+            if (view.rules().enabled(fixCleanup3_4_0) &&
+                issuerAccount->isFlag(lsfDisallowIncomingTrustline))
+            {
                 if (!trustLine)
                 {
-                    return ((flags & tapRETRY) != 0u) ? TER{terNO_LINE} : TER{tecNO_LINE};
+                    JLOG(j.debug()) << "delay: can't receive IOUs from issuer with "
+                                       "DisallowIncomingTrustline set";
+                    return ((flags & TapRetry) != 0u) ? TER{terNO_LINE} : TER{tecNO_LINE};
+                }
+            }
+
+            if (issuerAccount->isFlag(lsfRequireAuth))
+            {
+                if (!trustLine)
+                {
+                    return ((flags & TapRetry) != 0u) ? TER{terNO_LINE} : TER{tecNO_LINE};
                 }
 
                 // Entries have a canonical representation, determined by a
                 // lexicographical "greater than" comparison employing
                 // strict weak ordering. Determine which entry we need to
                 // access.
-                bool const canonical_gt(id > issuer);
+                bool const canonicalGt(id > issuer);
 
-                bool const is_authorized(
-                    ((*trustLine)[sfFlags] & (canonical_gt ? lsfLowAuth : lsfHighAuth)) != 0u);
+                bool const isAuthorized(trustLine->isFlag(canonicalGt ? lsfLowAuth : lsfHighAuth));
 
-                if (!is_authorized)
+                if (!isAuthorized)
                 {
                     JLOG(j.debug()) << "delay: can't receive IOUs from "
                                        "issuer without auth.";
 
-                    return ((flags & tapRETRY) != 0u) ? TER{terNO_AUTH} : TER{tecNO_AUTH};
+                    return ((flags & TapRetry) != 0u) ? TER{terNO_AUTH} : TER{tecNO_AUTH};
                 }
             }
-
-            auto const trustLine = view.read(keylet::line(id, issue.account, issue.currency));
 
             if (!trustLine)
             {
@@ -318,7 +366,13 @@ OfferCreate::checkAcceptAsset(
         [&](MPTIssue const& issue) -> TER {
             // WeakAuth - don't check if MPToken exists since it's created
             // if needed.
-            return requireAuth(view, issue, id, AuthType::WeakAuth);
+            if (auto const ter = requireAuth(view, issue, id, AuthType::WeakAuth);
+                !isTesSuccess(ter))
+            {
+                return ter;
+            }
+
+            return checkFrozen(view, id, issue);
         });
 }
 
@@ -327,7 +381,7 @@ OfferCreate::flowCross(
     PaymentSandbox& psb,
     PaymentSandbox& psbCancel,
     Amounts const& takerAmount,
-    std::optional<uint256> const& domainID)
+    std::optional<UInt256> const& domainID)
 {
     try
     {
@@ -338,11 +392,16 @@ OfferCreate::flowCross(
         // cause a user's available balance to go to 0 (by causing it to dip
         // below the reserve) so we check this case again.
         STAmount const inStartBalance = accountFunds(
-            psb, account_, takerAmount.in, fhZERO_IF_FROZEN, ahZERO_IF_UNAUTHORIZED, j_);
+            psb,
+            accountID_,
+            takerAmount.in,
+            FreezeHandling::ZeroIfFrozen,
+            AuthHandling::ZeroIfUnauthorized,
+            j_);
         // Allow unfunded MPT issuer
         auto const disallowUnfunded =
-            !inStartBalance.holds<MPTIssue>() || inStartBalance.getIssuer() != account_;
-        if (disallowUnfunded && inStartBalance <= beast::zero)
+            !inStartBalance.holds<MPTIssue>() || inStartBalance.getIssuer() != accountID_;
+        if (disallowUnfunded && inStartBalance <= beast::kZero)
         {
             // The account balance can't cover even part of the offer.
             JLOG(j_.debug()) << "Not crossing: taker is unfunded.";
@@ -354,7 +413,7 @@ OfferCreate::flowCross(
         // offer taker.  Set sendMax to allow for the gateway's cut.
         Rate gatewayXferRate{QUALITY_ONE};
         STAmount sendMax = takerAmount.in;
-        if (!sendMax.native() && (account_ != sendMax.getIssuer()))
+        if (!sendMax.native() && (accountID_ != sendMax.getIssuer()))
         {
             gatewayXferRate = transferRate(psb, sendMax);
             if (gatewayXferRate.value != QUALITY_ONE)
@@ -370,8 +429,7 @@ OfferCreate::flowCross(
 
         // If we're creating a passive offer adjust the threshold so we only
         // cross offers that have a better quality than this one.
-        std::uint32_t const txFlags = ctx_.tx.getFlags();
-        if ((txFlags & tfPassive) != 0u)
+        if (ctx_.tx.isFlag(tfPassive))
             ++threshold;
 
         // Don't send more than our balance.
@@ -386,16 +444,16 @@ OfferCreate::flowCross(
         if (!takerAmount.in.native() && !takerAmount.out.native())
         {
             STPath path;
-            path.emplace_back(std::nullopt, xrpCurrency(), std::nullopt);
-            paths.emplace_back(std::move(path));
+            path.emplaceBack(std::nullopt, xrpCurrency(), std::nullopt);
+            paths.emplaceBack(std::move(path));
         }
         // Special handling for the tfSell flag.
         STAmount deliver = takerAmount.out;
         auto const& deliverAsset = deliver.asset();
-        OfferCrossing offerCrossing = OfferCrossing::yes;
-        if ((txFlags & tfSell) != 0u)
+        OfferCrossing offerCrossing = OfferCrossing::Yes;
+        if (ctx_.tx.isFlag(tfSell))
         {
-            offerCrossing = OfferCrossing::sell;
+            offerCrossing = OfferCrossing::Sell;
             // We are selling, so we will accept *more* than the offer
             // specified.  Since we don't know how much they might offer,
             // we allow delivery of the largest possible amount.
@@ -403,7 +461,7 @@ OfferCreate::flowCross(
                 [&](Issue const& issue) {
                     if (issue.native())
                     {
-                        deliver = STAmount{STAmount::cMaxNative};
+                        deliver = STAmount{STAmount::kMaxNative};
                     }
                     // We can't use the maximum possible currency here because
                     // there might be a gateway transfer rate to account for.
@@ -412,22 +470,22 @@ OfferCreate::flowCross(
                     else
                     {
                         deliver =
-                            STAmount{deliverAsset, STAmount::cMaxValue / 2, STAmount::cMaxOffset};
+                            STAmount{deliverAsset, STAmount::kMaxValue / 2, STAmount::kMaxOffset};
                     }
                 },
-                [&](MPTIssue const&) { deliver = STAmount{deliverAsset, maxMPTokenAmount / 2}; });
+                [&](MPTIssue const&) { deliver = STAmount{deliverAsset, kMaxMpTokenAmount / 2}; });
         }
 
         // Call the payment engine's flow() to do the actual work.
         auto const result = flow(
             psb,
             deliver,
-            account_,
-            account_,
+            accountID_,
+            accountID_,
             paths,
-            true,                            // default path
-            (txFlags & tfFillOrKill) == 0u,  // partial payment
-            true,                            // owner pays transfer fee
+            true,                           // default path
+            !ctx_.tx.isFlag(tfFillOrKill),  // partial payment
+            true,                           // owner pays transfer fee
             offerCrossing,
             threshold,
             sendMax,
@@ -448,9 +506,14 @@ OfferCreate::flowCross(
         if (isTesSuccess(result.result()))
         {
             STAmount const takerInBalance = accountFunds(
-                psb, account_, takerAmount.in, fhZERO_IF_FROZEN, ahZERO_IF_UNAUTHORIZED, j_);
+                psb,
+                accountID_,
+                takerAmount.in,
+                FreezeHandling::ZeroIfFrozen,
+                AuthHandling::ZeroIfUnauthorized,
+                j_);
 
-            if (disallowUnfunded && takerInBalance <= beast::zero)
+            if (disallowUnfunded && takerInBalance <= beast::kZero)
             {
                 // If offer crossing exhausted the account's funds don't
                 // create the offer.
@@ -461,7 +524,7 @@ OfferCreate::flowCross(
             {
                 STAmount const rate{Quality{takerAmount.out, takerAmount.in}.rate()};
 
-                if ((txFlags & tfSell) != 0u)
+                if (ctx_.tx.isFlag(tfSell))
                 {
                     // If selling then scale the new out amount based on how
                     // much we sold during crossing.  This preserves the offer
@@ -481,8 +544,8 @@ OfferCreate::flowCross(
                     afterCross.in -= nonGatewayAmountIn;
 
                     // It's possible that the divRound will cause our subtract
-                    // to go slightly negative.  So limit afterCross.in to zero.
-                    if (afterCross.in < beast::zero)
+                    // to go slightly negative.  So limit afterCross.in to beast::kZero.
+                    if (afterCross.in < beast::kZero)
                     {
                         // We should verify that the difference *is* small, but
                         // what is a good threshold to check?
@@ -499,9 +562,9 @@ OfferCreate::flowCross(
                     // Quality.
                     afterCross.out -= result.actualAmountOut;
                     XRPL_ASSERT(
-                        afterCross.out >= beast::zero,
+                        afterCross.out >= beast::kZero,
                         "xrpl::OfferCreate::flowCross : minimum offer");
-                    if (afterCross.out < beast::zero)
+                    if (afterCross.out < beast::kZero)
                         afterCross.out.clear();
                     afterCross.in = mulRound(afterCross.out, rate, takerAmount.in.asset(), true);
                 }
@@ -519,7 +582,7 @@ OfferCreate::flowCross(
 }
 
 std::string
-OfferCreate::format_amount(STAmount const& amount)
+OfferCreate::formatAmount(STAmount const& amount)
 {
     std::string txt = amount.getText();
     txt += "/";
@@ -532,11 +595,12 @@ OfferCreate::format_amount(STAmount const& amount)
 TER
 OfferCreate::applyHybrid(
     Sandbox& sb,
-    std::shared_ptr<STLedgerEntry> sleOffer,
+    STLedgerEntry::pointer sleOffer,
     Keylet const& offerKey,
     STAmount const& saTakerPays,
     STAmount const& saTakerGets,
-    std::function<void(SLE::ref, std::optional<uint256>)> const& setDir)
+    std::uint64_t openRate,
+    std::function<void(SLE::Ref, std::optional<UInt256>)> const& setDir)
 {
     if (!sleOffer->isFieldPresent(sfDomainID))
         return tecINTERNAL;  // LCOV_EXCL_LINE
@@ -547,10 +611,10 @@ OfferCreate::applyHybrid(
     // if offer is hybrid, need to also place into open offer dir
     Book const book{saTakerPays.asset(), saTakerGets.asset(), std::nullopt};
 
-    auto dir = keylet::quality(keylet::book(book), getRate(saTakerGets, saTakerPays));
+    auto dir = keylet::quality(keylet::book(book), openRate);
     bool const bookExists = sb.exists(dir);
 
-    auto const bookNode = sb.dirAppend(dir, offerKey, [&](SLE::ref sle) {
+    auto const bookNode = sb.dirAppend(dir, offerKey, [&](SLE::Ref sle) {
         // don't set domainID on the directory object since this directory is
         // for open book
         setDir(sle, std::nullopt);
@@ -566,10 +630,10 @@ OfferCreate::applyHybrid(
     auto bookInfo = STObject::makeInnerObject(sfBook);
     bookInfo.setFieldH256(sfBookDirectory, dir.key);
     bookInfo.setFieldU64(sfBookNode, *bookNode);
-    bookArr.push_back(std::move(bookInfo));
+    bookArr.pushBack(std::move(bookInfo));
 
     if (!bookExists)
-        ctx_.registry.get().getOrderBookDB().addOrderBook(book);
+        ctx_.addOrderBook(book);
 
     sleOffer->setFieldArray(sfAdditionalBooks, bookArr);
     return tesSUCCESS;
@@ -578,15 +642,13 @@ OfferCreate::applyHybrid(
 std::pair<TER, bool>
 OfferCreate::applyGuts(Sandbox& sb, Sandbox& sbCancel)
 {
-    using beast::zero;
+    using beast::kZero;
 
-    std::uint32_t const uTxFlags = ctx_.tx.getFlags();
-
-    bool const bPassive((uTxFlags & tfPassive) != 0u);
-    bool const bImmediateOrCancel((uTxFlags & tfImmediateOrCancel) != 0u);
-    bool const bFillOrKill((uTxFlags & tfFillOrKill) != 0u);
-    bool const bSell((uTxFlags & tfSell) != 0u);
-    bool const bHybrid((uTxFlags & tfHybrid) != 0u);
+    bool const bPassive(ctx_.tx.isFlag(tfPassive));
+    bool const bImmediateOrCancel(ctx_.tx.isFlag(tfImmediateOrCancel));
+    bool const bFillOrKill(ctx_.tx.isFlag(tfFillOrKill));
+    bool const bSell(ctx_.tx.isFlag(tfSell));
+    bool const bHybrid(ctx_.tx.isFlag(tfHybrid));
 
     auto saTakerPays = ctx_.tx[sfTakerPays];
     auto saTakerGets = ctx_.tx[sfTakerGets];
@@ -596,7 +658,7 @@ OfferCreate::applyGuts(Sandbox& sb, Sandbox& sbCancel)
 
     // Note that we use the value from the sequence or ticket as the
     // offer sequence.  For more explanation see comments in SeqProxy.h.
-    auto const offerSequence = ctx_.tx.getSeqValue();
+    auto const offerSequence = ctx_.tx.getSeqProxy();
 
     // This is the original rate of the offer, and is the rate at which
     // it will be placed, even if crossing offers change the amounts that
@@ -610,7 +672,8 @@ OfferCreate::applyGuts(Sandbox& sb, Sandbox& sbCancel)
     // Process a cancellation request that's passed along with an offer.
     if (cancelSequence)
     {
-        auto const sleCancel = sb.peek(keylet::offer(account_, *cancelSequence));
+        auto const seqProxy = SeqProxy::rawSequence(*cancelSequence);
+        auto const sleCancel = sb.peek(keylet::offer(accountID_, seqProxy));
 
         // It's not an error to not find the offer to cancel: it might have
         // been consumed or removed. If it is found, however, it's an error
@@ -632,6 +695,7 @@ OfferCreate::applyGuts(Sandbox& sb, Sandbox& sbCancel)
     }
 
     bool crossed = false;
+    bool const mptV2 = ctx_.view().rules().enabled(featureMPTokensV2);
 
     if (isTesSuccess(result))
     {
@@ -639,7 +703,7 @@ OfferCreate::applyGuts(Sandbox& sb, Sandbox& sbCancel)
         auto const& uPaysIssuerID = saTakerPays.getIssuer();
         auto const& uGetsIssuerID = saTakerGets.getIssuer();
 
-        std::uint8_t uTickSize = Quality::maxTickSize;
+        std::uint8_t uTickSize = Quality::kMaxTickSize;
         // Not XRP or MPT
         if (!saTakerPays.integral())
         {
@@ -654,7 +718,12 @@ OfferCreate::applyGuts(Sandbox& sb, Sandbox& sbCancel)
             if (sle && sle->isFieldPresent(sfTickSize))
                 uTickSize = std::min(uTickSize, (*sle)[sfTickSize]);
         }
-        if (uTickSize < Quality::maxTickSize)
+        // Quality's ctor is the same getRate() call that produced uRate, and
+        // round() maps zero to zero, so an unrepresentable quality would make
+        // divide() below throw (tefEXCEPTION). Skip the rounding instead: the
+        // offer still crosses, and any residual is stopped before placement.
+        bool const unrepresentableRate = mptV2 && uRate == 0;
+        if (uTickSize < Quality::kMaxTickSize && !unrepresentableRate)
         {
             auto const rate = Quality{saTakerGets, saTakerPays}.round(uTickSize).rate();
 
@@ -690,18 +759,18 @@ OfferCreate::applyGuts(Sandbox& sb, Sandbox& sbCancel)
         if (auto stream = j_.trace())
         {
             stream << "   mode: " << (bPassive ? "passive " : "") << (bSell ? "sell" : "buy");
-            stream << "     in: " << format_amount(takerAmount.in);
-            stream << "    out: " << format_amount(takerAmount.out);
+            stream << "     in: " << formatAmount(takerAmount.in);
+            stream << "    out: " << formatAmount(takerAmount.out);
         }
 
         // The amount of the offer that is unfilled after crossing has been
         // performed. It may be equal to the original amount (didn't cross),
         // empty (fully crossed), or something in-between.
-        Amounts place_offer;
+        Amounts placeOffer;
         PaymentSandbox psbFlow{&sb};
         PaymentSandbox psbCancelFlow{&sbCancel};
 
-        std::tie(result, place_offer) = flowCross(psbFlow, psbCancelFlow, takerAmount, domainID);
+        std::tie(result, placeOffer) = flowCross(psbFlow, psbCancelFlow, takerAmount, domainID);
         psbFlow.apply(sb);
         psbCancelFlow.apply(sbCancel);
 
@@ -715,8 +784,8 @@ OfferCreate::applyGuts(Sandbox& sb, Sandbox& sbCancel)
         if (auto stream = j_.trace())
         {
             stream << "Cross result: " << transToken(result);
-            stream << "     in: " << format_amount(place_offer.in);
-            stream << "    out: " << format_amount(place_offer.out);
+            stream << "     in: " << formatAmount(placeOffer.in);
+            stream << "    out: " << formatAmount(placeOffer.out);
         }
 
         if (result == tecFAILED_PROCESSING && sb.open())
@@ -729,26 +798,26 @@ OfferCreate::applyGuts(Sandbox& sb, Sandbox& sbCancel)
         }
 
         XRPL_ASSERT(
-            saTakerGets.asset() == place_offer.in.asset(),
+            saTakerGets.asset() == placeOffer.in.asset(),
             "xrpl::OfferCreate::applyGuts : taker gets issue match");
         XRPL_ASSERT(
-            saTakerPays.asset() == place_offer.out.asset(),
+            saTakerPays.asset() == placeOffer.out.asset(),
             "xrpl::OfferCreate::applyGuts : taker pays issue match");
 
-        if (takerAmount != place_offer)
+        if (takerAmount != placeOffer)
             crossed = true;
 
         // The offer that we need to place after offer crossing should
         // never be negative. If it is, something went very very wrong.
-        if (place_offer.in < zero || place_offer.out < zero)
+        if (placeOffer.in < kZero || placeOffer.out < kZero)
         {
             JLOG(j_.fatal()) << "Cross left offer negative!"
-                             << "     in: " << format_amount(place_offer.in)
-                             << "    out: " << format_amount(place_offer.out);
+                             << "     in: " << formatAmount(placeOffer.in)
+                             << "    out: " << formatAmount(placeOffer.out);
             return {tefINTERNAL, true};
         }
 
-        if (place_offer.in == zero || place_offer.out == zero)
+        if (placeOffer.in == kZero || placeOffer.out == kZero)
         {
             JLOG(j_.debug()) << "Offer fully crossed!";
             return {result, true};
@@ -757,12 +826,12 @@ OfferCreate::applyGuts(Sandbox& sb, Sandbox& sbCancel)
         // We now need to adjust the offer to reflect the amount left after
         // crossing. We reverse in and out here, since during crossing we
         // were the taker.
-        saTakerPays = place_offer.out;
-        saTakerGets = place_offer.in;
+        saTakerPays = placeOffer.out;
+        saTakerGets = placeOffer.in;
     }
 
     XRPL_ASSERT(
-        saTakerPays > zero && saTakerGets > zero,
+        saTakerPays > beast::kZero && saTakerGets > beast::kZero,
         "xrpl::OfferCreate::applyGuts : taker pays and gets positive");
 
     if (!isTesSuccess(result))
@@ -801,14 +870,26 @@ OfferCreate::applyGuts(Sandbox& sb, Sandbox& sbCancel)
         return {tesSUCCESS, true};
     }
 
-    auto const sleCreator = sb.peek(keylet::account(account_));
+    // The remainder rests at uRate, the original pre-crossing rate. A zero
+    // rate (quality not representable) puts it in the directory whose index
+    // equals getBookBase(book), and BookTip scans keys strictly greater, so it
+    // could never be crossed while holding the owner's reserve. Don't place
+    // it; anything that crossed is kept, and a fully crossed offer has already
+    // returned above. Gated to preserve pre-amendment behavior.
+    if (mptV2 && uRate == 0)
+    {
+        JLOG(j_.debug()) << "Unrepresentable quality: remainder not placed";
+        if (!crossed)
+            return {tecKILLED, false};
+        return {tesSUCCESS, true};
+    }
+
+    auto const sleCreator = sb.peek(keylet::account(accountID_));
     if (!sleCreator)
         return {tefINTERNAL, false};
 
     {
-        XRPAmount const reserve =
-            sb.fees().accountReserve(sleCreator->getFieldU32(sfOwnerCount) + 1);
-
+        XRPAmount const reserve = accountReserve(sb, sleCreator, viewJ, {.ownerCountDelta = 1});
         if (preFeeBalance_ < reserve)
         {
             // If we are here, the signing account had an insufficient reserve
@@ -827,11 +908,11 @@ OfferCreate::applyGuts(Sandbox& sb, Sandbox& sbCancel)
     }
 
     // We need to place the remainder of the offer into its order book.
-    auto const offer_index = keylet::offer(account_, offerSequence);
+    auto const offerIndex = keylet::offer(accountID_, offerSequence);
 
     // Add offer to owner's directory.
     auto const ownerNode =
-        sb.dirInsert(keylet::ownerDir(account_), offer_index, describeOwnerDir(account_));
+        sb.dirInsert(keylet::ownerDir(accountID_), offerIndex, describeOwnerDir(accountID_));
 
     if (!ownerNode)
     {
@@ -842,7 +923,7 @@ OfferCreate::applyGuts(Sandbox& sb, Sandbox& sbCancel)
     }
 
     // Update owner count.
-    adjustOwnerCount(sb, sleCreator, 1, viewJ);
+    increaseOwnerCount(sb, sleCreator, {}, 1, viewJ);
 
     JLOG(j_.trace()) << "adding to book: " << to_string(saTakerPays.asset()) << " : "
                      << to_string(saTakerGets.asset())
@@ -864,7 +945,7 @@ OfferCreate::applyGuts(Sandbox& sb, Sandbox& sbCancel)
     auto dir = keylet::quality(keylet::book(book), uRate);
     bool const bookExisted = static_cast<bool>(sb.peek(dir));
 
-    auto setBookDir = [&](SLE::ref sle, std::optional<uint256> const& maybeDomain) {
+    auto setBookDir = [&](SLE::Ref sle, std::optional<UInt256> const& maybeDomain) {
         saTakerPays.asset().visit(
             [&](Issue const& issue) {
                 sle->setFieldH160(sfTakerPaysCurrency, issue.currency);
@@ -882,7 +963,7 @@ OfferCreate::applyGuts(Sandbox& sb, Sandbox& sbCancel)
             sle->setFieldH256(sfDomainID, *maybeDomain);
     };
 
-    auto const bookNode = sb.dirAppend(dir, offer_index, [&](SLE::ref sle) {
+    auto const bookNode = sb.dirAppend(dir, offerIndex, [&](SLE::Ref sle) {
         // sets domainID on book directory if it's a domain offer
         setBookDir(sle, domainID);
     });
@@ -895,9 +976,9 @@ OfferCreate::applyGuts(Sandbox& sb, Sandbox& sbCancel)
         // LCOV_EXCL_STOP
     }
 
-    auto sleOffer = std::make_shared<SLE>(offer_index);
-    sleOffer->setAccountID(sfAccount, account_);
-    sleOffer->setFieldU32(sfSequence, offerSequence);
+    auto sleOffer = std::make_shared<SLE>(offerIndex);
+    sleOffer->setAccountID(sfAccount, accountID_);
+    sleOffer->setFieldU32(sfSequence, offerSequence.value());
     sleOffer->setFieldH256(sfBookDirectory, dir.key);
     sleOffer->setFieldAmount(sfTakerPays, saTakerPays);
     sleOffer->setFieldAmount(sfTakerGets, saTakerGets);
@@ -915,8 +996,16 @@ OfferCreate::applyGuts(Sandbox& sb, Sandbox& sbCancel)
     // if it's a hybrid offer, set hybrid flag, and create an open dir
     if (bHybrid)
     {
+        // Pre-fixCleanup3_2_0: the open-book directory quality was computed
+        // from post-crossing amounts, which may differ from the original rate
+        // due to rounding in rate preservation. Post-fixCleanup3_2_0: use the
+        // original placement rate so the open-book directory quality matches
+        // the domain-book directory.
+        auto const openRate = ctx_.view().rules().enabled(fixCleanup3_2_0)
+            ? uRate
+            : getRate(saTakerGets, saTakerPays);
         auto const res =
-            applyHybrid(sb, sleOffer, offer_index, saTakerPays, saTakerGets, setBookDir);
+            applyHybrid(sb, sleOffer, offerIndex, saTakerPays, saTakerGets, openRate, setBookDir);
         if (!isTesSuccess(res))
             return {res, true};  // LCOV_EXCL_LINE
     }
@@ -924,7 +1013,7 @@ OfferCreate::applyGuts(Sandbox& sb, Sandbox& sbCancel)
     sb.insert(sleOffer);
 
     if (!bookExisted)
-        ctx_.registry.get().getOrderBookDB().addOrderBook(book);
+        ctx_.addOrderBook(book);
 
     JLOG(j_.debug()) << "final result: success";
 
@@ -934,6 +1023,27 @@ OfferCreate::applyGuts(Sandbox& sb, Sandbox& sbCancel)
 TER
 OfferCreate::doApply()
 {
+    // If a DomainID is present, verify the account is still in the domain and
+    // delete any expired credential SLEs. This must happen before the Sandboxes
+    // are created: if we return a tec error, the engine applies sbCancel (not
+    // sb) to rawView, so deletions made inside sb would be lost. Deletions made
+    // directly to ctx_.view() here are preserved regardless of which branch
+    // applyGuts takes.
+    if (ctx_.tx.isFieldPresent(sfDomainID) && ctx_.view().rules().enabled(fixCleanup3_4_0))
+    {
+        auto const domainID = ctx_.tx[sfDomainID];
+        auto const sleDomain = ctx_.view().read(keylet::permissionedDomain(domainID));
+        if (!sleDomain)
+            return tecINTERNAL;  // LCOV_EXCL_LINE
+
+        if (sleDomain->getAccountID(sfOwner) != accountID_)
+        {
+            if (auto const err = verifyValidDomain(ctx_.view(), accountID_, domainID, j_);
+                !isTesSuccess(err))
+                return err;
+        }
+    }
+
     // This is the ledger view that we work against. Transactions are applied
     // as we go on processing transactions.
     Sandbox sb(&ctx_.view());
@@ -956,16 +1066,15 @@ OfferCreate::doApply()
 }
 
 void
-OfferCreate::visitInvariantEntry(
-    bool,
-    std::shared_ptr<SLE const> const&,
-    std::shared_ptr<SLE const> const&)
+OfferCreate::visitInvariantEntry(bool, SLE::ConstRef, SLE::ConstRef)
 {
+    // No transaction-specific invariants yet (future work).
 }
 
 bool
 OfferCreate::finalizeInvariants(STTx const&, TER, XRPAmount, ReadView const&, beast::Journal const&)
 {
+    // No transaction-specific invariants yet (future work).
     return true;
 }
 

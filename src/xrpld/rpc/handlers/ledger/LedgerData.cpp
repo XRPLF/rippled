@@ -35,13 +35,13 @@ namespace xrpl {
 //     ledger_index: chosen ledger's index
 //     state:        array of state nodes
 //     marker:       resume point, if any
-Json::Value
-doLedgerData(RPC::JsonContext& context)
+json::Value
+doLedgerData(rpc::JsonContext& context)
 {
     std::shared_ptr<ReadView const> lpLedger;
     auto const& params = context.params;
 
-    auto jvResult = RPC::lookupLedger(lpLedger, context);
+    auto jvResult = rpc::lookupLedger(lpLedger, context);
     if (!lpLedger)
         return jvResult;
 
@@ -49,24 +49,30 @@ doLedgerData(RPC::JsonContext& context)
     ReadView::key_type key = ReadView::key_type();
     if (isMarker)
     {
-        Json::Value const& jMarker = params[jss::marker];
+        json::Value const& jMarker = params[jss::marker];
         if (!(jMarker.isString() && key.parseHex(jMarker.asString())))
-            return RPC::expected_field_error(jss::marker, "valid");
+            return rpc::expectedFieldError(jss::marker, "valid");
     }
 
-    bool const isBinary = params[jss::binary].asBool();
+    bool isBinary = false;
+    if (params.isMember(jss::binary))
+    {
+        if (!params[jss::binary].isBool())
+            return rpc::expectedFieldError(jss::binary, "boolean");
+        isBinary = params[jss::binary].asBool();
+    }
 
     int limit = -1;
     if (params.isMember(jss::limit))
     {
-        Json::Value const& jLimit = params[jss::limit];
+        json::Value const& jLimit = params[jss::limit];
         if (!jLimit.isIntegral())
-            return RPC::expected_field_error(jss::limit, "integer");
+            return rpc::expectedFieldError(jss::limit, "integer");
 
         limit = jLimit.asInt();
     }
 
-    auto maxLimit = RPC::Tuning::pageLength(isBinary);
+    auto maxLimit = rpc::tuning::pageLength(isBinary);
     if ((limit < 0) || ((limit > maxLimit) && (!isUnlimited(context.role))))
         limit = maxLimit;
 
@@ -76,25 +82,25 @@ doLedgerData(RPC::JsonContext& context)
     if (!isMarker)
     {
         // Return base ledger data on first query
-        jvResult[jss::ledger] =
-            getJson(LedgerFill(*lpLedger, &context, isBinary ? LedgerFill::Options::binary : 0));
+        jvResult[jss::ledger] = getJson(LedgerFill(
+            *lpLedger, &context, isBinary ? static_cast<int>(LedgerFill::Options::Binary) : 0));
     }
 
-    auto [rpcStatus, type] = RPC::chooseLedgerEntryType(params);
+    auto [rpcStatus, type] = rpc::chooseLedgerEntryType(params);
     if (rpcStatus)
     {
         jvResult.clear();
         rpcStatus.inject(jvResult);
         return jvResult;
     }
-    Json::Value& nodes = jvResult[jss::state];
-    if (nodes.type() == Json::nullValue)
+    json::Value& nodes = jvResult[jss::state];
+    if (nodes.type() == json::ValueType::Null)
     {
-        nodes = Json::Value(Json::arrayValue);
+        nodes = json::Value(json::ValueType::Array);
     }
 
     auto e = lpLedger->sles.end();
-    for (auto i = lpLedger->sles.upper_bound(key); i != e; ++i)
+    for (auto i = lpLedger->sles.upperBound(key); i != e; ++i)
     {
         auto sle = lpLedger->read(keylet::unchecked((*i)->key()));
         if (limit-- <= 0)
@@ -109,13 +115,13 @@ doLedgerData(RPC::JsonContext& context)
         {
             if (isBinary)
             {
-                Json::Value& entry = nodes.append(Json::objectValue);
+                json::Value& entry = nodes.append(json::ValueType::Object);
                 entry[jss::data] = serializeHex(*sle);
                 entry[jss::index] = to_string(sle->key());
             }
             else
             {
-                Json::Value& entry = nodes.append(sle->getJson(JsonOptions::none));
+                json::Value& entry = nodes.append(sle->getJson(JsonOptions::Values::None));
                 entry[jss::index] = to_string(sle->key());
             }
         }
@@ -125,17 +131,17 @@ doLedgerData(RPC::JsonContext& context)
 }
 
 std::pair<org::xrpl::rpc::v1::GetLedgerDataResponse, grpc::Status>
-doLedgerDataGrpc(RPC::GRPCContext<org::xrpl::rpc::v1::GetLedgerDataRequest>& context)
+doLedgerDataGrpc(rpc::GRPCContext<org::xrpl::rpc::v1::GetLedgerDataRequest>& context)
 {
     org::xrpl::rpc::v1::GetLedgerDataRequest const& request = context.params;
     org::xrpl::rpc::v1::GetLedgerDataResponse response;
     grpc::Status const status = grpc::Status::OK;
 
     std::shared_ptr<ReadView const> ledger;
-    if (auto status = RPC::ledgerFromRequest(ledger, context))
+    if (auto status = rpc::ledgerFromRequest(ledger, context))
     {
         grpc::Status errorStatus;
-        if (status.toErrorCode() == rpcINVALID_PARAMS)
+        if (status.toErrorCode() == RpcInvalidParams)
         {
             errorStatus = grpc::Status(grpc::StatusCode::INVALID_ARGUMENT, status.message());
         }
@@ -146,8 +152,8 @@ doLedgerDataGrpc(RPC::GRPCContext<org::xrpl::rpc::v1::GetLedgerDataRequest>& con
         return {response, errorStatus};
     }
 
-    uint256 startKey;
-    if (auto key = uint256::fromVoidChecked(request.marker()))
+    UInt256 startKey;
+    if (auto key = UInt256::fromVoidChecked(request.marker()))
     {
         startKey = *key;
     }
@@ -160,7 +166,7 @@ doLedgerDataGrpc(RPC::GRPCContext<org::xrpl::rpc::v1::GetLedgerDataRequest>& con
     auto e = ledger->sles.end();
     if (!request.end_marker().empty())
     {
-        auto const key = uint256::fromVoidChecked(request.end_marker());
+        auto const key = UInt256::fromVoidChecked(request.end_marker());
 
         if (!key)
             return {response, {grpc::StatusCode::INVALID_ARGUMENT, "end marker malformed"}};
@@ -168,12 +174,12 @@ doLedgerDataGrpc(RPC::GRPCContext<org::xrpl::rpc::v1::GetLedgerDataRequest>& con
         if (*key < startKey)
             return {response, {grpc::StatusCode::INVALID_ARGUMENT, "end marker out of range"}};
 
-        e = ledger->sles.upper_bound(*key);
+        e = ledger->sles.upperBound(*key);
     }
 
-    int maxLimit = RPC::Tuning::pageLength(true);
+    int maxLimit = rpc::tuning::pageLength(true);
 
-    for (auto i = ledger->sles.upper_bound(startKey); i != e; ++i)
+    for (auto i = ledger->sles.upperBound(startKey); i != e; ++i)
     {
         auto sle = ledger->read(keylet::unchecked((*i)->key()));
         if (maxLimit-- <= 0)

@@ -21,7 +21,7 @@ TEST(TransactionsOracleSetTests, BuilderSettersRoundTrip)
 {
     // Generate a deterministic keypair for signing
     auto const [publicKey, secretKey] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testOracleSet"));
+        generateKeyPair(KeyType::Secp256k1, generateSeed("testOracleSet"));
 
     // Common transaction fields
     auto const accountValue = calcAccountID(publicKey);
@@ -116,7 +116,7 @@ TEST(TransactionsOracleSetTests, BuilderFromStTxRoundTrip)
 {
     // Generate a deterministic keypair for signing
     auto const [publicKey, secretKey] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testOracleSetFromTx"));
+        generateKeyPair(KeyType::Secp256k1, generateSeed("testOracleSetFromTx"));
 
     // Common transaction fields
     auto const accountValue = calcAccountID(publicKey);
@@ -208,7 +208,7 @@ TEST(TransactionsOracleSetTests, WrapperThrowsOnWrongTxType)
 {
     // Build a valid transaction of a different type
     auto const [pk, sk] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testWrongType"));
+        generateKeyPair(KeyType::Secp256k1, generateSeed("testWrongType"));
     auto const account = calcAccountID(pk);
 
     AccountSetBuilder wrongBuilder{account, 1, canonical_AMOUNT()};
@@ -222,7 +222,7 @@ TEST(TransactionsOracleSetTests, BuilderThrowsOnWrongTxType)
 {
     // Build a valid transaction of a different type
     auto const [pk, sk] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testWrongTypeBuilder"));
+        generateKeyPair(KeyType::Secp256k1, generateSeed("testWrongTypeBuilder"));
     auto const account = calcAccountID(pk);
 
     AccountSetBuilder wrongBuilder{account, 1, canonical_AMOUNT()};
@@ -236,7 +236,7 @@ TEST(TransactionsOracleSetTests, OptionalFieldsReturnNullopt)
 {
     // Generate a deterministic keypair for signing
     auto const [publicKey, secretKey] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testOracleSetNullopt"));
+        generateKeyPair(KeyType::Secp256k1, generateSeed("testOracleSetNullopt"));
 
     // Common transaction fields
     auto const accountValue = calcAccountID(publicKey);

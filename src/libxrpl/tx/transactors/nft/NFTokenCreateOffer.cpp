@@ -5,6 +5,7 @@
 #include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/NFTokenHelpers.h>
 #include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STAccount.h>  // IWYU pragma: keep
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
@@ -14,8 +15,6 @@
 #include <xrpl/tx/Transactor.h>
 
 #include <cstdint>
-#include <memory>
-
 namespace xrpl {
 
 std::uint32_t
@@ -53,11 +52,10 @@ NFTokenCreateOffer::preclaim(PreclaimContext const& ctx)
     if (hasExpired(ctx.view, ctx.tx[~sfExpiration]))
         return tecEXPIRED;
 
-    uint256 const nftokenID = ctx.tx[sfNFTokenID];
+    UInt256 const nftokenID = ctx.tx[sfNFTokenID];
     std::uint32_t const txFlags = ctx.tx.getFlags();
-
     if (!nft::findToken(
-            ctx.view, ctx.tx[((txFlags & tfSellNFToken) != 0u) ? sfAccount : sfOwner], nftokenID))
+            ctx.view, ctx.tx[ctx.tx.isFlag(tfSellNFToken) ? sfAccount : sfOwner], nftokenID))
         return tecNO_ENTRY;
 
     // Use implementation shared with NFTokenMint
@@ -92,11 +90,9 @@ NFTokenCreateOffer::doApply()
 }
 
 void
-NFTokenCreateOffer::visitInvariantEntry(
-    bool,
-    std::shared_ptr<SLE const> const&,
-    std::shared_ptr<SLE const> const&)
+NFTokenCreateOffer::visitInvariantEntry(bool, SLE::ConstRef, SLE::ConstRef)
 {
+    // No transaction-specific invariants yet (future work).
 }
 
 bool
@@ -107,6 +103,7 @@ NFTokenCreateOffer::finalizeInvariants(
     ReadView const&,
     beast::Journal const&)
 {
+    // No transaction-specific invariants yet (future work).
     return true;
 }
 

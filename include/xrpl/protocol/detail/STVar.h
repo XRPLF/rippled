@@ -5,22 +5,23 @@
 #include <xrpl/protocol/Serializer.h>
 
 #include <cstddef>
+#include <tuple>
 #include <type_traits>
 
 namespace xrpl::detail {
 
-struct defaultObject_t
+struct DefaultObjectT
 {
-    explicit defaultObject_t() = default;
+    explicit DefaultObjectT() = default;
 };
 
-struct nonPresentObject_t
+struct NonPresentObjectT
 {
-    explicit nonPresentObject_t() = default;
+    explicit NonPresentObjectT() = default;
 };
 
-extern defaultObject_t defaultObject;
-extern nonPresentObject_t nonPresentObject;
+extern DefaultObjectT gDefaultObject;
+extern NonPresentObjectT gNonPresentObject;
 
 // Concept to constrain STVar constructors, which
 // instantiate ST* types from SerializedTypeID
@@ -33,11 +34,12 @@ concept ValidConstructSTArgs =
 // and includes a small-object allocation optimization.
 class STVar
 {
-private:
+public:
     // The largest "small object" we can accommodate
-    static std::size_t constexpr max_size = 72;
+    static constexpr std::size_t kMaxSize = 72;
 
-    std::aligned_storage<max_size>::type d_ = {};
+private:
+    alignas(std::max_align_t) std::byte d_[kMaxSize] = {};
     STBase* p_ = nullptr;
 
 public:
@@ -49,18 +51,17 @@ public:
     STVar&
     operator=(STVar&& rhs);
 
-    STVar(STBase&& t)  // NOLINT(cppcoreguidelines-rvalue-reference-param-not-moved)
+    // NOLINTNEXTLINE(cppcoreguidelines-rvalue-reference-param-not-moved)
+    STVar(STBase&& t) : p_(t.move(kMaxSize, &d_))
     {
-        p_ = t.move(max_size, &d_);
     }
 
-    STVar(STBase const& t)
+    STVar(STBase const& t) : p_(t.copy(kMaxSize, &d_))
     {
-        p_ = t.copy(max_size, &d_);
     }
 
-    STVar(defaultObject_t, SField const& name);
-    STVar(nonPresentObject_t, SField const& name);
+    STVar(DefaultObjectT, SField const& name);
+    STVar(NonPresentObjectT, SField const& name);
     STVar(SerialIter& sit, SField const& name, int depth = 0);
 
     STBase&
@@ -96,7 +97,7 @@ public:
 
     template <class T, class... Args>
     friend STVar
-    make_stvar(Args&&... args);
+    makeStvar(Args&&... args);
 
 private:
     STVar() = default;
@@ -110,7 +111,7 @@ private:
     void
     construct(Args&&... args)
     {
-        if constexpr (sizeof(T) > max_size)
+        if constexpr (sizeof(T) > kMaxSize)
         {
             p_ = new T(std::forward<Args>(args)...);
         }
@@ -120,7 +121,8 @@ private:
         }
     }
 
-    /** Construct requested Serializable Type according to id.
+    /**
+     * Construct requested Serializable Type according to id.
      * The variadic args are: (SField), or (SerialIter, SField).
      * depth is ignored in former case.
      */
@@ -130,7 +132,7 @@ private:
     constructST(SerializedTypeID id, int depth, Args&&... arg);
 
     [[nodiscard]] bool
-    on_heap() const
+    onHeap() const
     {
         return static_cast<void const*>(p_) != static_cast<void const*>(&d_);
     }
@@ -138,7 +140,7 @@ private:
 
 template <class T, class... Args>
 inline STVar
-make_stvar(Args&&... args)
+makeStvar(Args&&... args)
 {
     STVar st;
     st.construct<T>(std::forward<Args>(args)...);
@@ -149,12 +151,6 @@ inline bool
 operator==(STVar const& lhs, STVar const& rhs)
 {
     return lhs.get().isEquivalent(rhs.get());
-}
-
-inline bool
-operator!=(STVar const& lhs, STVar const& rhs)
-{
-    return !(lhs == rhs);
 }
 
 }  // namespace xrpl::detail

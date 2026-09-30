@@ -1,7 +1,11 @@
 #pragma once
 
+#include <xrpl/basics/Blob.h>
+#include <xrpl/basics/CountedObject.h>
 #include <xrpl/basics/RangeSet.h>
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/Journal.h>
+#include <xrpl/json/json_value.h>
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/STBase.h>
@@ -9,8 +13,17 @@
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxMeta.h>
 #include <xrpl/protocol/TxSearched.h>
+#include <xrpl/protocol/XRPAmount.h>
 
+// boost::optional (not std::optional) appears in the declarations below,
+// because SOCI's into()/use() bindings only support boost::optional.
+#include <boost/optional/optional.hpp>
+
+#include <cstdint>
+#include <memory>
 #include <optional>
+#include <string>
+#include <utility>
 #include <variant>
 
 namespace xrpl {
@@ -23,7 +36,7 @@ namespace xrpl {
 class Application;
 class Rules;
 
-enum TransStatus {
+enum class TransStatus {
     NEW = 0,         // just received / generated
     INVALID = 1,     // no valid signature, insufficient funds
     INCLUDED = 2,    // added to the current ledger
@@ -42,7 +55,7 @@ class Transaction : public std::enable_shared_from_this<Transaction>,
 {
 public:
     using pointer = std::shared_ptr<Transaction>;
-    using ref = pointer const&;
+    using Ref = pointer const&;
 
     Transaction(std::shared_ptr<STTx const> const&, std::string&, Application&) noexcept;
 
@@ -63,43 +76,43 @@ public:
     std::shared_ptr<STTx const> const&
     getSTransaction()
     {
-        return mTransaction;
+        return transaction_;
     }
 
-    uint256 const&
+    UInt256 const&
     getID() const
     {
-        return mTransactionID;
+        return transactionID_;
     }
 
     LedgerIndex
     getLedger() const
     {
-        return mLedgerIndex;
+        return ledgerIndex_;
     }
 
     bool
     isValidated() const
     {
-        return mLedgerIndex != 0;
+        return ledgerIndex_ != 0;
     }
 
     TransStatus
     getStatus() const
     {
-        return mStatus;
+        return status_;
     }
 
     TER
     getResult()
     {
-        return mResult;
+        return result_;
     }
 
     void
     setResult(TER terResult)
     {
-        mResult = terResult;
+        result_ = terResult;
     }
 
     void
@@ -112,13 +125,13 @@ public:
     void
     setStatus(TransStatus status)
     {
-        mStatus = status;
+        status_ = status;
     }
 
     void
     setLedger(LedgerIndex ledger)
     {
-        mLedgerIndex = ledger;
+        ledgerIndex_ = ledger;
     }
 
     /**
@@ -127,9 +140,9 @@ public:
     void
     setApplying()
     {
-        // Note that all access to mApplying are made by NetworkOPsImp, and must
+        // Note that all access to applying_ are made by NetworkOPsImp, and must
         // be done under that class's lock.
-        mApplying = true;
+        applying_ = true;
     }
 
     /**
@@ -140,9 +153,9 @@ public:
     bool
     getApplying() const
     {
-        // Note that all access to mApplying are made by NetworkOPsImp, and must
+        // Note that all access to applying_ are made by NetworkOPsImp, and must
         // be done under that class's lock.
-        return mApplying;
+        return applying_;
     }
 
     /**
@@ -151,9 +164,9 @@ public:
     void
     clearApplying()
     {
-        // Note that all access to mApplying are made by NetworkOPsImp, and must
+        // Note that all access to applying_ are made by NetworkOPsImp, and must
         // be done under that class's lock.
-        mApplying = false;
+        applying_ = false;
     }
 
     struct SubmitResult
@@ -290,7 +303,7 @@ public:
         currentLedgerState_.emplace(validatedLedger, fee, accountSeq, availableSeq);
     }
 
-    Json::Value
+    json::Value
     getJson(JsonOptions options, bool binary = false) const;
 
     // Information used to locate a transaction.
@@ -299,40 +312,48 @@ public:
     // at the time of search.
     struct Locator
     {
-        std::variant<std::pair<uint256, uint32_t>, ClosedInterval<uint32_t>> locator;
+        std::variant<std::pair<UInt256, uint32_t>, ClosedInterval<uint32_t>> locator;
 
-        // @return true if transaction was found, false otherwise
-        //
-        // Call this function first to determine the type of the contained info.
-        // Calling the wrong getter function will throw an exception.
-        // See documentation for the getter functions for more details
+        /**
+         * @return true if transaction was found, false otherwise
+         *
+         * Call this function first to determine the type of the contained info.
+         * Calling the wrong getter function will throw an exception.
+         * See documentation for the getter functions for more details
+         */
         [[nodiscard]] bool
         isFound() const
         {
-            return std::holds_alternative<std::pair<uint256, uint32_t>>(locator);
+            return std::holds_alternative<std::pair<UInt256, uint32_t>>(locator);
         }
 
-        // @return key used to find transaction in nodestore
-        //
-        // Throws if isFound() returns false
-        uint256 const&
+        /**
+         * @return key used to find transaction in nodestore
+         *
+         * @throws if isFound() returns false
+         */
+        UInt256 const&
         getNodestoreHash()
         {
-            return std::get<std::pair<uint256, uint32_t>>(locator).first;
+            return std::get<std::pair<UInt256, uint32_t>>(locator).first;
         }
 
-        // @return sequence of ledger containing the transaction
-        //
-        // Throws is isFound() returns false
+        /**
+         * @return sequence of ledger containing the transaction
+         *
+         * @throws if isFound() returns false
+         */
         uint32_t
         getLedgerSequence()
         {
-            return std::get<std::pair<uint256, uint32_t>>(locator).second;
+            return std::get<std::pair<UInt256, uint32_t>>(locator).second;
         }
 
-        // @return range of ledgers searched
-        //
-        // Throws if isFound() returns true
+        /**
+         * @return range of ledgers searched
+         *
+         * @throws if isFound() returns true
+         */
         ClosedInterval<uint32_t> const&
         getLedgerRangeSearched()
         {
@@ -341,37 +362,37 @@ public:
     };
 
     static Locator
-    locate(uint256 const& id, Application& app);
+    locate(UInt256 const& id, Application& app);
 
     static std::
         variant<std::pair<std::shared_ptr<Transaction>, std::shared_ptr<TxMeta>>, TxSearched>
-        load(uint256 const& id, Application& app, error_code_i& ec);
+        load(UInt256 const& id, Application& app, ErrorCodeI& ec);
 
     static std::
         variant<std::pair<std::shared_ptr<Transaction>, std::shared_ptr<TxMeta>>, TxSearched>
         load(
-            uint256 const& id,
+            UInt256 const& id,
             Application& app,
             ClosedInterval<uint32_t> const& range,
-            error_code_i& ec);
+            ErrorCodeI& ec);
 
 private:
     static std::
         variant<std::pair<std::shared_ptr<Transaction>, std::shared_ptr<TxMeta>>, TxSearched>
         load(
-            uint256 const& id,
+            UInt256 const& id,
             Application& app,
             std::optional<ClosedInterval<uint32_t>> const& range,
-            error_code_i& ec);
+            ErrorCodeI& ec);
 
-    uint256 mTransactionID;
+    UInt256 transactionID_;
 
-    LedgerIndex mLedgerIndex = 0;
-    std::optional<uint32_t> mTxnSeq;
-    std::optional<uint32_t> mNetworkID;
-    TransStatus mStatus = INVALID;
-    TER mResult = temUNCERTAIN;
-    /* Note that all access to mApplying are made by NetworkOPsImp,
+    LedgerIndex ledgerIndex_ = 0;
+    std::optional<uint32_t> txnSeq_;
+    std::optional<uint32_t> networkID_;
+    TransStatus status_ = TransStatus::INVALID;
+    TER result_ = temUNCERTAIN;
+    /* Note that all access to applying_ are made by NetworkOPsImp,
         and must be done under that class's lock. This avoids the overhead of
         taking a separate lock, and the consequences of a race condition are
         nearly-zero.
@@ -389,15 +410,17 @@ private:
             cleared, then it might get attempted again later as is the case with
             item 1.
     */
-    bool mApplying = false;
+    bool applying_ = false;
 
-    /** different ways for transaction to be accepted */
+    /**
+     * different ways for transaction to be accepted
+     */
     SubmitResult submitResult_;
 
     std::optional<CurrentLedgerState> currentLedgerState_;
 
-    std::shared_ptr<STTx const> mTransaction;
-    Application& mApp;
+    std::shared_ptr<STTx const> transaction_;
+    Application& app_;
     beast::Journal j_;
 };
 

@@ -19,9 +19,9 @@ class VaultWithdrawBuilder;
  * @brief Transaction: VaultWithdraw
  *
  * Type: ttVAULT_WITHDRAW (69)
- * Delegable: Delegation::notDelegable
+ * Delegable: Delegation::NotDelegable
  * Amendment: featureSingleAssetVault
- * Privileges: mayDeleteMPT | mayAuthorizeMPT | mustModifyVault
+ * Privileges: Privilege::MayDeleteMpt | Privilege::MayAuthorizeMpt | Privilege::MustModifyVault
  *
  * Immutable wrapper around STTx providing type-safe field access.
  * Use VaultWithdrawBuilder to construct new transactions.
@@ -48,7 +48,7 @@ public:
     // Transaction-specific field getters
 
     /**
-     * @brief Get sfVaultID (soeREQUIRED)
+     * @brief Get sfVaultID (SoeRequired)
      * @return The field value.
      */
     [[nodiscard]]
@@ -59,7 +59,7 @@ public:
     }
 
     /**
-     * @brief Get sfAmount (soeREQUIRED)
+     * @brief Get sfAmount (SoeRequired)
      * @note This field supports MPT (Multi-Purpose Token) amounts.
      * @return The field value.
      */
@@ -71,7 +71,7 @@ public:
     }
 
     /**
-     * @brief Get sfDestination (soeOPTIONAL)
+     * @brief Get sfDestination (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -97,7 +97,7 @@ public:
     }
 
     /**
-     * @brief Get sfDestinationTag (soeOPTIONAL)
+     * @brief Get sfDestinationTag (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -121,13 +121,39 @@ public:
     {
         return this->tx_->isFieldPresent(sfDestinationTag);
     }
+
+    /**
+     * @brief Get sfCredentialIDs (SoeOptional)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_VECTOR256::type::value_type>
+    getCredentialIDs() const
+    {
+        if (hasCredentialIDs())
+        {
+            return this->tx_->at(sfCredentialIDs);
+        }
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfCredentialIDs is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasCredentialIDs() const
+    {
+        return this->tx_->isFieldPresent(sfCredentialIDs);
+    }
 };
 
 /**
  * @brief Builder for VaultWithdraw transactions.
  *
  * Provides a fluent interface for constructing transactions with method chaining.
- * Uses Json::Value internally for flexible transaction construction.
+ * Uses STObject internally for flexible transaction construction.
  * Inherits common field setters from TransactionBuilderBase.
  */
 class VaultWithdrawBuilder : public TransactionBuilderBase<VaultWithdrawBuilder>
@@ -165,10 +191,12 @@ public:
         object_ = *tx;
     }
 
-    /** @brief Transaction-specific field setters */
+    /**
+     * @brief Transaction-specific field setters
+     */
 
     /**
-     * @brief Set sfVaultID (soeREQUIRED)
+     * @brief Set sfVaultID (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     VaultWithdrawBuilder&
@@ -179,7 +207,7 @@ public:
     }
 
     /**
-     * @brief Set sfAmount (soeREQUIRED)
+     * @brief Set sfAmount (SoeRequired)
      * @note This field supports MPT (Multi-Purpose Token) amounts.
      * @return Reference to this builder for method chaining.
      */
@@ -191,7 +219,7 @@ public:
     }
 
     /**
-     * @brief Set sfDestination (soeOPTIONAL)
+     * @brief Set sfDestination (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     VaultWithdrawBuilder&
@@ -202,13 +230,24 @@ public:
     }
 
     /**
-     * @brief Set sfDestinationTag (soeOPTIONAL)
+     * @brief Set sfDestinationTag (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     VaultWithdrawBuilder&
     setDestinationTag(std::decay_t<typename SF_UINT32::type::value_type> const& value)
     {
         object_[sfDestinationTag] = value;
+        return *this;
+    }
+
+    /**
+     * @brief Set sfCredentialIDs (SoeOptional)
+     * @return Reference to this builder for method chaining.
+     */
+    VaultWithdrawBuilder&
+    setCredentialIDs(std::decay_t<typename SF_VECTOR256::type::value_type> const& value)
+    {
+        object_[sfCredentialIDs] = value;
         return *this;
     }
 

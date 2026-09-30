@@ -3,17 +3,23 @@
 #include <xrpl/basics/CountedObject.h>
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/AcceptedLedgerTx.h>
+#include <xrpl/ledger/ReadView.h>
+
+#include <cstddef>
+#include <memory>
+#include <vector>
 
 namespace xrpl {
 
-/** A ledger that has become irrevocable.
-
-    An accepted ledger is a ledger that has a sufficient number of
-    validations to convince the local server that it is irrevocable.
-
-    The existence of an accepted ledger implies all preceding ledgers
-    are accepted.
-*/
+/**
+ * A ledger that has become irrevocable.
+ *
+ * An accepted ledger is a ledger that has a sufficient number of
+ * validations to convince the local server that it is irrevocable.
+ *
+ * The existence of an accepted ledger implies all preceding ledgers
+ * are accepted.
+ */
 /* VFALCO TODO digest this terminology clarification:
     Closed and accepted refer to ledgers that have not passed the
     validation threshold yet. Once they pass the threshold, they are
@@ -25,12 +31,12 @@ namespace xrpl {
 class AcceptedLedger : public CountedObject<AcceptedLedger>
 {
 public:
-    AcceptedLedger(std::shared_ptr<ReadView const> const& ledger);
+    AcceptedLedger(std::shared_ptr<ReadView const> ledger);
 
     [[nodiscard]] std::shared_ptr<ReadView const> const&
     getLedger() const
     {
-        return mLedger;
+        return ledger_;
     }
 
     [[nodiscard]] std::size_t
@@ -51,8 +57,17 @@ public:
         return transactions_.end();
     }
 
+    /**
+     * The last accepted transaction. Precondition: size() > 0.
+     */
+    [[nodiscard]] AcceptedLedgerTx const&
+    back() const
+    {
+        return *transactions_.back();
+    }
+
 private:
-    std::shared_ptr<ReadView const> mLedger;
+    std::shared_ptr<ReadView const> ledger_;
     std::vector<std::unique_ptr<AcceptedLedgerTx>> transactions_;
 };
 

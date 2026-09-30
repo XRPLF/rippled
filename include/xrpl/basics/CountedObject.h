@@ -9,7 +9,9 @@
 
 namespace xrpl {
 
-/** Manages all counted object types. */
+/**
+ * Manages all counted object types.
+ */
 class CountedObjects
 {
 public:
@@ -23,10 +25,11 @@ public:
     getCounts(int minimumThreshold) const;
 
 public:
-    /** Implementation for @ref CountedObject.
-
-        @internal
-    */
+    /**
+     * Implementation for @ref CountedObject.
+     *
+     * @internal
+     */
     class Counter
     {
     public:
@@ -38,11 +41,11 @@ public:
 
             do
             {
-                head = instance.m_head.load();
+                head = instance.head_.load();
                 next_ = head;
-            } while (instance.m_head.exchange(this) != head);
+            } while (instance.head_.exchange(this) != head);
 
-            ++instance.m_count;
+            ++instance.count_;
         }
 
         ~Counter() noexcept = default;
@@ -88,19 +91,20 @@ private:
     ~CountedObjects() noexcept = default;
 
 private:
-    std::atomic<int> m_count;
-    std::atomic<Counter*> m_head;
+    std::atomic<int> count_;
+    std::atomic<Counter*> head_;
 };
 
 //------------------------------------------------------------------------------
 
-/** Tracks the number of instances of an object.
-
-    Derived classes have their instances counted automatically. This is used
-    for reporting purposes.
-
-    @ingroup basics
-*/
+/**
+ * Tracks the number of instances of an object.
+ *
+ * Derived classes have their instances counted automatically. This is used
+ * for reporting purposes.
+ *
+ * @ingroup basics
+ */
 template <class Object>
 class CountedObject
 {
@@ -108,8 +112,8 @@ private:
     static auto&
     getCounter() noexcept
     {
-        static CountedObjects::Counter c{beast::type_name<Object>()};
-        return c;
+        static CountedObjects::Counter kC{beast::typeName<Object>()};
+        return kC;
     }
 
     CountedObject() noexcept

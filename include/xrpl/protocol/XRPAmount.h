@@ -3,6 +3,7 @@
 #include <xrpl/basics/Number.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/beast/utility/Zero.h>
+#include <xrpl/json/json_forwards.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/Units.h>
 
@@ -10,7 +11,11 @@
 #include <boost/operators.hpp>
 
 #include <cstdint>
+#include <istream>
+#include <limits>
 #include <optional>
+#include <ostream>
+#include <stdexcept>
 #include <string>
 #include <type_traits>
 
@@ -22,7 +27,7 @@ class XRPAmount : private boost::totally_ordered<XRPAmount>,
                   private boost::additive<XRPAmount, std::int64_t>
 {
 public:
-    using unit_type = unit::dropTag;
+    using UnitType = unit::dropTag;
     using value_type = std::int64_t;
 
 private:
@@ -133,7 +138,9 @@ public:
         return drops_ < other.drops_;
     }
 
-    /** Returns true if the amount is not zero */
+    /**
+     * Returns true if the amount is not zero
+     */
     explicit constexpr
     operator bool() const noexcept
     {
@@ -145,7 +152,9 @@ public:
         return drops();
     }
 
-    /** Return the sign of the amount */
+    /**
+     * Return the sign of the amount
+     */
     [[nodiscard]] constexpr int
     signum() const noexcept
     {
@@ -154,7 +163,9 @@ public:
         return (drops_ != 0) ? 1 : 0;
     }
 
-    /** Returns the number of drops */
+    /**
+     * Returns the number of drops
+     */
     [[nodiscard]] constexpr value_type
     drops() const
     {
@@ -195,27 +206,28 @@ public:
      * in contexts that don't expect the value to ever approach
      * the 32-bit limits (i.e. fees and reserves).
      */
-    [[nodiscard]] Json::Value
+    [[nodiscard]] json::Value
     jsonClipped() const
     {
         static_assert(
             std::is_signed_v<value_type> && std::is_integral_v<value_type>,
             "Expected XRPAmount to be a signed integral type");
 
-        constexpr auto min = std::numeric_limits<Json::Int>::min();
-        constexpr auto max = std::numeric_limits<Json::Int>::max();
+        constexpr auto kMin = std::numeric_limits<json::Int>::min();
+        constexpr auto kMax = std::numeric_limits<json::Int>::max();
 
-        if (drops_ < min)
-            return min;
-        if (drops_ > max)
-            return max;
-        return static_cast<Json::Int>(drops_);
+        if (drops_ < kMin)
+            return kMin;
+        if (drops_ > kMax)
+            return kMax;
+        return static_cast<json::Int>(drops_);
     }
 
-    /** Returns the underlying value. Code SHOULD NOT call this
-        function unless the type has been abstracted away,
-        e.g. in a templated function.
-    */
+    /**
+     * Returns the underlying value. Code SHOULD NOT call this
+     * function unless the type has been abstracted away,
+     * e.g. in a templated function.
+     */
     [[nodiscard]] constexpr value_type
     value() const
     {
@@ -236,13 +248,15 @@ public:
     }
 };
 
-/** Number of drops per 1 XRP */
-constexpr XRPAmount DROPS_PER_XRP{1'000'000};
+/**
+ * Number of drops per 1 XRP
+ */
+constexpr XRPAmount kDropsPerXrp{1'000'000};
 
 constexpr double
 XRPAmount::decimalXRP() const
 {
-    return static_cast<double>(drops_) / DROPS_PER_XRP.drops();
+    return static_cast<double>(drops_) / kDropsPerXrp.drops();
 }
 
 // Output XRPAmount as just the drops value.

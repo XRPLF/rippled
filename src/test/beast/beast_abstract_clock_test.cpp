@@ -11,12 +11,12 @@
 
 namespace beast {
 
-class abstract_clock_test : public unit_test::suite
+class abstract_clock_test : public unit_test::Suite
 {
 public:
     template <class Clock>
     void
-    test(std::string name, abstract_clock<Clock>& c)
+    test(std::string name, AbstractClock<Clock>& c)
     {
         testcase(name);
 
@@ -31,17 +31,17 @@ public:
     }
 
     void
-    test_manual()
+    testManual()
     {
         testcase("manual");
 
-        using clock_type = manual_clock<std::chrono::steady_clock>;
-        clock_type c;
+        using ClockType = ManualClock<std::chrono::steady_clock>;
+        ClockType c;
 
         auto c1 = c.now().time_since_epoch();
-        c.set(clock_type::time_point(std::chrono::seconds(1)));
+        c.set(ClockType::time_point(std::chrono::seconds(1)));
         auto c2 = c.now().time_since_epoch();
-        c.set(clock_type::time_point(std::chrono::seconds(2)));
+        c.set(ClockType::time_point(std::chrono::seconds(2)));
         auto c3 = c.now().time_since_epoch();
 
         log << "[" << c1.count() << "," << c2.count() << "," << c3.count() << "]" << std::endl;
@@ -52,11 +52,11 @@ public:
     void
     run() override
     {
-        test("steady_clock", get_abstract_clock<std::chrono::steady_clock>());
-        test("system_clock", get_abstract_clock<std::chrono::system_clock>());
-        test("high_resolution_clock", get_abstract_clock<std::chrono::high_resolution_clock>());
+        test("steady_clock", getAbstractClock<std::chrono::steady_clock>());
+        test("system_clock", getAbstractClock<std::chrono::system_clock>());
+        test("high_resolution_clock", getAbstractClock<std::chrono::high_resolution_clock>());
 
-        test_manual();
+        testManual();
     }
 };
 

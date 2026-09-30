@@ -2,10 +2,17 @@
 
 #include <xrpl/basics/CountedObject.h>
 #include <xrpl/basics/Number.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/protocol/Asset.h>
+#include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STBase.h>
 #include <xrpl/protocol/STTakesAsset.h>
+#include <xrpl/protocol/Serializer.h>
 
+#include <cstddef>
+#include <cstdint>
 #include <ostream>
+#include <string>
 
 namespace xrpl {
 
@@ -96,6 +103,6 @@ NumberParts
 partsFromString(std::string const& number);
 
 STNumber
-numberFromJson(SField const& field, Json::Value const& value);
+numberFromJson(SField const& field, json::Value const& value);
 
 }  // namespace xrpl

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <xrpl/beast/utility/Journal.h>
 #include <xrpl/rdb/DatabaseCon.h>
 
 namespace xrpl {

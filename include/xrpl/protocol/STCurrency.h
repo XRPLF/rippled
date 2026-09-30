@@ -1,10 +1,14 @@
 #pragma once
 
-#include <xrpl/basics/CountedObject.h>
+#include <xrpl/json/json_value.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STBase.h>
 #include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/UintTypes.h>
+
+#include <cstddef>
+#include <memory>
+#include <string>
 
 namespace xrpl {
 
@@ -39,7 +43,7 @@ public:
     [[nodiscard]] std::string
     getText() const override;
 
-    [[nodiscard]] Json::Value getJson(JsonOptions) const override;
+    [[nodiscard]] json::Value getJson(JsonOptions) const override;
 
     void
     add(Serializer& s) const override;
@@ -63,7 +67,7 @@ private:
 };
 
 STCurrency
-currencyFromJson(SField const& name, Json::Value const& v);
+currencyFromJson(SField const& name, json::Value const& v);
 
 inline Currency const&
 STCurrency::currency() const
@@ -87,12 +91,6 @@ inline bool
 operator==(STCurrency const& lhs, STCurrency const& rhs)
 {
     return lhs.currency() == rhs.currency();
-}
-
-inline bool
-operator!=(STCurrency const& lhs, STCurrency const& rhs)
-{
-    return !operator==(lhs, rhs);
 }
 
 inline bool

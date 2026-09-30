@@ -18,7 +18,7 @@ namespace xrpl::ledger_entries {
 // builder's STObject and the wrapper's SLE.
 TEST(MPTokenIssuanceTests, BuilderSettersRoundTrip)
 {
-    uint256 const index{1u};
+    UInt256 const index{1u};
 
     auto const issuerValue = canonical_ACCOUNT();
     auto const sequenceValue = canonical_UINT32();
@@ -32,7 +32,13 @@ TEST(MPTokenIssuanceTests, BuilderSettersRoundTrip)
     auto const previousTxnIDValue = canonical_UINT256();
     auto const previousTxnLgrSeqValue = canonical_UINT32();
     auto const domainIDValue = canonical_UINT256();
-    auto const mutableFlagsValue = canonical_UINT32();
+    auto const immutableFlagsValue = canonical_UINT32();
+    auto const referenceHoldingValue = canonical_UINT256();
+    auto const issuerEncryptionKeyValue = canonical_VL();
+    auto const auditorEncryptionKeyValue = canonical_VL();
+    auto const issuerKeyEpochValue = canonical_UINT32();
+    auto const auditorKeyEpochValue = canonical_UINT32();
+    auto const confidentialOutstandingAmountValue = canonical_UINT64();
 
     MPTokenIssuanceBuilder builder{
         issuerValue,
@@ -49,7 +55,13 @@ TEST(MPTokenIssuanceTests, BuilderSettersRoundTrip)
     builder.setLockedAmount(lockedAmountValue);
     builder.setMPTokenMetadata(mPTokenMetadataValue);
     builder.setDomainID(domainIDValue);
-    builder.setMutableFlags(mutableFlagsValue);
+    builder.setImmutableFlags(immutableFlagsValue);
+    builder.setReferenceHolding(referenceHoldingValue);
+    builder.setIssuerEncryptionKey(issuerEncryptionKeyValue);
+    builder.setAuditorEncryptionKey(auditorEncryptionKeyValue);
+    builder.setIssuerKeyEpoch(issuerKeyEpochValue);
+    builder.setAuditorKeyEpoch(auditorKeyEpochValue);
+    builder.setConfidentialOutstandingAmount(confidentialOutstandingAmountValue);
 
     builder.setLedgerIndex(index);
     builder.setFlags(0x1u);
@@ -145,11 +157,59 @@ TEST(MPTokenIssuanceTests, BuilderSettersRoundTrip)
     }
 
     {
-        auto const& expected = mutableFlagsValue;
-        auto const actualOpt = entry.getMutableFlags();
+        auto const& expected = immutableFlagsValue;
+        auto const actualOpt = entry.getImmutableFlags();
         ASSERT_TRUE(actualOpt.has_value());
-        expectEqualField(expected, *actualOpt, "sfMutableFlags");
-        EXPECT_TRUE(entry.hasMutableFlags());
+        expectEqualField(expected, *actualOpt, "sfImmutableFlags");
+        EXPECT_TRUE(entry.hasImmutableFlags());
+    }
+
+    {
+        auto const& expected = referenceHoldingValue;
+        auto const actualOpt = entry.getReferenceHolding();
+        ASSERT_TRUE(actualOpt.has_value());
+        expectEqualField(expected, *actualOpt, "sfReferenceHolding");
+        EXPECT_TRUE(entry.hasReferenceHolding());
+    }
+
+    {
+        auto const& expected = issuerEncryptionKeyValue;
+        auto const actualOpt = entry.getIssuerEncryptionKey();
+        ASSERT_TRUE(actualOpt.has_value());
+        expectEqualField(expected, *actualOpt, "sfIssuerEncryptionKey");
+        EXPECT_TRUE(entry.hasIssuerEncryptionKey());
+    }
+
+    {
+        auto const& expected = auditorEncryptionKeyValue;
+        auto const actualOpt = entry.getAuditorEncryptionKey();
+        ASSERT_TRUE(actualOpt.has_value());
+        expectEqualField(expected, *actualOpt, "sfAuditorEncryptionKey");
+        EXPECT_TRUE(entry.hasAuditorEncryptionKey());
+    }
+
+    {
+        auto const& expected = issuerKeyEpochValue;
+        auto const actualOpt = entry.getIssuerKeyEpoch();
+        ASSERT_TRUE(actualOpt.has_value());
+        expectEqualField(expected, *actualOpt, "sfIssuerKeyEpoch");
+        EXPECT_TRUE(entry.hasIssuerKeyEpoch());
+    }
+
+    {
+        auto const& expected = auditorKeyEpochValue;
+        auto const actualOpt = entry.getAuditorKeyEpoch();
+        ASSERT_TRUE(actualOpt.has_value());
+        expectEqualField(expected, *actualOpt, "sfAuditorKeyEpoch");
+        EXPECT_TRUE(entry.hasAuditorKeyEpoch());
+    }
+
+    {
+        auto const& expected = confidentialOutstandingAmountValue;
+        auto const actualOpt = entry.getConfidentialOutstandingAmount();
+        ASSERT_TRUE(actualOpt.has_value());
+        expectEqualField(expected, *actualOpt, "sfConfidentialOutstandingAmount");
+        EXPECT_TRUE(entry.hasConfidentialOutstandingAmount());
     }
 
     EXPECT_TRUE(entry.hasLedgerIndex());
@@ -163,7 +223,7 @@ TEST(MPTokenIssuanceTests, BuilderSettersRoundTrip)
 // from that SLE, build a new wrapper, and verify all fields (and validate()).
 TEST(MPTokenIssuanceTests, BuilderFromSleRoundTrip)
 {
-    uint256 const index{2u};
+    UInt256 const index{2u};
 
     auto const issuerValue = canonical_ACCOUNT();
     auto const sequenceValue = canonical_UINT32();
@@ -177,7 +237,13 @@ TEST(MPTokenIssuanceTests, BuilderFromSleRoundTrip)
     auto const previousTxnIDValue = canonical_UINT256();
     auto const previousTxnLgrSeqValue = canonical_UINT32();
     auto const domainIDValue = canonical_UINT256();
-    auto const mutableFlagsValue = canonical_UINT32();
+    auto const immutableFlagsValue = canonical_UINT32();
+    auto const referenceHoldingValue = canonical_UINT256();
+    auto const issuerEncryptionKeyValue = canonical_VL();
+    auto const auditorEncryptionKeyValue = canonical_VL();
+    auto const issuerKeyEpochValue = canonical_UINT32();
+    auto const auditorKeyEpochValue = canonical_UINT32();
+    auto const confidentialOutstandingAmountValue = canonical_UINT64();
 
     auto sle = std::make_shared<SLE>(MPTokenIssuance::entryType, index);
 
@@ -193,7 +259,13 @@ TEST(MPTokenIssuanceTests, BuilderFromSleRoundTrip)
     sle->at(sfPreviousTxnID) = previousTxnIDValue;
     sle->at(sfPreviousTxnLgrSeq) = previousTxnLgrSeqValue;
     sle->at(sfDomainID) = domainIDValue;
-    sle->at(sfMutableFlags) = mutableFlagsValue;
+    sle->at(sfImmutableFlags) = immutableFlagsValue;
+    sle->at(sfReferenceHolding) = referenceHoldingValue;
+    sle->at(sfIssuerEncryptionKey) = issuerEncryptionKeyValue;
+    sle->at(sfAuditorEncryptionKey) = auditorEncryptionKeyValue;
+    sle->at(sfIssuerKeyEpoch) = issuerKeyEpochValue;
+    sle->at(sfAuditorKeyEpoch) = auditorKeyEpochValue;
+    sle->at(sfConfidentialOutstandingAmount) = confidentialOutstandingAmountValue;
 
     MPTokenIssuanceBuilder builderFromSle{sle};
     EXPECT_TRUE(builderFromSle.validate());
@@ -343,16 +415,94 @@ TEST(MPTokenIssuanceTests, BuilderFromSleRoundTrip)
     }
 
     {
-        auto const& expected = mutableFlagsValue;
+        auto const& expected = immutableFlagsValue;
 
-        auto const fromSleOpt = entryFromSle.getMutableFlags();
-        auto const fromBuilderOpt = entryFromBuilder.getMutableFlags();
+        auto const fromSleOpt = entryFromSle.getImmutableFlags();
+        auto const fromBuilderOpt = entryFromBuilder.getImmutableFlags();
 
         ASSERT_TRUE(fromSleOpt.has_value());
         ASSERT_TRUE(fromBuilderOpt.has_value());
 
-        expectEqualField(expected, *fromSleOpt, "sfMutableFlags");
-        expectEqualField(expected, *fromBuilderOpt, "sfMutableFlags");
+        expectEqualField(expected, *fromSleOpt, "sfImmutableFlags");
+        expectEqualField(expected, *fromBuilderOpt, "sfImmutableFlags");
+    }
+
+    {
+        auto const& expected = referenceHoldingValue;
+
+        auto const fromSleOpt = entryFromSle.getReferenceHolding();
+        auto const fromBuilderOpt = entryFromBuilder.getReferenceHolding();
+
+        ASSERT_TRUE(fromSleOpt.has_value());
+        ASSERT_TRUE(fromBuilderOpt.has_value());
+
+        expectEqualField(expected, *fromSleOpt, "sfReferenceHolding");
+        expectEqualField(expected, *fromBuilderOpt, "sfReferenceHolding");
+    }
+
+    {
+        auto const& expected = issuerEncryptionKeyValue;
+
+        auto const fromSleOpt = entryFromSle.getIssuerEncryptionKey();
+        auto const fromBuilderOpt = entryFromBuilder.getIssuerEncryptionKey();
+
+        ASSERT_TRUE(fromSleOpt.has_value());
+        ASSERT_TRUE(fromBuilderOpt.has_value());
+
+        expectEqualField(expected, *fromSleOpt, "sfIssuerEncryptionKey");
+        expectEqualField(expected, *fromBuilderOpt, "sfIssuerEncryptionKey");
+    }
+
+    {
+        auto const& expected = auditorEncryptionKeyValue;
+
+        auto const fromSleOpt = entryFromSle.getAuditorEncryptionKey();
+        auto const fromBuilderOpt = entryFromBuilder.getAuditorEncryptionKey();
+
+        ASSERT_TRUE(fromSleOpt.has_value());
+        ASSERT_TRUE(fromBuilderOpt.has_value());
+
+        expectEqualField(expected, *fromSleOpt, "sfAuditorEncryptionKey");
+        expectEqualField(expected, *fromBuilderOpt, "sfAuditorEncryptionKey");
+    }
+
+    {
+        auto const& expected = issuerKeyEpochValue;
+
+        auto const fromSleOpt = entryFromSle.getIssuerKeyEpoch();
+        auto const fromBuilderOpt = entryFromBuilder.getIssuerKeyEpoch();
+
+        ASSERT_TRUE(fromSleOpt.has_value());
+        ASSERT_TRUE(fromBuilderOpt.has_value());
+
+        expectEqualField(expected, *fromSleOpt, "sfIssuerKeyEpoch");
+        expectEqualField(expected, *fromBuilderOpt, "sfIssuerKeyEpoch");
+    }
+
+    {
+        auto const& expected = auditorKeyEpochValue;
+
+        auto const fromSleOpt = entryFromSle.getAuditorKeyEpoch();
+        auto const fromBuilderOpt = entryFromBuilder.getAuditorKeyEpoch();
+
+        ASSERT_TRUE(fromSleOpt.has_value());
+        ASSERT_TRUE(fromBuilderOpt.has_value());
+
+        expectEqualField(expected, *fromSleOpt, "sfAuditorKeyEpoch");
+        expectEqualField(expected, *fromBuilderOpt, "sfAuditorKeyEpoch");
+    }
+
+    {
+        auto const& expected = confidentialOutstandingAmountValue;
+
+        auto const fromSleOpt = entryFromSle.getConfidentialOutstandingAmount();
+        auto const fromBuilderOpt = entryFromBuilder.getConfidentialOutstandingAmount();
+
+        ASSERT_TRUE(fromSleOpt.has_value());
+        ASSERT_TRUE(fromBuilderOpt.has_value());
+
+        expectEqualField(expected, *fromSleOpt, "sfConfidentialOutstandingAmount");
+        expectEqualField(expected, *fromBuilderOpt, "sfConfidentialOutstandingAmount");
     }
 
     EXPECT_EQ(entryFromSle.getKey(), index);
@@ -362,7 +512,7 @@ TEST(MPTokenIssuanceTests, BuilderFromSleRoundTrip)
 // 3) Verify wrapper throws when constructed from wrong ledger entry type.
 TEST(MPTokenIssuanceTests, WrapperThrowsOnWrongEntryType)
 {
-    uint256 const index{3u};
+    UInt256 const index{3u};
 
     // Build a valid ledger entry of a different type
     // Ticket requires: Account, OwnerNode, TicketSequence, PreviousTxnID, PreviousTxnLgrSeq
@@ -381,7 +531,7 @@ TEST(MPTokenIssuanceTests, WrapperThrowsOnWrongEntryType)
 // 4) Verify builder throws when constructed from wrong ledger entry type.
 TEST(MPTokenIssuanceTests, BuilderThrowsOnWrongEntryType)
 {
-    uint256 const index{4u};
+    UInt256 const index{4u};
 
     // Build a valid ledger entry of a different type
     TicketBuilder wrongBuilder{
@@ -398,7 +548,7 @@ TEST(MPTokenIssuanceTests, BuilderThrowsOnWrongEntryType)
 // 5) Build with only required fields and verify optional fields return nullopt.
 TEST(MPTokenIssuanceTests, OptionalFieldsReturnNullopt)
 {
-    uint256 const index{3u};
+    UInt256 const index{3u};
 
     auto const issuerValue = canonical_ACCOUNT();
     auto const sequenceValue = canonical_UINT32();
@@ -431,7 +581,19 @@ TEST(MPTokenIssuanceTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(entry.getMPTokenMetadata().has_value());
     EXPECT_FALSE(entry.hasDomainID());
     EXPECT_FALSE(entry.getDomainID().has_value());
-    EXPECT_FALSE(entry.hasMutableFlags());
-    EXPECT_FALSE(entry.getMutableFlags().has_value());
+    EXPECT_FALSE(entry.hasImmutableFlags());
+    EXPECT_FALSE(entry.getImmutableFlags().has_value());
+    EXPECT_FALSE(entry.hasReferenceHolding());
+    EXPECT_FALSE(entry.getReferenceHolding().has_value());
+    EXPECT_FALSE(entry.hasIssuerEncryptionKey());
+    EXPECT_FALSE(entry.getIssuerEncryptionKey().has_value());
+    EXPECT_FALSE(entry.hasAuditorEncryptionKey());
+    EXPECT_FALSE(entry.getAuditorEncryptionKey().has_value());
+    EXPECT_FALSE(entry.hasIssuerKeyEpoch());
+    EXPECT_FALSE(entry.getIssuerKeyEpoch().has_value());
+    EXPECT_FALSE(entry.hasAuditorKeyEpoch());
+    EXPECT_FALSE(entry.getAuditorKeyEpoch().has_value());
+    EXPECT_FALSE(entry.hasConfidentialOutstandingAmount());
+    EXPECT_FALSE(entry.getConfidentialOutstandingAmount().has_value());
 }
 }

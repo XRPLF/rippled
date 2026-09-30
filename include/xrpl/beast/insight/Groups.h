@@ -8,18 +8,22 @@
 
 namespace beast::insight {
 
-/** A container for managing a set of metric groups. */
+/**
+ * A container for managing a set of metric groups.
+ */
 class Groups
 {
 public:
     virtual ~Groups() = 0;
 
-    /** Find or create a new collector with a given name. */
+    /**
+     * Find or create a new collector with a given name.
+     */
     /** @{ */
-    virtual Group::ptr const&
+    virtual Group::Ptr const&
     get(std::string const& name) = 0;
 
-    Group::ptr const&
+    Group::Ptr const&
     operator[](std::string const& name)
     {
         return get(name);
@@ -27,8 +31,10 @@ public:
     /** @} */
 };
 
-/** Create a group container that uses the specified collector. */
+/**
+ * Create a group container that uses the specified collector.
+ */
 std::unique_ptr<Groups>
-make_Groups(Collector::ptr const& collector);
+makeGroups(Collector::Ptr const& collector);
 
 }  // namespace beast::insight

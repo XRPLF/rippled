@@ -6,14 +6,14 @@
 
 namespace xrpl {
 
-namespace RPC {
+namespace rpc {
 struct JsonContext;
-}  // namespace RPC
+}  // namespace rpc
 
-Json::Value
-doPing(RPC::JsonContext& context)
+json::Value
+doPing(rpc::JsonContext& context)
 {
-    Json::Value ret(Json::objectValue);
+    json::Value ret(json::ValueType::Object);
     switch (context.role)
     {
         case Role::ADMIN:

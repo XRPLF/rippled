@@ -1,8 +1,8 @@
 #!/bin/bash
 
 if [[ $# -lt 3 || "$1" == "--help" || "$1" = "-h" ]]; then
-    name=$( basename $0 )
-    cat <<- USAGE
+    name=$(basename $0)
+    cat <<-USAGE
     Usage: $name workbranch base/branch user/branch [user/branch [...]]
 
     * workbranch will be created locally from base/branch
@@ -16,7 +16,7 @@ fi
 work="$1"
 shift
 
-branches=( $( echo "${@}" | sed "s/:/\//" ) )
+branches=($(echo "${@}" | sed "s/:/\//"))
 base="${branches[0]}"
 unset branches[0]
 
@@ -24,10 +24,10 @@ set -e
 
 users=()
 for b in "${branches[@]}"; do
-    users+=( $( echo $b | cut -d/ -f1 ) )
+    users+=($(echo $b | cut -d/ -f1))
 done
 
-users=( $( printf '%s\n' "${users[@]}" | sort -u ) )
+users=($(printf '%s\n' "${users[@]}" | sort -u))
 
 git fetch --multiple upstreams "${users[@]}"
 git checkout -B "$work" --no-track "$base"
@@ -40,7 +40,7 @@ done
 # Make sure the commits look right
 git log --show-signature "$base..HEAD"
 
-parts=( $( echo $base | sed "s/\// /" ) )
+parts=($(echo $base | sed "s/\// /"))
 repo="${parts[0]}"
 b="${parts[1]}"
 push=$repo
@@ -50,7 +50,7 @@ fi
 if [[ "$repo" == "upstream" ]]; then
     repo="upstreams"
 fi
-cat << PUSH
+cat <<PUSH
 
 -------------------------------------------------------------------
 This script will not push. Verify everything is correct, then push

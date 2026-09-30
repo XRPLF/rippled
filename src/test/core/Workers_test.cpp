@@ -9,6 +9,7 @@
 #include <memory>
 #include <mutex>
 #include <string>
+#include <string_view>
 
 namespace xrpl {
 
@@ -21,17 +22,17 @@ namespace perf {
 class PerfLogTest : public PerfLog
 {
     void
-    rpcStart(std::string const& method, std::uint64_t requestId) override
+    rpcStart(std::string_view method, std::uint64_t requestId) override
     {
     }
 
     void
-    rpcFinish(std::string const& method, std::uint64_t requestId) override
+    rpcFinish(std::string_view method, std::uint64_t requestId) override
     {
     }
 
     void
-    rpcError(std::string const& method, std::uint64_t dur) override
+    rpcError(std::string_view method, std::uint64_t requestId) override
     {
     }
 
@@ -54,16 +55,16 @@ class PerfLogTest : public PerfLog
     {
     }
 
-    [[nodiscard]] Json::Value
+    [[nodiscard]] json::Value
     countersJson() const override
     {
-        return Json::Value();
+        return json::Value();
     }
 
-    [[nodiscard]] Json::Value
+    [[nodiscard]] json::Value
     currentJson() const override
     {
-        return Json::Value();
+        return json::Value();
     }
 
     void
@@ -81,7 +82,7 @@ class PerfLogTest : public PerfLog
 
 //------------------------------------------------------------------------------
 
-class Workers_test : public beast::unit_test::suite
+class Workers_test : public beast::unit_test::Suite
 {
 public:
     struct TestCallback : Workers::Callback
@@ -89,7 +90,7 @@ public:
         void
         processTask(int instance) override
         {
-            std::lock_guard const lk{mut};
+            std::scoped_lock const lk{mut};
             if (--count == 0)
                 cv.notify_all();
         }

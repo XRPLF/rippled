@@ -5,6 +5,8 @@
 # This file is sorted in reverse chronological order, with the most recent commits at the top.
 # The commits listed here are ignored by git blame, which is useful for formatting-only commits that would otherwise obscure the history of changes to a file.
 
+# refactor: Enable clang-tidy `readability-identifier-naming` check (#6571)
+8995564ed6b9e453e144bb663303072a3c1ba305
 # refactor: Enable remaining clang-tidy `cppcoreguidelines` checks (#6538)
 72f4cb097f626b08b02fc3efcb4aa11cb2e7adb8
 # refactor: Rename system name from 'ripple' to 'xrpld' (#6347)

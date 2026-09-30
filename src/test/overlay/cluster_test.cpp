@@ -3,9 +3,9 @@
 
 #include <xrpld/overlay/Cluster.h>
 
-#include <xrpl/basics/BasicConfig.h>
 #include <xrpl/basics/chrono.h>
 #include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/config/BasicConfig.h>
 #include <xrpl/protocol/KeyType.h>
 #include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/SecretKey.h>
@@ -13,6 +13,7 @@
 
 #include <algorithm>
 #include <chrono>
+#include <cstddef>
 #include <cstdint>
 #include <memory>
 #include <vector>
@@ -42,7 +43,7 @@ public:
     static PublicKey
     randomNode()
     {
-        return derivePublicKey(KeyType::secp256k1, randomSecretKey());
+        return derivePublicKey(KeyType::Secp256k1, randomSecretKey());
     }
 
     void
@@ -94,6 +95,29 @@ public:
                 auto found = std::ranges::find(cluster, n);
                 BEAST_EXPECT(static_cast<bool>(c->member(n)) == (found != cluster.end()));
             }
+        }
+
+        {
+            testcase("Membership: isMember agrees with member");
+
+            // Number of network nodes that also belong to the cluster.
+            std::size_t const overlapCount = 16;
+
+            // Total size of the cluster once padded with non-network nodes.
+            std::size_t const clusterSize = 32;
+
+            std::vector<PublicKey> cluster(network.begin(), network.begin() + overlapCount);
+
+            while (cluster.size() != clusterSize)
+                cluster.push_back(randomNode());
+
+            auto c = create(cluster);
+
+            for (auto const& n : cluster)
+                BEAST_EXPECT(c->isMember(n));
+
+            for (auto const& n : network)
+                BEAST_EXPECT(c->isMember(n) == static_cast<bool>(c->member(n)));
         }
 
         {
@@ -150,7 +174,7 @@ public:
         {
             auto member = c->member(node);
             BEAST_EXPECT(static_cast<bool>(member));
-            BEAST_EXPECT(member->compare(name) == 0);  // NOLINT(bugprone-unchecked-optional-access)
+            BEAST_EXPECT(*member == name);  // NOLINT(bugprone-unchecked-optional-access)
         }
 
         // Updating the name (non-empty doesn't go to empty)
@@ -159,7 +183,7 @@ public:
         {
             auto member = c->member(node);
             BEAST_EXPECT(static_cast<bool>(member));
-            BEAST_EXPECT(member->compare(name) == 0);  // NOLINT(bugprone-unchecked-optional-access)
+            BEAST_EXPECT(*member == name);  // NOLINT(bugprone-unchecked-optional-access)
         }
 
         // Updating the name (non-empty updates to new non-empty)
@@ -168,8 +192,7 @@ public:
         {
             auto member = c->member(node);
             BEAST_EXPECT(static_cast<bool>(member));
-            BEAST_EXPECT(
-                member->compare("test") == 0);  // NOLINT(bugprone-unchecked-optional-access)
+            BEAST_EXPECT(*member == "test");  // NOLINT(bugprone-unchecked-optional-access)
         }
     }
 

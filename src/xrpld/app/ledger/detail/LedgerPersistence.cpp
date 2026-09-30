@@ -8,7 +8,9 @@
 #include <xrpl/core/JobQueue.h>
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/PendingSaves.h>
+#include <xrpl/protocol/Indexes.h>  // IWYU pragma: keep
 #include <xrpl/protocol/Rules.h>
+#include <xrpl/protocol/SystemParameters.h>  // IWYU pragma: keep
 #include <xrpl/rdb/RelationalDatabase.h>
 
 #include <cstdint>
@@ -78,7 +80,7 @@ pendSaveValidated(
     // See if we can use the JobQueue.
     if (!isSynchronous &&
         registry.getJobQueue().addJob(
-            isCurrent ? jtPUBLEDGER : jtPUBOLDLEDGER,
+            isCurrent ? JtPubledger : JtPuboldledger,
             "Pub" + std::to_string(ledger->seq()),
             [&registry, ledger, isCurrent]() { saveValidatedLedger(registry, ledger, isCurrent); }))
     {
@@ -120,7 +122,7 @@ finishLoadByIndexOrHash(std::shared_ptr<Ledger> const& ledger, beast::Journal j)
         return;
 
     XRPL_ASSERT(
-        ledger->header().seq < XRP_LEDGER_EARLIEST_FEES || ledger->read(keylet::fees()),
+        ledger->header().seq < kXrpLedgerEarliestFees || ledger->read(keylet::feeSettings()),
         "xrpl::finishLoadByIndexOrHash : valid ledger fees");
     ledger->setImmutable();
 
@@ -129,7 +131,7 @@ finishLoadByIndexOrHash(std::shared_ptr<Ledger> const& ledger, beast::Journal j)
     ledger->setFull();
 }
 
-std::tuple<std::shared_ptr<Ledger>, std::uint32_t, uint256>
+std::tuple<std::shared_ptr<Ledger>, std::uint32_t, UInt256>
 getLatestLedger(Rules const& rules, Fees const& fees, ServiceRegistry& registry)
 {
     std::optional<LedgerHeader> const info = registry.getRelationalDatabase().getNewestLedgerInfo();
@@ -158,7 +160,7 @@ loadByIndex(
 
 std::shared_ptr<Ledger>
 loadByHash(
-    uint256 const& ledgerHash,
+    UInt256 const& ledgerHash,
     Rules const& rules,
     Fees const& fees,
     ServiceRegistry& registry,

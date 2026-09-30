@@ -53,8 +53,8 @@ SHAMap::walkBranch(
         if (node->isInner())
         {
             // This is an inner node, add all non-empty branches
-            auto inner = safe_downcast<SHAMapInnerNode*>(node);
-            for (int i = 0; i < 16; ++i)
+            auto inner = safeDowncast<SHAMapInnerNode*>(node);
+            for (auto i = 0u; i < SHAMapInnerNode::kBranchFactor; ++i)
             {
                 if (!inner->isEmptyBranch(i))
                     nodeStack.push({descendThrow(inner, i)});
@@ -63,7 +63,7 @@ SHAMap::walkBranch(
         else
         {
             // This is a leaf node, process its item
-            auto item = safe_downcast<SHAMapLeafNode*>(node)->peekItem();
+            auto item = safeDowncast<SHAMapLeafNode*>(node)->peekItem();
 
             if (emptyBranch || (item->key() != otherMapItem->key()))
             {
@@ -153,15 +153,15 @@ SHAMap::compare(SHAMap const& otherMap, Delta& differences, int maxCount) const
         {
             // LCOV_EXCL_START
             UNREACHABLE("xrpl::SHAMap::compare : missing a node");
-            Throw<SHAMapMissingNode>(type_, uint256());
+            Throw<SHAMapMissingNode>(type_, UInt256());
             // LCOV_EXCL_STOP
         }
 
         if (ourNode->isLeaf() && otherNode->isLeaf())
         {
             // two leaves
-            auto ours = safe_downcast<SHAMapLeafNode*>(ourNode);
-            auto other = safe_downcast<SHAMapLeafNode*>(otherNode);
+            auto ours = safeDowncast<SHAMapLeafNode*>(ourNode);
+            auto other = safeDowncast<SHAMapLeafNode*>(otherNode);
             if (ours->peekItem()->key() == other->peekItem()->key())
             {
                 if (ours->peekItem()->slice() != other->peekItem()->slice())
@@ -189,23 +189,23 @@ SHAMap::compare(SHAMap const& otherMap, Delta& differences, int maxCount) const
         }
         else if (ourNode->isInner() && otherNode->isLeaf())
         {
-            auto ours = safe_downcast<SHAMapInnerNode*>(ourNode);
-            auto other = safe_downcast<SHAMapLeafNode*>(otherNode);
+            auto ours = safeDowncast<SHAMapInnerNode*>(ourNode);
+            auto other = safeDowncast<SHAMapLeafNode*>(otherNode);
             if (!walkBranch(ours, other->peekItem(), true, differences, maxCount))
                 return false;
         }
         else if (ourNode->isLeaf() && otherNode->isInner())
         {
-            auto ours = safe_downcast<SHAMapLeafNode*>(ourNode);
-            auto other = safe_downcast<SHAMapInnerNode*>(otherNode);
+            auto ours = safeDowncast<SHAMapLeafNode*>(ourNode);
+            auto other = safeDowncast<SHAMapInnerNode*>(otherNode);
             if (!otherMap.walkBranch(other, ours->peekItem(), false, differences, maxCount))
                 return false;
         }
         else if (ourNode->isInner() && otherNode->isInner())
         {
-            auto ours = safe_downcast<SHAMapInnerNode*>(ourNode);
-            auto other = safe_downcast<SHAMapInnerNode*>(otherNode);
-            for (int i = 0; i < 16; ++i)
+            auto ours = safeDowncast<SHAMapInnerNode*>(ourNode);
+            auto other = safeDowncast<SHAMapInnerNode*>(otherNode);
+            for (auto i = 0u; i < SHAMapInnerNode::kBranchFactor; ++i)
             {
                 if (ours->getChildHash(i) != other->getChildHash(i))
                 {
@@ -250,23 +250,23 @@ SHAMap::walkMap(std::vector<SHAMapMissingNode>& missingNodes, int maxMissing) co
     using StackEntry = intr_ptr::SharedPtr<SHAMapInnerNode>;
     std::stack<StackEntry, std::vector<StackEntry>> nodeStack;
 
-    nodeStack.push(intr_ptr::static_pointer_cast<SHAMapInnerNode>(root_));
+    nodeStack.push(intr_ptr::staticPointerCast<SHAMapInnerNode>(root_));
 
     while (!nodeStack.empty())
     {
         intr_ptr::SharedPtr<SHAMapInnerNode> const node = std::move(nodeStack.top());
         nodeStack.pop();
 
-        for (int i = 0; i < 16; ++i)
+        for (auto i = 0u; i < SHAMapInnerNode::kBranchFactor; ++i)
         {
             if (!node->isEmptyBranch(i))
             {
-                intr_ptr::SharedPtr<SHAMapTreeNode> const nextNode = descendNoStore(*node, i);
+                SHAMapTreeNodePtr const nextNode = descendNoStore(*node, i);
 
                 if (nextNode)
                 {
                     if (nextNode->isInner())
-                        nodeStack.push(intr_ptr::static_pointer_cast<SHAMapInnerNode>(nextNode));
+                        nodeStack.push(intr_ptr::staticPointerCast<SHAMapInnerNode>(nextNode));
                 }
                 else
                 {
@@ -286,33 +286,35 @@ SHAMap::walkMapParallel(std::vector<SHAMapMissingNode>& missingNodes, int maxMis
         return false;
 
     using StackEntry = intr_ptr::SharedPtr<SHAMapInnerNode>;
-    std::array<intr_ptr::SharedPtr<SHAMapTreeNode>, 16> topChildren;
+    std::array<SHAMapTreeNodePtr, SHAMapInnerNode::kBranchFactor> topChildren;
     {
-        auto const& innerRoot = intr_ptr::static_pointer_cast<SHAMapInnerNode>(root_);
-        for (int i = 0; i < 16; ++i)
+        auto const& innerRoot = intr_ptr::staticPointerCast<SHAMapInnerNode>(root_);
+        for (auto i = 0u; i < SHAMapInnerNode::kBranchFactor; ++i)
         {
             if (!innerRoot->isEmptyBranch(i))
                 topChildren[i] = descendNoStore(*innerRoot, i);
         }
     }
     std::vector<std::thread> workers;
-    workers.reserve(16);
+    workers.reserve(SHAMapInnerNode::kBranchFactor);
     std::vector<SHAMapMissingNode> exceptions;
-    exceptions.reserve(16);
+    exceptions.reserve(SHAMapInnerNode::kBranchFactor);
 
-    std::array<std::stack<StackEntry, std::vector<StackEntry>>, 16> nodeStacks;
+    std::array<std::stack<StackEntry, std::vector<StackEntry>>, SHAMapInnerNode::kBranchFactor>
+        nodeStacks;
 
     // This mutex is used inside the worker threads to protect `missingNodes`
     // and `maxMissing` from race conditions
     std::mutex m;
 
-    for (int rootChildIndex = 0; rootChildIndex < 16; ++rootChildIndex)
+    for (auto rootChildIndex = 0u; rootChildIndex < SHAMapInnerNode::kBranchFactor;
+         ++rootChildIndex)
     {
         auto const& child = topChildren[rootChildIndex];
         if (!child || !child->isInner())
             continue;
 
-        nodeStacks[rootChildIndex].push(intr_ptr::static_pointer_cast<SHAMapInnerNode>(child));
+        nodeStacks[rootChildIndex].push(intr_ptr::staticPointerCast<SHAMapInnerNode>(child));
 
         JLOG(journal_.debug()) << "starting worker " << rootChildIndex;
         workers.emplace_back(
@@ -327,24 +329,23 @@ SHAMap::walkMapParallel(std::vector<SHAMapMissingNode>& missingNodes, int maxMis
                         XRPL_ASSERT(node, "xrpl::SHAMap::walkMapParallel : non-null node");
                         nodeStack.pop();
 
-                        for (int i = 0; i < 16; ++i)
+                        for (auto i = 0u; i < SHAMapInnerNode::kBranchFactor; ++i)
                         {
                             if (node->isEmptyBranch(i))
                                 continue;
-                            intr_ptr::SharedPtr<SHAMapTreeNode> const nextNode =
-                                descendNoStore(*node, i);
+                            SHAMapTreeNodePtr const nextNode = descendNoStore(*node, i);
 
                             if (nextNode)
                             {
                                 if (nextNode->isInner())
                                 {
                                     nodeStack.push(
-                                        intr_ptr::static_pointer_cast<SHAMapInnerNode>(nextNode));
+                                        intr_ptr::staticPointerCast<SHAMapInnerNode>(nextNode));
                                 }
                             }
                             else
                             {
-                                std::lock_guard const l{m};
+                                std::scoped_lock const l{m};
                                 missingNodes.emplace_back(type_, node->getChildHash(i));
                                 if (--maxMissing <= 0)
                                     return;
@@ -354,7 +355,7 @@ SHAMap::walkMapParallel(std::vector<SHAMapMissingNode>& missingNodes, int maxMis
                 }
                 catch (SHAMapMissingNode const& e)
                 {
-                    std::lock_guard const l(m);
+                    std::scoped_lock const l(m);
                     exceptions.push_back(e);
                 }
             },
@@ -364,7 +365,7 @@ SHAMap::walkMapParallel(std::vector<SHAMapMissingNode>& missingNodes, int maxMis
     for (std::thread& worker : workers)
         worker.join();
 
-    std::lock_guard const l(m);
+    std::scoped_lock const l(m);
     if (exceptions.empty())
         return true;
     std::stringstream ss;

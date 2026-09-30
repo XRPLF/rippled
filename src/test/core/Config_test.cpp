@@ -2,17 +2,14 @@
 #include <test/unit_test/FileDirGuard.h>
 
 #include <xrpld/core/Config.h>
-#include <xrpld/core/ConfigSections.h>
 
-#include <xrpl/basics/BasicConfig.h>
+#include <xrpl/basics/FileUtilities.h>
 #include <xrpl/beast/unit_test/suite.h>
-#include <xrpl/beast/utility/temp_dir.h>
+#include <xrpl/config/BasicConfig.h>
+#include <xrpl/config/Constants.h>
 #include <xrpl/protocol/SystemParameters.h>  // IWYU pragma: keep
 #include <xrpl/server/Port.h>
 
-#include <boost/filesystem/operations.hpp>
-#include <boost/format.hpp>  // IWYU pragma: keep
-#include <boost/format/free_funcs.hpp>
 #include <boost/lexical_cast/bad_lexical_cast.hpp>
 
 #include <array>
@@ -20,6 +17,8 @@
 #include <cstdint>
 #include <cstdlib>
 #include <exception>
+#include <filesystem>
+#include <format>
 #include <fstream>
 #include <optional>
 #include <ostream>
@@ -36,7 +35,7 @@ namespace detail {
 std::string
 configContents(std::string const& dbPath, std::string const& validatorsFile)
 {
-    static boost::format configContentsTemplate(R"xrpldConfig(
+    static constexpr char const* kConfigContentsTemplate = R"xrpldConfig(
 [server]
 port_rpc
 port_peer
@@ -83,9 +82,9 @@ cache_mb=256
 file_size_mb=8
 file_size_mult=2
 
-%1%
+{}
 
-%2%
+{}
 
 # This needs to be an absolute directory reference, not a relative one.
 # Modify this value as required.
@@ -106,7 +105,7 @@ r.ripple.com 51235
 # Turn down default logging to save disk space in the long run.
 # Valid values here are trace, debug, info, warning, error, and fatal
 [rpc_startup]
-{ "command": "log_level", "severity": "warning" }
+{{ "command": "log_level", "severity": "warning" }}
 
 # Defaults to 1 ("yes") so that certificates will be validated. To allow the use
 # of self-signed certificates for development or internal use, set to 0 ("no").
@@ -115,21 +114,21 @@ r.ripple.com 51235
 
 [sqdb]
 backend=sqlite
-)xrpldConfig");
+)xrpldConfig";
 
     std::string dbPathSection = dbPath.empty() ? "" : "[database_path]\n" + dbPath;
     std::string valFileSection =
         validatorsFile.empty() ? "" : "[validators_file]\n" + validatorsFile;
-    return boost::str(configContentsTemplate % dbPathSection % valFileSection);
+    return std::format(kConfigContentsTemplate, dbPathSection, valFileSection);
 }
 
 /**
-   Write an xrpld config file and remove when done.
+ * Write an xrpld config file and remove when done.
  */
 class FileCfgGuard : public xrpl::detail::FileDirGuard
 {
 private:
-    path dataDir_;
+    Path dataDir_;
 
     bool rmDataDir_{false};
 
@@ -137,11 +136,11 @@ private:
 
 public:
     FileCfgGuard(
-        beast::unit_test::suite& test,
-        path subDir,
-        path const& dbPath,
-        path const& configFile,
-        path const& validatorsFile,
+        beast::unit_test::Suite& test,
+        Path subDir,
+        Path const& dbPath,
+        Path const& configFile,
+        Path const& validatorsFile,
         bool useCounter = true,
         std::string confContents = "")
         : FileDirGuard(
@@ -154,7 +153,7 @@ public:
         , dataDir_(dbPath)
     {
         if (dbPath.empty())
-            dataDir_ = subdir() / path(Config::databaseDirName);
+            dataDir_ = subdir() / Path(Config::kDatabaseDirName);
 
         rmDataDir_ = !exists(dataDir_);
         config_.setup(
@@ -179,7 +178,7 @@ public:
     [[nodiscard]] bool
     dataDirExists() const
     {
-        return boost::filesystem::is_directory(dataDir_);
+        return std::filesystem::is_directory(dataDir_);
     }
 
     [[nodiscard]] bool
@@ -192,7 +191,7 @@ public:
     {
         try
         {
-            using namespace boost::filesystem;
+            using namespace std::filesystem;
             if (rmDataDir_)
                 rmDir(dataDir_);
         }
@@ -235,20 +234,20 @@ more-xrpl-validators.net
 }
 
 /**
-   Write a validators.txt file and remove when done.
+ * Write a validators.txt file and remove when done.
  */
 class ValidatorsTxtGuard : public detail::FileDirGuard
 {
 public:
     ValidatorsTxtGuard(
-        beast::unit_test::suite& test,
-        path subDir,
-        path const& validatorsFileName,
+        beast::unit_test::Suite& test,
+        Path subDir,
+        Path const& validatorsFileName,
         bool useCounter = true)
         : FileDirGuard(
               test,
               std::move(subDir),
-              path(validatorsFileName.empty() ? Config::validatorsFileName : validatorsFileName),
+              Path(validatorsFileName.empty() ? Config::kValidatorsFileName : validatorsFileName),
               valFileContents(),
               useCounter)
     {
@@ -273,7 +272,7 @@ public:
 class Config_test final : public TestSuite
 {
 private:
-    using path = boost::filesystem::path;
+    using Path = std::filesystem::path;
 
 public:
     void
@@ -295,9 +294,9 @@ port_wss_admin
 
         c.loadFromString(toLoad);
 
-        BEAST_EXPECT(c.legacy("ssl_verify") == "0");
+        BEAST_EXPECT(c.legacy(Sections::kSslVerify) == "0");
         expectException(
-            [&c] { [[maybe_unused]] auto _ = c.legacy("server"); });  // not a single line
+            [&c] { [[maybe_unused]] auto _ = c.legacy(Sections::kServer); });  // not a single line
 
         // set a legacy value
         BEAST_EXPECT(c.legacy("not_in_file").empty());
@@ -309,19 +308,19 @@ port_wss_admin
     {
         testcase("config_file");
 
-        using namespace boost::filesystem;
+        using namespace std::filesystem;
         auto const cwd = current_path();
 
         // Test both config file names.
-        std::string_view const configFiles[] = {Config::configFileName, Config::configLegacyName};
+        std::string_view const configFiles[] = {Config::kConfigFileName, Config::kConfigLegacyName};
 
         // Config file in current directory.
         for (auto const& configFile : configFiles)
         {
             // Use a temporary directory for testing.
-            beast::temp_dir const td;
+            TempDir const td;
             current_path(td.path());
-            path const f = td.file(std::string{configFile});
+            Path const f = td.file(std::string{configFile});
             std::ofstream o(f.string());
             o << detail::configContents("", "");
             o.close();
@@ -329,9 +328,9 @@ port_wss_admin
             // Load the config file from the current directory and verify it.
             Config c;
             c.setup("", true, false, true);
-            BEAST_EXPECT(c.section(SECTION_DEBUG_LOGFILE).values().size() == 1);
+            BEAST_EXPECT(c.section(Sections::kDebugLogfile).values().size() == 1);
             BEAST_EXPECT(
-                c.section(SECTION_DEBUG_LOGFILE).values()[0] ==
+                c.section(Sections::kDebugLogfile).values()[0] ==
                 "/Users/dummy/xrpld/config/log/debug.log");
         }
 
@@ -341,13 +340,13 @@ port_wss_admin
         {
             // Point the current working directory to a temporary directory, so
             // we don't pick up an actual config file from the repository root.
-            beast::temp_dir const td;
+            TempDir const td;
             current_path(td.path());
 
             // The XDG config directory is set: the config file must be in a
             // subdirectory named after the system.
             {
-                beast::temp_dir const tc;
+                TempDir const tc;
 
                 // Set the HOME and XDG_CONFIG_HOME environment variables. The
                 // HOME variable is not used when XDG_CONFIG_HOME is set, but
@@ -358,7 +357,7 @@ port_wss_admin
                 setenv("XDG_CONFIG_HOME", tc.path().c_str(), 1);
 
                 // Create the config file in '${XDG_CONFIG_HOME}/[systemName]'.
-                path p = tc.file(systemName());
+                Path p = tc.file(systemName());
                 create_directory(p);
                 p = tc.file(systemName() + "/" + std::string{configFile});
                 std::ofstream o(p.string());
@@ -368,9 +367,9 @@ port_wss_admin
                 // Load the config file from the config directory and verify it.
                 Config c;
                 c.setup("", true, false, true);
-                BEAST_EXPECT(c.section(SECTION_DEBUG_LOGFILE).values().size() == 1);
+                BEAST_EXPECT(c.section(Sections::kDebugLogfile).values().size() == 1);
                 BEAST_EXPECT(
-                    c.section(SECTION_DEBUG_LOGFILE).values()[0] ==
+                    c.section(Sections::kDebugLogfile).values()[0] ==
                     "/Users/dummy/xrpld/config/log/debug.log");
 
                 // Restore the environment variables.
@@ -381,7 +380,7 @@ port_wss_admin
             // The XDG config directory is not set: the config file must be in a
             // subdirectory named .config followed by the system name.
             {
-                beast::temp_dir const tc;
+                TempDir const tc;
 
                 // Set only the HOME environment variable.
                 char const* h = getenv("HOME");
@@ -391,7 +390,7 @@ port_wss_admin
 
                 // Create the config file in '${HOME}/.config/[systemName]'.
                 std::string s = ".config";
-                path p = tc.file(s);
+                Path p = tc.file(s);
                 create_directory(p);
                 s += "/" + systemName();
                 p = tc.file(s);
@@ -404,9 +403,9 @@ port_wss_admin
                 // Load the config file from the config directory and verify it.
                 Config c;
                 c.setup("", true, false, true);
-                BEAST_EXPECT(c.section(SECTION_DEBUG_LOGFILE).values().size() == 1);
+                BEAST_EXPECT(c.section(Sections::kDebugLogfile).values().size() == 1);
                 BEAST_EXPECT(
-                    c.section(SECTION_DEBUG_LOGFILE).values()[0] ==
+                    c.section(Sections::kDebugLogfile).values()[0] ==
                     "/Users/dummy/xrpld/config/log/debug.log");
 
                 // Restore the environment variables.
@@ -425,24 +424,24 @@ port_wss_admin
     {
         testcase("database_path");
 
-        using namespace boost::filesystem;
+        using namespace std::filesystem;
         {
-            boost::format cc("[database_path]\n%1%\n");
+            constexpr char const* cc = "[database_path]\n{}\n";
 
             auto const cwd = current_path();
-            path const dataDirRel("test_data_dir");
-            path const dataDirAbs(cwd / dataDirRel);
+            Path const dataDirRel("test_data_dir");
+            Path const dataDirAbs(cwd / dataDirRel);
             {
                 // Dummy test - do we get back what we put in
                 Config c;
-                c.loadFromString(boost::str(cc % dataDirAbs.string()));
-                BEAST_EXPECT(c.legacy("database_path") == dataDirAbs.string());
+                c.loadFromString(std::format(cc, dataDirAbs.string()));
+                BEAST_EXPECT(c.legacy(Sections::kDatabasePath) == dataDirAbs.string());
             }
             {
                 // Rel paths should convert to abs paths
                 Config c;
-                c.loadFromString(boost::str(cc % dataDirRel.string()));
-                BEAST_EXPECT(c.legacy("database_path") == dataDirAbs.string());
+                c.loadFromString(std::format(cc, dataDirRel.string()));
+                BEAST_EXPECT(c.legacy(Sections::kDatabasePath) == dataDirAbs.string());
             }
             {
                 // No db section.
@@ -450,41 +449,41 @@ port_wss_admin
                 // load will not.
                 Config c;
                 c.loadFromString("");
-                BEAST_EXPECT(c.legacy("database_path").empty());
+                BEAST_EXPECT(c.legacy(Sections::kDatabasePath).empty());
             }
         }
         {
             // read from file absolute path
             auto const cwd = current_path();
             detail::DirGuard const g0(*this, "test_db");
-            path const dataDirRel("test_data_dir");
-            path const dataDirAbs(cwd / g0.subdir() / dataDirRel);
+            Path const dataDirRel("test_data_dir");
+            Path const dataDirAbs(cwd / g0.subdir() / dataDirRel);
             detail::FileCfgGuard const g(
-                *this, g0.subdir(), dataDirAbs, Config::configFileName, "", false);
+                *this, g0.subdir(), dataDirAbs, Config::kConfigFileName, "", false);
             auto const& c(g.config());
             BEAST_EXPECT(g.dataDirExists());
             BEAST_EXPECT(g.configFileExists());
-            BEAST_EXPECT(c.legacy("database_path") == dataDirAbs.string());
+            BEAST_EXPECT(c.legacy(Sections::kDatabasePath) == dataDirAbs.string());
         }
         {
             // read from file relative path
             std::string const dbPath("my_db");
-            detail::FileCfgGuard const g(*this, "test_db", dbPath, Config::configFileName, "");
+            detail::FileCfgGuard const g(*this, "test_db", dbPath, Config::kConfigFileName, "");
             auto const& c(g.config());
-            std::string const nativeDbPath = absolute(path(dbPath)).string();
+            std::string const nativeDbPath = absolute(Path(dbPath)).string();
             BEAST_EXPECT(g.dataDirExists());
             BEAST_EXPECT(g.configFileExists());
-            BEAST_EXPECT(c.legacy("database_path") == nativeDbPath);
+            BEAST_EXPECT(c.legacy(Sections::kDatabasePath) == nativeDbPath);
         }
         {
             // read from file no path
-            detail::FileCfgGuard const g(*this, "test_db", "", Config::configFileName, "");
+            detail::FileCfgGuard const g(*this, "test_db", "", Config::kConfigFileName, "");
             auto const& c(g.config());
             std::string const nativeDbPath =
-                absolute(g.subdir() / path(Config::databaseDirName)).string();
+                absolute(g.subdir() / Path(Config::kDatabaseDirName)).string();
             BEAST_EXPECT(g.dataDirExists());
             BEAST_EXPECT(g.configFileExists());
-            BEAST_EXPECT(c.legacy("database_path") == nativeDbPath);
+            BEAST_EXPECT(c.legacy(Sections::kDatabasePath) == nativeDbPath);
         }
     }
 
@@ -508,20 +507,20 @@ port_wss_admin
 
         {
             Config c;
-            static boost::format configTemplate(R"xrpldConfig(
+            static constexpr char const* kConfigTemplate = R"xrpldConfig(
 [validation_seed]
-%1%
+{}
 
 [validator_token]
-%2%
-)xrpldConfig");
+{}
+)xrpldConfig";
             std::string error;
             auto const expectedError =
                 "Cannot have both [validation_seed] "
                 "and [validator_token] config sections";
             try
             {
-                c.loadFromString(boost::str(configTemplate % validationSeed % token));
+                c.loadFromString(std::format(kConfigTemplate, validationSeed, token));
             }
             catch (std::runtime_error const& e)
             {
@@ -550,7 +549,7 @@ main
         }
 
         BEAST_EXPECT(error.empty());
-        BEAST_EXPECT(c.NETWORK_ID == 0);
+        BEAST_EXPECT(c.networkId == 0);
 
         try
         {
@@ -563,7 +562,7 @@ main
         }
 
         BEAST_EXPECT(error.empty());
-        BEAST_EXPECT(c.NETWORK_ID == 0);
+        BEAST_EXPECT(c.networkId == 0);
 
         try
         {
@@ -578,7 +577,7 @@ main
         }
 
         BEAST_EXPECT(error.empty());
-        BEAST_EXPECT(c.NETWORK_ID == 255);
+        BEAST_EXPECT(c.networkId == 255);
 
         try
         {
@@ -593,7 +592,7 @@ main
         }
 
         BEAST_EXPECT(error.empty());
-        BEAST_EXPECT(c.NETWORK_ID == 10000);
+        BEAST_EXPECT(c.networkId == 10000);
     }
 
     void
@@ -601,10 +600,10 @@ main
     {
         testcase("validators_file");
 
-        using namespace boost::filesystem;
+        using namespace std::filesystem;
         {
             // load should throw for missing specified validators file
-            boost::format cc("[validators_file]\n%1%\n");
+            constexpr char const* cc = "[validators_file]\n{}\n";
             std::string error;
             std::string const missingPath = "/no/way/this/path/exists";
             auto const expectedError =
@@ -612,7 +611,7 @@ main
             try
             {
                 Config c;
-                c.loadFromString(boost::str(cc % missingPath));
+                c.loadFromString(std::format(cc, missingPath));
             }
             catch (std::runtime_error const& e)
             {
@@ -623,15 +622,15 @@ main
         {
             // load should throw for invalid [validators_file]
             detail::ValidatorsTxtGuard const vtg(*this, "test_cfg", "validators.cfg");
-            path const invalidFile = current_path() / vtg.subdir();
-            boost::format cc("[validators_file]\n%1%\n");
+            Path const invalidFile = current_path() / vtg.subdir();
+            constexpr char const* cc = "[validators_file]\n{}\n";
             std::string error;
             auto const expectedError =
                 "Invalid file specified in [validators_file]: " + invalidFile.string();
             try
             {
                 Config c;
-                c.loadFromString(boost::str(cc % invalidFile.string()));
+                c.loadFromString(std::format(cc, invalidFile.string()));
             }
             catch (std::runtime_error const& e)
             {
@@ -653,9 +652,9 @@ nHUhG1PgAG8H8myUENypM35JgfqXAKNQvRVVAFDRzJrny5eZN8d5
 nHBu9PTL9dn2GuZtdW4U2WzBwffyX9qsQCd9CNU4Z5YG3PQfViM8
 )xrpldConfig");
             c.loadFromString(toLoad);
-            BEAST_EXPECT(c.legacy("validators_file").empty());
-            BEAST_EXPECT(c.section(SECTION_VALIDATORS).values().size() == 5);
-            BEAST_EXPECT(c.VALIDATOR_LIST_THRESHOLD == std::nullopt);
+            BEAST_EXPECT(c.legacy(Sections::kValidatorsFile).empty());
+            BEAST_EXPECT(c.section(Sections::kValidators).values().size() == 5);
+            BEAST_EXPECT(c.validatorListThreshold == std::nullopt);
         }
         {
             // load validator list sites and keys from config
@@ -672,20 +671,20 @@ trust-these-validators.gov
 1
 )xrpldConfig");
             c.loadFromString(toLoad);
-            BEAST_EXPECT(c.section(SECTION_VALIDATOR_LIST_SITES).values().size() == 2);
+            BEAST_EXPECT(c.section(Sections::kValidatorListSites).values().size() == 2);
             BEAST_EXPECT(
-                c.section(SECTION_VALIDATOR_LIST_SITES).values()[0] == "xrpl-validators.com");
+                c.section(Sections::kValidatorListSites).values()[0] == "xrpl-validators.com");
             BEAST_EXPECT(
-                c.section(SECTION_VALIDATOR_LIST_SITES).values()[1] ==
+                c.section(Sections::kValidatorListSites).values()[1] ==
                 "trust-these-validators.gov");
-            BEAST_EXPECT(c.section(SECTION_VALIDATOR_LIST_KEYS).values().size() == 1);
+            BEAST_EXPECT(c.section(Sections::kValidatorListKeys).values().size() == 1);
             BEAST_EXPECT(
-                c.section(SECTION_VALIDATOR_LIST_KEYS).values()[0] ==
+                c.section(Sections::kValidatorListKeys).values()[0] ==
                 "021A99A537FDEBC34E4FCA03B39BEADD04299BB19E85097EC92B15A3518801"
                 "E566");
-            BEAST_EXPECT(c.section(SECTION_VALIDATOR_LIST_THRESHOLD).values().size() == 1);
-            BEAST_EXPECT(c.section(SECTION_VALIDATOR_LIST_THRESHOLD).values()[0] == "1");
-            BEAST_EXPECT(c.VALIDATOR_LIST_THRESHOLD == std::size_t(1));
+            BEAST_EXPECT(c.section(Sections::kValidatorListThreshold).values().size() == 1);
+            BEAST_EXPECT(c.section(Sections::kValidatorListThreshold).values()[0] == "1");
+            BEAST_EXPECT(c.validatorListThreshold == std::size_t(1));
         }
         {
             // load validator list sites and keys from config
@@ -702,20 +701,20 @@ trust-these-validators.gov
 0
 )xrpldConfig");
             c.loadFromString(toLoad);
-            BEAST_EXPECT(c.section(SECTION_VALIDATOR_LIST_SITES).values().size() == 2);
+            BEAST_EXPECT(c.section(Sections::kValidatorListSites).values().size() == 2);
             BEAST_EXPECT(
-                c.section(SECTION_VALIDATOR_LIST_SITES).values()[0] == "xrpl-validators.com");
+                c.section(Sections::kValidatorListSites).values()[0] == "xrpl-validators.com");
             BEAST_EXPECT(
-                c.section(SECTION_VALIDATOR_LIST_SITES).values()[1] ==
+                c.section(Sections::kValidatorListSites).values()[1] ==
                 "trust-these-validators.gov");
-            BEAST_EXPECT(c.section(SECTION_VALIDATOR_LIST_KEYS).values().size() == 1);
+            BEAST_EXPECT(c.section(Sections::kValidatorListKeys).values().size() == 1);
             BEAST_EXPECT(
-                c.section(SECTION_VALIDATOR_LIST_KEYS).values()[0] ==
+                c.section(Sections::kValidatorListKeys).values()[0] ==
                 "021A99A537FDEBC34E4FCA03B39BEADD04299BB19E85097EC92B15A3518801"
                 "E566");
-            BEAST_EXPECT(c.section(SECTION_VALIDATOR_LIST_THRESHOLD).values().size() == 1);
-            BEAST_EXPECT(c.section(SECTION_VALIDATOR_LIST_THRESHOLD).values()[0] == "0");
-            BEAST_EXPECT(c.VALIDATOR_LIST_THRESHOLD == std::nullopt);
+            BEAST_EXPECT(c.section(Sections::kValidatorListThreshold).values().size() == 1);
+            BEAST_EXPECT(c.section(Sections::kValidatorListThreshold).values()[0] == "0");
+            BEAST_EXPECT(c.validatorListThreshold == std::nullopt);
         }
         {
             // load should throw if [validator_list_threshold] is greater than
@@ -829,14 +828,14 @@ trust-these-validators.gov
             detail::ValidatorsTxtGuard const vtg(*this, "test_cfg", "validators.cfg");
             BEAST_EXPECT(vtg.validatorsFileExists());
             Config c;
-            boost::format cc("[validators_file]\n%1%\n");
-            c.loadFromString(boost::str(cc % vtg.validatorsFile()));
-            BEAST_EXPECT(c.legacy("validators_file") == vtg.validatorsFile());
-            BEAST_EXPECT(c.section(SECTION_VALIDATORS).values().size() == 8);
-            BEAST_EXPECT(c.section(SECTION_VALIDATOR_LIST_SITES).values().size() == 2);
-            BEAST_EXPECT(c.section(SECTION_VALIDATOR_LIST_KEYS).values().size() == 2);
-            BEAST_EXPECT(c.section(SECTION_VALIDATOR_LIST_THRESHOLD).values().size() == 1);
-            BEAST_EXPECT(c.VALIDATOR_LIST_THRESHOLD == 2);
+            constexpr char const* cc = "[validators_file]\n{}\n";
+            c.loadFromString(std::format(cc, vtg.validatorsFile()));
+            BEAST_EXPECT(c.legacy(Sections::kValidatorsFile) == vtg.validatorsFile());
+            BEAST_EXPECT(c.section(Sections::kValidators).values().size() == 8);
+            BEAST_EXPECT(c.section(Sections::kValidatorListSites).values().size() == 2);
+            BEAST_EXPECT(c.section(Sections::kValidatorListKeys).values().size() == 2);
+            BEAST_EXPECT(c.section(Sections::kValidatorListThreshold).values().size() == 1);
+            BEAST_EXPECT(c.validatorListThreshold == 2);
         }
         {
             // load from specified [validators_file] file name
@@ -844,16 +843,16 @@ trust-these-validators.gov
             std::string const valFileName = "validators.txt";
             detail::ValidatorsTxtGuard const vtg(*this, "test_cfg", valFileName);
             detail::FileCfgGuard const rcg(
-                *this, vtg.subdir(), "", Config::configFileName, valFileName, false);
+                *this, vtg.subdir(), "", Config::kConfigFileName, valFileName, false);
             BEAST_EXPECT(vtg.validatorsFileExists());
             BEAST_EXPECT(rcg.configFileExists());
             auto const& c(rcg.config());
-            BEAST_EXPECT(c.legacy("validators_file") == valFileName);
-            BEAST_EXPECT(c.section(SECTION_VALIDATORS).values().size() == 8);
-            BEAST_EXPECT(c.section(SECTION_VALIDATOR_LIST_SITES).values().size() == 2);
-            BEAST_EXPECT(c.section(SECTION_VALIDATOR_LIST_KEYS).values().size() == 2);
-            BEAST_EXPECT(c.section(SECTION_VALIDATOR_LIST_THRESHOLD).values().size() == 1);
-            BEAST_EXPECT(c.VALIDATOR_LIST_THRESHOLD == 2);
+            BEAST_EXPECT(c.legacy(Sections::kValidatorsFile) == valFileName);
+            BEAST_EXPECT(c.section(Sections::kValidators).values().size() == 8);
+            BEAST_EXPECT(c.section(Sections::kValidatorListSites).values().size() == 2);
+            BEAST_EXPECT(c.section(Sections::kValidatorListKeys).values().size() == 2);
+            BEAST_EXPECT(c.section(Sections::kValidatorListThreshold).values().size() == 1);
+            BEAST_EXPECT(c.validatorListThreshold == 2);
         }
         {
             // load from specified [validators_file] relative path
@@ -861,31 +860,31 @@ trust-these-validators.gov
             detail::ValidatorsTxtGuard const vtg(*this, "test_cfg", "validators.txt");
             auto const valFilePath = ".." / vtg.subdir() / "validators.txt";
             detail::FileCfgGuard const rcg(
-                *this, vtg.subdir(), "", Config::configFileName, valFilePath, false);
+                *this, vtg.subdir(), "", Config::kConfigFileName, valFilePath, false);
             BEAST_EXPECT(vtg.validatorsFileExists());
             BEAST_EXPECT(rcg.configFileExists());
             auto const& c(rcg.config());
-            BEAST_EXPECT(c.legacy("validators_file") == valFilePath);
-            BEAST_EXPECT(c.section(SECTION_VALIDATORS).values().size() == 8);
-            BEAST_EXPECT(c.section(SECTION_VALIDATOR_LIST_SITES).values().size() == 2);
-            BEAST_EXPECT(c.section(SECTION_VALIDATOR_LIST_KEYS).values().size() == 2);
-            BEAST_EXPECT(c.section(SECTION_VALIDATOR_LIST_THRESHOLD).values().size() == 1);
-            BEAST_EXPECT(c.VALIDATOR_LIST_THRESHOLD == 2);
+            BEAST_EXPECT(c.legacy(Sections::kValidatorsFile) == valFilePath);
+            BEAST_EXPECT(c.section(Sections::kValidators).values().size() == 8);
+            BEAST_EXPECT(c.section(Sections::kValidatorListSites).values().size() == 2);
+            BEAST_EXPECT(c.section(Sections::kValidatorListKeys).values().size() == 2);
+            BEAST_EXPECT(c.section(Sections::kValidatorListThreshold).values().size() == 1);
+            BEAST_EXPECT(c.validatorListThreshold == 2);
         }
         {
             // load from validators file in default location
             detail::ValidatorsTxtGuard const vtg(*this, "test_cfg", "validators.txt");
             detail::FileCfgGuard const rcg(
-                *this, vtg.subdir(), "", Config::configFileName, "", false);
+                *this, vtg.subdir(), "", Config::kConfigFileName, "", false);
             BEAST_EXPECT(vtg.validatorsFileExists());
             BEAST_EXPECT(rcg.configFileExists());
             auto const& c(rcg.config());
-            BEAST_EXPECT(c.legacy("validators_file").empty());
-            BEAST_EXPECT(c.section(SECTION_VALIDATORS).values().size() == 8);
-            BEAST_EXPECT(c.section(SECTION_VALIDATOR_LIST_SITES).values().size() == 2);
-            BEAST_EXPECT(c.section(SECTION_VALIDATOR_LIST_KEYS).values().size() == 2);
-            BEAST_EXPECT(c.section(SECTION_VALIDATOR_LIST_THRESHOLD).values().size() == 1);
-            BEAST_EXPECT(c.VALIDATOR_LIST_THRESHOLD == 2);
+            BEAST_EXPECT(c.legacy(Sections::kValidatorsFile).empty());
+            BEAST_EXPECT(c.section(Sections::kValidators).values().size() == 8);
+            BEAST_EXPECT(c.section(Sections::kValidatorListSites).values().size() == 2);
+            BEAST_EXPECT(c.section(Sections::kValidatorListKeys).values().size() == 2);
+            BEAST_EXPECT(c.section(Sections::kValidatorListThreshold).values().size() == 1);
+            BEAST_EXPECT(c.validatorListThreshold == 2);
         }
         {
             // load from specified [validators_file] instead
@@ -896,22 +895,22 @@ trust-these-validators.gov
                 *this, vtg.subdir(), "validators.txt", false);
             BEAST_EXPECT(vtgDefault.validatorsFileExists());
             detail::FileCfgGuard const rcg(
-                *this, vtg.subdir(), "", Config::configFileName, vtg.validatorsFile(), false);
+                *this, vtg.subdir(), "", Config::kConfigFileName, vtg.validatorsFile(), false);
             BEAST_EXPECT(rcg.configFileExists());
             auto const& c(rcg.config());
-            BEAST_EXPECT(c.legacy("validators_file") == vtg.validatorsFile());
-            BEAST_EXPECT(c.section(SECTION_VALIDATORS).values().size() == 8);
-            BEAST_EXPECT(c.section(SECTION_VALIDATOR_LIST_SITES).values().size() == 2);
-            BEAST_EXPECT(c.section(SECTION_VALIDATOR_LIST_KEYS).values().size() == 2);
-            BEAST_EXPECT(c.section(SECTION_VALIDATOR_LIST_THRESHOLD).values().size() == 1);
-            BEAST_EXPECT(c.VALIDATOR_LIST_THRESHOLD == 2);
+            BEAST_EXPECT(c.legacy(Sections::kValidatorsFile) == vtg.validatorsFile());
+            BEAST_EXPECT(c.section(Sections::kValidators).values().size() == 8);
+            BEAST_EXPECT(c.section(Sections::kValidatorListSites).values().size() == 2);
+            BEAST_EXPECT(c.section(Sections::kValidatorListKeys).values().size() == 2);
+            BEAST_EXPECT(c.section(Sections::kValidatorListThreshold).values().size() == 1);
+            BEAST_EXPECT(c.validatorListThreshold == 2);
         }
 
         {
             // load validators from both config and validators file
-            boost::format cc(R"xrpldConfig(
+            constexpr char const* cc = R"xrpldConfig(
 [validators_file]
-%1%
+{}
 
 [validators]
 n949f75evCHwgyP4fPVgaHqNHxUVN15PsJEZ3B3HnXPcPjcZAoy7
@@ -930,28 +929,28 @@ trust-these-validators.gov
 
 [validator_list_keys]
 021A99A537FDEBC34E4FCA03B39BEADD04299BB19E85097EC92B15A3518801E566
-)xrpldConfig");
+)xrpldConfig";
             detail::ValidatorsTxtGuard const vtg(*this, "test_cfg", "validators.cfg");
             BEAST_EXPECT(vtg.validatorsFileExists());
             Config c;
-            c.loadFromString(boost::str(cc % vtg.validatorsFile()));
-            BEAST_EXPECT(c.legacy("validators_file") == vtg.validatorsFile());
-            BEAST_EXPECT(c.section(SECTION_VALIDATORS).values().size() == 15);
-            BEAST_EXPECT(c.section(SECTION_VALIDATOR_LIST_SITES).values().size() == 4);
-            BEAST_EXPECT(c.section(SECTION_VALIDATOR_LIST_KEYS).values().size() == 3);
-            BEAST_EXPECT(c.section(SECTION_VALIDATOR_LIST_THRESHOLD).values().size() == 1);
-            BEAST_EXPECT(c.VALIDATOR_LIST_THRESHOLD == 2);
+            c.loadFromString(std::format(cc, vtg.validatorsFile()));
+            BEAST_EXPECT(c.legacy(Sections::kValidatorsFile) == vtg.validatorsFile());
+            BEAST_EXPECT(c.section(Sections::kValidators).values().size() == 15);
+            BEAST_EXPECT(c.section(Sections::kValidatorListSites).values().size() == 4);
+            BEAST_EXPECT(c.section(Sections::kValidatorListKeys).values().size() == 3);
+            BEAST_EXPECT(c.section(Sections::kValidatorListThreshold).values().size() == 1);
+            BEAST_EXPECT(c.validatorListThreshold == 2);
         }
         {
             // load should throw if [validator_list_threshold] is present both
             // in xrpld.cfg and validators file
-            boost::format cc(R"xrpldConfig(
+            constexpr char const* cc = R"xrpldConfig(
 [validators_file]
-%1%
+{}
 
 [validator_list_threshold]
 1
-)xrpldConfig");
+)xrpldConfig";
             std::string error;
             detail::ValidatorsTxtGuard const vtg(*this, "test_cfg", "validators.cfg");
             BEAST_EXPECT(vtg.validatorsFileExists());
@@ -961,7 +960,7 @@ trust-these-validators.gov
             try
             {
                 Config c;
-                c.loadFromString(boost::str(cc % vtg.validatorsFile()));
+                c.loadFromString(std::format(cc, vtg.validatorsFile()));
                 fail();
             }
             catch (std::runtime_error const& e)
@@ -975,7 +974,7 @@ trust-these-validators.gov
             // [validator_list_keys] are missing from xrpld.cfg and
             // validators file
             Config const c;
-            boost::format cc("[validators_file]\n%1%\n");
+            constexpr char const* cc = "[validators_file]\n{}\n";
             std::string error;
             detail::ValidatorsTxtGuard const vtg(*this, "test_cfg", "validators.cfg");
             BEAST_EXPECT(vtg.validatorsFileExists());
@@ -988,7 +987,7 @@ trust-these-validators.gov
             try
             {
                 Config c2;
-                c2.loadFromString(boost::str(cc % vtg.validatorsFile()));
+                c2.loadFromString(std::format(cc, vtg.validatorsFile()));
             }
             catch (std::runtime_error const& e)
             {
@@ -1002,7 +1001,7 @@ trust-these-validators.gov
     testSetup(bool explicitPath)
     {
         detail::FileCfgGuard const cfg(
-            *this, "testSetup", explicitPath ? "test_db" : "", Config::configFileName, "");
+            *this, "testSetup", explicitPath ? "test_db" : "", Config::kConfigFileName, "");
         /* FileCfgGuard has a Config object that gets loaded on
             construction, but Config::setup is not reentrant, so we
             need a fresh config for every test case, so ignore it.
@@ -1017,8 +1016,8 @@ trust-these-validators.gov
             BEAST_EXPECT(!config.quiet());
             BEAST_EXPECT(!config.silent());
             BEAST_EXPECT(!config.standalone());
-            BEAST_EXPECT(config.LEDGER_HISTORY == 256);
-            BEAST_EXPECT(!config.legacy("database_path").empty());
+            BEAST_EXPECT(config.ledgerHistory == 256);
+            BEAST_EXPECT(!config.legacy(Sections::kDatabasePath).empty());
         }
         {
             Config config;
@@ -1030,8 +1029,8 @@ trust-these-validators.gov
             BEAST_EXPECT(config.quiet());
             BEAST_EXPECT(!config.silent());
             BEAST_EXPECT(!config.standalone());
-            BEAST_EXPECT(config.LEDGER_HISTORY == 256);
-            BEAST_EXPECT(!config.legacy("database_path").empty());
+            BEAST_EXPECT(config.ledgerHistory == 256);
+            BEAST_EXPECT(!config.legacy(Sections::kDatabasePath).empty());
         }
         {
             Config config;
@@ -1043,8 +1042,8 @@ trust-these-validators.gov
             BEAST_EXPECT(config.quiet());
             BEAST_EXPECT(config.silent());
             BEAST_EXPECT(!config.standalone());
-            BEAST_EXPECT(config.LEDGER_HISTORY == 256);
-            BEAST_EXPECT(!config.legacy("database_path").empty());
+            BEAST_EXPECT(config.ledgerHistory == 256);
+            BEAST_EXPECT(!config.legacy(Sections::kDatabasePath).empty());
         }
         {
             Config config;
@@ -1056,8 +1055,8 @@ trust-these-validators.gov
             BEAST_EXPECT(config.quiet());
             BEAST_EXPECT(config.silent());
             BEAST_EXPECT(!config.standalone());
-            BEAST_EXPECT(config.LEDGER_HISTORY == 256);
-            BEAST_EXPECT(!config.legacy("database_path").empty());
+            BEAST_EXPECT(config.ledgerHistory == 256);
+            BEAST_EXPECT(!config.legacy(Sections::kDatabasePath).empty());
         }
         {
             Config config;
@@ -1069,8 +1068,8 @@ trust-these-validators.gov
             BEAST_EXPECT(!config.quiet());
             BEAST_EXPECT(!config.silent());
             BEAST_EXPECT(config.standalone());
-            BEAST_EXPECT(config.LEDGER_HISTORY == 0);
-            BEAST_EXPECT(config.legacy("database_path").empty() == !explicitPath);
+            BEAST_EXPECT(config.ledgerHistory == 0);
+            BEAST_EXPECT(config.legacy(Sections::kDatabasePath).empty() == !explicitPath);
         }
         {
             Config config;
@@ -1082,8 +1081,8 @@ trust-these-validators.gov
             BEAST_EXPECT(config.quiet());
             BEAST_EXPECT(!config.silent());
             BEAST_EXPECT(config.standalone());
-            BEAST_EXPECT(config.LEDGER_HISTORY == 0);
-            BEAST_EXPECT(config.legacy("database_path").empty() == !explicitPath);
+            BEAST_EXPECT(config.ledgerHistory == 0);
+            BEAST_EXPECT(config.legacy(Sections::kDatabasePath).empty() == !explicitPath);
         }
         {
             Config config;
@@ -1095,8 +1094,8 @@ trust-these-validators.gov
             BEAST_EXPECT(config.quiet());
             BEAST_EXPECT(config.silent());
             BEAST_EXPECT(config.standalone());
-            BEAST_EXPECT(config.LEDGER_HISTORY == 0);
-            BEAST_EXPECT(config.legacy("database_path").empty() == !explicitPath);
+            BEAST_EXPECT(config.ledgerHistory == 0);
+            BEAST_EXPECT(config.legacy(Sections::kDatabasePath).empty() == !explicitPath);
         }
         {
             Config config;
@@ -1108,40 +1107,40 @@ trust-these-validators.gov
             BEAST_EXPECT(config.quiet());
             BEAST_EXPECT(config.silent());
             BEAST_EXPECT(config.standalone());
-            BEAST_EXPECT(config.LEDGER_HISTORY == 0);
-            BEAST_EXPECT(config.legacy("database_path").empty() == !explicitPath);
+            BEAST_EXPECT(config.ledgerHistory == 0);
+            BEAST_EXPECT(config.legacy(Sections::kDatabasePath).empty() == !explicitPath);
         }
     }
 
     void
     testPort()
     {
-        detail::FileCfgGuard const cfg(*this, "testPort", "", Config::configFileName, "");
+        detail::FileCfgGuard const cfg(*this, "testPort", "", Config::kConfigFileName, "");
         auto const& conf = cfg.config();
-        if (!BEAST_EXPECT(conf.exists("port_rpc")))
+        if (!BEAST_EXPECT(conf.exists(Sections::kPortRpc)))
             return;
-        if (!BEAST_EXPECT(conf.exists("port_wss_admin")))
+        if (!BEAST_EXPECT(conf.exists(Sections::kPortWssAdmin)))
             return;
         ParsedPort rpc;
-        if (!unexcept([&]() { parse_Port(rpc, conf["port_rpc"], log); }))
+        if (!unexcept([&]() { parsePort(rpc, conf[Sections::kPortRpc], log); }))
             return;
-        BEAST_EXPECT(rpc.admin_nets_v4.size() + rpc.admin_nets_v6.size() == 2);
+        BEAST_EXPECT(rpc.adminNetsV4.size() + rpc.adminNetsV6.size() == 2);
         ParsedPort wss;
-        if (!unexcept([&]() { parse_Port(wss, conf["port_wss_admin"], log); }))
+        if (!unexcept([&]() { parsePort(wss, conf[Sections::kPortWssAdmin], log); }))
             return;
-        BEAST_EXPECT(wss.admin_nets_v4.size() + wss.admin_nets_v6.size() == 1);
+        BEAST_EXPECT(wss.adminNetsV4.size() + wss.adminNetsV6.size() == 1);
     }
 
     void
     testZeroPort()
     {
         auto const contents = std::regex_replace(
-            detail::configContents("", ""), std::regex("port\\s*=\\s*\\d+"), "port = 0");
+            detail::configContents("", ""), std::regex(R"(port\s*=\s*\d+)"), "port = 0");
 
         try
         {
             detail::FileCfgGuard const cfg(
-                *this, "testPort", "", Config::configFileName, "", true, contents);
+                *this, "testPort", "", Config::kConfigFileName, "", true, contents);
             BEAST_EXPECT(false);
         }
         catch (std::exception const& ex)
@@ -1182,14 +1181,15 @@ r.ripple.com 51235
 )");
         cfg.loadFromString(toLoad);
         BEAST_EXPECT(
-            cfg.exists("port_rpc") && cfg.section("port_rpc").lines().empty() &&
-            cfg.section("port_rpc").values().empty());
+            cfg.exists(Sections::kPortRpc) && cfg.section(Sections::kPortRpc).lines().empty() &&
+            cfg.section(Sections::kPortRpc).values().empty());
         BEAST_EXPECT(
-            cfg.exists(SECTION_IPS) && cfg.section(SECTION_IPS).lines().size() == 1 &&
-            cfg.section(SECTION_IPS).values().size() == 1);
+            cfg.exists(Sections::kIps) && cfg.section(Sections::kIps).lines().size() == 1 &&
+            cfg.section(Sections::kIps).values().size() == 1);
         BEAST_EXPECT(
-            cfg.exists(SECTION_IPS_FIXED) && cfg.section(SECTION_IPS_FIXED).lines().size() == 2 &&
-            cfg.section(SECTION_IPS_FIXED).values().size() == 2);
+            cfg.exists(Sections::kIpsFixed) &&
+            cfg.section(Sections::kIpsFixed).lines().size() == 2 &&
+            cfg.section(Sections::kIpsFixed).values().size() == 2);
     }
 
     void
@@ -1237,33 +1237,34 @@ r.ripple.com:51235
 )");
         cfg.loadFromString(toLoad);
         BEAST_EXPECT(
-            cfg.exists("port_rpc") && cfg.section("port_rpc").lines().empty() &&
-            cfg.section("port_rpc").values().empty());
+            cfg.exists(Sections::kPortRpc) && cfg.section(Sections::kPortRpc).lines().empty() &&
+            cfg.section(Sections::kPortRpc).values().empty());
         BEAST_EXPECT(
-            cfg.exists(SECTION_IPS) && cfg.section(SECTION_IPS).lines().size() == 1 &&
-            cfg.section(SECTION_IPS).values().size() == 1);
+            cfg.exists(Sections::kIps) && cfg.section(Sections::kIps).lines().size() == 1 &&
+            cfg.section(Sections::kIps).values().size() == 1);
         BEAST_EXPECT(
-            cfg.exists(SECTION_IPS_FIXED) && cfg.section(SECTION_IPS_FIXED).lines().size() == 15 &&
-            cfg.section(SECTION_IPS_FIXED).values().size() == 15);
-        BEAST_EXPECT(cfg.IPS[0] == "r.ripple.com 51235");
+            cfg.exists(Sections::kIpsFixed) &&
+            cfg.section(Sections::kIpsFixed).lines().size() == 15 &&
+            cfg.section(Sections::kIpsFixed).values().size() == 15);
+        BEAST_EXPECT(cfg.ips[0] == "r.ripple.com 51235");
 
-        BEAST_EXPECT(cfg.IPS_FIXED[0] == "s1.ripple.com 51235");
-        BEAST_EXPECT(cfg.IPS_FIXED[1] == "s2.ripple.com 51235");
-        BEAST_EXPECT(cfg.IPS_FIXED[2] == "anotherserversansport");
-        BEAST_EXPECT(cfg.IPS_FIXED[3] == "anotherserverwithport 12");
-        BEAST_EXPECT(cfg.IPS_FIXED[4] == "1.1.1.1 1");
-        BEAST_EXPECT(cfg.IPS_FIXED[5] == "1.1.1.1 1");
-        BEAST_EXPECT(cfg.IPS_FIXED[6] == "12.34.12.123 12345");
-        BEAST_EXPECT(cfg.IPS_FIXED[7] == "12.34.12.123 12345");
+        BEAST_EXPECT(cfg.ipsFixed[0] == "s1.ripple.com 51235");
+        BEAST_EXPECT(cfg.ipsFixed[1] == "s2.ripple.com 51235");
+        BEAST_EXPECT(cfg.ipsFixed[2] == "anotherserversansport");
+        BEAST_EXPECT(cfg.ipsFixed[3] == "anotherserverwithport 12");
+        BEAST_EXPECT(cfg.ipsFixed[4] == "1.1.1.1 1");
+        BEAST_EXPECT(cfg.ipsFixed[5] == "1.1.1.1 1");
+        BEAST_EXPECT(cfg.ipsFixed[6] == "12.34.12.123 12345");
+        BEAST_EXPECT(cfg.ipsFixed[7] == "12.34.12.123 12345");
 
         // all ipv6 should be ignored by colon replacer, howsoever formatted
-        BEAST_EXPECT(cfg.IPS_FIXED[8] == "::");
-        BEAST_EXPECT(cfg.IPS_FIXED[9] == "2001:db8::");
-        BEAST_EXPECT(cfg.IPS_FIXED[10] == "::1");
-        BEAST_EXPECT(cfg.IPS_FIXED[11] == "::1:12345");
-        BEAST_EXPECT(cfg.IPS_FIXED[12] == "[::1]:12345");
-        BEAST_EXPECT(cfg.IPS_FIXED[13] == "2001:db8:3333:4444:5555:6666:7777:8888:12345");
-        BEAST_EXPECT(cfg.IPS_FIXED[14] == "[2001:db8:3333:4444:5555:6666:7777:8888]:1");
+        BEAST_EXPECT(cfg.ipsFixed[8] == "::");
+        BEAST_EXPECT(cfg.ipsFixed[9] == "2001:db8::");
+        BEAST_EXPECT(cfg.ipsFixed[10] == "::1");
+        BEAST_EXPECT(cfg.ipsFixed[11] == "::1:12345");
+        BEAST_EXPECT(cfg.ipsFixed[12] == "[::1]:12345");
+        BEAST_EXPECT(cfg.ipsFixed[13] == "2001:db8:3333:4444:5555:6666:7777:8888:12345");
+        BEAST_EXPECT(cfg.ipsFixed[14] == "[2001:db8:3333:4444:5555:6666:7777:8888]:1");
     }
 
     void
@@ -1274,51 +1275,51 @@ r.ripple.com:51235
             std::string_view line;
             std::string_view field;
             std::string_view expect;
-            bool had_comment;
+            bool hadComment;
         };
 
         std::array<TestCommentData, 13> const tests = {
             {{.line = "password = aaaa\\#bbbb",
               .field = "password",
               .expect = "aaaa#bbbb",
-              .had_comment = false},
+              .hadComment = false},
              {.line = "password = aaaa#bbbb",
               .field = "password",
               .expect = "aaaa",
-              .had_comment = true},
+              .hadComment = true},
              {.line = "password = aaaa #bbbb",
               .field = "password",
               .expect = "aaaa",
-              .had_comment = true},
+              .hadComment = true},
              // since the value is all comment, this doesn't parse as k=v :
              {.line = "password = #aaaa #bbbb",
               .field = "",
               .expect = "password =",
-              .had_comment = true},
+              .hadComment = true},
              {.line = "password = aaaa\\# #bbbb",
               .field = "password",
               .expect = "aaaa#",
-              .had_comment = true},
+              .hadComment = true},
              {.line = "password = aaaa\\##bbbb",
               .field = "password",
               .expect = "aaaa#",
-              .had_comment = true},
-             {.line = "aaaa#bbbb", .field = "", .expect = "aaaa", .had_comment = true},
-             {.line = "aaaa\\#bbbb", .field = "", .expect = "aaaa#bbbb", .had_comment = false},
-             {.line = "aaaa\\##bbbb", .field = "", .expect = "aaaa#", .had_comment = true},
-             {.line = "aaaa #bbbb", .field = "", .expect = "aaaa", .had_comment = true},
-             {.line = "1 #comment", .field = "", .expect = "1", .had_comment = true},
-             {.line = "#whole thing is comment", .field = "", .expect = "", .had_comment = false},
+              .hadComment = true},
+             {.line = "aaaa#bbbb", .field = "", .expect = "aaaa", .hadComment = true},
+             {.line = "aaaa\\#bbbb", .field = "", .expect = "aaaa#bbbb", .hadComment = false},
+             {.line = "aaaa\\##bbbb", .field = "", .expect = "aaaa#", .hadComment = true},
+             {.line = "aaaa #bbbb", .field = "", .expect = "aaaa", .hadComment = true},
+             {.line = "1 #comment", .field = "", .expect = "1", .hadComment = true},
+             {.line = "#whole thing is comment", .field = "", .expect = "", .hadComment = false},
              {.line = "  #whole comment with space",
               .field = "",
               .expect = "",
-              .had_comment = false}}};
+              .hadComment = false}}};
 
         for (auto const& t : tests)
         {
             Section s;
             s.append(std::string(t.line));
-            BEAST_EXPECT(s.had_trailing_comments() == t.had_comment);
+            BEAST_EXPECT(s.hadTrailingComments() == t.hadComment);
             if (t.field.empty())
             {
                 BEAST_EXPECTS(s.legacy() == t.expect, s.legacy());
@@ -1335,18 +1336,18 @@ r.ripple.com:51235
             Section s;
             s.append("online_delete = 3000");
             std::uint32_t od = 0;
-            BEAST_EXPECT(set(od, "online_delete", s));
+            BEAST_EXPECT(set(od, Keys::kOnlineDelete, s));
             // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
-            BEAST_EXPECTS(od == 3000, *(s.get<std::string>("online_delete")));
+            BEAST_EXPECTS(od == 3000, *(s.get<std::string>(Keys::kOnlineDelete)));
         }
 
         {
             Section s;
             s.append("online_delete = 2000 #my comment on this");
             std::uint32_t od = 0;
-            BEAST_EXPECT(set(od, "online_delete", s));
+            BEAST_EXPECT(set(od, Keys::kOnlineDelete, s));
             // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
-            BEAST_EXPECTS(od == 2000, *(s.get<std::string>("online_delete")));
+            BEAST_EXPECTS(od == 2000, *(s.get<std::string>(Keys::kOnlineDelete)));
         }
     }
 
@@ -1361,65 +1362,65 @@ r.ripple.com:51235
         s.append("bool_ish = 1");
 
         {
-            auto val_1 = "value 1"s;
-            BEAST_EXPECT(set(val_1, "a_string", s));
-            BEAST_EXPECT(val_1 == "mystring");
+            auto val1 = "value 1"s;
+            BEAST_EXPECT(set(val1, "a_string", s));
+            BEAST_EXPECT(val1 == "mystring");
 
-            auto val_2 = "value 2"s;
-            BEAST_EXPECT(!set(val_2, "not_a_key", s));
-            BEAST_EXPECT(val_2 == "value 2");
-            BEAST_EXPECT(!set(val_2, "default"s, "not_a_key", s));
-            BEAST_EXPECT(val_2 == "default");
+            auto val2 = "value 2"s;
+            BEAST_EXPECT(!set(val2, "not_a_key", s));
+            BEAST_EXPECT(val2 == "value 2");
+            BEAST_EXPECT(!set(val2, "default"s, "not_a_key", s));
+            BEAST_EXPECT(val2 == "default");
 
-            auto val_3 = get<std::string>(s, "a_string");
-            BEAST_EXPECT(val_3 == "mystring");
-            auto val_4 = get<std::string>(s, "not_a_key");
-            BEAST_EXPECT(val_4.empty());
-            auto val_5 = get<std::string>(s, "not_a_key", "default");
-            BEAST_EXPECT(val_5 == "default");
+            auto val3 = get<std::string>(s, "a_string");
+            BEAST_EXPECT(val3 == "mystring");
+            auto val4 = get<std::string>(s, "not_a_key");
+            BEAST_EXPECT(val4.empty());
+            auto val5 = get<std::string>(s, "not_a_key", "default");
+            BEAST_EXPECT(val5 == "default");
 
-            auto val_6 = "value 6"s;
-            BEAST_EXPECT(get_if_exists(s, "a_string", val_6));
-            BEAST_EXPECT(val_6 == "mystring");
+            auto val6 = "value 6"s;
+            BEAST_EXPECT(getIfExists(s, "a_string", val6));
+            BEAST_EXPECT(val6 == "mystring");
 
-            auto val_7 = "value 7"s;
-            BEAST_EXPECT(!get_if_exists(s, "not_a_key", val_7));
-            BEAST_EXPECT(val_7 == "value 7");
+            auto val7 = "value 7"s;
+            BEAST_EXPECT(!getIfExists(s, "not_a_key", val7));
+            BEAST_EXPECT(val7 == "value 7");
         }
 
         {
-            int val_1 = 1;
-            BEAST_EXPECT(set(val_1, "positive_int", s));
-            BEAST_EXPECT(val_1 == 2);
+            int val1 = 1;
+            BEAST_EXPECT(set(val1, "positive_int", s));
+            BEAST_EXPECT(val1 == 2);
 
-            int val_2 = 2;
-            BEAST_EXPECT(set(val_2, "negative_int", s));
-            BEAST_EXPECT(val_2 == -3);
+            int val2 = 2;
+            BEAST_EXPECT(set(val2, "negative_int", s));
+            BEAST_EXPECT(val2 == -3);
 
-            int val_3 = 3;
-            BEAST_EXPECT(!set(val_3, "a_string", s));
-            BEAST_EXPECT(val_3 == 3);
+            int val3 = 3;
+            BEAST_EXPECT(!set(val3, "a_string", s));
+            BEAST_EXPECT(val3 == 3);
 
-            auto val_4 = get<int>(s, "positive_int");
-            BEAST_EXPECT(val_4 == 2);
-            auto val_5 = get<int>(s, "not_a_key");
-            BEAST_EXPECT(val_5 == 0);
-            auto val_6 = get<int>(s, "not_a_key", 5);
-            BEAST_EXPECT(val_6 == 5);
-            auto val_7 = get<int>(s, "a_string", 6);
-            BEAST_EXPECT(val_7 == 6);
+            auto val4 = get<int>(s, "positive_int");
+            BEAST_EXPECT(val4 == 2);
+            auto val5 = get<int>(s, "not_a_key");
+            BEAST_EXPECT(val5 == 0);
+            auto val6 = get<int>(s, "not_a_key", 5);
+            BEAST_EXPECT(val6 == 5);
+            auto val7 = get<int>(s, "a_string", 6);
+            BEAST_EXPECT(val7 == 6);
 
-            int val_8 = 8;
-            BEAST_EXPECT(get_if_exists(s, "positive_int", val_8));
-            BEAST_EXPECT(val_8 == 2);
+            int val8 = 8;
+            BEAST_EXPECT(getIfExists(s, "positive_int", val8));
+            BEAST_EXPECT(val8 == 2);
 
-            auto val_9 = 9;
-            BEAST_EXPECT(!get_if_exists(s, "not_a_key", val_9));
-            BEAST_EXPECT(val_9 == 9);
+            auto val9 = 9;
+            BEAST_EXPECT(!getIfExists(s, "not_a_key", val9));
+            BEAST_EXPECT(val9 == 9);
 
-            auto val_10 = 10;
-            BEAST_EXPECT(!get_if_exists(s, "a_string", val_10));
-            BEAST_EXPECT(val_10 == 10);
+            auto val10 = 10;
+            BEAST_EXPECT(!getIfExists(s, "a_string", val10));
+            BEAST_EXPECT(val10 == 10);
 
             BEAST_EXPECT(s.get<int>("not_a_key") == std::nullopt);
             try
@@ -1434,13 +1435,13 @@ r.ripple.com:51235
         }
 
         {
-            bool flag_1 = false;
-            BEAST_EXPECT(get_if_exists(s, "bool_ish", flag_1));
-            BEAST_EXPECT(flag_1 == true);
+            bool flag1 = false;
+            BEAST_EXPECT(getIfExists(s, "bool_ish", flag1));
+            BEAST_EXPECT(flag1 == true);
 
-            bool flag_2 = false;
-            BEAST_EXPECT(!get_if_exists(s, "not_a_key", flag_2));
-            BEAST_EXPECT(flag_2 == false);
+            bool flag2 = false;
+            BEAST_EXPECT(!getIfExists(s, "not_a_key", flag2));
+            BEAST_EXPECT(flag2 == false);
         }
     }
 
@@ -1457,14 +1458,14 @@ r.ripple.com:51235
         };
 
         std::vector<ConfigUnit> const units = {
-            {"seconds", 1, 15 * 60, false},
-            {"minutes", 60, 14, false},
-            {"minutes", 60, 15, true},
-            {"hours", 3600, 10, true},
-            {"days", 86400, 10, true},
-            {"weeks", 604800, 2, true},
-            {"months", 2592000, 1, false},
-            {"years", 31536000, 1, false}};
+            {.unit = "seconds", .numSeconds = 1, .configVal = 15 * 60, .shouldPass = false},
+            {.unit = "minutes", .numSeconds = 60, .configVal = 14, .shouldPass = false},
+            {.unit = "minutes", .numSeconds = 60, .configVal = 15, .shouldPass = true},
+            {.unit = "hours", .numSeconds = 3600, .configVal = 10, .shouldPass = true},
+            {.unit = "days", .numSeconds = 86400, .configVal = 10, .shouldPass = true},
+            {.unit = "weeks", .numSeconds = 604800, .configVal = 2, .shouldPass = true},
+            {.unit = "months", .numSeconds = 2592000, .configVal = 1, .shouldPass = false},
+            {.unit = "years", .numSeconds = 31536000, .configVal = 1, .shouldPass = false}};
 
         std::string space;
         for (auto& [unit, sec, val, shouldPass] : units)
@@ -1473,6 +1474,7 @@ r.ripple.com:51235
             std::string toLoad(R"xrpldConfig(
 [amendment_majority_time]
 )xrpldConfig");
+            // NOLINTNEXTLINE(performance-inefficient-string-concatenation)
             toLoad += std::to_string(val) + space + unit;
             space = space.empty() ? " " : "";
 
@@ -1481,7 +1483,7 @@ r.ripple.com:51235
                 c.loadFromString(toLoad);
                 if (shouldPass)
                 {
-                    BEAST_EXPECT(c.AMENDMENT_MAJORITY_TIME.count() == val * sec);
+                    BEAST_EXPECT(c.amendmentMajorityTime.count() == val * sec);
                 }
                 else
                 {
@@ -1512,7 +1514,7 @@ r.ripple.com:51235
             {
                 Config c;
                 c.loadFromString("[overlay]\nmax_unknown_time=" + value);
-                return c.MAX_UNKNOWN_TIME;
+                return c.maxUnknownTime;
             }
             catch (std::runtime_error const&)
             {
@@ -1546,7 +1548,7 @@ r.ripple.com:51235
             {
                 Config c;
                 c.loadFromString("[overlay]\nmax_diverged_time=" + value);
-                return c.MAX_DIVERGED_TIME;
+                return c.maxDivergedTime;
             }
             catch (std::runtime_error const&)
             {
@@ -1572,6 +1574,87 @@ r.ripple.com:51235
 
         // Above upper bound
         BEAST_EXPECT(!testDiverged("901"));
+
+        testcase("overlay: manifest counts");
+
+        // Both keys share one range and one parse path, so exercise each
+        // through the same helper.
+        auto testCount = [](std::string const& key,
+                            std::string const& value) -> std::optional<std::size_t> {
+            try
+            {
+                Config c;
+                c.loadFromString("[overlay]\n" + key + "=" + value);
+                return key == "max_trusted_count" ? c.maxTrustedCount : c.maxUntrustedCount;
+            }
+            catch (std::runtime_error const&)
+            {
+                return {};
+            }
+        };
+
+        for (auto const* key : {"max_untrusted_count", "max_trusted_count"})
+        {
+            // Failures. A bad value must surface as std::runtime_error, not
+            // the std::bad_cast that the underlying parse throws.
+            BEAST_EXPECT(!testCount(key, "none"));
+            BEAST_EXPECT(!testCount(key, "0.5"));
+            BEAST_EXPECT(!testCount(key, "400 manifests"));
+            BEAST_EXPECT(!testCount(key, "-1"));
+
+            // Below lower bound
+            BEAST_EXPECT(!testCount(key, "0"));
+            BEAST_EXPECT(!testCount(key, "49"));
+
+            // In bounds
+            BEAST_EXPECT(testCount(key, "50") == 50);
+            BEAST_EXPECT(testCount(key, "51") == 51);
+            BEAST_EXPECT(testCount(key, "300") == 300);
+            BEAST_EXPECT(testCount(key, "400") == 400);
+            BEAST_EXPECT(testCount(key, "999") == 999);
+            BEAST_EXPECT(testCount(key, "1000") == 1000);
+
+            // Above upper bound
+            BEAST_EXPECT(!testCount(key, "1001"));
+        }
+
+        // Each key is independent: setting one leaves the other unset.
+        {
+            Config c;
+            c.loadFromString("[overlay]\nmax_untrusted_count=500");
+            BEAST_EXPECT(c.maxUntrustedCount == 500);
+            BEAST_EXPECT(!c.maxTrustedCount);
+        }
+        {
+            Config c;
+            c.loadFromString("[overlay]\nmax_trusted_count=500");
+            BEAST_EXPECT(c.maxTrustedCount == 500);
+            BEAST_EXPECT(!c.maxUntrustedCount);
+        }
+
+        // Both can be set together.
+        {
+            Config c;
+            c.loadFromString("[overlay]\nmax_untrusted_count=250\nmax_trusted_count=750");
+            BEAST_EXPECT(c.maxUntrustedCount == 250);
+            BEAST_EXPECT(c.maxTrustedCount == 750);
+        }
+
+        // Unset leaves no override, so the use sites fall back to the defaults.
+        {
+            Config c;
+            c.loadFromString("[overlay]\nip_limit=64");
+            BEAST_EXPECT(!c.maxUntrustedCount);
+            BEAST_EXPECT(!c.maxTrustedCount);
+        }
+
+        // No [overlay] section at all leaves both unset too.
+        {
+            Config c;
+            c.loadFromString("");
+            BEAST_EXPECT(!c.maxUntrustedCount);
+            BEAST_EXPECT(!c.maxTrustedCount);
+        }
     }
 
     void

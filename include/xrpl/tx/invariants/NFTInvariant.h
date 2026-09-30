@@ -1,10 +1,11 @@
 #pragma once
 
-#include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/XRPAmount.h>
 
 #include <cstdint>
 
@@ -33,7 +34,7 @@ class ValidNFTokenPage
 
 public:
     void
-    visitEntry(bool, std::shared_ptr<SLE const> const&, std::shared_ptr<SLE const> const&);
+    visitEntry(bool, SLE::ConstRef, SLE::ConstRef);
 
     [[nodiscard]] bool
     finalize(STTx const&, TER const, XRPAmount const, ReadView const&, beast::Journal const&) const;
@@ -54,14 +55,14 @@ public:
  */
 class NFTokenCountTracking
 {
-    std::uint32_t beforeMintedTotal = 0;
-    std::uint32_t beforeBurnedTotal = 0;
-    std::uint32_t afterMintedTotal = 0;
-    std::uint32_t afterBurnedTotal = 0;
+    std::uint32_t beforeMintedTotal_ = 0;
+    std::uint32_t beforeBurnedTotal_ = 0;
+    std::uint32_t afterMintedTotal_ = 0;
+    std::uint32_t afterBurnedTotal_ = 0;
 
 public:
     void
-    visitEntry(bool, std::shared_ptr<SLE const> const&, std::shared_ptr<SLE const> const&);
+    visitEntry(bool, SLE::ConstRef, SLE::ConstRef);
 
     [[nodiscard]] bool
     finalize(STTx const&, TER const, XRPAmount const, ReadView const&, beast::Journal const&) const;

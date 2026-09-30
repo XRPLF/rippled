@@ -1,17 +1,31 @@
 #pragma once
 
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/beast/utility/Zero.h>
 #include <xrpl/json/json_value.h>
+#include <xrpl/protocol/Asset.h>
+#include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/MPTIssue.h>
+#include <xrpl/protocol/Protocol.h>
+#include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/TxFormats.h>
 #include <xrpl/protocol/jss.h>
 
+#include <cstdint>
+#include <map>
 #include <memory>
+#include <optional>
+#include <sstream>
+#include <stdexcept>
+#include <string>
+#include <tuple>
 
-namespace Json {
+namespace json {
 class Value;
-}  // namespace Json
+}  // namespace json
 
 namespace xrpl {
 
@@ -20,10 +34,10 @@ class Transaction;
 class TxMeta;
 class STTx;
 
-namespace RPC {
+namespace rpc {
 
 template <class L>
-Json::Value
+json::Value
 computeBookChanges(std::shared_ptr<L const> const& lpAccepted)
 {
     std::map<
@@ -35,8 +49,38 @@ computeBookChanges(std::shared_ptr<L const> const& lpAccepted)
             STAmount,                 // low rate
             STAmount,                 // open rate
             STAmount,                 // close rate
-            std::optional<uint256>>>  // optional: domain id
+            std::optional<UInt256>>>  // optional: domain id
         tally;
+
+    // Accumulating volume can exceed what the asset can represent, and the two
+    // types fail differently: STAmount's IOU addition throws, while its MPT
+    // addition is a raw int64 add that wraps past kMaxMpTokenAmount to a
+    // negative amount. Reject both so that one extreme crossing cannot poison
+    // this ledger's report, which is otherwise permanent -- the ledger is
+    // immutable and the computation deterministic.
+    auto const checkedAdd = [](STAmount& acc, STAmount const& delta) {
+        return acc.asset().visit(
+            [&](Issue const&) {
+                try
+                {
+                    acc += delta;
+                }
+                catch (std::overflow_error const&)
+                {
+                    return false;
+                }
+                return true;
+            },
+            [&](MPTIssue const&) {
+                // Both volumes are non-negative by the time they reach the
+                // tally, so this cannot underflow.
+                auto const room = static_cast<std::int64_t>(kMaxMpTokenAmount) - acc.mpt().value();
+                if (delta.mpt().value() > room)
+                    return false;
+                acc += delta;
+                return true;
+            });
+    };
 
     for (auto& tx : lpAccepted->txs)
     {
@@ -108,15 +152,24 @@ computeBookChanges(std::shared_ptr<L const> const& lpAccepted)
             STAmount second = noswap ? deltaPays : deltaGets;
 
             // defensively programmed, should (probably) never happen
-            if (second == beast::zero)
+            if (second == beast::kZero)
                 continue;
 
-            STAmount const rate = divide(first, second, noIssue());
+            std::optional<STAmount> maybeRate;
+            try
+            {
+                maybeRate = divide(first, second, noIssue());
+            }
+            catch (std::overflow_error const&)
+            {
+                continue;
+            }
+            STAmount const rate = *maybeRate;
 
-            if (first < beast::zero)
+            if (first < beast::kZero)
                 first = -first;
 
-            if (second < beast::zero)
+            if (second < beast::kZero)
                 second = -second;
 
             std::stringstream ss;
@@ -129,7 +182,7 @@ computeBookChanges(std::shared_ptr<L const> const& lpAccepted)
                 ss << p << "|" << g;
             }
 
-            std::optional<uint256> const domain = finalFields[~sfDomainID];
+            std::optional<UInt256> const domain = finalFields[~sfDomainID];
 
             std::string const key{ss.str()};
 
@@ -149,8 +202,15 @@ computeBookChanges(std::shared_ptr<L const> const& lpAccepted)
                 // increment volume
                 auto& entry = tally[key];
 
-                std::get<0>(entry) += first;   // side A vol
-                std::get<1>(entry) += second;  // side B vol
+                // Commit both sides or neither, so an overflow on the second
+                // cannot leave the entry half-updated. Skipping the crossing
+                // matches how an unrepresentable rate is handled above.
+                STAmount volA = std::get<0>(entry);
+                STAmount volB = std::get<1>(entry);
+                if (!checkedAdd(volA, first) || !checkedAdd(volB, second))
+                    continue;
+                std::get<0>(entry) = volA;  // side A vol
+                std::get<1>(entry) = volB;  // side B vol
 
                 if (std::get<2>(entry) < rate)  // high
                     std::get<2>(entry) = rate;
@@ -164,7 +224,7 @@ computeBookChanges(std::shared_ptr<L const> const& lpAccepted)
         }
     }
 
-    Json::Value jvObj(Json::objectValue);
+    json::Value jvObj(json::ValueType::Object);
     jvObj[jss::type] = "bookChanges";
 
     // retrieve validated information from LedgerHeader class
@@ -172,9 +232,9 @@ computeBookChanges(std::shared_ptr<L const> const& lpAccepted)
     jvObj[jss::ledger_index] = lpAccepted->header().seq;
     jvObj[jss::ledger_hash] = to_string(lpAccepted->header().hash);
     jvObj[jss::ledger_time] =
-        Json::Value::UInt(lpAccepted->header().closeTime.time_since_epoch().count());
+        json::Value::UInt(lpAccepted->header().closeTime.time_since_epoch().count());
 
-    jvObj[jss::changes] = Json::arrayValue;
+    jvObj[jss::changes] = json::ValueType::Array;
 
     auto volToStr = [](STAmount const& vol) {
         return vol.asset().visit(
@@ -188,7 +248,7 @@ computeBookChanges(std::shared_ptr<L const> const& lpAccepted)
 
     for (auto const& entry : tally)
     {
-        Json::Value& inner = jvObj[jss::changes].append(Json::objectValue);
+        json::Value& inner = jvObj[jss::changes].append(json::ValueType::Object);
 
         STAmount const volA = std::get<0>(entry.second);
         STAmount const volB = std::get<1>(entry.second);
@@ -213,7 +273,7 @@ computeBookChanges(std::shared_ptr<L const> const& lpAccepted)
         inner[jss::open] = to_string(std::get<4>(entry.second).iou());
         inner[jss::close] = to_string(std::get<5>(entry.second).iou());
 
-        std::optional<uint256> const domain = std::get<6>(entry.second);
+        std::optional<UInt256> const domain = std::get<6>(entry.second);
         if (domain)
             inner[jss::domain] = to_string(*domain);
     }
@@ -221,5 +281,5 @@ computeBookChanges(std::shared_ptr<L const> const& lpAccepted)
     return jvObj;
 }
 
-}  // namespace RPC
+}  // namespace rpc
 }  // namespace xrpl

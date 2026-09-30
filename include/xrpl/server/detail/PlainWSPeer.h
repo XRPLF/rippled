@@ -1,10 +1,14 @@
 #pragma once
 
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/server/Port.h>
 #include <xrpl/server/detail/BaseWSPeer.h>
 
 #include <boost/beast/core/tcp_stream.hpp>
 
+#include <chrono>
 #include <memory>
+#include <utility>
 
 namespace xrpl {
 
@@ -15,22 +19,22 @@ class PlainWSPeer : public BaseWSPeer<Handler, PlainWSPeer<Handler>>,
     friend class BasePeer<Handler, PlainWSPeer>;
     friend class BaseWSPeer<Handler, PlainWSPeer>;
 
-    using clock_type = std::chrono::system_clock;
-    using error_code = boost::system::error_code;
-    using endpoint_type = boost::asio::ip::tcp::endpoint;
-    using waitable_timer = boost::asio::basic_waitable_timer<clock_type>;
-    using socket_type = boost::beast::tcp_stream;
+    using ClockType = std::chrono::system_clock;
+    using ErrorCode = boost::system::error_code;
+    using EndpointType = boost::asio::ip::tcp::endpoint;
+    using WaitableTimer = boost::asio::basic_waitable_timer<ClockType>;
+    using SocketType = boost::beast::tcp_stream;
 
-    boost::beast::websocket::stream<socket_type> ws_;
+    boost::beast::websocket::stream<SocketType> ws_;
 
 public:
     template <class Body, class Headers>
     PlainWSPeer(
         Port const& port,
         Handler& handler,
-        endpoint_type remote_address,
+        EndpointType remoteAddress,
         boost::beast::http::request<Body, Headers>&& request,
-        socket_type&& socket,
+        SocketType&& socket,
         beast::Journal journal);
 };
 
@@ -41,16 +45,16 @@ template <class Body, class Headers>
 PlainWSPeer<Handler>::PlainWSPeer(
     Port const& port,
     Handler& handler,
-    endpoint_type remote_address,
+    EndpointType remoteAddress,
     boost::beast::http::request<Body, Headers>&& request,
-    socket_type&& socket,
+    SocketType&& socket,
     beast::Journal journal)
     : BaseWSPeer<Handler, PlainWSPeer>(
           port,
           handler,
           socket.get_executor(),
-          waitable_timer{socket.get_executor()},
-          remote_address,
+          WaitableTimer{socket.get_executor()},
+          remoteAddress,
           std::move(request),
           journal)
     , ws_(std::move(socket))

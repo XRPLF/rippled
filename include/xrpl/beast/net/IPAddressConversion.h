@@ -4,29 +4,35 @@
 
 #include <boost/asio.hpp>
 
-namespace beast::IP {
+namespace beast::ip {
 
-/** Convert to Endpoint.
-    The port is set to zero.
-*/
+/**
+ * Convert to Endpoint.
+ * The port is set to zero.
+ */
 Endpoint
-from_asio(boost::asio::ip::address const& address);
+fromAsio(boost::asio::ip::address const& address);
 
-/** Convert to Endpoint. */
+/**
+ * Convert to Endpoint.
+ */
 Endpoint
-from_asio(boost::asio::ip::tcp::endpoint const& endpoint);
+fromAsio(boost::asio::ip::tcp::endpoint const& endpoint);
 
-/** Convert to asio::ip::address.
-    The port is ignored.
-*/
+/**
+ * Convert to asio::ip::address.
+ * The port is ignored.
+ */
 boost::asio::ip::address
-to_asio_address(Endpoint const& endpoint);
+toAsioAddress(Endpoint const& endpoint);
 
-/** Convert to asio::ip::tcp::endpoint. */
+/**
+ * Convert to asio::ip::tcp::endpoint.
+ */
 boost::asio::ip::tcp::endpoint
-to_asio_endpoint(Endpoint const& endpoint);
+toAsioEndpoint(Endpoint const& endpoint);
 
-}  // namespace beast::IP
+}  // namespace beast::ip
 
 namespace beast {
 
@@ -35,25 +41,25 @@ struct IPAddressConversion
 {
     explicit IPAddressConversion() = default;
 
-    static IP::Endpoint
-    from_asio(boost::asio::ip::address const& address)
+    static ip::Endpoint
+    fromAsio(boost::asio::ip::address const& address)
     {
-        return IP::from_asio(address);
+        return ip::fromAsio(address);
     }
-    static IP::Endpoint
-    from_asio(boost::asio::ip::tcp::endpoint const& endpoint)
+    static ip::Endpoint
+    fromAsio(boost::asio::ip::tcp::endpoint const& endpoint)
     {
-        return IP::from_asio(endpoint);
+        return ip::fromAsio(endpoint);
     }
     static boost::asio::ip::address
-    to_asio_address(IP::Endpoint const& address)
+    toAsioAddress(ip::Endpoint const& address)
     {
-        return IP::to_asio_address(address);
+        return ip::toAsioAddress(address);
     }
     static boost::asio::ip::tcp::endpoint
-    to_asio_endpoint(IP::Endpoint const& address)
+    toAsioEndpoint(ip::Endpoint const& address)
     {
-        return IP::to_asio_endpoint(address);
+        return ip::toAsioEndpoint(address);
     }
 };
 

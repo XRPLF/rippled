@@ -1,53 +1,62 @@
 #include <xrpld/rpc/detail/Handler.h>
 
 #include <xrpld/rpc/Context.h>
+#include <xrpld/rpc/MethodNames.h>
 #include <xrpld/rpc/Role.h>
+#include <xrpld/rpc/Status.h>
 #include <xrpld/rpc/handlers/Handlers.h>
 #include <xrpld/rpc/handlers/ledger/Ledger.h>
 #include <xrpld/rpc/handlers/server_info/Version.h>
 
-#include <xrpl/basics/contract.h>
+#include <xrpl/basics/StringUtilities.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/ApiVersion.h>
 
 #include <algorithm>
+#include <array>
 #include <cstddef>
-#include <map>
-#include <set>
-#include <string>
+#include <iterator>
+#include <span>
+#include <string_view>
 #include <utility>
 
-namespace xrpl::RPC {
+namespace xrpl::rpc {
 namespace {
 
-/** Adjust an old-style handler to be call-by-reference. */
-template <typename Function>
-Handler::Method<Json::Value>
-byRef(Function const& f)
-{
-    return [f](JsonContext& context, Json::Value& result) {
-        result = f(context);
-        if (result.type() != Json::objectValue)
-        {
-            // LCOV_EXCL_START
-            UNREACHABLE("xrpl::RPC::byRef : result is object");
-            result = RPC::makeObjectValue(result);
-            // LCOV_EXCL_STOP
-        }
+// Shorthand: the tables below name this type once per entry.
+using Method = Handler::Method;
 
-        return Status();
-    };
+/**
+ * Adjust an old-style handler to be call-by-reference.
+ *
+ * The handler is a template parameter rather than an argument, so that byRef
+ * names a plain function instead of returning a closure over it.
+ */
+template <json::Value (*Function)(JsonContext&)>
+Status
+byRef(JsonContext& context, json::Value& result)
+{
+    result = Function(context);
+    if (result.type() != json::ValueType::Object)
+    {
+        // LCOV_EXCL_START
+        UNREACHABLE("xrpl::rpc::byRef : result is object");
+        result = rpc::makeObjectValue(result);
+        // LCOV_EXCL_STOP
+    }
+
+    return Status();
 }
 
-template <class Object, class HandlerImpl>
+template <class HandlerImpl>
 Status
-handle(JsonContext& context, Object& object)
+handle(JsonContext& context, json::Value& object)
 {
     XRPL_ASSERT(
         context.apiVersion >= HandlerImpl::minApiVer &&
             context.apiVersion <= HandlerImpl::maxApiVer,
-        "xrpl::RPC::handle : valid API version");
+        "xrpl::rpc::handle : valid API version");
     HandlerImpl handler(context);
 
     auto status = handler.check();
@@ -63,427 +72,581 @@ handle(JsonContext& context, Object& object)
 }
 
 template <typename HandlerImpl>
-Handler
+constexpr Handler
 handlerFrom()
 {
+    static_assert(HandlerImpl::minApiVer <= HandlerImpl::maxApiVer);
+    static_assert(HandlerImpl::maxApiVer <= rpc::kApiMaximumValidVersion);
+    static_assert(rpc::kApiMinimumSupportedVersion <= HandlerImpl::minApiVer);
+
     return {
         HandlerImpl::name,
-        &handle<Json::Value, HandlerImpl>,
+        Method::of<&handle<HandlerImpl>>(),
         HandlerImpl::role,
         HandlerImpl::condition,
         HandlerImpl::minApiVer,
-        HandlerImpl::maxApiVer};
+        HandlerImpl::maxApiVer,
+    };
 }
 
-Handler const handlerArray[]{
-    // Some handlers not specified here are added to the table via addHandler()
+// The handlers that name the function they dispatch to. The order is free:
+// getHandler() searches kHandlers below, which is this array and the next one
+// sorted together.
+constexpr auto kFunctionHandlerArray = std::to_array<Handler>({
     // Request-response methods
-    {.name_ = "account_info",
-     .valueMethod_ = byRef(&doAccountInfo),
-     .role_ = Role::USER,
-     .condition_ = NO_CONDITION},
-    {.name_ = "account_currencies",
-     .valueMethod_ = byRef(&doAccountCurrencies),
-     .role_ = Role::USER,
-     .condition_ = NO_CONDITION},
-    {.name_ = "account_lines",
-     .valueMethod_ = byRef(&doAccountLines),
-     .role_ = Role::USER,
-     .condition_ = NO_CONDITION},
-    {.name_ = "account_channels",
-     .valueMethod_ = byRef(&doAccountChannels),
-     .role_ = Role::USER,
-     .condition_ = NO_CONDITION},
-    {.name_ = "account_nfts",
-     .valueMethod_ = byRef(&doAccountNFTs),
-     .role_ = Role::USER,
-     .condition_ = NO_CONDITION},
-    {.name_ = "account_objects",
-     .valueMethod_ = byRef(&doAccountObjects),
-     .role_ = Role::USER,
-     .condition_ = NO_CONDITION},
-    {.name_ = "account_offers",
-     .valueMethod_ = byRef(&doAccountOffers),
-     .role_ = Role::USER,
-     .condition_ = NO_CONDITION},
-    {.name_ = "account_tx",
-     .valueMethod_ = byRef(&doAccountTx),
-     .role_ = Role::USER,
-     .condition_ = NO_CONDITION},
-    {.name_ = "amm_info",
-     .valueMethod_ = byRef(&doAMMInfo),
-     .role_ = Role::USER,
-     .condition_ = NO_CONDITION},
-    {.name_ = "blacklist",
-     .valueMethod_ = byRef(&doBlackList),
-     .role_ = Role::ADMIN,
-     .condition_ = NO_CONDITION},
-    {.name_ = "book_changes",
-     .valueMethod_ = byRef(&doBookChanges),
-     .role_ = Role::USER,
-     .condition_ = NO_CONDITION},
-    {.name_ = "book_offers",
-     .valueMethod_ = byRef(&doBookOffers),
-     .role_ = Role::USER,
-     .condition_ = NO_CONDITION},
-    {.name_ = "can_delete",
-     .valueMethod_ = byRef(&doCanDelete),
-     .role_ = Role::ADMIN,
-     .condition_ = NO_CONDITION},
-    {.name_ = "channel_authorize",
-     .valueMethod_ = byRef(&doChannelAuthorize),
-     .role_ = Role::USER,
-     .condition_ = NO_CONDITION},
-    {.name_ = "channel_verify",
-     .valueMethod_ = byRef(&doChannelVerify),
-     .role_ = Role::USER,
-     .condition_ = NO_CONDITION},
-    {.name_ = "connect",
-     .valueMethod_ = byRef(&doConnect),
-     .role_ = Role::ADMIN,
-     .condition_ = NO_CONDITION},
-    {.name_ = "consensus_info",
-     .valueMethod_ = byRef(&doConsensusInfo),
-     .role_ = Role::ADMIN,
-     .condition_ = NO_CONDITION},
-    {.name_ = "deposit_authorized",
-     .valueMethod_ = byRef(&doDepositAuthorized),
-     .role_ = Role::USER,
-     .condition_ = NO_CONDITION},
-    {.name_ = "feature",
-     .valueMethod_ = byRef(&doFeature),
-     .role_ = Role::USER,
-     .condition_ = NO_CONDITION},
-    {.name_ = "fee",
-     .valueMethod_ = byRef(&doFee),
-     .role_ = Role::USER,
-     .condition_ = NEEDS_CURRENT_LEDGER},
-    {.name_ = "fetch_info",
-     .valueMethod_ = byRef(&doFetchInfo),
-     .role_ = Role::ADMIN,
-     .condition_ = NO_CONDITION},
-    {.name_ = "gateway_balances",
-     .valueMethod_ = byRef(&doGatewayBalances),
-     .role_ = Role::USER,
-     .condition_ = NO_CONDITION},
-    {.name_ = "get_counts",
-     .valueMethod_ = byRef(&doGetCounts),
-     .role_ = Role::ADMIN,
-     .condition_ = NO_CONDITION},
-    {.name_ = "get_aggregate_price",
-     .valueMethod_ = byRef(&doGetAggregatePrice),
-     .role_ = Role::USER,
-     .condition_ = NO_CONDITION},
-    {.name_ = "ledger_accept",
-     .valueMethod_ = byRef(&doLedgerAccept),
-     .role_ = Role::ADMIN,
-     .condition_ = NEEDS_CURRENT_LEDGER},
-    {.name_ = "ledger_cleaner",
-     .valueMethod_ = byRef(&doLedgerCleaner),
-     .role_ = Role::ADMIN,
-     .condition_ = NEEDS_NETWORK_CONNECTION},
-    {.name_ = "ledger_closed",
-     .valueMethod_ = byRef(&doLedgerClosed),
-     .role_ = Role::USER,
-     .condition_ = NEEDS_CLOSED_LEDGER},
-    {.name_ = "ledger_current",
-     .valueMethod_ = byRef(&doLedgerCurrent),
-     .role_ = Role::USER,
-     .condition_ = NEEDS_CURRENT_LEDGER},
-    {.name_ = "ledger_data",
-     .valueMethod_ = byRef(&doLedgerData),
-     .role_ = Role::USER,
-     .condition_ = NO_CONDITION},
-    {.name_ = "ledger_entry",
-     .valueMethod_ = byRef(&doLedgerEntry),
-     .role_ = Role::USER,
-     .condition_ = NO_CONDITION},
-    {.name_ = "ledger_header",
-     .valueMethod_ = byRef(&doLedgerHeader),
-     .role_ = Role::USER,
-     .condition_ = NO_CONDITION,
-     .minApiVer_ = 1,
-     .maxApiVer_ = 1},
-    {.name_ = "ledger_request",
-     .valueMethod_ = byRef(&doLedgerRequest),
-     .role_ = Role::ADMIN,
-     .condition_ = NO_CONDITION},
-    {.name_ = "log_level",
-     .valueMethod_ = byRef(&doLogLevel),
-     .role_ = Role::ADMIN,
-     .condition_ = NO_CONDITION},
-    {.name_ = "logrotate",
-     .valueMethod_ = byRef(&doLogRotate),
-     .role_ = Role::ADMIN,
-     .condition_ = NO_CONDITION},
-    {.name_ = "manifest",
-     .valueMethod_ = byRef(&doManifest),
-     .role_ = Role::USER,
-     .condition_ = NO_CONDITION},
-    {.name_ = "nft_buy_offers",
-     .valueMethod_ = byRef(&doNFTBuyOffers),
-     .role_ = Role::USER,
-     .condition_ = NO_CONDITION},
-    {.name_ = "nft_sell_offers",
-     .valueMethod_ = byRef(&doNFTSellOffers),
-     .role_ = Role::USER,
-     .condition_ = NO_CONDITION},
-    {.name_ = "noripple_check",
-     .valueMethod_ = byRef(&doNoRippleCheck),
-     .role_ = Role::USER,
-     .condition_ = NO_CONDITION},
-    {.name_ = "owner_info",
-     .valueMethod_ = byRef(&doOwnerInfo),
-     .role_ = Role::USER,
-     .condition_ = NEEDS_CURRENT_LEDGER},
-    {.name_ = "peers",
-     .valueMethod_ = byRef(&doPeers),
-     .role_ = Role::ADMIN,
-     .condition_ = NO_CONDITION},
-    {.name_ = "path_find",
-     .valueMethod_ = byRef(&doPathFind),
-     .role_ = Role::USER,
-     .condition_ = NEEDS_CURRENT_LEDGER},
-    {.name_ = "ping",
-     .valueMethod_ = byRef(&doPing),
-     .role_ = Role::USER,
-     .condition_ = NO_CONDITION},
-    {.name_ = "print",
-     .valueMethod_ = byRef(&doPrint),
-     .role_ = Role::ADMIN,
-     .condition_ = NO_CONDITION},
-    //      {   "profile",              byRef (&doProfile), Role::USER,
-    //      NEEDS_CURRENT_LEDGER  },
-    {.name_ = "random",
-     .valueMethod_ = byRef(&doRandom),
-     .role_ = Role::USER,
-     .condition_ = NO_CONDITION},
-    {.name_ = "peer_reservations_add",
-     .valueMethod_ = byRef(&doPeerReservationsAdd),
-     .role_ = Role::ADMIN,
-     .condition_ = NO_CONDITION},
-    {.name_ = "peer_reservations_del",
-     .valueMethod_ = byRef(&doPeerReservationsDel),
-     .role_ = Role::ADMIN,
-     .condition_ = NO_CONDITION},
-    {.name_ = "peer_reservations_list",
-     .valueMethod_ = byRef(&doPeerReservationsList),
-     .role_ = Role::ADMIN,
-     .condition_ = NO_CONDITION},
-    {.name_ = "ripple_path_find",
-     .valueMethod_ = byRef(&doRipplePathFind),
-     .role_ = Role::USER,
-     .condition_ = NO_CONDITION},
-    {.name_ = "server_definitions",
-     .valueMethod_ = byRef(&doServerDefinitions),
-     .role_ = Role::USER,
-     .condition_ = NO_CONDITION},
-    {.name_ = "server_info",
-     .valueMethod_ = byRef(&doServerInfo),
-     .role_ = Role::USER,
-     .condition_ = NO_CONDITION},
-    {.name_ = "server_state",
-     .valueMethod_ = byRef(&doServerState),
-     .role_ = Role::USER,
-     .condition_ = NO_CONDITION},
-    {.name_ = "sign",
-     .valueMethod_ = byRef(&doSign),
-     .role_ = Role::USER,
-     .condition_ = NO_CONDITION},
-    {.name_ = "sign_for",
-     .valueMethod_ = byRef(&doSignFor),
-     .role_ = Role::USER,
-     .condition_ = NO_CONDITION},
-    {.name_ = "simulate",
-     .valueMethod_ = byRef(&doSimulate),
-     .role_ = Role::USER,
-     .condition_ = NEEDS_CURRENT_LEDGER},
-    {.name_ = "stop",
-     .valueMethod_ = byRef(&doStop),
-     .role_ = Role::ADMIN,
-     .condition_ = NO_CONDITION},
-    {.name_ = "submit",
-     .valueMethod_ = byRef(&doSubmit),
-     .role_ = Role::USER,
-     .condition_ = NEEDS_CURRENT_LEDGER},
-    {.name_ = "submit_multisigned",
-     .valueMethod_ = byRef(&doSubmitMultiSigned),
-     .role_ = Role::USER,
-     .condition_ = NEEDS_CURRENT_LEDGER},
-    {.name_ = "transaction_entry",
-     .valueMethod_ = byRef(&doTransactionEntry),
-     .role_ = Role::USER,
-     .condition_ = NO_CONDITION},
-    {.name_ = "tx",
-     .valueMethod_ = byRef(&doTxJson),
-     .role_ = Role::USER,
-     .condition_ = NEEDS_NETWORK_CONNECTION},
-    {.name_ = "tx_history",
-     .valueMethod_ = byRef(&doTxHistory),
-     .role_ = Role::USER,
-     .condition_ = NO_CONDITION,
-     .minApiVer_ = 1,
-     .maxApiVer_ = 1},
-    {.name_ = "tx_reduce_relay",
-     .valueMethod_ = byRef(&doTxReduceRelay),
-     .role_ = Role::USER,
-     .condition_ = NO_CONDITION},
-    {.name_ = "unl_list",
-     .valueMethod_ = byRef(&doUnlList),
-     .role_ = Role::ADMIN,
-     .condition_ = NO_CONDITION},
-    {.name_ = "validation_create",
-     .valueMethod_ = byRef(&doValidationCreate),
-     .role_ = Role::ADMIN,
-     .condition_ = NO_CONDITION},
-    {.name_ = "validators",
-     .valueMethod_ = byRef(&doValidators),
-     .role_ = Role::ADMIN,
-     .condition_ = NO_CONDITION},
-    {.name_ = "validator_list_sites",
-     .valueMethod_ = byRef(&doValidatorListSites),
-     .role_ = Role::ADMIN,
-     .condition_ = NO_CONDITION},
-    {.name_ = "validator_info",
-     .valueMethod_ = byRef(&doValidatorInfo),
-     .role_ = Role::ADMIN,
-     .condition_ = NO_CONDITION},
-    {.name_ = "vault_info",
-     .valueMethod_ = byRef(&doVaultInfo),
-     .role_ = Role::USER,
-     .condition_ = NO_CONDITION},
-    {.name_ = "wallet_propose",
-     .valueMethod_ = byRef(&doWalletPropose),
-     .role_ = Role::ADMIN,
-     .condition_ = NO_CONDITION},
+    {
+        .name = method::kAccountInfo,
+        .valueMethod = Method::of<&byRef<&doAccountInfo>>(),
+        .role = Role::USER,
+        .condition = Condition::NoCondition,
+    },
+    {
+        .name = method::kAccountCurrencies,
+        .valueMethod = Method::of<&byRef<&doAccountCurrencies>>(),
+        .role = Role::USER,
+        .condition = Condition::NoCondition,
+    },
+    {
+        .name = method::kAccountLines,
+        .valueMethod = Method::of<&byRef<&doAccountLines>>(),
+        .role = Role::USER,
+        .condition = Condition::NoCondition,
+    },
+    {
+        .name = method::kAccountChannels,
+        .valueMethod = Method::of<&byRef<&doAccountChannels>>(),
+        .role = Role::USER,
+        .condition = Condition::NoCondition,
+    },
+    {
+        .name = method::kAccountNfts,
+        .valueMethod = Method::of<&byRef<&doAccountNFTs>>(),
+        .role = Role::USER,
+        .condition = Condition::NoCondition,
+    },
+    {
+        .name = method::kAccountObjects,
+        .valueMethod = Method::of<&byRef<&doAccountObjects>>(),
+        .role = Role::USER,
+        .condition = Condition::NoCondition,
+    },
+    {
+        .name = method::kAccountOffers,
+        .valueMethod = Method::of<&byRef<&doAccountOffers>>(),
+        .role = Role::USER,
+        .condition = Condition::NoCondition,
+    },
+    {
+        .name = method::kAccountTx,
+        .valueMethod = Method::of<&byRef<&doAccountTx>>(),
+        .role = Role::USER,
+        .condition = Condition::NoCondition,
+    },
+    {
+        .name = method::kAmmInfo,
+        .valueMethod = Method::of<&byRef<&doAMMInfo>>(),
+        .role = Role::USER,
+        .condition = Condition::NoCondition,
+    },
+    {
+        .name = method::kBlacklist,
+        .valueMethod = Method::of<&byRef<&doBlackList>>(),
+        .role = Role::ADMIN,
+        .condition = Condition::NoCondition,
+        .hasCommandLineForm = false,
+    },
+    {
+        .name = method::kBookChanges,
+        .valueMethod = Method::of<&byRef<&doBookChanges>>(),
+        .role = Role::USER,
+        .condition = Condition::NoCondition,
+    },
+    {
+        .name = method::kBookOffers,
+        .valueMethod = Method::of<&byRef<&doBookOffers>>(),
+        .role = Role::USER,
+        .condition = Condition::NoCondition,
+    },
+    {
+        .name = method::kCanDelete,
+        .valueMethod = Method::of<&byRef<&doCanDelete>>(),
+        .role = Role::ADMIN,
+        .condition = Condition::NoCondition,
+    },
+    {
+        .name = method::kChannelAuthorize,
+        .valueMethod = Method::of<&byRef<&doChannelAuthorize>>(),
+        .role = Role::USER,
+        .condition = Condition::NoCondition,
+    },
+    {
+        .name = method::kChannelVerify,
+        .valueMethod = Method::of<&byRef<&doChannelVerify>>(),
+        .role = Role::USER,
+        .condition = Condition::NoCondition,
+    },
+    {
+        .name = method::kConnect,
+        .valueMethod = Method::of<&byRef<&doConnect>>(),
+        .role = Role::ADMIN,
+        .condition = Condition::NoCondition,
+    },
+    {
+        .name = method::kConsensusInfo,
+        .valueMethod = Method::of<&byRef<&doConsensusInfo>>(),
+        .role = Role::ADMIN,
+        .condition = Condition::NoCondition,
+    },
+    {
+        .name = method::kDepositAuthorized,
+        .valueMethod = Method::of<&byRef<&doDepositAuthorized>>(),
+        .role = Role::USER,
+        .condition = Condition::NoCondition,
+    },
+    {
+        .name = method::kFeature,
+        .valueMethod = Method::of<&byRef<&doFeature>>(),
+        .role = Role::USER,
+        .condition = Condition::NoCondition,
+    },
+    {
+        .name = method::kFee,
+        .valueMethod = Method::of<&byRef<&doFee>>(),
+        .role = Role::USER,
+        .condition = Condition::NeedsCurrentLedger,
+        .hasCommandLineForm = false,
+    },
+    {
+        .name = method::kFetchInfo,
+        .valueMethod = Method::of<&byRef<&doFetchInfo>>(),
+        .role = Role::ADMIN,
+        .condition = Condition::NoCondition,
+    },
+    {
+        .name = method::kGatewayBalances,
+        .valueMethod = Method::of<&byRef<&doGatewayBalances>>(),
+        .role = Role::USER,
+        .condition = Condition::NoCondition,
+    },
+    {
+        .name = method::kGetCounts,
+        .valueMethod = Method::of<&byRef<&doGetCounts>>(),
+        .role = Role::ADMIN,
+        .condition = Condition::NoCondition,
+    },
+    {
+        .name = method::kGetAggregatePrice,
+        .valueMethod = Method::of<&byRef<&doGetAggregatePrice>>(),
+        .role = Role::USER,
+        .condition = Condition::NoCondition,
+        .hasCommandLineForm = false,
+    },
+    {
+        .name = method::kLedgerAccept,
+        .valueMethod = Method::of<&byRef<&doLedgerAccept>>(),
+        .role = Role::ADMIN,
+        .condition = Condition::NeedsCurrentLedger,
+    },
+    {
+        .name = method::kLedgerCleaner,
+        .valueMethod = Method::of<&byRef<&doLedgerCleaner>>(),
+        .role = Role::ADMIN,
+        .condition = Condition::NeedsNetworkConnection,
+        .hasCommandLineForm = false,
+    },
+    {
+        .name = method::kLedgerClosed,
+        .valueMethod = Method::of<&byRef<&doLedgerClosed>>(),
+        .role = Role::USER,
+        .condition = Condition::NeedsClosedLedger,
+    },
+    {
+        .name = method::kLedgerCurrent,
+        .valueMethod = Method::of<&byRef<&doLedgerCurrent>>(),
+        .role = Role::USER,
+        .condition = Condition::NeedsCurrentLedger,
+    },
+    {
+        .name = method::kLedgerData,
+        .valueMethod = Method::of<&byRef<&doLedgerData>>(),
+        .role = Role::USER,
+        .condition = Condition::NoCondition,
+        .hasCommandLineForm = false,
+    },
+    {
+        .name = method::kLedgerEntry,
+        .valueMethod = Method::of<&byRef<&doLedgerEntry>>(),
+        .role = Role::USER,
+        .condition = Condition::NoCondition,
+    },
+    {
+        .name = method::kLedgerHeader,
+        .valueMethod = Method::of<&byRef<&doLedgerHeader>>(),
+        .role = Role::USER,
+        .condition = Condition::NoCondition,
+        .minApiVer = 1,
+        .maxApiVer = 1,
+    },
+    {
+        .name = method::kLedgerRequest,
+        .valueMethod = Method::of<&byRef<&doLedgerRequest>>(),
+        .role = Role::ADMIN,
+        .condition = Condition::NoCondition,
+    },
+    {
+        .name = method::kLogLevel,
+        .valueMethod = Method::of<&byRef<&doLogLevel>>(),
+        .role = Role::ADMIN,
+        .condition = Condition::NoCondition,
+    },
+    {
+        .name = method::kLogrotate,
+        .valueMethod = Method::of<&byRef<&doLogRotate>>(),
+        .role = Role::ADMIN,
+        .condition = Condition::NoCondition,
+    },
+    {
+        .name = method::kManifest,
+        .valueMethod = Method::of<&byRef<&doManifest>>(),
+        .role = Role::USER,
+        .condition = Condition::NoCondition,
+    },
+    {
+        .name = method::kNftBuyOffers,
+        .valueMethod = Method::of<&byRef<&doNFTBuyOffers>>(),
+        .role = Role::USER,
+        .condition = Condition::NoCondition,
+        .hasCommandLineForm = false,
+    },
+    {
+        .name = method::kNftSellOffers,
+        .valueMethod = Method::of<&byRef<&doNFTSellOffers>>(),
+        .role = Role::USER,
+        .condition = Condition::NoCondition,
+        .hasCommandLineForm = false,
+    },
+    {
+        .name = method::kNorippleCheck,
+        .valueMethod = Method::of<&byRef<&doNoRippleCheck>>(),
+        .role = Role::USER,
+        .condition = Condition::NoCondition,
+        .hasCommandLineForm = false,
+    },
+    {
+        .name = method::kOwnerInfo,
+        .valueMethod = Method::of<&byRef<&doOwnerInfo>>(),
+        .role = Role::USER,
+        .condition = Condition::NeedsCurrentLedger,
+    },
+    {
+        .name = method::kPeers,
+        .valueMethod = Method::of<&byRef<&doPeers>>(),
+        .role = Role::ADMIN,
+        .condition = Condition::NoCondition,
+    },
+    {
+        .name = method::kPathFind,
+        .valueMethod = Method::of<&byRef<&doPathFind>>(),
+        .role = Role::USER,
+        .condition = Condition::NeedsCurrentLedger,
+    },
+    {
+        .name = method::kPing,
+        .valueMethod = Method::of<&byRef<&doPing>>(),
+        .role = Role::USER,
+        .condition = Condition::NoCondition,
+    },
+    {
+        .name = method::kPrint,
+        .valueMethod = Method::of<&byRef<&doPrint>>(),
+        .role = Role::ADMIN,
+        .condition = Condition::NoCondition,
+    },
+    {
+        .name = method::kRandom,
+        .valueMethod = Method::of<&byRef<&doRandom>>(),
+        .role = Role::USER,
+        .condition = Condition::NoCondition,
+    },
+    {
+        .name = method::kPeerReservationsAdd,
+        .valueMethod = Method::of<&byRef<&doPeerReservationsAdd>>(),
+        .role = Role::ADMIN,
+        .condition = Condition::NoCondition,
+    },
+    {
+        .name = method::kPeerReservationsDel,
+        .valueMethod = Method::of<&byRef<&doPeerReservationsDel>>(),
+        .role = Role::ADMIN,
+        .condition = Condition::NoCondition,
+    },
+    {
+        .name = method::kPeerReservationsList,
+        .valueMethod = Method::of<&byRef<&doPeerReservationsList>>(),
+        .role = Role::ADMIN,
+        .condition = Condition::NoCondition,
+    },
+    {
+        .name = method::kRipplePathFind,
+        .valueMethod = Method::of<&byRef<&doRipplePathFind>>(),
+        .role = Role::USER,
+        .condition = Condition::NoCondition,
+    },
+    {
+        .name = method::kServerDefinitions,
+        .valueMethod = Method::of<&byRef<&doServerDefinitions>>(),
+        .role = Role::USER,
+        .condition = Condition::NoCondition,
+    },
+    {
+        .name = method::kServerInfo,
+        .valueMethod = Method::of<&byRef<&doServerInfo>>(),
+        .role = Role::USER,
+        .condition = Condition::NoCondition,
+    },
+    {
+        .name = method::kServerState,
+        .valueMethod = Method::of<&byRef<&doServerState>>(),
+        .role = Role::USER,
+        .condition = Condition::NoCondition,
+    },
+    {
+        .name = method::kSign,
+        .valueMethod = Method::of<&byRef<&doSign>>(),
+        .role = Role::USER,
+        .condition = Condition::NoCondition,
+    },
+    {
+        .name = method::kSignFor,
+        .valueMethod = Method::of<&byRef<&doSignFor>>(),
+        .role = Role::USER,
+        .condition = Condition::NoCondition,
+    },
+    {
+        .name = method::kSimulate,
+        .valueMethod = Method::of<&byRef<&doSimulate>>(),
+        .role = Role::USER,
+        .condition = Condition::NeedsCurrentLedger,
+    },
+    {
+        .name = method::kStop,
+        .valueMethod = Method::of<&byRef<&doStop>>(),
+        .role = Role::ADMIN,
+        .condition = Condition::NoCondition,
+    },
+    {
+        .name = method::kSubmit,
+        .valueMethod = Method::of<&byRef<&doSubmit>>(),
+        .role = Role::USER,
+        .condition = Condition::NeedsCurrentLedger,
+    },
+    {
+        .name = method::kSubmitMultisigned,
+        .valueMethod = Method::of<&byRef<&doSubmitMultiSigned>>(),
+        .role = Role::USER,
+        .condition = Condition::NeedsCurrentLedger,
+    },
+    {
+        .name = method::kTransactionEntry,
+        .valueMethod = Method::of<&byRef<&doTransactionEntry>>(),
+        .role = Role::USER,
+        .condition = Condition::NoCondition,
+    },
+    {
+        .name = method::kTx,
+        .valueMethod = Method::of<&byRef<&doTxJson>>(),
+        .role = Role::USER,
+        .condition = Condition::NeedsNetworkConnection,
+    },
+    {
+        .name = method::kTxHistory,
+        .valueMethod = Method::of<&byRef<&doTxHistory>>(),
+        .role = Role::USER,
+        .condition = Condition::NoCondition,
+        .minApiVer = 1,
+        .maxApiVer = 1,
+    },
+    {
+        .name = method::kTxReduceRelay,
+        .valueMethod = Method::of<&byRef<&doTxReduceRelay>>(),
+        .role = Role::USER,
+        .condition = Condition::NoCondition,
+        .hasCommandLineForm = false,
+    },
+    {
+        .name = method::kUnlList,
+        .valueMethod = Method::of<&byRef<&doUnlList>>(),
+        .role = Role::ADMIN,
+        .condition = Condition::NoCondition,
+    },
+    {
+        .name = method::kValidationCreate,
+        .valueMethod = Method::of<&byRef<&doValidationCreate>>(),
+        .role = Role::ADMIN,
+        .condition = Condition::NoCondition,
+    },
+    {
+        .name = method::kValidators,
+        .valueMethod = Method::of<&byRef<&doValidators>>(),
+        .role = Role::ADMIN,
+        .condition = Condition::NoCondition,
+        .hasCommandLineForm = false,
+    },
+    {
+        .name = method::kValidatorListSites,
+        .valueMethod = Method::of<&byRef<&doValidatorListSites>>(),
+        .role = Role::ADMIN,
+        .condition = Condition::NoCondition,
+        .hasCommandLineForm = false,
+    },
+    {
+        .name = method::kValidatorInfo,
+        .valueMethod = Method::of<&byRef<&doValidatorInfo>>(),
+        .role = Role::ADMIN,
+        .condition = Condition::NoCondition,
+    },
+    {
+        .name = method::kVaultInfo,
+        .valueMethod = Method::of<&byRef<&doVaultInfo>>(),
+        .role = Role::USER,
+        .condition = Condition::NoCondition,
+    },
+    {
+        .name = method::kWalletPropose,
+        .valueMethod = Method::of<&byRef<&doWalletPropose>>(),
+        .role = Role::ADMIN,
+        .condition = Condition::NoCondition,
+    },
     // Event methods
-    {.name_ = "subscribe",
-     .valueMethod_ = byRef(&doSubscribe),
-     .role_ = Role::USER,
-     .condition_ = NO_CONDITION},
-    {.name_ = "unsubscribe",
-     .valueMethod_ = byRef(&doUnsubscribe),
-     .role_ = Role::USER,
-     .condition_ = NO_CONDITION},
-};
+    {
+        .name = method::kSubscribe,
+        .valueMethod = Method::of<&byRef<&doSubscribe>>(),
+        .role = Role::USER,
+        .condition = Condition::NoCondition,
+    },
+    {
+        .name = method::kUnsubscribe,
+        .valueMethod = Method::of<&byRef<&doUnsubscribe>>(),
+        .role = Role::USER,
+        .condition = Condition::NoCondition,
+    },
+});
 
-class HandlerTable
+// The class-based handlers, which carry their name and API range as static
+// members rather than as a table entry, so they cannot go in the array above.
+constexpr auto kClassHandlerArray = std::to_array<Handler>({
+    handlerFrom<LedgerHandler>(),
+    handlerFrom<VersionHandler>(),
+});
+
+/**
+ * Join the two handler arrays above into one.
+ *
+ * Handler has no default constructor, so every entry is built in place from an
+ * index pack rather than the array being sized and then copied into. The packs
+ * come from the arrays themselves, so adding a handler to either needs no change
+ * here.
+ *
+ * @return kFunctionHandlerArray followed by kClassHandlerArray.
+ */
+constexpr auto
+joinHandlers()
 {
-private:
-    using handler_table_t = std::multimap<std::string, Handler>;
+    constexpr auto kFunctionIndices = std::make_index_sequence<std::size(kFunctionHandlerArray)>{};
+    constexpr auto kClassIndices = std::make_index_sequence<std::size(kClassHandlerArray)>{};
 
-    // Use with equal_range to enforce that API range of a newly added handler
-    // does not overlap with API range of an existing handler with same name
-    [[nodiscard]] static bool
-    overlappingApiVersion(
-        std::pair<handler_table_t::iterator, handler_table_t::iterator> range,
-        unsigned minVer,
-        unsigned maxVer)
-    {
-        XRPL_ASSERT(minVer <= maxVer, "xrpl::RPC::HandlerTable : valid API version range");
-        XRPL_ASSERT(
-            maxVer <= RPC::apiMaximumValidVersion,
-            "xrpl::RPC::HandlerTable : valid max API version");
+    return []<std::size_t... Function, std::size_t... Class>(
+               std::index_sequence<Function...>, std::index_sequence<Class...>) {
+        return std::array<Handler, sizeof...(Function) + sizeof...(Class)>{
+            kFunctionHandlerArray[Function]..., kClassHandlerArray[Class]...};
+    }(kFunctionIndices, kClassIndices);
+}
 
-        return std::any_of(
-            range.first,
-            range.second,  //
-            [minVer, maxVer](auto const& item) {
-                return item.second.minApiVer_ <= maxVer && item.second.maxApiVer_ >= minVer;
-            });
-    }
+// The whole dispatch table.
+constexpr auto kHandlers = [] {
+    auto all = joinHandlers();
 
-    template <std::size_t N>
-    explicit HandlerTable(Handler const (&entries)[N])
-    {
-        for (auto const& entry : entries)
+    // Sorted by name, so a handler can be found by binary search.
+    std::ranges::sort(all, {}, &Handler::name);
+    return all;
+}();
+
+// getHandler() relies on this being sorted to binary search it, and
+// kHandlerNames below inherits the order.
+static_assert(
+    std::ranges::is_sorted(kHandlers, {}, &Handler::name),
+    "xrpl::rpc : kHandlers must be sorted by name");
+
+// A name must select exactly one handler, otherwise a request would have two
+// answers. Where a method's behaviour differs by API version, the handler
+// branches on context.apiVersion rather than being registered once per range.
+// Checked here, at compile time, rather than on the first dispatch.
+//
+// The method is not checked: Handler::Method has no default constructor, so an
+// entry that omits it does not compile.
+static_assert(
+    [] {
+        for (std::size_t i = 0; i < kHandlers.size(); ++i)
         {
-            if (overlappingApiVersion(
-                    table_.equal_range(entry.name_), entry.minApiVer_, entry.maxApiVer_))
-            {
-                LogicError(
-                    std::string("Handler for ") + entry.name_ +
-                    " overlaps with an existing handler");
-            }
+            auto const& h = kHandlers[i];
+            if (h.name.empty() || h.minApiVer > h.maxApiVer ||
+                h.maxApiVer > rpc::kApiMaximumValidVersion ||
+                h.minApiVer < rpc::kApiMinimumSupportedVersion)
+                return false;
 
-            table_.insert({entry.name_, entry});
+            // Sorted, so a repeat can only be of the preceding entry.
+            if (i > 0 && kHandlers[i - 1].name == h.name)
+                return false;
         }
+        return true;
+    }(),
+    "xrpl::rpc : every handler needs a unique name and a valid API version range");
 
-        // This is where the new-style handlers are added.
-        addHandler<LedgerHandler>();
-        addHandler<VersionHandler>();
-    }
+/**
+ * Convert the handler names to a form that may be read as C strings.
+ *
+ * NullTerminatedView's constructor rejects a name that does not reach its
+ * terminating null, so this replaces the separate assertion that used to check
+ * the same property. It is consteval because that constructor is.
+ *
+ * @tparam I The indices of kHandlers.
+ * @return The names, in the order kHandlers holds them, which is sorted.
+ */
+template <std::size_t... I>
+consteval auto
+checkedHandlerNames(std::index_sequence<I...>)
+{
+    return std::array<NullTerminatedView, sizeof...(I)>{NullTerminatedView{kHandlers[I].name}...};
+}
 
-public:
-    static HandlerTable const&
-    instance()
-    {
-        static HandlerTable const handlerTable(handlerArray);
-        return handlerTable;
-    }
-
-    [[nodiscard]] Handler const*
-    getHandler(unsigned version, bool betaEnabled, std::string const& name) const
-    {
-        if (version < RPC::apiMinimumSupportedVersion ||
-            version > (betaEnabled ? RPC::apiBetaVersion : RPC::apiMaximumSupportedVersion))
-            return nullptr;
-
-        auto const range = table_.equal_range(name);
-        auto const i = std::find_if(range.first, range.second, [version](auto const& entry) {
-            return entry.second.minApiVer_ <= version && version <= entry.second.maxApiVer_;
-        });
-
-        return i == range.second ? nullptr : &i->second;
-    }
-
-    [[nodiscard]] std::set<char const*>
-    getHandlerNames() const
-    {
-        std::set<char const*> ret;
-        for (auto const& i : table_)
-            ret.insert(i.second.name_);
-
-        return ret;
-    }
-
-private:
-    handler_table_t table_;
-
-    template <class HandlerImpl>
-    void
-    addHandler()
-    {
-        static_assert(HandlerImpl::minApiVer <= HandlerImpl::maxApiVer);
-        static_assert(HandlerImpl::maxApiVer <= RPC::apiMaximumValidVersion);
-        static_assert(RPC::apiMinimumSupportedVersion <= HandlerImpl::minApiVer);
-
-        if (overlappingApiVersion(
-                table_.equal_range(HandlerImpl::name),
-                HandlerImpl::minApiVer,
-                HandlerImpl::maxApiVer))
-        {
-            LogicError(
-                std::string("Handler for ") + HandlerImpl::name +
-                " overlaps with an existing handler");
-        }
-
-        table_.insert({HandlerImpl::name, handlerFrom<HandlerImpl>()});
-    }
-};
+// The handler names, which are already distinct and sorted.
+constexpr auto kHandlerNames = checkedHandlerNames(std::make_index_sequence<kHandlers.size()>{});
 
 }  // namespace
 
 Handler const*
-getHandler(unsigned version, bool betaEnabled, std::string const& name)
+getHandler(unsigned version, bool betaEnabled, std::string_view name)
 {
-    return HandlerTable::instance().getHandler(version, betaEnabled, name);
+    if (version < rpc::kApiMinimumSupportedVersion ||
+        version > (betaEnabled ? rpc::kApiBetaVersion : rpc::kApiMaximumSupportedVersion))
+        return nullptr;
+
+    // Names are unique, so the binary search finds the only candidate; it then
+    // answers this request only if it serves this version.
+    auto const i = std::ranges::lower_bound(kHandlers, name, {}, &Handler::name);
+    if (i == kHandlers.end() || i->name != name)
+        return nullptr;
+
+    if (i->minApiVer <= version && version <= i->maxApiVer)
+        return &*i;
+
+    return nullptr;
 }
 
-std::set<char const*>
+std::span<NullTerminatedView const>
 getHandlerNames()
 {
-    return HandlerTable::instance().getHandlerNames();
+    return kHandlerNames;
 }
 
-}  // namespace xrpl::RPC
+}  // namespace xrpl::rpc

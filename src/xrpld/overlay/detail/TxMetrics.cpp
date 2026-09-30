@@ -17,7 +17,7 @@ void
 TxMetrics::addMetrics(protocol::MessageType type, std::uint32_t val)
 {
     auto add = [&](auto& m, std::uint32_t val) {
-        std::lock_guard const lock(mutex);
+        std::scoped_lock const lock(mutex);
         m.addMetrics(val);
     };
 
@@ -46,7 +46,7 @@ TxMetrics::addMetrics(protocol::MessageType type, std::uint32_t val)
 void
 TxMetrics::addMetrics(std::uint32_t selected, std::uint32_t suppressed, std::uint32_t notenabled)
 {
-    std::lock_guard const lock(mutex);
+    std::scoped_lock const lock(mutex);
     selectedPeers.addMetrics(selected);
     suppressedPeers.addMetrics(suppressed);
     notEnabled.addMetrics(notenabled);
@@ -55,7 +55,7 @@ TxMetrics::addMetrics(std::uint32_t selected, std::uint32_t suppressed, std::uin
 void
 TxMetrics::addMetrics(std::uint32_t missing)
 {
-    std::lock_guard const lock(mutex);
+    std::scoped_lock const lock(mutex);
     missingTx.addMetrics(missing);
 }
 
@@ -77,31 +77,31 @@ SingleMetrics::addMetrics(std::uint32_t val)
 {
     using namespace std::chrono_literals;
     accum += val;
-    N++;
-    auto const timeElapsed = clock_type::now() - intervalStart;
+    n++;
+    auto const timeElapsed = ClockType::now() - intervalStart;
     auto const timeElapsedInSecs = std::chrono::duration_cast<std::chrono::seconds>(timeElapsed);
 
     if (timeElapsedInSecs >= 1s)
     {
-        auto const avg = accum / (perTimeUnit ? timeElapsedInSecs.count() : N);
+        auto const avg = accum / (perTimeUnit ? timeElapsedInSecs.count() : n);
         rollingAvgAggregate.push_back(avg);
 
         auto const total =
             std::accumulate(rollingAvgAggregate.begin(), rollingAvgAggregate.end(), 0ull);
         rollingAvg = total / rollingAvgAggregate.size();
 
-        intervalStart = clock_type::now();
+        intervalStart = ClockType::now();
         accum = 0;
-        N = 0;
+        n = 0;
     }
 }
 
-Json::Value
+json::Value
 TxMetrics::json() const
 {
-    std::lock_guard const l(mutex);
+    std::scoped_lock const l(mutex);
 
-    Json::Value ret(Json::objectValue);
+    json::Value ret(json::ValueType::Object);
 
     ret[jss::txr_tx_cnt] = std::to_string(tx.m1.rollingAvg);
     ret[jss::txr_tx_sz] = std::to_string(tx.m2.rollingAvg);

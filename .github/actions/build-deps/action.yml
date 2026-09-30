@@ -35,14 +35,13 @@ runs:
         LOG_VERBOSITY: ${{ inputs.log_verbosity }}
         SANITIZERS: ${{ inputs.sanitizers }}
       run: |
-        echo 'Installing dependencies.'
         conan install \
-          --profile ci \
-          --build="${BUILD_OPTION}" \
-          --options:host='&:tests=True' \
-          --options:host='&:xrpld=True' \
-          --settings:all build_type="${BUILD_TYPE}" \
-          --conf:all tools.build:jobs=${BUILD_NPROC} \
-          --conf:all tools.build:verbosity="${LOG_VERBOSITY}" \
-          --conf:all tools.compilation:verbosity="${LOG_VERBOSITY}" \
-          .
+            --profile:all ci \
+            --build="${BUILD_OPTION}" \
+            --options:host='&:tests=True' \
+            --options:host='&:xrpld=True' \
+            --settings:all build_type="${BUILD_TYPE}" \
+            --conf:all tools.build:jobs=${BUILD_NPROC} \
+            --conf:all tools.build:verbosity="${LOG_VERBOSITY}" \
+            --conf:all tools.compilation:verbosity="${LOG_VERBOSITY}" \
+            .

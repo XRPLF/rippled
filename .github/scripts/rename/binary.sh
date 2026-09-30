@@ -6,7 +6,7 @@ set -e
 # On MacOS, ensure that GNU sed is installed and available as `gsed`.
 SED_COMMAND=sed
 if [[ "${OSTYPE}" == 'darwin'* ]]; then
-    if ! command -v gsed &> /dev/null; then
+    if ! command -v gsed &>/dev/null; then
         echo "Error: gsed is not installed. Please install it using 'brew install gnu-sed'."
         exit 1
     fi
@@ -49,7 +49,7 @@ ${SED_COMMAND} -i -E 's@ripple/xrpld@XRPLF/rippled@g' BUILD.md
 ${SED_COMMAND} -i -E 's@XRPLF/xrpld@XRPLF/rippled@g' BUILD.md
 ${SED_COMMAND} -i -E 's@xrpld \(`xrpld`\)@xrpld@g' BUILD.md
 ${SED_COMMAND} -i -E 's@XRPLF/xrpld@XRPLF/rippled@g' CONTRIBUTING.md
-${SED_COMMAND} -i -E 's@XRPLF/xrpld@XRPLF/rippled@g' docs/build/install.md
+${SED_COMMAND} -i -E 's@XRPLF/xrpld@XRPLF/rippled@g' docs/install.md
 
 popd
 echo "Processing complete."
