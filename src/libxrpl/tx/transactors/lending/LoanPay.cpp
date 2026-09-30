@@ -7,6 +7,7 @@
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/json/to_string.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/entries/AccountRootEntry.h>
 #include <xrpl/ledger/helpers/LendingHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/AccountID.h>
@@ -56,7 +57,7 @@ conservationBalance(ReadView const& view, AccountID const& id, Asset const& asse
 {
     if (isXRP(asset))
     {
-        auto const sle = view.read(keylet::account(id));
+        auto const sle = AccountRootEntryR(id, view);
         if (!sle)
             return STAmount{asset};  // LCOV_EXCL_LINE
         return view.balanceHookIOU(id, xrpAccount(), sle->getFieldAmount(sfBalance));
@@ -391,7 +392,7 @@ LoanPay::doApply()
     }();
 
     auto const brokerPayee = sendBrokerFeeToOwner ? brokerOwner : brokerPseudoAccount;
-    auto const brokerPayeeSle = view.peek(keylet::account(brokerPayee));
+    auto const brokerPayeeSle = AccountRootEntryW(brokerPayee, view);
     if (!sendBrokerFeeToOwner)
     {
         // If we can't send the fee to the owner, and the pseudo-account is

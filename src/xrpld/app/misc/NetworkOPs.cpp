@@ -73,6 +73,7 @@
 #include <xrpl/ledger/OpenView.h>
 #include <xrpl/ledger/OrderBookDB.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/entries/AccountRootEntry.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/ledger/helpers/MPTokenHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
@@ -4367,7 +4368,7 @@ NetworkOPsImp::subAccountHistoryStart(
     }
     if (accountId == kGenesisAccountId)
     {
-        if (auto const sleAcct = ledger->read(accountKeylet); sleAcct)
+        if (auto const sleAcct = AccountRootEntryR(accountKeylet, *ledger); sleAcct)
         {
             if (sleAcct->getFieldU32(sfSequence) == 1)
             {

@@ -7,6 +7,7 @@
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/entries/AccountRootEntry.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/ledger/helpers/RippleStateHelpers.h>
@@ -852,7 +853,7 @@ tokenOfferCreatePreclaim(
 
     if (nftIssuer != acctID && ((nftFlags & nft::kFlagTransferable) == 0))
     {
-        auto const root = view.read(keylet::account(nftIssuer));
+        auto const root = AccountRootEntryR(nftIssuer, view);
         XRPL_ASSERT(root, "xrpl::nft::tokenOfferCreatePreclaim : non-null account");
 
         if (auto minter = (*root)[~sfNFTokenMinter]; minter != acctID)
@@ -883,7 +884,7 @@ tokenOfferCreatePreclaim(
     {
         // If a destination is specified, the destination must already be in
         // the ledger.
-        auto const sleDst = view.read(keylet::account(*dest));
+        auto const sleDst = AccountRootEntryR(*dest, view);
 
         if (!sleDst)
             return tecNO_DST;
@@ -895,7 +896,7 @@ tokenOfferCreatePreclaim(
 
     if (owner)
     {
-        auto const sleOwner = view.read(keylet::account(*owner));
+        auto const sleOwner = AccountRootEntryR(*owner, view);
 
         // defensively check
         // it should not be possible to specify owner that doesn't exist
@@ -934,8 +935,7 @@ tokenOfferCreateApply(
     beast::Journal j,
     std::uint32_t txFlags)
 {
-    Keylet const acctKeylet = keylet::account(acctID);
-    if (auto const acct = view.read(acctKeylet);
+    if (auto const acct = AccountRootEntryW(acctID, view);
         priorBalance < accountReserve(view, acct, j, {.ownerCountDelta = 1}))
         return tecINSUFFICIENT_RESERVE;
 
@@ -1005,7 +1005,7 @@ checkTrustlineAuthorized(
 
     if (view.rules().enabled(fixEnforceNFTokenTrustlineV2))
     {
-        auto const issuerAccount = view.read(keylet::account(issue.account));
+        auto const issuerAccount = AccountRootEntryR(issue.account, view);
         if (!issuerAccount)
         {
             JLOG(j.debug()) << "xrpl::nft::checkTrustlineAuthorized: can't "
@@ -1057,7 +1057,7 @@ checkTrustlineDeepFrozen(
 
     if (view.rules().enabled(featureDeepFreeze))
     {
-        auto const issuerAccount = view.read(keylet::account(issue.account));
+        auto const issuerAccount = AccountRootEntryR(issue.account, view);
         if (!issuerAccount)
         {
             JLOG(j.debug()) << "xrpl::nft::checkTrustlineDeepFrozen: can't "

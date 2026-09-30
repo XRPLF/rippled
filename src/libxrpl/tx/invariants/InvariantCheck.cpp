@@ -735,6 +735,15 @@ NoDeepFreezeTrustLinesWithoutFreeze::finalize(
 
 //------------------------------------------------------------------------------
 
+bool
+isPseudoAccountSle(SLE::ConstRef sleAcct)
+{
+    auto const& fields = getPseudoAccountFields();
+    return sleAcct && sleAcct->getType() == ltACCOUNT_ROOT &&
+        std::ranges::any_of(
+               fields, [&sleAcct](SField const* sf) { return sleAcct->isFieldPresent(*sf); });
+}
+
 void
 ValidNewAccountRoot::visitEntry(bool, SLE::ConstRef before, SLE::ConstRef after)
 {
@@ -742,7 +751,7 @@ ValidNewAccountRoot::visitEntry(bool, SLE::ConstRef before, SLE::ConstRef after)
     {
         accountsCreated_++;
         accountSeq_ = (*after)[sfSequence];
-        pseudoAccount_ = isPseudoAccount(after);
+        pseudoAccount_ = isPseudoAccountSle(after);
         flags_ = after->getFlags();
     }
 }
@@ -1020,9 +1029,9 @@ ValidPseudoAccounts::visitEntry(bool isDelete, SLE::ConstRef before, SLE::ConstR
     if (after && after->getType() == ltACCOUNT_ROOT)
     {
         bool const isPseudo = [&]() {
-            // isPseudoAccount checks that any of the pseudo-account fields are
-            // set.
-            if (isPseudoAccount(after))
+            // isPseudoAccountSle checks that any of the pseudo-account fields
+            // are set.
+            if (isPseudoAccountSle(after))
                 return true;
             // Not all pseudo-accounts have a zero sequence, but all accounts
             // with a zero sequence had better be pseudo-accounts.
