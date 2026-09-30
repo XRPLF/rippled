@@ -2324,7 +2324,7 @@ Requires `trace_peer=1` in the `[telemetry]` config section.
 | Panel                                | Type       | PromQL                                                                                                                     | Labels Used |
 | ------------------------------------ | ---------- | -------------------------------------------------------------------------------------------------------------------------- | ----------- |
 | Active Peers                         | timeseries | `peer_finder_active_*_peers`                                                                                               | —           |
-| Peer Disconnects                     | timeseries | `increase(overlay_peer_disconnects[$__rate_interval])`                                                                     | —           |
+| Peer Disconnects                     | timeseries | `rate(overlay_peer_disconnects[$__rate_interval])*60`                                                                      | —           |
 | Total Network Bytes                  | timeseries | `rate(total_bytes_in/out[$__rate_interval])`                                                                               | —           |
 | Total Network Messages               | timeseries | `rate(total_messages_in/out[$__rate_interval])`                                                                            | —           |
 | Transaction Traffic                  | timeseries | `rate(transactions_messages_in/out[$__rate_interval])`                                                                     | —           |
