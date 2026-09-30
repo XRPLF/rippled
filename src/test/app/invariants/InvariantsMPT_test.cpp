@@ -36,6 +36,7 @@
 #include <functional>
 #include <initializer_list>
 #include <memory>
+#include <ranges>
 #include <source_location>
 #include <string>
 #include <tuple>
@@ -1104,45 +1105,55 @@ class InvariantsMPT_test : public InvariantsBase
         // Post-fixCleanup3_5_0: clearing another issuance flag trips the
         // invariant.
         {
+            std::uint32_t allFlags = 0;
+            for (auto const flag : std::views::values(getMPTokenIssuanceFlags()))
+                allFlags |= flag;
+            allFlags &= ~lsfMPTLocked;
+
             MPTID id{};
-            Precheck const clearCanTransfer =
-                [&](Account const&, Account const&, ApplyContext& ac) {
-                    auto sleIssuance = ac.view().peek(keylet::mptokenIssuance(id));
-                    if (!sleIssuance)
-                        return false;
-                    sleIssuance->setFieldU32(
-                        sfFlags, sleIssuance->getFieldU32(sfFlags) & ~lsfMPTCanTransfer);
-                    ac.view().update(sleIssuance);
-                    return true;
-                };
             Preclose const setup = [&](Account const&, Account const&, Env& env) {
                 Account const issuer{"issuer"};
                 env.fund(XRP(10'000), issuer);
                 env.close();
                 MPTTester mptt{env, issuer, kMptInitNoFund};
-                mptt.create({.flags = tfMPTCanTransfer | tfMPTCanLock});
+                mptt.create({.flags = allFlags});
                 id = mptt.issuanceID();
                 env.close();
                 return true;
             };
             STTx const tx{ttACCOUNT_SET, [](STObject&) {}};
 
-            doInvariantCheck(
-                makeEnv(all_ - fixCleanup3_5_0),
-                {},
-                clearCanTransfer,
-                XRPAmount{},
-                tx,
-                {tesSUCCESS, tesSUCCESS},
-                setup);
-            doInvariantCheck(
-                makeEnv(all_),
-                {{"immutable MPTokenIssuance flag cleared"}},
-                clearCanTransfer,
-                XRPAmount{},
-                tx,
-                {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
-                setup);
+            for (auto const flag : std::views::values(getMPTokenIssuanceFlags()))
+            {
+                if (flag == lsfMPTLocked)
+                    continue;
+                Precheck const clearFlag = [&, flag](
+                                               Account const&, Account const&, ApplyContext& ac) {
+                    auto sleIssuance = ac.view().peek(keylet::mptokenIssuance(id));
+                    if (!sleIssuance)
+                        return false;
+                    sleIssuance->setFieldU32(sfFlags, sleIssuance->getFlags() & ~flag);
+                    ac.view().update(sleIssuance);
+                    return true;
+                };
+
+                doInvariantCheck(
+                    makeEnv(all_ - fixCleanup3_5_0),
+                    {},
+                    clearFlag,
+                    XRPAmount{},
+                    tx,
+                    {tesSUCCESS, tesSUCCESS},
+                    setup);
+                doInvariantCheck(
+                    makeEnv(all_),
+                    {{"immutable MPTokenIssuance flag cleared"}},
+                    clearFlag,
+                    XRPAmount{},
+                    tx,
+                    {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
+                    setup);
+            }
         }
 
         // A vault pseudo-account's MPToken cannot be deleted by anything

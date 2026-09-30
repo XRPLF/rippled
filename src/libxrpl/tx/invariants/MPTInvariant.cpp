@@ -91,8 +91,7 @@ ValidMPTIssuance::visitEntry(bool isDelete, SLE::const_ref before, SLE::const_re
         {
             // lsfMPTLocked is the only issuance flag with a legal clear path
             // (tfMPTUnlock); the rest are fixed at creation or set-once.
-            issuanceFlagsCleared_ |=
-                before->getFieldU32(sfFlags) & ~after->getFieldU32(sfFlags) & ~lsfMPTLocked;
+            issuanceFlagsCleared_ |= before->getFlags() & ~after->getFlags() & ~lsfMPTLocked;
 
             if (fix320Enabled)
             {
@@ -207,7 +206,8 @@ ValidMPTIssuance::finalize(
     // lsfMPTCanTransfer.
     if (rules.enabled(fixCleanup3_5_0) && issuanceFlagsCleared_ != 0)
     {
-        JLOG(j.fatal()) << "Invariant failed: immutable MPTokenIssuance flag cleared";
+        JLOG(j.fatal()) << "Invariant failed: immutable MPTokenIssuance flag cleared: "
+                        << issuanceFlagsCleared_;
         return false;
     }
 
