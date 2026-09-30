@@ -88,7 +88,7 @@ groups:
             datasourceUid: prometheus
             model:
               refId: mismatches_15m
-              expr: sum by (service_instance_id) (increase(ledger_history_mismatch_total{service_name="xrpld"}[15m]))
+              expr: sum by (service_instance_id) (increase(ledger_hash_mismatch_total{service_name="xrpld"}[15m]))
               instant: true
               range: false
               intervalMs: 1000

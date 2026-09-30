@@ -1452,44 +1452,31 @@ Three monotonic counters created alongside the Phase 7+ parity counters
 "how deep is the queue"; these answer "what did the queue refuse, and did the
 ledger we built match the one the network validated".
 
-| Prometheus Metric               | Type    | Labels            | Description                                        | Increment Site        |
-| ------------------------------- | ------- | ----------------- | -------------------------------------------------- | --------------------- |
-| `txq_dropped_total`             | Counter | `reason="<name>"` | Transactions refused admission to the queue        | TxQ.cpp:1302,1347     |
-| `txq_expired_total`             | Counter | (none)            | Transactions abandoned out of the queue on expiry  | TxQ.cpp:1428          |
-| `ledger_history_mismatch_total` | Counter | `reason="<name>"` | Built-vs-validated ledger hash mismatches, by kind | LedgerHistory.cpp:332 |
+| Prometheus Metric            | Type    | Labels            | Description                                        | Increment Site        |
+| ---------------------------- | ------- | ----------------- | -------------------------------------------------- | --------------------- |
+| `txq_dropped_total`          | Counter | `reason="<name>"` | Transactions refused admission to the queue        | TxQ.cpp:1302,1347     |
+| `txq_expired_total`          | Counter | (none)            | Transactions abandoned out of the queue on expiry  | TxQ.cpp:1428          |
+| `ledger_hash_mismatch_total` | Counter | `reason="<name>"` | Built-vs-validated ledger hash mismatches, by kind | LedgerHistory.cpp:332 |
 
 Label domains, as emitted:
 
-| Label                                   | Values                                                                                                  |
-| --------------------------------------- | ------------------------------------------------------------------------------------------------------- |
-| `txq_dropped_total{reason}`             | `queue_full`                                                                                            |
-| `ledger_history_mismatch_total{reason}` | `prior_ledger`, `close_time`, `consensus_txset`, `different_txset`, `same_txset_diff_result`, `unknown` |
+| Label                                | Values                                                                                                  |
+| ------------------------------------ | ------------------------------------------------------------------------------------------------------- |
+| `txq_dropped_total{reason}`          | `queue_full`                                                                                            |
+| `ledger_hash_mismatch_total{reason}` | `prior_ledger`, `close_time`, `consensus_txset`, `different_txset`, `same_txset_diff_result`, `unknown` |
 
 **Grafana dashboards**: _Fee Market & TxQ_ (`fee-market`) — "Queue Admission
 Rejections (Dropped)", "Queue Abandonment Rate (Expired)"; _Consensus Health_
 (`consensus-health`) — "Ledger History Mismatch Rate by Reason"; _Node Health_
 (`node-health`) — "Ledger History Mismatches".
 
-> **Known issue — `ledger_history_mismatch_total` has two producers, so a bare
-> `sum()` double-counts.** `LedgerHistory::handleMismatch()` increments **both**
-> a `beast::insight` counter registered as `ledger.history` / `mismatch`
-> (`src/xrpld/app/ledger/LedgerHistory.cpp:323`, created at `:41`) **and** the
-> OTel counter above (`:331-332`). The insight counter carries **no** `reason`
-> label, and the Prometheus exporter appends `_total` to both, so the two land in
-> one metric family: per-node series carrying a `reason` label, plus per-node
-> series with `reason` absent that already total all of them. The dual-producer
-> mechanism is verifiable from the code above; the exact series count in any given
-> stack depends on how many nodes report and how many distinct reasons they have
-> hit, so do not treat a fixed number as an invariant.
->
-> Consequence: `sum(rate(ledger_history_mismatch_total[5m]))` counts every
-> mismatch twice. Always group or filter by `reason`:
-> `sum by (reason) (rate(ledger_history_mismatch_total{reason!=""}[5m]))` for the
-> per-reason breakdown, or `reason=""` for the untyped total alone. This is a
-> **code** defect, not a documentation one — the fix is to retire one producer;
-> until then the shipped panels avoid the trap (`consensus-health` groups
-> `by (reason)`, `node-health` plots the series unaggregated), and any new panel
-> or alert must do the same.
+> **Two metrics count the same mismatches — never add them.**
+> `ledger_hash_mismatch_total` carries exactly one `reason` per mismatch, so
+> `sum by (reason)` and a plain `sum` over it are both exact. The unlabelled
+> `ledger_history_mismatch_total` ([§2.2](#22-counters)) is the `beast::insight`
+> counter `ledger.history` / `mismatch` in `LedgerHistory::handleMismatch()`. It
+> counts the same events, and reaches Prometheus only with `[insight] server=otel`
+> (StatsD sees it as `<prefix>.ledger.history.mismatch`).
 
 #### Reduce-Relay Efficiency (Observable Gauge — `reduce_relay_metrics`)
 
@@ -2041,24 +2028,23 @@ Grafana keys a dashboard by its UID, so two dashboards sharing one UID overwrite
 
 ## 6. Known Issues
 
-| Issue                                                                 | Impact                                                                                              | Status                                                                                                                                                             |
-| --------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `warn` and `drop` metrics use non-standard StatsD `\|m` meter type    | Metrics silently dropped by OTel StatsD receiver                                                    | Phase 6 Task 6.1 — needs `\|m` → `\|c` change in StatsDCollector.cpp                                                                                               |
-| `jobq_job_count` may not emit in standalone mode                      | Missing from Prometheus in some test configs                                                        | Requires active job queue activity                                                                                                                                 |
-| `rpc_requests_total` depends on `[insight]` config                    | Zero series if `[insight]` is absent or unset                                                       | Requires `[insight] server=otel` in xrpld.cfg                                                                                                                      |
-| Peer tracing enabled by default                                       | `peer.*` spans emit unless `trace_peer=0`                                                           | High volume — set `trace_peer=0` to opt out on busy mainnet nodes                                                                                                  |
-| `handler="other"` mixes several producers                             | Cannot separate `GetConsL1` from `GetConsL2`                                                        | By design — the cardinality bound; see [§Per-Job-Type Metrics](#per-job-type-metrics-synchronous-countershistogram)                                                |
-| `overhead_cluster_*` is always zero                                   | 8 dashboard panel references are flatlines by construction; cluster traffic is counted as `unknown` | **NOT IMPLEMENTED** — see [§6.0](#60-mtcluster-is-counted-as-unknown-not-implemented)                                                                              |
-| `squelch_ignored_bytes_in/out` always read zero                       | Only the `_messages_*` pair carries signal for this category                                        | **NOT IMPLEMENTED** — see [§6.1](#61-squelch_ignored-byte-counts-not-implemented)                                                                                  |
-| `total_bytes_in` and `total_bytes_out` use different size bases       | In/out byte totals are not directly comparable when compression is on                               | **NOT IMPLEMENTED** — see [§6.2](#62-inboundoutbound-byte-basis-asymmetry-not-implemented)                                                                         |
-| `overhead` conflates `mtPING` with `mtSTATUS_CHANGE`                  | Keepalive traffic cannot be isolated from status-change traffic                                     | **NOT IMPLEMENTED** — needs a new category; see [§6.3](#63-peer-keepalive-and-discovery-traffic-gaps-not-implemented)                                              |
-| No metrics for ping RTT distribution, ping timeouts, or `mtENDPOINTS` | Peer keepalive and discovery health are not observable                                              | **NOT IMPLEMENTED** — see [§6.3](#63-peer-keepalive-and-discovery-traffic-gaps-not-implemented)                                                                    |
-| 11 of 13 peer message families have no spans                          | `02` §2.3.2 catalogs `peer.message.*`, `peer.connect`, `peer.disconnect` that were never built      | **NOT IMPLEMENTED** — see [§6.4](#64-peer-span-coverage-gap-not-implemented)                                                                                       |
-| PeerFinder exports 2 of ~17 available slot/cache readings             | Slot pressure, connection churn and discovery-cache health are not observable                       | **NOT IMPLEMENTED** — see [§6.5](#65-peerfinder-slot-and-cache-metrics-not-implemented)                                                                            |
-| `ledger_history_mismatch_total` has two producers in one family       | A bare `sum()` double-counts every mismatch; one series carries no `reason` label                   | **CODE BUG** — retire one producer; group by `reason` meanwhile. See [§TxQ Admission and Ledger Mismatch](#txq-admission-and-ledger-mismatch-synchronous-counters) |
-| `overlay_peer_disconnects_charges` never existed                      | The documented selector matches nothing; use `server_info{metric="peer_disconnects_resources"}`     | **NOT IMPLEMENTED** — see [§2.1](#21-gauges)                                                                                                                       |
-| Nine dotted `xrpl.<domain>.*` span attributes never shipped           | TraceQL filters and harness assertions on the dotted keys match nothing                             | **NOT IMPLEMENTED** — renamed to bare keys; see [§Span Attribute Enrichments](#span-attribute-enrichments-phases-2-4-removed)                                      |
-| `node_writes_duration_us` has no dashboard panel                      | Cumulative write latency is exported and linted, but never charted                                  | Open follow-up — see [§Extended NodeStore Metrics](#extended-nodestore-metrics-additions-to-existing-nodestore_state)                                              |
+| Issue                                                                 | Impact                                                                                              | Status                                                                                                                        |
+| --------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| `warn` and `drop` metrics use non-standard StatsD `\|m` meter type    | Metrics silently dropped by OTel StatsD receiver                                                    | Phase 6 Task 6.1 — needs `\|m` → `\|c` change in StatsDCollector.cpp                                                          |
+| `jobq_job_count` may not emit in standalone mode                      | Missing from Prometheus in some test configs                                                        | Requires active job queue activity                                                                                            |
+| `rpc_requests_total` depends on `[insight]` config                    | Zero series if `[insight]` is absent or unset                                                       | Requires `[insight] server=otel` in xrpld.cfg                                                                                 |
+| Peer tracing enabled by default                                       | `peer.*` spans emit unless `trace_peer=0`                                                           | High volume — set `trace_peer=0` to opt out on busy mainnet nodes                                                             |
+| `handler="other"` mixes several producers                             | Cannot separate `GetConsL1` from `GetConsL2`                                                        | By design — the cardinality bound; see [§Per-Job-Type Metrics](#per-job-type-metrics-synchronous-countershistogram)           |
+| `overhead_cluster_*` is always zero                                   | 8 dashboard panel references are flatlines by construction; cluster traffic is counted as `unknown` | **NOT IMPLEMENTED** — see [§6.0](#60-mtcluster-is-counted-as-unknown-not-implemented)                                         |
+| `squelch_ignored_bytes_in/out` always read zero                       | Only the `_messages_*` pair carries signal for this category                                        | **NOT IMPLEMENTED** — see [§6.1](#61-squelch_ignored-byte-counts-not-implemented)                                             |
+| `total_bytes_in` and `total_bytes_out` use different size bases       | In/out byte totals are not directly comparable when compression is on                               | **NOT IMPLEMENTED** — see [§6.2](#62-inboundoutbound-byte-basis-asymmetry-not-implemented)                                    |
+| `overhead` conflates `mtPING` with `mtSTATUS_CHANGE`                  | Keepalive traffic cannot be isolated from status-change traffic                                     | **NOT IMPLEMENTED** — needs a new category; see [§6.3](#63-peer-keepalive-and-discovery-traffic-gaps-not-implemented)         |
+| No metrics for ping RTT distribution, ping timeouts, or `mtENDPOINTS` | Peer keepalive and discovery health are not observable                                              | **NOT IMPLEMENTED** — see [§6.3](#63-peer-keepalive-and-discovery-traffic-gaps-not-implemented)                               |
+| 11 of 13 peer message families have no spans                          | `02` §2.3.2 catalogs `peer.message.*`, `peer.connect`, `peer.disconnect` that were never built      | **NOT IMPLEMENTED** — see [§6.4](#64-peer-span-coverage-gap-not-implemented)                                                  |
+| PeerFinder exports 2 of ~17 available slot/cache readings             | Slot pressure, connection churn and discovery-cache health are not observable                       | **NOT IMPLEMENTED** — see [§6.5](#65-peerfinder-slot-and-cache-metrics-not-implemented)                                       |
+| `overlay_peer_disconnects_charges` never existed                      | The documented selector matches nothing; use `server_info{metric="peer_disconnects_resources"}`     | **NOT IMPLEMENTED** — see [§2.1](#21-gauges)                                                                                  |
+| Nine dotted `xrpl.<domain>.*` span attributes never shipped           | TraceQL filters and harness assertions on the dotted keys match nothing                             | **NOT IMPLEMENTED** — renamed to bare keys; see [§Span Attribute Enrichments](#span-attribute-enrichments-phases-2-4-removed) |
+| `node_writes_duration_us` has no dashboard panel                      | Cumulative write latency is exported and linted, but never charted                                  | Open follow-up — see [§Extended NodeStore Metrics](#extended-nodestore-metrics-additions-to-existing-nodestore_state)         |
 
 ### 6.0 `mtCLUSTER` is counted as `unknown`: NOT IMPLEMENTED
 

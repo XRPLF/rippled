@@ -383,8 +383,10 @@ MetricsRegistry::initSyncInstruments()
         meter_->CreateUInt64Counter("state_changes_total", "Total operating mode changes");
     // Started here, not in the block below, so removing this counter removes its zero too.
     stateChangesCounter_->Add(0);
+    // Not ledger_history_mismatch_total: the beast::insight counter in
+    // LedgerHistory already exports that name for the same event.
     ledgerHistoryMismatchCounter_ = meter_->CreateUInt64Counter(
-        "ledger_history_mismatch_total", "Total built-vs-validated ledger mismatches by reason");
+        "ledger_hash_mismatch_total", "Total built-vs-validated ledger mismatches by reason");
     txqExpiredCounter_ = meter_->CreateUInt64Counter(
         "txq_expired_total", "Total transactions expired out of the transaction queue");
     txqDroppedCounter_ = meter_->CreateUInt64Counter(
