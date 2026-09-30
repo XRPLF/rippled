@@ -9,7 +9,6 @@
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/LedgerHeader.h>
-#include <xrpl/protocol/LedgerShortcut.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/TxMeta.h>
 #include <xrpl/protocol/TxSearched.h>
@@ -104,21 +103,6 @@ public:
     using AccountTxs = std::vector<AccountTx>;
     using txnMetaLedgerType = std::tuple<Blob, Blob, std::uint32_t>;
     using MetaTxsList = std::vector<txnMetaLedgerType>;
-
-    using LedgerSequence = uint32_t;
-    using LedgerHash = uint256;
-    using LedgerSpecifier = std::variant<LedgerRange, LedgerShortcut, LedgerSequence, LedgerHash>;
-
-    struct AccountTxArgs
-    {
-        AccountID account;
-        std::optional<LedgerSpecifier> ledger;
-        bool binary = false;
-        bool forward = false;
-        uint32_t limit = 0;
-        std::optional<AccountTxMarker> marker;
-        std::optional<DelegateFilter> delegate;
-    };
 
     struct AccountTxResult
     {

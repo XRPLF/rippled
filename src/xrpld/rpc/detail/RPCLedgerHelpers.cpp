@@ -16,7 +16,6 @@
 #include <xrpl/json/json_value.h>
 #include <xrpl/ledger/View.h>
 #include <xrpl/protocol/ErrorCodes.h>
-#include <xrpl/protocol/LedgerShortcut.h>
 #include <xrpl/protocol/RPCErr.h>
 #include <xrpl/protocol/RippleLedgerHash.h>
 #include <xrpl/protocol/jss.h>
@@ -25,14 +24,27 @@
 #include <org/xrpl/rpc/v1/get_ledger_data.pb.h>   // IWYU pragma: keep
 #include <org/xrpl/rpc/v1/get_ledger_entry.pb.h>  // IWYU pragma: keep
 #include <org/xrpl/rpc/v1/ledger.pb.h>
+#include <rpcspec/Ledger.hpp>
 
 #include <cstdint>
 #include <expected>
 #include <memory>
+#include <utility>
+#include <variant>
 
 namespace xrpl::rpc {
 
 namespace {
+
+template <typename... Ts>
+struct Overload : Ts...
+{
+    using Ts::operator()...;
+
+    constexpr Overload(Ts&&... ts) : Ts(std::forward<Ts>(ts))...
+    {
+    }
+};
 
 bool
 isValidatedOld(LedgerMaster& ledgerMaster, bool standalone)
@@ -68,13 +80,13 @@ ledgerFromIndex(
     auto const index = indexValue.asString();
 
     if (index == "current" || index.empty())
-        return getLedger(ledger, LedgerShortcut::Current, context);
+        return getLedger(ledger, ::rpc::spec::LedgerShortcut::Current, context);
 
     if (index == "validated")
-        return getLedger(ledger, LedgerShortcut::Validated, context);
+        return getLedger(ledger, ::rpc::spec::LedgerShortcut::Validated, context);
 
     if (index == "closed")
-        return getLedger(ledger, LedgerShortcut::Closed, context);
+        return getLedger(ledger, ::rpc::spec::LedgerShortcut::Closed, context);
 
     std::uint32_t iVal = 0;
     if (!beast::lexicalCastChecked(iVal, index))
@@ -146,7 +158,7 @@ ledgerFromRequest(T& ledger, JsonContext const& context)
     }
 
     // nothing specified, `index` has a default setting
-    return getLedger(ledger, LedgerShortcut::Current, context);
+    return getLedger(ledger, ::rpc::spec::LedgerShortcut::Current, context);
 }
 }  // namespace
 
@@ -204,17 +216,17 @@ ledgerFromSpecifier(
             auto const shortcut = specifier.shortcut();
             if (shortcut == org::xrpl::rpc::v1::LedgerSpecifier::SHORTCUT_VALIDATED)
             {
-                return getLedger(ledger, LedgerShortcut::Validated, context);
+                return getLedger(ledger, ::rpc::spec::LedgerShortcut::Validated, context);
             }
 
             if (shortcut == org::xrpl::rpc::v1::LedgerSpecifier::SHORTCUT_CURRENT ||
                 shortcut == org::xrpl::rpc::v1::LedgerSpecifier::SHORTCUT_UNSPECIFIED)
             {
-                return getLedger(ledger, LedgerShortcut::Current, context);
+                return getLedger(ledger, ::rpc::spec::LedgerShortcut::Current, context);
             }
             if (shortcut == org::xrpl::rpc::v1::LedgerSpecifier::SHORTCUT_CLOSED)
             {
-                return getLedger(ledger, LedgerShortcut::Closed, context);
+                return getLedger(ledger, ::rpc::spec::LedgerShortcut::Closed, context);
             }
         }
     }
@@ -263,7 +275,7 @@ getLedger(T& ledger, uint32_t ledgerIndex, Context const& context)
 
 template <class T>
 Status
-getLedger(T& ledger, LedgerShortcut shortcut, Context const& context)
+getLedger(T& ledger, ::rpc::spec::LedgerShortcut shortcut, Context const& context)
 {
     if (isValidatedOld(context.ledgerMaster, context.app.config().standalone()))
     {
@@ -272,7 +284,7 @@ getLedger(T& ledger, LedgerShortcut shortcut, Context const& context)
         return {RpcNotSynced, "notSynced"};
     }
 
-    if (shortcut == LedgerShortcut::Validated)
+    if (shortcut == ::rpc::spec::LedgerShortcut::Validated)
     {
         ledger = context.ledgerMaster.getValidatedLedger();
         if (ledger == nullptr)
@@ -286,12 +298,12 @@ getLedger(T& ledger, LedgerShortcut shortcut, Context const& context)
     }
     else
     {
-        if (shortcut == LedgerShortcut::Current)
+        if (shortcut == ::rpc::spec::LedgerShortcut::Current)
         {
             ledger = context.ledgerMaster.getCurrentLedger();
             XRPL_ASSERT(ledger->open(), "xrpl::rpc::getLedger : current is open");
         }
-        else if (shortcut == LedgerShortcut::Closed)
+        else if (shortcut == ::rpc::spec::LedgerShortcut::Closed)
         {
             ledger = context.ledgerMaster.getClosedLedger();
             XRPL_ASSERT(!ledger->open(), "xrpl::rpc::getLedger : closed is not open");
@@ -321,15 +333,32 @@ getLedger(T& ledger, LedgerShortcut shortcut, Context const& context)
     return Status::kOK;
 }
 
-// Explicit instantiation of above three functions
+template <class T>
+Status
+getLedger(T& ledger, ::rpc::spec::LedgerSpecifier const& specifier, Context const& context)
+{
+    return std::visit(
+        Overload{
+            [&](std::monostate) {
+                return getLedger(ledger, ::rpc::spec::kDefaultLedgerShortcut, context);
+            },
+            [&](auto const& value) { return getLedger(ledger, value, context); },
+        },
+        specifier.value);
+}
+
+// Explicit instantiation of above four functions
 template Status
 getLedger<>(std::shared_ptr<ReadView const>&, uint32_t, Context const&);
 
 template Status
-getLedger<>(std::shared_ptr<ReadView const>&, LedgerShortcut shortcut, Context const&);
+getLedger<>(std::shared_ptr<ReadView const>&, ::rpc::spec::LedgerShortcut shortcut, Context const&);
 
 template Status
 getLedger<>(std::shared_ptr<ReadView const>&, uint256 const&, Context const&);
+
+template Status
+getLedger<>(std::shared_ptr<ReadView const>&, ::rpc::spec::LedgerSpecifier const&, Context const&);
 
 // explicit instantiation of ledgerFromSpecifier
 template Status

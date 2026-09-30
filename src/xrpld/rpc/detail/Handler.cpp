@@ -4,6 +4,7 @@
 #include <xrpld/rpc/MethodNames.h>
 #include <xrpld/rpc/Role.h>
 #include <xrpld/rpc/Status.h>
+#include <xrpld/rpc/detail/SpecBridge.hpp>
 #include <xrpld/rpc/handlers/Handlers.h>
 #include <xrpld/rpc/handlers/ledger/Ledger.h>
 #include <xrpld/rpc/handlers/server_info/Version.h>
@@ -12,10 +13,15 @@
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/ApiVersion.h>
+#include <xrpl/protocol/ErrorCodes.h>
+
+#include <rpcspec/Types.hpp>
 
 #include <algorithm>
 #include <array>
+#include <concepts>
 #include <cstddef>
+#include <expected>
 #include <iterator>
 #include <span>
 #include <string_view>
@@ -49,7 +55,34 @@ byRef(JsonContext& context, json::Value& result)
     return Status();
 }
 
+template <typename HandlerImpl>
+concept SpecBasedHandler = std::derived_from<HandlerImpl, HandlerFor<typename HandlerImpl::Input>>;
+
+template <typename HandlerImpl>
+concept InputlessHandler = requires(HandlerImpl& handler) { handler.process(); };
+
+template <class HandlerImpl, class Output>
+Status
+respond(
+    HandlerImpl const& handler,
+    json::Value& object,
+    std::expected<Output, ::rpc::Status> const& output,
+    ::rpc::spec::Warnings const& warnings)
+{
+    if (not output.has_value())
+    {
+        injectSpecError(object, output.error());
+        return std::get<ErrorCodeI>(output.error().code);
+    }
+
+    handler.writeResult(object, *output);
+    injectSpecWarnings(object, warnings);
+
+    return Status::kOK;
+}
+
 template <class HandlerImpl>
+    requires SpecBasedHandler<HandlerImpl> or InputlessHandler<HandlerImpl>
 Status
 handle(JsonContext& context, json::Value& object)
 {
@@ -57,18 +90,28 @@ handle(JsonContext& context, json::Value& object)
         context.apiVersion >= HandlerImpl::minApiVer &&
             context.apiVersion <= HandlerImpl::maxApiVer,
         "xrpl::rpc::handle : valid API version");
-    HandlerImpl handler(context);
 
-    auto status = handler.check();
-    if (status)
+    if constexpr (SpecBasedHandler<HandlerImpl>)
     {
-        status.inject(object);
+        auto const input = HandlerImpl::parseInput(context.params, context.apiVersion);
+        if (not input.has_value())
+        {
+            injectSpecError(object, input.error());
+            return std::get<ErrorCodeI>(input.error().code);
+        }
+
+        HandlerImpl handler(context);
+        return respond(
+            handler,
+            object,
+            handler.process(*input),
+            HandlerImpl::spec(context.apiVersion).check(context.params));
     }
     else
     {
-        handler.writeResult(object);
+        HandlerImpl handler(context);
+        return respond(handler, object, handler.process(), /* warnings= */ {});
     }
-    return status;
 }
 
 template <typename HandlerImpl>

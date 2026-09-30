@@ -287,6 +287,14 @@ if(xrpld)
     )
     target_sources(xrpld PRIVATE ${sources})
 
+    rpcspec_generate_instantiations(
+        OUT_VAR rpcspec_instantiations
+        VALUE_TYPE "::json::Value"
+        VIEW_HEADER "xrpld/rpc/detail/JsonObjectView.hpp"
+        HANDLERS ledger
+    )
+    target_sources(xrpld PRIVATE ${rpcspec_instantiations})
+
     if(tests)
         file(
             GLOB_RECURSE sources
