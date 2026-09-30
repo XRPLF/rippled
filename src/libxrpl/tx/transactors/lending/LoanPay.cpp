@@ -361,7 +361,7 @@ LoanPay::doApply()
     TenthBips32 const coverRateMinimum{brokerSle->at(sfCoverRateMinimum)};
     auto debtTotalProxy = brokerSle->at(sfDebtTotal);
 
-    auto const vaultScale = getAssetsTotalScale(vaultSle);
+    auto const vaultScale = vaultSle.assetsTotalScale();
 
     // Send the broker fee to the owner if they have sufficient cover available,
     // _and_ if the owner can receive funds
@@ -378,7 +378,7 @@ LoanPay::doApply()
         auto const minCover = [&]() {
             if (view.rules().enabled(fixCleanup3_2_0))
             {
-                return minimumBrokerCover(debtTotalProxy.value(), coverRateMinimum, vaultSle);
+                return vaultSle.minimumBrokerCover(debtTotalProxy.value(), coverRateMinimum);
             }
             // Round the minimum required cover up to be conservative. This ensures
             // CoverAvailable never drops below the theoretical minimum, protecting

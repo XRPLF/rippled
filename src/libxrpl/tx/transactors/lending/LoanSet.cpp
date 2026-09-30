@@ -472,7 +472,7 @@ LoanSet::doApply()
 
     auto vaultAvailableProxy = vaultSle->at(sfAssetsAvailable);
     auto vaultTotalProxy = vaultSle->at(sfAssetsTotal);
-    auto const vaultScale = getAssetsTotalScale(vaultSle);
+    auto const vaultScale = vaultSle.assetsTotalScale();
     if (vaultAvailableProxy < principalRequested)
     {
         JLOG(j_.warn()) << "Insufficient assets available in the Vault to fund the loan.";
@@ -565,7 +565,7 @@ LoanSet::doApply()
         auto const minCover = [&]() {
             if (ctx_.view().rules().enabled(fixCleanup3_2_0))
             {
-                return minimumBrokerCover(newDebtTotal, coverRateMinimum, vaultSle);
+                return vaultSle.minimumBrokerCover(newDebtTotal, coverRateMinimum);
             }
 
             // Round the minimum required cover up to be conservative. This ensures

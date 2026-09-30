@@ -11,7 +11,6 @@
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/LedgerFormats.h>  // IWYU pragma: keep
-#include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/Rules.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
@@ -253,32 +252,6 @@ adjustImpreciseNumber(
 
     if (*value < beast::kZero)
         value = 0;
-}
-
-inline int
-getAssetsTotalScale(VaultEntryR const& vaultSle)
-{
-    if (!vaultSle)
-        return Number::kMinExponent - 1;  // LCOV_EXCL_LINE
-    return scale(vaultSle->at(sfAssetsTotal), vaultSle->at(sfAsset));
-}
-
-// Compute the minimum required broker cover, rounded consistently.
-// DebtTotal is a broker-level aggregate maintained at vault scale, so the
-// rounding must also use vault scale — never an individual loan's scale.
-inline Number
-minimumBrokerCover(
-    Number const& debtTotal,
-    TenthBips32 coverRateMinimum,
-    VaultEntryR const& vaultSle)
-{
-    XRPL_ASSERT(
-        vaultSle && vaultSle->getType() == ltVAULT, "xrpl::minimumBrokerCover : valid Vault sle");
-    NumberRoundModeGuard const mg(Number::RoundingMode::Upward);
-    return roundToAsset(
-        vaultSle->at(sfAsset),
-        tenthBipsOfValue(debtTotal, coverRateMinimum),
-        getAssetsTotalScale(vaultSle));
 }
 
 TER
