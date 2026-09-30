@@ -190,7 +190,7 @@ protected:
             using namespace jtx;
 
             auto const vaultSle = env.le(keylet::vault(vaultID));
-            return getAssetsTotalScale(VaultEntryR(vaultSle, *env.current()));
+            return VaultEntryR(vaultSle, *env.current()).assetsTotalScale();
         }
     };
 

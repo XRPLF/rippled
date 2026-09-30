@@ -3,6 +3,7 @@
 #include <xrpl/basics/Number.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/Journal.h>
+#include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/entries/SLEBase.h>
@@ -10,9 +11,11 @@
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/Protocol.h>
+#include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/SeqProxy.h>
 #include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/Units.h>
 
 #include <expected>
 
@@ -120,6 +123,36 @@ public:
      */
     [[nodiscard]] Number
     assetsTotalForWithdrawal(WaiveUnrealizedLoss waive) const;
+
+    /**
+     * Returns the scale of the vault's sfAssetsTotal for its asset, or
+     * Number::kMinExponent - 1 if the entry does not exist.
+     */
+    [[nodiscard]] int
+    assetsTotalScale() const
+    {
+        if (!*this)
+            return Number::kMinExponent - 1;  // LCOV_EXCL_LINE
+        return scale((*this)->at(sfAssetsTotal), (*this)->at(sfAsset));
+    }
+
+    /**
+     * Computes the minimum required broker cover, rounded consistently.
+     * DebtTotal is a broker-level aggregate maintained at vault scale, so the
+     * rounding must also use vault scale — never an individual loan's scale.
+     */
+    [[nodiscard]] Number
+    minimumBrokerCover(Number const& debtTotal, TenthBips32 coverRateMinimum) const
+    {
+        XRPL_ASSERT(
+            *this && (*this)->getType() == ltVAULT,
+            "xrpl::VaultEntry::minimumBrokerCover : valid Vault sle");
+        NumberRoundModeGuard const mg(Number::RoundingMode::Upward);
+        return roundToAsset(
+            (*this)->at(sfAsset),
+            tenthBipsOfValue(debtTotal, coverRateMinimum),
+            assetsTotalScale());
+    }
 };
 
 using VaultEntryR = VaultEntry<ReadView>;
