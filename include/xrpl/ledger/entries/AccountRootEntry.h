@@ -7,8 +7,17 @@
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/XRPAmount.h>
+
+#include <cstdint>
 
 namespace xrpl {
+
+struct Adjustment
+{
+    std::int32_t ownerCountDelta = 0;
+    std::int32_t accountCountDelta = 0;
+};
 
 template <typename ViewT>
 class AccountRootEntry : public SLEBase<ViewT, ltACCOUNT_ROOT>
@@ -27,6 +36,22 @@ public:
         : Base(keylet::account(id), view, j)
     {
     }
+
+    /**
+     * Returns the account reserve, in drops.
+     *
+     * Actual owner count can be adjusted by delta in ownerCountAdj
+     * Actual reserve count can be adjusted by delta in accountCountAdj
+     * The reserve is calculated as:
+     * (ownerCount + "sponsoring object count" - "sponsored object count" + additionalOwnerCount) *
+     * increment + (1 if not sponsored account + sponsoringAccountCount) * "reserve base"
+     *
+     * @param adj Adjustment to the owner/account count (default: 0/0). Positive to add, negative
+     * to subtract.
+     * @return The account reserve amount in drops
+     */
+    [[nodiscard]] XRPAmount
+    reserve(Adjustment adj = {}) const;
 };
 
 using AccountRootEntryR = AccountRootEntry<ReadView>;

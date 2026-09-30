@@ -434,7 +434,7 @@ EscrowCreate::doApply()
     if (ctx_.tx[~sfFinishAfter] && after(closeTime, ctx_.tx[sfFinishAfter]))
         return tecNO_PERMISSION;
 
-    auto sle = AccountRootEntryW(accountID_, ctx_.view());
+    auto sle = AccountRootEntryW(accountID_, ctx_.view(), j_);
     if (!sle)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
@@ -465,8 +465,8 @@ EscrowCreate::doApply()
         // - sponsored:   0  — sponsor covers the new owner increment, so the
         //                source only owes reserve for its current owners.
         // - unsponsored: 1  — source owes reserve including the new increment.
-        auto const sourceReserve = accountReserve(
-            ctx_.view(), sle, j_, {.ownerCountDelta = getTxReserveSponsorID(ctx_.tx) ? 0 : 1});
+        auto const sourceReserve =
+            sle.reserve({.ownerCountDelta = getTxReserveSponsorID(ctx_.tx) ? 0 : 1});
         if (balance - STAmount(amount).xrp() < sourceReserve)
             return tecUNFUNDED;
     }

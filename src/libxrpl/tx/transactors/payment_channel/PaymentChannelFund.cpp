@@ -82,7 +82,7 @@ PaymentChannelFund::doApply()
         ctx_.view().update(slep);
     }
 
-    auto sle = AccountRootEntryW(txAccount, ctx_.view());
+    auto sle = AccountRootEntryW(txAccount, ctx_.view(), j_);
     if (!sle)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
@@ -99,7 +99,7 @@ PaymentChannelFund::doApply()
         // when a sponsor is present and would ignore the source's post-lock
         // balance entirely. Funding an existing channel adds no owned object,
         // so there is no owner-count delta.
-        if (balance < accountReserve(ctx_.view(), sle, j_) + ctx_.tx[sfAmount])
+        if (balance < sle.reserve() + ctx_.tx[sfAmount])
             return tecUNFUNDED;
     }
 
