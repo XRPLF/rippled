@@ -5,6 +5,7 @@
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/entries/AMMEntry.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/RippleStateHelpers.h>
 #include <xrpl/ledger/helpers/SponsorHelpers.h>
@@ -205,7 +206,7 @@ TrustSet::preclaim(PreclaimContext const& ctx)
             {
                 // pass
             }
-            else if (auto const ammSle = ctx.view.read({ltAMM, sleDst->getFieldH256(sfAMMID)}))
+            else if (auto const ammSle = AMMEntryR(sleDst->getFieldH256(sfAMMID), ctx.view))
             {
                 auto const lpTokens = ammSle->getFieldAmount(sfLPTokenBalance);
                 if (lpTokens == beast::kZero)

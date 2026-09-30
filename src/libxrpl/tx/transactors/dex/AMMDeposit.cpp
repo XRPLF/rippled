@@ -5,6 +5,7 @@
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/Sandbox.h>
+#include <xrpl/ledger/entries/AMMEntry.h>
 #include <xrpl/ledger/helpers/AMMHelpers.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/MPTokenHelpers.h>
@@ -179,7 +180,7 @@ AMMDeposit::preclaim(PreclaimContext const& ctx)
 {
     auto const accountID = ctx.tx[sfAccount];
 
-    auto const ammSle = ctx.view.read(keylet::amm(ctx.tx[sfAsset], ctx.tx[sfAsset2]));
+    AMMEntryR const ammSle(ctx.tx[sfAsset], ctx.tx[sfAsset2], ctx.view);
     if (!ammSle)
     {
         JLOG(ctx.j.debug()) << "AMM Deposit: Invalid asset pair.";
@@ -188,7 +189,7 @@ AMMDeposit::preclaim(PreclaimContext const& ctx)
 
     auto const expected = ammHolds(
         ctx.view,
-        *ammSle,
+        ammSle,
         std::nullopt,
         std::nullopt,
         FreezeHandling::IgnoreFreeze,
@@ -388,7 +389,7 @@ AMMDeposit::preclaim(PreclaimContext const& ctx)
 
     // Check the reserve for LPToken trustline if not LP.
     // We checked above but need to check again if depositing IOU only.
-    if (ammLPHolds(ctx.view, *ammSle, accountID, ctx.j) == beast::kZero)
+    if (ammLPHolds(ctx.view, ammSle, accountID, ctx.j) == beast::kZero)
     {
         STAmount const xrpBalance = xrpLiquid(ctx.view, accountID, 1, ctx.j);
         // Insufficient reserve
@@ -416,14 +417,14 @@ AMMDeposit::applyGuts(Sandbox& sb)
     auto const amount2 = ctx_.tx[~sfAmount2];
     auto const ePrice = ctx_.tx[~sfEPrice];
     auto const lpTokensDeposit = ctx_.tx[~sfLPTokenOut];
-    auto ammSle = sb.peek(keylet::amm(ctx_.tx[sfAsset], ctx_.tx[sfAsset2]));
+    AMMEntryW ammSle(ctx_.tx[sfAsset], ctx_.tx[sfAsset2], sb, j_);
     if (!ammSle)
         return {tecINTERNAL, false};  // LCOV_EXCL_LINE
     auto const ammAccountID = (*ammSle)[sfAccount];
 
     auto const expected = ammHolds(
         sb,
-        *ammSle,
+        ammSle,
         amount ? amount->asset() : std::optional<Asset>{},
         amount2 ? amount2->asset() : std::optional<Asset>{},
         FreezeHandling::ZeroIfFrozen,
@@ -434,7 +435,7 @@ AMMDeposit::applyGuts(Sandbox& sb)
     auto const [amountBalance, amount2Balance, lptAMMBalance] = *expected;
     auto const tfee = (lptAMMBalance == beast::kZero)
         ? ctx_.tx[~sfTradingFee].value_or(0)
-        : getTradingFee(ctx_.view(), *ammSle, accountID_);
+        : getTradingFee(ctx_.view(), ammSle, accountID_);
 
     auto const subTxType = ctx_.tx.getFlags() & tfDepositSubTx;
 
@@ -541,7 +542,7 @@ AMMDeposit::applyGuts(Sandbox& sb)
         if (lptAMMBalance == beast::kZero)
             initializeFeeAuctionVote(sb, ammSle, accountID_, lptAMMBalance.asset(), tfee);
 
-        sb.update(ammSle);
+        ammSle.update();
     }
 
     return {result, isTesSuccess(result)};

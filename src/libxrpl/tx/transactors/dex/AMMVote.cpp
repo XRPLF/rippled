@@ -4,12 +4,13 @@
 #include <xrpl/basics/Number.h>
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/Sandbox.h>
+#include <xrpl/ledger/entries/AMMEntry.h>
 #include <xrpl/ledger/helpers/AMMHelpers.h>
 #include <xrpl/protocol/AMMCore.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
-#include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STArray.h>
@@ -58,7 +59,7 @@ AMMVote::preflight(PreflightContext const& ctx)
 TER
 AMMVote::preclaim(PreclaimContext const& ctx)
 {
-    auto const ammSle = ctx.view.read(keylet::amm(ctx.tx[sfAsset], ctx.tx[sfAsset2]));
+    AMMEntryR const ammSle(ctx.tx[sfAsset], ctx.tx[sfAsset2], ctx.view);
     if (!ammSle)
     {
         JLOG(ctx.j.debug()) << "AMM Vote: Invalid asset pair.";
@@ -68,7 +69,7 @@ AMMVote::preclaim(PreclaimContext const& ctx)
     {
         return tecAMM_EMPTY;
     }
-    if (auto const lpTokensNew = ammLPHolds(ctx.view, *ammSle, ctx.tx[sfAccount], ctx.j);
+    if (auto const lpTokensNew = ammLPHolds(ctx.view, ammSle, ctx.tx[sfAccount], ctx.j);
         lpTokensNew == beast::kZero)
     {
         JLOG(ctx.j.debug()) << "AMM Vote: account is not LP.";
@@ -82,11 +83,11 @@ static std::pair<TER, bool>
 applyVote(ApplyContext& ctx, Sandbox& sb, AccountID const& accountID, beast::Journal j)
 {
     auto const feeNew = ctx.tx[sfTradingFee];
-    auto ammSle = sb.peek(keylet::amm(ctx.tx[sfAsset], ctx.tx[sfAsset2]));
+    AMMEntryW ammSle(ctx.tx[sfAsset], ctx.tx[sfAsset2], sb, j);
     if (!ammSle)
         return {tecINTERNAL, false};
     STAmount const lptAMMBalance = (*ammSle)[sfLPTokenBalance];
-    auto const lpTokensNew = ammLPHolds(sb, *ammSle, accountID, ctx.journal);
+    auto const lpTokensNew = ammLPHolds(sb, ammSle, accountID, ctx.journal);
     std::optional<STAmount> minTokens;
     std::size_t minPos{0};
     AccountID minAccount{0};
@@ -104,7 +105,7 @@ applyVote(ApplyContext& ctx, Sandbox& sb, AccountID const& accountID, beast::Jou
     for (auto const& entry : ammSle->getFieldArray(sfVoteSlots))
     {
         auto const entryAccount = entry[sfAccount];
-        auto lpTokens = ammLPHolds(sb, *ammSle, entryAccount, ctx.journal);
+        auto lpTokens = ammLPHolds(sb, ammSle, entryAccount, ctx.journal);
         if (lpTokens == beast::kZero)
         {
             JLOG(j.debug()) << "AMMVote::applyVote, accountID " << entryAccount << " is not LP";
@@ -226,7 +227,7 @@ applyVote(ApplyContext& ctx, Sandbox& sb, AccountID const& accountID, beast::Jou
                 auctionSlot.makeFieldAbsent(sfDiscountedFee);
         }
     }
-    sb.update(ammSle);
+    ammSle.update();
 
     return {tesSUCCESS, true};
 }
