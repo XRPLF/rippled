@@ -1886,11 +1886,21 @@ NetworkOPsImp::apply(std::unique_lock<std::mutex>& batchLock)
 
             if (validatedLedgerIndex)
             {
-                auto [fee, accountSeq, availableSeq] =
-                    registry_.get().getTxQ().getTxRequiredFeeAndSeq(
-                        *newOL, e.transaction->getSTransaction());
-                e.transaction->setCurrentLedgerState(
-                    *validatedLedgerIndex, fee, accountSeq, availableSeq);
+                auto maybeFeeAndSeq = registry_.get().getTxQ().getTxRequiredFeeAndSeq(
+                    *newOL, e.transaction->getSTransaction());
+                if (maybeFeeAndSeq.has_value())
+                {
+                    auto [fee, accountSeq, availableSeq] = *maybeFeeAndSeq;
+                    e.transaction->setCurrentLedgerState(
+                        *validatedLedgerIndex, fee, accountSeq, availableSeq);
+                }
+                else
+                {
+                    JLOG(journal_.debug())
+                        << "Unable to compute current ledger state for tx "
+                        << e.transaction->getID() << " in validated ledger "
+                        << *validatedLedgerIndex << ": " << transToken(maybeFeeAndSeq.error());
+                }
             }
         }
     }
@@ -4978,9 +4988,27 @@ NetworkOPsImp::getBookPage(
                         .setJson(jvOffer[jss::taker_pays_funded]);
                 }
 
+                // What the owner pays for this offer, charged against the
+                // running balance for the owner's later offers. BookStep
+                // rounds the MPT owner's fee-grossed cost up; multiply() rounds
+                // to nearest and would leave one unit per offer over-reported
+                // to the next offer. Can't overflow: saTakerGetsFunded <=
+                // floor(saOwnerFunds / offerRate).
+                auto const grossed = [&]() {
+                    return saOwnerFunds.asset().visit(
+                        [&](MPTIssue const&) {
+                            auto const mpt = mulRatio(
+                                saTakerGetsFunded.mpt(),
+                                offerRate.value,
+                                kParityRate.value,
+                                /*roundUp*/ true);
+                            return toSTAmount(mpt, saOwnerFunds.asset());
+                        },
+                        [&](Issue const&) { return multiply(saTakerGetsFunded, offerRate); });
+                };
                 STAmount const saOwnerPays = (kParityRate == offerRate)
                     ? saTakerGetsFunded
-                    : std::min(saOwnerFunds, multiply(saTakerGetsFunded, offerRate));
+                    : std::min(saOwnerFunds, grossed());
 
                 umBalance[uOfferOwnerID] = saOwnerFunds - saOwnerPays;
 

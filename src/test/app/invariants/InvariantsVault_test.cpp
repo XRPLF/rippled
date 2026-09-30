@@ -1224,33 +1224,51 @@ class InvariantsVault_test : public InvariantsBase
 
         // ttLOAN_PAY success post-conditions. A loan left with payments still
         // remaining after a successful payment must show that payment in its
-        // balance and schedule: PrincipalOutstanding and PaymentRemaining both
-        // strictly decrease, and NextPaymentDueDate advances by a positive
-        // multiple of PaymentInterval. Each case seeds the same loan, then applies
+        // balance and schedule: neither PrincipalOutstanding nor
+        // TotalValueOutstanding may increase, at least one of them must
+        // strictly decrease, PaymentRemaining must strictly decrease, and
+        // NextPaymentDueDate must advance by a positive multiple of
+        // PaymentInterval. Each failing case seeds the same loan, then applies
         // an after-image that breaks exactly one of those conditions.
         {
             struct Case
             {
                 Number principal;
+                Number totalValue;
                 std::uint32_t remaining;
                 std::uint32_t dueDate;
                 std::string expected;
             };
             auto const cases = std::to_array<Case>({
                 {.principal = Number(100),
+                 .totalValue = Number(150),
                  .remaining = 1,
                  .dueDate = 110,
-                 .expected = "loan pay must strictly decrease PrincipalOutstanding"},
+                 .expected = "loan pay must decrease PrincipalOutstanding or "
+                             "TotalValueOutstanding"},
+                {.principal = Number(110),
+                 .totalValue = Number(150),
+                 .remaining = 1,
+                 .dueDate = 110,
+                 .expected = "loan pay must not increase PrincipalOutstanding"},
                 {.principal = Number(50),
+                 .totalValue = Number(160),
+                 .remaining = 1,
+                 .dueDate = 110,
+                 .expected = "loan pay must not increase TotalValueOutstanding"},
+                {.principal = Number(50),
+                 .totalValue = Number(150),
                  .remaining = 2,
                  .dueDate = 110,
                  .expected = "loan pay must decrease PaymentRemaining"},
                 {.principal = Number(50),
+                 .totalValue = Number(150),
                  .remaining = 1,
                  .dueDate = 100,
                  .expected = "loan pay must advance NextPaymentDueDate"},
                 // Advanced, but not by a whole number of payment intervals.
                 {.principal = Number(50),
+                 .totalValue = Number(150),
                  .remaining = 1,
                  .dueDate = 105,
                  .expected = "loan pay must advance NextPaymentDueDate"},
@@ -1291,6 +1309,7 @@ class InvariantsVault_test : public InvariantsBase
                 if (!BEAST_EXPECT(sleLoan))
                     continue;
                 sleLoan->at(sfPrincipalOutstanding) = c.principal;
+                sleLoan->at(sfTotalValueOutstanding) = c.totalValue;
                 sleLoan->setFieldU32(sfPaymentRemaining, c.remaining);
                 sleLoan->setFieldU32(sfNextPaymentDueDate, c.dueDate);
                 ac.view().update(sleLoan);
@@ -1302,6 +1321,65 @@ class InvariantsVault_test : public InvariantsBase
                     tesSUCCESS, XRPAmount{}, Transactor::InvariantScope::Full);
                 BEAST_EXPECT(result == tecINVARIANT_FAILED);
                 BEAST_EXPECT(sink.messages().str().contains(c.expected));
+            }
+
+            // Principal may stick while TotalValueOutstanding falls. This
+            // after-image is only a Loan mutation, so other (vault) invariants
+            // still fail under Full scope; ValidLoan itself must not.
+            {
+                Env env{*this, all_};
+                Account const a1{"A1"};
+                Account const a2{"A2"};
+                env.fund(XRP(1000), a1, a2);
+                auto const keys = createClosedXrpBroker(a1, env);
+                if (!keys)
+                {
+                    fail();
+                }
+                else
+                {
+                    auto const& brokerKeylet = keys->second;
+                    OpenView ov{*env.current()};
+                    auto const loanKeylet =
+                        keylet::loan(brokerKeylet.key, SeqProxy::rawSequence(1));
+                    {
+                        auto sleLoan = makeLoanSle(brokerKeylet.key, 1, a2.id());
+                        sleLoan->at(sfPrincipalOutstanding) = Number(100);
+                        sleLoan->at(sfTotalValueOutstanding) = Number(150);
+                        sleLoan->at(sfPaymentInterval) = 10u;
+                        sleLoan->setFieldU32(sfPaymentRemaining, 2);
+                        sleLoan->setFieldU32(sfNextPaymentDueDate, 100);
+                        ov.rawInsert(sleLoan);
+                    }
+
+                    STTx const tx{
+                        ttLOAN_PAY, [](STObject& t) { t.setFieldAmount(sfAmount, XRPAmount(50)); }};
+                    test::StreamSink sink{beast::Severity::Warning};
+                    beast::Journal const jlog{sink};
+                    ApplyContext ac{
+                        env.app(), ov, tx, tesSUCCESS, env.current()->fees().base, TapNone, jlog};
+                    CurrentTransactionRulesGuard const rulesGuard(ov.rules());
+
+                    auto sleLoan = ac.view().peek(loanKeylet);
+                    if (BEAST_EXPECT(sleLoan))
+                    {
+                        sleLoan->at(sfPrincipalOutstanding) = Number(100);
+                        sleLoan->at(sfTotalValueOutstanding) = Number(140);
+                        sleLoan->setFieldU32(sfPaymentRemaining, 1);
+                        sleLoan->setFieldU32(sfNextPaymentDueDate, 110);
+                        ac.view().update(sleLoan);
+
+                        auto transactor = makeTransactor(ac);
+                        if (BEAST_EXPECT(transactor))
+                        {
+                            std::ignore = transactor->checkInvariants(
+                                tesSUCCESS, XRPAmount{}, Transactor::InvariantScope::Full);
+                            auto const logs = sink.messages().str();
+                            BEAST_EXPECT(!logs.contains("Invariant failed: Loan"));
+                            BEAST_EXPECT(!logs.contains("loan pay"));
+                        }
+                    }
+                }
             }
         }
 

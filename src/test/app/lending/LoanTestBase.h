@@ -85,7 +85,7 @@ protected:
     //
     // featureLendingProtocolV1_1 is excluded from the default set: it changes
     // Vault/LoanBroker accounting (AssetsTotal/DebtTotal/LossUnrealized), and
-    // most of this file's tests assert whole-life-specific expected values
+    // most of this file's tests assert instant-interest-recognition-specific expected values
     // for those fields. Tests that specifically exercise the amendment opt
     // it back in explicitly (e.g. `all_ | featureLendingProtocolV1_1`).
     FeatureBitset const all_{jtx::testableAmendments() - featureLendingProtocolV1_1};
