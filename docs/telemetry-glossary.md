@@ -1179,7 +1179,7 @@ The resource manager bills each peer a load cost per request, so expensive reque
 
 ### Resource disconnect
 
-The resource manager tracks each peer's load and disconnects those exceeding limits. A rising resource-disconnect count is consistent with abusive or misbehaving peers being shed as backpressure; a flat line is healthy.
+The resource manager tracks each peer's load and disconnects those exceeding limits. A non-zero resource-disconnect rate is consistent with abusive or misbehaving peers being shed as backpressure; a rate at zero is healthy.
 
 **Scope:** per node — measured on and specific to this individual server.
 

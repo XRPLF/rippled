@@ -4493,7 +4493,7 @@
         "type": "prometheus",
         "uid": "${DS_PROMETHEUS}"
       },
-      "description": "###### What this is:\n*Cumulative count of peers disconnected for exceeding resource limits.*\n\n###### How it's computed:\n*Current value of the resource-disconnect gauge, plotted over time.*\n\n###### Reading it:\n*A flat line is healthy; steps up mean peers were dropped for overuse.*\n\n###### Healthy range:\n*Flat or very slowly rising.*\n\n###### Watch for:\n*A rising line indicates peers are being throttled off, consistent with abusive or misbehaving peers.*\n\n###### Keywords:\n- **Resource disconnect** *(per node)* \u2014 a peer dropped for exceeding resource/load limits \u2014 the node shedding abusive or overactive peers.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Computed in xrpld code (MetricsRegistry, OpenTelemetry SDK) and exported as a metric; the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[AppMetricGauges.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/telemetry/AppMetricGauges.cpp)\n\n###### Function:\n`registerServerInfoGauge`\n\n###### References:\n[Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#resource-disconnect)",
+      "description": "###### What this is:\n*How many peers per minute this node disconnects for exceeding resource limits.*\n\n###### How it's computed:\n*Per-minute rate of the resource-disconnect total over the rate interval. The total starts again from zero after a restart; the rate treats that as a restart, not a fall.*\n\n###### Reading it:\n*Zero is healthy; any line above zero means peers were dropped for overuse.*\n\n###### Healthy range:\n*At or near zero.*\n\n###### Watch for:\n*A sustained non-zero rate means peers are being dropped, consistent with abusive or misbehaving peers.*\n\n###### Keywords:\n- **Resource disconnect** *(per node)* \u2014 a peer dropped for exceeding resource/load limits \u2014 the node shedding abusive or overactive peers.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Computed in xrpld code (MetricsRegistry, OpenTelemetry SDK) and exported as a metric; the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[AppMetricGauges.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/telemetry/AppMetricGauges.cpp)\n\n###### Function:\n`registerServerInfoGauge`\n\n###### References:\n[Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#resource-disconnect)",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -4503,7 +4503,7 @@
             "axisBorderShow": false,
             "axisCenteredZero": false,
             "axisColorMode": "text",
-            "axisLabel": "Disconnects",
+            "axisLabel": "Disconnects / Min",
             "axisPlacement": "auto",
             "barAlignment": 0,
             "barWidthFactor": 0.6,
@@ -4547,7 +4547,7 @@
               }
             ]
           },
-          "unit": "short",
+          "unit": "si: disconnects/min",
           "decimals": 0
         }
       },
@@ -4585,7 +4585,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "label_replace(label_join(label_replace(server_info{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", metric=\"peer_disconnects_resources\"}, \"series\", \"Resource Disconnects\", \"\", \"\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(?:, )*(.*[^, ])(?:, )*\")",
+          "expr": "label_replace(label_join(label_replace(rate(server_info{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", metric=\"peer_disconnects_resources\"}[$__rate_interval]) * 60, \"series\", \"Resource Disconnects / Min\", \"\", \"\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(?:, )*(.*[^, ])(?:, )*\")",
           "refId": "A"
         }
       ],
