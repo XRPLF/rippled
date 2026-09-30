@@ -14,6 +14,9 @@
 #include <test/jtx/token.h>
 
 #include <xrpld/app/rdb/backend/SQLiteDatabase.h>
+#include <xrpld/rpc/Context.h>
+#include <xrpld/rpc/Role.h>
+#include <xrpld/rpc/handlers/Handlers.h>
 
 #include <xrpl/basics/Slice.h>
 #include <xrpl/basics/StringUtilities.h>
@@ -22,8 +25,11 @@
 #include <xrpl/basics/strHex.h>
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/config/Constants.h>
+#include <xrpl/core/Job.h>
+#include <xrpl/core/JobQueue.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/json/to_string.h>
+#include <xrpl/protocol/ApiVersion.h>
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/SField.h>
@@ -33,6 +39,9 @@
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/protocol/jss.h>
+#include <xrpl/resource/Charge.h>
+#include <xrpl/resource/Consumer.h>
+#include <xrpl/resource/Fees.h>
 
 #include <chrono>
 #include <cstdint>
@@ -40,6 +49,7 @@
 #include <memory>
 #include <optional>
 #include <string>
+#include <utility>
 
 namespace xrpl::test {
 
@@ -465,6 +475,104 @@ class Simulate_test : public beast::unit_test::Suite
                 resp[jss::result][jss::error_message] ==
                 "tfInnerBatchTxn flag is not allowed on top-level transactions.");
         }
+    }
+
+    // Runs `doSimulate` and reports the resource charge it settled on.
+    resource::Charge
+    simulateLoadType(jtx::Env& env, json::Value const& txJson)
+    {
+        auto& app = env.app();
+        resource::Charge loadType = resource::kFeeReferenceRpc;
+        resource::Consumer c;
+        rpc::JsonContext context{
+            {.j = env.journal,
+             .app = app,
+             .loadType = loadType,
+             .netOps = app.getOPs(),
+             .ledgerMaster = app.getLedgerMaster(),
+             .consumer = c,
+             .role = Role::USER,
+             .coro = {},
+             .infoSub = {},
+             .apiVersion = rpc::kApiVersionIfUnspecified},
+            {},
+            {}};
+
+        json::Value params;
+        params[jss::tx_json] = txJson;
+        context.params = std::move(params);
+
+        jtx::Gate g;
+        app.getJobQueue().postCoro(JtClient, "RPC-Client", [&](auto const& coro) {
+            context.coro = coro;
+            doSimulate(context);
+            g.signal();
+        });
+        using namespace std::chrono_literals;
+        BEAST_EXPECT(g.waitFor(5s));
+        return loadType;
+    }
+
+    void
+    testWasmLoadType()
+    {
+        testcase("WASM transactions are charged the heavier rate");
+
+        using namespace jtx;
+
+        Env env(*this);
+        Account const alice{"alice"};
+        Account const bob{"bob"};
+        env.fund(XRP(10000), alice, bob);
+        env.close();
+
+        auto escrowCreate = [&alice, &bob]() {
+            json::Value tx;
+            tx[jss::TransactionType] = jss::EscrowCreate;
+            tx[jss::Account] = alice.human();
+            tx[jss::Destination] = bob.human();
+            tx[jss::Amount] = "1000000";
+            tx[sfCancelAfter.jsonName] = 1'000'000'000;
+            return tx;
+        };
+
+        auto escrowFinish = [&alice, &bob]() {
+            json::Value tx;
+            tx[jss::TransactionType] = jss::EscrowFinish;
+            tx[jss::Account] = bob.human();
+            tx[jss::Owner] = alice.human();
+            tx[sfOfferSequence.jsonName] = 1;
+            return tx;
+        };
+
+        // Never reaches the engine: the charge is settled before apply.
+        constexpr auto kWasmHeader = "0061736D01000000";
+
+        {
+            auto tx = escrowCreate();
+            tx[sfBytecode.jsonName] = kWasmHeader;
+            BEAST_EXPECT(simulateLoadType(env, tx) == resource::kFeeHeavyBurdenRpc);
+        }
+
+        {
+            auto tx = escrowFinish();
+            tx[sfGas.jsonName] = 10'000;
+            BEAST_EXPECT(simulateLoadType(env, tx) == resource::kFeeHeavyBurdenRpc);
+        }
+
+        // Bytecode this node would refuse is charged the same, deliberately.
+        {
+            auto tx = escrowCreate();
+            tx[sfBytecode.jsonName] = "DEADBEEF";
+            BEAST_EXPECT(simulateLoadType(env, tx) == resource::kFeeHeavyBurdenRpc);
+        }
+
+        // Without the fields that reach the engine, the default rate holds.
+        BEAST_EXPECT(simulateLoadType(env, escrowCreate()) == resource::kFeeMediumBurdenRpc);
+        BEAST_EXPECT(simulateLoadType(env, escrowFinish()) == resource::kFeeMediumBurdenRpc);
+        BEAST_EXPECT(
+            simulateLoadType(env, static_cast<json::Value>(pay(alice, bob, XRP(1)))) ==
+            resource::kFeeMediumBurdenRpc);
     }
 
     void
@@ -1342,6 +1450,7 @@ public:
     {
         testParamErrors();
         testFeeError();
+        testWasmLoadType();
         testInvalidTransactionType();
         testSuccessfulTransaction();
         testTransactionNonTecFailure();
