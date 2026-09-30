@@ -8,7 +8,7 @@
 
 namespace xrpl::test {
 
-TEST(TicketEntryTests, Constructors)
+TEST(TicketEntryTests, constructors)
 {
     EntryTestEnv e;
 
@@ -21,7 +21,7 @@ TEST(TicketEntryTests, Constructors)
         e.alice.id(),
         ticketSeq);
 
-    expectKeylet<TicketEntry>(e, keylet::ticket(e.someID()), "ticket(uint256)", e.someID());
+    expectKeylet<TicketEntry>(e, keylet::ticket(e.someID()), "ticket(UInt256)", e.someID());
 }
 
 }  // namespace xrpl::test

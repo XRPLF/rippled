@@ -40,7 +40,7 @@ VaultWithdraw::checkExtraFeatures(PreflightContext const& ctx)
 }
 
 static WaiveUnrealizedLoss
-shouldWaiveWithdrawal(ReadView const& view, AccountID const& account, SLE::const_ref issuance)
+shouldWaiveWithdrawal(ReadView const& view, AccountID const& account, SLE::ConstRef issuance)
 {
     XRPL_ASSERT(
         issuance && issuance->getType() == ltMPTOKEN_ISSUANCE,
@@ -631,7 +631,7 @@ VaultWithdraw::doApply()
 }
 
 void
-VaultWithdraw::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
+VaultWithdraw::visitInvariantEntry(bool, SLE::ConstRef, SLE::ConstRef)
 {
     // No transaction-specific invariants yet (future work).
 }
