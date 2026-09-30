@@ -7118,14 +7118,12 @@ private:
         STAmount const shareAmt{MPTIssue{shareMPTID}, 100'000'000};
         {
             AMM const amm{env, alice_, XRP(100), shareAmt, Ter(tecWRONG_ASSET)};
-            env.close();
             BEAST_EXPECT(!amm.ammExists());
         }
 
         // Argument order swapped: shares as Amount, XRP as Amount2.
         {
             AMM const amm{env, alice_, shareAmt, XRP(100), Ter(tecWRONG_ASSET)};
-            env.close();
             BEAST_EXPECT(!amm.ammExists());
         }
 
@@ -7136,14 +7134,13 @@ private:
         env(vault.deposit({.depositor = alice_, .id = vaultKeylet2.key, .amount = iou(200)}));
         env.close();
 
-        auto const vaultSle2 = env.le(vaultKeylet2);
-        if (!BEAST_EXPECT(vaultSle2))
+        auto const vault2Sle = env.le(vaultKeylet2);
+        if (!BEAST_EXPECT(vault2Sle))
             return;
 
-        STAmount const shareAmt2{MPTIssue{vaultSle2->at(sfShareMPTID)}, 100'000'000};
+        STAmount const vault2Shares{MPTIssue{vault2Sle->at(sfShareMPTID)}, 100'000'000};
         {
-            AMM const amm{env, alice_, shareAmt, shareAmt2, Ter(tecWRONG_ASSET)};
-            env.close();
+            AMM const amm{env, alice_, shareAmt, vault2Shares, Ter(tecWRONG_ASSET)};
             BEAST_EXPECT(!amm.ammExists());
         }
     }
