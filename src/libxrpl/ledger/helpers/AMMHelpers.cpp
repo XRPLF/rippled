@@ -6,7 +6,6 @@
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/beast/utility/instrumentation.h>
-#include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/Sandbox.h>
 #include <xrpl/ledger/View.h>
@@ -27,12 +26,10 @@
 #include <xrpl/protocol/Rules.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
-#include <xrpl/protocol/STArray.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/TER.h>
 
 #include <algorithm>
-#include <chrono>
 #include <cstdint>
 #include <expected>
 #include <functional>
@@ -692,63 +689,6 @@ deleteAMMAccount(Sandbox& sb, Asset const& asset, Asset const& asset2, beast::Jo
     sb.erase(sleAMMRoot);
 
     return tesSUCCESS;
-}
-
-void
-initializeFeeAuctionVote(
-    ApplyView& view,
-    AMMEntryW& ammSle,
-    AccountID const& account,
-    Asset const& lptAsset,
-    std::uint16_t tfee)
-{
-    auto const& rules = view.rules();
-    // AMM creator gets the voting slot.
-    STArray voteSlots;
-    STObject voteEntry = STObject::makeInnerObject(sfVoteEntry);
-    if (tfee != 0)
-        voteEntry.setFieldU16(sfTradingFee, tfee);
-    voteEntry.setFieldU32(sfVoteWeight, kVoteWeightScaleFactor);
-    voteEntry.setAccountID(sfAccount, account);
-    voteSlots.pushBack(voteEntry);
-    ammSle->setFieldArray(sfVoteSlots, voteSlots);
-    // AMM creator gets the auction slot for free.
-    // AuctionSlot is created on AMMCreate and updated on AMMDeposit
-    // when AMM is in an empty state
-    if (!ammSle->isFieldPresent(sfAuctionSlot))
-    {
-        STObject auctionSlot = STObject::makeInnerObject(sfAuctionSlot);
-        ammSle->set(std::move(auctionSlot));
-    }
-    STObject& auctionSlot = ammSle->peekFieldObject(sfAuctionSlot);
-    auctionSlot.setAccountID(sfAccount, account);
-    // current + sec in 24h
-    auto const expiration = std::chrono::duration_cast<std::chrono::seconds>(
-                                view.header().parentCloseTime.time_since_epoch())
-                                .count() +
-        kTotalTimeSlotSecs;
-    auctionSlot.setFieldU32(sfExpiration, expiration);
-    auctionSlot.setFieldAmount(sfPrice, STAmount{lptAsset, 0});
-    // Set the fee
-    if (tfee != 0)
-    {
-        ammSle->setFieldU16(sfTradingFee, tfee);
-    }
-    else if (ammSle->isFieldPresent(sfTradingFee))
-    {
-        ammSle->makeFieldAbsent(sfTradingFee);  // LCOV_EXCL_LINE
-    }
-    if (auto const dfee = tfee / kAuctionSlotDiscountedFeeFraction)
-    {
-        auctionSlot.setFieldU16(sfDiscountedFee, dfee);
-    }
-    else if (auctionSlot.isFieldPresent(sfDiscountedFee))
-    {
-        auctionSlot.makeFieldAbsent(sfDiscountedFee);  // LCOV_EXCL_LINE
-    }
-    // Clear stale auth accounts from any previous auction slot holder.
-    if (rules.enabled(fixCleanup3_2_0) && auctionSlot.isFieldPresent(sfAuthAccounts))
-        auctionSlot.makeFieldAbsent(sfAuthAccounts);
 }
 
 std::expected<bool, TER>
