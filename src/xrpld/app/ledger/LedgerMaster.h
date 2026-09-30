@@ -105,11 +105,12 @@ class Transaction;
  * @note Thread-safe, except takeReplay() and releaseReplay(), which take no
  * lock: startup stores the replay before consensus reads it. Also except the
  * two age accessors, whose unlocked static only limits repeat log lines. The
- * closed and validated ledgers lock themselves. Two recursive mutexes guard
- * the rest: mutex_ for the published, path and last-valid ledgers, held
- * transactions and job flags; completeLock_ for completeLedgers_ only. When
- * both are needed, mutex_ is taken first. The sequence numbers are atomics
- * and are read without either lock.
+ * closed and validated ledgers have their own lock for reads, and change only
+ * under mutex_. Two recursive mutexes guard the rest: mutex_ for the
+ * published, path and last-valid ledgers, held transactions and job flags;
+ * completeLock_ for completeLedgers_ only. When both are needed, mutex_ is
+ * taken first. The sequence numbers and gotFetchPackThread_ are atomics and
+ * are used without either lock.
  * @note Several accessors can be slow: anything that reaches
  * InboundLedgers::acquire() may read the node store from disk, and anything
  * walking a skip list may throw SHAMapMissingNode. acquire() never waits for
@@ -166,8 +167,9 @@ public:
     isCompatible(ReadView const&, beast::Journal::Stream, char const* reason);
 
     /**
-     * Exposes the lock guarding the tracked ledgers, so a caller can hold it
-     * across several calls and see one consistent snapshot.
+     * Exposes mutex_. Holding it across several calls keeps the closed,
+     * validated and published ledgers from changing; the open ledger is not
+     * covered.
      *
      * @return The recursive mutex. Callers must not keep it past a blocking call.
      */
@@ -865,8 +867,8 @@ private:
      * callers.
      *
      * @param name Job name, for the perf log.
-     * @return true when a pathfinding worker is running and the server is not
-     * shutting down, so the caller may expect its request to be serviced.
+     * @return true when a pathfinding job is queued or running and the server
+     * is not shutting down, so the caller may expect its request to be serviced.
      */
     bool
     newPFWork(char const* name, std::unique_lock<std::recursive_mutex>&);
@@ -883,10 +885,12 @@ private:
 
     /**
      * Guards pubLedger_, pathLedger_, lastValidLedger_, the held transactions
-     * and the job flags. closedLedger_ and validLedger_ lock themselves;
-     * histLedger_ and fetchSeq_ belong to the advance job, which runs one at a
-     * time. Recursive because the advance and pathfinding paths re-enter public
-     * accessors. Taken before completeLock_.
+     * and the job flags other than the atomic gotFetchPackThread_.
+     * closedLedger_ and validLedger_ lock themselves for reads and are changed
+     * only under this lock. histLedger_ and fetchSeq_ belong to the advance
+     * job, which runs one at a time. Recursive because holders re-enter it:
+     * checkAccept() and tryFill() call tryAdvance() while holding it. Taken
+     * before completeLock_.
      */
     std::recursive_mutex mutable mutex_;
 
@@ -949,7 +953,7 @@ private:
     RangeSet<std::uint32_t> completeLedgers_;
 
     /**
-     * Publish thread is running.
+     * An AdvanceLedger job is queued or running.
      */
     bool advanceThread_{false};
 
