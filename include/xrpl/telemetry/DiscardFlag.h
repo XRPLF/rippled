@@ -39,7 +39,7 @@
  * @note Thread safety: the flag is thread-local, so each thread observes only
  * its own discard signal — no synchronization is required.
  *
- * @see SpanGuard::discard(), FilteringSpanProcessor (Telemetry.cpp)
+ * @see SpanGuard::discard(), FilteringSpanProcessor (FilteringSpanProcessor.h)
  */
 
 namespace xrpl::telemetry {

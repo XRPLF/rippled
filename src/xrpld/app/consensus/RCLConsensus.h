@@ -498,6 +498,10 @@ class RCLConsensus
          * Create a consensus.accept span as a child of the round span.
          * Returned via shared_ptr so it can be captured into the
          * jtACCEPT lambda and live until doAccept completes.
+         *
+         * @param result The consensus result the span describes.
+         * @return A handle to the span, or an empty handle when the span is
+         * not live. Nothing is allocated in that case.
          */
         std::shared_ptr<telemetry::SpanGuard>
         makeAcceptSpan(Result const& result);

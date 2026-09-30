@@ -248,9 +248,9 @@ private:
 
             lastSample_ = lastSample;
 
-            // Always emit the first sample so the metric is registered in
-            // downstream stores (Prometheus via StatsD).  After that, only
-            // report latency >= 10 ms to avoid flooding with sub-ms values.
+            // Always emit the first sample so the series exists downstream
+            // even on an idle node. After that, only report latency >= 10 ms,
+            // so faster samples are never recorded.
             if (firstSample_.exchange(false) || lastSample >= 10ms)
                 event_.notify(lastSample);
             if (lastSample >= 500ms)
@@ -1969,10 +1969,10 @@ ApplicationImp::run()
     ledgerCleaner_->stop();
     nodeStore_->stop();
     perfLog_->stop();
-    // Telemetry must stop last among trace-producing components.
-    // serverHandler_, overlay_, and jobQueue_ are already stopped above,
-    // so no threads should be calling startSpan() at this point.
-    // See TODO in TelemetryImpl::stop() re: thread-safety of sdkProvider_.
+    // Telemetry must stop last among trace-producing components: a span that
+    // ends after stop() is dropped, not exported. serverHandler_, overlay_,
+    // and jobQueue_ are already stopped above, so no threads should be
+    // calling startSpan() at this point.
     telemetry_->stop();
 
     JLOG(journal_.info()) << "Done.";

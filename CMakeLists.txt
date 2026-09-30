@@ -150,6 +150,10 @@ endif()
 # which decides whether opentelemetry-cpp is fetched and sets the variable read
 # below through the generated toolchain.
 #
+# The define is set for every target in this project, and also PUBLIC on
+# xrpl.libxrpl.telemetry (cmake/XrplCore.cmake), so a parent project that
+# adds this one with add_subdirectory() and links that module gets it too.
+#
 # -DXRPL_ENABLE_TELEMETRY=OFF turns nothing off: that name is only a compile
 # definition added below, so CMake lists it as an unused variable at the end of
 # configuration.
