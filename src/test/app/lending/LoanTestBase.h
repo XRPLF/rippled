@@ -347,7 +347,7 @@ protected:
                 {
                     auto const expectedDebt =
                         env.current()->rules().enabled(featureLendingProtocolV1_1) &&
-                            getVaultVersion(VaultEntryR(vaultSle, *env.current())) ==
+                            VaultEntryR(vaultSle, *env.current()).version() ==
                                 VaultVersion::CashBasis
                         ? principalOutstanding
                         : principalOutstanding + interestOwed;
@@ -453,7 +453,7 @@ protected:
                             env.test.BEAST_EXPECT(
                                 vaultSle->at(sfLossUnrealized) ==
                                 (env.current()->rules().enabled(featureLendingProtocolV1_1) &&
-                                         getVaultVersion(VaultEntryR(vaultSle, *env.current())) ==
+                                         VaultEntryR(vaultSle, *env.current()).version() ==
                                              VaultVersion::CashBasis
                                      ? principalOutstanding
                                      : totalValue - managementFeeOutstanding));
@@ -669,7 +669,7 @@ protected:
                     vaultSle->at(sfAssetsTotal) - vaultSle->at(sfAssetsAvailable);
                 auto const unrealizedLoss = vaultSle->at(sfLossUnrealized) +
                     (env.current()->rules().enabled(featureLendingProtocolV1_1) &&
-                             getVaultVersion(VaultEntryR(vaultSle, *env.current())) ==
+                             VaultEntryR(vaultSle, *env.current()).version() ==
                                  VaultVersion::CashBasis
                          ? state.principalOutstanding
                          : state.totalValue - state.managementFeeOutstanding);

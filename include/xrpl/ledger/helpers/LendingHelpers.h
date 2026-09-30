@@ -384,7 +384,7 @@ loanPaymentDeltas(LoanPaymentParts const& parts);
 }  // namespace cash_basis
 
 // Public dispatchers: pick cash_basis:: if featureLendingProtocolV1_1 is
-// enabled AND the Vault's LEVersion (VaultHelpers::getVaultVersion) is
+// enabled AND the Vault's LEVersion (VaultEntry::version) is
 // VaultVersion::CashBasis, else instant_recognition::. These are the only entry points
 // transactors call.
 AccountingDeltas
