@@ -23,8 +23,12 @@ doPathFind(rpc::JsonContext& context)
     using namespace telemetry;
     // Scoped so pathfind.compute/discover (created synchronously below on this
     // thread) nest under it. doPathFind does not yield, so scoping is safe.
+    // Internal, not Server: the inbound boundary is above rpc.command.
     auto span = ScopedSpanGuard(
-        TraceCategory::Rpc, pathfind_span::prefix::pathfind, pathfind_span::op::request);
+        TraceCategory::Rpc,
+        pathfind_span::prefix::pathfind,
+        pathfind_span::op::request,
+        SpanRole::Internal);
     // Guarded on the span being live because the account parse below is not
     // free and runs on every path_find call otherwise. The compiled-out
     // guard's operator bool() is a literal false, so the block disappears
