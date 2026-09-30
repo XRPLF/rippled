@@ -6,7 +6,6 @@
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/View.h>
 #include <xrpl/ledger/entries/AccountRootEntry.h>
-#include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/NFTokenHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/Asset.h>
@@ -377,7 +376,7 @@ NFTokenAcceptOffer::transferNFToken(
         !isTesSuccess(ret))
         return ret;
 
-    auto const sleBuyer = AccountRootEntryW(buyer, view());
+    auto const sleBuyer = AccountRootEntryW(buyer, view(), j_);
     if (!sleBuyer)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
@@ -398,7 +397,7 @@ NFTokenAcceptOffer::transferNFToken(
     auto const buyerOwnerCountAfter = sleBuyer->getFieldU32(sfOwnerCount);
     if (buyerOwnerCountAfter > buyerOwnerCountBefore)
     {
-        if (buyerBalance < accountReserve(view(), sleBuyer, j_))
+        if (buyerBalance < sleBuyer.reserve())
             return tecINSUFFICIENT_RESERVE;
     }
 

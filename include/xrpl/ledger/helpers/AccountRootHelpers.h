@@ -46,34 +46,17 @@ isGlobalFrozen(ReadView const& view, AccountID const& issuer);
 [[nodiscard]] XRPAmount
 xrpLiquid(ReadView const& view, AccountID const& id, std::int32_t ownerCountAdj, beast::Journal j);
 
-struct Adjustment
-{
-    std::int32_t ownerCountDelta = 0;
-    std::int32_t accountCountDelta = 0;
-};
+namespace detail {
 
 /**
- * Returns the account reserve, in drops.
- *
- * Actual owner count can be adjusted by delta in ownerCountAdj
- * Actual reserve count can be adjusted by delta in accountCountAdj
- * The reserve is calculated as:
- * (ownerCount + "sponsoring object count" - "sponsored object count" + additionalOwnerCount) *
- * increment + (1 if not sponsored account + sponsoringAccountCount) * "reserve base"
- *
- * @param view The ledger view to read from
- * @param sle The ledger entry for the account
- * @param j Journal for logging
- * @param adj Adjustment to the owner/account count (default: 0/0). Positive to add, negative to
- * subtract.
- * @return The account reserve amount in drops
+ * Returns the number of account reserves funded by this account: 1 for itself
+ * (0 if sponsored by another account) plus the count of accounts it sponsors.
+ * Shared by AccountRootEntry::reserve() and xrpLiquid().
  */
-[[nodiscard]] XRPAmount
-accountReserve(
-    ReadView const& view,
-    AccountRootEntryR const& sle,
-    beast::Journal j,
-    Adjustment adj = {});
+std::uint32_t
+accountCountImpl(AccountRootEntryR const& sle, std::int32_t accountCountAdj, beast::Journal j);
+
+}  // namespace detail
 
 /**
  * Convenience overload that accepts AccountID instead of SLE.
@@ -88,7 +71,7 @@ accountReserve(
 [[nodiscard]] inline XRPAmount
 accountReserve(ReadView const& view, AccountID const& id, beast::Journal j, Adjustment adj = {})
 {
-    return accountReserve(view, AccountRootEntryR(id, view), j, adj);
+    return AccountRootEntryR(id, view, j).reserve(adj);
 }
 
 /**
