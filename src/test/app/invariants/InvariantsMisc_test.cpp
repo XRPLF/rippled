@@ -1543,6 +1543,54 @@ class InvariantsMisc_test : public InvariantsBase
     }
 
     void
+    testTxCheckEraseMissingBase()
+    {
+        testcase << "txCheck erase of entry missing from base";
+        using namespace jtx;
+
+        // A no-op TxInvariantCheck, so any failure comes from building the
+        // InvariantEntry during the state table traversal rather than from
+        // a check.
+        struct NoopTxInvariantCheck : TxInvariantCheck
+        {
+            void
+            visitEntry(InvariantEntry const&) override
+            {
+            }
+
+            [[nodiscard]] bool
+            finalize(STTx const&, TER, XRPAmount, ReadView const&, beast::Journal const&) override
+            {
+                return true;
+            }
+        };
+
+        Env env{*this};
+        Account const alice{"alice"};
+        env.fund(XRP(1000), alice);
+        env.close();
+
+        OpenView ov{*env.current()};
+        STTx const tx{ttACCOUNT_SET, [](STObject&) {}};
+        test::StreamSink sink{beast::Severity::Warning};
+        beast::Journal const jlog{sink};
+        ApplyContext ac{env.app(), ov, tx, tesSUCCESS, env.current()->fees().base, TapNone, jlog};
+        CurrentTransactionRulesGuard const rulesGuard(ov.rules());
+
+        // Erase a key that does not exist in the base ledger. The state
+        // table reports an Erase with no before state, which InvariantEntry
+        // rejects.
+        auto const missing = keylet::escrow(alice.id(), SeqProxy::rawSequence(999));
+        BEAST_EXPECT(!env.current()->exists(missing));
+        ac.rawView().rawErase(std::make_shared<SLE>(missing));
+
+        NoopTxInvariantCheck noop;
+        TER const result = checkInvariants(ac, tesSUCCESS, XRPAmount{}, noop);
+        BEAST_EXPECT(result == tecINVARIANT_FAILED);
+        BEAST_EXPECT(sink.messages().str().contains("deleted entry missing before state"));
+    }
+
+    void
     testTxCheckFinalizeFalse()
     {
         testcase << "txCheck finalize returns false";
@@ -1612,6 +1660,7 @@ class InvariantsMisc_test : public InvariantsBase
         testSponsorship();
         testInvariantEntry();
         testTxCheckException();
+        testTxCheckEraseMissingBase();
         testTxCheckFinalizeFalse();
     }
 };
