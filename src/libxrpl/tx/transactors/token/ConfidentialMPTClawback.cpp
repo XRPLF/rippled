@@ -4,6 +4,7 @@
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/entries/MPTokenIssuanceEntry.h>
 #include <xrpl/protocol/ConfidentialTransfer.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
@@ -66,7 +67,7 @@ ConfidentialMPTClawback::preclaim(PreclaimContext const& ctx)
 
     // Check if MPT issuance exists
     auto const mptIssuanceID = ctx.tx[sfMPTokenIssuanceID];
-    auto const sleIssuance = ctx.view.read(keylet::mptokenIssuance(mptIssuanceID));
+    MPTokenIssuanceEntryR const sleIssuance(mptIssuanceID, ctx.view);
     if (!sleIssuance)
         return tecOBJECT_NOT_FOUND;
 
@@ -132,7 +133,7 @@ ConfidentialMPTClawback::doApply()
     auto const mptIssuanceID = ctx_.tx[sfMPTokenIssuanceID];
     auto const holder = ctx_.tx[sfHolder];
 
-    auto sleIssuance = view().peek(keylet::mptokenIssuance(mptIssuanceID));
+    MPTokenIssuanceEntryW sleIssuance(mptIssuanceID, view(), j_);
     auto sleHolderMPToken = view().peek(keylet::mptoken(mptIssuanceID, holder));
 
     if (!sleIssuance || !sleHolderMPToken)
@@ -229,7 +230,7 @@ ConfidentialMPTClawback::doApply()
     (*sleIssuance)[sfOutstandingAmount] = oldOA - clawAmount;
 
     view().update(sleHolderMPToken);
-    view().update(sleIssuance);
+    sleIssuance.update();
 
     return tesSUCCESS;
 }

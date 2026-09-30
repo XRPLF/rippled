@@ -3,6 +3,7 @@
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/Zero.h>
+#include <xrpl/ledger/entries/MPTokenIssuanceEntry.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/MPTokenHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
@@ -66,7 +67,7 @@ VaultDelete::preclaim(PreclaimContext const& ctx)
     }
 
     // Verify we can destroy MPTokenIssuance
-    auto const sleMPT = ctx.view.read(keylet::mptokenIssuance(vault->at(sfShareMPTID)));
+    MPTokenIssuanceEntryR const sleMPT(vault->at(sfShareMPTID), ctx.view);
 
     if (!sleMPT)
     {
@@ -121,7 +122,7 @@ VaultDelete::doApply()
     // Destroy the share issuance. Do not use MPTokenIssuanceDestroy for this,
     // no special logic needed. First run few checks, duplicated from preclaim.
     auto const shareMPTID = *vault->at(sfShareMPTID);
-    auto const mpt = view().peek(keylet::mptokenIssuance(shareMPTID));
+    MPTokenIssuanceEntryW mpt(shareMPTID, view(), j_);
     if (!mpt)
     {
         // LCOV_EXCL_START
@@ -155,9 +156,9 @@ VaultDelete::doApply()
         return tefBAD_LEDGER;
         // LCOV_EXCL_STOP
     }
-    decreaseOwnerCountForObject(view(), pseudoAcct, mpt, 1, j_);
+    decreaseOwnerCountForObject(view(), pseudoAcct, mpt.mutableRawSle(), 1, j_);
 
-    view().erase(mpt);
+    mpt.erase();
 
     // The pseudo-account's directory should have been deleted already.
     if (view().peek(keylet::ownerDir(pseudoID)))

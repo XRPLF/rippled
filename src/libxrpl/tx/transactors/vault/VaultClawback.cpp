@@ -6,6 +6,7 @@
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/core/ServiceRegistry.h>
+#include <xrpl/ledger/entries/MPTokenIssuanceEntry.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/ledger/helpers/VaultHelpers.h>
@@ -87,7 +88,7 @@ VaultClawback::preclaim(PreclaimContext const& ctx)
     auto const holder = ctx.tx[sfHolder];
     auto const maybeAmount = ctx.tx[~sfAmount];
     auto const mptIssuanceID = vault->at(sfShareMPTID);
-    auto const sleShareIssuance = ctx.view.read(keylet::mptokenIssuance(mptIssuanceID));
+    MPTokenIssuanceEntryR const sleShareIssuance(mptIssuanceID, ctx.view);
     if (!sleShareIssuance)
     {
         // LCOV_EXCL_START
@@ -192,8 +193,8 @@ VaultClawback::preclaim(PreclaimContext const& ctx)
 
         return vaultAsset.visit(
             [&](MPTIssue const& issue) -> TER {
-                auto const mptIssue = ctx.view.read(keylet::mptokenIssuance(issue.getMptID()));
-                if (mptIssue == nullptr)
+                MPTokenIssuanceEntryR const mptIssue(issue.getMptID(), ctx.view);
+                if (!mptIssue)
                     return tecOBJECT_NOT_FOUND;
 
                 if (!mptIssue->isFlag(lsfMPTCanClawback))
@@ -233,7 +234,7 @@ VaultClawback::preclaim(PreclaimContext const& ctx)
 std::expected<std::pair<STAmount, STAmount>, TER>
 VaultClawback::assetsToClawback(
     SLE::Ref vault,
-    SLE::ConstRef sleShareIssuance,
+    MPTokenIssuanceEntryR const& sleShareIssuance,
     AccountID const& holder,
     STAmount const& clawbackAmount)
 {
@@ -395,7 +396,7 @@ VaultClawback::doApply()
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
     auto const mptIssuanceID = *vault->at(sfShareMPTID);
-    auto const sleIssuance = view().read(keylet::mptokenIssuance(mptIssuanceID));
+    MPTokenIssuanceEntryR const sleIssuance(mptIssuanceID, view());
     if (!sleIssuance)
     {
         // LCOV_EXCL_START

@@ -6,6 +6,7 @@
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/PaymentSandbox.h>
+#include <xrpl/ledger/entries/MPTokenIssuanceEntry.h>
 #include <xrpl/ledger/helpers/MPTokenHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/AccountID.h>
@@ -471,7 +472,7 @@ MPTEndpointStep<TDerived>::maxPaymentFlow(ReadView const& sb) const
         return {toAmount<MPTAmount>(maxFlow), DebtDirection::Redeems};
 
     // From an issuer to a holder
-    if (auto const sle = sb.read(keylet::mptokenIssuance(mptIssue_)))
+    if (auto const sle = MPTokenIssuanceEntryR(mptIssue_.getMptID(), sb))
     {
         // If issuer is the source account, and it is direct payment then
         // MPTEndpointStep is the only step. Provide available maxFlow.

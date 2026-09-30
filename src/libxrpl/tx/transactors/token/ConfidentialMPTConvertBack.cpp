@@ -5,6 +5,7 @@
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/entries/MPTokenIssuanceEntry.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/ConfidentialTransfer.h>
 #include <xrpl/protocol/Feature.h>
@@ -70,7 +71,7 @@ ConfidentialMPTConvertBack::calculateBaseFee(ReadView const& view, STTx const& t
 static TER
 verifyProofs(
     STTx const& tx,
-    std::shared_ptr<SLE const> const& issuance,
+    MPTokenIssuanceEntryR const& issuance,
     std::shared_ptr<SLE const> const& mptoken)
 {
     if (!mptoken->isFieldPresent(sfHolderEncryptionKey))
@@ -154,7 +155,7 @@ ConfidentialMPTConvertBack::preclaim(PreclaimContext const& ctx)
     auto const amount = ctx.tx[sfMPTAmount];
 
     // ensure that issuance exists
-    auto const sleIssuance = ctx.view.read(keylet::mptokenIssuance(mptIssuanceID));
+    MPTokenIssuanceEntryR const sleIssuance(mptIssuanceID, ctx.view);
     if (!sleIssuance)
         return tecOBJECT_NOT_FOUND;
 
@@ -255,7 +256,7 @@ ConfidentialMPTConvertBack::doApply()
         // LCOV_EXCL_STOP
     }
 
-    auto sleIssuance = view().peek(keylet::mptokenIssuance(mptIssuanceID));
+    MPTokenIssuanceEntryW sleIssuance(mptIssuanceID, view(), j_);
     if (!sleIssuance)
     {
         // LCOV_EXCL_START
@@ -333,7 +334,7 @@ ConfidentialMPTConvertBack::doApply()
 
     incrementConfidentialVersion(*sleMptoken);
 
-    view().update(sleIssuance);
+    sleIssuance.update();
     view().update(sleMptoken);
     return tesSUCCESS;
 }

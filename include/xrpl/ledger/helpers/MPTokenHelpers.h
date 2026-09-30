@@ -3,6 +3,7 @@
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/entries/MPTokenIssuanceEntry.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Asset.h>
@@ -30,7 +31,7 @@ namespace xrpl {
 isGlobalFrozen(ReadView const& view, MPTIssue const& mptIssue);
 
 [[nodiscard]] bool
-isGlobalFrozen(SLE const& issuanceSle);
+isGlobalFrozen(MPTokenIssuanceEntryR const& issuanceSle);
 
 /**
  * Returns true if @p account's MPToken for @p mptIssue carries the
@@ -178,7 +179,7 @@ enforceMPTokenAuthorization(
  * @return The underlying Asset (MPTIssue or Issue).
  */
 [[nodiscard]] Asset
-assetOfHolding(SLE const& sleShareIssuance, SLE const& sleHolding);
+assetOfHolding(MPTokenIssuanceEntryR const& sleShareIssuance, SLE const& sleHolding);
 
 /**
  * Check whether @p to may receive the given MPT from @p from.
@@ -319,7 +320,7 @@ maxMPTAmount(SLE const& sleIssuance);
 // OutstandingAmount may overflow and available amount might be negative.
 // But available amount is always <= |MaximumAmount - OutstandingAmount|.
 std::int64_t
-availableMPTAmount(SLE const& sleIssuance);
+availableMPTAmount(MPTokenIssuanceEntryR const& sleIssuance);
 
 std::int64_t
 availableMPTAmount(ReadView const& view, MPTID const& mptID);

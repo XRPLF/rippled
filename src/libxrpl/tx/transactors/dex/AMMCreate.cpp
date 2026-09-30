@@ -5,6 +5,7 @@
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/Sandbox.h>
 #include <xrpl/ledger/View.h>
+#include <xrpl/ledger/entries/MPTokenIssuanceEntry.h>
 #include <xrpl/ledger/helpers/AMMHelpers.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/MPTokenHelpers.h>
@@ -227,7 +228,7 @@ AMMCreate::preclaim(PreclaimContext const& ctx)
     auto clawbackDisabled = [&](Asset const& asset) -> TER {
         return asset.visit(
             [&](MPTIssue const& issue) -> TER {
-                auto const sle = ctx.view.read(keylet::mptokenIssuance(issue.getMptID()));
+                MPTokenIssuanceEntryR const sle(issue.getMptID(), ctx.view);
                 if (!sle)
                     return tecINTERNAL;  // LCOV_EXCL_LINE
                 if (sle->isFlag(lsfMPTCanClawback))

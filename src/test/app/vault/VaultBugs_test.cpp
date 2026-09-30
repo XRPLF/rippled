@@ -22,6 +22,7 @@
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/json/json_forwards.h>
 #include <xrpl/json/json_value.h>
+#include <xrpl/ledger/entries/MPTokenIssuanceEntry.h>
 #include <xrpl/ledger/helpers/VaultHelpers.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Feature.h>
@@ -1522,7 +1523,7 @@ private:
             // assuming an exact 90/10 split holds under truncation.
             auto const maybeSharesDestroyed = assetsToSharesWithdraw(
                 vaultBefore,
-                issuanceBefore,
+                MPTokenIssuanceEntryR(issuanceBefore, *env.current()),
                 setup.usd(9'000).value(),
                 TruncateShares::Yes,
                 WaiveUnrealizedLoss::Yes);
