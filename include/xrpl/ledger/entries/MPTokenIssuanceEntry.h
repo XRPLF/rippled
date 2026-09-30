@@ -10,6 +10,7 @@
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/Rate.h>
 #include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/UintTypes.h>
 
@@ -118,6 +119,14 @@ public:
 
         return tesSUCCESS;
     }
+
+    /**
+     * Returns the funds the issuer can still self-issue through an
+     * issuer-owned MPT sell offer: availableAmount(), less amounts already
+     * self-sold, as tracked by the view's balanceHookSelfIssueMPT().
+     */
+    [[nodiscard]] STAmount
+    issuerFundsToSelfIssue() const;
 };
 
 using MPTokenIssuanceEntryR = MPTokenIssuanceEntry<ReadView>;
