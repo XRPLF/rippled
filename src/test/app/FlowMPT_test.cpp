@@ -578,7 +578,7 @@ struct FlowMPT_test : public beast::unit_test::Suite
                     Sendmax(XRP(40)),
                     Txflags(tfPartialPayment));
                 // +1 for fset in helperIssueIOU
-                using tEUR = std::decay_t<decltype(eur)>;
+                using TEur = std::decay_t<decltype(eur)>;
                 auto const fee = txFee(env, 3);
                 // bob pays 25% on 40USD (40 since sendmax is 40XRP)
                 // 8USD goes to gw and 32USD goes back to bob ->
@@ -586,7 +586,7 @@ struct FlowMPT_test : public beast::unit_test::Suite
                 // bob pays 25% on 32EUR -> 7EUR if MPT, 6.4EUR if IOU,
                 // therefore carl gets 25EUR if MPT, 25.6EUR if IOU.
                 auto const carolEUR = [&]() {
-                    if constexpr (std::is_same_v<tEUR, IOU>)
+                    if constexpr (std::is_same_v<TEur, IOU>)
                     {
                         return eur(25.6);
                     }
@@ -1211,7 +1211,7 @@ struct FlowMPT_test : public beast::unit_test::Suite
     offersOnAccount(jtx::Env& env, jtx::Account account)
     {
         std::vector<SLE::const_pointer> result;
-        forEachItem(*env.current(), account, [&result](SLE::const_ref sle) {
+        forEachItem(*env.current(), account, [&result](SLE::ConstRef sle) {
             if (sle->getType() == ltOFFER)
                 result.push_back(sle);
         });
@@ -2075,7 +2075,7 @@ struct FlowMPT_test : public beast::unit_test::Suite
                      .issuer = gw,
                      .holders = {alice, carol},
                      .limit = 100});
-                using tUSD = std::decay_t<decltype(usd)>;
+                using TUsd = std::decay_t<decltype(usd)>;
                 auto const eur = issue2(
                     {.env = env,
                      .token = "EUR",
@@ -2089,7 +2089,7 @@ struct FlowMPT_test : public beast::unit_test::Suite
 
                 env(pay(gw, carol, usd(100)), Sendmax(eur(100)), Path(~usd));
 
-                if constexpr (std::is_same_v<tUSD, MPT>)
+                if constexpr (std::is_same_v<TUsd, MPT>)
                     BEAST_EXPECT(env.balance(gw, usd) == usd(-100));
                 BEAST_EXPECT(env.balance(alice, usd) == usd(0));
                 BEAST_EXPECT(env.balance(alice, eur) == eur(100));
@@ -2158,14 +2158,14 @@ struct FlowMPT_test : public beast::unit_test::Suite
                      .issuer = gw,
                      .holders = {alice, carol, bob},
                      .limit = 1'000});
-                using tUSD = std::decay_t<decltype(usd)>;
+                using TUsd = std::decay_t<decltype(usd)>;
                 auto const eur = issue2(
                     {.env = env,
                      .token = "EUR",
                      .issuer = gw,
                      .holders = {alice, carol, bob},
                      .limit = 1'000});
-                using tEUR = std::decay_t<decltype(eur)>;
+                using TEur = std::decay_t<decltype(eur)>;
 
                 env(pay(gw, alice, usd(600)));
                 env(pay(gw, carol, eur(700)));
@@ -2182,7 +2182,7 @@ struct FlowMPT_test : public beast::unit_test::Suite
                     Path(~usd),
                     Txflags(tfPartialPayment));
 
-                if constexpr (std::is_same_v<tUSD, MPT>)
+                if constexpr (std::is_same_v<TUsd, MPT>)
                 {
                     BEAST_EXPECT(env.balance(gw, usd) == usd(-1'000));
                     BEAST_EXPECT(env.balance(alice, usd) == usd(495));
@@ -2196,9 +2196,9 @@ struct FlowMPT_test : public beast::unit_test::Suite
                     // for the holders
                     BEAST_EXPECT(env.balance(bob, usd) == usd(615));
                 }
-                if constexpr (std::is_same_v<tEUR, MPT>)
+                if constexpr (std::is_same_v<TEur, MPT>)
                 {
-                    if constexpr (std::is_same_v<tUSD, MPT>)
+                    if constexpr (std::is_same_v<TUsd, MPT>)
                     {
                         BEAST_EXPECT(env.balance(carol, eur) == eur(210));
                     }
@@ -2215,9 +2215,9 @@ struct FlowMPT_test : public beast::unit_test::Suite
                 }
                 // 100/101 is partially crossed (90/91) and 100/100 is
                 // unfunded when MPT. All offers are consumed if IOU.
-                env.require(offers(gw, 0));
+                env.require(Offers(gw, 0));
                 // alice's offer is consumed.
-                env.require(offers(alice, 0));
+                env.require(Offers(alice, 0));
             };
             testHelper2TokensMix(test);
         }
@@ -2249,8 +2249,8 @@ struct FlowMPT_test : public beast::unit_test::Suite
 
             BEAST_EXPECT(env.balance(gw, usd) == usd(-1'624));
             BEAST_EXPECT(env.balance(carol, usd) == usd(1'102));
-            env.require(offers(carol, 0));
-            env.require(offers(gw, 0));
+            env.require(Offers(carol, 0));
+            env.require(Offers(gw, 0));
             // 100 XRP's = 5+6+7+17+23+10+15+17(25-8)
             BEAST_EXPECT(isOffer(env, alice, XRP(8), usd(15)));
         }

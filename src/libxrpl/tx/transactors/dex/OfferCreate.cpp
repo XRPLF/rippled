@@ -6,7 +6,6 @@
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/ApplyView.h>
-#include <xrpl/ledger/OrderBookDB.h>
 #include <xrpl/ledger/PaymentSandbox.h>
 #include <xrpl/ledger/Sandbox.h>
 #include <xrpl/ledger/View.h>
@@ -100,7 +99,7 @@ OfferCreate::preflight(PreflightContext const& ctx)
         return temINVALID_FLAG;
 
     // A zero DomainID is invalid for a PermissionedDomain ledger entry because
-    // keylet::permissionedDomain(uint256) uses the DomainID as the ledger key.
+    // keylet::permissionedDomain(UInt256) uses the DomainID as the ledger key.
     if (auto const domainID = tx[~sfDomainID];
         ctx.rules.enabled(fixCleanup3_2_0) && domainID && *domainID == beast::kZero)
         return temMALFORMED;
@@ -384,7 +383,7 @@ OfferCreate::flowCross(
     PaymentSandbox& psb,
     PaymentSandbox& psbCancel,
     Amounts const& takerAmount,
-    std::optional<uint256> const& domainID)
+    std::optional<UInt256> const& domainID)
 {
     try
     {
@@ -631,7 +630,7 @@ OfferCreate::applyHybrid(
     STAmount const& saTakerPays,
     STAmount const& saTakerGets,
     std::uint64_t openRate,
-    std::function<void(SLE::ref, std::optional<uint256>)> const& setDir)
+    std::function<void(SLE::Ref, std::optional<UInt256>)> const& setDir)
 {
     if (!sleOffer->isFieldPresent(sfDomainID))
         return tecINTERNAL;  // LCOV_EXCL_LINE
@@ -645,7 +644,7 @@ OfferCreate::applyHybrid(
     auto dir = keylet::quality(keylet::book(book), openRate);
     bool const bookExists = sb.exists(dir);
 
-    auto const bookNode = sb.dirAppend(dir, offerKey, [&](SLE::ref sle) {
+    auto const bookNode = sb.dirAppend(dir, offerKey, [&](SLE::Ref sle) {
         // don't set domainID on the directory object since this directory is
         // for open book
         setDir(sle, std::nullopt);
@@ -664,7 +663,7 @@ OfferCreate::applyHybrid(
     bookArr.pushBack(std::move(bookInfo));
 
     if (!bookExists)
-        ctx_.registry.get().getOrderBookDB().addOrderBook(book);
+        ctx_.addOrderBook(book);
 
     sleOffer->setFieldArray(sfAdditionalBooks, bookArr);
     return tesSUCCESS;
@@ -991,7 +990,7 @@ OfferCreate::applyGuts(Sandbox& sb, Sandbox& sbCancel)
     auto dir = keylet::quality(keylet::book(book), uRate);
     bool const bookExisted = static_cast<bool>(sb.peek(dir));
 
-    auto setBookDir = [&](SLE::ref sle, std::optional<uint256> const& maybeDomain) {
+    auto setBookDir = [&](SLE::Ref sle, std::optional<UInt256> const& maybeDomain) {
         saTakerPays.asset().visit(
             [&](Issue const& issue) {
                 sle->setFieldH160(sfTakerPaysCurrency, issue.currency);
@@ -1009,7 +1008,7 @@ OfferCreate::applyGuts(Sandbox& sb, Sandbox& sbCancel)
             sle->setFieldH256(sfDomainID, *maybeDomain);
     };
 
-    auto const bookNode = sb.dirAppend(dir, offerIndex, [&](SLE::ref sle) {
+    auto const bookNode = sb.dirAppend(dir, offerIndex, [&](SLE::Ref sle) {
         // sets domainID on book directory if it's a domain offer
         setBookDir(sle, domainID);
     });
@@ -1059,7 +1058,7 @@ OfferCreate::applyGuts(Sandbox& sb, Sandbox& sbCancel)
     sb.insert(sleOffer);
 
     if (!bookExisted)
-        ctx_.registry.get().getOrderBookDB().addOrderBook(book);
+        ctx_.addOrderBook(book);
 
     JLOG(j_.debug()) << "final result: success";
 
@@ -1112,7 +1111,7 @@ OfferCreate::doApply()
 }
 
 void
-OfferCreate::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
+OfferCreate::visitInvariantEntry(bool, SLE::ConstRef, SLE::ConstRef)
 {
     // No transaction-specific invariants yet (future work).
 }

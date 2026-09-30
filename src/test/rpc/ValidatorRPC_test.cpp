@@ -132,7 +132,7 @@ public:
         }
         // Negative UNL update
         {
-            hash_set<PublicKey> disabledKeys;
+            HashSet<PublicKey> disabledKeys;
             auto k1 = randomKeyPair(KeyType::Ed25519).first;
             auto k2 = randomKeyPair(KeyType::Ed25519).first;
             disabledKeys.insert(k1);
@@ -332,7 +332,7 @@ public:
 
             env.app().getValidatorSites().start();
             env.app().getValidatorSites().join();
-            hash_set<NodeID> startKeys;
+            HashSet<NodeID> startKeys;
             for (auto const& val : validators)
                 startKeys.insert(calcNodeID(val.masterPublic));
 
@@ -425,7 +425,7 @@ public:
 
             env.app().getValidatorSites().start();
             env.app().getValidatorSites().join();
-            hash_set<NodeID> startKeys;
+            HashSet<NodeID> startKeys;
             for (auto const& val : validators)
                 startKeys.insert(calcNodeID(val.masterPublic));
 

@@ -39,7 +39,7 @@ namespace {
  * @return true if the request must be rejected to stay within the cap.
  */
 [[nodiscard]] bool
-wouldExceedSubscriptionCap(InfoSub::ref ispSub, std::size_t additional, std::size_t cap)
+wouldExceedSubscriptionCap(InfoSub::Ref ispSub, std::size_t additional, std::size_t cap)
 {
     return exceedsSubscriptionCap(ispSub->totalSubscriptionCount(), additional, cap);
 }
@@ -206,8 +206,8 @@ doSubscribe(rpc::JsonContext& context)
     bool const hasProposed = context.params.isMember(accountsProposed);
     bool const hasAccounts = context.params.isMember(jss::accounts);
 
-    hash_set<AccountID> proposedIds;
-    hash_set<AccountID> accountIds;
+    HashSet<AccountID> proposedIds;
+    HashSet<AccountID> accountIds;
 
     if (hasProposed)
     {
@@ -322,7 +322,7 @@ doSubscribe(rpc::JsonContext& context)
 
             if (j.isMember(jss::domain))
             {
-                uint256 domain;
+                UInt256 domain;
                 if (!j[jss::domain].isString() || !domain.parseHex(j[jss::domain].asString()))
                 {
                     return rpcError(RpcDomainMalformed);
