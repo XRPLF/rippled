@@ -25,6 +25,7 @@
 #include <xrpl/ledger/Dir.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/PublicKey.h>
@@ -151,7 +152,8 @@ struct PayChanToken_test : public beast::unit_test::Suite
 
         // PaymentChannelClaim accepts the RPC signature
         auto const sigBlob = strUnHex(sig);
-        if (!BEAST_EXPECT(sigBlob))
+        BEAST_EXPECT(sigBlob);
+        if (!sigBlob)
             return;
         env(paychan::claim(dst, chan, authAmt, authAmt, makeSlice(*sigBlob), src.pk()),
             Ter(tesSUCCESS));
