@@ -210,8 +210,8 @@ SignerListSet::replaceSignerList()
     // This may be either a create or a replace.  Preemptively remove any
     // old signer list.  May reduce the reserve, so this is done before
     // checking the reserve.
-    if (TER const ter =
-            SignerListEntryW(accountID_, view(), j_).removeFromLedger(ctx_.registry, accountID_))
+    if (TER const ter = SignerListEntryW(accountID_, view(), ctx_.registry.get().getJournal("View"))
+                            .removeFromLedger(accountID_))
         return ter;
 
     auto const sle = view().peek(accountKeylet);
@@ -288,7 +288,8 @@ SignerListSet::destroySignerList()
     if ((ledgerEntry->isFlag(lsfDisableMaster)) && (!ledgerEntry->isFieldPresent(sfRegularKey)))
         return tecNO_ALTERNATIVE_KEY;
 
-    return SignerListEntryW(accountID_, view(), j_).removeFromLedger(ctx_.registry, accountID_);
+    return SignerListEntryW(accountID_, view(), ctx_.registry.get().getJournal("View"))
+        .removeFromLedger(accountID_);
 }
 
 void

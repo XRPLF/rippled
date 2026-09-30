@@ -2,7 +2,6 @@
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/beast/utility/instrumentation.h>
-#include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
@@ -84,7 +83,7 @@ SignerListEntry<ViewT>::setSigners(
 
 template <typename ViewT>
 TER
-SignerListEntry<ViewT>::removeFromLedger(ServiceRegistry& registry, AccountID const& owner)
+SignerListEntry<ViewT>::removeFromLedger(AccountID const& owner)
     requires Base::kIsWritable
 {
     // If the signer list doesn't exist we've already succeeded in deleting it.
@@ -116,11 +115,7 @@ SignerListEntry<ViewT>::removeFromLedger(ServiceRegistry& registry, AccountID co
     }
 
     decreaseOwnerCountForObject(
-        view,
-        view.peek(keylet::account(owner)),
-        this->mutableRawSle(),
-        removeFromOwnerCount,
-        registry.getJournal("View"));
+        view, view.peek(keylet::account(owner)), this->mutableRawSle(), removeFromOwnerCount, j);
 
     // Remove object from ledger
     this->erase();
