@@ -173,8 +173,8 @@ LoanBrokerCoverWithdraw::preclaim(PreclaimContext const& ctx)
     auto const minimumCover = [&]() {
         if (fix320Enabled)
         {
-            return minimumBrokerCover(
-                currentDebtTotal, TenthBips32{sleBroker->at(sfCoverRateMinimum)}, vault);
+            return vault.minimumBrokerCover(
+                currentDebtTotal, TenthBips32{sleBroker->at(sfCoverRateMinimum)});
         }
 
         // Always round the minimum required up.
