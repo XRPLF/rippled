@@ -1865,13 +1865,8 @@ public:
             auto sle = std::make_shared<SLE>(ltLOAN_BROKER, UInt256{1u});
             sle->at(sfCoverAvailable) = tc.coverAvailable;
             BEAST_EXPECT(
-                canApplyToBrokerCover(
-                    *env.current(),
-                    LoanBrokerEntryR(sle, *env.current()),
-                    iou,
-                    tc.amount,
-                    env.journal,
-                    "test") == tc.expected);
+                LoanBrokerEntryR(sle, *env.current(), env.journal)
+                    .canApplyToCover(iou, tc.amount, "test") == tc.expected);
         }
 
         // Amendment off → guard is bypassed regardless of amount.
@@ -1881,13 +1876,8 @@ public:
             auto sle = std::make_shared<SLE>(ltLOAN_BROKER, UInt256{1u});
             sle->at(sfCoverAvailable) = Number{10};
             BEAST_EXPECT(
-                canApplyToBrokerCover(
-                    *envOff.current(),
-                    LoanBrokerEntryR(sle, *envOff.current()),
-                    iou,
-                    STAmount{iou, Number{0}},
-                    envOff.journal,
-                    "test") == tesSUCCESS);
+                LoanBrokerEntryR(sle, *envOff.current(), envOff.journal)
+                    .canApplyToCover(iou, STAmount{iou, Number{0}}, "test") == tesSUCCESS);
         }
     }
 
