@@ -9,11 +9,11 @@
 #include <xrpl/ledger/PaymentSandbox.h>
 #include <xrpl/ledger/Sandbox.h>
 #include <xrpl/ledger/View.h>
+#include <xrpl/ledger/entries/OfferEntry.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/CredentialHelpers.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/ledger/helpers/MPTokenHelpers.h>
-#include <xrpl/ledger/helpers/OfferHelpers.h>
 #include <xrpl/ledger/helpers/PermissionedDEXHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/AccountID.h>
@@ -495,10 +495,10 @@ OfferCreate::flowCross(
         // If stale offers were found remove them.
         for (auto const& toRemove : result.removableOffers)
         {
-            if (auto otr = psb.peek(keylet::offer(toRemove)))
-                offerDelete(psb, otr, j_);
-            if (auto otr = psbCancel.peek(keylet::offer(toRemove)))
-                offerDelete(psbCancel, otr, j_);
+            if (OfferEntryW otr(toRemove, psb, j_); otr)
+                otr.removeFromLedger();
+            if (OfferEntryW otr(toRemove, psbCancel, j_); otr)
+                otr.removeFromLedger();
         }
 
         // Determine the size of the final offer after crossing.
@@ -595,7 +595,7 @@ OfferCreate::formatAmount(STAmount const& amount)
 TER
 OfferCreate::applyHybrid(
     Sandbox& sb,
-    STLedgerEntry::pointer sleOffer,
+    OfferEntryW& sleOffer,
     Keylet const& offerKey,
     STAmount const& saTakerPays,
     STAmount const& saTakerGets,
@@ -673,7 +673,7 @@ OfferCreate::applyGuts(Sandbox& sb, Sandbox& sbCancel)
     if (cancelSequence)
     {
         auto const seqProxy = SeqProxy::rawSequence(*cancelSequence);
-        auto const sleCancel = sb.peek(keylet::offer(accountID_, seqProxy));
+        OfferEntryW sleCancel(accountID_, seqProxy, sb, viewJ);
 
         // It's not an error to not find the offer to cancel: it might have
         // been consumed or removed. If it is found, however, it's an error
@@ -681,7 +681,7 @@ OfferCreate::applyGuts(Sandbox& sb, Sandbox& sbCancel)
         if (sleCancel)
         {
             JLOG(j_.debug()) << "Create cancels order " << *cancelSequence;
-            result = offerDelete(sb, sleCancel, viewJ);
+            result = sleCancel.removeFromLedger();
         }
     }
 
@@ -976,7 +976,8 @@ OfferCreate::applyGuts(Sandbox& sb, Sandbox& sbCancel)
         // LCOV_EXCL_STOP
     }
 
-    auto sleOffer = std::make_shared<SLE>(offerIndex);
+    OfferEntryW sleOffer(offerIndex, sb, j_);
+    sleOffer.newSLE();
     sleOffer->setAccountID(sfAccount, accountID_);
     sleOffer->setFieldU32(sfSequence, offerSequence.value());
     sleOffer->setFieldH256(sfBookDirectory, dir.key);
@@ -1010,7 +1011,7 @@ OfferCreate::applyGuts(Sandbox& sb, Sandbox& sbCancel)
             return {res, true};  // LCOV_EXCL_LINE
     }
 
-    sb.insert(sleOffer);
+    sleOffer.insert();
 
     if (!bookExisted)
         ctx_.addOrderBook(book);
