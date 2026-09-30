@@ -59,12 +59,12 @@ struct FeeSetup
     /**
      * The account reserve requirement in drops.
      */
-    XRPAmount accountReserve{10 * kDropsPerXrp};
+    XRPAmount accountReserve{1'000'000};
 
     /**
      * The per-owned item reserve requirement in drops.
      */
-    XRPAmount ownerReserve{2 * kDropsPerXrp};
+    XRPAmount ownerReserve{200'000};
 
     /**
      * The gas limit for Feature Extensions.
@@ -94,6 +94,16 @@ struct FeeSetup
             referenceFee, accountReserve, ownerReserve, gasLimit, bytecodeSizeLimit, gasPrice};
     }
 };
+
+static_assert(
+    FeeSetup{}.referenceFee == XRPAmount{10},
+    "Default FeeSetup.referenceFee has been modified, please verify if change is correct.");
+static_assert(
+    FeeSetup{}.accountReserve == XRPAmount{1'000'000},
+    "Default FeeSetup.accountReserve has been modified, please verify if change is correct.");
+static_assert(
+    FeeSetup{}.ownerReserve == XRPAmount{200'000},
+    "Default FeeSetup.ownerReserve has been modified, please verify if change is correct.");
 
 //  This entire derived class is deprecated.
 //  For new config information use the style implied
