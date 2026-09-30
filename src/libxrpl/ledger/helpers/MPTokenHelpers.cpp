@@ -324,25 +324,15 @@ removeEmptyHolding(
     // a token does exist, it will get deleted. If not, return success.
     bool const accountIsIssuer = accountID == mptIssue.getIssuer();
     auto const& mptID = mptIssue.getMptID();
-    MPTokenEntryW mptoken(mptID, accountID, ctx.view, journal);
+    MPTokenEntryW const mptoken(mptID, accountID, ctx.view, journal);
     if (!mptoken)
         return accountIsIssuer ? (TER)tesSUCCESS : (TER)tecOBJECT_NOT_FOUND;
     // Unlike a trust line, if the account is the issuer, and the token has a
     // balance, it can not just be deleted, because that will throw the issuance
     // accounting out of balance, so fail. Since this should be impossible
     // anyway, I'm not going to put any effort into it.
-    if (mptoken->at(sfMPTAmount) != 0 ||
-        (ctx.view.rules().enabled(fixCleanup3_1_3) && (*mptoken)[~sfLockedAmount].valueOr(0) != 0))
+    if (mptoken.hasObligations())
         return tecHAS_OBLIGATIONS;
-
-    // Don't delete if the token still has confidential balances
-    if (mptoken->isFieldPresent(sfConfidentialBalanceInbox) ||
-        mptoken->isFieldPresent(sfConfidentialBalanceSpending) ||
-        mptoken->isFieldPresent(sfIssuerEncryptedBalance) ||
-        mptoken->isFieldPresent(sfAuditorEncryptedBalance))
-    {
-        return tecHAS_OBLIGATIONS;
-    }
 
     return authorizeMPToken(
         ctx,
