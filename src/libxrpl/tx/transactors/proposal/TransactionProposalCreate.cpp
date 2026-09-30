@@ -4,6 +4,7 @@
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/View.h>
+#include <xrpl/ledger/entries/SignerListEntry.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/ledger/helpers/ProposalHelpers.h>
@@ -185,7 +186,7 @@ TransactionProposalCreate::preclaim(PreclaimContext const& ctx)
             if (proposer == account)
                 return true;
 
-            auto const sleSigners = ctx.view.read(keylet::signerList(account));
+            SignerListEntryR const sleSigners(account, ctx.view);
             if (!sleSigners)
                 return false;
 
