@@ -35,7 +35,9 @@ WasmHostFunctionsImpl::getParentLedgerHash() const
 std::expected<std::uint32_t, HostFunctionError>
 WasmHostFunctionsImpl::getBaseFee() const
 {
-    return ctx_.view().fees().base.drops();
+    if (auto const drops = ctx_.view().fees().base.dropsAs<std::uint32_t>())
+        return *drops;
+    return std::unexpected(HostFunctionError::InternalFatal);
 }
 
 std::expected<int32_t, HostFunctionError>
