@@ -898,6 +898,39 @@ private:
             env(tx, Ter(tecNO_AUTH));
         });
 
+        {
+            testcase("MPT without CanTransfer until issuer enables it");
+            using namespace test::jtx;
+
+            Env env{*this};
+            Account const issuer{"issuer"};
+            Account const holder{"holder"};
+            MPTTester mptt{env, issuer, {.holders = {holder}}};
+
+            // No tfMPTCanTransfer, so the vault pseudo-account cannot hold it.
+            mptt.create({.ownerCount = 1, .holderCount = 0});
+            Asset const asset = mptt.issuanceID();
+            mptt.authorize({.account = holder});
+
+            Vault vault{env};
+            {
+                auto [tx, keylet] = vault.create({.owner = holder, .asset = asset});
+                env(tx, Ter(tecNO_AUTH));
+            }
+            {
+                auto [tx, keylet] = vault.create({.owner = issuer, .asset = asset});
+                env(tx, Ter(tecNO_AUTH));
+            }
+
+            mptt.set({.account = issuer, .flags = tfMPTSetCanTransfer});
+            env.close();
+
+            auto [tx, keylet] = vault.create({.owner = holder, .asset = asset});
+            env(tx);
+            env.close();
+            BEAST_EXPECT(env.le(keylet));
+        }
+
         testCase([this](
                      Env& env,
                      Account const& issuer,
