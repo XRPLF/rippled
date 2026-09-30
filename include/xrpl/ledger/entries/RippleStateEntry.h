@@ -76,6 +76,15 @@ public:
         result.get<Issue>().account = account;
         return result;
     }
+
+    /**
+     * Returns true if @p issuer froze this line for @p account.
+     */
+    [[nodiscard]] bool
+    isIndividualFrozen(AccountID const& account, AccountID const& issuer) const
+    {
+        return (*this)->isFlag((issuer > account) ? lsfHighFreeze : lsfLowFreeze);
+    }
 };
 
 using RippleStateEntryR = RippleStateEntry<ReadView>;
