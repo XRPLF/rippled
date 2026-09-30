@@ -255,14 +255,6 @@ isValidClosedEndedGap(std::uint32_t sub, std::uint32_t red)
 }
 
 [[nodiscard]] VaultPhase
-getVaultPhase(ReadView const& view, VaultEntryR const& vault)
-{
-    XRPL_ASSERT(vault && vault->getType() == ltVAULT, "xrpl::getVaultPhase : valid Vault sle");
-    return getVaultPhase(
-        view, (*vault)[~sfVaultKind], (*vault)[~sfSubscriptionDate], (*vault)[~sfRedemptionDate]);
-}
-
-[[nodiscard]] VaultPhase
 getVaultPhase(
     ReadView const& view,
     std::optional<std::uint8_t> vaultKind,

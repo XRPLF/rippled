@@ -110,7 +110,7 @@ VaultDeposit::preclaim(PreclaimContext const& ctx)
 
     if (ctx.view.rules().enabled(featureLendingProtocolV1_1))
     {
-        auto const phase = getVaultPhase(ctx.view, vault);
+        auto const phase = vault.phase();
         if (phase == VaultPhase::Investment || phase == VaultPhase::Redemption)
         {
             JLOG(ctx.j.debug()) << "VaultDeposit: vault deposit is not allowed in the investment "
