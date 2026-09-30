@@ -169,6 +169,30 @@ public:
 
         return STAmount{(*this)->at(sfAsset)};
     }
+
+    /**
+     * Rounds @p amount down to the scale the vault's sfAssetsTotal would have
+     * after adding @p amount. Integral amounts are returned unchanged.
+     */
+    [[nodiscard]] STAmount
+    roundToScale(STAmount const& amount) const
+    {
+        XRPL_ASSERT(
+            *this && (*this)->getType() == ltVAULT,
+            "xrpl::VaultEntry::roundToScale : valid vault sle");
+        XRPL_ASSERT(
+            amount.asset() == (*this)->at(sfAsset),
+            "xrpl::VaultEntry::roundToScale : valid vault asset");
+
+        if (amount.integral())
+            return amount;
+
+        int const postScale = [&]() {
+            NumberRoundModeGuard const rg(Number::RoundingMode::ToNearest);
+            return scale((*this)->at(sfAssetsTotal) + amount, (*this)->at(sfAsset));
+        }();
+        return xrpl::roundToScale(amount, postScale, Number::RoundingMode::Downward);
+    }
 };
 
 using VaultEntryR = VaultEntry<ReadView>;

@@ -92,7 +92,8 @@ VaultEntry<ViewT>::clampToAssetsTotalScale(STAmount const& delta) const
     {
         // For withdrawals (debits), floor the magnitude to the target scale
         // to ensure exact grid alignment without paying out extra assets.
-        actualDelta = roundToScale(magnitude, postScale, Number::RoundingMode::Downward);
+        // Qualified: the member roundToScale() hides the free function here.
+        actualDelta = xrpl::roundToScale(magnitude, postScale, Number::RoundingMode::Downward);
     }
     else
     {
