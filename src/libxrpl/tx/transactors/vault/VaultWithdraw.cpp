@@ -7,6 +7,7 @@
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/View.h>
+#include <xrpl/ledger/entries/VaultEntry.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/CredentialHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
@@ -83,7 +84,7 @@ VaultWithdraw::preclaim(PreclaimContext const& ctx)
     auto const fix330Enabled = ctx.view.rules().enabled(fixCleanup3_3_0);
     auto const fix340Enabled = ctx.view.rules().enabled(fixCleanup3_4_0);
 
-    auto const vault = ctx.view.read(keylet::vault(ctx.tx[sfVaultID]));
+    VaultEntryR const vault(ctx.tx[sfVaultID], ctx.view);
     if (!vault)
         return tecNO_ENTRY;
 
@@ -278,7 +279,7 @@ TER
 VaultWithdraw::doApply()
 {
     bool const fix340Enabled = view().rules().enabled(fixCleanup3_4_0);
-    auto const vault = view().peek(keylet::vault(ctx_.tx[sfVaultID]));
+    VaultEntryW vault(ctx_.tx[sfVaultID], view());
     auto applyViewContext = ctx_.getApplyViewContext();
     if (!vault)
         return tefINTERNAL;  // LCOV_EXCL_LINE
@@ -543,7 +544,7 @@ VaultWithdraw::doApply()
         assetsTotal -= assetsWithdrawn;
         assetsAvailable -= assetsWithdrawn;
     }
-    view().update(vault);
+    vault.update();
 
     auto const& vaultAccount = vault->at(sfAccount);
 

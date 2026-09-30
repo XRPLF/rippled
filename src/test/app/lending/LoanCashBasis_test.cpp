@@ -13,6 +13,7 @@
 #include <xrpl/basics/chrono.h>
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/beast/utility/Zero.h>
+#include <xrpl/ledger/entries/VaultEntry.h>
 #include <xrpl/ledger/helpers/LendingHelpers.h>
 #include <xrpl/ledger/helpers/VaultHelpers.h>
 #include <xrpl/protocol/Feature.h>
@@ -1126,7 +1127,8 @@ private:
             auto const vaultSle = env.le(broker.vaultKeylet());
             BEAST_EXPECT(vaultSle);
             BEAST_EXPECT(!vaultSle->isFieldPresent(sfLEVersion));
-            BEAST_EXPECT(getVaultVersion(vaultSle) == VaultVersion::Legacy);
+            BEAST_EXPECT(
+                getVaultVersion(VaultEntryR(vaultSle, *env.current())) == VaultVersion::Legacy);
         }
     }
 

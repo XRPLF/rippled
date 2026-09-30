@@ -5,6 +5,7 @@
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/View.h>
+#include <xrpl/ledger/entries/VaultEntry.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/LendingHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
@@ -98,7 +99,7 @@ LoanBrokerSet::preclaim(PreclaimContext const& ctx)
     auto const account = tx[sfAccount];
     auto const vaultID = tx[sfVaultID];
 
-    auto const sleVault = ctx.view.read(keylet::vault(vaultID));
+    VaultEntryR const sleVault(vaultID, ctx.view);
     if (!sleVault)
     {
         JLOG(ctx.j.warn()) << "Vault does not exist.";
@@ -204,7 +205,7 @@ LoanBrokerSet::doApply()
             // LCOV_EXCL_STOP
         }
 
-        auto const vault = view.read(keylet::vault(broker->at(sfVaultID)));
+        VaultEntryR const vault(broker->at(sfVaultID), view);
         if (!vault)
             return tecINTERNAL;  // LCOV_EXCL_LINE
 
@@ -223,7 +224,7 @@ LoanBrokerSet::doApply()
     {
         // Create a new LoanBroker pointing back to the given Vault
         auto const vaultID = tx[sfVaultID];
-        auto const sleVault = view.read(keylet::vault(vaultID));
+        VaultEntryR const sleVault(vaultID, view);
         if (!sleVault)
         {
             // This should be impossible

@@ -14,6 +14,7 @@
 #include <xrpl/basics/Number.h>
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/json/json_value.h>
+#include <xrpl/ledger/entries/VaultEntry.h>
 #include <xrpl/ledger/helpers/LendingHelpers.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Feature.h>
@@ -665,7 +666,8 @@ private:
                     return std::nullopt;
                 if (!BEAST_EXPECT(tinyLoanSle->at(sfLoanScale) == -12) ||
                     !BEAST_EXPECT(bigLoanSle->at(sfLoanScale) == -11) ||
-                    !BEAST_EXPECT(getAssetsTotalScale(vaultSle) == -11))
+                    !BEAST_EXPECT(
+                        getAssetsTotalScale(VaultEntryR(vaultSle, *env.current())) == -11))
                     return std::nullopt;
 
                 // Use issuer clawback to reduce cover to the minimum the
@@ -792,7 +794,7 @@ private:
 
                 auto const coverAvail = brokerSle->at(sfCoverAvailable);
                 auto const debtTotal = brokerSle->at(sfDebtTotal);
-                auto const vaultScale = getAssetsTotalScale(vaultSle);
+                auto const vaultScale = getAssetsTotalScale(VaultEntryR(vaultSle, *env.current()));
                 auto const debtScale = scale(debtTotal, asset);
 
                 // Sanity: debt scale differs from vault scale for this setup.
@@ -806,7 +808,9 @@ private:
                         debtScale);
                 }();
                 auto const newMin = minimumBrokerCover(
-                    debtTotal, TenthBips32{c.brokerParams.coverRateMin}, vaultSle);
+                    debtTotal,
+                    TenthBips32{c.brokerParams.coverRateMin},
+                    VaultEntryR(vaultSle, *env.current()));
 
                 // The new (vaultScale) minimum must be strictly larger than
                 // the old (debtScale) minimum — that is the gap the amendment
@@ -890,7 +894,7 @@ private:
                 auto const vaultSle = env.le(keylet::vault(c.broker.vaultID));
                 if (!BEAST_EXPECT(vaultSle))
                     return;
-                auto const vaultScale = getAssetsTotalScale(vaultSle);
+                auto const vaultScale = getAssetsTotalScale(VaultEntryR(vaultSle, *env.current()));
                 BEAST_EXPECT(vaultScale == -11);
 
                 // Now try to create a tiny additional loan.  Principal is
