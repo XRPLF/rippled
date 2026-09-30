@@ -60,22 +60,6 @@ VaultClawback::preflight(PreflightContext const& ctx)
     return tesSUCCESS;
 }
 
-[[nodiscard]] STAmount
-clawbackAmount(
-    VaultEntryR const& vault,
-    std::optional<STAmount> const& maybeAmount,
-    AccountID const& account)
-{
-    if (maybeAmount)
-        return *maybeAmount;
-
-    Asset const share = MPTIssue{vault->at(sfShareMPTID)};
-    if (account == vault->at(sfOwner))
-        return STAmount{share};
-
-    return STAmount{vault->at(sfAsset)};
-}
-
 TER
 VaultClawback::preclaim(PreclaimContext const& ctx)
 {
@@ -117,7 +101,7 @@ VaultClawback::preclaim(PreclaimContext const& ctx)
         return tecWRONG_ASSET;
     }
 
-    auto const amount = clawbackAmount(vault, maybeAmount, account);
+    auto const amount = vault.clawbackAmount(maybeAmount, account);
 
     // There is a special case that allows the VaultOwner to use clawback to
     // burn shares when Vault assets total and available are zero, but
@@ -407,7 +391,7 @@ VaultClawback::doApply()
     MPTIssue const share{mptIssuanceID};
 
     Asset const vaultAsset = vault->at(sfAsset);
-    STAmount const amount = clawbackAmount(vault, tx[~sfAmount], accountID_);
+    STAmount const amount = vault.clawbackAmount(tx[~sfAmount], accountID_);
 
     auto assetsAvailable = vault->at(sfAssetsAvailable);
     auto assetsTotal = vault->at(sfAssetsTotal);
