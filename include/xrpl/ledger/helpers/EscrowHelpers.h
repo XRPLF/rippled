@@ -28,6 +28,27 @@
 
 namespace xrpl {
 
+namespace detail {
+
+/**
+ * Before fixCleanup3_2_0, EscrowCancel passes the escrow SLE as sleDest.
+ * Return what the old reserve check returned for it, without adopting a
+ * non-AccountRoot SLE into an AccountRootEntry: the tx reserve sponsor's
+ * error if the escrow owner submitted the tx, else tefINTERNAL.
+ */
+inline TER
+escrowDestNotAccountResult(ApplyViewContext ctx, SLE::ConstRef sleDest)
+{
+    if (sleDest->getAccountID(sfAccount) == ctx.tx[sfAccount])
+    {
+        if (auto const sponsor = getTxReserveSponsor(ctx); !sponsor)
+            return sponsor.error();  // LCOV_EXCL_LINE
+    }
+    return tefINTERNAL;
+}
+
+}  // namespace detail
+
 template <ValidIssueType T>
 TER
 escrowUnlockApplyHelper(
@@ -71,6 +92,8 @@ escrowUnlockApplyHelper<Issue>(
     if (!ctx.view.exists(trustLineKey) && createAsset)
     {
         // Can the account cover the trust line's reserve?
+        if (sleDest->getType() != ltACCOUNT_ROOT)
+            return detail::escrowDestNotAccountResult(ctx, sleDest);
         auto const destSle = AccountRootEntryR(sleDest, ctx.view);
         auto sponsorSle = getEffectiveTxReserveSponsor(ctx, destSle);
         if (!sponsorSle)
@@ -208,6 +231,8 @@ escrowUnlockApplyHelper<MPTIssue>(
     auto const mptKeylet = keylet::mptoken(issuanceKey.key, receiver);
     if (!ctx.view.exists(mptKeylet) && createAsset && !receiverIssuer)
     {
+        if (sleDest->getType() != ltACCOUNT_ROOT)
+            return detail::escrowDestNotAccountResult(ctx, sleDest);
         auto const destSle = AccountRootEntryR(sleDest, ctx.view);
         auto sponsorSle = getEffectiveTxReserveSponsor(ctx, destSle);
         if (!sponsorSle)
