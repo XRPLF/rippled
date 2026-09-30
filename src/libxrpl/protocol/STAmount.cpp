@@ -383,10 +383,11 @@ operator+(STAmount const& v1, STAmount const& v2)
         return {v1.getFName(), v1.asset(), v2.mantissa(), v2.exponent(), v2.negative()};
     }
 
+    // XRPAmount and MPTAmount check for int64 overflow under featureMPTokensV2.
     if (v1.native())
-        return {v1.getFName(), getSNValue(v1) + getSNValue(v2)};
+        return {v1.getFName(), (v1.xrp() + v2.xrp()).drops()};
     if (v1.holds<MPTIssue>())
-        return {v1.asset_, v1.mpt().value() + v2.mpt().value()};
+        return {v1.asset_, (v1.mpt() + v2.mpt()).value()};
 
     auto x = v1;
     x = v1.iou() + v2.iou();

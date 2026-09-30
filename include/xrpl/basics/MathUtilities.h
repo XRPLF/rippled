@@ -3,8 +3,66 @@
 #include <algorithm>
 #include <cassert>
 #include <cstddef>
+#include <cstdint>
+#include <limits>
+#include <optional>
 
 namespace xrpl {
+
+/**
+ * Add two signed 64-bit integers, returning std::nullopt when the exact
+ * mathematical sum is not representable in std::int64_t.
+ */
+[[nodiscard]] constexpr std::optional<std::int64_t>
+checkedAdd(std::int64_t a, std::int64_t b) noexcept
+{
+    using L = std::numeric_limits<std::int64_t>;
+
+    if ((b > 0 && a > L::max() - b) || (b < 0 && a < L::min() - b))
+        return std::nullopt;
+
+    return a + b;
+}
+
+/**
+ * Subtract two signed 64-bit integers, returning std::nullopt when the exact
+ * mathematical difference is not representable in std::int64_t.
+ */
+[[nodiscard]] constexpr std::optional<std::int64_t>
+checkedSub(std::int64_t a, std::int64_t b) noexcept
+{
+    using L = std::numeric_limits<std::int64_t>;
+
+    if ((b > 0 && a < L::min() + b) || (b < 0 && a > L::max() + b))
+        return std::nullopt;
+
+    return a - b;
+}
+
+/**
+ * Multiply two signed 64-bit integers, returning std::nullopt when the exact
+ * mathematical product is not representable in std::int64_t.
+ */
+[[nodiscard]] constexpr std::optional<std::int64_t>
+checkedMul(std::int64_t a, std::int64_t b) noexcept
+{
+    using L = std::numeric_limits<std::int64_t>;
+
+    if (a == 0 || b == 0)
+        return 0;
+
+    if (a > 0)
+    {
+        if (b > 0 ? a > L::max() / b : b < L::min() / a)
+            return std::nullopt;
+    }
+    else if (b > 0 ? a < L::min() / b : b < L::max() / a)
+    {
+        return std::nullopt;
+    }
+
+    return a * b;
+}
 
 /**
  * Calculate one number divided by another number in percentage.
