@@ -3,7 +3,6 @@
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/Slice.h>
 #include <xrpl/basics/base_uint.h>
-#include <xrpl/basics/chrono.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
@@ -26,7 +25,6 @@
 #include <algorithm>
 #include <cstdint>
 #include <expected>
-#include <limits>
 #include <set>
 #include <unordered_set>
 #include <utility>
@@ -34,15 +32,6 @@
 
 namespace xrpl {
 namespace credentials {
-
-bool
-checkExpired(CredentialEntryR const& sleCredential, NetClock::time_point const& closed)
-{
-    std::uint32_t const exp =
-        (*sleCredential)[~sfExpiration].value_or(std::numeric_limits<std::uint32_t>::max());
-    std::uint32_t const now = closed.time_since_epoch().count();
-    return now > exp;
-}
 
 [[nodiscard]]
 static std::expected<bool, TER>
@@ -59,7 +48,7 @@ removeExpired(ApplyView& view, STVector256 const& arr, beast::Journal const j)
 
         CredentialEntryW sleCred(h, view, j);
 
-        if (sleCred && checkExpired(sleCred, closeTime))
+        if (sleCred && sleCred.isExpired(closeTime))
         {
             JLOG(j.trace()) << "Credentials are expired. Cred: " << sleCred->getText();
             // delete expired credentials even if the transaction failed
@@ -227,7 +216,7 @@ validDomain(ReadView const& view, UInt256 domainID, AccountID const& subject)
         // allows expired credentials to be deleted by any transaction.
         if (sleCredential)
         {
-            if (checkExpired(sleCredential, closeTime))
+            if (sleCredential.isExpired(closeTime))
             {
                 foundExpired = true;
                 continue;
