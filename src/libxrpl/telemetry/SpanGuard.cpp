@@ -23,7 +23,7 @@
  * null guard whose methods are all no-ops.
  *
  * @see SpanGuard, ScopedSpanGuard (SpanGuard.h), Telemetry (Telemetry.h),
- * FilteringSpanProcessor (Telemetry.cpp)
+ * FilteringSpanProcessor (FilteringSpanProcessor.h)
  */
 
 #ifdef XRPL_ENABLE_TELEMETRY
