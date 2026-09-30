@@ -4,9 +4,11 @@
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/helpers/MPTokenHelpers.h>
+#include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/Rate.h>
 #include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STAmount.h>
 
 #include <cstdint>
 
@@ -34,6 +36,15 @@ MPTokenIssuanceEntry<ViewT>::transferRate() const
     }
 
     return kParityRate;
+}
+
+template <typename ViewT>
+STAmount
+MPTokenIssuanceEntry<ViewT>::issuerFundsToSelfIssue() const
+{
+    MPTIssue const issue{(**this)[sfSequence], (**this)[sfIssuer]};
+    auto const available = availableAmount();
+    return this->readView().balanceHookSelfIssueMPT(issue, available);
 }
 
 template class MPTokenIssuanceEntry<ReadView>;
