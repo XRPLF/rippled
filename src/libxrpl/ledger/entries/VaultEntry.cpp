@@ -19,6 +19,17 @@ VaultEntry<ViewT>::version() const
     return decodeVaultVersion((**this).at(~sfLEVersion));
 }
 
+template <typename ViewT>
+VaultKind
+VaultEntry<ViewT>::kind() const
+{
+    XRPL_ASSERT(*this && (*this)->getType() == ltVAULT, "xrpl::VaultEntry::kind : valid Vault sle");
+    auto const vaultKind = (*this)->at(~sfVaultKind);
+    if (vaultKind && *vaultKind == std::to_underlying(VaultKind::ClosedEnded))
+        return VaultKind::ClosedEnded;
+    return VaultKind::OpenEnded;
+}
+
 template class VaultEntry<ReadView>;
 template class VaultEntry<ApplyView>;
 
