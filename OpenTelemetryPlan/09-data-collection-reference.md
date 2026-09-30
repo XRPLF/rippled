@@ -1881,9 +1881,9 @@ Single `CreateDoubleObservableGauge`, in `AppMetricGauges::registerPeerQualityGa
 
 | Prometheus Metric                             | Type   | Labels   | Description                        |
 | --------------------------------------------- | ------ | -------- | ---------------------------------- |
-| `ledger_economy{metric="base_fee_xrp"}`       | Double | `metric` | Base transaction fee in drops      |
-| `ledger_economy{metric="reserve_base_xrp"}`   | Double | `metric` | Account reserve in drops           |
-| `ledger_economy{metric="reserve_inc_xrp"}`    | Double | `metric` | Owner reserve increment in drops   |
+| `ledger_economy{metric="base_fee_drops"}`     | Double | `metric` | Base transaction fee in drops      |
+| `ledger_economy{metric="reserve_base_drops"}` | Double | `metric` | Account reserve in drops           |
+| `ledger_economy{metric="reserve_inc_drops"}`  | Double | `metric` | Owner reserve increment in drops   |
 | `ledger_economy{metric="ledger_age_seconds"}` | Double | `metric` | Seconds since last validated close |
 | `ledger_economy{metric="transaction_rate"}`   | Double | `metric` | Smoothed transaction rate (tx/s)   |
 

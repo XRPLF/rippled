@@ -576,9 +576,9 @@ dropped the `xrpld-` prefix).
 
 | Panel                | Type       | PromQL                                        |
 | -------------------- | ---------- | --------------------------------------------- |
-| Base Fee (drops)     | stat       | `ledger_economy{metric="base_fee_xrp"}`       |
-| Reserve Base (drops) | stat       | `ledger_economy{metric="reserve_base_xrp"}`   |
-| Reserve Inc (drops)  | stat       | `ledger_economy{metric="reserve_inc_xrp"}`    |
+| Base Fee (drops)     | stat       | `ledger_economy{metric="base_fee_drops"}`     |
+| Reserve Base (drops) | stat       | `ledger_economy{metric="reserve_base_drops"}` |
+| Reserve Inc (drops)  | stat       | `ledger_economy{metric="reserve_inc_drops"}`  |
 | Ledger Age           | stat       | `ledger_economy{metric="ledger_age_seconds"}` |
 | Transaction Rate     | timeseries | `ledger_economy{metric="transaction_rate"}`   |
 

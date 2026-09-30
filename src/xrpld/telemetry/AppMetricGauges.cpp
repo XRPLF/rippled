@@ -1021,12 +1021,13 @@ AppMetricGauges::registerLedgerEconomyGauge()
                 {
                     auto const& fees = ledger->fees();
                     // Cost of a reference transaction (drops).
-                    observe("base_fee_xrp", static_cast<double>(fees.base.drops()));
+                    observe("base_fee_drops", static_cast<double>(fees.base.drops()));
                     // Base reserve = one account, zero owned objects:
                     // accountReserve(ownerCount=0, accountCount=1) == reserve.
                     observe(
-                        "reserve_base_xrp", static_cast<double>(fees.accountReserve(0, 1).drops()));
-                    observe("reserve_inc_xrp", static_cast<double>(fees.increment.drops()));
+                        "reserve_base_drops",
+                        static_cast<double>(fees.accountReserve(0, 1).drops()));
+                    observe("reserve_inc_drops", static_cast<double>(fees.increment.drops()));
                 }
 
                 // Seconds since the last validated ledger closed.

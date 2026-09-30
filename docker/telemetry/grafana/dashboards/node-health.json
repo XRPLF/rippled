@@ -4608,7 +4608,7 @@
         "type": "prometheus",
         "uid": "${DS_PROMETHEUS}"
       },
-      "description": "###### What this is:\n*The node's local load-based fee factor that scales its minimum transaction cost; baseline 256 at idle.*\n\n###### How it's computed:\n*Current value of the local load-fee economy gauge.*\n\n###### Reading it:\n*Steady at the baseline (256) is normal; higher values mean the node is raising its fee in response to load.*\n\n###### Healthy range:\n*Around 256 (the normal baseline) when idle.*\n\n###### Watch for:\n*A climbing factor, which indicates the node is under transaction load pressure.*\n\n###### Keywords:\n- **Load factor** *(per node)* \u2014 a unitless multiplier (1.0 = no load) that scales the base transaction cost as the node comes under load.\n- **Base fee** *(network-wide)* \u2014 the baseline transaction cost for a reference transaction under minimum load, in drops.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Computed in xrpld code (MetricsRegistry, OpenTelemetry SDK) and exported as a metric; the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[AppMetricGauges.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/telemetry/AppMetricGauges.cpp)\n\n###### Function:\n`registerLedgerEconomyGauge`\n\n###### References:\n[Load factor](https://xrpl.org/docs/concepts/transactions/transaction-cost#local-load-cost) \u00b7 [Base fee](https://xrpl.org/docs/concepts/transactions/transaction-cost) \u00b7 [Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#load-factor)",
+      "description": "###### What this is:\n*The cost of a reference transaction, from the validated ledger's fee settings, in drops. It does not include load scaling.*\n\n###### How it's computed:\n*Current value of the base-fee economy gauge, read from the validated ledger.*\n\n###### Reading it:\n*A stable value is expected; it changes only via network amendment or vote.*\n\n###### Healthy range:\n*The configured network base fee.*\n\n###### Watch for:\n*An unexpected change outside a known amendment or fee vote.*\n\n###### Keywords:\n- **Base fee** *(network-wide)* \u2014 the baseline transaction cost for a reference transaction under minimum load, in drops.\n- **drops** *(network-wide)* \u2014 the smallest XRP unit \u2014 one drop is 0.000001 XRP (one millionth).\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Computed in xrpld code (MetricsRegistry, OpenTelemetry SDK) and exported as a metric; the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[AppMetricGauges.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/telemetry/AppMetricGauges.cpp)\n\n###### Function:\n`registerLedgerEconomyGauge`\n\n###### References:\n[Base fee](https://xrpl.org/docs/concepts/transactions/transaction-cost) \u00b7 [drops](https://xrpl.org/docs/references/protocol/data-types/basic-data-types#specifying-currency-amounts) \u00b7 [Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#base-fee)",
       "fieldConfig": {
         "defaults": {
           "displayName": "${__field.labels.xrpl_ident}",
@@ -4662,7 +4662,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "label_replace(label_join(ledger_economy{metric=\"base_fee_xrp\",service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}, \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(?:, )*(.*[^, ])(?:, )*\")",
+          "expr": "label_replace(label_join(ledger_economy{metric=\"base_fee_drops\",service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}, \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(?:, )*(.*[^, ])(?:, )*\")",
           "refId": "A"
         }
       ],
@@ -4731,7 +4731,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "label_replace(label_join(ledger_economy{metric=\"reserve_base_xrp\",service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}, \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(?:, )*(.*[^, ])(?:, )*\")",
+          "expr": "label_replace(label_join(ledger_economy{metric=\"reserve_base_drops\",service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}, \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(?:, )*(.*[^, ])(?:, )*\")",
           "refId": "A"
         }
       ],
@@ -4800,7 +4800,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "label_replace(label_join(ledger_economy{metric=\"reserve_inc_xrp\",service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}, \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(?:, )*(.*[^, ])(?:, )*\")",
+          "expr": "label_replace(label_join(ledger_economy{metric=\"reserve_inc_drops\",service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}, \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(?:, )*(.*[^, ])(?:, )*\")",
           "refId": "A"
         }
       ],
