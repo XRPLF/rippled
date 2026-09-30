@@ -422,7 +422,7 @@ VaultWithdraw::doApply()
     // AssetsDeployed below half a unit of AssetsAvailable's grid rounds
     // away, so the payout equals AssetsAvailable exactly and the vault would
     // be left with no shares and no cash but a non-zero AssetsDeployed.
-    if (isFinalWithdrawal && getVaultVersion(vault) == VaultVersion::FixedPrecision &&
+    if (isFinalWithdrawal && vault.version() == VaultVersion::FixedPrecision &&
         Number(vault->at(sfAssetsDeployed)) != beast::kZero)
     {
         JLOG(j_.debug()) << "VaultWithdraw: cannot empty vault while AssetsDeployed is non-zero";
@@ -563,7 +563,7 @@ VaultWithdraw::doApply()
         return tecPRECISION_LOSS;
     }
 
-    if (finalPayout && getVaultVersion(vault) != VaultVersion::FixedPrecision)
+    if (finalPayout && vault.version() != VaultVersion::FixedPrecision)
     {
         // Do not let dust accumulate in the Vault.
         vault->at(sfAssetsTotal) = 0;

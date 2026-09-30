@@ -467,7 +467,7 @@ loanPaymentDeltas(LoanPaymentParts const& parts);
 }  // namespace cash_basis
 
 // Public dispatchers: pick cash_basis:: if the Vault's LEVersion
-// (VaultHelpers::getVaultVersion) is CashBasis or later (CashBasis or
+// (VaultEntry::version) is CashBasis or later (CashBasis or
 // FixedPrecision), else instant_recognition::. These are the only entry
 // points transactors call.
 AccountingDeltas

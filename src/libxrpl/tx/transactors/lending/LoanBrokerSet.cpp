@@ -234,7 +234,7 @@ LoanBrokerSet::preclaim(PreclaimContext const& ctx)
         if (auto const value = tx[field]; value &&
             ((fix350Enabled && !isRepresentable(asset, *value)) ||
              STAmount{asset, *value} != *value ||
-             (getVaultVersion(sleVault) == VaultVersion::FixedPrecision &&
+             (sleVault.version() == VaultVersion::FixedPrecision &&
               !isOnVaultBaseGrid(asset, *value, getVaultBaseScale(sleVault.rawSle())))))
         {
             JLOG(ctx.j.warn()) << field.f->getName() << " (" << *value
