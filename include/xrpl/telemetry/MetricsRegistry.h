@@ -325,7 +325,8 @@ public:
      * pipeline: OTLP exporter, periodic reader, MeterProvider and every
      * SYNCHRONOUS instrument (counters and histograms).
      *
-     * The parity counters it creates start at 0 for each label value, so a
+     * The parity counters it creates start at 0 for each label value, and
+     * jobq_stall_total at 0 for each job type the job queue can run, so a
      * later event shows under increase(). See initSyncInstruments().
      *
      * Doing this in the constructor is what fixes the init order. The
@@ -943,7 +944,8 @@ private:
     opentelemetry::nostd::unique_ptr<opentelemetry::metrics::Counter<uint64_t>> jobFinishedCounter_;
     /**
      * Counter: jobq_stall_total{job_type="<name>"} — one per finished job
-     * whose run time reached kJobStallThresholdUs.
+     * whose run time reached kJobStallThresholdUs. Starts at 0 for each job
+     * type the job queue can run.
      */
     opentelemetry::nostd::unique_ptr<opentelemetry::metrics::Counter<uint64_t>> jobStallCounter_;
     /**
@@ -1005,7 +1007,8 @@ private:
     /**
      * Create the synchronous instruments (RPC and job-queue counters and
      * histograms, plus the synchronous parity counters), and start each of
-     * those parity counters at 0 for every label value. Extracted from the
+     * those parity counters at 0 for every label value, and jobq_stall_total
+     * at 0 for every job type the job queue can run. Extracted from the
      * constructor to keep each function under the 80-line limit.
      */
     void

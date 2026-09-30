@@ -28,6 +28,8 @@
 #ifdef XRPL_ENABLE_TELEMETRY
 
 #include <xrpl/basics/Log.h>
+#include <xrpl/core/JobTypeInfo.h>
+#include <xrpl/core/JobTypes.h>
 #include <xrpl/telemetry/GetObjectMetricNames.h>
 #include <xrpl/telemetry/HistogramBuckets.h>
 #include <xrpl/telemetry/MetricNames.h>
@@ -203,6 +205,25 @@ addRotationPhaseHistogramView(metric_sdk::ViewRegistry& views, std::string const
         views,
         name,
         xrpl::telemetry::buckets::toVector(xrpl::telemetry::buckets::kRotationPhaseSecondsBuckets));
+}
+
+/**
+ * Add to jobq_stall_total for one job type.
+ *
+ * The startup zero and every real stall both go through here, so they build
+ * the same label set and land on the same series.
+ *
+ * @param counter The jobq_stall_total counter.
+ * @param value   Amount to add: 0 creates the series, 1 counts a stall.
+ * @param jobType The job type's JobTypes name.
+ */
+void
+addJobStall(
+    opentelemetry::metrics::Counter<std::uint64_t>& counter,
+    std::uint64_t value,
+    std::string_view jobType)
+{
+    counter.Add(value, {{xrpl::telemetry::label::jobType, std::string(jobType)}});
 }
 
 }  // namespace
@@ -500,6 +521,15 @@ MetricsRegistry::initSyncInstruments()
     jobFinishedCounter_ = meter_->CreateUInt64Counter("job_finished_total", "Total jobs completed");
     jobStallCounter_ = meter_->CreateUInt64Counter(
         metric::jobqStallTotal, "Jobs whose run time reached the 1 s stall threshold");
+    // Stalls are rare, so each job type starts at 0, and a stall after the
+    // first export shows under increase(). A stall before that export is
+    // still missed (see the constructor's note). A special() type is left
+    // out: the job queue never runs one.
+    for (auto const& [_, info] : JobTypes::instance())
+    {
+        if (!info.special())
+            addJobStall(*jobStallCounter_, 0, info.name());
+    }
     jobQueuedDurationHistogram_ = meter_->CreateDoubleHistogram(
         kJobQueuedDurationUs, "Time jobs spent waiting in the queue (microseconds)");
     jobRunningDurationHistogram_ =
@@ -528,8 +558,9 @@ MetricsRegistry::initSyncInstruments()
     // Each parity counter created above starts at 0 for each label value, so
     // a later event shows under increase(), which cannot count the event that
     // creates a series. An event before the first export is still lost (see
-    // the constructor's note). The rpc and job counters are left out: their
-    // label sets are large, and their events are frequent.
+    // the constructor's note). The rpc counters, and the job counters other
+    // than jobq_stall_total, are left out: their label sets are large, and
+    // their events are frequent.
     ledgersClosedCounter_->Add(0);
     validationsSentCounter_->Add(0);
     validationsCheckedCounter_->Add(0);
@@ -716,7 +747,7 @@ MetricsRegistry::recordJobFinished(
     // One compare per job finish. A process-wide freeze shows up here as
     // several job types crossing the bar in the same second.
     if (runningDurUs >= kJobStallThresholdUs && jobStallCounter_)
-        jobStallCounter_->Add(1, {{label::jobType, std::string(jobType)}});
+        addJobStall(*jobStallCounter_, 1, jobType);
 #endif
 }
 

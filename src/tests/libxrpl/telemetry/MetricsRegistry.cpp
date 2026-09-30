@@ -754,11 +754,18 @@ TEST(MetricsRegistryDaysUntil, the_sentinel_is_the_one_the_validator_list_sets)
 
 #ifdef XRPL_ENABLE_TELEMETRY
 #include <xrpl/basics/base_uint.h>
+#include <xrpl/core/Job.h>
+#include <xrpl/core/JobTypeInfo.h>
+#include <xrpl/core/JobTypes.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/telemetry/ValidationTracker.h>
 
 #include <helpers/CollectedCounters.h>
 #include <helpers/ManualMetricReader.h>
+#include <opentelemetry/sdk/metrics/data/metric_data.h>
+#include <opentelemetry/sdk/metrics/export/metric_producer.h>
+#include <opentelemetry/sdk/metrics/instruments.h>
+#include <opentelemetry/sdk/metrics/metric_reader.h>
 
 #include <functional>
 #include <map>
@@ -1157,16 +1164,19 @@ TEST_F(MetricsRegistryTest, validation_tracker_is_owned_per_registry)
 //
 // A Prometheus series born by an event cannot show that event: increase()
 // needs an earlier sample to count from. The constructor therefore puts every
-// parity counter it creates at 0 for each label value. These tests hand in a
-// reader through Options::extraReader and read those points back.
+// parity counter it creates at 0 for each label value, and jobq_stall_total at
+// 0 for each job type the job queue can run. These tests hand in a reader
+// through Options::extraReader and read those points back.
 //
-// Instrument names and the `reason` key are written out, because they are what
-// the dashboards query: a rename should fail here. The label values come from
-// the constants the callers pass, never from a copy of their spelling.
+// Instrument names and the `reason` and `job_type` keys are written out,
+// because they are what the dashboards query: a rename should fail here. The
+// label values come from the constants the callers pass and from JobTypes,
+// never from a copy of their spelling.
 // ---------------------------------------------------------------------------
 
 namespace {
 
+using xrpl::test::addCounterPoint;
 using xrpl::test::collectCounters;
 using xrpl::test::CollectedCounter;
 using xrpl::test::CounterLabels;
@@ -1176,6 +1186,16 @@ using xrpl::test::ManualMetricReader;
  * The label key the dashboards filter the reason counters on.
  */
 constexpr std::string_view kReasonKey{"reason"};
+
+/**
+ * The label key jobq_stall_total is split by.
+ */
+constexpr std::string_view kJobTypeKey{"job_type"};
+
+/**
+ * The stall counter's instrument name.
+ */
+constexpr std::string_view kJobStallCounter{"jobq_stall_total"};
 
 /**
  * Count one closed ledger the way RCLConsensus does.
@@ -1304,8 +1324,25 @@ reasonLabels(std::string_view reason)
 }
 
 /**
+ * The labels of one point on jobq_stall_total.
+ *
+ * @param jobType A JobTypes name.
+ * @return The one-label set {job_type = @p jobType}.
+ */
+CounterLabels
+jobTypeLabels(std::string_view jobType)
+{
+    return {{std::string{kJobTypeKey}, std::string{jobType}}};
+}
+
+/**
  * What one collection must show before any event: each counter in the two
- * tables on one stream, at 0 for each label value, and no other instrument.
+ * tables, and jobq_stall_total, on one stream at 0 for each label value, and
+ * no other instrument.
+ *
+ * jobq_stall_total has a point for each job type the job queue can run. A
+ * special() type has a limit of 0, so the queue never runs it and it gets no
+ * point.
  *
  * @return The expected counters, by instrument name.
  */
@@ -1326,7 +1363,52 @@ expectedAtZero()
         for (auto const reason : counter.reasons)
             entry.points[reasonLabels(reason)] = 0;
     }
+
+    auto& stalls = expected[std::string{kJobStallCounter}];
+    stalls.streams = 1;
+    for (auto const& [_, info] : xrpl::JobTypes::instance())
+    {
+        if (!info.special())
+            stalls.points[jobTypeLabels(info.name())] = 0;
+    }
     return expected;
+}
+
+/**
+ * Run one collection through @p reader and gather the one counter @p name.
+ *
+ * collectCounters() fails the running test for any point that is not an
+ * integer sum, and recordJobFinished() also records the job_running_us
+ * histogram. A test that finishes a job therefore reads its counter by name,
+ * through the addCounterPoint() that collectCounters() uses.
+ *
+ * @param reader A reader attached to a live pipeline.
+ * @param name   The counter's instrument name.
+ * @return That counter as the collection saw it; no streams and no points if
+ *         it exported nothing.
+ */
+CollectedCounter
+collectOneCounter(ManualMetricReader& reader, std::string_view name)
+{
+    std::string const text{name};
+    CollectedCounter counter;
+    bool const collected =
+        reader.Collect([&counter, &text](opentelemetry::sdk::metrics::ResourceMetrics& data) {
+            for (auto const& scope : data.scope_metric_data_)
+            {
+                for (auto const& metric : scope.metric_data_)
+                {
+                    if (metric.instrument_descriptor.name_ != text)
+                        continue;
+                    ++counter.streams;
+                    for (auto const& point : metric.point_data_attr_)
+                        addCounterPoint(counter, text, point);
+                }
+            }
+            return true;
+        });
+    EXPECT_TRUE(collected) << "the reader is not attached to a live pipeline";
+    return counter;
 }
 
 /**
@@ -1387,12 +1469,15 @@ TEST_F(MetricsRegistryZeroStart, parity_counters_export_zero_before_any_event)
     ASSERT_EQ(registry_.hasPipeline(), true);
 
     // One comparison pins it all: each parity counter the constructor creates
-    // is present, on one stream, at 0 for every value its callers pass, and no
-    // other instrument has a point. The rpc and job counters are absent
-    // because they are not started.
+    // is present, on one stream, at 0 for every value its callers pass, and so
+    // is jobq_stall_total for every job type the queue can run. No other
+    // instrument has a point: the rpc counters and the other job counters are
+    // absent because they are not started.
     //
     // Mutation: delete the Add(0) calls from initSyncInstruments(). No
     // instrument then has a point, so the collection comes back empty.
+    // Mutation: drop the special() filter from the jobq_stall_total zeros. The
+    // collection then has a point for each job type the queue never runs.
     EXPECT_EQ(collectCounters(*reader_), expectedAtZero());
 }
 
@@ -1440,6 +1525,41 @@ TEST_F(MetricsRegistryZeroStart, each_event_reads_one_on_its_started_series)
                 << counter.name << " after one event for " << reason;
         }
     }
+}
+
+TEST_F(MetricsRegistryZeroStart, a_stall_at_the_threshold_lands_on_its_zero_series)
+{
+    auto expected = expectedAtZero().at(std::string{kJobStallCounter});
+
+    // Setup: the job type's series is there at 0 before the stall.
+    ASSERT_EQ(collectOneCounter(*reader_, kJobStallCounter), expected);
+
+    // A job whose run time equals the threshold is a stall.
+    std::string_view const jobType = xrpl::JobTypes::name(xrpl::JtPack);
+    registry_.recordJobFinished(jobType, "h", xrpl::telemetry::kJobStallThresholdUs);
+    // at(), so the test fails if JtPack had no zero series to move.
+    expected.points.at(jobTypeLabels(jobType)) = 1;
+
+    // The stall moves its own zero series to 1, the other job types stay at
+    // 0, and the one stream the zeros started carries it all.
+    //
+    // Mutation: label the stall differently from its zero, for example with
+    // another key in recordJobFinished() only. The stall then adds a point of
+    // its own and the JtPack series stays at 0.
+    // Mutation: compare with > instead of >=. The stall is then not counted.
+    EXPECT_EQ(collectOneCounter(*reader_, kJobStallCounter), expected);
+}
+
+TEST_F(MetricsRegistryZeroStart, a_job_just_under_the_threshold_is_not_a_stall)
+{
+    auto const expected = expectedAtZero().at(std::string{kJobStallCounter});
+
+    registry_.recordJobFinished(
+        xrpl::JobTypes::name(xrpl::JtPack), "h", xrpl::telemetry::kJobStallThresholdUs - 1);
+
+    // Mutation: drop the threshold check, so every finished job counts as a
+    // stall. The JtPack series then reads 1.
+    EXPECT_EQ(collectOneCounter(*reader_, kJobStallCounter), expected);
 }
 
 #endif  // XRPL_ENABLE_TELEMETRY
