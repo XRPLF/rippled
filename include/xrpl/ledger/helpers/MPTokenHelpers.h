@@ -3,6 +3,7 @@
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/entries/MPTokenEntry.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Asset.h>
@@ -48,7 +49,7 @@ isGlobalFrozen(SLE const& issuanceSle);
 isIndividualFrozen(ReadView const& view, AccountID const& account, MPTIssue const& mptIssue);
 
 [[nodiscard]] bool
-isIndividualFrozen(SLE const& mptSle);
+isIndividualFrozen(MPTokenEntryR const& mptSle);
 
 /**
  * Returns true if @p account cannot send or receive tokens of @p mptIssue
