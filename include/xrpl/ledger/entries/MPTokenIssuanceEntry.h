@@ -10,6 +10,7 @@
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/Rate.h>
 #include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/UintTypes.h>
 
 #include <cstdint>
@@ -95,6 +96,26 @@ public:
      */
     [[nodiscard]] Rate
     transferRate() const;
+
+    /**
+     * Returns tesSUCCESS if a holding of this issuance may be added:
+     * tecOBJECT_NOT_FOUND if the issuance does not exist, tecNO_AUTH if
+     * lsfMPTCanTransfer is not set.
+     */
+    [[nodiscard]] TER
+    canAddHolding() const
+    {
+        if (!this->exists())
+        {
+            return tecOBJECT_NOT_FOUND;
+        }
+        if (!(*this)->isFlag(lsfMPTCanTransfer))
+        {
+            return tecNO_AUTH;
+        }
+
+        return tesSUCCESS;
+    }
 };
 
 using MPTokenIssuanceEntryR = MPTokenIssuanceEntry<ReadView>;
