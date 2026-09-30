@@ -43,17 +43,8 @@ bool
 isGlobalFrozen(ReadView const& view, MPTIssue const& mptIssue)
 {
     if (auto const sle = MPTokenIssuanceEntryR(mptIssue.getMptID(), view))
-        return isGlobalFrozen(sle);
+        return sle.isGlobalFrozen();
     return false;
-}
-
-bool
-isGlobalFrozen(MPTokenIssuanceEntryR const& issuanceSle)
-{
-    XRPL_ASSERT(
-        issuanceSle->getType() == ltMPTOKEN_ISSUANCE, "xrpl::isGlobalFrozen : MPTokenIssuance SLE");
-
-    return issuanceSle->isFlag(lsfMPTLocked);
 }
 
 bool
@@ -97,7 +88,7 @@ isFrozen(ReadView const& view, AccountID const& account, SLE const& sle, std::ui
         MPTID const mptID = sle[sfMPTokenIssuanceID];
         MPTokenIssuanceEntryR const issuanceSle(mptID, view);
 
-        if ((issuanceSle && isGlobalFrozen(issuanceSle)) || isIndividualFrozen(sle))
+        if ((issuanceSle && issuanceSle.isGlobalFrozen()) || isIndividualFrozen(sle))
             return true;
 
         if (issuanceSle)
@@ -110,7 +101,7 @@ isFrozen(ReadView const& view, AccountID const& account, SLE const& sle, std::ui
     // whole call, so this avoids copying the SLE.
     MPTokenIssuanceEntryR const issuanceSle(SLE::const_pointer(SLE::const_pointer{}, &sle), view);
     MPTIssue const mptIssue{sle[sfSequence], sle[sfIssuer]};
-    return isGlobalFrozen(issuanceSle) || isIndividualFrozen(view, account, mptIssue) ||
+    return issuanceSle.isGlobalFrozen() || isIndividualFrozen(view, account, mptIssue) ||
         isVaultPseudoAccountFrozen(view, account, issuanceSle, depth);
 }
 
@@ -122,7 +113,7 @@ isAnyFrozen(
     std::uint8_t depth)
 {
     MPTokenIssuanceEntryR const issuanceSle(mptIssue.getMptID(), view);
-    if (issuanceSle && isGlobalFrozen(issuanceSle))
+    if (issuanceSle && issuanceSle.isGlobalFrozen())
         return true;
 
     for (auto const& account : accounts)
