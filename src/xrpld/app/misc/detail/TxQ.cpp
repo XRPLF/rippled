@@ -8,6 +8,7 @@
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/basics/mulDiv.h>
+#include <xrpl/basics/scope.h>
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/config/BasicConfig.h>
@@ -50,6 +51,7 @@
 #include <optional>
 #include <stdexcept>
 #include <string>
+#include <string_view>
 #include <tuple>
 #include <utility>
 #include <vector>
@@ -794,6 +796,12 @@ TxQ::apply(
         return ScopedSpanGuard(
             TraceCategory::Transactions, txq_span::prefix::txq, txq_span::op::enqueue);
     }();
+    // txq_status is written once, when this function exits. The OTLP
+    // exporter keeps every value set for a key, so a default followed by the
+    // real outcome would export both. Returns that set no outcome report rejected.
+    std::string_view outcome = txq_span::val::rejected;
+    ScopeExit const writeOutcome(
+        [&span, &outcome]() noexcept { span.setAttribute(txq_span::attr::txqStatus, outcome); });
     // Guarded on the span being recorded: this runs for every transaction and
     // again for each local transaction doAccept replays into the new open
     // ledger, and the two hash strings each allocate. The compiled-out guard's
@@ -809,9 +817,6 @@ TxQ::apply(
         span.setAttribute(txq_span::attr::currentLedgerSeq, static_cast<std::int64_t>(view.seq()));
         span.setAttribute(
             txq_span::attr::currentLedgerHash, to_string(view.header().parentHash).c_str());
-        // Default outcome; overridden below on the direct-apply and queued
-        // paths. Every other early return leaves the tx rejected from the queue.
-        span.setAttribute(txq_span::attr::txqStatus, txq_span::val::rejected);
     }
 
     // See if the transaction is valid, properly formed,
@@ -826,19 +831,17 @@ TxQ::apply(
     if (auto directApplied = tryDirectApply(app, view, tx, flags, j))
     {
         // A result comes back even when the apply failed, so branch on the outcome.
-        // transToken() builds a string, so the whole block is guarded.
-        if (span)
+        if (directApplied->applied)
         {
-            span.setAttribute(txq_span::attr::terCode, transToken(directApplied->ter).c_str());
-            if (directApplied->applied)
-            {
-                span.setAttribute(txq_span::attr::txqStatus, txq_span::val::appliedDirect);
-            }
-            else
-            {
-                span.setAttribute(txq_span::attr::txqStatus, txq_span::val::failed);
-            }
+            outcome = txq_span::val::appliedDirect;
         }
+        else
+        {
+            outcome = txq_span::val::failed;
+        }
+        // transToken() builds a string, so it runs only for a live span.
+        if (span)
+            span.setAttribute(txq_span::attr::terCode, transToken(directApplied->ter).c_str());
         return *directApplied;
     }
 
@@ -1311,7 +1314,7 @@ TxQ::apply(
             /* Can't erase (*replacedTxIter) here because success
                 implies that it has already been deleted.
             */
-            span.setAttribute(txq_span::attr::txqStatus, txq_span::val::applied);
+            outcome = txq_span::val::applied;
             return result;
         }
     }
@@ -1427,7 +1430,7 @@ TxQ::apply(
                      << " to queue."
                      << " Flags: " << flags;
 
-    span.setAttribute(txq_span::attr::txqStatus, txq_span::val::queued);
+    outcome = txq_span::val::queued;
     return {terQUEUED, false};
 }
 
