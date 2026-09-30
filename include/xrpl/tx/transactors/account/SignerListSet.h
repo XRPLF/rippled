@@ -61,14 +61,6 @@ public:
         ReadView const& view,
         beast::Journal const& j) override;
 
-    // Interface used by AccountDelete
-    static TER
-    removeFromLedger(
-        ServiceRegistry& registry,
-        ApplyView& view,
-        AccountID const& account,
-        beast::Journal j);
-
 private:
     static std::tuple<NotTEC, std::uint32_t, std::vector<SignerEntries::SignerEntry>, Operation>
     determineOperation(STTx const& tx, ApplyFlags flags, beast::Journal j);
@@ -85,9 +77,6 @@ private:
     replaceSignerList();
     TER
     destroySignerList();
-
-    void
-    writeSignersToSLE(SLE::pointer const& ledgerEntry, std::uint32_t flags) const;
 };
 
 }  // namespace xrpl

@@ -3,6 +3,7 @@
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/entries/SignerListEntry.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/OracleHelpers.h>
 #include <xrpl/ledger/helpers/ProposalHelpers.h>
@@ -230,10 +231,10 @@ isLedgerEntryOwner(ReadView const& view, SLE const& sle, AccountID const& accoun
         case ltMPTOKEN_ISSUANCE:
             return sle.getAccountID(sfIssuer) == account;
         case ltSIGNER_LIST: {
-            auto const signerList = view.read(keylet::signerList(account));
+            SignerListEntryR const signerList(account, view);
             if (!signerList)
                 return false;
-            return signerList->key() == sle.key();
+            return signerList.key() == sle.key();
         }
         case ltCREDENTIAL: {
             auto const& ownerField = sle.isFlag(lsfAccepted) ? sfSubject : sfIssuer;

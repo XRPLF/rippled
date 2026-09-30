@@ -6,13 +6,13 @@
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/entries/SignerListEntry.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/ledger/helpers/SponsorHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
-#include <xrpl/protocol/Keylet.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STArray.h>
@@ -28,17 +28,11 @@
 #include <algorithm>
 #include <cstddef>
 #include <cstdint>
-#include <memory>
 #include <tuple>
 #include <utility>
 #include <vector>
 
 namespace xrpl {
-
-// We're prepared for there to be multiple signer lists in the future,
-// but we don't need them yet.  So for the time being we're manually
-// setting the sfSignerListID to zero in all cases.
-static std::uint32_t const kDefaultSignerListId = 0;
 
 std::tuple<NotTEC, std::uint32_t, std::vector<SignerEntries::SignerEntry>, SignerListSet::Operation>
 SignerListSet::determineOperation(STTx const& tx, ApplyFlags flags, beast::Journal j)
@@ -148,94 +142,6 @@ SignerListSet::preCompute()
     Transactor::preCompute();
 }
 
-static std::uint32_t
-signerCountBasedOwnerCountDelta(std::size_t entryCount, Rules const& rules)
-{
-    // We always compute the full change in OwnerCount, taking into account:
-    //  o The fact that we're adding/removing a SignerList and
-    //  o Accounting for the number of entries in the list.
-    // We can get away with that because lists are not adjusted incrementally;
-    // we add or remove an entire list.
-    //
-    // The rule is:
-    //  o Simply having a SignerList costs 2 OwnerCount units.
-    //  o And each signer in the list costs 1 more OwnerCount unit.
-    // So, at a minimum, adding a SignerList with 1 entry costs 3 OwnerCount
-    // units.  A SignerList with 8 entries would cost 10 OwnerCount units.
-    //
-    // The static_cast should always be safe since entryCount should always
-    // be in the range from 1 to 32, so the result is always positive.
-    // We've got a lot of room to grow.
-    XRPL_ASSERT(
-        entryCount >= STTx::kMinMultiSigners,
-        "xrpl::signerCountBasedOwnerCountDelta : minimum signers");
-    XRPL_ASSERT(
-        entryCount <= STTx::kMaxMultiSigners,
-        "xrpl::signerCountBasedOwnerCountDelta : maximum signers");
-    return 2 + static_cast<int>(entryCount);
-}
-
-static TER
-removeSignersFromLedger(
-    ServiceRegistry& registry,
-    ApplyView& view,
-    Keylet const& accountKeylet,
-    Keylet const& ownerDirKeylet,
-    Keylet const& signerListKeylet,
-    beast::Journal j)
-{
-    // We have to examine the current SignerList so we know how much to
-    // reduce the OwnerCount.
-    SLE::pointer const signers = view.peek(signerListKeylet);
-
-    // If the signer list doesn't exist we've already succeeded in deleting it.
-    if (!signers)
-        return tesSUCCESS;
-
-    // There are two different ways that the OwnerCount could be managed.
-    // If the lsfOneOwnerCount bit is set then remove just one owner count.
-    // Otherwise use the pre-MultiSignReserve amendment calculation.
-    std::uint32_t removeFromOwnerCount = 1;
-    if (!signers->isFlag(lsfOneOwnerCount))
-    {
-        STArray const& actualList = signers->getFieldArray(sfSignerEntries);
-        removeFromOwnerCount = signerCountBasedOwnerCountDelta(actualList.size(), view.rules());
-    }
-
-    // Remove the node from the account directory.
-    auto const hint = (*signers)[sfOwnerNode];
-
-    if (!view.dirRemove(ownerDirKeylet, hint, signerListKeylet.key, false))
-    {
-        // LCOV_EXCL_START
-        JLOG(j.fatal()) << "Unable to delete SignerList from owner.";
-        return tefBAD_LEDGER;
-        // LCOV_EXCL_STOP
-    }
-
-    decreaseOwnerCountForObject(
-        view, view.peek(accountKeylet), signers, removeFromOwnerCount, registry.getJournal("View"));
-
-    view.erase(signers);
-
-    return tesSUCCESS;
-}
-
-TER
-SignerListSet::removeFromLedger(
-    ServiceRegistry& registry,
-    ApplyView& view,
-    AccountID const& account,
-    beast::Journal j)
-{
-    auto const accountKeylet = keylet::account(account);
-    auto const ownerDirKeylet = keylet::ownerDir(account);
-    auto const signerListKeylet = keylet::signerList(account);
-
-    return removeSignersFromLedger(
-        registry, view, accountKeylet, ownerDirKeylet, signerListKeylet, j);
-}
-
 NotTEC
 SignerListSet::validateQuorumAndSignerEntries(
     std::uint32_t quorum,
@@ -300,13 +206,12 @@ SignerListSet::replaceSignerList()
 {
     auto const accountKeylet = keylet::account(accountID_);
     auto const ownerDirKeylet = keylet::ownerDir(accountID_);
-    auto const signerListKeylet = keylet::signerList(accountID_);
 
     // This may be either a create or a replace.  Preemptively remove any
     // old signer list.  May reduce the reserve, so this is done before
     // checking the reserve.
-    if (TER const ter = removeSignersFromLedger(
-            ctx_.registry, view(), accountKeylet, ownerDirKeylet, signerListKeylet, j_))
+    if (TER const ter =
+            SignerListEntryW(accountID_, view(), j_).removeFromLedger(ctx_.registry, accountID_))
         return ter;
 
     auto const sle = view().peek(accountKeylet);
@@ -329,61 +234,9 @@ SignerListSet::replaceSignerList()
         return ret;
 
     // Everything's ducky.  Add the ltSIGNER_LIST to the ledger.
-    auto signerList = std::make_shared<SLE>(signerListKeylet);
-    view().insert(signerList);
-    writeSignersToSLE(signerList, flags);
-
-    auto viewJ = ctx_.registry.get().getJournal("View");
-    // Add the signer list to the account's directory.
-    auto const page =
-        ctx_.view().dirInsert(ownerDirKeylet, signerListKeylet, describeOwnerDir(accountID_));
-
-    JLOG(j_.trace()) << "Create signer list for account " << toBase58(accountID_) << ": "
-                     << (page ? "success" : "failure");
-
-    if (!page)
-        return tecDIR_FULL;  // LCOV_EXCL_LINE
-
-    signerList->setFieldU64(sfOwnerNode, *page);
-
-    // If we succeeded, the new entry counts against the
-    // creator's reserve.
-    increaseOwnerCount(ctx_.getApplyViewContext(), sle, kAddedOwnerCount, viewJ);
-    addSponsorToLedgerEntry(ctx_.getApplyViewContext(), signerList);
-    return tesSUCCESS;
-}
-
-TER
-SignerListSet::destroySignerList()
-{
-    auto const accountKeylet = keylet::account(accountID_);
-    // Destroying the signer list is only allowed if either the master key
-    // is enabled or there is a regular key.
-    SLE::pointer const ledgerEntry = view().peek(accountKeylet);
-    if (!ledgerEntry)
-        return tefINTERNAL;  // LCOV_EXCL_LINE
-
-    if ((ledgerEntry->isFlag(lsfDisableMaster)) && (!ledgerEntry->isFieldPresent(sfRegularKey)))
-        return tecNO_ALTERNATIVE_KEY;
-
-    auto const ownerDirKeylet = keylet::ownerDir(accountID_);
-    auto const signerListKeylet = keylet::signerList(accountID_);
-    return removeSignersFromLedger(
-        ctx_.registry, view(), accountKeylet, ownerDirKeylet, signerListKeylet, j_);
-}
-
-void
-SignerListSet::writeSignersToSLE(SLE::pointer const& ledgerEntry, std::uint32_t flags) const
-{
-    // Assign the quorum, default SignerListID, and flags.
-    if (ctx_.view().rules().enabled(fixIncludeKeyletFields))
-    {
-        ledgerEntry->setAccountID(sfOwner, accountID_);
-    }
-    ledgerEntry->setFieldU32(sfSignerQuorum, quorum_);
-    ledgerEntry->setFieldU32(sfSignerListID, kDefaultSignerListId);
-    if (flags != 0u)  // Only set flags if they are non-default (default is zero).
-        ledgerEntry->setFieldU32(sfFlags, flags);
+    SignerListEntryW signerList(accountID_, view(), j_);
+    signerList.newSLE();
+    signerList.insert();
 
     // Create the SignerListArray one SignerEntry at a time.
     STArray toLedger(signers_.size());
@@ -400,9 +253,42 @@ SignerListSet::writeSignersToSLE(SLE::pointer const& ledgerEntry, std::uint32_t 
         if (entry.tag)
             obj.setFieldH256(sfWalletLocator, *(entry.tag));
     }
+    signerList.setSigners(accountID_, quorum_, toLedger, flags);
 
-    // Assign the SignerEntries.
-    ledgerEntry->setFieldArray(sfSignerEntries, toLedger);
+    auto viewJ = ctx_.registry.get().getJournal("View");
+    // Add the signer list to the account's directory.
+    auto const page =
+        ctx_.view().dirInsert(ownerDirKeylet, signerList.keylet(), describeOwnerDir(accountID_));
+
+    JLOG(j_.trace()) << "Create signer list for account " << toBase58(accountID_) << ": "
+                     << (page ? "success" : "failure");
+
+    if (!page)
+        return tecDIR_FULL;  // LCOV_EXCL_LINE
+
+    signerList->setFieldU64(sfOwnerNode, *page);
+
+    // If we succeeded, the new entry counts against the
+    // creator's reserve.
+    increaseOwnerCount(ctx_.getApplyViewContext(), sle, kAddedOwnerCount, viewJ);
+    addSponsorToLedgerEntry(ctx_.getApplyViewContext(), signerList.mutableRawSle());
+    return tesSUCCESS;
+}
+
+TER
+SignerListSet::destroySignerList()
+{
+    auto const accountKeylet = keylet::account(accountID_);
+    // Destroying the signer list is only allowed if either the master key
+    // is enabled or there is a regular key.
+    SLE::pointer const ledgerEntry = view().peek(accountKeylet);
+    if (!ledgerEntry)
+        return tefINTERNAL;  // LCOV_EXCL_LINE
+
+    if ((ledgerEntry->isFlag(lsfDisableMaster)) && (!ledgerEntry->isFieldPresent(sfRegularKey)))
+        return tecNO_ALTERNATIVE_KEY;
+
+    return SignerListEntryW(accountID_, view(), j_).removeFromLedger(ctx_.registry, accountID_);
 }
 
 void
