@@ -9,6 +9,7 @@
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/View.h>
+#include <xrpl/ledger/entries/DepositPreauthEntry.h>
 #include <xrpl/ledger/helpers/CredentialHelpers.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/ledger/helpers/NFTokenHelpers.h>
@@ -29,7 +30,6 @@
 #include <xrpl/tx/transactors/delegate/DelegateSet.h>
 #include <xrpl/tx/transactors/did/DIDDelete.h>
 #include <xrpl/tx/transactors/oracle/OracleDelete.h>
-#include <xrpl/tx/transactors/payment/DepositPreauth.h>
 
 #include <cstdint>
 #include <utility>
@@ -114,12 +114,13 @@ TER
 removeDepositPreauthFromLedger(
     ServiceRegistry&,
     ApplyView& view,
-    AccountID const&,
+    AccountID const& account,
     UInt256 const& delIndex,
     SLE::Ref,
     beast::Journal j)
 {
-    return DepositPreauth::removeFromLedger(view, delIndex, j);
+    return DepositPreauthEntryW(Keylet(ltDEPOSIT_PREAUTH, delIndex), view, j)
+        .removeFromLedger(account);
 }
 
 TER
@@ -245,7 +246,7 @@ AccountDelete::preclaim(PreclaimContext const& ctx)
         // lsfDepositAuth flag set by default
         if (sleDst->isFlag(lsfDepositAuth))
         {
-            if (!ctx.view.exists(keylet::depositPreauth(dst, account)))
+            if (!DepositPreauthEntryR(dst, account, ctx.view))
                 return tecNO_PERMISSION;
         }
     }
