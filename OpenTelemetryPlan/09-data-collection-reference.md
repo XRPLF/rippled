@@ -170,14 +170,14 @@ or, for the apply pipeline: `{resource.service.name="xrpld" && name=~"tx.preflig
 
 Controlled by `trace_transactions=1` in `[telemetry]` config.
 
-| Span Name          | Parent                                                      | Source File | Description                                                                                                                                             |
-| ------------------ | ----------------------------------------------------------- | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `txq.enqueue`      | `tx.process` (submission path; root on open-ledger rebuild) | TxQ.cpp     | Queue admission decision (apply/queue/reject). Parents to `tx.process` via explicit context on submit; correlates via `current_ledger_seq` on all paths |
-| `txq.apply_direct` | `txq.enqueue`                                               | TxQ.cpp     | Direct apply attempt that bypasses the queue                                                                                                            |
-| `txq.batch_clear`  | `txq.enqueue`                                               | TxQ.cpp     | Batch clear of an account's queued txs                                                                                                                  |
-| `txq.accept`       | —                                                           | TxQ.cpp     | Ledger-close accept loop (drains the queue)                                                                                                             |
-| `txq.accept_tx`    | `txq.accept`                                                | TxQ.cpp     | Per-queued-transaction apply inside the accept loop                                                                                                     |
-| `txq.cleanup`      | —                                                           | TxQ.cpp     | Once per closed ledger, even when nothing expired: fee metrics, queue resize, expiry of entries (`expired_count`)                                       |
+| Span Name          | Parent                                                    | Source File | Description                                                                                                                                    |
+| ------------------ | --------------------------------------------------------- | ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| `txq.enqueue`      | `tx.process` (submit); `consensus.accept.apply` (rebuild) | TxQ.cpp     | Queue admission decision (apply/queue/reject) on every `TxQ::apply`; a root on a rebuild outside `doAccept`; `current_ledger_seq` on all paths |
+| `txq.apply_direct` | `txq.enqueue`                                             | TxQ.cpp     | Direct apply attempt that bypasses the queue                                                                                                   |
+| `txq.batch_clear`  | `txq.enqueue`                                             | TxQ.cpp     | Batch clear of an account's queued txs                                                                                                         |
+| `txq.accept`       | —                                                         | TxQ.cpp     | Ledger-close accept loop (drains the queue)                                                                                                    |
+| `txq.accept_tx`    | `txq.accept`                                              | TxQ.cpp     | Per-queued-transaction apply inside the accept loop                                                                                            |
+| `txq.cleanup`      | —                                                         | TxQ.cpp     | Once per closed ledger, even when nothing expired: fee metrics, queue resize, expiry of entries (`expired_count`)                              |
 
 **Where to find**: Tempo → TraceQL: `{resource.service.name="xrpld" && name=~"txq.*"}`
 
@@ -329,7 +329,7 @@ The tables below list one row per attribute per subsystem, so a key shared by tw
 | `sequence`            | int64   | `tx.process`                                                 | Transaction sequence number                                                                                                             |
 | `tx_account`          | string  | `tx.process`                                                 | Sending account, raw r-address                                                                                                          |
 | `tx_<field>`          | string  | `tx.process`                                                 | One per other account-typed top-level field the transaction carries (`tx_destination`, `tx_owner`, ...); keys in `TxAccountSpanNames.h` |
-| `tx_status`           | string  | `tx.receive`                                                 | Transaction status (e.g., `"known_bad"`)                                                                                                |
+| `tx_status`           | string  | `tx.receive`                                                 | Outcome, set once: `dropped_no_sync`, `dropped_queue_full` or `queued_for_check`                                                        |
 | `peer_id`             | int64   | `tx.receive`                                                 | Peer identifier (also set on peer spans)                                                                                                |
 | `peer_version`        | string  | `tx.receive`                                                 | Peer protocol version string                                                                                                            |
 | `stage`               | string  | `tx.preflight`, `tx.preclaim`, `tx.transactor`               | Apply-pipeline stage: `preflight`, `preclaim`, or `apply`                                                                               |

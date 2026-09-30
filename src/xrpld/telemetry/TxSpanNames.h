@@ -114,6 +114,10 @@ inline constexpr auto droppedNoSync = makeStr("dropped_no_sync");
  * is at MAX_TRANSACTIONS — backpressure on the receive side.
  */
 inline constexpr auto droppedQueueFull = makeStr("dropped_queue_full");
+/**
+ * Transaction was handed to the job queue to be checked.
+ */
+inline constexpr auto queuedForCheck = makeStr("queued_for_check");
 }  // namespace val
 
 }  // namespace xrpl::telemetry::tx_span

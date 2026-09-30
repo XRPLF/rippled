@@ -27,8 +27,12 @@ TEST(SpanGuardFactory, null_guard_methods_are_safe)
     span.addEvent("event");
 }
 
-TEST(SpanGuardFactory, category_span_returns_null_when_disabled)
+// No Telemetry is installed here, so span() returns a null guard before it
+// reads the category. SpanGuardScope.cpp covers a category that is off.
+TEST(SpanGuardFactory, category_span_returns_null_when_telemetry_absent)
 {
+    ASSERT_EQ(Telemetry::getInstance(), nullptr);
+
     auto span = SpanGuard::span(TraceCategory::Rpc, "rpc", "test");
     EXPECT_FALSE(span);
 
