@@ -202,7 +202,7 @@ ConfidentialMPTHolderKeyUpdate::doApply()
 }
 
 void
-ConfidentialMPTHolderKeyUpdate::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
+ConfidentialMPTHolderKeyUpdate::visitInvariantEntry(bool, SLE::ConstRef, SLE::ConstRef)
 {
 }
 
