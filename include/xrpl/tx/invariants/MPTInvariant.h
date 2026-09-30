@@ -45,7 +45,9 @@ class ValidMPTIssuance
     /**
      * MPTokens and RippleStates deleted during apply. finalize() checks each
      * holder's AccountRoot to detect vault pseudo-account holdings deleted
-     * outside VaultDelete. All these checks are gated on fixCleanup3_2_0.
+     * outside VaultDelete. All these checks are gated on fixCleanup3_2_0. From
+     * fixCleanup3_5_0 a VaultDelete is checked as well, catching the holdings
+     * of a vault that survives the transaction.
      */
     std::vector<std::shared_ptr<SLE const>> deletedHoldings_;
 

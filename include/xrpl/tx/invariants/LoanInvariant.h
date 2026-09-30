@@ -44,6 +44,10 @@ namespace xrpl {
  *          `PaymentRemaining` strictly decreases;
  *          `NextPaymentDueDate` advances by N * `PaymentInterval`, N > 0.
  *       `PaymentRemaining == 0` after: pinned by checks 1 and 5b.
+ *    h. From `fixCleanup3_5_0` onward, a successful `ttLOAN_DELETE` must erase
+ *       exactly one `ltLOAN`, it must be the one identified by the
+ *       transaction's `LoanID`, and the transaction must not leave any other
+ *       Loan created or modified.
  *
  */
 class ValidLoan
