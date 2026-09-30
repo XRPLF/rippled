@@ -562,7 +562,7 @@ private:
         // phase gate, so this is fine to do in Subscription.
         auto const brokerKeylet =
             keylet::loanBroker(owner.id(), SeqProxy::rawSequence(env.seq(owner)));
-        env(loan_broker::set(owner, keylet.key));
+        env(loan_broker::set(owner), loan_broker::kVaultId(keylet.key));
         env.close();
 
         auto const withdraw = [&](STAmount const& amount,
@@ -683,7 +683,7 @@ private:
         // fine to do in Subscription.
         auto const brokerKeylet =
             keylet::loanBroker(owner.id(), SeqProxy::rawSequence(env.seq(owner)));
-        env(loan_broker::set(owner, keylet.key));
+        env(loan_broker::set(owner), loan_broker::kVaultId(keylet.key));
         env.close();
 
         // ---- Investment phase (now == sub + 1) ----
@@ -794,7 +794,7 @@ private:
 
         auto const brokerKeylet =
             keylet::loanBroker(owner.id(), SeqProxy::rawSequence(env.seq(owner)));
-        env(loan_broker::set(owner, keylet.key));
+        env(loan_broker::set(owner), loan_broker::kVaultId(keylet.key));
         env.close();
 
         // Investment phase: originate a zero-interest, single-payment loan
@@ -863,7 +863,7 @@ private:
 
         auto const brokerKeylet =
             keylet::loanBroker(owner.id(), SeqProxy::rawSequence(env.seq(owner)));
-        env(loan_broker::set(owner, keylet.key));
+        env(loan_broker::set(owner), loan_broker::kVaultId(keylet.key));
         env.close();
 
         env.close(tp{d{sub + 1}});

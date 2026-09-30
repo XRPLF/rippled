@@ -865,9 +865,7 @@ checkMetrics(
 namespace loan_broker {
 
 json::Value
-set(AccountID const& account,
-    std::optional<uint256> const& vaultId = std::nullopt,
-    std::uint32_t flags = 0);
+set(AccountID const& account, std::uint32_t flags = 0);
 
 // Use "del" because "delete" is a reserved word in C++.
 json::Value
@@ -892,6 +890,8 @@ json::Value
 coverClawback(AccountID const& account, std::uint32_t flags = 0);
 
 auto const kLoanBrokerId = JTxFieldWrapper<UInt256Field>(sfLoanBrokerID);
+
+auto const kVaultId = JTxFieldWrapper<UInt256Field>(sfVaultID);
 
 auto const kManagementFeeRate =
     valueUnitWrapper<SF_UINT16, unit::TenthBipsTag>(sfManagementFeeRate);

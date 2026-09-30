@@ -27,7 +27,6 @@
 #include <chrono>
 #include <cstdint>
 #include <functional>
-#include <optional>
 #include <string>
 #include <tuple>
 
@@ -199,13 +198,23 @@ private:
 
             BrokerInfo const broker{createVaultAndBroker(env, xrpAsset, lender, brokerParams)};
 
-            auto const vaultIdOnUpdate = features[featureLendingProtocolV1_2]
-                ? std::optional<uint256>{}
-                : std::optional<uint256>{broker.vaultID};
-            env(loan_broker::set(lender, vaultIdOnUpdate),
-                loan_broker::kLoanBrokerId(broker.brokerID),
-                loan_broker::kDebtMaximum(debtMaximum),
-                Fee(env.current()->fees().base * 2));
+            // Post-amendment, VaultID must be omitted on update;
+            // pre-amendment it is required.
+            if (features[featureLendingProtocolV1_2])
+            {
+                env(loan_broker::set(lender),
+                    loan_broker::kLoanBrokerId(broker.brokerID),
+                    loan_broker::kDebtMaximum(debtMaximum),
+                    Fee(env.current()->fees().base * 2));
+            }
+            else
+            {
+                env(loan_broker::set(lender),
+                    loan_broker::kVaultId(broker.vaultID),
+                    loan_broker::kLoanBrokerId(broker.brokerID),
+                    loan_broker::kDebtMaximum(debtMaximum),
+                    Fee(env.current()->fees().base * 2));
+            }
             env.close();
 
             env(set(borrower, broker.brokerID, xrpAsset(principalRequest).value()),

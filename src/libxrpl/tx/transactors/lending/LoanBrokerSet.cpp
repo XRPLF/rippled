@@ -70,26 +70,23 @@ LoanBrokerSet::preflight(PreflightContext const& ctx)
     }
 
     // Amendment-specific field presence rules
-    if (ctx.rules.enabled(featureLendingProtocolV1_2))
+    if (auto const vaultID = tx[~sfVaultID]; ctx.rules.enabled(featureLendingProtocolV1_2))
     {
         if (isLoanBrokerUpdate)
         {
-            if (tx.isFieldPresent(sfVaultID))
+            if (vaultID)
                 return temINVALID;
         }
         else
         {
-            if (!tx.isFieldPresent(sfVaultID) || tx[sfVaultID] == beast::kZero)
+            if (!vaultID || *vaultID == beast::kZero)
                 return temINVALID;
         }
     }
     else
     {
         // Pre-amendment: VaultID was soeREQUIRED, must always be present
-        if (!tx.isFieldPresent(sfVaultID))
-            return temINVALID;
-
-        if (tx[sfVaultID] == beast::kZero)
+        if (!vaultID || *vaultID == beast::kZero)
             return temINVALID;
     }
 
@@ -125,7 +122,7 @@ LoanBrokerSet::getValueFields()
 [[nodiscard]] static std::expected<std::shared_ptr<SLE const>, TER>
 readVault(PreclaimContext const& ctx, AccountID const& account, uint256 const& id)
 {
-    auto const sle = ctx.view.read(keylet::vault(id));
+    auto sle = ctx.view.read(keylet::vault(id));
     if (!sle)
     {
         JLOG(ctx.j.warn()) << "Vault does not exist.";
@@ -166,10 +163,15 @@ preclaimUpdate(PreclaimContext const& ctx, AccountID const& account, uint256 con
             return std::unexpected(tecNO_ENTRY);
         }
 
-        auto const vault = readVault(ctx, account, sleBroker->at(sfVaultID));
-        if (!vault)
-            return vault;
-        sleVault = *vault;
+        // A vault cannot be deleted while a broker is linked, so it must exist.
+        sleVault = ctx.view.read(keylet::vault(sleBroker->at(sfVaultID)));
+        if (!sleVault)
+        {
+            // LCOV_EXCL_START
+            JLOG(ctx.j.fatal()) << "Vault is missing for Broker " << brokerID;
+            return std::unexpected(tefBAD_LEDGER);
+            // LCOV_EXCL_STOP
+        }
     }
     else
     {
@@ -267,7 +269,7 @@ LoanBrokerSet::preclaim(PreclaimContext const& ctx)
 {
     auto const account = ctx.tx[sfAccount];
 
-    auto const maybeVault = [&]() -> std::expected<std::shared_ptr<SLE const>, TER> {
+    auto const maybeVault = [&] {
         if (auto const brokerID = ctx.tx[~sfLoanBrokerID])
             return preclaimUpdate(ctx, account, *brokerID);
         return preclaimCreate(ctx, account);
@@ -278,7 +280,8 @@ LoanBrokerSet::preclaim(PreclaimContext const& ctx)
 
     // Check that relevant values can be represented as the vault asset
     // type. This is mostly only relevant for integral (non-IOU) types.
-    Asset const asset = (*maybeVault)->at(sfAsset);
+    auto const sleVault = *maybeVault;
+    Asset const asset = sleVault->at(sfAsset);
     for (auto const& field : getValueFields())
     {
         if (auto const value = ctx.tx[field]; value && STAmount{asset, *value} != *value)

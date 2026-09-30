@@ -858,7 +858,7 @@ private:
             // Create a loan broker backed by this vault
             auto const brokerKeylet =
                 keylet::loanBroker(d.owner.id(), SeqProxy::rawSequence(env.seq(d.owner)));
-            env(set(d.owner, d.keylet.key));
+            env(set(d.owner), loan_broker::kVaultId(d.keylet.key));
             env.close();
 
             // Borrow 40: assetsAvailable=60, assetsTotal=100

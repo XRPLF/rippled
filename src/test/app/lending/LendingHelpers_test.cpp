@@ -1921,7 +1921,7 @@ public:
 
         auto const brokerKeylet =
             keylet::loanBroker(lender.id(), SeqProxy::rawSequence(env.seq(lender)));
-        env(loan_broker::set(lender, vaultKeylet.key));
+        env(loan_broker::set(lender), loan_broker::kVaultId(vaultKeylet.key));
         env.close();
 
         env(set(borrower, brokerKeylet.key, Number{200'000}),
