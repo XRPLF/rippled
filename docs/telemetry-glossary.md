@@ -665,7 +665,7 @@ How many jobs of a given type are queued or executing at the instant the queue i
 
 ### Ledger acquire (inbound fetch)
 
-Acquiring a ledger means requesting it and its contents from peers when the node lacks it. Acquire outcomes split three ways: complete, failed (the acquisition ended on its own without the ledger, having run out of retries or hit unusable data), and aborted (it was abandoned before finishing, either swept away as stale or discarded wholesale at shutdown). A rising failed rate means the node cannot fetch needed ledgers from its peers.
+Acquiring a ledger means requesting it and its contents from peers when the node lacks it. Acquire outcomes split three ways: complete, failed (the acquisition ended on its own without the ledger, having run out of retries or hit unusable data), and abandoned (it was destroyed before finishing: swept away as stale, discarded wholesale at shutdown, or dropped by an admin fetch_info clear). A rising failed rate means the node cannot fetch needed ledgers from its peers.
 
 **Scope:** per node — measured on and specific to this individual server.
 
