@@ -45,20 +45,14 @@ isGlobalFrozen(ReadView const& view, AccountID const& issuer)
     return false;
 }
 
-namespace {
+namespace detail {
 
-// An owner count cannot be negative. If adjustment would cause a negative
-// owner count, clamp the owner count at 0. Similarly for overflow. This
-// adjustment allows the ownerCount to be adjusted up or down in multiple steps.
-// If id != std::nullopt, then do error reporting.
-//
-// Returns adjusted owner count.
 std::uint32_t
 confineOwnerCount(
     std::uint32_t currentOwnerCount,
     std::int32_t ownerCountAdj,
-    std::optional<AccountID> const& id = std::nullopt,
-    beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
+    std::optional<AccountID> const& id,
+    beast::Journal j)
 {
     std::uint32_t totalOwnerCount{currentOwnerCount + ownerCountAdj};
     if (ownerCountAdj > 0)
@@ -92,10 +86,6 @@ confineOwnerCount(
     }
     return totalOwnerCount;
 }
-
-}  // namespace
-
-namespace detail {
 
 std::uint32_t
 accountCountImpl(AccountRootEntryR const& sle, std::int32_t accountCountAdj, beast::Journal j)
@@ -139,7 +129,7 @@ adjustOwnerCountImpl(
 {
     std::uint32_t const currentOwnerCount = sle->at(sfield);
     std::uint32_t const totalOwnerCount =
-        confineOwnerCount(currentOwnerCount, ownerCountAdj, accID, j);
+        detail::confineOwnerCount(currentOwnerCount, ownerCountAdj, accID, j);
     sle->at(sfield) = totalOwnerCount;
     view.update(sle);
     return totalOwnerCount;
@@ -223,7 +213,7 @@ adjustOwnerCountSigned(
         XRPL_ASSERT(adjustment, "xrpl::adjustOwnerCount : nonzero adjustment input");
         std::uint32_t const current{accountSle->getFieldU32(sfOwnerCount)};
         AccountID const id = (*accountSle)[sfAccount];
-        std::uint32_t const adjusted = confineOwnerCount(current, adjustment, id, j);
+        std::uint32_t const adjusted = detail::confineOwnerCount(current, adjustment, id, j);
 
         OwnerCounts const currentOwnerCount(accountSle.rawSle());
         OwnerCounts finalOwnerCount(currentOwnerCount);
@@ -237,47 +227,6 @@ adjustOwnerCountSigned(
 
 }  // namespace
 
-std::uint32_t
-ownerCount(AccountRootEntryR const& sle, beast::Journal j, std::int32_t ownerCountAdj)
-{
-    XRPL_ASSERT(sle && sle->getType() == ltACCOUNT_ROOT, "xrpl::ownerCount : sle is account root");
-
-    AccountID const id = sle->getAccountID(sfAccount);
-    std::uint32_t const currentOwnerCount = sle->at(sfOwnerCount);
-    std::uint32_t const sponsoredOwnerCount = sle->at(sfSponsoredOwnerCount);
-    std::uint32_t const sponsoringOwnerCount = sle->at(sfSponsoringOwnerCount);
-
-    XRPL_ASSERT(
-        currentOwnerCount >= sponsoredOwnerCount,
-        "xrpl::ownerCount : OwnerCount must be greater than or equal to SponsoredOwnerCount");
-
-    std::int64_t deltaCount =
-        static_cast<std::int64_t>(ownerCountAdj) - sponsoredOwnerCount + sponsoringOwnerCount;
-
-    if (deltaCount > std::numeric_limits<std::int32_t>::max())
-    {
-        // LCOV_EXCL_START
-        deltaCount = std::numeric_limits<std::int32_t>::max();
-        JLOG(j.fatal()) << "Account " << id << " delta count exceeds max, "
-                        << "adjustment: " << ownerCountAdj
-                        << ", sponsoredCount: " << sponsoredOwnerCount
-                        << ", sponsoringOwnerCount: " << sponsoringOwnerCount;
-        // LCOV_EXCL_STOP
-    }
-    else if (deltaCount < std::numeric_limits<std::int32_t>::min())
-    {
-        // LCOV_EXCL_START
-        deltaCount = std::numeric_limits<std::int32_t>::min();
-        JLOG(j.fatal()) << "Account " << id << " delta count is below min, "
-                        << "adjustment: " << ownerCountAdj
-                        << ", sponsoredCount: " << sponsoredOwnerCount
-                        << ", sponsoringCount: " << sponsoringOwnerCount;
-        // LCOV_EXCL_STOP
-    }
-
-    return confineOwnerCount(currentOwnerCount, deltaCount);
-}
-
 XRPAmount
 xrpLiquid(ReadView const& view, AccountID const& id, std::int32_t ownerCountAdj, beast::Journal j)
 {
@@ -286,7 +235,7 @@ xrpLiquid(ReadView const& view, AccountID const& id, std::int32_t ownerCountAdj,
         return beast::kZero;
 
     // Return balance minus reserve
-    std::uint32_t const currentOwnerCount = confineOwnerCount(
+    std::uint32_t const currentOwnerCount = detail::confineOwnerCount(
         view.ownerCountHook(id, OwnerCounts(sle.rawSle())).count(), ownerCountAdj);
     std::uint32_t const currentAccountCount = detail::accountCountImpl(sle, 0, j);
 
