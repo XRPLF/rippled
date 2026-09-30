@@ -1042,20 +1042,12 @@ maxMPTAmount(SLE const& sleIssuance)
 }
 
 std::int64_t
-availableMPTAmount(MPTokenIssuanceEntryR const& sleIssuance)
-{
-    auto const max = sleIssuance.maxAmount();
-    auto const outstanding = (*sleIssuance)[sfOutstandingAmount];
-    return max - outstanding;
-}
-
-std::int64_t
 availableMPTAmount(ReadView const& view, MPTID const& mptID)
 {
     MPTokenIssuanceEntryR const sle(mptID, view);
     if (!sle)
         Throw<std::runtime_error>(transHuman(tecINTERNAL));
-    return availableMPTAmount(sle);
+    return sle.availableAmount();
 }
 
 bool
@@ -1079,7 +1071,7 @@ issuerFundsToSelfIssue(ReadView const& view, MPTIssue const& issue)
     MPTokenIssuanceEntryR const sle(issue.getMptID(), view);
     if (!sle)
         return amount;
-    auto const available = availableMPTAmount(sle);
+    auto const available = sle.availableAmount();
     return view.balanceHookSelfIssueMPT(issue, available);
 }
 
