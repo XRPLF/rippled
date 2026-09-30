@@ -180,21 +180,15 @@ AMMDeposit::preclaim(PreclaimContext const& ctx)
 {
     auto const accountID = ctx.tx[sfAccount];
 
-    AMMEntryR const ammSle(ctx.tx[sfAsset], ctx.tx[sfAsset2], ctx.view);
+    AMMEntryR const ammSle(ctx.tx[sfAsset], ctx.tx[sfAsset2], ctx.view, ctx.j);
     if (!ammSle)
     {
         JLOG(ctx.j.debug()) << "AMM Deposit: Invalid asset pair.";
         return terNO_AMM;
     }
 
-    auto const expected = ammHolds(
-        ctx.view,
-        ammSle,
-        std::nullopt,
-        std::nullopt,
-        FreezeHandling::IgnoreFreeze,
-        AuthHandling::IgnoreAuth,
-        ctx.j);
+    auto const expected = ammSle.holds(
+        std::nullopt, std::nullopt, FreezeHandling::IgnoreFreeze, AuthHandling::IgnoreAuth);
     if (!expected)
         return expected.error();  // LCOV_EXCL_LINE
     auto const [amountBalance, amount2Balance, lptAMMBalance] = *expected;
@@ -422,14 +416,11 @@ AMMDeposit::applyGuts(Sandbox& sb)
         return {tecINTERNAL, false};  // LCOV_EXCL_LINE
     auto const ammAccountID = (*ammSle)[sfAccount];
 
-    auto const expected = ammHolds(
-        sb,
-        ammSle,
+    auto const expected = ammSle.holds(
         amount ? amount->asset() : std::optional<Asset>{},
         amount2 ? amount2->asset() : std::optional<Asset>{},
         FreezeHandling::ZeroIfFrozen,
-        AuthHandling::ZeroIfUnauthorized,
-        ctx_.journal);
+        AuthHandling::ZeroIfUnauthorized);
     if (!expected)
         return {expected.error(), false};  // LCOV_EXCL_LINE
     auto const [amountBalance, amount2Balance, lptAMMBalance] = *expected;

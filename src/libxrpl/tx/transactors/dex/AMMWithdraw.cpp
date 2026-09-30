@@ -186,7 +186,7 @@ AMMWithdraw::preclaim(PreclaimContext const& ctx)
 {
     auto const accountID = ctx.tx[sfAccount];
 
-    AMMEntryR const ammSle(ctx.tx[sfAsset], ctx.tx[sfAsset2], ctx.view);
+    AMMEntryR const ammSle(ctx.tx[sfAsset], ctx.tx[sfAsset2], ctx.view, ctx.j);
     if (!ammSle)
     {
         JLOG(ctx.j.debug()) << "AMM Withdraw: Invalid asset pair.";
@@ -196,14 +196,11 @@ AMMWithdraw::preclaim(PreclaimContext const& ctx)
     auto const amount = ctx.tx[~sfAmount];
     auto const amount2 = ctx.tx[~sfAmount2];
 
-    auto const expected = ammHolds(
-        ctx.view,
-        ammSle,
+    auto const expected = ammSle.holds(
         amount ? amount->asset() : std::optional<Asset>{},
         amount2 ? amount2->asset() : std::optional<Asset>{},
         FreezeHandling::IgnoreFreeze,
-        AuthHandling::IgnoreAuth,
-        ctx.j);
+        AuthHandling::IgnoreAuth);
     if (!expected)
         return expected.error();
     auto const [amountBalance, amount2Balance, lptAMMBalance] = *expected;
@@ -321,7 +318,7 @@ AMMWithdraw::issuerFreezeHandling() const
 {
     // When the withdrawer is the issuer of a pool asset, the issuer can
     // always receive their own token — even when the pool is frozen.
-    // Use IgnoreFreeze so ammHolds returns real balances instead of zero.
+    // Use IgnoreFreeze so AMMEntry::holds() returns real balances instead of zero.
     if (!ctx_.view().rules().enabled(fixCleanup3_3_0))
         return FreezeHandling::ZeroIfFrozen;
 
@@ -364,14 +361,11 @@ AMMWithdraw::applyGuts(Sandbox& sb)
 
     auto const freezeHandling = issuerFreezeHandling();
 
-    auto const expected = ammHolds(
-        sb,
-        ammSle,
+    auto const expected = ammSle.holds(
         amount ? amount->asset() : std::optional<Asset>{},
         amount2 ? amount2->asset() : std::optional<Asset>{},
         freezeHandling,
-        AuthHandling::ZeroIfUnauthorized,
-        ctx_.journal);
+        AuthHandling::ZeroIfUnauthorized);
     if (!expected)
         return {expected.error(), false};
     auto const [amountBalance, amount2Balance, lptAMMBalance] = *expected;
@@ -556,8 +550,8 @@ AMMWithdraw::withdraw(
     beast::Journal const& journal)
 {
     auto const lpTokens = ammLPHolds(view, ammSle, account, journal);
-    auto const expected = ammHolds(
-        view, ammSle, amountWithdraw.asset(), std::nullopt, freezeHandling, authHandling, journal);
+    auto const expected =
+        ammSle.holds(amountWithdraw.asset(), std::nullopt, freezeHandling, authHandling);
     // LCOV_EXCL_START
     if (!expected)
         return {expected.error(), STAmount{}, STAmount{}, STAmount{}};
