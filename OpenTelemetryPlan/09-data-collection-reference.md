@@ -177,7 +177,7 @@ Controlled by `trace_transactions=1` in `[telemetry]` config.
 | `txq.batch_clear`  | `txq.enqueue`                                               | TxQ.cpp     | Batch clear of an account's queued txs                                                                                                                  |
 | `txq.accept`       | —                                                           | TxQ.cpp     | Ledger-close accept loop (drains the queue)                                                                                                             |
 | `txq.accept_tx`    | `txq.accept`                                                | TxQ.cpp     | Per-queued-transaction apply inside the accept loop                                                                                                     |
-| `txq.cleanup`      | —                                                           | TxQ.cpp     | Post-close cleanup of expired queue entries                                                                                                             |
+| `txq.cleanup`      | —                                                           | TxQ.cpp     | Once per closed ledger, even when nothing expired: fee metrics, queue resize, expiry of entries (`expired_count`)                                       |
 
 **Where to find**: Tempo → TraceQL: `{resource.service.name="xrpld" && name=~"txq.*"}`
 
