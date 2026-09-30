@@ -25,7 +25,7 @@ public:
         // Test empty type.
         tx[jss::type] = "";
         result = rpc::chooseLedgerEntryType(tx);
-        BEAST_EXPECT(result.first == RpcInvalidParams);
+        BEAST_EXPECT(result.first == ::rpc::Status(RpcInvalidParams, "Invalid field 'type'."));
         BEAST_EXPECT(result.second == 0);
 
         // Test type using canonical name in mixedcase.
@@ -49,19 +49,20 @@ public:
         // Test type using RPC name with inexact match.
         tx[jss::type] = "MPT_Issuance";
         result = rpc::chooseLedgerEntryType(tx);
-        BEAST_EXPECT(result.first == RpcInvalidParams);
+        BEAST_EXPECT(result.first == ::rpc::Status(RpcInvalidParams, "Invalid field 'type'."));
         BEAST_EXPECT(result.second == 0);
 
         // Test invalid type.
         tx[jss::type] = 1234;
         result = rpc::chooseLedgerEntryType(tx);
-        BEAST_EXPECT(result.first == RpcInvalidParams);
+        BEAST_EXPECT(
+            result.first == ::rpc::Status(RpcInvalidParams, "Invalid field 'type', not string."));
         BEAST_EXPECT(result.second == 0);
 
         // Test unknown type.
         tx[jss::type] = "unknown";
         result = rpc::chooseLedgerEntryType(tx);
-        BEAST_EXPECT(result.first == RpcInvalidParams);
+        BEAST_EXPECT(result.first == ::rpc::Status(RpcInvalidParams, "Invalid field 'type'."));
         BEAST_EXPECT(result.second == 0);
     }
 

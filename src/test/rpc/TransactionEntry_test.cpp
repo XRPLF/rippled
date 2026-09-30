@@ -82,6 +82,16 @@ class TransactionEntry_test : public beast::unit_test::Suite
             BEAST_EXPECT(result[jss::status] == "error");
         }
 
+        for (auto const type : {json::ValueType::Object, json::ValueType::Array})
+        {
+            json::Value params{json::ValueType::Object};
+            params[jss::ledger] = "closed";
+            params[jss::tx_hash] = json::Value{type};
+            auto const result = env.client().invoke("transaction_entry", params)[jss::result];
+            BEAST_EXPECT(result[jss::error] == "malformedRequest");
+            BEAST_EXPECT(result[jss::status] == "error");
+        }
+
         std::string const txHash{
             "E2FE8D4AF3FCC3944DDF6CD8CDDC5E3F0AD50863EF8919AFEF10CB6408CD4D05"};
 
