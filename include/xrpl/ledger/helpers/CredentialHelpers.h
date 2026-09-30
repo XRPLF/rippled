@@ -2,7 +2,6 @@
 
 #include <xrpl/basics/Slice.h>
 #include <xrpl/basics/base_uint.h>
-#include <xrpl/basics/chrono.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
@@ -25,10 +24,6 @@ namespace credentials {
 // These function will be used by the code that use DepositPreauth / Credentials
 // (and any future pre-authorization modes) as part of authorization (all the
 // transfer funds transactions)
-
-// Check if credential sfExpiration field has passed ledger's parentCloseTime
-bool
-checkExpired(CredentialEntryR const& sleCredential, NetClock::time_point const& closed);
 
 // Actually remove a credentials object from the ledger
 [[nodiscard]] TER
