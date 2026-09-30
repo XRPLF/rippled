@@ -119,6 +119,22 @@ public:
     isPseudoAccount() const;
 
     /**
+     * Calculate the liquid XRP balance of this account.
+     *
+     * This is the amount of XRP that the holder is able to freely spend. It
+     * subtracts reserve requirements. Returns zero if the entry does not exist.
+     *
+     * ownerCountAdj adjusts the owner count in case the caller calculates
+     * before ledger entries are added or removed. Positive to add, negative
+     * to subtract.
+     *
+     * @param ownerCountAdj Positive to add to count, negative to reduce count
+     * @return The liquid XRP amount available to the account
+     */
+    [[nodiscard]] XRPAmount
+    xrpLiquid(std::int32_t ownerCountAdj = 0) const;
+
+    /**
      * Returns true if this account has the global freeze flag set.
      */
     [[nodiscard]] bool
