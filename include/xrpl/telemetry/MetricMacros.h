@@ -59,17 +59,21 @@
  * in which a bare `const char*` selects the boolean alternative, so an
  * unwrapped literal is recorded as `true`.
  *
- * Example usage -- UpDownCounter (edge case: value that can decrease):
+ * Example usage -- UpDownCounter (edge case: value that can decrease). The
+ * +1 and the -1 go through one helper, so the name has one call site:
  * @code
- * void ServerHandler::onRpcStart()
+ * void addRpcInFlight(ServiceRegistry& app, std::int64_t const delta)
  * {
- *     XRPL_METRIC_UPDOWN_ADD(app_, "rpc_in_flight_requests",
- *         "RPC requests currently executing", 1);
+ *     XRPL_METRIC_UPDOWN_ADD(app, "rpc_in_flight_requests",
+ *         "RPC requests currently executing", delta);
  * }
- * void ServerHandler::onRpcFinish()
+ * void PerfLogImp::rpcStart(std::string_view method, std::uint64_t requestId)
  * {
- *     XRPL_METRIC_UPDOWN_ADD(app_, "rpc_in_flight_requests",
- *         "RPC requests currently executing", -1);
+ *     addRpcInFlight(app_, 1);
+ * }
+ * void PerfLogImp::rpcEnd(std::string_view method, std::uint64_t requestId, bool finish)
+ * {
+ *     addRpcInFlight(app_, -1);
  * }
  * @endcode
  *
@@ -101,6 +105,10 @@
  * The only branch on the hot path is the recording() gate, which is false
  * once stop() has torn the pipeline down; without that gate a Record on a
  * stale SDK instrument would deref a dangling AggregationConfig.
+ *
+ * @note Give each metric name one call site. Every expansion creates its own
+ * instrument, and two whose descriptions differ become two streams under one
+ * name. Route every value through one helper or loop.
  *
  * @note Static-init safety: Meter::CreateXxx is declared noexcept in the
  * OTel API (opentelemetry/metrics/meter.h), so the function-local static
@@ -192,8 +200,8 @@
     } while (false)
 
 // UpDownCounter: like COUNTER_ADD, but the underlying instrument permits a
-// negative amount (e.g. in-flight request count, +1 on start / -1 on
-// finish from two different points in the same or different call sites).
+// negative amount (e.g. in-flight request count: +1 on start and -1 on
+// finish, both through one helper so the name has one call site).
 // A plain Counter's Add() must never see a negative value per the OTel
 // API contract; use this macro, not COUNTER_ADD, whenever the value can
 // decrease.

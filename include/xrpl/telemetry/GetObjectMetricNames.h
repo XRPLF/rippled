@@ -46,15 +46,17 @@
  * @endcode
  *
  * Example usage -- edge case: the same instrument recorded under two
- * different label values, which is why the label key and both values are
- * constants rather than literals:
+ * different label values from one call site, so it is created once. The
+ * label key and both values are constants rather than literals:
  * @code
- * XRPL_METRIC_COUNTER_ADD_LABELED(
- *     app_, kGetObjectLookupsTotal, kGetObjectLookupsTotalDesc, hits,
- *     {{kLabelResult, std::string(kResultHit)}});
- * XRPL_METRIC_COUNTER_ADD_LABELED(
- *     app_, kGetObjectLookupsTotal, kGetObjectLookupsTotalDesc, misses,
- *     {{kLabelResult, std::string(kResultMiss)}});
+ * std::array<std::pair<std::string_view, int>, 2> const split{
+ *     {{kResultHit, hits}, {kResultMiss, misses}}};
+ * for (auto const& [result, amount] : split)
+ * {
+ *     XRPL_METRIC_COUNTER_ADD_LABELED(
+ *         app_, kGetObjectLookupsTotal, kGetObjectLookupsTotalDesc, amount,
+ *         {{kLabelResult, std::string(result)}});
+ * }
  * @endcode
  *
  * @note These are `constexpr char[]`, not `constexpr std::string_view`. The
@@ -95,7 +97,8 @@ inline constexpr char kGetObjectRequestObjects[] = "getobject_request_objects";
 inline constexpr char kGetObjectLookupUs[] = "getobject_lookup_us";
 
 /**
- * NodeStore lookups performed, split by the `result` label.
+ * NodeStore lookups attempted, split by the `result` label. An entry skipped
+ * before the lookup is not counted.
  */
 inline constexpr char kGetObjectLookupsTotal[] = "getobject_lookups_total";
 

@@ -54,6 +54,7 @@
 #include <queue>
 #include <shared_mutex>
 #include <string>
+#include <string_view>
 #include <type_traits>
 #include <utility>
 #include <vector>
@@ -696,6 +697,20 @@ private:
     std::shared_ptr<SHAMap const>
     getTxSet(std::shared_ptr<protocol::TMGetLedger> const& m) const;
 
+    /**
+     * Counts one TMGetObjectByHash request refused before any NodeStore
+     * access. The only call site of getobject_rejected_total, so both gates
+     * share one instrument.
+     *
+     * @param reason Which gate refused it: kReasonMalformedLedgerHash or
+     *        kReasonOversize.
+     *
+     * @note No-op when telemetry is compiled out or disabled; the macro
+     *       carries that guard.
+     */
+    void
+    recordGetObjectRejected(std::string_view reason);
+
 protected:
     void
     processLedgerRequest(
@@ -703,31 +718,62 @@ protected:
         std::vector<SHAMapNodeID> nodeIDs);
 
     /**
+     * The three object counts of one `TMGetObjectByHash` request.
+     *
+     *   processGetObjectByHash() --> GetObjectCounts --> recordGetObjectMetrics()
+     *
+     * `found <= attempted <= requested` always holds. An entry with no hash or
+     * a wrong-size hash is skipped before the lookup, nothing past
+     * `kHardMaxReplyNodes` is looked at, and the reply grows only on a hit.
+     *
+     * @code
+     * // 5 entries: 1 malformed, 3 of the other 4 stored.
+     * GetObjectCounts const counts{.requested = 5, .attempted = 4, .found = 3};
+     * // Hits 3, misses 1. The malformed entry is neither.
+     * @endcode
+     *
+     * @note A plain value built per request, so there is nothing to lock.
+     */
+    struct GetObjectCounts
+    {
+        /**
+         * Entries in the request, `objects_size()`.
+         */
+        int requested = 0;
+        /**
+         * Entries that reached the NodeStore lookup.
+         */
+        int attempted = 0;
+        /**
+         * Objects returned in the reply.
+         */
+        int found = 0;
+    };
+
+    /**
      * Record the OTel metrics for one completed `TMGetObjectByHash` request.
      *
      * Called once per request from `processGetObjectByHash()`, after the fetch
      * loop and the `charge()` call. A separate method so that one stays within
      * the 80-line limit; it holds no logic of its own beyond deriving the
-     * hit/miss split from `requested` and `found`.
+     * hit/miss split from the counts. Virtual so a test subclass can capture
+     * the counts, as it does with `charge()`.
      *
      * Records `getobject_request_objects`, `getobject_lookup_us`,
      * `getobject_charge`, and both label values of
-     * `getobject_lookups_total`. Every statement is an `XRPL_METRIC_*` record,
-     * and those macros discard their arguments when telemetry is disabled, so
-     * the body costs nothing in that build and the call site needs no guard.
+     * `getobject_lookups_total`, the last from one call site in a loop. The
+     * macros discard their arguments when telemetry is disabled, so the body
+     * costs nothing in that build and the call site needs no guard.
      *
-     * @param requested     Objects the peer asked for (`objects_size()`).
-     * @param found         Objects returned, i.e. the reply's object count.
-     *                      Expected to be `<= requested`; clamped either way
-     *                      so the derived miss count cannot go negative.
+     * @param counts        The request's counts. Hits are `found`; misses are
+     *                      `attempted - found`.
      * @param lookupElapsed Wall time of the whole fetch loop.
      * @param fee           The dynamic charge that was applied, so the
      *                      recorded value is exactly the one charged.
      */
-    void
+    virtual void
     recordGetObjectMetrics(
-        int const requested,
-        int const found,
+        GetObjectCounts const& counts,
         std::chrono::microseconds const lookupElapsed,
         resource::Charge const& fee);
 

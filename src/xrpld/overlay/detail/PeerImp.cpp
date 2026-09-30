@@ -97,6 +97,7 @@
 #include <xrpl.pb.h>
 
 #include <algorithm>
+#include <array>
 #include <atomic>
 #include <chrono>
 #include <cstddef>
@@ -2822,12 +2823,7 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMGetObjectByHash> const& m)
             {
                 JLOG(pJournal_.debug()) << "GetObj: malformed ledgerhash from peer " << id_;
                 fee_.update(resource::kFeeMalformedRequest, "get object ledger hash");
-                XRPL_METRIC_COUNTER_INC_LABELED(
-                    app_,
-                    telemetry::kGetObjectRejectedTotal,
-                    telemetry::kGetObjectRejectedTotalDesc,
-                    {{telemetry::kLabelReason,
-                      std::string(telemetry::kReasonMalformedLedgerHash)}});
+                recordGetObjectRejected(telemetry::kReasonMalformedLedgerHash);
                 return;
             }
         }
@@ -2840,11 +2836,7 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMGetObjectByHash> const& m)
                 << "GetObj: oversized request from peer " << id_ << " (" << packet.objects_size()
                 << " > " << tuning::kHardMaxReplyNodes << ")";
             fee_.update(resource::kFeeInvalidData, "oversized get object request");
-            XRPL_METRIC_COUNTER_INC_LABELED(
-                app_,
-                telemetry::kGetObjectRejectedTotal,
-                telemetry::kGetObjectRejectedTotalDesc,
-                {{telemetry::kLabelReason, std::string(telemetry::kReasonOversize)}});
+            recordGetObjectRejected(telemetry::kReasonOversize);
             return;
         }
 
@@ -2971,12 +2963,16 @@ PeerImp::processGetObjectByHash(std::shared_ptr<protocol::TMGetObjectByHash> con
     // Stopwatch holds no state in that build.
     telemetry::Stopwatch const lookupTimer;
 
+    // Entries that reach the NodeStore. A malformed entry is skipped first,
+    // so it is not a lookup.
+    int attempted = 0;
     for (int i = 0; i < iterLimit; ++i)
     {
         auto const& obj = packet.objects(i);
         if (!obj.has_hash() || !stringIsUInt256Sized(obj.hash()))
             continue;
 
+        ++attempted;
         uint256 const hash = uint256::fromRaw(obj.hash());
         // VFALCO TODO Move this someplace more sensible so we don't
         //             need to inject the NodeStore interfaces.
@@ -3012,31 +3008,43 @@ PeerImp::processGetObjectByHash(std::shared_ptr<protocol::TMGetObjectByHash> con
     resource::Charge const fee = computeGetObjectByHashFee(requested, reply.objects_size());
     charge(fee, "processed get object by hash request");
 
-    // Called unconditionally: every statement in the body is an XRPL_METRIC_*
-    // argument, and those macros discard their arguments when telemetry is
-    // compiled out. All four values here are already computed for the request
-    // itself, so passing them costs nothing.
-    recordGetObjectMetrics(requested, reply.objects_size(), lookupElapsed, fee);
+    // Called unconditionally: the body only feeds XRPL_METRIC_* macros, which
+    // discard their arguments when telemetry is compiled out, and every value
+    // here is already computed for the request itself.
+    recordGetObjectMetrics(
+        GetObjectCounts{
+            .requested = requested, .attempted = attempted, .found = reply.objects_size()},
+        lookupElapsed,
+        fee);
 
     JLOG(pJournal_.trace()) << "GetObj: " << reply.objects_size() << " of " << requested;
     send(std::make_shared<Message>(reply, protocol::mtGET_OBJECTS));
 }
 
-// Reads app_ through the metric macros when telemetry is compiled in and
-// touches no member when it is not, so clang-tidy asks for it to be static.
-// Making it static would give the two builds different signatures.
+// These read app_ through the metric macros when telemetry is compiled in and
+// touch no member when it is not, so clang-tidy asks for them to be static.
+// Making them static would give the two builds different signatures.
 // NOLINTBEGIN(readability-convert-member-functions-to-static)
 void
+PeerImp::recordGetObjectRejected(std::string_view reason)
+{
+    XRPL_METRIC_COUNTER_INC_LABELED(
+        app_,
+        telemetry::kGetObjectRejectedTotal,
+        telemetry::kGetObjectRejectedTotalDesc,
+        {{telemetry::kLabelReason, std::string(reason)}});
+}
+
+void
 PeerImp::recordGetObjectMetrics(
-    int const requested,
-    int const found,
+    GetObjectCounts const& counts,
     std::chrono::microseconds const lookupElapsed,
     resource::Charge const& fee)
 {
     using namespace telemetry;
 
     XRPL_METRIC_HISTOGRAM_RECORD(
-        app_, kGetObjectRequestObjects, kGetObjectRequestObjectsDesc, requested);
+        app_, kGetObjectRequestObjects, kGetObjectRequestObjectsDesc, counts.requested);
 
     XRPL_METRIC_HISTOGRAM_RECORD(
         app_, kGetObjectLookupUs, kGetObjectLookupUsDesc, lookupElapsed.count());
@@ -3047,29 +3055,23 @@ PeerImp::recordGetObjectMetrics(
     // per-object increments on a loop bounded by kHardMaxReplyNodes would be
     // a measurable cost for no extra information.
     //
-    // `found` is the reply size, which the fetch loop only grows on a
-    // successful lookup within `iterLimit <= requested`, so `found <=
-    // requested` always holds. std::max still clamps both values, so a future
-    // caller passing found > requested cannot make the miss count wrap
-    // negative -- the counter takes an unsigned amount, where a wrap would
-    // read as ~1.8e19 rather than as an error.
+    // Only entries that reached the NodeStore are lookups: misses are the
+    // attempts that found nothing, so a malformed entry the loop skipped counts
+    // as neither. std::max keeps a caller that breaks `found <= attempted` from
+    // wrapping the unsigned amount to ~1.8e19.
     //
-    // Written as two calls rather than a loop over a {hit, miss} pair: the two
-    // amounts come from different expressions, so there is no single value to
-    // iterate over.
-    XRPL_METRIC_COUNTER_ADD_LABELED(
-        app_,
-        kGetObjectLookupsTotal,
-        kGetObjectLookupsTotalDesc,
-        static_cast<std::uint64_t>(std::max(0, found)),
-        {{kLabelResult, std::string(kResultHit)}});
-
-    XRPL_METRIC_COUNTER_ADD_LABELED(
-        app_,
-        kGetObjectLookupsTotal,
-        kGetObjectLookupsTotalDesc,
-        static_cast<std::uint64_t>(std::max(0, requested - found)),
-        {{kLabelResult, std::string(kResultMiss)}});
+    // One call site for both label values, so the counter is created once.
+    std::array<std::pair<std::string_view, int>, 2> const split{
+        {{kResultHit, counts.found}, {kResultMiss, counts.attempted - counts.found}}};
+    for (auto const& [result, amount] : split)
+    {
+        XRPL_METRIC_COUNTER_ADD_LABELED(
+            app_,
+            kGetObjectLookupsTotal,
+            kGetObjectLookupsTotalDesc,
+            static_cast<std::uint64_t>(std::max(0, amount)),
+            {{kLabelResult, std::string(result)}});
+    }
 }
 
 // NOLINTEND(readability-convert-member-functions-to-static)
