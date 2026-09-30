@@ -87,7 +87,7 @@ def main() -> None:
     parser.add_argument(
         "--channel",
         required=True,
-        choices=("stable", "rc", "beta", "develop", "private"),
+        choices=("stable", "rc", "beta", "custom", "develop", "private"),
         help="release channel, selecting the deb-<channel> and rpm-<channel>-hosted repositories",
     )
     parser.add_argument(
@@ -98,7 +98,7 @@ def main() -> None:
     )
     parser.add_argument(
         "--nexus-url",
-        default="https://packages.xrplf.org",
+        default="https://packages-upload.xrplf.org",
         help="the Nexus instance to publish to (default: %(default)s)",
     )
     parser.add_argument(

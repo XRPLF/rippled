@@ -49,7 +49,7 @@ TEST(MallocTrimReport, structure)
 }
 
 #if defined(__GLIBC__) && BOOST_OS_LINUX
-TEST(parseStatmRSSkB, standard_format)
+TEST(ParseStatmRSSkB, standard_format)
 {
     using xrpl::detail::parseStatmRSSkB;
 
@@ -121,7 +121,7 @@ TEST(parseStatmRSSkB, standard_format)
 }
 #endif
 
-TEST(mallocTrim, without_debug_logging)
+TEST(MallocTrim, without_debug_logging)
 {
     beast::Journal const journal{beast::Journal::getNullSink()};
 
@@ -144,7 +144,7 @@ TEST(mallocTrim, without_debug_logging)
 #endif
 }
 
-TEST(mallocTrim, empty_tag)
+TEST(MallocTrim, empty_tag)
 {
     beast::Journal const journal{beast::Journal::getNullSink()};
     MallocTrimReport const report = mallocTrim("", journal);
@@ -157,7 +157,7 @@ TEST(mallocTrim, empty_tag)
 #endif
 }
 
-TEST(mallocTrim, with_debug_logging)
+TEST(MallocTrim, with_debug_logging)
 {
     struct DebugSink : public beast::Journal::Sink
     {
@@ -194,7 +194,7 @@ TEST(mallocTrim, with_debug_logging)
 #endif
 }
 
-TEST(mallocTrim, repeated_calls)
+TEST(MallocTrim, repeated_calls)
 {
     beast::Journal const journal{beast::Journal::getNullSink()};
 
