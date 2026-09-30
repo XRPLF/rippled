@@ -260,7 +260,7 @@ LoanBrokerCoverClawback::preclaim(PreclaimContext const& ctx)
     auto const brokerID = *findBrokerID;
     auto const amount = tx[~sfAmount];
 
-    LoanBrokerEntryR const sleBroker(brokerID, ctx.view);
+    LoanBrokerEntryR const sleBroker(brokerID, ctx.view, ctx.j);
     if (!sleBroker)
     {
         JLOG(ctx.j.warn()) << "LoanBroker does not exist.";
@@ -320,12 +320,12 @@ LoanBrokerCoverClawback::preclaim(PreclaimContext const& ctx)
     STAmount const& clawAmount = *findClawAmount;
 
     // FixedPrecision outflows already rounded at the posterior exponent; the
-    // live CoverAvailable scale used by canApplyToBrokerCover would reject a
+    // live CoverAvailable scale used by canApplyToCover would reject a
     // re-fining clawback as sub-ULP.
     if (getVaultVersion(vault) != VaultVersion::FixedPrecision)
     {
-        if (auto const ret = canApplyToBrokerCover(
-                ctx.view, sleBroker, vaultAsset, clawAmount, ctx.j, "LoanBrokerCoverClawback"))
+        if (auto const ret =
+                sleBroker.canApplyToCover(vaultAsset, clawAmount, "LoanBrokerCoverClawback"))
             return ret;
     }
 
