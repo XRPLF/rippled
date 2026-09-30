@@ -796,9 +796,8 @@ TxQ::apply(
         return ScopedSpanGuard(
             TraceCategory::Transactions, txq_span::prefix::txq, txq_span::op::enqueue);
     }();
-    // txq_status is written once, when this function exits. The OTLP
-    // exporter keeps every value set for a key, so a default followed by the
-    // real outcome would export both. Returns that set no outcome report rejected.
+    // txq_status is written once, when this function exits, not as a default
+    // that a later exit overwrites. Returns that set no outcome report rejected.
     std::string_view outcome = txq_span::val::rejected;
     ScopeExit const writeOutcome(
         [&span, &outcome]() noexcept { span.setAttribute(txq_span::attr::txqStatus, outcome); });
