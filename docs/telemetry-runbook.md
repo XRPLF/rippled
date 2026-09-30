@@ -115,14 +115,14 @@ hash); `tx.preflight` is stateless and omits both.
 
 ### Transaction Queue Spans
 
-| Span Name          | Source File | Attributes                                                        | Description                                                                                                                                                                                  |
-| ------------------ | ----------- | ----------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `txq.enqueue`      | TxQ.cpp     | `tx_hash`, `tx_type`, `current_ledger_seq`, `current_ledger_hash` | Enqueue decision; parents to `tx.process` on the submission path (explicit context), a root on the open-ledger rebuild path — `current_ledger_seq` correlates it to the ledger in both cases |
-| `txq.apply_direct` | TxQ.cpp     | --                                                                | Direct apply attempt (bypassing queue)                                                                                                                                                       |
-| `txq.batch_clear`  | TxQ.cpp     | --                                                                | Batch clear of queued transactions for an account                                                                                                                                            |
-| `txq.accept`       | TxQ.cpp     | `queue_size`, `ledger_changed`                                    | Ledger-close accept loop over queued transactions                                                                                                                                            |
-| `txq.accept_tx`    | TxQ.cpp     | `tx_hash`, `retries_remaining`, `ter_code`, `txq_status`          | Per-transaction apply during accept                                                                                                                                                          |
-| `txq.cleanup`      | TxQ.cpp     | `ledger_seq`                                                      | Post-close cleanup of expired queue entries                                                                                                                                                  |
+| Span Name          | Source File | Attributes                                                        | Description                                                                                                                                                             |
+| ------------------ | ----------- | ----------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `txq.enqueue`      | TxQ.cpp     | `tx_hash`, `tx_type`, `current_ledger_seq`, `current_ledger_hash` | Admission decision on every `TxQ::apply` (`txq_status` = outcome); child of `tx.process` on submit, of `consensus.accept.apply` on a rebuild in `doAccept`, else a root |
+| `txq.apply_direct` | TxQ.cpp     | --                                                                | Direct apply attempt (bypassing queue)                                                                                                                                  |
+| `txq.batch_clear`  | TxQ.cpp     | --                                                                | Batch clear of queued transactions for an account                                                                                                                       |
+| `txq.accept`       | TxQ.cpp     | `queue_size`, `ledger_changed`                                    | Ledger-close accept loop over queued transactions                                                                                                                       |
+| `txq.accept_tx`    | TxQ.cpp     | `tx_hash`, `retries_remaining`, `ter_code`, `txq_status`          | Per-transaction apply during accept                                                                                                                                     |
+| `txq.cleanup`      | TxQ.cpp     | `ledger_seq`, `expired_count`                                     | Once per closed ledger, even when nothing expired: fee-metric update, queue resize, and expiry of entries past `LastLedgerSequence` (`expired_count`)                   |
 
 ### PathFinding Spans
 
@@ -793,7 +793,7 @@ Requires `trace_peer=1` in the `[telemetry]` config section.
 | Panel                                | Type       | PromQL                                                 | Labels Used |
 | ------------------------------------ | ---------- | ------------------------------------------------------ | ----------- |
 | Active Peers                         | timeseries | `peer_finder_active_*_peers`                           | —           |
-| Peer Disconnects                     | timeseries | `increase(overlay_peer_disconnects[$__rate_interval])` | —           |
+| Peer Disconnects                     | timeseries | `rate(overlay_peer_disconnects[$__rate_interval])*60`  | —           |
 | Total Network Bytes                  | timeseries | `rate(total_bytes_in/out[$__rate_interval])`           | —           |
 | Total Network Messages               | timeseries | `rate(total_messages_in/out[$__rate_interval])`        | —           |
 | Transaction Traffic                  | timeseries | `rate(transactions_messages_in/out[$__rate_interval])` | —           |

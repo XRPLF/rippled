@@ -247,6 +247,14 @@ if(telemetry)
         xrpl.libxrpl.telemetry
         PUBLIC opentelemetry-cpp::opentelemetry-cpp
     )
+    # PUBLIC, so a parent project that adds this one with add_subdirectory()
+    # and links this module sees the same class layouts it was built with.
+    # CMakeLists.txt also sets the define for every target in this project.
+    # Conan consumers get it from conanfile.py instead.
+    target_compile_definitions(
+        xrpl.libxrpl.telemetry
+        PUBLIC XRPL_ENABLE_TELEMETRY
+    )
 endif()
 
 # Links xrpl.libxrpl.telemetry for the consensus tracing spans declared in

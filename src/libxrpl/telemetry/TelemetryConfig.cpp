@@ -9,6 +9,7 @@
  */
 
 #include <xrpl/basics/contract.h>
+#include <xrpl/beast/core/LexicalCast.h>
 #include <xrpl/config/BasicConfig.h>
 #include <xrpl/telemetry/Telemetry.h>
 
@@ -148,6 +149,37 @@ readBounded(
     }
 
     return static_cast<std::uint32_t>(*parsed);
+}
+
+/**
+ * Read an on/off key. Accepts 0, 1, true or false, in any case.
+ *
+ * Reading it as a number would throw boost::bad_lexical_cast for "true",
+ * naming no key. This reads the text and names the key instead.
+ *
+ * @param section The [telemetry] section to read from.
+ * @param name Key to read, as documented in cfg/xrpld-example.cfg.
+ * @param absentValue Value returned when the key is absent.
+ * @return The configured value, or absentValue if the key is absent.
+ * @throws std::runtime_error For any other value, with a message naming the
+ * key.
+ */
+[[nodiscard]] bool
+readFlag(Section const& section, std::string_view name, bool absentValue)
+{
+    std::string const keyName{name};
+    auto const text = section.get(keyName);
+    if (!text)
+        return absentValue;
+
+    bool flag = false;
+    if (!beast::lexicalCastChecked(flag, *text))
+    {
+        Throw<std::runtime_error>(
+            "Invalid value '" + keyName + "' in " + kSectionLabel +
+            ": must be 0, 1, true or false.");
+    }
+    return flag;
 }
 
 /**
@@ -340,7 +372,7 @@ makeTelemetrySetup(
 {
     Telemetry::Setup setup;
 
-    setup.enabled = section.valueOr<int>(key::enabled, 0) != 0;
+    setup.enabled = readFlag(section, key::enabled, false);
     setup.serviceName = section.valueOr<std::string>(key::serviceName, dflt::serviceName);
     setup.serviceVersion = version;
     setup.serviceInstanceId = section.valueOr<std::string>(key::serviceInstanceId, nodePublicKey);
@@ -349,7 +381,7 @@ makeTelemetrySetup(
     setup.metricsEndpoint =
         section.valueOr<std::string>(key::metricsEndpoint, dflt::metricsEndpoint);
 
-    setup.useTls = section.valueOr<int>(key::useTls, 0) != 0;
+    setup.useTls = readFlag(section, key::useTls, false);
     setup.tlsCertPath = section.valueOr<std::string>(key::tlsCaCert, "");
     setup.tlsClientCertPath = section.valueOr<std::string>(key::tlsClientCert, "");
     setup.tlsClientKeyPath = section.valueOr<std::string>(key::tlsClientKey, "");
@@ -460,11 +492,11 @@ makeTelemetrySetup(
     setup.networkId = networkId;
     setup.networkType = networkTypeFromId(networkId);
 
-    setup.traceTransactions = section.valueOr<int>(key::traceTransactions, 1) != 0;
-    setup.traceConsensus = section.valueOr<int>(key::traceConsensus, 1) != 0;
-    setup.traceRpc = section.valueOr<int>(key::traceRpc, 1) != 0;
-    setup.tracePeer = section.valueOr<int>(key::tracePeer, 1) != 0;
-    setup.traceLedger = section.valueOr<int>(key::traceLedger, 1) != 0;
+    setup.traceTransactions = readFlag(section, key::traceTransactions, true);
+    setup.traceConsensus = readFlag(section, key::traceConsensus, true);
+    setup.traceRpc = readFlag(section, key::traceRpc, true);
+    setup.tracePeer = readFlag(section, key::tracePeer, true);
+    setup.traceLedger = readFlag(section, key::traceLedger, true);
 
     setup.consensusTraceStrategy =
         readConsensusTraceStrategy(section.valueOr<std::string>(key::consensusTraceStrategy, ""));

@@ -1394,20 +1394,19 @@ PeerImp::handleTransaction(
         //
         // SpanGuard is thread-free (holds no Scope), so it is safe to hand to
         // a job-queue worker and end on that thread — no detach step is needed.
-        // Left null when telemetry is compiled out: there is no span to own, so
-        // nothing is allocated for one. Every use below tests it, the job
-        // capture and activateIfLive() accept a null handle, and the transaction
-        // pipeline already takes a null span by default.
+        // The job closure must be copyable, because JobQueue stores it in a
+        // std::function, so the span sits behind a shared_ptr, not in an
+        // optional. The shared_ptr is made only for a live span, so a node with
+        // tracing off allocates nothing for it. Every use below accepts an empty
+        // one.
         std::shared_ptr<SpanGuard> span;
 #ifdef XRPL_ENABLE_TELEMETRY
-        span = std::make_shared<SpanGuard>(txReceiveSpan(txID, *m));
+        if (auto guard = txReceiveSpan(txID, *m))
+            span = std::make_shared<SpanGuard>(std::move(guard));
 #endif
-        // Guarded on the span being live because these values are not free: the
-        // hash string allocates, and the open-ledger index takes the ledger
-        // master's lock. With telemetry compiled out the span is null; with it
-        // compiled in the block is skipped when telemetry is disabled at runtime
-        // or the transaction category is off.
-        if (span && *span)
+        // Guarded because these values are not free: the hash string allocates,
+        // and the open-ledger index takes the open ledger's lock.
+        if (span)
         {
             span->setAttribute(tx_span::attr::txHash, to_string(txID).c_str());
             span->setAttribute(tx_span::attr::peerId, static_cast<int64_t>(id_));
@@ -1422,8 +1421,8 @@ PeerImp::handleTransaction(
             if (auto const version = getVersion(); !version.empty())
                 span->setAttribute(tx_span::attr::peerVersion, version.c_str());
         }
-        // Note: txStatus is set once at each exit path below (not as a default
-        // here) to avoid OTel SDK attribute duplication.
+        // tx_status is set once, in whichever of the three branches below runs.
+        // It has no default here, so each span writes the key once.
 
         JLOG(pJournal_.debug()) << "Got tx " << txID;
 
@@ -1462,6 +1461,8 @@ PeerImp::handleTransaction(
         }
         else
         {
+            if (span)
+                span->setAttribute(tx_span::attr::txStatus, tx_span::val::queuedForCheck);
             app_.getJobQueue().addJob(
                 JtTransaction,
                 "RcvCheckTx",
@@ -2073,13 +2074,14 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMProposeSet> const& m)
     // Create a receive span that links to the sender's trace context
     // (if propagated). shared_ptr keeps it alive across the job boundary.
     // The receive span is a thread-free SpanGuard handed to the job worker;
-    // no scope to strip. The handle stays empty when telemetry is compiled
-    // out, so nothing is allocated on a path every inbound proposal takes.
-    // The job body only carries the handle to hold the span alive, so an
-    // empty handle is safe there.
+    // no scope to strip. The handle is allocated only for a live span, so an
+    // inbound proposal allocates nothing for it when telemetry is compiled out
+    // or disabled. The job body only carries the handle to hold the span
+    // alive, so an empty handle is safe there.
     std::shared_ptr<telemetry::SpanGuard> proposalSpan;
 #ifdef XRPL_ENABLE_TELEMETRY
-    proposalSpan = std::make_shared<telemetry::SpanGuard>(telemetry::proposalReceiveSpan(set));
+    if (auto guard = telemetry::proposalReceiveSpan(set))
+        proposalSpan = std::make_shared<telemetry::SpanGuard>(std::move(guard));
 #endif
     // Every attribute below exists only for the proposalSpan, so the block is guarded
     // on the proposalSpan being live. Unguarded, each inbound proposal — trusted or
@@ -2684,13 +2686,14 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMValidation> const& m)
         // Create a receive span that links to the sender's trace context
         // (if propagated). shared_ptr keeps it alive across the job boundary.
         // The receive span is a thread-free SpanGuard handed to the job worker;
-        // no scope to strip. The handle stays empty when telemetry is compiled
-        // out, so nothing is allocated on a path every inbound validation
-        // takes. The job body only carries the handle to hold the span alive,
-        // so an empty handle is safe there.
+        // no scope to strip. The handle is allocated only for a live span, so
+        // an inbound validation allocates nothing for it when telemetry is
+        // compiled out or disabled. The job body only carries the handle to hold
+        // the span alive, so an empty handle is safe there.
         std::shared_ptr<telemetry::SpanGuard> span;
 #ifdef XRPL_ENABLE_TELEMETRY
-        span = std::make_shared<telemetry::SpanGuard>(telemetry::validationReceiveSpan(*m));
+        if (auto guard = telemetry::validationReceiveSpan(*m))
+            span = std::make_shared<telemetry::SpanGuard>(std::move(guard));
 #endif
         // Every attribute below exists only for the span, so the block is
         // guarded on the span being live. Unguarded, each inbound validation
@@ -2712,10 +2715,9 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMValidation> const& m)
                 static_cast<int64_t>(val->getSignTime().time_since_epoch().count()));
         }
 
-        // validation_receive_status is set once on each exit below, not as a default
-        // here, to avoid OTel SDK attribute duplication. It is what separates
-        // the microsecond drop paths from the queued path, which also covers
-        // job wait and checkValidation.
+        // Each branch below sets validation_receive_status once. It separates
+        // the microsecond drop paths from the queued path, whose span also
+        // covers the job wait and checkValidation.
         if (!isTrusted && (tracking_.load() == Tracking::Diverged))
         {
             if (span && *span)
