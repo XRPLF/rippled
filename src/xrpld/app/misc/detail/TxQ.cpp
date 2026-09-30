@@ -1803,8 +1803,6 @@ TxQ::tryDirectApply(
     beast::Journal j)
 {
     using namespace telemetry;
-    [[maybe_unused]] ScopedSpanGuard const span(
-        TraceCategory::Transactions, txq_span::prefix::txq, txq_span::op::applyDirect);
 
     auto const account = (*tx)[sfAccount];
     auto const sleAccount = view.read(keylet::account(account));
@@ -1839,6 +1837,11 @@ TxQ::tryDirectApply(
 
     if (feeLevelPaid >= requiredFeeLevel)
     {
+        // Opened here so the span covers a real direct apply, not the checks
+        // above that return early.
+        [[maybe_unused]] ScopedSpanGuard const applyDirectSpan(
+            TraceCategory::Transactions, txq_span::prefix::txq, txq_span::op::applyDirect);
+
         // Attempt to apply the transaction directly.
         auto const transactionID = tx->getTransactionID();
         JLOG(j_.trace()) << "Applying transaction " << transactionID << " to open ledger.";
