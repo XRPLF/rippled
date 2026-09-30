@@ -470,7 +470,7 @@ VaultWithdraw::doApply()
             // Round down at the posterior sfAssetsTotal scale so the payout never exceeds the
             // value represented by the redeemed shares. sharesRedeemed is intentionally not
             // re-derived: any trimmed residue stays with remaining shareholders.
-            auto const maybeClamped = clampToAssetsTotalScale(vault, -assetsWithdrawn);
+            auto const maybeClamped = vault.clampToAssetsTotalScale(-assetsWithdrawn);
             if (!maybeClamped)
                 return maybeClamped.error();  // LCOV_EXCL_LINE
             assetsWithdrawn = *maybeClamped;

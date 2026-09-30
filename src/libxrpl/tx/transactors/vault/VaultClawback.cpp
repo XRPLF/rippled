@@ -363,7 +363,7 @@ VaultClawback::assetsToClawback(
         // sub-ULP trimmed off stays in the vault for the remaining shareholders.
         if (ctx_.view().rules().enabled(fixCleanup3_4_0) && assetsRecovered > beast::kZero)
         {
-            auto const maybeClamped = clampToAssetsTotalScale(vault, -assetsRecovered);
+            auto const maybeClamped = vault.clampToAssetsTotalScale(-assetsRecovered);
             if (!maybeClamped)
                 return std::unexpected(maybeClamped.error());
             assetsRecovered = *maybeClamped;
