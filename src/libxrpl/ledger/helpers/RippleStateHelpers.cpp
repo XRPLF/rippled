@@ -52,10 +52,7 @@ creditLimit(
     RippleStateEntryR const sleRippleState(account, issuer, currency, view);
 
     if (sleRippleState)
-    {
-        result = sleRippleState->getFieldAmount(account < issuer ? sfLowLimit : sfHighLimit);
-        result.get<Issue>().account = account;
-    }
+        result = sleRippleState.creditLimit(account, issuer);
 
     XRPL_ASSERT(result.getIssuer() == account, "xrpl::creditLimit : result issuer match");
     XRPL_ASSERT(
@@ -83,12 +80,7 @@ creditBalance(
     RippleStateEntryR const sleRippleState(account, issuer, currency, view);
 
     if (sleRippleState)
-    {
-        result = sleRippleState->getFieldAmount(sfBalance);
-        if (account < issuer)
-            result.negate();
-        result.get<Issue>().account = account;
-    }
+        result = sleRippleState.creditBalance(account, issuer);
 
     XRPL_ASSERT(result.getIssuer() == account, "xrpl::creditBalance : result issuer match");
     XRPL_ASSERT(
